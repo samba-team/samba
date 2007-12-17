@@ -62,6 +62,7 @@ import credentials
 import param
 random_password = _misc.random_password
 ldb_set_credentials = _misc.ldb_set_credentials
+ldb_set_session_info = _misc.ldb_set_session_info
 ldb_set_loadparm = _misc.ldb_set_loadparm
 
 

@@ -450,7 +450,7 @@ PyObject *PyExc_LdbError;
  * Wrap ldb functions 
  */
 
-%rename(Ldb) ldb;
+%rename(Ldb) ldb_context;
 /* Top-level ldb operations */
 typedef struct ldb_context {
     %typemap(out) ldb_error {
@@ -535,7 +535,7 @@ fail:
 } ldb;
 
 %nodefault ldb_message;
-%nodefault Ldb;
+%nodefault ldb_context;
 %nodefault Dn;
 
 %rename(valid_attr_name) ldb_valid_attr_name;

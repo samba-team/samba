@@ -15,6 +15,7 @@ from socket import gethostname, gethostbyname
 import param
 import registry
 from samba import Ldb, substitute_var, valid_netbios_name
+from samba.samdb import SamDB
 from ldb import Dn, SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
         LDB_ERR_NO_SUCH_OBJECT, timestring
 
@@ -164,32 +165,6 @@ def findnss(nssfn, *names):
             pass
     raise Exception("Unable to find user/group for %s" % arguments[1])
 
-def add_foreign(ldb, subobj, sid, desc):
-    """Add a foreign security principle."""
-    add = """
-dn: CN=%s,CN=ForeignSecurityPrincipals,%s
-objectClass: top
-objectClass: foreignSecurityPrincipal
-description: %s
-""" % (sid, subobj.domaindn, desc)
-    # deliberately ignore errors from this, as the records may
-    # already exist
-    for msg in ldb.parse_ldif(add):
-        ldb.add(msg[1])
-
-def setup_name_mapping(subobj, ldb, sid, unixname):
-    """Setup a mapping between a sam name and a unix name."""
-    res = ldb.search(Dn(ldb, subobj.domaindn), SCOPE_SUBTREE, 
-                     "objectSid=%s" % sid, ["dn"])
-    assert len(res) == 1, "Failed to find record for objectSid %s" % sid
-
-    mod = """
-dn: %s
-changetype: modify
-replace: unixName
-unixName: %s
-""" % (res[0].dn, unixname)
-    ldb.modify(ldb.parse_ldif(mod).next()[1])
 
 
 def hostip():
@@ -213,57 +188,6 @@ def ldb_delete(ldb):
     os.unlink(ldb.filename)
     ldb.connect(ldb.filename)
 
-
-def ldb_erase(ldb):
-    """Erase an ldb, removing all records."""
-    # delete the specials
-    for attr in ["@INDEXLIST", "@ATTRIBUTES", "@SUBCLASSES", "@MODULES", 
-                 "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
-        try:
-            ldb.delete(Dn(ldb, attr))
-        except LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
-            # Ignore missing dn errors
-            pass
-
-    basedn = Dn(ldb, "")
-    # and the rest
-    for msg in ldb.search(basedn, SCOPE_SUBTREE, 
-            "(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", 
-            ["dn"]):
-        ldb.delete(msg.dn)
-
-    res = ldb.search(basedn, SCOPE_SUBTREE, "(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", ["dn"])
-    assert len(res) == 0
-
-
-def ldb_erase_partitions(subobj, message, ldb, ldapbackend):
-    """Erase an ldb, removing all records."""
-    assert ldb is not None
-    res = ldb.search(Dn(ldb, ""), SCOPE_BASE, "(objectClass=*)", 
-                     ["namingContexts"])
-    assert len(res) == 1
-    if not "namingContexts" in res[0]:
-        return
-    for basedn in res[0]["namingContexts"]:
-        anything = "(|(objectclass=*)(dn=*))"
-        previous_remaining = 1
-        current_remaining = 0
-
-        if ldapbackend and (basedn == subobj.domaindn):
-            # Only delete objects that were created by provision
-            anything = "(objectcategory=*)"
-
-        k = 0
-        while ++k < 10 and (previous_remaining != current_remaining):
-            # and the rest
-            res2 = ldb.search(Dn(ldb, basedn), SCOPE_SUBTREE, anything, ["dn"])
-            previous_remaining = current_remaining
-            current_remaining = len(res2)
-            for msg in res2:
-                try:
-                    ldb.delete(msg.dn)
-                except LdbError, (_, text):
-                    message("Unable to delete %s: %s" % (msg.dn, text))
 
 
 def open_ldb(session_info, credentials, dbname):
@@ -374,30 +298,30 @@ def setup_name_mappings(subobj, ldb):
     sid = list(res[0]["objectSid"])[0]
 
     # add some foreign sids if they are not present already
-    add_foreign(ldb, subobj, "S-1-5-7", "Anonymous")
-    add_foreign(ldb, subobj, "S-1-1-0", "World")
-    add_foreign(ldb, subobj, "S-1-5-2", "Network")
-    add_foreign(ldb, subobj, "S-1-5-18", "System")
-    add_foreign(ldb, subobj, "S-1-5-11", "Authenticated Users")
+    ldb.add_foreign(subobj.domaindn, "S-1-5-7", "Anonymous")
+    ldb.add_foreign(subobj.domaindn, "S-1-1-0", "World")
+    ldb.add_foreign(subobj.domaindn, "S-1-5-2", "Network")
+    ldb.add_foreign(subobj.domaindn, "S-1-5-18", "System")
+    ldb.add_foreign(subobj.domaindn, "S-1-5-11", "Authenticated Users")
 
     # some well known sids
-    setup_name_mapping(subobj, ldb, "S-1-5-7", subobj.nobody)
-    setup_name_mapping(subobj, ldb, "S-1-1-0", subobj.nogroup)
-    setup_name_mapping(subobj, ldb, "S-1-5-2", subobj.nogroup)
-    setup_name_mapping(subobj, ldb, "S-1-5-18", subobj.root)
-    setup_name_mapping(subobj, ldb, "S-1-5-11", subobj.users)
-    setup_name_mapping(subobj, ldb, "S-1-5-32-544", subobj.wheel)
-    setup_name_mapping(subobj, ldb, "S-1-5-32-545", subobj.users)
-    setup_name_mapping(subobj, ldb, "S-1-5-32-546", subobj.nogroup)
-    setup_name_mapping(subobj, ldb, "S-1-5-32-551", subobj.backup)
+    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-7", subobj.nobody)
+    ldb.setup_name_mapping(subobj.domaindn, "S-1-1-0", subobj.nogroup)
+    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-2", subobj.nogroup)
+    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-18", subobj.root)
+    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-11", subobj.users)
+    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-32-544", subobj.wheel)
+    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-32-545", subobj.users)
+    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-32-546", subobj.nogroup)
+    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-32-551", subobj.backup)
 
     # and some well known domain rids
-    setup_name_mapping(subobj, ldb, sid + "-500", subobj.root)
-    setup_name_mapping(subobj, ldb, sid + "-518", subobj.wheel)
-    setup_name_mapping(subobj, ldb, sid + "-519", subobj.wheel)
-    setup_name_mapping(subobj, ldb, sid + "-512", subobj.wheel)
-    setup_name_mapping(subobj, ldb, sid + "-513", subobj.users)
-    setup_name_mapping(subobj, ldb, sid + "-520", subobj.wheel)
+    ldb.setup_name_mapping(subobj.domaindn, sid + "-500", subobj.root)
+    ldb.setup_name_mapping(subobj.domaindn, sid + "-518", subobj.wheel)
+    ldb.setup_name_mapping(subobj.domaindn, sid + "-519", subobj.wheel)
+    ldb.setup_name_mapping(subobj.domaindn, sid + "-512", subobj.wheel)
+    ldb.setup_name_mapping(subobj.domaindn, sid + "-513", subobj.users)
+    ldb.setup_name_mapping(subobj.domaindn, sid + "-520", subobj.wheel)
 
 
 def provision_become_dc(setup_dir, subobj, message, paths, session_info, 
@@ -414,7 +338,8 @@ def provision_become_dc(setup_dir, subobj, message, paths, session_info,
     setup_ldb(setup_dir, "provision_partitions.ldif", session_info, 
               credentials, subobj, paths.samdb)
 
-    samdb = open_ldb(session_info, credentials, paths.samdb)
+    samdb = SamDB(paths.samdb, session_info=session_info, 
+                  credentials=credentials)
     ldb.transaction_start()
     try:
         message("Setting up %s attributes" % paths.samdb)
@@ -424,7 +349,7 @@ def provision_become_dc(setup_dir, subobj, message, paths, session_info,
         setup_add_ldif(setup_dir, "provision_rootdse_add.ldif", subobj, samdb)
 
         message("Erasing data from partitions")
-        ldb_erase_partitions(subobj, message, samdb, undefined)
+        ldb_erase_partitions(subobj, message, samdb, None)
 
         message("Setting up %s indexes" % paths.samdb)
         setup_add_ldif(setup_dir, "provision_index.ldif", subobj, samdb)
@@ -603,7 +528,7 @@ def provision_dns(setup_dir, subobj, message, paths, session_info, credentials):
     """Write out a DNS zone file, from the info in the current database."""
     message("Setting up DNS zone: %s" % subobj.dnsdomain)
     # connect to the sam
-    ldb = Ldb(paths.samdb, session_info=session_info, credentials=credentials)
+    ldb = SamDB(paths.samdb, session_info=session_info, credentials=credentials)
 
     # These values may have changed, due to an incoming SamSync,
     # or may not have been specified, so fetch them from the database
@@ -614,7 +539,7 @@ def provision_dns(setup_dir, subobj, message, paths, session_info, credentials):
     assert(res[0]["objectGUID"] is not None)
     subobj.domainguid = res[0]["objectGUID"]
 
-    subobj.host_guid = searchone(ldb, subobj.domaindn, 
+    subobj.host_guid = ldb.searchone(subobj.domaindn, 
                                  "(&(objectClass=computer)(cn=%s))" % subobj.netbiosname, "objectGUID")
     assert subobj.host_guid is not None
 
@@ -716,13 +641,6 @@ def provision_guess(lp):
     return subobj
 
 
-def searchone(ldb, basedn, expression, attribute):
-    """search for one attribute as a string."""
-    res = ldb.search(basedn, SCOPE_SUBTREE, expression, [attribute])
-    if len(res) != 1 or res[0][attribute] is None:
-        return None
-    return res[0][attribute]
-
 
 def load_schema(setup_dir, subobj, samdb):
     """Load schema."""
@@ -743,70 +661,6 @@ def load_schema(setup_dir, subobj, samdb):
     head_data = substitute_var(head_data, subobj.subst_vars())
 
     samdb.attach_dsdb_schema_from_ldif(head_data, schema_data)
-
-
-def enable_account(ldb, user_dn):
-    """enable the account."""
-    res = ldb.search(user_dn, SCOPE_ONELEVEL, None, ["userAccountControl"])
-    assert len(res) == 1
-    userAccountControl = res[0].userAccountControl
-    userAccountControl = userAccountControl - 2 # remove disabled bit
-    mod = """
-dn: %s
-changetype: modify
-replace: userAccountControl
-userAccountControl: %u
-""" % (user_dn, userAccountControl)
-    ldb.modify(mod)
-
-
-def newuser(sam, username, unixname, password, message, session_info, 
-            credentials):
-    """add a new user record"""
-    # connect to the sam 
-    ldb.transaction_start()
-
-    # find the DNs for the domain and the domain users group
-    res = ldb.search("", SCOPE_BASE, "defaultNamingContext=*", 
-                     ["defaultNamingContext"])
-    assert(len(res) == 1 and res[0].defaultNamingContext is not None)
-    domain_dn = res[0].defaultNamingContext
-    assert(domain_dn is not None)
-    dom_users = searchone(ldb, domain_dn, "name=Domain Users", "dn")
-    assert(dom_users is not None)
-
-    user_dn = "CN=%s,CN=Users,%s" % (username, domain_dn)
-
-    #
-    #  the new user record. note the reliance on the samdb module to fill
-    #  in a sid, guid etc
-    #
-    ldif = """
-dn: %s
-sAMAccountName: %s
-unixName: %s
-sambaPassword: %s
-objectClass: user
-""" % (user_dn, username, unixname, password)
-    #  add the user to the users group as well
-    modgroup = """
-dn: %s
-changetype: modify
-add: member
-member: %s
-""" % (dom_users, user_dn)
-
-
-    #  now the real work
-    message("Adding user %s" % user_dn)
-    ldb.add(ldif)
-
-    message("Modifying group %s" % dom_users)
-    ldb.modify(modgroup)
-
-    #  modify the userAccountControl to remove the disabled bit
-    enable_account(ldb, user_dn)
-    ldb.transaction_commit()
 
 
 def join_domain(domain, netbios_name, join_type, creds, message):
@@ -835,3 +689,35 @@ def vampire(domain, session_info, credentials, message):
     vampire_ctx.session_info = session_info
     if not ctx.SamSyncLdb(vampire_ctx):
         raise Exception("Migration of remote domain to Samba failed: %s " % vampire_ctx.error_string)
+
+
+def ldb_erase_partitions(subobj, message, ldb, ldapbackend):
+    """Erase an ldb, removing all records."""
+    assert ldb is not None
+    res = ldb.search(Dn(ldb, ""), SCOPE_BASE, "(objectClass=*)", 
+                     ["namingContexts"])
+    assert len(res) == 1
+    if not "namingContexts" in res[0]:
+        return
+    for basedn in res[0]["namingContexts"]:
+        anything = "(|(objectclass=*)(dn=*))"
+        previous_remaining = 1
+        current_remaining = 0
+
+        if ldapbackend and (basedn == subobj.domaindn):
+            # Only delete objects that were created by provision
+            anything = "(objectcategory=*)"
+
+        k = 0
+        while ++k < 10 and (previous_remaining != current_remaining):
+            # and the rest
+            res2 = ldb.search(Dn(ldb, basedn), SCOPE_SUBTREE, anything, ["dn"])
+            previous_remaining = current_remaining
+            current_remaining = len(res2)
+            for msg in res2:
+                try:
+                    ldb.delete(msg.dn)
+                except LdbError, (_, text):
+                    message("Unable to delete %s: %s" % (msg.dn, text))
+
+

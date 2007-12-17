@@ -40,12 +40,10 @@ void ldb_set_credentials(struct ldb_context *ldb, struct cli_credentials *creds)
     ldb_set_opaque(ldb, "credentials", creds);
 }
 
-#if 0 /* Fails to link.. */
 void ldb_set_session_info(struct ldb_context *ldb, struct auth_session_info *session_info)
 {
     ldb_set_opaque(ldb, "sessionInfo", session_info);
 }
-#endif
 
 void ldb_set_loadparm(struct ldb_context *ldb, struct loadparm_context *lp_ctx)
 {

@@ -3075,7 +3075,7 @@ SWIGINTERN PyObject *_wrap_new_Dn(PyObject *SWIGUNUSEDPARM(self), PyObject *args
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   char *  kwnames[] = {
-    (char *) "Ldb",(char *) "str", NULL 
+    (char *) "ldb",(char *) "str", NULL 
   };
   
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:new_Dn",kwnames,&obj0,&obj1)) SWIG_fail;
@@ -4297,7 +4297,7 @@ SWIGINTERN PyObject *_wrap_new_Ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *arg
     arg3 = (char **)(argp3);
   }
   result = (ldb *)new_ldb((char const *)arg1,arg2,(char const *(*))arg3);
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_ldb_context, SWIG_POINTER_OWN |  0 );
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_ldb_context, SWIG_POINTER_NEW |  0 );
   if (alloc1 == SWIG_NEWOBJ) free((char*)buf1);
   return resultobj;
 fail:
@@ -4306,7 +4306,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_connect(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_connect(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   char *arg2 = (char *) 0 ;
@@ -4330,28 +4330,28 @@ SWIGINTERN PyObject *_wrap_ldb_connect(PyObject *SWIGUNUSEDPARM(self), PyObject 
     (char *) "self",(char *) "url",(char *) "flags",(char *) "options", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO|OO:ldb_connect",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO|OO:Ldb_connect",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_connect" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_connect" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_connect" "', argument " "2"" of type '" "char const *""'");
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_connect" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
   if (obj2) {
     ecode3 = SWIG_AsVal_unsigned_SS_int(obj2, &val3);
     if (!SWIG_IsOK(ecode3)) {
-      SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "ldb_connect" "', argument " "3"" of type '" "unsigned int""'");
+      SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Ldb_connect" "', argument " "3"" of type '" "unsigned int""'");
     } 
     arg3 = (unsigned int)(val3);
   }
   if (obj3) {
     res4 = SWIG_ConvertPtr(obj3, &argp4,SWIGTYPE_p_p_char, 0 |  0 );
     if (!SWIG_IsOK(res4)) {
-      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "ldb_connect" "', argument " "4"" of type '" "char const *[]""'"); 
+      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "Ldb_connect" "', argument " "4"" of type '" "char const *[]""'"); 
     } 
     arg4 = (char **)(argp4);
   }
@@ -4376,7 +4376,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_delete_ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_delete_Ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   void *argp1 = 0 ;
@@ -4387,7 +4387,7 @@ SWIGINTERN PyObject *_wrap_delete_ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, SWIG_POINTER_DISOWN |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_ldb" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_Ldb" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   {
@@ -4404,7 +4404,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_search(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_search(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_dn *arg2 = (ldb_dn *) NULL ;
@@ -4436,30 +4436,30 @@ SWIGINTERN PyObject *_wrap_ldb_search(PyObject *SWIGUNUSEDPARM(self), PyObject *
   {
     arg6 = &temp_ldb_result6;
   }
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOOO:ldb_search",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOOO:Ldb_search",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_search" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_search" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   if (obj1) {
     res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_dn, 0 |  0 );
     if (!SWIG_IsOK(res2)) {
-      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_search" "', argument " "2"" of type '" "ldb_dn *""'"); 
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_search" "', argument " "2"" of type '" "ldb_dn *""'"); 
     }
     arg2 = (ldb_dn *)(argp2);
   }
   if (obj2) {
     ecode3 = SWIG_AsVal_int(obj2, &val3);
     if (!SWIG_IsOK(ecode3)) {
-      SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "ldb_search" "', argument " "3"" of type '" "enum ldb_scope""'");
+      SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Ldb_search" "', argument " "3"" of type '" "enum ldb_scope""'");
     } 
     arg3 = (enum ldb_scope)(val3);
   }
   if (obj3) {
     res4 = SWIG_AsCharPtrAndSize(obj3, &buf4, NULL, &alloc4);
     if (!SWIG_IsOK(res4)) {
-      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "ldb_search" "', argument " "4"" of type '" "char const *""'");
+      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "Ldb_search" "', argument " "4"" of type '" "char const *""'");
     }
     arg4 = (char *)(buf4);
   }
@@ -4513,7 +4513,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_delete(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_delete(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_dn *arg2 = (ldb_dn *) 0 ;
@@ -4528,15 +4528,15 @@ SWIGINTERN PyObject *_wrap_ldb_delete(PyObject *SWIGUNUSEDPARM(self), PyObject *
     (char *) "self",(char *) "dn", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_delete",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Ldb_delete",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_delete" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_delete" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_dn, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_delete" "', argument " "2"" of type '" "ldb_dn *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_delete" "', argument " "2"" of type '" "ldb_dn *""'"); 
   }
   arg2 = (ldb_dn *)(argp2);
   {
@@ -4558,7 +4558,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_rename(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_rename(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_dn *arg2 = (ldb_dn *) 0 ;
@@ -4577,20 +4577,20 @@ SWIGINTERN PyObject *_wrap_ldb_rename(PyObject *SWIGUNUSEDPARM(self), PyObject *
     (char *) "self",(char *) "olddn",(char *) "newdn", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO:ldb_rename",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO:Ldb_rename",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_rename" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_rename" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_dn, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_rename" "', argument " "2"" of type '" "ldb_dn *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_rename" "', argument " "2"" of type '" "ldb_dn *""'"); 
   }
   arg2 = (ldb_dn *)(argp2);
   res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_ldb_dn, 0 |  0 );
   if (!SWIG_IsOK(res3)) {
-    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "ldb_rename" "', argument " "3"" of type '" "ldb_dn *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "Ldb_rename" "', argument " "3"" of type '" "ldb_dn *""'"); 
   }
   arg3 = (ldb_dn *)(argp3);
   {
@@ -4612,7 +4612,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_add(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_add(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_msg *arg2 = (ldb_msg *) 0 ;
@@ -4630,10 +4630,10 @@ SWIGINTERN PyObject *_wrap_ldb_add(PyObject *SWIGUNUSEDPARM(self), PyObject *arg
     (char *) "self",(char *) "add_msg", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_add",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Ldb_add",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_add" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_add" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   {
@@ -4691,7 +4691,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_modify(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_modify(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_msg *arg2 = (ldb_msg *) 0 ;
@@ -4706,15 +4706,15 @@ SWIGINTERN PyObject *_wrap_ldb_modify(PyObject *SWIGUNUSEDPARM(self), PyObject *
     (char *) "self",(char *) "message", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_modify",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Ldb_modify",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_modify" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_modify" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_message, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_modify" "', argument " "2"" of type '" "ldb_msg *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_modify" "', argument " "2"" of type '" "ldb_msg *""'"); 
   }
   arg2 = (ldb_msg *)(argp2);
   {
@@ -4741,7 +4741,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_get_config_basedn(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Ldb_get_config_basedn(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_dn *result = 0 ;
@@ -4753,7 +4753,7 @@ SWIGINTERN PyObject *_wrap_ldb_get_config_basedn(PyObject *SWIGUNUSEDPARM(self),
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_get_config_basedn" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_get_config_basedn" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   {
@@ -4769,7 +4769,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_get_root_basedn(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Ldb_get_root_basedn(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_dn *result = 0 ;
@@ -4781,7 +4781,7 @@ SWIGINTERN PyObject *_wrap_ldb_get_root_basedn(PyObject *SWIGUNUSEDPARM(self), P
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_get_root_basedn" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_get_root_basedn" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   {
@@ -4797,7 +4797,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_get_schema_basedn(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Ldb_get_schema_basedn(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_dn *result = 0 ;
@@ -4809,7 +4809,7 @@ SWIGINTERN PyObject *_wrap_ldb_get_schema_basedn(PyObject *SWIGUNUSEDPARM(self),
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_get_schema_basedn" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_get_schema_basedn" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   {
@@ -4825,7 +4825,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_get_default_basedn(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Ldb_get_default_basedn(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_dn *result = 0 ;
@@ -4837,7 +4837,7 @@ SWIGINTERN PyObject *_wrap_ldb_get_default_basedn(PyObject *SWIGUNUSEDPARM(self)
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_get_default_basedn" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_get_default_basedn" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   {
@@ -4853,7 +4853,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_errstring(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Ldb_errstring(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   char *result = 0 ;
@@ -4865,7 +4865,7 @@ SWIGINTERN PyObject *_wrap_ldb_errstring(PyObject *SWIGUNUSEDPARM(self), PyObjec
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_errstring" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_errstring" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   {
@@ -4881,7 +4881,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_set_create_perms(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_set_create_perms(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   unsigned int arg2 ;
@@ -4895,15 +4895,15 @@ SWIGINTERN PyObject *_wrap_ldb_set_create_perms(PyObject *SWIGUNUSEDPARM(self), 
     (char *) "self",(char *) "perms", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_set_create_perms",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Ldb_set_create_perms",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_set_create_perms" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_set_create_perms" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   ecode2 = SWIG_AsVal_unsigned_SS_int(obj1, &val2);
   if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ldb_set_create_perms" "', argument " "2"" of type '" "unsigned int""'");
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "Ldb_set_create_perms" "', argument " "2"" of type '" "unsigned int""'");
   } 
   arg2 = (unsigned int)(val2);
   {
@@ -4919,7 +4919,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_set_modules_dir(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_set_modules_dir(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   char *arg2 = (char *) 0 ;
@@ -4934,15 +4934,15 @@ SWIGINTERN PyObject *_wrap_ldb_set_modules_dir(PyObject *SWIGUNUSEDPARM(self), P
     (char *) "self",(char *) "path", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_set_modules_dir",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Ldb_set_modules_dir",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_set_modules_dir" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_set_modules_dir" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_set_modules_dir" "', argument " "2"" of type '" "char const *""'");
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_set_modules_dir" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
   {
@@ -4960,7 +4960,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_set_debug(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_set_debug(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   void (*arg2)(void *,enum ldb_debug_level,char const *,va_list) = (void (*)(void *,enum ldb_debug_level,char const *,va_list)) 0 ;
@@ -4974,10 +4974,10 @@ SWIGINTERN PyObject *_wrap_ldb_set_debug(PyObject *SWIGUNUSEDPARM(self), PyObjec
     (char *) "self",(char *) "debug", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_set_debug",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Ldb_set_debug",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_set_debug" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_set_debug" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   {
@@ -5006,7 +5006,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_set_opaque(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_set_opaque(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   char *arg2 = (char *) 0 ;
@@ -5025,20 +5025,20 @@ SWIGINTERN PyObject *_wrap_ldb_set_opaque(PyObject *SWIGUNUSEDPARM(self), PyObje
     (char *) "self",(char *) "name",(char *) "value", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO:ldb_set_opaque",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO:Ldb_set_opaque",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_set_opaque" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_set_opaque" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_set_opaque" "', argument " "2"" of type '" "char const *""'");
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_set_opaque" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
   res3 = SWIG_ConvertPtr(obj2,SWIG_as_voidptrptr(&arg3), 0, 0);
   if (!SWIG_IsOK(res3)) {
-    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "ldb_set_opaque" "', argument " "3"" of type '" "void *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "Ldb_set_opaque" "', argument " "3"" of type '" "void *""'"); 
   }
   {
     if (arg1 == NULL)
@@ -5061,7 +5061,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_get_opaque(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_get_opaque(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   char *arg2 = (char *) 0 ;
@@ -5077,15 +5077,15 @@ SWIGINTERN PyObject *_wrap_ldb_get_opaque(PyObject *SWIGUNUSEDPARM(self), PyObje
     (char *) "self",(char *) "name", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_get_opaque",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Ldb_get_opaque",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_get_opaque" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_get_opaque" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_get_opaque" "', argument " "2"" of type '" "char const *""'");
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_get_opaque" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
   {
@@ -5103,7 +5103,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_transaction_start(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Ldb_transaction_start(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_error result;
@@ -5115,7 +5115,7 @@ SWIGINTERN PyObject *_wrap_ldb_transaction_start(PyObject *SWIGUNUSEDPARM(self),
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_transaction_start" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_transaction_start" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   {
@@ -5137,7 +5137,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_transaction_commit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Ldb_transaction_commit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_error result;
@@ -5149,7 +5149,7 @@ SWIGINTERN PyObject *_wrap_ldb_transaction_commit(PyObject *SWIGUNUSEDPARM(self)
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_transaction_commit" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_transaction_commit" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   {
@@ -5171,7 +5171,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_transaction_cancel(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_Ldb_transaction_cancel(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_error result;
@@ -5183,7 +5183,7 @@ SWIGINTERN PyObject *_wrap_ldb_transaction_cancel(PyObject *SWIGUNUSEDPARM(self)
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_transaction_cancel" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_transaction_cancel" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   {
@@ -5205,7 +5205,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb___contains__(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb___contains__(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   ldb_dn *arg2 = (ldb_dn *) 0 ;
@@ -5225,15 +5225,15 @@ SWIGINTERN PyObject *_wrap_ldb___contains__(PyObject *SWIGUNUSEDPARM(self), PyOb
   {
     arg3 = &tmp3; 
   }
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb___contains__",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Ldb___contains__",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb___contains__" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb___contains__" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_dn, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb___contains__" "', argument " "2"" of type '" "ldb_dn *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb___contains__" "', argument " "2"" of type '" "ldb_dn *""'"); 
   }
   arg2 = (ldb_dn *)(argp2);
   {
@@ -5264,7 +5264,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_ldb_parse_ldif(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_parse_ldif(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
   char *arg2 = (char *) 0 ;
@@ -5280,15 +5280,15 @@ SWIGINTERN PyObject *_wrap_ldb_parse_ldif(PyObject *SWIGUNUSEDPARM(self), PyObje
     (char *) "self",(char *) "s", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_parse_ldif",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Ldb_parse_ldif",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_parse_ldif" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_parse_ldif" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_parse_ldif" "', argument " "2"" of type '" "char const *""'");
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_parse_ldif" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
   {
@@ -5306,11 +5306,15 @@ fail:
 }
 
 
-SWIGINTERN PyObject *ldb_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *Ldb_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
   SWIG_TypeNewClientData(SWIGTYPE_p_ldb_context, SWIG_NewClientData(obj));
   return SWIG_Py_Void();
+}
+
+SWIGINTERN PyObject *Ldb_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  return SWIG_Python_InitShadowInstance(args);
 }
 
 SWIGINTERN PyObject *_wrap_valid_attr_name(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
@@ -5438,29 +5442,30 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Message_swiginit", Message_swiginit, METH_VARARGS, NULL},
 	 { (char *)"ldb_ldif_to_pyobject", (PyCFunction) _wrap_ldb_ldif_to_pyobject, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"new_Ldb", (PyCFunction) _wrap_new_Ldb, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_connect", (PyCFunction) _wrap_ldb_connect, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"delete_ldb", (PyCFunction)_wrap_delete_ldb, METH_O, NULL},
-	 { (char *)"ldb_search", (PyCFunction) _wrap_ldb_search, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_delete", (PyCFunction) _wrap_ldb_delete, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_rename", (PyCFunction) _wrap_ldb_rename, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_add", (PyCFunction) _wrap_ldb_add, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_modify", (PyCFunction) _wrap_ldb_modify, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_get_config_basedn", (PyCFunction)_wrap_ldb_get_config_basedn, METH_O, NULL},
-	 { (char *)"ldb_get_root_basedn", (PyCFunction)_wrap_ldb_get_root_basedn, METH_O, NULL},
-	 { (char *)"ldb_get_schema_basedn", (PyCFunction)_wrap_ldb_get_schema_basedn, METH_O, NULL},
-	 { (char *)"ldb_get_default_basedn", (PyCFunction)_wrap_ldb_get_default_basedn, METH_O, NULL},
-	 { (char *)"ldb_errstring", (PyCFunction)_wrap_ldb_errstring, METH_O, NULL},
-	 { (char *)"ldb_set_create_perms", (PyCFunction) _wrap_ldb_set_create_perms, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_set_modules_dir", (PyCFunction) _wrap_ldb_set_modules_dir, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_set_debug", (PyCFunction) _wrap_ldb_set_debug, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_set_opaque", (PyCFunction) _wrap_ldb_set_opaque, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_get_opaque", (PyCFunction) _wrap_ldb_get_opaque, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_transaction_start", (PyCFunction)_wrap_ldb_transaction_start, METH_O, NULL},
-	 { (char *)"ldb_transaction_commit", (PyCFunction)_wrap_ldb_transaction_commit, METH_O, NULL},
-	 { (char *)"ldb_transaction_cancel", (PyCFunction)_wrap_ldb_transaction_cancel, METH_O, NULL},
-	 { (char *)"ldb___contains__", (PyCFunction) _wrap_ldb___contains__, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_parse_ldif", (PyCFunction) _wrap_ldb_parse_ldif, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"ldb_swigregister", ldb_swigregister, METH_VARARGS, NULL},
+	 { (char *)"Ldb_connect", (PyCFunction) _wrap_Ldb_connect, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"delete_Ldb", (PyCFunction)_wrap_delete_Ldb, METH_O, NULL},
+	 { (char *)"Ldb_search", (PyCFunction) _wrap_Ldb_search, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_delete", (PyCFunction) _wrap_Ldb_delete, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_rename", (PyCFunction) _wrap_Ldb_rename, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_add", (PyCFunction) _wrap_Ldb_add, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_modify", (PyCFunction) _wrap_Ldb_modify, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_get_config_basedn", (PyCFunction)_wrap_Ldb_get_config_basedn, METH_O, NULL},
+	 { (char *)"Ldb_get_root_basedn", (PyCFunction)_wrap_Ldb_get_root_basedn, METH_O, NULL},
+	 { (char *)"Ldb_get_schema_basedn", (PyCFunction)_wrap_Ldb_get_schema_basedn, METH_O, NULL},
+	 { (char *)"Ldb_get_default_basedn", (PyCFunction)_wrap_Ldb_get_default_basedn, METH_O, NULL},
+	 { (char *)"Ldb_errstring", (PyCFunction)_wrap_Ldb_errstring, METH_O, NULL},
+	 { (char *)"Ldb_set_create_perms", (PyCFunction) _wrap_Ldb_set_create_perms, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_set_modules_dir", (PyCFunction) _wrap_Ldb_set_modules_dir, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_set_debug", (PyCFunction) _wrap_Ldb_set_debug, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_set_opaque", (PyCFunction) _wrap_Ldb_set_opaque, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_get_opaque", (PyCFunction) _wrap_Ldb_get_opaque, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_transaction_start", (PyCFunction)_wrap_Ldb_transaction_start, METH_O, NULL},
+	 { (char *)"Ldb_transaction_commit", (PyCFunction)_wrap_Ldb_transaction_commit, METH_O, NULL},
+	 { (char *)"Ldb_transaction_cancel", (PyCFunction)_wrap_Ldb_transaction_cancel, METH_O, NULL},
+	 { (char *)"Ldb___contains__", (PyCFunction) _wrap_Ldb___contains__, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_parse_ldif", (PyCFunction) _wrap_Ldb_parse_ldif, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_swigregister", Ldb_swigregister, METH_VARARGS, NULL},
+	 { (char *)"Ldb_swiginit", Ldb_swiginit, METH_VARARGS, NULL},
 	 { (char *)"valid_attr_name", (PyCFunction) _wrap_valid_attr_name, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"timestring", (PyCFunction) _wrap_timestring, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"string_to_time", (PyCFunction) _wrap_string_to_time, METH_VARARGS | METH_KEYWORDS, NULL},
