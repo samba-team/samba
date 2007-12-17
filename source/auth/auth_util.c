@@ -811,7 +811,7 @@ static NTSTATUS create_builtin_administrators( void )
 		return NT_STATUS_NO_MEMORY;
 	}
 	fstr_sprintf( root_name, "%s\\root", get_global_sam_name() );
-	ret = lookup_name( ctx, root_name, 0, NULL, NULL, &root_sid, &type );
+	ret = lookup_name( ctx, root_name, LOOKUP_NAME_DOMAIN, NULL, NULL, &root_sid, &type );
 	TALLOC_FREE( ctx );
 
 	if ( ret ) {
