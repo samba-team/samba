@@ -203,14 +203,15 @@ int ldb_register_module(const struct ldb_module_ops *ops)
 	return 0;
 }
 
-int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
+void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
+			    const char *symbol)
 {
 	char *path;
 	void *handle;
-	int (*init_fn) (void);
+	void *sym;
 
 	if (ldb->modules_dir == NULL)
-		return -1;
+		return NULL;
 
 	path = talloc_asprintf(ldb, "%s/%s.%s", ldb->modules_dir, name, 
 			       SHLIBEXT);
@@ -220,19 +221,19 @@ int ldb_try_load_dso(struct ldb_context *ldb, const char *name)
 	handle = dlopen(path, RTLD_NOW);
 	if (handle == NULL) {
 		ldb_debug(ldb, LDB_DEBUG_WARNING, "unable to load %s from %s: %s\n", name, path, dlerror());
-		return -1;
+		return NULL;
 	}
 
-	init_fn = (int (*)(void))dlsym(handle, "init_module");
+	sym = (int (*)(void))dlsym(handle, symbol);
 
-	if (init_fn == NULL) {
-		ldb_debug(ldb, LDB_DEBUG_ERROR, "no symbol `init_module' found in %s: %s\n", path, dlerror());
-		return -1;
+	if (sym == NULL) {
+		ldb_debug(ldb, LDB_DEBUG_ERROR, "no symbol `%s' found in %s: %s\n", symbol, path, dlerror());
+		return NULL;
 	}
 
 	talloc_free(path);
 
-	return init_fn();
+	return sym;
 }
 
 int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, struct ldb_module *backend, struct ldb_module **out)
@@ -248,9 +249,18 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 		
 		ops = ldb_find_module_ops(module_list[i]);
 		if (ops == NULL) {
-			if (ldb_try_load_dso(ldb, module_list[i]) == 0) {
+			int (*init_fn) (void);
+
+			init_fn = ldb_dso_load_symbol(ldb, module_list[i], 
+						      "init_module");
+			if (init_fn != NULL && init_fn() == 0) {
 				ops = ldb_find_module_ops(module_list[i]);
 			}
+		}
+
+		if (ops == NULL) {
+			ops = ldb_dso_load_symbol(ldb, module_list[i], 
+						      "ldb_module_ops");
 		}
 		
 		if (ops == NULL) {
