@@ -1,4 +1,4 @@
-SELFTEST = $(PERL) $(srcdir)/selftest/selftest.pl --prefix=${selftest_prefix} \
+SELFTEST = $(LIB_PATH_VAR)=$(builddir)/bin/shared $(PERL) $(srcdir)/selftest/selftest.pl --prefix=${selftest_prefix} \
     --builddir=$(builddir) --srcdir=$(srcdir) \
     --expected-failures=$(srcdir)/samba4-knownfail \
     --exclude=$(srcdir)/samba4-skip --testlist="./selftest/samba4_tests.sh|" \

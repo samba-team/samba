@@ -217,6 +217,8 @@ HOSTLD_FLAGS=$self->{config}->{LDFLAGS}
 
 XSLTPROC=$self->{config}->{XSLTPROC}
 
+LIB_PATH_VAR=$self->{config}->{LIB_PATH_VAR}
+
 LEX=$self->{config}->{LEX}
 YACC=$self->{config}->{YACC}
 YAPP=$self->{config}->{YAPP}
