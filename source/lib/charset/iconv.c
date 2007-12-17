@@ -154,17 +154,17 @@ static bool is_utf16(const char *name)
 		strcasecmp(name, "UTF-16LE") == 0;
 }
 
-/*
-  simple iconv_open() wrapper
- */
-smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode, 
-			   bool native_iconv)
+
+
+smb_iconv_t smb_iconv_open_ex(TALLOC_CTX *mem_ctx, const char *tocode, 
+			      const char *fromcode, bool native_iconv)
 {
 	smb_iconv_t ret;
 	const struct charset_functions *from=NULL, *to=NULL;
 	int i;
 
-	ret = (smb_iconv_t)talloc_named(NULL, sizeof(*ret), 
+	ret = (smb_iconv_t)talloc_named(mem_ctx,
+					sizeof(*ret), 
 					"iconv(%s,%s)", tocode, fromcode);
 	if (!ret) {
 		errno = ENOMEM;
@@ -258,6 +258,14 @@ failed:
 	talloc_free(ret);
 	errno = EINVAL;
 	return (smb_iconv_t)-1;
+}
+
+/*
+  simple iconv_open() wrapper
+ */
+smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
+{
+	return smb_iconv_open_ex(NULL, tocode, fromcode, true);
 }
 
 /*

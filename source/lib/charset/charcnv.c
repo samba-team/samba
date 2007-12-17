@@ -134,7 +134,8 @@ static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
 	n1 = charset_name(ic, from);
 	n2 = charset_name(ic, to);
 
-	ic->conv_handles[from][to] = smb_iconv_open(n2, n1, ic->native_iconv);
+	ic->conv_handles[from][to] = smb_iconv_open_ex(ic, n2, n1, 
+						       ic->native_iconv);
 	
 	if (ic->conv_handles[from][to] == (smb_iconv_t)-1) {
 		if ((from == CH_DOS || to == CH_DOS) &&
@@ -146,8 +147,8 @@ static smb_iconv_t get_conv_handle(struct smb_iconv_convenience *ic,
 			n1 = charset_name(ic, from);
 			n2 = charset_name(ic, to);
 			
-			ic->conv_handles[from][to] = smb_iconv_open(n2, n1,
-				ic->native_iconv);
+			ic->conv_handles[from][to] = 
+				smb_iconv_open_ex(ic, n2, n1, ic->native_iconv);
 		}
 	}
 
