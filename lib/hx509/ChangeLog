@@ -2,6 +2,10 @@
 
 	* ca.c: doxygen
 
+2007-12-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* error.c: doxygen
+	
 2007-12-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* hx509_err.et: add NO_STORE
