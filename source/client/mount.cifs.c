@@ -81,6 +81,40 @@ static char * mountpassword = NULL;
 char * domain_name = NULL;
 char * prefixpath = NULL;
 
+/* glibc doesn't have strlcpy, strlcat. Ensure we do. JRA. We
+ * don't link to libreplace so need them here. */
+
+/* like strncpy but does not 0 fill the buffer and always null
+ *    terminates. bufsize is the size of the destination buffer */
+size_t strlcpy(char *d, const char *s, size_t bufsize)
+{
+	size_t len = strlen(s);
+	size_t ret = len;
+	if (bufsize <= 0) return 0;
+	if (len >= bufsize) len = bufsize-1;
+	memcpy(d, s, len);
+	d[len] = 0;
+	return ret;
+}
+
+/* like strncat but does not 0 fill the buffer and always null
+ *    terminates. bufsize is the length of the buffer, which should
+ *       be one more than the maximum resulting string length */
+size_t strlcat(char *d, const char *s, size_t bufsize)
+{
+	size_t len1 = strlen(d);
+	size_t len2 = strlen(s);
+	size_t ret = len1 + len2;
+
+	if (len1+len2 >= bufsize) {
+		len2 = bufsize - (len1+1);
+	}
+	if (len2 > 0) {
+		memcpy(d+len1, s, len2);
+		d[len1+len2] = 0;
+	}
+	return ret;
+}
 
 /* BB finish BB
 
@@ -322,6 +356,8 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 	int out_len = 0;
 	int word_len;
 	int rc = 0;
+	char user[32];
+	char group[32];
 
 	if (!optionsp || !*optionsp)
 		return 1;
@@ -331,6 +367,13 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 		printf("parsing options: %s\n", data);
 
 	/* BB fixme check for separator override BB */
+
+	if (getuid()) {
+		got_uid = 1;
+		snprintf(user,sizeof(user),"%u",getuid());
+		got_gid = 1;
+		snprintf(group,sizeof(group),"%u",getgid());
+	}
 
 /* while ((data = strsep(&options, ",")) != NULL) { */
 	while(data != NULL) {
@@ -494,33 +537,33 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 				got_uid = 1;
 				if (!isdigit(*value)) {
 					struct passwd *pw;
-					static char temp[32];
 
 					if (!(pw = getpwnam(value))) {
 						printf("bad user name \"%s\"\n", value);
 						exit(1);
 					}
-					sprintf(temp, "%u", pw->pw_uid);
-					value = temp;
-					endpwent();
+					snprintf(user, sizeof(user), "%u", pw->pw_uid);
+				} else {
+					strlcpy(user,value,sizeof(user));
 				}
 			}
+			goto nocopy;
 		} else if (strncmp(data, "gid", 3) == 0) {
 			if (value && *value) {
 				got_gid = 1;
 				if (!isdigit(*value)) {
 					struct group *gr;
-					static char temp[32];
 
 					if (!(gr = getgrnam(value))) {
 						printf("bad group name \"%s\"\n", value);
 						exit(1);
 					}
-					sprintf(temp, "%u", gr->gr_gid);
-					value = temp;
-					endpwent();
+					snprintf(group, sizeof(group), "%u", gr->gr_gid);
+				} else {
+					strlcpy(group,value,sizeof(group));
 				}
 			}
+			goto nocopy;
        /* fmask and dmask synonyms for people used to smbfs syntax */
 		} else if (strcmp(data, "file_mode") == 0 || strcmp(data, "fmask")==0) {
 			if (!value || !*value) {
@@ -611,17 +654,55 @@ static int parse_options(char ** optionsp, int * filesys_flags)
 			exit(1);
 		}
 
-		if (out_len)
-			out[out_len++] = ',';
+		if (out_len) {
+			strlcat(out, ",", out_len + word_len + 2);
+			out_len++;
+		}
+
 		if (value)
-			sprintf(out + out_len, "%s=%s", data, value);
+			snprintf(out + out_len, word_len + 1, "%s=%s", data, value);
 		else
-			sprintf(out + out_len, "%s", data);
+			snprintf(out + out_len, word_len + 1, "%s", data);
 		out_len = strlen(out);
 
 nocopy:
 		data = next_keyword;
 	}
+
+	/* special-case the uid and gid */
+	if (got_uid) {
+		word_len = strlen(user);
+
+		out = (char *)realloc(out, out_len + word_len + 6);
+		if (out == NULL) {
+			perror("malloc");
+			exit(1);
+		}
+
+		if (out_len) {
+			strlcat(out, ",", out_len + word_len + 6);
+			out_len++;
+		}
+		snprintf(out + out_len, word_len + 5, "uid=%s", user);
+		out_len = strlen(out);
+	}
+	if (got_gid) {
+		word_len = strlen(group);
+
+		out = (char *)realloc(out, out_len + 1 + word_len + 6);
+		if (out == NULL) {
+		perror("malloc");
+			exit(1);
+		}
+
+		if (out_len) {
+			strlcat(out, ",", out_len + word_len + 6);
+			out_len++;
+		}
+		snprintf(out + out_len, word_len + 5, "gid=%s", group);
+		out_len = strlen(out);
+	}
+
 	free(*optionsp);
 	*optionsp = out;
 	return 0;
@@ -724,7 +805,7 @@ static char * check_for_domain(char **ppuser)
 	if(domainnm == NULL)
 		return NULL;
 
-	strcpy(domainnm,*ppuser);
+	strlcpy(domainnm,*ppuser,len+1);
 
 /*	move_string(*ppuser, usernm+1) */
 	len = strlen(usernm+1);
@@ -927,6 +1008,7 @@ int main(int argc, char ** argv)
 	int gid = 0;
 	int optlen = 0;
 	int orgoptlen = 0;
+	size_t options_size = 0;
 	int retry = 0; /* set when we have to retry mount with uppercase */
 	struct stat statbuf;
 	struct utsname sysinfo;
@@ -1204,38 +1286,38 @@ mount_retry:
 		optlen += strlen(mountpassword) + 6;
 	if(options)
 		free(options);
-	options = (char *)malloc(optlen + 10 + 64 /* space for commas in password */ + 8 /* space for domain=  , domain name itself was counted as part of the length username string above */);
+	options_size = optlen + 10 + 64;
+	options = (char *)malloc(options_size /* space for commas in password */ + 8 /* space for domain=  , domain name itself was counted as part of the length username string above */);
 
 	if(options == NULL) {
 		printf("Could not allocate memory for mount options\n");
 		return -1;
 	}
-		
 
 	options[0] = 0;
-	strncat(options,"unc=",4);
-	strcat(options,share_name);
+	strlcpy(options,"unc=",options_size);
+	strlcat(options,share_name,options_size);
 	/* scan backwards and reverse direction of slash */
 	temp = strrchr(options, '/');
 	if(temp > options + 6)
 		*temp = '\\';
 	if(ipaddr) {
-		strncat(options,",ip=",4);
-		strcat(options,ipaddr);
+		strlcat(options,",ip=",options_size);
+		strlcat(options,ipaddr,options_size);
 	}
 
 	if(user_name) {
 		/* check for syntax like user=domain\user */
 		if(got_domain == 0)
 			domain_name = check_for_domain(&user_name);
-		strncat(options,",user=",6);
-		strcat(options,user_name);
+		strlcat(options,",user=",options_size);
+		strlcat(options,user_name,options_size);
 	}
 	if(retry == 0) {
-		if(domain_name) { 
+		if(domain_name) {
 			/* extra length accounted for in option string above */
-			strncat(options,",domain=",8);
-			strcat(options,domain_name);
+			strlcat(options,",domain=",options_size);
+			strlcat(options,domain_name,options_size);
 		}
 	}
 	if(mountpassword) {
@@ -1244,21 +1326,21 @@ mount_retry:
 /*		if(sep is not set)*/
 		if(retry == 0)
 			check_for_comma(&mountpassword);
-		strncat(options,",pass=",6);
-		strcat(options,mountpassword);
+		strlcat(options,",pass=",options_size);
+		strlcat(options,mountpassword,options_size);
 	}
 
-	strncat(options,",ver=",5);
-	strcat(options,MOUNT_CIFS_VERSION_MAJOR);
+	strlcat(options,",ver=",options_size);
+	strlcat(options,MOUNT_CIFS_VERSION_MAJOR,options_size);
 
 	if(orgoptions) {
-		strcat(options,",");
-		strcat(options,orgoptions);
+		strlcat(options,",",options_size);
+		strlcat(options,orgoptions,options_size);
 	}
 	if(prefixpath) {
-		strncat(options,",prefixpath=",12);
-		strcat(options,prefixpath); /* no need to cat the / */
-	}	
+		strlcat(options,",prefixpath=",options_size);
+		strlcat(options,prefixpath,options_size); /* no need to cat the / */
+	}
 	if(verboseflag)
 		printf("\nmount.cifs kernel mount options %s \n",options);
 
@@ -1301,23 +1383,23 @@ mount_retry:
 				char * mount_user = getusername();
 				memset(mountent.mnt_opts,0,200);
 				if(flags & MS_RDONLY)
-					strcat(mountent.mnt_opts,"ro");
+					strlcat(mountent.mnt_opts,"ro",220);
 				else
-					strcat(mountent.mnt_opts,"rw");
+					strlcat(mountent.mnt_opts,"rw",220);
 				if(flags & MS_MANDLOCK)
-					strcat(mountent.mnt_opts,",mand");
+					strlcat(mountent.mnt_opts,",mand",220);
 				if(flags & MS_NOEXEC)
-					strcat(mountent.mnt_opts,",noexec");
+					strlcat(mountent.mnt_opts,",noexec",220);
 				if(flags & MS_NOSUID)
-					strcat(mountent.mnt_opts,",nosuid");
+					strlcat(mountent.mnt_opts,",nosuid",220);
 				if(flags & MS_NODEV)
-					strcat(mountent.mnt_opts,",nodev");
+					strlcat(mountent.mnt_opts,",nodev",220);
 				if(flags & MS_SYNCHRONOUS)
-					strcat(mountent.mnt_opts,",synch");
+					strlcat(mountent.mnt_opts,",synch",220);
 				if(mount_user) {
 					if(getuid() != 0) {
-						strcat(mountent.mnt_opts,",user=");
-						strcat(mountent.mnt_opts,mount_user);
+						strlcat(mountent.mnt_opts,",user=",220);
+						strlcat(mountent.mnt_opts,mount_user,220);
 					}
 					/* free(mount_user); do not free static mem */
 				}
@@ -1356,4 +1438,3 @@ mount_exit:
 	free(share_name);
 	return rc;
 }
-

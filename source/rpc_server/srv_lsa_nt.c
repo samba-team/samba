@@ -1032,6 +1032,31 @@ NTSTATUS _lsa_lookup_sids3(pipes_struct *p,
 	return r_u->status;
 }
 
+static int lsa_lookup_level_to_flags(uint16 level)
+{
+	int flags;
+
+	switch (level) {
+		case 1:
+			flags = LOOKUP_NAME_ALL;
+			break;
+		case 2:
+			flags = LOOKUP_NAME_DOMAIN|LOOKUP_NAME_REMOTE|LOOKUP_NAME_ISOLATED;
+			break;
+		case 3:
+			flags = LOOKUP_NAME_DOMAIN|LOOKUP_NAME_ISOLATED;
+			break;
+		case 4:
+		case 5:
+		case 6:
+		default:
+			flags = LOOKUP_NAME_NONE;
+			break;
+	}
+
+	return flags;
+}
+
 /***************************************************************************
 lsa_reply_lookup_names
  ***************************************************************************/
@@ -1051,10 +1076,7 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 		DEBUG(5,("_lsa_lookup_names: truncating name lookup list to %d\n", num_entries));
 	}
 		
-	/* Probably the lookup_level is some sort of bitmask. */
-	if (q_u->lookup_level == 1) {
-		flags = LOOKUP_NAME_ALL;
-	}
+	flags = lsa_lookup_level_to_flags(q_u->lookup_level);
 
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
 	if (!ref) {
@@ -1120,11 +1142,8 @@ NTSTATUS _lsa_lookup_names2(pipes_struct *p, LSA_Q_LOOKUP_NAMES2 *q_u, LSA_R_LOO
 		num_entries = MAX_LOOKUP_SIDS;
 		DEBUG(5,("_lsa_lookup_names2: truncating name lookup list to %d\n", num_entries));
 	}
-		
-	/* Probably the lookup_level is some sort of bitmask. */
-	if (q_u->lookup_level == 1) {
-		flags = LOOKUP_NAME_ALL;
-	}
+
+	flags = lsa_lookup_level_to_flags(q_u->lookup_level);
 
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
 	if (ref == NULL) {

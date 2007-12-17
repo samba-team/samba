@@ -126,6 +126,7 @@ static int dochild(int master, const char *slavedev, const struct passwd *pass,
 	struct termios stermios;
 	gid_t gid;
 	uid_t uid;
+	char * const eptrs[1] = { NULL };
 
 	if (pass == NULL)
 	{
@@ -222,7 +223,7 @@ static int dochild(int master, const char *slavedev, const struct passwd *pass,
 	       passwordprogram));
 
 	/* execl() password-change application */
-	if (execl("/bin/sh", "sh", "-c", passwordprogram, NULL) < 0)
+	if (execle("/bin/sh", "sh", "-c", passwordprogram, NULL, eptrs) < 0)
 	{
 		DEBUG(3, ("Bad status returned from %s\n", passwordprogram));
 		return (False);
@@ -498,6 +499,9 @@ BOOL chgpasswd(const char *name, const struct passwd *pass,
 #ifdef WITH_PAM
 	if (lp_pam_password_change()) {
 		BOOL ret;
+#ifdef HAVE_SETLOCALE
+		char *prevlocale = setlocale(LC_ALL, "C");
+#endif
 
 		if (as_root)
 			become_root();
@@ -510,6 +514,10 @@ BOOL chgpasswd(const char *name, const struct passwd *pass,
 			
 		if (as_root)
 			unbecome_root();
+
+#ifdef HAVE_SETLOCALE
+		setlocale(LC_ALL, prevlocale);
+#endif
 
 		return ret;
 	}
