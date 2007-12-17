@@ -1,8 +1,11 @@
 #!/usr/bin/python
-# Simple tests for the ldb python API
+# Simple tests for the ldb python bindings.
 # Copyright (C) 2007 Jelmer Vernooij <jelmer@samba.org>
+
 import sys
 import unittest
+
+# Required for the standalone LDB build
 sys.path.append("swig")
 sys.path.append("build/lib.linux-i686-2.4")
 
