@@ -120,7 +120,7 @@ int rep_getifaddrs(struct ifaddrs **);
 #endif
 
 #ifndef HAVE_FREEIFADDRS
-int rep_freeifaddrs(struct ifaddrs **);
+void rep_freeifaddrs(struct ifaddrs **);
 #endif
 
 /*
