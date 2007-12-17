@@ -2435,7 +2435,7 @@ struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	uint32 sec_chan_type = 0;
 	unsigned char machine_pwd[16];
-	fstring machine_account;
+	const char *machine_account;
 
 	netlogon_pipe = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON, perr);
 	if (!netlogon_pipe) {
@@ -2443,7 +2443,8 @@ struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 	}
 
 	/* Get the machine account credentials from secrets.tdb. */
-	if (!get_trust_pw(domain, machine_pwd, &sec_chan_type)) {
+	if (!get_trust_pw(domain, machine_pwd, &machine_account, &sec_chan_type))
+	{
 		DEBUG(0, ("get_schannel_session_key: could not fetch "
 			"trust account password for domain '%s'\n",
 			domain));
@@ -2451,20 +2452,6 @@ struct rpc_pipe_client *get_schannel_session_key(struct cli_state *cli,
 		*perr = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		return NULL;
 	}
-
-	/* A DC should use DOMAIN$ as its account name.
-	   A member server can only use it's machine name since it
-	   does not have an account in a trusted domain.
-
-	   We don't check the domain against lp_workgroup() here since
-	   'net ads join' has to continue to work with only the realm
-	   specified in smb.conf.  -- jerry */
-
-        if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains()) {
-		fstrcpy( machine_account, lp_workgroup() );
-        } else {
-		fstrcpy(machine_account, global_myname());
-        }
 
 	*perr = rpccli_netlogon_setup_creds(netlogon_pipe,
 					cli->desthost, /* server name */
@@ -2561,7 +2548,7 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	uint32 sec_chan_type = 0;
 	unsigned char machine_pwd[16];
-	fstring machine_account;
+	const char *machine_account;
 
 	netlogon_pipe = cli_rpc_pipe_open_spnego_ntlmssp(cli, PI_NETLOGON, PIPE_AUTH_LEVEL_PRIVACY, domain, username, password, perr);
 	if (!netlogon_pipe) {
@@ -2569,7 +2556,8 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 	}
 
 	/* Get the machine account credentials from secrets.tdb. */
-	if (!get_trust_pw(domain, machine_pwd, &sec_chan_type)) {
+	if (!get_trust_pw(domain, machine_pwd, &machine_account, &sec_chan_type))
+	{
 		DEBUG(0, ("get_schannel_session_key_auth_ntlmssp: could not fetch "
 			"trust account password for domain '%s'\n",
 			domain));
@@ -2577,20 +2565,6 @@ static struct rpc_pipe_client *get_schannel_session_key_auth_ntlmssp(struct cli_
 		*perr = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		return NULL;
 	}
-
-        /* if we are a DC and this is a trusted domain, then we need to use our
-           domain name in the net_req_auth2() request */
-
-        if ( IS_DC && !strequal(domain, lp_workgroup()) && lp_allow_trusted_domains()) {
-		fstrcpy( machine_account, lp_workgroup() );
-        } else {
-                /* Hmmm. Is this correct for trusted domains when we're a member server ? JRA. */
-                if (strequal(domain, lp_workgroup())) {
-                        fstrcpy(machine_account, global_myname());
-                } else {
-                        fstrcpy(machine_account, domain);
-                }
-        }
 
 	*perr = rpccli_netlogon_setup_creds(netlogon_pipe,
 					cli->desthost,     /* server name */

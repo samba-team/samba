@@ -642,10 +642,12 @@ char *secrets_fetch_machine_password(const char *domain,
 }
 
 /*******************************************************************
- Wrapper around retrieving the trust account password
+ Wrapper around retrieving the trust account password.
+ appropriate account name is stored in account_name.
 *******************************************************************/
 
-BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16], uint32 *channel)
+BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16],
+		  const char **account_name, uint32 *channel)
 {
 	DOM_SID sid;
 	char *pwd;
@@ -667,6 +669,10 @@ BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16], uint32 *channel)
 		E_md4hash(pwd, ret_pwd);
 		SAFE_FREE(pwd);
 
+		if (account_name != NULL) {
+			*account_name = lp_workgroup();
+		}
+
 		return True;
 	}
 
@@ -675,7 +681,13 @@ BOOL get_trust_pw(const char *domain, uint8 ret_pwd[16], uint32 *channel)
 
 	if (secrets_fetch_trust_account_password(domain, ret_pwd,
 						&last_set_time, channel))
+	{
+		if (account_name != NULL) {
+			*account_name = global_myname();
+		}
+
 		return True;
+	}
 
 	DEBUG(5, ("get_trust_pw: could not fetch trust account "
 		"password for domain %s\n", domain));

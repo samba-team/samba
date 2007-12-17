@@ -1991,27 +1991,11 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 		neg_flags |= NETLOGON_NEG_SCHANNEL;
 	}
 
-	if (!get_trust_pw(domain->name, mach_pwd, &sec_chan_type)) {
+	if (!get_trust_pw(domain->name, mach_pwd, &account_name,
+			  &sec_chan_type))
+	{
 		cli_rpc_pipe_close(netlogon_pipe);
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-	}
-
-	/* if we are a DC and this is a trusted domain, then we need to use our
-	   domain name in the net_req_auth2() request */
-
-	if ( IS_DC
-		&& !strequal(domain->name, lp_workgroup())
-		&& lp_allow_trusted_domains() ) 
-	{
-		account_name = lp_workgroup();
-	} else {
-		account_name = domain->primary ?
-			global_myname() : domain->name;
-	}
-
-	if (account_name == NULL) {
-		cli_rpc_pipe_close(netlogon_pipe);
-		return NT_STATUS_NO_MEMORY;
 	}
 
 	result = rpccli_netlogon_setup_creds(
