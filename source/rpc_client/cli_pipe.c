@@ -2466,7 +2466,6 @@ static bool get_schannel_session_key_common(struct rpc_pipe_client *netlogon_pip
 	if (((*pneg_flags) & NETLOGON_NEG_SCHANNEL) == 0) {
 		DEBUG(3, ("get_schannel_session_key: Server %s did not offer schannel\n",
 			cli->desthost));
-		cli_rpc_pipe_close(netlogon_pipe);
 		*perr = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		return false;
 	}
