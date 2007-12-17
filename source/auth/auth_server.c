@@ -268,8 +268,6 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 					 auth_serversupplied_info **server_info)
 {
 	struct cli_state *cli;
-	static unsigned char badpass[24];
-	static fstring baduser; 
 	static bool tested_password_server = False;
 	static bool bad_password_server = False;
 	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
@@ -300,23 +298,6 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 		}
 	}
 
-	if(badpass[0] == 0)
-		memset(badpass, 0x1f, sizeof(badpass));
-
-	if((user_info->nt_resp.length == sizeof(badpass)) && 
-	   !memcmp(badpass, user_info->nt_resp.data, sizeof(badpass))) {
-		/* 
-		 * Very unlikely, our random bad password is the same as the users
-		 * password.
-		 */
-		memset(badpass, badpass[0]+1, sizeof(badpass));
-	}
-
-	if(baduser[0] == 0) {
-		fstrcpy(baduser, INVALID_USER_PREFIX);
-		fstrcat(baduser, global_myname());
-	}
-
 	/*
 	 * Attempt a session setup with a totally incorrect password.
 	 * If this succeeds with the guest bit *NOT* set then the password
@@ -330,6 +311,28 @@ static NTSTATUS check_smbserver_security(const struct auth_context *auth_context
 	 */
 
 	if ((!tested_password_server) && (lp_paranoid_server_security())) {
+		unsigned char badpass[24];
+		char *baduser = NULL;
+
+		memset(badpass, 0x1f, sizeof(badpass));
+
+		if((user_info->nt_resp.length == sizeof(badpass)) && 
+		   !memcmp(badpass, user_info->nt_resp.data, sizeof(badpass))) {
+			/* 
+			 * Very unlikely, our random bad password is the same as the users
+			 * password.
+			 */
+			memset(badpass, badpass[0]+1, sizeof(badpass));
+		}
+
+		baduser = talloc_asprintf(mem_ctx,
+					"%s%s",
+					INVALID_USER_PREFIX,
+					global_myname());
+		if (!baduser) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		if (NT_STATUS_IS_OK(cli_session_setup(cli, baduser,
 						      (char *)badpass,
 						      sizeof(badpass), 
