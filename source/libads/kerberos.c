@@ -521,7 +521,10 @@ char *kerberos_get_default_realm_from_ccache( void )
 #if defined(HAVE_KRB5_PRINCIPAL_GET_REALM)
 	realm = SMB_STRDUP(krb5_principal_get_realm(ctx, princ));
 #elif defined(HAVE_KRB5_PRINC_REALM)
-	realm = SMB_STRDUP(krb5_princ_realm(ctx, princ)->data);
+	{
+		krb5_data *realm_data = krb5_princ_realm(ctx, princ);
+		realm = SMB_STRNDUP(realm_data->data, realm_data->length);
+	}
 #endif
 
   out:
