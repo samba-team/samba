@@ -159,7 +159,8 @@ void ldb_reset_err_string(struct ldb_context *ldb);
 
 int ldb_register_module(const struct ldb_module_ops *);
 int ldb_register_backend(const char *url_prefix, ldb_connect_fn);
-int ldb_try_load_dso(struct ldb_context *ldb, const char *name);
+void *ldb_dso_load_symbol(struct ldb_context *ldb, const char *name,
+			    const char *symbol);
 
 /* The following definitions come from lib/ldb/common/ldb_debug.c  */
 void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
