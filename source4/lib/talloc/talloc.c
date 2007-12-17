@@ -1245,8 +1245,6 @@ char *talloc_strndup_append_buffer(char *s, const char *a, size_t n)
 #endif
 #endif
 
-char *talloc_vasprintf(const void *t, const char *fmt, va_list ap) PRINTF_ATTRIBUTE(2,0);
-
 char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
 {
 	int len;
@@ -1278,7 +1276,6 @@ char *talloc_vasprintf(const void *t, const char *fmt, va_list ap)
   Perform string formatting, and return a pointer to newly allocated
   memory holding the result, inside a memory pool.
  */
-char *talloc_asprintf(const void *t, const char *fmt, ...) PRINTF_ATTRIBUTE(2,3);
 char *talloc_asprintf(const void *t, const char *fmt, ...)
 {
 	va_list ap;
