@@ -79,6 +79,10 @@
 #include <sys/ioctl.h>
 #endif
 
+#ifdef HAVE_STROPTS_H
+#include <stropts.h>
+#endif
+
 #ifdef REPLACE_INET_NTOA
 /* define is in "replace.h" */
 char *rep_inet_ntoa(struct in_addr ip);
