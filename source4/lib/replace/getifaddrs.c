@@ -60,7 +60,7 @@ struct sockaddr *sockaddr_dup(struct sockaddr *sa)
 #else
 	socklen = sizeof(struct sockaddr_storage);
 #endif
-	ret = = calloc(1, socklen);
+	ret = calloc(1, socklen);
 	if (ret == NULL)
 		return NULL;
 	memcpy(ret, sa, socklen);
