@@ -10,12 +10,9 @@ Samba 4 is currently not yet in a state where it is usable in
 production environments. Note the WARNINGS below, and the STATUS file,
 which aims to document what should and should not work.
 
-Samba4 alpha2 is the culmination of 4.5 years of development under our
-belt since Tridge first proposed a new Virtual File System (VFS) layer
-for Samba3 (a project which eventually lead to our Active Directory
-efforts), and 1.5 years since we first released a Technology Preview,
-we wish to allow users, managers and developers to see how we have
-progressed, and to invite feedback and support.
+Samba4 alpha2 follows on from our first alpha release, made in
+September, and the Technology Preview series we have offered for some
+time now. 
 
 WARNINGS
 ========
@@ -58,7 +55,7 @@ annotation information (in streams) and NT ACLs in particular.  The
 VFS is backed with an extensive automated test suite.
 
 A new scripting interface has been added to Samba 4, allowing
-JavaScript programs to interface to Samba's internals.
+Python programs to interface to Samba's internals.
 
 The Samba 4 architecture is based around an LDAP-like database that
 can use a range of modular backends.  One of the backends supports
