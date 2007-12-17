@@ -69,6 +69,7 @@ LoadParm.__getitem__ = new_instancemethod(_param.LoadParm___getitem__,None,LoadP
 LoadParm.configfile = new_instancemethod(_param.LoadParm_configfile,None,LoadParm)
 LoadParm.is_mydomain = new_instancemethod(_param.LoadParm_is_mydomain,None,LoadParm)
 LoadParm.is_myname = new_instancemethod(_param.LoadParm_is_myname,None,LoadParm)
+LoadParm.use = new_instancemethod(_param.LoadParm_use,None,LoadParm)
 LoadParm_swigregister = _param.LoadParm_swigregister
 LoadParm_swigregister(LoadParm)
 
@@ -95,21 +96,32 @@ class ParamFile(object):
 
     __swig_destroy__ = _param.delete_ParamFile
 ParamFile.get_section = new_instancemethod(_param.ParamFile_get_section,None,ParamFile)
+ParamFile.add_section = new_instancemethod(_param.ParamFile_add_section,None,ParamFile)
 ParamFile.get = new_instancemethod(_param.ParamFile_get,None,ParamFile)
+ParamFile.get_string = new_instancemethod(_param.ParamFile_get_string,None,ParamFile)
 ParamFile.set_string = new_instancemethod(_param.ParamFile_set_string,None,ParamFile)
+ParamFile.set = new_instancemethod(_param.ParamFile_set,None,ParamFile)
 ParamFile.read = new_instancemethod(_param.ParamFile_read,None,ParamFile)
-ParamFile.use = new_instancemethod(_param.ParamFile_use,None,ParamFile)
 ParamFile.write = new_instancemethod(_param.ParamFile_write,None,ParamFile)
 ParamFile_swigregister = _param.ParamFile_swigregister
 ParamFile_swigregister(ParamFile)
+
+class param_opt(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
+    def __init__(self): raise AttributeError, "No constructor defined"
+    __repr__ = _swig_repr
+    __swig_destroy__ = _param.delete_param_opt
+param_opt.__str__ = new_instancemethod(_param.param_opt___str__,None,param_opt)
+param_opt_swigregister = _param.param_opt_swigregister
+param_opt_swigregister(param_opt)
 
 class param_section(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
     def __getitem__(self, name):
-        ret = self.get_section(name)
+        ret = self.get(name)
         if ret is None:
-            raise KeyError("No such section %s" % name)
+            raise KeyError("No such option %s" % name)
         return ret
 
     def __init__(self, *args, **kwargs): 

@@ -16,6 +16,7 @@ import param
 import registry
 from samba import Ldb, substitute_var, valid_netbios_name
 from samba.samdb import SamDB
+import security
 from ldb import Dn, SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
         LDB_ERR_NO_SUCH_OBJECT, timestring
 
@@ -69,7 +70,7 @@ class ProvisionSettings(object):
                 "DOMAINDN_LDB": self.domaindn_ldb,
                 "DOMAINDN_MOD": "pdc_fsmo,password_hash",
                 "DOMAINDN_MOD2": ",objectguid",
-                "DOMAINSID": self.domainsid,
+                "DOMAINSID": str(self.domainsid),
                 "MODULES_LIST": ",".join(self.modules_list),
                 "CONFIGDN_MOD": "naming_fsmo",
                 "CONFIGDN_MOD2": ",objectguid",
@@ -115,13 +116,13 @@ class ProvisionSettings(object):
         if not valid_netbios_name(self.netbiosname):
             raise InvalidNetbiosName(self.netbiosname)
 
-        if lp.get("workgroup").upper() != self.domain.upper():
+        if lp.get_string("workgroup").upper() != self.domain.upper():
             raise Error("workgroup '%s' in smb.conf must match chosen domain '%s'\n",
-                lp.get("workgroup"), self.domain)
+                lp.get_string("workgroup"), self.domain)
 
-        if lp.get("realm").upper() != self.realm.upper():
+        if lp.get_string("realm").upper() != self.realm.upper():
             raise Error("realm '%s' in smb.conf must match chosen realm '%s'\n" %
-                (lp.get("realm"), self.realm))
+                (lp.get_string("realm"), self.realm))
 
 
 class ProvisionPaths:
@@ -147,9 +148,9 @@ class ProvisionPaths:
 
 def install_ok(lp, session_info, credentials):
     """Check whether the current install seems ok."""
-    if lp.get("realm") == "":
+    if lp.get_string("realm") == "":
         return False
-    ldb = Ldb(lp.get("sam database"), session_info=session_info, 
+    ldb = Ldb(lp.get_string("sam database"), session_info=session_info, 
             credentials=credentials)
     if len(ldb.search("(cn=Administrator)")) != 1:
         return False
@@ -164,7 +165,6 @@ def findnss(nssfn, *names):
         except KeyError:
             pass
     raise Exception("Unable to find user/group for %s" % arguments[1])
-
 
 
 def hostip():
@@ -230,7 +230,7 @@ def setup_ldb(setup_dir, ldif, session_info, credentials, subobj, dbname,
     ldb.transaction_start()
     try:
         if erase:
-            ldb_erase(ldb);    
+            ldb.erase();    
         setup_add_ldif(setup_dir, ldif, subobj, ldb)
     except:
         ldb.transaction_cancel()
@@ -271,10 +271,10 @@ def provision_default_paths(lp, subobj):
     :param subobj: Object
     """
     paths = ProvisionPaths()
-    private_dir = lp.get("private dir")
+    private_dir = lp.get_string("private dir")
     paths.shareconf = os.path.join(private_dir, "share.ldb")
-    paths.samdb = lp.get("sam database") or os.path.join(private_dir, "samdb.ldb")
-    paths.secrets = lp.get("secrets database") or os.path.join(private_dir, "secrets.ldb")
+    paths.samdb = lp.get_string("sam database") or os.path.join(private_dir, "samdb.ldb")
+    paths.secrets = lp.get_string("secrets database") or os.path.join(private_dir, "secrets.ldb")
     paths.templates = os.path.join(private_dir, "templates.ldb")
     paths.keytab = os.path.join(private_dir, "secrets.keytab")
     paths.dns = os.path.join(private_dir, subobj.dnsdomain + ".zone")
@@ -572,8 +572,8 @@ def provision_ldapbase(setup_dir, subobj, message, paths):
 
 def provision_guess(lp):
     """guess reasonably default options for provisioning."""
-    subobj = ProvisionSettings(realm=lp.get("realm").upper(),
-                               domain=lp.get("workgroup"),
+    subobj = ProvisionSettings(realm=lp.get_string("realm").upper(),
+                               domain=lp.get_string("workgroup"),
                                hostname=hostname(), 
                                hostip=hostip())
 
@@ -581,7 +581,7 @@ def provision_guess(lp):
     assert subobj.domain is not None
     assert subobj.hostname is not None
     
-    subobj.domainsid    = sid.random()
+    subobj.domainsid    = security.random_sid()
     subobj.invocationid = uuid.random()
     subobj.policyguid   = uuid.random()
     subobj.krbtgtpass   = misc.random_password(12)

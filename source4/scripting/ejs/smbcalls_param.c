@@ -45,7 +45,7 @@ static int ejs_param_get(MprVarHandle eid, int argc, char **argv)
 	if (argc == 2) {
 		ret = param_get_string(ctx, argv[0], argv[1]);
 	} else {
-		ret = param_get_string(ctx, NULL, argv[0]);
+		ret = param_get_string(ctx, argv[0], NULL);
 	}
 
 	if (ret) {
@@ -78,7 +78,7 @@ static int ejs_param_get_list(MprVarHandle eid, int argc, char **argv)
 	if (argc == 2) {
 		ret = param_get_string_list(ctx, argv[0], argv[1], NULL);
 	} else {
-		ret = param_get_string_list(ctx, NULL, argv[0], NULL);
+		ret = param_get_string_list(ctx, argv[0], NULL, NULL);
 	}
 
 	if (ret != NULL) {
@@ -123,9 +123,9 @@ static int ejs_param_set(MprVarHandle eid, int argc, struct MprVar **argv)
 	
 	list = mprToList(mprMemCtx(), value);
 	if (list) {
-		ret = param_set_string_list(ctx, section, paramname, list);
+		ret = param_set_string_list(ctx, paramname, list, section);
 	} else {
-		ret = param_set_string(ctx, section, paramname, mprToString(value));
+		ret = param_set_string(ctx, paramname, mprToString(value), section);
 	}
 
 	mpr_Return(eid, mprCreateBoolVar(ret));

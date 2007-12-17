@@ -110,15 +110,15 @@ if opts.realm is None or opts.domain is None or opts.host_name is None:
 		print >>sys.stderr, "No domain set"
 	if opts.host_name is None:
 		print >>sys.stderr, "No host name set"
-	parser.print_help()
+	parser.print_usage()
 	sys.exit(1)
 
 # cope with an initially blank smb.conf 
-lp = param.ParamFile(opts.configfile)
+lp = param.ParamFile()
+lp.read(opts.configfile)
 lp.set("realm", opts.realm);
 lp.set("workgroup", opts.domain);
 lp.set("server role", opts.server_role);
-lp.use()
 
 subobj = provision_guess(lp)
 subobj.domain_guid = opts.domain_guid
@@ -161,12 +161,12 @@ if opts.ldap_base:
 	message("Please install the LDIF located in %s, %s and  into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server" % (paths.ldap_basedn_ldif, paths.ldap_config_basedn_ldif, paths.ldap_schema_basedn_ldif))
 elif opts.partitions_only:
 	provision_become_dc(setup_dir, subobj, message, False, 
-			            paths, system_session, creds)
+			            paths, system_session(), creds)
 else:
 	provision(lp, setup_dir, subobj, message, opts.blank, paths, 
-			  system_session, creds, opts.ldap_backend)
+			  system_session(), creds, opts.ldap_backend)
 	provision_dns(setup_dir, subobj, message, paths, 
-			      system_session, creds)
+			      system_session(), creds)
 	message("To reproduce this provision, run with:")
 	message("--realm='" + subobj.realm_conf + "' --domain='" + subobj.domain_conf + "' --domain-guid='" + subobj.domain_guid + "' \\")
 	message("--policy-guid='" + subobj.policyguid + "' --host-name='" + subobj.hostname + "' --host-ip='" + subobj.hostip + "' \\")

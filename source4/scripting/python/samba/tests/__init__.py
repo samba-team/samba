@@ -27,7 +27,7 @@ class LdbTestCase(unittest.TestCase):
         self.filename = os.tempnam()
         self.ldb = samba.Ldb(self.filename)
 
-    def load_modules(self, modules=[]):
+    def set_modules(self, modules=[]):
         m = ldb.Message()
         m.dn = ldb.Dn(self.ldb, "@MODULES")
         m["@LIST"] = ",".join(modules)

@@ -29,6 +29,7 @@ typedef struct param_context param;
 typedef struct loadparm_context loadparm_context;
 typedef struct loadparm_service loadparm_service;
 typedef struct param_section param_section;
+typedef struct param_opt param_opt;
 %}
 
 %import "stdint.i"
@@ -55,6 +56,7 @@ typedef struct loadparm_context {
         const char *configfile() { return lp_configfile($self); }
         bool is_mydomain(const char *domain) { return lp_is_mydomain($self, domain); }
         bool is_myname(const char *name) { return lp_is_myname($self, name); }
+        int use(struct param_context *param) { return param_use($self, param); }
     }
 } loadparm_context;
 
@@ -76,10 +78,21 @@ typedef struct param_context {
     %extend { 
         param(TALLOC_CTX *mem_ctx) { return param_init(mem_ctx); }
         struct param_section *get_section(const char *name);
-        struct param_opt *get(const char *section_name, const char *name);
-        int set_string(const char *section, const char *param, const char *value);
+        struct param_section *add_section(const char *name);
+        struct param_opt *get(const char *name, const char *section_name="global");
+        const char *get_string(const char *name, const char *section_name="global");
+        int set_string(const char *param, const char *value, const char *section="global");
+        int set(const char *param, PyObject *ob, const char *section_name="global")
+        {
+            struct param_opt *opt = param_get_add($self, param, section_name);
+
+            talloc_free(opt->value);
+            opt->value = talloc_strdup(opt, PyObject_Str(ob));
+
+            return 0;
+        }
+
         int read(const char *fn);
-        int use(struct param_context *);
         int write(const char *fn);
     }
     %pythoncode {
@@ -91,6 +104,16 @@ typedef struct param_context {
     }
 } param;
 
+%talloctype(param_opt);
+
+typedef struct param_opt {
+    %extend {
+#ifdef SWIGPYTHON
+        const char *__str__() { return $self->value; }
+#endif
+    }
+} param_opt;
+
 %talloctype(param);
 typedef struct param_section {
     %extend {
@@ -98,9 +121,9 @@ typedef struct param_section {
     }
     %pythoncode {
         def __getitem__(self, name):
-            ret = self.get_section(name)
+            ret = self.get(name)
             if ret is None:
-                raise KeyError("No such section %s" % name)
+                raise KeyError("No such option %s" % name)
             return ret
     }
 } param_section;

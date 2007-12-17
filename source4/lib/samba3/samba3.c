@@ -36,7 +36,7 @@ NTSTATUS samba3_read_passdb_backends(TALLOC_CTX *ctx, const char *libdir, struct
 	char *dbfile;
 	NTSTATUS status = NT_STATUS_OK;
 	int i;
-	const char **backends = param_get_string_list(samba3->configuration, NULL, "passdb backend", NULL);
+	const char **backends = param_get_string_list(samba3->configuration, "passdb backend", NULL, NULL);
 
 	/* Default to smbpasswd */
 	if (backends == NULL) 
@@ -59,7 +59,7 @@ NTSTATUS samba3_read_passdb_backends(TALLOC_CTX *ctx, const char *libdir, struct
 			const char *p = strchr(backends[i], ':');
 			if (p && p[1]) {
 				dbfile = talloc_strdup(ctx, p+1);
-			} else if ((p = param_get_string(samba3->configuration, NULL, "smb passwd file"))) {
+			} else if ((p = param_get_string(samba3->configuration, "smb passwd file", NULL))) {
 				dbfile = talloc_strdup(ctx, p);
 			} else {
 				dbfile = talloc_strdup(ctx, "/etc/samba/smbpasswd");
