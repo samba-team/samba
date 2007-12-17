@@ -329,7 +329,7 @@ done:
 
 static int schema_init_classes(struct ldb_module *module, struct schema_private_data *data)
 {
-	static const char *schema_attrs[] = {	"governsID",
+	const char *schema_attrs[] = {	"governsID",
 						"lDAPDisplayName",
 						"objectClassCategory",
 						"defaultObjectCategory",
@@ -542,7 +542,7 @@ static int schema_add_check_parent(struct ldb_context *ldb, void *context, struc
 
 static int schema_add_build_parent_req(struct schema_context *sctx)
 {
-	static const char * const parent_attrs[] = { "objectClass", NULL };
+	const char * const parent_attrs[] = { "objectClass", NULL };
 	int ret;
 
 	sctx->parent_req = talloc_zero(sctx, struct ldb_request);

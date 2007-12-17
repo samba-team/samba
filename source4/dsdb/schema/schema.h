@@ -151,4 +151,6 @@ struct dsdb_schema {
 	struct dsdb_class *classes;
 };
 
+#include "dsdb/schema/proto.h"
+
 #endif /* _DSDB_SCHEMA_H */

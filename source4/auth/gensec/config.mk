@@ -18,7 +18,7 @@ PUBLIC_DEPENDENCIES = \
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_krb5_init
 OBJ_FILES = gensec_krb5.o 
-PRIVATE_DEPENDENCIES = CREDENTIALS_KRB5 KERBEROS auth auth_sam
+PRIVATE_DEPENDENCIES = CREDENTIALS KERBEROS auth auth_sam
 # End MODULE gensec_krb5
 ################################################
 
@@ -28,7 +28,7 @@ PRIVATE_DEPENDENCIES = CREDENTIALS_KRB5 KERBEROS auth auth_sam
 SUBSYSTEM = gensec
 INIT_FUNCTION = gensec_gssapi_init
 OBJ_FILES = gensec_gssapi.o 
-PRIVATE_DEPENDENCIES = HEIMDAL_GSSAPI CREDENTIALS_KRB5 KERBEROS 
+PRIVATE_DEPENDENCIES = HEIMDAL_GSSAPI CREDENTIALS KERBEROS 
 # End MODULE gensec_gssapi
 ################################################
 

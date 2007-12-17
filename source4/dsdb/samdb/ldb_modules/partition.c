@@ -117,9 +117,9 @@ static struct dsdb_control_current_partition *find_partition(struct partition_pr
 	return NULL;
 };
 
-/*
-  fire the caller's callback for every entry, but only send 'done' once.
-*/
+/**
+ * fire the caller's callback for every entry, but only send 'done' once.
+ */
 static int partition_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct partition_context *ac;
@@ -139,9 +139,9 @@ static int partition_search_callback(struct ldb_context *ldb, void *context, str
 	}
 }
 
-/*
-  only fire the 'last' callback, and only for START-TLS for now 
-*/
+/**
+ * only fire the 'last' callback, and only for START-TLS for now 
+ */
 static int partition_other_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares)
 {
 	struct partition_context *ac;
@@ -248,7 +248,9 @@ static int partition_send_request(struct partition_context *ac, struct ldb_contr
 	return LDB_SUCCESS;
 }
 
-/* Send a request down to all the partitions */
+/**
+ * Send a request down to all the partitions
+ */
 static int partition_send_all(struct ldb_module *module, 
 			      struct partition_context *ac, 
 			      struct ldb_control *remove_control, 
@@ -270,8 +272,10 @@ static int partition_send_all(struct ldb_module *module,
 	return LDB_SUCCESS;
 }
 
-/* Figure out which backend a request needs to be aimed at.  Some
- * requests must be replicated to all backends */
+/**
+ * Figure out which backend a request needs to be aimed at.  Some
+ * requests must be replicated to all backends
+ */
 static int partition_replicate(struct ldb_module *module, struct ldb_request *req, struct ldb_dn *dn) 
 {
 	unsigned i;

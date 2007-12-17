@@ -2,27 +2,16 @@
 # Start SUBSYSTEM CREDENTIALS
 [SUBSYSTEM::CREDENTIALS]
 PUBLIC_PROTO_HEADER = credentials_proto.h
-PUBLIC_HEADERS = credentials.h
+PUBLIC_HEADERS = credentials.h credentials_krb5.h
 OBJ_FILES = credentials.o \
 		credentials_files.o \
-		credentials_ntlm.o
+		credentials_ntlm.o \
+		credentials_krb5.o \
+		../kerberos/kerberos_util.o
 PUBLIC_DEPENDENCIES = \
 		LIBCLI_AUTH SECRETS LIBCRYPTO KERBEROS UTIL_LDB
-PRIVATE_DEPENDENCIES = CREDENTIALS_KRB5
-# End SUBSYSTEM CREDENTIALS
-#################################
-
-#################################
-# Start SUBSYSTEM CREDENTIALS
-[SUBSYSTEM::CREDENTIALS_KRB5]
-PUBLIC_PROTO_HEADER = credentials_krb5_proto.h
-PUBLIC_HEADERS = credentials_krb5.h
-OBJ_FILES = credentials_krb5.o \
-			../kerberos/kerberos_util.o
-PUBLIC_DEPENDENCIES = \
-		HEIMDAL_GSSAPI KERBEROS
-# End SUBSYSTEM CREDENTIALS
-#################################
+PRIVATE_DEPENDENCIES = \
+		HEIMDAL_GSSAPI KERBEROS SECRETS
 
 [PYTHON::swig_credentials]
 PUBLIC_DEPENDENCIES = CREDENTIALS LIBPYTHON

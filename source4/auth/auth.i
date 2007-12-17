@@ -27,12 +27,14 @@
 #include "includes.h"
 #include "auth/session.h"
 #include "auth/system_session_proto.h"
+#include "param/param.h"
 %}
 
-%include "carrays.i"
-%include "stdint.i"
-%include "typemaps.i"
+%import "carrays.i"
+%import "stdint.i"
+%import "typemaps.i"
 %import "../lib/talloc/talloc.i"
+%import "../param/param.i"
 
 %typemap(default) struct auth_session_info * {
     $1 = system_session_anon(NULL, global_loadparm);
