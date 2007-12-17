@@ -191,7 +191,7 @@ bool lookup_name(TALLOC_CTX *mem_ctx,
               this, tested an XP workstation in a NT domain -- vl */
 
 	if ((flags & LOOKUP_NAME_REMOTE) && IS_DC &&
-	    (secrets_fetch_trusted_domain_password(name, NULL, &sid, NULL)))
+	    (pdb_get_trusteddom_pw(name, NULL, &sid, NULL)))
 	{
 		/* Swap domain and name */
 		tmp = name; name = domain; domain = tmp;
