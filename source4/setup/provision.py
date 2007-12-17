@@ -77,11 +77,12 @@ parser.add_option("--wheel", type="string", metavar="GROUPNAME",
 		help="choose 'wheel' privileged group")
 parser.add_option("--users", type="string", metavar="GROUPNAME", 
 		help="choose 'users' group")
-parser.add_option("--quiet", help="Be quiet")
+parser.add_option("--quiet", help="Be quiet", action="store_true")
 parser.add_option("--blank", 
 		help="do not add users or groups, just the structure")
 parser.add_option("--ldap-base", 
-		help="output only an LDIF file, suitable for creating an LDAP baseDN")
+		help="output only an LDIF file, suitable for creating an LDAP baseDN",
+        action="store_true")
 parser.add_option("--ldap-backend", type="string", metavar="LDAPSERVER", 
 		help="LDAP server to use for this provision")
 parser.add_option("--ldap-module=", type="string", metavar="MODULE", 
@@ -92,7 +93,7 @@ parser.add_option("--server-role", type="choice", metavar="ROLE",
 		          choices=["domain controller", "domain server"],
 		help="Set server role to provision for (default standalone)")
 parser.add_option("--partitions-only", 
-		help="Configure Samba's partitions, but do not modify them (ie, join a BDC)")
+		help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true")
 
 opts = parser.parse_args()[0]
 
