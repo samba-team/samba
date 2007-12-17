@@ -511,7 +511,7 @@ static int net_sam_rights_list(int argc, const char **argv)
 	SE_PRIV mask;
 
 	if (argc > 1) {
-		d_fprintf(stderr, "usage: net sam rights list [name]\n");
+		d_fprintf(stderr, "usage: net sam rights list [privilege name]\n");
 		return -1;
 	}
 
