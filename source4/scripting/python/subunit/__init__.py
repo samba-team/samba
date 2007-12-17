@@ -215,14 +215,14 @@ class TestProtocolClient(unittest.TestResult):
     def addError(self, test, error):
         """Report an error in test test."""
         self._stream.write("error: %s [\n" % (test.shortDescription() or str(test)))
-        for line in self._exc_info_to_string(error, test).split():
+        for line in self._exc_info_to_string(error, test).splitlines():
             self._stream.write("%s\n" % line)
         self._stream.write("]\n")
 
     def addFailure(self, test, error):
         """Report a failure in test test."""
         self._stream.write("failure: %s [\n" % (test.shortDescription() or str(test)))
-        for line in self._exc_info_to_string(error, test).split():
+        for line in self._exc_info_to_string(error, test).splitlines():
             self._stream.write("%s\n" % line)
         self._stream.write("]\n")
 
