@@ -15,7 +15,7 @@ OBJ_FILES = \
 		trans2.o \
 		signing.o
 PUBLIC_DEPENDENCIES = \
-		ntvfs LIBPACKET
+		ntvfs LIBPACKET CREDENTIALS
 LDFLAGS = $(SUBSYSTEM_SMB_SERVER_OUTPUT)
 # End SUBSYSTEM SMB_PROTOCOL
 #######################

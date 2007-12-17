@@ -12,7 +12,7 @@ OBJ_FILES = ntlmssp.o \
 		ntlmssp_sign.o \
 		ntlmssp_client.o \
 		ntlmssp_server.o
-PRIVATE_DEPENDENCIES = MSRPC_PARSE
+PRIVATE_DEPENDENCIES = MSRPC_PARSE CREDENTIALS
 OUTPUT_TYPE = INTEGRATED
 # End MODULE gensec_ntlmssp
 ################################################
