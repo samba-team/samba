@@ -35,40 +35,78 @@ if _in_source_tree():
 
 import misc
 import ldb
-ldb.ldb.set_credentials = misc.ldb_set_credentials
-#FIXME: ldb.ldb.set_session_info = misc.ldb_set_session_info
-ldb.ldb.set_loadparm = misc.ldb_set_loadparm
+ldb.Ldb.set_credentials = misc.ldb_set_credentials
+ldb.Ldb.set_session_info = misc.ldb_set_session_info
+ldb.Ldb.set_loadparm = misc.ldb_set_loadparm
 
-def Ldb(url, session_info=None, credentials=None, modules_dir=None, lp=None):
-    """Open a Samba Ldb file. 
-
-    :param url: LDB Url to open
-    :param session_info: Optional session information
-    :param credentials: Optional credentials, defaults to anonymous.
-    :param modules_dir: Modules directory, automatically set if not specified.
-    :param lp: Loadparm object, optional.
-
-    This is different from a regular Ldb file in that the Samba-specific
-    modules-dir is used by default and that credentials and session_info 
-    can be passed through (required by some modules).
+class Ldb(ldb.Ldb):
+    """Simple Samba-specific LDB subclass that takes care 
+    of setting up the modules dir, credentials pointers, etc.
+    
+    Please note that this is intended to be for all Samba LDB files, 
+    not necessarily the Sam database. For Sam-specific helper 
+    functions see samdb.py.
     """
-    import ldb
-    ret = ldb.Ldb()
-    if modules_dir is None:
-        modules_dir = default_ldb_modules_dir
-    if modules_dir is not None:
-        ret.set_modules_dir(modules_dir)
-    def samba_debug(level,text):
-        print "%d %s" % (level, text)
-    if credentials is not None:
-        ldb.set_credentials(credentials)
-    if session_info is not None:
-        ldb.set_session_info(session_info)
-    if lp is not None:
-        ldb.set_loadparm(lp)
-    #ret.set_debug(samba_debug)
-    ret.connect(url)
-    return ret
+    def __init__(url, session_info=None, credentials=None, modules_dir=None, 
+            lp=None):
+        """Open a Samba Ldb file. 
+
+        :param url: LDB Url to open
+        :param session_info: Optional session information
+        :param credentials: Optional credentials, defaults to anonymous.
+        :param modules_dir: Modules directory, automatically set if not specified.
+        :param lp: Loadparm object, optional.
+
+        This is different from a regular Ldb file in that the Samba-specific
+        modules-dir is used by default and that credentials and session_info 
+        can be passed through (required by some modules).
+        """
+        super(self, Ldb).__init__()
+        import ldb
+        ret = ldb.Ldb()
+        if modules_dir is None:
+            modules_dir = default_ldb_modules_dir
+        if modules_dir is not None:
+            ret.set_modules_dir(modules_dir)
+        def samba_debug(level,text):
+            print "%d %s" % (level, text)
+        if credentials is not None:
+            ldb.set_credentials(credentials)
+        if session_info is not None:
+            ldb.set_session_info(session_info)
+        if lp is not None:
+            ldb.set_loadparm(lp)
+        #ret.set_debug(samba_debug)
+        ret.connect(url)
+        return ret
+
+    def searchone(self, basedn, expression, attribute):
+        """Search for one attribute as a string."""
+        res = self.search(basedn, SCOPE_SUBTREE, expression, [attribute])
+        if len(res) != 1 or res[0][attribute] is None:
+            return None
+        return res[0][attribute]
+
+    def erase(self):
+        """Erase an ldb, removing all records."""
+        # delete the specials
+        for attr in ["@INDEXLIST", "@ATTRIBUTES", "@SUBCLASSES", "@MODULES", 
+                     "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
+            try:
+                self.delete(Dn(self, attr))
+            except LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
+                # Ignore missing dn errors
+                pass
+
+        basedn = Dn(self, "")
+        # and the rest
+        for msg in self.search(basedn, SCOPE_SUBTREE, 
+                "(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", 
+                ["dn"]):
+            self.delete(msg.dn)
+
+        res = self.search(basedn, SCOPE_SUBTREE, "(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", ["dn"])
+        assert len(res) == 0
 
 
 def substitute_var(text, values):

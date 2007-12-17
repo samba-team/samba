@@ -165,38 +165,35 @@ LDB_ERR_ENTRY_ALREADY_EXISTS = _ldb.LDB_ERR_ENTRY_ALREADY_EXISTS
 LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED = _ldb.LDB_ERR_OBJECT_CLASS_MODS_PROHIBITED
 LDB_ERR_AFFECTS_MULTIPLE_DSAS = _ldb.LDB_ERR_AFFECTS_MULTIPLE_DSAS
 LDB_ERR_OTHER = _ldb.LDB_ERR_OTHER
-class ldb(object):
+class Ldb(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
-    def __init__(self): raise AttributeError, "No constructor defined"
     __repr__ = _swig_repr
-    __swig_destroy__ = _ldb.delete_ldb
-ldb.connect = new_instancemethod(_ldb.ldb_connect,None,ldb)
-ldb.search = new_instancemethod(_ldb.ldb_search,None,ldb)
-ldb.delete = new_instancemethod(_ldb.ldb_delete,None,ldb)
-ldb.rename = new_instancemethod(_ldb.ldb_rename,None,ldb)
-ldb.add = new_instancemethod(_ldb.ldb_add,None,ldb)
-ldb.modify = new_instancemethod(_ldb.ldb_modify,None,ldb)
-ldb.get_config_basedn = new_instancemethod(_ldb.ldb_get_config_basedn,None,ldb)
-ldb.get_root_basedn = new_instancemethod(_ldb.ldb_get_root_basedn,None,ldb)
-ldb.get_schema_basedn = new_instancemethod(_ldb.ldb_get_schema_basedn,None,ldb)
-ldb.get_default_basedn = new_instancemethod(_ldb.ldb_get_default_basedn,None,ldb)
-ldb.errstring = new_instancemethod(_ldb.ldb_errstring,None,ldb)
-ldb.set_create_perms = new_instancemethod(_ldb.ldb_set_create_perms,None,ldb)
-ldb.set_modules_dir = new_instancemethod(_ldb.ldb_set_modules_dir,None,ldb)
-ldb.set_debug = new_instancemethod(_ldb.ldb_set_debug,None,ldb)
-ldb.set_opaque = new_instancemethod(_ldb.ldb_set_opaque,None,ldb)
-ldb.get_opaque = new_instancemethod(_ldb.ldb_get_opaque,None,ldb)
-ldb.transaction_start = new_instancemethod(_ldb.ldb_transaction_start,None,ldb)
-ldb.transaction_commit = new_instancemethod(_ldb.ldb_transaction_commit,None,ldb)
-ldb.transaction_cancel = new_instancemethod(_ldb.ldb_transaction_cancel,None,ldb)
-ldb.__contains__ = new_instancemethod(_ldb.ldb___contains__,None,ldb)
-ldb.parse_ldif = new_instancemethod(_ldb.ldb_parse_ldif,None,ldb)
-ldb_swigregister = _ldb.ldb_swigregister
-ldb_swigregister(ldb)
-
-def Ldb(*args, **kwargs):
-    val = _ldb.new_Ldb(*args, **kwargs)
-    return val
+    def __init__(self, *args, **kwargs): 
+        _ldb.Ldb_swiginit(self,_ldb.new_Ldb(*args, **kwargs))
+    __swig_destroy__ = _ldb.delete_Ldb
+Ldb.connect = new_instancemethod(_ldb.Ldb_connect,None,Ldb)
+Ldb.search = new_instancemethod(_ldb.Ldb_search,None,Ldb)
+Ldb.delete = new_instancemethod(_ldb.Ldb_delete,None,Ldb)
+Ldb.rename = new_instancemethod(_ldb.Ldb_rename,None,Ldb)
+Ldb.add = new_instancemethod(_ldb.Ldb_add,None,Ldb)
+Ldb.modify = new_instancemethod(_ldb.Ldb_modify,None,Ldb)
+Ldb.get_config_basedn = new_instancemethod(_ldb.Ldb_get_config_basedn,None,Ldb)
+Ldb.get_root_basedn = new_instancemethod(_ldb.Ldb_get_root_basedn,None,Ldb)
+Ldb.get_schema_basedn = new_instancemethod(_ldb.Ldb_get_schema_basedn,None,Ldb)
+Ldb.get_default_basedn = new_instancemethod(_ldb.Ldb_get_default_basedn,None,Ldb)
+Ldb.errstring = new_instancemethod(_ldb.Ldb_errstring,None,Ldb)
+Ldb.set_create_perms = new_instancemethod(_ldb.Ldb_set_create_perms,None,Ldb)
+Ldb.set_modules_dir = new_instancemethod(_ldb.Ldb_set_modules_dir,None,Ldb)
+Ldb.set_debug = new_instancemethod(_ldb.Ldb_set_debug,None,Ldb)
+Ldb.set_opaque = new_instancemethod(_ldb.Ldb_set_opaque,None,Ldb)
+Ldb.get_opaque = new_instancemethod(_ldb.Ldb_get_opaque,None,Ldb)
+Ldb.transaction_start = new_instancemethod(_ldb.Ldb_transaction_start,None,Ldb)
+Ldb.transaction_commit = new_instancemethod(_ldb.Ldb_transaction_commit,None,Ldb)
+Ldb.transaction_cancel = new_instancemethod(_ldb.Ldb_transaction_cancel,None,Ldb)
+Ldb.__contains__ = new_instancemethod(_ldb.Ldb___contains__,None,Ldb)
+Ldb.parse_ldif = new_instancemethod(_ldb.Ldb_parse_ldif,None,Ldb)
+Ldb_swigregister = _ldb.Ldb_swigregister
+Ldb_swigregister(Ldb)
 
 valid_attr_name = _ldb.valid_attr_name
 timestring = _ldb.timestring
