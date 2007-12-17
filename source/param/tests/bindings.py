@@ -29,6 +29,23 @@ class LoadParmTestCase(unittest.TestCase):
         file = param.LoadParm()
         self.assertEquals(0, len(file))
 
+    def test_set_workgroup(self):
+        file = param.LoadParm()
+        file.set("workgroup", "bla")
+        self.assertEquals("BLA", file.get("workgroup"))
+
+    def test_is_mydomain(self):
+        file = param.LoadParm()
+        file.set("workgroup", "bla")
+        self.assertTrue(file.is_mydomain("BLA"))
+        self.assertFalse(file.is_mydomain("FOOBAR"))
+
+    def test_is_myname(self):
+        file = param.LoadParm()
+        file.set("netbios name", "bla")
+        self.assertTrue(file.is_myname("BLA"))
+        self.assertFalse(file.is_myname("FOOBAR"))
+
 
 class ParamTestCase(unittest.TestCase):
     def test_init(self):

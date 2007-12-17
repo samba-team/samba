@@ -115,11 +115,11 @@ if opts.realm is None or opts.domain is None or opts.host_name is None:
 	sys.exit(1)
 
 # cope with an initially blank smb.conf 
-lp = param.ParamFile()
-lp.read(opts.configfile)
-lp.set_string("realm", opts.realm)
-lp.set_string("workgroup", opts.domain)
-lp.set_string("server role", opts.server_role)
+lp = param.LoadParm()
+lp.load(opts.configfile)
+lp.set("realm", opts.realm)
+lp.set("workgroup", opts.domain)
+lp.set("server role", opts.server_role)
 
 subobj = provision_guess(lp)
 subobj.domain_guid = opts.domain_guid
@@ -162,7 +162,7 @@ if opts.ldap_base:
 	message("Please install the LDIF located in %s, %s and  into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server" % (paths.ldap_basedn_ldif, paths.ldap_config_basedn_ldif, paths.ldap_schema_basedn_ldif))
 elif opts.partitions_only:
     provision_become_dc(setup_dir, subobj, message, False, 
-                        paths, system_session(), creds)
+                        paths, lp, system_session(), creds)
 else:
     provision(lp, setup_dir, subobj, message, opts.blank, paths, 
               system_session(), creds, opts.ldap_backend)

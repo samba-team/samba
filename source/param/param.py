@@ -70,6 +70,8 @@ LoadParm.configfile = new_instancemethod(_param.LoadParm_configfile,None,LoadPar
 LoadParm.is_mydomain = new_instancemethod(_param.LoadParm_is_mydomain,None,LoadParm)
 LoadParm.is_myname = new_instancemethod(_param.LoadParm_is_myname,None,LoadParm)
 LoadParm.use = new_instancemethod(_param.LoadParm_use,None,LoadParm)
+LoadParm.set = new_instancemethod(_param.LoadParm_set,None,LoadParm)
+LoadParm.get = new_instancemethod(_param.LoadParm_get,None,LoadParm)
 LoadParm_swigregister = _param.LoadParm_swigregister
 LoadParm_swigregister(LoadParm)
 

@@ -122,13 +122,13 @@ class ProvisionSettings(object):
         if not valid_netbios_name(self.netbiosname):
             raise InvalidNetbiosName(self.netbiosname)
 
-        if lp.get_string("workgroup").upper() != self.domain.upper():
+        if lp.get("workgroup").upper() != self.domain.upper():
             raise Error("workgroup '%s' in smb.conf must match chosen domain '%s'\n",
-                lp.get_string("workgroup"), self.domain)
+                lp.get("workgroup"), self.domain)
 
-        if lp.get_string("realm").upper() != self.realm.upper():
+        if lp.get("realm").upper() != self.realm.upper():
             raise Error("realm '%s' in smb.conf must match chosen realm '%s'\n" %
-                (lp.get_string("realm"), self.realm))
+                (lp.get("realm"), self.realm))
 
 
 class ProvisionPaths:
@@ -154,10 +154,10 @@ class ProvisionPaths:
 
 def install_ok(lp, session_info, credentials):
     """Check whether the current install seems ok."""
-    if lp.get_string("realm") == "":
+    if lp.get("realm") == "":
         return False
-    ldb = Ldb(lp.get_string("sam database"), session_info=session_info, 
-            credentials=credentials)
+    ldb = Ldb(lp.get("sam database"), session_info=session_info, 
+            credentials=credentials, lp=lp)
     if len(ldb.search("(cn=Administrator)")) != 1:
         return False
     return True
@@ -195,14 +195,16 @@ def ldb_delete(ldb):
     ldb.connect(ldb.filename)
 
 
-def open_ldb(session_info, credentials, dbname):
+def open_ldb(session_info, credentials, lp, dbname):
     assert session_info is not None
     try:
-        return Ldb(dbname, session_info=session_info, credentials=credentials)
+        return Ldb(dbname, session_info=session_info, credentials=credentials, 
+                   lp=lp)
     except LdbError, e:
         print e
         os.unlink(dbname)
-        return Ldb(dbname, session_info=session_info, credentials=credentials)
+        return Ldb(dbname, session_info=session_info, credentials=credentials,
+                   lp=lp)
 
 
 def setup_add_ldif(setup_dir, ldif, subobj, ldb):
@@ -228,10 +230,10 @@ def setup_modify_ldif(setup_dir, ldif, subobj, ldb):
         ldb.modify(msg)
 
 
-def setup_ldb(setup_dir, ldif, session_info, credentials, subobj, dbname, 
+def setup_ldb(setup_dir, ldif, session_info, credentials, subobj, lp, dbname, 
               erase=True):
     assert dbname is not None
-    ldb = open_ldb(session_info, credentials, dbname)
+    ldb = open_ldb(session_info, credentials, lp, dbname)
     assert ldb is not None
     ldb.transaction_start()
     try:
@@ -277,10 +279,10 @@ def provision_default_paths(lp, subobj):
     :param subobj: Object
     """
     paths = ProvisionPaths()
-    private_dir = lp.get_string("private dir")
+    private_dir = lp.get("private dir")
     paths.shareconf = os.path.join(private_dir, "share.ldb")
-    paths.samdb = lp.get_string("sam database") or os.path.join(private_dir, "samdb.ldb")
-    paths.secrets = lp.get_string("secrets database") or os.path.join(private_dir, "secrets.ldb")
+    paths.samdb = lp.get("sam database") or os.path.join(private_dir, "samdb.ldb")
+    paths.secrets = lp.get("secrets database") or os.path.join(private_dir, "secrets.ldb")
     paths.templates = os.path.join(private_dir, "templates.ldb")
     paths.keytab = os.path.join(private_dir, "secrets.keytab")
     paths.dns = os.path.join(private_dir, subobj.dnsdomain + ".zone")
@@ -329,22 +331,22 @@ def setup_name_mappings(subobj, ldb):
     ldb.setup_name_mapping(subobj.domaindn, sid + "-520", subobj.wheel)
 
 
-def provision_become_dc(setup_dir, subobj, message, paths, session_info, 
+def provision_become_dc(setup_dir, subobj, message, paths, lp, session_info, 
                         credentials):
     assert session_info is not None
     subobj.fix(paths)
 
     message("Setting up templates into %s" % paths.templates)
     setup_ldb(setup_dir, "provision_templates.ldif", session_info,
-              credentials, subobj, paths.templates)
+              credentials, subobj, lp, paths.templates)
 
     # Also wipes the database
     message("Setting up %s partitions" % paths.samdb)
     setup_ldb(setup_dir, "provision_partitions.ldif", session_info, 
-              credentials, subobj, paths.samdb)
+              credentials, subobj, lp, paths.samdb)
 
     samdb = SamDB(paths.samdb, session_info=session_info, 
-                  credentials=credentials)
+                  credentials=credentials, lp=lp)
     ldb.transaction_start()
     try:
         message("Setting up %s attributes" % paths.samdb)
@@ -366,9 +368,9 @@ def provision_become_dc(setup_dir, subobj, message, paths, session_info,
 
     message("Setting up %s" % paths.secrets)
     setup_ldb(setup_dir, "secrets_init.ldif", session_info, credentials, 
-              subobj, paths.secrets)
+              subobj, lp, paths.secrets)
 
-    setup_ldb(setup_dir, "secrets.ldif", session_info, credentials, subobj, 
+    setup_ldb(setup_dir, "secrets.ldif", session_info, credentials, subobj, lp,
               paths.secrets, False)
 
 
@@ -401,11 +403,11 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
         message("Setting up share.ldb")
-        setup_ldb(setup_dir, "share.ldif", session_info, credentials, subobj, paths.shareconf)
+        setup_ldb(setup_dir, "share.ldif", session_info, credentials, subobj, lp, paths.shareconf)
 
     message("Setting up %s" % paths.secrets)
-    setup_ldb(setup_dir, "secrets_init.ldif", session_info, credentials, subobj, paths.secrets)
-    setup_ldb(setup_dir, "secrets.ldif", session_info, credentials, subobj, paths.secrets, False)
+    setup_ldb(setup_dir, "secrets_init.ldif", session_info, credentials, subobj, lp, paths.secrets)
+    setup_ldb(setup_dir, "secrets.ldif", session_info, credentials, subobj, lp, paths.secrets, False)
 
     message("Setting up registry")
     reg = registry.Registry()
@@ -414,13 +416,13 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     #reg.apply_patchfile(os.path.join(setup_dir, "provision.reg"))
 
     message("Setting up templates into %s" % paths.templates)
-    setup_ldb(setup_dir, "provision_templates.ldif", session_info, credentials, subobj, paths.templates)
+    setup_ldb(setup_dir, "provision_templates.ldif", session_info, credentials, subobj, lp, paths.templates)
 
     message("Setting up sam.ldb partitions")
     setup_ldb(setup_dir, "provision_partitions.ldif", session_info, 
-              credentials, subobj, paths.samdb)
+              credentials, subobj, lp, paths.samdb)
 
-    samdb = open_ldb(session_info, credentials, paths.samdb)
+    samdb = open_ldb(session_info, credentials, lp, paths.samdb)
     samdb.transaction_start()
     try:
         message("Setting up sam.ldb attributes")
@@ -439,7 +441,8 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
 
     message("Pre-loading the Samba 4 and AD schema")
 
-    samdb = SamDB(paths.samdb, session_info, credentials)
+    samdb = SamDB(paths.samdb, session_info=session_info, 
+                  credentials=credentials, lp=lp)
     samdb.set_domain_sid(subobj.domainsid)
     load_schema(setup_dir, subobj, samdb)
 
@@ -531,7 +534,8 @@ def provision_dns(setup_dir, subobj, message, paths, session_info, credentials):
     """Write out a DNS zone file, from the info in the current database."""
     message("Setting up DNS zone: %s" % subobj.dnsdomain)
     # connect to the sam
-    ldb = SamDB(paths.samdb, session_info=session_info, credentials=credentials)
+    ldb = SamDB(paths.samdb, session_info=session_info, credentials=credentials,
+                lp=lp)
 
     # These values may have changed, due to an incoming SamSync,
     # or may not have been specified, so fetch them from the database
@@ -576,8 +580,8 @@ def provision_ldapbase(setup_dir, subobj, message, paths):
 
 def provision_guess(lp):
     """guess reasonably default options for provisioning."""
-    subobj = ProvisionSettings(realm=lp.get_string("realm").upper(),
-                               domain=lp.get_string("workgroup"),
+    subobj = ProvisionSettings(realm=lp.get("realm").upper(),
+                               domain=lp.get("workgroup"),
                                hostname=hostname(), 
                                hostip=hostip())
 

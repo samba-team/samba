@@ -2517,6 +2517,7 @@ static swig_module_info swig_module = {swig_types, 15, 0, 0, 0, 0};
 
 #include "includes.h"
 #include "param/param.h"
+#include "param/loadparm.h"
 
 typedef struct param_context param;
 typedef struct loadparm_context loadparm_context;
@@ -2641,6 +2642,102 @@ SWIG_FromCharPtr(const char *cptr)
 SWIGINTERN bool loadparm_context_is_mydomain(loadparm_context *self,char const *domain){ return lp_is_mydomain(self, domain); }
 SWIGINTERN bool loadparm_context_is_myname(loadparm_context *self,char const *name){ return lp_is_myname(self, name); }
 SWIGINTERN int loadparm_context_use(loadparm_context *self,struct param_context *param){ return param_use(self, param); }
+SWIGINTERN bool loadparm_context_set(loadparm_context *self,char const *parm_name,char const *parm_value){
+            return lp_set_cmdline(self, parm_name, parm_value);
+        }
+SWIGINTERN PyObject *loadparm_context_get(loadparm_context *self,char const *param_name,char const *service_name){
+            struct parm_struct *parm = NULL;
+            void *parm_ptr = NULL;
+            int i;
+
+            if (service_name != NULL) {
+                struct loadparm_service *service;
+                /* its a share parameter */
+                service = lp_service(self, service_name);
+                if (service == NULL) {
+                    return Py_None;
+                }
+                if (strchr(param_name, ':')) {
+                    /* its a parametric option on a share */
+                    const char *type = talloc_strndup(self, 
+                                      param_name, 
+                                      strcspn(param_name, ":"));
+                    const char *option = strchr(param_name, ':') + 1;
+                    const char *value;
+                    if (type == NULL || option == NULL) {
+                        return Py_None;
+                    }
+                    value = lp_get_parametric(self, service, type, option);
+                    if (value == NULL) {
+                        return Py_None;
+                    }
+                    return PyString_FromString(value);
+                }
+
+                parm = lp_parm_struct(param_name);
+                if (parm == NULL || parm->class == P_GLOBAL) {
+                    return Py_None;
+                }
+                parm_ptr = lp_parm_ptr(self, service, parm);
+            } else if (strchr(param_name, ':')) {
+                /* its a global parametric option */
+                const char *type = talloc_strndup(self, 
+                                  param_name, strcspn(param_name, ":"));
+                const char *option = strchr(param_name, ':') + 1;
+                const char *value;
+                if (type == NULL || option == NULL) {
+                    return Py_None;
+                }
+                value = lp_get_parametric(self, NULL, type, option);
+                if (value == NULL)
+                    return Py_None;
+                return PyString_FromString(value);
+            } else {
+                /* its a global parameter */
+                parm = lp_parm_struct(param_name);
+                if (parm == NULL) {
+                    return Py_None;
+                }
+                parm_ptr = lp_parm_ptr(self, NULL, parm);
+            }
+
+            if (parm == NULL || parm_ptr == NULL) {
+                return Py_None;
+            }
+
+            /* construct and return the right type of python object */
+            switch (parm->type) {
+            case P_STRING:
+            case P_USTRING:
+                return PyString_FromString(*(char **)parm_ptr);
+            case P_BOOL:
+                return PyBool_FromLong(*(bool *)parm_ptr);
+            case P_INTEGER:
+            case P_OCTAL:
+            case P_BYTES:
+                return PyLong_FromLong(*(int *)parm_ptr);
+            case P_ENUM:
+                for (i=0; parm->enum_list[i].name; i++) {
+                    if (*(int *)parm_ptr == parm->enum_list[i].value) {
+                        return PyString_FromString(parm->enum_list[i].name);
+                    }
+                }
+                return Py_None;
+            case P_LIST: 
+                {
+                    int i;
+                    const char **strlist = *(const char ***)parm_ptr;
+                    PyObject *pylist = PyList_New(str_list_length(strlist));
+                    for (i = 0; strlist[i]; i++) 
+                        PyList_SetItem(pylist, i, 
+                                       PyString_FromString(strlist[i]));
+                    return pylist;
+                }
+
+                break;
+            }
+            return Py_None;
+        }
 SWIGINTERN void delete_loadparm_context(loadparm_context *self){ talloc_free(self); }
 SWIGINTERN char const *loadparm_service_volume_label(loadparm_service *self){ return volume_label(self); }
 SWIGINTERN char const *loadparm_service_printername(loadparm_service *self){ return lp_printername(self); }
@@ -2950,6 +3047,122 @@ SWIGINTERN PyObject *_wrap_LoadParm_use(PyObject *SWIGUNUSEDPARM(self), PyObject
   resultobj = SWIG_From_int((int)(result));
   return resultobj;
 fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_LoadParm_set(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  loadparm_context *arg1 = (loadparm_context *) 0 ;
+  char *arg2 = (char *) 0 ;
+  char *arg3 = (char *) 0 ;
+  bool result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  int res3 ;
+  char *buf3 = 0 ;
+  int alloc3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "parm_name",(char *) "parm_value", NULL 
+  };
+  
+  {
+    arg1 = loadparm_init(NULL);
+  }
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:LoadParm_set",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
+  if (obj0) {
+    res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "LoadParm_set" "', argument " "1"" of type '" "loadparm_context *""'"); 
+    }
+    arg1 = (loadparm_context *)(argp1);
+  }
+  if (obj1) {
+    res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "LoadParm_set" "', argument " "2"" of type '" "char const *""'");
+    }
+    arg2 = (char *)(buf2);
+  }
+  if (obj2) {
+    res3 = SWIG_AsCharPtrAndSize(obj2, &buf3, NULL, &alloc3);
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "LoadParm_set" "', argument " "3"" of type '" "char const *""'");
+    }
+    arg3 = (char *)(buf3);
+  }
+  result = (bool)loadparm_context_set(arg1,(char const *)arg2,(char const *)arg3);
+  resultobj = SWIG_From_bool((bool)(result));
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_LoadParm_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  loadparm_context *arg1 = (loadparm_context *) 0 ;
+  char *arg2 = (char *) 0 ;
+  char *arg3 = (char *) 0 ;
+  PyObject *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  int res3 ;
+  char *buf3 = 0 ;
+  int alloc3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "param_name",(char *) "service_name", NULL 
+  };
+  
+  {
+    arg1 = loadparm_init(NULL);
+  }
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:LoadParm_get",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
+  if (obj0) {
+    res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "LoadParm_get" "', argument " "1"" of type '" "loadparm_context *""'"); 
+    }
+    arg1 = (loadparm_context *)(argp1);
+  }
+  if (obj1) {
+    res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+    if (!SWIG_IsOK(res2)) {
+      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "LoadParm_get" "', argument " "2"" of type '" "char const *""'");
+    }
+    arg2 = (char *)(buf2);
+  }
+  if (obj2) {
+    res3 = SWIG_AsCharPtrAndSize(obj2, &buf3, NULL, &alloc3);
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "LoadParm_get" "', argument " "3"" of type '" "char const *""'");
+    }
+    arg3 = (char *)(buf3);
+  }
+  result = (PyObject *)loadparm_context_get(arg1,(char const *)arg2,(char const *)arg3);
+  resultobj = result;
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
   return NULL;
 }
 
@@ -3658,6 +3871,8 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"LoadParm_is_mydomain", (PyCFunction) _wrap_LoadParm_is_mydomain, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_is_myname", (PyCFunction) _wrap_LoadParm_is_myname, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_use", (PyCFunction) _wrap_LoadParm_use, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"LoadParm_set", (PyCFunction) _wrap_LoadParm_set, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"LoadParm_get", (PyCFunction) _wrap_LoadParm_get, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_LoadParm", (PyCFunction) _wrap_delete_LoadParm, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_swigregister", LoadParm_swigregister, METH_VARARGS, NULL},
 	 { (char *)"LoadParm_swiginit", LoadParm_swiginit, METH_VARARGS, NULL},
