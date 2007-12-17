@@ -23,16 +23,16 @@
 #include "includes.h"
 #include "lib/ldb/include/ldb.h"
 #include "lib/ldb/include/ldb_errors.h"
-
+#include "lib/util/util_ldb.h"
 /*
   search the sam for the specified attributes - va_list variant
 */
-int gendb_search_v(struct ldb_context *ldb, 
+int gendb_search_v(struct ldb_context *ldb,
 		   TALLOC_CTX *mem_ctx,
 		   struct ldb_dn *basedn,
 		   struct ldb_message ***msgs,
 		   const char * const *attrs,
-		   const char *format, 
+		   const char *format,
 		   va_list ap)  _PRINTF_ATTRIBUTE(6,0)
 {
 	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
