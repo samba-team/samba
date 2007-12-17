@@ -47,8 +47,9 @@
  * - @ref page_keyset
  * - @ref page_error
  * - @ref page_lock
- * - @ref page_revoke
  * - @ref page_cms
+ * - @ref page_ca
+ * - @ref page_revoke
  *
  * The project web page:
  * http://www.h5l.org/
@@ -75,3 +76,5 @@
 /** @defgroup hx509_lock hx509 lock functions
  * See the @ref page_lock for description and examples. */
 /** @defgroup hx509_query hx509 query functions */
+/** @defgroup hx509_ca hx509 CA functions
+ * See the @ref page_ca for description and examples. */
