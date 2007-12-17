@@ -116,9 +116,9 @@ if opts.realm is None or opts.domain is None or opts.host_name is None:
 # cope with an initially blank smb.conf 
 lp = param.ParamFile()
 lp.read(opts.configfile)
-lp.set("realm", opts.realm);
-lp.set("workgroup", opts.domain);
-lp.set("server role", opts.server_role);
+lp.set_string("realm", opts.realm);
+lp.set_string("workgroup", opts.domain);
+lp.set_string("server role", opts.server_role);
 
 subobj = provision_guess(lp)
 subobj.domain_guid = opts.domain_guid

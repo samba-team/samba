@@ -60,9 +60,12 @@ def _swig_setattr_nondynamic_method(set):
 import ldb
 import credentials
 import param
+import security
 random_password = _misc.random_password
 ldb_set_credentials = _misc.ldb_set_credentials
 ldb_set_session_info = _misc.ldb_set_session_info
 ldb_set_loadparm = _misc.ldb_set_loadparm
+samdb_set_domain_sid = _misc.samdb_set_domain_sid
+dsdb_attach_schema_from_ldif_file = _misc.dsdb_attach_schema_from_ldif_file
 
 

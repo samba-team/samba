@@ -21,6 +21,7 @@
 #
 
 import samba
+import misc
 
 class SamDB(samba.Ldb):
     def add_foreign(self, domaindn, sid, desc):
@@ -114,4 +115,8 @@ member: %s
         enable_account(self, user_dn)
         self.transaction_commit()
 
+    def set_domain_sid(self, sid):
+        misc.samdb_set_domain_sid(self, sid)
 
+    def attach_schema_from_ldif(self, pf, df):
+        misc.dsdb_attach_schema_from_ldif_file(self, pf, df)

@@ -43,8 +43,8 @@ class ParamTestCase(unittest.TestCase):
     def test_set_param_string(self):
         file = param.ParamFile()
         file.add_section("global")
-        file["global"]["data"] = "bar"
-        self.assertEquals("bar", file["global"]["data"])
+        file.set_string("data", "bar")
+        self.assertEquals("bar", file.get_string("data"))
 
     def test_get_section(self):
         file = param.ParamFile()
