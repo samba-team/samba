@@ -1,7 +1,7 @@
 Source: heimdal
 Section: net
 Priority: optional
-Maintainer: Love Hornquist Astrand <lha@h5l.se>
+Maintainer: Love Hornquist Astrand <lha@h5l.org>
 Standards-Version: 3.7.2
 Build-Depends: libncurses5-dev, bison, flex, debhelper (>= 4.1.16), libx11-dev, libxau-dev, libxt-dev, libedit-dev, libdb4.4-dev, libssl-dev (>= 0.9.8), cdbs, quilt, comerr-dev (>= 1.35-1), libldap2-dev, texinfo
 Build-Conflicts: heimdal-dev
@@ -43,7 +43,7 @@ Section: devel
 Priority: extra
 Architecture: any
 Conflicts: heimdal-clients (<< 0.4e-7), kerberos4kth-dev
-Depends: libasn1-8-heimdal (= ${Source-Version}), libkrb5-22-heimdal (= ${Source-Version}), libhdb9-heimdal (= ${Source-Version}), libkadm5srv8-heimdal (= ${Source-Version}), libkadm5clnt7-heimdal (= ${Source-Version}), libgssapi2-heimdal (= ${Source-Version}), libkafs0-heimdal (= ${Source-Version}), comerr-dev
+Depends: libasn1-8-heimdal (= ${Source-Version}), libkrb5-22-heimdal (= ${Source-Version}), libhdb9-heimdal (= ${Source-Version}), libkadm5srv8-heimdal (= ${Source-Version}), libkadm5clnt7-heimdal (= ${Source-Version}), libgssapi2-heimdal (= ${Source-Version}), libkafs0-heimdal (= ${Source-Version}), libheimntlm-0-heimdal (= ${Source-Version}), libhx509-1-heimdal (= ${Source-Version}), comerr-dev
 Replaces: heimdal-clients (<< 0.4e-7)
 Suggests: heimdal-docs
 Description: Development files for Heimdal Kerberos
