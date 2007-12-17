@@ -10,6 +10,7 @@ PUBLIC_DEPENDENCIES = \
 		NDR_IRPC \
 		UNIX_PRIVS \
 		UTIL_TDB \
-		CLUSTER
+		CLUSTER \
+		LIBNDR
 # End SUBSYSTEM MESSAGING
 ################################################

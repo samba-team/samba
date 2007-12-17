@@ -11,7 +11,7 @@ PUBLIC_PROTO_HEADER = session_proto.h
 [SUBSYSTEM::auth_system_session]
 OBJ_FILES = system_session.o
 PUBLIC_PROTO_HEADER = system_session_proto.h
-PRIVATE_DEPENDENCIES = auth_session LIBSAMBA-UTIL LIBSECURITY
+PRIVATE_DEPENDENCIES = auth_session LIBSAMBA-UTIL LIBSECURITY CREDENTIALS
 
 [SUBSYSTEM::auth_sam]
 PRIVATE_PROTO_HEADER = auth_sam.h

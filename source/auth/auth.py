@@ -57,6 +57,7 @@ def _swig_setattr_nondynamic_method(set):
     return set_attr
 
 
+import param
 system_session = _auth.system_session
 system_session_anon = _auth.system_session_anon
 

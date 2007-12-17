@@ -9,20 +9,29 @@ PUBLIC_PROTO_HEADER = samdb/samdb_proto.h
 PUBLIC_HEADERS = samdb/samdb.h
 PUBLIC_DEPENDENCIES = HEIMDAL_KRB5 
 PRIVATE_DEPENDENCIES = LIBNDR NDR_MISC NDR_DRSUAPI NDR_DRSBLOBS NSS_WRAPPER \
-					   auth_system_session LDAP_ENCODE
+					   auth_system_session LDAP_ENCODE LIBCLI_AUTH LIBNDR \
+					   SAMDB_SCHEMA LDB_WRAP SAMDB_COMMON
 OBJ_FILES = \
 		samdb/samdb.o \
 		samdb/samdb_privilege.o \
 		samdb/cracknames.o \
+		repl/replicated_objects.o
+
+[SUBSYSTEM::SAMDB_COMMON]
+PUBLIC_PROTO_HEADER = common/proto.h
+OBJ_FILES = \
 		common/sidmap.o \
 		common/flag_mapping.o \
+		common/util.o
+
+[SUBSYSTEM::SAMDB_SCHEMA]
+PUBLIC_PROTO_HEADER = schema/proto.h
+PUBLIC_HEADERS = schema/schema.h
+PRIVATE_DEPENDENCIES = SAMDB_COMMON
+OBJ_FILES = \
 		schema/schema_init.o \
 		schema/schema_syntax.o \
 		schema/schema_constructed.o \
-		repl/replicated_objects.o
-#
-# End SUBSYSTEM SAMDB
-################################################
 
 #######################
 # Start SUBSYSTEM DREPL_SRV
