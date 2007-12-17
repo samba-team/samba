@@ -100,6 +100,7 @@ AC_CHECK_HEADERS(sys/socket.h netinet/in.h netdb.h arpa/inet.h)
 AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(sys/sockio.h sys/un.h)
 AC_CHECK_HEADERS(sys/mount.h mntent.h)
+AC_CHECK_HEADERS(stropts.h)
 
 dnl we need to check that net/if.h really can be used, to cope with hpux
 dnl where including it always fails
