@@ -405,16 +405,6 @@ my $tls_enabled = not $opt_quick;
 $ENV{TLS_ENABLED} = ($tls_enabled?"yes":"no");
 $ENV{LDB_MODULES_PATH} = "$old_pwd/bin/modules/ldb";
 $ENV{LD_SAMBA_MODULE_PATH} = "$old_pwd/bin/modules";
-if (defined($ENV{LD_LIBRARY_PATH})) {
-	$ENV{LD_LIBRARY_PATH} = "$old_pwd/bin/shared:$ENV{LD_LIBRARY_PATH}";
-} else {
-	$ENV{LD_LIBRARY_PATH} = "$old_pwd/bin/shared";
-}
-if (defined($ENV{PKG_CONFIG_PATH})) {
-	$ENV{PKG_CONFIG_PATH} = "$old_pwd/bin/pkgconfig:$ENV{PKG_CONFIG_PATH}";
-} else { 
-	$ENV{PKG_CONFIG_PATH} = "$old_pwd/bin/pkgconfig";
-}
 # Required for smbscript:
 $ENV{PATH} = "$old_pwd/bin:$old_pwd:$ENV{PATH}";
 
