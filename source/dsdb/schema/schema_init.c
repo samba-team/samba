@@ -1085,10 +1085,10 @@ int dsdb_set_global_schema(struct ldb_context *ldb)
  * Find the schema object for this ldb
  */
 
-const struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
+struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
 {
 	const void *p;
-	const struct dsdb_schema *schema;
+	struct dsdb_schema *schema;
 
 	/* see if we have a cached copy */
 	p = ldb_get_opaque(ldb, "dsdb_schema");
@@ -1110,8 +1110,7 @@ const struct dsdb_schema *dsdb_get_schema(struct ldb_context *ldb)
 
 void dsdb_make_schema_global(struct ldb_context *ldb)
 {
-	const void *p;
-	const struct dsdb_schema *schema = dsdb_get_schema(ldb);
+	struct dsdb_schema *schema = dsdb_get_schema(ldb);
 	if (!schema) {
 		return;
 	}
