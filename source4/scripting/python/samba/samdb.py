@@ -89,7 +89,7 @@ userAccountControl: %u
         assert(len(res) == 1 and res[0].defaultNamingContext is not None)
         domain_dn = res[0].defaultNamingContext
         assert(domain_dn is not None)
-        dom_users = searchone(self, domain_dn, "name=Domain Users", "dn")
+        dom_users = self.searchone(domain_dn, "dn", "name=Domain Users")
         assert(dom_users is not None)
 
         user_dn = "CN=%s,CN=Users,%s" % (username, domain_dn)

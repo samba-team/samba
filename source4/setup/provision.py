@@ -166,7 +166,7 @@ elif opts.partitions_only:
 else:
     provision(lp, setup_dir, subobj, message, opts.blank, paths, 
               system_session(), creds, opts.ldap_backend)
-    provision_dns(setup_dir, subobj, message, paths, system_session(), creds)
+    provision_dns(setup_dir, subobj, message, paths, system_session(), creds, lp)
     message("To reproduce this provision, run with:")
     def shell_escape(arg):
         if " " in arg:
