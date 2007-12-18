@@ -141,6 +141,7 @@ PIDDIR = @piddir@
 LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
 LIBADDNS=bin/libaddns.a @LIBADDNS_SHARED@
+LIBNETAPI=bin/libnetapi.a @LIBNETAPI_SHARED@
 
 FLAGS1 = $(CFLAGS) @FLAGS1@ @SAMBA_CPPFLAGS@ $(CPPFLAGS)
 FLAGS2 =
@@ -198,7 +199,7 @@ EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@ bin/ndrdump@EXEEXT@ \
 	bin/vlp@EXEEXT@
 
-SHLIBS = @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBADDNS@
+SHLIBS = @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBADDNS@ @LIBNETAPI@
 
 PAM_MODULES = @PAM_MODULES@
 
@@ -706,10 +707,12 @@ REG_API_OBJ = registry/reg_api.o \
 	      $(UTIL_REG_SMBCONF_OBJ)
 
 
-LIBNETAPI_OBJ1 = lib/netapi/netapi.o lib/netapi/joindomain.o
+LIBNETAPI_OBJ1 = lib/netapi/netapi.o \
+		 lib/netapi/joindomain.o
+
 LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
 		 $(REG_API_OBJ) \
-		 $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
+		 $(PARAM_WITHOUT_REG_OBJ) $(LIB_NONSMBD_OBJ) \
 		 $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		 $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
 		 $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ)
@@ -1043,7 +1046,7 @@ idl:
 #####################################################################
 
 
-everything: all libsmbclient debug2html smbfilter talloctort replacetort modules torture \
+everything: all libsmbclient libnetapi debug2html smbfilter talloctort replacetort modules torture \
 	$(EVERYTHING_PROGS)
 
 .SUFFIXES:
@@ -1408,6 +1411,7 @@ bin/libbigballofmud.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBBIGBALLOFMUD_OBJ)
 libsmbclient: $(LIBSMBCLIENT)
 libsmbsharemodes: $(LIBSMBSHAREMODES)
 libaddns: $(LIBADDNS)
+libnetapi: $(LIBNETAPI)
 
 # Linker command to link a RPC, VFS, AUTH, CHARSET or PASSDB module.
 SHLD_MODULE = $(SHLD) $(LDSHFLAGS) $(MODULE_EXPORTS) \
@@ -1744,7 +1748,7 @@ bin/timelimit@EXEEXT@: script/tests/timelimit.o
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(DYNEXP) script/tests/timelimit.o
 
-install: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSSPNEGO@ installman installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ @INSTALL_LIBSMBCLIENT@ @INSTALL_PAM_MODULES@ @INSTALL_LIBSMBSHAREMODES@
+install: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSSPNEGO@ installman installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ @INSTALL_LIBSMBCLIENT@ @INSTALL_PAM_MODULES@ @INSTALL_LIBSMBSHAREMODES@ @INSTALL_LIBNETAPI@
 
 
 install-everything: install installmodules
@@ -1823,6 +1827,13 @@ installlibaddns: installdirs libaddns
 	-$(INSTALLLIBCMD_SH) bin/libaddns.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libaddns.a $(DESTDIR)$(LIBDIR)
 
+installlibnetapi: installdirs libnetapi
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
+	-$(INSTALLLIBCMD_SH) bin/libnetapi.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
+	-$(INSTALLLIBCMD_A) bin/libnetapi.a $(DESTDIR)$(LIBDIR)
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/libnetapi.h $(DESTDIR)${prefix}/include/samba/libnetapi
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/joindomain.h $(DESTDIR)${prefix}/include/samba/libnetapi
+
 installpammodules: $(PAM_MODULES)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(PAMMODULESDIR)
 	@for module in $(PAM_MODULES); do \
@@ -1857,7 +1868,7 @@ showlayout:
 	@echo "  swatdir:     $(SWATDIR)"
 
 
-uninstall: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSSPNEGO@ uninstallscripts uninstalldat uninstallswat uninstallmodules @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_PAM_MODULES@ @UNINSTALL_LIBSMBSHAREMODES@
+uninstall: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSSPNEGO@ uninstallscripts uninstalldat uninstallswat uninstallmodules @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_PAM_MODULES@ @UNINSTALL_LIBSMBSHAREMODES@ @UNINSTALL_LIBNETAPI@
 
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) C
@@ -1907,6 +1918,11 @@ uninstalllibaddns:
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libaddns.@SHLIBEXT@
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libaddns.a
 
+uninstalllibnetapi:
+	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libnetapi.@SHLIBEXT@
+	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libnetapi.a
+	-rm -f $(DESTDIR)${prefix}/include/samba/libnetapi/netapi.h
+
 uninstallpammodules:
 	@for module in $(PAM_MODULES); do \
 		echo "Removing $(DESTDIR)/$(PAMMODULESDIR)/$${module}.@SHLIBEXT@ "; \
@@ -1923,7 +1939,7 @@ clean: delheaders
 		*/*.@SHLIBEXT@ */*/*.@SHLIBEXT@ */*/*/*.@SHLIBEXT@ \
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) $(LIBADDNS) \
-		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) \
+		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
 		.headers.stamp */src/*.o proto_exists
 	-rm -rf t_dir
 
