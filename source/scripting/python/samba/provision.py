@@ -54,14 +54,6 @@ class ProvisionSettings(object):
         self.schemedn_ldb = None
         self.s4_ldapi_path = None
         self.policyguid = None
-        self.serverrole = None
-
-    def subst_vars(self):
-        return {
-                "SERVERROLE": self.serverrole,
-                "DOMAIN_CONF": self.domain,
-                "REALM_CONF": self.realm,
-                }
 
     def fix(self, paths):
         self.realm       = self.realm.upper()
@@ -74,13 +66,6 @@ class ProvisionSettings(object):
             raise InvalidNetbiosName(self.netbiosname)
         rdns = self.domaindn.split(",")
         self.rdn_dc = rdns[0][len("DC="):]
-
-        self.sam_ldb        = paths.samdb
-        self.secrets_ldb    = paths.secrets
-        self.secrets_keytab    = paths.keytab
-        
-        self.s4_ldapi_path = paths.s4_ldapi_path
-        self.serverrole = "domain controller"
 
     def validate(self, lp):
         if not valid_netbios_name(self.domain):
@@ -111,12 +96,12 @@ class ProvisionPaths:
         self.samdb = None
         self.secrets = None
         self.keytab = None
+        self.dns_keytab = None
         self.dns = None
         self.winsdb = None
         self.ldap_basedn_ldif = None
         self.ldap_config_basedn_ldif = None
         self.ldap_schema_basedn_ldif = None
-        self.s4_ldapi_path = None
 
 
 def install_ok(lp, session_info, credentials):
@@ -184,6 +169,8 @@ def setup_add_ldif(ldb, setup_dir, ldif, subst_vars=None):
     if subst_vars is not None:
         data = substitute_var(data, subst_vars)
 
+    assert "${" not in data
+
     for msg in ldb.parse_ldif(data):
         ldb.add(msg[1])
 
@@ -194,6 +181,8 @@ def setup_modify_ldif(ldb, setup_dir, ldif, substvars=None):
     data = open(src, 'r').read()
     if substvars is not None:
         data = substitute_var(data, substvars)
+
+    assert "${" not in data
 
     for (changetype, msg) in ldb.parse_ldif(data):
         ldb.modify(msg)
@@ -231,7 +220,8 @@ def setup_file(setup_dir, template, fname, substvars):
         os.unlink(f)
 
     data = open(src, 'r').read()
-    data = substitute_var(data, substvars)
+    if substvars:
+        data = substitute_var(data, substvars)
     assert not "${" in data
 
     open(f, 'w').write(data)
@@ -250,6 +240,7 @@ def provision_default_paths(lp, subobj):
     paths.secrets = os.path.join(private_dir, lp.get("secrets database") or "secrets.ldb")
     paths.templates = os.path.join(private_dir, "templates.ldb")
     paths.keytab = os.path.join(private_dir, "secrets.keytab")
+    paths.dns_keytab = os.path.join(private_dir, "dns.keytab")
     paths.dns = os.path.join(private_dir, subobj.dnsdomain + ".zone")
     paths.winsdb = os.path.join(private_dir, "wins.ldb")
     paths.ldap_basedn_ldif = os.path.join(private_dir, 
@@ -262,6 +253,14 @@ def provision_default_paths(lp, subobj):
     paths.phpldapadminconfig = os.path.join(private_dir, 
                                             "phpldapadmin-config.php")
     paths.hklm = os.path.join(private_dir, "hklm.ldb")
+    paths.sysvol = lp.get("sysvol", "path")
+    if paths.sysvol is None:
+        paths.sysvol = os.path.join(lp.get("lock dir"), "sysvol")
+
+    paths.netlogon = lp.get("netlogon", "path")
+    if paths.netlogon is None:
+        paths.netlogon = os.path.join(os.path.join(paths.sysvol, "scripts"))
+
     return paths
 
 
@@ -412,11 +411,6 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     """
     subobj.fix(paths)
 
-    if subobj.host_guid is not None:
-        subobj.hostguid_add = "objectGUID: %s" % subobj.host_guid
-    else:
-        subobj.hostguid_add = ""
-
     assert paths.smbconf is not None
 
     # only install a new smb.conf if there isn't one there already
@@ -440,10 +434,11 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
         setup_ldb(share_ldb, setup_dir, "share.ldif", None)
 
     message("Setting up %s" % paths.secrets)
-    setup_secretsdb(paths.secrets, setup_dir, session_info=session_info, 
+    secrets_ldb = setup_secretsdb(paths.secrets, setup_dir, session_info=session_info, 
                     credentials=credentials, lp=lp)
 
     message("Setting up registry")
+    # FIXME: Still fails for some reason
     #setup_registry(paths.hklm, setup_dir, session_info, 
     #               credentials=credentials, lp=lp)
 
@@ -582,15 +577,7 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
             "CONFIGDN": subobj.configdn,
             })
 
-        if blank:
-            message("Setting up sam.ldb index")
-            setup_add_ldif(samdb, setup_dir, "provision_index.ldif")
-
-            message("Setting up sam.ldb rootDSE marking as syncronized")
-            setup_modify_ldif(samdb, setup_dir, "provision_rootdse_modify.ldif")
-
-            samdb.transaction_commit()
-            return
+        if not blank:
 
     #    message("Activate schema module")
     #    setup_modify_ldif("schema_activation.ldif", info, samdb, False)
@@ -605,16 +592,62 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     #
     #    samdb = open_ldb(info, paths.samdb, False)
     #
-        message("Setting up sam.ldb users and groups")
-        setup_add_ldif(samdb, setup_dir, "provision_users.ldif", {
-            "DOMAINDN": subobj.domaindn,
-            "DOMAINSID": str(subobj.domainsid),
-            "CONFIGDN": subobj.configdn,
-            "ADMINPASS_B64": b64encode(subobj.adminpass),
-            "KRBTGTPASS_B64": b64encode(subobj.krbtgtpass),
-            })
+            message("Setting up sam.ldb users and groups")
+            setup_add_ldif(samdb, setup_dir, "provision_users.ldif", {
+                "DOMAINDN": subobj.domaindn,
+                "DOMAINSID": str(subobj.domainsid),
+                "CONFIGDN": subobj.configdn,
+                "ADMINPASS_B64": b64encode(subobj.adminpass),
+                "KRBTGTPASS_B64": b64encode(subobj.krbtgtpass),
+                })
 
-        setup_name_mappings(subobj, samdb)
+            if lp.get("server role") == "domain controller":
+                message("Setting up self join")
+                if subobj.host_guid is not None:
+                    hostguid_add = "objectGUID: %s" % subobj.host_guid
+                else:
+                    hostguid_add = ""
+
+                setup_add_ldif(samdb, setup_dir, "provision_self_join.ldif", { 
+                          "CONFIGDN": subobj.configdn, 
+                          "SCHEMADN": subobj.schemadn,
+                          "DOMAINDN": subobj.domaindn,
+                          "INVOCATIONID": subobj.invocationid,
+                          "NETBIOSNAME": subobj.netbiosname,
+                          "DEFAULTSITE": subobj.defaultsite,
+                          "DNSNAME": subobj.dnsname,
+                          "MACHINEPASS_B64": b64encode(subobj.machinepass),
+                          "DNSPASS_B64": b64encode(subobj.dnspass),
+                          "REALM": subobj.realm,
+                          "DOMAIN": subobj.domain,
+                          "HOSTGUID_ADD": hostguid_add,
+                          "DNSDOMAIN": subobj.dnsdomain})
+                setup_add_ldif(samdb, setup_dir, "provision_group_policy.ldif", { 
+                          "POLICYGUID": subobj.policyguid,
+                          "DNSDOMAIN": subobj.dnsdomain,
+                          "DOMAINSID": str(subobj.domainsid),
+                          "DOMAINDN": subobj.domaindn})
+
+                os.makedirs(os.path.join(paths.sysvol, subobj.dnsdomain, "Policies", "{" + subobj.policyguid + "}"), 0755)
+                os.makedirs(os.path.join(paths.sysvol, subobj.dnsdomain, "Policies", "{" + subobj.policyguid + "}", "Machine"), 0755)
+                os.makedirs(os.path.join(paths.sysvol, subobj.dnsdomain, "Policies", "{" + subobj.policyguid + "}", "User"), 0755)
+                if not os.path.isdir(paths.netlogon):
+                    os.makedirs(paths.netlogon, 0755)
+                setup_ldb(secrets_ldb, setup_dir, "secrets_dc.ldif", { 
+                    "MACHINEPASS_B64": b64encode(subobj.machinepass),
+                    "DOMAIN": subobj.domain,
+                    "REALM": subobj.realm,
+                    "LDAPTIME": timestring(int(time.time())),
+                    "DNSDOMAIN": subobj.dnsdomain,
+                    "DOMAINSID": str(subobj.domainsid),
+                    "SECRETS_KEYTAB": paths.keytab,
+                    "NETBIOSNAME": subobj.netbiosname,
+                    "SAM_LDB": paths.samdb,
+                    "DNS_KEYTAB": paths.dns_keytab,
+                    "DNSPASS_B64": b64encode(subobj.dnspass),
+                    })
+
+            setup_name_mappings(subobj, samdb)
 
         message("Setting up sam.ldb index")
         setup_add_ldif(samdb, setup_dir, "provision_index.ldif")
@@ -628,7 +661,7 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     samdb.transaction_commit()
 
     message("Setting up phpLDAPadmin configuration")
-    create_phplpapdadmin_config(paths.phpldapadminconfig, setup_dir, subobj.s4_ldapi_path)
+    create_phplpapdadmin_config(paths.phpldapadminconfig, setup_dir, paths.s4_ldapi_path)
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
 
