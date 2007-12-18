@@ -52,7 +52,7 @@ static int naming_fsmo_init(struct ldb_module *module)
 	naming_dn = samdb_partitions_dn(module->ldb, mem_ctx);
 	if (!naming_dn) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
-			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)");
+			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)\n");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	}
@@ -70,7 +70,7 @@ static int naming_fsmo_init(struct ldb_module *module)
 			 &naming_res);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
-			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)");
+			  "naming_fsmo_init: no partitions dn present: (skip loading of naming contexts details)\n");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	}
@@ -84,7 +84,7 @@ static int naming_fsmo_init(struct ldb_module *module)
 	talloc_steal(mem_ctx, naming_res);
 	if (naming_res->count == 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
-			  "naming_fsmo_init: no cross-ref container present: (skip loading of naming contexts details)");
+			  "naming_fsmo_init: no cross-ref container present: (skip loading of naming contexts details)\n");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	} else if (naming_res->count > 1) {
@@ -110,7 +110,7 @@ static int naming_fsmo_init(struct ldb_module *module)
 	talloc_steal(module, naming_fsmo);
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE,
-			  "naming_fsmo_init: we are master: %s",
+			  "naming_fsmo_init: we are master: %s\n",
 			  (naming_fsmo->we_are_master?"yes":"no"));
 
 	talloc_free(mem_ctx);

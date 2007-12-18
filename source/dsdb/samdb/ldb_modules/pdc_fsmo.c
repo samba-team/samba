@@ -51,7 +51,7 @@ static int pdc_fsmo_init(struct ldb_module *module)
 	pdc_dn = samdb_base_dn(module->ldb);
 	if (!pdc_dn) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
-			  "pdc_fsmo_init: no domain dn present: (skip loading of domain details)");
+			  "pdc_fsmo_init: no domain dn present: (skip loading of domain details)\n");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	}
@@ -69,7 +69,7 @@ static int pdc_fsmo_init(struct ldb_module *module)
 			 &pdc_res);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
-			  "pdc_fsmo_init: no domain object present: (skip loading of domain details)");
+			  "pdc_fsmo_init: no domain object present: (skip loading of domain details)\n");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	} else if (ret != LDB_SUCCESS) {
@@ -82,7 +82,7 @@ static int pdc_fsmo_init(struct ldb_module *module)
 	talloc_steal(mem_ctx, pdc_res);
 	if (pdc_res->count == 0) {
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
-			  "pdc_fsmo_init: no domain object present: (skip loading of domain details)");
+			  "pdc_fsmo_init: no domain object present: (skip loading of domain details)\n");
 		talloc_free(mem_ctx);
 		return ldb_next_init(module);
 	} else if (pdc_res->count > 1) {
@@ -108,7 +108,7 @@ static int pdc_fsmo_init(struct ldb_module *module)
 	talloc_steal(module, pdc_fsmo);
 
 	ldb_debug(module->ldb, LDB_DEBUG_TRACE,
-			  "pdc_fsmo_init: we are master: %s",
+			  "pdc_fsmo_init: we are master: %s\n",
 			  (pdc_fsmo->we_are_master?"yes":"no"));
 
 	talloc_free(mem_ctx);
