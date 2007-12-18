@@ -691,6 +691,8 @@ bool torture_userlist(struct torture_context *torture)
 		req.in.resume_index = req.out.resume_index;
 
 		status = libnet_UserList(ctx, mem_ctx, &req);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) break;
 
 		for (i = 0; i < req.out.count; i++) {
 			printf("\tuser: %s, sid=%s\n",
