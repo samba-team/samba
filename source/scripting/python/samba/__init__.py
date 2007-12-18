@@ -77,7 +77,7 @@ class Ldb(ldb.Ldb):
 
         def msg(l,text):
             print text
-        self.set_debug(msg)
+        #self.set_debug(msg)
 
         if url is not None:
             self.connect(url)
@@ -87,9 +87,9 @@ class Ldb(ldb.Ldb):
     set_session_info = misc.ldb_set_session_info
     set_loadparm = misc.ldb_set_loadparm
 
-    def searchone(self, basedn, expression, attribute):
+    def searchone(self, basedn, attribute, expression=None, scope=ldb.SCOPE_BASE):
         """Search for one attribute as a string."""
-        res = self.search(basedn, SCOPE_SUBTREE, expression, [attribute])
+        res = self.search(basedn, scope, expression, [attribute])
         if len(res) != 1 or res[0][attribute] is None:
             return None
         return res[0][attribute]
@@ -125,6 +125,8 @@ def substitute_var(text, values):
     """
 
     for (name, value) in values.items():
+        assert isinstance(name, str), "%r is not a string" % name
+        assert isinstance(value, str), "Value %r for %s is not a string" % (value, name)
         text = text.replace("${%s}" % name, value)
 
     assert "${" not in text, text
