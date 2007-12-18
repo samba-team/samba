@@ -90,7 +90,7 @@ parser.add_option("--ldap-module=", type="string", metavar="MODULE",
 parser.add_option("--aci", type="string", metavar="ACI", 
 		help="An arbitary LDIF fragment, particularly useful to loading a backend ACI value into a target LDAP server. You must provide at least a realm and domain")
 parser.add_option("--server-role", type="choice", metavar="ROLE",
-		          choices=["domain controller", "domain server"],
+		          choices=["domain controller", "member server"],
 		help="Set server role to provision for (default standalone)")
 parser.add_option("--partitions-only", 
 		help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true")
