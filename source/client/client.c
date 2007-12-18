@@ -28,10 +28,13 @@
 #define REGISTER 0
 #endif
 
+extern int do_smb_browse(void); /* mDNS browsing */
+
 extern bool AllowDebugChange;
 extern bool override_logfile;
 extern char tar_type;
 extern bool in_client;
+
 static int port = 0;
 static char *service;
 static char *desthost;
@@ -4512,6 +4515,7 @@ static int do_message_op(void)
 		{ "send-buffer", 'b', POPT_ARG_INT, &io_bufsize, 'b', "Changes the transmit/send buffer", "BYTES" },
 		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
 		{ "grepable", 'g', POPT_ARG_NONE, NULL, 'g', "Produce grepable output" },
+                { "browse", 'B', POPT_ARG_NONE, NULL, 'B', "Browse SMB servers using DNS" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -4654,6 +4658,9 @@ static int do_message_op(void)
 		case 'g':
 			grepable=true;
 			break;
+		case 'B':
+			return(do_smb_browse());
+
 		}
 	}
 
