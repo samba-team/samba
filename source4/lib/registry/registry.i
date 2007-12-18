@@ -104,6 +104,18 @@ typedef struct registry_context {
 
     WERROR mount_hive(struct hive_key *hive_key, uint32_t hkey_id,
                       const char **elements=NULL);
+
+    WERROR mount_hive(struct hive_key *hive_key, const char *predef_name)
+    {
+        int i;
+        for (i = 0; reg_predefined_keys[i].name; i++) {
+            if (!strcasecmp(reg_predefined_keys[i].name, predef_name))
+                return reg_mount_hive($self, hive_key, 
+                                      reg_predefined_keys[i].handle, NULL);
+        }
+        return WERR_INVALID_NAME;
+        }
+
     }
 } reg;
 

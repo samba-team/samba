@@ -99,7 +99,7 @@ opts = parser.parse_args()[0]
 
 def message(text):
 	"""print a message if quiet is not set."""
-	if opts.quiet:
+	if not opts.quiet:
 		print text
 
 hostname = opts.host_name

@@ -78,6 +78,10 @@ class Ldb(ldb.Ldb):
         if url:
             self.connect(url)
 
+        def msg(l,text):
+            print text
+        #self.set_debug(msg)
+
     set_credentials = misc.ldb_set_credentials
     set_session_info = misc.ldb_set_session_info
     set_loadparm = misc.ldb_set_loadparm

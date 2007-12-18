@@ -2531,6 +2531,7 @@ static swig_module_info swig_module = {swig_types, 27, 0, 0, 0, 0};
 #include "ldb.h"
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
+#include "lib/ldb-samba/ldif_handlers.h"
 
 
 SWIGINTERN int
@@ -2781,6 +2782,16 @@ SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
 
 
 
+
+
+  #define SWIG_From_long   PyInt_FromLong 
+
+
+SWIGINTERNINLINE PyObject *
+SWIG_From_int  (int value)
+{    
+  return SWIG_From_long  (value);
+}
 
 #ifdef __cplusplus
 extern "C" {
@@ -3051,6 +3062,66 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_dsdb_set_global_schema(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  struct ldb_context *arg1 = (struct ldb_context *) 0 ;
+  int result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  char *  kwnames[] = {
+    (char *) "ldb", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:dsdb_set_global_schema",kwnames,&obj0)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "dsdb_set_global_schema" "', argument " "1"" of type '" "struct ldb_context *""'"); 
+  }
+  arg1 = (struct ldb_context *)(argp1);
+  {
+    if (arg1 == NULL)
+    SWIG_exception(SWIG_ValueError, 
+      "ldb context must be non-NULL");
+  }
+  result = (int)dsdb_set_global_schema(arg1);
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_ldb_register_samba_handlers(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  struct ldb_context *arg1 = (struct ldb_context *) 0 ;
+  int result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  char *  kwnames[] = {
+    (char *) "ldb", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:ldb_register_samba_handlers",kwnames,&obj0)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_register_samba_handlers" "', argument " "1"" of type '" "struct ldb_context *""'"); 
+  }
+  arg1 = (struct ldb_context *)(argp1);
+  {
+    if (arg1 == NULL)
+    SWIG_exception(SWIG_ValueError, 
+      "ldb context must be non-NULL");
+  }
+  result = (int)ldb_register_samba_handlers(arg1);
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"random_password", (PyCFunction) _wrap_random_password, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ldb_set_credentials", (PyCFunction) _wrap_ldb_set_credentials, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -3059,6 +3130,8 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"samdb_set_domain_sid", (PyCFunction) _wrap_samdb_set_domain_sid, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"dsdb_attach_schema_from_ldif_file", (PyCFunction) _wrap_dsdb_attach_schema_from_ldif_file, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"version", (PyCFunction)_wrap_version, METH_NOARGS, NULL},
+	 { (char *)"dsdb_set_global_schema", (PyCFunction) _wrap_dsdb_set_global_schema, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"ldb_register_samba_handlers", (PyCFunction) _wrap_ldb_register_samba_handlers, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 

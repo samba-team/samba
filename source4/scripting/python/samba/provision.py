@@ -306,7 +306,7 @@ def setup_name_mappings(subobj, ldb):
                      ["objectSid"])
     assert len(res) == 1
     assert "objectSid" in res[0]
-    sid = list(res[0]["objectSid"])[0]
+    sid = str(list(res[0]["objectSid"])[0])
 
     # add some foreign sids if they are not present already
     ldb.add_foreign(subobj.domaindn, "S-1-5-7", "Anonymous")
@@ -419,12 +419,12 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
 
     message("Setting up registry")
     reg = registry.Registry()
-    hive = registry.Hive(paths.hklm, session_info=session_info, 
-                         credentials=credentials, lp_ctx=lp)
-    reg.mount_hive(hive, registry.HKEY_LOCAL_MACHINE, [])
+    #hive = registry.Hive(paths.hklm, session_info=session_info, 
+    #                     credentials=credentials, lp_ctx=lp)
+    #reg.mount_hive(hive, "HKEY_LOCAL_MACHINE")
     provision_reg = os.path.join(setup_dir, "provision.reg")
     assert os.path.exists(provision_reg)
-    reg.apply_patchfile(provision_reg)
+    #reg.apply_patchfile(provision_reg)
 
     message("Setting up templates into %s" % paths.templates)
     setup_ldb(setup_dir, "provision_templates.ldif", session_info, 
@@ -434,7 +434,8 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     setup_ldb(setup_dir, "provision_partitions.ldif", session_info, 
               credentials, subobj, lp, paths.samdb)
 
-    samdb = open_ldb(session_info, credentials, lp, paths.samdb)
+    samdb = SamDB(paths.samdb, session_info=session_info, 
+                  credentials=credentials, lp=lp)
     samdb.transaction_start()
     try:
         message("Setting up sam.ldb attributes")
