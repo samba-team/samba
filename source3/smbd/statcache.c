@@ -26,8 +26,6 @@
  Stat cache code used in unix_convert.
 *****************************************************************************/
 
-static TDB_CONTEXT *tdb_stat_cache;
-
 /**
  * Add an entry into the stat cache.
  *
@@ -45,22 +43,14 @@ void stat_cache_add( const char *full_orig_name,
 		bool case_sensitive)
 {
 	size_t translated_path_length;
-	TDB_DATA data_val;
 	char *original_path;
 	size_t original_path_length;
-	size_t sc_size = lp_max_stat_cache_size();
 	char saved_char;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	if (!lp_stat_cache()) {
 		return;
 	}
-
-	if (sc_size && (tdb_map_size(tdb_stat_cache) > sc_size*1024)) {
-		reset_stat_cache();
-	}
-
-	ZERO_STRUCT(data_val);
 
 	/*
 	 * Don't cache trivial valid directory entries such as . and ..
@@ -132,24 +122,20 @@ void stat_cache_add( const char *full_orig_name,
 	saved_char = translated_path[translated_path_length];
 	translated_path[translated_path_length] = '\0';
 
-	data_val.dsize = translated_path_length + 1;
-	data_val.dptr = (uint8 *)translated_path;
-
 	/*
 	 * New entry or replace old entry.
 	 */
 
-	if (tdb_store_bystring(tdb_stat_cache, original_path, data_val,
-				TDB_REPLACE) != 0) {
-		DEBUG(0,("stat_cache_add: Error storing entry %s -> %s\n",
-					original_path, translated_path));
-	} else {
-		DEBUG(5,("stat_cache_add: Added entry (%lx:size%x) %s -> %s\n",
-			(unsigned long)data_val.dptr,
-			(unsigned int)data_val.dsize,
-			original_path,
-			translated_path));
-	}
+	memcache_add(
+		smbd_memcache(), STAT_CACHE,
+		data_blob_const(original_path, original_path_length),
+		data_blob_const(translated_path, translated_path_length + 1));
+
+	DEBUG(5,("stat_cache_add: Added entry (%lx:size %x) %s -> %s\n",
+		 (unsigned long)translated_path,
+		 (unsigned int)translated_path_length,
+		 original_path,
+		 translated_path));
 
 	translated_path[translated_path_length] = saved_char;
 	TALLOC_FREE(original_path);
@@ -186,7 +172,7 @@ bool stat_cache_lookup(connection_struct *conn,
 	unsigned int num_components = 0;
 	char *translated_path;
 	size_t translated_path_length;
-	TDB_DATA data_val;
+	DATA_BLOB data_val;
 	char *name;
 	TALLOC_CTX *ctx = talloc_tos();
 
@@ -236,9 +222,12 @@ bool stat_cache_lookup(connection_struct *conn,
 	while (1) {
 		char *sp;
 
-		data_val = tdb_fetch_bystring(tdb_stat_cache, chk_name);
+		data_val = data_blob_null;
 
-		if (data_val.dptr != NULL && data_val.dsize != 0) {
+		if (memcache_lookup(
+			    smbd_memcache(), STAT_CACHE,
+			    data_blob_const(chk_name, strlen(chk_name)),
+			    &data_val)) {
 			break;
 		}
 
@@ -275,12 +264,11 @@ bool stat_cache_lookup(connection_struct *conn,
 		}
 	}
 
-	translated_path = talloc_strdup(ctx,(char *)data_val.dptr);
+	translated_path = talloc_strdup(ctx,(char *)data_val.data);
 	if (!translated_path) {
 		smb_panic("talloc failed");
 	}
-	translated_path_length = data_val.dsize - 1;
-	SAFE_FREE(data_val.dptr);
+	translated_path_length = data_val.length - 1;
 
 	DEBUG(10,("stat_cache_lookup: lookup succeeded for name [%s] "
 		  "-> [%s]\n", chk_name, translated_path ));
@@ -288,7 +276,8 @@ bool stat_cache_lookup(connection_struct *conn,
 
 	if (SMB_VFS_STAT(conn, translated_path, pst) != 0) {
 		/* Discard this entry - it doesn't exist in the filesystem. */
-		tdb_delete_bystring(tdb_stat_cache, chk_name);
+		memcache_delete(smbd_memcache(), STAT_CACHE,
+				data_blob_const(chk_name, strlen(chk_name)));
 		TALLOC_FREE(chk_name);
 		TALLOC_FREE(translated_path);
 		return False;
@@ -366,7 +355,8 @@ void stat_cache_delete(const char *name)
 	DEBUG(10,("stat_cache_delete: deleting name [%s] -> %s\n",
 			lname, name ));
 
-	tdb_delete_bystring(tdb_stat_cache, lname);
+	memcache_delete(smbd_memcache(), STAT_CACHE,
+			data_blob_const(lname, talloc_get_size(lname)-1));
 	TALLOC_FREE(lname);
 }
 
@@ -395,15 +385,7 @@ bool reset_stat_cache( void )
 	if (!lp_stat_cache())
 		return True;
 
-	if (tdb_stat_cache) {
-		tdb_close(tdb_stat_cache);
-	}
+	memcache_flush(smbd_memcache(), STAT_CACHE);
 
-	/* Create the in-memory tdb using our custom hash function. */
-	tdb_stat_cache = tdb_open_ex("statcache", 1031, TDB_INTERNAL,
-				(O_RDWR|O_CREAT), 0644, NULL, fast_string_hash);
-
-	if (!tdb_stat_cache)
-		return False;
 	return True;
 }

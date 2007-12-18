@@ -88,8 +88,6 @@ static bool include_registry_globals = False;
 #define USERSHARE_VALID 1
 #define USERSHARE_PENDING_DELETE 2
 
-bool use_getwd_cache = True;
-
 extern int extra_time_offset;
 
 static bool defaults_saved = False;
@@ -215,6 +213,7 @@ typedef struct {
 	int pwordlevel;
 	int unamelevel;
 	int deadtime;
+	bool getwd_cache;
 	int maxprotocol;
 	int minprotocol;
 	int security;
@@ -1037,7 +1036,7 @@ static struct parm_struct parm_table[] = {
 
 	{"block size", P_INTEGER, P_LOCAL, &sDefault.iBlock_size, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"deadtime", P_INTEGER, P_GLOBAL, &Globals.deadtime, NULL, NULL, FLAG_ADVANCED}, 
-	{"getwd cache", P_BOOL, P_GLOBAL, &use_getwd_cache, NULL, NULL, FLAG_ADVANCED}, 
+	{"getwd cache", P_BOOL, P_GLOBAL, &Globals.getwd_cache, NULL, NULL, FLAG_ADVANCED},
 	{"keepalive", P_INTEGER, P_GLOBAL, &Globals.iKeepalive, NULL, NULL, FLAG_ADVANCED},
 	{"change notify", P_BOOL, P_LOCAL, &sDefault.bChangeNotify, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
 	{"directory name cache size", P_INTEGER, P_LOCAL, &sDefault.iDirectoryNameCacheSize, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
@@ -1535,6 +1534,7 @@ static void init_globals(bool first_time_only)
 	Globals.pwordlevel = 0;
 	Globals.unamelevel = 0;
 	Globals.deadtime = 0;
+	Globals.getwd_cache = true;
 	Globals.bLargeReadwrite = True;
 	Globals.max_log_size = 5000;
 	Globals.max_open_files = MAX_OPEN_FILES;
@@ -2023,6 +2023,7 @@ FN_GLOBAL_INTEGER(lp_maxmux, &Globals.max_mux)
 FN_GLOBAL_INTEGER(lp_passwordlevel, &Globals.pwordlevel)
 FN_GLOBAL_INTEGER(lp_usernamelevel, &Globals.unamelevel)
 FN_GLOBAL_INTEGER(lp_deadtime, &Globals.deadtime)
+FN_GLOBAL_BOOL(lp_getwd_cache, &Globals.getwd_cache)
 FN_GLOBAL_INTEGER(lp_maxprotocol, &Globals.maxprotocol)
 FN_GLOBAL_INTEGER(lp_minprotocol, &Globals.minprotocol)
 FN_GLOBAL_INTEGER(lp_security, &Globals.security)

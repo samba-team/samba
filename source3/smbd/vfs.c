@@ -731,152 +731,98 @@ int vfs_ChDir(connection_struct *conn, const char *path)
 	return(res);
 }
 
-/* number of list structures for a caching GetWd function. */
-#define MAX_GETWDCACHE (50)
-
-static struct {
-	SMB_DEV_T dev; /* These *must* be compatible with the types returned in a stat() call. */
-	SMB_INO_T inode; /* These *must* be compatible with the types returned in a stat() call. */
-	char *path; /* The pathname. */
-	bool valid;
-} ino_list[MAX_GETWDCACHE];
-
-extern bool use_getwd_cache;
-
-/****************************************************************************
- Prompte a ptr (to make it recently used)
-****************************************************************************/
-
-static void array_promote(char *array,int elsize,int element)
-{
-	char *p;
-	if (element == 0)
-		return;
-
-	p = (char *)SMB_MALLOC(elsize);
-
-	if (!p) {
-		DEBUG(5,("array_promote: malloc fail\n"));
-		return;
-	}
-
-	memcpy(p,array + element * elsize, elsize);
-	memmove(array + elsize,array,elsize*element);
-	memcpy(array,p,elsize);
-	SAFE_FREE(p);
-}
-
 /*******************************************************************
  Return the absolute current directory path - given a UNIX pathname.
  Note that this path is returned in DOS format, not UNIX
  format. Note this can be called with conn == NULL.
 ********************************************************************/
 
+struct getwd_cache_key {
+	SMB_DEV_T dev;
+	SMB_INO_T ino;
+};
+
 char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 {
         char s[PATH_MAX+1];
-	static bool getwd_cache_init = False;
 	SMB_STRUCT_STAT st, st2;
-	int i;
-	char *ret = NULL;
+	char *result;
+	DATA_BLOB cache_value;
+	struct getwd_cache_key key;
 
 	*s = 0;
 
-	if (!use_getwd_cache) {
- nocache:
-		ret = SMB_VFS_GETWD(conn,s);
-		if (!ret) {
-			DEBUG(0,("vfs_GetWd: SMB_VFS_GETWD call failed, "
-				"errno %s\n",strerror(errno)));
-			return NULL;
-		}
-		return talloc_strdup(ctx, ret);
-	}
-
-	/* init the cache */
-	if (!getwd_cache_init) {
-		getwd_cache_init = True;
-		for (i=0;i<MAX_GETWDCACHE;i++) {
-			string_set(&ino_list[i].path,"");
-			ino_list[i].valid = False;
-		}
-	}
-
-	/*  Get the inode of the current directory, if this doesn't work we're
-		in trouble :-) */
-
-	if (SMB_VFS_STAT(conn, ".",&st) == -1) {
-		/* Known to fail for root: the directory may be
-		 * NFS-mounted and exported with root_squash (so has no root access). */
-		DEBUG(1,("vfs_GetWd: couldn't stat \".\" error %s "
-			"(NFS problem ?)\n",
-			strerror(errno) ));
+	if (!lp_getwd_cache()) {
 		goto nocache;
 	}
 
+	SET_STAT_INVALID(st);
 
-	for (i=0; i<MAX_GETWDCACHE; i++) {
-		if (ino_list[i].valid) {
-
-			/*  If we have found an entry with a matching inode and dev number
-				then find the inode number for the directory in the cached string.
-				If this agrees with that returned by the stat for the current
-				directory then all is o.k. (but make sure it is a directory all
-				the same...) */
-
-			if (st.st_ino == ino_list[i].inode && st.st_dev == ino_list[i].dev) {
-				if (SMB_VFS_STAT(conn,ino_list[i].path,&st2) == 0) {
-					if (st.st_ino == st2.st_ino && st.st_dev == st2.st_dev &&
-							(st2.st_mode & S_IFMT) == S_IFDIR) {
-
-						ret = talloc_strdup(ctx,
-							ino_list[i].path);
-
-						/* promote it for future use */
-						array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
-						if (ret == NULL) {
-							errno = ENOMEM;
-						}
-						return ret;
-					} else {
-						/*  If the inode is different then something's changed,
-							scrub the entry and start from scratch. */
-						ino_list[i].valid = False;
-					}
-				}
-			}
-		}
+	if (SMB_VFS_STAT(conn, ".",&st) == -1) {
+		/*
+		 * Known to fail for root: the directory may be NFS-mounted
+		 * and exported with root_squash (so has no root access).
+		 */
+		DEBUG(1,("vfs_GetWd: couldn't stat \".\" error %s "
+			 "(NFS problem ?)\n", strerror(errno) ));
+		goto nocache;
 	}
 
-	/*  We don't have the information to hand so rely on traditional
-	 *  methods. The very slow getcwd, which spawns a process on some
-	 *  systems, or the not quite so bad getwd. */
+	ZERO_STRUCT(key); /* unlikely, but possible padding */
+	key.dev = st.st_dev;
+	key.ino = st.st_ino;
+
+	if (!memcache_lookup(smbd_memcache(), GETWD_CACHE,
+			     data_blob_const(&key, sizeof(key)),
+			     &cache_value)) {
+		goto nocache;
+	}
+
+	SMB_ASSERT((cache_value.length > 0)
+		   && (cache_value.data[cache_value.length-1] == '\0'));
+
+	if ((SMB_VFS_STAT(conn, (char *)cache_value.data, &st2) == 0)
+	    && (st.st_dev == st2.st_dev) && (st.st_ino == st2.st_ino)
+	    && (S_ISDIR(st.st_mode))) {
+		/*
+		 * Ok, we're done
+		 */
+		result = talloc_strdup(ctx, (char *)cache_value.data);
+		if (result == NULL) {
+			errno = ENOMEM;
+		}
+		return result;
+	}
+
+ nocache:
+
+	/*
+	 * We don't have the information to hand so rely on traditional
+	 * methods. The very slow getcwd, which spawns a process on some
+	 * systems, or the not quite so bad getwd.
+	 */
 
 	if (!SMB_VFS_GETWD(conn,s)) {
-		DEBUG(0,("vfs_GetWd: SMB_VFS_GETWD call failed, errno %s\n",
-				strerror(errno)));
-		return (NULL);
+		DEBUG(0, ("vfs_GetWd: SMB_VFS_GETWD call failed: %s\n",
+			  strerror(errno)));
+		return NULL;
 	}
 
-	ret = talloc_strdup(ctx,s);
+	if (lp_getwd_cache() && VALID_STAT(st)) {
+		ZERO_STRUCT(key); /* unlikely, but possible padding */
+		key.dev = st.st_dev;
+		key.ino = st.st_ino;
 
-	DEBUG(5,("vfs_GetWd %s, inode %.0f, dev %.0f\n",
-				s,(double)st.st_ino,(double)st.st_dev));
+		memcache_add(smbd_memcache(), GETWD_CACHE,
+			     data_blob_const(&key, sizeof(key)),
+			     data_blob_const(s, strlen(s)+1));
+	}
 
-	/* add it to the cache */
-	i = MAX_GETWDCACHE - 1;
-	string_set(&ino_list[i].path,s);
-	ino_list[i].dev = st.st_dev;
-	ino_list[i].inode = st.st_ino;
-	ino_list[i].valid = True;
-
-	/* put it at the top of the list */
-	array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
-
-	if (ret == NULL) {
+	result = talloc_strdup(ctx, s);
+	if (result == NULL) {
 		errno = ENOMEM;
 	}
-	return ret;
+	return result;
 }
 
 /*******************************************************************

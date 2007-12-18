@@ -719,6 +719,7 @@ typedef char fstring[FSTRING_LEN];
 #include "packet.h"
 #include "ctdbd_conn.h"
 #include "talloc_stack.h"
+#include "cache.h"
 
 /* used in net.c */
 struct functable {
