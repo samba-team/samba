@@ -74,3 +74,36 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 	TALLOC_FREE(ctx);
 	return W_ERROR_V(WERR_OK);
 }
+
+NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx,
+				      const char *username)
+{
+	TALLOC_FREE(ctx->username);
+	ctx->username = talloc_strdup(ctx, username);
+	if (!ctx->username) {
+		return W_ERROR_V(WERR_NOMEM);
+	}
+	return W_ERROR_V(WERR_OK);
+}
+
+NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx,
+				      const char *password)
+{
+	TALLOC_FREE(ctx->password);
+	ctx->password = talloc_strdup(ctx, password);
+	if (!ctx->password) {
+		return W_ERROR_V(WERR_NOMEM);
+	}
+	return W_ERROR_V(WERR_OK);
+}
+
+NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
+				       const char *workgroup)
+{
+	TALLOC_FREE(ctx->workgroup);
+	ctx->workgroup = talloc_strdup(ctx, workgroup);
+	if (!ctx->workgroup) {
+		return W_ERROR_V(WERR_NOMEM);
+	}
+	return W_ERROR_V(WERR_OK);
+}
