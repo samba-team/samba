@@ -22,6 +22,9 @@
 
 struct libnetapi_ctx {
 	int debuglevel;
+	char *username;
+	char *workgroup;
+	char *password;
 };
 
 WERROR libnetapi_init(struct libnetapi_ctx **ctx);
