@@ -24,13 +24,13 @@ extern bool AllowDebugChange;
 
 static bool libnetapi_initialized = false;
 
-WERROR libnetapi_init(struct libnetapi_ctx **context)
+NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 {
 	struct libnetapi_ctx *ctx = NULL;
 	TALLOC_CTX *frame = NULL;
 
 	if (libnetapi_initialized) {
-		return WERR_OK;
+		return W_ERROR_V(WERR_OK);
 	}
 
 	frame = talloc_stackframe();
@@ -38,7 +38,7 @@ WERROR libnetapi_init(struct libnetapi_ctx **context)
 	ctx = talloc_zero(frame, struct libnetapi_ctx);
 	if (!ctx) {
 		TALLOC_FREE(frame);
-		return WERR_NOMEM;
+		return W_ERROR_V(WERR_NOMEM);
 	}
 
 	DEBUGLEVEL = 0;
@@ -53,7 +53,7 @@ WERROR libnetapi_init(struct libnetapi_ctx **context)
 
 	if (!lp_load(get_dyn_CONFIGFILE(), true, false, false, false)) {
 		TALLOC_FREE(frame);
-		return WERR_GENERAL_FAILURE;
+		return W_ERROR_V(WERR_GENERAL_FAILURE);
 	}
 
 	init_names();
@@ -66,11 +66,11 @@ WERROR libnetapi_init(struct libnetapi_ctx **context)
 
 	*context = ctx;
 
-	return WERR_OK;
+	return W_ERROR_V(WERR_OK);
 }
 
-WERROR libnetapi_free(struct libnetapi_ctx *ctx)
+NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 {
 	TALLOC_FREE(ctx);
-	return WERR_OK;
+	return W_ERROR_V(WERR_OK);
 }

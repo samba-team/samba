@@ -29,8 +29,8 @@ struct libnetapi_ctx {
 	char *password;
 };
 
-WERROR libnetapi_init(struct libnetapi_ctx **ctx);
-WERROR libnetapi_free(struct libnetapi_ctx *ctx);
+NET_API_STATUS libnetapi_init(struct libnetapi_ctx **ctx);
+NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx);
 
 #include "joindomain.h"
 
