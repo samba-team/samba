@@ -22,14 +22,16 @@
 
 extern bool AllowDebugChange;
 
+struct libnetapi_ctx *stat_ctx = NULL;
+TALLOC_CTX *frame = NULL;
 static bool libnetapi_initialized = false;
 
 NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 {
 	struct libnetapi_ctx *ctx = NULL;
-	TALLOC_CTX *frame = NULL;
 
-	if (libnetapi_initialized) {
+	if (stat_ctx && libnetapi_initialized) {
+		*context = stat_ctx;
 		return W_ERROR_V(WERR_OK);
 	}
 
@@ -65,14 +67,34 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 
 	libnetapi_initialized = true;
 
-	*context = ctx;
+	*context = stat_ctx = ctx;
 
 	return W_ERROR_V(WERR_OK);
 }
 
+NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx)
+{
+	if (stat_ctx) {
+		*ctx = stat_ctx;
+		return W_ERROR_V(WERR_OK);
+	}
+
+	return libnetapi_init(ctx);
+}
+
 NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 {
+	gfree_names();
+	gfree_loadparm();
+	gfree_case_tables();
+	gfree_charcnv();
+	gfree_interfaces();
+
 	TALLOC_FREE(ctx);
+	TALLOC_FREE(frame);
+
+	gfree_debugsyms();
+
 	return W_ERROR_V(WERR_OK);
 }
 

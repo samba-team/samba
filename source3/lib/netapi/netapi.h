@@ -30,6 +30,7 @@ struct libnetapi_ctx {
 };
 
 NET_API_STATUS libnetapi_init(struct libnetapi_ctx **ctx);
+NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx);
 NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx);
 NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx, const char *debuglevel);
 NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx, const char **debuglevel);
