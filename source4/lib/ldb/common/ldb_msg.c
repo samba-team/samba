@@ -124,11 +124,6 @@ int ldb_msg_add_empty(	struct ldb_message *msg,
 {
 	struct ldb_message_element *els;
 
-	/* FIXME: we should probably leave this to the schema module to check */
-	if (! ldb_valid_attr_name(attr_name)) {
-		return LDB_ERR_OPERATIONS_ERROR;
-	}
-
 	els = talloc_realloc(msg, msg->elements, 
 			     struct ldb_message_element, msg->num_elements+1);
 	if (!els) {
