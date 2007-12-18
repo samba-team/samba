@@ -199,12 +199,13 @@ def setup_ldb(ldb, setup_dir, ldif, subst_vars=None):
     ldb.transaction_commit()
 
 
-def setup_ldb_modify(setup_dir, ldif, substvars, ldb):
+def setup_ldb_modify(ldb, setup_dir, ldif, substvars=None):
     """Modify a ldb in the private dir."""
     src = os.path.join(setup_dir, ldif)
 
     data = open(src, 'r').read()
-    data = substitute_var(data, substvars)
+    if substvars is not None:
+        data = substitute_var(data, substvars)
     assert not "${" in data
 
     for (changetype, msg) in ldb.parse_ldif(data):
@@ -312,7 +313,8 @@ def provision_become_dc(setup_dir, subobj, message, paths, lp, session_info,
     samdb.erase()
 
     message("Setting up %s partitions" % paths.samdb)
-    setup_samdb_partitions(samdb, setup_dir, subobj)
+    setup_samdb_partitions(samdb, setup_dir, subobj.schemadn, 
+                           subobj.configdn, subobj.domaindn)
 
     samdb = SamDB(paths.samdb, credentials=credentials, 
                   session_info=session_info, lp=lp)
@@ -382,23 +384,52 @@ def setup_samdb_rootdse(samdb, setup_dir, subobj):
         })
 
 
-def setup_samdb_partitions(samdb, setup_dir, subobj):
+def setup_samdb_partitions(samdb, setup_dir, schemadn, configdn, domaindn):
+    #Add modules to the list to activate them by default
+    #beware often order is important
+    #
+    # Some Known ordering constraints:
+    # - rootdse must be first, as it makes redirects from "" -> cn=rootdse
+    # - objectclass must be before password_hash, because password_hash checks
+    #   that the objectclass is of type person (filled in by objectclass
+    #   module when expanding the objectclass list)
+    # - partition must be last
+    # - each partition has its own module list then
+    modules_list = ["rootdse",
+                    "paged_results",
+                    "ranged_results",
+                    "anr",
+                    "server_sort",
+                    "extended_dn",
+                    "asq",
+                    "samldb",
+                    "rdn_name",
+                    "objectclass",
+                    "kludge_acl",
+                    "operational"]
+    tdb_modules_list = [
+                    "subtree_rename",
+                    "subtree_delete",
+                    "linked_attributes"]
+    modules_list2 = ["show_deleted",
+                    "partition"]
+ 
     setup_ldb(samdb, setup_dir, "provision_partitions.ldif", {
-        "SCHEMADN": subobj.schemadn, 
+        "SCHEMADN": schemadn, 
         "SCHEMADN_LDB": "schema.ldb",
         "SCHEMADN_MOD2": ",objectguid",
-        "CONFIGDN": subobj.configdn,
+        "CONFIGDN": configdn,
         "CONFIGDN_LDB": "configuration.ldb",
-        "DOMAINDN": subobj.domaindn,
+        "DOMAINDN": domaindn,
         "DOMAINDN_LDB": "users.ldb",
         "SCHEMADN_MOD": "schema_fsmo",
         "CONFIGDN_MOD": "naming_fsmo",
         "CONFIGDN_MOD2": ",objectguid",
         "DOMAINDN_MOD": "pdc_fsmo,password_hash",
         "DOMAINDN_MOD2": ",objectguid",
-        "MODULES_LIST": ",".join(subobj.modules_list),
-        "TDB_MODULES_LIST": ","+",".join(subobj.tdb_modules_list),
-        "MODULES_LIST2": ",".join(subobj.modules_list2),
+        "MODULES_LIST": ",".join(modules_list),
+        "TDB_MODULES_LIST": ","+",".join(tdb_modules_list),
+        "MODULES_LIST2": ",".join(modules_list2),
         })
 
 
@@ -451,7 +482,8 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     samdb.erase()
 
     message("Setting up sam.ldb partitions")
-    setup_samdb_partitions(samdb, setup_dir, subobj)
+    setup_samdb_partitions(samdb, setup_dir, subobj.schemadn,
+                           subobj.configdn, subobj.domaindn)
 
     samdb = SamDB(paths.samdb, session_info=session_info, 
                   credentials=credentials, lp=lp)
@@ -495,7 +527,7 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
         else:
             domainguid_mod = ""
 
-        setup_ldb_modify(setup_dir, "provision_basedn_modify.ldif", {
+        setup_ldb_modify(samdb, setup_dir, "provision_basedn_modify.ldif", {
             "RDN_DC": subobj.rdn_dc,
             "LDAPTIME": timestring(int(time.time())),
             "DOMAINSID": str(subobj.domainsid),
@@ -506,7 +538,7 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
             "POLICYGUID": subobj.policyguid,
             "DOMAINDN": subobj.domaindn,
             "DOMAINGUID_MOD": domainguid_mod,
-            }, samdb)
+            })
 
         message("Adding configuration container (permitted to fail)")
         setup_add_ldif(samdb, setup_dir, "provision_configuration_basedn.ldif", {
@@ -515,10 +547,10 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
             "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
             })
         message("Modifying configuration container")
-        setup_ldb_modify(setup_dir, "provision_configuration_basedn_modify.ldif", {
+        setup_ldb_modify(samdb, setup_dir, "provision_configuration_basedn_modify.ldif", {
             "CONFIGDN": subobj.configdn, 
             "SCHEMADN": subobj.schemadn,
-            }, samdb)
+            })
 
         message("Adding schema container (permitted to fail)")
         setup_add_ldif(samdb, setup_dir, "provision_schema_basedn.ldif", {
@@ -527,12 +559,12 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
             "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb"
             })
         message("Modifying schema container")
-        setup_ldb_modify(setup_dir, "provision_schema_basedn_modify.ldif", {
+        setup_ldb_modify(samdb, setup_dir, "provision_schema_basedn_modify.ldif", {
             "SCHEMADN": subobj.schemadn,
             "NETBIOSNAME": subobj.netbiosname,
             "DEFAULTSITE": subobj.defaultsite,
             "CONFIGDN": subobj.configdn,
-            }, samdb)
+            })
 
         message("Setting up sam.ldb Samba4 schema")
         setup_add_ldif(samdb, setup_dir, "schema_samba4.ldif", {
@@ -561,14 +593,14 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
         setup_add_ldif(samdb, setup_dir, "provision_users_add.ldif", {
             "DOMAINDN": subobj.domaindn})
         message("Modifying users container")
-        setup_ldb_modify(setup_dir, "provision_users_modify.ldif", {
-            "DOMAINDN": subobj.domaindn}, samdb)
+        setup_ldb_modify(samdb, setup_dir, "provision_users_modify.ldif", {
+            "DOMAINDN": subobj.domaindn})
         message("Adding computers container (permitted to fail)")
         setup_add_ldif(samdb, setup_dir, "provision_computers_add.ldif", {
             "DOMAINDN": subobj.domaindn})
         message("Modifying computers container")
-        setup_ldb_modify(setup_dir, "provision_computers_modify.ldif", {
-            "DOMAINDN": subobj.domaindn}, samdb)
+        setup_ldb_modify(samdb, setup_dir, "provision_computers_modify.ldif", {
+            "DOMAINDN": subobj.domaindn})
         message("Setting up sam.ldb data")
         setup_add_ldif(samdb, setup_dir, "provision.ldif", {
             "DOMAINDN": subobj.domaindn,
@@ -754,35 +786,6 @@ def provision_guess(lp):
     subobj.rootdn       = subobj.domaindn
     subobj.configdn     = "CN=Configuration," + subobj.rootdn
     subobj.schemadn     = "CN=Schema," + subobj.configdn
-
-    #Add modules to the list to activate them by default
-    #beware often order is important
-    #
-    # Some Known ordering constraints:
-    # - rootdse must be first, as it makes redirects from "" -> cn=rootdse
-    # - objectclass must be before password_hash, because password_hash checks
-    #   that the objectclass is of type person (filled in by objectclass
-    #   module when expanding the objectclass list)
-    # - partition must be last
-    # - each partition has its own module list then
-    subobj.modules_list = ["rootdse",
-                    "paged_results",
-                    "ranged_results",
-                    "anr",
-                    "server_sort",
-                    "extended_dn",
-                    "asq",
-                    "samldb",
-                    "rdn_name",
-                    "objectclass",
-                    "kludge_acl",
-                    "operational"]
-    subobj.tdb_modules_list = [
-                    "subtree_rename",
-                    "subtree_delete",
-                    "linked_attributes"]
-    subobj.modules_list2 = ["show_deleted",
-                    "partition"]
 
     return subobj
 
