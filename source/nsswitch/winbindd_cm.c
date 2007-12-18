@@ -1757,7 +1757,6 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 			goto schannel;
 		}
 		domain_name = domain->name;
-		goto schannel;
 	} else {
 		machine_password = SMB_STRDUP(conn_pwd);		
 		machine_account = SMB_STRDUP(conn->cli->user_name);
