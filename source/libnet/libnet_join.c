@@ -73,14 +73,6 @@ static NTSTATUS do_DomainJoin(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, &lsa_pol,
-					      5,
-					      &r->out.netbios_domain_name,
-					      &r->out.domain_sid);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
 	status = rpccli_lsa_query_info_policy2(pipe_hnd, mem_ctx, &lsa_pol,
 					       12,
 					       &r->out.netbios_domain_name,
@@ -88,6 +80,16 @@ static NTSTATUS do_DomainJoin(TALLOC_CTX *mem_ctx,
 					       NULL,
 					       NULL,
 					       &r->out.domain_sid);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		status = rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, &lsa_pol,
+						      5,
+						      &r->out.netbios_domain_name,
+						      &r->out.domain_sid);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
+		}
+	}
 
 	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
 	cli_rpc_pipe_close(pipe_hnd);
