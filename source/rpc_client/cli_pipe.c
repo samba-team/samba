@@ -2364,8 +2364,8 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 		goto err;
 	}
 
-	DEBUG(10,("cli_rpc_pipe_open_ntlmssp_internal: opened pipe %s to machine %s and"
-		"bound NTLMSSP as user %s\\%s.\n",
+	DEBUG(10,("cli_rpc_pipe_open_ntlmssp_internal: opened pipe %s to "
+		"machine %s and bound NTLMSSP as user %s\\%s.\n",
 		result->pipe_name, cli->desthost,
 		domain, username ));
 
