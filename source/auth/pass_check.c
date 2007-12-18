@@ -28,7 +28,7 @@
 /* these are kept here to keep the string_combinations function simple */
 static char *ths_user;
 
-static const char *get_this_user()
+static const char *get_this_user(void)
 {
 	if (!ths_user) {
 		return "";
@@ -49,7 +49,7 @@ static const char *set_this_user(const char *newuser)
 #if !defined(WITH_PAM)
 static char *ths_salt;
 /* This must be writable. */
-static char *get_this_salt()
+static char *get_this_salt(void)
 {
 	return ths_salt;
 }
@@ -66,7 +66,7 @@ static const char *set_this_salt(const char *newsalt)
 }
 
 static char *ths_crypted;
-static const char *get_this_crypted()
+static const char *get_this_crypted(void)
 {
 	if (!ths_crypted) {
 		return "";
