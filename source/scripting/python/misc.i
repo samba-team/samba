@@ -23,6 +23,7 @@
 #include "ldb.h"
 #include "param/param.h"
 #include "dsdb/samdb/samdb.h"
+#include "lib/ldb-samba/ldif_handlers.h"
 %}
 
 %import "stdint.i"
@@ -62,3 +63,5 @@ WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf
 
 %rename(version) samba_version_string;
 const char *samba_version_string(void);
+int dsdb_set_global_schema(struct ldb_context *ldb);
+int ldb_register_samba_handlers(struct ldb_context *ldb);

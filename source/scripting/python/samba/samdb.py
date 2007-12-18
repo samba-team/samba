@@ -22,8 +22,14 @@
 
 import samba
 import misc
+import ldb
 
 class SamDB(samba.Ldb):
+    def __init__(self, *args, **kwargs):
+        super(SamDB, self).__init__(*args, **kwargs)
+        misc.dsdb_set_global_schema(self)
+        misc.ldb_register_samba_handlers(self)
+
     def add_foreign(self, domaindn, sid, desc):
         """Add a foreign security principle."""
         add = """
@@ -39,7 +45,7 @@ description: %s
 
     def setup_name_mapping(self, domaindn, sid, unixname):
         """Setup a mapping between a sam name and a unix name."""
-        res = self.search(Dn(ldb, domaindn), SCOPE_SUBTREE, 
+        res = self.search(ldb.Dn(self, domaindn), ldb.SCOPE_SUBTREE, 
                          "objectSid=%s" % sid, ["dn"])
         assert len(res) == 1, "Failed to find record for objectSid %s" % sid
 
