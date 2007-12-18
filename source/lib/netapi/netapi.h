@@ -23,7 +23,7 @@
 #define NET_API_STATUS uint32_t
 
 struct libnetapi_ctx {
-	int debuglevel;
+	const char *debuglevel;
 	char *username;
 	char *workgroup;
 	char *password;
@@ -31,6 +31,8 @@ struct libnetapi_ctx {
 
 NET_API_STATUS libnetapi_init(struct libnetapi_ctx **ctx);
 NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx);
+NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx, const char *debuglevel);
+NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx, const char **debuglevel);
 NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx, const char *username);
 NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx, const char *password);
 NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx, const char *workgroup);

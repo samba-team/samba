@@ -42,19 +42,20 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 	}
 
 	DEBUGLEVEL = 0;
-	DEBUGLEVEL_CLASS[DBGC_ALL] = 0;
+	setup_logging("libnetapi", true);
+
 	dbf = x_stderr;
 	x_setbuf(x_stderr, NULL);
 	AllowDebugChange = false;
 
 	load_case_tables();
 
-	setup_logging("libnetapi", true);
-
 	if (!lp_load(get_dyn_CONFIGFILE(), true, false, false, false)) {
 		TALLOC_FREE(frame);
 		return W_ERROR_V(WERR_GENERAL_FAILURE);
 	}
+
+	AllowDebugChange = true;
 
 	init_names();
 	load_interfaces();
@@ -72,6 +73,24 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 {
 	TALLOC_FREE(ctx);
+	return W_ERROR_V(WERR_OK);
+}
+
+NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
+					const char *debuglevel)
+{
+	AllowDebugChange = true;
+	ctx->debuglevel = debuglevel;
+	if (!debug_parse_levels(debuglevel)) {
+		return W_ERROR_V(WERR_GENERAL_FAILURE);
+	}
+	return W_ERROR_V(WERR_OK);
+}
+
+NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx,
+					const char **debuglevel)
+{
+	*debuglevel = ctx->debuglevel;
 	return W_ERROR_V(WERR_OK);
 }
 
