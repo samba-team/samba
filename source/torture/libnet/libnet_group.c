@@ -202,6 +202,25 @@ static bool test_samr_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 
+static bool test_lsa_close(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			   struct policy_handle *domain_handle)
+{
+	NTSTATUS status;
+	struct lsa_Close r;
+
+	r.in.handle = domain_handle;
+	r.out.handle = domain_handle;
+	
+	status = dcerpc_lsa_Close(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Close lsa domain failed - %s\n", nt_errstr(status));
+		return false;
+	}
+
+	return true;
+}
+
+
 bool torture_groupinfo_api(struct torture_context *torture)
 {
 	const char *name = TEST_GROUPNAME;
@@ -260,6 +279,67 @@ bool torture_groupinfo_api(struct torture_context *torture)
 
 	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
 		printf("domain close failed\n");
+		ret = false;
+	}
+
+	talloc_free(ctx);
+
+done:
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+
+bool torture_grouplist(struct torture_context *torture)
+{
+	bool ret = true;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct libnet_context *ctx;
+	struct lsa_String domain_name;
+	struct libnet_GroupList req;
+	int i;
+
+	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx->cred = cmdline_credentials;
+
+	domain_name.string = lp_workgroup(torture->lp_ctx);
+	mem_ctx = talloc_init("torture group list");
+
+	ZERO_STRUCT(req);
+
+	printf("listing group accounts:\n");
+	
+	do {
+		req.in.domain_name  = domain_name.string;
+		req.in.page_size    = 128;
+		req.in.resume_index = req.out.resume_index;
+
+		status = libnet_GroupList(ctx, mem_ctx, &req);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES)) break;
+
+		for (i = 0; i < req.out.count; i++) {
+			printf("\tgroup: %s, sid=%s\n",
+			       req.out.groups[i].groupname, req.out.groups[i].sid);
+		}
+
+	} while (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES));
+
+	if (!(NT_STATUS_IS_OK(status) ||
+	      NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES))) {
+		printf("libnet_GroupList call failed: %s\n", nt_errstr(status));
+		ret = false;
+		goto done;
+	}
+
+	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
+		printf("domain close failed\n");
+		ret = false;
+	}
+
+	if (!test_lsa_close(ctx->lsa.pipe, mem_ctx, &ctx->lsa.handle)) {
+		printf("lsa domain close failed\n");
 		ret = false;
 	}
 
