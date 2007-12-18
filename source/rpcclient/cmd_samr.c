@@ -2114,11 +2114,11 @@ static NTSTATUS cmd_samr_lookup_domain(struct rpc_pipe_client *cli,
 	result = rpccli_samr_lookup_domain(
 		cli, mem_ctx, &connect_pol, domain_name, &sid);
 
-	sid_to_fstring(sid_string,&sid);
- 
-	if (NT_STATUS_IS_OK(result)) 
+	if (NT_STATUS_IS_OK(result)) {
+		sid_to_fstring(sid_string,&sid);
 		printf("SAMR_LOOKUP_DOMAIN: Domain Name: %s Domain SID: %s\n",
 		       domain_name,sid_string);
+	}
 
 	rpccli_samr_close(cli, mem_ctx, &domain_pol);
 	rpccli_samr_close(cli, mem_ctx, &connect_pol);
