@@ -673,6 +673,7 @@ LIBBIGBALLOFMUD_OBJ = $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ) \
 	$(GROUPDB_OBJ) $(KRBCLIENT_OBJ) $(SMBLDAP_OBJ) $(LDB_OBJ)
 
 CLIENT_OBJ1 = client/client.o client/clitar.o rpc_client/cli_pipe.o \
+	      client/dnsbrowse.o \
 	      $(RPC_CLIENT_OBJ1) \
 	      $(RPC_PARSE_OBJ2)
 
@@ -1140,7 +1141,8 @@ bin/smbd@EXEEXT@: $(BINARY_PREREQS) $(SMBD_OBJ) @BUILD_POPT@
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(LDAP_LIBS) \
 		$(KRB5LIBS) $(DYNEXP) $(PRINT_LIBS) $(AUTH_LIBS) \
-		$(ACL_LIBS) $(PASSDB_LIBS) $(LIBS) @POPTLIBS@ @SMBD_LIBS@
+		$(ACL_LIBS) $(PASSDB_LIBS) $(LIBS) $(DNSSD_LIBS) \
+		@POPTLIBS@ @SMBD_LIBS@
 
 bin/nmbd@EXEEXT@: $(BINARY_PREREQS) $(NMBD_OBJ) @BUILD_POPT@
 	@echo Linking $@
@@ -1159,7 +1161,9 @@ bin/rpcclient@EXEEXT@: $(BINARY_PREREQS) $(RPCCLIENT_OBJ) @BUILD_POPT@
 
 bin/smbclient@EXEEXT@: $(BINARY_PREREQS) $(CLIENT_OBJ) @BUILD_POPT@
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS)
+	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(DYNEXP) \
+		$(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ \
+		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) $(DNSSD_LIBS)
 
 bin/net@EXEEXT@: $(BINARY_PREREQS) $(NET_OBJ) @BUILD_POPT@
 	@echo Linking $@
