@@ -5042,6 +5042,81 @@ static bool run_local_rbtree(int dummy)
 	return ret;
 }
 
+static bool data_blob_equal(DATA_BLOB a, DATA_BLOB b)
+{
+	if (a.length != b.length) {
+		printf("a.length=%d != b.length=%d\n",
+		       (int)a.length, (int)b.length);
+		return false;
+	}
+	if (memcmp(a.data, b.data, a.length) != 0) {
+		printf("a.data and b.data differ\n");
+		return false;
+	}
+	return true;
+}
+
+static bool run_local_memcache(int dummy)
+{
+	struct memcache *cache;
+	DATA_BLOB k1, k2;
+	DATA_BLOB d1, d2, d3;
+	DATA_BLOB v1, v2, v3;
+
+	cache = memcache_init(NULL, 100);
+
+	if (cache == NULL) {
+		printf("memcache_init failed\n");
+		return false;
+	}
+
+	d1 = data_blob_const("d1", 2);
+	d2 = data_blob_const("d2", 2);
+	d3 = data_blob_const("d3", 2);
+
+	k1 = data_blob_const("d1", 2);
+	k2 = data_blob_const("d2", 2);
+
+	memcache_add(cache, STAT_CACHE, k1, d1);
+	memcache_add(cache, GETWD_CACHE, k2, d2);
+
+	if (!memcache_lookup(cache, STAT_CACHE, k1, &v1)) {
+		printf("could not find k1\n");
+		return false;
+	}
+	if (!data_blob_equal(d1, v1)) {
+		return false;
+	}
+
+	if (!memcache_lookup(cache, GETWD_CACHE, k2, &v2)) {
+		printf("could not find k2\n");
+		return false;
+	}
+	if (!data_blob_equal(d2, v2)) {
+		return false;
+	}
+
+	memcache_add(cache, STAT_CACHE, k1, d3);
+
+	if (!memcache_lookup(cache, STAT_CACHE, k1, &v3)) {
+		printf("could not find replaced k1\n");
+		return false;
+	}
+	if (!data_blob_equal(d3, v3)) {
+		return false;
+	}
+
+	memcache_add(cache, GETWD_CACHE, k1, d1);
+
+	if (memcache_lookup(cache, GETWD_CACHE, k2, &v2)) {
+		printf("Did find k2, should have been purged\n");
+		return false;
+	}
+
+	TALLOC_FREE(cache);
+	return true;
+}
+
 static double create_procs(bool (*fn)(int), bool *result)
 {
 	int i, status;
@@ -5196,6 +5271,7 @@ static struct {
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},
+	{ "LOCAL-MEMCACHE", run_local_memcache, 0},
 	{NULL, NULL, 0}};
 
 

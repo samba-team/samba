@@ -86,6 +86,19 @@ struct messaging_context *smbd_messaging_context(void)
 	return ctx;
 }
 
+struct memcache *smbd_memcache(void)
+{
+	static struct memcache *cache;
+
+	if (!cache
+	    && !(cache = memcache_init(NULL,
+				       lp_max_stat_cache_size()*1024))) {
+
+		smb_panic("Could not init smbd memcache");
+	}
+	return cache;
+}
+
 /*******************************************************************
  What to do when smb.conf is updated.
  ********************************************************************/
