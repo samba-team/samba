@@ -2227,17 +2227,12 @@ void dump_data_pw(const char *msg, const uchar * data, size_t len)
 #endif
 }
 
-char *tab_depth(int depth)
+const char *tab_depth(int level, int depth)
 {
-	static fstring spaces;
-	size_t len = depth * 4;
-	if (len > sizeof(fstring)-1) {
-		len = sizeof(fstring)-1;
+	if( DEBUGLVL(level) ) {
+		dbgtext("%*s", depth*4, "");
 	}
-
-	memset(spaces, ' ', len);
-	spaces[len] = 0;
-	return spaces;
+	return "";
 }
 
 /*****************************************************************************
