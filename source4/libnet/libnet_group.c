@@ -414,7 +414,7 @@ static void continue_groups_enumerated(struct rpc_request *req)
 			group_sid = dom_sid_add_rid(c, domain_sid, entry->idx);
 			if (composite_nomem(group_sid, c)) return;
 
-			s->groups[i].groupname = dom_sid_string(c, group_sid);
+			s->groups[i].groupname = talloc_strdup(c, entry->name.string);
 			if (composite_nomem(s->groups[i].groupname, c)) return;
 
 			s->groups[i].sid = dom_sid_string(c, group_sid);
