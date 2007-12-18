@@ -230,15 +230,10 @@ def setup_modify_ldif(setup_dir, ldif, subobj, ldb):
         ldb.modify(msg)
 
 
-def setup_ldb(setup_dir, ldif, session_info, credentials, subobj, lp, dbname, 
-              erase=True):
-    assert dbname is not None
-    ldb = open_ldb(session_info, credentials, lp, dbname)
+def setup_ldb(ldb, setup_dir, ldif, subobj):
     assert ldb is not None
     ldb.transaction_start()
     try:
-        if erase:
-            ldb.erase();    
         setup_add_ldif(setup_dir, ldif, subobj, ldb)
     except:
         ldb.transaction_cancel()
@@ -281,8 +276,8 @@ def provision_default_paths(lp, subobj):
     paths = ProvisionPaths()
     private_dir = lp.get("private dir")
     paths.shareconf = os.path.join(private_dir, "share.ldb")
-    paths.samdb = lp.get("sam database") or os.path.join(private_dir, "samdb.ldb")
-    paths.secrets = lp.get("secrets database") or os.path.join(private_dir, "secrets.ldb")
+    paths.samdb = os.path.join(private_dir, lp.get("sam database") or "samdb.ldb")
+    paths.secrets = os.path.join(private_dir, lp.get("secrets database") or "secrets.ldb")
     paths.templates = os.path.join(private_dir, "templates.ldb")
     paths.keytab = os.path.join(private_dir, "secrets.keytab")
     paths.dns = os.path.join(private_dir, subobj.dnsdomain + ".zone")
@@ -341,13 +336,17 @@ def provision_become_dc(setup_dir, subobj, message, paths, lp, session_info,
     subobj.fix(paths)
 
     message("Setting up templates into %s" % paths.templates)
-    setup_ldb(setup_dir, "provision_templates.ldif", session_info,
-              credentials, subobj, lp, paths.templates)
+    templates_ldb = Ldb(paths.templates, session_info=session_info,
+                        credentials=credentials, lp=lp)
+    templates_ldb.erase()
+    setup_ldb(templates_ldb, setup_dir, "provision_templates.ldif", subobj)
 
     # Also wipes the database
     message("Setting up %s partitions" % paths.samdb)
-    setup_ldb(setup_dir, "provision_partitions.ldif", session_info, 
-              credentials, subobj, lp, paths.samdb)
+    samdb = SamDB(paths.samdb, credentials=credentials, 
+                  session_info=session_info, lp=lp)
+    samdb.erase()
+    setup_ldb(samdb, setup_dir, "provision_partitions.ldif", subobj)
 
     samdb = SamDB(paths.samdb, session_info=session_info, 
                   credentials=credentials, lp=lp)
@@ -371,11 +370,12 @@ def provision_become_dc(setup_dir, subobj, message, paths, lp, session_info,
     samdb.transaction_commit()
 
     message("Setting up %s" % paths.secrets)
-    setup_ldb(setup_dir, "secrets_init.ldif", session_info, credentials, 
-              subobj, lp, paths.secrets)
-
-    setup_ldb(setup_dir, "secrets.ldif", session_info, credentials, subobj, 
-              lp, paths.secrets, False)
+    secrets_ldb = Ldb(paths.secrets, session_info=session_info,
+                      credentials=credentials, lp=lp)
+    secrets_ldb.clear()
+    setup_ldb(secrets_ldb, setup_dir, "secrets_init.ldif", subobj)
+    setup_ldb(secrets_ldb, setup_dir, "secrets.ldif", subobj)
+    setup_ldb(secrets_ldb, setup_dir, "secrets_dc.ldif", subobj)
 
 
 def provision(lp, setup_dir, subobj, message, blank, paths, session_info, 
@@ -408,14 +408,16 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
         message("Setting up share.ldb")
-        setup_ldb(setup_dir, "share.ldif", session_info, credentials, subobj, 
-                  lp, paths.shareconf)
+        share_ldb = Ldb(paths.shareconf, session_info=session_info, 
+                        credentials=credentials, lp=lp)
+        setup_ldb(share_ldb, setup_dir, "share.ldif", subobj)
 
     message("Setting up %s" % paths.secrets)
-    setup_ldb(setup_dir, "secrets_init.ldif", session_info, credentials, 
-              subobj, lp, paths.secrets)
-    setup_ldb(setup_dir, "secrets.ldif", session_info, credentials, subobj, 
-              lp, paths.secrets, False)
+    secrets_ldb = Ldb(paths.secrets, session_info=session_info, 
+                      credentials=credentials, lp=lp)
+    secrets_ldb.erase()
+    setup_ldb(secrets_ldb, setup_dir, "secrets_init.ldif", subobj)
+    setup_ldb(secrets_ldb, setup_dir, "secrets.ldif", subobj)
 
     message("Setting up registry")
     reg = registry.Registry()
@@ -427,12 +429,16 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     #reg.apply_patchfile(provision_reg)
 
     message("Setting up templates into %s" % paths.templates)
-    setup_ldb(setup_dir, "provision_templates.ldif", session_info, 
-              credentials, subobj, lp, paths.templates)
+    templates_ldb = Ldb(paths.templates, session_info=session_info,
+                        credentials=credentials, lp=lp)
+    templates_ldb.erase()
+    setup_ldb(templates_ldb, setup_dir, "provision_templates.ldif", subobj)
 
     message("Setting up sam.ldb partitions")
-    setup_ldb(setup_dir, "provision_partitions.ldif", session_info, 
-              credentials, subobj, lp, paths.samdb)
+    samdb = SamDB(paths.samdb, session_info=session_info, 
+                  credentials=credentials, lp=lp)
+    samdb.erase()
+    setup_ldb(samdb, setup_dir, "provision_partitions.ldif", subobj)
 
     samdb = SamDB(paths.samdb, session_info=session_info, 
                   credentials=credentials, lp=lp)
@@ -453,7 +459,6 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     samdb.transaction_commit()
 
     message("Pre-loading the Samba 4 and AD schema")
-
     samdb = SamDB(paths.samdb, session_info=session_info, 
                   credentials=credentials, lp=lp)
     samdb.set_domain_sid(subobj.domainsid)
