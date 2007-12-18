@@ -20,6 +20,8 @@
 #ifndef __LIB_NETAPI_H__
 #define __LIB_NETAPI_H__
 
+#define NET_API_STATUS uint32_t
+
 struct libnetapi_ctx {
 	int debuglevel;
 	char *username;
