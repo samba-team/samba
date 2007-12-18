@@ -75,12 +75,13 @@ class Ldb(ldb.Ldb):
         if lp is not None:
             self.set_loadparm(self, lp)
 
-        if url:
-            self.connect(url)
-
         def msg(l,text):
             print text
         self.set_debug(msg)
+
+        if url is not None:
+            self.connect(url)
+
 
     set_credentials = misc.ldb_set_credentials
     set_session_info = misc.ldb_set_session_info

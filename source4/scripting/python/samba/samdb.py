@@ -25,10 +25,14 @@ import misc
 import ldb
 
 class SamDB(samba.Ldb):
-    def __init__(self, *args, **kwargs):
-        super(SamDB, self).__init__(*args, **kwargs)
+    def __init__(self, url=None, session_info=None, credentials=None, 
+                 modules_dir=None, lp=None):
+        super(SamDB, self).__init__(session_info=session_info, credentials=credentials,
+                                    modules_dir=modules_dir, lp=lp)
         misc.dsdb_set_global_schema(self)
         misc.ldb_register_samba_handlers(self)
+        if url:
+            self.connect(url)
 
     def add_foreign(self, domaindn, sid, desc):
         """Add a foreign security principle."""
