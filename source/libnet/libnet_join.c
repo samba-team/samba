@@ -22,15 +22,14 @@
 #include "libnet/libnet_join.h"
 #include "libnet/libnet_proto.h"
 
-static WERROR do_DomainJoin(TALLOC_CTX *mem_ctx,
-			    struct libnet_JoinCtx *r)
+static NTSTATUS do_DomainJoin(TALLOC_CTX *mem_ctx,
+			      struct libnet_JoinCtx *r)
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	const char *password = NULL;
 	POLICY_HND sam_pol, domain_pol, user_pol, lsa_pol;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	WERROR werr;
 	char *acct_name;
 	const char *const_acct_name;
 	uint32 user_rid;
@@ -49,7 +48,7 @@ static WERROR do_DomainJoin(TALLOC_CTX *mem_ctx,
 
 	password = talloc_strdup(mem_ctx,
 		generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH));
-	W_ERROR_HAVE_NO_MEMORY(password);
+	NT_STATUS_HAVE_NO_MEMORY(password);
 
 	status = cli_full_connection(&cli, NULL, r->in.server_name,
 				     NULL, 0,
@@ -60,20 +59,17 @@ static WERROR do_DomainJoin(TALLOC_CTX *mem_ctx,
 				     0, Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &status);
 	if (!pipe_hnd) {
-		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
 	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, True,
 					SEC_RIGHTS_MAXIMUM_ALLOWED, &lsa_pol);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
@@ -82,7 +78,6 @@ static WERROR do_DomainJoin(TALLOC_CTX *mem_ctx,
 					      &r->out.netbios_domain_name,
 					      &r->out.domain_sid);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
@@ -99,14 +94,12 @@ static WERROR do_DomainJoin(TALLOC_CTX *mem_ctx,
 
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &status);
 	if (!pipe_hnd) {
-		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
 	status = rpccli_samr_connect(pipe_hnd, mem_ctx,
 				     SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_pol);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
@@ -115,7 +108,6 @@ static WERROR do_DomainJoin(TALLOC_CTX *mem_ctx,
 					 r->out.domain_sid,
 					 &domain_pol);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
@@ -128,7 +120,6 @@ static WERROR do_DomainJoin(TALLOC_CTX *mem_ctx,
 					     0xe005000b, &user_pol, &user_rid);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 		if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED)) {
-			werr = WERR_SETUP_ALREADY_JOINED;
 			goto done;
 		}
 	}
@@ -142,12 +133,11 @@ static WERROR do_DomainJoin(TALLOC_CTX *mem_ctx,
 					  &const_acct_name,
 					  &num_rids, &user_rids, &name_types);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
 	if (name_types[0] != SID_NAME_USER) {
-		werr = ntstatus_to_werror(NT_STATUS_INVALID_WORKSTATION);
+		status = NT_STATUS_INVALID_WORKSTATION;
 		goto done;
 	}
 
@@ -157,7 +147,6 @@ static WERROR do_DomainJoin(TALLOC_CTX *mem_ctx,
 				       SEC_RIGHTS_MAXIMUM_ALLOWED, user_rid,
 				       &user_pol);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
@@ -197,7 +186,6 @@ static WERROR do_DomainJoin(TALLOC_CTX *mem_ctx,
 					   infolevel, &cli->user_session_key,
 					   &ctr);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
 		goto done;
 	}
 
@@ -207,7 +195,7 @@ static WERROR do_DomainJoin(TALLOC_CTX *mem_ctx,
 	if (!secrets_store_domain_sid(r->out.netbios_domain_name,
 				      r->out.domain_sid))
 	{
-		werr = WERR_GENERAL_FAILURE;
+		status = NT_STATUS_INTERNAL_DB_ERROR;
 		goto done;
 	}
 
@@ -215,17 +203,17 @@ static WERROR do_DomainJoin(TALLOC_CTX *mem_ctx,
 					    r->out.netbios_domain_name,
 					    SEC_CHAN_WKSTA))
 	{
-		werr = WERR_GENERAL_FAILURE;
+		status = NT_STATUS_INTERNAL_DB_ERROR;
 		goto done;
 	}
 
-	werr = WERR_OK;
+	status = NT_STATUS_OK;
  done:
 	if (cli) {
 		cli_shutdown(cli);
 	}
 
-	return werr;
+	return status;
 }
 
 static WERROR do_modify_val_config(struct registry_key *key,
@@ -343,6 +331,7 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		   struct libnet_JoinCtx *r)
 {
 	WERROR werr;
+	NTSTATUS status;
 
 	if (!r->in.domain_name) {
 		return WERR_INVALID_PARAM;
@@ -354,9 +343,12 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
-		werr = do_DomainJoin(mem_ctx, r);
-		if (!W_ERROR_IS_OK(werr)) {
-			return werr;
+		status = do_DomainJoin(mem_ctx, r);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+				return WERR_SETUP_ALREADY_JOINED;
+			}
+			return ntstatus_to_werror(status);
 		}
 	}
 
