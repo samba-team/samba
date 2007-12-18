@@ -135,18 +135,6 @@ def hostname():
     return gethostname().split(".")[0]
 
 
-def ldb_delete(ldb):
-    """Delete a LDB file.
-
-    This may be necessary if the ldb is in bad shape, possibly due to being 
-    built from an incompatible previous version of the code, so delete it
-    completely.
-    """
-    print "Deleting %s\n" % ldb.filename
-    os.unlink(ldb.filename)
-    ldb.connect(ldb.filename)
-
-
 def open_ldb(session_info, credentials, lp, dbname):
     assert session_info is not None
     try:
@@ -176,6 +164,13 @@ def setup_add_ldif(ldb, setup_dir, ldif, subst_vars=None):
 
 
 def setup_modify_ldif(ldb, setup_dir, ldif, substvars=None):
+    """Modify a ldb in the private dir.
+    
+    :param ldb: LDB object.
+    :param setup_dir: Setup directory.
+    :param ldif: LDIF file path.
+    :param substvars: Optional dictionary with substitution variables.
+    """
     src = os.path.join(setup_dir, ldif)
 
     data = open(src, 'r').read()
@@ -197,19 +192,6 @@ def setup_ldb(ldb, setup_dir, ldif, subst_vars=None):
         ldb.transaction_cancel()
         raise
     ldb.transaction_commit()
-
-
-def setup_ldb_modify(ldb, setup_dir, ldif, substvars=None):
-    """Modify a ldb in the private dir."""
-    src = os.path.join(setup_dir, ldif)
-
-    data = open(src, 'r').read()
-    if substvars is not None:
-        data = substitute_var(data, substvars)
-    assert not "${" in data
-
-    for (changetype, msg) in ldb.parse_ldif(data):
-        ldb.modify(msg)
 
 
 def setup_file(setup_dir, template, fname, substvars):
@@ -328,7 +310,7 @@ def provision_become_dc(setup_dir, subobj, message, paths, lp, session_info,
         setup_samdb_rootdse(samdb, setup_dir, subobj)
 
         message("Erasing data from partitions")
-        ldb_erase_partitions(subobj, message, samdb, None)
+        ldb_erase_partitions(subobj.domaindn, message, samdb, None)
 
         message("Setting up %s indexes" % paths.samdb)
         setup_add_ldif(samdb, setup_dir, "provision_index.ldif")
@@ -453,8 +435,7 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
             smbconfsuffix = "member"
         else:
             assert "Invalid server role setting: %s" % lp.get("server role")
-        setup_file(setup_dir, "provision.smb.conf.%s" % smbconfsuffix, paths.smbconf, 
-                None)
+        setup_file(setup_dir, "provision.smb.conf.%s" % smbconfsuffix, paths.smbconf)
         lp.reload()
 
     # only install a new shares config db if there is none
@@ -462,7 +443,7 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
         message("Setting up share.ldb")
         share_ldb = Ldb(paths.shareconf, session_info=session_info, 
                         credentials=credentials, lp=lp)
-        setup_ldb(share_ldb, setup_dir, "share.ldif", None)
+        setup_ldb(share_ldb, setup_dir, "share.ldif")
 
     message("Setting up %s" % paths.secrets)
     secrets_ldb = setup_secretsdb(paths.secrets, setup_dir, session_info=session_info, 
@@ -497,7 +478,7 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
         setup_samdb_rootdse(samdb, setup_dir, subobj)
 
         message("Erasing data from partitions")
-        ldb_erase_partitions(subobj, message, samdb, ldapbackend)
+        ldb_erase_partitions(subobj.domaindn, message, samdb, ldapbackend)
     except:
         samdb.transaction_cancel()
         raise
@@ -527,7 +508,7 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
         else:
             domainguid_mod = ""
 
-        setup_ldb_modify(samdb, setup_dir, "provision_basedn_modify.ldif", {
+        setup_modify_ldif(samdb, setup_dir, "provision_basedn_modify.ldif", {
             "RDN_DC": subobj.rdn_dc,
             "LDAPTIME": timestring(int(time.time())),
             "DOMAINSID": str(subobj.domainsid),
@@ -547,7 +528,7 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
             "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
             })
         message("Modifying configuration container")
-        setup_ldb_modify(samdb, setup_dir, "provision_configuration_basedn_modify.ldif", {
+        setup_modify_ldif(samdb, setup_dir, "provision_configuration_basedn_modify.ldif", {
             "CONFIGDN": subobj.configdn, 
             "SCHEMADN": subobj.schemadn,
             })
@@ -559,7 +540,7 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
             "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb"
             })
         message("Modifying schema container")
-        setup_ldb_modify(samdb, setup_dir, "provision_schema_basedn_modify.ldif", {
+        setup_modify_ldif(samdb, setup_dir, "provision_schema_basedn_modify.ldif", {
             "SCHEMADN": subobj.schemadn,
             "NETBIOSNAME": subobj.netbiosname,
             "DEFAULTSITE": subobj.defaultsite,
@@ -593,13 +574,13 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
         setup_add_ldif(samdb, setup_dir, "provision_users_add.ldif", {
             "DOMAINDN": subobj.domaindn})
         message("Modifying users container")
-        setup_ldb_modify(samdb, setup_dir, "provision_users_modify.ldif", {
+        setup_modify_ldif(samdb, setup_dir, "provision_users_modify.ldif", {
             "DOMAINDN": subobj.domaindn})
         message("Adding computers container (permitted to fail)")
         setup_add_ldif(samdb, setup_dir, "provision_computers_add.ldif", {
             "DOMAINDN": subobj.domaindn})
         message("Modifying computers container")
-        setup_ldb_modify(samdb, setup_dir, "provision_computers_modify.ldif", {
+        setup_modify_ldif(samdb, setup_dir, "provision_computers_modify.ldif", {
             "DOMAINDN": subobj.domaindn})
         message("Setting up sam.ldb data")
         setup_add_ldif(samdb, setup_dir, "provision.ldif", {
@@ -807,7 +788,7 @@ def load_schema(setup_dir, samdb, subobj):
     samdb.attach_schema_from_ldif(head_data, schema_data)
 
 
-def join_domain(domain, netbios_name, join_type, creds, message):
+def join_domain(domain, netbios_name, join_type, creds):
     ctx = NetContext(creds)
     joindom = object()
     joindom.domain = domain
@@ -824,8 +805,7 @@ def vampire(domain, session_info, credentials, message):
     access to our local database (might be remote ldap)
     """
     ctx = NetContext(credentials)
-    vampire_ctx = object()
-    machine_creds = credentials_init()
+    machine_creds = Credentials()
     machine_creds.set_domain(form.domain)
     if not machine_creds.set_machine_account():
         raise Exception("Failed to access domain join information!")
@@ -835,7 +815,7 @@ def vampire(domain, session_info, credentials, message):
         raise Exception("Migration of remote domain to Samba failed: %s " % vampire_ctx.error_string)
 
 
-def ldb_erase_partitions(subobj, message, ldb, ldapbackend):
+def ldb_erase_partitions(domaindn, message, ldb, ldapbackend):
     """Erase an ldb, removing all records."""
     assert ldb is not None
     res = ldb.search(Dn(ldb, ""), SCOPE_BASE, "(objectClass=*)", 
@@ -848,7 +828,7 @@ def ldb_erase_partitions(subobj, message, ldb, ldapbackend):
         previous_remaining = 1
         current_remaining = 0
 
-        if ldapbackend and (basedn == subobj.domaindn):
+        if ldapbackend and (basedn == domaindn):
             # Only delete objects that were created by provision
             anything = "(objectcategory=*)"
 

@@ -35,3 +35,20 @@ class LdbTestCase(unittest.TestCase):
         self.ldb = samba.Ldb(self.filename)
 
 
+class SubstituteVarTestCase(unittest.TestCase):
+    def test_empty(self):
+        self.assertEquals("", samba.substitute_var("", {}))
+
+    def test_nothing(self):
+        self.assertEquals("foo bar", samba.substitute_var("foo bar", {"bar": "bla"}))
+
+    def test_replace(self):
+        self.assertEquals("foo bla", samba.substitute_var("foo ${bar}", {"bar": "bla"}))
+
+    def test_broken(self):
+        self.assertEquals("foo ${bdkjfhsdkfh sdkfh ", 
+                samba.substitute_var("foo ${bdkjfhsdkfh sdkfh ", {"bar": "bla"}))
+
+    def test_unknown_var(self):
+        self.assertEquals("foo ${bla} gsff", 
+                samba.substitute_var("foo ${bla} gsff", {"bar": "bla"}))
