@@ -129,8 +129,6 @@ def substitute_var(text, values):
         assert isinstance(value, str), "Value %r for %s is not a string" % (value, name)
         text = text.replace("${%s}" % name, value)
 
-    assert "${" not in text, text
-
     return text
 
 
