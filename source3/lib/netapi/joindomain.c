@@ -85,8 +85,10 @@ static WERROR NetJoinDomainRemote(TALLOC_CTX *mem_ctx,
 	status = cli_full_connection(&cli, NULL, server_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
-				     opt_user_name, opt_workgroup,
-				     opt_password, 0, Undefined, NULL);
+				     ctx->username,
+				     ctx->workgroup,
+				     ctx->password,
+				     0, Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
