@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
-#include "lib/netapi/joindomain.h"
+#include "lib/netapi/netapi.h"
 
 static int net_dom_usage(int argc, const char **argv)
 {
@@ -51,7 +51,7 @@ static int net_dom_unjoin(int argc, const char **argv)
 	struct cli_state *cli = NULL;
 	bool reboot = false;
 	NTSTATUS status;
-	WERROR werr;
+	NET_API_STATUS werr;
 	int ret = -1;
 	int i;
 
@@ -90,9 +90,9 @@ static int net_dom_unjoin(int argc, const char **argv)
 	}
 
 	werr = NetUnjoinDomain(server_name, account, password, unjoin_flags);
-	if (!W_ERROR_IS_OK(werr)) {
+	if (werr != 0) {
 		printf("Failed to unjoin domain: %s\n",
-			get_friendly_nt_error_msg(werror_to_ntstatus(werr)));
+			get_friendly_nt_error_msg(werror_to_ntstatus(W_ERROR(werr))));
 		goto done;
 	}
 
@@ -136,7 +136,7 @@ static int net_dom_join(int argc, const char **argv)
 	struct cli_state *cli = NULL;
 	bool reboot = false;
 	NTSTATUS status;
-	WERROR werr;
+	NET_API_STATUS werr;
 	int ret = -1;
 	int i;
 
@@ -194,10 +194,10 @@ static int net_dom_join(int argc, const char **argv)
 
 	werr = NetJoinDomain(server_name, domain_name, account_ou,
 			     Account, password, join_flags);
-	if (!W_ERROR_IS_OK(werr)) {
+	if (werr != 0) {
 		printf("Failed to join domain: %s (WERROR: %s)\n",
-			get_friendly_nt_error_msg(werror_to_ntstatus(werr)),
-			dos_errstr(werr));
+			get_friendly_nt_error_msg(werror_to_ntstatus(W_ERROR(werr))),
+			dos_errstr(W_ERROR(werr)));
 		goto done;
 	}
 

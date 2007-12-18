@@ -20,18 +20,18 @@
 #ifndef __LIB_NETAPI_JOINDOMAIN_H__
 #define __LIB_NETAPI_JOINDOMAIN_H__
 
-WERROR NetJoinDomain(const char *server,
-		     const char *domain,
-		     const char *account_ou,
-		     const char *account,
-		     const char *password,
-		     uint32_t join_options);
-WERROR NetUnjoinDomain(const char *server_name,
-		       const char *account,
-		       const char *password,
-		       uint32_t unjoin_flags);
-WERROR NetGetJoinInformation(const char *server_name,
-			     const char **name_buffer,
-			     uint16_t *name_type);
+NET_API_STATUS NetJoinDomain(const char *server,
+			     const char *domain,
+			     const char *account_ou,
+			     const char *account,
+			     const char *password,
+			     uint32_t join_options);
+NET_API_STATUS NetUnjoinDomain(const char *server_name,
+			       const char *account,
+			       const char *password,
+			       uint32_t unjoin_flags);
+NET_API_STATUS NetGetJoinInformation(const char *server_name,
+				     const char **name_buffer,
+				     uint16_t *name_type);
 
 #endif
