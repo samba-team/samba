@@ -43,10 +43,7 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	r->in.domain_name = talloc_strdup(mem_ctx, domain_name);
 	W_ERROR_HAVE_NO_MEMORY(r->in.domain_name);
 
-	if (server_name) {
-		r->in.server_name = talloc_strdup(mem_ctx, server_name);
-		W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
-	} else if (join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
+	if (join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		NTSTATUS status;
 		struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
