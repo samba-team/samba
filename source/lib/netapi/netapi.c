@@ -148,3 +148,53 @@ NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 	}
 	return W_ERROR_V(WERR_OK);
 }
+
+const char *libnetapi_errstr(struct libnetapi_ctx *ctx,
+			     NET_API_STATUS status)
+{
+	const char *err_str = NULL;
+
+	switch (status) {
+		case 0:
+			err_str = "Success";
+			break;
+		case 0x00000057: /* WERR_INVALID_PARAM */
+			err_str = "Invalid parameter";
+			break;
+		case 0x0000052E: /* WERR_LOGON_FAILURE */
+			err_str = "Invalid logon credentials";
+			break;
+		case 0x00000995: /* WERR_DOMAIN_CONTROLLER_NOT_FOUND */
+			err_str = "A domain controller could not be found";
+			break;
+		case 0x00000a84: /* WERR_SETUP_NOT_JOINED */
+			err_str = "Join failed";
+			break;
+		case 0x00000a83: /* WERR_SETUP_ALREADY_JOINED */
+			err_str = "Machine is already joined";
+			break;
+		case 0x00000a85: /* WERR_SETUP_DOMAIN_CONTROLLER */
+			err_str = "Machine is a Domain Controller";
+			break;
+		case 0x00000032: /* WERR_NOT_SUPPORTED */
+			err_str = "Not supported";
+			break;
+		case 0x0000051f: /* WERR_NO_LOGON_SERVERS */
+			err_str = "No logon servers found";
+			break;
+		case 0x00000056: /* WERR_BAD_PASSWORD */
+			err_str = "A bad password was supplied";
+			break;
+		case 0x00000520: /* WERR_NO_SUCH_LOGON_SESSION */
+			err_str = "No such logon session";
+			break;
+		default:
+			err_str = talloc_asprintf(ctx, "0x%08x", status);
+			if (!err_str) {
+				return NULL;
+			}
+			break;
+	}
+
+	return err_str;
+}
