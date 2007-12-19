@@ -121,6 +121,10 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 	memcpy(this_key.dptr, rec->key.dptr, node->keysize);
 	memcpy(this_val.dptr, data.dptr, node->valuesize);
 
+	if (del_old_keyval) {
+		SAFE_FREE(rec_priv->node);
+	}
+
 	parent = NULL;
 	p = &rec_priv->db_ctx->tree.rb_node;
 
@@ -156,10 +160,6 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 
 	rb_link_node(&node->rb_node, parent, p);
 	rb_insert_color(&node->rb_node, &rec_priv->db_ctx->tree);
-
-	if (del_old_keyval) {
-		SAFE_FREE(rec_priv->node);
-	}
 
 	return NT_STATUS_OK;
 }
