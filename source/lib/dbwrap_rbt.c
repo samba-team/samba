@@ -68,8 +68,6 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 
 	TDB_DATA this_key, this_val;
 
-	bool del_old_keyval = false;
-
 	if (rec_priv->node != NULL) {
 
 		/*
@@ -97,7 +95,11 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		 */
 
 		rb_erase(&rec_priv->node->rb_node, &rec_priv->db_ctx->tree);
-		del_old_keyval = true;
+
+		/*
+		 * Keep the existing node around for a while: If the record
+		 * existed before, we reference the key data in there.
+		 */
 	}
 
 	node = (struct db_rbt_node *)SMB_MALLOC(
@@ -105,9 +107,7 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		+ data.dsize);
 
 	if (node == NULL) {
-		if (del_old_keyval) {
-			SAFE_FREE(rec_priv->node);
-		}
+		SAFE_FREE(rec_priv->node);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -119,11 +119,9 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 	db_rbt_parse_node(node, &this_key, &this_val);
 
 	memcpy(this_key.dptr, rec->key.dptr, node->keysize);
-	memcpy(this_val.dptr, data.dptr, node->valuesize);
+	SAFE_FREE(rec_priv->node);
 
-	if (del_old_keyval) {
-		SAFE_FREE(rec_priv->node);
-	}
+	memcpy(this_val.dptr, data.dptr, node->valuesize);
 
 	parent = NULL;
 	p = &rec_priv->db_ctx->tree.rb_node;
