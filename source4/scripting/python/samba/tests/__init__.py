@@ -67,6 +67,6 @@ class SubstituteVarTestCase(unittest.TestCase):
 class LdbExtensionTests(TestCaseInTempDir):
     def test_searchone(self):
         l = samba.Ldb(self.tempdir + "/searchone.ldb")
-        l.add({"dn": ldb.Dn(l, "foo=dc"), "bar": "bla"})
+        l.add({"dn": "foo=dc", "bar": "bla"})
         self.assertEquals("bla", l.searchone(ldb.Dn(l, "foo=dc"), "bar"))
 

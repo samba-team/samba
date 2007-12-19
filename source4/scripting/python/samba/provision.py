@@ -21,7 +21,7 @@ from samba import Ldb, substitute_var, valid_netbios_name
 from samba.samdb import SamDB
 import security
 from ldb import Dn, SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
-        LDB_ERR_NO_SUCH_OBJECT, timestring
+        LDB_ERR_NO_SUCH_OBJECT, timestring, CHANGETYPE_MODIFY, CHANGETYPE_NONE
 
 
 DEFAULTSITE = "Default-First-Site-Name"
@@ -58,7 +58,7 @@ def install_ok(lp, session_info, credentials):
         return False
     ldb = Ldb(lp.get("sam database"), session_info=session_info, 
             credentials=credentials, lp=lp)
-    if len(ldb.search("(cn=Administrator)")) != 1:
+    if len(ldb.search(ldb.Dn("(cn=Administrator)"))) != 1:
         return False
     return True
 
@@ -85,62 +85,56 @@ def open_ldb(session_info, credentials, lp, dbname):
                    lp=lp)
 
 
-def setup_add_ldif(ldb, setup_dir, ldif, subst_vars=None):
+def setup_add_ldif(ldb, ldif_path, subst_vars=None):
     """Setup a ldb in the private dir."""
-    assert isinstance(ldif, str)
-    assert isinstance(setup_dir, str)
-    src = os.path.join(setup_dir, ldif)
+    assert isinstance(ldif_path, str)
 
-    data = open(src, 'r').read()
+    data = open(ldif_path, 'r').read()
     if subst_vars is not None:
         data = substitute_var(data, subst_vars)
 
     assert "${" not in data
 
-    for msg in ldb.parse_ldif(data):
-        ldb.add(msg[1])
+    ldb.load_ldif_add(data)
 
 
-def setup_modify_ldif(ldb, setup_dir, ldif, substvars=None):
+def setup_modify_ldif(ldb, ldif_path, substvars=None):
     """Modify a ldb in the private dir.
     
     :param ldb: LDB object.
-    :param setup_dir: Setup directory.
-    :param ldif: LDIF file path.
+    :param ldif_path: LDIF file path.
     :param substvars: Optional dictionary with substitution variables.
     """
-    src = os.path.join(setup_dir, ldif)
-
-    data = open(src, 'r').read()
+    data = open(ldif_path, 'r').read()
     if substvars is not None:
         data = substitute_var(data, substvars)
 
     assert "${" not in data
 
     for (changetype, msg) in ldb.parse_ldif(data):
+        assert changetype == CHANGETYPE_MODIFY
         ldb.modify(msg)
 
 
-def setup_ldb(ldb, setup_dir, ldif, subst_vars=None):
+def setup_ldb(ldb, ldif_path, subst_vars):
     assert ldb is not None
     ldb.transaction_start()
     try:
-        setup_add_ldif(ldb, setup_dir, ldif, subst_vars)
+        setup_add_ldif(ldb, ldif_path, subst_vars)
     except:
         ldb.transaction_cancel()
         raise
     ldb.transaction_commit()
 
 
-def setup_file(setup_dir, template, fname, substvars):
+def setup_file(template, fname, substvars):
     """Setup a file in the private dir."""
     f = fname
-    src = os.path.join(setup_dir, template)
 
     if os.path.exists(f):
         os.unlink(f)
 
-    data = open(src, 'r').read()
+    data = open(template, 'r').read()
     if substvars:
         data = substitute_var(data, substvars)
     assert not "${" in data
@@ -218,40 +212,44 @@ def setup_name_mappings(ldb, sid, domaindn, root, nobody, nogroup, users,
 def provision_become_dc(setup_dir, message, paths, lp, session_info, 
                         credentials):
     assert session_info is not None
+    erase = False
 
-    message("Setting up templates into %s" % paths.templates)
-    setup_templatesdb(paths.templates, setup_dir, session_info, 
+    def setup_path(file):
+        return os.path.join(setup_dir, file)
+    os.path.unlink(paths.samdb)
+
+    message("Setting up templates db")
+    setup_templatesdb(paths.templates, setup_path, session_info, 
                       credentials, lp)
 
     # Also wipes the database
-    message("Setting up samdb")
-    os.path.unlink(paths.samdb)
+    message("Setting up sam.ldb")
     samdb = SamDB(paths.samdb, credentials=credentials, 
                   session_info=session_info, lp=lp)
-    samdb.erase()
 
-    message("Setting up %s partitions" % paths.samdb)
-    setup_samdb_partitions(samdb, setup_dir, schemadn, 
-                           configdn, domaindn)
+    message("Setting up sam.ldb partitions")
+    setup_samdb_partitions(samdb, setup_path, schemadn, 
+                       configdn, domaindn)
 
     samdb = SamDB(paths.samdb, credentials=credentials, 
                   session_info=session_info, lp=lp)
 
     ldb.transaction_start()
     try:
-        message("Setting up %s attributes" % paths.samdb)
-        setup_add_ldif(samdb, setup_dir, "provision_init.ldif")
+        message("Setting up sam.ldb attributes")
+        samdb.load_ldif_file_add(setup_path("provision_init.ldif"))
 
-        message("Setting up %s rootDSE" % paths.samdb)
-        setup_samdb_rootdse(samdb, setup_dir, schemadn, domaindn, 
+        message("Setting up sam.ldb rootDSE")
+        setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, 
                             hostname, dnsdomain, realm, rootdn, configdn, 
                             netbiosname)
 
-        message("Erasing data from partitions")
-        ldb_erase_partitions(domaindn, message, samdb, None)
+        if erase:
+            message("Erasing data from partitions")
+            samdb.erase_partitions()
 
-        message("Setting up %s indexes" % paths.samdb)
-        setup_add_ldif(samdb, setup_dir, "provision_index.ldif")
+        message("Setting up sam.ldb indexes")
+        samdb.load_ldif_file_add(setup_path("provision_index.ldif"))
     except:
         samdb.transaction_cancel()
         raise
@@ -259,39 +257,39 @@ def provision_become_dc(setup_dir, message, paths, lp, session_info,
     samdb.transaction_commit()
 
     message("Setting up %s" % paths.secrets)
-    secrets_ldb = setup_secretsdb(paths.secrets, setup_dir, session_info, credentials, lp)
-    setup_ldb(secrets_ldb, setup_dir, "secrets_dc.ldif", 
+    secrets_ldb = setup_secretsdb(paths.secrets, setup_path, session_info, credentials, lp)
+    setup_ldb(secrets_ldb, setup_path("secrets_dc.ldif"), 
               { "MACHINEPASS_B64": b64encode(machinepass) })
 
 
-def setup_secretsdb(path, setup_dir, session_info, credentials, lp):
+def setup_secretsdb(path, setup_path, session_info, credentials, lp):
     secrets_ldb = Ldb(path, session_info=session_info, credentials=credentials, lp=lp)
     secrets_ldb.erase()
-    setup_ldb(secrets_ldb, setup_dir, "secrets_init.ldif")
-    setup_ldb(secrets_ldb, setup_dir, "secrets.ldif")
+    secrets_ldb.load_ldif_file_add(setup_path("secrets_init.ldif"))
+    secrets_ldb.load_ldif_file_add(setup_path("secrets.ldif"))
     return secrets_ldb
 
 
-def setup_templatesdb(path, setup_dir, session_info, credentials, lp):
-    templates_ldb = Ldb(path, session_info=session_info,
+def setup_templatesdb(path, setup_path, session_info, credentials, lp):
+    templates_ldb = SamDB(path, session_info=session_info,
                         credentials=credentials, lp=lp)
     templates_ldb.erase()
-    setup_ldb(templates_ldb, setup_dir, "provision_templates.ldif", None)
+    templates_ldb.load_ldif_file_add(setup_path("provision_templates.ldif"))
 
 
-def setup_registry(path, setup_dir, session_info, credentials, lp):
+def setup_registry(path, setup_path, session_info, credentials, lp):
     reg = registry.Registry()
     hive = registry.Hive(path, session_info=session_info, 
                          credentials=credentials, lp_ctx=lp)
     reg.mount_hive(hive, "HKEY_LOCAL_MACHINE")
-    provision_reg = os.path.join(setup_dir, "provision.reg")
+    provision_reg = setup_path("provision.reg")
     assert os.path.exists(provision_reg)
     reg.apply_patchfile(provision_reg)
 
 
-def setup_samdb_rootdse(samdb, setup_dir, schemadn, domaindn, hostname, 
+def setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname, 
                         dnsdomain, realm, rootdn, configdn, netbiosname):
-    setup_add_ldif(samdb, setup_dir, "provision_rootdse_add.ldif", {
+    setup_add_ldif(samdb, setup_path("provision_rootdse_add.ldif"), {
         "SCHEMADN": schemadn, 
         "NETBIOSNAME": netbiosname,
         "DNSDOMAIN": dnsdomain,
@@ -305,7 +303,7 @@ def setup_samdb_rootdse(samdb, setup_dir, schemadn, domaindn, hostname,
         })
 
 
-def setup_samdb_partitions(samdb, setup_dir, schemadn, configdn, domaindn):
+def setup_samdb_partitions(samdb, setup_path, schemadn, configdn, domaindn):
     #Add modules to the list to activate them by default
     #beware often order is important
     #
@@ -335,7 +333,7 @@ def setup_samdb_partitions(samdb, setup_dir, schemadn, configdn, domaindn):
     modules_list2 = ["show_deleted",
                     "partition"]
  
-    setup_ldb(samdb, setup_dir, "provision_partitions.ldif", {
+    setup_add_ldif(samdb, setup_path("provision_partitions.ldif"), {
         "SCHEMADN": schemadn, 
         "SCHEMADN_LDB": "schema.ldb",
         "SCHEMADN_MOD2": ",objectguid",
@@ -366,6 +364,11 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
     
     :note: caution, this wipes all existing data!
     """
+
+    def setup_path(file):
+        return os.path.join(setup_dir, file)
+
+    erase = False
 
     if domainsid is None:
         domainsid = security.random_sid()
@@ -438,6 +441,7 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
 
     rdn_dc = domaindn.split(",")[0][len("DC="):]
 
+    message("set DOMAIN SID: %s" % str(domainsid))
     message("Provisioning for %s in realm %s" % (domain, realm))
     message("Using administrator password: %s" % adminpass)
 
@@ -452,7 +456,14 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
             smbconfsuffix = "member"
         else:
             assert "Invalid server role setting: %s" % serverrole
-        setup_file(setup_dir, "provision.smb.conf.%s" % smbconfsuffix, paths.smbconf)
+        setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix), paths.smbconf, {
+            "HOSTNAME": hostname,
+            "DOMAIN_CONF": domain,
+            "REALM_CONF": realm,
+            "SERVERROLE": serverrole,
+            "NETLOGONPATH": paths.netlogon,
+            "SYSVOLPATH": paths.sysvol,
+            })
         lp.reload()
 
     # only install a new shares config db if there is none
@@ -460,27 +471,26 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
         message("Setting up share.ldb")
         share_ldb = Ldb(paths.shareconf, session_info=session_info, 
                         credentials=credentials, lp=lp)
-        setup_ldb(share_ldb, setup_dir, "share.ldif")
+        share_ldb.load_ldif_file_add(setup_path("share.ldif"))
 
-    message("Setting up %s" % paths.secrets)
-    secrets_ldb = setup_secretsdb(paths.secrets, setup_dir, session_info=session_info, 
+    message("Setting up secrets.ldb")
+    secrets_ldb = setup_secretsdb(paths.secrets, setup_path, session_info=session_info, 
                     credentials=credentials, lp=lp)
 
-    message("Setting up registry")
+    message("Setting up the registry")
     # FIXME: Still fails for some reason
-    #setup_registry(paths.hklm, setup_dir, session_info, 
+    #setup_registry(paths.hklm, setup_path, session_info, 
     #               credentials=credentials, lp=lp)
 
-    message("Setting up templates into %s" % paths.templates)
-    setup_templatesdb(paths.templates, setup_dir, session_info=session_info, 
+    message("Setting up templates db")
+    setup_templatesdb(paths.templates, setup_path, session_info=session_info, 
                       credentials=credentials, lp=lp)
 
     samdb = SamDB(paths.samdb, session_info=session_info, 
                   credentials=credentials, lp=lp)
-    samdb.erase()
 
     message("Setting up sam.ldb partitions")
-    setup_samdb_partitions(samdb, setup_dir, schemadn, configdn, domaindn)
+    setup_samdb_partitions(samdb, setup_path, schemadn, configdn, domaindn)
 
     samdb = SamDB(paths.samdb, session_info=session_info, 
                   credentials=credentials, lp=lp)
@@ -488,15 +498,16 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
     samdb.transaction_start()
     try:
         message("Setting up sam.ldb attributes")
-        setup_add_ldif(samdb, setup_dir, "provision_init.ldif")
+        samdb.load_ldif_file_add(setup_path("provision_init.ldif"))
 
         message("Setting up sam.ldb rootDSE")
-        setup_samdb_rootdse(samdb, setup_dir, schemadn, domaindn, 
+        setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, 
                             hostname, dnsdomain, realm, rootdn, configdn, 
                             netbiosname)
 
-        message("Erasing data from partitions")
-        ldb_erase_partitions(domaindn, message, samdb, ldapbackend)
+        if erase:
+            message("Erasing data from partitions")
+            samdb.erase_partitions()
     except:
         samdb.transaction_cancel()
         raise
@@ -507,13 +518,13 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
     samdb = SamDB(paths.samdb, session_info=session_info, 
                   credentials=credentials, lp=lp)
     samdb.set_domain_sid(domainsid)
-    load_schema(setup_dir, samdb, schemadn, netbiosname, configdn)
+    load_schema(setup_path, samdb, schemadn, netbiosname, configdn)
 
     samdb.transaction_start()
         
     try:
         message("Adding DomainDN: %s (permitted to fail)" % domaindn)
-        setup_add_ldif(samdb, setup_dir, "provision_basedn.ldif", {
+        setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
             "DOMAINDN": domaindn,
             "ACI": aci,
             "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
@@ -526,7 +537,7 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
         else:
             domainguid_mod = ""
 
-        setup_modify_ldif(samdb, setup_dir, "provision_basedn_modify.ldif", {
+        setup_modify_ldif(samdb, setup_path("provision_basedn_modify.ldif"), {
             "RDN_DC": rdn_dc,
             "LDAPTIME": timestring(int(time.time())),
             "DOMAINSID": str(domainsid),
@@ -540,25 +551,25 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
             })
 
         message("Adding configuration container (permitted to fail)")
-        setup_add_ldif(samdb, setup_dir, "provision_configuration_basedn.ldif", {
+        setup_add_ldif(samdb, setup_path("provision_configuration_basedn.ldif"), {
             "CONFIGDN": configdn, 
             "ACI": aci,
             "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
             })
         message("Modifying configuration container")
-        setup_modify_ldif(samdb, setup_dir, "provision_configuration_basedn_modify.ldif", {
+        setup_modify_ldif(samdb, setup_path("provision_configuration_basedn_modify.ldif"), {
             "CONFIGDN": configdn, 
             "SCHEMADN": schemadn,
             })
 
         message("Adding schema container (permitted to fail)")
-        setup_add_ldif(samdb, setup_dir, "provision_schema_basedn.ldif", {
+        setup_add_ldif(samdb, setup_path("provision_schema_basedn.ldif"), {
             "SCHEMADN": schemadn,
             "ACI": aci,
             "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb"
             })
         message("Modifying schema container")
-        setup_modify_ldif(samdb, setup_dir, "provision_schema_basedn_modify.ldif", {
+        setup_modify_ldif(samdb, setup_path("provision_schema_basedn_modify.ldif"), {
             "SCHEMADN": schemadn,
             "NETBIOSNAME": netbiosname,
             "DEFAULTSITE": DEFAULTSITE,
@@ -566,14 +577,14 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
             })
 
         message("Setting up sam.ldb Samba4 schema")
-        setup_add_ldif(samdb, setup_dir, "schema_samba4.ldif", 
+        setup_add_ldif(samdb, setup_path("schema_samba4.ldif"), 
                        {"SCHEMADN": schemadn })
         message("Setting up sam.ldb AD schema")
-        setup_add_ldif(samdb, setup_dir, "schema.ldif", 
+        setup_add_ldif(samdb, setup_path("schema.ldif"), 
                        {"SCHEMADN": schemadn})
 
         message("Setting up sam.ldb configuration data")
-        setup_add_ldif(samdb, setup_dir, "provision_configuration.ldif", {
+        setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
             "CONFIGDN": configdn,
             "NETBIOSNAME": netbiosname,
             "DEFAULTSITE": DEFAULTSITE,
@@ -584,22 +595,23 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
             })
 
         message("Setting up display specifiers")
-        setup_add_ldif(samdb, setup_dir, "display_specifiers.ldif", {"CONFIGDN": configdn})
+        setup_add_ldif(samdb, setup_path("display_specifiers.ldif"), 
+                       {"CONFIGDN": configdn})
 
         message("Adding users container (permitted to fail)")
-        setup_add_ldif(samdb, setup_dir, "provision_users_add.ldif", {
+        setup_add_ldif(samdb, setup_path("provision_users_add.ldif"), {
             "DOMAINDN": domaindn})
         message("Modifying users container")
-        setup_modify_ldif(samdb, setup_dir, "provision_users_modify.ldif", {
+        setup_modify_ldif(samdb, setup_path("provision_users_modify.ldif"), {
             "DOMAINDN": domaindn})
         message("Adding computers container (permitted to fail)")
-        setup_add_ldif(samdb, setup_dir, "provision_computers_add.ldif", {
+        setup_add_ldif(samdb, setup_path("provision_computers_add.ldif"), {
             "DOMAINDN": domaindn})
         message("Modifying computers container")
-        setup_modify_ldif(samdb, setup_dir, "provision_computers_modify.ldif", {
+        setup_modify_ldif(samdb, setup_path("provision_computers_modify.ldif"), {
             "DOMAINDN": domaindn})
         message("Setting up sam.ldb data")
-        setup_add_ldif(samdb, setup_dir, "provision.ldif", {
+        setup_add_ldif(samdb, setup_path("provision.ldif"), {
             "DOMAINDN": domaindn,
             "NETBIOSNAME": netbiosname,
             "DEFAULTSITE": DEFAULTSITE,
@@ -622,7 +634,7 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
     #    samdb = open_ldb(info, paths.samdb, False)
     #
             message("Setting up sam.ldb users and groups")
-            setup_add_ldif(samdb, setup_dir, "provision_users.ldif", {
+            setup_add_ldif(samdb, setup_path("provision_users.ldif"), {
                 "DOMAINDN": domaindn,
                 "DOMAINSID": str(domainsid),
                 "CONFIGDN": configdn,
@@ -637,7 +649,7 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
                 else:
                     hostguid_add = ""
 
-                setup_add_ldif(samdb, setup_dir, "provision_self_join.ldif", { 
+                setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
                           "CONFIGDN": configdn, 
                           "SCHEMADN": schemadn,
                           "DOMAINDN": domaindn,
@@ -651,7 +663,7 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
                           "DOMAIN": domain,
                           "HOSTGUID_ADD": hostguid_add,
                           "DNSDOMAIN": dnsdomain})
-                setup_add_ldif(samdb, setup_dir, "provision_group_policy.ldif", { 
+                setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
                           "POLICYGUID": policyguid,
                           "DNSDOMAIN": dnsdomain,
                           "DOMAINSID": str(domainsid),
@@ -662,7 +674,7 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
                 os.makedirs(os.path.join(paths.sysvol, dnsdomain, "Policies", "{" + policyguid + "}", "User"), 0755)
                 if not os.path.isdir(paths.netlogon):
                     os.makedirs(paths.netlogon, 0755)
-                setup_ldb(secrets_ldb, setup_dir, "secrets_dc.ldif", { 
+                setup_ldb(secrets_ldb, setup_path("secrets_dc.ldif"), { 
                     "MACHINEPASS_B64": b64encode(machinepass),
                     "DOMAIN": domain,
                     "REALM": realm,
@@ -682,10 +694,10 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
                                 backup=backup)
 
         message("Setting up sam.ldb index")
-        setup_add_ldif(samdb, setup_dir, "provision_index.ldif")
+        samdb.load_ldif_file_add(setup_path("provision_index.ldif"))
 
         message("Setting up sam.ldb rootDSE marking as syncronized")
-        setup_modify_ldif(samdb, setup_dir, "provision_rootdse_modify.ldif")
+        setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
     except:
         samdb.transaction_cancel()
         raise
@@ -693,38 +705,33 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
     samdb.transaction_commit()
 
     message("Setting up phpLDAPadmin configuration")
-    create_phplpapdadmin_config(paths.phpldapadminconfig, setup_dir, paths.s4_ldapi_path)
+    create_phplpapdadmin_config(paths.phpldapadminconfig, setup_path, paths.s4_ldapi_path)
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
 
     message("Setting up DNS zone: %s" % dnsdomain)
-    provision_dns(setup_dir, paths, session_info, credentials, lp,
+    create_zone_file(paths.dns, setup_path, samdb, 
                   hostname=hostname, hostip=hostip, dnsdomain=dnsdomain,
                   domaindn=domaindn, dnspass=dnspass, realm=realm)
     message("Please install the zone located in %s into your DNS server" % paths.dns)
 
-def create_phplpapdadmin_config(path, setup_dir, s4_ldapi_path):
-    setup_file(setup_dir, "phpldapadmin-config.php", 
+def create_phplpapdadmin_config(path, setup_path, s4_ldapi_path):
+    setup_file(setup_path("phpldapadmin-config.php"), 
                path, {"S4_LDAPI_URI": "ldapi://%s" % s4_ldapi_path.replace("/", "%2F")})
 
 
-def provision_dns(setup_dir, paths, session_info, 
-                  credentials, lp, dnsdomain, domaindn, 
+def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn, 
                   hostip, hostname, dnspass, realm):
     """Write out a DNS zone file, from the info in the current database."""
 
     # connect to the sam
-    ldb = SamDB(paths.samdb, session_info=session_info, credentials=credentials,
-                lp=lp)
-
     # These values may have changed, due to an incoming SamSync,
     # or may not have been specified, so fetch them from the database
-    domainguid = str(ldb.searchone(Dn(ldb, domaindn), "objectGUID"))
+    domainguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID")
+    hostguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID" ,
+                     expression="(&(objectClass=computer)(cn=%s))" % hostname)
 
-    hostguid = str(ldb.searchone(Dn(ldb, domaindn), "objectGUID" ,
-                                 expression="(&(objectClass=computer)(cn=%s))" % hostname))
-
-    setup_file(setup_dir, "provision.zone", paths.dns, {
+    setup_file(setup_path("provision.zone"), path, {
             "DNSPASS_B64": b64encode(dnspass),
             "HOSTNAME": hostname,
             "DNSDOMAIN": dnsdomain,
@@ -744,13 +751,16 @@ def provision_ldapbase(setup_dir, message, paths):
 
     rdn_dc = rdns[0][len("DC="):]
 
-    setup_file(setup_dir, "provision_basedn.ldif", 
+    def setup_path(file):
+        return os.path.join(setup_dir, file)
+
+    setup_file(setup_path("provision_basedn.ldif"), 
            paths.ldap_basedn_ldif)
 
-    setup_file(setup_dir, "provision_configuration_basedn.ldif", 
+    setup_file(setup_path("provision_configuration_basedn.ldif"), 
            paths.ldap_config_basedn_ldif)
 
-    setup_file(setup_dir, "provision_schema_basedn.ldif", 
+    setup_file(setup_path("provision_schema_basedn.ldif"), 
            paths.ldap_schema_basedn_ldif, {
             "SCHEMADN": schemadn,
             "ACI": "# no aci for local ldb",
@@ -759,15 +769,12 @@ def provision_ldapbase(setup_dir, message, paths):
     message("Please install the LDIF located in " + paths.ldap_basedn_ldif + ", " + paths.ldap_config_basedn_ldif + " and " + paths.ldap_schema_basedn_ldif + " into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server")
 
 
-def load_schema(setup_dir, samdb, schemadn, netbiosname, configdn):
+def load_schema(setup_path, samdb, schemadn, netbiosname, configdn):
     """Load schema."""
-    src = os.path.join(setup_dir, "schema.ldif")
-    schema_data = open(src, 'r').read()
-    src = os.path.join(setup_dir, "schema_samba4.ldif")
-    schema_data += open(src, 'r').read()
+    schema_data = open(setup_path("schema.ldif"), 'r').read()
+    schema_data += open(setup_path("schema_samba4.ldif"), 'r').read()
     schema_data = substitute_var(schema_data, {"SCHEMADN": schemadn})
-    src = os.path.join(setup_dir, "provision_schema_basedn_modify.ldif")
-    head_data = open(src, 'r').read()
+    head_data = open(setup_path("provision_schema_basedn_modify.ldif"), 'r').read()
     head_data = substitute_var(head_data, {
                     "SCHEMADN": schemadn,
                     "NETBIOSNAME": netbiosname,
@@ -802,34 +809,5 @@ def vampire(domain, session_info, credentials, message):
     if not ctx.SamSyncLdb(vampire_ctx):
         raise Exception("Migration of remote domain to Samba failed: %s " % vampire_ctx.error_string)
 
-
-def ldb_erase_partitions(domaindn, message, ldb, ldapbackend):
-    """Erase an ldb, removing all records."""
-    assert ldb is not None
-    res = ldb.search(Dn(ldb, ""), SCOPE_BASE, "(objectClass=*)", 
-                     ["namingContexts"])
-    assert len(res) == 1
-    if not "namingContexts" in res[0]:
-        return
-    for basedn in res[0]["namingContexts"]:
-        anything = "(|(objectclass=*)(dn=*))"
-        previous_remaining = 1
-        current_remaining = 0
-
-        if ldapbackend and (basedn == domaindn):
-            # Only delete objects that were created by provision
-            anything = "(objectcategory=*)"
-
-        k = 0
-        while ++k < 10 and (previous_remaining != current_remaining):
-            # and the rest
-            res2 = ldb.search(Dn(ldb, basedn), SCOPE_SUBTREE, anything, ["dn"])
-            previous_remaining = current_remaining
-            current_remaining = len(res2)
-            for msg in res2:
-                try:
-                    ldb.delete(msg.dn)
-                except LdbError, (_, text):
-                    message("Unable to delete %s: %s" % (msg.dn, text))
 
 
