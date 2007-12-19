@@ -89,9 +89,6 @@ Dn.__add__ = new_instancemethod(_ldb.Dn___add__,None,Dn)
 Dn_swigregister = _ldb.Dn_swigregister
 Dn_swigregister(Dn)
 
-ldb_dn_from_pyobject = _ldb.ldb_dn_from_pyobject
-ldb_msg_element_from_pyobject = _ldb.ldb_msg_element_from_pyobject
-ldb_msg_element_to_set = _ldb.ldb_msg_element_to_set
 class ldb_msg_element(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     def __init__(self): raise AttributeError, "No constructor defined"

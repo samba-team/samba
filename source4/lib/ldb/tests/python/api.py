@@ -119,6 +119,16 @@ class SimpleLdb(unittest.TestCase):
         finally:
             l.delete(ldb.Dn(l, "dc=foo"))
 
+    def test_add_dict_string_dn(self):
+        l = ldb.Ldb("foo.tdb")
+        m = {"dn": "dc=foo", "bla": "bla"}
+        self.assertEquals(len(l.search()), 1)
+        l.add(m)
+        try:
+            self.assertEquals(len(l.search()), 2)
+        finally:
+            l.delete(ldb.Dn(l, "dc=foo"))
+
     def test_rename(self):
         l = ldb.Ldb("foo.tdb")
         m = ldb.Message()

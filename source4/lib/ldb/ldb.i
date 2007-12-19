@@ -96,37 +96,6 @@ typedef int ldb_error;
 	$result = PyString_FromStringAndSize((const char *)$1.data, $1.length);
 }
 
-%typemap(in) ldb_msg *add_msg (int dict_pos, int msg_pos, PyObject *key, 
-                               PyObject *value, ldb_msg_element *msgel) {
-    if (PyDict_Check($input)) {
-        $1 = ldb_msg_new(NULL);
-        $1->num_elements = PyDict_Size($input) - 1; /* dn isn't in there */
-        $1->elements = talloc_zero_array($1, struct ldb_message_element, $1->num_elements+1);
-        msg_pos = dict_pos = 0;
-        while (PyDict_Next($input, &dict_pos, &key, &value)) {
-            if (!strcmp(PyString_AsString(key), "dn")) {
-                if (ldb_dn_from_pyobject(value, &$1->dn) != 0)
-                    SWIG_exception(SWIG_TypeError, "unable to convert dn");
-            } else {
-                msgel = ldb_msg_element_from_pyobject(value, 0, PyString_AsString(key));
-                memcpy(&$1->elements[msg_pos], msgel, sizeof(*msgel));
-                msg_pos++;
-            }
-            dict_pos++;
-        }
-
-        if ($1->dn == NULL)
-            SWIG_exception(SWIG_TypeError, "no dn set");
-    } else {
-        if (SWIG_ConvertPtr($input, (void **)&$1, SWIGTYPE_p_ldb_message, 0) != 0)
-            return NULL;
-    }
-}
-
-%typemap(freearg) ldb_msg *add_msg {
-//talloc_free($1);
-}
-
 /*
  * Wrap struct ldb_result
  */
@@ -222,10 +191,16 @@ fail:
 } ldb_dn;
 
 #ifdef SWIGPYTHON
-%inline {
-int ldb_dn_from_pyobject(PyObject *object, ldb_dn **dn)
+%{
+int ldb_dn_from_pyobject(TALLOC_CTX *mem_ctx, PyObject *object, 
+                         struct ldb_context *ldb, ldb_dn **dn)
 {
-    return SWIG_ConvertPtr(object, (void **)dn, SWIGTYPE_p_ldb_dn, 0);
+    if (ldb != NULL && PyString_Check(object)) {
+        *dn = ldb_dn_new(mem_ctx, ldb, PyString_AsString(object));
+        return 0;
+    }
+    return SWIG_ConvertPtr(object, (void **)dn, SWIGTYPE_p_ldb_dn, 
+                           SWIG_POINTER_EXCEPTION);
 }
 
 ldb_msg_element *ldb_msg_element_from_pyobject(PyObject *set_obj, int flags,
@@ -274,7 +249,7 @@ PyObject *ldb_msg_element_to_set(ldb_msg_element *me)
     return result;
 }
 
-}
+%}
 #endif
 
 /* ldb_message_element */
@@ -493,6 +468,48 @@ fail:
         ldb_error delete(ldb_dn *dn);
         ldb_error rename(ldb_dn *olddn, ldb_dn *newdn);
         ldb_error add(ldb_msg *add_msg);
+        ldb_error add(PyObject *py_msg) 
+        {
+            ldb_error ret;
+            int dict_pos, msg_pos;
+            PyObject *key, *value;
+            ldb_msg_element *msgel;
+            ldb_msg *msg = NULL;
+            if (PyDict_Check(py_msg)) {
+                msg = ldb_msg_new(NULL);
+                msg->num_elements = PyDict_Size(py_msg) - 1; /* dn isn't in there */
+                msg->elements = talloc_zero_array(msg, struct ldb_message_element, msg->num_elements+1);
+                msg_pos = dict_pos = 0;
+                while (PyDict_Next(py_msg, &dict_pos, &key, &value)) {
+                    if (!strcmp(PyString_AsString(key), "dn")) {
+                        if (ldb_dn_from_pyobject(msg, value, $self, &msg->dn) != 0) {
+                            return LDB_ERR_OTHER;
+                        }
+                    } else {
+                        msgel = ldb_msg_element_from_pyobject(value, 0, PyString_AsString(key));
+                        memcpy(&msg->elements[msg_pos], msgel, sizeof(*msgel));
+                        msg_pos++;
+                    }
+                    dict_pos++;
+                }
+
+                if (msg->dn == NULL) {
+                    SWIG_exception(SWIG_TypeError, "no dn set");
+                    return LDB_ERR_OTHER;
+                }
+            } else {
+                if (SWIG_ConvertPtr(py_msg, (void **)&msg, SWIGTYPE_p_ldb_message, 0) != 0)
+                    return LDB_ERR_OTHER;
+            }
+
+            ret = ldb_add($self,msg);
+
+            talloc_free(msg);
+            return ret;
+
+            fail:
+            return LDB_ERR_OTHER;
+        }
         ldb_error modify(ldb_msg *message);
         ldb_dn *get_config_basedn();
         ldb_dn *get_root_basedn();
