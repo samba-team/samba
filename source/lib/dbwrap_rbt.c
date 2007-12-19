@@ -68,6 +68,8 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 
 	TDB_DATA this_key, this_val;
 
+	bool del_old_keyval = false;
+
 	if (rec_priv->node != NULL) {
 
 		/*
@@ -95,7 +97,7 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		 */
 
 		rb_erase(&rec_priv->node->rb_node, &rec_priv->db_ctx->tree);
-		SAFE_FREE(rec_priv->node);
+		del_old_keyval = true;
 	}
 
 	node = (struct db_rbt_node *)SMB_MALLOC(
@@ -103,6 +105,9 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		+ data.dsize);
 
 	if (node == NULL) {
+		if (del_old_keyval) {
+			SAFE_FREE(rec_priv->node);
+		}
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -151,6 +156,10 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 
 	rb_link_node(&node->rb_node, parent, p);
 	rb_insert_color(&node->rb_node, &rec_priv->db_ctx->tree);
+
+	if (del_old_keyval) {
+		SAFE_FREE(rec_priv->node);
+	}
 
 	return NT_STATUS_OK;
 }
