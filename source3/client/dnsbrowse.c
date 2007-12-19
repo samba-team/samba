@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "client/client_proto.h"
 
 #ifdef WITH_DNSSD_SUPPORT
 
