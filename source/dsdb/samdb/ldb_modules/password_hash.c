@@ -1198,7 +1198,7 @@ static int build_domain_data_request(struct ph_context *ac)
 	/* attrs[] is returned from this function in
 	   ac->dom_req->op.search.attrs, so it must be static, as
 	   otherwise the compiler can put it on the stack */
-	const char * const attrs[] = { "pwdProperties", "pwdHistoryLength", NULL };
+	static const char * const attrs[] = { "pwdProperties", "pwdHistoryLength", NULL };
 	char *filter;
 
 	ac->dom_req = talloc_zero(ac, struct ldb_request);
@@ -1662,7 +1662,7 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 static int password_hash_mod_search_self(struct ldb_handle *h) {
 
 	struct ph_context *ac;
-	const char * const attrs[] = { "userAccountControl", "lmPwdHistory", 
+	static const char * const attrs[] = { "userAccountControl", "lmPwdHistory", 
 					      "ntPwdHistory", 
 					      "objectSid", "msDS-KeyVersionNumber", 
 					      "objectClass", "userPrincipalName",

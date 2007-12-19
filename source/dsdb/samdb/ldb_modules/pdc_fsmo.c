@@ -37,7 +37,7 @@ static int pdc_fsmo_init(struct ldb_module *module)
 	struct dsdb_pdc_fsmo *pdc_fsmo;
 	struct ldb_result *pdc_res;
 	int ret;
-	const char *pdc_attrs[] = {
+	static const char *pdc_attrs[] = {
 		"fSMORoleOwner",
 		NULL
 	};

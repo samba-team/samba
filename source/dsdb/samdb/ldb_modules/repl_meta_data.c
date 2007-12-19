@@ -1519,7 +1519,7 @@ static int replmd_replicated_uptodate_search_callback(struct ldb_context *ldb,
 static int replmd_replicated_uptodate_search(struct replmd_replicated_request *ar)
 {
 	int ret;
-	const char *attrs[] = {
+	static const char *attrs[] = {
 		"replUpToDateVector",
 		"repsFrom",
 		NULL

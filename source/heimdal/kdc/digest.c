@@ -726,7 +726,7 @@ _kdc_do_digest(krb5_context context,
 	
 	    /* conf|int */
 	    if (strcmp(ireq.u.digestRequest.digest, "clear") != 0) {
-		const char conf_zeros[] = ":00000000000000000000000000000000";
+		static char conf_zeros[] = ":00000000000000000000000000000000";
 		MD5_Update(&ctx, conf_zeros, sizeof(conf_zeros) - 1);
 	    }
 	    

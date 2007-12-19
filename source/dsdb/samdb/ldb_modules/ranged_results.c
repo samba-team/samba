@@ -40,7 +40,7 @@ static int rr_search_callback(struct ldb_context *ldb, void *context, struct ldb
 {
 	struct rr_context *rr_context = talloc_get_type(context, struct rr_context);
 	struct ldb_request *orig_req = rr_context->orig_req;
-	int i, j;
+	int i, j, ret;
 	
 	if (ares->type != LDB_REPLY_ENTRY) {
 		return rr_context->orig_req->callback(ldb, rr_context->orig_req->context, ares);
