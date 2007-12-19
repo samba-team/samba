@@ -164,7 +164,7 @@ AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_DISALLOW_UNDEF_FLAG],
 			LD_SHLIB_DISALLOW_UNDEF_FLAG="-warning_unresolved"
 			;;
 		*darwin*)
-			LD_SHLIB_DISALLOW_UNDEF_FLAG="-undefined warning"
+			LD_SHLIB_DISALLOW_UNDEF_FLAG="-undefined error"
 			;;
 	esac
 
@@ -268,7 +268,7 @@ AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_ALLOW_UNDEF_FLAG],
 			LD_SHLIB_ALLOW_UNDEF_FLAG="-expect_unresolved '*'"
 			;;
 		*darwin*)
-			LD_SHLIB_ALLOW_UNDEF_FLAG="-undefined suppress"
+			LD_SHLIB_ALLOW_UNDEF_FLAG="-undefined dynamic_lookup"
 			;;
 	esac
 
