@@ -38,7 +38,6 @@ int max_send = BUFFER_SIZE;
  */
 int max_recv = BUFFER_SIZE;
 
-extern int last_message;
 SIG_ATOMIC_T reload_after_sighup = 0;
 SIG_ATOMIC_T got_sig_term = 0;
 extern bool global_machine_password_needs_changing;
@@ -1307,8 +1306,6 @@ static void switch_message(uint8 type, struct smb_request *req, int size)
 	static uint16 last_session_tag = UID_FIELD_INVALID;
 
 	errno = 0;
-
-	last_message = type;
 
 	/* Make sure this is an SMB packet. smb_size contains NetBIOS header
 	 * so subtract 4 from it. */
