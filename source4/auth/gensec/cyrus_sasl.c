@@ -365,7 +365,7 @@ NTSTATUS gensec_sasl_init(void)
 	int sasl_ret, i;
 	const char **sasl_mechs;
 	
-	const sasl_callback_t callbacks[] = {
+	static const sasl_callback_t callbacks[] = {
 		{ 
 			.id = SASL_CB_LOG,
 			.proc = gensec_sasl_log,

@@ -113,7 +113,7 @@ NTSTATUS schannel_unseal_packet(struct gensec_security *gensec_security,
 	uint8_t confounder[8];
 	uint8_t seq_num[8];
 	uint8_t sealing_key[16];
-	const uint8_t netsec_sig[8] = NETSEC_SEAL_SIGNATURE;
+	static const uint8_t netsec_sig[8] = NETSEC_SEAL_SIGNATURE;
 
 	if (sig->length != 32) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -162,7 +162,7 @@ NTSTATUS schannel_check_packet(struct gensec_security *gensec_security,
 
 	uint8_t digest_final[16];
 	uint8_t seq_num[8];
-	const uint8_t netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
+	static const uint8_t netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
 
 	/* w2k sends just 24 bytes and skip the confounder */
 	if (sig->length != 32 && sig->length != 24) {
@@ -212,7 +212,7 @@ NTSTATUS schannel_seal_packet(struct gensec_security *gensec_security,
 	uint8_t confounder[8];
 	uint8_t seq_num[8];
 	uint8_t sealing_key[16];
-	const uint8_t netsec_sig[8] = NETSEC_SEAL_SIGNATURE;
+	static const uint8_t netsec_sig[8] = NETSEC_SEAL_SIGNATURE;
 
 	generate_random_buffer(confounder, 8);
 
@@ -258,7 +258,7 @@ NTSTATUS schannel_sign_packet(struct gensec_security *gensec_security,
 
 	uint8_t digest_final[16];
 	uint8_t seq_num[8];
-	const uint8_t netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
+	static const uint8_t netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
 
 	RSIVAL(seq_num, 0, state->seq_num);
 	SIVAL(seq_num, 4, state->initiator?0x80:0);

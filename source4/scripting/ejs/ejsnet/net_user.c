@@ -197,7 +197,7 @@ static int ejs_net_deleteuser(MprVarHandle eid, int argc, char **argv)
 	}
 	
 	/* domain where the account is to be deleted */
-	userman_domain = (const char*)mprGetThisPtr(eid, "domain");
+	userman_domain = (struct libnet_context *)mprGetThisPtr(eid, "domain");
 	if (!userman_domain) {
 		ejsSetErrorMsg(eid, "domain property returns null pointer");
 		goto done;
@@ -260,7 +260,7 @@ static int ejs_net_userinfo(MprVarHandle eid, int argc, char **argv)
 	}
 	
 	/* domain where the user account is to be queried */
-	userman_domain = (const char *)mprGetThisPtr(eid, "domain");
+	userman_domain = (struct libnet_context *)mprGetThisPtr(eid, "domain");
 	if (userman_domain == NULL) {
 		ejsSetErrorMsg(eid, "domain property returns null pointer");
 		return -1;

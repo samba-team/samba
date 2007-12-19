@@ -500,7 +500,7 @@ const struct auth_operations *auth_backend_byname(const char *name)
 */
 const struct auth_critical_sizes *auth_interface_version(void)
 {
-	const static struct auth_critical_sizes critical_sizes = {
+	static const struct auth_critical_sizes critical_sizes = {
 		AUTH_INTERFACE_VERSION,
 		sizeof(struct auth_operations),
 		sizeof(struct auth_method_context),

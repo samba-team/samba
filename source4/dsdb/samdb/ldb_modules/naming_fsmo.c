@@ -38,7 +38,7 @@ static int naming_fsmo_init(struct ldb_module *module)
 	struct dsdb_naming_fsmo *naming_fsmo;
 	struct ldb_result *naming_res;
 	int ret;
-	const char *naming_attrs[] = {
+	static const char *naming_attrs[] = {
 		"fSMORoleOwner",
 		NULL
 	};

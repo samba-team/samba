@@ -1048,7 +1048,7 @@ enum {
 
 int main(int argc, const char **argv)
 {
-	const char *helper_protocol;
+	static const char *helper_protocol;
 	int opt;
 
 	poptContext pc;

@@ -241,7 +241,7 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 
 	printf("Number of nodes:%d\n", nodemap->num);
 	for(i=0;i<nodemap->num;i++){
-		const struct {
+		static const struct {
 			uint32_t flag;
 			const char *name;
 		} flag_names[] = {

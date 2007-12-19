@@ -809,7 +809,7 @@ static NTSTATUS becomeDC_ldap1_rootdse(struct libnet_BecomeDC_state *s)
 	int ret;
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
-	const char *attrs[] = {
+	static const char *attrs[] = {
 		"*",
 		NULL
 	};
@@ -853,7 +853,7 @@ static NTSTATUS becomeDC_ldap1_crossref_behavior_version(struct libnet_BecomeDC_
 	int ret;
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
-	const char *attrs[] = {
+	static const char *attrs[] = {
 		"msDs-Behavior-Version",
 		NULL
 	};
@@ -882,7 +882,7 @@ static NTSTATUS becomeDC_ldap1_domain_behavior_version(struct libnet_BecomeDC_st
 	int ret;
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
-	const char *attrs[] = {
+	static const char *attrs[] = {
 		"msDs-Behavior-Version",
 		NULL
 	};
@@ -911,7 +911,7 @@ static NTSTATUS becomeDC_ldap1_schema_object_version(struct libnet_BecomeDC_stat
 	int ret;
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
-	const char *attrs[] = {
+	static const char *attrs[] = {
 		"objectVersion",
 		NULL
 	};
@@ -940,7 +940,7 @@ static NTSTATUS becomeDC_ldap1_w2k3_update_revision(struct libnet_BecomeDC_state
 	int ret;
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
-	const char *attrs[] = {
+	static const char *attrs[] = {
 		"revision",
 		NULL
 	};
@@ -976,19 +976,19 @@ static NTSTATUS becomeDC_ldap1_infrastructure_fsmo(struct libnet_BecomeDC_state 
 	struct ldb_dn *basedn;
 	struct ldb_dn *ntds_dn;
 	struct ldb_dn *server_dn;
-	const char *_1_1_attrs[] = {
+	static const char *_1_1_attrs[] = {
 		"1.1",
 		NULL
 	};
-	const char *fsmo_attrs[] = {
+	static const char *fsmo_attrs[] = {
 		"fSMORoleOwner",
 		NULL
 	};
-	const char *dns_attrs[] = {
+	static const char *dns_attrs[] = {
 		"dnsHostName",
 		NULL
 	};
-	const char *guid_attrs[] = {
+	static const char *guid_attrs[] = {
 		"objectGUID",
 		NULL
 	};
@@ -1074,19 +1074,19 @@ static NTSTATUS becomeDC_ldap1_rid_manager_fsmo(struct libnet_BecomeDC_state *s)
 	const char *reference_dn_str;
 	struct ldb_dn *ntds_dn;
 	struct ldb_dn *server_dn;
-	const char *rid_attrs[] = {
+	static const char *rid_attrs[] = {
 		"rIDManagerReference",
 		NULL
 	};
-	const char *fsmo_attrs[] = {
+	static const char *fsmo_attrs[] = {
 		"fSMORoleOwner",
 		NULL
 	};
-	const char *dns_attrs[] = {
+	static const char *dns_attrs[] = {
 		"dnsHostName",
 		NULL
 	};
-	const char *guid_attrs[] = {
+	static const char *guid_attrs[] = {
 		"objectGUID",
 		NULL
 	};
@@ -1212,7 +1212,7 @@ static NTSTATUS becomeDC_ldap1_computer_object(struct libnet_BecomeDC_state *s)
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
 	char *filter;
-	const char *attrs[] = {
+	static const char *attrs[] = {
 		"distinguishedName",
 		"userAccountControl",
 		NULL
@@ -1306,7 +1306,7 @@ static NTSTATUS becomeDC_ldap1_server_object_2(struct libnet_BecomeDC_state *s)
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
 	const char *server_reference_bl_dn_str;
-	const char *attrs[] = {
+	static const char *attrs[] = {
 		"serverReferenceBL",
 		NULL
 	};
@@ -2852,7 +2852,7 @@ static NTSTATUS becomeDC_ldap2_move_computer(struct libnet_BecomeDC_state *s)
 	struct ldb_dn *basedn;
 	struct ldb_dn *old_dn;
 	struct ldb_dn *new_dn;
-	const char *_1_1_attrs[] = {
+	static const char *_1_1_attrs[] = {
 		"1.1",
 		NULL
 	};

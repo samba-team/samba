@@ -517,13 +517,13 @@ int main(int argc,char *argv[])
 	const struct torture_ui_ops *ui_ops;
 	char **argv_new;
 	poptContext pc;
-	const char *target = "other";
+	static const char *target = "other";
 	NTSTATUS status;
 	int shell = false;
-	const char *ui_ops_name = "simple";
+	static const char *ui_ops_name = "simple";
 	const char *basedir = NULL;
 	const char *extra_module = NULL;
-	int list_tests = 0;
+	static int list_tests = 0;
 	enum {OPT_LOADFILE=1000,OPT_UNCLIST,OPT_TIMELIMIT,OPT_DNS, OPT_LIST,
 	      OPT_DANGEROUS,OPT_SMB_PORTS,OPT_ASYNC,OPT_NUMPROGS};
 	

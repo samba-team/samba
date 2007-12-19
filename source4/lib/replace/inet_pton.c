@@ -77,7 +77,7 @@ inet_pton4(src, dst)
 	const char *src;
 	unsigned char *dst;
 {
-	const char digits[] = "0123456789";
+	static const char digits[] = "0123456789";
 	int saw_digit, octets, ch;
 	unsigned char tmp[NS_INADDRSZ], *tp;
 
@@ -131,7 +131,7 @@ inet_pton6(src, dst)
 	const char *src;
 	unsigned char *dst;
 {
-	const char xdigits_l[] = "0123456789abcdef",
+	static const char xdigits_l[] = "0123456789abcdef",
 			  xdigits_u[] = "0123456789ABCDEF";
 	unsigned char tmp[NS_IN6ADDRSZ], *tp, *endp, *colonp;
 	const char *xdigits, *curtok;
