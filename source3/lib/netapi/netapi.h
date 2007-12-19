@@ -40,5 +40,6 @@ NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx, const char *wo
 const char *libnetapi_errstr(struct libnetapi_ctx *ctx, NET_API_STATUS status);
 
 #include "joindomain.h"
+#include "serverinfo.h"
 
 #endif
