@@ -384,49 +384,15 @@ NET_API_STATUS NetUnjoinDomain(const char *server_name,
 	return 0;
 }
 
-
-WERROR libnetapi_NetGetJoinInformation(struct libnetapi_ctx *ctx,
-				       const char *server_name,
-				       const char **name_buffer,
-				       uint16_t *name_type)
+static WERROR NetGetJoinInformationRemote(struct libnetapi_ctx *ctx,
+					  const char *server_name,
+					  const char **name_buffer,
+					  uint16_t *name_type)
 {
-	TALLOC_CTX *mem_ctx = NULL;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	NTSTATUS status;
 	WERROR werr;
-
-	mem_ctx = talloc_init("NetGetJoinInformation");
-	if (!mem_ctx) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
-	if (!server_name || is_myname_or_ipaddr(server_name)) {
-		if ((lp_security() == SEC_ADS) && lp_realm()) {
-			*name_buffer = SMB_STRDUP(lp_realm());
-		} else {
-			*name_buffer = SMB_STRDUP(lp_workgroup());
-		}
-		if (!*name_buffer) {
-			werr = WERR_NOMEM;
-			goto done;
-		}
-		switch (lp_server_role()) {
-			case ROLE_DOMAIN_MEMBER:
-			case ROLE_DOMAIN_PDC:
-			case ROLE_DOMAIN_BDC:
-				*name_type = NetSetupDomainName;
-				break;
-			case ROLE_STANDALONE:
-			default:
-				*name_type = NetSetupWorkgroupName;
-				break;
-		}
-
-		werr = WERR_OK;
-		goto done;
-	}
 
 	status = cli_full_connection(&cli, NULL, server_name,
 				     NULL, 0,
@@ -448,7 +414,7 @@ WERROR libnetapi_NetGetJoinInformation(struct libnetapi_ctx *ctx,
 		goto done;
 	};
 
-	status = rpccli_wkssvc_NetrGetJoinInformation(pipe_cli, mem_ctx,
+	status = rpccli_wkssvc_NetrGetJoinInformation(pipe_cli, ctx,
 						      server_name,
 						      name_buffer,
 						      (enum wkssvc_NetJoinStatus *)name_type,
@@ -462,9 +428,55 @@ WERROR libnetapi_NetGetJoinInformation(struct libnetapi_ctx *ctx,
 	if (cli) {
 		cli_shutdown(cli);
 	}
-	TALLOC_FREE(mem_ctx);
 
 	return werr;
+}
+
+static WERROR NetGetJoinInformationLocal(struct libnetapi_ctx *ctx,
+					 const char *server_name,
+					 const char **name_buffer,
+					 uint16_t *name_type)
+{
+	if ((lp_security() == SEC_ADS) && lp_realm()) {
+		*name_buffer = SMB_STRDUP(lp_realm());
+	} else {
+		*name_buffer = SMB_STRDUP(lp_workgroup());
+	}
+	if (!*name_buffer) {
+		return WERR_NOMEM;
+	}
+
+	switch (lp_server_role()) {
+		case ROLE_DOMAIN_MEMBER:
+		case ROLE_DOMAIN_PDC:
+		case ROLE_DOMAIN_BDC:
+			*name_type = NetSetupDomainName;
+			break;
+		case ROLE_STANDALONE:
+		default:
+			*name_type = NetSetupWorkgroupName;
+			break;
+	}
+
+	return WERR_OK;
+}
+
+WERROR libnetapi_NetGetJoinInformation(struct libnetapi_ctx *ctx,
+				       const char *server_name,
+				       const char **name_buffer,
+				       uint16_t *name_type)
+{
+	if (!server_name || is_myname_or_ipaddr(server_name)) {
+		return NetGetJoinInformationLocal(ctx,
+						  server_name,
+						  name_buffer,
+						  name_type);
+	}
+
+	return NetGetJoinInformationRemote(ctx,
+					   server_name,
+					   name_buffer,
+					   name_type);
 }
 
 NET_API_STATUS NetGetJoinInformation(const char *server_name,
