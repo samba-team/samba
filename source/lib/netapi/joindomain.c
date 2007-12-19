@@ -36,15 +36,30 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	werr = libnet_init_JoinCtx(mem_ctx, &r);
 	W_ERROR_NOT_OK_RETURN(werr);
 
-	if (!server_name || !domain_name) {
+	if (!domain_name) {
 		return WERR_INVALID_PARAM;
 	}
 
-	r->in.server_name = talloc_strdup(mem_ctx, server_name);
-	W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
-
 	r->in.domain_name = talloc_strdup(mem_ctx, domain_name);
 	W_ERROR_HAVE_NO_MEMORY(r->in.domain_name);
+
+	if (server_name) {
+		r->in.server_name = talloc_strdup(mem_ctx, server_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
+	} else if (join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
+		NTSTATUS status;
+		struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
+				 DS_WRITABLE_REQUIRED |
+				 DS_RETURN_DNS_NAME;
+		status = DsGetDcName(mem_ctx, NULL, domain_name,
+				     NULL, NULL, flags, &info);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+		r->in.server_name = talloc_strdup(mem_ctx, info->domain_controller_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
+	}
 
 	if (account_ou) {
 		r->in.account_ou = talloc_strdup(mem_ctx, account_ou);
@@ -158,17 +173,8 @@ static WERROR libnetapi_NetJoinDomain(struct libnetapi_ctx *ctx,
 
 	if (!server_name || is_myname_or_ipaddr(server_name)) {
 
-		const char *dc = NULL;
-
-		/* FIXME: DsGetDcName */
-		if (server_name == NULL) {
-			dc = domain_name;
-		} else {
-			dc = domain_name;
-		}
-
 		werr = NetJoinDomainLocal(ctx,
-					  dc,
+					  server_name,
 					  domain_name,
 					  account_ou,
 					  Account,
