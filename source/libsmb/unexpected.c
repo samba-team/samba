@@ -59,6 +59,8 @@ void unexpected_packet(struct packet_struct *p)
 	
 	len = build_packet(buf, p);
 
+	ZERO_STRUCT(key);	/* needed for potential alignment */
+
 	key.packet_type = p->packet_type;
 	key.timestamp = p->timestamp;
 	key.count = count++;
