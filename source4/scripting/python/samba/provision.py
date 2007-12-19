@@ -1,8 +1,10 @@
 #
 #    backend code for provisioning a Samba4 server
-#    Copyright Andrew Tridgell 2005
-#    Copyright Jelmer Vernooij 2007
 #    Released under the GNU GPL v2 or later
+#    Copyright Jelmer Vernooij 2007
+#
+# Based on the original in EJS:
+#    Copyright Andrew Tridgell 2005
 #
 
 from base64 import b64encode
@@ -22,65 +24,11 @@ from ldb import Dn, SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
         LDB_ERR_NO_SUCH_OBJECT, timestring
 
 
+DEFAULTSITE = "Default-First-Site-Name"
+
 class InvalidNetbiosName(Exception):
     def __init__(self, name):
         super(InvalidNetbiosName, self).__init__("The name '%r' is not a valid NetBIOS name" % name)
-
-
-class ProvisionSettings(object):
-    def __init__(self, realm=None, domain=None, hostname=None, hostip=None):
-        self.realm = realm
-        self.domain = domain
-        self.hostname = hostname
-        self.hostip = hostip
-        self.domainsid = None
-        self.invocationid = None
-        self.krbtgtpass = None
-        self.machinepass = None
-        self.adminpass = None
-        self.defaultsite  = "Default-First-Site-Name"
-        self.root = None
-        self.nobody = None
-        self.nogroup = None
-        self.wheel = None
-        self.backup = None
-        self.users = None
-        self.dnsdomain = None
-        self.dnsname = None
-        self.domaindn = None
-        self.rootdn = None
-        self.configdn = None
-        self.schemedn = None
-        self.schemedn_ldb = None
-        self.s4_ldapi_path = None
-        self.policyguid = None
-
-    def fix(self, paths):
-        self.realm       = self.realm.upper()
-        self.hostname    = self.hostname.lower()
-        self.domain      = self.domain.upper()
-        if not valid_netbios_name(self.domain):
-            raise InvalidNetbiosName(self.domain)
-        self.netbiosname = self.hostname.upper()
-        if not valid_netbios_name(self.netbiosname):
-            raise InvalidNetbiosName(self.netbiosname)
-        rdns = self.domaindn.split(",")
-        self.rdn_dc = rdns[0][len("DC="):]
-
-    def validate(self, lp):
-        if not valid_netbios_name(self.domain):
-            raise InvalidNetbiosName(self.domain)
-
-        if not valid_netbios_name(self.netbiosname):
-            raise InvalidNetbiosName(self.netbiosname)
-
-        if lp.get("workgroup").upper() != self.domain.upper():
-            raise Error("workgroup '%s' in smb.conf must match chosen domain '%s'\n",
-                lp.get("workgroup"), self.domain)
-
-        if lp.get("realm").upper() != self.realm.upper():
-            raise Error("realm '%s' in smb.conf must match chosen realm '%s'\n" %
-                (lp.get("realm"), self.realm))
 
 
 class ProvisionPaths:
@@ -123,11 +71,6 @@ def findnss(nssfn, *names):
         except KeyError:
             pass
     raise Exception("Unable to find user/group for %s" % arguments[1])
-
-
-def hostip():
-    """return first host IP."""
-    return gethostbyname(hostname())
 
 
 def hostname():
@@ -210,11 +153,11 @@ def setup_file(setup_dir, template, fname, substvars):
     open(f, 'w').write(data)
 
 
-def provision_default_paths(lp, subobj):
+def provision_default_paths(lp, dnsdomain):
     """Set the default paths for provisioning.
 
     :param lp: Loadparm context.
-    :param subobj: Object
+    :param dnsdomain: DNS Domain name
     """
     paths = ProvisionPaths()
     private_dir = lp.get("private dir")
@@ -224,14 +167,14 @@ def provision_default_paths(lp, subobj):
     paths.templates = os.path.join(private_dir, "templates.ldb")
     paths.keytab = os.path.join(private_dir, "secrets.keytab")
     paths.dns_keytab = os.path.join(private_dir, "dns.keytab")
-    paths.dns = os.path.join(private_dir, subobj.dnsdomain + ".zone")
+    paths.dns = os.path.join(private_dir, dnsdomain + ".zone")
     paths.winsdb = os.path.join(private_dir, "wins.ldb")
     paths.ldap_basedn_ldif = os.path.join(private_dir, 
-                                          subobj.dnsdomain + ".ldif")
+                                          dnsdomain + ".ldif")
     paths.ldap_config_basedn_ldif = os.path.join(private_dir, 
-                                             subobj.dnsdomain + "-config.ldif")
+                                             dnsdomain + "-config.ldif")
     paths.ldap_schema_basedn_ldif = os.path.join(private_dir, 
-                                              subobj.dnsdomain + "-schema.ldif")
+                                              dnsdomain + "-schema.ldif")
     paths.s4_ldapi_path = os.path.join(private_dir, "ldapi")
     paths.phpldapadminconfig = os.path.join(private_dir, 
                                             "phpldapadmin-config.php")
@@ -247,41 +190,39 @@ def provision_default_paths(lp, subobj):
     return paths
 
 
-def setup_name_mappings(subobj, ldb):
+def setup_name_mappings(ldb, sid, domaindn, root, nobody, nogroup, users, 
+                        wheel, backup):
     """setup reasonable name mappings for sam names to unix names."""
-    sid = str(subobj.domainsid)
-
     # add some foreign sids if they are not present already
-    ldb.add_foreign(subobj.domaindn, "S-1-5-7", "Anonymous")
-    ldb.add_foreign(subobj.domaindn, "S-1-1-0", "World")
-    ldb.add_foreign(subobj.domaindn, "S-1-5-2", "Network")
-    ldb.add_foreign(subobj.domaindn, "S-1-5-18", "System")
-    ldb.add_foreign(subobj.domaindn, "S-1-5-11", "Authenticated Users")
+    ldb.add_foreign(domaindn, "S-1-5-7", "Anonymous")
+    ldb.add_foreign(domaindn, "S-1-1-0", "World")
+    ldb.add_foreign(domaindn, "S-1-5-2", "Network")
+    ldb.add_foreign(domaindn, "S-1-5-18", "System")
+    ldb.add_foreign(domaindn, "S-1-5-11", "Authenticated Users")
 
     # some well known sids
-    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-7", subobj.nobody)
-    ldb.setup_name_mapping(subobj.domaindn, "S-1-1-0", subobj.nogroup)
-    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-2", subobj.nogroup)
-    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-18", subobj.root)
-    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-11", subobj.users)
-    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-32-544", subobj.wheel)
-    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-32-545", subobj.users)
-    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-32-546", subobj.nogroup)
-    ldb.setup_name_mapping(subobj.domaindn, "S-1-5-32-551", subobj.backup)
+    ldb.setup_name_mapping(domaindn, "S-1-5-7", nobody)
+    ldb.setup_name_mapping(domaindn, "S-1-1-0", nogroup)
+    ldb.setup_name_mapping(domaindn, "S-1-5-2", nogroup)
+    ldb.setup_name_mapping(domaindn, "S-1-5-18", root)
+    ldb.setup_name_mapping(domaindn, "S-1-5-11", users)
+    ldb.setup_name_mapping(domaindn, "S-1-5-32-544", wheel)
+    ldb.setup_name_mapping(domaindn, "S-1-5-32-545", users)
+    ldb.setup_name_mapping(domaindn, "S-1-5-32-546", nogroup)
+    ldb.setup_name_mapping(domaindn, "S-1-5-32-551", backup)
 
     # and some well known domain rids
-    ldb.setup_name_mapping(subobj.domaindn, sid + "-500", subobj.root)
-    ldb.setup_name_mapping(subobj.domaindn, sid + "-518", subobj.wheel)
-    ldb.setup_name_mapping(subobj.domaindn, sid + "-519", subobj.wheel)
-    ldb.setup_name_mapping(subobj.domaindn, sid + "-512", subobj.wheel)
-    ldb.setup_name_mapping(subobj.domaindn, sid + "-513", subobj.users)
-    ldb.setup_name_mapping(subobj.domaindn, sid + "-520", subobj.wheel)
+    ldb.setup_name_mapping(domaindn, sid + "-500", root)
+    ldb.setup_name_mapping(domaindn, sid + "-518", wheel)
+    ldb.setup_name_mapping(domaindn, sid + "-519", wheel)
+    ldb.setup_name_mapping(domaindn, sid + "-512", wheel)
+    ldb.setup_name_mapping(domaindn, sid + "-513", users)
+    ldb.setup_name_mapping(domaindn, sid + "-520", wheel)
 
 
-def provision_become_dc(setup_dir, subobj, message, paths, lp, session_info, 
+def provision_become_dc(setup_dir, message, paths, lp, session_info, 
                         credentials):
     assert session_info is not None
-    subobj.fix(paths)
 
     message("Setting up templates into %s" % paths.templates)
     setup_templatesdb(paths.templates, setup_dir, session_info, 
@@ -295,8 +236,8 @@ def provision_become_dc(setup_dir, subobj, message, paths, lp, session_info,
     samdb.erase()
 
     message("Setting up %s partitions" % paths.samdb)
-    setup_samdb_partitions(samdb, setup_dir, subobj.schemadn, 
-                           subobj.configdn, subobj.domaindn)
+    setup_samdb_partitions(samdb, setup_dir, schemadn, 
+                           configdn, domaindn)
 
     samdb = SamDB(paths.samdb, credentials=credentials, 
                   session_info=session_info, lp=lp)
@@ -307,10 +248,12 @@ def provision_become_dc(setup_dir, subobj, message, paths, lp, session_info,
         setup_add_ldif(samdb, setup_dir, "provision_init.ldif")
 
         message("Setting up %s rootDSE" % paths.samdb)
-        setup_samdb_rootdse(samdb, setup_dir, subobj)
+        setup_samdb_rootdse(samdb, setup_dir, schemadn, domaindn, 
+                            hostname, dnsdomain, realm, rootdn, configdn, 
+                            netbiosname)
 
         message("Erasing data from partitions")
-        ldb_erase_partitions(subobj.domaindn, message, samdb, None)
+        ldb_erase_partitions(domaindn, message, samdb, None)
 
         message("Setting up %s indexes" % paths.samdb)
         setup_add_ldif(samdb, setup_dir, "provision_index.ldif")
@@ -323,7 +266,7 @@ def provision_become_dc(setup_dir, subobj, message, paths, lp, session_info,
     message("Setting up %s" % paths.secrets)
     secrets_ldb = setup_secretsdb(paths.secrets, setup_dir, session_info, credentials, lp)
     setup_ldb(secrets_ldb, setup_dir, "secrets_dc.ldif", 
-              { "MACHINEPASS_B64": b64encode(self.machinepass) })
+              { "MACHINEPASS_B64": b64encode(machinepass) })
 
 
 def setup_secretsdb(path, setup_dir, session_info, credentials, lp):
@@ -351,17 +294,18 @@ def setup_registry(path, setup_dir, session_info, credentials, lp):
     reg.apply_patchfile(provision_reg)
 
 
-def setup_samdb_rootdse(samdb, setup_dir, subobj):
+def setup_samdb_rootdse(samdb, setup_dir, schemadn, domaindn, hostname, 
+                        dnsdomain, realm, rootdn, configdn, netbiosname):
     setup_add_ldif(samdb, setup_dir, "provision_rootdse_add.ldif", {
-        "SCHEMADN": subobj.schemadn, 
-        "NETBIOSNAME": subobj.netbiosname,
-        "DNSDOMAIN": subobj.dnsdomain,
-        "DEFAULTSITE": subobj.defaultsite,
-        "REALM": subobj.realm,
-        "DNSNAME": subobj.dnsname,
-        "DOMAINDN": subobj.domaindn,
-        "ROOTDN": subobj.rootdn,
-        "CONFIGDN": subobj.configdn,
+        "SCHEMADN": schemadn, 
+        "NETBIOSNAME": netbiosname,
+        "DNSDOMAIN": dnsdomain,
+        "DEFAULTSITE": DEFAULTSITE,
+        "REALM": realm,
+        "DNSNAME": "%s.%s" % (hostname, dnsdomain),
+        "DOMAINDN": domaindn,
+        "ROOTDN": rootdn,
+        "CONFIGDN": configdn,
         "VERSION": samba.version(),
         })
 
@@ -416,25 +360,103 @@ def setup_samdb_partitions(samdb, setup_dir, schemadn, configdn, domaindn):
 
 
 
-def provision(lp, setup_dir, subobj, message, blank, paths, session_info, 
-              credentials, ldapbackend):
+def provision(lp, setup_dir, message, blank, paths, session_info, 
+              credentials, ldapbackend, realm=None, domain=None, hostname=None, 
+              hostip=None, domainsid=None, hostguid=None, adminpass=None, 
+              krbtgtpass=None, domainguid=None, policyguid=None, 
+              invocationid=None, machinepass=None, dnspass=None, root=None,
+              nobody=None, nogroup=None, users=None, wheel=None, backup=None, 
+              aci=None, serverrole=None):
     """Provision samba4
     
     :note: caution, this wipes all existing data!
     """
-    subobj.fix(paths)
+
+    if domainsid is None:
+        domainsid = security.random_sid()
+    if policyguid is None:
+        policyguid = uuid.random()
+    if invocationid is None:
+        invocationid = uuid.random()
+    if adminpass is None:
+        adminpass = misc.random_password(12)
+    if krbtgtpass is None:
+        krbtgtpass = misc.random_password(12)
+    if machinepass is None:
+        machinepass  = misc.random_password(12)
+    if dnspass is None:
+        dnspass = misc.random_password(12)
+    if root is None:
+        root = findnss(pwd.getpwnam, "root")[4]
+    if nobody is None:
+        nobody = findnss(pwd.getpwnam, "nobody")[4]
+    if nogroup is None:
+        nogroup = findnss(grp.getgrnam, "nogroup", "nobody")[2]
+    if users is None:
+        users = findnss(grp.getgrnam, "users", "guest", "other", "unknown", "usr")[2]
+    if wheel is None:
+        wheel = findnss(grp.getgrnam, "wheel", "root", "staff", "adm")[2]
+    if backup is None:
+        backup = findnss(grp.getgrnam, "backup", "wheel", "root", "staff")[2]
+    if aci is None:
+        aci = "# no aci for local ldb"
+    if serverrole is None:
+        serverrole = lp.get("server role")
+
+    if realm is None:
+        realm = lp.get("realm")
+    else:
+        if lp.get("realm").upper() != realm.upper():
+            raise Error("realm '%s' in smb.conf must match chosen realm '%s'\n" %
+                (lp.get("realm"), realm))
+
+    assert realm is not None
+    realm = realm.upper()
+
+    if domain is None:
+        domain = lp.get("workgroup")
+    else:
+        if lp.get("workgroup").upper() != domain.upper():
+            raise Error("workgroup '%s' in smb.conf must match chosen domain '%s'\n",
+                lp.get("workgroup"), domain)
+
+    assert domain is not None
+    domain = domain.upper()
+    if not valid_netbios_name(domain):
+        raise InvalidNetbiosName(domain)
+
+    if hostname is None:
+        hostname = gethostname().split(".")[0].lower()
+
+    if hostip is None:
+        hostip = gethostbyname(hostname)
+
+    netbiosname = hostname.upper()
+    if not valid_netbios_name(netbiosname):
+        raise InvalidNetbiosName(netbiosname)
+
+    dnsdomain    = realm.lower()
+    domaindn     = "DC=" + dnsdomain.replace(".", ",DC=")
+    rootdn       = domaindn
+    configdn     = "CN=Configuration," + rootdn
+    schemadn     = "CN=Schema," + configdn
+
+    rdn_dc = domaindn.split(",")[0][len("DC="):]
+
+    message("Provisioning for %s in realm %s" % (domain, realm))
+    message("Using administrator password: %s" % adminpass)
 
     assert paths.smbconf is not None
 
     # only install a new smb.conf if there isn't one there already
     if not os.path.exists(paths.smbconf):
         message("Setting up smb.conf")
-        if lp.get("server role") == "domain controller":
+        if serverrole == "domain controller":
             smbconfsuffix = "dc"
-        elif lp.get("server role") == "member":
+        elif serverrole == "member":
             smbconfsuffix = "member"
         else:
-            assert "Invalid server role setting: %s" % lp.get("server role")
+            assert "Invalid server role setting: %s" % serverrole
         setup_file(setup_dir, "provision.smb.conf.%s" % smbconfsuffix, paths.smbconf)
         lp.reload()
 
@@ -463,8 +485,7 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     samdb.erase()
 
     message("Setting up sam.ldb partitions")
-    setup_samdb_partitions(samdb, setup_dir, subobj.schemadn,
-                           subobj.configdn, subobj.domaindn)
+    setup_samdb_partitions(samdb, setup_dir, schemadn, configdn, domaindn)
 
     samdb = SamDB(paths.samdb, session_info=session_info, 
                   credentials=credentials, lp=lp)
@@ -475,10 +496,12 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
         setup_add_ldif(samdb, setup_dir, "provision_init.ldif")
 
         message("Setting up sam.ldb rootDSE")
-        setup_samdb_rootdse(samdb, setup_dir, subobj)
+        setup_samdb_rootdse(samdb, setup_dir, schemadn, domaindn, 
+                            hostname, dnsdomain, realm, rootdn, configdn, 
+                            netbiosname)
 
         message("Erasing data from partitions")
-        ldb_erase_partitions(subobj.domaindn, message, samdb, ldapbackend)
+        ldb_erase_partitions(domaindn, message, samdb, ldapbackend)
     except:
         samdb.transaction_cancel()
         raise
@@ -488,106 +511,104 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     message("Pre-loading the Samba 4 and AD schema")
     samdb = SamDB(paths.samdb, session_info=session_info, 
                   credentials=credentials, lp=lp)
-    samdb.set_domain_sid(subobj.domainsid)
-    load_schema(setup_dir, samdb, subobj)
+    samdb.set_domain_sid(domainsid)
+    load_schema(setup_dir, samdb, schemadn, netbiosname, configdn)
 
     samdb.transaction_start()
         
     try:
-        message("Adding DomainDN: %s (permitted to fail)" % subobj.domaindn)
+        message("Adding DomainDN: %s (permitted to fail)" % domaindn)
         setup_add_ldif(samdb, setup_dir, "provision_basedn.ldif", {
-            "DOMAINDN": subobj.domaindn,
-            "ACI": "# no aci for local ldb",
+            "DOMAINDN": domaindn,
+            "ACI": aci,
             "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
-            "RDN_DC": subobj.rdn_dc,
+            "RDN_DC": rdn_dc,
             })
 
-        message("Modifying DomainDN: " + subobj.domaindn + "")
-        if subobj.domain_guid is not None:
-            domainguid_mod = "replace: objectGUID\nobjectGUID: %s\n-" % subobj.domain_guid
+        message("Modifying DomainDN: " + domaindn + "")
+        if domainguid is not None:
+            domainguid_mod = "replace: objectGUID\nobjectGUID: %s\n-" % domainguid
         else:
             domainguid_mod = ""
 
         setup_modify_ldif(samdb, setup_dir, "provision_basedn_modify.ldif", {
-            "RDN_DC": subobj.rdn_dc,
+            "RDN_DC": rdn_dc,
             "LDAPTIME": timestring(int(time.time())),
-            "DOMAINSID": str(subobj.domainsid),
-            "SCHEMADN": subobj.schemadn, 
-            "NETBIOSNAME": subobj.netbiosname,
-            "DEFAULTSITE": subobj.defaultsite,
-            "CONFIGDN": subobj.configdn,
-            "POLICYGUID": subobj.policyguid,
-            "DOMAINDN": subobj.domaindn,
+            "DOMAINSID": str(domainsid),
+            "SCHEMADN": schemadn, 
+            "NETBIOSNAME": netbiosname,
+            "DEFAULTSITE": DEFAULTSITE,
+            "CONFIGDN": configdn,
+            "POLICYGUID": policyguid,
+            "DOMAINDN": domaindn,
             "DOMAINGUID_MOD": domainguid_mod,
             })
 
         message("Adding configuration container (permitted to fail)")
         setup_add_ldif(samdb, setup_dir, "provision_configuration_basedn.ldif", {
-            "CONFIGDN": subobj.configdn, 
-            "ACI": "# no aci for local ldb",
+            "CONFIGDN": configdn, 
+            "ACI": aci,
             "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
             })
         message("Modifying configuration container")
         setup_modify_ldif(samdb, setup_dir, "provision_configuration_basedn_modify.ldif", {
-            "CONFIGDN": subobj.configdn, 
-            "SCHEMADN": subobj.schemadn,
+            "CONFIGDN": configdn, 
+            "SCHEMADN": schemadn,
             })
 
         message("Adding schema container (permitted to fail)")
         setup_add_ldif(samdb, setup_dir, "provision_schema_basedn.ldif", {
-            "SCHEMADN": subobj.schemadn,
-            "ACI": "# no aci for local ldb",
+            "SCHEMADN": schemadn,
+            "ACI": aci,
             "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb"
             })
         message("Modifying schema container")
         setup_modify_ldif(samdb, setup_dir, "provision_schema_basedn_modify.ldif", {
-            "SCHEMADN": subobj.schemadn,
-            "NETBIOSNAME": subobj.netbiosname,
-            "DEFAULTSITE": subobj.defaultsite,
-            "CONFIGDN": subobj.configdn,
+            "SCHEMADN": schemadn,
+            "NETBIOSNAME": netbiosname,
+            "DEFAULTSITE": DEFAULTSITE,
+            "CONFIGDN": configdn,
             })
 
         message("Setting up sam.ldb Samba4 schema")
-        setup_add_ldif(samdb, setup_dir, "schema_samba4.ldif", {
-            "SCHEMADN": subobj.schemadn,
-            })
+        setup_add_ldif(samdb, setup_dir, "schema_samba4.ldif", 
+                       {"SCHEMADN": schemadn })
         message("Setting up sam.ldb AD schema")
-        setup_add_ldif(samdb, setup_dir, "schema.ldif", {
-            "SCHEMADN": subobj.schemadn,
-            })
+        setup_add_ldif(samdb, setup_dir, "schema.ldif", 
+                       {"SCHEMADN": schemadn})
 
         message("Setting up sam.ldb configuration data")
         setup_add_ldif(samdb, setup_dir, "provision_configuration.ldif", {
-            "CONFIGDN": subobj.configdn,
-            "NETBIOSNAME": subobj.netbiosname,
-            "DEFAULTSITE": subobj.defaultsite,
-            "DNSDOMAIN": subobj.dnsdomain,
-            "DOMAIN": subobj.domain,
-            "SCHEMADN": subobj.schemadn,
-            "DOMAINDN": subobj.domaindn,
+            "CONFIGDN": configdn,
+            "NETBIOSNAME": netbiosname,
+            "DEFAULTSITE": DEFAULTSITE,
+            "DNSDOMAIN": dnsdomain,
+            "DOMAIN": domain,
+            "SCHEMADN": schemadn,
+            "DOMAINDN": domaindn,
             })
 
         message("Setting up display specifiers")
-        setup_add_ldif(samdb, setup_dir, "display_specifiers.ldif", {"CONFIGDN": subobj.configdn})
+        setup_add_ldif(samdb, setup_dir, "display_specifiers.ldif", {"CONFIGDN": configdn})
 
         message("Adding users container (permitted to fail)")
         setup_add_ldif(samdb, setup_dir, "provision_users_add.ldif", {
-            "DOMAINDN": subobj.domaindn})
+            "DOMAINDN": domaindn})
         message("Modifying users container")
         setup_modify_ldif(samdb, setup_dir, "provision_users_modify.ldif", {
-            "DOMAINDN": subobj.domaindn})
+            "DOMAINDN": domaindn})
         message("Adding computers container (permitted to fail)")
         setup_add_ldif(samdb, setup_dir, "provision_computers_add.ldif", {
-            "DOMAINDN": subobj.domaindn})
+            "DOMAINDN": domaindn})
         message("Modifying computers container")
         setup_modify_ldif(samdb, setup_dir, "provision_computers_modify.ldif", {
-            "DOMAINDN": subobj.domaindn})
+            "DOMAINDN": domaindn})
         message("Setting up sam.ldb data")
         setup_add_ldif(samdb, setup_dir, "provision.ldif", {
-            "DOMAINDN": subobj.domaindn,
-            "NETBIOSNAME": subobj.netbiosname,
-            "DEFAULTSITE": subobj.defaultsite,
-            "CONFIGDN": subobj.configdn,
+            "DOMAINDN": domaindn,
+            "NETBIOSNAME": netbiosname,
+            "DEFAULTSITE": DEFAULTSITE,
+            "CONFIGDN": configdn,
             })
 
         if not blank:
@@ -607,60 +628,63 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
     #
             message("Setting up sam.ldb users and groups")
             setup_add_ldif(samdb, setup_dir, "provision_users.ldif", {
-                "DOMAINDN": subobj.domaindn,
-                "DOMAINSID": str(subobj.domainsid),
-                "CONFIGDN": subobj.configdn,
-                "ADMINPASS_B64": b64encode(subobj.adminpass),
-                "KRBTGTPASS_B64": b64encode(subobj.krbtgtpass),
+                "DOMAINDN": domaindn,
+                "DOMAINSID": str(domainsid),
+                "CONFIGDN": configdn,
+                "ADMINPASS_B64": b64encode(adminpass),
+                "KRBTGTPASS_B64": b64encode(krbtgtpass),
                 })
 
             if lp.get("server role") == "domain controller":
                 message("Setting up self join")
-                if subobj.host_guid is not None:
-                    hostguid_add = "objectGUID: %s" % subobj.host_guid
+                if hostguid is not None:
+                    hostguid_add = "objectGUID: %s" % hostguid
                 else:
                     hostguid_add = ""
 
                 setup_add_ldif(samdb, setup_dir, "provision_self_join.ldif", { 
-                          "CONFIGDN": subobj.configdn, 
-                          "SCHEMADN": subobj.schemadn,
-                          "DOMAINDN": subobj.domaindn,
-                          "INVOCATIONID": subobj.invocationid,
-                          "NETBIOSNAME": subobj.netbiosname,
-                          "DEFAULTSITE": subobj.defaultsite,
-                          "DNSNAME": subobj.dnsname,
-                          "MACHINEPASS_B64": b64encode(subobj.machinepass),
-                          "DNSPASS_B64": b64encode(subobj.dnspass),
-                          "REALM": subobj.realm,
-                          "DOMAIN": subobj.domain,
+                          "CONFIGDN": configdn, 
+                          "SCHEMADN": schemadn,
+                          "DOMAINDN": domaindn,
+                          "INVOCATIONID": invocationid,
+                          "NETBIOSNAME": netbiosname,
+                          "DEFAULTSITE": DEFAULTSITE,
+                          "DNSNAME": "%s.%s" % (hostname, dnsdomain),
+                          "MACHINEPASS_B64": b64encode(machinepass),
+                          "DNSPASS_B64": b64encode(dnspass),
+                          "REALM": realm,
+                          "DOMAIN": domain,
                           "HOSTGUID_ADD": hostguid_add,
-                          "DNSDOMAIN": subobj.dnsdomain})
+                          "DNSDOMAIN": dnsdomain})
                 setup_add_ldif(samdb, setup_dir, "provision_group_policy.ldif", { 
-                          "POLICYGUID": subobj.policyguid,
-                          "DNSDOMAIN": subobj.dnsdomain,
-                          "DOMAINSID": str(subobj.domainsid),
-                          "DOMAINDN": subobj.domaindn})
+                          "POLICYGUID": policyguid,
+                          "DNSDOMAIN": dnsdomain,
+                          "DOMAINSID": str(domainsid),
+                          "DOMAINDN": domaindn})
 
-                os.makedirs(os.path.join(paths.sysvol, subobj.dnsdomain, "Policies", "{" + subobj.policyguid + "}"), 0755)
-                os.makedirs(os.path.join(paths.sysvol, subobj.dnsdomain, "Policies", "{" + subobj.policyguid + "}", "Machine"), 0755)
-                os.makedirs(os.path.join(paths.sysvol, subobj.dnsdomain, "Policies", "{" + subobj.policyguid + "}", "User"), 0755)
+                os.makedirs(os.path.join(paths.sysvol, dnsdomain, "Policies", "{" + policyguid + "}"), 0755)
+                os.makedirs(os.path.join(paths.sysvol, dnsdomain, "Policies", "{" + policyguid + "}", "Machine"), 0755)
+                os.makedirs(os.path.join(paths.sysvol, dnsdomain, "Policies", "{" + policyguid + "}", "User"), 0755)
                 if not os.path.isdir(paths.netlogon):
                     os.makedirs(paths.netlogon, 0755)
                 setup_ldb(secrets_ldb, setup_dir, "secrets_dc.ldif", { 
-                    "MACHINEPASS_B64": b64encode(subobj.machinepass),
-                    "DOMAIN": subobj.domain,
-                    "REALM": subobj.realm,
+                    "MACHINEPASS_B64": b64encode(machinepass),
+                    "DOMAIN": domain,
+                    "REALM": realm,
                     "LDAPTIME": timestring(int(time.time())),
-                    "DNSDOMAIN": subobj.dnsdomain,
-                    "DOMAINSID": str(subobj.domainsid),
+                    "DNSDOMAIN": dnsdomain,
+                    "DOMAINSID": str(domainsid),
                     "SECRETS_KEYTAB": paths.keytab,
-                    "NETBIOSNAME": subobj.netbiosname,
+                    "NETBIOSNAME": netbiosname,
                     "SAM_LDB": paths.samdb,
                     "DNS_KEYTAB": paths.dns_keytab,
-                    "DNSPASS_B64": b64encode(subobj.dnspass),
+                    "DNSPASS_B64": b64encode(dnspass),
                     })
 
-            setup_name_mappings(subobj, samdb)
+            setup_name_mappings(samdb, str(domainsid), 
+                                domaindn, root=root, nobody=nobody, 
+                                nogroup=nogroup, wheel=wheel, users=users,
+                                backup=backup)
 
         message("Setting up sam.ldb index")
         setup_add_ldif(samdb, setup_dir, "provision_index.ldif")
@@ -678,113 +702,83 @@ def provision(lp, setup_dir, subobj, message, blank, paths, session_info,
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
 
+    message("Setting up DNS zone: %s" % dnsdomain)
+    provision_dns(setup_dir, paths, session_info, credentials, lp,
+                  hostname=hostname, hostip=hostip, dnsdomain=dnsdomain,
+                  domaindn=domaindn, dnspass=dnspass, realm=realm)
+    message("Please install the zone located in %s into your DNS server" % paths.dns)
 
 def create_phplpapdadmin_config(path, setup_dir, s4_ldapi_path):
     setup_file(setup_dir, "phpldapadmin-config.php", 
                path, {"S4_LDAPI_URI": "ldapi://%s" % s4_ldapi_path.replace("/", "%2F")})
 
 
-def provision_dns(setup_dir, subobj, message, paths, session_info, credentials, lp):
+def provision_dns(setup_dir, paths, session_info, 
+                  credentials, lp, dnsdomain, domaindn, 
+                  hostip, hostname, dnspass, realm):
     """Write out a DNS zone file, from the info in the current database."""
-    message("Setting up DNS zone: %s" % subobj.dnsdomain)
+
     # connect to the sam
     ldb = SamDB(paths.samdb, session_info=session_info, credentials=credentials,
                 lp=lp)
 
     # These values may have changed, due to an incoming SamSync,
     # or may not have been specified, so fetch them from the database
-    domainguid = str(ldb.searchone(Dn(ldb, subobj.domaindn), "objectGUID"))
+    domainguid = str(ldb.searchone(Dn(ldb, domaindn), "objectGUID"))
 
-    hostguid = str(ldb.searchone(Dn(ldb, subobj.domaindn), "objectGUID" ,
-                                 expression="(&(objectClass=computer)(cn=%s))" % subobj.netbiosname))
+    hostguid = str(ldb.searchone(Dn(ldb, domaindn), "objectGUID" ,
+                                 expression="(&(objectClass=computer)(cn=%s))" % hostname))
 
     setup_file(setup_dir, "provision.zone", paths.dns, {
-            "DNSPASS_B64": b64encode(subobj.dnspass),
-            "HOSTNAME": hostname(),
-            "DNSDOMAIN": subobj.dnsdomain,
-            "REALM": subobj.realm,
-            "HOSTIP": hostip(),
+            "DNSPASS_B64": b64encode(dnspass),
+            "HOSTNAME": hostname,
+            "DNSDOMAIN": dnsdomain,
+            "REALM": realm,
+            "HOSTIP": hostip,
             "DOMAINGUID": domainguid,
             "DATESTRING": time.strftime("%Y%m%d%H"),
-            "DEFAULTSITE": subobj.defaultsite,
+            "DEFAULTSITE": DEFAULTSITE,
             "HOSTGUID": hostguid,
         })
 
-    message("Please install the zone located in %s into your DNS server" % paths.dns)
 
 
-def provision_ldapbase(setup_dir, subobj, message, paths):
+def provision_ldapbase(setup_dir, message, paths):
     """Write out a DNS zone file, from the info in the current database."""
-    message("Setting up LDAP base entry: %s" % subobj.domaindn)
-    rdns = subobj.domaindn.split(",")
+    message("Setting up LDAP base entry: %s" % domaindn)
+    rdns = domaindn.split(",")
 
-    subobj.rdn_dc = rdns[0][len("DC="):]
+    rdn_dc = rdns[0][len("DC="):]
 
     setup_file(setup_dir, "provision_basedn.ldif", 
-           paths.ldap_basedn_ldif, 
-           None)
+           paths.ldap_basedn_ldif)
 
     setup_file(setup_dir, "provision_configuration_basedn.ldif", 
-           paths.ldap_config_basedn_ldif, None)
+           paths.ldap_config_basedn_ldif)
 
     setup_file(setup_dir, "provision_schema_basedn.ldif", 
            paths.ldap_schema_basedn_ldif, {
-            "SCHEMADN": subobj.schemadn,
+            "SCHEMADN": schemadn,
             "ACI": "# no aci for local ldb",
             "EXTENSIBLEOBJECT": "objectClass: extensibleObject"})
 
     message("Please install the LDIF located in " + paths.ldap_basedn_ldif + ", " + paths.ldap_config_basedn_ldif + " and " + paths.ldap_schema_basedn_ldif + " into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server")
 
 
-def provision_guess(lp):
-    """guess reasonably default options for provisioning."""
-    subobj = ProvisionSettings(realm=lp.get("realm").upper(),
-                               domain=lp.get("workgroup"),
-                               hostname=hostname(), 
-                               hostip=hostip())
-
-    assert subobj.realm is not None
-    assert subobj.domain is not None
-    assert subobj.hostname is not None
-    
-    subobj.domainsid    = security.random_sid()
-    subobj.invocationid = uuid.random()
-    subobj.policyguid   = uuid.random()
-    subobj.krbtgtpass   = misc.random_password(12)
-    subobj.machinepass  = misc.random_password(12)
-    subobj.adminpass    = misc.random_password(12)
-    subobj.dnspass      = misc.random_password(12)
-    subobj.root         = findnss(pwd.getpwnam, "root")[4]
-    subobj.nobody       = findnss(pwd.getpwnam, "nobody")[4]
-    subobj.nogroup      = findnss(grp.getgrnam, "nogroup", "nobody")[2]
-    subobj.wheel        = findnss(grp.getgrnam, "wheel", "root", "staff", "adm")[2]
-    subobj.backup       = findnss(grp.getgrnam, "backup", "wheel", "root", "staff")[2]
-    subobj.users        = findnss(grp.getgrnam, "users", "guest", "other", "unknown", "usr")[2]
-
-    subobj.dnsdomain    = subobj.realm.lower()
-    subobj.dnsname      = "%s.%s" % (subobj.hostname.lower(), subobj.dnsdomain)
-    subobj.domaindn     = "DC=" + subobj.dnsdomain.replace(".", ",DC=")
-    subobj.rootdn       = subobj.domaindn
-    subobj.configdn     = "CN=Configuration," + subobj.rootdn
-    subobj.schemadn     = "CN=Schema," + subobj.configdn
-
-    return subobj
-
-
-def load_schema(setup_dir, samdb, subobj):
+def load_schema(setup_dir, samdb, schemadn, netbiosname, configdn):
     """Load schema."""
     src = os.path.join(setup_dir, "schema.ldif")
     schema_data = open(src, 'r').read()
     src = os.path.join(setup_dir, "schema_samba4.ldif")
     schema_data += open(src, 'r').read()
-    schema_data = substitute_var(schema_data, {"SCHEMADN": subobj.schemadn})
+    schema_data = substitute_var(schema_data, {"SCHEMADN": schemadn})
     src = os.path.join(setup_dir, "provision_schema_basedn_modify.ldif")
     head_data = open(src, 'r').read()
     head_data = substitute_var(head_data, {
-                    "SCHEMADN": subobj.schemadn,
-                    "NETBIOSNAME": subobj.netbiosname,
-                    "CONFIGDN": subobj.configdn,
-                    "DEFAULTSITE": subobj.defaultsite})
+                    "SCHEMADN": schemadn,
+                    "NETBIOSNAME": netbiosname,
+                    "CONFIGDN": configdn,
+                    "DEFAULTSITE": DEFAULTSITE})
     samdb.attach_schema_from_ldif(head_data, schema_data)
 
 

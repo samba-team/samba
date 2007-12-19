@@ -31,9 +31,8 @@ import samba
 from auth import system_session
 import samba.getopt as options
 import param
-from samba.provision import (provision, provision_guess, 
-                             provision_default_paths, provision_ldapbase, 
-                             provision_dns)
+from samba.provision import (provision,  
+                             provision_default_paths, provision_ldapbase)
 
 parser = optparse.OptionParser("provision [options]")
 parser.add_option_group(options.SambaOptions(parser))
@@ -121,17 +120,11 @@ lp.set("realm", opts.realm)
 lp.set("workgroup", opts.domain)
 lp.set("server role", opts.server_role)
 
-subobj = provision_guess(lp)
-subobj.domain_guid = opts.domain_guid
-subobj.host_guid = opts.host_guid
-
 if opts.aci is not None:
-	print "set ACI: %s" % subobj.aci
+	print "set ACI: %s" % opts.aci
 
-print "set domain sid: %s" % subobj.domainsid
-paths = provision_default_paths(lp, subobj)
+paths = provision_default_paths(lp, opts.realm.lower())
 paths.smbconf = opts.configfile
-subobj.fix(paths);
 
 if opts.ldap_backend:
 	if opts.ldap_backend == "ldapi":
@@ -148,25 +141,28 @@ if opts.ldap_backend:
 	subobj.schemadn_mod2 = ",%s,paged_searches" % subobj.ldapmodule
 	message("LDAP module: %s on backend: %s" % (subobj.ldapmodule, subobj.ldap_backend))
 
-subobj.validate(lp)
-
 creds = credopts.get_credentials()
-message("Provisioning for %s in realm %s" % (subobj.domain, subobj.realm))
-message("Using administrator password: %s" % subobj.adminpass)
 
 setup_dir = opts.setupdir
 if setup_dir is None:
 	setup_dir = "setup"
 if opts.ldap_base:
-	provision_ldapbase(setup_dir, subobj, message, paths)
+	provision_ldapbase(setup_dir, message, paths)
 	message("Please install the LDIF located in %s, %s and  into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server" % (paths.ldap_basedn_ldif, paths.ldap_config_basedn_ldif, paths.ldap_schema_basedn_ldif))
 elif opts.partitions_only:
-    provision_become_dc(setup_dir, subobj, message, False, 
+    provision_become_dc(setup_dir, message, False, 
                         paths, lp, system_session(), creds)
 else:
-    provision(lp, setup_dir, subobj, message, opts.blank, paths, 
-              system_session(), creds, opts.ldap_backend)
-    provision_dns(setup_dir, subobj, message, paths, system_session(), creds, lp)
+    provision(lp, setup_dir, message, opts.blank, paths, 
+              system_session(), creds, opts.ldap_backend, realm=opts.realm,
+              domainguid=opts.domain_guid, domainsid=opts.domain_sid,
+              policyguid=opts.policy_guid, hostname=opts.host_name,
+              hostip=opts.host_ip, hostguid=opts.host_guid, 
+              invocationid=opts.invocationid, adminpass=opts.adminpass,
+              krbtgtpass=opts.krbtgtpass, machinepass=opts.machinepass,
+              dnspass=opts.dnspass, root=opts.root, nobody=opts.nobody,
+              nogroup=opts.nogroup, wheel=opts.wheel, users=opts.users,
+              aci=opts.aci, serverrole=opts.server_role)
     message("To reproduce this provision, run with:")
     def shell_escape(arg):
         if " " in arg:
