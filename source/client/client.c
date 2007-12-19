@@ -41,6 +41,7 @@ static char *desthost;
 static char *calling_name;
 static bool grepable = false;
 static char *cmdstr = NULL;
+static const char *cmd_ptr = NULL;
 
 static int io_bufsize = 64512;
 
@@ -425,7 +426,7 @@ static int cmd_cd(void)
 	char *buf = NULL;
 	int rc = 0;
 
-	if (next_token_nr_talloc(talloc_tos(), NULL, &buf,NULL)) {
+	if (next_token_talloc(talloc_tos(), &cmd_ptr, &buf,NULL)) {
 		rc = do_cd(buf);
 	} else {
 		d_printf("Current directory is %s\n",client_get_cur_dir());
@@ -863,7 +864,7 @@ static int cmd_dir(void)
 		return 1;
 	}
 
-	if (next_token_nr_talloc(ctx, NULL,&buf,NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		string_replace(buf,'/','\\');
 		if (*buf == CLI_DIRSEP_CHAR) {
 			mask = talloc_strdup(ctx, buf + 1);
@@ -915,7 +916,7 @@ static int cmd_du(void)
 		}
 	}
 
-	if (next_token_nr_talloc(ctx, NULL,&buf,NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		string_replace(buf,'/','\\');
 		if (*buf == CLI_DIRSEP_CHAR) {
 			mask = talloc_strdup(ctx, buf);
@@ -941,8 +942,8 @@ static int cmd_echo(void)
 	char *num;
 	char *data;
 
-	if (!next_token_nr_talloc(ctx, NULL, &num, NULL)
-	    || !next_token_nr_talloc(ctx, NULL, &data, NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr, &num, NULL)
+	    || !next_token_talloc(ctx, &cmd_ptr, &data, NULL)) {
 		d_printf("echo <num> <data>\n");
 		return 1;
 	}
@@ -1116,7 +1117,7 @@ static int cmd_get(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx, NULL,&fname,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&fname,NULL)) {
 		d_printf("get <filename> [localname]\n");
 		return 1;
 	}
@@ -1129,7 +1130,7 @@ static int cmd_get(void)
 		return 1;
 	}
 
-	next_token_nr_talloc(ctx, NULL,&lname,NULL);
+	next_token_talloc(ctx, &cmd_ptr,&lname,NULL);
 	if (!lname) {
 		lname = fname;
 	}
@@ -1277,7 +1278,7 @@ static int cmd_more(void)
 	}
 	close(fd);
 
-	if (!next_token_nr_talloc(ctx,NULL,&fname,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&fname,NULL)) {
 		d_printf("more <filename>\n");
 		unlink(lname);
 		return 1;
@@ -1325,7 +1326,7 @@ static int cmd_mget(void)
 
 	abort_mget = false;
 
-	while (next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	while (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		mget_mask = talloc_strdup(ctx, client_get_cur_dir());
 		if (!mget_mask) {
 			return 1;
@@ -1442,7 +1443,7 @@ static int cmd_mkdir(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx, NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		if (!recurse) {
 			d_printf("mkdir <dirname>\n");
 		}
@@ -1511,7 +1512,7 @@ static int cmd_altname(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx, NULL, &buf, NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
 		d_printf("altname <file>\n");
 		return 1;
 	}
@@ -1677,12 +1678,12 @@ static int cmd_put(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx,NULL,&lname,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&lname,NULL)) {
 		d_printf("put <filename>\n");
 		return 1;
 	}
 
-	if (next_token_nr_talloc(ctx, NULL,&buf,NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		rname = talloc_asprintf_append(rname, buf);
 	} else {
 		rname = talloc_asprintf_append(rname, lname);
@@ -1762,7 +1763,7 @@ static int cmd_select(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *new_fs = NULL;
-	next_token_nr_talloc(ctx, NULL,&new_fs,NULL)
+	next_token_talloc(ctx, &cmd_ptr,&new_fs,NULL)
 		;
 	if (new_fs) {
 		client_set_fileselection(new_fs);
@@ -1848,7 +1849,7 @@ static int cmd_mput(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *p = NULL;
 
-	while (next_token_nr_talloc(ctx, NULL,&p,NULL)) {
+	while (next_token_talloc(ctx, &cmd_ptr,&p,NULL)) {
 		int ret;
 		struct file_list *temp_list;
 		char *quest, *lname, *rname;
@@ -1959,14 +1960,14 @@ static int cmd_cancel(void)
 	char *buf = NULL;
 	int job;
 
-	if (!next_token_nr_talloc(ctx, NULL, &buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr, &buf,NULL)) {
 		d_printf("cancel <jobid> ...\n");
 		return 1;
 	}
 	do {
 		job = atoi(buf);
 		do_cancel(job);
-	} while (next_token_nr_talloc(ctx,NULL,&buf,NULL));
+	} while (next_token_talloc(ctx, &cmd_ptr,&buf,NULL));
 
 	return 0;
 }
@@ -1982,7 +1983,7 @@ static int cmd_print(void)
 	char *rname = NULL;
 	char *p = NULL;
 
-	if (!next_token_nr_talloc(ctx, NULL, &lname,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr, &lname,NULL)) {
 		d_printf("print <filename>\n");
 		return 1;
 	}
@@ -2078,7 +2079,7 @@ static int cmd_del(void)
 	if (!mask) {
 		return 1;
 	}
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("del <filename>\n");
 		return 1;
 	}
@@ -2104,14 +2105,14 @@ static int cmd_wdel(void)
 	struct cli_state *targetcli;
 	char *targetname = NULL;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("wdel 0x<attrib> <wcard>\n");
 		return 1;
 	}
 
 	attribute = (uint16)strtol(buf, (char **)NULL, 16);
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("wdel 0x<attrib> <wcard>\n");
 		return 1;
 	}
@@ -2146,7 +2147,7 @@ static int cmd_open(void)
 	struct cli_state *targetcli;
 	int fnum;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("open <filename>\n");
 		return 1;
 	}
@@ -2190,7 +2191,7 @@ static int cmd_posix_open(void)
 	mode_t mode;
 	int fnum;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_open <filename> 0<mode>\n");
 		return 1;
 	}
@@ -2202,7 +2203,7 @@ static int cmd_posix_open(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_open <filename> 0<mode>\n");
 		return 1;
 	}
@@ -2238,7 +2239,7 @@ static int cmd_posix_mkdir(void)
 	mode_t mode;
 	int fnum;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_mkdir <filename> 0<mode>\n");
 		return 1;
 	}
@@ -2250,7 +2251,7 @@ static int cmd_posix_mkdir(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_mkdir <filename> 0<mode>\n");
 		return 1;
 	}
@@ -2278,7 +2279,7 @@ static int cmd_posix_unlink(void)
 	char *targetname = NULL;
 	struct cli_state *targetcli;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_unlink <filename>\n");
 		return 1;
 	}
@@ -2312,7 +2313,7 @@ static int cmd_posix_rmdir(void)
 	char *targetname = NULL;
 	struct cli_state *targetcli;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_rmdir <filename>\n");
 		return 1;
 	}
@@ -2344,7 +2345,7 @@ static int cmd_close(void)
 	char *buf = NULL;
 	int fnum;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("close <fnum>\n");
 		return 1;
 	}
@@ -2451,13 +2452,13 @@ static int cmd_lock(void)
 	enum brl_type lock_type;
 	int fnum;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
 		return 1;
 	}
 	fnum = atoi(buf);
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
 		return 1;
 	}
@@ -2471,14 +2472,14 @@ static int cmd_lock(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
 		return 1;
 	}
 
 	start = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
 		return 1;
 	}
@@ -2499,20 +2500,20 @@ static int cmd_unlock(void)
 	SMB_BIG_UINT start, len;
 	int fnum;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
 		return 1;
 	}
 	fnum = atoi(buf);
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
 		return 1;
 	}
 
 	start = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
 		return 1;
 	}
@@ -2539,7 +2540,7 @@ static int cmd_rmdir(void)
 	char *targetname = NULL;
 	struct cli_state *targetcli;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("rmdir <dirname>\n");
 		return 1;
 	}
@@ -2578,8 +2579,8 @@ static int cmd_link(void)
 	char *targetname = NULL;
 	struct cli_state *targetcli;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf2,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
 		d_printf("link <oldname> <newname>\n");
 		return 1;
 	}
@@ -2629,8 +2630,8 @@ static int cmd_symlink(void)
 	char *targetname = NULL;
 	struct cli_state *targetcli;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf2,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
 		d_printf("symlink <oldname> <newname>\n");
 		return 1;
 	}
@@ -2682,8 +2683,8 @@ static int cmd_chmod(void)
 	struct cli_state *targetcli;
 	mode_t mode;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf2,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
 		d_printf("chmod mode file\n");
 		return 1;
 	}
@@ -2838,7 +2839,7 @@ static int cmd_getfacl(void)
 	uint16 num_dir_acls = 0;
 	uint16 i;
 
-	if (!next_token_nr_talloc(ctx,NULL,&name,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&name,NULL)) {
 		d_printf("getfacl filename\n");
 		return 1;
 	}
@@ -3004,7 +3005,7 @@ static int cmd_stat(void)
 	SMB_STRUCT_STAT sbuf;
 	struct tm *lt;
 
-	if (!next_token_nr_talloc(ctx,NULL,&name,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&name,NULL)) {
 		d_printf("stat file\n");
 		return 1;
 	}
@@ -3100,9 +3101,9 @@ static int cmd_chown(void)
 	struct cli_state *targetcli;
 	char *targetname = NULL;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf2,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf3,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf3,NULL)) {
 		d_printf("chown uid gid file\n");
 		return 1;
 	}
@@ -3149,8 +3150,8 @@ static int cmd_rename(void)
 	char *targetsrc;
 	char *targetdest;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf2,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
 		d_printf("rename <src> <dest>\n");
 		return 1;
 	}
@@ -3224,8 +3225,8 @@ static int cmd_hardlink(void)
 	struct cli_state *targetcli;
 	char *targetname;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf2,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
 		d_printf("hardlink <src> <dest>\n");
 		return 1;
 	}
@@ -3281,7 +3282,7 @@ static int cmd_newer(void)
 	bool ok;
 	SMB_STRUCT_STAT sbuf;
 
-	ok = next_token_nr_talloc(ctx,NULL,&buf,NULL);
+	ok = next_token_talloc(ctx, &cmd_ptr,&buf,NULL);
 	if (ok && (sys_stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
@@ -3307,7 +3308,7 @@ static int cmd_archive(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf;
 
-	if (next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		archive_level = atoi(buf);
 	} else {
 		d_printf("Archive level is %d\n",archive_level);
@@ -3386,7 +3387,7 @@ static int cmd_lcd(void)
 	char *buf;
 	char *d;
 
-	if (next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		chdir(buf);
 	}
 	d = TALLOC_ARRAY(ctx, char, PATH_MAX+1);
@@ -3417,7 +3418,7 @@ static int cmd_reget(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx, NULL, &fname, NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr, &fname, NULL)) {
 		d_printf("reget <filename>\n");
 		return 1;
 	}
@@ -3431,7 +3432,7 @@ static int cmd_reget(void)
 	}
 
 	local_name = fname;
-	next_token_nr_talloc(ctx, NULL, &p, NULL);
+	next_token_talloc(ctx, &cmd_ptr, &p, NULL);
 	if (p) {
 		local_name = p;
 	}
@@ -3459,7 +3460,7 @@ static int cmd_reput(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx, NULL, &local_name, NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr, &local_name, NULL)) {
 		d_printf("reput <filename>\n");
 		return 1;
 	}
@@ -3469,7 +3470,7 @@ static int cmd_reput(void)
 		return 1;
 	}
 
-	if (next_token_nr_talloc(ctx, NULL, &buf, NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
 		remote_name = talloc_asprintf_append(remote_name,
 						buf);
 	} else {
@@ -3643,7 +3644,7 @@ static int cmd_vuid(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("Current VUID is %d\n", cli->vuid);
 		return 0;
 	}
@@ -3661,12 +3662,12 @@ static int cmd_logon(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *l_username, *l_password;
 
-	if (!next_token_nr_talloc(ctx,NULL,&l_username,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&l_username,NULL)) {
 		d_printf("logon <username> [<password>]\n");
 		return 0;
 	}
 
-	if (!next_token_nr_talloc(ctx,NULL,&l_password,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&l_password,NULL)) {
 		char *pass = getpass("Password: ");
 		if (pass) {
 			l_password = talloc_strdup(ctx,pass);
@@ -3729,7 +3730,7 @@ int cmd_iosize(void)
 	char *buf;
 	int iosize;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("iosize <n> or iosize 0x<n>. "
 			"Minimum is 16384 (0x4000), "
 			"max is 16776960 (0xFFFF00)\n");
@@ -3882,7 +3883,7 @@ static int cmd_help(void)
 	int i=0,j;
 	char *buf;
 
-	if (next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		if ((i = process_tok(buf)) >= 0)
 			d_printf("HELP %s:\n\t%s\n\n",
 				commands[i].name,commands[i].description);
@@ -3922,7 +3923,6 @@ static int process_command_string(const char *cmd_in)
 
 	while (cmd[0] != '\0')    {
 		char *line;
-		const char *ptr;
 		char *p;
 		char *tok;
 		int i;
@@ -3937,8 +3937,8 @@ static int process_command_string(const char *cmd_in)
 		}
 
 		/* and get the first part of the command */
-		ptr = line;
-		if (!next_token_nr_talloc(ctx,&ptr,&tok,NULL)) {
+		cmd_ptr = line;
+		if (!next_token_talloc(ctx, &cmd_ptr,&tok,NULL)) {
 			continue;
 		}
 
@@ -4282,7 +4282,6 @@ static void readline_callback(void)
 
 static int process_stdin(void)
 {
-	const char *ptr;
 	int rc = 0;
 
 	while (1) {
@@ -4313,8 +4312,8 @@ static int process_stdin(void)
 		}
 
 		/* and get the first part of the command */
-		ptr = line;
-		if (!next_token_nr_talloc(frame,&ptr,&tok,NULL)) {
+		cmd_ptr = line;
+		if (!next_token_talloc(frame, &cmd_ptr,&tok,NULL)) {
 			TALLOC_FREE(frame);
 			SAFE_FREE(line);
 			continue;
