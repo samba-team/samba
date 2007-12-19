@@ -708,7 +708,8 @@ REG_API_OBJ = registry/reg_api.o \
 
 
 LIBNETAPI_OBJ1 = lib/netapi/netapi.o \
-		 lib/netapi/joindomain.o
+		 lib/netapi/joindomain.o \
+		 lib/netapi/serverinfo.o
 
 LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
 		 $(REG_API_OBJ) \
@@ -1834,6 +1835,7 @@ installlibnetapi: installdirs libnetapi
 	-$(INSTALLLIBCMD_A) bin/libnetapi.a $(DESTDIR)$(LIBDIR)
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/libnetapi.h $(DESTDIR)${prefix}/include/samba/libnetapi
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/joindomain.h $(DESTDIR)${prefix}/include/samba/libnetapi
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/serverinfo.h $(DESTDIR)${prefix}/include/samba/libnetapi
 
 installpammodules: $(PAM_MODULES)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(PAMMODULESDIR)
