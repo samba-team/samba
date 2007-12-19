@@ -17,8 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __CACHE_H__
-#define __CACHE_H__
+#ifndef __MEMCACHE_H__
+#define __MEMCACHE_H__
 
 #include "includes.h"
 
