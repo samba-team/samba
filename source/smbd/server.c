@@ -27,12 +27,6 @@ static_decl_rpc;
 
 static int am_parent = 1;
 
-/* the last message the was processed */
-int last_message = -1;
-
-/* a useful macro to debug the last message processed */
-#define LAST_MESSAGE() smb_fn_name(last_message)
-
 extern struct auth_context *negprot_global_auth_context;
 extern SIG_ATOMIC_T got_sig_term;
 extern SIG_ATOMIC_T reload_after_sighup;
