@@ -154,44 +154,28 @@ static WERROR libnetapi_NetJoinDomain(struct libnetapi_ctx *ctx,
 				      const char *password,
 				      uint32_t join_flags)
 {
-	TALLOC_CTX *mem_ctx = NULL;
-	WERROR werr;
-
-	mem_ctx = talloc_init("NetJoinDomain");
-	if (!mem_ctx) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
 	if (!domain_name) {
-		werr = WERR_INVALID_PARAM;
-		goto done;
+		return WERR_INVALID_PARAM;
 	}
 
 	if (!server_name || is_myname_or_ipaddr(server_name)) {
 
-		werr = NetJoinDomainLocal(ctx,
+		return NetJoinDomainLocal(ctx,
 					  server_name,
 					  domain_name,
 					  account_ou,
 					  Account,
 					  password,
 					  join_flags);
-
-		goto done;
 	}
 
-	werr = NetJoinDomainRemote(ctx,
+	return NetJoinDomainRemote(ctx,
 				   server_name,
 				   domain_name,
 				   account_ou,
 				   Account,
 				   password,
 				   join_flags);
-done:
-	TALLOC_FREE(mem_ctx);
-
-	return werr;
 }
 
 NET_API_STATUS NetJoinDomain(const char *server_name,
@@ -230,7 +214,6 @@ static WERROR libnetapi_NetUnjoinDomain(struct libnetapi_ctx *ctx,
 					const char *password,
 					uint32_t unjoin_flags)
 {
-	TALLOC_CTX *mem_ctx = NULL;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
 	struct wkssvc_PasswordBuffer encrypted_password;
@@ -239,17 +222,6 @@ static WERROR libnetapi_NetUnjoinDomain(struct libnetapi_ctx *ctx,
 	unsigned int old_timeout = 0;
 
 	ZERO_STRUCT(encrypted_password);
-
-	mem_ctx = talloc_init("NetUnjoinDomain");
-	if (!mem_ctx) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
-	if (!server_name || is_myname_or_ipaddr(server_name)) {
-		werr = WERR_NOT_SUPPORTED;
-		goto done;
-	}
 
 	status = cli_full_connection(&cli, NULL, server_name,
 				     NULL, 0,
@@ -274,7 +246,7 @@ static WERROR libnetapi_NetUnjoinDomain(struct libnetapi_ctx *ctx,
 	};
 
 	if (password) {
-		encode_wkssvc_join_password_buffer(mem_ctx,
+		encode_wkssvc_join_password_buffer(ctx,
 						   password,
 						   &cli->user_session_key,
 						   &encrypted_password);
@@ -282,7 +254,7 @@ static WERROR libnetapi_NetUnjoinDomain(struct libnetapi_ctx *ctx,
 
 	old_timeout = cli_set_timeout(cli, 60000);
 
-	status = rpccli_wkssvc_NetrUnjoinDomain2(pipe_cli, mem_ctx,
+	status = rpccli_wkssvc_NetrUnjoinDomain2(pipe_cli, ctx,
 						 server_name,
 						 account,
 						 &encrypted_password,
@@ -298,7 +270,6 @@ static WERROR libnetapi_NetUnjoinDomain(struct libnetapi_ctx *ctx,
 		cli_set_timeout(cli, old_timeout);
 		cli_shutdown(cli);
 	}
-	TALLOC_FREE(mem_ctx);
 
 	return werr;
 }
