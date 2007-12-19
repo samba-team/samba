@@ -17,13 +17,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import unittest
-import samba.provision
+import os
+from samba.provision import setup_secretsdb
+import samba.tests
+from ldb import Dn
 
-class ProvisionTestCase(unittest.TestCase):
+setup_dir = "setup"
+
+class ProvisionTestCase(samba.tests.TestCaseInTempDir):
     def test_setup_secretsdb(self):
-        raise NotImplementedError(self.test_setup_secretsdb)
+        ldb = setup_secretsdb(os.path.join(self.tempdir, "secrets.ldb"), 
+                              setup_dir, None, None, None)
+        self.assertEquals("LSA Secrets",
+                 ldb.searchone(Dn(ldb, "CN=LSA Secrets"), "CN"))
 
+
+class Disabled:
     def test_setup_templatesdb(self):
         raise NotImplementedError(self.test_setup_templatesdb)
 

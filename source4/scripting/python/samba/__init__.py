@@ -92,7 +92,9 @@ class Ldb(ldb.Ldb):
         res = self.search(basedn, scope, expression, [attribute])
         if len(res) != 1 or res[0][attribute] is None:
             return None
-        return res[0][attribute]
+        values = set(res[0][attribute])
+        assert len(values) == 1
+        return values.pop()
 
     def erase(self):
         """Erase an ldb, removing all records."""

@@ -20,6 +20,7 @@
 import os
 import ldb
 import samba
+import tempfile
 import unittest
 
 class LdbTestCase(unittest.TestCase):
@@ -33,6 +34,15 @@ class LdbTestCase(unittest.TestCase):
         m["@LIST"] = ",".join(modules)
         self.ldb.add(m)
         self.ldb = samba.Ldb(self.filename)
+
+
+class TestCaseInTempDir(unittest.TestCase):
+    def setUp(self):
+        super(TestCaseInTempDir, self).setUp()
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        super(TestCaseInTempDir, self).tearDown()
 
 
 class SubstituteVarTestCase(unittest.TestCase):
@@ -52,3 +62,11 @@ class SubstituteVarTestCase(unittest.TestCase):
     def test_unknown_var(self):
         self.assertEquals("foo ${bla} gsff", 
                 samba.substitute_var("foo ${bla} gsff", {"bar": "bla"}))
+
+
+class LdbExtensionTests(TestCaseInTempDir):
+    def test_searchone(self):
+        l = samba.Ldb(self.tempdir + "/searchone.ldb")
+        l.add({"dn": ldb.Dn(l, "foo=dc"), "bar": "bla"})
+        self.assertEquals("bla", l.searchone(ldb.Dn(l, "foo=dc"), "bar"))
+
