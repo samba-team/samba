@@ -37,6 +37,7 @@ NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx, const char **
 NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx, const char *username);
 NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx, const char *password);
 NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx, const char *workgroup);
+const char *libnetapi_errstr(struct libnetapi_ctx *ctx, NET_API_STATUS status);
 
 #include "joindomain.h"
 
