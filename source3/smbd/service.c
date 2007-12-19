@@ -357,6 +357,7 @@ void load_registry_shares(void)
 int find_service(fstring service)
 {
 	int iService;
+	TALLOC_CTX *frame = talloc_stackframe();
 
 	all_string_sub(service,"\\","/",0);
 
@@ -364,7 +365,7 @@ int find_service(fstring service)
 
 	/* now handle the special case of a home directory */
 	if (iService < 0) {
-		char *phome_dir = get_user_home_dir(service);
+		char *phome_dir = get_user_home_dir(talloc_tos(), service);
 
 		if(!phome_dir) {
 			/*
@@ -372,7 +373,8 @@ int find_service(fstring service)
 			 * be a Windows to unix mapped user name.
 			 */
 			if(map_username(service))
-				phome_dir = get_user_home_dir(service);
+				phome_dir = get_user_home_dir(
+					talloc_tos(), service);
 		}
 
 		DEBUG(3,("checking for home directory %s gave %s\n",service,
@@ -460,6 +462,8 @@ int find_service(fstring service)
 
 	if (iService < 0)
 		DEBUG(3,("find_service() failed to find service %s\n", service));
+
+	TALLOC_FREE(frame);
 
 	return (iService);
 }
@@ -744,11 +748,12 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			*status = NT_STATUS_WRONG_PASSWORD;
 			return NULL;
 		}
-		pass = Get_Pwnam(user);
+		pass = Get_Pwnam_alloc(talloc_tos(), user);
 		status2 = create_token_from_username(conn->mem_ctx, pass->pw_name, True,
 						     &conn->uid, &conn->gid,
 						     &found_username,
 						     &conn->nt_user_token);
+		TALLOC_FREE(pass);
 		if (!NT_STATUS_IS_OK(status2)) {
 			conn_free(conn);
 			*status = status2;

@@ -28,7 +28,7 @@
  any incoming or new username - in order to canonicalize the name.
  This is being done to de-couple the case conversions from the user mapping
  function. Previously, the map_username was being called
- every time Get_Pwnam was called.
+ every time Get_Pwnam_alloc was called.
  Returns True if username was changed, false otherwise.
 ********************************************************************/
 

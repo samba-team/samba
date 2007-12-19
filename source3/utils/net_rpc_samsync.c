@@ -486,7 +486,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!(passwd = Get_Pwnam(account))) {
+	if (!(passwd = Get_Pwnam_alloc(sam_account, account))) {
 		/* Create appropriate user */
 		if (delta->acb_info & ACB_NORMAL) {
 			add_script = talloc_strdup(sam_account,
@@ -525,7 +525,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		}
 
 		/* try and find the possible unix account again */
-		if ( !(passwd = Get_Pwnam(account)) ) {
+		if ( !(passwd = Get_Pwnam_alloc(sam_account, account)) ) {
 			d_fprintf(stderr, "Could not create posix account info for '%s'\n", account);
 			nt_ret = NT_STATUS_NO_SUCH_USER;
 			goto done;

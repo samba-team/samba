@@ -1142,7 +1142,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 		return NT_STATUS_PASSWORD_RESTRICTION;
 	}
 
-	pass = Get_Pwnam(username);
+	pass = Get_Pwnam_alloc(talloc_tos(), username);
 	if (!pass) {
 		DEBUG(1, ("change_oem_password: Username %s does not exist in system !?!\n", username));
 		return NT_STATUS_ACCESS_DENIED;
@@ -1160,6 +1160,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 			if (samr_reject_reason) {
 				*samr_reject_reason = REJECT_REASON_NOT_COMPLEX;
 			}
+			TALLOC_FREE(pass);
 			return NT_STATUS_PASSWORD_RESTRICTION;
 		}
 	}
@@ -1178,8 +1179,11 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 	
 	if(lp_unix_password_sync() &&
 		!chgpasswd(username, pass, old_passwd, new_passwd, as_root)) {
+		TALLOC_FREE(pass);
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	TALLOC_FREE(pass);
 
 	if (!pdb_set_plaintext_passwd (hnd, new_passwd)) {
 		return NT_STATUS_ACCESS_DENIED;

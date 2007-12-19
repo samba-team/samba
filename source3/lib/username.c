@@ -32,19 +32,24 @@ static struct passwd *uname_string_combinations2(char *s, TALLOC_CTX *mem_ctx, i
  Get a users home directory.
 ****************************************************************************/
 
-char *get_user_home_dir(const char *user)
+char *get_user_home_dir(TALLOC_CTX *mem_ctx, const char *user)
 {
-	static struct passwd *pass;
+	struct passwd *pass;
+	char *result;
 
 	/* Ensure the user exists. */
 
-	pass = Get_Pwnam(user);
+	pass = Get_Pwnam_alloc(mem_ctx, user);
 
 	if (!pass)
 		return(NULL);
+
 	/* Return home directory from struct passwd. */
 
-	return(pass->pw_dir);      
+	result = talloc_move(mem_ctx, &pass->pw_dir);
+
+	TALLOC_FREE(pass);
+	return result;
 }
 
 /****************************************************************************
@@ -54,8 +59,6 @@ char *get_user_home_dir(const char *user)
  *   - in all upper case if this differs from transmitted
  *   - using lp_usernamelevel() for permutations.
 ****************************************************************************/
-
-static struct passwd *Get_Pwnam_ret = NULL;
 
 static struct passwd *Get_Pwnam_internals(TALLOC_CTX *mem_ctx,
 					  const char *user, char *user2)
@@ -131,40 +134,6 @@ struct passwd *Get_Pwnam_alloc(TALLOC_CTX *mem_ctx, const char *user)
 
 	ret = Get_Pwnam_internals(mem_ctx, user, user2);
 	
-	return ret;  
-}
-
-/****************************************************************************
- Get_Pwnam wrapper without modification.
-  NOTE: This with NOT modify 'user'! 
-****************************************************************************/
-
-struct passwd *Get_Pwnam(const char *user)
-{
-	struct passwd *ret;
-
-	ret = Get_Pwnam_alloc(NULL, user);
-	
-	/* This call used to just return the 'passwd' static buffer.
-	   This could then have accidental reuse implications, so 
-	   we now malloc a copy, and free it in the next use.
-
-	   This should cause the (ab)user to segfault if it 
-	   uses an old struct. 
-	   
-	   This is better than useing the wrong data in security
-	   critical operations.
-
-	   The real fix is to make the callers free the returned 
-	   malloc'ed data.
-	*/
-
-	if (Get_Pwnam_ret) {
-		TALLOC_FREE(Get_Pwnam_ret);
-	}
-	
-	Get_Pwnam_ret = ret;
-
 	return ret;  
 }
 

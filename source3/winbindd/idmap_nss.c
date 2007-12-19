@@ -145,7 +145,6 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 	}
 
 	for (i = 0; ids[i]; i++) {
-		struct passwd *pw;
 		struct group *gr;
 		enum lsa_SidType type;
 		const char *dom_name = NULL;
@@ -166,17 +165,20 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 		}
 
 		switch (type) {
-		case SID_NAME_USER:
+		case SID_NAME_USER: {
+			struct passwd *pw;
 
 			/* this will find also all lower case name and use username level */
-			
-			pw = Get_Pwnam(name);
+
+			pw = Get_Pwnam_alloc(talloc_tos(), name);
 			if (pw) {
 				ids[i]->xid.id = pw->pw_uid;
 				ids[i]->xid.type = ID_TYPE_UID;
 				ids[i]->status = ID_MAPPED;
 			}
+			TALLOC_FREE(pw);
 			break;
+		}
 
 		case SID_NAME_DOM_GRP:
 		case SID_NAME_ALIAS:

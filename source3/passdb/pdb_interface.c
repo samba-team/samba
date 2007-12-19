@@ -1570,11 +1570,12 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 			return True;
 		}
 
-		pw = Get_Pwnam(*name);
+		pw = Get_Pwnam_alloc(talloc_tos(), *name);
 		if (pw == NULL) {
 			return False;
 		}
 		unix_id->uid = pw->pw_uid;
+		TALLOC_FREE(pw);
 		return True;
 	}
 	TALLOC_FREE(sam_account);

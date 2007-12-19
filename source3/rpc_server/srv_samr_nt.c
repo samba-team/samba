@@ -3325,7 +3325,8 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
 				return NT_STATUS_ACCESS_DENIED;
 			}
 
-			if ((passwd = Get_Pwnam(pdb_get_username(pwd))) == NULL) {
+			passwd = Get_Pwnam_alloc(pwd, pdb_get_username(pwd));
+			if (passwd == NULL) {
 				DEBUG(1, ("chgpasswd: Username does not exist in system !?!\n"));
 			}
 
@@ -3333,6 +3334,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
 				TALLOC_FREE(pwd);
 				return NT_STATUS_ACCESS_DENIED;
 			}
+			TALLOC_FREE(passwd);
 		}
 	}
 
@@ -3406,7 +3408,8 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
 				return False;
 			}
 
-			if ((passwd = Get_Pwnam(pdb_get_username(pwd))) == NULL) {
+			passwd = Get_Pwnam_alloc(pwd, pdb_get_username(pwd));
+			if (passwd == NULL) {
 				DEBUG(1, ("chgpasswd: Username does not exist in system !?!\n"));
 			}
 
@@ -3414,6 +3417,7 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
 				TALLOC_FREE(pwd);
 				return False;
 			}
+			TALLOC_FREE(passwd);
 		}
 	}
 
