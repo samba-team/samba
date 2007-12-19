@@ -215,7 +215,7 @@ NTSTATUS ldap_bind_sasl(struct ldap_connection *conn,
 
 	const char **sasl_names;
 	uint32_t old_gensec_features;
-	static const char *supported_sasl_mech_attrs[] = {
+	const char *supported_sasl_mech_attrs[] = {
 		"supportedSASLMechanisms", 
 		NULL 
 	};

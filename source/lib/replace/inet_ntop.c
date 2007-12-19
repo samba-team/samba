@@ -74,7 +74,7 @@ rep_inet_ntop(int af, const void *src, char *dst, socklen_t size)
 static const char *
 inet_ntop4(const unsigned char *src, char *dst, socklen_t size)
 {
-	static const char *fmt = "%u.%u.%u.%u";
+	const char *fmt = "%u.%u.%u.%u";
 	char tmp[sizeof "255.255.255.255"];
 	size_t len;
 

@@ -162,7 +162,7 @@ void ldb_set_default_dns(struct ldb_context *ldb)
 	int ret;
 	struct ldb_result *res;
 	struct ldb_dn *tmp_dn=NULL;
-	static const char *attrs[] = {
+	const char *attrs[] = {
 		"rootDomainNamingContext",
 		"configurationNamingContext",
 		"schemaNamingContext",

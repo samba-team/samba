@@ -40,7 +40,7 @@ WERROR dreplsrv_load_partitions(struct dreplsrv_service *s)
 	struct ldb_dn *basedn;
 	struct ldb_result *r;
 	struct ldb_message_element *el;
-	static const char *attrs[] = { "namingContexts", NULL };
+	const char *attrs[] = { "namingContexts", NULL };
 	uint32_t i;
 	int ret;
 
@@ -188,7 +188,7 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	struct ldb_result *r;
 	uint32_t i;
 	int ret;
-	static const char *attrs[] = {
+	const char *attrs[] = {
 		"objectSid",
 		"objectGUID",
 		"replUpToDateVector",

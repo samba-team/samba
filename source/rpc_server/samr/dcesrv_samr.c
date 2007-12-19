@@ -749,7 +749,7 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	switch (r->in.level) {
 	case 1: 
 	{
-		static const char * const attrs2[] = { "minPwdLength", "pwdHistoryLength",
+		const char * const attrs2[] = { "minPwdLength", "pwdHistoryLength",
 						       "pwdProperties", "maxPwdAge",
 						       "minPwdAge", NULL };
 		attrs = attrs2;
@@ -757,7 +757,7 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	}
 	case 2:
 	{
-		static const char * const attrs2[] = {"forceLogoff",
+		const char * const attrs2[] = {"forceLogoff",
 						      "comment", 
 						      "modifiedCount", 
 						      "fSMORoleOwner",
@@ -767,14 +767,14 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	}
 	case 3:
 	{
-		static const char * const attrs2[] = {"forceLogoff", 
+		const char * const attrs2[] = {"forceLogoff", 
 						      NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 4:
 	{
-		static const char * const attrs2[] = {"comment", 
+		const char * const attrs2[] = {"comment", 
 						      NULL};
 		attrs = attrs2;
 		break;
@@ -786,7 +786,7 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	}
 	case 6:
 	{
-		static const char * const attrs2[] = {"fSMORoleOwner", 
+		const char * const attrs2[] = {"fSMORoleOwner", 
 						      NULL};
 		attrs = attrs2;
 		break;
@@ -798,7 +798,7 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	}
 	case 8:
 	{
-		static const char * const attrs2[] = { "modifiedCount", 
+		const char * const attrs2[] = { "modifiedCount", 
 						       "creationTime", 
 						       NULL };
 		attrs = attrs2;
@@ -809,7 +809,7 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 		break;		
 	case 11:
 	{
-		static const char * const attrs2[] = { "comment", "forceLogoff", 
+		const char * const attrs2[] = { "comment", "forceLogoff", 
 						       "modifiedCount", 
 						       "lockoutDuration", 
 						       "lockOutObservationWindow", 
@@ -820,7 +820,7 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	}
 	case 12:
 	{
-		static const char * const attrs2[] = { "lockoutDuration", 
+		const char * const attrs2[] = { "lockoutDuration", 
 						       "lockOutObservationWindow", 
 						       "lockoutThreshold", 
 						       NULL};
@@ -829,7 +829,7 @@ static NTSTATUS dcesrv_samr_QueryDomainInfo(struct dcesrv_call_state *dce_call, 
 	}
 	case 13:
 	{
-		static const char * const attrs2[] = { "modifiedCount", 
+		const char * const attrs2[] = { "modifiedCount", 
 						       "creationTime", 
 						       NULL };
 		attrs = attrs2;
@@ -2944,7 +2944,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	switch (r->in.level) {
 	case 1:
 	{
-		static const char * const attrs2[] = {"sAMAccountName", "displayName",
+		const char * const attrs2[] = {"sAMAccountName", "displayName",
 						      "primaryGroupID", "description",
 						      "comment", NULL};
 		attrs = attrs2;
@@ -2952,13 +2952,13 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	}
 	case 2:
 	{
-		static const char * const attrs2[] = {"comment", "countryCode", "codePage", NULL};
+		const char * const attrs2[] = {"comment", "countryCode", "codePage", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 3:
 	{
-		static const char * const attrs2[] = {"sAMAccountName",
+		const char * const attrs2[] = {"sAMAccountName",
 						      "displayName",
 						      "objectSid",
 						      "primaryGroupID",
@@ -2979,13 +2979,13 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	}
 	case 4:
 	{
-		static const char * const attrs2[] = {"logonHours", NULL};
+		const char * const attrs2[] = {"logonHours", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 5:
 	{
-		static const char * const attrs2[] = {"sAMAccountName", 
+		const char * const attrs2[] = {"sAMAccountName", 
 						      "displayName",
 						      "objectSid",
 						      "primaryGroupID",
@@ -3009,79 +3009,79 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	}
 	case 6:
 	{
-		static const char * const attrs2[] = {"sAMAccountName", "displayName", NULL};
+		const char * const attrs2[] = {"sAMAccountName", "displayName", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 7:
 	{
-		static const char * const attrs2[] = {"sAMAccountName", NULL};
+		const char * const attrs2[] = {"sAMAccountName", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 8:
 	{
-		static const char * const attrs2[] = {"displayName", NULL};
+		const char * const attrs2[] = {"displayName", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 9:
 	{
-		static const char * const attrs2[] = {"primaryGroupID", NULL};
+		const char * const attrs2[] = {"primaryGroupID", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 10:
 	{
-		static const char * const attrs2[] = {"homeDirectory", "homeDrive", NULL};
+		const char * const attrs2[] = {"homeDirectory", "homeDrive", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 11:
 	{
-		static const char * const attrs2[] = {"scriptPath", NULL};
+		const char * const attrs2[] = {"scriptPath", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 12:
 	{
-		static const char * const attrs2[] = {"profilePath", NULL};
+		const char * const attrs2[] = {"profilePath", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 13:
 	{
-		static const char * const attrs2[] = {"description", NULL};
+		const char * const attrs2[] = {"description", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 14:
 	{
-		static const char * const attrs2[] = {"userWorkstations", NULL};
+		const char * const attrs2[] = {"userWorkstations", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 16:
 	{
-		static const char * const attrs2[] = {"userAccountControl", NULL};
+		const char * const attrs2[] = {"userAccountControl", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 17:
 	{
-		static const char * const attrs2[] = {"accountExpires", NULL};
+		const char * const attrs2[] = {"accountExpires", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 20:
 	{
-		static const char * const attrs2[] = {"userParameters", NULL};
+		const char * const attrs2[] = {"userParameters", NULL};
 		attrs = attrs2;
 		break;
 	}
 	case 21:
 	{
-		static const char * const attrs2[] = {"lastLogon",
+		const char * const attrs2[] = {"lastLogon",
 						      "lastLogoff",
 						      "pwdLastSet",
 						      "accountExpires",

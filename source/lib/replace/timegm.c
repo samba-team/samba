@@ -46,7 +46,7 @@ static int is_leap(unsigned y)
 
 time_t rep_timegm(struct tm *tm)
 {
-	static const unsigned ndays[2][12] ={
+	const unsigned ndays[2][12] ={
 		{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
 		{31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
 	time_t res = 0;

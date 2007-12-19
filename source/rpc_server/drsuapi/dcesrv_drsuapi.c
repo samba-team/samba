@@ -41,10 +41,10 @@ static WERROR dcesrv_drsuapi_DsBind(struct dcesrv_call_state *dce_call, TALLOC_C
 	struct GUID site_guid;
 	struct ldb_result *site_res;
 	struct ldb_dn *server_site_dn;
-	static const char *site_attrs[] = { "objectGUID", NULL };
+	const char *site_attrs[] = { "objectGUID", NULL };
 	struct ldb_result *ntds_res;
 	struct ldb_dn *ntds_dn;
-	static const char *ntds_attrs[] = { "ms-DS-ReplicationEpoch", NULL };
+	const char *ntds_attrs[] = { "ms-DS-ReplicationEpoch", NULL };
 	uint32_t u1;
 	uint32_t repl_epoch;
 	int ret;

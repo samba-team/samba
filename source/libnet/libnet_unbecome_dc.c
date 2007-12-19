@@ -326,7 +326,7 @@ static NTSTATUS unbecomeDC_ldap_rootdse(struct libnet_UnbecomeDC_state *s)
 	int ret;
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
-	static const char *attrs[] = {
+	const char *attrs[] = {
 		"defaultNamingContext",
 		"configurationNamingContext",
 		NULL
@@ -370,7 +370,7 @@ static NTSTATUS unbecomeDC_ldap_computer_object(struct libnet_UnbecomeDC_state *
 	struct ldb_result *r;
 	struct ldb_dn *basedn;
 	char *filter;
-	static const char *attrs[] = {
+	const char *attrs[] = {
 		"distinguishedName",
 		"userAccountControl",
 		NULL
@@ -451,7 +451,7 @@ static NTSTATUS unbecomeDC_ldap_move_computer(struct libnet_UnbecomeDC_state *s)
 	struct ldb_dn *basedn;
 	struct ldb_dn *old_dn;
 	struct ldb_dn *new_dn;
-	static const char *_1_1_attrs[] = {
+	const char *_1_1_attrs[] = {
 		"1.1",
 		NULL
 	};

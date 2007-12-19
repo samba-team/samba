@@ -867,7 +867,7 @@ static int map_objectclass_convert_operator(struct ldb_module *module, void *mem
 					    struct ldb_parse_tree **new, const struct ldb_parse_tree *tree) 
 {
 	
-	static const struct ldb_map_attribute objectclass_map = {
+	const struct ldb_map_attribute objectclass_map = {
 		.local_name = "objectClass",
 		.type = MAP_CONVERT,
 		.u = {
@@ -956,7 +956,7 @@ struct ldb_request *map_search_self_req(struct map_context *ac, struct ldb_dn *d
 	/* attrs[] is returned from this function in
 	 * ac->search_req->op.search.attrs, so it must be static, as
 	 * otherwise the compiler can put it on the stack */
-	static const char * const attrs[] = { IS_MAPPED, NULL };
+	const char * const attrs[] = { IS_MAPPED, NULL };
 	struct ldb_parse_tree *tree;
 
 	/* Limit search to records with 'IS_MAPPED' present */
@@ -1242,7 +1242,7 @@ static const struct ldb_map_attribute builtin_attribute_maps[] = {
  * base DNs in private data. */
 static int map_init_dns(struct ldb_module *module, struct ldb_map_context *data, const char *name)
 {
-	static const char * const attrs[] = { MAP_DN_FROM, MAP_DN_TO, NULL };
+	const char * const attrs[] = { MAP_DN_FROM, MAP_DN_TO, NULL };
 	struct ldb_dn *dn;
 	struct ldb_message *msg;
 	struct ldb_result *res;

@@ -102,7 +102,7 @@ static void show_locks(const char *op, struct lock_struct *locks, int count)
   talloc_free(). We need the messaging_ctx to allow for
   pending lock notifications.
 */
-static struct brl_context *brl_ctdb_init(TALLOC_CTX *mem_ctx, struct server_id server, 
+static struct brl_context *brl_ctdb_init(TALLOC_CTX *mem_ctx, struct server_id server, struct loadparm_context *lp_ctx,
 				    struct messaging_context *messaging_ctx)
 {
 	struct ctdb_context *ctdb = talloc_get_type(cluster_backend_handle(), 

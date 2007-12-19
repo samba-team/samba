@@ -1062,7 +1062,7 @@ int dsdb_set_schema(struct ldb_context *ldb, struct dsdb_schema *schema)
 /**
  * Global variable to hold one copy of the schema, used to avoid memory bloat
  */
-static struct dsdb_schema *global_schema;
+static const struct dsdb_schema *global_schema;
 
 /**
  * Make this ldb use the 'global' schema, setup to avoid having multiple copies in this process

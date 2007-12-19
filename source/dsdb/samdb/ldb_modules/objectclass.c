@@ -361,7 +361,7 @@ static int fix_attributes(struct ldb_context *ldb, const struct dsdb_schema *sch
 static int objectclass_add(struct ldb_module *module, struct ldb_request *req)
 {
 
-	static const char * const attrs[] = { NULL };
+	const char * const attrs[] = { NULL };
 
 	struct ldb_handle *h;
 	struct oc_context *ac;
@@ -748,7 +748,7 @@ static int objectclass_search_self(struct ldb_handle *h)
 {
 	int ret;
 	struct oc_context *ac;
-	static const char * const attrs[] = { "objectClass", NULL };
+	const char * const attrs[] = { "objectClass", NULL };
 
 	ac = talloc_get_type(h->private_data, struct oc_context);
 
@@ -865,7 +865,7 @@ static int objectclass_do_mod(struct ldb_handle *h) {
 static int objectclass_rename(struct ldb_module *module, struct ldb_request *req)
 {
 
-	static const char * const attrs[] = { NULL };
+	const char * const attrs[] = { NULL };
 
 	struct ldb_handle *h;
 	struct oc_context *ac;
