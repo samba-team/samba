@@ -39,8 +39,25 @@ struct libnet_JoinCtx {
 		char *netbios_domain_name;
 		char *dns_domain_name;
 		char *dn;
-		bool modified_config;
 		struct dom_sid *domain_sid;
+		bool modified_config;
+		WERROR result;
+	} out;
+};
+
+struct libnet_UnjoinCtx {
+	struct {
+		const char *server_name;
+		const char *domain_name;
+		const char *admin_account;
+		const char *password;
+		uint32_t unjoin_flags;
+		bool modify_config;
+		struct dom_sid *domain_sid;
+	} in;
+
+	struct {
+		bool modified_config;
 		WERROR result;
 	} out;
 };
