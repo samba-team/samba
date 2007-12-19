@@ -959,8 +959,8 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 		if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0 &&
 		    !lp_client_plaintext_auth() && (*pass)) {
-			DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
-				  " is disabled\n"));
+			DEBUG(1, ("Server requested plaintext password but "
+				  "'client plaintext auth' is disabled\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
@@ -986,8 +986,8 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		if (!lp_client_plaintext_auth() && (*pass)) {
-			DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
-				  " is disabled\n"));
+			DEBUG(1, ("Server requested plaintext password but "
+				  "'client plaintext auth' is disabled\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		return cli_session_setup_plaintext(cli, user, pass, workgroup);
@@ -1086,8 +1086,9 @@ bool cli_send_tconX(struct cli_state *cli,
 	} else {
 		if((cli->sec_mode & (NEGOTIATE_SECURITY_USER_LEVEL|NEGOTIATE_SECURITY_CHALLENGE_RESPONSE)) == 0) {
 			if (!lp_client_plaintext_auth() && (*pass)) {
-				DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
-					  " is disabled\n"));
+				DEBUG(1, ("Server requested plaintext "
+					  "password but 'client plaintext "
+					  "auth' is disabled\n"));
 				return False;
 			}
 
@@ -1798,8 +1799,8 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 	char *p;
 
 	if (!lp_client_plaintext_auth() && (*pass)) {
-		DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
-			  " is disabled\n"));
+		DEBUG(1, ("Server requested plaintext password but 'client "
+			  "plaintext auth' is disabled\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
