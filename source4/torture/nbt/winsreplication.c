@@ -1008,7 +1008,7 @@ static bool test_wrepl_sgroup_merged(struct torture_context *tctx,
 static bool test_conflict_same_owner(struct torture_context *tctx, 
 									 struct test_wrepl_conflict_conn *ctx)
 {
-	static bool ret = true;
+	bool ret = true;
 	struct nbt_name	name;
 	struct wrepl_wins_name wins_name1;
 	struct wrepl_wins_name wins_name2;

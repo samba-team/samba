@@ -407,7 +407,7 @@ static int check_supported_paged(struct ldb_context *ldb, void *context,
 
 static int ps_init(struct ldb_module *module)
 {
-	static const char *attrs[] = { "supportedControl", NULL };
+	const char *attrs[] = { "supportedControl", NULL };
 	struct private_data *data;
 	int ret;
 	struct ldb_request *req;

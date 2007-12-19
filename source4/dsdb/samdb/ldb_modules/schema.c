@@ -235,7 +235,7 @@ struct schema_attribute **schema_get_attrs_list(struct ldb_module *module,
 
 static int schema_init_attrs(struct ldb_module *module, struct schema_private_data *data)
 {
-	static const char *schema_attrs[] = {	"attributeID",
+	const char *schema_attrs[] = {	"attributeID",
 						"lDAPDisplayName",
 						"attributeSyntax",
 						"oMSyntax",
@@ -1156,7 +1156,7 @@ static int schema_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 
 static int schema_init(struct ldb_module *module)
 {
-	static const char *schema_attrs[] = { "schemaNamingContext", NULL };
+	const char *schema_attrs[] = { "schemaNamingContext", NULL };
 	struct schema_private_data *data;
 	struct ldb_result *res;
 	int ret;

@@ -59,7 +59,7 @@ static void dd_handle_signal(int sig)
 
 static const char * argtype_str(enum argtype arg_type)
 {
-	static const struct {
+	const struct {
 		enum argtype arg_type;
 		const char * arg_name;
 	} names [] = 
@@ -295,7 +295,7 @@ static void cifsdd_help_message(poptContext pctx,
 		const char * parg,
 		void * pdata)
 {
-	static const char notes[] = 
+	const char notes[] = 
 "FILE can be a local filename or a UNC path of the form //server/share/path.\n";
 
 	char prefix[24];

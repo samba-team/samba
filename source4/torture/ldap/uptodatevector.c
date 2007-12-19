@@ -47,7 +47,7 @@ static bool test_check_uptodatevector(struct torture_context *torture,
 	struct ldb_result *r;
 	const struct ldb_val *utdv_val1;
 	struct replUpToDateVectorBlob utdv1;
-	static const char *attrs[] = {
+	const char *attrs[] = {
 		"uSNChanged",
 		"replUpToDateVector",
 		"description",

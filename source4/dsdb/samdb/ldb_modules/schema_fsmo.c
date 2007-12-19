@@ -46,7 +46,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 	struct ldb_result *c_res;
 	uint32_t i;
 	int ret;
-	static const char *schema_attrs[] = {
+	const char *schema_attrs[] = {
 		"prefixMap",
 		"schemaInfo",
 		"fSMORoleOwner",

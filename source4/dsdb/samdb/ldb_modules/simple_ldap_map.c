@@ -752,7 +752,7 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 		     entryuuid_private->base_dns && 
 		     entryuuid_private->base_dns[i];
 		i++) {
-		static const char *contextCSN_attr[] = {
+		const char *contextCSN_attr[] = {
 			"contextCSN", NULL
 		};
 		search_req = talloc(req, struct ldb_request);

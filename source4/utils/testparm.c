@@ -172,18 +172,18 @@ static int do_share_checks(struct loadparm_context *lp_ctx, const char *cname, c
 
  int main(int argc, const char *argv[])
 {
-	static bool silent_mode = false;
+	bool silent_mode = false;
 	int ret = 0;
 	poptContext pc;
 /*
-	static int show_all_parameters = 0;
-	static char *new_local_machine = NULL;
+	int show_all_parameters = 0;
+	char *new_local_machine = NULL;
 */
-	static const char *section_name = NULL;
-	static char *parameter_name = NULL;
-	static const char *cname;
-	static const char *caddr;
-	static bool show_defaults = false;
+	const char *section_name = NULL;
+	char *parameter_name = NULL;
+	const char *cname = NULL;
+	const char *caddr = NULL;
+	bool show_defaults = false;
 	struct loadparm_context *lp_ctx;
 
 	struct poptOption long_options[] = {

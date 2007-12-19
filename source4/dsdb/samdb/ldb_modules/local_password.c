@@ -378,7 +378,7 @@ static int get_self_callback(struct ldb_context *ldb, void *context, struct ldb_
 static int local_password_mod_search_self(struct ldb_handle *h) {
 
 	struct lpdb_context *ac;
-	static const char * const attrs[] = { "objectGUID", "objectClass", NULL };
+	const char * const attrs[] = { "objectGUID", "objectClass", NULL };
 
 	ac = talloc_get_type(h->private_data, struct lpdb_context);
 
