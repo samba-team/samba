@@ -837,9 +837,11 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 
 	/* check for a normal guest connection */
 	if (!ok && GUEST_OK(snum)) {
+		struct passwd *guest_pw;
 		fstring guestname;
 		fstrcpy(guestname,lp_guestaccount());
-		if (Get_Pwnam(guestname)) {
+		guest_pw = Get_Pwnam_alloc(talloc_tos(), guestname);
+		if (guest_pw != NULL) {
 			fstrcpy(user,guestname);
 			ok = True;
 			DEBUG(3,("authorise_login: ACCEPTED: guest account "
@@ -848,6 +850,7 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 			DEBUG(0,("authorise_login: Invalid guest account "
 				 "%s??\n",guestname));
 		}
+		TALLOC_FREE(guest_pw);
 		*guest = True;
 	}
 

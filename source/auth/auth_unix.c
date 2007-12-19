@@ -92,7 +92,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	struct passwd *pass = NULL;
 
 	become_root();
-	pass = Get_Pwnam(user_info->internal_username);
+	pass = Get_Pwnam_alloc(talloc_tos(), user_info->internal_username);
 
 	
 	/** @todo This call assumes a ASCII password, no charset transformation is 
@@ -123,6 +123,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 		}
 	}
 
+	TALLOC_FREE(pass);
 	return nt_status;
 }
 
