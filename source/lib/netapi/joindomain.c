@@ -208,11 +208,73 @@ NET_API_STATUS NetJoinDomain(const char *server_name,
 	return 0;
 }
 
-static WERROR libnetapi_NetUnjoinDomain(struct libnetapi_ctx *ctx,
-					const char *server_name,
-					const char *account,
-					const char *password,
-					uint32_t unjoin_flags)
+static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
+				   const char *server_name,
+				   const char *account,
+				   const char *password,
+				   uint32_t unjoin_flags)
+{
+	struct libnet_UnjoinCtx *r = NULL;
+	struct dom_sid domain_sid;
+	WERROR werr;
+
+	if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
+		return WERR_SETUP_NOT_JOINED;
+	}
+
+	werr = libnet_init_UnjoinCtx(mem_ctx, &r);
+	W_ERROR_NOT_OK_RETURN(werr);
+
+	if (server_name) {
+		r->in.server_name = talloc_strdup(mem_ctx, server_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
+	} else {
+
+		NTSTATUS status;
+		const char *domain = NULL;
+		struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
+				 DS_WRITABLE_REQUIRED |
+				 DS_IS_FLAT_NAME |
+				 DS_RETURN_DNS_NAME;
+		if (lp_realm()) {
+			domain = lp_realm();
+		} else {
+			domain = lp_workgroup();
+		}
+		status = DsGetDcName(mem_ctx, NULL, domain,
+				     NULL, NULL, flags, &info);
+		if (!NT_STATUS_IS_OK(status)) {
+			return ntstatus_to_werror(status);
+		}
+		r->in.server_name = talloc_strdup(mem_ctx, info->domain_controller_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
+	}
+
+	if (account) {
+		r->in.admin_account = talloc_strdup(mem_ctx, account);
+		W_ERROR_HAVE_NO_MEMORY(r->in.admin_account);
+	}
+
+	if (password) {
+		r->in.password = talloc_strdup(mem_ctx, password);
+		W_ERROR_HAVE_NO_MEMORY(r->in.password);
+	}
+
+	r->in.unjoin_flags = unjoin_flags;
+	r->in.modify_config = true;
+
+	r->in.domain_sid = &domain_sid;
+
+	return libnet_Unjoin(mem_ctx, r);
+
+}
+
+static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
+				    const char *server_name,
+				    const char *account,
+				    const char *password,
+				    uint32_t unjoin_flags)
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
@@ -272,6 +334,28 @@ static WERROR libnetapi_NetUnjoinDomain(struct libnetapi_ctx *ctx,
 	}
 
 	return werr;
+}
+
+static WERROR libnetapi_NetUnjoinDomain(struct libnetapi_ctx *ctx,
+					const char *server_name,
+					const char *account,
+					const char *password,
+					uint32_t unjoin_flags)
+{
+	if (!server_name || is_myname_or_ipaddr(server_name)) {
+
+		return NetUnjoinDomainLocal(ctx,
+					    server_name,
+					    account,
+					    password,
+					    unjoin_flags);
+	}
+
+	return NetUnjoinDomainRemote(ctx,
+				     server_name,
+				     account,
+				     password,
+				     unjoin_flags);
 }
 
 NET_API_STATUS NetUnjoinDomain(const char *server_name,
