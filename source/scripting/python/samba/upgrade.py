@@ -537,9 +537,7 @@ replace: @LIST
 @LIST: samldb,operational,objectguid,rdn_name,samba3sam
 """)
 
-        samdb.add("""
-dn: @MAP=samba3sam
-@MAP_URL: %s""" % ldapurl)
+        samdb.add({"dn": "@MAP=samba3sam", "@MAP_URL": ldapurl})
 
     return ret
 

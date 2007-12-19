@@ -23,11 +23,14 @@ import samba.tests
 from ldb import Dn
 
 setup_dir = "setup"
+def setup_path(file):
+    return os.path.join(setup_dir, file)
+
 
 class ProvisionTestCase(samba.tests.TestCaseInTempDir):
     def test_setup_secretsdb(self):
         ldb = setup_secretsdb(os.path.join(self.tempdir, "secrets.ldb"), 
-                              setup_dir, None, None, None)
+                              setup_path, None, None, None)
         self.assertEquals("LSA Secrets",
                  ldb.searchone(Dn(ldb, "CN=LSA Secrets"), "CN"))
 

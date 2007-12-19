@@ -87,7 +87,8 @@ class Ldb(ldb.Ldb):
     set_session_info = misc.ldb_set_session_info
     set_loadparm = misc.ldb_set_loadparm
 
-    def searchone(self, basedn, attribute, expression=None, scope=ldb.SCOPE_BASE):
+    def searchone(self, basedn, attribute, expression=None, 
+                  scope=ldb.SCOPE_BASE):
         """Search for one attribute as a string."""
         res = self.search(basedn, scope, expression, [attribute])
         if len(res) != 1 or res[0][attribute] is None:
@@ -112,10 +113,46 @@ class Ldb(ldb.Ldb):
         for msg in self.search(basedn, ldb.SCOPE_SUBTREE, 
                 "(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", 
                 ["dn"]):
-            self.delete(msg.dn)
+            try:
+                self.delete(msg.dn)
+            except ldb.LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
+                # Ignor eno such object errors
+                pass
 
         res = self.search(basedn, ldb.SCOPE_SUBTREE, "(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", ["dn"])
         assert len(res) == 0
+
+    def erase_partitions(self):
+        """Erase an ldb, removing all records."""
+        res = self.search(ldb.Dn(self, ""), ldb.SCOPE_BASE, "(objectClass=*)", 
+                         ["namingContexts"])
+        assert len(res) == 1
+        if not "namingContexts" in res[0]:
+            return
+        for basedn in res[0]["namingContexts"]:
+            previous_remaining = 1
+            current_remaining = 0
+
+            k = 0
+            while ++k < 10 and (previous_remaining != current_remaining):
+                # and the rest
+                res2 = self.search(ldb.Dn(self, basedn), ldb.SCOPE_SUBTREE, "(|(objectclass=*)(dn=*))", ["dn"])
+                previous_remaining = current_remaining
+                current_remaining = len(res2)
+                for msg in res2:
+                    self.delete(msg.dn)
+
+    def load_ldif_file_add(self, ldif_path):
+        """Load a LDIF file.
+
+        :param ldif_path: Path to LDIF file.
+        """
+        self.load_ldif_add(open(ldif_path, 'r').read())
+
+    def load_ldif_add(self, ldif):
+        for changetype, msg in self.parse_ldif(ldif):
+            assert changetype == ldb.CHANGETYPE_NONE
+            self.add(msg)
 
 
 def substitute_var(text, values):

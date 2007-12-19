@@ -29,8 +29,8 @@ class SamDB(samba.Ldb):
                  modules_dir=None, lp=None):
         super(SamDB, self).__init__(session_info=session_info, credentials=credentials,
                                     modules_dir=modules_dir, lp=lp)
-        misc.dsdb_set_global_schema(self)
-        misc.ldb_register_samba_handlers(self)
+        assert misc.dsdb_set_global_schema(self) == 0
+        assert misc.ldb_register_samba_handlers(self) == 0
         if url:
             self.connect(url)
 
