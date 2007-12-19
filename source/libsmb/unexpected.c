@@ -88,6 +88,10 @@ static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *st
 {
 	struct unexpected_key key;
 
+	if (kbuf.dsize != sizeof(key)) {
+		tdb_delete(ttdb, kbuf);
+	}
+
 	memcpy(&key, kbuf.dptr, sizeof(key));
 
 	if (lastt - key.timestamp > NMBD_UNEXPECTED_TIMEOUT) {
@@ -135,6 +139,10 @@ static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	uint32_t enc_ip;
 	int port;
 	struct packet_struct *p;
+
+	if (kbuf.dsize != sizeof(key)) {
+		return 0;
+	}
 
 	memcpy(&key, kbuf.dptr, sizeof(key));
 
