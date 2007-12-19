@@ -163,12 +163,13 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	/*
-	return libnet_conf_set_parm(GLOBAL_NAME,
-				    "server string",
-				    info1005->comment);
-	*/
-	return WERR_NOT_SUPPORTED;
+	if (!lp_include_registry_globals()) {
+		return WERR_NOT_SUPPORTED;
+	}
+
+	return libnet_smbconf_set_global_param(ctx,
+					       "server string",
+					       info1005->comment);
 }
 
 static WERROR NetServerSetInfoLocal(struct libnetapi_ctx *ctx,
@@ -180,7 +181,6 @@ static WERROR NetServerSetInfoLocal(struct libnetapi_ctx *ctx,
 	switch (level) {
 		case 1005:
 			return NetServerSetInfoLocal_1005(ctx, buffer, parm_error);
-			break;
 		default:
 			return WERR_UNKNOWN_LEVEL;
 	}
