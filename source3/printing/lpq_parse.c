@@ -444,7 +444,7 @@ static bool parse_lpq_hpux(char *line, print_queue_struct *buf, bool first)
 {
 	/* must read two lines to process, therefore keep some values static */
 	static bool header_line_ok=False, base_prio_reset=False;
-	static fstring jobuser;
+	static char *jobuser;
 	static int jobid;
 	static int jobprio;
 	static time_t jobtime;
@@ -511,7 +511,11 @@ static bool parse_lpq_hpux(char *line, print_queue_struct *buf, bool first)
 		buf->job = jobid;
 		buf->status = jobstat;
 		buf->priority = jobprio;
-		fstrcpy(buf->fs_user,jobuser);
+		if (jobuser) {
+			fstrcpy(buf->fs_user,jobuser);
+		} else {
+			buf->fs_user[0] = '\0';
+		}
 
 		TALLOC_FREE(frame);
 		return True;
@@ -548,7 +552,8 @@ static bool parse_lpq_hpux(char *line, print_queue_struct *buf, bool first)
 			return False;
 		}
 		jobid = atoi(tok[1]);
-		fstrcpy(jobuser,tok[2]);
+		SAFE_FREE(jobuser);
+		jobuser = SMB_STRDUP(tok[2]);
 		jobprio = atoi(tok[4]);
 
 		/* process time */
