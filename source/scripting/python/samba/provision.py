@@ -73,11 +73,6 @@ def findnss(nssfn, *names):
     raise Exception("Unable to find user/group for %s" % arguments[1])
 
 
-def hostname():
-    """return first part of hostname."""
-    return gethostname().split(".")[0]
-
-
 def open_ldb(session_info, credentials, lp, dbname):
     assert session_info is not None
     try:
@@ -740,7 +735,6 @@ def provision_dns(setup_dir, paths, session_info,
             "DEFAULTSITE": DEFAULTSITE,
             "HOSTGUID": hostguid,
         })
-
 
 
 def provision_ldapbase(setup_dir, message, paths):

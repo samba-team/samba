@@ -14,7 +14,10 @@ import pwd
 import uuid
 
 def regkey_to_dn(name):
-    """Convert a registry key to a DN."""
+    """Convert a registry key to a DN.
+    
+    :name: The registry key name.
+    :return: A matching DN."""
     dn = "hive=NONE"
 
     if name == "":
@@ -253,8 +256,6 @@ maxVersion: %llu
     return ldif
 
 def upgrade_provision(lp, samba3):
-    subobj = Object()
-
     domainname = samba3.configuration.get("workgroup")
     
     if domainname is None:
@@ -272,13 +273,7 @@ def upgrade_provision(lp, samba3):
 
     subobj.realm        = realm
     subobj.domain       = domainname
-    subobj.hostname     = hostname()
 
-    assert subobj.realm is not None
-    assert subobj.domain is not None
-    assert subobj.hostname is not None
-
-    subobj.HOSTIP       = hostip()
     if domsec is not None:
         subobj.DOMAINGUID   = domsec.guid
         subobj.DOMAINSID    = domsec.sid
@@ -288,10 +283,7 @@ def upgrade_provision(lp, samba3):
         subobj.DOMAINSID = randsid()
     
     if hostsec:
-        subobj.HOSTGUID     = hostsec.guid
-    else:
-        subobj.HOSTGUID = uuid.random()
-    subobj.invocationid = uuid.random()
+        hostguid = hostsec.guid
     subobj.krbtgtpass   = randpass(12)
     subobj.machinepass  = randpass(12)
     subobj.adminpass    = randpass(12)
