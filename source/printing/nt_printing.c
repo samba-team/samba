@@ -3849,10 +3849,46 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, const uint8 *buf, int bu
 /****************************************************************************
  ***************************************************************************/
 
+static char *last_from;
+static char *last_to;
+
+static const char *get_last_from(void)
+{
+	if (!last_from) {
+		return "";
+	}
+	return last_from;
+}
+
+static const char *get_last_to(void)
+{
+	if (!last_to) {
+		return "";
+	}
+	return last_to;
+}
+
+static bool set_last_from_to(const char *from, const char *to)
+{
+	char *orig_from = last_from;
+	char *orig_to = last_to;
+
+	last_from = SMB_STRDUP(from);
+	last_to = SMB_STRDUP(to);
+
+	SAFE_FREE(orig_from);
+	SAFE_FREE(orig_to);
+
+	if (!last_from || !last_to) {
+		SAFE_FREE(last_from);
+		SAFE_FREE(last_to);
+		return false;
+	}
+	return true;
+}
+
 static void map_to_os2_driver(fstring drivername)
 {
-	static bool initialised=False;
-	static fstring last_from,last_to;
 	char *mapfile = lp_os2_driver_map();
 	char **lines = NULL;
 	int numlines = 0;
@@ -3864,14 +3900,10 @@ static void map_to_os2_driver(fstring drivername)
 	if (!*mapfile)
 		return;
 
-	if (!initialised) {
-		*last_from = *last_to = 0;
-		initialised = True;
-	}
-
-	if (strequal(drivername,last_from)) {
-		DEBUG(3,("Mapped Windows driver %s to OS/2 driver %s\n",drivername,last_to));
-		fstrcpy(drivername,last_to);
+	if (strequal(drivername,get_last_from())) {
+		DEBUG(3,("Mapped Windows driver %s to OS/2 driver %s\n",
+			drivername,get_last_to()));
+		fstrcpy(drivername,get_last_to());
 		return;
 	}
 
@@ -3920,8 +3952,7 @@ static void map_to_os2_driver(fstring drivername)
 
 		if (strequal(nt_name,drivername)) {
 			DEBUG(3,("Mapped windows driver %s to os2 driver%s\n",drivername,os2_name));
-			fstrcpy(last_from,drivername);
-			fstrcpy(last_to,os2_name);
+			set_last_from_to(drivername,os2_name);
 			fstrcpy(drivername,os2_name);
 			file_lines_free(lines);
 			return;
