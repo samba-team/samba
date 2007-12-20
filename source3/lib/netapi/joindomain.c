@@ -18,6 +18,7 @@
  */
 
 #include "includes.h"
+#include "lib/netapi/joindomain.h"
 
 extern const char *opt_user_name;
 extern const char *opt_workgroup;
