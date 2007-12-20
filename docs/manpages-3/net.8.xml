@@ -733,8 +733,12 @@ such as domain name, domain sid and number of users and groups.
 <refsect3>
 <title>RPC TRUSTDOM ADD <replaceable>DOMAIN</replaceable></title>
 
-<para>Add a interdomain trust account for 
-<replaceable>DOMAIN</replaceable> to the remote server. 
+<para>Add a interdomain trust account for <replaceable>DOMAIN</replaceable>. 
+This is in fact a Samba account named <replaceable>DOMAIN$</replaceable> 
+with the account flag <constant>'I'</constant> (interdomain trust account). 
+If the command is used against localhost it has the same effect as 
+<command>smbpasswd -a -i DOMAIN</command>. Please note that both commands
+expect a appropriate UNIX account. 
 </para>
 
 </refsect3>
@@ -743,10 +747,9 @@ such as domain name, domain sid and number of users and groups.
 <title>RPC TRUSTDOM DEL <replaceable>DOMAIN</replaceable></title>
 
 <para>Remove interdomain trust account for 
-<replaceable>DOMAIN</replaceable> from the remote server. 
+<replaceable>DOMAIN</replaceable>. If it is used against localhost 
+it has the same effect as <command>smbpasswd -x DOMAIN$</command>. 
 </para>
-
-&not.implemented;
 
 </refsect3>
 
