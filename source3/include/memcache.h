@@ -31,7 +31,7 @@ enum memcache_number {
 	GID_SID_CACHE,
 	SID_GID_CACHE,
 	GETWD_CACHE,
-	GETPWNAM_CACHE,
+	GETPWNAM_CACHE,		/* talloc */
 	MANGLE_HASH2_CACHE
 };
 
@@ -42,11 +42,17 @@ void memcache_set_global(struct memcache *cache);
 void memcache_add(struct memcache *cache, enum memcache_number n,
 		  DATA_BLOB key, DATA_BLOB value);
 
+void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
+			 DATA_BLOB key, void *ptr);
+
 void memcache_delete(struct memcache *cache, enum memcache_number n,
 		     DATA_BLOB key);
 
 bool memcache_lookup(struct memcache *cache, enum memcache_number n,
 		     DATA_BLOB key, DATA_BLOB *value);
+
+void *memcache_lookup_talloc(struct memcache *cache, enum memcache_number n,
+			     DATA_BLOB key);
 
 void memcache_flush(struct memcache *cache, enum memcache_number n);
 
