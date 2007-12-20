@@ -20,6 +20,8 @@
 #include "memcache.h"
 #include "rbtree.h"
 
+static struct memcache *global_cache;
+
 struct memcache_element {
 	struct rb_node rb_node;
 	struct memcache_element *prev, *next;
@@ -56,6 +58,12 @@ struct memcache *memcache_init(TALLOC_CTX *mem_ctx, size_t max_size)
 	result->max_size = max_size;
 	talloc_set_destructor(result, memcache_destructor);
 	return result;
+}
+
+void memcache_set_global(struct memcache *cache)
+{
+	TALLOC_FREE(global_cache);
+	global_cache = cache;
 }
 
 static struct memcache_element *memcache_node2elem(struct rb_node *node)
@@ -119,6 +127,13 @@ bool memcache_lookup(struct memcache *cache, enum memcache_number n,
 {
 	struct memcache_element *e;
 
+	if (cache == NULL) {
+		cache = global_cache;
+	}
+	if (cache == NULL) {
+		return false;
+	}
+
 	e = memcache_find(cache, n, key);
 	if (e == NULL) {
 		return false;
@@ -172,6 +187,13 @@ void memcache_delete(struct memcache *cache, enum memcache_number n,
 {
 	struct memcache_element *e;
 
+	if (cache == NULL) {
+		cache = global_cache;
+	}
+	if (cache == NULL) {
+		return;
+	}
+
 	e = memcache_find(cache, n, key);
 	if (e == NULL) {
 		return;
@@ -188,6 +210,13 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 	struct rb_node *parent;
 	DATA_BLOB cache_key, cache_value;
 	size_t element_size;
+
+	if (cache == NULL) {
+		cache = global_cache;
+	}
+	if (cache == NULL) {
+		return;
+	}
 
 	if (key.length == 0) {
 		return;
@@ -257,6 +286,13 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 void memcache_flush(struct memcache *cache, enum memcache_number n)
 {
 	struct rb_node *node;
+
+	if (cache == NULL) {
+		cache = global_cache;
+	}
+	if (cache == NULL) {
+		return;
+	}
 
 	/*
 	 * Find the smallest element of number n
