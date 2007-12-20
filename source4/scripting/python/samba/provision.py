@@ -219,20 +219,19 @@ def provision_become_dc(setup_dir, message, paths, lp, session_info,
     os.path.unlink(paths.samdb)
 
     message("Setting up templates db")
-    setup_templatesdb(paths.templates, setup_path, session_info, 
-                      credentials, lp)
+    setup_templatesdb(paths.templates, setup_path, session_info=session_info, 
+                      credentials=credentials, lp=lp)
 
     # Also wipes the database
     message("Setting up sam.ldb")
-    samdb = SamDB(paths.samdb, credentials=credentials, 
-                  session_info=session_info, lp=lp)
+    samdb = SamDB(paths.samdb, session_info=session_info, 
+                  credentials=credentials, lp=lp)
 
     message("Setting up sam.ldb partitions")
-    setup_samdb_partitions(samdb, setup_path, schemadn, 
-                       configdn, domaindn)
+    setup_samdb_partitions(samdb, setup_path, schemadn, configdn, domaindn)
 
-    samdb = SamDB(paths.samdb, credentials=credentials, 
-                  session_info=session_info, lp=lp)
+    samdb = SamDB(paths.samdb, session_info=session_info, 
+                  credentials=credentials, lp=lp)
 
     ldb.transaction_start()
     try:
@@ -257,12 +256,15 @@ def provision_become_dc(setup_dir, message, paths, lp, session_info,
     samdb.transaction_commit()
 
     message("Setting up %s" % paths.secrets)
-    secrets_ldb = setup_secretsdb(paths.secrets, setup_path, session_info, credentials, lp)
+    secrets_ldb = setup_secretsdb(paths.secrets, setup_path, session_info, 
+                                  credentials, lp)
     setup_ldb(secrets_ldb, setup_path("secrets_dc.ldif"), 
               { "MACHINEPASS_B64": b64encode(machinepass) })
 
 
 def setup_secretsdb(path, setup_path, session_info, credentials, lp):
+    if os.path.exists(path):
+        os.unlink(path)
     secrets_ldb = Ldb(path, session_info=session_info, credentials=credentials, lp=lp)
     secrets_ldb.erase()
     secrets_ldb.load_ldif_file_add(setup_path("secrets_init.ldif"))
@@ -474,8 +476,9 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
         share_ldb.load_ldif_file_add(setup_path("share.ldif"))
 
     message("Setting up secrets.ldb")
-    secrets_ldb = setup_secretsdb(paths.secrets, setup_path, session_info=session_info, 
-                    credentials=credentials, lp=lp)
+    secrets_ldb = setup_secretsdb(paths.secrets, setup_path, 
+                                  session_info=session_info, 
+                                  credentials=credentials, lp=lp)
 
     message("Setting up the registry")
     # FIXME: Still fails for some reason
@@ -486,6 +489,8 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
     setup_templatesdb(paths.templates, setup_path, session_info=session_info, 
                       credentials=credentials, lp=lp)
 
+    # Also wipes the database
+    message("Setting up sam.ldb")
     samdb = SamDB(paths.samdb, session_info=session_info, 
                   credentials=credentials, lp=lp)
 
@@ -619,20 +624,6 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
             })
 
         if not blank:
-
-    #    message("Activate schema module")
-    #    setup_modify_ldif("schema_activation.ldif", info, samdb, False)
-    #
-    #    // (hack) Reload, now we have the schema loaded.  
-    #    commit_ok = samdb.transaction_commit()
-    #    if (!commit_ok) {
-    #        message("samdb commit failed: " + samdb.errstring() + "\n")
-    #        assert(commit_ok)
-    #    }
-    #    samdb.close()
-    #
-    #    samdb = open_ldb(info, paths.samdb, False)
-    #
             message("Setting up sam.ldb users and groups")
             setup_add_ldif(samdb, setup_path("provision_users.ldif"), {
                 "DOMAINDN": domaindn,
@@ -696,7 +687,7 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
         message("Setting up sam.ldb index")
         samdb.load_ldif_file_add(setup_path("provision_index.ldif"))
 
-        message("Setting up sam.ldb rootDSE marking as syncronized")
+        message("Setting up sam.ldb rootDSE marking as synchronized")
         setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
     except:
         samdb.transaction_cancel()
@@ -709,10 +700,21 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
 
+    samdb = SamDB(paths.samdb, session_info=session_info, 
+                  credentials=credentials, lp=lp)
+
+    domainguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID")
+    assert isinstance(domainguid, str)
+    hostguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID",
+            expression="(&(objectClass=computer)(cn=%s))" % hostname,
+            scope=SCOPE_SUBTREE)
+    assert isinstance(hostguid, str)
+
     message("Setting up DNS zone: %s" % dnsdomain)
     create_zone_file(paths.dns, setup_path, samdb, 
                   hostname=hostname, hostip=hostip, dnsdomain=dnsdomain,
-                  domaindn=domaindn, dnspass=dnspass, realm=realm)
+                  domaindn=domaindn, dnspass=dnspass, realm=realm, 
+                  domainguid=domainguid, hostguid=hostguid)
     message("Please install the zone located in %s into your DNS server" % paths.dns)
 
 def create_phplpapdadmin_config(path, setup_path, s4_ldapi_path):
@@ -721,15 +723,8 @@ def create_phplpapdadmin_config(path, setup_path, s4_ldapi_path):
 
 
 def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn, 
-                  hostip, hostname, dnspass, realm):
+                  hostip, hostname, dnspass, realm, domainguid, hostguid):
     """Write out a DNS zone file, from the info in the current database."""
-
-    # connect to the sam
-    # These values may have changed, due to an incoming SamSync,
-    # or may not have been specified, so fetch them from the database
-    domainguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID")
-    hostguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID" ,
-                     expression="(&(objectClass=computer)(cn=%s))" % hostname)
 
     setup_file(setup_path("provision.zone"), path, {
             "DNSPASS_B64": b64encode(dnspass),
