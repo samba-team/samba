@@ -109,8 +109,6 @@ static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
 		goto done;
 	}
 
-	old_timeout = cli_set_timeout(cli, 60000);
-
 	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_WKSSVC,
 					    &status);
 	if (!pipe_cli) {
@@ -297,8 +295,6 @@ static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 		werr = ntstatus_to_werror(status);
 		goto done;
 	}
-
-	old_timeout = cli_set_timeout(cli, 60000);
 
 	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_WKSSVC,
 					    &status);
