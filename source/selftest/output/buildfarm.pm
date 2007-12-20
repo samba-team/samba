@@ -49,47 +49,53 @@ sub control_msg($$$)
 	$self->{test_output}->{$state->{NAME}} .= $output;
 }
 
-sub end_testsuite($$$$$$)
+sub end_testsuite($$$$$$$)
 {
-	my ($self, $name, $state, $expected_ret, $ret, $envlog) = @_;
+	my ($self, $name, $state, $result, $unexpected, $reason) = @_;
 	my $out = "";
 
 	$out .= "TEST RUNTIME: " . (time() - $state->{START_TIME}) . "s\n";
 
-	if ($ret == $expected_ret) {
+	if (not $unexpected) {
 		$out .= "ALL OK\n";
 	} else {
-		$out .= "ERROR: $ret\n";
+		$out .= "ERROR: $reason\n";
 		$out .= $self->{test_output}->{$name};
 	}
 
 	$out .= "PCAP FILE: $state->{PCAP_FILE}\n" if defined($state->{PCAP_FILE});
 
-	$out .= $envlog;
-
 	$out .= "==========================================\n";
-	if ($ret == $expected_ret) {
+	if (not $unexpected) {
 		$out .= "TEST PASSED: $name\n";
 	} else {
-		$out .= "TEST FAILED: $name (status $ret)\n";
+		$out .= "TEST FAILED: $name (status $reason)\n";
 	}
 	$out .= "==========================================\n";
 
 	print $out;
 }
 
-sub start_test($$$)
+sub start_test($$$$)
 {
-	my ($self, $state, $testname) = @_;
+	my ($self, $state, $parents, $testname) = @_;
+
+	if ($#$parents == -1) {
+		$self->start_testsuite($testname, $state);
+	}
 }
 
 sub end_test($$$$$$)
 {
-	my ($self, $state, $testname, $result, $unexpected, $reason) = @_;
+	my ($self, $state, $parents, $testname, $result, $unexpected, $reason) = @_;
 
-	return unless ($unexpected);
+	if ($unexpected) {
+		$self->{test_output}->{$state->{NAME}} .= "UNEXPECTED($result): $testname\n";
+	}
 
-	$self->{test_output}->{$state->{NAME}} .= "UNEXPECTED($result): $testname\n";
+	if ($#$parents == -1) {
+		$self->end_testsuite($testname, $state, $result, $unexpected, $reason); 
+	}
 }
 
 sub summary($)
