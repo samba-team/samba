@@ -61,7 +61,7 @@ static int memcache_destructor(struct memcache *cache) {
 
 	for (e = cache->mru; e != NULL; e = next) {
 		next = e->next;
-		if (memcache_is_talloc(e->n)
+		if (memcache_is_talloc((enum memcache_number)e->n)
 		    && (e->valuelength == sizeof(void *))) {
 			DATA_BLOB key, value;
 			void *ptr;

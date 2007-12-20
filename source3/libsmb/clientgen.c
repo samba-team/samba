@@ -471,7 +471,7 @@ struct cli_state *cli_initialise(void)
 	cli->inbuf = (char *)SMB_MALLOC(cli->bufsize+SAFETY_MARGIN);
 	cli->oplock_handler = cli_oplock_ack;
 	cli->case_sensitive = False;
-	cli->smb_rw_error = 0;
+	cli->smb_rw_error = SMB_READ_OK;
 
 	cli->use_spnego = lp_client_use_spnego();
 
@@ -606,7 +606,7 @@ void cli_shutdown(struct cli_state *cli)
 		close(cli->fd);
 	}
 	cli->fd = -1;
-	cli->smb_rw_error = 0;
+	cli->smb_rw_error = SMB_READ_OK;
 
 	SAFE_FREE(cli);
 }
