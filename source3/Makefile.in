@@ -1833,9 +1833,7 @@ installlibnetapi: installdirs libnetapi
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libnetapi.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libnetapi.a $(DESTDIR)$(LIBDIR)
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/libnetapi.h $(DESTDIR)${prefix}/include/samba/libnetapi
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/joindomain.h $(DESTDIR)${prefix}/include/samba/libnetapi
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/serverinfo.h $(DESTDIR)${prefix}/include/samba/libnetapi
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/netapi/libnetapi.h $(DESTDIR)${prefix}/include
 
 installpammodules: $(PAM_MODULES)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(PAMMODULESDIR)
@@ -1924,7 +1922,7 @@ uninstalllibaddns:
 uninstalllibnetapi:
 	-$(UNINSTALLLIBCMD_SH) $(DESTDIR)$(LIBDIR)/libnetapi.@SHLIBEXT@
 	-$(UNINSTALLLIBCMD_A) $(DESTDIR)$(LIBDIR)/libnetapi.a
-	-rm -f $(DESTDIR)${prefix}/include/samba/libnetapi/netapi.h
+	-rm -f $(DESTDIR)${prefix}/include/libnetapi.h
 
 uninstallpammodules:
 	@for module in $(PAM_MODULES); do \
