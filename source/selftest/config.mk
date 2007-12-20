@@ -1,11 +1,11 @@
+TEST_FORMAT = plain
+
 SELFTEST = $(LIB_PATH_VAR)=$(builddir)/bin/shared $(PERL) $(srcdir)/selftest/selftest.pl --prefix=${selftest_prefix} \
     --builddir=$(builddir) --srcdir=$(srcdir) \
     --expected-failures=$(srcdir)/samba4-knownfail \
+	--format=$(TEST_FORMAT) \
     --exclude=$(srcdir)/samba4-skip --testlist="./selftest/samba4_tests.sh|" \
     $(TEST_OPTIONS) 
-
-htmltest: everything
-	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --format=html $(TESTS)
 
 test: everything
 	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --immediate $(TESTS)
@@ -27,9 +27,6 @@ test-noswrap: everything
 
 quicktest: all
 	$(SELFTEST) --quick --socket-wrapper --immediate $(TESTS)
-
-htmlquicktest: all
-	$(SELFTEST) --quick --socket-wrapper --format=html --immediate $(TESTS)
 
 quicktestone: all
 	$(SELFTEST) --quick --socket-wrapper --one $(TESTS)
