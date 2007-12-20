@@ -461,10 +461,10 @@ static WERROR NetGetJoinInformationLocal(struct libnetapi_ctx *ctx,
 	return WERR_OK;
 }
 
-WERROR libnetapi_NetGetJoinInformation(struct libnetapi_ctx *ctx,
-				       const char *server_name,
-				       const char **name_buffer,
-				       uint16_t *name_type)
+static WERROR libnetapi_NetGetJoinInformation(struct libnetapi_ctx *ctx,
+					      const char *server_name,
+					      const char **name_buffer,
+					      uint16_t *name_type)
 {
 	if (!server_name || is_myname_or_ipaddr(server_name)) {
 		return NetGetJoinInformationLocal(ctx,
