@@ -37,6 +37,8 @@ enum memcache_number {
 
 struct memcache *memcache_init(TALLOC_CTX *mem_ctx, size_t max_size);
 
+void memcache_set_global(struct memcache *cache);
+
 void memcache_add(struct memcache *cache, enum memcache_number n,
 		  DATA_BLOB key, DATA_BLOB value);
 
