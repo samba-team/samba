@@ -9,13 +9,13 @@ use warnings;
 
 use FindBin qw($RealBin);
 
-sub new($$$$) {
+sub new$($$$) {
 	my ($class, $dirname, $statistics) = @_;
 	my $self = { 
 		dirname => $dirname,
-		statistics => $statistics,
 		active_test => undef,
 		local_statistics => {},
+		statistics => {},
 		msg => "",
 		error_summary => { 
 			skip => [],
@@ -248,7 +248,9 @@ sub summary($)
 	print INDEX "<tr>\n";
 	print INDEX "  <td class=\"testSuiteTotal\">Total</td>\n";
 
-	if ($st->{SUITES_FAIL} == 0) {
+	if ($st->{TESTS_UNEXPECTED_OK} == 0 and 
+	    $st->{TESTS_UNEXPECTED_FAIL} == 0 and
+		$st->{TESTS_ERROR} == 0) {
 		print INDEX "  <td class=\"resultOk\">";
 	} else {
 		print INDEX "  <td class=\"resultFailure\">";

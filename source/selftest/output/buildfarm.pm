@@ -7,11 +7,11 @@ use Exporter;
 
 use strict;
 
-sub new($$$$) {
-	my ($class, $statistics) = @_;
+sub new($$$) {
+	my ($class) = @_;
 	my $self = {
-		statistics => $statistics,
-		test_output => {}
+		test_output => {},
+		start_time => time()
 	};
 	bless($self, $class);
 }
@@ -24,7 +24,7 @@ sub start_testsuite($$$)
 	$state->{NAME} = $name;
 	$state->{START_TIME} = time();
 
-	my $duration = $state->{START_TIME} - $self->{statistics}->{START_TIME};
+	my $duration = $state->{START_TIME} - $self->{start_time};
 	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
 	$out .= "Running test $name (level 0 stdout)\n";
 	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
@@ -103,6 +103,8 @@ sub end_test($$$$$$)
 sub summary($)
 {
 	my ($self) = @_;
+
+	print "DURATION: " . (time() - $self->{start_time}) . " seconds\n";
 }
 
 sub skip_testsuite($$$$)
