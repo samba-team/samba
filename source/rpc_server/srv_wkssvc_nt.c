@@ -32,7 +32,7 @@
 
 static void create_wks_info_100(struct wkssvc_NetWkstaInfo100 *info100)
 {
-	info100->platform_id	 = 0x000001f4;	/* unknown */
+	info100->platform_id	 = PLATFORM_ID_NT;	/* unknown */
 	info100->version_major	 = lp_major_announce_version();
 	info100->version_minor	 = lp_minor_announce_version();
 
