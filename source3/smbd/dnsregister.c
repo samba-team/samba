@@ -41,7 +41,6 @@ struct dns_reg_state {
 
 void dns_register_close(struct dns_reg_state **dns_state_ptr)
 {
-	int mdnsd_conn_fd;
 	struct dns_reg_state *dns_state = *dns_state_ptr;
 
 	if (dns_state == NULL) {
@@ -74,7 +73,7 @@ static void dns_register_smbd_retry(struct event_context *ctx,
 	/* Clear previous registration state to force new
 	 * registration attempt. Clears event handler.
 	 */
-	dns_register_close(dns_state);
+	dns_register_close(&dns_state);
 }
 
 static void schedule_dns_register_smbd_retry(struct dns_reg_state *dns_state,
