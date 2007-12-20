@@ -32,7 +32,8 @@ enum memcache_number {
 	SID_GID_CACHE,
 	GETWD_CACHE,
 	GETPWNAM_CACHE,		/* talloc */
-	MANGLE_HASH2_CACHE
+	MANGLE_HASH2_CACHE,
+	SINGLETON_CACHE
 };
 
 struct memcache *memcache_init(TALLOC_CTX *mem_ctx, size_t max_size);
