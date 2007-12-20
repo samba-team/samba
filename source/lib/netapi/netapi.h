@@ -39,7 +39,27 @@ NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx, const char *pas
 NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx, const char *workgroup);
 const char *libnetapi_errstr(struct libnetapi_ctx *ctx, NET_API_STATUS status);
 
-#include "joindomain.h"
-#include "serverinfo.h"
+/* wkssvc */
+NET_API_STATUS NetJoinDomain(const char *server,
+			     const char *domain,
+			     const char *account_ou,
+			     const char *account,
+			     const char *password,
+			     uint32_t join_options);
+NET_API_STATUS NetUnjoinDomain(const char *server_name,
+			       const char *account,
+			       const char *password,
+			       uint32_t unjoin_flags);
+NET_API_STATUS NetGetJoinInformation(const char *server_name,
+				     const char **name_buffer,
+				     uint16_t *name_type);
 
+/* srvsvc */
+NET_API_STATUS NetServerGetInfo(const char *server_name,
+				uint32_t level,
+				uint8_t **buffer);
+NET_API_STATUS NetServerSetInfo(const char *server_name,
+				uint32_t level,
+				uint8_t *buffer,
+				uint32_t *parm_error);
 #endif
