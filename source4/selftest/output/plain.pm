@@ -6,14 +6,16 @@ use Exporter;
 
 use strict;
 
-sub new($$$$$$) {
+sub new($$$$$$$) {
 	my ($class, $summaryfile, $verbose, $immediate, $statistics, $totaltests) = @_;
 	my $self = { 
 		verbose => $verbose, 
 		immediate => $immediate, 
 		statistics => $statistics,
+		start_time => time(),
 		test_output => {},
 		suitesfailed => [],
+		suites_ok => 0,
 		skips => {},
 		summaryfile => $summaryfile,
 		index => 0,
@@ -32,13 +34,13 @@ sub start_testsuite($$$)
 	$state->{NAME} = $name;
 	$state->{START_TIME} = time();
 
-	my $duration = $state->{START_TIME} - $self->{statistics}->{START_TIME};
+	my $duration = $state->{START_TIME} - $self->{start_time};
 
 	$self->{test_output}->{$name} = "" unless($self->{verbose});
 
 	my $out = "";
 	$out .= "[$self->{index}/$self->{totalsuites} in ".$duration."s";
-	$out .= sprintf(", %d errors", $self->{statistics}->{SUITES_FAIL}) if ($self->{statistics}->{SUITES_FAIL} > 0);
+	$out .= sprintf(", %d errors", ($#{$self->{suitesfailed}}+1)) if ($#{$self->{suitesfailed}} > -1);
 	$out .= "] $name\n", 
 	print "$out";
 }
@@ -68,12 +70,15 @@ sub end_testsuite($$$$$$)
 
 	if ($unexpected) {
 		$self->output_msg($state, "ERROR: $reason\n");
+		push (@{$self->{suitesfailed}}, $name);
+	} else {
+		$self->{suites_ok}++;
 	}
 
 	if ($unexpected and $self->{immediate} and not $self->{verbose}) {
 		$out .= $self->{test_output}->{$name};
-		push (@{$self->{suitesfailed}}, $name);
 	}
+
 
 	print $out;
 }
@@ -151,12 +156,12 @@ sub summary($)
 
 	print "\nA summary with detailed informations can be found in:\n  $self->{summaryfile}\n";
 
-	if ($self->{statistics}->{SUITES_FAIL} == 0) {
+	if ($#{$self->{suitesfailed}} == -1) {
 		my $ok = $self->{statistics}->{TESTS_EXPECTED_OK} + 
 				 $self->{statistics}->{TESTS_EXPECTED_FAIL};
-		print "\nALL OK ($ok tests in $self->{statistics}->{SUITES_OK} testsuites)\n";
+		print "\nALL OK ($ok tests in $self->{suites_ok} testsuites)\n";
 	} else {
-		print "\nFAILED ($self->{statistics}->{TESTS_UNEXPECTED_FAIL} failures and $self->{statistics}->{TESTS_ERROR} errors in $self->{statistics}->{SUITES_FAIL} testsuites)\n";
+		print "\nFAILED ($self->{statistics}->{TESTS_UNEXPECTED_FAIL} failures and $self->{statistics}->{TESTS_ERROR} errors in ". ($#{$self->{suitesfailed}}+1) ." testsuites)\n";
 	}
 
 }

@@ -165,11 +165,7 @@ my @includes = ();
 my @excludes = ();
 
 my $statistics = {
-	START_TIME => time(),
-
 	SUITES_FAIL => 0,
-	SUITES_OK => 0,
-	SUITES_SKIPPED => 0,
 
 	TESTS_UNEXPECTED_OK => 0,
 	TESTS_EXPECTED_OK => 0,
@@ -276,8 +272,6 @@ sub run_testsuite($$$$$$)
 	if ($ret != $expected_ret) {
 		$statistics->{SUITES_FAIL}++;
 		exit(1) if ($opt_one);
-	} else {
-		$statistics->{SUITES_OK}++;
 	}
 
 	return ($ret == $expected_ret);
@@ -631,7 +625,6 @@ foreach (@available) {
 	my $skipreason = skip($name);
 	if ($skipreason) {
 		$msg_ops->skip_testsuite($name, $skipreason);
-		$statistics->{SUITES_SKIPPED}++;
 	} else {
 		push(@todo, $_); 
 	}
@@ -791,7 +784,6 @@ $envvarstr
 		
 		my $envvars = setup_env($envname);
 		if (not defined($envvars)) {
-			$statistics->{SUITES_SKIPPED}++;
 			$msg_ops->skip_testsuite($name, "unable to set up environment $envname");
 			next;
 		}
@@ -813,10 +805,7 @@ teardown_env($_) foreach (keys %running_envs);
 
 $target->stop();
 
-$statistics->{END_TIME} = time();
-my $duration = ($statistics->{END_TIME}-$statistics->{START_TIME});
 $msg_ops->summary();
-print "DURATION: $duration seconds\n";
 
 my $failed = 0;
 
