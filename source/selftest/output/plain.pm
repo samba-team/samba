@@ -6,8 +6,8 @@ use Exporter;
 
 use strict;
 
-sub new($$$$$) {
-	my ($class, $summaryfile, $verbose, $immediate, $statistics) = @_;
+sub new($$$$$$) {
+	my ($class, $summaryfile, $verbose, $immediate, $statistics, $totaltests) = @_;
 	my $self = { 
 		verbose => $verbose, 
 		immediate => $immediate, 
@@ -16,6 +16,8 @@ sub new($$$$$) {
 		suitesfailed => [],
 		skips => {},
 		summaryfile => $summaryfile,
+		index => 0,
+		totalsuites => $totaltests,
 	};
 	bless($self, $class);
 }
@@ -26,14 +28,16 @@ sub start_testsuite($$$)
 {
 	my ($self, $name, $state) = @_;
 
+	$self->{index}++;
+	$state->{NAME} = $name;
+	$state->{START_TIME} = time();
+
 	my $duration = $state->{START_TIME} - $self->{statistics}->{START_TIME};
 
 	$self->{test_output}->{$name} = "" unless($self->{verbose});
 
-	$self->output_msg($state, "CMD: $state->{CMD}\n");
-
 	my $out = "";
-	$out .= "[$state->{INDEX}/$state->{TOTAL} in ".$duration."s";
+	$out .= "[$self->{index}/$self->{totalsuites} in ".$duration."s";
 	$out .= sprintf(", %d errors", $self->{statistics}->{SUITES_FAIL}) if ($self->{statistics}->{SUITES_FAIL} > 0);
 	$out .= "] $name\n", 
 	print "$out";
@@ -162,6 +166,8 @@ sub skip_testsuite($$)
 	my ($self, $name, $reason) = @_;
 
 	push (@{$self->{skips}->{$reason}}, $name);
+
+	$self->{totalsuites}--;
 }
 
 1;

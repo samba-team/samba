@@ -208,14 +208,14 @@ sub skip($)
 
 sub getlog_env($);
 
-sub setup_pcap($)
+sub setup_pcap($$)
 {
-	my ($state) = @_;
+	my ($state, $name) = @_;
 
 	return unless ($opt_socket_wrapper_pcap);
 	return unless defined($ENV{SOCKET_WRAPPER_PCAP_DIR});
 
-	my $fname = sprintf("t%03u_%s", $state->{INDEX}, $state->{NAME});
+	my $fname = $name;
 	$fname =~ s%[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\-]%_%g;
 
 	$state->{PCAP_FILE} = "$ENV{SOCKET_WRAPPER_PCAP_DIR}/$fname.pcap";
@@ -236,20 +236,13 @@ sub cleanup_pcap($$$)
 	$state->{PCAP_FILE} = undef;
 }
 
-sub run_testsuite($$$$$$$)
+sub run_testsuite($$$$$$)
 {
-	my ($envname, $envvars, $name, $cmd, $i, $totalsuites, $msg_ops) = @_;
+	my ($envname, $name, $cmd, $i, $totalsuites, $msg_ops) = @_;
 	my $msg_state = {
-		ENVNAME	=> $envname,
-		ENVVARS => $envvars,
-		NAME => $name,
-		CMD	=> $cmd,
-		INDEX	=> $i,
-		TOTAL	=> $totalsuites,
-		START_TIME	=> time()
 	};
 
-	setup_pcap($msg_state);
+	setup_pcap($msg_state, $name);
 
 	$msg_ops->start_test($msg_state, [], $name);
 
@@ -259,6 +252,8 @@ sub run_testsuite($$$$$$$)
 
 	my $envlog = getlog_env($envname);
 	$msg_ops->output_msg($msg_state, "ENVLOG: $envlog\n") if ($envlog ne "");
+
+	$msg_ops->output_msg($msg_state, "CMD: $cmd\n");
 
 	my $ret = close(RESULT);
 	$ret = 0 unless $ret == 1;
@@ -606,13 +601,22 @@ if ($#testlists == -1) {
 	die("No testlists specified");
 }
 
+my @available = ();
+foreach my $fn (@testlists) {
+	foreach (read_testlist($fn)) {
+		my $name = $$_[0];
+		next if (@includes and not find_in_list(\@includes, $name));
+		push (@available, $_);
+	}
+}
+
 my $msg_ops;
 if ($opt_format eq "buildfarm") {
 	require output::buildfarm;
 	$msg_ops = new output::buildfarm($statistics);
 } elsif ($opt_format eq "plain") {
 	require output::plain;
-	$msg_ops = new output::plain("$prefix/summary", $opt_verbose, $opt_immediate, $statistics);
+	$msg_ops = new output::plain("$prefix/summary", $opt_verbose, $opt_immediate, $statistics, $#available+1);
 } elsif ($opt_format eq "html") {
 	require output::html;
 	mkdir("test-results", 0777);
@@ -621,17 +625,15 @@ if ($opt_format eq "buildfarm") {
 	die("Invalid output format '$opt_format'");
 }
 
-foreach my $fn (@testlists) {
-	foreach (read_testlist($fn)) {
-		my $name = $$_[0];
-		next if (@includes and not find_in_list(\@includes, $name));
-		my $skipreason = skip($name);
-		if ($skipreason) {
-			$msg_ops->skip_testsuite($name, $skipreason);
-			$statistics->{SUITES_SKIPPED}++;
-		} else {
-			push(@todo, $_); 
-		}
+
+foreach (@available) {
+	my $name = $$_[0];
+	my $skipreason = skip($name);
+	if ($skipreason) {
+		$msg_ops->skip_testsuite($name, $skipreason);
+		$statistics->{SUITES_SKIPPED}++;
+	} else {
+		push(@todo, $_); 
 	}
 }
 
@@ -794,7 +796,7 @@ $envvarstr
 			next;
 		}
 
-		run_testsuite($envname, $envvars, $name, $cmd, $i, $suitestotal, 
+		run_testsuite($envname, $name, $cmd, $i, $suitestotal, 
 		              $msg_ops);
 
 		if (defined($opt_analyse_cmd)) {
