@@ -3473,7 +3473,7 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 		if (size && data_p) {
 			err = registry_pull_value(reg_tdb,
 						  &value,
-						  type,
+						  (enum winreg_Type)type,
 						  data_p,
 						  size,
 						  size);
