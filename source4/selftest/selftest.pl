@@ -251,19 +251,26 @@ sub run_testsuite($$$$$$$)
 
 	setup_pcap($msg_state);
 
-	open(RESULT, "$cmd 2>&1|");
-	$msg_ops->start_testsuite($name, $msg_state);
+	$msg_ops->start_test($msg_state, [], $name);
 
+	open(RESULT, "$cmd 2>&1|");
 	my $expected_ret = parse_results(
-		$msg_ops, $msg_state, $statistics, *RESULT, \&expecting_failure);
+		$msg_ops, $msg_state, $statistics, *RESULT, \&expecting_failure, [$name]);
+
+	my $envlog = getlog_env($envname);
+	$msg_ops->output_msg($msg_state, "ENVLOG: $envlog\n") if ($envlog ne "");
 
 	my $ret = close(RESULT);
 	$ret = 0 unless $ret == 1;
 
-	cleanup_pcap($msg_state, $expected_ret, $ret);
+	if ($ret == 1) {
+		$msg_ops->end_test($msg_state, [], $name, "success", $expected_ret != $ret, undef);
+	} else {
+		$msg_ops->end_test($msg_state, [], $name, "failure", $expected_ret != $ret, 
+					       "Returned $ret");
+	}
 
-	$msg_ops->end_testsuite($name, $msg_state, $expected_ret, $ret,
-							getlog_env($msg_state->{ENVNAME}));
+	cleanup_pcap($msg_state, $expected_ret, $ret);
 
 	if (not $opt_socket_wrapper_keep_pcap and 
 		defined($msg_state->{PCAP_FILE})) {

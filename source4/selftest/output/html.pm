@@ -136,7 +136,7 @@ sub output_msg($$$)
 
 sub end_testsuite($$$$$)
 {
-	my ($self, $name, $state, $expected_ret, $ret, $envlog) = @_;
+	my ($self, $name, $state, $result, $unexpected, $reason) = @_;
 
 	print TEST "</table>\n";
 
@@ -151,8 +151,8 @@ sub end_testsuite($$$$$)
 	print INDEX "  <td class=\"testSuite\"><a href=\"$state->{HTMLFILE}\">$name</a></td>\n";
 	my $st = $self->{local_statistics};
 
-	if ($ret == $expected_ret) {
-		if ($ret == 0) {
+	if (not $unexpected) {
+		if ($result eq "failure") {
 			print INDEX "  <td class=\"resultExpectedFailure\">";
 		} else {
 			print INDEX "  <td class=\"resultOk\">";
@@ -183,7 +183,7 @@ sub end_testsuite($$$$$)
 	}
 
 	if ($l == 0) {
-		if ($ret == $expected_ret) {
+		if (not $unexpected) {
 			print INDEX "OK";
 		} else {
 			print INDEX "FAIL";
@@ -197,15 +197,25 @@ sub end_testsuite($$$$$)
 
 sub start_test($$$)
 {
-	my ($self, $state, $testname) = @_;
+	my ($self, $state, $parents, $testname) = @_;
+
+	if ($#$parents == -1) {
+		$self->start_testsuite($testname, $state);
+		return;
+	}
 
 	$self->{active_test} = $testname;
 	$self->{msg} = "";
 }
 
-sub end_test($$$$$$)
+sub end_test($$$$$$$)
 {
-	my ($self, $state, $testname, $result, $unexpected, $reason) = @_;
+	my ($self, $state, $parents, $testname, $result, $unexpected, $reason) = @_;
+
+	if ($#$parents == -1) {
+		$self->end_testsuite($testname, $state, $result, $unexpected, $reason);
+		return;
+	}
 
 	print TEST "<tr>";
 

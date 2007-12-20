@@ -25,18 +25,18 @@ sub output_msg($$$);
 sub start_testsuite($$$)
 {
 	my ($self, $name, $state) = @_;
-	my $out = "";
 
 	my $duration = $state->{START_TIME} - $self->{statistics}->{START_TIME};
-	$out .= "[$state->{INDEX}/$state->{TOTAL} in ".$duration."s";
-	$out .= sprintf(", %d errors", $self->{statistics}->{SUITES_FAIL}) if ($self->{statistics}->{SUITES_FAIL} > 0);
-	$out .= "] $name\n", 
 
 	$self->{test_output}->{$name} = "" unless($self->{verbose});
 
 	$self->output_msg($state, "CMD: $state->{CMD}\n");
 
-	print $out;
+	my $out = "";
+	$out .= "[$state->{INDEX}/$state->{TOTAL} in ".$duration."s";
+	$out .= sprintf(", %d errors", $self->{statistics}->{SUITES_FAIL}) if ($self->{statistics}->{SUITES_FAIL} > 0);
+	$out .= "] $name\n", 
+	print "$out";
 }
 
 sub output_msg($$$)
@@ -59,16 +59,14 @@ sub control_msg($$$)
 
 sub end_testsuite($$$$$$)
 {
-	my ($self, $name, $state, $expected_ret, $ret, $envlog) = @_;
+	my ($self, $name, $state, $result, $unexpected, $reason) = @_;
 	my $out = "";
 
-	$self->output_msg($state, "ENVLOG: $envlog\n") if ($envlog ne "");
-
-	if ($ret != $expected_ret) {
-		$self->output_msg($state, "ERROR: $ret\n");
+	if ($unexpected) {
+		$self->output_msg($state, "ERROR: $reason\n");
 	}
 
-	if ($ret != $expected_ret and $self->{immediate} and not $self->{verbose}) {
+	if ($unexpected and $self->{immediate} and not $self->{verbose}) {
 		$out .= $self->{test_output}->{$name};
 		push (@{$self->{suitesfailed}}, $name);
 	}
@@ -76,14 +74,24 @@ sub end_testsuite($$$$$$)
 	print $out;
 }
 
-sub start_test($$)
+sub start_test($$$$)
 {
-	my ($state, $testname) = @_;
+	my ($self, $state, $parents, $testname) = @_;
+
+	if ($#$parents == -1) {
+		$self->start_testsuite($testname, $state);
+	}
 }
 
 sub end_test($$$$$$)
 {
-	my ($self, $state, $testname, $result, $unexpected, $reason) = @_;
+	my ($self, $state, $parents, $testname, $result, $unexpected, $reason) = @_;
+	
+	if ($#$parents == -1) {
+		$self->end_testsuite($testname, $state, $result, $unexpected, $reason);
+		return;
+	}
+
 	my $append = "";
 
 	unless ($unexpected) {

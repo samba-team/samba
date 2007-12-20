@@ -6,20 +6,20 @@ require Exporter;
 
 use strict;
 
-sub parse_results($$$$$)
+sub parse_results($$$$$$)
 {
-	my ($msg_ops, $msg_state, $statistics, $fh, $expecting_failure) = @_;
+	my ($msg_ops, $msg_state, $statistics, $fh, $expecting_failure, $open_tests) = @_;
 	my $unexpected_ok = 0;
 	my $expected_fail = 0;
 	my $unexpected_fail = 0;
 	my $unexpected_err = 0;
-	my $open_tests = {};
+	my $orig_open_len = $#$open_tests;
 
 	while(<$fh>) {
 		if (/^test: (.+)\n/) {
 			$msg_ops->control_msg($msg_state, $_);
-			$open_tests->{$1} = 1;
-			$msg_ops->start_test($msg_state, $1);
+			$msg_ops->start_test($msg_state, $open_tests, $1);
+			push (@$open_tests, $1);
 		} elsif (/^(success|successful|failure|skip|error): (.*?)( \[)?([ \t]*)\n/) {
 			$msg_ops->control_msg($msg_state, $_);
 			my $reason = undef;
@@ -33,34 +33,34 @@ sub parse_results($$$$$)
 			}
 			my $result = $1;
 			if ($1 eq "success" or $1 eq "successful") {
-				delete $open_tests->{$2};
+				pop(@$open_tests); #FIXME: Check that popped value == $2
 				if ($expecting_failure->("$msg_state->{NAME}/$2")) {
 					$statistics->{TESTS_UNEXPECTED_OK}++;
-					$msg_ops->end_test($msg_state, $2, $1, 1, $reason);
+					$msg_ops->end_test($msg_state, $open_tests, $2, $1, 1, $reason);
 					$unexpected_ok++;
 				} else {
 					$statistics->{TESTS_EXPECTED_OK}++;
-					$msg_ops->end_test($msg_state, $2, $1, 0, $reason);
+					$msg_ops->end_test($msg_state, $open_tests, $2, $1, 0, $reason);
 				}
 			} elsif ($1 eq "failure") {
-				delete $open_tests->{$2};
+				pop(@$open_tests); #FIXME: Check that popped value == $2
 				if ($expecting_failure->("$msg_state->{NAME}/$2")) {
 					$statistics->{TESTS_EXPECTED_FAIL}++;
-					$msg_ops->end_test($msg_state, $2, $1, 0, $reason);
+					$msg_ops->end_test($msg_state, $open_tests, $2, $1, 0, $reason);
 					$expected_fail++;
 				} else {
 					$statistics->{TESTS_UNEXPECTED_FAIL}++;
-					$msg_ops->end_test($msg_state, $2, $1, 1, $reason);
+					$msg_ops->end_test($msg_state, $open_tests, $2, $1, 1, $reason);
 					$unexpected_fail++;
 				}
 			} elsif ($1 eq "skip") {
 				$statistics->{TESTS_SKIP}++;
-				delete $open_tests->{$2};
-				$msg_ops->end_test($msg_state, $2, $1, 0, $reason);
+				pop(@$open_tests); #FIXME: Check that popped value == $2
+				$msg_ops->end_test($msg_state, $open_tests, $2, $1, 0, $reason);
 			} elsif ($1 eq "error") {
 				$statistics->{TESTS_ERROR}++;
-				delete $open_tests->{$2};
-				$msg_ops->end_test($msg_state, $2, $1, 1, $reason);
+				pop(@$open_tests); #FIXME: Check that popped value == $2
+				$msg_ops->end_test($msg_state, $open_tests, $2, $1, 1, $reason);
 				$unexpected_err++;
 			}
 		} else {
@@ -68,8 +68,8 @@ sub parse_results($$$$$)
 		}
 	}
 
-	foreach (keys %$open_tests) {
-		$msg_ops->end_test($msg_state, $_, "error", 1,
+	while ($#$open_tests > $orig_open_len) {
+		$msg_ops->end_test($msg_state, $open_tests, pop(@$open_tests), "error", 1,
 				   "was started but never finished!");
 		$statistics->{TESTS_ERROR}++;
 		$unexpected_err++;
