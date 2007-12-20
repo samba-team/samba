@@ -5,6 +5,11 @@ package output::buildfarm;
 use Exporter;
 @ISA = qw(Exporter);
 
+use FindBin qw($RealBin);
+use lib "$RealBin/..";
+
+use Subunit qw(parse_results);
+
 use strict;
 
 sub new($$$) {
@@ -16,15 +21,15 @@ sub new($$$) {
 	bless($self, $class);
 }
 
-sub start_testsuite($$$)
+sub start_testsuite($$)
 {
-	my ($self, $name, $state) = @_;
+	my ($self, $name) = @_;
 	my $out = "";
 
-	$state->{NAME} = $name;
-	$state->{START_TIME} = time();
+	$self->{NAME} = $name;
+	$self->{START_TIME} = time();
 
-	my $duration = $state->{START_TIME} - $self->{start_time};
+	my $duration = $self->{START_TIME} - $self->{start_time};
 	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
 	$out .= "Running test $name (level 0 stdout)\n";
 	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
@@ -37,26 +42,26 @@ sub start_testsuite($$$)
 	print $out;
 }
 
-sub output_msg($$$)
+sub output_msg($$)
 {
-	my ($self, $state, $output) = @_;
+	my ($self, $output) = @_;
 
-	$self->{test_output}->{$state->{NAME}} .= $output;
+	$self->{test_output}->{$self->{NAME}} .= $output;
 }
 
-sub control_msg($$$)
+sub control_msg($$)
 {
-	my ($self, $state, $output) = @_;
+	my ($self, $output) = @_;
 
-	$self->{test_output}->{$state->{NAME}} .= $output;
+	$self->{test_output}->{$self->{NAME}} .= $output;
 }
 
-sub end_testsuite($$$$$$$)
+sub end_testsuite($$$$$$)
 {
-	my ($self, $name, $state, $result, $unexpected, $reason) = @_;
+	my ($self, $name, $result, $unexpected, $reason) = @_;
 	my $out = "";
 
-	$out .= "TEST RUNTIME: " . (time() - $state->{START_TIME}) . "s\n";
+	$out .= "TEST RUNTIME: " . (time() - $self->{START_TIME}) . "s\n";
 
 	if (not $unexpected) {
 		$out .= "ALL OK\n";
@@ -64,8 +69,6 @@ sub end_testsuite($$$$$$$)
 		$out .= "ERROR: $reason\n";
 		$out .= $self->{test_output}->{$name};
 	}
-
-	$out .= "PCAP FILE: $state->{PCAP_FILE}\n" if defined($state->{PCAP_FILE});
 
 	$out .= "==========================================\n";
 	if (not $unexpected) {
@@ -78,25 +81,25 @@ sub end_testsuite($$$$$$$)
 	print $out;
 }
 
-sub start_test($$$$)
+sub start_test($$$)
 {
-	my ($self, $state, $parents, $testname) = @_;
+	my ($self, $parents, $testname) = @_;
 
 	if ($#$parents == -1) {
-		$self->start_testsuite($testname, $state);
+		$self->start_testsuite($testname);
 	}
 }
 
-sub end_test($$$$$$)
+sub end_test($$$$$)
 {
-	my ($self, $state, $parents, $testname, $result, $unexpected, $reason) = @_;
+	my ($self, $parents, $testname, $result, $unexpected, $reason) = @_;
 
 	if ($unexpected) {
-		$self->{test_output}->{$state->{NAME}} .= "UNEXPECTED($result): $testname\n";
+		$self->{test_output}->{$self->{NAME}} .= "UNEXPECTED($result): $testname\n";
 	}
 
 	if ($#$parents == -1) {
-		$self->end_testsuite($testname, $state, $result, $unexpected, $reason); 
+		$self->end_testsuite($testname, $result, $unexpected, $reason); 
 	}
 }
 
