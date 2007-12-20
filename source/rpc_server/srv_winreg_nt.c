@@ -934,7 +934,9 @@ static WERROR make_default_reg_sd( TALLOC_CTX *ctx, SEC_DESC **psd )
         if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 2, ace)) == NULL)
                 return WERR_NOMEM;
 
-        if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, &owner_sid, NULL, NULL, psa, &sd_size)) == NULL)
+        if ((*psd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
+				  SEC_DESC_SELF_RELATIVE, &owner_sid, NULL,
+				  NULL, psa, &sd_size)) == NULL)
                 return WERR_NOMEM;
 
 	return WERR_OK;

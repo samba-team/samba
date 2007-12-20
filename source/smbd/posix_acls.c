@@ -891,7 +891,7 @@ static bool nt4_compatible_acls(void)
 ****************************************************************************/
 
 static SEC_ACCESS map_canon_ace_perms(int snum,
-				int *pacl_type,
+				enum security_ace_type *pacl_type,
 				mode_t perms,
 				bool directory_ace)
 {
@@ -2869,7 +2869,7 @@ static NTSTATUS posix_get_nt_acl_common(struct connection_struct *conn,
 
 		{
 			canon_ace *ace;
-			int nt_acl_type;
+			enum security_ace_type nt_acl_type;
 			int i;
 
 			if (nt4_compatible_acls() && dir_ace) {
@@ -3210,7 +3210,7 @@ static NTSTATUS append_ugw_ace(files_struct *fsp,
 {
 	mode_t perms;
 	SEC_ACCESS acc;
-	int nt_acl_type;
+	enum security_ace_type nt_acl_type;
 	DOM_SID trustee;
 
 	switch (ugw) {
