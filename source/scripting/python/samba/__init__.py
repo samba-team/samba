@@ -72,6 +72,8 @@ class Ldb(ldb.Ldb):
         if session_info is not None:
             self.set_session_info(self, session_info)
 
+        assert misc.ldb_register_samba_handlers(self) == 0
+
         if lp is not None:
             self.set_loadparm(self, lp)
 
