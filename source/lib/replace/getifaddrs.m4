@@ -11,6 +11,10 @@ AC_CACHE_CHECK([for getifaddrs and freeifaddrs],samba_cv_HAVE_GETIFADDRS,[
 AC_TRY_COMPILE([
 #include <sys/socket.h>
 #include <sys/types.h>
+#if STDC_HEADERS
+#include <stdlib.h>
+#include <stddef.h>
+#endif
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <ifaddrs.h>
