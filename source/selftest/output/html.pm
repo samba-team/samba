@@ -12,13 +12,13 @@ use lib "$RealBin/..";
 
 use Subunit qw(parse_results);
 
-sub new$($$$) {
+sub new($$$) {
 	my ($class, $dirname, $statistics) = @_;
 	my $self = { 
 		dirname => $dirname,
 		active_test => undef,
 		local_statistics => {},
-		statistics => {},
+		statistics => $statistics,
 		msg => "",
 		error_summary => { 
 			skip => [],
