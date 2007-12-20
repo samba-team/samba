@@ -17,10 +17,6 @@
 
 #include "includes.h"
 
-#if !defined(HAVE_LINUX_READAHEAD) && !defined(HAVE_POSIX_FADVISE)
-static bool didmsg;
-#endif
-
 struct readahead_data {
 	SMB_OFF_T off_bound;
 	SMB_OFF_T len;
