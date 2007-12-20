@@ -21,6 +21,9 @@ sub start_testsuite($$$)
 	my ($self, $name, $state) = @_;
 	my $out = "";
 
+	$state->{NAME} = $name;
+	$state->{START_TIME} = time();
+
 	my $duration = $state->{START_TIME} - $self->{statistics}->{START_TIME};
 	$out .= "--==--==--==--==--==--==--==--==--==--==--\n";
 	$out .= "Running test $name (level 0 stdout)\n";
@@ -28,7 +31,6 @@ sub start_testsuite($$$)
 	$out .= scalar(localtime())."\n";
 	$out .= "SELFTEST RUNTIME: " . $duration . "s\n";
 	$out .= "NAME: $name\n";
-	$out .= "CMD: $state->{CMD}\n";
 
 	$self->{test_output}->{$name} = "";
 

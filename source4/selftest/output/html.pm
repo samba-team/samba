@@ -84,32 +84,13 @@ sub start_testsuite($$$)
 		failure => 0
 	};
 
+	$state->{NAME} = $name;
 	$state->{HTMLFILE} = "$name.html";
 	$state->{HTMLFILE} =~ s/[:\t\n \/]/_/g;
 
 	open(TEST, ">$self->{dirname}/$state->{HTMLFILE}") or die("Unable to open $state->{HTMLFILE} for writing");
 
 	$self->print_html_header("Test Results for $name", *TEST);
-
-	if ($state->{ENVNAME} ne "none") {
-		print TEST "<h2>Environment settings</h2>\n";
-
-		print TEST "  <table>\n";
-		print TEST "    <tr><td><b>Variable name</b></td><td><b>Variable value</b></td></tr>\n";
-		foreach (keys %{$state->{ENVVARS}}) {
-			print TEST "    <tr><td>$_</td><td>";
-			my $val = $state->{ENVVARS}->{$_};
-			if ($val =~ /^\.\// and -r $val) { 
-				print TEST "<a href=\"../$val\">$val</a>"; 
-			} elsif (-r $val) {
-				print TEST "<a href=\"$val\">$val</a>"; 
-			} else { 
-				print TEST $val; 
-			}
-			print TEST "</td></tr>\n";
-		}
-		print TEST "  </table>\n";
-	}
 
 	print TEST "<h2>Tests</h2>\n";
 
@@ -140,7 +121,6 @@ sub end_testsuite($$$$$)
 
 	print TEST "</table>\n";
 
-	print TEST "<div class=\"command\">$state->{CMD}</div>\n";
 	print TEST "<div class=\"duration\">Duration: " . (time() - $state->{START_TIME}) . "s</div>\n";
 
 	$self->print_html_footer(*TEST);
@@ -200,6 +180,7 @@ sub start_test($$$)
 	my ($self, $state, $parents, $testname) = @_;
 
 	if ($#$parents == -1) {
+		$state->{START_TIME} = time();
 		$self->start_testsuite($testname, $state);
 		return;
 	}
