@@ -37,11 +37,38 @@ struct memcache {
 	size_t max_size;
 };
 
+static void memcache_element_parse(struct memcache_element *e,
+				   DATA_BLOB *key, DATA_BLOB *value);
+
+static bool memcache_is_talloc(enum memcache_number n)
+{
+	bool result;
+
+	switch (n) {
+	case GETPWNAM_CACHE:
+		result = true;
+		break;
+	default:
+		result = false;
+		break;
+	}
+
+	return result;
+}
+
 static int memcache_destructor(struct memcache *cache) {
 	struct memcache_element *e, *next;
 
 	for (e = cache->mru; e != NULL; e = next) {
 		next = e->next;
+		if (memcache_is_talloc(e->n)
+		    && (e->valuelength == sizeof(void *))) {
+			DATA_BLOB key, value;
+			void *ptr;
+			memcache_element_parse(e, &key, &value);
+			memcpy(&ptr, value.data, sizeof(ptr));
+			TALLOC_FREE(ptr);
+		}
 		SAFE_FREE(e);
 	}
 	return 0;
@@ -154,6 +181,25 @@ bool memcache_lookup(struct memcache *cache, enum memcache_number n,
 
 	memcache_element_parse(e, &key, value);
 	return true;
+}
+
+void *memcache_lookup_talloc(struct memcache *cache, enum memcache_number n,
+			     DATA_BLOB key)
+{
+	DATA_BLOB value;
+	void *result;
+
+	if (!memcache_lookup(cache, n, key, &value)) {
+		return NULL;
+	}
+
+	if (value.length != sizeof(result)) {
+		return NULL;
+	}
+
+	memcpy(&result, value.data, sizeof(result));
+
+	return result;
 }
 
 static void memcache_delete_element(struct memcache *cache,
@@ -281,6 +327,12 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 
 	cache->size += element_size;
 	memcache_trim(cache);
+}
+
+void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
+			 DATA_BLOB key, void *ptr)
+{
+	return memcache_add(cache, n, key, data_blob_const(&ptr, sizeof(ptr)));
 }
 
 void memcache_flush(struct memcache *cache, enum memcache_number n)
