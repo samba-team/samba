@@ -39,11 +39,13 @@ static int linux_statvfs(const char *path, vfs_statvfs_struct *statbuf)
 		statbuf->FreeFileNodes = statvfs_buf.f_ffree;
 		statbuf->FsIdentifier = statvfs_buf.f_fsid;
 
+#if defined(FILE_CASE_SENSITIVE_SEARCH) && defined(FILE_CASE_PRESERVING_NAMES)
 		/* Good defaults for Linux filesystems are case sensitive
 		 * and case preserving.
 		 */
 		statbuf->FsCapabilities =
 		    FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVING_NAMES;
+#endif
 	}
 	return result;
 }
