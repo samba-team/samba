@@ -158,6 +158,9 @@ const char *libnetapi_errstr(struct libnetapi_ctx *ctx,
 		case 0:
 			err_str = "Success";
 			break;
+		case 0x00000005: /* WERR_ACCESS_DENIED */
+			err_str = "Access is denied";
+			break;
 		case 0x00000057: /* WERR_INVALID_PARAM */
 			err_str = "Invalid parameter";
 			break;
