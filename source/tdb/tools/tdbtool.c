@@ -151,7 +151,7 @@ static void print_data(const char *buf,int len)
 	if (len<=0) return;
 	printf("[%03X] ",i);
 	for (i=0;i<len;) {
-		printf("%02X ",(int)buf[i]);
+		printf("%02X ",(int)((unsigned char)buf[i]));
 		i++;
 		if (i%8 == 0) printf(" ");
 		if (i%16 == 0) {      
