@@ -555,8 +555,6 @@ WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 	NTSTATUS status;
 
-	printf("libnet_Unjoin\n");
-
 	if (r->in.modify_config && !lp_include_registry_globals()) {
 		return WERR_NOT_SUPPORTED;
 	}
