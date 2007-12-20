@@ -1,35 +1,35 @@
-LOCAL-RESOLVE.*/async
-LOCAL-ICONV.*/next_codepoint()
-BASE-DELAYWRITE/finfo update on close
-BASE-DELETE.*/deltest20a
-BASE-DELETE.*/deltest20b
-RAW-OPLOCK.*/OPLOCK
+LOCAL-RESOLVE.*.async
+LOCAL-ICONV.*.next_codepoint()
+BASE-DELAYWRITE.finfo update on close
+BASE-DELETE.*.deltest20a
+BASE-DELETE.*.deltest20b
+RAW-OPLOCK.*.OPLOCK
 RPC-WINREG
-LOCAL-REGISTRY.*/security # Not implemented yet
+LOCAL-REGISTRY.*.security # Not implemented yet
 RPC-WKSSVC
-RPC-HANDLES.*/lsarpc-shared
-RPC-HANDLES.*/mixed-shared
-RPC-EPMAPPER.*/Insert
-RPC-EPMAPPER.*/InqObject
+RPC-HANDLES.*.lsarpc-shared
+RPC-HANDLES.*.mixed-shared
+RPC-EPMAPPER.*.Insert
+RPC-EPMAPPER.*.InqObject
 RPC-DFS.*
 RPC-DRSUAPI.*
 RPC-LSALOOKUP
 RPC-CRACKNAMES
-RPC-NETLOGON.*/LogonUasLogon
-RPC-NETLOGON.*/LogonUasLogoff
-RPC-NETLOGON.*/DatabaseSync
-RPC-NETLOGON.*/DatabaseSync2
-RPC-NETLOGON.*/GetDcName
-RPC-NETLOGON.*/LogonControl
-RPC-NETLOGON.*/LogonControl2
-RPC-NETLOGON.*/GetAnyDCName
-RPC-NETLOGON.*/DsrEnumerateDomainTrusts
-RPC-NETLOGON.*/NetrEnumerateTrustedDomains
-RPC-NETLOGON.*/NetrEnumerateTrustedDomainsEx
-RPC-NETLOGON.*/DsrGetDcSiteCoverageW
-RPC-NETLOGON.*/DsRAddressToSitenamesW
-RPC-NETLOGON.*/DsRAddressToSitenamesExW
-RPC-NETLOGON.*/GetPassword
-RPC-NETLOGON.*/GetTrustPasswords
-BASE-CHARSET.*/Testing partial surrogate
+RPC-NETLOGON.*.LogonUasLogon
+RPC-NETLOGON.*.LogonUasLogoff
+RPC-NETLOGON.*.DatabaseSync
+RPC-NETLOGON.*.DatabaseSync2
+RPC-NETLOGON.*.GetDcName
+RPC-NETLOGON.*.LogonControl
+RPC-NETLOGON.*.LogonControl2
+RPC-NETLOGON.*.GetAnyDCName
+RPC-NETLOGON.*.DsrEnumerateDomainTrusts
+RPC-NETLOGON.*.NetrEnumerateTrustedDomains
+RPC-NETLOGON.*.NetrEnumerateTrustedDomainsEx
+RPC-NETLOGON.*.DsrGetDcSiteCoverageW
+RPC-NETLOGON.*.DsRAddressToSitenamesW
+RPC-NETLOGON.*.DsRAddressToSitenamesExW
+RPC-NETLOGON.*.GetPassword
+RPC-NETLOGON.*.GetTrustPasswords
+BASE-CHARSET.*.Testing partial surrogate
 .*NET-API-DELSHARE.*				# DelShare isn't implemented yet

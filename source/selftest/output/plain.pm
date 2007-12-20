@@ -4,6 +4,11 @@ package output::plain;
 use Exporter;
 @ISA = qw(Exporter);
 
+use FindBin qw($RealBin);
+use lib "$RealBin/..";
+
+use Subunit qw(parse_results);
+
 use strict;
 
 sub new($$$$$$$) {
@@ -24,17 +29,17 @@ sub new($$$$$$$) {
 	bless($self, $class);
 }
 
-sub output_msg($$$);
+sub output_msg($$);
 
-sub start_testsuite($$$)
+sub start_testsuite($$)
 {
-	my ($self, $name, $state) = @_;
+	my ($self, $name) = @_;
 
 	$self->{index}++;
-	$state->{NAME} = $name;
-	$state->{START_TIME} = time();
+	$self->{NAME} = $name;
+	$self->{START_TIME} = time();
 
-	my $duration = $state->{START_TIME} - $self->{start_time};
+	my $duration = $self->{START_TIME} - $self->{start_time};
 
 	$self->{test_output}->{$name} = "" unless($self->{verbose});
 
@@ -45,31 +50,31 @@ sub start_testsuite($$$)
 	print "$out";
 }
 
-sub output_msg($$$)
+sub output_msg($$)
 {
-	my ($self, $state, $output) = @_;
+	my ($self, $output) = @_;
 
 	if ($self->{verbose}) {
 		print $output;
 	} else {
-		$self->{test_output}->{$state->{NAME}} .= $output;
+		$self->{test_output}->{$self->{NAME}} .= $output;
 	}
 }
 
-sub control_msg($$$)
+sub control_msg($$)
 {
-	my ($self, $state, $output) = @_;
+	my ($self, $output) = @_;
 
-	$self->output_msg($state, $output);
+	$self->output_msg($output);
 }
 
-sub end_testsuite($$$$$$)
+sub end_testsuite($$$$$)
 {
-	my ($self, $name, $state, $result, $unexpected, $reason) = @_;
+	my ($self, $name, $result, $unexpected, $reason) = @_;
 	my $out = "";
 
 	if ($unexpected) {
-		$self->output_msg($state, "ERROR: $reason\n");
+		$self->output_msg("ERROR: $reason\n");
 		push (@{$self->{suitesfailed}}, $name);
 	} else {
 		$self->{suites_ok}++;
@@ -83,38 +88,38 @@ sub end_testsuite($$$$$$)
 	print $out;
 }
 
-sub start_test($$$$)
+sub start_test($$$)
 {
-	my ($self, $state, $parents, $testname) = @_;
+	my ($self, $parents, $testname) = @_;
 
 	if ($#$parents == -1) {
-		$self->start_testsuite($testname, $state);
+		$self->start_testsuite($testname);
 	}
 }
 
-sub end_test($$$$$$)
+sub end_test($$$$$)
 {
-	my ($self, $state, $parents, $testname, $result, $unexpected, $reason) = @_;
+	my ($self, $parents, $testname, $result, $unexpected, $reason) = @_;
 	
 	if ($#$parents == -1) {
-		$self->end_testsuite($testname, $state, $result, $unexpected, $reason);
+		$self->end_testsuite($testname, $result, $unexpected, $reason);
 		return;
 	}
 
 	my $append = "";
 
 	unless ($unexpected) {
-		$self->{test_output}->{$state->{NAME}} = "";
+		$self->{test_output}->{$self->{NAME}} = "";
 		return;
 	}
 
 	$append = "UNEXPECTED($result): $testname\n";
 
-	$self->{test_output}->{$state->{NAME}} .= $append;
+	$self->{test_output}->{$self->{NAME}} .= $append;
 
 	if ($self->{immediate} and not $self->{verbose}) {
-		print $self->{test_output}->{$state->{NAME}};
-		$self->{test_output}->{$state->{NAME}} = "";
+		print $self->{test_output}->{$self->{NAME}};
+		$self->{test_output}->{$self->{NAME}} = "";
 	}
 }
 

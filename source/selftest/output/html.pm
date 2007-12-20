@@ -8,6 +8,9 @@ use strict;
 use warnings;
 
 use FindBin qw($RealBin);
+use lib "$RealBin/..";
+
+use Subunit qw(parse_results);
 
 sub new$($$$) {
 	my ($class, $dirname, $statistics) = @_;
@@ -71,11 +74,11 @@ sub print_html_footer($$)
 	print $fh "</html>\n";
 }
 
-sub output_msg($$$);
+sub output_msg($$);
 
-sub start_testsuite($$$)
+sub start_testsuite($$)
 {
-	my ($self, $name, $state) = @_;
+	my ($self, $name) = @_;
 
 	$self->{local_statistics} = {
 		success => 0,
@@ -84,11 +87,11 @@ sub start_testsuite($$$)
 		failure => 0
 	};
 
-	$state->{NAME} = $name;
-	$state->{HTMLFILE} = "$name.html";
-	$state->{HTMLFILE} =~ s/[:\t\n \/]/_/g;
+	$self->{NAME} = $name;
+	$self->{HTMLFILE} = "$name.html";
+	$self->{HTMLFILE} =~ s/[:\t\n \/]/_/g;
 
-	open(TEST, ">$self->{dirname}/$state->{HTMLFILE}") or die("Unable to open $state->{HTMLFILE} for writing");
+	open(TEST, ">$self->{dirname}/$self->{HTMLFILE}") or die("Unable to open $self->{HTMLFILE} for writing");
 
 	$self->print_html_header("Test Results for $name", *TEST);
 
@@ -97,16 +100,16 @@ sub start_testsuite($$$)
 	print TEST "  <table>\n";
 }
 
-sub control_msg($$$)
+sub control_msg($$)
 {
-	my ($self, $state, $output) = @_;
+	my ($self, $output) = @_;
 
 	$self->{msg} .=  "<span class=\"control\">$output<br/></span>\n";
 }
 
-sub output_msg($$$)
+sub output_msg($$)
 {
-	my ($self, $state, $output) = @_;
+	my ($self, $output) = @_;
 
 	unless (defined($self->{active_test})) {
 		print TEST "$output<br/>";
@@ -115,20 +118,20 @@ sub output_msg($$$)
 	}
 }
 
-sub end_testsuite($$$$$)
+sub end_testsuite($$$$)
 {
-	my ($self, $name, $state, $result, $unexpected, $reason) = @_;
+	my ($self, $name, $result, $unexpected, $reason) = @_;
 
 	print TEST "</table>\n";
 
-	print TEST "<div class=\"duration\">Duration: " . (time() - $state->{START_TIME}) . "s</div>\n";
+	print TEST "<div class=\"duration\">Duration: " . (time() - $self->{START_TIME}) . "s</div>\n";
 
 	$self->print_html_footer(*TEST);
 
 	close(TEST);
 
 	print INDEX "<tr>\n";
-	print INDEX "  <td class=\"testSuite\"><a href=\"$state->{HTMLFILE}\">$name</a></td>\n";
+	print INDEX "  <td class=\"testSuite\"><a href=\"$self->{HTMLFILE}\">$name</a></td>\n";
 	my $st = $self->{local_statistics};
 
 	if (not $unexpected) {
@@ -175,13 +178,13 @@ sub end_testsuite($$$$$)
 	print INDEX "</tr>\n";
 }
 
-sub start_test($$$)
+sub start_test($$)
 {
-	my ($self, $state, $parents, $testname) = @_;
+	my ($self, $parents, $testname) = @_;
 
 	if ($#$parents == -1) {
-		$state->{START_TIME} = time();
-		$self->start_testsuite($testname, $state);
+		$self->{START_TIME} = time();
+		$self->start_testsuite($testname);
 		return;
 	}
 
@@ -189,12 +192,12 @@ sub start_test($$$)
 	$self->{msg} = "";
 }
 
-sub end_test($$$$$$$)
+sub end_test($$$$$$)
 {
-	my ($self, $state, $parents, $testname, $result, $unexpected, $reason) = @_;
+	my ($self, $parents, $testname, $result, $unexpected, $reason) = @_;
 
 	if ($#$parents == -1) {
-		$self->end_testsuite($testname, $state, $result, $unexpected, $reason);
+		$self->end_testsuite($testname, $result, $unexpected, $reason);
 		return;
 	}
 
@@ -224,7 +227,7 @@ sub end_test($$$$$$$)
 	}
 
 	push(@{$self->{error_summary}->{$track_class}}, ,
-		 [$state->{HTMLFILE}, $testname, $state->{NAME}, 
+		 [$self->{HTMLFILE}, $testname, $self->{NAME}, 
 		  $reason]);
 
 	print TEST "<a name=\"$testname\"><h3>$testname</h3></a>\n";

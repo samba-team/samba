@@ -204,7 +204,7 @@ sub skip($)
 
 sub getlog_env($);
 
-sub setup_pcap($$)
+sub setup_pcap($)
 {
 	my ($state, $name) = @_;
 
@@ -214,59 +214,56 @@ sub setup_pcap($$)
 	my $fname = $name;
 	$fname =~ s%[^abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789\-]%_%g;
 
-	$state->{PCAP_FILE} = "$ENV{SOCKET_WRAPPER_PCAP_DIR}/$fname.pcap";
+	my $pcap_file = "$ENV{SOCKET_WRAPPER_PCAP_DIR}/$fname.pcap";
 
-	SocketWrapper::setup_pcap($state->{PCAP_FILE});
+	SocketWrapper::setup_pcap($pcap_file);
+
+	return $pcap_file;
 }
 
 sub cleanup_pcap($$$)
 {
-	my ($state, $expected_ret, $ret) = @_;
+	my ($pcap_file, $expected_ret, $ret) = @_;
 
 	return unless ($opt_socket_wrapper_pcap);
 	return if ($opt_socket_wrapper_keep_pcap);
 	return unless ($expected_ret == $ret);
-	return unless defined($state->{PCAP_FILE});
+	return unless defined($pcap_file);
 
-	unlink($state->{PCAP_FILE});
-	$state->{PCAP_FILE} = undef;
+	unlink($pcap_file);
 }
 
 sub run_testsuite($$$$$$)
 {
 	my ($envname, $name, $cmd, $i, $totalsuites, $msg_ops) = @_;
-	my $msg_state = {
-	};
+	my $pcap_file = setup_pcap($name);
 
-	setup_pcap($msg_state, $name);
-
-	$msg_ops->start_test($msg_state, [], $name);
+	$msg_ops->start_test([], $name);
 
 	open(RESULT, "$cmd 2>&1|");
 	my $expected_ret = parse_results(
-		$msg_ops, $msg_state, $statistics, *RESULT, \&expecting_failure, [$name]);
+		$msg_ops, $statistics, *RESULT, \&expecting_failure, [$name]);
 
 	my $envlog = getlog_env($envname);
-	$msg_ops->output_msg($msg_state, "ENVLOG: $envlog\n") if ($envlog ne "");
+	$msg_ops->output_msg("ENVLOG: $envlog\n") if ($envlog ne "");
 
-	$msg_ops->output_msg($msg_state, "CMD: $cmd\n");
+	$msg_ops->output_msg("CMD: $cmd\n");
 
 	my $ret = close(RESULT);
 	$ret = 0 unless $ret == 1;
 
 	if ($ret == 1) {
-		$msg_ops->end_test($msg_state, [], $name, "success", $expected_ret != $ret, undef);
+		$msg_ops->end_test([], $name, "success", $expected_ret != $ret, undef);
 	} else {
-		$msg_ops->end_test($msg_state, [], $name, "failure", $expected_ret != $ret, 
+		$msg_ops->end_test([], $name, "failure", $expected_ret != $ret, 
 					       "Returned $ret");
 	}
 
-	cleanup_pcap($msg_state, $expected_ret, $ret);
+	cleanup_pcap($pcap_file, $expected_ret, $ret);
 
 	if (not $opt_socket_wrapper_keep_pcap and 
-		defined($msg_state->{PCAP_FILE})) {
-		$msg_ops->output_msg($msg_state, 
-			"PCAP FILE: $msg_state->{PCAP_FILE}\n");
+		defined($pcap_file)) {
+		$msg_ops->output_msg("PCAP FILE: $pcap_file\n");
 	}
 
 	if ($ret != $expected_ret) {
