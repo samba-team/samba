@@ -102,10 +102,10 @@ static WERROR NetServerGetInfoRemote(struct libnetapi_ctx *ctx,
 	return werr;
 }
 
-WERROR libnetapi_NetServerGetInfo(struct libnetapi_ctx *ctx,
-				  const char *server_name,
-				  uint32_t level,
-				  uint8_t **buffer)
+static WERROR libnetapi_NetServerGetInfo(struct libnetapi_ctx *ctx,
+					 const char *server_name,
+					 uint32_t level,
+					 uint8_t **buffer)
 {
 	if (!server_name || is_myname_or_ipaddr(server_name)) {
 		return NetServerGetInfoLocal(ctx,
@@ -248,11 +248,11 @@ static WERROR NetServerSetInfoRemote(struct libnetapi_ctx *ctx,
 	return werr;
 }
 
-WERROR libnetapi_NetServerSetInfo(struct libnetapi_ctx *ctx,
-				  const char *server_name,
-				  uint32_t level,
-				  uint8_t *buffer,
-				  uint32_t *parm_error)
+static WERROR libnetapi_NetServerSetInfo(struct libnetapi_ctx *ctx,
+					 const char *server_name,
+					 uint32_t level,
+					 uint8_t *buffer,
+					 uint32_t *parm_error)
 {
 	if (!server_name || is_myname_or_ipaddr(server_name)) {
 		return NetServerSetInfoLocal(ctx,
