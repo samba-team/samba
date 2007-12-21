@@ -21,14 +21,19 @@ COMPILE = $(COMPILE_CC)
 		$(COMPILE_CC) >/dev/null 2>&1
 
 GETDC_OBJ = getdc.o
+NETDOMJOIN_OBJ = netdomjoin.o
 
-PROGS = getdc
+PROGS = getdc netdomjoin
 
 all: $(PROGS)
 
 getdc: $(GETDC_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(GETDC_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+
+netdomjoin: $(NETDOMJOIN_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(NETDOMJOIN_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
 clean:
 	@rm -f $(PROGS)
