@@ -48,7 +48,7 @@ static WERROR cmd_netlogon_getanydcname(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx, int argc, 
 					const char **argv)
 {
-	fstring dcname;
+	char *dcname = NULL;
 	WERROR result = WERR_GENERAL_FAILURE;
 	int old_timeout;
 
@@ -60,7 +60,7 @@ static WERROR cmd_netlogon_getanydcname(struct rpc_pipe_client *cli,
 	/* Make sure to wait for our DC's reply */
 	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
 
-	result = rpccli_netlogon_getanydcname(cli, mem_ctx, cli->cli->desthost, argv[1], dcname);
+	result = rpccli_netlogon_getanydcname(cli, mem_ctx, cli->cli->desthost, argv[1], &dcname);
 
 	cli_set_timeout(cli->cli, old_timeout);
 
@@ -79,7 +79,7 @@ static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx, int argc, 
 				     const char **argv)
 {
-	fstring dcname;
+	char *dcname = NULL;
 	WERROR result = WERR_GENERAL_FAILURE;
 	int old_timeout;
 
@@ -91,7 +91,7 @@ static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli,
 	/* Make sure to wait for our DC's reply */
 	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
 
-	result = rpccli_netlogon_getdcname(cli, mem_ctx, cli->cli->desthost, argv[1], dcname);
+	result = rpccli_netlogon_getdcname(cli, mem_ctx, cli->cli->desthost, argv[1], &dcname);
 
 	cli_set_timeout(cli->cli, old_timeout);
 
