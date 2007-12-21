@@ -14,6 +14,16 @@ DYNEXP=@DYNEXP@
 COMPILE_CC = $(CC) -I. $(FLAGS) $(PICFLAG) -c $< -o $@
 COMPILE = $(COMPILE_CC)
 
+BINARY_PREREQS = proto_exists bin/.dummy
+
+MAKEDIR = || exec false; \
+	  if test -d "$$dir"; then :; else \
+	  echo mkdir "$$dir"; \
+	  mkdir -p "$$dir" >/dev/null 2>&1 || \
+	  test -d "$$dir" || \
+	  mkdir "$$dir" || \
+	  exec false; fi || exec false
+
 .c.o:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
 	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
@@ -23,23 +33,23 @@ COMPILE = $(COMPILE_CC)
 		echo "$(COMPILE_CC)" 1>&2;\
 		$(COMPILE_CC) >/dev/null 2>&1
 
-GETDC_OBJ = getdc.o
-NETDOMJOIN_OBJ = netdomjoin.o
-NETDOMJOIN_GUI_OBJ = netdomjoin-gui.o
+GETDC_OBJ = getdc/getdc.o
+NETDOMJOIN_OBJ = netdomjoin/netdomjoin.o
+NETDOMJOIN_GUI_OBJ = netdomjoin-gui/netdomjoin-gui.o
 
-PROGS = getdc netdomjoin netdomjoin-gui
+PROGS = bin/getdc@EXEEXT@ bin/netdomjoin@EXEEXT@ bin/netdomjoin-gui@EXEEXT@
 
 all: $(PROGS)
 
-getdc: $(GETDC_OBJ)
+bin/getdc@EXEEXT@: $(GETDC_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(GETDC_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-netdomjoin: $(NETDOMJOIN_OBJ)
+bin/netdomjoin@EXEEXT@: $(NETDOMJOIN_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NETDOMJOIN_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-netdomjoin-gui: $(NETDOMJOIN_GUI_OBJ)
+bin/netdomjoin-gui@EXEEXT@: $(NETDOMJOIN_GUI_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) $(GTK_FLAGS) -o $@ $(NETDOMJOIN_GUI_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(GTK_LIBS)
 
