@@ -1396,7 +1396,7 @@ bin/libwbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ)
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBWBCLIENT_OBJ) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
-	@ln -s `basename $@` $@.$(SONAME_VER)
+	@ln -s -f `basename $@` $@.$(SONAME_VER)
 
 bin/libwbclient.a: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ)
 	@echo Linking non-shared library $@
