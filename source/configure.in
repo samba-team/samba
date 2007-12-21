@@ -318,6 +318,15 @@ AC_SUBST(INSTALL_LIBADDNS)
 AC_SUBST(UNINSTALL_LIBADDNS)
 AC_SUBST(LIBADDNS_SHARED)
 AC_SUBST(LIBADDNS)
+
+AC_SUBST(INSTALL_LIBWBCLIENT)
+AC_SUBST(UNINSTALL_LIBWBCLIENT)
+AC_SUBST(LIBWBCLIENT_SHARED)
+AC_SUBST(LIBWBCLIENT)
+AC_SUBST(WINBIND_LIBS)
+
+AC_SUBST(LIBSAMBAUTIL_SHARED)
+
 AC_SUBST(INSTALL_LIBSMBCLIENT)
 AC_SUBST(UNINSTALL_LIBSMBCLIENT)
 AC_SUBST(LIBSMBCLIENT_SHARED)
@@ -5143,11 +5152,13 @@ AC_ARG_WITH(libaddns,
      INSTALL_LIBADDNS=installlibaddns
      UNINSTALL_LIBADDNS=uninstalllibaddns
      ;;
-  esac ]
+  esac ],
+[AC_MSG_RESULT(no)]
 )
 
 #################################################
 # should we build libsmbclient?
+
 INSTALL_LIBSMBCLIENT=
 UNINSTALL_LIBSMBCLIENT=
 LIBSMBCLIENT_SHARED=
@@ -5233,6 +5244,7 @@ AC_ARG_WITH(libsmbsharemodes,
   fi]
   INSTALL_LIBSMBSHAREMODES=installlibsmbsharemodes
 )
+
 
 #################################################
 # these tests are taken from the GNU fileutils package
@@ -6133,6 +6145,14 @@ fi
 
 if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes"; then
 	NSS_MODULES="${WINBIND_NSS} ${WINBIND_WINS_NSS}"
+	## Only worry about libwbclient if we have shared library support
+	## and winbindd
+        LIBWBCLIENT_SHARED=bin/libwbclient.$SHLIBEXT
+        LIBWBCLIENT=libwbclient
+	INSTALL_LIBWBCLIENT=installlibwbclient
+	UNINSTALL_LIBWBCLIENT=uninstalllibwbclient
+	WINBIND_LIBS="-lwbclient"
+	LDFLAGS="$LDFLAGS -L./bin"
 fi
 
 if test x"$HAVE_WINBIND" = x"yes"; then
