@@ -390,7 +390,7 @@ static WERROR do_unjoin_modify_vals_config(TALLOC_CTX *mem_ctx,
 					   struct libnet_UnjoinCtx *r,
 					   struct registry_key *key)
 {
-	WERROR werr;
+	WERROR werr = WERR_OK;
 
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
