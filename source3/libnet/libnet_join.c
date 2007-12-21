@@ -530,6 +530,10 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		return WERR_NOT_SUPPORTED;
 	}
 
+	if (IS_DC) {
+		return WERR_SETUP_DOMAIN_CONTROLLER;
+	}
+
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
 		status = do_DomainJoin(mem_ctx, r);
