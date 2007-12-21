@@ -46,7 +46,7 @@ sub slapd_start($$)
 	# running slapd in the background means it stays in the same process group, so it can be
 	# killed by timelimit
 	if ($self->{ldap} eq "fedora-ds") {
-	        system("$ENV{FEDORA_DS_PREFIX}/sbin/ns-slapd -D $env_vars->{FEDORA_DS_DIR} -d0 -i $env_vars->{FEDORA_DS_PIDFILE}> $env_vars->{LDAPDIR}/logs 2>&1 &");
+	        system("$ENV{FEDORA_DS_ROOT}/sbin/ns-slapd -D $env_vars->{FEDORA_DS_DIR} -d0 -i $env_vars->{FEDORA_DS_PIDFILE}> $env_vars->{LDAPDIR}/logs 2>&1 &");
 	} elsif ($self->{ldap} eq "openldap") {
 	        openldap_start($env_vars->{SLAPD_CONF}, $uri, "$env_vars->{LDAPDIR}/logs");
 	}
@@ -204,10 +204,10 @@ sub mk_fedora_ds($$$)
 	system("$self->{bindir}/ad2oLschema $configuration -H $ldapdir/schema-tmp.ldb --option=convert:target=fedora-ds -I $self->{setupdir}/schema-map-fedora-ds-1.0 -O $ldapdir/99_ad.ldif >&2") == 0 or die("schema conversion for Fedora DS failed");
 
 my $dir = getcwd();
-chdir "$ENV{FEDORA_DS_PREFIX}/bin" || die;
-	if (system("perl $ENV{FEDORA_DS_PREFIX}/sbin/setup-ds.pl --silent --file=$fedora_ds_inf >&2") != 0) {
+chdir "$ENV{FEDORA_DS_ROOT}/bin" || die;
+	if (system("perl $ENV{FEDORA_DS_ROOT}/sbin/setup-ds.pl --silent --file=$fedora_ds_inf >&2") != 0) {
             chdir $dir;
-            die("perl $ENV{FEDORA_DS_PREFIX}/sbin/setup-ds.pl --silent --file=$fedora_ds_inf FAILED: $?");
+            die("perl $ENV{FEDORA_DS_ROOT}/sbin/setup-ds.pl --silent --file=$fedora_ds_inf FAILED: $?");
         }
         chdir $dir || die;
 
@@ -227,15 +227,26 @@ sub mk_openldap($$$)
 
 	my $oldpath = $ENV{PATH};
 	my $olpath = "";
-       my $olroot = "";
-       if (defined $ENV{OPENLDAP_ROOT}) {
+	my $olroot = "";
+	if (defined $ENV{OPENLDAP_ROOT}) {
                $olroot = "$ENV{OPENLDAP_ROOT}";
-                       $olpath = "$olroot/libexec:$olroot/sbin:";
+	       $olpath = "$olroot/libexec:$olroot/sbin:";
 	}
 	$ENV{PATH} = "$olpath/usr/local/sbin:/usr/sbin:/sbin:$ENV{PATH}";
 
 	unlink($modconf);
 	open(CONF, ">$modconf"); close(CONF);
+
+	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
+		open(CONF, ">$modconf"); 
+		# enable slapd modules
+		print CONF "
+modulepath      $olpath/libexec/openldap
+moduleload	back_hdb
+moduleload	syncprov
+";
+		close(CONF);
+	}
 
 	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
 		open(CONF, ">$modconf"); 

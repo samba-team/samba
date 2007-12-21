@@ -356,7 +356,7 @@ my $old_pwd = "$RealBin/..";
 
 # Backwards compatibility:
 if (defined($ENV{TEST_LDAP}) and $ENV{TEST_LDAP} eq "yes") {
-	if (defined($ENV{FEDORA_DS_PREFIX})) {
+	if (defined($ENV{FEDORA_DS_ROOT})) {
 		$ldap = "fedora-ds";
 	} else {
 		$ldap = "openldap";
