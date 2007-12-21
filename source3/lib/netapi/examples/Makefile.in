@@ -1,0 +1,34 @@
+KRB5LIBS=@KRB5_LIBS@
+LDAP_LIBS=@LDAP_LIBS@
+LIBS=@LIBS@ -lnetapi
+DEVELOPER_CFLAGS=@DEVELOPER_CFLAGS@
+FLAGS=@CFLAGS@
+CC=@CC@
+LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
+DYNEXP=@DYNEXP@
+
+# Compile a source file.
+COMPILE_CC = $(CC) -I. $(FLAGS) $(PICFLAG) -c $< -o $@
+COMPILE = $(COMPILE_CC)
+
+.c.o:
+	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
+	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
+	@echo Compiling $*.c
+	@$(COMPILE) && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE_CC)" 1>&2;\
+		$(COMPILE_CC) >/dev/null 2>&1
+
+GETDC_OBJ = getdc.o
+
+PROGS = getdc
+
+all: $(PROGS)
+
+getdc: $(GETDC_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(GETDC_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+
+clean:
+	@rm -f $(PROGS)
