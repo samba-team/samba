@@ -2,6 +2,7 @@
 *.po
 *~
 source/client/client_proto.h
+source/libnet/libnet_proto.h
 source/include/build_env.h
 source/include/config.h
 source/include/config.h.in
@@ -9,6 +10,7 @@ source/include/proto.h
 source/include/stamp-h
 source/include/version.h
 source/Makefile
+source/lib/netapi/examples/Makefile
 source/config.log
 source/config.status
 source/configure
