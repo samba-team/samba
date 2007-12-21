@@ -286,6 +286,7 @@ WERROR _wkssvc_NetrGetJoinableOus(pipes_struct *p, struct wkssvc_NetrGetJoinable
 
 WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r)
 {
+#if 0
 	struct libnet_JoinCtx *j = NULL;
 	char *pwd = NULL;
 	char *admin_domain = NULL;
@@ -350,6 +351,9 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r
 	unbecome_root();
 
 	return werr;
+#endif
+	p->rng_fault_state = True;
+	return WERR_NOT_SUPPORTED;
 }
 
 /********************************************************************
