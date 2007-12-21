@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <libnetapi.h>
+#include <netapi.h>
 
 char *get_string_param(const char *param)
 {

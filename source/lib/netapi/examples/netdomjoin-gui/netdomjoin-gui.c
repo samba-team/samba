@@ -28,7 +28,7 @@
 #include <gtk/gtk.h>
 #include <glib/gprintf.h>
 
-#include <libnetapi.h>
+#include <netapi.h>
 
 #define MAX_CRED_LEN 256
 #define MAX_NETBIOS_NAME_LEN 15
