@@ -298,7 +298,7 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		     int num_rids,
 		     uint32_t *rids,
-		     const char **domain_name,
+		     const char **pp_domain_name,
 		     const char ***names,
 		     enum wbcSidType **types)
 {
@@ -308,6 +308,7 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 	struct winbindd_request request;
 	struct winbindd_response response;
 	char *sid_string = NULL;
+	char *domain_name = NULL;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
 	if (!dom_sid || (num_rids == 0)) {
@@ -357,8 +358,8 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 					&response);
 	free(ridlist);
 
-	*domain_name = strdup(response.data.domain_name);
-	BAIL_ON_PTR_ERROR((*domain_name), wbc_status);
+	domain_name = strdup(response.data.domain_name);
+	BAIL_ON_PTR_ERROR(domain_name, wbc_status);
 
 	*names = (const char**)malloc(sizeof(char*) * num_rids);
 	BAIL_ON_PTR_ERROR((*names), wbc_status);
@@ -408,12 +409,14 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 
  done:
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
-		if (*domain_name)
-			free(*domain_name);
+		if (domain_name)
+			free(domain_name);
 		if (*names)
 			free(*names);
 		if (*types)
 			free(*types);
+	} else {
+		*pp_domain_name = domain_name;
 	}
 
 	return wbc_status;
