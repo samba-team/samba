@@ -332,7 +332,7 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
 			 DATA_BLOB key, void *ptr)
 {
-	return memcache_add(cache, n, key, data_blob_const(&ptr, sizeof(ptr)));
+	memcache_add(cache, n, key, data_blob_const(&ptr, sizeof(ptr)));
 }
 
 void memcache_flush(struct memcache *cache, enum memcache_number n)
