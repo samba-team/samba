@@ -1,8 +1,11 @@
+GTK_FLAGS=`pkg-config gtk+-2.0 --cflags`
+GTK_LIBS=`pkg-config gtk+-2.0 --libs`
+
 KRB5LIBS=@KRB5_LIBS@
 LDAP_LIBS=@LDAP_LIBS@
 LIBS=@LIBS@ -lnetapi
 DEVELOPER_CFLAGS=@DEVELOPER_CFLAGS@
-FLAGS=@CFLAGS@
+FLAGS=@CFLAGS@ $(GTK_FLAGS)
 CC=@CC@
 LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 DYNEXP=@DYNEXP@
@@ -22,8 +25,9 @@ COMPILE = $(COMPILE_CC)
 
 GETDC_OBJ = getdc.o
 NETDOMJOIN_OBJ = netdomjoin.o
+NETDOMJOIN_GUI_OBJ = netdomjoin-gui.o
 
-PROGS = getdc netdomjoin
+PROGS = getdc netdomjoin netdomjoin-gui
 
 all: $(PROGS)
 
@@ -34,6 +38,10 @@ getdc: $(GETDC_OBJ)
 netdomjoin: $(NETDOMJOIN_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NETDOMJOIN_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+
+netdomjoin-gui: $(NETDOMJOIN_GUI_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) $(GTK_FLAGS) -o $@ $(NETDOMJOIN_GUI_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(GTK_LIBS)
 
 clean:
 	@rm -f $(PROGS)
