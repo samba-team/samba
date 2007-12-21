@@ -166,13 +166,12 @@ bool winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 wbcErr wb_is_trusted_domain(const char *domain)
 {
 	wbcErr result;
-	struct wbcDomainInfo info;	
+	struct wbcDomainInfo *info = NULL;
 	
 	result = wbcDomainInfo(domain, &info);
 
-	if (result == WBC_ERR_SUCCESS) {
-		SAFE_FREE(info.short_name);
-		SAFE_FREE(info.dns_name);
+	if (WBC_ERROR_IS_OK(result)) {
+		wbcFreeMemory(info);
 	}
 
 	return result;	

@@ -39,7 +39,7 @@ wbcErr wbcPing(void)
 /** @brief Lookup the current status of a trusted domain
  *
  * @param domain      Domain to query
- * @param *info       Pointer to returned domain_info struct
+ * @param *dinfo       Pointer to returned domain_info struct
  *
  * @return #wbcErr
  *
