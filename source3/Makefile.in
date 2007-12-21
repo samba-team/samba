@@ -1951,7 +1951,8 @@ clean: delheaders
 # afterwards.
 proto_exists: include/proto.h include/build_env.h \
 	winbindd/winbindd_proto.h web/swat_proto.h \
-	client/client_proto.h utils/net_proto.h utils/ntlm_auth_proto.h smbd/build_options.c
+	client/client_proto.h utils/net_proto.h utils/ntlm_auth_proto.h smbd/build_options.c \
+	libnet/libnet_proto.h
 	@touch proto_exists
 
 delheaders:
