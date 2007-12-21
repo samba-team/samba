@@ -784,6 +784,7 @@ enum flush_reason_enum {
     NUM_FLUSH_REASONS};
 
 #include "nss_info.h"
+#include "nsswitch/libwbclient/wbclient.h"
 
 /* generated rpc server implementation functions */
 #include "librpc/gen_ndr/srv_echo.h"
