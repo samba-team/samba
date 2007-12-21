@@ -572,7 +572,7 @@ static const char *socket_wrapper_pcap_file(void)
 	static int initialized = 0;
 	static const char *s = NULL;
 	static const struct swrap_file_hdr h = { 0, };
-	static const struct swrap_packet p = { 0, };
+	static const struct swrap_packet p = { { 0, }, { { 0, }, { { 0, } } } };
 
 	if (initialized == 1) {
 		return s;
