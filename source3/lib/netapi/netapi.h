@@ -62,4 +62,13 @@ NET_API_STATUS NetServerSetInfo(const char *server_name,
 				uint32_t level,
 				uint8_t *buffer,
 				uint32_t *parm_error);
+
+/* netlogon */
+NET_API_STATUS NetGetDCName(const char *server_name,
+			    const char *domain_name,
+			    uint8_t **buffer);
+NET_API_STATUS NetGetAnyDCName(const char *server_name,
+			       const char *domain_name,
+			       uint8_t **buffer);
+
 #endif
