@@ -539,7 +539,6 @@ sub write_clientconf($$)
 	close(CF);
 }
 
-
 my @torture_options = ();
 push (@torture_options, "--configfile=$conffile");
 # ensure any one smbtorture call doesn't run too long
@@ -769,7 +768,7 @@ TORTURE_OPTIONS=\$TORTURE_OPTIONS
 CONFIGURATION=\$CONFIGURATION
 
 $envvarstr
-\" && bash'");
+\" && LD_LIBRARY_PATH=$ENV{LD_LIBRARY_PATH} bash'");
 	teardown_env($testenv_name);
 } else {
 	foreach (@todo) {

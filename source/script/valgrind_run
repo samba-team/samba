@@ -1,2 +1,7 @@
 #!/bin/sh
-valgrind -q --db-attach=yes --num-callers=30 $@
+
+ENV="$1"
+
+shift 1
+
+$ENV valgrind -q --db-attach=yes --num-callers=30 $@
