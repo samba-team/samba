@@ -36,8 +36,7 @@ struct reg_diff_callbacks {
 	WERROR (*done) (void *callback_data);
 };
 
-WERROR reg_diff_apply (const char *filename,
-		       struct registry_context *ctx);
+WERROR reg_diff_apply(struct registry_context *ctx, const char *filename);
 
 WERROR reg_generate_diff(struct registry_context *ctx1,
 			 struct registry_context *ctx2,

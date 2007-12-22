@@ -432,8 +432,7 @@ static WERROR reg_diff_apply_del_all_values(void *_ctx, const char *key_name)
 /**
  * Apply diff to a registry context
  */
-_PUBLIC_ WERROR reg_diff_apply(const char *filename,
-			       struct registry_context *ctx)
+_PUBLIC_ WERROR reg_diff_apply(struct registry_context *ctx, const char *filename)
 {
 	struct reg_diff_callbacks callbacks;
 
