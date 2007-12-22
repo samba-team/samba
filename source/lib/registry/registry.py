@@ -69,22 +69,16 @@ class reg(object):
         _registry.reg_swiginit(self,_registry.new_reg(*args, **kwargs))
     __swig_destroy__ = _registry.delete_reg
 reg.get_predefined_key_by_name = new_instancemethod(_registry.reg_get_predefined_key_by_name,None,reg)
+reg.key_del_abs = new_instancemethod(_registry.reg_key_del_abs,None,reg)
 reg.get_predefined_key = new_instancemethod(_registry.reg_get_predefined_key,None,reg)
-reg.apply_patchfile = new_instancemethod(_registry.reg_apply_patchfile,None,reg)
+reg.diff_apply = new_instancemethod(_registry.reg_diff_apply,None,reg)
+reg.generate_diff = new_instancemethod(_registry.reg_generate_diff,None,reg)
+reg.import_hive_key = new_instancemethod(_registry.reg_import_hive_key,None,reg)
 reg.mount_hive = new_instancemethod(_registry.reg_mount_hive,None,reg)
 reg_swigregister = _registry.reg_swigregister
 reg_swigregister(reg)
 
-Hive = _registry.Hive
-class hive(object):
-    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
-    __repr__ = _swig_repr
-    def __init__(self, *args, **kwargs): 
-        _registry.hive_swiginit(self,_registry.new_hive(*args, **kwargs))
-    __swig_destroy__ = _registry.delete_hive
-hive_swigregister = _registry.hive_swigregister
-hive_swigregister(hive)
-
+hive_key = _registry.hive_key
 open_samba = _registry.open_samba
 HKEY_CLASSES_ROOT = _registry.HKEY_CLASSES_ROOT
 HKEY_CURRENT_USER = _registry.HKEY_CURRENT_USER

@@ -681,9 +681,8 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
                                   credentials=credentials, lp=lp)
 
     message("Setting up the registry")
-    # FIXME: Still fails for some reason
-    #setup_registry(paths.hklm, setup_path, session_info, 
-    #               credentials=credentials, lp=lp)
+    setup_registry(paths.hklm, setup_path, session_info, 
+                   credentials=credentials, lp=lp)
 
     message("Setting up templates db")
     setup_templatesdb(paths.templates, setup_path, session_info=session_info, 

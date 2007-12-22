@@ -138,7 +138,7 @@ WERROR hive_get_value_by_index(TALLOC_CTX *mem_ctx,
 }
 
 
-WERROR hive_del_value(struct hive_key *key, const char *name)
+WERROR hive_key_del_value(struct hive_key *key, const char *name)
 {
 	if (key->ops->delete_value == NULL)
 		return WERR_NOT_SUPPORTED;

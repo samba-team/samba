@@ -211,13 +211,13 @@ static bool test_del_value(struct torture_context *tctx, const void *test_data)
 			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
 	torture_assert_werr_ok(tctx, error, "hive_set_value");
 
-	error = hive_del_value(subkey, "Answer");
+	error = hive_key_del_value(subkey, "Answer");
 	torture_assert_werr_ok(tctx, error, "deleting value");
 
 	error = hive_get_value(mem_ctx, subkey, "Answer", &type, &value);
 	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND, "getting value");
 
-	error = hive_del_value(subkey, "Answer");
+	error = hive_key_del_value(subkey, "Answer");
 	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND,
 				  "deleting value");
 

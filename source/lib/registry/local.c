@@ -251,7 +251,7 @@ static WERROR local_delete_value(struct registry_key *key, const char *name)
 {
 	const struct local_key *local = (const struct local_key *)key;
 
-	return hive_del_value(local->hive_key, name);
+	return hive_key_del_value(local->hive_key, name);
 }
 
 static WERROR local_flush_key(struct registry_key *key)
