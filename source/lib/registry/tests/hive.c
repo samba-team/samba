@@ -74,9 +74,9 @@ static bool test_keyinfo_nums(struct torture_context *tctx,
 				  NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
-	error = hive_set_value(root, "Answer", REG_DWORD,
+	error = hive_key_set_value(root, "Answer", REG_DWORD,
 			       data_blob_talloc(tctx, &data, sizeof(data)));
-	torture_assert_werr_ok(tctx, error, "hive_set_value");
+	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	/* This is a new backend. There should be no subkeys and no
 	 * values */
@@ -154,9 +154,9 @@ static bool test_set_value(struct torture_context *tctx,
 				  NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
-	error = hive_set_value(subkey, "Answer", REG_DWORD,
+	error = hive_key_set_value(subkey, "Answer", REG_DWORD,
 			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
-	torture_assert_werr_ok(tctx, error, "hive_set_value");
+	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	return true;
 }
@@ -179,9 +179,9 @@ static bool test_get_value(struct torture_context *tctx, const void *test_data)
 	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND,
 				  "getting missing value");
 
-	error = hive_set_value(subkey, "Answer", REG_DWORD,
+	error = hive_key_set_value(subkey, "Answer", REG_DWORD,
 			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
-	torture_assert_werr_ok(tctx, error, "hive_set_value");
+	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	error = hive_get_value(mem_ctx, subkey, "Answer", &type, &value);
 	torture_assert_werr_ok(tctx, error, "getting value");
@@ -207,9 +207,9 @@ static bool test_del_value(struct torture_context *tctx, const void *test_data)
 							 NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
-	error = hive_set_value(subkey, "Answer", REG_DWORD,
+	error = hive_key_set_value(subkey, "Answer", REG_DWORD,
 			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
-	torture_assert_werr_ok(tctx, error, "hive_set_value");
+	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	error = hive_key_del_value(subkey, "Answer");
 	torture_assert_werr_ok(tctx, error, "deleting value");
@@ -240,9 +240,9 @@ static bool test_list_values(struct torture_context *tctx,
 				  NULL, &subkey);
 	torture_assert_werr_ok(tctx, error, "hive_key_add_name");
 
-	error = hive_set_value(subkey, "Answer", REG_DWORD,
+	error = hive_key_set_value(subkey, "Answer", REG_DWORD,
 			       data_blob_talloc(mem_ctx, &data, sizeof(data)));
-	torture_assert_werr_ok(tctx, error, "hive_set_value");
+	torture_assert_werr_ok(tctx, error, "hive_key_set_value");
 
 	error = hive_get_value_by_index(mem_ctx, subkey, 0, &name,
 					&type, &value);

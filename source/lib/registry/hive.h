@@ -164,7 +164,7 @@ WERROR hive_enum_key(TALLOC_CTX *mem_ctx,
 		     const char **classname,
 		     NTTIME *last_mod_time);
 
-WERROR hive_set_value(struct hive_key *key, const char *name,
+WERROR hive_key_set_value(struct hive_key *key, const char *name,
 		      uint32_t type, const DATA_BLOB data);
 
 WERROR hive_get_value(TALLOC_CTX *mem_ctx,

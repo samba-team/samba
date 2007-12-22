@@ -17,8 +17,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import os
 import unittest
 import registry
+import samba.tests
 
 class HelperTests(unittest.TestCase):
     def test_predef_to_name(self):
@@ -27,6 +29,22 @@ class HelperTests(unittest.TestCase):
 
     def test_str_regtype(self):
         self.assertEquals("REG_DWORD", registry.str_regtype(4))
+
+
+
+class HiveTests(samba.tests.TestCaseInTempDir):
+    def setUp(self):
+        super(HiveTests, self).setUp()
+        self.hive = registry.open_ldb(os.path.join(self.tempdir, "ldb_new.ldb"))
+
+    def test_ldb_new(self):
+        self.assertTrue(self.hive is not None)
+
+    def test_flush(self):
+        self.hive.flush()
+
+    def test_del_value(self):
+        self.hive.del_value("FOO")
 
 
 class RegistryTests(unittest.TestCase):

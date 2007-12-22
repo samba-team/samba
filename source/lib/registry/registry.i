@@ -137,6 +137,21 @@ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
                      struct loadparm_context *lp_ctx,
                      struct hive_key **root);
 
+%rename(open_ldb) reg_open_ldb_file;
+WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
+             struct auth_session_info *session_info,
+             struct cli_credentials *credentials,
+             struct loadparm_context *lp_ctx,
+             struct hive_key **k);
+
+%rename(create_dir) reg_create_directory;
+WERROR reg_create_directory(TALLOC_CTX *parent_ctx,
+                const char *location, struct hive_key **key);
+
+%rename(open_dir) reg_open_directory;
+WERROR reg_open_directory(TALLOC_CTX *parent_ctx,
+             const char *location, struct hive_key **key);
+
 %talloctype(hive_key);
 
 typedef struct hive_key {
@@ -144,6 +159,7 @@ typedef struct hive_key {
         WERROR del(const char *name);
         WERROR flush(void);
         WERROR del_value(const char *name);
+        WERROR set_value(const char *name, uint32_t type, const DATA_BLOB data);
     }
 } hive_key;
 

@@ -79,6 +79,9 @@ reg_swigregister = _registry.reg_swigregister
 reg_swigregister(reg)
 
 hive_key = _registry.hive_key
+open_ldb = _registry.open_ldb
+create_dir = _registry.create_dir
+open_dir = _registry.open_dir
 open_samba = _registry.open_samba
 HKEY_CLASSES_ROOT = _registry.HKEY_CLASSES_ROOT
 HKEY_CURRENT_USER = _registry.HKEY_CURRENT_USER

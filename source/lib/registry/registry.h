@@ -247,9 +247,6 @@ WERROR reg_create_key(TALLOC_CTX *mem_ctx,
 		      struct security_descriptor *security,
 		      struct registry_key **key);
 
-
-
-
 /* Utility functions */
 const char *str_regtype(int type);
 char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,

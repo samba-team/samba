@@ -3582,6 +3582,192 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_open_ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
+  char *arg2 = (char *) 0 ;
+  struct auth_session_info *arg3 = (struct auth_session_info *) 0 ;
+  struct cli_credentials *arg4 = (struct cli_credentials *) 0 ;
+  struct loadparm_context *arg5 = (struct loadparm_context *) 0 ;
+  struct hive_key **arg6 = (struct hive_key **) 0 ;
+  WERROR result;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  void *argp3 = 0 ;
+  int res3 = 0 ;
+  void *argp4 = 0 ;
+  int res4 = 0 ;
+  void *argp5 = 0 ;
+  int res5 = 0 ;
+  struct hive_key *tmp6 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  char *  kwnames[] = {
+    (char *) "location",(char *) "session_info",(char *) "credentials",(char *) "lp_ctx", NULL 
+  };
+  
+  {
+    arg3 = NULL; 
+  }
+  {
+    arg4 = NULL;
+  }
+  {
+    arg5 = loadparm_init(NULL);
+  }
+  {
+    arg1 = NULL;
+  }
+  {
+    arg6 = &tmp6; 
+  }
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOO:open_ldb",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "open_ldb" "', argument " "2"" of type '" "char const *""'");
+  }
+  arg2 = (char *)(buf2);
+  if (obj1) {
+    res3 = SWIG_ConvertPtr(obj1, &argp3,SWIGTYPE_p_auth_session_info, 0 |  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "open_ldb" "', argument " "3"" of type '" "struct auth_session_info *""'"); 
+    }
+    arg3 = (struct auth_session_info *)(argp3);
+  }
+  if (obj2) {
+    res4 = SWIG_ConvertPtr(obj2, &argp4,SWIGTYPE_p_cli_credentials, 0 |  0 );
+    if (!SWIG_IsOK(res4)) {
+      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "open_ldb" "', argument " "4"" of type '" "struct cli_credentials *""'"); 
+    }
+    arg4 = (struct cli_credentials *)(argp4);
+  }
+  if (obj3) {
+    res5 = SWIG_ConvertPtr(obj3, &argp5,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res5)) {
+      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "open_ldb" "', argument " "5"" of type '" "struct loadparm_context *""'"); 
+    }
+    arg5 = (struct loadparm_context *)(argp5);
+  }
+  result = reg_open_ldb_file(arg1,(char const *)arg2,arg3,arg4,arg5,arg6);
+  {
+    if (!W_ERROR_IS_OK(result)) {
+      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+      PyErr_SetObject(PyExc_RuntimeError, obj);
+    } else if (resultobj == NULL) {
+      resultobj = Py_None;
+    }
+  }
+  {
+    Py_XDECREF(resultobj);
+    resultobj = SWIG_NewPointerObj(*arg6, SWIGTYPE_p_hive_key, 0);
+  }
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_create_dir(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
+  char *arg2 = (char *) 0 ;
+  struct hive_key **arg3 = (struct hive_key **) 0 ;
+  WERROR result;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  struct hive_key *tmp3 ;
+  PyObject * obj0 = 0 ;
+  char *  kwnames[] = {
+    (char *) "location", NULL 
+  };
+  
+  {
+    arg1 = NULL;
+  }
+  {
+    arg3 = &tmp3; 
+  }
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:create_dir",kwnames,&obj0)) SWIG_fail;
+  res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "create_dir" "', argument " "2"" of type '" "char const *""'");
+  }
+  arg2 = (char *)(buf2);
+  result = reg_create_directory(arg1,(char const *)arg2,arg3);
+  {
+    if (!W_ERROR_IS_OK(result)) {
+      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+      PyErr_SetObject(PyExc_RuntimeError, obj);
+    } else if (resultobj == NULL) {
+      resultobj = Py_None;
+    }
+  }
+  {
+    Py_XDECREF(resultobj);
+    resultobj = SWIG_NewPointerObj(*arg3, SWIGTYPE_p_hive_key, 0);
+  }
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_open_dir(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
+  char *arg2 = (char *) 0 ;
+  struct hive_key **arg3 = (struct hive_key **) 0 ;
+  WERROR result;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  struct hive_key *tmp3 ;
+  PyObject * obj0 = 0 ;
+  char *  kwnames[] = {
+    (char *) "location", NULL 
+  };
+  
+  {
+    arg1 = NULL;
+  }
+  {
+    arg3 = &tmp3; 
+  }
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:open_dir",kwnames,&obj0)) SWIG_fail;
+  res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "open_dir" "', argument " "2"" of type '" "char const *""'");
+  }
+  arg2 = (char *)(buf2);
+  result = reg_open_directory(arg1,(char const *)arg2,arg3);
+  {
+    if (!W_ERROR_IS_OK(result)) {
+      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+      PyErr_SetObject(PyExc_RuntimeError, obj);
+    } else if (resultobj == NULL) {
+      resultobj = Py_None;
+    }
+  }
+  {
+    Py_XDECREF(resultobj);
+    resultobj = SWIG_NewPointerObj(*arg3, SWIGTYPE_p_hive_key, 0);
+  }
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
@@ -3675,6 +3861,9 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"reg_swigregister", reg_swigregister, METH_VARARGS, NULL},
 	 { (char *)"reg_swiginit", reg_swiginit, METH_VARARGS, NULL},
 	 { (char *)"hive_key", (PyCFunction) _wrap_hive_key, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"open_ldb", (PyCFunction) _wrap_open_ldb, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"create_dir", (PyCFunction) _wrap_create_dir, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"open_dir", (PyCFunction) _wrap_open_dir, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"open_samba", (PyCFunction) _wrap_open_samba, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };

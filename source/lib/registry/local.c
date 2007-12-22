@@ -216,7 +216,7 @@ static WERROR local_set_value(struct registry_key *key, const char *name,
 {
 	struct local_key *local = (struct local_key *)key;
 
-	return hive_set_value(local->hive_key, name, type, data);
+	return hive_key_set_value(local->hive_key, name, type, data);
 }
 
 static WERROR local_get_value(TALLOC_CTX *mem_ctx,

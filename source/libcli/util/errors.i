@@ -22,6 +22,7 @@
     if (!W_ERROR_IS_OK($1)) {
         PyObject *obj = Py_BuildValue("(i,s)", $1.v, win_errstr($1));
         PyErr_SetObject(PyExc_RuntimeError, obj);
+        SWIG_fail;
     } else if ($result == NULL) {
         $result = Py_None;
     }
@@ -31,6 +32,7 @@
     if (NT_STATUS_IS_ERR($1)) {
         PyObject *obj = Py_BuildValue("(i,s)", $1.v, nt_errstr($1));
         PyErr_SetObject(PyExc_RuntimeError, obj);
+        SWIG_fail;
     } else if ($result == NULL) {
         $result = Py_None;
     }
