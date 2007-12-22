@@ -729,17 +729,17 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
 
     message("Please install the phpLDAPadmin configuration located at %s into /etc/phpldapadmin/config.php" % paths.phpldapadminconfig)
 
-    samdb = SamDB(paths.samdb, session_info=session_info, 
-                  credentials=credentials, lp=lp)
-
-    domainguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID")
-    assert isinstance(domainguid, str)
-    hostguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID",
-            expression="(&(objectClass=computer)(cn=%s))" % hostname,
-            scope=SCOPE_SUBTREE)
-    assert isinstance(hostguid, str)
-
     if lp.get("server role") == "domain controller":
+        samdb = SamDB(paths.samdb, session_info=session_info, 
+                      credentials=credentials, lp=lp)
+
+        domainguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID")
+        assert isinstance(domainguid, str)
+        hostguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID",
+                expression="(&(objectClass=computer)(cn=%s))" % hostname,
+                scope=SCOPE_SUBTREE)
+        assert isinstance(hostguid, str)
+
         message("Setting up DNS zone: %s" % dnsdomain)
         create_zone_file(paths.dns, setup_path, samdb, 
                       hostname=hostname, hostip=hostip, dnsdomain=dnsdomain,
