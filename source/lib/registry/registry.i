@@ -97,11 +97,7 @@ typedef struct registry_context {
                                       struct registry_key **key);
 
     WERROR get_predefined_key(uint32_t hkey_id, struct registry_key **key);
-    WERROR apply_patchfile(const char *filename)
-    {
-        return reg_diff_apply(filename, $self);
-    }
-
+    WERROR apply_patchfile(const char *filename);
     WERROR mount_hive(struct hive_key *hive_key, uint32_t hkey_id,
                       const char **elements=NULL);
 

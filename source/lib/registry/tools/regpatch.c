@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 
 	poptFreeContext(pc);
 
-	reg_diff_apply(patch, h);
+	reg_diff_apply(h, patch);
 
 	return 0;
 }
