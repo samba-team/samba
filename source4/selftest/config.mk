@@ -1,6 +1,6 @@
 TEST_FORMAT = plain
 
-SELFTEST = $(LIB_PATH_VAR)=$(builddir)/bin/shared $(PERL) $(srcdir)/selftest/selftest.pl --prefix=${selftest_prefix} \
+SELFTEST = $(LD_LIBPATH_OVERRIDE) $(PERL) $(srcdir)/selftest/selftest.pl --prefix=${selftest_prefix} \
     --builddir=$(builddir) --srcdir=$(srcdir) \
     --expected-failures=$(srcdir)/samba4-knownfail \
 	--format=$(TEST_FORMAT) \
@@ -37,17 +37,17 @@ testenv: everything
 valgrindtest: valgrindtest-all
 
 valgrindtest-quick: all
-	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/valgrind_run" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --quick --immediate --socket-wrapper $(TESTS)
 
 valgrindtest-all: everything
-	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/valgrind_run" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --immediate --socket-wrapper $(TESTS)
 
 valgrindtest-env: everything
-	SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/valgrind_run" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --socket-wrapper --testenv
 

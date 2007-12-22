@@ -43,6 +43,8 @@ manpages: $(MANPAGES)
 all: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules pythonmods
 everything: all libraries headers
 
+LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)=$(builddir)/bin/shared
+
 # 'make testsuite' creates all binaries which are
 # needed by samba3's 'make test' and the build-farm
 # scripts use that it as fallback in case
