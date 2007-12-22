@@ -78,7 +78,7 @@ NTSTATUS fd_close(struct connection_struct *conn, files_struct *fsp)
 	if (fsp->fh->ref_count > 1) {
 		return NT_STATUS_OK; /* Shared handle. Only close last reference. */
 	}
-	return fd_close_posix(conn, fsp);
+	return fd_close_posix(fsp);
 }
 
 /****************************************************************************
