@@ -318,6 +318,15 @@ AC_SUBST(INSTALL_LIBADDNS)
 AC_SUBST(UNINSTALL_LIBADDNS)
 AC_SUBST(LIBADDNS_SHARED)
 AC_SUBST(LIBADDNS)
+
+AC_SUBST(INSTALL_LIBWBCLIENT)
+AC_SUBST(UNINSTALL_LIBWBCLIENT)
+AC_SUBST(LIBWBCLIENT_SHARED)
+AC_SUBST(LIBWBCLIENT)
+AC_SUBST(WINBIND_LIBS)
+
+AC_SUBST(LIBSAMBAUTIL_SHARED)
+
 AC_SUBST(INSTALL_LIBSMBCLIENT)
 AC_SUBST(UNINSTALL_LIBSMBCLIENT)
 AC_SUBST(LIBSMBCLIENT_SHARED)
@@ -326,6 +335,10 @@ AC_SUBST(INSTALL_LIBSMBSHAREMODES)
 AC_SUBST(UNINSTALL_LIBSMBSHAREMODES)
 AC_SUBST(LIBSMBSHAREMODES_SHARED)
 AC_SUBST(LIBSMBSHAREMODES)
+AC_SUBST(INSTALL_LIBNETAPI)
+AC_SUBST(UNINSTALL_LIBNETAPI)
+AC_SUBST(LIBNETAPI_SHARED)
+AC_SUBST(LIBNETAPI)
 AC_SUBST(PRINT_LIBS)
 AC_SUBST(AUTH_LIBS)
 AC_SUBST(ACL_LIBS)
@@ -5067,6 +5080,51 @@ if test $enable_static = yes; then
 fi
 
 #################################################
+# should we build libnetapi?
+INSTALL_LIBNETAPI=
+UNINSTALL_LIBNETAPI=
+LIBNETAPI_SHARED=
+LIBNETAPI=
+AC_MSG_CHECKING(whether to build the libnetapi shared library)
+AC_ARG_WITH(libnetapi,
+[  --with-libnetapi         Build the libnetapi shared library (default=no undefined API)],
+[ case "$withval" in
+  *)
+     AC_MSG_RESULT(no)
+     ;;
+  yes)
+     if test $BLDSHARED = true; then
+        LIBNETAPI_SHARED=bin/libnetapi.$SHLIBEXT
+        LIBNETAPI=libnetapi
+        AC_MSG_RESULT(yes)
+     else
+	enable_static=yes
+        AC_MSG_RESULT(no shared library support -- will supply static library)
+     fi
+     if test $enable_static = yes; then
+        LIBNETAPI=libnetapi
+     fi
+     INSTALL_LIBNETAPI=installlibnetapi
+     UNINSTALL_LIBNETAPI=uninstalllibnetapi
+     ;;
+  esac ],
+[
+# if unspecified, default is to built it if possible.
+  if test $BLDSHARED = true; then
+     LIBNETAPI_SHARED=bin/libnetapi.$SHLIBEXT
+     LIBNETAPI=libnetapi
+     AC_MSG_RESULT(yes)
+   else
+     enable_static=yes
+     AC_MSG_RESULT(no shared library support -- will supply static library)
+   fi
+   if test $enable_static = yes; then
+     LIBNETAPI=libnetapi
+  fi]
+  INSTALL_LIBNETAPI=installlibnetapi
+)
+
+#################################################
 # should we build libaddns?
 INSTALL_LIBADDNS=
 UNINSTALL_LIBADDNS=
@@ -5094,11 +5152,13 @@ AC_ARG_WITH(libaddns,
      INSTALL_LIBADDNS=installlibaddns
      UNINSTALL_LIBADDNS=uninstalllibaddns
      ;;
-  esac ]
+  esac ],
+[AC_MSG_RESULT(no)]
 )
 
 #################################################
 # should we build libsmbclient?
+
 INSTALL_LIBSMBCLIENT=
 UNINSTALL_LIBSMBCLIENT=
 LIBSMBCLIENT_SHARED=
@@ -5184,6 +5244,7 @@ AC_ARG_WITH(libsmbsharemodes,
   fi]
   INSTALL_LIBSMBSHAREMODES=installlibsmbsharemodes
 )
+
 
 #################################################
 # these tests are taken from the GNU fileutils package
@@ -6084,6 +6145,14 @@ fi
 
 if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes"; then
 	NSS_MODULES="${WINBIND_NSS} ${WINBIND_WINS_NSS}"
+	## Only worry about libwbclient if we have shared library support
+	## and winbindd
+        LIBWBCLIENT_SHARED=bin/libwbclient.$SHLIBEXT
+        LIBWBCLIENT=libwbclient
+	INSTALL_LIBWBCLIENT=installlibwbclient
+	UNINSTALL_LIBWBCLIENT=uninstalllibwbclient
+	WINBIND_LIBS="-lwbclient"
+	LDFLAGS="$LDFLAGS -L./bin"
 fi
 
 if test x"$HAVE_WINBIND" = x"yes"; then
@@ -6554,7 +6623,11 @@ AC_SUBST(builddir)
 SMBD_LIBS="$samba_dmapi_libs"
 AC_SUBST(SMBD_LIBS)
 
-AC_OUTPUT(Makefile library-versions script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh)
+AC_OUTPUT(Makefile library-versions
+	  script/findsmb smbadduser script/gen-8bit-gap.sh script/installbin.sh script/uninstallbin.sh
+	  lib/netapi/examples/Makefile
+	  pkgconfig/smbclient.pc pkgconfig/netapi.pc pkgconfig/smbsharemodes.pc
+	  )
 
 #################################################
 # Print very concise instructions on building/use

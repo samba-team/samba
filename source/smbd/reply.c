@@ -1163,8 +1163,8 @@ void reply_dskattr(connection_struct *conn, struct smb_request *req)
 		total_space = dsize * (double)bsize;
 		free_space = dfree * (double)bsize;
 
-		dsize = (total_space+63*512) / (64*512);
-		dfree = (free_space+63*512) / (64*512);
+		dsize = (SMB_BIG_UINT)((total_space+63*512) / (64*512));
+		dfree = (SMB_BIG_UINT)((free_space+63*512) / (64*512));
 		
 		if (dsize > 0xFFFF) dsize = 0xFFFF;
 		if (dfree > 0xFFFF) dfree = 0xFFFF;

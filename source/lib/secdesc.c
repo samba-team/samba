@@ -182,7 +182,9 @@ SEC_DESC_BUF *sec_desc_merge(TALLOC_CTX *ctx, SEC_DESC_BUF *new_sdb, SEC_DESC_BU
  Creates a SEC_DESC structure
 ********************************************************************/
 
-SEC_DESC *make_sec_desc(TALLOC_CTX *ctx, uint16 revision, uint16 type,
+SEC_DESC *make_sec_desc(TALLOC_CTX *ctx,
+			enum security_descriptor_revision revision,
+			uint16 type,
 			const DOM_SID *owner_sid, const DOM_SID *grp_sid,
 			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size)
 {
@@ -329,8 +331,9 @@ NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
 SEC_DESC *make_standard_sec_desc(TALLOC_CTX *ctx, const DOM_SID *owner_sid, const DOM_SID *grp_sid,
 				 SEC_ACL *dacl, size_t *sd_size)
 {
-	return make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
-			     owner_sid, grp_sid, NULL, dacl, sd_size);
+	return make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
+			     SEC_DESC_SELF_RELATIVE, owner_sid, grp_sid, NULL,
+			     dacl, sd_size);
 }
 
 /*******************************************************************
@@ -557,7 +560,8 @@ SEC_DESC_BUF *se_create_child_secdesc(TALLOC_CTX *ctx, SEC_DESC *parent_ctr,
 	   correct.  Perhaps the user and group should be passed in as
 	   parameters by the caller? */
 
-	sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+	sd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
+			   SEC_DESC_SELF_RELATIVE,
 			   parent_ctr->owner_sid,
 			   parent_ctr->group_sid,
 			   parent_ctr->sacl,

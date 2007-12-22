@@ -2167,7 +2167,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	r_u->size_secdesc = sd_size;
 	r_u->sec_desc = psd;
 
-	psd->dacl->revision = (uint16) NT4_ACL_REVISION;
+	psd->dacl->revision = NT4_ACL_REVISION;
 
 	unbecome_user();
 	close_cnum(conn, user.vuid);

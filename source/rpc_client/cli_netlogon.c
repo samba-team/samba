@@ -383,7 +383,7 @@ NTSTATUS rpccli_netlogon_logon_ctrl2(struct rpc_pipe_client *cli, TALLOC_CTX *me
 
 WERROR rpccli_netlogon_getanydcname(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx, const char *mydcname,
-				    const char *domainname, fstring newdcname)
+				    const char *domainname, char **newdcname)
 {
 	prs_struct qbuf, rbuf;
 	NET_Q_GETANYDCNAME q;
@@ -410,8 +410,9 @@ WERROR rpccli_netlogon_getanydcname(struct rpc_pipe_client *cli,
 
 	result = r.status;
 
-	if (W_ERROR_IS_OK(result)) {
-		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
+	if (W_ERROR_IS_OK(result) && newdcname) {
+		*newdcname = rpcstr_pull_unistr2_talloc(mem_ctx, &r.uni_dcname);
+		W_ERROR_HAVE_NO_MEMORY(*newdcname);
 	}
 
 	return result;
@@ -421,7 +422,7 @@ WERROR rpccli_netlogon_getanydcname(struct rpc_pipe_client *cli,
 
 WERROR rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx, const char *mydcname,
-				 const char *domainname, fstring newdcname)
+				 const char *domainname, char **newdcname)
 {
 	prs_struct qbuf, rbuf;
 	NET_Q_GETDCNAME q;
@@ -448,8 +449,9 @@ WERROR rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 
 	result = r.status;
 
-	if (W_ERROR_IS_OK(result)) {
-		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
+	if (W_ERROR_IS_OK(result) && newdcname) {
+		*newdcname = rpcstr_pull_unistr2_talloc(mem_ctx, &r.uni_dcname);
+		W_ERROR_HAVE_NO_MEMORY(*newdcname);
 	}
 
 	return result;

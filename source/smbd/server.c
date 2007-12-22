@@ -1191,6 +1191,12 @@ extern void build_options(bool screen);
 	if (smbd_messaging_context() == NULL)
 		exit(1);
 
+	if (smbd_memcache() == NULL) {
+		exit(1);
+	}
+
+	memcache_set_global(smbd_memcache());
+
 	/* Initialise the password backed before the global_sam_sid
 	   to ensure that we fetch from ldap before we make a domain sid up */
 

@@ -1,6 +1,6 @@
 /*
  *  Unix SMB/CIFS implementation.
- *  NetApi Support
+ *  GetDCName query
  *  Copyright (C) Guenther Deschner 2007
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -17,13 +17,41 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-WERROR NetJoinDomain(const char *server,
-		     const char *domain,
-		     const char *account_ou,
-		     const char *account,
-		     const char *password,
-		     uint32_t join_options);
-WERROR NetUnjoinDomain(const char *server_name,
-		       const char *account,
-		       const char *password,
-		       uint32_t unjoin_flags);
+#include <sys/types.h>
+#include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <netapi.h>
+
+int main(int argc, char **argv)
+{
+	NET_API_STATUS status;
+	struct libnetapi_ctx *ctx = NULL;
+	uint8_t *buffer;
+
+	if (argc < 3) {
+		printf("usage: getdc <hostname> <domain>\n");
+		return -1;
+	}
+
+	status = libnetapi_init(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	libnetapi_set_username(ctx, "");
+	libnetapi_set_password(ctx, "");
+
+	status = NetGetDCName(argv[1], argv[2], &buffer);
+	if (status != 0) {
+		printf("GetDcName failed with: %s\n", libnetapi_errstr(ctx, status));
+	} else {
+		printf("%s\n", (char *)buffer);
+	}
+
+	libnetapi_free(ctx);
+
+	return status;
+}

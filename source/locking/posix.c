@@ -607,14 +607,14 @@ static size_t get_posix_pending_close_entries(TALLOC_CTX *mem_ctx,
  to delete all locks on this fsp before this function is called.
 ****************************************************************************/
 
-NTSTATUS fd_close_posix(struct connection_struct *conn, files_struct *fsp)
+NTSTATUS fd_close_posix(struct files_struct *fsp)
 {
 	int saved_errno = 0;
 	int ret;
 	int *fd_array = NULL;
 	size_t count, i;
 
-	if (!lp_locking(fsp->conn->params) || !lp_posix_locking(conn->params)) {
+	if (!lp_locking(fsp->conn->params) || !lp_posix_locking(fsp->conn->params)) {
 		/*
 		 * No locking or POSIX to worry about or we want POSIX semantics
 		 * which will lose all locks on all fd's open on this dev/inode,

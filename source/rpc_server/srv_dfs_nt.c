@@ -34,7 +34,7 @@ void _dfs_GetManagerVersion(pipes_struct *p, struct dfs_GetManagerVersion *r)
 	if (lp_host_msdfs()) {
 		*r->out.version = DFS_MANAGER_VERSION_NT4;
 	} else {
-		*r->out.version = 0;
+		*r->out.version = (enum dfs_ManagerVersion)0;
 	}
 }
 
