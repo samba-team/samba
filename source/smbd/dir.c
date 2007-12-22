@@ -646,10 +646,13 @@ const char *dptr_ReadDirName(TALLOC_CTX *ctx,
 
 		TALLOC_FREE(pathreal);
 
-		/* In case sensitive mode we don't search - we know if it doesn't exist 
-		   with a stat we will fail. */
+		/* Stat failed. We know this is authoratiative if we are
+		 * providing case sensitive semantics or the underlying
+		 * filesystem is case sensitive.
+		 */
 
-		if (dptr->conn->case_sensitive) {
+		if (dptr->conn->case_sensitive ||
+		    !(dptr->conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH)) {
 			/* We need to set the underlying dir_hnd offset to -1 also as
 			   this function is usually called with the output from TellDir. */
 			dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
@@ -924,12 +927,7 @@ static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 		return True;
 	}
 
-	/* If we can't stat it does not show it */
-	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0)) {
-		DEBUG(10,("user_can_read_file: SMB_VFS_STAT failed for file %s with error %s\n",
-			name, strerror(errno) ));
-		return False;
-	}
+	SMB_ASSERT(VALID_STAT(*pst));
 
 	/* Pseudo-open the file (note - no fd's created). */
 
@@ -987,10 +985,7 @@ static bool user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 		return True;
 	}
 
-	/* If we can't stat it does not show it */
-	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0)) {
-		return False;
-	}
+	SMB_ASSERT(VALID_STAT(*pst));
 
 	/* Pseudo-open the file */
 
@@ -1039,9 +1034,7 @@ static bool file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
 	if (conn->admin_user)
 		return False;
 
-	/* If we can't stat it does not show it */
-	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0))
-		return True;
+	SMB_ASSERT(VALID_STAT(*pst));
 
 	if (S_ISREG(pst->st_mode) || S_ISDIR(pst->st_mode) || S_ISLNK(pst->st_mode))
 		return False;
@@ -1050,7 +1043,9 @@ static bool file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
 }
 
 /*******************************************************************
- Should the file be seen by the client ?
+ Should the file be seen by the client ? NOTE: A successful return
+ is no guarantee of the file's existence ... you also have to check
+ whether pst is valid.
 ********************************************************************/
 
 bool is_visible_file(connection_struct *conn, const char *dir_path, const char *name, SMB_STRUCT_STAT *pst, bool use_veto)
@@ -1084,6 +1079,15 @@ bool is_visible_file(connection_struct *conn, const char *dir_path, const char *
 				is_msdfs_link(conn, entry, NULL)) {
 			SAFE_FREE(entry);
 			return True;
+		}
+
+		/* If the file name does not exist, there's no point checking
+		 * the configuration options. We succeed, on the basis that the
+		 * checks *might* have passed if the file was present.
+		 */
+		if (SMB_VFS_STAT(conn, entry, pst) != 0) {
+		        SAFE_FREE(entry);
+		        return True;
 		}
 
 		/* Honour _hide unreadable_ option */
