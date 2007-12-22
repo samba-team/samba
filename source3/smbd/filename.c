@@ -735,6 +735,15 @@ static bool scan_directory(connection_struct *conn, const char *path,
 		path = ".";
 	}
 
+	/* If we have a case-sensitive filesystem, it doesn't do us any
+	 * good to search for a name. If a case variation of the name was
+	 * there, then the original stat(2) would have found it.
+	 */
+	if (!mangled && !(conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH)) {
+		errno = ENOENT;
+		return False;
+	}
+
 	/*
 	 * The incoming name can be mangled, and if we de-mangle it
 	 * here it will not compare correctly against the filename (name2)
