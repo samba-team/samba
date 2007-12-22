@@ -105,8 +105,6 @@ bool winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid)
 	memcpy(&dom_sid, sid, sizeof(dom_sid));	
 
 	result = wbcSidToUid(&dom_sid, puid);	
-	if (result != WBC_ERR_SUCCESS)
-		return False;
 
 	return (result == WBC_ERR_SUCCESS);	
 }
@@ -138,8 +136,6 @@ bool winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid)
 	memcpy(&dom_sid, sid, sizeof(dom_sid));	
 
 	result = wbcSidToGid(&dom_sid, pgid);	
-	if (result != WBC_ERR_SUCCESS)
-		return False;
 
 	return (result == WBC_ERR_SUCCESS);	
 }
