@@ -354,6 +354,195 @@ def setup_samdb_partitions(samdb, setup_path, schemadn, configdn, domaindn):
         })
 
 
+def setup_samdb(path, setup_path, session_info, credentials, lp, 
+                schemadn, configdn, domaindn, dnsdomain, realm, 
+                netbiosname, message, hostname, rootdn, erase, 
+                domainsid, aci, rdn_dc, domainguid, policyguid, 
+                domainname, blank, adminpass, krbtgtpass, 
+                machinepass, hostguid, invocationid, dnspass):
+    # Also wipes the database
+    message("Setting up sam.ldb")
+    samdb = SamDB(path, session_info=session_info, 
+                  credentials=credentials, lp=lp)
+
+    message("Setting up sam.ldb partitions")
+    setup_samdb_partitions(samdb, setup_path, schemadn, configdn, domaindn)
+
+    samdb = SamDB(path, session_info=session_info, 
+                  credentials=credentials, lp=lp)
+
+    samdb.transaction_start()
+    try:
+        message("Setting up sam.ldb attributes")
+        samdb.load_ldif_file_add(setup_path("provision_init.ldif"))
+
+        message("Setting up sam.ldb rootDSE")
+        setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, 
+                            hostname, dnsdomain, realm, rootdn, configdn, 
+                            netbiosname)
+
+        if erase:
+            message("Erasing data from partitions")
+            samdb.erase_partitions()
+    except:
+        samdb.transaction_cancel()
+        raise
+
+    samdb.transaction_commit()
+
+    message("Pre-loading the Samba 4 and AD schema")
+    samdb = SamDB(path, session_info=session_info, 
+                  credentials=credentials, lp=lp)
+    samdb.set_domain_sid(domainsid)
+    load_schema(setup_path, samdb, schemadn, netbiosname, configdn)
+
+    samdb.transaction_start()
+        
+    try:
+        message("Adding DomainDN: %s (permitted to fail)" % domaindn)
+        setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
+            "DOMAINDN": domaindn,
+            "ACI": aci,
+            "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
+            "RDN_DC": rdn_dc,
+            })
+
+        message("Modifying DomainDN: " + domaindn + "")
+        if domainguid is not None:
+            domainguid_mod = "replace: objectGUID\nobjectGUID: %s\n-" % domainguid
+        else:
+            domainguid_mod = ""
+
+        setup_modify_ldif(samdb, setup_path("provision_basedn_modify.ldif"), {
+            "RDN_DC": rdn_dc,
+            "LDAPTIME": timestring(int(time.time())),
+            "DOMAINSID": str(domainsid),
+            "SCHEMADN": schemadn, 
+            "NETBIOSNAME": netbiosname,
+            "DEFAULTSITE": DEFAULTSITE,
+            "CONFIGDN": configdn,
+            "POLICYGUID": policyguid,
+            "DOMAINDN": domaindn,
+            "DOMAINGUID_MOD": domainguid_mod,
+            })
+
+        message("Adding configuration container (permitted to fail)")
+        setup_add_ldif(samdb, setup_path("provision_configuration_basedn.ldif"), {
+            "CONFIGDN": configdn, 
+            "ACI": aci,
+            "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
+            })
+        message("Modifying configuration container")
+        setup_modify_ldif(samdb, setup_path("provision_configuration_basedn_modify.ldif"), {
+            "CONFIGDN": configdn, 
+            "SCHEMADN": schemadn,
+            })
+
+        message("Adding schema container (permitted to fail)")
+        setup_add_ldif(samdb, setup_path("provision_schema_basedn.ldif"), {
+            "SCHEMADN": schemadn,
+            "ACI": aci,
+            "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb"
+            })
+        message("Modifying schema container")
+        setup_modify_ldif(samdb, setup_path("provision_schema_basedn_modify.ldif"), {
+            "SCHEMADN": schemadn,
+            "NETBIOSNAME": netbiosname,
+            "DEFAULTSITE": DEFAULTSITE,
+            "CONFIGDN": configdn,
+            })
+
+        message("Setting up sam.ldb Samba4 schema")
+        setup_add_ldif(samdb, setup_path("schema_samba4.ldif"), 
+                       {"SCHEMADN": schemadn })
+        message("Setting up sam.ldb AD schema")
+        setup_add_ldif(samdb, setup_path("schema.ldif"), 
+                       {"SCHEMADN": schemadn})
+
+        message("Setting up sam.ldb configuration data")
+        setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
+            "CONFIGDN": configdn,
+            "NETBIOSNAME": netbiosname,
+            "DEFAULTSITE": DEFAULTSITE,
+            "DNSDOMAIN": dnsdomain,
+            "DOMAIN": domainname,
+            "SCHEMADN": schemadn,
+            "DOMAINDN": domaindn,
+            })
+
+        message("Setting up display specifiers")
+        setup_add_ldif(samdb, setup_path("display_specifiers.ldif"), 
+                       {"CONFIGDN": configdn})
+
+        message("Adding users container (permitted to fail)")
+        setup_add_ldif(samdb, setup_path("provision_users_add.ldif"), {
+            "DOMAINDN": domaindn})
+        message("Modifying users container")
+        setup_modify_ldif(samdb, setup_path("provision_users_modify.ldif"), {
+            "DOMAINDN": domaindn})
+        message("Adding computers container (permitted to fail)")
+        setup_add_ldif(samdb, setup_path("provision_computers_add.ldif"), {
+            "DOMAINDN": domaindn})
+        message("Modifying computers container")
+        setup_modify_ldif(samdb, setup_path("provision_computers_modify.ldif"), {
+            "DOMAINDN": domaindn})
+        message("Setting up sam.ldb data")
+        setup_add_ldif(samdb, setup_path("provision.ldif"), {
+            "DOMAINDN": domaindn,
+            "NETBIOSNAME": netbiosname,
+            "DEFAULTSITE": DEFAULTSITE,
+            "CONFIGDN": configdn,
+            })
+
+        if not blank:
+            message("Setting up sam.ldb users and groups")
+            setup_add_ldif(samdb, setup_path("provision_users.ldif"), {
+                "DOMAINDN": domaindn,
+                "DOMAINSID": str(domainsid),
+                "CONFIGDN": configdn,
+                "ADMINPASS_B64": b64encode(adminpass),
+                "KRBTGTPASS_B64": b64encode(krbtgtpass),
+                })
+
+            if lp.get("server role") == "domain controller":
+                message("Setting up self join")
+                if hostguid is not None:
+                    hostguid_add = "objectGUID: %s" % hostguid
+                else:
+                    hostguid_add = ""
+
+                setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
+                          "CONFIGDN": configdn, 
+                          "SCHEMADN": schemadn,
+                          "DOMAINDN": domaindn,
+                          "INVOCATIONID": invocationid,
+                          "NETBIOSNAME": netbiosname,
+                          "DEFAULTSITE": DEFAULTSITE,
+                          "DNSNAME": "%s.%s" % (hostname, dnsdomain),
+                          "MACHINEPASS_B64": b64encode(machinepass),
+                          "DNSPASS_B64": b64encode(dnspass),
+                          "REALM": realm,
+                          "DOMAIN": domainname,
+                          "HOSTGUID_ADD": hostguid_add,
+                          "DNSDOMAIN": dnsdomain})
+                setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
+                          "POLICYGUID": policyguid,
+                          "DNSDOMAIN": dnsdomain,
+                          "DOMAINSID": str(domainsid),
+                          "DOMAINDN": domaindn})
+
+        message("Setting up sam.ldb index")
+        samdb.load_ldif_file_add(setup_path("provision_index.ldif"))
+
+        message("Setting up sam.ldb rootDSE marking as synchronized")
+        setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
+    except:
+        samdb.transaction_cancel()
+        raise
+
+    samdb.transaction_commit()
+    return samdb
+
 
 def provision(lp, setup_dir, message, blank, paths, session_info, 
               credentials, ldapbackend, realm=None, domain=None, hostname=None, 
@@ -489,211 +678,40 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
     setup_templatesdb(paths.templates, setup_path, session_info=session_info, 
                       credentials=credentials, lp=lp)
 
-    # Also wipes the database
-    message("Setting up sam.ldb")
-    samdb = SamDB(paths.samdb, session_info=session_info, 
-                  credentials=credentials, lp=lp)
+    samdb = setup_samdb(paths.samdb, setup_path, session_info=session_info, credentials=credentials,
+                        lp=lp, schemadn=schemadn, configdn=configdn, domaindn=domaindn,
+                        dnsdomain=dnsdomain, netbiosname=netbiosname, realm=realm, message=message,
+                        hostname=hostname, rootdn=rootdn, erase=erase, domainsid=domainsid, aci=aci,
+                        rdn_dc=rdn_dc, domainguid=domainguid, policyguid=policyguid, 
+                        domainname=domain, blank=blank, adminpass=adminpass, krbtgtpass=krbtgtpass,
+                        hostguid=hostguid, invocationid=invocationid, machinepass=machinepass,
+                        dnspass=dnspass)
 
-    message("Setting up sam.ldb partitions")
-    setup_samdb_partitions(samdb, setup_path, schemadn, configdn, domaindn)
-
-    samdb = SamDB(paths.samdb, session_info=session_info, 
-                  credentials=credentials, lp=lp)
-
-    samdb.transaction_start()
-    try:
-        message("Setting up sam.ldb attributes")
-        samdb.load_ldif_file_add(setup_path("provision_init.ldif"))
-
-        message("Setting up sam.ldb rootDSE")
-        setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, 
-                            hostname, dnsdomain, realm, rootdn, configdn, 
-                            netbiosname)
-
-        if erase:
-            message("Erasing data from partitions")
-            samdb.erase_partitions()
-    except:
-        samdb.transaction_cancel()
-        raise
-
-    samdb.transaction_commit()
-
-    message("Pre-loading the Samba 4 and AD schema")
-    samdb = SamDB(paths.samdb, session_info=session_info, 
-                  credentials=credentials, lp=lp)
-    samdb.set_domain_sid(domainsid)
-    load_schema(setup_path, samdb, schemadn, netbiosname, configdn)
-
-    samdb.transaction_start()
-        
-    try:
-        message("Adding DomainDN: %s (permitted to fail)" % domaindn)
-        setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
-            "DOMAINDN": domaindn,
-            "ACI": aci,
-            "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
-            "RDN_DC": rdn_dc,
-            })
-
-        message("Modifying DomainDN: " + domaindn + "")
-        if domainguid is not None:
-            domainguid_mod = "replace: objectGUID\nobjectGUID: %s\n-" % domainguid
-        else:
-            domainguid_mod = ""
-
-        setup_modify_ldif(samdb, setup_path("provision_basedn_modify.ldif"), {
-            "RDN_DC": rdn_dc,
-            "LDAPTIME": timestring(int(time.time())),
-            "DOMAINSID": str(domainsid),
-            "SCHEMADN": schemadn, 
-            "NETBIOSNAME": netbiosname,
-            "DEFAULTSITE": DEFAULTSITE,
-            "CONFIGDN": configdn,
-            "POLICYGUID": policyguid,
-            "DOMAINDN": domaindn,
-            "DOMAINGUID_MOD": domainguid_mod,
-            })
-
-        message("Adding configuration container (permitted to fail)")
-        setup_add_ldif(samdb, setup_path("provision_configuration_basedn.ldif"), {
-            "CONFIGDN": configdn, 
-            "ACI": aci,
-            "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
-            })
-        message("Modifying configuration container")
-        setup_modify_ldif(samdb, setup_path("provision_configuration_basedn_modify.ldif"), {
-            "CONFIGDN": configdn, 
-            "SCHEMADN": schemadn,
-            })
-
-        message("Adding schema container (permitted to fail)")
-        setup_add_ldif(samdb, setup_path("provision_schema_basedn.ldif"), {
-            "SCHEMADN": schemadn,
-            "ACI": aci,
-            "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb"
-            })
-        message("Modifying schema container")
-        setup_modify_ldif(samdb, setup_path("provision_schema_basedn_modify.ldif"), {
-            "SCHEMADN": schemadn,
-            "NETBIOSNAME": netbiosname,
-            "DEFAULTSITE": DEFAULTSITE,
-            "CONFIGDN": configdn,
-            })
-
-        message("Setting up sam.ldb Samba4 schema")
-        setup_add_ldif(samdb, setup_path("schema_samba4.ldif"), 
-                       {"SCHEMADN": schemadn })
-        message("Setting up sam.ldb AD schema")
-        setup_add_ldif(samdb, setup_path("schema.ldif"), 
-                       {"SCHEMADN": schemadn})
-
-        message("Setting up sam.ldb configuration data")
-        setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
-            "CONFIGDN": configdn,
-            "NETBIOSNAME": netbiosname,
-            "DEFAULTSITE": DEFAULTSITE,
-            "DNSDOMAIN": dnsdomain,
+    if lp.get("server role") == "domain controller":
+        os.makedirs(os.path.join(paths.sysvol, dnsdomain, "Policies", "{" + policyguid + "}"), 0755)
+        os.makedirs(os.path.join(paths.sysvol, dnsdomain, "Policies", "{" + policyguid + "}", "Machine"), 0755)
+        os.makedirs(os.path.join(paths.sysvol, dnsdomain, "Policies", "{" + policyguid + "}", "User"), 0755)
+        if not os.path.isdir(paths.netlogon):
+            os.makedirs(paths.netlogon, 0755)
+        setup_ldb(secrets_ldb, setup_path("secrets_dc.ldif"), { 
+            "MACHINEPASS_B64": b64encode(machinepass),
             "DOMAIN": domain,
-            "SCHEMADN": schemadn,
-            "DOMAINDN": domaindn,
-            })
-
-        message("Setting up display specifiers")
-        setup_add_ldif(samdb, setup_path("display_specifiers.ldif"), 
-                       {"CONFIGDN": configdn})
-
-        message("Adding users container (permitted to fail)")
-        setup_add_ldif(samdb, setup_path("provision_users_add.ldif"), {
-            "DOMAINDN": domaindn})
-        message("Modifying users container")
-        setup_modify_ldif(samdb, setup_path("provision_users_modify.ldif"), {
-            "DOMAINDN": domaindn})
-        message("Adding computers container (permitted to fail)")
-        setup_add_ldif(samdb, setup_path("provision_computers_add.ldif"), {
-            "DOMAINDN": domaindn})
-        message("Modifying computers container")
-        setup_modify_ldif(samdb, setup_path("provision_computers_modify.ldif"), {
-            "DOMAINDN": domaindn})
-        message("Setting up sam.ldb data")
-        setup_add_ldif(samdb, setup_path("provision.ldif"), {
-            "DOMAINDN": domaindn,
+            "REALM": realm,
+            "LDAPTIME": timestring(int(time.time())),
+            "DNSDOMAIN": dnsdomain,
+            "DOMAINSID": str(domainsid),
+            "SECRETS_KEYTAB": paths.keytab,
             "NETBIOSNAME": netbiosname,
-            "DEFAULTSITE": DEFAULTSITE,
-            "CONFIGDN": configdn,
+            "SAM_LDB": paths.samdb,
+            "DNS_KEYTAB": paths.dns_keytab,
+            "DNSPASS_B64": b64encode(dnspass),
             })
 
-        if not blank:
-            message("Setting up sam.ldb users and groups")
-            setup_add_ldif(samdb, setup_path("provision_users.ldif"), {
-                "DOMAINDN": domaindn,
-                "DOMAINSID": str(domainsid),
-                "CONFIGDN": configdn,
-                "ADMINPASS_B64": b64encode(adminpass),
-                "KRBTGTPASS_B64": b64encode(krbtgtpass),
-                })
-
-            if lp.get("server role") == "domain controller":
-                message("Setting up self join")
-                if hostguid is not None:
-                    hostguid_add = "objectGUID: %s" % hostguid
-                else:
-                    hostguid_add = ""
-
-                setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
-                          "CONFIGDN": configdn, 
-                          "SCHEMADN": schemadn,
-                          "DOMAINDN": domaindn,
-                          "INVOCATIONID": invocationid,
-                          "NETBIOSNAME": netbiosname,
-                          "DEFAULTSITE": DEFAULTSITE,
-                          "DNSNAME": "%s.%s" % (hostname, dnsdomain),
-                          "MACHINEPASS_B64": b64encode(machinepass),
-                          "DNSPASS_B64": b64encode(dnspass),
-                          "REALM": realm,
-                          "DOMAIN": domain,
-                          "HOSTGUID_ADD": hostguid_add,
-                          "DNSDOMAIN": dnsdomain})
-                setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
-                          "POLICYGUID": policyguid,
-                          "DNSDOMAIN": dnsdomain,
-                          "DOMAINSID": str(domainsid),
-                          "DOMAINDN": domaindn})
-
-                os.makedirs(os.path.join(paths.sysvol, dnsdomain, "Policies", "{" + policyguid + "}"), 0755)
-                os.makedirs(os.path.join(paths.sysvol, dnsdomain, "Policies", "{" + policyguid + "}", "Machine"), 0755)
-                os.makedirs(os.path.join(paths.sysvol, dnsdomain, "Policies", "{" + policyguid + "}", "User"), 0755)
-                if not os.path.isdir(paths.netlogon):
-                    os.makedirs(paths.netlogon, 0755)
-                setup_ldb(secrets_ldb, setup_path("secrets_dc.ldif"), { 
-                    "MACHINEPASS_B64": b64encode(machinepass),
-                    "DOMAIN": domain,
-                    "REALM": realm,
-                    "LDAPTIME": timestring(int(time.time())),
-                    "DNSDOMAIN": dnsdomain,
-                    "DOMAINSID": str(domainsid),
-                    "SECRETS_KEYTAB": paths.keytab,
-                    "NETBIOSNAME": netbiosname,
-                    "SAM_LDB": paths.samdb,
-                    "DNS_KEYTAB": paths.dns_keytab,
-                    "DNSPASS_B64": b64encode(dnspass),
-                    })
-
-            setup_name_mappings(samdb, str(domainsid), 
-                                domaindn, root=root, nobody=nobody, 
-                                nogroup=nogroup, wheel=wheel, users=users,
-                                backup=backup)
-
-        message("Setting up sam.ldb index")
-        samdb.load_ldif_file_add(setup_path("provision_index.ldif"))
-
-        message("Setting up sam.ldb rootDSE marking as synchronized")
-        setup_modify_ldif(samdb, setup_path("provision_rootdse_modify.ldif"))
-    except:
-        samdb.transaction_cancel()
-        raise
-
-    samdb.transaction_commit()
+    if not blank:
+        setup_name_mappings(samdb, str(domainsid), 
+                        domaindn, root=root, nobody=nobody, 
+                        nogroup=nogroup, wheel=wheel, users=users,
+                        backup=backup)
 
     message("Setting up phpLDAPadmin configuration")
     create_phplpapdadmin_config(paths.phpldapadminconfig, setup_path, paths.s4_ldapi_path)
