@@ -1423,7 +1423,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	static const char zeros[16] = { 0, };
 
 	NTSTATUS nt_status = NT_STATUS_OK;
-	char *found_username;
+	char *found_username = NULL;
 	const char *nt_domain;
 	const char *nt_username;
 	struct samu *sam_account = NULL;
@@ -1431,8 +1431,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	DOM_SID group_sid;
 	bool username_was_mapped;
 
-	uid_t uid;
-	gid_t gid;
+	uid_t uid = (uid_t)-1;
+	gid_t gid = (gid_t)-1;
 
 	auth_serversupplied_info *result;
 
