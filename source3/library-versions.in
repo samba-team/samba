@@ -5,5 +5,5 @@
 bin/libsmbclient.@SHLIBEXT@:0:1
 bin/libsmbsharemodes.@SHLIBEXT@:0:2
 bin/libaddns.@SHLIBEXT@:0:1
-bin/libmsrpc.@SHLIBEXT@:0:1
-
+bin/libwbclient.@SHLIBEXT@:0:1
+bin/libnetapi.@SHLIBEXT@:0:1

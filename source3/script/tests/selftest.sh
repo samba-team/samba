@@ -70,6 +70,10 @@ export WINBINDD_SOCKET_DIR WINBINDD_PRIV_PIPE_DIR
 PATH=bin:$PATH
 export PATH
 
+LD_LIBRARY_PATH=$BINDIR
+echo "LD_LIBRRARY_PATH=$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH
+
 ##
 ## verify that we were built with --enable-socket-wrapper
 ##

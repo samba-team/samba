@@ -1045,7 +1045,10 @@ static bool get_sam_group_entries(struct getent_state *ent)
 		status = domain->methods->enum_local_groups(domain, mem_ctx, &num_entries, &sam_grp_entries);
 		
 		if ( !NT_STATUS_IS_OK(status) ) { 
-			DEBUG(3,("get_sam_group_entries: Failed to enumerate domain local groups!\n"));
+			DEBUG(3,("get_sam_group_entries: "
+				"Failed to enumerate "
+				"domain local groups with error %s!\n",
+				nt_errstr(status)));
 			num_entries = 0;
 		}
 		else

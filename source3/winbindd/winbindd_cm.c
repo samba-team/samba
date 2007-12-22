@@ -570,7 +570,7 @@ static bool get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	WERROR werr;
 	TALLOC_CTX *mem_ctx;
 	unsigned int orig_timeout;
-	fstring tmp;
+	char *tmp = NULL;
 	char *p;
 
 	/* Hmmmm. We can only open one connection to the NETLOGON pipe at the
@@ -602,7 +602,7 @@ static bool get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
 	
 	werr = rpccli_netlogon_getanydcname(netlogon_pipe, mem_ctx, our_domain->dcname,
-					    domain->name, tmp);
+					    domain->name, &tmp);
 
 	/* And restore our original timeout. */
 	cli_set_timeout(netlogon_pipe->cli, orig_timeout);

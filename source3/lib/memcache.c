@@ -20,6 +20,8 @@
 #include "memcache.h"
 #include "rbtree.h"
 
+static struct memcache *global_cache;
+
 struct memcache_element {
 	struct rb_node rb_node;
 	struct memcache_element *prev, *next;
@@ -35,11 +37,38 @@ struct memcache {
 	size_t max_size;
 };
 
+static void memcache_element_parse(struct memcache_element *e,
+				   DATA_BLOB *key, DATA_BLOB *value);
+
+static bool memcache_is_talloc(enum memcache_number n)
+{
+	bool result;
+
+	switch (n) {
+	case GETPWNAM_CACHE:
+		result = true;
+		break;
+	default:
+		result = false;
+		break;
+	}
+
+	return result;
+}
+
 static int memcache_destructor(struct memcache *cache) {
 	struct memcache_element *e, *next;
 
 	for (e = cache->mru; e != NULL; e = next) {
 		next = e->next;
+		if (memcache_is_talloc((enum memcache_number)e->n)
+		    && (e->valuelength == sizeof(void *))) {
+			DATA_BLOB key, value;
+			void *ptr;
+			memcache_element_parse(e, &key, &value);
+			memcpy(&ptr, value.data, sizeof(ptr));
+			TALLOC_FREE(ptr);
+		}
 		SAFE_FREE(e);
 	}
 	return 0;
@@ -56,6 +85,12 @@ struct memcache *memcache_init(TALLOC_CTX *mem_ctx, size_t max_size)
 	result->max_size = max_size;
 	talloc_set_destructor(result, memcache_destructor);
 	return result;
+}
+
+void memcache_set_global(struct memcache *cache)
+{
+	TALLOC_FREE(global_cache);
+	global_cache = cache;
 }
 
 static struct memcache_element *memcache_node2elem(struct rb_node *node)
@@ -119,6 +154,13 @@ bool memcache_lookup(struct memcache *cache, enum memcache_number n,
 {
 	struct memcache_element *e;
 
+	if (cache == NULL) {
+		cache = global_cache;
+	}
+	if (cache == NULL) {
+		return false;
+	}
+
 	e = memcache_find(cache, n, key);
 	if (e == NULL) {
 		return false;
@@ -139,6 +181,25 @@ bool memcache_lookup(struct memcache *cache, enum memcache_number n,
 
 	memcache_element_parse(e, &key, value);
 	return true;
+}
+
+void *memcache_lookup_talloc(struct memcache *cache, enum memcache_number n,
+			     DATA_BLOB key)
+{
+	DATA_BLOB value;
+	void *result;
+
+	if (!memcache_lookup(cache, n, key, &value)) {
+		return NULL;
+	}
+
+	if (value.length != sizeof(result)) {
+		return NULL;
+	}
+
+	memcpy(&result, value.data, sizeof(result));
+
+	return result;
 }
 
 static void memcache_delete_element(struct memcache *cache,
@@ -172,6 +233,13 @@ void memcache_delete(struct memcache *cache, enum memcache_number n,
 {
 	struct memcache_element *e;
 
+	if (cache == NULL) {
+		cache = global_cache;
+	}
+	if (cache == NULL) {
+		return;
+	}
+
 	e = memcache_find(cache, n, key);
 	if (e == NULL) {
 		return;
@@ -188,6 +256,13 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 	struct rb_node *parent;
 	DATA_BLOB cache_key, cache_value;
 	size_t element_size;
+
+	if (cache == NULL) {
+		cache = global_cache;
+	}
+	if (cache == NULL) {
+		return;
+	}
 
 	if (key.length == 0) {
 		return;
@@ -254,9 +329,22 @@ void memcache_add(struct memcache *cache, enum memcache_number n,
 	memcache_trim(cache);
 }
 
+void memcache_add_talloc(struct memcache *cache, enum memcache_number n,
+			 DATA_BLOB key, void *ptr)
+{
+	memcache_add(cache, n, key, data_blob_const(&ptr, sizeof(ptr)));
+}
+
 void memcache_flush(struct memcache *cache, enum memcache_number n)
 {
 	struct rb_node *node;
+
+	if (cache == NULL) {
+		cache = global_cache;
+	}
+	if (cache == NULL) {
+		return;
+	}
 
 	/*
 	 * Find the smallest element of number n

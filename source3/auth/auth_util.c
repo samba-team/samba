@@ -1731,17 +1731,17 @@ bool is_trusted_domain(const char* dom_name)
 			return True;
 	}
 	else {
-		NSS_STATUS result;
+		wbcErr result;
 
 		/* If winbind is around, ask it */
 
 		result = wb_is_trusted_domain(dom_name);
 
-		if (result == NSS_STATUS_SUCCESS) {
+		if (result == WBC_ERR_SUCCESS) {
 			return True;
 		}
 
-		if (result == NSS_STATUS_NOTFOUND) {
+		if (result == WBC_ERR_DOMAIN_NOT_FOUND) {
 			/* winbind could not find the domain */
 			return False;
 		}

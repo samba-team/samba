@@ -26,6 +26,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
+#include "libnet/libnet.h"
 
 /*
  * usage functions
@@ -214,67 +215,6 @@ done:
 }
 
 /*
- * Open a subkey of KEY_SMBCONF (i.e a service)
- * - variant without error output (q = quiet)-
- */
-static WERROR smbconf_open_path_q(TALLOC_CTX *ctx, const char *subkeyname,
-			 	  uint32 desired_access,
-				  struct registry_key **key)
-{
-	WERROR werr = WERR_OK;
-	char *path = NULL;
-	NT_USER_TOKEN *token;
-
-	if (!(token = registry_create_admin_token(ctx))) {
-		DEBUG(1, ("Error creating admin token\n"));
-		goto done;
-	}
-
-	if (subkeyname == NULL) {
-		path = talloc_strdup(ctx, KEY_SMBCONF);
-	} else {
-		path = talloc_asprintf(ctx, "%s\\%s", KEY_SMBCONF, subkeyname);
-	}
-
-	werr = reg_open_path(ctx, path, desired_access,
-			     token, key);
-
-done:
-	TALLOC_FREE(path);
-	return werr;
-}
-
-/*
- * Open a subkey of KEY_SMBCONF (i.e a service)
- * - variant with error output -
- */
-static WERROR smbconf_open_path(TALLOC_CTX *ctx, const char *subkeyname,
-				uint32 desired_access,
-				struct registry_key **key)
-{
-	WERROR werr = WERR_OK;
-
-	werr = smbconf_open_path_q(ctx, subkeyname, desired_access, key);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Error opening registry path '%s\\%s': %s\n",
-			  KEY_SMBCONF,
-			  (subkeyname == NULL) ? "" : subkeyname,
-			  dos_errstr(werr));
-	}
-
-	return werr;
-}
-
-/*
- * open the base key KEY_SMBCONF
- */
-static WERROR smbconf_open_basepath(TALLOC_CTX *ctx, uint32 desired_access,
-			     	    struct registry_key **key)
-{
-	return smbconf_open_path(ctx, NULL, desired_access, key);
-}
-
-/*
  * delete a subkey of KEY_SMBCONF
  */
 static WERROR reg_delkey_internal(TALLOC_CTX *ctx, const char *keyname)
@@ -282,7 +222,7 @@ static WERROR reg_delkey_internal(TALLOC_CTX *ctx, const char *keyname)
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
 
-	werr = smbconf_open_basepath(ctx, REG_KEY_WRITE, &key);
+	werr = libnet_smbconf_open_basepath(ctx, REG_KEY_WRITE, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -296,72 +236,6 @@ static WERROR reg_delkey_internal(TALLOC_CTX *ctx, const char *keyname)
 done:
 	TALLOC_FREE(key);
 	return werr;
-}
-
-/*
- * create a subkey of KEY_SMBCONF
- */
-static WERROR reg_createkey_internal(TALLOC_CTX *ctx,
-				     const char * subkeyname,
-				     struct registry_key **newkey)
-{
-	WERROR werr = WERR_OK;
-	struct registry_key *create_parent = NULL;
-	TALLOC_CTX *create_ctx;
-	enum winreg_CreateAction action = REG_ACTION_NONE;
-
-	/* create a new talloc ctx for creation. it will hold
-	 * the intermediate parent key (SMBCONF) for creation
-	 * and will be destroyed when leaving this function... */
-	if (!(create_ctx = talloc_new(ctx))) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
-	werr = smbconf_open_basepath(create_ctx, REG_KEY_WRITE, &create_parent);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = reg_createkey(ctx, create_parent, subkeyname,
-			     REG_KEY_WRITE, newkey, &action);
-	if (W_ERROR_IS_OK(werr) && (action != REG_CREATED_NEW_KEY)) {
-		d_fprintf(stderr, "Key '%s' already exists.\n", subkeyname);
-		werr = WERR_ALREADY_EXISTS;
-	}
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Error creating key %s: %s\n",
-			 subkeyname, dos_errstr(werr));
-	}
-
-done:
-	TALLOC_FREE(create_ctx);
-	return werr;
-}
-
-/*
- * check if a subkey of KEY_SMBCONF of a given name exists
- */
-static bool smbconf_key_exists(TALLOC_CTX *ctx, const char *subkeyname)
-{
-	bool ret = False;
-	WERROR werr = WERR_OK;
-	TALLOC_CTX *mem_ctx;
-	struct registry_key *key;
-
-	if (!(mem_ctx = talloc_new(ctx))) {
-		d_fprintf(stderr, "ERROR: Out of memory...!\n");
-		goto done;
-	}
-
-	werr = smbconf_open_path_q(mem_ctx, subkeyname, REG_KEY_READ, &key);
-	if (W_ERROR_IS_OK(werr)) {
-		ret = True;
-	}
-
-done:
-	TALLOC_FREE(mem_ctx);
-	return ret;
 }
 
 static bool smbconf_value_exists(TALLOC_CTX *ctx, struct registry_key *key,
@@ -553,13 +427,13 @@ static int import_process_service(TALLOC_CTX *ctx,
 	if (opt_testmode) {
 		d_printf("[%s]\n", servicename);
 	} else {
-		if (smbconf_key_exists(tmp_ctx, servicename)) {
+		if (libnet_smbconf_key_exists(tmp_ctx, servicename)) {
 			werr = reg_delkey_internal(tmp_ctx, servicename);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
 			}
 		}
-		werr = reg_createkey_internal(tmp_ctx, servicename, &key);
+		werr = libnet_reg_createkey_internal(tmp_ctx, servicename, &key);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -632,12 +506,12 @@ int net_conf_list(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = smbconf_open_basepath(ctx, REG_KEY_READ, &base_key);
+	werr = libnet_smbconf_open_basepath(ctx, REG_KEY_READ, &base_key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
-	if (smbconf_key_exists(ctx, GLOBAL_NAME))  {
+	if (libnet_smbconf_key_exists(ctx, GLOBAL_NAME))  {
 		werr = reg_openkey(ctx, base_key, GLOBAL_NAME,
 				   REG_KEY_READ, &sub_key);
 		if (!W_ERROR_IS_OK(werr)) {
@@ -790,7 +664,7 @@ int net_conf_listshares(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = smbconf_open_basepath(ctx, SEC_RIGHTS_ENUM_SUBKEYS, &key);
+	werr = libnet_smbconf_open_basepath(ctx, SEC_RIGHTS_ENUM_SUBKEYS, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -852,7 +726,7 @@ int net_conf_showshare(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = smbconf_open_path(ctx, argv[0], REG_KEY_READ, &key);
+	werr = libnet_smbconf_open_path(ctx, argv[0], REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -989,7 +863,7 @@ int net_conf_addshare(int argc, const char **argv)
 	 * create the share
 	 */
 
-	werr = reg_createkey_internal(NULL, argv[0], &newkey);
+	werr = libnet_reg_createkey_internal(NULL, argv[0], &newkey);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -1060,10 +934,10 @@ static int net_conf_setparm(int argc, const char **argv)
 	param = strdup_lower(argv[1]);
 	value_str = argv[2];
 
-	if (!smbconf_key_exists(ctx, service)) {
-		werr = reg_createkey_internal(ctx, service, &key);
+	if (!libnet_smbconf_key_exists(ctx, service)) {
+		werr = libnet_reg_createkey_internal(ctx, service, &key);
 	} else {
-		werr = smbconf_open_path(ctx, service, REG_KEY_READ, &key);
+		werr = libnet_smbconf_open_path(ctx, service, REG_KEY_WRITE, &key);
 	}
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -1104,14 +978,14 @@ static int net_conf_getparm(int argc, const char **argv)
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	if (!smbconf_key_exists(ctx, service)) {
+	if (!libnet_smbconf_key_exists(ctx, service)) {
 		d_fprintf(stderr,
 			  "ERROR: given service '%s' does not exist.\n",
 			  service);
 		goto done;
 	}
 
-	werr = smbconf_open_path(ctx, service, REG_KEY_READ, &key);
+	werr = libnet_smbconf_open_path(ctx, service, REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -1151,14 +1025,14 @@ static int net_conf_delparm(int argc, const char **argv)
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	if (!smbconf_key_exists(ctx, service)) {
+	if (!libnet_smbconf_key_exists(ctx, service)) {
 		d_fprintf(stderr,
 			  "Error: given service '%s' does not exist.\n",
 			  service);
 		goto done;
 	}
 
-	werr = smbconf_open_path(ctx, service, REG_KEY_READ, &key);
+	werr = libnet_smbconf_open_path(ctx, service, REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}

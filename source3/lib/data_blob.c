@@ -128,7 +128,7 @@ DATA_BLOB data_blob_string_const(const char *str)
 {
 	DATA_BLOB blob;
 	blob.data = CONST_DISCARD(uint8 *, str);
-	blob.length = strlen(str);
+	blob.length = strlen(str) + 1;
 	blob.free = NULL;
 	return blob;
 }
