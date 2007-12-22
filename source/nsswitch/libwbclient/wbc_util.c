@@ -33,7 +33,15 @@
 
 wbcErr wbcPing(void)
 {
-	return wbcRequestResponse(WINBINDD_PING, NULL, NULL);
+	struct winbindd_request request;
+	struct winbindd_response response;
+
+	/* Initialize request */
+
+	ZERO_STRUCT(request);
+	ZERO_STRUCT(response);
+
+	return wbcRequestResponse(WINBINDD_PING, &request, &response);
 }
 
 /** @brief Lookup the current status of a trusted domain
