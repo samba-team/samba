@@ -1165,6 +1165,21 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 #endif
 
+	/* Figure out the characteristics of the underlying filesystem. This
+	 * assumes that all the filesystem mounted withing a share path have
+	 * the same characteristics, which is likely but not guaranteed.
+	 */
+	{
+		vfs_statvfs_struct svfs;
+
+		conn->fs_capabilities =
+		    FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+
+		if (SMB_VFS_STATVFS(conn, conn->connectpath, &svfs) == 0) {
+			conn->fs_capabilities = svfs.FsCapabilities;
+		}
+	}
+
 	/*
 	 * Print out the 'connected as' stuff here as we need
 	 * to know the effective uid and gid we will be using

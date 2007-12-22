@@ -658,9 +658,13 @@ typedef struct connection_struct {
 	int num_files_open;
 	unsigned int num_smb_operations; /* Count of smb operations on this tree. */
 
+	/* Semantics requested by the client or forced by the server config. */
 	bool case_sensitive;
 	bool case_preserve;
 	bool short_case_preserve;
+
+	/* Semantics provided by the underlying filesystem. */
+	int fs_capabilities;
 
 	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
