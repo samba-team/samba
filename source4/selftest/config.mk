@@ -37,32 +37,32 @@ testenv: everything
 valgrindtest: valgrindtest-all
 
 valgrindtest-quick: all
-	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/valgrind_run" \
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --quick --immediate --socket-wrapper $(TESTS)
 
 valgrindtest-all: everything
-	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/valgrind_run" \
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --immediate --socket-wrapper $(TESTS)
 
 valgrindtest-env: everything
-	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/valgrind_run" \
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --socket-wrapper --testenv
 
 gdbtest: gdbtest-all
 
 gdbtest-quick: all
-	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run " \
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run $(LD_LIBPATH_OVERRIDE)" \
 	$(SELFTEST) --immediate --quick --socket-wrapper $(TESTS)
 
 gdbtest-all: everything
-	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run " \
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run $(LD_LIBPATH_OVERRIDE)" \
 	$(SELFTEST) --immediate --socket-wrapper $(TESTS)
 
 gdbtest-env: everything
-	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run " \
+	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run $(LD_LIBPATH_OVERRIDE)" \
 	$(SELFTEST) --socket-wrapper --testenv
 
 wintest: all
