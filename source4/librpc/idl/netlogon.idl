@@ -1294,7 +1294,14 @@ interface netlogon
 
 	/****************/
 	/* Function 0x2c */
-	WERROR netr_NETRGETFORESTTRUSTINFORMATION();
+	WERROR netr_GetForestTrustInformation(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,ref] [string,charset(UTF16)] uint16 *trusted_domain_name,
+		[in,ref] netr_Authenticator *credential,
+		[out,ref] netr_Authenticator *return_authenticator,
+		[in] uint32 flags,
+		[out,ref] lsa_ForestTrustInformation **forest_trust_info
+		);
 
 	/****************/
 	/* Function 0x2d */

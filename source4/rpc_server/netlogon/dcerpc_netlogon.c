@@ -1237,11 +1237,11 @@ static WERROR dcesrv_netr_DsRGetForestTrustInformation(struct dcesrv_call_state 
 }
 
 
-/* 
-  netr_NETRGETFORESTTRUSTINFORMATION 
+/*
+  netr_GetForestTrustInformation
 */
-static WERROR dcesrv_netr_NETRGETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRGETFORESTTRUSTINFORMATION *r)
+static WERROR dcesrv_netr_GetForestTrustInformation(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_GetForestTrustInformation *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
