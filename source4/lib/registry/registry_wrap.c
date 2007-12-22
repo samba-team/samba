@@ -2472,15 +2472,17 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_param_context swig_types[13]
 #define SWIGTYPE_p_param_opt swig_types[14]
 #define SWIGTYPE_p_param_section swig_types[15]
-#define SWIGTYPE_p_registry_context swig_types[16]
-#define SWIGTYPE_p_short swig_types[17]
-#define SWIGTYPE_p_signed_char swig_types[18]
-#define SWIGTYPE_p_unsigned_char swig_types[19]
-#define SWIGTYPE_p_unsigned_int swig_types[20]
-#define SWIGTYPE_p_unsigned_long_long swig_types[21]
-#define SWIGTYPE_p_unsigned_short swig_types[22]
-static swig_type_info *swig_types[24];
-static swig_module_info swig_module = {swig_types, 23, 0, 0, 0, 0};
+#define SWIGTYPE_p_reg_diff_callbacks swig_types[16]
+#define SWIGTYPE_p_registry_context swig_types[17]
+#define SWIGTYPE_p_registry_key swig_types[18]
+#define SWIGTYPE_p_short swig_types[19]
+#define SWIGTYPE_p_signed_char swig_types[20]
+#define SWIGTYPE_p_unsigned_char swig_types[21]
+#define SWIGTYPE_p_unsigned_int swig_types[22]
+#define SWIGTYPE_p_unsigned_long_long swig_types[23]
+#define SWIGTYPE_p_unsigned_short swig_types[24]
+static swig_type_info *swig_types[26];
+static swig_module_info swig_module = {swig_types, 25, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2529,7 +2531,7 @@ static swig_module_info swig_module = {swig_types, 23, 0, 0, 0, 0};
 #include "param/param.h"
 
 typedef struct registry_context reg;
-typedef struct hive_key hive;
+typedef struct hive_key hive_key;
 
 
 #include <limits.h>
@@ -2828,9 +2830,6 @@ SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
 
 
 
-SWIGINTERN WERROR reg_apply_patchfile(reg *self,char const *filename){
-        return reg_diff_apply(filename, self);
-    }
 SWIGINTERN WERROR reg_mount_hive__SWIG_1(reg *self,struct hive_key *hive_key,char const *predef_name){
         int i;
         for (i = 0; reg_predefined_keys[i].name; i++) {
@@ -2839,7 +2838,7 @@ SWIGINTERN WERROR reg_mount_hive__SWIG_1(reg *self,struct hive_key *hive_key,cha
                                       reg_predefined_keys[i].handle, NULL);
         }
         return WERR_INVALID_NAME;
-        }
+    }
 
   #define SWIG_From_long   PyInt_FromLong 
 
@@ -3027,6 +3026,50 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_reg_key_del_abs(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  reg *arg1 = (reg *) 0 ;
+  char *arg2 = (char *) 0 ;
+  WERROR result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "path", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:reg_key_del_abs",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_registry_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "reg_key_del_abs" "', argument " "1"" of type '" "reg *""'"); 
+  }
+  arg1 = (reg *)(argp1);
+  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "reg_key_del_abs" "', argument " "2"" of type '" "char const *""'");
+  }
+  arg2 = (char *)(buf2);
+  result = reg_key_del_abs(arg1,(char const *)arg2);
+  {
+    if (!W_ERROR_IS_OK(result)) {
+      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+      PyErr_SetObject(PyExc_RuntimeError, obj);
+    } else if (resultobj == NULL) {
+      resultobj = Py_None;
+    }
+  }
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_reg_get_predefined_key(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   reg *arg1 = (reg *) 0 ;
@@ -3077,7 +3120,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_reg_apply_patchfile(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_reg_diff_apply(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   reg *arg1 = (reg *) 0 ;
   char *arg2 = (char *) 0 ;
@@ -3093,18 +3136,18 @@ SWIGINTERN PyObject *_wrap_reg_apply_patchfile(PyObject *SWIGUNUSEDPARM(self), P
     (char *) "self",(char *) "filename", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:reg_apply_patchfile",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:reg_diff_apply",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_registry_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "reg_apply_patchfile" "', argument " "1"" of type '" "reg *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "reg_diff_apply" "', argument " "1"" of type '" "reg *""'"); 
   }
   arg1 = (reg *)(argp1);
   res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "reg_apply_patchfile" "', argument " "2"" of type '" "char const *""'");
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "reg_diff_apply" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
-  result = reg_apply_patchfile(arg1,(char const *)arg2);
+  result = reg_diff_apply(arg1,(char const *)arg2);
   {
     if (!W_ERROR_IS_OK(result)) {
       PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
@@ -3117,6 +3160,63 @@ SWIGINTERN PyObject *_wrap_reg_apply_patchfile(PyObject *SWIGUNUSEDPARM(self), P
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_reg_generate_diff(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  reg *arg1 = (reg *) 0 ;
+  struct registry_context *arg2 = (struct registry_context *) 0 ;
+  struct reg_diff_callbacks *arg3 = (struct reg_diff_callbacks *) 0 ;
+  void *arg4 = (void *) 0 ;
+  WERROR result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  void *argp3 = 0 ;
+  int res3 = 0 ;
+  int res4 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "ctx2",(char *) "callbacks",(char *) "callback_data", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOOO:reg_generate_diff",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_registry_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "reg_generate_diff" "', argument " "1"" of type '" "reg *""'"); 
+  }
+  arg1 = (reg *)(argp1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_registry_context, 0 |  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "reg_generate_diff" "', argument " "2"" of type '" "struct registry_context *""'"); 
+  }
+  arg2 = (struct registry_context *)(argp2);
+  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_reg_diff_callbacks, 0 |  0 );
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "reg_generate_diff" "', argument " "3"" of type '" "struct reg_diff_callbacks const *""'"); 
+  }
+  arg3 = (struct reg_diff_callbacks *)(argp3);
+  res4 = SWIG_ConvertPtr(obj3,SWIG_as_voidptrptr(&arg4), 0, 0);
+  if (!SWIG_IsOK(res4)) {
+    SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "reg_generate_diff" "', argument " "4"" of type '" "void *""'"); 
+  }
+  result = reg_generate_diff(arg1,arg2,(struct reg_diff_callbacks const *)arg3,arg4);
+  {
+    if (!W_ERROR_IS_OK(result)) {
+      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+      PyErr_SetObject(PyExc_RuntimeError, obj);
+    } else if (resultobj == NULL) {
+      resultobj = Py_None;
+    }
+  }
+  return resultobj;
+fail:
   return NULL;
 }
 
@@ -3184,6 +3284,79 @@ SWIGINTERN PyObject *_wrap_reg_mount_hive__SWIG_0(PyObject *SWIGUNUSEDPARM(self)
       resultobj = Py_None;
     }
   }
+  {
+    free((char **) arg4);
+  }
+  return resultobj;
+fail:
+  {
+    free((char **) arg4);
+  }
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_reg_import_hive_key(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  reg *arg1 = (reg *) 0 ;
+  struct hive_key *arg2 = (struct hive_key *) 0 ;
+  uint32_t arg3 ;
+  char **arg4 = (char **) 0 ;
+  struct registry_key *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  unsigned int val3 ;
+  int ecode3 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "hive",(char *) "predef_key",(char *) "elements", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOOO:reg_import_hive_key",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_registry_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "reg_import_hive_key" "', argument " "1"" of type '" "reg *""'"); 
+  }
+  arg1 = (reg *)(argp1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_hive_key, 0 |  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "reg_import_hive_key" "', argument " "2"" of type '" "struct hive_key *""'"); 
+  }
+  arg2 = (struct hive_key *)(argp2);
+  ecode3 = SWIG_AsVal_unsigned_SS_int(obj2, &val3);
+  if (!SWIG_IsOK(ecode3)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "reg_import_hive_key" "', argument " "3"" of type '" "uint32_t""'");
+  } 
+  arg3 = (uint32_t)(val3);
+  {
+    /* Check if is a list */
+    if (PyList_Check(obj3)) {
+      int size = PyList_Size(obj3);
+      int i = 0;
+      arg4 = (char **) malloc((size+1)*sizeof(const char *));
+      for (i = 0; i < size; i++) {
+        PyObject *o = PyList_GetItem(obj3,i);
+        if (PyString_Check(o))
+        arg4[i] = PyString_AsString(PyList_GetItem(obj3,i));
+        else {
+          PyErr_SetString(PyExc_TypeError,"list must contain strings");
+          free(arg4);
+          return NULL;
+        }
+      }
+      arg4[i] = 0;
+    } else {
+      PyErr_SetString(PyExc_TypeError,"not a list");
+      return NULL;
+    }
+  }
+  result = (struct registry_key *)reg_import_hive_key(arg1,arg2,arg3,(char const **)arg4);
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_registry_key, 0 |  0 );
   {
     free((char **) arg4);
   }
@@ -3319,7 +3492,7 @@ SWIGINTERN PyObject *reg_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args
   return SWIG_Python_InitShadowInstance(args);
 }
 
-SWIGINTERN PyObject *_wrap_Hive(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_hive_key(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
   char *arg2 = (char *) 0 ;
@@ -3361,30 +3534,30 @@ SWIGINTERN PyObject *_wrap_Hive(PyObject *SWIGUNUSEDPARM(self), PyObject *args, 
   {
     arg6 = &tmp6; 
   }
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOO:Hive",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOO:hive_key",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
   res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Hive" "', argument " "2"" of type '" "char const *""'");
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "hive_key" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
   if (obj1) {
     res3 = SWIG_ConvertPtr(obj1, &argp3,SWIGTYPE_p_auth_session_info, 0 |  0 );
     if (!SWIG_IsOK(res3)) {
-      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "Hive" "', argument " "3"" of type '" "struct auth_session_info *""'"); 
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "hive_key" "', argument " "3"" of type '" "struct auth_session_info *""'"); 
     }
     arg3 = (struct auth_session_info *)(argp3);
   }
   if (obj2) {
     res4 = SWIG_ConvertPtr(obj2, &argp4,SWIGTYPE_p_cli_credentials, 0 |  0 );
     if (!SWIG_IsOK(res4)) {
-      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "Hive" "', argument " "4"" of type '" "struct cli_credentials *""'"); 
+      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "hive_key" "', argument " "4"" of type '" "struct cli_credentials *""'"); 
     }
     arg4 = (struct cli_credentials *)(argp4);
   }
   if (obj3) {
     res5 = SWIG_ConvertPtr(obj3, &argp5,SWIGTYPE_p_loadparm_context, 0 |  0 );
     if (!SWIG_IsOK(res5)) {
-      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "Hive" "', argument " "5"" of type '" "struct loadparm_context *""'"); 
+      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "hive_key" "', argument " "5"" of type '" "struct loadparm_context *""'"); 
     }
     arg5 = (struct loadparm_context *)(argp5);
   }
@@ -3408,53 +3581,6 @@ fail:
   return NULL;
 }
 
-
-SWIGINTERN PyObject *_wrap_new_hive(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  hive *result = 0 ;
-  
-  if (!SWIG_Python_UnpackTuple(args,"new_hive",0,0,0)) SWIG_fail;
-  result = (hive *)(hive *) calloc(1, sizeof(hive));
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_hive_key, SWIG_POINTER_NEW |  0 );
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_delete_hive(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  hive *arg1 = (hive *) 0 ;
-  void *argp1 = 0 ;
-  int res1 = 0 ;
-  PyObject *swig_obj[1] ;
-  
-  if (!args) SWIG_fail;
-  swig_obj[0] = args;
-  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_hive_key, SWIG_POINTER_DISOWN |  0 );
-  if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_hive" "', argument " "1"" of type '" "hive *""'"); 
-  }
-  arg1 = (hive *)(argp1);
-  free((char *) arg1);
-  
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *hive_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *obj;
-  if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
-  SWIG_TypeNewClientData(SWIGTYPE_p_hive_key, SWIG_NewClientData(obj));
-  return SWIG_Py_Void();
-}
-
-SWIGINTERN PyObject *hive_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  return SWIG_Python_InitShadowInstance(args);
-}
 
 SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
@@ -3538,18 +3664,17 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"str_regtype", (PyCFunction) _wrap_str_regtype, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Registry", (PyCFunction) _wrap_Registry, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"reg_get_predefined_key_by_name", (PyCFunction) _wrap_reg_get_predefined_key_by_name, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"reg_key_del_abs", (PyCFunction) _wrap_reg_key_del_abs, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"reg_get_predefined_key", (PyCFunction) _wrap_reg_get_predefined_key, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"reg_apply_patchfile", (PyCFunction) _wrap_reg_apply_patchfile, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"reg_diff_apply", (PyCFunction) _wrap_reg_diff_apply, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"reg_generate_diff", (PyCFunction) _wrap_reg_generate_diff, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"reg_import_hive_key", (PyCFunction) _wrap_reg_import_hive_key, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"reg_mount_hive", _wrap_reg_mount_hive, METH_VARARGS, NULL},
 	 { (char *)"new_reg", (PyCFunction)_wrap_new_reg, METH_NOARGS, NULL},
 	 { (char *)"delete_reg", (PyCFunction)_wrap_delete_reg, METH_O, NULL},
 	 { (char *)"reg_swigregister", reg_swigregister, METH_VARARGS, NULL},
 	 { (char *)"reg_swiginit", reg_swiginit, METH_VARARGS, NULL},
-	 { (char *)"Hive", (PyCFunction) _wrap_Hive, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"new_hive", (PyCFunction)_wrap_new_hive, METH_NOARGS, NULL},
-	 { (char *)"delete_hive", (PyCFunction)_wrap_delete_hive, METH_O, NULL},
-	 { (char *)"hive_swigregister", hive_swigregister, METH_VARARGS, NULL},
-	 { (char *)"hive_swiginit", hive_swiginit, METH_VARARGS, NULL},
+	 { (char *)"hive_key", (PyCFunction) _wrap_hive_key, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"open_samba", (PyCFunction) _wrap_open_samba, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
@@ -3561,7 +3686,7 @@ static swig_type_info _swigt__p_TALLOC_CTX = {"_p_TALLOC_CTX", "TALLOC_CTX *", 0
 static swig_type_info _swigt__p_auth_session_info = {"_p_auth_session_info", "struct auth_session_info *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_cli_credentials = {"_p_cli_credentials", "struct cli_credentials *|cli_credentials *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_hive_key = {"_p_hive_key", "struct hive_key *|hive *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_hive_key = {"_p_hive_key", "struct hive_key *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_int = {"_p_int", "intptr_t *|int *|int_least32_t *|int_fast32_t *|int32_t *|int_fast16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_loadparm_context = {"_p_loadparm_context", "struct loadparm_context *|loadparm_context *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_loadparm_service = {"_p_loadparm_service", "struct loadparm_service *|loadparm_service *", 0, 0, (void*)0, 0};
@@ -3573,7 +3698,9 @@ static swig_type_info _swigt__p_p_registry_key = {"_p_p_registry_key", "struct r
 static swig_type_info _swigt__p_param_context = {"_p_param_context", "struct param_context *|param *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_param_opt = {"_p_param_opt", "struct param_opt *|param_opt *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_param_section = {"_p_param_section", "struct param_section *|param_section *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_reg_diff_callbacks = {"_p_reg_diff_callbacks", "struct reg_diff_callbacks *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_registry_context = {"_p_registry_context", "struct registry_context *|reg *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_registry_key = {"_p_registry_key", "struct registry_key *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_short = {"_p_short", "short *|int_least16_t *|int16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_signed_char = {"_p_signed_char", "signed char *|int_least8_t *|int_fast8_t *|int8_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_unsigned_char = {"_p_unsigned_char", "unsigned char *|uint_least8_t *|uint_fast8_t *|uint8_t *", 0, 0, (void*)0, 0};
@@ -3598,7 +3725,9 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_param_context,
   &_swigt__p_param_opt,
   &_swigt__p_param_section,
+  &_swigt__p_reg_diff_callbacks,
   &_swigt__p_registry_context,
+  &_swigt__p_registry_key,
   &_swigt__p_short,
   &_swigt__p_signed_char,
   &_swigt__p_unsigned_char,
@@ -3623,7 +3752,9 @@ static swig_cast_info _swigc__p_p_registry_key[] = {  {&_swigt__p_p_registry_key
 static swig_cast_info _swigc__p_param_context[] = {  {&_swigt__p_param_context, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_param_opt[] = {  {&_swigt__p_param_opt, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_param_section[] = {  {&_swigt__p_param_section, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_reg_diff_callbacks[] = {  {&_swigt__p_reg_diff_callbacks, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_registry_context[] = {  {&_swigt__p_registry_context, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_registry_key[] = {  {&_swigt__p_registry_key, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_short[] = {  {&_swigt__p_short, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_signed_char[] = {  {&_swigt__p_signed_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_unsigned_char[] = {  {&_swigt__p_unsigned_char, 0, 0, 0},{0, 0, 0, 0}};
@@ -3648,7 +3779,9 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_param_context,
   _swigc__p_param_opt,
   _swigc__p_param_section,
+  _swigc__p_reg_diff_callbacks,
   _swigc__p_registry_context,
+  _swigc__p_registry_key,
   _swigc__p_short,
   _swigc__p_signed_char,
   _swigc__p_unsigned_char,

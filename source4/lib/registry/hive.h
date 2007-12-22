@@ -175,7 +175,7 @@ WERROR hive_get_value_by_index(TALLOC_CTX *mem_ctx,
 			       const char **name,
 			       uint32_t *type, DATA_BLOB *data);
 
-WERROR hive_del_value(struct hive_key *key, const char *name);
+WERROR hive_key_del_value(struct hive_key *key, const char *name);
 
 WERROR hive_key_flush(struct hive_key *key);
 

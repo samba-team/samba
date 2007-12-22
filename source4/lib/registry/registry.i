@@ -28,7 +28,7 @@
 #include "param/param.h"
 
 typedef struct registry_context reg;
-typedef struct hive_key hive;
+typedef struct hive_key hive_key;
 %}
 
 /* FIXME: This should be in another file */
@@ -96,11 +96,16 @@ typedef struct registry_context {
     WERROR get_predefined_key_by_name(const char *name, 
                                       struct registry_key **key);
 
+    WERROR key_del_abs(const char *path);
     WERROR get_predefined_key(uint32_t hkey_id, struct registry_key **key);
-    WERROR apply_patchfile(const char *filename);
+    WERROR diff_apply(const char *filename);
+    WERROR generate_diff(struct registry_context *ctx2, const struct reg_diff_callbacks *callbacks,
+                         void *callback_data);
+
     WERROR mount_hive(struct hive_key *hive_key, uint32_t hkey_id,
                       const char **elements=NULL);
 
+    struct registry_key *import_hive_key(struct hive_key *hive, uint32_t predef_key, const char **elements);
     WERROR mount_hive(struct hive_key *hive_key, const char *predef_name)
     {
         int i;
@@ -110,7 +115,7 @@ typedef struct registry_context {
                                       reg_predefined_keys[i].handle, NULL);
         }
         return WERR_INVALID_NAME;
-        }
+    }
 
     }
 } reg;
@@ -125,17 +130,22 @@ typedef struct registry_context {
     $result = SWIG_NewPointerObj(*$1, SWIGTYPE_p_hive_key, 0);
 }
 
-%rename(Hive) reg_open_hive;
+%rename(hive_key) reg_open_hive;
 WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
                      struct auth_session_info *session_info,
                      struct cli_credentials *credentials,
                      struct loadparm_context *lp_ctx,
                      struct hive_key **root);
 
-%talloctype(hive);
+%talloctype(hive_key);
 
 typedef struct hive_key {
-} hive;
+    %extend {
+        WERROR del(const char *name);
+        WERROR flush(void);
+        WERROR del_value(const char *name);
+    }
+} hive_key;
 
 %rename(open_samba) reg_open_samba;
 
