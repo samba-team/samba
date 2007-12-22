@@ -281,12 +281,12 @@ def setup_templatesdb(path, setup_path, session_info, credentials, lp):
 
 def setup_registry(path, setup_path, session_info, credentials, lp):
     reg = registry.Registry()
-    hive = registry.Hive(path, session_info=session_info, 
+    hive = registry.open_ldb(path, session_info=session_info, 
                          credentials=credentials, lp_ctx=lp)
     reg.mount_hive(hive, "HKEY_LOCAL_MACHINE")
     provision_reg = setup_path("provision.reg")
     assert os.path.exists(provision_reg)
-    reg.apply_patchfile(provision_reg)
+    reg.diff_apply(provision_reg)
 
 
 def setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname, 
