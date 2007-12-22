@@ -1,4 +1,4 @@
-What's new in Samba 4 alpha1
+What's new in Samba 4 alpha2
 ============================
 
 Samba 4 is the ambitious next version of the Samba suite that is being
@@ -10,17 +10,14 @@ Samba 4 is currently not yet in a state where it is usable in
 production environments. Note the WARNINGS below, and the STATUS file,
 which aims to document what should and should not work.
 
-Samba4 alpha1 is the culmination of 4.5 years of development under our
-belt since Tridge first proposed a new Virtual File System (VFS) layer
-for Samba3 (a project which eventually lead to our Active Directory
-efforts), and 1.5 years since we first released a Technology Preview,
-we wish to allow users, managers and developers to see how we have
-progressed, and to invite feedback and support.
+Samba4 alpha2 follows on from our first alpha release, made in
+September, and the Technology Preview series we have offered for some
+time now. 
 
 WARNINGS
 ========
 
-Samba4 alpha1 is not a final Samba release.  That is more a reference
+Samba4 alpha2 is not a final Samba release.  That is more a reference
 to Samba4's lack of the features we expect you will need than a
 statement of code quality, but clearly it hasn't seen a broad
 deployment yet.  If you were to upgrade Samba3 (or indeed Windows) to
@@ -58,7 +55,7 @@ annotation information (in streams) and NT ACLs in particular.  The
 VFS is backed with an extensive automated test suite.
 
 A new scripting interface has been added to Samba 4, allowing
-JavaScript programs to interface to Samba's internals.
+Python programs to interface to Samba's internals.
 
 The Samba 4 architecture is based around an LDAP-like database that
 can use a range of modular backends.  One of the backends supports
@@ -67,26 +64,26 @@ working on modules to map between AD-like behaviours and this backend.
 We are aiming for Samba 4 to be powerful frontend to large
 directories.
 
-CHANGES SINCE TP5
-=================
+CHANGES SINCE Alpha 1
+=====================
 
-In the time since TP5 was released in June 2007, Samba has
+In the time since Samba4 Alpha1 was released in September 2007, Samba has
 continued to evolve, but you may particularly notice these areas:
 
-  Group Policy Support:  Basic group policies may be defined, and are
-  enforced by Windows clients
-
   MMC Support:  The Active Directory Users and Computers console now
-  works, supporting most operations.  
+  handles group membership correctly.  
 
-  Winbind:  Kai Blin has been working hard on his Google Summer of
-  Code project, creating a winbind implementation for Samba4.
+  member/memberOf:  These and other linked attributes are now kept in
+  sync
 
-  Heimdal update:  A Heimdal 1.0 snapshot is now included as the
-  internal Kerberos library in Samba4.
+  subtree renames: Renaming a subtree of LDAP objects is now possible,
+  with all linked attributes being kept consistant.
 
-  In the past few weeks, many small but significant bugs have been
-  fixed, particularly thanks to Matthias Dieter Wallnöfer <mwallnoefer@yahoo.de>
+  Python Bindings:  Bindings for a future move to Python as the
+  internal scripting language have been created. 
+
+  Shared library use:  In support of projects such as OpenChange,
+  which depend on Samba4, more of Samba4 is built as shared libraries.
 
 These are just some of the highlights of the work done in the past few
 months.  More details can be found in our SVN history.
@@ -105,12 +102,6 @@ KNOWN ISSUES
   the support found in Samba3.
 
 - There is no printing support in the current release.
-
-- Support for managing groups is currently poor (as the
-  memberOf/member linked attributes are not kept in sync). 
-
-- Renaming and deleting subtrees (containers) in the the LDB tree will
-  have unexpected results.
 
 - The Samba4 port of the CTDB clustering support is not yet complete
 
