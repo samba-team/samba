@@ -27,7 +27,7 @@ extern struct current_user current_user;
  Run a file if it is a magic script.
 ****************************************************************************/
 
-static void check_magic(files_struct *fsp,connection_struct *conn)
+static void check_magic(struct files_struct *fsp)
 {
 	int ret;
 	const char *magic_output = NULL;
@@ -35,6 +35,7 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
 	int tmp_fd, outfd;
 	TALLOC_CTX *ctx = NULL;
 	const char *p;
+	struct connection_struct *conn = fsp->conn;
 
 	if (!*lp_magicscript(SNUM(conn))) {
 		return;
@@ -393,7 +394,7 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 
 	/* check for magic scripts */
 	if (close_type == NORMAL_CLOSE) {
-		check_magic(fsp,conn);
+		check_magic(fsp);
 	}
 
 	/*
