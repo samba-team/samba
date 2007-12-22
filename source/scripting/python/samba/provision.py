@@ -354,6 +354,36 @@ def setup_samdb_partitions(samdb, setup_path, schemadn, configdn, domaindn):
         })
 
 
+def setup_self_join(samdb, configdn, schemadn, domaindn, 
+                    netbiosname, hostname, dnsdomain, machinepass, dnspass, 
+                    realm, domainname, domainsid, invocationid, setup_path,
+                    policyguid, hostguid=None):
+    if hostguid is not None:
+        hostguid_add = "objectGUID: %s" % hostguid
+    else:
+        hostguid_add = ""
+
+    setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
+              "CONFIGDN": configdn, 
+              "SCHEMADN": schemadn,
+              "DOMAINDN": domaindn,
+              "INVOCATIONID": invocationid,
+              "NETBIOSNAME": netbiosname,
+              "DEFAULTSITE": DEFAULTSITE,
+              "DNSNAME": "%s.%s" % (hostname, dnsdomain),
+              "MACHINEPASS_B64": b64encode(machinepass),
+              "DNSPASS_B64": b64encode(dnspass),
+              "REALM": realm,
+              "DOMAIN": domainname,
+              "HOSTGUID_ADD": hostguid_add,
+              "DNSDOMAIN": dnsdomain})
+    setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
+              "POLICYGUID": policyguid,
+              "DNSDOMAIN": dnsdomain,
+              "DOMAINSID": str(domainsid),
+              "DOMAINDN": domaindn})
+
+
 def setup_samdb(path, setup_path, session_info, credentials, lp, 
                 schemadn, configdn, domaindn, dnsdomain, realm, 
                 netbiosname, message, hostname, rootdn, erase, 
@@ -506,30 +536,11 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
 
             if lp.get("server role") == "domain controller":
                 message("Setting up self join")
-                if hostguid is not None:
-                    hostguid_add = "objectGUID: %s" % hostguid
-                else:
-                    hostguid_add = ""
-
-                setup_add_ldif(samdb, setup_path("provision_self_join.ldif"), { 
-                          "CONFIGDN": configdn, 
-                          "SCHEMADN": schemadn,
-                          "DOMAINDN": domaindn,
-                          "INVOCATIONID": invocationid,
-                          "NETBIOSNAME": netbiosname,
-                          "DEFAULTSITE": DEFAULTSITE,
-                          "DNSNAME": "%s.%s" % (hostname, dnsdomain),
-                          "MACHINEPASS_B64": b64encode(machinepass),
-                          "DNSPASS_B64": b64encode(dnspass),
-                          "REALM": realm,
-                          "DOMAIN": domainname,
-                          "HOSTGUID_ADD": hostguid_add,
-                          "DNSDOMAIN": dnsdomain})
-                setup_add_ldif(samdb, setup_path("provision_group_policy.ldif"), { 
-                          "POLICYGUID": policyguid,
-                          "DNSDOMAIN": dnsdomain,
-                          "DOMAINSID": str(domainsid),
-                          "DOMAINDN": domaindn})
+                setup_self_join(samdb, configdn=configdn, schemadn=schemadn, domaindn=domaindn, 
+                                invocationid=invocationid, dnspass=dnspass, netbiosname=netbiosname,
+                                dnsdomain=dnsdomain, realm=realm, machinepass=machinepass, 
+                                domainname=domainname, domainsid=domainsid, policyguid=policyguid,
+                                hostname=hostname, hostguid=hostguid, setup_path=setup_path)
 
         message("Setting up sam.ldb index")
         samdb.load_ldif_file_add(setup_path("provision_index.ldif"))
@@ -693,6 +704,7 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
         os.makedirs(os.path.join(paths.sysvol, dnsdomain, "Policies", "{" + policyguid + "}", "User"), 0755)
         if not os.path.isdir(paths.netlogon):
             os.makedirs(paths.netlogon, 0755)
+        secrets_ldb = Ldb(paths.secrets, session_info=session_info, credentials=credentials, lp=lp)
         setup_ldb(secrets_ldb, setup_path("secrets_dc.ldif"), { 
             "MACHINEPASS_B64": b64encode(machinepass),
             "DOMAIN": domain,
@@ -728,12 +740,13 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
             scope=SCOPE_SUBTREE)
     assert isinstance(hostguid, str)
 
-    message("Setting up DNS zone: %s" % dnsdomain)
-    create_zone_file(paths.dns, setup_path, samdb, 
-                  hostname=hostname, hostip=hostip, dnsdomain=dnsdomain,
-                  domaindn=domaindn, dnspass=dnspass, realm=realm, 
-                  domainguid=domainguid, hostguid=hostguid)
-    message("Please install the zone located in %s into your DNS server" % paths.dns)
+    if lp.get("server role") == "domain controller":
+        message("Setting up DNS zone: %s" % dnsdomain)
+        create_zone_file(paths.dns, setup_path, samdb, 
+                      hostname=hostname, hostip=hostip, dnsdomain=dnsdomain,
+                      domaindn=domaindn, dnspass=dnspass, realm=realm, 
+                      domainguid=domainguid, hostguid=hostguid)
+        message("Please install the zone located in %s into your DNS server" % paths.dns)
 
 def create_phplpapdadmin_config(path, setup_path, s4_ldapi_path):
     setup_file(setup_path("phpldapadmin-config.php"), 

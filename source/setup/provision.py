@@ -77,7 +77,7 @@ parser.add_option("--wheel", type="string", metavar="GROUPNAME",
 parser.add_option("--users", type="string", metavar="GROUPNAME", 
 		help="choose 'users' group")
 parser.add_option("--quiet", help="Be quiet", action="store_true")
-parser.add_option("--blank", 
+parser.add_option("--blank", action="store_true",
 		help="do not add users or groups, just the structure")
 parser.add_option("--ldap-base", 
 		help="output only an LDIF file, suitable for creating an LDAP baseDN",
