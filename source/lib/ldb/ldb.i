@@ -34,6 +34,7 @@
 #include "talloc.h"
 #include "ldb.h"
 #include "ldb_errors.h"
+#include "ldb_private.h"
 
 typedef struct ldb_message ldb_msg;
 typedef struct ldb_context ldb;
@@ -425,16 +426,18 @@ PyObject *PyExc_LdbError;
  * Wrap ldb functions 
  */
 
+
+%typemap(out) ldb_error {
+    if ($1 != LDB_SUCCESS) {
+        PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", $1, ldb_strerror($1)));
+        SWIG_fail;
+    }
+    $result = Py_None;
+};
+
 %rename(Ldb) ldb_context;
 /* Top-level ldb operations */
 typedef struct ldb_context {
-    %typemap(out) ldb_error {
-        if ($1 != LDB_SUCCESS) {
-            PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", $1, ldb_strerror($1)));
-            SWIG_fail;
-        }
-        $result = Py_None;
-    };
     %extend {
         ldb(const char *url=NULL, unsigned int flags = 0, 
             const char *options[] = NULL)
@@ -572,3 +575,12 @@ static char *timestring(time_t t)
 
 %rename(string_to_time) ldb_string_to_time;
 time_t ldb_string_to_time(const char *s);
+
+%typemap(in) const struct ldb_module_ops * {
+    $1 = talloc_zero(talloc_autofree_context(), struct ldb_module_ops);
+
+    $1->name = PyObject_GetAttrString($input, "name");
+}
+
+%rename(register_module) ldb_register_module;
+ldb_error ldb_register_module(const struct ldb_module_ops *);
