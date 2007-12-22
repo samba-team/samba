@@ -211,7 +211,7 @@ wbcErr wbcAllocateUid(uid_t *puid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
-	NSS_STATUS result;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
 	if (!puid)
 		return WBC_ERR_INVALID_PARAM;
@@ -223,16 +223,17 @@ wbcErr wbcAllocateUid(uid_t *puid)
 
 	/* Make request */
 
-	result = wbcRequestResponse(WINBINDD_ALLOCATE_UID,
+	wbc_status = wbcRequestResponse(WINBINDD_ALLOCATE_UID,
 					   &request, &response);
-
-	if (result != NSS_STATUS_SUCCESS)
-		return WBC_ERR_UNKNOWN_FAILURE;
+	BAIL_ON_WBC_ERROR(wbc_status);
 
 	/* Copy out result */
 	*puid = response.data.uid;
 
-	return WBC_ERR_SUCCESS;
+	wbc_status = WBC_ERR_SUCCESS;
+
+ done:
+	return wbc_status;
 }
 
 /** @brief Obtain a new gid from Winbind
@@ -246,7 +247,7 @@ wbcErr wbcAllocateGid(uid_t *pgid)
 {
 	struct winbindd_request request;
 	struct winbindd_response response;
-	NSS_STATUS result;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
 	if (!pgid)
 		return WBC_ERR_INVALID_PARAM;
@@ -258,15 +259,16 @@ wbcErr wbcAllocateGid(uid_t *pgid)
 
 	/* Make request */
 
-	result = wbcRequestResponse(WINBINDD_ALLOCATE_GID,
+	wbc_status = wbcRequestResponse(WINBINDD_ALLOCATE_GID,
 					   &request, &response);
-
-	if (result != NSS_STATUS_SUCCESS)
-		return WBC_ERR_UNKNOWN_FAILURE;
+	BAIL_ON_WBC_ERROR(wbc_status);
 
 	/* Copy out result */
 	*pgid = response.data.gid;
 
-	return WBC_ERR_SUCCESS;
+	wbc_status = WBC_ERR_SUCCESS;
+
+ done:
+	return wbc_status;
 }
 
