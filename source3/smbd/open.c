@@ -70,7 +70,7 @@ static NTSTATUS fd_open(struct connection_struct *conn,
  Close the file associated with a fsp.
 ****************************************************************************/
 
-NTSTATUS fd_close(struct connection_struct *conn, files_struct *fsp)
+NTSTATUS fd_close(files_struct *fsp)
 {
 	if (fsp->fh->fd == -1) {
 		return NT_STATUS_OK; /* What we used to call a stat open. */
@@ -353,7 +353,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		/* For a non-io open, this stat failing means file not found. JRA */
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
-			fd_close(conn, fsp);
+			fd_close(fsp);
 			return status;
 		}
 	}
@@ -365,7 +365,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	 */
 
 	if(S_ISDIR(psbuf->st_mode)) {
-		fd_close(conn, fsp);
+		fd_close(fsp);
 		errno = EISDIR;
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
@@ -1688,7 +1688,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (lck == NULL) {
 			DEBUG(0, ("open_file_ntcreate: Could not get share "
 				  "mode lock for %s\n", fname));
-			fd_close(conn, fsp);
+			fd_close(fsp);
 			file_free(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
@@ -1699,7 +1699,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 oplock_request)) {
 			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
-			fd_close(conn, fsp);
+			fd_close(fsp);
 			file_free(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
@@ -1718,7 +1718,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 						 oplock_request)) {
 				schedule_defer_open(lck, request_time, req);
 				TALLOC_FREE(lck);
-				fd_close(conn, fsp);
+				fd_close(fsp);
 				file_free(fsp);
 				return NT_STATUS_SHARING_VIOLATION;
 			}
@@ -1727,7 +1727,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (!NT_STATUS_IS_OK(status)) {
 			struct deferred_open_record state;
 
-			fd_close(conn, fsp);
+			fd_close(fsp);
 			file_free(fsp);
 
 			state.delayed_for_oplocks = False;
@@ -1768,7 +1768,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if(ret_flock == -1 ){
 
 		TALLOC_FREE(lck);
-		fd_close(conn, fsp);
+		fd_close(fsp);
 		file_free(fsp);
 		
 		return NT_STATUS_SHARING_VIOLATION;
@@ -1793,7 +1793,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		    (SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf)==-1)) {
 			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(lck);
-			fd_close(conn,fsp);
+			fd_close(fsp);
 			file_free(fsp);
 			return status;
 		}
@@ -1850,7 +1850,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 			/* Remember to delete the mode we just added. */
 			del_share_mode(lck, fsp);
 			TALLOC_FREE(lck);
-			fd_close(conn,fsp);
+			fd_close(fsp);
 			file_free(fsp);
 			return status;
 		}
@@ -1974,7 +1974,7 @@ NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
 
 NTSTATUS close_file_fchmod(files_struct *fsp)
 {
-	NTSTATUS status = fd_close(fsp->conn, fsp);
+	NTSTATUS status = fd_close(fsp);
 	file_free(fsp);
 	return status;
 }

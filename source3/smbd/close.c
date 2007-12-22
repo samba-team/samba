@@ -389,7 +389,7 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 
 	locking_close_file(smbd_messaging_context(), fsp);
 
-	status = fd_close(conn, fsp);
+	status = fd_close(fsp);
 
 	/* check for magic scripts */
 	if (close_type == NORMAL_CLOSE) {
