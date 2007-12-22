@@ -2467,20 +2467,21 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_ldb_ldif swig_types[5]
 #define SWIGTYPE_p_ldb_message swig_types[6]
 #define SWIGTYPE_p_ldb_message_element swig_types[7]
-#define SWIGTYPE_p_ldb_result swig_types[8]
-#define SWIGTYPE_p_long_long swig_types[9]
-#define SWIGTYPE_p_p_char swig_types[10]
-#define SWIGTYPE_p_p_ldb_result swig_types[11]
-#define SWIGTYPE_p_short swig_types[12]
-#define SWIGTYPE_p_signed_char swig_types[13]
-#define SWIGTYPE_p_unsigned_char swig_types[14]
-#define SWIGTYPE_p_unsigned_int swig_types[15]
-#define SWIGTYPE_p_unsigned_long swig_types[16]
-#define SWIGTYPE_p_unsigned_long_long swig_types[17]
-#define SWIGTYPE_p_unsigned_short swig_types[18]
-#define SWIGTYPE_p_void swig_types[19]
-static swig_type_info *swig_types[21];
-static swig_module_info swig_module = {swig_types, 20, 0, 0, 0, 0};
+#define SWIGTYPE_p_ldb_module_ops swig_types[8]
+#define SWIGTYPE_p_ldb_result swig_types[9]
+#define SWIGTYPE_p_long_long swig_types[10]
+#define SWIGTYPE_p_p_char swig_types[11]
+#define SWIGTYPE_p_p_ldb_result swig_types[12]
+#define SWIGTYPE_p_short swig_types[13]
+#define SWIGTYPE_p_signed_char swig_types[14]
+#define SWIGTYPE_p_unsigned_char swig_types[15]
+#define SWIGTYPE_p_unsigned_int swig_types[16]
+#define SWIGTYPE_p_unsigned_long swig_types[17]
+#define SWIGTYPE_p_unsigned_long_long swig_types[18]
+#define SWIGTYPE_p_unsigned_short swig_types[19]
+#define SWIGTYPE_p_void swig_types[20]
+static swig_type_info *swig_types[22];
+static swig_module_info swig_module = {swig_types, 21, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2526,6 +2527,7 @@ static swig_module_info swig_module = {swig_types, 20, 0, 0, 0, 0};
 #include "talloc.h"
 #include "ldb.h"
 #include "ldb_errors.h"
+#include "ldb_private.h"
 
 typedef struct ldb_message ldb_msg;
 typedef struct ldb_context ldb;
@@ -5379,6 +5381,35 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_register_module(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  struct ldb_module_ops *arg1 = (struct ldb_module_ops *) 0 ;
+  ldb_error result;
+  PyObject * obj0 = 0 ;
+  char *  kwnames[] = {
+    (char *)"arg1", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:register_module",kwnames,&obj0)) SWIG_fail;
+  {
+    arg1 = talloc_zero(talloc_autofree_context(), struct ldb_module_ops);
+    
+    arg1->name = PyObject_GetAttrString(obj0, "name");
+  }
+  result = ldb_register_module((struct ldb_module_ops const *)arg1);
+  {
+    if (result != 0) {
+      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+      SWIG_fail;
+    }
+    resultobj = Py_None;
+  }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_Dn", (PyCFunction) _wrap_new_Dn, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_Dn", (PyCFunction)_wrap_delete_Dn, METH_O, NULL},
@@ -5447,6 +5478,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"valid_attr_name", (PyCFunction) _wrap_valid_attr_name, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"timestring", (PyCFunction) _wrap_timestring, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"string_to_time", (PyCFunction) _wrap_string_to_time, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"register_module", (PyCFunction) _wrap_register_module, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 
@@ -5461,6 +5493,7 @@ static swig_type_info _swigt__p_ldb_dn = {"_p_ldb_dn", "struct ldb_dn *|ldb_dn *
 static swig_type_info _swigt__p_ldb_ldif = {"_p_ldb_ldif", "struct ldb_ldif *|ldb_ldif *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_message = {"_p_ldb_message", "ldb_msg *|struct ldb_message *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_message_element = {"_p_ldb_message_element", "struct ldb_message_element *|ldb_msg_element *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_ldb_module_ops = {"_p_ldb_module_ops", "struct ldb_module_ops *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_ldb_result = {"_p_ldb_result", "struct ldb_result *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_long_long = {"_p_long_long", "int_least64_t *|int_fast64_t *|int64_t *|long long *|intmax_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_p_char = {"_p_p_char", "char **", 0, 0, (void*)0, 0};
@@ -5483,6 +5516,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_ldb_ldif,
   &_swigt__p_ldb_message,
   &_swigt__p_ldb_message_element,
+  &_swigt__p_ldb_module_ops,
   &_swigt__p_ldb_result,
   &_swigt__p_long_long,
   &_swigt__p_p_char,
@@ -5505,6 +5539,7 @@ static swig_cast_info _swigc__p_ldb_dn[] = {  {&_swigt__p_ldb_dn, 0, 0, 0},{0, 0
 static swig_cast_info _swigc__p_ldb_ldif[] = {  {&_swigt__p_ldb_ldif, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_ldb_message[] = {  {&_swigt__p_ldb_message, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_ldb_message_element[] = {  {&_swigt__p_ldb_message_element, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_ldb_module_ops[] = {  {&_swigt__p_ldb_module_ops, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_ldb_result[] = {  {&_swigt__p_ldb_result, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_long_long[] = {  {&_swigt__p_long_long, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_p_char[] = {  {&_swigt__p_p_char, 0, 0, 0},{0, 0, 0, 0}};
@@ -5527,6 +5562,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_ldb_ldif,
   _swigc__p_ldb_message,
   _swigc__p_ldb_message_element,
+  _swigc__p_ldb_module_ops,
   _swigc__p_ldb_result,
   _swigc__p_long_long,
   _swigc__p_p_char,

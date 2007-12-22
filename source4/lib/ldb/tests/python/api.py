@@ -364,3 +364,11 @@ class MessageElementTests(unittest.TestCase):
     def test_create_iterable(self):
         x = ldb.MessageElement(["foo"])
         self.assertEquals(["foo"], list(x))
+
+class ExampleModule:
+    name = "example"
+
+class ModuleTests(unittest.TestCase):
+    def test_register_module(self):
+        ldb.register_module(ExampleModule())
+

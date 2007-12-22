@@ -195,5 +195,6 @@ Ldb_swigregister(Ldb)
 valid_attr_name = _ldb.valid_attr_name
 timestring = _ldb.timestring
 string_to_time = _ldb.string_to_time
+register_module = _ldb.register_module
 
 
