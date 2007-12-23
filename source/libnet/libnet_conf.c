@@ -306,7 +306,7 @@ WERROR libnet_smbconf_delparm(TALLOC_CTX *mem_ctx,
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	werr = libnet_smbconf_open_path(mem_ctx, service, REG_KEY_READ, &key);
+	werr = libnet_smbconf_open_path(mem_ctx, service, REG_KEY_ALL, &key);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	if (!libnet_smbconf_value_exists(mem_ctx, key, param)) {
