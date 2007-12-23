@@ -78,12 +78,12 @@ bool libnet_smbconf_key_exists(const char *subkeyname)
 	return ret;
 }
 
-static bool libnet_smbconf_value_exists(TALLOC_CTX *ctx,
-					struct registry_key *key,
+static bool libnet_smbconf_value_exists(struct registry_key *key,
 					const char *param)
 {
 	bool ret = False;
 	WERROR werr = WERR_OK;
+	TALLOC_CTX *ctx = talloc_stackframe();
 	struct registry_value *value = NULL;
 
 	werr = reg_queryvalue(ctx, key, param, &value);
@@ -91,7 +91,7 @@ static bool libnet_smbconf_value_exists(TALLOC_CTX *ctx,
 		ret = True;
 	}
 
-	TALLOC_FREE(value);
+	TALLOC_FREE(ctx);
 	return ret;
 }
 
@@ -283,7 +283,7 @@ WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (!libnet_smbconf_value_exists(mem_ctx, key, param)) {
+	if (!libnet_smbconf_value_exists(key, param)) {
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -309,7 +309,7 @@ WERROR libnet_smbconf_delparm(TALLOC_CTX *mem_ctx,
 	werr = libnet_smbconf_open_path(mem_ctx, service, REG_KEY_ALL, &key);
 	W_ERROR_NOT_OK_RETURN(werr);
 
-	if (!libnet_smbconf_value_exists(mem_ctx, key, param)) {
+	if (!libnet_smbconf_value_exists(key, param)) {
 		return WERR_INVALID_PARAM;
 	}
 
