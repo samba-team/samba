@@ -222,8 +222,14 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	start = name;
 
-	if(!conn->case_sensitive
-	   && stat_cache_lookup(conn, &name, &dirpath, &start, &st)) {
+	/* If we're providing case insentive semantics or
+	 * the underlying filesystem is case insensitive,
+	 * then a case-normalized hit in the stat-cache is
+	 * authoratitive. JRA.
+	 */
+
+	if((!conn->case_sensitive || !(conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH)) &&
+			stat_cache_lookup(conn, &name, &dirpath, &start, &st)) {
 		*pst = st;
 		goto done;
 	}
@@ -269,10 +275,11 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	/*
 	 * A special case - if we don't have any mangling chars and are case
-	 * sensitive then searching won't help.
+	 * sensitive or the underlying filesystem is case insentive then searching
+	 * won't help.
 	 */
 
-	if (conn->case_sensitive &&
+	if ((conn->case_sensitive || !(conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH)) &&
 			!mangle_is_mangled(name, conn->params)) {
 		goto done;
 	}
