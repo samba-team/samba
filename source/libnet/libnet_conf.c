@@ -134,9 +134,9 @@ WERROR libnet_smbconf_open_basepath(TALLOC_CTX *ctx, uint32 desired_access,
 /*
  * create a subkey of KEY_SMBCONF
  */
-WERROR libnet_reg_createkey_internal(TALLOC_CTX *ctx,
-				     const char * subkeyname,
-				     struct registry_key **newkey)
+WERROR libnet_smbconf_reg_createkey_internal(TALLOC_CTX *ctx,
+					     const char * subkeyname,
+					     struct registry_key **newkey)
 {
 	WERROR werr = WERR_OK;
 	struct registry_key *create_parent = NULL;
@@ -258,7 +258,8 @@ WERROR libnet_smbconf_setparm(TALLOC_CTX *mem_ctx,
 	struct registry_key *key = NULL;
 
 	if (!libnet_smbconf_key_exists(mem_ctx, service)) {
-		werr = libnet_reg_createkey_internal(mem_ctx, service, &key);
+		werr = libnet_smbconf_reg_createkey_internal(mem_ctx, service,
+							     &key);
 	} else {
 		werr = libnet_smbconf_open_path(mem_ctx, service, REG_KEY_WRITE,
 						&key);

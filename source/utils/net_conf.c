@@ -346,7 +346,7 @@ static int import_process_service(TALLOC_CTX *ctx,
 				goto done;
 			}
 		}
-		werr = libnet_reg_createkey_internal(tmp_ctx, servicename, &key);
+		werr = libnet_smbconf_reg_createkey_internal(tmp_ctx, servicename, &key);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -776,7 +776,7 @@ int net_conf_addshare(int argc, const char **argv)
 	 * create the share
 	 */
 
-	werr = libnet_reg_createkey_internal(NULL, argv[0], &newkey);
+	werr = libnet_smbconf_reg_createkey_internal(NULL, argv[0], &newkey);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
