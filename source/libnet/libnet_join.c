@@ -331,35 +331,20 @@ done:
 	return status;
 }
 
-static WERROR do_modify_val_config(struct registry_key *key,
-				   const char *val_name,
-				   const char *val_data)
-{
-	struct registry_value val;
-
-	ZERO_STRUCT(val);
-
-	val.type = REG_SZ;
-	val.v.sz.str = CONST_DISCARD(char *, val_data);
-	val.v.sz.len = strlen(val_data) + 1;
-
-	return reg_setvalue(key, val_name, &val);
-}
-
 static WERROR do_join_modify_vals_config(TALLOC_CTX *mem_ctx,
-					 struct libnet_JoinCtx *r,
-					 struct registry_key *key)
+					 struct libnet_JoinCtx *r)
 {
 	WERROR werr;
 	bool is_ad = false;
 
 	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
 
-		werr = do_modify_val_config(key, "security", "user");
+		werr = libnet_smbconf_set_global_param(mem_ctx, "security",
+						       "user");
 		W_ERROR_NOT_OK_RETURN(werr);
 
-		werr = do_modify_val_config(key, "workgroup",
-					    r->in.domain_name);
+		werr = libnet_smbconf_set_global_param(mem_ctx, "workgroup",
+						       r->in.domain_name);
 		return werr;
 	}
 
@@ -367,19 +352,20 @@ static WERROR do_join_modify_vals_config(TALLOC_CTX *mem_ctx,
 		is_ad = true;
 	}
 
-	werr = do_modify_val_config(key, "security", "domain");
+	werr = libnet_smbconf_set_global_param(mem_ctx, "security", "domain");
 	W_ERROR_NOT_OK_RETURN(werr);
 
-	werr = do_modify_val_config(key, "workgroup",
-				    r->out.netbios_domain_name);
+	werr = libnet_smbconf_set_global_param(mem_ctx, "workgroup",
+					       r->out.netbios_domain_name);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	if (is_ad) {
-		werr = do_modify_val_config(key, "security", "ads");
+		werr = libnet_smbconf_set_global_param(mem_ctx, "security",
+						       "ads");
 		W_ERROR_NOT_OK_RETURN(werr);
 
-		werr = do_modify_val_config(key, "realm",
-					    r->out.dns_domain_name);
+		werr = libnet_smbconf_set_global_param(mem_ctx, "realm",
+						       r->out.dns_domain_name);
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
@@ -387,14 +373,14 @@ static WERROR do_join_modify_vals_config(TALLOC_CTX *mem_ctx,
 }
 
 static WERROR do_unjoin_modify_vals_config(TALLOC_CTX *mem_ctx,
-					   struct libnet_UnjoinCtx *r,
-					   struct registry_key *key)
+					   struct libnet_UnjoinCtx *r)
 {
 	WERROR werr = WERR_OK;
 
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
-		werr = do_modify_val_config(key, "security", "user");
+		werr = libnet_smbconf_set_global_param(mem_ctx, "security",
+						       "user");
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
@@ -408,7 +394,6 @@ static WERROR do_JoinConfig(TALLOC_CTX *mem_ctx,
 			    struct libnet_JoinCtx *r)
 {
 	WERROR werr;
-	struct registry_key *key = NULL;
 
 	if (!W_ERROR_IS_OK(r->out.result)) {
 		return r->out.result;
@@ -418,23 +403,7 @@ static WERROR do_JoinConfig(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	if (!registry_init_regdb()) {
-		return WERR_REG_IO_FAILURE;
-	}
-
-	if (!libnet_smbconf_key_exists(mem_ctx, GLOBAL_NAME)) {
-		werr = libnet_reg_createkey_internal(mem_ctx,
-						     GLOBAL_NAME, &key);
-	} else {
-		werr = libnet_smbconf_open_path(mem_ctx,
-						GLOBAL_NAME,
-						REG_KEY_WRITE, &key);
-	}
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
-	}
-
-	werr = do_join_modify_vals_config(mem_ctx, r, key);
+	werr = do_join_modify_vals_config(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -449,7 +418,6 @@ static WERROR do_UnjoinConfig(TALLOC_CTX *mem_ctx,
 			      struct libnet_UnjoinCtx *r)
 {
 	WERROR werr;
-	struct registry_key *key = NULL;
 
 	if (!W_ERROR_IS_OK(r->out.result)) {
 		return r->out.result;
@@ -459,23 +427,7 @@ static WERROR do_UnjoinConfig(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	if (!registry_init_regdb()) {
-		return WERR_REG_IO_FAILURE;
-	}
-
-	if (!libnet_smbconf_key_exists(mem_ctx, GLOBAL_NAME)) {
-		werr = libnet_reg_createkey_internal(mem_ctx,
-						     GLOBAL_NAME, &key);
-	} else {
-		werr = libnet_smbconf_open_path(mem_ctx,
-						GLOBAL_NAME,
-						REG_KEY_WRITE, &key);
-	}
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
-	}
-
-	werr = do_unjoin_modify_vals_config(mem_ctx, r, key);
+	werr = do_unjoin_modify_vals_config(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
