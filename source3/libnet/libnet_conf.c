@@ -194,7 +194,7 @@ WERROR libnet_smbconf_set_global_param(TALLOC_CTX *mem_ctx,
 	return do_modify_val_config(key, param, val);
 }
 
-bool libnet_smbconf_value_exists(TALLOC_CTX *ctx,
+static bool libnet_smbconf_value_exists(TALLOC_CTX *ctx,
 					struct registry_key *key,
 					const char *param)
 {
@@ -211,3 +211,26 @@ bool libnet_smbconf_value_exists(TALLOC_CTX *ctx,
 	return ret;
 }
 
+WERROR libnet_smbconf_delparm(TALLOC_CTX *mem_ctx,
+			      const char *service,
+			      const char *param)
+{
+	struct registry_key *key = NULL;
+	WERROR werr = WERR_OK;
+
+	if (!libnet_smbconf_key_exists(mem_ctx, service)) {
+		return WERR_NO_SUCH_SERVICE;
+	}
+
+	werr = libnet_smbconf_open_path(mem_ctx, service, REG_KEY_READ, &key);
+	W_ERROR_NOT_OK_RETURN(werr);
+
+	if (!libnet_smbconf_value_exists(mem_ctx, key, param)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	werr = reg_deletevalue(key, param);
+	W_ERROR_NOT_OK_RETURN(werr);
+
+	return WERR_OK;
+}

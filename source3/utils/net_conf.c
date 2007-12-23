@@ -995,7 +995,6 @@ static int net_conf_delparm(int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
 	char *service = NULL;
 	char *param = NULL;
 	TALLOC_CTX *ctx;
@@ -1009,26 +1008,19 @@ static int net_conf_delparm(int argc, const char **argv)
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	if (!libnet_smbconf_key_exists(ctx, service)) {
+	werr = libnet_smbconf_delparm(ctx, service, param);
+
+	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,
 			  "Error: given service '%s' does not exist.\n",
 			  service);
 		goto done;
-	}
-
-	werr = libnet_smbconf_open_path(ctx, service, REG_KEY_READ, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	if (!libnet_smbconf_value_exists(ctx, key, param)) {
+	} else if (W_ERROR_EQUAL(werr, WERR_INVALID_PARAM)) {
 		d_fprintf(stderr,
 			  "Error: given parameter '%s' is not set.\n",
 			  param);
 		goto done;
-	}
-	werr = reg_deletevalue(key, param);
-	if (!W_ERROR_IS_OK(werr)) {
+	} else if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error deleting value '%s': %s.\n",
 			  param, dos_errstr(werr));
 		goto done;
