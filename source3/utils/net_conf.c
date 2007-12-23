@@ -238,22 +238,6 @@ done:
 	return werr;
 }
 
-static bool smbconf_value_exists(TALLOC_CTX *ctx, struct registry_key *key,
-				 const char *param)
-{
-	bool ret = False;
-	WERROR werr = WERR_OK;
-	struct registry_value *value = NULL;
-
-	werr = reg_queryvalue(ctx, key, param, &value);
-	if (W_ERROR_IS_OK(werr)) {
-		ret = True;
-	}
-
-	TALLOC_FREE(value);
-	return ret;
-}
-
 static WERROR list_values(TALLOC_CTX *ctx, struct registry_key *key)
 {
 	WERROR werr = WERR_OK;
@@ -1037,7 +1021,7 @@ static int net_conf_delparm(int argc, const char **argv)
 		goto done;
 	}
 
-	if (!smbconf_value_exists(ctx, key, param)) {
+	if (!libnet_smbconf_value_exists(ctx, key, param)) {
 		d_fprintf(stderr,
 			  "Error: given parameter '%s' is not set.\n",
 			  param);
