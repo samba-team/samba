@@ -869,7 +869,6 @@ static int net_conf_getparm(int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
 	char *service = NULL;
 	char *param = NULL;
 	struct registry_value *value = NULL;
@@ -884,21 +883,20 @@ static int net_conf_getparm(int argc, const char **argv)
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	if (!libnet_smbconf_key_exists(ctx, service)) {
+	werr = libnet_smbconf_getparm(ctx, service, param, &value);
+
+	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,
-			  "ERROR: given service '%s' does not exist.\n",
+			  "Error: given service '%s' does not exist.\n",
 			  service);
 		goto done;
-	}
-
-	werr = libnet_smbconf_open_path(ctx, service, REG_KEY_READ, &key);
-	if (!W_ERROR_IS_OK(werr)) {
+	} else if (W_ERROR_EQUAL(werr, WERR_INVALID_PARAM)) {
+		d_fprintf(stderr,
+			  "Error: given parameter '%s' is not set.\n",
+			  param);
 		goto done;
-	}
-
-	werr = reg_queryvalue(ctx, key, param, &value);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Error querying value '%s': %s.\n",
+	} else if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error getting value '%s': %s.\n",
 			  param, dos_errstr(werr));
 		goto done;
 	}
