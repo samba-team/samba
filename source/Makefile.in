@@ -25,7 +25,7 @@ SHLD=@SHLD@
 ## Dynamic shared libraries build settings
 DSO_EXPORTS_CMD=-Wl,--version-script,$(srcdir)/exports/`basename $@ | sed 's/@SHLIBEXT@$$/syms/'`
 DSO_EXPORTS=@DSO_EXPORTS@
-SONAME_VER=`grep ^$@ $(builddir)/library-versions | cut -d: -f2`
+SONAME_VER=`grep \^$@ $(builddir)/library-versions | cut -d: -f2`
 SHLD_DSO = $(SHLD) $(LDSHFLAGS) $(DSO_EXPORTS) -o $@
 
 # The MODULE_EXPORTS variable contains the platform-specific linker flags
