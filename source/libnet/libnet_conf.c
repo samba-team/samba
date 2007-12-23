@@ -194,3 +194,20 @@ WERROR libnet_smbconf_set_global_param(TALLOC_CTX *mem_ctx,
 	return do_modify_val_config(key, param, val);
 }
 
+bool libnet_smbconf_value_exists(TALLOC_CTX *ctx,
+					struct registry_key *key,
+					const char *param)
+{
+	bool ret = False;
+	WERROR werr = WERR_OK;
+	struct registry_value *value = NULL;
+
+	werr = reg_queryvalue(ctx, key, param, &value);
+	if (W_ERROR_IS_OK(werr)) {
+		ret = True;
+	}
+
+	TALLOC_FREE(value);
+	return ret;
+}
+
