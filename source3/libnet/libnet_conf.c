@@ -314,9 +314,8 @@ WERROR libnet_smbconf_delparm(TALLOC_CTX *mem_ctx,
 	}
 
 	werr = reg_deletevalue(key, param);
-	W_ERROR_NOT_OK_RETURN(werr);
 
-	return WERR_OK;
+	return werr;
 }
 
 
