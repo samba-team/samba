@@ -64,14 +64,14 @@ done:
  */
 bool libnet_smbconf_key_exists(const char *subkeyname)
 {
-	bool ret = False;
+	bool ret = false;
 	WERROR werr = WERR_OK;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct registry_key *key = NULL;
 
 	werr = libnet_smbconf_open_path_q(mem_ctx, subkeyname, REG_KEY_READ, &key);
 	if (W_ERROR_IS_OK(werr)) {
-		ret = True;
+		ret = true;
 	}
 
 	TALLOC_FREE(mem_ctx);
@@ -81,14 +81,14 @@ bool libnet_smbconf_key_exists(const char *subkeyname)
 static bool libnet_smbconf_value_exists(struct registry_key *key,
 					const char *param)
 {
-	bool ret = False;
+	bool ret = false;
 	WERROR werr = WERR_OK;
 	TALLOC_CTX *ctx = talloc_stackframe();
 	struct registry_value *value = NULL;
 
 	werr = reg_queryvalue(ctx, key, param, &value);
 	if (W_ERROR_IS_OK(werr)) {
-		ret = True;
+		ret = true;
 	}
 
 	TALLOC_FREE(ctx);
