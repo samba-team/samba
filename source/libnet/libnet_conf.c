@@ -280,18 +280,24 @@ WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 	struct registry_key *key = NULL;
 
 	if (!libnet_smbconf_key_exists(mem_ctx, service)) {
-		return WERR_NO_SUCH_SERVICE;
+		werr = WERR_NO_SUCH_SERVICE;
+		goto done;
 	}
 
 	werr = libnet_smbconf_open_path(mem_ctx, service, REG_KEY_READ, &key);
-	W_ERROR_NOT_OK_RETURN(werr);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
 
 	if (!libnet_smbconf_value_exists(mem_ctx, key, param)) {
-		return WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAM;
+		goto done;
 	}
 
 	werr = reg_queryvalue(mem_ctx, key, param, value);
 
+done:
+	TALLOC_FREE(key);
 	return werr;
 }
 
