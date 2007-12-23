@@ -340,7 +340,7 @@ static int import_process_service(TALLOC_CTX *ctx,
 	if (opt_testmode) {
 		d_printf("[%s]\n", servicename);
 	} else {
-		if (libnet_smbconf_key_exists(tmp_ctx, servicename)) {
+		if (libnet_smbconf_key_exists(servicename)) {
 			werr = reg_delkey_internal(tmp_ctx, servicename);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
@@ -424,7 +424,7 @@ int net_conf_list(int argc, const char **argv)
 		goto done;
 	}
 
-	if (libnet_smbconf_key_exists(ctx, GLOBAL_NAME))  {
+	if (libnet_smbconf_key_exists(GLOBAL_NAME))  {
 		werr = reg_openkey(ctx, base_key, GLOBAL_NAME,
 				   REG_KEY_READ, &sub_key);
 		if (!W_ERROR_IS_OK(werr)) {

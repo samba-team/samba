@@ -62,24 +62,18 @@ done:
 /*
  * check if a subkey of KEY_SMBCONF of a given name exists
  */
-bool libnet_smbconf_key_exists(TALLOC_CTX *ctx, const char *subkeyname)
+bool libnet_smbconf_key_exists(const char *subkeyname)
 {
 	bool ret = False;
 	WERROR werr = WERR_OK;
-	TALLOC_CTX *mem_ctx;
-	struct registry_key *key;
-
-	if (!(mem_ctx = talloc_new(ctx))) {
-		d_fprintf(stderr, "ERROR: Out of memory...!\n");
-		goto done;
-	}
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct registry_key *key = NULL;
 
 	werr = libnet_smbconf_open_path_q(mem_ctx, subkeyname, REG_KEY_READ, &key);
 	if (W_ERROR_IS_OK(werr)) {
 		ret = True;
 	}
 
-done:
 	TALLOC_FREE(mem_ctx);
 	return ret;
 }
@@ -257,7 +251,7 @@ WERROR libnet_smbconf_setparm(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 	struct registry_key *key = NULL;
 
-	if (!libnet_smbconf_key_exists(mem_ctx, service)) {
+	if (!libnet_smbconf_key_exists(service)) {
 		werr = libnet_smbconf_reg_createkey_internal(mem_ctx, service,
 							     &key);
 	} else {
@@ -279,7 +273,7 @@ WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 	struct registry_key *key = NULL;
 
-	if (!libnet_smbconf_key_exists(mem_ctx, service)) {
+	if (!libnet_smbconf_key_exists(service)) {
 		werr = WERR_NO_SUCH_SERVICE;
 		goto done;
 	}
@@ -308,7 +302,7 @@ WERROR libnet_smbconf_delparm(TALLOC_CTX *mem_ctx,
 	struct registry_key *key = NULL;
 	WERROR werr = WERR_OK;
 
-	if (!libnet_smbconf_key_exists(mem_ctx, service)) {
+	if (!libnet_smbconf_key_exists(service)) {
 		return WERR_NO_SUCH_SERVICE;
 	}
 
