@@ -24,9 +24,10 @@
  * Open a subkey of KEY_SMBCONF (i.e a service)
  * - variant without error output (q = quiet)-
  */
-WERROR libnet_smbconf_open_path_q(TALLOC_CTX *ctx, const char *subkeyname,
-				  uint32 desired_access,
-				  struct registry_key **key)
+static WERROR libnet_smbconf_open_path_q(TALLOC_CTX *ctx,
+					 const char *subkeyname,
+					 uint32 desired_access,
+					 struct registry_key **key)
 {
 	WERROR werr = WERR_OK;
 	char *path = NULL;
