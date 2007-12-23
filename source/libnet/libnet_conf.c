@@ -243,21 +243,6 @@ done:
 	return werr;
 }
 
-static WERROR do_modify_val_config(struct registry_key *key,
-				   const char *val_name,
-				   const char *val_data)
-{
-	struct registry_value val;
-
-	ZERO_STRUCT(val);
-
-	val.type = REG_SZ;
-	val.v.sz.str = CONST_DISCARD(char *, val_data);
-	val.v.sz.len = strlen(val_data) + 1;
-
-	return reg_setvalue(key, val_name, &val);
-}
-
 /**********************************************************************
  *
  * The actual net conf api functions, that are exported.
@@ -285,37 +270,6 @@ WERROR libnet_smbconf_setparm(TALLOC_CTX *mem_ctx,
 	return werr;
 }
 
-WERROR libnet_smbconf_set_global_param(TALLOC_CTX *mem_ctx,
-				       const char *param,
-				       const char *val)
-{
-	WERROR werr;
-	struct registry_key *key = NULL;
-
-	if (!lp_include_registry_globals()) {
-		return WERR_NOT_SUPPORTED;
-	}
-
-	if (!registry_init_regdb()) {
-		return WERR_REG_IO_FAILURE;
-	}
-
-	if (!libnet_smbconf_key_exists(mem_ctx, GLOBAL_NAME)) {
-		werr = libnet_reg_createkey_internal(mem_ctx,
-						     GLOBAL_NAME, &key);
-	} else {
-		werr = libnet_smbconf_open_path(mem_ctx,
-						GLOBAL_NAME,
-						REG_KEY_WRITE, &key);
-	}
-
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
-	}
-
-	return do_modify_val_config(key, param, val);
-}
-
 WERROR libnet_smbconf_delparm(TALLOC_CTX *mem_ctx,
 			      const char *service,
 			      const char *param)
@@ -339,3 +293,18 @@ WERROR libnet_smbconf_delparm(TALLOC_CTX *mem_ctx,
 
 	return WERR_OK;
 }
+
+
+/**********************************************************************
+ *
+ * Convenience functions, that are also exportet.
+ *
+ **********************************************************************/
+
+WERROR libnet_smbconf_set_global_param(TALLOC_CTX *mem_ctx,
+				       const char *param,
+				       const char *val)
+{
+	return libnet_smbconf_setparm(mem_ctx, GLOBAL_NAME, param, val);
+}
+
