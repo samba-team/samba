@@ -834,7 +834,6 @@ static int net_conf_setparm(int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
 	char *service = NULL;
 	char *param = NULL;
 	const char *value_str = NULL;
@@ -850,22 +849,13 @@ static int net_conf_setparm(int argc, const char **argv)
 	param = strdup_lower(argv[1]);
 	value_str = argv[2];
 
-	if (!libnet_smbconf_key_exists(ctx, service)) {
-		werr = libnet_reg_createkey_internal(ctx, service, &key);
-	} else {
-		werr = libnet_smbconf_open_path(ctx, service, REG_KEY_WRITE, &key);
-	}
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
+	werr = libnet_smbconf_setparm(ctx, service, param, value_str);
 
-	werr = libnet_smbconf_reg_setvalue_internal(key, param, value_str);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting value '%s': %s\n",
 			  param, dos_errstr(werr));
 		goto done;
 	}
-
 
 	ret = 0;
 

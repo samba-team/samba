@@ -235,6 +235,27 @@ static WERROR do_modify_val_config(struct registry_key *key,
 	return reg_setvalue(key, val_name, &val);
 }
 
+WERROR libnet_smbconf_setparm(TALLOC_CTX *mem_ctx,
+			      const char *service,
+			      const char *param,
+			      const char *valstr)
+{
+	WERROR werr;
+	struct registry_key *key = NULL;
+
+	if (!libnet_smbconf_key_exists(mem_ctx, service)) {
+		werr = libnet_reg_createkey_internal(mem_ctx, service, &key);
+	} else {
+		werr = libnet_smbconf_open_path(mem_ctx, service, REG_KEY_WRITE,
+						&key);
+	}
+	W_ERROR_NOT_OK_RETURN(werr);
+
+	werr = libnet_smbconf_reg_setvalue_internal(key, param, valstr);
+
+	return werr;
+}
+
 WERROR libnet_smbconf_set_global_param(TALLOC_CTX *mem_ctx,
 				       const char *param,
 				       const char *val)
