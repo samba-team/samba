@@ -20,6 +20,13 @@
 
 #include "includes.h"
 
+/**********************************************************************
+ *
+ * Helper functions (mostly registry related)
+ * TODO: These should be eventually static.
+
+ **********************************************************************/
+
 /*
  * Open a subkey of KEY_SMBCONF (i.e a service)
  * - variant without error output (q = quiet)-
@@ -74,6 +81,23 @@ bool libnet_smbconf_key_exists(TALLOC_CTX *ctx, const char *subkeyname)
 
 done:
 	TALLOC_FREE(mem_ctx);
+	return ret;
+}
+
+static bool libnet_smbconf_value_exists(TALLOC_CTX *ctx,
+					struct registry_key *key,
+					const char *param)
+{
+	bool ret = False;
+	WERROR werr = WERR_OK;
+	struct registry_value *value = NULL;
+
+	werr = reg_queryvalue(ctx, key, param, &value);
+	if (W_ERROR_IS_OK(werr)) {
+		ret = True;
+	}
+
+	TALLOC_FREE(value);
 	return ret;
 }
 
@@ -147,7 +171,6 @@ done:
 	TALLOC_FREE(create_ctx);
 	return werr;
 }
-
 
 /*
  * add a value to a key.
@@ -235,6 +258,12 @@ static WERROR do_modify_val_config(struct registry_key *key,
 	return reg_setvalue(key, val_name, &val);
 }
 
+/**********************************************************************
+ *
+ * The actual net conf api functions, that are exported.
+ *
+ **********************************************************************/
+
 WERROR libnet_smbconf_setparm(TALLOC_CTX *mem_ctx,
 			      const char *service,
 			      const char *param,
@@ -285,23 +314,6 @@ WERROR libnet_smbconf_set_global_param(TALLOC_CTX *mem_ctx,
 	}
 
 	return do_modify_val_config(key, param, val);
-}
-
-static bool libnet_smbconf_value_exists(TALLOC_CTX *ctx,
-					struct registry_key *key,
-					const char *param)
-{
-	bool ret = False;
-	WERROR werr = WERR_OK;
-	struct registry_value *value = NULL;
-
-	werr = reg_queryvalue(ctx, key, param, &value);
-	if (W_ERROR_IS_OK(werr)) {
-		ret = True;
-	}
-
-	TALLOC_FREE(value);
-	return ret;
 }
 
 WERROR libnet_smbconf_delparm(TALLOC_CTX *mem_ctx,
