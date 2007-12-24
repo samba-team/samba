@@ -961,15 +961,19 @@ static int ltdb_request(struct ldb_module *module, struct ldb_request *req)
 */
 static int ltdb_sequence_number(struct ldb_module *module, struct ldb_request *req)
 {
-	TALLOC_CTX *tmp_ctx = talloc_new(req);
+	TALLOC_CTX *tmp_ctx;
 	struct ldb_message *msg = NULL;
-	struct ldb_dn *dn = ldb_dn_new(tmp_ctx, module->ldb, LTDB_BASEINFO);
+	struct ldb_dn *dn;
+	const char *date;
 	int tret;
 
+	tmp_ctx = talloc_new(req);
 	if (tmp_ctx == NULL) {
 		talloc_free(tmp_ctx);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
+	dn = ldb_dn_new(tmp_ctx, module->ldb, LTDB_BASEINFO);
 
 	msg = talloc(tmp_ctx, struct ldb_message);
 	if (msg == NULL) {
@@ -996,8 +1000,7 @@ static int ltdb_sequence_number(struct ldb_module *module, struct ldb_request *r
 		req->op.seq_num.seq_num++;
 		break;
 	case LDB_SEQ_HIGHEST_TIMESTAMP:
-	{
-		const char *date = ldb_msg_find_attr_as_string(msg, LTDB_MOD_TIMESTAMP, NULL);
+		date = ldb_msg_find_attr_as_string(msg, LTDB_MOD_TIMESTAMP, NULL);
 		if (date) {
 			req->op.seq_num.seq_num = ldb_string_to_time(date);
 		} else {
@@ -1005,7 +1008,6 @@ static int ltdb_sequence_number(struct ldb_module *module, struct ldb_request *r
 			/* zero is as good as anything when we don't know */
 		}
 		break;
-	}
 	}
 	talloc_free(tmp_ctx);
 	return LDB_SUCCESS;
