@@ -202,7 +202,7 @@ NTSTATUS ntvfs_init_connection(TALLOC_CTX *mem_ctx, struct share_config *scfg, e
 NTSTATUS ntvfs_init(struct loadparm_context *lp_ctx)
 {
 	static bool initialized = false;
-	init_module_fn static_init[] = { STATIC_ntvfs_MODULES, NULL };
+	init_module_fn static_init[] = { STATIC_ntvfs_MODULES };
 	init_module_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;

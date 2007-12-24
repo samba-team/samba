@@ -146,7 +146,7 @@ NTSTATUS share_get_context_by_name(TALLOC_CTX *mem_ctx, const char *backend_name
 */
 NTSTATUS share_init(void)
 {
-	init_module_fn static_init[] = { STATIC_share_MODULES, NULL };
+	init_module_fn static_init[] = { STATIC_share_MODULES };
 
 	run_init_functions(static_init);
 

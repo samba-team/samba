@@ -44,7 +44,8 @@ my $section_types = {
 
 		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
-		"STANDARD_VISIBILITY"	=> "string"
+		"STANDARD_VISIBILITY"	=> "string",
+		"INIT_FUNCTION_SENTINEL" => "string"
 		},
 	"MODULE" => {
 		"SUBSYSTEM"		=> "string",
@@ -88,6 +89,7 @@ my $section_types = {
 		"LIBRARY_REALNAME" => "string",
 		
 		"INIT_FUNCTION_TYPE"	=> "string",
+		"INIT_FUNCTION_SENTINEL" => "string",
 		"OUTPUT_TYPE"		=> "list",
 
 		"OBJ_FILES"		=> "list",

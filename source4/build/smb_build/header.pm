@@ -44,13 +44,12 @@ sub _prepare_build_h($)
 			$DEFINE->{VAL} .= "\t$_, \\\n";
 			unless (/{/) {
 				my $fn = $key->{INIT_FUNCTION_TYPE};
-				unless(defined($fn)) { $fn = "NTSTATUS (*) (void)"; }
 				$fn =~ s/\(\*\)/$_/;
 				$output .= "$fn;\n";
 			}
 		}
 
-		$DEFINE->{VAL} =~ s/, \\\n$//g; # Remove the last comma
+		$DEFINE->{VAL} .= "\t$key->{INIT_FUNCTION_SENTINEL} \n";
 
 		push(@defines,$DEFINE);
 	}

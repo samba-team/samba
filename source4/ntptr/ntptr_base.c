@@ -71,7 +71,7 @@ NTSTATUS ntptr_register(const void *_ops)
 
 NTSTATUS ntptr_init(struct loadparm_context *lp_ctx)
 {
-	init_module_fn static_init[] = { STATIC_ntptr_MODULES, NULL };
+	init_module_fn static_init[] = { STATIC_ntptr_MODULES };
 	init_module_fn *shared_init = load_samba_modules(NULL, lp_ctx, "ntptr");
 
 	run_init_functions(static_init);
