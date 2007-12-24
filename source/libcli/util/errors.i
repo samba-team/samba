@@ -18,7 +18,7 @@
 */
 
 #ifdef SWIGPYTHON
-%typemap(out) WERROR {
+%typemap(out,noblock=1) WERROR {
     if (!W_ERROR_IS_OK($1)) {
         PyObject *obj = Py_BuildValue("(i,s)", $1.v, win_errstr($1));
         PyErr_SetObject(PyExc_RuntimeError, obj);
@@ -28,7 +28,7 @@
     }
 };
 
-%typemap(out) NTSTATUS {
+%typemap(out,noblock=1) NTSTATUS {
     if (NT_STATUS_IS_ERR($1)) {
         PyObject *obj = Py_BuildValue("(i,s)", $1.v, nt_errstr($1));
         PyErr_SetObject(PyExc_RuntimeError, obj);
@@ -38,7 +38,7 @@
     }
 };
 
-%typemap(in) NTSTATUS {
+%typemap(in,noblock=1) NTSTATUS {
 	if (PyLong_Check($input))
 		$1 = NT_STATUS(PyLong_AsUnsignedLong($input));
 	else if (PyInt_Check($input))

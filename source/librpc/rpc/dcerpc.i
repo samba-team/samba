@@ -44,11 +44,11 @@
 %include "../../lib/talloc/talloc.i"
 %include "../../auth/credentials/credentials.i"
 
-%typemap(in, numinputs=0) struct dcerpc_pipe **OUT (struct dcerpc_pipe *temp_dcerpc_pipe) {
+%typemap(in,noblock=1, numinputs=0) struct dcerpc_pipe **OUT (struct dcerpc_pipe *temp_dcerpc_pipe) {
         $1 = &temp_dcerpc_pipe;
 }
 
-%typemap(argout) struct dcerpc_pipe ** {
+%typemap(argout,noblock=1) struct dcerpc_pipe ** {
 	/* Set REF_ALLOC flag so we don't have to do too much extra
 	   mucking around with ref variables in ndr unmarshalling. */
 
@@ -71,7 +71,7 @@ NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
 			     struct cli_credentials *credentials,
                  struct loadparm_context *lp_ctx);
 
-%typemap(in) DATA_BLOB * (DATA_BLOB temp_data_blob) {
+%typemap(in,noblock=1) DATA_BLOB * (DATA_BLOB temp_data_blob) {
 	temp_data_blob.data = PyString_AsString($input);
 	temp_data_blob.length = PyString_Size($input);
 	$1 = &temp_data_blob;
@@ -83,16 +83,16 @@ const char *dcerpc_server_name(struct dcerpc_pipe *p);
    also be done using the uint32 carray functions, but it's a bit of a
    hassle.  TODO: Fix memory leak here. */
 
-%typemap(in) uint32_t *resume_handle {
+%typemap(in,noblock=1) uint32_t *resume_handle {
 	$1 = malloc(sizeof(*$1));
 	*$1 = PyLong_AsLong($input);
 }
 
-%typemap(out) uint32_t *resume_handle {
+%typemap(out,noblock=1) uint32_t *resume_handle {
 	$result = PyLong_FromLong(*$1);
 }
 
-%typemap(in) struct policy_handle * {
+%typemap(in,noblock=1) struct policy_handle * {
 
 	if ((SWIG_ConvertPtr($input, (void **) &$1, $1_descriptor,
 			     SWIG_POINTER_EXCEPTION)) == -1) 
@@ -108,7 +108,7 @@ const char *dcerpc_server_name(struct dcerpc_pipe *p);
    as the talloc context it is created under is destroyed after the
    wrapper function returns.  TODO: Fix memory leak created here. */
 
-%typemap(out) struct policy_handle * {
+%typemap(out,noblock=1) struct policy_handle * {
 	if ($1) {
 		struct policy_handle *temp = (struct policy_handle *)malloc(sizeof(struct policy_handle));
 		memcpy(temp, $1, sizeof(struct policy_handle));

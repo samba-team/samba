@@ -2928,18 +2928,12 @@ SWIGINTERN PyObject *_wrap_Registry(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
     (char *) "session_info",(char *) "credentials", NULL 
   };
   
-  {
-    arg3 = NULL; 
-  }
+  arg3 = NULL;
   {
     arg4 = NULL;
   }
-  {
-    arg1 = NULL;
-  }
-  {
-    arg2 = &tmp2; 
-  }
+  arg1 = NULL;
+  arg2 = &tmp2;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:Registry",kwnames,&obj0,&obj1)) SWIG_fail;
   if (obj0) {
     res3 = SWIG_ConvertPtr(obj0, &argp3,SWIGTYPE_p_auth_session_info, 0 |  0 );
@@ -2956,17 +2950,14 @@ SWIGINTERN PyObject *_wrap_Registry(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
     arg4 = (struct cli_credentials *)(argp4);
   }
   result = reg_open_local(arg1,arg2,arg3,arg4);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
-  {
-    resultobj = SWIG_NewPointerObj(*arg2, SWIGTYPE_p_registry_context, 0);
-  }
+  resultobj = SWIG_NewPointerObj(*arg2, SWIGTYPE_p_registry_context, 0);
   return resultobj;
 fail:
   return NULL;
@@ -3010,13 +3001,12 @@ SWIGINTERN PyObject *_wrap_reg_get_predefined_key_by_name(PyObject *SWIGUNUSEDPA
   }
   arg3 = (struct registry_key **)(argp3);
   result = reg_get_predefined_key_by_name(arg1,(char const *)arg2,arg3);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
@@ -3054,13 +3044,12 @@ SWIGINTERN PyObject *_wrap_reg_key_del_abs(PyObject *SWIGUNUSEDPARM(self), PyObj
   }
   arg2 = (char *)(buf2);
   result = reg_key_del_abs(arg1,(char const *)arg2);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
@@ -3106,13 +3095,12 @@ SWIGINTERN PyObject *_wrap_reg_get_predefined_key(PyObject *SWIGUNUSEDPARM(self)
   }
   arg3 = (struct registry_key **)(argp3);
   result = reg_get_predefined_key(arg1,arg2,arg3);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
   return resultobj;
 fail:
@@ -3148,13 +3136,12 @@ SWIGINTERN PyObject *_wrap_reg_diff_apply(PyObject *SWIGUNUSEDPARM(self), PyObje
   }
   arg2 = (char *)(buf2);
   result = reg_diff_apply(arg1,(char const *)arg2);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
@@ -3207,13 +3194,12 @@ SWIGINTERN PyObject *_wrap_reg_generate_diff(PyObject *SWIGUNUSEDPARM(self), PyO
     SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "reg_generate_diff" "', argument " "4"" of type '" "void *""'"); 
   }
   result = reg_generate_diff(arg1,arg2,(struct reg_diff_callbacks const *)arg3,arg4);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
   return resultobj;
 fail:
@@ -3252,46 +3238,39 @@ SWIGINTERN PyObject *_wrap_reg_mount_hive__SWIG_0(PyObject *SWIGUNUSEDPARM(self)
   } 
   arg3 = (uint32_t)(val3);
   if (swig_obj[3]) {
-    {
-      /* Check if is a list */
-      if (PyList_Check(swig_obj[3])) {
-        int size = PyList_Size(swig_obj[3]);
-        int i = 0;
-        arg4 = (char **) malloc((size+1)*sizeof(const char *));
-        for (i = 0; i < size; i++) {
-          PyObject *o = PyList_GetItem(swig_obj[3],i);
-          if (PyString_Check(o))
-          arg4[i] = PyString_AsString(PyList_GetItem(swig_obj[3],i));
-          else {
-            PyErr_SetString(PyExc_TypeError,"list must contain strings");
-            free(arg4);
-            return NULL;
-          }
+    /* Check if is a list */
+    if (PyList_Check(swig_obj[3])) {
+      int size = PyList_Size(swig_obj[3]);
+      int i = 0;
+      arg4 = (char **) malloc((size+1)*sizeof(const char *));
+      for (i = 0; i < size; i++) {
+        PyObject *o = PyList_GetItem(swig_obj[3],i);
+        if (PyString_Check(o))
+        arg4[i] = PyString_AsString(PyList_GetItem(swig_obj[3],i));
+        else {
+          PyErr_SetString(PyExc_TypeError,"list must contain strings");
+          free(arg4);
+          return NULL;
         }
-        arg4[i] = 0;
-      } else {
-        PyErr_SetString(PyExc_TypeError,"not a list");
-        return NULL;
       }
+      arg4[i] = 0;
+    } else {
+      PyErr_SetString(PyExc_TypeError,"not a list");
+      return NULL;
     }
   }
   result = reg_mount_hive(arg1,arg2,arg3,(char const **)arg4);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
-  {
-    free((char **) arg4);
-  }
+  free((char **) arg4);
   return resultobj;
 fail:
-  {
-    free((char **) arg4);
-  }
+  free((char **) arg4);
   return NULL;
 }
 
@@ -3333,38 +3312,32 @@ SWIGINTERN PyObject *_wrap_reg_import_hive_key(PyObject *SWIGUNUSEDPARM(self), P
     SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "reg_import_hive_key" "', argument " "3"" of type '" "uint32_t""'");
   } 
   arg3 = (uint32_t)(val3);
-  {
-    /* Check if is a list */
-    if (PyList_Check(obj3)) {
-      int size = PyList_Size(obj3);
-      int i = 0;
-      arg4 = (char **) malloc((size+1)*sizeof(const char *));
-      for (i = 0; i < size; i++) {
-        PyObject *o = PyList_GetItem(obj3,i);
-        if (PyString_Check(o))
-        arg4[i] = PyString_AsString(PyList_GetItem(obj3,i));
-        else {
-          PyErr_SetString(PyExc_TypeError,"list must contain strings");
-          free(arg4);
-          return NULL;
-        }
+  /* Check if is a list */
+  if (PyList_Check(obj3)) {
+    int size = PyList_Size(obj3);
+    int i = 0;
+    arg4 = (char **) malloc((size+1)*sizeof(const char *));
+    for (i = 0; i < size; i++) {
+      PyObject *o = PyList_GetItem(obj3,i);
+      if (PyString_Check(o))
+      arg4[i] = PyString_AsString(PyList_GetItem(obj3,i));
+      else {
+        PyErr_SetString(PyExc_TypeError,"list must contain strings");
+        free(arg4);
+        return NULL;
       }
-      arg4[i] = 0;
-    } else {
-      PyErr_SetString(PyExc_TypeError,"not a list");
-      return NULL;
     }
+    arg4[i] = 0;
+  } else {
+    PyErr_SetString(PyExc_TypeError,"not a list");
+    return NULL;
   }
   result = (struct registry_key *)reg_import_hive_key(arg1,arg2,arg3,(char const **)arg4);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_registry_key, 0 |  0 );
-  {
-    free((char **) arg4);
-  }
+  free((char **) arg4);
   return resultobj;
 fail:
-  {
-    free((char **) arg4);
-  }
+  free((char **) arg4);
   return NULL;
 }
 
@@ -3400,13 +3373,12 @@ SWIGINTERN PyObject *_wrap_reg_mount_hive__SWIG_1(PyObject *SWIGUNUSEDPARM(self)
   }
   arg3 = (char *)(buf3);
   result = reg_mount_hive__SWIG_1(arg1,arg2,(char const *)arg3);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
   if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
   return resultobj;
@@ -3519,21 +3491,15 @@ SWIGINTERN PyObject *_wrap_hive_key(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
     (char *) "location",(char *) "session_info",(char *) "credentials",(char *) "lp_ctx", NULL 
   };
   
-  {
-    arg3 = NULL; 
-  }
+  arg3 = NULL;
   {
     arg4 = NULL;
   }
   {
     arg5 = loadparm_init(NULL);
   }
-  {
-    arg1 = NULL;
-  }
-  {
-    arg6 = &tmp6; 
-  }
+  arg1 = NULL;
+  arg6 = &tmp6;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOO:hive_key",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
   res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
@@ -3562,18 +3528,15 @@ SWIGINTERN PyObject *_wrap_hive_key(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
     arg5 = (struct loadparm_context *)(argp5);
   }
   result = reg_open_hive(arg1,(char const *)arg2,arg3,arg4,arg5,arg6);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
-  {
-    Py_XDECREF(resultobj);
-    resultobj = SWIG_NewPointerObj(*arg6, SWIGTYPE_p_hive_key, 0);
-  }
+  Py_XDECREF(resultobj);
+  resultobj = SWIG_NewPointerObj(*arg6, SWIGTYPE_p_hive_key, 0);
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
 fail:
@@ -3609,21 +3572,15 @@ SWIGINTERN PyObject *_wrap_open_ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
     (char *) "location",(char *) "session_info",(char *) "credentials",(char *) "lp_ctx", NULL 
   };
   
-  {
-    arg3 = NULL; 
-  }
+  arg3 = NULL;
   {
     arg4 = NULL;
   }
   {
     arg5 = loadparm_init(NULL);
   }
-  {
-    arg1 = NULL;
-  }
-  {
-    arg6 = &tmp6; 
-  }
+  arg1 = NULL;
+  arg6 = &tmp6;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOO:open_ldb",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
   res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
@@ -3652,18 +3609,15 @@ SWIGINTERN PyObject *_wrap_open_ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
     arg5 = (struct loadparm_context *)(argp5);
   }
   result = reg_open_ldb_file(arg1,(char const *)arg2,arg3,arg4,arg5,arg6);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
-  {
-    Py_XDECREF(resultobj);
-    resultobj = SWIG_NewPointerObj(*arg6, SWIGTYPE_p_hive_key, 0);
-  }
+  Py_XDECREF(resultobj);
+  resultobj = SWIG_NewPointerObj(*arg6, SWIGTYPE_p_hive_key, 0);
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
 fail:
@@ -3687,12 +3641,8 @@ SWIGINTERN PyObject *_wrap_create_dir(PyObject *SWIGUNUSEDPARM(self), PyObject *
     (char *) "location", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
-  {
-    arg3 = &tmp3; 
-  }
+  arg1 = NULL;
+  arg3 = &tmp3;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:create_dir",kwnames,&obj0)) SWIG_fail;
   res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
@@ -3700,18 +3650,15 @@ SWIGINTERN PyObject *_wrap_create_dir(PyObject *SWIGUNUSEDPARM(self), PyObject *
   }
   arg2 = (char *)(buf2);
   result = reg_create_directory(arg1,(char const *)arg2,arg3);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
-  {
-    Py_XDECREF(resultobj);
-    resultobj = SWIG_NewPointerObj(*arg3, SWIGTYPE_p_hive_key, 0);
-  }
+  Py_XDECREF(resultobj);
+  resultobj = SWIG_NewPointerObj(*arg3, SWIGTYPE_p_hive_key, 0);
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
 fail:
@@ -3735,12 +3682,8 @@ SWIGINTERN PyObject *_wrap_open_dir(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
     (char *) "location", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
-  {
-    arg3 = &tmp3; 
-  }
+  arg1 = NULL;
+  arg3 = &tmp3;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:open_dir",kwnames,&obj0)) SWIG_fail;
   res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
@@ -3748,18 +3691,15 @@ SWIGINTERN PyObject *_wrap_open_dir(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   }
   arg2 = (char *)(buf2);
   result = reg_open_directory(arg1,(char const *)arg2,arg3);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
-  {
-    Py_XDECREF(resultobj);
-    resultobj = SWIG_NewPointerObj(*arg3, SWIGTYPE_p_hive_key, 0);
-  }
+  Py_XDECREF(resultobj);
+  resultobj = SWIG_NewPointerObj(*arg3, SWIGTYPE_p_hive_key, 0);
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
 fail:
@@ -3793,18 +3733,12 @@ SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *
   {
     arg3 = loadparm_init(NULL);
   }
-  {
-    arg4 = NULL; 
-  }
+  arg4 = NULL;
   {
     arg5 = NULL;
   }
-  {
-    arg1 = NULL;
-  }
-  {
-    arg2 = &tmp2; 
-  }
+  arg1 = NULL;
+  arg2 = &tmp2;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:open_samba",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   if (obj0) {
     res3 = SWIG_ConvertPtr(obj0, &argp3,SWIGTYPE_p_loadparm_context, 0 |  0 );
@@ -3828,17 +3762,14 @@ SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *
     arg5 = (struct cli_credentials *)(argp5);
   }
   result = reg_open_samba(arg1,arg2,arg3,arg4,arg5);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
-  {
-    resultobj = SWIG_NewPointerObj(*arg2, SWIGTYPE_p_registry_context, 0);
-  }
+  resultobj = SWIG_NewPointerObj(*arg2, SWIGTYPE_p_registry_context, 0);
   return resultobj;
 fail:
   return NULL;

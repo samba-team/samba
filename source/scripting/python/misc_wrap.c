@@ -2808,9 +2808,7 @@ SWIGINTERN PyObject *_wrap_random_password(PyObject *SWIGUNUSEDPARM(self), PyObj
     (char *) "len", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:random_password",kwnames,&obj0)) SWIG_fail;
   ecode2 = SWIG_AsVal_size_t(obj0, &val2);
   if (!SWIG_IsOK(ecode2)) {
@@ -2855,11 +2853,9 @@ SWIGINTERN PyObject *_wrap_ldb_set_credentials(PyObject *SWIGUNUSEDPARM(self), P
     }
     arg2 = (struct cli_credentials *)(argp2);
   }
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   ldb_set_credentials(arg1,arg2);
   resultobj = SWIG_Py_Void();
   return resultobj;
@@ -2893,11 +2889,9 @@ SWIGINTERN PyObject *_wrap_ldb_set_session_info(PyObject *SWIGUNUSEDPARM(self), 
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ldb_set_session_info" "', argument " "2"" of type '" "struct auth_session_info *""'"); 
   }
   arg2 = (struct auth_session_info *)(argp2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   ldb_set_session_info(arg1,arg2);
   resultobj = SWIG_Py_Void();
   return resultobj;
@@ -2936,11 +2930,9 @@ SWIGINTERN PyObject *_wrap_ldb_set_loadparm(PyObject *SWIGUNUSEDPARM(self), PyOb
     }
     arg2 = (struct loadparm_context *)(argp2);
   }
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   ldb_set_loadparm(arg1,arg2);
   resultobj = SWIG_Py_Void();
   return resultobj;
@@ -2975,11 +2967,9 @@ SWIGINTERN PyObject *_wrap_samdb_set_domain_sid(PyObject *SWIGUNUSEDPARM(self), 
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "samdb_set_domain_sid" "', argument " "2"" of type '" "struct dom_sid const *""'"); 
   }
   arg2 = (struct dom_sid *)(argp2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = (bool)samdb_set_domain_sid(arg1,(struct dom_sid const *)arg2);
   resultobj = SWIG_From_bool((bool)(result));
   return resultobj;
@@ -3025,19 +3015,16 @@ SWIGINTERN PyObject *_wrap_dsdb_attach_schema_from_ldif_file(PyObject *SWIGUNUSE
     SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "dsdb_attach_schema_from_ldif_file" "', argument " "3"" of type '" "char const *""'");
   }
   arg3 = (char *)(buf3);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = dsdb_attach_schema_from_ldif_file(arg1,(char const *)arg2,(char const *)arg3);
-  {
-    if (!W_ERROR_IS_OK(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (!W_ERROR_IS_OK(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
@@ -3079,11 +3066,9 @@ SWIGINTERN PyObject *_wrap_dsdb_set_global_schema(PyObject *SWIGUNUSEDPARM(self)
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "dsdb_set_global_schema" "', argument " "1"" of type '" "struct ldb_context *""'"); 
   }
   arg1 = (struct ldb_context *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = (int)dsdb_set_global_schema(arg1);
   resultobj = SWIG_From_int((int)(result));
   return resultobj;
@@ -3109,11 +3094,9 @@ SWIGINTERN PyObject *_wrap_ldb_register_samba_handlers(PyObject *SWIGUNUSEDPARM(
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_register_samba_handlers" "', argument " "1"" of type '" "struct ldb_context *""'"); 
   }
   arg1 = (struct ldb_context *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = (int)ldb_register_samba_handlers(arg1);
   resultobj = SWIG_From_int((int)(result));
   return resultobj;

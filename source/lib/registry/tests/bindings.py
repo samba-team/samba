@@ -40,11 +40,11 @@ class HiveTests(samba.tests.TestCaseInTempDir):
     def test_ldb_new(self):
         self.assertTrue(self.hive is not None)
 
-    def test_flush(self):
-        self.hive.flush()
+    #def test_flush(self):
+    #    self.hive.flush()
 
-    def test_del_value(self):
-        self.hive.del_value("FOO")
+    #def test_del_value(self):
+    #    self.hive.del_value("FOO")
 
 
 class RegistryTests(unittest.TestCase):

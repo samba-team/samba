@@ -287,6 +287,7 @@ fi
 # if python is available, run the python tests:
 if which python 2>/dev/null >/dev/null
 then
+	PYTHON=python
 	plantest "ldb.python" none PYTHONPATH=bin/python:scripting/python:lib/ldb/tests/python/ scripting/bin/subunitrun api
 	plantest "credentials.python" none PYTHONPATH=bin/python:scripting/python:auth/credentials/tests scripting/bin/subunitrun bindings
 	plantest "registry.python" none PYTHONPATH=bin/python:scripting/python:lib/registry/tests/ scripting/bin/subunitrun bindings
@@ -297,4 +298,7 @@ then
 	plantest "upgrade.python" none PYTHONPATH=bin/python:scripting/python scripting/bin/subunitrun samba.tests.upgrade
 	plantest "samba.python" none PYTHONPATH=bin/python:scripting/python scripting/bin/subunitrun samba.tests
 	plantest "provision.python" none PYTHONPATH=bin/python:scripting/python scripting/bin/subunitrun samba.tests.provision
+	plantest "samba3.python" none PYTHONPATH=bin/python:scripting/python scripting/bin/subunitrun samba.tests.samba3
+	plantest "samba3sam.python" none PYTHONPATH=bin/python:scripting/python $PYTHON dsdb/samdb/ldb_modules/tests/samba3sam.py `pwd` $DATADIR/samba3/
+	plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD
 fi

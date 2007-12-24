@@ -38,7 +38,7 @@ typedef struct param_opt param_opt;
 %import "typemaps.i"
 %import "../lib/talloc/talloc.i"
 
-%typemap(default) struct loadparm_context * {
+%typemap(default,noblock=1) struct loadparm_context * {
     $1 = loadparm_init(NULL);
 }
 

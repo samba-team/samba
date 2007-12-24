@@ -2464,15 +2464,16 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_loadparm_service swig_types[5]
 #define SWIGTYPE_p_long_long swig_types[6]
 #define SWIGTYPE_p_param_context swig_types[7]
-#define SWIGTYPE_p_param_section swig_types[8]
-#define SWIGTYPE_p_short swig_types[9]
-#define SWIGTYPE_p_signed_char swig_types[10]
-#define SWIGTYPE_p_unsigned_char swig_types[11]
-#define SWIGTYPE_p_unsigned_int swig_types[12]
-#define SWIGTYPE_p_unsigned_long_long swig_types[13]
-#define SWIGTYPE_p_unsigned_short swig_types[14]
-static swig_type_info *swig_types[16];
-static swig_module_info swig_module = {swig_types, 15, 0, 0, 0, 0};
+#define SWIGTYPE_p_param_opt swig_types[8]
+#define SWIGTYPE_p_param_section swig_types[9]
+#define SWIGTYPE_p_short swig_types[10]
+#define SWIGTYPE_p_signed_char swig_types[11]
+#define SWIGTYPE_p_unsigned_char swig_types[12]
+#define SWIGTYPE_p_unsigned_int swig_types[13]
+#define SWIGTYPE_p_unsigned_long_long swig_types[14]
+#define SWIGTYPE_p_unsigned_short swig_types[15]
+static swig_type_info *swig_types[17];
+static swig_module_info swig_module = {swig_types, 16, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2537,12 +2538,8 @@ SWIGINTERN PyObject *_wrap_system_session(PyObject *SWIGUNUSEDPARM(self), PyObje
     (char *) "lp_ctx", NULL 
   };
   
-  {
-    arg2 = loadparm_init(NULL);
-  }
-  {
-    arg1 = NULL;
-  }
+  arg2 = loadparm_init(NULL);
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:system_session",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res2 = SWIG_ConvertPtr(obj0, &argp2,SWIGTYPE_p_loadparm_context, 0 |  0 );
@@ -2571,12 +2568,8 @@ SWIGINTERN PyObject *_wrap_system_session_anon(PyObject *SWIGUNUSEDPARM(self), P
     (char *) "lp_ctx", NULL 
   };
   
-  {
-    arg2 = loadparm_init(NULL);
-  }
-  {
-    arg1 = NULL;
-  }
+  arg2 = loadparm_init(NULL);
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:system_session_anon",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res2 = SWIG_ConvertPtr(obj0, &argp2,SWIGTYPE_p_loadparm_context, 0 |  0 );
@@ -2610,6 +2603,7 @@ static swig_type_info _swigt__p_loadparm_context = {"_p_loadparm_context", "stru
 static swig_type_info _swigt__p_loadparm_service = {"_p_loadparm_service", "struct loadparm_service *|loadparm_service *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_long_long = {"_p_long_long", "int_least64_t *|int_fast64_t *|int64_t *|long long *|intmax_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_param_context = {"_p_param_context", "struct param_context *|param *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_param_opt = {"_p_param_opt", "struct param_opt *|param_opt *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_param_section = {"_p_param_section", "struct param_section *|param_section *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_short = {"_p_short", "short *|int_least16_t *|int16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_signed_char = {"_p_signed_char", "signed char *|int_least8_t *|int_fast8_t *|int8_t *", 0, 0, (void*)0, 0};
@@ -2627,6 +2621,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_loadparm_service,
   &_swigt__p_long_long,
   &_swigt__p_param_context,
+  &_swigt__p_param_opt,
   &_swigt__p_param_section,
   &_swigt__p_short,
   &_swigt__p_signed_char,
@@ -2644,6 +2639,7 @@ static swig_cast_info _swigc__p_loadparm_context[] = {  {&_swigt__p_loadparm_con
 static swig_cast_info _swigc__p_loadparm_service[] = {  {&_swigt__p_loadparm_service, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_long_long[] = {  {&_swigt__p_long_long, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_param_context[] = {  {&_swigt__p_param_context, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_param_opt[] = {  {&_swigt__p_param_opt, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_param_section[] = {  {&_swigt__p_param_section, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_short[] = {  {&_swigt__p_short, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_signed_char[] = {  {&_swigt__p_signed_char, 0, 0, 0},{0, 0, 0, 0}};
@@ -2661,6 +2657,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_loadparm_service,
   _swigc__p_long_long,
   _swigc__p_param_context,
+  _swigc__p_param_opt,
   _swigc__p_param_section,
   _swigc__p_short,
   _swigc__p_signed_char,

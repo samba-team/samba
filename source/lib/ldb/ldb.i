@@ -67,13 +67,13 @@ typedef int ldb_error;
 /* The ldb functions will crash if a NULL ldb context is passed so
    catch this before it happens. */
 
-%typemap(check) struct ldb_context* {
+%typemap(check,noblock=1) struct ldb_context* {
 	if ($1 == NULL)
 		SWIG_exception(SWIG_ValueError, 
 			"ldb context must be non-NULL");
 }
 
-%typemap(check) ldb_msg * {
+%typemap(check,noblock=1) ldb_msg * {
 	if ($1 == NULL)
 		SWIG_exception(SWIG_ValueError, 
 			"Message can not be None");
@@ -83,7 +83,7 @@ typedef int ldb_error;
  * Wrap struct ldb_val
  */
 
-%typemap(in) struct ldb_val *INPUT (struct ldb_val temp) {
+%typemap(in,noblock=1) struct ldb_val *INPUT (struct ldb_val temp) {
 	$1 = &temp;
 	if (!PyString_Check($input)) {
 		PyErr_SetString(PyExc_TypeError, "string arg expected");
@@ -93,7 +93,7 @@ typedef int ldb_error;
 	$1->data = PyString_AsString($input);
 }
 
-%typemap(out) struct ldb_val {
+%typemap(out,noblock=1) struct ldb_val {
 	$result = PyString_FromStringAndSize((const char *)$1.data, $1.length);
 }
 
@@ -101,7 +101,7 @@ typedef int ldb_error;
  * Wrap struct ldb_result
  */
 
-%typemap(in, numinputs=0) struct ldb_result **OUT (struct ldb_result *temp_ldb_result) {
+%typemap(in,noblock=1,numinputs=0) struct ldb_result **OUT (struct ldb_result *temp_ldb_result) {
 	$1 = &temp_ldb_result;
 }
 
@@ -115,7 +115,7 @@ typedef int ldb_error;
     }
 }
 
-%typemap(in, numinputs=1) const char * const *attrs {
+%typemap(in,noblock=1,numinputs=1) const char * const *attrs {
     if ($input == Py_None) {
         $1 = NULL;
     } else if (PySequence_Check($input)) {
@@ -196,12 +196,16 @@ fail:
 int ldb_dn_from_pyobject(TALLOC_CTX *mem_ctx, PyObject *object, 
                          struct ldb_context *ldb, ldb_dn **dn)
 {
+    int ret;
+    struct ldb_dn *odn;
     if (ldb != NULL && PyString_Check(object)) {
         *dn = ldb_dn_new(mem_ctx, ldb, PyString_AsString(object));
         return 0;
     }
-    return SWIG_ConvertPtr(object, (void **)dn, SWIGTYPE_p_ldb_dn, 
+    ret = SWIG_ConvertPtr(object, (void **)&odn, SWIGTYPE_p_ldb_dn, 
                            SWIG_POINTER_EXCEPTION);
+    *dn = ldb_dn_copy(mem_ctx, odn);
+    return ret;
 }
 
 ldb_msg_element *ldb_msg_element_from_pyobject(PyObject *set_obj, int flags,
@@ -276,6 +280,15 @@ typedef struct ldb_message_element {
 #endif
         ~ldb_msg_element() { talloc_free($self); }
         int compare(ldb_msg_element *);
+    }
+    %pythoncode {
+        def __eq__(self, other):
+            if (isinstance(other, str) and 
+                len(set(self)) == 1 and 
+                set(self).pop() == other):
+                return True
+            return self.__cmp__(other) == 0
+                
     }
 } ldb_msg_element;
 
@@ -427,7 +440,7 @@ PyObject *PyExc_LdbError;
  */
 
 
-%typemap(out) ldb_error {
+%typemap(out,noblock=1) ldb_error {
     if ($1 != LDB_SUCCESS) {
         PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", $1, ldb_strerror($1)));
         SWIG_fail;
@@ -436,6 +449,17 @@ PyObject *PyExc_LdbError;
 };
 
 %rename(Ldb) ldb_context;
+
+%typemap(in,noblock=1) struct ldb_dn * {
+    if (ldb_dn_from_pyobject(NULL, $input, arg1, &$1) != 0) {
+        SWIG_fail;
+    }
+};
+
+%typemap(freearg,noblock=1) struct ldb_dn * {
+    talloc_free($1);
+};
+
 /* Top-level ldb operations */
 typedef struct ldb_context {
     %extend {
@@ -553,6 +577,9 @@ fail:
 #endif
     }
 } ldb;
+
+%typemap(in,noblock=1) struct ldb_dn *;
+%typemap(freearg,noblock=1) struct ldb_dn *;
 
 %nodefault ldb_message;
 %nodefault ldb_context;

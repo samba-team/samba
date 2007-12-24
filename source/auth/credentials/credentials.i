@@ -34,7 +34,7 @@ typedef struct cli_credentials cli_credentials;
 %import "typemaps.i"
 %import "param/param.i"
 
-%typemap(default) struct cli_credentials * {
+%typemap(default,noblock=1) struct cli_credentials * {
     $1 = NULL;
 }
 
@@ -42,7 +42,7 @@ typedef struct cli_credentials cli_credentials;
 #include "librpc/gen_ndr/samr.h" /* for struct samr_Password */
 %}
 
-%typemap(out) struct samr_Password * {
+%typemap(out,noblock=1) struct samr_Password * {
     $result = PyString_FromStringAndSize($1->hash, 16);
 }
 

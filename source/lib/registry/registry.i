@@ -32,7 +32,7 @@ typedef struct hive_key hive_key;
 %}
 
 /* FIXME: This should be in another file */
-%typemap(default) struct auth_session_info * {
+%typemap(default,noblock=1) struct auth_session_info * {
     $1 = NULL; 
 }
 
@@ -48,11 +48,11 @@ const char *reg_get_predef_name(uint32_t hkey);
 const char *str_regtype(int type);
 
 /* Registry contexts */
-%typemap(in,numinputs=0) struct registry_context ** (struct registry_context *tmp) {
+%typemap(in,noblock=1,numinputs=0) struct registry_context ** (struct registry_context *tmp) {
     $1 = &tmp; 
 }
 
-%typemap(argout) struct registry_context ** {
+%typemap(argout,noblock=1) struct registry_context ** {
     $result = SWIG_NewPointerObj(*$1, SWIGTYPE_p_registry_context, 0);
 }
 
@@ -61,7 +61,7 @@ WERROR reg_open_local(TALLOC_CTX *parent_ctx, struct registry_context **ctx,
                       struct auth_session_info *session_info,
                       struct cli_credentials *credentials);
 
-%typemap(in) const char ** {
+%typemap(in,noblock=1) const char ** {
   /* Check if is a list */
   if (PyList_Check($input)) {
     int size = PyList_Size($input);
@@ -84,7 +84,7 @@ WERROR reg_open_local(TALLOC_CTX *parent_ctx, struct registry_context **ctx,
   }
 }
 
-%typemap(freearg) const char ** {
+%typemap(freearg,noblock=1) const char ** {
   free((char **) $1);
 }
 
@@ -121,11 +121,11 @@ typedef struct registry_context {
 } reg;
 
 /* Hives */
-%typemap(in,numinputs=0) struct hive_key ** (struct hive_key *tmp) {
+%typemap(in,noblock=1,numinputs=0) struct hive_key ** (struct hive_key *tmp) {
     $1 = &tmp; 
 }
 
-%typemap(argout) struct hive_key ** {
+%typemap(argout,noblock=1) struct hive_key ** {
     Py_XDECREF($result);
     $result = SWIG_NewPointerObj(*$1, SWIGTYPE_p_hive_key, 0);
 }

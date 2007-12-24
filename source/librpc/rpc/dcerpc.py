@@ -57,6 +57,7 @@ def _swig_setattr_nondynamic_method(set):
     return set_attr
 
 
+import param
 class Credentials(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr

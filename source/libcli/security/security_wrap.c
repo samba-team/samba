@@ -2802,9 +2802,7 @@ SWIGINTERN PyObject *_wrap_new_SecurityToken(PyObject *SWIGUNUSEDPARM(self), PyO
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
   security_token *result = 0 ;
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!SWIG_Python_UnpackTuple(args,"new_SecurityToken",0,0,0)) SWIG_fail;
   result = (security_token *)new_security_token(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_security_token, SWIG_POINTER_NEW |  0 );
@@ -3080,9 +3078,7 @@ SWIGINTERN PyObject *_wrap_new_security_descriptor(PyObject *SWIGUNUSEDPARM(self
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
   security_descriptor *result = 0 ;
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!SWIG_Python_UnpackTuple(args,"new_security_descriptor",0,0,0)) SWIG_fail;
   result = (security_descriptor *)new_security_descriptor(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_security_descriptor, SWIG_POINTER_NEW |  0 );
@@ -3119,13 +3115,12 @@ SWIGINTERN PyObject *_wrap_security_descriptor_sacl_add(PyObject *SWIGUNUSEDPARM
   }
   arg2 = (struct security_ace *)(argp2);
   result = security_descriptor_sacl_add(arg1,(struct security_ace const *)arg2);
-  {
-    if (NT_STATUS_IS_ERR(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (NT_STATUS_IS_ERR(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
   return resultobj;
 fail:
@@ -3160,13 +3155,12 @@ SWIGINTERN PyObject *_wrap_security_descriptor_dacl_add(PyObject *SWIGUNUSEDPARM
   }
   arg2 = (struct security_ace *)(argp2);
   result = security_descriptor_dacl_add(arg1,(struct security_ace const *)arg2);
-  {
-    if (NT_STATUS_IS_ERR(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (NT_STATUS_IS_ERR(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
   return resultobj;
 fail:
@@ -3201,13 +3195,12 @@ SWIGINTERN PyObject *_wrap_security_descriptor_dacl_del(PyObject *SWIGUNUSEDPARM
   }
   arg2 = (struct security_ace *)(argp2);
   result = security_descriptor_dacl_del(arg1,(struct security_ace const *)arg2);
-  {
-    if (NT_STATUS_IS_ERR(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (NT_STATUS_IS_ERR(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
   return resultobj;
 fail:
@@ -3242,13 +3235,12 @@ SWIGINTERN PyObject *_wrap_security_descriptor_sacl_del(PyObject *SWIGUNUSEDPARM
   }
   arg2 = (struct security_ace *)(argp2);
   result = security_descriptor_sacl_del(arg1,(struct security_ace const *)arg2);
-  {
-    if (NT_STATUS_IS_ERR(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (NT_STATUS_IS_ERR(result)) {
+    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
   return resultobj;
 fail:
@@ -3337,9 +3329,7 @@ SWIGINTERN PyObject *_wrap_new_Sid(PyObject *SWIGUNUSEDPARM(self), PyObject *arg
     (char *) "text", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:new_Sid",kwnames,&obj0)) SWIG_fail;
   res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
@@ -3365,9 +3355,7 @@ SWIGINTERN PyObject *_wrap_Sid___str__(PyObject *SWIGUNUSEDPARM(self), PyObject 
   int res1 = 0 ;
   PyObject *swig_obj[1] ;
   
-  {
-    arg2 = NULL;
-  }
+  arg2 = NULL;
   if (!args) SWIG_fail;
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_dom_sid, 0 |  0 );
@@ -3456,9 +3444,7 @@ SWIGINTERN PyObject *_wrap_random_sid(PyObject *SWIGUNUSEDPARM(self), PyObject *
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
   struct dom_sid *result = 0 ;
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!SWIG_Python_UnpackTuple(args,"random_sid",0,0,0)) SWIG_fail;
   result = (struct dom_sid *)random_sid(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_dom_sid, 0 |  0 );

@@ -94,6 +94,14 @@ class ldb_msg_element(object):
     def __init__(self): raise AttributeError, "No constructor defined"
     __repr__ = _swig_repr
     __swig_destroy__ = _ldb.delete_ldb_msg_element
+    def __eq__(self, other):
+        if (isinstance(other, str) and 
+            len(set(self)) == 1 and 
+            set(self).pop() == other):
+            return True
+        return self.__cmp__(other) == 0
+            
+
 ldb_msg_element.__iter__ = new_instancemethod(_ldb.ldb_msg_element___iter__,None,ldb_msg_element)
 ldb_msg_element.__set__ = new_instancemethod(_ldb.ldb_msg_element___set__,None,ldb_msg_element)
 ldb_msg_element.__cmp__ = new_instancemethod(_ldb.ldb_msg_element___cmp__,None,ldb_msg_element)

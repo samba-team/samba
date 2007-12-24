@@ -26,7 +26,7 @@
 
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
 
-%typemap(default) struct event_context * {
+%typemap(default,noblock=1) struct event_context * {
     $1 = event_context_init(NULL);
 }
 
