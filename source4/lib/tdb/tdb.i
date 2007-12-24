@@ -49,7 +49,7 @@ typedef TDB_CONTEXT tdb;
 %import exception.i
 %import stdint.i
 
-%typemap(check) TDB_CONTEXT* {
+%typemap(check,noblock=1) TDB_CONTEXT* {
 	if ($1 == NULL)
 		SWIG_exception(SWIG_ValueError, 
 			"tdb context must be non-NULL");
@@ -59,7 +59,7 @@ typedef TDB_CONTEXT tdb;
    and from the Python string type which can contain arbitrary binary
    data.. */
 
-%typemap(in) TDB_DATA {
+%typemap(in,noblock=1) TDB_DATA {
 	if (!PyString_Check($input)) {
 		PyErr_SetString(PyExc_TypeError, "string arg expected");
 		return NULL;
@@ -68,7 +68,7 @@ typedef TDB_CONTEXT tdb;
 	$1.dptr = (uint8_t *)PyString_AsString($input);
 }
 
-%typemap(out) TDB_DATA {
+%typemap(out,noblock=1) TDB_DATA {
 	if ($1.dptr == NULL && $1.dsize == 0) {
 		$result = Py_None;
 	} else {
@@ -115,23 +115,23 @@ enum TDB_ERROR {
 %rename(read_lock_all) tdb_context::lockall_read;
 %rename(read_unlock_all) tdb_context::unlockall_read;
 
-%typemap(default) int tdb_flags {
+%typemap(default,noblock=1) int tdb_flags {
     $1 = TDB_DEFAULT;
 }
 
-%typemap(default) int open_flags {
+%typemap(default,noblock=1) int open_flags {
     $1 = O_RDWR;
 }
 
-%typemap(default) int hash_size {
+%typemap(default,noblock=1) int hash_size {
     $1 = 0;
 }
 
-%typemap(default) mode_t mode {
+%typemap(default,noblock=1) mode_t mode {
     $1 = 0600;
 }
 
-%typemap(default) int flag {
+%typemap(default,noblock=1) int flag {
     $1 = TDB_REPLACE;
 }
 

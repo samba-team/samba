@@ -7,7 +7,7 @@
 
 """Support code for upgrading from Samba 3 to Samba 4."""
 
-from provision import findnss
+from provision import findnss, provision
 import provision
 import grp
 import pwd
@@ -69,7 +69,7 @@ data:: %s""" % (keydn, rv.name, rv.name, rv.type, ldb.encode(rv.data))
 
     return ldif
 
-def upgrade_sam_policy(samba3,dn):
+def upgrade_sam_policy(policy,dn):
     ldif = """
 dn: %s
 changetype: modify
@@ -84,11 +84,11 @@ samba3UserMustLogonToChangePassword: %d
 samba3BadLockoutMinutes: %d
 samba3DisconnectTime: %d
 
-""" % (dn, samba3.policy.min_password_length, 
-    samba3.policy.password_history, samba3.policy.minimum_password_age,
-    samba3.policy.maximum_password_age, samba3.policy.lockout_duration,
-    samba3.policy.reset_count_minutes, samba3.policy.user_must_logon_to_change_password,
-    samba3.policy.bad_lockout_minutes, samba3.policy.disconnect_time)
+""" % (dn, policy.min_password_length, 
+    policy.password_history, policy.minimum_password_age,
+    policy.maximum_password_age, policy.lockout_duration,
+    policy.reset_count_minutes, policy.user_must_logon_to_change_password,
+    policy.bad_lockout_minutes, policy.disconnect_time)
     
     return ldif
 
@@ -465,7 +465,7 @@ replace: type
 type: 4
 replace: data
 data: %d
-""" % samba3.policy.refuse_machine_password_change)
+""" % policy.refuse_machine_password_change)
 
     message("Importing users")
     for account in samba3.samaccounts:

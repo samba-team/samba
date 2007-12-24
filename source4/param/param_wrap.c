@@ -2762,9 +2762,7 @@ SWIGINTERN PyObject *_wrap_new_LoadParm(PyObject *SWIGUNUSEDPARM(self), PyObject
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
   loadparm_context *result = 0 ;
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!SWIG_Python_UnpackTuple(args,"new_LoadParm",0,0,0)) SWIG_fail;
   result = (loadparm_context *)new_loadparm_context(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_loadparm_context, SWIG_POINTER_NEW |  0 );
@@ -2790,9 +2788,7 @@ SWIGINTERN PyObject *_wrap_LoadParm_load(PyObject *SWIGUNUSEDPARM(self), PyObjec
     (char *) "self",(char *) "filename", NULL 
   };
   
-  {
-    arg1 = loadparm_init(NULL);
-  }
+  arg1 = loadparm_init(NULL);
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:LoadParm_load",kwnames,&obj0,&obj1)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
@@ -2829,9 +2825,7 @@ SWIGINTERN PyObject *_wrap_LoadParm___len__(PyObject *SWIGUNUSEDPARM(self), PyOb
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = loadparm_init(NULL);
-  }
+  arg1 = loadparm_init(NULL);
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:LoadParm___len__",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
@@ -2864,9 +2858,7 @@ SWIGINTERN PyObject *_wrap_LoadParm___getitem__(PyObject *SWIGUNUSEDPARM(self), 
     (char *) "self",(char *) "name", NULL 
   };
   
-  {
-    arg1 = loadparm_init(NULL);
-  }
+  arg1 = loadparm_init(NULL);
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:LoadParm___getitem__",kwnames,&obj0,&obj1)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
@@ -2903,9 +2895,7 @@ SWIGINTERN PyObject *_wrap_LoadParm_configfile(PyObject *SWIGUNUSEDPARM(self), P
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = loadparm_init(NULL);
-  }
+  arg1 = loadparm_init(NULL);
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:LoadParm_configfile",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
@@ -2938,9 +2928,7 @@ SWIGINTERN PyObject *_wrap_LoadParm_is_mydomain(PyObject *SWIGUNUSEDPARM(self), 
     (char *) "self",(char *) "domain", NULL 
   };
   
-  {
-    arg1 = loadparm_init(NULL);
-  }
+  arg1 = loadparm_init(NULL);
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:LoadParm_is_mydomain",kwnames,&obj0,&obj1)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
@@ -2982,9 +2970,7 @@ SWIGINTERN PyObject *_wrap_LoadParm_is_myname(PyObject *SWIGUNUSEDPARM(self), Py
     (char *) "self",(char *) "name", NULL 
   };
   
-  {
-    arg1 = loadparm_init(NULL);
-  }
+  arg1 = loadparm_init(NULL);
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:LoadParm_is_myname",kwnames,&obj0,&obj1)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
@@ -3025,9 +3011,7 @@ SWIGINTERN PyObject *_wrap_LoadParm_use(PyObject *SWIGUNUSEDPARM(self), PyObject
     (char *) "self",(char *) "param", NULL 
   };
   
-  {
-    arg1 = loadparm_init(NULL);
-  }
+  arg1 = loadparm_init(NULL);
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:LoadParm_use",kwnames,&obj0,&obj1)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
@@ -3072,9 +3056,7 @@ SWIGINTERN PyObject *_wrap_LoadParm_set(PyObject *SWIGUNUSEDPARM(self), PyObject
     (char *) "self",(char *) "parm_name",(char *) "parm_value", NULL 
   };
   
-  {
-    arg1 = loadparm_init(NULL);
-  }
+  arg1 = loadparm_init(NULL);
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:LoadParm_set",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
@@ -3130,9 +3112,7 @@ SWIGINTERN PyObject *_wrap_LoadParm_get(PyObject *SWIGUNUSEDPARM(self), PyObject
     (char *) "self",(char *) "param_name",(char *) "service_name", NULL 
   };
   
-  {
-    arg1 = loadparm_init(NULL);
-  }
+  arg1 = loadparm_init(NULL);
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:LoadParm_get",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
@@ -3177,9 +3157,7 @@ SWIGINTERN PyObject *_wrap_delete_LoadParm(PyObject *SWIGUNUSEDPARM(self), PyObj
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = loadparm_init(NULL);
-  }
+  arg1 = loadparm_init(NULL);
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:delete_LoadParm",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, SWIG_POINTER_DISOWN |  0 );
@@ -3289,9 +3267,7 @@ SWIGINTERN PyObject *_wrap_new_ParamFile(PyObject *SWIGUNUSEDPARM(self), PyObjec
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
   param *result = 0 ;
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!SWIG_Python_UnpackTuple(args,"new_ParamFile",0,0,0)) SWIG_fail;
   result = (param *)new_param(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_param_context, SWIG_POINTER_NEW |  0 );

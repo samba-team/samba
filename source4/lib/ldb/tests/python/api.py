@@ -52,6 +52,10 @@ class SimpleLdb(unittest.TestCase):
         l = ldb.Ldb("foo.tdb")
         self.assertEquals(len(l.search(ldb.Dn(l, ""), ldb.SCOPE_SUBTREE, "(dc=*)", ["dc"])), 0)
 
+    def test_search_string_dn(self):
+        l = ldb.Ldb("foo.tdb")
+        self.assertEquals(len(l.search("", ldb.SCOPE_SUBTREE, "(dc=*)", ["dc"])), 0)
+
     def test_opaque(self):
         l = ldb.Ldb("foo.tdb")
         l.set_opaque("my_opaque", l)
@@ -138,6 +142,19 @@ class SimpleLdb(unittest.TestCase):
         l.add(m)
         try:
             l.rename(ldb.Dn(l, "dc=foo"), ldb.Dn(l, "dc=bar"))
+            self.assertEquals(len(l.search()), 2)
+        finally:
+            l.delete(ldb.Dn(l, "dc=bar"))
+
+    def test_rename_string_dns(self):
+        l = ldb.Ldb("foo.tdb")
+        m = ldb.Message()
+        m.dn = ldb.Dn(l, "dc=foo")
+        m["bla"] = "bla"
+        self.assertEquals(len(l.search()), 1)
+        l.add(m)
+        try:
+            l.rename("dc=foo", "dc=bar")
             self.assertEquals(len(l.search()), 2)
         finally:
             l.delete(ldb.Dn(l, "dc=bar"))

@@ -91,7 +91,14 @@ class Ldb(ldb.Ldb):
 
     def searchone(self, basedn, attribute, expression=None, 
                   scope=ldb.SCOPE_BASE):
-        """Search for one attribute as a string."""
+        """Search for one attribute as a string.
+        
+        :param basedn: BaseDN for the search.
+        :param attribute: Name of the attribute
+        :param expression: Optional search expression.
+        :param scope: Search scope (defaults to base).
+        :return: Value of attribute as a string or None if it wasn't found.
+        """
         res = self.search(basedn, scope, expression, [attribute])
         if len(res) != 1 or res[0][attribute] is None:
             return None
@@ -100,7 +107,7 @@ class Ldb(ldb.Ldb):
         return values.pop()
 
     def erase(self):
-        """Erase an ldb, removing all records."""
+        """Erase this ldb, removing all records."""
         # delete the specials
         for attr in ["@INDEXLIST", "@ATTRIBUTES", "@SUBCLASSES", "@MODULES", 
                      "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
@@ -149,12 +156,17 @@ class Ldb(ldb.Ldb):
 
         :param ldif_path: Path to LDIF file.
         """
-        self.load_ldif_add(open(ldif_path, 'r').read())
+        self.add_ldif(open(ldif_path, 'r').read())
 
-    def load_ldif_add(self, ldif):
+    def add_ldif(self, ldif):
         for changetype, msg in self.parse_ldif(ldif):
             assert changetype == ldb.CHANGETYPE_NONE
             self.add(msg)
+
+    def modify_ldif(self, ldif):
+        for (changetype, msg) in ldb.parse_ldif(data):
+            assert changetype == CHANGETYPE_MODIFY
+            ldb.modify(msg)
 
 
 def substitute_var(text, values):

@@ -36,11 +36,11 @@
 %import "../lib/talloc/talloc.i"
 %import "../param/param.i"
 
-%typemap(default) struct auth_session_info * {
+%typemap(default,noblock=1) struct auth_session_info * {
     $1 = system_session_anon(NULL, global_loadparm);
 }
 
-%typemap(freearg) struct auth_session_info * {
+%typemap(freearg,noblock=1) struct auth_session_info * {
     talloc_free($1);
 }
 

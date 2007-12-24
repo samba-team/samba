@@ -54,7 +54,7 @@ static int ejs_apply_patchfile(MprVarHandle eid, int argc, struct MprVar **argv)
 		return -1;
 	}
 	
-	error = reg_diff_apply(mprToString(argv[0]), rctx);
+	error = reg_diff_apply(rctx, mprToString(argv[0]));
 
 	mpr_Return(eid, mprWERROR(error));
 

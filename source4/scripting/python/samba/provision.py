@@ -111,9 +111,7 @@ def setup_modify_ldif(ldb, ldif_path, substvars=None):
 
     assert "${" not in data
 
-    for (changetype, msg) in ldb.parse_ldif(data):
-        assert changetype == CHANGETYPE_MODIFY
-        ldb.modify(msg)
+    ldb.modify_ldif(data)
 
 
 def setup_ldb(ldb, ldif_path, subst_vars):

@@ -2675,12 +2675,16 @@ SWIGINTERN ldb_dn *ldb_dn___add__(ldb_dn *self,ldb_dn *other){
 int ldb_dn_from_pyobject(TALLOC_CTX *mem_ctx, PyObject *object, 
                          struct ldb_context *ldb, ldb_dn **dn)
 {
+    int ret;
+    struct ldb_dn *odn;
     if (ldb != NULL && PyString_Check(object)) {
         *dn = ldb_dn_new(mem_ctx, ldb, PyString_AsString(object));
         return 0;
     }
-    return SWIG_ConvertPtr(object, (void **)dn, SWIGTYPE_p_ldb_dn, 
+    ret = SWIG_ConvertPtr(object, (void **)&odn, SWIGTYPE_p_ldb_dn, 
                            SWIG_POINTER_EXCEPTION);
+    *dn = ldb_dn_copy(mem_ctx, odn);
+    return ret;
 }
 
 ldb_msg_element *ldb_msg_element_from_pyobject(PyObject *set_obj, int flags,
@@ -3137,11 +3141,9 @@ SWIGINTERN PyObject *_wrap_new_Dn(PyObject *SWIGUNUSEDPARM(self), PyObject *args
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "new_Dn" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = (ldb_dn *)new_ldb_dn(arg1,(char const *)arg2);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_ldb_dn, SWIG_POINTER_NEW |  0 );
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
@@ -3760,11 +3762,9 @@ SWIGINTERN PyObject *_wrap_ldb_msg_list_elements(PyObject *SWIGUNUSEDPARM(self),
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_msg_list_elements" "', argument " "1"" of type '" "ldb_msg *""'"); 
   }
   arg1 = (ldb_msg *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   result = (PyObject *)ldb_msg_list_elements(arg1);
   resultobj = result;
   return resultobj;
@@ -3794,11 +3794,9 @@ SWIGINTERN PyObject *_wrap_Message_dn_set(PyObject *SWIGUNUSEDPARM(self), PyObje
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Message_dn_set" "', argument " "2"" of type '" "ldb_dn *""'"); 
   }
   arg2 = (ldb_dn *)(argp2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   if (arg1) (arg1)->dn = arg2;
   
   resultobj = SWIG_Py_Void();
@@ -3823,11 +3821,9 @@ SWIGINTERN PyObject *_wrap_Message_dn_get(PyObject *SWIGUNUSEDPARM(self), PyObje
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Message_dn_get" "', argument " "1"" of type '" "ldb_msg *""'"); 
   }
   arg1 = (ldb_msg *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   result = (ldb_dn *) ((arg1)->dn);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_ldb_dn, 0 |  0 );
   return resultobj;
@@ -3877,11 +3873,9 @@ SWIGINTERN PyObject *_wrap_delete_Message(PyObject *SWIGUNUSEDPARM(self), PyObje
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_Message" "', argument " "1"" of type '" "ldb_msg *""'"); 
   }
   arg1 = (ldb_msg *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   delete_ldb_msg(arg1);
   
   resultobj = SWIG_Py_Void();
@@ -3918,11 +3912,9 @@ SWIGINTERN PyObject *_wrap_Message___getitem__(PyObject *SWIGUNUSEDPARM(self), P
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Message___getitem__" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   result = (ldb_msg_element *)ldb_msg_find_element(arg1,(char const *)arg2);
   {
     if (result == NULL)
@@ -3967,11 +3959,9 @@ SWIGINTERN PyObject *_wrap_Message___setitem____SWIG_0(PyObject *SWIGUNUSEDPARM(
     SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "Message___setitem__" "', argument " "3"" of type '" "ldb_msg_element *""'"); 
   }
   arg3 = (ldb_msg_element *)(argp3);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   ldb_msg___setitem____SWIG_0(arg1,(char const *)arg2,arg3);
   resultobj = SWIG_Py_Void();
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
@@ -4005,11 +3995,9 @@ SWIGINTERN PyObject *_wrap_Message___setitem____SWIG_1(PyObject *SWIGUNUSEDPARM(
   }
   arg2 = (char *)(buf2);
   arg3 = swig_obj[2];
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   ldb_msg___setitem____SWIG_1(arg1,(char const *)arg2,arg3);
   resultobj = SWIG_Py_Void();
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
@@ -4063,11 +4051,9 @@ SWIGINTERN PyObject *_wrap_Message___len__(PyObject *SWIGUNUSEDPARM(self), PyObj
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Message___len__" "', argument " "1"" of type '" "ldb_msg *""'"); 
   }
   arg1 = (ldb_msg *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   result = (unsigned int)ldb_msg___len__(arg1);
   resultobj = SWIG_From_unsigned_SS_int((unsigned int)(result));
   return resultobj;
@@ -4091,11 +4077,9 @@ SWIGINTERN PyObject *_wrap_Message_keys(PyObject *SWIGUNUSEDPARM(self), PyObject
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Message_keys" "', argument " "1"" of type '" "ldb_msg *""'"); 
   }
   arg1 = (ldb_msg *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   result = (PyObject *)ldb_msg_keys(arg1);
   resultobj = result;
   return resultobj;
@@ -4119,11 +4103,9 @@ SWIGINTERN PyObject *_wrap_Message___iter__(PyObject *SWIGUNUSEDPARM(self), PyOb
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Message___iter__" "', argument " "1"" of type '" "ldb_msg *""'"); 
   }
   arg1 = (ldb_msg *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   result = (PyObject *)ldb_msg___iter__(arg1);
   resultobj = result;
   return resultobj;
@@ -4158,11 +4140,9 @@ SWIGINTERN PyObject *_wrap_Message___delitem__(PyObject *SWIGUNUSEDPARM(self), P
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Message___delitem__" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   ldb_msg_remove_attr(arg1,(char const *)arg2);
   resultobj = SWIG_Py_Void();
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
@@ -4310,19 +4290,15 @@ SWIGINTERN PyObject *_wrap_Ldb_connect(PyObject *SWIGUNUSEDPARM(self), PyObject 
     } 
     arg4 = (char **)(argp4);
   }
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = ldb_connect(arg1,(char const *)arg2,arg3,(char const *(*))arg4);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
 fail:
@@ -4345,11 +4321,9 @@ SWIGINTERN PyObject *_wrap_delete_Ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_Ldb" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   delete_ldb(arg1);
   
   resultobj = SWIG_Py_Void();
@@ -4370,8 +4344,6 @@ SWIGINTERN PyObject *_wrap_Ldb_search(PyObject *SWIGUNUSEDPARM(self), PyObject *
   ldb_error result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
   int val3 ;
   int ecode3 = 0 ;
   int res4 ;
@@ -4388,9 +4360,7 @@ SWIGINTERN PyObject *_wrap_Ldb_search(PyObject *SWIGUNUSEDPARM(self), PyObject *
     (char *) "self",(char *) "base",(char *) "scope",(char *) "expression",(char *) "attrs", NULL 
   };
   
-  {
-    arg6 = &temp_ldb_result6;
-  }
+  arg6 = &temp_ldb_result6;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOOO:Ldb_search",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
@@ -4398,11 +4368,9 @@ SWIGINTERN PyObject *_wrap_Ldb_search(PyObject *SWIGUNUSEDPARM(self), PyObject *
   }
   arg1 = (ldb *)(argp1);
   if (obj1) {
-    res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_dn, 0 |  0 );
-    if (!SWIG_IsOK(res2)) {
-      SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_search" "', argument " "2"" of type '" "ldb_dn *""'"); 
+    if (ldb_dn_from_pyobject(NULL, obj1, arg1, &arg2) != 0) {
+      SWIG_fail;
     }
-    arg2 = (ldb_dn *)(argp2);
   }
   if (obj2) {
     ecode3 = SWIG_AsVal_int(obj2, &val3);
@@ -4419,33 +4387,27 @@ SWIGINTERN PyObject *_wrap_Ldb_search(PyObject *SWIGUNUSEDPARM(self), PyObject *
     arg4 = (char *)(buf4);
   }
   if (obj4) {
-    {
-      if (obj4 == Py_None) {
-        arg5 = NULL;
-      } else if (PySequence_Check(obj4)) {
-        int i;
-        arg5 = talloc_array(NULL, char *, PySequence_Size(obj4)+1);
-        for(i = 0; i < PySequence_Size(obj4); i++)
-        arg5[i] = PyString_AsString(PySequence_GetItem(obj4, i));
-        arg5[i] = NULL;
-      } else {
-        SWIG_exception(SWIG_TypeError, "expected sequence");
-      }
+    if (obj4 == Py_None) {
+      arg5 = NULL;
+    } else if (PySequence_Check(obj4)) {
+      int i;
+      arg5 = talloc_array(NULL, char *, PySequence_Size(obj4)+1);
+      for(i = 0; i < PySequence_Size(obj4); i++)
+      arg5[i] = PyString_AsString(PySequence_GetItem(obj4, i));
+      arg5[i] = NULL;
+    } else {
+      SWIG_exception(SWIG_TypeError, "expected sequence");
     }
   }
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = ldb_search(arg1,arg2,arg3,(char const *)arg4,(char const *const *)arg5,arg6);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
   {
     resultobj = PyList_New((*arg6)->count);
     for (i6 = 0; i6 < (*arg6)->count; i6++) {
@@ -4454,12 +4416,14 @@ SWIGINTERN PyObject *_wrap_Ldb_search(PyObject *SWIGUNUSEDPARM(self), PyObject *
         );
     }
   }
+  talloc_free(arg2);
   if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
   {
     talloc_free(arg5);
   }
   return resultobj;
 fail:
+  talloc_free(arg2);
   if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
   {
     talloc_free(arg5);
@@ -4475,8 +4439,6 @@ SWIGINTERN PyObject *_wrap_Ldb_delete(PyObject *SWIGUNUSEDPARM(self), PyObject *
   ldb_error result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   char *  kwnames[] = {
@@ -4489,26 +4451,22 @@ SWIGINTERN PyObject *_wrap_Ldb_delete(PyObject *SWIGUNUSEDPARM(self), PyObject *
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_delete" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_dn, 0 |  0 );
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_delete" "', argument " "2"" of type '" "ldb_dn *""'"); 
+  if (ldb_dn_from_pyobject(NULL, obj1, arg1, &arg2) != 0) {
+    SWIG_fail;
   }
-  arg2 = (ldb_dn *)(argp2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = ldb_delete(arg1,arg2);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
+  talloc_free(arg2);
   return resultobj;
 fail:
+  talloc_free(arg2);
   return NULL;
 }
 
@@ -4521,10 +4479,6 @@ SWIGINTERN PyObject *_wrap_Ldb_rename(PyObject *SWIGUNUSEDPARM(self), PyObject *
   ldb_error result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
-  void *argp3 = 0 ;
-  int res3 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
@@ -4538,31 +4492,27 @@ SWIGINTERN PyObject *_wrap_Ldb_rename(PyObject *SWIGUNUSEDPARM(self), PyObject *
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_rename" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_dn, 0 |  0 );
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_rename" "', argument " "2"" of type '" "ldb_dn *""'"); 
+  if (ldb_dn_from_pyobject(NULL, obj1, arg1, &arg2) != 0) {
+    SWIG_fail;
   }
-  arg2 = (ldb_dn *)(argp2);
-  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_ldb_dn, 0 |  0 );
-  if (!SWIG_IsOK(res3)) {
-    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "Ldb_rename" "', argument " "3"" of type '" "ldb_dn *""'"); 
+  if (ldb_dn_from_pyobject(NULL, obj2, arg1, &arg3) != 0) {
+    SWIG_fail;
   }
-  arg3 = (ldb_dn *)(argp3);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = ldb_rename(arg1,arg2,arg3);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
+  talloc_free(arg2);
+  talloc_free(arg3);
   return resultobj;
 fail:
+  talloc_free(arg2);
+  talloc_free(arg3);
   return NULL;
 }
 
@@ -4588,24 +4538,18 @@ SWIGINTERN PyObject *_wrap_Ldb_add__SWIG_0(PyObject *SWIGUNUSEDPARM(self), int n
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_add" "', argument " "2"" of type '" "ldb_msg *""'"); 
   }
   arg2 = (ldb_msg *)(argp2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
-  {
-    if (arg2 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
+  if (arg2 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   result = ldb_add(arg1,arg2);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
   return resultobj;
 fail:
   return NULL;
@@ -4627,19 +4571,15 @@ SWIGINTERN PyObject *_wrap_Ldb_add__SWIG_1(PyObject *SWIGUNUSEDPARM(self), int n
   }
   arg1 = (ldb *)(argp1);
   arg2 = swig_obj[1];
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = ldb_add__SWIG_1(arg1,arg2);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
   return resultobj;
 fail:
   return NULL;
@@ -4700,24 +4640,18 @@ SWIGINTERN PyObject *_wrap_Ldb_modify(PyObject *SWIGUNUSEDPARM(self), PyObject *
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_modify" "', argument " "2"" of type '" "ldb_msg *""'"); 
   }
   arg2 = (ldb_msg *)(argp2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
-  {
-    if (arg2 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "Message can not be None");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
+  if (arg2 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "Message can not be None");
   result = ldb_modify(arg1,arg2);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
   return resultobj;
 fail:
   return NULL;
@@ -4739,11 +4673,9 @@ SWIGINTERN PyObject *_wrap_Ldb_get_config_basedn(PyObject *SWIGUNUSEDPARM(self),
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_get_config_basedn" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = (ldb_dn *)ldb_get_config_basedn(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_ldb_dn, 0 |  0 );
   return resultobj;
@@ -4767,11 +4699,9 @@ SWIGINTERN PyObject *_wrap_Ldb_get_root_basedn(PyObject *SWIGUNUSEDPARM(self), P
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_get_root_basedn" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = (ldb_dn *)ldb_get_root_basedn(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_ldb_dn, 0 |  0 );
   return resultobj;
@@ -4795,11 +4725,9 @@ SWIGINTERN PyObject *_wrap_Ldb_get_schema_basedn(PyObject *SWIGUNUSEDPARM(self),
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_get_schema_basedn" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = (ldb_dn *)ldb_get_schema_basedn(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_ldb_dn, 0 |  0 );
   return resultobj;
@@ -4823,11 +4751,9 @@ SWIGINTERN PyObject *_wrap_Ldb_get_default_basedn(PyObject *SWIGUNUSEDPARM(self)
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_get_default_basedn" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = (ldb_dn *)ldb_get_default_basedn(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_ldb_dn, 0 |  0 );
   return resultobj;
@@ -4851,11 +4777,9 @@ SWIGINTERN PyObject *_wrap_Ldb_errstring(PyObject *SWIGUNUSEDPARM(self), PyObjec
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_errstring" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = (char *)ldb_errstring(arg1);
   resultobj = SWIG_FromCharPtr((const char *)result);
   return resultobj;
@@ -4889,11 +4813,9 @@ SWIGINTERN PyObject *_wrap_Ldb_set_create_perms(PyObject *SWIGUNUSEDPARM(self), 
     SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "Ldb_set_create_perms" "', argument " "2"" of type '" "unsigned int""'");
   } 
   arg2 = (unsigned int)(val2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   ldb_set_create_perms(arg1,arg2);
   resultobj = SWIG_Py_Void();
   return resultobj;
@@ -4928,11 +4850,9 @@ SWIGINTERN PyObject *_wrap_Ldb_set_modules_dir(PyObject *SWIGUNUSEDPARM(self), P
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_set_modules_dir" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   ldb_set_modules_dir(arg1,(char const *)arg2);
   resultobj = SWIG_Py_Void();
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
@@ -4970,19 +4890,15 @@ SWIGINTERN PyObject *_wrap_Ldb_set_debug(PyObject *SWIGUNUSEDPARM(self), PyObjec
     Py_INCREF(obj1);
     arg3 = obj1;
   }
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = ldb_set_debug(arg1,arg2,arg3);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
   return resultobj;
 fail:
   return NULL;
@@ -5023,19 +4939,15 @@ SWIGINTERN PyObject *_wrap_Ldb_set_opaque(PyObject *SWIGUNUSEDPARM(self), PyObje
   if (!SWIG_IsOK(res3)) {
     SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "Ldb_set_opaque" "', argument " "3"" of type '" "void *""'"); 
   }
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = ldb_set_opaque(arg1,(char const *)arg2,arg3);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return resultobj;
 fail:
@@ -5071,11 +4983,9 @@ SWIGINTERN PyObject *_wrap_Ldb_get_opaque(PyObject *SWIGUNUSEDPARM(self), PyObje
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_get_opaque" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = (void *)ldb_get_opaque(arg1,(char const *)arg2);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_void, 0 |  0 );
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
@@ -5101,19 +5011,15 @@ SWIGINTERN PyObject *_wrap_Ldb_transaction_start(PyObject *SWIGUNUSEDPARM(self),
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_transaction_start" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = ldb_transaction_start(arg1);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
   return resultobj;
 fail:
   return NULL;
@@ -5135,19 +5041,15 @@ SWIGINTERN PyObject *_wrap_Ldb_transaction_commit(PyObject *SWIGUNUSEDPARM(self)
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_transaction_commit" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = ldb_transaction_commit(arg1);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
   return resultobj;
 fail:
   return NULL;
@@ -5169,19 +5071,15 @@ SWIGINTERN PyObject *_wrap_Ldb_transaction_cancel(PyObject *SWIGUNUSEDPARM(self)
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_transaction_cancel" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = ldb_transaction_cancel(arg1);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
   return resultobj;
 fail:
   return NULL;
@@ -5196,8 +5094,6 @@ SWIGINTERN PyObject *_wrap_Ldb___contains__(PyObject *SWIGUNUSEDPARM(self), PyOb
   ldb_error result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  void *argp2 = 0 ;
-  int res2 = 0 ;
   struct ldb_result *tmp3 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
@@ -5214,32 +5110,28 @@ SWIGINTERN PyObject *_wrap_Ldb___contains__(PyObject *SWIGUNUSEDPARM(self), PyOb
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb___contains__" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_ldb_dn, 0 |  0 );
-  if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb___contains__" "', argument " "2"" of type '" "ldb_dn *""'"); 
+  if (ldb_dn_from_pyobject(NULL, obj1, arg1, &arg2) != 0) {
+    SWIG_fail;
   }
-  arg2 = (ldb_dn *)(argp2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = ldb___contains__(arg1,arg2,arg3);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
   {
     resultobj = ((*arg3)->count > 0)?Py_True:Py_False; 
   }
+  talloc_free(arg2);
   {
     talloc_free(*arg3); 
   }
   return resultobj;
 fail:
+  talloc_free(arg2);
   {
     talloc_free(*arg3); 
   }
@@ -5274,11 +5166,9 @@ SWIGINTERN PyObject *_wrap_Ldb_parse_ldif(PyObject *SWIGUNUSEDPARM(self), PyObje
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "Ldb_parse_ldif" "', argument " "2"" of type '" "char const *""'");
   }
   arg2 = (char *)(buf2);
-  {
-    if (arg1 == NULL)
-    SWIG_exception(SWIG_ValueError, 
-      "ldb context must be non-NULL");
-  }
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
   result = (PyObject *)ldb_parse_ldif(arg1,(char const *)arg2);
   resultobj = result;
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
@@ -5397,13 +5287,11 @@ SWIGINTERN PyObject *_wrap_register_module(PyObject *SWIGUNUSEDPARM(self), PyObj
     arg1->name = PyObject_GetAttrString(obj0, "name");
   }
   result = ldb_register_module((struct ldb_module_ops const *)arg1);
-  {
-    if (result != 0) {
-      PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
-      SWIG_fail;
-    }
-    resultobj = Py_None;
+  if (result != 0) {
+    PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", result, ldb_strerror(result)));
+    SWIG_fail;
   }
+  resultobj = Py_None;
   return resultobj;
 fail:
   return NULL;

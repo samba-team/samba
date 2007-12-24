@@ -2464,15 +2464,16 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_loadparm_service swig_types[5]
 #define SWIGTYPE_p_long_long swig_types[6]
 #define SWIGTYPE_p_param_context swig_types[7]
-#define SWIGTYPE_p_param_section swig_types[8]
-#define SWIGTYPE_p_short swig_types[9]
-#define SWIGTYPE_p_signed_char swig_types[10]
-#define SWIGTYPE_p_unsigned_char swig_types[11]
-#define SWIGTYPE_p_unsigned_int swig_types[12]
-#define SWIGTYPE_p_unsigned_long_long swig_types[13]
-#define SWIGTYPE_p_unsigned_short swig_types[14]
-static swig_type_info *swig_types[16];
-static swig_module_info swig_module = {swig_types, 15, 0, 0, 0, 0};
+#define SWIGTYPE_p_param_opt swig_types[8]
+#define SWIGTYPE_p_param_section swig_types[9]
+#define SWIGTYPE_p_short swig_types[10]
+#define SWIGTYPE_p_signed_char swig_types[11]
+#define SWIGTYPE_p_unsigned_char swig_types[12]
+#define SWIGTYPE_p_unsigned_int swig_types[13]
+#define SWIGTYPE_p_unsigned_long_long swig_types[14]
+#define SWIGTYPE_p_unsigned_short swig_types[15]
+static swig_type_info *swig_types[17];
+static swig_module_info swig_module = {swig_types, 16, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2800,9 +2801,7 @@ SWIGINTERN PyObject *_wrap_Credentials_get_username(PyObject *SWIGUNUSEDPARM(sel
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_get_username",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -2839,9 +2838,7 @@ SWIGINTERN PyObject *_wrap_Credentials_set_username(PyObject *SWIGUNUSEDPARM(sel
     (char *) "self",(char *) "value",(char *)"arg3", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:Credentials_set_username",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -2885,9 +2882,7 @@ SWIGINTERN PyObject *_wrap_Credentials_get_password(PyObject *SWIGUNUSEDPARM(sel
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_get_password",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -2924,9 +2919,7 @@ SWIGINTERN PyObject *_wrap_Credentials_set_password(PyObject *SWIGUNUSEDPARM(sel
     (char *) "self",(char *) "val",(char *)"arg3", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:Credentials_set_password",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -2970,9 +2963,7 @@ SWIGINTERN PyObject *_wrap_Credentials_get_domain(PyObject *SWIGUNUSEDPARM(self)
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_get_domain",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3009,9 +3000,7 @@ SWIGINTERN PyObject *_wrap_Credentials_set_domain(PyObject *SWIGUNUSEDPARM(self)
     (char *) "self",(char *) "val",(char *)"arg3", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:Credentials_set_domain",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3055,9 +3044,7 @@ SWIGINTERN PyObject *_wrap_Credentials_get_realm(PyObject *SWIGUNUSEDPARM(self),
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_get_realm",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3094,9 +3081,7 @@ SWIGINTERN PyObject *_wrap_Credentials_set_realm(PyObject *SWIGUNUSEDPARM(self),
     (char *) "self",(char *) "val",(char *)"arg3", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:Credentials_set_realm",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3148,9 +3133,7 @@ SWIGINTERN PyObject *_wrap_Credentials_parse_string(PyObject *SWIGUNUSEDPARM(sel
     (char *) "self",(char *) "text",(char *)"arg3", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:Credentials_parse_string",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3194,9 +3177,7 @@ SWIGINTERN PyObject *_wrap_Credentials_get_bind_dn(PyObject *SWIGUNUSEDPARM(self
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_get_bind_dn",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3229,9 +3210,7 @@ SWIGINTERN PyObject *_wrap_Credentials_set_bind_dn(PyObject *SWIGUNUSEDPARM(self
     (char *) "self",(char *) "bind_dn", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:Credentials_set_bind_dn",kwnames,&obj0,&obj1)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3268,9 +3247,7 @@ SWIGINTERN PyObject *_wrap_Credentials_get_workstation(PyObject *SWIGUNUSEDPARM(
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_get_workstation",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3307,9 +3284,7 @@ SWIGINTERN PyObject *_wrap_Credentials_set_workstation(PyObject *SWIGUNUSEDPARM(
     (char *) "self",(char *) "workstation",(char *) "obtained", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:Credentials_set_workstation",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3356,12 +3331,8 @@ SWIGINTERN PyObject *_wrap_Credentials_guess(PyObject *SWIGUNUSEDPARM(self), PyO
     (char *) "self",(char *) "lp_ctx", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
-  {
-    arg2 = loadparm_init(NULL);
-  }
+  arg1 = NULL;
+  arg2 = loadparm_init(NULL);
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:Credentials_guess",kwnames,&obj0,&obj1)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3396,9 +3367,7 @@ SWIGINTERN PyObject *_wrap_Credentials_is_anonymous(PyObject *SWIGUNUSEDPARM(sel
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_is_anonymous",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3427,12 +3396,8 @@ SWIGINTERN PyObject *_wrap_Credentials_get_nt_hash(PyObject *SWIGUNUSEDPARM(self
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
-  {
-    arg2 = NULL;
-  }
+  arg1 = NULL;
+  arg2 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_get_nt_hash",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3442,9 +3407,7 @@ SWIGINTERN PyObject *_wrap_Credentials_get_nt_hash(PyObject *SWIGUNUSEDPARM(self
     arg1 = (cli_credentials *)(argp1);
   }
   result = (struct samr_Password *)cli_credentials_get_nt_hash(arg1,arg2);
-  {
-    resultobj = PyString_FromStringAndSize(result->hash, 16);
-  }
+  resultobj = PyString_FromStringAndSize(result->hash, 16);
   return resultobj;
 fail:
   return NULL;
@@ -3462,9 +3425,7 @@ SWIGINTERN PyObject *_wrap_Credentials_authentication_requested(PyObject *SWIGUN
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_authentication_requested",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3492,9 +3453,7 @@ SWIGINTERN PyObject *_wrap_Credentials_wrong_password(PyObject *SWIGUNUSEDPARM(s
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_wrong_password",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
@@ -3521,9 +3480,7 @@ SWIGINTERN PyObject *_wrap_delete_Credentials(PyObject *SWIGUNUSEDPARM(self), Py
     (char *) "self", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:delete_Credentials",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, SWIG_POINTER_DISOWN |  0 );
@@ -3589,6 +3546,7 @@ static swig_type_info _swigt__p_loadparm_context = {"_p_loadparm_context", "stru
 static swig_type_info _swigt__p_loadparm_service = {"_p_loadparm_service", "struct loadparm_service *|loadparm_service *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_long_long = {"_p_long_long", "int_least64_t *|int_fast64_t *|int64_t *|long long *|intmax_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_param_context = {"_p_param_context", "struct param_context *|param *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_param_opt = {"_p_param_opt", "struct param_opt *|param_opt *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_param_section = {"_p_param_section", "struct param_section *|param_section *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_short = {"_p_short", "short *|int_least16_t *|int16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_signed_char = {"_p_signed_char", "signed char *|int_least8_t *|int_fast8_t *|int8_t *", 0, 0, (void*)0, 0};
@@ -3606,6 +3564,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_loadparm_service,
   &_swigt__p_long_long,
   &_swigt__p_param_context,
+  &_swigt__p_param_opt,
   &_swigt__p_param_section,
   &_swigt__p_short,
   &_swigt__p_signed_char,
@@ -3623,6 +3582,7 @@ static swig_cast_info _swigc__p_loadparm_context[] = {  {&_swigt__p_loadparm_con
 static swig_cast_info _swigc__p_loadparm_service[] = {  {&_swigt__p_loadparm_service, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_long_long[] = {  {&_swigt__p_long_long, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_param_context[] = {  {&_swigt__p_param_context, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_param_opt[] = {  {&_swigt__p_param_opt, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_param_section[] = {  {&_swigt__p_param_section, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_short[] = {  {&_swigt__p_short, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_signed_char[] = {  {&_swigt__p_signed_char, 0, 0, 0},{0, 0, 0, 0}};
@@ -3640,6 +3600,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_loadparm_service,
   _swigc__p_long_long,
   _swigc__p_param_context,
+  _swigc__p_param_opt,
   _swigc__p_param_section,
   _swigc__p_short,
   _swigc__p_signed_char,

@@ -2579,9 +2579,7 @@ SWIGINTERN PyObject *_wrap_event_context_init(PyObject *SWIGUNUSEDPARM(self), Py
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
   struct event_context *result = 0 ;
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!SWIG_Python_UnpackTuple(args,"event_context_init",0,0,0)) SWIG_fail;
   result = (struct event_context *)event_context_init(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_event_context, 0 |  0 );
@@ -2604,9 +2602,7 @@ SWIGINTERN PyObject *_wrap_event_context_init_byname(PyObject *SWIGUNUSEDPARM(se
     (char *) "name", NULL 
   };
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:event_context_init_byname",kwnames,&obj0)) SWIG_fail;
   res2 = SWIG_AsCharPtrAndSize(obj0, &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
@@ -2628,9 +2624,7 @@ SWIGINTERN PyObject *_wrap_event_backend_list(PyObject *SWIGUNUSEDPARM(self), Py
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
   char **result = 0 ;
   
-  {
-    arg1 = NULL;
-  }
+  arg1 = NULL;
   if (!SWIG_Python_UnpackTuple(args,"event_backend_list",0,0,0)) SWIG_fail;
   result = (char **)event_backend_list(arg1);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_p_char, 0 |  0 );

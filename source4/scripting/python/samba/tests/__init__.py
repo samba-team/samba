@@ -43,6 +43,7 @@ class TestCaseInTempDir(unittest.TestCase):
 
     def tearDown(self):
         super(TestCaseInTempDir, self).tearDown()
+        # FIXME: Remove all files in self.tempdir
 
 
 class SubstituteVarTestCase(unittest.TestCase):
