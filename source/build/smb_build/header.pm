@@ -39,16 +39,18 @@ sub _prepare_build_h($)
 		$name =~ s/-/_/g;
 		$DEFINE->{COMMENT} = "$key->{TYPE} $key->{NAME} INIT";
 		$DEFINE->{KEY} = "STATIC_$name\_MODULES";
-		$DEFINE->{VAL} = "{ \\\n";
+		$DEFINE->{VAL} = "\\\n";
 		foreach (@{$key->{INIT_FUNCTIONS}}) {
 			$DEFINE->{VAL} .= "\t$_, \\\n";
-			my $fn = $key->{INIT_FUNCTION_TYPE};
-			unless(defined($fn)) { $fn = "NTSTATUS (*) (void)"; }
-			$fn =~ s/\(\*\)/$_/;
-			$output .= "$fn;\n";
+			unless (/{/) {
+				my $fn = $key->{INIT_FUNCTION_TYPE};
+				unless(defined($fn)) { $fn = "NTSTATUS (*) (void)"; }
+				$fn =~ s/\(\*\)/$_/;
+				$output .= "$fn;\n";
+			}
 		}
 
-		$DEFINE->{VAL} .= "\tNULL \\\n }";
+		$DEFINE->{VAL} =~ s/, \\\n$//g; # Remove the last comma
 
 		push(@defines,$DEFINE);
 	}

@@ -108,7 +108,7 @@ sub check_module($$$)
 		my $sane_subsystem = lc($mod->{SUBSYSTEM});
 		$sane_subsystem =~ s/^lib//;
 		$mod->{INSTALLDIR} = "MODULESDIR/$sane_subsystem";
-		push (@{$mod->{PRIVATE_DEPENDENCIES}}, $mod->{SUBSYSTEM});
+		push (@{$mod->{PUBLIC_DEPENDENCIES}}, $mod->{SUBSYSTEM});
 	} 
 	if (grep(/INTEGRATED/, @{$mod->{OUTPUT_TYPE}})) {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
@@ -147,14 +147,14 @@ sub check_library($$$)
 	add_libreplace($lib);
 }
 
-sub check_python($$)
+sub check_python($$$)
 {
-	my ($INPUT, $python) = @_;
+	my ($INPUT, $python, $default_ot) = @_;
 
 	return if ($INPUT->{LIBPYTHON}{ENABLE} ne "YES");
 
 	$python->{INSTALLDIR} = "PYTHONDIR";
-	push (@{$python->{PUBLIC_DEPENDENCIES}}, "LIBPYTHON");
+	unless (defined($python->{CFLAGS})) { $python->{CFLAGS} = []; }
 	if (defined($python->{SWIG_FILE})) {
 		my $dirname = dirname($python->{SWIG_FILE});
 		my $basename = basename($python->{SWIG_FILE}, ".i");
@@ -165,18 +165,20 @@ sub check_python($$)
 		$python->{OBJ_FILES} = ["$dirname$basename\_wrap.o"];
 		$python->{LIBRARY_REALNAME} = "_$basename.\$(SHLIBEXT)";
 		$python->{PYTHON_FILES} = ["$dirname$basename.py"];
-		unless (defined($python->{CFLAGS})) { $python->{CFLAGS} = []; }
 		push (@{$python->{CFLAGS}}, $config::config{CFLAG_NO_UNUSED_MACROS});
 		push (@{$python->{CFLAGS}}, $config::config{CFLAG_NO_CAST_QUAL});
+		$python->{INIT_FUNCTION} = "{ (char *)\"_$basename\", init_$basename }";
 	} else {
 		my $basename = $python->{NAME};
 		$basename =~ s/^python_//g;
 		$python->{LIBRARY_REALNAME} = "$basename.\$(SHLIBEXT)";
+		$python->{INIT_FUNCTION} = "{ (char *)\"$basename\", init$basename }";
 	}
+	push (@{$python->{CFLAGS}}, @{$INPUT->{EXT_LIB_PYTHON}->{CFLAGS}});
 
 	$python->{SUBSYSTEM} = "LIBPYTHON";
 
-	check_module($INPUT, $python, ["SHARED_LIBRARY"]);
+	check_module($INPUT, $python, $default_ot);
 }
 
 sub check_binary($$)
@@ -204,7 +206,8 @@ sub import_integrated($$)
 
 		push (@{$lib->{FULL_OBJ_LIST}}, "\$($mod->{TYPE}_$mod->{NAME}_FULL_OBJ_LIST)");
 		push (@{$lib->{LINK_FLAGS}}, "\$($mod->{TYPE}_$mod->{NAME}_LINK_FLAGS)");
-		push (@{$lib->{PRIVATE_DEPENDENCIES}}, @{$mod->{PUBLIC_DEPENDENCIES}}) if defined($mod->{PUBLIC_DEPENDENCIES});
+		push (@{$lib->{CFLAGS}}, @{$mod->{CFLAGS}}) if defined($mod->{CFLAGS});
+		push (@{$lib->{PUBLIC_DEPENDENCIES}}, @{$mod->{PUBLIC_DEPENDENCIES}}) if defined($mod->{PUBLIC_DEPENDENCIES});
 		push (@{$lib->{PRIVATE_DEPENDENCIES}}, @{$mod->{PRIVATE_DEPENDENCIES}}) if defined($mod->{PRIVATE_DEPENDENCIES});
 
 		$mod->{ENABLE} = "NO";
@@ -288,7 +291,7 @@ sub check($$$$$)
 		} elsif ($part->{TYPE} eq "BINARY") {
 			check_binary($INPUT, $part);
 		} elsif ($part->{TYPE} eq "PYTHON") {
-			check_python($INPUT, $part);
+			check_python($INPUT, $part, $module_ot);
 		} elsif ($part->{TYPE} eq "EXT_LIB") {
 		} else {
 			die("Unknown type $part->{TYPE}");

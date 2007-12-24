@@ -25,9 +25,11 @@ sub generate($$$)
 
 	foreach my $part (values %{$depend}) {
 		next if (defined($only) and not contains($only,$part->{NAME}));
-		foreach my $elem (@{$part->{PUBLIC_DEPENDENCIES}},
-				  @{$part->{PRIVATE_DEPENDENCIES}}) {
-			$res .= "\t\"$part->{NAME}\" -> \"$elem\";\n";
+		foreach my $elem (@{$part->{PUBLIC_DEPENDENCIES}}) {
+			$res .= "\t\"$part->{NAME}\" -> \"$elem\"; /* public */\n";
+		}
+		foreach my $elem (@{$part->{PRIVATE_DEPENDENCIES}}) {
+			$res .= "\t\"$part->{NAME}\" -> \"$elem\"; /* private */\n";
 		}
 	}
 

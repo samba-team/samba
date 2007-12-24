@@ -125,7 +125,7 @@ _PUBLIC_ NTSTATUS sys_notify_init(void)
 {
 	static bool initialized = false;
 
-	init_module_fn static_init[] = STATIC_sys_notify_MODULES;
+	init_module_fn static_init[] = { STATIC_sys_notify_MODULES, NULL };
 	init_module_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;

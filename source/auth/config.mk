@@ -92,6 +92,6 @@ PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 #######################
 
 [PYTHON::swig_auth]
-PUBLIC_DEPENDENCIES = auth_system_session LIBPYTHON
+PUBLIC_DEPENDENCIES = auth_system_session
 PRIVATE_DEPENDENCIES = SAMDB 
 SWIG_FILE = auth.i

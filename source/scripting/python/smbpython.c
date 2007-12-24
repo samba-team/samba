@@ -20,6 +20,10 @@
 #include "includes.h"
 #include <Python.h>
 
-int main(int argc, char **argv) {
+void py_load_samba_modules(void);
+
+int main(int argc, char **argv) 
+{
+	py_load_samba_modules();
 	return Py_Main(argc,argv);
 }

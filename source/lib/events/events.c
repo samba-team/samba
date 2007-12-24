@@ -102,7 +102,7 @@ void event_set_default_backend(const char *backend)
 static void event_backend_init(void)
 {
 #if _SAMBA_BUILD_
-	init_module_fn static_init[] = STATIC_LIBEVENTS_MODULES;
+	init_module_fn static_init[] = { STATIC_LIBEVENTS_MODULES, NULL };
 	init_module_fn *shared_init;
 	if (event_backends) return;
 	shared_init = load_samba_modules(NULL, global_loadparm, "events");
