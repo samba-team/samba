@@ -170,6 +170,16 @@ class SecretsDatabase:
     def get_dom_guid(self, host):
         return self.tdb.get("SECRETS/DOMGUID/%s" % host)
 
+    def ldap_dns(self):
+        for k in self.tdb.keys():
+            if k.startswith("SECRETS/LDAP_BIND_PW/"):
+                yield k[len("SECRETS/LDAP_BIND_PW/"):].rstrip("\0")
+
+    def domains(self):
+        for k in self.tdb.keys():
+            if k.startswith("SECRETS/SID/"):
+                yield k[len("SECRETS/SID/"):].rstrip("\0")
+
     def get_ldap_bind_pw(self, host):
         return self.tdb.get("SECRETS/LDAP_BIND_PW/%s" % host)
     
@@ -177,10 +187,10 @@ class SecretsDatabase:
         return self.tdb.get("SECRETS/AFS_KEYFILE/%s" % host)
 
     def get_machine_sec_channel_type(self, host):
-        return self.tdb.get("SECRETS/MACHINE_SEC_CHANNEL_TYPE/%s" % host)
+        return self.tdb.fetch_uint32("SECRETS/MACHINE_SEC_CHANNEL_TYPE/%s" % host)
 
     def get_machine_last_change_time(self, host):
-        return self.tdb.get("SECRETS/MACHINE_LAST_CHANGE_TIME/%s" % host)
+        return self.tdb.fetch_uint32("SECRETS/MACHINE_LAST_CHANGE_TIME/%s" % host)
             
     def get_machine_password(self, host):
         return self.tdb.get("SECRETS/MACHINE_PASSWORD/%s" % host)
@@ -190,6 +200,11 @@ class SecretsDatabase:
 
     def get_domtrust_acc(self, host):
         return self.tdb.get("SECRETS/$DOMTRUST.ACC/%s" % host)
+
+    def trusted_domains(self):
+        for k in self.tdb.keys():
+            if k.startswith("SECRETS/$DOMTRUST.ACC/"):
+                yield k[len("SECRETS/$DOMTRUST.ACC/"):].rstrip("\0")
 
     def get_random_seed(self):
         return self.tdb.get("INFO/random_seed")
@@ -307,6 +322,9 @@ class SmbpasswdFile:
     def __getitem__(self, name):
         return self.users[name]
 
+    def __iter__(self):
+        return iter(self.entries)
+
     def close(self): # For consistency
         pass
 
@@ -363,7 +381,6 @@ class WinsDatabase:
             if l[0] == "#": # skip comments
                 continue
             entries = shellsplit(l.rstrip("\n"))
-            print entries
             name = entries[0]
             ttl = int(entries[1])
             i = 2
@@ -382,31 +399,34 @@ class WinsDatabase:
     def __len__(self):
         return len(self.entries)
 
+    def __iter__(self):
+        return iter(self.entries)
+
     def close(self): # for consistency
         pass
 
 class Samba3:
-    def __init__(self, smbconfpath, libdir):
+    def __init__(self, libdir, smbconfpath):
         self.smbconfpath = smbconfpath
         self.libdir = libdir
 
     def get_policy_db(self):
-        return PolicyDatabase(os.path.join(libdir, "account_policy.tdb"))
+        return PolicyDatabase(os.path.join(self.libdir, "account_policy.tdb"))
     
     def get_registry(self):
-        return Registry(os.path.join(libdir, "registry.tdb"))
+        return Registry(os.path.join(self.libdir, "registry.tdb"))
 
     def get_secrets_db(self):
-        return SecretsDatabase(os.path.join(libdir, "secrets.tdb"))
+        return SecretsDatabase(os.path.join(self.libdir, "secrets.tdb"))
 
     def get_shares_db(self):
-        return ShareInfoDatabase(os.path.join(libdir, "share_info.tdb"))
+        return ShareInfoDatabase(os.path.join(self.libdir, "share_info.tdb"))
 
     def get_idmap_db(self):
-        return IdmapDatabase(os.path.join(libdir, "winbindd_idmap.tdb"))
+        return IdmapDatabase(os.path.join(self.libdir, "winbindd_idmap.tdb"))
 
     def get_wins_db(self):
-        return WinsDatabase(os.path.join(libdir, "wins.dat"))
+        return WinsDatabase(os.path.join(self.libdir, "wins.dat"))
 
     def get_groupmapping_db(self):
-        return GroupMappingDatabase(os.path.join(libdir, "group_mapping.tdb"))
+        return GroupMappingDatabase(os.path.join(self.libdir, "group_mapping.tdb"))
