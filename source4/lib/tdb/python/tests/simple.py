@@ -10,6 +10,12 @@ import tdb
 from unittest import TestCase
 import os
 
+
+class OpenTdbTests(TestCase):
+    def test_nonexistant_read(self):
+        self.assertRaises(IOError, tdb.Tdb, "/some/nonexistant/file", 0, tdb.DEFAULT, os.O_RDWR)
+
+
 class SimpleTdbTests(TestCase):
     def setUp(self):
         super(SimpleTdbTests, self).setUp()

@@ -108,7 +108,6 @@ enum TDB_ERROR {
      TDB_ERR_RDONLY
 };
 
-%rename(Tdb) tdb;
 %rename(lock_all) tdb_context::lockall;
 %rename(unlock_all) tdb_context::unlockall;
 
@@ -135,23 +134,20 @@ enum TDB_ERROR {
     $1 = TDB_REPLACE;
 }
 
+%rename(Tdb) tdb;
+%typemap(out,noblock=1) tdb * {
+    /* Throw an IOError exception from errno if tdb_open() returns NULL */
+    if ($1 == NULL) {
+        PyErr_SetFromErrno(PyExc_IOError);
+        SWIG_fail;
+    }
+    $result = SWIG_NewPointerObj($1, $1_descriptor, 0);
+}
+
 typedef struct tdb_context {
     %extend {
-        tdb(const char *name, int hash_size,
-                    int tdb_flags,
-                    int open_flags, mode_t mode)
-        {
-            tdb *ret = tdb_open(name, hash_size, tdb_flags, open_flags, mode);
-
-            /* Throw an IOError exception from errno if tdb_open() returns 
-               NULL */
-            if (ret == NULL) {
-                PyErr_SetFromErrno(PyExc_IOError);
-                SWIG_fail;
-            }
-
-fail:
-            return ret;
+        tdb(const char *name, int hash_size, int tdb_flags, int open_flags, mode_t mode) {
+            return tdb_open(name, hash_size, tdb_flags, open_flags, mode);
         }
         enum TDB_ERROR error();
         ~tdb() { tdb_close($self); }

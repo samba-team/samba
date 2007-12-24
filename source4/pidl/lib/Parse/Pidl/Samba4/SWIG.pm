@@ -105,7 +105,7 @@ sub ParseInterface($$)
 		pidl "";
 		pidl "status = dcerpc_$fn->{NAME}(\$self->pipe, mem_ctx, &r);";
 		pidl "if (NT_STATUS_IS_ERR(status)) {";
-		pidl "\treturn status;";
+		indent; pidl "return status;"; deindent;
 		pidl "}";
 		pidl "";
 		pidl "/* Set out arguments */";

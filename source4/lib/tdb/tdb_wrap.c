@@ -2748,17 +2748,7 @@ SWIG_AsVal_int (PyObject * obj, int *val)
 }
 
 SWIGINTERN tdb *new_tdb(char const *name,int hash_size,int tdb_flags,int open_flags,mode_t mode){
-            tdb *ret = tdb_open(name, hash_size, tdb_flags, open_flags, mode);
-
-            /* Throw an IOError exception from errno if tdb_open() returns 
-               NULL */
-            if (ret == NULL) {
-                PyErr_SetFromErrno(PyExc_IOError);
-                SWIG_fail;
-            }
-
-fail:
-            return ret;
+            return tdb_open(name, hash_size, tdb_flags, open_flags, mode);
         }
 SWIGINTERN void delete_tdb(tdb *self){ tdb_close(self); }
 
@@ -2870,7 +2860,12 @@ SWIGINTERN PyObject *_wrap_new_Tdb(PyObject *SWIGUNUSEDPARM(self), PyObject *arg
     arg5 = (mode_t)(val5);
   }
   result = (tdb *)new_tdb((char const *)arg1,arg2,arg3,arg4,arg5);
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_tdb_context, SWIG_POINTER_OWN |  0 );
+  /* Throw an IOError exception from errno if tdb_open() returns NULL */
+  if (result == NULL) {
+    PyErr_SetFromErrno(PyExc_IOError);
+    SWIG_fail;
+  }
+  resultobj = SWIG_NewPointerObj(result, SWIGTYPE_p_tdb_context, 0);
   if (alloc1 == SWIG_NEWOBJ) free((char*)buf1);
   return resultobj;
 fail:
