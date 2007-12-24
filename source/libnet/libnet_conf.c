@@ -258,10 +258,14 @@ WERROR libnet_smbconf_setparm(TALLOC_CTX *mem_ctx,
 		werr = libnet_smbconf_open_path(mem_ctx, service, REG_KEY_WRITE,
 						&key);
 	}
-	W_ERROR_NOT_OK_RETURN(werr);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
 
 	werr = libnet_smbconf_reg_setvalue_internal(key, param, valstr);
 
+done:
+	TALLOC_FREE(key);
 	return werr;
 }
 
