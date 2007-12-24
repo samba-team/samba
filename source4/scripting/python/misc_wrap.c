@@ -2837,9 +2837,7 @@ SWIGINTERN PyObject *_wrap_ldb_set_credentials(PyObject *SWIGUNUSEDPARM(self), P
     (char *) "ldb",(char *) "creds", NULL 
   };
   
-  {
-    arg2 = NULL;
-  }
+  arg2 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|O:ldb_set_credentials",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
@@ -2914,9 +2912,7 @@ SWIGINTERN PyObject *_wrap_ldb_set_loadparm(PyObject *SWIGUNUSEDPARM(self), PyOb
     (char *) "ldb",(char *) "lp_ctx", NULL 
   };
   
-  {
-    arg2 = loadparm_init(NULL);
-  }
+  arg2 = loadparm_init(NULL);
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|O:ldb_set_loadparm",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {

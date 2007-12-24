@@ -165,6 +165,9 @@ sub check_python($$)
 		$python->{OBJ_FILES} = ["$dirname$basename\_wrap.o"];
 		$python->{LIBRARY_REALNAME} = "_$basename.\$(SHLIBEXT)";
 		$python->{PYTHON_FILES} = ["$dirname$basename.py"];
+		unless (defined($python->{CFLAGS})) { $python->{CFLAGS} = []; }
+		push (@{$python->{CFLAGS}}, $config::config{CFLAG_NO_UNUSED_MACROS});
+		push (@{$python->{CFLAGS}}, $config::config{CFLAG_NO_CAST_QUAL});
 	} else {
 		my $basename = $python->{NAME};
 		$basename =~ s/^python_//g;

@@ -121,15 +121,15 @@ FIRST_PREREQ = $first_prereq
 
 # Dependencies command
 DEPENDS = \$(CC) -M -MG -MP -MT \$(<:.c=.o) -MT \$@ \\
-    `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(CFLAGS) \$(FIRST_PREREQ) -o \$@
+    \$(CFLAGS) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
+    \$(CPPFLAGS) \$(FIRST_PREREQ) -o \$@
 # Dependencies for host objects
 HDEPENDS = \$(CC) -M -MG -MP -MT \$(<:.c=.ho) -MT \$@ \\
-    `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(HOSTCC_FLAGS) \$(FIRST_PREREQ) -o \$@
+    \$(HOSTCC_FLAGS) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
+    \$(CPPFLAGS) \$(FIRST_PREREQ) -o \$@
 # Dependencies for precompiled headers
 PCHDEPENDS = \$(CC) -M -MG -MT include/includes.h.gch -MT \$@ \\
-    \$(CFLAGS) \$(FIRST_PREREQ) -o \$@
+    \$(CFLAGS) \$(CPPFLAGS) \$(FIRST_PREREQ) -o \$@
 
 # \$< is broken in older BSD versions:
 # when \$@ is foo/bar.o, \$< could be torture/foo/bar.c
@@ -140,21 +140,23 @@ PCHDEPENDS = \$(CC) -M -MG -MT include/includes.h.gch -MT \$@ \\
 # building with \$srcdir != \$builddir work.
 
 # Run a static analysis checker
-CHECK = \$(CC_CHECKER) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(CFLAGS) \$(PICFLAG) -c \$(FIRST_PREREQ) -o \$@
+CHECK = \$(CC_CHECKER) \$(CFLAGS) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
+    \$(PICFLAG) \$(CPPLAGS) -c \$(FIRST_PREREQ) -o \$@
 
 # Run the configured compiler
-COMPILE = \$(CC) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(CFLAGS) \$(PICFLAG) -c \$(FIRST_PREREQ) -o \$@
+COMPILE = \$(CC) \$(CFLAGS)  \$(PICFLAG) \\
+          `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
+		  \$(CPPFLAGS) \\
+		  -c \$(FIRST_PREREQ) -o \$@
 
 # Run the compiler for the build host
-HCOMPILE = \$(HOSTCC) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(HOSTCC_FLAGS) -c \$(FIRST_PREREQ) -o \$@
+HCOMPILE = \$(HOSTCC) \$(HOSTCC_FLAGS) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
+	 \$(CPPFLAGS) -c \$(FIRST_PREREQ) -o \$@
 
 # Precompile headers
 PCHCOMPILE = @\$(CC) -Ilib/replace \\
-    `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(CFLAGS) \$(PICFLAG) -c \$(FIRST_PREREQ) -o \$@
+    \$(CFLAGS) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
+    \$(PICFLAG) \$(CPPFLAGS) -c \$(FIRST_PREREQ) -o \$@
 
 __EOD__
 );
@@ -190,7 +192,8 @@ CPP=$self->{config}->{CPP}
 CPPFLAGS=$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -I\$(srcdir)/lib/replace -I\$(srcdir)/lib/talloc -D_SAMBA_BUILD_=4 -DHAVE_CONFIG_H $self->{config}->{CPPFLAGS}
 
 CC=$self->{config}->{CC}
-CFLAGS=$self->{config}->{CFLAGS} \$(CPPFLAGS)
+CFLAGS=$self->{config}->{CFLAGS}
+CFLAG_NO_UNUSED_MACROS=$self->{config}->{CFLAG_NO_UNUSED_MACROS}
 PICFLAG=$self->{config}->{PICFLAG}
 
 INSTALL_LINK_FLAGS=$extra_link_flags
@@ -210,7 +213,7 @@ MDLD_FLAGS=$self->{config}->{MDLD_FLAGS} -L\$(builddir)/bin/shared
 SHLIBEXT=$self->{config}->{SHLIBEXT}
 
 HOSTCC=$self->{config}->{HOSTCC}
-HOSTCC_FLAGS=-D_SAMBA_HOSTCC_ $self->{config}->{CFLAGS} \$(CPPFLAGS)
+HOSTCC_FLAGS=-D_SAMBA_HOSTCC_ \$(CFLAGS)
 
 HOSTLD=$self->{config}->{HOSTLD}
 HOSTLD_FLAGS=$self->{config}->{LDFLAGS}
