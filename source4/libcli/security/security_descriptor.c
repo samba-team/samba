@@ -235,7 +235,7 @@ NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd,
 
 static NTSTATUS security_descriptor_acl_del(struct security_descriptor *sd,
 					    bool sacl_del,
-					    struct dom_sid *trustee)
+					    const struct dom_sid *trustee)
 {
 	int i;
 	bool found = false;
@@ -292,7 +292,7 @@ static NTSTATUS security_descriptor_acl_del(struct security_descriptor *sd,
 */
 
 NTSTATUS security_descriptor_dacl_del(struct security_descriptor *sd,
-				      struct dom_sid *trustee)
+				      const struct dom_sid *trustee)
 {
 	return security_descriptor_acl_del(sd, false, trustee);
 }
@@ -303,7 +303,7 @@ NTSTATUS security_descriptor_dacl_del(struct security_descriptor *sd,
 */
 
 NTSTATUS security_descriptor_sacl_del(struct security_descriptor *sd,
-				      struct dom_sid *trustee)
+				      const struct dom_sid *trustee)
 {
 	return security_descriptor_acl_del(sd, true, trustee);
 }

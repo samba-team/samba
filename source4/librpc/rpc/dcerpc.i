@@ -63,13 +63,13 @@
 
 %rename(pipe_connect) dcerpc_pipe_connect;
 
-NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx,
-	                     struct dcerpc_pipe **OUT,
-                             const char *binding,
-                             const char *pipe_uuid,
-                             uint32_t pipe_version,
+NTSTATUS dcerpc_pipe_connect(TALLOC_CTX *parent_ctx, 
+			     struct dcerpc_pipe **pp, 
+			     const char *binding,
+			     const struct ndr_interface_table *table,
 			     struct cli_credentials *credentials,
-                 struct loadparm_context *lp_ctx);
+			     struct event_context *ev,
+			     struct loadparm_context *lp_ctx);
 
 %typemap(in,noblock=1) DATA_BLOB * (DATA_BLOB temp_data_blob) {
 	temp_data_blob.data = PyString_AsString($input);

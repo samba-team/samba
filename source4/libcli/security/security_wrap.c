@@ -3116,7 +3116,7 @@ SWIGINTERN PyObject *_wrap_security_descriptor_sacl_add(PyObject *SWIGUNUSEDPARM
   arg2 = (struct security_ace *)(argp2);
   result = security_descriptor_sacl_add(arg1,(struct security_ace const *)arg2);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3156,7 +3156,7 @@ SWIGINTERN PyObject *_wrap_security_descriptor_dacl_add(PyObject *SWIGUNUSEDPARM
   arg2 = (struct security_ace *)(argp2);
   result = security_descriptor_dacl_add(arg1,(struct security_ace const *)arg2);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3171,7 +3171,7 @@ fail:
 SWIGINTERN PyObject *_wrap_security_descriptor_dacl_del(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   security_descriptor *arg1 = (security_descriptor *) 0 ;
-  struct security_ace *arg2 = (struct security_ace *) 0 ;
+  struct dom_sid *arg2 = (struct dom_sid *) 0 ;
   NTSTATUS result;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -3180,7 +3180,7 @@ SWIGINTERN PyObject *_wrap_security_descriptor_dacl_del(PyObject *SWIGUNUSEDPARM
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "ace", NULL 
+    (char *) "self",(char *) "trustee", NULL 
   };
   
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:security_descriptor_dacl_del",kwnames,&obj0,&obj1)) SWIG_fail;
@@ -3189,14 +3189,14 @@ SWIGINTERN PyObject *_wrap_security_descriptor_dacl_del(PyObject *SWIGUNUSEDPARM
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "security_descriptor_dacl_del" "', argument " "1"" of type '" "security_descriptor *""'"); 
   }
   arg1 = (security_descriptor *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_security_ace, 0 |  0 );
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_dom_sid, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "security_descriptor_dacl_del" "', argument " "2"" of type '" "struct security_ace const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "security_descriptor_dacl_del" "', argument " "2"" of type '" "struct dom_sid const *""'"); 
   }
-  arg2 = (struct security_ace *)(argp2);
-  result = security_descriptor_dacl_del(arg1,(struct security_ace const *)arg2);
+  arg2 = (struct dom_sid *)(argp2);
+  result = security_descriptor_dacl_del(arg1,(struct dom_sid const *)arg2);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {
@@ -3211,7 +3211,7 @@ fail:
 SWIGINTERN PyObject *_wrap_security_descriptor_sacl_del(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   security_descriptor *arg1 = (security_descriptor *) 0 ;
-  struct security_ace *arg2 = (struct security_ace *) 0 ;
+  struct dom_sid *arg2 = (struct dom_sid *) 0 ;
   NTSTATUS result;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -3220,7 +3220,7 @@ SWIGINTERN PyObject *_wrap_security_descriptor_sacl_del(PyObject *SWIGUNUSEDPARM
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "ace", NULL 
+    (char *) "self",(char *) "trustee", NULL 
   };
   
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:security_descriptor_sacl_del",kwnames,&obj0,&obj1)) SWIG_fail;
@@ -3229,14 +3229,14 @@ SWIGINTERN PyObject *_wrap_security_descriptor_sacl_del(PyObject *SWIGUNUSEDPARM
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "security_descriptor_sacl_del" "', argument " "1"" of type '" "security_descriptor *""'"); 
   }
   arg1 = (security_descriptor *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_security_ace, 0 |  0 );
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_dom_sid, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
-    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "security_descriptor_sacl_del" "', argument " "2"" of type '" "struct security_ace const *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "security_descriptor_sacl_del" "', argument " "2"" of type '" "struct dom_sid const *""'"); 
   }
-  arg2 = (struct security_ace *)(argp2);
-  result = security_descriptor_sacl_del(arg1,(struct security_ace const *)arg2);
+  arg2 = (struct dom_sid *)(argp2);
+  result = security_descriptor_sacl_del(arg1,(struct dom_sid const *)arg2);
   if (NT_STATUS_IS_ERR(result)) {
-    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {

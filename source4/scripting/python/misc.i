@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "ldb.h"
 #include "param/param.h"
+#include "auth/credentials/credentials.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb-samba/ldif_handlers.h"
 %}

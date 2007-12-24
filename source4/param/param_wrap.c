@@ -2641,7 +2641,7 @@ SWIG_FromCharPtr(const char *cptr)
 
 SWIGINTERN bool loadparm_context_is_mydomain(loadparm_context *self,char const *domain){ return lp_is_mydomain(self, domain); }
 SWIGINTERN bool loadparm_context_is_myname(loadparm_context *self,char const *name){ return lp_is_myname(self, name); }
-SWIGINTERN int loadparm_context_use(loadparm_context *self,struct param_context *param){ return param_use(self, param); }
+SWIGINTERN int loadparm_context_use(loadparm_context *self,struct param_context *param_ctx){ return param_use(self, param_ctx); }
 SWIGINTERN bool loadparm_context_set(loadparm_context *self,char const *parm_name,char const *parm_value){
             return lp_set_cmdline(self, parm_name, parm_value);
         }
@@ -2725,12 +2725,12 @@ SWIGINTERN PyObject *loadparm_context_get(loadparm_context *self,char const *par
                 return Py_None;
             case P_LIST: 
                 {
-                    int i;
+                    int j;
                     const char **strlist = *(const char ***)parm_ptr;
                     PyObject *pylist = PyList_New(str_list_length(strlist));
-                    for (i = 0; strlist[i]; i++) 
-                        PyList_SetItem(pylist, i, 
-                                       PyString_FromString(strlist[i]));
+                    for (j = 0; strlist[j]; j++) 
+                        PyList_SetItem(pylist, j, 
+                                       PyString_FromString(strlist[j]));
                     return pylist;
                 }
 
@@ -2743,8 +2743,8 @@ SWIGINTERN char const *loadparm_service_volume_label(loadparm_service *self){ re
 SWIGINTERN char const *loadparm_service_printername(loadparm_service *self){ return lp_printername(self); }
 SWIGINTERN int loadparm_service_maxprintjobs(loadparm_service *self){ return lp_maxprintjobs(self); }
 SWIGINTERN param *new_param(TALLOC_CTX *mem_ctx){ return param_init(mem_ctx); }
-SWIGINTERN int param_set(param *self,char const *param,PyObject *ob,char const *section_name){
-            struct param_opt *opt = param_get_add(self, param, section_name);
+SWIGINTERN int param_set(param *self,char const *parameter,PyObject *ob,char const *section_name){
+            struct param_opt *opt = param_get_add(self, parameter, section_name);
 
             talloc_free(opt->value);
             opt->value = talloc_strdup(opt, PyObject_Str(ob));
@@ -3008,7 +3008,7 @@ SWIGINTERN PyObject *_wrap_LoadParm_use(PyObject *SWIGUNUSEDPARM(self), PyObject
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "param", NULL 
+    (char *) "self",(char *) "param_ctx", NULL 
   };
   
   arg1 = loadparm_init(NULL);
@@ -3536,7 +3536,7 @@ SWIGINTERN PyObject *_wrap_ParamFile_set(PyObject *SWIGUNUSEDPARM(self), PyObjec
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "param",(char *) "ob",(char *) "section_name", NULL 
+    (char *) "self",(char *) "parameter",(char *) "ob",(char *) "section_name", NULL 
   };
   
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO|O:ParamFile_set",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;

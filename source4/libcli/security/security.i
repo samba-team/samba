@@ -83,8 +83,8 @@ typedef struct security_descriptor {
         security_descriptor(TALLOC_CTX *mem_ctx) { return security_descriptor_initialise(mem_ctx); }
         NTSTATUS sacl_add(const struct security_ace *ace);
         NTSTATUS dacl_add(const struct security_ace *ace);
-        NTSTATUS dacl_del(const struct security_ace *ace);
-        NTSTATUS sacl_del(const struct security_ace *ace);
+        NTSTATUS dacl_del(const struct dom_sid *trustee);
+        NTSTATUS sacl_del(const struct dom_sid *trustee);
 #ifdef SWIGPYTHON
         %rename(__eq__) equal;
 #endif

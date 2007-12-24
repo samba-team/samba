@@ -2530,6 +2530,7 @@ static swig_module_info swig_module = {swig_types, 27, 0, 0, 0, 0};
 #include "includes.h"
 #include "ldb.h"
 #include "param/param.h"
+#include "auth/credentials/credentials.h"
 #include "dsdb/samdb/samdb.h"
 #include "lib/ldb-samba/ldif_handlers.h"
 
@@ -3016,7 +3017,7 @@ SWIGINTERN PyObject *_wrap_dsdb_attach_schema_from_ldif_file(PyObject *SWIGUNUSE
     "ldb context must be non-NULL");
   result = dsdb_attach_schema_from_ldif_file(arg1,(char const *)arg2,(char const *)arg3);
   if (!W_ERROR_IS_OK(result)) {
-    PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, win_errstr(result));
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, win_errstr(result));
     PyErr_SetObject(PyExc_RuntimeError, obj);
     SWIG_fail;
   } else if (resultobj == NULL) {

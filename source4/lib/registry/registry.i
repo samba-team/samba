@@ -26,6 +26,7 @@
 #include "includes.h"
 #include "registry.h"
 #include "param/param.h"
+#include "hive.h"
 
 typedef struct registry_context reg;
 typedef struct hive_key hive_key;
@@ -102,16 +103,16 @@ typedef struct registry_context {
     WERROR generate_diff(struct registry_context *ctx2, const struct reg_diff_callbacks *callbacks,
                          void *callback_data);
 
-    WERROR mount_hive(struct hive_key *hive_key, uint32_t hkey_id,
+    WERROR mount_hive(struct hive_key *key, uint32_t hkey_id,
                       const char **elements=NULL);
 
     struct registry_key *import_hive_key(struct hive_key *hive, uint32_t predef_key, const char **elements);
-    WERROR mount_hive(struct hive_key *hive_key, const char *predef_name)
+    WERROR mount_hive(struct hive_key *key, const char *predef_name)
     {
         int i;
         for (i = 0; reg_predefined_keys[i].name; i++) {
             if (!strcasecmp(reg_predefined_keys[i].name, predef_name))
-                return reg_mount_hive($self, hive_key, 
+                return reg_mount_hive($self, key, 
                                       reg_predefined_keys[i].handle, NULL);
         }
         return WERR_INVALID_NAME;

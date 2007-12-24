@@ -2461,22 +2461,24 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_char swig_types[2]
 #define SWIGTYPE_p_cli_credentials swig_types[3]
 #define SWIGTYPE_p_dcerpc_pipe swig_types[4]
-#define SWIGTYPE_p_int swig_types[5]
-#define SWIGTYPE_p_loadparm_context swig_types[6]
-#define SWIGTYPE_p_loadparm_service swig_types[7]
-#define SWIGTYPE_p_long_long swig_types[8]
-#define SWIGTYPE_p_p_dcerpc_pipe swig_types[9]
-#define SWIGTYPE_p_param_context swig_types[10]
-#define SWIGTYPE_p_param_opt swig_types[11]
-#define SWIGTYPE_p_param_section swig_types[12]
-#define SWIGTYPE_p_short swig_types[13]
-#define SWIGTYPE_p_signed_char swig_types[14]
-#define SWIGTYPE_p_unsigned_char swig_types[15]
-#define SWIGTYPE_p_unsigned_int swig_types[16]
-#define SWIGTYPE_p_unsigned_long_long swig_types[17]
-#define SWIGTYPE_p_unsigned_short swig_types[18]
-static swig_type_info *swig_types[20];
-static swig_module_info swig_module = {swig_types, 19, 0, 0, 0, 0};
+#define SWIGTYPE_p_event_context swig_types[5]
+#define SWIGTYPE_p_int swig_types[6]
+#define SWIGTYPE_p_loadparm_context swig_types[7]
+#define SWIGTYPE_p_loadparm_service swig_types[8]
+#define SWIGTYPE_p_long_long swig_types[9]
+#define SWIGTYPE_p_ndr_interface_table swig_types[10]
+#define SWIGTYPE_p_p_dcerpc_pipe swig_types[11]
+#define SWIGTYPE_p_param_context swig_types[12]
+#define SWIGTYPE_p_param_opt swig_types[13]
+#define SWIGTYPE_p_param_section swig_types[14]
+#define SWIGTYPE_p_short swig_types[15]
+#define SWIGTYPE_p_signed_char swig_types[16]
+#define SWIGTYPE_p_unsigned_char swig_types[17]
+#define SWIGTYPE_p_unsigned_int swig_types[18]
+#define SWIGTYPE_p_unsigned_long_long swig_types[19]
+#define SWIGTYPE_p_unsigned_short swig_types[20]
+static swig_type_info *swig_types[22];
+static swig_module_info swig_module = {swig_types, 21, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2793,66 +2795,6 @@ SWIGINTERNINLINE PyObject*
 }
 
 SWIGINTERN void delete_cli_credentials(cli_credentials *self){ talloc_free(self); }
-
-SWIGINTERN int
-SWIG_AsVal_unsigned_SS_long (PyObject *obj, unsigned long *val) 
-{
-  if (PyInt_Check(obj)) {
-    long v = PyInt_AsLong(obj);
-    if (v >= 0) {
-      if (val) *val = v;
-      return SWIG_OK;
-    } else {
-      return SWIG_OverflowError;
-    }
-  } else if (PyLong_Check(obj)) {
-    unsigned long v = PyLong_AsUnsignedLong(obj);
-    if (!PyErr_Occurred()) {
-      if (val) *val = v;
-      return SWIG_OK;
-    } else {
-      PyErr_Clear();
-    }
-  }
-#ifdef SWIG_PYTHON_CAST_MODE
-  {
-    int dispatch = 0;
-    unsigned long v = PyLong_AsUnsignedLong(obj);
-    if (!PyErr_Occurred()) {
-      if (val) *val = v;
-      return SWIG_AddCast(SWIG_OK);
-    } else {
-      PyErr_Clear();
-    }
-    if (!dispatch) {
-      double d;
-      int res = SWIG_AddCast(SWIG_AsVal_double (obj,&d));
-      if (SWIG_IsOK(res) && SWIG_CanCastAsInteger(&d, 0, ULONG_MAX)) {
-	if (val) *val = (unsigned long)(d);
-	return res;
-      }
-    }
-  }
-#endif
-  return SWIG_TypeError;
-}
-
-
-SWIGINTERN int
-SWIG_AsVal_unsigned_SS_int (PyObject * obj, unsigned int *val)
-{
-  unsigned long v;
-  int res = SWIG_AsVal_unsigned_SS_long (obj, &v);
-  if (SWIG_IsOK(res)) {
-    if ((v > UINT_MAX)) {
-      return SWIG_OverflowError;
-    } else {
-      if (val) *val = (unsigned int)(v);
-    }
-  }  
-  return res;
-}
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -3486,7 +3428,7 @@ SWIGINTERN PyObject *_wrap_Credentials_get_nt_hash(PyObject *SWIGUNUSEDPARM(self
     arg1 = (cli_credentials *)(argp1);
   }
   result = (struct samr_Password *)cli_credentials_get_nt_hash(arg1,arg2);
-  resultobj = PyString_FromStringAndSize(result->hash, 16);
+  resultobj = PyString_FromStringAndSize((char *)result->hash, 16);
   return resultobj;
 fail:
   return NULL;
@@ -3593,20 +3535,20 @@ SWIGINTERN PyObject *_wrap_pipe_connect(PyObject *SWIGUNUSEDPARM(self), PyObject
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
   struct dcerpc_pipe **arg2 = (struct dcerpc_pipe **) 0 ;
   char *arg3 = (char *) 0 ;
-  char *arg4 = (char *) 0 ;
-  uint32_t arg5 ;
-  struct cli_credentials *arg6 = (struct cli_credentials *) 0 ;
+  struct ndr_interface_table *arg4 = (struct ndr_interface_table *) 0 ;
+  struct cli_credentials *arg5 = (struct cli_credentials *) 0 ;
+  struct event_context *arg6 = (struct event_context *) 0 ;
   struct loadparm_context *arg7 = (struct loadparm_context *) 0 ;
   NTSTATUS result;
-  struct dcerpc_pipe *temp_dcerpc_pipe2 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
   int res3 ;
   char *buf3 = 0 ;
   int alloc3 = 0 ;
-  int res4 ;
-  char *buf4 = 0 ;
-  int alloc4 = 0 ;
-  unsigned int val5 ;
-  int ecode5 = 0 ;
+  void *argp4 = 0 ;
+  int res4 = 0 ;
+  void *argp5 = 0 ;
+  int res5 = 0 ;
   void *argp6 = 0 ;
   int res6 = 0 ;
   void *argp7 = 0 ;
@@ -3616,45 +3558,52 @@ SWIGINTERN PyObject *_wrap_pipe_connect(PyObject *SWIGUNUSEDPARM(self), PyObject
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
   PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
   char *  kwnames[] = {
-    (char *) "binding",(char *) "pipe_uuid",(char *) "pipe_version",(char *) "credentials",(char *) "lp_ctx", NULL 
+    (char *) "pp",(char *) "binding",(char *) "table",(char *) "credentials",(char *) "ev",(char *) "lp_ctx", NULL 
   };
   
-  arg6 = NULL;
+  arg5 = NULL;
   arg7 = loadparm_init(NULL);
   arg1 = NULL;
-  arg2 = &temp_dcerpc_pipe2;
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO|OO:pipe_connect",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
-  res3 = SWIG_AsCharPtrAndSize(obj0, &buf3, NULL, &alloc3);
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO|OOO:pipe_connect",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4,&obj5)) SWIG_fail;
+  res2 = SWIG_ConvertPtr(obj0, &argp2,SWIGTYPE_p_p_dcerpc_pipe, 0 |  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "pipe_connect" "', argument " "2"" of type '" "struct dcerpc_pipe **""'"); 
+  }
+  arg2 = (struct dcerpc_pipe **)(argp2);
+  res3 = SWIG_AsCharPtrAndSize(obj1, &buf3, NULL, &alloc3);
   if (!SWIG_IsOK(res3)) {
     SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "pipe_connect" "', argument " "3"" of type '" "char const *""'");
   }
   arg3 = (char *)(buf3);
-  res4 = SWIG_AsCharPtrAndSize(obj1, &buf4, NULL, &alloc4);
+  res4 = SWIG_ConvertPtr(obj2, &argp4,SWIGTYPE_p_ndr_interface_table, 0 |  0 );
   if (!SWIG_IsOK(res4)) {
-    SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "pipe_connect" "', argument " "4"" of type '" "char const *""'");
+    SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "pipe_connect" "', argument " "4"" of type '" "struct ndr_interface_table const *""'"); 
   }
-  arg4 = (char *)(buf4);
-  ecode5 = SWIG_AsVal_unsigned_SS_int(obj2, &val5);
-  if (!SWIG_IsOK(ecode5)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode5), "in method '" "pipe_connect" "', argument " "5"" of type '" "uint32_t""'");
-  } 
-  arg5 = (uint32_t)(val5);
+  arg4 = (struct ndr_interface_table *)(argp4);
   if (obj3) {
-    res6 = SWIG_ConvertPtr(obj3, &argp6,SWIGTYPE_p_cli_credentials, 0 |  0 );
-    if (!SWIG_IsOK(res6)) {
-      SWIG_exception_fail(SWIG_ArgError(res6), "in method '" "pipe_connect" "', argument " "6"" of type '" "struct cli_credentials *""'"); 
+    res5 = SWIG_ConvertPtr(obj3, &argp5,SWIGTYPE_p_cli_credentials, 0 |  0 );
+    if (!SWIG_IsOK(res5)) {
+      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "pipe_connect" "', argument " "5"" of type '" "struct cli_credentials *""'"); 
     }
-    arg6 = (struct cli_credentials *)(argp6);
+    arg5 = (struct cli_credentials *)(argp5);
   }
   if (obj4) {
-    res7 = SWIG_ConvertPtr(obj4, &argp7,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    res6 = SWIG_ConvertPtr(obj4, &argp6,SWIGTYPE_p_event_context, 0 |  0 );
+    if (!SWIG_IsOK(res6)) {
+      SWIG_exception_fail(SWIG_ArgError(res6), "in method '" "pipe_connect" "', argument " "6"" of type '" "struct event_context *""'"); 
+    }
+    arg6 = (struct event_context *)(argp6);
+  }
+  if (obj5) {
+    res7 = SWIG_ConvertPtr(obj5, &argp7,SWIGTYPE_p_loadparm_context, 0 |  0 );
     if (!SWIG_IsOK(res7)) {
       SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "pipe_connect" "', argument " "7"" of type '" "struct loadparm_context *""'"); 
     }
     arg7 = (struct loadparm_context *)(argp7);
   }
-  result = dcerpc_pipe_connect(arg1,arg2,(char const *)arg3,(char const *)arg4,arg5,arg6,arg7);
+  result = dcerpc_pipe_connect(arg1,arg2,(char const *)arg3,(struct ndr_interface_table const *)arg4,arg5,arg6,arg7);
   resultobj = SWIG_NewPointerObj((NTSTATUS *)memcpy((NTSTATUS *)malloc(sizeof(NTSTATUS)),&result,sizeof(NTSTATUS)), SWIGTYPE_p_NTSTATUS, SWIG_POINTER_OWN |  0 );
   /* Set REF_ALLOC flag so we don't have to do too much extra
   	   mucking around with ref variables in ndr unmarshalling. */
@@ -3665,11 +3614,9 @@ SWIGINTERN PyObject *_wrap_pipe_connect(PyObject *SWIGUNUSEDPARM(self), PyObject
   
   resultobj = SWIG_NewPointerObj(*arg2, SWIGTYPE_p_dcerpc_pipe, 0);
   if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
-  if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
   return resultobj;
 fail:
   if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
-  if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
   return NULL;
 }
 
@@ -3735,10 +3682,12 @@ static swig_type_info _swigt__p_TALLOC_CTX = {"_p_TALLOC_CTX", "TALLOC_CTX *", 0
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_cli_credentials = {"_p_cli_credentials", "struct cli_credentials *|cli_credentials *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_dcerpc_pipe = {"_p_dcerpc_pipe", "struct dcerpc_pipe *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_event_context = {"_p_event_context", "struct event_context *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_int = {"_p_int", "intptr_t *|int *|int_least32_t *|int_fast32_t *|int32_t *|int_fast16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_loadparm_context = {"_p_loadparm_context", "struct loadparm_context *|loadparm_context *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_loadparm_service = {"_p_loadparm_service", "struct loadparm_service *|loadparm_service *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_long_long = {"_p_long_long", "int_least64_t *|int_fast64_t *|int64_t *|long long *|intmax_t *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_ndr_interface_table = {"_p_ndr_interface_table", "struct ndr_interface_table *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_p_dcerpc_pipe = {"_p_p_dcerpc_pipe", "struct dcerpc_pipe **", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_param_context = {"_p_param_context", "struct param_context *|param *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_param_opt = {"_p_param_opt", "struct param_opt *|param_opt *", 0, 0, (void*)0, 0};
@@ -3756,10 +3705,12 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_char,
   &_swigt__p_cli_credentials,
   &_swigt__p_dcerpc_pipe,
+  &_swigt__p_event_context,
   &_swigt__p_int,
   &_swigt__p_loadparm_context,
   &_swigt__p_loadparm_service,
   &_swigt__p_long_long,
+  &_swigt__p_ndr_interface_table,
   &_swigt__p_p_dcerpc_pipe,
   &_swigt__p_param_context,
   &_swigt__p_param_opt,
@@ -3777,10 +3728,12 @@ static swig_cast_info _swigc__p_TALLOC_CTX[] = {  {&_swigt__p_TALLOC_CTX, 0, 0, 
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_cli_credentials[] = {  {&_swigt__p_cli_credentials, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_dcerpc_pipe[] = {  {&_swigt__p_dcerpc_pipe, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_event_context[] = {  {&_swigt__p_event_context, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_int[] = {  {&_swigt__p_int, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_loadparm_context[] = {  {&_swigt__p_loadparm_context, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_loadparm_service[] = {  {&_swigt__p_loadparm_service, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_long_long[] = {  {&_swigt__p_long_long, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_ndr_interface_table[] = {  {&_swigt__p_ndr_interface_table, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_p_dcerpc_pipe[] = {  {&_swigt__p_p_dcerpc_pipe, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_param_context[] = {  {&_swigt__p_param_context, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_param_opt[] = {  {&_swigt__p_param_opt, 0, 0, 0},{0, 0, 0, 0}};
@@ -3798,10 +3751,12 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_char,
   _swigc__p_cli_credentials,
   _swigc__p_dcerpc_pipe,
+  _swigc__p_event_context,
   _swigc__p_int,
   _swigc__p_loadparm_context,
   _swigc__p_loadparm_service,
   _swigc__p_long_long,
+  _swigc__p_ndr_interface_table,
   _swigc__p_p_dcerpc_pipe,
   _swigc__p_param_context,
   _swigc__p_param_opt,
