@@ -44,9 +44,9 @@ class SimpleTdbTests(TestCase):
 
     def test_store(self):
         self.tdb.store("bar", "bla")
-        self.assertEquals("bla", self.tdb.fetch("bar"))
+        self.assertEquals("bla", self.tdb.get("bar"))
 
-    def test_fetch(self):
+    def test_getitem(self):
         self.tdb["bar"] = "foo"
         self.tdb.reopen()
         self.assertEquals("foo", self.tdb["bar"])

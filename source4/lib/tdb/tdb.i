@@ -158,6 +158,7 @@ typedef struct tdb_context {
         int close();
         int append(TDB_DATA key, TDB_DATA new_dbuf);
         const char *errorstr();
+        %rename(get) fetch;
         TDB_DATA fetch(TDB_DATA key);
         int delete(TDB_DATA key);
         int store(TDB_DATA key, TDB_DATA dbuf, int flag);
@@ -186,7 +187,7 @@ typedef struct tdb_context {
 
     # Random access to keys, values
     def __getitem__(self, key):
-        result = self.fetch(key)
+        result = self.get(key)
         if result is None:
             raise KeyError, '%s: %s' % (key, self.errorstr())
         return result
@@ -207,14 +208,14 @@ typedef struct tdb_context {
         return self.exists(key) != 0
 
     def fetch_uint32(self, key):
-        data = self.fetch(key)
+        data = self.get(key)
         if data is None:
             return None
         import struct
         return struct.unpack("<L", data)[0]
 
     def fetch_int32(self, key):
-        data = self.fetch(key)
+        data = self.get(key)
         if data is None:
             return None
         import struct

@@ -88,7 +88,7 @@ class tdb(object):
 
 
     def __getitem__(self, key):
-        result = self.fetch(key)
+        result = self.get(key)
         if result is None:
             raise KeyError, '%s: %s' % (key, self.errorstr())
         return result
@@ -109,14 +109,14 @@ class tdb(object):
         return self.exists(key) != 0
 
     def fetch_uint32(self, key):
-        data = self.fetch(key)
+        data = self.get(key)
         if data is None:
             return None
         import struct
         return struct.unpack("<L", data)[0]
 
     def fetch_int32(self, key):
-        data = self.fetch(key)
+        data = self.get(key)
         if data is None:
             return None
         import struct
@@ -172,7 +172,7 @@ tdb.error = new_instancemethod(_tdb.tdb_error,None,tdb)
 tdb.close = new_instancemethod(_tdb.tdb_close,None,tdb)
 tdb.append = new_instancemethod(_tdb.tdb_append,None,tdb)
 tdb.errorstr = new_instancemethod(_tdb.tdb_errorstr,None,tdb)
-tdb.fetch = new_instancemethod(_tdb.tdb_fetch,None,tdb)
+tdb.get = new_instancemethod(_tdb.tdb_get,None,tdb)
 tdb.delete = new_instancemethod(_tdb.tdb_delete,None,tdb)
 tdb.store = new_instancemethod(_tdb.tdb_store,None,tdb)
 tdb.exists = new_instancemethod(_tdb.tdb_exists,None,tdb)
