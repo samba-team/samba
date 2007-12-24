@@ -235,7 +235,7 @@ ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
 %_wrap.c %.py: %.i
-	$(SWIG) -python -keyword $<
+	$(SWIG) -O -Wall -python -keyword $<
 
 # Python bindings
 build-python: lib/libldb.$(SHLIBEXT) ldb_wrap.c ldb.py

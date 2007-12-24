@@ -17,7 +17,7 @@ autoconf $IPATHS || exit 1
 
 rm -rf autom4te.cache
 
-swig -python ldb.i # Ignore errors, for now
+swig -O -Wall -python -keyword ldb.i # Ignore errors, for now
 
 echo "Now run ./configure and then make."
 exit 0

@@ -113,7 +113,7 @@ realdistclean: distclean
 	rm -f configure include/config.h.in
 
 tdb_wrap.c tdb.py: tdb.i
-	$(SWIG) -python -keyword tdb.i
+	$(SWIG) -O -Wall -python -keyword tdb.i
 
 build-python: libtdb.$(SHLIBEXT) tdb_wrap.c tdb.py
 	./setup.py build
