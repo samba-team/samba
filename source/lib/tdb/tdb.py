@@ -108,6 +108,20 @@ class tdb(object):
     def has_key(self, key):
         return self.exists(key) != 0
 
+    def fetch_uint32(self, key):
+        data = self.fetch(key)
+        if data is None:
+            return None
+        import struct
+        return struct.unpack("<L", data)[0]
+
+    def fetch_int32(self, key):
+        data = self.fetch(key)
+        if data is None:
+            return None
+        import struct
+        return struct.unpack("<l", data)[0]
+
 
     class TdbIterator:
         def __init__(self, tdb):
