@@ -60,12 +60,16 @@ typedef TDB_CONTEXT tdb;
    data.. */
 
 %typemap(in,noblock=1) TDB_DATA {
-	if (!PyString_Check($input)) {
+    if ($input == Py_None) {
+        $1.dsize = 0;
+        $1.dptr = NULL;
+    } else if (!PyString_Check($input)) {
 		PyErr_SetString(PyExc_TypeError, "string arg expected");
 		return NULL;
-	}
-	$1.dsize = PyString_Size($input);
-	$1.dptr = (uint8_t *)PyString_AsString($input);
+	} else {
+        $1.dsize = PyString_Size($input);
+        $1.dptr = (uint8_t *)PyString_AsString($input);
+    }
 }
 
 %typemap(out,noblock=1) TDB_DATA {
@@ -74,7 +78,7 @@ typedef TDB_CONTEXT tdb;
 	} else {
 		$result = PyString_FromStringAndSize((const char *)$1.dptr, $1.dsize);
 		free($1.dptr);
-	}
+    }
 }
 
 /* Treat a mode_t as an unsigned integer */
@@ -146,8 +150,8 @@ enum TDB_ERROR {
 
 typedef struct tdb_context {
     %extend {
-        tdb(const char *name, int hash_size, int tdb_flags, int open_flags, mode_t mode) {
-            return tdb_open(name, hash_size, tdb_flags, open_flags, mode);
+        tdb(const char *name, int hash_size, int tdb_flags, int flags, mode_t mode) {
+            return tdb_open(name, hash_size, tdb_flags, flags, mode);
         }
         enum TDB_ERROR error();
         ~tdb() { tdb_close($self); }
@@ -201,6 +205,20 @@ typedef struct tdb_context {
 
     def has_key(self, key):
         return self.exists(key) != 0
+
+    def fetch_uint32(self, key):
+        data = self.fetch(key)
+        if data is None:
+            return None
+        import struct
+        return struct.unpack("<L", data)[0]
+
+    def fetch_int32(self, key):
+        data = self.fetch(key)
+        if data is None:
+            return None
+        import struct
+        return struct.unpack("<l", data)[0]
 
     # Tdb iterator
     class TdbIterator:

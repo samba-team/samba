@@ -22,16 +22,20 @@ from samba.samba3 import GroupMappingDatabase, Registry, PolicyDatabase
 import os
 
 DATADIR=os.path.join(os.path.dirname(__file__), "../../../../../testdata/samba3")
+print "Samba 3 data dir: %s" % DATADIR
 
 class RegistryTestCase(unittest.TestCase):
     def setUp(self):
         self.registry = Registry(os.path.join(DATADIR, "registry.tdb"))
 
+    def tearDown(self):
+        self.registry.close()
+
     def test_length(self):
         self.assertEquals(28, len(self.registry))
 
     def test_keys(self):
-        self.assertEquals([], self.registry.keys())
+        self.assertTrue("HKLM" in self.registry.keys())
 
 
 class PolicyTestCase(unittest.TestCase):
@@ -45,10 +49,10 @@ class PolicyTestCase(unittest.TestCase):
         self.assertEquals(self.policy.refuse_machine_password_change, 0)
         self.assertEquals(self.policy.reset_count_minutes, 0)
         self.assertEquals(self.policy.disconnect_time, -1)
-        self.assertEquals(self.policy.user_must_logon_to_change_password, 0)
+        self.assertEquals(self.policy.user_must_logon_to_change_password, None)
         self.assertEquals(self.policy.password_history, 0)
         self.assertEquals(self.policy.lockout_duration, 0)
-        self.assertEquals(self.policy.bad_lockout_minutes, 0)
+        self.assertEquals(self.policy.bad_lockout_minutes, None)
 
 
 class GroupsTestCase(unittest.TestCase):

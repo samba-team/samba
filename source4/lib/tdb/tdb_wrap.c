@@ -2747,8 +2747,8 @@ SWIG_AsVal_int (PyObject * obj, int *val)
   return res;
 }
 
-SWIGINTERN tdb *new_tdb(char const *name,int hash_size,int tdb_flags,int open_flags,mode_t mode){
-            return tdb_open(name, hash_size, tdb_flags, open_flags, mode);
+SWIGINTERN tdb *new_tdb(char const *name,int hash_size,int tdb_flags,int flags,mode_t mode){
+            return tdb_open(name, hash_size, tdb_flags, flags, mode);
         }
 SWIGINTERN void delete_tdb(tdb *self){ tdb_close(self); }
 
@@ -2818,12 +2818,11 @@ SWIGINTERN PyObject *_wrap_new_Tdb(PyObject *SWIGUNUSEDPARM(self), PyObject *arg
   PyObject * obj3 = 0 ;
   PyObject * obj4 = 0 ;
   char *  kwnames[] = {
-    (char *) "name",(char *) "hash_size",(char *) "tdb_flags",(char *) "open_flags",(char *) "mode", NULL 
+    (char *) "name",(char *) "hash_size",(char *) "tdb_flags",(char *) "flags",(char *) "mode", NULL 
   };
   
   arg2 = 0;
   arg3 = TDB_DEFAULT;
-  arg4 = O_RDWR;
   arg5 = 0600;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOOO:new_Tdb",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
   res1 = SWIG_AsCharPtrAndSize(obj0, &buf1, NULL, &alloc1);
@@ -2964,18 +2963,26 @@ SWIGINTERN PyObject *_wrap_tdb_append(PyObject *SWIGUNUSEDPARM(self), PyObject *
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_append" "', argument " "1"" of type '" "tdb *""'"); 
   }
   arg1 = (tdb *)(argp1);
-  if (!PyString_Check(obj1)) {
+  if (obj1 == Py_None) {
+    (&arg2)->dsize = 0;
+    (&arg2)->dptr = NULL;
+  } else if (!PyString_Check(obj1)) {
     PyErr_SetString(PyExc_TypeError, "string arg expected");
     return NULL;
+  } else {
+    (&arg2)->dsize = PyString_Size(obj1);
+    (&arg2)->dptr = (uint8_t *)PyString_AsString(obj1);
   }
-  (&arg2)->dsize = PyString_Size(obj1);
-  (&arg2)->dptr = (uint8_t *)PyString_AsString(obj1);
-  if (!PyString_Check(obj2)) {
+  if (obj2 == Py_None) {
+    (&arg3)->dsize = 0;
+    (&arg3)->dptr = NULL;
+  } else if (!PyString_Check(obj2)) {
     PyErr_SetString(PyExc_TypeError, "string arg expected");
     return NULL;
+  } else {
+    (&arg3)->dsize = PyString_Size(obj2);
+    (&arg3)->dptr = (uint8_t *)PyString_AsString(obj2);
   }
-  (&arg3)->dsize = PyString_Size(obj2);
-  (&arg3)->dptr = (uint8_t *)PyString_AsString(obj2);
   result = (int)tdb_append(arg1,arg2,arg3);
   resultobj = SWIG_From_int((int)(result));
   return resultobj;
@@ -3026,12 +3033,16 @@ SWIGINTERN PyObject *_wrap_tdb_fetch(PyObject *SWIGUNUSEDPARM(self), PyObject *a
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_fetch" "', argument " "1"" of type '" "tdb *""'"); 
   }
   arg1 = (tdb *)(argp1);
-  if (!PyString_Check(obj1)) {
+  if (obj1 == Py_None) {
+    (&arg2)->dsize = 0;
+    (&arg2)->dptr = NULL;
+  } else if (!PyString_Check(obj1)) {
     PyErr_SetString(PyExc_TypeError, "string arg expected");
     return NULL;
+  } else {
+    (&arg2)->dsize = PyString_Size(obj1);
+    (&arg2)->dptr = (uint8_t *)PyString_AsString(obj1);
   }
-  (&arg2)->dsize = PyString_Size(obj1);
-  (&arg2)->dptr = (uint8_t *)PyString_AsString(obj1);
   result = tdb_fetch(arg1,arg2);
   if ((&result)->dptr == NULL && (&result)->dsize == 0) {
     resultobj = Py_None;
@@ -3064,12 +3075,16 @@ SWIGINTERN PyObject *_wrap_tdb_delete(PyObject *SWIGUNUSEDPARM(self), PyObject *
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_delete" "', argument " "1"" of type '" "tdb *""'"); 
   }
   arg1 = (tdb *)(argp1);
-  if (!PyString_Check(obj1)) {
+  if (obj1 == Py_None) {
+    (&arg2)->dsize = 0;
+    (&arg2)->dptr = NULL;
+  } else if (!PyString_Check(obj1)) {
     PyErr_SetString(PyExc_TypeError, "string arg expected");
     return NULL;
+  } else {
+    (&arg2)->dsize = PyString_Size(obj1);
+    (&arg2)->dptr = (uint8_t *)PyString_AsString(obj1);
   }
-  (&arg2)->dsize = PyString_Size(obj1);
-  (&arg2)->dptr = (uint8_t *)PyString_AsString(obj1);
   result = (int)tdb_delete(arg1,arg2);
   resultobj = SWIG_From_int((int)(result));
   return resultobj;
@@ -3104,18 +3119,26 @@ SWIGINTERN PyObject *_wrap_tdb_store(PyObject *SWIGUNUSEDPARM(self), PyObject *a
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_store" "', argument " "1"" of type '" "tdb *""'"); 
   }
   arg1 = (tdb *)(argp1);
-  if (!PyString_Check(obj1)) {
+  if (obj1 == Py_None) {
+    (&arg2)->dsize = 0;
+    (&arg2)->dptr = NULL;
+  } else if (!PyString_Check(obj1)) {
     PyErr_SetString(PyExc_TypeError, "string arg expected");
     return NULL;
+  } else {
+    (&arg2)->dsize = PyString_Size(obj1);
+    (&arg2)->dptr = (uint8_t *)PyString_AsString(obj1);
   }
-  (&arg2)->dsize = PyString_Size(obj1);
-  (&arg2)->dptr = (uint8_t *)PyString_AsString(obj1);
-  if (!PyString_Check(obj2)) {
+  if (obj2 == Py_None) {
+    (&arg3)->dsize = 0;
+    (&arg3)->dptr = NULL;
+  } else if (!PyString_Check(obj2)) {
     PyErr_SetString(PyExc_TypeError, "string arg expected");
     return NULL;
+  } else {
+    (&arg3)->dsize = PyString_Size(obj2);
+    (&arg3)->dptr = (uint8_t *)PyString_AsString(obj2);
   }
-  (&arg3)->dsize = PyString_Size(obj2);
-  (&arg3)->dptr = (uint8_t *)PyString_AsString(obj2);
   if (obj3) {
     ecode4 = SWIG_AsVal_int(obj3, &val4);
     if (!SWIG_IsOK(ecode4)) {
@@ -3150,12 +3173,16 @@ SWIGINTERN PyObject *_wrap_tdb_exists(PyObject *SWIGUNUSEDPARM(self), PyObject *
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_exists" "', argument " "1"" of type '" "tdb *""'"); 
   }
   arg1 = (tdb *)(argp1);
-  if (!PyString_Check(obj1)) {
+  if (obj1 == Py_None) {
+    (&arg2)->dsize = 0;
+    (&arg2)->dptr = NULL;
+  } else if (!PyString_Check(obj1)) {
     PyErr_SetString(PyExc_TypeError, "string arg expected");
     return NULL;
+  } else {
+    (&arg2)->dsize = PyString_Size(obj1);
+    (&arg2)->dptr = (uint8_t *)PyString_AsString(obj1);
   }
-  (&arg2)->dsize = PyString_Size(obj1);
-  (&arg2)->dptr = (uint8_t *)PyString_AsString(obj1);
   result = (int)tdb_exists(arg1,arg2);
   resultobj = SWIG_From_int((int)(result));
   return resultobj;
@@ -3211,12 +3238,16 @@ SWIGINTERN PyObject *_wrap_tdb_nextkey(PyObject *SWIGUNUSEDPARM(self), PyObject 
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_nextkey" "', argument " "1"" of type '" "tdb *""'"); 
   }
   arg1 = (tdb *)(argp1);
-  if (!PyString_Check(obj1)) {
+  if (obj1 == Py_None) {
+    (&arg2)->dsize = 0;
+    (&arg2)->dptr = NULL;
+  } else if (!PyString_Check(obj1)) {
     PyErr_SetString(PyExc_TypeError, "string arg expected");
     return NULL;
+  } else {
+    (&arg2)->dsize = PyString_Size(obj1);
+    (&arg2)->dptr = (uint8_t *)PyString_AsString(obj1);
   }
-  (&arg2)->dsize = PyString_Size(obj1);
-  (&arg2)->dptr = (uint8_t *)PyString_AsString(obj1);
   result = tdb_nextkey(arg1,arg2);
   if ((&result)->dptr == NULL && (&result)->dsize == 0) {
     resultobj = Py_None;

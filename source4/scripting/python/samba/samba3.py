@@ -22,12 +22,16 @@
 REGISTRY_VALUE_PREFIX = "SAMBA_REGVAL"
 REGISTRY_DB_VERSION = 1
 
+import os
 import tdb
 
 class Registry:
     """Simple read-only support for reading the Samba3 registry."""
     def __init__(self, file):
-        self.tdb = tdb.Tdb(file)
+        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
+
+    def close(self):
+        self.tdb.close()
 
     def __len__(self):
         """Return the number of keys."""
@@ -38,7 +42,7 @@ class Registry:
         return [k.rstrip("\x00") for k in self.tdb.keys() if not k.startswith(REGISTRY_VALUE_PREFIX)]
 
     def subkeys(self, key):
-        data = self.tdb.get(key)
+        data = self.tdb.get("%s\x00" % key)
         if data is None:
             return []
         # FIXME: Parse data
@@ -46,7 +50,7 @@ class Registry:
 
     def values(self, key):
         """Return a dictionary with the values set for a specific key."""
-        data = self.tdb.get("%s/%s" % (REGISTRY_VALUE_PREFIX, key))
+        data = self.tdb.get("%s/%s\x00" % (REGISTRY_VALUE_PREFIX, key))
         if data is None:
             return {}
         # FIXME: Parse data
@@ -55,17 +59,17 @@ class Registry:
 
 class PolicyDatabase:
     def __init__(self, file):
-        self.tdb = tdb.Tdb(file)
-        self.min_password_length = tdb.fetch_uint32("min password length")
-        self.user_must_logon_to_change_password = tdb.fetch_uint32("password history")
-        self.user_must_logon_to_change_password = tdb.fetch_uint32("user must logon to change pasword")
-        self.maximum_password_age = tdb.fetch_uint32("maximum password age")
-        self.minimum_password_age = tdb.fetch_uint32("minimum password age")
-        self.lockout_duration = tdb.fetch_uint32("lockout duration")
-        self.reset_count_minutes = tdb.fetch_uint32("reset count minutes")
-        self.bad_lockout_minutes = tdb.fetch_uint32("bad lockout minutes")
-        self.disconnect_time = tdb.fetch_uint32("disconnect time")
-        self.refuse_machine_password_change = tdb.fetch_uint32("refuse machine password change")
+        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
+        self.min_password_length = self.tdb.fetch_uint32("min password length\x00")
+        self.password_history = self.tdb.fetch_uint32("password history\x00")
+        self.user_must_logon_to_change_password = self.tdb.fetch_uint32("user must logon to change pasword\x00")
+        self.maximum_password_age = self.tdb.fetch_uint32("maximum password age\x00")
+        self.minimum_password_age = self.tdb.fetch_uint32("minimum password age\x00")
+        self.lockout_duration = self.tdb.fetch_uint32("lockout duration\x00")
+        self.reset_count_minutes = self.tdb.fetch_uint32("reset count minutes\x00")
+        self.bad_lockout_minutes = self.tdb.fetch_uint32("bad lockout minutes\x00")
+        self.disconnect_time = self.tdb.fetch_int32("disconnect time\x00")
+        self.refuse_machine_password_change = self.tdb.fetch_uint32("refuse machine password change\x00")
 
         # FIXME: Read privileges as well
 
@@ -83,7 +87,7 @@ MEMBEROF_PREFIX = "MEMBEROF/"
 
 class GroupMappingDatabase:
     def __init__(self, file): 
-        self.tdb = tdb.Tdb(file)
+        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
 
 
 # High water mark keys
@@ -95,13 +99,13 @@ IDMAP_VERSION = 2
 
 class IdmapDatabase:
     def __init__(self, file):
-        self.tdb = tdb.Tdb(file)
+        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
         assert self.tdb.fetch_int32("IDMAP_VERSION") == IDMAP_VERSION
 
 
 class SecretsDatabase:
     def __init__(self, file):
-        self.tdb = tdb.Tdb(file)
+        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
         self.domains = {}
         for k, v in self.tdb.items():
             if k == "SECRETS/AUTH_PASSWORD":
@@ -138,7 +142,7 @@ SHARE_DATABASE_VERSION_V2 = 2
 
 class ShareInfoDatabase:
     def __init__(self, file):
-        self.tdb = tdb.Tdb(file)
+        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
         assert self.tdb.fetch_int32("INFO/version") in (SHARE_DATABASE_VERSION_V1, SHARE_DATABASE_VERSION_V2)
 
     def get_secdesc(self, name):
@@ -189,7 +193,7 @@ class Smbpasswd:
 
 class TdbSam:
     def __init__(self, file):
-        self.tdb = tdb.Tdb(file)
+        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
 
 
 class WinsDatabase:
