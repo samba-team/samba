@@ -3014,7 +3014,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_tdb_fetch(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_tdb_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   tdb *arg1 = (tdb *) 0 ;
   TDB_DATA arg2 ;
@@ -3027,10 +3027,10 @@ SWIGINTERN PyObject *_wrap_tdb_fetch(PyObject *SWIGUNUSEDPARM(self), PyObject *a
     (char *) "self",(char *) "key", NULL 
   };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:tdb_fetch",kwnames,&obj0,&obj1)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:tdb_get",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_tdb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_fetch" "', argument " "1"" of type '" "tdb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "tdb_get" "', argument " "1"" of type '" "tdb *""'"); 
   }
   arg1 = (tdb *)(argp1);
   if (obj1 == Py_None) {
@@ -3607,7 +3607,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"tdb_close", (PyCFunction)_wrap_tdb_close, METH_O, NULL},
 	 { (char *)"tdb_append", (PyCFunction) _wrap_tdb_append, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"tdb_errorstr", (PyCFunction)_wrap_tdb_errorstr, METH_O, NULL},
-	 { (char *)"tdb_fetch", (PyCFunction) _wrap_tdb_fetch, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"tdb_get", (PyCFunction) _wrap_tdb_get, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"tdb_delete", (PyCFunction) _wrap_tdb_delete, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"tdb_store", (PyCFunction) _wrap_tdb_store, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"tdb_exists", (PyCFunction) _wrap_tdb_exists, METH_VARARGS | METH_KEYWORDS, NULL},
