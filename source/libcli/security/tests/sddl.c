@@ -96,9 +96,9 @@ struct torture_suite *torture_local_sddl(TALLOC_CTX *mem_ctx)
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(examples); i++) {
-		torture_suite_add_simple_tcase(suite, 
-								talloc_asprintf(suite, "%d", i), 
-								test_sddl, examples[i]);
+		torture_suite_add_simple_tcase_const(suite,
+				talloc_asprintf(suite, "%d", i),
+				test_sddl, examples[i]);
 	}
 
 	return suite;

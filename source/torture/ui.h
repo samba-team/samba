@@ -140,67 +140,69 @@ struct torture_suite
 };
 
 /** Create a new torture suite */
-struct torture_suite *torture_suite_create(TALLOC_CTX *mem_ctx, 
-										   const char *name);
+struct torture_suite *torture_suite_create(TALLOC_CTX *mem_ctx,
+		const char *name);
 
 /** Change the setup and teardown functions for a testcase */
-void torture_tcase_set_fixture(struct torture_tcase *tcase, 
+void torture_tcase_set_fixture(struct torture_tcase *tcase,
 		bool (*setup) (struct torture_context *, void **),
 		bool (*teardown) (struct torture_context *, void *));
 
 /* Add another test to run for a particular testcase */
-struct torture_test *torture_tcase_add_test(struct torture_tcase *tcase, 
-		const char *name, 
-		bool (*run) (struct torture_context *test, const void *tcase_data,
-					 const void *test_data),
+struct torture_test *torture_tcase_add_test_const(struct torture_tcase *tcase,
+		const char *name,
+		bool (*run) (struct torture_context *test,
+			const void *tcase_data, const void *test_data),
 		const void *test_data);
 
 /* Add a testcase to a testsuite */
-struct torture_tcase *torture_suite_add_tcase(struct torture_suite *suite, 
+struct torture_tcase *torture_suite_add_tcase(struct torture_suite *suite,
 							 const char *name);
 
-/* Convenience wrapper that adds a testcase against only one 
+/* Convenience wrapper that adds a testcase against only one
  * test will be run */
-struct torture_tcase *torture_suite_add_simple_tcase(
-		struct torture_suite *suite, 
+struct torture_tcase *torture_suite_add_simple_tcase_const(
+		struct torture_suite *suite,
 		const char *name,
-		bool (*run) (struct torture_context *test, const void *test_data),
+		bool (*run) (struct torture_context *test,
+			const void *test_data),
 		const void *data);
 
-/* Convenience function that adds a test which only 
+/* Convenience function that adds a test which only
  * gets the test case data */
-struct torture_test *torture_tcase_add_simple_test(
+struct torture_test *torture_tcase_add_simple_test_const(
 		struct torture_tcase *tcase,
 		const char *name,
-		bool (*run) (struct torture_context *test, const void *tcase_data));
+		bool (*run) (struct torture_context *test,
+			const void *tcase_data));
 
-/* Convenience wrapper that adds a test that doesn't need any 
+/* Convenience wrapper that adds a test that doesn't need any
  * testcase data */
 struct torture_tcase *torture_suite_add_simple_test(
-		struct torture_suite *suite, 
+		struct torture_suite *suite,
 		const char *name,
 		bool (*run) (struct torture_context *test));
 
 /* Add a child testsuite to an existing testsuite */
 bool torture_suite_add_suite(struct torture_suite *suite,
-							 struct torture_suite *child);
+		struct torture_suite *child);
 
 /* Run the specified testsuite recursively */
-bool torture_run_suite(struct torture_context *context, 
+bool torture_run_suite(struct torture_context *context,
 					   struct torture_suite *suite);
 
 /* Run the specified testcase */
-bool torture_run_tcase(struct torture_context *context, 
+bool torture_run_tcase(struct torture_context *context,
 					   struct torture_tcase *tcase);
 
 /* Run the specified test */
-bool torture_run_test(struct torture_context *context, 
+bool torture_run_test(struct torture_context *context,
 					  struct torture_tcase *tcase,
 					  struct torture_test *test);
 
 void torture_comment(struct torture_context *test, const char *comment, ...) PRINTF_ATTRIBUTE(2,3);
 void torture_warning(struct torture_context *test, const char *comment, ...) PRINTF_ATTRIBUTE(2,3);
-void torture_result(struct torture_context *test, 
+void torture_result(struct torture_context *test,
 			enum torture_result, const char *reason, ...) PRINTF_ATTRIBUTE(3,4);
 
 #define torture_assert(torture_ctx,expr,cmt) \

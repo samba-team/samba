@@ -560,42 +560,43 @@ static bool setup_local_registry(struct torture_context *tctx, void **data)
 
 static void tcase_add_tests(struct torture_tcase *tcase)
 {
-	torture_tcase_add_simple_test(tcase, "list_subkeys",
-				      test_list_subkeys);
-	torture_tcase_add_simple_test(tcase, "get_predefined_key",
-				      test_get_predefined);
-	torture_tcase_add_simple_test(tcase, "get_predefined_key",
-				      test_get_predefined_unknown);
-	torture_tcase_add_simple_test(tcase, "create_key",
-				      test_create_subkey);
-	torture_tcase_add_simple_test(tcase, "create_key",
-				      test_create_nested_subkey);
-	torture_tcase_add_simple_test(tcase, "key_add_abs",
-				      test_key_add_abs);
-	torture_tcase_add_simple_test(tcase, "key_add_abs_top",
-				      test_key_add_abs_top);
-	torture_tcase_add_simple_test(tcase, "set_value",
-				      test_set_value);
-	torture_tcase_add_simple_test(tcase, "get_value",
-				      test_get_value);
-	torture_tcase_add_simple_test(tcase, "list_values",
-				      test_list_values);
-	torture_tcase_add_simple_test(tcase, "del_key",
-				      test_del_key);
-	torture_tcase_add_simple_test(tcase, "del_value",
-				      test_del_value);
-	torture_tcase_add_simple_test(tcase, "flush_key",
-				      test_flush_key);
-	torture_tcase_add_simple_test(tcase, "query_key",
-				      test_query_key);
-	torture_tcase_add_simple_test(tcase, "query_key_nums",
-				      test_query_key_nums);
-	torture_tcase_add_simple_test(tcase, "test_predef_key_by_name",
-				      test_predef_key_by_name);
-	torture_tcase_add_simple_test(tcase, "security",
-				      test_security);
-	torture_tcase_add_simple_test(tcase, "test_predef_key_by_name_invalid",
-				      test_predef_key_by_name_invalid);
+	torture_tcase_add_simple_test_const(tcase, "list_subkeys",
+						test_list_subkeys);
+	torture_tcase_add_simple_test_const(tcase, "get_predefined_key",
+						test_get_predefined);
+	torture_tcase_add_simple_test_const(tcase, "get_predefined_key",
+						test_get_predefined_unknown);
+	torture_tcase_add_simple_test_const(tcase, "create_key",
+						test_create_subkey);
+	torture_tcase_add_simple_test_const(tcase, "create_key",
+						test_create_nested_subkey);
+	torture_tcase_add_simple_test_const(tcase, "key_add_abs",
+						test_key_add_abs);
+	torture_tcase_add_simple_test_const(tcase, "key_add_abs_top",
+						test_key_add_abs_top);
+	torture_tcase_add_simple_test_const(tcase, "set_value",
+						test_set_value);
+	torture_tcase_add_simple_test_const(tcase, "get_value",
+						test_get_value);
+	torture_tcase_add_simple_test_const(tcase, "list_values",
+						test_list_values);
+	torture_tcase_add_simple_test_const(tcase, "del_key",
+						test_del_key);
+	torture_tcase_add_simple_test_const(tcase, "del_value",
+						test_del_value);
+	torture_tcase_add_simple_test_const(tcase, "flush_key",
+						test_flush_key);
+	torture_tcase_add_simple_test_const(tcase, "query_key",
+						test_query_key);
+	torture_tcase_add_simple_test_const(tcase, "query_key_nums",
+						test_query_key_nums);
+	torture_tcase_add_simple_test_const(tcase, "test_predef_key_by_name",
+						test_predef_key_by_name);
+	torture_tcase_add_simple_test_const(tcase, "security",
+						test_security);
+	torture_tcase_add_simple_test_const(tcase,
+			"test_predef_key_by_name_invalid",
+			test_predef_key_by_name_invalid);
 }
 
 struct torture_suite *torture_registry_registry(TALLOC_CTX *mem_ctx)

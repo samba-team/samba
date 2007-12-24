@@ -113,11 +113,11 @@ void torture_tcase_set_fixture(struct torture_tcase *tcase,
 	tcase->teardown = teardown;
 }
 
-static bool wrap_test_with_testcase(struct torture_context *torture_ctx,
+static bool wrap_test_with_testcase_const(struct torture_context *torture_ctx,
 				    struct torture_tcase *tcase,
 				    struct torture_test *test)
 {
-	bool (*fn) (struct torture_context *, 
+	bool (*fn) (struct torture_context *,
 		    const void *tcase_data,
 		    const void *test_data);
 
@@ -126,16 +126,17 @@ static bool wrap_test_with_testcase(struct torture_context *torture_ctx,
 	return fn(torture_ctx, tcase->data, test->data);
 }
 
-struct torture_test *torture_tcase_add_test(struct torture_tcase *tcase, 
-					    const char *name, 
-					    bool (*run) (struct torture_context *, const void *tcase_data, const void *test_data),
-					    const void *data)
+struct torture_test *torture_tcase_add_test_const(struct torture_tcase *tcase,
+		const char *name,
+		bool (*run) (struct torture_context *, const void *tcase_data,
+			const void *test_data),
+		const void *data)
 {
 	struct torture_test *test = talloc(tcase, struct torture_test);
 
 	test->name = talloc_strdup(test, name);
 	test->description = NULL;
-	test->run = wrap_test_with_testcase;
+	test->run = wrap_test_with_testcase_const;
 	test->fn = run;
 	test->dangerous = false;
 	test->data = data;
@@ -400,9 +401,10 @@ const char *torture_setting_string(struct torture_context *test,
 	return ret;
 }
 
-static bool wrap_test_with_simple_tcase(struct torture_context *torture_ctx,
-					struct torture_tcase *tcase,
-					struct torture_test *test)
+static bool wrap_test_with_simple_tcase_const (
+		struct torture_context *torture_ctx,
+		struct torture_tcase *tcase,
+		struct torture_test *test)
 {
 	bool (*fn) (struct torture_context *, const void *tcase_data);
 
@@ -411,21 +413,21 @@ static bool wrap_test_with_simple_tcase(struct torture_context *torture_ctx,
 	return fn(torture_ctx, test->data);
 }
 
-struct torture_tcase *torture_suite_add_simple_tcase(
+struct torture_tcase *torture_suite_add_simple_tcase_const(
 		struct torture_suite *suite, const char *name,
 		bool (*run) (struct torture_context *test, const void *),
 		const void *data)
 {
 	struct torture_tcase *tcase;
-	struct torture_test *test; 
-	
+	struct torture_test *test;
+
 	tcase = torture_suite_add_tcase(suite, name);
 
 	test = talloc(tcase, struct torture_test);
 
 	test->name = talloc_strdup(test, name);
 	test->description = NULL;
-	test->run = wrap_test_with_simple_tcase;
+	test->run = wrap_test_with_simple_tcase_const;
 	test->fn = run;
 	test->data = data;
 	test->dangerous = false;
@@ -496,7 +498,7 @@ struct torture_suite *torture_find_suite(struct torture_suite *parent,
 	return NULL;
 }
 
-static bool wrap_test_with_simple_test(struct torture_context *torture_ctx,
+static bool wrap_test_with_simple_test_const(struct torture_context *torture_ctx,
 				       struct torture_tcase *tcase,
 				       struct torture_test *test)
 {
@@ -507,18 +509,19 @@ static bool wrap_test_with_simple_test(struct torture_context *torture_ctx,
 	return fn(torture_ctx, tcase->data);
 }
 
-struct torture_test *torture_tcase_add_simple_test(
+struct torture_test *torture_tcase_add_simple_test_const(
 		struct torture_tcase *tcase,
 		const char *name,
-		bool (*run) (struct torture_context *test, const void *tcase_data))
+		bool (*run) (struct torture_context *test,
+			const void *tcase_data))
 {
-	struct torture_test *test; 
-	
+	struct torture_test *test;
+
 	test = talloc(tcase, struct torture_test);
 
 	test->name = talloc_strdup(test, name);
 	test->description = NULL;
-	test->run = wrap_test_with_simple_test;
+	test->run = wrap_test_with_simple_test_const;
 	test->fn = run;
 	test->data = NULL;
 	test->dangerous = false;

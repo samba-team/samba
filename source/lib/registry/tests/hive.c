@@ -264,26 +264,26 @@ static bool test_list_values(struct torture_context *tctx,
 
 static void tcase_add_tests(struct torture_tcase *tcase)
 {
-	torture_tcase_add_simple_test(tcase, "del_nonexistant_key",
-				      test_del_nonexistant_key);
-	torture_tcase_add_simple_test(tcase, "add_subkey",
-				      test_add_subkey);
-	torture_tcase_add_simple_test(tcase, "flush_key",
-				      test_flush_key);
-	torture_tcase_add_simple_test(tcase, "get_info",
-				      test_keyinfo_root);
-	torture_tcase_add_simple_test(tcase, "get_info_nums",
-				      test_keyinfo_nums);
-	torture_tcase_add_simple_test(tcase, "set_value",
-				      test_set_value);
-	torture_tcase_add_simple_test(tcase, "get_value",
-				      test_get_value);
-	torture_tcase_add_simple_test(tcase, "list_values",
-				      test_list_values);
-	torture_tcase_add_simple_test(tcase, "del_key",
-				      test_del_key);
-	torture_tcase_add_simple_test(tcase, "del_value",
-				      test_del_value);
+	torture_tcase_add_simple_test_const(tcase, "del_nonexistant_key",
+						test_del_nonexistant_key);
+	torture_tcase_add_simple_test_const(tcase, "add_subkey",
+						test_add_subkey);
+	torture_tcase_add_simple_test_const(tcase, "flush_key",
+						test_flush_key);
+	torture_tcase_add_simple_test_const(tcase, "get_info",
+						test_keyinfo_root);
+	torture_tcase_add_simple_test_const(tcase, "get_info_nums",
+						test_keyinfo_nums);
+	torture_tcase_add_simple_test_const(tcase, "set_value",
+						test_set_value);
+	torture_tcase_add_simple_test_const(tcase, "get_value",
+						test_get_value);
+	torture_tcase_add_simple_test_const(tcase, "list_values",
+						test_list_values);
+	torture_tcase_add_simple_test_const(tcase, "del_key",
+						test_del_key);
+	torture_tcase_add_simple_test_const(tcase, "del_value",
+						test_del_value);
 }
 
 static bool hive_setup_dir(struct torture_context *tctx, void **data)

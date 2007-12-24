@@ -260,11 +260,12 @@ struct torture_suite *torture_local_irpc(TALLOC_CTX *mem_ctx)
 	tcase->setup = irpc_setup;
 
 	for (i = 0; i < 5; i++) {
-		torture_tcase_add_test(tcase, "addone", test_addone, (void *)values[i]);
+		torture_tcase_add_test_const(tcase, "addone", test_addone,
+				(void *)values[i]);
 	}
-						   
-	torture_tcase_add_test(tcase, "echodata", test_echodata, NULL);
-	torture_tcase_add_test(tcase, "speed", test_speed, NULL);
+
+	torture_tcase_add_test_const(tcase, "echodata", test_echodata, NULL);
+	torture_tcase_add_test_const(tcase, "speed", test_speed, NULL);
 
 	return suite;
 }

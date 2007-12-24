@@ -168,12 +168,16 @@ static bool test_double_create(struct torture_context *tctx,
 
 static void tcase_add_share_tests(struct torture_tcase *tcase)
 {
-	torture_tcase_add_test(tcase, "list_empty", test_list_empty, NULL);
-	torture_tcase_add_test(tcase, "share_create", test_create, NULL);
-	torture_tcase_add_test(tcase, "share_remove", test_share_remove, NULL);
-	torture_tcase_add_test(tcase, "share_remove_invalid", test_share_remove_invalid, NULL);
-	torture_tcase_add_test(tcase, "share_create_invalid", test_create_invalid, NULL);
-	torture_tcase_add_test(tcase, "share_double_create", test_double_create, NULL);
+	torture_tcase_add_test_const(tcase, "list_empty", test_list_empty,NULL);
+	torture_tcase_add_test_const(tcase, "share_create", test_create, NULL);
+	torture_tcase_add_test_const(tcase, "share_remove", test_share_remove,
+			NULL);
+	torture_tcase_add_test_const(tcase, "share_remove_invalid",
+			test_share_remove_invalid, NULL);
+	torture_tcase_add_test_const(tcase, "share_create_invalid",
+			test_create_invalid, NULL);
+	torture_tcase_add_test_const(tcase, "share_double_create",
+			test_double_create, NULL);
 }
 
 static bool setup_ldb(struct torture_context *tctx, void **data)

@@ -93,9 +93,8 @@ struct torture_suite *torture_local_util_strlist(TALLOC_CTX *mem_ctx)
 	int i;
 
 	for (i = 0; test_lists_shell_strings[i]; i++) {
-		torture_suite_add_simple_tcase(suite, 
-									   "lists_shell", test_lists_shell,
-									   &test_lists_shell_strings[i]);
+		torture_suite_add_simple_tcase_const(suite, "lists_shell",
+				test_lists_shell, &test_lists_shell_strings[i]);
 	}
 
 	torture_suite_add_simple_test(suite, "list_copy", test_list_copy);
