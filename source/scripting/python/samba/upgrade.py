@@ -447,7 +447,6 @@ def upgrade_smbconf(oldconf,mark):
 
 def upgrade(subobj, samba3, message, paths, session_info, credentials):
     ret = 0
-    lp = loadparm_init()
     samdb = Ldb(paths.samdb, session_info=session_info, credentials=credentials)
 
     message("Writing configuration")
@@ -455,8 +454,7 @@ def upgrade(subobj, samba3, message, paths, session_info, credentials):
     newconf.save(paths.smbconf)
 
     message("Importing account policies")
-    ldif = upgrade_sam_policy(samba3,subobj.BASEDN)
-    samdb.modify(ldif)
+    samdb.modify_ldif(upgrade_sam_policy(samba3,subobj.BASEDN))
     regdb = Ldb(paths.hklm)
 
     regdb.modify("""
