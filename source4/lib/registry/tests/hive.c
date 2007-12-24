@@ -61,11 +61,10 @@ static bool test_keyinfo_root(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_keyinfo_nums(struct torture_context *tctx,
-			      const void *test_data)
+static bool test_keyinfo_nums(struct torture_context *tctx, void *test_data)
 {
 	uint32_t num_subkeys, num_values;
-	const struct hive_key *root = (const struct hive_key *)test_data;
+	struct hive_key *root = (struct hive_key *)test_data;
 	WERROR error;
 	struct hive_key *subkey;
 	uint32_t data = 42;
@@ -111,10 +110,9 @@ static bool test_add_subkey(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_flush_key(struct torture_context *tctx,
-			   const void *test_data)
+static bool test_flush_key(struct torture_context *tctx, void *test_data)
 {
-	const struct hive_key *root = (const struct hive_key *)test_data;
+	struct hive_key *root = (struct hive_key *)test_data;
 
 	torture_assert_werr_ok(tctx, hive_key_flush(root), "flush key");
 
@@ -268,11 +266,11 @@ static void tcase_add_tests(struct torture_tcase *tcase)
 						test_del_nonexistant_key);
 	torture_tcase_add_simple_test_const(tcase, "add_subkey",
 						test_add_subkey);
-	torture_tcase_add_simple_test_const(tcase, "flush_key",
+	torture_tcase_add_simple_test(tcase, "flush_key",
 						test_flush_key);
 	torture_tcase_add_simple_test_const(tcase, "get_info",
 						test_keyinfo_root);
-	torture_tcase_add_simple_test_const(tcase, "get_info_nums",
+	torture_tcase_add_simple_test(tcase, "get_info_nums",
 						test_keyinfo_nums);
 	torture_tcase_add_simple_test_const(tcase, "set_value",
 						test_set_value);
