@@ -19,7 +19,7 @@
 
 import unittest
 from samba.samba3 import (GroupMappingDatabase, Registry, PolicyDatabase, SecretsDatabase, TdbSam,
-                          WinsDatabase)
+                          WinsDatabase, SmbpasswdFile, ACB_NORMAL, IdmapDatabase)
 import os
 
 DATADIR=os.path.join(os.path.dirname(__file__), "../../../../../testdata/samba3")
@@ -109,6 +109,51 @@ class WinsDatabaseTestCase(unittest.TestCase):
     def tearDown(self):
         self.winsdb.close()
 
-# FIXME: smbpasswd
-# FIXME: idmapdb
-# FIXME: Shares
+class SmbpasswdTestCase(unittest.TestCase):
+    def setUp(self):
+        self.samdb = SmbpasswdFile(os.path.join(DATADIR, "smbpasswd"))
+
+    def test_length(self):
+        self.assertEquals(3, len(self.samdb))
+
+    def test_get_user(self):
+        self.assertEquals((0, "552902031BEDE9EFAAD3B435B51404EE", "878D8014606CDA29677A44EFA1353FC7", ACB_NORMAL, int(1125418267)), self.samdb["rootpw"])
+
+    def tearDown(self):
+        self.samdb.close()
+
+
+class IdmapDbTestCase(unittest.TestCase):
+    def setUp(self):
+        self.idmapdb = IdmapDatabase(os.path.join(DATADIR, "winbindd_idmap.tdb"))
+
+    def test_user_hwm(self):
+        self.assertEquals(10000, self.idmapdb.get_user_hwm())
+
+    def test_group_hwm(self):
+        self.assertEquals(10002, self.idmapdb.get_group_hwm())
+
+    def test_uids(self):
+        self.assertEquals(1, len(list(self.idmapdb.uids())))
+
+    def test_gids(self):
+        self.assertEquals(3, len(list(self.idmapdb.gids())))
+
+    def test_get_user_sid(self):
+        self.assertEquals("S-1-5-21-58189338-3053988021-627566699-501", self.idmapdb.get_user_sid(65534))
+
+    def test_get_group_sid(self):
+        self.assertEquals("S-1-5-21-2447931902-1787058256-3961074038-3007", self.idmapdb.get_group_sid(10001))
+
+    def tearDown(self):
+        self.idmapdb.close()
+
+
+class ShareInfoTestCase(unittest.TestCase):
+    def setUp(self):
+        self.shareinfodb = ShareInfoDatabase(os.path.join(DATADIR, "share_info.tdb"))
+
+    # FIXME: needs proper data so it can be tested
+
+    def tearDown(self):
+        self.shareinfodb.close()

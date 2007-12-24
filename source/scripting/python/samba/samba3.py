@@ -108,16 +108,47 @@ class GroupMappingDatabase:
 
 
 # High water mark keys
-HWM_GROUP = "GROUP HWM"
-HWM_USER = "USER HWM"
+IDMAP_HWM_GROUP = "GROUP HWM\0"
+IDMAP_HWM_USER = "USER HWM\0"
+
+IDMAP_GROUP_PREFIX = "GID "
+IDMAP_USER_PREFIX = "UID "
 
 # idmap version determines auto-conversion
-IDMAP_VERSION = 2
+IDMAP_VERSION_V2 = 2
 
 class IdmapDatabase:
     def __init__(self, file):
         self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
-        assert self.tdb.fetch_int32("IDMAP_VERSION") == IDMAP_VERSION
+        assert self.tdb.fetch_int32("IDMAP_VERSION\0") == IDMAP_VERSION_V2
+
+    def uids(self):
+        for k in self.tdb.keys():
+            if k.startswith(IDMAP_USER_PREFIX):
+                yield int(k[len(IDMAP_USER_PREFIX):].rstrip("\0"))
+
+    def gids(self):
+        for k in self.tdb.keys():
+            if k.startswith(IDMAP_GROUP_PREFIX):
+                yield int(k[len(IDMAP_GROUP_PREFIX):].rstrip("\0"))
+
+    def get_user_sid(self, uid):
+        data = self.tdb.get("%s%d\0" % (IDMAP_USER_PREFIX, uid))
+        if data is None:
+            return data
+        return data.rstrip("\0")
+
+    def get_group_sid(self, gid):
+        data = self.tdb.get("%s%d\0" % (IDMAP_GROUP_PREFIX, gid))
+        if data is None:
+            return data
+        return data.rstrip("\0")
+
+    def get_user_hwm(self):
+        return self.tdb.fetch_uint32(IDMAP_HWM_USER)
+
+    def get_group_hwm(self):
+        return self.tdb.fetch_uint32(IDMAP_HWM_GROUP)
 
     def close(self):
         self.tdb.close()
@@ -181,6 +212,7 @@ class ShareInfoDatabase:
     def get_secdesc(self, name):
         secdesc = self.tdb.get("SECDESC/%s" % name)
         # FIXME: Run ndr_pull_security_descriptor
+        return secdesc
 
     def close(self):
         self.tdb.close()
@@ -220,10 +252,64 @@ acb_info_mapping = {
         ' ': 0
         }
 
+def decode_acb(text):
+    assert not "[" in text and not "]" in text
+    ret = 0
+    for x in text:
+        ret |= acb_info_mapping[x]
+    return ret
 
-class Smbpasswd:
+
+class SmbpasswdFile:
     def __init__(self, file):
+        self.users = {}
+        f = open(file, 'r')
+        for l in f.readlines():
+            if len(l) == 0 or l[0] == "#":
+                continue # Skip comments and blank lines
+            parts = l.split(":")
+            username = parts[0]
+            uid = int(parts[1])
+            acct_ctrl = 0
+            last_change_time = None
+            if parts[2] == "NO PASSWORD":
+                acct_ctrl |= ACB_PWNOTREQ
+                lm_password = None
+            elif parts[2][0] in ("*", "X"):
+                # No password set
+                lm_password = None
+            else:
+                lm_password = parts[2]
+
+            if parts[3][0] in ("*", "X"):
+                # No password set
+                nt_password = None
+            else:
+                nt_password = parts[3]
+
+            if parts[4][0] == '[':
+                assert "]" in parts[4]
+                acct_ctrl |= decode_acb(parts[4][1:-1])
+                if parts[5].startswith("LCT-"):
+                    last_change_time = int(parts[5][len("LCT-"):], 16)
+            else: # old style file
+                if username[-1] == "$":
+                    acct_ctrl &= ~ACB_NORMAL
+                    acct_ctrl |= ACB_WSTRUST
+
+            self.users[username] = (uid, lm_password, nt_password, acct_ctrl, last_change_time)
+
+        f.close()
+
+    def __len__(self):
+        return len(self.users)
+
+    def __getitem__(self, name):
+        return self.users[name]
+
+    def close(self): # For consistency
         pass
+
 
 TDBSAM_FORMAT_STRING_V0 = "ddddddBBBBBBBBBBBBddBBwdwdBwwd"
 TDBSAM_FORMAT_STRING_V1 = "dddddddBBBBBBBBBBBBddBBwdwdBwwd"
