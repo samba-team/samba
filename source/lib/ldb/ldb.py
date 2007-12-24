@@ -176,6 +176,11 @@ class Ldb(object):
     def __init__(self, *args, **kwargs): 
         _ldb.Ldb_swiginit(self,_ldb.new_Ldb(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_Ldb
+    def __init__(self, url=None, flags=0, options=None):
+        _ldb.Ldb_swiginit(self,_ldb.new_Ldb())
+        if url is not None:
+            self.connect(url, flags, options)
+
 Ldb.connect = new_instancemethod(_ldb.Ldb_connect,None,Ldb)
 Ldb.search = new_instancemethod(_ldb.Ldb_search,None,Ldb)
 Ldb.delete = new_instancemethod(_ldb.Ldb_delete,None,Ldb)

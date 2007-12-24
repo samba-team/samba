@@ -463,25 +463,7 @@ PyObject *PyExc_LdbError;
 /* Top-level ldb operations */
 typedef struct ldb_context {
     %extend {
-        ldb(const char *url=NULL, unsigned int flags = 0, 
-            const char *options[] = NULL)
-        {
-            ldb *ldb_ctx = ldb_init(NULL);
-            
-            if (url != NULL) {
-                int ret;
-
-                ret = ldb_connect(ldb_ctx, url, flags, options);
-                if (ret != LDB_SUCCESS)
-                    SWIG_exception(SWIG_ValueError, ldb_errstring(ldb_ctx));
-            }
-
-            return ldb_ctx;
-
-fail:
-            talloc_free(ldb_ctx);
-            return NULL;
-        }
+        ldb(void) { return ldb_init(NULL); }
 
         ldb_error connect(const char *url, unsigned int flags = 0, 
             const char *options[] = NULL);
@@ -576,6 +558,13 @@ fail:
 
 #endif
     }
+    %pythoncode {
+        def __init__(self, url=None, flags=0, options=None):
+            _ldb.Ldb_swiginit(self,_ldb.new_Ldb())
+            if url is not None:
+                self.connect(url, flags, options)
+    }
+
 } ldb;
 
 %typemap(in,noblock=1) struct ldb_dn *;

@@ -2971,6 +2971,7 @@ static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *
 
 PyObject *PyExc_LdbError;
 
+SWIGINTERN ldb *new_ldb(){ return ldb_init(NULL); }
 
 SWIGINTERN int
 SWIG_AsVal_unsigned_SS_long (PyObject *obj, unsigned long *val) 
@@ -3031,23 +3032,6 @@ SWIG_AsVal_unsigned_SS_int (PyObject * obj, unsigned int *val)
   return res;
 }
 
-SWIGINTERN ldb *new_ldb(char const *url,unsigned int flags,char const *options[]){
-            ldb *ldb_ctx = ldb_init(NULL);
-            
-            if (url != NULL) {
-                int ret;
-
-                ret = ldb_connect(ldb_ctx, url, flags, options);
-                if (ret != 0)
-                    SWIG_exception(SWIG_ValueError, ldb_errstring(ldb_ctx));
-            }
-
-            return ldb_ctx;
-
-fail:
-            talloc_free(ldb_ctx);
-            return NULL;
-        }
 SWIGINTERN void delete_ldb(ldb *self){ talloc_free(self); }
 SWIGINTERN ldb_error ldb_add__SWIG_1(ldb *self,PyObject *py_msg){
             ldb_error ret;
@@ -4189,54 +4173,15 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_new_Ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_new_Ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  char *arg1 = (char *) NULL ;
-  unsigned int arg2 = (unsigned int) 0 ;
-  char **arg3 = (char **) (char **)NULL ;
   ldb *result = 0 ;
-  int res1 ;
-  char *buf1 = 0 ;
-  int alloc1 = 0 ;
-  unsigned int val2 ;
-  int ecode2 = 0 ;
-  void *argp3 = 0 ;
-  int res3 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  char *  kwnames[] = {
-    (char *) "url",(char *) "flags",(char *) "options", NULL 
-  };
   
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:new_Ldb",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
-  if (obj0) {
-    res1 = SWIG_AsCharPtrAndSize(obj0, &buf1, NULL, &alloc1);
-    if (!SWIG_IsOK(res1)) {
-      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "new_Ldb" "', argument " "1"" of type '" "char const *""'");
-    }
-    arg1 = (char *)(buf1);
-  }
-  if (obj1) {
-    ecode2 = SWIG_AsVal_unsigned_SS_int(obj1, &val2);
-    if (!SWIG_IsOK(ecode2)) {
-      SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "new_Ldb" "', argument " "2"" of type '" "unsigned int""'");
-    } 
-    arg2 = (unsigned int)(val2);
-  }
-  if (obj2) {
-    res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_p_char, 0 |  0 );
-    if (!SWIG_IsOK(res3)) {
-      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "new_Ldb" "', argument " "3"" of type '" "char const *[]""'"); 
-    } 
-    arg3 = (char **)(argp3);
-  }
-  result = (ldb *)new_ldb((char const *)arg1,arg2,(char const *(*))arg3);
+  if (!SWIG_Python_UnpackTuple(args,"new_Ldb",0,0,0)) SWIG_fail;
+  result = (ldb *)new_ldb();
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_ldb_context, SWIG_POINTER_NEW |  0 );
-  if (alloc1 == SWIG_NEWOBJ) free((char*)buf1);
   return resultobj;
 fail:
-  if (alloc1 == SWIG_NEWOBJ) free((char*)buf1);
   return NULL;
 }
 
@@ -5338,7 +5283,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Message_swigregister", Message_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Message_swiginit", Message_swiginit, METH_VARARGS, NULL},
 	 { (char *)"ldb_ldif_to_pyobject", (PyCFunction) _wrap_ldb_ldif_to_pyobject, METH_VARARGS | METH_KEYWORDS, NULL},
-	 { (char *)"new_Ldb", (PyCFunction) _wrap_new_Ldb, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"new_Ldb", (PyCFunction)_wrap_new_Ldb, METH_NOARGS, NULL},
 	 { (char *)"Ldb_connect", (PyCFunction) _wrap_Ldb_connect, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_Ldb", (PyCFunction)_wrap_delete_Ldb, METH_O, NULL},
 	 { (char *)"Ldb_search", (PyCFunction) _wrap_Ldb_search, METH_VARARGS | METH_KEYWORDS, NULL},
