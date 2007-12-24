@@ -530,14 +530,7 @@ data: %d
     if ldapurl is not None:
         message("Enabling Samba3 LDAP mappings for SAM database")
 
-        samdb.modify("""
-dn: @MODULES
-changetype: modify
-replace: @LIST
-@LIST: samldb,operational,objectguid,rdn_name,samba3sam
-""")
-
-        samdb.add({"dn": "@MAP=samba3sam", "@MAP_URL": ldapurl})
+        enable_samba3sam(samdb)
 
     return ret
 
@@ -551,3 +544,15 @@ def upgrade_verify(subobj, samba3, paths, message):
         assert(len(msg) >= 1)
     
     # FIXME
+
+
+
+def enable_samba3sam(samdb):
+    samdb.modify("""
+dn: @MODULES
+changetype: modify
+replace: @LIST
+@LIST: samldb,operational,objectguid,rdn_name,samba3sam
+""")
+
+    samdb.add({"dn": "@MAP=samba3sam", "@MAP_URL": ldapurl})

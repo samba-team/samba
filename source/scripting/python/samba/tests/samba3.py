@@ -18,7 +18,8 @@
 #
 
 import unittest
-from samba.samba3 import GroupMappingDatabase, Registry, PolicyDatabase
+from samba.samba3 import (GroupMappingDatabase, Registry, PolicyDatabase, SecretsDatabase, TdbSam,
+                          WinsDatabase)
 import os
 
 DATADIR=os.path.join(os.path.dirname(__file__), "../../../../../testdata/samba3")
@@ -59,3 +60,55 @@ class GroupsTestCase(unittest.TestCase):
     def setUp(self):
         self.groupdb = GroupMappingDatabase(os.path.join(DATADIR, "group_mapping.tdb"))
 
+    def tearDown(self):
+        self.groupdb.close()
+
+    def test_group_length(self):
+        self.assertEquals(13, len(list(self.groupdb.groupsids())))
+
+    def test_groupsids(self):
+        sids = list(self.groupdb.groupsids())
+        self.assertTrue("S-1-5-32-544" in sids)
+
+    def test_alias_length(self):
+        self.assertEquals(0, len(list(self.groupdb.aliases())))
+
+
+class SecretsDbTestCase(unittest.TestCase):
+    def setUp(self):
+        self.secretsdb = SecretsDatabase(os.path.join(DATADIR, "secrets.tdb"))
+
+    def tearDown(self):
+        self.secretsdb.close()
+
+    def test_get_sid(self):
+        self.assertTrue(self.secretsdb.get_sid("BEDWYR") is not None)
+
+
+class TdbSamTestCase(unittest.TestCase):
+    def setUp(self):
+        self.samdb = TdbSam(os.path.join(DATADIR, "passdb.tdb"))
+
+    def tearDown(self):
+        self.samdb.close()
+
+    def test_usernames(self):
+        self.assertEquals(3, len(list(self.samdb.usernames())))
+
+
+class WinsDatabaseTestCase(unittest.TestCase):
+    def setUp(self):
+        self.winsdb = WinsDatabase(os.path.join(DATADIR, "wins.dat"))
+
+    def test_length(self):
+        self.assertEquals(22, len(self.winsdb))
+
+    def test_first_entry(self):
+        self.assertEqual((1124185120, ["192.168.1.5"], "64R"), self.winsdb["ADMINISTRATOR#03"])
+
+    def tearDown(self):
+        self.winsdb.close()
+
+# FIXME: smbpasswd
+# FIXME: idmapdb
+# FIXME: Shares
