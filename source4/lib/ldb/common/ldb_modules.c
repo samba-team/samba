@@ -168,7 +168,7 @@ static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 
 int ldb_global_init(void)
 {
-	int (*static_init_fns[])(void) = STATIC_LIBLDB_MODULES;
+	int (*static_init_fns[])(void) = { STATIC_LIBLDB_MODULES, NULL };
 
 	static int initialized = 0;
 	int ret = 0, i;

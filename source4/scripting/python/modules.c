@@ -18,40 +18,28 @@
 */
 
 #include "includes.h"
-#include "Python.h"
-#include "librpc/ndr/libndr.h"
+#include <Python.h>
+#include "build.h"
 
-static PyObject *uuid_random(PyObject *self, PyObject *args)
+extern void init_ldb(void);
+extern void init_security(void);
+extern void init_registry(void);
+extern void init_param(void);
+extern void init_misc(void);
+extern void init_ldb(void);
+extern void init_auth(void);
+extern void init_credentials(void);
+extern void init_tdb(void);
+extern void init_dcerpc(void);
+extern void init_events(void);
+extern void inituuid(void);
+
+static struct _inittab py_modules[] = { STATIC_LIBPYTHON_MODULES };
+
+void py_load_samba_modules(void)
 {
-	struct GUID guid;
-	char *str;
-
-	if (!PyArg_ParseTuple(args, (char *)""))
-	        return NULL;
-
-	guid = GUID_random();
-
-	str = GUID_string(NULL, &guid);
-	if (str == NULL) {
-		PyErr_SetString(PyExc_TypeError, "can't convert uuid to string");
-		return NULL;
+	int i;
+	for (i = 0; i < ARRAY_SIZE(py_modules); i++) {
+		PyImport_ExtendInittab(&py_modules[i]);
 	}
-
-	talloc_free(str);
-
-	return PyString_FromString(str);
-}
-
-static PyMethodDef methods[] = {
-	{ "random", (PyCFunction)uuid_random, METH_VARARGS, NULL},
-	{ NULL, NULL }
-};
-
-PyDoc_STRVAR(param_doc, "UUID helper routines");
-
-PyMODINIT_FUNC inituuid(void)
-{
-	PyObject *mod = Py_InitModule3((char *)"uuid", methods, param_doc);
-	if (mod == NULL)
-		return;
 }

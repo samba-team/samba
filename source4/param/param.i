@@ -186,7 +186,7 @@ typedef struct param_context {
             struct param_opt *opt = param_get_add($self, parameter, section_name);
 
             talloc_free(opt->value);
-            opt->value = talloc_strdup(opt, PyObject_Str(ob));
+            opt->value = talloc_strdup(opt, PyString_AsString(PyObject_Str(ob)));
 
             return 0;
         }

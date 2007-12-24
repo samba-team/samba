@@ -640,6 +640,7 @@ nogroup:x:65534:nobody
 	push (@provision_options, "NSS_WRAPPER_PASSWD=\"$nsswrap_passwd\"");
 	push (@provision_options, "NSS_WRAPPER_GROUP=\"$nsswrap_group\"");
 	if (defined($ENV{PROVISION_PYTHON})) {
+		push (@provision_options, "$self->{bindir}/smbpython");
 		push (@provision_options, "$self->{setupdir}/provision.py");
 	} else {
 		push (@provision_options, "$self->{bindir}/smbscript");

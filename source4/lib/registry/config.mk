@@ -102,6 +102,6 @@ OBJ_FILES = \
 		tests/registry.o
 
 [PYTHON::swig_registry]
-PUBLIC_DEPENDENCIES = registry LIBPYTHON
+PUBLIC_DEPENDENCIES = registry
 SWIG_FILE = registry.i
 
