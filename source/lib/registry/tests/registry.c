@@ -30,11 +30,9 @@
 /**
  * Test obtaining a predefined key.
  */
-static bool test_get_predefined(struct torture_context *tctx,
-				const void *_data)
+static bool test_get_predefined(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *root;
 	WERROR error;
 
@@ -48,9 +46,9 @@ static bool test_get_predefined(struct torture_context *tctx,
  * Test obtaining a predefined key.
  */
 static bool test_get_predefined_unknown(struct torture_context *tctx,
-					const void *_data)
+		void *_data)
 {
-	const struct registry_context *rctx = _data;
+	struct registry_context *rctx = _data;
 	struct registry_key *root;
 	WERROR error;
 
@@ -60,11 +58,9 @@ static bool test_get_predefined_unknown(struct torture_context *tctx,
 	return true;
 }
 
-static bool test_predef_key_by_name(struct torture_context *tctx,
-				    const void *_data)
+static bool test_predef_key_by_name(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *root;
 	WERROR error;
 
@@ -82,10 +78,9 @@ static bool test_predef_key_by_name(struct torture_context *tctx,
 }
 
 static bool test_predef_key_by_name_invalid(struct torture_context *tctx,
-					    const void *_data)
+		void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *root;
 	WERROR error;
 
@@ -98,11 +93,9 @@ static bool test_predef_key_by_name_invalid(struct torture_context *tctx,
 /**
  * Test creating a new subkey
  */
-static bool test_create_subkey(struct torture_context *tctx,
-			       const void *_data)
+static bool test_create_subkey(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *root, *newkey;
 	WERROR error;
 
@@ -121,11 +114,9 @@ static bool test_create_subkey(struct torture_context *tctx,
 /**
  * Test creating a new nested subkey
  */
-static bool test_create_nested_subkey(struct torture_context *tctx,
-				      const void *_data)
+static bool test_create_nested_subkey(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *root, *newkey1, *newkey2;
 	WERROR error;
 
@@ -149,11 +140,9 @@ static bool test_create_nested_subkey(struct torture_context *tctx,
 /**
  * Test creating a new subkey
  */
-static bool test_key_add_abs_top(struct torture_context *tctx,
-				 const void *_data)
+static bool test_key_add_abs_top(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *root;
 	WERROR error;
 
@@ -168,12 +157,10 @@ static bool test_key_add_abs_top(struct torture_context *tctx,
 /**
  * Test creating a new subkey
  */
-static bool test_key_add_abs(struct torture_context *tctx,
-			     const void *_data)
+static bool test_key_add_abs(struct torture_context *tctx, void *_data)
 {
 	WERROR error;
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *root, *result1, *result2;
 
 	error = reg_key_add_abs(tctx, rctx,  "HKEY_CLASSES_ROOT\\bloe", 0, NULL,
@@ -198,10 +185,9 @@ static bool test_key_add_abs(struct torture_context *tctx,
 }
 
 
-static bool test_del_key(struct torture_context *tctx, const void *_data)
+static bool test_del_key(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *root, *newkey;
 	WERROR error;
 
@@ -229,7 +215,7 @@ static bool test_del_key(struct torture_context *tctx, const void *_data)
  * creating a single key for testing purposes.
  */
 static bool create_test_key(struct torture_context *tctx,
-			    const struct registry_context *rctx,
+			    struct registry_context *rctx,
 			    const char *name,
 			    struct registry_key **root,
 			    struct registry_key **subkey)
@@ -247,10 +233,9 @@ static bool create_test_key(struct torture_context *tctx,
 }
 
 
-static bool test_flush_key(struct torture_context *tctx, const void *_data)
+static bool test_flush_key(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *root, *subkey;
 	WERROR error;
 
@@ -266,10 +251,9 @@ static bool test_flush_key(struct torture_context *tctx, const void *_data)
 	return true;
 }
 
-static bool test_query_key(struct torture_context *tctx, const void *_data)
+static bool test_query_key(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *root, *subkey;
 	WERROR error;
 	NTTIME last_changed_time;
@@ -291,10 +275,9 @@ static bool test_query_key(struct torture_context *tctx, const void *_data)
 	return true;
 }
 
-static bool test_query_key_nums(struct torture_context *tctx, const void *_data)
+static bool test_query_key_nums(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *root, *subkey1, *subkey2;
 	WERROR error;
 	uint32_t num_subkeys, num_values;
@@ -326,10 +309,9 @@ static bool test_query_key_nums(struct torture_context *tctx, const void *_data)
  * the returned parameters for get_subkey_by_index are optional and
  * that enumerating the parents of a non-top-level node works.
  */
-static bool test_list_subkeys(struct torture_context *tctx, const void *_data)
+static bool test_list_subkeys(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
 	NTTIME last_mod_time;
@@ -366,10 +348,9 @@ static bool test_list_subkeys(struct torture_context *tctx, const void *_data)
 /**
  * Test setting a value
  */
-static bool test_set_value(struct torture_context *tctx, const void *_data)
+static bool test_set_value(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
 	uint32_t data = 42;
@@ -387,10 +368,9 @@ static bool test_set_value(struct torture_context *tctx, const void *_data)
 /**
  * Test getting/setting security descriptors
  */
-static bool test_security(struct torture_context *tctx, const void *_data)
+static bool test_security(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx =	(struct registry_context *)_data;
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
 	struct security_descriptor *osd, *nsd;
@@ -422,10 +402,9 @@ static bool test_security(struct torture_context *tctx, const void *_data)
 /**
  * Test getting a value
  */
-static bool test_get_value(struct torture_context *tctx, const void *_data)
+static bool test_get_value(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx =	(struct registry_context *)_data;
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
 	DATA_BLOB data;
@@ -459,10 +438,9 @@ static bool test_get_value(struct torture_context *tctx, const void *_data)
 /**
  * Test unsetting a value
  */
-static bool test_del_value(struct torture_context *tctx, const void *_data)
+static bool test_del_value(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx =(struct registry_context *)_data;
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
 	DATA_BLOB data;
@@ -495,10 +473,9 @@ static bool test_del_value(struct torture_context *tctx, const void *_data)
 /**
  * Test listing values
  */
-static bool test_list_values(struct torture_context *tctx, const void *_data)
+static bool test_list_values(struct torture_context *tctx, void *_data)
 {
-	const struct registry_context *rctx =
-		(const struct registry_context *)_data;
+	struct registry_context *rctx = (struct registry_context *)_data;
 	struct registry_key *subkey = NULL, *root;
 	WERROR error;
 	DATA_BLOB data;
@@ -560,43 +537,42 @@ static bool setup_local_registry(struct torture_context *tctx, void **data)
 
 static void tcase_add_tests(struct torture_tcase *tcase)
 {
-	torture_tcase_add_simple_test_const(tcase, "list_subkeys",
-						test_list_subkeys);
-	torture_tcase_add_simple_test_const(tcase, "get_predefined_key",
-						test_get_predefined);
-	torture_tcase_add_simple_test_const(tcase, "get_predefined_key",
-						test_get_predefined_unknown);
-	torture_tcase_add_simple_test_const(tcase, "create_key",
-						test_create_subkey);
-	torture_tcase_add_simple_test_const(tcase, "create_key",
-						test_create_nested_subkey);
-	torture_tcase_add_simple_test_const(tcase, "key_add_abs",
-						test_key_add_abs);
-	torture_tcase_add_simple_test_const(tcase, "key_add_abs_top",
-						test_key_add_abs_top);
-	torture_tcase_add_simple_test_const(tcase, "set_value",
-						test_set_value);
-	torture_tcase_add_simple_test_const(tcase, "get_value",
-						test_get_value);
-	torture_tcase_add_simple_test_const(tcase, "list_values",
-						test_list_values);
-	torture_tcase_add_simple_test_const(tcase, "del_key",
-						test_del_key);
-	torture_tcase_add_simple_test_const(tcase, "del_value",
-						test_del_value);
-	torture_tcase_add_simple_test_const(tcase, "flush_key",
-						test_flush_key);
-	torture_tcase_add_simple_test_const(tcase, "query_key",
-						test_query_key);
-	torture_tcase_add_simple_test_const(tcase, "query_key_nums",
-						test_query_key_nums);
-	torture_tcase_add_simple_test_const(tcase, "test_predef_key_by_name",
-						test_predef_key_by_name);
-	torture_tcase_add_simple_test_const(tcase, "security",
-						test_security);
-	torture_tcase_add_simple_test_const(tcase,
-			"test_predef_key_by_name_invalid",
-			test_predef_key_by_name_invalid);
+	torture_tcase_add_simple_test(tcase, "list_subkeys",
+					test_list_subkeys);
+	torture_tcase_add_simple_test(tcase, "get_predefined_key",
+					test_get_predefined);
+	torture_tcase_add_simple_test(tcase, "get_predefined_key",
+					test_get_predefined_unknown);
+	torture_tcase_add_simple_test(tcase, "create_key",
+					test_create_subkey);
+	torture_tcase_add_simple_test(tcase, "create_key",
+					test_create_nested_subkey);
+	torture_tcase_add_simple_test(tcase, "key_add_abs",
+					test_key_add_abs);
+	torture_tcase_add_simple_test(tcase, "key_add_abs_top",
+					test_key_add_abs_top);
+	torture_tcase_add_simple_test(tcase, "set_value",
+					test_set_value);
+	torture_tcase_add_simple_test(tcase, "get_value",
+					test_get_value);
+	torture_tcase_add_simple_test(tcase, "list_values",
+					test_list_values);
+	torture_tcase_add_simple_test(tcase, "del_key",
+					test_del_key);
+	torture_tcase_add_simple_test(tcase, "del_value",
+					test_del_value);
+	torture_tcase_add_simple_test(tcase, "flush_key",
+					test_flush_key);
+	torture_tcase_add_simple_test(tcase, "query_key",
+					test_query_key);
+	torture_tcase_add_simple_test(tcase, "query_key_nums",
+					test_query_key_nums);
+	torture_tcase_add_simple_test(tcase, "test_predef_key_by_name",
+					test_predef_key_by_name);
+	torture_tcase_add_simple_test(tcase, "security",
+					test_security);
+	torture_tcase_add_simple_test(tcase,"test_predef_key_by_name_invalid",
+					test_predef_key_by_name_invalid);
 }
 
 struct torture_suite *torture_registry_registry(TALLOC_CTX *mem_ctx)
