@@ -57,7 +57,7 @@ typedef struct loadparm_context {
         const char *configfile() { return lp_configfile($self); }
         bool is_mydomain(const char *domain) { return lp_is_mydomain($self, domain); }
         bool is_myname(const char *name) { return lp_is_myname($self, name); }
-        int use(struct param_context *param) { return param_use($self, param); }
+        int use(struct param_context *param_ctx) { return param_use($self, param_ctx); }
         bool set(const char *parm_name, const char *parm_value) {
             return lp_set_cmdline($self, parm_name, parm_value);
         }
@@ -143,12 +143,12 @@ typedef struct loadparm_context {
                 return Py_None;
             case P_LIST: 
                 {
-                    int i;
+                    int j;
                     const char **strlist = *(const char ***)parm_ptr;
                     PyObject *pylist = PyList_New(str_list_length(strlist));
-                    for (i = 0; strlist[i]; i++) 
-                        PyList_SetItem(pylist, i, 
-                                       PyString_FromString(strlist[i]));
+                    for (j = 0; strlist[j]; j++) 
+                        PyList_SetItem(pylist, j, 
+                                       PyString_FromString(strlist[j]));
                     return pylist;
                 }
 
@@ -181,9 +181,9 @@ typedef struct param_context {
         struct param_opt *get(const char *name, const char *section_name="global");
         const char *get_string(const char *name, const char *section_name="global");
         int set_string(const char *param, const char *value, const char *section="global");
-        int set(const char *param, PyObject *ob, const char *section_name="global")
+        int set(const char *parameter, PyObject *ob, const char *section_name="global")
         {
-            struct param_opt *opt = param_get_add($self, param, section_name);
+            struct param_opt *opt = param_get_add($self, parameter, section_name);
 
             talloc_free(opt->value);
             opt->value = talloc_strdup(opt, PyObject_Str(ob));

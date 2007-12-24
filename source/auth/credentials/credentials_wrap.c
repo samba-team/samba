@@ -3407,7 +3407,7 @@ SWIGINTERN PyObject *_wrap_Credentials_get_nt_hash(PyObject *SWIGUNUSEDPARM(self
     arg1 = (cli_credentials *)(argp1);
   }
   result = (struct samr_Password *)cli_credentials_get_nt_hash(arg1,arg2);
-  resultobj = PyString_FromStringAndSize(result->hash, 16);
+  resultobj = PyString_FromStringAndSize((char *)result->hash, 16);
   return resultobj;
 fail:
   return NULL;

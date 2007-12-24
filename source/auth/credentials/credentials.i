@@ -43,14 +43,14 @@ typedef struct cli_credentials cli_credentials;
 %}
 
 %typemap(out,noblock=1) struct samr_Password * {
-    $result = PyString_FromStringAndSize($1->hash, 16);
+    $result = PyString_FromStringAndSize((char *)$1->hash, 16);
 }
 
 %talloctype(cli_credentials);
 %rename(Credentials) cli_credentials;
 typedef struct cli_credentials {
     %extend {
-        cli_credentials() {
+        cli_credentials(void) {
             return cli_credentials_init(NULL);
         }
         /* username */
@@ -90,8 +90,8 @@ typedef struct cli_credentials {
 
         const struct samr_Password *get_nt_hash(TALLOC_CTX *mem_ctx);
 
-        bool authentication_requested();
+        bool authentication_requested(void);
 
-        bool wrong_password();
+        bool wrong_password(void);
     }
 } cli_credentials;

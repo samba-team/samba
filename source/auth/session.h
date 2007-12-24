@@ -28,6 +28,7 @@ struct auth_session_info {
 	struct cli_credentials *credentials;
 };
 
+#include "librpc/gen_ndr/netlogon.h"
 #include "auth/session_proto.h"
 
 #endif /* _SAMBA_AUTH_SESSION_H */

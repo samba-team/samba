@@ -146,9 +146,9 @@ typedef int ldb_error;
 %rename(Dn) ldb_dn;
 typedef struct ldb_dn {
     %extend {
-        ldb_dn(ldb *ldb, const char *str)
+        ldb_dn(ldb *ldb_ctx, const char *str)
         {
-            ldb_dn *ret = ldb_dn_new(ldb, ldb, str);
+            ldb_dn *ret = ldb_dn_new(ldb_ctx, ldb_ctx, str);
             /* ldb_dn_new() doesn't accept NULL as memory context, so 
                we do it this way... */
             talloc_steal(NULL, ret);
@@ -194,12 +194,12 @@ fail:
 #ifdef SWIGPYTHON
 %{
 int ldb_dn_from_pyobject(TALLOC_CTX *mem_ctx, PyObject *object, 
-                         struct ldb_context *ldb, ldb_dn **dn)
+                         struct ldb_context *ldb_ctx, ldb_dn **dn)
 {
     int ret;
     struct ldb_dn *odn;
-    if (ldb != NULL && PyString_Check(object)) {
-        *dn = ldb_dn_new(mem_ctx, ldb, PyString_AsString(object));
+    if (ldb_ctx != NULL && PyString_Check(object)) {
+        *dn = ldb_dn_new(mem_ctx, ldb_ctx, PyString_AsString(object));
         return 0;
     }
     ret = SWIG_ConvertPtr(object, (void **)&odn, SWIGTYPE_p_ldb_dn, 
@@ -387,7 +387,7 @@ static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *
     PyObject *fn = context;
 
     vasprintf(&text, fmt, ap);
-    PyObject_CallFunction(fn, "(i,s)", level, text);
+    PyObject_CallFunction(fn, (char *)"(i,s)", level, text);
     free(text);
 }
 %}
@@ -408,7 +408,7 @@ static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *
         if (ldif == NULL) {
             return Py_None;
         } else {
-            return Py_BuildValue("(iO)", ldif->changetype, 
+            return Py_BuildValue((char *)"(iO)", ldif->changetype, 
                    SWIG_NewPointerObj(ldif->msg, SWIGTYPE_p_ldb_message, 0));
         }
     }
@@ -427,7 +427,7 @@ PyObject *PyExc_LdbError;
 %}
 
 %init %{
-    PyExc_LdbError = PyErr_NewException("_ldb.LdbError", NULL, NULL);
+    PyExc_LdbError = PyErr_NewException((char *)"_ldb.LdbError", NULL, NULL);
     PyDict_SetItemString(d, "LdbError", PyExc_LdbError);
 %}
 
@@ -442,7 +442,7 @@ PyObject *PyExc_LdbError;
 
 %typemap(out,noblock=1) ldb_error {
     if ($1 != LDB_SUCCESS) {
-        PyErr_SetObject(PyExc_LdbError, Py_BuildValue("(i,s)", $1, ldb_strerror($1)));
+        PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(i,s)", $1, ldb_strerror($1)));
         SWIG_fail;
     }
     $result = Py_None;
@@ -466,20 +466,20 @@ typedef struct ldb_context {
         ldb(const char *url=NULL, unsigned int flags = 0, 
             const char *options[] = NULL)
         {
-            ldb *ldb = ldb_init(NULL);
+            ldb *ldb_ctx = ldb_init(NULL);
             
             if (url != NULL) {
                 int ret;
 
-                ret = ldb_connect(ldb, url, flags, options);
+                ret = ldb_connect(ldb_ctx, url, flags, options);
                 if (ret != LDB_SUCCESS)
-                    SWIG_exception(SWIG_ValueError, ldb_errstring(ldb));
+                    SWIG_exception(SWIG_ValueError, ldb_errstring(ldb_ctx));
             }
 
-            return ldb;
+            return ldb_ctx;
 
 fail:
-            talloc_free(ldb);
+            talloc_free(ldb_ctx);
             return NULL;
         }
 
@@ -606,7 +606,7 @@ time_t ldb_string_to_time(const char *s);
 %typemap(in) const struct ldb_module_ops * {
     $1 = talloc_zero(talloc_autofree_context(), struct ldb_module_ops);
 
-    $1->name = PyObject_GetAttrString($input, "name");
+    $1->name = (char *)PyObject_GetAttrString($input, (char *)"name");
 }
 
 %rename(register_module) ldb_register_module;
