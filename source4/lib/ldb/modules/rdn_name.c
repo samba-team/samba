@@ -238,7 +238,7 @@ static int rdn_name_rename_do_mod(struct ldb_handle *h) {
 	return ldb_request(h->module->ldb, ac->mod_req);
 }
 
-static int rename_wait(struct ldb_handle *handle)
+static int rdn_name_wait_once(struct ldb_handle *handle)
 {
 	struct rename_context *ac;
 	int ret;
@@ -304,27 +304,26 @@ done:
 	return ret;
 }
 
-static int rename_wait_all(struct ldb_handle *handle) {
-
-	int ret;
-
-	while (handle->state != LDB_ASYNC_DONE) {
-		ret = rename_wait(handle);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
-	}
-
-	return handle->status;
-}
-
 static int rdn_name_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
-	if (type == LDB_WAIT_ALL) {
-		return rename_wait_all(handle);
-	} else {
-		return rename_wait(handle);
+	int ret;
+ 
+	if (!handle || !handle->private_data) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
+
+	if (type == LDB_WAIT_ALL) {
+		while (handle->state != LDB_ASYNC_DONE) {
+			ret = rdn_name_wait_once(handle);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+
+		return handle->status;
+	}
+
+	return rdn_name_wait_once(handle);
 }
 
 static const struct ldb_module_ops rdn_name_ops = {

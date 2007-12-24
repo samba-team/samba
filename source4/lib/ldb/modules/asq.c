@@ -429,27 +429,26 @@ static int asq_search(struct ldb_module *module, struct ldb_request *req)
 	return asq_search_continue(h);
 }
 
-static int asq_wait_all(struct ldb_handle *handle)
+static int asq_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	int ret;
 
-	while (handle->state != LDB_ASYNC_DONE) {
-		ret = asq_search_continue(handle);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
+	if (!handle || !handle->private_data) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return handle->status;
-}
-
-static int asq_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
 	if (type == LDB_WAIT_ALL) {
-		return asq_wait_all(handle);
-	} else {
-		return asq_search_continue(handle);
+		while (handle->state != LDB_ASYNC_DONE) {
+			ret = asq_search_continue(handle);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+
+		return handle->status;
 	}
+
+	return asq_search_continue(handle);
 }
 
 static int asq_init(struct ldb_module *module)
