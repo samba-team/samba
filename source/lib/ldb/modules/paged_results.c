@@ -440,8 +440,7 @@ static int paged_results(struct ldb_handle *handle)
 	return ret;
 }
 
-static int paged_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
+static int paged_wait_once(struct ldb_handle *handle) {
 	struct paged_context *ac;
 	int ret;
     
@@ -471,28 +470,7 @@ static int paged_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 		return ret;
 	}
 
-	if (type == LDB_WAIT_ALL) {
-		while (ac->store->req->handle->state != LDB_ASYNC_DONE) {
-			ret = ldb_wait(ac->store->req->handle, type);
-			if (ret != LDB_SUCCESS) {
-				handle->state = LDB_ASYNC_DONE;
-				handle->status = ret;
-				return ret;
-			}
-		}
-
-		ret = paged_results(handle);
-
-		/* we are done, if num_entries is zero free the storage
-		 * as that mean we delivered the last batch */
-		if (ac->store->num_entries == 0) {
-			talloc_free(ac->store);
-		}
-
-		return ret;
-	}
-
-	ret = ldb_wait(ac->store->req->handle, type);
+	ret = ldb_wait(ac->store->req->handle, LDB_WAIT_NONE);
 	if (ret != LDB_SUCCESS) {
 		handle->state = LDB_ASYNC_DONE;
 		handle->status = ret;
@@ -514,6 +492,28 @@ static int paged_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	}
 
 	return ret;
+}
+
+static int paged_wait(struct ldb_handle *handle, enum ldb_wait_type type)
+{
+	int ret;
+ 
+	if (!handle || !handle->private_data) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (type == LDB_WAIT_ALL) {
+		while (handle->state != LDB_ASYNC_DONE) {
+			ret = paged_wait_once(handle);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+
+		return handle->status;
+	}
+
+	return paged_wait_once(handle);
 }
 
 static int paged_request_init(struct ldb_module *module)

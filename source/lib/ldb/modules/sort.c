@@ -373,7 +373,7 @@ static int server_sort_results(struct ldb_handle *handle)
 	return LDB_SUCCESS;
 }
 
-static int server_sort_wait(struct ldb_handle *handle, enum ldb_wait_type type)
+static int server_sort_wait_once(struct ldb_handle *handle)
 {
 	struct sort_context *ac;
 	int ret;
@@ -384,7 +384,7 @@ static int server_sort_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 
 	ac = talloc_get_type(handle->private_data, struct sort_context);
 
-	ret = ldb_wait(ac->req->handle, type);
+	ret = ldb_wait(ac->req->handle, LDB_WAIT_NONE);
 
 	if (ret != LDB_SUCCESS) {
 		handle->status = ret;
@@ -403,6 +403,28 @@ static int server_sort_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	}
 
 	return ret;
+}
+
+static int server_sort_wait(struct ldb_handle *handle, enum ldb_wait_type type)
+{
+	int ret;
+ 
+	if (!handle || !handle->private_data) {
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
+	if (type == LDB_WAIT_ALL) {
+		while (handle->state != LDB_ASYNC_DONE) {
+			ret = server_sort_wait_once(handle);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+
+		return handle->status;
+	}
+
+	return server_sort_wait_once(handle);
 }
 
 static int server_sort_init(struct ldb_module *module)

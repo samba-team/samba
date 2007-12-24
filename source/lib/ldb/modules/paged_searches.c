@@ -312,7 +312,7 @@ static int ps_continuation(struct ldb_handle *handle)
 	return ldb_next_request(handle->module, ac->new_req);
 }
 
-static int ps_wait_none(struct ldb_handle *handle)
+static int ps_wait_once(struct ldb_handle *handle)
 {
 	struct ps_context *ac;
 	int ret;
@@ -365,27 +365,25 @@ done:
 	return ret;
 }
 
-static int ps_wait_all(struct ldb_handle *handle)
+static int ps_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	int ret;
 
-	while (handle->state != LDB_ASYNC_DONE) {
-		ret = ps_wait_none(handle);
-		if (ret != LDB_SUCCESS) {
-			return ret;
-		}
+	if (!handle || !handle->private_data) {
+		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	return handle->status;
-}
-
-static int ps_wait(struct ldb_handle *handle, enum ldb_wait_type type)
-{
 	if (type == LDB_WAIT_ALL) {
-		return ps_wait_all(handle);
-	} else {
-		return ps_wait_none(handle);
+		while (handle->state != LDB_ASYNC_DONE) {
+			ret = ps_wait_once(handle);
+			if (ret != LDB_SUCCESS) {
+				return ret;
+			}
+		}
+
+		return handle->status;
 	}
+	return ps_wait_once(handle);
 }
 
 static int check_supported_paged(struct ldb_context *ldb, void *context, 
