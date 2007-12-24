@@ -136,7 +136,7 @@ struct torture_suite *torture_local_event(TALLOC_CTX *mem_ctx)
 	int i;
 
 	for (i=0;list && list[i];i++) {
-		torture_suite_add_simple_tcase(suite, list[i],
+		torture_suite_add_simple_tcase_const(suite, list[i],
 					       test_event_context,
 					       (const void *)list[i]);
 	}

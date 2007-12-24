@@ -201,7 +201,8 @@ static struct torture_tcase *add_test(struct torture_suite *suite, uint32_t bind
 	name = talloc_asprintf_append_buffer(name, " lm_key:%s", lm_key?"yes":"no");
 	settings->lm_key = lm_key;
 
-	return torture_suite_add_simple_tcase(suite, name, test_secrets, settings);
+	return torture_suite_add_simple_tcase_const(suite, name, test_secrets,
+			settings);
 }
 
 static const bool bool_vals[] = { true, false };
