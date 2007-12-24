@@ -2929,9 +2929,7 @@ SWIGINTERN PyObject *_wrap_Registry(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   };
   
   arg3 = NULL;
-  {
-    arg4 = NULL;
-  }
+  arg4 = NULL;
   arg1 = NULL;
   arg2 = &tmp2;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:Registry",kwnames,&obj0,&obj1)) SWIG_fail;
@@ -3492,12 +3490,8 @@ SWIGINTERN PyObject *_wrap_hive_key(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   };
   
   arg3 = NULL;
-  {
-    arg4 = NULL;
-  }
-  {
-    arg5 = loadparm_init(NULL);
-  }
+  arg4 = NULL;
+  arg5 = loadparm_init(NULL);
   arg1 = NULL;
   arg6 = &tmp6;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOO:hive_key",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
@@ -3573,12 +3567,8 @@ SWIGINTERN PyObject *_wrap_open_ldb(PyObject *SWIGUNUSEDPARM(self), PyObject *ar
   };
   
   arg3 = NULL;
-  {
-    arg4 = NULL;
-  }
-  {
-    arg5 = loadparm_init(NULL);
-  }
+  arg4 = NULL;
+  arg5 = loadparm_init(NULL);
   arg1 = NULL;
   arg6 = &tmp6;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOO:open_ldb",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
@@ -3730,13 +3720,9 @@ SWIGINTERN PyObject *_wrap_open_samba(PyObject *SWIGUNUSEDPARM(self), PyObject *
     (char *) "lp_ctx",(char *) "session_info",(char *) "credentials", NULL 
   };
   
-  {
-    arg3 = loadparm_init(NULL);
-  }
+  arg3 = loadparm_init(NULL);
   arg4 = NULL;
-  {
-    arg5 = NULL;
-  }
+  arg5 = NULL;
   arg1 = NULL;
   arg2 = &tmp2;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OOO:open_samba",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
