@@ -19,7 +19,7 @@
 /* Don't expose talloc contexts in Python code. Python does reference 
    counting for us, so just create a new top-level talloc context.
  */
-%typemap(in, numinputs=0) TALLOC_CTX * {
+%typemap(in, numinputs=0, noblock=1) TALLOC_CTX * {
     $1 = NULL;
 }
 
