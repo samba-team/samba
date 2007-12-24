@@ -1,3 +1,8 @@
+[BINARY::smbpython]
+PRIVATE_DEPENDENCIES = LIBPYTHON
+OBJ_FILES = \
+			smbpython.o
+
 [PYTHON::python_uuid]
 PRIVATE_DEPENDENCIES = LIBNDR 
 OBJ_FILES = uuidmodule.o

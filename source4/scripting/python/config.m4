@@ -41,9 +41,11 @@ then
 			Py_InitModule(NULL, NULL);
 		],[
 			SMB_ENABLE(LIBPYTHON,YES)
+			SMB_ENABLE(smbpython,YES)
 			AC_MSG_RESULT([yes])
 		],[
 			SMB_ENABLE(LIBPYTHON,NO)
+			SMB_ENABLE(smbpython,NO)
 			AC_MSG_RESULT([no])
 		])
 
@@ -51,5 +53,6 @@ then
 	CFLAGS="$ac_save_CFLAGS"
 else
 	SMB_ENABLE(LIBPYTHON,NO)
+	SMB_ENABLE(smbpython,NO)
 	AC_MSG_RESULT([no])
 fi
