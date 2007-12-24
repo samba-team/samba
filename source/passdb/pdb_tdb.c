@@ -1592,6 +1592,139 @@ static bool tdbsam_new_rid(struct pdb_methods *methods, uint32 *prid)
 	return ret;
 }
 
+struct tdbsam_search_state {
+	struct pdb_methods *methods;
+	uint32_t acct_flags;
+
+	uint32_t *rids;
+	uint32_t num_rids;
+	ssize_t array_size;
+	uint32_t current;
+};
+
+static int tdbsam_collect_rids(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
+			       void *private_data)
+{
+	struct tdbsam_search_state *state = talloc_get_type_abort(
+		private_data, struct tdbsam_search_state);
+	size_t prefixlen = strlen(RIDPREFIX);
+	uint32 rid;
+
+	if ((key.dsize < prefixlen)
+	    || (strncmp((char *)key.dptr, RIDPREFIX, prefixlen))) {
+		return 0;
+	}
+
+	rid = strtoul((char *)key.dptr+prefixlen, NULL, 16);
+
+	ADD_TO_LARGE_ARRAY(state, uint32, rid, &state->rids, &state->num_rids,
+			   &state->array_size);
+
+	return 0;
+}
+
+static void tdbsam_search_end(struct pdb_search *search)
+{
+	struct tdbsam_search_state *state = talloc_get_type_abort(
+		search->private_data, struct tdbsam_search_state);
+	TALLOC_FREE(state);
+}
+
+static bool tdbsam_search_next_entry(struct pdb_search *search,
+				     struct samr_displayentry *entry)
+{
+	struct tdbsam_search_state *state = talloc_get_type_abort(
+		search->private_data, struct tdbsam_search_state);
+	struct samu *user = NULL;
+	NTSTATUS status;
+	uint32_t rid;
+
+ again:
+	TALLOC_FREE(user);
+	user = samu_new(talloc_tos());
+	if (user == NULL) {
+		DEBUG(0, ("samu_new failed\n"));
+		return false;
+	}
+
+	if (state->current == state->num_rids) {
+		return false;
+	}
+
+	rid = state->rids[state->current++];
+
+	status = tdbsam_getsampwrid(state->methods, user, rid);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		/*
+		 * Someone has deleted that user since we listed the RIDs
+		 */
+		goto again;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("tdbsam_getsampwrid failed: %s\n",
+			   nt_errstr(status)));
+		TALLOC_FREE(user);
+		return false;
+	}
+
+	if ((state->acct_flags != 0) &&
+	    ((state->acct_flags & pdb_get_acct_ctrl(user)) == 0)) {
+		goto again;
+	}
+
+	entry->acct_flags = pdb_get_acct_ctrl(user);
+	entry->rid = rid;
+	entry->account_name = talloc_strdup(
+		search->mem_ctx, pdb_get_username(user));
+	entry->fullname = talloc_strdup(
+		search->mem_ctx, pdb_get_fullname(user));
+	entry->description = talloc_strdup(
+		search->mem_ctx, pdb_get_acct_desc(user));
+
+	TALLOC_FREE(user);
+
+	if ((entry->account_name == NULL) || (entry->fullname == NULL)
+	    || (entry->description == NULL)) {
+		DEBUG(0, ("talloc_strdup failed\n"));
+		return false;
+	}
+
+	return true;
+}
+
+static bool tdbsam_search_users(struct pdb_methods *methods,
+				struct pdb_search *search,
+				uint32 acct_flags)
+{
+	struct tdbsam_search_state *state;
+
+	if (!tdbsam_open(tdbsam_filename)) {
+		DEBUG(0,("tdbsam_getsampwnam: failed to open %s!\n",
+			 tdbsam_filename));
+		return false;
+	}
+
+	state = TALLOC_ZERO_P(search->mem_ctx, struct tdbsam_search_state);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return false;
+	}
+	state->acct_flags = acct_flags;
+	state->methods = methods;
+
+	tdb_traverse(tdbsam, tdbsam_collect_rids, state);
+
+	tdbsam_close();
+
+	search->private_data = state;
+	search->next_entry = tdbsam_search_next_entry;
+	search->search_end = tdbsam_search_end;
+
+	return true;
+}
+
 /*********************************************************************
  Initialize the tdb sam backend.  Setup the dispath table of methods,
  open the tdb, etc...
@@ -1618,6 +1751,7 @@ static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *loc
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
 	(*pdb_method)->rename_sam_account = tdbsam_rename_sam_account;
+	(*pdb_method)->search_users = tdbsam_search_users;
 
 	(*pdb_method)->rid_algorithm = tdbsam_rid_algorithm;
 	(*pdb_method)->new_rid = tdbsam_new_rid;
