@@ -311,14 +311,19 @@ WERROR libnet_smbconf_delparm(TALLOC_CTX *mem_ctx,
 	}
 
 	werr = libnet_smbconf_open_path(mem_ctx, service, REG_KEY_ALL, &key);
-	W_ERROR_NOT_OK_RETURN(werr);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
 
 	if (!libnet_smbconf_value_exists(key, param)) {
-		return WERR_INVALID_PARAM;
+		werr = WERR_INVALID_PARAM;
+		goto done;
 	}
 
 	werr = reg_deletevalue(key, param);
 
+done:
+	TALLOC_FREE(key);
 	return werr;
 }
 
