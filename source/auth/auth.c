@@ -516,7 +516,7 @@ NTSTATUS auth_init(void)
 {
 	static bool initialized = false;
 
-	init_module_fn static_init[] = { STATIC_auth_MODULES, NULL };
+	init_module_fn static_init[] = { STATIC_auth_MODULES };
 	
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;

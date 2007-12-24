@@ -173,7 +173,7 @@ _PUBLIC_ void ejs_exception(const char *reason)
 */
 void smb_setup_ejs_functions(void (*exception_handler)(const char *))
 {
-	init_module_fn static_init[] = { STATIC_smbcalls_MODULES, NULL };
+	init_module_fn static_init[] = { STATIC_smbcalls_MODULES };
 	init_module_fn *shared_init;
 
 	ejs_exception_handler = exception_handler;

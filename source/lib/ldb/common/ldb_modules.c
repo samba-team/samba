@@ -160,12 +160,13 @@ static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 	ldb_rdn_name_init,	\
 	ldb_paged_results_init,	\
 	ldb_sort_init,		\
-	ldb_asq_init
+	ldb_asq_init, \
+	NULL
 #endif
 
 int ldb_global_init(void)
 {
-	int (*static_init_fns[])(void) = { STATIC_LIBLDB_MODULES, NULL };
+	int (*static_init_fns[])(void) = { STATIC_LIBLDB_MODULES };
 
 	static int initialized = 0;
 	int ret = 0, i;

@@ -63,6 +63,10 @@ sub check_subsystem($$$)
 	unless(defined($subsys->{OUTPUT_TYPE})) {
 		$subsys->{OUTPUT_TYPE} = $default_ot;
 	}
+
+	unless (defined($subsys->{INIT_FUNCTION_TYPE})) { $subsys->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
+	unless (defined($subsys->{INIT_FUNCTION_SENTINEL})) { $subsys->{INIT_FUNCTION_SENTINEL} = "NULL"; }
+
 	add_libreplace($subsys);
 }
 
@@ -136,9 +140,9 @@ sub check_library($$$)
 		return;
 	}
 
-	unless (defined($lib->{INIT_FUNCTION_TYPE})) {
-		$lib->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)";
-	}
+	unless (defined($lib->{INIT_FUNCTION_TYPE})) { $lib->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
+
+	unless (defined($lib->{INIT_FUNCTION_SENTINEL})) { $lib->{INIT_FUNCTION_SENTINEL} = "NULL"; }
 
 	unless(defined($lib->{INSTALLDIR})) {
 		$lib->{INSTALLDIR} = "LIBDIR";
