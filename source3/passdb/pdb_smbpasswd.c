@@ -1606,6 +1606,119 @@ static void free_private_data(void **vp)
 	/* No need to free any further, as it is talloc()ed */
 }
 
+struct smbpasswd_search_state {
+	uint32_t acct_flags;
+
+	struct samr_displayentry *entries;
+	uint32_t num_entries;
+	ssize_t array_size;
+	uint32_t current;
+};
+
+static void smbpasswd_search_end(struct pdb_search *search)
+{
+	struct smbpasswd_search_state *state = talloc_get_type_abort(
+		search->private_data, struct smbpasswd_search_state);
+	TALLOC_FREE(state);
+}
+
+static bool smbpasswd_search_next_entry(struct pdb_search *search,
+					struct samr_displayentry *entry)
+{
+	struct smbpasswd_search_state *state = talloc_get_type_abort(
+		search->private_data, struct smbpasswd_search_state);
+
+	if (state->current == state->num_entries) {
+		return false;
+	}
+
+	*entry = state->entries[state->current++];
+
+	return true;
+}
+
+static bool smbpasswd_search_users(struct pdb_methods *methods,
+				   struct pdb_search *search,
+				   uint32_t acct_flags)
+{
+	struct smbpasswd_privates *smbpasswd_state =
+		(struct smbpasswd_privates*)methods->private_data;
+
+	struct smbpasswd_search_state *search_state;
+	struct smb_passwd *pwd;
+	FILE *fp;
+
+	search_state = TALLOC_ZERO_P(search->mem_ctx,
+				     struct smbpasswd_search_state);
+	if (search_state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return false;
+	}
+	search_state->acct_flags = acct_flags;
+
+	fp = startsmbfilepwent(smbpasswd_state->smbpasswd_file, PWF_READ,
+			       &smbpasswd_state->pw_file_lock_depth);
+
+	if (fp == NULL) {
+		DEBUG(10, ("Unable to open smbpasswd file.\n"));
+		TALLOC_FREE(search_state);
+		return false;
+	}
+
+	while ((pwd = getsmbfilepwent(smbpasswd_state, fp)) != NULL) {
+		struct samr_displayentry entry;
+		struct samu *user;
+
+		if ((acct_flags != 0)
+		    && ((acct_flags & pwd->acct_ctrl) == 0)) {
+			continue;
+		}
+
+		user = samu_new(talloc_tos());
+		if (user == NULL) {
+			DEBUG(0, ("samu_new failed\n"));
+			break;
+		}
+
+		if (!build_sam_account(smbpasswd_state, user, pwd)) {
+			/* Already got debug msgs... */
+			break;
+		}
+
+		ZERO_STRUCT(entry);
+
+		entry.acct_flags = pdb_get_acct_ctrl(user);
+		sid_peek_rid(pdb_get_user_sid(user), &entry.rid);
+		entry.account_name = talloc_strdup(
+			search_state, pdb_get_username(user));
+		entry.fullname = talloc_strdup(
+			search_state, pdb_get_fullname(user));
+		entry.description = talloc_strdup(
+			search_state, pdb_get_acct_desc(user));
+
+		TALLOC_FREE(user);
+
+		if ((entry.account_name == NULL) || (entry.fullname == NULL)
+		    || (entry.description == NULL)) {
+			DEBUG(0, ("talloc_strdup failed\n"));
+			break;
+		}
+
+		ADD_TO_LARGE_ARRAY(search_state, struct samr_displayentry,
+				   entry, &search_state->entries,
+				   &search_state->num_entries,
+				   &search_state->array_size);
+	}
+
+	endsmbfilepwent(fp, &(smbpasswd_state->pw_file_lock_depth));
+
+	search->private_data = search_state;
+	search->next_entry = smbpasswd_search_next_entry;
+	search->search_end = smbpasswd_search_end;
+
+	return true;
+}
+
 static NTSTATUS pdb_init_smbpasswd( struct pdb_methods **pdb_method, const char *location )
 {
 	NTSTATUS nt_status;
@@ -1626,6 +1739,7 @@ static NTSTATUS pdb_init_smbpasswd( struct pdb_methods **pdb_method, const char 
 	(*pdb_method)->update_sam_account = smbpasswd_update_sam_account;
 	(*pdb_method)->delete_sam_account = smbpasswd_delete_sam_account;
 	(*pdb_method)->rename_sam_account = smbpasswd_rename_sam_account;
+	(*pdb_method)->search_users = smbpasswd_search_users;
 
 	(*pdb_method)->rid_algorithm = smbpasswd_rid_algorithm;
 
