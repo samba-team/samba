@@ -21,9 +21,16 @@
 #include <Python.h>
 
 void py_load_samba_modules(void);
+void py_update_path(const char *bindir);
 
 int main(int argc, char **argv) 
 {
 	py_load_samba_modules();
+	Py_Initialize();
+	if (strchr(argv[0], '/') != NULL) {
+		char *bindir = strndup(argv[0], strrchr(argv[0], '/')-argv[0]);
+		py_update_path(bindir);
+		free(bindir);
+	}
 	return Py_Main(argc,argv);
 }
