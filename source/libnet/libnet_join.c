@@ -381,7 +381,7 @@ static WERROR do_unjoin_modify_vals_config(TALLOC_CTX *mem_ctx,
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
-	werr = libnet_smbconf_delparm(mem_ctx, "GLOBAL", "realm");
+	werr = libnet_smbconf_delparm("GLOBAL", "realm");
 
 	return werr;
 }
