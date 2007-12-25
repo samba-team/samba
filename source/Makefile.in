@@ -1996,6 +1996,7 @@ clean: delheaders
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) $(LIBADDNS) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
+		bin/libwbclient.so.0 bin/timelimit \
 		.headers.stamp */src/*.o proto_exists
 	-rm -rf t_dir
 
