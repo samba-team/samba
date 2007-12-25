@@ -846,9 +846,6 @@ static int net_conf_delparm(int argc, const char **argv)
 	WERROR werr = WERR_OK;
 	char *service = NULL;
 	char *param = NULL;
-	TALLOC_CTX *ctx;
-
-	ctx = talloc_init("delparm");
 
 	if (argc != 2) {
 		net_conf_delparm_usage(argc, argv);
@@ -857,7 +854,7 @@ static int net_conf_delparm(int argc, const char **argv)
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	werr = libnet_smbconf_delparm(ctx, service, param);
+	werr = libnet_smbconf_delparm(service, param);
 
 	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,

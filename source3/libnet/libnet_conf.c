@@ -366,12 +366,12 @@ done:
 	return werr;
 }
 
-WERROR libnet_smbconf_delparm(TALLOC_CTX *mem_ctx,
-			      const char *service,
+WERROR libnet_smbconf_delparm(const char *service,
 			      const char *param)
 {
 	struct registry_key *key = NULL;
 	WERROR werr = WERR_OK;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (!libnet_smbconf_key_exists(service)) {
 		return WERR_NO_SUCH_SERVICE;
@@ -390,7 +390,7 @@ WERROR libnet_smbconf_delparm(TALLOC_CTX *mem_ctx,
 	werr = reg_deletevalue(key, param);
 
 done:
-	TALLOC_FREE(key);
+	TALLOC_FREE(mem_ctx);
 	return werr;
 }
 
