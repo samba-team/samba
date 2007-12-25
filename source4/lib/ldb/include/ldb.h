@@ -705,7 +705,7 @@ struct ldb_handle {
 struct ldb_search {
 	struct ldb_dn *base;
 	enum ldb_scope scope;
-	const struct ldb_parse_tree *tree;
+	struct ldb_parse_tree *tree;
 	const char * const *attrs;
 	struct ldb_result *res;
 };
