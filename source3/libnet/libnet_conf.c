@@ -246,24 +246,21 @@ done:
 /**
  * delete a service from configuration
  */
-WERROR libnet_smbconf_delshare(TALLOC_CTX *ctx, const char *keyname)
+WERROR libnet_smbconf_delshare(const char *servicename)
 {
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
+	TALLOC_CTX *ctx = talloc_stackframe();
 
 	werr = libnet_smbconf_open_basepath(ctx, REG_KEY_WRITE, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
-	werr = reg_deletekey_recursive(key, key, keyname);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Error deleting registry key %s\\%s: %s\n",
-			  KEY_SMBCONF, keyname, dos_errstr(werr));
-	}
+	werr = reg_deletekey_recursive(key, key, servicename);
 
 done:
-	TALLOC_FREE(key);
+	TALLOC_FREE(ctx);
 	return werr;
 }
 
