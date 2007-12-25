@@ -167,8 +167,7 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 		return WERR_NOT_SUPPORTED;
 	}
 
-	return libnet_smbconf_set_global_param(ctx,
-					       "server string",
+	return libnet_smbconf_set_global_param("server string",
 					       info1005->comment);
 }
 
