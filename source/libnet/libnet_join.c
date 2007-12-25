@@ -331,8 +331,7 @@ done:
 	return status;
 }
 
-static WERROR do_join_modify_vals_config(TALLOC_CTX *mem_ctx,
-					 struct libnet_JoinCtx *r)
+static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 {
 	WERROR werr;
 	bool is_ad = false;
@@ -399,7 +398,7 @@ static WERROR do_JoinConfig(TALLOC_CTX *mem_ctx,
 		return WERR_OK;
 	}
 
-	werr = do_join_modify_vals_config(mem_ctx, r);
+	werr = do_join_modify_vals_config(r);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
