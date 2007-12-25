@@ -875,6 +875,8 @@ static int net_conf_delparm(int argc, const char **argv)
 	ret = 0;
 
 done:
+	SAFE_FREE(service);
+	SAFE_FREE(param);
 	return ret;
 }
 
