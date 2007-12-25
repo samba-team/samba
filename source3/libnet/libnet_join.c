@@ -339,11 +339,10 @@ static WERROR do_join_modify_vals_config(TALLOC_CTX *mem_ctx,
 
 	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
 
-		werr = libnet_smbconf_set_global_param(mem_ctx, "security",
-						       "user");
+		werr = libnet_smbconf_set_global_param("security", "user");
 		W_ERROR_NOT_OK_RETURN(werr);
 
-		werr = libnet_smbconf_set_global_param(mem_ctx, "workgroup",
+		werr = libnet_smbconf_set_global_param("workgroup",
 						       r->in.domain_name);
 		return werr;
 	}
@@ -352,19 +351,18 @@ static WERROR do_join_modify_vals_config(TALLOC_CTX *mem_ctx,
 		is_ad = true;
 	}
 
-	werr = libnet_smbconf_set_global_param(mem_ctx, "security", "domain");
+	werr = libnet_smbconf_set_global_param("security", "domain");
 	W_ERROR_NOT_OK_RETURN(werr);
 
-	werr = libnet_smbconf_set_global_param(mem_ctx, "workgroup",
+	werr = libnet_smbconf_set_global_param("workgroup",
 					       r->out.netbios_domain_name);
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	if (is_ad) {
-		werr = libnet_smbconf_set_global_param(mem_ctx, "security",
-						       "ads");
+		werr = libnet_smbconf_set_global_param("security", "ads");
 		W_ERROR_NOT_OK_RETURN(werr);
 
-		werr = libnet_smbconf_set_global_param(mem_ctx, "realm",
+		werr = libnet_smbconf_set_global_param("realm",
 						       r->out.dns_domain_name);
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
@@ -379,8 +377,7 @@ static WERROR do_unjoin_modify_vals_config(TALLOC_CTX *mem_ctx,
 
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
-		werr = libnet_smbconf_set_global_param(mem_ctx, "security",
-						       "user");
+		werr = libnet_smbconf_set_global_param("security", "user");
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
