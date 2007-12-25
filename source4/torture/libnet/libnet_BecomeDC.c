@@ -36,6 +36,59 @@
 #include "system/time.h"
 #include "auth/auth.h"
 #include "lib/ldb_wrap.h"
+
+struct test_become_dc_state {
+	struct libnet_context *ctx;
+	struct torture_context *tctx;
+	const char *netbios_name;
+	struct test_join *tj;
+	struct cli_credentials *machine_account;
+	struct dsdb_schema *self_made_schema;
+	const struct dsdb_schema *schema;
+
+	struct ldb_context *ldb;
+
+	struct {
+		uint32_t object_count;
+		struct drsuapi_DsReplicaObjectListItemEx *first_object;
+		struct drsuapi_DsReplicaObjectListItemEx *last_object;
+	} schema_part;
+
+	struct {
+		const char *samdb_ldb;
+		const char *domaindn_ldb;
+		const char *configdn_ldb;
+		const char *schemadn_ldb;
+		const char *secrets_ldb;
+		const char *secrets_keytab;
+	} path;
+};
+
+static NTSTATUS test_become_dc_check_options(void *private_data,
+					     const struct libnet_BecomeDC_CheckOptions *o)
+{
+	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
+
+	DEBUG(0,("Become DC [%s] of Domain[%s]/[%s]\n",
+		s->netbios_name,
+		o->domain->netbios_name, o->domain->dns_name));
+
+	DEBUG(0,("Promotion Partner is Server[%s] from Site[%s]\n",
+		o->source_dsa->dns_name, o->source_dsa->site_name));
+
+	DEBUG(0,("Options:crossRef behavior_version[%u]\n"
+		       "\tschema object_version[%u]\n"
+		       "\tdomain behavior_version[%u]\n"
+		       "\tdomain w2k3_update_revision[%u]\n", 
+		o->forest->crossref_behavior_version,
+		o->forest->schema_object_version,
+		o->domain->behavior_version,
+		o->domain->w2k3_update_revision));
+
+	return NT_STATUS_OK;
+}
+
+#ifndef PROVISION_PYTHON
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/appweb/ejs/ejsInternal.h"
 #include "scripting/ejs/smbcalls.h"
@@ -91,57 +144,6 @@ failed:
 	ejsClose();
 	talloc_free(mem_ctx);
 	return ejs_error;
-}
-
-struct test_become_dc_state {
-	struct libnet_context *ctx;
-	struct torture_context *tctx;
-	const char *netbios_name;
-	struct test_join *tj;
-	struct cli_credentials *machine_account;
-	struct dsdb_schema *self_made_schema;
-	const struct dsdb_schema *schema;
-
-	struct ldb_context *ldb;
-
-	struct {
-		uint32_t object_count;
-		struct drsuapi_DsReplicaObjectListItemEx *first_object;
-		struct drsuapi_DsReplicaObjectListItemEx *last_object;
-	} schema_part;
-
-	struct {
-		const char *samdb_ldb;
-		const char *domaindn_ldb;
-		const char *configdn_ldb;
-		const char *schemadn_ldb;
-		const char *secrets_ldb;
-		const char *secrets_keytab;
-	} path;
-};
-
-static NTSTATUS test_become_dc_check_options(void *private_data,
-					     const struct libnet_BecomeDC_CheckOptions *o)
-{
-	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
-
-	DEBUG(0,("Become DC [%s] of Domain[%s]/[%s]\n",
-		s->netbios_name,
-		o->domain->netbios_name, o->domain->dns_name));
-
-	DEBUG(0,("Promotion Partner is Server[%s] from Site[%s]\n",
-		o->source_dsa->dns_name, o->source_dsa->site_name));
-
-	DEBUG(0,("Options:crossRef behavior_version[%u]\n"
-		       "\tschema object_version[%u]\n"
-		       "\tdomain behavior_version[%u]\n"
-		       "\tdomain w2k3_update_revision[%u]\n", 
-		o->forest->crossref_behavior_version,
-		o->forest->schema_object_version,
-		o->domain->behavior_version,
-		o->domain->w2k3_update_revision));
-
-	return NT_STATUS_OK;
 }
 
 static NTSTATUS test_become_dc_prepare_db(void *private_data,
@@ -280,6 +282,113 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 
 	return NT_STATUS_OK;
 }
+
+#else 
+#include "param/param.h"
+#include <Python.h>
+#include "scripting/python/modules.h"
+
+static NTSTATUS test_become_dc_prepare_db(void *private_data,
+					  const struct libnet_BecomeDC_PrepareDB *p)
+{
+	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
+	bool ok;
+	PyObject *provision_fn, *result, *parameters;
+
+	py_load_samba_modules();
+	Py_Initialize();
+
+	py_update_path("bin"); /* FIXME: Can't assume this always runs in source/... */
+
+	provision_fn = PyImport_Import(PyString_FromString("samba.provision.provision"));
+
+	if (provision_fn == NULL) {
+		DEBUG(0, ("Unable to import provision Python module.\n"));
+	      	return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	DEBUG(0,("New Server[%s] in Site[%s]\n",
+		p->dest_dsa->dns_name, p->dest_dsa->site_name));
+
+	DEBUG(0,("DSA Instance [%s]\n"
+		"\tobjectGUID[%s]\n"
+		"\tinvocationId[%s]\n",
+		p->dest_dsa->ntds_dn_str,
+		GUID_string(s, &p->dest_dsa->ntds_guid),
+		GUID_string(s, &p->dest_dsa->invocation_id)));
+
+	DEBUG(0,("Pathes under PRIVATEDIR[%s]\n"
+		 "SAMDB[%s] SECRETS[%s] KEYTAB[%s]\n",
+		lp_private_dir(s->tctx->lp_ctx),
+		s->path.samdb_ldb,
+		s->path.secrets_ldb,
+		s->path.secrets_keytab));
+
+	DEBUG(0,("Schema Partition[%s => %s]\n",
+		p->forest->schema_dn_str, s->path.schemadn_ldb));
+
+	DEBUG(0,("Config Partition[%s => %s]\n",
+		p->forest->config_dn_str, s->path.configdn_ldb));
+
+	DEBUG(0,("Domain Partition[%s => %s]\n",
+		p->domain->dn_str, s->path.domaindn_ldb));
+
+	parameters = PyDict_New();
+
+	PyDict_SetItemString(parameters, "rootdn", PyString_FromString(p->forest->root_dn_str));
+	PyDict_SetItemString(parameters, "domaindn", PyString_FromString(p->domain->dn_str));
+	PyDict_SetItemString(parameters, "domaindn_ldb", PyString_FromString(s->path.domaindn_ldb));
+	PyDict_SetItemString(parameters, "configdn", PyString_FromString(p->forest->config_dn_str));
+	PyDict_SetItemString(parameters, "configdn_ldb", PyString_FromString(s->path.configdn_ldb));
+	PyDict_SetItemString(parameters, "schema_dn_str", PyString_FromString(p->forest->schema_dn_str));
+	PyDict_SetItemString(parameters, "schemadn_ldb", PyString_FromString(s->path.schemadn_ldb));
+	PyDict_SetItemString(parameters, "netbios_name", PyString_FromString(p->dest_dsa->netbios_name));
+	PyDict_SetItemString(parameters, "dnsname", PyString_FromString(p->dest_dsa->dns_name));
+	PyDict_SetItemString(parameters, "defaultsite", PyString_FromString(p->dest_dsa->site_name));
+	PyDict_SetItemString(parameters, "machinepass", PyString_FromString(cli_credentials_get_password(s->machine_account)));
+	PyDict_SetItemString(parameters, "samdb", PyString_FromString(s->path.samdb_ldb));
+	PyDict_SetItemString(parameters, "secrets_ldb", PyString_FromString(s->path.secrets_ldb));
+	PyDict_SetItemString(parameters, "secrets_keytab", PyString_FromString(s->path.secrets_keytab));
+
+	result = PyEval_CallObjectWithKeywords(provision_fn, NULL, parameters);
+
+	Py_DECREF(parameters);
+
+	if (result == NULL) {
+		PyErr_Print();
+		PyErr_Clear();
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	talloc_free(s->ldb);
+
+	DEBUG(0,("Open the SAM LDB with system credentials: %s\n", 
+		 s->path.samdb_ldb));
+
+	s->ldb = ldb_wrap_connect(s, s->tctx->lp_ctx, s->path.samdb_ldb,
+				  system_session(s, s->tctx->lp_ctx),
+				  NULL, 0, NULL);
+	if (!s->ldb) {
+		DEBUG(0,("Failed to open '%s'\n",
+			s->path.samdb_ldb));
+		return NT_STATUS_INTERNAL_DB_ERROR;
+	}
+
+	ok = samdb_set_ntds_invocation_id(s->ldb, &p->dest_dsa->invocation_id);
+	if (!ok) {
+		DEBUG(0,("Failed to set cached ntds invocationId\n"));
+		return NT_STATUS_FOOBAR;
+	}
+	ok = samdb_set_ntds_objectGUID(s->ldb, &p->dest_dsa->ntds_guid);
+	if (!ok) {
+		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	return NT_STATUS_OK;
+}
+
+#endif
 
 static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 				  const struct libnet_BecomeDC_StoreChunk *c)

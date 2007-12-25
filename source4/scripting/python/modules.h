@@ -17,18 +17,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "includes.h"
-#include <Python.h>
-#include "scripting/python/modules.h"
+#ifndef __SAMBA_PYTHON_MODULES_H__
+#define __SAMBA_PYTHON_MODULES_H__
 
-int main(int argc, char **argv) 
-{
-	py_load_samba_modules();
-	Py_Initialize();
-	if (strchr(argv[0], '/') != NULL) {
-		char *bindir = strndup(argv[0], strrchr(argv[0], '/')-argv[0]);
-		py_update_path(bindir);
-		free(bindir);
-	}
-	return Py_Main(argc,argv);
-}
+void py_load_samba_modules(void);
+void py_update_path(const char *bindir);
+
+#endif /* __SAMBA_PYTHON_MODULES_H__ */ 
