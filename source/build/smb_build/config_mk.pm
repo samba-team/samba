@@ -215,7 +215,6 @@ sub run_config_mk($$$$)
 	# corresponding input files. The curlies are so you can match the
 	# BEGIN/END pairs in a text editor.
 	$makefile .= "# BEGIN{ $parsing_file\n";
-	$makefile .= "dir = $basedir\n";
 
 	foreach (@lines) {
 		$linenum++;

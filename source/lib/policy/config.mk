@@ -3,9 +3,9 @@ CFLAGS = -Iheimdal/lib/roken
 OBJ_FILES = lex.o parse_adm.o 
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSAMBA-CONFIG LIBTALLOC CHARSET 
 
-$(dir)/lex.l: $(dir)/parse_adm.h
+lib/policy/lex.l: lib/policy/parse_adm.h
 
-$(dir)/parse_adm.h: $(dir)/parse_adm.c
+lib/policy/parse_adm.h: lib/policy/parse_adm.c
 
 [BINARY::dumpadm]
 OBJ_FILES = dumpadm.o
