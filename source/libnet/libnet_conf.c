@@ -243,10 +243,10 @@ done:
  *
  **********************************************************************/
 
-/*
- * delete a subkey of KEY_SMBCONF
+/**
+ * delete a service from configuration
  */
-WERROR reg_delkey_internal(TALLOC_CTX *ctx, const char *keyname)
+WERROR libnet_smbconf_delshare(TALLOC_CTX *ctx, const char *keyname)
 {
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
