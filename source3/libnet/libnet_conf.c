@@ -243,29 +243,23 @@ done:
  *
  **********************************************************************/
 
-WERROR libnet_smbconf_drop(TALLOC_CTX *ctx)
+WERROR libnet_smbconf_drop(void)
 {
 	char *path, *p;
 	WERROR werr = WERR_OK;
 	NT_USER_TOKEN *token;
 	struct registry_key *parent_key = NULL;
 	struct registry_key *new_key = NULL;
-	TALLOC_CTX* tmp_ctx = NULL;
+	TALLOC_CTX* mem_ctx = talloc_stackframe();
 	enum winreg_CreateAction action;
 
-	tmp_ctx = talloc_new(ctx);
-	if (tmp_ctx == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
-	if (!(token = registry_create_admin_token(tmp_ctx))) {
+	if (!(token = registry_create_admin_token(mem_ctx))) {
 		/* what is the appropriate error code here? */
 		werr = WERR_CAN_NOT_COMPLETE;
 		goto done;
 	}
 
-	path = talloc_strdup(tmp_ctx, KEY_SMBCONF);
+	path = talloc_strdup(mem_ctx, KEY_SMBCONF);
 	if (path == NULL) {
 		d_fprintf(stderr, "ERROR: out of memory!\n");
 		werr = WERR_NOMEM;
@@ -273,23 +267,23 @@ WERROR libnet_smbconf_drop(TALLOC_CTX *ctx)
 	}
 	p = strrchr(path, '\\');
 	*p = '\0';
-	werr = reg_open_path(tmp_ctx, path, REG_KEY_WRITE, token, &parent_key);
+	werr = reg_open_path(mem_ctx, path, REG_KEY_WRITE, token, &parent_key);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
-	werr = reg_deletekey_recursive(tmp_ctx, parent_key, p+1);
+	werr = reg_deletekey_recursive(mem_ctx, parent_key, p+1);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
-	werr = reg_createkey(tmp_ctx, parent_key, p+1, REG_KEY_WRITE,
+	werr = reg_createkey(mem_ctx, parent_key, p+1, REG_KEY_WRITE,
 			     &new_key, &action);
 
 done:
-	TALLOC_FREE(tmp_ctx);
+	TALLOC_FREE(mem_ctx);
 	return werr;
 }
 
