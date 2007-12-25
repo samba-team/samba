@@ -3,16 +3,16 @@ PUBLIC_DEPENDENCIES = TDR
 OBJ_FILES = tdr_regf.o
 
 # Special support for external builddirs
-lib/registry/regf.c: lib/registry/tdr_regf.c
-$(srcdir)/lib/registry/regf.c: lib/registry/tdr_regf.c
-lib/registry/tdr_regf.h: lib/registry/tdr_regf.c
-lib/registry/tdr_regf.c: $(srcdir)/lib/registry/regf.idl
+$(dir)/regf.c: $(dir)/tdr_regf.c
+$(srcdir)/$(dir)/regf.c: $(dir)/tdr_regf.c
+$(dir)/tdr_regf.h: $(dir)/tdr_regf.c
+$(dir)/tdr_regf.c: $(srcdir)/$(dir)/regf.idl
 	@CPP="$(CPP)" srcdir="$(srcdir)" $(PERL) $(srcdir)/pidl/pidl $(PIDL_ARGS) \
-		--header --outputdir=lib/registry \
-		--tdr-parser -- $(srcdir)/lib/registry/regf.idl
+		--header --outputdir=$(dir) \
+		--tdr-parser -- $(srcdir)/$(dir)/regf.idl
 
 clean::
-	@-rm -f lib/registry/regf.h lib/registry/tdr_regf*
+	@-rm -f $(dir)/regf.h $(dir)/tdr_regf*
 
 ################################################
 # Start SUBSYSTEM registry
