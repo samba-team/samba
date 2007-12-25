@@ -29,12 +29,11 @@
 
 /*
  * Open a subkey of KEY_SMBCONF (i.e a service)
- * - variant without error output (q = quiet)-
  */
-static WERROR libnet_smbconf_open_path_q(TALLOC_CTX *ctx,
-					 const char *subkeyname,
-					 uint32 desired_access,
-					 struct registry_key **key)
+WERROR libnet_smbconf_open_path(TALLOC_CTX *ctx,
+				       const char *subkeyname,
+				       uint32 desired_access,
+				       struct registry_key **key)
 {
 	WERROR werr = WERR_OK;
 	char *path = NULL;
@@ -54,6 +53,11 @@ static WERROR libnet_smbconf_open_path_q(TALLOC_CTX *ctx,
 	werr = reg_open_path(ctx, path, desired_access,
 			     token, key);
 
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Error opening registry path '%s': %s\n",
+			  path, dos_errstr(werr)));
+	}
+
 done:
 	TALLOC_FREE(path);
 	return werr;
@@ -69,7 +73,7 @@ bool libnet_smbconf_key_exists(const char *subkeyname)
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct registry_key *key = NULL;
 
-	werr = libnet_smbconf_open_path_q(mem_ctx, subkeyname, REG_KEY_READ, &key);
+	werr = libnet_smbconf_open_path(mem_ctx, subkeyname, REG_KEY_READ, &key);
 	if (W_ERROR_IS_OK(werr)) {
 		ret = true;
 	}
@@ -93,27 +97,6 @@ static bool libnet_smbconf_value_exists(struct registry_key *key,
 
 	TALLOC_FREE(ctx);
 	return ret;
-}
-
-/*
- * Open a subkey of KEY_SMBCONF (i.e a service)
- * - variant with error output -
- */
-WERROR libnet_smbconf_open_path(TALLOC_CTX *ctx, const char *subkeyname,
-				uint32 desired_access,
-				struct registry_key **key)
-{
-	WERROR werr = WERR_OK;
-
-	werr = libnet_smbconf_open_path_q(ctx, subkeyname, desired_access, key);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Error opening registry path '%s\\%s': %s\n",
-			  KEY_SMBCONF,
-			  (subkeyname == NULL) ? "" : subkeyname,
-			  dos_errstr(werr));
-	}
-
-	return werr;
 }
 
 /*
