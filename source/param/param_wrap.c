@@ -2643,6 +2643,8 @@ SWIGINTERN bool loadparm_context_is_mydomain(loadparm_context *self,char const *
 SWIGINTERN bool loadparm_context_is_myname(loadparm_context *self,char const *name){ return lp_is_myname(self, name); }
 SWIGINTERN int loadparm_context_use(loadparm_context *self,struct param_context *param_ctx){ return param_use(self, param_ctx); }
 SWIGINTERN bool loadparm_context_set(loadparm_context *self,char const *parm_name,char const *parm_value){
+            if (parm_value == NULL)
+                return false;
             return lp_set_cmdline(self, parm_name, parm_value);
         }
 SWIGINTERN PyObject *loadparm_context_get(loadparm_context *self,char const *param_name,char const *service_name){

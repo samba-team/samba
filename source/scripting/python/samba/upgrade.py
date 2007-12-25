@@ -8,7 +8,6 @@
 """Support code for upgrading from Samba 3 to Samba 4."""
 
 from provision import findnss, provision
-import provision
 import grp
 import pwd
 import uuid
@@ -255,7 +254,7 @@ maxVersion: %llu
 
     return ldif
 
-def upgrade_provision(samba3, setup_dir, message, credentials, session_info, paths):
+def upgrade_provision(samba3, setup_dir, message, credentials, session_info, lp, paths):
     oldconf = samba3.get_conf()
 
     if oldconf.get("domain logons") == "True":
@@ -266,7 +265,11 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info, pat
         else:
             serverrole = "member server"
 
+    lp.set("server role", serverrole)
     domainname = oldconf.get("workgroup")
+    if domainname:
+        domainname = str(domainname)
+    lp.set("workgroup", domainname)
     realm = oldconf.get("realm")
     netbiosname = oldconf.get("netbios name")
 
@@ -279,18 +282,19 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info, pat
     if realm is None:
         realm = domainname.lower()
         message("No realm specified in smb.conf file, assuming '%s'\n" % realm)
+    lp.set("realm", realm)
 
     domainguid = secrets_db.get_domain_guid(domainname)
-    domainsid = secrets_db.get_sid(domainsid)
+    domainsid = secrets_db.get_sid(domainname)
     if domainsid is None:
         message("Can't find domain secrets for '%s'; using random SID\n" % domainname)
     
     if netbiosname is not None:
         machinepass = secrets_db.get_machine_password(netbiosname)
     else:
-        netbiosname = None
+        machinepass = None
     
-    provision(lp, setup_dir, message, blank=True, paths=path, session_info=session_info, 
+    provision(lp=lp, setup_dir=setup_dir, message=message, blank=True, ldapbackend=None, paths=paths, session_info=session_info, 
               credentials=credentials, realm=realm, domain=domainname, 
               domainsid=domainsid, domainguid=domainguid, machinepass=machinepass, serverrole=serverrole)
 
@@ -499,18 +503,6 @@ data: %d
         enable_samba3sam(samdb)
 
     return ret
-
-def upgrade_verify(subobj, samba3, paths, message):
-    message("Verifying account policies")
-
-    samldb = Ldb(paths.samdb)
-
-    for account in samba3.samaccounts:
-        msg = samldb.search("(&(sAMAccountName=" + account.nt_username + ")(objectclass=user))")
-        assert(len(msg) >= 1)
-    
-    # FIXME
-
 
 
 def enable_samba3sam(samdb):

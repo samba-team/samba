@@ -21,7 +21,7 @@
 
 import getopt
 import optparse
-import sys
+import os, sys
 
 # Add path to the library for in-tree use
 sys.path.append("scripting/python")
@@ -32,7 +32,7 @@ from auth import system_session
 import samba.getopt as options
 import param
 from samba.provision import (provision,  
-                             provision_default_paths, provision_ldapbase)
+                             provision_paths_from_lp, provision_ldapbase)
 
 parser = optparse.OptionParser("provision [options]")
 parser.add_option_group(options.SambaOptions(parser))
@@ -93,6 +93,8 @@ parser.add_option("--server-role", type="choice", metavar="ROLE",
 		help="Set server role to provision for (default standalone)")
 parser.add_option("--partitions-only", 
 		help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true")
+parser.add_option("--targetdir", type="string", metavar="DIR", 
+		          help="Set target directory")
 
 opts = parser.parse_args()[0]
 
@@ -101,29 +103,29 @@ def message(text):
 	if not opts.quiet:
 		print text
 
-hostname = opts.host_name
-
-if opts.realm is None or opts.domain is None or opts.host_name is None:
+if opts.realm is None or opts.domain is None:
 	if opts.realm is None:
 		print >>sys.stderr, "No realm set"
 	if opts.domain is None:
 		print >>sys.stderr, "No domain set"
-	if opts.host_name is None:
-		print >>sys.stderr, "No host name set"
 	parser.print_usage()
 	sys.exit(1)
 
 # cope with an initially blank smb.conf 
 lp = param.LoadParm()
-lp.load(opts.configfile)
+if opts.configfile:
+    lp.load(opts.configfile)
+if opts.targetdir is not None:
+    lp.set("private dir", os.path.abspath(opts.targetdir))
+    lp.set("lock dir", os.path.abspath(opts.targetdir))
 lp.set("realm", opts.realm)
 lp.set("workgroup", opts.domain)
-lp.set("server role", opts.server_role)
+lp.set("server role", opts.server_role or "domain controller")
 
 if opts.aci is not None:
 	print "set ACI: %s" % opts.aci
 
-paths = provision_default_paths(lp, opts.realm.lower())
+paths = provision_paths_from_lp(lp, opts.realm.lower())
 paths.smbconf = opts.configfile
 
 if opts.ldap_backend:

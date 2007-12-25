@@ -29,10 +29,14 @@ def setup_path(file):
 
 class ProvisionTestCase(samba.tests.TestCaseInTempDir):
     def test_setup_secretsdb(self):
-        ldb = setup_secretsdb(os.path.join(self.tempdir, "secrets.ldb"), 
-                              setup_path, None, None, None)
-        self.assertEquals("LSA Secrets",
+        path = os.path.join(self.tempdir, "secrets.ldb")
+        ldb = setup_secretsdb(path, setup_path, None, None, None)
+        try:
+            self.assertEquals("LSA Secrets",
                  ldb.searchone(Dn(ldb, "CN=LSA Secrets"), "CN"))
+        finally:
+            del ldb
+            os.unlink(path)
 
 
 class Disabled:

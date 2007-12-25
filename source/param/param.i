@@ -59,6 +59,8 @@ typedef struct loadparm_context {
         bool is_myname(const char *name) { return lp_is_myname($self, name); }
         int use(struct param_context *param_ctx) { return param_use($self, param_ctx); }
         bool set(const char *parm_name, const char *parm_value) {
+            if (parm_value == NULL)
+                return false;
             return lp_set_cmdline($self, parm_name, parm_value);
         }
 

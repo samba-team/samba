@@ -95,7 +95,7 @@ def setup_add_ldif(ldb, ldif_path, subst_vars=None):
 
     assert "${" not in data
 
-    ldb.load_ldif_add(data)
+    ldb.add_ldif(data)
 
 
 def setup_modify_ldif(ldb, ldif_path, substvars=None):
@@ -140,7 +140,7 @@ def setup_file(template, fname, substvars):
     open(f, 'w').write(data)
 
 
-def provision_default_paths(lp, dnsdomain):
+def provision_paths_from_lp(lp, dnsdomain):
     """Set the default paths for provisioning.
 
     :param lp: Loadparm context.
@@ -605,7 +605,7 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
         realm = lp.get("realm")
     else:
         if lp.get("realm").upper() != realm.upper():
-            raise Error("realm '%s' in smb.conf must match chosen realm '%s'\n" %
+            raise Exception("realm '%s' in smb.conf must match chosen realm '%s'\n" %
                 (lp.get("realm"), realm))
 
     assert realm is not None

@@ -164,9 +164,9 @@ class Ldb(ldb.Ldb):
             self.add(msg)
 
     def modify_ldif(self, ldif):
-        for (changetype, msg) in ldb.parse_ldif(data):
-            assert changetype == CHANGETYPE_MODIFY
-            ldb.modify(msg)
+        for (changetype, msg) in self.parse_ldif(ldif):
+            assert changetype == ldb.CHANGETYPE_MODIFY
+            self.modify(msg)
 
 
 def substitute_var(text, values):

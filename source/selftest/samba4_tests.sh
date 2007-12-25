@@ -297,7 +297,11 @@ then
 	plantest "samba3.python" none PYTHONPATH=bin/python:scripting/python $PYTHON scripting/bin/subunitrun samba.tests.samba3
 	plantest "samba3sam.python" none PYTHONPATH=bin/python:scripting/python $PYTHON dsdb/samdb/ldb_modules/tests/samba3sam.py `pwd` $DATADIR/samba3/
 	plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD
+	plantest "blackbox.samba3dump" none $PYTHON scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
 	rm -rf $PREFIX/upgrade
 	mkdir -p $PREFIX/upgrade
-	plantest "blackbox.upgrade" none $PYTHON setup/upgrade.py $CONFIGURATION --verify --targetdir=$PREFIX ../testdata/samba3 ../testdata/samba3/smb.conf
+	plantest "blackbox.upgrade" none $PYTHON setup/upgrade.py $CONFIGURATION --targetdir=$PREFIX ../testdata/samba3 ../testdata/samba3/smb.conf
+	rm -rf $PREFIX/provision
+	mkdir -p $PREFIX/provision
+	plantest "blackbox.provision.py" none $PYTHON ./setup/provision.py $CONFIGURATION --domain=FOO --realm=foo --targetdir=$PREFIX/provision
 fi
