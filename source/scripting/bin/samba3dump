@@ -47,7 +47,6 @@ def print_samba3_policy(pol):
 
 def print_samba3_sam(samdb):
     print_header("SAM Database")
-    
     for user in samdb:
         print "%s" % user
 
@@ -55,10 +54,8 @@ def print_samba3_shares(shares):
     print_header("Configured shares")
     for s in shares:
         print "--- %s ---" % s.name
-
         for p in s:
             print "\t%s = %s" % (p.key, p.value)
-
         print ""
 
 def print_samba3_secrets(secrets):

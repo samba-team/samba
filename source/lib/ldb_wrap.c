@@ -140,7 +140,7 @@ struct ldb_context *ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 	
-	if (strcmp(lp_sam_url(lp_ctx), url) == 0) {
+	if (lp_ctx != NULL && strcmp(lp_sam_url(lp_ctx), url) == 0) {
 		dsdb_set_global_schema(ldb);
 	}
 

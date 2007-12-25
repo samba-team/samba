@@ -6,15 +6,20 @@
 #
 import getopt
 import optparse
-import sys
+import os, sys
 sys.path.append("scripting/python")
+import param
 import samba
-import samba.getopt
+import samba.getopt as options
+from samba.provision import provision_default_paths
 
-parser = optparse.OptionParser("upgrade [options]")
+parser = optparse.OptionParser("upgrade [options] <libdir> <smbconf>")
 parser.add_option_group(options.SambaOptions(parser))
 parser.add_option_group(options.VersionOptions(parser))
-parser.add_option_group(options.CredentialsOptions(parser))
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+parser.add_option("--setupdir", type="string", metavar="DIR", 
+		help="directory with setup files")
 parser.add_option("--realm", type="string", metavar="REALM", help="set realm")
 parser.add_option("--quiet", help="Be quiet")
 parser.add_option("--verify", help="Verify resulting configuration")
@@ -23,44 +28,41 @@ parser.add_option("--blank",
 parser.add_option("--targetdir", type="string", metavar="DIR", 
 		          help="Set target directory")
 
-opts = parser.parse_args()[0]
+opts, args = parser.parse_args()
 
 def message(text):
     """Print a message if quiet is not set."""
     if opts.quiet:
         print text
 
+if len(args) < 1:
+    parser.print_usage()
+    sys.exit(1)
+from samba.samba3 import Samba3
 message("Reading Samba3 databases and smb.conf\n")
-samba3 = samba3_read(options.ARGV[0], options.ARGV[1])
+libdir = args[0]
+if not os.path.isdir(libdir):
+    print "error: %s is not a directory"
+    sys.exit(1)
+if len(args) > 1:
+    smbconf = args[1]
+else:
+    smbconf = os.path.join(libdir, "smb.conf")
+samba3 = Samba3(libdir, smbconf)
+
+from samba.upgrade import upgrade_provision
 
 message("Provisioning\n")
-subobj = upgrade_provision(samba3)
-if options.targetdir is not None:
-	paths = ProvisionPaths()
-	paths.smbconf = os.path.join(options.targetdir, "smb.conf")
-	ldbs = ["hklm","hkcr","hku","hkcu","hkpd","hkpt","samdb","rootdse","secrets","wins"]
-	for n in ldbs:
-		paths[n] = sprintf("tdb://%s/%s.ldb", options.targetdir, n)
-	paths.dns = os.path.join(options.targetdir, "dns.zone")
-else:
-	paths = provision_default_paths(subobj)
 
-creds = options.get_credentials()
-system_session = system_session()
-paths = provision_default_paths(subobj)
+setup_dir = opts.setupdir
+if setup_dir is None:
+	setup_dir = "setup"
 
-if options.realm:
-	subobj.realm = options.realm
+creds = credopts.get_credentials()
+lp = param.LoadParm()
+lp.load(opts.configfile)
+upgrade_provision(samba3, setup_dir, message, credentials=creds, session_info=system_session())
 
-provision(lp, subobj, message, options.blank, paths, system_session, creds, undefined)
-
-ret = upgrade(subobj,samba3,message,paths, system_session, creds)
-if ret > 0:
-	message("Failed to import %d entries\n", ret)
-else:
-	provision_dns(subobj, message, paths, system_session, creds)
-	message("All OK\n")
-
-if options.verify:
+if opts.verify:
 	message("Verifying...\n")
 	ret = upgrade_verify(subobj, samba3, paths, message)

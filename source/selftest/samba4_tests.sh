@@ -241,10 +241,6 @@ DATADIR=$samba4srcdir/../testdata
 plantest "parse samba3" none $samba4bindir/smbscript $DATADIR/samba3/verify $CONFIGURATION $DATADIR/samba3
 plantest "js.samba3sam" none $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
 
-rm -rf $PREFIX/upgrade
-mkdir -p $PREFIX/upgrade
-#plantest "upgrade" none $samba4bindir/smbscript setup/upgrade $CONFIGURATION --verify --targetdir=$PREFIX ../testdata/samba3 ../testdata/samba3/smb.conf
-
 # Domain Member Tests
 
 plantest "RPC-ECHO against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" RPC-ECHO "$*"
@@ -301,4 +297,7 @@ then
 	plantest "samba3.python" none PYTHONPATH=bin/python:scripting/python $PYTHON scripting/bin/subunitrun samba.tests.samba3
 	plantest "samba3sam.python" none PYTHONPATH=bin/python:scripting/python $PYTHON dsdb/samdb/ldb_modules/tests/samba3sam.py `pwd` $DATADIR/samba3/
 	plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD
+	rm -rf $PREFIX/upgrade
+	mkdir -p $PREFIX/upgrade
+	plantest "blackbox.upgrade" none $PYTHON setup/upgrade.py $CONFIGURATION --verify --targetdir=$PREFIX ../testdata/samba3 ../testdata/samba3/smb.conf
 fi

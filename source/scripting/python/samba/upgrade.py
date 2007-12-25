@@ -255,68 +255,44 @@ maxVersion: %llu
 
     return ldif
 
-def upgrade_provision(lp, samba3):
-    domainname = samba3.configuration.get("workgroup")
+def upgrade_provision(samba3, setup_dir, message, credentials, session_info, paths):
+    oldconf = samba3.get_conf()
+
+    if oldconf.get("domain logons") == "True":
+        serverrole = "domain controller"
+    else:
+        if oldconf.get("security") == "user":
+            serverrole = "standalone"
+        else:
+            serverrole = "member server"
+
+    domainname = oldconf.get("workgroup")
+    realm = oldconf.get("realm")
+    netbiosname = oldconf.get("netbios name")
+
+    secrets_db = samba3.get_secrets_db()
     
     if domainname is None:
-        domainname = samba3.secrets.domains[0].name
-        print "No domain specified in smb.conf file, assuming '%s'\n" % domainname
+        domainname = secrets_db.domains()[0]
+        message("No domain specified in smb.conf file, assuming '%s'" % domainname)
     
-    domsec = samba3.find_domainsecrets(domainname)
-    hostsec = samba3.find_domainsecrets(hostname())
-    realm = samba3.configuration.get("realm")
-
     if realm is None:
-        realm = domainname
-        print "No realm specified in smb.conf file, assuming '%s'\n" % realm
-    random_init(local)
+        realm = domainname.lower()
+        message("No realm specified in smb.conf file, assuming '%s'\n" % realm)
 
-    subobj.realm        = realm
-    subobj.domain       = domainname
-
-    if domsec is not None:
-        subobj.DOMAINGUID   = domsec.guid
-        subobj.DOMAINSID    = domsec.sid
-    else:
-        print "Can't find domain secrets for '%s'; using random SID and GUID\n" % domainname
-        subobj.DOMAINGUID = uuid.random()
-        subobj.DOMAINSID = randsid()
+    domainguid = secrets_db.get_domain_guid(domainname)
+    domainsid = secrets_db.get_sid(domainsid)
+    if domainsid is None:
+        message("Can't find domain secrets for '%s'; using random SID\n" % domainname)
     
-    if hostsec:
-        hostguid = hostsec.guid
-    subobj.krbtgtpass   = randpass(12)
-    subobj.machinepass  = randpass(12)
-    subobj.adminpass    = randpass(12)
-    subobj.datestring   = datestring()
-    subobj.root         = findnss(pwd.getpwnam, "root")[4]
-    subobj.nobody       = findnss(pwd.getpwnam, "nobody")[4]
-    subobj.nogroup      = findnss(grp.getgrnam, "nogroup", "nobody")[2]
-    subobj.wheel        = findnss(grp.getgrnam, "wheel", "root")[2]
-    subobj.users        = findnss(grp.getgrnam, "users", "guest", "other")[2]
-    subobj.dnsdomain    = subobj.realm.lower()
-    subobj.dnsname      = "%s.%s" % (subobj.hostname.lower(), subobj.dnsdomain)
-    subobj.basedn       = "DC=" + ",DC=".join(subobj.realm.split("."))
-    rdn_list = subobj.dnsdomain.split(".")
-    subobj.domaindn     = "DC=" + ",DC=".join(rdn_list)
-    subobj.domaindn_ldb = "users.ldb"
-    subobj.rootdn       = subobj.domaindn
-
-    modules_list        = ["rootdse",
-                    "kludge_acl",
-                    "paged_results",
-                    "server_sort",
-                    "extended_dn",
-                    "asq",
-                    "samldb",
-                    "password_hash",
-                    "operational",
-                    "objectclass",
-                    "rdn_name",
-                    "show_deleted",
-                    "partition"]
-    subobj.modules_list = ",".join(modules_list)
-
-    return subobj
+    if netbiosname is not None:
+        machinepass = secrets_db.get_machine_password(netbiosname)
+    else:
+        netbiosname = None
+    
+    provision(lp, setup_dir, message, blank=True, paths=path, session_info=session_info, 
+              credentials=credentials, realm=realm, domain=domainname, 
+              domainsid=domainsid, domainguid=domainguid, machinepass=machinepass, serverrole=serverrole)
 
 smbconf_keep = [
     "dos charset", 
@@ -434,14 +410,6 @@ def upgrade_smbconf(oldconf,mark):
                 newconf.set(s, p, oldconf.get(s, p))
             elif mark:
                 newconf.set(s, "samba3:"+p, oldconf.get(s,p))
-
-    if oldconf.get("domain logons") == "True":
-        newconf.set("server role", "domain controller")
-    else:
-        if oldconf.get("security") == "user":
-            newconf.set("server role", "standalone")
-        else:
-            newconf.set("server role", "member server")
 
     return newconf
 
