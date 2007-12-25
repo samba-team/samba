@@ -385,8 +385,7 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 }
 
 
-static WERROR do_JoinConfig(TALLOC_CTX *mem_ctx,
-			    struct libnet_JoinCtx *r)
+static WERROR do_JoinConfig(struct libnet_JoinCtx *r)
 {
 	WERROR werr;
 
@@ -491,7 +490,7 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	werr = do_JoinConfig(mem_ctx, r);
+	werr = do_JoinConfig(r);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
