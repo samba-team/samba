@@ -243,7 +243,7 @@ done:
  *
  **********************************************************************/
 
-WERROR drop_smbconf_internal(TALLOC_CTX *ctx)
+WERROR libnet_smbconf_drop(TALLOC_CTX *ctx)
 {
 	char *path, *p;
 	WERROR werr = WERR_OK;

@@ -538,7 +538,7 @@ int net_conf_drop(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = drop_smbconf_internal(NULL);
+	werr = libnet_smbconf_drop(NULL);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error deleting configuration: %s\n",
 			  dos_errstr(werr));
