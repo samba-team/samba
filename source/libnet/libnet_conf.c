@@ -261,7 +261,6 @@ WERROR libnet_smbconf_drop(void)
 
 	path = talloc_strdup(mem_ctx, KEY_SMBCONF);
 	if (path == NULL) {
-		d_fprintf(stderr, "ERROR: out of memory!\n");
 		werr = WERR_NOMEM;
 		goto done;
 	}
