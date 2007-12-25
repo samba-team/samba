@@ -790,6 +790,7 @@ static int net_conf_setparm(int argc, const char **argv)
 
 done:
 	SAFE_FREE(service);
+	SAFE_FREE(param);
 	return ret;
 }
 
