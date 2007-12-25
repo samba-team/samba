@@ -565,7 +565,7 @@ int net_conf_showshare(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = libnet_smbconf_open_path(ctx, argv[0], REG_KEY_READ, &key);
+	werr = libnet_smbconf_reg_open_path(ctx, argv[0], REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
