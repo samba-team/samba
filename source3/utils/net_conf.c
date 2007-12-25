@@ -360,7 +360,7 @@ done:
 	return ret;
 }
 
-/* return True iff there are nondefault globals */
+/* return true iff there are nondefault globals */
 static bool globals_exist(void)
 {
 	int i = 0;
@@ -368,10 +368,10 @@ static bool globals_exist(void)
 
 	while ((parm = lp_next_parameter(GLOBAL_SECTION_SNUM, &i, 0)) != NULL) {
 		if (parm->type != P_SEP) {
-			return True;
+			return true;
 		}
 	}
-	return False;
+	return false;
 }
 
 /*
@@ -456,7 +456,7 @@ int net_conf_import(int argc, const char **argv)
 	int ret = -1;
 	const char *filename = NULL;
 	const char *servicename = NULL;
-	bool service_found = False;
+	bool service_found = false;
 	TALLOC_CTX *ctx;
 	struct share_iterator *shares;
 	struct share_params *share;
@@ -480,10 +480,10 @@ int net_conf_import(int argc, const char **argv)
 		filename));
 
 	if (!lp_load(filename,
-		     False,     /* global_only */
-		     True,      /* save_defaults */
-		     False,     /* add_ipc */
-		     True))     /* initialize_globals */
+		     false,     /* global_only */
+		     true,      /* save_defaults */
+		     false,     /* add_ipc */
+		     true))     /* initialize_globals */
 	{
 		d_fprintf(stderr, "Error parsing configuration file.\n");
 		goto done;
@@ -497,7 +497,7 @@ int net_conf_import(int argc, const char **argv)
 	if (((servicename == NULL) && globals_exist()) ||
 	    strequal(servicename, GLOBAL_NAME))
 	{
-		service_found = True;
+		service_found = true;
 		if (import_process_service(ctx, &global_share) != 0) {
 			goto done;
 		}
@@ -516,7 +516,7 @@ int net_conf_import(int argc, const char **argv)
 		if ((servicename == NULL)
 		    || strequal(servicename, lp_servicename(share->service)))
 		{
-			service_found = True;
+			service_found = true;
 			if (import_process_service(ctx, share)!= 0) {
 				goto done;
 			}
