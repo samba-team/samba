@@ -792,6 +792,7 @@ int net_conf_delshare(int argc, const char **argv)
 {
 	int ret = -1;
 	const char *sharename = NULL;
+	WERROR werr = WERR_OK;
 
 	if (argc != 1) {
 		net_conf_delshare_usage(argc, argv);
@@ -799,9 +800,14 @@ int net_conf_delshare(int argc, const char **argv)
 	}
 	sharename = argv[0];
 
-	if (W_ERROR_IS_OK(libnet_smbconf_delshare(sharename))) {
-		ret = 0;
+	werr = libnet_smbconf_delshare(sharename);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error deleting share %s: %s\n",
+			  sharename, dos_errstr(werr));
+		goto done;
 	}
+
+	ret = 0;
 done:
 	return ret;
 }
