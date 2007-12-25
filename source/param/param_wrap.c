@@ -2751,9 +2751,13 @@ SWIGINTERN int param_set(param *self,char const *parameter,PyObject *ob,char con
 
             return 0;
         }
+SWIGINTERN struct param_section *param_first_section(param *self){ return self->sections; }
+SWIGINTERN struct param_section *param_next_section(param *self,struct param_section *s){ return s->next; }
 SWIGINTERN void delete_param(param *self){ talloc_free(self); }
 SWIGINTERN char const *param_opt___str__(param_opt *self){ return self->value; }
 SWIGINTERN void delete_param_opt(param_opt *self){ talloc_free(self); }
+SWIGINTERN struct param_opt *param_section_first_parameter(param_section *self){ return self->parameters; }
+SWIGINTERN struct param_opt *param_section_next_parameter(param_section *self,struct param_opt *s){ return s->next; }
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -3570,6 +3574,63 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_ParamFile_first_section(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  param *arg1 = (param *) 0 ;
+  struct param_section *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_param_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ParamFile_first_section" "', argument " "1"" of type '" "param *""'"); 
+  }
+  arg1 = (param *)(argp1);
+  result = (struct param_section *)param_first_section(arg1);
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_param_section, 0 |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_ParamFile_next_section(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  param *arg1 = (param *) 0 ;
+  struct param_section *arg2 = (struct param_section *) 0 ;
+  struct param_section *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "s", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ParamFile_next_section",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_param_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ParamFile_next_section" "', argument " "1"" of type '" "param *""'"); 
+  }
+  arg1 = (param *)(argp1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_param_section, 0 |  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "ParamFile_next_section" "', argument " "2"" of type '" "struct param_section *""'"); 
+  }
+  arg2 = (struct param_section *)(argp2);
+  result = (struct param_section *)param_next_section(arg1,arg2);
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_param_section, 0 |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_ParamFile_read(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   param *arg1 = (param *) 0 ;
@@ -3678,6 +3739,52 @@ SWIGINTERN PyObject *ParamFile_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject
   return SWIG_Python_InitShadowInstance(args);
 }
 
+SWIGINTERN PyObject *_wrap_param_opt_key_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  param_opt *arg1 = (param_opt *) 0 ;
+  char *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_param_opt, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "param_opt_key_get" "', argument " "1"" of type '" "param_opt *""'"); 
+  }
+  arg1 = (param_opt *)(argp1);
+  result = (char *) ((arg1)->key);
+  resultobj = SWIG_FromCharPtr((const char *)result);
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_param_opt_value_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  param_opt *arg1 = (param_opt *) 0 ;
+  char *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_param_opt, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "param_opt_value_get" "', argument " "1"" of type '" "param_opt *""'"); 
+  }
+  arg1 = (param_opt *)(argp1);
+  result = (char *) ((arg1)->value);
+  resultobj = SWIG_FromCharPtr((const char *)result);
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_param_opt___str__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   param_opt *arg1 = (param_opt *) 0 ;
@@ -3731,6 +3838,29 @@ SWIGINTERN PyObject *param_opt_swigregister(PyObject *SWIGUNUSEDPARM(self), PyOb
   return SWIG_Py_Void();
 }
 
+SWIGINTERN PyObject *_wrap_param_section_name_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  param_section *arg1 = (param_section *) 0 ;
+  char *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_param_section, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "param_section_name_get" "', argument " "1"" of type '" "param_section *""'"); 
+  }
+  arg1 = (param_section *)(argp1);
+  result = (char *) ((arg1)->name);
+  resultobj = SWIG_FromCharPtr((const char *)result);
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_param_section_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   param_section *arg1 = (param_section *) 0 ;
@@ -3764,6 +3894,63 @@ SWIGINTERN PyObject *_wrap_param_section_get(PyObject *SWIGUNUSEDPARM(self), PyO
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_param_section_first_parameter(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  param_section *arg1 = (param_section *) 0 ;
+  struct param_opt *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_param_section, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "param_section_first_parameter" "', argument " "1"" of type '" "param_section *""'"); 
+  }
+  arg1 = (param_section *)(argp1);
+  result = (struct param_opt *)param_section_first_parameter(arg1);
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_param_opt, 0 |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_param_section_next_parameter(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  param_section *arg1 = (param_section *) 0 ;
+  struct param_opt *arg2 = (struct param_opt *) 0 ;
+  struct param_opt *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "s", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:param_section_next_parameter",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_param_section, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "param_section_next_parameter" "', argument " "1"" of type '" "param_section *""'"); 
+  }
+  arg1 = (param_section *)(argp1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_param_opt, 0 |  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "param_section_next_parameter" "', argument " "2"" of type '" "struct param_opt *""'"); 
+  }
+  arg2 = (struct param_opt *)(argp2);
+  result = (struct param_opt *)param_section_next_parameter(arg1,arg2);
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_param_opt, 0 |  0 );
+  return resultobj;
+fail:
   return NULL;
 }
 
@@ -3863,15 +4050,22 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"ParamFile_get_string", (PyCFunction) _wrap_ParamFile_get_string, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_set_string", (PyCFunction) _wrap_ParamFile_set_string, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_set", (PyCFunction) _wrap_ParamFile_set, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"ParamFile_first_section", (PyCFunction)_wrap_ParamFile_first_section, METH_O, NULL},
+	 { (char *)"ParamFile_next_section", (PyCFunction) _wrap_ParamFile_next_section, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_read", (PyCFunction) _wrap_ParamFile_read, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ParamFile_write", (PyCFunction) _wrap_ParamFile_write, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_ParamFile", (PyCFunction)_wrap_delete_ParamFile, METH_O, NULL},
 	 { (char *)"ParamFile_swigregister", ParamFile_swigregister, METH_VARARGS, NULL},
 	 { (char *)"ParamFile_swiginit", ParamFile_swiginit, METH_VARARGS, NULL},
+	 { (char *)"param_opt_key_get", (PyCFunction)_wrap_param_opt_key_get, METH_O, NULL},
+	 { (char *)"param_opt_value_get", (PyCFunction)_wrap_param_opt_value_get, METH_O, NULL},
 	 { (char *)"param_opt___str__", (PyCFunction)_wrap_param_opt___str__, METH_O, NULL},
 	 { (char *)"delete_param_opt", (PyCFunction)_wrap_delete_param_opt, METH_O, NULL},
 	 { (char *)"param_opt_swigregister", param_opt_swigregister, METH_VARARGS, NULL},
+	 { (char *)"param_section_name_get", (PyCFunction)_wrap_param_section_name_get, METH_O, NULL},
 	 { (char *)"param_section_get", (PyCFunction) _wrap_param_section_get, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"param_section_first_parameter", (PyCFunction)_wrap_param_section_first_parameter, METH_O, NULL},
+	 { (char *)"param_section_next_parameter", (PyCFunction) _wrap_param_section_next_parameter, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"new_param_section", (PyCFunction)_wrap_new_param_section, METH_NOARGS, NULL},
 	 { (char *)"delete_param_section", (PyCFunction)_wrap_delete_param_section, METH_O, NULL},
 	 { (char *)"param_section_swigregister", param_section_swigregister, METH_VARARGS, NULL},

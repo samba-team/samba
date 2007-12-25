@@ -222,7 +222,7 @@ SHARE_DATABASE_VERSION_V2 = 2
 class ShareInfoDatabase:
     def __init__(self, file):
         self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
-        assert self.tdb.fetch_int32("INFO/version") in (SHARE_DATABASE_VERSION_V1, SHARE_DATABASE_VERSION_V2)
+        assert self.tdb.fetch_int32("INFO/version\0") in (SHARE_DATABASE_VERSION_V1, SHARE_DATABASE_VERSION_V2)
 
     def get_secdesc(self, name):
         secdesc = self.tdb.get("SECDESC/%s" % name)
@@ -231,6 +231,19 @@ class ShareInfoDatabase:
 
     def close(self):
         self.tdb.close()
+
+
+class Shares:
+    def __init__(self, lp, shareinfo):
+        self.lp = lp
+        self.shareinfo = shareinfo
+
+    def __len__(self):
+        return len(self.lp) - 1
+
+    def __iter__(self):
+        return self.lp.__iter__()
+
 
 ACB_DISABLED = 0x00000001
 ACB_HOMDIRREQ = 0x00000002
@@ -323,7 +336,7 @@ class SmbpasswdFile:
         return self.users[name]
 
     def __iter__(self):
-        return iter(self.entries)
+        return iter(self.users)
 
     def close(self): # For consistency
         pass
@@ -345,6 +358,8 @@ class TdbSam:
         for k in self.tdb.keys():
             if k.startswith(TDBSAM_USER_PREFIX):
                 yield k[len(TDBSAM_USER_PREFIX):].rstrip("\0")
+
+    __iter__ = usernames
 
     def close(self):
         self.tdb.close()
@@ -409,24 +424,52 @@ class Samba3:
     def __init__(self, libdir, smbconfpath):
         self.smbconfpath = smbconfpath
         self.libdir = libdir
+        import param
+        self.lp = param.ParamFile()
+        self.lp.read(self.smbconfpath)
+
+    def libdir_path(self, path):
+        if path[0] == "/" or path[0] == ".":
+            return path
+        return os.path.join(self.libdir, path)
+
+    def get_conf(self):
+        return self.lp
+
+    def get_sam_db(self):
+        lp = self.get_conf()
+        backends = str(lp.get("passdb backend")).split(" ")
+        if backends[0].startswith("smbpasswd"):
+            if ":" in backends[0]:
+                return SmbpasswdFile(self.libdir_path(backends[0][len("smbpasswd:"):]))
+            return SmbpasswdFile(self.libdir_path("smbpasswd"))
+        elif backends[0].startswith("tdbsam"):
+            if ":" in backends[0]:
+                return TdbSam(self.libdir_path(backends[0][len("tdbsam:"):]))
+            return TdbSam(self.libdir_path("passdb.tdb"))
+        else:
+            raise NotImplementedError("unsupported passdb backend %s" % backends[0])
 
     def get_policy_db(self):
-        return PolicyDatabase(os.path.join(self.libdir, "account_policy.tdb"))
+        return PolicyDatabase(self.libdir_path("account_policy.tdb"))
     
     def get_registry(self):
-        return Registry(os.path.join(self.libdir, "registry.tdb"))
+        return Registry(self.libdir_path("registry.tdb"))
 
     def get_secrets_db(self):
-        return SecretsDatabase(os.path.join(self.libdir, "secrets.tdb"))
+        return SecretsDatabase(self.libdir_path("secrets.tdb"))
 
-    def get_shares_db(self):
-        return ShareInfoDatabase(os.path.join(self.libdir, "share_info.tdb"))
+    def get_shareinfo_db(self):
+        return ShareInfoDatabase(self.libdir_path("share_info.tdb"))
 
     def get_idmap_db(self):
-        return IdmapDatabase(os.path.join(self.libdir, "winbindd_idmap.tdb"))
+        return IdmapDatabase(self.libdir_path("winbindd_idmap.tdb"))
 
     def get_wins_db(self):
-        return WinsDatabase(os.path.join(self.libdir, "wins.dat"))
+        return WinsDatabase(self.libdir_path("wins.dat"))
+
+    def get_shares(self):
+        return Shares(self.get_conf(), self.get_shareinfo_db())
 
     def get_groupmapping_db(self):
-        return GroupMappingDatabase(os.path.join(self.libdir, "group_mapping.tdb"))
+        return GroupMappingDatabase(self.libdir_path("group_mapping.tdb"))

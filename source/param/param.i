@@ -181,6 +181,7 @@ typedef struct param_context {
         struct param_opt *get(const char *name, const char *section_name="global");
         const char *get_string(const char *name, const char *section_name="global");
         int set_string(const char *param, const char *value, const char *section="global");
+#ifdef SWIGPYTHON
         int set(const char *parameter, PyObject *ob, const char *section_name="global")
         {
             struct param_opt *opt = param_get_add($self, parameter, section_name);
@@ -190,6 +191,11 @@ typedef struct param_context {
 
             return 0;
         }
+        
+#endif
+
+        struct param_section *first_section() { return $self->sections; }
+        struct param_section *next_section(struct param_section *s) { return s->next; }
 
         int read(const char *fn);
         int write(const char *fn);
@@ -200,12 +206,38 @@ typedef struct param_context {
             if ret is None:
                 raise KeyError("No such section %s" % name)
             return ret
+
+        class SectionIterator:
+            def __init__(self, param):
+                self.param = param
+                self.key = None
+
+            def __iter__(self):
+                return self
+                
+            def next(self):
+                if self.key is None:
+                    self.key = self.param.first_section()
+                    if self.key is None:
+                        raise StopIteration
+                    return self.key
+                else:
+                    self.key = self.param.next_section(self.key)
+                    if self.key is None:
+                        raise StopIteration
+                    return self.key
+
+        def __iter__(self):
+            return self.SectionIterator(self)
     }
 } param;
 
 %talloctype(param_opt);
 
 typedef struct param_opt {
+    %immutable key;
+    %immutable value;
+    const char *key, *value;
     %extend {
 #ifdef SWIGPYTHON
         const char *__str__() { return $self->value; }
@@ -215,8 +247,12 @@ typedef struct param_opt {
 
 %talloctype(param);
 typedef struct param_section {
+    %immutable name;
+    const char *name;
     %extend {
         struct param_opt *get(const char *name);
+        struct param_opt *first_parameter() { return $self->parameters; }
+        struct param_opt *next_parameter(struct param_opt *s) { return s->next; }
     }
     %pythoncode {
         def __getitem__(self, name):
@@ -224,6 +260,29 @@ typedef struct param_section {
             if ret is None:
                 raise KeyError("No such option %s" % name)
             return ret
+
+        class ParamIterator:
+            def __init__(self, section):
+                self.section = section
+                self.key = None
+
+            def __iter__(self):
+                return self
+                
+            def next(self):
+                if self.key is None:
+                    self.key = self.section.first_parameter()
+                    if self.key is None:
+                        raise StopIteration
+                    return self.key
+                else:
+                    self.key = self.section.next_parameter(self.key)
+                    if self.key is None:
+                        raise StopIteration
+                    return self.key
+
+        def __iter__(self):
+            return self.ParamIterator(self)
     }
 } param_section;
 
