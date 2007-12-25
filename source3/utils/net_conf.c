@@ -143,30 +143,6 @@ static char *format_value(TALLOC_CTX *mem_ctx, struct registry_value *value)
 	return result;
 }
 
-/*
- * delete a subkey of KEY_SMBCONF
- */
-static WERROR reg_delkey_internal(TALLOC_CTX *ctx, const char *keyname)
-{
-	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
-
-	werr = libnet_smbconf_open_basepath(ctx, REG_KEY_WRITE, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = reg_deletekey_recursive(key, key, keyname);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Error deleting registry key %s\\%s: %s\n",
-			  KEY_SMBCONF, keyname, dos_errstr(werr));
-	}
-
-done:
-	TALLOC_FREE(key);
-	return werr;
-}
-
 static WERROR list_values(TALLOC_CTX *ctx, struct registry_key *key)
 {
 	WERROR werr = WERR_OK;
