@@ -11,7 +11,7 @@ sys.path.append("scripting/python")
 import param
 import samba
 import samba.getopt as options
-from samba.provision import provision_default_paths
+from auth import system_session
 
 parser = optparse.OptionParser("upgrade [options] <libdir> <smbconf>")
 parser.add_option_group(options.SambaOptions(parser))
@@ -22,7 +22,6 @@ parser.add_option("--setupdir", type="string", metavar="DIR",
 		help="directory with setup files")
 parser.add_option("--realm", type="string", metavar="REALM", help="set realm")
 parser.add_option("--quiet", help="Be quiet")
-parser.add_option("--verify", help="Verify resulting configuration")
 parser.add_option("--blank", 
 		help="do not add users or groups, just the structure")
 parser.add_option("--targetdir", type="string", metavar="DIR", 
@@ -51,6 +50,7 @@ else:
 samba3 = Samba3(libdir, smbconf)
 
 from samba.upgrade import upgrade_provision
+from samba.provision import provision_paths_from_lp
 
 message("Provisioning\n")
 
@@ -60,9 +60,12 @@ if setup_dir is None:
 
 creds = credopts.get_credentials()
 lp = param.LoadParm()
-lp.load(opts.configfile)
-upgrade_provision(samba3, setup_dir, message, credentials=creds, session_info=system_session())
-
-if opts.verify:
-	message("Verifying...\n")
-	ret = upgrade_verify(subobj, samba3, paths, message)
+if opts.configfile:
+    lp.load(opts.configfile)
+if opts.targetdir is not None:
+    lp.set("private dir", os.path.abspath(opts.targetdir))
+    lp.set("lock dir", os.path.abspath(opts.targetdir))
+paths = provision_paths_from_lp(lp, "")
+paths.smbconf = opts.configfile
+upgrade_provision(samba3, setup_dir, message, credentials=creds, session_info=system_session(), 
+                  lp=lp, paths=paths)
