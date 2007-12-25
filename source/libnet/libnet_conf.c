@@ -397,7 +397,7 @@ done:
 
 /**********************************************************************
  *
- * Convenience functions, that are also exportet.
+ * Convenience functions that are also exported.
  *
  **********************************************************************/
 
