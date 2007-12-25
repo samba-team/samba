@@ -310,13 +310,13 @@ done:
 	return werr;
 }
 
-WERROR libnet_smbconf_setparm(TALLOC_CTX *mem_ctx,
-			      const char *service,
+WERROR libnet_smbconf_setparm(const char *service,
 			      const char *param,
 			      const char *valstr)
 {
 	WERROR werr;
 	struct registry_key *key = NULL;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (!libnet_smbconf_key_exists(service)) {
 		werr = libnet_smbconf_reg_createkey_internal(mem_ctx, service,
@@ -332,7 +332,7 @@ WERROR libnet_smbconf_setparm(TALLOC_CTX *mem_ctx,
 	werr = libnet_smbconf_reg_setvalue_internal(key, param, valstr);
 
 done:
-	TALLOC_FREE(key);
+	TALLOC_FREE(mem_ctx);
 	return werr;
 }
 
@@ -401,10 +401,9 @@ done:
  *
  **********************************************************************/
 
-WERROR libnet_smbconf_set_global_param(TALLOC_CTX *mem_ctx,
-				       const char *param,
+WERROR libnet_smbconf_set_global_param(const char *param,
 				       const char *val)
 {
-	return libnet_smbconf_setparm(mem_ctx, GLOBAL_NAME, param, val);
+	return libnet_smbconf_setparm(GLOBAL_NAME, param, val);
 }
 

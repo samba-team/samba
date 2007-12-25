@@ -769,9 +769,6 @@ static int net_conf_setparm(int argc, const char **argv)
 	char *service = NULL;
 	char *param = NULL;
 	const char *value_str = NULL;
-	TALLOC_CTX *ctx;
-
-	ctx = talloc_init("setparm");
 
 	if (argc != 3) {
 		net_conf_setparm_usage(argc, argv);
@@ -781,7 +778,7 @@ static int net_conf_setparm(int argc, const char **argv)
 	param = strdup_lower(argv[1]);
 	value_str = argv[2];
 
-	werr = libnet_smbconf_setparm(ctx, service, param, value_str);
+	werr = libnet_smbconf_setparm(service, param, value_str);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting value '%s': %s\n",
@@ -793,7 +790,6 @@ static int net_conf_setparm(int argc, const char **argv)
 
 done:
 	SAFE_FREE(service);
-	TALLOC_FREE(ctx);
 	return ret;
 }
 
