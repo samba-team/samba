@@ -63,6 +63,8 @@ lp = param.LoadParm()
 if opts.configfile:
     lp.load(opts.configfile)
 if opts.targetdir is not None:
+    if not os.path.exists(opts.targetdir):
+        os.mkdir(opts.targetdir)
     lp.set("private dir", os.path.abspath(opts.targetdir))
     lp.set("lock dir", os.path.abspath(opts.targetdir))
 paths = provision_paths_from_lp(lp, "")
