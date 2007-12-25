@@ -3053,6 +3053,7 @@ AC_TRY_RUN([
 #undef _XOPEN_SOURCE_EXTENDED
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "${srcdir-.}/lib/replace/replace.c"
+#include "${srcdir-.}/lib/replace/snprintf.c"
 #include "${srcdir-.}/lib/interfaces.c"],
            samba_cv_HAVE_IFACE_AIX=yes,samba_cv_HAVE_IFACE_AIX=no,samba_cv_HAVE_IFACE_AIX=cross)])
 CPPFLAGS="$SAVE_CPPFLAGS"
