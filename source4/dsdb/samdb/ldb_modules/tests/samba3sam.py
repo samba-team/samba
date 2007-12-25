@@ -1034,18 +1034,18 @@ revision: 2
         self.samba4.connect()
 
     def tearDown(self):
-        super(Samba3SamTestCase, self).tearDown()
         os.unlink(self.ldbfile)
         os.unlink(self.samba3.file)
         os.unlink(self.templates.file)
         os.unlink(self.samba4.file)
+        super(Samba3SamTestCase, self).tearDown()
 
     def test_s3sam(self):
         ldb = Ldb(self.ldburl)
         self.setup_data(self.samba3, open(os.path.join(datadir, "samba3.ldif"), 'r').read())
         self.setup_data(self.templates, open(os.path.join(datadir, "provision_samba3sam_templates.ldif"), 'r').read())
         ldif = open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read()
-        ldb.add_ldif(substitute_var(ldif, s4.substvars))
+        ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
         self.setup_modules(ldb, self.samba3, self.samba4)
 
         ldb = Ldb(self.ldburl)
@@ -1057,7 +1057,7 @@ revision: 2
         ldb = Ldb(self.ldburl)
         self.setup_data(self.templates, open(os.path.join(datadir, "provision_samba3sam_templates.ldif"), 'r').read())
         ldif = open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read()
-        ldb.add_ldif(substitute_var(ldif, s4.substvars))
+        ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
         self.setup_modules(ldb, self.samba3, self.samba4)
 
         ldb = Ldb(self.ldburl)

@@ -284,24 +284,21 @@ fi
 if test -f $samba4bindir/smbpython
 then
 	PYTHON=bin/smbpython
-	plantest "ldb.python" none PYTHONPATH=bin/python:scripting/python:lib/ldb/tests/python/ $PYTHON scripting/bin/subunitrun api
-	plantest "credentials.python" none PYTHONPATH=bin/python:scripting/python:auth/credentials/tests $PYTHON scripting/bin/subunitrun bindings
-	plantest "registry.python" none PYTHONPATH=bin/python:scripting/python:lib/registry/tests/ $PYTHON scripting/bin/subunitrun bindings
-	plantest "tdb.python" none PYTHONPATH=bin/python:scripting/python:lib/tdb/python/tests $PYTHON scripting/bin/subunitrun simple
-	plantest "auth.python" none PYTHONPATH=bin/python:scripting/python:auth/tests/ $PYTHON scripting/bin/subunitrun bindings
-	plantest "security.python" none PYTHONPATH=bin/python:scripting/python:libcli/security/tests/ $PYTHON scripting/bin/subunitrun bindings
-	plantest "param.python" none PYTHONPATH=bin/python:scripting/python:param/tests $PYTHON scripting/bin/subunitrun bindings
-	plantest "upgrade.python" none PYTHONPATH=bin/python:scripting/python $PYTHON scripting/bin/subunitrun samba.tests.upgrade
-	plantest "samba.python" none PYTHONPATH=bin/python:scripting/python $PYTHON scripting/bin/subunitrun samba.tests
-	plantest "provision.python" none PYTHONPATH=bin/python:scripting/python $PYTHON scripting/bin/subunitrun samba.tests.provision
-	plantest "samba3.python" none PYTHONPATH=bin/python:scripting/python $PYTHON scripting/bin/subunitrun samba.tests.samba3
-	plantest "samba3sam.python" none PYTHONPATH=bin/python:scripting/python $PYTHON dsdb/samdb/ldb_modules/tests/samba3sam.py `pwd` $DATADIR/samba3/
+	SUBUNITRUN="$PYTHON ./scripting/bin/subunitrun"
+	plantest "ldb.python" none PYTHONPATH="$PYTHONPATH:lib/ldb/tests/python/" $SUBUNITRUN api
+	plantest "credentials.python" none PYTHONPATH="$PYTHONPATH:auth/credentials/tests" $SUBUNITRUN bindings
+	plantest "registry.python" none PYTHONPATH="$PYTHONPATH:lib/registry/tests/" $SUBUNITRUN bindings
+	plantest "tdb.python" none PYTHONPATH="$PYTHONPATH:lib/tdb/python/tests" $SUBUNITRUN simple
+	plantest "auth.python" none PYTHONPATH="$PYTHONPATH:auth/tests/" $SUBUNITRUN bindings
+	plantest "security.python" none PYTHONPATH="$PYTHONPATH:libcli/security/tests" $SUBUNITRUN bindings
+	plantest "param.python" none PYTHONPATH="$PYTHONPATH:param/tests" $SUBUNITRUN bindings
+	plantest "upgrade.python" none $SUBUNITRUN samba.tests.upgrade
+	plantest "samba.python" none $SUBUNITRUN samba.tests
+	plantest "provision.python" none $SUBUNITRUN samba.tests.provision
+	plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
+	plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
 	plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD
 	plantest "blackbox.samba3dump" none $PYTHON scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
-	rm -rf $PREFIX/upgrade
-	mkdir -p $PREFIX/upgrade
 	plantest "blackbox.upgrade" none $PYTHON setup/upgrade.py $CONFIGURATION --targetdir=$PREFIX ../testdata/samba3 ../testdata/samba3/smb.conf
-	rm -rf $PREFIX/provision
-	mkdir -p $PREFIX/provision
 	plantest "blackbox.provision.py" none $PYTHON ./setup/provision.py $CONFIGURATION --domain=FOO --realm=foo --targetdir=$PREFIX/provision
 fi
