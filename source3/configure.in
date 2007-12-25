@@ -3032,6 +3032,8 @@ AC_TRY_RUN([
 #define AUTOCONF_TEST 1
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "${srcdir-.}/lib/replace/replace.c"
+#include "${srcdir-.}/lib/replace/getaddrinfo.c"
+#include "${srcdir-.}/lib/replace/snprintf.c"
 #include "${srcdir-.}/lib/interfaces.c"],
            samba_cv_HAVE_IFACE_IFREQ=yes,samba_cv_HAVE_IFACE_IFREQ=no,samba_cv_HAVE_IFACE_IFREQ=cross)])
 CPPFLAGS="$SAVE_CPPFLAGS"
