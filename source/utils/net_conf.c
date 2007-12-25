@@ -317,7 +317,7 @@ static int import_process_service(TALLOC_CTX *ctx,
 		d_printf("[%s]\n", servicename);
 	} else {
 		if (libnet_smbconf_key_exists(servicename)) {
-			werr = libnet_smbconf_delshare(tmp_ctx, servicename);
+			werr = libnet_smbconf_delshare(servicename);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
 			}
@@ -799,7 +799,7 @@ int net_conf_delshare(int argc, const char **argv)
 	}
 	sharename = argv[0];
 
-	if (W_ERROR_IS_OK(libnet_smbconf_delshare(NULL, sharename))) {
+	if (W_ERROR_IS_OK(libnet_smbconf_delshare(sharename))) {
 		ret = 0;
 	}
 done:
