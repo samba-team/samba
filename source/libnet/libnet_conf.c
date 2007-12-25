@@ -243,6 +243,9 @@ done:
  *
  **********************************************************************/
 
+/**
+ * Drop the whole configuration (restarting empty).
+ */
 WERROR libnet_smbconf_drop(void)
 {
 	char *path, *p;
