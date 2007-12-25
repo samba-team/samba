@@ -3012,6 +3012,7 @@ AC_TRY_RUN([
 #define NO_CONFIG_H 1
 #define HAVE_IFACE_IFCONF 1
 #define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
 #include "${srcdir-.}/lib/replace/replace.c"
 #include "${srcdir-.}/lib/interfaces.c"],
            samba_cv_HAVE_IFACE_IFCONF=yes,samba_cv_HAVE_IFACE_IFCONF=no,samba_cv_HAVE_IFACE_IFCONF=cross)])
@@ -3029,6 +3030,7 @@ AC_TRY_RUN([
 #define NO_CONFIG_H 1
 #define HAVE_IFACE_IFREQ 1
 #define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
 #include "${srcdir-.}/lib/replace/replace.c"
 #include "${srcdir-.}/lib/interfaces.c"],
            samba_cv_HAVE_IFACE_IFREQ=yes,samba_cv_HAVE_IFACE_IFREQ=no,samba_cv_HAVE_IFACE_IFREQ=cross)])
@@ -3047,6 +3049,7 @@ AC_TRY_RUN([
 #define HAVE_IFACE_AIX 1
 #define AUTOCONF_TEST 1
 #undef _XOPEN_SOURCE_EXTENDED
+#define SOCKET_WRAPPER_NOT_REPLACE
 #include "${srcdir-.}/lib/replace/replace.c"
 #include "${srcdir-.}/lib/interfaces.c"],
            samba_cv_HAVE_IFACE_AIX=yes,samba_cv_HAVE_IFACE_AIX=no,samba_cv_HAVE_IFACE_AIX=cross)])
