@@ -1637,7 +1637,8 @@ static bool cmp_fileinfo(int instance,
 	case RAW_FILEINFO_UNIX_BASIC:
 	case RAW_FILEINFO_UNIX_LINK:
 	case RAW_FILEINFO_SMB2_ALL_EAS:
-	case RAW_FILEINFO_SMB2_ALL_INFORMATION:	
+	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
+	case RAW_FILEINFO_UNIX_INFO2:
 		break;
 	}
 
@@ -1775,6 +1776,7 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 	case RAW_SFILEINFO_1032:
 	case RAW_SFILEINFO_1039:
 	case RAW_SFILEINFO_1040:
+	case RAW_SFILEINFO_UNIX_INFO2:
 		/* Untested */
 		break;
 	}
