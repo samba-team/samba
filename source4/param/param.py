@@ -96,6 +96,29 @@ class ParamFile(object):
             raise KeyError("No such section %s" % name)
         return ret
 
+    class SectionIterator:
+        def __init__(self, param):
+            self.param = param
+            self.key = None
+
+        def __iter__(self):
+            return self
+            
+        def next(self):
+            if self.key is None:
+                self.key = self.param.first_section()
+                if self.key is None:
+                    raise StopIteration
+                return self.key
+            else:
+                self.key = self.param.next_section(self.key)
+                if self.key is None:
+                    raise StopIteration
+                return self.key
+
+    def __iter__(self):
+        return self.SectionIterator(self)
+
     __swig_destroy__ = _param.delete_ParamFile
 ParamFile.get_section = new_instancemethod(_param.ParamFile_get_section,None,ParamFile)
 ParamFile.add_section = new_instancemethod(_param.ParamFile_add_section,None,ParamFile)
@@ -103,6 +126,8 @@ ParamFile.get = new_instancemethod(_param.ParamFile_get,None,ParamFile)
 ParamFile.get_string = new_instancemethod(_param.ParamFile_get_string,None,ParamFile)
 ParamFile.set_string = new_instancemethod(_param.ParamFile_set_string,None,ParamFile)
 ParamFile.set = new_instancemethod(_param.ParamFile_set,None,ParamFile)
+ParamFile.first_section = new_instancemethod(_param.ParamFile_first_section,None,ParamFile)
+ParamFile.next_section = new_instancemethod(_param.ParamFile_next_section,None,ParamFile)
 ParamFile.read = new_instancemethod(_param.ParamFile_read,None,ParamFile)
 ParamFile.write = new_instancemethod(_param.ParamFile_write,None,ParamFile)
 ParamFile_swigregister = _param.ParamFile_swigregister
@@ -112,6 +137,8 @@ class param_opt(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     def __init__(self): raise AttributeError, "No constructor defined"
     __repr__ = _swig_repr
+    key = _swig_property(_param.param_opt_key_get)
+    value = _swig_property(_param.param_opt_value_get)
     __swig_destroy__ = _param.delete_param_opt
 param_opt.__str__ = new_instancemethod(_param.param_opt___str__,None,param_opt)
 param_opt_swigregister = _param.param_opt_swigregister
@@ -120,16 +147,42 @@ param_opt_swigregister(param_opt)
 class param_section(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
+    name = _swig_property(_param.param_section_name_get)
     def __getitem__(self, name):
         ret = self.get(name)
         if ret is None:
             raise KeyError("No such option %s" % name)
         return ret
 
+    class ParamIterator:
+        def __init__(self, section):
+            self.section = section
+            self.key = None
+
+        def __iter__(self):
+            return self
+            
+        def next(self):
+            if self.key is None:
+                self.key = self.section.first_parameter()
+                if self.key is None:
+                    raise StopIteration
+                return self.key
+            else:
+                self.key = self.section.next_parameter(self.key)
+                if self.key is None:
+                    raise StopIteration
+                return self.key
+
+    def __iter__(self):
+        return self.ParamIterator(self)
+
     def __init__(self, *args, **kwargs): 
         _param.param_section_swiginit(self,_param.new_param_section(*args, **kwargs))
     __swig_destroy__ = _param.delete_param_section
 param_section.get = new_instancemethod(_param.param_section_get,None,param_section)
+param_section.first_parameter = new_instancemethod(_param.param_section_first_parameter,None,param_section)
+param_section.next_parameter = new_instancemethod(_param.param_section_next_parameter,None,param_section)
 param_section_swigregister = _param.param_section_swigregister
 param_section_swigregister(param_section)
 
