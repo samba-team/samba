@@ -43,3 +43,11 @@ void py_load_samba_modules(void)
 		PyImport_ExtendInittab(&py_modules[i]);
 	}
 }
+
+void py_update_path(const char *bindir)
+{
+	char *newpath;
+	asprintf(&newpath, "%s:%s/python:%s/../scripting/python", Py_GetPath(), bindir, bindir);
+	PySys_SetPath(newpath);
+	free(newpath);
+}
