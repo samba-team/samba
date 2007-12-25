@@ -27,35 +27,33 @@ import ldb
 from samba import Ldb, substitute_var
 from samba.tests import LdbTestCase, TestCaseInTempDir
 
-datadir = sys.argv[2]
+datadir = os.path.join(os.path.dirname(__file__), "../../../../../testdata/samba3")
 
 class Samba3SamTestCase(TestCaseInTempDir):
     def setup_data(self, obj, ldif):
         self.assertTrue(ldif is not None)
         obj.db.add_ldif(substitute_var(ldif, obj.substvars))
 
-    def setup_modules(self, ldb, s3, s4, ldif):
-        self.assertTrue(ldif is not None)
-        ldb.add_ldif(substitute_var(ldif, s4.substvars))
+    def setup_modules(self, ldb, s3, s4):
 
         ldif = """
 dn: @MAP=samba3sam
-@FROM: """ + s4.substvars["BASEDN"] + """
-@TO: sambaDomainName=TESTS,""" + s3.substvars["BASEDN"] + """
+@FROM: """ + s4.basedn + """
+@TO: sambaDomainName=TESTS,""" + s3.basedn + """
 
 dn: @MODULES
 @LIST: rootdse,paged_results,server_sort,extended_dn,asq,samldb,password_hash,operational,objectguid,rdn_name,samba3sam,partition
 
 dn: @PARTITION
-partition: """ + s4.substvars["BASEDN"] + ":" + s4.url + """
-partition: """ + s3.substvars["BASEDN"] + ":" + s3.url + """
+partition: """ + s4.basedn + ":" + s4.url + """
+partition: """ + s3.basedn + ":" + s3.url + """
 replicateEntries: @SUBCLASSES
 replicateEntries: @ATTRIBUTES
 replicateEntries: @INDEXLIST
 """
         ldb.add_ldif(ldif)
 
-    def test_s3sam_search(self, ldb):
+    def _test_s3sam_search(self, ldb):
         print "Looking up by non-mapped attribute"
         msg = ldb.search(expression="(cn=Administrator)")
         self.assertEquals(len(msg), 1)
@@ -91,7 +89,7 @@ replicateEntries: @INDEXLIST
                    (str(msg[i].dn) == "unixName=nobody,ou=Users,dc=vernstok,dc=nl"))
 
 
-    def test_s3sam_modify(ldb, s3):
+    def _test_s3sam_modify(ldb, s3):
         print "Adding a record that will be fallbacked"
         ldb.add_ldif("""
 dn: cn=Foo
@@ -205,16 +203,15 @@ delete: description
         msg = ldb.search(expression="(cn=Niemand2)")
         self.assertEquals(len(msg), 0)
 
-    def test_map_search(ldb, s3, s4):
+    def _test_map_search(self, ldb, s3, s4):
         print "Running search tests on mapped data"
         ldif = """
-dn: """ + "sambaDomainName=TESTS,""" + s3.substvars["BASEDN"] + """
+dn: """ + "sambaDomainName=TESTS,""" + s3.basedn + """
 objectclass: sambaDomain
 objectclass: top
 sambaSID: S-1-5-21-4231626423-2410014848-2360679739
 sambaNextRid: 2000
 sambaDomainName: TESTS"""
-        self.assertTrue(ldif is not None)
         s3.db.add_ldif(substitute_var(ldif, s3.substvars))
 
         print "Add a set of split records"
@@ -252,7 +249,6 @@ lastLogon: z
 description: y
 """
 
-        self.assertTrue(ldif is not None)
         ldb.add_ldif(substitute_var(ldif, s4.substvars))
 
         print "Add a set of remote records"
@@ -284,7 +280,6 @@ sambaBadPasswordCount: y
 sambaLogonTime: z
 description: y
 """
-        self.assertTrue(ldif is not None)
         s3.add_ldif(substitute_var(ldif, s3.substvars))
 
         print "Testing search by DN"
@@ -678,7 +673,7 @@ description: y
         for dn in dns:
             ldb.delete(dn)
 
-    def test_map_modify(self, ldb, s3, s4):
+    def _test_map_modify(self, ldb, s3, s4):
         print "Running modification tests on mapped data"
 
         print "Testing modification of local records"
@@ -1002,66 +997,70 @@ revision: 2
     def setUp(self):
         super(Samba3SamTestCase, self).setUp()
 
-        def make_dn(rdn):
-            return rdn + ",sambaDomainName=TESTS," + this.substvars["BASEDN"]
+        def make_dn(basedn, rdn):
+            return rdn + ",sambaDomainName=TESTS," + basedn
 
-        def make_s4dn(rdn):
-            return rdn + "," + this.substvars["BASEDN"]
+        def make_s4dn(basedn, rdn):
+            return rdn + "," + basedn
 
-        ldb = Ldb()
-
-        ldbfile = os.path.join(self.tempdir, "test.ldb")
-        ldburl = "tdb://" + ldbfile
+        self.ldbfile = os.path.join(self.tempdir, "test.ldb")
+        self.ldburl = "tdb://" + self.ldbfile
 
         tempdir = self.tempdir
+        print tempdir
 
         class Target:
+            """Simple helper class that contains data for a specific SAM connection."""
             def __init__(self, file, basedn, dn):
                 self.file = os.path.join(tempdir, file)
                 self.url = "tdb://" + self.file
-                self.substvars = {"BASEDN": basedn}
+                self.basedn = basedn
+                self.substvars = {"BASEDN": self.basedn}
                 self.db = Ldb()
-                self.dn = dn
+                self._dn = dn
 
-        samba4 = Target("samba4.ldb", "dc=vernstok,dc=nl", make_s4dn)
-        samba3 = Target("samba3.ldb", "cn=Samba3Sam", make_dn)
-        templates = Target("templates.ldb", "cn=templates", None)
+            def dn(self, rdn):
+                return self._dn(rdn, self.basedn)
 
-        ldb.connect(ldburl)
-        samba3.db.connect(samba3.url)
-        templates.db.connect(templates.url)
-        samba4.db.connect(samba4.url)
+            def connect(self):
+                return self.db.connect(self.url)
 
-        self.setup_data(samba3, open(os.path.join(datadir, "samba3.ldif"), 'r').read())
-        self.setup_data(templates, open(os.path.join(datadir, "provision_samba3sam_templates.ldif"), 'r').read())
-        self.setup_modules(ldb, samba3, samba4, open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read())
+        self.samba4 = Target("samba4.ldb", "dc=vernstok,dc=nl", make_s4dn)
+        self.samba3 = Target("samba3.ldb", "cn=Samba3Sam", make_dn)
+        self.templates = Target("templates.ldb", "cn=templates", None)
 
-        ldb = Ldb()
-        ldb.connect(ldburl)
+        self.samba3.connect()
+        self.templates.connect()
+        self.samba4.connect()
 
-        self.test_s3sam_search(ldb)
-        self.test_s3sam_modify(ldb, samba3)
+    def tearDown(self):
+        super(Samba3SamTestCase, self).tearDown()
+        os.unlink(self.ldbfile)
+        os.unlink(self.samba3.file)
+        os.unlink(self.templates.file)
+        os.unlink(self.samba4.file)
 
-        os.unlink(ldbfile)
-        os.unlink(samba3.file)
-        os.unlink(templates.file)
-        os.unlink(samba4.file)
+    def test_s3sam(self):
+        ldb = Ldb(self.ldburl)
+        self.setup_data(self.samba3, open(os.path.join(datadir, "samba3.ldif"), 'r').read())
+        self.setup_data(self.templates, open(os.path.join(datadir, "provision_samba3sam_templates.ldif"), 'r').read())
+        ldif = open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read()
+        ldb.add_ldif(substitute_var(ldif, s4.substvars))
+        self.setup_modules(ldb, self.samba3, self.samba4)
 
-        ldb = Ldb()
-        ldb.connect(ldburl)
-        samba3.db = Ldb()
-        samba3.db.connect(samba3.url)
-        templates.db = Ldb()
-        templates.db.connect(templates.url)
-        samba4.db = Ldb()
-        samba4.db.connect(samba4.url)
+        ldb = Ldb(self.ldburl)
 
-        self.setup_data(templates, open(os.path.join(datadir, "provision_samba3sam_templates.ldif"), 'r').read())
-        self.setup_modules(ldb, samba3, samba4, open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read())
+        self._test_s3sam_search(ldb)
+        self._test_s3sam_modify(ldb, self.samba3)
 
-        ldb = Ldb()
-        ldb.connect(ldburl)
+    def test_map(self):
+        ldb = Ldb(self.ldburl)
+        self.setup_data(self.templates, open(os.path.join(datadir, "provision_samba3sam_templates.ldif"), 'r').read())
+        ldif = open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read()
+        ldb.add_ldif(substitute_var(ldif, s4.substvars))
+        self.setup_modules(ldb, self.samba3, self.samba4)
 
-        test_map_search(ldb, samba3, samba4)
-        test_map_modify(ldb, samba3, samba4)
+        ldb = Ldb(self.ldburl)
+        self._test_map_search(ldb, self.samba3, self.samba4)
+        self._test_map_modify(ldb, self.samba3, self.samba4)
 

@@ -167,7 +167,7 @@ class SecretsDatabase:
     def get_auth_user(self):
         return self.tdb.get("SECRETS/AUTH_USER")
 
-    def get_dom_guid(self, host):
+    def get_domain_guid(self, host):
         return self.tdb.get("SECRETS/DOMGUID/%s" % host)
 
     def ldap_dns(self):
