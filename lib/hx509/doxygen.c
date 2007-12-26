@@ -50,6 +50,7 @@
  * - @ref page_cms
  * - @ref page_ca
  * - @ref page_revoke
+ * - @ref page_print
  *
  * The project web page:
  * http://www.h5l.org/
