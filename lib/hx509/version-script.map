@@ -133,7 +133,6 @@ HEIMDAL_X509_1.0 {
 		hx509_peer_info_free;
 		hx509_peer_info_set_cert;
 		hx509_peer_info_set_cms_algs;
-		hx509_print_func;
 		hx509_print_stdout;
 		hx509_prompt_hidden;
 		hx509_query_alloc;
@@ -187,6 +186,7 @@ HEIMDAL_X509_1.0 {
 		hx509_pem_add_header;
 		hx509_pem_find_header;
 		hx509_pem_free_header;
+		hx509_xfree;
 		_hx509_write_file;
 		_hx509_map_file;
 		_hx509_map_file_os;
