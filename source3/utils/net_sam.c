@@ -1135,7 +1135,7 @@ static int net_sam_do_list(int argc, const char **argv,
 		}
 	}
 
-	search->search_end(search);
+	pdb_search_destroy(search);
 	return 0;
 }
 
