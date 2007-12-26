@@ -82,7 +82,6 @@ free_cms_alg(hx509_peer_info peer)
 /**
  * Free a peer info structure.
  *
- * @param context A hx509 context.
  * @param peer peer info to be freed.
  *
  * @ingroup hx509_peer
