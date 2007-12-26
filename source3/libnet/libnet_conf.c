@@ -103,8 +103,8 @@ static bool libnet_smbconf_value_exists(struct registry_key *key,
 /*
  * open the base key KEY_SMBCONF
  */
-WERROR libnet_smbconf_open_basepath(TALLOC_CTX *ctx, uint32 desired_access,
-			     	    struct registry_key **key)
+WERROR libnet_smbconf_reg_open_basepath(TALLOC_CTX *ctx, uint32 desired_access,
+					struct registry_key **key)
 {
 	return libnet_smbconf_reg_open_path(ctx, NULL, desired_access, key);
 }
@@ -129,7 +129,8 @@ WERROR libnet_smbconf_reg_createkey_internal(TALLOC_CTX *ctx,
 		goto done;
 	}
 
-	werr = libnet_smbconf_open_basepath(create_ctx, REG_KEY_WRITE, &create_parent);
+	werr = libnet_smbconf_reg_open_basepath(create_ctx, REG_KEY_WRITE,
+						&create_parent);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -282,7 +283,7 @@ WERROR libnet_smbconf_delshare(const char *servicename)
 	struct registry_key *key = NULL;
 	TALLOC_CTX *ctx = talloc_stackframe();
 
-	werr = libnet_smbconf_open_basepath(ctx, REG_KEY_WRITE, &key);
+	werr = libnet_smbconf_reg_open_basepath(ctx, REG_KEY_WRITE, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}

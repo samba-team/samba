@@ -345,7 +345,7 @@ int net_conf_list(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = libnet_smbconf_open_basepath(ctx, REG_KEY_READ, &base_key);
+	werr = libnet_smbconf_reg_open_basepath(ctx, REG_KEY_READ, &base_key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -503,7 +503,8 @@ int net_conf_listshares(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = libnet_smbconf_open_basepath(ctx, SEC_RIGHTS_ENUM_SUBKEYS, &key);
+	werr = libnet_smbconf_reg_open_basepath(ctx, SEC_RIGHTS_ENUM_SUBKEYS,
+						&key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
