@@ -9,5 +9,8 @@ WARN_IF_UNDOCUMENTED   = NO
 
 PERL_PATH              = /usr/bin/perl
 
+HTML_HEADER = "@srcdir@/header.html"
+HTML_FOOTER = "@srcdir@/footer.html"
+
 @INCLUDE = "@srcdir@/doxytmpl.dxy"
 
