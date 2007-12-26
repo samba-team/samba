@@ -29,8 +29,6 @@
 #include "param/param.h"
 #include "dynconfig.h"
 
-#define MAX_STRING_LEN 1024
-
 static struct cli_credentials *credentials;
 static bool showall = false;
 static bool old_list = false;
@@ -40,6 +38,9 @@ static int verbose;
 static int die_on_error;
 static int NumLoops = 0;
 static int max_length = 20;
+struct masktest_state {
+	TALLOC_CTX *mem_ctx;
+};
 
 static bool reg_match_one(struct smbcli_state *cli, const char *pattern, const char *file)
 {
@@ -107,6 +108,8 @@ static bool f_info_hit;
 
 static void listfn(struct clilist_file_info *f, const char *s, void *state)
 {
+	struct masktest_state *m = talloc_get_type(state,struct masktest_state);
+
 	if (ISDOT(f->name)) {
 		resultp[0] = '+';
 	} else if (ISDOTDOT(f->name)) {
@@ -114,8 +117,9 @@ static void listfn(struct clilist_file_info *f, const char *s, void *state)
 	} else {
 		resultp[2] = '+';
 	}
-	safe_strcpy(last_hit.long_name, f->name, MAX_STRING_LEN);
-	safe_strcpy(last_hit.short_name, f->short_name, MAX_STRING_LEN);
+
+	last_hit.long_name = talloc_strdup(m->mem_ctx, f->name);
+	last_hit.short_name = talloc_strdup(m->mem_ctx, f->short_name);
 	f_info_hit = true;
 }
 
@@ -123,6 +127,8 @@ static void get_real_name(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 			  char *long_name, fstring short_name)
 {
 	const char *mask;
+	struct masktest_state state;
+
 	if (cli->transport->negotiate.protocol <= PROTOCOL_LANMAN1) {
 		mask = "\\masktest\\*.*";
 	} else {
@@ -130,22 +136,22 @@ static void get_real_name(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 	}
 
 	f_info_hit = false;
-	last_hit.short_name = talloc_array(mem_ctx, char, MAX_STRING_LEN);
-	last_hit.long_name = talloc_array(mem_ctx, char, MAX_STRING_LEN);
+
+	state.mem_ctx = mem_ctx;
 
 	smbcli_list_new(cli->tree, mask,
 			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,
 			RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO,
-			listfn, NULL);
+			listfn, &state);
 
 	if (f_info_hit) {
 		fstrcpy(short_name, last_hit.short_name);
 		strlower(short_name);
-		safe_strcpy(long_name, last_hit.long_name, MAX_STRING_LEN);
+		long_name = talloc_strdup(mem_ctx, last_hit.long_name);
 		strlower(long_name);
 	}
 
-	if (*short_name == 0) {
+	if (*short_name == '\0') {
 		fstrcpy(short_name, long_name);
 	}
 }
@@ -159,11 +165,13 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 	static int count;
 	fstring short_name;
 	char *long_name;
+	struct masktest_state state;
 
-	long_name = talloc_array(mem_ctx, char, MAX_STRING_LEN);
 	count++;
 
 	fstrcpy(res1, "---");
+
+	state.mem_ctx = mem_ctx;
 
 	fnum = smbcli_open(cli->tree, file, O_CREAT|O_TRUNC|O_RDWR, 0);
 	if (fnum == -1) {
@@ -176,10 +184,10 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 	fstrcpy(short_name, "");
 	get_real_name(mem_ctx, cli, long_name, short_name);
 	fstrcpy(res1, "---");
-	smbcli_list_new(cli->tree, mask, 
-			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
+	smbcli_list_new(cli->tree, mask,
+			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,
 			RAW_SEARCH_DATA_BOTH_DIRECTORY_INFO,
-			listfn, NULL);
+			listfn, &state);
 
 	res2 = reg_test(cli, mask, long_name, short_name);
 
@@ -206,8 +214,6 @@ static void test_mask(int argc, char *argv[],
 	int fc_len = strlen(filechars);
 
 	mem_ctx = talloc_init("test_mask");
-	mask = talloc_array(mem_ctx, char, MAX_STRING_LEN);
-	file = talloc_array(mem_ctx, char, MAX_STRING_LEN);
 
 	smbcli_mkdir(cli->tree, "\\masktest");
 
@@ -215,10 +221,10 @@ static void test_mask(int argc, char *argv[],
 
 	if (argc >= 2) {
 		while (argc >= 2) {
-			safe_strcpy(mask,"\\masktest\\", MAX_STRING_LEN);
-			safe_strcpy(file,"\\masktest\\", MAX_STRING_LEN);
-			safe_strcat(mask, argv[0], MAX_STRING_LEN);
-			safe_strcat(file, argv[1], MAX_STRING_LEN);
+			mask = talloc_strdup(mem_ctx, "\\masktest\\");
+			file = talloc_strdup(mem_ctx, "\\masktest\\");
+			mask = talloc_strdup_append(mask, argv[0]);
+			file = talloc_strdup_append(file, argv[1]);
 			testpair(mem_ctx, cli, mask, file);
 			argv += 2;
 			argc -= 2;
@@ -229,8 +235,8 @@ static void test_mask(int argc, char *argv[],
 	while (1) {
 		l1 = 1 + random() % max_length;
 		l2 = 1 + random() % max_length;
-		safe_strcpy(mask,"\\masktest\\", MAX_STRING_LEN);
-		safe_strcpy(file,"\\masktest\\", MAX_STRING_LEN);
+		mask = talloc_strdup(mem_ctx, "\\masktest\\");
+		file = talloc_strdup(mem_ctx, "\\masktest\\");
 		l = strlen(mask);
 		for (i=0;i<l1;i++) {
 			mask[i+l] = maskchars[random() % mc_len];
