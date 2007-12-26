@@ -1152,6 +1152,7 @@ static void ctdb_election_data(struct ctdb_recoverd *rec, struct election_messag
 
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, rec, &nodemap);
 	if (ret != 0) {
+		DEBUG(0,(__location__ " unable to get election data\n"));
 		return;
 	}
 
@@ -1399,6 +1400,12 @@ static void monitor_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	CTDB_NO_MEMORY_VOID(ctdb, tmp_ctx);
 
 	ret = ctdb_ctrl_getnodemap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &nodemap);
+	if (ret != 0) {
+		DEBUG(0,(__location__ "ctdb_ctrl_getnodemap failed in monitor_handler\n"));
+		talloc_free(tmp_ctx);
+		return;		
+	}
+
 
 	for (i=0;i<nodemap->num;i++) {
 		if (nodemap->nodes[i].pnn == c->pnn) break;
