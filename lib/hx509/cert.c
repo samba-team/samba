@@ -3085,3 +3085,16 @@ _hx509_abort(const char *fmt, ...)
     abort();
 }
 
+/**
+ * Free a data element allocated in the library.
+ *
+ * @param ptr data to be freed.
+ *
+ * @ingroup hx509_misc
+ */
+
+void
+hx509_xfree(void *ptr)
+{
+    free(ptr);
+}
