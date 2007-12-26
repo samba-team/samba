@@ -1,5 +1,11 @@
 2007-12-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* print.c: doxygen
+
+	* env.c: doxygen
+
+	* doxygen.c: add more groups
+
 	* ca.c: doxygen.
 
 2007-12-17  Love Hörnquist Åstrand  <lha@it.su.se>
