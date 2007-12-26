@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 17
+Release: 18
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -124,4 +124,6 @@ fi
  - make deterministic IPs the default
  - fixed a bug related to continuous recovery 
  - added a debugging option --node-ip
+* Thu Dec 27 2007 : Version 1.0.18
+ - fixed crash bug in monitor_handler
 
