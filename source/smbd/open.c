@@ -2667,7 +2667,12 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		*pinfo = info;
 	}
 	if (psbuf != NULL) {
-		*psbuf = sbuf;
+		if ((fsp->fh == NULL) || (fsp->fh->fd == -1)) {
+			*psbuf = sbuf;
+		}
+		else {
+			SMB_VFS_FSTAT(fsp, fsp->fh->fd, psbuf);
+		}
 	}
 	return NT_STATUS_OK;
 
