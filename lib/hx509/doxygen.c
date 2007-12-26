@@ -49,7 +49,6 @@
  * - @ref page_lock
  * - @ref page_cms
  * - @ref page_ca
- * - @ref page_req
  * - @ref page_revoke
  *
  * The project web page:
@@ -79,7 +78,6 @@
 /** @defgroup hx509_query hx509 query functions */
 /** @defgroup hx509_ca hx509 CA functions
  * See the @ref page_ca for description and examples. */
-/** @defgroup hx509_req hx509 certificate request functions */
 /** @defgroup hx509_peer hx509 certificate selecting functions */
 /** @defgroup hx509_print hx509 printing functions */
 /** @defgroup hx509_env hx509 enviroment functions */
