@@ -195,9 +195,9 @@ static int ejs_net_deleteuser(MprVarHandle eid, int argc, char **argv)
 		ejsSetErrorMsg(eid, "ctx property returns null pointer");
 		goto done;
 	}
-	
+
 	/* domain where the account is to be deleted */
-	userman_domain = (struct libnet_context *)mprGetThisPtr(eid, "domain");
+	userman_domain = mprGetThisPtr(eid, "domain");
 	if (!userman_domain) {
 		ejsSetErrorMsg(eid, "domain property returns null pointer");
 		goto done;
@@ -258,9 +258,9 @@ static int ejs_net_userinfo(MprVarHandle eid, int argc, char **argv)
 		ejsSetErrorMsg(eid, "ctx property returns null pointer");
 		goto done;
 	}
-	
+
 	/* domain where the user account is to be queried */
-	userman_domain = (struct libnet_context *)mprGetThisPtr(eid, "domain");
+	userman_domain = mprGetThisPtr(eid, "domain");
 	if (userman_domain == NULL) {
 		ejsSetErrorMsg(eid, "domain property returns null pointer");
 		return -1;
