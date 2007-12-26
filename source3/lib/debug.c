@@ -785,13 +785,13 @@ void check_log_size( void )
 			(void)x_vfprintf( dbf, format_str, ap );
 		va_end( ap );
 		errno = old_errno;
-		return( 0 );
+		goto done;
 	}
 
 	/* prevent recursion by checking if reopen_logs() has temporaily
 	   set the debugf string to NULL */
 	if( debugf == NULL)
-		return( 0 );
+		goto done;
 
 #ifdef WITH_SYSLOG
 	if( !lp_syslog_only() )
@@ -806,7 +806,7 @@ void check_log_size( void )
 				x_setbuf( dbf, NULL );
 			} else {
 				errno = old_errno;
-				return(0);
+				goto done;
 			}
 		}
 	}
@@ -855,9 +855,10 @@ void check_log_size( void )
 			(void)x_fflush( dbf );
 	}
 
-	errno = old_errno;
-
+ done:
 	TALLOC_FREE(tmp_debug_ctx);
+
+	errno = old_errno;
 
 	return( 0 );
 }
