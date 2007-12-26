@@ -296,8 +296,7 @@ PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-NET \
 		smbcalls \
 		POPT_CREDENTIALS \
-		torture_rpc \
-		LIBPYTHON
+		torture_rpc
 # End SUBSYSTEM TORTURE_NET
 #################################
 
