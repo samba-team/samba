@@ -1264,79 +1264,6 @@ static bool build_sam_account(struct smbpasswd_privates *smbpasswd_state,
  Functions to be implemented by the new passdb API 
  ****************************************************************/
 
-static NTSTATUS smbpasswd_setsampwent (struct pdb_methods *my_methods, bool update, uint32 acb_mask)
-{
-	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
-	
-	smbpasswd_state->pw_file = startsmbfilepwent(smbpasswd_state->smbpasswd_file, 
-						       update ? PWF_UPDATE : PWF_READ, 
-						       &(smbpasswd_state->pw_file_lock_depth));
-				   
-	/* did we fail?  Should we try to create it? */
-	if (!smbpasswd_state->pw_file && update && errno == ENOENT) {
-		FILE *fp;
-		/* slprintf(msg_str,msg_str_len-1,
-		   "smbpasswd file did not exist - attempting to create it.\n"); */
-		DEBUG(0,("smbpasswd file did not exist - attempting to create it.\n"));
-		fp = sys_fopen(smbpasswd_state->smbpasswd_file, "w");
-		if (fp) {
-			fprintf(fp, "# Samba SMB password file\n");
-			fclose(fp);
-		}
-		
-		smbpasswd_state->pw_file = startsmbfilepwent(smbpasswd_state->smbpasswd_file, 
-							     update ? PWF_UPDATE : PWF_READ, 
-							     &(smbpasswd_state->pw_file_lock_depth));
-	}
-	
-	if (smbpasswd_state->pw_file != NULL)
-		return NT_STATUS_OK;
-	else
-		return NT_STATUS_UNSUCCESSFUL;  
-}
-
-static void smbpasswd_endsampwent (struct pdb_methods *my_methods)
-{
-	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
-	endsmbfilepwent(smbpasswd_state->pw_file, &(smbpasswd_state->pw_file_lock_depth));
-}
- 
-/*****************************************************************
- ****************************************************************/
-
-static NTSTATUS smbpasswd_getsampwent(struct pdb_methods *my_methods, struct samu *user)
-{
-	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)my_methods->private_data;
-	struct smb_passwd *pw_buf=NULL;
-	bool done = False;
-
-	DEBUG(5,("pdb_getsampwent\n"));
-
-	if ( !user ) {
-		DEBUG(5,("pdb_getsampwent (smbpasswd): user is NULL\n"));
-		return nt_status;
-	}
-
-	while (!done) {
-		/* do we have an entry? */
-		pw_buf = getsmbfilepwent(smbpasswd_state, smbpasswd_state->pw_file);
-		if (pw_buf == NULL) 
-			return nt_status;
-
-		/* build the struct samu entry from the smb_passwd struct. 
-		   We loop in case the user in the pdb does not exist in 
-		   the local system password file */
-		if (build_sam_account(smbpasswd_state, user, pw_buf))
-			done = True;
-	}
-
-	DEBUG(5,("getsampwent (smbpasswd): done\n"));
-
-	/* success */
-	return NT_STATUS_OK;
-}
-
 /****************************************************************
  Search smbpasswd file by iterating over the entries.  Do not
  call getpwnam() for unix account information until we have found
@@ -1730,9 +1657,6 @@ static NTSTATUS pdb_init_smbpasswd( struct pdb_methods **pdb_method, const char 
 
 	(*pdb_method)->name = "smbpasswd";
 
-	(*pdb_method)->setsampwent = smbpasswd_setsampwent;
-	(*pdb_method)->endsampwent = smbpasswd_endsampwent;
-	(*pdb_method)->getsampwent = smbpasswd_getsampwent;
 	(*pdb_method)->getsampwnam = smbpasswd_getsampwnam;
 	(*pdb_method)->getsampwsid = smbpasswd_getsampwsid;
 	(*pdb_method)->add_sam_account = smbpasswd_add_sam_account;

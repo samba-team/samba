@@ -364,24 +364,6 @@ int main(int argc, char **argv)
 					get_friendly_nt_error_msg(rv));
 	}
 
-	pdb->setsampwent(pdb, False, 0);
-	while (NT_STATUS_IS_OK(pdb->getsampwent(pdb, out))) {
-		if (pdb_get_username(out) == NULL) {
-			fprintf(stderr, "Got bad username through getsampwent()\n");
-			error = True;
-			break;
-		}
-		if (NT_STATUS_IS_ERR(pdb->getsampwnam(pdb, in, pdb_get_username(out)))) {
-			fprintf(stderr, "Error getting samu through getsampwnam() of an account we got through getsampwent!\n");
-			error = True;
-			continue;
-		}
-		if (!samu_correct(out, in)) {
-			printf("Record gotten through getsampwnam() differs from same record through getsampwent()\n");
-		}
-	}
-	pdb->endsampwent(pdb);
-	
 	TALLOC_FREE(ctx);
 
 	if (error) {
