@@ -117,6 +117,8 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Dec 27 2007 : Version 1.0.18
+ - fixed crash bug in monitor_handler
 * Tue Dec 04 2007 : Version 1.0.17
  - fixed bugs related to ban/unban of nodes
  - fixed a race condition that could lead to monitoring being permanently disabled,
@@ -124,6 +126,3 @@ fi
  - make deterministic IPs the default
  - fixed a bug related to continuous recovery 
  - added a debugging option --node-ip
-* Thu Dec 27 2007 : Version 1.0.18
- - fixed crash bug in monitor_handler
-
