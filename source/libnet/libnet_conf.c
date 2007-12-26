@@ -64,6 +64,15 @@ done:
 }
 
 /*
+ * open the base key KEY_SMBCONF
+ */
+WERROR libnet_smbconf_reg_open_basepath(TALLOC_CTX *ctx, uint32 desired_access,
+					struct registry_key **key)
+{
+	return libnet_smbconf_reg_open_path(ctx, NULL, desired_access, key);
+}
+
+/*
  * check if a subkey of KEY_SMBCONF of a given name exists
  */
 bool libnet_smbconf_key_exists(const char *subkeyname)
@@ -98,15 +107,6 @@ static bool libnet_smbconf_value_exists(struct registry_key *key,
 
 	TALLOC_FREE(ctx);
 	return ret;
-}
-
-/*
- * open the base key KEY_SMBCONF
- */
-WERROR libnet_smbconf_reg_open_basepath(TALLOC_CTX *ctx, uint32 desired_access,
-					struct registry_key **key)
-{
-	return libnet_smbconf_reg_open_path(ctx, NULL, desired_access, key);
 }
 
 /*
