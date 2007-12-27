@@ -86,6 +86,17 @@ static ssize_t client_receive_smb(struct cli_state *cli, size_t maxlen)
 			break;
 		}
 	}
+
+	if (cli_encryption_on(cli)) {
+		NTSTATUS status = cli_decrypt_message(cli);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("SMB decryption failed on incoming packet! Error %s\n",
+				nt_errstr(status)));
+			cli->smb_rw_error = SMB_READ_BAD_DECRYPT;
+			return -1;
+		}
+	}
+
 	show_msg(cli->inbuf);
 	return len;
 }
