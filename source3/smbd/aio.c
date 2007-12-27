@@ -496,7 +496,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 		}
 
 		ret = errno;
-		ERROR_BOTH(ERRHRD, ERRdiskfull, map_nt_error_from_unix(ret));
+		ERROR_BOTH(map_nt_error_from_unix(ret), ERRHRD, ERRdiskfull);
 		srv_set_message(inbuf,outbuf,0,0,true);
         } else {
 		bool write_through = BITSETW(aio_ex->inbuf+smb_vwv7,0);
@@ -514,7 +514,8 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 		status = sync_file(fsp->conn,fsp, write_through);
 		if (!NT_STATUS_IS_OK(status)) {
 			ret = errno;
-			ERROR_BOTH(ERRHRD, ERRdiskfull, map_nt_error_from_unix(ret));
+			ERROR_BOTH(map_nt_error_from_unix(ret),
+				   ERRHRD, ERRdiskfull);
 			srv_set_message(inbuf,outbuf,0,0,true);
                 	DEBUG(5,("handle_aio_write: sync_file for %s returned %s\n",
 				fsp->fsp_name, nt_errstr(status) ));
