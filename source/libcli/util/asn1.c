@@ -285,6 +285,13 @@ bool asn1_write_LDAPString(struct asn1_data *data, const char *s)
 	return !data->has_error;
 }
 
+/* write a LDAP string from a DATA_BLOB */
+bool asn1_write_DATA_BLOB_LDAPString(struct asn1_data *data, const DATA_BLOB *s)
+{
+	asn1_write(data, s->data, s->length);
+	return !data->has_error;
+}
+
 /* write a general string */
 bool asn1_write_GeneralString(struct asn1_data *data, const char *s)
 {

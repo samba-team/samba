@@ -77,7 +77,7 @@ static bool ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 		i = 0;
 		if ( ! tree->u.substring.start_with_wildcard) {
 			asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(0));
-			asn1_write_LDAPString(data, (char *)tree->u.substring.chunks[i]->data);
+			asn1_write_DATA_BLOB_LDAPString(data, tree->u.substring.chunks[i]);
 			asn1_pop_tag(data);
 			i++;
 		}
@@ -91,7 +91,7 @@ static bool ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 				ctx = 1;
 			}
 			asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(ctx));
-			asn1_write_LDAPString(data, (char *)tree->u.substring.chunks[i]->data);
+			asn1_write_DATA_BLOB_LDAPString(data, tree->u.substring.chunks[i]);
 			asn1_pop_tag(data);
 			i++;
 		}
@@ -157,7 +157,7 @@ static bool ldap_push_filter(struct asn1_data *data, struct ldb_parse_tree *tree
 			asn1_pop_tag(data);
 		}
 		asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(3));
-		asn1_write_LDAPString(data, (char *)tree->u.extended.value.data);
+		asn1_write_DATA_BLOB_LDAPString(data, &tree->u.extended.value);
 		asn1_pop_tag(data);
 		asn1_push_tag(data, ASN1_CONTEXT_SIMPLE(4));
 		asn1_write_uint8(data, tree->u.extended.dnAttributes);
