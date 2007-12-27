@@ -1924,7 +1924,7 @@ bool send_mailslot(bool unique, const char *mailslot,char *buf, size_t len,
 		return false;
 	}
 
-	set_message(ptr,17,strlen(mailslot) + 1 + len,True);
+	cli_set_message(ptr,17,strlen(mailslot) + 1 + len,True);
 	memcpy(ptr,tmp,4);
 
 	SCVAL(ptr,smb_com,SMBtrans);

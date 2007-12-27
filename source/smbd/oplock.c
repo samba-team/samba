@@ -252,7 +252,11 @@ static char *new_break_smb_message(TALLOC_CTX *mem_ctx,
 	}
 
 	memset(result,'\0',smb_size);
-	set_message(result,8,0,True);
+	/* We use cli_set_message here as this is an
+	 * asynchronous message that doesn't belong in
+	 * the stream.
+	 */
+	cli_set_message(result,8,0,True);
 	SCVAL(result,smb_com,SMBlockingX);
 	SSVAL(result,smb_tid,fsp->conn->cnum);
 	SSVAL(result,smb_pid,0xFFFF);

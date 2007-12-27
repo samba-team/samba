@@ -236,7 +236,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 	}
 
 	construct_reply_common((char *)req->inbuf, aio_ex->outbuf);
-	set_message(aio_ex->outbuf, 12, 0, True);
+	srv_set_message((const char *)req->inbuf, aio_ex->outbuf, 12, 0, True);
 	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
 
 	a = &aio_ex->acb;
@@ -387,6 +387,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 	int ret = 0;
 	int outsize;
 	char *outbuf = aio_ex->outbuf;
+	const char *inbuf = aio_ex->inbuf;
 	char *data = smb_buf(outbuf);
 	ssize_t nread = SMB_VFS_AIO_RETURN(aio_ex->fsp,&aio_ex->acb);
 
@@ -407,10 +408,11 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 			   "Error = %s\n",
 			   aio_ex->fsp->fsp_name, strerror(errno) ));
 
-		outsize = (UNIXERROR(ERRDOS,ERRnoaccess));
 		ret = errno;
+		ERROR_NT(map_nt_error_from_unix(ret));
+		outsize = srv_set_message(inbuf,outbuf,0,0,true);
 	} else {
-		outsize = set_message(outbuf,12,nread,False);
+		outsize = srv_set_message(inbuf, outbuf,12,nread,False);
 		SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be * -1. */
 		SSVAL(outbuf,smb_vwv5,nread);
 		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
@@ -423,7 +425,7 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 			    (int)aio_ex->acb.aio_nbytes, (int)nread ) );
 
 	}
-	smb_setlen(outbuf,outsize - 4);
+	_smb_setlen(outbuf,outsize - 4);
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf)) {
 		exit_server_cleanly("handle_aio_read_complete: send_smb "
@@ -448,6 +450,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 	int ret = 0;
 	files_struct *fsp = aio_ex->fsp;
 	char *outbuf = aio_ex->outbuf;
+	const char *inbuf = aio_ex->inbuf;
 	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
 	ssize_t nwritten = SMB_VFS_AIO_RETURN(fsp,&aio_ex->acb);
 
@@ -492,8 +495,9 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 			return 0;
 		}
 
-		UNIXERROR(ERRHRD,ERRdiskfull);
 		ret = errno;
+		ERROR_BOTH(ERRHRD, ERRdiskfull, map_nt_error_from_unix(ret));
+		srv_set_message(inbuf,outbuf,0,0,true);
         } else {
 		bool write_through = BITSETW(aio_ex->inbuf+smb_vwv7,0);
 		NTSTATUS status;
@@ -509,8 +513,9 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 			 fsp->fnum, (int)numtowrite, (int)nwritten));
 		status = sync_file(fsp->conn,fsp, write_through);
 		if (!NT_STATUS_IS_OK(status)) {
-			UNIXERROR(ERRHRD,ERRdiskfull);
 			ret = errno;
+			ERROR_BOTH(ERRHRD, ERRdiskfull, map_nt_error_from_unix(ret));
+			srv_set_message(inbuf,outbuf,0,0,true);
                 	DEBUG(5,("handle_aio_write: sync_file for %s returned %s\n",
 				fsp->fsp_name, nt_errstr(status) ));
 		}

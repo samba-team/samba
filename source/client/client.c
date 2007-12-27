@@ -2178,6 +2178,48 @@ static int cmd_open(void)
 	return 0;
 }
 
+static int cmd_posix_encrypt(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	if (cli->use_kerberos) {
+		status = cli_gss_smb_encryption_start(cli);
+	} else {
+		char *domain = NULL;
+		char *user = NULL;
+		char *password = NULL;
+
+		if (!next_token_talloc(ctx, &cmd_ptr,&domain,NULL)) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+
+		if (!next_token_talloc(ctx, &cmd_ptr,&user,NULL)) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+
+		if (!next_token_talloc(ctx, &cmd_ptr,&password,NULL)) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+
+		status = cli_raw_ntlm_smb_encryption_start(cli,
+							user,
+							password,
+							domain);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("posix_encrypt failed with error %s\n", nt_errstr(status));
+	} else {
+		d_printf("encryption on\n");
+	}
+
+	return 0;
+}
+
 /****************************************************************************
 ****************************************************************************/
 
@@ -3803,6 +3845,7 @@ static struct {
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"posix", cmd_posix, "turn on all POSIX capabilities", {COMPL_REMOTE,COMPL_NONE}},
+  {"posix_encrypt",cmd_posix_encrypt,"<domain> <user> <password> start up transport encryption",{COMPL_REMOTE,COMPL_NONE}},
   {"posix_open",cmd_posix_open,"<name> 0<mode> open_flags mode open a file using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
   {"posix_mkdir",cmd_posix_mkdir,"<name> 0<mode> creates a directory using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
   {"posix_rmdir",cmd_posix_rmdir,"<name> removes a directory using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
