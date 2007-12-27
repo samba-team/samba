@@ -141,6 +141,36 @@ if (options["ldap-backend-type"] == "fedora-ds") {
 	} else {
 		slapd_command = "slapd -f " + subobj.LDAPDIR + "/slapd.conf -h " + subobj.LDAPI_URI;
 	}
+
+	var ldb = ldb_init();
+	ldb.filename = tmp_schema_ldb;
+
+	var connect_ok = ldb.connect(ldb.filename);
+	assert(connect_ok);
+	var attrs = new Array("linkID", "lDAPDisplayName");
+	var res = ldb.search("(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", subobj.SCHEMADN, ldb.SCOPE_SUBTREE, attrs);
+	assert(res.error == 0);
+	var memberof_config = "";
+	for (i=0; i < res.msgs.length; i++) {
+searchone(ldb, subobj.DOMAINDN, "(&(objectClass=computer)(cn=" + subobj.NETBIOSNAME + "))", "objectGUID");
+		var target = searchone(ldb, subobj.SCHEMADN, "(&(objectclass=attributeSchema)(linkID=" + (res.msgs[i].linkID + 1) + "))", "lDAPDisplayName");
+		if (target != undefined) {
+			memberof_config = memberof_config + "overlay memberof
+memberof-dangling error
+memberof-refint TRUE
+memberof-group-oc top
+memberof-member-ad " + res.msgs[i].lDAPDisplayName + "
+memberof-memberof-ad " + target + "
+
+";
+		}
+	}
+	ok = sys.file_save(subobj.LDAPDIR + "/memberof.conf", memberof_config);
+	if (!ok) {
+		message("failed to create file: " + f + "\n");
+		assert(ok);
+	}
+
 }
 var schema_command = "ad2oLschema --option=convert:target=" + options["ldap-backend-type"] + " -I " + lp.get("setup directory") + "/" + mapping + " -H tdb://" + tmp_schema_ldb + " -O " + subobj.LDAPDIR + "/" + backend_schema;
 
