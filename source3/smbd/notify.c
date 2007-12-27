@@ -131,6 +131,7 @@ static bool notify_marshall_changes(int num_changes,
 static void change_notify_reply_packet(const uint8 *request_buf,
 				       NTSTATUS error_code)
 {
+	const char *inbuf = (const char *)request_buf;
 	char outbuf[smb_size+38];
 
 	memset(outbuf, '\0', sizeof(outbuf));
@@ -142,7 +143,7 @@ static void change_notify_reply_packet(const uint8 *request_buf,
 	 * Seems NT needs a transact command with an error code
 	 * in it. This is a longer packet than a simple error.
 	 */
-	set_message(outbuf,18,0,False);
+	srv_set_message((const char *)request_buf, outbuf,18,0,False);
 
 	show_msg(outbuf);
 	if (!send_smb(smbd_server_fd(),outbuf))

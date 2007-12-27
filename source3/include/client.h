@@ -27,7 +27,9 @@
    will be a multiple of the page size on almost any system */
 #define CLI_BUFFER_SIZE (0xFFFF)
 #define CLI_SAMBA_MAX_LARGE_READX_SIZE (127*1024) /* Works for Samba servers */
+#define CLI_SAMBA_MAX_LARGE_WRITEX_SIZE (127*1024) /* Works for Samba servers */
 #define CLI_WINDOWS_MAX_LARGE_READX_SIZE ((64*1024)-2) /* Windows servers are broken.... */
+#define CLI_WINDOWS_MAX_LARGE_WRITEX_SIZE ((64*1024)-2) /* Windows servers are broken.... */
 #define CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE (0xFFFF00) /* 24-bit len. */
 #define CLI_SAMBA_MAX_POSIX_LARGE_WRITEX_SIZE (0xFFFF00) /* 24-bit len. */
 
@@ -77,6 +79,28 @@ struct rpc_pipe_client {
 
 	/* The following is only non-null on a netlogon pipe. */
 	struct dcinfo *dc;
+};
+
+/* Transport encryption state. */
+enum smb_trans_enc_type { SMB_TRANS_ENC_NTLM, SMB_TRANS_ENC_GSS };
+
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+struct smb_tran_enc_state_gss {
+        gss_ctx_id_t gss_ctx;
+        gss_cred_id_t creds;
+};
+#endif
+
+struct smb_trans_enc_state {
+        enum smb_trans_enc_type smb_enc_type;
+        uint16 enc_ctx_num;
+        bool enc_on;
+        union {
+                NTLMSSP_STATE *ntlmssp_state;
+#if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+                struct smb_tran_enc_state_gss *gss_state;
+#endif
+        } s;
 };
 
 struct cli_state {
@@ -141,6 +165,8 @@ struct cli_state {
 #endif
 
 	smb_sign_info sign_info;
+
+	struct smb_trans_enc_state *trans_enc_state; /* Setup if we're encrypting SMB's. */
 
 	/* the session key for this CLI, outside
 	   any per-pipe authenticaion */

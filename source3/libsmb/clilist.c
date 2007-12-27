@@ -521,7 +521,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		memset(cli->outbuf,'\0',smb_size);
 		memset(cli->inbuf,'\0',smb_size);
 
-		set_message(cli->outbuf,2,0,True);
+		cli_set_message(cli->outbuf,2,0,True);
 
 		SCVAL(cli->outbuf,smb_com,SMBsearch);
 
@@ -581,7 +581,7 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		memset(cli->outbuf,'\0',smb_size);
 		memset(cli->inbuf,'\0',smb_size);
 
-		set_message(cli->outbuf,2,0,True);
+		cli_set_message(cli->outbuf,2,0,True);
 		SCVAL(cli->outbuf,smb_com,SMBfclose);
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);
 		cli_setup_packet(cli);

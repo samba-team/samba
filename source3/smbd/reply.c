@@ -2791,8 +2791,8 @@ void reply_readbraw(connection_struct *conn, struct smb_request *req)
 
 	START_PROFILE(SMBreadbraw);
 
-	if (srv_is_signing_active()) {
-		exit_server_cleanly("reply_readbraw: SMB signing is active - "
+	if (srv_is_signing_active() || srv_encryption_on()) {
+		exit_server_cleanly("reply_readbraw: SMB signing/sealing is active - "
 			"raw reads/writes are disallowed.");
 	}
 
@@ -3017,7 +3017,8 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 		return;
 	}
 	
-	set_message((char *)req->outbuf, 5, nread+3, False);
+	srv_set_message((const char *)req->inbuf,
+		(char *)req->outbuf, 5, nread+3, False);
 
 	SSVAL(req->outbuf,smb_vwv0,nread);
 	SSVAL(req->outbuf,smb_vwv5,nread+3);
@@ -3104,7 +3105,8 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 		return;
 	}
 
-	set_message((char *)req->outbuf, 5, nread+3, False);
+	srv_set_message((const char *)req->inbuf,
+		(char *)req->outbuf, 5, nread+3, False);
 
 	SSVAL(req->outbuf,smb_vwv0,nread);
 	SSVAL(req->outbuf,smb_vwv5,nread+3);
@@ -3122,12 +3124,12 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
  Setup readX header.
 ****************************************************************************/
 
-static int setup_readX_header(char *outbuf, size_t smb_maxcnt)
+static int setup_readX_header(const char *inbuf, char *outbuf, size_t smb_maxcnt)
 {
 	int outsize;
 	char *data;
 
-	outsize = set_message(outbuf,12,smb_maxcnt,False);
+	outsize = srv_set_message(inbuf, outbuf,12,smb_maxcnt,False);
 	data = smb_buf(outbuf);
 
 	memset(outbuf+smb_vwv0,'\0',24); /* valgrind init. */
@@ -3190,7 +3192,8 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		header = data_blob_const(headerbuf, sizeof(headerbuf));
 
 		construct_reply_common((char *)req->inbuf, (char *)headerbuf);
-		setup_readX_header((char *)headerbuf, smb_maxcnt);
+		setup_readX_header((const char *)req->inbuf,
+			(char *)headerbuf, smb_maxcnt);
 
 		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, smb_maxcnt)) == -1) {
 			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
@@ -3241,7 +3244,8 @@ normal_read:
 		uint8 headerbuf[smb_size + 2*12];
 
 		construct_reply_common((char *)req->inbuf, (char *)headerbuf);
-		setup_readX_header((char *)headerbuf, smb_maxcnt);
+		setup_readX_header((const char *)req->inbuf,
+			(char *)headerbuf, smb_maxcnt);
 
 		/* Send out the header. */
 		if (write_data(smbd_server_fd(), (char *)headerbuf,
@@ -3268,7 +3272,8 @@ normal_read:
 			return;
 		}
 
-		setup_readX_header((char *)req->outbuf, nread);
+		setup_readX_header((const char *)req->inbuf,
+			(char *)req->outbuf, nread);
 
 		DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
 			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
@@ -3332,8 +3337,8 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 				END_PROFILE(SMBreadX);
 				return;
 			}
-			/* We currently don't do this on signed data. */
-			if (srv_is_signing_active()) {
+			/* We currently don't do this on signed or sealed data. */
+			if (srv_is_signing_active() || srv_encryption_on()) {
 				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 				END_PROFILE(SMBreadX);
 				return;
@@ -3524,7 +3529,7 @@ void reply_writebraw(connection_struct *conn, struct smb_request *req)
 	 * it to send more bytes */
 
 	memcpy(buf, req->inbuf, smb_size);
-	outsize = set_message(buf,
+	outsize = srv_set_message((const char *)req->inbuf, buf,
 			Protocol>PROTOCOL_COREPLUS?1:0,0,True);
 	SCVAL(buf,smb_com,SMBwritebraw);
 	SSVALS(buf,smb_vwv0,0xFFFF);
@@ -3855,6 +3860,12 @@ bool is_valid_writeX_buffer(const char *inbuf)
 	connection_struct *conn = NULL;
 	unsigned int doff = 0;
 	size_t len = smb_len_large(inbuf);
+
+	if (srv_encryption_on()) {
+		/* Can't do this on encrypted
+		 * connections. */
+		return false;
+	}
 
 	if (CVAL(inbuf,smb_com) != SMBwriteX) {
 		return false;

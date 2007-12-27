@@ -50,6 +50,43 @@ enum smb_read_errors *get_srv_read_error(void)
 	return &smb_read_error;
 }
 
+/*******************************************************************
+ Setup the word count and byte count for a smb message.
+ copying the '0xFF X X X' bytes from incoming
+ buffer (so we copy any encryption context).
+********************************************************************/
+
+int srv_set_message(const char *frombuf,
+                        char *buf,
+                        int num_words,
+                        int num_bytes,
+                        bool zero)
+{
+	if (zero && (num_words || num_bytes)) {
+		memset(buf + smb_size,'\0',num_words*2 + num_bytes);
+	}
+	SCVAL(buf,smb_wct,num_words);
+	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);
+	_smb_setlen(buf,(smb_size + num_words*2 + num_bytes - 4));
+	if (buf != frombuf) {
+		memcpy(buf+4, frombuf+4, 4);
+	}
+	return (smb_size + num_words*2 + num_bytes);
+}
+
+static bool valid_smb_header(const char *inbuf)
+{
+	if (srv_encryption_on()) {
+		uint16_t enc_num;
+		NTSTATUS status = get_enc_ctx_num(inbuf, &enc_num);
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
+		return (enc_num == 0);
+	}
+	return (strncmp(smb_base(inbuf),"\377SMB",4) == 0);
+}
+
 /* Socket functions for smbd packet processing. */
 
 static bool valid_packet_size(size_t len)
@@ -322,6 +359,18 @@ ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx, int fd, char **buffer,
 
 	if (len < 0) {
 		return -1;
+	}
+
+	if (srv_encryption_on()) {
+		NTSTATUS status = srv_decrypt_buffer(*buffer);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("receive_smb_talloc: SMB decryption failed on "
+				"incoming packet! Error %s\n",
+				nt_errstr(status) ));
+			cond_set_smb_read_error(get_srv_read_error(),
+					SMB_READ_BAD_DECRYPT);
+			return -1;
+		}
 	}
 
 	/* Check the incoming SMB signature. */
@@ -1239,7 +1288,8 @@ void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
 	}
 
 	construct_reply_common((char *)req->inbuf, (char *)req->outbuf);
-	set_message((char *)req->outbuf, num_words, num_bytes, False);
+	srv_set_message((const char *)req->inbuf,
+			(char *)req->outbuf, num_words, num_bytes, false);
 	/*
 	 * Zero out the word area, the caller has to take care of the bcc area
 	 * himself
@@ -1309,7 +1359,7 @@ static void switch_message(uint8 type, struct smb_request *req, int size)
 
 	/* Make sure this is an SMB packet. smb_size contains NetBIOS header
 	 * so subtract 4 from it. */
-	if ((strncmp(smb_base(req->inbuf),"\377SMB",4) != 0)
+	if (!valid_smb_header((const char *)req->inbuf)
 	    || (size < (smb_size - 4))) {
 		DEBUG(2,("Non-SMB packet of length %d. Terminating server\n",
 			 smb_len(req->inbuf)));
@@ -1551,7 +1601,7 @@ void remove_from_common_flags2(uint32 v)
 
 void construct_reply_common(const char *inbuf, char *outbuf)
 {
-	set_message(outbuf,0,0,False);
+	srv_set_message(inbuf,outbuf,0,0,false);
 	
 	SCVAL(outbuf,smb_com,CVAL(inbuf,smb_com));
 	SIVAL(outbuf,smb_rcls,0);
