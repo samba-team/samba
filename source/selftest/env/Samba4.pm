@@ -241,9 +241,20 @@ sub mk_openldap($$$)
 		open(CONF, ">$modconf"); 
 		# enable slapd modules
 		print CONF "
-modulepath      $olpath/libexec/openldap
+modulepath      $olroot/libexec/openldap
+moduleload	syncprov
+moduleload      memberof
+";
+		close(CONF);
+	}
+	if (system("slaptest -u -f $slapd_conf >&2") != 0) {
+		open(CONF, ">$modconf"); 
+		# enable slapd modules
+		print CONF "
+modulepath      $olroot/libexec/openldap
 moduleload	back_hdb
 moduleload	syncprov
+moduleload      memberof
 ";
 		close(CONF);
 	}
@@ -254,6 +265,7 @@ moduleload	syncprov
 		print CONF "
 moduleload	back_hdb
 moduleload	syncprov
+moduleload      memberof
 ";
 		close(CONF);
 	}
@@ -265,6 +277,7 @@ moduleload	syncprov
 modulepath	/usr/lib/ldap
 moduleload	back_hdb
 moduleload	syncprov
+moduleload      memberof
 ";
 		close(CONF);
 	}
@@ -275,6 +288,7 @@ moduleload	syncprov
 		print CONF "
 modulepath	/usr/lib/openldap
 moduleload	syncprov
+moduleload      memberof
 ";
 		close(CONF);
 	}
@@ -285,6 +299,7 @@ moduleload	syncprov
 		print CONF "
 modulepath	/usr/lib64/openldap
 moduleload	syncprov
+moduleload      memberof
 ";
 		close(CONF);
 	}
