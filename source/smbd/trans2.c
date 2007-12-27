@@ -2737,7 +2737,10 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			data_len = 12;
 			SSVAL(pdata,0,CIFS_UNIX_MAJOR_VERSION);
 			SSVAL(pdata,2,CIFS_UNIX_MINOR_VERSION);
-			/* We have POSIX ACLs, pathname and locking capability. */
+
+			/* We have POSIX ACLs, pathname, encryption, 
+			 * large read/write, and locking capability. */
+
 			SBIG_UINT(pdata,4,((SMB_BIG_UINT)(
 					CIFS_UNIX_POSIX_ACLS_CAP|
 					CIFS_UNIX_POSIX_PATHNAMES_CAP|
@@ -2745,6 +2748,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 					CIFS_UNIX_EXTATTR_CAP|
 					CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP|
 					CIFS_UNIX_LARGE_READ_CAP|
+					CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP|
 					(large_write ?
 					CIFS_UNIX_LARGE_WRITE_CAP : 0))));
 			break;
