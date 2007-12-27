@@ -9,20 +9,15 @@
 
 from provision import findnss, provision
 import grp
+import ldb
 import pwd
 import uuid
 import registry
+from samba import Ldb
+from samba.samdb import SamDB
 
-# Where prefix is any of:
-# - HKLM
-#   HKU
-#   HKCR
-#   HKPD
-#   HKPT
-#
-
-def upgrade_sam_policy(policy,dn):
-    ldif = """
+def import_sam_policy(samldb, samba3_policy, domaindn):
+    samldb.modify_ldif("""
 dn: %s
 changetype: modify
 replace: minPwdLength
@@ -40,19 +35,24 @@ samba3DisconnectTime: %d
     policy.password_history, policy.minimum_password_age,
     policy.maximum_password_age, policy.lockout_duration,
     policy.reset_count_minutes, policy.user_must_logon_to_change_password,
-    policy.bad_lockout_minutes, policy.disconnect_time)
-    
-    return ldif
+    policy.bad_lockout_minutes, policy.disconnect_time))
 
-def upgrade_sam_account(ldb,acc,domaindn,domainsid):
-    """Upgrade a SAM account."""
+
+def import_sam_account(samldb,acc,domaindn,domainsid):
+    """Import a Samba 3 SAM account.
+    
+    :param samldb: Samba 4 SAM Database handle
+    :param acc: Samba 3 account
+    :param domaindn: Domain DN
+    :param domainsid: Domain SID."""
     if acc.nt_username is None or acc.nt_username == "":
         acc.nt_username = acc.username
 
     if acc.fullname is None:
-        acc.fullname = pwd.getpwnam(acc.fullname)[4]
-
-    acc.fullname = acc.fullname.split(",")[0]
+        try:
+            acc.fullname = pwd.getpwnam(acc.username)[4].split(",")[0]
+        except KeyError:
+            pass
 
     if acc.fullname is None:
         acc.fullname = acc.username
@@ -60,104 +60,112 @@ def upgrade_sam_account(ldb,acc,domaindn,domainsid):
     assert acc.fullname is not None
     assert acc.nt_username is not None
 
-    ldif = """dn: cn=%s,%s
-objectClass: top
-objectClass: user
-lastLogon: %d
-lastLogoff: %d
-unixName: %s
-sAMAccountName: %s
-cn: %s
-description: %s
-primaryGroupID: %d
-badPwdcount: %d
-logonCount: %d
-samba3Domain: %s
-samba3DirDrive: %s
-samba3MungedDial: %s
-samba3Homedir: %s
-samba3LogonScript: %s
-samba3ProfilePath: %s
-samba3Workstations: %s
-samba3KickOffTime: %d
-samba3BadPwdTime: %d
-samba3PassLastSetTime: %d
-samba3PassCanChangeTime: %d
-samba3PassMustChangeTime: %d
-objectSid: %s-%d
-lmPwdHash:: %s
-ntPwdHash:: %s
+    samldb.add({
+        "dn": "cn=%s,%s" % (acc.fullname, domaindn),
+        "objectClass": ["top", "user"],
+        "lastLogon": str(acc.logon_time),
+        "lastLogoff": str(acc.logoff_time),
+        "unixName": acc.username,
+        "sAMAccountName": acc.nt_username,
+        "cn": acc.nt_username,
+        "description": acc.acct_desc,
+        "primaryGroupID": str(acc.group_rid),
+        "badPwdcount": str(acc.bad_password_count),
+        "logonCount": str(acc.logon_count),
+        "samba3Domain": acc.domain,
+        "samba3DirDrive": acc.dir_drive,
+        "samba3MungedDial": acc.munged_dial,
+        "samba3Homedir": acc.homedir, 
+        "samba3LogonScript": acc.logon_script, 
+        "samba3ProfilePath": acc.profile_path,
+        "samba3Workstations": acc.workstations,
+        "samba3KickOffTime": str(acc.kickoff_time),
+        "samba3BadPwdTime": str(acc.bad_password_time),
+        "samba3PassLastSetTime": str(acc.pass_last_set_time),
+        "samba3PassCanChangeTime": str(acc.pass_can_change_time),
+        "samba3PassMustChangeTime": str(acc.pass_must_change_time),
+        "objectSid": "%s-%d" % (domainsid, acc.user_rid),
+        "lmPwdHash:": acc.lm_password,
+        "ntPwdHash:": acc.nt_password,
+        })
 
-""" % (ldb.dn_escape(acc.fullname), domaindn, acc.logon_time, acc.logoff_time, acc.username, acc.nt_username, acc.nt_username, 
-acc.acct_desc, acc.group_rid, acc.bad_password_count, acc.logon_count,
-acc.domain, acc.dir_drive, acc.munged_dial, acc.homedir, acc.logon_script, 
-acc.profile_path, acc.workstations, acc.kickoff_time, acc.bad_password_time, 
-acc.pass_last_set_time, acc.pass_can_change_time, acc.pass_must_change_time, domainsid, acc.user_rid,
-    ldb.encode(acc.lm_pw), ldb.encode(acc.nt_pw))
 
-    return ldif
+def import_sam_group(samldb, sid, gid, sid_name_use, nt_name, comment, domaindn):
+    """Upgrade a SAM group.
+    
+    :param samldb: SAM database.
+    :param gid: Group GID
+    :param sid_name_use: SID name use
+    :param nt_name: NT Group Name
+    :param comment: NT Group Comment
+    :param domaindn: Domain DN
+    """
 
-def upgrade_sam_group(group,domaindn):
-    """Upgrade a SAM group."""
-    if group.sid_name_use == 5: # Well-known group
+    if sid_name_use == 5: # Well-known group
         return None
 
-    if group.nt_name in ("Domain Guests", "Domain Users", "Domain Admins"):
+    if nt_name in ("Domain Guests", "Domain Users", "Domain Admins"):
         return None
     
-    if group.gid == -1:
-        gr = grp.getgrnam(grp.nt_name)
+    if gid == -1:
+        gr = grp.getgrnam(nt_name)
     else:
-        gr = grp.getgrgid(grp.gid)
+        gr = grp.getgrgid(gid)
 
     if gr is None:
-        group.unixname = "UNKNOWN"
+        unixname = "UNKNOWN"
     else:
-        group.unixname = gr.gr_name
+        unixname = gr.gr_name
 
-    assert group.unixname is not None
+    assert unixname is not None
     
-    ldif = """dn: cn=%s,%s
-objectClass: top
-objectClass: group
-description: %s
-cn: %s
-objectSid: %s
-unixName: %s
-samba3SidNameUse: %d
-""" % (group.nt_name, domaindn, 
-group.comment, group.nt_name, group.sid, group.unixname, group.sid_name_use)
+    samldb.add({
+        "dn": "cn=%s,%s" % (nt_name, domaindn),
+        "objectClass": ["top", "group"],
+        "description": comment,
+        "cn": nt_name, 
+        "objectSid": sid,
+        "unixName": unixname,
+        "samba3SidNameUse": str(sid_name_use)
+        })
 
-    return ldif
 
-def import_idmap(samba4_idmap,samba3_idmap,domaindn):
-    samba4_idmap.add({
+def import_idmap(samdb,samba3_idmap,domaindn):
+    """Import idmap data.
+
+    :param samdb: SamDB handle.
+    :param samba3_idmap: Samba 3 IDMAP database to import from
+    :param domaindn: Domain DN.
+    """
+    samdb.add({
         "dn": domaindn,
         "userHwm": str(samba3_idmap.get_user_hwm()),
         "groupHwm": str(samba3_idmap.get_group_hwm())})
 
     for uid in samba3_idmap.uids():
-        samba4_idmap.add({"dn": "SID=%s,%s" % (samba3_idmap.get_user_sid(uid), domaindn),
+        samdb.add({"dn": "SID=%s,%s" % (samba3_idmap.get_user_sid(uid), domaindn),
                           "SID": samba3_idmap.get_user_sid(uid),
                           "type": "user",
                           "unixID": str(uid)})
 
     for gid in samba3_idmap.uids():
-        samba4_idmap.add({"dn": "SID=%s,%s" % (samba3_idmap.get_group_sid(gid), domaindn),
+        samdb.add({"dn": "SID=%s,%s" % (samba3_idmap.get_group_sid(gid), domaindn),
                           "SID": samba3_idmap.get_group_sid(gid),
                           "type": "group",
                           "unixID": str(gid)})
 
 
 def import_wins(samba4_winsdb, samba3_winsdb):
-    """Import settings from a Samba3 WINS database."""
+    """Import settings from a Samba3 WINS database.
+    
+    :param samba4_winsdb: WINS database to import to
+    :param samba3_winsdb: WINS database to import from
+    """
     version_id = 0
     import time
 
     for (name, (ttl, ips, nb_flags)) in samba3_winsdb.items():
         version_id+=1
-
-        numIPs = len(e.ips)
 
         type = int(name.split("#", 1)[1], 16)
 
@@ -181,14 +189,14 @@ def import_wins(samba4_winsdb, samba3_winsdb):
 
         nType = ((nb_flags & 0x60)>>5)
 
-        samba4_winsdb.add({"dn": "name=%s,type=0x%s" % name.split("#"),
+        samba4_winsdb.add({"dn": "name=%s,type=0x%s" % tuple(name.split("#")),
                            "type": name.split("#")[1],
                            "name": name.split("#")[0],
                            "objectClass": "winsRecord",
                            "recordType": str(rType),
                            "recordState": str(rState),
                            "nodeType": str(nType),
-                           "expireTime": ldb.ldaptime(ttl),
+                           "expireTime": ldb.timestring(ttl),
                            "isStatic": "0",
                            "versionID": str(version_id),
                            "address": ips})
@@ -237,9 +245,52 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info, lp,
     else:
         machinepass = None
     
-    provision(lp=lp, setup_dir=setup_dir, message=message, blank=True, ldapbackend=None, paths=paths, session_info=session_info, 
-              credentials=credentials, realm=realm, domain=domainname, 
-              domainsid=domainsid, domainguid=domainguid, machinepass=machinepass, serverrole=serverrole)
+    domaindn = provision(lp=lp, setup_dir=setup_dir, message=message, blank=True, ldapbackend=None, 
+                         paths=paths, session_info=session_info, credentials=credentials, realm=realm, 
+                         domain=domainname, domainsid=domainsid, domainguid=domainguid, 
+                         machinepass=machinepass, serverrole=serverrole)
+
+    samdb = SamDB(paths.samdb, credentials=credentials, lp=lp, session_info=session_info)
+
+    import_wins(Ldb(paths.winsdb), samba3.get_wins_db())
+
+    # FIXME: import_registry(registry.Registry(), samba3.get_registry())
+
+    # FIXME: import_idmap(samdb,samba3.get_idmap_db(),domaindn)
+    
+    groupdb = samba3.get_groupmapping_db()
+    for sid in groupdb.groupsids():
+        (gid, sid_name_use, nt_name, comment) = groupdb.get_group(sid)
+        # FIXME: import_sam_group(samdb, sid, gid, sid_name_use, nt_name, comment, domaindn)
+
+    # FIXME: Aliases
+
+    passdb = samba3.get_sam_db()
+    for name in passdb:
+        user = passdb[name]
+        #FIXME: import_sam_account(samdb, user, domaindn, domainsid)
+
+    if hasattr(passdb, 'ldap_url'):
+        message("Enabling Samba3 LDAP mappings for SAM database")
+
+        enable_samba3sam(samdb, passdb.ldap_url)
+
+
+def enable_samba3sam(samdb, ldapurl):
+    """Enable Samba 3 LDAP URL database.
+
+    :param samdb: SAM Database.
+    :param ldapurl: Samba 3 LDAP URL
+    """
+    samdb.modify_ldif("""
+dn: @MODULES
+changetype: modify
+replace: @LIST
+@LIST: samldb,operational,objectguid,rdn_name,samba3sam
+""")
+
+    samdb.add({"dn": "@MAP=samba3sam", "@MAP_URL": ldapurl})
+
 
 smbconf_keep = [
     "dos charset", 
@@ -436,33 +487,4 @@ data: %d
     ldif = upgrade_wins(samba3)
     winsdb.add(ldif)
 
-    # figure out ldapurl, if applicable
-    ldapurl = None
-    pdb = samba3.configuration.get_list("passdb backend")
-    if pdb is not None:
-        for backend in pdb:
-            if len(backend) >= 7 and backend[0:7] == "ldapsam":
-                ldapurl = backend[7:]
 
-    # URL was not specified in passdb backend but ldap /is/ used
-    if ldapurl == "":
-        ldapurl = "ldap://%s" % samba3.configuration.get("ldap server")
-
-    # Enable samba3sam module if original passdb backend was ldap
-    if ldapurl is not None:
-        message("Enabling Samba3 LDAP mappings for SAM database")
-
-        enable_samba3sam(samdb)
-
-    return ret
-
-
-def enable_samba3sam(samdb):
-    samdb.modify("""
-dn: @MODULES
-changetype: modify
-replace: @LIST
-@LIST: samldb,operational,objectguid,rdn_name,samba3sam
-""")
-
-    samdb.add({"dn": "@MAP=samba3sam", "@MAP_URL": ldapurl})

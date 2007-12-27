@@ -745,6 +745,8 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
                       domainguid=domainguid, hostguid=hostguid)
         message("Please install the zone located in %s into your DNS server" % paths.dns)
 
+    return domaindn
+
 def create_phplpapdadmin_config(path, setup_path, s4_ldapi_path):
     setup_file(setup_path("phpldapadmin-config.php"), 
                path, {"S4_LDAPI_URI": "ldapi://%s" % s4_ldapi_path.replace("/", "%2F")})

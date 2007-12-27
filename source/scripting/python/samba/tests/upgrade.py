@@ -17,12 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from samba.upgrade import regkey_to_dn
+import samba.upgrade
 from unittest import TestCase
 
-class RegkeyDnTests(TestCase):
-    def test_empty(self):
-        self.assertEquals("hive=NONE", regkey_to_dn(""))
-
-    def test_nested(self):
-        self.assertEquals("key=bar,key=foo,hive=NONE", regkey_to_dn("foo/bar"))
