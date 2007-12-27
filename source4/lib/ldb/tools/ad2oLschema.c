@@ -28,7 +28,7 @@
  *
  *  Description: utility to convert an AD schema into the format required by OpenLDAP
  *
- *  Author: Andrew Tridgell
+ *  Author: Andrew Bartlett
  */
 
 #include "includes.h"
