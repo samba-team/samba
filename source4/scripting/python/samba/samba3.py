@@ -118,6 +118,15 @@ class GroupMappingDatabase:
             if k.startswith(GROUP_PREFIX):
                 yield k[len(GROUP_PREFIX):].rstrip("\0")
 
+    def get_group(self, sid):
+        data = self.tdb.get("%s%s\0" % (GROUP_PREFIX, sid))
+        if data is None:
+            return data
+        import struct
+        (gid, sid_name_use) = struct.unpack("<lL", data[0:8])
+        (nt_name, comment, _) = data[8:].split("\0")
+        return (gid, sid_name_use, nt_name, comment)
+
     def aliases(self):
         for k in self.tdb.keys():
             if k.startswith(MEMBEROF_PREFIX):
@@ -288,15 +297,15 @@ ACB_NO_AUTH_DATA_REQD = 0x00080000
 acb_info_mapping = {
         'N': ACB_PWNOTREQ,  # 'N'o password. 
         'D': ACB_DISABLED,  # 'D'isabled.
-		'H': ACB_HOMDIRREQ, # 'H'omedir required.
-		'T': ACB_TEMPDUP,   # 'T'emp account.
-		'U': ACB_NORMAL,    # 'U'ser account (normal).
-		'M': ACB_MNS,       # 'M'NS logon user account. What is this ?
-		'W': ACB_WSTRUST,   # 'W'orkstation account.
-		'S': ACB_SVRTRUST,  # 'S'erver account. 
-		'L': ACB_AUTOLOCK,  # 'L'ocked account.
-		'X': ACB_PWNOEXP,   # No 'X'piry on password
-		'I': ACB_DOMTRUST,  # 'I'nterdomain trust account.
+        'H': ACB_HOMDIRREQ, # 'H'omedir required.
+        'T': ACB_TEMPDUP,   # 'T'emp account.
+        'U': ACB_NORMAL,    # 'U'ser account (normal).
+        'M': ACB_MNS,       # 'M'NS logon user account. What is this ?
+        'W': ACB_WSTRUST,   # 'W'orkstation account.
+        'S': ACB_SVRTRUST,  # 'S'erver account. 
+        'L': ACB_AUTOLOCK,  # 'L'ocked account.
+        'X': ACB_PWNOEXP,   # No 'X'piry on password
+        'I': ACB_DOMTRUST,  # 'I'nterdomain trust account.
         ' ': 0
         }
 
@@ -306,6 +315,72 @@ def decode_acb(text):
     for x in text:
         ret |= acb_info_mapping[x]
     return ret
+
+
+class SAMUser:
+    def __init__(self, name, uid=None, lm_password=None, nt_password=None, acct_ctrl=None, 
+                 last_change_time=None, nt_username=None, fullname=None, logon_time=None, logoff_time=None,
+                 acct_desc=None, group_rid=None, bad_password_count=None, logon_count=None,
+                 domain=None, dir_drive=None, munged_dial=None, homedir=None, logon_script=None,
+                 profile_path=None, workstations=None, kickoff_time=None, bad_password_time=None,
+                 pass_last_set_time=None, pass_can_change_time=None, pass_must_change_time=None,
+                 user_rid=None):
+        self.username = name
+        self.uid = uid
+        self.lm_password = lm_password
+        self.nt_password = nt_password
+        self.acct_ctrl = acct_ctrl
+        self.pass_last_set_time = last_change_time
+        self.nt_username = nt_username
+        self.fullname = fullname
+        self.logon_time = logon_time
+        self.logoff_time = logoff_time
+        self.acct_desc = acct_desc
+        self.group_rid = group_rid
+        self.bad_password_count = bad_password_count
+        self.logon_count = logon_count
+        self.domain = domain
+        self.dir_drive = dir_drive
+        self.munged_dial = munged_dial
+        self.homedir = homedir
+        self.logon_script = logon_script
+        self.profile_path = profile_path
+        self.workstations = workstations
+        self.kickoff_time = kickoff_time
+        self.bad_password_time = bad_password_time
+        self.pass_can_change_time = pass_can_change_time
+        self.pass_must_change_time = pass_must_change_time
+        self.user_rid = user_rid
+
+    def __eq__(self, other): 
+        if not isinstance(other, SAMUser):
+            return False
+        return (self.username == other.username and 
+                self.uid == other.uid and 
+                self.lm_password == other.lm_password and 
+                self.nt_password == other.nt_password and 
+                self.acct_ctrl == other.acct_ctrl and 
+                self.pass_last_set_time == other.pass_last_set_time and 
+                self.nt_username == other.nt_username and 
+                self.fullname == other.fullname and 
+                self.logon_time == other.logon_time and 
+                self.logoff_time == other.logoff_time and 
+                self.acct_desc == other.acct_desc and 
+                self.group_rid == other.group_rid and 
+                self.bad_password_count == other.bad_password_count and 
+                self.logon_count == other.logon_count and 
+                self.domain == other.domain and 
+                self.dir_drive == other.dir_drive and 
+                self.munged_dial == other.munged_dial and 
+                self.homedir == other.homedir and 
+                self.logon_script == other.logon_script and 
+                self.profile_path == other.profile_path and 
+                self.workstations == other.workstations and 
+                self.kickoff_time == other.kickoff_time and 
+                self.bad_password_time == other.bad_password_time and 
+                self.pass_can_change_time == other.pass_can_change_time and 
+                self.pass_must_change_time == other.pass_must_change_time and 
+                self.user_rid == other.user_rid)
 
 
 class SmbpasswdFile:
@@ -345,7 +420,7 @@ class SmbpasswdFile:
                     acct_ctrl &= ~ACB_NORMAL
                     acct_ctrl |= ACB_WSTRUST
 
-            self.users[username] = (uid, lm_password, nt_password, acct_ctrl, last_change_time)
+            self.users[username] = SAMUser(username, uid, lm_password, nt_password, acct_ctrl, last_change_time)
 
         f.close()
 
@@ -368,6 +443,11 @@ TDBSAM_FORMAT_STRING_V2 = "dddddddBBBBBBBBBBBBddBBBwwdBwwd"
 TDBSAM_USER_PREFIX = "USER_"
 
 
+class LdapSam:
+    def __init__(self, url):
+        self.ldap_url = ldap_url
+
+
 class TdbSam:
     def __init__(self, file):
         self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
@@ -380,6 +460,45 @@ class TdbSam:
                 yield k[len(TDBSAM_USER_PREFIX):].rstrip("\0")
 
     __iter__ = usernames
+    
+    def __getitem__(self, name):
+        data = self.tdb["%s%s\0" % (TDBSAM_USER_PREFIX, name)]
+        import struct
+        (logon_time, logoff_time, kickoff_time, pass_last_set_time, pass_can_change_time, \
+                pass_must_change_time) = struct.unpack("<llllll", data[:6*4])
+        user = SAMUser(name)
+        user.logon_time = logon_time
+        user.logoff_time = logoff_time
+        user.kickoff_time = kickoff_time
+        user.pass_last_set_time = pass_last_set_time
+        user.pass_can_change_time = pass_can_change_time
+
+#	&username_len, &sampass->username,			/* B */
+#		&domain_len, &sampass->domain,				/* B */
+#		&nt_username_len, &sampass->nt_username,		/* B */
+#		&fullname_len, &sampass->fullname,			/* B */
+#		&homedir_len, &sampass->homedir,			/* B */
+#		&dir_drive_len, &sampass->dir_drive,			/* B */
+#		&logon_script_len, &sampass->logon_script,		/* B */
+#		&profile_path_len, &sampass->profile_path,		/* B */
+#		&acct_desc_len, &sampass->acct_desc,			/* B */
+#		&workstations_len, &sampass->workstations,		/* B */
+#		&unknown_str_len, &sampass->unknown_str,		/* B */
+#		&munged_dial_len, &sampass->munged_dial,		/* B */
+#		&sampass->user_rid,					/* d */
+#		&sampass->group_rid,					/* d */
+#		&lm_pw_len, sampass->lm_pw.hash,			/* B */
+#		&nt_pw_len, sampass->nt_pw.hash,			/* B */
+#		&sampass->acct_ctrl,					/* w */
+#		&remove_me, /* remove on the next TDB_FORMAT upgarde */	/* d */
+#		&sampass->logon_divs,					/* w */
+#		&sampass->hours_len,					/* d */
+#		&hourslen, &sampass->hours,				/* B */
+#		&sampass->bad_password_count,				/* w */
+#		&sampass->logon_count,					/* w */
+#		&sampass->unknown_6);					/* d */
+#		
+        return user
 
     def close(self):
         self.tdb.close()
@@ -423,7 +542,7 @@ class WinsDatabase:
             while "." in entries[i]:
                 ips.append(entries[i])
                 i+=1
-            nb_flags = entries[i]
+            nb_flags = int(entries[i][:-1], 16)
             assert not name in self.entries, "Name %s exists twice" % name
             self.entries[name] = (ttl, ips, nb_flags)
         f.close()
@@ -436,6 +555,9 @@ class WinsDatabase:
 
     def __iter__(self):
         return iter(self.entries)
+
+    def items(self):
+        return self.entries.items()
 
     def close(self): # for consistency
         pass
@@ -459,14 +581,19 @@ class Samba3:
     def get_sam_db(self):
         lp = self.get_conf()
         backends = str(lp.get("passdb backend")).split(" ")
-        if backends[0].startswith("smbpasswd"):
-            if ":" in backends[0]:
-                return SmbpasswdFile(self.libdir_path(backends[0][len("smbpasswd:"):]))
-            return SmbpasswdFile(self.libdir_path("smbpasswd"))
-        elif backends[0].startswith("tdbsam"):
-            if ":" in backends[0]:
-                return TdbSam(self.libdir_path(backends[0][len("tdbsam:"):]))
-            return TdbSam(self.libdir_path("passdb.tdb"))
+        if ":" in backends[0]:
+            (name, location) = backends[0].split(":", 2)
+        else:
+            name = backends[0]
+            location = None
+        if name == "smbpasswd":
+            return SmbpasswdFile(self.libdir_path(location or "smbpasswd"))
+        elif name == "tdbsam":
+            return TdbSam(self.libdir_path(location or "passdb.tdb"))
+        elif name == "ldapsam":
+            if location is not None:
+                return LdapSam("ldap:%s" % location)
+            return LdapSam(lp.get("ldap server"))
         else:
             raise NotImplementedError("unsupported passdb backend %s" % backends[0])
 

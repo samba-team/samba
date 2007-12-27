@@ -19,7 +19,7 @@
 
 import unittest
 from samba.samba3 import (GroupMappingDatabase, Registry, PolicyDatabase, SecretsDatabase, TdbSam,
-                          WinsDatabase, SmbpasswdFile, ACB_NORMAL, IdmapDatabase)
+                          WinsDatabase, SmbpasswdFile, ACB_NORMAL, IdmapDatabase, SAMUser)
 import os
 
 DATADIR=os.path.join(os.path.dirname(__file__), "../../../../../testdata/samba3")
@@ -74,6 +74,9 @@ class GroupsTestCase(unittest.TestCase):
     def test_group_length(self):
         self.assertEquals(13, len(list(self.groupdb.groupsids())))
 
+    def test_get_group(self):
+        self.assertEquals((-1, 5L, 'Administrators', ''), self.groupdb.get_group("S-1-5-32-544"))
+
     def test_groupsids(self):
         sids = list(self.groupdb.groupsids())
         self.assertTrue("S-1-5-32-544" in sids)
@@ -103,6 +106,11 @@ class TdbSamTestCase(unittest.TestCase):
     def test_usernames(self):
         self.assertEquals(3, len(list(self.samdb.usernames())))
 
+    def test_getuser(self):
+        return
+        user = SAMUser("root")
+        self.assertEquals(user, self.samdb["root"])
+
 
 class WinsDatabaseTestCase(unittest.TestCase):
     def setUp(self):
@@ -112,7 +120,7 @@ class WinsDatabaseTestCase(unittest.TestCase):
         self.assertEquals(22, len(self.winsdb))
 
     def test_first_entry(self):
-        self.assertEqual((1124185120, ["192.168.1.5"], "64R"), self.winsdb["ADMINISTRATOR#03"])
+        self.assertEqual((1124185120, ["192.168.1.5"], 0x64), self.winsdb["ADMINISTRATOR#03"])
 
     def tearDown(self):
         self.winsdb.close()
@@ -125,7 +133,13 @@ class SmbpasswdTestCase(unittest.TestCase):
         self.assertEquals(3, len(self.samdb))
 
     def test_get_user(self):
-        self.assertEquals((0, "552902031BEDE9EFAAD3B435B51404EE", "878D8014606CDA29677A44EFA1353FC7", ACB_NORMAL, int(1125418267)), self.samdb["rootpw"])
+        user = SAMUser("rootpw")
+        user.lm_password = "552902031BEDE9EFAAD3B435B51404EE"
+        user.nt_password = "878D8014606CDA29677A44EFA1353FC7"
+        user.acct_ctrl = ACB_NORMAL
+        user.pass_last_set_time = int(1125418267)
+        user.uid = 0
+        self.assertEquals(user, self.samdb["rootpw"])
 
     def tearDown(self):
         self.samdb.close()
