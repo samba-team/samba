@@ -682,10 +682,10 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	}
  done:
 	if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to add user %s - %s\n", acct_name, 
-			 nt_errstr(result));
+		d_fprintf(stderr, "Failed to add user '%s' with %s.\n",
+			  acct_name, nt_errstr(result));
 	} else {
-		d_printf("Added user %s\n", acct_name);
+		d_printf("Added user '%s'.\n", acct_name);
 	}
 	return result;
 }
@@ -732,12 +732,16 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol, user_pol;
+	const char *acct_name;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
 		rpc_user_usage(argc, argv);
 		return NT_STATUS_OK;
 	}
+
+	acct_name = argv[0];
+
 	/* Get sam policy and domain handles */
 
 	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
@@ -762,7 +766,7 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 		uint32 flags = 0x000003e8; /* Unknown */
 
 		result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-					       flags, 1, &argv[0],
+					       flags, 1, &acct_name,
 					       &num_rids, &user_rids,
 					       &name_types);
 
@@ -787,14 +791,14 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 		goto done;
 	}
 
-	/* Display results */
-	if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, "Failed to delete user account - %s\n", nt_errstr(result));
-	} else {
-		d_printf("Deleted user account\n");
-	}
-
  done:
+	if (!NT_STATUS_IS_OK(result)) {
+                d_fprintf(stderr, "Failed to delete user '%s' with %s.\n",
+			  acct_name, nt_errstr(result));
+        } else {
+                d_printf("Deleted user '%s'.\n", acct_name);
+        }
+
 	return result;
 }
 
