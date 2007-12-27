@@ -870,13 +870,11 @@ static void init_srv_sess_info_0(pipes_struct *p, SRV_SESS_INFO_0 *ss0, uint32 *
 /*******************************************************************
 ********************************************************************/
 
-/* global needed to make use of the share_mode_forall() callback */
-static struct sess_file_count s_file_cnt;
-
 static void sess_file_fn( const struct share_mode_entry *e, 
-                          const char *sharepath, const char *fname, void *state )
+                          const char *sharepath, const char *fname,
+			  void *data )
 {
-	struct sess_file_count *sess = &s_file_cnt;
+	struct sess_file_count *sess = (struct sess_file_count *)data;
  
 	if ( procid_equal(&e->pid, &sess->pid) && (sess->uid == e->uid) ) {
 		sess->count++;
@@ -890,11 +888,13 @@ static void sess_file_fn( const struct share_mode_entry *e,
 
 static int net_count_files( uid_t uid, struct server_id pid )
 {
+	struct sess_file_count s_file_cnt;
+
 	s_file_cnt.count = 0;
 	s_file_cnt.uid = uid;
 	s_file_cnt.pid = pid;
 	
-	share_mode_forall( sess_file_fn, NULL );
+	share_mode_forall( sess_file_fn, &s_file_cnt );
 	
 	return s_file_cnt.count;
 }
