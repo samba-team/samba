@@ -45,16 +45,36 @@ class Registry:
         data = self.tdb.get("%s\x00" % key)
         if data is None:
             return []
-        # FIXME: Parse data
-        return []
+        import struct
+        (num, ) = struct.unpack("<L", data[0:4])
+        keys = data[4:].split("\0")
+        assert keys[-1] == ""
+        keys.pop()
+        assert len(keys) == num
+        return keys
 
     def values(self, key):
         """Return a dictionary with the values set for a specific key."""
         data = self.tdb.get("%s/%s\x00" % (REGISTRY_VALUE_PREFIX, key))
         if data is None:
             return {}
-        # FIXME: Parse data
-        return {}
+        ret = {}
+        import struct
+        (num, ) = struct.unpack("<L", data[0:4])
+        data = data[4:]
+        for i in range(num):
+            # Value name
+            (name, data) = data.split("\0", 1)
+
+            (type, ) = struct.unpack("<L", data[0:4])
+            data = data[4:]
+            (value_len, ) = struct.unpack("<L", data[0:4])
+            data = data[4:]
+
+            ret[name] = (type, data[:value_len])
+            data = data[value_len:]
+
+        return ret
 
 
 class PolicyDatabase:

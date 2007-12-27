@@ -11,21 +11,7 @@ from provision import findnss, provision
 import grp
 import pwd
 import uuid
-
-def regkey_to_dn(name):
-    """Convert a registry key to a DN.
-    
-    :name: The registry key name.
-    :return: A matching DN."""
-    dn = "hive=NONE"
-
-    if name == "":
-        return dn
-
-    for el in name.split("/"):
-        dn = "key=%s," % el + dn
-
-    return dn
+import registry
 
 # Where prefix is any of:
 # - HKLM
@@ -34,39 +20,6 @@ def regkey_to_dn(name):
 #   HKPD
 #   HKPT
 #
-
-def upgrade_registry(regdb,prefix,ldb):
-    """Migrate registry contents."""
-    assert regdb is not None
-    prefix_up = prefix.upper()
-    ldif = []
-
-    for rk in regdb.keys:
-        pts = rk.name.split("/")
-
-        # Only handle selected hive
-        if pts[0].upper() != prefix_up:
-            continue
-
-        keydn = regkey_to_dn(rk.name)
-
-        pts = rk.name.split("/")
-
-        # Convert key name to dn
-        ldif[rk.name] = """
-dn: %s
-name: %s
-
-""" % (keydn, pts[0])
-        
-        for rv in rk.values:
-            ldif[rk.name + " (" + rv.name + ")"] = """
-dn: %s,value=%s
-value: %s
-type: %d
-data:: %s""" % (keydn, rv.name, rv.name, rv.type, ldb.encode(rv.data))
-
-    return ldif
 
 def upgrade_sam_policy(policy,dn):
     ldif = """
@@ -177,82 +130,72 @@ group.comment, group.nt_name, group.sid, group.unixname, group.sid_name_use)
 
     return ldif
 
-def upgrade_winbind(samba3,domaindn):
-    ldif = """
-        
-dn: dc=none
-userHwm: %d
-groupHwm: %d
+def import_idmap(samba4_idmap,samba3_idmap,domaindn):
+    samba4_idmap.add({
+        "dn": domaindn,
+        "userHwm": str(samba3_idmap.get_user_hwm()),
+        "groupHwm": str(samba3_idmap.get_group_hwm())})
 
-""" % (samba3.idmap.user_hwm, samba3.idmap.group_hwm)
+    for uid in samba3_idmap.uids():
+        samba4_idmap.add({"dn": "SID=%s,%s" % (samba3_idmap.get_user_sid(uid), domaindn),
+                          "SID": samba3_idmap.get_user_sid(uid),
+                          "type": "user",
+                          "unixID": str(uid)})
 
-    for m in samba3.idmap.mappings:
-        ldif += """
-dn: SID=%s,%s
-SID: %s
-type: %d
-unixID: %d""" % (m.sid, domaindn, m.sid, m.type, m.unix_id)
-    
-    return ldif
+    for gid in samba3_idmap.uids():
+        samba4_idmap.add({"dn": "SID=%s,%s" % (samba3_idmap.get_group_sid(gid), domaindn),
+                          "SID": samba3_idmap.get_group_sid(gid),
+                          "type": "group",
+                          "unixID": str(gid)})
 
-def upgrade_wins(samba3):
-    """Upgrade the WINS database."""
-    ldif = ""
+
+def import_wins(samba4_winsdb, samba3_winsdb):
+    """Import settings from a Samba3 WINS database."""
     version_id = 0
+    import time
 
-    for e in samba3.winsentries:
-        now = sys.nttime()
-        ttl = sys.unix2nttime(e.ttl)
-
+    for (name, (ttl, ips, nb_flags)) in samba3_winsdb.items():
         version_id+=1
 
         numIPs = len(e.ips)
 
-        if e.type == 0x1C:
+        type = int(name.split("#", 1)[1], 16)
+
+        if type == 0x1C:
             rType = 0x2
-        elif e.type & 0x80:
-            if numIPs > 1:
+        elif type & 0x80:
+            if len(ips) > 1:
                 rType = 0x2
             else:
                 rType = 0x1
         else:
-            if numIPs > 1:
+            if len(ips) > 1:
                 rType = 0x3
             else:
                 rType = 0x0
 
-        if ttl > now:
+        if ttl > time.time():
             rState = 0x0 # active
         else:
             rState = 0x1 # released
 
-        nType = ((e.nb_flags & 0x60)>>5)
+        nType = ((nb_flags & 0x60)>>5)
 
-        ldif += """
-dn: name=%s,type=0x%02X
-type: 0x%02X
-name: %s
-objectClass: winsRecord
-recordType: %u
-recordState: %u
-nodeType: %u
-isStatic: 0
-expireTime: %s
-versionID: %llu
-""" % (e.name, e.type, e.type, e.name, 
-   rType, rState, nType, 
-   ldaptime(ttl), version_id)
+        samba4_winsdb.add({"dn": "name=%s,type=0x%s" % name.split("#"),
+                           "type": name.split("#")[1],
+                           "name": name.split("#")[0],
+                           "objectClass": "winsRecord",
+                           "recordType": str(rType),
+                           "recordState": str(rState),
+                           "nodeType": str(nType),
+                           "expireTime": ldb.ldaptime(ttl),
+                           "isStatic": "0",
+                           "versionID": str(version_id),
+                           "address": ips})
 
-        for ip in e.ips:
-            ldif += "address: %s\n" % ip
-
-    ldif += """
-dn: CN=VERSION
-objectClass: winsMaxVersion
-maxVersion: %llu
-""" % version_id
-
-    return ldif
+    samba4_winsdb.add({"dn": "CN=VERSION",
+                       "objectClass": "winsMaxVersion",
+                       "maxVersion": str(version_id)})
 
 def upgrade_provision(samba3, setup_dir, message, credentials, session_info, lp, paths):
     oldconf = samba3.get_conf()
@@ -417,6 +360,30 @@ def upgrade_smbconf(oldconf,mark):
 
     return newconf
 
+SAMBA3_PREDEF_NAMES = {
+        'HKLM': registry.HKEY_LOCAL_MACHINE,
+}
+
+def import_registry(samba4_registry, samba3_regdb):
+    """Import a Samba 3 registry database into the Samba 4 registry.
+
+    :param samba4_registry: Samba 4 registry handle.
+    :param samba3_regdb: Samba 3 registry database handle.
+    """
+    def ensure_key_exists(keypath):
+        (predef_name, keypath) = keypath.split("/", 1)
+        predef_id = SAMBA3_PREDEF_NAMES[predef_name]
+        keypath = keypath.replace("/", "\\")
+        return samba4_registry.create_key(predef_id, keypath)
+
+    for key in samba3_regdb.keys():
+        key_handle = ensure_key_exists(key)
+        for subkey in samba3_regdb.subkeys(key):
+            ensure_key_exists(subkey)
+        for (value_name, (value_type, value_data)) in samba3_regdb.values(key).items():
+            key_handle.set_value(value_name, value_type, value_data)
+
+
 def upgrade(subobj, samba3, message, paths, session_info, credentials):
     ret = 0
     samdb = Ldb(paths.samdb, session_info=session_info, credentials=credentials)
@@ -461,21 +428,6 @@ data: %d
                 msg += "... error: " + str(e)
                 ret += 1
         message(msg)
-
-    message("Importing registry data")
-    for hive in ["hkcr","hkcu","hklm","hkpd","hku","hkpt"]:
-        message("... " + hive)
-        regdb = Ldb(paths[hive])
-        ldif = upgrade_registry(samba3.registry, hive, regdb)
-        for j in ldif:
-            msg = "... ... " + j
-            try:
-                regdb.add(ldif[j])
-            except LdbError, e:
-                # FIXME: Ignore 'Record exists' errors
-                msg += "... error: " + str(e)
-                ret += 1
-            message(msg)
 
     message("Importing WINS data")
     winsdb = Ldb(paths.winsdb)

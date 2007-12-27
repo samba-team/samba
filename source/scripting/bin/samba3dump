@@ -80,7 +80,7 @@ def print_samba3_secrets(secrets):
     for domain in secrets.domains():
         print "\t--- %s ---" % domain
         print "\tSID: %s" % secrets.get_sid(domain)
-        print "\tGUID: %s" % secrets.get_dom_guid(domain)
+        print "\tGUID: %s" % secrets.get_domain_guid(domain)
         print "\tPlaintext pwd: %s" % secrets.get_machine_password(domain)
         if secrets.get_machine_last_change_time(domain):
             print "\tLast Changed: %lu" % secrets.get_machine_last_change_time(domain)
@@ -93,11 +93,12 @@ def print_samba3_secrets(secrets):
 
 def print_samba3_regdb(regdb):
     print_header("Registry")
+    from registry import str_regtype
 
     for k in regdb.keys():
-        print "%s" % k
-        for v in regdb.values(k):
-            print "\t%s: type %d, length %d" % (v.name, v.type, v.data.length)
+        print "[%s]" % k
+        for (value_name, (type, value))  in regdb.values(k).items():
+            print "\"%s\"=%s:%s" % (value_name, str_regtype(type), value)
 
 def print_samba3_winsdb(winsdb):
     print_header("WINS Database")
@@ -151,7 +152,7 @@ def print_samba3_summary(samba3):
 
 libdir = args[0]
 if len(args) > 1:
-    smbconf = args[2]
+    smbconf = args[1]
 else:
     smbconf = os.path.join(libdir, "smb.conf")
 
