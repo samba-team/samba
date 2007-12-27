@@ -292,9 +292,6 @@ static int anr_search(struct ldb_module *module, struct ldb_request *req)
 		req->op.search.tree = talloc_steal(req, anr_tree);
 
 	}
-
-	/* TODO:  Add a callback, and ensure we retry the search with surname and given name if we fail to match */
-
 	return ldb_next_request(module, req);
 }
 
