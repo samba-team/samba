@@ -1003,7 +1003,8 @@ _kdc_do_digest(krb5_context context,
 	}
 
 	r.u.ntlmInitReply.flags |= 
-	    NTLM_NEG_TARGET_DOMAIN |
+	    NTLM_NEG_TARGET |
+	    NTLM_TARGET_DOMAIN |
 	    NTLM_ENC_128;
 
 #define ALL					\
@@ -1332,6 +1333,8 @@ _kdc_do_digest(krb5_context context,
 	break;
     }
     case choice_DigestReqInner_supportedMechs:
+
+	kdc_log(context, config, 0, "digest supportedMechs from %s", from);
 
 	r.element = choice_DigestRepInner_supportedMechs;
 	memset(&r.u.supportedMechs, 0, sizeof(r.u.supportedMechs));
