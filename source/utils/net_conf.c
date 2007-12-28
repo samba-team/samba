@@ -110,39 +110,6 @@ static int net_conf_delparm_usage(int argc, const char **argv)
  * Helper functions
  */
 
-static char *format_value(TALLOC_CTX *mem_ctx, struct registry_value *value)
-{
-	char *result = NULL;
-
-	/* what if mem_ctx = NULL? */
-
-	switch (value->type) {
-	case REG_DWORD:
-		result = talloc_asprintf(mem_ctx, "%d", value->v.dword);
-		break;
-	case REG_SZ:
-	case REG_EXPAND_SZ:
-		result = talloc_asprintf(mem_ctx, "%s", value->v.sz.str);
-		break;
-	case REG_MULTI_SZ: {
-                uint32 j;
-                for (j = 0; j < value->v.multi_sz.num_strings; j++) {
-                        result = talloc_asprintf(mem_ctx, "\"%s\" ",
-						 value->v.multi_sz.strings[j]);
-                }
-                break;
-        }
-	case REG_BINARY:
-                result = talloc_asprintf(mem_ctx, "binary (%d bytes)",
-					 (int)value->v.binary.length);
-                break;
-        default:
-                result = talloc_asprintf(mem_ctx, "<unprintable>");
-                break;
-        }
-	return result;
-}
-
 static WERROR list_values(TALLOC_CTX *ctx, struct registry_key *key)
 {
 	WERROR werr = WERR_OK;
