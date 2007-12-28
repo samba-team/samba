@@ -254,12 +254,37 @@ EVP_DigestInit_ex(EVP_MD_CTX *ctx, const EVP_MD *md, ENGINE *engine)
     return 1;
 }
 
+/**
+ * Update the digest with some data.
+ *
+ * @param ctx the context to update
+ * @param data the data to update the context with
+ * @param size length of data
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 int
 EVP_DigestUpdate(EVP_MD_CTX *ctx, const void *data, size_t size)
 {
     (ctx->md->update)(ctx->ptr, data, size);
     return 1;
 }
+
+/**
+ * Complete the message digest.
+ *
+ * @param ctx the context to complete.
+ * @param hash the output of the message digest function. At least
+ * EVP_MD_size().
+ * @param size the output size of hash.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 int
 EVP_DigestFinal_ex(EVP_MD_CTX *ctx, void *hash, unsigned int *size)
@@ -269,6 +294,23 @@ EVP_DigestFinal_ex(EVP_MD_CTX *ctx, void *hash, unsigned int *size)
 	*size = ctx->md->hash_size;
     return 1;
 }
+
+/**
+ * Do the whole EVP_MD_CTX_create(), EVP_DigestInit_ex(),
+ * EVP_DigestUpdate(), EVP_DigestFinal_ex(), EVP_MD_CTX_destroy()
+ * dance in one call.
+ *
+ * @param data the data to update the context with
+ * @param dsize length of data
+ * @param hash output data of at least EVP_MD_size() length.
+ * @param hsize output length of hash.
+ * @param md message digest to use
+ * @param engine engine to use, NULL for default engine.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 int
 EVP_Digest(const void *data, size_t dsize, void *hash, unsigned int *hsize, 
@@ -281,20 +323,22 @@ EVP_Digest(const void *data, size_t dsize, void *hash, unsigned int *hsize,
     if (ctx == NULL)
 	return 0;
     ret = EVP_DigestInit_ex(ctx, md, engine);
-    if (ret != 1)
+    if (ret != 1) {
+	EVP_MD_CTX_destroy(ctx);
 	return ret;
+    }
     ret = EVP_DigestUpdate(ctx, data, dsize);
-    if (ret != 1)
+    if (ret != 1) {
+	EVP_MD_CTX_destroy(ctx);
 	return ret;
+    }
     ret = EVP_DigestFinal_ex(ctx, hash, hsize);
-    if (ret != 1)
-	return ret;
     EVP_MD_CTX_destroy(ctx);
-    return 1;
+    return ret;
 }
 
-/*
- *
+/**
+ * The message digest SHA256
  */
 
 const EVP_MD *
@@ -322,17 +366,29 @@ static const struct hc_evp_md sha1 = {
     NULL
 };
 
+/**
+ * The message digest SHA1
+ */
+
 const EVP_MD *
 EVP_sha1(void)
 {
     return &sha1;
 }
 
+/**
+ * The message digest SHA1
+ */
+
 const EVP_MD *
 EVP_sha(void)
 {
     return &sha1;
 }
+
+/**
+ * The message digest MD5
+ */
 
 const EVP_MD *
 EVP_md5(void)
@@ -349,6 +405,10 @@ EVP_md5(void)
     return &md5;
 }
 
+/**
+ * The message digest MD4
+ */
+
 const EVP_MD *
 EVP_md4(void)
 {
@@ -363,6 +423,10 @@ EVP_md4(void)
     };
     return &md4;
 }
+
+/**
+ * The message digest MD2
+ */
 
 const EVP_MD *
 EVP_md2(void)
@@ -392,9 +456,13 @@ null_Update (void *m, const void * data, size_t size)
 {
 }
 static void
-null_Final(void *res, struct md5 *m)
+null_Final(void *res, struct void *m)
 {
 }
+
+/**
+ * The null message digest
+ */
 
 const EVP_MD *
 EVP_md_null(void)
