@@ -50,6 +50,8 @@ RCSID("$Id$");
  * to establish a shared secret key.
  *
  * Include and example how to use DH_new() and friends here.
+ *
+ * See the library functions here: @ref hcrypto_dh
  */
 
 /**
@@ -300,11 +302,35 @@ out:
     return ret;
 }
 
+/**
+ * Generate a new DH private-public key pair. The dh parameter must be
+ * allocted first with DH_new().
+ *
+ * @param dh dh parameter.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_dh
+ */
+
 int
 DH_generate_key(DH *dh)
 {
     return dh->meth->generate_key(dh);
 }
+
+/**
+ * Complute the shared secret key.
+ *
+ * @param shared_key the resulting shared key, need to be at least
+ * DH_size() large.
+ * @param peer_pub_key the peer's public key.
+ * @param dh the dh key pair.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_dh
+ */
 
 int
 DH_compute_key(unsigned char *shared_key,
@@ -317,6 +343,17 @@ DH_compute_key(unsigned char *shared_key,
 
     return dh->meth->compute_key(shared_key, peer_pub_key, dh);
 }
+
+/**
+ * Set a new method for the DH keypair.
+ *
+ * @param dh dh parameter.
+ * @param method the new method for the DH parameter.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_dh
+ */
 
 int
 DH_set_method(DH *dh, const DH_METHOD *method)
@@ -380,17 +417,41 @@ static const DH_METHOD dh_null_method = {
 extern const DH_METHOD hc_dh_imath_method;
 static const DH_METHOD *dh_default_method = &hc_dh_imath_method;
 
+/**
+ * Return the dummy DH implementation.
+ *
+ * @return pointer to a DH_METHOD.
+ *
+ * @ingroup hcrypto_dh
+ */
+
 const DH_METHOD *
 DH_null_method(void)
 {
     return &dh_null_method;
 }
 
+/**
+ * Set the default DH implementation.
+ *
+ * @param meth pointer to a DH_METHOD.
+ *
+ * @ingroup hcrypto_dh
+ */
+
 void
 DH_set_default_method(const DH_METHOD *meth)
 {
     dh_default_method = meth;
 }
+
+/**
+ * Return the default DH implementation.
+ *
+ * @return pointer to a DH_METHOD.
+ *
+ * @ingroup hcrypto_dh
+ */
 
 const DH_METHOD *
 DH_get_default_method(void)
