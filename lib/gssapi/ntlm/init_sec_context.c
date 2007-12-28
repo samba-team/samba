@@ -73,13 +73,13 @@ from_file(const char *fn, const char *domain,
 }
 
 static int
-get_user_file(const char *domain, char **username, struct ntlm_buf *key)
+get_user_file(const ntlm_name *name, char **username, struct ntlm_buf *key)
 {
     const char *fn = NULL;
 
     if (!issuid()) {
 	fn = getenv("NTLM_USER_FILE");
-	if (fn != NULL && from_file(fn, domain, username, key) == 0)
+	if (fn != NULL && from_file(fn, name->domain, username, key) == 0)
 	    return 0;
     }
     return ENOENT;
@@ -90,7 +90,7 @@ get_user_file(const char *domain, char **username, struct ntlm_buf *key)
  */
 
 static int
-get_user_ccache(const char *domain, char **username, struct ntlm_buf *key)
+get_user_ccache(const ntlm_name *name, char **username, struct ntlm_buf *key)
 {
     krb5_principal client;
     krb5_context context = NULL;
@@ -125,7 +125,7 @@ get_user_ccache(const char *domain, char **username, struct ntlm_buf *key)
 
     ret = krb5_make_principal(context, &mcreds.server,
 			      krb5_principal_get_realm(context, client),
-			      "@ntlm-key", domain, NULL);
+			      "@ntlm-key", name->domain, NULL);
     krb5_free_principal(context, client);
     if (ret)
 	goto out;
@@ -166,7 +166,7 @@ out:
 }
 
 int
-_gss_ntlm_get_user_cred(const char *domain,
+_gss_ntlm_get_user_cred(const ntlm_name *name,
 			ntlm_cred *rcred)
 {
     ntlm_cred cred;
@@ -176,9 +176,9 @@ _gss_ntlm_get_user_cred(const char *domain,
     if (cred == NULL)
 	return ENOMEM;
     
-    ret = get_user_file(domain, &cred->username, &cred->key);
+    ret = get_user_file(name, &cred->username, &cred->key);
     if (ret)
-	ret = get_user_ccache(domain, &cred->username, &cred->key);
+	ret = get_user_ccache(name, &cred->username, &cred->key);
     if (ret) {
 	free(cred);
 	return ret;
