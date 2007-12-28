@@ -142,10 +142,10 @@ test_parse(void)
     if (strcmp("workstation", type3.ws) != 0)
 	errx(1, "type3 ws wrong");
 
-    if (strcmp(rk_UNCONST(target), type3.targetname) != 0)
+    if (strcmp(target, type3.targetname) != 0)
 	errx(1, "type3 targetname wrong");
 
-    if (strcmp(rk_UNCONST(user), type3.username) != 0)
+    if (strcmp(user, type3.username) != 0)
 	errx(1, "type3 username wrong");
 
 
