@@ -65,6 +65,7 @@ OM_uint32 _gss_ntlm_import_name
     p = strchr(name, '@');
     if (p == NULL)
 	return GSS_S_BAD_NAME;
+    p[0] = '\0';
     p++;
     p2 = strchr(p, '.');
     if (p2 && p2[1] != '\0') {
@@ -75,14 +76,25 @@ OM_uint32 _gss_ntlm_import_name
     }
     strupr(p);
     
-    n = malloc(sizeof(n) + strlen(p));
-    if (n == NULL) {
+    n = calloc(1, sizeof(*n));
+    if (name == NULL) {
 	free(name);
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
-    strcpy(n->domain, p);
+
+    n->user = strdup(name);
+    n->domain = strdup(p);
+
     free(name);
+
+    if (n->user == NULL || n->domain == NULL) {
+	free(n->user);
+	free(n->domain);
+	free(n);
+	*minor_status = ENOMEM;
+	return GSS_S_FAILURE;
+    }
 
     *output_name = (gss_name_t)n;
 

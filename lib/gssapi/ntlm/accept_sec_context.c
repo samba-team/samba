@@ -189,11 +189,28 @@ _gss_ntlm_accept_sec_context
 					     ctx->ictx,
 					     &type3,
 					     &session);
-	heim_ntlm_free_type3(&type3);
 	if (maj_stat) {
+	    heim_ntlm_free_type3(&type3);
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    return maj_stat;
 	}
+
+	if (src_name) {
+	    ntlm_name n = calloc(1, sizeof(*n));
+	    if (n) {
+		n->user = strdup(type3.username);
+		n->domain = strdup(type3.targetname);
+	    }
+	    if (n == NULL || n->user == NULL || n->domain == NULL) {
+		heim_ntlm_free_type3(&type3);
+		_gss_ntlm_delete_sec_context(minor_status, 
+					     context_handle, NULL);
+		return maj_stat;
+	    }
+	    *src_name = (gss_name_t)n;
+	}	    
+
+	heim_ntlm_free_type3(&type3);
 
 	ret = krb5_data_copy(&ctx->sessionkey, 
 			     session.data, session.length);

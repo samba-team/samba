@@ -43,11 +43,30 @@ OM_uint32 _gss_ntlm_display_name
            )
 {
     *minor_status = 0;
+
     if (output_name_type)
 	*output_name_type = GSS_NTLM_MECHANISM;
+
     if (output_name_buffer) {
+	ntlm_name n = (ntlm_name)input_name;
+	char *str;
+	int len;
+	
 	output_name_buffer->length = 0;
 	output_name_buffer->value = NULL;
+
+	if (n == NULL) {
+	    *minor_status = 0;
+	    return GSS_S_BAD_NAME;
+	}
+
+	len = asprintf(&str, "%s@%s", n->user, n->domain);
+	if (str == NULL) {
+	    *minor_status = ENOMEM;
+	    return GSS_S_FAILURE;
+	}
+	output_name_buffer->length = len;
+	output_name_buffer->value = str;
     }
     return GSS_S_COMPLETE;
 }

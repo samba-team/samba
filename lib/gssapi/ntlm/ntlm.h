@@ -97,6 +97,7 @@ struct ntlmv2_key {
 extern struct ntlm_server_interface ntlmsspi_kdc_digest;
 
 typedef struct ntlm_cred {
+    gss_cred_usage_t usage;
     char *username;
     char *domain;
     struct ntlm_buf key;
@@ -128,7 +129,8 @@ typedef struct {
 } *ntlm_ctx;
 
 typedef struct {
-    char domain[1];
+    char *user;
+    char *domain;
 } *ntlm_name;
 
 #include <ntlm/ntlm-private.h>
