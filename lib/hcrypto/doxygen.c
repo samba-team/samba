@@ -37,19 +37,23 @@
 
 /*! @mainpage Heimdal crypto library
  *
- * The project web page:
- * http://www.h5l.org/
+ * @section intro Introduction
+ *
+ * Heimdal libhcrypto library is a implementation many crypto
+ * algorithms, among others: AES, SHA, DES, RSA, Camellia and many
+ * help function.
+ *
+ * hcrypto provies a OpenSSL compatible interface libcrypto interface
+ * and is licensed under a 3 clause BSD license (GPL compatible).
+ * 
+ * The project web page: http://www.h5l.org/
  *
  * Sections of this manual:
  *
- * @subpage page_dh
- * @subpage page_evp
+ * - @subpage page_dh
+ * - @subpage page_evp
  *
- * @section intro Introduction
- *
- * Heimdal libhcrypto library is a implementation many crypto algorithms
- * 
- * @subsection control_functions Control function
+ * @subsection control_functions Control functions
  *
  * Functions controlling general behavior, like adding algorithms, are
  * documented in this module: @ref hcrypto_core .
@@ -60,8 +64,6 @@
  * OpenSSL interface. The diffrence is that on success 1 is returned
  * instead of the customary 0.
  */
-
-/** @defgroup hcrypto Core functions */
 
 /** @defgroup hcrypto_dh Diffie-Hellman functions
  * See the @ref page_dh for description and examples.
