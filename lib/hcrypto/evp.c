@@ -213,7 +213,7 @@ EVP_MD_CTX_size(EVP_MD_CTX *ctx)
 /**
  * Return the blocksize of the message digest function.
  *
- * @param md the evp message digest context
+ * @param ctx the evp message digest context
  *
  * @return size size of the message digest block size
  *
@@ -225,6 +225,18 @@ EVP_MD_CTX_block_size(EVP_MD_CTX *ctx)
 {
     return EVP_MD_block_size(ctx->md);
 }
+
+/**
+ * Init a EVP_MD_CTX for use a specific message digest and engine.
+ *
+ * @param ctx the message digest context to init.
+ * @param md the message digest to use.
+ * @param engine the engine to use, NULL to use the default engine.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 int
 EVP_DigestInit_ex(EVP_MD_CTX *ctx, const EVP_MD *md, ENGINE *engine)
