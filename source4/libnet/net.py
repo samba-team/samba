@@ -58,10 +58,11 @@ def _swig_setattr_nondynamic_method(set):
 
 
 import events
-libnet_context_init = _net.libnet_context_init
+import param
 class libnet(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
+    cred = _swig_property(_net.libnet_cred_get, _net.libnet_cred_set)
     def __init__(self, *args, **kwargs): 
         _net.libnet_swiginit(self,_net.new_libnet(*args, **kwargs))
     __swig_destroy__ = _net.delete_libnet
