@@ -57,6 +57,14 @@ def _swig_setattr_nondynamic_method(set):
     return set_attr
 
 
+class event_context(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
+    def __init__(self): raise AttributeError, "No constructor defined"
+    __repr__ = _swig_repr
+    __swig_destroy__ = _events.delete_event_context
+event_context_swigregister = _events.event_context_swigregister
+event_context_swigregister(event_context)
+
 event_context_init = _events.event_context_init
 event_context_init_byname = _events.event_context_init_byname
 event_backend_list = _events.event_backend_list
