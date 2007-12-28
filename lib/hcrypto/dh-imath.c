@@ -224,7 +224,7 @@ dh_finish(DH *dh)
  *
  */
 
-const DH_METHOD hc_dh_imath_method = {
+const DH_METHOD _hc_dh_imath_method = {
     "hcrypto imath DH",
     dh_generate_key,
     dh_compute_key,
@@ -236,8 +236,16 @@ const DH_METHOD hc_dh_imath_method = {
     dh_generate_params
 };
 
+/**
+ * DH implementation using libimath.
+ *
+ * @return the DH_METHOD for the DH implementation using libimath.
+ *
+ * @ingroup hcrypto_dh
+ */
+
 const DH_METHOD *
 DH_imath_method(void)
 {
-    return &hc_dh_imath_method;
+    return &_hc_dh_imath_method;
 }
