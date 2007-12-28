@@ -2,8 +2,10 @@
 #
 # Unix SMB/CIFS implementation.
 # provision a Samba4 server
-# Copyright (C) Andrew Tridgell 2005
 # Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
+#
+# Based on the original in EJS:
+# Copyright (C) Andrew Tridgell 2005
 #   
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
