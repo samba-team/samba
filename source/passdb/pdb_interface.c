@@ -25,10 +25,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-/* Cache of latest SAM lookup query */
-
-static struct samu *csamuser = NULL;
-
 static_decl_pdb;
 
 static struct pdb_init_function_entry *backends = NULL;
@@ -211,24 +207,28 @@ static struct pdb_methods *pdb_get_methods(void)
 bool pdb_getsampwnam(struct samu *sam_acct, const char *username) 
 {
 	struct pdb_methods *pdb = pdb_get_methods();
+	struct samu *cache_copy;
+	const struct dom_sid *user_sid;
 
 	if (!NT_STATUS_IS_OK(pdb->getsampwnam(pdb, sam_acct, username))) {
 		return False;
 	}
 
-	if ( csamuser ) {
-		TALLOC_FREE(csamuser);
-	}
-
-	csamuser = samu_new( NULL );
-	if (!csamuser) {
+	cache_copy = samu_new(NULL);
+	if (cache_copy == NULL) {
 		return False;
 	}
 
-	if (!pdb_copy_sam_account(csamuser, sam_acct)) {
-		TALLOC_FREE(csamuser);
+	if (!pdb_copy_sam_account(cache_copy, sam_acct)) {
+		TALLOC_FREE(cache_copy);
 		return False;
 	}
+
+	user_sid = pdb_get_user_sid(cache_copy);
+
+	memcache_add_talloc(NULL, PDB_GETPWSID_CACHE,
+			    data_blob_const(user_sid, sizeof(*user_sid)),
+			    cache_copy);
 
 	return True;
 }
@@ -262,6 +262,7 @@ bool pdb_getsampwsid(struct samu *sam_acct, const DOM_SID *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	uint32 rid;
+	void *cache_data;
 
 	/* hard code the Guest RID of 501 */
 
@@ -274,9 +275,16 @@ bool pdb_getsampwsid(struct samu *sam_acct, const DOM_SID *sid)
 	}
 	
 	/* check the cache first */
-	
-	if ( csamuser && sid_equal(sid, pdb_get_user_sid(csamuser) ) )
-		return pdb_copy_sam_account(sam_acct, csamuser);
+
+	cache_data = memcache_lookup_talloc(
+		NULL, PDB_GETPWSID_CACHE, data_blob_const(sid, sizeof(*sid)));
+
+	if (cache_data != NULL) {
+		struct samu *cache_copy = talloc_get_type_abort(
+			cache_data, struct samu);
+
+		return pdb_copy_sam_account(sam_acct, cache_copy);
+	}
 
 	return NT_STATUS_IS_OK(pdb->getsampwsid(pdb, sam_acct, sid));
 }
@@ -471,10 +479,7 @@ NTSTATUS pdb_update_sam_account(struct samu *sam_acct)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 
-	if (csamuser != NULL) {
-		TALLOC_FREE(csamuser);
-		csamuser = NULL;
-	}
+	memcache_flush(NULL, PDB_GETPWSID_CACHE);
 
 	return pdb->update_sam_account(pdb, sam_acct);
 }
@@ -483,10 +488,7 @@ NTSTATUS pdb_delete_sam_account(struct samu *sam_acct)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 
-	if (csamuser != NULL) {
-		TALLOC_FREE(csamuser);
-		csamuser = NULL;
-	}
+	memcache_flush(NULL, PDB_GETPWSID_CACHE);
 
 	return pdb->delete_sam_account(pdb, sam_acct);
 }
@@ -497,10 +499,7 @@ NTSTATUS pdb_rename_sam_account(struct samu *oldname, const char *newname)
 	uid_t uid;
 	NTSTATUS status;
 
-	if (csamuser != NULL) {
-		TALLOC_FREE(csamuser);
-		csamuser = NULL;
-	}
+	memcache_flush(NULL, PDB_GETPWSID_CACHE);
 
 	/* sanity check to make sure we don't rename root */
 
