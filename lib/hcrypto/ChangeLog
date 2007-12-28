@@ -1,5 +1,8 @@
 2007-12-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* evp.c: Add last of the doxygen documentation for functions in
+	this module.
+
 	* evp.c: complete the EVP_MD functions doxygen.
 
 2007-12-11  Love Hörnquist Åstrand  <lha@it.su.se>
