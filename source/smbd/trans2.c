@@ -2430,6 +2430,16 @@ static void call_trans2qfsinfo(connection_struct *conn,
 
 	info_level = SVAL(params,0);
 
+	if (conn->encrypt_level == Required && SVAL(req->inbuf,4) != 0x45FF ) {
+		if (info_level != SMB_QUERY_CIFS_UNIX_INFO) {
+			DEBUG(0,("call_trans2qfsinfo: encryption required "
+				"and info level 0x%x sent.\n",
+				(unsigned int)info_level));
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+	}
+
 	DEBUG(3,("call_trans2qfsinfo: level = %d\n", info_level));
 
 	if(SMB_VFS_STAT(conn,".",&st)!=0) {
@@ -2736,7 +2746,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 				return;
 			}
 
-			switch (lp_smb_encrypt(SNUM(conn))) {
+			switch (conn->encrypt_level) {
 			case 0:
 				encrypt_caps = 0;
 				break;
@@ -2967,6 +2977,16 @@ static void call_trans2setfsinfo(connection_struct *conn,
 	}
 
 	info_level = SVAL(params,2);
+
+	if (conn->encrypt_level == Required && SVAL(req->inbuf,4) != 0x45FF ) {
+		if (info_level != SMB_REQUEST_TRANSPORT_ENCRYPTION) {
+			DEBUG(0,("call_trans2setfsinfo: encryption required "
+				"and info level 0x%x sent.\n",
+				(unsigned int)info_level));
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+	}
 
 	switch(info_level) {
 		case SMB_SET_CIFS_UNIX_INFO:
@@ -7058,6 +7078,17 @@ static void handle_trans2(connection_struct *conn, struct smb_request *req,
 	if (Protocol >= PROTOCOL_NT1) {
 		req->flags2 |= 0x40; /* IS_LONG_NAME */
 		SSVAL(req->inbuf,smb_flg2,req->flags2);
+	}
+
+	if (conn->encrypt_level == Required && SVAL(req->inbuf,4) != 0x45FF ) {
+		if (state->call != TRANSACT2_QFSINFO &&
+				state->call != TRANSACT2_SETFSINFO) {
+			DEBUG(0,("handle_trans2: encryption required "
+				"with call 0x%x\n",
+				(unsigned int)state->call));
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
 	}
 
 	/* Now we must call the relevant TRANS2 function */

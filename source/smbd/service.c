@@ -795,6 +795,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	conn->case_preserve = lp_preservecase(snum);
 	conn->short_case_preserve = lp_shortpreservecase(snum);
 
+	conn->encrypt_level = lp_smb_encrypt(snum);
+
 	conn->veto_list = NULL;
 	conn->hide_list = NULL;
 	conn->veto_oplock_list = NULL;

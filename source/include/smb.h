@@ -658,6 +658,7 @@ typedef struct connection_struct {
 	bool used;
 	int num_files_open;
 	unsigned int num_smb_operations; /* Count of smb operations on this tree. */
+	int encrypt_level;
 
 	/* Semantics requested by the client or forced by the server config. */
 	bool case_sensitive;
