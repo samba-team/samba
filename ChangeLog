@@ -1,3 +1,8 @@
+2007-12-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc/digest.c: Log probe message, add NTLM_TARGET_DOMAIN to the
+	type2 message.
+
 2007-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/dbinfo.c: Add hdb_default_db().
