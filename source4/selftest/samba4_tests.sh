@@ -296,6 +296,7 @@ then
 	plantest "samba.python" none $SUBUNITRUN samba.tests
 	plantest "provision.python" none $SUBUNITRUN samba.tests.provision
 	plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
+	plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
 	plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
 	plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD
 	plantest "blackbox.samba3dump" none $PYTHON scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
