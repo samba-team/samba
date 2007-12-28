@@ -59,7 +59,7 @@ test_parse(void)
     
     memset(&type1, 0, sizeof(type1));
 
-    type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM;
+    type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_TARGET|NTLM_NEG_NTLM;
     type1.domain = rk_UNCONST(domain);
     type1.hostname = NULL;
     type1.os[0] = 0;
@@ -84,7 +84,7 @@ test_parse(void)
 
     memset(&type2, 0, sizeof(type2));
 
-    flags = NTLM_NEG_UNICODE | NTLM_NEG_NTLM | NTLM_NEG_TARGET_DOMAIN;
+    flags = NTLM_NEG_UNICODE | NTLM_NEG_NTLM | NTLM_TARGET_DOMAIN;
     type2.flags = flags;
 
     memset(type2.challange, 0x7f, sizeof(type2.challange));
@@ -157,7 +157,7 @@ test_parse(void)
 
     memset(&type2, 0, sizeof(type2));
 
-    flags = NTLM_NEG_UNICODE | NTLM_NEG_NTLM | NTLM_NEG_TARGET_DOMAIN;
+    flags = NTLM_NEG_UNICODE | NTLM_NEG_NTLM | NTLM_TARGET_DOMAIN;
     type2.flags = flags;
 
     memset(type2.challange, 0x7f, sizeof(type2.challange));
