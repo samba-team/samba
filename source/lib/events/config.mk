@@ -37,6 +37,6 @@ PUBLIC_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL
 # End SUBSYSTEM LIBEVENTS
 ##############################
 
-[PYTHON::swig_python]
+[PYTHON::swig_events]
 SWIG_FILE = events.i
 PRIVATE_DEPENDENCIES = LIBEVENTS

@@ -22,17 +22,21 @@
 
 %{
 #include "lib/events/events.h"
-typedef struct event_context event_context;
+typedef struct event_context event;
 %}
 
-%talloctype(event_context);
-typedef struct event_context {} event_context;
+typedef struct event_context {
+    %extend {
+        event(TALLOC_CTX *mem_ctx) { return event_context_init(mem_ctx); }
+        int loop_once(void);
+        int loop_wait(void);
+    }
+} event;
+%talloctype(event);
 
 %typemap(default,noblock=1) struct event_context * {
     $1 = event_context_init(NULL);
 }
-
-struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
 
 %typemap(default,noblock=1) struct event_context * {
     $1 = event_context_init(NULL);
@@ -41,3 +45,5 @@ struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
 struct event_context *event_context_init_byname(TALLOC_CTX *mem_ctx, const char *name);
 
 const char **event_backend_list(TALLOC_CTX *mem_ctx);
+%rename(set_default_backend) event_set_default_backend;
+void event_set_default_backend(const char *backend);

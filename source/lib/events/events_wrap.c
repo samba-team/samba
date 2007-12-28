@@ -2502,9 +2502,20 @@ static swig_module_info swig_module = {swig_types, 4, 0, 0, 0, 0};
 
 
 #include "lib/events/events.h"
-typedef struct event_context event_context;
+typedef struct event_context event;
 
-SWIGINTERN void delete_event_context(event_context *self){ talloc_free(self); }
+SWIGINTERN event *new_event(TALLOC_CTX *mem_ctx){ return event_context_init(mem_ctx); }
+
+  #define SWIG_From_long   PyInt_FromLong 
+
+
+SWIGINTERNINLINE PyObject *
+SWIG_From_int  (int value)
+{    
+  return SWIG_From_long  (value);
+}
+
+SWIGINTERN void delete_event(event *self){ talloc_free(self); }
 
 SWIGINTERN swig_type_info*
 SWIG_pchar_descriptor(void)
@@ -2576,9 +2587,70 @@ SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
 #ifdef __cplusplus
 extern "C" {
 #endif
-SWIGINTERN PyObject *_wrap_delete_event_context(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_new_event(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  event_context *arg1 = (event_context *) 0 ;
+  TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
+  event *result = 0 ;
+  
+  arg1 = NULL;
+  if (!SWIG_Python_UnpackTuple(args,"new_event",0,0,0)) SWIG_fail;
+  result = (event *)new_event(arg1);
+  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_event_context, SWIG_POINTER_NEW |  0 );
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_event_loop_once(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  event *arg1 = (event *) 0 ;
+  int result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_event_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "event_loop_once" "', argument " "1"" of type '" "event *""'"); 
+  }
+  arg1 = (event *)(argp1);
+  result = (int)event_loop_once(arg1);
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_event_loop_wait(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  event *arg1 = (event *) 0 ;
+  int result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_event_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "event_loop_wait" "', argument " "1"" of type '" "event *""'"); 
+  }
+  arg1 = (event *)(argp1);
+  result = (int)event_loop_wait(arg1);
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_delete_event(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  event *arg1 = (event *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   PyObject *swig_obj[1] ;
@@ -2587,10 +2659,10 @@ SWIGINTERN PyObject *_wrap_delete_event_context(PyObject *SWIGUNUSEDPARM(self), 
   swig_obj[0] = args;
   res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_event_context, SWIG_POINTER_DISOWN |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_event_context" "', argument " "1"" of type '" "event_context *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_event" "', argument " "1"" of type '" "event *""'"); 
   }
-  arg1 = (event_context *)(argp1);
-  delete_event_context(arg1);
+  arg1 = (event *)(argp1);
+  delete_event(arg1);
   
   resultobj = SWIG_Py_Void();
   return resultobj;
@@ -2599,27 +2671,16 @@ fail:
 }
 
 
-SWIGINTERN PyObject *event_context_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *event_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
   if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
   SWIG_TypeNewClientData(SWIGTYPE_p_event_context, SWIG_NewClientData(obj));
   return SWIG_Py_Void();
 }
 
-SWIGINTERN PyObject *_wrap_event_context_init(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
-  struct event_context *result = 0 ;
-  
-  arg1 = NULL;
-  if (!SWIG_Python_UnpackTuple(args,"event_context_init",0,0,0)) SWIG_fail;
-  result = (struct event_context *)event_context_init(arg1);
-  resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_event_context, 0 |  0 );
-  return resultobj;
-fail:
-  return NULL;
+SWIGINTERN PyObject *event_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  return SWIG_Python_InitShadowInstance(args);
 }
-
 
 SWIGINTERN PyObject *_wrap_event_context_init_byname(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
@@ -2666,12 +2727,43 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_set_default_backend(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  char *arg1 = (char *) 0 ;
+  int res1 ;
+  char *buf1 = 0 ;
+  int alloc1 = 0 ;
+  PyObject * obj0 = 0 ;
+  char *  kwnames[] = {
+    (char *) "backend", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:set_default_backend",kwnames,&obj0)) SWIG_fail;
+  res1 = SWIG_AsCharPtrAndSize(obj0, &buf1, NULL, &alloc1);
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "set_default_backend" "', argument " "1"" of type '" "char const *""'");
+  }
+  arg1 = (char *)(buf1);
+  event_set_default_backend((char const *)arg1);
+  resultobj = SWIG_Py_Void();
+  if (alloc1 == SWIG_NEWOBJ) free((char*)buf1);
+  return resultobj;
+fail:
+  if (alloc1 == SWIG_NEWOBJ) free((char*)buf1);
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
-	 { (char *)"delete_event_context", (PyCFunction)_wrap_delete_event_context, METH_O, NULL},
-	 { (char *)"event_context_swigregister", event_context_swigregister, METH_VARARGS, NULL},
-	 { (char *)"event_context_init", (PyCFunction)_wrap_event_context_init, METH_NOARGS, NULL},
+	 { (char *)"new_event", (PyCFunction)_wrap_new_event, METH_NOARGS, NULL},
+	 { (char *)"event_loop_once", (PyCFunction)_wrap_event_loop_once, METH_O, NULL},
+	 { (char *)"event_loop_wait", (PyCFunction)_wrap_event_loop_wait, METH_O, NULL},
+	 { (char *)"delete_event", (PyCFunction)_wrap_delete_event, METH_O, NULL},
+	 { (char *)"event_swigregister", event_swigregister, METH_VARARGS, NULL},
+	 { (char *)"event_swiginit", event_swiginit, METH_VARARGS, NULL},
 	 { (char *)"event_context_init_byname", (PyCFunction) _wrap_event_context_init_byname, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"event_backend_list", (PyCFunction)_wrap_event_backend_list, METH_NOARGS, NULL},
+	 { (char *)"set_default_backend", (PyCFunction) _wrap_set_default_backend, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 
@@ -2680,7 +2772,7 @@ static PyMethodDef SwigMethods[] = {
 
 static swig_type_info _swigt__p_TALLOC_CTX = {"_p_TALLOC_CTX", "TALLOC_CTX *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_event_context = {"_p_event_context", "struct event_context *|event_context *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_event_context = {"_p_event_context", "struct event_context *|event *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_p_char = {"_p_p_char", "char **", 0, 0, (void*)0, 0};
 
 static swig_type_info *swig_type_initial[] = {
