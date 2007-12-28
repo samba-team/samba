@@ -339,6 +339,10 @@ EVP_Digest(const void *data, size_t dsize, void *hash, unsigned int *hsize,
 
 /**
  * The message digest SHA256
+ *
+ * @return the message digest type.
+ *
+ * @ingroup hcrypto_evp
  */
 
 const EVP_MD *
@@ -368,6 +372,10 @@ static const struct hc_evp_md sha1 = {
 
 /**
  * The message digest SHA1
+ *
+ * @return the message digest type.
+ *
+ * @ingroup hcrypto_evp
  */
 
 const EVP_MD *
@@ -378,6 +386,10 @@ EVP_sha1(void)
 
 /**
  * The message digest SHA1
+ *
+ * @return the message digest type.
+ *
+ * @ingroup hcrypto_evp
  */
 
 const EVP_MD *
@@ -388,6 +400,10 @@ EVP_sha(void)
 
 /**
  * The message digest MD5
+ *
+ * @return the message digest type.
+ *
+ * @ingroup hcrypto_evp
  */
 
 const EVP_MD *
@@ -407,6 +423,10 @@ EVP_md5(void)
 
 /**
  * The message digest MD4
+ *
+ * @return the message digest type.
+ *
+ * @ingroup hcrypto_evp
  */
 
 const EVP_MD *
@@ -426,6 +446,10 @@ EVP_md4(void)
 
 /**
  * The message digest MD2
+ *
+ * @return the message digest type.
+ *
+ * @ingroup hcrypto_evp
  */
 
 const EVP_MD *
@@ -462,6 +486,10 @@ null_Final(void *res, struct void *m)
 
 /**
  * The null message digest
+ *
+ * @return the message digest type.
+ *
+ * @ingroup hcrypto_evp
  */
 
 const EVP_MD *
@@ -487,8 +515,14 @@ int	EVP_SignFinal(EVP_MD_CTX *, void *, size_t *, EVP_PKEY *);
 int	EVP_VerifyFinal(EVP_MD_CTX *, const void *, size_t, EVP_PKEY *);
 #endif
 
-/*
+/**
+ * Return the block size of the cipher.
  *
+ * @param c cipher to get the block size from.
+ *
+ * @return the block size of the cipher.
+ *
+ * @ingroup hcrypto_evp
  */
 
 size_t
@@ -497,11 +531,31 @@ EVP_CIPHER_block_size(const EVP_CIPHER *c)
     return c->block_size;
 }
 
+/**
+ * Return the key size of the cipher.
+ *
+ * @param c cipher to get the key size from.
+ *
+ * @return the key size of the cipher.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 size_t
 EVP_CIPHER_key_length(const EVP_CIPHER *c)
 {
     return c->key_len;
 }
+
+/**
+ * Return the IV size of the cipher.
+ *
+ * @param c cipher to get the IV size from.
+ *
+ * @return the IV size of the cipher.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 size_t
 EVP_CIPHER_iv_length(const EVP_CIPHER *c)
@@ -509,11 +563,30 @@ EVP_CIPHER_iv_length(const EVP_CIPHER *c)
     return c->iv_len;
 }
 
+/**
+ * Initiate a EVP_CIPHER_CTX context. Clean up with
+ * EVP_CIPHER_CTX_cleanup().
+ *
+ * @param c the cipher initiate.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 void
 EVP_CIPHER_CTX_init(EVP_CIPHER_CTX *c)
 {
     memset(c, 0, sizeof(*c));
 }
+
+/**
+ * Clean up the EVP_CIPHER_CTX context.
+ *
+ * @param c the cipher to clean up.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 int
 EVP_CIPHER_CTX_cleanup(EVP_CIPHER_CTX *c)
@@ -541,11 +614,31 @@ EVP_CIPHER_CTX_set_padding(EVP_CIPHER_CTX *c, int pad)
 }
 #endif
 
+/**
+ * Return the EVP_CIPHER for a EVP_CIPHER_CTX context.
+ *
+ * @param ctx the context to get the cipher type from.
+ *
+ * @return the EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 const EVP_CIPHER *
 EVP_CIPHER_CTX_cipher(EVP_CIPHER_CTX *ctx)
 {
     return ctx->cipher;
 }
+
+/**
+ * Return the block size of the cipher context.
+ *
+ * @param ctx cipher context to get the block size from.
+ *
+ * @return the block size of the cipher context.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 size_t
 EVP_CIPHER_CTX_block_size(const EVP_CIPHER_CTX *ctx)
@@ -553,11 +646,31 @@ EVP_CIPHER_CTX_block_size(const EVP_CIPHER_CTX *ctx)
     return EVP_CIPHER_block_size(ctx->cipher);
 }
 
+/**
+ * Return the key size of the cipher context.
+ *
+ * @param ctx cipher context to get the key size from.
+ *
+ * @return the key size of the cipher context.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 size_t
 EVP_CIPHER_CTX_key_length(const EVP_CIPHER_CTX *ctx)
 {
     return EVP_CIPHER_key_length(ctx->cipher);
 }
+
+/**
+ * Return the IV size of the cipher context.
+ *
+ * @param c cipher context to get the IV size from.
+ *
+ * @return the IV size of the cipher context.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 size_t
 EVP_CIPHER_CTX_iv_length(const EVP_CIPHER_CTX *ctx)
@@ -565,11 +678,31 @@ EVP_CIPHER_CTX_iv_length(const EVP_CIPHER_CTX *ctx)
     return EVP_CIPHER_iv_length(ctx->cipher);
 }
 
+/**
+ * Get the flags for an EVP_CIPHER_CTX context.
+ *
+ * @param ctx the EVP_CIPHER_CTX to get the flags from
+ *
+ * @return the flags for an EVP_CIPHER_CTX.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 unsigned long
 EVP_CIPHER_CTX_flags(const EVP_CIPHER_CTX *ctx)
 {
     return ctx->cipher->flags;
 }
+
+/**
+ * Get the mode for an EVP_CIPHER_CTX context.
+ *
+ * @param ctx the EVP_CIPHER_CTX to get the mode from
+ *
+ * @return the mode for an EVP_CIPHER_CTX.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 int
 EVP_CIPHER_CTX_mode(const EVP_CIPHER_CTX *ctx)
@@ -577,17 +710,52 @@ EVP_CIPHER_CTX_mode(const EVP_CIPHER_CTX *ctx)
     return EVP_CIPHER_CTX_flags(ctx) & EVP_CIPH_MODE;
 }
 
+/**
+ * Get the app data for an EVP_CIPHER_CTX context.
+ *
+ * @param ctx the EVP_CIPHER_CTX to get the app data from
+ *
+ * @return the app data for an EVP_CIPHER_CTX.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 void *
 EVP_CIPHER_CTX_get_app_data(EVP_CIPHER_CTX *ctx)
 {
     return ctx->app_data;
 }
 
+/**
+ * Set the app data for an EVP_CIPHER_CTX context.
+ *
+ * @param ctx the EVP_CIPHER_CTX to set the app data for
+ * @param data the app data to set for an EVP_CIPHER_CTX.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 void
 EVP_CIPHER_CTX_set_app_data(EVP_CIPHER_CTX *ctx, void *data)
 {
     ctx->app_data = data;
 }
+
+/**
+ * Initiate the EVP_CIPHER_CTX context to encrypt or decrypt data.
+ * Clean up with EVP_CIPHER_CTX_cleanup().
+ *
+ * @param ctx context to initiate
+ * @param c cipher to use.
+ * @param engine crypto engine to use, NULL to select default.
+ * @param key the crypto key to use, NULL will use the previous value.
+ * @param iv the IV to use, NULL will use the previous value.
+ * @param encp non zero will encrypt, -1 use the previous value.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 int
 EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *c, ENGINE *engine,
@@ -631,6 +799,17 @@ EVP_CipherInit_ex(EVP_CIPHER_CTX *ctx, const EVP_CIPHER *c, ENGINE *engine,
     return 1;
 }
 
+/**
+ * Encypher/decypher data
+ *
+ * @param ctx the cipher context.
+ * @param out out data from the operation.
+ * @param in in data to the operation.
+ * @param size length of data.
+ *
+ * @return 1 on success.
+ */
+
 int
 EVP_Cipher(EVP_CIPHER_CTX *ctx, void *out, const void *in,size_t size)
 {
@@ -665,6 +844,14 @@ enc_null_cleanup(EVP_CIPHER_CTX *ctx)
 {
     return 1;
 }
+
+/**
+ * The NULL cipher type, does no encryption/decryption.
+ *
+ * @return the null EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 const EVP_CIPHER *
 EVP_enc_null(void)
@@ -729,6 +916,13 @@ rc2_cleanup(EVP_CIPHER_CTX *ctx)
     return 1;
 }
 
+/**
+ * The RC2 cipher type
+ *
+ * @return the RC2 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 const EVP_CIPHER *
 EVP_rc2_cbc(void)
@@ -751,6 +945,14 @@ EVP_rc2_cbc(void)
     return &rc2_cbc;
 }
 
+/**
+ * The RC2-40 cipher type
+ *
+ * @return the RC2-40 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 const EVP_CIPHER *
 EVP_rc2_40_cbc(void)
 {
@@ -771,6 +973,14 @@ EVP_rc2_40_cbc(void)
     };
     return &rc2_40_cbc;
 }
+
+/**
+ * The RC2-64 cipher type
+ *
+ * @return the RC2-64 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 const EVP_CIPHER *
 EVP_rc2_64_cbc(void)
@@ -793,8 +1003,12 @@ EVP_rc2_64_cbc(void)
     return &rc2_64_cbc;
 }
 
-/*
+/**
+ * The RC4 cipher type
  *
+ * @return the RC4 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
  */
 
 const EVP_CIPHER *
@@ -804,6 +1018,14 @@ EVP_rc4(void)
     abort();
     return NULL;
 }
+
+/**
+ * The RC4-40 cipher type
+ *
+ * @return the RC4-40 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 const EVP_CIPHER *
 EVP_rc4_40(void)
@@ -855,6 +1077,14 @@ des_ede3_cbc_cleanup(EVP_CIPHER_CTX *ctx)
     memset(ctx->cipher_data, 0, sizeof(struct des_ede3_cbc));
     return 1;
 }
+
+/**
+ * The tripple DES cipher type
+ *
+ * @return the DES-EDE3-CBC EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 const EVP_CIPHER *
 EVP_des_ede3_cbc(void)
@@ -913,6 +1143,14 @@ aes_cleanup(EVP_CIPHER_CTX *ctx)
     return 1;
 }
 
+/**
+ * The AES-128 cipher type
+ *
+ * @return the AES-128 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 const EVP_CIPHER *
 EVP_aes_128_cbc(void)
 {
@@ -933,6 +1171,14 @@ EVP_aes_128_cbc(void)
     };
     return &aes_128_cbc;
 }
+
+/**
+ * The AES-192 cipher type
+ *
+ * @return the AES-192 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 const EVP_CIPHER *
 EVP_aes_192_cbc(void)
@@ -955,6 +1201,13 @@ EVP_aes_192_cbc(void)
     return &aes_192_cbc;
 }
 
+/**
+ * The AES-256 cipher type
+ *
+ * @return the AES-256 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 const EVP_CIPHER *
 EVP_aes_256_cbc(void)
@@ -1007,6 +1260,14 @@ camellia_cleanup(EVP_CIPHER_CTX *ctx)
     return 1;
 }
 
+/**
+ * The Camellia-128 cipher type
+ *
+ * @return the Camellia-128 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 const EVP_CIPHER *
 EVP_camellia_128_cbc(void)
 {
@@ -1028,6 +1289,14 @@ EVP_camellia_128_cbc(void)
     return &cipher;
 }
 
+/**
+ * The Camellia-198 cipher type
+ *
+ * @return the Camellia-198 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 const EVP_CIPHER *
 EVP_camellia_192_cbc(void)
 {
@@ -1048,6 +1317,14 @@ EVP_camellia_192_cbc(void)
     };
     return &cipher;
 }
+
+/**
+ * The Camellia-256 cipher type
+ *
+ * @return the Camellia-256 EVP_CIPHER pointer.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 const EVP_CIPHER *
 EVP_camellia_256_cbc(void)
@@ -1087,6 +1364,15 @@ static const struct cipher_name {
     { "camellia-256-cbc", EVP_camellia_256_cbc }
 };
 
+/**
+ * Get the cipher type using their name.
+ *
+ * @param name the name of the cipher.
+ *
+ * @return the selected EVP_CIPHER pointer or NULL if not found.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 const EVP_CIPHER *
 EVP_get_cipherbyname(const char *name)
