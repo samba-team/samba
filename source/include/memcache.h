@@ -34,6 +34,7 @@ enum memcache_number {
 	GETPWNAM_CACHE,		/* talloc */
 	MANGLE_HASH2_CACHE,
 	PDB_GETPWSID_CACHE,	/* talloc */
+	SINGLETON_CACHE_TALLOC,	/* talloc */
 	SINGLETON_CACHE
 };
 

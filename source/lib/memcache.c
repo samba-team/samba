@@ -47,6 +47,7 @@ static bool memcache_is_talloc(enum memcache_number n)
 	switch (n) {
 	case GETPWNAM_CACHE:
 	case PDB_GETPWSID_CACHE:
+	case SINGLETON_CACHE_TALLOC:
 		result = true;
 		break;
 	default:
