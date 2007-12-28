@@ -1,6 +1,6 @@
 #
 #    backend code for provisioning a Samba4 server
-#    Released under the GNU GPL v2 or later
+#    Released under the GNU GPL v3 or later
 #    Copyright Jelmer Vernooij 2007
 #
 # Based on the original in EJS:
