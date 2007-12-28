@@ -2739,6 +2739,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		{
 			bool large_write = lp_min_receive_file_size() &&
 						!srv_is_signing_active();
+			bool large_read = !srv_is_signing_active();
 			int encrypt_caps = 0;
 
 			if (!lp_unix_extensions()) {
@@ -2757,6 +2758,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			case Required:
 				encrypt_caps = CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP|
 						CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP;
+				large_write = false;
+				large_read = false;
 				break;
 			}
 
@@ -2773,8 +2776,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 					CIFS_UNIX_FCNTL_LOCKS_CAP|
 					CIFS_UNIX_EXTATTR_CAP|
 					CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP|
-					CIFS_UNIX_LARGE_READ_CAP|
 					encrypt_caps|
+					(large_read ? CIFS_UNIX_LARGE_READ_CAP : 0) |
 					(large_write ?
 					CIFS_UNIX_LARGE_WRITE_CAP : 0))));
 			break;
