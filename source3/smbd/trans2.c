@@ -2729,11 +2729,27 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		{
 			bool large_write = lp_min_receive_file_size() &&
 						!srv_is_signing_active();
+			int encrypt_caps = 0;
 
 			if (!lp_unix_extensions()) {
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
+
+			switch (lp_smb_encrypt(SNUM(conn))) {
+			case 0:
+				encrypt_caps = 0;
+				break;
+			case 1:
+			case Auto:
+				encrypt_caps = CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP;
+				break;
+			case Required:
+				encrypt_caps = CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP|
+						CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP;
+				break;
+			}
+
 			data_len = 12;
 			SSVAL(pdata,0,CIFS_UNIX_MAJOR_VERSION);
 			SSVAL(pdata,2,CIFS_UNIX_MINOR_VERSION);
@@ -2748,7 +2764,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 					CIFS_UNIX_EXTATTR_CAP|
 					CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP|
 					CIFS_UNIX_LARGE_READ_CAP|
-					CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP|
+					encrypt_caps|
 					(large_write ?
 					CIFS_UNIX_LARGE_WRITE_CAP : 0))));
 			break;
@@ -3013,6 +3029,13 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					reply_nterror(
 						req,
 						NT_STATUS_INVALID_LEVEL);
+					return;
+				}
+
+				if (lp_smb_encrypt(SNUM(conn)) == false) {
+					reply_nterror(
+						req,
+						NT_STATUS_NOT_SUPPORTED);
 					return;
 				}
 
