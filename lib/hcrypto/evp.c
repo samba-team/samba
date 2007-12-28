@@ -1394,6 +1394,26 @@ EVP_get_cipherbyname(const char *name)
 #define min(a,b) (((a)>(b))?(b):(a))
 #endif
 
+/**
+ * Provides a legancy string to key function, used in PEM files.
+ *
+ * New protocols should use new string to key functions like NIST
+ * SP56-800A or PKCS#5 v2.0 (see PKCS5_PBKDF2_HMAC_SHA1()).
+ *
+ * @param type type of cipher to use
+ * @param md message digest to use
+ * @param salt salt salt string, should be an binary 8 byte buffer.
+ * @param data the password/input key string.
+ * @param datalen length of data parameter.
+ * @param count iteration counter.
+ * @param keydata output keydata, needs to of the size EVP_CIPHER_key_length().
+ * @param ivdata output ivdata, needs to of the size EVP_CIPHER_block_size().
+ *
+ * @return the size of derived key.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 int
 EVP_BytesToKey(const EVP_CIPHER *type,
 	       const EVP_MD *md, 
@@ -1473,8 +1493,10 @@ EVP_BytesToKey(const EVP_CIPHER *type,
     return EVP_CIPHER_key_length(type);
 }
 
-/*
+/**
+ * Add all algorithms to the crypto core.
  *
+ * @ingroup hcrypto_core
  */
 
 void
@@ -1483,11 +1505,24 @@ OpenSSL_add_all_algorithms(void)
     return;
 }
 
+/**
+ * Add all algorithms to the crypto core using configuration file.
+ *
+ * @ingroup hcrypto_core
+ */
+
 void
 OpenSSL_add_all_algorithms_conf(void)
 {
     return;
 }
+
+/**
+ * Add all algorithms to the crypto core, but don't use the
+ * configuration file.
+ *
+ * @ingroup hcrypto_core
+ */
 
 void
 OpenSSL_add_all_algorithms_noconf(void)
