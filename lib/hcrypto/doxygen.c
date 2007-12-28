@@ -37,17 +37,25 @@
 
 /*! @mainpage Heimdal crypto library
  *
- * @section intro Introduction
+ * The project web page:
+ * http://www.h5l.org/
  *
- * Heimdal libhcrypto library is a implementation many crypto algorithms
- * 
  * Sections of this manual:
  *
  * @subpage page_dh
  * @subpage page_evp
  *
- * The project web page:
- * http://www.h5l.org/
+ * @section intro Introduction
+ *
+ * Heimdal libhcrypto library is a implementation many crypto algorithms
+ * 
+ * @subsection Return values
+ *
+ * Return values are diffrent in this module to be compatible with
+ * OpenSSL interface. The diffrence is that on success 1 is returned
+ * instead of the customary 0.
+ *
+ *
  *
  */
 
