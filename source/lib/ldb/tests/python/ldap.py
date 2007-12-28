@@ -955,8 +955,10 @@ def find_schemadn(ldb):
     assertEquals(len(res), 1)
     return res[0].schemaNamingContext
 
+if not "://" in host:
+    host = "ldap://%s" % host
 
-ldb = Ldb("ldap://%s" % host, credentials=creds, session_info=system_session(), 
+ldb = Ldb(host, credentials=creds, session_info=system_session(), 
           lp=lp)
 base_dn = find_basedn(ldb)
 
@@ -965,7 +967,7 @@ schema_dn = find_schemadn(ldb)
 
 print "baseDN: %s\n" % base_dn
 
-gc_ldb = Ldb("ldap://%s:3268" % host, credentials=creds, 
+gc_ldb = Ldb("%s:3268" % host, credentials=creds, 
              session_info=system_session(), lp=lp)
 
 basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn)
