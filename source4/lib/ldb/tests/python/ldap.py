@@ -12,6 +12,7 @@ import samba.getopt as options
 
 from auth import system_session
 from samba import Ldb
+import param
 
 parser = optparse.OptionParser("ldap [options] <host>")
 parser.add_option_group(options.SambaOptions(parser))
@@ -27,6 +28,10 @@ if len(args) < 1:
     sys.exit(1)
 
 host = args[0]
+
+lp = param.LoadParm()
+if opts.configfile:
+    lp.load(opts.configfile)
 
 def assertEquals(a1, a2):
     assert a1 == a2
@@ -951,7 +956,8 @@ def find_schemadn(ldb):
     return res[0].schemaNamingContext
 
 
-ldb = Ldb("ldap://%s" % host, credentials=creds, session_info=system_session())
+ldb = Ldb("ldap://%s" % host, credentials=creds, session_info=system_session(), 
+          lp=lp)
 base_dn = find_basedn(ldb)
 
 configuration_dn = find_configurationdn(ldb)
@@ -960,7 +966,7 @@ schema_dn = find_schemadn(ldb)
 print "baseDN: %s\n" % base_dn
 
 gc_ldb = Ldb("ldap://%s:3268" % host, credentials=creds, 
-             session_info=system_session())
+             session_info=system_session(), lp=lp)
 
 basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn)
 basedn_tests(ldb, gc_ldb)
