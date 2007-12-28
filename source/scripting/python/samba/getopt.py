@@ -23,7 +23,7 @@ from credentials import Credentials
 class SambaOptions(optparse.OptionGroup):
     def __init__(self, parser):
         optparse.OptionGroup.__init__(self, parser, "Samba Common Options")
-        self.add_option("--configfile", type="string", metavar="FILE",
+        self.add_option("-s", "--configfile", type="string", metavar="FILE",
                         help="Configuration file")
 
 

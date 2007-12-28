@@ -107,9 +107,37 @@ class TdbSamTestCase(unittest.TestCase):
         self.assertEquals(3, len(list(self.samdb.usernames())))
 
     def test_getuser(self):
-        return
         user = SAMUser("root")
-        self.assertEquals(user, self.samdb["root"])
+        user.logoff_time = 2147483647
+        user.kickoff_time = 2147483647
+        user.pass_can_change_time = 1125418267
+        user.username = "root"
+        user.uid = None
+        user.lm_password = 'U)\x02\x03\x1b\xed\xe9\xef\xaa\xd3\xb45\xb5\x14\x04\xee'
+        user.nt_password = '\x87\x8d\x80\x14`l\xda)gzD\xef\xa15?\xc7'
+        user.acct_ctrl = 16
+        user.pass_last_set_time = 1125418267
+        user.fullname = "root"
+        user.nt_username = ""
+        user.logoff_time = 2147483647
+        user.acct_desc = ""
+        user.group_rid = 1001
+        user.logon_count = 0
+        user.bad_password_count = 0
+        user.domain = "BEDWYR"
+        user.munged_dial = ""
+        user.workstations = ""
+        user.user_rid = 1000
+        user.kickoff_time = 2147483647
+        user.logoff_time = 2147483647
+        user.unknown_6 = 1260L
+        user.logon_divs = 0
+        user.hours = [True for i in range(168)]
+        other = self.samdb["root"]
+        for name in other.__dict__:
+            if other.__dict__[name] != user.__dict__[name]:
+                print "%s: %r != %r" % (name, other.__dict__[name], user.__dict__[name])
+        self.assertEquals(user, other)
 
 
 class WinsDatabaseTestCase(unittest.TestCase):

@@ -324,7 +324,8 @@ class SAMUser:
                  domain=None, dir_drive=None, munged_dial=None, homedir=None, logon_script=None,
                  profile_path=None, workstations=None, kickoff_time=None, bad_password_time=None,
                  pass_last_set_time=None, pass_can_change_time=None, pass_must_change_time=None,
-                 user_rid=None):
+                 user_rid=None, unknown_6=None, nt_password_history=None,
+                 unknown_str=None, hours=None, logon_divs=None):
         self.username = name
         self.uid = uid
         self.lm_password = lm_password
@@ -351,37 +352,16 @@ class SAMUser:
         self.pass_can_change_time = pass_can_change_time
         self.pass_must_change_time = pass_must_change_time
         self.user_rid = user_rid
+        self.unknown_6 = unknown_6
+        self.nt_password_history = nt_password_history
+        self.unknown_str = unknown_str
+        self.hours = hours
+        self.logon_divs = logon_divs
 
     def __eq__(self, other): 
         if not isinstance(other, SAMUser):
             return False
-        return (self.username == other.username and 
-                self.uid == other.uid and 
-                self.lm_password == other.lm_password and 
-                self.nt_password == other.nt_password and 
-                self.acct_ctrl == other.acct_ctrl and 
-                self.pass_last_set_time == other.pass_last_set_time and 
-                self.nt_username == other.nt_username and 
-                self.fullname == other.fullname and 
-                self.logon_time == other.logon_time and 
-                self.logoff_time == other.logoff_time and 
-                self.acct_desc == other.acct_desc and 
-                self.group_rid == other.group_rid and 
-                self.bad_password_count == other.bad_password_count and 
-                self.logon_count == other.logon_count and 
-                self.domain == other.domain and 
-                self.dir_drive == other.dir_drive and 
-                self.munged_dial == other.munged_dial and 
-                self.homedir == other.homedir and 
-                self.logon_script == other.logon_script and 
-                self.profile_path == other.profile_path and 
-                self.workstations == other.workstations and 
-                self.kickoff_time == other.kickoff_time and 
-                self.bad_password_time == other.bad_password_time and 
-                self.pass_can_change_time == other.pass_can_change_time and 
-                self.pass_must_change_time == other.pass_must_change_time and 
-                self.user_rid == other.user_rid)
-
+        return self.__dict__ == other.__dict__
 
 class SmbpasswdFile:
     def __init__(self, file):
@@ -451,7 +431,7 @@ class LdapSam:
 class TdbSam:
     def __init__(self, file):
         self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
-        self.version = self.tdb.fetch_uint32("INFO/version") or 0
+        self.version = self.tdb.fetch_uint32("INFO/version\0") or 0
         assert self.version in (0, 1, 2)
 
     def usernames(self):
@@ -463,41 +443,82 @@ class TdbSam:
     
     def __getitem__(self, name):
         data = self.tdb["%s%s\0" % (TDBSAM_USER_PREFIX, name)]
-        import struct
-        (logon_time, logoff_time, kickoff_time, pass_last_set_time, pass_can_change_time, \
-                pass_must_change_time) = struct.unpack("<llllll", data[:6*4])
         user = SAMUser(name)
-        user.logon_time = logon_time
+        import struct
+    
+        def unpack_string(data):
+            (length, ) = struct.unpack("<L", data[:4])
+            data = data[4:]
+            if length == 0:
+                return (None, data)
+            return (data[:length].rstrip("\0"), data[length:])
+
+        def unpack_int32(data):
+            (value, ) = struct.unpack("<l", data[:4])
+            return (value, data[4:])
+
+        def unpack_uint32(data):
+            (value, ) = struct.unpack("<L", data[:4])
+            return (value, data[4:])
+
+        def unpack_uint16(data):
+            (value, ) = struct.unpack("<H", data[:2])
+            return (value, data[2:])
+
+        (logon_time, data) = unpack_int32(data)
+        (logoff_time, data) = unpack_int32(data)
+        (kickoff_time, data) = unpack_int32(data)
+
+        if self.version > 0:
+            (bad_password_time, data) = unpack_int32(data)
+            if bad_password_time != 0:
+                user.bad_password_time = bad_password_time
+        (pass_last_set_time, data) = unpack_int32(data)
+        (pass_can_change_time, data) = unpack_int32(data)
+        (pass_must_change_time, data) = unpack_int32(data)
+
+        if logon_time != 0:
+            user.logon_time = logon_time
         user.logoff_time = logoff_time
         user.kickoff_time = kickoff_time
-        user.pass_last_set_time = pass_last_set_time
+        if pass_last_set_time != 0:
+            user.pass_last_set_time = pass_last_set_time
         user.pass_can_change_time = pass_can_change_time
 
-#	&username_len, &sampass->username,			/* B */
-#		&domain_len, &sampass->domain,				/* B */
-#		&nt_username_len, &sampass->nt_username,		/* B */
-#		&fullname_len, &sampass->fullname,			/* B */
-#		&homedir_len, &sampass->homedir,			/* B */
-#		&dir_drive_len, &sampass->dir_drive,			/* B */
-#		&logon_script_len, &sampass->logon_script,		/* B */
-#		&profile_path_len, &sampass->profile_path,		/* B */
-#		&acct_desc_len, &sampass->acct_desc,			/* B */
-#		&workstations_len, &sampass->workstations,		/* B */
-#		&unknown_str_len, &sampass->unknown_str,		/* B */
-#		&munged_dial_len, &sampass->munged_dial,		/* B */
-#		&sampass->user_rid,					/* d */
-#		&sampass->group_rid,					/* d */
-#		&lm_pw_len, sampass->lm_pw.hash,			/* B */
-#		&nt_pw_len, sampass->nt_pw.hash,			/* B */
-#		&sampass->acct_ctrl,					/* w */
-#		&remove_me, /* remove on the next TDB_FORMAT upgarde */	/* d */
-#		&sampass->logon_divs,					/* w */
-#		&sampass->hours_len,					/* d */
-#		&hourslen, &sampass->hours,				/* B */
-#		&sampass->bad_password_count,				/* w */
-#		&sampass->logon_count,					/* w */
-#		&sampass->unknown_6);					/* d */
-#		
+        (user.username, data) = unpack_string(data)
+        (user.domain, data) = unpack_string(data)
+        (user.nt_username, data) = unpack_string(data)
+        (user.fullname, data) = unpack_string(data)
+        (user.homedir, data) = unpack_string(data)
+        (user.dir_drive, data) = unpack_string(data)
+        (user.logon_script, data) = unpack_string(data)
+        (user.profile_path, data) = unpack_string(data)
+        (user.acct_desc, data) = unpack_string(data)
+        (user.workstations, data) = unpack_string(data)
+        (user.unknown_str, data) = unpack_string(data)
+        (user.munged_dial, data) = unpack_string(data)
+
+        (user.user_rid, data) = unpack_int32(data)
+        (user.group_rid, data) = unpack_int32(data)
+
+        (user.lm_password, data) = unpack_string(data)
+        (user.nt_password, data) = unpack_string(data)
+
+        if self.version > 1:
+            (user.nt_password_history, data) = unpack_string(data)
+
+        (user.acct_ctrl, data) = unpack_uint16(data)
+        (_, data) = unpack_uint32(data) # remove_me field
+        (user.logon_divs, data) = unpack_uint16(data)
+        (hours, data) = unpack_string(data)
+        user.hours = []
+        for entry in hours:
+            for i in range(8):
+                user.hours.append(ord(entry) & (2 ** i) == (2 ** i))
+        (user.bad_password_count, data) = unpack_uint16(data)
+        (user.logon_count, data) = unpack_uint16(data)
+        (user.unknown_6, data) = unpack_uint32(data)
+        assert len(data) == 0
         return user
 
     def close(self):
