@@ -77,12 +77,19 @@ bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
 
 NT_USER_TOKEN *get_root_nt_token( void )
 {
-	static NT_USER_TOKEN *token = NULL;
+	struct nt_user_token *token = NULL;
 	DOM_SID u_sid, g_sid;
 	struct passwd *pw;
+	void *cache_data;
 
-	if ( token )
-		return token;
+	cache_data = memcache_lookup_talloc(
+		NULL, SINGLETON_CACHE_TALLOC,
+		data_blob_string_const("root_nt_token"));
+
+	if (cache_data != NULL) {
+		return talloc_get_type_abort(
+			cache_data, struct nt_user_token);
+	}
 
 	if ( !(pw = sys_getpwnam( "root" )) ) {
 		DEBUG(0,("get_root_nt_token: getpwnam(\"root\") failed!\n"));
@@ -97,6 +104,11 @@ NT_USER_TOKEN *get_root_nt_token( void )
 
 	token = create_local_nt_token(NULL, &u_sid, False,
 				      1, &global_sid_Builtin_Administrators);
+
+	memcache_add_talloc(
+		NULL, SINGLETON_CACHE_TALLOC,
+		data_blob_string_const("root_nt_token"), token);
+
 	return token;
 }
 
