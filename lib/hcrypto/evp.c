@@ -665,7 +665,7 @@ EVP_CIPHER_CTX_key_length(const EVP_CIPHER_CTX *ctx)
 /**
  * Return the IV size of the cipher context.
  *
- * @param c cipher context to get the IV size from.
+ * @param ctx cipher context to get the IV size from.
  *
  * @return the IV size of the cipher context.
  *
