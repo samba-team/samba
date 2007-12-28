@@ -22,18 +22,23 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 #include "lib/events/events.h"
+#include "param/param.h"
 typedef struct libnet_context libnet;
 %}
 
 %import "../libcli/util/errors.i"
 %import "../lib/events/events.i"
 %import "../lib/talloc/talloc.i"
+%import "../param/param.i"
 
-struct libnet_context *libnet_context_init(struct event_context *ev,
-                                           struct loadparm_context *lp_ctx);
+%talloctype(libnet_context);
 
 typedef struct libnet_context {
+    struct cli_credentials *cred;
     %extend { 
+        libnet(struct event_context *ev, struct loadparm_context *lp_ctx) {
+            return libnet_context_init(ev, lp_ctx);
+        }
         NTSTATUS samsync_ldb(TALLOC_CTX *mem_ctx, struct libnet_samsync_ldb *r);
         NTSTATUS DomainList(TALLOC_CTX *mem_ctx, struct libnet_DomainList *io);
         NTSTATUS DomainClose(TALLOC_CTX *mem_ctx, struct libnet_DomainClose *io);
