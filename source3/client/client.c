@@ -2466,16 +2466,29 @@ static int cmd_posix(void)
 			return 1;
 		}
 	}
+	if (caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP) {
+		caps = talloc_asprintf_append(caps, "posix_encrypt ");
+		if (!caps) {
+			return 1;
+		}
+	}
+	if (caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP) {
+		caps = talloc_asprintf_append(caps, "mandatory_posix_encrypt ");
+		if (!caps) {
+			return 1;
+		}
+	}
 
 	if (*caps && caps[strlen(caps)-1] == ' ') {
 		caps[strlen(caps)-1] = '\0';
 	}
+
+	d_printf("Server supports CIFS capabilities %s\n", caps);
+
 	if (!cli_set_unix_extensions_capabilities(cli, major, minor, caplow, caphigh)) {
 		d_printf("Can't set UNIX CIFS extensions capabilities. %s.\n", cli_errstr(cli));
 		return 1;
 	}
-
-	d_printf("Selecting server supported CIFS capabilities %s\n", caps);
 
 	if (caplow & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
 		CLI_DIRSEP_CHAR = '/';

@@ -1457,6 +1457,16 @@ static void switch_message(uint8 type, struct smb_request *req, int size)
 			reply_doserror(req, ERRSRV, ERRaccess);
 			return;
 		}
+
+		if (conn->encrypt_level == Required && SVAL(req->inbuf,4) != 0x45FF ) {
+			/* An encrypted packet has 0xFF 'E' at offset 4
+			 * which is little endian 0x45FF */
+			uint8 com = CVAL(req->inbuf,smb_com);
+			if (com != SMBtrans2 && com != SMBtranss2) {
+				reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+				return;
+			}
+		}
 		conn->num_smb_operations++;
 	}
 
