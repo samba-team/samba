@@ -35,12 +35,24 @@ class VersionOptions(optparse.OptionGroup):
 class CredentialsOptions(optparse.OptionGroup):
     def __init__(self, parser):
         optparse.OptionGroup.__init__(self, parser, "Credentials Options")
-        self.add_option("--simple-bind-dn", type="string", metavar="DN",
+        self.add_option("--simple-bind-dn", metavar="DN", action="callback",
+                        callback=self.set_simple_bind_dn, type=str,
                         help="DN to use for a simple bind")
-        self.add_option("--password", type="string", metavar="PASSWORD",
-                        help="Password")
+        self.add_option("--password", metavar="PASSWORD", action="callback",
+                        help="Password", type=str, callback=self.set_password)
+        self.add_option("-U", "--username", metavar="USERNAME", 
+                        action="callback", type=str,
+                        help="username", callback=self.parse_username)
+        self.creds = Credentials()
+
+    def parse_username(self, option, opt_str, arg, parser):
+        self.creds.parse_string(arg)
+
+    def set_password(self, option, opt_str, arg, parser):
+        self.creds.set_password(arg)
+
+    def set_simple_bind_dn(self, option, opt_str, arg, parser):
+        self.creds.set_simple_bind_dn(arg)
 
     def get_credentials(self):
-        creds = Credentials()
-        # FIXME: Update
-        return creds
+        return self.creds
