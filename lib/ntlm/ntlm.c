@@ -732,7 +732,7 @@ heim_ntlm_decode_type3(const struct ntlm_buf *buf,
     CHECK(ret_buf(in, &ntlm, &type3->ntlm), 0);
     CHECK(ret_string(in, ucs2, &target, &type3->targetname), 0);
     CHECK(ret_string(in, ucs2, &username, &type3->username), 0);
-    CHECK(ret_string(in, ucs2, &username, &type3->ws), 0);
+    CHECK(ret_string(in, ucs2, &ws, &type3->ws), 0);
     if (sessionkey.offset)
 	CHECK(ret_buf(in, &sessionkey, &type3->sessionkey), 0);
 
