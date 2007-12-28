@@ -44,6 +44,7 @@
  * Sections of this manual:
  *
  * @subpage page_dh
+ * @subpage page_evp
  *
  * The project web page:
  * http://www.h5l.org/
@@ -54,4 +55,7 @@
 
 /** @defgroup hcrypto_dh Diffie-Hellman functions
  * See the @ref page_dh for description and examples.
+ */
+/** @defgroup hcrypto_evp EVP generic crypto functions
+ * See the @ref page_evp for description and examples.
  */
