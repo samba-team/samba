@@ -22,7 +22,15 @@
 
 %{
 #include "lib/events/events.h"
+typedef struct event_context event_context;
 %}
+
+%talloctype(event_context);
+typedef struct event_context {} event_context;
+
+%typemap(default,noblock=1) struct event_context * {
+    $1 = event_context_init(NULL);
+}
 
 struct event_context *event_context_init(TALLOC_CTX *mem_ctx);
 

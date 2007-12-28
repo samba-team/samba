@@ -2502,7 +2502,9 @@ static swig_module_info swig_module = {swig_types, 4, 0, 0, 0, 0};
 
 
 #include "lib/events/events.h"
+typedef struct event_context event_context;
 
+SWIGINTERN void delete_event_context(event_context *self){ talloc_free(self); }
 
 SWIGINTERN swig_type_info*
 SWIG_pchar_descriptor(void)
@@ -2574,6 +2576,36 @@ SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
 #ifdef __cplusplus
 extern "C" {
 #endif
+SWIGINTERN PyObject *_wrap_delete_event_context(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  event_context *arg1 = (event_context *) 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_event_context, SWIG_POINTER_DISOWN |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_event_context" "', argument " "1"" of type '" "event_context *""'"); 
+  }
+  arg1 = (event_context *)(argp1);
+  delete_event_context(arg1);
+  
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *event_context_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *obj;
+  if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
+  SWIG_TypeNewClientData(SWIGTYPE_p_event_context, SWIG_NewClientData(obj));
+  return SWIG_Py_Void();
+}
+
 SWIGINTERN PyObject *_wrap_event_context_init(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
@@ -2635,6 +2667,8 @@ fail:
 
 
 static PyMethodDef SwigMethods[] = {
+	 { (char *)"delete_event_context", (PyCFunction)_wrap_delete_event_context, METH_O, NULL},
+	 { (char *)"event_context_swigregister", event_context_swigregister, METH_VARARGS, NULL},
 	 { (char *)"event_context_init", (PyCFunction)_wrap_event_context_init, METH_NOARGS, NULL},
 	 { (char *)"event_context_init_byname", (PyCFunction) _wrap_event_context_init_byname, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"event_backend_list", (PyCFunction)_wrap_event_backend_list, METH_NOARGS, NULL},
@@ -2646,7 +2680,7 @@ static PyMethodDef SwigMethods[] = {
 
 static swig_type_info _swigt__p_TALLOC_CTX = {"_p_TALLOC_CTX", "TALLOC_CTX *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_event_context = {"_p_event_context", "struct event_context *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_event_context = {"_p_event_context", "struct event_context *|event_context *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_p_char = {"_p_p_char", "char **", 0, 0, (void*)0, 0};
 
 static swig_type_info *swig_type_initial[] = {
