@@ -414,8 +414,8 @@ static const DH_METHOD dh_null_method = {
     dh_null_generate_params
 };
 
-extern const DH_METHOD hc_dh_imath_method;
-static const DH_METHOD *dh_default_method = &hc_dh_imath_method;
+extern const DH_METHOD _hc_dh_imath_method;
+static const DH_METHOD *dh_default_method = &_hc_dh_imath_method;
 
 /**
  * Return the dummy DH implementation.
