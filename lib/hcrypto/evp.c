@@ -1,3 +1,42 @@
+/*
+ * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden). 
+ * All rights reserved. 
+ *
+ * Redistribution and use in source and binary forms, with or without 
+ * modification, are permitted provided that the following conditions 
+ * are met: 
+ *
+ * 1. Redistributions of source code must retain the above copyright 
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright 
+ *    notice, this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the distribution. 
+ *
+ * 3. Neither the name of the Institute nor the names of its contributors 
+ *    may be used to endorse or promote products derived from this software 
+ *    without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE. 
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+RCSID("$Id$");
+
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,6 +57,13 @@
 #include <md4.h>
 #include <md5.h>
 
+/**
+ * @page page_evp EVP - generic crypto interface
+ *
+ * See the library functions here: @ref hcrypto_evp
+ */
+
+
 typedef int (*evp_md_init)(EVP_MD_CTX *);
 typedef int (*evp_md_update)(EVP_MD_CTX *,const void *, size_t);
 typedef int (*evp_md_final)(void *, EVP_MD_CTX *);
@@ -33,8 +79,14 @@ struct hc_evp_md {
     evp_md_cleanup cleanup;
 };
 
-/*
+/**
+ * Return the output size of the message digest function.
  *
+ * @param md the evp message
+ *
+ * @return size output size of the message digest function.
+ *
+ * @ingroup hcrypto_evp
  */
 
 size_t
@@ -43,11 +95,30 @@ EVP_MD_size(const EVP_MD *md)
     return md->hash_size;
 }
 
+/**
+ * Return the blocksize of the message digest function.
+ *
+ * @param md the evp message
+ *
+ * @return size size of the message digest block size
+ *
+ * @ingroup hcrypto_evp
+ */
+
 size_t
 EVP_MD_block_size(const EVP_MD *md)
 {
     return md->block_size;
 }
+
+/**
+ * Allocate a messsage digest context object. Free with
+ * EVP_MD_CTX_destroy().
+ *
+ * @return a newly allocated message digest context object.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 EVP_MD_CTX *
 EVP_MD_CTX_create(void)
@@ -55,11 +126,28 @@ EVP_MD_CTX_create(void)
     return calloc(1, sizeof(EVP_MD_CTX));
 }
 
+/**
+ * Initiate a messsage digest context object. Deallocate with
+ * EVP_MD_CTX_cleanup(). Please use EVP_MD_CTX_create() instead.
+ *
+ * @param ctx variable to initiate.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 void
 EVP_MD_CTX_init(EVP_MD_CTX *ctx)
 {
     memset(ctx, 0, sizeof(*ctx));
 }
+
+/**
+ * Free a messsage digest context object.
+ *
+ * @param ctx context to free.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 void
 EVP_MD_CTX_destroy(EVP_MD_CTX *ctx)
@@ -67,6 +155,16 @@ EVP_MD_CTX_destroy(EVP_MD_CTX *ctx)
     EVP_MD_CTX_cleanup(ctx);
     free(ctx);
 }
+
+/**
+ * Free the resources used by the EVP_MD context.
+ *
+ * @param ctx the context to free the resources from.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 int
 EVP_MD_CTX_cleanup(EVP_MD_CTX *ctx)
@@ -76,9 +174,19 @@ EVP_MD_CTX_cleanup(EVP_MD_CTX *ctx)
     ctx->md = NULL;
     ctx->engine = NULL;
     free(ctx->ptr);
+    memset(ctx, 0, sizeof(*ctx));
     return 1;
 }
 
+/**
+ * Get the EVP_MD use for a specified context.
+ *
+ * @param ctx the EVP_MD context to get the EVP_MD for.
+ *
+ * @return the EVP_MD used for the context.
+ *
+ * @ingroup hcrypto_evp
+ */
 
 const EVP_MD *
 EVP_MD_CTX_md(EVP_MD_CTX *ctx)
@@ -86,11 +194,31 @@ EVP_MD_CTX_md(EVP_MD_CTX *ctx)
     return ctx->md;
 }
 
+/**
+ * Return the output size of the message digest function.
+ *
+ * @param ctx the evp message digest context
+ *
+ * @return size output size of the message digest function.
+ *
+ * @ingroup hcrypto_evp
+ */
+
 size_t
 EVP_MD_CTX_size(EVP_MD_CTX *ctx)
 {
     return EVP_MD_size(ctx->md);
 }
+
+/**
+ * Return the blocksize of the message digest function.
+ *
+ * @param md the evp message digest context
+ *
+ * @return size size of the message digest block size
+ *
+ * @ingroup hcrypto_evp
+ */
 
 size_t
 EVP_MD_CTX_block_size(EVP_MD_CTX *ctx)
