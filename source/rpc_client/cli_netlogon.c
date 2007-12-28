@@ -978,11 +978,12 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 	int validation_level = 3;
 	const char *workstation_name_slash;
 	const char *server_name_slash;
-	static uint8 zeros[16];
+	uint8 zeros[16];
 	DOM_CRED clnt_creds;
 	DOM_CRED ret_creds;
 	int i;
-	
+
+	ZERO_STRUCT(zeros);
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 	ZERO_STRUCT(ret_creds);
@@ -1084,9 +1085,10 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 	int validation_level = 3;
 	const char *workstation_name_slash;
 	const char *server_name_slash;
-	static uint8 zeros[16];
+	uint8 zeros[16];
 	int i;
-	
+
+	ZERO_STRUCT(zeros);
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
