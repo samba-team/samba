@@ -49,14 +49,16 @@
  *
  * Heimdal libhcrypto library is a implementation many crypto algorithms
  * 
- * @subsection Return values
+ * @subsection control_functions Control function
+ *
+ * Functions controlling general behavior, like adding algorithms, are
+ * documented in this module: @ref hcrypto_core .
+ *
+ * @subsection return_values Return values
  *
  * Return values are diffrent in this module to be compatible with
  * OpenSSL interface. The diffrence is that on success 1 is returned
  * instead of the customary 0.
- *
- *
- *
  */
 
 /** @defgroup hcrypto Core functions */
@@ -67,3 +69,4 @@
 /** @defgroup hcrypto_evp EVP generic crypto functions
  * See the @ref page_evp for description and examples.
  */
+/** @defgroup hcrypto_core hcrypto function controlling behavior */
