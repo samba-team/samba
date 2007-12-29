@@ -1030,10 +1030,10 @@ static bool send_getdc_request(struct sockaddr_storage *dc_ss,
 		return false;
 	}
 
-	sid_linearize(p, sid_size, sid);
 	if (sid_size + 8 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
 		return false;
 	}
+	sid_linearize(p, sizeof(outbuf) - PTR_DIFF(p, outbuf), sid);
 
 	p += sid_size;
 
