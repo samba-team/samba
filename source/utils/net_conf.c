@@ -122,7 +122,8 @@ static WERROR list_values(TALLOC_CTX *ctx, struct registry_key *key)
 			                        &valvalue));
 	     idx++)
 	{
-		d_printf("\t%s = %s\n", valname, format_value(ctx, valvalue));
+		d_printf("\t%s = %s\n", valname,
+			 libnet_smbconf_format_registry_value(ctx, valvalue));
 	}
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
                 d_fprintf(stderr, "Error enumerating values: %s\n",
@@ -798,7 +799,7 @@ static int net_conf_getparm(int argc, const char **argv)
 		goto done;
 	}
 
-	d_printf("%s\n", format_value(ctx, value));
+	d_printf("%s\n", libnet_smbconf_format_registry_value(ctx, value));
 
 	ret = 0;
 done:

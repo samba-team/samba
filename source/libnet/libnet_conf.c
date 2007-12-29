@@ -222,7 +222,8 @@ done:
 	return werr;
 }
 
-char *format_value(TALLOC_CTX *mem_ctx, struct registry_value *value)
+char *libnet_smbconf_format_registry_value(TALLOC_CTX *mem_ctx,
+					   struct registry_value *value)
 {
 	char *result = NULL;
 
@@ -362,6 +363,7 @@ WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 {
 	WERROR werr;
 	struct registry_key *key = NULL;
+	struct registry_value *value = NULL;
 
 	if (!libnet_smbconf_key_exists(service)) {
 		werr = WERR_NO_SUCH_SERVICE;
