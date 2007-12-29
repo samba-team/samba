@@ -82,7 +82,7 @@ OM_uint32 _gss_ntlm_acquire_cred
     if (cred_usage == GSS_C_BOTH || cred_usage == GSS_C_INITIATE) {
 	ntlm_cred cred;
 
-	*min_stat = _gss_ntlm_get_user_cred(name->domain, &cred);
+	*min_stat = _gss_ntlm_get_user_cred(name, &cred);
 	if (*min_stat)
 	    return GSS_S_FAILURE;
 	cred->usage = cred_usage;

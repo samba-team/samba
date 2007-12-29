@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 static int
-from_file(const char *fn, const char *domain,
+from_file(const char *fn, const char *user, const char *domain,
 	  char **username, struct ntlm_buf *key)
 {	  
     char *str, buf[1024];
@@ -59,6 +59,9 @@ from_file(const char *fn, const char *domain,
 	p = strtok_r(NULL, ":", &str);
 	if (u == NULL || p == NULL)
 	    continue;
+	if (user && strcasecmp(user, u) != 0)
+	    continue;
+
 	*username = strdup(u);
 
 	heim_ntlm_nt_key(p, key);
@@ -73,15 +76,19 @@ from_file(const char *fn, const char *domain,
 }
 
 static int
-get_user_file(const ntlm_name *name, char **username, struct ntlm_buf *key)
+get_user_file(const ntlm_name name, char **username, struct ntlm_buf *key)
 {
-    const char *fn = NULL;
+    const char *fn;
 
-    if (!issuid()) {
-	fn = getenv("NTLM_USER_FILE");
-	if (fn != NULL && from_file(fn, name->domain, username, key) == 0)
-	    return 0;
-    }
+    if (issuid())
+	return ENOENT;
+
+    fn = getenv("NTLM_USER_FILE");
+    if (fn != NULL)
+	return ENOENT;
+    if (from_file(fn, name->domain, name->user, username, key) == 0)
+	return 0;
+
     return ENOENT;
 }
 
@@ -90,7 +97,7 @@ get_user_file(const ntlm_name *name, char **username, struct ntlm_buf *key)
  */
 
 static int
-get_user_ccache(const ntlm_name *name, char **username, struct ntlm_buf *key)
+get_user_ccache(const ntlm_name name, char **username, struct ntlm_buf *key)
 {
     krb5_principal client;
     krb5_context context = NULL;
@@ -166,7 +173,7 @@ out:
 }
 
 int
-_gss_ntlm_get_user_cred(const ntlm_name *name,
+_gss_ntlm_get_user_cred(const ntlm_name name,
 			ntlm_cred *rcred)
 {
     ntlm_cred cred;
@@ -184,7 +191,7 @@ _gss_ntlm_get_user_cred(const ntlm_name *name,
 	return ret;
     }
     
-    cred->domain = strdup(domain);
+    cred->domain = strdup(name->domain);
     *rcred = cred;
 
     return ret;
@@ -266,7 +273,7 @@ _gss_ntlm_init_sec_context
 	    ntlm_cred cred = (ntlm_cred)initiator_cred_handle;
 	    ret = _gss_copy_cred(cred, &ctx->client);
 	} else
-	    ret = _gss_ntlm_get_user_cred(name->domain, &ctx->client);
+	    ret = _gss_ntlm_get_user_cred(name, &ctx->client);
 
 	if (ret) {
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
