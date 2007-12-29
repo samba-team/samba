@@ -1,3 +1,7 @@
+2007-12-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ntlm: clean up name handling
+
 2007-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ntlm/init_sec_context.c: Use credential if it was passed in.
