@@ -27,6 +27,33 @@
 
  **********************************************************************/
 
+/**
+ * add a string to a talloced array of strings.
+ */
+static WERROR libnet_smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
+						char ***array,
+						uint32_t count,
+						const char *string)
+{
+	WERROR werr = WERR_OK;
+	char **new_array = NULL;
+
+	if ((array == NULL) || (string == NULL)) {
+		return WERR_INVALID_PARAM;
+	}
+
+	new_array = TALLOC_REALLOC_ARRAY(mem_ctx, *array, char *, count + 1);
+	if (new_array == NULL) {
+		return WERR_NOMEM;
+	}
+
+	new_array[count] = talloc_strdup(new_array, string);
+
+	*array = new_array;
+
+	return WERR_OK;
+}
+
 /*
  * Open a subkey of KEY_SMBCONF (i.e a service)
  */
@@ -302,18 +329,24 @@ static WERROR libnet_smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 						&valvalue));
 	     count++)
 	{
-		tmp_valnames = TALLOC_REALLOC_ARRAY(tmp_ctx, tmp_valnames,
-						    char *, count + 1);
-		tmp_valstrings = TALLOC_REALLOC_ARRAY(tmp_ctx, tmp_valstrings,
-						      char *, count + 1);
-		if ((tmp_valstrings == NULL) || (tmp_valnames == NULL)) {
-			werr = WERR_NOMEM;
+		char *valstring;
+
+		werr = libnet_smbconf_add_string_to_array(tmp_ctx,
+							  &tmp_valnames,
+							  count, valname);
+		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
-		tmp_valnames[count] = talloc_strdup(tmp_valnames, valname);
-		tmp_valstrings[count] =
-			libnet_smbconf_format_registry_value(tmp_valstrings,
-							     valvalue);
+
+		valstring = libnet_smbconf_format_registry_value(tmp_ctx,
+								 valvalue);
+		werr = libnet_smbconf_add_string_to_array(tmp_ctx,
+							  &tmp_valstrings,
+							  count,
+							  valstring);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
 	}
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
 		goto done;
@@ -420,9 +453,12 @@ WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 					      &subkey_name, NULL));
 	     count++)
 	{
-		tmp_share_names = TALLOC_REALLOC_ARRAY(tmp_ctx, tmp_share_names,
-						       char *, count + 1);
-		tmp_share_names[count] = talloc_strdup(tmp_ctx, subkey_name);
+		werr = libnet_smbconf_add_string_to_array(tmp_ctx,
+							  &tmp_share_names,
+							  count, subkey_name);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
 	}
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
 		goto done;
