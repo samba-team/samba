@@ -426,7 +426,7 @@ bool sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int
 	if(!prs_uint32    ("ptr  ", ps, depth, &ptr))
 		return False;
 
-	len = sec_desc_size(psdb->sd);
+	len = ndr_size_security_descriptor(psdb->sd, 0);
 	if(!prs_uint32_pre("len    ", ps, depth, &len, &off_len))
 		return False;
 

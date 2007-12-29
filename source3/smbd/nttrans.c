@@ -1650,7 +1650,7 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 		return;
 	}
 
-	sd_size = sec_desc_size(psd);
+	sd_size = ndr_size_security_descriptor(psd, 0);
 
 	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
 

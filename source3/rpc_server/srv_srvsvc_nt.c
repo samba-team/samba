@@ -2159,7 +2159,7 @@ WERROR _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 		goto error_exit;
 	}
 
-	sd_size = sec_desc_size(psd);
+	sd_size = ndr_size_security_descriptor(psd, 0);
 
 	r_u->ptr_response = 1;
 	r_u->size_response = sd_size;

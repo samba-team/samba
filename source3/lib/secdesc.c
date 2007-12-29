@@ -32,35 +32,6 @@ const struct generic_mapping file_generic_mapping = {
 };
 
 /*******************************************************************
- Works out the linearization size of a SEC_DESC.
-********************************************************************/
-
-size_t sec_desc_size(SEC_DESC *psd)
-{
-	size_t offset;
-
-	if (!psd) return 0;
-
-	offset = SEC_DESC_HEADER_SIZE;
-
-	/* don't align */
-
-	if (psd->owner_sid != NULL)
-		offset += ndr_size_dom_sid(psd->owner_sid, 0);
-
-	if (psd->group_sid != NULL)
-		offset += ndr_size_dom_sid(psd->group_sid, 0);
-
-	if (psd->sacl != NULL)
-		offset += psd->sacl->size;
-
-	if (psd->dacl != NULL)
-		offset += psd->dacl->size;
-
-	return offset;
-}
-
-/*******************************************************************
  Compares two SEC_DESC structures
 ********************************************************************/
 
