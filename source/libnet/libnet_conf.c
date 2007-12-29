@@ -384,6 +384,59 @@ done:
 	return werr;
 }
 
+WERROR libnet_smbconf_getshares(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
+				char ***share_names)
+{
+	uint32_t count;
+	TALLOC_CTX *tmp_ctx;
+	WERROR werr = WERR_OK;
+	struct registry_key *key = NULL;
+	char *subkey_name = NULL;
+	char **tmp_share_names = NULL;
+
+	if ((num_shares == NULL) || (share_names == NULL)) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	werr = libnet_smbconf_reg_open_basepath(tmp_ctx,
+						SEC_RIGHTS_ENUM_SUBKEYS,
+						&key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	for (count = 0;
+	     W_ERROR_IS_OK(werr = reg_enumkey(tmp_ctx, key, count,
+					      &subkey_name, NULL));
+	     count++)
+	{
+		tmp_share_names = TALLOC_REALLOC_ARRAY(tmp_ctx, tmp_share_names,
+						       char *, count + 1);
+		tmp_share_names[count] = talloc_strdup(tmp_ctx, subkey_name);
+	}
+	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+	*num_shares = count - 1;
+	if (count > 0) {
+		*share_names = talloc_move(mem_ctx, &tmp_share_names);
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return werr;
+}
+
 /**
  * get a definition of a share (service) from configuration.
  */

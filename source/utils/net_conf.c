@@ -459,9 +459,8 @@ static int net_conf_listshares(int argc, const char **argv)
 {
 	WERROR werr = WERR_OK;
 	int ret = -1;
-	struct registry_key *key;
-	uint32 idx = 0;
-	char *subkey_name = NULL;
+	uint32_t count, num_shares = 0;
+	char **share_names = NULL;
 	TALLOC_CTX *ctx;
 
 	ctx = talloc_init("listshares");
@@ -471,23 +470,14 @@ static int net_conf_listshares(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = libnet_smbconf_reg_open_basepath(ctx, SEC_RIGHTS_ENUM_SUBKEYS,
-						&key);
+	werr = libnet_smbconf_getshares(ctx, &num_shares, &share_names);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
-	for (idx = 0;
-	     W_ERROR_IS_OK(werr = reg_enumkey(ctx, key, idx,
-			    		      &subkey_name, NULL));
-	     idx++)
+	for (count = 0; count <= num_shares; count++)
 	{
-		d_printf("%s\n", subkey_name);
-	}
-	if (! W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
-		d_fprintf(stderr, "Error enumerating subkeys: %s\n",
-			  dos_errstr(werr));
-		goto done;
+		d_printf("%s\n", share_names[count]);
 	}
 
 	ret = 0;
