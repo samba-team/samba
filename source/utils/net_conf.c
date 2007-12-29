@@ -769,7 +769,7 @@ static int net_conf_getparm(int argc, const char **argv)
 	WERROR werr = WERR_OK;
 	char *service = NULL;
 	char *param = NULL;
-	struct registry_value *value = NULL;
+	char *valstr = NULL;
 	TALLOC_CTX *ctx;
 
 	ctx = talloc_init("getparm");
@@ -781,7 +781,7 @@ static int net_conf_getparm(int argc, const char **argv)
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	werr = libnet_smbconf_getparm(ctx, service, param, &value);
+	werr = libnet_smbconf_getparm(ctx, service, param, &valstr);
 
 	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,
@@ -799,7 +799,7 @@ static int net_conf_getparm(int argc, const char **argv)
 		goto done;
 	}
 
-	d_printf("%s\n", libnet_smbconf_format_registry_value(ctx, value));
+	d_printf("%s\n", valstr);
 
 	ret = 0;
 done:
