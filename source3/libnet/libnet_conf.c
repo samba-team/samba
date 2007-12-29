@@ -358,6 +358,9 @@ static WERROR libnet_smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 	if (count > 0) {
 		*value_names = talloc_move(mem_ctx, &tmp_valnames);
 		*value_strings = talloc_move(mem_ctx, &tmp_valstrings);
+	} else {
+		*value_names = NULL;
+		*value_strings = NULL;
 	}
 
 done:
@@ -486,6 +489,8 @@ WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 	*num_shares = added_count;
 	if (added_count > 0) {
 		*share_names = talloc_move(mem_ctx, &tmp_share_names);
+	} else {
+		*share_names = NULL;
 	}
 
 done:
