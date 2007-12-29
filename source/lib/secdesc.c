@@ -274,25 +274,21 @@ NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
 			   struct security_descriptor *secdesc,
 			   uint8 **data, size_t *len)
 {
-	prs_struct ps;
-	
-	if (!prs_init(&ps, sec_desc_size(secdesc), mem_ctx, MARSHALL)) {
-		return NT_STATUS_NO_MEMORY;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_push_struct_blob(
+		&blob, mem_ctx, secdesc,
+		(ndr_push_flags_fn_t)ndr_push_security_descriptor);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("ndr_push_security_descriptor failed: %s\n",
+			  ndr_errstr(ndr_err)));
+		return ndr_map_error2ntstatus(ndr_err);;
 	}
 
-	if (!sec_io_desc("security_descriptor", &secdesc, &ps, 1)) {
-		prs_mem_free(&ps);
-		return NT_STATUS_INVALID_PARAMETER;
-	}
-
-	if (!(*data = (uint8 *)talloc_memdup(mem_ctx, ps.data_p,
-					     prs_offset(&ps)))) {
-		prs_mem_free(&ps);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	*len = prs_offset(&ps);
-	prs_mem_free(&ps);
+	*data = blob.data;
+	*len = blob.length;
 	return NT_STATUS_OK;
 }
 
@@ -302,25 +298,33 @@ NTSTATUS marshall_sec_desc(TALLOC_CTX *mem_ctx,
 NTSTATUS unmarshall_sec_desc(TALLOC_CTX *mem_ctx, uint8 *data, size_t len,
 			     struct security_descriptor **psecdesc)
 {
-	prs_struct ps;
-	struct security_descriptor *secdesc = NULL;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	struct security_descriptor *result;
 
-	if (!(secdesc = TALLOC_ZERO_P(mem_ctx, struct security_descriptor))) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	if (!prs_init(&ps, 0, secdesc, UNMARSHALL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	prs_give_memory(&ps, (char *)data, len, False);
-
-	if (!sec_io_desc("security_descriptor", &secdesc, &ps, 1)) {
+	if ((data == NULL) || (len == 0)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	prs_mem_free(&ps);
-	*psecdesc = secdesc;
+	result = TALLOC_ZERO_P(mem_ctx, struct security_descriptor);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	blob = data_blob_const(data, len);
+
+	ndr_err = ndr_pull_struct_blob(
+		&blob, result, result,
+		(ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("ndr_pull_security_descriptor failed: %s\n",
+			  ndr_errstr(ndr_err)));
+		TALLOC_FREE(result);
+		return ndr_map_error2ntstatus(ndr_err);;
+	}
+
+	*psecdesc = result;
 	return NT_STATUS_OK;
 }
 
