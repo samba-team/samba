@@ -24,7 +24,7 @@ test_noninteractive_no_prompt()
     prompt="smb"
 
     echo du | \
-	$SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp 2>&1 | \
+	$SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I SERVER_IP 2>&1 | \
     grep $prompt
 
     if [ $? = 0 ] ; then
@@ -48,7 +48,7 @@ quit
 EOF
 
     CLI_FORCE_INTERACTIVE=yes \
-    $SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp \
+    $SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP \
 	< $tmpfile 2>/dev/null | \
     grep $prompt
 
@@ -64,7 +64,7 @@ EOF
 }
 
 testit "smbclient -L $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
-testit "smbclient -L $SERVER" $SMBCLIENT $CONFIGURATION -L $SERVER -N -p 139 || failed=`expr $failed + 1`
+testit "smbclient -L $SERVER -I $SERVER_IP" $SMBCLIENT $CONFIGURATION -L $SERVER -I $SERVER_IP -N -p 139 || failed=`expr $failed + 1`
 
 testit "noninteractive smbclient does not prompt" \
     test_noninteractive_no_prompt || \
