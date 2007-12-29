@@ -227,7 +227,10 @@ char *libnet_smbconf_format_registry_value(TALLOC_CTX *mem_ctx,
 {
 	char *result = NULL;
 
-	/* what if mem_ctx = NULL? */
+	/* alternatively, create a new talloc context? */
+	if (mem_ctx == NULL) {
+		return result;
+	}
 
 	switch (value->type) {
 	case REG_DWORD:
