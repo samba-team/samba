@@ -480,7 +480,7 @@ null_Update (void *m, const void * data, size_t size)
 {
 }
 static void
-null_Final(void *res, struct void *m)
+null_Final(void *res, void *m)
 {
 }
 
