@@ -359,11 +359,16 @@ done:
 WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 			      const char *service,
 			      const char *param,
-			      struct registry_value **value)
+			      char **valstr)
 {
-	WERROR werr;
+	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
 	struct registry_value *value = NULL;
+
+	if (valstr == NULL) {
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
 
 	if (!libnet_smbconf_key_exists(service)) {
 		werr = WERR_NO_SUCH_SERVICE;
@@ -381,10 +386,20 @@ WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	werr = reg_queryvalue(mem_ctx, key, param, value);
+	werr = reg_queryvalue(mem_ctx, key, param, &value);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	*valstr = libnet_smbconf_format_registry_value(mem_ctx, value);
+
+	if (*valstr == NULL) {
+		werr = WERR_NOMEM;
+	}
 
 done:
 	TALLOC_FREE(key);
+	TALLOC_FREE(value);
 	return werr;
 }
 
