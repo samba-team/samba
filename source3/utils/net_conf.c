@@ -301,10 +301,12 @@ static int net_conf_list(int argc, const char **argv)
 	WERROR werr = WERR_OK;
 	int ret = -1;
 	TALLOC_CTX *ctx;
-	struct registry_key *base_key = NULL;
-	struct registry_key *sub_key = NULL;
-	uint32 idx_key = 0;
-	char *subkey_name = NULL;
+	uint32_t num_shares;
+	char **share_names;
+	uint32_t *num_params;
+	char ***param_names;
+	char ***param_values;
+	uint32_t share_count, param_count;
 
 	ctx = talloc_init("list");
 
@@ -313,53 +315,25 @@ static int net_conf_list(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = libnet_smbconf_reg_open_basepath(ctx, REG_KEY_READ, &base_key);
+	werr = libnet_smbconf_get_config(ctx, &num_shares, &share_names,
+					 &num_params, &param_names,
+					 &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	if (libnet_smbconf_key_exists(GLOBAL_NAME))  {
-		werr = reg_openkey(ctx, base_key, GLOBAL_NAME,
-				   REG_KEY_READ, &sub_key);
-		if (!W_ERROR_IS_OK(werr)) {
-			d_fprintf(stderr, "Error opening subkey '%s' : %s\n",
-				  subkey_name, dos_errstr(werr));
-			goto done;
-		}
-		d_printf("[%s]\n", GLOBAL_NAME);
-		if (!W_ERROR_IS_OK(list_values(ctx, sub_key))) {
-			goto done;
-		}
-		d_printf("\n");
-	}
-
-	for (idx_key = 0;
-	     W_ERROR_IS_OK(werr = reg_enumkey(ctx, base_key, idx_key,
-			     		      &subkey_name, NULL));
-	     idx_key++)
-	{
-		if (strequal(subkey_name, GLOBAL_NAME)) {
-			continue;
-		}
-		d_printf("[%s]\n", subkey_name);
-
-		werr = reg_openkey(ctx, base_key, subkey_name,
-				   REG_KEY_READ, &sub_key);
-		if (!W_ERROR_IS_OK(werr)) {
-			d_fprintf(stderr,
-				  "Error opening subkey '%s': %s\n",
-				  subkey_name, dos_errstr(werr));
-			goto done;
-		}
-		if (!W_ERROR_IS_OK(list_values(ctx, sub_key))) {
-			goto done;
-		}
-		d_printf("\n");
-	}
-	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
-		d_fprintf(stderr, "Error enumerating subkeys: %s\n",
+		d_fprintf(stderr, "Error getting config: %s\n",
 			  dos_errstr(werr));
 		goto done;
+	}
+
+	for (share_count = 0; share_count < num_shares; share_count++) {
+		d_printf("[%s]\n", share_names[share_count]);
+		for (param_count = 0; param_count < num_params[share_count];
+		     param_count++)
+		{
+			d_printf("\t%s = %s\n",
+				 param_names[share_count][param_count],
+				 param_values[share_count][param_count]);
+		}
+		d_printf("\n");
 	}
 
 	ret = 0;
