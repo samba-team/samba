@@ -940,13 +940,22 @@ static BOOL send_getdc_request(struct in_addr dc_ip,
 	SIVAL(p, 0, 0); /* The sender's token ... */
 	p += 2;
 
-	p += dos_PutUniCode(p, global_myname(), sizeof(pstring), True);
+	p += dos_PutUniCode(p, global_myname(),
+		sizeof(outbuf) - PTR_DIFF(p, outbuf), True);
 	fstr_sprintf(my_acct_name, "%s$", global_myname());
-	p += dos_PutUniCode(p, my_acct_name, sizeof(pstring), True);
+	p += dos_PutUniCode(p, my_acct_name,
+			sizeof(outbuf) - PTR_DIFF(p, outbuf), True);
+
+	if (strlen(my_mailslot)+1 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
+		return False;
+	}
 
 	memcpy(p, my_mailslot, strlen(my_mailslot)+1);
 	p += strlen(my_mailslot)+1;
 
+	if (sizeof(outbuf) - PTR_DIFF(p, outbuf) < 8) {
+		return False;
+	}
 	SIVAL(p, 0, 0x80);
 	p+=4;
 
@@ -955,7 +964,15 @@ static BOOL send_getdc_request(struct in_addr dc_ip,
 
 	p = ALIGN4(p, outbuf);
 
-	sid_linearize(p, sid_size(sid), sid);
+	if (PTR_DIFF(p, outbuf) > sizeof(outbuf)) {
+		return False;
+	}
+
+	if (sid_size(sid) + 8 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
+		return False;
+	}
+
+	sid_linearize(p, sizeof(outbuf) - PTR_DIFF(p, outbuf), sid);
 	p += sid_size(sid);
 
 	SIVAL(p, 0, 1);
