@@ -94,8 +94,9 @@ done:
 /*
  * open the base key KEY_SMBCONF
  */
-WERROR libnet_smbconf_reg_open_basepath(TALLOC_CTX *ctx, uint32 desired_access,
-					struct registry_key **key)
+static WERROR libnet_smbconf_reg_open_basepath(TALLOC_CTX *ctx,
+					       uint32 desired_access,
+					       struct registry_key **key)
 {
 	return libnet_smbconf_reg_open_path(ctx, NULL, desired_access, key);
 }
