@@ -384,6 +384,9 @@ done:
 	return werr;
 }
 
+/**
+ * get the list of share names defined in the configuration.
+ */
 WERROR libnet_smbconf_getshares(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 				char ***share_names)
 {
