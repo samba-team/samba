@@ -2174,7 +2174,8 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 			for (;((tmp_list!=NULL)&&((qt_len +40+SID_MAX_SIZE)<max_data_count));
 				tmp_list=tmp_list->next,entry+=entry_len,qt_len+=entry_len) {
 
-				sid_len = sid_size(&tmp_list->quotas->sid);
+				sid_len = ndr_size_dom_sid(
+					&tmp_list->quotas->sid, 0);
 				entry_len = 40 + sid_len;
 
 				/* nextoffset entry 4 bytes */

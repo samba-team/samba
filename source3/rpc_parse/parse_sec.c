@@ -291,14 +291,14 @@ bool sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if (psd->owner_sid != NULL) {
 			off_owner_sid = offset;
-			offset += sid_size(psd->owner_sid);
+			offset += ndr_size_dom_sid(psd->owner_sid, 0);
 		} else {
 			off_owner_sid = 0;
 		}
 
 		if (psd->group_sid != NULL) {
 			off_grp_sid = offset;
-			offset += sid_size(psd->group_sid);
+			offset += ndr_size_dom_sid(psd->group_sid, 0);
 		} else {
 			off_grp_sid = 0;
 		}
