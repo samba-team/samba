@@ -222,6 +222,13 @@ done:
 	return werr;
 }
 
+/**
+ * format a registry_value into a string.
+ *
+ * This is intended to be used for smbconf registry values,
+ * which are ar stored as REG_SZ values, so the incomplete
+ * handling should be ok.
+ */
 char *libnet_smbconf_format_registry_value(TALLOC_CTX *mem_ctx,
 					   struct registry_value *value)
 {
