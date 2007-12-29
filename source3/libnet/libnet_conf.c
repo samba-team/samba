@@ -422,6 +422,90 @@ done:
 }
 
 /**
+ * Get the whole configuration as lists of strings with counts:
+ *
+ *  num_shares   : number of shares
+ *  share_names  : list of length num_shares of share names
+ *  num_params   : list of length num_shares of parameter counts for each share
+ *  param_names  : list of lists of parameter names for each share
+ *  param_values : list of lists of parameter values for each share
+ */
+WERROR libnet_smbconf_get_config(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
+				 char ***share_names, uint32_t **num_params,
+				 char ****param_names, char ****param_values)
+{
+	WERROR werr = WERR_OK;
+	TALLOC_CTX *tmp_ctx = NULL;
+	uint32_t tmp_num_shares;
+	char **tmp_share_names;
+	uint32_t *tmp_num_params;
+	char ***tmp_param_names;
+	char ***tmp_param_values;
+	uint32_t count;
+
+	if ((num_shares == NULL) || (share_names == NULL) ||
+	    (num_params == NULL) || (param_names == NULL) ||
+	    (param_values == NULL))
+	{
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	werr = libnet_smbconf_get_share_names(tmp_ctx, &tmp_num_shares,
+					      &tmp_share_names);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	tmp_num_params   = TALLOC_ARRAY(tmp_ctx, uint32_t, tmp_num_shares);
+	tmp_param_names  = TALLOC_ARRAY(tmp_ctx, char **, tmp_num_shares);
+	tmp_param_values = TALLOC_ARRAY(tmp_ctx, char **, tmp_num_shares);
+
+	if ((tmp_num_params == NULL) || (tmp_param_names == NULL) ||
+	    (tmp_param_values == NULL))
+	{
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	for (count = 0; count < tmp_num_shares; count++) {
+		werr = libnet_smbconf_getshare(mem_ctx, tmp_share_names[count],
+					       &tmp_num_params[count],
+					       &tmp_param_names[count],
+					       &tmp_param_values[count]);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+	}
+
+	werr = WERR_OK;
+
+	*num_shares = tmp_num_shares;
+	if (tmp_num_shares > 0) {
+		*share_names = talloc_move(mem_ctx, &tmp_share_names);
+		*num_params = talloc_move(mem_ctx, &tmp_num_params);
+		*param_names = talloc_move(mem_ctx, &tmp_param_names);
+		*param_values = talloc_move(mem_ctx, &tmp_param_values);
+	} else {
+		*share_names = NULL;
+		*num_params = NULL;
+		*param_names = NULL;
+		*param_values = NULL;
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return werr;
+}
+
+
+/**
  * get the list of share names defined in the configuration.
  */
 WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
