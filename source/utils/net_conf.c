@@ -541,7 +541,7 @@ static int net_conf_showshare(int argc, const char **argv)
 
 	d_printf("[%s]\n", sharename);
 
-	for (count = 0; count <= num_params; count++) {
+	for (count = 0; count < num_params; count++) {
 		d_printf("\t%s = %s\n", param_names[count],
 			 param_values[count]);
 	}

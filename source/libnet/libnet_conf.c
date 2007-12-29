@@ -354,7 +354,7 @@ static WERROR libnet_smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 
 	werr = WERR_OK;
 
-	*num_values = count - 1;
+	*num_values = count;
 	if (count > 0) {
 		*value_names = talloc_move(mem_ctx, &tmp_valnames);
 		*value_strings = talloc_move(mem_ctx, &tmp_valstrings);
