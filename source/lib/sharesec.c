@@ -144,7 +144,7 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
 	}
 
 	if (psd)
-		*psize = sec_desc_size(psd);
+		*psize = ndr_size_security_descriptor(psd, 0);
 
 	return psd;
 }
