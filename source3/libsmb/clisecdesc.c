@@ -28,9 +28,8 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 	char param[8];
 	char *rparam=NULL, *rdata=NULL;
 	unsigned int rparam_count=0, rdata_count=0;
-	prs_struct pd;
-	bool pd_initialized = False;
 	SEC_DESC *psd = NULL;
+	NTSTATUS status;
 
 	SIVAL(param, 0, fnum);
 	SIVAL(param, 4, 0x7);
@@ -56,15 +55,12 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 	if (cli_is_error(cli))
 		goto cleanup;
 
-	if (!prs_init(&pd, rdata_count, mem_ctx, UNMARSHALL)) {
-		goto cleanup;
-	}
-	pd_initialized = True;
-	prs_copy_data_in(&pd, rdata, rdata_count);
-	prs_set_offset(&pd,0);
+	status = unmarshall_sec_desc(mem_ctx, (uint8 *)rdata, rdata_count,
+				     &psd);
 
-	if (!sec_io_desc("sd data", &psd, &pd, 1)) {
-		DEBUG(1,("Failed to parse secdesc\n"));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("unmarshall_sec_desc failed: %s\n",
+			   nt_errstr(status)));
 		goto cleanup;
 	}
 
@@ -73,8 +69,6 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
 
-	if (pd_initialized)
-		prs_mem_free(&pd);
 	return psd;
 }
 
@@ -87,20 +81,16 @@ bool cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 	char *rparam=NULL, *rdata=NULL;
 	unsigned int rparam_count=0, rdata_count=0;
 	uint32 sec_info = 0;
-	TALLOC_CTX *mem_ctx;
-	prs_struct pd;
+	TALLOC_CTX *frame = talloc_stackframe();
 	bool ret = False;
+	uint8 *data;
+	size_t len;
+	NTSTATUS status;
 
-	if ((mem_ctx = talloc_init("cli_set_secdesc")) == NULL) {
-		DEBUG(0,("talloc_init failed.\n"));
-		goto cleanup;
-	}
-
-	prs_init(&pd, 0, mem_ctx, MARSHALL);
-	prs_give_memory(&pd, NULL, 0, True);
-
-	if (!sec_io_desc("sd data", &sd, &pd, 1)) {
-		DEBUG(1,("Failed to marshall secdesc\n"));
+	status = marshall_sec_desc(talloc_tos(), sd, &data, &len);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("marshall_sec_desc failed: %s\n",
+			   nt_errstr(status)));
 		goto cleanup;
 	}
 
@@ -119,7 +109,7 @@ bool cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 			       0, 
 			       NULL, 0, 0,
 			       param, 8, 0,
-			       prs_data_p(&pd), prs_offset(&pd), 0)) {
+			       (char *)data, len, 0)) {
 		DEBUG(1,("Failed to send NT_TRANSACT_SET_SECURITY_DESC\n"));
 		goto cleanup;
 	}
@@ -139,8 +129,7 @@ bool cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 	SAFE_FREE(rparam);
 	SAFE_FREE(rdata);
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(frame);
 
-	prs_mem_free(&pd);
 	return ret;
 }

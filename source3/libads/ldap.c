@@ -2384,20 +2384,22 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 		  LDAPMessage *msg, const char *field, SEC_DESC **sd)
 {
 	struct berval **values;
-	bool ret = False;
+	bool ret = true;
 
 	values = ldap_get_values_len(ads->ldap.ld, msg, field);
 
-	if (!values) return False;
+	if (!values) return false;
 
 	if (values[0]) {
-		prs_struct ps;
-		prs_init(&ps, values[0]->bv_len, mem_ctx, UNMARSHALL);
-		prs_copy_data_in(&ps, values[0]->bv_val, values[0]->bv_len);
-		prs_set_offset(&ps,0);
-
-		ret = sec_io_desc("sd", sd, &ps, 1);
-		prs_mem_free(&ps);
+		NTSTATUS status;
+		status = unmarshall_sec_desc(mem_ctx,
+					     (uint8 *)values[0]->bv_val,
+					     values[0]->bv_len, sd);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("unmarshall_sec_desc failed: %s\n",
+				  nt_errstr(status)));
+			ret = false;
+		}
 	}
 	
 	ldap_value_free_len(values);
