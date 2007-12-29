@@ -276,7 +276,7 @@ static WERROR libnet_smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 					    char ***value_names,
 					    char ***value_strings)
 {
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = NULL;
 	WERROR werr = WERR_OK;
 	uint32_t count;
 	struct registry_value *valvalue = NULL;
@@ -391,7 +391,7 @@ WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 				      char ***share_names)
 {
 	uint32_t count;
-	TALLOC_CTX *tmp_ctx;
+	TALLOC_CTX *tmp_ctx = NULL;
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
 	char *subkey_name = NULL;
