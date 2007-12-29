@@ -257,8 +257,8 @@ done:
  * which are ar stored as REG_SZ values, so the incomplete
  * handling should be ok.
  */
-char *libnet_smbconf_format_registry_value(TALLOC_CTX *mem_ctx,
-					   struct registry_value *value)
+static char *libnet_smbconf_format_registry_value(TALLOC_CTX *mem_ctx,
+						  struct registry_value *value)
 {
 	char *result = NULL;
 

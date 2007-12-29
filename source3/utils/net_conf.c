@@ -110,32 +110,6 @@ static int net_conf_delparm_usage(int argc, const char **argv)
  * Helper functions
  */
 
-static WERROR list_values(TALLOC_CTX *ctx, struct registry_key *key)
-{
-	WERROR werr = WERR_OK;
-	uint32 idx = 0;
-	struct registry_value *valvalue = NULL;
-	char *valname = NULL;
-
-	for (idx = 0;
-	     W_ERROR_IS_OK(werr = reg_enumvalue(ctx, key, idx, &valname,
-			                        &valvalue));
-	     idx++)
-	{
-		d_printf("\t%s = %s\n", valname,
-			 libnet_smbconf_format_registry_value(ctx, valvalue));
-	}
-	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
-                d_fprintf(stderr, "Error enumerating values: %s\n",
-                          dos_errstr(werr));
-		goto done;
-        }
-	werr = WERR_OK;
-
-done:
-	return werr;
-}
-
 static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
 			 struct share_params *share)
 {
