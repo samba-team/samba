@@ -387,8 +387,8 @@ done:
 /**
  * get the list of share names defined in the configuration.
  */
-WERROR libnet_smbconf_getshares(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
-				char ***share_names)
+WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
+				      char ***share_names)
 {
 	uint32_t count;
 	TALLOC_CTX *tmp_ctx;
