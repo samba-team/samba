@@ -46,10 +46,10 @@ size_t sec_desc_size(SEC_DESC *psd)
 	/* don't align */
 
 	if (psd->owner_sid != NULL)
-		offset += sid_size(psd->owner_sid);
+		offset += ndr_size_dom_sid(psd->owner_sid, 0);
 
 	if (psd->group_sid != NULL)
-		offset += sid_size(psd->group_sid);
+		offset += ndr_size_dom_sid(psd->group_sid, 0);
 
 	if (psd->sacl != NULL)
 		offset += psd->sacl->size;
@@ -235,11 +235,11 @@ SEC_DESC *make_sec_desc(TALLOC_CTX *ctx,
 	}
 
 	if (dst->owner_sid != NULL) {
-		offset += sid_size(dst->owner_sid);
+		offset += ndr_size_dom_sid(dst->owner_sid, 0);
 	}
 
 	if (dst->group_sid != NULL) {
-		offset += sid_size(dst->group_sid);
+		offset += ndr_size_dom_sid(dst->group_sid, 0);
 	}
 
 	*sd_size = (size_t)offset;

@@ -2897,8 +2897,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			 */
 			for (i = 0, sid_bytes = 0;
 			    i < current_user.nt_user_token->num_sids; ++i) {
-				sid_bytes +=
-				    sid_size(&current_user.nt_user_token->user_sids[i]);
+				sid_bytes += ndr_size_dom_sid(
+					&current_user.nt_user_token->user_sids[i], 0);
 			}
 
 			/* SID list byte count */
@@ -2918,8 +2918,8 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 			/* SID list */
 			for (i = 0;
 			    i < current_user.nt_user_token->num_sids; ++i) {
-				int sid_len =
-				    sid_size(&current_user.nt_user_token->user_sids[i]);
+				int sid_len = ndr_size_dom_sid(
+					&current_user.nt_user_token->user_sids[i], 0);
 
 				sid_linearize(pdata + data_len, sid_len,
 				    &current_user.nt_user_token->user_sids[i]);

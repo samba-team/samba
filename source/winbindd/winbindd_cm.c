@@ -978,6 +978,7 @@ static bool send_getdc_request(struct sockaddr_storage *dc_ss,
 	char *p;
 	fstring my_acct_name;
 	fstring my_mailslot;
+	size_t sid_size;
 
 	if (dc_ss->ss_family != AF_INET) {
 		return false;
@@ -1019,7 +1020,9 @@ static bool send_getdc_request(struct sockaddr_storage *dc_ss,
 	SIVAL(p, 0, 0x80);
 	p+=4;
 
-	SIVAL(p, 0, sid_size(sid));
+	sid_size = ndr_size_dom_sid(sid, 0);
+
+	SIVAL(p, 0, sid_size);
 	p+=4;
 
 	p = ALIGN4(p, outbuf);
@@ -1027,12 +1030,12 @@ static bool send_getdc_request(struct sockaddr_storage *dc_ss,
 		return false;
 	}
 
-	sid_linearize(p, sid_size(sid), sid);
-	if (sid_size(sid) + 8 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
+	sid_linearize(p, sid_size, sid);
+	if (sid_size + 8 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
 		return false;
 	}
 
-	p += sid_size(sid);
+	p += sid_size;
 
 	SIVAL(p, 0, 1);
 	SSVAL(p, 4, 0xffff);
