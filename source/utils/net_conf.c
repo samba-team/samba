@@ -525,7 +525,12 @@ static int net_conf_showshare(int argc, const char **argv)
 	int ret = -1;
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
+	char *sharename = NULL;
 	TALLOC_CTX *ctx;
+	uint32_t num_params;
+	uint32_t count;
+	char **param_names;
+	char **param_values;
 
 	ctx = talloc_init("showshare");
 
@@ -534,15 +539,21 @@ static int net_conf_showshare(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = libnet_smbconf_reg_open_path(ctx, argv[0], REG_KEY_READ, &key);
+	sharename = argv[0];
+
+	werr = libnet_smbconf_getshare(ctx, sharename, &num_params,
+				       &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("error getting share parameters: %s\n",
+			 dos_errstr(werr));
 		goto done;
 	}
 
-	d_printf("[%s]\n", argv[0]);
+	d_printf("[%s]\n", sharename);
 
-	if (!W_ERROR_IS_OK(list_values(ctx, key))) {
-		goto done;
+	for (count = 0; count <= num_params; count++) {
+		d_printf("\t%s = %s\n", param_names[count],
+			 param_values[count]);
 	}
 
 	ret = 0;

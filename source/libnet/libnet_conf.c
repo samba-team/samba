@@ -266,6 +266,71 @@ char *libnet_smbconf_format_registry_value(TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/**
+ * Get the values of a key as a list of value names
+ * and a list of value strings (ordered)
+ */
+static WERROR libnet_smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
+					    struct registry_key *key,
+					    uint32_t *num_values,
+					    char ***value_names,
+					    char ***value_strings)
+{
+	TALLOC_CTX *tmp_ctx;
+	WERROR werr = WERR_OK;
+	uint32_t count;
+	struct registry_value *valvalue = NULL;
+	char *valname = NULL;
+	char **tmp_valnames = NULL;
+	char **tmp_valstrings = NULL;
+
+	if ((num_values == NULL) || (value_names == NULL) ||
+	    (value_strings == NULL))
+	{
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	for (count = 0;
+	     W_ERROR_IS_OK(werr = reg_enumvalue(tmp_ctx, key, count, &valname,
+						&valvalue));
+	     count++)
+	{
+		tmp_valnames = TALLOC_REALLOC_ARRAY(tmp_ctx, tmp_valnames,
+						    char *, count + 1);
+		tmp_valstrings = TALLOC_REALLOC_ARRAY(tmp_ctx, tmp_valstrings,
+						      char *, count + 1);
+		if ((tmp_valstrings == NULL) || (tmp_valnames == NULL)) {
+			werr = WERR_NOMEM;
+			goto done;
+		}
+		tmp_valnames[count] = talloc_strdup(tmp_valnames, valname);
+		tmp_valstrings[count] =
+			libnet_smbconf_format_registry_value(tmp_valstrings,
+							     valvalue);
+	}
+	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
+		goto done;
+	}
+
+	werr = WERR_OK;
+
+	*num_values = count - 1;
+	if (count > 0) {
+		*value_names = talloc_move(mem_ctx, &tmp_valnames);
+		*value_strings = talloc_move(mem_ctx, &tmp_valstrings);
+	}
+
+done:
+	TALLOC_FREE(tmp_ctx);
+	return werr;
+}
 
 /**********************************************************************
  *
@@ -316,6 +381,30 @@ WERROR libnet_smbconf_drop(void)
 
 done:
 	TALLOC_FREE(mem_ctx);
+	return werr;
+}
+
+/**
+ * get a definition of a share (service) from configuration.
+ */
+WERROR libnet_smbconf_getshare(TALLOC_CTX *mem_ctx, const char *servicename,
+			       uint32_t *num_params, char ***param_names,
+			       char ***param_values)
+{
+	WERROR werr = WERR_OK;
+	struct registry_key *key = NULL;
+
+	werr = libnet_smbconf_reg_open_path(mem_ctx, servicename, REG_KEY_READ,
+					    &key);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnet_smbconf_reg_get_values(mem_ctx, key, num_params,
+					     param_names, param_values);
+
+done:
+	TALLOC_FREE(key);
 	return werr;
 }
 
