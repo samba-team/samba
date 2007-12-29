@@ -340,6 +340,9 @@ done:
 	return werr;
 }
 
+/**
+ * set a configuration parameter to the value provided.
+ */
 WERROR libnet_smbconf_setparm(const char *service,
 			      const char *param,
 			      const char *valstr)
@@ -366,6 +369,9 @@ done:
 	return werr;
 }
 
+/**
+ * get the value of a configuration parameter as a string
+ */
 WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 			      const char *service,
 			      const char *param,
@@ -413,6 +419,9 @@ done:
 	return werr;
 }
 
+/**
+ * delete a parameter from configuration
+ */
 WERROR libnet_smbconf_delparm(const char *service,
 			      const char *param)
 {
