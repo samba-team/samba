@@ -296,7 +296,7 @@ static bool globals_exist(void)
  * the conf functions
  */
 
-int net_conf_list(int argc, const char **argv)
+static int net_conf_list(int argc, const char **argv)
 {
 	WERROR werr = WERR_OK;
 	int ret = -1;
@@ -369,7 +369,7 @@ done:
 	return ret;
 }
 
-int net_conf_import(int argc, const char **argv)
+static int net_conf_import(int argc, const char **argv)
 {
 	int ret = -1;
 	const char *filename = NULL;
@@ -455,7 +455,7 @@ done:
 	return ret;
 }
 
-int net_conf_listshares(int argc, const char **argv)
+static int net_conf_listshares(int argc, const char **argv)
 {
 	WERROR werr = WERR_OK;
 	int ret = -1;
@@ -497,7 +497,7 @@ done:
 	return ret;
 }
 
-int net_conf_drop(int argc, const char **argv)
+static int net_conf_drop(int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr;
@@ -520,7 +520,7 @@ done:
 	return ret;
 }
 
-int net_conf_showshare(int argc, const char **argv)
+static int net_conf_showshare(int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
@@ -552,7 +552,7 @@ done:
 	return ret;
 }
 
-int net_conf_addshare(int argc, const char **argv)
+static int net_conf_addshare(int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
@@ -707,7 +707,7 @@ done:
 	return ret;
 }
 
-int net_conf_delshare(int argc, const char **argv)
+static int net_conf_delshare(int argc, const char **argv)
 {
 	int ret = -1;
 	const char *sharename = NULL;
