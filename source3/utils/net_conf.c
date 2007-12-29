@@ -475,7 +475,7 @@ static int net_conf_listshares(int argc, const char **argv)
 		goto done;
 	}
 
-	for (count = 0; count <= num_shares; count++)
+	for (count = 0; count < num_shares; count++)
 	{
 		d_printf("%s\n", share_names[count]);
 	}

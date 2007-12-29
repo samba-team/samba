@@ -424,6 +424,7 @@ WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 				      char ***share_names)
 {
 	uint32_t count;
+	uint32_t added_count = 0;
 	TALLOC_CTX *tmp_ctx = NULL;
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
@@ -441,6 +442,17 @@ WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 		goto done;
 	}
 
+	/* make sure "global" is always listed first */
+	if (libnet_smbconf_key_exists(GLOBAL_NAME)) {
+		werr = libnet_smbconf_add_string_to_array(tmp_ctx,
+							  &tmp_share_names,
+							  0, GLOBAL_NAME);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+		added_count++;
+	}
+
 	werr = libnet_smbconf_reg_open_basepath(tmp_ctx,
 						SEC_RIGHTS_ENUM_SUBKEYS,
 						&key);
@@ -453,21 +465,26 @@ WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 					      &subkey_name, NULL));
 	     count++)
 	{
+		if (strequal(subkey_name, GLOBAL_NAME)) {
+			continue;
+		}
+
 		werr = libnet_smbconf_add_string_to_array(tmp_ctx,
 							  &tmp_share_names,
-							  count, subkey_name);
+							  added_count,
+							  subkey_name);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
+		added_count++;
 	}
 	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
 		goto done;
 	}
-
 	werr = WERR_OK;
 
-	*num_shares = count - 1;
-	if (count > 0) {
+	*num_shares = added_count;
+	if (added_count > 0) {
 		*share_names = talloc_move(mem_ctx, &tmp_share_names);
 	}
 
