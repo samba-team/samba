@@ -48,6 +48,15 @@ bool srv_encryption_on(void)
 }
 
 /******************************************************************************
+ Return global enc context - this must change if we ever do multiple contexts.
+******************************************************************************/
+
+uint16 srv_enc_ctx(void)
+{
+	return srv_trans_enc_ctx->es->enc_ctx_num;
+}
+
+/******************************************************************************
  Create an auth_ntlmssp_state and ensure pointer copy is correct.
 ******************************************************************************/
 
