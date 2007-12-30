@@ -46,11 +46,38 @@ RCSID("$Id$");
 
 #include <roken.h>
 
+/**
+ * @page page_rsa RSA - public-key cryptography
+ *
+ * RSA is named by its inventors (Ron Rivest, Adi Shamir, and Leonard
+ * Adleman) (published in 1977), patented expired in 21 September 2000.
+ *
+ * See the library functions here: @ref hcrypto_rsa
+ */
+
+/**
+ * Same as RSA_new_method() using NULL as engine.
+ *
+ * @return a newly allocated RSA object. Free with RSA_free().
+ *
+ * @ingroup hcrypto_rsa
+ */
+
 RSA *
 RSA_new(void)
 {
     return RSA_new_method(NULL);
 }
+
+/**
+ * Allocate a new RSA object using the engine, if NULL is specified as
+ * the engine, use the default RSA engine as returned by
+ * ENGINE_get_default_RSA().
+ *
+ * @return a newly allocated RSA object. Free with RSA_free().
+ *
+ * @ingroup hcrypto_rsa
+ */
 
 RSA *
 RSA_new_method(ENGINE *engine)
@@ -87,6 +114,12 @@ RSA_new_method(ENGINE *engine)
     return rsa;
 }
 
+/**
+ * Free an allocation RSA object.
+ *
+ * @param rsa the RSA object to free.
+ * @ingroup hcrypto_rsa
+ */
 
 void
 RSA_free(RSA *rsa)
@@ -116,6 +149,18 @@ RSA_free(RSA *rsa)
     memset(rsa, 0, sizeof(*rsa));
     free(rsa);
 }
+
+/**
+ * Add an extra reference to the RSA object. The object should be free
+ * with RSA_free() to drop the reference.
+ *
+ * @param rsa the object to add reference counting too.
+ *
+ * @return the current reference count, can't safely be used except
+ * for debug printing.
+ *
+ * @ingroup hcrypto_rsa
+ */
 
 int
 RSA_up_ref(RSA *rsa)
@@ -296,7 +341,11 @@ RSA_null_method(void)
 }
 
 extern const RSA_METHOD hc_rsa_imath_method;
+#ifdef HAVE_GMP
+static const RSA_METHOD *default_rsa_method = &hc_rsa_gmp_method;
+#else
 static const RSA_METHOD *default_rsa_method = &hc_rsa_imath_method;
+#endif
 
 const RSA_METHOD *
 RSA_get_default_method(void)
