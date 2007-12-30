@@ -36,28 +36,28 @@ class CredentialsOptions(optparse.OptionGroup):
     def __init__(self, parser):
         optparse.OptionGroup.__init__(self, parser, "Credentials Options")
         self.add_option("--simple-bind-dn", metavar="DN", action="callback",
-                        callback=self.set_simple_bind_dn, type=str,
+                        callback=self._set_simple_bind_dn, type=str,
                         help="DN to use for a simple bind")
         self.add_option("--password", metavar="PASSWORD", action="callback",
-                        help="Password", type=str, callback=self.set_password)
+                        help="Password", type=str, callback=self._set_password)
         self.add_option("-U", "--username", metavar="USERNAME", 
                         action="callback", type=str,
-                        help="Username", callback=self.parse_username)
+                        help="Username", callback=self._parse_username)
         self.add_option("-W", "--workgroup", metavar="WORKGROUP", 
                         action="callback", type=str,
-                        help="Workgroup", callback=self.parse_workgroup)
+                        help="Workgroup", callback=self._parse_workgroup)
         self.creds = Credentials()
 
-    def parse_username(self, option, opt_str, arg, parser):
+    def _parse_username(self, option, opt_str, arg, parser):
         self.creds.parse_string(arg)
 
-    def parse_workgroup(self, option, opt_str, arg, parser):
+    def _parse_workgroup(self, option, opt_str, arg, parser):
         self.creds.set_domain(arg)
 
-    def set_password(self, option, opt_str, arg, parser):
+    def _set_password(self, option, opt_str, arg, parser):
         self.creds.set_password(arg)
 
-    def set_simple_bind_dn(self, option, opt_str, arg, parser):
+    def _set_simple_bind_dn(self, option, opt_str, arg, parser):
         self.creds.set_bind_dn(arg)
 
     def get_credentials(self):

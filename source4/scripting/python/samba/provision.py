@@ -23,6 +23,7 @@ import security
 from ldb import Dn, SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
         LDB_ERR_NO_SUCH_OBJECT, timestring, CHANGETYPE_MODIFY, CHANGETYPE_NONE
 
+"""Functions for setting up a Samba configuration."""
 
 DEFAULTSITE = "Default-First-Site-Name"
 
@@ -53,7 +54,12 @@ class ProvisionPaths:
 
 
 def install_ok(lp, session_info, credentials):
-    """Check whether the current install seems ok."""
+    """Check whether the current install seems ok.
+    
+    :param lp: Loadparm context
+    :param session_info: Session information
+    :param credentials: Credentials
+    """
     if lp.get("realm") == "":
         return False
     ldb = Ldb(lp.get("sam database"), session_info=session_info, 
