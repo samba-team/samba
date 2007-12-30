@@ -2430,7 +2430,8 @@ static void call_trans2qfsinfo(connection_struct *conn,
 
 	info_level = SVAL(params,0);
 
-	if (conn->encrypt_level == Required && SVAL(req->inbuf,4) != 0x45FF ) {
+	if (IS_IPC(conn) || 
+			(conn->encrypt_level == Required && SVAL(req->inbuf,4) != 0x45FF )) {
 		if (info_level != SMB_QUERY_CIFS_UNIX_INFO) {
 			DEBUG(0,("call_trans2qfsinfo: encryption required "
 				"and info level 0x%x sent.\n",
@@ -2980,6 +2981,17 @@ static void call_trans2setfsinfo(connection_struct *conn,
 	}
 
 	info_level = SVAL(params,2);
+
+	if (IS_IPC(conn)) {
+		if (info_level != SMB_REQUEST_TRANSPORT_ENCRYPTION &&
+				info_level != SMB_SET_CIFS_UNIX_INFO) {
+			DEBUG(0,("call_trans2setfsinfo: not an allowed "
+				"info level (0x%x) on IPC$.\n",
+				(unsigned int)info_level));
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+	}
 
 	if (conn->encrypt_level == Required && SVAL(req->inbuf,4) != 0x45FF ) {
 		if (info_level != SMB_REQUEST_TRANSPORT_ENCRYPTION) {
@@ -7276,12 +7288,20 @@ void reply_trans2(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	if (IS_IPC(conn) && (tran_call != TRANSACT2_OPEN)
-            && (tran_call != TRANSACT2_GET_DFS_REFERRAL)
-            && (tran_call != TRANSACT2_QFILEINFO)) {
-		reply_doserror(req, ERRSRV, ERRaccess);
-		END_PROFILE(SMBtrans2);
-		return;
+	if (IS_IPC(conn)) {
+		switch (tran_call) {
+		/* List the allowed trans2 calls on IPC$ */
+		case TRANSACT2_OPEN:
+		case TRANSACT2_GET_DFS_REFERRAL:
+		case TRANSACT2_QFILEINFO:
+		case TRANSACT2_QFSINFO:
+		case TRANSACT2_SETFSINFO:
+			break;
+		default:
+			reply_doserror(req, ERRSRV, ERRaccess);
+			END_PROFILE(SMBtrans2);
+			return;
+		}
 	}
 
 	if ((state = TALLOC_P(conn->mem_ctx, struct trans_state)) == NULL) {
