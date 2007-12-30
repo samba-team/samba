@@ -1,3 +1,9 @@
+2007-12-30  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rsa.c: ENGINE_get_default_RSA can return NULL.
+
+	* dh.c: more doxygen.
+
 2007-12-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* evp.c: Add last of the doxygen documentation for functions in
