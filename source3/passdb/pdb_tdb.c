@@ -1613,7 +1613,7 @@ static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *loc
 	/* save the path for later */
 
 	if (!location) {
-		if (asprintf(&tdbfile, "%s/%s", get_dyn_PRIVATE_DIR(),
+		if (asprintf(&tdbfile, "%s/%s", lp_private_dir(),
 			     PASSDB_FILE_NAME) < 0) {
 			return NT_STATUS_NO_MEMORY;
 		}
