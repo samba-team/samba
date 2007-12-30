@@ -36,7 +36,6 @@ static WERROR libnet_smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 						uint32_t count,
 						const char *string)
 {
-	WERROR werr = WERR_OK;
 	char **new_array = NULL;
 
 	if ((array == NULL) || (string == NULL)) {
