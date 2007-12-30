@@ -74,6 +74,14 @@ def findnss(nssfn, *names):
 
 
 def open_ldb(session_info, credentials, lp, dbname):
+    """Open a LDB, thrashing it if it is corrupt.
+
+    :param session_info: auth session information
+    :param credentials: credentials
+    :param lp: Loadparm context
+    :param dbname: Path of the database to open.
+    :return: a Ldb object
+    """
     assert session_info is not None
     try:
         return Ldb(dbname, session_info=session_info, credentials=credentials, 
@@ -86,7 +94,12 @@ def open_ldb(session_info, credentials, lp, dbname):
 
 
 def setup_add_ldif(ldb, ldif_path, subst_vars=None):
-    """Setup a ldb in the private dir."""
+    """Setup a ldb in the private dir.
+    
+    :param ldb: LDB file to import data into
+    :param ldif_path: Path of the LDIF file to load
+    :param subst_vars: Optional variables to subsitute in LDIF.
+    """
     assert isinstance(ldif_path, str)
 
     data = open(ldif_path, 'r').read()
@@ -126,7 +139,12 @@ def setup_ldb(ldb, ldif_path, subst_vars):
 
 
 def setup_file(template, fname, substvars):
-    """Setup a file in the private dir."""
+    """Setup a file in the private dir.
+
+    :param template: Path of the template file.
+    :param fname: Path of the file to create.
+    :param substvars: Substitution variables.
+    """
     f = fname
 
     if os.path.exists(f):
@@ -179,7 +197,17 @@ def provision_paths_from_lp(lp, dnsdomain):
 
 def setup_name_mappings(ldb, sid, domaindn, root, nobody, nogroup, users, 
                         wheel, backup):
-    """setup reasonable name mappings for sam names to unix names."""
+    """setup reasonable name mappings for sam names to unix names.
+    
+    :param ldb: SamDB object.
+    :param sid: The domain sid.
+    :param domaindn: The domain DN.
+    :param root: Name of the UNIX root user.
+    :param nobody: Name of the UNIX nobody user.
+    :param nogroup: Name of the unix nobody group.
+    :param users: Name of the unix users group.
+    :param wheel: Name of the wheel group (users that can become root).
+    :param backup: Name of the backup group."""
     # add some foreign sids if they are not present already
     ldb.add_foreign(domaindn, "S-1-5-7", "Anonymous")
     ldb.add_foreign(domaindn, "S-1-1-0", "World")
@@ -591,7 +619,8 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
     if nogroup is None:
         nogroup = findnss(grp.getgrnam, "nogroup", "nobody")[2]
     if users is None:
-        users = findnss(grp.getgrnam, "users", "guest", "other", "unknown", "usr")[2]
+        users = findnss(grp.getgrnam, "users", "guest", "other", "unknown", 
+                        "usr")[2]
     if wheel is None:
         wheel = findnss(grp.getgrnam, "wheel", "root", "staff", "adm")[2]
     if backup is None:
@@ -748,13 +777,32 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
     return domaindn
 
 def create_phplpapdadmin_config(path, setup_path, s4_ldapi_path):
+    """Create a PHP LDAP admin configuration file.
+
+    :param path: Path to write the configuration to.
+    :param setup_path: Function to generate setup paths.
+    :param s4_ldapi_path: Path to Samba 4 LDAPI socket.
+    """
     setup_file(setup_path("phpldapadmin-config.php"), 
                path, {"S4_LDAPI_URI": "ldapi://%s" % s4_ldapi_path.replace("/", "%2F")})
 
 
 def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn, 
                   hostip, hostname, dnspass, realm, domainguid, hostguid):
-    """Write out a DNS zone file, from the info in the current database."""
+    """Write out a DNS zone file, from the info in the current database.
+    
+    :param path: Path of the new file.
+    :param setup_path": Setup path function.
+    :param samdb: SamDB object
+    :param dnsdomain: DNS Domain name
+    :param domaindn: DN of the Domain
+    :param hostip: Local IP
+    :param hostname: Local hostname
+    :param dnspass: Password for DNS
+    :param realm: Realm name
+    :param domainguid: GUID of the domain.
+    :param hostguid: GUID of the host.
+    """
 
     setup_file(setup_path("provision.zone"), path, {
             "DNSPASS_B64": b64encode(dnspass),
@@ -795,7 +843,14 @@ def provision_ldapbase(setup_dir, message, paths):
 
 
 def load_schema(setup_path, samdb, schemadn, netbiosname, configdn):
-    """Load schema."""
+    """Load schema.
+    
+    :param samdb: Load a schema into a SamDB.
+    :param setup_path: Setup path function.
+    :param schemadn: DN of the schema
+    :param netbiosname: NetBIOS name of the host.
+    :param configdn: DN of the configuration
+    """
     schema_data = open(setup_path("schema.ldif"), 'r').read()
     schema_data += open(setup_path("schema_samba4.ldif"), 'r').read()
     schema_data = substitute_var(schema_data, {"SCHEMADN": schemadn})
@@ -806,33 +861,4 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn):
                     "CONFIGDN": configdn,
                     "DEFAULTSITE": DEFAULTSITE})
     samdb.attach_schema_from_ldif(head_data, schema_data)
-
-
-def join_domain(domain, netbios_name, join_type, creds):
-    ctx = NetContext(creds)
-    joindom = object()
-    joindom.domain = domain
-    joindom.join_type = join_type
-    joindom.netbios_name = netbios_name
-    if not ctx.JoinDomain(joindom):
-        raise Exception("Domain Join failed: " + joindom.error_string)
-
-
-def vampire(domain, session_info, credentials, message):
-    """Vampire a remote domain.  
-    
-    Session info and credentials are required for for
-    access to our local database (might be remote ldap)
-    """
-    ctx = NetContext(credentials)
-    machine_creds = Credentials()
-    machine_creds.set_domain(form.domain)
-    if not machine_creds.set_machine_account():
-        raise Exception("Failed to access domain join information!")
-    vampire_ctx.machine_creds = machine_creds
-    vampire_ctx.session_info = session_info
-    if not ctx.SamSyncLdb(vampire_ctx):
-        raise Exception("Migration of remote domain to Samba failed: %s " % vampire_ctx.error_string)
-
-
 

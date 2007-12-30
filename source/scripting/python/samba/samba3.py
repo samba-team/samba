@@ -25,14 +25,33 @@ REGISTRY_DB_VERSION = 1
 import os
 import tdb
 
-class Registry:
-    """Simple read-only support for reading the Samba3 registry."""
+
+class TdbDatabase:
+    """Simple Samba 3 TDB database reader."""
     def __init__(self, file):
+        """Open a file.
+
+        :param file: Path of the file to open.
+        """
         self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
+        self._check_version()
+
+    def _check_version(self):
+        pass
 
     def close(self):
+        """Close resources associated with this object."""
         self.tdb.close()
 
+
+class Registry(TdbDatabase):
+    """Simple read-only support for reading the Samba3 registry.
+    
+    :note: This object uses the same syntax for registry key paths as 
+        Samba 3. This particular format uses forward slashes for key path 
+        separators and abbreviations for the predefined key names. 
+        e.g.: HKLM/Software/Bar.
+    """
     def __len__(self):
         """Return the number of keys."""
         return len(self.keys())
@@ -42,6 +61,11 @@ class Registry:
         return [k.rstrip("\x00") for k in self.tdb.keys() if not k.startswith(REGISTRY_VALUE_PREFIX)]
 
     def subkeys(self, key):
+        """Retrieve the subkeys for the specified key.
+
+        :param key: Key path.
+        :return: list with key names
+        """
         data = self.tdb.get("%s\x00" % key)
         if data is None:
             return []
@@ -54,7 +78,11 @@ class Registry:
         return keys
 
     def values(self, key):
-        """Return a dictionary with the values set for a specific key."""
+        """Return a dictionary with the values set for a specific key.
+        
+        :param key: Key to retrieve values for.
+        :return: Dictionary with value names as key, tuple with type and 
+            data as value."""
         data = self.tdb.get("%s/%s\x00" % (REGISTRY_VALUE_PREFIX, key))
         if data is None:
             return {}
@@ -77,9 +105,14 @@ class Registry:
         return ret
 
 
-class PolicyDatabase:
+class PolicyDatabase(TdbDatabase):
+    """Samba 3 Account Policy database reader."""
     def __init__(self, file):
-        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
+        """Open a policy database
+        
+        :param file: Path to the file to open.
+        """
+        super(PolicyDatabase, self).__init__(file)
         self.min_password_length = self.tdb.fetch_uint32("min password length\x00")
         self.password_history = self.tdb.fetch_uint32("password history\x00")
         self.user_must_logon_to_change_password = self.tdb.fetch_uint32("user must logon to change pasword\x00")
@@ -93,9 +126,6 @@ class PolicyDatabase:
 
         # FIXME: Read privileges as well
 
-    def close(self):
-        self.tdb.close()
-
 
 GROUPDB_DATABASE_VERSION_V1 = 1 # native byte format.
 GROUPDB_DATABASE_VERSION_V2 = 2 # le format.
@@ -108,17 +138,27 @@ GROUP_PREFIX = "UNIXGROUP/"
 # hanging of the member as key.
 MEMBEROF_PREFIX = "MEMBEROF/"
 
-class GroupMappingDatabase:
-    def __init__(self, file): 
-        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
+class GroupMappingDatabase(TdbDatabase):
+    """Samba 3 group mapping database reader."""
+    def _check_version(self):
         assert self.tdb.fetch_int32("INFO/version\x00") in (GROUPDB_DATABASE_VERSION_V1, GROUPDB_DATABASE_VERSION_V2)
 
     def groupsids(self):
+        """Retrieve the SIDs for the groups in this database.
+
+        :return: List with sids as strings.
+        """
         for k in self.tdb.keys():
             if k.startswith(GROUP_PREFIX):
                 yield k[len(GROUP_PREFIX):].rstrip("\0")
 
     def get_group(self, sid):
+        """Retrieve the group mapping information for a particular group.
+
+        :param sid: SID of the group
+        :return: None if the group can not be found, otherwise 
+            a tuple with gid, sid_name_use, the NT name and comment.
+        """
         data = self.tdb.get("%s%s\0" % (GROUP_PREFIX, sid))
         if data is None:
             return data
@@ -128,12 +168,10 @@ class GroupMappingDatabase:
         return (gid, sid_name_use, nt_name, comment)
 
     def aliases(self):
+        """Retrieve the aliases in this database."""
         for k in self.tdb.keys():
             if k.startswith(MEMBEROF_PREFIX):
                 yield k[len(MEMBEROF_PREFIX):].rstrip("\0")
-
-    def close(self):
-        self.tdb.close()
 
 
 # High water mark keys
@@ -146,22 +184,29 @@ IDMAP_USER_PREFIX = "UID "
 # idmap version determines auto-conversion
 IDMAP_VERSION_V2 = 2
 
-class IdmapDatabase:
-    def __init__(self, file):
-        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
+class IdmapDatabase(TdbDatabase):
+    """Samba 3 ID map database reader."""
+    def _check_version(self):
         assert self.tdb.fetch_int32("IDMAP_VERSION\0") == IDMAP_VERSION_V2
 
     def uids(self):
+        """Retrieve a list of all uids in this database."""
         for k in self.tdb.keys():
             if k.startswith(IDMAP_USER_PREFIX):
                 yield int(k[len(IDMAP_USER_PREFIX):].rstrip("\0"))
 
     def gids(self):
+        """Retrieve a list of all gids in this database."""
         for k in self.tdb.keys():
             if k.startswith(IDMAP_GROUP_PREFIX):
                 yield int(k[len(IDMAP_GROUP_PREFIX):].rstrip("\0"))
 
     def get_user_sid(self, uid):
+        """Retrieve the SID associated with a particular uid.
+
+        :param uid: UID to retrieve SID for.
+        :return: A SID or None if no mapping was found.
+        """
         data = self.tdb.get("%s%d\0" % (IDMAP_USER_PREFIX, uid))
         if data is None:
             return data
@@ -174,19 +219,15 @@ class IdmapDatabase:
         return data.rstrip("\0")
 
     def get_user_hwm(self):
+        """Obtain the user high-water mark."""
         return self.tdb.fetch_uint32(IDMAP_HWM_USER)
 
     def get_group_hwm(self):
+        """Obtain the group high-water mark."""
         return self.tdb.fetch_uint32(IDMAP_HWM_GROUP)
 
-    def close(self):
-        self.tdb.close()
 
-
-class SecretsDatabase:
-    def __init__(self, file):
-        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
-
+class SecretsDatabase(TdbDatabase):
     def get_auth_password(self):
         return self.tdb.get("SECRETS/AUTH_PASSWORD")
 
@@ -241,25 +282,18 @@ class SecretsDatabase:
     def get_sid(self, host):
         return self.tdb.get("SECRETS/SID/%s" % host.upper())
 
-    def close(self):
-        self.tdb.close()
-
 
 SHARE_DATABASE_VERSION_V1 = 1
 SHARE_DATABASE_VERSION_V2 = 2
 
-class ShareInfoDatabase:
-    def __init__(self, file):
-        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
+class ShareInfoDatabase(TdbDatabase):
+    def _check_version(self):
         assert self.tdb.fetch_int32("INFO/version\0") in (SHARE_DATABASE_VERSION_V1, SHARE_DATABASE_VERSION_V2)
 
     def get_secdesc(self, name):
         secdesc = self.tdb.get("SECDESC/%s" % name)
         # FIXME: Run ndr_pull_security_descriptor
         return secdesc
-
-    def close(self):
-        self.tdb.close()
 
 
 class Shares:
