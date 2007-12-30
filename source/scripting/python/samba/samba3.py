@@ -26,7 +26,7 @@ import os
 import tdb
 
 
-class TdbDatabase:
+class TdbDatabase(object):
     """Simple Samba 3 TDB database reader."""
     def __init__(self, file):
         """Open a file.
@@ -228,6 +228,7 @@ class IdmapDatabase(TdbDatabase):
 
 
 class SecretsDatabase(TdbDatabase):
+    """Samba 3 Secrets database reader."""
     def get_auth_password(self):
         return self.tdb.get("SECRETS/AUTH_PASSWORD")
 
@@ -246,6 +247,10 @@ class SecretsDatabase(TdbDatabase):
                 yield k[len("SECRETS/LDAP_BIND_PW/"):].rstrip("\0")
 
     def domains(self):
+        """Iterate over domains in this database.
+
+        :return: Iterator over the names of domains in this database.
+        """
         for k in self.tdb.keys():
             if k.startswith("SECRETS/SID/"):
                 yield k[len("SECRETS/SID/"):].rstrip("\0")
@@ -287,10 +292,15 @@ SHARE_DATABASE_VERSION_V1 = 1
 SHARE_DATABASE_VERSION_V2 = 2
 
 class ShareInfoDatabase(TdbDatabase):
+    """Samba 3 Share Info database reader."""
     def _check_version(self):
         assert self.tdb.fetch_int32("INFO/version\0") in (SHARE_DATABASE_VERSION_V1, SHARE_DATABASE_VERSION_V2)
 
     def get_secdesc(self, name):
+        """Obtain the security descriptor on a particular share.
+        
+        :param name: Name of the share
+        """
         secdesc = self.tdb.get("SECDESC/%s" % name)
         # FIXME: Run ndr_pull_security_descriptor
         return secdesc
@@ -302,9 +312,11 @@ class Shares:
         self.shareinfo = shareinfo
 
     def __len__(self):
+        """Number of shares."""
         return len(self.lp) - 1
 
     def __iter__(self):
+        """Iterate over the share names."""
         return self.lp.__iter__()
 
 
@@ -329,7 +341,7 @@ ACB_PW_EXPIRED = 0x00020000
 ACB_NO_AUTH_DATA_REQD = 0x00080000
 
 acb_info_mapping = {
-        'N': ACB_PWNOTREQ,  # 'N'o password. 
+        'N': ACB_PWNOTREQ,  # 'N'o password.
         'D': ACB_DISABLED,  # 'D'isabled.
         'H': ACB_HOMDIRREQ, # 'H'omedir required.
         'T': ACB_TEMPDUP,   # 'T'emp account.
@@ -344,6 +356,11 @@ acb_info_mapping = {
         }
 
 def decode_acb(text):
+    """Decode a ACB field.
+
+    :param text: ACB text
+    :return: integer with flags set.
+    """
     assert not "[" in text and not "]" in text
     ret = 0
     for x in text:
@@ -352,6 +369,10 @@ def decode_acb(text):
 
 
 class SAMUser:
+    """Samba 3 SAM User.
+    
+    :note: Unknown or unset fields are set to None.
+    """
     def __init__(self, name, uid=None, lm_password=None, nt_password=None, acct_ctrl=None, 
                  last_change_time=None, nt_username=None, fullname=None, logon_time=None, logoff_time=None,
                  acct_desc=None, group_rid=None, bad_password_count=None, logon_count=None,
@@ -398,6 +419,7 @@ class SAMUser:
         return self.__dict__ == other.__dict__
 
 class SmbpasswdFile:
+    """Samba 3 smbpasswd file reader."""
     def __init__(self, file):
         self.users = {}
         f = open(file, 'r')
@@ -458,13 +480,14 @@ TDBSAM_USER_PREFIX = "USER_"
 
 
 class LdapSam:
+    """Samba 3 LDAP passdb backend reader."""
     def __init__(self, url):
         self.ldap_url = ldap_url
 
 
-class TdbSam:
-    def __init__(self, file):
-        self.tdb = tdb.Tdb(file, flags=os.O_RDONLY)
+class TdbSam(TdbDatabase):
+    """Samba 3 TDB passdb backend reader."""
+    def _check_version(self):
         self.version = self.tdb.fetch_uint32("INFO/version\0") or 0
         assert self.version in (0, 1, 2)
 
@@ -555,9 +578,6 @@ class TdbSam:
         assert len(data) == 0
         return user
 
-    def close(self):
-        self.tdb.close()
-
 
 def shellsplit(text):
     """Very simple shell-like line splitting.
@@ -582,6 +602,7 @@ def shellsplit(text):
 
 
 class WinsDatabase:
+    """Samba 3 WINS database reader."""
     def __init__(self, file):
         self.entries = {}
         f = open(file, 'r')
@@ -618,7 +639,13 @@ class WinsDatabase:
         pass
 
 class Samba3:
+    """Samba 3 configuration and state data reader."""
     def __init__(self, libdir, smbconfpath):
+        """Open the configuration and data for a Samba 3 installation.
+
+        :param libdir: Library directory
+        :param smbconfpath: Path to the smb.conf file.
+        """
         self.smbconfpath = smbconfpath
         self.libdir = libdir
         import param
