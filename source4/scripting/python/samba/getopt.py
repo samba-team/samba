@@ -58,7 +58,7 @@ class CredentialsOptions(optparse.OptionGroup):
         self.creds.set_password(arg)
 
     def set_simple_bind_dn(self, option, opt_str, arg, parser):
-        self.creds.set_simple_bind_dn(arg)
+        self.creds.set_bind_dn(arg)
 
     def get_credentials(self):
         return self.creds

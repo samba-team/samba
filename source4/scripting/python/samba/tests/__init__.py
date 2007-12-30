@@ -17,6 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Samba Python tests."""
+
 import os
 import ldb
 import samba
@@ -24,11 +26,13 @@ import tempfile
 import unittest
 
 class LdbTestCase(unittest.TestCase):
+    """Trivial test case for running tests against a LDB."""
     def setUp(self):
         self.filename = os.tempnam()
         self.ldb = samba.Ldb(self.filename)
 
     def set_modules(self, modules=[]):
+        """Change the modules for this Ldb."""
         m = ldb.Message()
         m.dn = ldb.Dn(self.ldb, "@MODULES")
         m["@LIST"] = ",".join(modules)

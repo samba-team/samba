@@ -159,11 +159,19 @@ class Ldb(ldb.Ldb):
         self.add_ldif(open(ldif_path, 'r').read())
 
     def add_ldif(self, ldif):
+        """Add data based on a LDIF string.
+
+        :param ldif: LDIF text.
+        """
         for changetype, msg in self.parse_ldif(ldif):
             assert changetype == ldb.CHANGETYPE_NONE
             self.add(msg)
 
     def modify_ldif(self, ldif):
+        """Modify database based on a LDIF string.
+
+        :param ldif: LDIF text.
+        """
         for (changetype, msg) in self.parse_ldif(ldif):
             assert changetype == ldb.CHANGETYPE_MODIFY
             self.modify(msg)
