@@ -50,8 +50,9 @@
  *
  * Sections of this manual:
  *
- * - @subpage page_dh
  * - @subpage page_evp
+ * - @subpage page_dh
+ * - @subpage page_rsa
  *
  * @subsection control_functions Control functions
  *
@@ -67,6 +68,9 @@
 
 /** @defgroup hcrypto_dh Diffie-Hellman functions
  * See the @ref page_dh for description and examples.
+ */
+/** @defgroup hcrypto_rsa RSA functions
+ * See the @ref page_rsa for description and examples.
  */
 /** @defgroup hcrypto_evp EVP generic crypto functions
  * See the @ref page_evp for description and examples.
