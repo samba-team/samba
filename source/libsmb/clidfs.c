@@ -58,6 +58,70 @@ static struct sockaddr_storage dest_ss;
 
 static struct client_connection *connections;
 
+static bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
+				struct cli_state *cli,
+				const char *sharename,
+				char **pp_newserver,
+				char **pp_newshare,
+				bool force_encrypt,
+				const char *username,
+				const char *password,
+				const char *domain);
+
+/********************************************************************
+ Ensure a connection is encrypted.
+********************************************************************/
+
+static bool force_cli_encryption(struct cli_state *c,
+			const char *username,
+			const char *password,
+			const char *domain,
+			const char *sharename)
+{
+	uint16 major, minor;
+	uint32 caplow, caphigh;
+	NTSTATUS status;
+
+	if (!SERVER_HAS_UNIX_CIFS(c)) {
+		d_printf("Encryption required and "
+			"server that doesn't support "
+			"UNIX extensions - failing connect\n");
+		return false;
+	}
+
+	if (!cli_unix_extensions_version(c, &major, &minor, &caplow, &caphigh)) {
+		d_printf("Encryption required and "
+			"can't get UNIX CIFS extensions "
+			"version from server.\n");
+		return false;
+	}
+
+	if (!(caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP)) {
+		d_printf("Encryption required and "
+			"share %s doesn't support "
+			"encryption.\n", sharename);
+		return false;
+	}
+
+	if (c->use_kerberos) {
+		status = cli_gss_smb_encryption_start(c);
+	} else {
+		status = cli_raw_ntlm_smb_encryption_start(c,
+						username,
+						password,
+						domain);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Encryption required and "
+			"setup failed with error %s.\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	return true;
+}
+	
 /********************************************************************
  Return a connection to a server.
 ********************************************************************/
@@ -65,7 +129,8 @@ static struct client_connection *connections;
 static struct cli_state *do_connect(TALLOC_CTX *ctx,
 					const char *server,
 					const char *share,
-					bool show_sessetup)
+					bool show_sessetup,
+					bool force_encrypt)
 {
 	struct cli_state *c = NULL;
 	struct nmb_name called, calling;
@@ -197,9 +262,14 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 
 	if ((c->capabilities & CAP_DFS) &&
 			cli_check_msdfs_proxy(ctx, c, sharename,
-				&newserver, &newshare)) {
+				&newserver, &newshare,
+				force_encrypt,
+				username,
+				password,
+				lp_workgroup())) {
 		cli_shutdown(c);
-		return do_connect(ctx, newserver, newshare, false);
+		return do_connect(ctx, newserver,
+				newshare, false, force_encrypt);
 	}
 
 	/* must be a normal share */
@@ -207,6 +277,15 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	if (!cli_send_tconX(c, sharename, "?????",
 				password, strlen(password)+1)) {
 		d_printf("tree connect failed: %s\n", cli_errstr(c));
+		cli_shutdown(c);
+		return NULL;
+	}
+
+	if (force_encrypt && !force_cli_encryption(c,
+					username,
+					password,
+					lp_workgroup(),
+					sharename)) {
 		cli_shutdown(c);
 		return NULL;
 	}
@@ -269,7 +348,8 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 					struct cli_state *referring_cli,
 	 				const char *server,
 					const char *share,
-					bool show_hdr)
+					bool show_hdr,
+					bool force_encrypt)
 {
 	struct client_connection *node;
 
@@ -279,7 +359,7 @@ static struct cli_state *cli_cm_connect(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	node->cli = do_connect(ctx, server, share, show_hdr);
+	node->cli = do_connect(ctx, server, share, show_hdr, force_encrypt);
 
 	if ( !node->cli ) {
 		TALLOC_FREE( node );
@@ -331,7 +411,8 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 				struct cli_state *referring_cli,
 				const char *server,
 				const char *share,
-				bool show_hdr)
+				bool show_hdr,
+				bool force_encrypt)
 {
 	struct cli_state *c;
 
@@ -339,7 +420,8 @@ struct cli_state *cli_cm_open(TALLOC_CTX *ctx,
 
 	c = cli_cm_find(server, share);
 	if (!c) {
-		c = cli_cm_connect(ctx, referring_cli, server, share, show_hdr);
+		c = cli_cm_connect(ctx, referring_cli,
+				server, share, show_hdr, force_encrypt);
 	}
 
 	return c;
@@ -776,7 +858,9 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 	/* Check for the referral. */
 
 	if (!(cli_ipc = cli_cm_open(ctx, rootcli,
-					rootcli->desthost, "IPC$", false))) {
+					rootcli->desthost,
+					"IPC$", false,
+					(rootcli->trans_enc_state != NULL)))) {
 		return false;
 	}
 
@@ -818,7 +902,10 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 
 	/* Open the connection to the target server & share */
 	if ((*targetcli = cli_cm_open(ctx, rootcli,
-					server, share, false)) == NULL) {
+					server,
+					share,
+					false,
+					(rootcli->trans_enc_state != NULL))) == NULL) {
 		d_printf("Unable to follow dfs referral [\\%s\\%s]\n",
 			server, share );
 		return false;
@@ -905,11 +992,15 @@ bool cli_resolve_path(TALLOC_CTX *ctx,
 /********************************************************************
 ********************************************************************/
 
-bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
+static bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 				struct cli_state *cli,
 				const char *sharename,
 				char **pp_newserver,
-				char **pp_newshare )
+				char **pp_newshare,
+				bool force_encrypt,
+				const char *username,
+				const char *password,
+				const char *domain)
 {
 	CLIENT_DFS_REFERRAL *refs = NULL;
 	size_t num_refs = 0;
@@ -941,6 +1032,14 @@ bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 	/* check for the referral */
 
 	if (!cli_send_tconX(cli, "IPC$", "IPC", NULL, 0)) {
+		return false;
+	}
+
+	if (force_encrypt && !force_cli_encryption(cli,
+					username,
+					password,
+					lp_workgroup(),
+					"IPC$")) {
 		return false;
 	}
 
