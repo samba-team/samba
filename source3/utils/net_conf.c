@@ -216,6 +216,8 @@ static int import_process_service(TALLOC_CTX *ctx,
 		}
 		werr = libnet_smbconf_reg_createkey_internal(tmp_ctx, servicename, &key);
 		if (!W_ERROR_IS_OK(werr)) {
+			d_fprintf(stderr, "Error creating share %s: %s\n",
+				  servicename, dos_errstr(werr));
 			goto done;
 		}
 	}
@@ -235,6 +237,10 @@ static int import_process_service(TALLOC_CTX *ctx,
 				werr = libnet_smbconf_reg_setvalue_internal(key,
 							parm->label, valstr);
 				if (!W_ERROR_IS_OK(werr)) {
+					d_fprintf(stderr,
+						  "Error setting parameter '%s'"
+						  ": %s\n", parm->label,
+						   dos_errstr(werr));
 					goto done;
 				}
 			}
@@ -622,31 +628,45 @@ static int net_conf_addshare(int argc, const char **argv)
 
 	werr = libnet_smbconf_reg_createkey_internal(NULL, argv[0], &newkey);
 	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error creating share %s: %s\n",
+			  argv[0], dos_errstr(werr));
 		goto done;
 	}
 
 	/* add config params as values */
 
 	werr = libnet_smbconf_reg_setvalue_internal(newkey, "path", path);
-	if (!W_ERROR_IS_OK(werr))
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error setting parameter %s: %s\n",
+			  "path", dos_errstr(werr));
 		goto done;
+	}
 
 	if (comment != NULL) {
 		werr = libnet_smbconf_reg_setvalue_internal(newkey, "comment",
 							    comment);
-		if (!W_ERROR_IS_OK(werr))
+		if (!W_ERROR_IS_OK(werr)) {
+			d_fprintf(stderr, "Error setting parameter %s: %s\n",
+				  "comment", dos_errstr(werr));
 			goto done;
+		}
 	}
 
 	werr = libnet_smbconf_reg_setvalue_internal(newkey, "guest ok",
 						    guest_ok);
-	if (!W_ERROR_IS_OK(werr))
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error setting parameter %s: %s\n",
+			  "'guest ok'", dos_errstr(werr));
 		goto done;
+	}
 
 	werr = libnet_smbconf_reg_setvalue_internal(newkey, "writeable",
 						    writeable);
-	if (!W_ERROR_IS_OK(werr))
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error setting parameter %s: %s\n",
+			  "writeable", dos_errstr(werr));
 		goto done;
+	}
 
 	ret = 0;
 
