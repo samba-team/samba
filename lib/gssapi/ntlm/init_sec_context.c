@@ -36,7 +36,7 @@
 RCSID("$Id$");
 
 static int
-from_file(const char *fn, const char *user, const char *domain,
+from_file(const char *fn, const char *target_domain, 
 	  char **username, struct ntlm_buf *key)
 {	  
     char *str, buf[1024];
@@ -53,13 +53,11 @@ from_file(const char *fn, const char *user, const char *domain,
 	    continue;
 	str = NULL;
 	d = strtok_r(buf, ":", &str);
-	if (d && strcasecmp(domain, d) != 0)
+	if (d && strcasecmp(target_domain, d) != 0)
 	    continue;
 	u = strtok_r(NULL, ":", &str);
 	p = strtok_r(NULL, ":", &str);
 	if (u == NULL || p == NULL)
-	    continue;
-	if (user && strcasecmp(user, u) != 0)
 	    continue;
 
 	*username = strdup(u);
@@ -76,7 +74,8 @@ from_file(const char *fn, const char *user, const char *domain,
 }
 
 static int
-get_user_file(const ntlm_name name, char **username, struct ntlm_buf *key)
+get_user_file(const ntlm_name target_name, 
+	      char **username, struct ntlm_buf *key)
 {
     const char *fn;
 
@@ -84,9 +83,9 @@ get_user_file(const ntlm_name name, char **username, struct ntlm_buf *key)
 	return ENOENT;
 
     fn = getenv("NTLM_USER_FILE");
-    if (fn != NULL)
+    if (fn == NULL)
 	return ENOENT;
-    if (from_file(fn, name->domain, name->user, username, key) == 0)
+    if (from_file(fn, target_name->domain, username, key) == 0)
 	return 0;
 
     return ENOENT;
@@ -173,7 +172,7 @@ out:
 }
 
 int
-_gss_ntlm_get_user_cred(const ntlm_name name,
+_gss_ntlm_get_user_cred(const ntlm_name target_name,
 			ntlm_cred *rcred)
 {
     ntlm_cred cred;
@@ -183,15 +182,15 @@ _gss_ntlm_get_user_cred(const ntlm_name name,
     if (cred == NULL)
 	return ENOMEM;
     
-    ret = get_user_file(name, &cred->username, &cred->key);
+    ret = get_user_file(target_name, &cred->username, &cred->key);
     if (ret)
-	ret = get_user_ccache(name, &cred->username, &cred->key);
+	ret = get_user_ccache(target_name, &cred->username, &cred->key);
     if (ret) {
 	free(cred);
 	return ret;
     }
     
-    cred->domain = strdup(name->domain);
+    cred->domain = strdup(target_name->domain);
     *rcred = cred;
 
     return ret;
