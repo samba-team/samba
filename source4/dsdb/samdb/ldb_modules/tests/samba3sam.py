@@ -20,40 +20,96 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+"""Tests for the samba3sam LDB module, which maps Samba3 LDAP to AD LDAP."""
+
 import os
 import sys
 import samba
 import ldb
+from ldb import SCOPE_DEFAULT, SCOPE_BASE
 from samba import Ldb, substitute_var
 from samba.tests import LdbTestCase, TestCaseInTempDir
 
 datadir = os.path.join(os.path.dirname(__file__), "../../../../../testdata/samba3")
 
-class Samba3SamTestCase(TestCaseInTempDir):
+class MapBaseTestCase(TestCaseInTempDir):
     def setup_data(self, obj, ldif):
         self.assertTrue(ldif is not None)
         obj.db.add_ldif(substitute_var(ldif, obj.substvars))
 
     def setup_modules(self, ldb, s3, s4):
+        ldb.add({"dn": "@MAP=samba3sam",
+                 "@FROM": s4.basedn,
+                 "@TO": "sambaDomainName=TESTS," + s3.basedn})
 
-        ldif = """
-dn: @MAP=samba3sam
-@FROM: """ + s4.basedn + """
-@TO: sambaDomainName=TESTS,""" + s3.basedn + """
+        ldb.add({"dn": "@MODULES",
+                 "@LIST": "rootdse,paged_results,server_sort,extended_dn,asq,samldb,password_hash,operational,objectguid,rdn_name,samba3sam,partition"})
 
-dn: @MODULES
-@LIST: rootdse,paged_results,server_sort,extended_dn,asq,samldb,password_hash,operational,objectguid,rdn_name,samba3sam,partition
+        ldb.add({"dn": "@PARTITION",
+            "partition": [s4.basedn + ":" + s4.url, s3.basedn + ":" + s3.url],
+            "replicateEntries": ["@SUBCLASSES", "@ATTRIBUTES", "@INDEXLIST"]})
 
-dn: @PARTITION
-partition: """ + s4.basedn + ":" + s4.url + """
-partition: """ + s3.basedn + ":" + s3.url + """
-replicateEntries: @SUBCLASSES
-replicateEntries: @ATTRIBUTES
-replicateEntries: @INDEXLIST
-"""
-        ldb.add_ldif(ldif)
+    def setUp(self):
+        super(MapBaseTestCase, self).setUp()
 
-    def _test_s3sam_search(self, ldb):
+        def make_dn(basedn, rdn):
+            return rdn + ",sambaDomainName=TESTS," + basedn
+
+        def make_s4dn(basedn, rdn):
+            return rdn + "," + basedn
+
+        self.ldbfile = os.path.join(self.tempdir, "test.ldb")
+        self.ldburl = "tdb://" + self.ldbfile
+
+        tempdir = self.tempdir
+        print tempdir
+
+        class Target:
+            """Simple helper class that contains data for a specific SAM connection."""
+            def __init__(self, file, basedn, dn):
+                self.file = os.path.join(tempdir, file)
+                self.url = "tdb://" + self.file
+                self.basedn = basedn
+                self.substvars = {"BASEDN": self.basedn}
+                self.db = Ldb()
+                self._dn = dn
+
+            def dn(self, rdn):
+                return self._dn(rdn, self.basedn)
+
+            def connect(self):
+                return self.db.connect(self.url)
+
+        self.samba4 = Target("samba4.ldb", "dc=vernstok,dc=nl", make_s4dn)
+        self.samba3 = Target("samba3.ldb", "cn=Samba3Sam", make_dn)
+        self.templates = Target("templates.ldb", "cn=templates", None)
+
+        self.samba3.connect()
+        self.templates.connect()
+        self.samba4.connect()
+
+    def tearDown(self):
+        os.unlink(self.ldbfile)
+        os.unlink(self.samba3.file)
+        os.unlink(self.templates.file)
+        os.unlink(self.samba4.file)
+        super(MapBaseTestCase, self).tearDown()
+
+
+class Samba3SamTestCase(MapBaseTestCase):
+    def setUp(self):
+        super(Samba3SamTestCase, self).setUp()
+        ldb = Ldb(self.ldburl)
+        self.setup_data(self.samba3, open(os.path.join(datadir, "samba3.ldif"), 'r').read())
+        self.setup_data(self.templates, open(os.path.join(datadir, "provision_samba3sam_templates.ldif"), 'r').read())
+        ldif = open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read()
+        ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
+        self.setup_modules(ldb, self.samba3, self.samba4)
+
+        self.ldb = Ldb(self.ldburl)
+
+    def test_s3sam_search(self):
+        ldb = self.ldb
         print "Looking up by non-mapped attribute"
         msg = ldb.search(expression="(cn=Administrator)")
         self.assertEquals(len(msg), 1)
@@ -89,15 +145,16 @@ replicateEntries: @INDEXLIST
                    (str(msg[i].dn) == "unixName=nobody,ou=Users,dc=vernstok,dc=nl"))
 
 
-    def _test_s3sam_modify(ldb, s3):
+    def test_s3sam_modify(self):
+        ldb = self.ldb
+        s3 = self.samba3
         print "Adding a record that will be fallbacked"
-        ldb.add_ldif("""
-dn: cn=Foo
-foo: bar
-blah: Blie
-cn: Foo
-showInAdvancedViewOnly: TRUE
-    """)
+        ldb.add({"dn": "cn=Foo", 
+            "foo": "bar", 
+            "blah": "Blie", 
+            "cn": "Foo", 
+            "showInAdvancedViewOnly": "TRUE"}
+            )
 
         print "Checking for existence of record (local)"
         # TODO: This record must be searched in the local database, which is currently only supported for base searches
@@ -105,21 +162,18 @@ showInAdvancedViewOnly: TRUE
         # TODO: Actually, this version should work as well but doesn't...
         # 
         #    
-        attrs =  ['foo','blah','cn','showInAdvancedViewOnly']
-        msg = ldb.search(expression="(cn=Foo)", base="cn=Foo", scope=ldb.LDB_SCOPE_BASE, attrs=attrs)
+        msg = ldb.search(expression="(cn=Foo)", base="cn=Foo", scope=LDB_SCOPE_BASE, attrs=['foo','blah','cn','showInAdvancedViewOnly'])
         self.assertEquals(len(msg), 1)
         self.assertEquals(msg[0]["showInAdvancedViewOnly"], "TRUE")
         self.assertEquals(msg[0]["foo"], "bar")
         self.assertEquals(msg[0]["blah"], "Blie")
 
         print "Adding record that will be mapped"
-        ldb.add_ldif("""
-dn: cn=Niemand,cn=Users,dc=vernstok,dc=nl
-objectClass: user
-unixName: bin
-sambaUnicodePwd: geheim
-cn: Niemand
-""")
+        ldb.add({"dn": "cn=Niemand,cn=Users,dc=vernstok,dc=nl",
+                 "objectClass": "user",
+                 "unixName": "bin",
+                 "sambaUnicodePwd": "geheim",
+                 "cn": "Niemand"})
 
         print "Checking for existence of record (remote)"
         msg = ldb.search(expression="(unixName=bin)", attrs=['unixName','cn','dn', 'sambaUnicodePwd'])
@@ -203,7 +257,22 @@ delete: description
         msg = ldb.search(expression="(cn=Niemand2)")
         self.assertEquals(len(msg), 0)
 
-    def _test_map_search(self, ldb, s3, s4):
+
+
+class MapTestCase(MapBaseTestCase):
+    def setUp(self):
+        super(MapTestCase, self).setUp()
+        ldb = Ldb(self.ldburl)
+        self.setup_data(self.templates, open(os.path.join(datadir, "provision_samba3sam_templates.ldif"), 'r').read())
+        ldif = open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read()
+        ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
+        self.setup_modules(ldb, self.samba3, self.samba4)
+        self.ldb = Ldb(self.ldburl)
+
+    def test_map_search(self):
+        s3 = self.samba3
+        ldb = self.ldb
+        s4 = self.samba4
         print "Running search tests on mapped data"
         ldif = """
 dn: """ + "sambaDomainName=TESTS,""" + s3.basedn + """
@@ -287,7 +356,7 @@ description: y
         # Search remote record by local DN
         dn = s4.dn("cn=A")
         attrs = ["dnsHostName", "lastLogon"]
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(str(res[0].dn)), dn)
         self.assertEquals(res[0]["dnsHostName"], undefined)
@@ -296,7 +365,7 @@ description: y
         # Search remote record by remote DN
         dn = s3.dn("cn=A")
         attrs = ["dnsHostName", "lastLogon", "sambaLogonTime"]
-        res = s3.db.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = s3.db.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(str(res[0].dn)), dn)
         self.assertEquals(res[0]["dnsHostName"], undefined)
@@ -306,7 +375,7 @@ description: y
         # Search split record by local DN
         dn = s4.dn("cn=X")
         attrs = ["dnsHostName", "lastLogon"]
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(str(res[0].dn)), dn)
         self.assertEquals(res[0]["dnsHostName"], "x")
@@ -315,7 +384,7 @@ description: y
         # Search split record by remote DN
         dn = s3.dn("cn=X")
         attrs = ["dnsHostName", "lastLogon", "sambaLogonTime"]
-        res = s3.db.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = s3.db.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(str(res[0].dn)), dn)
         self.assertEquals(res[0]["dnsHostName"], undefined)
@@ -326,7 +395,7 @@ description: y
 
         # Search by ignored attribute
         attrs = ["dnsHostName", "lastLogon"]
-        res = ldb.search(expression="(revision=x)", scope=ldb.SCOPE_DEFAULT, attrs=attrs)
+        res = ldb.search(expression="(revision=x)", scope=SCOPE_DEFAULT, attrs=attrs)
         self.assertEquals(len(res), 2)
         self.assertEquals(str(str(res[0].dn)), s4.dn("cn=Y"))
         self.assertEquals(res[0]["dnsHostName"], "y")
@@ -337,7 +406,7 @@ description: y
 
         # Search by kept attribute
         attrs = ["dnsHostName", "lastLogon"]
-        res = ldb.search(expression="(description=y)", scope=ldb.SCOPE_DEFAULT, attrs=attrs)
+        res = ldb.search(expression="(description=y)", scope=SCOPE_DEFAULT, attrs=attrs)
         self.assertEquals(len(res), 2)
         self.assertEquals(str(str(res[0].dn)), s4.dn("cn=Z"))
         self.assertEquals(res[0]["dnsHostName"], "z")
@@ -348,7 +417,7 @@ description: y
 
         # Search by renamed attribute
         attrs = ["dnsHostName", "lastLogon"]
-        res = ldb.search(expression="(badPwdCount=x)", scope=ldb.SCOPE_DEFAULT, attrs=attrs)
+        res = ldb.search(expression="(badPwdCount=x)", scope=SCOPE_DEFAULT, attrs=attrs)
         self.assertEquals(len(res), 2)
         self.assertEquals(str(res[0].dn), s4.dn("cn=B"))
         self.assertEquals(res[0]["dnsHostName"], undefined)
@@ -673,34 +742,32 @@ description: y
         for dn in dns:
             ldb.delete(dn)
 
-    def _test_map_modify(self, ldb, s3, s4):
-        print "Running modification tests on mapped data"
-
-        print "Testing modification of local records"
+    def test_map_modify_local(self):
+        """Modification of local records."""
+        s3 = self.samba3
+        ldb = self.ldb
+        s4 = self.samba4
 
         # Add local record
         dn = "cn=test,dc=idealx,dc=org"
-        ldif = """
-dn: """ + dn + """
-cn: test
-foo: bar
-revision: 1
-description: test
-"""
-        ldb.add_ldif(ldif)
+        ldb.add({"dn": dn, 
+                 "cn": "test",
+                 "foo": "bar",
+                 "revision": "1",
+                 "description": "test"})
         # Check it's there
         attrs = ["foo", "revision", "description"]
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["foo"], "bar")
         self.assertEquals(res[0]["revision"], "1")
         self.assertEquals(res[0]["description"], "test")
         # Check it's not in the local db
-        res = s4.db.search("(cn=test)", NULL, ldb.SCOPE_DEFAULT, attrs)
+        res = s4.db.search(expression="(cn=test)", scope=SCOPE_DEFAULT, attrs=attrs)
         self.assertEquals(len(res), 0)
         # Check it's not in the remote db
-        res = s3.db.search("(cn=test)", NULL, ldb.SCOPE_DEFAULT, attrs)
+        res = s3.db.search(expression="(cn=test)", scope=SCOPE_DEFAULT, attrs=attrs)
         self.assertEquals(len(res), 0)
 
         # Modify local record
@@ -713,7 +780,7 @@ description: foo
 """
         ldb.modify_ldif(ldif)
         # Check in local db
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["foo"], "baz")
@@ -724,7 +791,7 @@ description: foo
         dn2 = "cn=toast,dc=idealx,dc=org"
         ldb.rename(dn, dn2)
         # Check in local db
-        res = ldb.search(dn2, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = ldb.search(dn2, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["foo"], "baz")
@@ -734,25 +801,26 @@ description: foo
         # Delete local record
         ldb.delete(dn2)
         # Check it's gone
-        res = ldb.search(dn2, scope=ldb.SCOPE_BASE)
+        res = ldb.search(dn2, scope=SCOPE_BASE)
         self.assertEquals(len(res), 0)
 
-        print "Testing modification of remote records"
+    def test_map_modify_remote_remote(self):
+        """Modification of remote data of remote records"""
+        s3 = self.samba3
+        ldb = self.ldb
+        s4 = self.samba4
 
         # Add remote record
         dn = s4.dn("cn=test")
         dn2 = s3.dn("cn=test")
-        ldif = """
-dn: """ + dn2 + """
-cn: test
-description: foo
-sambaBadPasswordCount: 3
-sambaNextRid: 1001
-"""
-        s3.db.add_ldif(ldif)
+        s3.db.add({"dn": dn2, 
+                   "cn": "test",
+                   "description": "foo",
+                   "sambaBadPasswordCount": "3",
+                   "sambaNextRid": "1001"})
         # Check it's there
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid"]
-        res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs)
+        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "foo")
@@ -760,14 +828,14 @@ sambaNextRid: 1001
         self.assertEquals(res[0]["sambaNextRid"], "1001")
         # Check in mapped db
         attrs = ["description", "badPwdCount", "nextRid"]
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], "foo")
         self.assertEquals(res[0]["badPwdCount"], "3")
         self.assertEquals(res[0]["nextRid"], "1001")
         # Check in local db
-        res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs)
+        res = s4.db.search("", dn, SCOPE_BASE, attrs)
         self.assertEquals(len(res), 0)
 
         # Modify remote data of remote record
@@ -781,7 +849,7 @@ badPwdCount: 4
         ldb.modify_ldif(ldif)
         # Check in mapped db
         attrs = ["description", "badPwdCount", "nextRid"]
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], "test")
@@ -789,7 +857,7 @@ badPwdCount: 4
         self.assertEquals(res[0]["nextRid"], "1001")
         # Check in remote db
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid"]
-        res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs)
+        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "test")
@@ -802,7 +870,7 @@ badPwdCount: 4
         # Check in mapped db
         dn = dn2
         attrs = ["description", "badPwdCount", "nextRid"]
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], "test")
@@ -811,7 +879,7 @@ badPwdCount: 4
         # Check in remote db 
         dn2 = s3.dn("cn=toast")
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid"]
-        res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs)
+        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "test")
@@ -821,23 +889,26 @@ badPwdCount: 4
         # Delete remote record
         ldb.delete(dn)
         # Check in mapped db
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE)
+        res = ldb.search(dn, scope=SCOPE_BASE)
         self.assertEquals(len(res), 0)
         # Check in remote db
-        res = s3.db.search("", dn2, ldb.SCOPE_BASE)
+        res = s3.db.search("", dn2, SCOPE_BASE)
         self.assertEquals(len(res), 0)
+
+    def test_map_modify_remote_local(self):
+        """Modification of local data of remote records"""
+        s3 = self.samba3
+        ldb = self.ldb
+        s4 = self.samba4
 
         # Add remote record (same as before)
         dn = s4.dn("cn=test")
         dn2 = s3.dn("cn=test")
-        ldif = """
-dn: """ + dn2 + """
-cn: test
-description: foo
-sambaBadPasswordCount: 3
-sambaNextRid: 1001
-"""
-        s3.db.add_ldif(ldif)
+        s3.db.add({"dn": dn2, 
+                   "cn": "test",
+                   "description": "foo",
+                   "sambaBadPasswordCount": "3",
+                   "sambaNextRid": "1001"})
 
         # Modify local data of remote record
         ldif = """
@@ -850,19 +921,19 @@ description: test
         ldb.modify_ldif(ldif)
         # Check in mapped db
         attrs = ["revision", "description"]
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], "test")
         self.assertEquals(res[0]["revision"], "1")
         # Check in remote db
-        res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs)
+        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "test")
         self.assertEquals(res[0]["revision"], undefined)
         # Check in local db
-        res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs)
+        res = s4.db.search("", dn, SCOPE_BASE, attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], undefined)
@@ -871,23 +942,25 @@ description: test
         # Delete (newly) split record
         ldb.delete(dn)
 
-        print "Testing modification of split records"
+    def test_map_modify_split(self):
+        """Testing modification of split records"""
+        s3 = self.samba3
+        ldb = self.ldb
+        s4 = self.samba4
 
         # Add split record
         dn = s4.dn("cn=test")
         dn2 = s3.dn("cn=test")
-        ldif = """
-dn: """ + dn + """
-cn: test
-description: foo
-badPwdCount: 3
-nextRid: 1001
-revision: 1
-"""
-        ldb.add_ldif(ldif)
+        ldb.add({
+            "dn": dn,
+            "cn": "test",
+            "description": "foo",
+            "badPwdCount": "3",
+            "nextRid": "1001",
+            "revision": "1"})
         # Check it's there
         attrs = ["description", "badPwdCount", "nextRid", "revision"]
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], "foo")
@@ -895,7 +968,7 @@ revision: 1
         self.assertEquals(res[0]["nextRid"], "1001")
         self.assertEquals(res[0]["revision"], "1")
         # Check in local db
-        res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs)
+        res = s4.db.search("", dn, SCOPE_BASE, attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], undefined)
@@ -904,7 +977,7 @@ revision: 1
         self.assertEquals(res[0]["revision"], "1")
         # Check in remote db
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid", "revision"]
-        res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs)
+        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "foo")
@@ -925,7 +998,7 @@ revision: 2
         ldb.modify_ldif(ldif)
         # Check in mapped db
         attrs = ["description", "badPwdCount", "nextRid", "revision"]
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], "test")
@@ -933,7 +1006,7 @@ revision: 2
         self.assertEquals(res[0]["nextRid"], "1001")
         self.assertEquals(res[0]["revision"], "2")
         # Check in local db
-        res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs)
+        res = s4.db.search("", dn, SCOPE_BASE, attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], undefined)
@@ -942,7 +1015,7 @@ revision: 2
         self.assertEquals(res[0]["revision"], "2")
         # Check in remote db
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid", "revision"]
-        res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs)
+        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "test")
@@ -956,7 +1029,7 @@ revision: 2
         # Check in mapped db
         dn = dn2
         attrs = ["description", "badPwdCount", "nextRid", "revision"]
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE, attrs=attrs)
+        res = ldb.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], "test")
@@ -964,7 +1037,7 @@ revision: 2
         self.assertEquals(res[0]["nextRid"], "1001")
         self.assertEquals(res[0]["revision"], "2")
         # Check in local db
-        res = s4.db.search("", dn, ldb.SCOPE_BASE, attrs)
+        res = s4.db.search("", dn, SCOPE_BASE, attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], undefined)
@@ -974,7 +1047,7 @@ revision: 2
         # Check in remote db
         dn2 = s3.dn("cn=toast")
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid", "revision"]
-        res = s3.db.search("", dn2, ldb.SCOPE_BASE, attrs)
+        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "test")
@@ -985,82 +1058,11 @@ revision: 2
         # Delete split record
         ldb.delete(dn)
         # Check in mapped db
-        res = ldb.search(dn, scope=ldb.SCOPE_BASE)
+        res = ldb.search(dn, scope=SCOPE_BASE)
         self.assertEquals(len(res), 0)
         # Check in local db
-        res = s4.db.search("", dn, ldb.SCOPE_BASE)
+        res = s4.db.search("", dn, SCOPE_BASE)
         self.assertEquals(len(res), 0)
         # Check in remote db
-        res = s3.db.search("", dn2, ldb.SCOPE_BASE)
+        res = s3.db.search("", dn2, SCOPE_BASE)
         self.assertEquals(len(res), 0)
-
-    def setUp(self):
-        super(Samba3SamTestCase, self).setUp()
-
-        def make_dn(basedn, rdn):
-            return rdn + ",sambaDomainName=TESTS," + basedn
-
-        def make_s4dn(basedn, rdn):
-            return rdn + "," + basedn
-
-        self.ldbfile = os.path.join(self.tempdir, "test.ldb")
-        self.ldburl = "tdb://" + self.ldbfile
-
-        tempdir = self.tempdir
-        print tempdir
-
-        class Target:
-            """Simple helper class that contains data for a specific SAM connection."""
-            def __init__(self, file, basedn, dn):
-                self.file = os.path.join(tempdir, file)
-                self.url = "tdb://" + self.file
-                self.basedn = basedn
-                self.substvars = {"BASEDN": self.basedn}
-                self.db = Ldb()
-                self._dn = dn
-
-            def dn(self, rdn):
-                return self._dn(rdn, self.basedn)
-
-            def connect(self):
-                return self.db.connect(self.url)
-
-        self.samba4 = Target("samba4.ldb", "dc=vernstok,dc=nl", make_s4dn)
-        self.samba3 = Target("samba3.ldb", "cn=Samba3Sam", make_dn)
-        self.templates = Target("templates.ldb", "cn=templates", None)
-
-        self.samba3.connect()
-        self.templates.connect()
-        self.samba4.connect()
-
-    def tearDown(self):
-        os.unlink(self.ldbfile)
-        os.unlink(self.samba3.file)
-        os.unlink(self.templates.file)
-        os.unlink(self.samba4.file)
-        super(Samba3SamTestCase, self).tearDown()
-
-    def test_s3sam(self):
-        ldb = Ldb(self.ldburl)
-        self.setup_data(self.samba3, open(os.path.join(datadir, "samba3.ldif"), 'r').read())
-        self.setup_data(self.templates, open(os.path.join(datadir, "provision_samba3sam_templates.ldif"), 'r').read())
-        ldif = open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read()
-        ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
-        self.setup_modules(ldb, self.samba3, self.samba4)
-
-        ldb = Ldb(self.ldburl)
-
-        self._test_s3sam_search(ldb)
-        self._test_s3sam_modify(ldb, self.samba3)
-
-    def test_map(self):
-        ldb = Ldb(self.ldburl)
-        self.setup_data(self.templates, open(os.path.join(datadir, "provision_samba3sam_templates.ldif"), 'r').read())
-        ldif = open(os.path.join(datadir, "provision_samba3sam.ldif"), 'r').read()
-        ldb.add_ldif(substitute_var(ldif, self.samba4.substvars))
-        self.setup_modules(ldb, self.samba3, self.samba4)
-
-        ldb = Ldb(self.ldburl)
-        self._test_map_search(ldb, self.samba3, self.samba4)
-        self._test_map_modify(ldb, self.samba3, self.samba4)
-
