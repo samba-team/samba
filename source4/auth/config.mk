@@ -6,6 +6,7 @@ include credentials/config.mk
 
 [SUBSYSTEM::auth_session]
 OBJ_FILES = session.o
+PUBLIC_HEADERS = session.h
 PUBLIC_PROTO_HEADER = session_proto.h
 PUBLIC_DEPENDENCIES = CREDENTIALS
 
