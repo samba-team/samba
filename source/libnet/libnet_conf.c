@@ -167,12 +167,12 @@ WERROR libnet_smbconf_reg_createkey_internal(TALLOC_CTX *ctx,
 	werr = reg_createkey(ctx, create_parent, subkeyname,
 			     REG_KEY_WRITE, newkey, &action);
 	if (W_ERROR_IS_OK(werr) && (action != REG_CREATED_NEW_KEY)) {
-		d_fprintf(stderr, "Key '%s' already exists.\n", subkeyname);
+		DEBUG(10, ("Key '%s' already exists.\n", subkeyname));
 		werr = WERR_ALREADY_EXISTS;
 	}
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Error creating key %s: %s\n",
-			 subkeyname, dos_errstr(werr));
+		DEBUG(5, ("Error creating key %s: %s\n",
+			 subkeyname, dos_errstr(werr)));
 	}
 
 done:
@@ -198,11 +198,11 @@ WERROR libnet_smbconf_reg_setvalue_internal(struct registry_key *key,
 						  &canon_valstr))
 	{
 		if (canon_valname == NULL) {
-			d_fprintf(stderr, "invalid parameter '%s' given\n",
-				  valname);
+			DEBUG(5, ("invalid parameter '%s' given\n",
+				  valname));
 		} else {
-			d_fprintf(stderr, "invalid value '%s' given for "
-				  "parameter '%s'\n", valstr, valname);
+			DEBUG(5, ("invalid value '%s' given for "
+				  "parameter '%s'\n", valstr, valname));
 		}
 		werr = WERR_INVALID_PARAM;
 		goto done;
@@ -215,16 +215,16 @@ WERROR libnet_smbconf_reg_setvalue_internal(struct registry_key *key,
 	val.v.sz.len = strlen(canon_valstr) + 1;
 
 	if (registry_smbconf_valname_forbidden(canon_valname)) {
-		d_fprintf(stderr, "Parameter '%s' not allowed in registry.\n",
-			  canon_valname);
+		DEBUG(5, ("Parameter '%s' not allowed in registry.\n",
+			  canon_valname));
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
 
 	subkeyname = strrchr_m(key->key->name, '\\');
 	if ((subkeyname == NULL) || (*(subkeyname +1) == '\0')) {
-		d_fprintf(stderr, "Invalid registry key '%s' given as "
-			  "smbconf section.\n", key->key->name);
+		DEBUG(5, ("Invalid registry key '%s' given as "
+			  "smbconf section.\n", key->key->name));
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -232,19 +232,18 @@ WERROR libnet_smbconf_reg_setvalue_internal(struct registry_key *key,
 	if (!strequal(subkeyname, GLOBAL_NAME) &&
 	    lp_parameter_is_global(valname))
 	{
-		d_fprintf(stderr, "Global paramter '%s' not allowed in "
+		DEBUG(5, ("Global paramter '%s' not allowed in "
 			  "service definition ('%s').\n", canon_valname,
-			  subkeyname);
+			  subkeyname));
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
 
 	werr = reg_setvalue(key, canon_valname, &val);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr,
-			  "Error adding value '%s' to "
+		DEBUG(5, ("Error adding value '%s' to "
 			  "key '%s': %s\n",
-			  canon_valname, key->key->name, dos_errstr(werr));
+			  canon_valname, key->key->name, dos_errstr(werr)));
 	}
 
 done:
