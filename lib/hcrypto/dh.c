@@ -183,12 +183,35 @@ DH_size(const DH *dh)
     return BN_num_bytes(dh->p);
 }
 
+/**
+ * Set the data index idx in the DH object to data.
+ *
+ * @param dh DH object.
+ * @param idx index to set the data for.
+ * @param data data to store for the index idx.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_dh
+ */
+
 int
 DH_set_ex_data(DH *dh, int idx, void *data)
 {
     dh->ex_data.sk = data;
     return 1;
 }
+
+/**
+ * Get the data for index idx in the DH object.
+ *
+ * @param dh DH object.
+ * @param idx index to get the data for.
+ *
+ * @return the object store in index idx
+ *
+ * @ingroup hcrypto_dh
+ */
 
 void *
 DH_get_ex_data(DH *dh, int idx)
@@ -337,6 +360,11 @@ DH_compute_key(unsigned char *shared_key,
 	       const BIGNUM *peer_pub_key, DH *dh)
 {
     int codes;
+
+    /**
+     * Checks that the pubkey passed in is valid using
+     * dh_check_pubkey().
+     */
 
     if (!DH_check_pubkey(dh, peer_pub_key, &codes) || codes != 0)
 	return -1;
