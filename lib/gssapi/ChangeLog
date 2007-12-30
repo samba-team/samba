@@ -1,5 +1,10 @@
-2007-12-29  Love Hörnquist Åstrand  <lha@it.su.se>
+2007-12-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ntlm/init_sec_context.c: Don't confuse target name and source
+	name, make regressiont tests pass again.
+	
+2007-12-29  Love Hörnquist Åstrand  <lha@it.su.se>
+	
 	* ntlm: clean up name handling
 
 2007-12-04  Love Hörnquist Åstrand  <lha@it.su.se>
