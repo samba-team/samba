@@ -93,6 +93,9 @@ static unsigned int put_total_time_ms = 0;
 /* totals globals */
 static double dir_total;
 
+/* encrypted state. */
+static bool smb_encrypt;
+
 /* root cli_state connection */
 
 struct cli_state *cli;
@@ -2215,6 +2218,7 @@ static int cmd_posix_encrypt(void)
 		d_printf("posix_encrypt failed with error %s\n", nt_errstr(status));
 	} else {
 		d_printf("encryption on\n");
+		smb_encrypt = true;
 	}
 
 	return 0;
@@ -3786,16 +3790,28 @@ int cmd_iosize(void)
 	int iosize;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
-		d_printf("iosize <n> or iosize 0x<n>. "
-			"Minimum is 16384 (0x4000), "
-			"max is 16776960 (0xFFFF00)\n");
+		if (!smb_encrypt) {
+			d_printf("iosize <n> or iosize 0x<n>. "
+				"Minimum is 16384 (0x4000), "
+				"max is 16776960 (0xFFFF00)\n");
+		} else {
+			d_printf("iosize <n> or iosize 0x<n>. "
+				"(Encrypted connection) ,"
+				"Minimum is 16384 (0x4000), "
+				"max is 64512 (0xFC00)\n");
+		}
 		return 1;
 	}
 
 	iosize = strtol(buf,NULL,0);
-	if (iosize < 0 || iosize > 0xFFFF00) {
+	if (smb_encrypt && (iosize < 0x4000 || iosize > 0xFC00)) {
+		d_printf("iosize out of range for encrypted "
+			"connection (min = 16384 (0x4000), "
+			"max = 16776960 (0xFC00)");
+		return 1;
+	} else if (!smb_encrypt && (iosize < 0x4000 || iosize > 0xFFFF00)) {
 		d_printf("iosize out of range (min = 16384 (0x4000), "
-			"max = 16776960 (0x0xFFFF00)");
+			"max = 16776960 (0xFFFF00)");
 		return 1;
 	}
 
@@ -3971,7 +3987,8 @@ static int process_command_string(const char *cmd_in)
 	/* establish the connection if not already */
 
 	if (!cli) {
-		cli = cli_cm_open(talloc_tos(), NULL, desthost, service, true);
+		cli = cli_cm_open(talloc_tos(), NULL, desthost,
+				service, true, smb_encrypt);
 		if (!cli) {
 			return 1;
 		}
@@ -4396,7 +4413,8 @@ static int process(const char *base_directory)
 {
 	int rc = 0;
 
-	cli = cli_cm_open(talloc_tos(), NULL, desthost, service, true);
+	cli = cli_cm_open(talloc_tos(), NULL,
+			desthost, service, true, smb_encrypt);
 	if (!cli) {
 		return 1;
 	}
@@ -4425,7 +4443,8 @@ static int process(const char *base_directory)
 
 static int do_host_query(const char *query_host)
 {
-	cli = cli_cm_open(talloc_tos(), NULL, query_host, "IPC$", true);
+	cli = cli_cm_open(talloc_tos(), NULL,
+			query_host, "IPC$", true, smb_encrypt);
 	if (!cli)
 		return 1;
 
@@ -4438,7 +4457,8 @@ static int do_host_query(const char *query_host)
 
 		cli_cm_shutdown();
 		cli_cm_set_port( 139 );
-		cli = cli_cm_open(talloc_tos(), NULL, query_host, "IPC$", true);
+		cli = cli_cm_open(talloc_tos(), NULL,
+				query_host, "IPC$", true, smb_encrypt);
 	}
 
 	if (cli == NULL) {
@@ -4463,7 +4483,8 @@ static int do_tar_op(const char *base_directory)
 
 	/* do we already have a connection? */
 	if (!cli) {
-		cli = cli_cm_open(talloc_tos(), NULL, desthost, service, true);
+		cli = cli_cm_open(talloc_tos(), NULL,
+			desthost, service, true, smb_encrypt);
 		if (!cli)
 			return 1;
 	}
@@ -4571,6 +4592,7 @@ static int do_message_op(void)
 		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
 		{ "grepable", 'g', POPT_ARG_NONE, NULL, 'g', "Produce grepable output" },
                 { "browse", 'B', POPT_ARG_NONE, NULL, 'B', "Browse SMB servers using DNS" },
+		{ "encrypt", 'e', POPT_ARG_NONE, NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -4712,6 +4734,9 @@ static int do_message_op(void)
 			break;
 		case 'g':
 			grepable=true;
+			break;
+		case 'e':
+			smb_encrypt=true;
 			break;
 		case 'B':
 			return(do_smb_browse());
