@@ -2421,6 +2421,11 @@ const char *lp_configfile(struct loadparm_context *lp_ctx)
 	return lp_ctx->szConfigFile;
 }
 
+bool lp_load_default(struct loadparm_context *lp_ctx)
+{
+	return lp_load(lp_ctx, dyn_CONFIGFILE);
+}
+
 /**
  * Load the services array from the services file. 
  *
