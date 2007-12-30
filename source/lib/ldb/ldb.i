@@ -208,10 +208,11 @@ int ldb_dn_from_pyobject(TALLOC_CTX *mem_ctx, PyObject *object,
     return ret;
 }
 
-ldb_msg_element *ldb_msg_element_from_pyobject(PyObject *set_obj, int flags,
+ldb_msg_element *ldb_msg_element_from_pyobject(TALLOC_CTX *mem_ctx,
+                                               PyObject *set_obj, int flags,
                                                const char *attr_name)
 {
-    struct ldb_message_element *me = talloc(NULL, struct ldb_message_element);
+    struct ldb_message_element *me = talloc(mem_ctx, struct ldb_message_element);
     me->name = attr_name;
     me->flags = flags;
     if (PyString_Check(set_obj)) {
@@ -275,7 +276,7 @@ typedef struct ldb_message_element {
 
         ldb_msg_element(PyObject *set_obj, int flags=0, const char *name = NULL)
         {
-            return ldb_msg_element_from_pyobject(set_obj, flags, name);
+            return ldb_msg_element_from_pyobject(NULL, set_obj, flags, name);
         }
 #endif
         ~ldb_msg_element() { talloc_free($self); }
@@ -350,7 +351,7 @@ typedef struct ldb_message {
 
         void __setitem__(const char *attr_name, PyObject *val)
         {
-            struct ldb_message_element *el = ldb_msg_element_from_pyobject(
+            struct ldb_message_element *el = ldb_msg_element_from_pyobject(NULL,
                                                 val, 0, attr_name);
             talloc_steal($self, el);
             ldb_msg_remove_attr($self, attr_name);
@@ -486,8 +487,7 @@ typedef struct ldb_context {
             ldb_msg *msg = NULL;
             if (PyDict_Check(py_msg)) {
                 msg = ldb_msg_new(NULL);
-                msg->num_elements = PyDict_Size(py_msg) - 1; /* dn isn't in there */
-                msg->elements = talloc_zero_array(msg, struct ldb_message_element, msg->num_elements+1);
+                msg->elements = talloc_zero_array(msg, struct ldb_message_element, PyDict_Size(py_msg));
                 msg_pos = dict_pos = 0;
                 while (PyDict_Next(py_msg, &dict_pos, &key, &value)) {
                     if (!strcmp(PyString_AsString(key), "dn")) {
@@ -495,17 +495,22 @@ typedef struct ldb_context {
                             return LDB_ERR_OTHER;
                         }
                     } else {
-                        msgel = ldb_msg_element_from_pyobject(value, 0, PyString_AsString(key));
+                        msgel = ldb_msg_element_from_pyobject(msg->elements, value, 0, PyString_AsString(key));
+                        if (msgel == NULL) {
+                            SWIG_exception(SWIG_TypeError, "unable to import element");
+                            return LDB_ERR_OTHER;
+                        }
                         memcpy(&msg->elements[msg_pos], msgel, sizeof(*msgel));
                         msg_pos++;
                     }
-                    dict_pos++;
                 }
 
                 if (msg->dn == NULL) {
                     SWIG_exception(SWIG_TypeError, "no dn set");
                     return LDB_ERR_OTHER;
                 }
+
+                msg->num_elements = msg_pos;
             } else {
                 if (SWIG_ConvertPtr(py_msg, (void **)&msg, SWIGTYPE_p_ldb_message, 0) != 0)
                     return LDB_ERR_OTHER;

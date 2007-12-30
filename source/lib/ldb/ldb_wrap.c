@@ -2687,10 +2687,11 @@ int ldb_dn_from_pyobject(TALLOC_CTX *mem_ctx, PyObject *object,
     return ret;
 }
 
-ldb_msg_element *ldb_msg_element_from_pyobject(PyObject *set_obj, int flags,
+ldb_msg_element *ldb_msg_element_from_pyobject(TALLOC_CTX *mem_ctx,
+                                               PyObject *set_obj, int flags,
                                                const char *attr_name)
 {
-    struct ldb_message_element *me = talloc(NULL, struct ldb_message_element);
+    struct ldb_message_element *me = talloc(mem_ctx, struct ldb_message_element);
     me->name = attr_name;
     me->flags = flags;
     if (PyString_Check(set_obj)) {
@@ -2886,7 +2887,7 @@ SWIG_AsVal_int (PyObject * obj, int *val)
 }
 
 SWIGINTERN ldb_msg_element *new_ldb_msg_element(PyObject *set_obj,int flags,char const *name){
-            return ldb_msg_element_from_pyobject(set_obj, flags, name);
+            return ldb_msg_element_from_pyobject(NULL, set_obj, flags, name);
         }
 SWIGINTERN void delete_ldb_msg_element(ldb_msg_element *self){ talloc_free(self); }
 
@@ -2918,7 +2919,7 @@ SWIGINTERN void ldb_msg___setitem____SWIG_0(ldb_msg *self,char const *attr_name,
             ldb_msg_add(self, el, val->flags);
         }
 SWIGINTERN void ldb_msg___setitem____SWIG_1(ldb_msg *self,char const *attr_name,PyObject *val){
-            struct ldb_message_element *el = ldb_msg_element_from_pyobject(
+            struct ldb_message_element *el = ldb_msg_element_from_pyobject(NULL,
                                                 val, 0, attr_name);
             talloc_steal(self, el);
             ldb_msg_remove_attr(self, attr_name);
@@ -3041,8 +3042,7 @@ SWIGINTERN ldb_error ldb_add__SWIG_1(ldb *self,PyObject *py_msg){
             ldb_msg *msg = NULL;
             if (PyDict_Check(py_msg)) {
                 msg = ldb_msg_new(NULL);
-                msg->num_elements = PyDict_Size(py_msg) - 1; /* dn isn't in there */
-                msg->elements = talloc_zero_array(msg, struct ldb_message_element, msg->num_elements+1);
+                msg->elements = talloc_zero_array(msg, struct ldb_message_element, PyDict_Size(py_msg));
                 msg_pos = dict_pos = 0;
                 while (PyDict_Next(py_msg, &dict_pos, &key, &value)) {
                     if (!strcmp(PyString_AsString(key), "dn")) {
@@ -3050,17 +3050,22 @@ SWIGINTERN ldb_error ldb_add__SWIG_1(ldb *self,PyObject *py_msg){
                             return 80;
                         }
                     } else {
-                        msgel = ldb_msg_element_from_pyobject(value, 0, PyString_AsString(key));
+                        msgel = ldb_msg_element_from_pyobject(msg->elements, value, 0, PyString_AsString(key));
+                        if (msgel == NULL) {
+                            SWIG_exception(SWIG_TypeError, "unable to import element");
+                            return 80;
+                        }
                         memcpy(&msg->elements[msg_pos], msgel, sizeof(*msgel));
                         msg_pos++;
                     }
-                    dict_pos++;
                 }
 
                 if (msg->dn == NULL) {
                     SWIG_exception(SWIG_TypeError, "no dn set");
                     return 80;
                 }
+
+                msg->num_elements = msg_pos;
             } else {
                 if (SWIG_ConvertPtr(py_msg, (void **)&msg, SWIGTYPE_p_ldb_message, 0) != 0)
                     return 80;
