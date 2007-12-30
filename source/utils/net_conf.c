@@ -468,7 +468,6 @@ static int net_conf_showshare(int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
 	const char *sharename = NULL;
 	TALLOC_CTX *ctx;
 	uint32_t num_params;
