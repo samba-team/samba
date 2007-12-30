@@ -74,6 +74,8 @@ RSA_new(void)
  * the engine, use the default RSA engine as returned by
  * ENGINE_get_default_RSA().
  *
+ * @param engine Specific what ENGINE RSA provider should be used.
+ *
  * @return a newly allocated RSA object. Free with RSA_free().
  *
  * @ingroup hcrypto_rsa
@@ -97,13 +99,11 @@ RSA_new_method(ENGINE *engine)
 	rsa->engine = ENGINE_get_default_RSA();
     }
 
-    if (rsa->engine) {
-	rsa->meth = ENGINE_get_RSA(rsa->engine);
-	if (rsa->meth == NULL) {
-	    ENGINE_finish(engine);
-	    free(rsa);
-	    return 0;
-	}
+    rsa->meth = ENGINE_get_RSA(rsa->engine);
+    if (rsa->meth == NULL) {
+	ENGINE_finish(engine);
+	free(rsa);
+	return 0;
     }
 
     if (rsa->meth == NULL)
