@@ -19,6 +19,7 @@
 		<command>smbclient</command>
 		<arg choice="opt">-b &lt;buffer size&gt;</arg>
 		<arg choice="opt">-d debuglevel</arg>
+		<arg choice="opt">-e</arg>
 		<arg choice="opt">-L &lt;netbios name&gt;</arg>
 		<arg choice="opt">-U username</arg>
 		<arg choice="opt">-I destinationIP</arg>
@@ -42,6 +43,7 @@
 		<arg choice="opt">password</arg>
 		<arg choice="opt">-b &lt;buffer size&gt;</arg>
 		<arg choice="opt">-d debuglevel</arg>
+		<arg choice="opt">-e</arg>
 		<arg choice="opt">-D Directory</arg>
 		<arg choice="opt">-U username</arg>
 		<arg choice="opt">-W workgroup</arg>
@@ -307,6 +309,18 @@
 		size when getting or putting a file from/to the server. The default 
 		is 65520 bytes. Setting this value smaller (to 1200 bytes) has been 
 		observed to speed up file transfers to and from a Win9x server. 
+		</para></listitem>
+		</varlistentry>
+		
+		<varlistentry>
+		<term>-e</term>
+		<listitem><para>This command line parameter requires the remote
+		server support the UNIX extensions. Request that the connection be
+		encrypted. This is new for Samba 3.2 and will only work with Samba
+		3.2 or above servers. Negotiates SMB encryption using GSSAPI. Uses
+		the given credentials for the encryption negotiaion (either kerberos
+		or NTLMv1/v2 if given domain/username/password triple. Fails the
+		connection if encryption cannot be negotiated.
 		</para></listitem>
 		</varlistentry>
 		
@@ -797,6 +811,18 @@
 		<listitem><para>Query the remote server to see if it supports the CIFS UNIX
 		extensions and prints out the list of capabilities supported. If so, turn
 		on POSIX pathname processing and large file read/writes (if available),.
+		</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>posix_encrypt &lt;domain&gt; &lt;username&gt; &lt;password&gt;</term>
+		<listitem><para>This command depends on the server supporting the CIFS
+		UNIX extensions and will fail if the server does not. Attempt to negotiate
+		SMB encryption on this connection. If smbclient connected with kerberos
+		credentials (-k) the arguments to this command are ignored and the kerberos
+		credentials are used to negotiate GSSAPI signing and sealing instead. See
+		also the -e option to smbclient to force encryption on initial connection.
+		This command is new with Samba 3.2.
 		</para></listitem>
 		</varlistentry>
 
