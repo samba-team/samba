@@ -100,26 +100,6 @@ static WERROR libnet_smbconf_reg_open_basepath(TALLOC_CTX *ctx,
 	return libnet_smbconf_reg_open_path(ctx, NULL, desired_access, key);
 }
 
-/*
- * check if a subkey of KEY_SMBCONF of a given name exists
- */
-bool libnet_smbconf_key_exists(const char *subkeyname)
-{
-	bool ret = false;
-	WERROR werr = WERR_OK;
-	TALLOC_CTX *mem_ctx = talloc_stackframe();
-	struct registry_key *key = NULL;
-
-	werr = libnet_smbconf_reg_open_path(mem_ctx, subkeyname, REG_KEY_READ,
-					    &key);
-	if (W_ERROR_IS_OK(werr)) {
-		ret = true;
-	}
-
-	TALLOC_FREE(mem_ctx);
-	return ret;
-}
-
 static bool libnet_smbconf_value_exists(struct registry_key *key,
 					const char *param)
 {
@@ -530,7 +510,7 @@ WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 	}
 
 	/* make sure "global" is always listed first */
-	if (libnet_smbconf_key_exists(GLOBAL_NAME)) {
+	if (libnet_smbconf_share_exists(GLOBAL_NAME)) {
 		werr = libnet_smbconf_add_string_to_array(tmp_ctx,
 							  &tmp_share_names,
 							  0, GLOBAL_NAME);
@@ -580,6 +560,26 @@ WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 done:
 	TALLOC_FREE(tmp_ctx);
 	return werr;
+}
+
+/**
+ * check if a share/service of a given name exists
+ */
+bool libnet_smbconf_share_exists(const char *subkeyname)
+{
+	bool ret = false;
+	WERROR werr = WERR_OK;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct registry_key *key = NULL;
+
+	werr = libnet_smbconf_reg_open_path(mem_ctx, subkeyname, REG_KEY_READ,
+					    &key);
+	if (W_ERROR_IS_OK(werr)) {
+		ret = true;
+	}
+
+	TALLOC_FREE(mem_ctx);
+	return ret;
 }
 
 /**
@@ -638,7 +638,7 @@ WERROR libnet_smbconf_setparm(const char *service,
 	struct registry_key *key = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (!libnet_smbconf_key_exists(service)) {
+	if (!libnet_smbconf_share_exists(service)) {
 		werr = libnet_smbconf_reg_createkey_internal(mem_ctx, service,
 							     &key);
 	} else {
@@ -673,7 +673,7 @@ WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (!libnet_smbconf_key_exists(service)) {
+	if (!libnet_smbconf_share_exists(service)) {
 		werr = WERR_NO_SUCH_SERVICE;
 		goto done;
 	}
@@ -716,7 +716,7 @@ WERROR libnet_smbconf_delparm(const char *service,
 	WERROR werr = WERR_OK;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (!libnet_smbconf_key_exists(service)) {
+	if (!libnet_smbconf_share_exists(service)) {
 		return WERR_NO_SUCH_SERVICE;
 	}
 
