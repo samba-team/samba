@@ -28,6 +28,147 @@
 #include "libcli/security/security.h"
 
 
+struct create_group_state {
+	struct libnet_context *ctx;
+	struct libnet_CreateGroup r;
+	struct libnet_DomainOpen domain_open;
+	struct libnet_rpc_groupadd group_add;
+
+	/* information about the progress */
+	void (*monitor_fn)(struct monitor_msg *);
+};
+
+
+static void continue_domain_opened(struct composite_context *ctx);
+static void continue_rpc_group_added(struct composite_context *ctx);
+
+
+struct composite_context* libnet_CreateGroup_send(struct libnet_context *ctx,
+						  TALLOC_CTX *mem_ctx,
+						  struct libnet_CreateGroup *r,
+						  void (*monitor)(struct monitor_msg*))
+{
+	struct composite_context *c;
+	struct create_group_state *s;
+	struct composite_context *create_req;
+	bool prereq_met = false;
+
+	/* composite context allocation and setup */
+	c = composite_create(mem_ctx, ctx->event_ctx);
+	if (c == NULL) return NULL;
+
+	s = talloc_zero(c, struct create_group_state);
+	if (composite_nomem(s, c)) return c;
+
+	c->private_data = s;
+
+	s->ctx = ctx;
+	s->r   = *r;
+	ZERO_STRUCT(s->r.out);
+
+	/* prerequisite: make sure we have a valid samr domain handle */
+	prereq_met = samr_domain_opened(ctx, s->r.in.domain_name, &c, &s->domain_open,
+					continue_domain_opened, monitor);
+	if (!prereq_met) return c;
+
+	/* prepare arguments of rpc group add call */
+	s->group_add.in.groupname     = r->in.group_name;
+	s->group_add.in.domain_handle = ctx->samr.handle;
+
+	/* send the request */
+	create_req = libnet_rpc_groupadd_send(ctx->samr.pipe, &s->group_add, monitor);
+	if (composite_nomem(create_req, c)) return c;
+
+	composite_continue(c, create_req, continue_rpc_group_added, c);
+	return c;
+}
+
+
+static void continue_domain_opened(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct create_group_state *s;
+	struct composite_context *create_req;
+	
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct create_group_state);
+
+	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
+	if (!composite_is_ok(c)) return;
+
+	/* prepare arguments of groupadd call */
+	s->group_add.in.groupname     = s->r.in.group_name;
+	s->group_add.in.domain_handle = s->ctx->samr.handle;
+
+	/* send the request */
+	create_req = libnet_rpc_groupadd_send(s->ctx->samr.pipe, &s->group_add,
+					      s->monitor_fn);
+	if (composite_nomem(create_req, c)) return;
+
+	composite_continue(c, create_req, continue_rpc_group_added, c);
+}
+
+
+static void continue_rpc_group_added(struct composite_context *ctx)
+{
+	struct composite_context *c;
+	struct create_group_state *s;
+
+	c = talloc_get_type(ctx->async.private_data, struct composite_context);
+	s = talloc_get_type(c->private_data, struct create_group_state);
+
+	/* receive result of group add call */
+	c->status = libnet_rpc_groupadd_recv(ctx, c, &s->group_add);
+	if (!composite_is_ok(c)) return;
+
+	/* we're done */
+	composite_done(c);
+}
+
+
+/**
+ * Receive result of CreateGroup call
+ *
+ * @param c composite context returned by send request routine
+ * @param mem_ctx memory context of this call
+ * @param r pointer to a structure containing arguments and result of this call
+ * @return nt status
+ */
+NTSTATUS libnet_CreateGroup_recv(struct composite_context *c,
+				 TALLOC_CTX *mem_ctx,
+				 struct libnet_CreateGroup *r)
+{
+	NTSTATUS status;
+	struct create_group_state *s;
+
+	status = composite_wait(c);
+	if (!NT_STATUS_IS_OK(status)) {
+		s = talloc_get_type(c->private_data, struct create_group_state);
+		r->out.error_string = talloc_strdup(mem_ctx, nt_errstr(status));
+	}
+
+	return status;
+}
+
+
+/**
+ * Create domain group
+ *
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param io pointer to structure containing arguments and result of this call
+ * @return nt status
+ */
+NTSTATUS libnet_CreateGroup(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
+			    struct libnet_CreateGroup *io)
+{
+	struct composite_context *c;
+
+	c = libnet_CreateGroup_send(ctx, mem_ctx, io, NULL);
+	return libnet_CreateGroup_recv(c, mem_ctx, io);
+}
+
+
 struct group_info_state {
 	struct libnet_context *ctx;
 	const char *domain_name;
@@ -190,7 +331,7 @@ static void continue_group_info(struct composite_context *ctx)
  *
  * @param c composite context returned by libnet_GroupInfo_send
  * @param mem_ctx memory context of this call
- * @param io pointer to a structure receiving results of the call
+ * @param io pointer to structure receiving results of the call
  * @result nt status
  */
 NTSTATUS libnet_GroupInfo_recv(struct composite_context* c, TALLOC_CTX *mem_ctx,
@@ -260,6 +401,15 @@ static void continue_domain_queried(struct rpc_request *req);
 static void continue_groups_enumerated(struct rpc_request *req);
 
 
+/**
+ * Sends request to list (enumerate) group accounts
+ *
+ * @param ctx initialised libnet context
+ * @param mem_ctx memory context of this call
+ * @param io pointer to structure containing arguments and results of this call
+ * @param monitor function pointer for receiving monitor messages
+ * @return compostite context of this request
+ */
 struct composite_context *libnet_GroupList_send(struct libnet_context *ctx,
 						TALLOC_CTX *mem_ctx,
 						struct libnet_GroupList *io,
@@ -269,7 +419,8 @@ struct composite_context *libnet_GroupList_send(struct libnet_context *ctx,
 	struct grouplist_state *s;
 	struct rpc_request *query_req;
 	bool prereq_met = false;
-	
+
+	/* composite context allocation and setup */
 	c = composite_create(mem_ctx, ctx->event_ctx);
 	if (c == NULL) return NULL;
 
@@ -277,20 +428,24 @@ struct composite_context *libnet_GroupList_send(struct libnet_context *ctx,
 	if (composite_nomem(s, c)) return c;
 	
 	c->private_data = s;
-	
+
+	/* store the arguments in the state structure */
 	s->ctx          = ctx;
 	s->page_size    = io->in.page_size;
 	s->resume_index = (uint32_t)io->in.resume_index;
 	s->domain_name  = talloc_strdup(c, io->in.domain_name);
 	s->monitor_fn   = monitor;
 
+	/* make sure we have lsa domain handle before doing anything */
 	prereq_met = lsa_domain_opened(ctx, s->domain_name, &c, &s->domain_open,
 				       continue_lsa_domain_opened, monitor);
 	if (!prereq_met) return c;
 
+	/* prepare arguments of QueryDomainInfo call */
 	s->query_domain.in.handle = &ctx->lsa.handle;
 	s->query_domain.in.level  = LSA_POLICY_INFO_DOMAIN;
-	
+
+	/* send the request */
 	query_req = dcerpc_lsa_QueryInfoPolicy_send(ctx->lsa.pipe, c, &s->query_domain);
 	if (composite_nomem(query_req, c)) return c;
 	
@@ -299,6 +454,10 @@ struct composite_context *libnet_GroupList_send(struct libnet_context *ctx,
 }
 
 
+/*
+ * Stage 0.5 (optional): receive lsa domain handle and send
+ * request to query domain info
+ */
 static void continue_lsa_domain_opened(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -307,13 +466,16 @@ static void continue_lsa_domain_opened(struct composite_context *ctx)
 	
 	c = talloc_get_type(ctx->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct grouplist_state);
-	
+
+	/* receive lsa domain handle */
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
 	if (!composite_is_ok(c)) return;
 
+	/* prepare arguments of QueryDomainInfo call */
 	s->query_domain.in.handle = &s->ctx->lsa.handle;
 	s->query_domain.in.level  = LSA_POLICY_INFO_DOMAIN;
-	
+
+	/* send the request */
 	query_req = dcerpc_lsa_QueryInfoPolicy_send(s->ctx->lsa.pipe, c, &s->query_domain);
 	if (composite_nomem(query_req, c)) return;
 
@@ -321,6 +483,10 @@ static void continue_lsa_domain_opened(struct composite_context *ctx)
 }
 
 
+/*
+ * Stage 1: receive domain info and request to enum groups
+ * provided a valid samr handle is opened
+ */
 static void continue_domain_queried(struct rpc_request *req)
 {
 	struct composite_context *c;
@@ -344,9 +510,9 @@ static void continue_domain_queried(struct rpc_request *req)
 	if (!prereq_met) return;
 
 	/* prepare arguments od EnumDomainGroups call */
-	s->group_list.in.domain_handle = &s->ctx->samr.handle;
-	s->group_list.in.max_size = s->page_size;
-	s->group_list.in.resume_handle = &s->resume_index;
+	s->group_list.in.domain_handle  = &s->ctx->samr.handle;
+	s->group_list.in.max_size       = s->page_size;
+	s->group_list.in.resume_handle  = &s->resume_index;
 	s->group_list.out.resume_handle = &s->resume_index;
 
 	/* send the request */
@@ -357,6 +523,10 @@ static void continue_domain_queried(struct rpc_request *req)
 }
 
 
+/*
+ * Stage 1.5 (optional): receive samr domain handle
+ * and request to enumerate accounts
+ */
 static void continue_samr_domain_opened(struct composite_context *ctx)
 {
 	struct composite_context *c;
@@ -370,11 +540,13 @@ static void continue_samr_domain_opened(struct composite_context *ctx)
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
 	if (!composite_is_ok(c)) return;
 
+	/* prepare arguments of EnumDomainGroups call */
 	s->group_list.in.domain_handle  = &s->ctx->samr.handle;
 	s->group_list.in.max_size       = s->page_size;
 	s->group_list.in.resume_handle  = &s->resume_index;
 	s->group_list.out.resume_handle = &s->resume_index;
 
+	/* send the request */
 	enum_req = dcerpc_samr_EnumDomainGroups_send(s->ctx->samr.pipe, c, &s->group_list);
 	if (composite_nomem(enum_req, c)) return;
 
@@ -382,6 +554,9 @@ static void continue_samr_domain_opened(struct composite_context *ctx)
 }
 
 
+/*
+ * Stage 2: receive enumerated groups and their rids
+ */
 static void continue_groups_enumerated(struct rpc_request *req)
 {
 	struct composite_context *c;
@@ -391,18 +566,26 @@ static void continue_groups_enumerated(struct rpc_request *req)
 	c = talloc_get_type(req->async.private_data, struct composite_context);
 	s = talloc_get_type(c->private_data, struct grouplist_state);
 
+	/* receive result of rpc request */
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
+	/* get the actual status of the rpc call result
+	   (instead of rpc layer) */
 	c->status = s->group_list.out.result;
 
+	/* we're interested in status "ok" as well as two
+	   enum-specific status codes */
 	if (NT_STATUS_IS_OK(c->status) ||
 	    NT_STATUS_EQUAL(c->status, STATUS_MORE_ENTRIES) ||
 	    NT_STATUS_EQUAL(c->status, NT_STATUS_NO_MORE_ENTRIES)) {
-
+		
+		/* get enumerated accounts counter and resume handle (the latter allows
+		   making subsequent call to continue enumeration) */
 		s->resume_index = *s->group_list.out.resume_handle;
 		s->count        = s->group_list.out.num_entries;
 
+		/* prepare returned group accounts array */
 		s->groups       = talloc_array(c, struct grouplist, s->group_list.out.sam->count);
 		if (composite_nomem(s->groups, c)) return;
 
@@ -411,24 +594,37 @@ static void continue_groups_enumerated(struct rpc_request *req)
 			struct samr_SamEntry *entry = &s->group_list.out.sam->entries[i];
 			struct dom_sid *domain_sid = s->query_domain.out.info->domain.sid;
 			
+			/* construct group sid from returned rid and queried domain sid */
 			group_sid = dom_sid_add_rid(c, domain_sid, entry->idx);
 			if (composite_nomem(group_sid, c)) return;
 
+			/* groupname */
 			s->groups[i].groupname = talloc_strdup(c, entry->name.string);
 			if (composite_nomem(s->groups[i].groupname, c)) return;
 
+			/* sid string */
 			s->groups[i].sid = dom_sid_string(c, group_sid);
 			if (composite_nomem(s->groups[i].sid, c)) return;
 		}
 
+		/* that's it */
 		composite_done(c);
 
 	} else {
+		/* something went wrong */
 		composite_error(c, c->status);
 	}
 }
 
 
+/**
+ * Receive result of GroupList call
+ *
+ * @param c composite context returned by send request routine
+ * @param mem_ctx memory context of this call
+ * @param io pointer to structure containing arguments and result of this call
+ * @param nt status
+ */
 NTSTATUS libnet_GroupList_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 			       struct libnet_GroupList *io)
 {
@@ -446,13 +642,15 @@ NTSTATUS libnet_GroupList_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 		
 		s = talloc_get_type(c->private_data, struct grouplist_state);
 		
-		io->out.count = s->count;
+		/* get results from composite context */
+		io->out.count        = s->count;
 		io->out.resume_index = s->resume_index;
-		io->out.groups = talloc_steal(mem_ctx, s->groups);
+		io->out.groups       = talloc_steal(mem_ctx, s->groups);
 
 		if (NT_STATUS_IS_OK(status)) {
 			io->out.error_string = talloc_asprintf(mem_ctx, "Success");
 		} else {
+			/* success, but we're not done yet */
 			io->out.error_string = talloc_asprintf(mem_ctx, "Success (status: %s)",
 							       nt_errstr(status));
 		}
@@ -466,17 +664,18 @@ NTSTATUS libnet_GroupList_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
 
 
 /**
- * Gets list of groups
+ * Enumerate domain groups
  *
  * @param ctx initialised libnet context
  * @param mem_ctx memory context of this call
- * @param r pointer to a structure containing arguments and result of this call
+ * @param io pointer to structure containing arguments and result of this call
  * @return nt status
  */
 NTSTATUS libnet_GroupList(struct libnet_context *ctx, TALLOC_CTX *mem_ctx,
 			  struct libnet_GroupList *io)
 {
-	struct composite_context *c = libnet_GroupList_send(ctx, mem_ctx,
-							    io, NULL);
+	struct composite_context *c;
+
+	c = libnet_GroupList_send(ctx, mem_ctx, io, NULL);
 	return libnet_GroupList_recv(c, mem_ctx, io);
 }
