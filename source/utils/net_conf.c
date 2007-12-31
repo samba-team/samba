@@ -217,9 +217,11 @@ static int import_process_service(TALLOC_CTX *ctx,
 
 	while ((parm = lp_next_parameter(share->service, &pnum, 0)))
 	{
-		if ((share->service < 0 && parm->p_class == P_LOCAL)
+		if ((share->service < 0) && (parm->p_class == P_LOCAL)
 		    && !(parm->flags & FLAG_GLOBAL))
+		{
 			continue;
+		}
 
 		valstr = parm_valstr(tmp_ctx, parm, share);
 
