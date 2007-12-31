@@ -120,9 +120,9 @@ static bool libnet_smbconf_value_exists(struct registry_key *key,
 /*
  * create a subkey of KEY_SMBCONF
  */
-WERROR libnet_smbconf_reg_createkey_internal(TALLOC_CTX *ctx,
-					     const char * subkeyname,
-					     struct registry_key **newkey)
+static WERROR libnet_smbconf_reg_createkey_internal(TALLOC_CTX *ctx,
+						    const char * subkeyname,
+						    struct registry_key **newkey)
 {
 	WERROR werr = WERR_OK;
 	struct registry_key *create_parent = NULL;
@@ -162,7 +162,7 @@ done:
 /*
  * add a value to a key.
  */
-WERROR libnet_smbconf_reg_setvalue_internal(struct registry_key *key,
+static WERROR libnet_smbconf_reg_setvalue_internal(struct registry_key *key,
 						   const char *valname,
 						   const char *valstr)
 {
