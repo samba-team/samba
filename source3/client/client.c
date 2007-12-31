@@ -3798,7 +3798,7 @@ int cmd_iosize(void)
 			d_printf("iosize <n> or iosize 0x<n>. "
 				"(Encrypted connection) ,"
 				"Minimum is 16384 (0x4000), "
-				"max is 64512 (0xFC00)\n");
+				"max is 130048 (0x1FC00)\n");
 		}
 		return 1;
 	}
@@ -3807,7 +3807,7 @@ int cmd_iosize(void)
 	if (smb_encrypt && (iosize < 0x4000 || iosize > 0xFC00)) {
 		d_printf("iosize out of range for encrypted "
 			"connection (min = 16384 (0x4000), "
-			"max = 64512 (0xFC00)");
+			"max = 130048 (0x1FC00)");
 		return 1;
 	} else if (!smb_encrypt && (iosize < 0x4000 || iosize > 0xFFFF00)) {
 		d_printf("iosize out of range (min = 16384 (0x4000), "
