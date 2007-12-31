@@ -729,7 +729,7 @@ WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
 	}
 
 	/* recurse through subkeys first */
-	werr = reg_openkey(mem_ctx, parent, path, REG_KEY_WRITE, &key);
+	werr = reg_openkey(mem_ctx, parent, path, REG_KEY_ALL, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
