@@ -1,5 +1,11 @@
 Changes in release 1.1
 
+ * Documentation for hx509, hcrypto and ntlm libraries improved.
+
+ * Better compatibilty with Windows 2008 Server pre-releases and Vista.
+
+ * Mac OS X 10.5 support for native credential cache.
+
  * Provide pkg-config file for Heimdal (heimdal-gssapi.pc).
 
  * Bug fixes.
