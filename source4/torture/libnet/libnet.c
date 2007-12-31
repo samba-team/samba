@@ -43,6 +43,7 @@ NTSTATUS torture_net_init(void)
 	torture_suite_add_simple_test(suite, "API-USERLIST", torture_userlist);
 	torture_suite_add_simple_test(suite, "API-GROUPINFO", torture_groupinfo_api);
 	torture_suite_add_simple_test(suite, "API-GROUPLIST", torture_grouplist);
+	torture_suite_add_simple_test(suite, "API-CREATEGROUP", torture_creategroup);
 	torture_suite_add_simple_test(suite, "API-RPCCONN-BIND", torture_rpc_connect_binding);
 	torture_suite_add_simple_test(suite, "API-RPCCONN-SRV", torture_rpc_connect_srv);
 	torture_suite_add_simple_test(suite, "API-RPCCONN-PDC", torture_rpc_connect_pdc);
