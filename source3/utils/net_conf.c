@@ -191,7 +191,6 @@ static int import_process_service(TALLOC_CTX *ctx,
 	struct parm_struct *parm;
 	int pnum = 0;
 	const char *servicename;
-	struct registry_key *key;
 	WERROR werr;
 	char *valstr = NULL;
 	TALLOC_CTX *tmp_ctx = NULL;
@@ -214,12 +213,6 @@ static int import_process_service(TALLOC_CTX *ctx,
 				goto done;
 			}
 		}
-		werr = libnet_smbconf_reg_createkey_internal(tmp_ctx, servicename, &key);
-		if (!W_ERROR_IS_OK(werr)) {
-			d_fprintf(stderr, "Error creating share %s: %s\n",
-				  servicename, dos_errstr(werr));
-			goto done;
-		}
 	}
 
 	while ((parm = lp_next_parameter(share->service, &pnum, 0)))
@@ -234,8 +227,9 @@ static int import_process_service(TALLOC_CTX *ctx,
 			if (opt_testmode) {
 				d_printf("\t%s = %s\n", parm->label, valstr);
 			} else {
-				werr = libnet_smbconf_reg_setvalue_internal(key,
-							parm->label, valstr);
+				werr = libnet_smbconf_setparm(servicename,
+							      parm->label,
+							      valstr);
 				if (!W_ERROR_IS_OK(werr)) {
 					d_fprintf(stderr,
 						  "Error setting parameter '%s'"
