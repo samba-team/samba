@@ -349,3 +349,45 @@ done:
 	talloc_free(mem_ctx);
 	return ret;
 }
+
+
+bool torture_creategroup(struct torture_context *torture)
+{
+	bool ret = true;
+	NTSTATUS status;
+	TALLOC_CTX *mem_ctx = NULL;
+	struct libnet_context *ctx;
+	struct libnet_CreateGroup req;
+
+	mem_ctx = talloc_init("test_creategroup");
+
+	ctx = libnet_context_init(NULL, torture->lp_ctx);
+	ctx->cred = cmdline_credentials;
+
+	req.in.group_name = TEST_GROUPNAME;
+	req.in.domain_name = lp_workgroup(torture->lp_ctx);
+	req.out.error_string = NULL;
+
+	status = libnet_CreateGroup(ctx, mem_ctx, &req);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("libnet_CreateGroup call failed: %s\n", nt_errstr(status));
+		ret = false;
+		goto done;
+	}
+
+	if (!test_cleanup(ctx->samr.pipe, mem_ctx, &ctx->samr.handle, TEST_GROUPNAME)) {
+		printf("cleanup failed\n");
+		ret = false;
+		goto done;
+	}
+
+	if (!test_samr_close(ctx->samr.pipe, mem_ctx, &ctx->samr.handle)) {
+		printf("domain close failed\n");
+		ret = false;
+	}
+
+done:
+	talloc_free(ctx);
+	talloc_free(mem_ctx);
+	return ret;
+}
