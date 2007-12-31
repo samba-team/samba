@@ -506,11 +506,16 @@ done:
 	return ret;
 }
 
+/**
+ * Add a share, with a couple of standard parameters, partly optional.
+ *
+ * This is a high level utility function of the net conf utility,
+ * not a direct frontend to the libnet_conf API.
+ */
 static int net_conf_addshare(int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
-	struct registry_key *newkey = NULL;
 	char *sharename = NULL;
 	const char *path = NULL;
 	const char *comment = NULL;
@@ -562,7 +567,6 @@ static int net_conf_addshare(int argc, const char **argv)
 					net_conf_addshare_usage(argc, argv);
 					goto done;
 			}
-
 		case 2:
 			path = argv[1];
 			sharename = strdup_lower(argv[0]);
@@ -596,6 +600,12 @@ static int net_conf_addshare(int argc, const char **argv)
 		goto done;
 	}
 
+	if (libnet_smbconf_share_exists(sharename)) {
+		d_fprintf(stderr, "ERROR: share %s already exists.\n",
+			  sharename);
+		goto done;
+	}
+
 	/* validate path */
 
 	if (path[0] != '/') {
@@ -622,19 +632,10 @@ static int net_conf_addshare(int argc, const char **argv)
 	}
 
 	/*
-	 * create the share
+	 * create the share by adding the parameters
 	 */
 
-	werr = libnet_smbconf_reg_createkey_internal(NULL, argv[0], &newkey);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Error creating share %s: %s\n",
-			  argv[0], dos_errstr(werr));
-		goto done;
-	}
-
-	/* add config params as values */
-
-	werr = libnet_smbconf_reg_setvalue_internal(newkey, "path", path);
+	werr = libnet_smbconf_setparm(sharename, "path", path);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting parameter %s: %s\n",
 			  "path", dos_errstr(werr));
@@ -642,8 +643,7 @@ static int net_conf_addshare(int argc, const char **argv)
 	}
 
 	if (comment != NULL) {
-		werr = libnet_smbconf_reg_setvalue_internal(newkey, "comment",
-							    comment);
+		werr = libnet_smbconf_setparm(sharename, "comment", comment);
 		if (!W_ERROR_IS_OK(werr)) {
 			d_fprintf(stderr, "Error setting parameter %s: %s\n",
 				  "comment", dos_errstr(werr));
@@ -651,16 +651,14 @@ static int net_conf_addshare(int argc, const char **argv)
 		}
 	}
 
-	werr = libnet_smbconf_reg_setvalue_internal(newkey, "guest ok",
-						    guest_ok);
+	werr = libnet_smbconf_setparm(sharename, "guest ok", guest_ok);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting parameter %s: %s\n",
 			  "'guest ok'", dos_errstr(werr));
 		goto done;
 	}
 
-	werr = libnet_smbconf_reg_setvalue_internal(newkey, "writeable",
-						    writeable);
+	werr = libnet_smbconf_setparm(sharename, "writeable", writeable);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting parameter %s: %s\n",
 			  "writeable", dos_errstr(werr));
@@ -670,7 +668,6 @@ static int net_conf_addshare(int argc, const char **argv)
 	ret = 0;
 
 done:
-	TALLOC_FREE(newkey);
 	SAFE_FREE(sharename);
 	return ret;
 }
