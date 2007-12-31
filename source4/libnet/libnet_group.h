@@ -19,6 +19,17 @@
 */
 
 
+struct libnet_CreateGroup {
+	struct {
+		const char *group_name;
+		const char *domain_name;
+	} in;
+	struct {
+		const char *error_string;
+	} out;
+};
+
+
 struct libnet_GroupInfo {
 	struct {
 		const char *group_name;
