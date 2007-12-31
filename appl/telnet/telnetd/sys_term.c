@@ -1840,10 +1840,8 @@ jobend(jid, path, user)
     }
 
     if (path) {
-	strncpy(saved_path, path, sizeof(wtmp.ut_tpath));
-	strncpy(saved_user, user, sizeof(wtmp.ut_user));
-	saved_path[sizeof(saved_path)] = '\0';
-	saved_user[sizeof(saved_user)] = '\0';
+	strlcpy(saved_path, path, sizeof(saved_path));
+	strlcpy(saved_user, user, sizeof(saved_user));
     }
     if (saved_jid == 0) {
 	saved_jid = jid;
