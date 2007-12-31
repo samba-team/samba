@@ -866,7 +866,7 @@ static void continue_users_enumerated(struct rpc_request *req);
  *
  * @param ctx initialised libnet context
  * @param mem_ctx memory context of this call
- * @param r pointer to a structure containing arguments and results of this call
+ * @param r pointer to structure containing arguments and results of this call
  * @param monitor function pointer for receiving monitor messages
  * @return compostite context of this request
  */
@@ -969,7 +969,7 @@ static void continue_domain_queried(struct rpc_request *req)
 					continue_samr_domain_opened, s->monitor_fn);
 	if (!prereq_met) return;
 
-	/* prepare arguments od EnumDomainUsers call */
+	/* prepare arguments of EnumDomainUsers call */
 	s->user_list.in.domain_handle = &s->ctx->samr.handle;
 	s->user_list.in.max_size = s->page_size;
 	s->user_list.in.resume_handle = &s->resume_index;
@@ -1001,7 +1001,7 @@ static void continue_samr_domain_opened(struct composite_context *ctx)
 	c->status = libnet_DomainOpen_recv(ctx, s->ctx, c, &s->domain_open);
 	if (!composite_is_ok(c)) return;
 
-	/* prepare arguments od EnumDomainUsers call */
+	/* prepare arguments of EnumDomainUsers call */
 	s->user_list.in.domain_handle = &s->ctx->samr.handle;
 	s->user_list.in.max_size = s->page_size;
 	s->user_list.in.resume_handle = &s->resume_index;
@@ -1032,10 +1032,12 @@ static void continue_users_enumerated(struct rpc_request *req)
 	c->status = dcerpc_ndr_request_recv(req);
 	if (!composite_is_ok(c)) return;
 
-	/* get the actual status of the rpc call result (instead of rpc layer status) */
+	/* get the actual status of the rpc call result
+	   (instead of rpc layer status) */
 	c->status = s->user_list.out.result;
 
-	/* we're interested in status "ok" as well as two enum-specific status codes */
+	/* we're interested in status "ok" as well as two
+	   enum-specific status codes */
 	if (NT_STATUS_IS_OK(c->status) ||
 	    NT_STATUS_EQUAL(c->status, STATUS_MORE_ENTRIES) ||
 	    NT_STATUS_EQUAL(c->status, NT_STATUS_NO_MORE_ENTRIES)) {
@@ -1082,7 +1084,7 @@ static void continue_users_enumerated(struct rpc_request *req)
  *
  * @param c composite context returned by send request routine
  * @param mem_ctx memory context of this call
- * @param r pointer to a structure containing arguments and result of this call
+ * @param r pointer to structure containing arguments and result of this call
  * @return nt status
  */
 NTSTATUS libnet_UserList_recv(struct composite_context* c, TALLOC_CTX *mem_ctx,
@@ -1128,7 +1130,7 @@ NTSTATUS libnet_UserList_recv(struct composite_context* c, TALLOC_CTX *mem_ctx,
  *
  * @param ctx initialised libnet context
  * @param mem_ctx memory context of this call
- * @param r pointer to a structure containing arguments and result of this call
+ * @param r pointer to structure containing arguments and result of this call
  * @return nt status
  */
 NTSTATUS libnet_UserList(struct libnet_context *ctx,
