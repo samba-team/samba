@@ -2606,16 +2606,16 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		uint32_t sec_info_sent = ALL_SECURITY_INFORMATION;
 		uint32_t saved_access_mask = fsp->access_mask;
 
-		if (sd->owner_sid==0) {
+		if (sd->owner_sid == NULL) {
 			sec_info_sent &= ~OWNER_SECURITY_INFORMATION;
 		}
-		if (sd->group_sid==0) {
+		if (sd->group_sid == NULL) {
 			sec_info_sent &= ~GROUP_SECURITY_INFORMATION;
 		}
-		if (sd->sacl==0) {
+		if (sd->sacl == NULL) {
 			sec_info_sent &= ~SACL_SECURITY_INFORMATION;
 		}
-		if (sd->dacl==0) {
+		if (sd->dacl == NULL) {
 			sec_info_sent &= ~DACL_SECURITY_INFORMATION;
 		}
 
