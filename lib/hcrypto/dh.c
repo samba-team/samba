@@ -327,7 +327,7 @@ out:
 
 /**
  * Generate a new DH private-public key pair. The dh parameter must be
- * allocted first with DH_new().
+ * allocted first with DH_new(). dh->p and dp->g must be set.
  *
  * @param dh dh parameter.
  *
@@ -363,7 +363,7 @@ DH_compute_key(unsigned char *shared_key,
 
     /**
      * Checks that the pubkey passed in is valid using
-     * dh_check_pubkey().
+     * DH_check_pubkey().
      */
 
     if (!DH_check_pubkey(dh, peer_pub_key, &codes) || codes != 0)
