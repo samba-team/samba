@@ -152,11 +152,13 @@ DH_free(DH *dh)
 }    
 
 /**
- * Add a reference to the DH object.
+ * Add a reference to the DH object. The object should be free with
+ * DH_free() to drop the reference.
  *
  * @param dh the object to increase the reference count too.
  *
- * @return the updated reference count
+ * @return the updated reference count, can't safely be used except
+ * for debug printing.
  * 
  * @ingroup hcrypto_dh
  */
