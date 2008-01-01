@@ -24,6 +24,7 @@ CLEANFILES =			\
 	digest_asn1.h 		\
 	hdb-protos.h		\
 	heim_asn1.h		\
+	heim_threads.h		\
 	hex.h			\
 	hx509-protos.h		\
 	hx509.h			\
