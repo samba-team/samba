@@ -161,6 +161,7 @@ memberof-refint TRUE
 memberof-group-oc top
 memberof-member-ad " + res.msgs[i].lDAPDisplayName + "
 memberof-memberof-ad " + target + "
+memberof-dangling-error 32
 
 ";
 		}
