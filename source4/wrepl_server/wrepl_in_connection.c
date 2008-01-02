@@ -65,7 +65,9 @@ static NTSTATUS wreplsrv_recv_request(void *private, DATA_BLOB blob)
 	packet_in_blob.data = blob.data + 4;
 	packet_in_blob.length = blob.length - 4;
 
-	ndr_err = ndr_pull_struct_blob(&packet_in_blob, call, &call->req_packet,
+	ndr_err = ndr_pull_struct_blob(&packet_in_blob, call, 
+				       lp_iconv_convenience(global_loadparm),
+				       &call->req_packet,
 				       (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);

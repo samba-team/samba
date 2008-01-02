@@ -400,7 +400,7 @@ _PUBLIC_ NTSTATUS nbt_name_from_blob(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 {
 	enum ndr_err_code ndr_err;
 
-	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, name,
+	ndr_err = ndr_pull_struct_blob(blob, mem_ctx, NULL, name,
 				       (ndr_pull_flags_fn_t)ndr_pull_nbt_name);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);

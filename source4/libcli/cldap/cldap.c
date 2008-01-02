@@ -617,7 +617,9 @@ NTSTATUS cldap_netlogon_recv(struct cldap_request *req,
 	}
 	data = search.out.response->attributes[0].values;
 
-	ndr_err = ndr_pull_union_blob_all(data, mem_ctx, &io->out.netlogon,
+	ndr_err = ndr_pull_union_blob_all(data, mem_ctx, 
+					  lp_iconv_convenience(global_loadparm),
+					  &io->out.netlogon,
 					  io->in.version & 0xF,
 					  (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -711,7 +713,9 @@ NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 	TALLOC_CTX *tmp_ctx = talloc_new(cldap);
 	DATA_BLOB blob;
 
-	ndr_err = ndr_push_union_blob(&blob, tmp_ctx, netlogon, version & 0xF,
+	ndr_err = ndr_push_union_blob(&blob, tmp_ctx, 
+				      lp_iconv_convenience(global_loadparm),
+				      netlogon, version & 0xF,
 				     (ndr_push_flags_fn_t)ndr_push_nbt_cldap_netlogon);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);

@@ -171,7 +171,8 @@ static NTSTATUS notify_load(struct notify_context *notify)
 	blob.data = dbuf.dptr;
 	blob.length = dbuf.dsize;
 
-	ndr_err = ndr_pull_struct_blob(&blob, notify->array, notify->array,
+	ndr_err = ndr_pull_struct_blob(&blob, notify->array, lp_iconv_convenience(global_loadparm),
+				       notify->array,
 				       (ndr_pull_flags_fn_t)ndr_pull_notify_array);
 	free(dbuf.dptr);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -255,7 +256,7 @@ static void notify_handler(struct messaging_context *msg_ctx, void *private_data
 		return;
 	}
 
-	ndr_err = ndr_pull_struct_blob(data, tmp_ctx, &ev,
+	ndr_err = ndr_pull_struct_blob(data, tmp_ctx, lp_iconv_convenience(global_loadparm), &ev,
 				      (ndr_pull_flags_fn_t)ndr_pull_notify_event);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);

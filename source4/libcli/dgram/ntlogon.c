@@ -113,7 +113,7 @@ NTSTATUS dgram_mailslot_ntlogon_parse(struct dgram_mailslot_handler *dgmslot,
 	DATA_BLOB data = dgram_mailslot_data(dgram);
 	enum ndr_err_code ndr_err;
 
-	ndr_err = ndr_pull_struct_blob(&data, mem_ctx, ntlogon,
+	ndr_err = ndr_pull_struct_blob(&data, mem_ctx, lp_iconv_convenience(global_loadparm), ntlogon,
 				      (ndr_pull_flags_fn_t)ndr_pull_nbt_ntlogon_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);

@@ -213,7 +213,7 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 
 	/* supplementalCredentials if present */
 	if (sc_val) {
-		ndr_err = ndr_pull_struct_blob_all(sc_val, mem_ctx, &scb,
+		ndr_err = ndr_pull_struct_blob_all(sc_val, mem_ctx, lp_iconv_convenience(global_loadparm), &scb,
 						   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			dump_data(0, sc_val->data, sc_val->length);
@@ -250,7 +250,7 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 		talloc_steal(mem_ctx, blob.data);
 
 		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
-		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &_pkb,
+		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, lp_iconv_convenience(global_loadparm), &_pkb,
 					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosBlob");

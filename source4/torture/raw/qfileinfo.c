@@ -26,6 +26,7 @@
 #include "librpc/rpc/dcerpc.h"
 #include "torture/rpc/rpc.h"
 #include "torture/raw/proto.h"
+#include "param/param.h"
 
 static struct {
 	const char *name;
@@ -845,7 +846,8 @@ bool torture_raw_qfileinfo_pipe(struct torture_context *torture,
 	struct smbcli_tree *ipc_tree;
 	NTSTATUS status;
 
-	if (!(p = dcerpc_pipe_init(torture, cli->tree->session->transport->socket->event.ctx))) {
+	if (!(p = dcerpc_pipe_init(torture, cli->tree->session->transport->socket->event.ctx,
+				   lp_iconv_convenience(torture->lp_ctx)))) {
 		return false;
 	}
 

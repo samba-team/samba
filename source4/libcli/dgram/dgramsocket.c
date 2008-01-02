@@ -72,7 +72,7 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 	}
 
 	/* parse the request */
-	ndr_err = ndr_pull_struct_blob(&blob, packet, packet,
+	ndr_err = ndr_pull_struct_blob(&blob, packet, lp_iconv_convenience(global_loadparm), packet,
 				      (ndr_pull_flags_fn_t)ndr_pull_nbt_dgram_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);

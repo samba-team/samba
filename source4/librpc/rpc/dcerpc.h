@@ -55,6 +55,7 @@ struct dcerpc_connection {
 	struct dcerpc_security security_state;
 	const char *binding_string;
 	struct event_context *event_ctx;
+	struct smb_iconv_convenience *iconv_convenience;
 
 	bool dead;
 	bool free_skipped;

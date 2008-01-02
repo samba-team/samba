@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "librpc/gen_ndr/ndr_winbind.h"
 #include "lib/messaging/irpc.h"
+#include "param/param.h"
 
 static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response *response, struct netr_SamInfo3 *info3)
 {
@@ -37,8 +38,9 @@ static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response
 		blob.length = len - 4;
 		blob.data = (uint8_t *)(((char *)response->extra_data.data) + 4);
 
-		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, info3,
-					      (ndr_pull_flags_fn_t)ndr_pull_netr_SamInfo3);
+		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, 
+			       lp_iconv_convenience(global_loadparm), info3,
+			      (ndr_pull_flags_fn_t)ndr_pull_netr_SamInfo3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return ndr_map_error2ntstatus(ndr_err);
 		}

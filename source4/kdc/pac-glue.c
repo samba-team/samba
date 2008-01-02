@@ -190,7 +190,7 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 		return ENOMEM;
 	}
 		
-	ndr_err = ndr_pull_struct_blob(&pac_in, mem_ctx, &logon_info,
+	ndr_err = ndr_pull_struct_blob(&pac_in, mem_ctx, lp_iconv_convenience(global_loadparm), &logon_info,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_LOGON_INFO_CTR);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err) || !logon_info.info) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);

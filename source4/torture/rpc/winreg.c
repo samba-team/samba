@@ -221,7 +221,7 @@ static bool _test_GetKeySecurity(struct dcerpc_pipe *p,
 	sd = talloc_zero(tctx, struct security_descriptor);
 
 	torture_assert_ndr_success(tctx,
-		ndr_pull_struct_blob(&sdblob, tctx, sd,
+		ndr_pull_struct_blob(&sdblob, tctx, NULL, sd,
 				     (ndr_pull_flags_fn_t)ndr_pull_security_descriptor),
 				     "pull_security_descriptor failed");
 

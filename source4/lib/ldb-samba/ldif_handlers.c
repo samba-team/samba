@@ -62,7 +62,7 @@ static int ldif_write_objectSid(struct ldb_context *ldb, void *mem_ctx,
 	if (sid == NULL) {
 		return -1;
 	}
-	ndr_err = ndr_pull_struct_blob(in, sid, sid,
+	ndr_err = ndr_pull_struct_blob(in, sid, NULL, sid,
 				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sid);
@@ -163,7 +163,7 @@ static int ldif_write_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 {
 	struct GUID guid;
 	enum ndr_err_code ndr_err;
-	ndr_err = ndr_pull_struct_blob(in, mem_ctx, &guid,
+	ndr_err = ndr_pull_struct_blob(in, mem_ctx, NULL, &guid,
 				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
@@ -274,7 +274,7 @@ static int ldif_write_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ct
 	if (sd == NULL) {
 		return -1;
 	}
-	ndr_err = ndr_pull_struct_blob(in, sd, sd,
+	ndr_err = ndr_pull_struct_blob(in, sd, NULL, sd,
 				       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sd);

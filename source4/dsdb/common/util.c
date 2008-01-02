@@ -376,7 +376,7 @@ struct dom_sid *samdb_result_dom_sid(TALLOC_CTX *mem_ctx, const struct ldb_messa
 	if (sid == NULL) {
 		return NULL;
 	}
-	ndr_err = ndr_pull_struct_blob(v, sid, sid,
+	ndr_err = ndr_pull_struct_blob(v, sid, NULL, sid,
 				       (ndr_pull_flags_fn_t)ndr_pull_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(sid);
@@ -402,7 +402,7 @@ struct GUID samdb_result_guid(const struct ldb_message *msg, const char *attr)
 
 	mem_ctx = talloc_named_const(NULL, 0, "samdb_result_guid");
 	if (!mem_ctx) return guid;
-	ndr_err = ndr_pull_struct_blob(v, mem_ctx, &guid,
+	ndr_err = ndr_pull_struct_blob(v, mem_ctx, NULL, &guid,
 				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
 	talloc_free(mem_ctx);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

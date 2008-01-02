@@ -52,7 +52,7 @@ bool dcesrv_auth_bind(struct dcesrv_call_state *call)
 	}
 
 	ndr_err = ndr_pull_struct_blob(&pkt->u.bind.auth_info,
-				       call,
+				       call, NULL,
 				       dce_conn->auth_state.auth_info,
 				       (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -154,7 +154,7 @@ bool dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	}
 
 	ndr_err = ndr_pull_struct_blob(&pkt->u.auth3.auth_info,
-				       call,
+				       call, NULL,
 				       dce_conn->auth_state.auth_info,
 				       (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -212,7 +212,7 @@ bool dcesrv_auth_alter(struct dcesrv_call_state *call)
 	}
 
 	ndr_err = ndr_pull_struct_blob(&pkt->u.alter.auth_info,
-				       call,
+				       call, NULL,
 				       dce_conn->auth_state.auth_info,
 				       (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

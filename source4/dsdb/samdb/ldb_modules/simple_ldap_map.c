@@ -71,7 +71,7 @@ static struct ldb_val guid_always_string(struct ldb_module *module, TALLOC_CTX *
 		if (guid == NULL) {
 			return out;
 		}
-		ndr_err = ndr_pull_struct_blob(val, guid, guid,
+		ndr_err = ndr_pull_struct_blob(val, guid, NULL, guid,
 					       (ndr_pull_flags_fn_t)ndr_pull_GUID);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			talloc_free(guid);
@@ -116,7 +116,7 @@ static struct ldb_val guid_ns_string(struct ldb_module *module, TALLOC_CTX *ctx,
 		if (guid_p == NULL) {
 			return out;
 		}
-		ndr_err = ndr_pull_struct_blob(val, guid_p, guid_p,
+		ndr_err = ndr_pull_struct_blob(val, guid_p, NULL, guid_p,
 					       (ndr_pull_flags_fn_t)ndr_pull_GUID);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			talloc_free(guid_p);
