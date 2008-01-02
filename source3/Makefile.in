@@ -1424,7 +1424,7 @@ bin/libnetapi.a: $(BINARY_PREREQS) $(LIBNETAPI_OBJ)
 
 bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
 	@echo Linking shared library $@
-	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) $(LIBS) \
+	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) @LIBWBCLIENT_SHARED@ $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
