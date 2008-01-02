@@ -54,13 +54,13 @@ static WERROR libnet_smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-/*
+/**
  * Open a subkey of KEY_SMBCONF (i.e a service)
  */
-static WERROR libnet_smbconf_reg_open_path(TALLOC_CTX *ctx,
-					   const char *subkeyname,
-					   uint32 desired_access,
-					   struct registry_key **key)
+static WERROR libnet_smbconf_reg_open_service_key(TALLOC_CTX *ctx,
+						  const char *subkeyname,
+						  uint32 desired_access,
+						  struct registry_key **key)
 {
 	WERROR werr = WERR_OK;
 	char *path = NULL;
@@ -97,7 +97,8 @@ static WERROR libnet_smbconf_reg_open_basekey(TALLOC_CTX *ctx,
 					      uint32 desired_access,
 					      struct registry_key **key)
 {
-	return libnet_smbconf_reg_open_path(ctx, NULL, desired_access, key);
+	return libnet_smbconf_reg_open_service_key(ctx, NULL, desired_access,
+						   key);
 }
 
 static bool libnet_smbconf_value_exists(struct registry_key *key,
@@ -572,8 +573,8 @@ bool libnet_smbconf_share_exists(const char *servicename)
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct registry_key *key = NULL;
 
-	werr = libnet_smbconf_reg_open_path(mem_ctx, servicename, REG_KEY_READ,
-					    &key);
+	werr = libnet_smbconf_reg_open_service_key(mem_ctx, servicename,
+						   REG_KEY_READ, &key);
 	if (W_ERROR_IS_OK(werr)) {
 		ret = true;
 	}
@@ -592,8 +593,8 @@ WERROR libnet_smbconf_getshare(TALLOC_CTX *mem_ctx, const char *servicename,
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
 
-	werr = libnet_smbconf_reg_open_path(mem_ctx, servicename, REG_KEY_READ,
-					    &key);
+	werr = libnet_smbconf_reg_open_service_key(mem_ctx, servicename,
+						   REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -642,8 +643,8 @@ WERROR libnet_smbconf_setparm(const char *service,
 		werr = libnet_smbconf_reg_createkey_internal(mem_ctx, service,
 							     &key);
 	} else {
-		werr = libnet_smbconf_reg_open_path(mem_ctx, service,
-						    REG_KEY_WRITE, &key);
+		werr = libnet_smbconf_reg_open_service_key(mem_ctx, service,
+							   REG_KEY_WRITE, &key);
 	}
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -678,8 +679,8 @@ WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	werr = libnet_smbconf_reg_open_path(mem_ctx, service, REG_KEY_READ,
-					    &key);
+	werr = libnet_smbconf_reg_open_service_key(mem_ctx, service,
+						   REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -720,7 +721,8 @@ WERROR libnet_smbconf_delparm(const char *service,
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	werr = libnet_smbconf_reg_open_path(mem_ctx, service, REG_KEY_ALL, &key);
+	werr = libnet_smbconf_reg_open_service_key(mem_ctx, service,
+						   REG_KEY_ALL, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
