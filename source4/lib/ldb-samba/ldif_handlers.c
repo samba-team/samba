@@ -40,7 +40,7 @@ static int ldif_read_objectSid(struct ldb_context *ldb, void *mem_ctx,
 	if (sid == NULL) {
 		return -1;
 	}
-	ndr_err = ndr_push_struct_blob(out, mem_ctx, sid,
+	ndr_err = ndr_push_struct_blob(out, mem_ctx, NULL, sid,
 				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	talloc_free(sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -147,7 +147,7 @@ static int ldif_read_objectGUID(struct ldb_context *ldb, void *mem_ctx,
 		return -1;
 	}
 
-	ndr_err = ndr_push_struct_blob(out, mem_ctx, &guid,
+	ndr_err = ndr_push_struct_blob(out, mem_ctx, NULL, &guid,
 				       (ndr_push_flags_fn_t)ndr_push_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;
@@ -252,7 +252,7 @@ static int ldif_read_ntSecurityDescriptor(struct ldb_context *ldb, void *mem_ctx
 	if (sd == NULL) {
 		return -1;
 	}
-	ndr_err = ndr_push_struct_blob(out, mem_ctx, sd,
+	ndr_err = ndr_push_struct_blob(out, mem_ctx, NULL, sd,
 				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	talloc_free(sd);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

@@ -31,6 +31,7 @@
 #include "dsdb/common/flags.h"
 #include "dsdb/common/proto.h"
 #include "libcli/ldap/ldap_ndr.h"
+#include "param/param.h"
 #include "libcli/auth/libcli_auth.h"
 
 /*
@@ -674,7 +675,9 @@ int samdb_msg_add_dom_sid(struct ldb_context *sam_ldb, TALLOC_CTX *mem_ctx, stru
 	struct ldb_val v;
 	enum ndr_err_code ndr_err;
 
-	ndr_err = ndr_push_struct_blob(&v, mem_ctx, sid,
+	ndr_err = ndr_push_struct_blob(&v, mem_ctx, 
+				       lp_iconv_convenience(ldb_get_opaque(sam_ldb, "loadparm")),
+				       sid,
 				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return -1;

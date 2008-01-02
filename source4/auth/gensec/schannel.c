@@ -82,7 +82,8 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		bind_schannel.u.info3.workstation = cli_credentials_get_workstation(gensec_security->credentials);
 #endif
 		
-		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel,
+		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, 
+					       lp_iconv_convenience(gensec_security->lp_ctx), &bind_schannel,
 					       (ndr_push_flags_fn_t)ndr_push_schannel_bind);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);
@@ -137,7 +138,8 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		bind_schannel_ack.unknown2 = 0;
 		bind_schannel_ack.unknown3 = 0x6c0000;
 		
-		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, &bind_schannel_ack,
+		ndr_err = ndr_push_struct_blob(out, out_mem_ctx, 
+					       lp_iconv_convenience(gensec_security->lp_ctx), &bind_schannel_ack,
 					       (ndr_push_flags_fn_t)ndr_push_schannel_bind_ack);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);

@@ -233,7 +233,7 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 		return NT_STATUS_OK;
 	}
 
-	ndr_err = ndr_push_struct_blob(&blob, lck, file, (ndr_push_flags_fn_t)ndr_push_opendb_file);
+	ndr_err = ndr_push_struct_blob(&blob, lck, lp_iconv_convenience(global_loadparm), file, (ndr_push_flags_fn_t)ndr_push_opendb_file);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}

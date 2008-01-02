@@ -36,6 +36,7 @@
 #include "includes.h"
 #include "ldb/include/ldb_includes.h"
 #include "librpc/gen_ndr/ndr_misc.h"
+#include "param/param.h"
 
 static struct ldb_message_element *objectguid_find_attribute(const struct ldb_message *msg, const char *name)
 {
@@ -143,7 +144,9 @@ static int objectguid_add(struct ldb_module *module, struct ldb_request *req)
 	/* a new GUID */
 	guid = GUID_random();
 
-	ndr_err = ndr_push_struct_blob(&v, msg, &guid,
+	ndr_err = ndr_push_struct_blob(&v, msg, 
+				       lp_iconv_convenience(ldb_get_opaque(module->ldb, "loadparm")),
+				       &guid,
 				       (ndr_push_flags_fn_t)ndr_push_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(down_req);

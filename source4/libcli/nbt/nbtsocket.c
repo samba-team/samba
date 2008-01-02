@@ -394,7 +394,9 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	
 	talloc_set_destructor(req, nbt_name_request_destructor);	
 
-	ndr_err = ndr_push_struct_blob(&req->encoded, req, request,
+	ndr_err = ndr_push_struct_blob(&req->encoded, req, 
+				       lp_iconv_convenience(global_loadparm),
+				       request,
 				       (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
 
@@ -441,7 +443,9 @@ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 		NDR_PRINT_DEBUG(nbt_name_packet, request);		
 	}
 
-	ndr_err = ndr_push_struct_blob(&req->encoded, req, request,
+	ndr_err = ndr_push_struct_blob(&req->encoded, req, 
+				       lp_iconv_convenience(global_loadparm),
+				       request,
 				       (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(req);

@@ -204,7 +204,7 @@ static NTSTATUS nttrans_query_sec_desc_send(struct nttrans_op *op)
 	NT_STATUS_NOT_OK_RETURN(status);
 	params = op->trans->out.params.data;
 
-	ndr_err = ndr_push_struct_blob(&op->trans->out.data, op,
+	ndr_err = ndr_push_struct_blob(&op->trans->out.data, op, NULL,
 				       io->query_secdesc.out.sd,
 				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

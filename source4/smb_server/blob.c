@@ -278,7 +278,7 @@ NTSTATUS smbsrv_push_passthru_fsinfo(TALLOC_CTX *mem_ctx,
 
 		BLOB_CHECK(smbsrv_blob_grow_data(mem_ctx, blob, 64));
 
-		ndr_err = ndr_push_struct_blob(&guid_blob, mem_ctx,
+		ndr_err = ndr_push_struct_blob(&guid_blob, mem_ctx, NULL, 
 					       &fsinfo->objectid_information.out.guid,
 					       (ndr_push_flags_fn_t)ndr_push_GUID);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

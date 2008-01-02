@@ -494,7 +494,7 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 	}
 
 	wrap.packet = *packet;
-	ndr_err = ndr_push_struct_blob(&blob, req, &wrap,
+	ndr_err = ndr_push_struct_blob(&blob, req, lp_iconv_convenience(global_loadparm), &wrap, 
 				       (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);

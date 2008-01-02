@@ -187,8 +187,9 @@ static struct ldb_val encode_sid(struct ldb_module *module, TALLOC_CTX *ctx, con
 		return out;
 	}
 
-	ndr_err = ndr_push_struct_blob(&out, ctx, sid,
-				       (ndr_push_flags_fn_t)ndr_push_dom_sid);
+	ndr_err = ndr_push_struct_blob(&out, ctx, 
+				       NULL,
+				       sid, (ndr_push_flags_fn_t)ndr_push_dom_sid);
 	talloc_free(sid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return out;

@@ -28,6 +28,7 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "lib/crypto/crypto.h"
 #include "libcli/auth/libcli_auth.h"
+#include "param/param.h"
 
 static WERROR dsdb_decrypt_attribute_value(TALLOC_CTX *mem_ctx,
 					   const DATA_BLOB *gensec_skey,
@@ -322,7 +323,9 @@ static WERROR dsdb_convert_object(struct ldb_context *ldb,
 	whenChanged_s = ldb_timestring(msg, whenChanged_t);
 	W_ERROR_HAVE_NO_MEMORY(whenChanged_s);
 
-	ndr_err = ndr_push_struct_blob(&guid_value, msg, &in->object.identifier->guid,
+	ndr_err = ndr_push_struct_blob(&guid_value, msg, 
+				       lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm")),
+				       &in->object.identifier->guid,
 					 (ndr_push_flags_fn_t)ndr_push_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);

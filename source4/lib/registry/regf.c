@@ -1041,8 +1041,8 @@ static WERROR regf_set_sec_desc(struct hive_key *key,
 		     (tdr_pull_fn_t) tdr_pull_nk_block, &root);
 
 	/* Push the security descriptor to a blob */
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_push_struct_blob(&data, regf, sec_desc,
-			     (ndr_push_flags_fn_t)ndr_push_security_descriptor))) {
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_push_struct_blob(&data, regf, NULL, 
+							  sec_desc, (ndr_push_flags_fn_t)ndr_push_security_descriptor))) {
 		DEBUG(0, ("Unable to push security descriptor\n"));
 		return WERR_GENERAL_FAILURE;
 	}

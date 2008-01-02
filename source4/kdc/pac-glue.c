@@ -73,7 +73,7 @@ static krb5_error_code make_pac(krb5_context context,
 
 	logon_info.info->info3 = *info3;
 
-	ndr_err = ndr_push_struct_blob(&pac_out, mem_ctx, &logon_info,
+	ndr_err = ndr_push_struct_blob(&pac_out, mem_ctx, lp_iconv_convenience(global_loadparm), &logon_info,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_LOGON_INFO_CTR);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);

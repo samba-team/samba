@@ -913,7 +913,9 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		return ret;
 	}
 
-	ndr_err = ndr_push_struct_blob(&pkb_blob, io->ac, &pkb,
+	ndr_err = ndr_push_struct_blob(&pkb_blob, io->ac, 
+				       lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")),
+				       &pkb,
 				       (ndr_push_flags_fn_t)ndr_push_package_PrimaryKerberosBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -952,7 +954,9 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 		return ret;
 	}
 
-	ndr_err = ndr_push_struct_blob(&pdb_blob, io->ac, &pdb,
+	ndr_err = ndr_push_struct_blob(&pdb_blob, io->ac, 
+				       lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")),
+				       &pdb,
 				       (ndr_push_flags_fn_t)ndr_push_package_PrimaryWDigestBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -979,7 +983,9 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 
 		pcb.cleartext	= io->n.cleartext;
 
-		ndr_err = ndr_push_struct_blob(&pcb_blob, io->ac, &pcb,
+		ndr_err = ndr_push_struct_blob(&pcb_blob, io->ac, 
+					       lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")),
+					       &pcb,
 					       (ndr_push_flags_fn_t)ndr_push_package_PrimaryCLEARTEXTBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -1002,7 +1008,9 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	/*
 	 * setup 'Packages' element
 	 */
-	ndr_err = ndr_push_struct_blob(&pb_blob, io->ac, &pb,
+	ndr_err = ndr_push_struct_blob(&pb_blob, io->ac, 
+				       lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")), 
+				       &pb,
 				       (ndr_push_flags_fn_t)ndr_push_package_PackagesBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -1027,7 +1035,9 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 	scb.sub.num_packages	= num_packages;
 	scb.sub.packages	= packages;
 
-	ndr_err = ndr_push_struct_blob(&io->g.supplemental, io->ac, &scb,
+	ndr_err = ndr_push_struct_blob(&io->g.supplemental, io->ac, 
+				       lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")),
+				       &scb,
 				       (ndr_push_flags_fn_t)ndr_push_supplementalCredentialsBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);

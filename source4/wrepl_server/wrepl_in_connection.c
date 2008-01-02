@@ -88,7 +88,9 @@ static NTSTATUS wreplsrv_recv_request(void *private, DATA_BLOB blob)
 
 	/* and now encode the reply */
 	packet_out_wrap.packet = call->rep_packet;
-	ndr_err = ndr_push_struct_blob(&packet_out_blob, call, &packet_out_wrap,
+	ndr_err = ndr_push_struct_blob(&packet_out_blob, call, 
+				       lp_iconv_convenience(global_loadparm),
+				       &packet_out_wrap,
 				      (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);

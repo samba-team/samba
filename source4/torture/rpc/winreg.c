@@ -156,7 +156,7 @@ static bool test_CreateKey_sd(struct dcerpc_pipe *p,
 					NULL);
 
 	torture_assert_ndr_success(tctx,
-		ndr_push_struct_blob(&sdblob, tctx, sd,
+		ndr_push_struct_blob(&sdblob, tctx, NULL, sd,
 				     (ndr_push_flags_fn_t)ndr_push_security_descriptor),
 				     "Failed to push security_descriptor ?!\n");
 
@@ -265,7 +265,7 @@ static bool _test_SetKeySecurity(struct dcerpc_pipe *p,
 	}
 
 	torture_assert_ndr_success(tctx,
-		ndr_push_struct_blob(&sdblob, tctx, sd,
+		ndr_push_struct_blob(&sdblob, tctx, NULL, sd,
 				     (ndr_push_flags_fn_t)ndr_push_security_descriptor),
 				     "push_security_descriptor failed");
 
