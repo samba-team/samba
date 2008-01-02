@@ -565,14 +565,14 @@ done:
 /**
  * check if a share/service of a given name exists
  */
-bool libnet_smbconf_share_exists(const char *subkeyname)
+bool libnet_smbconf_share_exists(const char *servicename)
 {
 	bool ret = false;
 	WERROR werr = WERR_OK;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct registry_key *key = NULL;
 
-	werr = libnet_smbconf_reg_open_path(mem_ctx, subkeyname, REG_KEY_READ,
+	werr = libnet_smbconf_reg_open_path(mem_ctx, servicename, REG_KEY_READ,
 					    &key);
 	if (W_ERROR_IS_OK(werr)) {
 		ret = true;
