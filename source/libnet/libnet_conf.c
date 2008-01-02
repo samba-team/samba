@@ -58,7 +58,7 @@ static WERROR libnet_smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
  * Open a subkey of KEY_SMBCONF (i.e a service)
  */
 static WERROR libnet_smbconf_reg_open_service_key(TALLOC_CTX *ctx,
-						  const char *subkeyname,
+						  const char *servicename,
 						  uint32 desired_access,
 						  struct registry_key **key)
 {
@@ -71,10 +71,10 @@ static WERROR libnet_smbconf_reg_open_service_key(TALLOC_CTX *ctx,
 		goto done;
 	}
 
-	if (subkeyname == NULL) {
+	if (servicename == NULL) {
 		path = talloc_strdup(ctx, KEY_SMBCONF);
 	} else {
-		path = talloc_asprintf(ctx, "%s\\%s", KEY_SMBCONF, subkeyname);
+		path = talloc_asprintf(ctx, "%s\\%s", KEY_SMBCONF, servicename);
 	}
 
 	werr = reg_open_path(ctx, path, desired_access,
