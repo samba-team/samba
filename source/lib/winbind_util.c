@@ -74,8 +74,8 @@ bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	DEBUG(10, ("winbind_lookup_sid: SUCCESS: SID %s -> %s %s\n", 
 		   sid_string_dbg(sid), domain_name, account_name));
 
-	SAFE_FREE(domain_name);
-	SAFE_FREE(account_name);
+	wbcFreeMemory(domain_name);
+	wbcFreeMemory(account_name);
 	
 	if ((domain && !*domain) || (name && !*name)) {		
 		DEBUG(0,("winbind_lookup_sid: talloc() failed!\n"));
@@ -192,8 +192,9 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 	
 	ret = wbcLookupRids(&dom_sid, num_rids, rids,
 			    &dom_name, &namelist, &name_types);
-	if (ret != WBC_ERR_SUCCESS)
+	if (ret != WBC_ERR_SUCCESS) {		
 		return False;
+	}	
 	
 	*domain_name = talloc_strdup(mem_ctx, dom_name);
 	*names       = TALLOC_ARRAY(mem_ctx, const char*, num_rids);
@@ -202,11 +203,11 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 	for(i=0; i<num_rids; i++) {
 		(*names)[i] = talloc_strdup(names, namelist[i]);
 		(*types)[i] = (enum lsa_SidType)name_types[i];
-
-		free(CONST_DISCARD(char*, namelist[i]));		
 	}
-	free(namelist);
-	free(name_types);
+
+	wbcFreeMemory(CONST_DISCARD(char*, dom_name));
+	wbcFreeMemory(namelist);
+	wbcFreeMemory(name_types);
 	
 	return True;	
 }
