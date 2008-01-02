@@ -1368,7 +1368,8 @@ NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
   this triggers on a debug level of >= 10
 */
 void dcerpc_log_packet(const struct ndr_interface_table *ndr,
-		       uint32_t opnum, uint32_t flags, DATA_BLOB *pkt)
+		       uint32_t opnum, uint32_t flags, 
+		       DATA_BLOB *pkt)
 {
 	const int num_examples = 20;
 	int i;
