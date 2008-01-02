@@ -162,7 +162,7 @@ class Samba3SamTestCase(MapBaseTestCase):
         # TODO: Actually, this version should work as well but doesn't...
         # 
         #    
-        msg = ldb.search(expression="(cn=Foo)", base="cn=Foo", scope=LDB_SCOPE_BASE, attrs=['foo','blah','cn','showInAdvancedViewOnly'])
+        msg = ldb.search(expression="(cn=Foo)", base="cn=Foo", scope=SCOPE_BASE, attrs=['foo','blah','cn','showInAdvancedViewOnly'])
         self.assertEquals(len(msg), 1)
         self.assertEquals(msg[0]["showInAdvancedViewOnly"], "TRUE")
         self.assertEquals(msg[0]["foo"], "bar")
@@ -820,7 +820,7 @@ description: foo
                    "sambaNextRid": "1001"})
         # Check it's there
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid"]
-        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
+        res = s3.db.search(dn2, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "foo")
@@ -835,7 +835,7 @@ description: foo
         self.assertEquals(res[0]["badPwdCount"], "3")
         self.assertEquals(res[0]["nextRid"], "1001")
         # Check in local db
-        res = s4.db.search("", dn, SCOPE_BASE, attrs)
+        res = s4.db.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 0)
 
         # Modify remote data of remote record
@@ -857,7 +857,7 @@ badPwdCount: 4
         self.assertEquals(res[0]["nextRid"], "1001")
         # Check in remote db
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid"]
-        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
+        res = s3.db.search(dn2, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "test")
@@ -879,7 +879,7 @@ badPwdCount: 4
         # Check in remote db 
         dn2 = s3.dn("cn=toast")
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid"]
-        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
+        res = s3.db.search(dn2, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "test")
@@ -892,7 +892,7 @@ badPwdCount: 4
         res = ldb.search(dn, scope=SCOPE_BASE)
         self.assertEquals(len(res), 0)
         # Check in remote db
-        res = s3.db.search("", dn2, SCOPE_BASE)
+        res = s3.db.search(dn2, scope=SCOPE_BASE)
         self.assertEquals(len(res), 0)
 
     def test_map_modify_remote_local(self):
@@ -927,13 +927,13 @@ description: test
         self.assertEquals(res[0]["description"], "test")
         self.assertEquals(res[0]["revision"], "1")
         # Check in remote db
-        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
+        res = s3.db.search(dn2, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "test")
         self.assertEquals(res[0]["revision"], undefined)
         # Check in local db
-        res = s4.db.search("", dn, SCOPE_BASE, attrs)
+        res = s4.db.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], undefined)
@@ -968,7 +968,7 @@ description: test
         self.assertEquals(res[0]["nextRid"], "1001")
         self.assertEquals(res[0]["revision"], "1")
         # Check in local db
-        res = s4.db.search("", dn, SCOPE_BASE, attrs)
+        res = s4.db.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], undefined)
@@ -977,7 +977,7 @@ description: test
         self.assertEquals(res[0]["revision"], "1")
         # Check in remote db
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid", "revision"]
-        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
+        res = s3.db.search(dn2, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "foo")
@@ -1006,7 +1006,7 @@ revision: 2
         self.assertEquals(res[0]["nextRid"], "1001")
         self.assertEquals(res[0]["revision"], "2")
         # Check in local db
-        res = s4.db.search("", dn, SCOPE_BASE, attrs)
+        res = s4.db.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], undefined)
@@ -1015,7 +1015,7 @@ revision: 2
         self.assertEquals(res[0]["revision"], "2")
         # Check in remote db
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid", "revision"]
-        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
+        res = s3.db.search(dn2, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "test")
@@ -1037,7 +1037,7 @@ revision: 2
         self.assertEquals(res[0]["nextRid"], "1001")
         self.assertEquals(res[0]["revision"], "2")
         # Check in local db
-        res = s4.db.search("", dn, SCOPE_BASE, attrs)
+        res = s4.db.search(dn, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn)
         self.assertEquals(res[0]["description"], undefined)
@@ -1047,7 +1047,7 @@ revision: 2
         # Check in remote db
         dn2 = s3.dn("cn=toast")
         attrs = ["description", "sambaBadPasswordCount", "sambaNextRid", "revision"]
-        res = s3.db.search("", dn2, SCOPE_BASE, attrs)
+        res = s3.db.search(dn2, scope=SCOPE_BASE, attrs=attrs)
         self.assertEquals(len(res), 1)
         self.assertEquals(str(res[0].dn), dn2)
         self.assertEquals(res[0]["description"], "test")
@@ -1061,8 +1061,8 @@ revision: 2
         res = ldb.search(dn, scope=SCOPE_BASE)
         self.assertEquals(len(res), 0)
         # Check in local db
-        res = s4.db.search("", dn, SCOPE_BASE)
+        res = s4.db.search(dn, scope=SCOPE_BASE)
         self.assertEquals(len(res), 0)
         # Check in remote db
-        res = s3.db.search("", dn2, SCOPE_BASE)
+        res = s3.db.search(dn2, scope=SCOPE_BASE)
         self.assertEquals(len(res), 0)
