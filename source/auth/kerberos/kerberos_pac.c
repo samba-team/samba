@@ -437,6 +437,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	struct PAC_SIGNATURE_DATA *kdc_checksum = NULL;
 	struct PAC_SIGNATURE_DATA *srv_checksum = NULL;
 	int i;
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	/* First, just get the keytypes filled in (and lengths right, eventually) */
 	for (i=0; i < pac_data->num_buffers; i++) {
@@ -485,7 +486,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	memset(srv_checksum->signature.data, '\0', srv_checksum->signature.length);
 
 	ndr_err = ndr_push_struct_blob(&tmp_blob, mem_ctx, 
-				       lp_iconv_convenience(global_loadparm),
+				       iconv_convenience,
 				       pac_data,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -510,7 +511,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 
 	/* And push it out again, this time to the world.  This relies on determanistic pointer values */
 	ndr_err = ndr_push_struct_blob(&tmp_blob, mem_ctx, 
-				       lp_iconv_convenience(global_loadparm),
+				       iconv_convenience,
 				       pac_data,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

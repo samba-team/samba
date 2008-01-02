@@ -83,7 +83,7 @@ static struct tdb_wrap *ctdb_tdb_tmp_open(struct cluster_ops *ops,
 					  struct loadparm_context *lp_ctx,
 					  const char *dbname, int flags)
 {
-	const char *dir = lp_parm_string(global_loadparm, NULL, "ctdb", "shared data");
+	const char *dir = lp_parm_string(lp_ctx, NULL, "ctdb", "shared data");
 	char *path;
 	struct tdb_wrap *w;
 	if (dir == NULL) {
