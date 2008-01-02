@@ -89,8 +89,7 @@ static void continue_smb_connect(struct composite_context *ctx)
   Initiate async open of a rpc connection to a rpc pipe on SMB using
   the binding structure to determine the endpoint and options
 */
-static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *mem_ctx, 
-								struct dcerpc_pipe_connect *io)
+static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CTX *mem_ctx, struct dcerpc_pipe_connect *io, struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	struct pipe_np_smb_state *s;
@@ -111,14 +110,14 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	/* prepare smb connection parameters: we're connecting to IPC$ share on
 	   remote rpc server */
 	conn->in.dest_host              = s->io.binding->host;
-	conn->in.dest_ports                  = lp_smb_ports(global_loadparm);
+	conn->in.dest_ports                  = lp_smb_ports(lp_ctx);
 	if (s->io.binding->target_hostname == NULL)
 		conn->in.called_name = "*SMBSERVER"; /* FIXME: This is invalid */
 	else
 		conn->in.called_name            = s->io.binding->target_hostname;
 	conn->in.service                = "IPC$";
 	conn->in.service_type           = NULL;
-	conn->in.workgroup		= lp_workgroup(global_loadparm);
+	conn->in.workgroup		= lp_workgroup(lp_ctx);
 
 	/*
 	 * provide proper credentials - user supplied, but allow a
@@ -208,7 +207,8 @@ static void continue_smb2_connect(struct composite_context *ctx)
 */
 static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 					TALLOC_CTX *mem_ctx,
-					struct dcerpc_pipe_connect *io)
+					struct dcerpc_pipe_connect *io,
+					struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	struct pipe_np_smb2_state *s;
@@ -232,7 +232,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb2_send(
 		s->io.creds = cli_credentials_init(mem_ctx);
 		if (composite_nomem(s->io.creds, c)) return c;
 
-		cli_credentials_guess(s->io.creds, global_loadparm);
+		cli_credentials_guess(s->io.creds, lp_ctx);
 	}
 
 	/* send smb2 connect request */
@@ -427,7 +427,7 @@ static void continue_pipe_open_ncalrpc(struct composite_context *ctx)
    the binding structure to determine the endpoint and options
 */
 static struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *mem_ctx,
-								  struct dcerpc_pipe_connect *io)
+								  struct dcerpc_pipe_connect *io, struct loadparm_context *lp_ctx)
 {
 	struct composite_context *c;
 	struct pipe_ncalrpc_state *s;
@@ -445,7 +445,7 @@ static struct composite_context* dcerpc_pipe_connect_ncalrpc_send(TALLOC_CTX *me
 	s->io  = *io;
 
 	/* send pipe open request */
-	pipe_req = dcerpc_pipe_open_pipe_send(s->io.pipe->conn, lp_ncalrpc_dir(global_loadparm), 
+	pipe_req = dcerpc_pipe_open_pipe_send(s->io.pipe->conn, lp_ncalrpc_dir(lp_ctx), 
 					      s->io.binding->endpoint);
 	composite_continue(c, pipe_req, continue_pipe_open_ncalrpc, c);
 	return c;
@@ -522,20 +522,20 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 	pc.binding      = s->binding;
 	pc.interface    = s->table;
 	pc.creds        = s->credentials;
-	pc.resolve_ctx  = lp_resolve_context(global_loadparm);
+	pc.resolve_ctx  = lp_resolve_context(s->lp_ctx);
 
 	/* connect dcerpc pipe depending on required transport */
 	switch (s->binding->transport) {
 	case NCACN_NP:
 		if (pc.binding->flags & DCERPC_SMB2) {
 			/* new varient of SMB a.k.a. SMB2 */
-			ncacn_np_smb2_req = dcerpc_pipe_connect_ncacn_np_smb2_send(c, &pc);
+			ncacn_np_smb2_req = dcerpc_pipe_connect_ncacn_np_smb2_send(c, &pc, s->lp_ctx);
 			composite_continue(c, ncacn_np_smb2_req, continue_pipe_connect_ncacn_np_smb2, c);
 			return;
 
 		} else {
 			/* good old ordinary SMB */
-			ncacn_np_smb_req = dcerpc_pipe_connect_ncacn_np_smb_send(c, &pc);
+			ncacn_np_smb_req = dcerpc_pipe_connect_ncacn_np_smb_send(c, &pc, s->lp_ctx);
 			composite_continue(c, ncacn_np_smb_req, continue_pipe_connect_ncacn_np_smb, c);
 			return;
 		}
@@ -552,7 +552,7 @@ static void continue_connect(struct composite_context *c, struct pipe_connect_st
 		return;
 
 	case NCALRPC:
-		ncalrpc_req = dcerpc_pipe_connect_ncalrpc_send(c, &pc);
+		ncalrpc_req = dcerpc_pipe_connect_ncalrpc_send(c, &pc, s->lp_ctx);
 		composite_continue(c, ncalrpc_req, continue_pipe_connect_ncalrpc, c);
 		return;
 

@@ -303,6 +303,7 @@ static void continue_socket_connect(struct composite_context *ctx)
 
 static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ctx,
 						       struct dcerpc_connection *cn,
+						       struct resolve_context *resolve_context,
 						       struct socket_address *server,
 						       const char *target_hostname,
 						       enum dcerpc_transport_t transport)
@@ -333,7 +334,7 @@ static struct composite_context *dcerpc_pipe_open_socket_send(TALLOC_CTX *mem_ct
 	talloc_steal(s->sock, s->socket_ctx);
 
 	conn_req = socket_connect_send(s->socket_ctx, NULL, s->server, 0, 
-				       lp_resolve_context(global_loadparm), 
+				       resolve_context, 
 				       c->event_ctx);
 	composite_continue(c, conn_req, continue_socket_connect, c);
 	return c;
@@ -354,6 +355,7 @@ struct pipe_tcp_state {
 	const char *address;
 	uint32_t port;
 	struct socket_address *srvaddr;
+	struct resolve_context *resolve_ctx;
 	struct dcerpc_connection *conn;
 };
 
@@ -381,6 +383,7 @@ static void continue_ip_resolve_name(struct composite_context *ctx)
 
 	/* resolve_nbt_name gives only ipv4 ... - send socket open request */
 	sock_ipv4_req = dcerpc_pipe_open_socket_send(c, s->conn,
+						     s->resolve_ctx,
 						     s->srvaddr, s->target_hostname,
 						     NCACN_IP_TCP);
 	composite_continue(c, sock_ipv4_req, continue_ipv4_open_socket, c);
@@ -479,6 +482,7 @@ struct composite_context* dcerpc_pipe_open_tcp_send(struct dcerpc_connection *co
 	}
 	s->port            = port;
 	s->conn            = conn;
+	s->resolve_ctx     = resolve_ctx;
 
 	make_nbt_name_server(&name, server);
 	resolve_req = resolve_name_send(resolve_ctx, &name, c->event_ctx);
@@ -554,6 +558,7 @@ struct composite_context *dcerpc_pipe_open_unix_stream_send(struct dcerpc_connec
 
 	/* send socket open request */
 	sock_unix_req = dcerpc_pipe_open_socket_send(c, s->conn, 
+						     NULL,
 						     s->srvaddr, NULL,
 						     NCALRPC);
 	composite_continue(c, sock_unix_req, continue_unix_open_socket, c);
@@ -630,7 +635,7 @@ struct composite_context* dcerpc_pipe_open_pipe_send(struct dcerpc_connection *c
 	if (composite_nomem(s->srvaddr, c)) return c;
 
 	/* send socket open request */
-	sock_np_req = dcerpc_pipe_open_socket_send(c, s->conn, s->srvaddr, NULL, NCALRPC);
+	sock_np_req = dcerpc_pipe_open_socket_send(c, s->conn, NULL, s->srvaddr, NULL, NCALRPC);
 	composite_continue(c, sock_np_req, continue_np_open_socket, c);
 	return c;
 }
