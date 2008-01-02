@@ -106,7 +106,7 @@ typedef int ldb_error;
 }
 
 #ifdef SWIGPYTHON
-%typemap(argout) struct ldb_result ** (int i) {
+%typemap(argout,noblock=1) struct ldb_result ** (int i) {
 	$result = PyList_New((*$1)->count);
     for (i = 0; i < (*$1)->count; i++) {
         PyList_SetItem($result, i, 
@@ -129,7 +129,7 @@ typedef int ldb_error;
     }
 }
 
-%typemap(freearg) const char * const *attrs {
+%typemap(freearg,noblock=1) const char * const *attrs {
     talloc_free($1);
 }
 #endif
@@ -331,7 +331,6 @@ typedef struct ldb_message {
             return ret;
         }
         ~ldb_msg() { talloc_free($self); }
-
         ldb_msg_element *find_element(const char *name);
         
 #ifdef SWIGPYTHON
@@ -393,8 +392,7 @@ static void py_ldb_debug(void *context, enum ldb_debug_level level, const char *
 }
 %}
 
-%typemap(in,numinputs=1) (void (*debug)(void *context, enum ldb_debug_level level, const char *fmt, va_list ap),
-                            void *context) {
+%typemap(in,numinputs=1,noblock=1) (void (*debug)(void *context, enum ldb_debug_level level, const char *fmt, va_list ap), void *context) {
     $1 = py_ldb_debug;
     /* FIXME: Should be decreased somewhere as well. Perhaps register a 
        destructor and tie it to the ldb context ? */
@@ -485,6 +483,7 @@ typedef struct ldb_context {
             PyObject *key, *value;
             ldb_msg_element *msgel;
             ldb_msg *msg = NULL;
+
             if (PyDict_Check(py_msg)) {
                 msg = ldb_msg_new(NULL);
                 msg->elements = talloc_zero_array(msg, struct ldb_message_element, PyDict_Size(py_msg));
@@ -516,7 +515,7 @@ typedef struct ldb_context {
                     return LDB_ERR_OTHER;
             }
 
-            ret = ldb_add($self,msg);
+            ret = ldb_add($self, msg);
 
             talloc_free(msg);
             return ret;
@@ -542,9 +541,9 @@ typedef struct ldb_context {
         ldb_error transaction_cancel();
 
 #ifdef SWIGPYTHON
-        %typemap(in,numinputs=0) struct ldb_result **result_as_bool (struct ldb_result *tmp) { $1 = &tmp; }
-        %typemap(argout) struct ldb_result **result_as_bool { $result = ((*$1)->count > 0)?Py_True:Py_False; }
-        %typemap(freearg) struct ldb_result **result_as_bool { talloc_free(*$1); }
+        %typemap(in,numinputs=0,noblock=1) struct ldb_result **result_as_bool (struct ldb_result *tmp) { $1 = &tmp; }
+        %typemap(argout,noblock=1) struct ldb_result **result_as_bool { $result = ((*$1)->count > 0)?Py_True:Py_False; }
+        %typemap(freearg,noblock=1) struct ldb_result **result_as_bool { talloc_free(*$1); }
         ldb_error __contains__(ldb_dn *dn, struct ldb_result **result_as_bool)
         {
             return ldb_search($self, dn, LDB_SCOPE_BASE, NULL, NULL, 
@@ -597,7 +596,7 @@ static char *timestring(time_t t)
 %rename(string_to_time) ldb_string_to_time;
 time_t ldb_string_to_time(const char *s);
 
-%typemap(in) const struct ldb_module_ops * {
+%typemap(in,noblock=1) const struct ldb_module_ops * {
     $1 = talloc_zero(talloc_autofree_context(), struct ldb_module_ops);
 
     $1->name = (char *)PyObject_GetAttrString($input, (char *)"name");
