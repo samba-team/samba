@@ -332,10 +332,24 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		   if the rsn values are equal */
 		if (header.rsn < hdr->rsn ||
 		    (header.dmaster != ctdb->pnn && header.rsn == hdr->rsn)) {
-			ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
-			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to store record\n"));
-				goto failed;
+			/* this is a push optimisation - we can skip writing the record if:
+
+			       1) this is not a persistent db
+			   AND 2) we are not the recmaster
+			   AND 3) we don't hold the record currently
+			   AND 4) we won't hold the new record
+			*/
+			if (!ctdb_db->persistent &&
+			    ctdb->recovery_master != ctdb->pnn &&
+			    header.dmaster != ctdb->pnn &&
+			    hdr->dmaster != ctdb->pnn) {
+				DEBUG(5,("Skipping push of record\n"));
+			} else {
+				ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
+				if (ret != 0) {
+					DEBUG(0, (__location__ " Unable to store record\n"));
+					goto failed;
+				}
 			}
 		}
 
@@ -359,6 +373,11 @@ static int traverse_setdmaster(struct tdb_context *tdb, TDB_DATA key, TDB_DATA d
 	uint32_t *dmaster = (uint32_t *)p;
 	struct ctdb_ltdb_header *header = (struct ctdb_ltdb_header *)data.dptr;
 	int ret;
+
+	/* skip if already correct */
+	if (header->dmaster == *dmaster) {
+		return 0;
+	}
 
 	header->dmaster = *dmaster;
 

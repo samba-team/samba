@@ -28,7 +28,7 @@
 #include <time.h>
 
 static int num_records = 10;
-
+static int base_rec;
 
 static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
 {
@@ -43,7 +43,8 @@ static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
 
 	printf("creating %d records\n", num_records);
 	for (i=0;i<num_records;i++) {
-		key.dptr = (uint8_t *)&i;
+		int r = base_rec + i;
+		key.dptr = (uint8_t *)&r;
 		key.dsize = sizeof(uint32_t); 
 
 		h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
@@ -71,7 +72,8 @@ static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
 	printf("fetching all %d records\n", num_records);
 	while (1) {
 		for (i=0;i<num_records;i++) {
-			key.dptr = (uint8_t *)&i;
+			int r = base_rec + i;
+			key.dptr = (uint8_t *)&r;
 			key.dsize = sizeof(uint32_t); 
 
 			h = ctdb_fetch_lock(ctdb_db, tmp_ctx, key, &data);
@@ -103,6 +105,7 @@ int main(int argc, const char *argv[])
 		POPT_AUTOHELP
 		POPT_CTDB_CMDLINE
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
+		{ "base-rec", 'b', POPT_ARG_INT, &base_rec, 0, "base_rec", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;

@@ -504,25 +504,19 @@ static int pull_all_remote_databases(struct ctdb_context *ctdb, struct ctdb_node
 /*
   change the dmaster on all databases to point to us
  */
-static int update_dmaster_on_all_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
-					   uint32_t pnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
+static int update_dmaster_on_our_databases(struct ctdb_context *ctdb, uint32_t pnn, 
+					   struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
 {
-	int i, j, ret;
+	int i, ret;
 
 	/* update dmaster to point to this node for all databases/nodes */
 	for (i=0;i<dbmap->num;i++) {
-		for (j=0; j<nodemap->num; j++) {
-			/* dont repoint nodes that are unavailable */
-			if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-				continue;
-			}
-			ret = ctdb_ctrl_setdmaster(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-						   ctdb, dbmap->dbs[i].dbid, pnn);
-			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to set dmaster for node %u db:0x%08x\n", 
-					  nodemap->nodes[j].pnn, dbmap->dbs[i].dbid));
-				return -1;
-			}
+		ret = ctdb_ctrl_setdmaster(ctdb, CONTROL_TIMEOUT(), pnn, 
+					   ctdb, dbmap->dbs[i].dbid, pnn);
+		if (ret != 0) {
+			DEBUG(0, (__location__ " Unable to set dmaster for node %u db:0x%08x\n", 
+				  pnn, dbmap->dbs[i].dbid));
+			return -1;
 		}
 	}
 
@@ -1004,6 +998,18 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	DEBUG(1, (__location__ " Recovery - pulled remote databases\n"));
 
+	/* repoint all local database records to the local node as
+	   being dmaster
+	 */
+	ret = update_dmaster_on_our_databases(ctdb, pnn, dbmap, mem_ctx);
+	if (ret != 0) {
+		DEBUG(0, (__location__ " Unable to update dmaster on all databases\n"));
+		return -1;
+	}
+
+	DEBUG(1, (__location__ " Recovery - updated dmaster on all databases\n"));
+
+
 	/* push all local databases to the remote nodes */
 	ret = push_all_local_databases(ctdb, nodemap, pnn, dbmap, mem_ctx);
 	if (ret != 0) {
@@ -1046,17 +1052,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	}
 
 	DEBUG(1, (__location__ " Recovery - updated recmaster\n"));
-
-	/* repoint all local and remote database records to the local
-	   node as being dmaster
-	 */
-	ret = update_dmaster_on_all_databases(ctdb, nodemap, pnn, dbmap, mem_ctx);
-	if (ret != 0) {
-		DEBUG(0, (__location__ " Unable to update dmaster on all databases\n"));
-		return -1;
-	}
-
-	DEBUG(1, (__location__ " Recovery - updated dmaster on all databases\n"));
 
 	/*
 	  update all nodes to have the same flags that we have
