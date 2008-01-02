@@ -172,8 +172,7 @@ class Ldb(ldb.Ldb):
 
         :param ldif: LDIF text.
         """
-        for (changetype, msg) in self.parse_ldif(ldif):
-            assert changetype == ldb.CHANGETYPE_MODIFY
+        for changetype, msg in self.parse_ldif(ldif):
             self.modify(msg)
 
 
