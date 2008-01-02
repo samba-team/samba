@@ -1194,7 +1194,7 @@ static WERROR regf_get_sec_desc(TALLOC_CTX *ctx, const struct hive_key *key,
 
 	data.data = sk.sec_desc;
 	data.length = sk.rec_size;
-	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_pull_struct_blob(&data, ctx, *sd,
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_pull_struct_blob(&data, ctx, NULL, *sd,
 						  (ndr_pull_flags_fn_t)ndr_pull_security_descriptor))) {
 		DEBUG(0, ("Error parsing security descriptor\n"));
 		return WERR_GENERAL_FAILURE;

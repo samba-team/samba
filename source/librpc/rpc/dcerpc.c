@@ -56,7 +56,8 @@ static int dcerpc_connection_destructor(struct dcerpc_connection *conn)
    the event context is optional
 */
 static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx, 
-						 struct event_context *ev)
+						 struct event_context *ev,
+						 struct smb_iconv_convenience *ic)
 {
 	struct dcerpc_connection *c;
 
@@ -72,6 +73,8 @@ static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 			return NULL;
 		}
 	}
+
+	c->iconv_convenience = talloc_reference(c, ic);
 
 	c->event_ctx = ev;
 	
@@ -95,7 +98,8 @@ static struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx,
 }
 
 /* initialise a dcerpc pipe. */
-struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct event_context *ev)
+struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct event_context *ev,
+				     struct smb_iconv_convenience *ic)
 {
 	struct dcerpc_pipe *p;
 
@@ -104,7 +108,7 @@ struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx, struct event_context *
 		return NULL;
 	}
 
-	p->conn = dcerpc_connection_init(p, ev);
+	p->conn = dcerpc_connection_init(p, ev, ic);
 	if (p->conn == NULL) {
 		talloc_free(p);
 		return NULL;
@@ -170,7 +174,7 @@ void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
 static struct ndr_pull *ndr_pull_init_flags(struct dcerpc_connection *c, 
 					    DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
-	struct ndr_pull *ndr = ndr_pull_init_blob(blob, mem_ctx, lp_iconv_convenience(global_loadparm));
+	struct ndr_pull *ndr = ndr_pull_init_blob(blob, mem_ctx, c->iconv_convenience);
 
 	if (ndr == NULL) return ndr;
 
@@ -350,7 +354,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 		return ncacn_push_auth(blob, mem_ctx, pkt, c->security_state.auth_info);
 	}
 
-	ndr = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
+	ndr = ndr_push_init_ctx(mem_ctx, c->iconv_convenience);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -666,6 +670,7 @@ static void dcerpc_bind_recv_handler(struct rpc_request *req,
 		enum ndr_err_code ndr_err;
 		ndr_err = ndr_pull_struct_blob(
 			&pkt->u.bind_ack.auth_info, conn,
+			NULL,
 			conn->security_state.auth_info,
 			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -1194,7 +1199,7 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	push = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
+	push = ndr_push_init_ctx(mem_ctx, c->iconv_convenience);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
 	}	
@@ -1252,7 +1257,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 	}
 	memcpy(st, struct_ptr, struct_size);
 
-	push = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
+	push = ndr_push_init_ctx(mem_ctx, c->iconv_convenience);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
 	}	
@@ -1283,7 +1288,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	push = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
+	push = ndr_push_init_ctx(mem_ctx, c->iconv_convenience);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
 	}	
@@ -1334,7 +1339,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 }
 
 
-/*
+/**
  send a rpc request given a dcerpc_call structure 
  */
 struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
@@ -1354,7 +1359,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	call = &table->calls[opnum];
 
 	/* setup for a ndr_push_* call */
-	push = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
+	push = ndr_push_init_ctx(mem_ctx, p->conn->iconv_convenience);
 	if (!push) {
 		return NULL;
 	}
@@ -1584,6 +1589,7 @@ static void dcerpc_alter_recv_handler(struct rpc_request *req,
 		enum ndr_err_code ndr_err;
 		ndr_err = ndr_pull_struct_blob(
 			&pkt->u.alter_resp.auth_info, recv_pipe,
+			NULL,
 			recv_pipe->conn->security_state.auth_info,
 			(ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

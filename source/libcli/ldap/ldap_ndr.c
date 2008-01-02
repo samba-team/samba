@@ -85,7 +85,7 @@ NTSTATUS ldap_decode_ndr_GUID(TALLOC_CTX *mem_ctx, struct ldb_val val, struct GU
 
 	blob.data = val.data;
 	blob.length = val.length;
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, guid,
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, NULL, guid,
 				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
 	talloc_free(val.data);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

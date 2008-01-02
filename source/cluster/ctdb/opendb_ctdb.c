@@ -205,7 +205,7 @@ static NTSTATUS odb_pull_record(struct odb_lock *lck, struct opendb_file *file)
 	blob.data = dbuf.dptr;
 	blob.length = dbuf.dsize;
 
-	ndr_err = ndr_pull_struct_blob(&blob, lck, file, (ndr_pull_flags_fn_t)ndr_pull_opendb_file);
+	ndr_err = ndr_pull_struct_blob(&blob, lck, lp_iconv_convenience(global_loadparm), file, (ndr_pull_flags_fn_t)ndr_pull_opendb_file);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}

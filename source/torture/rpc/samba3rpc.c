@@ -89,7 +89,8 @@ bool torture_bind_authcontext(struct torture_context *torture)
 		goto done;
 	}
 
-	lsa_pipe = dcerpc_pipe_init(mem_ctx, cli->transport->socket->event.ctx);
+	lsa_pipe = dcerpc_pipe_init(mem_ctx, cli->transport->socket->event.ctx,
+				    lp_iconv_convenience(torture->lp_ctx));
 	if (lsa_pipe == NULL) {
 		d_printf("dcerpc_pipe_init failed\n");
 		goto done;
@@ -206,7 +207,8 @@ static bool bindtest(struct smbcli_state *cli,
 	}
 
 	lsa_pipe = dcerpc_pipe_init(mem_ctx,
-				    cli->transport->socket->event.ctx);
+				    cli->transport->socket->event.ctx,
+				    lp_iconv_convenience(lp_ctx));
 	if (lsa_pipe == NULL) {
 		d_printf("dcerpc_pipe_init failed\n");
 		goto done;
@@ -346,7 +348,8 @@ static NTSTATUS get_usr_handle(struct smbcli_state *cli,
 	uint32_t user_rid,access_granted;
 
 	samr_pipe = dcerpc_pipe_init(mem_ctx,
-				     cli->transport->socket->event.ctx);
+				     cli->transport->socket->event.ctx,
+				     lp_iconv_convenience(lp_ctx));
 	if (samr_pipe == NULL) {
 		d_printf("dcerpc_pipe_init failed\n");
 		status = NT_STATUS_NO_MEMORY;
@@ -816,7 +819,8 @@ static bool auth2(struct smbcli_state *cli,
 	}
 
 	net_pipe = dcerpc_pipe_init(mem_ctx,
-				    cli->transport->socket->event.ctx);
+				    cli->transport->socket->event.ctx,
+				    lp_iconv_convenience(global_loadparm));
 	if (net_pipe == NULL) {
 		d_printf("dcerpc_pipe_init failed\n");
 		goto done;
@@ -918,7 +922,8 @@ static bool schan(struct smbcli_state *cli,
 	}
 
 	net_pipe = dcerpc_pipe_init(mem_ctx,
-				    cli->transport->socket->event.ctx);
+				    cli->transport->socket->event.ctx,
+				    lp_iconv_convenience(lp_ctx));
 	if (net_pipe == NULL) {
 		d_printf("dcerpc_pipe_init failed\n");
 		goto done;
@@ -1366,7 +1371,8 @@ static NTSTATUS pipe_bind_smb(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	if (!(result = dcerpc_pipe_init(
-		      mem_ctx, tree->session->transport->socket->event.ctx))) {
+		      mem_ctx, tree->session->transport->socket->event.ctx, 
+		      lp_iconv_convenience(global_loadparm)))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1901,7 +1907,8 @@ bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 	}
 
 	if (!(net_pipe = dcerpc_pipe_init(
-		      mem_ctx, cli->transport->socket->event.ctx))) {
+		      mem_ctx, cli->transport->socket->event.ctx,
+		      lp_iconv_convenience(torture->lp_ctx)))) {
 		d_printf("dcerpc_pipe_init failed\n");
 		goto done;
 	}
@@ -2972,7 +2979,8 @@ static NTSTATUS get_shareinfo(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	if (!(p = dcerpc_pipe_init(cli,
-				   cli->transport->socket->event.ctx))) {
+				   cli->transport->socket->event.ctx,
+				   lp_iconv_convenience(global_loadparm)))) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
@@ -3038,7 +3046,8 @@ static NTSTATUS get_hklm_handle(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!(p = dcerpc_pipe_init(result,
-				   cli->transport->socket->event.ctx))) {
+				   cli->transport->socket->event.ctx,
+				   lp_iconv_convenience(global_loadparm)))) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}

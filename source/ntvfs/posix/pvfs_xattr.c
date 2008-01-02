@@ -117,7 +117,8 @@ _PUBLIC_ NTSTATUS pvfs_xattr_ndr_load(struct pvfs_state *pvfs,
 	}
 
 	/* pull the blob */
-	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, p, (ndr_pull_flags_fn_t)pull_fn);
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), 
+				       p, (ndr_pull_flags_fn_t)pull_fn);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}

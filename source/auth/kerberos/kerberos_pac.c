@@ -113,8 +113,9 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ndr_err = ndr_pull_struct_blob(&blob, pac_data, pac_data,
-				       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+	ndr_err = ndr_pull_struct_blob(&blob, pac_data, 
+			iconv_convenience, pac_data,
+		       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
 		DEBUG(0,("can't parse the PAC: %s\n",
@@ -128,7 +129,8 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ndr_err = ndr_pull_struct_blob(&blob, pac_data_raw, pac_data_raw,
+	ndr_err = ndr_pull_struct_blob(&blob, pac_data_raw, 
+				       iconv_convenience, pac_data_raw,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA_RAW);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -208,7 +210,8 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	/* Find and zero out the signatures, as required by the signing algorithm */
 
 	/* We find the data blobs above, now we parse them to get at the exact portion we should zero */
-	ndr_err = ndr_pull_struct_blob(kdc_sig_blob, kdc_sig_wipe, kdc_sig_wipe,
+	ndr_err = ndr_pull_struct_blob(kdc_sig_blob, kdc_sig_wipe, 
+				       iconv_convenience, kdc_sig_wipe,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -217,7 +220,8 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 		return status;
 	}
 	
-	ndr_err = ndr_pull_struct_blob(srv_sig_blob, srv_sig_wipe, srv_sig_wipe,
+	ndr_err = ndr_pull_struct_blob(srv_sig_blob, srv_sig_wipe, 
+				       iconv_convenience, srv_sig_wipe,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);

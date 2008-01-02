@@ -473,7 +473,7 @@ static int setup_primary_kerberos(struct setup_password_fields_io *io,
 		talloc_steal(io->ac, blob.data);
 
 		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
-		ndr_err = ndr_pull_struct_blob(&blob, io->ac, &_old_pkb,
+		ndr_err = ndr_pull_struct_blob(&blob, io->ac, lp_iconv_convenience(global_loadparm), &_old_pkb,
 					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -880,7 +880,7 @@ static int setup_supplemental_field(struct setup_password_fields_io *io)
 
 	/* if there's an old supplementaCredentials blob then parse it */
 	if (io->o.supplemental) {
-		ndr_err = ndr_pull_struct_blob_all(io->o.supplemental, io->ac, &_old_scb,
+		ndr_err = ndr_pull_struct_blob_all(io->o.supplemental, io->ac, lp_iconv_convenience(ldb_get_opaque(io->ac->module->ldb, "loadparm")), &_old_scb,
 						   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);

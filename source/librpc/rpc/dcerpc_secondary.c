@@ -71,7 +71,7 @@ struct composite_context* dcerpc_secondary_connection_send(struct dcerpc_pipe *p
 	s->binding  = b;
 
 	/* initialise second dcerpc pipe based on primary pipe's event context */
-	s->pipe2 = dcerpc_pipe_init(c, s->pipe->conn->event_ctx);
+	s->pipe2 = dcerpc_pipe_init(c, s->pipe->conn->event_ctx, s->pipe->conn->iconv_convenience);
 	if (composite_nomem(s->pipe2, c)) return c;
 
 	/* open second dcerpc pipe using the same transport as for primary pipe */

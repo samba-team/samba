@@ -73,7 +73,6 @@ struct cldap_request {
 struct cldap_socket {
 	struct socket_context *sock;
 	struct event_context *event_ctx;
-	struct loadparm_context *lp_ctx;
 
 	/* the fd event */
 	struct fd_event *fde;

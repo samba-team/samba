@@ -31,6 +31,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "param/param.h"
 
 static WERROR dreplsrv_refresh_partitions(struct dreplsrv_service *s);
 
@@ -155,7 +156,8 @@ static WERROR dreplsrv_partition_add_source_dsa(struct dreplsrv_service *s,
 	source = talloc_zero(p, struct dreplsrv_partition_source_dsa);
 	W_ERROR_HAVE_NO_MEMORY(source);
 
-	ndr_err = ndr_pull_struct_blob(val, source, &source->_repsFromBlob,
+	ndr_err = ndr_pull_struct_blob(val, source, 
+				       lp_iconv_convenience(global_loadparm), &source->_repsFromBlob,
 				       (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -221,7 +223,8 @@ static WERROR dreplsrv_refresh_partition(struct dreplsrv_service *s,
 	ouv_value = ldb_msg_find_ldb_val(r->msgs[0], "replUpToDateVector");
 	if (ouv_value) {
 		enum ndr_err_code ndr_err;
-		ndr_err = ndr_pull_struct_blob(ouv_value, mem_ctx, &ouv,
+		ndr_err = ndr_pull_struct_blob(ouv_value, mem_ctx, 
+					       lp_iconv_convenience(global_loadparm), &ouv,
 					       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);

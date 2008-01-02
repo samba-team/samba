@@ -102,8 +102,7 @@ static NTSTATUS wrepl_finish_recv(void *private, DATA_BLOB packet_blob_in)
 	blob.length = packet_blob_in.length - 4;
 	
 	/* we have a full request - parse it */
-	ndr_err = ndr_pull_struct_blob(&blob,
-				       req->packet, req->packet,
+	ndr_err = ndr_pull_struct_blob(&blob, req->packet, lp_iconv_convenience(global_loadparm), req->packet,
 				       (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);

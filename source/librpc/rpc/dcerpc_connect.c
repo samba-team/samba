@@ -731,7 +731,7 @@ struct composite_context* dcerpc_pipe_connect_b_send(TALLOC_CTX *parent_ctx,
 	c->private_data = s;
 
 	/* initialise dcerpc pipe structure */
-	s->pipe = dcerpc_pipe_init(c, ev);
+	s->pipe = dcerpc_pipe_init(c, ev, lp_iconv_convenience(lp_ctx));
 	if (composite_nomem(s->pipe, c)) return c;
 
 	/* store parameters in state structure */

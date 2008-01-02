@@ -909,7 +909,8 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	/* find existing meta data */
 	omd_value = ldb_msg_find_ldb_val(ar->sub.search_msg, "replPropertyMetaData");
 	if (omd_value) {
-		ndr_err = ndr_pull_struct_blob(omd_value, ar->sub.mem_ctx, &omd,
+		ndr_err = ndr_pull_struct_blob(omd_value, ar->sub.mem_ctx, 
+					       lp_iconv_convenience(ldb_get_opaque(ar->module->ldb, "loadparm")), &omd,
 					       (ndr_pull_flags_fn_t)ndr_pull_replPropertyMetaDataBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -1234,7 +1235,8 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	 */
 	ouv_value = ldb_msg_find_ldb_val(ar->sub.search_msg, "replUpToDateVector");
 	if (ouv_value) {
-		ndr_err = ndr_pull_struct_blob(ouv_value, ar->sub.mem_ctx, &ouv,
+		ndr_err = ndr_pull_struct_blob(ouv_value, ar->sub.mem_ctx, 
+					       lp_iconv_convenience(ldb_get_opaque(ar->module->ldb, "loadparm")), &ouv,
 					       (ndr_pull_flags_fn_t)ndr_pull_replUpToDateVectorBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -1398,7 +1400,7 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 			trf = talloc(ar->sub.mem_ctx, struct repsFromToBlob);
 			if (!trf) return replmd_replicated_request_werror(ar, WERR_NOMEM);
 
-			ndr_err = ndr_pull_struct_blob(&orf_el->values[i], trf, trf,
+			ndr_err = ndr_pull_struct_blob(&orf_el->values[i], trf, lp_iconv_convenience(ldb_get_opaque(ar->module->ldb, "loadparm")), trf,
 						       (ndr_pull_flags_fn_t)ndr_pull_repsFromToBlob);
 			if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 				NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);

@@ -103,8 +103,10 @@ static NTSTATUS schannel_update(struct gensec_security *gensec_security, TALLOC_
 		}
 		
 		/* parse the schannel startup blob */
-		ndr_err = ndr_pull_struct_blob(&in, out_mem_ctx, &bind_schannel,
-					       (ndr_pull_flags_fn_t)ndr_pull_schannel_bind);
+		ndr_err = ndr_pull_struct_blob(&in, out_mem_ctx,
+			lp_iconv_convenience(gensec_security->lp_ctx),
+			&bind_schannel, 
+			(ndr_pull_flags_fn_t)ndr_pull_schannel_bind);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			status = ndr_map_error2ntstatus(ndr_err);
 			DEBUG(3, ("Could not parse incoming schannel bind: %s\n",

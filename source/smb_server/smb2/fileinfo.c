@@ -310,7 +310,7 @@ static NTSTATUS smb2srv_setinfo_security(struct smb2srv_setinfo_op *op, uint8_t 
 		io->set_secdesc.in.sd = talloc(io, struct security_descriptor);
 		NT_STATUS_HAVE_NO_MEMORY(io->set_secdesc.in.sd);
 
-		ndr_err = ndr_pull_struct_blob(&op->info->in.blob, io,
+		ndr_err = ndr_pull_struct_blob(&op->info->in.blob, io, NULL,
 					       io->set_secdesc.in.sd,
 					       (ndr_pull_flags_fn_t)ndr_pull_security_descriptor);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

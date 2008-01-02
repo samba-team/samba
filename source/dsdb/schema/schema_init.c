@@ -85,7 +85,7 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 	struct prefixMapBlob pfm;
 	char *schema_info;
 
-	ndr_err = ndr_pull_struct_blob(prefixMap, schema, &pfm,
+	ndr_err = ndr_pull_struct_blob(prefixMap, schema, lp_iconv_convenience(global_loadparm), &pfm,
 				       (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -658,7 +658,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 		struct drsuapi_DsReplicaObjectIdentifier3 _id3; \
 		enum ndr_err_code _ndr_err; \
 		_ndr_err = ndr_pull_struct_blob_all(_a->value_ctr.values[0].blob, \
-						      mem_ctx, &_id3,\
+						      mem_ctx, lp_iconv_convenience(global_loadparm), &_id3,\
 						      (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);\
 		if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
 			NTSTATUS _nt_status = ndr_map_error2ntstatus(_ndr_err); \
@@ -720,7 +720,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	    && _a->value_ctr.values[0].blob->length == 16) { \
 		enum ndr_err_code _ndr_err; \
 		_ndr_err = ndr_pull_struct_blob_all(_a->value_ctr.values[0].blob, \
-						      mem_ctx, &(p)->elem, \
+						      mem_ctx, lp_iconv_convenience(global_loadparm), &(p)->elem, \
 						      (ndr_pull_flags_fn_t)ndr_pull_GUID); \
 		if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
 			NTSTATUS _nt_status = ndr_map_error2ntstatus(_ndr_err); \
