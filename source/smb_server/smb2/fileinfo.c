@@ -145,7 +145,7 @@ static NTSTATUS smb2srv_getinfo_security_send(struct smb2srv_getinfo_op *op)
 	union smb_fileinfo *io = talloc_get_type(op->io_ptr, union smb_fileinfo);
 	enum ndr_err_code ndr_err;
 
-	ndr_err = ndr_push_struct_blob(&op->info->out.blob, op->req,
+	ndr_err = ndr_push_struct_blob(&op->info->out.blob, op->req, NULL,
 				       io->query_secdesc.out.sd,
 				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

@@ -29,6 +29,7 @@
 #include "librpc/gen_ndr/ndr_krb5pac.h"
 #include "lib/ldb/include/ldb.h"
 #include "auth/auth_sam_reply.h"
+#include "param/param.h"
 
 static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx, 
 					  DATA_BLOB pac_data,
@@ -85,6 +86,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	struct PAC_LOGON_NAME *logon_name = NULL;
 	struct PAC_DATA *pac_data;
 	struct PAC_DATA_RAW *pac_data_raw;
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	DATA_BLOB *srv_sig_blob = NULL;
 	DATA_BLOB *kdc_sig_blob = NULL;
@@ -229,7 +231,9 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	memset(srv_sig_wipe->signature.data, '\0', srv_sig_wipe->signature.length);
 	
 	/* and reencode, back into the same place it came from */
-	ndr_err = ndr_push_struct_blob(kdc_sig_blob, pac_data_raw, kdc_sig_wipe,
+	ndr_err = ndr_push_struct_blob(kdc_sig_blob, pac_data_raw, 
+				       iconv_convenience,
+				       kdc_sig_wipe,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -237,7 +241,9 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 			nt_errstr(status)));
 		return status;
 	}
-	ndr_err = ndr_push_struct_blob(srv_sig_blob, pac_data_raw, srv_sig_wipe,
+	ndr_err = ndr_push_struct_blob(srv_sig_blob, pac_data_raw, 
+				       iconv_convenience,
+				       srv_sig_wipe,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -247,7 +253,9 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	/* push out the whole structure, but now with zero'ed signatures */
-	ndr_err = ndr_push_struct_blob(&modified_pac_blob, pac_data_raw, pac_data_raw,
+	ndr_err = ndr_push_struct_blob(&modified_pac_blob, pac_data_raw, 
+				       iconv_convenience,
+				       pac_data_raw,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA_RAW);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -472,7 +480,9 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	memset(kdc_checksum->signature.data, '\0', kdc_checksum->signature.length);
 	memset(srv_checksum->signature.data, '\0', srv_checksum->signature.length);
 
-	ndr_err = ndr_push_struct_blob(&tmp_blob, mem_ctx, pac_data,
+	ndr_err = ndr_push_struct_blob(&tmp_blob, mem_ctx, 
+				       lp_iconv_convenience(global_loadparm),
+				       pac_data,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -495,7 +505,9 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	}
 
 	/* And push it out again, this time to the world.  This relies on determanistic pointer values */
-	ndr_err = ndr_push_struct_blob(&tmp_blob, mem_ctx, pac_data,
+	ndr_err = ndr_push_struct_blob(&tmp_blob, mem_ctx, 
+				       lp_iconv_convenience(global_loadparm),
+				       pac_data,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);

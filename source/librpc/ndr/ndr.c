@@ -755,11 +755,10 @@ _PUBLIC_ enum ndr_err_code ndr_pull_union_blob_all(const DATA_BLOB *blob, TALLOC
 /*
   push a struct to a blob using NDR
 */
-_PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, const void *p,
-			      ndr_push_flags_fn_t fn)
+_PUBLIC_ enum ndr_err_code ndr_push_struct_blob(DATA_BLOB *blob, TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, const void *p, ndr_push_flags_fn_t fn)
 {
 	struct ndr_push *ndr;
-	ndr = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
+	ndr = ndr_push_init_ctx(mem_ctx, iconv_convenience);
 	NDR_ERR_HAVE_NO_MEMORY(ndr);
 
 	NDR_CHECK(fn(ndr, NDR_SCALARS|NDR_BUFFERS, p));

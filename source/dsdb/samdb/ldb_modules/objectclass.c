@@ -43,6 +43,7 @@
 #include "librpc/gen_ndr/ndr_security.h"
 #include "libcli/security/security.h"
 #include "auth/auth.h"
+#include "param/param.h"
 
 struct oc_context {
 
@@ -273,7 +274,9 @@ static DATA_BLOB *get_sd(struct ldb_module *module, TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	ndr_err = ndr_push_struct_blob(linear_sd, mem_ctx, sd,
+	ndr_err = ndr_push_struct_blob(linear_sd, mem_ctx, 
+					lp_iconv_convenience(ldb_get_opaque(module->ldb, "loadparm")),
+				       sd,
 				       (ndr_push_flags_fn_t)ndr_push_security_descriptor);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return NULL;

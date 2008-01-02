@@ -24,6 +24,7 @@
 #include "lib/util/dlinklist.h"
 #include "libcli/dgram/libdgram.h"
 #include "lib/socket/socket.h"
+#include "param/param.h"
 #include "librpc/gen_ndr/ndr_nbt.h"
 
 
@@ -228,7 +229,7 @@ NTSTATUS nbt_dgram_send(struct nbt_dgram_socket *dgmsock,
 	req->dest = dest;
 	if (talloc_reference(req, dest) == NULL) goto failed;
 
-	ndr_err = ndr_push_struct_blob(&req->encoded, req, packet,
+	ndr_err = ndr_push_struct_blob(&req->encoded, req, lp_iconv_convenience(global_loadparm), packet,
 				      (ndr_push_flags_fn_t)ndr_push_nbt_dgram_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);

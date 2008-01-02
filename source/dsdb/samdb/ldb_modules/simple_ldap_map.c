@@ -49,7 +49,7 @@ static struct ldb_val encode_guid(struct ldb_module *module, TALLOC_CTX *ctx, co
 	if (!NT_STATUS_IS_OK(status)) {
 		return out;
 	}
-	ndr_err = ndr_push_struct_blob(&out, ctx, &guid,
+	ndr_err = ndr_push_struct_blob(&out, ctx, NULL, &guid,
 				       (ndr_push_flags_fn_t)ndr_push_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return out;
@@ -93,7 +93,7 @@ static struct ldb_val encode_ns_guid(struct ldb_module *module, TALLOC_CTX *ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		return out;
 	}
-	ndr_err = ndr_push_struct_blob(&out, ctx, &guid,
+	ndr_err = ndr_push_struct_blob(&out, ctx, NULL, &guid,
 				       (ndr_push_flags_fn_t)ndr_push_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return out;

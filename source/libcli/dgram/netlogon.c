@@ -40,7 +40,9 @@ NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 	DATA_BLOB blob;
 	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
 
-	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, request,
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, 
+				       lp_iconv_convenience(global_loadparm),
+				       request,
 				      (ndr_push_flags_fn_t)ndr_push_nbt_netlogon_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
@@ -73,7 +75,9 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 	struct nbt_name myname;
 	struct socket_address *dest;
 
-	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, reply,
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, 
+				       lp_iconv_convenience(global_loadparm),
+				       reply,
 				      (ndr_push_flags_fn_t)ndr_push_nbt_netlogon_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);

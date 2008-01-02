@@ -175,7 +175,7 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		os.build		= dcesrv_common_get_version_build(mem_ctx, server->ntptr->lp_ctx);
 		os.extra_string		= "";
 
-		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &os, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersion);
+		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, lp_iconv_convenience(global_loadparm), &os, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersion);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return WERR_GENERAL_FAILURE;
 		}
@@ -195,7 +195,7 @@ static WERROR sptr_GetPrintServerData(struct ntptr_GenericHandle *server, TALLOC
 		os_ex.unknown2		= 0;
 		os_ex.unknown3		= 0;
 
-		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &os_ex, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersionEx);
+		ndr_err = ndr_push_struct_blob(&blob, mem_ctx, lp_iconv_convenience(global_loadparm), &os_ex, (ndr_push_flags_fn_t)ndr_push_spoolss_OSVersionEx);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			return WERR_GENERAL_FAILURE;
 		}

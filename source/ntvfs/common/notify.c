@@ -219,7 +219,7 @@ static NTSTATUS notify_save(struct notify_context *notify)
 	tmp_ctx = talloc_new(notify);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_ctx);
 
-	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, notify->array,
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, lp_iconv_convenience(global_loadparm), notify->array,
 				       (ndr_push_flags_fn_t)ndr_push_notify_array);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
@@ -554,8 +554,7 @@ static void notify_send(struct notify_context *notify, struct notify_entry *e,
 
 	tmp_ctx = talloc_new(notify);
 
-	ndr_err = ndr_push_struct_blob(&data, tmp_ctx, &ev,
-				      (ndr_push_flags_fn_t)ndr_push_notify_event);
+	ndr_err = ndr_push_struct_blob(&data, tmp_ctx, lp_iconv_convenience(global_loadparm), &ev, (ndr_push_flags_fn_t)ndr_push_notify_event);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(tmp_ctx);
 		return;

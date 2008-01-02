@@ -47,6 +47,7 @@
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_drsblobs.h"
+#include "param/param.h"
 
 struct replmd_replicated_request {
 	struct ldb_module *module;
@@ -518,13 +519,17 @@ static int replmd_add_originating(struct ldb_module *module,
 	replmd_replPropertyMetaDataCtr1_sort(&nmd.ctr.ctr1, &rdn_attr->attributeID_id);
 
 	/* generated NDR encoded values */
-	ndr_err = ndr_push_struct_blob(&guid_value, msg, &guid,
+	ndr_err = ndr_push_struct_blob(&guid_value, msg, 
+				       NULL,
+				       &guid,
 				       (ndr_push_flags_fn_t)ndr_push_GUID);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
-	ndr_err = ndr_push_struct_blob(&nmd_value, msg, &nmd,
+	ndr_err = ndr_push_struct_blob(&nmd_value, msg, 
+				       lp_iconv_convenience(ldb_get_opaque(module->ldb, "loadparm")),
+				       &nmd,
 				       (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(down_req);
@@ -773,7 +778,9 @@ static int replmd_replicated_apply_add(struct replmd_replicated_request *ar)
 	for (i=0; i < md->ctr.ctr1.count; i++) {
 		md->ctr.ctr1.array[i].local_usn = seq_num;
 	}
-	ndr_err = ndr_push_struct_blob(&md_value, msg, md,
+	ndr_err = ndr_push_struct_blob(&md_value, msg, 
+				       lp_iconv_convenience(global_loadparm),
+				       md,
 				       (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -985,7 +992,9 @@ static int replmd_replicated_apply_merge(struct replmd_replicated_request *ar)
 	}
 
 	/* create the meta data value */
-	ndr_err = ndr_push_struct_blob(&nmd_value, msg, &nmd,
+	ndr_err = ndr_push_struct_blob(&nmd_value, msg, 
+				       lp_iconv_convenience(global_loadparm),
+				       &nmd,
 				       (ndr_push_flags_fn_t)ndr_push_replPropertyMetaDataBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -1350,7 +1359,9 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	if (!msg) return replmd_replicated_request_werror(ar, WERR_NOMEM);
 	msg->dn = ar->sub.search_msg->dn;
 
-	ndr_err = ndr_push_struct_blob(&nuv_value, msg, &nuv,
+	ndr_err = ndr_push_struct_blob(&nuv_value, msg, 
+				       lp_iconv_convenience(global_loadparm), 
+				       &nuv,
 				       (ndr_push_flags_fn_t)ndr_push_replUpToDateVectorBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -1437,7 +1448,9 @@ static int replmd_replicated_uptodate_modify(struct replmd_replicated_request *a
 	}
 
 	/* we now fill the value which is already attached to ldb_message */
-	ndr_err = ndr_push_struct_blob(nrf_value, msg, &nrf,
+	ndr_err = ndr_push_struct_blob(nrf_value, msg, 
+				       lp_iconv_convenience(global_loadparm),
+				       &nrf,
 				       (ndr_push_flags_fn_t)ndr_push_repsFromToBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);

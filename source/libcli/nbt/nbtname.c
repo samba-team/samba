@@ -27,6 +27,7 @@
 #include "librpc/gen_ndr/ndr_nbt.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "system/locale.h"
+#include "param/param.h"
 
 /* don't allow an unlimited number of name components */
 #define MAX_COMPONENTS 10
@@ -384,8 +385,7 @@ _PUBLIC_ NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct 
 {
 	enum ndr_err_code ndr_err;
 
-	ndr_err = ndr_push_struct_blob(blob, mem_ctx, name,
-				       (ndr_push_flags_fn_t)ndr_push_nbt_name);
+	ndr_err = ndr_push_struct_blob(blob, mem_ctx, lp_iconv_convenience(global_loadparm), name, (ndr_push_flags_fn_t)ndr_push_nbt_name);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
