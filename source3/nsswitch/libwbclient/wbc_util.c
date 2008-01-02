@@ -51,10 +51,6 @@ wbcErr wbcPing(void)
  *
  * @return #wbcErr
  *
- * The char* members of the struct wbcDomainInfo* are malloc()'d
- * and it the the responsibility of the caller to free the members
- * before  discarding the struct.
- *
  **/
 
 
