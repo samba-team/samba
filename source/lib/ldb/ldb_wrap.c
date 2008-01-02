@@ -3040,6 +3040,7 @@ SWIGINTERN ldb_error ldb_add__SWIG_1(ldb *self,PyObject *py_msg){
             PyObject *key, *value;
             ldb_msg_element *msgel;
             ldb_msg *msg = NULL;
+
             if (PyDict_Check(py_msg)) {
                 msg = ldb_msg_new(NULL);
                 msg->elements = talloc_zero_array(msg, struct ldb_message_element, PyDict_Size(py_msg));
@@ -3071,7 +3072,7 @@ SWIGINTERN ldb_error ldb_add__SWIG_1(ldb *self,PyObject *py_msg){
                     return 80;
             }
 
-            ret = ldb_add(self,msg);
+            ret = ldb_add(self, msg);
 
             talloc_free(msg);
             return ret;
@@ -4358,26 +4359,20 @@ SWIGINTERN PyObject *_wrap_Ldb_search(PyObject *SWIGUNUSEDPARM(self), PyObject *
     SWIG_fail;
   }
   resultobj = Py_None;
-  {
-    resultobj = PyList_New((*arg6)->count);
-    for (i6 = 0; i6 < (*arg6)->count; i6++) {
-      PyList_SetItem(resultobj, i6, 
-        SWIG_NewPointerObj((*arg6)->msgs[i6], SWIGTYPE_p_ldb_message, 0)
-        );
-    }
+  resultobj = PyList_New((*arg6)->count);
+  for (i6 = 0; i6 < (*arg6)->count; i6++) {
+    PyList_SetItem(resultobj, i6, 
+      SWIG_NewPointerObj((*arg6)->msgs[i6], SWIGTYPE_p_ldb_message, 0)
+      );
   }
   talloc_free(arg2);
   if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
-  {
-    talloc_free(arg5);
-  }
+  talloc_free(arg5);
   return resultobj;
 fail:
   talloc_free(arg2);
   if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
-  {
-    talloc_free(arg5);
-  }
+  talloc_free(arg5);
   return NULL;
 }
 
@@ -4833,13 +4828,11 @@ SWIGINTERN PyObject *_wrap_Ldb_set_debug(PyObject *SWIGUNUSEDPARM(self), PyObjec
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_set_debug" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
-  {
-    arg2 = py_ldb_debug;
-    /* FIXME: Should be decreased somewhere as well. Perhaps register a 
-           destructor and tie it to the ldb context ? */
-    Py_INCREF(obj1);
-    arg3 = obj1;
-  }
+  arg2 = py_ldb_debug;
+  /* FIXME: Should be decreased somewhere as well. Perhaps register a 
+         destructor and tie it to the ldb context ? */
+  Py_INCREF(obj1);
+  arg3 = obj1;
   if (arg1 == NULL)
   SWIG_exception(SWIG_ValueError, 
     "ldb context must be non-NULL");
@@ -5051,9 +5044,7 @@ SWIGINTERN PyObject *_wrap_Ldb___contains__(PyObject *SWIGUNUSEDPARM(self), PyOb
     (char *) "self",(char *) "dn", NULL 
   };
   
-  {
-    arg3 = &tmp3; 
-  }
+  arg3 = &tmp3;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:Ldb___contains__",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
@@ -5072,19 +5063,13 @@ SWIGINTERN PyObject *_wrap_Ldb___contains__(PyObject *SWIGUNUSEDPARM(self), PyOb
     SWIG_fail;
   }
   resultobj = Py_None;
-  {
-    resultobj = ((*arg3)->count > 0)?Py_True:Py_False; 
-  }
+  resultobj = ((*arg3)->count > 0)?Py_True:Py_False;
   talloc_free(arg2);
-  {
-    talloc_free(*arg3); 
-  }
+  talloc_free(*arg3);
   return resultobj;
 fail:
   talloc_free(arg2);
-  {
-    talloc_free(*arg3); 
-  }
+  talloc_free(*arg3);
   return NULL;
 }
 
@@ -5231,11 +5216,9 @@ SWIGINTERN PyObject *_wrap_register_module(PyObject *SWIGUNUSEDPARM(self), PyObj
   };
   
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O:register_module",kwnames,&obj0)) SWIG_fail;
-  {
-    arg1 = talloc_zero(talloc_autofree_context(), struct ldb_module_ops);
-    
-    arg1->name = (char *)PyObject_GetAttrString(obj0, (char *)"name");
-  }
+  arg1 = talloc_zero(talloc_autofree_context(), struct ldb_module_ops);
+  
+  arg1->name = (char *)PyObject_GetAttrString(obj0, (char *)"name");
   result = ldb_register_module((struct ldb_module_ops const *)arg1);
   if (result != 0) {
     PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(i,s)", result, ldb_strerror(result)));
