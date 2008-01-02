@@ -2129,6 +2129,14 @@ Makefile: $(srcdir)/Makefile.in config.status
 ######################################################################
 # Samba Testing Framework
 
+# Check shared libs for unresolved symbols
+test_shlibs: $(SHLIBS)
+	@echo "Testing $(SHLIBS) "
+	@for module in $(SHLIBS); do \
+		./script/tests/dlopen.sh bin/$${module}.@SHLIBEXT@ \
+			|| exit 1; \
+	done
+
 # Check for NSS module problems.
 test_nss_modules: nss_modules
 	@echo "Testing $(NSS_MODULES) "
