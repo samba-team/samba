@@ -295,12 +295,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_st
 				bestfit.rec_len = rec->rec_len;
 				bestfit.rec_ptr = rec_ptr;
 				bestfit.last_ptr = last_ptr;
-				/* consider a fit to be good enough if
-				   we aren't wasting more than half
-				   the space */
-				if (bestfit.rec_len < 2*length) {
-					break;
-				}
+				break;
 			}
 		}
 

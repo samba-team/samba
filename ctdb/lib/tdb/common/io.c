@@ -261,9 +261,9 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	/* must know about any previous expansions by another process */
 	tdb->methods->tdb_oob(tdb, tdb->map_size + 1, 1);
 
-	/* always make room for at least 10 more records, and round
+	/* always make room for at least 100 more records, and round
            the database up to a multiple of the page size */
-	size = TDB_ALIGN(tdb->map_size + size*10, tdb->page_size) - tdb->map_size;
+	size = TDB_ALIGN(tdb->map_size + size*100, tdb->page_size) - tdb->map_size;
 
 	if (!(tdb->flags & TDB_INTERNAL))
 		tdb_munmap(tdb);

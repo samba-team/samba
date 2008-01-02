@@ -6,7 +6,6 @@ if [ $# -gt 0 ]; then
 fi
 NODES="nodes.txt"
 shift
-shift
 
 rm -f nodes.txt
 for i in `seq 1 $NUMNODES`; do
