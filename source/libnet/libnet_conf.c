@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  libnet smbconf registry Support
- *  Copyright (C) Michael Adam 2007
+ *  Copyright (C) Michael Adam 2007-2008
  *  Copyright (C) Guenther Deschner 2007
  *
  *  This program is free software; you can redistribute it and/or modify
