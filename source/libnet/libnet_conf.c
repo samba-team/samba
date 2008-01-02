@@ -68,6 +68,8 @@ static WERROR libnet_smbconf_reg_open_service_key(TALLOC_CTX *ctx,
 
 	if (!(token = registry_create_admin_token(ctx))) {
 		DEBUG(1, ("Error creating admin token\n"));
+		/* what is the appropriate error code here? */
+		werr = WERR_CAN_NOT_COMPLETE;
 		goto done;
 	}
 
