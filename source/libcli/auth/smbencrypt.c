@@ -299,7 +299,8 @@ DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx,
 {
 	DATA_BLOB names_blob = data_blob_talloc(mem_ctx, NULL, 0);
 	
-	msrpc_gen(mem_ctx, &names_blob, "aaa", 
+	msrpc_gen(mem_ctx, lp_iconv_convenience(global_loadparm), &names_blob, 
+		  "aaa", 
 		  NTLMSSP_NAME_TYPE_DOMAIN, domain,
 		  NTLMSSP_NAME_TYPE_SERVER, hostname,
 		  0, "");
@@ -321,7 +322,7 @@ static DATA_BLOB NTLMv2_generate_client_data(TALLOC_CTX *mem_ctx, const DATA_BLO
 
 	/* See http://www.ubiqx.org/cifs/SMB.html#SMB.8.5 */
 
-	msrpc_gen(mem_ctx, &response, "ddbbdb", 
+	msrpc_gen(mem_ctx, NULL, &response, "ddbbdb", 
 		  0x00000101,     /* Header  */
 		  0,              /* 'Reserved'  */
 		  long_date, 8,	  /* Timestamp */
