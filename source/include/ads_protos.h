@@ -114,3 +114,7 @@ ADS_STATUS ads_get_tokensids(ADS_STRUCT *ads,
 			      DOM_SID *primary_group_sid,
 			      DOM_SID **sids,
 			      size_t *num_sids);
+ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
+				TALLOC_CTX *mem_ctx,
+				char ***ous,
+				size_t *num_ous);

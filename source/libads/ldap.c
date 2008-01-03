@@ -2791,6 +2791,66 @@ ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char ***suffix
 }
 
 /**
+ * get the joinable ous for a domain
+ * @param ads connection to ads server
+ * @param mem_ctx Pointer to talloc context
+ * @param ous Pointer to an array of ous
+ * @param num_ous Pointer to the number of ous
+ * @return status of search
+ **/
+ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
+				TALLOC_CTX *mem_ctx,
+				char ***ous,
+				size_t *num_ous)
+{
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	LDAPMessage *msg = NULL;
+	const char *attrs[] = { "dn", NULL };
+	int count = 0;
+
+	status = ads_search(ads, &res,
+			    "(|(objectClass=domain)(objectclass=organizationalUnit))",
+			    attrs);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	count = ads_count_replies(ads, res);
+	if (count < 1) {
+		ads_msgfree(ads, res);
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	}
+
+	for (msg = ads_first_entry(ads, res); msg;
+	     msg = ads_next_entry(ads, msg)) {
+
+		char *dn = NULL;
+
+		dn = ads_get_dn(ads, msg);
+		if (!dn) {
+			ads_msgfree(ads, res);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
+		if (!add_string_to_array(mem_ctx, dn,
+					 (const char ***)ous,
+					 (int *)num_ous)) {
+			ads_memfree(ads, dn);
+			ads_msgfree(ads, res);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
+		ads_memfree(ads, dn);
+	}
+
+	ads_msgfree(ads, res);
+
+	return status;
+}
+
+
+/**
  * pull a DOM_SID from an extended dn string
  * @param mem_ctx TALLOC_CTX 
  * @param extended_dn string
