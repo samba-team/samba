@@ -395,13 +395,6 @@ WERROR libnet_smbconf_drop(void)
 	TALLOC_CTX* mem_ctx = talloc_stackframe();
 	enum winreg_CreateAction action;
 
-	if (!(token = registry_create_admin_token(mem_ctx))) {
-		DEBUG(1, ("Error creating admin token\n"));
-		/* what is the appropriate error code here? */
-		werr = WERR_CAN_NOT_COMPLETE;
-		goto done;
-	}
-
 	path = talloc_strdup(mem_ctx, KEY_SMBCONF);
 	if (path == NULL) {
 		werr = WERR_NOMEM;
@@ -409,7 +402,8 @@ WERROR libnet_smbconf_drop(void)
 	}
 	p = strrchr(path, '\\');
 	*p = '\0';
-	werr = reg_open_path(mem_ctx, path, REG_KEY_WRITE, token, &parent_key);
+	werr = libnet_smbconf_reg_open_path(mem_ctx, path, REG_KEY_WRITE,
+					    &parent_key);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
