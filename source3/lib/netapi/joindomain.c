@@ -233,7 +233,6 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
-				 DS_IS_FLAT_NAME |
 				 DS_RETURN_DNS_NAME;
 		if (lp_realm()) {
 			domain = lp_realm();
