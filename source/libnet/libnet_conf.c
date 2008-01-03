@@ -612,6 +612,27 @@ bool libnet_smbconf_share_exists(const char *servicename)
 }
 
 /**
+ * Add a service if it does not already exist.
+ */
+WERROR libnet_smbconf_create_share(const char *servicename)
+{
+	WERROR werr;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct registry_key *key = NULL;
+
+	if (libnet_smbconf_share_exists(servicename)) {
+		werr = WERR_ALREADY_EXISTS;
+		goto done;
+	}
+
+	werr = libnet_smbconf_reg_createkey_internal(mem_ctx, servicename, &key);
+
+done:
+	TALLOC_FREE(mem_ctx);
+	return werr;
+}
+
+/**
  * get a definition of a share (service) from configuration.
  */
 WERROR libnet_smbconf_getshare(TALLOC_CTX *mem_ctx, const char *servicename,
@@ -668,12 +689,12 @@ WERROR libnet_smbconf_setparm(const char *service,
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (!libnet_smbconf_share_exists(service)) {
-		werr = libnet_smbconf_reg_createkey_internal(mem_ctx, service,
-							     &key);
-	} else {
-		werr = libnet_smbconf_reg_open_service_key(mem_ctx, service,
-							   REG_KEY_WRITE, &key);
+		werr = WERR_NO_SUCH_SERVICE;
+		goto done;
 	}
+
+	werr = libnet_smbconf_reg_open_service_key(mem_ctx, service,
+						   REG_KEY_WRITE, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
