@@ -757,8 +757,7 @@ done:
 /**
  * delete a parameter from configuration
  */
-WERROR libnet_smbconf_delparm(const char *service,
-			      const char *param)
+WERROR libnet_conf_delete_parameter(const char *service, const char *param)
 {
 	struct registry_key *key = NULL;
 	WERROR werr = WERR_OK;

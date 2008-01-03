@@ -795,7 +795,7 @@ static int net_conf_delparm(int argc, const char **argv)
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	werr = libnet_smbconf_delparm(service, param);
+	werr = libnet_conf_delete_parameter(service, param);
 
 	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,
