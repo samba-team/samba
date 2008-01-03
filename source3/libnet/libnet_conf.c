@@ -612,7 +612,7 @@ bool libnet_conf_share_exists(const char *servicename)
 /**
  * Add a service if it does not already exist.
  */
-WERROR libnet_smbconf_create_share(const char *servicename)
+WERROR libnet_conf_create_share(const char *servicename)
 {
 	WERROR werr;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
