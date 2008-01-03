@@ -3019,7 +3019,8 @@ static int process_stdin(struct smbclient_context *ctx)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static bool do_connect(struct smbclient_context *ctx,
+static bool do_connect(struct smbclient_context *ctx, 
+		       struct resolve_context *resolve_ctx,
 		       const char *specified_server, const char **ports, const char *specified_share, struct cli_credentials *cred)
 {
 	NTSTATUS status;
@@ -3038,7 +3039,7 @@ static bool do_connect(struct smbclient_context *ctx,
 	ctx->remote_cur_dir = talloc_strdup(ctx, "\\");
 	
 	status = smbcli_full_connection(ctx, &ctx->cli, server, ports,
-					share, NULL, cred, 
+					share, NULL, cred, resolve_ctx, 
 					cli_credentials_get_event_context(cred));
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Connection to \\\\%s\\%s failed - %s\n", 
@@ -3064,7 +3065,7 @@ static int do_host_query(struct loadparm_context *lp_ctx, const char *query_host
 /****************************************************************************
 handle a message operation
 ****************************************************************************/
-static int do_message_op(const char *netbios_name, const char *desthost, const char **destports, const char *destip, int name_type, struct resolve_context *resolve_ctx, int max_xmit, int max_mux)
+static int do_message_op(const char *netbios_name, const char *desthost, const char **destports, const char *destip, int name_type, struct resolve_context *resolve_ctx, int max_xmit, int max_mux, bool use_spnego)
 {
 	struct nbt_name called, calling;
 	const char *server_name;
@@ -3076,7 +3077,7 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 
 	server_name = destip ? destip : desthost;
 
-	if (!(cli=smbcli_state_init(NULL)) || !smbcli_socket_connect(cli, server_name, destports, resolve_ctx, max_xmit, max_mux)) {
+	if (!(cli=smbcli_state_init(NULL)) || !smbcli_socket_connect(cli, server_name, destports, resolve_ctx, max_xmit, max_mux, use_spnego)) {
 		d_printf("Connection to %s failed\n", server_name);
 		return 1;
 	}
@@ -3224,10 +3225,10 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 	}
 
 	if (message) {
-		return do_message_op(lp_netbios_name(cmdline_lp_ctx), desthost, lp_smb_ports(cmdline_lp_ctx), dest_ip, name_type, lp_resolve_context(cmdline_lp_ctx), lp_max_xmit(cmdline_lp_ctx), lp_maxmux(cmdline_lp_ctx));
+		return do_message_op(lp_netbios_name(cmdline_lp_ctx), desthost, lp_smb_ports(cmdline_lp_ctx), dest_ip, name_type, lp_resolve_context(cmdline_lp_ctx), lp_max_xmit(cmdline_lp_ctx), lp_maxmux(cmdline_lp_ctx), lp_nt_status_support(cmdline_lp_ctx) && lp_use_spnego(cmdline_lp_ctx));
 	}
 	
-	if (!do_connect(ctx, desthost, lp_smb_ports(cmdline_lp_ctx), service, cmdline_credentials))
+	if (!do_connect(ctx, lp_resolve_context(cmdline_lp_ctx), desthost, lp_smb_ports(cmdline_lp_ctx), service, cmdline_credentials))
 		return 1;
 
 	if (base_directory) 

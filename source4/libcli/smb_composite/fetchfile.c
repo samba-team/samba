@@ -23,6 +23,8 @@
 #include "includes.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
 enum fetchfile_stage {FETCHFILE_CONNECT,
 		      FETCHFILE_READ};
@@ -145,7 +147,8 @@ struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetc
 	state->connect->in.fallback_to_anonymous = false;
 	state->connect->in.workgroup    = io->in.workgroup;
 
-	state->creq = smb_composite_connect_send(state->connect, state, event_ctx);
+	state->creq = smb_composite_connect_send(state->connect, state, 
+						 lp_resolve_context(global_loadparm), event_ctx);
 	if (state->creq == NULL) goto failed;
 
 	state->creq->async.private_data = c;

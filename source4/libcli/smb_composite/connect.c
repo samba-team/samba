@@ -309,7 +309,8 @@ static NTSTATUS connect_socket(struct composite_context *c,
 	/* the socket is up - we can initialise the smbcli transport layer */
 	state->transport = smbcli_transport_init(state->sock, state, true, 
 						 lp_max_xmit(global_loadparm),
-						 lp_maxmux(global_loadparm));
+						 lp_maxmux(global_loadparm),
+						 lp_use_spnego(global_loadparm) && lp_nt_status_support(global_loadparm));
 	NT_STATUS_HAVE_NO_MEMORY(state->transport);
 
 	if (is_ipaddress(state->sock->hostname) &&
@@ -362,7 +363,8 @@ static NTSTATUS connect_resolve(struct composite_context *c,
 
 	state->creq = smbcli_sock_connect_send(state, address, 
 					       io->in.dest_ports,
-					       io->in.dest_host, c->event_ctx);
+					       io->in.dest_host, 
+					       NULL, c->event_ctx);
 	NT_STATUS_HAVE_NO_MEMORY(state->creq);
 
 	state->stage = CONNECT_SOCKET;
@@ -440,6 +442,7 @@ static void composite_handler(struct composite_context *creq)
 */
 struct composite_context *smb_composite_connect_send(struct smb_composite_connect *io,
 						     TALLOC_CTX *mem_ctx,
+						     struct resolve_context *resolve_ctx,
 						     struct event_context *event_ctx)
 {
 	struct composite_context *c;
@@ -464,7 +467,7 @@ struct composite_context *smb_composite_connect_send(struct smb_composite_connec
 
 	state->stage = CONNECT_RESOLVE;
 	make_nbt_name_server(&name, io->in.dest_host);
-	state->creq = resolve_name_send(lp_resolve_context(global_loadparm), &name, c->event_ctx);
+	state->creq = resolve_name_send(resolve_ctx, &name, c->event_ctx);
 
 	if (state->creq == NULL) goto failed;
 	state->creq->async.private_data = c;
@@ -498,8 +501,9 @@ NTSTATUS smb_composite_connect_recv(struct composite_context *c, TALLOC_CTX *mem
   sync version of smb_composite_connect 
 */
 NTSTATUS smb_composite_connect(struct smb_composite_connect *io, TALLOC_CTX *mem_ctx,
+			       struct resolve_context *resolve_ctx,
 			       struct event_context *ev)
 {
-	struct composite_context *c = smb_composite_connect_send(io, mem_ctx, ev);
+	struct composite_context *c = smb_composite_connect_send(io, mem_ctx, resolve_ctx, ev);
 	return smb_composite_connect_recv(c, mem_ctx);
 }

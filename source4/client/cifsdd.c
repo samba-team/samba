@@ -22,6 +22,7 @@
 #include "system/filesys.h"
 #include "auth/gensec/gensec.h"
 #include "lib/cmdline/popt_common.h"
+#include "libcli/resolve/resolve.h"
 
 #include "cifsdd.h"
 #include "param/param.h"
@@ -351,7 +352,8 @@ static void print_transfer_stats(void)
 	}
 }
 
-static struct dd_iohandle * open_file(const char * which, const char **ports)
+static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx, 
+				      const char * which, const char **ports)
 {
 	int			options = 0;
 	const char *		path = NULL;
@@ -371,13 +373,13 @@ static struct dd_iohandle * open_file(const char * which, const char **ports)
 
 	if (strcmp(which, "if") == 0) {
 		path = check_arg_pathname("if");
-		handle = dd_open_path(path, ports, check_arg_numeric("ibs"),
-					options);
+		handle = dd_open_path(resolve_ctx, path, ports, 
+				      check_arg_numeric("ibs"), options);
 	} else if (strcmp(which, "of") == 0) {
 		options |= DD_WRITE;
 		path = check_arg_pathname("of");
-		handle = dd_open_path(path, ports, check_arg_numeric("obs"),
-					options);
+		handle = dd_open_path(resolve_ctx, path, ports, 
+				      check_arg_numeric("obs"), options);
 	} else {
 		SMB_ASSERT(0);
 		return(NULL);
@@ -431,11 +433,13 @@ static int copy_files(struct loadparm_context *lp_ctx)
 	DEBUG(4, ("IO buffer size is %llu, max xmit is %d\n",
 			(unsigned long long)iomax, lp_max_xmit(lp_ctx)));
 
-	if (!(ifile = open_file("if", lp_smb_ports(lp_ctx)))) {
+	if (!(ifile = open_file(lp_resolve_context(lp_ctx), "if", 
+				lp_smb_ports(lp_ctx)))) {
 		return(FILESYS_EXIT_CODE);
 	}
 
-	if (!(ofile = open_file("of", lp_smb_ports(lp_ctx)))) {
+	if (!(ofile = open_file(lp_resolve_context(lp_ctx), "of", 
+				lp_smb_ports(lp_ctx)))) {
 		return(FILESYS_EXIT_CODE);
 	}
 

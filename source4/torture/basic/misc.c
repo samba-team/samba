@@ -822,7 +822,8 @@ static struct composite_context *torture_connect_async(
 	smb->in.fallback_to_anonymous=false;
 	smb->in.workgroup=workgroup;
 	
-	return smb_composite_connect_send(smb,mem_ctx,ev);
+	return smb_composite_connect_send(smb,mem_ctx,
+					  lp_resolve_context(tctx->lp_ctx),ev);
 }
 
 bool run_benchrw(struct torture_context *tctx)

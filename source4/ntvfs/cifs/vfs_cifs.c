@@ -32,6 +32,7 @@
 #include "ntvfs/ntvfs.h"
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
 struct cvfs_file {
 	struct cvfs_file *prev, *next;
@@ -202,7 +203,9 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	io.in.service = remote_share;
 	io.in.service_type = "?????";
 	
-	creq = smb_composite_connect_send(&io, private, ntvfs->ctx->event_ctx);
+	creq = smb_composite_connect_send(&io, private, 
+					  lp_resolve_context(ntvfs->ctx->lp_ctx),
+					  ntvfs->ctx->event_ctx);
 	status = smb_composite_connect_recv(creq, private);
 	NT_STATUS_NOT_OK_RETURN(status);
 

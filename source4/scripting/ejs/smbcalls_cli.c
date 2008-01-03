@@ -26,6 +26,7 @@
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
 #include "libcli/libcli.h"
+#include "libcli/resolve/resolve.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
 
@@ -445,7 +446,9 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 	io.in.fallback_to_anonymous  = false;
 	io.in.workgroup              = lp_workgroup(global_loadparm);
 
-	result = smb_composite_connect(&io, mem_ctx, NULL);
+	result = smb_composite_connect(&io, mem_ctx, 
+				       lp_resolve_context(global_loadparm), 
+				       NULL);
 	tree = io.out.tree;
 
 	talloc_free(mem_ctx);

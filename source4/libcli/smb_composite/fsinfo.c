@@ -6,6 +6,8 @@
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
 /* the stages of this call */
 enum fsinfo_stage {FSINFO_CONNECT, FSINFO_QUERY};
@@ -157,7 +159,7 @@ struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree,
 	c->private_data = state;
 
 	state->creq = smb_composite_connect_send(state->connect, state,
-						 c->event_ctx);
+			 lp_resolve_context(global_loadparm), c->event_ctx);
 
 	if (state->creq == NULL) goto failed;
   

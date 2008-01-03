@@ -75,7 +75,8 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 					       TALLOC_CTX *parent_ctx, 
 					       bool primary, 
 					       int max_xmit,
-					       int max_mux)
+					       int max_mux,
+					       bool use_spnego)
 {
 	struct smbcli_transport *transport;
 
@@ -88,8 +89,7 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 		transport->socket = talloc_reference(transport, sock);
 	}
 	transport->negotiate.protocol = PROTOCOL_NT1;
-	transport->options.use_spnego = lp_use_spnego(global_loadparm) && 
-		                        lp_nt_status_support(global_loadparm);
+	transport->options.use_spnego = use_spnego;
 	transport->options.max_xmit = max_xmit;
 	transport->options.max_mux = max_mux;
 	transport->options.request_timeout = SMB_REQUEST_TIMEOUT;

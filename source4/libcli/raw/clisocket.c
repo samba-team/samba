@@ -47,6 +47,7 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 						   const char *host_addr,
 						   const char **ports,
 						   const char *host_name,
+						   struct resolve_context *resolve_ctx,
 						   struct event_context *event_ctx)
 {
 	struct composite_context *result, *ctx;
@@ -152,11 +153,13 @@ NTSTATUS smbcli_sock_connect_recv(struct composite_context *c,
 NTSTATUS smbcli_sock_connect(TALLOC_CTX *mem_ctx,
 			     const char *host_addr, const char **ports,
 			     const char *host_name,
+			     struct resolve_context *resolve_ctx,
 			     struct event_context *event_ctx,
 			     struct smbcli_socket **result)
 {
 	struct composite_context *c =
 		smbcli_sock_connect_send(mem_ctx, host_addr, ports, host_name,
+					 resolve_ctx,
 					 event_ctx);
 	return smbcli_sock_connect_recv(c, mem_ctx, result);
 }
@@ -233,8 +236,8 @@ struct smbcli_socket *smbcli_sock_connect_byname(const char *host, const char **
 		return NULL;
 	}
 
-	status = smbcli_sock_connect(mem_ctx, address, ports, name, event_ctx,
-				     &result);
+	status = smbcli_sock_connect(mem_ctx, address, ports, name, resolve_ctx,
+				     event_ctx, &result);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(9, ("smbcli_sock_connect failed: %s\n",
