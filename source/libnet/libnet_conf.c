@@ -270,8 +270,8 @@ done:
  * which are ar stored as REG_SZ values, so the incomplete
  * handling should be ok.
  */
-static char *libnet_smbconf_format_registry_value(TALLOC_CTX *mem_ctx,
-						  struct registry_value *value)
+static char *libnet_conf_format_registry_value(TALLOC_CTX *mem_ctx,
+					       struct registry_value *value)
 {
 	char *result = NULL;
 
@@ -352,8 +352,8 @@ static WERROR libnet_smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
 
-		valstring = libnet_smbconf_format_registry_value(tmp_ctx,
-								 valvalue);
+		valstring = libnet_conf_format_registry_value(tmp_ctx,
+							      valvalue);
 		werr = libnet_conf_add_string_to_array(tmp_ctx,
 						       &tmp_valstrings,
 						       count,
@@ -742,7 +742,7 @@ WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	*valstr = libnet_smbconf_format_registry_value(mem_ctx, value);
+	*valstr = libnet_conf_format_registry_value(mem_ctx, value);
 
 	if (*valstr == NULL) {
 		werr = WERR_NOMEM;
