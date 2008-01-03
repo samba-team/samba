@@ -480,8 +480,8 @@ static int net_conf_showshare(int argc, const char **argv)
 
 	sharename = argv[0];
 
-	werr = libnet_smbconf_getshare(ctx, sharename, &num_params,
-				       &param_names, &param_values);
+	werr = libnet_conf_get_share(ctx, sharename, &num_params,
+				     &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf("error getting share parameters: %s\n",
 			 dos_errstr(werr));

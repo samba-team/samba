@@ -482,10 +482,10 @@ WERROR libnet_conf_get_config(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 	}
 
 	for (count = 0; count < tmp_num_shares; count++) {
-		werr = libnet_smbconf_getshare(mem_ctx, tmp_share_names[count],
-					       &tmp_num_params[count],
-					       &tmp_param_names[count],
-					       &tmp_param_values[count]);
+		werr = libnet_conf_get_share(mem_ctx, tmp_share_names[count],
+					     &tmp_num_params[count],
+					     &tmp_param_names[count],
+					     &tmp_param_values[count]);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -633,9 +633,9 @@ done:
 /**
  * get a definition of a share (service) from configuration.
  */
-WERROR libnet_smbconf_getshare(TALLOC_CTX *mem_ctx, const char *servicename,
-			       uint32_t *num_params, char ***param_names,
-			       char ***param_values)
+WERROR libnet_conf_get_share(TALLOC_CTX *mem_ctx, const char *servicename,
+			     uint32_t *num_params, char ***param_names,
+			     char ***param_values)
 {
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
