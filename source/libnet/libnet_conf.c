@@ -57,10 +57,10 @@ static WERROR libnet_conf_add_string_to_array(TALLOC_CTX *mem_ctx,
 /**
  * Open a registry key specified by "path"
  */
-static WERROR libnet_smbconf_reg_open_path(TALLOC_CTX *mem_ctx,
-					   const char *path,
-					   uint32 desired_access,
-					   struct registry_key **key)
+static WERROR libnet_conf_reg_open_path(TALLOC_CTX *mem_ctx,
+					const char *path,
+					uint32 desired_access,
+					struct registry_key **key)
 {
 	WERROR werr = WERR_OK;
 	NT_USER_TOKEN *token;
@@ -117,7 +117,7 @@ static WERROR libnet_smbconf_reg_open_service_key(TALLOC_CTX *ctx,
 
 	path = talloc_asprintf(ctx, "%s\\%s", KEY_SMBCONF, servicename);
 
-	werr = libnet_smbconf_reg_open_path(ctx, path, desired_access, key);
+	werr = libnet_conf_reg_open_path(ctx, path, desired_access, key);
 
 done:
 	TALLOC_FREE(path);
@@ -131,8 +131,7 @@ static WERROR libnet_smbconf_reg_open_basekey(TALLOC_CTX *ctx,
 					      uint32 desired_access,
 					      struct registry_key **key)
 {
-	return libnet_smbconf_reg_open_path(ctx, KEY_SMBCONF, desired_access,
-					    key);
+	return libnet_conf_reg_open_path(ctx, KEY_SMBCONF, desired_access, key);
 }
 
 static bool libnet_smbconf_value_exists(struct registry_key *key,
@@ -408,8 +407,8 @@ WERROR libnet_smbconf_drop(void)
 	}
 	p = strrchr(path, '\\');
 	*p = '\0';
-	werr = libnet_smbconf_reg_open_path(mem_ctx, path, REG_KEY_WRITE,
-					    &parent_key);
+	werr = libnet_conf_reg_open_path(mem_ctx, path, REG_KEY_WRITE,
+					 &parent_key);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
