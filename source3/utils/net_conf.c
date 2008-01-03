@@ -2,7 +2,7 @@
  *  Samba Unix/Linux SMB client library
  *  Distributed SMB/CIFS Server Management Utility
  *  Local configuration interface
- *  Copyright (C) Michael Adam 2007
+ *  Copyright (C) Michael Adam 2007-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
