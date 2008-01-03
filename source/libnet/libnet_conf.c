@@ -101,10 +101,10 @@ done:
 /**
  * Open a subkey of KEY_SMBCONF (i.e a service)
  */
-static WERROR libnet_smbconf_reg_open_service_key(TALLOC_CTX *ctx,
-						  const char *servicename,
-						  uint32 desired_access,
-						  struct registry_key **key)
+static WERROR libnet_conf_reg_open_service_key(TALLOC_CTX *ctx,
+					       const char *servicename,
+					       uint32 desired_access,
+					       struct registry_key **key)
 {
 	WERROR werr = WERR_OK;
 	char *path = NULL;
@@ -600,8 +600,8 @@ bool libnet_smbconf_share_exists(const char *servicename)
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct registry_key *key = NULL;
 
-	werr = libnet_smbconf_reg_open_service_key(mem_ctx, servicename,
-						   REG_KEY_READ, &key);
+	werr = libnet_conf_reg_open_service_key(mem_ctx, servicename,
+						REG_KEY_READ, &key);
 	if (W_ERROR_IS_OK(werr)) {
 		ret = true;
 	}
@@ -641,8 +641,8 @@ WERROR libnet_smbconf_getshare(TALLOC_CTX *mem_ctx, const char *servicename,
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
 
-	werr = libnet_smbconf_reg_open_service_key(mem_ctx, servicename,
-						   REG_KEY_READ, &key);
+	werr = libnet_conf_reg_open_service_key(mem_ctx, servicename,
+						REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -692,8 +692,8 @@ WERROR libnet_smbconf_setparm(const char *service,
 		goto done;
 	}
 
-	werr = libnet_smbconf_reg_open_service_key(mem_ctx, service,
-						   REG_KEY_WRITE, &key);
+	werr = libnet_conf_reg_open_service_key(mem_ctx, service, REG_KEY_WRITE,
+						&key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -727,8 +727,8 @@ WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	werr = libnet_smbconf_reg_open_service_key(mem_ctx, service,
-						   REG_KEY_READ, &key);
+	werr = libnet_conf_reg_open_service_key(mem_ctx, service, REG_KEY_READ,
+						&key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -769,8 +769,8 @@ WERROR libnet_smbconf_delparm(const char *service,
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	werr = libnet_smbconf_reg_open_service_key(mem_ctx, service,
-						   REG_KEY_ALL, &key);
+	werr = libnet_conf_reg_open_service_key(mem_ctx, service, REG_KEY_ALL,
+						&key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
