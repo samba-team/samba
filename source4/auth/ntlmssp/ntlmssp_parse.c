@@ -41,7 +41,9 @@
   d = word (4 bytes)
   C = constant ascii string
  */
-bool msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
+bool msrpc_gen(TALLOC_CTX *mem_ctx, 
+	       struct smb_iconv_convenience *iconv_convenience,
+	       DATA_BLOB *blob,
 	       const char *format, ...)
 {
 	int i;
@@ -65,7 +67,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 		case 'U':
 			s = va_arg(ap, char *);
 			head_size += 8;
-			n = push_ucs2_talloc(pointers, lp_iconv_convenience(global_loadparm), (void **)&pointers[i].data, s);
+			n = push_ucs2_talloc(pointers, iconv_convenience, (void **)&pointers[i].data, s);
 			if (n == -1) {
 				return false;
 			}
@@ -76,7 +78,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 		case 'A':
 			s = va_arg(ap, char *);
 			head_size += 8;
-			n = push_ascii_talloc(pointers, lp_iconv_convenience(global_loadparm), (char **)&pointers[i].data, s);
+			n = push_ascii_talloc(pointers, iconv_convenience, (char **)&pointers[i].data, s);
 			if (n == -1) {
 				return false;
 			}
@@ -88,7 +90,7 @@ bool msrpc_gen(TALLOC_CTX *mem_ctx, DATA_BLOB *blob,
 			n = va_arg(ap, int);
 			intargs[i] = n;
 			s = va_arg(ap, char *);
-			n = push_ucs2_talloc(pointers, lp_iconv_convenience(global_loadparm), (void **)&pointers[i].data, s);
+			n = push_ucs2_talloc(pointers, iconv_convenience, (void **)&pointers[i].data, s);
 			if (n == -1) {
 				return false;
 			}
@@ -199,7 +201,9 @@ if ((head_ofs + amount) > blob->length) { \
   C = constant ascii string
  */
 
-bool msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
+bool msrpc_parse(TALLOC_CTX *mem_ctx, 
+		 struct smb_iconv_convenience *iconv_convenience, 
+		 const DATA_BLOB *blob,
 		 const char *format, ...)
 {
 	int i;
@@ -244,7 +248,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 				}
 
 				if (0 < len1) {
-					pull_string(lp_iconv_convenience(global_loadparm), p, blob->data + ptr, p_len, 
+					pull_string(iconv_convenience, p, blob->data + ptr, p_len, 
 						    len1, STR_UNICODE|STR_NOALIGN);
 					(*ps) = talloc_strdup(mem_ctx, p);
 					if (!(*ps)) {
@@ -279,7 +283,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 				}
 
 				if (0 < len1) {
-					pull_string(lp_iconv_convenience(global_loadparm), p, blob->data + ptr, p_len, 
+					pull_string(iconv_convenience, p, blob->data + ptr, p_len, 
 						    len1, STR_ASCII|STR_NOALIGN);
 					(*ps) = talloc_strdup(mem_ctx, p);
 					if (!(*ps)) {
@@ -344,7 +348,7 @@ bool msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 				goto cleanup;
 			}
 
-			head_ofs += pull_string(lp_iconv_convenience(global_loadparm), p,
+			head_ofs += pull_string(iconv_convenience, p,
 					blob->data+head_ofs, p_len,
 					blob->length - head_ofs,
 					STR_ASCII|STR_TERMINATE);

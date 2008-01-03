@@ -26,6 +26,7 @@
 #include "lib/crypto/crypto.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "param/param.h"
 
 #define CLI_SIGN "session key to client-to-server signing key magic constant"
 #define CLI_SEAL "session key to client-to-server sealing key magic constant"
@@ -117,7 +118,9 @@ static NTSTATUS ntlmssp_make_packet_signature(struct gensec_ntlmssp_state *gense
 	} else {
 		uint32_t crc;
 		crc = crc32_calc_buffer(data, length);
-		if (!msrpc_gen(sig_mem_ctx, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, gensec_ntlmssp_state->crypt.ntlm.seq_num)) {
+		if (!msrpc_gen(sig_mem_ctx, 
+			       lp_iconv_convenience(gensec_ntlmssp_state->gensec_security->lp_ctx),
+			       sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, gensec_ntlmssp_state->crypt.ntlm.seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		gensec_ntlmssp_state->crypt.ntlm.seq_num++;
@@ -244,7 +247,9 @@ NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security,
 	} else {
 		uint32_t crc;
 		crc = crc32_calc_buffer(data, length);
-		if (!msrpc_gen(sig_mem_ctx, sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, gensec_ntlmssp_state->crypt.ntlm.seq_num)) {
+		if (!msrpc_gen(sig_mem_ctx, 
+		               lp_iconv_convenience(gensec_security->lp_ctx),
+			       sig, "dddd", NTLMSSP_SIGN_VERSION, 0, crc, gensec_ntlmssp_state->crypt.ntlm.seq_num)) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
