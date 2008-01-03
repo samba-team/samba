@@ -311,11 +311,11 @@ static char *libnet_conf_format_registry_value(TALLOC_CTX *mem_ctx,
  * Get the values of a key as a list of value names
  * and a list of value strings (ordered)
  */
-static WERROR libnet_smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
-					    struct registry_key *key,
-					    uint32_t *num_values,
-					    char ***value_names,
-					    char ***value_strings)
+static WERROR libnet_conf_reg_get_values(TALLOC_CTX *mem_ctx,
+					 struct registry_key *key,
+					 uint32_t *num_values,
+					 char ***value_names,
+					 char ***value_strings)
 {
 	TALLOC_CTX *tmp_ctx = NULL;
 	WERROR werr = WERR_OK;
@@ -646,8 +646,8 @@ WERROR libnet_smbconf_getshare(TALLOC_CTX *mem_ctx, const char *servicename,
 		goto done;
 	}
 
-	werr = libnet_smbconf_reg_get_values(mem_ctx, key, num_params,
-					     param_names, param_values);
+	werr = libnet_conf_reg_get_values(mem_ctx, key, num_params,
+					  param_names, param_values);
 
 done:
 	TALLOC_FREE(key);
