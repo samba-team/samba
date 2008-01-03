@@ -605,21 +605,14 @@ int file_ntimes(connection_struct *conn, const char *fname, const struct timespe
 BOOL set_filetime(connection_struct *conn, const char *fname,
 		const struct timespec mtime)
 {
-	SMB_STRUCT_STAT sbuf;
 	struct timespec ts[2];
 
 	if (null_timespec(mtime)) {
 		return(True);
 	}
 
-	ZERO_STRUCT(sbuf);
-
-	if (SMB_VFS_STAT(conn,fname,&sbuf) == -1) {
-		return False;
-	}
-
-	ts[0] = get_atimespec(&sbuf); /* atime. */
 	ts[1] = mtime; /* mtime. */
+	ts[0] = ts[1]; /* atime. */
 
 	if (file_ntimes(conn, fname, ts)) {
 		DEBUG(4,("set_filetime(%s) failed: %s\n",fname,strerror(errno)));
