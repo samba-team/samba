@@ -108,7 +108,6 @@ static WERROR libnet_smbconf_reg_open_service_key(TALLOC_CTX *ctx,
 {
 	WERROR werr = WERR_OK;
 	char *path = NULL;
-	NT_USER_TOKEN *token;
 
 	if (servicename == NULL) {
 		DEBUG(3, ("Error: NULL servicename given.\n"));
@@ -397,7 +396,6 @@ WERROR libnet_smbconf_drop(void)
 {
 	char *path, *p;
 	WERROR werr = WERR_OK;
-	NT_USER_TOKEN *token;
 	struct registry_key *parent_key = NULL;
 	struct registry_key *new_key = NULL;
 	TALLOC_CTX* mem_ctx = talloc_stackframe();
