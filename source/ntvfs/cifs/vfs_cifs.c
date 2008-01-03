@@ -202,6 +202,12 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	io.in.workgroup = lp_workgroup(ntvfs->ctx->lp_ctx);
 	io.in.service = remote_share;
 	io.in.service_type = "?????";
+	io.in.max_xmit = lp_max_xmit(ntvfs->ctx->lp_ctx);
+	io.in.max_mux = lp_maxmux(ntvfs->ctx->lp_ctx);
+	io.in.ntstatus_support = lp_nt_status_support(ntvfs->ctx->lp_ctx);
+	io.in.max_protocol = lp_cli_maxprotocol(ntvfs->ctx->lp_ctx);
+	io.in.unicode = lp_unicode(ntvfs->ctx->lp_ctx);
+	io.in.use_spnego = lp_use_spnego(ntvfs->ctx->lp_ctx) && lp_nt_status_support(ntvfs->ctx->lp_ctx);
 	
 	creq = smb_composite_connect_send(&io, private, 
 					  lp_resolve_context(ntvfs->ctx->lp_ctx),

@@ -193,6 +193,12 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 	io->in.credentials  = cmdline_credentials;
 	io->in.fallback_to_anonymous = false;
 	io->in.workgroup    = lp_workgroup(state->tctx->lp_ctx);
+	io->in.max_xmit = lp_max_xmit(state->tctx->lp_ctx);
+	io->in.max_mux = lp_maxmux(state->tctx->lp_ctx);
+	io->in.ntstatus_support = lp_nt_status_support(state->tctx->lp_ctx);
+	io->in.max_protocol = lp_cli_maxprotocol(state->tctx->lp_ctx);
+	io->in.unicode = lp_unicode(state->tctx->lp_ctx);
+	io->in.use_spnego = lp_use_spnego(state->tctx->lp_ctx) && lp_nt_status_support(state->tctx->lp_ctx);
 
 	/* kill off the remnants of the old connection */
 	talloc_free(state->tree);
