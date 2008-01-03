@@ -852,11 +852,6 @@ int net_conf(int argc, const char **argv)
 		{NULL, NULL, NULL}
 	};
 
-	if (!registry_init_regdb()) {
-		d_fprintf(stderr, "Error initializing the registry!\n");
-		goto done;
-	}
-
 	ret = net_run_function2(argc, argv, "net conf", func);
 
 	regdb_close();

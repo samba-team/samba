@@ -21,6 +21,11 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 
+/*
+ * yuck - static variable to keep track of the registry initialization. 
+ */
+static bool registry_initialized = false;
+
 /**********************************************************************
  *
  * Helper functions (mostly registry related)
@@ -54,6 +59,26 @@ static WERROR libnet_conf_add_string_to_array(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+static WERROR libnet_conf_reg_initialize(void)
+{
+	WERROR werr = WERR_OK;
+
+	if (registry_initialized) {
+		goto done;
+	}
+
+	if (!registry_init_regdb()) {
+		/* proper error code? */
+		werr = WERR_GENERAL_FAILURE;
+		goto done;
+	}
+
+	registry_initialized = true;
+
+done:
+	return werr;
+}
+
 /**
  * Open a registry key specified by "path"
  */
@@ -75,6 +100,13 @@ static WERROR libnet_conf_reg_open_path(TALLOC_CTX *mem_ctx,
 	tmp_ctx = talloc_new(mem_ctx);
 	if (tmp_ctx == NULL) {
 		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	werr = libnet_conf_reg_initialize();
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Error initializing registry: %s\n",
+			  dos_errstr(werr)));
 		goto done;
 	}
 
