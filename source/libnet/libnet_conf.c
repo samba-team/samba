@@ -678,9 +678,9 @@ done:
 /**
  * set a configuration parameter to the value provided.
  */
-WERROR libnet_smbconf_setparm(const char *service,
-			      const char *param,
-			      const char *valstr)
+WERROR libnet_conf_set_parameter(const char *service,
+				 const char *param,
+				 const char *valstr)
 {
 	WERROR werr;
 	struct registry_key *key = NULL;
@@ -796,6 +796,6 @@ done:
 WERROR libnet_smbconf_set_global_param(const char *param,
 				       const char *val)
 {
-	return libnet_smbconf_setparm(GLOBAL_NAME, param, val);
+	return libnet_conf_set_parameter(GLOBAL_NAME, param, val);
 }
 

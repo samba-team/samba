@@ -229,9 +229,9 @@ static int import_process_service(TALLOC_CTX *ctx,
 			if (opt_testmode) {
 				d_printf("\t%s = %s\n", parm->label, valstr);
 			} else {
-				werr = libnet_smbconf_setparm(servicename,
-							      parm->label,
-							      valstr);
+				werr = libnet_conf_set_parameter(servicename,
+								 parm->label,
+								 valstr);
 				if (!W_ERROR_IS_OK(werr)) {
 					d_fprintf(stderr,
 						  "Error setting parameter '%s'"
@@ -642,7 +642,7 @@ static int net_conf_addshare(int argc, const char **argv)
 	 * fill the share with parameters
 	 */
 
-	werr = libnet_smbconf_setparm(sharename, "path", path);
+	werr = libnet_conf_set_parameter(sharename, "path", path);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting parameter %s: %s\n",
 			  "path", dos_errstr(werr));
@@ -650,7 +650,7 @@ static int net_conf_addshare(int argc, const char **argv)
 	}
 
 	if (comment != NULL) {
-		werr = libnet_smbconf_setparm(sharename, "comment", comment);
+		werr = libnet_conf_set_parameter(sharename, "comment", comment);
 		if (!W_ERROR_IS_OK(werr)) {
 			d_fprintf(stderr, "Error setting parameter %s: %s\n",
 				  "comment", dos_errstr(werr));
@@ -658,14 +658,14 @@ static int net_conf_addshare(int argc, const char **argv)
 		}
 	}
 
-	werr = libnet_smbconf_setparm(sharename, "guest ok", guest_ok);
+	werr = libnet_conf_set_parameter(sharename, "guest ok", guest_ok);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting parameter %s: %s\n",
 			  "'guest ok'", dos_errstr(werr));
 		goto done;
 	}
 
-	werr = libnet_smbconf_setparm(sharename, "writeable", writeable);
+	werr = libnet_conf_set_parameter(sharename, "writeable", writeable);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting parameter %s: %s\n",
 			  "writeable", dos_errstr(werr));
@@ -719,7 +719,7 @@ static int net_conf_setparm(int argc, const char **argv)
 	param = strdup_lower(argv[1]);
 	value_str = argv[2];
 
-	werr = libnet_smbconf_setparm(service, param, value_str);
+	werr = libnet_conf_set_parameter(service, param, value_str);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting value '%s': %s\n",
