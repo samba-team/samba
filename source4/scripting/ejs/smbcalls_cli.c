@@ -451,6 +451,7 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 	io.in.max_protocol = lp_cli_maxprotocol(global_loadparm);
 	io.in.unicode = lp_unicode(global_loadparm);
 	io.in.use_spnego = lp_use_spnego(global_loadparm) && lp_nt_status_support(global_loadparm);
+	io.in.signing = lp_client_signing(global_loadparm);
 
 	result = smb_composite_connect(&io, mem_ctx, 
 				       lp_resolve_context(global_loadparm), 

@@ -309,7 +309,8 @@ static NTSTATUS connect_socket(struct composite_context *c,
 	state->transport = smbcli_transport_init(state->sock, state, true, 
 						 io->in.max_xmit,
 						 io->in.max_mux,
-						 io->in.use_spnego);
+						 io->in.use_spnego,
+						 io->in.signing);
 	NT_STATUS_HAVE_NO_MEMORY(state->transport);
 
 	if (is_ipaddress(state->sock->hostname) &&

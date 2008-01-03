@@ -198,8 +198,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	io.in.max_protocol = lp_cli_maxprotocol(global_loadparm);
 	io.in.unicode = lp_unicode(global_loadparm);
 	io.in.use_spnego = lp_use_spnego(global_loadparm) && lp_nt_status_support(global_loadparm);
-
-
+	io.in.signing = lp_client_signing(global_loadparm);
 	
 	status = smb_composite_connect(&io, parent_ctx, resolve_ctx, ev);
 	if (NT_STATUS_IS_OK(status)) {

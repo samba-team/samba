@@ -827,6 +827,7 @@ static struct composite_context *torture_connect_async(
 	smb->in.max_protocol = lp_cli_maxprotocol(tctx->lp_ctx);
 	smb->in.unicode = lp_unicode(tctx->lp_ctx);
 	smb->in.use_spnego = lp_use_spnego(tctx->lp_ctx) && lp_nt_status_support(tctx->lp_ctx);
+	smb->in.signing = lp_client_signing(tctx->lp_ctx);
 	
 	return smb_composite_connect_send(smb,mem_ctx,
 					  lp_resolve_context(tctx->lp_ctx),ev);

@@ -51,7 +51,7 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 		goto failed;
 	}
 
-	if (!smbcli_socket_connect(cli, host, lp_smb_ports(tctx->lp_ctx), lp_resolve_context(tctx->lp_ctx), lp_max_xmit(tctx->lp_ctx), lp_maxmux(tctx->lp_ctx), lp_nt_status_support(tctx->lp_ctx) && lp_use_spnego(tctx->lp_ctx))) {
+	if (!smbcli_socket_connect(cli, host, lp_smb_ports(tctx->lp_ctx), lp_resolve_context(tctx->lp_ctx), lp_max_xmit(tctx->lp_ctx), lp_maxmux(tctx->lp_ctx), lp_nt_status_support(tctx->lp_ctx) && lp_use_spnego(tctx->lp_ctx), lp_client_signing(tctx->lp_ctx))) {
 		torture_comment(tctx, "Failed to connect with %s\n", host);
 		goto failed;
 	}

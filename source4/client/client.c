@@ -3065,7 +3065,7 @@ static int do_host_query(struct loadparm_context *lp_ctx, const char *query_host
 /****************************************************************************
 handle a message operation
 ****************************************************************************/
-static int do_message_op(const char *netbios_name, const char *desthost, const char **destports, const char *destip, int name_type, struct resolve_context *resolve_ctx, int max_xmit, int max_mux, bool use_spnego)
+static int do_message_op(const char *netbios_name, const char *desthost, const char **destports, const char *destip, int name_type, struct resolve_context *resolve_ctx, int max_xmit, int max_mux, bool use_spnego, enum smb_signing_state signing)
 {
 	struct nbt_name called, calling;
 	const char *server_name;
@@ -3077,7 +3077,7 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 
 	server_name = destip ? destip : desthost;
 
-	if (!(cli=smbcli_state_init(NULL)) || !smbcli_socket_connect(cli, server_name, destports, resolve_ctx, max_xmit, max_mux, use_spnego)) {
+	if (!(cli=smbcli_state_init(NULL)) || !smbcli_socket_connect(cli, server_name, destports, resolve_ctx, max_xmit, max_mux, use_spnego, signing)) {
 		d_printf("Connection to %s failed\n", server_name);
 		return 1;
 	}
@@ -3225,7 +3225,7 @@ static int do_message_op(const char *netbios_name, const char *desthost, const c
 	}
 
 	if (message) {
-		return do_message_op(lp_netbios_name(cmdline_lp_ctx), desthost, lp_smb_ports(cmdline_lp_ctx), dest_ip, name_type, lp_resolve_context(cmdline_lp_ctx), lp_max_xmit(cmdline_lp_ctx), lp_maxmux(cmdline_lp_ctx), lp_nt_status_support(cmdline_lp_ctx) && lp_use_spnego(cmdline_lp_ctx));
+		return do_message_op(lp_netbios_name(cmdline_lp_ctx), desthost, lp_smb_ports(cmdline_lp_ctx), dest_ip, name_type, lp_resolve_context(cmdline_lp_ctx), lp_max_xmit(cmdline_lp_ctx), lp_maxmux(cmdline_lp_ctx), lp_nt_status_support(cmdline_lp_ctx) && lp_use_spnego(cmdline_lp_ctx), lp_client_signing(cmdline_lp_ctx));
 	}
 	
 	if (!do_connect(ctx, lp_resolve_context(cmdline_lp_ctx), desthost, lp_smb_ports(cmdline_lp_ctx), service, cmdline_credentials))

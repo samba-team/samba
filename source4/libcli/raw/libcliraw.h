@@ -97,6 +97,7 @@ struct smbcli_options {
 	uint32_t max_xmit;
 	uint16_t max_mux;
 	int request_timeout;
+	enum smb_signing_state signing;
 };
 
 /* this is the context for the client transport layer */

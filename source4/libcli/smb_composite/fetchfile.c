@@ -154,7 +154,8 @@ struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetc
 	state->connect->in.unicode = lp_unicode(global_loadparm);
 	state->connect->in.use_spnego = lp_use_spnego(global_loadparm) && 
 		lp_nt_status_support(global_loadparm);
-
+	state->connect->in.signing = lp_client_signing(global_loadparm);
+	
 	state->creq = smb_composite_connect_send(state->connect, state, 
 						 lp_resolve_context(global_loadparm), event_ctx);
 	if (state->creq == NULL) goto failed;
