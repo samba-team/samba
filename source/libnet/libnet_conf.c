@@ -657,7 +657,7 @@ done:
 /**
  * delete a service from configuration
  */
-WERROR libnet_smbconf_delshare(const char *servicename)
+WERROR libnet_conf_delete_share(const char *servicename)
 {
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
