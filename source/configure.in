@@ -455,7 +455,7 @@ AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnin
 # DEVELOPER_CFLAGS, so that you can turn them on and off with a simple
 # Makefile edit, avoiding the need to re-run configure.
 if test x"$ac_cv_prog_gcc" = x"yes" ; then
-    	DEVELOPER_CFLAGS="-gstabs -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+    	DEVELOPER_CFLAGS="-g -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
 	# Add -Wdeclaration-after-statement if compiler supports it
 	AC_CACHE_CHECK(
           [that the C compiler understands -Wdeclaration-after-statement],
