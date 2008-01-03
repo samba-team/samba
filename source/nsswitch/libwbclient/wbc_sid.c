@@ -392,7 +392,7 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		*q = '\0';
 
 		(*names)[i] = talloc_strdup((*names), p);
-		BAIL_ON_PTR_ERROR(((*names)[i]), wbc_status);		
+		BAIL_ON_PTR_ERROR(((*names)[i]), wbc_status);
 
 		p = q+1;
 	}
@@ -405,10 +405,10 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
-	if (response.extra_data.data) {		
+	if (response.extra_data.data) {
 		free(response.extra_data.data);
-	}	
-		
+	}
+
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		if (domain_name)
 			talloc_free(domain_name);
@@ -421,4 +421,4 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 	}
 
 	return wbc_status;
-} 
+}
