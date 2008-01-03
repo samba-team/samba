@@ -124,7 +124,7 @@ done:
 	return werr;
 }
 
-/*
+/**
  * open the base key KEY_SMBCONF
  */
 static WERROR libnet_conf_reg_open_base_key(TALLOC_CTX *ctx,
@@ -134,6 +134,9 @@ static WERROR libnet_conf_reg_open_base_key(TALLOC_CTX *ctx,
 	return libnet_conf_reg_open_path(ctx, KEY_SMBCONF, desired_access, key);
 }
 
+/**
+ * check if a value exists in a given registry key
+ */
 static bool libnet_conf_value_exists(struct registry_key *key,
 				     const char *param)
 {
@@ -151,7 +154,7 @@ static bool libnet_conf_value_exists(struct registry_key *key,
 	return ret;
 }
 
-/*
+/**
  * create a subkey of KEY_SMBCONF
  */
 static WERROR libnet_conf_reg_create_service_key(TALLOC_CTX *ctx,
@@ -193,7 +196,7 @@ done:
 	return werr;
 }
 
-/*
+/**
  * add a value to a key.
  */
 static WERROR libnet_conf_reg_set_value(struct registry_key *key,
@@ -792,8 +795,7 @@ done:
  *
  **********************************************************************/
 
-WERROR libnet_conf_set_global_parameter(const char *param,
-					const char *val)
+WERROR libnet_conf_set_global_parameter(const char *param, const char *val)
 {
 	return libnet_conf_set_parameter(GLOBAL_NAME, param, val);
 }
