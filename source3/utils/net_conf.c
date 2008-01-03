@@ -753,7 +753,7 @@ static int net_conf_getparm(int argc, const char **argv)
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	werr = libnet_smbconf_getparm(ctx, service, param, &valstr);
+	werr = libnet_conf_get_parameter(ctx, service, param, &valstr);
 
 	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,

@@ -707,10 +707,10 @@ done:
 /**
  * get the value of a configuration parameter as a string
  */
-WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
-			      const char *service,
-			      const char *param,
-			      char **valstr)
+WERROR libnet_conf_get_parameter(TALLOC_CTX *mem_ctx,
+				 const char *service,
+				 const char *param,
+				 char **valstr)
 {
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
