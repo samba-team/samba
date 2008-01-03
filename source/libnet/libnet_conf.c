@@ -55,7 +55,7 @@ static WERROR libnet_smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 }
 
 /**
- * Open a subkey of KEY_SMBCONF (i.e a service)
+ * Open a registry key specified by "path"
  */
 static WERROR libnet_smbconf_reg_open_path(TALLOC_CTX *mem_ctx,
 					   const char *path,
