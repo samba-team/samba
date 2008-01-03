@@ -68,8 +68,7 @@ static WERROR libnet_conf_reg_initialize(void)
 	}
 
 	if (!registry_init_regdb()) {
-		/* proper error code? */
-		werr = WERR_GENERAL_FAILURE;
+		werr = WERR_REG_IO_FAILURE;
 		goto done;
 	}
 
