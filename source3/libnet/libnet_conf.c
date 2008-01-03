@@ -196,9 +196,9 @@ done:
 /*
  * add a value to a key.
  */
-static WERROR libnet_smbconf_reg_set_value(struct registry_key *key,
-					   const char *valname,
-					   const char *valstr)
+static WERROR libnet_conf_reg_set_value(struct registry_key *key,
+					const char *valname,
+					const char *valstr)
 {
 	struct registry_value val;
 	WERROR werr = WERR_OK;
@@ -697,7 +697,7 @@ WERROR libnet_smbconf_setparm(const char *service,
 		goto done;
 	}
 
-	werr = libnet_smbconf_reg_set_value(key, param, valstr);
+	werr = libnet_conf_reg_set_value(key, param, valstr);
 
 done:
 	TALLOC_FREE(mem_ctx);
