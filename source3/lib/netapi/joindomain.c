@@ -114,7 +114,7 @@ static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
 	if (!pipe_cli) {
 		werr = ntstatus_to_werror(status);
 		goto done;
-	};
+	}
 
 	if (password) {
 		encode_wkssvc_join_password_buffer(ctx,
@@ -300,7 +300,7 @@ static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 	if (!pipe_cli) {
 		werr = ntstatus_to_werror(status);
 		goto done;
-	};
+	}
 
 	if (password) {
 		encode_wkssvc_join_password_buffer(ctx,
@@ -407,7 +407,7 @@ static WERROR NetGetJoinInformationRemote(struct libnetapi_ctx *ctx,
 	if (!pipe_cli) {
 		werr = ntstatus_to_werror(status);
 		goto done;
-	};
+	}
 
 	status = rpccli_wkssvc_NetrGetJoinInformation(pipe_cli, ctx,
 						      server_name,
