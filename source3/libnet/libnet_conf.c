@@ -57,6 +57,42 @@ static WERROR libnet_smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
 /**
  * Open a subkey of KEY_SMBCONF (i.e a service)
  */
+static WERROR libnet_smbconf_reg_open_path(TALLOC_CTX *mem_ctx,
+					   const char *path,
+					   uint32 desired_access,
+					   struct registry_key **key)
+{
+	WERROR werr = WERR_OK;
+	NT_USER_TOKEN *token;
+
+	if (path == NULL) {
+		DEBUG(1, ("Error: NULL path string given\n"));
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	token = registry_create_admin_token(mem_ctx);
+	if (token == NULL) {
+		DEBUG(1, ("Error creating admin token\n"));
+		/* what is the appropriate error code here? */
+		werr = WERR_CAN_NOT_COMPLETE;
+		goto done;
+	}
+
+	werr = reg_open_path(mem_ctx, path, desired_access, token, key);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Error opening registry path '%s': %s\n",
+			  path, dos_errstr(werr)));
+	}
+
+done:
+	return werr;
+}
+
+/**
+ * Open a subkey of KEY_SMBCONF (i.e a service)
+ */
 static WERROR libnet_smbconf_reg_open_service_key(TALLOC_CTX *ctx,
 						  const char *servicename,
 						  uint32 desired_access,
@@ -66,26 +102,15 @@ static WERROR libnet_smbconf_reg_open_service_key(TALLOC_CTX *ctx,
 	char *path = NULL;
 	NT_USER_TOKEN *token;
 
-	if (!(token = registry_create_admin_token(ctx))) {
-		DEBUG(1, ("Error creating admin token\n"));
-		/* what is the appropriate error code here? */
-		werr = WERR_CAN_NOT_COMPLETE;
+	if (servicename == NULL) {
+		DEBUG(3, ("Error: NULL servicename given.\n"));
+		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
 
-	if (servicename == NULL) {
-		path = talloc_strdup(ctx, KEY_SMBCONF);
-	} else {
-		path = talloc_asprintf(ctx, "%s\\%s", KEY_SMBCONF, servicename);
-	}
+	path = talloc_asprintf(ctx, "%s\\%s", KEY_SMBCONF, servicename);
 
-	werr = reg_open_path(ctx, path, desired_access,
-			     token, key);
-
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Error opening registry path '%s': %s\n",
-			  path, dos_errstr(werr)));
-	}
+	werr = libnet_smbconf_reg_open_path(ctx, path, desired_access, key);
 
 done:
 	TALLOC_FREE(path);
@@ -99,8 +124,8 @@ static WERROR libnet_smbconf_reg_open_basekey(TALLOC_CTX *ctx,
 					      uint32 desired_access,
 					      struct registry_key **key)
 {
-	return libnet_smbconf_reg_open_service_key(ctx, NULL, desired_access,
-						   key);
+	return libnet_smbconf_reg_open_path(ctx, KEY_SMBCONF, desired_access,
+					    key);
 }
 
 static bool libnet_smbconf_value_exists(struct registry_key *key,
