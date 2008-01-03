@@ -792,8 +792,8 @@ done:
  *
  **********************************************************************/
 
-WERROR libnet_smbconf_set_global_param(const char *param,
-				       const char *val)
+WERROR libnet_conf_set_global_parameter(const char *param,
+					const char *val)
 {
 	return libnet_conf_set_parameter(GLOBAL_NAME, param, val);
 }
