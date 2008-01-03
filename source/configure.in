@@ -5102,7 +5102,7 @@ LIBNETAPI_SHARED=
 LIBNETAPI=
 AC_MSG_CHECKING(whether to build the libnetapi shared library)
 AC_ARG_WITH(libnetapi,
-[  --with-libnetapi         Build the libnetapi shared library (default=no undefined API)],
+[  --with-libnetapi        Build the libnetapi shared library (default=yes if shared libs supported)],
 [ case "$withval" in
   *)
      AC_MSG_RESULT(no)
