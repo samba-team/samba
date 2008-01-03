@@ -631,7 +631,7 @@ static int net_conf_addshare(int argc, const char **argv)
 	 * create the share
 	 */
 
-	werr = libnet_smbconf_create_share(sharename);
+	werr = libnet_conf_create_share(sharename);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error creating share %s: %s\n",
 			  sharename, dos_errstr(werr));
