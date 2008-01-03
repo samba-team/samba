@@ -152,8 +152,8 @@ static NTSTATUS do_DomainJoin(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	E_md4hash(r->in.password, md4_trust_password);
-	encode_pw_buffer(pwbuf, r->in.password, STR_UNICODE);
+	E_md4hash(password, md4_trust_password);
+	encode_pw_buffer(pwbuf, password, STR_UNICODE);
 
 	generate_random_buffer((uint8*)md5buffer, sizeof(md5buffer));
 	digested_session_key = data_blob_talloc(mem_ctx, 0, 16);
