@@ -28,6 +28,7 @@
 */
 
 #include "libcli/raw/signing.h"
+#include "libcli/raw/libcliraw.h"
 
 
 /*
@@ -93,13 +94,7 @@ struct smb_composite_connect {
 		struct cli_credentials *credentials;
 		bool fallback_to_anonymous;
 		const char *workgroup;
-		bool use_spnego;
-		bool ntstatus_support;
-		bool unicode;
-		int max_xmit;
-		int max_mux;
-		int max_protocol;
-		enum smb_signing_state signing;
+		struct smbcli_options options;
 	} in;
 	struct {
 		struct smbcli_tree *tree;

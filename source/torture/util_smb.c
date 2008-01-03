@@ -474,12 +474,16 @@ _PUBLIC_ bool torture_open_connection_share(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 
+	struct smbcli_options options;
+
+	lp_smbcli_options(tctx->lp_ctx, &options);
+
 	status = smbcli_full_connection(mem_ctx, c, hostname, 
 					lp_smb_ports(tctx->lp_ctx),
 					sharename, NULL,
 					cmdline_credentials, 
 					lp_resolve_context(tctx->lp_ctx),
-					ev);
+					ev, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return false;

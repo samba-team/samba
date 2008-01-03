@@ -63,6 +63,7 @@
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
 #include "param/loadparm.h"
+#include "libcli/raw/libcliraw.h"
 
 #define standard_sub_basic talloc_strdup
 
@@ -2604,4 +2605,19 @@ _PUBLIC_ void reload_charcnv(struct loadparm_context *lp_ctx)
 {
 	talloc_free(lp_ctx->iconv_convenience);
 	lp_ctx->iconv_convenience = smb_iconv_convenience_init_lp(lp_ctx, lp_ctx);
+}
+
+void lp_smbcli_options(struct loadparm_context *lp_ctx, 
+			 struct smbcli_options *options)
+{
+	options->max_xmit = lp_max_xmit(lp_ctx); 
+	options->max_mux = lp_maxmux(lp_ctx);
+	options->use_spnego = lp_nt_status_support(lp_ctx) && lp_use_spnego(lp_ctx); 
+	options->signing = lp_client_signing(lp_ctx);
+	options->request_timeout = SMB_REQUEST_TIMEOUT;
+	options->ntstatus_support = lp_nt_status_support(lp_ctx);
+	options->max_protocol = lp_cli_maxprotocol(lp_ctx);
+	options->unicode = lp_unicode(lp_ctx);
+	options->use_oplocks = false;
+	options->use_level2_oplocks = false;
 }

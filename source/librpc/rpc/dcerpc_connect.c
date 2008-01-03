@@ -119,13 +119,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	conn->in.service_type           = NULL;
 	conn->in.workgroup		= lp_workgroup(lp_ctx);
 
-	conn->in.max_xmit = lp_max_xmit(lp_ctx);
-	conn->in.max_mux = lp_maxmux(lp_ctx);
-	conn->in.ntstatus_support = lp_nt_status_support(lp_ctx);
-	conn->in.max_protocol = lp_cli_maxprotocol(lp_ctx);
-	conn->in.unicode = lp_unicode(lp_ctx);
-	conn->in.use_spnego = lp_use_spnego(lp_ctx) && lp_nt_status_support(lp_ctx);
-	conn->in.signing = lp_client_signing(lp_ctx);
+	lp_smbcli_options(lp_ctx, &conn->in.options);
 
 	/*
 	 * provide proper credentials - user supplied, but allow a

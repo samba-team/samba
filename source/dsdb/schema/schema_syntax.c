@@ -939,8 +939,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_schema *sch
 		}
 
 		ndr_err = ndr_pull_struct_blob_all(in->value_ctr.values[i].blob,
-						   out->values, 
-						   lp_iconv_convenience(global_loadparm), &id3b,
+						   out->values, NULL, &id3b,
 						   (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3Binary);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -998,7 +997,7 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(const struct dsdb_schema *sch
 		id3b.dn		= (const char *)in->values[i].data;
 		id3b.binary	= data_blob(NULL, 0);
 
-		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, lp_iconv_convenience(global_loadparm), &id3b,
+		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, NULL, &id3b,
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);

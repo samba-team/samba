@@ -74,7 +74,8 @@ static char *reg_test(struct smbcli_state *cli, char *pattern, char *long_name, 
 return a connection to a server
 *******************************************************/
 static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx, 
-					char *share, const char **ports)
+					char *share, const char **ports,
+					struct smbcli_options *options)
 {
 	struct smbcli_state *c;
 	fstring server;
@@ -92,7 +93,8 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 					server, 
 					ports,
 					share, NULL,
-					credentials, resolve_ctx, NULL);
+					credentials, resolve_ctx, NULL,
+					options);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
@@ -303,6 +305,7 @@ static void usage(void)
 	int opt;
 	int seed;
 	struct loadparm_context *lp_ctx;
+	struct smbcli_options options;
 
 	setlinebuf(stdout);
 
@@ -382,7 +385,10 @@ static void usage(void)
 	argc -= optind;
 	argv += optind;
 
-	cli = connect_one(lp_resolve_context(lp_ctx), share, lp_smb_ports(lp_ctx));
+	lp_smbcli_options(lp_ctx, &options);
+
+	cli = connect_one(lp_resolve_context(lp_ctx), share, 
+			  lp_smb_ports(lp_ctx), &options);
 	if (!cli) {
 		DEBUG(0,("Failed to connect to %s\n", share));
 		exit(1);

@@ -55,12 +55,16 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx)
 
 	const char *host = torture_setting_string(tctx, "host", NULL);
 	const char *share = torture_setting_string(tctx, "share", NULL);
+	struct smbcli_options options;
+
+	lp_smbcli_options(tctx->lp_ctx, &options);
 
 	status = smbcli_full_connection(tctx, &cli, host, 
 					lp_smb_ports(tctx->lp_ctx),
 					share, NULL,
 					cmdline_credentials, 
-					lp_resolve_context(tctx->lp_ctx), NULL);
+					lp_resolve_context(tctx->lp_ctx), NULL, 
+					&options);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to connect to //%s/%s: %s\n",

@@ -59,6 +59,7 @@ enum announce_as {/* Types of machine we can announce as. */
 
 struct loadparm_context;
 struct loadparm_service;
+struct smbcli_options;
 
 #include "param/proto.h"
 

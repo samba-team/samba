@@ -821,13 +821,7 @@ static struct composite_context *torture_connect_async(
 	smb->in.credentials=cmdline_credentials;
 	smb->in.fallback_to_anonymous=false;
 	smb->in.workgroup=workgroup;
-	smb->in.max_xmit = lp_max_xmit(tctx->lp_ctx);
-	smb->in.max_mux = lp_maxmux(tctx->lp_ctx);
-	smb->in.ntstatus_support = lp_nt_status_support(tctx->lp_ctx);
-	smb->in.max_protocol = lp_cli_maxprotocol(tctx->lp_ctx);
-	smb->in.unicode = lp_unicode(tctx->lp_ctx);
-	smb->in.use_spnego = lp_use_spnego(tctx->lp_ctx) && lp_nt_status_support(tctx->lp_ctx);
-	smb->in.signing = lp_client_signing(tctx->lp_ctx);
+	lp_smbcli_options(tctx->lp_ctx, &smb->in.options);
 	
 	return smb_composite_connect_send(smb,mem_ctx,
 					  lp_resolve_context(tctx->lp_ctx),ev);

@@ -71,6 +71,7 @@ bool torture_bind_authcontext(struct torture_context *torture)
 	struct dcerpc_pipe *lsa_pipe;
 	struct cli_credentials *anon_creds;
 	struct smb_composite_sesssetup setup;
+	struct smbcli_options options;
 
 	mem_ctx = talloc_init("torture_bind_authcontext");
 
@@ -79,12 +80,14 @@ bool torture_bind_authcontext(struct torture_context *torture)
 		return false;
 	}
 
+	lp_smbcli_options(torture->lp_ctx, &options);
+
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL, cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
-					NULL);
+					NULL, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -282,6 +285,7 @@ bool torture_bind_samba3(struct torture_context *torture)
 	NTSTATUS status;
 	bool ret = false;
 	struct smbcli_state *cli;
+	struct smbcli_options options;
 
 	mem_ctx = talloc_init("torture_bind_authcontext");
 
@@ -290,12 +294,14 @@ bool torture_bind_samba3(struct torture_context *torture)
 		return false;
 	}
 
+	lp_smbcli_options(torture->lp_ctx, &options);
+
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL, cmdline_credentials,
 					lp_resolve_context(torture->lp_ctx),
-					NULL);
+					NULL, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -1134,6 +1140,7 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 	struct cli_credentials *wks_creds;
 	const char *wks_name;
 	int i;
+	struct smbcli_options options;
 
 	wks_name = torture_setting_string(torture, "wksname", NULL);
 	if (wks_name == NULL) {
@@ -1152,12 +1159,14 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 		goto done;
 	}
 
+	lp_smbcli_options(torture->lp_ctx, &options);
+
 	status = smbcli_full_connection(mem_ctx, &cli,
 					torture_setting_string(torture, "host", NULL),
 					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL, anon_creds, 
 					lp_resolve_context(torture->lp_ctx),
-					NULL);
+					NULL, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -1235,13 +1244,16 @@ static bool test_join3(struct torture_context *tctx,
 	bool ret = false;
 	struct smbcli_state *cli;
 	struct cli_credentials *wks_creds;
+	struct smbcli_options options;
+
+	lp_smbcli_options(tctx->lp_ctx, &options);
 
 	status = smbcli_full_connection(tctx, &cli,
 					torture_setting_string(tctx, "host", NULL),
 					lp_smb_ports(tctx->lp_ctx),
 					"IPC$", NULL, smb_creds, 
 					lp_resolve_context(tctx->lp_ctx),
-					NULL);
+					NULL, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("smbcli_full_connection failed: %s\n",
 			 nt_errstr(status));
@@ -1598,17 +1610,20 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 	struct cli_credentials *anon_creds;
 	struct cli_credentials *user_creds;
 	char *domain_name;
+	struct smbcli_options options;
 
 	if (!(mem_ctx = talloc_new(torture))) {
 		return false;
 	}
+
+	lp_smbcli_options(torture->lp_ctx, &options);
 
 	status = smbcli_full_connection(
 		mem_ctx, &cli, torture_setting_string(torture, "host", NULL),
 		lp_smb_ports(torture->lp_ctx),
 		"IPC$", NULL, cmdline_credentials, 
 		lp_resolve_context(torture->lp_ctx),
-		NULL);
+		NULL, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) smbcli_full_connection failed: %s\n",
 			 __location__, nt_errstr(status));
@@ -1635,7 +1650,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		lp_smb_ports(torture->lp_ctx),
 		"IPC$", NULL, anon_creds, 
 		lp_resolve_context(torture->lp_ctx),
-		NULL);
+		NULL, &options);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) anon smbcli_full_connection failed: %s\n",
 			 __location__, nt_errstr(status));

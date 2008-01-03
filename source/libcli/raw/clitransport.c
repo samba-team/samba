@@ -74,10 +74,7 @@ static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob);
 struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 					       TALLOC_CTX *parent_ctx, 
 					       bool primary, 
-					       int max_xmit,
-					       int max_mux,
-					       bool use_spnego,
-					       enum smb_signing_state signing)
+					       struct smbcli_options *options)
 {
 	struct smbcli_transport *transport;
 
@@ -90,12 +87,7 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 		transport->socket = talloc_reference(transport, sock);
 	}
 	transport->negotiate.protocol = PROTOCOL_NT1;
-	transport->options.use_spnego = use_spnego;
-	transport->options.max_xmit = max_xmit;
-	transport->options.max_mux = max_mux;
-	transport->options.request_timeout = SMB_REQUEST_TIMEOUT;
-	transport->options.signing = signing;
-
+	transport->options = *options;
 	transport->negotiate.max_xmit = transport->options.max_xmit;
 
 	/* setup the stream -> packet parser */

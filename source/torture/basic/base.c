@@ -40,6 +40,7 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 	struct nbt_name called, calling;
 	struct smbcli_state *cli;
 	const char *host = torture_setting_string(tctx, "host", NULL);
+	struct smbcli_options options;
 
 	make_nbt_name_client(&calling, lp_netbios_name(tctx->lp_ctx));
 
@@ -51,7 +52,9 @@ static struct smbcli_state *open_nbt_connection(struct torture_context *tctx)
 		goto failed;
 	}
 
-	if (!smbcli_socket_connect(cli, host, lp_smb_ports(tctx->lp_ctx), lp_resolve_context(tctx->lp_ctx), lp_max_xmit(tctx->lp_ctx), lp_maxmux(tctx->lp_ctx), lp_nt_status_support(tctx->lp_ctx) && lp_use_spnego(tctx->lp_ctx), lp_client_signing(tctx->lp_ctx))) {
+	lp_smbcli_options(tctx->lp_ctx, &options);
+
+	if (!smbcli_socket_connect(cli, host, lp_smb_ports(tctx->lp_ctx), lp_resolve_context(tctx->lp_ctx), &options)) {
 		torture_comment(tctx, "Failed to connect with %s\n", host);
 		goto failed;
 	}
