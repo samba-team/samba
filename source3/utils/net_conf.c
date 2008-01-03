@@ -291,9 +291,9 @@ static int net_conf_list(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = libnet_smbconf_get_config(ctx, &num_shares, &share_names,
-					 &num_params, &param_names,
-					 &param_values);
+	werr = libnet_conf_get_config(ctx, &num_shares, &share_names,
+				      &num_params, &param_names,
+				      &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error getting config: %s\n",
 			  dos_errstr(werr));
