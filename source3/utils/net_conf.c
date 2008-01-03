@@ -208,7 +208,7 @@ static int import_process_service(TALLOC_CTX *ctx,
 		d_printf("[%s]\n", servicename);
 	} else {
 		if (libnet_conf_share_exists(servicename)) {
-			werr = libnet_smbconf_delshare(servicename);
+			werr = libnet_conf_delete_share(servicename);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
 			}
@@ -691,7 +691,7 @@ static int net_conf_delshare(int argc, const char **argv)
 	}
 	sharename = argv[0];
 
-	werr = libnet_smbconf_delshare(sharename);
+	werr = libnet_conf_delete_share(sharename);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error deleting share %s: %s\n",
 			  sharename, dos_errstr(werr));
