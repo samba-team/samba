@@ -464,8 +464,8 @@ WERROR libnet_conf_get_config(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 		goto done;
 	}
 
-	werr = libnet_smbconf_get_share_names(tmp_ctx, &tmp_num_shares,
-					      &tmp_share_names);
+	werr = libnet_conf_get_share_names(tmp_ctx, &tmp_num_shares,
+					   &tmp_share_names);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -515,8 +515,8 @@ done:
 /**
  * get the list of share names defined in the configuration.
  */
-WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
-				      char ***share_names)
+WERROR libnet_conf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
+				   char ***share_names)
 {
 	uint32_t count;
 	uint32_t added_count = 0;

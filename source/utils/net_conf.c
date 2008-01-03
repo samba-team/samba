@@ -420,7 +420,7 @@ static int net_conf_listshares(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = libnet_smbconf_get_share_names(ctx, &num_shares, &share_names);
+	werr = libnet_conf_get_share_names(ctx, &num_shares, &share_names);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
