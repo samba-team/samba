@@ -1864,8 +1864,7 @@ static void store_nc(const struct name_addr_pair *nc)
 	DATA_BLOB tmp;
 	size_t namelen = strlen(nc->name);
 
-	tmp.length = sizeof(nc->ss) + namelen + 1;
-	tmp.data = (uint8_t *)SMB_MALLOC(tmp.length);
+	tmp = data_blob(NULL, sizeof(nc->ss) + namelen + 1);
 	if (!tmp.data) {
 		return;
 	}
@@ -1875,7 +1874,7 @@ static void store_nc(const struct name_addr_pair *nc)
 	memcache_add(NULL, SINGLETON_CACHE,
 			data_blob_string_const("get_peer_name"),
 			tmp);
-	SAFE_FREE(tmp.data);
+	data_blob_free(&tmp);
 }
 
 /*******************************************************************
