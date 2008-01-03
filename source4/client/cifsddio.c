@@ -223,7 +223,8 @@ static bool smb_write_func(void * handle, uint8_t * buf, uint64_t wanted,
 static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ctx,
 					      const char * host,
 					      const char **ports,
-					      const char * share)
+					      const char * share,
+					      struct smbcli_options *options)
 {
 	NTSTATUS		ret;
 	struct smbcli_state *	cli = NULL;
@@ -233,7 +234,7 @@ static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ct
 	 */
 	ret = smbcli_full_connection(NULL, &cli, host, ports, share,
 			 NULL /* devtype */, cmdline_credentials, resolve_ctx, 
-			 NULL /* events */);
+			 NULL /* events */, options);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		fprintf(stderr, "%s: connecting to //%s/%s: %s\n",
@@ -297,7 +298,8 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 					const char * share,
 					const char * path,
 					uint64_t io_size,
-					int options)
+					int options,
+					struct smbcli_options *smb_options)
 {
 	struct cifs_handle * smbh;
 
@@ -317,7 +319,8 @@ static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx
 	smbh->h.io_write = smb_write_func;
 	smbh->h.io_seek = smb_seek_func;
 
-	if ((smbh->cli = init_smb_session(resolve_ctx, host, ports, share)) == NULL) {
+	if ((smbh->cli = init_smb_session(resolve_ctx, host, ports, share,
+					  smb_options)) == NULL) {
 		return(NULL);
 	}
 
@@ -336,7 +339,8 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 				  const char * path,
 				  const char **ports,
 				uint64_t io_size,
-				int options)
+				int options,
+				struct smbcli_options *smb_options)
 {
 	if (file_exist(path)) {
 		return(open_fd_handle(path, io_size, options));
@@ -353,7 +357,7 @@ struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx,
 
 			return(open_cifs_handle(resolve_ctx, host, ports, 
 						share, remain,
-						io_size, options));
+						io_size, options, smb_options));
 		}
 
 		return(open_fd_handle(path, io_size, options));

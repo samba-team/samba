@@ -94,6 +94,9 @@ struct smbcli_options {
 	uint_t use_oplocks:1;
 	uint_t use_level2_oplocks:1;
 	uint_t use_spnego:1;
+	uint_t unicode:1;
+	uint_t ntstatus_support:1;
+	int max_protocol;
 	uint32_t max_xmit;
 	uint16_t max_mux;
 	int request_timeout;

@@ -88,10 +88,13 @@ struct dd_iohandle
 #define DD_WRITE		0x00000004
 #define DD_OPLOCK		0x00000008
 
+struct smbcli_options;
+
 struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx, 
 				  const char * path,
 				  const char **ports,
-				uint64_t io_size, int options);
+				uint64_t io_size, int options, 
+				struct smbcli_options *smb_options);
 bool dd_fill_block(struct dd_iohandle * h, uint8_t * buf,
 		uint64_t * buf_size, uint64_t need_size, uint64_t block_size);
 bool dd_flush_block(struct dd_iohandle * h, uint8_t * buf,

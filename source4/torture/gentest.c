@@ -176,6 +176,7 @@ static bool connect_servers(struct loadparm_context *lp_ctx)
 
 	for (i=0;i<NSERVERS;i++) {
 		for (j=0;j<NINSTANCES;j++) {
+			struct smbcli_options smb_options;
 			NTSTATUS status;
 			printf("Connecting to \\\\%s\\%s as %s - instance %d\n",
 			       servers[i].server_name, servers[i].share_name, 
@@ -184,13 +185,14 @@ static bool connect_servers(struct loadparm_context *lp_ctx)
 			cli_credentials_set_workstation(servers[i].credentials, 
 							"gentest", CRED_SPECIFIED);
 
+			lp_smbcli_options(lp_ctx, &smb_options);
 			status = smbcli_full_connection(NULL, &servers[i].cli[j],
 							servers[i].server_name, 
 							lp_smb_ports(lp_ctx),
 							servers[i].share_name, NULL, 
 							servers[i].credentials, 
 							lp_resolve_context(lp_ctx), 
-							NULL);
+							NULL, &smb_options);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to connect to \\\\%s\\%s - %s\n",
 				       servers[i].server_name, servers[i].share_name,

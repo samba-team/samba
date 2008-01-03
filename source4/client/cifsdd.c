@@ -23,6 +23,7 @@
 #include "auth/gensec/gensec.h"
 #include "lib/cmdline/popt_common.h"
 #include "libcli/resolve/resolve.h"
+#include "libcli/raw/libcliraw.h"
 
 #include "cifsdd.h"
 #include "param/param.h"
@@ -353,7 +354,8 @@ static void print_transfer_stats(void)
 }
 
 static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx, 
-				      const char * which, const char **ports)
+				      const char * which, const char **ports,
+				      struct smbcli_options *smb_options)
 {
 	int			options = 0;
 	const char *		path = NULL;
@@ -374,12 +376,14 @@ static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx,
 	if (strcmp(which, "if") == 0) {
 		path = check_arg_pathname("if");
 		handle = dd_open_path(resolve_ctx, path, ports, 
-				      check_arg_numeric("ibs"), options);
+				      check_arg_numeric("ibs"), options,
+				      smb_options);
 	} else if (strcmp(which, "of") == 0) {
 		options |= DD_WRITE;
 		path = check_arg_pathname("of");
 		handle = dd_open_path(resolve_ctx, path, ports, 
-				      check_arg_numeric("obs"), options);
+				      check_arg_numeric("obs"), options,
+				      smb_options);
 	} else {
 		SMB_ASSERT(0);
 		return(NULL);
@@ -390,14 +394,6 @@ static struct dd_iohandle * open_file(struct resolve_context *resolve_ctx,
 	}
 
 	return(handle);
-}
-
-static void set_max_xmit(struct loadparm_context *lp_ctx, uint64_t iomax)
-{
-	char buf[64];
-
-	snprintf(buf, sizeof(buf), "%llu", (unsigned long long)iomax);
-	lp_set_cmdline(lp_ctx, "max xmit", buf);
 }
 
 static int copy_files(struct loadparm_context *lp_ctx)
@@ -413,9 +409,13 @@ static int copy_files(struct loadparm_context *lp_ctx)
 	struct dd_iohandle *	ifile;
 	struct dd_iohandle *	ofile;
 
+	struct smbcli_options options;
+
 	ibs = check_arg_numeric("ibs");
 	obs = check_arg_numeric("obs");
 	count = check_arg_numeric("count");
+
+	lp_smbcli_options(lp_ctx, &options);
 
 	/* Allocate IO buffer. We need more than the max IO size because we
 	 * could accumulate a remainder if ibs and obs don't match.
@@ -428,18 +428,18 @@ static int copy_files(struct loadparm_context *lp_ctx)
 		return(EOM_EXIT_CODE);
 	}
 
-	set_max_xmit(lp_ctx, MAX(ibs, obs));
+	options.max_xmit = MAX(ibs, obs);
 
 	DEBUG(4, ("IO buffer size is %llu, max xmit is %d\n",
-			(unsigned long long)iomax, lp_max_xmit(lp_ctx)));
+			(unsigned long long)iomax, options.max_xmit));
 
 	if (!(ifile = open_file(lp_resolve_context(lp_ctx), "if", 
-				lp_smb_ports(lp_ctx)))) {
+				lp_smb_ports(lp_ctx), &options))) {
 		return(FILESYS_EXIT_CODE);
 	}
 
 	if (!(ofile = open_file(lp_resolve_context(lp_ctx), "of", 
-				lp_smb_ports(lp_ctx)))) {
+				lp_smb_ports(lp_ctx), &options))) {
 		return(FILESYS_EXIT_CODE);
 	}
 
@@ -447,7 +447,7 @@ static int copy_files(struct loadparm_context *lp_ctx)
 	ifile->io_seek(ifile, check_arg_numeric("skip") * ibs);
 	ofile->io_seek(ofile, check_arg_numeric("seek") * obs);
 
-	DEBUG(4, ("max xmit was negotiated to be %d\n", lp_max_xmit(lp_ctx)));
+	DEBUG(4, ("max xmit was negotiated to be %d\n", options.max_xmit));
 
 	for (data_size = 0;;) {
 
