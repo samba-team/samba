@@ -31,10 +31,10 @@
 /**
  * add a string to a talloced array of strings.
  */
-static WERROR libnet_smbconf_add_string_to_array(TALLOC_CTX *mem_ctx,
-						char ***array,
-						uint32_t count,
-						const char *string)
+static WERROR libnet_conf_add_string_to_array(TALLOC_CTX *mem_ctx,
+					      char ***array,
+					      uint32_t count,
+					      const char *string)
 {
 	char **new_array = NULL;
 
@@ -346,19 +346,19 @@ static WERROR libnet_smbconf_reg_get_values(TALLOC_CTX *mem_ctx,
 	{
 		char *valstring;
 
-		werr = libnet_smbconf_add_string_to_array(tmp_ctx,
-							  &tmp_valnames,
-							  count, valname);
+		werr = libnet_conf_add_string_to_array(tmp_ctx,
+						       &tmp_valnames,
+						       count, valname);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
 
 		valstring = libnet_smbconf_format_registry_value(tmp_ctx,
 								 valvalue);
-		werr = libnet_smbconf_add_string_to_array(tmp_ctx,
-							  &tmp_valstrings,
-							  count,
-							  valstring);
+		werr = libnet_conf_add_string_to_array(tmp_ctx,
+						       &tmp_valstrings,
+						       count,
+						       valstring);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -540,9 +540,9 @@ WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 
 	/* make sure "global" is always listed first */
 	if (libnet_smbconf_share_exists(GLOBAL_NAME)) {
-		werr = libnet_smbconf_add_string_to_array(tmp_ctx,
-							  &tmp_share_names,
-							  0, GLOBAL_NAME);
+		werr = libnet_conf_add_string_to_array(tmp_ctx,
+						       &tmp_share_names,
+						       0, GLOBAL_NAME);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -565,10 +565,10 @@ WERROR libnet_smbconf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 			continue;
 		}
 
-		werr = libnet_smbconf_add_string_to_array(tmp_ctx,
-							  &tmp_share_names,
-							  added_count,
-							  subkey_name);
+		werr = libnet_conf_add_string_to_array(tmp_ctx,
+						       &tmp_share_names,
+						       added_count,
+						       subkey_name);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
