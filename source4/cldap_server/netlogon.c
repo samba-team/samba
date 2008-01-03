@@ -162,10 +162,14 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	}
 
 	server_type      = 
-		NBT_SERVER_PDC | NBT_SERVER_GC | 
+		NBT_SERVER_GC | 
 		NBT_SERVER_DS | NBT_SERVER_TIMESERV |
 		NBT_SERVER_CLOSEST | NBT_SERVER_WRITABLE | 
 		NBT_SERVER_GOOD_TIMESERV;
+
+	if (samdb_is_pdc(cldapd->samctx)) {
+		server_type |= NBT_SERVER_PDC;
+	}
 
 	if (str_list_check(services, "ldap")) {
 		server_type |= NBT_SERVER_LDAP;
