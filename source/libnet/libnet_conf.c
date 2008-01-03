@@ -538,7 +538,7 @@ WERROR libnet_conf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 	}
 
 	/* make sure "global" is always listed first */
-	if (libnet_smbconf_share_exists(GLOBAL_NAME)) {
+	if (libnet_conf_share_exists(GLOBAL_NAME)) {
 		werr = libnet_conf_add_string_to_array(tmp_ctx,
 						       &tmp_share_names,
 						       0, GLOBAL_NAME);
@@ -592,7 +592,7 @@ done:
 /**
  * check if a share/service of a given name exists
  */
-bool libnet_smbconf_share_exists(const char *servicename)
+bool libnet_conf_share_exists(const char *servicename)
 {
 	bool ret = false;
 	WERROR werr = WERR_OK;
@@ -618,7 +618,7 @@ WERROR libnet_smbconf_create_share(const char *servicename)
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct registry_key *key = NULL;
 
-	if (libnet_smbconf_share_exists(servicename)) {
+	if (libnet_conf_share_exists(servicename)) {
 		werr = WERR_ALREADY_EXISTS;
 		goto done;
 	}
@@ -686,7 +686,7 @@ WERROR libnet_smbconf_setparm(const char *service,
 	struct registry_key *key = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (!libnet_smbconf_share_exists(service)) {
+	if (!libnet_conf_share_exists(service)) {
 		werr = WERR_NO_SUCH_SERVICE;
 		goto done;
 	}
@@ -721,7 +721,7 @@ WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (!libnet_smbconf_share_exists(service)) {
+	if (!libnet_conf_share_exists(service)) {
 		werr = WERR_NO_SUCH_SERVICE;
 		goto done;
 	}
@@ -764,7 +764,7 @@ WERROR libnet_smbconf_delparm(const char *service,
 	WERROR werr = WERR_OK;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (!libnet_smbconf_share_exists(service)) {
+	if (!libnet_conf_share_exists(service)) {
 		return WERR_NO_SUCH_SERVICE;
 	}
 
