@@ -332,6 +332,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		   if the rsn values are equal */
 		if (header.rsn < hdr->rsn ||
 		    (header.dmaster != ctdb->pnn && header.rsn == hdr->rsn)) {
+#if 0
 			/* this is a push optimisation - we can skip writing the record if:
 
 			       1) this is not a persistent db
@@ -344,7 +345,9 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 			    header.dmaster != ctdb->pnn &&
 			    hdr->dmaster != ctdb->pnn) {
 				DEBUG(5,("Skipping push of record\n"));
-			} else {
+			} else 
+#endif
+{
 				ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
 				if (ret != 0) {
 					DEBUG(0, (__location__ " Unable to store record\n"));
