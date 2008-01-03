@@ -64,6 +64,7 @@ static WERROR libnet_smbconf_reg_open_path(TALLOC_CTX *mem_ctx,
 {
 	WERROR werr = WERR_OK;
 	NT_USER_TOKEN *token;
+	TALLOC_CTX *tmp_ctx = NULL;
 
 	if (path == NULL) {
 		DEBUG(1, ("Error: NULL path string given\n"));
@@ -71,7 +72,13 @@ static WERROR libnet_smbconf_reg_open_path(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	token = registry_create_admin_token(mem_ctx);
+	tmp_ctx = talloc_new(mem_ctx);
+	if (tmp_ctx == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
+
+	token = registry_create_admin_token(tmp_ctx);
 	if (token == NULL) {
 		DEBUG(1, ("Error creating admin token\n"));
 		/* what is the appropriate error code here? */
@@ -87,6 +94,7 @@ static WERROR libnet_smbconf_reg_open_path(TALLOC_CTX *mem_ctx,
 	}
 
 done:
+	TALLOC_FREE(tmp_ctx);
 	return werr;
 }
 
