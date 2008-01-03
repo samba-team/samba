@@ -1824,18 +1824,67 @@ static bool matchname(const char *remotehost,
 	return false;
 }
 
-static struct {
-        struct sockaddr_storage ss;
-        char *name;
-} nc;
+/*******************************************************************
+ Deal with the singleton cache.
+******************************************************************/
+
+struct name_addr_pair {
+	struct sockaddr_storage ss;
+	const char *name;
+};
+
+/*******************************************************************
+ Lookup a name/addr pair. Returns memory allocated from memcache.
+******************************************************************/
+
+static bool lookup_nc(struct name_addr_pair *nc)
+{
+	DATA_BLOB tmp;
+
+	ZERO_STRUCTP(nc);
+
+	if (!memcache_lookup(
+			NULL, SINGLETON_CACHE,
+			data_blob_string_const("get_peer_name"),
+			&tmp)) {
+		return false;
+	}
+
+	memcpy(&nc->ss, tmp.data, sizeof(nc->ss));
+	nc->name = (const char *)tmp.data + sizeof(nc->ss);
+	return true;
+}
+
+/*******************************************************************
+ Save a name/addr pair.
+******************************************************************/
+
+static void store_nc(const struct name_addr_pair *nc)
+{
+	DATA_BLOB tmp;
+	size_t namelen = strlen(nc->name);
+
+	tmp.length = sizeof(nc->ss) + namelen + 1;
+	tmp.data = (uint8_t *)SMB_MALLOC(tmp.length);
+	if (!tmp.data) {
+		return;
+	}
+	memcpy(tmp.data, &nc->ss, sizeof(nc->ss));
+	memcpy(tmp.data+sizeof(nc->ss), nc->name, namelen+1);
+
+	memcache_add(NULL, SINGLETON_CACHE,
+			data_blob_string_const("get_peer_name"),
+			tmp);
+	SAFE_FREE(tmp.data);
+}
 
 /*******************************************************************
  Return the DNS name of the remote end of a socket.
 ******************************************************************/
 
-const char *get_peer_name(int fd,
-				bool force_lookup)
+const char *get_peer_name(int fd, bool force_lookup)
 {
+	struct name_addr_pair nc;
 	char addr_buf[INET6_ADDRSTRLEN];
 	struct sockaddr_storage ss;
 	socklen_t length = sizeof(ss);
@@ -1850,12 +1899,14 @@ const char *get_peer_name(int fd,
 	   possible */
 	if (!lp_hostname_lookups() && (force_lookup == false)) {
 		length = sizeof(nc.ss);
-		p = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf),
+		nc.name = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf),
 			&nc.ss, &length);
-		SAFE_FREE(nc.name);
-		nc.name = SMB_STRDUP(p);
+		store_nc(&nc);
+		lookup_nc(&nc);
 		return nc.name ? nc.name : "UNKNOWN";
 	}
+
+	lookup_nc(&nc);
 
 	memset(&ss, '\0', sizeof(ss));
 	p = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf), &ss, &length);
@@ -1865,9 +1916,7 @@ const char *get_peer_name(int fd,
 		return nc.name ? nc.name : "UNKNOWN";
 	}
 
-	/* Not the same. Reset the cache. */
-	zero_addr(&nc.ss);
-	SAFE_FREE(nc.name);
+	/* Not the same. We need to lookup. */
 	if (fd == -1) {
 		return "UNKNOWN";
 	}
@@ -1904,7 +1953,11 @@ const char *get_peer_name(int fd,
 		strlcpy(name_buf, "UNKNOWN", sizeof(name_buf));
 	}
 
-	nc.name = SMB_STRDUP(name_buf);
+	nc.name = name_buf;
+	nc.ss = ss;
+
+	store_nc(&nc);
+	lookup_nc(&nc);
 	return nc.name ? nc.name : "UNKNOWN";
 }
 
@@ -2026,50 +2079,68 @@ out_umask:
 
 const char *get_mydnsfullname(void)
 {
-	static char *dnshostname_cache;
+	struct addrinfo *res = NULL;
+	char my_hostname[HOST_NAME_MAX];
+	bool ret;
+	DATA_BLOB tmp;
 
-	if (dnshostname_cache == NULL || !*dnshostname_cache) {
-		struct addrinfo *res = NULL;
-		char my_hostname[HOST_NAME_MAX];
-		bool ret;
-
-		/* get my host name */
-		if (gethostname(my_hostname, sizeof(my_hostname)) == -1) {
-			DEBUG(0,("get_mydnsfullname: gethostname failed\n"));
-			return NULL;
-		}
-
-		/* Ensure null termination. */
-		my_hostname[sizeof(my_hostname)-1] = '\0';
-
-		ret = interpret_string_addr_internal(&res,
-					my_hostname,
-					AI_ADDRCONFIG|AI_CANONNAME);
-
-		if (!ret || res == NULL) {
-			DEBUG(3,("get_mydnsfullname: getaddrinfo failed for "
-				"name %s [%s]\n",
-				my_hostname,
-				gai_strerror(ret) ));
-			return NULL;
-		}
-
-		/*
-		 * Make sure that getaddrinfo() returns the "correct" host name.
-		 */
-
-		if (res->ai_canonname == NULL) {
-			DEBUG(3,("get_mydnsfullname: failed to get "
-				"canonical name for %s\n",
-				my_hostname));
-			freeaddrinfo(res);
-			return NULL;
-		}
-
-		dnshostname_cache = SMB_STRDUP(res->ai_canonname);
-		freeaddrinfo(res);
+	if (memcache_lookup(NULL, SINGLETON_CACHE,
+			data_blob_string_const("get_mydnsfullname"),
+			&tmp)) {
+		SMB_ASSERT(tmp.length > 0);
+		return (const char *)tmp.data;
 	}
-	return dnshostname_cache;
+
+	/* get my host name */
+	if (gethostname(my_hostname, sizeof(my_hostname)) == -1) {
+		DEBUG(0,("get_mydnsfullname: gethostname failed\n"));
+		return NULL;
+	}
+
+	/* Ensure null termination. */
+	my_hostname[sizeof(my_hostname)-1] = '\0';
+
+	ret = interpret_string_addr_internal(&res,
+				my_hostname,
+				AI_ADDRCONFIG|AI_CANONNAME);
+
+	if (!ret || res == NULL) {
+		DEBUG(3,("get_mydnsfullname: getaddrinfo failed for "
+			"name %s [%s]\n",
+			my_hostname,
+			gai_strerror(ret) ));
+		return NULL;
+	}
+
+	/*
+	 * Make sure that getaddrinfo() returns the "correct" host name.
+	 */
+
+	if (res->ai_canonname == NULL) {
+		DEBUG(3,("get_mydnsfullname: failed to get "
+			"canonical name for %s\n",
+			my_hostname));
+		freeaddrinfo(res);
+		return NULL;
+	}
+
+	/* This copies the data, so we must do a lookup
+	 * afterwards to find the value to return.
+	 */
+
+	memcache_add(NULL, SINGLETON_CACHE,
+			data_blob_string_const("get_mydnsfullname"),
+			data_blob_string_const(res->ai_canonname));
+
+	freeaddrinfo(res);
+
+	if (!memcache_lookup(NULL, SINGLETON_CACHE,
+			data_blob_string_const("get_mydnsfullname"),
+			&tmp)) {
+		return NULL;
+	}
+
+	return (const char *)tmp.data;
 }
 
 /************************************************************
