@@ -3944,6 +3944,30 @@ if test x"$with_ads_support" != x"no"; then
   fi
 
 
+  AC_CACHE_CHECK([for krb5_principal_get_realm],
+                samba_cv_HAVE_KRB5_PRINCIPAL_GET_REALM,[
+    AC_TRY_LINK([#include <krb5.h>],
+      [krb5_context ctx = NULL; krb5_principal princ = NULL; const char *str = krb5_principal_get_realm(ctx, princ);],
+      samba_cv_HAVE_KRB5_PRINCIPAL_GET_REALM=yes,
+      samba_cv_HAVE_KRB5_PRINCIPAL_GET_REALM=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_PRINCIPAL_GET_REALM" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_PRINCIPAL_GET_REALM,1,
+               [Whether the function krb5_principal_get_realm is defined])
+  fi
+
+  AC_CACHE_CHECK([for krb5_princ_realm],
+                samba_cv_HAVE_KRB5_PRINC_REALM,[
+    AC_TRY_LINK([#include <krb5.h>],
+      [krb5_context ctx = NULL; krb5_principal princ = NULL; const char *str = krb5_princ_realm(ctx, princ)->data;],
+      samba_cv_HAVE_KRB5_PRINC_REALM=yes,
+      samba_cv_HAVE_KRB5_PRINC_REALM=no)])
+
+  if test x"$samba_cv_HAVE_KRB5_PRINC_REALM" = x"yes"; then
+    AC_DEFINE(HAVE_KRB5_PRINC_REALM,1,
+               [Whether the macro krb5_princ_realm is defined])
+  fi
+
   #
   #
   # Now the decisions whether we can support krb5

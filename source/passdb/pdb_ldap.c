@@ -1651,6 +1651,10 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 				pdb_get_username(newpwd), ldap_err2string(rc), ld_error?ld_error:"unknown"));
 			SAFE_FREE(ld_error);
 			ber_bvfree(bv);
+#if defined(LDAP_CONSTRAINT_VIOLATION)
+			if (rc == LDAP_CONSTRAINT_VIOLATION)
+				return NT_STATUS_PASSWORD_RESTRICTION;
+#endif
 			return NT_STATUS_UNSUCCESSFUL;
 		} else {
 			DEBUG(3,("ldapsam_modify_entry: LDAP Password changed for user %s\n",pdb_get_username(newpwd)));

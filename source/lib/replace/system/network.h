@@ -74,6 +74,10 @@
 #include <sys/ioctl.h>
 #endif
 
+#ifdef HAVE_STROPTS_H
+#include <stropts.h>
+#endif
+
 #ifdef SOCKET_WRAPPER
 #ifndef SOCKET_WRAPPER_NOT_REPLACE
 #define SOCKET_WRAPPER_REPLACE

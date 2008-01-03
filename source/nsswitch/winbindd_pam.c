@@ -1517,11 +1517,13 @@ process_result:
 			}
 		}
 
-		result = fillup_password_policy(domain, state);
+		if (state->request.flags & WBFLAG_PAM_GET_PWD_POLICY) {
+			result = fillup_password_policy(domain, state);
 
-		if (!NT_STATUS_IS_OK(result)) {
-			DEBUG(10,("Failed to get password policies: %s\n", nt_errstr(result)));
-			goto done;
+			if (!NT_STATUS_IS_OK(result)) {
+				DEBUG(10,("Failed to get password policies: %s\n", nt_errstr(result)));
+				goto done;
+			}
 		}
 
 		if (state->request.flags & WBFLAG_PAM_UNIX_NAME) {

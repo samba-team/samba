@@ -452,7 +452,7 @@ NTSTATUS pdb_default_create_alias(struct pdb_methods *methods,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	exists = lookup_name(mem_ctx, name, LOOKUP_NAME_ISOLATED,
+	exists = lookup_name(mem_ctx, name, LOOKUP_NAME_LOCAL,
 			     NULL, NULL, &sid, &type);
 	TALLOC_FREE(mem_ctx);
 

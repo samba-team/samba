@@ -438,11 +438,18 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	dosmode &= SAMBA_ATTRIBUTES_MASK;
 
 	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n", dosmode, fname));
-	if (!st || (st && !VALID_STAT(*st))) {
+
+	if (st == NULL) {
+		SET_STAT_INVALID(st1);
 		st = &st1;
+	}
+
+	if (!VALID_STAT(*st)) {
 		if (SMB_VFS_STAT(conn,fname,st))
 			return(-1);
 	}
+
+	unixmode = st->st_mode;
 
 	get_acl_group_bits(conn, fname, &st->st_mode);
 
@@ -451,11 +458,14 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	else
 		dosmode &= ~aDIR;
 
-	if (dos_mode(conn,fname,st) == dosmode)
+	if (dos_mode(conn,fname,st) == dosmode) {
+		st->st_mode = unixmode;
 		return(0);
+	}
 
 	/* Store the DOS attributes in an EA by preference. */
 	if (set_ea_dos_attribute(conn, fname, st, dosmode)) {
+		st->st_mode = unixmode;
 		return 0;
 	}
 
@@ -494,6 +504,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	if ((ret = SMB_VFS_CHMOD(conn,fname,unixmode)) == 0) {
 		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
+		st->st_mode = unixmode;
 		return 0;
 	}
 
@@ -526,6 +537,9 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		close_file_fchmod(fsp);
 		notify_fname(conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
+		if (ret == 0) {
+			st->st_mode = unixmode;
+		}
 	}
 
 	return( ret );

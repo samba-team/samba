@@ -40,6 +40,8 @@ static const struct {
 	{-1,NULL}
 };
 
+static const char *star_smbserver_name = "*SMBSERVER";
+
 /**
  * Set the user session key for a connection
  * @param cli The cli structure to add it too
@@ -861,10 +863,41 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			}
 		}
 		
-		rc = cli_session_setup_kerberos(cli, principal, domain);
-		if (ADS_ERR_OK(rc) || !cli->fallback_after_kerberos) {
+		/* If we get a bad principal, try to guess it if
+		   we have a valid host NetBIOS name.
+		 */
+		if (strequal(principal,
+				"not_defined_in_RFC4178@please_ignore")) {
 			SAFE_FREE(principal);
-			return rc;
+		}
+		if (principal == NULL &&
+			!is_ipaddress(cli->desthost) &&
+			!strequal(star_smbserver_name,
+				cli->desthost)) {
+			char *realm = NULL;
+			DEBUG(3,("cli_session_setup_spnego: got a "
+				"bad server principal, trying to guess ...\n"));
+
+			realm = kerberos_get_default_realm_from_ccache();
+			if (realm && *realm) {
+				if (asprintf(&principal, "%s$@%s",
+						cli->desthost, realm) < 0) {
+					SAFE_FREE(realm);
+					return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+				}
+				DEBUG(3,("cli_session_setup_spnego: guessed "
+					"server principal=%s\n",
+					principal ? principal : "<null>"));
+			}
+			SAFE_FREE(realm);
+		}
+
+		if (principal) {
+			rc = cli_session_setup_kerberos(cli, principal, domain);
+			if (ADS_ERR_OK(rc) || !cli->fallback_after_kerberos) {
+				SAFE_FREE(principal);
+				return rc;
+			}
 		}
 	}
 #endif
@@ -1412,7 +1445,7 @@ NTSTATUS cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip
 	char *p;
 
 	/* reasonable default hostname */
-	if (!host) host = "*SMBSERVER";
+	if (!host) host = star_smbserver_name;
 
 	fstrcpy(cli->desthost, host);
 
@@ -1527,8 +1560,8 @@ again:
 			*p = 0;
 			goto again;
 		}
-		if (strcmp(called.name, "*SMBSERVER")) {
-			make_nmb_name(&called , "*SMBSERVER", 0x20);
+		if (strcmp(called.name, star_smbserver_name)) {
+			make_nmb_name(&called , star_smbserver_name, 0x20);
 			goto again;
 		}
 		return NT_STATUS_BAD_NETWORK_NAME;
@@ -1652,7 +1685,7 @@ BOOL attempt_netbios_session_request(struct cli_state **ppcli, const char *srcho
 	 */
 
 	if(is_ipaddress(desthost)) {
-		make_nmb_name(&called, "*SMBSERVER", 0x20);
+		make_nmb_name(&called, star_smbserver_name, 0x20);
 	} else {
 		make_nmb_name(&called, desthost, 0x20);
 	}
@@ -1661,7 +1694,7 @@ BOOL attempt_netbios_session_request(struct cli_state **ppcli, const char *srcho
 		NTSTATUS status;
 		struct nmb_name smbservername;
 
-		make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
+		make_nmb_name(&smbservername, star_smbserver_name, 0x20);
 
 		/*
 		 * If the name wasn't *SMBSERVER then

@@ -1606,6 +1606,8 @@ void retransmit_or_expire_response_records(time_t t)
 	for (subrec = FIRST_SUBNET; subrec; subrec = get_next_subnet_maybe_unicast_or_wins_server(subrec)) {
 		struct response_record *rrec, *nextrrec;
 
+  restart:
+
 		for (rrec = subrec->responselist; rrec; rrec = nextrrec) {
 			nextrrec = rrec->next;
    
@@ -1644,6 +1646,9 @@ on subnet %s\n", rrec->response_id, inet_ntoa(rrec->packet->ip), subrec->subnet_
 									no timeout function. */
 							remove_response_record(subrec, rrec);
 						}
+						/* We have changed subrec->responselist,
+						 * restart from the beginning of this list. */
+						goto restart;
 					} /* !rrec->in_expitation_processing */
 				} /* rrec->repeat_count > 0 */
 			} /* rrec->repeat_time <= t */

@@ -30,7 +30,7 @@ static int am_parent = 1;
 int last_message = -1;
 
 /* a useful macro to debug the last message processed */
-#define LAST_MESSAGE() smb_fn_name(last_message)
+#define LAST_MESSAGE() (last_message != -1 ? smb_fn_name(last_message) : "")
 
 extern struct auth_context *negprot_global_auth_context;
 extern pstring user_socket_options;

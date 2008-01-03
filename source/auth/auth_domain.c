@@ -128,8 +128,11 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
 		uint32 sec_chan_type = 0;
 		unsigned char machine_pwd[16];
+		const char *account_name;
 
-		if (!get_trust_pw(domain, machine_pwd, &sec_chan_type)) {
+		if (!get_trust_pw_hash(domain, machine_pwd, &account_name,
+				       &sec_chan_type))
+		{
 			DEBUG(0, ("connect_to_domain_password_server: could not fetch "
 			"trust account password for domain '%s'\n",
 				domain));
@@ -143,7 +146,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 					dc_name, /* server name */
 					domain, /* domain */
 					global_myname(), /* client name */
-					global_myname(), /* machine account name */
+					account_name, /* machine account name */
 					machine_pwd,
 					sec_chan_type,
 					&neg_flags);

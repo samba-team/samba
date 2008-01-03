@@ -270,6 +270,10 @@ enum lsa_SidType {
 #define LOOKUP_NAME_BUILTIN		0x00000010 /* builtin names */
 #define LOOKUP_NAME_WKN			0x00000020 /* well known names */
 #define LOOKUP_NAME_DOMAIN		0x00000040 /* only lookup own domain */
+#define LOOKUP_NAME_LOCAL		(LOOKUP_NAME_ISOLATED\
+					|LOOKUP_NAME_BUILTIN\
+					|LOOKUP_NAME_WKN\
+					|LOOKUP_NAME_DOMAIN)
 #define LOOKUP_NAME_ALL			(LOOKUP_NAME_ISOLATED\
 					|LOOKUP_NAME_REMOTE\
 					|LOOKUP_NAME_BUILTIN\

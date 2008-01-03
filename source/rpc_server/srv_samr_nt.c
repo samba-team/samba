@@ -2507,9 +2507,9 @@ static NTSTATUS can_create(TALLOC_CTX *mem_ctx, const char *new_name)
 	DEBUG(10, ("Checking whether [%s] can be created\n", new_name));
 
 	become_root();
-	/* Lookup in our local databases (only LOOKUP_NAME_ISOLATED set)
+	/* Lookup in our local databases (LOOKUP_NAME_REMOTE not set)
 	 * whether the name already exists */
-	result = lookup_name(mem_ctx, new_name, LOOKUP_NAME_ISOLATED,
+	result = lookup_name(mem_ctx, new_name, LOOKUP_NAME_LOCAL,
 			     NULL, NULL, NULL, &type);
 	unbecome_root();
 
