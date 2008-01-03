@@ -25,6 +25,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "librpc/gen_ndr/security.h"
 #include "auth/credentials/credentials.h"
+#include "libcli/resolve/resolve.h"
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 #include "dynconfig.h"
@@ -187,7 +188,9 @@ static bool connect_servers(struct loadparm_context *lp_ctx)
 							servers[i].server_name, 
 							lp_smb_ports(lp_ctx),
 							servers[i].share_name, NULL, 
-							servers[i].credentials, NULL);
+							servers[i].credentials, 
+							lp_resolve_context(lp_ctx), 
+							NULL);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to connect to \\\\%s\\%s - %s\n",
 				       servers[i].server_name, servers[i].share_name,

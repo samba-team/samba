@@ -29,6 +29,7 @@
 
 struct smb2_connect_state {
 	struct cli_credentials *credentials;
+	struct resolve_context *resolve_ctx;
 	const char *host;
 	const char *share;
 	struct smb2_negprot negprot;
@@ -152,7 +153,7 @@ static void continue_resolve(struct composite_context *creq)
 	c->status = resolve_name_recv(creq, state, &addr);
 	if (!composite_is_ok(c)) return;
 
-	creq = smbcli_sock_connect_send(state, addr, ports, state->host, c->event_ctx);
+	creq = smbcli_sock_connect_send(state, addr, ports, state->host, state->resolve_ctx, c->event_ctx);
 
 	composite_continue(c, creq, continue_socket, c);
 }
@@ -185,6 +186,7 @@ struct composite_context *smb2_connect_send(TALLOC_CTX *mem_ctx,
 	if (composite_nomem(state->host, c)) return c;
 	state->share = talloc_strdup(c, share);
 	if (composite_nomem(state->share, c)) return c;
+	state->resolve_ctx = talloc_reference(state, resolve_ctx);
 
 	ZERO_STRUCT(name);
 	name.name = host;

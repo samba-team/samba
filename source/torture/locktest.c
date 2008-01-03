@@ -26,6 +26,7 @@
 #include "libcli/libcli.h"
 #include "param/param.h"
 #include "dynconfig.h"
+#include "libcli/resolve/resolve.h"
 
 static int numops = 1000;
 static bool showall;
@@ -155,7 +156,9 @@ static struct smbcli_state *connect_one(struct loadparm_context *lp_ctx,
 						server, 
 						lp_smb_ports(lp_ctx),
 						share, NULL,
-						servers[snum], NULL);
+						servers[snum], 
+						lp_resolve_context(lp_ctx),
+						NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			sleep(2);
 		}

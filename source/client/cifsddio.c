@@ -220,7 +220,8 @@ static bool smb_write_func(void * handle, uint8_t * buf, uint64_t wanted,
 	return(true);
 }
 
-static struct smbcli_state * init_smb_session(const char * host,
+static struct smbcli_state * init_smb_session(struct resolve_context *resolve_ctx,
+					      const char * host,
 					      const char **ports,
 					      const char * share)
 {
@@ -231,7 +232,8 @@ static struct smbcli_state * init_smb_session(const char * host,
 	 * each connection, but for now, we just use the same one for both.
 	 */
 	ret = smbcli_full_connection(NULL, &cli, host, ports, share,
-			 NULL /* devtype */, cmdline_credentials, NULL /* events */);
+			 NULL /* devtype */, cmdline_credentials, resolve_ctx, 
+			 NULL /* events */);
 
 	if (!NT_STATUS_IS_OK(ret)) {
 		fprintf(stderr, "%s: connecting to //%s/%s: %s\n",
@@ -289,7 +291,8 @@ static int open_smb_file(struct smbcli_state * cli,
 	return(o.ntcreatex.out.file.fnum);
 }
 
-static struct dd_iohandle * open_cifs_handle(const char * host,
+static struct dd_iohandle * open_cifs_handle(struct resolve_context *resolve_ctx,
+					     const char * host,
 					const char **ports,
 					const char * share,
 					const char * path,
@@ -314,7 +317,7 @@ static struct dd_iohandle * open_cifs_handle(const char * host,
 	smbh->h.io_write = smb_write_func;
 	smbh->h.io_seek = smb_seek_func;
 
-	if ((smbh->cli = init_smb_session(host, ports, share)) == NULL) {
+	if ((smbh->cli = init_smb_session(resolve_ctx, host, ports, share)) == NULL) {
 		return(NULL);
 	}
 
@@ -329,7 +332,8 @@ static struct dd_iohandle * open_cifs_handle(const char * host,
 /* Abstract IO interface.						     */
 /* ------------------------------------------------------------------------- */
 
-struct dd_iohandle * dd_open_path(const char * path,
+struct dd_iohandle * dd_open_path(struct resolve_context *resolve_ctx, 
+				  const char * path,
 				  const char **ports,
 				uint64_t io_size,
 				int options)
@@ -347,7 +351,8 @@ struct dd_iohandle * dd_open_path(const char * path,
 			/* Skip over leading directory separators. */
 			while (*remain == '/' || *remain == '\\') { remain++; }
 
-			return(open_cifs_handle(host, ports, share, remain,
+			return(open_cifs_handle(resolve_ctx, host, ports, 
+						share, remain,
 						io_size, options));
 		}
 

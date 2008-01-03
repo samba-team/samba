@@ -133,7 +133,9 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	}
 
 	/* send smb connect request */
-	conn_req = smb_composite_connect_send(conn, s->io.pipe->conn, s->io.pipe->conn->event_ctx);
+	conn_req = smb_composite_connect_send(conn, s->io.pipe->conn, 
+					      lp_resolve_context(lp_ctx), 
+					      s->io.pipe->conn->event_ctx);
 	if (composite_nomem(conn_req, c)) return c;
 
 	composite_continue(c, conn_req, continue_smb_connect, c);

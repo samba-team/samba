@@ -28,6 +28,7 @@
 #include "auth/gensec/gensec.h"
 #include "param/param.h"
 #include "dynconfig.h"
+#include "libcli/resolve/resolve.h"
 
 static struct cli_credentials *credentials;
 static bool showall = false;
@@ -72,7 +73,8 @@ static char *reg_test(struct smbcli_state *cli, char *pattern, char *long_name, 
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct smbcli_state *connect_one(char *share, const char **ports)
+static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx, 
+					char *share, const char **ports)
 {
 	struct smbcli_state *c;
 	fstring server;
@@ -90,7 +92,7 @@ static struct smbcli_state *connect_one(char *share, const char **ports)
 					server, 
 					ports,
 					share, NULL,
-					credentials, NULL);
+					credentials, resolve_ctx, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
@@ -380,7 +382,7 @@ static void usage(void)
 	argc -= optind;
 	argv += optind;
 
-	cli = connect_one(share, lp_smb_ports(lp_ctx));
+	cli = connect_one(lp_resolve_context(lp_ctx), share, lp_smb_ports(lp_ctx));
 	if (!cli) {
 		DEBUG(0,("Failed to connect to %s\n", share));
 		exit(1);

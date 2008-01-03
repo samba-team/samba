@@ -30,6 +30,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "libcli/composite/composite.h"
 #include "libcli/smb_composite/smb_composite.h"
+#include "libcli/resolve/resolve.h"
 #include "param/param.h"
 
 #define BASEDIR "\\benchlock"
@@ -197,7 +198,9 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 	talloc_free(state->tree);
 	state->tree = NULL;
 
-	ctx = smb_composite_connect_send(io, state->mem_ctx, state->ev);
+	ctx = smb_composite_connect_send(io, state->mem_ctx, 
+					 lp_resolve_context(state->tctx->lp_ctx),
+					 state->ev);
 	if (ctx == NULL) {
 		DEBUG(0,("Failed to setup async reconnect\n"));
 		exit(1);

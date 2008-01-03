@@ -174,6 +174,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 				     const char *dest_host, const char **dest_ports,
 				     const char *service, const char *service_type,
 				     struct cli_credentials *credentials,
+				     struct resolve_context *resolve_ctx,
 				     struct event_context *ev)
 {
 	struct smb_composite_connect io;
@@ -192,7 +193,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	io.in.fallback_to_anonymous = false;
 	io.in.workgroup = lp_workgroup(global_loadparm);
 	
-	status = smb_composite_connect(&io, parent_ctx, ev);
+	status = smb_composite_connect(&io, parent_ctx, resolve_ctx, ev);
 	if (NT_STATUS_IS_OK(status)) {
 		*ret_tree = io.out.tree;
 	}

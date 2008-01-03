@@ -32,7 +32,7 @@
 */
 bool smbcli_socket_connect(struct smbcli_state *cli, const char *server, 
 			   const char **ports, struct resolve_context *resolve_ctx,
-			   int max_xmit, int max_mux)
+			   int max_xmit, int max_mux, bool use_spnego)
 {
 	struct smbcli_socket *sock;
 
@@ -42,7 +42,7 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 	if (sock == NULL) return false;
 	
 	cli->transport = smbcli_transport_init(sock, cli, true, max_xmit,
-					       max_mux);
+					       max_mux, use_spnego);
 	if (!cli->transport) {
 		return false;
 	}
@@ -140,6 +140,7 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 				const char *sharename,
 				const char *devtype,
 				struct cli_credentials *credentials,
+				struct resolve_context *resolve_ctx,
 				struct event_context *ev)
 {
 	struct smbcli_tree *tree;
@@ -150,7 +151,7 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 	status = smbcli_tree_full_connection(parent_ctx,
 					     &tree, host, ports, 
 					     sharename, devtype,
-					     credentials, ev);
+					     credentials, resolve_ctx, ev);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}

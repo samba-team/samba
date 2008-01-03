@@ -25,6 +25,7 @@
 #include "lib/cmdline/popt_common.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
+#include "libcli/resolve/resolve.h"
 
 /* Size (in bytes) of the required fields in the SMBwhoami response. */
 #define WHOAMI_REQUIRED_SIZE	40
@@ -78,7 +79,8 @@ static struct smbcli_state *connect_to_server(struct torture_context *tctx,
 	status = smbcli_full_connection(tctx, &cli, host, 
 					lp_smb_ports(tctx->lp_ctx),
 					share, NULL,
-					creds, NULL);
+					creds, lp_resolve_context(tctx->lp_ctx),
+					NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("failed to connect to //%s/%s: %s\n",

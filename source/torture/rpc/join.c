@@ -5,6 +5,7 @@
 #include "auth/credentials/credentials.h"
 #include "torture/rpc/rpc.h"
 
+#include "libcli/resolve/resolve.h"
 #include "param/param.h"
 
 #define TORTURE_NETBIOS_NAME "smbtorturejoin"
@@ -34,6 +35,7 @@ bool torture_rpc_join(struct torture_context *torture)
 					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL,
 					machine_account,
+					lp_resolve_context(torture->lp_ctx),
 					NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("%s failed to connect to IPC$ with workstation credentials\n",
@@ -59,6 +61,7 @@ bool torture_rpc_join(struct torture_context *torture)
 					lp_smb_ports(torture->lp_ctx),
 					"IPC$", NULL,
 					machine_account,
+					lp_resolve_context(torture->lp_ctx),
 					NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("%s failed to connect to IPC$ with workstation credentials\n",
