@@ -63,8 +63,7 @@ static NTSTATUS connect_send_negprot(struct composite_context *c,
 {
 	struct connect_state *state = talloc_get_type(c->private_data, struct connect_state);
 
-	state->req = smb_raw_negotiate_send(state->transport, lp_unicode(global_loadparm),
-					    lp_cli_maxprotocol(global_loadparm));
+	state->req = smb_raw_negotiate_send(state->transport, io->in.unicode, io->in.max_protocol);
 	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
 	state->req->async.fn = request_handler;
@@ -308,9 +307,9 @@ static NTSTATUS connect_socket(struct composite_context *c,
 
 	/* the socket is up - we can initialise the smbcli transport layer */
 	state->transport = smbcli_transport_init(state->sock, state, true, 
-						 lp_max_xmit(global_loadparm),
-						 lp_maxmux(global_loadparm),
-						 lp_use_spnego(global_loadparm) && lp_nt_status_support(global_loadparm));
+						 io->in.max_xmit,
+						 io->in.max_mux,
+						 io->in.use_spnego);
 	NT_STATUS_HAVE_NO_MEMORY(state->transport);
 
 	if (is_ipaddress(state->sock->hostname) &&

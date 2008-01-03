@@ -91,6 +91,12 @@ struct smb_composite_connect {
 		struct cli_credentials *credentials;
 		bool fallback_to_anonymous;
 		const char *workgroup;
+		bool use_spnego;
+		bool ntstatus_support;
+		bool unicode;
+		int max_xmit;
+		int max_mux;
+		int max_protocol;
 	} in;
 	struct {
 		struct smbcli_tree *tree;

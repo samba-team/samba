@@ -445,6 +445,12 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 	io.in.credentials            = creds;
 	io.in.fallback_to_anonymous  = false;
 	io.in.workgroup              = lp_workgroup(global_loadparm);
+	io.in.max_xmit = lp_max_xmit(global_loadparm);
+	io.in.max_mux = lp_maxmux(global_loadparm);
+	io.in.ntstatus_support = lp_nt_status_support(global_loadparm);
+	io.in.max_protocol = lp_cli_maxprotocol(global_loadparm);
+	io.in.unicode = lp_unicode(global_loadparm);
+	io.in.use_spnego = lp_use_spnego(global_loadparm) && lp_nt_status_support(global_loadparm);
 
 	result = smb_composite_connect(&io, mem_ctx, 
 				       lp_resolve_context(global_loadparm), 
