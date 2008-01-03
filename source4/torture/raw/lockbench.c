@@ -59,7 +59,7 @@ struct benchlock_state {
 	struct timed_event *te;
 
 	/* these are used for reconnections */
-	int dest_port;
+	const char **dest_ports;
 	const char *dest_host;
 	const char *called_name;
 	const char *service_type;
@@ -186,7 +186,7 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 	}
 
 	io->in.dest_host    = state->dest_host;
-	io->in.dest_ports   = state->dest_port;
+	io->in.dest_ports   = state->dest_ports;
 	io->in.called_name  = state->called_name;
 	io->in.service      = share;
 	io->in.service_type = state->service_type;
@@ -345,7 +345,12 @@ bool torture_bench_lock(struct torture_context *torture)
 		state[i].tree = cli->tree;
 		state[i].dest_host = talloc_strdup(state[i].mem_ctx, 
 						   cli->tree->session->transport->socket->hostname);
-		state[i].dest_port = cli->tree->session->transport->socket->port;
+		state[i].dest_ports = talloc_array(state[i].mem_ctx, 
+						   const char *, 2);
+		state[i].dest_ports[0] = talloc_asprintf(state[i].dest_ports, 
+							 "%u", 
+							 cli->tree->session->transport->socket->port);
+		state[i].dest_ports[1] = NULL;
 		state[i].called_name  = talloc_strdup(state[i].mem_ctx,
 						      cli->tree->session->transport->called.name);
 		state[i].service_type = talloc_strdup(state[i].mem_ctx,
