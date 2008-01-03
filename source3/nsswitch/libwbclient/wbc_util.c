@@ -60,7 +60,7 @@ wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 	struct winbindd_response response;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcDomainInfo *info = NULL;
-	
+
 	if (!domain || !dinfo) {
 		wbc_status = WBC_ERR_INVALID_PARAM;
 		BAIL_ON_WBC_ERROR(wbc_status);
@@ -71,7 +71,7 @@ wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
 
-	strncpy(request.domain_name, domain, 
+	strncpy(request.domain_name, domain,
 		sizeof(request.domain_name)-1);
 
 	wbc_status = wbcRequestResponse(WINBINDD_DOMAIN_INFO,
@@ -82,15 +82,15 @@ wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 	info = talloc(NULL, struct wbcDomainInfo);
 	BAIL_ON_PTR_ERROR(info, wbc_status);
 
-	info->short_name = talloc_strdup(info, 
+	info->short_name = talloc_strdup(info,
 					 response.data.domain_info.name);
 	BAIL_ON_PTR_ERROR(info->short_name, wbc_status);
 
-	info->dns_name = talloc_strdup(info, 
+	info->dns_name = talloc_strdup(info,
 				       response.data.domain_info.alt_name);
 	BAIL_ON_PTR_ERROR(info->dns_name, wbc_status);
 
-	wbc_status = wbcStringToSid(response.data.domain_info.sid, 
+	wbc_status = wbcStringToSid(response.data.domain_info.sid,
 				    &info->sid);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
@@ -102,7 +102,7 @@ wbcErr wbcDomainInfo(const char *domain, struct wbcDomainInfo **dinfo)
 		info->flags |= WBC_DOMINFO_PRIMARY;
 
 	*dinfo = info;
-	
+
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
