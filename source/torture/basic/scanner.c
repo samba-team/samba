@@ -162,7 +162,8 @@ static bool trans2_op_exists(struct smbcli_state *cli, int op)
 /****************************************************************************
 check for existance of a trans2 call
 ****************************************************************************/
-static bool scan_trans2(struct smbcli_state *cli, int op, int level,
+static bool scan_trans2(struct smb_iconv_convenience *iconv_convenience, 
+			struct smbcli_state *cli, int op, int level,
 			int fnum, int dnum, int qfnum, const char *fname)
 {
 	int data_len = 0;
@@ -231,7 +232,7 @@ static bool scan_trans2(struct smbcli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(lp_iconv_convenience(global_loadparm),
+	param_len += push_string(iconv_convenience,
 			&param[6], fname, PARAM_SIZE-7,
 			STR_TERMINATE|STR_UNICODE);
 
@@ -247,7 +248,7 @@ static bool scan_trans2(struct smbcli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(lp_iconv_convenience(global_loadparm),
+	param_len += push_string(iconv_convenience,
 			&param[6], "\\newfile.dat", PARAM_SIZE-7,
 			STR_TERMINATE|STR_UNICODE);
 
@@ -264,7 +265,7 @@ static bool scan_trans2(struct smbcli_state *cli, int op, int level,
 	smbcli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
-	param_len += push_string(lp_iconv_convenience(global_loadparm),
+	param_len += push_string(iconv_convenience,
 			&param[2], "\\testdir", PARAM_SIZE-3,
 			STR_TERMINATE|STR_UNICODE);
 
@@ -319,15 +320,15 @@ bool torture_trans2_scan(struct torture_context *torture,
 		}
 
 		for (level = 0; level <= 50; level++) {
-			scan_trans2(cli, op, level, fnum, dnum, qfnum, fname);
+			scan_trans2(lp_iconv_convenience(torture->lp_ctx), cli, op, level, fnum, dnum, qfnum, fname);
 		}
 
 		for (level = 0x100; level <= 0x130; level++) {
-			scan_trans2(cli, op, level, fnum, dnum, qfnum, fname);
+			scan_trans2(lp_iconv_convenience(torture->lp_ctx), cli, op, level, fnum, dnum, qfnum, fname);
 		}
 
 		for (level = 1000; level < 1050; level++) {
-			scan_trans2(cli, op, level, fnum, dnum, qfnum, fname);
+			scan_trans2(lp_iconv_convenience(torture->lp_ctx), cli, op, level, fnum, dnum, qfnum, fname);
 		}
 	}
 
@@ -435,7 +436,8 @@ static NTSTATUS try_nttrans_len(struct smbcli_state *cli,
 /****************************************************************************
 check for existance of a nttrans call
 ****************************************************************************/
-static bool scan_nttrans(struct smbcli_state *cli, int op, int level,
+static bool scan_nttrans(struct smb_iconv_convenience *iconv_convenience,
+			 struct smbcli_state *cli, int op, int level,
 			int fnum, int dnum, const char *fname)
 {
 	int data_len = 0;
@@ -491,7 +493,7 @@ static bool scan_nttrans(struct smbcli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(lp_iconv_convenience(global_loadparm),
+	param_len += push_string(iconv_convenience,
 			&param[6], fname, PARAM_SIZE,
 			STR_TERMINATE | STR_UNICODE);
 
@@ -507,7 +509,7 @@ static bool scan_nttrans(struct smbcli_state *cli, int op, int level,
 	SSVAL(param, 0, level);
 	SSVAL(param, 2, 0);
 	SSVAL(param, 4, 0);
-	param_len += push_string(lp_iconv_convenience(global_loadparm),
+	param_len += push_string(iconv_convenience,
 			&param[6], "\\newfile.dat", PARAM_SIZE,
 			STR_TERMINATE | STR_UNICODE);
 
@@ -524,7 +526,7 @@ static bool scan_nttrans(struct smbcli_state *cli, int op, int level,
 	smbcli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
-	param_len += push_string(lp_iconv_convenience(global_loadparm),
+	param_len += push_string(iconv_convenience,
 			&param[2], "\\testdir", PARAM_SIZE,
 			STR_TERMINATE | STR_UNICODE);
 
@@ -555,15 +557,18 @@ bool torture_nttrans_scan(struct torture_context *torture,
 	for (op=OP_MIN; op<=OP_MAX; op++) {
 		printf("Scanning op=%d\n", op);
 		for (level = 0; level <= 50; level++) {
-			scan_nttrans(cli, op, level, fnum, dnum, fname);
+			scan_nttrans(lp_iconv_convenience(torture->lp_ctx),
+				     cli, op, level, fnum, dnum, fname);
 		}
 
 		for (level = 0x100; level <= 0x130; level++) {
-			scan_nttrans(cli, op, level, fnum, dnum, fname);
+			scan_nttrans(lp_iconv_convenience(torture->lp_ctx),
+				     cli, op, level, fnum, dnum, fname);
 		}
 
 		for (level = 1000; level < 1050; level++) {
-			scan_nttrans(cli, op, level, fnum, dnum, fname);
+			scan_nttrans(lp_iconv_convenience(torture->lp_ctx),
+				     cli, op, level, fnum, dnum, fname);
 		}
 	}
 
