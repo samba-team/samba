@@ -175,7 +175,7 @@ port 445 is tried and if no response then port 139 is tried.
 	<varlistentry>
 		<term>ip=<replaceable>arg</replaceable></term>
 
-		<listitem><para>sets the destination host or IP address.</para></listitem>
+		<listitem><para>sets the destination IP address.</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
