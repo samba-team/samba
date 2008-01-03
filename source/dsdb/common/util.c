@@ -1367,6 +1367,42 @@ failed:
 	return false;
 }
 
+/*
+  work out if we are a Global Catalog server for the domain of the current open ldb
+*/
+bool samdb_is_gc(struct ldb_context *ldb)
+{
+	const char *attrs[] = { "options", NULL };
+	int ret, options;
+	struct ldb_result *res;
+	TALLOC_CTX *tmp_ctx;
+
+	tmp_ctx = talloc_new(ldb);
+	if (tmp_ctx == NULL) {
+		DEBUG(1, ("talloc_new failed in samdb_is_pdc"));
+		return false;
+	}
+
+	/* Query cn=ntds settings,.... */
+	ret = ldb_search(ldb, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, NULL, attrs, &res);
+	if (ret) {
+		return false;
+	}
+	if (res->count != 1) {
+		talloc_free(res);
+		return false;
+	}
+
+	options = ldb_msg_find_attr_as_int(res->msgs[0], "options", 0);
+	talloc_free(res);
+	talloc_free(ldb);
+
+	/* if options attribute has the 0x00000001 flag set, then enable the global catlog */
+	if (options & 0x000000001) {
+		return true;
+	}
+	return false;
+}
 
 /* Find a domain object in the parents of a particular DN.  */
 int samdb_search_for_parent_domain(struct ldb_context *ldb, TALLOC_CTX *mem_ctx, struct ldb_dn *dn,
