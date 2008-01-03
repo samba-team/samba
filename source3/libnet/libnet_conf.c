@@ -154,9 +154,9 @@ static bool libnet_conf_value_exists(struct registry_key *key,
 /*
  * create a subkey of KEY_SMBCONF
  */
-static WERROR libnet_smbconf_reg_create_service_key(TALLOC_CTX *ctx,
-						    const char * subkeyname,
-						    struct registry_key **newkey)
+static WERROR libnet_conf_reg_create_service_key(TALLOC_CTX *ctx,
+						 const char * subkeyname,
+						 struct registry_key **newkey)
 {
 	WERROR werr = WERR_OK;
 	struct registry_key *create_parent = NULL;
@@ -623,7 +623,7 @@ WERROR libnet_smbconf_create_share(const char *servicename)
 		goto done;
 	}
 
-	werr = libnet_smbconf_reg_create_service_key(mem_ctx, servicename, &key);
+	werr = libnet_conf_reg_create_service_key(mem_ctx, servicename, &key);
 
 done:
 	TALLOC_FREE(mem_ctx);
