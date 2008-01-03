@@ -134,8 +134,8 @@ static WERROR libnet_conf_reg_open_base_key(TALLOC_CTX *ctx,
 	return libnet_conf_reg_open_path(ctx, KEY_SMBCONF, desired_access, key);
 }
 
-static bool libnet_smbconf_value_exists(struct registry_key *key,
-					const char *param)
+static bool libnet_conf_value_exists(struct registry_key *key,
+				     const char *param)
 {
 	bool ret = false;
 	WERROR werr = WERR_OK;
@@ -732,7 +732,7 @@ WERROR libnet_smbconf_getparm(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (!libnet_smbconf_value_exists(key, param)) {
+	if (!libnet_conf_value_exists(key, param)) {
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
@@ -774,7 +774,7 @@ WERROR libnet_smbconf_delparm(const char *service,
 		goto done;
 	}
 
-	if (!libnet_smbconf_value_exists(key, param)) {
+	if (!libnet_conf_value_exists(key, param)) {
 		werr = WERR_INVALID_PARAM;
 		goto done;
 	}
