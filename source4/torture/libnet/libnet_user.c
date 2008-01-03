@@ -461,7 +461,7 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 bool torture_modifyuser(struct torture_context *torture)
 {
 	NTSTATUS status;
-	struct dcerpc_binding *bind;
+	struct dcerpc_binding *binding;
 	struct dcerpc_pipe *p;
 	TALLOC_CTX *prep_mem_ctx;
 	struct policy_handle h;
@@ -499,7 +499,7 @@ bool torture_modifyuser(struct torture_context *torture)
 		goto done;
 	}
 
-	status = torture_rpc_binding(torture, &bind);
+	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = false;
 		goto done;

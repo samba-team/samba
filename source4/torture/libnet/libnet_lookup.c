@@ -36,7 +36,7 @@ bool torture_lookup(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct libnet_Lookup lookup;
-	struct dcerpc_binding *bind;
+	struct dcerpc_binding *binding;
 
 	mem_ctx = talloc_init("test_lookup");
 
@@ -45,9 +45,9 @@ bool torture_lookup(struct torture_context *torture)
 
 	lookup.in.hostname = torture_setting_string(torture, "host", NULL);
 	if (lookup.in.hostname == NULL) {
-		status = torture_rpc_binding(torture, &bind);
+		status = torture_rpc_binding(torture, &binding);
 		if (NT_STATUS_IS_OK(status)) {
-			lookup.in.hostname = bind->host;
+			lookup.in.hostname = binding->host;
 		}
 	}
 
@@ -80,7 +80,7 @@ bool torture_lookup_host(struct torture_context *torture)
 	TALLOC_CTX *mem_ctx;
 	struct libnet_context *ctx;
 	struct libnet_Lookup lookup;
-	struct dcerpc_binding *bind;
+	struct dcerpc_binding *binding;
 
 	mem_ctx = talloc_init("test_lookup_host");
 
@@ -89,9 +89,9 @@ bool torture_lookup_host(struct torture_context *torture)
 
 	lookup.in.hostname = torture_setting_string(torture, "host", NULL);
 	if (lookup.in.hostname == NULL) {
-		status = torture_rpc_binding(torture, &bind);
+		status = torture_rpc_binding(torture, &binding);
 		if (NT_STATUS_IS_OK(status)) {
-			lookup.in.hostname = bind->host;
+			lookup.in.hostname = binding->host;
 		}
 	}
 

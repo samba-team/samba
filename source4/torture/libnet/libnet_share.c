@@ -121,11 +121,11 @@ bool torture_listshares(struct torture_context *torture)
 	int i;
 	bool ret = true;
 	struct libnet_context* libnetctx;
-	struct dcerpc_binding *bind;
+	struct dcerpc_binding *binding;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("test_listshares");
-	status = torture_rpc_binding(torture, &bind);
+	status = torture_rpc_binding(torture, &binding);
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = false;
 		goto done;
@@ -142,7 +142,7 @@ bool torture_listshares(struct torture_context *torture)
 	
 	printf("Testing libnet_ListShare\n");
 	
-	share.in.server_name = talloc_asprintf(mem_ctx, "%s", bind->host);
+	share.in.server_name = talloc_asprintf(mem_ctx, "%s", binding->host);
 
 	for (i = 0; i < ARRAY_SIZE(levels); i++) {
 		share.in.level = levels[i];
@@ -199,7 +199,7 @@ static bool test_addshare(struct dcerpc_pipe *svc_pipe, TALLOC_CTX *mem_ctx, con
 bool torture_delshare(struct torture_context *torture)
 {
 	struct dcerpc_pipe *p;
-	struct dcerpc_binding *bind;
+	struct dcerpc_binding *binding;
 	struct libnet_context* libnetctx;
 	const char *host;
 	NTSTATUS  status;
@@ -207,7 +207,7 @@ bool torture_delshare(struct torture_context *torture)
 	struct libnet_DelShare share;
 	
 	host = torture_setting_string(torture, "host", NULL);
-	status = torture_rpc_binding(torture, &bind);
+	status = torture_rpc_binding(torture, &binding);
 	torture_assert_ntstatus_ok(torture, status, "Failed to get binding");
 
 	libnetctx = libnet_context_init(NULL, torture->lp_ctx);
@@ -223,7 +223,7 @@ bool torture_delshare(struct torture_context *torture)
 		return false;
 	}
 
-	share.in.server_name	= bind->host;
+	share.in.server_name	= binding->host;
 	share.in.share_name	= TEST_SHARENAME;
 
 	status = libnet_DelShare(libnetctx, torture, &share);
