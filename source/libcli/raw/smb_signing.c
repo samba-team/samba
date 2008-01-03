@@ -383,7 +383,7 @@ bool smbcli_init_signing(struct smbcli_transport *transport)
 		return false;
 	}
 	
-	switch (lp_client_signing(global_loadparm)) {
+	switch (transport->options.signing) {
 	case SMB_SIGNING_OFF:
 		transport->negotiate.sign_info.allow_smb_signing = false;
 		break;

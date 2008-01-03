@@ -27,6 +27,8 @@
   particularly designed to be used in async applications
 */
 
+#include "libcli/raw/signing.h"
+
 
 /*
   a composite open/read(s)/close request that loads a whole file
@@ -97,6 +99,7 @@ struct smb_composite_connect {
 		int max_xmit;
 		int max_mux;
 		int max_protocol;
+		enum smb_signing_state signing;
 	} in;
 	struct {
 		struct smbcli_tree *tree;

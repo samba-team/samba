@@ -31,8 +31,10 @@
   wrapper around smbcli_sock_connect()
 */
 bool smbcli_socket_connect(struct smbcli_state *cli, const char *server, 
-			   const char **ports, struct resolve_context *resolve_ctx,
-			   int max_xmit, int max_mux, bool use_spnego)
+			   const char **ports, 
+			   struct resolve_context *resolve_ctx,
+			   int max_xmit, int max_mux, bool use_spnego,
+			   enum smb_signing_state signing)
 {
 	struct smbcli_socket *sock;
 
@@ -42,7 +44,7 @@ bool smbcli_socket_connect(struct smbcli_state *cli, const char *server,
 	if (sock == NULL) return false;
 	
 	cli->transport = smbcli_transport_init(sock, cli, true, max_xmit,
-					       max_mux, use_spnego);
+					       max_mux, use_spnego, signing);
 	if (!cli->transport) {
 		return false;
 	}

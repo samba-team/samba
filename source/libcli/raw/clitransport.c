@@ -76,7 +76,8 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 					       bool primary, 
 					       int max_xmit,
 					       int max_mux,
-					       bool use_spnego)
+					       bool use_spnego,
+					       enum smb_signing_state signing)
 {
 	struct smbcli_transport *transport;
 
@@ -93,6 +94,7 @@ struct smbcli_transport *smbcli_transport_init(struct smbcli_socket *sock,
 	transport->options.max_xmit = max_xmit;
 	transport->options.max_mux = max_mux;
 	transport->options.request_timeout = SMB_REQUEST_TIMEOUT;
+	transport->options.signing = signing;
 
 	transport->negotiate.max_xmit = transport->options.max_xmit;
 

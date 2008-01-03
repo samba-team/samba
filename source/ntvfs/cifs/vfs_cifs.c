@@ -208,6 +208,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	io.in.max_protocol = lp_cli_maxprotocol(ntvfs->ctx->lp_ctx);
 	io.in.unicode = lp_unicode(ntvfs->ctx->lp_ctx);
 	io.in.use_spnego = lp_use_spnego(ntvfs->ctx->lp_ctx) && lp_nt_status_support(ntvfs->ctx->lp_ctx);
+	io.in.signing = lp_client_signing(ntvfs->ctx->lp_ctx);
 	
 	creq = smb_composite_connect_send(&io, private, 
 					  lp_resolve_context(ntvfs->ctx->lp_ctx),

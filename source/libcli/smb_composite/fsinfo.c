@@ -160,6 +160,7 @@ struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree,
 	state->connect->in.unicode = lp_unicode(global_loadparm);
 	state->connect->in.use_spnego = lp_use_spnego(global_loadparm) && 
 		lp_nt_status_support(global_loadparm);
+	state->connect->in.signing = lp_client_signing(global_loadparm);
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	state->stage = FSINFO_CONNECT;

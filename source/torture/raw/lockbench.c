@@ -199,6 +199,7 @@ static void reopen_connection(struct event_context *ev, struct timed_event *te,
 	io->in.max_protocol = lp_cli_maxprotocol(state->tctx->lp_ctx);
 	io->in.unicode = lp_unicode(state->tctx->lp_ctx);
 	io->in.use_spnego = lp_use_spnego(state->tctx->lp_ctx) && lp_nt_status_support(state->tctx->lp_ctx);
+	io->in.signing = lp_client_signing(state->tctx->lp_ctx);
 
 	/* kill off the remnants of the old connection */
 	talloc_free(state->tree);

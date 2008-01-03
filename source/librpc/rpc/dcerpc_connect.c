@@ -125,6 +125,7 @@ static struct composite_context *dcerpc_pipe_connect_ncacn_np_smb_send(TALLOC_CT
 	conn->in.max_protocol = lp_cli_maxprotocol(lp_ctx);
 	conn->in.unicode = lp_unicode(lp_ctx);
 	conn->in.use_spnego = lp_use_spnego(lp_ctx) && lp_nt_status_support(lp_ctx);
+	conn->in.signing = lp_client_signing(lp_ctx);
 
 	/*
 	 * provide proper credentials - user supplied, but allow a
