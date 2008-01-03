@@ -447,11 +447,7 @@ static NTSTATUS add_socket(struct event_context *event_context,
 {
 	uint16_t port = 389;
 	NTSTATUS status;
-	const char *attrs[] = { "options", NULL };
-	int ret;
-	struct ldb_result *res;
 	struct ldb_context *ldb;
-	int options;
 
 	status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
 				     "ipv4", address, &port, 
@@ -481,22 +477,7 @@ static NTSTATUS add_socket(struct event_context *event_context,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
-	/* Query cn=ntds settings,.... */
-	ret = ldb_search(ldb, samdb_ntds_settings_dn(ldb), LDB_SCOPE_BASE, NULL, attrs, &res);
-	if (ret) {
-		return NT_STATUS_INTERNAL_DB_CORRUPTION;
-	}
-	if (res->count != 1) {
-		talloc_free(res);
-		return NT_STATUS_NOT_FOUND;
-	}
-
-	options = ldb_msg_find_attr_as_int(res->msgs[0], "options", 0);
-	talloc_free(res);
-	talloc_free(ldb);
-
-	/* if options attribute has the 0x00000001 flag set, then enable the global catlog */
-	if (options & 0x000000001) {
+	if (samdb_is_gc(ldb)) {
 		port = 3268;
 		status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
 					     "ipv4", address, &port, 
