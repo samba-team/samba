@@ -158,10 +158,10 @@
 #define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
 #define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
 
-#define ERROR_DOS(class,code) error_packet(inbuf,outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
-#define ERROR_NT(status) error_packet(inbuf,outbuf,0,0,status,__LINE__,__FILE__)
-#define ERROR_FORCE_NT(status) error_packet(inbuf,outbuf,-1,-1,status,__LINE__,__FILE__)
-#define ERROR_BOTH(status,class,code) error_packet(inbuf,outbuf,class,code,status,__LINE__,__FILE__)
+#define ERROR_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
+#define ERROR_NT(status) error_packet(outbuf,0,0,status,__LINE__,__FILE__)
+#define ERROR_FORCE_NT(status) error_packet(outbuf,-1,-1,status,__LINE__,__FILE__)
+#define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)
 
 #define reply_nterror(req,status) reply_nt_error(req,status,__LINE__,__FILE__)
 #define reply_force_nterror(req,status) reply_force_nt_error(req,status,__LINE__,__FILE__)
@@ -191,6 +191,9 @@
 #define smb_len_large(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|(PVAL(buf,1)<<16))
 #define _smb_setlen_large(buf,len) do { buf[0] = 0; buf[1] = ((len)&0xFF0000)>>16; \
         buf[2] = ((len)&0xFF00)>>8; buf[3] = (len)&0xFF; } while (0)
+
+#define ENCRYPTION_REQUIRED(conn) ((conn) ? ((conn)->encrypt_level == Required) : false)
+#define IS_CONN_ENCRYPTED(conn) ((conn) ? (conn)->encrypted_tid : false)
 
 /*******************************************************************
 find the difference in milliseconds between two struct timeval

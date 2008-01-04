@@ -236,7 +236,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 	}
 
 	construct_reply_common((char *)req->inbuf, aio_ex->outbuf);
-	srv_set_message((const char *)req->inbuf, aio_ex->outbuf, 12, 0, True);
+	srv_set_message(aio_ex->outbuf, 12, 0, True);
 	SCVAL(aio_ex->outbuf,smb_vwv0,0xFF); /* Never a chained reply. */
 
 	a = &aio_ex->acb;
@@ -356,8 +356,9 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	        SSVAL(aio_ex->outbuf,smb_vwv2,numtowrite);
                 SSVAL(aio_ex->outbuf,smb_vwv4,(numtowrite>>16)&1);
 		show_msg(aio_ex->outbuf);
-		if (!send_smb(smbd_server_fd(),aio_ex->outbuf)) {
-			exit_server_cleanly("handle_aio_write: send_smb "
+		if (!srv_send_smb(smbd_server_fd(),aio_ex->outbuf,
+				IS_CONN_ENCRYPTED(fsp->conn))) {
+			exit_server_cleanly("handle_aio_write: srv_send_smb "
 					    "failed.");
 		}
 		DEBUG(10,("schedule_aio_write_and_X: scheduled aio_write "
@@ -387,7 +388,6 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 	int ret = 0;
 	int outsize;
 	char *outbuf = aio_ex->outbuf;
-	const char *inbuf = aio_ex->inbuf;
 	char *data = smb_buf(outbuf);
 	ssize_t nread = SMB_VFS_AIO_RETURN(aio_ex->fsp,&aio_ex->acb);
 
@@ -410,9 +410,9 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 
 		ret = errno;
 		ERROR_NT(map_nt_error_from_unix(ret));
-		outsize = srv_set_message(inbuf,outbuf,0,0,true);
+		outsize = srv_set_message(outbuf,0,0,true);
 	} else {
-		outsize = srv_set_message(inbuf, outbuf,12,nread,False);
+		outsize = srv_set_message(outbuf,12,nread,False);
 		SSVAL(outbuf,smb_vwv2,0xFFFF); /* Remaining - must be * -1. */
 		SSVAL(outbuf,smb_vwv5,nread);
 		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
@@ -425,10 +425,11 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 			    (int)aio_ex->acb.aio_nbytes, (int)nread ) );
 
 	}
-	_smb_setlen(outbuf,outsize - 4);
+	smb_setlen(outbuf,outsize - 4);
 	show_msg(outbuf);
-	if (!send_smb(smbd_server_fd(),outbuf)) {
-		exit_server_cleanly("handle_aio_read_complete: send_smb "
+	if (!srv_send_smb(smbd_server_fd(),outbuf,
+			IS_CONN_ENCRYPTED(aio_ex->fsp->conn))) {
+		exit_server_cleanly("handle_aio_read_complete: srv_send_smb "
 				    "failed.");
 	}
 
@@ -497,7 +498,7 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 
 		ret = errno;
 		ERROR_BOTH(map_nt_error_from_unix(ret), ERRHRD, ERRdiskfull);
-		srv_set_message(inbuf,outbuf,0,0,true);
+		srv_set_message(outbuf,0,0,true);
         } else {
 		bool write_through = BITSETW(aio_ex->inbuf+smb_vwv7,0);
 		NTSTATUS status;
@@ -516,15 +517,15 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 			ret = errno;
 			ERROR_BOTH(map_nt_error_from_unix(ret),
 				   ERRHRD, ERRdiskfull);
-			srv_set_message(inbuf,outbuf,0,0,true);
+			srv_set_message(outbuf,0,0,true);
                 	DEBUG(5,("handle_aio_write: sync_file for %s returned %s\n",
 				fsp->fsp_name, nt_errstr(status) ));
 		}
 	}
 
 	show_msg(outbuf);
-	if (!send_smb(smbd_server_fd(),outbuf)) {
-		exit_server_cleanly("handle_aio_write: send_smb failed.");
+	if (!srv_send_smb(smbd_server_fd(),outbuf,IS_CONN_ENCRYPTED(fsp->conn))) {
+		exit_server_cleanly("handle_aio_write: srv_send_smb failed.");
 	}
 
 	DEBUG(10,("handle_aio_write_complete: scheduled aio_write completed "

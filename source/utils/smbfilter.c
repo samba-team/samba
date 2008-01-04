@@ -114,6 +114,30 @@ static void filter_request(char *buf)
 
 }
 
+/****************************************************************************
+ Send an smb to a fd.
+****************************************************************************/
+
+static bool send_smb(int fd, char *buffer)
+{
+	size_t len;
+	size_t nwritten=0;
+	ssize_t ret;
+
+        len = smb_len(buffer) + 4;
+
+	while (nwritten < len) {
+		ret = write_data(fd,buffer+nwritten,len - nwritten);
+		if (ret <= 0) {
+			DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
+				(int)len,(int)ret, strerror(errno) ));
+			return false;
+		}
+		nwritten += ret;
+	}
+
+	return true;
+}
 
 static void filter_child(int c, struct sockaddr_storage *dest_ss)
 {
@@ -145,7 +169,7 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 		if (num <= 0) continue;
 		
 		if (c != -1 && FD_ISSET(c, &fds)) {
-			if (!receive_smb(c, packet, 0, NULL)) {
+			if (!receive_smb_raw(c, packet, 0, NULL)) {
 				d_printf("client closed connection\n");
 				exit(0);
 			}
@@ -156,7 +180,7 @@ static void filter_child(int c, struct sockaddr_storage *dest_ss)
 			}			
 		}
 		if (s != -1 && FD_ISSET(s, &fds)) {
-			if (!receive_smb(s, packet, 0, NULL)) {
+			if (!receive_smb_raw(s, packet, 0, NULL)) {
 				d_printf("server closed connection\n");
 				exit(0);
 			}

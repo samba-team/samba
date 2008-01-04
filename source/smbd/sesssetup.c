@@ -139,7 +139,7 @@ static void reply_sesssetup_blob(connection_struct *conn,
 	}
 
 	show_msg((char *)req->outbuf);
-	send_smb(smbd_server_fd(),(char *)req->outbuf);
+	srv_send_smb(smbd_server_fd(),(char *)req->outbuf,req->encrypted);
 	TALLOC_FREE(req->outbuf);
 }
 
