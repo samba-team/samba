@@ -34,6 +34,7 @@ extern void init_dcerpc(void);
 extern void init_events(void);
 extern void inituuid(void);
 extern void init_net(void);
+extern void initecho(void);
 
 static struct _inittab py_modules[] = { STATIC_LIBPYTHON_MODULES };
 
