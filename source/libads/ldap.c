@@ -56,6 +56,10 @@ LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to)
 {
 	LDAP *ldp = NULL;
 
+
+	DEBUG(10, ("Opening connection to LDAP server '%s:%d', timeout "
+		   "%u seconds\n", server, port, to));
+
 	/* Setup timeout */
 	gotalarm = 0;
 	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
@@ -65,8 +69,10 @@ LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to)
 	ldp = ldap_open(server, port);
 
 	if (ldp == NULL) {
-		DEBUG(2,("Could not open LDAP connection to %s:%d: %s\n",
+		DEBUG(2,("Could not open connection to LDAP server %s:%d: %s\n",
 			 server, port, strerror(errno)));
+	} else {
+		DEBUG(10, ("Connected to LDAP server '%s:%d'\n", server, port));
 	}
 
 	/* Teardown timeout. */
