@@ -54,8 +54,9 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			return ntstatus_to_werror(status);
 		}
-		r->in.server_name = talloc_strdup(mem_ctx, info->domain_controller_name);
-		W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
+		r->in.dc_name = talloc_strdup(mem_ctx,
+					      info->domain_controller_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	}
 
 	if (account_ou) {
@@ -224,8 +225,8 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	if (server_name) {
-		r->in.server_name = talloc_strdup(mem_ctx, server_name);
-		W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
+		r->in.dc_name = talloc_strdup(mem_ctx, server_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	} else {
 
 		NTSTATUS status;
@@ -244,8 +245,9 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			return ntstatus_to_werror(status);
 		}
-		r->in.server_name = talloc_strdup(mem_ctx, info->domain_controller_name);
-		W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
+		r->in.dc_name = talloc_strdup(mem_ctx,
+					      info->domain_controller_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	}
 
 	if (account) {

@@ -22,7 +22,8 @@
 
 struct libnet_JoinCtx {
 	struct {
-		const char *server_name;
+		const char *dc_name;
+		const char *machine_name;
 		const char *domain_name;
 		const char *account_ou;
 		const char *admin_account;
@@ -48,7 +49,7 @@ struct libnet_JoinCtx {
 
 struct libnet_UnjoinCtx {
 	struct {
-		const char *server_name;
+		const char *dc_name;
 		const char *domain_name;
 		const char *admin_account;
 		const char *admin_password;
