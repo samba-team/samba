@@ -211,7 +211,7 @@ void tdb_mmap(struct tdb_context *tdb)
   says to use for mmap expansion */
 static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t addition)
 {
-	char buf[1024];
+	char buf[8192];
 
 	if (tdb->read_only || tdb->traverse_read) {
 		tdb->ecode = TDB_ERR_RDONLY;
@@ -251,7 +251,7 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 {
 	struct list_struct rec;
-	tdb_off_t offset;
+	tdb_off_t offset, new_size;	
 
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "lock failed in tdb_expand\n"));
@@ -261,9 +261,11 @@ int tdb_expand(struct tdb_context *tdb, tdb_off_t size)
 	/* must know about any previous expansions by another process */
 	tdb->methods->tdb_oob(tdb, tdb->map_size + 1, 1);
 
-	/* always make room for at least 100 more records, and round
-           the database up to a multiple of the page size */
-	size = TDB_ALIGN(tdb->map_size + size*100, tdb->page_size) - tdb->map_size;
+	/* always make room for at least 100 more records, and at
+           least 25% more space. Round the database up to a multiple
+           of the page size */
+	new_size = MAX(tdb->map_size + size*100, tdb->map_size * 1.25);
+	size = TDB_ALIGN(new_size, tdb->page_size) - tdb->map_size;
 
 	if (!(tdb->flags & TDB_INTERNAL))
 		tdb_munmap(tdb);
