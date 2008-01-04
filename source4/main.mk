@@ -216,7 +216,8 @@ $(IDL_HEADER_FILES) \
 	$(IDL_NDR_PARSE_H_FILES) $(IDL_NDR_PARSE_C_FILES) \
 	$(IDL_NDR_CLIENT_C_FILES) $(IDL_NDR_CLIENT_H_FILES) \
 	$(IDL_NDR_SERVER_C_FILES) $(IDL_SWIG_FILES) \
-	$(IDL_NDR_EJS_C_FILES) $(IDL_NDR_EJS_H_FILES): idl
+	$(IDL_NDR_EJS_C_FILES) $(IDL_NDR_EJS_H_FILES) \
+	$(IDL_NDR_PY_C_FILES) $(IDL_NDR_PY_H_FILES): idl
 
 idl_full: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
 	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh FULL
