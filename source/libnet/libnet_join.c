@@ -2,7 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  libnet Join Support
  *  Copyright (C) Gerald (Jerry) Carter 2006
- *  Copyright (C) Guenther Deschner 2007
+ *  Copyright (C) Guenther Deschner 2007-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@ static NTSTATUS do_DomainJoin(TALLOC_CTX *mem_ctx,
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
-	const char *password = NULL;
 	POLICY_HND sam_pol, domain_pol, user_pol, lsa_pol;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
@@ -46,17 +45,19 @@ static NTSTATUS do_DomainJoin(TALLOC_CTX *mem_ctx,
 	DATA_BLOB digested_session_key;
 	uchar md4_trust_password[16];
 
-	password = talloc_strdup(mem_ctx,
-		generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH));
-	NT_STATUS_HAVE_NO_MEMORY(password);
+	if (!r->in.machine_password) {
+		r->in.machine_password = talloc_strdup(mem_ctx, generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH));
+		NT_STATUS_HAVE_NO_MEMORY(r->in.machine_password);
+	}
 
 	status = cli_full_connection(&cli, NULL, r->in.server_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
 				     r->in.admin_account,
-				     NULL, //r->in.domain_name,
-				     r->in.password,
-				     0, Undefined, NULL);
+				     NULL,
+				     r->in.admin_password,
+				     0,
+				     Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -152,15 +153,16 @@ static NTSTATUS do_DomainJoin(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	E_md4hash(password, md4_trust_password);
-	encode_pw_buffer(pwbuf, password, STR_UNICODE);
+	E_md4hash(r->in.machine_password, md4_trust_password);
+	encode_pw_buffer(pwbuf, r->in.machine_password, STR_UNICODE);
 
 	generate_random_buffer((uint8*)md5buffer, sizeof(md5buffer));
 	digested_session_key = data_blob_talloc(mem_ctx, 0, 16);
 
 	MD5Init(&md5ctx);
 	MD5Update(&md5ctx, md5buffer, sizeof(md5buffer));
-	MD5Update(&md5ctx, cli->user_session_key.data, cli->user_session_key.length);
+	MD5Update(&md5ctx, cli->user_session_key.data,
+		  cli->user_session_key.length);
 	MD5Final(digested_session_key.data, &md5ctx);
 
 	SamOEMhashBlob(pwbuf, sizeof(pwbuf), &digested_session_key);
@@ -237,8 +239,8 @@ static NTSTATUS do_DomainUnjoin(TALLOC_CTX *mem_ctx,
 				     NULL, 0,
 				     "IPC$", "IPC",
 				     r->in.admin_account,
-				     NULL, //r->in.domain_name,
-				     r->in.password,
+				     NULL,
+				     r->in.admin_password,
 				     0, Undefined, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {

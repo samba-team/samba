@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  NetApi Join Support
- *  Copyright (C) Guenther Deschner 2007
+ *  Copyright (C) Guenther Deschner 2007-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -69,8 +69,8 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	}
 
 	if (password) {
-		r->in.password = talloc_strdup(mem_ctx, password);
-		W_ERROR_HAVE_NO_MEMORY(r->in.password);
+		r->in.admin_password = talloc_strdup(mem_ctx, password);
+		W_ERROR_HAVE_NO_MEMORY(r->in.admin_password);
 	}
 
 	r->in.join_flags = join_flags;
@@ -254,8 +254,8 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	}
 
 	if (password) {
-		r->in.password = talloc_strdup(mem_ctx, password);
-		W_ERROR_HAVE_NO_MEMORY(r->in.password);
+		r->in.admin_password = talloc_strdup(mem_ctx, password);
+		W_ERROR_HAVE_NO_MEMORY(r->in.admin_password);
 	}
 
 	r->in.unjoin_flags = unjoin_flags;
