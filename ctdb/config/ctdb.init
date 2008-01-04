@@ -80,19 +80,30 @@ start() {
 	    suse)
 		startproc /usr/sbin/ctdbd $CTDB_OPTIONS
 		rc_status -v
+		RETVAL=$?
 		;;
 	    redhat)
 		daemon ctdbd $CTDB_OPTIONS
 		RETVAL=$?
 		echo
 		[ $RETVAL -eq 0 ] && touch /var/lock/subsys/ctdb || RETVAL=1
-		return $RETVAL
 		;;
 	    ubuntu)
 		start-stop-daemon --start --quiet --background --exec /usr/sbin/ctdbd -- $CTDB_OPTIONS
-		return $?
+		RETVAL=$?
 		;;
 	esac
+
+	sleep 1
+	# set any tunables from the config file
+	set | grep ^CTDB_SET_ | cut -d_ -f3- | 
+	while read v; do
+	    varname=`echo $v | cut -d= -f1`
+	    value=`echo $v | cut -d= -f2`
+	    ctdb setvar $varname $value || RETVAL=1
+	done || exit 1
+
+	return $RETVAL
 }	
 
 stop() {
