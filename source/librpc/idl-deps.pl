@@ -15,6 +15,8 @@ foreach(@ARGV) {
 	push (@{$vars{IDL_NDR_SERVER_C_FILES}}, "librpc/gen_ndr/ndr_$b\_s.c");
 	push (@{$vars{IDL_NDR_EJS_C_FILES}}, "librpc/gen_ndr/ndr_$b\_ejs.c");
 	push (@{$vars{IDL_NDR_EJS_H_FILES}}, "librpc/gen_ndr/ndr_$b\_ejs.h");
+	push (@{$vars{IDL_NDR_PY_C_FILES}}, "librpc/gen_ndr/py_$b.c");
+	push (@{$vars{IDL_NDR_PY_H_FILES}}, "librpc/gen_ndr/py_$b.h");
 }
 
 foreach (keys %vars) {
