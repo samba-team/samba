@@ -24,8 +24,7 @@
  *
  * This currently supports local interaction with the configuration
  * stored in the registry. But other backends and remote access via
- * rpc (to registry stored configuration) might get implemented in
- * the future.
+ * rpc might get implemented in the future.
  */
 
 #include "includes.h"
@@ -847,15 +846,15 @@ int net_conf(int argc, const char **argv)
 		{"import", net_conf_import,
 		 "Import configuration from file in smb.conf format."},
 		{"listshares", net_conf_listshares,
-		 "List the registry shares."},
+		 "List the share names."},
 		{"drop", net_conf_drop,
-		 "Delete the complete configuration from registry."},
+		 "Delete the complete configuration."},
 		{"showshare", net_conf_showshare,
-		 "Show the definition of a registry share."},
+		 "Show the definition of a share."},
 		{"addshare", net_conf_addshare,
-		 "Create a new registry share."},
+		 "Create a new share."},
 		{"delshare", net_conf_delshare,
-		 "Delete a registry share."},
+		 "Delete a share."},
 		{"setparm", net_conf_setparm,
 		 "Store a parameter."},
 		{"getparm", net_conf_getparm,
