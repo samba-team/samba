@@ -1736,25 +1736,47 @@ again:
 		goto again;
 	}
 
+	/* check which node is the recovery master */
+	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), pnn, &recmaster);
+	if (ret != 0) {
+		DEBUG(0, (__location__ " Unable to get recmaster from node %u\n", pnn));
+		goto again;
+	}
+
+	if (recmaster == (uint32_t)-1) {
+		DEBUG(0,(__location__ " Initial recovery master set - forcing election\n"));
+		force_election(rec, mem_ctx, pnn, nodemap);
+		goto again;
+	}
+	
 	/* check that we (recovery daemon) and the local ctdb daemon
 	   agrees on whether we are banned or not
 	*/
 	if (nodemap->nodes[pnn].flags & NODE_FLAGS_BANNED) {
 		if (rec->banned_nodes[pnn] == NULL) {
-			DEBUG(0,("Local ctdb daemon thinks this node is BANNED but the recovery master disagrees. Re-banning the node\n"));
+			if (recmaster == pnn) {
+				DEBUG(0,("Local ctdb daemon on recmaster thinks this node is BANNED but the recovery master disagrees. Unbanning the node\n"));
 
-			ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
-			ctdb_set_culprit(rec, pnn);
-
+				ctdb_unban_node(rec, pnn);
+			} else {
+				DEBUG(0,("Local ctdb daemon on non-recmaster thinks this node is BANNED but the recovery master disagrees. Re-banning the node\n"));
+				ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
+				ctdb_set_culprit(rec, pnn);
+			}
 			goto again;
 		}
 	} else {
 		if (rec->banned_nodes[pnn] != NULL) {
-			DEBUG(0,("Local ctdb daemon does not think this node is BANNED but the recovery master disagrees. Re-banning the node\n"));
+			if (recmaster == pnn) {
+				DEBUG(0,("Local ctdb daemon on recmaster does not think this node is BANNED but the recovery master disagrees. Unbanning the node\n"));
 
-			ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
-			ctdb_set_culprit(rec, pnn);
+				ctdb_unban_node(rec, pnn);
+			} else {
+				DEBUG(0,("Local ctdb daemon on non-recmaster does not think this node is BANNED but the recovery master disagrees. Re-banning the node\n"));
 
+				ctdb_ban_node(rec, pnn, ctdb->tunable.recovery_ban_period);
+				ctdb_set_culprit(rec, pnn);
+			}
 			goto again;
 		}
 	}
@@ -1771,19 +1793,6 @@ again:
 	}
 
 
-	/* check which node is the recovery master */
-	ret = ctdb_ctrl_getrecmaster(ctdb, mem_ctx, CONTROL_TIMEOUT(), pnn, &recmaster);
-	if (ret != 0) {
-		DEBUG(0, (__location__ " Unable to get recmaster from node %u\n", pnn));
-		goto again;
-	}
-
-	if (recmaster == (uint32_t)-1) {
-		DEBUG(0,(__location__ " Initial recovery master set - forcing election\n"));
-		force_election(rec, mem_ctx, pnn, nodemap);
-		goto again;
-	}
-	
 	/* verify that the recmaster node is still active */
 	for (j=0; j<nodemap->num; j++) {
 		if (nodemap->nodes[j].pnn==recmaster) {
