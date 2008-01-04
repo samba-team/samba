@@ -84,12 +84,61 @@ sub TypeConstructor($$)
 {
 	my ($self, $type) = @_;
 
+	$self->pidl("staticforward PyTypeObject $type->{NAME}_ObjectType;");
+	$self->pidl("typedef struct {");
+	$self->indent;
+	$self->pidl("PyObject_HEAD");
+	$self->pidl("void *object;"); # FIXME: Use real type rather than void
+	$self->deindent;
+	$self->pidl("} $type->{NAME}_Object;");
+
+	$self->pidl("");
+
+	$self->pidl("static PyObject *py_$type->{NAME}_getattr(PyTypeObject *obj, char *name)");
+	$self->pidl("{");
+	$self->indent;
+	$self->pidl("return Py_None;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
+
+	$self->pidl("static void py_$type->{NAME}_dealloc(PyObject* self)");
+	$self->pidl("{");
+	$self->indent;
+	$self->pidl("$type->{NAME}_Object *obj = ($type->{NAME}_Object *)self;");
+	$self->pidl("talloc_free(obj->object);");
+	$self->pidl("PyObject_Del(self);");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
+
+	$self->pidl("static PyObject *py_$type->{NAME}_setattr(PyTypeObject *obj, char *name, PyObject *value)");
+	$self->pidl("{");
+	$self->indent;
+	$self->pidl("return Py_None;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
+
+	$self->pidl("static PyTypeObject $type->{NAME}_ObjectType = {");
+	$self->indent;
+	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
+	$self->pidl(".tp_name = (char *)\"$type->{NAME}\",");
+	$self->pidl(".tp_basicsize = sizeof($type->{NAME}_Object),");
+	$self->pidl(".tp_dealloc = py_$type->{NAME}_dealloc,");
+	$self->pidl(".tp_getattr = py_$type->{NAME}_getattr,");
+	$self->pidl(".tp_setattr = py_$type->{NAME}_setattr,");
+	$self->deindent;
+	$self->pidl("};");
+
+	$self->pidl("");
+
 	$self->pidl("static PyObject *py_$type->{NAME}(PyObject *self, PyObject *args)");
 	$self->pidl("{");
 	$self->indent;
-	#FIXME
-
-	$self->pidl("return Py_None;");
+	$self->pidl("$type->{NAME}\_Object *ret;");
+	$self->pidl("ret = PyObject_New($type->{NAME}_Object, &$type->{NAME}_ObjectType);");
+	$self->pidl("return (PyObject *) ret;");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
@@ -199,7 +248,7 @@ sub Interface($$)
 	$self->pidl("static PyTypeObject $interface->{NAME}_InterfaceType = {");
 	$self->indent;
 	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
-	$self->pidl(".tp_name = \"$interface->{NAME}\",");
+	$self->pidl(".tp_name = (char *)\"$interface->{NAME}\",");
 	$self->pidl(".tp_basicsize = sizeof($interface->{NAME}_InterfaceObject),");
 	$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
 	$self->pidl(".tp_getattr = interface_$interface->{NAME}_getattr,");
