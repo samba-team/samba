@@ -2267,7 +2267,7 @@ NTSTATUS open_directory(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS create_directory(connection_struct *conn, const char *directory)
+NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, const char *directory)
 {
 	NTSTATUS status;
 	SMB_STRUCT_STAT sbuf;
@@ -2275,7 +2275,7 @@ NTSTATUS create_directory(connection_struct *conn, const char *directory)
 
 	SET_STAT_INVALID(sbuf);
 	
-	status = open_directory(conn, NULL, directory, &sbuf,
+	status = open_directory(conn, req, directory, &sbuf,
 				FILE_READ_ATTRIBUTES, /* Just a stat open */
 				FILE_SHARE_NONE, /* Ignored for stat opens */
 				FILE_CREATE,

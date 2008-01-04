@@ -23,13 +23,13 @@
  Pull out the encryption context for this packet. 0 means global context.
 ******************************************************************************/
 
-NTSTATUS get_enc_ctx_num(const char *buf, uint16 *p_enc_ctx_num)
+NTSTATUS get_enc_ctx_num(const uint8_t *buf, uint16 *p_enc_ctx_num)
 {
 	if (smb_len(buf) < 8) {
 		return NT_STATUS_INVALID_BUFFER_SIZE;
 	}
 
-	if (buf[4] == (char)0xFF) {
+	if (buf[4] == 0xFF) {
 		if (buf[5] == 'S' && buf [6] == 'M' && buf[7] == 'B') {
 			/* Not an encrypted buffer. */
 			return NT_STATUS_NOT_FOUND;
@@ -93,8 +93,8 @@ NTSTATUS common_ntlm_decrypt_buffer(NTLMSSP_STATE *ntlmssp_state, char *buf)
 
 	memcpy(buf + 8, inbuf + 8 + NTLMSSP_SIG_SIZE, data_len);
 
-	/* Reset the length. */
-	_smb_setlen(buf,data_len + 4);
+	/* Reset the length and overwrite the header. */
+	smb_setlen(buf,data_len + 4);
 
 	SAFE_FREE(inbuf);
 	return NT_STATUS_OK;
@@ -203,7 +203,8 @@ static NTSTATUS common_gss_decrypt_buffer(struct smb_tran_enc_state_gss *gss_sta
 	}
 
 	memcpy(buf + 8, out_buf.value, out_buf.length);
-	_smb_setlen(buf, out_buf.length + 4);
+	/* Reset the length and overwrite the header. */
+	smb_setlen(buf, out_buf.length + 4);
 
 	gss_release_buffer(&minor, &out_buf);
 	return NT_STATUS_OK;
@@ -440,9 +441,9 @@ void cli_free_enc_buffer(struct cli_state *cli, char *buf)
 {
 	/* We know this is an smb buffer, and we
 	 * didn't malloc, only copy, for a keepalive,
-	 * so ignore session keepalives. */
+	 * so ignore non-session messages. */
 
-	if(CVAL(buf,0) == SMBkeepalive) {
+	if(CVAL(buf,0)) {
 		return;
 	}
 
@@ -461,12 +462,12 @@ NTSTATUS cli_decrypt_message(struct cli_state *cli)
 	NTSTATUS status;
 	uint16 enc_ctx_num;
 
-	/* Ignore session keepalives. */
-	if(CVAL(cli->inbuf,0) == SMBkeepalive) {
+	/* Ignore non-session messages. */
+	if(CVAL(cli->inbuf,0)) {
 		return NT_STATUS_OK;
 	}
 
-	status = get_enc_ctx_num(cli->inbuf, &enc_ctx_num);
+	status = get_enc_ctx_num((const uint8_t *)cli->inbuf, &enc_ctx_num);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -484,8 +485,8 @@ NTSTATUS cli_decrypt_message(struct cli_state *cli)
 
 NTSTATUS cli_encrypt_message(struct cli_state *cli, char **buf_out)
 {
-	/* Ignore session keepalives. */
-	if(CVAL(cli->outbuf,0) == SMBkeepalive) {
+	/* Ignore non-session messages. */
+	if(CVAL(cli->outbuf,0)) {
 		return NT_STATUS_OK;
 	}
 

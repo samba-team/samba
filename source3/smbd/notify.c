@@ -128,10 +128,10 @@ static bool notify_marshall_changes(int num_changes,
  Setup the common parts of the return packet and send it.
 *****************************************************************************/
 
-static void change_notify_reply_packet(const uint8 *request_buf,
+static void change_notify_reply_packet(connection_struct *conn,
+				const uint8 *request_buf,
 				       NTSTATUS error_code)
 {
-	const char *inbuf = (const char *)request_buf;
 	char outbuf[smb_size+38];
 
 	memset(outbuf, '\0', sizeof(outbuf));
@@ -143,15 +143,18 @@ static void change_notify_reply_packet(const uint8 *request_buf,
 	 * Seems NT needs a transact command with an error code
 	 * in it. This is a longer packet than a simple error.
 	 */
-	srv_set_message((const char *)request_buf, outbuf,18,0,False);
+	srv_set_message(outbuf,18,0,False);
 
 	show_msg(outbuf);
-	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server_cleanly("change_notify_reply_packet: send_smb "
+	if (!srv_send_smb(smbd_server_fd(),
+			outbuf,
+			IS_CONN_ENCRYPTED(conn)))
+		exit_server_cleanly("change_notify_reply_packet: srv_send_smb "
 				    "failed.");
 }
 
-void change_notify_reply(const uint8 *request_buf, uint32 max_param,
+void change_notify_reply(connection_struct *conn,
+			const uint8 *request_buf, uint32 max_param,
 			 struct notify_change_buf *notify_buf)
 {
 	prs_struct ps;
@@ -159,7 +162,7 @@ void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 	uint8 tmp_request[smb_size];
 
 	if (notify_buf->num_changes == -1) {
-		change_notify_reply_packet(request_buf, NT_STATUS_OK);
+		change_notify_reply_packet(conn, request_buf, NT_STATUS_OK);
 		notify_buf->num_changes = 0;
 		return;
 	}
@@ -172,12 +175,12 @@ void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 		 * We exceed what the client is willing to accept. Send
 		 * nothing.
 		 */
-		change_notify_reply_packet(request_buf, NT_STATUS_OK);
+		change_notify_reply_packet(conn, request_buf, NT_STATUS_OK);
 		goto done;
 	}
 
 	if (!(req = talloc(talloc_tos(), struct smb_request))) {
-		change_notify_reply_packet(request_buf, NT_STATUS_NO_MEMORY);
+		change_notify_reply_packet(conn, request_buf, NT_STATUS_NO_MEMORY);
 		goto done;
 	}
 
@@ -190,9 +193,9 @@ void change_notify_reply(const uint8 *request_buf, uint32 max_param,
 	smb_setlen((char *)tmp_request, smb_size);
 	SCVAL(tmp_request, smb_wct, 0);
 
-	init_smb_request(req, tmp_request,0);
+	init_smb_request(req, tmp_request,0, conn->encrypted_tid);
 
-	send_nt_replies(req, NT_STATUS_OK, prs_data_p(&ps),
+	send_nt_replies(conn, req, NT_STATUS_OK, prs_data_p(&ps),
 			prs_offset(&ps), NULL, 0);
 
  done:
@@ -243,9 +246,10 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 	return status;
 }
 
-NTSTATUS change_notify_add_request(const uint8 *inbuf, uint32 max_param,
-				   uint32 filter, bool recursive,
-				   struct files_struct *fsp)
+NTSTATUS change_notify_add_request(const struct smb_request *req,
+				uint32 max_param,
+				uint32 filter, bool recursive,
+				struct files_struct *fsp)
 {
 	struct notify_change_request *request = NULL;
 	struct notify_mid_map *map = NULL;
@@ -259,7 +263,7 @@ NTSTATUS change_notify_add_request(const uint8 *inbuf, uint32 max_param,
 	request->mid_map = map;
 	map->req = request;
 
-	memcpy(request->request_buf, inbuf, sizeof(request->request_buf));
+	memcpy(request->request_buf, req->inbuf, sizeof(request->request_buf));
 	request->max_param = max_param;
 	request->filter = filter;
 	request->fsp = fsp;
@@ -268,11 +272,11 @@ NTSTATUS change_notify_add_request(const uint8 *inbuf, uint32 max_param,
 	DLIST_ADD_END(fsp->notify->requests, request,
 		      struct notify_change_request *);
 
-	map->mid = SVAL(inbuf, smb_mid);
+	map->mid = SVAL(req->inbuf, smb_mid);
 	DLIST_ADD(notify_changes_by_mid, map);
 
 	/* Push the MID of this packet on the signing queue. */
-	srv_defer_sign_response(SVAL(inbuf,smb_mid));
+	srv_defer_sign_response(SVAL(req->inbuf,smb_mid));
 
 	return NT_STATUS_OK;
 }
@@ -325,7 +329,8 @@ void remove_pending_change_notify_requests_by_mid(uint16 mid)
 		return;
 	}
 
-	change_notify_reply_packet(map->req->request_buf, NT_STATUS_CANCELLED);
+	change_notify_reply_packet(map->req->fsp->conn,
+			map->req->request_buf, NT_STATUS_CANCELLED);
 	change_notify_remove_request(map->req);
 }
 
@@ -341,7 +346,7 @@ void remove_pending_change_notify_requests_by_fid(files_struct *fsp,
 	}
 
 	while (fsp->notify->requests != NULL) {
-		change_notify_reply_packet(
+		change_notify_reply_packet(fsp->conn,
 			fsp->notify->requests->request_buf, status);
 		change_notify_remove_request(fsp->notify->requests);
 	}
@@ -435,7 +440,8 @@ static void notify_fsp(files_struct *fsp, uint32 action, const char *name)
 	 * TODO: do we have to walk the lists of requests pending?
 	 */
 
-	change_notify_reply(fsp->notify->requests->request_buf,
+	change_notify_reply(fsp->conn,
+			fsp->notify->requests->request_buf,
 			    fsp->notify->requests->max_param,
 			    fsp->notify);
 

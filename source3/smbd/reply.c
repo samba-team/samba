@@ -391,7 +391,7 @@ void reply_special(char *inbuf)
 
 	/*
 	 * We only really use 4 bytes of the outbuf, but for the smb_setlen
-	 * calculation & friends (send_smb uses that) we need the full smb
+	 * calculation & friends (srv_send_smb uses that) we need the full smb
 	 * header.
 	 */
 	char outbuf[smb_size];
@@ -470,7 +470,7 @@ void reply_special(char *inbuf)
 	DEBUG(5,("init msg_type=0x%x msg_flags=0x%x\n",
 		    msg_type, msg_flags));
 
-	send_smb(smbd_server_fd(), outbuf);
+	srv_send_smb(smbd_server_fd(), outbuf, false);
 	return;
 }
 
@@ -523,6 +523,7 @@ void reply_tcon(connection_struct *conn, struct smb_request *req)
 	password_blob = data_blob(password, pwlen+1);
 
 	conn = make_connection(service,password_blob,dev,req->vuid,&nt_status);
+	req->conn = conn;
 
 	data_blob_clear_free(&password_blob);
 
@@ -578,6 +579,7 @@ void reply_tcon_and_X(connection_struct *conn, struct smb_request *req)
 	/* we might have to close an old one */
 	if ((tcon_flags & 0x1) && conn) {
 		close_cnum(conn,req->vuid);
+		req->conn = NULL;
 	}
 
 	if ((passlen > MAX_PASS_LEN) || (passlen >= smb_buflen(req->inbuf))) {
@@ -646,6 +648,7 @@ void reply_tcon_and_X(connection_struct *conn, struct smb_request *req)
 
 	conn = make_connection(service, password, client_devicetype,
 			       req->vuid, &nt_status);
+	req->conn =conn;
 
 	data_blob_clear_free(&password);
 
@@ -2725,7 +2728,7 @@ void reply_readbraw(connection_struct *conn, struct smb_request *req)
 
 	START_PROFILE(SMBreadbraw);
 
-	if (srv_is_signing_active() || srv_encryption_on()) {
+	if (srv_is_signing_active() || is_encrypted_packet(req->inbuf)) {
 		exit_server_cleanly("reply_readbraw: SMB signing/sealing is active - "
 			"raw reads/writes are disallowed.");
 	}
@@ -2951,8 +2954,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 		return;
 	}
 	
-	srv_set_message((const char *)req->inbuf,
-		(char *)req->outbuf, 5, nread+3, False);
+	srv_set_message((char *)req->outbuf, 5, nread+3, False);
 
 	SSVAL(req->outbuf,smb_vwv0,nread);
 	SSVAL(req->outbuf,smb_vwv5,nread+3);
@@ -3039,8 +3041,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 		return;
 	}
 
-	srv_set_message((const char *)req->inbuf,
-		(char *)req->outbuf, 5, nread+3, False);
+	srv_set_message((char *)req->outbuf, 5, nread+3, False);
 
 	SSVAL(req->outbuf,smb_vwv0,nread);
 	SSVAL(req->outbuf,smb_vwv5,nread+3);
@@ -3058,12 +3059,12 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
  Setup readX header.
 ****************************************************************************/
 
-static int setup_readX_header(const char *inbuf, char *outbuf, size_t smb_maxcnt)
+static int setup_readX_header(char *outbuf, size_t smb_maxcnt)
 {
 	int outsize;
 	char *data;
 
-	outsize = srv_set_message(inbuf, outbuf,12,smb_maxcnt,False);
+	outsize = srv_set_message(outbuf,12,smb_maxcnt,False);
 	data = smb_buf(outbuf);
 
 	memset(outbuf+smb_vwv0,'\0',24); /* valgrind init. */
@@ -3113,6 +3114,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	 */
 
 	if ((chain_size == 0) && (CVAL(req->inbuf,smb_vwv0) == 0xFF) &&
+	    !is_encrypted_packet(req->inbuf) &&
 	    lp_use_sendfile(SNUM(conn)) && (fsp->wcp == NULL) ) {
 		uint8 headerbuf[smb_size + 12 * 2];
 		DATA_BLOB header;
@@ -3126,8 +3128,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		header = data_blob_const(headerbuf, sizeof(headerbuf));
 
 		construct_reply_common((char *)req->inbuf, (char *)headerbuf);
-		setup_readX_header((const char *)req->inbuf,
-			(char *)headerbuf, smb_maxcnt);
+		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
 		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, smb_maxcnt)) == -1) {
 			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
@@ -3178,8 +3179,7 @@ normal_read:
 		uint8 headerbuf[smb_size + 2*12];
 
 		construct_reply_common((char *)req->inbuf, (char *)headerbuf);
-		setup_readX_header((const char *)req->inbuf,
-			(char *)headerbuf, smb_maxcnt);
+		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
 		/* Send out the header. */
 		if (write_data(smbd_server_fd(), (char *)headerbuf,
@@ -3206,8 +3206,7 @@ normal_read:
 			return;
 		}
 
-		setup_readX_header((const char *)req->inbuf,
-			(char *)req->outbuf, nread);
+		setup_readX_header((char *)req->outbuf, nread);
 
 		DEBUG( 3, ( "send_file_readX fnum=%d max=%d nread=%d\n",
 			fsp->fnum, (int)smb_maxcnt, (int)nread ) );
@@ -3272,7 +3271,7 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 				return;
 			}
 			/* We currently don't do this on signed or sealed data. */
-			if (srv_is_signing_active() || srv_encryption_on()) {
+			if (srv_is_signing_active() || is_encrypted_packet(req->inbuf)) {
 				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 				END_PROFILE(SMBreadX);
 				return;
@@ -3463,13 +3462,15 @@ void reply_writebraw(connection_struct *conn, struct smb_request *req)
 	 * it to send more bytes */
 
 	memcpy(buf, req->inbuf, smb_size);
-	outsize = srv_set_message((const char *)req->inbuf, buf,
+	outsize = srv_set_message(buf,
 			Protocol>PROTOCOL_COREPLUS?1:0,0,True);
 	SCVAL(buf,smb_com,SMBwritebraw);
 	SSVALS(buf,smb_vwv0,0xFFFF);
 	show_msg(buf);
-	if (!send_smb(smbd_server_fd(),buf)) {
-		exit_server_cleanly("reply_writebraw: send_smb "
+	if (!srv_send_smb(smbd_server_fd(),
+			buf,
+			IS_CONN_ENCRYPTED(conn))) {
+		exit_server_cleanly("reply_writebraw: srv_send_smb "
 			"failed.");
 	}
 
@@ -3788,14 +3789,14 @@ void reply_write(connection_struct *conn, struct smb_request *req)
 						(2*14) + /* word count (including bcc) */ \
 						1 /* pad byte */)
 
-bool is_valid_writeX_buffer(const char *inbuf)
+bool is_valid_writeX_buffer(const uint8_t *inbuf)
 {
 	size_t numtowrite;
 	connection_struct *conn = NULL;
 	unsigned int doff = 0;
 	size_t len = smb_len_large(inbuf);
 
-	if (srv_encryption_on()) {
+	if (is_encrypted_packet(inbuf)) {
 		/* Can't do this on encrypted
 		 * connections. */
 		return false;
@@ -4476,6 +4477,7 @@ void reply_tdis(connection_struct *conn, struct smb_request *req)
 	conn->used = False;
 
 	close_cnum(conn,req->vuid);
+	req->conn = NULL;
 
 	reply_outbuf(req, 0, 0);
 	END_PROFILE(SMBtdis);
@@ -4526,8 +4528,10 @@ void reply_echo(connection_struct *conn, struct smb_request *req)
 		SSVAL(req->outbuf,smb_vwv0,seq_num);
 
 		show_msg((char *)req->outbuf);
-		if (!send_smb(smbd_server_fd(),(char *)req->outbuf))
-			exit_server_cleanly("reply_echo: send_smb failed.");
+		if (!srv_send_smb(smbd_server_fd(),
+				(char *)req->outbuf,
+				IS_CONN_ENCRYPTED(conn)||req->encrypted))
+			exit_server_cleanly("reply_echo: srv_send_smb failed.");
 	}
 
 	DEBUG(3,("echo %d times\n", smb_reverb));
@@ -4830,7 +4834,7 @@ void reply_mkdir(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = create_directory(conn, directory);
+	status = create_directory(conn, req, directory);
 
 	DEBUG(5, ("create_directory returned %s\n", nt_errstr(status)));
 
@@ -6803,8 +6807,7 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 				 * onto the blocking lock queue.
 				 */
 				if(push_blocking_lock_request(br_lck,
-							(char *)req->inbuf,
-							smb_len(req->inbuf)+4,
+							req,
 							fsp,
 							lock_timeout,
 							i,

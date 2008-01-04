@@ -575,7 +575,8 @@ static struct ea_list *ea_list_union(struct ea_list *name_list, struct ea_list *
   HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-void send_trans2_replies(struct smb_request *req,
+void send_trans2_replies(connection_struct *conn,
+			struct smb_request *req,
 			 const char *params,
 			 int paramsize,
 			 const char *pdata,
@@ -737,8 +738,10 @@ void send_trans2_replies(struct smb_request *req,
 
 		/* Send the packet */
 		show_msg((char *)req->outbuf);
-		if (!send_smb(smbd_server_fd(),(char *)req->outbuf))
-			exit_server_cleanly("send_trans2_replies: send_smb failed.");
+		if (!srv_send_smb(smbd_server_fd(),
+				(char *)req->outbuf,
+				IS_CONN_ENCRYPTED(conn)))
+			exit_server_cleanly("send_trans2_replies: srv_send_smb failed.");
 
 		TALLOC_FREE(req->outbuf);
 
@@ -956,7 +959,7 @@ static void call_trans2open(connection_struct *conn,
 	}
 
 	/* Send the required number of replies */
-	send_trans2_replies(req, params, 30, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(conn, req, params, 30, *ppdata, 0, max_data_bytes);
 }
 
 /*********************************************************
@@ -2026,7 +2029,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	SSVAL(params,6,0); /* Never an EA error */
 	SSVAL(params,8,last_entry_off);
 
-	send_trans2_replies(req, params, 10, pdata, PTR_DIFF(p,pdata),
+	send_trans2_replies(conn, req, params, 10, pdata, PTR_DIFF(p,pdata),
 			    max_data_bytes);
 
 	if ((! *directory) && dptr_path(dptr_num)) {
@@ -2350,7 +2353,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 	SSVAL(params,4,0); /* Never an EA error */
 	SSVAL(params,6,last_entry_off);
 
-	send_trans2_replies(req, params, 8, pdata, PTR_DIFF(p,pdata),
+	send_trans2_replies(conn, req, params, 8, pdata, PTR_DIFF(p,pdata),
 			    max_data_bytes);
 
 	return;
@@ -2389,13 +2392,23 @@ static void call_trans2qfsinfo(connection_struct *conn,
 
 	info_level = SVAL(params,0);
 
-	if (IS_IPC(conn) || 
-			(conn->encrypt_level == Required && SVAL(req->inbuf,4) != 0x45FF )) {
+	if (IS_IPC(conn)) {
+		if (info_level != SMB_QUERY_CIFS_UNIX_INFO) {
+			DEBUG(0,("call_trans2qfsinfo: not an allowed "
+				"info level (0x%x) on IPC$.\n",
+				(unsigned int)info_level));
+			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			return;
+		}
+	}
+
+	if (ENCRYPTION_REQUIRED(conn) && !req->encrypted) {
 		if (info_level != SMB_QUERY_CIFS_UNIX_INFO) {
 			DEBUG(0,("call_trans2qfsinfo: encryption required "
 				"and info level 0x%x sent.\n",
 				(unsigned int)info_level));
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			exit_server_cleanly("encryption required "
+				"on connection");
 			return;
 		}
 	}
@@ -2906,7 +2919,7 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 	}
 
 
-	send_trans2_replies(req, params, 0, pdata, data_len,
+	send_trans2_replies(conn, req, params, 0, pdata, data_len,
 			    max_data_bytes);
 
 	DEBUG( 4, ( "%s info_level = %d\n",
@@ -2952,12 +2965,13 @@ static void call_trans2setfsinfo(connection_struct *conn,
 		}
 	}
 
-	if (conn->encrypt_level == Required && SVAL(req->inbuf,4) != 0x45FF ) {
+	if (ENCRYPTION_REQUIRED(conn) && !req->encrypted) {
 		if (info_level != SMB_REQUEST_TRANSPORT_ENCRYPTION) {
 			DEBUG(0,("call_trans2setfsinfo: encryption required "
 				"and info level 0x%x sent.\n",
 				(unsigned int)info_level));
-			reply_nterror(req, NT_STATUS_ACCESS_DENIED);
+			exit_server_cleanly("encryption required "
+				"on connection");
 			return;
 		}
 	}
@@ -3048,7 +3062,7 @@ cap_low = 0x%x, cap_high = 0x%x\n",
 					return;
 				}
 
-				send_trans2_replies(req,
+				send_trans2_replies(conn, req,
 						*pparams,
 						param_len,
 						*ppdata,
@@ -3524,7 +3538,7 @@ static void call_trans2qpipeinfo(connection_struct *conn,
 			return;
 	}
 
-	send_trans2_replies(req, params, param_size, *ppdata, data_size,
+	send_trans2_replies(conn, req, params, param_size, *ppdata, data_size,
 			    max_data_bytes);
 
 	return;
@@ -4456,7 +4470,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			return;
 	}
 
-	send_trans2_replies(req, params, param_size, *ppdata, data_size,
+	send_trans2_replies(conn, req, params, param_size, *ppdata, data_size,
 			    max_data_bytes);
 
 	return;
@@ -5160,8 +5174,7 @@ static NTSTATUS smb_set_posix_acl(connection_struct *conn,
 ****************************************************************************/
 
 static NTSTATUS smb_set_posix_lock(connection_struct *conn,
-				const uint8 *inbuf,
-				int length,
+				const struct smb_request *req,
 				const char *pdata,
 				int total_data,
 				files_struct *fsp)
@@ -5171,6 +5184,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 	uint32 lock_pid;
 	bool blocking_lock = False;
 	enum brl_type lock_type;
+
 	NTSTATUS status = NT_STATUS_OK;
 
 	if (fsp == NULL || fsp->fh->fd == -1) {
@@ -5258,7 +5272,7 @@ static NTSTATUS smb_set_posix_lock(connection_struct *conn,
 			 * onto the blocking lock queue.
 			 */
 			if(push_blocking_lock_request(br_lck,
-						(char *)inbuf, length,
+						req,
 						fsp,
 						-1, /* infinite timeout. */
 						0,
@@ -6316,7 +6330,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 				DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n", fsp->fsp_name ));
 
 				SSVAL(params,0,0);
-				send_trans2_replies(req, params, 2,
+				send_trans2_replies(conn, req, params, 2,
 						    *ppdata, 0,
 						    max_data_bytes);
 				return;
@@ -6606,8 +6620,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 				reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 				return;
 			}
-			status = smb_set_posix_lock(conn, req->inbuf,
-						    smb_len(req->inbuf) + 4,
+			status = smb_set_posix_lock(conn, req,
 						    pdata, total_data, fsp);
 			break;
 		}
@@ -6675,7 +6688,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 	}
 
 	SSVAL(params,0,0);
-	send_trans2_replies(req, params, 2, *ppdata, data_return_size,
+	send_trans2_replies(conn, req, params, 2, *ppdata, data_return_size,
 			    max_data_bytes);
   
 	return;
@@ -6767,7 +6780,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 		return;
 	}
 
-	status = create_directory(conn, directory);
+	status = create_directory(conn, req, directory);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -6793,7 +6806,7 @@ static void call_trans2mkdir(connection_struct *conn, struct smb_request *req,
 
 	SSVAL(params,0,0);
 
-	send_trans2_replies(req, params, 2, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(conn, req, params, 2, *ppdata, 0, max_data_bytes);
   
 	return;
 }
@@ -6847,7 +6860,7 @@ static void call_trans2findnotifyfirst(connection_struct *conn,
 	if(fnf_handle == 0)
 		fnf_handle = 257;
 
-	send_trans2_replies(req, params, 6, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(conn, req, params, 6, *ppdata, 0, max_data_bytes);
   
 	return;
 }
@@ -6878,7 +6891,7 @@ static void call_trans2findnotifynext(connection_struct *conn,
 	SSVAL(params,0,0); /* No changes */
 	SSVAL(params,2,0); /* No EA errors */
 
-	send_trans2_replies(req, params, 4, *ppdata, 0, max_data_bytes);
+	send_trans2_replies(conn, req, params, 4, *ppdata, 0, max_data_bytes);
   
 	return;
 }
@@ -6928,7 +6941,7 @@ static void call_trans2getdfsreferral(connection_struct *conn,
 
 	SSVAL(req->inbuf, smb_flg2,
 	      SVAL(req->inbuf,smb_flg2) | FLAGS2_DFS_PATHNAMES);
-	send_trans2_replies(req,0,0,*ppdata,reply_size, max_data_bytes);
+	send_trans2_replies(conn, req,0,0,*ppdata,reply_size, max_data_bytes);
 
 	return;
 }
@@ -6975,7 +6988,7 @@ static void call_trans2ioctl(connection_struct *conn,
 		srvstr_push(pdata, req->flags2, pdata+18,
 			    lp_servicename(SNUM(conn)), 13,
 			    STR_ASCII|STR_TERMINATE); /* Service name */
-		send_trans2_replies(req, *pparams, 0, *ppdata, 32,
+		send_trans2_replies(conn, req, *pparams, 0, *ppdata, 32,
 				    max_data_bytes);
 		return;
 	}

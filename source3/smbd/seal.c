@@ -36,24 +36,37 @@ static struct smb_srv_trans_enc_ctx *partial_srv_trans_enc_ctx;
 static struct smb_srv_trans_enc_ctx *srv_trans_enc_ctx;
 
 /******************************************************************************
- Is server encryption on ?
-******************************************************************************/
-
-bool srv_encryption_on(void)
-{
-	if (srv_trans_enc_ctx) {
-		return common_encryption_on(srv_trans_enc_ctx->es);
-	}
-	return false;
-}
-
-/******************************************************************************
  Return global enc context - this must change if we ever do multiple contexts.
 ******************************************************************************/
 
-uint16 srv_enc_ctx(void)
+uint16_t srv_enc_ctx(void)
 {
 	return srv_trans_enc_ctx->es->enc_ctx_num;
+}
+
+/******************************************************************************
+ Is this an incoming encrypted packet ?
+******************************************************************************/
+
+bool is_encrypted_packet(const uint8_t *inbuf)
+{
+	NTSTATUS status;
+	uint16_t enc_num;
+
+	/* Ignore non-session messages. */
+	if(CVAL(inbuf,0)) {
+		return false;
+	}
+
+	status = get_enc_ctx_num(inbuf, &enc_num);
+	if (!NT_STATUS_IS_OK(status)) {
+		return false;
+	}
+
+	if (srv_trans_enc_ctx && enc_num == srv_enc_ctx()) {
+		return true;
+	}
+	return false;
 }
 
 /******************************************************************************
@@ -292,9 +305,9 @@ void srv_free_enc_buffer(char *buf)
 {
 	/* We know this is an smb buffer, and we
 	 * didn't malloc, only copy, for a keepalive,
-	 * so ignore session keepalives. */
+	 * so ignore non-session messages. */
 
-	if(CVAL(buf,0) == SMBkeepalive) {
+	if(CVAL(buf,0)) {
 		return;
 	}
 
@@ -309,8 +322,8 @@ void srv_free_enc_buffer(char *buf)
 
 NTSTATUS srv_decrypt_buffer(char *buf)
 {
-	/* Ignore session keepalives. */
-	if(CVAL(buf,0) == SMBkeepalive) {
+	/* Ignore non-session messages. */
+	if(CVAL(buf,0)) {
 		return NT_STATUS_OK;
 	}
 
@@ -329,8 +342,8 @@ NTSTATUS srv_encrypt_buffer(char *buf, char **buf_out)
 {
 	*buf_out = buf;
 
-	/* Ignore session keepalives. */
-	if(CVAL(buf,0) == SMBkeepalive) {
+	/* Ignore non-session messages. */
+	if(CVAL(buf,0)) {
 		return NT_STATUS_OK;
 	}
 
@@ -698,6 +711,7 @@ NTSTATUS srv_encryption_start(connection_struct *conn)
 	srv_trans_enc_ctx->es->enc_on = true;
 
 	partial_srv_trans_enc_ctx = NULL;
+
 	return NT_STATUS_OK;
 }
 
