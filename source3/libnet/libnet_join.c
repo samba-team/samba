@@ -69,7 +69,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		NT_STATUS_HAVE_NO_MEMORY(r->in.machine_password);
 	}
 
-	status = cli_full_connection(&cli, NULL, r->in.server_name,
+	status = cli_full_connection(&cli, NULL,
+				     r->in.dc_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
 				     r->in.admin_account,
@@ -253,7 +254,8 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	SAM_USERINFO_CTR ctr, *qctr = NULL;
 	SAM_USER_INFO_16 p16;
 
-	status = cli_full_connection(&cli, NULL, r->in.server_name,
+	status = cli_full_connection(&cli, NULL,
+				     r->in.dc_name,
 				     NULL, 0,
 				     "IPC$", "IPC",
 				     r->in.admin_account,
