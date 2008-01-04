@@ -448,9 +448,9 @@ got_connection:
 	
 	/* Otherwise setup the TCP LDAP session */
 
-	if ( (ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name, 
-		LDAP_PORT, lp_ldap_timeout())) == NULL )
-	{
+	ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name,
+					      LDAP_PORT, lp_ldap_timeout());
+	if (ads->ldap.ld == NULL) {
 		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
 	}
 
