@@ -286,7 +286,7 @@ bool regdb_init( void )
 	/* always setup the necessary keys and values */
 
 	if ( !init_registry_data() ) {
-		DEBUG(0,("init_registry: Failed to initialize data in registry!\n"));
+		DEBUG(0,("regdb_init: Failed to initialize data in registry!\n"));
 		return false;
 	}
 
