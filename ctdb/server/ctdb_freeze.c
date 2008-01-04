@@ -249,6 +249,10 @@ bool ctdb_blocking_freeze(struct ctdb_context *ctdb)
  */
 int32_t ctdb_control_thaw(struct ctdb_context *ctdb)
 {
+#if 0
+	/* this hack can be used to get a copy of the databases at the end of a recovery */
+	system("mkdir -p /var/ctdb.saved; /usr/bin/rsync --delete -a /var/ctdb/ /var/ctdb.saved/$$ 2>&1 > /dev/null");
+#endif
 	talloc_free(ctdb->freeze_handle);
 	ctdb->freeze_handle = NULL;
 	ctdb_call_resend_all(ctdb);
