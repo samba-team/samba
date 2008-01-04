@@ -90,12 +90,10 @@ static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
-	struct wkssvc_PasswordBuffer encrypted_password;
+	struct wkssvc_PasswordBuffer *encrypted_password = NULL;
 	NTSTATUS status;
 	WERROR werr;
 	unsigned int old_timeout = 0;
-
-	ZERO_STRUCT(encrypted_password);
 
 	status = cli_full_connection(&cli, NULL, server_name,
 				     NULL, 0,
@@ -129,7 +127,7 @@ static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
 	status = rpccli_wkssvc_NetrJoinDomain2(pipe_cli, ctx,
 					       server_name, domain_name,
 					       account_ou, Account,
-					       &encrypted_password,
+					       encrypted_password,
 					       join_flags, &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
@@ -277,12 +275,10 @@ static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
-	struct wkssvc_PasswordBuffer encrypted_password;
+	struct wkssvc_PasswordBuffer *encrypted_password = NULL;
 	NTSTATUS status;
 	WERROR werr;
 	unsigned int old_timeout = 0;
-
-	ZERO_STRUCT(encrypted_password);
 
 	status = cli_full_connection(&cli, NULL, server_name,
 				     NULL, 0,
@@ -316,7 +312,7 @@ static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 	status = rpccli_wkssvc_NetrUnjoinDomain2(pipe_cli, ctx,
 						 server_name,
 						 account,
-						 &encrypted_password,
+						 encrypted_password,
 						 unjoin_flags,
 						 &werr);
 	if (!NT_STATUS_IS_OK(status)) {
