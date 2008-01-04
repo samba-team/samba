@@ -297,7 +297,36 @@ struct ctdb_key_list {
 	struct ctdb_ltdb_header *headers;
 	TDB_DATA *data;
 };
-int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid, uint32_t lmaster, TALLOC_CTX *mem_ctx, struct ctdb_key_list *keys);
+
+int ctdb_ctrl_pulldb(
+       struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid,
+       uint32_t lmaster, TALLOC_CTX *mem_ctx,
+       struct timeval timeout, TDB_DATA *outdata);
+
+struct ctdb_client_control_state *ctdb_ctrl_pulldb_send(
+       struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid,
+       uint32_t lmaster, TALLOC_CTX *mem_ctx, struct timeval timeout);
+
+int ctdb_ctrl_pulldb_recv(
+       struct ctdb_context *ctdb,
+       TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state,
+       TDB_DATA *outdata);
+
+int ctdb_ctrl_pushdb(
+       struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid,
+       TALLOC_CTX *mem_ctx,
+       struct timeval timeout, TDB_DATA indata);
+
+struct ctdb_client_control_state *ctdb_ctrl_pushdb_send(
+       struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid,
+       TALLOC_CTX *mem_ctx, struct timeval timeout,
+       TDB_DATA indata);
+
+int ctdb_ctrl_pushdb_recv(
+       struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
+       struct ctdb_client_control_state *state);
+
+
 int ctdb_ctrl_copydb(struct ctdb_context *ctdb, 
 	struct timeval timeout, uint32_t sourcenode, 
 	uint32_t destnode, uint32_t dbid, uint32_t lmaster, 

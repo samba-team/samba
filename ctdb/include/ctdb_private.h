@@ -86,6 +86,7 @@ struct ctdb_tunable {
 	uint32_t recovery_grace_period;
 	uint32_t recovery_ban_period;
 	uint32_t database_hash_size;
+	uint32_t database_max_dead;
 	uint32_t rerecovery_timeout;
 	uint32_t enable_bans;
 	uint32_t deterministic_public_ips;
@@ -1058,8 +1059,25 @@ void ctdb_node_dead(struct ctdb_node *node);
 void ctdb_node_connected(struct ctdb_node *node);
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
 int32_t ctdb_control_max_rsn(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+
+struct ctdb_client_control_state *ctdb_ctrl_set_rsn_nonempty_send(
+	struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, 
+	uint32_t destnode, uint32_t db_id, uint64_t rsn);
+int ctdb_ctrl_set_rsn_nonempty_recv(struct ctdb_context *ctdb, 
+				    struct ctdb_client_control_state *state);
+int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout, 
+			       uint32_t destnode, uint32_t db_id, uint64_t rsn);
+struct ctdb_client_control_state *ctdb_ctrl_delete_low_rsn_send(
+	struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, 
+	uint32_t destnode, uint32_t db_id, uint64_t rsn);
+int ctdb_ctrl_delete_low_rsn_recv(struct ctdb_context *ctdb, 
+				  struct ctdb_client_control_state *state);
+int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
+			     uint32_t destnode, uint32_t db_id, uint64_t rsn);
+
 int32_t ctdb_control_set_rsn_nonempty(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
 int32_t ctdb_control_delete_low_rsn(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
+
 int ctdb_ctrl_get_max_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
 			  uint32_t destnode, uint32_t db_id, uint64_t *max_rsn);
 int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout, 

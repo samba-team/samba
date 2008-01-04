@@ -260,6 +260,9 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 
 	DLIST_ADD(ctdb->db_list, ctdb_db);
 
+	/* setting this can help some high churn databases */
+	tdb_set_max_dead(ctdb_db->ltdb->tdb, ctdb->tunable.database_max_dead);
+
 	/* 
 	   all databases support the "null" function. we need this in
 	   order to do forced migration of records
