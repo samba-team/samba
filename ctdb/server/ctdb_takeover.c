@@ -1738,10 +1738,10 @@ int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indat
 		( offsetof(struct ctdb_control_gratious_arp, iface)
 		+ gratious_arp->len ) ){
 
-		DEBUG(0,(__location__ " Wrong size of indata. Was %d bytes "
-			"but should be %d bytes\n", 
-			indata.dsize, 
-			offsetof(struct ctdb_control_gratious_arp, iface)+gratious_arp->len));
+		DEBUG(0,(__location__ " Wrong size of indata. Was %u bytes "
+			"but should be %u bytes\n", 
+			 (unsigned)indata.dsize, 
+			 (unsigned)(offsetof(struct ctdb_control_gratious_arp, iface)+gratious_arp->len)));
 		return -1;
 	}
 
