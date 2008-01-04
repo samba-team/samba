@@ -719,6 +719,15 @@ static int net_conf_setparm(int argc, const char **argv)
 	param = strdup_lower(argv[1]);
 	value_str = argv[2];
 
+	if (!libnet_conf_share_exists(service)) {
+		werr = libnet_conf_create_share(service);
+		if (!W_ERROR_IS_OK(werr)) {
+			d_fprintf(stderr, "Error creating share '%s': %s\n",
+				  service, dos_errstr(werr));
+			goto done;
+		}
+	}
+
 	werr = libnet_conf_set_parameter(service, param, value_str);
 
 	if (!W_ERROR_IS_OK(werr)) {
