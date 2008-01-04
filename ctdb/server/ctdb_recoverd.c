@@ -113,7 +113,7 @@ static void ctdb_ban_timeout(struct event_context *ev, struct timed_event *te, s
 	struct ctdb_recoverd *rec = state->rec;
 	uint32_t pnn = state->banned_node;
 
-	DEBUG(0,("Ban timeout. Node %u is now unbanned te:0x%08x\n", pnn, (int)te));
+	DEBUG(0,("Ban timeout. Node %u is now unbanned\n", pnn));
 	ctdb_unban_node(rec, pnn);
 }
 
