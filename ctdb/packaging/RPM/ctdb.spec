@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 18_custom2
+Release: 19
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -117,6 +117,10 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Sat Jan 05 2008 : Version 1.0.19
+ - fixed non-master bug
+ - big speedup in recovery for large databases
+ - lots of changes to improve tdb and ctdb for high churn databases
 * Thu Dec 27 2007 : Version 1.0.18
  - fixed crash bug in monitor_handler
 * Tue Dec 04 2007 : Version 1.0.17
