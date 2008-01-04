@@ -453,6 +453,7 @@ got_connection:
 	if (ads->ldap.ld == NULL) {
 		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
 	}
+	DEBUG(3,("Connected to LDAP server %s\n", ads->config.ldap_server_name));
 
 	/* cache the successful connection for workgroup and realm */
 	if (ads_closest_dc(ads)) {
