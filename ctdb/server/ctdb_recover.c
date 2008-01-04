@@ -303,7 +303,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	rec = (struct ctdb_rec_data *)&reply->data[0];
 
-	DEBUG(3,("starting push of %u records for dbid 0x%x\n",
+	DEBUG(1,("starting push of %u records for dbid 0x%x\n",
 		 reply->count, reply->db_id));
 
 	for (i=0;i<reply->count;i++) {
@@ -328,31 +328,16 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 			DEBUG(0, (__location__ " Unable to fetch record\n"));
 			goto failed;
 		}
+
 		/* The check for dmaster gives priority to the dmaster
 		   if the rsn values are equal */
-		if (header.rsn < hdr->rsn ||
-		    (header.dmaster != ctdb->pnn && header.rsn == hdr->rsn)) {
-#if 0
-			/* this is a push optimisation - we can skip writing the record if:
-
-			       1) this is not a persistent db
-			   AND 2) we are not the recmaster
-			   AND 3) we don't hold the record currently
-			   AND 4) we won't hold the new record
-			*/
-			if (!ctdb_db->persistent &&
-			    ctdb->recovery_master != ctdb->pnn &&
-			    header.dmaster != ctdb->pnn &&
-			    hdr->dmaster != ctdb->pnn) {
-				DEBUG(5,("Skipping push of record\n"));
-			} else 
-#endif
-{
-				ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
-				if (ret != 0) {
-					DEBUG(0, (__location__ " Unable to store record\n"));
-					goto failed;
-				}
+		if (ctdb->pnn != ctdb->recovery_master ||
+		    header.rsn < hdr->rsn ||
+		    (header.dmaster != ctdb->recovery_master && header.rsn == hdr->rsn)) {
+			ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
+			if (ret != 0) {
+				DEBUG(0, (__location__ " Unable to store record\n"));
+				goto failed;
 			}
 		}
 
@@ -389,6 +374,9 @@ static int traverse_setdmaster(struct tdb_context *tdb, TDB_DATA key, TDB_DATA d
 		DEBUG(0,(__location__ " failed to write tdb data back  ret:%d\n",ret));
 		return ret;
 	}
+
+	/* TODO: add error checking here */
+
 	return 0;
 }
 
