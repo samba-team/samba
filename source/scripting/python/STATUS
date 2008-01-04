@@ -1,0 +1,20 @@
+dsdb/samdb/ldb_modules/tests/samba3sam.py
+lib/ldb/tests/python/ldap.py
+SWAT
+hierarchy
+DCE/RPC bindings
+ - pidl:
+     Parse::Pidl::Samba::Python
+	 - wrap struct/bitmap/enum/union types
+	  - __ndr_pack__/__ndr_unpack__ members
+	 Parse::Pidl::Samba::NDR::Python
+	 - pidl generated client fns
+	  - one class per interface
+	  - AddOne()
+
+ - scripting/bin/smbstatus.py
+ - scripting/bin/winreg.py
+
+not important before making Python the default:
+- scripting/python/samba/upgrade.py
+- install python modules into system
