@@ -329,6 +329,10 @@ WERROR regdb_open( void )
 
 int regdb_close( void )
 {
+	if (tdb_refcount == 0) {
+		return 0;
+	}
+
 	tdb_refcount--;
 
 	DEBUG(10,("regdb_close: decrementing refcount (%d)\n", tdb_refcount));
