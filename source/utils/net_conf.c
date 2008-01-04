@@ -19,9 +19,13 @@
  */
 
 /*
- * This is an interface to the configuration stored inside the
- * samba registry. In the future there might be support for other
- * configuration backends as well.
+ * This is an interface to the Samba's configuration as made available
+ * by the libnet_conf interface (source/libnet/libnet_conf.c).
+ *
+ * This currently supports local interaction with the configuration
+ * stored in the registry. But other backends and remote access via
+ * rpc (to registry stored configuration) might get implemented in
+ * the future.
  */
 
 #include "includes.h"
