@@ -84,18 +84,43 @@ sub TypeConstructor($$)
 {
 	my ($self, $type) = @_;
 
+	$self->pidl("static PyObject *py_$type->{NAME}(PyObject *self, PyObject *args)");
+	$self->pidl("{");
+	$self->indent;
 	#FIXME
+
+	$self->pidl("return Py_None;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
 }
 
-sub PythonFunction($$)
+sub PythonFunction($$$)
 {
-	my ($self, $fn) = @_;
+	my ($self, $fn, $iface) = @_;
 
 	$self->pidl("static PyObject *py_$fn->{NAME}(PyObject *self, PyObject *args)");
 	$self->pidl("{");
 	$self->indent;
+	$self->pidl("$iface\_InterfaceObject *iface = ($iface\_InterfaceObject *)self;");
+	$self->pidl("NTSTATUS status;");
+	$self->pidl("");
 	# FIXME
+	$self->handle_ntstatus("status", "NULL");
 	$self->pidl("return Py_None;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
+}
+
+sub handle_ntstatus($$$)
+{
+	my ($self, $var, $retval) = @_;
+
+	$self->pidl("if (NT_STATUS_IS_ERR($var)) {");
+	$self->indent;
+	$self->pidl("PyErr_SetString(PyExc_RuntimeError, nt_errstr($var));");
+	$self->pidl("return $retval;");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
@@ -155,7 +180,7 @@ sub Interface($$)
 	$self->pidl("static void interface_$interface->{NAME}_dealloc(PyObject* self)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$interface->{NAME}_InterfaceObject *interface;");
+	$self->pidl("$interface->{NAME}_InterfaceObject *interface = ($interface->{NAME}_InterfaceObject *)self;");
 	$self->pidl("talloc_free(interface->pipe);");
 	$self->pidl("PyObject_Del(self);");
 	$self->deindent;
@@ -199,13 +224,7 @@ sub Interface($$)
 
 	$self->pidl("status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, ");
 	$self->pidl("             &ndr_table_$interface->{NAME}, credentials, NULL, lp_ctx);");
-	$self->pidl("if (NT_STATUS_IS_ERR(status)) {");
-	$self->indent;
-	$self->pidl("PyErr_SetString(PyExc_RuntimeError, nt_errstr(status));");
-	$self->pidl("return NULL;");
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
+	$self->handle_ntstatus("status", "NULL");
 
 	$self->pidl("return (PyObject *)ret;");
 	$self->deindent;
@@ -246,6 +265,18 @@ sub Parse($$$$)
 	foreach my $x (@$ndr) {
 	    next if ($x->{TYPE} ne "INTERFACE");
 		$self->pidl("{ (char *)\"$x->{NAME}\", (PyCFunction)interface_$x->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
+
+		foreach my $d (@{$x->{TYPES}}) {
+			next if has_property($d, "nopython");
+			next if ($d->{TYPE} eq "ENUM" or $d->{TYPE} eq "BITMAP");
+
+			my $fn_name = $d->{NAME};
+
+			$fn_name =~ s/^$x->{NAME}_//;
+			$fn_name =~ s/^$basename\_//;
+
+			$self->pidl("{ (char *)\"$fn_name\", (PyCFunction)py_$d->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
+		}
 	}
 	
 	$self->pidl("{ NULL, NULL, 0, NULL }");
