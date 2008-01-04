@@ -863,8 +863,6 @@ int net_conf(int argc, const char **argv)
 
 	ret = net_run_function2(argc, argv, "net conf", func);
 
-	regdb_close();
-
 	return ret;
 }
 
