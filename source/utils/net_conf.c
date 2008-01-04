@@ -46,9 +46,9 @@ static int net_conf_import_usage(int argc, const char**argv)
 	d_printf("USAGE: net conf import [--test|-T] <filename> "
 		 "[<servicename>]\n"
 		 "\t[--test|-T]    testmode - do not act, just print "
-		                   "what would be done\n"
+			"what would be done\n"
 		 "\t<servicename>  only import service <servicename>, "
-		                   "ignore the rest\n");
+			"ignore the rest\n");
 	return -1;
 }
 
@@ -139,14 +139,14 @@ static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
 		valstr = talloc_asprintf(ctx, "%s", BOOLSTR(!*(bool *)ptr));
 		break;
 	case P_ENUM:
-        	for (i = 0; parm->enum_list[i].name; i++) {
-        	        if (*(int *)ptr == parm->enum_list[i].value)
+		for (i = 0; parm->enum_list[i].name; i++) {
+			if (*(int *)ptr == parm->enum_list[i].value)
 			{
 				valstr = talloc_asprintf(ctx, "%s",
-        	                         parm->enum_list[i].name);
-        	                break;
-        	        }
-        	}
+					parm->enum_list[i].name);
+				break;
+			}
+		}
 		break;
 	case P_OCTAL: {
 		char *o = octal_string(*(int *)ptr);
