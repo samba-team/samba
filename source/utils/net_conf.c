@@ -856,7 +856,6 @@ int net_conf(int argc, const char **argv)
 
 	regdb_close();
 
-done:
 	return ret;
 }
 
