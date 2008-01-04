@@ -35,6 +35,7 @@
 
 #define SAMBA_ICON_PATH  "/usr/share/pixmaps/samba/samba.ico"
 #define SAMBA_IMAGE_PATH "/usr/share/pixmaps/samba/logo.png"
+#define SAMBA_IMAGE_PATH_SMALL "/usr/share/pixmaps/samba/logo-small.png"
 
 #define WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED ( 0x00000020 )
 #define WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE ( 0x00000004 )
@@ -224,7 +225,8 @@ static void callback_do_reboot(GtkWidget *widget,
 	gtk_widget_destroy(dialog);
 #endif
 
-	gtk_label_set_text(GTK_LABEL(state->label_reboot), "Changes will take effect after you restart this computer");
+	gtk_label_set_text(GTK_LABEL(state->label_reboot),
+			   "Changes will take effect after you restart this computer");
 
 	debug("destroying do_change window\n");
 	gtk_widget_destroy(GTK_WIDGET(state->window_do_change));
@@ -247,11 +249,14 @@ static void callback_do_reboot(GtkWidget *widget,
 		SAFE_FREE(buffer);
 		state->name_type_new = type;
 #endif
-		gtk_label_set_text(GTK_LABEL(state->label_current_name_buffer), state->name_buffer_new);
-		if (state->name_type_new == 3) {
-			gtk_label_set_text(GTK_LABEL(state->label_current_name_type), "Domain:");
+		gtk_label_set_text(GTK_LABEL(state->label_current_name_buffer),
+				   state->name_buffer_new);
+		if (state->name_type_new == NetSetupDomainName) {
+			gtk_label_set_text(GTK_LABEL(state->label_current_name_type),
+					   "Domain:");
 		} else {
-			gtk_label_set_text(GTK_LABEL(state->label_current_name_type), "Workgroup:");
+			gtk_label_set_text(GTK_LABEL(state->label_current_name_type),
+					   "Workgroup:");
 		}
 	}
 }
@@ -779,6 +784,8 @@ static void callback_do_change(GtkWidget *widget,
 
 	debug("callback_do_change called\n");
 
+#if 0
+	/* FIXME: add proper warnings for Samba as a DC */
 	if (state->server_role == 3) {
 		GtkWidget *dialog;
 		dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_main),
@@ -793,13 +800,14 @@ static void callback_do_change(GtkWidget *widget,
 		gtk_widget_show(dialog);
 		return;
 	}
+#endif
 
 	state->button_ok = gtk_button_new_from_stock(GTK_STOCK_OK);
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 
 	gtk_window_set_title(GTK_WINDOW(window), "Computer Name Changes");
 	gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
-	gtk_widget_set_size_request(GTK_WIDGET(window), 480, 500); /* breite * höhe */
+	gtk_widget_set_size_request(GTK_WIDGET(window), 480, 500);
 	gtk_window_set_icon_from_file(GTK_WINDOW(window), SAMBA_ICON_PATH, NULL);
 
 	g_signal_connect(G_OBJECT(window), "delete_event",
@@ -849,14 +857,17 @@ static void callback_do_change(GtkWidget *widget,
 		char *str = NULL;
 		entry_text = gtk_entry_get_text(GTK_ENTRY(entry));
 		if (state->name_type_initial == NetSetupDomainName) {
-			asprintf(&str, "%s.%s", entry_text, state->my_dnsdomain);
+			asprintf(&str, "%s.%s", entry_text,
+				 state->my_dnsdomain);
 		} else {
 			asprintf(&str, "%s.", entry_text);
 		}
-		gtk_label_set_text(GTK_LABEL(state->label_full_computer_name), str);
+		gtk_label_set_text(GTK_LABEL(state->label_full_computer_name),
+				   str);
 		free(str);
 		gtk_misc_set_alignment(GTK_MISC(state->label_full_computer_name), 0, 0);
-		gtk_box_pack_start(GTK_BOX(box1), state->label_full_computer_name, TRUE, TRUE, 0);
+		gtk_box_pack_start(GTK_BOX(box1),
+				   state->label_full_computer_name, TRUE, TRUE, 0);
 		gtk_widget_show(state->label_full_computer_name);
 	}
 
@@ -891,7 +902,8 @@ static void callback_do_change(GtkWidget *widget,
 				 G_CALLBACK(callback_continue),
 				 (gpointer)state);
 		if (state->name_type_initial == NetSetupDomainName) {
-			gtk_entry_set_text(GTK_ENTRY(state->entry_domain), state->name_buffer_initial);
+			gtk_entry_set_text(GTK_ENTRY(state->entry_domain),
+					   state->name_buffer_initial);
 			gtk_widget_set_sensitive(state->entry_workgroup, FALSE);
 			gtk_widget_set_sensitive(state->entry_domain, TRUE);
 		}
@@ -912,7 +924,8 @@ static void callback_do_change(GtkWidget *widget,
 			 G_CALLBACK(callback_do_join_workgroup),
 			 (gpointer)state);
 	{
-		gtk_entry_set_max_length(GTK_ENTRY(state->entry_workgroup), MAX_NETBIOS_NAME_LEN);
+		gtk_entry_set_max_length(GTK_ENTRY(state->entry_workgroup),
+					 MAX_NETBIOS_NAME_LEN);
 		g_signal_connect(G_OBJECT(state->entry_workgroup), "changed",
 				 G_CALLBACK(callback_enter_workgroup_and_unlock),
 				 (gpointer)state);
@@ -921,7 +934,8 @@ static void callback_do_change(GtkWidget *widget,
 				 (gpointer)state);
 
 		if (state->name_type_initial == NetSetupWorkgroupName) {
-			gtk_entry_set_text(GTK_ENTRY(state->entry_workgroup), state->name_buffer_initial);
+			gtk_entry_set_text(GTK_ENTRY(state->entry_workgroup),
+					   state->name_buffer_initial);
 			gtk_widget_set_sensitive(GTK_WIDGET(state->entry_domain), FALSE);
 			gtk_widget_set_sensitive(GTK_WIDGET(state->entry_workgroup), TRUE);
 		}
@@ -998,21 +1012,25 @@ static int draw_main_window(struct join_state *state)
 	icon = gdk_pixbuf_new_from_file(SAMBA_ICON_PATH,
 	                                &error);
 	if (icon == NULL) {
-		g_print("failed to load logo from %s : %s\n",
+		g_print("failed to load icon from %s : %s\n",
 			SAMBA_ICON_PATH, error->message);
 	}
 
 #if 1
-	image = gtk_image_new_from_file(SAMBA_IMAGE_PATH);
+	image = gtk_image_new_from_file(SAMBA_IMAGE_PATH_SMALL);
 #else
 	image = gtk_image_new_from_file("/usr/share/pixmaps/redhat-system_settings.png");
 #endif
+	if (image == NULL) {
+		g_print("failed to load logo from %s : %s\n",
+			SAMBA_IMAGE_PATH_SMALL, error->message);
+	}
 
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	state->window_main = window;
 
 	gtk_window_set_title(GTK_WINDOW(window), "Samba - Join Domain dialogue");
-	gtk_widget_set_size_request(GTK_WIDGET(window), 600, 600); /* breite * höhe */
+	gtk_widget_set_size_request(GTK_WIDGET(window), 600, 600);
 	gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
 	gtk_window_set_icon_from_file(GTK_WINDOW(window), SAMBA_ICON_PATH, NULL);
 
@@ -1034,14 +1052,15 @@ static int draw_main_window(struct join_state *state)
 
 	{
 /*		gtk_box_pack_start(GTK_BOX(main_vbox), image, TRUE, TRUE, 10); */
-		gtk_misc_set_alignment(GTK_MISC(image), 0, 0);
+/*		gtk_misc_set_alignment(GTK_MISC(image), 0, 0); */
+		gtk_widget_set_size_request(GTK_WIDGET(image), 150, 40);
 		gtk_box_pack_start(GTK_BOX(hbox), image, FALSE, FALSE, 10);
 		gtk_widget_show(image);
 
 		/* Label */
 		label = gtk_label_new("Samba uses the following information to identify your computer on the network.");
-		gtk_misc_set_alignment(GTK_MISC(label), 0, 0);
-		gtk_widget_set_size_request(GTK_WIDGET(label), 500, 40);
+/*		gtk_misc_set_alignment(GTK_MISC(label), 0, 0); */
+		gtk_widget_set_size_request(GTK_WIDGET(label), 400, 40);
 		gtk_label_set_line_wrap(GTK_LABEL(label), TRUE);
 		gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 0);
 		gtk_widget_show(label);
