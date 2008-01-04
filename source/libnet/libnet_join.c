@@ -319,10 +319,11 @@ static NTSTATUS do_DomainUnjoin(TALLOC_CTX *mem_ctx,
 	}
 
 done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
-	rpccli_samr_close(pipe_hnd, mem_ctx, &sam_pol);
-
-	cli_rpc_pipe_close(pipe_hnd);
+	if (pipe_hnd) {
+		rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
+		rpccli_samr_close(pipe_hnd, mem_ctx, &sam_pol);
+		cli_rpc_pipe_close(pipe_hnd);
+	}
 
 	if (cli) {
 		cli_shutdown(cli);
