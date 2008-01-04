@@ -19,7 +19,7 @@
  */
 
 /*
- * This is an interface to the Samba's configuration as made available
+ * This is an interface to Samba's configuration as made available
  * by the libnet_conf interface (source/libnet/libnet_conf.c).
  *
  * This currently supports local interaction with the configuration
