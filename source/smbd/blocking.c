@@ -303,19 +303,20 @@ static void generic_blocking_lock_error(blocking_lock_record *blr, NTSTATUS stat
 		/* Store the last lock error. */
 		files_struct *fsp = blr->fsp;
 
-		fsp->last_lock_failure.context.smbpid = blr->lock_pid;
-		fsp->last_lock_failure.context.tid = fsp->conn->cnum;
-		fsp->last_lock_failure.context.pid = procid_self();
-		fsp->last_lock_failure.start = blr->offset;
-		fsp->last_lock_failure.size = blr->count;
-		fsp->last_lock_failure.fnum = fsp->fnum;
-		fsp->last_lock_failure.lock_type = READ_LOCK; /* Don't care. */
-		fsp->last_lock_failure.lock_flav = blr->lock_flav;
+		if (fsp) {
+			fsp->last_lock_failure.context.smbpid = blr->lock_pid;
+			fsp->last_lock_failure.context.tid = fsp->conn->cnum;
+			fsp->last_lock_failure.context.pid = procid_self();
+			fsp->last_lock_failure.start = blr->offset;
+			fsp->last_lock_failure.size = blr->count;
+			fsp->last_lock_failure.fnum = fsp->fnum;
+			fsp->last_lock_failure.lock_type = READ_LOCK; /* Don't care. */
+			fsp->last_lock_failure.lock_flav = blr->lock_flav;
+		}
 	}
 
 	ERROR_NT(status);
-	if (!srv_send_smb(smbd_server_fd(),outbuf,
-			IS_CONN_ENCRYPTED(blr->fsp->conn))) {
+	if (!srv_send_smb(smbd_server_fd(),outbuf, blr->encrypted)) {
 		exit_server_cleanly("generic_blocking_lock_error: srv_send_smb failed.");
 	}
 }
@@ -605,6 +606,9 @@ file %s fnum = %d\n", blr->com_type, fsp->fsp_name, fsp->fnum ));
 					locktype,
 					NT_STATUS_RANGE_NOT_LOCKED);
 			}
+			/* We're closing the file fsp here, so ensure
+			 * we don't have a dangling pointer. */
+			blr->fsp = NULL;
 		}
 	}
 }
