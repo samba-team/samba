@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  libnet Join Support
- *  Copyright (C) Guenther Deschner 2007
+ *  Copyright (C) Guenther Deschner 2007-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,7 +26,8 @@ struct libnet_JoinCtx {
 		const char *domain_name;
 		const char *account_ou;
 		const char *admin_account;
-		const char *password;
+		const char *admin_password;
+		const char *machine_password;
 		uint32_t join_flags;
 		const char *os_version;
 		const char *os_string;
@@ -50,7 +51,7 @@ struct libnet_UnjoinCtx {
 		const char *server_name;
 		const char *domain_name;
 		const char *admin_account;
-		const char *password;
+		const char *admin_password;
 		uint32_t unjoin_flags;
 		bool modify_config;
 		struct dom_sid *domain_sid;
