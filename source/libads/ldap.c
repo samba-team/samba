@@ -400,7 +400,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 got_connection:
 
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
-	DEBUG(3,("Connected to LDAP server %s\n", addr));
+	DEBUG(3,("Successfully contacted LDAP server %s\n", addr));
 
 	if (!ads->auth.user_name) {
 		/* Must use the userPrincipalName value here or sAMAccountName
