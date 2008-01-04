@@ -7,6 +7,7 @@
 
 package output;
 use strict;
+use smb_build::config;
 
 sub add_dir_str($$)
 {
@@ -79,7 +80,7 @@ sub generate_shared_library($)
 
 	$lib->{LIBRARY_DEBUGNAME} = $lib->{LIBRARY_REALNAME};
 
-	if (defined($lib->{VERSION})) {
+	if (defined($lib->{VERSION}) and $config::config{SONAMEFLAG} ne "#") {
 		$lib->{LIBRARY_SONAME} = "$lib->{LIBRARY_REALNAME}.$lib->{SO_VERSION}";
 		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}.$lib->{VERSION}";
 	} 
