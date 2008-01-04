@@ -238,7 +238,9 @@ int tdb_traverse(struct tdb_context *tdb,
 		return -1;
 	}
 
+	tdb->traverse_write++;
 	ret = tdb_traverse_internal(tdb, fn, private_data, &tl);
+	tdb->traverse_write--;
 
 	tdb_transaction_unlock(tdb);
 
