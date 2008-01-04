@@ -4333,7 +4333,7 @@ static void readline_callback(void)
 	   session keepalives and then drop them here.
 	*/
 	if (FD_ISSET(cli->fd,&fds)) {
-		if (!receive_smb_raw(cli->fd,cli->inbuf,0,0,&cli->smb_rw_error)) {
+		if (receive_smb_raw(cli->fd,cli->inbuf,0,0,&cli->smb_rw_error) == -1) {
 			DEBUG(0, ("Read from server failed, maybe it closed the "
 				"connection\n"));
 			return;
