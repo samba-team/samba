@@ -55,10 +55,10 @@ pushd .
 BASEDIR=`basename $PWD`
 cd ..
 chown -R ${USERID}.${GRPID} $BASEDIR
-if [ ! -d ctdb-${VERSION} ]; then
-	ln -s $BASEDIR ctdb-${VERSION} || exit 1
-	REMOVE_LN=$PWD/ctdb-$VERSION
-fi
+rm -f ctdb-${VERSION}
+ln -s $BASEDIR ctdb-${VERSION} || exit 1
+REMOVE_LN=$PWD/ctdb-$VERSION
+
 echo -n "Creating ctdb-${VERSION}.tar.gz ... "
 tar --exclude=.bzr --exclude .bzrignore --exclude="*~" -cf - ctdb-${VERSION}/. | gzip -9 --rsyncable > ${SRCDIR}/ctdb-${VERSION}.tar.gz
 echo "Done."
