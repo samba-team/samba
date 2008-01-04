@@ -105,6 +105,10 @@ int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 		goto fail;
 	}
 
+#if 0
+	/* (tridge) disable 'right' merges for now as they give rise to a O(n^2) behaviour during
+	   traverse which is freeing old dead records */
+
 	/* Look right first (I'm an Australian, dammit) */
 	right = offset + sizeof(*rec) + rec->rec_len;
 	if (right + sizeof(*rec) <= tdb->map_size) {
@@ -124,6 +128,7 @@ int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 			rec->rec_len += sizeof(r) + r.rec_len;
 		}
 	}
+#endif
 
 left:
 	/* Look left */
@@ -153,6 +158,23 @@ left:
 
 		/* If it's free, expand to include it. */
 		if (l.magic == TDB_FREE_MAGIC) {
+#if 1
+			/* we now merge the new record into the left record, rather than the other 
+			   way around. This makes the operation O(1) instead of O(n). This change
+			   prevents traverse from being O(n^2) after a lot of deletes */
+			l.rec_len += sizeof(*rec) + rec->rec_len;
+			if (tdb_rec_write(tdb, left, &l) == -1) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_left failed at %u\n", left));
+				goto fail;
+			}
+			if (update_tailer(tdb, left, &l) == -1) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed at %u\n", offset));
+				goto fail;
+			}
+			/* we're done. */
+			tdb_unlock(tdb, -1, F_WRLCK);
+			return 0;			
+#else
 			if (remove_from_freelist(tdb, left, l.next) == -1) {
 				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left free failed at %u\n", left));
 				goto update;
@@ -160,6 +182,7 @@ left:
 				offset = left;
 				rec->rec_len += leftsize;
 			}
+#endif
 		}
 	}
 
