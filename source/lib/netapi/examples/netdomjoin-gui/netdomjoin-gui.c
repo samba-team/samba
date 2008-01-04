@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  Join Support (gtk + netapi)
- *  Copyright (C) Guenther Deschner 2007
+ *  Copyright (C) Guenther Deschner 2007-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -124,7 +124,6 @@ static void free_join_state(struct join_state *s)
 	SAFE_FREE(s->my_fqdn);
 	SAFE_FREE(s->my_dnsdomain);
 	SAFE_FREE(s->my_hostname);
-
 }
 
 static void do_cleanup(struct join_state *state)
@@ -365,7 +364,8 @@ static void callback_do_join(GtkWidget *widget,
 	uint32_t unjoin_flags = 0;
 	gboolean domain_join = FALSE;
 	gboolean try_unjoin = FALSE;
-	const char *domain_or_workgroup = NULL;
+	const char *new_workgroup_type = NULL;
+	const char *initial_workgroup_type = NULL;
 
 	struct join_state *state = (struct join_state *)data;
 
@@ -376,14 +376,33 @@ static void callback_do_join(GtkWidget *widget,
 		gtk_widget_destroy(GTK_WIDGET(state->window_creds_prompt));
 	}
 
+	switch (state->name_type_initial) {
+		case NetSetupWorkgroupName:
+			initial_workgroup_type = "workgroup";
+			break;
+		case NetSetupDomainName:
+			initial_workgroup_type = "domain";
+			break;
+		default:
+			break;
+	}
+
+	switch (state->name_type_new) {
+		case NetSetupWorkgroupName:
+			new_workgroup_type = "workgroup";
+			break;
+		case NetSetupDomainName:
+			new_workgroup_type = "domain";
+			break;
+		default:
+			break;
+	}
+
 	if (state->name_type_new == NetSetupDomainName) {
 		domain_join = TRUE;
 		join_flags = WKSSVC_JOIN_FLAGS_JOIN_TYPE |
 			     WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
 			     WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED; /* for testing */
-		domain_or_workgroup = "domain";
-	} else {
-		domain_or_workgroup = "workgroup";
 	}
 
 	if ((state->name_type_initial == NetSetupDomainName) &&
@@ -394,7 +413,7 @@ static void callback_do_join(GtkWidget *widget,
 	}
 
 	debug("callback_do_join: Joining a %s named %s using join_flags 0x%08x ",
-		domain_or_workgroup,
+		new_workgroup_type,
 		state->name_buffer_new,
 		join_flags);
 	if (domain_join) {
@@ -422,8 +441,8 @@ static void callback_do_join(GtkWidget *widget,
 							GTK_MESSAGE_ERROR,
 							GTK_BUTTONS_CLOSE,
 							"The following error occured attempting to unjoin the %s: \"%s\": %s",
-							domain_or_workgroup,
-							state->name_buffer_new,
+							initial_workgroup_type,
+							state->name_buffer_initial,
 							err_str);
 
 			g_signal_connect_swapped(dialog, "response",
@@ -451,7 +470,7 @@ static void callback_do_join(GtkWidget *widget,
 						GTK_MESSAGE_ERROR,
 						GTK_BUTTONS_CLOSE,
 						"The following error occured attempting to join the %s: \"%s\": %s",
-						domain_or_workgroup,
+						new_workgroup_type,
 						state->name_buffer_new,
 						err_str);
 
@@ -465,7 +484,7 @@ static void callback_do_join(GtkWidget *widget,
 	}
 
 	debug("callback_do_join: Successfully joined %s\n",
-		domain_or_workgroup);
+		new_workgroup_type);
 
 	dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_parent),
 					GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -473,7 +492,7 @@ static void callback_do_join(GtkWidget *widget,
 					GTK_BUTTONS_OK,
 					"Welcome to the %s %s.",
 					state->name_buffer_new,
-					domain_or_workgroup);
+					new_workgroup_type);
 
 	gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
