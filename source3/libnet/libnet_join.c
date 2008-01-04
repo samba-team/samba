@@ -138,17 +138,21 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
-	status = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-					     acct_name, ACB_WSTRUST,
-					     0xe005000b, &user_pol, &user_rid);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-		if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED)) {
-			goto done;
+	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE) {
+		status = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx,
+						     &domain_pol,
+						     acct_name, ACB_WSTRUST,
+						     0xe005000b, &user_pol,
+						     &user_rid);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+			if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED)) {
+				goto done;
+			}
 		}
-	}
 
-	if (NT_STATUS_IS_OK(status)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		if (NT_STATUS_IS_OK(status)) {
+			rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		}
 	}
 
 	status = rpccli_samr_lookup_names(pipe_hnd, mem_ctx,
