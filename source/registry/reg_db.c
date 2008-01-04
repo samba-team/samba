@@ -259,7 +259,7 @@ bool regdb_init( void )
 	uint32 vers_id;
 
 	if ( tdb_reg )
-		return True;
+		return true;
 
 	if ( !(tdb_reg = tdb_wrap_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600)) )
 	{
@@ -267,7 +267,7 @@ bool regdb_init( void )
 		if ( !tdb_reg ) {
 			DEBUG(0,("regdb_init: Failed to open registry %s (%s)\n",
 				state_path("registry.tdb"), strerror(errno) ));
-			return False;
+			return false;
 		}
 		
 		DEBUG(10,("regdb_init: Successfully created registry tdb\n"));
@@ -287,10 +287,10 @@ bool regdb_init( void )
 
 	if ( !init_registry_data() ) {
 		DEBUG(0,("init_registry: Failed to initialize data in registry!\n"));
-		return False;
+		return false;
 	}
 
-	return True;
+	return true;
 }
 
 /***********************************************************************
@@ -368,7 +368,7 @@ static bool regdb_store_keys_internal(const char *key, REGSUBKEY_CTR *ctr)
 	uint8 *buffer = NULL;
 	int i = 0;
 	uint32 len, buflen;
-	bool ret = True;
+	bool ret = true;
 	uint32 num_subkeys = regsubkey_ctr_numkeys(ctr);
 	char *keyname = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -386,7 +386,7 @@ static bool regdb_store_keys_internal(const char *key, REGSUBKEY_CTR *ctr)
 	/* allocate some initial memory */
 
 	if (!(buffer = (uint8 *)SMB_MALLOC(1024))) {
-		return False;
+		return false;
 	}
 	buflen = 1024;
 	len = 0;
@@ -403,7 +403,7 @@ static bool regdb_store_keys_internal(const char *key, REGSUBKEY_CTR *ctr)
 			/* allocate some extra space */
 			if ((buffer = (uint8 *)SMB_REALLOC( buffer, len*2 )) == NULL) {
 				DEBUG(0,("regdb_store_keys: Failed to realloc memory of size [%d]\n", len*2));
-				ret = False;
+				ret = false;
 				goto done;
 			}
 			buflen = len*2;
@@ -417,7 +417,7 @@ static bool regdb_store_keys_internal(const char *key, REGSUBKEY_CTR *ctr)
 	dbuf.dptr = buffer;
 	dbuf.dsize = len;
 	if ( tdb_store_bystring( tdb_reg->tdb, keyname, dbuf, TDB_REPLACE ) == -1) {
-		ret = False;
+		ret = false;
 		goto done;
 	}
 
@@ -805,7 +805,7 @@ bool regdb_store_values( const char *key, REGVAL_CTR *values )
 	    && (memcmp(old_data.dptr, data.dptr, data.dsize) == 0)) {
 		SAFE_FREE(old_data.dptr);
 		SAFE_FREE(data.dptr);
-		return True;
+		return true;
 	}
 
 	ret = tdb_trans_store_bystring(tdb_reg->tdb, keystr, data, TDB_REPLACE);
