@@ -22,8 +22,27 @@
 #include "libnet/libnet_join.h"
 #include "libnet/libnet_proto.h"
 
-static NTSTATUS do_DomainJoin(TALLOC_CTX *mem_ctx,
-			      struct libnet_JoinCtx *r)
+static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
+						 struct libnet_JoinCtx *r)
+{
+	if (!secrets_store_domain_sid(r->out.netbios_domain_name,
+				      r->out.domain_sid))
+	{
+		return false;
+	}
+
+	if (!secrets_store_machine_password(r->in.machine_password,
+					    r->out.netbios_domain_name,
+					    SEC_CHAN_WKSTA))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
+					   struct libnet_JoinCtx *r)
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
@@ -196,21 +215,6 @@ static NTSTATUS do_DomainJoin(TALLOC_CTX *mem_ctx,
 	rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
 	cli_rpc_pipe_close(pipe_hnd);
 
-	if (!secrets_store_domain_sid(r->out.netbios_domain_name,
-				      r->out.domain_sid))
-	{
-		status = NT_STATUS_INTERNAL_DB_ERROR;
-		goto done;
-	}
-
-	if (!secrets_store_machine_password(password,
-					    r->out.netbios_domain_name,
-					    SEC_CHAN_WKSTA))
-	{
-		status = NT_STATUS_INTERNAL_DB_ERROR;
-		goto done;
-	}
-
 	status = NT_STATUS_OK;
  done:
 	if (cli) {
@@ -220,8 +224,22 @@ static NTSTATUS do_DomainJoin(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
-static NTSTATUS do_DomainUnjoin(TALLOC_CTX *mem_ctx,
-				struct libnet_UnjoinCtx *r)
+static bool libnet_join_unjoindomain_remove_secrets(TALLOC_CTX *mem_ctx,
+						    struct libnet_UnjoinCtx *r)
+{
+	if (!secrets_delete_machine_password_ex(lp_workgroup())) {
+		return false;
+	}
+
+	if (!secrets_delete_domain_sid(lp_workgroup())) {
+		return false;
+	}
+
+	return true;
+}
+
+static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
+					     struct libnet_UnjoinCtx *r)
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
@@ -309,16 +327,6 @@ static NTSTATUS do_DomainUnjoin(TALLOC_CTX *mem_ctx,
 					   &cli->user_session_key, &ctr);
 
 	rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
-
-	if (!secrets_delete_machine_password_ex(lp_workgroup())) {
-		status = NT_STATUS_INTERNAL_DB_ERROR;
-		goto done;
-	}
-
-	if (!secrets_delete_domain_sid(lp_workgroup())) {
-		status = NT_STATUS_INTERNAL_DB_ERROR;
-		goto done;
-	}
 
 done:
 	if (pipe_hnd) {
@@ -484,12 +492,16 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
-		status = do_DomainJoin(mem_ctx, r);
+		status = libnet_join_joindomain_rpc(mem_ctx, r);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 				return WERR_SETUP_ALREADY_JOINED;
 			}
 			return ntstatus_to_werror(status);
+		}
+
+		if (!libnet_join_joindomain_store_secrets(mem_ctx, r)) {
+			return WERR_SETUP_NOT_JOINED;
 		}
 	}
 
@@ -513,13 +525,15 @@ WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
-		status = do_DomainUnjoin(mem_ctx, r);
+		status = libnet_join_unjoindomain_rpc(mem_ctx, r);
 		if (!NT_STATUS_IS_OK(status)) {
 			if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 				return WERR_SETUP_NOT_JOINED;
 			}
 			return ntstatus_to_werror(status);
 		}
+
+		libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
 	}
 
 	werr = do_UnjoinConfig(r);
