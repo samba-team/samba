@@ -49,6 +49,38 @@ sub deindent($)
 	$self->{tabs} = substr($self->{tabs}, 0, -1);
 }
 
+sub Import
+{
+	my $self = shift;
+	my @imports = @_;
+	foreach (@imports) {
+		s/\.idl\"$//;
+		s/^\"//;
+		$self->pidl_hdr("#include \"librpc/gen_ndr/py_$_\.h\"\n");
+	}
+}
+
+sub Const($$)
+{
+    my ($self, $const) = @_;
+    $self->{constants}->{$const->{NAME}} = [$const->{DATA}->{TYPE}, $const->{VALUE}];
+}
+
+sub Interface($$)
+{
+	my($self,$interface) = @_;
+
+	$self->pidl_hdr("#ifndef _HEADER_PYTHON_$interface->{NAME}\n");
+	$self->pidl_hdr("#define _HEADER_PYTHON_$interface->{NAME}\n\n");
+
+	$self->pidl_hdr("\n");
+
+	$self->Const($_) foreach (@{$interface->{CONSTS}});
+
+	$self->pidl_hdr("\n");
+	$self->pidl_hdr("#endif /* _HEADER_NDR_$interface->{NAME} */\n");
+}
+
 sub Parse($$$$)
 {
     my($self,$basename,$ndr,$hdr) = @_;
@@ -66,6 +98,11 @@ sub Parse($$$$)
 #include \"$py_hdr\"
 
 ");
+
+	foreach my $x (@$ndr) {
+	    ($x->{TYPE} eq "INTERFACE") && $self->Interface($x);
+		($x->{TYPE} eq "IMPORT") && $self->Import(@{$x->{PATHS}});
+	}
 	
 	$self->pidl("static PyMethodDef $basename\_methods[] = {");
 	$self->indent;
@@ -78,9 +115,13 @@ sub Parse($$$$)
 	$self->pidl("void init$basename(void)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("PyObject *m;");
+	$self->pidl("PyObject *m, *d;");
 	$self->pidl("m = Py_InitModule((char *)\"$basename\", $basename\_methods);");
-	# FIXME
+	$self->pidl("d = PyModule_GetDict(m);");
+	foreach (keys %{$self->{constants}}) {
+		# FIXME: Handle non-string constants
+		$self->pidl("PyDict_SetItemString(d, \"$_\", PyString_FromString(" . $self->{constants}->{$_}->[1] . "));");
+	}
 	$self->deindent;
 	$self->pidl("}");
     return ($self->{res_hdr}, $self->{res});
