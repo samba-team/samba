@@ -489,8 +489,9 @@ static void handle_trans(connection_struct *conn, struct smb_request *req,
  Reply to a SMBtrans.
  ****************************************************************************/
 
-void reply_trans(connection_struct *conn, struct smb_request *req)
+void reply_trans(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	unsigned int dsoff;
 	unsigned int dscnt;
 	unsigned int psoff;
@@ -669,8 +670,9 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
  Reply to a secondary SMBtrans.
  ****************************************************************************/
 
-void reply_transs(connection_struct *conn, struct smb_request *req)
+void reply_transs(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
 	int size;

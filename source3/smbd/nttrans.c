@@ -413,8 +413,9 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
  Reply to an NT create and X call.
 ****************************************************************************/
 
-void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
+void reply_ntcreate_and_X(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *fname = NULL;
 	uint32 flags;
 	uint32 access_mask;
@@ -1093,7 +1094,7 @@ static void call_nt_transact_create(connection_struct *conn,
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_ntcancel(connection_struct *conn, struct smb_request *req)
+void reply_ntcancel(struct smb_request *req)
 {
 	/*
 	 * Go through and cancel any pending change notifies.
@@ -1255,8 +1256,9 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
  Reply to a NT rename request.
 ****************************************************************************/
 
-void reply_ntrename(connection_struct *conn, struct smb_request *req)
+void reply_ntrename(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *oldname = NULL;
 	char *newname = NULL;
 	char *p;
@@ -2578,8 +2580,9 @@ static void handle_nttrans(connection_struct *conn,
  Reply to a SMBNTtrans.
 ****************************************************************************/
 
-void reply_nttrans(connection_struct *conn, struct smb_request *req)
+void reply_nttrans(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	uint32 pscnt;
 	uint32 psoff;
 	uint32 dscnt;
@@ -2769,8 +2772,9 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
  Reply to a SMBnttranss
  ****************************************************************************/
 
-void reply_nttranss(connection_struct *conn, struct smb_request *req)
+void reply_nttranss(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
 

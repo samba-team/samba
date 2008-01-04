@@ -7001,7 +7001,7 @@ static void call_trans2ioctl(connection_struct *conn,
  Reply to a SMBfindclose (stop trans2 directory search).
 ****************************************************************************/
 
-void reply_findclose(connection_struct *conn, struct smb_request *req)
+void reply_findclose(struct smb_request *req)
 {
 	int dptr_num;
 
@@ -7031,7 +7031,7 @@ void reply_findclose(connection_struct *conn, struct smb_request *req)
  Reply to a SMBfindnclose (stop FINDNOTIFYFIRST directory search).
 ****************************************************************************/
 
-void reply_findnclose(connection_struct *conn, struct smb_request *req)
+void reply_findnclose(struct smb_request *req)
 {
 	int dptr_num;
 
@@ -7225,8 +7225,9 @@ static void handle_trans2(connection_struct *conn, struct smb_request *req,
  Reply to a SMBtrans2.
  ****************************************************************************/
 
-void reply_trans2(connection_struct *conn, struct smb_request *req)
+void reply_trans2(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	unsigned int dsoff;
 	unsigned int dscnt;
 	unsigned int psoff;
@@ -7414,8 +7415,9 @@ void reply_trans2(connection_struct *conn, struct smb_request *req)
  Reply to a SMBtranss2
  ****************************************************************************/
 
-void reply_transs2(connection_struct *conn, struct smb_request *req)
+void reply_transs2(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
 	int size;

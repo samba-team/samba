@@ -1045,7 +1045,7 @@ force write permissions on print services.
 */
 static const struct smb_message_struct {
 	const char *name;
-	void (*fn_new)(connection_struct *conn, struct smb_request *req);
+	void (*fn_new)(struct smb_request *req);
 	int flags;
 } smb_messages[256] = {
 
@@ -1525,7 +1525,7 @@ static connection_struct *switch_message(uint8 type, struct smb_request *req, in
 		return conn;
 	}
 
-	smb_messages[type].fn_new(conn, req);
+	smb_messages[type].fn_new(req);
 	return req->conn;
 }
 
