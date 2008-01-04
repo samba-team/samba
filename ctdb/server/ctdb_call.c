@@ -322,11 +322,22 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 
 	/* its a protocol error if the sending node is not the current dmaster */
 	if (header.dmaster != hdr->srcnode) {
-		DEBUG(0,("pnn %u dmaster request non-master %u dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u\n",
-			 ctdb->pnn, hdr->srcnode, header.dmaster, ctdb_hash(&key),
-			 ctdb_db->db_id, hdr->generation, ctdb->vnn_map->generation));
-		ctdb_fatal(ctdb, "ctdb_req_dmaster from non-master");
-		return;
+		DEBUG(0,("pnn %u dmaster request for new-dmaster %u from non-master %u real-dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u c->rsn=%llu header.rsn=%llu reqid=%u keyval=0x%08x\n",
+			 ctdb->pnn, c->dmaster, hdr->srcnode, header.dmaster, ctdb_hash(&key),
+			 ctdb_db->db_id, hdr->generation, ctdb->vnn_map->generation,
+			 (unsigned long long)c->rsn, (unsigned long long)header.rsn, c->hdr.reqid,
+			 (key.dsize >= 4)?(*(uint32_t *)key.dptr):0));
+		if (header.rsn != 0 || header.dmaster != ctdb->pnn) {
+			ctdb_fatal(ctdb, "ctdb_req_dmaster from non-master");
+			return;
+		}
+	}
+
+	if (header.rsn > c->rsn) {
+		DEBUG(0,("pnn %u dmaster request with older RSN new-dmaster %u from %u real-dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u c->rsn=%llu header.rsn=%llu reqid=%u\n",
+			 ctdb->pnn, c->dmaster, hdr->srcnode, header.dmaster, ctdb_hash(&key),
+			 ctdb_db->db_id, hdr->generation, ctdb->vnn_map->generation,
+			 (unsigned long long)c->rsn, (unsigned long long)header.rsn, c->hdr.reqid));
 	}
 
 	/* use the rsn from the sending node */
