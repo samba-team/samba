@@ -12,7 +12,7 @@ fi
 SERVER="$1"
 SERVER_IP="$2"
 SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient} $CONFIGURATION"
-shift 3
+shift 2
 ADDARGS="$*"
 
 incdir=`dirname $0`
