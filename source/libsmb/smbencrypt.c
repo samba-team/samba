@@ -704,15 +704,21 @@ char *decrypt_trustdom_secret(const char *pass, DATA_BLOB *data_in)
 void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 					const char *pwd,
 					DATA_BLOB *session_key,
-					struct wkssvc_PasswordBuffer *pwd_buf)
+					struct wkssvc_PasswordBuffer **pwd_buf)
 {
 	uint8_t buffer[516];
 	struct MD5Context ctx;
-
-	DATA_BLOB confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
-
+	struct wkssvc_PasswordBuffer *my_pwd_buf = NULL;
+	DATA_BLOB confounded_session_key;
 	int confounder_len = 8;
 	uint8_t confounder[8];
+
+	my_pwd_buf = talloc_zero(mem_ctx, struct wkssvc_PasswordBuffer);
+	if (!my_pwd_buf) {
+		return;
+	}
+
+	confounded_session_key = data_blob_talloc(mem_ctx, NULL, 16);
 
 	encode_pw_buffer(buffer, pwd, STR_UNICODE);
 
@@ -725,10 +731,12 @@ void encode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,
 
 	SamOEMhashBlob(buffer, 516, &confounded_session_key);
 
-	memcpy(&pwd_buf->data[0], confounder, confounder_len);
-	memcpy(&pwd_buf->data[8], buffer, 516);
+	memcpy(&my_pwd_buf->data[0], confounder, confounder_len);
+	memcpy(&my_pwd_buf->data[8], buffer, 516);
 
 	data_blob_free(&confounded_session_key);
+
+	*pwd_buf = my_pwd_buf;
 }
 
 WERROR decode_wkssvc_join_password_buffer(TALLOC_CTX *mem_ctx,

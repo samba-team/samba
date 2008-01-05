@@ -57,8 +57,7 @@ static char magic_char = '~';
 static const char basechars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_-!@#$%";
 #define MANGLE_BASE       (sizeof(basechars)/sizeof(char)-1)
 
-static unsigned char chartest[256]  = { 0 };
-static bool          ct_initialized = False;
+static unsigned char *chartest;
 
 #define mangle(V) ((char)(basechars[(V) % MANGLE_BASE]))
 #define BASECHAR_MASK 0xf0
@@ -334,13 +333,13 @@ static void init_chartest( void )
 {
 	const unsigned char *s;
 
-	memset( (char *)chartest, '\0', 256 );
+	chartest = SMB_MALLOC_ARRAY(unsigned char, 256);
+
+	SMB_ASSERT(chartest != NULL);
 
 	for( s = (const unsigned char *)basechars; *s; s++ ) {
 		chartest[*s] |= BASECHAR_MASK;
 	}
-
-	ct_initialized = True;
 }
 
 /* ************************************************************************** **
@@ -367,8 +366,9 @@ static bool is_mangled(const char *s, const struct share_params *p)
 
 	magic_char = lp_magicchar(p);
 
-	if( !ct_initialized )
+	if (chartest == NULL) {
 		init_chartest();
+	}
 
 	magic = strchr_m( s, magic_char );
 	while( magic && magic[1] && magic[2] ) {         /* 3 chars, 1st is magic. */

@@ -34,3 +34,4 @@ source/proto_exists
 source/winbindd/winbindd_proto.h
 source/cscope.out
 source/torture.tdb
+source/pkgconfig/*.pc

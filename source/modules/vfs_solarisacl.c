@@ -264,8 +264,8 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 	}
 
  done:
-	DEBUG(10, ("solarisacl_sys_acl_st_fd %s.\n",
-		   ((ret == 0) ? "succeded" : "failed" )));
+	DEBUG(10, ("solarisacl_sys_acl_set_fd %s.\n",
+		   ((ret == 0) ? "succeeded" : "failed" )));
 	SAFE_FREE(solaris_acl);
 	SAFE_FREE(default_acl);
 	return ret;

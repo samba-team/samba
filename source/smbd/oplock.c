@@ -252,7 +252,7 @@ static char *new_break_smb_message(TALLOC_CTX *mem_ctx,
 	}
 
 	memset(result,'\0',smb_size);
-	set_message(result,8,0,True);
+	srv_set_message(result,8,0,true);
 	SCVAL(result,smb_com,SMBlockingX);
 	SSVAL(result,smb_tid,fsp->conn->cnum);
 	SSVAL(result,smb_pid,0xFFFF);
@@ -449,8 +449,10 @@ static void process_oplock_async_level2_break_message(struct messaging_context *
 	sign_state = srv_oplock_set_signing(False);
 
 	show_msg(break_msg);
-	if (!send_smb(smbd_server_fd(), break_msg)) {
-		exit_server_cleanly("oplock_break: send_smb failed.");
+	if (!srv_send_smb(smbd_server_fd(),
+			break_msg,
+			IS_CONN_ENCRYPTED(fsp->conn))) {
+		exit_server_cleanly("oplock_break: srv_send_smb failed.");
 	}
 
 	/* Restore the sign state to what it was. */
@@ -554,8 +556,10 @@ static void process_oplock_break_message(struct messaging_context *msg_ctx,
 	sign_state = srv_oplock_set_signing(False);
 
 	show_msg(break_msg);
-	if (!send_smb(smbd_server_fd(), break_msg)) {
-		exit_server_cleanly("oplock_break: send_smb failed.");
+	if (!srv_send_smb(smbd_server_fd(),
+			break_msg,
+			IS_CONN_ENCRYPTED(fsp->conn))) {
+		exit_server_cleanly("oplock_break: srv_send_smb failed.");
 	}
 
 	/* Restore the sign state to what it was. */
@@ -631,8 +635,10 @@ static void process_kernel_oplock_break(struct messaging_context *msg_ctx,
 	sign_state = srv_oplock_set_signing(False);
 
 	show_msg(break_msg);
-	if (!send_smb(smbd_server_fd(), break_msg)) {
-		exit_server_cleanly("oplock_break: send_smb failed.");
+	if (!srv_send_smb(smbd_server_fd(),
+			break_msg,
+			IS_CONN_ENCRYPTED(fsp->conn))) {
+		exit_server_cleanly("oplock_break: srv_send_smb failed.");
 	}
 
 	/* Restore the sign state to what it was. */

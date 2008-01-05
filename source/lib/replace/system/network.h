@@ -233,6 +233,10 @@ typedef unsigned short int sa_family_t;
 #endif
 #endif
 
+#ifdef HAVE_AIX_SOCKADDR_STORAGE
+#define ss_family __ss_family
+#endif
+
 #ifndef HAVE_STRUCT_ADDRINFO
 #define HAVE_STRUCT_ADDRINFO
 struct addrinfo {

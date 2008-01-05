@@ -455,7 +455,7 @@ AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnin
 # DEVELOPER_CFLAGS, so that you can turn them on and off with a simple
 # Makefile edit, avoiding the need to re-run configure.
 if test x"$ac_cv_prog_gcc" = x"yes" ; then
-    	DEVELOPER_CFLAGS="-gstabs -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
+    	DEVELOPER_CFLAGS="-g -Wall -Wshadow -Wpointer-arith -Wcast-align -Wwrite-strings -DDEBUG_PASSWORD -DDEVELOPER"
 	# Add -Wdeclaration-after-statement if compiler supports it
 	AC_CACHE_CHECK(
           [that the C compiler understands -Wdeclaration-after-statement],
@@ -3014,6 +3014,7 @@ AC_TRY_RUN([
 #define NO_CONFIG_H 1
 #define HAVE_IFACE_IFCONF 1
 #define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
 #include "${srcdir-.}/lib/replace/replace.c"
 #include "${srcdir-.}/lib/interfaces.c"],
            samba_cv_HAVE_IFACE_IFCONF=yes,samba_cv_HAVE_IFACE_IFCONF=no,samba_cv_HAVE_IFACE_IFCONF=cross)])
@@ -3031,13 +3032,25 @@ AC_TRY_RUN([
 #define NO_CONFIG_H 1
 #define HAVE_IFACE_IFREQ 1
 #define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
 #include "${srcdir-.}/lib/replace/replace.c"
+#include "${srcdir-.}/lib/replace/getaddrinfo.c"
+#include "${srcdir-.}/lib/replace/snprintf.c"
 #include "${srcdir-.}/lib/interfaces.c"],
            samba_cv_HAVE_IFACE_IFREQ=yes,samba_cv_HAVE_IFACE_IFREQ=no,samba_cv_HAVE_IFACE_IFREQ=cross)])
 CPPFLAGS="$SAVE_CPPFLAGS"
 if test x"$samba_cv_HAVE_IFACE_IFREQ" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_IFREQ,1,[Whether iface ifreq is available])
 fi
+fi
+
+dnl AIX 5.3.0.0
+AC_TRY_COMPILE([#include <sys/socket.h>],[
+struct sockaddr_storage s; s.__ss_family = 0],
+samba_cv_have_aix_sockaddr_storage=yes,samba_cv_have_aix_sockaddr_storage=no)
+
+if test x"$samba_cv_have_aix_sockaddr_storage" = x"yes"; then
+   AC_DEFINE(HAVE_AIX_SOCKADDR_STORAGE, 1, [Whether struct sockaddr_storage has __sa_family])
 fi
 
 if test $iface = no; then
@@ -3049,7 +3062,9 @@ AC_TRY_RUN([
 #define HAVE_IFACE_AIX 1
 #define AUTOCONF_TEST 1
 #undef _XOPEN_SOURCE_EXTENDED
+#define SOCKET_WRAPPER_NOT_REPLACE
 #include "${srcdir-.}/lib/replace/replace.c"
+#include "${srcdir-.}/lib/replace/snprintf.c"
 #include "${srcdir-.}/lib/interfaces.c"],
            samba_cv_HAVE_IFACE_AIX=yes,samba_cv_HAVE_IFACE_AIX=no,samba_cv_HAVE_IFACE_AIX=cross)])
 CPPFLAGS="$SAVE_CPPFLAGS"
@@ -5089,7 +5104,7 @@ LIBNETAPI_SHARED=
 LIBNETAPI=
 AC_MSG_CHECKING(whether to build the libnetapi shared library)
 AC_ARG_WITH(libnetapi,
-[  --with-libnetapi         Build the libnetapi shared library (default=no undefined API)],
+[  --with-libnetapi        Build the libnetapi shared library (default=yes if shared libs supported)],
 [ case "$withval" in
   *)
      AC_MSG_RESULT(no)

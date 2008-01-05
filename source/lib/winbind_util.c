@@ -35,12 +35,12 @@ bool winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid,
 
 	result = wbcLookupName(dom_name, name, &dom_sid, &type);
 	if (result != WBC_ERR_SUCCESS)
-		return False;
+		return false;
 
 	memcpy(sid, &dom_sid, sizeof(DOM_SID));	
 	*name_type = (enum lsa_SidType)type;	
 
-	return True;	
+	return true;	
 }
 
 /* Call winbindd to convert sid to name */
@@ -59,7 +59,7 @@ bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 
 	result = wbcLookupSid(&dom_sid, &domain_name, &account_name, &type);
 	if (result != WBC_ERR_SUCCESS)
-		return False;
+		return false;
 
 	/* Copy out result */
 
@@ -74,16 +74,16 @@ bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	DEBUG(10, ("winbind_lookup_sid: SUCCESS: SID %s -> %s %s\n", 
 		   sid_string_dbg(sid), domain_name, account_name));
 
-	SAFE_FREE(domain_name);
-	SAFE_FREE(account_name);
+	wbcFreeMemory(domain_name);
+	wbcFreeMemory(account_name);
 	
 	if ((domain && !*domain) || (name && !*name)) {		
 		DEBUG(0,("winbind_lookup_sid: talloc() failed!\n"));
-		return False;
+		return false;
 	}	
 
 
-	return True;
+	return true;
 }
 
 /* Ping winbindd to see it is alive */
@@ -192,8 +192,9 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 	
 	ret = wbcLookupRids(&dom_sid, num_rids, rids,
 			    &dom_name, &namelist, &name_types);
-	if (ret != WBC_ERR_SUCCESS)
-		return False;
+	if (ret != WBC_ERR_SUCCESS) {		
+		return false;
+	}	
 	
 	*domain_name = talloc_strdup(mem_ctx, dom_name);
 	*names       = TALLOC_ARRAY(mem_ctx, const char*, num_rids);
@@ -202,13 +203,13 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 	for(i=0; i<num_rids; i++) {
 		(*names)[i] = talloc_strdup(names, namelist[i]);
 		(*types)[i] = (enum lsa_SidType)name_types[i];
-
-		free(CONST_DISCARD(char*, namelist[i]));		
 	}
-	free(namelist);
-	free(name_types);
+
+	wbcFreeMemory(CONST_DISCARD(char*, dom_name));
+	wbcFreeMemory(namelist);
+	wbcFreeMemory(name_types);
 	
-	return True;	
+	return true;	
 }
 
 /* Ask Winbind to allocate a new uid for us */
@@ -238,7 +239,7 @@ bool winbind_allocate_gid(gid_t *gid)
 bool winbind_lookup_name(const char *dom_name, const char *name, DOM_SID *sid, 
                          enum lsa_SidType *name_type)
 {
-	return False;
+	return false;
 }
 
 /* Call winbindd to convert sid to name */
@@ -247,42 +248,42 @@ bool winbind_lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 			const char **domain, const char **name,
                         enum lsa_SidType *name_type)
 {
-	return False;
+	return false;
 }
 
 /* Ping winbindd to see it is alive */
 
 bool winbind_ping(void)
 {
-	return False;
+	return false;
 }
 
 /* Call winbindd to convert SID to uid */
 
 bool winbind_sid_to_uid(uid_t *puid, const DOM_SID *sid)
 {
-	return False;
+	return false;
 }
 
 /* Call winbindd to convert uid to sid */
 
 bool winbind_uid_to_sid(DOM_SID *sid, uid_t uid)
 {
-	return False;
+	return false;
 }
 
 /* Call winbindd to convert SID to gid */
 
 bool winbind_sid_to_gid(gid_t *pgid, const DOM_SID *sid)
 {
-	return False;	
+	return false;	
 }
 
 /* Call winbindd to convert gid to sid */
 
 bool winbind_gid_to_sid(DOM_SID *sid, gid_t gid)
 {
-	return False;
+	return false;
 }
 
 /* Check for a trusted domain */
@@ -300,21 +301,21 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 			 const char **domain_name,
 			 const char ***names, enum lsa_SidType **types)
 {
-	return False;
+	return false;
 }
 
 /* Ask Winbind to allocate a new uid for us */
 
 bool winbind_allocate_uid(uid_t *uid)
 {
-	return False;
+	return false;
 }
 
 /* Ask Winbind to allocate a new gid for us */
 
 bool winbind_allocate_gid(gid_t *gid)
 {
-	return False;
+	return false;
 }
 
 #endif     /* WITH_WINBIND */

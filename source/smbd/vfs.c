@@ -31,7 +31,7 @@ static_decl_vfs;
 
 struct vfs_init_function_entry {
 	char *name;
- 	vfs_op_tuple *vfs_op_tuples;
+	const vfs_op_tuple *vfs_op_tuples;
 	struct vfs_init_function_entry *prev, *next;
 };
 
@@ -55,7 +55,7 @@ static struct vfs_init_function_entry *vfs_find_backend_entry(const char *name)
 	return NULL;
 }
 
-NTSTATUS smb_register_vfs(int version, const char *name, vfs_op_tuple *vfs_op_tuples)
+NTSTATUS smb_register_vfs(int version, const char *name, const vfs_op_tuple *vfs_op_tuples)
 {
 	struct vfs_init_function_entry *entry = backends;
 
@@ -110,13 +110,13 @@ static inline void vfs_set_operation(struct vfs_ops * vfs, vfs_op_type which,
 
 bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 {
-	vfs_op_tuple *ops;
+	const vfs_op_tuple *ops;
 	char *module_path = NULL;
 	char *module_name = NULL;
 	char *module_param = NULL, *p;
 	int i;
 	vfs_handle_struct *handle;
-	struct vfs_init_function_entry *entry;
+	const struct vfs_init_function_entry *entry;
 	
 	if (!conn||!vfs_object||!vfs_object[0]) {
 		DEBUG(0,("vfs_init_custon() called with NULL pointer or emtpy vfs_object!\n"));

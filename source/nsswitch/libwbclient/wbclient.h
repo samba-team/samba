@@ -177,7 +177,7 @@ wbcErr wbcDomainSequenceNumbers(void);
  * Athenticate functions
  */
 
-wbcErr wbcAuthenticateUser(const char *username, 
+wbcErr wbcAuthenticateUser(const char *username,
 			   const char *password);
 
 

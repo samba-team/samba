@@ -51,4 +51,3 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 {
 	return NT_STATUS_OK;
 }
-

@@ -373,13 +373,17 @@ static struct printjob *print_job_find(const char *sharename, uint32 jobid)
 
 /* Convert a unix jobid to a smb jobid */
 
-static uint32 sysjob_to_jobid_value;
+struct unixjob_traverse_state {
+	int sysjob;
+	uint32 sysjob_to_jobid_value;
+};
 
 static int unixjob_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
-			       TDB_DATA data, void *state)
+			       TDB_DATA data, void *private_data)
 {
 	struct printjob *pjob;
-	int *sysjob = (int *)state;
+	struct unixjob_traverse_state *state =
+		(struct unixjob_traverse_state *)private_data;
 
 	if (!data.dptr || data.dsize == 0)
 		return 0;
@@ -388,10 +392,10 @@ static int unixjob_traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA key,
 	if (key.dsize != sizeof(uint32))
 		return 0;
 
-	if (*sysjob == pjob->sysjob) {
+	if (state->sysjob == pjob->sysjob) {
 		uint32 jobid = IVAL(key.dptr,0);
 
-		sysjob_to_jobid_value = jobid;
+		state->sysjob_to_jobid_value = jobid;
 		return 1;
 	}
 
@@ -407,8 +411,10 @@ uint32 sysjob_to_jobid(int unix_jobid)
 {
 	int services = lp_numservices();
 	int snum;
+	struct unixjob_traverse_state state;
 
-	sysjob_to_jobid_value = (uint32)-1;
+	state.sysjob = unix_jobid;
+	state.sysjob_to_jobid_value = (uint32)-1;
 
 	for (snum = 0; snum < services; snum++) {
 		struct tdb_print_db *pdb;
@@ -418,10 +424,10 @@ uint32 sysjob_to_jobid(int unix_jobid)
 		if (!pdb) {
 			continue;
 		}
-		tdb_traverse(pdb->tdb, unixjob_traverse_fn, &unix_jobid);
+		tdb_traverse(pdb->tdb, unixjob_traverse_fn, &state);
 		release_print_db(pdb);
-		if (sysjob_to_jobid_value != (uint32)-1)
-			return sysjob_to_jobid_value;
+		if (state.sysjob_to_jobid_value != (uint32)-1)
+			return state.sysjob_to_jobid_value;
 	}
 	return (uint32)-1;
 }

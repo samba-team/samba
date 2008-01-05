@@ -228,13 +228,14 @@ wbcErr wbcGetgrnam(const char *name, struct group **grp)
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	*grp = copy_group_entry(&response.data.gr, response.extra_data.data);
+	*grp = copy_group_entry(&response.data.gr,
+				(char*)response.extra_data.data);
 	BAIL_ON_PTR_ERROR(*grp, wbc_status);
 
  done:
 	if (response.extra_data.data)
 		free(response.extra_data.data);
-	
+
 	return wbc_status;
 }
 
@@ -270,7 +271,8 @@ wbcErr wbcGetgrgid(gid_t gid, struct group **grp)
 					&response);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
-	*grp = copy_group_entry(&response.data.gr, response.extra_data.data);
+	*grp = copy_group_entry(&response.data.gr,
+				(char*)response.extra_data.data);
 	BAIL_ON_PTR_ERROR(*grp, wbc_status);
 
  done:

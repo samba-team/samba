@@ -34,7 +34,7 @@ static bool cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	if ((SMB_BIG_UINT)offset >> 32)
 		bigoffset = True;
 
-	set_message(cli->outbuf,bigoffset ? 12 : 10,0,True);
+	cli_set_message(cli->outbuf,bigoffset ? 12 : 10,0,True);
 
 	SCVAL(cli->outbuf,smb_com,SMBreadX);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -65,8 +65,8 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	size_t size2;
 	size_t readsize;
 	ssize_t total = 0;
-	/* We can only do direct reads if not signing. */
-	bool direct_reads = !client_is_signing_on(cli);
+	/* We can only do direct reads if not signing or encrypting. */
+	bool direct_reads = !client_is_signing_on(cli) && !cli_encryption_on(cli);
 
 	if (size == 0)
 		return 0;
@@ -76,7 +76,9 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	 * rounded down to a multiple of 1024.
 	 */
 
-	if (client_is_signing_on(cli) == False && (cli->posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
+	if (client_is_signing_on(cli) == false &&
+			cli_encryption_on(cli) == false &&
+			(cli->posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
 		readsize = CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE;
 	} else if (cli->capabilities & CAP_LARGE_READX) {
 		if (cli->is_samba) {
@@ -203,7 +205,7 @@ static bool cli_issue_readraw(struct cli_state *cli, int fnum, off_t offset,
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,10,0,True);
+	cli_set_message(cli->outbuf,10,0,True);
 		
 	SCVAL(cli->outbuf,smb_com,SMBreadbraw);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -295,8 +297,8 @@ static bool cli_issue_write(struct cli_state *cli,
 {
 	char *p;
 	bool large_writex = false;
-	/* We can only do direct writes if not signing. */
-	bool direct_writes = !client_is_signing_on(cli);
+	/* We can only do direct writes if not signing and not encrypting. */
+	bool direct_writes = !client_is_signing_on(cli) && !cli_encryption_on(cli);
 
 	if (!direct_writes && size + 1 > cli->bufsize) {
 		cli->outbuf = (char *)SMB_REALLOC(cli->outbuf, size + 1024);
@@ -319,9 +321,9 @@ static bool cli_issue_write(struct cli_state *cli,
 	}
 
 	if (large_writex) {
-		set_message(cli->outbuf,14,0,True);
+		cli_set_message(cli->outbuf,14,0,True);
 	} else {
-		set_message(cli->outbuf,12,0,True);
+		cli_set_message(cli->outbuf,12,0,True);
 	}
 
 	SCVAL(cli->outbuf,smb_com,SMBwriteX);
@@ -404,16 +406,17 @@ ssize_t cli_write(struct cli_state *cli,
 
         if (write_mode == 0 &&
 			!client_is_signing_on(cli) &&
+			!cli_encryption_on(cli) &&
 			(cli->posix_capabilities & CIFS_UNIX_LARGE_WRITE_CAP) &&
 			(cli->capabilities & CAP_LARGE_FILES)) {
 		/* Only do massive writes if we can do them direct
-		 * with no signing - not on a pipe. */
+		 * with no signing or encrypting - not on a pipe. */
 		writesize = CLI_SAMBA_MAX_POSIX_LARGE_WRITEX_SIZE;
-	} else if (cli->capabilities & CAP_LARGE_READX) {
+	} else if (cli->capabilities & CAP_LARGE_WRITEX) {
 		if (cli->is_samba) {
-			writesize = CLI_SAMBA_MAX_LARGE_READX_SIZE;
+			writesize = CLI_SAMBA_MAX_LARGE_WRITEX_SIZE;
 		} else {
-			writesize = CLI_WINDOWS_MAX_LARGE_READX_SIZE;
+			writesize = CLI_WINDOWS_MAX_LARGE_WRITEX_SIZE;
 		}
 	} else {
 		writesize = (cli->max_xmit - (smb_size+32)) & ~1023;
@@ -471,7 +474,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 		memset(cli->outbuf,'\0',smb_size);
 		memset(cli->inbuf,'\0',smb_size);
 
-		set_message(cli->outbuf,5, 0,True);
+		cli_set_message(cli->outbuf,5, 0,True);
 
 		SCVAL(cli->outbuf,smb_com,SMBwrite);
 		SSVAL(cli->outbuf,smb_tid,cli->cnum);

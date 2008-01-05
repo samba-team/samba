@@ -472,6 +472,7 @@ typedef struct {
 	int iAioWriteSize;
 	int iMap_readonly;
 	int iDirectoryNameCacheSize;
+	int ismb_encrypt;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -617,6 +618,7 @@ static service sDefault = {
 #else
 	100,			/* iDirectoryNameCacheSize */
 #endif
+	Auto,			/* ismb_encrypt */
 	NULL,			/* Parametric options */
 
 	""			/* dummy */
@@ -1027,6 +1029,7 @@ static struct parm_struct parm_table[] = {
 	{"use spnego", P_BOOL, P_GLOBAL, &Globals.bUseSpnego, NULL, NULL, FLAG_ADVANCED}, 
 	{"client signing", P_ENUM, P_GLOBAL, &Globals.client_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
 	{"server signing", P_ENUM, P_GLOBAL, &Globals.server_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
+	{"smb encrypt", P_ENUM, P_LOCAL, &sDefault.ismb_encrypt, NULL, enum_smb_signing_vals, FLAG_ADVANCED},
 	{"client use spnego", P_BOOL, P_GLOBAL, &Globals.bClientUseSpnego, NULL, NULL, FLAG_ADVANCED}, 
 	{"client ldap sasl wrapping", P_ENUM, P_GLOBAL, &Globals.client_ldap_sasl_wrapping, NULL, enum_ldap_sasl_wrapping, FLAG_ADVANCED},
 	{"enable asu support", P_BOOL, P_GLOBAL, &Globals.bASUSupport, NULL, NULL, FLAG_ADVANCED}, 
@@ -2173,6 +2176,7 @@ FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize)
 FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize)
 FN_LOCAL_INTEGER(lp_map_readonly, iMap_readonly)
 FN_LOCAL_INTEGER(lp_directory_name_cache_size, iDirectoryNameCacheSize)
+FN_LOCAL_INTEGER(lp_smb_encrypt, ismb_encrypt)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_LIST(lp_winbind_nss_info, &Globals.szWinbindNssInfo)
@@ -6218,7 +6222,9 @@ bool lp_use_sendfile(int snum)
 	if (Protocol < PROTOCOL_NT1) {
 		return False;
 	}
-	return (_lp_use_sendfile(snum) && (get_remote_arch() != RA_WIN95) && !srv_is_signing_active());
+	return (_lp_use_sendfile(snum) &&
+			(get_remote_arch() != RA_WIN95) &&
+			!srv_is_signing_active());
 }
 
 /*******************************************************************

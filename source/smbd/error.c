@@ -24,34 +24,6 @@ extern struct unix_error_map unix_dos_nt_errmap[];
 
 extern uint32 global_client_caps;
 
-/****************************************************************************
- Create an error packet from errno.
-****************************************************************************/
-
-int unix_error_packet(char *outbuf,int def_class,uint32 def_code, NTSTATUS def_status, int line, const char *file)
-{
-	int eclass=def_class;
-	int ecode=def_code;
-	NTSTATUS ntstatus = def_status;
-	int i=0;
-
-	if (errno != 0) {
-		DEBUG(3,("unix_error_packet: error string = %s\n",strerror(errno)));
-  
-		while (unix_dos_nt_errmap[i].dos_class != 0) {
-			if (unix_dos_nt_errmap[i].unix_error == errno) {
-				eclass = unix_dos_nt_errmap[i].dos_class;
-				ecode = unix_dos_nt_errmap[i].dos_code;
-				ntstatus = unix_dos_nt_errmap[i].nt_error;
-				break;
-			}
-			i++;
-		}
-	}
-
-	return error_packet(outbuf,eclass,ecode,ntstatus,line,file);
-}
-
 bool use_nt_status(void)
 {
 	return lp_nt_status_support() && (global_client_caps & CAP_STATUS32);
@@ -111,7 +83,7 @@ void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatu
 
 int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
 {
-	int outsize = set_message(outbuf,0,0,True);
+	int outsize = srv_set_message(outbuf,0,0,True);
 	error_packet_set(outbuf, eclass, ecode, ntstatus, line, file);
 	return outsize;
 }
@@ -150,36 +122,6 @@ void reply_both_error(struct smb_request *req, uint8 eclass, uint32 ecode,
 			 line, file);
 }
 
-void reply_unix_error(struct smb_request *req, uint8 defclass, uint32 defcode,
-		      NTSTATUS defstatus, int line, const char *file)
-{
-	int eclass=defclass;
-	int ecode=defcode;
-	NTSTATUS ntstatus = defstatus;
-	int i=0;
-
-	TALLOC_FREE(req->outbuf);
-	reply_outbuf(req, 0, 0);
-
-	if (errno != 0) {
-		DEBUG(3,("unix_error_packet: error string = %s\n",
-			 strerror(errno)));
-
-		while (unix_dos_nt_errmap[i].dos_class != 0) {
-			if (unix_dos_nt_errmap[i].unix_error == errno) {
-				eclass = unix_dos_nt_errmap[i].dos_class;
-				ecode = unix_dos_nt_errmap[i].dos_code;
-				ntstatus = unix_dos_nt_errmap[i].nt_error;
-				break;
-			}
-			i++;
-		}
-	}
-
-	error_packet_set((char *)req->outbuf, eclass, ecode, ntstatus,
-			 line, file);
-}
-
 void reply_openerror(struct smb_request *req, NTSTATUS status)
 {
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_COLLISION)) {
@@ -196,3 +138,32 @@ void reply_openerror(struct smb_request *req, NTSTATUS status)
 	}
 }
 
+void reply_unix_error(struct smb_request *req, uint8 defclass, uint32 defcode,
+			NTSTATUS defstatus, int line, const char *file)
+{
+	int eclass=defclass;
+	int ecode=defcode;
+	NTSTATUS ntstatus = defstatus;
+	int i=0;
+
+	TALLOC_FREE(req->outbuf);
+	reply_outbuf(req, 0, 0);
+
+	if (errno != 0) {
+		DEBUG(3,("unix_error_packet: error string = %s\n",
+			strerror(errno)));
+
+		while (unix_dos_nt_errmap[i].dos_class != 0) {
+			if (unix_dos_nt_errmap[i].unix_error == errno) {
+				eclass = unix_dos_nt_errmap[i].dos_class;
+				ecode = unix_dos_nt_errmap[i].dos_code;
+				ntstatus = unix_dos_nt_errmap[i].nt_error;
+				break;
+			}
+			i++;
+		}
+	}
+
+	error_packet_set((char *)req->outbuf, eclass, ecode, ntstatus,
+		line, file);
+}

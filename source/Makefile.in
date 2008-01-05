@@ -375,7 +375,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clistr.o libsmb/cliquota.o libsmb/clifsinfo.o libsmb/clidfs.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o $(ERRORMAP_OBJ) libsmb/clirap2.o \
-	     $(DOSERR_OBJ) \
+	     libsmb/smb_seal.o $(DOSERR_OBJ) \
 	     $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(LIBNMB_OBJ)
 
 RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o
@@ -552,7 +552,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
                smbd/reply.o smbd/sesssetup.o smbd/trans2.o smbd/uid.o \
 	       smbd/dosmode.o smbd/filename.o smbd/open.o smbd/close.o \
 	       smbd/blocking.o smbd/sec_ctx.o smbd/srvstr.o \
-	       smbd/vfs.o smbd/statcache.o \
+	       smbd/vfs.o smbd/statcache.o smbd/seal.o \
                smbd/posix_acls.o lib/sysacls.o $(SERVER_MUTEX_OBJ) \
 	       smbd/process.o smbd/service.o smbd/error.o \
 	       printing/printfsp.o lib/sysquotas.o lib/sysquotas_linux.o \
@@ -677,7 +677,7 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
 		   $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ)
 
-LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o $(TDB_BASE_OBJ)
+LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o $(TDBBASE_OBJ)
 
 # This shared library is intended for linking with unit test programs
 # to test Samba internals.  It's called libbigballofmud.so to
@@ -1415,7 +1415,7 @@ bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 
 bin/libnetapi.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBNETAPI_OBJ)
 	@echo Linking shared library $@
-	@$(SHLD_DSO) $(LIBNETAPI_OBJ) $(LIBS) \
+	@$(SHLD_DSO) $(LIBNETAPI_OBJ) @LIBWBCLIENT_SHARED@ $(LIBS) \
 		$(LDAP_LIBS) $(KRB5LIBS) $(NSCD_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
@@ -1425,7 +1425,7 @@ bin/libnetapi.a: $(BINARY_PREREQS) $(LIBNETAPI_OBJ)
 
 bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
 	@echo Linking shared library $@
-	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) $(LIBS) \
+	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) @LIBWBCLIENT_SHARED@ $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
@@ -1532,7 +1532,7 @@ bin/winbindd@EXEEXT@: $(BINARY_PREREQS) $(WINBINDD_OBJ) @BUILD_POPT@ @LIBWBCLIEN
 		@POPTLIBS@ $(KRB5LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) \
 		@WINBIND_LIBS@
 
-bin/vlp@EXEEXT@: $(BINARY_PREREQS) $(VLP_OBJ)
+bin/vlp@EXEEXT@: $(BINARY_PREREQS) $(VLP_OBJ) @LIBWBCLIENT_SHARED@
 	@echo "Linking $@"
 	@$(CC) $(FLAGS) -o $@ $(VLP_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @POPTLIBS@ \
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) @LIBWBCLIENT_SHARED@
@@ -1997,6 +1997,7 @@ clean: delheaders
 		$(TOPFILES) $(BIN_PROGS) $(SBIN_PROGS) $(ROOT_SBIN_PROGS) \
 		$(MODULES) $(TORTURE_PROGS) $(LIBSMBCLIENT) $(LIBADDNS) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
+		bin/libwbclient.so.0 bin/timelimit \
 		.headers.stamp */src/*.o proto_exists
 	-rm -rf t_dir
 
@@ -2128,6 +2129,14 @@ Makefile: $(srcdir)/Makefile.in config.status
 
 ######################################################################
 # Samba Testing Framework
+
+# Check shared libs for unresolved symbols
+test_shlibs: $(SHLIBS)
+	@echo "Testing $(SHLIBS) "
+	@for module in $(SHLIBS); do \
+		./script/tests/dlopen.sh bin/$${module}.@SHLIBEXT@ \
+			|| exit 1; \
+	done
 
 # Check for NSS module problems.
 test_nss_modules: nss_modules

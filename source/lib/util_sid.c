@@ -382,7 +382,7 @@ bool sid_linearize(char *outbuf, size_t len, const DOM_SID *sid)
 {
 	size_t i;
 
-	if (len < sid_size(sid))
+	if (len < ndr_size_dom_sid(sid, 0))
 		return False;
 
 	SCVAL(outbuf,0,sid->sid_rev_num);
@@ -495,18 +495,6 @@ bool sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 }
 
 /*****************************************************************
- Calculates size of a sid.
-*****************************************************************/  
-
-size_t sid_size(const DOM_SID *sid)
-{
-	if (sid == NULL)
-		return 0;
-
-	return sid->num_auths * sizeof(uint32) + 8;
-}
-
-/*****************************************************************
  Returns true if SID is internal (and non-mappable).
 *****************************************************************/
 
@@ -535,7 +523,7 @@ bool non_mappable_sid(DOM_SID *sid)
 char *sid_binstring(const DOM_SID *sid)
 {
 	char *buf, *s;
-	int len = sid_size(sid);
+	int len = ndr_size_dom_sid(sid, 0);
 	buf = (char *)SMB_MALLOC(len);
 	if (!buf)
 		return NULL;
@@ -553,7 +541,7 @@ char *sid_binstring(const DOM_SID *sid)
 char *sid_binstring_hex(const DOM_SID *sid)
 {
 	char *buf, *s;
-	int len = sid_size(sid);
+	int len = ndr_size_dom_sid(sid, 0);
 	buf = (char *)SMB_MALLOC(len);
 	if (!buf)
 		return NULL;

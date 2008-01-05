@@ -118,8 +118,7 @@ static void sessionsetup_start_signing_engine(
  Send a security blob via a session setup reply.
 ****************************************************************************/
 
-static void reply_sesssetup_blob(connection_struct *conn,
-				 struct smb_request *req,
+static void reply_sesssetup_blob(struct smb_request *req,
 				 DATA_BLOB blob,
 				 NTSTATUS nt_status)
 {
@@ -139,7 +138,7 @@ static void reply_sesssetup_blob(connection_struct *conn,
 	}
 
 	show_msg((char *)req->outbuf);
-	send_smb(smbd_server_fd(),(char *)req->outbuf);
+	srv_send_smb(smbd_server_fd(),(char *)req->outbuf,req->encrypted);
 	TALLOC_FREE(req->outbuf);
 }
 
@@ -247,8 +246,7 @@ static bool make_krb5_skew_error(DATA_BLOB *pblob_out)
  Reply to a session setup spnego negotiate packet for kerberos.
 ****************************************************************************/
 
-static void reply_spnego_kerberos(connection_struct *conn,
-				  struct smb_request *req,
+static void reply_spnego_kerberos(struct smb_request *req,
 				  DATA_BLOB *secblob,
 				  uint16 vuid,
 				  bool *p_invalidate_vuid)
@@ -539,7 +537,9 @@ static void reply_spnego_kerberos(connection_struct *conn,
 		}
 	}
 
-	server_info->was_mapped |= username_was_mapped;
+	if (username_was_mapped) {
+		server_info->was_mapped = username_was_mapped;
+	}
 
 	/* we need to build the token for the user. make_server_info_guest()
 	   already does this */
@@ -605,7 +605,7 @@ static void reply_spnego_kerberos(connection_struct *conn,
 	}
 	response = spnego_gen_auth_response(&ap_rep_wrapped, ret,
 			OID_KERBEROS5_OLD);
-	reply_sesssetup_blob(conn, req, response, ret);
+	reply_sesssetup_blob(req, response, ret);
 
 	data_blob_free(&ap_rep);
 	data_blob_free(&ap_rep_wrapped);
@@ -623,8 +623,7 @@ static void reply_spnego_kerberos(connection_struct *conn,
  leg of the NTLM auth steps.
 ***************************************************************************/
 
-static void reply_spnego_ntlmssp(connection_struct *conn,
-				 struct smb_request *req,
+static void reply_spnego_ntlmssp(struct smb_request *req,
 				 uint16 vuid,
 				 AUTH_NTLMSSP_STATE **auth_ntlmssp_state,
 				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status,
@@ -693,7 +692,7 @@ static void reply_spnego_ntlmssp(connection_struct *conn,
 		response = *ntlmssp_blob;
 	}
 
-	reply_sesssetup_blob(conn, req, response, nt_status);
+	reply_sesssetup_blob(req, response, nt_status);
 	if (wrap) {
 		data_blob_free(&response);
 	}
@@ -756,8 +755,7 @@ NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in, DATA_BLOB *pblob_out,
  Reply to a session setup spnego negotiate packet.
 ****************************************************************************/
 
-static void reply_spnego_negotiate(connection_struct *conn,
-				   struct smb_request *req,
+static void reply_spnego_negotiate(struct smb_request *req,
 				   uint16 vuid,
 				   DATA_BLOB blob1,
 				   AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
@@ -783,7 +781,7 @@ static void reply_spnego_negotiate(connection_struct *conn,
 	if ( got_kerberos_mechanism && ((lp_security()==SEC_ADS) ||
 				lp_use_kerberos_keytab()) ) {
 		bool destroy_vuid = True;
-		reply_spnego_kerberos(conn, req, &secblob, vuid,
+		reply_spnego_kerberos(req, &secblob, vuid,
 				      &destroy_vuid);
 		data_blob_free(&secblob);
 		if (destroy_vuid) {
@@ -811,7 +809,7 @@ static void reply_spnego_negotiate(connection_struct *conn,
 
 	data_blob_free(&secblob);
 
-	reply_spnego_ntlmssp(conn, req, vuid, auth_ntlmssp_state,
+	reply_spnego_ntlmssp(req, vuid, auth_ntlmssp_state,
 			     &chal, status, True);
 
 	data_blob_free(&chal);
@@ -824,8 +822,7 @@ static void reply_spnego_negotiate(connection_struct *conn,
  Reply to a session setup spnego auth packet.
 ****************************************************************************/
 
-static void reply_spnego_auth(connection_struct *conn,
-			      struct smb_request *req,
+static void reply_spnego_auth(struct smb_request *req,
 			      uint16 vuid,
 			      DATA_BLOB blob1,
 			      AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
@@ -860,7 +857,7 @@ static void reply_spnego_auth(connection_struct *conn,
 			if ( got_krb5_mechanism && ((lp_security()==SEC_ADS) ||
 						lp_use_kerberos_keytab()) ) {
 				bool destroy_vuid = True;
-				reply_spnego_kerberos(conn, req, &secblob,
+				reply_spnego_kerberos(req, &secblob,
 						      vuid, &destroy_vuid);
 				data_blob_free(&secblob);
 				data_blob_free(&auth);
@@ -892,7 +889,7 @@ static void reply_spnego_auth(connection_struct *conn,
 
 	data_blob_free(&auth);
 
-	reply_spnego_ntlmssp(conn, req, vuid,
+	reply_spnego_ntlmssp(req, vuid,
 			     auth_ntlmssp_state,
 			     &auth_reply, status, True);
 
@@ -1104,8 +1101,7 @@ static NTSTATUS check_spnego_blob_complete(uint16 smbpid, uint16 vuid,
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-static void reply_sesssetup_and_X_spnego(connection_struct *conn,
-					 struct smb_request *req)
+static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 {
 	uint8 *p;
 	DATA_BLOB blob1;
@@ -1225,7 +1221,7 @@ static void reply_sesssetup_and_X_spnego(connection_struct *conn,
 
 		/* its a negTokenTarg packet */
 
-		reply_spnego_negotiate(conn, req, vuid, blob1,
+		reply_spnego_negotiate(req, vuid, blob1,
 				       &vuser->auth_ntlmssp_state);
 		data_blob_free(&blob1);
 		return;
@@ -1235,7 +1231,7 @@ static void reply_sesssetup_and_X_spnego(connection_struct *conn,
 
 		/* its a auth packet */
 
-		reply_spnego_auth(conn, req, vuid, blob1,
+		reply_spnego_auth(req, vuid, blob1,
 				  &vuser->auth_ntlmssp_state);
 		data_blob_free(&blob1);
 		return;
@@ -1260,7 +1256,7 @@ static void reply_sesssetup_and_X_spnego(connection_struct *conn,
 
 		data_blob_free(&blob1);
 
-		reply_spnego_ntlmssp(conn, req, vuid,
+		reply_spnego_ntlmssp(req, vuid,
 				     &vuser->auth_ntlmssp_state,
 				     &chal, status, False);
 		data_blob_free(&chal);
@@ -1326,7 +1322,7 @@ static void setup_new_vc_session(void)
  Reply to a session setup command.
 ****************************************************************************/
 
-void reply_sesssetup_and_X(connection_struct *conn, struct smb_request *req)
+void reply_sesssetup_and_X(struct smb_request *req)
 {
 	int sess_vuid;
 	int smb_bufsize;
@@ -1377,7 +1373,7 @@ void reply_sesssetup_and_X(connection_struct *conn, struct smb_request *req)
 			setup_new_vc_session();
 		}
 
-		reply_sesssetup_and_X_spnego(conn, req);
+		reply_sesssetup_and_X_spnego(req);
 		END_PROFILE(SMBsesssetupX);
 		return;
 	}

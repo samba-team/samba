@@ -141,3 +141,12 @@ const char *ads_errstr(ADS_STATUS status)
 	}
 }
 
+#ifdef HAVE_GSSAPI
+NTSTATUS gss_err_to_ntstatus(uint32 maj, uint32 min)
+{
+        ADS_STATUS adss = ADS_ERROR_GSS(maj, min);
+        DEBUG(10,("gss_err_to_ntstatus: Error %s\n",
+                ads_errstr(adss) ));
+        return ads_ntstatus(adss);
+}
+#endif

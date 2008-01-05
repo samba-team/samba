@@ -507,7 +507,8 @@ static bool srv_io_share_info502_str(const char *desc, SH_INFO_502_STR *sh502, p
 
 		if(UNMARSHALLING(ps)) {
 
-			sh502->ptrs->sd_size = sh502->sd_size = sec_desc_size(sh502->sd);
+			sh502->ptrs->sd_size = sh502->sd_size =
+				ndr_size_security_descriptor(sh502->sd, 0);
 
 			prs_set_offset(ps, old_offset + sh502->reserved);
 		}
@@ -1460,7 +1461,7 @@ void init_srv_q_net_share_add(SRV_Q_NET_SHARE_ADD *q, const char *srvname,
 {
 	switch(level) {
 	case 502: {
-		size_t sd_size = sec_desc_size(sd);
+		size_t sd_size = ndr_size_security_descriptor(sd, 0);
 		q->ptr_srv_name = 1;
 		init_unistr2(&q->uni_srv_name, srvname, UNI_STR_TERMINATE);
 		q->info.switch_value = q->info_level = level;

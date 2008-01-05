@@ -289,7 +289,8 @@ static struct user_auth_info cmdline_auth_info = {
 	NULL,	/* password */
 	false,	/* got_pass */
 	false,	/* use_kerberos */
-	Undefined /* signing state */
+	Undefined, /* signing state */
+	false	/* smb_encrypt */
 };
 
 const char *get_cmdline_auth_info_username(void)
@@ -362,9 +363,20 @@ void set_cmdline_auth_info_use_krb5_ticket(void)
 	cmdline_auth_info.got_pass = true;
 }
 
+/* This should only be used by lib/popt_common.c JRA */
+void set_cmdline_auth_info_smb_encrypt(void)
+{
+	cmdline_auth_info.smb_encrypt = true;
+}
+
 bool get_cmdline_auth_info_got_pass(void)
 {
 	return cmdline_auth_info.got_pass;
+}
+
+bool get_cmdline_auth_info_smb_encrypt(void)
+{
+	return cmdline_auth_info.smb_encrypt;
 }
 
 bool get_cmdline_auth_info_copy(struct user_auth_info *info)
@@ -605,6 +617,19 @@ void show_msg(char *buf)
 }
 
 /*******************************************************************
+ Set the length and marker of an encrypted smb packet.
+********************************************************************/
+
+void smb_set_enclen(char *buf,int len,uint16 enc_ctx_num)
+{
+	_smb_setlen(buf,len);
+
+	SCVAL(buf,4,0xFF);
+	SCVAL(buf,5,'E');
+	SSVAL(buf,6,enc_ctx_num);
+}
+
+/*******************************************************************
  Set the length and marker of an smb packet.
 ********************************************************************/
 
@@ -619,21 +644,6 @@ void smb_setlen(char *buf,int len)
 }
 
 /*******************************************************************
- Setup the word count and byte count for a smb message.
-********************************************************************/
-
-int set_message(char *buf,int num_words,int num_bytes,bool zero)
-{
-	if (zero && (num_words || num_bytes)) {
-		memset(buf + smb_size,'\0',num_words*2 + num_bytes);
-	}
-	SCVAL(buf,smb_wct,num_words);
-	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
-	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
-	return (smb_size + num_words*2 + num_bytes);
-}
-
-/*******************************************************************
  Setup only the byte count for a smb message.
 ********************************************************************/
 
@@ -641,18 +651,8 @@ int set_message_bcc(char *buf,int num_bytes)
 {
 	int num_words = CVAL(buf,smb_wct);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);
-	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
+	_smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
 	return (smb_size + num_words*2 + num_bytes);
-}
-
-/*******************************************************************
- Setup only the byte count for a smb message, using the end of the
- message as a marker.
-********************************************************************/
-
-int set_message_end(void *outbuf,void *end_ptr)
-{
-	return set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
 }
 
 /*******************************************************************

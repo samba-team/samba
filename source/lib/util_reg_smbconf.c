@@ -57,7 +57,7 @@ done:
  */
 bool registry_init_regdb(void)
 {
-	bool ret = False;
+	bool ret = false;
 	int saved_errno = 0;
 	static REGISTRY_HOOK smbconf_reg_hook = {KEY_SMBCONF, &smbconf_reg_ops};
 
@@ -78,7 +78,7 @@ bool registry_init_regdb(void)
 		goto done;
 	}
 
-	ret = True;
+	ret = true;
 
 done:
 	return ret;

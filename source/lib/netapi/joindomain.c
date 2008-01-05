@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  NetApi Join Support
- *  Copyright (C) Guenther Deschner 2007
+ *  Copyright (C) Guenther Deschner 2007-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -54,8 +54,9 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			return ntstatus_to_werror(status);
 		}
-		r->in.server_name = talloc_strdup(mem_ctx, info->domain_controller_name);
-		W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
+		r->in.dc_name = talloc_strdup(mem_ctx,
+					      info->domain_controller_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	}
 
 	if (account_ou) {
@@ -69,8 +70,8 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	}
 
 	if (password) {
-		r->in.password = talloc_strdup(mem_ctx, password);
-		W_ERROR_HAVE_NO_MEMORY(r->in.password);
+		r->in.admin_password = talloc_strdup(mem_ctx, password);
+		W_ERROR_HAVE_NO_MEMORY(r->in.admin_password);
 	}
 
 	r->in.join_flags = join_flags;
@@ -89,12 +90,10 @@ static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
-	struct wkssvc_PasswordBuffer encrypted_password;
+	struct wkssvc_PasswordBuffer *encrypted_password = NULL;
 	NTSTATUS status;
 	WERROR werr;
 	unsigned int old_timeout = 0;
-
-	ZERO_STRUCT(encrypted_password);
 
 	status = cli_full_connection(&cli, NULL, server_name,
 				     NULL, 0,
@@ -114,7 +113,7 @@ static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
 	if (!pipe_cli) {
 		werr = ntstatus_to_werror(status);
 		goto done;
-	};
+	}
 
 	if (password) {
 		encode_wkssvc_join_password_buffer(ctx,
@@ -128,7 +127,7 @@ static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
 	status = rpccli_wkssvc_NetrJoinDomain2(pipe_cli, ctx,
 					       server_name, domain_name,
 					       account_ou, Account,
-					       &encrypted_password,
+					       encrypted_password,
 					       join_flags, &werr);
 	if (!NT_STATUS_IS_OK(status)) {
 		werr = ntstatus_to_werror(status);
@@ -224,8 +223,8 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	W_ERROR_NOT_OK_RETURN(werr);
 
 	if (server_name) {
-		r->in.server_name = talloc_strdup(mem_ctx, server_name);
-		W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
+		r->in.dc_name = talloc_strdup(mem_ctx, server_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	} else {
 
 		NTSTATUS status;
@@ -233,7 +232,6 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
-				 DS_IS_FLAT_NAME |
 				 DS_RETURN_DNS_NAME;
 		if (lp_realm()) {
 			domain = lp_realm();
@@ -245,8 +243,9 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		if (!NT_STATUS_IS_OK(status)) {
 			return ntstatus_to_werror(status);
 		}
-		r->in.server_name = talloc_strdup(mem_ctx, info->domain_controller_name);
-		W_ERROR_HAVE_NO_MEMORY(r->in.server_name);
+		r->in.dc_name = talloc_strdup(mem_ctx,
+					      info->domain_controller_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	}
 
 	if (account) {
@@ -255,8 +254,8 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	}
 
 	if (password) {
-		r->in.password = talloc_strdup(mem_ctx, password);
-		W_ERROR_HAVE_NO_MEMORY(r->in.password);
+		r->in.admin_password = talloc_strdup(mem_ctx, password);
+		W_ERROR_HAVE_NO_MEMORY(r->in.admin_password);
 	}
 
 	r->in.unjoin_flags = unjoin_flags;
@@ -276,12 +275,10 @@ static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 {
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_cli = NULL;
-	struct wkssvc_PasswordBuffer encrypted_password;
+	struct wkssvc_PasswordBuffer *encrypted_password = NULL;
 	NTSTATUS status;
 	WERROR werr;
 	unsigned int old_timeout = 0;
-
-	ZERO_STRUCT(encrypted_password);
 
 	status = cli_full_connection(&cli, NULL, server_name,
 				     NULL, 0,
@@ -301,7 +298,7 @@ static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 	if (!pipe_cli) {
 		werr = ntstatus_to_werror(status);
 		goto done;
-	};
+	}
 
 	if (password) {
 		encode_wkssvc_join_password_buffer(ctx,
@@ -315,7 +312,7 @@ static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 	status = rpccli_wkssvc_NetrUnjoinDomain2(pipe_cli, ctx,
 						 server_name,
 						 account,
-						 &encrypted_password,
+						 encrypted_password,
 						 unjoin_flags,
 						 &werr);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -408,7 +405,7 @@ static WERROR NetGetJoinInformationRemote(struct libnetapi_ctx *ctx,
 	if (!pipe_cli) {
 		werr = ntstatus_to_werror(status);
 		goto done;
-	};
+	}
 
 	status = rpccli_wkssvc_NetrGetJoinInformation(pipe_cli, ctx,
 						      server_name,
