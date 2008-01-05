@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  Join Support (cmdline + netapi)
- *  Copyright (C) Guenther Deschner 2007
+ *  Copyright (C) Guenther Deschner 2007-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -56,7 +56,10 @@ int main(int argc, char **argv)
 
 	if (argc < 2) {
 		printf("usage: netdomjoin\n");
-		printf("\t[hostname=HOSTNAME] [domain=DOMAIN] <ou=OU> <usero=USERO> <passwordo=PASSWORDO> <userd=USERD> <passwordd=PASSWORDD>\n");
+		printf("\t[hostname] [domain=DOMAIN] <ou=OU> "
+		       "<usero=USERO> <passwordo=PASSWORDO> "
+		       "<userd=USERD> <passwordd=PASSWORDD> "
+		       "<debug=DEBUGLEVEL>\n");
 		return 0;
 	}
 
@@ -86,6 +89,11 @@ int main(int argc, char **argv)
 			const char *str = NULL;
 			str = get_string_param(argv[i]);
 			libnetapi_set_password(ctx, str);
+		}
+		if (strncasecmp(argv[i], "debug", strlen("debug"))== 0) {
+			const char *str = NULL;
+			str = get_string_param(argv[i]);
+			libnetapi_set_debuglevel(ctx, str);
 		}
 	}
 

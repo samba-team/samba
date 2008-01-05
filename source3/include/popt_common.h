@@ -49,6 +49,7 @@ struct user_auth_info {
 	bool got_pass;
 	bool use_kerberos;
 	int signing_state;
+	bool smb_encrypt;
 };
 
 #endif /* _POPT_COMMON_H */

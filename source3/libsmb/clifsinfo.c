@@ -634,3 +634,36 @@ NTSTATUS cli_gss_smb_encryption_start(struct cli_state *cli)
 	return NT_STATUS_NOT_SUPPORTED;
 }
 #endif
+
+/********************************************************************
+ Ensure a connection is encrypted.
+********************************************************************/
+
+NTSTATUS cli_force_encryption(struct cli_state *c,
+			const char *username,
+			const char *password,
+			const char *domain)
+{
+	uint16 major, minor;
+	uint32 caplow, caphigh;
+
+	if (!SERVER_HAS_UNIX_CIFS(c)) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
+	if (!cli_unix_extensions_version(c, &major, &minor, &caplow, &caphigh)) {
+		return NT_STATUS_UNKNOWN_REVISION;
+	}
+
+	if (!(caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP)) {
+		return NT_STATUS_UNSUPPORTED_COMPRESSION;
+	}
+
+	if (c->use_kerberos) {
+		return cli_gss_smb_encryption_start(c);
+	}
+	return cli_raw_ntlm_smb_encryption_start(c,
+					username,
+					password,
+					domain);
+}

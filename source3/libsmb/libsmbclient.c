@@ -6,6 +6,7 @@
    Copyright (C) John Terpstra 2000
    Copyright (C) Tom Jansen (Ninja ISD) 2002 
    Copyright (C) Derrell Lipman 2003, 2004
+   Copyright (C) Jeremy Allison 2007, 2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -739,6 +740,12 @@ smbc_server(SMBCCTX *context,
                                         password, strlen(password)+1);
                         }
 
+			/*
+			 * We don't need to renegotiate encryption
+			 * here as the encryption context is not per
+			 * tid.
+			 */
+
                         if (! cli_send_tconX(srv->cli, share, "?????",
                                              password, strlen(password)+1)) {
 
@@ -903,6 +910,30 @@ smbc_server(SMBCCTX *context,
 
 	DEBUG(4,(" tconx ok\n"));
 
+	if (context->internal->_smb_encryption_level) {
+		/* Attempt UNIX smb encryption. */
+		if (!NT_STATUS_IS_OK(cli_force_encryption(c,
+						username_used,
+						password,
+						workgroup))) {
+
+			/*
+			 * context->internal->_smb_encryption_level == 1
+			 * means don't fail if encryption can't be negotiated,
+			 * == 2 means fail if encryption can't be negotiated.
+			 */
+
+			DEBUG(4,(" SMB encrypt failed\n"));
+
+			if (context->internal->_smb_encryption_level == 2) {
+	                        cli_shutdown(c);
+				errno = EPERM;
+				return NULL;
+			}
+		}
+		DEBUG(4,(" SMB encrypt ok\n"));
+	}
+
 	/*
 	 * Ok, we have got a nice connection
 	 * Let's allocate a server structure.
@@ -1018,6 +1049,30 @@ smbc_attr_server(SMBCCTX *context,
                         errno = ENOTSUP;
                         return NULL;
                 }
+
+		if (context->internal->_smb_encryption_level) {
+			/* Attempt UNIX smb encryption. */
+			if (!NT_STATUS_IS_OK(cli_force_encryption(ipc_cli,
+						username,
+						password,
+						workgroup))) {
+
+				/*
+				 * context->internal->_smb_encryption_level == 1
+				 * means don't fail if encryption can't be negotiated,
+				 * == 2 means fail if encryption can't be negotiated.
+				 */
+
+				DEBUG(4,(" SMB encrypt failed on IPC$\n"));
+
+				if (context->internal->_smb_encryption_level == 2) {
+		                        cli_shutdown(ipc_cli);
+					errno = EPERM;
+					return NULL;
+				}
+			}
+			DEBUG(4,(" SMB encrypt ok on IPC$\n"));
+		}
 
                 ipc_srv = SMB_MALLOC_P(SMBCSRV);
                 if (!ipc_srv) {
@@ -6724,6 +6779,7 @@ smbc_option_set(SMBCCTX *context,
                 bool b;
                 smbc_get_auth_data_with_context_fn auth_fn;
                 void *v;
+		const char *s;
         } option_value;
 
         va_start(ap, option_name);
@@ -6772,6 +6828,19 @@ smbc_option_set(SMBCCTX *context,
                  */
                 option_value.v = va_arg(ap, void *);
                 context->internal->_user_data = option_value.v;
+        } else if (strcmp(option_name, "smb_encrypt_level") == 0) {
+                /*
+                 * Save an encoded value for encryption level.
+                 * 0 = off, 1 = attempt, 2 = required.
+                 */
+                option_value.s = va_arg(ap, const char *);
+		if (strcmp(option_value.s, "none") == 0) {
+			context->internal->_smb_encryption_level = 0;
+		} else if (strcmp(option_value.s, "request") == 0) {
+			context->internal->_smb_encryption_level = 1;
+		} else if (strcmp(option_value.s, "require") == 0) {
+			context->internal->_smb_encryption_level = 2;
+		}
         }
 
         va_end(ap);
@@ -6821,6 +6890,35 @@ smbc_option_get(SMBCCTX *context,
                  * with smbc_option_get()
                  */
                 return context->internal->_user_data;
+        } else if (strcmp(option_name, "smb_encrypt_level") == 0) {
+		/*
+		 * Return the current smb encrypt negotiate option as a string.
+		 */
+		switch (context->internal->_smb_encryption_level) {
+		case 0:
+			return (void *) "none";
+		case 1:
+			return (void *) "request";
+		case 2:
+			return (void *) "require";
+		}
+        } else if (strcmp(option_name, "smb_encrypt_on") == 0) {
+		/*
+		 * Return the current smb encrypt status option as a bool.
+		 * false = off, true = on. We don't know what server is
+		 * being requested, so we only return true if all servers
+		 * are using an encrypted connection.
+		 */
+		SMBCSRV *s;
+		unsigned int num_servers = 0;
+
+		for (s = context->internal->_servers; s; s = s->next) {
+			num_servers++;
+			if (s->cli->trans_enc_state == NULL) {
+				return (void *)false;
+			}
+		}
+		return (void *) (bool) (num_servers > 0);
         }
 
         return NULL;

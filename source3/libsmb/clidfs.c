@@ -72,54 +72,36 @@ static bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
  Ensure a connection is encrypted.
 ********************************************************************/
 
-static bool force_cli_encryption(struct cli_state *c,
+NTSTATUS cli_cm_force_encryption(struct cli_state *c,
 			const char *username,
 			const char *password,
 			const char *domain,
 			const char *sharename)
 {
-	uint16 major, minor;
-	uint32 caplow, caphigh;
-	NTSTATUS status;
+	NTSTATUS status = cli_force_encryption(c,
+					username,
+					password,
+					domain);
 
-	if (!SERVER_HAS_UNIX_CIFS(c)) {
+	if (NT_STATUS_EQUAL(status,NT_STATUS_NOT_SUPPORTED)) {
 		d_printf("Encryption required and "
 			"server that doesn't support "
 			"UNIX extensions - failing connect\n");
-		return false;
-	}
-
-	if (!cli_unix_extensions_version(c, &major, &minor, &caplow, &caphigh)) {
+	} else if (NT_STATUS_EQUAL(status,NT_STATUS_UNKNOWN_REVISION)) {
 		d_printf("Encryption required and "
 			"can't get UNIX CIFS extensions "
 			"version from server.\n");
-		return false;
-	}
-
-	if (!(caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP)) {
+	} else if (NT_STATUS_EQUAL(status,NT_STATUS_UNSUPPORTED_COMPRESSION)) {
 		d_printf("Encryption required and "
 			"share %s doesn't support "
 			"encryption.\n", sharename);
-		return false;
-	}
-
-	if (c->use_kerberos) {
-		status = cli_gss_smb_encryption_start(c);
-	} else {
-		status = cli_raw_ntlm_smb_encryption_start(c,
-						username,
-						password,
-						domain);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
+	} else if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Encryption required and "
 			"setup failed with error %s.\n",
 			nt_errstr(status));
-		return false;
 	}
 
-	return true;
+	return status;
 }
 	
 /********************************************************************
@@ -281,13 +263,16 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	if (force_encrypt && !force_cli_encryption(c,
+	if (force_encrypt) {
+		status = cli_cm_force_encryption(c,
 					username,
 					password,
 					lp_workgroup(),
-					sharename)) {
-		cli_shutdown(c);
-		return NULL;
+					sharename);
+		if (!NT_STATUS_IS_OK(status)) {
+			cli_shutdown(c);
+			return NULL;
+		}
 	}
 
 	DEBUG(4,(" tconx ok\n"));
@@ -1035,12 +1020,15 @@ static bool cli_check_msdfs_proxy(TALLOC_CTX *ctx,
 		return false;
 	}
 
-	if (force_encrypt && !force_cli_encryption(cli,
+	if (force_encrypt) {
+		NTSTATUS status = cli_cm_force_encryption(cli,
 					username,
 					password,
 					lp_workgroup(),
-					"IPC$")) {
-		return false;
+					"IPC$");
+		if (!NT_STATUS_IS_OK(status)) {
+			return false;
+		}
 	}
 
 	res = cli_dfs_get_referral(ctx, cli, fullpath, &refs, &num_refs, &consumed);

@@ -56,6 +56,10 @@ static void gotalarm_sig(void)
 {
 	LDAP *ldp = NULL;
 
+
+	DEBUG(10, ("Opening connection to LDAP server '%s:%d', timeout "
+		   "%u seconds\n", server, port, to));
+
 	/* Setup timeout */
 	gotalarm = 0;
 	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
@@ -65,8 +69,10 @@ static void gotalarm_sig(void)
 	ldp = ldap_open(server, port);
 
 	if (ldp == NULL) {
-		DEBUG(2,("Could not open LDAP connection to %s:%d: %s\n",
+		DEBUG(2,("Could not open connection to LDAP server %s:%d: %s\n",
 			 server, port, strerror(errno)));
+	} else {
+		DEBUG(10, ("Connected to LDAP server '%s:%d'\n", server, port));
 	}
 
 	/* Teardown timeout. */
@@ -400,7 +406,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 got_connection:
 
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
-	DEBUG(3,("Connected to LDAP server %s\n", addr));
+	DEBUG(3,("Successfully contacted LDAP server %s\n", addr));
 
 	if (!ads->auth.user_name) {
 		/* Must use the userPrincipalName value here or sAMAccountName
@@ -442,11 +448,12 @@ got_connection:
 	
 	/* Otherwise setup the TCP LDAP session */
 
-	if ( (ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name, 
-		LDAP_PORT, lp_ldap_timeout())) == NULL )
-	{
+	ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name,
+					      LDAP_PORT, lp_ldap_timeout());
+	if (ads->ldap.ld == NULL) {
 		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
 	}
+	DEBUG(3,("Connected to LDAP server %s\n", ads->config.ldap_server_name));
 
 	/* cache the successful connection for workgroup and realm */
 	if (ads_closest_dc(ads)) {

@@ -6213,7 +6213,7 @@ uint32 lp_get_spoolss_state( void )
 }
 
 /*******************************************************************
- Ensure we don't use sendfile if server smb signing or selaing is active.
+ Ensure we don't use sendfile if server smb signing is active.
 ********************************************************************/
 
 bool lp_use_sendfile(int snum)
@@ -6224,8 +6224,7 @@ bool lp_use_sendfile(int snum)
 	}
 	return (_lp_use_sendfile(snum) &&
 			(get_remote_arch() != RA_WIN95) &&
-			!srv_is_signing_active() &&
-			!srv_encryption_on());
+			!srv_is_signing_active());
 }
 
 /*******************************************************************

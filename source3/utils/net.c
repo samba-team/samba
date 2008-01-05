@@ -88,6 +88,7 @@ int opt_testmode = False;
 
 int opt_have_ip = False;
 struct sockaddr_storage opt_dest_ip;
+bool smb_encrypt;
 
 extern bool AllowDebugChange;
 
@@ -178,9 +179,7 @@ NTSTATUS connect_to_service(struct cli_state **c,
 					service_name, service_type,
 					opt_user_name, opt_workgroup,
 					opt_password, 0, Undefined, NULL);
-	if (NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	} else {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, "Could not connect to server %s\n", server_name);
 
 		/* Display a nicer message depending on the result */
@@ -196,9 +195,40 @@ NTSTATUS connect_to_service(struct cli_state **c,
 		if (NT_STATUS_V(nt_status) ==
 		    NT_STATUS_V(NT_STATUS_ACCOUNT_DISABLED))
 			d_fprintf(stderr, "The account was disabled.\n");
-
 		return nt_status;
 	}
+
+	if (smb_encrypt) {
+		nt_status = cli_force_encryption(*c,
+					opt_user_name,
+					opt_password,
+					opt_workgroup);
+
+		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_NOT_SUPPORTED)) {
+			d_printf("Encryption required and "
+				"server that doesn't support "
+				"UNIX extensions - failing connect\n");
+		} else if (NT_STATUS_EQUAL(nt_status,NT_STATUS_UNKNOWN_REVISION)) {
+			d_printf("Encryption required and "
+				"can't get UNIX CIFS extensions "
+				"version from server.\n");
+		} else if (NT_STATUS_EQUAL(nt_status,NT_STATUS_UNSUPPORTED_COMPRESSION)) {
+			d_printf("Encryption required and "
+				"share %s doesn't support "
+				"encryption.\n", service_name);
+		} else if (!NT_STATUS_IS_OK(nt_status)) {
+			d_printf("Encryption required and "
+				"setup failed with error %s.\n",
+				nt_errstr(nt_status));
+		}
+
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			cli_shutdown(*c);
+			*c = NULL;
+		}
+	}
+
+	return nt_status;
 }
 
 /****************************************************************************
@@ -287,12 +317,24 @@ NTSTATUS connect_to_ipc_krb5(struct cli_state **c,
 
 	SAFE_FREE(user_and_realm);
 
-	if (NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	} else {
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1,("Cannot connect to server using kerberos.  Error was %s\n", nt_errstr(nt_status)));
 		return nt_status;
 	}
+
+        if (smb_encrypt) {
+		nt_status = cli_cm_force_encryption(*c,
+					user_and_realm,
+					opt_password,
+					opt_workgroup,
+                                        "IPC$");
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			cli_shutdown(*c);
+			*c = NULL;
+		}
+	}
+
+	return nt_status;
 }
 
 /**
@@ -988,6 +1030,7 @@ static struct functable net_func[] = {
 		{"port",	'p', POPT_ARG_INT,    &opt_port},
 		{"myname",	'n', POPT_ARG_STRING, &opt_requester_name},
 		{"server",	'S', POPT_ARG_STRING, &opt_host},
+		{"encrypt",	'e', POPT_ARG_NONE,   NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },
 		{"container",	'c', POPT_ARG_STRING, &opt_container},
 		{"comment",	'C', POPT_ARG_STRING, &opt_comment},
 		{"maxusers",	'M', POPT_ARG_INT,    &opt_maxusers},
@@ -1010,7 +1053,7 @@ static struct functable net_func[] = {
 		{"acls",	0, POPT_ARG_NONE,     &opt_acls},
 		{"attrs",	0, POPT_ARG_NONE,     &opt_attrs},
 		{"timestamps",	0, POPT_ARG_NONE,     &opt_timestamps},
-		{"exclude",	'e', POPT_ARG_STRING, &opt_exclude},
+		{"exclude",	'X', POPT_ARG_STRING, &opt_exclude},
 		{"destination",	0, POPT_ARG_STRING,   &opt_destination},
 		{"tallocreport", 0, POPT_ARG_NONE, &do_talloc_report},
 
@@ -1036,6 +1079,9 @@ static struct functable net_func[] = {
 		case 'h':
 			net_help(argc, argv);
 			exit(0);
+			break;
+		case 'e':
+			smb_encrypt=true;
 			break;
 		case 'I':
 			if (!interpret_string_addr(&opt_dest_ip,
