@@ -2,6 +2,7 @@
 
 #include "replace.h"
 #include "talloc.h"
+#include "system/wait.h"
 #include "tdb.h"
 #include "idtree.h"
 #include "ctdb.h"
