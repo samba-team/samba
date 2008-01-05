@@ -3,11 +3,8 @@ SAVE_CPPFLAGS="$CPPFLAGS"
 CPPFLAGS="$CPPFLAGS -I$libreplacedir/"
 AC_TRY_COMPILE([
 #include "confdefs.h"
-#define _LIBREPLACE_REPLACE_H
-#define REPLACE_GETPASS 1
-#define main dont_declare_main
+#define NO_CONFIG_H
 #include "$libreplacedir/getpass.c"
-#undef main
 ],[],samba_cv_REPLACE_GETPASS=yes,samba_cv_REPLACE_GETPASS=no)
 CPPFLAGS="$SAVE_CPPFLAGS"
 ])

@@ -18,21 +18,10 @@ not, see <http://www.gnu.org/licenses/>.  */
 /* Modified to use with samba by Jeremy Allison, 8th July 1995. */
 
 #include "replace.h"
-
-#if defined(HAVE_TERMIOS_H)
-/* POSIX terminal handling. */
-#include <termios.h>
-#elif defined(HAVE_TERMIO_H)
-/* Older SYSV terminal handling - don't use if we can avoid it. */
-#include <termio.h>
-#elif defined(HAVE_SYS_TERMIO_H)
-/* Older SYSV terminal handling - don't use if we can avoid it. */
-#include <sys/termio.h>
-#endif
-
-#ifdef HAVE_SYS_WAIT_H
-#include <sys/wait.h>
-#endif
+#include "system/filesys.h"
+#include "system/wait.h"
+#include "system/terminal.h"
+#include "system/passwd.h"
 
 /*
  * Define additional missing types
@@ -48,8 +37,6 @@ typedef int sig_atomic_t;
 #ifndef SIGNAL_CAST
 #define SIGNAL_CAST (RETSIGTYPE (*)(int))
 #endif
-
-#ifdef REPLACE_GETPASS
 
 #ifdef SYSV_TERMIO 
 
@@ -131,81 +118,102 @@ static void catch_signal(int signum,void (*handler)(int ))
 	sigemptyset(&act.sa_mask);
 	sigaddset(&act.sa_mask,signum);
 	sigaction(signum,&act,&oldact);
-	return oldact.sa_handler;
 #else /* !HAVE_SIGACTION */
 	/* FIXME: need to handle sigvec and systems with broken signal() */
-	return signal(signum, handler);
+	signal(signum, handler);
 #endif
 }
 
-char *getsmbpass(const char *prompt)
+static sig_atomic_t gotintr;
+static int in_fd = -1;
+
+/***************************************************************
+ Signal function to tell us were ^C'ed.
+****************************************************************/
+
+static void gotintr_sig(void)
 {
-  FILE *in, *out;
-  int echo_off;
-  static char buf[256];
-  static size_t bufsize = sizeof(buf);
-  size_t nread;
-
-  /* Catch problematic signals */
-  catch_signal(SIGINT, SIGNAL_CAST SIG_IGN);
-
-  /* Try to write to and read from the terminal if we can.
-     If we can't open the terminal, use stderr and stdin.  */
-
-  in = fopen ("/dev/tty", "w+");
-  if (in == NULL)
-    {
-      in = stdin;
-      out = stderr;
-    }
-  else
-    out = in;
-
-  setvbuf(in, NULL, _IONBF, 0);
-
-  /* Turn echoing off if it is on now.  */
-
-  if (tcgetattr (fileno (in), &t) == 0)
-    {
-	  if (ECHO_IS_ON(t))
-	{
-		TURN_ECHO_OFF(t);
-		echo_off = tcsetattr (fileno (in), TCSAFLUSH, &t) == 0;
-		TURN_ECHO_ON(t);
-	}
-      else
-	echo_off = 0;
-    }
-  else
-    echo_off = 0;
-
-  /* Write the prompt.  */
-  fputs (prompt, out);
-  fflush (out);
-
-  /* Read the password.  */
-  buf[0] = 0;
-  fgets(buf, bufsize, in);
-  nread = strlen(buf);
-  if (buf[nread - 1] == '\n')
-    buf[nread - 1] = '\0';
-
-  /* Restore echoing.  */
-  if (echo_off)
-    (void) tcsetattr (fileno (in), TCSANOW, &t);
-
-  if (in != stdin)
-    /* We opened the terminal; now close it.  */
-    fclose (in);
-
-  /* Catch problematic signals */
-  catch_signal(SIGINT, SIGNAL_CAST SIG_DFL);
-
-  printf("\n");
-  return buf;
+	gotintr = 1;
+	if (in_fd != -1)
+		close(in_fd); /* Safe way to force a return. */
+	in_fd = -1;
 }
 
-#else
- void getsmbpasswd_dummy(void);
- void getsmbpasswd_dummy(void) {;}
-#endif
+char *rep_getpass(const char *prompt)
+{
+	FILE *in, *out;
+	int echo_off;
+	static char buf[256];
+	static size_t bufsize = sizeof(buf);
+	size_t nread;
+
+	/* Catch problematic signals */
+	catch_signal(SIGINT, SIGNAL_CAST gotintr_sig);
+
+	/* Try to write to and read from the terminal if we can.
+		If we can't open the terminal, use stderr and stdin.  */
+
+	in = fopen ("/dev/tty", "w+");
+	if (in == NULL) {
+		in = stdin;
+		out = stderr;
+	} else {
+		out = in;
+	}
+
+	setvbuf(in, NULL, _IONBF, 0);
+
+	/* Turn echoing off if it is on now.  */
+
+	if (tcgetattr (fileno (in), &t) == 0) {
+		if (ECHO_IS_ON(t)) {
+			TURN_ECHO_OFF(t);
+			echo_off = tcsetattr (fileno (in), TCSAFLUSH, &t) == 0;
+			TURN_ECHO_ON(t);
+		} else {
+			echo_off = 0;
+		}
+	} else {
+		echo_off = 0;
+	}
+
+	/* Write the prompt.  */
+	fputs(prompt, out);
+	fflush(out);
+
+	/* Read the password.  */
+	buf[0] = 0;
+	if (!gotintr) {
+		in_fd = fileno(in);
+		fgets(buf, bufsize, in);
+	}
+	nread = strlen(buf);
+	if (nread) {
+		if (buf[nread - 1] == '\n')
+			buf[nread - 1] = '\0';
+	}
+
+	/* Restore echoing.  */
+	if (echo_off) {
+		if (gotintr && in_fd == -1)
+			in = fopen ("/dev/tty", "w+");
+		if (in != NULL)
+			tcsetattr (fileno (in), TCSANOW, &t);
+	}
+
+	fprintf(out, "\n");
+	fflush(out);
+
+	if (in && in != stdin) /* We opened the terminal; now close it.  */
+		fclose(in);
+
+	/* Catch problematic signals */
+	catch_signal(SIGINT, SIGNAL_CAST SIG_DFL);
+
+	if (gotintr) {
+		printf("Interupted by signal.\n");
+		fflush(stdout);
+		exit(1);
+	}
+	return buf;
+}

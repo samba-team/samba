@@ -6,6 +6,7 @@
    networking system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Jelmer Vernooij 2007
    
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
@@ -78,16 +79,127 @@
 #include <sys/ioctl.h>
 #endif
 
-#ifdef SOCKET_WRAPPER
-#ifndef SOCKET_WRAPPER_NOT_REPLACE
-#define SOCKET_WRAPPER_REPLACE
-#endif
-#include "lib/socket_wrapper/socket_wrapper.h"
+#ifdef REPLACE_INET_NTOA
+/* define is in "replace.h" */
+char *rep_inet_ntoa(struct in_addr ip);
 #endif
 
-#ifdef REPLACE_INET_NTOA
-char *rep_inet_ntoa(struct in_addr ip);
-#define inet_ntoa rep_inet_ntoa
+#ifndef HAVE_INET_PTON
+/* define is in "replace.h" */
+int rep_inet_pton(int af, const char *src, void *dst);
+#endif
+
+#ifndef HAVE_INET_NTOP
+/* define is in "replace.h" */
+const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
+#endif
+
+#ifdef HAVE_IFADDRS_H
+#include <ifaddrs.h>
+#endif
+
+#ifndef HAVE_STRUCT_IFADDRS
+struct ifaddrs {
+	struct ifaddrs   *ifa_next;         /* Pointer to next struct */
+	char             *ifa_name;         /* Interface name */
+	unsigned int     ifa_flags;         /* Interface flags */
+	struct sockaddr  *ifa_addr;         /* Interface address */
+	struct sockaddr  *ifa_netmask;      /* Interface netmask */
+#undef ifa_dstaddr
+	struct sockaddr  *ifa_dstaddr;      /* P2P interface destination */
+	void             *ifa_data;         /* Address specific data */
+};
+#endif
+
+#ifndef HAVE_GETIFADDRS
+int rep_getifaddrs(struct ifaddrs **);
+#endif
+
+#ifndef HAVE_FREEIFADDRS
+void rep_freeifaddrs(struct ifaddrs *);
+#endif
+
+/*
+ * Some systems have getaddrinfo but not the
+ * defines needed to use it.
+ */
+
+/* Various macros that ought to be in <netdb.h>, but might not be */
+
+#ifndef EAI_FAIL
+#define EAI_BADFLAGS	(-1)
+#define EAI_NONAME	(-2)
+#define EAI_AGAIN	(-3)
+#define EAI_FAIL	(-4)
+#define EAI_FAMILY	(-6)
+#define EAI_SOCKTYPE	(-7)
+#define EAI_SERVICE	(-8)
+#define EAI_MEMORY	(-10)
+#define EAI_SYSTEM	(-11)
+#endif   /* !EAI_FAIL */
+
+#ifndef AI_PASSIVE
+#define AI_PASSIVE	0x0001
+#endif
+
+#ifndef AI_CANONNAME
+#define AI_CANONNAME	0x0002
+#endif
+
+#ifndef AI_NUMERICHOST
+/*
+ * some platforms don't support AI_NUMERICHOST; define as zero if using
+ * the system version of getaddrinfo...
+ */
+#if defined(HAVE_STRUCT_ADDRINFO) && defined(HAVE_GETADDRINFO)
+#define AI_NUMERICHOST	0
+#else
+#define AI_NUMERICHOST	0x0004
+#endif
+#endif
+
+#ifndef AI_ADDRCONFIG
+#define AI_ADDRCONFIG	0x0020
+#endif
+
+#ifndef AI_NUMERICSERV
+/*
+ * logic copied from AI_NUMERICHOST
+ */
+#if defined(HAVE_STRUCT_ADDRINFO) && defined(HAVE_GETADDRINFO)
+#define AI_NUMERICSERV	0
+#else
+#define AI_NUMERICSERV	0x0400
+#endif
+#endif
+
+#ifndef NI_NUMERICHOST
+#define NI_NUMERICHOST	1
+#endif
+
+#ifndef NI_NUMERICSERV
+#define NI_NUMERICSERV	2
+#endif
+
+#ifndef NI_NOFQDN
+#define NI_NOFQDN	4
+#endif
+
+#ifndef NI_NAMEREQD
+#define NI_NAMEREQD 	8
+#endif
+
+#ifndef NI_DGRAM
+#define NI_DGRAM	16
+#endif
+
+
+#ifndef NI_MAXHOST
+#define NI_MAXHOST	1025
+#endif
+
+#ifndef NI_MAXSERV
+#define NI_MAXSERV	32
 #endif
 
 /*
@@ -98,20 +210,88 @@ char *rep_inet_ntoa(struct in_addr ip);
 #define MSG_WAITALL 0
 #endif
 
-/*
- * Some older systems seem not to have MAXHOSTNAMELEN
- * defined.
- */
-#ifndef MAXHOSTNAMELEN
-#define MAXHOSTNAMELEN 254
-#endif
-
 #ifndef INADDR_LOOPBACK
 #define INADDR_LOOPBACK 0x7f000001
 #endif
 
 #ifndef INADDR_NONE
 #define INADDR_NONE 0xffffffff
+#endif
+
+#ifndef EAFNOSUPPORT
+#define EAFNOSUPPORT EINVAL
+#endif
+
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN 16
+#endif
+
+#ifndef INET6_ADDRSTRLEN
+#define INET6_ADDRSTRLEN 46
+#endif
+
+#ifndef HOST_NAME_MAX
+#define HOST_NAME_MAX 256
+#endif
+
+#ifndef HAVE_SOCKLEN_T
+#define HAVE_SOCKLEN_T
+typedef int socklen_t;
+#endif
+
+#ifndef HAVE_SA_FAMILY_T
+#define HAVE_SA_FAMILY_T
+typedef unsigned short int sa_family_t;
+#endif
+
+#ifndef HAVE_STRUCT_SOCKADDR_STORAGE
+#define HAVE_STRUCT_SOCKADDR_STORAGE
+#ifdef HAVE_STRUCT_SOCKADDR_IN6
+#define sockaddr_storage sockaddr_in6
+#define ss_family sin6_family
+#define HAVE_SS_FAMILY 1
+#else
+#define sockaddr_storage sockaddr_in
+#define ss_family sin_family
+#define HAVE_SS_FAMILY 1
+#endif
+#endif
+
+#ifndef HAVE_SS_FAMILY
+#ifdef HAVE___SS_FAMILY
+#define ss_family __ss_family
+#define HAVE_SS_FAMILY 1
+#endif
+#endif
+
+#ifndef HAVE_STRUCT_ADDRINFO
+#define HAVE_STRUCT_ADDRINFO
+struct addrinfo {
+	int			ai_flags;
+	int			ai_family;
+	int			ai_socktype;
+	int			ai_protocol;
+	socklen_t		ai_addrlen;
+	struct sockaddr 	*ai_addr;
+	char			*ai_canonname;
+	struct addrinfo		*ai_next;
+};
+#endif   /* HAVE_STRUCT_ADDRINFO */
+
+#if !defined(HAVE_GETADDRINFO)
+#include "getaddrinfo.h"
+#endif
+
+/* Needed for some systems that don't define it (Solaris). */
+#ifndef ifr_netmask
+#define ifr_netmask ifr_addrs
+#endif
+
+#ifdef SOCKET_WRAPPER
+#ifndef SOCKET_WRAPPER_NOT_REPLACE
+#define SOCKET_WRAPPER_REPLACE
+#endif
+#include "lib/socket_wrapper/socket_wrapper.h"
 #endif
 
 #endif

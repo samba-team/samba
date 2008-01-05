@@ -41,4 +41,14 @@
 #include <utime.h>
 #endif
 
+#ifndef HAVE_MKTIME
+/* define is in "replace.h" */
+time_t rep_mktime(struct tm *t);
+#endif
+
+#ifndef HAVE_TIMEGM
+/* define is in "replace.h" */
+time_t rep_timegm(struct tm *tm);
+#endif
+
 #endif

@@ -87,19 +87,6 @@ fi
 rm -f conftest*
 ])])
 
-AC_DEFUN([AC_EXTENSION_FLAG],
-[
-  cat >>confdefs.h <<\EOF
-#ifndef $1
-# define $1 1
-#endif
-EOF
-AH_VERBATIM([$1], [#ifndef $1
-# define $1 1
-#endif])
-])
-
-
 dnl see if a declaration exists for a function or variable
 dnl defines HAVE_function_DECL if it exists
 dnl AC_HAVE_DECL(var, includes)
@@ -248,11 +235,18 @@ m4_define([AH_CHECK_FUNC_EXT],
 
 dnl Define an AC_DEFINE with ifndef guard.
 dnl AC_N_DEFINE(VARIABLE [, VALUE])
-define(AC_N_DEFINE,
-[cat >> confdefs.h <<\EOF
-[#ifndef] $1
-[#define] $1 ifelse($#, 2, [$2], $#, 3, [$2], 1)
-[#endif]
+AC_DEFUN([AC_N_DEFINE],
+[
+AH_VERBATIM([$1], [
+#ifndef $1
+# undef $1
+#endif
+])
+
+ cat >>confdefs.h <<\EOF
+#ifndef $1
+[#define] $1 m4_if($#, 1, 1, [$2])
+#endif
 EOF
 ])
 
@@ -291,14 +285,14 @@ dnl check if the prototype in the header matches the given one
 dnl AC_VERIFY_C_PROTOTYPE(prototype,functionbody,[IF-TRUE].[IF-FALSE],[extraheaders])
 AC_DEFUN(AC_VERIFY_C_PROTOTYPE,
 [AC_CACHE_CHECK([for prototype $1], AS_TR_SH([ac_cv_c_prototype_$1]),
-	AC_COMPILE_IFELSE([
+	AC_COMPILE_IFELSE([AC_LANG_SOURCE([
 		AC_INCLUDES_DEFAULT
 		$5
 		$1
 		{
 			$2
 		}
-	],[
+	])],[
 		AS_TR_SH([ac_cv_c_prototype_$1])=yes
 	],[
 		AS_TR_SH([ac_cv_c_prototype_$1])=no
@@ -314,4 +308,25 @@ AC_DEFUN(LIBREPLACE_PROVIDE_HEADER,
 	)
 ])
 
-
+dnl AC_HAVE_TYPE(TYPE,INCLUDES)
+AC_DEFUN([AC_HAVE_TYPE], [
+AC_REQUIRE([AC_HEADER_STDC])
+cv=`echo "$1" | sed 'y%./+- %__p__%'`
+AC_MSG_CHECKING(for $1)
+AC_CACHE_VAL([ac_cv_type_$cv],
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+AC_INCLUDES_DEFAULT
+$2]],
+[[$1 foo;]])],
+[eval "ac_cv_type_$cv=yes"],
+[eval "ac_cv_type_$cv=no"]))dnl
+ac_foo=`eval echo \\$ac_cv_type_$cv`
+AC_MSG_RESULT($ac_foo)
+if test "$ac_foo" = yes; then
+  ac_tr_hdr=HAVE_`echo $1 | sed 'y%abcdefghijklmnopqrstuvwxyz./- %ABCDEFGHIJKLMNOPQRSTUVWXYZ____%'`
+if false; then
+	AC_CHECK_TYPES($1)
+fi
+  AC_DEFINE_UNQUOTED($ac_tr_hdr, 1, [Define if you have type `$1'])
+fi
+])

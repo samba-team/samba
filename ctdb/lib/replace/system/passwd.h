@@ -27,6 +27,9 @@
 
 */
 
+/* this needs to be included before nss_wrapper.h on some systems */
+#include <unistd.h>
+
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
@@ -65,7 +68,8 @@
 #endif
 
 #ifdef REPLACE_GETPASS
-#define getpass(prompt) getsmbpass((prompt))
+#define getpass(prompt) rep_getpass(prompt)
+char *rep_getpass(const char *prompt);
 #endif
 
 #ifndef NGROUPS_MAX
@@ -90,6 +94,13 @@
 
 #if defined(HAVE_CRYPT16) && defined(HAVE_GETAUTHUID)
 #define ULTRIX_AUTH 1
+#endif
+
+#ifdef NSS_WRAPPER
+#ifndef NSS_WRAPPER_NOT_REPLACE
+#define NSS_WRAPPER_REPLACE
+#endif
+#include "lib/nss_wrapper/nss_wrapper.h"
 #endif
 
 #endif

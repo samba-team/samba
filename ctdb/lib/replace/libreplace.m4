@@ -137,21 +137,46 @@ if test x"$samba_cv_REPLACE_INET_NTOA" = x"yes"; then
     AC_DEFINE(REPLACE_INET_NTOA,1,[Whether inet_ntoa should be replaced])
 fi
 
-dnl Provided by replace.c:
-AC_TRY_COMPILE([
+AC_HAVE_TYPE([socklen_t],[#include <sys/socket.h>])
+AC_HAVE_TYPE([sa_family_t],[#include <sys/socket.h>])
+AC_HAVE_TYPE([struct addrinfo], [#include <netdb.h>])
+AC_HAVE_TYPE([struct sockaddr], [#include <sys/socket.h>])
+AC_HAVE_TYPE([struct sockaddr_storage], [
+#include <sys/socket.h>
 #include <sys/types.h>
-#if STDC_HEADERS
-#include <stdlib.h>
-#include <stddef.h>
-#endif
-#include <sys/socket.h>], 
-[socklen_t foo;],,
-[AC_DEFINE(socklen_t, int,[Socket length type])])
+#include <netinet/in.h>
+])
+AC_HAVE_TYPE([struct sockaddr_in6], [
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+])
+
+if test x"$ac_cv_type_struct_sockaddr_storage" = x"yes"; then
+AC_CHECK_MEMBER(struct sockaddr_storage.ss_family,
+                AC_DEFINE(HAVE_SS_FAMILY, 1, [Defined if struct sockaddr_storage has ss_family field]),,
+                [
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+		])
+
+if test x"$ac_cv_member_struct_sockaddr_storage_ss_family" != x"yes"; then
+AC_CHECK_MEMBER(struct sockaddr_storage.__ss_family,
+                AC_DEFINE(HAVE___SS_FAMILY, 1, [Defined if struct sockaddr_storage has __ss_family field]),,
+                [
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+		])
+fi
+fi
 
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid strlcpy strlcat initgroups memmove strdup)
 AC_CHECK_FUNCS(pread pwrite strndup strcasestr strtok_r mkdtemp socketpair)
+AC_CHECK_FUNCS(isatty)
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
 AC_HAVE_DECL(errno, [#include <errno.h>])
@@ -275,9 +300,6 @@ AC_TRY_CPP([
 eprintf("bla", "bar");
 ], AC_DEFINE(HAVE__VA_ARGS__MACRO, 1, [Whether the __VA_ARGS__ macro is available]))
 
-# Check prerequisites
-AC_CHECK_FUNCS([memset printf syslog], [], 
-			   [ AC_MSG_ERROR([Required function not found])])
 
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
@@ -303,18 +325,7 @@ AC_TRY_COMPILE([
 samba_cv_HAVE_OPEN_O_DIRECT=yes,samba_cv_HAVE_OPEN_O_DIRECT=no)])
 if test x"$samba_cv_HAVE_OPEN_O_DIRECT" = x"yes"; then
     AC_DEFINE(HAVE_OPEN_O_DIRECT,1,[Whether the open(2) accepts O_DIRECT])
-fi 
-
-
-AC_CACHE_CHECK([that the C compiler can precompile header files],samba_cv_precompiled_headers, [
-	dnl Check whether the compiler can generate precompiled headers
-	touch conftest.h
-	if ${CC-cc} conftest.h 2> /dev/null && test -f conftest.h.gch; then
-		precompiled_headers=yes
-	else
-		precompiled_headers=no
-	fi])
-AC_SUBST(precompiled_headers)
+fi
 
 
 dnl Check if the C compiler understands volatile (it should, being ANSI).
@@ -332,9 +343,13 @@ m4_include(getpass.m4)
 m4_include(strptime.m4)
 m4_include(win32.m4)
 m4_include(timegm.m4)
+m4_include(inet_ntop.m4)
+m4_include(inet_pton.m4)
+m4_include(getaddrinfo.m4)
 m4_include(repdir.m4)
+m4_include(getifaddrs.m4)
 
-AC_CHECK_FUNCS([syslog memset memcpy],,[AC_MSG_ERROR([Required function not found])])
+AC_CHECK_FUNCS([syslog printf memset memcpy],,[AC_MSG_ERROR([Required function not found])])
 
 echo "LIBREPLACE_BROKEN_CHECKS: END"
 ]) dnl end AC_LIBREPLACE_BROKEN_CHECKS
@@ -358,5 +373,6 @@ CFLAGS="$CFLAGS -I$libreplacedir"
 ])
 
 m4_include(libreplace_cc.m4)
+m4_include(libreplace_ld.m4)
 m4_include(libreplace_macros.m4)
 m4_include(autoconf-2.60.m4)
