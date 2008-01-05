@@ -944,7 +944,7 @@ static struct file_id vfswrap_file_id_create(struct vfs_handle_struct *handle, S
 }
 
 static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
-				    files_struct *fsp, int fd,
+				    files_struct *fsp,
 				    uint32 security_info, SEC_DESC **ppdesc)
 {
 	NTSTATUS result;

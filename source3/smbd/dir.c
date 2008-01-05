@@ -948,7 +948,7 @@ static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 	}
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	status = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd,
+	status = SMB_VFS_FGET_NT_ACL(fsp,
 			(OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
 	close_file(fsp, NORMAL_CLOSE);
 
@@ -1007,7 +1007,7 @@ static bool user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 	}
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	status = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd,
+	status = SMB_VFS_FGET_NT_ACL(fsp,
 			(OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
 	close_file(fsp, NORMAL_CLOSE);
 

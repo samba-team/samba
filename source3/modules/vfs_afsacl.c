@@ -993,7 +993,7 @@ static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 static NTSTATUS afsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
-				   int fd,  uint32 security_info,
+				   uint32 security_info,
 				   struct security_descriptor **ppdesc)
 {
 	struct afs_acl acl;
