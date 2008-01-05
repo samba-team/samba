@@ -202,8 +202,7 @@ NTSTATUS connect_to_service(struct cli_state **c,
 		nt_status = cli_force_encryption(*c,
 					opt_user_name,
 					opt_password,
-					opt_workgroup,
-					service_name);
+					opt_workgroup);
 
 		if (NT_STATUS_EQUAL(nt_status,NT_STATUS_NOT_SUPPORTED)) {
 			d_printf("Encryption required and "
