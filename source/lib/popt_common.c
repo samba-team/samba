@@ -414,6 +414,7 @@ static void get_credentials_file(const char *file)
  *		-N,--no-pass
  *		-S,--signing
  *              -P --machine-pass
+ * 		-e --encrypt
  */
 
 
@@ -532,6 +533,10 @@ static void popt_common_credentials_callback(poptContext con,
 	case 'N':
 		set_cmdline_auth_info_password("");
 		break;
+	case 'e':
+		set_cmdline_auth_info_smb_encrypt();
+		break;
+
 	}
 }
 
@@ -543,5 +548,6 @@ struct poptOption popt_common_credentials[] = {
 	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
 	{ "signing", 'S', POPT_ARG_STRING, NULL, 'S', "Set the client signing state", "on|off|required" },
 	{"machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password" },
+	{"encrypt", 'e', POPT_ARG_NONE, NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },
 	POPT_TABLEEND
 };
