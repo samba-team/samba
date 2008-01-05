@@ -4598,7 +4598,6 @@ static int do_message_op(void)
 		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
 		{ "grepable", 'g', POPT_ARG_NONE, NULL, 'g', "Produce grepable output" },
                 { "browse", 'B', POPT_ARG_NONE, NULL, 'B', "Browse SMB servers using DNS" },
-		{ "encrypt", 'e', POPT_ARG_NONE, NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -4834,6 +4833,7 @@ static int do_message_op(void)
 		calling_name = talloc_strdup(frame, global_myname() );
 	}
 
+	smb_encrypt = get_cmdline_auth_info_smb_encrypt();
 	init_names();
 
 	if(new_name_resolve_order)
