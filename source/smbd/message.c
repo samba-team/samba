@@ -137,7 +137,7 @@ static void msg_deliver(struct msg_state *state)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_sends(connection_struct *conn, struct smb_request *req)
+void reply_sends(struct smb_request *req)
 {
 	struct msg_state *state;
 	int len;
@@ -190,7 +190,7 @@ void reply_sends(connection_struct *conn, struct smb_request *req)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_sendstrt(connection_struct *conn, struct smb_request *req)
+void reply_sendstrt(struct smb_request *req)
 {
 	char *p;
 
@@ -234,7 +234,7 @@ void reply_sendstrt(connection_struct *conn, struct smb_request *req)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_sendtxt(connection_struct *conn, struct smb_request *req)
+void reply_sendtxt(struct smb_request *req)
 {
 	int len;
 	char *msg;
@@ -287,7 +287,7 @@ void reply_sendtxt(connection_struct *conn, struct smb_request *req)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_sendend(connection_struct *conn, struct smb_request *req)
+void reply_sendend(struct smb_request *req)
 {
 	START_PROFILE(SMBsendend);
 

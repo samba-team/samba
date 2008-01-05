@@ -1867,7 +1867,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 		goto err_exit;
 	}
 
-	create_directory(conn, new_dir);
+	create_directory(conn, NULL, new_dir);
 
 	/* For each driver file, archi\filexxx.yyy, if there is a duplicate file
 	 * listed for this driver which has already been moved, skip it (note:

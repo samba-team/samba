@@ -2267,7 +2267,7 @@ NTSTATUS open_directory(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS create_directory(connection_struct *conn, const char *directory)
+NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, const char *directory)
 {
 	NTSTATUS status;
 	SMB_STRUCT_STAT sbuf;
@@ -2275,7 +2275,7 @@ NTSTATUS create_directory(connection_struct *conn, const char *directory)
 
 	SET_STAT_INVALID(sbuf);
 	
-	status = open_directory(conn, NULL, directory, &sbuf,
+	status = open_directory(conn, req, directory, &sbuf,
 				FILE_READ_ATTRIBUTES, /* Just a stat open */
 				FILE_SHARE_NONE, /* Ignored for stat opens */
 				FILE_CREATE,
@@ -2606,16 +2606,16 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		uint32_t sec_info_sent = ALL_SECURITY_INFORMATION;
 		uint32_t saved_access_mask = fsp->access_mask;
 
-		if (sd->owner_sid==0) {
+		if (sd->owner_sid == NULL) {
 			sec_info_sent &= ~OWNER_SECURITY_INFORMATION;
 		}
-		if (sd->group_sid==0) {
+		if (sd->group_sid == NULL) {
 			sec_info_sent &= ~GROUP_SECURITY_INFORMATION;
 		}
-		if (sd->sacl==0) {
+		if (sd->sacl == NULL) {
 			sec_info_sent &= ~SACL_SECURITY_INFORMATION;
 		}
-		if (sd->dacl==0) {
+		if (sd->dacl == NULL) {
 			sec_info_sent &= ~DACL_SECURITY_INFORMATION;
 		}
 

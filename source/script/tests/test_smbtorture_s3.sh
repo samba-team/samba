@@ -42,7 +42,7 @@ for t in $tests; do
     fi
     start=""
     name="$t"
-    testit "$name" $VALGRIND $BINDIR/smbtorture $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
+    testit "$name" $VALGRIND $BINDIR/smbtorture $unc -U"$username"%"$password" $ADDARGS $t || failed=`expr $failed + 1`
 done
 
 testok $0 $failed

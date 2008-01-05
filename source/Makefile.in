@@ -676,7 +676,7 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
 		   $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ)
 
-LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o $(TDB_BASE_OBJ)
+LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o $(TDBBASE_OBJ)
 
 # This shared library is intended for linking with unit test programs
 # to test Samba internals.  It's called libbigballofmud.so to
@@ -1414,7 +1414,7 @@ bin/libaddns.a: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 
 bin/libnetapi.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBNETAPI_OBJ)
 	@echo Linking shared library $@
-	@$(SHLD_DSO) $(LIBNETAPI_OBJ) $(LIBS) \
+	@$(SHLD_DSO) $(LIBNETAPI_OBJ) @LIBWBCLIENT_SHARED@ $(LIBS) \
 		$(LDAP_LIBS) $(KRB5LIBS) $(NSCD_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
@@ -1424,7 +1424,7 @@ bin/libnetapi.a: $(BINARY_PREREQS) $(LIBNETAPI_OBJ)
 
 bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
 	@echo Linking shared library $@
-	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) $(LIBS) \
+	@$(SHLD_DSO) $(LIBSMBCLIENT_OBJ) @LIBWBCLIENT_SHARED@ $(LIBS) \
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
@@ -2128,6 +2128,14 @@ Makefile: $(srcdir)/Makefile.in config.status
 
 ######################################################################
 # Samba Testing Framework
+
+# Check shared libs for unresolved symbols
+test_shlibs: $(SHLIBS)
+	@echo "Testing $(SHLIBS) "
+	@for module in $(SHLIBS); do \
+		./script/tests/dlopen.sh bin/$${module}.@SHLIBEXT@ \
+			|| exit 1; \
+	done
 
 # Check for NSS module problems.
 test_nss_modules: nss_modules

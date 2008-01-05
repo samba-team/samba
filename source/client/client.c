@@ -4328,16 +4328,22 @@ static void readline_callback(void)
 	timeout.tv_usec = 0;
 	sys_select_intr(cli->fd+1,&fds,NULL,NULL,&timeout);
 
-	/* We deliberately use receive_smb instead of
+	/* We deliberately use receive_smb_raw instead of
 	   client_receive_smb as we want to receive
 	   session keepalives and then drop them here.
 	*/
 	if (FD_ISSET(cli->fd,&fds)) {
-		if (!receive_smb(cli->fd,cli->inbuf,0,&cli->smb_rw_error)) {
+		if (receive_smb_raw(cli->fd,cli->inbuf,0,0,&cli->smb_rw_error) == -1) {
 			DEBUG(0, ("Read from server failed, maybe it closed the "
 				"connection\n"));
 			return;
 		}
+		if(CVAL(cli->inbuf,0) != SMBkeepalive) {
+			DEBUG(0, ("Read from server "
+				"returned unexpected packet!\n"));
+			return;
+		}
+
 		goto again;
 	}
 

@@ -1270,11 +1270,23 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				d.domain_type = domains[i].trust_type;
 				d.domain_trust_attribs = domains[i].trust_attributes;
 			} else {
+				/* Look up the record in the cache */
+				struct winbindd_tdc_domain *parent;
+
 				DEBUG(10,("trusted_domains(ads):  Inheriting trust "
 					  "flags for domain %s\n", d.alt_name));				
+
+				parent = wcache_tdc_fetch_domain(NULL, domain->name);
+				if (parent) {
+					d.domain_flags = parent->trust_flags;
+					d.domain_type  = parent->trust_type;
+					d.domain_trust_attribs = parent->trust_attribs;
+				} else {
 				d.domain_flags = domain->domain_flags;				
 				d.domain_type  = domain->domain_type;
 				d.domain_trust_attribs = domain->domain_trust_attribs;
+			}
+				TALLOC_FREE(parent);
 			}
 
 			wcache_tdc_add_domain( &d );
