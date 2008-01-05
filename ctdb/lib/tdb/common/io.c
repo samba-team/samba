@@ -99,9 +99,9 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 }
 
 /* Endian conversion: we only ever deal with 4 byte quantities */
-void *tdb_convert(void *buf, u32 size)
+void *tdb_convert(void *buf, uint32_t size)
 {
-	u32 i, *p = (u32 *)buf;
+	uint32_t i, *p = (uint32_t *)buf;
 	for (i = 0; i < size / 4; i++)
 		p[i] = TDB_BYTEREV(p[i]);
 	return buf;
@@ -142,17 +142,17 @@ static int tdb_read(struct tdb_context *tdb, tdb_off_t off, void *buf,
   do an unlocked scan of the hash table heads to find the next non-zero head. The value
   will then be confirmed with the lock held
 */		
-static void tdb_next_hash_chain(struct tdb_context *tdb, u32 *chain)
+static void tdb_next_hash_chain(struct tdb_context *tdb, uint32_t *chain)
 {
-	u32 h = *chain;
+	uint32_t h = *chain;
 	if (tdb->map_ptr) {
 		for (;h < tdb->header.hash_size;h++) {
-			if (0 != *(u32 *)(TDB_HASH_TOP(h) + (unsigned char *)tdb->map_ptr)) {
+			if (0 != *(uint32_t *)(TDB_HASH_TOP(h) + (unsigned char *)tdb->map_ptr)) {
 				break;
 			}
 		}
 	} else {
-		u32 off=0;
+		uint32_t off=0;
 		for (;h < tdb->header.hash_size;h++) {
 			if (tdb_ofs_read(tdb, TDB_HASH_TOP(h), &off) != 0 || off != 0) {
 				break;
