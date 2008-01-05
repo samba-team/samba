@@ -60,7 +60,7 @@ ln -s $BASEDIR ctdb-${VERSION} || exit 1
 REMOVE_LN=$PWD/ctdb-$VERSION
 
 echo -n "Creating ctdb-${VERSION}.tar.gz ... "
-tar --exclude=.bzr --exclude .bzrignore --exclude="*~" -cf - ctdb-${VERSION}/. | gzip -9 --rsyncable > ${SRCDIR}/ctdb-${VERSION}.tar.gz
+tar --exclude=.bzr --exclude .bzrignore --exclude="*~" --exclude=configure --exclude="test.db*" --exclude="#*" --exclude="push*.sh" --exclude="publish*.sh" -cf - ctdb-${VERSION}/. | gzip -9 --rsyncable > ${SRCDIR}/ctdb-${VERSION}.tar.gz
 echo "Done."
 if [ $? -ne 0 ]; then
         echo "Build failed!"
