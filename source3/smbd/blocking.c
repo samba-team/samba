@@ -238,9 +238,9 @@ bool push_blocking_lock_request( struct byte_range_lock *br_lck,
 		set_lock_msg = True;
 	}
 
-	DEBUG(3,("push_blocking_lock_request: lock request length=%d blocked with "
+	DEBUG(3,("push_blocking_lock_request: lock request length=%u blocked with "
 		"expiry time (%u sec. %u usec) (+%d msec) for fnum = %d, name = %s\n",
-		length, (unsigned int)blr->expire_time.tv_sec,
+		(unsigned int)length, (unsigned int)blr->expire_time.tv_sec,
 		(unsigned int)blr->expire_time.tv_usec, lock_timeout,
 		blr->fsp->fnum, blr->fsp->fsp_name ));
 
