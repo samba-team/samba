@@ -61,7 +61,7 @@ typedef u32 tdb_off_t;
 #define TDB_BAD_MAGIC(r) ((r)->magic != TDB_MAGIC && !TDB_DEAD(r))
 #define TDB_HASH_TOP(hash) (FREELIST_TOP + (BUCKET(hash)+1)*sizeof(tdb_off_t))
 #define TDB_HASHTABLE_SIZE(tdb) ((tdb->header.hash_size+1)*sizeof(tdb_off_t))
-#define TDB_DATA_START(hash_size) TDB_HASH_TOP(hash_size-1)
+#define TDB_DATA_START(hash_size) TDB_HASH_TOP(hash_size)
 #define TDB_RECOVERY_HEAD offsetof(struct tdb_header, recovery_start)
 #define TDB_SEQNUM_OFS    offsetof(struct tdb_header, sequence_number)
 #define TDB_PAD_BYTE 0x42
