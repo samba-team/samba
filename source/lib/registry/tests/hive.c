@@ -186,7 +186,9 @@ static bool test_get_value(struct torture_context *tctx, const void *test_data)
 
 	torture_assert_int_equal(tctx, value.length, 4, "value length");
 	torture_assert_int_equal(tctx, type, REG_DWORD, "value type");
-	torture_assert(tctx, memcmp(value.data, &data, 4) == 0, "value data");
+
+	torture_assert_int_equal(tctx, data, IVAL(value.data, 0),
+				 "value data");
 
 	return true;
 }
@@ -250,7 +252,9 @@ static bool test_list_values(struct torture_context *tctx,
 
 	torture_assert_int_equal(tctx, value.length, 4, "value length");
 	torture_assert_int_equal(tctx, type, REG_DWORD, "value type");
-	torture_assert(tctx, memcmp(value.data, &data, 4) == 0, "value data");
+	
+	
+	torture_assert_int_equal(tctx, data, IVAL(value.data, 0), "value data");
 
 	error = hive_get_value_by_index(mem_ctx, subkey, 1, &name,
 					&type, &value);
