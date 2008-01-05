@@ -822,7 +822,7 @@ static int cacl_set(struct cli_state *cli, char *filename,
 *******************************************************/
 static struct cli_state *connect_one(const char *server, const char *share)
 {
-	struct cli_state *c;
+	struct cli_state *c = NULL;
 	struct sockaddr_storage ss;
 	NTSTATUS nt_status;
 	zero_addr(&ss);
@@ -834,20 +834,33 @@ static struct cli_state *connect_one(const char *server, const char *share)
 		}
 	}
 
-	if (NT_STATUS_IS_OK(nt_status = cli_full_connection(&c, global_myname(), server, 
-							    &ss, 0,
-							    share, "?????",
-							    get_cmdline_auth_info_username(),
-							    lp_workgroup(),
-							    get_cmdline_auth_info_password(),
-							    0,
-							    get_cmdline_auth_info_signing_state(),
-							    NULL))) {
-		return c;
-	} else {
+	nt_status = cli_full_connection(&c, global_myname(), server, 
+				&ss, 0,
+				share, "?????",
+				get_cmdline_auth_info_username(),
+				lp_workgroup(),
+				get_cmdline_auth_info_password(),
+				get_cmdline_auth_info_use_kerberos() ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
+				get_cmdline_auth_info_signing_state(),
+				NULL);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("cli_full_connection failed! (%s)\n", nt_errstr(nt_status)));
 		return NULL;
 	}
+
+	if (get_cmdline_auth_info_smb_encrypt()) {
+		nt_status = cli_cm_force_encryption(c,
+					get_cmdline_auth_info_username(),
+					get_cmdline_auth_info_password(),
+					lp_workgroup(),
+					share);
+                if (!NT_STATUS_IS_OK(nt_status)) {
+			cli_shutdown(c);
+			c = NULL;
+                }
+	}
+
+	return c;
 }
 
 /****************************************************************************

@@ -51,24 +51,3 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 {
 	return NT_STATUS_OK;
 }
-
-NTSTATUS srv_decrypt_buffer(char *buf)
-{
-        return NT_STATUS_OK;
-}
-
-NTSTATUS srv_encrypt_buffer(char *buffer, char **buf_out)
-{
-        *buf_out = buffer;
-        return NT_STATUS_OK;
-}
-
-void srv_free_enc_buffer(char *buf)
-{
-        ;
-}
-
-bool srv_encryption_on(void)
-{
-        return false;
-}

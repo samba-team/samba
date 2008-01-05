@@ -47,7 +47,9 @@ static struct cli_state *smb_complete_connection(const char *, const char *,int 
 static struct cli_state	*smb_connect(const char *, const char *, int, const char *, const char *, const char *, const char *);
 static int		smb_print(struct cli_state *, char *, FILE *);
 static char *		uri_unescape_alloc(const char *);
-
+#if 0
+static bool smb_encrypt;
+#endif
 
 /*
  * 'main()' - Main entry for SMB backend.
@@ -468,6 +470,23 @@ static struct cli_state
     return NULL;
   }
     
+#if 0
+  /* Need to work out how to specify this on the URL. */
+  if (smb_encrypt)
+  {
+    if (!cli_cm_force_encryption(cli,
+			username,
+			password,
+			workgroup,
+			share))
+    {
+      fprintf(stderr, "ERROR: encryption setup failed\n");
+      cli_shutdown(cli);
+      return NULL;
+    }
+  }
+#endif
+
   return cli;
 }
 

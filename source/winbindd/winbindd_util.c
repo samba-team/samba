@@ -500,9 +500,13 @@ void rescan_trusted_domains( void )
 	    ((now-last_trustdom_scan) < WINBINDD_RESCAN_FREQ) )
 		return;
 		
-	/* clear the TRUSTDOM cache first */
-
-	wcache_tdc_clear();
+	/* I use to clear the cache here and start over but that
+	   caused problems in child processes that needed the
+	   trust dom list early on.  Removing it means we
+	   could have some trusted domains listed that have been
+	   removed from our primary domain's DC until a full
+	   restart.  This should be ok since I think this is what
+	   Windows does as well. */
 
 	/* this will only add new domains we didn't already know about
 	   in the domain_list()*/

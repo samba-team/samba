@@ -505,7 +505,7 @@ static const struct {
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_negprot(connection_struct *conn, struct smb_request *req)
+void reply_negprot(struct smb_request *req)
 {
 	size_t size = smb_len(req->inbuf) + 4;
 	int choice= -1;

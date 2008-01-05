@@ -3798,7 +3798,7 @@ int cmd_iosize(void)
 			d_printf("iosize <n> or iosize 0x<n>. "
 				"(Encrypted connection) ,"
 				"Minimum is 16384 (0x4000), "
-				"max is 64512 (0xFC00)\n");
+				"max is 130048 (0x1FC00)\n");
 		}
 		return 1;
 	}
@@ -3807,7 +3807,7 @@ int cmd_iosize(void)
 	if (smb_encrypt && (iosize < 0x4000 || iosize > 0xFC00)) {
 		d_printf("iosize out of range for encrypted "
 			"connection (min = 16384 (0x4000), "
-			"max = 64512 (0xFC00)");
+			"max = 130048 (0x1FC00)");
 		return 1;
 	} else if (!smb_encrypt && (iosize < 0x4000 || iosize > 0xFFFF00)) {
 		d_printf("iosize out of range (min = 16384 (0x4000), "
@@ -4328,16 +4328,22 @@ static void readline_callback(void)
 	timeout.tv_usec = 0;
 	sys_select_intr(cli->fd+1,&fds,NULL,NULL,&timeout);
 
-	/* We deliberately use receive_smb instead of
+	/* We deliberately use receive_smb_raw instead of
 	   client_receive_smb as we want to receive
 	   session keepalives and then drop them here.
 	*/
 	if (FD_ISSET(cli->fd,&fds)) {
-		if (!receive_smb(cli->fd,cli->inbuf,0,&cli->smb_rw_error)) {
+		if (receive_smb_raw(cli->fd,cli->inbuf,0,0,&cli->smb_rw_error) == -1) {
 			DEBUG(0, ("Read from server failed, maybe it closed the "
 				"connection\n"));
 			return;
 		}
+		if(CVAL(cli->inbuf,0) != SMBkeepalive) {
+			DEBUG(0, ("Read from server "
+				"returned unexpected packet!\n"));
+			return;
+		}
+
 		goto again;
 	}
 
@@ -4592,7 +4598,6 @@ static int do_message_op(void)
 		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
 		{ "grepable", 'g', POPT_ARG_NONE, NULL, 'g', "Produce grepable output" },
                 { "browse", 'B', POPT_ARG_NONE, NULL, 'B', "Browse SMB servers using DNS" },
-		{ "encrypt", 'e', POPT_ARG_NONE, NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -4828,6 +4833,7 @@ static int do_message_op(void)
 		calling_name = talloc_strdup(frame, global_myname() );
 	}
 
+	smb_encrypt = get_cmdline_auth_info_smb_encrypt();
 	init_names();
 
 	if(new_name_resolve_order)

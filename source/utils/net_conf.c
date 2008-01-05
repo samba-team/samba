@@ -19,9 +19,12 @@
  */
 
 /*
- * This is an interface to the configuration stored inside the
- * samba registry. In the future there might be support for other
- * configuration backends as well.
+ * This is an interface to Samba's configuration as made available
+ * by the libnet_conf interface (source/libnet/libnet_conf.c).
+ *
+ * This currently supports local interaction with the configuration
+ * stored in the registry. But other backends and remote access via
+ * rpc might get implemented in the future.
  */
 
 #include "includes.h"
@@ -43,9 +46,9 @@ static int net_conf_import_usage(int argc, const char**argv)
 	d_printf("USAGE: net conf import [--test|-T] <filename> "
 		 "[<servicename>]\n"
 		 "\t[--test|-T]    testmode - do not act, just print "
-		                   "what would be done\n"
+			"what would be done\n"
 		 "\t<servicename>  only import service <servicename>, "
-		                   "ignore the rest\n");
+			"ignore the rest\n");
 	return -1;
 }
 
@@ -136,14 +139,14 @@ static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
 		valstr = talloc_asprintf(ctx, "%s", BOOLSTR(!*(bool *)ptr));
 		break;
 	case P_ENUM:
-        	for (i = 0; parm->enum_list[i].name; i++) {
-        	        if (*(int *)ptr == parm->enum_list[i].value)
+		for (i = 0; parm->enum_list[i].name; i++) {
+			if (*(int *)ptr == parm->enum_list[i].value)
 			{
 				valstr = talloc_asprintf(ctx, "%s",
-        	                         parm->enum_list[i].name);
-        	                break;
-        	        }
-        	}
+					parm->enum_list[i].name);
+				break;
+			}
+		}
 		break;
 	case P_OCTAL: {
 		char *o = octal_string(*(int *)ptr);
@@ -719,6 +722,15 @@ static int net_conf_setparm(int argc, const char **argv)
 	param = strdup_lower(argv[1]);
 	value_str = argv[2];
 
+	if (!libnet_conf_share_exists(service)) {
+		werr = libnet_conf_create_share(service);
+		if (!W_ERROR_IS_OK(werr)) {
+			d_fprintf(stderr, "Error creating share '%s': %s\n",
+				  service, dos_errstr(werr));
+			goto done;
+		}
+	}
+
 	werr = libnet_conf_set_parameter(service, param, value_str);
 
 	if (!W_ERROR_IS_OK(werr)) {
@@ -834,15 +846,15 @@ int net_conf(int argc, const char **argv)
 		{"import", net_conf_import,
 		 "Import configuration from file in smb.conf format."},
 		{"listshares", net_conf_listshares,
-		 "List the registry shares."},
+		 "List the share names."},
 		{"drop", net_conf_drop,
-		 "Delete the complete configuration from registry."},
+		 "Delete the complete configuration."},
 		{"showshare", net_conf_showshare,
-		 "Show the definition of a registry share."},
+		 "Show the definition of a share."},
 		{"addshare", net_conf_addshare,
-		 "Create a new registry share."},
+		 "Create a new share."},
 		{"delshare", net_conf_delshare,
-		 "Delete a registry share."},
+		 "Delete a share."},
 		{"setparm", net_conf_setparm,
 		 "Store a parameter."},
 		{"getparm", net_conf_getparm,
@@ -854,9 +866,6 @@ int net_conf(int argc, const char **argv)
 
 	ret = net_run_function2(argc, argv, "net conf", func);
 
-	regdb_close();
-
-done:
 	return ret;
 }
 

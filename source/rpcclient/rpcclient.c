@@ -850,6 +850,18 @@ out_free:
 		goto done;
 	}
 
+	if (get_cmdline_auth_info_smb_encrypt()) {
+		nt_status = cli_cm_force_encryption(cli,
+					get_cmdline_auth_info_username(),
+					get_cmdline_auth_info_password(),
+					lp_workgroup(),
+					"IPC$");
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			result = 1;
+			goto done;
+		}
+	}
+
 #if 0	/* COMMENT OUT FOR TESTING */
 	memset(cmdline_auth_info.password,'X',sizeof(cmdline_auth_info.password));
 #endif
