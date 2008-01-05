@@ -175,11 +175,11 @@ NTSTATUS smb_raw_negotiate_recv(struct smbcli_request *req)
 	}
 
 	/* a way to force ascii SMB */
-	if (!lp_unicode(global_loadparm)) {
+	if (!transport->options.unicode) {
 		transport->negotiate.capabilities &= ~CAP_UNICODE;
 	}
 
-	if (!lp_nt_status_support(global_loadparm)) {
+	if (!transport->options.ntstatus_support) {
 		transport->negotiate.capabilities &= ~CAP_STATUS32;
 	}
 

@@ -83,7 +83,7 @@ struct composite_context *smbcli_sock_connect_send(TALLOC_CTX *mem_ctx,
 
 	ctx = socket_connect_multi_send(state, host_addr,
 					state->num_ports, state->ports,
-					lp_resolve_context(global_loadparm),
+					resolve_ctx,
 					state->ctx->event_ctx);
 	if (ctx == NULL) goto failed;
 	ctx->async.fn = smbcli_sock_connect_recv_conn;

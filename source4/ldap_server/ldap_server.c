@@ -345,7 +345,7 @@ static void ldapsrv_accept(struct stream_connection *c)
 	conn->connection  = c;
 	conn->service     = ldapsrv_service;
 	conn->sockets.raw = c->socket;
-	conn->lp_ctx      = global_loadparm;
+	conn->lp_ctx      = ldapsrv_service->task->lp_ctx;
 
 	c->private        = conn;
 
@@ -522,6 +522,8 @@ static void ldapsrv_task_init(struct task_server *task)
 
 	ldap_service = talloc_zero(task, struct ldapsrv_service);
 	if (ldap_service == NULL) goto failed;
+
+	ldap_service->task = task;
 
 	ldap_service->tls_params = tls_initialise(ldap_service, task->lp_ctx);
 	if (ldap_service->tls_params == NULL) goto failed;

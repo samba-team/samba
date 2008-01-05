@@ -2017,7 +2017,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		v[0].sid		= s->zero_sid;
 		v[0].dn			= s->forest.schema_dn_str;
 
-		ndr_err = ndr_push_struct_blob(&vd[0], vd, lp_iconv_convenience(global_loadparm), &v[0],
+		ndr_err = ndr_push_struct_blob(&vd[0], vd, NULL, &v[0],
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
@@ -2049,7 +2049,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		v[0].sid		= s->zero_sid;
 		v[0].dn			= s->domain.dn_str;
 
-		ndr_err = ndr_push_struct_blob(&vd[0], vd, lp_iconv_convenience(global_loadparm), &v[0],
+		ndr_err = ndr_push_struct_blob(&vd[0], vd, NULL, &v[0],
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
@@ -2131,7 +2131,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		v[0].sid		= s->zero_sid;
 		v[0].dn			= s->dest_dsa.computer_dn_str;
 
-		ndr_err = ndr_push_struct_blob(&vd[0], vd, lp_iconv_convenience(global_loadparm), &v[0],
+		ndr_err = ndr_push_struct_blob(&vd[0], vd, NULL, &v[0],
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
