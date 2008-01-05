@@ -364,7 +364,7 @@ void set_cmdline_auth_info_use_krb5_ticket(void)
 }
 
 /* This should only be used by lib/popt_common.c JRA */
-bool set_cmdline_auth_info_smb_encrypt(void)
+void set_cmdline_auth_info_smb_encrypt(void)
 {
 	cmdline_auth_info.smb_encrypt = true;
 }
