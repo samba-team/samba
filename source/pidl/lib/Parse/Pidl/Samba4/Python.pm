@@ -123,11 +123,11 @@ sub TypeConstructor($$)
 	$self->pidl("static PyTypeObject $type->{NAME}_ObjectType = {");
 	$self->indent;
 	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
-	$self->pidl(".tp_name = (char *)\"$type->{NAME}\",");
+	$self->pidl(".tp_name = \"$type->{NAME}\",");
 	$self->pidl(".tp_basicsize = sizeof($type->{NAME}_Object),");
-	$self->pidl(".tp_dealloc = py_$type->{NAME}_dealloc,");
-	$self->pidl(".tp_getattr = py_$type->{NAME}_getattr,");
-	$self->pidl(".tp_setattr = py_$type->{NAME}_setattr,");
+	$self->pidl(".tp_dealloc = (destructor)py_$type->{NAME}_dealloc,");
+	$self->pidl(".tp_getattr = (getattrfunc)py_$type->{NAME}_getattr,");
+	$self->pidl(".tp_setattr = (setattrfunc)py_$type->{NAME}_setattr,");
 	$self->deindent;
 	$self->pidl("};");
 
@@ -219,7 +219,7 @@ sub Interface($$)
 
 		$fn_name =~ s/^$interface->{NAME}_//;
 
-		$self->pidl("{ (char *)\"$fn_name\", (PyCFunction)py_$d->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
+		$self->pidl("{ \"$fn_name\", (PyCFunction)py_$d->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
 	}
 	$self->pidl("{ NULL, NULL, 0, NULL }");
 	$self->deindent;
@@ -248,7 +248,7 @@ sub Interface($$)
 	$self->pidl("static PyTypeObject $interface->{NAME}_InterfaceType = {");
 	$self->indent;
 	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
-	$self->pidl(".tp_name = (char *)\"$interface->{NAME}\",");
+	$self->pidl(".tp_name = \"$interface->{NAME}\",");
 	$self->pidl(".tp_basicsize = sizeof($interface->{NAME}_InterfaceObject),");
 	$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
 	$self->pidl(".tp_getattr = interface_$interface->{NAME}_getattr,");
@@ -313,7 +313,7 @@ sub Parse($$$$)
 	$self->indent;
 	foreach my $x (@$ndr) {
 	    next if ($x->{TYPE} ne "INTERFACE");
-		$self->pidl("{ (char *)\"$x->{NAME}\", (PyCFunction)interface_$x->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
+		$self->pidl("{ \"$x->{NAME}\", (PyCFunction)interface_$x->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
 
 		foreach my $d (@{$x->{TYPES}}) {
 			next if has_property($d, "nopython");
@@ -324,7 +324,7 @@ sub Parse($$$$)
 			$fn_name =~ s/^$x->{NAME}_//;
 			$fn_name =~ s/^$basename\_//;
 
-			$self->pidl("{ (char *)\"$fn_name\", (PyCFunction)py_$d->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
+			$self->pidl("{ \"$fn_name\", (PyCFunction)py_$d->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
 		}
 	}
 	
@@ -338,7 +338,7 @@ sub Parse($$$$)
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("PyObject *m;");
-	$self->pidl("m = Py_InitModule((char *)\"$basename\", $basename\_methods);");
+	$self->pidl("m = Py_InitModule(\"$basename\", $basename\_methods);");
 	foreach (keys %{$self->{constants}}) {
 		# FIXME: Handle non-string constants
 		$self->pidl("PyModule_AddObject(m, \"$_\", PyString_FromString(" . $self->{constants}->{$_}->[1] . "));");
