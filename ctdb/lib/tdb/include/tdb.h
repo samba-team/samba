@@ -46,6 +46,7 @@ extern "C" {
 #define TDB_BIGENDIAN 32 /* header is big-endian (internal use) */
 #define TDB_NOSYNC   64 /* don't use synchronous transactions */
 #define TDB_SEQNUM   128 /* maintain a sequence number */
+#define TDB_VOLATILE   256 /* Activate the per-hashchain freelist, default 5 */
 
 #define TDB_ERRCODE(code, ret) ((tdb->ecode = (code)), ret)
 
@@ -145,6 +146,8 @@ int tdb_chainlock_read(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainunlock_read(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainlock_mark(struct tdb_context *tdb, TDB_DATA key);
 int tdb_chainlock_unmark(struct tdb_context *tdb, TDB_DATA key);
+
+void tdb_setalarm_sigptr(struct tdb_context *tdb, volatile sig_atomic_t *sigptr);
 
 /* Debug functions. Not used in production. */
 void tdb_dump_all(struct tdb_context *tdb);

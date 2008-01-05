@@ -57,12 +57,3 @@ PRIVATE_DEPENDENCIES = \
 		LIBTDB
 # End BINARY tdbbackup
 ################################################
-
-#######################
-# Start LIBRARY swig_tdb
-[LIBRARY::swig_tdb]
-LIBRARY_REALNAME = swig/_tdb.$(SHLIBEXT)
-OBJ_FILES = swig/tdb_wrap.o
-PUBLIC_DEPENDENCIES = LIBTDB DYNCONFIG
-# End LIBRARY swig_tdb
-#######################

@@ -16,6 +16,12 @@ CPPFLAGS = @CPPFLAGS@ -I$(srcdir)/include -Iinclude
 CFLAGS = $(CPPFLAGS) @CFLAGS@
 LDFLAGS = @LDFLAGS@
 EXEEXT = @EXEEXT@
+SHLD = @SHLD@
+SHLD_FLAGS = @SHLD_FLAGS@
+PACKAGE_VERSION = @PACKAGE_VERSION@
+PICFLAG = @PICFLAG@
+SHLIBEXT = @SHLIBEXT@
+SWIG = swig
 
 .PHONY: test
 
@@ -27,7 +33,10 @@ TDB_OBJ = @TDB_OBJ@ @LIBREPLACEOBJ@
 
 DIRS = bin common tools
 
-all: showflags dirs $(PROGS)
+SONAME = libtdb.$(SHLIBEXT).1
+SOLIB = libtdb.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+all: showflags dirs $(PROGS) $(SOLIB) libtdb.a
 
 showflags:
 	@echo 'tdb will be compiled with flags:'
@@ -36,10 +45,12 @@ showflags:
 	@echo '  LDFLAGS = $(LDFLAGS)'
 	@echo '  LIBS = $(LIBS)'
 
+.SUFFIXES: .c .o
+
 .c.o:
 	@echo Compiling $*.c
 	@mkdir -p `dirname $@`
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(PICFLAG) $(CFLAGS) -c $< -o $@
 
 dirs:
 	@mkdir -p $(DIRS)
@@ -52,23 +63,35 @@ install: all
 	cp $(PROGS) $(DESTDIR)$(bindir)
 	cp $(srcdir)/include/tdb.h $(DESTDIR)$(includedir)
 	cp tdb.pc $(DESTDIR)$(libdir)/pkgconfig
+	cp libtdb.a $(SOLIB) $(DESTDIR)$(libdir)
 
 libtdb.a: $(TDB_OBJ)
 	ar -rv libtdb.a $(TDB_OBJ)
 
-bin/tdbtest$(EXEEXT): tools/tdbtest.o libtdb.a
+libtdb.$(SHLIBEXT): $(SOLIB)
+	ln -fs $< $@
+
+$(SONAME): $(SOLIB)
+	ln -fs $< $@
+
+$(SOLIB): $(TDB_OBJ)
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(TDB_OBJ) @SONAMEFLAG@$(SONAME)
+
+TDB_LIB = libtdb.a
+
+bin/tdbtest$(EXEEXT): tools/tdbtest.o $(TDB_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtest tools/tdbtest.o -L. -ltdb -lgdbm
 
-bin/tdbtool$(EXEEXT): tools/tdbtool.o libtdb.a
+bin/tdbtool$(EXEEXT): tools/tdbtool.o $(TDB_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtool tools/tdbtool.o -L. -ltdb
 
-bin/tdbtorture$(EXEEXT): tools/tdbtorture.o libtdb.a
+bin/tdbtorture$(EXEEXT): tools/tdbtorture.o $(TDB_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbtorture tools/tdbtorture.o -L. -ltdb
 
-bin/tdbdump$(EXEEXT): tools/tdbdump.o libtdb.a
+bin/tdbdump$(EXEEXT): tools/tdbdump.o $(TDB_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbdump tools/tdbdump.o -L. -ltdb
 
-bin/tdbbackup$(EXEEXT): tools/tdbbackup.o libtdb.a
+bin/tdbbackup$(EXEEXT): tools/tdbbackup.o $(TDB_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb
 
 test: bin/tdbtorture$(EXEEXT)
@@ -79,6 +102,7 @@ installcheck: test install
 clean:
 	rm -f $(ALL_PROGS) *.o *.a common/*.o tools/*.o tdb.pc
 	rm -f test.db test.tdb torture.tdb test.gdbm
+	rm -f $(SONAME) $(SOLIB) libtdb.a libtdb.$(SHLIBEXT)
 
 distclean: clean
 	rm -f *~ */*~
@@ -87,3 +111,23 @@ distclean: clean
 
 realdistclean: distclean
 	rm -f configure include/config.h.in
+
+tdb_wrap.c tdb.py: tdb.i
+	$(SWIG) -O -Wall -python -keyword tdb.i
+
+build-python: libtdb.$(SHLIBEXT) tdb_wrap.c tdb.py
+	./setup.py build
+
+install-python:
+	./setup.py install --prefix=$(prefix)
+
+check-python: build-python
+	# FIXME: Should be more portable:
+	LD_LIBRARY_PATH=. PYTHONPATH=.:build/lib.linux-i686-2.4 trial python/tests/simple.py
+
+install-swig:
+	mkdir -p $(DESTDIR)`$(SWIG) -swiglib`
+	cp tdb.i $(DESTDIR)`$(SWIG) -swiglib`
+
+clean-python:
+	./setup.py clean

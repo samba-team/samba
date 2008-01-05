@@ -88,12 +88,31 @@ static int tdb_write(struct tdb_context *tdb, tdb_off_t off,
 
 	if (tdb->map_ptr) {
 		memcpy(off + (char *)tdb->map_ptr, buf, len);
-	} else if (pwrite(tdb->fd, buf, len, off) != (ssize_t)len) {
+	} else {
+		ssize_t written = pwrite(tdb->fd, buf, len, off);
+		if ((written != (ssize_t)len) && (written != -1)) {
+			/* try once more */
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_write: wrote only "
+				 "%d of %d bytes at %d, trying once more\n",
+				 (int)written, len, off));
+			errno = ENOSPC;
+			written = pwrite(tdb->fd, (const void *)((const char *)buf+written),
+					 len-written,
+					 off+written);
+		}
+		if (written == -1) {
 		/* Ensure ecode is set for log fn. */
 		tdb->ecode = TDB_ERR_IO;
-		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_write failed at %d len=%d (%s)\n",
-			   off, len, strerror(errno)));
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_write failed at %d "
+				 "len=%d (%s)\n", off, len, strerror(errno)));
+			return TDB_ERRCODE(TDB_ERR_IO, -1);
+		} else if (written != (ssize_t)len) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_write: failed to "
+				 "write %d bytes at %d in two attempts\n",
+				 len, off));
+			errno = ENOSPC;
 		return TDB_ERRCODE(TDB_ERR_IO, -1);
+	}
 	}
 	return 0;
 }
@@ -220,7 +239,16 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 
 	if (ftruncate(tdb->fd, size+addition) == -1) {
 		char b = 0;
-		if (pwrite(tdb->fd,  &b, 1, (size+addition) - 1) != 1) {
+		ssize_t written = pwrite(tdb->fd,  &b, 1, (size+addition) - 1);
+		if (written == 0) {
+			/* try once more, potentially revealing errno */
+			written = pwrite(tdb->fd,  &b, 1, (size+addition) - 1);
+		}
+		if (written == 0) {
+			/* again - give up, guessing errno */
+			errno = ENOSPC;
+		}
+		if (written != 1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file to %d failed (%s)\n", 
 				 size+addition, strerror(errno)));
 			return -1;
@@ -232,15 +260,30 @@ static int tdb_expand_file(struct tdb_context *tdb, tdb_off_t size, tdb_off_t ad
 	   disk. This must be done with write, not via mmap */
 	memset(buf, TDB_PAD_BYTE, sizeof(buf));
 	while (addition) {
-		int n = addition>sizeof(buf)?sizeof(buf):addition;
-		int ret = pwrite(tdb->fd, buf, n, size);
-		if (ret != n) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file write of %d failed (%s)\n", 
-				   n, strerror(errno)));
-			return -1;
+		size_t n = addition>sizeof(buf)?sizeof(buf):addition;
+		ssize_t written = pwrite(tdb->fd, buf, n, size);
+		if (written == 0) {
+			/* prevent infinite loops: try _once_ more */
+			written = pwrite(tdb->fd, buf, n, size);
 		}
-		addition -= n;
-		size += n;
+		if (written == 0) {
+			/* give up, trying to provide a useful errno */
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file write "
+				"returned 0 twice: giving up!\n"));
+			errno = ENOSPC;
+			return -1;
+		} else if (written == -1) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "expand_file write of "
+				 "%d bytes failed (%s)\n", (int)n,
+				 strerror(errno)));
+			return -1;
+		} else if (written != n) {
+			TDB_LOG((tdb, TDB_DEBUG_WARNING, "expand_file: wrote "
+				 "only %d of %d bytes - retrying\n", (int)written,
+				 (int)n));
+		}
+		addition -= written;
+		size += written;
 	}
 	return 0;
 }

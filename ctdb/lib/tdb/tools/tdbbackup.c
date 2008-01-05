@@ -44,6 +44,7 @@
 #include "system/locale.h"
 #include "system/time.h"
 #include "system/filesys.h"
+#include "system/wait.h"
 #include "tdb.h"
 
 #ifdef HAVE_GETOPT_H
@@ -70,7 +71,7 @@ static int copy_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 	TDB_CONTEXT *tdb_new = (TDB_CONTEXT *)state;
 
 	if (tdb_store(tdb_new, key, dbuf, TDB_INSERT) != 0) {
-		fprintf(stderr,"Failed to insert into %s\n", tdb_name(tdb));
+		fprintf(stderr,"Failed to insert into %s\n", tdb_name(tdb_new));
 		failed = 1;
 		return 1;
 	}
@@ -163,7 +164,7 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 	}
 	
 	/* traverse the new tdb to confirm */
-	count2 = tdb_traverse(tdb_new, test_fn, 0);
+	count2 = tdb_traverse(tdb_new, test_fn, NULL);
 	if (count2 != count1) {
 		fprintf(stderr,"failed to copy %s\n", old_name);
 		tdb_close(tdb_new);
@@ -177,7 +178,6 @@ static int backup_tdb(const char *old_name, const char *new_name, int hash_size)
 
 	/* close the new tdb and rename it to .bak */
 	tdb_close(tdb_new);
-	unlink(new_name);
 	if (rename(tmp_name, new_name) != 0) {
 		perror(new_name);
 		free(tmp_name);

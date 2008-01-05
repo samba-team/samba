@@ -28,6 +28,7 @@
 #include "system/time.h"
 #include "system/shmem.h"
 #include "system/select.h"
+#include "system/wait.h"
 #include "tdb.h"
 
 #ifndef HAVE_GETPAGESIZE
@@ -61,7 +62,7 @@ typedef uint32_t tdb_off_t;
 #define TDB_RECOVERY_HEAD offsetof(struct tdb_header, recovery_start)
 #define TDB_SEQNUM_OFS    offsetof(struct tdb_header, sequence_number)
 #define TDB_PAD_BYTE 0x42
-#define TDB_PAD_UINT32_T  0x42424242
+#define TDB_PAD_U32  0x42424242
 
 /* NB assumes there is a local variable called "tdb" that is the
  * current context, also takes doubly-parenthesized print-style
@@ -167,6 +168,7 @@ struct tdb_context {
 	int page_size;
 	int max_dead_records;
 	bool have_transaction_lock;
+	volatile sig_atomic_t *interrupt_sig_ptr;
 };
 
 
