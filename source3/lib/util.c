@@ -289,7 +289,8 @@ static struct user_auth_info cmdline_auth_info = {
 	NULL,	/* password */
 	false,	/* got_pass */
 	false,	/* use_kerberos */
-	Undefined /* signing state */
+	Undefined, /* signing state */
+	false	/* smb_encrypt */
 };
 
 const char *get_cmdline_auth_info_username(void)
@@ -362,9 +363,20 @@ void set_cmdline_auth_info_use_krb5_ticket(void)
 	cmdline_auth_info.got_pass = true;
 }
 
+/* This should only be used by lib/popt_common.c JRA */
+bool set_cmdline_auth_info_smb_encrypt(void)
+{
+	cmdline_auth_info.smb_encrypt = true;
+}
+
 bool get_cmdline_auth_info_got_pass(void)
 {
 	return cmdline_auth_info.got_pass;
+}
+
+bool get_cmdline_auth_info_smb_encrypt(void)
+{
+	return cmdline_auth_info.smb_encrypt;
 }
 
 bool get_cmdline_auth_info_copy(struct user_auth_info *info)
