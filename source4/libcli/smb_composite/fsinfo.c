@@ -153,11 +153,11 @@ struct composite_context *smb_composite_fsinfo_send(struct smbcli_tree *tree,
 	state->connect->in.fallback_to_anonymous = false;
 	state->connect->in.workgroup    = io->in.workgroup;
 
-	lp_smbcli_options(global_loadparm, &state->connect->in.options);
+	state->connect->in.options = tree->session->transport->options;
 
 	c->state = COMPOSITE_STATE_IN_PROGRESS;
 	state->stage = FSINFO_CONNECT;
-	c->event_ctx = talloc_reference(c,  tree->session->transport->socket->event.ctx);
+	c->event_ctx = talloc_reference(c, tree->session->transport->socket->event.ctx);
 	c->private_data = state;
 
 	state->creq = smb_composite_connect_send(state->connect, state,
