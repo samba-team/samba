@@ -43,6 +43,8 @@ for t in $tests; do
     start=""
     name="$t"
     testit "$name" $VALGRIND $BINDIR/smbtorture $ADDARGS $unc -U"$username"%"$password" $t || failed=`expr $failed + 1`
+    echo "testing encrypted connection"
+    testit "$name" $VALGRIND $BINDIR/smbtorture $ADDARGS $unc -U"$username"%"$password" -e $t || failed=`expr $failed + 1`
 done
 
 testok $0 $failed
