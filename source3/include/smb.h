@@ -27,7 +27,7 @@
 #define _SMB_H
 
 /* logged when starting the various Samba daemons */
-#define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2007"
+#define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2008"
 
 
 #if defined(LARGE_SMB_OFF_T)
@@ -659,6 +659,7 @@ typedef struct connection_struct {
 	int num_files_open;
 	unsigned int num_smb_operations; /* Count of smb operations on this tree. */
 	int encrypt_level;
+	bool encrypted_tid;
 
 	/* Semantics requested by the client or forced by the server config. */
 	bool case_sensitive;
@@ -694,6 +695,8 @@ struct smb_request {
 	const uint8 *inbuf;
 	uint8 *outbuf;
 	size_t unread_bytes;
+	bool encrypted;
+	connection_struct *conn;
 };
 
 /* Defines for the sent_oplock_break field above. */
@@ -757,6 +760,7 @@ struct pending_message_list {
 	struct pending_message_list *next, *prev;
 	struct timeval request_time; /* When was this first issued? */
 	struct timeval end_time; /* When does this time out? */
+	bool encrypted;
 	DATA_BLOB buf;
 	DATA_BLOB private_data;
 };

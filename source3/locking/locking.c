@@ -608,7 +608,10 @@ static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 
 	for (i = 0; i < lck->num_share_modes; i++) {
 		struct share_mode_entry *entry_p = &lck->share_modes[i];
-		char *str = share_mode_str(NULL, i, entry_p);
+		char *str = NULL;
+		if (DEBUGLEVEL >= 10) {
+			str = share_mode_str(NULL, i, entry_p);
+		}
 		DEBUG(10,("parse_share_modes: %s\n",
 			str ? str : ""));
 		if (!process_exists(entry_p->pid)) {

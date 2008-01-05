@@ -56,6 +56,10 @@ static void gotalarm_sig(void)
 {
 	LDAP *ldp = NULL;
 
+
+	DEBUG(10, ("Opening connection to LDAP server '%s:%d', timeout "
+		   "%u seconds\n", server, port, to));
+
 	/* Setup timeout */
 	gotalarm = 0;
 	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
@@ -65,8 +69,10 @@ static void gotalarm_sig(void)
 	ldp = ldap_open(server, port);
 
 	if (ldp == NULL) {
-		DEBUG(2,("Could not open LDAP connection to %s:%d: %s\n",
+		DEBUG(2,("Could not open connection to LDAP server %s:%d: %s\n",
 			 server, port, strerror(errno)));
+	} else {
+		DEBUG(10, ("Connected to LDAP server '%s:%d'\n", server, port));
 	}
 
 	/* Teardown timeout. */
@@ -400,7 +406,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 got_connection:
 
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
-	DEBUG(3,("Connected to LDAP server %s\n", addr));
+	DEBUG(3,("Successfully contacted LDAP server %s\n", addr));
 
 	if (!ads->auth.user_name) {
 		/* Must use the userPrincipalName value here or sAMAccountName
@@ -442,11 +448,12 @@ got_connection:
 	
 	/* Otherwise setup the TCP LDAP session */
 
-	if ( (ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name, 
-		LDAP_PORT, lp_ldap_timeout())) == NULL )
-	{
+	ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name,
+					      LDAP_PORT, lp_ldap_timeout());
+	if (ads->ldap.ld == NULL) {
 		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
 	}
+	DEBUG(3,("Connected to LDAP server %s\n", ads->config.ldap_server_name));
 
 	/* cache the successful connection for workgroup and realm */
 	if (ads_closest_dc(ads)) {
@@ -2789,6 +2796,66 @@ ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char ***suffix
 
 	return status;
 }
+
+/**
+ * get the joinable ous for a domain
+ * @param ads connection to ads server
+ * @param mem_ctx Pointer to talloc context
+ * @param ous Pointer to an array of ous
+ * @param num_ous Pointer to the number of ous
+ * @return status of search
+ **/
+ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
+				TALLOC_CTX *mem_ctx,
+				char ***ous,
+				size_t *num_ous)
+{
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	LDAPMessage *msg = NULL;
+	const char *attrs[] = { "dn", NULL };
+	int count = 0;
+
+	status = ads_search(ads, &res,
+			    "(|(objectClass=domain)(objectclass=organizationalUnit))",
+			    attrs);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	count = ads_count_replies(ads, res);
+	if (count < 1) {
+		ads_msgfree(ads, res);
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	}
+
+	for (msg = ads_first_entry(ads, res); msg;
+	     msg = ads_next_entry(ads, msg)) {
+
+		char *dn = NULL;
+
+		dn = ads_get_dn(ads, msg);
+		if (!dn) {
+			ads_msgfree(ads, res);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
+		if (!add_string_to_array(mem_ctx, dn,
+					 (const char ***)ous,
+					 (int *)num_ous)) {
+			ads_memfree(ads, dn);
+			ads_msgfree(ads, res);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
+		ads_memfree(ads, dn);
+	}
+
+	ads_msgfree(ads, res);
+
+	return status;
+}
+
 
 /**
  * pull a DOM_SID from an extended dn string

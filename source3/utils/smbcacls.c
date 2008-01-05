@@ -840,7 +840,7 @@ static struct cli_state *connect_one(const char *server, const char *share)
 							    get_cmdline_auth_info_username(),
 							    lp_workgroup(),
 							    get_cmdline_auth_info_password(),
-							    0,
+							     get_cmdline_auth_info_use_kerberos() ? CLI_FULL_CONNECTION_USE_KERBEROS : 0,
 							    get_cmdline_auth_info_signing_state(),
 							    NULL))) {
 		return c;

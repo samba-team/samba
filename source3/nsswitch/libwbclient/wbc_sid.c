@@ -265,12 +265,12 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
 	/* Copy out result */
 
 	if (domain != NULL) {
-		*domain = strdup(response.data.name.dom_name);
+		*domain = talloc_strdup(NULL, response.data.name.dom_name);
 		BAIL_ON_PTR_ERROR((*domain), wbc_status);
 	}
 
 	if (name != NULL) {
-		*name = strdup(response.data.name.name);
+		*name = talloc_strdup(NULL, response.data.name.name);
 		BAIL_ON_PTR_ERROR((*name), wbc_status);
 	}
 
@@ -283,9 +283,9 @@ wbcErr wbcLookupSid(const struct wbcDomainSid *sid,
  done:
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		if (*domain)
-			free(*domain);
+			talloc_free(*domain);
 		if (*name)
-			free(*name);
+			talloc_free(*name);
 	}
 
 	return wbc_status;
@@ -334,10 +334,8 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 
 	ridbuf_size = (sizeof(char)*11) * num_rids + 1;
 
-	ridlist = malloc(ridbuf_size);
+	ridlist = talloc_zero_array(NULL, char, ridbuf_size);
 	BAIL_ON_PTR_ERROR(ridlist, wbc_status);
-
-	memset(ridlist, 0x0, ridbuf_size);
 
 	len = 0;
 	for (i=0; i<num_rids && (len-1)>0; i++) {
@@ -356,15 +354,15 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 	wbc_status = wbcRequestResponse(WINBINDD_LOOKUPRIDS,
 					&request,
 					&response);
-	free(ridlist);
+	talloc_free(ridlist);
 
-	domain_name = strdup(response.data.domain_name);
+	domain_name = talloc_strdup(NULL, response.data.domain_name);
 	BAIL_ON_PTR_ERROR(domain_name, wbc_status);
 
-	*names = (const char**)malloc(sizeof(char*) * num_rids);
+	*names = talloc_array(NULL, const char*, num_rids);
 	BAIL_ON_PTR_ERROR((*names), wbc_status);
 
-	*types = (enum wbcSidType*)malloc(sizeof(enum wbcSidType) * num_rids);
+	*types = talloc_array(NULL, enum wbcSidType, num_rids);
 	BAIL_ON_PTR_ERROR((*types), wbc_status);
 
 	p = (char *)response.extra_data.data;
@@ -393,7 +391,8 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 
 		*q = '\0';
 
-		(*names)[i] = strdup(p);
+		(*names)[i] = talloc_strdup((*names), p);
+		BAIL_ON_PTR_ERROR(((*names)[i]), wbc_status);
 
 		p = q+1;
 	}
@@ -403,18 +402,20 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
-	free(response.extra_data.data);
-
 	wbc_status = WBC_ERR_SUCCESS;
 
  done:
+	if (response.extra_data.data) {
+		free(response.extra_data.data);
+	}
+
 	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		if (domain_name)
-			free(domain_name);
+			talloc_free(domain_name);
 		if (*names)
-			free(*names);
+			talloc_free(*names);
 		if (*types)
-			free(*types);
+			talloc_free(*types);
 	} else {
 		*pp_domain_name = domain_name;
 	}

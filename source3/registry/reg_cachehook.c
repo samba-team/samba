@@ -25,19 +25,21 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
-static SORTED_TREE *cache_tree;
+static SORTED_TREE *cache_tree = NULL;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 static REGISTRY_HOOK default_hook = { KEY_TREE_ROOT, &regdb_ops };
 
 /**********************************************************************
- Initialize the cache tree
+ Initialize the cache tree if it has not been initialized yet.
  *********************************************************************/
 
 bool reghook_cache_init( void )
 {
-	cache_tree = pathtree_init( &default_hook, NULL );
+	if (cache_tree == NULL) {
+		cache_tree = pathtree_init(&default_hook, NULL);
+	}
 
-	return ( cache_tree == NULL );
+	return (cache_tree != NULL);
 }
 
 /**********************************************************************

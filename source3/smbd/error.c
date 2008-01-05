@@ -81,9 +81,9 @@ void error_packet_set(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatu
 	}
 }
 
-int error_packet(const char *inbuf, char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
+int error_packet(char *outbuf, uint8 eclass, uint32 ecode, NTSTATUS ntstatus, int line, const char *file)
 {
-	int outsize = srv_set_message(inbuf, outbuf,0,0,True);
+	int outsize = srv_set_message(outbuf,0,0,True);
 	error_packet_set(outbuf, eclass, ecode, ntstatus, line, file);
 	return outsize;
 }
