@@ -2,7 +2,7 @@
 
 # this runs the file serving tests that are expected to pass with samba3
 
-if [ $# != 2 ]; then
+if [ $# -lt 2 ]; then
 cat <<EOF
 Usage: test_smbclient_s3.sh SERVER SERVER_IP
 EOF
@@ -12,6 +12,8 @@ fi
 SERVER="$1"
 SERVER_IP="$2"
 SMBCLIENT="$VALGRIND ${SMBCLIENT:-$BINDIR/smbclient} $CONFIGURATION"
+shift 3
+ADDARGS="$*"
 
 incdir=`dirname $0`
 . $incdir/test_functions.sh
@@ -24,7 +26,7 @@ test_noninteractive_no_prompt()
     prompt="smb"
 
     echo du | \
-	$SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I SERVER_IP 2>&1 | \
+	$SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I SERVER_IP $ADDARGS 2>&1 | \
     grep $prompt
 
     if [ $? = 0 ] ; then
@@ -49,7 +51,7 @@ EOF
 
     CLI_FORCE_INTERACTIVE=yes \
     $SMBCLIENT $CONFIGURATION "$@" -U$USERNAME%$PASSWORD //$SERVER/tmp -I $SERVER_IP \
-	< $tmpfile 2>/dev/null | \
+	$ADDARGS < $tmpfile 2>/dev/null | \
     grep $prompt
 
     if [ $? = 0 ] ; then
