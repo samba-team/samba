@@ -597,6 +597,11 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 
 	if (do_fork) {
 		setsid();
+		close(0);
+		if (open("/dev/null", O_RDONLY) != 0) {
+			DEBUG(0,(__location__ " Failed to setup stdin on /dev/null\n"));
+			exit(11);
+		}
 	}
 	block_signal(SIGPIPE);
 
