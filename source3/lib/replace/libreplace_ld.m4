@@ -1,3 +1,23 @@
+#
+# This offers a nice overview how to build shared libraries on all platforms
+#        http://www.fortran-2000.com/ArnaudRecipes/sharedlib.html
+#
+
+AC_DEFUN([AC_LIBREPLACE_STLD],
+[
+	AC_PATH_PROG(PROG_AR, ar)
+
+	STLD=${PROG_AR}
+
+	AC_SUBST(STLD)
+])
+
+AC_DEFUN([AC_LIBREPLACE_STLD_FLAGS],
+[
+	STLD_FLAGS="-rcs"
+	AC_SUBST(STLD_FLAGS)
+])
+
 AC_DEFUN([AC_LD_EXPORT_DYNAMIC],
 [
 saved_LDFLAGS="$LDFLAGS"
@@ -67,48 +87,102 @@ case "$host_os" in
 		PICFLAG="-KPIC"
 		;;
 	*darwin*)
+		PICFLAG="-fno-common"
 		;;
 esac
 AC_SUBST(PICFLAG)
 ])
 
-AC_DEFUN([AC_LD_SHLDFLAGS],
+AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_LINKER],
 [
-	SHLD_FLAGS="-shared"
+	LD_SHLIB_LINKER="${CC}"
 
 	case "$host_os" in
-		*linux*)
-			SHLD_FLAGS="-shared -Wl,-Bsymbolic"
-			;;
-		*solaris*)
-			SHLD_FLAGS="-G"
-			if test "${GCC}" = "no"; then
-				## ${CFLAGS} added for building 64-bit shared 
-				## libs using Sun's Compiler
-				SHLD_FLAGS="-G \${CFLAGS}"
-			fi
-			;;
-		*sunos*)
-			SHLD_FLAGS="-G"
-			;;
 		*irix*)
-			SHLD_FLAGS="-shared"
-			;;
-		*aix*)
-			SHLD_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
-			;;
-		*hpux*)
-			if test "${GCC}" = "yes"; then
-				SHLD_FLAGS="-shared"
-			else
-				SHLD_FLAGS="-b"
-			fi
-			;;
-		*darwin*)
-			SHLD_FLAGS="-dynamiclib"
+			LD_SHLIB_LINKER="${PROG_LD}"
 			;;
 	esac
 
+	AC_SUBST(LD_SHLIB_LINKER)
+])
+
+AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_FLAGS],
+[
+	LD_SHLIB_FLAGS="-shared"
+
+	case "$host_os" in
+		*linux*)
+			LD_SHLIB_FLAGS="-shared -Wl,-Bsymbolic"
+			;;
+		*solaris*)
+			LD_SHLIB_FLAGS="-G"
+			if test "${GCC}" = "no"; then
+				## ${CFLAGS} added for building 64-bit shared 
+				## libs using Sun's Compiler
+				LD_SHLIB_FLAGS="-G \${CFLAGS}"
+			fi
+			;;
+		*sunos*)
+			LD_SHLIB_FLAGS="-G"
+			;;
+		*irix*)
+			LD_SHLIB_FLAGS="-shared"
+			;;
+		*aix*)
+			LD_SHLIB_FLAGS="-Wl,-G,-bexpall,-bbigtoc"
+			;;
+		*hpux*)
+			if test "${GCC}" = "yes"; then
+				LD_SHLIB_FLAGS="-shared"
+			else
+				LD_SHLIB_FLAGS="-b"
+			fi
+			;;
+		*osf*)
+			LD_SHLIB_FLAGS="-shared"
+			;;
+		*darwin*)
+			LD_SHLIB_FLAGS="-dynamiclib -Wl,-search_paths_first"
+			;;
+	esac
+
+	AC_SUBST(LD_SHLIB_FLAGS)
+])
+
+AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_DISALLOW_UNDEF_FLAG],
+[
+	LD_SHLIB_DISALLOW_UNDEF_FLAG=""
+
+	#
+	# TODO: enforce error not only warnings
+	#
+	# NOTE: -Wl,--no-allow-shlib-undefined isn't what we want...
+	#       as it bails out on broken system libraries
+	#
+	case "$host_os" in
+		*osf*)
+			LD_SHLIB_DISALLOW_UNDEF_FLAG="-warning_unresolved"
+			;;
+		*darwin*)
+			LD_SHLIB_DISALLOW_UNDEF_FLAG="-undefined error"
+			;;
+	esac
+
+	AC_SUBST(LD_SHLIB_DISALLOW_UNDEF_FLAG)
+])
+
+AC_DEFUN([AC_LIBREPLACE_SHLD],
+[
+	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_LINKER])
+	SHLD="$LD_SHLIB_LINKER"
+	AC_SUBST(SHLD)
+])
+
+AC_DEFUN([AC_LIBREPLACE_SHLD_FLAGS],
+[
+	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_FLAGS])
+	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_DISALLOW_UNDEF_FLAG])
+	SHLD_FLAGS="$LD_SHLIB_FLAGS $LD_SHLIB_DISALLOW_UNDEF_FLAG"
 	AC_SUBST(SHLD_FLAGS)
 ])
 
@@ -157,7 +231,7 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 			SONAMEFLAG="-Wl,-soname,"
 			;;
 		*hpux*)
-			SONAMEFLAG="-Wl,+h "
+			SONAMEFLAG="-Wl,+h,"
 			;;
 		*osf*)
 			SONAMEFLAG="-Wl,-soname,"
@@ -166,7 +240,74 @@ AC_DEFUN([AC_LD_SONAMEFLAG],
 			SONAMEFLAG="-Wl,-soname,"
 			;;
 		*darwin*)
-			SONAMEFLAG="-install_name "
+			SONAMEFLAG="#"
+			;;
+		*aix*)
+			# Not supported
+			SONAMEFLAG="#"
 			;;
 		esac
+])
+
+AC_DEFUN([AC_LIBREPLACE_MDLD],
+[
+	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_LINKER])
+	MDLD="$LD_SHLIB_LINKER"
+	AC_SUBST(MDLD)
+])
+
+AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_ALLOW_UNDEF_FLAG],
+[
+	LD_ALLOW_SHLIB_UNDEF_FLAG=""
+
+	case "$host_os" in
+		*linux*)
+			LD_SHLIB_ALLOW_UNDEF_FLAG="-Wl,--allow-shlib-undefined"
+			;;
+		*osf*)
+			LD_SHLIB_ALLOW_UNDEF_FLAG="-expect_unresolved '*'"
+			;;
+		*darwin*)
+			LD_SHLIB_ALLOW_UNDEF_FLAG="-undefined dynamic_lookup"
+			;;
+	esac
+
+	AC_SUBST(LD_SHLIB_ALLOW_UNDEF_FLAG)
+])
+
+AC_DEFUN([AC_LIBREPLACE_MDLD_FLAGS],
+[
+	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_FLAGS])
+	AC_REQUIRE([AC_LIBREPLACE_LD_SHLIB_ALLOW_UNDEF_FLAG])
+	MDLD_FLAGS="$LD_SHLIB_FLAGS $LD_SHLIB_ALLOW_UNDEF_FLAG"
+	AC_SUBST(MDLD_FLAGS)
+])
+
+AC_DEFUN([AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR],
+[
+	case "$host_os" in
+		*linux*)
+			LIB_PATH_VAR=LD_LIBRARY_PATH
+		;;
+		*solaris*)
+			LIB_PATH_VAR=LD_LIBRARY_PATH
+		;;
+		*hpux*)
+			LIB_PATH_VAR=SHLIB_PATH
+		;;
+		*osf*)
+			LIB_PATH_VAR=LD_LIBRARY_PATH
+		;;
+		*aix*)
+			LIB_PATH_VAR=LIB_PATH
+			;;
+		*irix*)
+			LIB_PATH_VAR=LD_LIBRARY_PATH
+			;;
+		*darwin*)
+			LIB_PATH_VAR=DYLD_LIBRARY_PATH
+			;;
+	esac
+
+	AC_SUBST(LIB_PATH_VAR)
 ])

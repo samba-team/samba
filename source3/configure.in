@@ -2037,6 +2037,8 @@ AC_MSG_RESULT([$PICFLAG])
 
 AC_DEFINE_UNQUOTED(SHLIBEXT, "$SHLIBEXT", [Shared library extension])
 
+AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR
+
 ################
 
 AC_CACHE_CHECK([for long long],samba_cv_have_longlong,[

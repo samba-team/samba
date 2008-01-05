@@ -21,6 +21,7 @@ smbtorture4_path=@smbtorture4_path@
 LIBS=@LIBS@
 CC=@CC@
 SHLD=@SHLD@
+LIB_PATH_VAR=@LIB_PATH_VAR@
 
 ## Dynamic shared libraries build settings
 DSO_EXPORTS_CMD=-Wl,--version-script,$(srcdir)/exports/`basename $@ | sed 's/@SHLIBEXT@$$/syms/'`
@@ -2145,16 +2146,18 @@ test_pam_modules: pam_modules
 			|| exit 1; \
 	done
 
+
 ##
 ## Targets for 'make test'
 ##
 test: all torture timelimit
 	@echo Running Test suite
-	@PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
+	@$(LIB_PATH_VAR)=`dirname ${smbtorture4_path}`/shared PERL="$(PERL)" $(srcdir)/script/tests/selftest.sh ${selftest_prefix}/st all "${smbtorture4_path}"
 
 valgrindtest: all torture timelimit
 	@echo Running Test suite with valgrind
-	@NMBD_VALGRIND="xterm -n nmbd -e valgrind -q --db-attach=yes --num-callers=30" \
+	@$(LIB_PATH_VAR)=`dirname ${smbtorture4_path}`/shared \
+	 NMBD_VALGRIND="xterm -n nmbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 WINBINDD_VALGRIND="xterm -n winbindd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 SMBD_VALGRIND="xterm -n smbd -e valgrind -q --db-attach=yes --num-callers=30" \
 	 VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/st/valgrind.log" \
