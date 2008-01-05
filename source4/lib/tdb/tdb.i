@@ -122,7 +122,7 @@ enum TDB_ERROR {
     $1 = TDB_DEFAULT;
 }
 
-%typemap(default,noblock=1) int open_flags {
+%typemap(default,noblock=1) int flags {
     $1 = O_RDWR;
 }
 

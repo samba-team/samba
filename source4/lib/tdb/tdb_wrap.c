@@ -2823,6 +2823,7 @@ SWIGINTERN PyObject *_wrap_new_Tdb(PyObject *SWIGUNUSEDPARM(self), PyObject *arg
   
   arg2 = 0;
   arg3 = TDB_DEFAULT;
+  arg4 = O_RDWR;
   arg5 = 0600;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOOO:new_Tdb",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
   res1 = SWIG_AsCharPtrAndSize(obj0, &buf1, NULL, &alloc1);
