@@ -336,7 +336,9 @@ bool check_elections(void)
 	for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec)) {
 		struct work_record *work;
 		for (work = subrec->workgrouplist; work; work = work->next) {
-			run_any_election |= work->RunningElection;
+			if (work->RunningElection) {
+				run_any_election = work->RunningElection;
+			}
 
 			/* 
 			 * Start an election if we have any chance of winning.
