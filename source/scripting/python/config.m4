@@ -13,7 +13,12 @@ if test -z "$PYTHON"; then
 	AC_MSG_WARN([No python found])
 fi
 
-AC_PATH_PROG([PYTHON_CONFIG],[python[$PYTHON_VERSION]-config])
+if test -z "$PYTHON_VERSION"; then 
+	AC_PATH_PROGS([PYTHON_CONFIG], [python2.6-config python2.5-config python2.4-config python-config])
+else 
+	AC_PATH_PROG([PYTHON_CONFIG], [python[$PYTHON_VERSION]-config])
+fi
+
 if test -z "$PYTHON_CONFIG"; then
 	working_python=no
 	AC_MSG_WARN([No python-config found])
