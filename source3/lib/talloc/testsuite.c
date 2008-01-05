@@ -813,6 +813,25 @@ static bool test_speed(void)
 
 	talloc_free(ctx);
 
+	ctx = talloc_pool(NULL, 1024);
+
+	tv = timeval_current();
+	count = 0;
+	do {
+		void *p1, *p2, *p3;
+		for (i=0;i<loop;i++) {
+			p1 = talloc_size(ctx, loop % 100);
+			p2 = talloc_strdup(p1, "foo bar");
+			p3 = talloc_size(p1, 300);
+			talloc_free_children(ctx);
+		}
+		count += 3 * loop;
+	} while (timeval_elapsed(&tv) < 5.0);
+
+	talloc_free(ctx);
+
+	fprintf(stderr, "talloc_pool: %.0f ops/sec\n", count/timeval_elapsed(&tv));
+
 	tv = timeval_current();
 	count = 0;
 	do {
@@ -1066,6 +1085,23 @@ static bool test_autofree(void)
 	return true;
 }
 
+static bool test_pool(void)
+{
+	void *pool;
+	void *p1, *p2, *p3, *p4;
+
+	pool = talloc_pool(NULL, 1024);
+
+	p1 = talloc_size(pool, 80);
+	p2 = talloc_size(pool, 20);
+	p3 = talloc_size(p1, 50);
+	p4 = talloc_size(p3, 1000);
+
+	talloc_free(pool);
+
+	return true;
+}
+
 struct torture_context;
 bool torture_local_talloc(struct torture_context *tctx)
 {
@@ -1094,6 +1130,7 @@ bool torture_local_talloc(struct torture_context *tctx)
 	ret &= test_free_parent_deny_child(); 
 	ret &= test_talloc_ptrtype();
 	ret &= test_talloc_free_in_destructor();
+	ret &= test_pool();
 
 	if (ret) {
 		ret &= test_speed();
