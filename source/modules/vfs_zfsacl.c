@@ -174,7 +174,7 @@ static NTSTATUS zfs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 static NTSTATUS zfsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				 struct files_struct *fsp,
-				 int fd,  uint32 security_info,
+				 uint32 security_info,
 				 struct security_descriptor **ppdesc)
 {
 	SMB4ACL_T *pacl;

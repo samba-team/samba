@@ -77,6 +77,7 @@
 /* Leave at 22 - not yet released. Change get_nt_acl to return NTSTATUS - vl */
 /* Leave at 22 - not yet released. Change get_nt_acl to *not* take a
  * files_struct. - obnox.*/
+/* Leave at 22 - not yet released. Remove parameter fd from fget_nt_acl. - obnox */
 
 #define SMB_VFS_INTERFACE_VERSION 22
 
@@ -310,7 +311,7 @@ struct vfs_ops {
 		/* NT ACL operations. */
 		
 		NTSTATUS (*fget_nt_acl)(struct vfs_handle_struct *handle,
-					struct files_struct *fsp, int fd,
+					struct files_struct *fsp,
 					uint32 security_info,
 					struct security_descriptor **ppdesc);
 		NTSTATUS (*get_nt_acl)(struct vfs_handle_struct *handle,

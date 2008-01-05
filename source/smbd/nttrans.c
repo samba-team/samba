@@ -1643,7 +1643,7 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	} else {
 		if (fsp->fh->fd != -1) {
 			status = SMB_VFS_FGET_NT_ACL(
-				fsp, fsp->fh->fd, security_info_wanted, &psd);
+				fsp, security_info_wanted, &psd);
 		}
 		else {
 			status = SMB_VFS_GET_NT_ACL(

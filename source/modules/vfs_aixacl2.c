@@ -159,7 +159,7 @@ static bool aixjfs2_get_nfs4_acl(const char *name,
 }
 
 static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
-	files_struct *fsp, int fd, uint32 security_info,
+	files_struct *fsp, uint32 security_info,
 	SEC_DESC **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;

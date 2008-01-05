@@ -191,7 +191,7 @@ static int smb_full_audit_chflags(vfs_handle_struct *handle,
 static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *handle,
 						    SMB_DEV_T dev, SMB_INO_T inode);
 static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-				int fd, uint32 security_info,
+				uint32 security_info,
 				SEC_DESC **ppdesc);
 static NTSTATUS smb_full_audit_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 			       const char *name, uint32 security_info,
@@ -1525,13 +1525,12 @@ static struct file_id smb_full_audit_file_id_create(struct vfs_handle_struct *ha
 }
 
 static NTSTATUS smb_full_audit_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-				int fd, uint32 security_info,
+				uint32 security_info,
 				SEC_DESC **ppdesc)
 {
 	NTSTATUS result;
 
-	result = SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, fd, security_info,
-					  ppdesc);
+	result = SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc);
 
 	do_log(SMB_VFS_OP_FGET_NT_ACL, NT_STATUS_IS_OK(result), handle,
 	       "%s", fsp->fsp_name);
