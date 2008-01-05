@@ -66,7 +66,7 @@ static NTSTATUS wreplsrv_recv_request(void *private, DATA_BLOB blob)
 	packet_in_blob.length = blob.length - 4;
 
 	ndr_err = ndr_pull_struct_blob(&packet_in_blob, call, 
-				       lp_iconv_convenience(global_loadparm),
+				       lp_iconv_convenience(wreplconn->service->task->lp_ctx),
 				       &call->req_packet,
 				       (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -91,7 +91,7 @@ static NTSTATUS wreplsrv_recv_request(void *private, DATA_BLOB blob)
 	/* and now encode the reply */
 	packet_out_wrap.packet = call->rep_packet;
 	ndr_err = ndr_push_struct_blob(&packet_out_blob, call, 
-				       lp_iconv_convenience(global_loadparm),
+				       lp_iconv_convenience(wreplconn->service->task->lp_ctx),
 				       &packet_out_wrap,
 				      (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
