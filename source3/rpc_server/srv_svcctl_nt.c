@@ -813,7 +813,7 @@ WERROR _svcctl_query_service_sec( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_SEC *q
 	if ( !(sec_desc = svcctl_get_secdesc( p->mem_ctx, info->name, get_root_nt_token() )) )
                 return WERR_NOMEM;
 
-	r_u->needed = sec_desc_size( sec_desc );
+	r_u->needed = ndr_size_security_descriptor( sec_desc, 0 );
 
 	if ( r_u->needed > q_u->buffer_size ) {
 		ZERO_STRUCTP( &r_u->buffer );

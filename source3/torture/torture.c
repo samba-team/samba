@@ -37,6 +37,7 @@ static const char *client_txt = "client_oplocks.txt";
 static bool use_kerberos;
 static fstring multishare_conn_fname;
 static bool use_multishare_conn = False;
+static bool do_encrypt;
 
 bool torture_showall = False;
 
@@ -93,6 +94,57 @@ void *shm_setup(int size)
 	shmctl(shmid, IPC_RMID, 0);
 	
 	return ret;
+}
+
+/********************************************************************
+ Ensure a connection is encrypted.
+********************************************************************/
+
+static bool force_cli_encryption(struct cli_state *c,
+			const char *sharename)
+{
+	uint16 major, minor;
+	uint32 caplow, caphigh;
+	NTSTATUS status;
+
+	if (!SERVER_HAS_UNIX_CIFS(c)) {
+		d_printf("Encryption required and "
+			"server that doesn't support "
+			"UNIX extensions - failing connect\n");
+			return false;
+	}
+
+	if (!cli_unix_extensions_version(c, &major, &minor, &caplow, &caphigh)) {
+		d_printf("Encryption required and "
+			"can't get UNIX CIFS extensions "
+			"version from server.\n");
+		return false;
+	}
+
+	if (!(caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP)) {
+		d_printf("Encryption required and "
+			"share %s doesn't support "
+			"encryption.\n", sharename);
+		return false;
+	}
+
+	if (c->use_kerberos) {
+		status = cli_gss_smb_encryption_start(c);
+	} else {
+		status = cli_raw_ntlm_smb_encryption_start(c,
+						username,
+						password,
+						workgroup);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Encryption required and "
+			"setup failed with error %s.\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	return true;
 }
 
 
@@ -235,6 +287,10 @@ static bool torture_open_connection_share(struct cli_state **c,
 	if (use_level_II_oplocks) (*c)->use_level_II_oplocks = True;
 	(*c)->timeout = 120000; /* set a really long timeout (2 minutes) */
 
+	if (do_encrypt) {
+		return force_cli_encryption(*c,
+					sharename);
+	}
 	return True;
 }
 
@@ -5425,7 +5481,7 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ld:Ac:ks:b:")) != EOF) {
+	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ld:Aec:ks:b:")) != EOF) {
 		switch (opt) {
 		case 'p':
 			port_to_use = atoi(optarg);
@@ -5462,6 +5518,9 @@ static void usage(void)
 			break;
 		case 'c':
 			client_txt = optarg;
+			break;
+		case 'e':
+			do_encrypt = true;
 			break;
 		case 'k':
 #ifdef HAVE_KRB5

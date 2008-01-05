@@ -50,6 +50,73 @@ enum smb_read_errors *get_srv_read_error(void)
 	return &smb_read_error;
 }
 
+/****************************************************************************
+ Send an smb to a fd.
+****************************************************************************/
+
+bool srv_send_smb(int fd, char *buffer, bool do_encrypt)
+{
+	size_t len;
+	size_t nwritten=0;
+	ssize_t ret;
+	char *buf_out = buffer;
+
+	/* Sign the outgoing packet if required. */
+	srv_calculate_sign_mac(buf_out);
+
+	if (do_encrypt) {
+		NTSTATUS status = srv_encrypt_buffer(buffer, &buf_out);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("send_smb: SMB encryption failed "
+				"on outgoing packet! Error %s\n",
+				nt_errstr(status) ));
+			return false;
+		}
+	}
+
+	len = smb_len(buf_out) + 4;
+
+	while (nwritten < len) {
+		ret = write_data(fd,buf_out+nwritten,len - nwritten);
+		if (ret <= 0) {
+			DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
+				(int)len,(int)ret, strerror(errno) ));
+			srv_free_enc_buffer(buf_out);
+			return false;
+		}
+		nwritten += ret;
+	}
+
+	srv_free_enc_buffer(buf_out);
+	return true;
+}
+
+/*******************************************************************
+ Setup the word count and byte count for a smb message.
+********************************************************************/
+
+int srv_set_message(char *buf,
+                        int num_words,
+                        int num_bytes,
+                        bool zero)
+{
+	if (zero && (num_words || num_bytes)) {
+		memset(buf + smb_size,'\0',num_words*2 + num_bytes);
+	}
+	SCVAL(buf,smb_wct,num_words);
+	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);
+	smb_setlen(buf,(smb_size + num_words*2 + num_bytes - 4));
+	return (smb_size + num_words*2 + num_bytes);
+}
+
+static bool valid_smb_header(const uint8_t *inbuf)
+{
+	if (is_encrypted_packet(inbuf)) {
+		return true;
+	}
+	return (strncmp(smb_base(inbuf),"\377SMB",4) == 0);
+}
+
 /* Socket functions for smbd packet processing. */
 
 static bool valid_packet_size(size_t len)
@@ -125,7 +192,7 @@ static ssize_t read_packet_remainder(int fd,
 				(2*14) + /* word count (including bcc) */ \
 				1 /* pad byte */)
 
-ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
+static ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 					const char lenbuf[4],
 					int fd,
 					char **buffer,
@@ -165,7 +232,7 @@ ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	 * valid writeX call.
 	 */
 
-	if (is_valid_writeX_buffer(writeX_header)) {
+	if (is_valid_writeX_buffer((uint8_t *)writeX_header)) {
 		/*
 		 * If the data offset is beyond what
 		 * we've read, drain the extra bytes.
@@ -273,7 +340,7 @@ static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	if (CVAL(lenbuf,0) != SMBkeepalive &&
+	if (CVAL(lenbuf,0) == 0 &&
 			min_recv_size &&
 			smb_len_large(lenbuf) > min_recv_size && /* Could be a UNIX large writeX. */
 			!srv_is_signing_active()) {
@@ -313,15 +380,34 @@ static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 	return len + 4;
 }
 
-ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx, int fd, char **buffer,
-			   unsigned int timeout, size_t *p_unread)
+static ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx,
+				int fd,
+				char **buffer,
+				unsigned int timeout,
+				size_t *p_unread,
+				bool *p_encrypted)
 {
 	ssize_t len;
+
+	*p_encrypted = false;
 
 	len = receive_smb_raw_talloc(mem_ctx, fd, buffer, timeout, p_unread);
 
 	if (len < 0) {
 		return -1;
+	}
+
+	if (is_encrypted_packet((uint8_t *)*buffer)) {
+		NTSTATUS status = srv_decrypt_buffer(*buffer);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("receive_smb_talloc: SMB decryption failed on "
+				"incoming packet! Error %s\n",
+				nt_errstr(status) ));
+			cond_set_smb_read_error(get_srv_read_error(),
+					SMB_READ_BAD_DECRYPT);
+			return -1;
+		}
+		*p_encrypted = true;
 	}
 
 	/* Check the incoming SMB signature. */
@@ -341,7 +427,8 @@ ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx, int fd, char **buffer,
 
 void init_smb_request(struct smb_request *req,
 			const uint8 *inbuf,
-			size_t unread_bytes)
+			size_t unread_bytes,
+			bool encrypted)
 {
 	size_t req_size = smb_len(inbuf) + 4;
 	/* Ensure we have at least smb_size bytes. */
@@ -357,6 +444,8 @@ void init_smb_request(struct smb_request *req,
 	req->tid    = SVAL(inbuf, smb_tid);
 	req->wct    = CVAL(inbuf, smb_wct);
 	req->unread_bytes = unread_bytes;
+	req->encrypted = encrypted;
+	req->conn = conn_find(req->tid);
 
 	/* Ensure we have at least wct words and 2 bytes of bcc. */
 	if (smb_size + req->wct*2 > req_size) {
@@ -414,6 +503,7 @@ static bool push_queued_message(struct smb_request *req,
 
 	msg->request_time = request_time;
 	msg->end_time = end_time;
+	msg->encrypted = req->encrypted;
 
 	if (private_data) {
 		msg->private_data = data_blob_talloc(msg, private_data,
@@ -689,7 +779,8 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 				char **buffer,
 				size_t *buffer_len,
 				int timeout,
-				size_t *p_unread)
+				size_t *p_unread,
+				bool *p_encrypted)
 {
 	fd_set r_fds, w_fds;
 	int selrtn;
@@ -756,6 +847,7 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 				return False;
 			}
 			*buffer_len = msg->buf.length;
+			*p_encrypted = msg->encrypted;
 
 			/* We leave this message on the queue so the open code can
 			   know this is a retry. */
@@ -872,7 +964,8 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 		goto again;
 	}
 
-	len = receive_smb_talloc(mem_ctx, smbd_server_fd(), buffer, 0, p_unread);
+	len = receive_smb_talloc(mem_ctx, smbd_server_fd(),
+				buffer, 0, p_unread, p_encrypted);
 
 	if (len == -1) {
 		return False;
@@ -952,7 +1045,7 @@ force write permissions on print services.
 */
 static const struct smb_message_struct {
 	const char *name;
-	void (*fn_new)(connection_struct *conn, struct smb_request *req);
+	void (*fn_new)(struct smb_request *req);
 	int flags;
 } smb_messages[256] = {
 
@@ -1239,7 +1332,7 @@ void reply_outbuf(struct smb_request *req, uint8 num_words, uint32 num_bytes)
 	}
 
 	construct_reply_common((char *)req->inbuf, (char *)req->outbuf);
-	set_message((char *)req->outbuf, num_words, num_bytes, False);
+	srv_set_message((char *)req->outbuf, num_words, num_bytes, false);
 	/*
 	 * Zero out the word area, the caller has to take care of the bcc area
 	 * himself
@@ -1297,11 +1390,11 @@ static void smb_dump(const char *name, int type, const char *data, ssize_t len)
  find.
 ****************************************************************************/
 
-static void switch_message(uint8 type, struct smb_request *req, int size)
+static connection_struct *switch_message(uint8 type, struct smb_request *req, int size)
 {
 	int flags;
 	uint16 session_tag;
-	connection_struct *conn;
+	connection_struct *conn = NULL;
 
 	static uint16 last_session_tag = UID_FIELD_INVALID;
 
@@ -1309,7 +1402,7 @@ static void switch_message(uint8 type, struct smb_request *req, int size)
 
 	/* Make sure this is an SMB packet. smb_size contains NetBIOS header
 	 * so subtract 4 from it. */
-	if ((strncmp(smb_base(req->inbuf),"\377SMB",4) != 0)
+	if (!valid_smb_header(req->inbuf)
 	    || (size < (smb_size - 4))) {
 		DEBUG(2,("Non-SMB packet of length %d. Terminating server\n",
 			 smb_len(req->inbuf)));
@@ -1320,7 +1413,7 @@ static void switch_message(uint8 type, struct smb_request *req, int size)
 		DEBUG(0,("Unknown message type %d!\n",type));
 		smb_dump("Unknown", 1, (char *)req->inbuf, size);
 		reply_unknown_new(req, type);
-		return;
+		return NULL;
 	}
 
 	flags = smb_messages[type].flags;
@@ -1328,7 +1421,7 @@ static void switch_message(uint8 type, struct smb_request *req, int size)
 	/* In share mode security we must ignore the vuid. */
 	session_tag = (lp_security() == SEC_SHARE)
 		? UID_FIELD_INVALID : req->vuid;
-	conn = conn_find(req->tid);
+	conn = req->conn;
 
 	DEBUG(3,("switch message %s (pid %d) conn 0x%lx\n", smb_fn_name(type),
 		 (int)sys_getpid(), (unsigned long)conn));
@@ -1373,12 +1466,12 @@ static void switch_message(uint8 type, struct smb_request *req, int size)
 			} else {
 				reply_doserror(req, ERRSRV, ERRinvnid);
 			}
-			return;
+			return NULL;
 		}
 
 		if (!change_to_user(conn,session_tag)) {
 			reply_nterror(req, NT_STATUS_DOS(ERRSRV, ERRbaduid));
-			return;
+			return conn;
 		}
 
 		/* All NEED_WRITE and CAN_IPC flags must also have AS_USER. */
@@ -1386,13 +1479,13 @@ static void switch_message(uint8 type, struct smb_request *req, int size)
 		/* Does it need write permission? */
 		if ((flags & NEED_WRITE) && !CAN_WRITE(conn)) {
 			reply_nterror(req, NT_STATUS_MEDIA_WRITE_PROTECTED);
-			return;
+			return conn;
 		}
 
 		/* IPC services are limited */
 		if (IS_IPC(conn) && !(flags & CAN_IPC)) {
 			reply_doserror(req, ERRSRV,ERRaccess);
-			return;
+			return conn;
 		}
 	} else {
 		/* This call needs to be run as root */
@@ -1401,11 +1494,24 @@ static void switch_message(uint8 type, struct smb_request *req, int size)
 
 	/* load service specific parameters */
 	if (conn) {
+		if (req->encrypted) {
+			conn->encrypted_tid = true;
+			/* encrypted required from now on. */
+			conn->encrypt_level = Required;
+		} else if (ENCRYPTION_REQUIRED(conn)) {
+			uint8 com = CVAL(req->inbuf,smb_com);
+			if (com != SMBtrans2 && com != SMBtranss2) {
+				exit_server_cleanly("encryption required "
+					"on connection");
+				return conn;
+			}
+		}
+
 		if (!set_current_service(conn,SVAL(req->inbuf,smb_flg),
 					 (flags & (AS_USER|DO_CHDIR)
 					  ?True:False))) {
 			reply_doserror(req, ERRSRV, ERRaccess);
-			return;
+			return conn;
 		}
 		conn->num_smb_operations++;
 	}
@@ -1416,19 +1522,21 @@ static void switch_message(uint8 type, struct smb_request *req, int size)
 		!check_access(smbd_server_fd(), lp_hostsallow(-1),
 			      lp_hostsdeny(-1)))) {
 		reply_doserror(req, ERRSRV, ERRaccess);
-		return;
+		return conn;
 	}
 
-	smb_messages[type].fn_new(conn, req);
+	smb_messages[type].fn_new(req);
+	return req->conn;
 }
 
 /****************************************************************************
  Construct a reply to the incoming packet.
 ****************************************************************************/
 
-static void construct_reply(char *inbuf, int size, size_t unread_bytes)
+static void construct_reply(char *inbuf, int size, size_t unread_bytes, bool encrypted)
 {
 	uint8 type = CVAL(inbuf,smb_com);
+	connection_struct *conn;
 	struct smb_request *req;
 
 	chain_size = 0;
@@ -1438,9 +1546,9 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes)
 	if (!(req = talloc(talloc_tos(), struct smb_request))) {
 		smb_panic("could not allocate smb_request");
 	}
-	init_smb_request(req, (uint8 *)inbuf, unread_bytes);
+	init_smb_request(req, (uint8 *)inbuf, unread_bytes, encrypted);
 
-	switch_message(type, req, size);
+	conn = switch_message(type, req, size);
 
 	if (req->unread_bytes) {
 		/* writeX failed. drain socket. */
@@ -1459,8 +1567,10 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes)
 		show_msg((char *)req->outbuf);
 	}
 
-	if (!send_smb(smbd_server_fd(), (char *)req->outbuf)) {
-		exit_server_cleanly("construct_reply: send_smb failed.");
+	if (!srv_send_smb(smbd_server_fd(),
+			(char *)req->outbuf,
+			IS_CONN_ENCRYPTED(conn)||req->encrypted)) {
+		exit_server_cleanly("construct_reply: srv_send_smb failed.");
 	}
 
 	TALLOC_FREE(req);
@@ -1472,7 +1582,7 @@ static void construct_reply(char *inbuf, int size, size_t unread_bytes)
  Process an smb from the client
 ****************************************************************************/
 
-static void process_smb(char *inbuf, size_t nread, size_t unread_bytes)
+static void process_smb(char *inbuf, size_t nread, size_t unread_bytes, bool encrypted)
 {
 	static int trans_num;
 	int msg_type = CVAL(inbuf,0);
@@ -1493,7 +1603,7 @@ static void process_smb(char *inbuf, size_t nread, size_t unread_bytes)
 			static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
 			DEBUG( 1, ( "Connection denied from %s\n",
 				client_addr(get_client_fd(),addr,sizeof(addr)) ) );
-			(void)send_smb(smbd_server_fd(),(char *)buf);
+			(void)srv_send_smb(smbd_server_fd(),(char *)buf,false);
 			exit_server_cleanly("connection denied");
 		}
 	}
@@ -1514,7 +1624,7 @@ static void process_smb(char *inbuf, size_t nread, size_t unread_bytes)
 
 	show_msg(inbuf);
 
-	construct_reply(inbuf,nread,unread_bytes);
+	construct_reply(inbuf,nread,unread_bytes,encrypted);
 
 	trans_num++;
 }
@@ -1551,7 +1661,7 @@ void remove_from_common_flags2(uint32 v)
 
 void construct_reply_common(const char *inbuf, char *outbuf)
 {
-	set_message(outbuf,0,0,False);
+	srv_set_message(outbuf,0,0,false);
 	
 	SCVAL(outbuf,smb_com,CVAL(inbuf,smb_com));
 	SIVAL(outbuf,smb_rcls,0);
@@ -1674,7 +1784,7 @@ void chain_reply(struct smb_request *req)
 	if (!(req2 = talloc(talloc_tos(), struct smb_request))) {
 		smb_panic("could not allocate smb_request");
 	}
-	init_smb_request(req2, (uint8 *)inbuf2,0);
+	init_smb_request(req2, (uint8 *)inbuf2,0, req->encrypted);
 
 	/* process the request */
 	switch_message(smb_com2, req2, new_size);
@@ -1960,6 +2070,7 @@ void smbd_process(void)
 		int num_echos;
 		char *inbuf;
 		size_t inbuf_len;
+		bool encrypted = false;
 		TALLOC_CTX *frame = talloc_stackframe();
 
 		errno = 0;
@@ -1975,7 +2086,9 @@ void smbd_process(void)
 		run_events(smbd_event_context(), 0, NULL, NULL);
 
 		while (!receive_message_or_smb(NULL, &inbuf, &inbuf_len,
-					       select_timeout, &unread_bytes)) {
+						select_timeout,
+						&unread_bytes,
+						&encrypted)) {
 			if(!timeout_processing(&select_timeout,
 					       &last_timeout_processing_time))
 				return;
@@ -1994,7 +2107,7 @@ void smbd_process(void)
 		 */
 		num_echos = smb_echo_count;
 
-		process_smb(inbuf, inbuf_len, unread_bytes);
+		process_smb(inbuf, inbuf_len, unread_bytes, encrypted);
 
 		TALLOC_FREE(inbuf);
 

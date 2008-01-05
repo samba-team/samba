@@ -601,8 +601,34 @@ static bool get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 
 	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
 	
-	werr = rpccli_netlogon_getanydcname(netlogon_pipe, mem_ctx, our_domain->dcname,
+	if (our_domain->active_directory) {
+		struct DS_DOMAIN_CONTROLLER_INFO *domain_info = NULL;
+		
+		werr = rpccli_netlogon_dsr_getdcname(netlogon_pipe, 
+						     mem_ctx, 
+						     our_domain->dcname,
+						     domain->name,
+						     NULL,
+						     NULL,
+						     DS_RETURN_DNS_NAME,
+						     &domain_info);
+		if (W_ERROR_IS_OK(werr)) {
+			fstrcpy(tmp, domain_info->domain_controller_name);
+			if (strlen(domain->alt_name) == 0) {
+				fstrcpy(domain->alt_name, 
+					CONST_DISCARD(char*, domain_info->domain_name));
+			}
+			if (strlen(domain->forest_name) == 0) {
+				fstrcpy(domain->forest_name, 
+					CONST_DISCARD(char*, domain_info->dns_forest_name));
+			}
+		}		
+	} else {
+		
+		werr = rpccli_netlogon_getanydcname(netlogon_pipe, mem_ctx, 
+						    our_domain->dcname,
 					    domain->name, &tmp);
+	}
 
 	/* And restore our original timeout. */
 	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
@@ -978,6 +1004,7 @@ static bool send_getdc_request(struct sockaddr_storage *dc_ss,
 	char *p;
 	fstring my_acct_name;
 	fstring my_mailslot;
+	size_t sid_size;
 
 	if (dc_ss->ss_family != AF_INET) {
 		return false;
@@ -1019,7 +1046,9 @@ static bool send_getdc_request(struct sockaddr_storage *dc_ss,
 	SIVAL(p, 0, 0x80);
 	p+=4;
 
-	SIVAL(p, 0, sid_size(sid));
+	sid_size = ndr_size_dom_sid(sid, 0);
+
+	SIVAL(p, 0, sid_size);
 	p+=4;
 
 	p = ALIGN4(p, outbuf);
@@ -1027,12 +1056,12 @@ static bool send_getdc_request(struct sockaddr_storage *dc_ss,
 		return false;
 	}
 
-	sid_linearize(p, sid_size(sid), sid);
-	if (sid_size(sid) + 8 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
+	if (sid_size + 8 > sizeof(outbuf) - PTR_DIFF(p, outbuf)) {
 		return false;
 	}
+	sid_linearize(p, sizeof(outbuf) - PTR_DIFF(p, outbuf), sid);
 
-	p += sid_size(sid);
+	p += sid_size;
 
 	SIVAL(p, 0, 1);
 	SSVAL(p, 4, 0xffff);
@@ -1866,8 +1895,16 @@ no_lsarpc_ds:
 		if (dns_name)
 			fstrcpy(domain->alt_name, dns_name);
 
-		if ( forest_name )
+		/* See if we can set some domain trust flags about
+		   ourself */
+
+		if ( forest_name ) {
 			fstrcpy(domain->forest_name, forest_name);		
+
+			if (strequal(domain->forest_name, domain->alt_name)) {
+				domain->domain_flags = DS_DOMAIN_TREE_ROOT;
+			}
+		}
 
 		if (dom_sid) 
 			sid_copy(&domain->sid, dom_sid);

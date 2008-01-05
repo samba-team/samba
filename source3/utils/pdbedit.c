@@ -61,69 +61,85 @@ static int export_database (struct pdb_methods *in,
                             struct pdb_methods *out, 
                             const char *username) 
 {
-	struct samu *user = NULL;
 	NTSTATUS status;
+	struct pdb_search *u_search;
+	struct samr_displayentry userentry;
 
 	DEBUG(3, ("export_database: username=\"%s\"\n", username ? username : "(NULL)"));
 
-	status = in->setsampwent(in, 0, 0);
-	if ( NT_STATUS_IS_ERR(status) ) {
-		fprintf(stderr, "Unable to set account database iterator for %s!\n", 
-			in->name);
+	u_search = pdb_search_init(PDB_USER_SEARCH);
+	if (u_search == NULL) {
+		DEBUG(0, ("pdb_search_init failed\n"));
 		return 1;
 	}
 
-	if ( ( user = samu_new( NULL ) ) == NULL ) {
-		fprintf(stderr, "export_database: Memory allocation failure!\n");
+	if (!in->search_users(in, u_search, 0)) {
+		DEBUG(0, ("Could not start searching users\n"));
+		pdb_search_destroy(u_search);
 		return 1;
 	}
 
-	while ( NT_STATUS_IS_OK(in->getsampwent(in, user)) ) 
-	{
-		DEBUG(4, ("Processing account %s\n", user->username));
+	while (u_search->next_entry(u_search, &userentry)) {
+		struct samu *user;
+		struct samu *account;
+		DOM_SID user_sid;
 
-		/* If we don't have a specific user or if we do and 
-		   the login name matches */
+		DEBUG(4, ("Processing account %s\n", userentry.account_name));
 
-		if ( !username || (strcmp(username, user->username) == 0)) {
-			struct samu *account;
-
-			if ( (account = samu_new( NULL )) == NULL ) {
-				fprintf(stderr, "export_database: Memory allocation failure!\n");
-				TALLOC_FREE( user );
-				in->endsampwent( in );
-				return 1;
-			}
-
-			printf("Importing account for %s...", user->username);
-			if ( !NT_STATUS_IS_OK(out->getsampwnam( out, account, user->username )) ) {
-				status = out->add_sam_account(out, user);
-			} else {
-				status = out->update_sam_account( out, user );
-			}
-
-			if ( NT_STATUS_IS_OK(status) ) {
-				printf( "ok\n");
-			} else {
-				printf( "failed\n");
-			}
-
-			TALLOC_FREE( account );
+		if ((username != NULL)
+		    && (strcmp(username, userentry.account_name) != 0)) {
+			/*
+			 * ignore unwanted users
+			 */
+			continue;
 		}
 
-		/* clean up and get ready for another run */
+		user = samu_new(talloc_tos());
+		if (user == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			break;
+		}
 
-		TALLOC_FREE( user );
+		sid_compose(&user_sid, get_global_sam_sid(), userentry.rid);
 
-		if ( ( user = samu_new( NULL ) ) == NULL ) {
-			fprintf(stderr, "export_database: Memory allocation failure!\n");
+		status = in->getsampwsid(in, user, &user_sid);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(2, ("getsampwsid failed: %s\n",
+				  nt_errstr(status)));
+			TALLOC_FREE(user);
+			continue;
+		}
+
+		account = samu_new(NULL);
+		if (account == NULL) {
+			fprintf(stderr, "export_database: Memory allocation "
+				"failure!\n");
+			TALLOC_FREE( user );
+			pdb_search_destroy(u_search);
 			return 1;
 		}
+
+		printf("Importing account for %s...", user->username);
+		status = out->getsampwnam(out, account, user->username);
+
+		if (NT_STATUS_IS_OK(status)) {
+			status = out->update_sam_account( out, user );
+		} else {
+			status = out->add_sam_account(out, user);
+		}
+
+		if ( NT_STATUS_IS_OK(status) ) {
+			printf( "ok\n");
+		} else {
+			printf( "failed\n");
+		}
+
+		TALLOC_FREE( account );
+		TALLOC_FREE( user );
 	}
 
-	TALLOC_FREE( user );
-
-	in->endsampwent(in);
+	pdb_search_destroy(u_search);
 
 	return 0;
 }
@@ -326,33 +342,50 @@ static int print_user_info (struct pdb_methods *in, const char *username, bool v
 **********************************************************/
 static int print_users_list (struct pdb_methods *in, bool verbosity, bool smbpwdstyle)
 {
-	struct samu *sam_pwent=NULL;
-	bool check;
-	
-	check = NT_STATUS_IS_OK(in->setsampwent(in, False, 0));
-	if (!check) {
+	struct pdb_search *u_search;
+	struct samr_displayentry userentry;
+
+	u_search = pdb_search_init(PDB_USER_SEARCH);
+	if (u_search == NULL) {
+		DEBUG(0, ("pdb_search_init failed\n"));
 		return 1;
 	}
 
-	check = True;
-	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
+	if (!in->search_users(in, u_search, 0)) {
+		DEBUG(0, ("Could not start searching users\n"));
+		pdb_search_destroy(u_search);
 		return 1;
 	}
 
-	while (check && NT_STATUS_IS_OK(in->getsampwent (in, sam_pwent))) {
+	while (u_search->next_entry(u_search, &userentry)) {
+		struct samu *sam_pwent;
+		DOM_SID user_sid;
+		NTSTATUS status;
+
+		sam_pwent = samu_new(talloc_tos());
+		if (sam_pwent == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			break;
+		}
+
+		sid_compose(&user_sid, get_global_sam_sid(), userentry.rid);
+
+		status = in->getsampwsid(in, sam_pwent, &user_sid);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(2, ("getsampwsid failed: %s\n",
+				  nt_errstr(status)));
+			TALLOC_FREE(sam_pwent);
+			continue;
+		}
+
 		if (verbosity)
 			printf ("---------------\n");
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
 		TALLOC_FREE(sam_pwent);
-		
-		if ( (sam_pwent = samu_new( NULL )) == NULL ) {
-			check = False;
-		}
 	}
-	if (check) 
-		TALLOC_FREE(sam_pwent);
-	
-	in->endsampwent(in);
+	pdb_search_destroy(u_search);
+
 	return 0;
 }
 
@@ -361,38 +394,50 @@ static int print_users_list (struct pdb_methods *in, bool verbosity, bool smbpwd
 **********************************************************/
 static int fix_users_list (struct pdb_methods *in)
 {
-	struct samu *sam_pwent=NULL;
-	bool check;
-	
-	check = NT_STATUS_IS_OK(in->setsampwent(in, False, 0));
-	if (!check) {
+	struct pdb_search *u_search;
+	struct samr_displayentry userentry;
+
+	u_search = pdb_search_init(PDB_USER_SEARCH);
+	if (u_search == NULL) {
+		DEBUG(0, ("pdb_search_init failed\n"));
 		return 1;
 	}
 
-	check = True;
-	if ( (sam_pwent = samu_new( NULL )) == NULL ) {
+	if (!in->search_users(in, u_search, 0)) {
+		DEBUG(0, ("Could not start searching users\n"));
+		pdb_search_destroy(u_search);
 		return 1;
 	}
 
-	while (check && NT_STATUS_IS_OK(in->getsampwent (in, sam_pwent))) {
-		printf("Updating record for user %s\n", pdb_get_username(sam_pwent));
-	
+	while (u_search->next_entry(u_search, &userentry)) {
+		struct samu *sam_pwent;
+		DOM_SID user_sid;
+		NTSTATUS status;
+
+		sam_pwent = samu_new(talloc_tos());
+		if (sam_pwent == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			break;
+		}
+
+		sid_compose(&user_sid, get_global_sam_sid(), userentry.rid);
+
+		status = in->getsampwsid(in, sam_pwent, &user_sid);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(2, ("getsampwsid failed: %s\n",
+				  nt_errstr(status)));
+			TALLOC_FREE(sam_pwent);
+			continue;
+		}
+
 		if (!NT_STATUS_IS_OK(pdb_update_sam_account(sam_pwent))) {
-			printf("Update of user %s failed!\n", pdb_get_username(sam_pwent));
+			printf("Update of user %s failed!\n",
+			       pdb_get_username(sam_pwent));
 		}
 		TALLOC_FREE(sam_pwent);
-		if ( (sam_pwent = samu_new( NULL )) == NULL ) {
-			check = False;
-		}
-		if (!check) {
-			fprintf(stderr, "Failed to initialise new struct samu structure (out of memory?)\n");
-		}
-			
 	}
-	if (check) 
-		TALLOC_FREE(sam_pwent);
-	
-	in->endsampwent(in);
+	pdb_search_destroy(u_search);
 	return 0;
 }
 

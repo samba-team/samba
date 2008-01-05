@@ -378,7 +378,7 @@ WERROR reg_queryinfokey(struct registry_key *key, uint32_t *num_subkeys,
 		return err;
 	}
 
-	*secdescsize = sec_desc_size(secdesc);
+	*secdescsize = ndr_size_security_descriptor(secdesc, 0);
 	TALLOC_FREE(mem_ctx);
 
 	*last_changed_time = 0;
@@ -729,7 +729,7 @@ WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
 	}
 
 	/* recurse through subkeys first */
-	werr = reg_openkey(mem_ctx, parent, path, REG_KEY_WRITE, &key);
+	werr = reg_openkey(mem_ctx, parent, path, REG_KEY_ALL, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}

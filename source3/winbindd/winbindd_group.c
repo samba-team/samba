@@ -1494,9 +1494,18 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 		s->username = talloc_strdup( state->mem_ctx, state->request.data.username );
 	}
 	
-	/* Get info for the domain */
+	/* Get info for the domain (either by short domain name or 
+	   DNS name in the case of a UPN) */
 
 	s->domain = find_domain_from_name_noinit(s->domname);
+	if (!s->domain) {
+		char *p = strchr(s->username, '@');
+		
+		if (p) {
+			s->domain = find_domain_from_name_noinit(p+1);			
+		}
+		
+	}
 
 	if (s->domain == NULL) {
 		DEBUG(7, ("could not find domain entry for domain %s\n", 

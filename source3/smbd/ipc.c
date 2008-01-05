@@ -30,7 +30,7 @@ extern int max_send;
 
 #define NERR_notsupported 50
 
-static void api_no_reply(struct smb_request *req);
+static void api_no_reply(connection_struct *conn, struct smb_request *req);
 
 /*******************************************************************
  copies parameters and data, as needed, into the smb buffer
@@ -81,7 +81,8 @@ static void copy_trans_params_and_data(char *outbuf, int align,
  Send a trans reply.
  ****************************************************************************/
 
-void send_trans_reply(struct smb_request *req,
+void send_trans_reply(connection_struct *conn,
+			struct smb_request *req,
 		      char *rparam, int rparam_len,
 		      char *rdata, int rdata_len,
 		      bool buffer_too_large)
@@ -129,8 +130,10 @@ void send_trans_reply(struct smb_request *req,
 	}
 
 	show_msg((char *)req->outbuf);
-	if (!send_smb(smbd_server_fd(),(char *)req->outbuf))
-		exit_server_cleanly("send_trans_reply: send_smb failed.");
+	if (!srv_send_smb(smbd_server_fd(),
+			(char *)req->outbuf,
+			IS_CONN_ENCRYPTED(conn)))
+		exit_server_cleanly("send_trans_reply: srv_send_smb failed.");
 
 	TALLOC_FREE(req->outbuf);
 
@@ -175,8 +178,10 @@ void send_trans_reply(struct smb_request *req,
 		}
 
 		show_msg((char *)req->outbuf);
-		if (!send_smb(smbd_server_fd(), (char *)req->outbuf))
-			exit_server_cleanly("send_trans_reply: send_smb failed.");
+		if (!srv_send_smb(smbd_server_fd(),
+				(char *)req->outbuf,
+				IS_CONN_ENCRYPTED(conn)))
+			exit_server_cleanly("send_trans_reply: srv_send_smb failed.");
 
 		tot_data_sent  += this_ldata;
 		tot_param_sent += this_lparam;
@@ -188,7 +193,7 @@ void send_trans_reply(struct smb_request *req,
  Start the first part of an RPC reply which began with an SMBtrans request.
 ****************************************************************************/
 
-static void api_rpc_trans_reply(struct smb_request *req, smb_np_struct *p)
+static void api_rpc_trans_reply(connection_struct *conn, struct smb_request *req, smb_np_struct *p)
 {
 	bool is_data_outstanding;
 	char *rdata = (char *)SMB_MALLOC(p->max_trans_reply);
@@ -203,11 +208,11 @@ static void api_rpc_trans_reply(struct smb_request *req, smb_np_struct *p)
 	if((data_len = read_from_pipe( p, rdata, p->max_trans_reply,
 					&is_data_outstanding)) < 0) {
 		SAFE_FREE(rdata);
-		api_no_reply(req);
+		api_no_reply(conn,req);
 		return;
 	}
 
-	send_trans_reply(req, NULL, 0, rdata, data_len, is_data_outstanding);
+	send_trans_reply(conn, req, NULL, 0, rdata, data_len, is_data_outstanding);
 	SAFE_FREE(rdata);
 	return;
 }
@@ -216,7 +221,7 @@ static void api_rpc_trans_reply(struct smb_request *req, smb_np_struct *p)
  WaitNamedPipeHandleState 
 ****************************************************************************/
 
-static void api_WNPHS(struct smb_request *req, smb_np_struct *p,
+static void api_WNPHS(connection_struct *conn, struct smb_request *req, smb_np_struct *p,
 		      char *param, int param_len)
 {
 	uint16 priority;
@@ -231,10 +236,10 @@ static void api_WNPHS(struct smb_request *req, smb_np_struct *p,
 
 	if (wait_rpc_pipe_hnd_state(p, priority)) {
 		/* now send the reply */
-		send_trans_reply(req, NULL, 0, NULL, 0, False);
+		send_trans_reply(conn, req, NULL, 0, NULL, 0, False);
 		return;
 	}
-	api_no_reply(req);
+	api_no_reply(conn,req);
 }
 
 
@@ -242,7 +247,7 @@ static void api_WNPHS(struct smb_request *req, smb_np_struct *p,
  SetNamedPipeHandleState 
 ****************************************************************************/
 
-static void api_SNPHS(struct smb_request *req, smb_np_struct *p,
+static void api_SNPHS(connection_struct *conn, struct smb_request *req, smb_np_struct *p,
 		      char *param, int param_len)
 {
 	uint16 id;
@@ -257,10 +262,10 @@ static void api_SNPHS(struct smb_request *req, smb_np_struct *p,
 
 	if (set_rpc_pipe_hnd_state(p, id)) {
 		/* now send the reply */
-		send_trans_reply(req, NULL, 0, NULL, 0, False);
+		send_trans_reply(conn, req, NULL, 0, NULL, 0, False);
 		return;
 	}
-	api_no_reply(req);
+	api_no_reply(conn,req);
 }
 
 
@@ -268,7 +273,7 @@ static void api_SNPHS(struct smb_request *req, smb_np_struct *p,
  When no reply is generated, indicate unsupported.
  ****************************************************************************/
 
-static void api_no_reply(struct smb_request *req)
+static void api_no_reply(connection_struct *conn, struct smb_request *req)
 {
 	char rparam[4];
 
@@ -279,7 +284,7 @@ static void api_no_reply(struct smb_request *req)
 	DEBUG(3,("Unsupported API fd command\n"));
 
 	/* now send the reply */
-	send_trans_reply(req, rparam, 4, NULL, 0, False);
+	send_trans_reply(conn, req, rparam, 4, NULL, 0, False);
 
 	return;
 }
@@ -321,7 +326,7 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 			/* Win9x does this call with a unicode pipe name, not a pnum. */
 			/* Just return success for now... */
 			DEBUG(3,("Got TRANSACT_WAITNAMEDPIPEHANDLESTATE on text pipe name\n"));
-			send_trans_reply(req, NULL, 0, NULL, 0, False);
+			send_trans_reply(conn, req, NULL, 0, NULL, 0, False);
 			return;
 		}
 
@@ -349,18 +354,18 @@ static void api_fd_reply(connection_struct *conn, uint16 vuid,
 		/* dce/rpc command */
 		reply = write_to_pipe(p, data, tdscnt);
 		if (!reply) {
-			api_no_reply(req);
+			api_no_reply(conn, req);
 			return;
 		}
-		api_rpc_trans_reply(req, p);
+		api_rpc_trans_reply(conn, req, p);
 		break;
 	case TRANSACT_WAITNAMEDPIPEHANDLESTATE:
 		/* Wait Named Pipe Handle state */
-		api_WNPHS(req, p, params, tpscnt);
+		api_WNPHS(conn, req, p, params, tpscnt);
 		break;
 	case TRANSACT_SETNAMEDPIPEHANDLESTATE:
 		/* Set Named Pipe Handle state */
-		api_SNPHS(req, p, params, tpscnt);
+		api_SNPHS(conn, req, p, params, tpscnt);
 		break;
 	default:
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
@@ -472,8 +477,10 @@ static void handle_trans(connection_struct *conn, struct smb_request *req,
 		   state->max_data_return,
 		   state->max_param_return);
 
-	if (state->close_on_completion)
+	if (state->close_on_completion) {
 		close_cnum(conn,state->vuid);
+		req->conn = NULL;
+	}
 
 	return;
 }
@@ -482,8 +489,9 @@ static void handle_trans(connection_struct *conn, struct smb_request *req,
  Reply to a SMBtrans.
  ****************************************************************************/
 
-void reply_trans(connection_struct *conn, struct smb_request *req)
+void reply_trans(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	unsigned int dsoff;
 	unsigned int dscnt;
 	unsigned int psoff;
@@ -662,8 +670,9 @@ void reply_trans(connection_struct *conn, struct smb_request *req)
  Reply to a secondary SMBtrans.
  ****************************************************************************/
 
-void reply_transs(connection_struct *conn, struct smb_request *req)
+void reply_transs(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
 	int size;

@@ -81,7 +81,7 @@ bool cli_send_mailslot(struct messaging_context *msg_ctx,
 		return False;
 	}
 
-	set_message(ptr,17,strlen(mailslot) + 1 + len,True);
+	cli_set_message(ptr,17,strlen(mailslot) + 1 + len,True);
 	memcpy(ptr,tmp,4);
 
 	SCVAL(ptr,smb_com,SMBtrans);

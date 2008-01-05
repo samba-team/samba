@@ -1544,9 +1544,11 @@ static void schannel_digest(struct schannel_auth_struct *a,
 			  uchar digest_final[16]) 
 {
 	uchar whole_packet_digest[16];
-	static const uchar zeros[4] = { 0, };
+	uchar zeros[4];
 	struct MD5Context ctx3;
-	
+
+	ZERO_STRUCT(zeros);
+
 	/* verfiy the signature on the packet by MD5 over various bits */
 	MD5Init(&ctx3);
 	/* use our sequence number, which ensures the packet is not
@@ -1573,10 +1575,12 @@ static void schannel_get_sealing_key(struct schannel_auth_struct *a,
 				   RPC_AUTH_SCHANNEL_CHK *verf,
 				   uchar sealing_key[16]) 
 {
-	static const uchar zeros[4] = { 0, };
+	uchar zeros[4];
 	uchar digest2[16];
 	uchar sess_kf0[16];
 	int i;
+
+	ZERO_STRUCT(zeros);
 
 	for (i = 0; i < sizeof(sess_kf0); i++) {
 		sess_kf0[i] = a->sess_key[i] ^ 0xf0;
@@ -1600,9 +1604,11 @@ static void schannel_get_sealing_key(struct schannel_auth_struct *a,
 static void schannel_deal_with_seq_num(struct schannel_auth_struct *a,
 				     RPC_AUTH_SCHANNEL_CHK *verf)
 {
-	static const uchar zeros[4] = { 0, };
+	uchar zeros[4];
 	uchar sequence_key[16];
 	uchar digest1[16];
+
+	ZERO_STRUCT(zeros);
 
 	hmac_md5(a->sess_key, zeros, sizeof(zeros), digest1);
 	dump_data_pw("(sequence key) digest1:\n", digest1, sizeof(digest1));

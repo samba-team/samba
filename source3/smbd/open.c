@@ -1405,7 +1405,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 #endif /* O_SYNC */
   
-	if (posix_open & (access_mask & FILE_APPEND_DATA)) {
+	if (posix_open && (access_mask & FILE_APPEND_DATA)) {
 		flags2 |= O_APPEND;
 	}
 
@@ -1864,10 +1864,15 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (lp_map_archive(SNUM(conn)) ||
 		    lp_store_dos_attributes(SNUM(conn))) {
 			if (!posix_open) {
-				file_set_dosmode(conn, fname,
-					 new_dos_attributes | aARCH, NULL,
-					 parent_dir,
-					 true);
+				SMB_STRUCT_STAT tmp_sbuf;
+				SET_STAT_INVALID(tmp_sbuf);
+				if (file_set_dosmode(
+					    conn, fname,
+					    new_dos_attributes | aARCH,
+					    &tmp_sbuf, parent_dir,
+					    true) == 0) {
+					unx_mode = tmp_sbuf.st_mode;
+				}
 			}
 		}
 	}
@@ -2262,7 +2267,7 @@ NTSTATUS open_directory(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS create_directory(connection_struct *conn, const char *directory)
+NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, const char *directory)
 {
 	NTSTATUS status;
 	SMB_STRUCT_STAT sbuf;
@@ -2270,7 +2275,7 @@ NTSTATUS create_directory(connection_struct *conn, const char *directory)
 
 	SET_STAT_INVALID(sbuf);
 	
-	status = open_directory(conn, NULL, directory, &sbuf,
+	status = open_directory(conn, req, directory, &sbuf,
 				FILE_READ_ATTRIBUTES, /* Just a stat open */
 				FILE_SHARE_NONE, /* Ignored for stat opens */
 				FILE_CREATE,
@@ -2601,16 +2606,16 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		uint32_t sec_info_sent = ALL_SECURITY_INFORMATION;
 		uint32_t saved_access_mask = fsp->access_mask;
 
-		if (sd->owner_sid==0) {
+		if (sd->owner_sid == NULL) {
 			sec_info_sent &= ~OWNER_SECURITY_INFORMATION;
 		}
-		if (sd->group_sid==0) {
+		if (sd->group_sid == NULL) {
 			sec_info_sent &= ~GROUP_SECURITY_INFORMATION;
 		}
-		if (sd->sacl==0) {
+		if (sd->sacl == NULL) {
 			sec_info_sent &= ~SACL_SECURITY_INFORMATION;
 		}
-		if (sd->dacl==0) {
+		if (sd->dacl == NULL) {
 			sec_info_sent &= ~DACL_SECURITY_INFORMATION;
 		}
 
@@ -2667,7 +2672,12 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		*pinfo = info;
 	}
 	if (psbuf != NULL) {
-		*psbuf = sbuf;
+		if ((fsp->fh == NULL) || (fsp->fh->fd == -1)) {
+			*psbuf = sbuf;
+		}
+		else {
+			SMB_VFS_FSTAT(fsp, fsp->fh->fd, psbuf);
+		}
 	}
 	return NT_STATUS_OK;
 

@@ -93,6 +93,9 @@ static unsigned int put_total_time_ms = 0;
 /* totals globals */
 static double dir_total;
 
+/* encrypted state. */
+static bool smb_encrypt;
+
 /* root cli_state connection */
 
 struct cli_state *cli;
@@ -2178,6 +2181,49 @@ static int cmd_open(void)
 	return 0;
 }
 
+static int cmd_posix_encrypt(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	if (cli->use_kerberos) {
+		status = cli_gss_smb_encryption_start(cli);
+	} else {
+		char *domain = NULL;
+		char *user = NULL;
+		char *password = NULL;
+
+		if (!next_token_talloc(ctx, &cmd_ptr,&domain,NULL)) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+
+		if (!next_token_talloc(ctx, &cmd_ptr,&user,NULL)) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+
+		if (!next_token_talloc(ctx, &cmd_ptr,&password,NULL)) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+
+		status = cli_raw_ntlm_smb_encryption_start(cli,
+							user,
+							password,
+							domain);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("posix_encrypt failed with error %s\n", nt_errstr(status));
+	} else {
+		d_printf("encryption on\n");
+		smb_encrypt = true;
+	}
+
+	return 0;
+}
+
 /****************************************************************************
 ****************************************************************************/
 
@@ -2424,16 +2470,29 @@ static int cmd_posix(void)
 			return 1;
 		}
 	}
+	if (caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP) {
+		caps = talloc_asprintf_append(caps, "posix_encrypt ");
+		if (!caps) {
+			return 1;
+		}
+	}
+	if (caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP) {
+		caps = talloc_asprintf_append(caps, "mandatory_posix_encrypt ");
+		if (!caps) {
+			return 1;
+		}
+	}
 
 	if (*caps && caps[strlen(caps)-1] == ' ') {
 		caps[strlen(caps)-1] = '\0';
 	}
+
+	d_printf("Server supports CIFS capabilities %s\n", caps);
+
 	if (!cli_set_unix_extensions_capabilities(cli, major, minor, caplow, caphigh)) {
 		d_printf("Can't set UNIX CIFS extensions capabilities. %s.\n", cli_errstr(cli));
 		return 1;
 	}
-
-	d_printf("Selecting server supported CIFS capabilities %s\n", caps);
 
 	if (caplow & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
 		CLI_DIRSEP_CHAR = '/';
@@ -3731,16 +3790,28 @@ int cmd_iosize(void)
 	int iosize;
 
 	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
-		d_printf("iosize <n> or iosize 0x<n>. "
-			"Minimum is 16384 (0x4000), "
-			"max is 16776960 (0xFFFF00)\n");
+		if (!smb_encrypt) {
+			d_printf("iosize <n> or iosize 0x<n>. "
+				"Minimum is 16384 (0x4000), "
+				"max is 16776960 (0xFFFF00)\n");
+		} else {
+			d_printf("iosize <n> or iosize 0x<n>. "
+				"(Encrypted connection) ,"
+				"Minimum is 16384 (0x4000), "
+				"max is 130048 (0x1FC00)\n");
+		}
 		return 1;
 	}
 
 	iosize = strtol(buf,NULL,0);
-	if (iosize < 0 || iosize > 0xFFFF00) {
+	if (smb_encrypt && (iosize < 0x4000 || iosize > 0xFC00)) {
+		d_printf("iosize out of range for encrypted "
+			"connection (min = 16384 (0x4000), "
+			"max = 130048 (0x1FC00)");
+		return 1;
+	} else if (!smb_encrypt && (iosize < 0x4000 || iosize > 0xFFFF00)) {
 		d_printf("iosize out of range (min = 16384 (0x4000), "
-			"max = 16776960 (0x0xFFFF00)");
+			"max = 16776960 (0xFFFF00)");
 		return 1;
 	}
 
@@ -3803,6 +3874,7 @@ static struct {
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"posix", cmd_posix, "turn on all POSIX capabilities", {COMPL_REMOTE,COMPL_NONE}},
+  {"posix_encrypt",cmd_posix_encrypt,"<domain> <user> <password> start up transport encryption",{COMPL_REMOTE,COMPL_NONE}},
   {"posix_open",cmd_posix_open,"<name> 0<mode> open_flags mode open a file using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
   {"posix_mkdir",cmd_posix_mkdir,"<name> 0<mode> creates a directory using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
   {"posix_rmdir",cmd_posix_rmdir,"<name> removes a directory using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
@@ -3915,7 +3987,8 @@ static int process_command_string(const char *cmd_in)
 	/* establish the connection if not already */
 
 	if (!cli) {
-		cli = cli_cm_open(talloc_tos(), NULL, desthost, service, true);
+		cli = cli_cm_open(talloc_tos(), NULL, desthost,
+				service, true, smb_encrypt);
 		if (!cli) {
 			return 1;
 		}
@@ -4255,16 +4328,22 @@ static void readline_callback(void)
 	timeout.tv_usec = 0;
 	sys_select_intr(cli->fd+1,&fds,NULL,NULL,&timeout);
 
-	/* We deliberately use receive_smb instead of
+	/* We deliberately use receive_smb_raw instead of
 	   client_receive_smb as we want to receive
 	   session keepalives and then drop them here.
 	*/
 	if (FD_ISSET(cli->fd,&fds)) {
-		if (!receive_smb(cli->fd,cli->inbuf,0,&cli->smb_rw_error)) {
+		if (receive_smb_raw(cli->fd,cli->inbuf,0,0,&cli->smb_rw_error) == -1) {
 			DEBUG(0, ("Read from server failed, maybe it closed the "
 				"connection\n"));
 			return;
 		}
+		if(CVAL(cli->inbuf,0) != SMBkeepalive) {
+			DEBUG(0, ("Read from server "
+				"returned unexpected packet!\n"));
+			return;
+		}
+
 		goto again;
 	}
 
@@ -4340,7 +4419,8 @@ static int process(const char *base_directory)
 {
 	int rc = 0;
 
-	cli = cli_cm_open(talloc_tos(), NULL, desthost, service, true);
+	cli = cli_cm_open(talloc_tos(), NULL,
+			desthost, service, true, smb_encrypt);
 	if (!cli) {
 		return 1;
 	}
@@ -4369,7 +4449,8 @@ static int process(const char *base_directory)
 
 static int do_host_query(const char *query_host)
 {
-	cli = cli_cm_open(talloc_tos(), NULL, query_host, "IPC$", true);
+	cli = cli_cm_open(talloc_tos(), NULL,
+			query_host, "IPC$", true, smb_encrypt);
 	if (!cli)
 		return 1;
 
@@ -4382,7 +4463,8 @@ static int do_host_query(const char *query_host)
 
 		cli_cm_shutdown();
 		cli_cm_set_port( 139 );
-		cli = cli_cm_open(talloc_tos(), NULL, query_host, "IPC$", true);
+		cli = cli_cm_open(talloc_tos(), NULL,
+				query_host, "IPC$", true, smb_encrypt);
 	}
 
 	if (cli == NULL) {
@@ -4407,7 +4489,8 @@ static int do_tar_op(const char *base_directory)
 
 	/* do we already have a connection? */
 	if (!cli) {
-		cli = cli_cm_open(talloc_tos(), NULL, desthost, service, true);
+		cli = cli_cm_open(talloc_tos(), NULL,
+			desthost, service, true, smb_encrypt);
 		if (!cli)
 			return 1;
 	}
@@ -4657,6 +4740,9 @@ static int do_message_op(void)
 		case 'g':
 			grepable=true;
 			break;
+		case 'e':
+			smb_encrypt=true;
+			break;
 		case 'B':
 			return(do_smb_browse());
 
@@ -4747,6 +4833,7 @@ static int do_message_op(void)
 		calling_name = talloc_strdup(frame, global_myname() );
 	}
 
+	smb_encrypt = get_cmdline_auth_info_smb_encrypt();
 	init_names();
 
 	if(new_name_resolve_order)

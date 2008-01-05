@@ -31,7 +31,7 @@
  * @return #wbcErr
  **/
 
-wbcErr wbcAuthenticateUser(const char *username, 
+wbcErr wbcAuthenticateUser(const char *username,
 			   const char *password)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
@@ -61,5 +61,5 @@ wbcErr wbcAuthenticateUser(const char *username,
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 done:
-	return wbc_status;	
+	return wbc_status;
 }

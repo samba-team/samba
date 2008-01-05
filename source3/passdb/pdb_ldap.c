@@ -1454,79 +1454,6 @@ static bool init_ldap_from_sam (struct ldapsam_privates *ldap_state,
 }
 
 /**********************************************************************
- Connect to LDAP server for password enumeration.
-*********************************************************************/
-
-static NTSTATUS ldapsam_setsampwent(struct pdb_methods *my_methods, bool update, uint32 acb_mask)
-{
-	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)my_methods->private_data;
-	int rc;
-	char *filter = NULL;
-	const char *suffix;
-	const char **attr_list;
-	bool machine_mask = False, user_mask = False;
-	NTSTATUS status = NT_STATUS_OK;
-	TALLOC_CTX *ctx = talloc_init("ldapsam_setsampwent");
-
-	if (!ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	filter = talloc_asprintf(ctx, "(&%s%s)", "(uid=%u)",
-		get_objclass_filter(ldap_state->schema_ver));
-	if (!filter) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-
-	filter = talloc_all_string_sub(ctx, filter, "%u", "*");
-	if (!filter) {
-		status = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
-
-	machine_mask 	= ((acb_mask != 0) && (acb_mask & (ACB_WSTRUST|ACB_SVRTRUST|ACB_DOMTRUST)));
-	user_mask 	= ((acb_mask != 0) && (acb_mask & ACB_NORMAL));
-
-	if (machine_mask) {
-		suffix = lp_ldap_machine_suffix();
-	} else if (user_mask) {
-		suffix = lp_ldap_user_suffix();
-	} else {
-		suffix = lp_ldap_suffix();
-	}
-
-	DEBUG(10,("ldapsam_setsampwent: LDAP Query for acb_mask 0x%x will use suffix %s\n", 
-		acb_mask, suffix));
-
-	attr_list = get_userattr_list(NULL, ldap_state->schema_ver);
-	rc = smbldap_search(ldap_state->smbldap_state, suffix, LDAP_SCOPE_SUBTREE, filter, 
-			    attr_list, 0, &ldap_state->result);
-	TALLOC_FREE( attr_list );
-
-	if (rc != LDAP_SUCCESS) {
-		DEBUG(0, ("ldapsam_setsampwent: LDAP search failed: %s\n", ldap_err2string(rc)));
-		DEBUG(3, ("ldapsam_setsampwent: Query was: %s, %s\n", suffix, filter));
-		ldap_msgfree(ldap_state->result);
-		ldap_state->result = NULL;
-		status = NT_STATUS_UNSUCCESSFUL;
-		goto out;
-	}
-
-	DEBUG(2, ("ldapsam_setsampwent: %d entries in the base %s\n",
-		ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
-		ldap_state->result), suffix));
-
-	ldap_state->entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
-				 ldap_state->result);
-	ldap_state->index = 0;
-
-  out:
-
-	TALLOC_FREE(ctx);
-	return status;
-}
-
-/**********************************************************************
  End enumeration of the LDAP password list.
 *********************************************************************/
 
@@ -1537,32 +1464,6 @@ static void ldapsam_endsampwent(struct pdb_methods *my_methods)
 		ldap_msgfree(ldap_state->result);
 		ldap_state->result = NULL;
 	}
-}
-
-/**********************************************************************
-Get the next entry in the LDAP password database.
-*********************************************************************/
-
-static NTSTATUS ldapsam_getsampwent(struct pdb_methods *my_methods,
-				    struct samu *user)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct ldapsam_privates *ldap_state =
-		(struct ldapsam_privates *)my_methods->private_data;
-	bool bret = False;
-
-	while (!bret) {
-		if (!ldap_state->entry)
-			return ret;
-		
-		ldap_state->index++;
-		bret = init_sam_from_ldap(ldap_state, user, ldap_state->entry);
-		
-		ldap_state->entry = ldap_next_entry(priv2ld(ldap_state),
-						    ldap_state->entry);	
-	}
-
-	return NT_STATUS_OK;
 }
 
 static void append_attr(TALLOC_CTX *mem_ctx, const char ***attr_list,
@@ -1867,6 +1768,10 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 				pdb_get_username(newpwd), ldap_err2string(rc), ld_error?ld_error:"unknown"));
 			SAFE_FREE(ld_error);
 			ber_bvfree(bv);
+#if defined(LDAP_CONSTRAINT_VIOLATION)
+			if (rc == LDAP_CONSTRAINT_VIOLATION)
+				return NT_STATUS_PASSWORD_RESTRICTION;
+#endif
 			return NT_STATUS_UNSUCCESSFUL;
 		} else {
 			DEBUG(3,("ldapsam_modify_entry: LDAP Password changed for user %s\n",pdb_get_username(newpwd)));
@@ -6172,9 +6077,6 @@ static NTSTATUS pdb_init_ldapsam_common(struct pdb_methods **pdb_method, const c
 
 	(*pdb_method)->name = "ldapsam";
 
-	(*pdb_method)->setsampwent = ldapsam_setsampwent;
-	(*pdb_method)->endsampwent = ldapsam_endsampwent;
-	(*pdb_method)->getsampwent = ldapsam_getsampwent;
 	(*pdb_method)->getsampwnam = ldapsam_getsampwnam;
 	(*pdb_method)->getsampwsid = ldapsam_getsampwsid;
 	(*pdb_method)->add_sam_account = ldapsam_add_sam_account;
