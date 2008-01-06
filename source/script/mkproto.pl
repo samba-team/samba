@@ -17,14 +17,15 @@ use File::Path;
 
 my $public_file = undef;
 my $private_file = undef;
+my $all_file = undef;
 my $public_define = undef;
 my $private_define = undef;
 my $_public = "";
 my $_private = "";
 my $public_data = \$_public;
 my $private_data = \$_private;
-my $builddir = undef;
-my $srcdir = undef;
+my $builddir = ".";
+my $srcdir = ".";
 
 sub public($)
 {
@@ -55,6 +56,7 @@ sub usage()
 
 GetOptions(
 	'public=s' => sub { my ($f,$v) = @_; $public_file = $v; },
+	'all=s' => sub { my ($f,$v) = @_; $public_file = $v; $private_file = $v; },
 	'private=s' => sub { my ($f,$v) = @_; $private_file = $v; },
 	'define=s' => sub { 
 		my ($f,$v) = @_; 
@@ -93,9 +95,9 @@ if ((defined($private_file) and defined($public_file) and ($private_file eq $pub
 
 sub file_load($)
 {
-    my($filename) = shift;
+    my($filename) = @_;
     local(*INPUTFILE);
-    open(INPUTFILE, $filename) || return undef;
+    open(INPUTFILE, $filename) or return undef;
     my($saved_delim) = $/;
     undef $/;
     my($data) = <INPUTFILE>;
@@ -231,7 +233,7 @@ sub process_file($$$)
 
 
 print_header(\&public, $public_define);
-if ($public_file ne $private_file) {
+if (defined($private_file) and defined($public_file) and $public_file ne $private_file) {
 	print_header(\&private, $private_define);
 
 	private("/* this file contains prototypes for functions that " .
@@ -251,7 +253,7 @@ public("#ifndef _WARN_UNUSED_RESULT_\n#define _WARN_UNUSED_RESULT_\n#endif\n\n")
 
 process_file(\&public, \&private, $_) foreach (@ARGV);
 print_footer(\&public, $public_define);
-if ($public_file ne $private_file) {
+if (defined($private_file) and $public_file ne $private_file) {
 	print_footer(\&private, $private_define);
 }
 
@@ -263,15 +265,12 @@ if (not defined($private_file) and defined($public_file)) {
 	print STDOUT $$private_data;
 }
 
-my $old_public_data = file_load($public_file);
-my $old_private_data = file_load($private_file);
-
 mkpath(dirname($public_file), 0, 0755);
 open(PUBLIC, ">$public_file") or die("Can't open `$public_file': $!"); 
 print PUBLIC "$$public_data";
 close(PUBLIC);
 
-if ($public_file ne $private_file) {
+if (defined($private_file) and $public_file ne $private_file) {
 	mkpath(dirname($private_file), 0, 0755);
 	open(PRIVATE, ">$private_file") or die("Can't open `$private_file': $!"); 
 	print PRIVATE "$$private_data";
