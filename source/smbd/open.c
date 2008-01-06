@@ -2621,8 +2621,7 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 
 		fsp->access_mask = FILE_GENERIC_ALL;
 
-		status = SMB_VFS_FSET_NT_ACL(
-			fsp, fsp->fh->fd, sec_info_sent, sd);
+		status = SMB_VFS_FSET_NT_ACL(fsp, sec_info_sent, sd);
 
 		fsp->access_mask = saved_access_mask;
 

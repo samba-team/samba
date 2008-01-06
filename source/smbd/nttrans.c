@@ -769,8 +769,7 @@ static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 	}
 
 	if (fsp->fh->fd != -1) {
-		status = SMB_VFS_FSET_NT_ACL(fsp, fsp->fh->fd,
-					     security_info_sent, psd);
+		status = SMB_VFS_FSET_NT_ACL(fsp, security_info_sent, psd);
 	}
 	else {
 		status = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name,
