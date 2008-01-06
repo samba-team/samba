@@ -666,6 +666,16 @@ int tdb_get_flags(struct tdb_context *tdb)
 	return tdb->flags;
 }
 
+void tdb_add_flags(struct tdb_context *tdb, unsigned flags)
+{
+	tdb->flags |= flags;
+}
+
+void tdb_remove_flags(struct tdb_context *tdb, unsigned flags)
+{
+	tdb->flags &= ~flags;
+}
+
 
 /*
   enable sequence number handling on an open tdb

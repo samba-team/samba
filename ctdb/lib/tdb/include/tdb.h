@@ -135,6 +135,8 @@ int tdb_get_seqnum(struct tdb_context *tdb);
 int tdb_hash_size(struct tdb_context *tdb);
 size_t tdb_map_size(struct tdb_context *tdb);
 int tdb_get_flags(struct tdb_context *tdb);
+void tdb_add_flags(struct tdb_context *tdb, unsigned flag);
+void tdb_remove_flags(struct tdb_context *tdb, unsigned flag);
 void tdb_enable_seqnum(struct tdb_context *tdb);
 void tdb_increment_seqnum_nonblock(struct tdb_context *tdb);
 
@@ -153,6 +155,7 @@ void tdb_setalarm_sigptr(struct tdb_context *tdb, volatile sig_atomic_t *sigptr)
 void tdb_dump_all(struct tdb_context *tdb);
 int tdb_printfreelist(struct tdb_context *tdb);
 int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries);
+int tdb_wipe_all(struct tdb_context *tdb);
 
 extern TDB_DATA tdb_null;
 
