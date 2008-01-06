@@ -290,9 +290,9 @@ static struct file_id skel_file_id_create(vfs_handle_struct *handle,
 }
 
 static size_t skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	int fd, uint32 security_info, SEC_DESC **ppdesc)
+	uint32 security_info, SEC_DESC **ppdesc)
 {
-	return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, fd, security_info, ppdesc);
+	return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc);
 }
 
 static size_t skel_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
@@ -302,9 +302,9 @@ static size_t skel_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	int fd, uint32 security_info_sent, SEC_DESC *psd)
+	uint32 security_info_sent, SEC_DESC *psd)
 {
-	return SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, fd, security_info_sent, psd);
+	return SMB_VFS_NEXT_FSET_NT_ACL(handle, fsp, security_info_sent, psd);
 }
 
 static NTSTATUS skel_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
