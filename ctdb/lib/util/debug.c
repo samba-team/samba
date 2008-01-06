@@ -22,17 +22,14 @@
 #include <unistd.h>
 
 
-void do_debug(const char *format, ...)
+void do_debug_v(const char *format, va_list ap)
 {
 	struct timeval t;
-	va_list ap;
 	char *s = NULL;
 	struct tm *tm;
 	char tbuf[100];
 
-	va_start(ap, format);
 	vasprintf(&s, format, ap);
-	va_end(ap);
 
 	t = timeval_current();
 	tm = localtime(&t.tv_sec);
@@ -42,4 +39,13 @@ void do_debug(const char *format, ...)
 	fprintf(stderr, "%s.%06u [%5u]: %s", tbuf, (unsigned)t.tv_usec, (unsigned)getpid(), s);
 	fflush(stderr);
 	free(s);
+}
+
+void do_debug(const char *format, ...)
+{
+	va_list ap;
+
+	va_start(ap, format);
+	do_debug_v(format, ap);
+	va_end(ap);
 }

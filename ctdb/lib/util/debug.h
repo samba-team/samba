@@ -17,4 +17,5 @@
    along with this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+void do_debug_v(const char *format, va_list ap);
 void do_debug(const char *format, ...) PRINTF_ATTRIBUTE(1, 2);

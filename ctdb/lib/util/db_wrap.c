@@ -44,6 +44,18 @@ static int tdb_wrap_destructor(struct tdb_wrap *w)
 	return 0;
 }				 
 
+static void log_fn(struct tdb_context *tdb, enum tdb_debug_level level, const char *fmt, ...)
+{
+	if (level <= TDB_DEBUG_ERROR) {
+		va_list ap;
+
+		va_start(ap, fmt);
+		do_debug_v(fmt, ap);
+		va_end(ap);
+	}
+}
+
+
 /*
   wrapped connection to a tdb database
   to close just talloc_free() the tdb_wrap pointer
@@ -53,6 +65,10 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 			       int open_flags, mode_t mode)
 {
 	struct tdb_wrap *w;
+	struct tdb_logging_context log_ctx;
+
+	log_ctx.log_fn = log_fn;
+	log_ctx.log_private = NULL;
 
 	for (w=tdb_list;w;w=w->next) {
 		if (strcmp(name, w->name) == 0) {
@@ -67,8 +83,8 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx,
 
 	w->name = talloc_strdup(w, name);
 
-	w->tdb = tdb_open(name, hash_size, tdb_flags, 
-			  open_flags, mode);
+	w->tdb = tdb_open_ex(name, hash_size, tdb_flags, 
+			     open_flags, mode, &log_ctx, NULL);
 	if (w->tdb == NULL) {
 		talloc_free(w);
 		return NULL;
