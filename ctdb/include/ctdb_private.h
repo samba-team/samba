@@ -454,9 +454,9 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_SHUTDOWN                = 36,
 		    CTDB_CONTROL_GET_MONMODE             = 37,
 		    /* #38 removed */
-		    CTDB_CONTROL_MAX_RSN                 = 39,
-		    CTDB_CONTROL_SET_RSN_NONEMPTY        = 40,
-		    CTDB_CONTROL_DELETE_LOW_RSN          = 41,
+		    /* #39 removed */
+		    /* #40 removed */
+		    /* #41 removed */
 		    CTDB_CONTROL_TAKEOVER_IP             = 42,
 		    CTDB_CONTROL_RELEASE_IP              = 43,
 		    CTDB_CONTROL_TCP_CLIENT              = 44,
@@ -480,23 +480,10 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_PERSISTENT_STORE        = 62,
 		    CTDB_CONTROL_UPDATE_RECORD           = 63,
 		    CTDB_CONTROL_SEND_GRATIOUS_ARP       = 64,
+		    CTDB_CONTROL_TRANSACTION_START       = 65,
+		    CTDB_CONTROL_TRANSACTION_COMMIT      = 66,
+		    CTDB_CONTROL_WIPE_DATABASE           = 67,
 };	
-
-/*
-  structure passed in ctdb_control_set_rsn_nonempty
- */
-struct ctdb_control_set_rsn_nonempty {
-	uint32_t db_id;
-	uint64_t rsn;
-};
-
-/*
-  structure passed in ctdb_control_delete_low_rsn
- */
-struct ctdb_control_delete_low_rsn {
-	uint32_t db_id;
-	uint64_t rsn;
-};
 
 /*
   structure passed in set_call control
@@ -1058,32 +1045,6 @@ void ctdb_call_resend_all(struct ctdb_context *ctdb);
 void ctdb_node_dead(struct ctdb_node *node);
 void ctdb_node_connected(struct ctdb_node *node);
 bool ctdb_blocking_freeze(struct ctdb_context *ctdb);
-int32_t ctdb_control_max_rsn(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
-
-struct ctdb_client_control_state *ctdb_ctrl_set_rsn_nonempty_send(
-	struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, 
-	uint32_t destnode, uint32_t db_id, uint64_t rsn);
-int ctdb_ctrl_set_rsn_nonempty_recv(struct ctdb_context *ctdb, 
-				    struct ctdb_client_control_state *state);
-int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout, 
-			       uint32_t destnode, uint32_t db_id, uint64_t rsn);
-struct ctdb_client_control_state *ctdb_ctrl_delete_low_rsn_send(
-	struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, 
-	uint32_t destnode, uint32_t db_id, uint64_t rsn);
-int ctdb_ctrl_delete_low_rsn_recv(struct ctdb_context *ctdb, 
-				  struct ctdb_client_control_state *state);
-int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
-			     uint32_t destnode, uint32_t db_id, uint64_t rsn);
-
-int32_t ctdb_control_set_rsn_nonempty(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
-int32_t ctdb_control_delete_low_rsn(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata);
-
-int ctdb_ctrl_get_max_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
-			  uint32_t destnode, uint32_t db_id, uint64_t *max_rsn);
-int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout, 
-			       uint32_t destnode, uint32_t db_id, uint64_t rsn);
-int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
-			     uint32_t destnode, uint32_t db_id, uint64_t rsn);
 void ctdb_set_scheduler(struct ctdb_context *ctdb);
 void ctdb_restore_scheduler(struct ctdb_context *ctdb);
 int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb, 
@@ -1216,5 +1177,8 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 				   struct ctdb_req_control *c, TDB_DATA recdata, 
 				   bool *async_reply);
 
+int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb);
+int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb);
+int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
 
 #endif

@@ -27,6 +27,7 @@
 #include "cmdline.h"
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
+#include "db_wrap.h"
 
 
 struct ban_state {
@@ -63,6 +64,8 @@ struct async_data {
 static void async_callback(struct ctdb_client_control_state *state)
 {
 	struct async_data *data = talloc_get_type(state->async.private_data, struct async_data);
+	int ret;
+	int32_t res;
 
 	/* one more node has responded with recmode data */
 	data->count--;
@@ -72,6 +75,15 @@ static void async_callback(struct ctdb_client_control_state *state)
 	*/
 	if (state->state != CTDB_CONTROL_DONE) {
 		DEBUG(0,("Async operation failed with state %d\n", state->state));
+		data->fail_count++;
+		return;
+	}
+	
+	state->async.fn = NULL;
+
+	ret = ctdb_control_recv(state->ctdb, state, data, NULL, &res, NULL);
+	if ((ret != 0) || (res != 0)) {
+		DEBUG(0,("Async operation failed with ret=%d res=%d\n", ret, (int)res));
 		data->fail_count++;
 	}
 }
@@ -241,49 +253,49 @@ static void ctdb_ban_node(struct ctdb_recoverd *rec, uint32_t pnn, uint32_t ban_
 enum monitor_result { MONITOR_OK, MONITOR_RECOVERY_NEEDED, MONITOR_ELECTION_NEEDED, MONITOR_FAILED};
 
 
-
-
-/* freeze all nodes */
-static enum monitor_result freeze_all_nodes(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
+/* 
+   perform a simple control on all active nodes. The control cannot return data
+ */
+static int async_control_on_active_nodes(struct ctdb_context *ctdb, enum ctdb_controls opcode,
+					 struct ctdb_node_map *nodemap, TDB_DATA data, bool include_self)
 {
 	struct async_data *async_data;
-	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
 	struct ctdb_client_control_state *state;
 	int j;
+	struct timeval timeout = CONTROL_TIMEOUT();
 	
-	async_data = talloc_zero(mem_ctx, struct async_data);
+	async_data = talloc_zero(ctdb, struct async_data);
 	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
 
-	/* loop over all active nodes and send an async freeze call to 
-	   them*/
+	/* loop over all active nodes and send an async control to each of them */
 	for (j=0; j<nodemap->num; j++) {
 		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
 			continue;
 		}
-		state = ctdb_ctrl_freeze_send(ctdb, mem_ctx, 
-					      CONTROL_TIMEOUT(), 
-					      nodemap->nodes[j].pnn);
+		if (nodemap->nodes[j].pnn == ctdb->pnn && !include_self) {
+			continue;
+		}
+		state = ctdb_control_send(ctdb, nodemap->nodes[j].pnn, 0, opcode, 
+					  0, data, async_data, NULL, &timeout, NULL);
 		if (state == NULL) {
-			/* we failed to send the control, treat this as 
-			   an error and try again next iteration
-			*/			
-			DEBUG(0,("Failed to call ctdb_ctrl_freeze_send during recovery\n"));
-			talloc_free(mem_ctx);
-			return MONITOR_RECOVERY_NEEDED;
+			DEBUG(0,(__location__ " Failed to call async control %u\n", (unsigned)opcode));
+			talloc_free(async_data);
+			return -1;
 		}
 		
 		async_add(async_data, state);
 	}
 
 	if (async_wait(ctdb, async_data) != 0) {
-		DEBUG(0,(__location__ " Failed async freeze call\n"));
-		talloc_free(mem_ctx);
-		return MONITOR_RECOVERY_NEEDED;
+		DEBUG(0,(__location__ " Failed async control %u\n", (unsigned)opcode));
+		talloc_free(async_data);
+		return -1;
 	}
 
-	talloc_free(mem_ctx);
-	return MONITOR_OK;
+	talloc_free(async_data);
+	return 0;
 }
+
 
 
 /*
@@ -291,37 +303,32 @@ static enum monitor_result freeze_all_nodes(struct ctdb_context *ctdb, struct ct
  */
 static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t rec_mode)
 {
-	int j, ret;
+	TDB_DATA data;
 
 	/* freeze all nodes */
 	if (rec_mode == CTDB_RECOVERY_ACTIVE) {
-		ret = freeze_all_nodes(ctdb, nodemap);
-		if (ret != MONITOR_OK) {
+		if (async_control_on_active_nodes(ctdb, CTDB_CONTROL_FREEZE, 
+						  nodemap, tdb_null, true) != 0) {
 			DEBUG(0, (__location__ " Unable to freeze nodes. Recovery failed.\n"));
 			return -1;
 		}
 	}
 
 
-	/* set recovery mode to active on all nodes */
-	for (j=0; j<nodemap->num; j++) {
-		/* dont change it for nodes that are unavailable */
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
+	data.dsize = sizeof(uint32_t);
+	data.dptr = (unsigned char *)&rec_mode;
 
-		ret = ctdb_ctrl_setrecmode(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, rec_mode);
-		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to set recmode on node %u\n", nodemap->nodes[j].pnn));
+	if (async_control_on_active_nodes(ctdb, CTDB_CONTROL_SET_RECMODE, 
+					  nodemap, data, true) != 0) {
+		DEBUG(0, (__location__ " Unable to set recovery mode. Recovery failed.\n"));
+		return -1;
+	}
+
+	if (rec_mode == CTDB_RECOVERY_NORMAL) {
+		if (async_control_on_active_nodes(ctdb, CTDB_CONTROL_THAW, 
+						  nodemap, tdb_null, true) != 0) {
+			DEBUG(0, (__location__ " Unable to thaw nodes. Recovery failed.\n"));
 			return -1;
-		}
-
-		if (rec_mode == CTDB_RECOVERY_NORMAL) {
-			ret = ctdb_ctrl_thaw(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn);
-			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to thaw node %u\n", nodemap->nodes[j].pnn));
-				return -1;
-			}
 		}
 	}
 
@@ -333,20 +340,15 @@ static int set_recovery_mode(struct ctdb_context *ctdb, struct ctdb_node_map *no
  */
 static int set_recovery_master(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, uint32_t pnn)
 {
-	int j, ret;
+	TDB_DATA data;
 
-	/* set recovery master to pnn on all nodes */
-	for (j=0; j<nodemap->num; j++) {
-		/* dont change it for nodes that are unavailable */
-		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
+	data.dsize = sizeof(uint32_t);
+	data.dptr = (unsigned char *)&pnn;
 
-		ret = ctdb_ctrl_setrecmaster(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, pnn);
-		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to set recmaster on node %u\n", nodemap->nodes[j].pnn));
-			return -1;
-		}
+	if (async_control_on_active_nodes(ctdb, CTDB_CONTROL_SET_RECMASTER, 
+					  nodemap, data, true) != 0) {
+		DEBUG(0, (__location__ " Unable to set recmaster. Recovery failed.\n"));
+		return -1;
 	}
 
 	return 0;
@@ -483,59 +485,111 @@ static int create_missing_local_databases(struct ctdb_context *ctdb, struct ctdb
 
 
 /*
-  pull all the remote database contents into ours
+  pull the remote database contents from one node into the recdb
  */
-static int pull_all_remote_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
-				     uint32_t pnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
+static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode, 
+				    struct tdb_wrap *recdb, uint32_t dbid)
 {
-	int i, j, ret;
+	int ret;
+	TDB_DATA outdata;
+	struct ctdb_control_pulldb_reply *reply;
+	struct ctdb_rec_data *rec;
+	int i;
+	TALLOC_CTX *tmp_ctx = talloc_new(recdb);
 
-	/* pull all records from all other nodes across onto this node
-	   (this merges based on rsn)
-	*/
-	for (i=0;i<dbmap->num;i++) {
-		for (j=0; j<nodemap->num; j++) {
-			/* we dont need to merge with ourselves */
-			if (nodemap->nodes[j].pnn == pnn) {
-				continue;
-			}
-			/* dont merge from nodes that are unavailable */
-			if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-				continue;
-			}
-			ret = ctdb_ctrl_copydb(ctdb, CONTROL_TIMEOUT(), nodemap->nodes[j].pnn, 
-					       pnn, dbmap->dbs[i].dbid, CTDB_LMASTER_ANY, mem_ctx);
-			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to copy db from node %u to node %u\n", 
-					  nodemap->nodes[j].pnn, pnn));
+	ret = ctdb_ctrl_pulldb(ctdb, srcnode, dbid, CTDB_LMASTER_ANY, tmp_ctx,
+			       CONTROL_TIMEOUT(), &outdata);
+	if (ret != 0) {
+		DEBUG(0,(__location__ " Unable to copy db from node %u\n", srcnode));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+
+	reply = (struct ctdb_control_pulldb_reply *)outdata.dptr;
+
+	if (outdata.dsize < offsetof(struct ctdb_control_pulldb_reply, data)) {
+		DEBUG(0,(__location__ " invalid data in pulldb reply\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	
+	rec = (struct ctdb_rec_data *)&reply->data[0];
+	
+	for (i=0;
+	     i<reply->count;
+	     rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec), i++) {
+		TDB_DATA key, data;
+		struct ctdb_ltdb_header *hdr;
+		TDB_DATA existing;
+		
+		key.dptr = &rec->data[0];
+		key.dsize = rec->keylen;
+		data.dptr = &rec->data[key.dsize];
+		data.dsize = rec->datalen;
+		
+		hdr = (struct ctdb_ltdb_header *)data.dptr;
+
+		if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
+			DEBUG(0,(__location__ " bad ltdb record\n"));
+			talloc_free(tmp_ctx);
+			return -1;
+		}
+
+		/* fetch the existing record, if any */
+		existing = tdb_fetch(recdb->tdb, key);
+		
+		if (existing.dptr != NULL) {
+			struct ctdb_ltdb_header header;
+			if (existing.dsize < sizeof(struct ctdb_ltdb_header)) {
+				DEBUG(0,(__location__ " Bad record size %u from node %u\n", 
+					 existing.dsize, srcnode));
+				free(existing.dptr);
+				talloc_free(tmp_ctx);
 				return -1;
 			}
+			header = *(struct ctdb_ltdb_header *)existing.dptr;
+			free(existing.dptr);
+			if (!(header.rsn < hdr->rsn ||
+			      (header.dmaster != ctdb->recovery_master && header.rsn == hdr->rsn))) {
+				continue;
+			}
+		}
+		
+		if (tdb_store(recdb->tdb, key, data, TDB_REPLACE) != 0) {
+			DEBUG(0,(__location__ " Failed to store record\n"));
+			talloc_free(tmp_ctx);
+			return -1;				
 		}
 	}
+
+	talloc_free(tmp_ctx);
 
 	return 0;
 }
 
-
 /*
-  change the dmaster on all databases to point to us
+  pull all the remote database contents into the recdb
  */
-static int update_dmaster_on_our_databases(struct ctdb_context *ctdb, uint32_t pnn, 
-					   struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
+static int pull_remote_database(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
+				struct tdb_wrap *recdb, uint32_t dbid)
 {
-	int i, ret;
+	int j;
 
-	/* update dmaster to point to this node for all databases/nodes */
-	for (i=0;i<dbmap->num;i++) {
-		ret = ctdb_ctrl_setdmaster(ctdb, CONTROL_TIMEOUT(), pnn, 
-					   ctdb, dbmap->dbs[i].dbid, pnn);
-		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to set dmaster for node %u db:0x%08x\n", 
-				  pnn, dbmap->dbs[i].dbid));
+	/* pull all records from all other nodes across onto this node
+	   (this merges based on rsn)
+	*/
+	for (j=0; j<nodemap->num; j++) {
+		/* dont merge from nodes that are unavailable */
+		if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (pull_one_remote_database(ctdb, nodemap->nodes[j].pnn, recdb, dbid) != 0) {
+			DEBUG(0,(__location__ " Failed to pull remote database from node %u\n", 
+				 nodemap->nodes[j].pnn));
 			return -1;
 		}
 	}
-
+	
 	return 0;
 }
 
@@ -561,161 +615,6 @@ static int update_flags_on_all_nodes(struct ctdb_context *ctdb, struct ctdb_node
 				  CTDB_SRVID_NODE_FLAGS_CHANGED, data);
 
 	}
-	return 0;
-}
-
-/*
-  vacuum one database
- */
-static int vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb_node_map *nodemap)
-{
-	uint64_t max_rsn;
-	int ret, i;
-	TALLOC_CTX *mem_ctx = talloc_new(ctdb);
-	struct async_data *async_data;
-	struct ctdb_client_control_state *state;
-
-	/* find max rsn on our local node for this db */
-	ret = ctdb_ctrl_get_max_rsn(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, db_id, &max_rsn);
-	if (ret != 0) {
-		talloc_free(mem_ctx);
-		return -1;
-	}
-
-	async_data = talloc_zero(mem_ctx, struct async_data);
-	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
-
-	/* set rsn on non-empty records to max_rsn+1 */
-	for (i=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		state = ctdb_ctrl_set_rsn_nonempty_send(ctdb, async_data, CONTROL_TIMEOUT(), nodemap->nodes[i].pnn,
-							db_id, max_rsn+1);
-		if (state == NULL) {
-			DEBUG(0,(__location__ " Failed to set rsn on node %u to %llu\n",
-				 nodemap->nodes[i].pnn, (unsigned long long)max_rsn+1));
-			talloc_free(mem_ctx);
-			return -1;
-		}
-		async_add(async_data, state);
-	}
-	
-	if (async_wait(ctdb, async_data) != 0) {
-		DEBUG(0,(__location__ " Failed async calls to set rsn nonempty\n"));
-		talloc_free(mem_ctx);
-		return -1;
-	}
-
-
-	/* delete records with rsn < max_rsn+1 on all nodes */
-	for (i=0;i<nodemap->num;i++) {
-		if (nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE) {
-			continue;
-		}
-		state = ctdb_ctrl_delete_low_rsn_send(ctdb, async_data, CONTROL_TIMEOUT(), nodemap->nodes[i].pnn,
-						      db_id, max_rsn+1);
-		if (state == NULL) {
-			DEBUG(0,(__location__ " Failed to delete records on node %u with rsn below %llu\n",
-				 nodemap->nodes[i].pnn, (unsigned long long)max_rsn+1));
-			talloc_free(mem_ctx);
-			return -1;
-		}
-		async_add(async_data, state);
-	}
-
-	if (async_wait(ctdb, async_data) != 0) {
-		DEBUG(0,(__location__ " Failed async calls to delete low rsn\n"));
-		talloc_free(mem_ctx);
-		return -1;
-	}
-
-	return 0;
-}
-
-
-/*
-  vacuum all attached databases
- */
-static int vacuum_all_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
-				struct ctdb_dbid_map *dbmap)
-{
-	int i;
-
-	/* update dmaster to point to this node for all databases/nodes */
-	for (i=0;i<dbmap->num;i++) {
-		if (vacuum_db(ctdb, dbmap->dbs[i].dbid, nodemap) != 0) {
-			return -1;
-		}
-	}
-	return 0;
-}
-
-/*
-  push out all our database contents to all other nodes
- */
-static int push_all_local_databases(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap, 
-				    uint32_t pnn, struct ctdb_dbid_map *dbmap, TALLOC_CTX *mem_ctx)
-{
-	int i;
-
-	/* push all records out to the nodes again */
-	for (i=0;i<dbmap->num;i++) {
-		int j, ret;
-		TDB_DATA outdata;
-		struct async_data *async_data;
-		struct ctdb_client_control_state *state;
-
-		DEBUG(3,("pulling dbid 0x%x from local node %u\n",
-			dbmap->dbs[i].dbid, pnn));
-
-		async_data = talloc_zero(mem_ctx, struct async_data);
-		CTDB_NO_MEMORY_FATAL(ctdb, async_data);
-
-		ret = ctdb_ctrl_pulldb(ctdb, pnn, dbmap->dbs[i].dbid,
-				       CTDB_LMASTER_ANY,
-				       async_data, CONTROL_TIMEOUT(), &outdata);
-		if (ret != 0) {
-			DEBUG(0,(__location__ " ctdb_control for pulldb failed\n"));
-			return -1;
-		}
-
-		for (j=0; j<nodemap->num; j++) {
-			/* we dont need to push to ourselves */
-			if (nodemap->nodes[j].pnn == pnn) {
-				continue;
-			}
-			/* dont push to nodes that are unavailable */
-			if (nodemap->nodes[j].flags & NODE_FLAGS_INACTIVE) {
-				continue;
-			}
-
-			DEBUG(3,("starting async push of dbid 0x%x to %u\n",
-				 dbmap->dbs[i].dbid,
-				 nodemap->nodes[j].pnn));
-
-			state = ctdb_ctrl_pushdb_send(ctdb,
-						      nodemap->nodes[j].pnn, 
-						      dbmap->dbs[i].dbid, async_data, 
-						      CONTROL_TIMEOUT(), outdata);
-			if (state == NULL) {
-				DEBUG(0,(__location__ " async control for pushdb for dbid 0x%08x to node %u failed\n", dbmap->dbs[i].dbid, nodemap->nodes[j].pnn));
-				talloc_free(async_data);
-				return -1;
-			}
-
-			async_add(async_data, state);
-		}
-
-		if (async_wait(ctdb, async_data) != 0) {
-			DEBUG(0,("Async push of database 0x%08x failed\n", dbmap->dbs[i].dbid));
-			talloc_free(async_data);
-			return -1;
-		}
-
-		talloc_free(async_data);
-	}
-
 	return 0;
 }
 
@@ -965,6 +864,169 @@ static uint32_t new_generation(void)
 	return generation;
 }
 
+
+/*
+  create a temporary working database
+ */
+static struct tdb_wrap *create_recdb(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx)
+{
+	char *name;
+	struct tdb_wrap *recdb;
+
+	/* open up the temporary recovery database */
+	name = talloc_asprintf(mem_ctx, "%s/recdb.tdb", ctdb->db_directory);
+	if (name == NULL) {
+		return NULL;
+	}
+	unlink(name);
+	recdb = tdb_wrap_open(mem_ctx, name, ctdb->tunable.database_hash_size, 
+			      TDB_NOLOCK, O_RDWR|O_CREAT|O_EXCL, 0600);
+	if (recdb == NULL) {
+		DEBUG(0,(__location__ " Failed to create temp recovery database '%s'\n", name));
+	}
+
+	talloc_free(name);
+
+	return recdb;
+}
+
+
+/* 
+   a traverse function for pulling all relevent records from recdb
+ */
+struct recdb_data {
+	struct ctdb_context *ctdb;
+	struct ctdb_control_pulldb_reply *recdata;
+	uint32_t len;
+};
+
+static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
+{
+	struct recdb_data *params = (struct recdb_data *)p;
+	struct ctdb_rec_data *rec;
+	struct ctdb_ltdb_header *hdr;
+
+	/* skip empty records */
+	if (data.dsize <= sizeof(struct ctdb_ltdb_header)) {
+		return 0;
+	}
+
+	/* update the dmaster field to point to us */
+	hdr = (struct ctdb_ltdb_header *)data.dptr;
+	hdr->dmaster = params->ctdb->pnn;
+
+	/* add the record to the blob ready to send to the nodes */
+	rec = ctdb_marshall_record(params->recdata, 0, key, NULL, data);
+	params->recdata = talloc_realloc_size(NULL, params->recdata, rec->length + params->len);
+	if (params->recdata == NULL) {
+		DEBUG(0,(__location__ " Failed to expand recdata to %u (%u records)\n", 
+			 rec->length + params->len, params->recdata->count));
+		return -1;
+	}
+	params->recdata->count++;
+	memcpy(params->len+(uint8_t *)params->recdata, rec, rec->length);
+	params->len += rec->length;
+	talloc_free(rec);
+
+	return 0;
+}
+
+/*
+  push the recdb database out to all nodes
+ */
+static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
+			       struct tdb_wrap *recdb, struct ctdb_node_map *nodemap)
+{
+	struct recdb_data params;
+	struct ctdb_control_pulldb_reply *recdata;
+	TDB_DATA outdata;
+
+	recdata = talloc_zero(recdb, struct ctdb_control_pulldb_reply);
+	CTDB_NO_MEMORY(ctdb, recdata);
+
+	recdata->db_id = dbid;
+
+	params.ctdb = ctdb;
+	params.recdata = recdata;
+	params.len = offsetof(struct ctdb_control_pulldb_reply, data);
+
+	if (tdb_traverse_read(recdb->tdb, traverse_recdb, &params) == -1) {
+		DEBUG(0,(__location__ " Failed to traverse recdb database\n"));
+		return -1;
+	}
+
+	recdata = params.recdata;
+
+	outdata.dptr = (void *)recdata;
+	outdata.dsize = params.len;
+
+	if (async_control_on_active_nodes(ctdb, CTDB_CONTROL_PUSH_DB, nodemap, outdata, true) != 0) {
+		DEBUG(0,(__location__ " Failed to push recdb records to nodes for db 0x%x\n", dbid));
+		talloc_free(recdata);
+		return -1;
+	}
+
+	DEBUG(0, (__location__ " Recovery - pushed remote database 0x%x of size %u\n", 
+		  dbid, recdata->count));
+
+	talloc_free(recdata);
+
+	return 0;
+}
+
+
+/*
+  go through a full recovery on one database 
+ */
+static int recover_database(struct ctdb_recoverd *rec, 
+			    TALLOC_CTX *mem_ctx,
+			    uint32_t dbid,
+			    uint32_t pnn, 
+			    struct ctdb_node_map *nodemap)
+{
+	struct tdb_wrap *recdb;
+	int ret;
+	struct ctdb_context *ctdb = rec->ctdb;
+	TDB_DATA data;
+
+	recdb = create_recdb(ctdb, mem_ctx);
+	if (recdb == NULL) {
+		return -1;
+	}
+
+	/* pull all remote databases onto the recdb */
+	ret = pull_remote_database(ctdb, nodemap, recdb, dbid);
+	if (ret != 0) {
+		DEBUG(0, (__location__ " Unable to pull remote database 0x%x\n", dbid));
+		return -1;
+	}
+
+	DEBUG(0, (__location__ " Recovery - pulled remote database 0x%x\n", dbid));
+
+	/* wipe all the remote databases. This is safe as we are in a transaction */
+	data.dptr = (void *)&dbid;
+	data.dsize = sizeof(uint32_t);
+
+	if (async_control_on_active_nodes(ctdb, CTDB_CONTROL_WIPE_DATABASE, 
+					  nodemap, data, true) != 0) {
+		DEBUG(0, (__location__ " Unable to wipe database. Recovery failed.\n"));
+		return -1;
+	}
+	
+	/* push out the correct database. This sets the dmaster and skips 
+	   the empty records */
+	ret = push_recdb_database(ctdb, dbid, recdb, nodemap);
+	if (ret != 0) {
+		talloc_free(recdb);
+		return -1;
+	}
+
+	/* all done with this database */
+	talloc_free(recdb);
+
+	return 0;
+}
+
 		
 /*
   we are the recmaster, and recovery is needed - start a recovery run
@@ -999,14 +1061,40 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
+	DEBUG(0, (__location__ " Recovery initiated due to problem with node %u\n", culprit));
+
+	/* get a list of all databases */
+	ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, &dbmap);
+	if (ret != 0) {
+		DEBUG(0, (__location__ " Unable to get dbids from node :%u\n", pnn));
+		return -1;
+	}
+
+	/* we do the db creation before we set the recovery mode, so the freeze happens
+	   on all databases we will be dealing with. */
+
+	/* verify that we have all the databases any other node has */
+	ret = create_missing_local_databases(ctdb, nodemap, pnn, &dbmap, mem_ctx);
+	if (ret != 0) {
+		DEBUG(0, (__location__ " Unable to create missing local databases\n"));
+		return -1;
+	}
+
+	/* verify that all other nodes have all our databases */
+	ret = create_missing_remote_databases(ctdb, nodemap, pnn, dbmap, mem_ctx);
+	if (ret != 0) {
+		DEBUG(0, (__location__ " Unable to create missing remote databases\n"));
+		return -1;
+	}
+
+	DEBUG(0, (__location__ " Recovery - created remote databases\n"));
+
 	/* set recovery mode to active on all nodes */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_ACTIVE);
 	if (ret!=0) {
 		DEBUG(0, (__location__ " Unable to set recovery mode to active on cluster\n"));
 		return -1;
 	}
-
-	DEBUG(0, (__location__ " Recovery initiated due to problem with node %u\n", culprit));
 
 	/* pick a new generation number */
 	generation = new_generation();
@@ -1028,67 +1116,32 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-	/* get a list of all databases */
-	ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, &dbmap);
-	if (ret != 0) {
-		DEBUG(0, (__location__ " Unable to get dbids from node :%u\n", pnn));
+	if (async_control_on_active_nodes(ctdb, CTDB_CONTROL_TRANSACTION_START, 
+					  nodemap, tdb_null, true) != 0) {
+		DEBUG(0, (__location__ " Unable to start transactions. Recovery failed.\n"));
 		return -1;
 	}
 
+	DEBUG(0,(__location__ " started transactions on all nodes\n"));
 
-	/* verify that all other nodes have all our databases */
-	ret = create_missing_remote_databases(ctdb, nodemap, pnn, dbmap, mem_ctx);
-	if (ret != 0) {
-		DEBUG(0, (__location__ " Unable to create missing remote databases\n"));
+	for (i=0;i<dbmap->num;i++) {
+		if (recover_database(rec, mem_ctx, dbmap->dbs[i].dbid, pnn, nodemap) != 0) {
+			DEBUG(0, (__location__ " Failed to recover database 0x%x\n", dbmap->dbs[i].dbid));
+			return -1;
+		}
+	}
+
+	DEBUG(0, (__location__ " Recovery - starting database commits\n"));
+
+	/* commit all the changes */
+	if (async_control_on_active_nodes(ctdb, CTDB_CONTROL_TRANSACTION_COMMIT, 
+					  nodemap, tdb_null, true) != 0) {
+		DEBUG(0, (__location__ " Unable to commit recovery changes. Recovery failed.\n"));
 		return -1;
 	}
 
-	/* verify that we have all the databases any other node has */
-	ret = create_missing_local_databases(ctdb, nodemap, pnn, &dbmap, mem_ctx);
-	if (ret != 0) {
-		DEBUG(0, (__location__ " Unable to create missing local databases\n"));
-		return -1;
-	}
-
-	/* verify that all other nodes have all our databases */
-	ret = create_missing_remote_databases(ctdb, nodemap, pnn, dbmap, mem_ctx);
-	if (ret != 0) {
-		DEBUG(0, (__location__ " Unable to create missing remote databases\n"));
-		return -1;
-	}
-
-
-	DEBUG(0, (__location__ " Recovery - created remote databases\n"));
-
-	/* pull all remote databases onto the local node */
-	ret = pull_all_remote_databases(ctdb, nodemap, pnn, dbmap, mem_ctx);
-	if (ret != 0) {
-		DEBUG(0, (__location__ " Unable to pull remote databases\n"));
-		return -1;
-	}
-
-	DEBUG(0, (__location__ " Recovery - pulled remote databases\n"));
-
-	/* repoint all local database records to the local node as
-	   being dmaster
-	 */
-	ret = update_dmaster_on_our_databases(ctdb, pnn, dbmap, mem_ctx);
-	if (ret != 0) {
-		DEBUG(0, (__location__ " Unable to update dmaster on all databases\n"));
-		return -1;
-	}
-
-	DEBUG(0, (__location__ " Recovery - updated dmaster on our databases\n"));
-
-
-	/* push all local databases to the remote nodes */
-	ret = push_all_local_databases(ctdb, nodemap, pnn, dbmap, mem_ctx);
-	if (ret != 0) {
-		DEBUG(0, (__location__ " Unable to push local databases\n"));
-		return -1;
-	}
-
-	DEBUG(0, (__location__ " Recovery - pushed remote databases\n"));
+	DEBUG(0, (__location__ " Recovery - committed databases\n"));
+	
 
 	/* build a new vnn map with all the currently active and
 	   unbanned nodes */
@@ -1134,17 +1187,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(0, (__location__ " Recovery - updated flags\n"));
 
 	/*
-	  run a vacuum operation on empty records
-	 */
-	ret = vacuum_all_databases(ctdb, nodemap, dbmap);
-	if (ret != 0) {
-		DEBUG(0, (__location__ " Unable to vacuum all databases\n"));
-		return -1;
-	}
-
-	DEBUG(0, (__location__ " Recovery - vacuumed all databases\n"));
-
-	/*
 	  if enabled, tell nodes to takeover their public IPs
 	 */
 	if (ctdb->vnn) {
@@ -1155,10 +1197,6 @@ static int do_recovery(struct ctdb_recoverd *rec,
 			return -1;
 		}
 		DEBUG(1, (__location__ " Recovery - done takeover\n"));
-	}
-
-	for (i=0;i<dbmap->num;i++) {
-		DEBUG(2,("Recovered database with db_id 0x%08x\n", dbmap->dbs[i].dbid));
 	}
 
 	/* disable recovery mode */

@@ -58,6 +58,7 @@ struct ctdb_freeze_handle {
 	pid_t child;
 	int fd;
 	struct ctdb_freeze_waiter *waiters;
+	bool transaction_started;
 };
 
 /*
@@ -249,12 +250,144 @@ bool ctdb_blocking_freeze(struct ctdb_context *ctdb)
  */
 int32_t ctdb_control_thaw(struct ctdb_context *ctdb)
 {
+	/* cancel any pending transactions */
+	if (ctdb->freeze_handle && ctdb->freeze_handle->transaction_started) {
+		struct ctdb_db_context *ctdb_db;
+
+		for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+			tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+			if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
+				DEBUG(0,(__location__ " Failed to cancel transaction for db '%s'\n",
+					 ctdb_db->db_name));
+			}
+			tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+		}
+	}
+
 #if 0
 	/* this hack can be used to get a copy of the databases at the end of a recovery */
 	system("mkdir -p /var/ctdb.saved; /usr/bin/rsync --delete -a /var/ctdb/ /var/ctdb.saved/$$ 2>&1 > /dev/null");
 #endif
+
+#if 0
+	/* and this one for local testing */
+	system("mkdir -p test.db.saved; /usr/bin/rsync --delete -a test.db/ test.db.saved/$$ 2>&1 > /dev/null");
+#endif
+
+
 	talloc_free(ctdb->freeze_handle);
 	ctdb->freeze_handle = NULL;
 	ctdb_call_resend_all(ctdb);
+	return 0;
+}
+
+
+/*
+  start a transaction on all databases - used for recovery
+ */
+int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb)
+{
+	struct ctdb_db_context *ctdb_db;
+
+	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
+		DEBUG(0,(__location__ " Failed transaction_start while not frozen\n"));
+		return -1;
+	}
+
+
+	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+		int ret;
+
+		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+
+		if (ctdb->freeze_handle->transaction_started) {
+			if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
+				DEBUG(0,(__location__ " Failed to cancel transaction for db '%s'\n",
+					 ctdb_db->db_name));
+				/* not a fatal error */
+			}
+		}
+
+		ret = tdb_transaction_start(ctdb_db->ltdb->tdb);
+
+		tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+
+		if (ret != 0) {
+			DEBUG(0,(__location__ " Failed to start transaction for db '%s'\n",
+				 ctdb_db->db_name));
+			return -1;
+		}
+	}
+
+	ctdb->freeze_handle->transaction_started = true;
+
+	return 0;
+}
+
+/*
+  commit transactions on all databases
+ */
+int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb)
+{
+	struct ctdb_db_context *ctdb_db;
+
+	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
+		DEBUG(0,(__location__ " Failed transaction_start while not frozen\n"));
+		return -1;
+	}
+
+	if (!ctdb->freeze_handle->transaction_started) {
+		DEBUG(0,(__location__ " transaction not started\n"));
+		return -1;
+	}
+
+	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
+		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+		if (tdb_transaction_commit(ctdb_db->ltdb->tdb) != 0) {
+			DEBUG(0,(__location__ " Failed to commit transaction for db '%s'\n",
+				 ctdb_db->db_name));
+			/* this has to be fatal to maintain integrity - it should only
+			   happen if we run out of disk space */
+			ctdb_fatal(ctdb, "Unable to commit transactions\n");
+			return -1;
+		}
+		tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
+	}
+
+	ctdb->freeze_handle->transaction_started = false;
+
+	return 0;
+}
+
+/*
+  wipe a database - only possible when in a frozen transaction
+ */
+int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_db_context *ctdb_db;
+	uint32_t db_id = *(uint32_t *)indata.dptr;
+
+	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
+		DEBUG(0,(__location__ " Failed transaction_start while not frozen\n"));
+		return -1;
+	}
+
+	if (!ctdb->freeze_handle->transaction_started) {
+		DEBUG(0,(__location__ " transaction not started\n"));
+		return -1;
+	}
+
+	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (!ctdb_db) {
+		DEBUG(0,(__location__ " Unknown db 0x%x\n", db_id));
+		return -1;
+	}
+
+	if (tdb_wipe_all(ctdb_db->ltdb->tdb) != 0) {
+		DEBUG(0,(__location__ " Failed to wipe database for db '%s'\n",
+			 ctdb_db->db_name));
+		return -1;
+	}
+
 	return 0;
 }

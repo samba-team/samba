@@ -879,9 +879,15 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 		TALLOC_CTX *mem_ctx,
 		TDB_DATA *outdata, int32_t *status, char **errormsg)
 {
+	TALLOC_CTX *tmp_ctx;
+
 	if (state == NULL) {
 		return -1;
 	}
+
+	/* prevent double free of state */
+	tmp_ctx = talloc_new(ctdb);
+	talloc_steal(tmp_ctx, state);
 
 	/* loop one event at a time until we either timeout or the control
 	   completes.
@@ -895,7 +901,7 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 		if (state->async.fn) {
 			state->async.fn(state);
 		}
-		talloc_free(state);
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
@@ -907,7 +913,7 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 		if (state->async.fn) {
 			state->async.fn(state);
 		}
-		talloc_free(state);
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
@@ -920,12 +926,11 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 		*status = state->status;
 	}
 
-
-
 	if (state->async.fn) {
 		state->async.fn(state);
 	}
-	talloc_free(state);
+
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -1343,85 +1348,6 @@ int ctdb_ctrl_pulldb(struct ctdb_context *ctdb, uint32_t destnode,
 	return ctdb_ctrl_pulldb_recv(ctdb, mem_ctx, state, outdata);
 }
 
-
-
-/*
-  async send for pushdb
- */
-struct ctdb_client_control_state *ctdb_ctrl_pushdb_send(
-	struct ctdb_context *ctdb, uint32_t destnode, uint32_t dbid,
-	TALLOC_CTX *mem_ctx, struct timeval timeout, TDB_DATA indata)
-{
-	return ctdb_control_send(ctdb, destnode, 0, 
-			   CTDB_CONTROL_PUSH_DB, 0, indata, 
-			   mem_ctx, NULL, &timeout, NULL);
-}
-
-int ctdb_ctrl_pushdb_recv(
-	struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
-	struct ctdb_client_control_state *state)
-{
-	int ret;
-	int32_t res;
-
-	ret = ctdb_control_recv(ctdb, state, mem_ctx, NULL, &res, NULL);
-	if ( (ret != 0) || (res != 0) ){
-		DEBUG(0,(__location__ " ctdb_ctrl_pushdb_recv failed\n"));
-		return -1;
-	}
-
-	return 0;
-}
-
-/*
-  push all records to a specific database on a node
- */
-int ctdb_ctrl_pushdb(struct ctdb_context *ctdb, uint32_t destnode, 
-		uint32_t dbid,
-		TALLOC_CTX *mem_ctx, struct timeval timeout,
-		TDB_DATA indata)
-{
-	struct ctdb_client_control_state *state;
-
-	state = ctdb_ctrl_pushdb_send(ctdb, destnode, dbid, mem_ctx,
-			timeout, indata);
-	
-	return ctdb_ctrl_pushdb_recv(ctdb, mem_ctx, state);
-}
-
-
-/*
-  copy a tdb from one node to another node
- */
-int ctdb_ctrl_copydb(struct ctdb_context *ctdb, struct timeval timeout, uint32_t sourcenode, 
-		     uint32_t destnode, uint32_t dbid, uint32_t lmaster, TALLOC_CTX *mem_ctx)
-{
-	int ret;
-	TDB_DATA outdata;
-
-	DEBUG(3,("pulling dbid 0x%x from %u\n", dbid, sourcenode));
-
-	ret = ctdb_ctrl_pulldb(ctdb, sourcenode, dbid, lmaster, mem_ctx,
-				timeout, &outdata);
-	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for pulldb failed\n"));
-		return -1;
-	}
-
-	DEBUG(3,("pushing dbid 0x%x to %u\n", dbid, destnode));
-
-	ret = ctdb_ctrl_pushdb(ctdb, destnode, dbid, mem_ctx, timeout, outdata);
-	talloc_free(outdata.dptr);
-	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for pushdb failed\n"));
-		return -1;
-	}
-
-	DEBUG(3,("copydb for dbid 0x%x done for %u to %u\n", 
-		 dbid, sourcenode, destnode));
-
-	return 0;
-}
 
 /*
   change dmaster for all keys in the database to the new value
@@ -1992,133 +1918,6 @@ int ctdb_ctrl_getmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 
 	return 0;
 }
-
-
-/*
-  get maximum rsn for a db on a node
- */
-int ctdb_ctrl_get_max_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
-			  uint32_t destnode, uint32_t db_id, uint64_t *max_rsn)
-{
-	TDB_DATA data, outdata;
-	int ret;
-	int32_t res;
-
-	data.dptr = (uint8_t *)&db_id;
-	data.dsize = sizeof(db_id);
-
-	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_MAX_RSN, 0, data, ctdb,
-			   &outdata, &res, &timeout, NULL);
-	if (ret != 0 || res != 0 || outdata.dsize != sizeof(uint64_t)) {
-		DEBUG(0,(__location__ " ctdb_control for get_max_rsn failed\n"));
-		return -1;
-	}
-
-	*max_rsn = *(uint64_t *)outdata.dptr;
-	talloc_free(outdata.dptr);
-
-	return 0;	
-}
-
-/*
-  set the rsn on non-empty records to the given rsn
- */
-struct ctdb_client_control_state *ctdb_ctrl_set_rsn_nonempty_send(
-	struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, 
-	uint32_t destnode, uint32_t db_id, uint64_t rsn)
-{
-	TDB_DATA data;
-	struct ctdb_control_set_rsn_nonempty p;
-
-	memset(&p, 0, sizeof(p));
-	p.db_id = db_id;
-	p.rsn = rsn;
-
-	data.dptr = (uint8_t *)&p;
-	data.dsize = sizeof(p);
-
-	return ctdb_control_send(ctdb, destnode, 0, CTDB_CONTROL_SET_RSN_NONEMPTY, 0, data, mem_ctx,
-				 NULL, &timeout, NULL);
-}
-
-/*
-  set the rsn on non-empty records to the given rsn
- */
-int ctdb_ctrl_set_rsn_nonempty_recv(struct ctdb_context *ctdb, 
-				    struct ctdb_client_control_state *state)
-{
-	int32_t res;
-	int ret;
-
-	ret = ctdb_control_recv(ctdb, state, NULL, NULL, &res, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for set_rsn_nonempty failed\n"));
-		return -1;
-	}
-	return 0;
-}
-
-/*
-  set the rsn on non-empty records to the given rsn
- */
-int ctdb_ctrl_set_rsn_nonempty(struct ctdb_context *ctdb, struct timeval timeout, 
-			       uint32_t destnode, uint32_t db_id, uint64_t rsn)
-{
-	struct ctdb_client_control_state *state;
-	state = ctdb_ctrl_set_rsn_nonempty_send(ctdb, ctdb, timeout, destnode, db_id, rsn);
-	return ctdb_ctrl_set_rsn_nonempty_recv(ctdb, state);
-}
-
-
-/*
-  set the rsn on non-empty records to the given rsn
- */
-struct ctdb_client_control_state *ctdb_ctrl_delete_low_rsn_send(
-	struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, 
-	uint32_t destnode, uint32_t db_id, uint64_t rsn)
-{
-	TDB_DATA data;
-	struct ctdb_control_delete_low_rsn p;
-
-	memset(&p, 0, sizeof(p));
-	p.db_id = db_id;
-	p.rsn = rsn;
-
-	data.dptr = (uint8_t *)&p;
-	data.dsize = sizeof(p);
-
-	return ctdb_control_send(ctdb, destnode, 0, CTDB_CONTROL_DELETE_LOW_RSN, 0, data, mem_ctx,
-				 NULL, &timeout, NULL);
-}
-
-/*
-  set the rsn on non-empty records to the given rsn
- */
-int ctdb_ctrl_delete_low_rsn_recv(struct ctdb_context *ctdb, 
-				    struct ctdb_client_control_state *state)
-{
-	int32_t res;
-	int ret;
-
-	ret = ctdb_control_recv(ctdb, state, NULL, NULL, &res, NULL);
-	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for delete_low_rsn failed\n"));
-		return -1;
-	}
-	return 0;
-}
-
-/*
-  set the rsn on non-empty records to the given rsn
- */
-int ctdb_ctrl_delete_low_rsn(struct ctdb_context *ctdb, struct timeval timeout, 
-			       uint32_t destnode, uint32_t db_id, uint64_t rsn)
-{
-	struct ctdb_client_control_state *state;
-	state = ctdb_ctrl_delete_low_rsn_send(ctdb, ctdb, timeout, destnode, db_id, rsn);
-	return ctdb_ctrl_delete_low_rsn_recv(ctdb, state);
-}
-
 
 /* 
   sent to a node to make it take over an ip address

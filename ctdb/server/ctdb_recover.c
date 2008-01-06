@@ -308,7 +308,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	for (i=0;i<reply->count;i++) {
 		TDB_DATA key, data;
-		struct ctdb_ltdb_header *hdr, header;
+		struct ctdb_ltdb_header *hdr;
 
 		key.dptr = &rec->data[0];
 		key.dsize = rec->keylen;
@@ -323,22 +323,10 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		data.dptr += sizeof(*hdr);
 		data.dsize -= sizeof(*hdr);
 
-		ret = ctdb_ltdb_fetch(ctdb_db, key, &header, NULL, NULL);
+		ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
 		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to fetch record\n"));
+			DEBUG(0, (__location__ " Unable to store record\n"));
 			goto failed;
-		}
-
-		/* The check for dmaster gives priority to the dmaster
-		   if the rsn values are equal */
-		if (ctdb->pnn != ctdb->recovery_master ||
-		    header.rsn < hdr->rsn ||
-		    (header.dmaster != ctdb->recovery_master && header.rsn == hdr->rsn)) {
-			ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
-			if (ret != 0) {
-				DEBUG(0, (__location__ " Unable to store record\n"));
-				goto failed;
-			}
 		}
 
 		rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
@@ -607,171 +595,6 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	return 0;
 }
 
-/*
-  callback for ctdb_control_max_rsn
- */
-static int traverse_max_rsn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
-{
-	struct ctdb_ltdb_header *h = (struct ctdb_ltdb_header *)data.dptr;
-	uint64_t *max_rsn = (uint64_t *)p;
-
-	if (data.dsize >= sizeof(*h)) {
-		(*max_rsn) = MAX(*max_rsn, h->rsn);
-	}
-	return 0;
-}
-
-/*
-  get max rsn across an entire db
- */
-int32_t ctdb_control_max_rsn(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata)
-{
-	struct ctdb_db_context *ctdb_db;
-	uint32_t db_id = *(uint32_t *)indata.dptr;
-	uint64_t max_rsn = 0;
-	int ret;
-
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,("rejecting ctdb_control_max_rsn when not frozen\n"));
-		return -1;
-	}
-
-	ctdb_db = find_ctdb_db(ctdb, db_id);
-	if (!ctdb_db) {
-		DEBUG(0,(__location__ " Unknown db\n"));
-		return -1;
-	}
-
-	if (ctdb_lock_all_databases_mark(ctdb) != 0) {
-		DEBUG(0,(__location__ " Failed to get lock on entired db - failing\n"));
-		return -1;
-	}
-
-	ret = tdb_traverse_read(ctdb_db->ltdb->tdb, traverse_max_rsn, &max_rsn);
-	if (ret < 0) {
-		DEBUG(0,(__location__ " traverse failed in ctdb_control_max_rsn\n"));
-		return -1;
-	}
-
-	ctdb_lock_all_databases_unmark(ctdb);
-
-	outdata->dptr = (uint8_t *)talloc(outdata, uint64_t);
-	if (!outdata->dptr) {
-		return -1;
-	}
-	(*(uint64_t *)outdata->dptr) = max_rsn;
-	outdata->dsize = sizeof(uint64_t);
-
-	return 0;
-}
-
-
-/*
-  callback for ctdb_control_set_rsn_nonempty
- */
-static int traverse_set_rsn_nonempty(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
-{
-	struct ctdb_ltdb_header *h = (struct ctdb_ltdb_header *)data.dptr;
-	uint64_t *rsn = (uint64_t *)p;
-
-	if (data.dsize > sizeof(*h)) {
-		h->rsn = *rsn;
-		if (tdb_store(tdb, key, data, TDB_REPLACE) != 0) {
-			return -1;
-		}
-	}
-	return 0;
-}
-
-/*
-  set rsn for all non-empty records in a database to a given rsn
- */
-int32_t ctdb_control_set_rsn_nonempty(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata)
-{
-	struct ctdb_control_set_rsn_nonempty *p = (struct ctdb_control_set_rsn_nonempty *)indata.dptr;
-	struct ctdb_db_context *ctdb_db;
-	int ret;
-
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,("rejecting ctdb_control_set_rsn_nonempty when not frozen\n"));
-		return -1;
-	}
-
-	ctdb_db = find_ctdb_db(ctdb, p->db_id);
-	if (!ctdb_db) {
-		DEBUG(0,(__location__ " Unknown db\n"));
-		return -1;
-	}
-
-	if (ctdb_lock_all_databases_mark(ctdb) != 0) {
-		DEBUG(0,(__location__ " Failed to get lock on entired db - failing\n"));
-		return -1;
-	}
-
-	ret = tdb_traverse(ctdb_db->ltdb->tdb, traverse_set_rsn_nonempty, &p->rsn);
-	if (ret < 0) {
-		DEBUG(0,(__location__ " traverse failed in ctdb_control_set_rsn_nonempty\n"));
-		return -1;
-	}
-
-	ctdb_lock_all_databases_unmark(ctdb);
-
-	return 0;
-}
-
-
-/*
-  callback for ctdb_control_delete_low_rsn
- */
-static int traverse_delete_low_rsn(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
-{
-	struct ctdb_ltdb_header *h = (struct ctdb_ltdb_header *)data.dptr;
-	uint64_t *rsn = (uint64_t *)p;
-
-	if (data.dsize < sizeof(*h) || h->rsn < *rsn) {
-		if (tdb_delete(tdb, key) != 0) {
-			return -1;
-		}
-	}
-	return 0;
-}
-
-/*
-  delete any records with a rsn < the given rsn
- */
-int32_t ctdb_control_delete_low_rsn(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DATA *outdata)
-{
-	struct ctdb_control_delete_low_rsn *p = (struct ctdb_control_delete_low_rsn *)indata.dptr;
-	struct ctdb_db_context *ctdb_db;
-	int ret;
-
-	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,("rejecting ctdb_control_delete_low_rsn when not frozen\n"));
-		return -1;
-	}
-
-	ctdb_db = find_ctdb_db(ctdb, p->db_id);
-	if (!ctdb_db) {
-		DEBUG(0,(__location__ " Unknown db\n"));
-		return -1;
-	}
-
-	if (ctdb_lock_all_databases_mark(ctdb) != 0) {
-		DEBUG(0,(__location__ " Failed to get lock on entired db - failing\n"));
-		return -1;
-	}
-
-	ret = tdb_traverse(ctdb_db->ltdb->tdb, traverse_delete_low_rsn, &p->rsn);
-	if (ret < 0) {
-		DEBUG(0,(__location__ " traverse failed in ctdb_control_delete_low_rsn\n"));
-		return -1;
-	}
-
-	ctdb_lock_all_databases_unmark(ctdb);
-
-	return 0;
-}
-
 
 /*
   try and get the recovery lock in shared storage - should only work
@@ -817,3 +640,5 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 
 	return true;
 }
+
+

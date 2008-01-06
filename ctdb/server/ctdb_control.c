@@ -235,14 +235,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		DEBUG(0,("Received SHUTDOWN command. Stopping CTDB daemon.\n"));
 		exit(0);
 
-	case CTDB_CONTROL_MAX_RSN: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
-		return ctdb_control_max_rsn(ctdb, indata, outdata);
-
-	case CTDB_CONTROL_SET_RSN_NONEMPTY: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_set_rsn_nonempty));
-		return ctdb_control_set_rsn_nonempty(ctdb, indata, outdata);
-
 	case CTDB_CONTROL_TAKEOVER_IP:
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_public_ip));
 		return ctdb_control_takeover_ip(ctdb, c, indata, async_reply);
@@ -254,10 +246,6 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_GET_PUBLIC_IPS:
 		CHECK_CONTROL_DATA_SIZE(0);
 		return ctdb_control_get_public_ips(ctdb, c, outdata);
-
-	case CTDB_CONTROL_DELETE_LOW_RSN: 
-		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_delete_low_rsn));
-		return ctdb_control_delete_low_rsn(ctdb, indata, outdata);
 
 	case CTDB_CONTROL_TCP_CLIENT: 
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_tcp));
@@ -320,6 +308,16 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_SEND_GRATIOUS_ARP:
 		return ctdb_control_send_gratious_arp(ctdb, indata);
+
+	case CTDB_CONTROL_TRANSACTION_START:
+		return ctdb_control_transaction_start(ctdb);
+
+	case CTDB_CONTROL_TRANSACTION_COMMIT:
+		return ctdb_control_transaction_commit(ctdb);
+
+	case CTDB_CONTROL_WIPE_DATABASE:
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_wipe_database(ctdb, indata);
 
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
