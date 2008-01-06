@@ -301,7 +301,7 @@ static struct file_id skel_file_id_create(vfs_handle_struct *handle,
 }
 
 static size_t skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	int fd, uint32 security_info, SEC_DESC **ppdesc)
+	uint32 security_info, SEC_DESC **ppdesc)
 {
 	errno = ENOSYS;
 	return 0;
@@ -314,8 +314,8 @@ static size_t skel_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	return 0;
 }
 
-static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int
-	fd, uint32 security_info_sent, SEC_DESC *psd)
+static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+	uint32 security_info_sent, SEC_DESC *psd)
 {
 	errno = ENOSYS;
 	return NT_STATUS_NOT_IMPLEMENTED;
