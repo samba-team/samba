@@ -399,7 +399,7 @@ static NTSTATUS aixjfs2_set_nt_acl_common(files_struct *fsp, uint32 security_inf
 	return result;
 }
 
-NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
+NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 {
 	return aixjfs2_set_nt_acl_common(fsp, security_info_sent, psd);
 }
