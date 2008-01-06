@@ -625,7 +625,7 @@ void remove_pending_lock_requests_by_mid(int mid)
 		next = blr->next;
 		if(SVAL(blr->inbuf,smb_mid) == mid) {
 			files_struct *fsp = blr->fsp;
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(talloc_tos(), fsp);
 
 			if (br_lck) {
 				DEBUG(10,("remove_pending_lock_requests_by_mid - removing request type %d for \
@@ -715,7 +715,7 @@ static void process_blocking_lock_queue(void)
 			fsp->fnum, fsp->fsp_name ));
 
 		if(!change_to_user(conn,vuid)) {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(talloc_tos(), fsp);
 
 			/*
 			 * Remove the entry and return an error to the client.
@@ -741,7 +741,7 @@ static void process_blocking_lock_queue(void)
 		}
 
 		if(!set_current_service(conn,SVAL(blr->inbuf,smb_flg),True)) {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(talloc_tos(), fsp);
 
 			/*
 			 * Remove the entry and return an error to the client.
@@ -773,7 +773,7 @@ static void process_blocking_lock_queue(void)
 		 */
 
 		if(blocking_lock_record_process(blr)) {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(talloc_tos(), fsp);
 
 			if (br_lck) {
 				brl_lock_cancel(br_lck,
@@ -800,7 +800,7 @@ static void process_blocking_lock_queue(void)
 		 */
 
 		if (!timeval_is_zero(&blr->expire_time) && timeval_compare(&blr->expire_time, &tv_curr) <= 0) {
-			struct byte_range_lock *br_lck = brl_get_locks(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks(talloc_tos(), fsp);
 
 			/*
 			 * Lock expired - throw away all previously
