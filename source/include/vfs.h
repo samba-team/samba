@@ -318,8 +318,16 @@ struct vfs_ops {
 				       const char *name,
 				       uint32 security_info,
 				       struct security_descriptor **ppdesc);
-		NTSTATUS (*fset_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor *psd);
-		NTSTATUS (*set_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor *psd);
+		NTSTATUS (*fset_nt_acl)(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					int fd,
+					uint32 security_info_sent,
+					struct security_descriptor *psd);
+		NTSTATUS (*set_nt_acl)(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       const char *name,
+				       uint32 security_info_sent,
+				       struct security_descriptor *psd);
 		
 		/* POSIX ACL operations. */
 		
