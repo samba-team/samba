@@ -160,16 +160,15 @@ static ssize_t cprime_read(
 static ssize_t cprime_pread(
                 vfs_handle_struct * handle,
                 files_struct *      fsp,
-                int                 fd,
                 void *              data,
 		        size_t              count,
                 SMB_OFF_T           offset)
 {
         if (g_readbuf) {
-                prime_cache(handle, fsp, fd, offset, count);
+                prime_cache(handle, fsp, fsp->fh->fd, offset, count);
         }
 
-        return SMB_VFS_NEXT_PREAD(handle, fsp, fd, data, count, offset);
+        return SMB_VFS_NEXT_PREAD(handle, fsp, data, count, offset);
 }
 
 static vfs_op_tuple cprime_ops [] =

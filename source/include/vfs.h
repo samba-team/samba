@@ -79,6 +79,7 @@
  * files_struct. - obnox.*/
 /* Leave at 22 - not yet released. Remove parameter fd from fget_nt_acl. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from gset_nt_acl. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from pread. - obnox */
 
 #define SMB_VFS_INTERFACE_VERSION 22
 
@@ -269,7 +270,7 @@ struct vfs_ops {
 		int (*open)(struct vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode);
 		int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
 		ssize_t (*read)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n);
-		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n, SMB_OFF_T offset);
+		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, SMB_OFF_T offset);
 		ssize_t (*write)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n);
 		ssize_t (*pwrite)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n, SMB_OFF_T offset);
 		SMB_OFF_T (*lseek)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T offset, int whence);
