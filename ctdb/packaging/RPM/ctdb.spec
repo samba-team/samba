@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 19
+Release: 20
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -117,6 +117,8 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Sun Jan 06 2008 : Version 1.0.20
+ - new transaction based recovery code
 * Sat Jan 05 2008 : Version 1.0.19
  - fixed non-master bug
  - big speedup in recovery for large databases
