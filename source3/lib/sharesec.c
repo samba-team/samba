@@ -228,25 +228,20 @@ bool share_access_check(const NT_USER_TOKEN *token, const char *sharename,
 {
 	uint32 granted;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx = NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	bool ret = True;
 
-	if (!(mem_ctx = talloc_init("share_access_check"))) {
-		return False;
-	}
-
-	psd = get_share_security(mem_ctx, sharename, &sd_size);
+	psd = get_share_security(talloc_tos(), sharename, &sd_size);
 
 	if (!psd) {
-		TALLOC_FREE(mem_ctx);
 		return True;
 	}
 
 	ret = se_access_check(psd, token, desired_access, &granted, &status);
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(psd);
+
 	return ret;
 }
 
