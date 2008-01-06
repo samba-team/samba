@@ -44,14 +44,21 @@ struct model_ops {
 	void (*model_init)(struct event_context *);
 
 	/* function to accept new connection */
-	void (*accept_connection)(struct event_context *, struct socket_context *, 
-				  void (*)(struct event_context *, struct socket_context *, 
+	void (*accept_connection)(struct event_context *, 
+				  struct loadparm_context *,
+				  struct socket_context *, 
+				  void (*)(struct event_context *, 
+					   struct loadparm_context *,
+					   struct socket_context *, 
 					   struct server_id , void *), 
 				  void *);
 
 	/* function to create a task */
 	void (*new_task)(struct event_context *, 
-			 void (*)(struct event_context *, struct server_id, void *),
+			 struct loadparm_context *lp_ctx, 
+			 void (*)(struct event_context *, 
+				  struct loadparm_context *, struct server_id, 
+				  void *),
 			 void *);
 
 	/* function to terminate a connection or task */

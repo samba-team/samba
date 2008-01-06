@@ -43,6 +43,7 @@
 */
 struct stream_socket {
 	const struct stream_server_ops *ops;
+	struct loadparm_context *lp_ctx;
 	struct event_context *event_ctx;
 	const struct model_ops *model_ops;
 	struct socket_context *sock;
@@ -151,6 +152,7 @@ NTSTATUS stream_new_connection_merge(struct event_context *ev,
   context of the new process (if appropriate)
 */
 static void stream_new_connection(struct event_context *ev,
+				  struct loadparm_context *lp_ctx,
 				  struct socket_context *sock, 
 				  struct server_id server_id, void *private)
 {
@@ -182,9 +184,9 @@ static void stream_new_connection(struct event_context *ev,
 
 	/* setup to receive internal messages on this connection */
 	srv_conn->msg_ctx = messaging_init(srv_conn, 
-					   lp_messaging_path(srv_conn, global_loadparm),
+					   lp_messaging_path(srv_conn, lp_ctx),
 					   srv_conn->server_id, 
-				           lp_iconv_convenience(global_loadparm),
+				           lp_iconv_convenience(lp_ctx),
 					   ev);
 	if (!srv_conn->msg_ctx) {
 		stream_terminate_connection(srv_conn, "messaging_init() failed");
@@ -225,7 +227,8 @@ static void stream_accept_handler(struct event_context *ev, struct fd_event *fde
 	/* ask the process model to create us a process for this new
 	   connection.  When done, it calls stream_new_connection()
 	   with the newly created socket */
-	stream_socket->model_ops->accept_connection(ev, stream_socket->sock, 
+	stream_socket->model_ops->accept_connection(ev, stream_socket->lp_ctx, 
+						    stream_socket->sock, 
 						    stream_new_connection, stream_socket);
 }
 
@@ -238,6 +241,7 @@ static void stream_accept_handler(struct event_context *ev, struct fd_event *fde
          to the socket implementation - JRV20070903
  */
 NTSTATUS stream_setup_socket(struct event_context *event_context,
+			     struct loadparm_context *lp_ctx,
 			     const struct model_ops *model_ops,
 			     const struct stream_server_ops *stream_ops,
 			     const char *family,
@@ -258,6 +262,8 @@ NTSTATUS stream_setup_socket(struct event_context *event_context,
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	talloc_steal(stream_socket, stream_socket->sock);
+
+	stream_socket->lp_ctx = talloc_reference(stream_socket, lp_ctx);
 
 	/* ready to listen */
 	status = socket_set_option(stream_socket->sock, "SO_KEEPALIVE", NULL);

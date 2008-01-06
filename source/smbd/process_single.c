@@ -37,8 +37,11 @@ static void single_model_init(struct event_context *ev)
   called when a listening socket becomes readable. 
 */
 static void single_accept_connection(struct event_context *ev, 
+				     struct loadparm_context *lp_ctx,
 				     struct socket_context *sock,
-				     void (*new_conn)(struct event_context *, struct socket_context *, 
+				     void (*new_conn)(struct event_context *, 
+						      struct loadparm_context *,
+						      struct socket_context *, 
 						      struct server_id , void *), 
 				     void *private)
 {
@@ -61,18 +64,19 @@ static void single_accept_connection(struct event_context *ev,
 
 	talloc_steal(private, sock);
 
-	new_conn(ev, sock2, cluster_id(socket_get_fd(sock2)), private);
+	new_conn(ev, lp_ctx, sock2, cluster_id(socket_get_fd(sock2)), private);
 }
 
 /*
   called to startup a new task
 */
 static void single_new_task(struct event_context *ev, 
-			    void (*new_task)(struct event_context *, struct server_id, void *), 
+			    struct loadparm_context *lp_ctx, 
+			    void (*new_task)(struct event_context *, struct loadparm_context *, struct server_id, void *), 
 			    void *private)
 {
 	static uint32_t taskid = 0x10000000;
-	new_task(ev, cluster_id(taskid++), private);
+	new_task(ev, lp_ctx, cluster_id(taskid++), private);
 }
 
 

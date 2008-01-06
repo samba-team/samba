@@ -39,7 +39,8 @@ static pthread_key_t title_key;
 struct new_conn_state {
 	struct event_context *ev;
 	struct socket_context *sock;
-	void (*new_conn)(struct event_context *, struct socket_context *, uint32_t , void *);
+	struct loadparm_context *lp_ctx;
+	void (*new_conn)(struct event_context *, struct loadparm_context *lp_ctx, struct socket_context *, uint32_t , void *);
 	void *private;
 };
 
@@ -47,7 +48,7 @@ static void *thread_connection_fn(void *thread_parm)
 {
 	struct new_conn_state *new_conn = talloc_get_type(thread_parm, struct new_conn_state);
 
-	new_conn->new_conn(new_conn->ev, new_conn->sock, pthread_self(), new_conn->private);
+	new_conn->new_conn(new_conn->ev, new_conn->lp_ctx, new_conn->sock, pthread_self(), new_conn->private);
 
 	/* run this connection from here */
 	event_loop_wait(new_conn->ev);
@@ -61,8 +62,11 @@ static void *thread_connection_fn(void *thread_parm)
   called when a listening socket becomes readable
 */
 static void thread_accept_connection(struct event_context *ev, 
+				     struct loadparm_context *lp_ctx, 
 				     struct socket_context *sock,
-				     void (*new_conn)(struct event_context *, struct socket_context *, 
+				     void (*new_conn)(struct event_context *, 
+						      struct loadparm_context *,
+						      struct socket_context *, 
 						      uint32_t , void *), 
 				     void *private)
 {		
@@ -84,6 +88,7 @@ static void thread_accept_connection(struct event_context *ev,
 
 	state->new_conn = new_conn;
 	state->private  = private;
+	state->lp_ctx   = lp_ctx;
 	state->ev       = ev2;
 
 	/* accept an incoming connection. */
@@ -117,7 +122,9 @@ static void thread_accept_connection(struct event_context *ev,
 
 struct new_task_state {
 	struct event_context *ev;
-	void (*new_task)(struct event_context *, uint32_t , void *);
+	struct loadparm_context *lp_ctx;
+	void (*new_task)(struct event_context *, struct loadparm_context *, 
+			 uint32_t , void *);
 	void *private;
 };
 
@@ -125,7 +132,8 @@ static void *thread_task_fn(void *thread_parm)
 {
 	struct new_task_state *new_task = talloc_get_type(thread_parm, struct new_task_state);
 
-	new_task->new_task(new_task->ev, pthread_self(), new_task->private);
+	new_task->new_task(new_task->ev, new_task->lp_ctx, pthread_self(), 
+			   new_task->private);
 
 	/* run this connection from here */
 	event_loop_wait(new_task->ev);
@@ -139,7 +147,10 @@ static void *thread_task_fn(void *thread_parm)
   called when a new task is needed
 */
 static void thread_new_task(struct event_context *ev, 
-			    void (*new_task)(struct event_context *, uint32_t , void *), 
+			    struct loadparm_context *lp_ctx,
+			    void (*new_task)(struct event_context *, 
+					     struct loadparm_context *,
+					     uint32_t , void *), 
 			    void *private)
 {		
 	int rc;
@@ -158,6 +169,7 @@ static void thread_new_task(struct event_context *ev,
 	}
 
 	state->new_task = new_task;
+	state->lp_ctx   = lp_ctx;
 	state->private  = private;
 	state->ev       = ev2;
 

@@ -294,7 +294,9 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 		*/
 		for(i = 0; i < num_interfaces; i++) {
 			address = iface_n_ip(ifaces, i);
-			status = stream_setup_socket(task->event_ctx, model_ops, &wreplsrv_stream_ops,
+			status = stream_setup_socket(task->event_ctx, 
+						     task->lp_ctx, model_ops, 
+						     &wreplsrv_stream_ops,
 						     "ipv4", address, &port, 
 				     	              lp_socket_options(task->lp_ctx), 
 						     service);
@@ -306,7 +308,8 @@ NTSTATUS wreplsrv_setup_sockets(struct wreplsrv_service *service, struct loadpar
 		}
 	} else {
 		address = lp_socket_address(lp_ctx);
-		status = stream_setup_socket(task->event_ctx, model_ops, &wreplsrv_stream_ops,
+		status = stream_setup_socket(task->event_ctx, task->lp_ctx, 
+					     model_ops, &wreplsrv_stream_ops,
 					     "ipv4", address, &port, lp_socket_options(task->lp_ctx), 
 					     service);
 		if (!NT_STATUS_IS_OK(status)) {

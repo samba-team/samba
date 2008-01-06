@@ -260,7 +260,8 @@ static void websrv_task_init(struct task_server *task)
 		num_interfaces = iface_count(ifaces);
 		for(i = 0; i < num_interfaces; i++) {
 			const char *address = iface_n_ip(ifaces, i);
-			status = stream_setup_socket(task->event_ctx, model_ops, 
+			status = stream_setup_socket(task->event_ctx, 
+						     task->lp_ctx, model_ops, 
 						     &web_stream_ops, 
 						     "ipv4", address, 
 						     &port, lp_socket_options(task->lp_ctx), 
@@ -270,8 +271,8 @@ static void websrv_task_init(struct task_server *task)
 
 		talloc_free(ifaces);
 	} else {
-		status = stream_setup_socket(task->event_ctx, model_ops, 
-					     &web_stream_ops, 
+		status = stream_setup_socket(task->event_ctx, task->lp_ctx,
+					     model_ops, &web_stream_ops, 
 					     "ipv4", lp_socket_address(task->lp_ctx), 
 					     &port, lp_socket_options(task->lp_ctx), task);
 		if (!NT_STATUS_IS_OK(status)) goto failed;
@@ -297,7 +298,8 @@ static NTSTATUS websrv_init(struct event_context *event_context,
 			    struct loadparm_context *lp_ctx,
 			    const struct model_ops *model_ops)
 {	
-	return task_server_startup(event_context, model_ops, websrv_task_init);
+	return task_server_startup(event_context, lp_ctx, 
+				   model_ops, websrv_task_init);
 }
 
 /* called at smbd startup - register ourselves as a server service */

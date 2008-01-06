@@ -185,7 +185,8 @@ _PUBLIC_ NTSTATUS smbsrv_add_socket(struct event_context *event_context,
 	for (i=0;ports[i];i++) {
 		uint16_t port = atoi(ports[i]);
 		if (port == 0) continue;
-		status = stream_setup_socket(event_context, model_ops, &smb_stream_ops, 
+		status = stream_setup_socket(event_context, lp_ctx, 
+					     model_ops, &smb_stream_ops, 
 					     "ipv4", address, &port, 
 					     lp_socket_options(lp_ctx), 
 					     NULL);
@@ -257,7 +258,8 @@ static NTSTATUS smbsrv_init(struct event_context *event_context,
 			    struct loadparm_context *lp_ctx,
 			    const struct model_ops *model_ops)
 {	
-	return task_server_startup(event_context, model_ops, smbsrv_task_init);
+	return task_server_startup(event_context, lp_ctx, 
+				   model_ops, smbsrv_task_init);
 }
 
 /* called at smbd startup - register ourselves as a server service */

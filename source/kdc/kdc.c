@@ -489,7 +489,9 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	status = stream_setup_socket(kdc->task->event_ctx, model_ops, 
+	status = stream_setup_socket(kdc->task->event_ctx, 
+				     kdc->task->lp_ctx,
+				     model_ops, 
 				     &kdc_tcp_stream_ops, 
 				     "ip", address, &kdc_port, 
 				     lp_socket_options(kdc->task->lp_ctx), 
@@ -501,7 +503,9 @@ static NTSTATUS kdc_add_socket(struct kdc_server *kdc, const char *address,
 		return status;
 	}
 
-	status = stream_setup_socket(kdc->task->event_ctx, model_ops, 
+	status = stream_setup_socket(kdc->task->event_ctx, 
+				     kdc->task->lp_ctx,
+				     model_ops, 
 				     &kpasswdd_tcp_stream_ops, 
 				     "ip", address, &kpasswd_port, 
 				     lp_socket_options(kdc->task->lp_ctx), 
@@ -663,7 +667,7 @@ static NTSTATUS kdc_init(struct event_context *event_ctx,
 			 struct loadparm_context *lp_ctx,
 			 const struct model_ops *model_ops)
 {	
-	return task_server_startup(event_ctx, model_ops, kdc_task_init);
+	return task_server_startup(event_ctx, lp_ctx, model_ops, kdc_task_init);
 }
 
 /* called at smbd startup - register ourselves as a server service */

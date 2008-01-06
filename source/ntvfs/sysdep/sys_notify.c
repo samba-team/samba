@@ -126,17 +126,11 @@ _PUBLIC_ NTSTATUS sys_notify_init(void)
 	static bool initialized = false;
 
 	init_module_fn static_init[] = { STATIC_sys_notify_MODULES };
-	init_module_fn *shared_init;
 
 	if (initialized) return NT_STATUS_OK;
 	initialized = true;
 
-	shared_init = load_samba_modules(NULL, global_loadparm, "sys_notify");
-
 	run_init_functions(static_init);
-	run_init_functions(shared_init);
-
-	talloc_free(shared_init);
 	
 	return NT_STATUS_OK;
 }
