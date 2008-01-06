@@ -82,6 +82,8 @@ static void rap_heap_restore(struct rap_string_heap *heap,
 }
 
 struct rap_call {
+	struct loadparm_context *lp_ctx;
+
 	TALLOC_CTX *mem_ctx;
 	uint16_t callno;
 	const char *paramdesc;
@@ -103,6 +105,7 @@ struct rap_call {
 #define RAPNDR_FLAGS (LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 
 static struct rap_call *new_rap_srv_call(TALLOC_CTX *mem_ctx,
+					 struct loadparm_context *lp_ctx,
 					 struct smb_trans2 *trans)
 {
 	struct rap_call *call;
@@ -114,12 +117,14 @@ static struct rap_call *new_rap_srv_call(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCTP(call);
 
+	call->lp_ctx = talloc_reference(call, lp_ctx);
+
 	call->mem_ctx = mem_ctx;
 
-	call->ndr_pull_param = ndr_pull_init_blob(&trans->in.params, mem_ctx, lp_iconv_convenience(global_loadparm));
+	call->ndr_pull_param = ndr_pull_init_blob(&trans->in.params, mem_ctx, lp_iconv_convenience(lp_ctx));
 	call->ndr_pull_param->flags = RAPNDR_FLAGS;
 
-	call->ndr_pull_data = ndr_pull_init_blob(&trans->in.data, mem_ctx, lp_iconv_convenience(global_loadparm));
+	call->ndr_pull_data = ndr_pull_init_blob(&trans->in.data, mem_ctx, lp_iconv_convenience(lp_ctx));
 	call->ndr_pull_data->flags = RAPNDR_FLAGS;
 
 	call->heap = talloc(mem_ctx, struct rap_string_heap);
@@ -266,7 +271,7 @@ static NTSTATUS _rap_netshareenum(struct rap_call *call)
 		break;
 	}
 
-	result = rap_netshareenum(call, &r);
+	result = rap_netshareenum(call, call->lp_ctx, &r);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -348,7 +353,7 @@ static NTSTATUS _rap_netserverenum2(struct rap_call *call)
 		break;
 	}
 
-	result = rap_netserverenum2(call, &r);
+	result = rap_netserverenum2(call, call->lp_ctx, &r);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -425,7 +430,8 @@ static const struct
 	{NULL, -1, api_Unsupported}
 };
 
-NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct smb_trans2 *trans)
+NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
+		      struct smb_trans2 *trans)
 {
 	int i;
 	NTSTATUS result;
@@ -434,7 +440,7 @@ NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct smb_trans2 *trans)
 	struct ndr_push *final_param;
 	struct ndr_push *final_data;
 
-	call = new_rap_srv_call(mem_ctx, trans);
+	call = new_rap_srv_call(mem_ctx, lp_ctx, trans);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -445,8 +451,8 @@ NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct smb_trans2 *trans)
 	NDR_RETURN(ndr_pull_string(call->ndr_pull_param, NDR_SCALARS,
 				  &call->datadesc));
 
-	call->ndr_push_param = ndr_push_init_ctx(call, lp_iconv_convenience(global_loadparm));
-	call->ndr_push_data = ndr_push_init_ctx(call, lp_iconv_convenience(global_loadparm));
+	call->ndr_push_param = ndr_push_init_ctx(call, lp_iconv_convenience(lp_ctx));
+	call->ndr_push_data = ndr_push_init_ctx(call, lp_iconv_convenience(lp_ctx));
 
 	if ((call->ndr_push_param == NULL) || (call->ndr_push_data == NULL))
 		return NT_STATUS_NO_MEMORY;
@@ -471,8 +477,8 @@ NTSTATUS ipc_rap_call(TALLOC_CTX *mem_ctx, struct smb_trans2 *trans)
 	result_param = ndr_push_blob(call->ndr_push_param);
 	result_data = ndr_push_blob(call->ndr_push_data);
 
-	final_param = ndr_push_init_ctx(call, lp_iconv_convenience(global_loadparm));
-	final_data = ndr_push_init_ctx(call, lp_iconv_convenience(global_loadparm));
+	final_param = ndr_push_init_ctx(call, lp_iconv_convenience(lp_ctx));
+	final_data = ndr_push_init_ctx(call, lp_iconv_convenience(lp_ctx));
 
 	if ((final_param == NULL) || (final_data == NULL))
 		return NT_STATUS_NO_MEMORY;

@@ -53,6 +53,7 @@ struct task_state {
   the server specific startup code
 */
 static void task_server_callback(struct event_context *event_ctx, 
+				 struct loadparm_context *lp_ctx,
 				 struct server_id server_id, void *private)
 {
 	struct task_state *state = talloc_get_type(private, struct task_state);
@@ -64,7 +65,7 @@ static void task_server_callback(struct event_context *event_ctx,
 	task->event_ctx = event_ctx;
 	task->model_ops = state->model_ops;
 	task->server_id = server_id;
-	task->lp_ctx = global_loadparm;
+	task->lp_ctx = lp_ctx;
 
 	task->msg_ctx = messaging_init(task, 
 				       lp_messaging_path(task, task->lp_ctx),
@@ -83,6 +84,7 @@ static void task_server_callback(struct event_context *event_ctx,
   startup a task based server
 */
 NTSTATUS task_server_startup(struct event_context *event_ctx, 
+			     struct loadparm_context *lp_ctx,
 			     const struct model_ops *model_ops, 
 			     void (*task_init)(struct task_server *))
 {
@@ -94,7 +96,7 @@ NTSTATUS task_server_startup(struct event_context *event_ctx,
 	state->task_init = task_init;
 	state->model_ops = model_ops;
 	
-	model_ops->new_task(event_ctx, task_server_callback, state);
+	model_ops->new_task(event_ctx, lp_ctx, task_server_callback, state);
 
 	return NT_STATUS_OK;
 }

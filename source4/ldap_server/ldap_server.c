@@ -449,7 +449,8 @@ static NTSTATUS add_socket(struct event_context *event_context,
 	NTSTATUS status;
 	struct ldb_context *ldb;
 
-	status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
+	status = stream_setup_socket(event_context, lp_ctx,
+				     model_ops, &ldap_stream_ops, 
 				     "ipv4", address, &port, 
 				     lp_socket_options(lp_ctx), 
 				     ldap_service);
@@ -461,7 +462,8 @@ static NTSTATUS add_socket(struct event_context *event_context,
 	if (tls_support(ldap_service->tls_params)) {
 		/* add ldaps server */
 		port = 636;
-		status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
+		status = stream_setup_socket(event_context, lp_ctx, 
+					     model_ops, &ldap_stream_ops, 
 					     "ipv4", address, &port, 
 					     lp_socket_options(lp_ctx), 
 					     ldap_service);
@@ -479,7 +481,8 @@ static NTSTATUS add_socket(struct event_context *event_context,
 	
 	if (samdb_is_gc(ldb)) {
 		port = 3268;
-		status = stream_setup_socket(event_context, model_ops, &ldap_stream_ops, 
+		status = stream_setup_socket(event_context, lp_ctx,
+					     model_ops, &ldap_stream_ops, 
 					     "ipv4", address, &port, 
 				     	     lp_socket_options(lp_ctx), 
 					     ldap_service);
@@ -556,7 +559,8 @@ static void ldapsrv_task_init(struct task_server *task)
 		goto failed;
 	}
 
-	status = stream_setup_socket(task->event_ctx, model_ops, &ldap_stream_ops, 
+	status = stream_setup_socket(task->event_ctx, task->lp_ctx,
+				     model_ops, &ldap_stream_ops, 
 				     "unix", ldapi_path, NULL, 
 				     lp_socket_options(task->lp_ctx), 
 				     ldap_service);
@@ -580,7 +584,8 @@ static NTSTATUS ldapsrv_init(struct event_context *event_context,
 			     struct loadparm_context *lp_ctx,
 			     const struct model_ops *model_ops)
 {	
-	return task_server_startup(event_context, model_ops, ldapsrv_task_init);
+	return task_server_startup(event_context, lp_ctx, model_ops, 
+				   ldapsrv_task_init);
 }
 
 

@@ -232,7 +232,8 @@ static NTSTATUS dcesrv_add_ep_unix(struct dcesrv_context *dce_ctx,
 	dcesrv_sock->endpoint		= e;
 	dcesrv_sock->dcesrv_ctx		= talloc_reference(dcesrv_sock, dce_ctx);
 
-	status = stream_setup_socket(event_ctx, model_ops, &dcesrv_stream_ops, 
+	status = stream_setup_socket(event_ctx, lp_ctx,
+				     model_ops, &dcesrv_stream_ops, 
 				     "unix", e->ep_description->endpoint, &port, 
 				     lp_socket_options(lp_ctx), 
 				     dcesrv_sock);
@@ -271,7 +272,8 @@ static NTSTATUS dcesrv_add_ep_ncalrpc(struct dcesrv_context *dce_ctx,
 	dcesrv_sock->endpoint		= e;
 	dcesrv_sock->dcesrv_ctx		= talloc_reference(dcesrv_sock, dce_ctx);
 
-	status = stream_setup_socket(event_ctx, model_ops, &dcesrv_stream_ops, 
+	status = stream_setup_socket(event_ctx, lp_ctx,
+				     model_ops, &dcesrv_stream_ops, 
 				     "unix", full_path, &port, 
 				     lp_socket_options(lp_ctx), 
 				     dcesrv_sock);
@@ -352,7 +354,8 @@ static NTSTATUS add_socket_rpc_tcp_iface(struct dcesrv_context *dce_ctx, struct 
 	dcesrv_sock->endpoint		= e;
 	dcesrv_sock->dcesrv_ctx		= talloc_reference(dcesrv_sock, dce_ctx);
 
-	status = stream_setup_socket(event_ctx, model_ops, &dcesrv_stream_ops, 
+	status = stream_setup_socket(event_ctx, dce_ctx->lp_ctx,
+				     model_ops, &dcesrv_stream_ops, 
 				     "ipv4", address, &port, 
 				     lp_socket_options(dce_ctx->lp_ctx), 
 				     dcesrv_sock);
@@ -462,7 +465,8 @@ static NTSTATUS dcesrv_init(struct event_context *event_context,
 			    struct loadparm_context *lp_ctx,
 			    const struct model_ops *model_ops)
 {	
-	return task_server_startup(event_context, model_ops, dcesrv_task_init);
+	return task_server_startup(event_context, lp_ctx, 
+				   model_ops, dcesrv_task_init);
 }
 
 NTSTATUS server_service_rpc_init(void)

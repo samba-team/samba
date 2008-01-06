@@ -56,8 +56,10 @@ static void standard_model_init(struct event_context *ev)
   called when a listening socket becomes readable. 
 */
 static void standard_accept_connection(struct event_context *ev, 
+				       struct loadparm_context *lp_ctx,
 				       struct socket_context *sock, 
-				       void (*new_conn)(struct event_context *, struct socket_context *, 
+				       void (*new_conn)(struct event_context *,
+							struct loadparm_context *, struct socket_context *, 
 							struct server_id , void *), 
 				       void *private)
 {
@@ -126,7 +128,7 @@ static void standard_accept_connection(struct event_context *ev,
 	talloc_free(s);
 
 	/* setup this new connection */
-	new_conn(ev2, sock2, cluster_id(pid), private);
+	new_conn(ev2, lp_ctx, sock2, cluster_id(pid), private);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
@@ -141,7 +143,8 @@ static void standard_accept_connection(struct event_context *ev,
   called to create a new server task
 */
 static void standard_new_task(struct event_context *ev, 
-			      void (*new_task)(struct event_context *, struct server_id , void *), 
+			      struct loadparm_context *lp_ctx,
+			      void (*new_task)(struct event_context *, struct loadparm_context *lp_ctx, struct server_id , void *), 
 			      void *private)
 {
 	pid_t pid;
@@ -179,7 +182,7 @@ static void standard_new_task(struct event_context *ev,
 	setproctitle("task server_id[%d]", pid);
 
 	/* setup this new connection */
-	new_task(ev2, cluster_id(pid), private);
+	new_task(ev2, lp_ctx, cluster_id(pid), private);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no

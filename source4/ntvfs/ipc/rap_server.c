@@ -29,6 +29,7 @@
  * idea. */
 
 NTSTATUS rap_netshareenum(TALLOC_CTX *mem_ctx,
+			  struct loadparm_context *lp_ctx,
 			  struct rap_NetShareEnum *r)
 {
 	NTSTATUS nterr;
@@ -41,7 +42,7 @@ NTSTATUS rap_netshareenum(TALLOC_CTX *mem_ctx,
 	r->out.available = 0;
 	r->out.info = NULL;
 
-	nterr = share_get_context_by_name(mem_ctx, lp_share_backend(global_loadparm), global_loadparm, &sctx);
+	nterr = share_get_context_by_name(mem_ctx, lp_share_backend(lp_ctx), lp_ctx, &sctx);
 	if (!NT_STATUS_IS_OK(nterr)) {
 		return nterr;
 	}
@@ -75,6 +76,7 @@ NTSTATUS rap_netshareenum(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS rap_netserverenum2(TALLOC_CTX *mem_ctx,
+			    struct loadparm_context *lp_ctx,
 			    struct rap_NetServerEnum2 *r)
 {
 	r->out.status = 0;
