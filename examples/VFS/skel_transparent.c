@@ -129,9 +129,9 @@ static ssize_t skel_read(vfs_handle_struct *handle, files_struct *fsp, int fd, v
 	return SMB_VFS_NEXT_READ(handle, fsp, fd, data, n);
 }
 
-static ssize_t skel_pread(vfs_handle_struct *handle, files_struct *fsp, int fd, void *data, size_t n, SMB_OFF_T offset)
+static ssize_t skel_pread(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n, SMB_OFF_T offset)
 {
-	return SMB_VFS_NEXT_PREAD(handle, fsp, fd, data, n, offset);
+	return SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
 }
 
 static ssize_t skel_write(vfs_handle_struct *handle, files_struct *fsp, int fd, const void *data, size_t n)

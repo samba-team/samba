@@ -411,7 +411,7 @@ ssize_t vfs_pread_data(files_struct *fsp, char *buf,
 
 	while (total < byte_count)
 	{
-		ssize_t ret = SMB_VFS_PREAD(fsp, fsp->fh->fd, buf + total,
+		ssize_t ret = SMB_VFS_PREAD(fsp, buf + total,
 					byte_count - total, offset + total);
 
 		if (ret == 0) return total;
