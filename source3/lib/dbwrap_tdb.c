@@ -70,7 +70,7 @@ static int db_tdb_fetchlock_parse(TDB_DATA key, TDB_DATA data,
 	state->result->value.dsize = data.dsize;
 
 	if (data.dsize > 0) {
-		state->result->value.dptr = state->result->key.dptr + key.dsize;
+		state->result->value.dptr = state->result->key.dptr+key.dsize;
 		memcpy(state->result->value.dptr, data.dptr, data.dsize);
 	}
 	else {
@@ -127,29 +127,49 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	return state.result;
 }
 
+struct tdb_fetch_state {
+	TALLOC_CTX *mem_ctx;
+	int result;
+	TDB_DATA data;
+};
+
+static int db_tdb_fetch_parse(TDB_DATA key, TDB_DATA data,
+			      void *private_data)
+{
+	struct tdb_fetch_state *state =
+		(struct tdb_fetch_state *)private_data;
+
+	state->data.dptr = (uint8 *)talloc_memdup(state->mem_ctx, data.dptr,
+						  data.dsize);
+	if (state->data.dptr == NULL) {
+		state->result = -1;
+		return 0;
+	}
+
+	state->data.dsize = data.dsize;
+	return 0;
+}
+
 static int db_tdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 			TDB_DATA key, TDB_DATA *pdata)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_tdb_ctx);
 
-	TDB_DATA data;
+	struct tdb_fetch_state state;
 
-	data = tdb_fetch(ctx->wtdb->tdb, key);
+	state.mem_ctx = mem_ctx;
+	state.result = 0;
+	state.data.dptr = NULL;
+	state.data.dsize = 0;
 
-	if (data.dptr == NULL) {
-		pdata->dptr = NULL;
-		pdata->dsize = 0;
-		return 0;
-	}
+	tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetch_parse, &state);
 
-	pdata->dptr = (uint8 *)talloc_memdup(mem_ctx, data.dptr, data.dsize);
-	SAFE_FREE(data.dptr);
-
-	if (pdata->dptr == NULL) {
+	if (state.result == -1) {
 		return -1;
 	}
-	pdata->dsize = data.dsize;
+
+	*pdata = state.data;
 	return 0;
 }
 
