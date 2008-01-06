@@ -1221,7 +1221,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		request_time = pml->request_time;
 
 		/* Remove the deferred open entry under lock. */
-		lck = get_share_mode_lock(NULL, state->id, NULL, NULL);
+		lck = get_share_mode_lock(talloc_tos(), state->id, NULL, NULL);
 		if (lck == NULL) {
 			DEBUG(0, ("could not get share mode lock\n"));
 		} else {
@@ -1451,7 +1451,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (file_existed) {
 		id = vfs_file_id_from_sbuf(conn, psbuf);
 
-		lck = get_share_mode_lock(NULL, id,
+		lck = get_share_mode_lock(talloc_tos(), id,
 					  conn->connectpath,
 					  fname);
 
@@ -1678,7 +1678,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		id = fsp->file_id;
 
-		lck = get_share_mode_lock(NULL, id,
+		lck = get_share_mode_lock(talloc_tos(), id,
 					  conn->connectpath,
 					  fname);
 
@@ -2212,7 +2212,7 @@ NTSTATUS open_directory(connection_struct *conn,
 
 	string_set(&fsp->fsp_name,fname);
 
-	lck = get_share_mode_lock(NULL, fsp->file_id,
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
 				  conn->connectpath,
 				  fname);
 
