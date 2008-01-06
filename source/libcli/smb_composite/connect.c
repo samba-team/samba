@@ -172,8 +172,9 @@ static NTSTATUS connect_session_setup(struct composite_context *c,
 
 		state->io_setup->in.credentials = cli_credentials_init(state);
 		NT_STATUS_HAVE_NO_MEMORY(state->io_setup->in.credentials);
-		cli_credentials_set_conf(state->io_setup->in.credentials, 
-					 global_loadparm);
+		cli_credentials_set_workstation(state->io_setup->in.credentials,
+		   cli_credentials_get_workstation(state->io->in.credentials), 
+		   CRED_SPECIFIED);
 		cli_credentials_set_anonymous(state->io_setup->in.credentials);
 
 		/* If the preceding attempt was with extended security, we
