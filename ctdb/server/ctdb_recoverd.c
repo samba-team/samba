@@ -982,12 +982,14 @@ static int recover_database(struct ctdb_recoverd *rec,
 			    TALLOC_CTX *mem_ctx,
 			    uint32_t dbid,
 			    uint32_t pnn, 
-			    struct ctdb_node_map *nodemap)
+			    struct ctdb_node_map *nodemap,
+			    uint32_t transaction_id)
 {
 	struct tdb_wrap *recdb;
 	int ret;
 	struct ctdb_context *ctdb = rec->ctdb;
 	TDB_DATA data;
+	struct ctdb_control_wipe_database w;
 
 	recdb = create_recdb(ctdb, mem_ctx);
 	if (recdb == NULL) {
@@ -1004,8 +1006,11 @@ static int recover_database(struct ctdb_recoverd *rec,
 	DEBUG(0, (__location__ " Recovery - pulled remote database 0x%x\n", dbid));
 
 	/* wipe all the remote databases. This is safe as we are in a transaction */
-	data.dptr = (void *)&dbid;
-	data.dsize = sizeof(uint32_t);
+	w.db_id = dbid;
+	w.transaction_id = transaction_id;
+
+	data.dptr = (void *)&w;
+	data.dsize = sizeof(w);
 
 	if (async_control_on_active_nodes(ctdb, CTDB_CONTROL_WIPE_DATABASE, 
 					  nodemap, data, true) != 0) {
@@ -1040,6 +1045,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	int i, j, ret;
 	uint32_t generation;
 	struct ctdb_dbid_map *dbmap;
+	TDB_DATA data;
 
 	DEBUG(0, (__location__ " Starting do_recovery\n"));
 
@@ -1116,8 +1122,11 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
+	data.dptr = (void *)&generation;
+	data.dsize = sizeof(uint32_t);
+
 	if (async_control_on_active_nodes(ctdb, CTDB_CONTROL_TRANSACTION_START, 
-					  nodemap, tdb_null, true) != 0) {
+					  nodemap, data, true) != 0) {
 		DEBUG(0, (__location__ " Unable to start transactions. Recovery failed.\n"));
 		return -1;
 	}
@@ -1125,7 +1134,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	DEBUG(0,(__location__ " started transactions on all nodes\n"));
 
 	for (i=0;i<dbmap->num;i++) {
-		if (recover_database(rec, mem_ctx, dbmap->dbs[i].dbid, pnn, nodemap) != 0) {
+		if (recover_database(rec, mem_ctx, dbmap->dbs[i].dbid, pnn, nodemap, generation) != 0) {
 			DEBUG(0, (__location__ " Failed to recover database 0x%x\n", dbmap->dbs[i].dbid));
 			return -1;
 		}
@@ -1135,7 +1144,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 
 	/* commit all the changes */
 	if (async_control_on_active_nodes(ctdb, CTDB_CONTROL_TRANSACTION_COMMIT, 
-					  nodemap, tdb_null, true) != 0) {
+					  nodemap, data, true) != 0) {
 		DEBUG(0, (__location__ " Unable to commit recovery changes. Recovery failed.\n"));
 		return -1;
 	}

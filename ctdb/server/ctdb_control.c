@@ -310,13 +310,15 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_send_gratious_arp(ctdb, indata);
 
 	case CTDB_CONTROL_TRANSACTION_START:
-		return ctdb_control_transaction_start(ctdb);
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_transaction_start(ctdb, *(uint32_t *)indata.dptr);
 
 	case CTDB_CONTROL_TRANSACTION_COMMIT:
-		return ctdb_control_transaction_commit(ctdb);
+		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		return ctdb_control_transaction_commit(ctdb, *(uint32_t *)indata.dptr);
 
 	case CTDB_CONTROL_WIPE_DATABASE:
-		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
+		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_wipe_database));
 		return ctdb_control_wipe_database(ctdb, indata);
 
 	default:

@@ -996,6 +996,11 @@ struct ctdb_node_map {
 	struct ctdb_node_and_flags nodes[1];
 };
 
+struct ctdb_control_wipe_database {
+	uint32_t db_id;
+	uint32_t transaction_id;
+};
+
 int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA indata, 
 				    TDB_DATA *outdata, uint32_t srcnode);
 int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata);
@@ -1177,8 +1182,8 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 				   struct ctdb_req_control *c, TDB_DATA recdata, 
 				   bool *async_reply);
 
-int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb);
-int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb);
+int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
+int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
 
 #endif

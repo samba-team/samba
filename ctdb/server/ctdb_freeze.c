@@ -59,6 +59,7 @@ struct ctdb_freeze_handle {
 	int fd;
 	struct ctdb_freeze_waiter *waiters;
 	bool transaction_started;
+	uint32_t transaction_id;
 };
 
 /*
@@ -285,7 +286,7 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb)
 /*
   start a transaction on all databases - used for recovery
  */
-int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb)
+int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 {
 	struct ctdb_db_context *ctdb_db;
 
@@ -320,6 +321,7 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb)
 	}
 
 	ctdb->freeze_handle->transaction_started = true;
+	ctdb->freeze_handle->transaction_id = id;
 
 	return 0;
 }
@@ -327,7 +329,7 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb)
 /*
   commit transactions on all databases
  */
-int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb)
+int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 {
 	struct ctdb_db_context *ctdb_db;
 
@@ -338,6 +340,11 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb)
 
 	if (!ctdb->freeze_handle->transaction_started) {
 		DEBUG(0,(__location__ " transaction not started\n"));
+		return -1;
+	}
+
+	if (id != ctdb->freeze_handle->transaction_id) {
+		DEBUG(0,(__location__ " incorrect transaction id 0x%x in commit\n", id));
 		return -1;
 	}
 
@@ -355,6 +362,7 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb)
 	}
 
 	ctdb->freeze_handle->transaction_started = false;
+	ctdb->freeze_handle->transaction_id = 0;
 
 	return 0;
 }
@@ -364,8 +372,8 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb)
  */
 int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
 {
+	struct ctdb_control_wipe_database w = *(struct ctdb_control_wipe_database *)indata.dptr;
 	struct ctdb_db_context *ctdb_db;
-	uint32_t db_id = *(uint32_t *)indata.dptr;
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
 		DEBUG(0,(__location__ " Failed transaction_start while not frozen\n"));
@@ -377,9 +385,14 @@ int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;
 	}
 
-	ctdb_db = find_ctdb_db(ctdb, db_id);
+	if (w.transaction_id != ctdb->freeze_handle->transaction_id) {
+		DEBUG(0,(__location__ " incorrect transaction id 0x%x in commit\n", w.transaction_id));
+		return -1;
+	}
+
+	ctdb_db = find_ctdb_db(ctdb, w.db_id);
 	if (!ctdb_db) {
-		DEBUG(0,(__location__ " Unknown db 0x%x\n", db_id));
+		DEBUG(0,(__location__ " Unknown db 0x%x\n", w.db_id));
 		return -1;
 	}
 
