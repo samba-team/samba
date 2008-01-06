@@ -592,7 +592,8 @@ void reply_tcon_and_X(struct smb_request *req)
 	}
 
 	if (global_encrypted_passwords_negotiated) {
-		password = data_blob(smb_buf(req->inbuf),passlen);
+		password = data_blob_talloc(talloc_tos(), smb_buf(req->inbuf),
+					    passlen);
 		if (lp_security() == SEC_SHARE) {
 			/*
 			 * Security = share always has a pad byte
@@ -603,7 +604,8 @@ void reply_tcon_and_X(struct smb_request *req)
 			p = smb_buf(req->inbuf) + passlen;
 		}
 	} else {
-		password = data_blob(smb_buf(req->inbuf),passlen+1);
+		password = data_blob_talloc(talloc_tos(), smb_buf(req->inbuf),
+					    passlen+1);
 		/* Ensure correct termination */
 		password.data[passlen]=0;
 		p = smb_buf(req->inbuf) + passlen + 1;
@@ -5508,7 +5510,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
 
 	/*
 	 * We have the file open ourselves, so not being able to get the

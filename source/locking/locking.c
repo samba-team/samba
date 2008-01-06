@@ -925,7 +925,7 @@ bool get_delete_on_close_flag(struct file_id id)
 	bool result;
 	struct share_mode_lock *lck;
   
-	if (!(lck = fetch_share_mode_unlocked(NULL, id, NULL, NULL))) {
+	if (!(lck = fetch_share_mode_unlocked(talloc_tos(), id, NULL, NULL))) {
 		return False;
 	}
 	result = lck->delete_on_close;
@@ -1328,7 +1328,7 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, UNIX_USER_TOKE
 		return True;
 	}
 
-	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
 	if (lck == NULL) {
 		return False;
 	}
