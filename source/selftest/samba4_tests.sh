@@ -190,6 +190,11 @@ for t in $base $raw $smb2; do
     plantest "$t" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD" $t
 done
 
+rap=`$smb4torture --list | grep "^RAP-" | xargs`
+for t in $rap; do
+    plantest "$t" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/IPC\\\$ -U"\$USERNAME"%"\$PASSWORD" $t
+done
+
 # Tests against the NTVFS CIFS backend
 for t in $base $raw; do
     plantest "ntvfs.cifs.$t" dc $VALGRIND $smb4torture //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $t

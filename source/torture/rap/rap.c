@@ -3,6 +3,7 @@
    test suite for various RAP operations
    Copyright (C) Volker Lendecke 2004
    Copyright (C) Tim Potter 2005
+   Copyright (C) Jelmer Vernooij 2007
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -311,25 +312,23 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_tree *tree,
 	return result;
 }
 
-static bool test_netshareenum(struct smbcli_tree *tree)
+static bool test_netshareenum(struct torture_context *tctx, 
+			      struct smbcli_state *cli)
 {
 	struct rap_NetShareEnum r;
 	int i;
-	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 
 	r.in.level = 1;
 	r.in.bufsize = 8192;
 
-	if (!NT_STATUS_IS_OK(smbcli_rap_netshareenum(tree, tmp_ctx, &r)))
-		return false;
+	torture_assert_ntstatus_ok(tctx, 
+		smbcli_rap_netshareenum(cli->tree, tctx, &r), "");
 
 	for (i=0; i<r.out.count; i++) {
 		printf("%s %d %s\n", r.out.info[i].info1.name,
 		       r.out.info[i].info1.type,
 		       r.out.info[i].info1.comment);
 	}
-
-	talloc_free(tmp_ctx);
 
 	return true;
 }
@@ -409,11 +408,11 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_tree *tree,
 	return result;
 }
 
-static bool test_netserverenum(struct smbcli_tree *tree)
+static bool test_netserverenum(struct torture_context *tctx, 
+			       struct smbcli_state *cli)
 {
 	struct rap_NetServerEnum2 r;
 	int i;
-	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 
 	r.in.level = 0;
 	r.in.bufsize = 8192;
@@ -421,8 +420,8 @@ static bool test_netserverenum(struct smbcli_tree *tree)
 	r.in.servertype = 0x80000000;
 	r.in.domain = NULL;
 
-	if (!NT_STATUS_IS_OK(smbcli_rap_netserverenum2(tree, tmp_ctx, &r)))
-		return false;
+	torture_assert_ntstatus_ok(tctx, 
+		   smbcli_rap_netserverenum2(cli->tree, tctx, &r), "");
 
 	for (i=0; i<r.out.count; i++) {
 		switch (r.in.level) {
@@ -436,8 +435,6 @@ static bool test_netserverenum(struct smbcli_tree *tree)
 			break;
 		}
 	}
-
-	talloc_free(tmp_ctx);
 
 	return true;
 }
@@ -501,74 +498,28 @@ _PUBLIC_ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 	return result;
 }
 
-static bool test_netservergetinfo(struct smbcli_tree *tree)
+static bool test_netservergetinfo(struct torture_context *tctx, 
+				  struct smbcli_state *cli)
 {
 	struct rap_WserverGetInfo r;
 	bool res = true;
-	TALLOC_CTX *mem_ctx;
-
-	if (!(mem_ctx = talloc_new(tree))) {
-		return false;
-	}
 
 	r.in.bufsize = 0xffff;
 
 	r.in.level = 0;
-	res &= NT_STATUS_IS_OK(smbcli_rap_netservergetinfo(tree, mem_ctx, &r));
+	torture_assert_ntstatus_ok(tctx, smbcli_rap_netservergetinfo(cli->tree, tctx, &r), "");
 	r.in.level = 1;
-	res &= NT_STATUS_IS_OK(smbcli_rap_netservergetinfo(tree, mem_ctx, &r));
-
-	talloc_free(mem_ctx);
-	return res;
-}
-
-static bool test_rap(struct smbcli_tree *tree)
-{
-	bool res = true;
-
-	res &= test_netserverenum(tree);
-	res &= test_netshareenum(tree);
-	res &= test_netservergetinfo(tree);
+	torture_assert_ntstatus_ok(tctx, smbcli_rap_netservergetinfo(cli->tree, tctx, &r), "");
 
 	return res;
 }
 
-bool torture_rap_basic(struct torture_context *torture)
+bool torture_rap_scan(struct torture_context *torture, struct smbcli_state *cli)
 {
-	struct smbcli_state *cli;
-	bool ret = true;
-	TALLOC_CTX *mem_ctx;
-
-	if (!torture_open_connection(&cli, torture, 0)) {
-		return false;
-	}
-
-	mem_ctx = talloc_init("torture_rap_basic");
-
-	if (!test_rap(cli->tree)) {
-		ret = false;
-	}
-
-	torture_close_connection(cli);
-	talloc_free(mem_ctx);
-
-	return ret;
-}
-
-bool torture_rap_scan(struct torture_context *torture)
-{
-	TALLOC_CTX *mem_ctx;
-	struct smbcli_state *cli;
 	int callno;
 
-	mem_ctx = talloc_init("torture_rap_scan");
-
-	if (!torture_open_connection(&cli, torture, 0)) {
-		return false;
-	}
-	
 	for (callno = 0; callno < 0xffff; callno++) {
-		struct rap_call *call = new_rap_cli_call(mem_ctx, callno);
+		struct rap_call *call = new_rap_cli_call(torture, callno);
 		NTSTATUS result;
 
 		result = rap_cli_do_call(cli->tree, call);
@@ -579,19 +530,24 @@ bool torture_rap_scan(struct torture_context *torture)
 		printf("callno %d is RAP call\n", callno);
 	}
 
-	torture_close_connection(cli);
-
 	return true;
 }
 
 NTSTATUS torture_rap_init(void)
 {
-	struct torture_suite *suite = torture_suite_create(
-									talloc_autofree_context(),
-									"RAP");
+	struct torture_suite *suite = torture_suite_create(talloc_autofree_context(), "RAP");
+	struct torture_suite *suite_basic = torture_suite_create(suite, "BASIC");
 
-	torture_suite_add_simple_test(suite, "BASIC", torture_rap_basic);
-	torture_suite_add_simple_test(suite, "SCAN", torture_rap_scan);
+	torture_suite_add_suite(suite, suite_basic);
+
+	torture_suite_add_1smb_test(suite_basic, "netserverenum", 
+				    test_netserverenum);
+	torture_suite_add_1smb_test(suite_basic, "netshareenum",
+				    test_netshareenum);
+	torture_suite_add_1smb_test(suite_basic, "netservergetinfo",
+				    test_netservergetinfo);
+
+	torture_suite_add_1smb_test(suite, "SCAN", torture_rap_scan);
 
 	suite->description = talloc_strdup(suite, 
 						"Remote Administration Protocol tests");

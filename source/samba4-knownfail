@@ -33,3 +33,4 @@ RPC-NETLOGON.*.GetPassword
 RPC-NETLOGON.*.GetTrustPasswords
 BASE-CHARSET.*.Testing partial surrogate
 .*NET-API-DELSHARE.*				# DelShare isn't implemented yet
+RAP.*netservergetinfo
