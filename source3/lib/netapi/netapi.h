@@ -31,7 +31,11 @@ struct libnetapi_ctx {
 	char *username;
 	char *workgroup;
 	char *password;
+	char *krb5_cc_env;
 };
+
+/****************************************************************
+****************************************************************/
 
 NET_API_STATUS libnetapi_init(struct libnetapi_ctx **ctx);
 NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx);
