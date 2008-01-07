@@ -430,7 +430,7 @@ static bool libnet_join_create_keytab(TALLOC_CTX *mem_ctx,
 		return true;
 	}
 
-#ifdef WITH_ADS
+#ifdef WITH_KRB5
 	if (!ads_keytab_create_default(r->in.ads)) {
 		return false;
 	}
