@@ -1821,6 +1821,12 @@ again:
 	/* we only check for recovery once every second */
 	ctdb_wait_timeout(ctdb, ctdb->tunable.recover_interval);
 
+	/* verify that the main daemon is still running */
+	if (kill(ctdb->ctdbd_pid, 0) != 0) {
+		DEBUG(0,("CTDB daemon is no longer available. Shutting down recovery daemon\n"));
+		exit(-1);
+	}
+
 	if (rec->election_timeout) {
 		/* an election is in progress */
 		goto again;
@@ -2274,6 +2280,8 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	if (pipe(fd) != 0) {
 		return -1;
 	}
+
+	ctdb->ctdbd_pid = getpid();
 
 	ctdb->recoverd_pid = fork();
 	if (ctdb->recoverd_pid == -1) {

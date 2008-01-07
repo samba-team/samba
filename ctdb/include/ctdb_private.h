@@ -366,6 +366,7 @@ struct ctdb_context {
 	struct _trbt_tree_t *server_ids;	
 	const char *event_script_dir;
 	const char *default_public_interface;
+	pid_t ctdbd_pid;
 	pid_t recoverd_pid;
 	bool done_startup;
 	const char *node_ip;
