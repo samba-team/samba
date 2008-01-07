@@ -77,7 +77,10 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	r->in.join_flags = join_flags;
 	r->in.modify_config = true;
 
-	return libnet_Join(mem_ctx, r);
+	werr = libnet_Join(mem_ctx, r);
+	TALLOC_FREE(r);
+
+	return werr;
 }
 
 static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
