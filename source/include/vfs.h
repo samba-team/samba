@@ -91,6 +91,8 @@
 /* Leave at 22 - not yet released. Remove parameter fd from kernel_flock. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from linux_setlease. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from getlock. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from sys_acl_get_fd. - obnox */
+
 
 
 #define SMB_VFS_INTERFACE_VERSION 22
