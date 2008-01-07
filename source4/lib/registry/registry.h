@@ -80,7 +80,6 @@ typedef void (*reg_key_notification_function) (void);
 typedef void (*reg_value_notification_function) (void);
 
 struct cli_credentials;
-struct registry_context;
 
 struct registry_operations {
 	const char *name;
