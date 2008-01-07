@@ -322,6 +322,7 @@ AC_SUBST(LIBADDNS)
 AC_SUBST(INSTALL_LIBWBCLIENT)
 AC_SUBST(UNINSTALL_LIBWBCLIENT)
 AC_SUBST(LIBWBCLIENT_SHARED)
+AC_SUBST(LIBWBCLIENT_STATIC)
 AC_SUBST(LIBWBCLIENT)
 AC_SUBST(WINBIND_LIBS)
 
@@ -6160,7 +6161,15 @@ if test x"$HAVE_WINBIND" = x"no"; then
 	WINBIND_WINS_NSS=""
 fi
 
-if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes"; then
+BUILD_LIBWBCLIENT_SHARED=yes
+
+AC_ARG_ENABLE(libwbclient-shared,
+[ --enable-libwbclient-shared	Build libwbclient as shared object (default=yes, \"no\" only for --enable-developer)],
+	[if eval "test x$enable_developer = xyes -a x$enable_libwbclient_shared = xno" ; then
+		BUILD_LIBWBCLIENT_SHARED=no
+	fi])
+
+if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes" -a x"$BUILD_LIBWBCLIENT_SHARED" = x"yes"; then
 	NSS_MODULES="${WINBIND_NSS} ${WINBIND_WINS_NSS}"
 	## Only worry about libwbclient if we have shared library support
 	## and winbindd
@@ -6170,6 +6179,8 @@ if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes"; then
 	UNINSTALL_LIBWBCLIENT=uninstalllibwbclient
 	WINBIND_LIBS="-lwbclient"
 	LDFLAGS="$LDFLAGS -L./bin"
+else
+	LIBWBCLIENT_STATIC=bin/libwbclient.a
 fi
 
 if test x"$HAVE_WINBIND" = x"yes"; then
