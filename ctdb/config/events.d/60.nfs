@@ -55,6 +55,9 @@ case $cmd in
 	;;
 
      recovered)
+	# if no IPs have changed then don't need to restart statd 
+	[ -f $CTDB_BASE/state/statd/restart ] || exit 0;
+
 	# always restart the lockmanager so that we start with a clusterwide
 	# graceperiod when ip addresses has changed
 	[ -x $CTDB_BASE/statd-callout ] && {
