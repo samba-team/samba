@@ -229,9 +229,9 @@ static int skel_ntimes(vfs_handle_struct *handle,  const char *path, const struc
 	return SMB_VFS_NEXT_NTIMES(handle, path, ts);
 }
 
-static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T offset)
+static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset)
 {
-	return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, fd, offset);
+	return SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
 }
 
 static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)

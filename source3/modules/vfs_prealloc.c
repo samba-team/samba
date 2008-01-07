@@ -184,11 +184,10 @@ normal_open:
 
 static int prealloc_ftruncate(vfs_handle_struct * handle,
 			files_struct *	fsp,
-			int		fd,
 			SMB_OFF_T	offset)
 {
 	SMB_OFF_T *psize;
-	int ret = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, fd, offset);
+	int ret = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, offset);
 
 	/* Maintain the allocated space even in the face of truncates. */
 	if ((psize = VFS_FETCH_FSP_EXTENSION(handle, fsp))) {

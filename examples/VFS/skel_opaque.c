@@ -236,9 +236,9 @@ static int skel_ntimes(vfs_handle_struct *handle,  const char *path, const struc
 	return vfswrap_ntimes(NULL,  path, ts);
 }
 
-static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T offset)
+static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset)
 {
-	return vfswrap_ftruncate(NULL, fsp, fd, offset);
+	return vfswrap_ftruncate(NULL, fsp, offset);
 }
 
 static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)

@@ -184,7 +184,7 @@ static int wcp_file_size_change(files_struct *fsp)
 	write_cache *wcp = fsp->wcp;
 
 	wcp->file_size = wcp->offset + wcp->data_size;
-	ret = SMB_VFS_FTRUNCATE(fsp, fsp->fh->fd, wcp->file_size);
+	ret = SMB_VFS_FTRUNCATE(fsp, wcp->file_size);
 	if (ret == -1) {
 		DEBUG(0,("wcp_file_size_change (%s): ftruncate of size %.0f error %s\n",
 			fsp->fsp_name, (double)wcp->file_size, strerror(errno) ));
