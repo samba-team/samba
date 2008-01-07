@@ -130,7 +130,7 @@ NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
 					const char *debuglevel)
 {
 	AllowDebugChange = true;
-	ctx->debuglevel = debuglevel;
+	ctx->debuglevel = talloc_strdup(ctx, debuglevel);
 	if (!debug_parse_levels(debuglevel)) {
 		return W_ERROR_V(WERR_GENERAL_FAILURE);
 	}
@@ -141,7 +141,7 @@ NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
 ****************************************************************/
 
 NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx,
-					const char **debuglevel)
+					char **debuglevel)
 {
 	*debuglevel = ctx->debuglevel;
 	return NET_API_STATUS_SUCCESS;
@@ -194,4 +194,27 @@ const char *libnetapi_errstr(struct libnetapi_ctx *ctx,
 	}
 
 	return get_friendly_werror_msg(W_ERROR(status));
+}
+
+/****************************************************************
+****************************************************************/
+
+NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx,
+					  const char *error_string)
+{
+	TALLOC_FREE(ctx->error_string);
+	ctx->error_string = talloc_strdup(ctx, error_string);
+	if (!ctx->error_string) {
+		return W_ERROR_V(WERR_NOMEM);
+	}
+	return NET_API_STATUS_SUCCESS;
+
+}
+
+/****************************************************************
+****************************************************************/
+
+const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx)
+{
+	return ctx->error_string;
 }

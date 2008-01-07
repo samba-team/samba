@@ -27,7 +27,8 @@
 ****************************************************************/
 
 struct libnetapi_ctx {
-	const char *debuglevel;
+	char *debuglevel;
+	char *error_string;
 	char *username;
 	char *workgroup;
 	char *password;
@@ -41,11 +42,16 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **ctx);
 NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx);
 NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx);
 NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx, const char *debuglevel);
-NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx, const char **debuglevel);
+NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx, char **debuglevel);
 NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx, const char *username);
 NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx, const char *password);
 NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx, const char *workgroup);
 const char *libnetapi_errstr(struct libnetapi_ctx *ctx, NET_API_STATUS status);
+NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx, const char *error_string);
+const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx);
+
+/****************************************************************
+****************************************************************/
 
 /* wkssvc */
 NET_API_STATUS NetJoinDomain(const char *server,
