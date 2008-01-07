@@ -34,6 +34,11 @@ fstring remote_proto="UNKNOWN";
 
 static char *local_machine;
 
+void free_local_machine_name(void)
+{
+	SAFE_FREE(local_machine);
+}
+
 bool set_local_machine_name(const char *local_name, bool perm)
 {
 	static bool already_perm = false;
