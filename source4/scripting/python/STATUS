@@ -1,6 +1,9 @@
 dsdb/samdb/ldb_modules/tests/samba3sam.py
 lib/ldb/tests/python/ldap.py
+provisioning in LDAP mode
 SWAT
+command-line vampire
+provisioning: combine some of the python dictionaries
 hierarchy
 DCE/RPC bindings
  - pidl:
