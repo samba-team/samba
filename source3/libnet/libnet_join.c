@@ -22,6 +22,42 @@
 #include "libnet/libnet_join.h"
 #include "libnet/libnet_proto.h"
 
+/****************************************************************
+****************************************************************/
+
+static void libnet_join_set_error_string(TALLOC_CTX *mem_ctx,
+					 struct libnet_JoinCtx *r,
+					 const char *format, ...)
+{
+	va_list args;
+	char *tmp = NULL;
+
+	va_start(args, format);
+	tmp = talloc_vasprintf(mem_ctx, format, args);
+	va_end(args);
+
+	TALLOC_FREE(r->out.error_string);
+	r->out.error_string = tmp;
+}
+
+/****************************************************************
+****************************************************************/
+
+static void libnet_unjoin_set_error_string(TALLOC_CTX *mem_ctx,
+					   struct libnet_UnjoinCtx *r,
+					   const char *format, ...)
+{
+	va_list args;
+	char *tmp = NULL;
+
+	va_start(args, format);
+	tmp = talloc_vasprintf(mem_ctx, format, args);
+	va_end(args);
+
+	TALLOC_FREE(r->out.error_string);
+	r->out.error_string = tmp;
+}
+
 static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 						 struct libnet_JoinCtx *r)
 {

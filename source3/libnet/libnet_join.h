@@ -44,6 +44,7 @@ struct libnet_JoinCtx {
 		struct dom_sid *domain_sid;
 		bool modified_config;
 		WERROR result;
+		char *error_string;
 	} out;
 };
 
@@ -61,6 +62,7 @@ struct libnet_UnjoinCtx {
 	struct {
 		bool modified_config;
 		WERROR result;
+		char *error_string;
 	} out;
 };
 
