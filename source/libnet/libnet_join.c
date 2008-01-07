@@ -252,6 +252,190 @@ static ADS_STATUS libnet_join_find_machine_acct(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
+					      struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+	ADS_MODLIST mods;
+	fstring my_fqdn;
+	const char *spn_array[3] = {NULL, NULL, NULL};
+	char *spn = NULL;
+
+	if (!r->in.ads) {
+		status = libnet_join_connect_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+	}
+
+	status = libnet_join_find_machine_acct(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	spn = talloc_asprintf(mem_ctx, "HOST/%s", r->in.machine_name);
+	if (!spn) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+	strupper_m(spn);
+	spn_array[0] = spn;
+
+	if (name_to_fqdn(my_fqdn, r->in.machine_name) &&
+	    !strequal(my_fqdn, r->in.machine_name)) {
+
+		strlower_m(my_fqdn);
+		spn = talloc_asprintf(mem_ctx, "HOST/%s", my_fqdn);
+		if (!spn) {
+			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		}
+		spn_array[1] = spn;
+	}
+
+	mods = ads_init_mods(mem_ctx);
+	if (!mods) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	status = ads_mod_str(mem_ctx, &mods, "dNSHostName", my_fqdn);
+	if (!ADS_ERR_OK(status)) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	status = ads_mod_strlist(mem_ctx, &mods, "servicePrincipalName",
+				 spn_array);
+	if (!ADS_ERR_OK(status)) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	return ads_gen_mod(r->in.ads, r->out.dn, mods);
+}
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_join_set_machine_upn(TALLOC_CTX *mem_ctx,
+					      struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+	ADS_MODLIST mods;
+
+	if (!r->in.create_upn) {
+		return ADS_SUCCESS;
+	}
+
+	if (!r->in.ads) {
+		status = libnet_join_connect_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+	}
+
+	status = libnet_join_find_machine_acct(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	if (!r->in.upn) {
+		r->in.upn = talloc_asprintf(mem_ctx,
+					    "host/%s@%s",
+					    r->in.machine_name,
+					    r->out.dns_domain_name);
+		if (!r->in.upn) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+	}
+
+	mods = ads_init_mods(mem_ctx);
+	if (!mods) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	status = ads_mod_str(mem_ctx, &mods, "userPrincipalName", r->in.upn);
+	if (!ADS_ERR_OK(status)) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	return ads_gen_mod(r->in.ads, r->out.dn, mods);
+}
+
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
+						struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+	ADS_MODLIST mods;
+	char *os_sp = NULL;
+
+	if (!r->in.os_name || !r->in.os_version ) {
+		return ADS_SUCCESS;
+	}
+
+	if (!r->in.ads) {
+		status = libnet_join_connect_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+	}
+
+	status = libnet_join_find_machine_acct(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	mods = ads_init_mods(mem_ctx);
+	if (!mods) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	os_sp = talloc_asprintf(mem_ctx, "Samba %s", SAMBA_VERSION_STRING);
+	if (!os_sp) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	status = ads_mod_str(mem_ctx, &mods, "operatingSystem",
+			     r->in.os_name);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	status = ads_mod_str(mem_ctx, &mods, "operatingSystemVersion",
+			     r->in.os_version);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	status = ads_mod_str(mem_ctx, &mods, "operatingSystemServicePack",
+			     os_sp);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	return ads_gen_mod(r->in.ads, r->out.dn, mods);
+}
+
+/****************************************************************
+****************************************************************/
+
+static bool libnet_join_create_keytab(TALLOC_CTX *mem_ctx,
+				      struct libnet_JoinCtx *r)
+{
+	if (!lp_use_kerberos_keytab()) {
+		return true;
+	}
+
+	if (!ads_keytab_create_default(r->in.ads)) {
+		return false;
+	}
+
+	return true;
+}
+
+/****************************************************************
+****************************************************************/
+
 static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 						 struct libnet_JoinCtx *r)
 {

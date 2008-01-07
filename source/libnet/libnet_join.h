@@ -31,7 +31,8 @@ struct libnet_JoinCtx {
 		const char *machine_password;
 		uint32_t join_flags;
 		const char *os_version;
-		const char *os_string;
+		const char *os_name;
+		bool create_upn;
 		const char *upn;
 		bool modify_config;
 		struct ads_struct *ads;
