@@ -2362,8 +2362,9 @@ bool initialize_winbindd_cache(void)
 
 void close_winbindd_cache()
 {
-	if (!wcache)
+	if (!wcache) {
 		return;
+	}
 	if (wcache->tdb) {
 		tdb_close(wcache->tdb);
 		wcache->tdb = NULL;
