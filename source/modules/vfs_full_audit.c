@@ -122,7 +122,7 @@ static ssize_t smb_full_audit_pwrite(vfs_handle_struct *handle, files_struct *fs
 			    const void *data, size_t n,
 			    SMB_OFF_T offset);
 static SMB_OFF_T smb_full_audit_lseek(vfs_handle_struct *handle, files_struct *fsp,
-			     int filedes, SMB_OFF_T offset, int whence);
+			     SMB_OFF_T offset, int whence);
 static ssize_t smb_full_audit_sendfile(vfs_handle_struct *handle, int tofd,
 			      files_struct *fsp, int fromfd,
 			      const DATA_BLOB *hdr, SMB_OFF_T offset,
@@ -1137,11 +1137,11 @@ static ssize_t smb_full_audit_pwrite(vfs_handle_struct *handle, files_struct *fs
 }
 
 static SMB_OFF_T smb_full_audit_lseek(vfs_handle_struct *handle, files_struct *fsp,
-			     int filedes, SMB_OFF_T offset, int whence)
+			     SMB_OFF_T offset, int whence)
 {
 	ssize_t result;
 
-	result = SMB_VFS_NEXT_LSEEK(handle, fsp, filedes, offset, whence);
+	result = SMB_VFS_NEXT_LSEEK(handle, fsp, offset, whence);
 
 	do_log(SMB_VFS_OP_LSEEK, (result != (ssize_t)-1), handle,
 	       "%s", fsp->fsp_name);

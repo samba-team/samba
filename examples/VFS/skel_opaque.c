@@ -150,9 +150,9 @@ ssize_t skel_pwrite(vfs_handle_struct *handle, struct files_struct *fsp, const v
 	return vfswrap_pwrite(NULL, fsp, data, n, offset);
 }
 
-static SMB_OFF_T skel_lseek(vfs_handle_struct *handle, files_struct *fsp, int filedes, SMB_OFF_T offset, int whence)
+static SMB_OFF_T skel_lseek(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset, int whence)
 {
-	return vfswrap_lseek(NULL, fsp, filedes, offset, whence);
+	return vfswrap_lseek(NULL, fsp, offset, whence);
 }
 
 static ssize_t skel_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *hdr,
