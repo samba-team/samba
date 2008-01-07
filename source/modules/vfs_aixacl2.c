@@ -258,8 +258,7 @@ SMB_ACL_T aixjfs2_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T aixjfs2_sys_acl_get_fd(vfs_handle_struct *handle,
-                                  files_struct *fsp,
-                                  int fd)
+                                  files_struct *fsp)
 {
         acl_type_t aixjfs2_type;
         aixjfs2_type.u64 = ACL_AIXC;

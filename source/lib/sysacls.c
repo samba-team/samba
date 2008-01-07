@@ -364,9 +364,9 @@ SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 	return posixacl_sys_acl_get_file(handle, path_p, type);
 }
  
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, int fd)
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
 {
-	return posixacl_sys_acl_get_fd(handle, fsp, fd);
+	return posixacl_sys_acl_get_fd(handle, fsp);
 }
  
 int sys_acl_set_file(vfs_handle_struct *handle,
@@ -395,9 +395,9 @@ SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 	return aixacl_sys_acl_get_file(handle, path_p, type);
 }
 
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, int fd)
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
 {
-	return aixacl_sys_acl_get_fd(handle, fsp, fd);
+	return aixacl_sys_acl_get_fd(handle, fsp);
 }
 
 int sys_acl_set_file(vfs_handle_struct *handle,
@@ -426,9 +426,9 @@ SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 	return tru64acl_sys_acl_get_file(handle, path_p, type);
 }
 
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, int fd)
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
 {
-	return tru64acl_sys_acl_get_fd(handle, fsp, fd);
+	return tru64acl_sys_acl_get_fd(handle, fsp);
 }
 
 int sys_acl_set_file(vfs_handle_struct *handle,
@@ -457,9 +457,9 @@ SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 	return solarisacl_sys_acl_get_file(handle, path_p, type);
 }
 
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, int fd)
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
 {
-	return solarisacl_sys_acl_get_fd(handle, fsp, fd);
+	return solarisacl_sys_acl_get_fd(handle, fsp);
 }
 
 int sys_acl_set_file(vfs_handle_struct *handle,
@@ -488,9 +488,9 @@ SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 	return hpuxacl_sys_acl_get_file(handle, path_p, type);
 }
 
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, int fd)
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
 {
-	return hpuxacl_sys_acl_get_fd(handle, fsp, fd);
+	return hpuxacl_sys_acl_get_fd(handle, fsp);
 }
 
 int sys_acl_set_file(vfs_handle_struct *handle,
@@ -519,9 +519,9 @@ SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 	return irixacl_sys_acl_get_file(handle, path_p, type);
 }
 
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, int fd)
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
 {
-	return irixacl_sys_acl_get_fd(handle, fsp, fd);
+	return irixacl_sys_acl_get_fd(handle, fsp);
 }
 
 int sys_acl_set_file(vfs_handle_struct *handle,
@@ -555,7 +555,7 @@ SMB_ACL_T sys_acl_get_file(vfs_handle_struct *handle,
 	return NULL;
 }
 
-SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, int fd)
+SMB_ACL_T sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
 {
 #ifdef ENOTSUP
 	errno = ENOTSUP;

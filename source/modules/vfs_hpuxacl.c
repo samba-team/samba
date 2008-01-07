@@ -182,15 +182,14 @@ SMB_ACL_T hpuxacl_sys_acl_get_file(vfs_handle_struct *handle,
  * get the access ACL of a file referred to by a fd
  */
 SMB_ACL_T hpuxacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				 files_struct *fsp,
-				 int fd)
+				 files_struct *fsp)
 {
         /* 
 	 * HPUX doesn't have the facl call. Fake it using the path.... JRA. 
 	 */
 	/* For all I see, the info should already be in the fsp
 	 * parameter, but get it again to be safe --- necessary? */
-        files_struct *file_struct_p = file_find_fd(fd);
+        files_struct *file_struct_p = file_find_fd(fsp->fh->fd);
         if (file_struct_p == NULL) {
                 errno = EBADF;
                 return NULL;

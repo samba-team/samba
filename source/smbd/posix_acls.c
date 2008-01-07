@@ -3085,7 +3085,7 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 	}
 
 	/* Get the ACL from the fd. */
-	posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fh->fd);
+	posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp);
 
 	pal = fload_inherited_info(fsp);
 
@@ -3808,13 +3808,13 @@ int fchmod_acl(files_struct *fsp, int fd, mode_t mode)
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
 
-	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fd)) == NULL)
+	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp)) == NULL)
 		return -1;
 
 	if ((ret = chmod_acl_internals(conn, posix_acl, mode)) == -1)
 		goto done;
 
-	ret = SMB_VFS_SYS_ACL_SET_FD(fsp, fd, posix_acl);
+	ret = SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, posix_acl);
 
   done:
 
@@ -4099,7 +4099,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 
 	/* Get the current file ACL. */
 	if (fsp && fsp->fh->fd != -1) {
-		file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fh->fd);
+		file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp);
 	} else {
 		file_acl = SMB_VFS_SYS_ACL_GET_FILE( conn, fname, SMB_ACL_TYPE_ACCESS);
 	}

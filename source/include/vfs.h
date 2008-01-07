@@ -352,7 +352,7 @@ struct vfs_ops {
 		int (*sys_acl_get_permset)(struct vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
 		void * (*sys_acl_get_qualifier)(struct vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry_d);
 		SMB_ACL_T (*sys_acl_get_file)(struct vfs_handle_struct *handle, const char *path_p, SMB_ACL_TYPE_T type);
-		SMB_ACL_T (*sys_acl_get_fd)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
+		SMB_ACL_T (*sys_acl_get_fd)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 		int (*sys_acl_clear_perms)(struct vfs_handle_struct *handle, SMB_ACL_PERMSET_T permset);
 		int (*sys_acl_add_perm)(struct vfs_handle_struct *handle, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 		char * (*sys_acl_to_text)(struct vfs_handle_struct *handle, SMB_ACL_T theacl, ssize_t *plen);
