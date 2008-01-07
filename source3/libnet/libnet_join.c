@@ -58,6 +58,103 @@ static void libnet_unjoin_set_error_string(TALLOC_CTX *mem_ctx,
 	r->out.error_string = tmp;
 }
 
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
+				     const char *netbios_domain_name,
+				     const char *dc_name,
+				     const char *user_name,
+				     const char *password,
+				     ADS_STRUCT **ads)
+{
+	ADS_STATUS status;
+	ADS_STRUCT *my_ads = NULL;
+
+	my_ads = ads_init(dns_domain_name,
+			  netbios_domain_name,
+			  dc_name);
+	if (!my_ads) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	if (user_name) {
+		SAFE_FREE(my_ads->auth.user_name);
+		my_ads->auth.user_name = SMB_STRDUP(user_name);
+	}
+
+	if (password) {
+		SAFE_FREE(my_ads->auth.password);
+		my_ads->auth.password = SMB_STRDUP(password);
+	}
+
+	status = ads_connect(my_ads);
+	if (!ADS_ERR_OK(status)) {
+		ads_destroy(&my_ads);
+		return status;
+	}
+
+	*ads = my_ads;
+	return ADS_SUCCESS;
+}
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
+					  struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+
+	if (r->in.ads) {
+		ads_destroy(&r->in.ads);
+	}
+
+	status = libnet_connect_ads(r->in.domain_name,
+				    r->in.domain_name,
+				    r->in.dc_name,
+				    r->in.admin_account,
+				    r->in.admin_password,
+				    &r->in.ads);
+	if (!ADS_ERR_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to connect to AD: %s\n",
+			ads_errstr(status));
+	}
+
+	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_unjoin_connect_ads(TALLOC_CTX *mem_ctx,
+					    struct libnet_UnjoinCtx *r)
+{
+	ADS_STATUS status;
+
+	if (r->in.ads) {
+		ads_destroy(&r->in.ads);
+	}
+
+	status = libnet_connect_ads(r->in.domain_name,
+				    r->in.domain_name,
+				    r->in.dc_name,
+				    r->in.admin_account,
+				    r->in.admin_password,
+				    &r->in.ads);
+	if (!ADS_ERR_OK(status)) {
+		libnet_unjoin_set_error_string(mem_ctx, r,
+			"failed to connect to AD: %s\n",
+			ads_errstr(status));
+	}
+
+	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
 static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 						 struct libnet_JoinCtx *r)
 {
@@ -484,6 +581,33 @@ static WERROR do_UnjoinConfig(struct libnet_UnjoinCtx *r)
 	return werr;
 }
 
+/****************************************************************
+****************************************************************/
+
+static int libnet_destroy_JoinCtx(struct libnet_JoinCtx *r)
+{
+	if (r->in.ads) {
+		ads_destroy(&r->in.ads);
+	}
+
+	return 0;
+}
+
+/****************************************************************
+****************************************************************/
+
+static int libnet_destroy_UnjoinCtx(struct libnet_UnjoinCtx *r)
+{
+	if (r->in.ads) {
+		ads_destroy(&r->in.ads);
+	}
+
+	return 0;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 			   struct libnet_JoinCtx **r)
 {
@@ -494,10 +618,18 @@ WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 		return WERR_NOMEM;
 	}
 
+	talloc_set_destructor(ctx, libnet_destroy_JoinCtx);
+
+	ctx->in.machine_name = talloc_strdup(mem_ctx, global_myname());
+	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
+
 	*r = ctx;
 
 	return WERR_OK;
 }
+
+/****************************************************************
+****************************************************************/
 
 WERROR libnet_init_UnjoinCtx(TALLOC_CTX *mem_ctx,
 			     struct libnet_UnjoinCtx **r)
@@ -508,6 +640,11 @@ WERROR libnet_init_UnjoinCtx(TALLOC_CTX *mem_ctx,
 	if (!ctx) {
 		return WERR_NOMEM;
 	}
+
+	talloc_set_destructor(ctx, libnet_destroy_UnjoinCtx);
+
+	ctx->in.machine_name = talloc_strdup(mem_ctx, global_myname());
+	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
 
 	*r = ctx;
 

@@ -34,6 +34,7 @@ struct libnet_JoinCtx {
 		const char *os_string;
 		const char *upn;
 		bool modify_config;
+		struct ads_struct *ads;
 	} in;
 
 	struct {
@@ -51,12 +52,14 @@ struct libnet_JoinCtx {
 struct libnet_UnjoinCtx {
 	struct {
 		const char *dc_name;
+		const char *machine_name;
 		const char *domain_name;
 		const char *admin_account;
 		const char *admin_password;
 		uint32_t unjoin_flags;
 		bool modify_config;
 		struct dom_sid *domain_sid;
+		struct ads_struct *ads;
 	} in;
 
 	struct {
