@@ -428,7 +428,10 @@ static WERROR regf_get_info(TALLOC_CTX *mem_ctx,
 			    const char **classname,
 			    uint32_t *num_subkeys,
 			    uint32_t *num_values,
-			    NTTIME *last_mod_time)
+			    NTTIME *last_mod_time,
+			    uint32_t *max_subkeynamelen,
+			    uint32_t *max_valnamelen,
+			    uint32_t *max_valbufsize)
 {
 	const struct regf_key_data *private_data =
 		(const struct regf_key_data *)key;
@@ -451,6 +454,12 @@ static WERROR regf_get_info(TALLOC_CTX *mem_ctx,
 	}
 
 	/* TODO: Last mod time */
+
+	/* TODO: max valnamelen */
+	
+	/* TODO: max valbufsize */
+
+	/* TODO: max subkeynamelen */
 
 	return WERR_OK;
 }

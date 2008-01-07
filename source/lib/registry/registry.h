@@ -89,7 +89,10 @@ struct registry_operations {
 				const char **classname,
 				uint32_t *numsubkeys,
 				uint32_t *numvalues,
-				NTTIME *last_change_time);
+				NTTIME *last_change_time,
+				uint32_t *max_subkeynamelen,
+				uint32_t *max_valnamelen,
+				uint32_t *max_valbufsize);
 
 	WERROR (*flush_key) (struct registry_key *key);
 
@@ -211,7 +214,10 @@ WERROR reg_key_get_info(TALLOC_CTX *mem_ctx,
 			const char **class_name,
 			uint32_t *num_subkeys,
 			uint32_t *num_values,
-			NTTIME *last_change_time);
+			NTTIME *last_change_time,
+			uint32_t *max_subkeynamelen,
+			uint32_t *max_valnamelen,
+			uint32_t *max_valbufsize);
 WERROR reg_key_get_subkey_by_index(TALLOC_CTX *mem_ctx,
 				   const struct registry_key *key,
 				   int idx,

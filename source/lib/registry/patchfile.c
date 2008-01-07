@@ -54,7 +54,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 	if (oldkey != NULL) {
 		error = reg_key_get_info(mem_ctx, oldkey, NULL,
 					 &old_num_subkeys, &old_num_values,
-					 NULL);
+					 NULL, NULL, NULL, NULL);
 		if (!W_ERROR_IS_OK(error)) {
 			DEBUG(0, ("Error occured while getting key info: %s\n",
 				win_errstr(error)));
@@ -102,7 +102,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 	if (newkey != NULL) {
 		error = reg_key_get_info(mem_ctx, newkey, NULL,
 					 &new_num_subkeys, &new_num_values,
-					 NULL);
+					 NULL, NULL, NULL, NULL);
 		if (!W_ERROR_IS_OK(error)) {
 			DEBUG(0, ("Error occured while getting key info: %s\n",
 				win_errstr(error)));
@@ -412,11 +412,8 @@ static WERROR reg_diff_apply_del_all_values(void *_ctx, const char *key_name)
 		return error;
 	}
 
-	W_ERROR_NOT_OK_RETURN(reg_key_get_info(ctx, key,
-					       NULL,
-					       NULL,
-					       &num_values,
-					       NULL));
+	W_ERROR_NOT_OK_RETURN(reg_key_get_info(ctx, key, NULL,
+			       NULL, &num_values, NULL, NULL, NULL, NULL));
 
 	for (i = 0; i < num_values; i++) {
 		const char *name;

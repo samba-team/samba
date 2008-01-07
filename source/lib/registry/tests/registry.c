@@ -265,7 +265,7 @@ static bool test_query_key(struct torture_context *tctx, void *_data)
 
 	error = reg_key_get_info(tctx, subkey, &classname,
 				 &num_subkeys, &num_values,
-				 &last_changed_time);
+				 &last_changed_time, NULL, NULL, NULL);
 
 	torture_assert_werr_ok(tctx, error, "get info key");
 	torture_assert(tctx, classname == NULL, "classname");
@@ -295,7 +295,7 @@ static bool test_query_key_nums(struct torture_context *tctx, void *_data)
 	torture_assert_werr_ok(tctx, error, "set value");
 
 	error = reg_key_get_info(tctx, subkey1, NULL, &num_subkeys,
-				 &num_values, NULL);
+				 &num_values, NULL, NULL, NULL, NULL);
 
 	torture_assert_werr_ok(tctx, error, "get info key");
 	torture_assert_int_equal(tctx, num_subkeys, 1, "num subkeys");

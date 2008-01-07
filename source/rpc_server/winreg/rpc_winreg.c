@@ -262,7 +262,7 @@ static WERROR dcesrv_winreg_EnumValue(struct dcesrv_call_state *dce_call,
 
 	r->out.name->name = data_name;
 	r->out.name->length = 2*strlen_m_term(data_name);
-	r->out.name->size = 2*strlen_m_term(data_name);
+	r->out.name->size = r->in.name->size;
 
 	if (r->in.value) {
 		r->out.value = data.data;
@@ -379,7 +379,9 @@ static WERROR dcesrv_winreg_QueryInfoKey(struct dcesrv_call_state *dce_call,
 	k = h->data;
 
 	ret = reg_key_get_info(mem_ctx, k, &classname, r->out.num_subkeys,
-			       r->out.num_values, r->out.last_changed_time);
+			       r->out.num_values, r->out.last_changed_time,
+			       r->out.max_subkeylen, r->out.max_valnamelen, 
+			       r->out.max_valbufsize);
 
 	if (r->out.classname != NULL)
 		r->out.classname->name = classname;

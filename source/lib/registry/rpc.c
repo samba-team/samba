@@ -29,6 +29,7 @@ struct rpc_key {
 	uint32_t num_subkeys;
 	uint32_t max_valnamelen;
 	uint32_t max_valdatalen;
+	uint32_t max_subkeynamelen;
 };
 
 struct rpc_registry_context {
@@ -202,7 +203,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 	}
 
 	name.length = 0;
-	name.size   = mykeydata->max_valnamelen * 2+1;
+	name.size   = mykeydata->max_valnamelen * 2;
 	name.name   = NULL;
 
 	r.in.handle = &mykeydata->pol;
@@ -213,6 +214,7 @@ static WERROR rpc_get_value_by_index(TALLOC_CTX *mem_ctx,
 	r.in.length = &zero;
 	r.in.size = &mykeydata->max_valdatalen;
 	r.out.name = &name;
+	r.out.type = type;
 
 	status = dcerpc_winreg_EnumValue(mykeydata->pipe, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
@@ -313,18 +315,17 @@ static WERROR rpc_query_key(const struct registry_key *k)
 	struct rpc_key *mykeydata = talloc_get_type(k, struct rpc_key);
 	TALLOC_CTX *mem_ctx = talloc_init("query_key");
 	uint32_t max_subkeysize;
-	uint32_t num_values;
 	uint32_t secdescsize;
 	NTTIME last_changed_time;
 
 	ZERO_STRUCT(r.out);
 
 	r.out.num_subkeys = &mykeydata->num_subkeys;
-	r.out.max_subkeylen = &mykeydata->num_values;
+	r.out.max_subkeylen = &mykeydata->max_subkeynamelen;
 	r.out.max_valnamelen = &mykeydata->max_valnamelen;
 	r.out.max_valbufsize = &mykeydata->max_valdatalen;
 	r.out.max_subkeysize = &max_subkeysize;
-	r.out.num_values = &num_values;
+	r.out.num_values = &mykeydata->num_values;
 	r.out.secdescsize = &secdescsize;
 	r.out.last_changed_time = &last_changed_time;
 
@@ -367,7 +368,10 @@ static WERROR rpc_get_info(TALLOC_CTX *mem_ctx, const struct registry_key *key,
 						   const char **classname,
 						   uint32_t *numsubkeys,
 						   uint32_t *numvalue,
-						   NTTIME *last_changed_time)
+						   NTTIME *last_changed_time,
+						   uint32_t *max_subkeynamelen,
+						   uint32_t *max_valnamelen,
+						   uint32_t *max_valbufsize)
 {
 	struct rpc_key *mykeydata = talloc_get_type(key, struct rpc_key);
 	WERROR error;
@@ -385,6 +389,15 @@ static WERROR rpc_get_info(TALLOC_CTX *mem_ctx, const struct registry_key *key,
 
 	if (numsubkeys != NULL)
 		*numsubkeys = mykeydata->num_subkeys;
+
+	if (max_valnamelen != NULL)
+		*max_valnamelen = mykeydata->max_valnamelen;
+
+	if (max_valbufsize != NULL)
+		*max_valbufsize = mykeydata->max_valdatalen;
+
+	if (max_subkeynamelen != NULL)
+		*max_subkeynamelen = mykeydata->max_subkeynamelen;
 
 	return WERR_OK;
 }
