@@ -509,6 +509,11 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	if (recmode != ctdb->recovery_mode) {
+		DEBUG(0,(__location__ " Recovery mode set to %s\n", 
+			 recmode==CTDB_RECOVERY_NORMAL?"NORMAL":"ACTIVE"));
+	}
+
 	if (recmode != CTDB_RECOVERY_NORMAL ||
 	    ctdb->recovery_mode != CTDB_RECOVERY_ACTIVE) {
 		ctdb->recovery_mode = recmode;
