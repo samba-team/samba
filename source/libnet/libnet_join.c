@@ -188,6 +188,24 @@ static ADS_STATUS libnet_join_precreate_machine_acct(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static ADS_STATUS libnet_unjoin_remove_machine_acct(TALLOC_CTX *mem_ctx,
+						    struct libnet_UnjoinCtx *r)
+{
+	ADS_STATUS status;
+
+	if (!r->in.ads) {
+		status = libnet_unjoin_connect_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+	}
+
+	return ads_leave_realm(r->in.ads, r->in.machine_name);
+}
+
+/****************************************************************
+****************************************************************/
+
 static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 						 struct libnet_JoinCtx *r)
 {
@@ -780,27 +798,55 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 	return werr;
 }
 
+/****************************************************************
+****************************************************************/
+
+static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
+				  struct libnet_UnjoinCtx *r)
+{
+	NTSTATUS status;
+
+	status = libnet_join_unjoindomain_rpc(mem_ctx, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+			return WERR_SETUP_NOT_JOINED;
+		}
+		return ntstatus_to_werror(status);
+	}
+
+	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) {
+		ADS_STATUS ads_status;
+		libnet_unjoin_connect_ads(mem_ctx, r);
+		ads_status = libnet_unjoin_remove_machine_acct(mem_ctx, r);
+		if (!ADS_ERR_OK(ads_status)) {
+			libnet_unjoin_set_error_string(mem_ctx, r,
+				"failed to remove machine account from AD: %s\n",
+				ads_errstr(ads_status));
+		}
+	}
+
+	libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 		     struct libnet_UnjoinCtx *r)
 {
 	WERROR werr;
-	NTSTATUS status;
 
 	if (r->in.modify_config && !lp_include_registry_globals()) {
 		return WERR_NOT_SUPPORTED;
 	}
 
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
-
-		status = libnet_join_unjoindomain_rpc(mem_ctx, r);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
-				return WERR_SETUP_NOT_JOINED;
-			}
-			return ntstatus_to_werror(status);
+		werr = libnet_DomainUnjoin(mem_ctx, r);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
 		}
-
-		libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
 	}
 
 	werr = do_UnjoinConfig(r);
