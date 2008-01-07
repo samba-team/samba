@@ -8,7 +8,7 @@
 
 import tdb
 from unittest import TestCase
-import os
+import os, tempfile
 
 
 class OpenTdbTests(TestCase):
@@ -19,7 +19,7 @@ class OpenTdbTests(TestCase):
 class SimpleTdbTests(TestCase):
     def setUp(self):
         super(SimpleTdbTests, self).setUp()
-        self.tdb = tdb.Tdb(os.tmpnam(), 0, tdb.DEFAULT, os.O_CREAT|os.O_RDWR)
+        self.tdb = tdb.Tdb(tempfile.mkstemp()[1], 0, tdb.DEFAULT, os.O_CREAT|os.O_RDWR)
         self.assertNotEqual(None, self.tdb)
 
     def tearDown(self):
@@ -82,6 +82,13 @@ class SimpleTdbTests(TestCase):
         self.tdb["brainslug"] = "2"
         self.assertEquals([("bla", "1"), ("brainslug", "2")], self.tdb.items())
 
+    def test_iteritems(self):
+        self.tdb["bloe"] = "2"
+        self.tdb["bla"] = "25"
+        i = self.tdb.iteritems()
+        self.assertEquals(set([("bla", "25"), ("bloe", "2")]),
+                              set([i.next(), i.next()]))
+
     def test_transaction_cancel(self):
         self.tdb["bloe"] = "2"
         self.tdb.transaction_start()
@@ -107,10 +114,22 @@ class SimpleTdbTests(TestCase):
         self.tdb["bla"] = "25"
         self.assertEquals(["bla", "bloe"], self.tdb.keys())
 
+    def test_iterkeys(self):
+        self.tdb["bloe"] = "2"
+        self.tdb["bla"] = "25"
+        i = self.tdb.iterkeys()
+        self.assertEquals(set(["bloe", "bla"]), set([i.next(), i.next()]))
+
     def test_values(self):
         self.tdb["bloe"] = "2"
         self.tdb["bla"] = "25"
         self.assertEquals(["25", "2"], self.tdb.values())
+
+    def test_itervalues(self):
+        self.tdb["bloe"] = "2"
+        self.tdb["bla"] = "25"
+        i = self.tdb.itervalues()
+        self.assertEquals(set(["25", "2"]), set([i.next(), i.next()]))
 
     def test_clear(self):
         self.tdb["bloe"] = "2"
