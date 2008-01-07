@@ -30,7 +30,7 @@ struct reg_key_path {
 };
 
 struct registry_local {
-	struct registry_context registry;
+	const struct registry_operations *ops;
 
 	struct mountpoint {
 		struct reg_key_path path;
@@ -299,7 +299,7 @@ WERROR reg_open_local(TALLOC_CTX *mem_ctx, struct registry_context **ctx,
 
 	W_ERROR_HAVE_NO_MEMORY(ret);
 
-	ret->registry.ops = &local_ops;
+	ret->ops = &local_ops;
 	ret->session_info = session_info;
 	ret->credentials = credentials;
 

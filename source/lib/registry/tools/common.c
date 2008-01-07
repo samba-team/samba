@@ -27,7 +27,7 @@ struct registry_context *reg_common_open_remote(const char *remote,
 						struct loadparm_context *lp_ctx,
 						struct cli_credentials *creds)
 {
-	struct registry_context *h;
+	struct registry_context *h = NULL;
 	WERROR error;
 
 	error = reg_open_remote(&h, NULL, creds, lp_ctx, remote, NULL);
@@ -46,7 +46,7 @@ struct registry_key *reg_common_open_file(const char *path,
 					  struct cli_credentials *creds)
 {
 	struct hive_key *hive_root;
-	struct registry_context *h;
+	struct registry_context *h = NULL;
 	WERROR error;
 
 	error = reg_open_hive(NULL, path, NULL, creds, lp_ctx, &hive_root);
@@ -70,7 +70,7 @@ struct registry_key *reg_common_open_file(const char *path,
 struct registry_context *reg_common_open_local(struct cli_credentials *creds, struct loadparm_context *lp_ctx)
 {
 	WERROR error;
-	struct registry_context *h;
+	struct registry_context *h = NULL;
 
 	error = reg_open_samba(NULL, &h, lp_ctx, NULL, creds);
 
