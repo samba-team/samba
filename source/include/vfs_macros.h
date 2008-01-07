@@ -190,7 +190,7 @@
 #define SMB_VFS_OPAQUE_NTIMES(conn, path, ts) ((conn)->vfs_opaque.ops.ntimes((conn)->vfs_opaque.handles.ntimes, (path), (ts)))
 #define SMB_VFS_OPAQUE_FTRUNCATE(fsp, offset) ((fsp)->conn->vfs_opaque.ops.ftruncate((fsp)->conn->vfs_opaque.handles.ftruncate, (fsp), (offset)))
 #define SMB_VFS_OPAQUE_LOCK(fsp, op, offset, count, type) ((fsp)->conn->vfs_opaque.ops.lock((fsp)->conn->vfs_opaque.handles.lock, (fsp), (op), (offset), (count), (type)))
-#define SMB_VFS_OPAQUE_FLOCK(fsp, fd, share_mode) ((fsp)->conn->vfs_opaque.ops.lock((fsp)->conn->vfs_opaque.handles.kernel_flock, (fsp), (fd), (share_mode)))
+#define SMB_VFS_OPAQUE_KERNEL_FLOCK(fsp, fd, share_mode) ((fsp)->conn->vfs_opaque.ops.kernel_flock((fsp)->conn->vfs_opaque.handles.kernel_flock, (fsp), (fd), (share_mode)))
 #define SMB_VFS_OPAQUE_LINUX_SETLEASE(fsp, fd, leasetype) ((fsp)->conn->vfs_opaque.ops.linux_setlease((fsp)->conn->vfs_opaque.handles.linux_setlease, (fsp), (fd), (leasetype)))
 #define SMB_VFS_OPAQUE_GETLOCK(fsp, fd, poffset, pcount, ptype, ppid) ((fsp)->conn->vfs_opaque.ops.getlock((fsp)->conn->vfs_opaque.handles.getlock, (fsp), (fd), (poffset), (pcount), (ptype), (ppid)))
 #define SMB_VFS_OPAQUE_SYMLINK(conn, oldpath, newpath) ((conn)->vfs_opaque.ops.symlink((conn)->vfs_opaque.handles.symlink, (oldpath), (newpath)))
