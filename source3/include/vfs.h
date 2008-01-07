@@ -82,6 +82,7 @@
 /* Leave at 22 - not yet released. Remove parameter fd from pread. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from pwrite. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from lseek. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fsync. - obnox */
 
 #define SMB_VFS_INTERFACE_VERSION 22
 
@@ -279,7 +280,7 @@ struct vfs_ops {
 		ssize_t (*sendfile)(struct vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
 		ssize_t (*recvfile)(struct vfs_handle_struct *handle, int fromfd, files_struct *fsp, int tofd, SMB_OFF_T offset, size_t count);
 		int (*rename)(struct vfs_handle_struct *handle, const char *oldname, const char *newname);
-		int (*fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
+		int (*fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 		int (*stat)(struct vfs_handle_struct *handle, const char *fname, SMB_STRUCT_STAT *sbuf);
 		int (*fstat)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf);
 		int (*lstat)(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf);
