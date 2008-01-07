@@ -4,7 +4,7 @@
    DsGetDcname
 
    Copyright (C) Gerald Carter 2006
-   Copyright (C) Guenther Deschner 2007
+   Copyright (C) Guenther Deschner 2007-2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -891,27 +891,71 @@ static NTSTATUS DsGetDcName_rediscover(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
- DsGetDcName.
-
- This will be the only public function here.
 ********************************************************************/
 
-NTSTATUS DsGetDcName(TALLOC_CTX *mem_ctx,
-		     const char *computer_name,
-		     const char *domain_name,
-		     struct GUID *domain_guid,
-		     const char *site_name,
-		     uint32_t flags,
-		     struct DS_DOMAIN_CONTROLLER_INFO **info)
+NTSTATUS DsGetDcName_remote(TALLOC_CTX *mem_ctx,
+			    const char *computer_name,
+			    const char *domain_name,
+			    struct GUID *domain_guid,
+			    const char *site_name,
+			    uint32_t flags,
+			    struct DS_DOMAIN_CONTROLLER_INFO **info)
+{
+	WERROR werr;
+	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+
+	status = cli_full_connection(&cli, NULL, computer_name,
+				     NULL, 0,
+				     "IPC$", "IPC",
+				     "",
+				     "",
+				     "",
+				     0, Undefined, NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON,
+					    &status);
+	if (!pipe_cli) {
+		goto done;
+	}
+
+	werr = rpccli_netlogon_dsr_getdcname(pipe_cli,
+					     mem_ctx,
+					     computer_name,
+					     domain_name,
+					     domain_guid,
+					     NULL,
+					     flags,
+					     info);
+	status = werror_to_ntstatus(werr);
+
+ done:
+	cli_rpc_pipe_close(pipe_cli);
+	if (cli) {
+		cli_shutdown(cli);
+	}
+
+	return status;
+}
+
+/********************************************************************
+********************************************************************/
+
+NTSTATUS DsGetDcName_local(TALLOC_CTX *mem_ctx,
+			   const char *computer_name,
+			   const char *domain_name,
+			   struct GUID *domain_guid,
+			   const char *site_name,
+			   uint32_t flags,
+			   struct DS_DOMAIN_CONTROLLER_INFO **info)
 {
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	struct DS_DOMAIN_CONTROLLER_INFO *myinfo = NULL;
-
-	DEBUG(10,("DsGetDcName: computer_name: %s, domain_name: %s, "
-		  "domain_guid: %s, site_name: %s, flags: 0x%08x\n",
-		  computer_name, domain_name,
-		  domain_guid ? GUID_string(mem_ctx, domain_guid) : "(null)",
-		  site_name, flags));
 
 	*info = NULL;
 
@@ -946,4 +990,45 @@ NTSTATUS DsGetDcName(TALLOC_CTX *mem_ctx,
 	}
 
 	return status;
+}
+
+/********************************************************************
+ DsGetDcName.
+
+ This will be the only public function here.
+********************************************************************/
+
+NTSTATUS DsGetDcName(TALLOC_CTX *mem_ctx,
+		     const char *computer_name,
+		     const char *domain_name,
+		     struct GUID *domain_guid,
+		     const char *site_name,
+		     uint32_t flags,
+		     struct DS_DOMAIN_CONTROLLER_INFO **info)
+{
+	DEBUG(10,("DsGetDcName: computer_name: %s, domain_name: %s, "
+		  "domain_guid: %s, site_name: %s, flags: 0x%08x\n",
+		  computer_name, domain_name,
+		  domain_guid ? GUID_string(mem_ctx, domain_guid) : "(null)",
+		  site_name, flags));
+
+	*info = NULL;
+
+	if (computer_name) {
+		return DsGetDcName_remote(mem_ctx,
+					  computer_name,
+					  domain_name,
+					  domain_guid,
+					  site_name,
+					  flags,
+					  info);
+	}
+
+	return DsGetDcName_local(mem_ctx,
+				 computer_name,
+				 domain_name,
+				 domain_guid,
+				 site_name,
+				 flags,
+				 info);
 }
