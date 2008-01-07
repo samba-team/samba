@@ -52,21 +52,21 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp, 
-				 int fd, int leasetype)
+			     int leasetype)
 {
 	int ret;
 	
 	START_PROFILE(syscall_linux_setlease);
 	
-	if ( linux_set_lease_sighandler(fd) == -1)
+	if ( linux_set_lease_sighandler(fsp->fh->fd) == -1)
 		return -1;
 
-	ret = set_gpfs_lease(fd,leasetype);
+	ret = set_gpfs_lease(fsp->fh->fd,leasetype);
 	
 	if ( ret < 0 ) {
 		/* This must have come from GPFS not being available */
 		/* or some other error, hence call the default */
-		ret = linux_setlease(fd, leasetype);
+		ret = linux_setlease(fsp->fh->fd, leasetype);
 	}
 
 	END_PROFILE(syscall_linux_setlease);
