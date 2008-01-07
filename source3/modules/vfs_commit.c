@@ -217,7 +217,7 @@ static int commit_open(
         /* EOF commit modes require us to know the initial file size. */
         if (c && (c->on_eof != EOF_NONE)) {
                 SMB_STRUCT_STAT st;
-                if (SMB_VFS_FSTAT(fsp, fd, &st) == -1) {
+                if (SMB_VFS_FSTAT(fsp, &st) == -1) {
                         return -1;
                 }
 		c->eof = st.st_size;

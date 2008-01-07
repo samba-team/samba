@@ -342,7 +342,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		if (fsp->fh->fd == -1) {
 			ret = SMB_VFS_STAT(conn, path, psbuf);
 		} else {
-			ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf);
+			ret = SMB_VFS_FSTAT(fsp, psbuf);
 			/* If we have an fd, this stat should succeed. */
 			if (ret == -1) {
 				DEBUG(0,("Error doing fstat on open file %s "
@@ -1790,7 +1790,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * struct..
 		 */
 		if ((SMB_VFS_FTRUNCATE(fsp,fsp->fh->fd,0) == -1) ||
-		    (SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf)==-1)) {
+		    (SMB_VFS_FSTAT(fsp, psbuf)==-1)) {
 			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
@@ -2675,7 +2675,7 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 			*psbuf = sbuf;
 		}
 		else {
-			SMB_VFS_FSTAT(fsp, fsp->fh->fd, psbuf);
+			SMB_VFS_FSTAT(fsp, psbuf);
 		}
 	}
 	return NT_STATUS_OK;

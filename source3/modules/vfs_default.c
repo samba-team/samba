@@ -491,12 +491,12 @@ static int vfswrap_stat(vfs_handle_struct *handle,  const char *fname, SMB_STRUC
 	return result;
 }
 
-static int vfswrap_fstat(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf)
+static int vfswrap_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
 	int result;
 
 	START_PROFILE(syscall_fstat);
-	result = sys_fstat(fd, sbuf);
+	result = sys_fstat(fsp->fh->fd, sbuf);
 	END_PROFILE(syscall_fstat);
 	return result;
 }
@@ -684,7 +684,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	if (currpos == -1)
 		return -1;
 
-	if (SMB_VFS_FSTAT(fsp, fd, &st) == -1)
+	if (SMB_VFS_FSTAT(fsp, &st) == -1)
 		return -1;
 
 	space_to_write = len - st.st_size;
@@ -763,7 +763,7 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int f
 	   size in which case the ftruncate above should have
 	   succeeded or shorter, in which case seek to len - 1 and
 	   write 1 byte of zero */
-	if (SMB_VFS_FSTAT(fsp, fd, &st) == -1) {
+	if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 		goto done;
 	}
 

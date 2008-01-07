@@ -525,7 +525,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 		return -1;
 	}
 
-	ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st);
+	ret = SMB_VFS_FSTAT(fsp, &st);
 	if (ret == -1)
 		return ret;
 
@@ -612,7 +612,7 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 	ssize_t pwrite_ret;
 
 	release_level_2_oplocks_on_change(fsp);
-	ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st);
+	ret = SMB_VFS_FSTAT(fsp, &st);
 	if (ret == -1) {
 		return ret;
 	}

@@ -229,7 +229,7 @@ ssize_t write_file(struct smb_request *req,
 		SMB_STRUCT_STAT st;
 		fsp->modified = True;
 
-		if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st) == 0) {
+		if (SMB_VFS_FSTAT(fsp, &st) == 0) {
 			int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
 			if ((lp_store_dos_attributes(SNUM(fsp->conn)) ||
 					MAP_ARCHIVE(fsp->conn)) &&
@@ -896,6 +896,6 @@ int fsp_stat(files_struct *fsp, SMB_STRUCT_STAT *pst)
 	if (fsp->fh->fd == -1) {
 		return SMB_VFS_STAT(fsp->conn, fsp->fsp_name, pst);
 	} else {
-		return SMB_VFS_FSTAT(fsp,fsp->fh->fd, pst);
+		return SMB_VFS_FSTAT(fsp, pst);
 	}
 }

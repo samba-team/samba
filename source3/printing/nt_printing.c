@@ -1360,7 +1360,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 old_file));
 			use_version = false;
-			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) {
+			if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 				 goto error_exit;
 			}
 			old_create_time = st.st_mtime;
@@ -1400,7 +1400,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 new_file));
 			use_version = false;
-			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) {
+			if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 				goto error_exit;
 			}
 			new_create_time = st.st_mtime;

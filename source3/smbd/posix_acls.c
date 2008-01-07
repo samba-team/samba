@@ -3080,7 +3080,7 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 	}
 
 	/* Get the stat struct for the owner info. */
-	if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
+	if(SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
@@ -3429,7 +3429,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 		if(SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf) != 0)
 			return map_nt_error_from_unix(errno);
 	} else {
-		if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0)
+		if(SMB_VFS_FSTAT(fsp, &sbuf) != 0)
 			return map_nt_error_from_unix(errno);
 	}
 
@@ -3479,7 +3479,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 			if(fsp->fh->fd == -1)
 				ret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name, &sbuf);
 			else
-				ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf);
+				ret = SMB_VFS_FSTAT(fsp, &sbuf);
 
 			if(ret != 0)
 				return map_nt_error_from_unix(errno);
