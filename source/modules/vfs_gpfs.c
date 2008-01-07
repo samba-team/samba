@@ -33,7 +33,7 @@
 
 
 static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp, 
-				 int fd, uint32 share_mode)
+				 uint32 share_mode)
 {
 
 	START_PROFILE(syscall_kernel_flock);

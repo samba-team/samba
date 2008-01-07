@@ -811,11 +811,11 @@ static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int op, S
 	return result;
 }
 
-static int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp, int fd,
+static int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 				uint32 share_mode)
 {
 	START_PROFILE(syscall_kernel_flock);
-	kernel_flock(fd, share_mode);
+	kernel_flock(fsp->fh->fd, share_mode);
 	END_PROFILE(syscall_kernel_flock);
 	return 0;
 }
