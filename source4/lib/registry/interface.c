@@ -128,7 +128,10 @@ _PUBLIC_ WERROR reg_key_get_info(TALLOC_CTX *mem_ctx,
 				 const char **classname,
 				 uint32_t *num_subkeys,
 				 uint32_t *num_values,
-				 NTTIME *last_change_time)
+				 NTTIME *last_change_time,
+				 uint32_t *max_subkeynamelen,
+				 uint32_t *max_valnamelen,
+				 uint32_t *max_valbufsize)
 {
 	if (key == NULL)
 		return WERR_INVALID_PARAM;
@@ -138,7 +141,9 @@ _PUBLIC_ WERROR reg_key_get_info(TALLOC_CTX *mem_ctx,
 
 	return key->context->ops->get_key_info(mem_ctx,
 					       key, classname, num_subkeys,
-					       num_values, last_change_time);
+					       num_values, last_change_time,
+					       max_subkeynamelen,
+					       max_valnamelen, max_valbufsize);
 }
 
 /**

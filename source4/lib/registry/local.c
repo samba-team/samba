@@ -266,13 +266,17 @@ static WERROR local_get_key_info(TALLOC_CTX *mem_ctx,
 				 const char **classname,
 				 uint32_t *num_subkeys,
 				 uint32_t *num_values,
-				 NTTIME *last_change_time)
+				 NTTIME *last_change_time,
+				 uint32_t *max_subkeynamelen,
+				 uint32_t *max_valnamelen,
+				 uint32_t *max_valbufsize)
 {
 	const struct local_key *local = (const struct local_key *)key;
 
 	return hive_key_get_info(mem_ctx, local->hive_key,
 				 classname, num_subkeys, num_values,
-				 last_change_time);
+				 last_change_time, max_subkeynamelen, 
+				 max_valnamelen, max_valbufsize);
 }
 
 const static struct registry_operations local_ops = {

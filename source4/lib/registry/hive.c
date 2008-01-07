@@ -66,10 +66,15 @@ _PUBLIC_ WERROR hive_key_get_info(TALLOC_CTX *mem_ctx,
 				  const struct hive_key *key,
 				  const char **classname, uint32_t *num_subkeys,
 				  uint32_t *num_values,
-				  NTTIME *last_change_time)
+				  NTTIME *last_change_time,
+				  uint32_t *max_subkeynamelen,
+				  uint32_t *max_valnamelen,
+				  uint32_t *max_valbufsize)
 {
 	return key->ops->get_key_info(mem_ctx, key, classname, num_subkeys,
-				      num_values, last_change_time);
+				      num_values, last_change_time,
+				      max_subkeynamelen,
+				      max_valnamelen, max_valbufsize);
 }
 
 _PUBLIC_ WERROR hive_key_add_name(TALLOC_CTX *ctx,

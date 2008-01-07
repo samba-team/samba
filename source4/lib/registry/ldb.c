@@ -41,16 +41,19 @@ static void reg_ldb_unpack_value(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 				 DATA_BLOB *data)
 {
 	const struct ldb_val *val;
+	uint32_t value_type;
+
 	if (name != NULL)
 		*name = talloc_strdup(mem_ctx,
 				      ldb_msg_find_attr_as_string(msg, "value",
 				      NULL));
 
+	value_type = ldb_msg_find_attr_as_uint(msg, "type", 0);
 	if (type != NULL)
-		*type = ldb_msg_find_attr_as_uint(msg, "type", 0);
+		*type = value_type; 
 	val = ldb_msg_find_ldb_val(msg, "data");
 
-	switch (*type)
+	switch (value_type)
 	{
 	case REG_SZ:
 	case REG_EXPAND_SZ:
@@ -483,7 +486,10 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 			       const char **classname,
 			       uint32_t *num_subkeys,
 			       uint32_t *num_values,
-			       NTTIME *last_change_time)
+			       NTTIME *last_change_time,
+			       uint32_t *max_subkeynamelen,
+			       uint32_t *max_valnamelen,
+			       uint32_t *max_valbufsize)
 {
 	struct ldb_key_data *kd = talloc_get_type(key, struct ldb_key_data);
 
@@ -503,6 +509,46 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 
 	if (last_change_time != NULL)
 		*last_change_time = 0;
+
+	if (max_subkeynamelen != NULL) {
+		int i;
+		struct ldb_message_element *el;
+		W_ERROR_NOT_OK_RETURN(cache_subkeys(kd));
+
+		*max_subkeynamelen = 0;
+
+		for (i = 0; i < kd->subkey_count; i++) {
+			el = ldb_msg_find_element(kd->subkeys[i], "key");
+			*max_subkeynamelen = MAX(*max_subkeynamelen, el->values[0].length);
+		}
+	}
+
+	if (max_valnamelen != NULL || max_valbufsize != NULL) {
+		int i;
+		struct ldb_message_element *el;
+		W_ERROR_NOT_OK_RETURN(cache_values(kd));
+
+		if (max_valbufsize != NULL)
+			*max_valbufsize = 0;
+
+		if (max_valnamelen != NULL)
+			*max_valnamelen = 0;
+
+		for (i = 0; i < kd->value_count; i++) {
+			if (max_valnamelen != NULL) {
+				el = ldb_msg_find_element(kd->values[i], "value");
+				*max_valnamelen = MAX(*max_valnamelen, el->values[0].length);
+			}
+
+			if (max_valbufsize != NULL) {
+				DATA_BLOB data;
+				reg_ldb_unpack_value(mem_ctx, kd->values[i], NULL, 
+						     NULL, &data);
+				*max_valbufsize = MAX(*max_valbufsize, data.length);
+				talloc_free(data.data);
+			}
+		}
+	}
 
 	return WERR_OK;
 }

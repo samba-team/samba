@@ -53,11 +53,16 @@ static WERROR cmd_info(struct regshell_context *ctx, int argc, char **argv)
 	struct security_descriptor *sec_desc = NULL;
 	time_t last_mod;
 	WERROR error;
-	const char *classname;
+	const char *classname = NULL;
 	NTTIME last_change;
+	uint32_t max_subkeynamelen;
+	uint32_t max_valnamelen;
+	uint32_t max_valbufsize;
+	uint32_t num_subkeys;
+	uint32_t num_values;
 
-	error = reg_key_get_info(ctx, ctx->current, &classname, NULL, NULL,
-				 &last_change);
+	error = reg_key_get_info(ctx, ctx->current, &classname, &num_subkeys, &num_values,
+				 &last_change, &max_subkeynamelen, &max_valnamelen, &max_valbufsize);
 	if (!W_ERROR_IS_OK(error)) {
 		printf("Error getting key info: %s\n", win_errstr(error));
 		return error;
@@ -67,9 +72,21 @@ static WERROR cmd_info(struct regshell_context *ctx, int argc, char **argv)
 	printf("Name: %s\n", strchr(ctx->path, '\\')?strrchr(ctx->path, '\\')+1:
 		   ctx->path);
 	printf("Full path: %s\n", ctx->path);
-	printf("Key Class: %s\n", classname);
+	if (classname != NULL)
+		printf("Key Class: %s\n", classname);
 	last_mod = nt_time_to_unix(last_change);
 	printf("Time Last Modified: %s\n", ctime(&last_mod));
+	printf("Number of subkeys: %d\n", num_subkeys);
+	printf("Number of values: %d\n", num_values);
+
+	if (max_valnamelen > 0)
+		printf("Maximum value name length: %d\n", max_valnamelen);
+
+	if (max_valbufsize > 0)
+		printf("Maximum value data length: %d\n", max_valbufsize);
+
+	if (max_subkeynamelen > 0)
+		printf("Maximum sub key name length: %d\n", max_subkeynamelen);
 
 	error = reg_get_sec_desc(ctx, ctx->current, &sec_desc);
 	if (!W_ERROR_IS_OK(error)) {
@@ -188,10 +205,9 @@ static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 {
 	int i;
 	WERROR error;
-	struct registry_value *value;
 	uint32_t data_type;
 	DATA_BLOB data;
-	const char *name;
+	const char *name = NULL;
 
 	for (i = 0; W_ERROR_IS_OK(error = reg_key_get_subkey_by_index(ctx,
 								      ctx->current,
@@ -213,7 +229,7 @@ static WERROR cmd_ls(struct regshell_context *ctx, int argc, char **argv)
 								     &name,
 								     &data_type,
 								     &data)); i++) {
-		printf("V \"%s\" %s %s\n", value->name, str_regtype(data_type),
+		printf("V \"%s\" %s %s\n", name, str_regtype(data_type),
 			   reg_val_data_string(ctx, data_type, data));
 	}
 

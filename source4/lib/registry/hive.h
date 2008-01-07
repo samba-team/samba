@@ -135,7 +135,10 @@ struct hive_operations {
 				const char **classname,
 				uint32_t *num_subkeys,
 				uint32_t *num_values,
-				NTTIME *last_change_time);
+				NTTIME *last_change_time,
+				uint32_t *max_subkeynamelen,
+				uint32_t *max_valnamelen,
+				uint32_t *max_valbufsize);
 };
 
 struct cli_credentials;
@@ -148,8 +151,9 @@ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 		     struct hive_key **root);
 WERROR hive_key_get_info(TALLOC_CTX *mem_ctx, const struct hive_key *key,
 			 const char **classname, uint32_t *num_subkeys,
-			 uint32_t *num_values,
-			 NTTIME *last_change_time);
+			 uint32_t *num_values, NTTIME *last_change_time,
+			 uint32_t *max_subkeynamelen,
+			 uint32_t *max_valnamelen, uint32_t *max_valbufsize);
 WERROR hive_key_add_name(TALLOC_CTX *ctx, const struct hive_key *parent_key,
 			 const char *name, const char *classname,
 			 struct security_descriptor *desc,

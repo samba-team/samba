@@ -184,7 +184,10 @@ static WERROR reg_dir_get_info(TALLOC_CTX *ctx, const struct hive_key *key,
 			       const char **classname,
 			       uint32_t *num_subkeys,
 			       uint32_t *num_values,
-			       NTTIME *lastmod)
+			       NTTIME *lastmod,
+			       uint32_t *max_subkeynamelen,
+			       uint32_t *max_valnamelen,
+			       uint32_t *max_valbufsize)
 {
 	DIR *d;
 	const struct dir_key *dk = talloc_get_type(key, struct dir_key);
@@ -206,6 +209,15 @@ static WERROR reg_dir_get_info(TALLOC_CTX *ctx, const struct hive_key *key,
 	if (num_values != NULL)
 		*num_values = 0;
 
+	if (max_subkeynamelen != NULL)
+		*max_subkeynamelen = 0;
+
+	if (max_valnamelen != NULL)
+		*max_valnamelen = 0;
+
+	if (max_valbufsize != NULL)
+		*max_valbufsize = 0;
+
 	while((e = readdir(d))) {
 		if(!ISDOT(e->d_name) && !ISDOTDOT(e->d_name)) {
 			char *path = talloc_asprintf(ctx, "%s/%s",
@@ -217,11 +229,21 @@ static WERROR reg_dir_get_info(TALLOC_CTX *ctx, const struct hive_key *key,
 				continue;
 			}
 
-			if (S_ISDIR(st.st_mode) && num_subkeys != NULL)
-				(*num_subkeys)++;
+			if (S_ISDIR(st.st_mode)) {
+				if (num_subkeys != NULL)
+					(*num_subkeys)++;
+				if (max_subkeynamelen != NULL)
+					*max_subkeynamelen = MAX(*max_subkeynamelen, strlen(e->d_name));
+			}
 
-			if (!S_ISDIR(st.st_mode) && num_values != NULL)
-				(*num_values)++;
+			if (!S_ISDIR(st.st_mode)) {
+				if (num_values != NULL)
+					(*num_values)++;
+				if (max_valnamelen != NULL)
+					*max_valnamelen = MAX(*max_valnamelen, strlen(e->d_name));
+				if (max_valbufsize != NULL)
+					*max_valbufsize = MAX(*max_valbufsize, st.st_size);
+			}
 
 			talloc_free(path);
 		}

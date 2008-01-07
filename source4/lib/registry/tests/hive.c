@@ -47,7 +47,7 @@ static bool test_keyinfo_root(struct torture_context *tctx,
 	/* This is a new backend. There should be no subkeys and no
 	 * values */
 	error = hive_key_get_info(tctx, root, NULL, &num_subkeys, &num_values,
-				  NULL);
+				  NULL, NULL, NULL, NULL);
 	torture_assert_werr_ok(tctx, error, "reg_key_num_subkeys()");
 
 	torture_assert_int_equal(tctx, num_subkeys, 0,
@@ -80,7 +80,7 @@ static bool test_keyinfo_nums(struct torture_context *tctx, void *test_data)
 	/* This is a new backend. There should be no subkeys and no
 	 * values */
 	error = hive_key_get_info(tctx, root, NULL, &num_subkeys, &num_values,
-				  NULL);
+				  NULL, NULL, NULL, NULL);
 	torture_assert_werr_ok(tctx, error, "reg_key_num_subkeys()");
 
 	torture_assert_int_equal(tctx, num_subkeys, 1, "subkey count");
