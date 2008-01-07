@@ -2261,7 +2261,7 @@ void wcache_invalidate_samlogon(struct winbindd_domain *domain,
 	netsamlogon_clear_cached_user(cache->tdb, info3);
 }
 
-int wcache_invalidate_cache(void)
+bool wcache_invalidate_cache(void)
 {
 	struct winbindd_domain *domain;
 
@@ -2274,11 +2274,11 @@ int wcache_invalidate_cache(void)
 			if (cache->tdb) {
 				tdb_traverse(cache->tdb, traverse_fn, NULL);
 			} else {
-				return -1;
+				return false;
 			}
 		}
 	}
-	return 0;
+	return true;
 }
 
 bool init_wcache(void)
