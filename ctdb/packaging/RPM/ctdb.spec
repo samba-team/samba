@@ -101,6 +101,7 @@ fi
 %{_sysconfdir}/ctdb/events.d/60.nfs
 %{_sysconfdir}/ctdb/events.d/61.nfstickle
 %{_sysconfdir}/ctdb/events.d/90.ipmux
+%{_sysconfdir}/ctdb/events.d/91.lvs
 %{_sysconfdir}/ctdb/statd-callout
 %{_sbindir}/ctdbd
 %{_bindir}/ctdb

@@ -160,6 +160,7 @@ EOF
  show_all "/usr/lpp/mmfs/bin/mmlsconfig"
  show_all "/usr/lpp/mmfs/bin/mmlsfs all"
  show_all "/usr/lpp/mmfs/bin/mmlsnsd"
+ show_all "/usr/lpp/mmfs/bin/mmlsnsd -X"
  show_all "/usr/lpp/mmfs/bin/mmfsadm dump version"
  show_all "/usr/lpp/mmfs/bin/mmfsadm dump waiters"
  show_all "/usr/lpp/mmfs/bin/mmlsmount all"

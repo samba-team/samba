@@ -20,20 +20,25 @@
 	
 	<cmdsynopsis>
 		<command>ctdbd</command>
-		<arg choice="req">--reclock=&lt;filename&gt;</arg>
-		<arg choice="req">--nlist=&lt;filename&gt;</arg>
-		<arg choice="req">--dbdir=&lt;directory&gt;</arg>
 		<arg choice="opt">-? --help</arg>
-		<arg choice="opt">--usage</arg>
-		<arg choice="opt">-i --interactive</arg>
-		<arg choice="opt">--public-addresses=&lt;filename&gt;</arg>
-		<arg choice="opt">--event-script-dir=&lt;directory&gt;</arg>
-		<arg choice="opt">--logfile=&lt;filename&gt;</arg>
-		<arg choice="opt">--listen=&lt;address&gt;</arg>
-		<arg choice="opt">--transport=&lt;STRING&gt;</arg>
-		<arg choice="opt">--socket=&lt;filename&gt;</arg>
 		<arg choice="opt">-d --debug=&lt;INTEGER&gt;</arg>
+		<arg choice="req">--dbdir=&lt;directory&gt;</arg>
+		<arg choice="req">--dbdir-persistent=&lt;directory&gt;</arg>
+		<arg choice="opt">--event-script-dir=&lt;directory&gt;</arg>
+		<arg choice="opt">-i --interactive</arg>
+		<arg choice="opt">--listen=&lt;address&gt;</arg>
+		<arg choice="opt">--logfile=&lt;filename&gt;</arg>
+		<arg choice="req">--nlist=&lt;filename&gt;</arg>
+		<arg choice="opt">--nosetsched</arg>
+		<arg choice="opt">--public-addresses=&lt;filename&gt;</arg>
+		<arg choice="opt">--public-interface=&lt;interface&gt;</arg>
+		<arg choice="req">--reclock=&lt;filename&gt;</arg>
+		<arg choice="opt">--single-public-ip=&lt;address&gt;</arg>
+		<arg choice="opt">--socket=&lt;filename&gt;</arg>
+		<arg choice="opt">--syslog</arg>
 		<arg choice="opt">--torture</arg>
+		<arg choice="opt">--transport=&lt;STRING&gt;</arg>
+		<arg choice="opt">--usage</arg>
 	</cmdsynopsis>
 	
 </refsynopsisdiv>
@@ -69,30 +74,10 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>--usage</term>
+      <varlistentry><term>-d --debug=&lt;DEBUGLEVEL&gt;</term>
         <listitem>
           <para>
-            Print useage information to the screen.
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--reclock=&lt;filename&gt;</term>
-        <listitem>
-          <para>
-            This is the name of the lock file stored of the shared cluster filesystem that ctdbd uses to arbitrate which node has the role of recovery-master.
-            This file must be stored on shared storage.
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--nlist=&lt;filename&gt;</term>
-        <listitem>
-          <para>
-            This file contains a list of the private ip addresses of every node in the cluster. There is one line/ip address for each node. This file must be the same for all nodes in the cluster.
-          </para>
-          <para>
-            This file is usually /etc/ctdb/nodes .
+            This option sets the debuglevel on the ctdbd daemon which controls what will be written to the logfile. The default is 0 which will only log important events and errors. A larger number will provide additional logging.
           </para>
         </listitem>
       </varlistentry>
@@ -109,22 +94,14 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>-i --interactive</term>
+      <varlistentry><term>--dbdir-persistent=&lt;directory&gt;</term>
         <listitem>
           <para>
-            By default ctdbd will detach itself from the shell and run in
-            the background as a daemon. This option makes ctdbd to start in interactive mode.
-          </para>
-        </listitem>
-      </varlistentry>
-
-      <varlistentry><term>--public_addresses=&lt;filename&gt;</term>
-        <listitem>
-          <para>
-            When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains a list of ip addresses netmasks and interfaces. When ctdb is operational it will distribute these public ip addresses evenly across the available nodes.
+            This is the directory on local storage where ctdbd keeps the local
+            copy of the persistent TDB databases. This directory is local for each node and should not be stored on the shared cluster filesystem.
           </para>
           <para>
-            This is usually the file /etc/ctdb/public_addresses
+            This directory would usually be /etc/ctdb/persistent .
           </para>
         </listitem>
       </varlistentry>
@@ -141,10 +118,11 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>--logfile=&lt;filename&gt;</term>
+      <varlistentry><term>-i --interactive</term>
         <listitem>
           <para>
-            This is the file where ctdbd will write its log. This is usually /var/log/log.ctdb .
+            By default ctdbd will detach itself from the shell and run in
+            the background as a daemon. This option makes ctdbd to start in interactive mode.
           </para>
         </listitem>
       </varlistentry>
@@ -160,13 +138,92 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>--transport=&lt;STRING&gt;</term>
+      <varlistentry><term>--logfile=&lt;filename&gt;</term>
         <listitem>
           <para>
-            This option specifies which transport to use for ctdbd internode communications. The default is "tcp".
+            This is the file where ctdbd will write its log. This is usually /var/log/log.ctdb .
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--nlist=&lt;filename&gt;</term>
+        <listitem>
+          <para>
+            This file contains a list of the private ip addresses of every node in the cluster. There is one line/ip address for each node. This file must be the same for all nodes in the cluster.
           </para>
           <para>
-            Suported transports are "tcp" and "infiniband".
+            This file is usually /etc/ctdb/nodes .
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--nosetsched</term>
+        <listitem>
+          <para>
+            Normally ctdb will change its scheduler to run as a real-time 
+	    process. This option is used to change this behaviour and have
+	    ctdb run as a normal process.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--public_addresses=&lt;filename&gt;</term>
+        <listitem>
+          <para>
+            When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains a list of ip addresses netmasks and interfaces. When ctdb is operational it will distribute these public ip addresses evenly across the available nodes.
+          </para>
+          <para>
+            This is usually the file /etc/ctdb/public_addresses
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--public_interface=&lt;interface&gt;</term>
+        <listitem>
+          <para>
+            This option tells ctdb which interface to attach public-addresses
+	    to and also where to attach the single-public-ip when used.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--reclock=&lt;filename&gt;</term>
+        <listitem>
+          <para>
+            This is the name of the lock file stored of the shared cluster filesystem that ctdbd uses to arbitrate which node has the role of recovery-master.
+            This file must be stored on shared storage.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--single-public-ip=&lt;address&gt;</term>
+        <listitem>
+          <para>
+            This option is used to activate the "ipmux" functionality of ctdb.
+            In this mode, all nodes of the cluster will expose a single
+            ip address from all nodes with all incoming traffic to the cluster
+            being passed through the current recmaster. This functionality
+            is similar to using a load-balancing switch.
+          </para>
+          <para>
+            All incoming packets are sent to the recmaster which will multiplex
+            the clients across all available nodes and pass the packets on to
+            a different node in the cluster to manage the connection based
+            on the clients ip address. Outgoing packets however are sent
+            directly from the node that was choosen back to the client.
+            Since all incoming packets are sent through the recmaster this will
+            have a throughput and performance impact when used. This impact
+            in performance primarily affects write-performance while 
+	    read-performance should be mainly unaffected.
+            Only use this feature if your environment is mostly-read 
+            (i.e. most traffic is from the nodes back to the clients) or
+            if it is not important to get maximum write-performance to the
+	    cluster.
+          </para>
+          <para>
+            When using a single public ip, you must also specify the 
+            public-interface so that ctdb knows which interface to attach the 
+            single public ip to.
           </para>
         </listitem>
       </varlistentry>
@@ -182,10 +239,10 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>-d --debug=&lt;DEBUGLEVEL&gt;</term>
+      <varlistentry><term>--syslog</term>
         <listitem>
           <para>
-            This option sets the debuglevel on the ctdbd daemon which controls what will be written to the logfile. The default is 0 which will only log important events and errors. A larger number will provide additional logging.
+	    Send all log messages to syslog instead of to the ctdb logfile.
           </para>
         </listitem>
       </varlistentry>
@@ -200,6 +257,26 @@
           </para>
         </listitem>
       </varlistentry>
+
+      <varlistentry><term>--transport=&lt;STRING&gt;</term>
+        <listitem>
+          <para>
+            This option specifies which transport to use for ctdbd internode communications. The default is "tcp".
+          </para>
+          <para>
+            Suported transports are "tcp" and "infiniband".
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--usage</term>
+        <listitem>
+          <para>
+            Print useage information to the screen.
+          </para>
+        </listitem>
+      </varlistentry>
+
     </variablelist>
   </refsect1>
 

@@ -19,6 +19,7 @@ MAXNODE=`expr $NUMNODES - 1`
 
 if [ $NODE = "all" ]; then
     for a in `egrep '^[[:alnum:]]' $NODES`; do
+	echo; echo ">> NODE: $a <<"
 	if [ -f "$SCRIPT" ]; then
 	    rsh $a at -f $SCRIPT now
 	else

@@ -225,7 +225,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	
 	ctdb_db = find_ctdb_db(ctdb, pull->db_id);
 	if (!ctdb_db) {
-		DEBUG(0,(__location__ " Unknown db\n"));
+		DEBUG(0,(__location__ " Unknown db 0x%08x\n", pull->db_id));
 		return -1;
 	}
 
