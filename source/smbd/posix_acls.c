@@ -3194,7 +3194,7 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 
 	become_root();
 	/* Keep the current file gid the same. */
-	ret = SMB_VFS_FCHOWN(fsp, fsp->fh->fd, uid, (gid_t)-1);
+	ret = SMB_VFS_FCHOWN(fsp, uid, (gid_t)-1);
 	unbecome_root();
 
 	close_file_fchmod(fsp);
