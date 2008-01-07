@@ -230,7 +230,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 	case 5:
 	case 6:
 	case 7:
-		netlogon->logon5.type         = (user?23+2:23);
+		netlogon->logon5.type         = (user?NETLOGON_RESPONSE_FROM_PDC_USER:NETLOGON_RESPONSE_FROM_PDC2);
 		netlogon->logon5.server_type  = server_type;
 		netlogon->logon5.domain_uuid  = domain_uuid;
 		netlogon->logon5.forest       = realm;
@@ -245,7 +245,7 @@ static NTSTATUS cldapd_netlogon_fill(struct cldapd_server *cldapd,
 		netlogon->logon5.lm20_token   = 0xFFFF;
 		break;
 	default:
-		netlogon->logon13.type         = (user?23+2:23);
+		netlogon->logon13.type         = (user?NETLOGON_RESPONSE_FROM_PDC_USER:NETLOGON_RESPONSE_FROM_PDC2);
 		netlogon->logon13.server_type  = server_type;
 		netlogon->logon13.domain_uuid  = domain_uuid;
 		netlogon->logon13.forest       = realm;
