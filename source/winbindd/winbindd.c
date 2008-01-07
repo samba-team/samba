@@ -130,7 +130,8 @@ static void flush_caches(void)
 		 * before we initialize the cache again.
 		 */
 		if (winbindd_validate_cache() < 0) {
-			DEBUG(0, ("corrupted tdb found, trying to restore backup\n"));
+			DEBUG(0, ("winbindd cache tdb corrupt and no backup "
+				  "could be restore.\n"));
 		}
 
 		/* Initialize cache again. */
