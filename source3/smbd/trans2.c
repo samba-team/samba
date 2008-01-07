@@ -4305,7 +4305,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				uint16 num_def_acls = 0;
 
 				if (fsp && !fsp->is_directory && (fsp->fh->fd != -1)) {
-					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fh->fd);
+					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp);
 				} else {
 					file_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS);
 				}

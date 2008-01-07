@@ -501,8 +501,7 @@ SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				  files_struct *fsp,
-				  int fd)
+				 files_struct *fsp)
 {
 	return gpfsacl_get_posix_acl(fsp->fsp_name, GPFS_ACL_TYPE_ACCESS);
 }

@@ -1042,9 +1042,9 @@ static SMB_ACL_T vfswrap_sys_acl_get_file(vfs_handle_struct *handle,  const char
 	return sys_acl_get_file(handle, path_p, type);
 }
 
-static SMB_ACL_T vfswrap_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, int fd)
+static SMB_ACL_T vfswrap_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
 {
-	return sys_acl_get_fd(handle, fsp, fd);
+	return sys_acl_get_fd(handle, fsp);
 }
 
 static int vfswrap_sys_acl_clear_perms(vfs_handle_struct *handle,  SMB_ACL_PERMSET_T permset)

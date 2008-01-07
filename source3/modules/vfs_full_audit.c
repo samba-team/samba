@@ -221,8 +221,7 @@ static SMB_ACL_T smb_full_audit_sys_acl_get_file(vfs_handle_struct *handle,
 					const char *path_p,
 					SMB_ACL_TYPE_T type);
 static SMB_ACL_T smb_full_audit_sys_acl_get_fd(vfs_handle_struct *handle,
-				      files_struct *fsp,
-				      int fd);
+				      files_struct *fsp);
 static int smb_full_audit_sys_acl_clear_perms(vfs_handle_struct *handle,
 				     SMB_ACL_PERMSET_T permset);
 static int smb_full_audit_sys_acl_add_perm(vfs_handle_struct *handle,
@@ -451,7 +450,7 @@ static vfs_op_tuple audit_op_tuples[] = {
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_sys_acl_get_file),	SMB_VFS_OP_SYS_ACL_GET_FILE,
 	 SMB_VFS_LAYER_LOGGER},
-	{SMB_VFS_OP(smb_full_audit_sys_acl_get_fd),	SMB_VFS_OP_SYS_ACL_GET_FD,
+{SMB_VFS_OP(smb_full_audit_sys_acl_get_fd),	SMB_VFS_OP_SYS_ACL_GET_FD,
 	 SMB_VFS_LAYER_LOGGER},
 	{SMB_VFS_OP(smb_full_audit_sys_acl_clear_perms),	SMB_VFS_OP_SYS_ACL_CLEAR_PERMS,
 	 SMB_VFS_LAYER_LOGGER},
@@ -1684,11 +1683,11 @@ static SMB_ACL_T smb_full_audit_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 static SMB_ACL_T smb_full_audit_sys_acl_get_fd(vfs_handle_struct *handle,
-				      files_struct *fsp, int fd)
+				      files_struct *fsp)
 {
 	SMB_ACL_T result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, fd);
+	result = SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp);
 
 	do_log(SMB_VFS_OP_SYS_ACL_GET_FD, (result != NULL), handle,
 	       "%s", fsp->fsp_name);

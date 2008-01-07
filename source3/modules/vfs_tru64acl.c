@@ -67,11 +67,10 @@ SMB_ACL_T tru64acl_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T tru64acl_sys_acl_get_fd(vfs_handle_struct *handle,
-				  files_struct *fsp,
-				  int fd)
+				  files_struct *fsp)
 {
 	struct smb_acl_t *result;
-	acl_t tru64_acl = acl_get_fd(fd, ACL_TYPE_ACCESS);
+	acl_t tru64_acl = acl_get_fd(fsp->fh->fd, ACL_TYPE_ACCESS);
 
 	if (tru64_acl == NULL) {
 		return NULL;
