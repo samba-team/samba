@@ -263,7 +263,17 @@ typedef struct tdb_context {
         for k in iter(self):
             del(self[k])
 
-    # TODO: iterkeys, itervalues, iteritems
+    def iterkeys(self):
+        for k in iter(self):
+            yield k
+       
+    def itervalues(self):
+        for k in iter(self):
+            yield self[k]
+
+    def iteritems(self):
+        for k in iter(self):
+            yield (k, self[k])
 
     # TODO: any other missing methods for container types
     }
