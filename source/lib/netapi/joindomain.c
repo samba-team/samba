@@ -78,6 +78,9 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	r->in.modify_config = true;
 
 	werr = libnet_Join(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr) && r->out.error_string) {
+		libnetapi_set_error_string(mem_ctx, r->out.error_string);
+	}
 	TALLOC_FREE(r);
 
 	return werr;
