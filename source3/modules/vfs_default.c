@@ -820,12 +820,12 @@ static int vfswrap_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 	return 0;
 }
 
-static bool vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+static bool vfswrap_getlock(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
 	bool result;
 
 	START_PROFILE(syscall_fcntl_getlock);
-	result =  fcntl_getlock(fd, poffset, pcount, ptype, ppid);
+	result =  fcntl_getlock(fsp->fh->fd, poffset, pcount, ptype, ppid);
 	END_PROFILE(syscall_fcntl_getlock);
 	return result;
 }

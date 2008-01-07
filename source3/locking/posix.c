@@ -233,7 +233,7 @@ static bool posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T
 	DEBUG(8,("posix_fcntl_getlock %d %.0f %.0f %d\n",
 		fsp->fh->fd,(double)*poffset,(double)*pcount,*ptype));
 
-	ret = SMB_VFS_GETLOCK(fsp,fsp->fh->fd,poffset,pcount,ptype,&pid);
+	ret = SMB_VFS_GETLOCK(fsp, poffset, pcount, ptype, &pid);
 
 	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
 
@@ -257,7 +257,7 @@ static bool posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T
 			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
 			errno = 0;
 			*pcount &= 0x7fffffff;
-			ret = SMB_VFS_GETLOCK(fsp,fsp->fh->fd,poffset,pcount,ptype,&pid);
+			ret = SMB_VFS_GETLOCK(fsp,poffset,pcount,ptype,&pid);
 		}
 	}
 

@@ -167,7 +167,7 @@ static int smb_full_audit_kernel_flock(struct vfs_handle_struct *handle,
 				       uint32 share_mode);
 static int smb_full_audit_linux_setlease(vfs_handle_struct *handle, files_struct *fsp,
 					int leasetype);
-static bool smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd,
+static bool smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp,
 		       SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
 static int smb_full_audit_symlink(vfs_handle_struct *handle,
 			 const char *oldpath, const char *newpath);
@@ -1404,12 +1404,12 @@ static int smb_full_audit_linux_setlease(vfs_handle_struct *handle, files_struct
         return result;
 }
 
-static bool smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd,
+static bool smb_full_audit_getlock(vfs_handle_struct *handle, files_struct *fsp,
 		       SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
 	bool result;
 
-	result = SMB_VFS_NEXT_GETLOCK(handle, fsp, fd, poffset, pcount, ptype, ppid);
+	result = SMB_VFS_NEXT_GETLOCK(handle, fsp, poffset, pcount, ptype, ppid);
 
 	do_log(SMB_VFS_OP_GETLOCK, result, handle, "%s", fsp->fsp_name);
 
