@@ -182,7 +182,7 @@ if (ldapbase) {
 	message("--invocationid='%s' \\\n", subobj.INVOCATIONID);
 	message("--adminpass='%s' --krbtgtpass='%s' \\\n", subobj.ADMINPASS, subobj.KRBTGTPASS);
 	message("--machinepass='%s' --dnspass='%s' \\\n", subobj.MACHINEPASS, subobj.DNSPASS);
-	message("--root='%s' --nobody='%s' --nogroup-'%s' \\\n", subobj.ROOT, subobj.NOBODY, subobj.NOGROUP);
+	message("--root='%s' --nobody='%s' --nogroup='%s' \\\n", subobj.ROOT, subobj.NOBODY, subobj.NOGROUP);
 	message("--wheel='%s' --users='%s' --server-role='%s' \\\n", subobj.WHEEL, subobj.USERS, subobj.SERVERROLE);
 	if (ldapbackend) {
 		message("--ldap-backend='%s' \\\n", subobj.LDAPBACKEND);
