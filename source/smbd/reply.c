@@ -2835,7 +2835,7 @@ void reply_readbraw(struct smb_request *req)
 		return;
 	}
 
-	if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st) == 0) {
+	if (SMB_VFS_FSTAT(fsp, &st) == 0) {
 		size = st.st_size;
 	}
 
@@ -3096,7 +3096,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	SMB_STRUCT_STAT sbuf;
 	ssize_t nread = -1;
 
-	if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
+	if(SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		return;
 	}
@@ -4096,7 +4096,7 @@ void reply_lseek(struct smb_request *req)
 				SMB_OFF_T current_pos = startpos;
 				SMB_STRUCT_STAT sbuf;
 
-				if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
+				if(SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
 					reply_unixerror(req, ERRDOS,
 							ERRnoaccess);
 					END_PROFILE(SMBlseek);
@@ -5485,7 +5485,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	/* Ensure we have a valid stat struct for the source. */
 	if (fsp->fh->fd != -1) {
-		if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) == -1) {
+		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
 			return map_nt_error_from_unix(errno);
 		}
 	} else {

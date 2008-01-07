@@ -3663,7 +3663,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				return;
 			}
 
-			if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
+			if (SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
 				DEBUG(3,("fstat of fnum %d failed (%s)\n", fsp->fnum, strerror(errno)));
 				reply_unixerror(req, ERRDOS, ERRbadfid);
 				return;
@@ -6346,7 +6346,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 				return;
 			}
 
-			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &sbuf) != 0) {
+			if (SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
 				DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
 				reply_unixerror(req, ERRDOS, ERRbadfid);
 				return;

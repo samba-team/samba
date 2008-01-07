@@ -572,7 +572,7 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_OK;
 	}
 
-	if (SMB_VFS_FSTAT(vfs->files[fd], fd, &st) == -1) {
+	if (SMB_VFS_FSTAT(vfs->files[fd], &st) == -1) {
 		printf("fstat: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

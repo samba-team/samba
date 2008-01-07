@@ -684,7 +684,7 @@ static size_t afs_fto_nt_acl(struct afs_acl *afs_acl,
 				     security_info, ppdesc);
 	}
 
-	if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
+	if(SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
 		return 0;
 	}
 

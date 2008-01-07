@@ -645,7 +645,7 @@ static int vfs_gpfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mo
 static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
 {
 		 SMB_STRUCT_STAT st;
-		 if (SMB_VFS_NEXT_FSTAT(handle, fsp, fd, &st) != 0) {
+		 if (SMB_VFS_NEXT_FSTAT(handle, fsp, &st) != 0) {
 		 		 return -1;
 		 }
 		 /* avoid chmod() if possible, to preserve acls */

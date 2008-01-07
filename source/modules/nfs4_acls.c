@@ -185,7 +185,7 @@ static int smbacl4_fGetFileOwner(files_struct *fsp, SMB_STRUCT_STAT *psbuf)
 	if (fsp->is_directory || fsp->fh->fd == -1) {
 		return smbacl4_GetFileOwner(fsp->conn, fsp->fsp_name, psbuf);
 	}
-	if (SMB_VFS_FSTAT(fsp,fsp->fh->fd, psbuf) != 0)
+	if (SMB_VFS_FSTAT(fsp, psbuf) != 0)
 	{
 		DEBUG(8, ("SMB_VFS_FSTAT failed with error %s\n",
 			strerror(errno)));

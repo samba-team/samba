@@ -181,9 +181,9 @@ static int skel_stat(vfs_handle_struct *handle,  const char *fname, SMB_STRUCT_S
 	return vfswrap_stat(NULL,  fname, sbuf);
 }
 
-static int skel_fstat(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf)
+static int skel_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
-	return vfswrap_fstat(NULL, fsp, fd, sbuf);
+	return vfswrap_fstat(NULL, fsp, sbuf);
 }
 
 static int skel_lstat(vfs_handle_struct *handle,  const char *path, SMB_STRUCT_STAT *sbuf)
