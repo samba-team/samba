@@ -94,6 +94,19 @@ bool secrets_init(void)
 	return True;
 }
 
+/*
+ * close secrets.tdb
+ */
+void secrets_shutdown(void)
+{
+	if (!tdb) {
+		return;
+	}
+
+	tdb_close(tdb);
+	tdb = NULL;
+}
+
 /* read a entry from the secrets database - the caller must free the result
    if size is non-null then the size of the entry is put in there
  */
