@@ -272,38 +272,38 @@ static ssize_t vfswrap_write(vfs_handle_struct *handle, files_struct *fsp, int f
 	return result;
 }
 
-static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, int fd, const void *data,
+static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, const void *data,
 			size_t n, SMB_OFF_T offset)
 {
 	ssize_t result;
 
 #if defined(HAVE_PWRITE) || defined(HAVE_PRWITE64)
 	START_PROFILE_BYTES(syscall_pwrite, n);
-	result = sys_pwrite(fd, data, n, offset);
+	result = sys_pwrite(fsp->fh->fd, data, n, offset);
 	END_PROFILE(syscall_pwrite);
 
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be sought on. */
-		result = SMB_VFS_WRITE(fsp, fd, data, n);
+		result = SMB_VFS_WRITE(fsp, fsp->fh->fd, data, n);
 	}
 
 #else /* HAVE_PWRITE */
 	SMB_OFF_T   curr;
 	int         lerrno;
 
-	curr = SMB_VFS_LSEEK(fsp, fd, 0, SEEK_CUR);
+	curr = SMB_VFS_LSEEK(fsp, fsp->fh->fd, 0, SEEK_CUR);
 	if (curr == -1) {
 		return -1;
 	}
 
-	if (SMB_VFS_LSEEK(fsp, fd, offset, SEEK_SET) == -1) {
+	if (SMB_VFS_LSEEK(fsp, fsp->fh->fd, offset, SEEK_SET) == -1) {
 		return -1;
 	}
 
-	result = SMB_VFS_WRITE(fsp, fd, data, n);
+	result = SMB_VFS_WRITE(fsp, fsp->fh->fd, data, n);
 	lerrno = errno;
 
-	SMB_VFS_LSEEK(fsp, fd, curr, SEEK_SET);
+	SMB_VFS_LSEEK(fsp, fsp->fh->fd, curr, SEEK_SET);
 	errno = lerrno;
 
 #endif /* HAVE_PWRITE */

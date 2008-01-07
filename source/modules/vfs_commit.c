@@ -248,14 +248,13 @@ static ssize_t commit_write(
 static ssize_t commit_pwrite(
         vfs_handle_struct * handle,
         files_struct *      fsp,
-        int                 fd,
         void *              data,
         size_t              count,
 	SMB_OFF_T	    offset)
 {
         ssize_t ret;
 
-        ret = SMB_VFS_NEXT_PWRITE(handle, fsp, fd, data, count, offset);
+        ret = SMB_VFS_NEXT_PWRITE(handle, fsp, data, count, offset);
         if (ret > 0) {
                 if (commit(handle, fsp, offset, ret) == -1) {
                         return -1;

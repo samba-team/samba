@@ -485,8 +485,8 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 	}
 
 	while (total < N) {
-		ret = SMB_VFS_PWRITE(fsp, fsp->fh->fd, buffer + total,
-                                N - total, offset + total);
+		ret = SMB_VFS_PWRITE(fsp, buffer + total, N - total,
+				     offset + total);
 
 		if (ret == -1)
 			return -1;
@@ -641,7 +641,7 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 	while (total < num_to_write) {
 		size_t curr_write_size = MIN(SPARSE_BUF_WRITE_SIZE, (num_to_write - total));
 
-		pwrite_ret = SMB_VFS_PWRITE(fsp, fsp->fh->fd, sparse_buf, curr_write_size, offset + total);
+		pwrite_ret = SMB_VFS_PWRITE(fsp, sparse_buf, curr_write_size, offset + total);
 		if (pwrite_ret == -1) {
 			DEBUG(10,("vfs_fill_sparse: SMB_VFS_PWRITE for file %s failed with error %s\n",
 				fsp->fsp_name, strerror(errno) ));
