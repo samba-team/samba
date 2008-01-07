@@ -27,9 +27,14 @@ static bool test_JobGetInfo(struct dcerpc_pipe *p, struct torture_context *tctx,
 {
 	NTSTATUS status;
 	struct atsvc_JobGetInfo r;
+	struct atsvc_JobInfo *info = talloc(tctx, struct atsvc_JobInfo);
+	if (!info) {
+		return false;
+	}
 
 	r.in.servername = dcerpc_server_name(p);
 	r.in.job_id = job_id;
+	r.out.job_info = &info;
 
 	status = dcerpc_atsvc_JobGetInfo(p, tctx, &r);
 
