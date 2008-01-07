@@ -1395,7 +1395,7 @@ bool samdb_is_gc(struct ldb_context *ldb)
 
 	options = ldb_msg_find_attr_as_int(res->msgs[0], "options", 0);
 	talloc_free(res);
-	talloc_free(ldb);
+	talloc_free(tmp_ctx);
 
 	/* if options attribute has the 0x00000001 flag set, then enable the global catlog */
 	if (options & 0x000000001) {
