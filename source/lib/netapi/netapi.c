@@ -32,7 +32,7 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 
 	if (stat_ctx && libnetapi_initialized) {
 		*context = stat_ctx;
-		return W_ERROR_V(WERR_OK);
+		return NET_API_STATUS_SUCCESS;
 	}
 
 	frame = talloc_stackframe();
@@ -69,14 +69,14 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 
 	*context = stat_ctx = ctx;
 
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
 
 NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx)
 {
 	if (stat_ctx) {
 		*ctx = stat_ctx;
-		return W_ERROR_V(WERR_OK);
+		return NET_API_STATUS_SUCCESS;
 	}
 
 	return libnetapi_init(ctx);
@@ -98,7 +98,7 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 
 	gfree_debugsyms();
 
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
 
 NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
@@ -109,14 +109,14 @@ NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
 	if (!debug_parse_levels(debuglevel)) {
 		return W_ERROR_V(WERR_GENERAL_FAILURE);
 	}
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
 
 NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx,
 					const char **debuglevel)
 {
 	*debuglevel = ctx->debuglevel;
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
 
 NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx,
@@ -127,7 +127,7 @@ NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx,
 	if (!ctx->username) {
 		return W_ERROR_V(WERR_NOMEM);
 	}
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
 
 NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx,
@@ -138,7 +138,7 @@ NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx,
 	if (!ctx->password) {
 		return W_ERROR_V(WERR_NOMEM);
 	}
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
 
 NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
@@ -149,7 +149,7 @@ NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 	if (!ctx->workgroup) {
 		return W_ERROR_V(WERR_NOMEM);
 	}
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
 
 const char *libnetapi_errstr(struct libnetapi_ctx *ctx,
