@@ -549,7 +549,7 @@ static int vfswrap_chmod(vfs_handle_struct *handle,  const char *path, mode_t mo
 	return result;
 }
 
-static int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
+static int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
 	int result;
 
@@ -563,7 +563,7 @@ static int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, 
 
 	{
 		int saved_errno = errno; /* We might get ENOSYS */
-		if ((result = SMB_VFS_FCHMOD_ACL(fsp, fd, mode)) == 0) {
+		if ((result = SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd, mode)) == 0) {
 			END_PROFILE(syscall_fchmod);
 			return result;
 		}
@@ -572,7 +572,7 @@ static int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, 
 	}
 
 #if defined(HAVE_FCHMOD)
-	result = fchmod(fd, mode);
+	result = fchmod(fsp->fh->fd, mode);
 #else
 	result = -1;
 	errno = ENOSYS;

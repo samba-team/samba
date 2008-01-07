@@ -84,6 +84,7 @@
 /* Leave at 22 - not yet released. Remove parameter fd from lseek. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from fsync. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from fstat. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fchmod. - obnox */
 
 
 #define SMB_VFS_INTERFACE_VERSION 22
@@ -288,7 +289,7 @@ struct vfs_ops {
 		int (*lstat)(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf);
 		int (*unlink)(struct vfs_handle_struct *handle, const char *path);
 		int (*chmod)(struct vfs_handle_struct *handle, const char *path, mode_t mode);
-		int (*fchmod)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, mode_t mode);
+		int (*fchmod)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
 		int (*chown)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);
 		int (*fchown)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uid_t uid, gid_t gid);
 		int (*lchown)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);

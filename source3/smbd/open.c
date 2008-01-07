@@ -1915,7 +1915,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		if ((ret == -1) &&
-		    (SMB_VFS_FCHMOD(fsp, fsp->fh->fd, new_unx_mode) == -1))
+		    (SMB_VFS_FCHMOD(fsp, new_unx_mode) == -1))
 			DEBUG(5, ("open_file_ntcreate: failed to reset "
 				  "attributes of file %s to 0%o\n",
 				  fname, (unsigned int)new_unx_mode));
