@@ -206,6 +206,52 @@ static ADS_STATUS libnet_unjoin_remove_machine_acct(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static ADS_STATUS libnet_join_find_machine_acct(TALLOC_CTX *mem_ctx,
+						struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	char *dn = NULL;
+
+	if (!r->in.machine_name) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	status = ads_find_machine_acct(r->in.ads,
+				       &res,
+				       r->in.machine_name);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	if (ads_count_replies(r->in.ads, res) != 1) {
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	dn = ads_get_dn(r->in.ads, res);
+	if (!dn) {
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	TALLOC_FREE(r->out.dn);
+	r->out.dn = talloc_strdup(mem_ctx, dn);
+	if (!r->out.dn) {
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+ done:
+	ads_msgfree(r->in.ads, res);
+	ads_memfree(r->in.ads, dn);
+
+	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
 static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 						 struct libnet_JoinCtx *r)
 {
