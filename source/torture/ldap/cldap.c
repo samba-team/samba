@@ -80,6 +80,27 @@ static bool test_cldap_netlogon(struct torture_context *tctx, const char *dest)
 		CHECK_STATUS(status, NT_STATUS_OK);
 	}
 
+	search.in.version = 0x20000006;
+	status = cldap_netlogon(cldap, tctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	printf("Trying with User=NULL\n");
+
+	search.in.user = NULL;
+	status = cldap_netlogon(cldap, tctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+	CHECK_STRING(search.out.netlogon.logon5.user_name, "");
+	CHECK_VAL(search.out.netlogon.logon5.type, NETLOGON_RESPONSE_FROM_PDC2);
+
+	printf("Trying with User=Administrator\n");
+
+	search.in.user = "Administrator";
+	status = cldap_netlogon(cldap, tctx, &search);
+	CHECK_STATUS(status, NT_STATUS_OK);
+
+	CHECK_STRING(search.out.netlogon.logon5.user_name, search.in.user);
+	CHECK_VAL(search.out.netlogon.logon5.type, NETLOGON_RESPONSE_FROM_PDC_USER);
+
 	search.in.version = 6;
 	status = cldap_netlogon(cldap, tctx, &search);
 	CHECK_STATUS(status, NT_STATUS_OK);
