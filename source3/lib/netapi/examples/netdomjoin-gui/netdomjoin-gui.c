@@ -449,14 +449,8 @@ static void callback_do_join(GtkWidget *widget,
 							initial_workgroup_type,
 							state->name_buffer_initial,
 							err_str);
-
-			g_signal_connect_swapped(dialog, "response",
-						 G_CALLBACK(gtk_widget_destroy),
-						 dialog);
-
-			gtk_widget_show(dialog);
-
-			return;
+			gtk_dialog_run(GTK_DIALOG(dialog));
+			gtk_widget_destroy(dialog);
 		}
 
 	}
