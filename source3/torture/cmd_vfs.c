@@ -758,7 +758,7 @@ static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 		printf("fchown: error=%d (invalid file descriptor)\n", EBADF);
 		return NT_STATUS_OK;
 	}
-	if (SMB_VFS_FCHOWN(vfs->files[fd], fd, uid, gid) == -1) {
+	if (SMB_VFS_FCHOWN(vfs->files[fd], uid, gid) == -1) {
 		printf("fchown error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

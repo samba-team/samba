@@ -102,7 +102,7 @@ static void change_file_owner_to_parent(connection_struct *conn,
 	}
 
 	become_root();
-	ret = SMB_VFS_FCHOWN(fsp, fsp->fh->fd, parent_st.st_uid, (gid_t)-1);
+	ret = SMB_VFS_FCHOWN(fsp, parent_st.st_uid, (gid_t)-1);
 	unbecome_root();
 	if (ret == -1) {
 		DEBUG(0,("change_file_owner_to_parent: failed to fchown "

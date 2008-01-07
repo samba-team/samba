@@ -211,9 +211,9 @@ static int skel_chown(vfs_handle_struct *handle,  const char *path, uid_t uid, g
 	return vfswrap_chown(NULL,  path, uid, gid);
 }
 
-static int skel_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd, uid_t uid, gid_t gid)
+static int skel_fchown(vfs_handle_struct *handle, files_struct *fsp, uid_t uid, gid_t gid)
 {
-	return vfswrap_fchown(NULL, fsp, fd, uid, gid);
+	return vfswrap_fchown(NULL, fsp, uid, gid);
 }
 
 static int skel_lchown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
