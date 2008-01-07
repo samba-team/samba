@@ -121,7 +121,7 @@ static void flush_caches(void)
            otherwise cached access denied errors due to restrict anonymous
            hang around until the sequence number changes. */
 
-	if (wcache_invalidate_cache() < 0) {
+	if (!wcache_invalidate_cache()) {
 		DEBUG(0, ("invalidating the cache failed; revalidate the cache\n"));
 		/* Close the cache to be able to valdite the cache */
 		close_winbindd_cache();
