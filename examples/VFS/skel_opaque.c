@@ -171,9 +171,9 @@ static int skel_rename(vfs_handle_struct *handle,  const char *oldname, const ch
 	return vfswrap_rename(NULL,  oldname, newname);
 }
 
-static int skel_fsync(vfs_handle_struct *handle, files_struct *fsp, int fd)
+static int skel_fsync(vfs_handle_struct *handle, files_struct *fsp)
 {
-	return vfswrap_fsync(NULL, fsp, fd);
+	return vfswrap_fsync(NULL, fsp);
 }
 
 static int skel_stat(vfs_handle_struct *handle,  const char *fname, SMB_STRUCT_STAT *sbuf)
