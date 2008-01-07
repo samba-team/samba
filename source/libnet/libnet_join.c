@@ -58,6 +58,8 @@ static void libnet_unjoin_set_error_string(TALLOC_CTX *mem_ctx,
 	r->out.error_string = tmp;
 }
 
+#ifdef WITH_LDAP
+
 /****************************************************************
 ****************************************************************/
 
@@ -416,6 +418,8 @@ static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
 	return ads_gen_mod(r->in.ads, r->out.dn, mods);
 }
 
+#endif
+
 /****************************************************************
 ****************************************************************/
 
@@ -426,10 +430,11 @@ static bool libnet_join_create_keytab(TALLOC_CTX *mem_ctx,
 		return true;
 	}
 
+#ifdef WITH_ADS
 	if (!ads_keytab_create_default(r->in.ads)) {
 		return false;
 	}
-
+#endif
 	return true;
 }
 
@@ -959,6 +964,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				struct libnet_JoinCtx *r)
 {
 	NTSTATUS status;
+#ifdef WITH_LDAP
 	ADS_STATUS ads_status;
 
 	if (r->in.account_ou) {
@@ -977,7 +983,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 
 		r->in.join_flags &= ~WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
 	}
-
+#endif
 	status = libnet_join_joindomain_rpc(mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
@@ -990,6 +996,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		return WERR_SETUP_NOT_JOINED;
 	}
 
+#ifdef WITH_LDAP
 	ads_status = libnet_join_set_machine_spn(mem_ctx, r);
 	if (!ADS_ERR_OK(ads_status)) {
 		libnet_join_set_error_string(mem_ctx, r,
@@ -1013,7 +1020,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 			ads_errstr(ads_status));
 		return WERR_GENERAL_FAILURE;
 	}
-
+#endif
 	if (!libnet_join_create_keytab(mem_ctx, r)) {
 		libnet_join_set_error_string(mem_ctx, r,
 			"failed to create kerberos keytab\n");
@@ -1074,6 +1081,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		return ntstatus_to_werror(status);
 	}
 
+#ifdef WITH_LDAP
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) {
 		ADS_STATUS ads_status;
 		libnet_unjoin_connect_ads(mem_ctx, r);
@@ -1084,7 +1092,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 				ads_errstr(ads_status));
 		}
 	}
-
+#endif
 	libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
 
 	return WERR_OK;
