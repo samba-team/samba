@@ -21,6 +21,15 @@
 #
 # CTDB_PUBLIC_ADDRESSES=/etc/ctdb/public_addresses
 
+# Should CTDB present the cluster using a single public ip address to clients
+# and multiplex clients across all CONNECTED nodes ?
+# This is based on LVS 
+# When this is enabled, the entire cluster will present one single ip address
+# which clients will connect to.
+# CTDB_LVS_PUBLIC_IP=10.1.1.1
+
+
+# IPMUX : OBSOLETE use LVS instead
 # Should ctdb implement a single public ip address across the entire cluster
 # and multiplex incoming connections across the connected nodes
 # When using a single public ip you must also specify the public interface!

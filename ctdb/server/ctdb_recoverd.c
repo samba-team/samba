@@ -542,7 +542,7 @@ static int pull_one_remote_database(struct ctdb_context *ctdb, uint32_t srcnode,
 			struct ctdb_ltdb_header header;
 			if (existing.dsize < sizeof(struct ctdb_ltdb_header)) {
 				DEBUG(0,(__location__ " Bad record size %u from node %u\n", 
-					 existing.dsize, srcnode));
+					 (unsigned)existing.dsize, srcnode));
 				free(existing.dptr);
 				talloc_free(tmp_ctx);
 				return -1;
@@ -898,6 +898,7 @@ struct recdb_data {
 	struct ctdb_context *ctdb;
 	struct ctdb_control_pulldb_reply *recdata;
 	uint32_t len;
+	bool failed;
 };
 
 static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *p)
@@ -917,10 +918,15 @@ static int traverse_recdb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, 
 
 	/* add the record to the blob ready to send to the nodes */
 	rec = ctdb_marshall_record(params->recdata, 0, key, NULL, data);
+	if (rec == NULL) {
+		params->failed = true;
+		return -1;
+	}
 	params->recdata = talloc_realloc_size(NULL, params->recdata, rec->length + params->len);
 	if (params->recdata == NULL) {
 		DEBUG(0,(__location__ " Failed to expand recdata to %u (%u records)\n", 
 			 rec->length + params->len, params->recdata->count));
+		params->failed = true;
 		return -1;
 	}
 	params->recdata->count++;
@@ -949,10 +955,18 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 	params.ctdb = ctdb;
 	params.recdata = recdata;
 	params.len = offsetof(struct ctdb_control_pulldb_reply, data);
+	params.failed = false;
 
 	if (tdb_traverse_read(recdb->tdb, traverse_recdb, &params) == -1) {
 		DEBUG(0,(__location__ " Failed to traverse recdb database\n"));
+		talloc_free(params.recdata);
 		return -1;
+	}
+
+	if (params.failed) {
+		DEBUG(0,(__location__ " Failed to traverse recdb database\n"));
+		talloc_free(params.recdata);
+		return -1;		
 	}
 
 	recdata = params.recdata;
