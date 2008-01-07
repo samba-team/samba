@@ -88,6 +88,7 @@
 /* Leave at 22 - not yet released. Remove parameter fd from fchown. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from ftruncate. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from lock. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from kernel_flock. - obnox */
 
 
 #define SMB_VFS_INTERFACE_VERSION 22
@@ -301,7 +302,7 @@ struct vfs_ops {
 		int (*ntimes)(struct vfs_handle_struct *handle, const char *path, const struct timespec ts[2]);
 		int (*ftruncate)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T offset);
 		bool (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
-		int (*kernel_flock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 share_mode);
+		int (*kernel_flock)(struct vfs_handle_struct *handle, struct files_struct *fsp, uint32 share_mode);
 		int (*linux_setlease)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, int leasetype);
 		bool (*getlock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
 		int (*symlink)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
