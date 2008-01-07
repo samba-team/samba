@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  NetApi Support
- *  Copyright (C) Guenther Deschner 2007
+ *  Copyright (C) Guenther Deschner 2007-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -21,6 +21,10 @@
 #define __LIB_NETAPI_H__
 
 #define NET_API_STATUS uint32_t
+#define NET_API_STATUS_SUCCESS 0
+
+/****************************************************************
+****************************************************************/
 
 struct libnetapi_ctx {
 	const char *debuglevel;
