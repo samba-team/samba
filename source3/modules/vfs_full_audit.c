@@ -160,7 +160,7 @@ static int smb_full_audit_ntimes(vfs_handle_struct *handle,
 		       const char *path, const struct timespec ts[2]);
 static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp,
 			   SMB_OFF_T len);
-static bool smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, int fd,
+static bool smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
 		       int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
 static int smb_full_audit_kernel_flock(struct vfs_handle_struct *handle,
 				       struct files_struct *fsp, int fd,
@@ -1365,12 +1365,12 @@ static int smb_full_audit_ftruncate(vfs_handle_struct *handle, files_struct *fsp
 	return result;
 }
 
-static bool smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp, int fd,
+static bool smb_full_audit_lock(vfs_handle_struct *handle, files_struct *fsp,
 		       int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 	bool result;
 
-	result = SMB_VFS_NEXT_LOCK(handle, fsp, fd, op, offset, count, type);
+	result = SMB_VFS_NEXT_LOCK(handle, fsp, op, offset, count, type);
 
 	do_log(SMB_VFS_OP_LOCK, result, handle, "%s", fsp->fsp_name);
 

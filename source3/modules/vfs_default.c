@@ -801,12 +801,12 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 	return result;
 }
 
-static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+static bool vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 	bool result;
 
 	START_PROFILE(syscall_fcntl_lock);
-	result =  fcntl_lock(fd, op, offset, count, type);
+	result =  fcntl_lock(fsp->fh->fd, op, offset, count, type);
 	END_PROFILE(syscall_fcntl_lock);
 	return result;
 }
