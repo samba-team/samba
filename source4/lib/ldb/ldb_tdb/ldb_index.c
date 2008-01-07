@@ -886,7 +886,7 @@ static int ltdb_index_add1_add(struct ldb_context *ldb,
 	msg->elements[idx].values[msg->elements[idx].num_values].data = discard_const_p(uint8_t, dn);
 	msg->elements[idx].num_values++;
 
-	return 0;
+	return LDB_SUCCESS;
 }
 
 /*
