@@ -241,9 +241,9 @@ static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_
 	return vfswrap_ftruncate(NULL, fsp, offset);
 }
 
-static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
-	return vfswrap_lock(NULL, fsp, fd, op, offset, count, type);
+	return vfswrap_lock(NULL, fsp, op, offset, count, type);
 }
 
 static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
