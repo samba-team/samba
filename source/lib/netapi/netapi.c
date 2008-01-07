@@ -26,9 +26,13 @@ struct libnetapi_ctx *stat_ctx = NULL;
 TALLOC_CTX *frame = NULL;
 static bool libnetapi_initialized = false;
 
+/****************************************************************
+****************************************************************/
+
 NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 {
 	struct libnetapi_ctx *ctx = NULL;
+	char *krb5_cc_env = NULL;
 
 	if (stat_ctx && libnetapi_initialized) {
 		*context = stat_ctx;
@@ -65,12 +69,21 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 
 	BlockSignals(True, SIGPIPE);
 
+	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
+	if (!krb5_cc_env || (strlen(krb5_cc_env) == 0)) {
+		ctx->krb5_cc_env = talloc_strdup(frame, "MEMORY:libnetapi");
+		setenv(KRB5_ENV_CCNAME, ctx->krb5_cc_env, 1);
+	}
+
 	libnetapi_initialized = true;
 
 	*context = stat_ctx = ctx;
 
 	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
 
 NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx)
 {
@@ -81,6 +94,9 @@ NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx)
 
 	return libnetapi_init(ctx);
 }
+
+/****************************************************************
+****************************************************************/
 
 NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 {
@@ -94,6 +110,11 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 	secrets_shutdown();
 	regdb_close();
 
+	if (ctx->krb5_cc_env &&
+	    (strequal(ctx->krb5_cc_env, getenv(KRB5_ENV_CCNAME)))) {
+		unsetenv(KRB5_ENV_CCNAME);
+	}
+
 	TALLOC_FREE(ctx);
 	TALLOC_FREE(frame);
 
@@ -101,6 +122,9 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 
 	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
 
 NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
 					const char *debuglevel)
@@ -113,12 +137,18 @@ NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
 	return NET_API_STATUS_SUCCESS;
 }
 
+/****************************************************************
+****************************************************************/
+
 NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx,
 					const char **debuglevel)
 {
 	*debuglevel = ctx->debuglevel;
 	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
 
 NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx,
 				      const char *username)
@@ -152,6 +182,9 @@ NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 	}
 	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
 
 const char *libnetapi_errstr(struct libnetapi_ctx *ctx,
 			     NET_API_STATUS status)
