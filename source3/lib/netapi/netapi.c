@@ -39,6 +39,9 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 		return NET_API_STATUS_SUCCESS;
 	}
 
+#ifdef DEVELOPER
+	talloc_enable_leak_report();
+#endif
 	frame = talloc_stackframe();
 
 	ctx = talloc_zero(frame, struct libnetapi_ctx);
