@@ -706,7 +706,7 @@ static NTSTATUS cmd_fchmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 		return NT_STATUS_OK;
 	}
 
-	if (SMB_VFS_FCHMOD(vfs->files[fd], fd, mode) == -1) {
+	if (SMB_VFS_FCHMOD(vfs->files[fd], mode) == -1) {
 		printf("fchmod: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

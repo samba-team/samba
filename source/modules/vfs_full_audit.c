@@ -144,7 +144,7 @@ static int smb_full_audit_unlink(vfs_handle_struct *handle,
 			const char *path);
 static int smb_full_audit_chmod(vfs_handle_struct *handle,
 		       const char *path, mode_t mode);
-static int smb_full_audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd,
+static int smb_full_audit_fchmod(vfs_handle_struct *handle, files_struct *fsp,
 			mode_t mode);
 static int smb_full_audit_chown(vfs_handle_struct *handle,
 		       const char *path, uid_t uid, gid_t gid);
@@ -1264,12 +1264,12 @@ static int smb_full_audit_chmod(vfs_handle_struct *handle,
 	return result;
 }
 
-static int smb_full_audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd,
+static int smb_full_audit_fchmod(vfs_handle_struct *handle, files_struct *fsp,
 			mode_t mode)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_FCHMOD(handle, fsp, fd, mode);
+	result = SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
 
 	do_log(SMB_VFS_OP_FCHMOD, (result >= 0), handle,
 	       "%s|%o", fsp->fsp_name, mode);

@@ -201,9 +201,9 @@ static int skel_chmod(vfs_handle_struct *handle,  const char *path, mode_t mode)
 	return vfswrap_chmod(NULL,  path, mode);
 }
 
-static int skel_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
+static int skel_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
-	return vfswrap_fchmod(NULL, fsp, fd, mode);
+	return vfswrap_fchmod(NULL, fsp, mode);
 }
 
 static int skel_chown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)

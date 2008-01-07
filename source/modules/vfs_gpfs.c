@@ -642,7 +642,7 @@ static int vfs_gpfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mo
 		 return SMB_VFS_NEXT_CHMOD(handle, path, mode);
 }
 
-static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
+static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
 		 SMB_STRUCT_STAT st;
 		 if (SMB_VFS_NEXT_FSTAT(handle, fsp, &st) != 0) {
@@ -652,7 +652,7 @@ static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd,
 		 if ((st.st_mode & ~S_IFMT) == mode) {
 		 		 return 0;
 		 }
-		 return SMB_VFS_NEXT_FCHMOD(handle, fsp, fd, mode);
+		 return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
 }
 
 /* VFS operations structure */
