@@ -129,7 +129,7 @@ static void request_handler(struct smbcli_request *req)
 	case RAW_SESSSETUP_SPNEGO:
 		state->io->out.vuid = state->setup.spnego.out.vuid;
 		if (NT_STATUS_EQUAL(c->status, NT_STATUS_LOGON_FAILURE)) {
-			/* we neet to reset the vuid for a new try */
+			/* we need to reset the vuid for a new try */
 			session->vuid = 0;
 			if (cli_credentials_wrong_password(state->io->in.credentials)) {
 				nt_status = session_setup_spnego(c, session, 
