@@ -1789,7 +1789,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * We are modifing the file after open - update the stat
 		 * struct..
 		 */
-		if ((SMB_VFS_FTRUNCATE(fsp,fsp->fh->fd,0) == -1) ||
+		if ((SMB_VFS_FTRUNCATE(fsp, 0) == -1) ||
 		    (SMB_VFS_FSTAT(fsp, psbuf)==-1)) {
 			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(lck);

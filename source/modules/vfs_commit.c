@@ -277,12 +277,11 @@ static int commit_close(
 static int commit_ftruncate(
         vfs_handle_struct * handle,
         files_struct *      fsp,
-        int                 fd,
         SMB_OFF_T           len)
 {
         int result;
 
-        result = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, fd, len);
+        result = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, len);
         if (result == 0) {
 		struct commit_info *c;
 		if ((c = VFS_FETCH_FSP_EXTENSION(handle, fsp))) {

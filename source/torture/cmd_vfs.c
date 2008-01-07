@@ -818,7 +818,7 @@ static NTSTATUS cmd_ftruncate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 		return NT_STATUS_OK;
 	}
 
-	if (SMB_VFS_FTRUNCATE(vfs->files[fd], fd, off) == -1) {
+	if (SMB_VFS_FTRUNCATE(vfs->files[fd], off) == -1) {
 		printf("ftruncate: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

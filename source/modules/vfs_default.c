@@ -674,7 +674,7 @@ static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path, const str
  allocate is set.
 **********************************************************************/
 
-static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T len)
+static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T len)
 {
 	SMB_STRUCT_STAT st;
 	SMB_OFF_T currpos = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
@@ -699,7 +699,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 
 	/* Shrink - just ftruncate. */
 	if (st.st_size > len)
-		return sys_ftruncate(fd, len);
+		return sys_ftruncate(fsp->fh->fd, len);
 
 	/* Write out the real space on disk. */
 	if (SMB_VFS_LSEEK(fsp, st.st_size, SEEK_SET) != st.st_size)
@@ -726,7 +726,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	return 0;
 }
 
-static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T len)
+static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T len)
 {
 	int result = -1;
 	SMB_STRUCT_STAT st;
@@ -736,7 +736,7 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int f
 	START_PROFILE(syscall_ftruncate);
 
 	if (lp_strict_allocate(SNUM(fsp->conn))) {
-		result = strict_allocate_ftruncate(handle, fsp, fd, len);
+		result = strict_allocate_ftruncate(handle, fsp, fsp->fh->fd, len);
 		END_PROFILE(syscall_ftruncate);
 		return result;
 	}
@@ -747,7 +747,7 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int f
 	   expansion and some that don't! On Linux fat can't do
 	   ftruncate extend but ext2 can. */
 
-	result = sys_ftruncate(fd, len);
+	result = sys_ftruncate(fsp->fh->fd, len);
 	if (result == 0)
 		goto done;
 
@@ -787,7 +787,7 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int f
 	if (SMB_VFS_LSEEK(fsp, len-1, SEEK_SET) != len -1)
 		goto done;
 
-	if (SMB_VFS_WRITE(fsp, fd, &c, 1)!=1)
+	if (SMB_VFS_WRITE(fsp, fsp->fh->fd, &c, 1)!=1)
 		goto done;
 
 	/* Seek to where we were */
