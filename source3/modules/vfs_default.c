@@ -238,7 +238,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 	SMB_OFF_T   curr;
 	int lerrno;
 
-	curr = SMB_VFS_LSEEK(fsp, fsp->fh->fd, 0, SEEK_CUR);
+	curr = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
 	if (curr == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
 		result = SMB_VFS_READ(fsp, fsp->fh->fd, data, n);
@@ -246,7 +246,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 		return result;
 	}
 
-	if (SMB_VFS_LSEEK(fsp, fsp->fh->fd, offset, SEEK_SET) == -1) {
+	if (SMB_VFS_LSEEK(fsp, offset, SEEK_SET) == -1) {
 		return -1;
 	}
 
@@ -254,7 +254,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 	result = SMB_VFS_READ(fsp, fsp->fh->fd, data, n);
 	lerrno = errno;
 
-	SMB_VFS_LSEEK(fsp, fsp->fh->fd, curr, SEEK_SET);
+	SMB_VFS_LSEEK(fsp, curr, SEEK_SET);
 	errno = lerrno;
 
 #endif /* HAVE_PREAD */
@@ -291,19 +291,19 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 	SMB_OFF_T   curr;
 	int         lerrno;
 
-	curr = SMB_VFS_LSEEK(fsp, fsp->fh->fd, 0, SEEK_CUR);
+	curr = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
 	if (curr == -1) {
 		return -1;
 	}
 
-	if (SMB_VFS_LSEEK(fsp, fsp->fh->fd, offset, SEEK_SET) == -1) {
+	if (SMB_VFS_LSEEK(fsp, offset, SEEK_SET) == -1) {
 		return -1;
 	}
 
 	result = SMB_VFS_WRITE(fsp, fsp->fh->fd, data, n);
 	lerrno = errno;
 
-	SMB_VFS_LSEEK(fsp, fsp->fh->fd, curr, SEEK_SET);
+	SMB_VFS_LSEEK(fsp, curr, SEEK_SET);
 	errno = lerrno;
 
 #endif /* HAVE_PWRITE */
@@ -311,15 +311,15 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 	return result;
 }
 
-static SMB_OFF_T vfswrap_lseek(vfs_handle_struct *handle, files_struct *fsp, int filedes, SMB_OFF_T offset, int whence)
+static SMB_OFF_T vfswrap_lseek(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset, int whence)
 {
 	SMB_OFF_T result = 0;
 
 	START_PROFILE(syscall_lseek);
 
 	/* Cope with 'stat' file opens. */
-	if (filedes != -1)
-		result = sys_lseek(filedes, offset, whence);
+	if (fsp->fh->fd != -1)
+		result = sys_lseek(fsp->fh->fd, offset, whence);
 
 	/*
 	 * We want to maintain the fiction that we can seek
@@ -677,7 +677,7 @@ static int vfswrap_ntimes(vfs_handle_struct *handle, const char *path, const str
 static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T len)
 {
 	SMB_STRUCT_STAT st;
-	SMB_OFF_T currpos = SMB_VFS_LSEEK(fsp, fd, 0, SEEK_CUR);
+	SMB_OFF_T currpos = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
 	unsigned char zero_space[4096];
 	SMB_OFF_T space_to_write;
 
@@ -702,7 +702,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 		return sys_ftruncate(fd, len);
 
 	/* Write out the real space on disk. */
-	if (SMB_VFS_LSEEK(fsp, fd, st.st_size, SEEK_SET) != st.st_size)
+	if (SMB_VFS_LSEEK(fsp, st.st_size, SEEK_SET) != st.st_size)
 		return -1;
 
 	space_to_write = len - st.st_size;
@@ -720,7 +720,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 	}
 
 	/* Seek to where we were */
-	if (SMB_VFS_LSEEK(fsp, fd, currpos, SEEK_SET) != currpos)
+	if (SMB_VFS_LSEEK(fsp, currpos, SEEK_SET) != currpos)
 		return -1;
 
 	return 0;
@@ -754,7 +754,7 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int f
 	/* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
 	   extend a file with ftruncate. Provide alternate implementation
 	   for this */
-	currpos = SMB_VFS_LSEEK(fsp, fd, 0, SEEK_CUR);
+	currpos = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
 	if (currpos == -1) {
 		goto done;
 	}
@@ -784,14 +784,14 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int f
 		goto done;
 	}
 
-	if (SMB_VFS_LSEEK(fsp, fd, len-1, SEEK_SET) != len -1)
+	if (SMB_VFS_LSEEK(fsp, len-1, SEEK_SET) != len -1)
 		goto done;
 
 	if (SMB_VFS_WRITE(fsp, fd, &c, 1)!=1)
 		goto done;
 
 	/* Seek to where we were */
-	if (SMB_VFS_LSEEK(fsp, fd, currpos, SEEK_SET) != currpos)
+	if (SMB_VFS_LSEEK(fsp, currpos, SEEK_SET) != currpos)
 		goto done;
 	result = 0;
 

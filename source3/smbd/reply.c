@@ -4091,7 +4091,7 @@ void reply_lseek(struct smb_request *req)
 	}
 
 	if (umode == SEEK_END) {
-		if((res = SMB_VFS_LSEEK(fsp,fsp->fh->fd,startpos,umode)) == -1) {
+		if((res = SMB_VFS_LSEEK(fsp,startpos,umode)) == -1) {
 			if(errno == EINVAL) {
 				SMB_OFF_T current_pos = startpos;
 				SMB_STRUCT_STAT sbuf;
@@ -4105,7 +4105,7 @@ void reply_lseek(struct smb_request *req)
 
 				current_pos += sbuf.st_size;
 				if(current_pos < 0)
-					res = SMB_VFS_LSEEK(fsp,fsp->fh->fd,0,SEEK_SET);
+					res = SMB_VFS_LSEEK(fsp,0,SEEK_SET);
 			}
 		}
 
@@ -6052,7 +6052,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	}
 
 	if ((ofun&3) == 1) {
-		if(SMB_VFS_LSEEK(fsp2,fsp2->fh->fd,0,SEEK_END) == -1) {
+		if(SMB_VFS_LSEEK(fsp2,0,SEEK_END) == -1) {
 			DEBUG(0,("copy_file: error - vfs lseek returned error %s\n", strerror(errno) ));
 			/*
 			 * Stop the copy from occurring.

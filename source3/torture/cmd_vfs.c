@@ -440,7 +440,7 @@ static NTSTATUS cmd_lseek(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		default:	whence = SEEK_END;
 	}
 
-	pos = SMB_VFS_LSEEK(vfs->files[fd], fd, offset, whence);
+	pos = SMB_VFS_LSEEK(vfs->files[fd], offset, whence);
 	if (pos == (SMB_OFF_T)-1) {
 		printf("lseek: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
