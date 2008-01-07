@@ -736,7 +736,7 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 	START_PROFILE(syscall_ftruncate);
 
 	if (lp_strict_allocate(SNUM(fsp->conn))) {
-		result = strict_allocate_ftruncate(handle, fsp, fsp->fh->fd, len);
+		result = strict_allocate_ftruncate(handle, fsp, len);
 		END_PROFILE(syscall_ftruncate);
 		return result;
 	}
