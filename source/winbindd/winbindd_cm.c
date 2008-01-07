@@ -74,7 +74,7 @@ extern bool override_logfile;
 
 static NTSTATUS init_dc_connection_network(struct winbindd_domain *domain);
 static void set_dc_type_and_flags( struct winbindd_domain *domain );
-static bool get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
+static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		    struct dc_name_ip **dcs, int *num_dcs);
 
 /****************************************************************
@@ -560,7 +560,7 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 	}
 }
 
-static bool get_dc_name_via_netlogon(const struct winbindd_domain *domain,
+static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 				     fstring dcname,
 				     struct sockaddr_storage *dc_ss)
 {
@@ -600,12 +600,12 @@ static bool get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 	   35 seconds should do it. */
 
 	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
-	
+
 	if (our_domain->active_directory) {
 		struct DS_DOMAIN_CONTROLLER_INFO *domain_info = NULL;
-		
-		werr = rpccli_netlogon_dsr_getdcname(netlogon_pipe, 
-						     mem_ctx, 
+
+		werr = rpccli_netlogon_dsr_getdcname(netlogon_pipe,
+						     mem_ctx,
 						     our_domain->dcname,
 						     domain->name,
 						     NULL,
@@ -615,19 +615,21 @@ static bool get_dc_name_via_netlogon(const struct winbindd_domain *domain,
 		if (W_ERROR_IS_OK(werr)) {
 			fstrcpy(tmp, domain_info->domain_controller_name);
 			if (strlen(domain->alt_name) == 0) {
-				fstrcpy(domain->alt_name, 
-					CONST_DISCARD(char*, domain_info->domain_name));
+				fstrcpy(domain->alt_name,
+					domain_info->domain_name);
 			}
 			if (strlen(domain->forest_name) == 0) {
-				fstrcpy(domain->forest_name, 
-					CONST_DISCARD(char*, domain_info->dns_forest_name));
+				fstrcpy(domain->forest_name,
+					domain_info->dns_forest_name);
 			}
-		}		
+		}
 	} else {
-		
-		werr = rpccli_netlogon_getanydcname(netlogon_pipe, mem_ctx, 
+
+		werr = rpccli_netlogon_getanydcname(netlogon_pipe,
+						    mem_ctx,
 						    our_domain->dcname,
-					    domain->name, &tmp);
+						    domain->name,
+						    &tmp);
 	}
 
 	/* And restore our original timeout. */
@@ -1245,7 +1247,7 @@ static bool dcip_to_name(const struct winbindd_domain *domain,
  the dcs[]  with results.
 *******************************************************************/
 
-static bool get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
+static bool get_dcs(TALLOC_CTX *mem_ctx, struct winbindd_domain *domain,
 		    struct dc_name_ip **dcs, int *num_dcs)
 {
 	fstring dcname;
@@ -1348,7 +1350,7 @@ static bool get_dcs(TALLOC_CTX *mem_ctx, const struct winbindd_domain *domain,
 }
 
 static bool find_new_dc(TALLOC_CTX *mem_ctx,
-			const struct winbindd_domain *domain,
+			struct winbindd_domain *domain,
 			fstring dcname, struct sockaddr_storage *pss, int *fd)
 {
 	struct dc_name_ip *dcs = NULL;
