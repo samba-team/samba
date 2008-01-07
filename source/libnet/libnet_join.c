@@ -990,6 +990,36 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		return WERR_SETUP_NOT_JOINED;
 	}
 
+	ads_status = libnet_join_set_machine_spn(mem_ctx, r);
+	if (!ADS_ERR_OK(ads_status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to set machine spn: %s\n",
+			ads_errstr(ads_status));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	ads_status = libnet_join_set_os_attributes(mem_ctx, r);
+	if (!ADS_ERR_OK(ads_status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to set machine os attributes: %s\n",
+			ads_errstr(ads_status));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	ads_status = libnet_join_set_machine_upn(mem_ctx, r);
+	if (!ADS_ERR_OK(ads_status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to set machine upn: %s\n",
+			ads_errstr(ads_status));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if (!libnet_join_create_keytab(mem_ctx, r)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to create kerberos keytab\n");
+		return WERR_GENERAL_FAILURE;
+	}
+
 	return WERR_OK;
 }
 
