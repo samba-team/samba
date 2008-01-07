@@ -33,12 +33,12 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	struct libnet_JoinCtx *r = NULL;
 	WERROR werr;
 
-	werr = libnet_init_JoinCtx(mem_ctx, &r);
-	W_ERROR_NOT_OK_RETURN(werr);
-
 	if (!domain_name) {
 		return WERR_INVALID_PARAM;
 	}
+
+	werr = libnet_init_JoinCtx(mem_ctx, &r);
+	W_ERROR_NOT_OK_RETURN(werr);
 
 	r->in.domain_name = talloc_strdup(mem_ctx, domain_name);
 	W_ERROR_HAVE_NO_MEMORY(r->in.domain_name);
