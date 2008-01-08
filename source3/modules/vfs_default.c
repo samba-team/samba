@@ -1141,9 +1141,9 @@ static ssize_t vfswrap_lgetxattr(struct vfs_handle_struct *handle,const char *pa
 	return sys_lgetxattr(path, name, value, size);
 }
 
-static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, void *value, size_t size)
+static ssize_t vfswrap_fgetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size)
 {
-	return sys_fgetxattr(fd, name, value, size);
+	return sys_fgetxattr(fsp->fh->fd, name, value, size);
 }
 
 static ssize_t vfswrap_listxattr(struct vfs_handle_struct *handle, const char *path, char *list, size_t size)

@@ -130,7 +130,7 @@ static bool get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 	}
 
 	if (fsp && fsp->fh->fd != -1) {
-		sizeret = SMB_VFS_FGETXATTR(fsp, fsp->fh->fd, ea_name, val, attr_size);
+		sizeret = SMB_VFS_FGETXATTR(fsp, ea_name, val, attr_size);
 	} else {
 		sizeret = SMB_VFS_GETXATTR(conn, fname, ea_name, val, attr_size);
 	}

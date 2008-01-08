@@ -363,7 +363,7 @@ size)
         return SMB_VFS_NEXT_LGETXATTR(handle, cappath, capname, value, size);
 }
 
-static ssize_t cap_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *path, void *value, size_t size)
+static ssize_t cap_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *path, void *value, size_t size)
 {
 	char *cappath = capencode(talloc_tos(), path);
 
@@ -371,7 +371,7 @@ static ssize_t cap_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp
 		errno = ENOMEM;
 		return -1;
 	}
-        return SMB_VFS_NEXT_FGETXATTR(handle, fsp, fd, cappath, value, size);
+        return SMB_VFS_NEXT_FGETXATTR(handle, fsp, cappath, value, size);
 }
 
 static ssize_t cap_listxattr(vfs_handle_struct *handle, const char *path, char *list, size_t size)

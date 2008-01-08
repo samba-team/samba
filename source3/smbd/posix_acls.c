@@ -445,7 +445,7 @@ static struct pai_val *fload_inherited_info(files_struct *fsp)
 
 	do {
 		if (fsp->fh->fd != -1)
-			ret = SMB_VFS_FGETXATTR(fsp, fsp->fh->fd, SAMBA_POSIX_INHERITANCE_EA_NAME,
+			ret = SMB_VFS_FGETXATTR(fsp, SAMBA_POSIX_INHERITANCE_EA_NAME,
 					pai_buf, pai_buf_size);
 		else
 			ret = SMB_VFS_GETXATTR(fsp->conn,fsp->fsp_name,SAMBA_POSIX_INHERITANCE_EA_NAME,

@@ -94,6 +94,7 @@
 /* Leave at 22 - not yet released. Remove parameter fd from sys_acl_get_fd. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from fchmod_acl. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from sys_acl_set_fd. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fgetxattr. - obnox */
 
 
 
@@ -377,7 +378,7 @@ struct vfs_ops {
 		/* EA operations. */
 		ssize_t (*getxattr)(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size);
 		ssize_t (*lgetxattr)(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size);
-		ssize_t (*fgetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, void *value, size_t size);
+		ssize_t (*fgetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size);
 		ssize_t (*listxattr)(struct vfs_handle_struct *handle, const char *path, char *list, size_t size);
 		ssize_t (*llistxattr)(struct vfs_handle_struct *handle, const char *path, char *list, size_t size);
 		ssize_t (*flistxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, char *list, size_t size);
