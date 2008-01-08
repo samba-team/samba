@@ -166,7 +166,7 @@ static void gpo_sync_func(const char *mnt,
 		}
 
 		old_nt_dir = ctx->remote_path;
-		ctx->remote_path = nt_dir;
+		ctx->remote_path = talloc_strdup(ctx->mem_ctx, nt_dir);
 
 		old_unix_dir = ctx->local_path;
 		ctx->local_path = talloc_strdup(ctx->mem_ctx, unix_dir);
@@ -174,7 +174,7 @@ static void gpo_sync_func(const char *mnt,
 		ctx->mask = talloc_asprintf(ctx->mem_ctx,
 					"%s\\*",
 					nt_dir);
-		if (!ctx->local_path || !ctx->mask) {
+		if (!ctx->local_path || !ctx->mask || !ctx->remote_path) {
 			DEBUG(0,("gpo_sync_func: ENOMEM\n"));
 			return;
 		}
