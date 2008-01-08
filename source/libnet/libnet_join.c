@@ -58,7 +58,7 @@ static void libnet_unjoin_set_error_string(TALLOC_CTX *mem_ctx,
 	r->out.error_string = tmp;
 }
 
-#ifdef WITH_LDAP
+#ifdef HAVE_LDAP
 
 /****************************************************************
 ****************************************************************/
@@ -964,7 +964,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				struct libnet_JoinCtx *r)
 {
 	NTSTATUS status;
-#ifdef WITH_LDAP
+#ifdef HAVE_LDAP
 	ADS_STATUS ads_status;
 
 	if (r->in.account_ou) {
@@ -996,7 +996,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		return WERR_SETUP_NOT_JOINED;
 	}
 
-#ifdef WITH_LDAP
+#ifdef HAVE_LDAP
 	ads_status = libnet_join_set_machine_spn(mem_ctx, r);
 	if (!ADS_ERR_OK(ads_status)) {
 		libnet_join_set_error_string(mem_ctx, r,
@@ -1084,7 +1084,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		return ntstatus_to_werror(status);
 	}
 
-#ifdef WITH_LDAP
+#ifdef HAVE_LDAP
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) {
 		ADS_STATUS ads_status;
 		libnet_unjoin_connect_ads(mem_ctx, r);
