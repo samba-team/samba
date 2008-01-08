@@ -23,9 +23,8 @@
 #include "torture/torture.h"
 #include "build.h"
 #include "lib/util/dlinklist.h"
-#include "auth/credentials/credentials.h"
-#include "lib/cmdline/popt_common.h"
 #include "param/param.h"
+#include "lib/cmdline/popt_common.h"
 
 _PUBLIC_ int torture_numops=10;
 _PUBLIC_ int torture_entries=1000;
@@ -44,21 +43,6 @@ bool torture_register_suite(struct torture_suite *suite)
 		torture_root = talloc_zero(talloc_autofree_context(), struct torture_suite);
 
 	return torture_suite_add_suite(torture_root, suite);
-}
-
-struct torture_context *torture_context_init(TALLOC_CTX *mem_ctx, 
-					     const struct torture_ui_ops *ui_ops)
-{
-	struct torture_context *torture = talloc_zero(mem_ctx, 
-						      struct torture_context);
-	torture->ui_ops = ui_ops;
-	torture->returncode = true;
-	torture->ev = cli_credentials_get_event_context(cmdline_credentials);
-
-	if (ui_ops->init)
-		ui_ops->init(torture);
-
-	return torture;
 }
 
 
