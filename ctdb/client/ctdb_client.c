@@ -148,19 +148,6 @@ static int ctdb_client_queue_pkt(struct ctdb_context *ctdb, struct ctdb_req_head
 
 
 /*
-  state of a in-progress ctdb call in client
-*/
-struct ctdb_client_call_state {
-	enum call_state state;
-	uint32_t reqid;
-	struct ctdb_db_context *ctdb_db;
-	struct ctdb_call call;
-	struct {
-		void (*fn)(struct ctdb_client_call_state *);
-	} async;
-};
-
-/*
   called when a CTDB_REPLY_CALL packet comes in in the client
 
   This packet comes in response to a CTDB_REQ_CALL request packet. It
@@ -384,8 +371,7 @@ static struct ctdb_client_call_state *ctdb_client_call_local_send(struct ctdb_db
   This call never blocks.
 */
 struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, 
-					      struct ctdb_call *call, 
-					      void (*callback)(struct ctdb_client_call_state *))
+					      struct ctdb_call *call)
 {
 	struct ctdb_client_call_state *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
@@ -412,9 +398,6 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 		state = ctdb_client_call_local_send(ctdb_db, call, &header, &data);
 		talloc_free(data.dptr);
 		ctdb_ltdb_unlock(ctdb_db, call->key);
-		if (state) {
-			state->async.fn = callback;
-		}
 		return state;
 	}
 
@@ -457,8 +440,6 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 
 	ctdb_client_queue_pkt(ctdb, &c->hdr);
 
-	state->async.fn = callback;
-
 	return state;
 }
 
@@ -470,7 +451,7 @@ int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call)
 {
 	struct ctdb_client_call_state *state;
 
-	state = ctdb_call_send(ctdb_db, call, NULL);
+	state = ctdb_call_send(ctdb_db, call);
 	return ctdb_call_recv(state, call);
 }
 

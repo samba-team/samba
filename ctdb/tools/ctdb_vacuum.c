@@ -281,7 +281,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 
 
 	/* add the record to the blob ready to send to the nodes */
-	rec = ctdb_marshall_record(vdata->list[lmaster], 0, key, NULL, tdb_null);
+	rec = ctdb_marshall_record(vdata->list[lmaster], vdata->ctdb->pnn, key, NULL, tdb_null);
 	if (rec == NULL) {
 		DEBUG(0,(__location__ " Out of memory\n"));
 		vdata->traverse_error = true;
@@ -416,7 +416,7 @@ int ctdb_vacuum(struct ctdb_context *ctdb, int argc, const char **argv)
 	struct ctdb_dbid_map *dbmap=NULL;
 	struct ctdb_node_map *nodemap=NULL;
 	int ret, i, pnn;
-	uint32_t vacuum_limit = 100;
+	uint32_t vacuum_limit = 0;
 
 	if (argc > 0) {
 		vacuum_limit = atoi(argv[0]);

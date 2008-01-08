@@ -1003,6 +1003,21 @@ struct ctdb_control_wipe_database {
 	uint32_t transaction_id;
 };
 
+/*
+  state of a in-progress ctdb call in client
+*/
+struct ctdb_client_call_state {
+	enum call_state state;
+	uint32_t reqid;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_call call;
+	struct {
+		void (*fn)(struct ctdb_client_call_state *);
+		void *private;
+	} async;
+};
+
+
 int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA indata, 
 				    TDB_DATA *outdata, uint32_t srcnode);
 int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata);
