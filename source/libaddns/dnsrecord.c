@@ -119,12 +119,19 @@ DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
 }
 
 DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
-			      uint32 ttl, struct in_addr ip,
+			      uint32 ttl, const struct sockaddr_storage *pss,
 			      struct dns_rrec **prec)
 {
 	uint8 *data;
 	DNS_ERROR err;
+	struct in_addr ip;
 
+	if (pss->ss_family != AF_INET) {
+		/* Silently ignore this. */
+		return ERROR_DNS_SUCCESS;
+	}
+
+	ip = ((struct sockaddr_in *)pss)->sin_addr;
 	if (!(data = (uint8 *)TALLOC_MEMDUP(mem_ctx, (const void *)&ip.s_addr,
 					    sizeof(ip.s_addr)))) {
 		return ERROR_DNS_NO_MEMORY;
@@ -142,11 +149,11 @@ DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
 
 DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
 					const char *name,
-					const struct in_addr *ip,
+					const struct sockaddr_storage *ss,
 					struct dns_rrec **prec)
 {
-	if (ip != NULL) {
-		return dns_create_a_record(mem_ctx, name, 0, *ip, prec);
+	if (ss != NULL) {
+		return dns_create_a_record(mem_ctx, name, 0, ss, prec);
 	}
 
 	return dns_create_rrec(mem_ctx, name, QTYPE_ANY, DNS_CLASS_IN, 0, 0,
@@ -321,7 +328,7 @@ DNS_ERROR dns_add_rrec(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 
 DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
 			   const char *host, int num_ips,
-			   const struct in_addr *iplist,
+			   const struct sockaddr_storage *sslist,
 			   struct dns_update_request **preq)
 {
 	struct dns_update_request *req;
@@ -340,7 +347,7 @@ DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
 
 	for (i=0; i<num_ips; i++) {
 		err = dns_create_name_in_use_record(req, host,
-						    &iplist[i], &rec);
+						    &sslist[i], &rec);
 		if (!ERR_DNS_IS_OK(err)) goto error;
 
 		err = dns_add_rrec(req, rec, &req->num_preqs, &req->preqs);
@@ -358,14 +365,14 @@ DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
 DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 				    const char *domainname,
 				    const char *hostname,
-				    const struct in_addr *ip_addrs,
+				    const struct sockaddr_storage *ss_addrs,
 				    size_t num_addrs,
 				    struct dns_update_request **preq)
 {
 	struct dns_update_request *req;
 	struct dns_rrec *rec;
 	DNS_ERROR err;
-	size_t i;	
+	size_t i;
 
 	err = dns_create_update(mem_ctx, domainname, &req);
 	if (!ERR_DNS_IS_OK(err)) return err;
@@ -388,7 +395,7 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 	err = dns_create_delete_record(req, hostname, QTYPE_A, DNS_CLASS_ANY,
 				       &rec);
 	if (!ERR_DNS_IS_OK(err)) goto error;
-	
+
 	err = dns_add_rrec(req, rec, &req->num_updates, &req->updates);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
@@ -396,15 +403,15 @@ DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 	 * .. and add our IPs
 	 */
 
-	for ( i=0; i<num_addrs; i++ ) {		
-		err = dns_create_a_record(req, hostname, 3600, ip_addrs[i], &rec);
-		if (!ERR_DNS_IS_OK(err)) 
+	for ( i=0; i<num_addrs; i++ ) {
+		err = dns_create_a_record(req, hostname, 3600, &ss_addrs[i], &rec);
+		if (!ERR_DNS_IS_OK(err))
 			goto error;
 
 		err = dns_add_rrec(req, rec, &req->num_updates, &req->updates);
-		if (!ERR_DNS_IS_OK(err)) 
+		if (!ERR_DNS_IS_OK(err))
 			goto error;
-	}	
+	}
 
 	*preq = req;
 	return ERROR_DNS_SUCCESS;
