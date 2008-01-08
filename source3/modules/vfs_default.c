@@ -1206,9 +1206,9 @@ static ssize_t vfswrap_aio_return(struct vfs_handle_struct *handle, struct files
 	return sys_aio_return(aiocb);
 }
 
-static int vfswrap_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb)
+static int vfswrap_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
-	return sys_aio_cancel(fd, aiocb);
+	return sys_aio_cancel(fsp->fh->fd, aiocb);
 }
 
 static int vfswrap_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)

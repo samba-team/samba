@@ -98,6 +98,7 @@
 /* Leave at 22 - not yet released. Remove parameter fd from flistxattr. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from fremovexattr. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from fsetxattr. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from aio_cancel. - obnox */
 
 
 
@@ -396,7 +397,7 @@ struct vfs_ops {
 		int (*aio_read)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_write)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 		ssize_t (*aio_return_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-		int (*aio_cancel)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_cancel)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_error_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_suspend)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *timeout);
