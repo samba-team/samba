@@ -239,9 +239,9 @@ static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op, SMB_
 	return SMB_VFS_NEXT_LOCK(handle, fsp, op, offset, count, type);
 }
 
-static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
+static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
 {
-	return SMB_VFS_NEXT_GETLOCK(handle, fsp, fd, poffset, pcount, ptype, ppid);
+	return SMB_VFS_NEXT_GETLOCK(handle, fsp, poffset, pcount, ptype, ppid);
 }
 
 static int skel_symlink(vfs_handle_struct *handle,  const char *oldpath, const char *newpath)
@@ -289,16 +289,16 @@ static struct file_id skel_file_id_create(vfs_handle_struct *handle,
 	return SMB_VFS_NEXT_FILE_ID_CREATE(handle, dev, inode);
 }
 
-static size_t skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	uint32 security_info, SEC_DESC **ppdesc)
 {
 	return SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc);
 }
 
-static size_t skel_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+static NTSTATUS skel_get_nt_acl(vfs_handle_struct *handle,
 	const char *name, uint32 security_info, SEC_DESC **ppdesc)
 {
-	return SMB_VFS_NEXT_GET_NT_ACL(handle, fsp, name, security_info, ppdesc);
+	return SMB_VFS_NEXT_GET_NT_ACL(handle, name, security_info, ppdesc);
 }
 
 static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
@@ -323,14 +323,14 @@ static int skel_chmod_acl(vfs_handle_struct *handle,  const char *name, mode_t m
 	return SMB_VFS_NEXT_CHMOD_ACL(handle, name, mode);
 }
 
-static int skel_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
+static int skel_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
 	/* If the underlying VFS doesn't have ACL support... */
 	if (!handle->vfs_next.ops.fchmod_acl) {
 		errno = ENOSYS;
 		return -1;
 	}
-	return SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, fd, mode);
+	return SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
 }
 
 static int skel_sys_acl_get_entry(vfs_handle_struct *handle,  SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p)
@@ -358,9 +358,9 @@ static SMB_ACL_T skel_sys_acl_get_file(vfs_handle_struct *handle,  const char *p
 	return SMB_VFS_NEXT_SYS_ACL_GET_FILE(handle, path_p, type);
 }
 
-static SMB_ACL_T skel_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp, int fd)
+static SMB_ACL_T skel_sys_acl_get_fd(vfs_handle_struct *handle, files_struct *fsp)
 {
-	return SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp, fd);
+	return SMB_VFS_NEXT_SYS_ACL_GET_FD(handle, fsp);
 }
 
 static int skel_sys_acl_clear_perms(vfs_handle_struct *handle,  SMB_ACL_PERMSET_T permset)
@@ -413,9 +413,9 @@ static int skel_sys_acl_set_file(vfs_handle_struct *handle,  const char *name, S
 	return SMB_VFS_NEXT_SYS_ACL_SET_FILE(handle, name, acltype, theacl);
 }
 
-static int skel_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_ACL_T theacl)
+static int skel_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, SMB_ACL_T theacl)
 {
-	return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, fd, theacl);
+	return SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
 }
 
 static int skel_sys_acl_delete_def_file(vfs_handle_struct *handle,  const char *path)
@@ -454,9 +454,9 @@ size)
         return SMB_VFS_NEXT_LGETXATTR(handle, path, name, value, size);
 }
 
-static ssize_t skel_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, void *value, size_t size)
+static ssize_t skel_fgetxattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size)
 {
-        return SMB_VFS_NEXT_FGETXATTR(handle, fsp, fd, name, value, size);
+        return SMB_VFS_NEXT_FGETXATTR(handle, fsp, name, value, size);
 }
 
 static ssize_t skel_listxattr(vfs_handle_struct *handle, const char *path, char *list, size_t size)
@@ -469,9 +469,9 @@ static ssize_t skel_llistxattr(vfs_handle_struct *handle, const char *path, char
         return SMB_VFS_NEXT_LLISTXATTR(handle, path, list, size);
 }
 
-static ssize_t skel_flistxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, char *list, size_t size)
+static ssize_t skel_flistxattr(vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
-        return SMB_VFS_NEXT_FLISTXATTR(handle, fsp, fd, list, size);
+        return SMB_VFS_NEXT_FLISTXATTR(handle, fsp, list, size);
 }
 
 static int skel_removexattr(vfs_handle_struct *handle, const char *path, const char *name)
@@ -484,9 +484,9 @@ static int skel_lremovexattr(vfs_handle_struct *handle, const char *path, const 
         return SMB_VFS_NEXT_LREMOVEXATTR(handle, path, name);
 }
 
-static int skel_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name)
+static int skel_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *name)
 {
-        return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, fd, name);
+        return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
 }
 
 static int skel_setxattr(vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags)
@@ -499,9 +499,9 @@ static int skel_lsetxattr(vfs_handle_struct *handle, const char *path, const cha
         return SMB_VFS_NEXT_LSETXATTR(handle, path, name, value, size, flags);
 }
 
-static int skel_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, const void *value, size_t size, int flags)
+static int skel_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags)
 {
-        return SMB_VFS_NEXT_FSETXATTR(handle, fsp, fd, name, value, size, flags);
+        return SMB_VFS_NEXT_FSETXATTR(handle, fsp, name, value, size, flags);
 }
 
 static int skel_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
@@ -519,9 +519,9 @@ static ssize_t skel_aio_return(struct vfs_handle_struct *handle, struct files_st
 	return SMB_VFS_NEXT_AIO_RETURN(handle, fsp, aiocb);
 }
 
-static int skel_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb)
+static int skel_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
-	return SMB_VFS_NEXT_AIO_CANCEL(handle, fsp, fd, aiocb);
+	return SMB_VFS_NEXT_AIO_CANCEL(handle, fsp, aiocb);
 }
 
 static int skel_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
