@@ -1588,7 +1588,7 @@ static void init_globals(bool first_time_only)
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
 	Globals.bNTStatusSupport = True; /* Use NT status by default. */
 	Globals.bStatCache = True;	/* use stat cache by default */
-	Globals.iMaxStatCacheSize = 1024; /* one Meg by default. */
+	Globals.iMaxStatCacheSize = 256; /* 256k by default */
 	Globals.restrict_anonymous = 0;
 	Globals.bClientLanManAuth = False;	/* Do NOT use the LanMan hash if it is available */
 	Globals.bClientPlaintextAuth = False;	/* Do NOT use a plaintext password even if is requested by the server */
