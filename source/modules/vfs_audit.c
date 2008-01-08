@@ -40,7 +40,7 @@ static int audit_unlink(vfs_handle_struct *handle, const char *path);
 static int audit_chmod(vfs_handle_struct *handle, const char *path, mode_t mode);
 static int audit_chmod_acl(vfs_handle_struct *handle, const char *name, mode_t mode);
 static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode);
-static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode);
+static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t mode);
 
 /* VFS operations */
 
@@ -282,11 +282,11 @@ static int audit_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mod
 	return result;
 }
 
-static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
+static int audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, fd, mode);
+	result = SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
 
 	syslog(audit_syslog_priority(handle), "fchmod_acl %s mode 0x%x %s%s\n",
 	       fsp->fsp_name, mode,

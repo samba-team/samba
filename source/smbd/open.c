@@ -1887,7 +1887,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		int saved_errno = errno; /* We might get ENOSYS in the next
 					  * call.. */
 
-		if (SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd, unx_mode) == -1 &&
+		if (SMB_VFS_FCHMOD_ACL(fsp, unx_mode) == -1 &&
 		    errno == ENOSYS) {
 			errno = saved_errno; /* Ignore ENOSYS */
 		}
@@ -1901,8 +1901,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		{
 			int saved_errno = errno; /* We might get ENOSYS in the
 						  * next call.. */
-			ret = SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd,
-						 new_unx_mode);
+			ret = SMB_VFS_FCHMOD_ACL(fsp, new_unx_mode);
 
 			if (ret == -1 && errno == ENOSYS) {
 				errno = saved_errno; /* Ignore ENOSYS */

@@ -3802,7 +3802,7 @@ int inherit_access_acl(connection_struct *conn, const char *inherit_from_dir,
  and set the mask to rwx. Needed to preserve complex ACLs set by NT.
 ****************************************************************************/
 
-int fchmod_acl(files_struct *fsp, int fd, mode_t mode)
+int fchmod_acl(files_struct *fsp, mode_t mode)
 {
 	connection_struct *conn = fsp->conn;
 	SMB_ACL_T posix_acl = NULL;
