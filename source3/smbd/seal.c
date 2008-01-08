@@ -53,8 +53,8 @@ bool is_encrypted_packet(const uint8_t *inbuf)
 	NTSTATUS status;
 	uint16_t enc_num;
 
-	/* Ignore non-session messages. */
-	if(CVAL(inbuf,0)) {
+	/* Ignore non-session messages or 0xFF'SMB' messages. */
+	if(CVAL(inbuf,0) || IVAL(inbuf,4) == 0x424d53ff) {
 		return false;
 	}
 
@@ -63,7 +63,9 @@ bool is_encrypted_packet(const uint8_t *inbuf)
 		return false;
 	}
 
-	if (srv_trans_enc_ctx && enc_num == srv_enc_ctx()) {
+	if (SVAL(inbuf,4) == 0x45FF &&
+			srv_trans_enc_ctx &&
+			enc_num == srv_enc_ctx()) {
 		return true;
 	}
 	return false;
