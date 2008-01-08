@@ -411,7 +411,7 @@ DNS_ERROR dns_create_update( TALLOC_CTX *mem_ctx, const char *name,
 			     struct dns_update_request **preq );
 DNS_ERROR dns_create_probe(TALLOC_CTX *mem_ctx, const char *zone,
 			   const char *host, int num_ips,
-			   const struct in_addr *iplist,
+			   const struct sockaddr_storage *sslist,
 			   struct dns_update_request **preq);
 DNS_ERROR dns_create_rrec(TALLOC_CTX *mem_ctx, const char *name,
 			  uint16 type, uint16 r_class, uint32 ttl,
@@ -426,7 +426,7 @@ DNS_ERROR dns_create_tkey_record(TALLOC_CTX *mem_ctx, const char *keyname,
 				 struct dns_rrec **prec);
 DNS_ERROR dns_create_name_in_use_record(TALLOC_CTX *mem_ctx,
 					const char *name,
-					const struct in_addr *ip,
+					const struct sockaddr_storage *ip,
 					struct dns_rrec **prec);
 DNS_ERROR dns_create_delete_record(TALLOC_CTX *mem_ctx, const char *name,
 				   uint16 type, uint16 r_class,
@@ -435,7 +435,7 @@ DNS_ERROR dns_create_name_not_in_use_record(TALLOC_CTX *mem_ctx,
 					    const char *name, uint32 type,
 					    struct dns_rrec **prec);
 DNS_ERROR dns_create_a_record(TALLOC_CTX *mem_ctx, const char *host,
-			      uint32 ttl, struct in_addr ip,
+			      uint32 ttl, const struct sockaddr_storage *pss,
 			      struct dns_rrec **prec);
 DNS_ERROR dns_unmarshall_tkey_record(TALLOC_CTX *mem_ctx, struct dns_rrec *rec,
 				     struct dns_tkey_record **ptkey);
@@ -517,7 +517,7 @@ DNS_ERROR dns_sign_update(struct dns_update_request *req,
 DNS_ERROR dns_create_update_request(TALLOC_CTX *mem_ctx,
 				    const char *domainname,
 				    const char *hostname,
-				    const struct in_addr *ip_addr,
+				    const struct sockaddr_storage *ip_addr,
 				    size_t num_adds,
 				    struct dns_update_request **preq);
 
