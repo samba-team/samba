@@ -303,7 +303,7 @@ static int smb_full_audit_fsetxattr(struct vfs_handle_struct *handle,
 static int smb_full_audit_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 static int smb_full_audit_aio_write(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 static ssize_t smb_full_audit_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-static int smb_full_audit_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb);
+static int smb_full_audit_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 static int smb_full_audit_aio_error(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 static int smb_full_audit_aio_fsync(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb);
 static int smb_full_audit_aio_suspend(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *ts);
@@ -2128,11 +2128,11 @@ static ssize_t smb_full_audit_aio_return(struct vfs_handle_struct *handle, struc
 	return result;
 }
 
-static int smb_full_audit_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb)
+static int smb_full_audit_aio_cancel(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_AIO_CANCEL(handle, fsp, fd, aiocb);
+	result = SMB_VFS_NEXT_AIO_CANCEL(handle, fsp, aiocb);
 	do_log(SMB_VFS_OP_AIO_CANCEL, (result >= 0), handle,
 		"%s", fsp->fsp_name);
 
