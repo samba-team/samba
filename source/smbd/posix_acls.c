@@ -2573,7 +2573,7 @@ static bool set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, bool defau
 			}
 		}
 	} else {
-		if (SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, the_acl) == -1) {
+		if (SMB_VFS_SYS_ACL_SET_FD(fsp, the_acl) == -1) {
 			/*
 			 * Some systems allow all the above calls and only fail with no ACL support
 			 * when attempting to apply the acl. HPUX with HFS is an example of this. JRA.
@@ -2589,7 +2589,7 @@ static bool set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, bool defau
 					fsp->fsp_name ));
 
 				become_root();
-				sret = SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, the_acl);
+				sret = SMB_VFS_SYS_ACL_SET_FD(fsp, the_acl);
 				unbecome_root();
 				if (sret == 0) {
 					ret = True;
@@ -3814,7 +3814,7 @@ int fchmod_acl(files_struct *fsp, mode_t mode)
 	if ((ret = chmod_acl_internals(conn, posix_acl, mode)) == -1)
 		goto done;
 
-	ret = SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, posix_acl);
+	ret = SMB_VFS_SYS_ACL_SET_FD(fsp, posix_acl);
 
   done:
 
@@ -4152,7 +4152,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 
 	/* Set the new empty file ACL. */
 	if (fsp && fsp->fh->fd != -1) {
-		if (SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, new_file_acl) == -1) {
+		if (SMB_VFS_SYS_ACL_SET_FD(fsp, new_file_acl) == -1) {
 			DEBUG(5,("remove_posix_acl: acl_set_file failed on %s (%s)\n",
 				fname, strerror(errno) ));
 			goto done;
@@ -4199,7 +4199,7 @@ bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
 
 	if (fsp && fsp->fh->fd != -1) {
 		/* The preferred way - use an open fd. */
-		if (SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, file_acl) == -1) {
+		if (SMB_VFS_SYS_ACL_SET_FD(fsp, file_acl) == -1) {
 			DEBUG(5,("set_unix_posix_acl: acl_set_file failed on %s (%s)\n",
 				fname, strerror(errno) ));
 		        SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);

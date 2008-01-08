@@ -153,7 +153,7 @@ int aixacl_sys_acl_set_file(vfs_handle_struct *handle,
 
 int aixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
-			    int fd, SMB_ACL_T theacl)
+			    SMB_ACL_T theacl)
 {
 	struct acl *file_acl = NULL;
 	unsigned int rc;
@@ -162,7 +162,7 @@ int aixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 	if (!file_acl)
 		return -1;
 
-	rc = fchacl(fd,file_acl,file_acl->acl_len);
+	rc = fchacl(fsp->fh->fd,file_acl,file_acl->acl_len);
 	DEBUG(10,("errno is %d\n",errno));
 	DEBUG(10,("return code is %d\n",rc));
 	SAFE_FREE(file_acl);

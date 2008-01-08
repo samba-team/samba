@@ -1097,9 +1097,9 @@ static int vfswrap_sys_acl_set_file(vfs_handle_struct *handle,  const char *name
 	return sys_acl_set_file(handle, name, acltype, theacl);
 }
 
-static int vfswrap_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_ACL_T theacl)
+static int vfswrap_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp, SMB_ACL_T theacl)
 {
-	return sys_acl_set_fd(handle, fsp, fd, theacl);
+	return sys_acl_set_fd(handle, fsp, theacl);
 }
 
 static int vfswrap_sys_acl_delete_def_file(vfs_handle_struct *handle,  const char *path)

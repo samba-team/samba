@@ -1,7 +1,7 @@
 /*
    Unix SMB/Netbios implementation.
    VFS module to get and set Solaris ACLs
-   Copyright (C) Michael Adam 2006
+   Copyright (C) Michael Adam 2006,2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -219,7 +219,7 @@ int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
  */
 int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			      files_struct *fsp,
-			      int fd, SMB_ACL_T theacl)
+			      SMB_ACL_T theacl)
 {
 	SOLARIS_ACL_T solaris_acl = NULL;
 	SOLARIS_ACL_T default_acl = NULL;
@@ -242,7 +242,7 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			   strerror(errno)));
 		goto done;
 	}
-	if (!solaris_acl_get_fd(fd, &default_acl, &default_count)) {
+	if (!solaris_acl_get_fd(fsp->fh->fd, &default_acl, &default_count)) {
 		DEBUG(10, ("error getting (default) acl from fd\n"));
 		goto done;
 	}
@@ -258,7 +258,7 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	ret = facl(fd, SETACL, count, solaris_acl);
+	ret = facl(fsp->fh->fd, SETACL, count, solaris_acl);
 	if (ret != 0) {
 		DEBUG(10, ("call of facl failed (%s).\n", strerror(errno)));
 	}

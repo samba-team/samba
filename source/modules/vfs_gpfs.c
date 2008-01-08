@@ -615,7 +615,7 @@ int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
 
 int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
-			    int fd, SMB_ACL_T theacl)
+			    SMB_ACL_T theacl)
 {
 	return gpfsacl_sys_acl_set_file(handle, fsp->fsp_name, SMB_ACL_TYPE_ACCESS, theacl);
 }

@@ -448,7 +448,7 @@ int aixjfs2_sys_acl_set_file(vfs_handle_struct *handle,
 
 int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
-			    int fd, SMB_ACL_T theacl)
+			    SMB_ACL_T theacl)
 {
 	struct acl	*acl_aixc;
 	acl_type_t	acl_type_info;
@@ -467,7 +467,7 @@ int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 		return -1;
 
 	rc = aclx_fput(
-		fd,
+		fsp->fh->fd,
 		SET_ACL, /* set only the ACL, not mode bits */
 		acl_type_info,
 		acl_aixc,

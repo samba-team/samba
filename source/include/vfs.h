@@ -93,6 +93,7 @@
 /* Leave at 22 - not yet released. Remove parameter fd from getlock. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from sys_acl_get_fd. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from fchmod_acl. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from sys_acl_set_fd. - obnox */
 
 
 
@@ -366,7 +367,7 @@ struct vfs_ops {
 		int (*sys_acl_set_permset)(struct vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
 		int (*sys_acl_valid)(struct vfs_handle_struct *handle, SMB_ACL_T theacl );
 		int (*sys_acl_set_file)(struct vfs_handle_struct *handle, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
-		int (*sys_acl_set_fd)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_ACL_T theacl);
+		int (*sys_acl_set_fd)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_ACL_T theacl);
 		int (*sys_acl_delete_def_file)(struct vfs_handle_struct *handle, const char *path);
 		int (*sys_acl_get_perm)(struct vfs_handle_struct *handle, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 		int (*sys_acl_free_text)(struct vfs_handle_struct *handle, char *text);

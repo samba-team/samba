@@ -3,7 +3,7 @@
    Samba system utilities for ACL support.
    Copyright (C) Jeremy Allison 2000.
    Copyright (C) Volker Lendecke 2006
-   Copyright (C) Michael Adam 2006
+   Copyright (C) Michael Adam 2006,2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -376,9 +376,9 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 }
  
 int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   int fd, SMB_ACL_T acl_d)
+		   SMB_ACL_T acl_d)
 {
-	return posixacl_sys_acl_set_fd(handle, fsp, fd, acl_d);
+	return posixacl_sys_acl_set_fd(handle, fsp, acl_d);
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
@@ -407,9 +407,9 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 }
 
 int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   int fd, SMB_ACL_T acl_d)
+		   SMB_ACL_T acl_d)
 {
-	return aixacl_sys_acl_set_fd(handle, fsp, fd, acl_d);
+	return aixacl_sys_acl_set_fd(handle, fsp, acl_d);
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
@@ -438,9 +438,9 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 }
 
 int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   int fd, SMB_ACL_T acl_d)
+		   SMB_ACL_T acl_d)
 {
-	return tru64acl_sys_acl_set_fd(handle, fsp, fd, acl_d);
+	return tru64acl_sys_acl_set_fd(handle, fsp, acl_d);
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
@@ -469,9 +469,9 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 }
 
 int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   int fd, SMB_ACL_T acl_d)
+		   SMB_ACL_T acl_d)
 {
-	return solarisacl_sys_acl_set_fd(handle, fsp, fd, acl_d);
+	return solarisacl_sys_acl_set_fd(handle, fsp, acl_d);
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
@@ -500,9 +500,9 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 }
 
 int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   int fd, SMB_ACL_T acl_d)
+		   SMB_ACL_T acl_d)
 {
-	return hpuxacl_sys_acl_set_fd(handle, fsp, fd, acl_d);
+	return hpuxacl_sys_acl_set_fd(handle, fsp, acl_d);
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
@@ -531,9 +531,9 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 }
 
 int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   int fd, SMB_ACL_T acl_d)
+		   SMB_ACL_T acl_d)
 {
-	return irixacl_sys_acl_set_fd(handle, fsp, fd, acl_d);
+	return irixacl_sys_acl_set_fd(handle, fsp, acl_d);
 }
 
 int sys_acl_delete_def_file(vfs_handle_struct *handle,
@@ -577,7 +577,7 @@ int sys_acl_set_file(vfs_handle_struct *handle,
 }
 
 int sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-		   int fd, SMB_ACL_T acl_d)
+		   SMB_ACL_T acl_d)
 {
 #ifdef ENOTSUP
 	errno = ENOTSUP;
