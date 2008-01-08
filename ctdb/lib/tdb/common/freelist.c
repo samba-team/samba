@@ -342,3 +342,26 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_st
 	return 0;
 }
 
+
+
+/* 
+   return the size of the freelist - used to decide if we should repack 
+*/
+int tdb_freelist_size(struct tdb_context *tdb)
+{
+	tdb_off_t ptr;
+	int count=0;
+
+	if (tdb_lock(tdb, -1, F_RDLCK) == -1) {
+		return -1;
+	}
+
+	ptr = FREELIST_TOP;
+	while (ptr != 0 && tdb_ofs_read(tdb, ptr, &ptr) == 0) {
+		count++;
+		
+	}
+
+	tdb_unlock(tdb, -1, F_RDLCK);
+	return count;
+}

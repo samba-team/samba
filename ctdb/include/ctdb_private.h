@@ -484,6 +484,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TRANSACTION_START       = 65,
 		    CTDB_CONTROL_TRANSACTION_COMMIT      = 66,
 		    CTDB_CONTROL_WIPE_DATABASE           = 67,
+		    CTDB_CONTROL_DELETE_RECORD           = 68,
 };	
 
 /*
@@ -1186,5 +1187,12 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
+
+
+int ctdb_vacuum(struct ctdb_context *ctdb, int argc, const char **argv);
+int ctdb_repack(struct ctdb_context *ctdb, int argc, const char **argv);
+
+int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata);
+
 
 #endif

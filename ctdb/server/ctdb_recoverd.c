@@ -701,6 +701,94 @@ static void unban_handler(struct ctdb_context *ctdb, uint64_t srvid,
 }
 
 
+/*
+  called when a vacuum fetch has completed - just free it
+ */
+static void vacuum_fetch_callback(struct ctdb_client_call_state *state)
+{
+	talloc_free(state);
+}
+
+
+/*
+  handler for vacuum fetch
+*/
+static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+				 TDB_DATA data, void *private_data)
+{
+	struct ctdb_call call;
+	struct ctdb_control_pulldb_reply *recs;
+	int ret, i;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	const char *name;
+	struct ctdb_dbid_map *dbmap=NULL;
+	bool persistent = false;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_rec_data *r;
+
+	recs = (struct ctdb_control_pulldb_reply *)data.dptr;
+
+	/* work out if the database is persistent */
+	ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &dbmap);
+	if (ret != 0) {
+		DEBUG(0, (__location__ " Unable to get dbids from local node\n"));
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	for (i=0;i<dbmap->num;i++) {
+		if (dbmap->dbs[i].dbid == recs->db_id) {
+			persistent = dbmap->dbs[i].persistent;
+			break;
+		}
+	}
+	if (i == dbmap->num) {
+		DEBUG(0, (__location__ " Unable to find db_id 0x%x on local node\n", recs->db_id));
+		talloc_free(tmp_ctx);
+		return;		
+	}
+
+	/* find the name of this database */
+	if (ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, recs->db_id, tmp_ctx, &name) != 0) {
+		DEBUG(0,(__location__ " Failed to get name of db 0x%x\n", recs->db_id));
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	/* attach to it */
+	ctdb_db = ctdb_attach(ctdb, name, persistent);
+	if (ctdb_db == NULL) {
+		DEBUG(0,(__location__ " Failed to attach to database '%s'\n", name));
+		talloc_free(tmp_ctx);
+		return;
+	}
+	
+
+	ZERO_STRUCT(call);
+	call.call_id = CTDB_NULL_FUNC;
+	call.flags = CTDB_IMMEDIATE_MIGRATION;
+
+	r = (struct ctdb_rec_data *)&recs->data[0];
+	
+	for (i=0;
+	     i<recs->count;
+	     r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r), i++) {
+		struct ctdb_client_call_state *state;
+
+		call.key.dptr = &r->data[0];
+		call.key.dsize = r->keylen;
+
+		state = ctdb_call_send(ctdb_db, &call, vacuum_fetch_callback);
+		if (state == NULL) {
+			DEBUG(0,(__location__ " Failed to setup vacuum fetch call\n"));
+			talloc_free(tmp_ctx);
+			return;			
+		}
+	}
+
+	talloc_free(tmp_ctx);	
+}
+
 
 /*
   called when ctdb_wait_timeout should finish
@@ -1806,6 +1894,9 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	/* and one for when nodes are unbanned */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_UNBAN_NODE, unban_handler, rec);
+
+	/* register a message port for vacuum fetch */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_VACUUM_FETCH, vacuum_fetch_handler, rec);
 	
 again:
 	if (mem_ctx) {

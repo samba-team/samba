@@ -85,6 +85,11 @@ struct ctdb_call_info {
  */
 #define CTDB_SRVID_UNBAN_NODE 0xF600000000000000LL
 
+/*
+  a message to tell the recovery daemon to fetch a set of records
+ */
+#define CTDB_SRVID_VACUUM_FETCH 0xF700000000000000LL
+
 
 /* used on the domain socket, send a pdu to the local daemon */
 #define CTDB_CURRENT_NODE     0xF0000001
@@ -225,7 +230,8 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 
 int ctdb_call(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
-struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call);
+struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, struct ctdb_call *call,
+					      void (*callback)(struct ctdb_client_call_state *));
 int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call);
 
 /* send a ctdb message */
