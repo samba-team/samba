@@ -103,6 +103,14 @@ NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx)
 
 NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 {
+
+	if (ctx->krb5_cc_env) {
+		char *env = getenv(KRB5_ENV_CCNAME);
+		if (env && (strequal(ctx->krb5_cc_env, env))) {
+			unsetenv(KRB5_ENV_CCNAME);
+		}
+	}
+
 	gfree_names();
 	gfree_loadparm();
 	gfree_case_tables();
@@ -112,11 +120,6 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 	gencache_shutdown();
 	secrets_shutdown();
 	regdb_close();
-
-	if (ctx->krb5_cc_env &&
-	    (strequal(ctx->krb5_cc_env, getenv(KRB5_ENV_CCNAME)))) {
-		unsetenv(KRB5_ENV_CCNAME);
-	}
 
 	TALLOC_FREE(ctx);
 	TALLOC_FREE(frame);
