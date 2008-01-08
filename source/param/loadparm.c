@@ -3514,7 +3514,9 @@ done:
 /*
  * this is process_registry_globals as it _should_ be (roughly)
  * using the reg_api functions...
- * 
+ *
+ * We are *not* currently doing it like this due to the large
+ * linker dependecies of the registry code (see above).
  */
 static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 {
