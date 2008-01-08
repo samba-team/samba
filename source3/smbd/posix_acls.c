@@ -229,7 +229,7 @@ static void store_inheritance_attributes(files_struct *fsp, canon_ace *file_ace_
 	if (!pai_protected && num_inherited_entries(file_ace_list) == 0 && num_inherited_entries(dir_ace_list) == 0) {
 		/* Instead just remove the attribute if it exists. */
 		if (fsp->fh->fd != -1)
-			SMB_VFS_FREMOVEXATTR(fsp, fsp->fh->fd, SAMBA_POSIX_INHERITANCE_EA_NAME);
+			SMB_VFS_FREMOVEXATTR(fsp, SAMBA_POSIX_INHERITANCE_EA_NAME);
 		else
 			SMB_VFS_REMOVEXATTR(fsp->conn, fsp->fsp_name, SAMBA_POSIX_INHERITANCE_EA_NAME);
 		return;

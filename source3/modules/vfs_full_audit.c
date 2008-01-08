@@ -286,7 +286,7 @@ static int smb_full_audit_lremovexattr(struct vfs_handle_struct *handle,
 			      const char *path,
 			      const char *name);
 static int smb_full_audit_fremovexattr(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp, int fd,
+			      struct files_struct *fsp,
 			      const char *name);
 static int smb_full_audit_setxattr(struct vfs_handle_struct *handle,
 			  const char *path,
@@ -2036,12 +2036,12 @@ static int smb_full_audit_lremovexattr(struct vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_fremovexattr(struct vfs_handle_struct *handle,
-			      struct files_struct *fsp, int fd,
+			      struct files_struct *fsp,
 			      const char *name)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, fd, name);
+	result = SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, name);
 
 	do_log(SMB_VFS_OP_FREMOVEXATTR, (result >= 0), handle,
 	       "%s|%s", fsp->fsp_name, name);
