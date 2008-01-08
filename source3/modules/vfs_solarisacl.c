@@ -100,8 +100,7 @@ SMB_ACL_T solarisacl_sys_acl_get_file(vfs_handle_struct *handle,
  * get the access ACL of a file referred to by a fd
  */
 SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				    files_struct *fsp,
-				    int fd)
+				    files_struct *fsp)
 {
 	SMB_ACL_T result = NULL;
 	int count;
@@ -109,7 +108,7 @@ SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
 
 	DEBUG(10, ("entering solarisacl_sys_acl_get_fd.\n"));
 
-	if (!solaris_acl_get_fd(fd, &solaris_acl, &count)) {
+	if (!solaris_acl_get_fd(fsp->fh->fd, &solaris_acl, &count)) {
 		goto done;
 	}
 	/* 
