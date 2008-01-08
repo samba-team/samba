@@ -187,7 +187,7 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 		}
 
 		if (fsp && fsp->fh->fd != -1) {
-			sizeret = SMB_VFS_FLISTXATTR(fsp, fsp->fh->fd, ea_namelist, ea_namelist_size);
+			sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist, ea_namelist_size);
 		} else {
 			sizeret = SMB_VFS_LISTXATTR(conn, fname, ea_namelist, ea_namelist_size);
 		}
