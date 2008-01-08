@@ -647,6 +647,11 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct ctdb_db_context *ctdb_db;
 	TDB_DATA key, data;
 	struct ctdb_ltdb_header *hdr, *hdr2;
+	
+	/* these are really internal tdb functions - but we need them here for
+	   non-blocking lock of the freelist */
+	int tdb_lock_nonblock(struct tdb_context *tdb, int list, int ltype);
+	int tdb_unlock(struct tdb_context *tdb, int list, int ltype);
 
 	if (indata.dsize < sizeof(uint32_t) || indata.dsize != rec->length) {
 		DEBUG(0,(__location__ " Bad record size in ctdb_control_delete_record\n"));
@@ -688,8 +693,11 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 	}
 
 	if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
-		tdb_delete(ctdb_db->ltdb->tdb, key);
-		DEBUG(0,(__location__ " Deleted corrupt record\n"));
+		if (tdb_lock_nonblock(ctdb_db->ltdb->tdb, -1, F_WRLCK) == 0) {
+			tdb_delete(ctdb_db->ltdb->tdb, key);
+			tdb_unlock(ctdb_db->ltdb->tdb, -1, F_WRLCK);
+			DEBUG(0,(__location__ " Deleted corrupt record\n"));
+		}
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
 		free(data.dptr);
 		return 0;
@@ -712,13 +720,21 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 		return -1;				
 	}
 
+	if (tdb_lock_nonblock(ctdb_db->ltdb->tdb, -1, F_WRLCK) != 0) {
+		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+		free(data.dptr);
+		return -1;				
+	}
+
 	if (tdb_delete(ctdb_db->ltdb->tdb, key) != 0) {
+		tdb_unlock(ctdb_db->ltdb->tdb, -1, F_WRLCK);
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
 		DEBUG(2,(__location__ " Failed to delete record\n"));
 		free(data.dptr);
 		return -1;						
 	}
 
+	tdb_unlock(ctdb_db->ltdb->tdb, -1, F_WRLCK);
 	tdb_chainunlock(ctdb_db->ltdb->tdb, key);
 	free(data.dptr);
 	return 0;	
