@@ -270,7 +270,7 @@ static ssize_t smb_full_audit_lgetxattr(struct vfs_handle_struct *handle,
 			       const char *path, const char *name,
 			       void *value, size_t size);
 static ssize_t smb_full_audit_fgetxattr(struct vfs_handle_struct *handle,
-			       struct files_struct *fsp, int fd,
+			       struct files_struct *fsp,
 			       const char *name, void *value, size_t size);
 static ssize_t smb_full_audit_listxattr(struct vfs_handle_struct *handle,
 			       const char *path, char *list, size_t size);
@@ -1956,12 +1956,12 @@ static ssize_t smb_full_audit_lgetxattr(struct vfs_handle_struct *handle,
 }
 
 static ssize_t smb_full_audit_fgetxattr(struct vfs_handle_struct *handle,
-			       struct files_struct *fsp, int fd,
+			       struct files_struct *fsp,
 			       const char *name, void *value, size_t size)
 {
 	ssize_t result;
 
-	result = SMB_VFS_NEXT_FGETXATTR(handle, fsp, fd, name, value, size);
+	result = SMB_VFS_NEXT_FGETXATTR(handle, fsp, name, value, size);
 
 	do_log(SMB_VFS_OP_FGETXATTR, (result >= 0), handle,
 	       "%s|%s", fsp->fsp_name, name);

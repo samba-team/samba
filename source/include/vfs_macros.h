@@ -119,7 +119,7 @@
 /* EA operations. */
 #define SMB_VFS_GETXATTR(conn,path,name,value,size) ((conn)->vfs.ops.getxattr((conn)->vfs.handles.getxattr,(path),(name),(value),(size)))
 #define SMB_VFS_LGETXATTR(conn,path,name,value,size) ((conn)->vfs.ops.lgetxattr((conn)->vfs.handles.lgetxattr,(path),(name),(value),(size)))
-#define SMB_VFS_FGETXATTR(fsp,fd,name,value,size) ((fsp)->conn->vfs.ops.fgetxattr((fsp)->conn->vfs.handles.fgetxattr,(fsp),(fd),(name),(value),(size)))
+#define SMB_VFS_FGETXATTR(fsp,name,value,size) ((fsp)->conn->vfs.ops.fgetxattr((fsp)->conn->vfs.handles.fgetxattr,(fsp),(name),(value),(size)))
 #define SMB_VFS_LISTXATTR(conn,path,list,size) ((conn)->vfs.ops.listxattr((conn)->vfs.handles.listxattr,(path),(list),(size)))
 #define SMB_VFS_LLISTXATTR(conn,path,list,size) ((conn)->vfs.ops.llistxattr((conn)->vfs.handles.llistxattr,(path),(list),(size)))
 #define SMB_VFS_FLISTXATTR(fsp,fd,list,size) ((fsp)->conn->vfs.ops.flistxattr((fsp)->conn->vfs.handles.flistxattr,(fsp),(fd),(list),(size)))
@@ -238,7 +238,7 @@
 /* EA operations. */
 #define SMB_VFS_OPAQUE_GETXATTR(conn,path,name,value,size) ((conn)->vfs_opaque.ops.getxattr((conn)->vfs_opaque.handles.getxattr,(path),(name),(value),(size)))
 #define SMB_VFS_OPAQUE_LGETXATTR(conn,path,name,value,size) ((conn)->vfs_opaque.ops.lgetxattr((conn)->vfs_opaque.handles.lgetxattr,(path),(name),(value),(size)))
-#define SMB_VFS_OPAQUE_FGETXATTR(fsp,fd,name,value,size) ((fsp)->conn->vfs_opaque.ops.fgetxattr((fsp)->conn->vfs_opaque.handles.fgetxattr,(fsp),(fd),(name),(value),(size)))
+#define SMB_VFS_OPAQUE_FGETXATTR(fsp,name,value,size) ((fsp)->conn->vfs_opaque.ops.fgetxattr((fsp)->conn->vfs_opaque.handles.fgetxattr,(fsp),(name),(value),(size)))
 #define SMB_VFS_OPAQUE_LISTXATTR(conn,path,list,size) ((conn)->vfs_opaque.ops.listxattr((conn)->vfs_opaque.handles.listxattr,(path),(list),(size)))
 #define SMB_VFS_OPAQUE_LLISTXATTR(conn,path,list,size) ((conn)->vfs_opaque.ops.llistxattr((conn)->vfs_opaque.handles.llistxattr,(path),(list),(size)))
 #define SMB_VFS_OPAQUE_FLISTXATTR(fsp,fd,list,size) ((fsp)->conn->vfs_opaque.ops.flistxattr((fsp)->conn->vfs_opaque.handles.flistxattr,(fsp),(fd),(list),(size)))
@@ -358,7 +358,7 @@
 /* EA operations. */
 #define SMB_VFS_NEXT_GETXATTR(handle,path,name,value,size) ((handle)->vfs_next.ops.getxattr((handle)->vfs_next.handles.getxattr,(path),(name),(value),(size)))
 #define SMB_VFS_NEXT_LGETXATTR(handle,path,name,value,size) ((handle)->vfs_next.ops.lgetxattr((handle)->vfs_next.handles.lgetxattr,(path),(name),(value),(size)))
-#define SMB_VFS_NEXT_FGETXATTR(handle,fsp,fd,name,value,size) ((handle)->vfs_next.ops.fgetxattr((handle)->vfs_next.handles.fgetxattr,(fsp),(fd),(name),(value),(size)))
+#define SMB_VFS_NEXT_FGETXATTR(handle,fsp,name,value,size) ((handle)->vfs_next.ops.fgetxattr((handle)->vfs_next.handles.fgetxattr,(fsp),(name),(value),(size)))
 #define SMB_VFS_NEXT_LISTXATTR(handle,path,list,size) ((handle)->vfs_next.ops.listxattr((handle)->vfs_next.handles.listxattr,(path),(list),(size)))
 #define SMB_VFS_NEXT_LLISTXATTR(handle,path,list,size) ((handle)->vfs_next.ops.llistxattr((handle)->vfs_next.handles.llistxattr,(path),(list),(size)))
 #define SMB_VFS_NEXT_FLISTXATTR(handle,fsp,fd,list,size) ((handle)->vfs_next.ops.flistxattr((handle)->vfs_next.handles.flistxattr,(fsp),(fd),(list),(size)))
