@@ -1156,9 +1156,9 @@ ssize_t vfswrap_llistxattr(struct vfs_handle_struct *handle, const char *path, c
 	return sys_llistxattr(path, list, size);
 }
 
-ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, char *list, size_t size)
+ssize_t vfswrap_flistxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size)
 {
-	return sys_flistxattr(fd, list, size);
+	return sys_flistxattr(fsp->fh->fd, list, size);
 }
 
 static int vfswrap_removexattr(struct vfs_handle_struct *handle, const char *path, const char *name)
