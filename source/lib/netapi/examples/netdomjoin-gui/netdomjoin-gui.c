@@ -249,6 +249,8 @@ static void callback_do_reboot(GtkWidget *widget,
 		SAFE_FREE(buffer);
 		state->name_type_new = type;
 #endif
+		NetApiBufferFree((void *)buffer);
+
 		gtk_label_set_text(GTK_LABEL(state->label_current_name_buffer),
 				   state->name_buffer_new);
 		if (state->name_type_new == NetSetupDomainName) {
@@ -1292,8 +1294,12 @@ static int initialize_join_state(struct join_state *state,
 		if (status) {
 			return status;
 		}
-		state->name_buffer_initial = (char *)buffer;
+		state->name_buffer_initial = strdup(buffer);
+		if (!state->name_buffer_initial) {
+			return -1;
+		}
 		state->name_type_initial = type;
+		NetApiBufferFree((void *)buffer);
 	}
 
 	{
@@ -1311,6 +1317,7 @@ static int initialize_join_state(struct join_state *state,
 		if (!state->comment) {
 			return -1;
 		}
+		NetApiBufferFree(buffer);
 	}
 #if 0
 	{
