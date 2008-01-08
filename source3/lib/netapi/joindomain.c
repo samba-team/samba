@@ -437,9 +437,9 @@ static WERROR NetGetJoinInformationLocal(struct libnetapi_ctx *ctx,
 					 uint16_t *name_type)
 {
 	if ((lp_security() == SEC_ADS) && lp_realm()) {
-		*name_buffer = SMB_STRDUP(lp_realm());
+		*name_buffer = talloc_strdup(ctx, lp_realm());
 	} else {
-		*name_buffer = SMB_STRDUP(lp_workgroup());
+		*name_buffer = talloc_strdup(ctx, lp_workgroup());
 	}
 	if (!*name_buffer) {
 		return WERR_NOMEM;
