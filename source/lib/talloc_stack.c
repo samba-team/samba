@@ -39,6 +39,7 @@
 #include "includes.h"
 
 static int talloc_stacksize;
+static int talloc_stack_arraysize;
 static TALLOC_CTX **talloc_stack;
 
 static int talloc_pop(TALLOC_CTX *frame)
@@ -67,21 +68,25 @@ TALLOC_CTX *talloc_stackframe(void)
 {
 	TALLOC_CTX **tmp, *top;
 
-	if (!(tmp = TALLOC_REALLOC_ARRAY(NULL, talloc_stack, TALLOC_CTX *,
-					 talloc_stacksize + 1))) {
-		goto fail;
-	}
+	if (talloc_stack_arraysize < talloc_stacksize + 1) {
+		tmp = TALLOC_REALLOC_ARRAY(NULL, talloc_stack, TALLOC_CTX *,
+					   talloc_stacksize + 1);
+		if (tmp == NULL) {
+			goto fail;
+		}
+		talloc_stack = tmp;
+		talloc_stack_arraysize = talloc_stacksize + 1;
+        }
 
-	talloc_stack = tmp;
+	top = talloc_new(talloc_stack);
 
-	if (!(top = talloc_new(talloc_stack))) {
+	if (top == NULL) {
 		goto fail;
 	}
 
 	talloc_set_destructor(top, talloc_pop);
 
 	talloc_stack[talloc_stacksize++] = top;
-
 	return top;
 
  fail:
