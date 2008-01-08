@@ -420,7 +420,7 @@ static int cap_lremovexattr(vfs_handle_struct *handle, const char *path, const c
         return SMB_VFS_NEXT_LREMOVEXATTR(handle, cappath, capname);
 }
 
-static int cap_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *path)
+static int cap_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *path)
 {
 	char *cappath = capencode(talloc_tos(), path);
 
@@ -428,7 +428,7 @@ static int cap_fremovexattr(vfs_handle_struct *handle, struct files_struct *fsp,
 		errno = ENOMEM;
 		return -1;
 	}
-        return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, fd, cappath);
+        return SMB_VFS_NEXT_FREMOVEXATTR(handle, fsp, cappath);
 }
 
 static int cap_setxattr(vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags)

@@ -1171,9 +1171,9 @@ static int vfswrap_lremovexattr(struct vfs_handle_struct *handle, const char *pa
 	return sys_lremovexattr(path, name);
 }
 
-static int vfswrap_fremovexattr(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name)
+static int vfswrap_fremovexattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name)
 {
-	return sys_fremovexattr(fd, name);
+	return sys_fremovexattr(fsp->fh->fd, name);
 }
 
 static int vfswrap_setxattr(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags)

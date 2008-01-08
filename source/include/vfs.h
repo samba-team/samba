@@ -96,6 +96,7 @@
 /* Leave at 22 - not yet released. Remove parameter fd from sys_acl_set_fd. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from fgetxattr. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from flistxattr. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fremovexattr. - obnox */
 
 
 
@@ -385,7 +386,7 @@ struct vfs_ops {
 		ssize_t (*flistxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size);
 		int (*removexattr)(struct vfs_handle_struct *handle, const char *path, const char *name);
 		int (*lremovexattr)(struct vfs_handle_struct *handle, const char *path, const char *name);
-		int (*fremovexattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int filedes, const char *name);
+		int (*fremovexattr)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name);
 		int (*setxattr)(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags);
 		int (*lsetxattr)(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags);
 		int (*fsetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int filedes, const char *name, const void *value, size_t size, int flags);
