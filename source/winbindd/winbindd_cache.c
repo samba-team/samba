@@ -2360,7 +2360,7 @@ bool initialize_winbindd_cache(void)
 	return true;
 }
 
-void close_winbindd_cache()
+void close_winbindd_cache(void)
 {
 	if (!wcache) {
 		return;
