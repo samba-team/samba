@@ -33,7 +33,7 @@
 
 
 static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp, 
-				 int fd, uint32 share_mode)
+				 uint32 share_mode)
 {
 
 	START_PROFILE(syscall_kernel_flock);
@@ -52,21 +52,21 @@ static int vfs_gpfs_kernel_flock(vfs_handle_struct *handle, files_struct *fsp,
 }
 
 static int vfs_gpfs_setlease(vfs_handle_struct *handle, files_struct *fsp, 
-				 int fd, int leasetype)
+			     int leasetype)
 {
 	int ret;
 	
 	START_PROFILE(syscall_linux_setlease);
 	
-	if ( linux_set_lease_sighandler(fd) == -1)
+	if ( linux_set_lease_sighandler(fsp->fh->fd) == -1)
 		return -1;
 
-	ret = set_gpfs_lease(fd,leasetype);
+	ret = set_gpfs_lease(fsp->fh->fd,leasetype);
 	
 	if ( ret < 0 ) {
 		/* This must have come from GPFS not being available */
 		/* or some other error, hence call the default */
-		ret = linux_setlease(fd, leasetype);
+		ret = linux_setlease(fsp->fh->fd, leasetype);
 	}
 
 	END_PROFILE(syscall_linux_setlease);
@@ -227,7 +227,7 @@ static int gpfs_get_nfs4_acl(const char *fname, SMB4ACL_T **ppacl)
 }
 
 static NTSTATUS gpfsacl_fget_nt_acl(vfs_handle_struct *handle,
-	files_struct *fsp, int fd, uint32 security_info,
+	files_struct *fsp, uint32 security_info,
 	SEC_DESC **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
@@ -363,7 +363,7 @@ static NTSTATUS gpfsacl_set_nt_acl_internal(files_struct *fsp, uint32 security_i
 	return result;
 }
 
-static NTSTATUS gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
+static NTSTATUS gpfsacl_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 {
 	return gpfsacl_set_nt_acl_internal(fsp, security_info_sent, psd);
 }
@@ -501,8 +501,7 @@ SMB_ACL_T gpfsacl_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T gpfsacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				  files_struct *fsp,
-				  int fd)
+				 files_struct *fsp)
 {
 	return gpfsacl_get_posix_acl(fsp->fsp_name, GPFS_ACL_TYPE_ACCESS);
 }
@@ -616,7 +615,7 @@ int gpfsacl_sys_acl_set_file(vfs_handle_struct *handle,
 
 int gpfsacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
-			    int fd, SMB_ACL_T theacl)
+			    SMB_ACL_T theacl)
 {
 	return gpfsacl_sys_acl_set_file(handle, fsp->fsp_name, SMB_ACL_TYPE_ACCESS, theacl);
 }
@@ -642,17 +641,17 @@ static int vfs_gpfs_chmod(vfs_handle_struct *handle, const char *path, mode_t mo
 		 return SMB_VFS_NEXT_CHMOD(handle, path, mode);
 }
 
-static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
+static int vfs_gpfs_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
 		 SMB_STRUCT_STAT st;
-		 if (SMB_VFS_NEXT_FSTAT(handle, fsp, fd, &st) != 0) {
+		 if (SMB_VFS_NEXT_FSTAT(handle, fsp, &st) != 0) {
 		 		 return -1;
 		 }
 		 /* avoid chmod() if possible, to preserve acls */
 		 if ((st.st_mode & ~S_IFMT) == mode) {
 		 		 return 0;
 		 }
-		 return SMB_VFS_NEXT_FCHMOD(handle, fsp, fd, mode);
+		 return SMB_VFS_NEXT_FCHMOD(handle, fsp, mode);
 }
 
 /* VFS operations structure */

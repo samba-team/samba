@@ -39,7 +39,7 @@
 #include <fcntl.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
-#define MOUNT_CIFS_VERSION_MINOR "10"
+#define MOUNT_CIFS_VERSION_MINOR "11"
 
 #ifndef MOUNT_CIFS_VENDOR_SUFFIX
  #ifdef _SAMBA_BUILD_
@@ -136,14 +136,16 @@ static void mount_cifs_usage(void)
 	printf("\nLess commonly used options:");
 	printf("\n\tcredentials=<filename>,guest,perm,noperm,setuids,nosetuids,rw,ro,");
 	printf("\n\tsep=<char>,iocharset=<codepage>,suid,nosuid,exec,noexec,serverino,");
-	printf("\n\tdirectio,mapchars,nomapchars,nolock,servernetbiosname=<SRV_RFC1001NAME>");
+	printf("\n\tmapchars,nomapchars,nolock,servernetbiosname=<SRV_RFC1001NAME>");
+	printf("\n\tdirectio,nounix,cifsacl,sec=<authentication mechanism>,sign");
 	printf("\n\nOptions not needed for servers supporting CIFS Unix extensions");
 	printf("\n\t(e.g. unneeded for mounts to most Samba versions):");
 	printf("\n\tuid=<uid>,gid=<gid>,dir_mode=<mode>,file_mode=<mode>,sfu");
 	printf("\n\nRarely used options:");
 	printf("\n\tport=<tcpport>,rsize=<size>,wsize=<size>,unc=<unc_name>,ip=<ip_address>,");
 	printf("\n\tdev,nodev,nouser_xattr,netbiosname=<OUR_RFC1001NAME>,hard,soft,intr,");
-	printf("\n\tnointr,ignorecase,noposixpaths,noacl");
+	printf("\n\tnointr,ignorecase,noposixpaths,noacl,prefixpath=<path>,nobrl");
+	printf("\n\tin6_addr");
 	printf("\n\nOptions are described in more detail in the manual page");
 	printf("\n\tman 8 mount.cifs\n");
 	printf("\nTo display the version number of the mount helper:");

@@ -183,6 +183,7 @@ void gfree_names(void)
 	SAFE_FREE( smb_myworkgroup );
 	SAFE_FREE( smb_scope );
 	free_netbios_names_array();
+	free_local_machine_name();
 }
 
 void gfree_all( void )

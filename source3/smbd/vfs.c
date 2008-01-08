@@ -411,7 +411,7 @@ ssize_t vfs_pread_data(files_struct *fsp, char *buf,
 
 	while (total < byte_count)
 	{
-		ssize_t ret = SMB_VFS_PREAD(fsp, fsp->fh->fd, buf + total,
+		ssize_t ret = SMB_VFS_PREAD(fsp, buf + total,
 					byte_count - total, offset + total);
 
 		if (ret == 0) return total;
@@ -485,8 +485,8 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 	}
 
 	while (total < N) {
-		ret = SMB_VFS_PWRITE(fsp, fsp->fh->fd, buffer + total,
-                                N - total, offset + total);
+		ret = SMB_VFS_PWRITE(fsp, buffer + total, N - total,
+				     offset + total);
 
 		if (ret == -1)
 			return -1;
@@ -525,7 +525,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 		return -1;
 	}
 
-	ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st);
+	ret = SMB_VFS_FSTAT(fsp, &st);
 	if (ret == -1)
 		return ret;
 
@@ -539,7 +539,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 				fsp->fsp_name, (double)st.st_size ));
 
 		flush_write_cache(fsp, SIZECHANGE_FLUSH);
-		if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fh->fd, (SMB_OFF_T)len)) != -1) {
+		if ((ret = SMB_VFS_FTRUNCATE(fsp, (SMB_OFF_T)len)) != -1) {
 			set_filelen_write_cache(fsp, len);
 		}
 		return ret;
@@ -581,7 +581,7 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 	release_level_2_oplocks_on_change(fsp);
 	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n", fsp->fsp_name, (double)len));
 	flush_write_cache(fsp, SIZECHANGE_FLUSH);
-	if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fh->fd, len)) != -1) {
+	if ((ret = SMB_VFS_FTRUNCATE(fsp, len)) != -1) {
 		set_filelen_write_cache(fsp, len);
 		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_SIZE
@@ -612,7 +612,7 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 	ssize_t pwrite_ret;
 
 	release_level_2_oplocks_on_change(fsp);
-	ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st);
+	ret = SMB_VFS_FSTAT(fsp, &st);
 	if (ret == -1) {
 		return ret;
 	}
@@ -641,7 +641,7 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 	while (total < num_to_write) {
 		size_t curr_write_size = MIN(SPARSE_BUF_WRITE_SIZE, (num_to_write - total));
 
-		pwrite_ret = SMB_VFS_PWRITE(fsp, fsp->fh->fd, sparse_buf, curr_write_size, offset + total);
+		pwrite_ret = SMB_VFS_PWRITE(fsp, sparse_buf, curr_write_size, offset + total);
 		if (pwrite_ret == -1) {
 			DEBUG(10,("vfs_fill_sparse: SMB_VFS_PWRITE for file %s failed with error %s\n",
 				fsp->fsp_name, strerror(errno) ));

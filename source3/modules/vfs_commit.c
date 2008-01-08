@@ -217,7 +217,7 @@ static int commit_open(
         /* EOF commit modes require us to know the initial file size. */
         if (c && (c->on_eof != EOF_NONE)) {
                 SMB_STRUCT_STAT st;
-                if (SMB_VFS_FSTAT(fsp, fd, &st) == -1) {
+                if (SMB_VFS_FSTAT(fsp, &st) == -1) {
                         return -1;
                 }
 		c->eof = st.st_size;
@@ -248,14 +248,13 @@ static ssize_t commit_write(
 static ssize_t commit_pwrite(
         vfs_handle_struct * handle,
         files_struct *      fsp,
-        int                 fd,
         void *              data,
         size_t              count,
 	SMB_OFF_T	    offset)
 {
         ssize_t ret;
 
-        ret = SMB_VFS_NEXT_PWRITE(handle, fsp, fd, data, count, offset);
+        ret = SMB_VFS_NEXT_PWRITE(handle, fsp, data, count, offset);
         if (ret > 0) {
                 if (commit(handle, fsp, offset, ret) == -1) {
                         return -1;
@@ -278,12 +277,11 @@ static int commit_close(
 static int commit_ftruncate(
         vfs_handle_struct * handle,
         files_struct *      fsp,
-        int                 fd,
         SMB_OFF_T           len)
 {
         int result;
 
-        result = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, fd, len);
+        result = SMB_VFS_NEXT_FTRUNCATE(handle, fsp, len);
         if (result == 0) {
 		struct commit_info *c;
 		if ((c = VFS_FETCH_FSP_EXTENSION(handle, fsp))) {

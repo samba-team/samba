@@ -102,7 +102,7 @@ static void change_file_owner_to_parent(connection_struct *conn,
 	}
 
 	become_root();
-	ret = SMB_VFS_FCHOWN(fsp, fsp->fh->fd, parent_st.st_uid, (gid_t)-1);
+	ret = SMB_VFS_FCHOWN(fsp, parent_st.st_uid, (gid_t)-1);
 	unbecome_root();
 	if (ret == -1) {
 		DEBUG(0,("change_file_owner_to_parent: failed to fchown "
@@ -342,7 +342,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		if (fsp->fh->fd == -1) {
 			ret = SMB_VFS_STAT(conn, path, psbuf);
 		} else {
-			ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf);
+			ret = SMB_VFS_FSTAT(fsp, psbuf);
 			/* If we have an fd, this stat should succeed. */
 			if (ret == -1) {
 				DEBUG(0,("Error doing fstat on open file %s "
@@ -1764,7 +1764,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
            the kernel refuses the operations then the kernel is wrong.
 	   note that GPFS supports it as well - jmcd */
 
-	ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, fsp->fh->fd, share_access);
+	ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access);
 	if(ret_flock == -1 ){
 
 		TALLOC_FREE(lck);
@@ -1789,8 +1789,8 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * We are modifing the file after open - update the stat
 		 * struct..
 		 */
-		if ((SMB_VFS_FTRUNCATE(fsp,fsp->fh->fd,0) == -1) ||
-		    (SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf)==-1)) {
+		if ((SMB_VFS_FTRUNCATE(fsp, 0) == -1) ||
+		    (SMB_VFS_FSTAT(fsp, psbuf)==-1)) {
 			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(lck);
 			fd_close(fsp);
@@ -1887,7 +1887,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		int saved_errno = errno; /* We might get ENOSYS in the next
 					  * call.. */
 
-		if (SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd, unx_mode) == -1 &&
+		if (SMB_VFS_FCHMOD_ACL(fsp, unx_mode) == -1 &&
 		    errno == ENOSYS) {
 			errno = saved_errno; /* Ignore ENOSYS */
 		}
@@ -1901,8 +1901,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		{
 			int saved_errno = errno; /* We might get ENOSYS in the
 						  * next call.. */
-			ret = SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd,
-						 new_unx_mode);
+			ret = SMB_VFS_FCHMOD_ACL(fsp, new_unx_mode);
 
 			if (ret == -1 && errno == ENOSYS) {
 				errno = saved_errno; /* Ignore ENOSYS */
@@ -1915,7 +1914,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		if ((ret == -1) &&
-		    (SMB_VFS_FCHMOD(fsp, fsp->fh->fd, new_unx_mode) == -1))
+		    (SMB_VFS_FCHMOD(fsp, new_unx_mode) == -1))
 			DEBUG(5, ("open_file_ntcreate: failed to reset "
 				  "attributes of file %s to 0%o\n",
 				  fname, (unsigned int)new_unx_mode));
@@ -2621,8 +2620,7 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 
 		fsp->access_mask = FILE_GENERIC_ALL;
 
-		status = SMB_VFS_FSET_NT_ACL(
-			fsp, fsp->fh->fd, sec_info_sent, sd);
+		status = SMB_VFS_FSET_NT_ACL(fsp, sec_info_sent, sd);
 
 		fsp->access_mask = saved_access_mask;
 
@@ -2676,7 +2674,7 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 			*psbuf = sbuf;
 		}
 		else {
-			SMB_VFS_FSTAT(fsp, fsp->fh->fd, psbuf);
+			SMB_VFS_FSTAT(fsp, psbuf);
 		}
 	}
 	return NT_STATUS_OK;

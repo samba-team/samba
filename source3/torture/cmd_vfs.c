@@ -440,7 +440,7 @@ static NTSTATUS cmd_lseek(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		default:	whence = SEEK_END;
 	}
 
-	pos = SMB_VFS_LSEEK(vfs->files[fd], fd, offset, whence);
+	pos = SMB_VFS_LSEEK(vfs->files[fd], offset, whence);
 	if (pos == (SMB_OFF_T)-1) {
 		printf("lseek: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -479,7 +479,7 @@ static NTSTATUS cmd_fsync(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	}
 
 	fd = atoi(argv[1]);
-	ret = SMB_VFS_FSYNC(vfs->files[fd], fd);
+	ret = SMB_VFS_FSYNC(vfs->files[fd]);
 	if (ret == -1) {
 		printf("fsync: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
@@ -572,7 +572,7 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_OK;
 	}
 
-	if (SMB_VFS_FSTAT(vfs->files[fd], fd, &st) == -1) {
+	if (SMB_VFS_FSTAT(vfs->files[fd], &st) == -1) {
 		printf("fstat: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -706,7 +706,7 @@ static NTSTATUS cmd_fchmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 		return NT_STATUS_OK;
 	}
 
-	if (SMB_VFS_FCHMOD(vfs->files[fd], fd, mode) == -1) {
+	if (SMB_VFS_FCHMOD(vfs->files[fd], mode) == -1) {
 		printf("fchmod: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -758,7 +758,7 @@ static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 		printf("fchown: error=%d (invalid file descriptor)\n", EBADF);
 		return NT_STATUS_OK;
 	}
-	if (SMB_VFS_FCHOWN(vfs->files[fd], fd, uid, gid) == -1) {
+	if (SMB_VFS_FCHOWN(vfs->files[fd], uid, gid) == -1) {
 		printf("fchown error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -818,7 +818,7 @@ static NTSTATUS cmd_ftruncate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 		return NT_STATUS_OK;
 	}
 
-	if (SMB_VFS_FTRUNCATE(vfs->files[fd], fd, off) == -1) {
+	if (SMB_VFS_FTRUNCATE(vfs->files[fd], off) == -1) {
 		printf("ftruncate: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -901,7 +901,7 @@ static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 	printf("lock: debug lock(fd=%d, op=%d, offset=%ld, count=%ld, type=%d))\n", fd, op, offset, count, type);
 
-	if ((ret = SMB_VFS_LOCK(vfs->files[fd], fd, op, offset, count, type)) == False) {
+	if ((ret = SMB_VFS_LOCK(vfs->files[fd], op, offset, count, type)) == False) {
 		printf("lock: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

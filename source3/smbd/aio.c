@@ -746,7 +746,7 @@ void cancel_aio_by_fsp(files_struct *fsp)
 			/* Don't delete the aio_extra record as we may have
 			   completed and don't yet know it. Just do the
 			   aio_cancel call and return. */
-			SMB_VFS_AIO_CANCEL(fsp,fsp->fh->fd, &aio_ex->acb);
+			SMB_VFS_AIO_CANCEL(fsp, &aio_ex->acb);
 			aio_ex->fsp = NULL; /* fsp will be closed when we
 					     * return. */
 		}

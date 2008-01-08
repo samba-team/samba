@@ -41,16 +41,18 @@
 static int talloc_stacksize;
 static TALLOC_CTX **talloc_stack;
 
-static int talloc_pop(int *ptr)
+static int talloc_pop(TALLOC_CTX *frame)
 {
-	int tos = *ptr;
 	int i;
 
-	for (i=talloc_stacksize-1; i>=tos; i--) {
+	for (i=talloc_stacksize-1; i>0; i--) {
+		if (frame == talloc_stack[i]) {
+			break;
+		}
 		talloc_free(talloc_stack[i]);
 	}
 
-	talloc_stacksize = tos;
+	talloc_stacksize = i;
 	return 0;
 }
 
@@ -64,7 +66,6 @@ static int talloc_pop(int *ptr)
 TALLOC_CTX *talloc_stackframe(void)
 {
 	TALLOC_CTX **tmp, *top;
-	int *cleanup;
 
 	if (!(tmp = TALLOC_REALLOC_ARRAY(NULL, talloc_stack, TALLOC_CTX *,
 					 talloc_stacksize + 1))) {
@@ -77,12 +78,7 @@ TALLOC_CTX *talloc_stackframe(void)
 		goto fail;
 	}
 
-	if (!(cleanup = talloc(top, int))) {
-		goto fail;
-	}
-
-	*cleanup = talloc_stacksize;
-	talloc_set_destructor(cleanup, talloc_pop);
+	talloc_set_destructor(top, talloc_pop);
 
 	talloc_stack[talloc_stacksize++] = top;
 

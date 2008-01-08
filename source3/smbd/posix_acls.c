@@ -229,7 +229,7 @@ static void store_inheritance_attributes(files_struct *fsp, canon_ace *file_ace_
 	if (!pai_protected && num_inherited_entries(file_ace_list) == 0 && num_inherited_entries(dir_ace_list) == 0) {
 		/* Instead just remove the attribute if it exists. */
 		if (fsp->fh->fd != -1)
-			SMB_VFS_FREMOVEXATTR(fsp, fsp->fh->fd, SAMBA_POSIX_INHERITANCE_EA_NAME);
+			SMB_VFS_FREMOVEXATTR(fsp, SAMBA_POSIX_INHERITANCE_EA_NAME);
 		else
 			SMB_VFS_REMOVEXATTR(fsp->conn, fsp->fsp_name, SAMBA_POSIX_INHERITANCE_EA_NAME);
 		return;
@@ -238,7 +238,7 @@ static void store_inheritance_attributes(files_struct *fsp, canon_ace *file_ace_
 	pai_buf = create_pai_buf(file_ace_list, dir_ace_list, pai_protected, &store_size);
 
 	if (fsp->fh->fd != -1)
-		ret = SMB_VFS_FSETXATTR(fsp, fsp->fh->fd, SAMBA_POSIX_INHERITANCE_EA_NAME,
+		ret = SMB_VFS_FSETXATTR(fsp, SAMBA_POSIX_INHERITANCE_EA_NAME,
 				pai_buf, store_size, 0);
 	else
 		ret = SMB_VFS_SETXATTR(fsp->conn,fsp->fsp_name, SAMBA_POSIX_INHERITANCE_EA_NAME,
@@ -445,7 +445,7 @@ static struct pai_val *fload_inherited_info(files_struct *fsp)
 
 	do {
 		if (fsp->fh->fd != -1)
-			ret = SMB_VFS_FGETXATTR(fsp, fsp->fh->fd, SAMBA_POSIX_INHERITANCE_EA_NAME,
+			ret = SMB_VFS_FGETXATTR(fsp, SAMBA_POSIX_INHERITANCE_EA_NAME,
 					pai_buf, pai_buf_size);
 		else
 			ret = SMB_VFS_GETXATTR(fsp->conn,fsp->fsp_name,SAMBA_POSIX_INHERITANCE_EA_NAME,
@@ -2573,7 +2573,7 @@ static bool set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, bool defau
 			}
 		}
 	} else {
-		if (SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, the_acl) == -1) {
+		if (SMB_VFS_SYS_ACL_SET_FD(fsp, the_acl) == -1) {
 			/*
 			 * Some systems allow all the above calls and only fail with no ACL support
 			 * when attempting to apply the acl. HPUX with HFS is an example of this. JRA.
@@ -2589,7 +2589,7 @@ static bool set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, bool defau
 					fsp->fsp_name ));
 
 				become_root();
-				sret = SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, the_acl);
+				sret = SMB_VFS_SYS_ACL_SET_FD(fsp, the_acl);
 				unbecome_root();
 				if (sret == 0) {
 					ret = True;
@@ -3080,12 +3080,12 @@ NTSTATUS posix_fget_nt_acl(struct files_struct *fsp, uint32_t security_info,
 	}
 
 	/* Get the stat struct for the owner info. */
-	if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
+	if(SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
 		return map_nt_error_from_unix(errno);
 	}
 
 	/* Get the ACL from the fd. */
-	posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fh->fd);
+	posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp);
 
 	pal = fload_inherited_info(fsp);
 
@@ -3194,7 +3194,7 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 
 	become_root();
 	/* Keep the current file gid the same. */
-	ret = SMB_VFS_FCHOWN(fsp, fsp->fh->fd, uid, (gid_t)-1);
+	ret = SMB_VFS_FCHOWN(fsp, uid, (gid_t)-1);
 	unbecome_root();
 
 	close_file_fchmod(fsp);
@@ -3429,7 +3429,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 		if(SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf) != 0)
 			return map_nt_error_from_unix(errno);
 	} else {
-		if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0)
+		if(SMB_VFS_FSTAT(fsp, &sbuf) != 0)
 			return map_nt_error_from_unix(errno);
 	}
 
@@ -3479,7 +3479,7 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 			if(fsp->fh->fd == -1)
 				ret = SMB_VFS_STAT(fsp->conn, fsp->fsp_name, &sbuf);
 			else
-				ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf);
+				ret = SMB_VFS_FSTAT(fsp, &sbuf);
 
 			if(ret != 0)
 				return map_nt_error_from_unix(errno);
@@ -3802,19 +3802,19 @@ int inherit_access_acl(connection_struct *conn, const char *inherit_from_dir,
  and set the mask to rwx. Needed to preserve complex ACLs set by NT.
 ****************************************************************************/
 
-int fchmod_acl(files_struct *fsp, int fd, mode_t mode)
+int fchmod_acl(files_struct *fsp, mode_t mode)
 {
 	connection_struct *conn = fsp->conn;
 	SMB_ACL_T posix_acl = NULL;
 	int ret = -1;
 
-	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fd)) == NULL)
+	if ((posix_acl = SMB_VFS_SYS_ACL_GET_FD(fsp)) == NULL)
 		return -1;
 
 	if ((ret = chmod_acl_internals(conn, posix_acl, mode)) == -1)
 		goto done;
 
-	ret = SMB_VFS_SYS_ACL_SET_FD(fsp, fd, posix_acl);
+	ret = SMB_VFS_SYS_ACL_SET_FD(fsp, posix_acl);
 
   done:
 
@@ -4099,7 +4099,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 
 	/* Get the current file ACL. */
 	if (fsp && fsp->fh->fd != -1) {
-		file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fh->fd);
+		file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp);
 	} else {
 		file_acl = SMB_VFS_SYS_ACL_GET_FILE( conn, fname, SMB_ACL_TYPE_ACCESS);
 	}
@@ -4152,7 +4152,7 @@ static bool remove_posix_acl(connection_struct *conn, files_struct *fsp, const c
 
 	/* Set the new empty file ACL. */
 	if (fsp && fsp->fh->fd != -1) {
-		if (SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, new_file_acl) == -1) {
+		if (SMB_VFS_SYS_ACL_SET_FD(fsp, new_file_acl) == -1) {
 			DEBUG(5,("remove_posix_acl: acl_set_file failed on %s (%s)\n",
 				fname, strerror(errno) ));
 			goto done;
@@ -4199,7 +4199,7 @@ bool set_unix_posix_acl(connection_struct *conn, files_struct *fsp, const char *
 
 	if (fsp && fsp->fh->fd != -1) {
 		/* The preferred way - use an open fd. */
-		if (SMB_VFS_SYS_ACL_SET_FD(fsp, fsp->fh->fd, file_acl) == -1) {
+		if (SMB_VFS_SYS_ACL_SET_FD(fsp, file_acl) == -1) {
 			DEBUG(5,("set_unix_posix_acl: acl_set_file failed on %s (%s)\n",
 				fname, strerror(errno) ));
 		        SMB_VFS_SYS_ACL_FREE_ACL(conn, file_acl);

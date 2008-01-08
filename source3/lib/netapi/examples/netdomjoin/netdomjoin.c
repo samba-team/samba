@@ -104,7 +104,12 @@ int main(int argc, char **argv)
 			       password,
 			       join_flags);
 	if (status != 0) {
-		printf("Join failed with: %s\n", libnetapi_errstr(ctx, status));
+		const char *errstr = NULL;
+		errstr = libnetapi_get_error_string(ctx);
+		if (!errstr) {
+			errstr = libnetapi_errstr(ctx, status);
+		}
+		printf("Join failed with: %s\n", errstr);
 	} else {
 		printf("Successfully joined\n");
 	}
