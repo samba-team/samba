@@ -159,7 +159,7 @@ static bool aixjfs2_get_nfs4_acl(const char *name,
 }
 
 static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
-	files_struct *fsp, int fd, uint32 security_info,
+	files_struct *fsp, uint32 security_info,
 	SEC_DESC **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
@@ -258,8 +258,7 @@ SMB_ACL_T aixjfs2_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T aixjfs2_sys_acl_get_fd(vfs_handle_struct *handle,
-                                  files_struct *fsp,
-                                  int fd)
+                                  files_struct *fsp)
 {
         acl_type_t aixjfs2_type;
         aixjfs2_type.u64 = ACL_AIXC;
@@ -399,7 +398,7 @@ static NTSTATUS aixjfs2_set_nt_acl_common(files_struct *fsp, uint32 security_inf
 	return result;
 }
 
-NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
+NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 {
 	return aixjfs2_set_nt_acl_common(fsp, security_info_sent, psd);
 }
@@ -449,7 +448,7 @@ int aixjfs2_sys_acl_set_file(vfs_handle_struct *handle,
 
 int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
-			    int fd, SMB_ACL_T theacl)
+			    SMB_ACL_T theacl)
 {
 	struct acl	*acl_aixc;
 	acl_type_t	acl_type_info;
@@ -468,7 +467,7 @@ int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 		return -1;
 
 	rc = aclx_fput(
-		fd,
+		fsp->fh->fd,
 		SET_ACL, /* set only the ACL, not mode bits */
 		acl_type_info,
 		acl_aixc,

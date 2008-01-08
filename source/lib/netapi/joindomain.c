@@ -33,12 +33,12 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	struct libnet_JoinCtx *r = NULL;
 	WERROR werr;
 
-	werr = libnet_init_JoinCtx(mem_ctx, &r);
-	W_ERROR_NOT_OK_RETURN(werr);
-
 	if (!domain_name) {
 		return WERR_INVALID_PARAM;
 	}
+
+	werr = libnet_init_JoinCtx(mem_ctx, &r);
+	W_ERROR_NOT_OK_RETURN(werr);
 
 	r->in.domain_name = talloc_strdup(mem_ctx, domain_name);
 	W_ERROR_HAVE_NO_MEMORY(r->in.domain_name);
@@ -77,7 +77,13 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	r->in.join_flags = join_flags;
 	r->in.modify_config = true;
 
-	return libnet_Join(mem_ctx, r);
+	werr = libnet_Join(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr) && r->out.error_string) {
+		libnetapi_set_error_string(mem_ctx, r->out.error_string);
+	}
+	TALLOC_FREE(r);
+
+	return werr;
 }
 
 static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
@@ -431,9 +437,9 @@ static WERROR NetGetJoinInformationLocal(struct libnetapi_ctx *ctx,
 					 uint16_t *name_type)
 {
 	if ((lp_security() == SEC_ADS) && lp_realm()) {
-		*name_buffer = SMB_STRDUP(lp_realm());
+		*name_buffer = talloc_strdup(ctx, lp_realm());
 	} else {
-		*name_buffer = SMB_STRDUP(lp_workgroup());
+		*name_buffer = talloc_strdup(ctx, lp_workgroup());
 	}
 	if (!*name_buffer) {
 		return WERR_NOMEM;

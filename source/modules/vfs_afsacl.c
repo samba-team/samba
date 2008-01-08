@@ -684,7 +684,7 @@ static size_t afs_fto_nt_acl(struct afs_acl *afs_acl,
 				     security_info, ppdesc);
 	}
 
-	if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
+	if(SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
 		return 0;
 	}
 
@@ -993,7 +993,7 @@ static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 static NTSTATUS afsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
-				   int fd,  uint32 security_info,
+				   uint32 security_info,
 				   struct security_descriptor **ppdesc)
 {
 	struct afs_acl acl;
@@ -1039,7 +1039,7 @@ static NTSTATUS afsacl_get_nt_acl(struct vfs_handle_struct *handle,
 
 NTSTATUS afsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
-			 int fd, uint32 security_info_sent,
+			 uint32 security_info_sent,
 			 SEC_DESC *psd)
 {
 	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);

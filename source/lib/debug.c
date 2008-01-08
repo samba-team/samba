@@ -199,6 +199,8 @@ void gfree_debugsyms(void)
 
 	if ( DEBUGLEVEL_CLASS_ISSET != &debug_all_class_isset_hack )
 		SAFE_FREE( DEBUGLEVEL_CLASS_ISSET );
+
+	SAFE_FREE(format_bufr);
 }
 
 /****************************************************************************

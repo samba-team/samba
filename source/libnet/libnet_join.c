@@ -22,6 +22,425 @@
 #include "libnet/libnet_join.h"
 #include "libnet/libnet_proto.h"
 
+/****************************************************************
+****************************************************************/
+
+static void libnet_join_set_error_string(TALLOC_CTX *mem_ctx,
+					 struct libnet_JoinCtx *r,
+					 const char *format, ...)
+{
+	va_list args;
+	char *tmp = NULL;
+
+	va_start(args, format);
+	tmp = talloc_vasprintf(mem_ctx, format, args);
+	va_end(args);
+
+	TALLOC_FREE(r->out.error_string);
+	r->out.error_string = tmp;
+}
+
+/****************************************************************
+****************************************************************/
+
+static void libnet_unjoin_set_error_string(TALLOC_CTX *mem_ctx,
+					   struct libnet_UnjoinCtx *r,
+					   const char *format, ...)
+{
+	va_list args;
+	char *tmp = NULL;
+
+	va_start(args, format);
+	tmp = talloc_vasprintf(mem_ctx, format, args);
+	va_end(args);
+
+	TALLOC_FREE(r->out.error_string);
+	r->out.error_string = tmp;
+}
+
+#ifdef HAVE_LDAP
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_connect_ads(const char *dns_domain_name,
+				     const char *netbios_domain_name,
+				     const char *dc_name,
+				     const char *user_name,
+				     const char *password,
+				     ADS_STRUCT **ads)
+{
+	ADS_STATUS status;
+	ADS_STRUCT *my_ads = NULL;
+
+	my_ads = ads_init(dns_domain_name,
+			  netbios_domain_name,
+			  dc_name);
+	if (!my_ads) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	if (user_name) {
+		SAFE_FREE(my_ads->auth.user_name);
+		my_ads->auth.user_name = SMB_STRDUP(user_name);
+	}
+
+	if (password) {
+		SAFE_FREE(my_ads->auth.password);
+		my_ads->auth.password = SMB_STRDUP(password);
+	}
+
+	status = ads_connect(my_ads);
+	if (!ADS_ERR_OK(status)) {
+		ads_destroy(&my_ads);
+		return status;
+	}
+
+	*ads = my_ads;
+	return ADS_SUCCESS;
+}
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
+					  struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+
+	if (r->in.ads) {
+		ads_destroy(&r->in.ads);
+	}
+
+	status = libnet_connect_ads(r->in.domain_name,
+				    r->in.domain_name,
+				    r->in.dc_name,
+				    r->in.admin_account,
+				    r->in.admin_password,
+				    &r->in.ads);
+	if (!ADS_ERR_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to connect to AD: %s\n",
+			ads_errstr(status));
+	}
+
+	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_unjoin_connect_ads(TALLOC_CTX *mem_ctx,
+					    struct libnet_UnjoinCtx *r)
+{
+	ADS_STATUS status;
+
+	if (r->in.ads) {
+		ads_destroy(&r->in.ads);
+	}
+
+	status = libnet_connect_ads(r->in.domain_name,
+				    r->in.domain_name,
+				    r->in.dc_name,
+				    r->in.admin_account,
+				    r->in.admin_password,
+				    &r->in.ads);
+	if (!ADS_ERR_OK(status)) {
+		libnet_unjoin_set_error_string(mem_ctx, r,
+			"failed to connect to AD: %s\n",
+			ads_errstr(status));
+	}
+
+	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_join_precreate_machine_acct(TALLOC_CTX *mem_ctx,
+						     struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	const char *attrs[] = { "dn", NULL };
+
+	status = ads_search_dn(r->in.ads, &res, r->in.account_ou, attrs);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	if (ads_count_replies(r->in.ads, res) != 1) {
+		ads_msgfree(r->in.ads, res);
+		return ADS_ERROR_LDAP(LDAP_NO_SUCH_OBJECT);
+	}
+
+	status = ads_create_machine_acct(r->in.ads,
+					 r->in.machine_name,
+					 r->in.account_ou);
+	ads_msgfree(r->in.ads, res);
+
+	if ((status.error_type == ENUM_ADS_ERROR_LDAP) &&
+	    (status.err.rc == LDAP_ALREADY_EXISTS)) {
+		status = ADS_SUCCESS;
+	}
+
+	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_unjoin_remove_machine_acct(TALLOC_CTX *mem_ctx,
+						    struct libnet_UnjoinCtx *r)
+{
+	ADS_STATUS status;
+
+	if (!r->in.ads) {
+		status = libnet_unjoin_connect_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+	}
+
+	return ads_leave_realm(r->in.ads, r->in.machine_name);
+}
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_join_find_machine_acct(TALLOC_CTX *mem_ctx,
+						struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	char *dn = NULL;
+
+	if (!r->in.machine_name) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	status = ads_find_machine_acct(r->in.ads,
+				       &res,
+				       r->in.machine_name);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	if (ads_count_replies(r->in.ads, res) != 1) {
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	dn = ads_get_dn(r->in.ads, res);
+	if (!dn) {
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+	TALLOC_FREE(r->out.dn);
+	r->out.dn = talloc_strdup(mem_ctx, dn);
+	if (!r->out.dn) {
+		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		goto done;
+	}
+
+ done:
+	ads_msgfree(r->in.ads, res);
+	ads_memfree(r->in.ads, dn);
+
+	return status;
+}
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
+					      struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+	ADS_MODLIST mods;
+	fstring my_fqdn;
+	const char *spn_array[3] = {NULL, NULL, NULL};
+	char *spn = NULL;
+
+	if (!r->in.ads) {
+		status = libnet_join_connect_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+	}
+
+	status = libnet_join_find_machine_acct(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	spn = talloc_asprintf(mem_ctx, "HOST/%s", r->in.machine_name);
+	if (!spn) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+	strupper_m(spn);
+	spn_array[0] = spn;
+
+	if (name_to_fqdn(my_fqdn, r->in.machine_name) &&
+	    !strequal(my_fqdn, r->in.machine_name)) {
+
+		strlower_m(my_fqdn);
+		spn = talloc_asprintf(mem_ctx, "HOST/%s", my_fqdn);
+		if (!spn) {
+			return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+		}
+		spn_array[1] = spn;
+	}
+
+	mods = ads_init_mods(mem_ctx);
+	if (!mods) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	status = ads_mod_str(mem_ctx, &mods, "dNSHostName", my_fqdn);
+	if (!ADS_ERR_OK(status)) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	status = ads_mod_strlist(mem_ctx, &mods, "servicePrincipalName",
+				 spn_array);
+	if (!ADS_ERR_OK(status)) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	return ads_gen_mod(r->in.ads, r->out.dn, mods);
+}
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_join_set_machine_upn(TALLOC_CTX *mem_ctx,
+					      struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+	ADS_MODLIST mods;
+
+	if (!r->in.create_upn) {
+		return ADS_SUCCESS;
+	}
+
+	if (!r->in.ads) {
+		status = libnet_join_connect_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+	}
+
+	status = libnet_join_find_machine_acct(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	if (!r->in.upn) {
+		r->in.upn = talloc_asprintf(mem_ctx,
+					    "host/%s@%s",
+					    r->in.machine_name,
+					    r->out.dns_domain_name);
+		if (!r->in.upn) {
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+	}
+
+	mods = ads_init_mods(mem_ctx);
+	if (!mods) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	status = ads_mod_str(mem_ctx, &mods, "userPrincipalName", r->in.upn);
+	if (!ADS_ERR_OK(status)) {
+		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
+	}
+
+	return ads_gen_mod(r->in.ads, r->out.dn, mods);
+}
+
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
+						struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+	ADS_MODLIST mods;
+	char *os_sp = NULL;
+
+	if (!r->in.os_name || !r->in.os_version ) {
+		return ADS_SUCCESS;
+	}
+
+	if (!r->in.ads) {
+		status = libnet_join_connect_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+	}
+
+	status = libnet_join_find_machine_acct(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	mods = ads_init_mods(mem_ctx);
+	if (!mods) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	os_sp = talloc_asprintf(mem_ctx, "Samba %s", SAMBA_VERSION_STRING);
+	if (!os_sp) {
+		return ADS_ERROR(LDAP_NO_MEMORY);
+	}
+
+	status = ads_mod_str(mem_ctx, &mods, "operatingSystem",
+			     r->in.os_name);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	status = ads_mod_str(mem_ctx, &mods, "operatingSystemVersion",
+			     r->in.os_version);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	status = ads_mod_str(mem_ctx, &mods, "operatingSystemServicePack",
+			     os_sp);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	return ads_gen_mod(r->in.ads, r->out.dn, mods);
+}
+
+#endif
+
+/****************************************************************
+****************************************************************/
+
+static bool libnet_join_create_keytab(TALLOC_CTX *mem_ctx,
+				      struct libnet_JoinCtx *r)
+{
+	if (!lp_use_kerberos_keytab()) {
+		return true;
+	}
+
+#ifdef WITH_KRB5
+	if (!ads_keytab_create_default(r->in.ads)) {
+		return false;
+	}
+#endif
+	return true;
+}
+
+/****************************************************************
+****************************************************************/
+
 static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 						 struct libnet_JoinCtx *r)
 {
@@ -40,6 +459,9 @@ static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 
 	return true;
 }
+
+/****************************************************************
+****************************************************************/
 
 static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					   struct libnet_JoinCtx *r)
@@ -138,17 +560,21 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
-	status = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-					     acct_name, ACB_WSTRUST,
-					     0xe005000b, &user_pol, &user_rid);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-		if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED)) {
-			goto done;
+	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE) {
+		status = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx,
+						     &domain_pol,
+						     acct_name, ACB_WSTRUST,
+						     0xe005000b, &user_pol,
+						     &user_rid);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+			if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED)) {
+				goto done;
+			}
 		}
-	}
 
-	if (NT_STATUS_IS_OK(status)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		if (NT_STATUS_IS_OK(status)) {
+			rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		}
 	}
 
 	status = rpccli_samr_lookup_names(pipe_hnd, mem_ctx,
@@ -225,6 +651,9 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+/****************************************************************
+****************************************************************/
+
 static bool libnet_join_unjoindomain_remove_secrets(TALLOC_CTX *mem_ctx,
 						    struct libnet_UnjoinCtx *r)
 {
@@ -238,6 +667,9 @@ static bool libnet_join_unjoindomain_remove_secrets(TALLOC_CTX *mem_ctx,
 
 	return true;
 }
+
+/****************************************************************
+****************************************************************/
 
 static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 					     struct libnet_UnjoinCtx *r)
@@ -344,6 +776,9 @@ done:
 	return status;
 }
 
+/****************************************************************
+****************************************************************/
+
 static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 {
 	WERROR werr;
@@ -382,6 +817,9 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 	return werr;
 }
 
+/****************************************************************
+****************************************************************/
+
 static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 {
 	WERROR werr = WERR_OK;
@@ -397,6 +835,8 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 	return werr;
 }
 
+/****************************************************************
+****************************************************************/
 
 static WERROR do_JoinConfig(struct libnet_JoinCtx *r)
 {
@@ -421,6 +861,9 @@ static WERROR do_JoinConfig(struct libnet_JoinCtx *r)
 	return werr;
 }
 
+/****************************************************************
+****************************************************************/
+
 static WERROR do_UnjoinConfig(struct libnet_UnjoinCtx *r)
 {
 	WERROR werr;
@@ -444,6 +887,33 @@ static WERROR do_UnjoinConfig(struct libnet_UnjoinCtx *r)
 	return werr;
 }
 
+/****************************************************************
+****************************************************************/
+
+static int libnet_destroy_JoinCtx(struct libnet_JoinCtx *r)
+{
+	if (r->in.ads) {
+		ads_destroy(&r->in.ads);
+	}
+
+	return 0;
+}
+
+/****************************************************************
+****************************************************************/
+
+static int libnet_destroy_UnjoinCtx(struct libnet_UnjoinCtx *r)
+{
+	if (r->in.ads) {
+		ads_destroy(&r->in.ads);
+	}
+
+	return 0;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 			   struct libnet_JoinCtx **r)
 {
@@ -454,10 +924,18 @@ WERROR libnet_init_JoinCtx(TALLOC_CTX *mem_ctx,
 		return WERR_NOMEM;
 	}
 
+	talloc_set_destructor(ctx, libnet_destroy_JoinCtx);
+
+	ctx->in.machine_name = talloc_strdup(mem_ctx, global_myname());
+	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
+
 	*r = ctx;
 
 	return WERR_OK;
 }
+
+/****************************************************************
+****************************************************************/
 
 WERROR libnet_init_UnjoinCtx(TALLOC_CTX *mem_ctx,
 			     struct libnet_UnjoinCtx **r)
@@ -469,16 +947,96 @@ WERROR libnet_init_UnjoinCtx(TALLOC_CTX *mem_ctx,
 		return WERR_NOMEM;
 	}
 
+	talloc_set_destructor(ctx, libnet_destroy_UnjoinCtx);
+
+	ctx->in.machine_name = talloc_strdup(mem_ctx, global_myname());
+	W_ERROR_HAVE_NO_MEMORY(ctx->in.machine_name);
+
 	*r = ctx;
 
 	return WERR_OK;
 }
 
+/****************************************************************
+****************************************************************/
+
+static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
+				struct libnet_JoinCtx *r)
+{
+	NTSTATUS status;
+#ifdef HAVE_LDAP
+	ADS_STATUS ads_status;
+
+	if (r->in.account_ou) {
+		ads_status = libnet_join_connect_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(ads_status)) {
+			return WERR_GENERAL_FAILURE;
+		}
+		ads_status = libnet_join_precreate_machine_acct(mem_ctx, r);
+		if (!ADS_ERR_OK(ads_status)) {
+			libnet_join_set_error_string(mem_ctx, r,
+				"failed to precreate account in ou %s: %s\n",
+				r->in.account_ou,
+				ads_errstr(ads_status));
+			return WERR_GENERAL_FAILURE;
+		}
+
+		r->in.join_flags &= ~WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
+	}
+#endif
+	status = libnet_join_joindomain_rpc(mem_ctx, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+			return WERR_SETUP_ALREADY_JOINED;
+		}
+		return ntstatus_to_werror(status);
+	}
+
+	if (!libnet_join_joindomain_store_secrets(mem_ctx, r)) {
+		return WERR_SETUP_NOT_JOINED;
+	}
+
+#ifdef HAVE_LDAP
+	ads_status = libnet_join_set_machine_spn(mem_ctx, r);
+	if (!ADS_ERR_OK(ads_status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to set machine spn: %s\n",
+			ads_errstr(ads_status));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	ads_status = libnet_join_set_os_attributes(mem_ctx, r);
+	if (!ADS_ERR_OK(ads_status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to set machine os attributes: %s\n",
+			ads_errstr(ads_status));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	ads_status = libnet_join_set_machine_upn(mem_ctx, r);
+	if (!ADS_ERR_OK(ads_status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to set machine upn: %s\n",
+			ads_errstr(ads_status));
+		return WERR_GENERAL_FAILURE;
+	}
+#endif
+	if (!libnet_join_create_keytab(mem_ctx, r)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to create kerberos keytab\n");
+		return WERR_GENERAL_FAILURE;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		   struct libnet_JoinCtx *r)
 {
 	WERROR werr;
-	NTSTATUS status;
 
 	if (!r->in.domain_name) {
 		return WERR_INVALID_PARAM;
@@ -493,17 +1051,9 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 	}
 
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
-
-		status = libnet_join_joindomain_rpc(mem_ctx, r);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-				return WERR_SETUP_ALREADY_JOINED;
-			}
-			return ntstatus_to_werror(status);
-		}
-
-		if (!libnet_join_joindomain_store_secrets(mem_ctx, r)) {
-			return WERR_SETUP_NOT_JOINED;
+		werr = libnet_DomainJoin(mem_ctx, r);
+		if (!W_ERROR_IS_OK(werr)) {
+			return werr;
 		}
 	}
 
@@ -515,27 +1065,60 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 	return werr;
 }
 
+/****************************************************************
+****************************************************************/
+
+static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
+				  struct libnet_UnjoinCtx *r)
+{
+	NTSTATUS status;
+
+	status = libnet_join_unjoindomain_rpc(mem_ctx, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		libnet_unjoin_set_error_string(mem_ctx, r,
+			"failed to unjoin domain: %s\n",
+			nt_errstr(status));
+		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+			return WERR_SETUP_NOT_JOINED;
+		}
+		return ntstatus_to_werror(status);
+	}
+
+#ifdef HAVE_LDAP
+	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) {
+		ADS_STATUS ads_status;
+		libnet_unjoin_connect_ads(mem_ctx, r);
+		ads_status = libnet_unjoin_remove_machine_acct(mem_ctx, r);
+		if (!ADS_ERR_OK(ads_status)) {
+			libnet_unjoin_set_error_string(mem_ctx, r,
+				"failed to remove machine account from AD: %s\n",
+				ads_errstr(ads_status));
+		}
+	}
+#endif
+	libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 		     struct libnet_UnjoinCtx *r)
 {
 	WERROR werr;
-	NTSTATUS status;
 
 	if (r->in.modify_config && !lp_include_registry_globals()) {
 		return WERR_NOT_SUPPORTED;
 	}
 
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
-
-		status = libnet_join_unjoindomain_rpc(mem_ctx, r);
-		if (!NT_STATUS_IS_OK(status)) {
-			if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
-				return WERR_SETUP_NOT_JOINED;
-			}
-			return ntstatus_to_werror(status);
+		werr = libnet_DomainUnjoin(mem_ctx, r);
+		if (!W_ERROR_IS_OK(werr)) {
+			do_UnjoinConfig(r);
+			return werr;
 		}
-
-		libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
 	}
 
 	werr = do_UnjoinConfig(r);

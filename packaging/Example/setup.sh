@@ -24,4 +24,4 @@ echo "Done. Now settting up samba command"
 ln /sbin/init.d/samba.init /sbin/samba
 echo "Done."
 echo "To start / stop samba:"
-echo "	execute:  samba [start | stop]
+echo "	execute:  samba [start | stop]"

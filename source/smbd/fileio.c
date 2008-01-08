@@ -77,7 +77,7 @@ ssize_t read_file(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 #ifdef DMF_FIX
 		int numretries = 3;
 tryagain:
-		readret = SMB_VFS_PREAD(fsp,fsp->fh->fd,data,n,pos);
+		readret = SMB_VFS_PREAD(fsp,data,n,pos);
 
 		if (readret == -1) {
 			if ((errno == EAGAIN) && numretries) {
@@ -89,7 +89,7 @@ tryagain:
 			return -1;
 		}
 #else /* NO DMF fix. */
-		readret = SMB_VFS_PREAD(fsp,fsp->fh->fd,data,n,pos);
+		readret = SMB_VFS_PREAD(fsp,data,n,pos);
 
 		if (readret == -1) {
 			return -1;
@@ -184,7 +184,7 @@ static int wcp_file_size_change(files_struct *fsp)
 	write_cache *wcp = fsp->wcp;
 
 	wcp->file_size = wcp->offset + wcp->data_size;
-	ret = SMB_VFS_FTRUNCATE(fsp, fsp->fh->fd, wcp->file_size);
+	ret = SMB_VFS_FTRUNCATE(fsp, wcp->file_size);
 	if (ret == -1) {
 		DEBUG(0,("wcp_file_size_change (%s): ftruncate of size %.0f error %s\n",
 			fsp->fsp_name, (double)wcp->file_size, strerror(errno) ));
@@ -229,7 +229,7 @@ ssize_t write_file(struct smb_request *req,
 		SMB_STRUCT_STAT st;
 		fsp->modified = True;
 
-		if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st) == 0) {
+		if (SMB_VFS_FSTAT(fsp, &st) == 0) {
 			int dosmode = dos_mode(fsp->conn,fsp->fsp_name,&st);
 			if ((lp_store_dos_attributes(SNUM(fsp->conn)) ||
 					MAP_ARCHIVE(fsp->conn)) &&
@@ -879,7 +879,7 @@ NTSTATUS sync_file(connection_struct *conn, files_struct *fsp, bool write_throug
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
-		ret = SMB_VFS_FSYNC(fsp,fsp->fh->fd);
+		ret = SMB_VFS_FSYNC(fsp);
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
@@ -896,6 +896,6 @@ int fsp_stat(files_struct *fsp, SMB_STRUCT_STAT *pst)
 	if (fsp->fh->fd == -1) {
 		return SMB_VFS_STAT(fsp->conn, fsp->fsp_name, pst);
 	} else {
-		return SMB_VFS_FSTAT(fsp,fsp->fh->fd, pst);
+		return SMB_VFS_FSTAT(fsp, pst);
 	}
 }

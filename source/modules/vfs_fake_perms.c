@@ -46,11 +46,11 @@ static int fake_perms_stat(vfs_handle_struct *handle, const char *fname, SMB_STR
 	return ret;
 }
 
-static int fake_perms_fstat(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf)
+static int fake_perms_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
 	int ret = -1;
 
-	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, fd, sbuf);
+	ret = SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
 	if (ret == 0) {
 		if (S_ISDIR(sbuf->st_mode)) {
 			sbuf->st_mode = S_IFDIR | S_IRWXU;

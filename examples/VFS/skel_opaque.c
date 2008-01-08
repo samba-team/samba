@@ -135,9 +135,9 @@ static ssize_t skel_read(vfs_handle_struct *handle, files_struct *fsp, int fd, v
 	return vfswrap_read(NULL, fsp, fd, data, n);
 }
 
-static ssize_t skel_pread(vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n, SMB_OFF_T offset)
+static ssize_t skel_pread(vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, SMB_OFF_T offset)
 {
-	return vfswrap_pread(NULL, fsp, fd, data, n, offset);
+	return vfswrap_pread(NULL, fsp, data, n, offset);
 }
 
 static ssize_t skel_write(vfs_handle_struct *handle, files_struct *fsp, int fd, const void *data, size_t n)
@@ -145,14 +145,14 @@ static ssize_t skel_write(vfs_handle_struct *handle, files_struct *fsp, int fd, 
 	return vfswrap_write(NULL, fsp, fd, data, n);
 }
 
-ssize_t skel_pwrite(vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n, SMB_OFF_T offset)
+ssize_t skel_pwrite(vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n, SMB_OFF_T offset)
 {
-	return vfswrap_pwrite(NULL, fsp, fd, data, n, offset);
+	return vfswrap_pwrite(NULL, fsp, data, n, offset);
 }
 
-static SMB_OFF_T skel_lseek(vfs_handle_struct *handle, files_struct *fsp, int filedes, SMB_OFF_T offset, int whence)
+static SMB_OFF_T skel_lseek(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset, int whence)
 {
-	return vfswrap_lseek(NULL, fsp, filedes, offset, whence);
+	return vfswrap_lseek(NULL, fsp, offset, whence);
 }
 
 static ssize_t skel_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *hdr,
@@ -171,9 +171,9 @@ static int skel_rename(vfs_handle_struct *handle,  const char *oldname, const ch
 	return vfswrap_rename(NULL,  oldname, newname);
 }
 
-static int skel_fsync(vfs_handle_struct *handle, files_struct *fsp, int fd)
+static int skel_fsync(vfs_handle_struct *handle, files_struct *fsp)
 {
-	return vfswrap_fsync(NULL, fsp, fd);
+	return vfswrap_fsync(NULL, fsp);
 }
 
 static int skel_stat(vfs_handle_struct *handle,  const char *fname, SMB_STRUCT_STAT *sbuf)
@@ -181,9 +181,9 @@ static int skel_stat(vfs_handle_struct *handle,  const char *fname, SMB_STRUCT_S
 	return vfswrap_stat(NULL,  fname, sbuf);
 }
 
-static int skel_fstat(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf)
+static int skel_fstat(vfs_handle_struct *handle, files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
-	return vfswrap_fstat(NULL, fsp, fd, sbuf);
+	return vfswrap_fstat(NULL, fsp, sbuf);
 }
 
 static int skel_lstat(vfs_handle_struct *handle,  const char *path, SMB_STRUCT_STAT *sbuf)
@@ -201,9 +201,9 @@ static int skel_chmod(vfs_handle_struct *handle,  const char *path, mode_t mode)
 	return vfswrap_chmod(NULL,  path, mode);
 }
 
-static int skel_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
+static int skel_fchmod(vfs_handle_struct *handle, files_struct *fsp, mode_t mode)
 {
-	return vfswrap_fchmod(NULL, fsp, fd, mode);
+	return vfswrap_fchmod(NULL, fsp, mode);
 }
 
 static int skel_chown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
@@ -211,9 +211,9 @@ static int skel_chown(vfs_handle_struct *handle,  const char *path, uid_t uid, g
 	return vfswrap_chown(NULL,  path, uid, gid);
 }
 
-static int skel_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd, uid_t uid, gid_t gid)
+static int skel_fchown(vfs_handle_struct *handle, files_struct *fsp, uid_t uid, gid_t gid)
 {
-	return vfswrap_fchown(NULL, fsp, fd, uid, gid);
+	return vfswrap_fchown(NULL, fsp, uid, gid);
 }
 
 static int skel_lchown(vfs_handle_struct *handle,  const char *path, uid_t uid, gid_t gid)
@@ -236,14 +236,14 @@ static int skel_ntimes(vfs_handle_struct *handle,  const char *path, const struc
 	return vfswrap_ntimes(NULL,  path, ts);
 }
 
-static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T offset)
+static int skel_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_OFF_T offset)
 {
-	return vfswrap_ftruncate(NULL, fsp, fd, offset);
+	return vfswrap_ftruncate(NULL, fsp, offset);
 }
 
-static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+static bool skel_lock(vfs_handle_struct *handle, files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
-	return vfswrap_lock(NULL, fsp, fd, op, offset, count, type);
+	return vfswrap_lock(NULL, fsp, op, offset, count, type);
 }
 
 static bool skel_getlock(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid)
@@ -301,7 +301,7 @@ static struct file_id skel_file_id_create(vfs_handle_struct *handle,
 }
 
 static size_t skel_fget_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
-	int fd, uint32 security_info, SEC_DESC **ppdesc)
+	uint32 security_info, SEC_DESC **ppdesc)
 {
 	errno = ENOSYS;
 	return 0;
@@ -314,8 +314,8 @@ static size_t skel_get_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 	return 0;
 }
 
-static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int
-	fd, uint32 security_info_sent, SEC_DESC *psd)
+static NTSTATUS skel_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
+	uint32 security_info_sent, SEC_DESC *psd)
 {
 	errno = ENOSYS;
 	return NT_STATUS_NOT_IMPLEMENTED;

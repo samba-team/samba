@@ -1097,7 +1097,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	}
 
 	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
-	if (SMB_VFS_LSEEK(fsp, fsp->fh->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
+	if (SMB_VFS_LSEEK(fsp, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
 		DEBUG(3,("get_file_version: File [%s] too short, errno = %d\n",
 				fname, errno));
 		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
@@ -1118,7 +1118,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 		unsigned int section_table_bytes;
 
 		/* Just skip over optional header to get to section table */
-		if (SMB_VFS_LSEEK(fsp, fsp->fh->fd,
+		if (SMB_VFS_LSEEK(fsp,
 				SVAL(buf,PE_HEADER_OPTIONAL_HEADER_SIZE)-(NE_HEADER_SIZE-PE_HEADER_SIZE),
 				SEEK_CUR) == (SMB_OFF_T)-1) {
 			DEBUG(3,("get_file_version: File [%s] Windows optional header too short, errno = %d\n",
@@ -1164,7 +1164,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 				}
 
 				/* Seek to the start of the .rsrc section info */
-				if (SMB_VFS_LSEEK(fsp, fsp->fh->fd, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
+				if (SMB_VFS_LSEEK(fsp, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
 					DEBUG(3,("get_file_version: PE file [%s] too short for section info, errno = %d\n",
 							fname, errno));
 					goto error_exit;
@@ -1260,7 +1260,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 				 * twice, as it is simpler to read the code. */
 				if (strcmp(&buf[i], VS_SIGNATURE) == 0) {
 					/* Compute skip alignment to next long address */
-					int skip = -(SMB_VFS_LSEEK(fsp, fsp->fh->fd, 0, SEEK_CUR) - (byte_count - i) +
+					int skip = -(SMB_VFS_LSEEK(fsp, 0, SEEK_CUR) - (byte_count - i) +
 								 sizeof(VS_SIGNATURE)) & 3;
 					if (IVAL(buf,i+sizeof(VS_SIGNATURE)+skip) != 0xfeef04bd) continue;
 
@@ -1360,7 +1360,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 old_file));
 			use_version = false;
-			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) {
+			if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 				 goto error_exit;
 			}
 			old_create_time = st.st_mtime;
@@ -1400,7 +1400,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 new_file));
 			use_version = false;
-			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) {
+			if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 				goto error_exit;
 			}
 			new_create_time = st.st_mtime;

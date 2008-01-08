@@ -130,7 +130,7 @@ static bool get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 	}
 
 	if (fsp && fsp->fh->fd != -1) {
-		sizeret = SMB_VFS_FGETXATTR(fsp, fsp->fh->fd, ea_name, val, attr_size);
+		sizeret = SMB_VFS_FGETXATTR(fsp, ea_name, val, attr_size);
 	} else {
 		sizeret = SMB_VFS_GETXATTR(conn, fname, ea_name, val, attr_size);
 	}
@@ -187,7 +187,7 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 		}
 
 		if (fsp && fsp->fh->fd != -1) {
-			sizeret = SMB_VFS_FLISTXATTR(fsp, fsp->fh->fd, ea_namelist, ea_namelist_size);
+			sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist, ea_namelist_size);
 		} else {
 			sizeret = SMB_VFS_LISTXATTR(conn, fname, ea_namelist, ea_namelist_size);
 		}
@@ -355,7 +355,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname, s
 			if (fsp && (fsp->fh->fd != -1)) {
 				DEBUG(10,("set_ea: deleting ea name %s on file %s by file descriptor.\n",
 					unix_ea_name, fsp->fsp_name));
-				ret = SMB_VFS_FREMOVEXATTR(fsp, fsp->fh->fd, unix_ea_name);
+				ret = SMB_VFS_FREMOVEXATTR(fsp, unix_ea_name);
 			} else {
 				DEBUG(10,("set_ea: deleting ea name %s on file %s.\n",
 					unix_ea_name, fname));
@@ -373,7 +373,7 @@ NTSTATUS set_ea(connection_struct *conn, files_struct *fsp, const char *fname, s
 			if (fsp && (fsp->fh->fd != -1)) {
 				DEBUG(10,("set_ea: setting ea name %s on file %s by file descriptor.\n",
 					unix_ea_name, fsp->fsp_name));
-				ret = SMB_VFS_FSETXATTR(fsp, fsp->fh->fd, unix_ea_name,
+				ret = SMB_VFS_FSETXATTR(fsp, unix_ea_name,
 							ea_list->ea.value.data, ea_list->ea.value.length, 0);
 			} else {
 				DEBUG(10,("set_ea: setting ea name %s on file %s.\n",
@@ -3663,7 +3663,7 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 				return;
 			}
 
-			if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
+			if (SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
 				DEBUG(3,("fstat of fnum %d failed (%s)\n", fsp->fnum, strerror(errno)));
 				reply_unixerror(req, ERRDOS, ERRbadfid);
 				return;
@@ -4305,7 +4305,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 				uint16 num_def_acls = 0;
 
 				if (fsp && !fsp->is_directory && (fsp->fh->fd != -1)) {
-					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp, fsp->fh->fd);
+					file_acl = SMB_VFS_SYS_ACL_GET_FD(fsp);
 				} else {
 					file_acl = SMB_VFS_SYS_ACL_GET_FILE(conn, fname, SMB_ACL_TYPE_ACCESS);
 				}
@@ -6346,7 +6346,7 @@ static void call_trans2setfilepathinfo(connection_struct *conn,
 				return;
 			}
 
-			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &sbuf) != 0) {
+			if (SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
 				DEBUG(3,("call_trans2setfilepathinfo: fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
 				reply_unixerror(req, ERRDOS, ERRbadfid);
 				return;

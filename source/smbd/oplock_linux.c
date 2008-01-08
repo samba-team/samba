@@ -164,7 +164,7 @@ static files_struct *linux_oplock_receive_message(fd_set *fds)
 
 static bool linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
-	if ( SMB_VFS_LINUX_SETLEASE(fsp,fsp->fh->fd, F_WRLCK) == -1) {
+	if ( SMB_VFS_LINUX_SETLEASE(fsp, F_WRLCK) == -1) {
 		DEBUG(3,("linux_set_kernel_oplock: Refused oplock on file %s, "
 			 "fd = %d, file_id = %s. (%s)\n",
 			 fsp->fsp_name, fsp->fh->fd, 
@@ -202,7 +202,7 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 	/*
 	 * Remove the kernel oplock on this file.
 	 */
-	if ( SMB_VFS_LINUX_SETLEASE(fsp,fsp->fh->fd, F_UNLCK) == -1) {
+	if ( SMB_VFS_LINUX_SETLEASE(fsp, F_UNLCK) == -1) {
 		if (DEBUGLVL(0)) {
 			dbgtext("linux_release_kernel_oplock: Error when "
 				"removing kernel oplock on file " );

@@ -1255,7 +1255,6 @@ static bool net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 	ADS_STATUS status;
 	fstring salt;
 	char *std_salt;
-	LDAPMessage *res = NULL;
 	const char *machine_name = global_myname();
 
 	status = ads_domain_func_level( ads, &domain_func );
@@ -1278,24 +1277,11 @@ static bool net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 
 	if ( domain_func == DS_DOMAIN_FUNCTION_2000 ) {
 		char *upn;
-		int count;
 
-		status = ads_find_machine_acct(ads, &res, machine_name);
-		if (!ADS_ERR_OK(status)) {
-			return False;
-		}
-
-		if ( (count = ads_count_replies(ads, res)) != 1 ) {
-			DEBUG(1,("net_set_machine_spn: %d entries returned!\n", count));
-			return False;
-		}
-
-		upn = ads_pull_string(ads, ctx, res, "userPrincipalName");
+		upn = ads_get_upn(ads, ctx, machine_name);
 		if ( upn ) {
 			fstrcpy( salt, upn );
 		}
-
-		ads_msgfree(ads, res);
 	}
 
 	return kerberos_secrets_store_des_salt( salt );

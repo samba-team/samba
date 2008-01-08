@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  NetApi Support
- *  Copyright (C) Guenther Deschner 2007
+ *  Copyright (C) Guenther Deschner 2007-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,15 +26,22 @@ struct libnetapi_ctx *stat_ctx = NULL;
 TALLOC_CTX *frame = NULL;
 static bool libnetapi_initialized = false;
 
+/****************************************************************
+****************************************************************/
+
 NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 {
 	struct libnetapi_ctx *ctx = NULL;
+	char *krb5_cc_env = NULL;
 
 	if (stat_ctx && libnetapi_initialized) {
 		*context = stat_ctx;
-		return W_ERROR_V(WERR_OK);
+		return NET_API_STATUS_SUCCESS;
 	}
 
+#ifdef DEVELOPER
+	talloc_enable_leak_report();
+#endif
 	frame = talloc_stackframe();
 
 	ctx = talloc_zero(frame, struct libnetapi_ctx);
@@ -65,56 +72,89 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 
 	BlockSignals(True, SIGPIPE);
 
+	krb5_cc_env = getenv(KRB5_ENV_CCNAME);
+	if (!krb5_cc_env || (strlen(krb5_cc_env) == 0)) {
+		ctx->krb5_cc_env = talloc_strdup(frame, "MEMORY:libnetapi");
+		setenv(KRB5_ENV_CCNAME, ctx->krb5_cc_env, 1);
+	}
+
 	libnetapi_initialized = true;
 
 	*context = stat_ctx = ctx;
 
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
 
 NET_API_STATUS libnetapi_getctx(struct libnetapi_ctx **ctx)
 {
 	if (stat_ctx) {
 		*ctx = stat_ctx;
-		return W_ERROR_V(WERR_OK);
+		return NET_API_STATUS_SUCCESS;
 	}
 
 	return libnetapi_init(ctx);
 }
 
+/****************************************************************
+****************************************************************/
+
 NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 {
+
+	if (ctx->krb5_cc_env) {
+		char *env = getenv(KRB5_ENV_CCNAME);
+		if (env && (strequal(ctx->krb5_cc_env, env))) {
+			unsetenv(KRB5_ENV_CCNAME);
+		}
+	}
+
 	gfree_names();
 	gfree_loadparm();
 	gfree_case_tables();
 	gfree_charcnv();
 	gfree_interfaces();
 
+	gencache_shutdown();
+	secrets_shutdown();
+	regdb_close();
+
 	TALLOC_FREE(ctx);
 	TALLOC_FREE(frame);
 
 	gfree_debugsyms();
 
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
 
 NET_API_STATUS libnetapi_set_debuglevel(struct libnetapi_ctx *ctx,
 					const char *debuglevel)
 {
 	AllowDebugChange = true;
-	ctx->debuglevel = debuglevel;
+	ctx->debuglevel = talloc_strdup(ctx, debuglevel);
 	if (!debug_parse_levels(debuglevel)) {
 		return W_ERROR_V(WERR_GENERAL_FAILURE);
 	}
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
 
+/****************************************************************
+****************************************************************/
+
 NET_API_STATUS libnetapi_get_debuglevel(struct libnetapi_ctx *ctx,
-					const char **debuglevel)
+					char **debuglevel)
 {
 	*debuglevel = ctx->debuglevel;
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
 
 NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx,
 				      const char *username)
@@ -124,7 +164,7 @@ NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx,
 	if (!ctx->username) {
 		return W_ERROR_V(WERR_NOMEM);
 	}
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
 
 NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx,
@@ -135,7 +175,7 @@ NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx,
 	if (!ctx->password) {
 		return W_ERROR_V(WERR_NOMEM);
 	}
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
 
 NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
@@ -146,8 +186,11 @@ NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 	if (!ctx->workgroup) {
 		return W_ERROR_V(WERR_NOMEM);
 	}
-	return W_ERROR_V(WERR_OK);
+	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
 
 const char *libnetapi_errstr(struct libnetapi_ctx *ctx,
 			     NET_API_STATUS status)
@@ -157,4 +200,41 @@ const char *libnetapi_errstr(struct libnetapi_ctx *ctx,
 	}
 
 	return get_friendly_werror_msg(W_ERROR(status));
+}
+
+/****************************************************************
+****************************************************************/
+
+NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx,
+					  const char *error_string)
+{
+	TALLOC_FREE(ctx->error_string);
+	ctx->error_string = talloc_strdup(ctx, error_string);
+	if (!ctx->error_string) {
+		return W_ERROR_V(WERR_NOMEM);
+	}
+	return NET_API_STATUS_SUCCESS;
+
+}
+
+/****************************************************************
+****************************************************************/
+
+const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx)
+{
+	return ctx->error_string;
+}
+
+/****************************************************************
+****************************************************************/
+
+NET_API_STATUS NetApiBufferFree(void *buffer)
+{
+	if (!buffer) {
+		return W_ERROR_V(WERR_INSUFFICIENT_BUFFER);
+	}
+
+	talloc_free(buffer);
+
+	return NET_API_STATUS_SUCCESS;
 }

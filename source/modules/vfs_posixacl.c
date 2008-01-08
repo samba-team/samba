@@ -63,11 +63,10 @@ SMB_ACL_T posixacl_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T posixacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				  files_struct *fsp,
-				  int fd)
+				  files_struct *fsp)
 {
 	struct smb_acl_t *result;
-	acl_t acl = acl_get_fd(fd);
+	acl_t acl = acl_get_fd(fsp->fh->fd);
 
 	if (acl == NULL) {
 		return NULL;
@@ -114,14 +113,14 @@ int posixacl_sys_acl_set_file(vfs_handle_struct *handle,
 
 int posixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
-			    int fd, SMB_ACL_T theacl)
+			    SMB_ACL_T theacl)
 {
 	int res;
 	acl_t acl = smb_acl_to_posix(theacl);
 	if (acl == NULL) {
 		return -1;
 	}
-	res =  acl_set_fd(fd, acl);
+	res =  acl_set_fd(fsp->fh->fd, acl);
 	acl_free(acl);
 	return res;
 }

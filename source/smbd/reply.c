@@ -2835,7 +2835,7 @@ void reply_readbraw(struct smb_request *req)
 		return;
 	}
 
-	if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st) == 0) {
+	if (SMB_VFS_FSTAT(fsp, &st) == 0) {
 		size = st.st_size;
 	}
 
@@ -3096,7 +3096,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	SMB_STRUCT_STAT sbuf;
 	ssize_t nread = -1;
 
-	if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
+	if(SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		return;
 	}
@@ -4091,12 +4091,12 @@ void reply_lseek(struct smb_request *req)
 	}
 
 	if (umode == SEEK_END) {
-		if((res = SMB_VFS_LSEEK(fsp,fsp->fh->fd,startpos,umode)) == -1) {
+		if((res = SMB_VFS_LSEEK(fsp,startpos,umode)) == -1) {
 			if(errno == EINVAL) {
 				SMB_OFF_T current_pos = startpos;
 				SMB_STRUCT_STAT sbuf;
 
-				if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
+				if(SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
 					reply_unixerror(req, ERRDOS,
 							ERRnoaccess);
 					END_PROFILE(SMBlseek);
@@ -4105,7 +4105,7 @@ void reply_lseek(struct smb_request *req)
 
 				current_pos += sbuf.st_size;
 				if(current_pos < 0)
-					res = SMB_VFS_LSEEK(fsp,fsp->fh->fd,0,SEEK_SET);
+					res = SMB_VFS_LSEEK(fsp,0,SEEK_SET);
 			}
 		}
 
@@ -5485,7 +5485,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	/* Ensure we have a valid stat struct for the source. */
 	if (fsp->fh->fd != -1) {
-		if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) == -1) {
+		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
 			return map_nt_error_from_unix(errno);
 		}
 	} else {
@@ -6052,7 +6052,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	}
 
 	if ((ofun&3) == 1) {
-		if(SMB_VFS_LSEEK(fsp2,fsp2->fh->fd,0,SEEK_END) == -1) {
+		if(SMB_VFS_LSEEK(fsp2,0,SEEK_END) == -1) {
 			DEBUG(0,("copy_file: error - vfs lseek returned error %s\n", strerror(errno) ));
 			/*
 			 * Stop the copy from occurring.

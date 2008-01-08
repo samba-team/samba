@@ -83,7 +83,7 @@ NTSTATUS print_fsp_open(connection_struct *conn, const char *fname,
 	fsp->is_directory = False;
 	string_set(&fsp->fsp_name,print_job_fname(lp_const_servicename(SNUM(conn)),jobid));
 	fsp->wcp = NULL; 
-	SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf);
+	SMB_VFS_FSTAT(fsp, &sbuf);
 	fsp->mode = sbuf.st_mode;
 	fsp->file_id = vfs_file_id_from_sbuf(conn, &sbuf);
 

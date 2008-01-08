@@ -3026,26 +3026,26 @@ char* ads_get_upn( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name )
 	ADS_STATUS status;
 	int count = 0;
 	char *name = NULL;
-	
-	status = ads_find_machine_acct(ads, &res, global_myname());
+
+	status = ads_find_machine_acct(ads, &res, machine_name);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(0,("ads_get_upn: Failed to find account for %s\n",
 			global_myname()));
 		goto out;
 	}
-		
+
 	if ( (count = ads_count_replies(ads, res)) != 1 ) {
 		DEBUG(1,("ads_get_upn: %d entries returned!\n", count));
 		goto out;
 	}
-		
+
 	if ( (name = ads_pull_string(ads, ctx, res, "userPrincipalName")) == NULL ) {
 		DEBUG(2,("ads_get_upn: No userPrincipalName attribute!\n"));
 	}
 
 out:
 	ads_msgfree(ads, res);
-	
+
 	return name;
 }
 
