@@ -1304,19 +1304,22 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 	/* always add the primary group to the sid array */
 	sid_compose(&primary_group, &info3->dom_sid.sid, info3->user_rid);
 	
-	if (!add_sid_to_array(mem_ctx, &primary_group, user_sids, &num_groups)) {
+	status = add_sid_to_array(mem_ctx, &primary_group, user_sids,
+				  &num_groups);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(info3);
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 
 	for (i=0; i<info3->num_groups; i++) {
 		sid_copy(&group_sid, &info3->dom_sid.sid);
 		sid_append_rid(&group_sid, info3->gids[i].g_rid);
 
-		if (!add_sid_to_array(mem_ctx, &group_sid, user_sids,
-				 &num_groups)) {
+		status = add_sid_to_array(mem_ctx, &group_sid, user_sids,
+					  &num_groups);
+		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(info3);
-			return NT_STATUS_NO_MEMORY;
+			return status;
 		}
 	}
 
@@ -1328,11 +1331,11 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 		if (info3->other_sids_attrib[i] & SE_GROUP_RESOURCE)
 			continue;
 
-		if (!add_sid_to_array(mem_ctx, &info3->other_sids[i].sid,
-				      user_sids, &num_groups))
-		{
+		status = add_sid_to_array(mem_ctx, &info3->other_sids[i].sid,
+					  user_sids, &num_groups);
+		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(info3);
-			return NT_STATUS_NO_MEMORY;			
+			return status;
 		}
 	}
 	

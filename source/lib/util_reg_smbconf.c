@@ -30,18 +30,21 @@ extern REGISTRY_OPS smbconf_reg_ops;
  */
 NT_USER_TOKEN *registry_create_admin_token(TALLOC_CTX *mem_ctx)
 {
+	NTSTATUS status;
 	NT_USER_TOKEN *token = NULL;
 
 	/* fake a user token: builtin administrators sid and the
 	 * disk operators privilege is all we need to access the 
 	 * registry... */
-	if (!(token = TALLOC_ZERO_P(mem_ctx, NT_USER_TOKEN))) {
+	token = TALLOC_ZERO_P(mem_ctx, NT_USER_TOKEN);
+	if (token == NULL) {
 		DEBUG(1, ("talloc failed\n"));
 		goto done;
 	}
 	token->privileges = se_disk_operators;
-	if (!add_sid_to_array(token, &global_sid_Builtin_Administrators,
-			 &token->user_sids, &token->num_sids)) {
+	status = add_sid_to_array(token, &global_sid_Builtin_Administrators,
+				  &token->user_sids, &token->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Error adding builtin administrators sid "
 			  "to fake token.\n"));
 		goto done;

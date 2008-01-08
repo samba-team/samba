@@ -643,9 +643,12 @@ ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 	token_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, 1);
 	ADS_ERROR_HAVE_NO_MEMORY(token_sids);
 
-	if (!add_sid_to_array_unique(mem_ctx, &primary_group_sid, &token_sids,
-				     &num_token_sids)) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
+	status = ADS_ERROR_NT(add_sid_to_array_unique(mem_ctx,
+						      &primary_group_sid,
+						      &token_sids,
+						      &num_token_sids));
+	if (!ADS_ERR_OK(status)) {
+		return status;
 	}
 
 	for (i = 0; i < num_ad_token_sids; i++) {
@@ -654,9 +657,12 @@ ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 			continue;
 		}
 
-		if (!add_sid_to_array_unique(mem_ctx, &ad_token_sids[i],
-					     &token_sids, &num_token_sids)) {
-			return ADS_ERROR(LDAP_NO_MEMORY);
+		status = ADS_ERROR_NT(add_sid_to_array_unique(mem_ctx,
+							      &ad_token_sids[i],
+							      &token_sids,
+							      &num_token_sids));
+		if (!ADS_ERR_OK(status)) {
+			return status;
 		}
 	}
 
