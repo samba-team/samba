@@ -128,7 +128,8 @@ static int async_control_on_vnnmap(struct ctdb_context *ctdb, enum ctdb_controls
 /*
   vacuum one record
  */
-static int ctdb_vacuum_one(struct ctdb_context *ctdb, TDB_DATA key, struct ctdb_db_context *ctdb_db)
+static int ctdb_vacuum_one(struct ctdb_context *ctdb, TDB_DATA key, 
+			   struct ctdb_db_context *ctdb_db, uint32_t *count)
 {
 	TDB_DATA data;
 	struct ctdb_ltdb_header *hdr;
@@ -211,6 +212,8 @@ static int ctdb_vacuum_one(struct ctdb_context *ctdb, TDB_DATA key, struct ctdb_
 	tdb_chainunlock(ctdb_db->ltdb->tdb, key);
 	free(data.dptr);
 
+	(*count)++;
+
 	return 0;
 }
 
@@ -219,7 +222,7 @@ static int ctdb_vacuum_one(struct ctdb_context *ctdb, TDB_DATA key, struct ctdb_
   vacuum records for which we are the lmaster 
  */
 static int ctdb_vacuum_local(struct ctdb_context *ctdb, struct ctdb_control_pulldb_reply *list, 
-			     struct ctdb_db_context *ctdb_db)
+			     struct ctdb_db_context *ctdb_db, uint32_t *count)
 {
 	struct ctdb_rec_data *r;
 	int i;
@@ -232,7 +235,7 @@ static int ctdb_vacuum_local(struct ctdb_context *ctdb, struct ctdb_control_pull
 		TDB_DATA key;
 		key.dptr = &r->data[0];
 		key.dsize = r->keylen;
-		if (ctdb_vacuum_one(ctdb, key, ctdb_db) != 0) {
+		if (ctdb_vacuum_one(ctdb, key, ctdb_db, count) != 0) {
 			return -1;
 		}
 	}
@@ -374,11 +377,11 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 			continue;
 		}
 
-		printf("Found %u records for lmaster %u\n", vdata->list[i]->count, i);		
-
 		/* for records where we are not the lmaster, tell the lmaster to fetch the record */
 		if (ctdb->vnn_map->map[i] != ctdb->pnn) {
 			TDB_DATA data;
+			printf("Found %u records for lmaster %u in '%s'\n", vdata->list[i]->count, i, name);
+
 			data.dsize = talloc_get_size(vdata->list[i]);
 			data.dptr  = (void *)vdata->list[i];
 			if (ctdb_send_message(ctdb, ctdb->vnn_map->map[i], CTDB_SRVID_VACUUM_FETCH, data) != 0) {
@@ -389,12 +392,23 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 			}
 			continue;
 		}
+	}	
+
+	for (i=0;i<ctdb->vnn_map->size;i++) {
+		uint32_t count = 0;
+
+		if (vdata->list[i]->count == 0) {
+			continue;
+		}
 
 		/* for records where we are the lmaster, we can try to delete them */
-		if (ctdb_vacuum_local(ctdb, vdata->list[i], ctdb_db) != 0) {
+		if (ctdb_vacuum_local(ctdb, vdata->list[i], ctdb_db, &count) != 0) {
 			DEBUG(0,(__location__ " Deletion error in vacuuming '%s'\n", name));
 			talloc_free(vdata);
 			return -1;					
+		}
+		if (count != 0) {
+			printf("Deleted %u records on this node from '%s'\n", count, name);
 		}
 	}	
 
@@ -576,7 +590,7 @@ static int ctdb_repack_db(struct ctdb_context *ctdb, uint32_t db_id,
 		return 0;
 	}
 
-	DEBUG(0,("Repacking %s with %u freelist entries\n", name, size));
+	printf("Repacking %s with %u freelist entries\n", name, size);
 
 	if (ctdb_repack_tdb(ctdb_db->ltdb->tdb) != 0) {
 		DEBUG(0,(__location__ " Failed to repack '%s'\n", name));

@@ -1117,6 +1117,8 @@ int main(int argc, const char *argv[])
 	struct event_context *ev;
 	const char *control;
 
+	setlinebuf(stdout);
+	
 	/* set some defaults */
 	options.timelimit = 3;
 	options.pnn = CTDB_CURRENT_NODE;
