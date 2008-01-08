@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   simple SPNEGO routines
+   simple ASN1 routines
    Copyright (C) Andrew Tridgell 2001
    
    This program is free software; you can redistribute it and/or modify
@@ -679,7 +679,7 @@ bool asn1_read_ContextSimple(struct asn1_data *data, uint8_t num, DATA_BLOB *blo
 	return !data->has_error;
 }
 
-/* read an interger without tag*/
+/* read an integer without tag*/
 bool asn1_read_implicit_Integer(struct asn1_data *data, int *i)
 {
 	uint8_t b;
@@ -693,7 +693,7 @@ bool asn1_read_implicit_Integer(struct asn1_data *data, int *i)
 	
 }
 
-/* read an interger */
+/* read an integer */
 bool asn1_read_Integer(struct asn1_data *data, int *i)
 {
 	*i = 0;
@@ -703,7 +703,7 @@ bool asn1_read_Integer(struct asn1_data *data, int *i)
 	return asn1_end_tag(data);	
 }
 
-/* read an interger */
+/* read an integer */
 bool asn1_read_enumerated(struct asn1_data *data, int *v)
 {
 	*v = 0;
@@ -717,7 +717,7 @@ bool asn1_read_enumerated(struct asn1_data *data, int *v)
 	return asn1_end_tag(data);	
 }
 
-/* check a enumarted value is correct */
+/* check a enumerated value is correct */
 bool asn1_check_enumerated(struct asn1_data *data, int v)
 {
 	uint8_t b;
@@ -731,7 +731,7 @@ bool asn1_check_enumerated(struct asn1_data *data, int v)
 	return !data->has_error;
 }
 
-/* write an enumarted value to the stream */
+/* write an enumerated value to the stream */
 bool asn1_write_enumerated(struct asn1_data *data, uint8_t v)
 {
 	if (!asn1_push_tag(data, ASN1_ENUMERATED)) return false;
