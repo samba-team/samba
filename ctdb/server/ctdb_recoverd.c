@@ -28,6 +28,7 @@
 #include "../include/ctdb.h"
 #include "../include/ctdb_private.h"
 #include "db_wrap.h"
+#include "dlinklist.h"
 
 
 struct ban_state {
@@ -50,6 +51,7 @@ struct ctdb_recoverd {
 	uint32_t node_flags;
 	struct timed_event *send_election_te;
 	struct timed_event *election_timeout;
+	struct vacuum_info *vacuum_info;
 };
 
 #define CONTROL_TIMEOUT() timeval_current_ofs(ctdb->tunable.recover_timeout, 0)
@@ -700,6 +702,190 @@ static void unban_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	talloc_free(mem_ctx);
 }
 
+
+struct vacuum_info {
+	struct vacuum_info *next, *prev;
+	struct ctdb_recoverd *rec;
+	uint32_t srcnode;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_control_pulldb_reply *recs;
+	struct ctdb_rec_data *r;
+};
+
+static void vacuum_fetch_next(struct vacuum_info *v);
+
+/*
+  called when a vacuum fetch has completed - just free it and do the next one
+ */
+static void vacuum_fetch_callback(struct ctdb_client_call_state *state)
+{
+	struct vacuum_info *v = talloc_get_type(state->async.private, struct vacuum_info);
+	talloc_free(state);
+	vacuum_fetch_next(v);
+}
+
+
+/*
+  process the next element from the vacuum list
+*/
+static void vacuum_fetch_next(struct vacuum_info *v)
+{
+	struct ctdb_call call;
+	struct ctdb_rec_data *r;
+
+	while (v->recs->count) {
+		struct ctdb_client_call_state *state;
+		TDB_DATA data;
+		struct ctdb_ltdb_header *hdr;
+
+		ZERO_STRUCT(call);
+		call.call_id = CTDB_NULL_FUNC;
+		call.flags = CTDB_IMMEDIATE_MIGRATION;
+
+		r = v->r;
+		v->r = (struct ctdb_rec_data *)(r->length + (uint8_t *)r);
+		v->recs->count--;
+
+		call.key.dptr = &r->data[0];
+		call.key.dsize = r->keylen;
+
+		/* ensure we don't block this daemon - just skip a record if we can't get
+		   the chainlock */
+		if (tdb_chainlock_nonblock(v->ctdb_db->ltdb->tdb, call.key) != 0) {
+			continue;
+		}
+
+		data = tdb_fetch(v->ctdb_db->ltdb->tdb, call.key);
+		if (data.dptr == NULL || data.dsize < sizeof(struct ctdb_ltdb_header)) {
+			tdb_chainunlock(v->ctdb_db->ltdb->tdb, call.key);
+			continue;
+		}
+		
+		hdr = (struct ctdb_ltdb_header *)data.dptr;
+		if (hdr->dmaster == v->rec->ctdb->pnn) {
+			/* its already local */
+			tdb_chainunlock(v->ctdb_db->ltdb->tdb, call.key);
+			continue;
+		}
+
+		state = ctdb_call_send(v->ctdb_db, &call);
+		tdb_chainunlock(v->ctdb_db->ltdb->tdb, call.key);
+		if (state == NULL) {
+			DEBUG(0,(__location__ " Failed to setup vacuum fetch call\n"));
+			talloc_free(v);
+			return;
+		}
+		state->async.fn = vacuum_fetch_callback;
+		state->async.private = v;
+		return;
+	}
+
+	talloc_free(v);
+}
+
+
+/*
+  destroy a vacuum info structure
+ */
+static int vacuum_info_destructor(struct vacuum_info *v)
+{
+	DLIST_REMOVE(v->rec->vacuum_info, v);
+	return 0;
+}
+
+
+/*
+  handler for vacuum fetch
+*/
+static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid, 
+				 TDB_DATA data, void *private_data)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(private_data, struct ctdb_recoverd);
+	struct ctdb_control_pulldb_reply *recs;
+	int ret, i;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	const char *name;
+	struct ctdb_dbid_map *dbmap=NULL;
+	bool persistent = false;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_rec_data *r;
+	uint32_t srcnode;
+	struct vacuum_info *v;
+
+	recs = (struct ctdb_control_pulldb_reply *)data.dptr;
+	r = (struct ctdb_rec_data *)&recs->data[0];
+
+	if (recs->count == 0) {
+		return;
+	}
+
+	srcnode = r->reqid;
+
+	for (v=rec->vacuum_info;v;v=v->next) {
+		if (srcnode == v->srcnode) {
+			/* we're already working on records from this node */
+			return;
+		}
+	}
+
+	/* work out if the database is persistent */
+	ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, tmp_ctx, &dbmap);
+	if (ret != 0) {
+		DEBUG(0, (__location__ " Unable to get dbids from local node\n"));
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	for (i=0;i<dbmap->num;i++) {
+		if (dbmap->dbs[i].dbid == recs->db_id) {
+			persistent = dbmap->dbs[i].persistent;
+			break;
+		}
+	}
+	if (i == dbmap->num) {
+		DEBUG(0, (__location__ " Unable to find db_id 0x%x on local node\n", recs->db_id));
+		talloc_free(tmp_ctx);
+		return;		
+	}
+
+	/* find the name of this database */
+	if (ctdb_ctrl_getdbname(ctdb, CONTROL_TIMEOUT(), CTDB_CURRENT_NODE, recs->db_id, tmp_ctx, &name) != 0) {
+		DEBUG(0,(__location__ " Failed to get name of db 0x%x\n", recs->db_id));
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	/* attach to it */
+	ctdb_db = ctdb_attach(ctdb, name, persistent);
+	if (ctdb_db == NULL) {
+		DEBUG(0,(__location__ " Failed to attach to database '%s'\n", name));
+		talloc_free(tmp_ctx);
+		return;
+	}
+
+	v = talloc_zero(rec, struct vacuum_info);
+	if (v == NULL) {
+		DEBUG(0,(__location__ " Out of memory\n"));
+		return;
+	}
+
+	v->rec = rec;
+	v->srcnode = srcnode;
+	v->ctdb_db = ctdb_db;
+	v->recs = talloc_memdup(v, recs, data.dsize);
+	if (v->recs == NULL) {
+		DEBUG(0,(__location__ " Out of memory\n"));
+		talloc_free(v);
+		return;		
+	}
+	v->r = 	(struct ctdb_rec_data *)&v->recs->data[0];
+
+	DLIST_ADD(rec->vacuum_info, v);
+
+	talloc_set_destructor(v, vacuum_info_destructor);
+
+	vacuum_fetch_next(v);
+}
 
 
 /*
@@ -1806,6 +1992,9 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	/* and one for when nodes are unbanned */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_UNBAN_NODE, unban_handler, rec);
+
+	/* register a message port for vacuum fetch */
+	ctdb_set_message_handler(ctdb, CTDB_SRVID_VACUUM_FETCH, vacuum_fetch_handler, rec);
 	
 again:
 	if (mem_ctx) {
@@ -1820,6 +2009,12 @@ again:
 
 	/* we only check for recovery once every second */
 	ctdb_wait_timeout(ctdb, ctdb->tunable.recover_interval);
+
+	/* verify that the main daemon is still running */
+	if (kill(ctdb->ctdbd_pid, 0) != 0) {
+		DEBUG(0,("CTDB daemon is no longer available. Shutting down recovery daemon\n"));
+		exit(-1);
+	}
 
 	if (rec->election_timeout) {
 		/* an election is in progress */
@@ -2274,6 +2469,8 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 	if (pipe(fd) != 0) {
 		return -1;
 	}
+
+	ctdb->ctdbd_pid = getpid();
 
 	ctdb->recoverd_pid = fork();
 	if (ctdb->recoverd_pid == -1) {

@@ -148,16 +148,6 @@ static int ctdb_client_queue_pkt(struct ctdb_context *ctdb, struct ctdb_req_head
 
 
 /*
-  state of a in-progress ctdb call in client
-*/
-struct ctdb_client_call_state {
-	enum call_state state;
-	uint32_t reqid;
-	struct ctdb_db_context *ctdb_db;
-	struct ctdb_call call;
-};
-
-/*
   called when a CTDB_REPLY_CALL packet comes in in the client
 
   This packet comes in response to a CTDB_REQ_CALL request packet. It
@@ -187,6 +177,10 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 	talloc_steal(state, c);
 
 	state->state = CTDB_CALL_DONE;
+
+	if (state->async.fn) {
+		state->async.fn(state);
+	}
 }
 
 static void ctdb_client_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr);
@@ -377,7 +371,7 @@ static struct ctdb_client_call_state *ctdb_client_call_local_send(struct ctdb_db
   This call never blocks.
 */
 struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db, 
-				       struct ctdb_call *call)
+					      struct ctdb_call *call)
 {
 	struct ctdb_client_call_state *state;
 	struct ctdb_context *ctdb = ctdb_db->ctdb;
@@ -1575,6 +1569,22 @@ int ctdb_statistics_reset(struct ctdb_context *ctdb, uint32_t destnode)
 	return 0;
 }
 
+/*
+  this is the dummy null procedure that all databases support
+*/
+static int ctdb_null_func(struct ctdb_call_info *call)
+{
+	return 0;
+}
+
+/*
+  this is a plain fetch procedure that all databases support
+*/
+static int ctdb_fetch_func(struct ctdb_call_info *call)
+{
+	call->reply_data = &call->record_data;
+	return 0;
+}
 
 /*
   attach to a specific database - client call
@@ -1632,6 +1642,10 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 
 	DLIST_ADD(ctdb->db_list, ctdb_db);
 
+	/* add well known functions */
+	ctdb_set_call(ctdb_db, ctdb_null_func, CTDB_NULL_FUNC);
+	ctdb_set_call(ctdb_db, ctdb_fetch_func, CTDB_FETCH_FUNC);
+
 	return ctdb_db;
 }
 
@@ -1641,12 +1655,15 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
  */
 int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id)
 {
+	struct ctdb_registered_call *call;
+
+#if 0
 	TDB_DATA data;
 	int32_t status;
 	struct ctdb_control_set_call c;
 	int ret;
-	struct ctdb_registered_call *call;
 
+	/* this is no longer valid with the separate daemon architecture */
 	c.db_id = ctdb_db->db_id;
 	c.fn    = fn;
 	c.id    = id;
@@ -1660,6 +1677,7 @@ int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id)
 		DEBUG(0,("ctdb_set_call failed for call %u\n", id));
 		return -1;
 	}
+#endif
 
 	/* also register locally */
 	call = talloc(ctdb_db, struct ctdb_registered_call);

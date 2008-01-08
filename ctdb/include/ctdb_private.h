@@ -366,6 +366,7 @@ struct ctdb_context {
 	struct _trbt_tree_t *server_ids;	
 	const char *event_script_dir;
 	const char *default_public_interface;
+	pid_t ctdbd_pid;
 	pid_t recoverd_pid;
 	bool done_startup;
 	const char *node_ip;
@@ -483,6 +484,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TRANSACTION_START       = 65,
 		    CTDB_CONTROL_TRANSACTION_COMMIT      = 66,
 		    CTDB_CONTROL_WIPE_DATABASE           = 67,
+		    CTDB_CONTROL_DELETE_RECORD           = 68,
 };	
 
 /*
@@ -1001,6 +1003,21 @@ struct ctdb_control_wipe_database {
 	uint32_t transaction_id;
 };
 
+/*
+  state of a in-progress ctdb call in client
+*/
+struct ctdb_client_call_state {
+	enum call_state state;
+	uint32_t reqid;
+	struct ctdb_db_context *ctdb_db;
+	struct ctdb_call call;
+	struct {
+		void (*fn)(struct ctdb_client_call_state *);
+		void *private;
+	} async;
+};
+
+
 int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA indata, 
 				    TDB_DATA *outdata, uint32_t srcnode);
 int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_DATA *outdata);
@@ -1185,5 +1202,12 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id);
 int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata);
+
+
+int ctdb_vacuum(struct ctdb_context *ctdb, int argc, const char **argv);
+int ctdb_repack(struct ctdb_context *ctdb, int argc, const char **argv);
+
+int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata);
+
 
 #endif

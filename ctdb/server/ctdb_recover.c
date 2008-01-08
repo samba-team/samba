@@ -509,6 +509,11 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		return -1;
 	}
 
+	if (recmode != ctdb->recovery_mode) {
+		DEBUG(0,(__location__ " Recovery mode set to %s\n", 
+			 recmode==CTDB_RECOVERY_NORMAL?"NORMAL":"ACTIVE"));
+	}
+
 	if (recmode != CTDB_RECOVERY_NORMAL ||
 	    ctdb->recovery_mode != CTDB_RECOVERY_ACTIVE) {
 		ctdb->recovery_mode = recmode;
@@ -631,3 +636,106 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 }
 
 
+/*
+  delete a record as part of the vacuum process
+  only delete if we are not lmaster or dmaster, and our rsn is <= the provided rsn
+  use non-blocking locks
+ */
+int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
+{
+	struct ctdb_rec_data *rec = (struct ctdb_rec_data *)indata.dptr;
+	struct ctdb_db_context *ctdb_db;
+	TDB_DATA key, data;
+	struct ctdb_ltdb_header *hdr, *hdr2;
+	
+	/* these are really internal tdb functions - but we need them here for
+	   non-blocking lock of the freelist */
+	int tdb_lock_nonblock(struct tdb_context *tdb, int list, int ltype);
+	int tdb_unlock(struct tdb_context *tdb, int list, int ltype);
+
+	if (indata.dsize < sizeof(uint32_t) || indata.dsize != rec->length) {
+		DEBUG(0,(__location__ " Bad record size in ctdb_control_delete_record\n"));
+		return -1;
+	}
+
+	ctdb_db = find_ctdb_db(ctdb, rec->reqid);
+	if (!ctdb_db) {
+		DEBUG(0,(__location__ " Unknown db 0x%08x\n", rec->reqid));
+		return -1;
+	}
+
+	key.dsize = rec->keylen;
+	key.dptr  = &rec->data[0];
+	data.dsize = rec->datalen;
+	data.dptr = &rec->data[rec->keylen];
+
+	if (ctdb_lmaster(ctdb, &key) == ctdb->pnn) {
+		DEBUG(2,(__location__ " Called delete on record where we are lmaster\n"));
+		return -1;
+	}
+
+	if (data.dsize != sizeof(struct ctdb_ltdb_header)) {
+		DEBUG(0,(__location__ " Bad record size\n"));
+		return -1;
+	}
+
+	hdr = (struct ctdb_ltdb_header *)data.dptr;
+
+	/* use a non-blocking lock */
+	if (tdb_chainlock_nonblock(ctdb_db->ltdb->tdb, key) != 0) {
+		return -1;
+	}
+
+	data = tdb_fetch(ctdb_db->ltdb->tdb, key);
+	if (data.dptr == NULL) {
+		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+		return 0;
+	}
+
+	if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
+		if (tdb_lock_nonblock(ctdb_db->ltdb->tdb, -1, F_WRLCK) == 0) {
+			tdb_delete(ctdb_db->ltdb->tdb, key);
+			tdb_unlock(ctdb_db->ltdb->tdb, -1, F_WRLCK);
+			DEBUG(0,(__location__ " Deleted corrupt record\n"));
+		}
+		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+		free(data.dptr);
+		return 0;
+	}
+	
+	hdr2 = (struct ctdb_ltdb_header *)data.dptr;
+
+	if (hdr2->rsn > hdr->rsn) {
+		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+		DEBUG(2,(__location__ " Skipping record with rsn=%llu - called with rsn=%llu\n",
+			 (unsigned long long)hdr2->rsn, (unsigned long long)hdr->rsn));
+		free(data.dptr);
+		return -1;		
+	}
+
+	if (hdr2->dmaster == ctdb->pnn) {
+		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+		DEBUG(2,(__location__ " Attempted delete record where we are the dmaster\n"));
+		free(data.dptr);
+		return -1;				
+	}
+
+	if (tdb_lock_nonblock(ctdb_db->ltdb->tdb, -1, F_WRLCK) != 0) {
+		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+		free(data.dptr);
+		return -1;				
+	}
+
+	if (tdb_delete(ctdb_db->ltdb->tdb, key) != 0) {
+		tdb_unlock(ctdb_db->ltdb->tdb, -1, F_WRLCK);
+		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+		DEBUG(2,(__location__ " Failed to delete record\n"));
+		free(data.dptr);
+		return -1;						
+	}
+
+	tdb_unlock(ctdb_db->ltdb->tdb, -1, F_WRLCK);
+	tdb_chainunlock(ctdb_db->ltdb->tdb, key);
+	free(data.dptr);
+	return 0;	
+}

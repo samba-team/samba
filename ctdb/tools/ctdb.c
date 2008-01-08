@@ -1025,7 +1025,6 @@ static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **
 			    CTDB_CTRL_FLAG_NOREPLY, tdb_null, NULL, NULL, NULL, NULL, NULL);
 }
 
-
 static const struct {
 	const char *name;
 	int (*fn)(struct ctdb_context *, int, const char **);
@@ -1068,6 +1067,8 @@ static const struct {
 	{ "unregsrvid",      unregsrvid,		false, "unregister a server id", "<pnn> <type> <id>" },
 	{ "chksrvid",        chksrvid,			false, "check if a server id exists", "<pnn> <type> <id>" },
 	{ "getsrvids",       getsrvids,			false, "get a list of all server ids"},
+	{ "vacuum",          ctdb_vacuum,		false, "vacuum the databases of empty records", "[max_records]"},
+	{ "repack",          ctdb_repack,		false, "repack all databases", "[max_freelist]"},
 };
 
 /*
@@ -1116,6 +1117,8 @@ int main(int argc, const char *argv[])
 	struct event_context *ev;
 	const char *control;
 
+	setlinebuf(stdout);
+	
 	/* set some defaults */
 	options.timelimit = 3;
 	options.pnn = CTDB_CURRENT_NODE;

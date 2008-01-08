@@ -321,6 +321,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		CHECK_CONTROL_DATA_SIZE(sizeof(struct ctdb_control_wipe_database));
 		return ctdb_control_wipe_database(ctdb, indata);
 
+	case CTDB_CONTROL_DELETE_RECORD:
+		return ctdb_control_delete_record(ctdb, indata);
+
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
