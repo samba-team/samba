@@ -345,6 +345,7 @@ WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 {
 	struct ldb_key_data *kd;
 	struct ldb_context *wrap;
+	struct ldb_message *attrs_msg;
 
 	if (location == NULL)
 		return WERR_INVALID_PARAM;
@@ -356,6 +357,15 @@ WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 		DEBUG(1, (__FILE__": unable to connect\n"));
 		return WERR_FOOBAR;
 	}
+
+	attrs_msg = ldb_msg_new(wrap);
+	W_ERROR_HAVE_NO_MEMORY(attrs_msg);
+	attrs_msg->dn = ldb_dn_new(attrs_msg, wrap, "@ATTRIBUTES");
+	W_ERROR_HAVE_NO_MEMORY(attrs_msg->dn);
+	ldb_msg_add_string(attrs_msg, "key", "CASE_INSENSITIVE");
+	ldb_msg_add_string(attrs_msg, "value", "CASE_INSENSITIVE");
+
+	ldb_add(wrap, attrs_msg);
 
 	ldb_set_debug_stderr(wrap);
 
