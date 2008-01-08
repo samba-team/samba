@@ -787,6 +787,11 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 
 	tc = talloc_chunk_from_ptr(ptr);
 
+	if ((size < tc->size) && ((tc->size - size) < 1024)) {
+		tc->size = size;
+		return ptr;
+	}
+
 	/* don't allow realloc on referenced pointers */
 	if (unlikely(tc->refs)) {
 		return NULL;
