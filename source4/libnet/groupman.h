@@ -33,3 +33,14 @@ struct libnet_rpc_groupadd {
 		struct policy_handle group_handle;
 	} out;
 };
+
+
+struct libnet_rpc_groupdel {
+	struct {
+		struct policy_handle domain_handle;
+		const char *groupname;
+	} in;
+	struct {
+		struct policy_handle group_handle;
+	} out;
+};
