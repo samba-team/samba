@@ -53,6 +53,11 @@ const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx);
 /****************************************************************
 ****************************************************************/
 
+NET_API_STATUS NetApiBufferFree(void *buffer);
+
+/****************************************************************
+****************************************************************/
+
 /* wkssvc */
 NET_API_STATUS NetJoinDomain(const char *server,
 			     const char *domain,

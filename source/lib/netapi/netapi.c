@@ -224,3 +224,17 @@ const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx)
 {
 	return ctx->error_string;
 }
+
+/****************************************************************
+****************************************************************/
+
+NET_API_STATUS NetApiBufferFree(void *buffer)
+{
+	if (!buffer) {
+		return W_ERROR_V(WERR_INSUFFICIENT_BUFFER);
+	}
+
+	talloc_free(buffer);
+
+	return NET_API_STATUS_SUCCESS;
+}
