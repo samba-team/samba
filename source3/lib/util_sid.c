@@ -573,20 +573,20 @@ DOM_SID *sid_dup_talloc(TALLOC_CTX *ctx, const DOM_SID *src)
  Add SID to an array SIDs
 ********************************************************************/
 
-bool add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid, 
-		      DOM_SID **sids, size_t *num)
+NTSTATUS add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+			  DOM_SID **sids, size_t *num)
 {
 	*sids = TALLOC_REALLOC_ARRAY(mem_ctx, *sids, DOM_SID,
 					     (*num)+1);
 	if (*sids == NULL) {
 		*num = 0;
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	sid_copy(&((*sids)[*num]), sid);
 	*num += 1;
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 
@@ -594,14 +594,14 @@ bool add_sid_to_array(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
  Add SID to an array SIDs ensuring that it is not already there
 ********************************************************************/
 
-bool add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
-			     DOM_SID **sids, size_t *num_sids)
+NTSTATUS add_sid_to_array_unique(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
+				 DOM_SID **sids, size_t *num_sids)
 {
 	size_t i;
 
 	for (i=0; i<(*num_sids); i++) {
 		if (sid_compare(sid, &(*sids)[i]) == 0)
-			return True;
+			return NT_STATUS_OK;
 	}
 
 	return add_sid_to_array(mem_ctx, sid, sids, num_sids);
@@ -670,6 +670,7 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 			      size_t *num_user_sids,
 			      bool include_user_group_rid)
 {
+	NTSTATUS status;
 	DOM_SID sid;
 	DOM_SID *sid_array = NULL;
 	size_t num_sids = 0;
@@ -677,34 +678,46 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 
 	if (include_user_group_rid) {
 
-		if (!sid_compose(&sid, &(info3->dom_sid.sid),
-				 info3->user_rid)
-		    || !add_sid_to_array(mem_ctx, &sid,
-					 &sid_array, &num_sids)) {
-			DEBUG(3,("could not add user SID from rid 0x%x\n",
-				 info3->user_rid));			
+		if (!sid_compose(&sid, &(info3->dom_sid.sid), info3->user_rid))
+		{
+			DEBUG(3, ("could not compose user SID from rid 0x%x\n",
+				  info3->user_rid));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
+		status = add_sid_to_array(mem_ctx, &sid, &sid_array, &num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("could not append user SID from rid 0x%x\n",
+				  info3->user_rid));
+			return status;
+		}
 
-		if (!sid_compose(&sid, &(info3->dom_sid.sid),
-				 info3->group_rid)
-		    || !add_sid_to_array(mem_ctx, &sid, 
-					 &sid_array, &num_sids)) {
-			DEBUG(3,("could not append additional group rid 0x%x\n",
-				 info3->group_rid));			
-			
+		if (!sid_compose(&sid, &(info3->dom_sid.sid), info3->group_rid))
+		{
+			DEBUG(3, ("could not compose group SID from rid 0x%x\n",
+				  info3->group_rid));
 			return NT_STATUS_INVALID_PARAMETER;
+		}
+		status = add_sid_to_array(mem_ctx, &sid, &sid_array, &num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("could not append group SID from rid 0x%x\n",
+				  info3->group_rid));
+			return status;
 		}
 	}
 
 	for (i = 0; i < info3->num_groups2; i++) {
 		if (!sid_compose(&sid, &(info3->dom_sid.sid),
-				 info3->gids[i].g_rid)
-		    || !add_sid_to_array(mem_ctx, &sid,
-					 &sid_array, &num_sids)) {
-			DEBUG(3,("could not append additional group rid 0x%x\n",
-				 info3->gids[i].g_rid));	
+				 info3->gids[i].g_rid))
+		{
+			DEBUG(3, ("could not compose SID from additional group "
+				  "rid 0x%x\n", info3->gids[i].g_rid));
 			return NT_STATUS_INVALID_PARAMETER;
+		}
+		status = add_sid_to_array(mem_ctx, &sid, &sid_array, &num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(3, ("could not append SID from additional group "
+				  "rid 0x%x\n", info3->gids[i].g_rid));
+			return status;
 		}
 	}
 
@@ -715,11 +728,12 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
          */
 
 	for (i = 0; i < info3->num_other_sids; i++) {
-		if (!add_sid_to_array(mem_ctx, &info3->other_sids[i].sid,
-				      &sid_array, &num_sids)) {
+		status = add_sid_to_array(mem_ctx, &info3->other_sids[i].sid,
+				      &sid_array, &num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("could not add SID to array: %s\n",
 				  sid_string_dbg(&info3->other_sids[i].sid)));
-			return NT_STATUS_NO_MEMORY;
+			return status;
 		}
 	}
 

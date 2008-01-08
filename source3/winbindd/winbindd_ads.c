@@ -596,8 +596,9 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 	num_groups = 0;
 
 	/* always add the primary group to the sid array */
-	if (!add_sid_to_array(mem_ctx, primary_group, user_sids, &num_groups)) {
-		status = NT_STATUS_NO_MEMORY;
+	status = add_sid_to_array(mem_ctx, primary_group, user_sids,
+				  &num_groups);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
@@ -615,10 +616,10 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 			if (sid_check_is_in_builtin(&group_sid)) {
 				continue;
 			}
-			       
-			if (!add_sid_to_array(mem_ctx, &group_sid, user_sids,
-					 &num_groups)) {
-				status = NT_STATUS_NO_MEMORY;
+
+			status = add_sid_to_array(mem_ctx, &group_sid,
+						  user_sids, &num_groups);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
 		}
@@ -684,8 +685,9 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 	num_groups = 0;
 
 	/* always add the primary group to the sid array */
-	if (!add_sid_to_array(mem_ctx, primary_group, user_sids, &num_groups)) {
-		status = NT_STATUS_NO_MEMORY;
+	status = add_sid_to_array(mem_ctx, primary_group, user_sids,
+				  &num_groups);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
@@ -720,10 +722,10 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 		if (sid_check_is_in_builtin(&group_sids[i])) {
 			continue;
 		}
-		       
-		if (!add_sid_to_array(mem_ctx, &group_sids[i], user_sids,
-				 &num_groups)) {
-			status = NT_STATUS_NO_MEMORY;
+
+		status = add_sid_to_array(mem_ctx, &group_sids[i], user_sids,
+					  &num_groups);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 	
@@ -861,8 +863,9 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	*user_sids = NULL;
 	num_groups = 0;
 
-	if (!add_sid_to_array(mem_ctx, &primary_group, user_sids, &num_groups)) {
-		status = NT_STATUS_NO_MEMORY;
+	status = add_sid_to_array(mem_ctx, &primary_group, user_sids,
+				  &num_groups);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 	
@@ -872,10 +875,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		if (sid_check_is_in_builtin(&sids[i])) {
 			continue;
 		}
-			       
-		if (!add_sid_to_array_unique(mem_ctx, &sids[i],
-					user_sids, &num_groups)) {
-			status = NT_STATUS_NO_MEMORY;
+
+		status = add_sid_to_array_unique(mem_ctx, &sids[i],
+						 user_sids, &num_groups);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 	}

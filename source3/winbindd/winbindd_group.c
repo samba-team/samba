@@ -438,18 +438,15 @@ static NTSTATUS expand_groups( TALLOC_CTX *ctx,
 			if ( name_types[j] == SID_NAME_DOM_GRP ||
 			     name_types[j] == SID_NAME_ALIAS )
 			{
-				bool ret;
-				
-				ret = add_sid_to_array_unique( ctx, 
-							       &sid_mem[j],
-							       &new_groups, 
-							       &new_groups_size );
-				if ( !ret ) {
-					status = NT_STATUS_NO_MEMORY;
+				status = add_sid_to_array_unique(ctx,
+							         &sid_mem[j],
+							         &new_groups,
+							         &new_groups_size);
+				if (NT_STATUS_IS_OK(status)) {
 					goto out;
 				}
 
-				continue;				
+				continue;
 			}
 		}
 

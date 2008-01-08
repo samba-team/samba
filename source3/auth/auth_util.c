@@ -549,11 +549,13 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 				"for gid %d!\n", gids[i]));
 			continue;
 		}
-		if (!add_sid_to_array_unique( result, &unix_group_sid,
-				&result->sids, &result->num_sids )) {
+		status = add_sid_to_array_unique(result, &unix_group_sid,
+						 &result->sids,
+						 &result->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
 			result->sam_account = NULL; /* Don't free on error exit. */
 			TALLOC_FREE(result);
-			return NT_STATUS_NO_MEMORY;
+			return status;
 		}
 	}
 
@@ -895,9 +897,9 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				"for gid %d!\n", gids[i]));
 			continue;
 		}
-		if (!add_sid_to_array_unique(tmp_ctx, &unix_group_sid,
-				&group_sids, &num_group_sids )) {
-			result = NT_STATUS_NO_MEMORY;
+		result = add_sid_to_array_unique(tmp_ctx, &unix_group_sid,
+						 &group_sids, &num_group_sids);
+		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}
 	}
@@ -1074,11 +1076,12 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	if (!add_sid_to_array_unique(result, &u_sid,
-					&result->sids,
-					&result->num_sids)) {
+	status = add_sid_to_array_unique(result, &u_sid,
+					 &result->sids,
+					 &result->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 
 	/* For now we throw away the gids and convert via sid_to_gid

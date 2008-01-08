@@ -273,12 +273,13 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (!add_sid_to_array(mem_ctx, &sid,
-				      &require_membership_of_sid,
-				      &num_require_membership_of_sid)) {
+		status = add_sid_to_array(mem_ctx, &sid,
+					  &require_membership_of_sid,
+					  &num_require_membership_of_sid);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("add_sid_to_array failed\n"));
 			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
+			return status;
 		}
 	}
 

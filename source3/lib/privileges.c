@@ -184,8 +184,10 @@ static int priv_traverse_fn(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *s
 		return 0;
 	}
 
-	if (!add_sid_to_array( priv->mem_ctx, &sid, &priv->sids.list,
-			       &priv->sids.count )) {
+	if (!NT_STATUS_IS_OK(add_sid_to_array(priv->mem_ctx, &sid,
+					      &priv->sids.list,
+					      &priv->sids.count)))
+	{
 		return 0;
 	}
 	
