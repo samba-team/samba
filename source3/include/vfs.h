@@ -97,6 +97,7 @@
 /* Leave at 22 - not yet released. Remove parameter fd from fgetxattr. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from flistxattr. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from fremovexattr. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fsetxattr. - obnox */
 
 
 
@@ -389,7 +390,7 @@ struct vfs_ops {
 		int (*fremovexattr)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name);
 		int (*setxattr)(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags);
 		int (*lsetxattr)(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags);
-		int (*fsetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int filedes, const char *name, const void *value, size_t size, int flags);
+		int (*fsetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags);
 
 		/* aio operations */
 		int (*aio_read)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);

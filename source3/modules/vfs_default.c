@@ -1186,9 +1186,9 @@ static int vfswrap_lsetxattr(struct vfs_handle_struct *handle, const char *path,
 	return sys_lsetxattr(path, name, value, size, flags);
 }
 
-static int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, const void *value, size_t size, int flags)
+static int vfswrap_fsetxattr(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags)
 {
-	return sys_fsetxattr(fd, name, value, size, flags);
+	return sys_fsetxattr(fsp->fh->fd, name, value, size, flags);
 }
 
 static int vfswrap_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb)

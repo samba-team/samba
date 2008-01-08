@@ -128,7 +128,7 @@
 #define SMB_VFS_FREMOVEXATTR(fsp,name) ((fsp)->conn->vfs.ops.fremovexattr((fsp)->conn->vfs.handles.fremovexattr,(fsp),(name)))
 #define SMB_VFS_SETXATTR(conn,path,name,value,size,flags) ((conn)->vfs.ops.setxattr((conn)->vfs.handles.setxattr,(path),(name),(value),(size),(flags)))
 #define SMB_VFS_LSETXATTR(conn,path,name,value,size,flags) ((conn)->vfs.ops.lsetxattr((conn)->vfs.handles.lsetxattr,(path),(name),(value),(size),(flags)))
-#define SMB_VFS_FSETXATTR(fsp,fd,name,value,size,flags) ((fsp)->conn->vfs.ops.fsetxattr((fsp)->conn->vfs.handles.fsetxattr,(fsp),(fd),(name),(value),(size),(flags)))
+#define SMB_VFS_FSETXATTR(fsp,name,value,size,flags) ((fsp)->conn->vfs.ops.fsetxattr((fsp)->conn->vfs.handles.fsetxattr,(fsp),(name),(value),(size),(flags)))
 
 /* AIO operations. */
 #define SMB_VFS_AIO_READ(fsp,aiocb) ((fsp)->conn->vfs.ops.aio_read((fsp)->conn->vfs.handles.aio_read,(fsp),(aiocb)))
@@ -247,7 +247,7 @@
 #define SMB_VFS_OPAQUE_FREMOVEXATTR(fsp,name) ((fsp)->conn->vfs_opaque.ops.fremovexattr((fsp)->conn->vfs_opaque.handles.fremovexattr,(fsp),(name)))
 #define SMB_VFS_OPAQUE_SETXATTR(conn,path,name,value,size,flags) ((conn)->vfs_opaque.ops.setxattr((conn)->vfs_opaque.handles.setxattr,(path),(name),(value),(size),(flags)))
 #define SMB_VFS_OPAQUE_LSETXATTR(conn,path,name,value,size,flags) ((conn)->vfs_opaque.ops.lsetxattr((conn)->vfs_opaque.handles.lsetxattr,(path),(name),(value),(size),(flags)))
-#define SMB_VFS_OPAQUE_FSETXATTR(fsp,fd,name,value,size,flags) ((fsp)->conn->vfs_opaque.ops.fsetxattr((fsp)->conn->vfs_opaque.handles.fsetxattr,(fsp),(fd),(name),(value),(size),(flags)))
+#define SMB_VFS_OPAQUE_FSETXATTR(fsp,name,value,size,flags) ((fsp)->conn->vfs_opaque.ops.fsetxattr((fsp)->conn->vfs_opaque.handles.fsetxattr,(fsp),(name),(value),(size),(flags)))
 
 /* AIO operations. */
 #define SMB_VFS_OPAQUE_AIO_READ(fsp,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_read((fsp)->conn->vfs_opaque.handles.aio_read,(fsp),(aiocb)))
@@ -367,7 +367,7 @@
 #define SMB_VFS_NEXT_FREMOVEXATTR(handle,fsp,name) ((handle)->vfs_next.ops.fremovexattr((handle)->vfs_next.handles.fremovexattr,(fsp),(name)))
 #define SMB_VFS_NEXT_SETXATTR(handle,path,name,value,size,flags) ((handle)->vfs_next.ops.setxattr((handle)->vfs_next.handles.setxattr,(path),(name),(value),(size),(flags)))
 #define SMB_VFS_NEXT_LSETXATTR(handle,path,name,value,size,flags) ((handle)->vfs_next.ops.lsetxattr((handle)->vfs_next.handles.lsetxattr,(path),(name),(value),(size),(flags)))
-#define SMB_VFS_NEXT_FSETXATTR(handle,fsp,fd,name,value,size,flags) ((handle)->vfs_next.ops.fsetxattr((handle)->vfs_next.handles.fsetxattr,(fsp),(fd),(name),(value),(size),(flags)))
+#define SMB_VFS_NEXT_FSETXATTR(handle,fsp,name,value,size,flags) ((handle)->vfs_next.ops.fsetxattr((handle)->vfs_next.handles.fsetxattr,(fsp),(name),(value),(size),(flags)))
 
 /* AIO operations. */
 #define SMB_VFS_NEXT_AIO_READ(handle,fsp,aiocb) ((handle)->vfs_next.ops.aio_read((handle)->vfs_next.handles.aio_read,(fsp),(aiocb)))

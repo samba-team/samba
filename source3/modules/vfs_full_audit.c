@@ -297,7 +297,7 @@ static int smb_full_audit_lsetxattr(struct vfs_handle_struct *handle,
 			   const char *name, const void *value, size_t size,
 			   int flags);
 static int smb_full_audit_fsetxattr(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp, int fd, const char *name,
+			   struct files_struct *fsp, const char *name,
 			   const void *value, size_t size, int flags);
 
 static int smb_full_audit_aio_read(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
@@ -2082,13 +2082,12 @@ static int smb_full_audit_lsetxattr(struct vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_fsetxattr(struct vfs_handle_struct *handle,
-			   struct files_struct *fsp, int fd, const char *name,
+			   struct files_struct *fsp, const char *name,
 			   const void *value, size_t size, int flags)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_FSETXATTR(handle, fsp, fd, name, value, size,
-					flags);
+	result = SMB_VFS_NEXT_FSETXATTR(handle, fsp, name, value, size, flags);
 
 	do_log(SMB_VFS_OP_FSETXATTR, (result >= 0), handle,
 	       "%s|%s", fsp->fsp_name, name);

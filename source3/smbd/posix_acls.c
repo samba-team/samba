@@ -238,7 +238,7 @@ static void store_inheritance_attributes(files_struct *fsp, canon_ace *file_ace_
 	pai_buf = create_pai_buf(file_ace_list, dir_ace_list, pai_protected, &store_size);
 
 	if (fsp->fh->fd != -1)
-		ret = SMB_VFS_FSETXATTR(fsp, fsp->fh->fd, SAMBA_POSIX_INHERITANCE_EA_NAME,
+		ret = SMB_VFS_FSETXATTR(fsp, SAMBA_POSIX_INHERITANCE_EA_NAME,
 				pai_buf, store_size, 0);
 	else
 		ret = SMB_VFS_SETXATTR(fsp->conn,fsp->fsp_name, SAMBA_POSIX_INHERITANCE_EA_NAME,

@@ -455,7 +455,7 @@ static int cap_lsetxattr(vfs_handle_struct *handle, const char *path, const char
         return SMB_VFS_NEXT_LSETXATTR(handle, cappath, capname, value, size, flags);
 }
 
-static int cap_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *path, const void *value, size_t size, int flags)
+static int cap_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp, const char *path, const void *value, size_t size, int flags)
 {
 	char *cappath = capencode(talloc_tos(), path);
 
@@ -463,7 +463,7 @@ static int cap_fsetxattr(vfs_handle_struct *handle, struct files_struct *fsp,int
 		errno = ENOMEM;
 		return -1;
 	}
-        return SMB_VFS_NEXT_FSETXATTR(handle, fsp, fd, cappath, value, size, flags);
+        return SMB_VFS_NEXT_FSETXATTR(handle, fsp, cappath, value, size, flags);
 }
 
 /* VFS operations structure */
