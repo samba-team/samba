@@ -152,6 +152,8 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 	smb_ucs2_t *s = NULL;
 	int ret, count, i;
 	struct max_n *max_n = NULL;
+	struct max_n *max_n_free = NULL;
+	struct max_n one_max_n;
 
 	if (ISDOTDOT(string)) {
 		string = ".";
@@ -201,17 +203,27 @@ int ms_fnmatch(const char *pattern, const char *string, bool translate_pattern,
 	}
 
 	if (count != 0) {
-		max_n = SMB_CALLOC_ARRAY(struct max_n, count);
-		if (!max_n) {
-			SAFE_FREE(p);
-			SAFE_FREE(s);
-			return -1;
+		if (count == 1) {
+			/*
+			 * We're doing this a LOT, so save the effort to allocate
+			 */
+			ZERO_STRUCT(one_max_n);
+			max_n = &one_max_n;
+		}
+		else {
+			max_n = SMB_CALLOC_ARRAY(struct max_n, count);
+			if (!max_n) {
+				SAFE_FREE(p);
+				SAFE_FREE(s);
+				return -1;
+			}
+			max_n_free = max_n;
 		}
 	}
 
 	ret = ms_fnmatch_core(p, s, max_n, strrchr_w(s, UCS2_CHAR('.')), is_case_sensitive);
 
-	SAFE_FREE(max_n);
+	SAFE_FREE(max_n_free);
 	SAFE_FREE(p);
 	SAFE_FREE(s);
 	return ret;
