@@ -92,6 +92,7 @@
 /* Leave at 22 - not yet released. Remove parameter fd from linux_setlease. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from getlock. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from sys_acl_get_fd. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fchmod_acl. - obnox */
 
 
 
@@ -347,7 +348,7 @@ struct vfs_ops {
 		/* POSIX ACL operations. */
 		
 		int (*chmod_acl)(struct vfs_handle_struct *handle, const char *name, mode_t mode);
-		int (*fchmod_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, mode_t mode);
+		int (*fchmod_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
 		
 		int (*sys_acl_get_entry)(struct vfs_handle_struct *handle, SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 		int (*sys_acl_get_tag_type)(struct vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);

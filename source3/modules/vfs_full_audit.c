@@ -205,7 +205,7 @@ static NTSTATUS smb_full_audit_set_nt_acl(vfs_handle_struct *handle, files_struc
 static int smb_full_audit_chmod_acl(vfs_handle_struct *handle,
 			   const char *path, mode_t mode);
 static int smb_full_audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp,
-			    int fd, mode_t mode);
+				     mode_t mode);
 static int smb_full_audit_sys_acl_get_entry(vfs_handle_struct *handle,
 				   SMB_ACL_T theacl, int entry_id,
 				   SMB_ACL_ENTRY_T *entry_p);
@@ -1594,11 +1594,11 @@ static int smb_full_audit_chmod_acl(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_fchmod_acl(vfs_handle_struct *handle, files_struct *fsp,
-			    int fd, mode_t mode)
+				     mode_t mode)
 {
 	int result;
 	
-	result = SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, fd, mode);
+	result = SMB_VFS_NEXT_FCHMOD_ACL(handle, fsp, mode);
 
 	do_log(SMB_VFS_OP_FCHMOD_ACL, (result >= 0), handle,
 	       "%s|%o", fsp->fsp_name, mode);
