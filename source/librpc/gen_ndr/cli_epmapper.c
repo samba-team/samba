@@ -10,30 +10,30 @@ NTSTATUS rpccli_epm_Insert(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uin
 {
 	struct epm_Insert r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.num_ents = num_ents;
 	r.in.entries = entries;
 	r.in.replace = replace;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_Insert, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, &ndr_table_epmapper, NDR_EPM_INSERT, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(epm_Insert, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return NT_STATUS_OK;
 }
@@ -42,29 +42,29 @@ NTSTATUS rpccli_epm_Delete(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uin
 {
 	struct epm_Delete r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.num_ents = num_ents;
 	r.in.entries = entries;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_Delete, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, &ndr_table_epmapper, NDR_EPM_DELETE, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(epm_Delete, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return NT_STATUS_OK;
 }
@@ -73,7 +73,7 @@ NTSTATUS rpccli_epm_Lookup(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uin
 {
 	struct epm_Lookup r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.inquiry_type = inquiry_type;
 	r.in.object = object;
@@ -81,28 +81,28 @@ NTSTATUS rpccli_epm_Lookup(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uin
 	r.in.vers_option = vers_option;
 	r.in.entry_handle = entry_handle;
 	r.in.max_ents = max_ents;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_Lookup, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, &ndr_table_epmapper, NDR_EPM_LOOKUP, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(epm_Lookup, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*entry_handle = *r.out.entry_handle;
 	*num_ents = *r.out.num_ents;
 	memcpy(entries, r.out.entries, r.in.max_ents);
-	
+
 	/* Return result */
 	return NT_STATUS_OK;
 }
@@ -111,34 +111,34 @@ NTSTATUS rpccli_epm_Map(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct
 {
 	struct epm_Map r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.object = object;
 	r.in.map_tower = map_tower;
 	r.in.entry_handle = entry_handle;
 	r.in.max_towers = max_towers;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_Map, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, &ndr_table_epmapper, NDR_EPM_MAP, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(epm_Map, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*entry_handle = *r.out.entry_handle;
 	*num_towers = *r.out.num_towers;
 	memcpy(towers, r.out.towers, r.in.max_towers);
-	
+
 	/* Return result */
 	return NT_STATUS_OK;
 }
@@ -147,29 +147,29 @@ NTSTATUS rpccli_epm_LookupHandleFree(struct rpc_pipe_client *cli, TALLOC_CTX *me
 {
 	struct epm_LookupHandleFree r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.entry_handle = entry_handle;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_LookupHandleFree, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, &ndr_table_epmapper, NDR_EPM_LOOKUPHANDLEFREE, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(epm_LookupHandleFree, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*entry_handle = *r.out.entry_handle;
-	
+
 	/* Return result */
 	return NT_STATUS_OK;
 }
@@ -178,28 +178,28 @@ NTSTATUS rpccli_epm_InqObject(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 {
 	struct epm_InqObject r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.epm_object = epm_object;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_InqObject, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, &ndr_table_epmapper, NDR_EPM_INQOBJECT, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(epm_InqObject, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return NT_STATUS_OK;
 }
@@ -208,30 +208,30 @@ NTSTATUS rpccli_epm_MgmtDelete(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 {
 	struct epm_MgmtDelete r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.object_speced = object_speced;
 	r.in.object = object;
 	r.in.tower = tower;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_MgmtDelete, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, &ndr_table_epmapper, NDR_EPM_MGMTDELETE, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(epm_MgmtDelete, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return NT_STATUS_OK;
 }
@@ -240,27 +240,27 @@ NTSTATUS rpccli_epm_MapAuth(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
 {
 	struct epm_MapAuth r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(epm_MapAuth, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EPMAPPER, &ndr_table_epmapper, NDR_EPM_MAPAUTH, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(epm_MapAuth, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return NT_STATUS_OK;
 }
