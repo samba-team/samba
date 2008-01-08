@@ -26,16 +26,16 @@ extern REGISTRY_OPS smbconf_reg_ops;
 
 /*
  * create a fake token just with enough rights to
- * locally access the registry.
+ * locally access the registry:
+ *
+ * - builtin administrators sid
+ * - disk operators privilege
  */
 NT_USER_TOKEN *registry_create_admin_token(TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	NT_USER_TOKEN *token = NULL;
 
-	/* fake a user token: builtin administrators sid and the
-	 * disk operators privilege is all we need to access the 
-	 * registry... */
 	token = TALLOC_ZERO_P(mem_ctx, NT_USER_TOKEN);
 	if (token == NULL) {
 		DEBUG(1, ("talloc failed\n"));
