@@ -250,7 +250,7 @@ static int smb_full_audit_sys_acl_set_file(vfs_handle_struct *handle,
 				  const char *name, SMB_ACL_TYPE_T acltype,
 				  SMB_ACL_T theacl);
 static int smb_full_audit_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-				int fd, SMB_ACL_T theacl);
+				SMB_ACL_T theacl);
 static int smb_full_audit_sys_acl_delete_def_file(vfs_handle_struct *handle,
 					 const char *path);
 static int smb_full_audit_sys_acl_get_perm(vfs_handle_struct *handle,
@@ -1843,11 +1843,11 @@ static int smb_full_audit_sys_acl_set_file(vfs_handle_struct *handle,
 }
 
 static int smb_full_audit_sys_acl_set_fd(vfs_handle_struct *handle, files_struct *fsp,
-				int fd, SMB_ACL_T theacl)
+				SMB_ACL_T theacl)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, fd, theacl);
+	result = SMB_VFS_NEXT_SYS_ACL_SET_FD(handle, fsp, theacl);
 
 	do_log(SMB_VFS_OP_SYS_ACL_SET_FD, (result >= 0), handle,
 	       "%s", fsp->fsp_name);

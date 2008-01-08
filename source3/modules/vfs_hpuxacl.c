@@ -1,7 +1,7 @@
 /*
  * Unix SMB/Netbios implementation.
  * VFS module to get and set HP-UX ACLs
- * Copyright (C) Michael Adam 2006
+ * Copyright (C) Michael Adam 2006,2008
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -306,14 +306,14 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
  */
 int hpuxacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			      files_struct *fsp,
-			      int fd, SMB_ACL_T theacl)
+			      SMB_ACL_T theacl)
 {
         /*
          * HPUX doesn't have the facl call. Fake it using the path.... JRA.
          */
 	/* For all I see, the info should already be in the fsp
 	 * parameter, but get it again to be safe --- necessary? */
-        files_struct *file_struct_p = file_find_fd(fd);
+        files_struct *file_struct_p = file_find_fd(fsp->fh->fd);
         if (file_struct_p == NULL) {
                 errno = EBADF;
                 return -1;

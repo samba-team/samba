@@ -1,7 +1,7 @@
 /*
    Unix SMB/Netbios implementation.
    VFS module to get and set Tru64 acls
-   Copyright (C) Michael Adam 2006
+   Copyright (C) Michael Adam 2006,2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -128,14 +128,14 @@ fail:
 
 int tru64acl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
-			    int fd, SMB_ACL_T theacl)
+			    SMB_ACL_T theacl)
 {
         int res;
         acl_t tru64_acl = smb_acl_to_tru64_acl(theacl);
         if (tru64_acl == NULL) {
                 return -1;
         }
-        res =  acl_set_fd(fd, ACL_TYPE_ACCESS, tru64_acl);
+        res =  acl_set_fd(fsp->fh->fd, ACL_TYPE_ACCESS, tru64_acl);
         acl_free(tru64_acl);
         return res;
 
