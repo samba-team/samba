@@ -10,34 +10,34 @@ NTSTATUS rpccli_svcctl_CloseServiceHandle(struct rpc_pipe_client *cli, TALLOC_CT
 {
 	struct svcctl_CloseServiceHandle r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_CloseServiceHandle, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_CLOSESERVICEHANDLE, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_CloseServiceHandle, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*handle = *r.out.handle;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -45,35 +45,35 @@ NTSTATUS rpccli_svcctl_ControlService(struct rpc_pipe_client *cli, TALLOC_CTX *m
 {
 	struct svcctl_ControlService r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.control = control;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_ControlService, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_CONTROLSERVICE, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_ControlService, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*service_status = *r.out.service_status;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -81,33 +81,33 @@ NTSTATUS rpccli_svcctl_DeleteService(struct rpc_pipe_client *cli, TALLOC_CTX *me
 {
 	struct svcctl_DeleteService r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_DeleteService, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_DELETESERVICE, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_DeleteService, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -115,34 +115,34 @@ NTSTATUS rpccli_svcctl_LockServiceDatabase(struct rpc_pipe_client *cli, TALLOC_C
 {
 	struct svcctl_LockServiceDatabase r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_LockServiceDatabase, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_LOCKSERVICEDATABASE, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_LockServiceDatabase, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*lock = *r.out.lock;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -150,32 +150,32 @@ NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli, T
 {
 	struct svcctl_QueryServiceObjectSecurity r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceObjectSecurity, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceObjectSecurity, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -183,32 +183,32 @@ NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli, TAL
 {
 	struct svcctl_SetServiceObjectSecurity r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SetServiceObjectSecurity, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_SETSERVICEOBJECTSECURITY, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_SetServiceObjectSecurity, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -216,34 +216,34 @@ NTSTATUS rpccli_svcctl_QueryServiceStatus(struct rpc_pipe_client *cli, TALLOC_CT
 {
 	struct svcctl_QueryServiceStatus r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceStatus, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_QUERYSERVICESTATUS, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceStatus, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*service_status = *r.out.service_status;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -251,32 +251,32 @@ NTSTATUS rpccli_svcctl_SetServiceStatus(struct rpc_pipe_client *cli, TALLOC_CTX 
 {
 	struct svcctl_SetServiceStatus r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SetServiceStatus, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_SETSERVICESTATUS, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_SetServiceStatus, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -284,34 +284,34 @@ NTSTATUS rpccli_svcctl_UnlockServiceDatabase(struct rpc_pipe_client *cli, TALLOC
 {
 	struct svcctl_UnlockServiceDatabase r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.lock = lock;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_UnlockServiceDatabase, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_UNLOCKSERVICEDATABASE, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_UnlockServiceDatabase, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*lock = *r.out.lock;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -319,32 +319,32 @@ NTSTATUS rpccli_svcctl_NotifyBootConfigStatus(struct rpc_pipe_client *cli, TALLO
 {
 	struct svcctl_NotifyBootConfigStatus r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_NotifyBootConfigStatus, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_NOTIFYBOOTCONFIGSTATUS, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_NotifyBootConfigStatus, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -352,36 +352,36 @@ NTSTATUS rpccli_svcctl_SCSetServiceBitsW(struct rpc_pipe_client *cli, TALLOC_CTX
 {
 	struct svcctl_SCSetServiceBitsW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.bits = bits;
 	r.in.bitson = bitson;
 	r.in.immediate = immediate;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SCSetServiceBitsW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_SCSETSERVICEBITSW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_SCSetServiceBitsW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -389,7 +389,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigW(struct rpc_pipe_client *cli, TALLOC_
 {
 	struct svcctl_ChangeServiceConfigW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.type = type;
@@ -401,31 +401,31 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigW(struct rpc_pipe_client *cli, TALLOC_
 	r.in.service_start_name = service_start_name;
 	r.in.password = password;
 	r.in.display_name = display_name;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfigW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_CHANGESERVICECONFIGW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_ChangeServiceConfigW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*tag_id = *r.out.tag_id;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -433,7 +433,7 @@ NTSTATUS rpccli_svcctl_CreateServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 {
 	struct svcctl_CreateServiceW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.scmanager_handle = scmanager_handle;
 	r.in.ServiceName = ServiceName;
@@ -450,34 +450,34 @@ NTSTATUS rpccli_svcctl_CreateServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	r.in.service_start_name = service_start_name;
 	r.in.password = password;
 	r.in.password_size = password_size;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_CreateServiceW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_CREATESERVICEW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_CreateServiceW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	if (TagId && r.out.TagId) {
 		*TagId = *r.out.TagId;
 	}
 	*handle = *r.out.handle;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -485,40 +485,40 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesW(struct rpc_pipe_client *cli, TALLO
 {
 	struct svcctl_EnumDependentServicesW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.service = service;
 	r.in.state = state;
 	r.in.buf_size = buf_size;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumDependentServicesW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_ENUMDEPENDENTSERVICESW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_EnumDependentServicesW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	if (service_status && r.out.service_status) {
 		*service_status = *r.out.service_status;
 	}
 	*bytes_needed = *r.out.bytes_needed;
 	*services_returned = *r.out.services_returned;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -526,30 +526,30 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli, TALLOC_C
 {
 	struct svcctl_EnumServicesStatusW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.type = type;
 	r.in.state = state;
 	r.in.buf_size = buf_size;
 	r.in.resume_handle = resume_handle;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumServicesStatusW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_ENUMSERVICESSTATUSW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_EnumServicesStatusW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	memcpy(service, r.out.service, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
@@ -557,12 +557,12 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusW(struct rpc_pipe_client *cli, TALLOC_C
 	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -570,36 +570,36 @@ NTSTATUS rpccli_svcctl_OpenSCManagerW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 {
 	struct svcctl_OpenSCManagerW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.MachineName = MachineName;
 	r.in.DatabaseName = DatabaseName;
 	r.in.access_mask = access_mask;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_OpenSCManagerW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_OPENSCMANAGERW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_OpenSCManagerW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*handle = *r.out.handle;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -607,36 +607,36 @@ NTSTATUS rpccli_svcctl_OpenServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 {
 	struct svcctl_OpenServiceW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.scmanager_handle = scmanager_handle;
 	r.in.ServiceName = ServiceName;
 	r.in.access_mask = access_mask;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_OpenServiceW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_OPENSERVICEW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_OpenServiceW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*handle = *r.out.handle;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -644,36 +644,36 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigW(struct rpc_pipe_client *cli, TALLOC_C
 {
 	struct svcctl_QueryServiceConfigW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.buf_size = buf_size;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfigW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_QUERYSERVICECONFIGW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceConfigW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	memcpy(query, r.out.query, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -681,36 +681,36 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusW(struct rpc_pipe_client *cli, TALL
 {
 	struct svcctl_QueryServiceLockStatusW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.buf_size = buf_size;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceLockStatusW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_QUERYSERVICELOCKSTATUSW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceLockStatusW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*lock_status = *r.out.lock_status;
 	*required_buf_size = *r.out.required_buf_size;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -718,35 +718,35 @@ NTSTATUS rpccli_svcctl_StartServiceW(struct rpc_pipe_client *cli, TALLOC_CTX *me
 {
 	struct svcctl_StartServiceW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.NumArgs = NumArgs;
 	r.in.Arguments = Arguments;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_StartServiceW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_STARTSERVICEW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_StartServiceW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -754,39 +754,39 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameW(struct rpc_pipe_client *cli, TALLO
 {
 	struct svcctl_GetServiceDisplayNameW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.service_name = service_name;
 	r.in.display_name_length = display_name_length;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceDisplayNameW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_GETSERVICEDISPLAYNAMEW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_GetServiceDisplayNameW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*display_name = *r.out.display_name;
 	if (display_name_length && r.out.display_name_length) {
 		*display_name_length = *r.out.display_name_length;
 	}
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -794,39 +794,39 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameW(struct rpc_pipe_client *cli, TALLOC_CT
 {
 	struct svcctl_GetServiceKeyNameW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.service_name = service_name;
 	r.in.display_name_length = display_name_length;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceKeyNameW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_GETSERVICEKEYNAMEW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_GetServiceKeyNameW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*key_name = *r.out.key_name;
 	if (display_name_length && r.out.display_name_length) {
 		*display_name_length = *r.out.display_name_length;
 	}
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -834,36 +834,36 @@ NTSTATUS rpccli_svcctl_SCSetServiceBitsA(struct rpc_pipe_client *cli, TALLOC_CTX
 {
 	struct svcctl_SCSetServiceBitsA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.bits = bits;
 	r.in.bitson = bitson;
 	r.in.immediate = immediate;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SCSetServiceBitsA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_SCSETSERVICEBITSA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_SCSetServiceBitsA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -871,7 +871,7 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigA(struct rpc_pipe_client *cli, TALLOC_
 {
 	struct svcctl_ChangeServiceConfigA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.type = type;
@@ -883,31 +883,31 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfigA(struct rpc_pipe_client *cli, TALLOC_
 	r.in.service_start_name = service_start_name;
 	r.in.password = password;
 	r.in.display_name = display_name;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfigA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_CHANGESERVICECONFIGA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_ChangeServiceConfigA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*tag_id = *r.out.tag_id;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -915,7 +915,7 @@ NTSTATUS rpccli_svcctl_CreateServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 {
 	struct svcctl_CreateServiceA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.ServiceName = ServiceName;
@@ -929,33 +929,33 @@ NTSTATUS rpccli_svcctl_CreateServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	r.in.dependencies = dependencies;
 	r.in.service_start_name = service_start_name;
 	r.in.password = password;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_CreateServiceA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_CREATESERVICEA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_CreateServiceA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	if (TagId && r.out.TagId) {
 		*TagId = *r.out.TagId;
 	}
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -963,40 +963,40 @@ NTSTATUS rpccli_svcctl_EnumDependentServicesA(struct rpc_pipe_client *cli, TALLO
 {
 	struct svcctl_EnumDependentServicesA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.service = service;
 	r.in.state = state;
 	r.in.buf_size = buf_size;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumDependentServicesA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_ENUMDEPENDENTSERVICESA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_EnumDependentServicesA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	if (service_status && r.out.service_status) {
 		*service_status = *r.out.service_status;
 	}
 	*bytes_needed = *r.out.bytes_needed;
 	*services_returned = *r.out.services_returned;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1004,30 +1004,30 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli, TALLOC_C
 {
 	struct svcctl_EnumServicesStatusA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.type = type;
 	r.in.state = state;
 	r.in.buf_size = buf_size;
 	r.in.resume_handle = resume_handle;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumServicesStatusA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_ENUMSERVICESSTATUSA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_EnumServicesStatusA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	memcpy(service, r.out.service, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
@@ -1035,12 +1035,12 @@ NTSTATUS rpccli_svcctl_EnumServicesStatusA(struct rpc_pipe_client *cli, TALLOC_C
 	if (resume_handle && r.out.resume_handle) {
 		*resume_handle = *r.out.resume_handle;
 	}
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1048,36 +1048,36 @@ NTSTATUS rpccli_svcctl_OpenSCManagerA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 {
 	struct svcctl_OpenSCManagerA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.MachineName = MachineName;
 	r.in.DatabaseName = DatabaseName;
 	r.in.access_mask = access_mask;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_OpenSCManagerA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_OPENSCMANAGERA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_OpenSCManagerA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*handle = *r.out.handle;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1085,35 +1085,35 @@ NTSTATUS rpccli_svcctl_OpenServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 {
 	struct svcctl_OpenServiceA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.scmanager_handle = scmanager_handle;
 	r.in.ServiceName = ServiceName;
 	r.in.access_mask = access_mask;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_OpenServiceA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_OPENSERVICEA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_OpenServiceA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1121,36 +1121,36 @@ NTSTATUS rpccli_svcctl_QueryServiceConfigA(struct rpc_pipe_client *cli, TALLOC_C
 {
 	struct svcctl_QueryServiceConfigA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.buf_size = buf_size;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfigA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_QUERYSERVICECONFIGA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceConfigA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	memcpy(query, r.out.query, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1158,36 +1158,36 @@ NTSTATUS rpccli_svcctl_QueryServiceLockStatusA(struct rpc_pipe_client *cli, TALL
 {
 	struct svcctl_QueryServiceLockStatusA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.buf_size = buf_size;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceLockStatusA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_QUERYSERVICELOCKSTATUSA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceLockStatusA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*lock_status = *r.out.lock_status;
 	*required_buf_size = *r.out.required_buf_size;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1195,35 +1195,35 @@ NTSTATUS rpccli_svcctl_StartServiceA(struct rpc_pipe_client *cli, TALLOC_CTX *me
 {
 	struct svcctl_StartServiceA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.NumArgs = NumArgs;
 	r.in.Arguments = Arguments;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_StartServiceA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_STARTSERVICEA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_StartServiceA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1231,39 +1231,39 @@ NTSTATUS rpccli_svcctl_GetServiceDisplayNameA(struct rpc_pipe_client *cli, TALLO
 {
 	struct svcctl_GetServiceDisplayNameA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.service_name = service_name;
 	r.in.display_name_length = display_name_length;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceDisplayNameA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_GETSERVICEDISPLAYNAMEA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_GetServiceDisplayNameA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*display_name = *r.out.display_name;
 	if (display_name_length && r.out.display_name_length) {
 		*display_name_length = *r.out.display_name_length;
 	}
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1271,39 +1271,39 @@ NTSTATUS rpccli_svcctl_GetServiceKeyNameA(struct rpc_pipe_client *cli, TALLOC_CT
 {
 	struct svcctl_GetServiceKeyNameA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.service_name = service_name;
 	r.in.display_name_length = display_name_length;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceKeyNameA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_GETSERVICEKEYNAMEA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_GetServiceKeyNameA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*key_name = *r.out.key_name;
 	if (display_name_length && r.out.display_name_length) {
 		*display_name_length = *r.out.display_name_length;
 	}
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1311,32 +1311,32 @@ NTSTATUS rpccli_svcctl_GetCurrentGroupeStateW(struct rpc_pipe_client *cli, TALLO
 {
 	struct svcctl_GetCurrentGroupeStateW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_GetCurrentGroupeStateW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_GETCURRENTGROUPESTATEW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_GetCurrentGroupeStateW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1344,32 +1344,32 @@ NTSTATUS rpccli_svcctl_EnumServiceGroupW(struct rpc_pipe_client *cli, TALLOC_CTX
 {
 	struct svcctl_EnumServiceGroupW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_EnumServiceGroupW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_ENUMSERVICEGROUPW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_EnumServiceGroupW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1377,35 +1377,35 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfig2A(struct rpc_pipe_client *cli, TALLOC
 {
 	struct svcctl_ChangeServiceConfig2A r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.info_level = info_level;
 	r.in.info = info;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfig2A, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_CHANGESERVICECONFIG2A, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_ChangeServiceConfig2A, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1413,35 +1413,35 @@ NTSTATUS rpccli_svcctl_ChangeServiceConfig2W(struct rpc_pipe_client *cli, TALLOC
 {
 	struct svcctl_ChangeServiceConfig2W r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.info_level = info_level;
 	r.in.info = info;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfig2W, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_CHANGESERVICECONFIG2W, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_ChangeServiceConfig2W, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1449,37 +1449,37 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2A(struct rpc_pipe_client *cli, TALLOC_
 {
 	struct svcctl_QueryServiceConfig2A r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.info_level = info_level;
 	r.in.buf_size = buf_size;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfig2A, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_QUERYSERVICECONFIG2A, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceConfig2A, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	memcpy(buffer, r.out.buffer, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1487,37 +1487,37 @@ NTSTATUS rpccli_svcctl_QueryServiceConfig2W(struct rpc_pipe_client *cli, TALLOC_
 {
 	struct svcctl_QueryServiceConfig2W r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.info_level = info_level;
 	r.in.buf_size = buf_size;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfig2W, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_QUERYSERVICECONFIG2W, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceConfig2W, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	memcpy(buffer, r.out.buffer, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1525,37 +1525,37 @@ NTSTATUS rpccli_svcctl_QueryServiceStatusEx(struct rpc_pipe_client *cli, TALLOC_
 {
 	struct svcctl_QueryServiceStatusEx r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.info_level = info_level;
 	r.in.buf_size = buf_size;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceStatusEx, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_QUERYSERVICESTATUSEX, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceStatusEx, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	memcpy(buffer, r.out.buffer, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1563,7 +1563,7 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 {
 	struct EnumServicesStatusExA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.scmanager = scmanager;
 	r.in.info_level = info_level;
@@ -1571,23 +1571,23 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	r.in.state = state;
 	r.in.buf_size = buf_size;
 	r.in.resume_handle = resume_handle;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(EnumServicesStatusExA, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_ENUMSERVICESSTATUSEXA, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(EnumServicesStatusExA, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	memcpy(services, r.out.services, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
@@ -1596,12 +1596,12 @@ NTSTATUS rpccli_EnumServicesStatusExA(struct rpc_pipe_client *cli, TALLOC_CTX *m
 		*resume_handle = *r.out.resume_handle;
 	}
 	*group_name = *r.out.group_name;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1609,7 +1609,7 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 {
 	struct EnumServicesStatusExW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.scmanager = scmanager;
 	r.in.info_level = info_level;
@@ -1617,23 +1617,23 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	r.in.state = state;
 	r.in.buf_size = buf_size;
 	r.in.resume_handle = resume_handle;
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(EnumServicesStatusExW, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_ENUMSERVICESSTATUSEXW, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(EnumServicesStatusExW, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	memcpy(services, r.out.services, r.in.buf_size);
 	*bytes_needed = *r.out.bytes_needed;
@@ -1642,12 +1642,12 @@ NTSTATUS rpccli_EnumServicesStatusExW(struct rpc_pipe_client *cli, TALLOC_CTX *m
 		*resume_handle = *r.out.resume_handle;
 	}
 	*group_name = *r.out.group_name;
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
@@ -1655,32 +1655,32 @@ NTSTATUS rpccli_svcctl_SCSendTSMessage(struct rpc_pipe_client *cli, TALLOC_CTX *
 {
 	struct svcctl_SCSendTSMessage r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_IN_DEBUG(svcctl_SCSendTSMessage, &r);
-	
+
 	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SVCCTL, &ndr_table_svcctl, NDR_SVCCTL_SCSENDTSMESSAGE, &r);
-	
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
+
 	if (DEBUGLEVEL >= 10)
 		NDR_PRINT_OUT_DEBUG(svcctl_SCSendTSMessage, &r);
-	
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	if (werror) {
 		*werror = r.out.result;
 	}
-	
+
 	return werror_to_ntstatus(r.out.result);
 }
 
