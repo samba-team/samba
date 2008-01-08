@@ -1631,7 +1631,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 		return NULL;
 	}
 
-	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 0, 0, O_RDWR, 0);
+	ctdb_db->ltdb = tdb_wrap_open(ctdb, ctdb_db->db_path, 0, persistent?TDB_DEFAULT:TDB_NOSYNC, O_RDWR, 0);
 	if (ctdb_db->ltdb == NULL) {
 		ctdb_set_error(ctdb, "Failed to open tdb '%s'\n", ctdb_db->db_path);
 		talloc_free(ctdb_db);

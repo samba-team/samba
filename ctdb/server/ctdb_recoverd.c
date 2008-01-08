@@ -822,7 +822,7 @@ static void vacuum_fetch_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	srcnode = r->reqid;
 
 	for (v=rec->vacuum_info;v;v=v->next) {
-		if (srcnode == v->srcnode) {
+		if (srcnode == v->srcnode && recs->db_id == v->ctdb_db->db_id) {
 			/* we're already working on records from this node */
 			return;
 		}
