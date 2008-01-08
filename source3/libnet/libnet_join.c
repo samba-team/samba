@@ -438,6 +438,57 @@ static bool libnet_join_create_keytab(TALLOC_CTX *mem_ctx,
 	return true;
 }
 
+#ifdef HAVE_LDAP
+
+/****************************************************************
+****************************************************************/
+
+static bool libnet_join_derive_salting_principal(TALLOC_CTX *mem_ctx,
+						 struct libnet_JoinCtx *r)
+{
+	uint32_t domain_func;
+	ADS_STATUS status;
+	const char *salt = NULL;
+	char *std_salt = NULL;
+
+	status = ads_domain_func_level(r->in.ads, &domain_func);
+	if (!ADS_ERR_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"Failed to determine domain functional level!\n");
+		return false;
+	}
+
+	std_salt = kerberos_standard_des_salt();
+	if (!std_salt) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to obtain standard DES salt\n");
+		return false;
+	}
+
+	salt = talloc_strdup(mem_ctx, std_salt);
+	if (!salt) {
+		return false;
+	}
+
+	SAFE_FREE(std_salt);
+
+	if (domain_func == DS_DOMAIN_FUNCTION_2000) {
+		char *upn;
+
+		upn = ads_get_upn(r->in.ads, mem_ctx,
+				  r->in.machine_name);
+		if (upn) {
+			salt = talloc_strdup(mem_ctx, upn);
+			if (!salt) {
+				return false;
+			}
+		}
+	}
+
+	return kerberos_secrets_store_des_salt(salt);
+}
+#endif
+
 /****************************************************************
 ****************************************************************/
 
@@ -1018,6 +1069,10 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		libnet_join_set_error_string(mem_ctx, r,
 			"failed to set machine upn: %s\n",
 			ads_errstr(ads_status));
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if (!libnet_join_derive_salting_principal(mem_ctx, r)) {
 		return WERR_GENERAL_FAILURE;
 	}
 #endif
