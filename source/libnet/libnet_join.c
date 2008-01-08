@@ -1075,6 +1075,9 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 
 	status = libnet_join_unjoindomain_rpc(mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
+		libnet_unjoin_set_error_string(mem_ctx, r,
+			"failed to unjoin domain: %s\n",
+			nt_errstr(status));
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 			return WERR_SETUP_NOT_JOINED;
 		}
@@ -1113,6 +1116,7 @@ WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		werr = libnet_DomainUnjoin(mem_ctx, r);
 		if (!W_ERROR_IS_OK(werr)) {
+			do_UnjoinConfig(r);
 			return werr;
 		}
 	}
