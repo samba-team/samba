@@ -78,7 +78,6 @@ static int async_wait(struct ctdb_context *ctdb, struct async_data *data)
 		event_loop_once(ctdb->ev);
 	}
 	if (data->fail_count != 0) {
-		DEBUG(0,("Async wait failed - fail_count=%u\n", data->fail_count));
 		return -1;
 	}
 	return 0;
