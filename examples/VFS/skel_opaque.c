@@ -92,7 +92,7 @@ static SMB_STRUCT_DIRENT *skel_readdir(vfs_handle_struct *handle,  SMB_STRUCT_DI
 
 static void skel_seekdir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp, long offset)
 {
-	return vfswrap_seekdir(NULL,  dirp, offset);
+	vfswrap_seekdir(NULL,  dirp, offset);
 }
 
 static long skel_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
@@ -102,7 +102,7 @@ static long skel_telldir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 
 static void skel_rewinddir(vfs_handle_struct *handle,  SMB_STRUCT_DIR *dirp)
 {
-	return vfswrap_rewinddir(NULL,  dirp);
+	vfswrap_rewinddir(NULL,  dirp);
 }
 
 static int skel_mkdir(vfs_handle_struct *handle,  const char *path, mode_t mode)
