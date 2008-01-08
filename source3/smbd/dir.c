@@ -1139,16 +1139,6 @@ struct smb_Dir *OpenDir(connection_struct *conn, const char *name, const char *m
 		goto fail;
 	}
 
-	if (dirp->name_cache_size) {
-		dirp->name_cache = SMB_CALLOC_ARRAY(struct name_cache_entry,
-				dirp->name_cache_size);
-		if (!dirp->name_cache) {
-			goto fail;
-		}
-	} else {
-		dirp->name_cache = NULL;
-	}
-
 	dirhandles_open++;
 	return dirp;
 
@@ -1295,8 +1285,17 @@ void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset)
 {
 	struct name_cache_entry *e;
 
-	if (!dirp->name_cache_size || !dirp->name_cache) {
+	if (dirp->name_cache_size == 0) {
 		return;
+	}
+
+	if (dirp->name_cache == NULL) {
+		dirp->name_cache = SMB_CALLOC_ARRAY(struct name_cache_entry,
+						    dirp->name_cache_size);
+
+		if (dirp->name_cache == NULL) {
+			return;
+		}
 	}
 
 	dirp->name_cache_index = (dirp->name_cache_index+1) %
