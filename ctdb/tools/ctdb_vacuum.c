@@ -608,7 +608,8 @@ int ctdb_repack(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	struct ctdb_dbid_map *dbmap=NULL;
 	int ret, i;
-	uint32_t repack_limit = 100;
+	/* a reasonable default limit to prevent us using too much memory */
+	uint32_t repack_limit = 10000; 
 
 	if (argc > 0) {
 		repack_limit = atoi(argv[0]);
