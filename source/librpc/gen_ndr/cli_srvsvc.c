@@ -6,7 +6,15 @@
 #include "includes.h"
 #include "librpc/gen_ndr/cli_srvsvc.h"
 
-NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetCharDevCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      const char *server_unc,
+				      uint32_t *level,
+				      union srvsvc_NetCharDevCtr *ctr,
+				      uint32_t max_buffer,
+				      uint32_t *totalentries,
+				      uint32_t *resume_handle,
+				      WERROR *werror)
 {
 	struct srvsvc_NetCharDevEnum r;
 	NTSTATUS status;
@@ -18,17 +26,24 @@ NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevEnum, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETCHARDEVENUM, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETCHARDEVENUM,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevEnum, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -50,7 +65,13 @@ NTSTATUS rpccli_srvsvc_NetCharDevEnum(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetCharDevGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *device_name, uint32_t level, union srvsvc_NetCharDevInfo *info, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetCharDevGetInfo(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx,
+					 const char *server_unc,
+					 const char *device_name,
+					 uint32_t level,
+					 union srvsvc_NetCharDevInfo *info,
+					 WERROR *werror)
 {
 	struct srvsvc_NetCharDevGetInfo r;
 	NTSTATUS status;
@@ -60,17 +81,24 @@ NTSTATUS rpccli_srvsvc_NetCharDevGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX
 	r.in.device_name = device_name;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevGetInfo, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETCHARDEVGETINFO, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETCHARDEVGETINFO,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevGetInfo, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -87,7 +115,12 @@ NTSTATUS rpccli_srvsvc_NetCharDevGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetCharDevControl(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *device_name, uint32_t opcode, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetCharDevControl(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx,
+					 const char *server_unc,
+					 const char *device_name,
+					 uint32_t opcode,
+					 WERROR *werror)
 {
 	struct srvsvc_NetCharDevControl r;
 	NTSTATUS status;
@@ -97,17 +130,24 @@ NTSTATUS rpccli_srvsvc_NetCharDevControl(struct rpc_pipe_client *cli, TALLOC_CTX
 	r.in.device_name = device_name;
 	r.in.opcode = opcode;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevControl, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETCHARDEVCONTROL, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETCHARDEVCONTROL,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevControl, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -123,7 +163,16 @@ NTSTATUS rpccli_srvsvc_NetCharDevControl(struct rpc_pipe_client *cli, TALLOC_CTX
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *user, uint32_t *level, union srvsvc_NetCharDevQCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       const char *server_unc,
+				       const char *user,
+				       uint32_t *level,
+				       union srvsvc_NetCharDevQCtr *ctr,
+				       uint32_t max_buffer,
+				       uint32_t *totalentries,
+				       uint32_t *resume_handle,
+				       WERROR *werror)
 {
 	struct srvsvc_NetCharDevQEnum r;
 	NTSTATUS status;
@@ -136,17 +185,24 @@ NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli, TALLOC_CTX *
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQEnum, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETCHARDEVQENUM, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETCHARDEVQENUM,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevQEnum, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -168,7 +224,14 @@ NTSTATUS rpccli_srvsvc_NetCharDevQEnum(struct rpc_pipe_client *cli, TALLOC_CTX *
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetCharDevQGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *queue_name, const char *user, uint32_t level, union srvsvc_NetCharDevQInfo *info, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetCharDevQGetInfo(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx,
+					  const char *server_unc,
+					  const char *queue_name,
+					  const char *user,
+					  uint32_t level,
+					  union srvsvc_NetCharDevQInfo *info,
+					  WERROR *werror)
 {
 	struct srvsvc_NetCharDevQGetInfo r;
 	NTSTATUS status;
@@ -179,17 +242,24 @@ NTSTATUS rpccli_srvsvc_NetCharDevQGetInfo(struct rpc_pipe_client *cli, TALLOC_CT
 	r.in.user = user;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQGetInfo, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETCHARDEVQGETINFO, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETCHARDEVQGETINFO,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevQGetInfo, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -206,7 +276,14 @@ NTSTATUS rpccli_srvsvc_NetCharDevQGetInfo(struct rpc_pipe_client *cli, TALLOC_CT
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *queue_name, uint32_t level, union srvsvc_NetCharDevQInfo info, uint32_t *parm_error, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx,
+					  const char *server_unc,
+					  const char *queue_name,
+					  uint32_t level,
+					  union srvsvc_NetCharDevQInfo info,
+					  uint32_t *parm_error,
+					  WERROR *werror)
 {
 	struct srvsvc_NetCharDevQSetInfo r;
 	NTSTATUS status;
@@ -218,17 +295,24 @@ NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli, TALLOC_CT
 	r.in.info = info;
 	r.in.parm_error = parm_error;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQSetInfo, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETCHARDEVQSETINFO, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETCHARDEVQSETINFO,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevQSetInfo, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -247,7 +331,11 @@ NTSTATUS rpccli_srvsvc_NetCharDevQSetInfo(struct rpc_pipe_client *cli, TALLOC_CT
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetCharDevQPurge(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *queue_name, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetCharDevQPurge(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					const char *server_unc,
+					const char *queue_name,
+					WERROR *werror)
 {
 	struct srvsvc_NetCharDevQPurge r;
 	NTSTATUS status;
@@ -256,17 +344,24 @@ NTSTATUS rpccli_srvsvc_NetCharDevQPurge(struct rpc_pipe_client *cli, TALLOC_CTX 
 	r.in.server_unc = server_unc;
 	r.in.queue_name = queue_name;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQPurge, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETCHARDEVQPURGE, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETCHARDEVQPURGE,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevQPurge, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -282,7 +377,12 @@ NTSTATUS rpccli_srvsvc_NetCharDevQPurge(struct rpc_pipe_client *cli, TALLOC_CTX 
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetCharDevQPurgeSelf(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *queue_name, const char *computer_name, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetCharDevQPurgeSelf(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx,
+					    const char *server_unc,
+					    const char *queue_name,
+					    const char *computer_name,
+					    WERROR *werror)
 {
 	struct srvsvc_NetCharDevQPurgeSelf r;
 	NTSTATUS status;
@@ -292,17 +392,24 @@ NTSTATUS rpccli_srvsvc_NetCharDevQPurgeSelf(struct rpc_pipe_client *cli, TALLOC_
 	r.in.queue_name = queue_name;
 	r.in.computer_name = computer_name;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetCharDevQPurgeSelf, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETCHARDEVQPURGESELF, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETCHARDEVQPURGESELF,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetCharDevQPurgeSelf, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -318,7 +425,16 @@ NTSTATUS rpccli_srvsvc_NetCharDevQPurgeSelf(struct rpc_pipe_client *cli, TALLOC_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *path, uint32_t *level, union srvsvc_NetConnCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   const char *server_unc,
+				   const char *path,
+				   uint32_t *level,
+				   union srvsvc_NetConnCtr *ctr,
+				   uint32_t max_buffer,
+				   uint32_t *totalentries,
+				   uint32_t *resume_handle,
+				   WERROR *werror)
 {
 	struct srvsvc_NetConnEnum r;
 	NTSTATUS status;
@@ -331,17 +447,24 @@ NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetConnEnum, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETCONNENUM, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETCONNENUM,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetConnEnum, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -363,7 +486,17 @@ NTSTATUS rpccli_srvsvc_NetConnEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *path, const char *user, uint32_t *level, union srvsvc_NetFileCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   const char *server_unc,
+				   const char *path,
+				   const char *user,
+				   uint32_t *level,
+				   union srvsvc_NetFileCtr *ctr,
+				   uint32_t max_buffer,
+				   uint32_t *totalentries,
+				   uint32_t *resume_handle,
+				   WERROR *werror)
 {
 	struct srvsvc_NetFileEnum r;
 	NTSTATUS status;
@@ -377,17 +510,24 @@ NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetFileEnum, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETFILEENUM, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETFILEENUM,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetFileEnum, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -409,7 +549,13 @@ NTSTATUS rpccli_srvsvc_NetFileEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetFileGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t fid, uint32_t level, union srvsvc_NetFileInfo *info, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetFileGetInfo(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      const char *server_unc,
+				      uint32_t fid,
+				      uint32_t level,
+				      union srvsvc_NetFileInfo *info,
+				      WERROR *werror)
 {
 	struct srvsvc_NetFileGetInfo r;
 	NTSTATUS status;
@@ -419,17 +565,24 @@ NTSTATUS rpccli_srvsvc_NetFileGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	r.in.fid = fid;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetFileGetInfo, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETFILEGETINFO, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETFILEGETINFO,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetFileGetInfo, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -446,7 +599,11 @@ NTSTATUS rpccli_srvsvc_NetFileGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetFileClose(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t fid, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetFileClose(struct rpc_pipe_client *cli,
+				    TALLOC_CTX *mem_ctx,
+				    const char *server_unc,
+				    uint32_t fid,
+				    WERROR *werror)
 {
 	struct srvsvc_NetFileClose r;
 	NTSTATUS status;
@@ -455,17 +612,24 @@ NTSTATUS rpccli_srvsvc_NetFileClose(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	r.in.server_unc = server_unc;
 	r.in.fid = fid;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetFileClose, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETFILECLOSE, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETFILECLOSE,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetFileClose, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -481,7 +645,17 @@ NTSTATUS rpccli_srvsvc_NetFileClose(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *client, const char *user, uint32_t *level, union srvsvc_NetSessCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   const char *server_unc,
+				   const char *client,
+				   const char *user,
+				   uint32_t *level,
+				   union srvsvc_NetSessCtr *ctr,
+				   uint32_t max_buffer,
+				   uint32_t *totalentries,
+				   uint32_t *resume_handle,
+				   WERROR *werror)
 {
 	struct srvsvc_NetSessEnum r;
 	NTSTATUS status;
@@ -495,17 +669,24 @@ NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSessEnum, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSESSENUM, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSESSENUM,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetSessEnum, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -527,7 +708,12 @@ NTSTATUS rpccli_srvsvc_NetSessEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetSessDel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *client, const char *user, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetSessDel(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx,
+				  const char *server_unc,
+				  const char *client,
+				  const char *user,
+				  WERROR *werror)
 {
 	struct srvsvc_NetSessDel r;
 	NTSTATUS status;
@@ -537,17 +723,24 @@ NTSTATUS rpccli_srvsvc_NetSessDel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	r.in.client = client;
 	r.in.user = user;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSessDel, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSESSDEL, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSESSDEL,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetSessDel, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -563,7 +756,13 @@ NTSTATUS rpccli_srvsvc_NetSessDel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, union srvsvc_NetShareInfo info, uint32_t *parm_error, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   const char *server_unc,
+				   uint32_t level,
+				   union srvsvc_NetShareInfo info,
+				   uint32_t *parm_error,
+				   WERROR *werror)
 {
 	struct srvsvc_NetShareAdd r;
 	NTSTATUS status;
@@ -574,17 +773,24 @@ NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.info = info;
 	r.in.parm_error = parm_error;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareAdd, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSHAREADD, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSHAREADD,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareAdd, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -603,7 +809,15 @@ NTSTATUS rpccli_srvsvc_NetShareAdd(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetShareCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       const char *server_unc,
+				       uint32_t *level,
+				       union srvsvc_NetShareCtr *ctr,
+				       uint32_t max_buffer,
+				       uint32_t *totalentries,
+				       uint32_t *resume_handle,
+				       WERROR *werror)
 {
 	struct srvsvc_NetShareEnumAll r;
 	NTSTATUS status;
@@ -615,17 +829,24 @@ NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli, TALLOC_CTX *
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareEnumAll, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSHAREENUMALL, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSHAREENUMALL,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareEnumAll, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -647,7 +868,13 @@ NTSTATUS rpccli_srvsvc_NetShareEnumAll(struct rpc_pipe_client *cli, TALLOC_CTX *
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share_name, uint32_t level, union srvsvc_NetShareInfo *info, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetShareGetInfo(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       const char *server_unc,
+				       const char *share_name,
+				       uint32_t level,
+				       union srvsvc_NetShareInfo *info,
+				       WERROR *werror)
 {
 	struct srvsvc_NetShareGetInfo r;
 	NTSTATUS status;
@@ -657,17 +884,24 @@ NTSTATUS rpccli_srvsvc_NetShareGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *
 	r.in.share_name = share_name;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareGetInfo, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSHAREGETINFO, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSHAREGETINFO,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareGetInfo, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -684,7 +918,14 @@ NTSTATUS rpccli_srvsvc_NetShareGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share_name, uint32_t level, union srvsvc_NetShareInfo info, uint32_t *parm_error, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       const char *server_unc,
+				       const char *share_name,
+				       uint32_t level,
+				       union srvsvc_NetShareInfo info,
+				       uint32_t *parm_error,
+				       WERROR *werror)
 {
 	struct srvsvc_NetShareSetInfo r;
 	NTSTATUS status;
@@ -696,17 +937,24 @@ NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *
 	r.in.info = info;
 	r.in.parm_error = parm_error;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareSetInfo, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSHARESETINFO, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSHARESETINFO,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareSetInfo, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -725,7 +973,12 @@ NTSTATUS rpccli_srvsvc_NetShareSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareDel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share_name, uint32_t reserved, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetShareDel(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   const char *server_unc,
+				   const char *share_name,
+				   uint32_t reserved,
+				   WERROR *werror)
 {
 	struct srvsvc_NetShareDel r;
 	NTSTATUS status;
@@ -735,17 +988,24 @@ NTSTATUS rpccli_srvsvc_NetShareDel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.share_name = share_name;
 	r.in.reserved = reserved;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareDel, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSHAREDEL, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSHAREDEL,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareDel, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -761,7 +1021,12 @@ NTSTATUS rpccli_srvsvc_NetShareDel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareDelSticky(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share_name, uint32_t reserved, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetShareDelSticky(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx,
+					 const char *server_unc,
+					 const char *share_name,
+					 uint32_t reserved,
+					 WERROR *werror)
 {
 	struct srvsvc_NetShareDelSticky r;
 	NTSTATUS status;
@@ -771,17 +1036,24 @@ NTSTATUS rpccli_srvsvc_NetShareDelSticky(struct rpc_pipe_client *cli, TALLOC_CTX
 	r.in.share_name = share_name;
 	r.in.reserved = reserved;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareDelSticky, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSHAREDELSTICKY, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSHAREDELSTICKY,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareDelSticky, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -797,7 +1069,12 @@ NTSTATUS rpccli_srvsvc_NetShareDelSticky(struct rpc_pipe_client *cli, TALLOC_CTX
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareCheck(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *device_name, enum srvsvc_ShareType *type, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetShareCheck(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *server_unc,
+				     const char *device_name,
+				     enum srvsvc_ShareType *type,
+				     WERROR *werror)
 {
 	struct srvsvc_NetShareCheck r;
 	NTSTATUS status;
@@ -806,17 +1083,24 @@ NTSTATUS rpccli_srvsvc_NetShareCheck(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	r.in.server_unc = server_unc;
 	r.in.device_name = device_name;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareCheck, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSHARECHECK, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSHARECHECK,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareCheck, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -833,7 +1117,12 @@ NTSTATUS rpccli_srvsvc_NetShareCheck(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetSrvGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, union srvsvc_NetSrvInfo *info, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetSrvGetInfo(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *server_unc,
+				     uint32_t level,
+				     union srvsvc_NetSrvInfo *info,
+				     WERROR *werror)
 {
 	struct srvsvc_NetSrvGetInfo r;
 	NTSTATUS status;
@@ -842,17 +1131,24 @@ NTSTATUS rpccli_srvsvc_NetSrvGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	r.in.server_unc = server_unc;
 	r.in.level = level;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSrvGetInfo, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSRVGETINFO, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSRVGETINFO,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetSrvGetInfo, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -869,7 +1165,13 @@ NTSTATUS rpccli_srvsvc_NetSrvGetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, union srvsvc_NetSrvInfo info, uint32_t *parm_error, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx,
+				     const char *server_unc,
+				     uint32_t level,
+				     union srvsvc_NetSrvInfo info,
+				     uint32_t *parm_error,
+				     WERROR *werror)
 {
 	struct srvsvc_NetSrvSetInfo r;
 	NTSTATUS status;
@@ -880,17 +1182,24 @@ NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	r.in.info = info;
 	r.in.parm_error = parm_error;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSrvSetInfo, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSRVSETINFO, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSRVSETINFO,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetSrvSetInfo, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -909,7 +1218,15 @@ NTSTATUS rpccli_srvsvc_NetSrvSetInfo(struct rpc_pipe_client *cli, TALLOC_CTX *me
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, struct srvsvc_NetDiskInfo *info, uint32_t maxlen, uint32_t *totalentries, uint32_t *resume_handle, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   const char *server_unc,
+				   uint32_t level,
+				   struct srvsvc_NetDiskInfo *info,
+				   uint32_t maxlen,
+				   uint32_t *totalentries,
+				   uint32_t *resume_handle,
+				   WERROR *werror)
 {
 	struct srvsvc_NetDiskEnum r;
 	NTSTATUS status;
@@ -921,17 +1238,24 @@ NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.maxlen = maxlen;
 	r.in.resume_handle = resume_handle;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetDiskEnum, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETDISKENUM, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETDISKENUM,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetDiskEnum, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -952,7 +1276,14 @@ NTSTATUS rpccli_srvsvc_NetDiskEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *service, uint32_t level, uint32_t options, struct srvsvc_Statistics *stats, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx,
+					      const char *server_unc,
+					      const char *service,
+					      uint32_t level,
+					      uint32_t options,
+					      struct srvsvc_Statistics *stats,
+					      WERROR *werror)
 {
 	struct srvsvc_NetServerStatisticsGet r;
 	NTSTATUS status;
@@ -963,17 +1294,24 @@ NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli, TALLO
 	r.in.level = level;
 	r.in.options = options;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetServerStatisticsGet, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSERVERSTATISTICSGET, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSERVERSTATISTICSGET,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetServerStatisticsGet, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -990,7 +1328,12 @@ NTSTATUS rpccli_srvsvc_NetServerStatisticsGet(struct rpc_pipe_client *cli, TALLO
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetTransportAdd(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, union srvsvc_NetTransportInfo info, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetTransportAdd(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       const char *server_unc,
+				       uint32_t level,
+				       union srvsvc_NetTransportInfo info,
+				       WERROR *werror)
 {
 	struct srvsvc_NetTransportAdd r;
 	NTSTATUS status;
@@ -1000,17 +1343,24 @@ NTSTATUS rpccli_srvsvc_NetTransportAdd(struct rpc_pipe_client *cli, TALLOC_CTX *
 	r.in.level = level;
 	r.in.info = info;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetTransportAdd, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETTRANSPORTADD, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETTRANSPORTADD,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetTransportAdd, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1026,7 +1376,15 @@ NTSTATUS rpccli_srvsvc_NetTransportAdd(struct rpc_pipe_client *cli, TALLOC_CTX *
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetTransportCtr *transports, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					const char *server_unc,
+					uint32_t *level,
+					union srvsvc_NetTransportCtr *transports,
+					uint32_t max_buffer,
+					uint32_t *totalentries,
+					uint32_t *resume_handle,
+					WERROR *werror)
 {
 	struct srvsvc_NetTransportEnum r;
 	NTSTATUS status;
@@ -1038,17 +1396,24 @@ NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX 
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetTransportEnum, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETTRANSPORTENUM, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETTRANSPORTENUM,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetTransportEnum, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1070,7 +1435,12 @@ NTSTATUS rpccli_srvsvc_NetTransportEnum(struct rpc_pipe_client *cli, TALLOC_CTX 
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t unknown, struct srvsvc_NetTransportInfo0 transport, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       const char *server_unc,
+				       uint32_t unknown,
+				       struct srvsvc_NetTransportInfo0 transport,
+				       WERROR *werror)
 {
 	struct srvsvc_NetTransportDel r;
 	NTSTATUS status;
@@ -1080,17 +1450,24 @@ NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli, TALLOC_CTX *
 	r.in.unknown = unknown;
 	r.in.transport = transport;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetTransportDel, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETTRANSPORTDEL, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETTRANSPORTDEL,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetTransportDel, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1106,7 +1483,11 @@ NTSTATUS rpccli_srvsvc_NetTransportDel(struct rpc_pipe_client *cli, TALLOC_CTX *
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, struct srvsvc_NetRemoteTODInfo *info, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli,
+				    TALLOC_CTX *mem_ctx,
+				    const char *server_unc,
+				    struct srvsvc_NetRemoteTODInfo *info,
+				    WERROR *werror)
 {
 	struct srvsvc_NetRemoteTOD r;
 	NTSTATUS status;
@@ -1114,17 +1495,24 @@ NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	/* In parameters */
 	r.in.server_unc = server_unc;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetRemoteTOD, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETREMOTETOD, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETREMOTETOD,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetRemoteTOD, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1143,7 +1531,13 @@ NTSTATUS rpccli_srvsvc_NetRemoteTOD(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetSetServiceBits(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *transport, uint32_t servicebits, uint32_t updateimmediately, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetSetServiceBits(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx,
+					 const char *server_unc,
+					 const char *transport,
+					 uint32_t servicebits,
+					 uint32_t updateimmediately,
+					 WERROR *werror)
 {
 	struct srvsvc_NetSetServiceBits r;
 	NTSTATUS status;
@@ -1154,17 +1548,24 @@ NTSTATUS rpccli_srvsvc_NetSetServiceBits(struct rpc_pipe_client *cli, TALLOC_CTX
 	r.in.servicebits = servicebits;
 	r.in.updateimmediately = updateimmediately;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSetServiceBits, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSETSERVICEBITS, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSETSERVICEBITS,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetSetServiceBits, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1180,7 +1581,13 @@ NTSTATUS rpccli_srvsvc_NetSetServiceBits(struct rpc_pipe_client *cli, TALLOC_CTX
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetPathType(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *path, uint32_t pathflags, uint32_t *pathtype, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetPathType(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   const char *server_unc,
+				   const char *path,
+				   uint32_t pathflags,
+				   uint32_t *pathtype,
+				   WERROR *werror)
 {
 	struct srvsvc_NetPathType r;
 	NTSTATUS status;
@@ -1190,17 +1597,24 @@ NTSTATUS rpccli_srvsvc_NetPathType(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	r.in.path = path;
 	r.in.pathflags = pathflags;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetPathType, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETPATHTYPE, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETPATHTYPE,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetPathType, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1217,7 +1631,16 @@ NTSTATUS rpccli_srvsvc_NetPathType(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *path, uint8_t *can_path, uint32_t maxbuf, const char *prefix, uint32_t *pathtype, uint32_t pathflags, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx,
+					   const char *server_unc,
+					   const char *path,
+					   uint8_t *can_path,
+					   uint32_t maxbuf,
+					   const char *prefix,
+					   uint32_t *pathtype,
+					   uint32_t pathflags,
+					   WERROR *werror)
 {
 	struct srvsvc_NetPathCanonicalize r;
 	NTSTATUS status;
@@ -1230,17 +1653,24 @@ NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli, TALLOC_C
 	r.in.pathtype = pathtype;
 	r.in.pathflags = pathflags;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetPathCanonicalize, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETPATHCANONICALIZE, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETPATHCANONICALIZE,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetPathCanonicalize, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1258,7 +1688,14 @@ NTSTATUS rpccli_srvsvc_NetPathCanonicalize(struct rpc_pipe_client *cli, TALLOC_C
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetPathCompare(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *path1, const char *path2, uint32_t pathtype, uint32_t pathflags, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetPathCompare(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      const char *server_unc,
+				      const char *path1,
+				      const char *path2,
+				      uint32_t pathtype,
+				      uint32_t pathflags,
+				      WERROR *werror)
 {
 	struct srvsvc_NetPathCompare r;
 	NTSTATUS status;
@@ -1270,17 +1707,24 @@ NTSTATUS rpccli_srvsvc_NetPathCompare(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	r.in.pathtype = pathtype;
 	r.in.pathflags = pathflags;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetPathCompare, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETPATHCOMPARE, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETPATHCOMPARE,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetPathCompare, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1296,7 +1740,13 @@ NTSTATUS rpccli_srvsvc_NetPathCompare(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetNameValidate(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *name, uint32_t name_type, uint32_t flags, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetNameValidate(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       const char *server_unc,
+				       const char *name,
+				       uint32_t name_type,
+				       uint32_t flags,
+				       WERROR *werror)
 {
 	struct srvsvc_NetNameValidate r;
 	NTSTATUS status;
@@ -1307,17 +1757,24 @@ NTSTATUS rpccli_srvsvc_NetNameValidate(struct rpc_pipe_client *cli, TALLOC_CTX *
 	r.in.name_type = name_type;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetNameValidate, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETNAMEVALIDATE, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETNAMEVALIDATE,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetNameValidate, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1333,24 +1790,33 @@ NTSTATUS rpccli_srvsvc_NetNameValidate(struct rpc_pipe_client *cli, TALLOC_CTX *
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NETRPRNAMECANONICALIZE(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NETRPRNAMECANONICALIZE(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx,
+					      WERROR *werror)
 {
 	struct srvsvc_NETRPRNAMECANONICALIZE r;
 	NTSTATUS status;
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRPRNAMECANONICALIZE, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETRPRNAMECANONICALIZE, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETRPRNAMECANONICALIZE,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRPRNAMECANONICALIZE, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1366,7 +1832,14 @@ NTSTATUS rpccli_srvsvc_NETRPRNAMECANONICALIZE(struct rpc_pipe_client *cli, TALLO
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetPRNameCompare(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *name1, const char *name2, uint32_t name_type, uint32_t flags, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetPRNameCompare(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					const char *server_unc,
+					const char *name1,
+					const char *name2,
+					uint32_t name_type,
+					uint32_t flags,
+					WERROR *werror)
 {
 	struct srvsvc_NetPRNameCompare r;
 	NTSTATUS status;
@@ -1378,17 +1851,24 @@ NTSTATUS rpccli_srvsvc_NetPRNameCompare(struct rpc_pipe_client *cli, TALLOC_CTX 
 	r.in.name_type = name_type;
 	r.in.flags = flags;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetPRNameCompare, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETPRNAMECOMPARE, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETPRNAMECOMPARE,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetPRNameCompare, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1404,7 +1884,15 @@ NTSTATUS rpccli_srvsvc_NetPRNameCompare(struct rpc_pipe_client *cli, TALLOC_CTX 
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t *level, union srvsvc_NetShareCtr *ctr, uint32_t max_buffer, uint32_t *totalentries, uint32_t *resume_handle, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli,
+				    TALLOC_CTX *mem_ctx,
+				    const char *server_unc,
+				    uint32_t *level,
+				    union srvsvc_NetShareCtr *ctr,
+				    uint32_t max_buffer,
+				    uint32_t *totalentries,
+				    uint32_t *resume_handle,
+				    WERROR *werror)
 {
 	struct srvsvc_NetShareEnum r;
 	NTSTATUS status;
@@ -1416,17 +1904,24 @@ NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	r.in.max_buffer = max_buffer;
 	r.in.resume_handle = resume_handle;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareEnum, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSHAREENUM, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSHAREENUM,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareEnum, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1448,7 +1943,13 @@ NTSTATUS rpccli_srvsvc_NetShareEnum(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareDelStart(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share, uint32_t reserved, struct policy_handle *hnd, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetShareDelStart(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					const char *server_unc,
+					const char *share,
+					uint32_t reserved,
+					struct policy_handle *hnd,
+					WERROR *werror)
 {
 	struct srvsvc_NetShareDelStart r;
 	NTSTATUS status;
@@ -1458,17 +1959,24 @@ NTSTATUS rpccli_srvsvc_NetShareDelStart(struct rpc_pipe_client *cli, TALLOC_CTX 
 	r.in.share = share;
 	r.in.reserved = reserved;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareDelStart, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSHAREDELSTART, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSHAREDELSTART,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareDelStart, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1487,7 +1995,10 @@ NTSTATUS rpccli_srvsvc_NetShareDelStart(struct rpc_pipe_client *cli, TALLOC_CTX 
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetShareDelCommit(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *hnd, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetShareDelCommit(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx,
+					 struct policy_handle *hnd,
+					 WERROR *werror)
 {
 	struct srvsvc_NetShareDelCommit r;
 	NTSTATUS status;
@@ -1495,17 +2006,24 @@ NTSTATUS rpccli_srvsvc_NetShareDelCommit(struct rpc_pipe_client *cli, TALLOC_CTX
 	/* In parameters */
 	r.in.hnd = hnd;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetShareDelCommit, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSHAREDELCOMMIT, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSHAREDELCOMMIT,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetShareDelCommit, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1524,7 +2042,14 @@ NTSTATUS rpccli_srvsvc_NetShareDelCommit(struct rpc_pipe_client *cli, TALLOC_CTX
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share, const char *file, uint32_t securityinformation, struct sec_desc_buf *sd_buf, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx,
+					  const char *server_unc,
+					  const char *share,
+					  const char *file,
+					  uint32_t securityinformation,
+					  struct sec_desc_buf *sd_buf,
+					  WERROR *werror)
 {
 	struct srvsvc_NetGetFileSecurity r;
 	NTSTATUS status;
@@ -1535,17 +2060,24 @@ NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli, TALLOC_CT
 	r.in.file = file;
 	r.in.securityinformation = securityinformation;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetGetFileSecurity, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETGETFILESECURITY, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETGETFILESECURITY,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetGetFileSecurity, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1564,7 +2096,14 @@ NTSTATUS rpccli_srvsvc_NetGetFileSecurity(struct rpc_pipe_client *cli, TALLOC_CT
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetSetFileSecurity(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *share, const char *file, uint32_t securityinformation, struct sec_desc_buf sd_buf, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetSetFileSecurity(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx,
+					  const char *server_unc,
+					  const char *share,
+					  const char *file,
+					  uint32_t securityinformation,
+					  struct sec_desc_buf sd_buf,
+					  WERROR *werror)
 {
 	struct srvsvc_NetSetFileSecurity r;
 	NTSTATUS status;
@@ -1576,17 +2115,24 @@ NTSTATUS rpccli_srvsvc_NetSetFileSecurity(struct rpc_pipe_client *cli, TALLOC_CT
 	r.in.securityinformation = securityinformation;
 	r.in.sd_buf = sd_buf;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetSetFileSecurity, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSETFILESECURITY, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSETFILESECURITY,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetSetFileSecurity, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1602,7 +2148,12 @@ NTSTATUS rpccli_srvsvc_NetSetFileSecurity(struct rpc_pipe_client *cli, TALLOC_CT
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetServerTransportAddEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, uint32_t level, union srvsvc_NetTransportInfo info, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetServerTransportAddEx(struct rpc_pipe_client *cli,
+					       TALLOC_CTX *mem_ctx,
+					       const char *server_unc,
+					       uint32_t level,
+					       union srvsvc_NetTransportInfo info,
+					       WERROR *werror)
 {
 	struct srvsvc_NetServerTransportAddEx r;
 	NTSTATUS status;
@@ -1612,17 +2163,24 @@ NTSTATUS rpccli_srvsvc_NetServerTransportAddEx(struct rpc_pipe_client *cli, TALL
 	r.in.level = level;
 	r.in.info = info;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetServerTransportAddEx, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSERVERTRANSPORTADDEX, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSERVERTRANSPORTADDEX,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetServerTransportAddEx, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1638,7 +2196,15 @@ NTSTATUS rpccli_srvsvc_NetServerTransportAddEx(struct rpc_pipe_client *cli, TALL
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NetServerSetServiceBitsEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, const char *server_unc, const char *emulated_server_unc, const char *transport, uint32_t servicebitsofinterest, uint32_t servicebits, uint32_t updateimmediately, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NetServerSetServiceBitsEx(struct rpc_pipe_client *cli,
+						 TALLOC_CTX *mem_ctx,
+						 const char *server_unc,
+						 const char *emulated_server_unc,
+						 const char *transport,
+						 uint32_t servicebitsofinterest,
+						 uint32_t servicebits,
+						 uint32_t updateimmediately,
+						 WERROR *werror)
 {
 	struct srvsvc_NetServerSetServiceBitsEx r;
 	NTSTATUS status;
@@ -1651,17 +2217,24 @@ NTSTATUS rpccli_srvsvc_NetServerSetServiceBitsEx(struct rpc_pipe_client *cli, TA
 	r.in.servicebits = servicebits;
 	r.in.updateimmediately = updateimmediately;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NetServerSetServiceBitsEx, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETSERVERSETSERVICEBITSEX, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETSERVERSETSERVICEBITSEX,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NetServerSetServiceBitsEx, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1677,24 +2250,33 @@ NTSTATUS rpccli_srvsvc_NetServerSetServiceBitsEx(struct rpc_pipe_client *cli, TA
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NETRDFSGETVERSION(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NETRDFSGETVERSION(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx,
+					 WERROR *werror)
 {
 	struct srvsvc_NETRDFSGETVERSION r;
 	NTSTATUS status;
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSGETVERSION, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETRDFSGETVERSION, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETRDFSGETVERSION,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSGETVERSION, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1710,24 +2292,33 @@ NTSTATUS rpccli_srvsvc_NETRDFSGETVERSION(struct rpc_pipe_client *cli, TALLOC_CTX
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NETRDFSCREATELOCALPARTITION(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NETRDFSCREATELOCALPARTITION(struct rpc_pipe_client *cli,
+						   TALLOC_CTX *mem_ctx,
+						   WERROR *werror)
 {
 	struct srvsvc_NETRDFSCREATELOCALPARTITION r;
 	NTSTATUS status;
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSCREATELOCALPARTITION, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETRDFSCREATELOCALPARTITION, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETRDFSCREATELOCALPARTITION,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSCREATELOCALPARTITION, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1743,24 +2334,33 @@ NTSTATUS rpccli_srvsvc_NETRDFSCREATELOCALPARTITION(struct rpc_pipe_client *cli, 
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NETRDFSDELETELOCALPARTITION(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NETRDFSDELETELOCALPARTITION(struct rpc_pipe_client *cli,
+						   TALLOC_CTX *mem_ctx,
+						   WERROR *werror)
 {
 	struct srvsvc_NETRDFSDELETELOCALPARTITION r;
 	NTSTATUS status;
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSDELETELOCALPARTITION, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETRDFSDELETELOCALPARTITION, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETRDFSDELETELOCALPARTITION,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSDELETELOCALPARTITION, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1776,24 +2376,33 @@ NTSTATUS rpccli_srvsvc_NETRDFSDELETELOCALPARTITION(struct rpc_pipe_client *cli, 
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NETRDFSSETLOCALVOLUMESTATE(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NETRDFSSETLOCALVOLUMESTATE(struct rpc_pipe_client *cli,
+						  TALLOC_CTX *mem_ctx,
+						  WERROR *werror)
 {
 	struct srvsvc_NETRDFSSETLOCALVOLUMESTATE r;
 	NTSTATUS status;
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSSETLOCALVOLUMESTATE, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETRDFSSETLOCALVOLUMESTATE, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETRDFSSETLOCALVOLUMESTATE,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSSETLOCALVOLUMESTATE, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1809,24 +2418,33 @@ NTSTATUS rpccli_srvsvc_NETRDFSSETLOCALVOLUMESTATE(struct rpc_pipe_client *cli, T
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NETRDFSSETSERVERINFO(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NETRDFSSETSERVERINFO(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx,
+					    WERROR *werror)
 {
 	struct srvsvc_NETRDFSSETSERVERINFO r;
 	NTSTATUS status;
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSSETSERVERINFO, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETRDFSSETSERVERINFO, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETRDFSSETSERVERINFO,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSSETSERVERINFO, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1842,24 +2460,33 @@ NTSTATUS rpccli_srvsvc_NETRDFSSETSERVERINFO(struct rpc_pipe_client *cli, TALLOC_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NETRDFSCREATEEXITPOINT(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NETRDFSCREATEEXITPOINT(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx,
+					      WERROR *werror)
 {
 	struct srvsvc_NETRDFSCREATEEXITPOINT r;
 	NTSTATUS status;
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSCREATEEXITPOINT, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETRDFSCREATEEXITPOINT, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETRDFSCREATEEXITPOINT,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSCREATEEXITPOINT, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1875,24 +2502,33 @@ NTSTATUS rpccli_srvsvc_NETRDFSCREATEEXITPOINT(struct rpc_pipe_client *cli, TALLO
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NETRDFSDELETEEXITPOINT(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NETRDFSDELETEEXITPOINT(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx,
+					      WERROR *werror)
 {
 	struct srvsvc_NETRDFSDELETEEXITPOINT r;
 	NTSTATUS status;
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSDELETEEXITPOINT, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETRDFSDELETEEXITPOINT, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETRDFSDELETEEXITPOINT,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSDELETEEXITPOINT, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1908,24 +2544,33 @@ NTSTATUS rpccli_srvsvc_NETRDFSDELETEEXITPOINT(struct rpc_pipe_client *cli, TALLO
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NETRDFSMODIFYPREFIX(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NETRDFSMODIFYPREFIX(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx,
+					   WERROR *werror)
 {
 	struct srvsvc_NETRDFSMODIFYPREFIX r;
 	NTSTATUS status;
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSMODIFYPREFIX, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETRDFSMODIFYPREFIX, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETRDFSMODIFYPREFIX,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSMODIFYPREFIX, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1941,24 +2586,33 @@ NTSTATUS rpccli_srvsvc_NETRDFSMODIFYPREFIX(struct rpc_pipe_client *cli, TALLOC_C
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NETRDFSFIXLOCALVOLUME(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NETRDFSFIXLOCALVOLUME(struct rpc_pipe_client *cli,
+					     TALLOC_CTX *mem_ctx,
+					     WERROR *werror)
 {
 	struct srvsvc_NETRDFSFIXLOCALVOLUME r;
 	NTSTATUS status;
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSFIXLOCALVOLUME, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETRDFSFIXLOCALVOLUME, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETRDFSFIXLOCALVOLUME,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSFIXLOCALVOLUME, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -1974,24 +2628,33 @@ NTSTATUS rpccli_srvsvc_NETRDFSFIXLOCALVOLUME(struct rpc_pipe_client *cli, TALLOC
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NETRDFSMANAGERREPORTSITEINFO(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NETRDFSMANAGERREPORTSITEINFO(struct rpc_pipe_client *cli,
+						    TALLOC_CTX *mem_ctx,
+						    WERROR *werror)
 {
 	struct srvsvc_NETRDFSMANAGERREPORTSITEINFO r;
 	NTSTATUS status;
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRDFSMANAGERREPORTSITEINFO, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETRDFSMANAGERREPORTSITEINFO, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETRDFSMANAGERREPORTSITEINFO,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRDFSMANAGERREPORTSITEINFO, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -2007,24 +2670,33 @@ NTSTATUS rpccli_srvsvc_NETRDFSMANAGERREPORTSITEINFO(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_srvsvc_NETRSERVERTRANSPORTDELEX(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, WERROR *werror)
+NTSTATUS rpccli_srvsvc_NETRSERVERTRANSPORTDELEX(struct rpc_pipe_client *cli,
+						TALLOC_CTX *mem_ctx,
+						WERROR *werror)
 {
 	struct srvsvc_NETRSERVERTRANSPORTDELEX r;
 	NTSTATUS status;
 
 	/* In parameters */
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(srvsvc_NETRSERVERTRANSPORTDELEX, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_SRVSVC, &ndr_table_srvsvc, NDR_SRVSVC_NETRSERVERTRANSPORTDELEX, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_SRVSVC,
+				&ndr_table_srvsvc,
+				NDR_SRVSVC_NETRSERVERTRANSPORTDELEX,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(srvsvc_NETRSERVERTRANSPORTDELEX, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
