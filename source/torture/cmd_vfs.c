@@ -279,14 +279,27 @@ static NTSTATUS cmd_open(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	}
 
 	fsp = SMB_MALLOC_P(struct files_struct);
+	if (fsp == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	fsp->fsp_name = SMB_STRDUP(argv[1]);
+	if (fsp->fsp_name == NULL) {
+		SAFE_FREE(fsp);
+		return NT_STATUS_NO_MEMORY;
+	}
 	fsp->fh = SMB_MALLOC_P(struct fd_handle);
+	if (fsp->fh == NULL) {
+		SAFE_FREE(fsp->fsp_name);
+		SAFE_FREE(fsp);
+		return NT_STATUS_NO_MEMORY;
+	}
 	fsp->conn = vfs->conn;
 
 	fsp->fh->fd = SMB_VFS_OPEN(vfs->conn, argv[1], fsp, flags, mode);
 	if (fsp->fh->fd == -1) {
 		printf("open: error=%d (%s)\n", errno, strerror(errno));
 		SAFE_FREE(fsp->fh);
+		SAFE_FREE(fsp->fsp_name);
 		SAFE_FREE(fsp);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
