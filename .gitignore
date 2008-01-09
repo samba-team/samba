@@ -36,3 +36,12 @@ source/cscope.out
 source/torture.tdb
 source/pkgconfig/*.pc
 source/st
+examples/VFS/Makefile
+examples/VFS/config.log
+examples/VFS/config.status
+examples/VFS/configure
+examples/VFS/module_config.h
+examples/VFS/module_config.h.in
+examples/VFS/shadow_copy_test.so
+examples/VFS/skel_opaque.so
+examples/VFS/skel_transparent.so
