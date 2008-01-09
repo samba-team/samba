@@ -156,6 +156,9 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 	/* have to open a new connection */
 	if (!(c=cli_initialise()) || (cli_set_port(c, port) != port)) {
 		d_printf("Connection to %s failed\n", server_n);
+		if (c) {
+			cli_shutdown(c);
+		}
 		return NULL;
 	}
 	status = cli_connect(c, server_n, &ss);
@@ -163,6 +166,7 @@ static struct cli_state *do_connect(TALLOC_CTX *ctx,
 		d_printf("Connection to %s failed (Error %s)\n",
 				server_n,
 				nt_errstr(status));
+		cli_shutdown(c);
 		return NULL;
 	}
 
