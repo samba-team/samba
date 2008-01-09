@@ -71,6 +71,7 @@ static struct cli_state *server_cryptkey(TALLOC_CTX *mem_ctx)
 		   connection (tridge) */
 
 		if (!grab_server_mutex(desthost)) {
+			cli_shutdown(cli);
 			return NULL;
 		}
 
