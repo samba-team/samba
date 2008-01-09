@@ -3529,7 +3529,7 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 	char *valname = NULL;
 	char *valstr = NULL;
 	uint32 idx = 0;
-	NT_USER_TOKEN *token;
+	NT_USER_TOKEN *token = NULL;
 
 	ctx = talloc_init("process_registry_globals");
 	if (!ctx) {
@@ -3543,8 +3543,9 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 		goto done;
 	}
 
-	if (!(token = registry_create_admin_token(ctx))) {
-		DEBUG(1, ("Error creating admin token\n"));
+	werr = ntstatus_to_werror(registry_create_admin_token(ctx, &token));
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Error creating admin token: %s\n",dos_errstr(werr)));
 		goto done;
 	}
 

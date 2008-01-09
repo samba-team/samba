@@ -31,14 +31,20 @@ extern REGISTRY_OPS smbconf_reg_ops;
  * - builtin administrators sid
  * - disk operators privilege
  */
-NT_USER_TOKEN *registry_create_admin_token(TALLOC_CTX *mem_ctx)
+NTSTATUS registry_create_admin_token(TALLOC_CTX *mem_ctx,
+				     NT_USER_TOKEN **ptoken)
 {
 	NTSTATUS status;
 	NT_USER_TOKEN *token = NULL;
 
+	if (ptoken == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	token = TALLOC_ZERO_P(mem_ctx, NT_USER_TOKEN);
 	if (token == NULL) {
 		DEBUG(1, ("talloc failed\n"));
+		status = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 	token->privileges = se_disk_operators;
@@ -49,8 +55,11 @@ NT_USER_TOKEN *registry_create_admin_token(TALLOC_CTX *mem_ctx)
 			  "to fake token.\n"));
 		goto done;
 	}
+
+	*ptoken = token;
+
 done:
-	return token;
+	return status;
 }
 
 /*
