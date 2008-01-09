@@ -372,9 +372,8 @@ int tdb_freelist_size(struct tdb_context *tdb)
 	}
 
 	ptr = FREELIST_TOP;
-	while (ptr != 0 && tdb_ofs_read(tdb, ptr, &ptr) == 0) {
+	while (tdb_ofs_read(tdb, ptr, &ptr) == 0 && ptr != 0) {
 		count++;
-		
 	}
 
 	tdb_unlock(tdb, -1, F_RDLCK);
