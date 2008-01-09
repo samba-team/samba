@@ -13,6 +13,6 @@
 	You should not need to change this parameter.</para>
 </description>
 <related>stat cache</related>
-<value type="default">1024</value>
+<value type="default">256</value>
 <value type="example">100</value>
 </samba:parameter>
