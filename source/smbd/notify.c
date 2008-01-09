@@ -66,6 +66,8 @@ static BOOL notify_marshall_changes(int num_changes,
 	int i;
 	UNISTR uni_name;
 
+	uni_name.buffer = NULL;
+
 	for (i=0; i<num_changes; i++) {
 		struct notify_change *c;
 		size_t namelen;
