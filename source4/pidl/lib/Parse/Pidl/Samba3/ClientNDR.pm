@@ -66,8 +66,11 @@ sub ParseFunction($$$)
 	}
 
 	$self->pidl("");
-	$self->pidl("if (DEBUGLEVEL >= 10)");
-	$self->pidl("\tNDR_PRINT_IN_DEBUG($fn->{NAME}, &r);");
+	$self->pidl("if (DEBUGLEVEL >= 10) {");
+	$self->indent;
+	$self->pidl("NDR_PRINT_IN_DEBUG($fn->{NAME}, &r);");
+	$self->deindent;
+	$self->pidl("}");
 	$self->pidl("");
 	$self->pidl("status = cli_do_rpc_ndr(cli, mem_ctx, PI_$uif, &ndr_table_$if, $ufn, &r);");
 	$self->pidl("");
@@ -79,11 +82,16 @@ sub ParseFunction($$$)
 	$self->pidl("}");
 
 	$self->pidl("");
-	$self->pidl("if (DEBUGLEVEL >= 10)");
-	$self->pidl("\tNDR_PRINT_OUT_DEBUG($fn->{NAME}, &r);");
+	$self->pidl("if (DEBUGLEVEL >= 10) {");
+	$self->indent;
+	$self->pidl("NDR_PRINT_OUT_DEBUG($fn->{NAME}, &r);");
+	$self->deindent;
+	$self->pidl("}");
 	$self->pidl("");
 	$self->pidl("if (NT_STATUS_IS_ERR(status)) {");
-	$self->pidl("\treturn status;");
+	$self->indent;
+	$self->pidl("return status;");
+	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
 	$self->pidl("/* Return variables */");
