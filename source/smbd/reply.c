@@ -5169,11 +5169,13 @@ int reply_copy(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 
 			status = check_name(conn, fname);
 			if (!NT_STATUS_IS_OK(status)) {
+				CloseDir(dir_hnd);
 				return ERROR_NT(status);
 			}
 		
 			status = check_name(conn, destname);
 			if (!NT_STATUS_IS_OK(status)) {
+				CloseDir(dir_hnd);
 				return ERROR_NT(status);
 			}
 		
