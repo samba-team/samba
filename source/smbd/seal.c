@@ -53,8 +53,8 @@ bool is_encrypted_packet(const uint8_t *inbuf)
 	NTSTATUS status;
 	uint16_t enc_num;
 
-	/* Ignore non-session messages or 0xFF'SMB' messages. */
-	if(CVAL(inbuf,0) || IVAL(inbuf,4) == 0x424d53ff) {
+	/* Ignore non-session messages or non 0xFF'E' messages. */
+	if(CVAL(inbuf,0) || !(inbuf[4] == 0xFF && inbuf[5] == 'E')) {
 		return false;
 	}
 
@@ -63,9 +63,8 @@ bool is_encrypted_packet(const uint8_t *inbuf)
 		return false;
 	}
 
-	if (SVAL(inbuf,4) == 0x45FF &&
-			srv_trans_enc_ctx &&
-			enc_num == srv_enc_ctx()) {
+	/* Encrypted messages are 0xFF'E'<ctx> */
+	if (srv_trans_enc_ctx && enc_num == srv_enc_ctx()) {
 		return true;
 	}
 	return false;
@@ -714,6 +713,7 @@ NTSTATUS srv_encryption_start(connection_struct *conn)
 
 	partial_srv_trans_enc_ctx = NULL;
 
+	DEBUG(1,("srv_encryption_start: context negotiated\n"));
 	return NT_STATUS_OK;
 }
 
