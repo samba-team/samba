@@ -14,67 +14,69 @@ static bool api_epm_Insert(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct epm_Insert *r;
-	
+
 	call = &ndr_table_epmapper.calls[NDR_EPM_INSERT];
-	
+
 	r = talloc(NULL, struct epm_Insert);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(epm_Insert, r);
-	
+	}
+
 	r->out.result = _epm_Insert(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(epm_Insert, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_epm_Delete(pipes_struct *p)
@@ -85,67 +87,69 @@ static bool api_epm_Delete(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct epm_Delete *r;
-	
+
 	call = &ndr_table_epmapper.calls[NDR_EPM_DELETE];
-	
+
 	r = talloc(NULL, struct epm_Delete);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(epm_Delete, r);
-	
+	}
+
 	r->out.result = _epm_Delete(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(epm_Delete, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_epm_Lookup(pipes_struct *p)
@@ -156,81 +160,83 @@ static bool api_epm_Lookup(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct epm_Lookup *r;
-	
+
 	call = &ndr_table_epmapper.calls[NDR_EPM_LOOKUP];
-	
+
 	r = talloc(NULL, struct epm_Lookup);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(epm_Lookup, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.entry_handle = r->in.entry_handle;
 	r->out.num_ents = talloc_zero(r, uint32_t);
 	if (r->out.num_ents == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.entries = talloc_zero_array(r, struct epm_entry_t, r->in.max_ents);
 	if (r->out.entries == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _epm_Lookup(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(epm_Lookup, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_epm_Map(pipes_struct *p)
@@ -241,81 +247,83 @@ static bool api_epm_Map(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct epm_Map *r;
-	
+
 	call = &ndr_table_epmapper.calls[NDR_EPM_MAP];
-	
+
 	r = talloc(NULL, struct epm_Map);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(epm_Map, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.entry_handle = r->in.entry_handle;
 	r->out.num_towers = talloc_zero(r, uint32_t);
 	if (r->out.num_towers == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.towers = talloc_zero_array(r, struct epm_twr_p_t, r->in.max_towers);
 	if (r->out.towers == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _epm_Map(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(epm_Map, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_epm_LookupHandleFree(pipes_struct *p)
@@ -326,69 +334,71 @@ static bool api_epm_LookupHandleFree(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct epm_LookupHandleFree *r;
-	
+
 	call = &ndr_table_epmapper.calls[NDR_EPM_LOOKUPHANDLEFREE];
-	
+
 	r = talloc(NULL, struct epm_LookupHandleFree);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(epm_LookupHandleFree, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.entry_handle = r->in.entry_handle;
 	r->out.result = _epm_LookupHandleFree(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(epm_LookupHandleFree, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_epm_InqObject(pipes_struct *p)
@@ -399,67 +409,69 @@ static bool api_epm_InqObject(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct epm_InqObject *r;
-	
+
 	call = &ndr_table_epmapper.calls[NDR_EPM_INQOBJECT];
-	
+
 	r = talloc(NULL, struct epm_InqObject);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(epm_InqObject, r);
-	
+	}
+
 	r->out.result = _epm_InqObject(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(epm_InqObject, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_epm_MgmtDelete(pipes_struct *p)
@@ -470,67 +482,69 @@ static bool api_epm_MgmtDelete(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct epm_MgmtDelete *r;
-	
+
 	call = &ndr_table_epmapper.calls[NDR_EPM_MGMTDELETE];
-	
+
 	r = talloc(NULL, struct epm_MgmtDelete);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(epm_MgmtDelete, r);
-	
+	}
+
 	r->out.result = _epm_MgmtDelete(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(epm_MgmtDelete, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_epm_MapAuth(pipes_struct *p)
@@ -541,67 +555,69 @@ static bool api_epm_MapAuth(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct epm_MapAuth *r;
-	
+
 	call = &ndr_table_epmapper.calls[NDR_EPM_MAPAUTH];
-	
+
 	r = talloc(NULL, struct epm_MapAuth);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(epm_MapAuth, r);
-	
+	}
+
 	r->out.result = _epm_MapAuth(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(epm_MapAuth, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 
