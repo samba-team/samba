@@ -94,6 +94,7 @@ int main(int argc, const char *argv[])
 		POPT_CTDB_CMDLINE
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
 		{ "base-rec", 'b', POPT_ARG_INT, &base_rec, 0, "base_rec", "integer" },
+		{ "delete-pct", 'p', POPT_ARG_INT, &delete_pct, 0, "delete_pct", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
