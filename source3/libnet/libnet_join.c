@@ -1072,9 +1072,12 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		return WERR_GENERAL_FAILURE;
 	}
 
+#ifdef HAVE_KRB5
 	if (!libnet_join_derive_salting_principal(mem_ctx, r)) {
 		return WERR_GENERAL_FAILURE;
 	}
+#endif /* HAVE_KRB5 */
+
 #endif /* HAVE_LDAP */
 	if (!libnet_join_create_keytab(mem_ctx, r)) {
 		libnet_join_set_error_string(mem_ctx, r,
