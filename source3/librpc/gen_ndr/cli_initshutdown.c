@@ -6,7 +6,14 @@
 #include "includes.h"
 #include "librpc/gen_ndr/cli_initshutdown.h"
 
-NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint16_t *hostname, struct initshutdown_String *message, uint32_t timeout, uint8_t force_apps, uint8_t reboot, WERROR *werror)
+NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli,
+				  TALLOC_CTX *mem_ctx,
+				  uint16_t *hostname,
+				  struct initshutdown_String *message,
+				  uint32_t timeout,
+				  uint8_t force_apps,
+				  uint8_t reboot,
+				  WERROR *werror)
 {
 	struct initshutdown_Init r;
 	NTSTATUS status;
@@ -18,17 +25,24 @@ NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	r.in.force_apps = force_apps;
 	r.in.reboot = reboot;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(initshutdown_Init, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_INITSHUTDOWN, &ndr_table_initshutdown, NDR_INITSHUTDOWN_INIT, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_INITSHUTDOWN,
+				&ndr_table_initshutdown,
+				NDR_INITSHUTDOWN_INIT,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(initshutdown_Init, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -44,7 +58,10 @@ NTSTATUS rpccli_initshutdown_Init(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint16_t *server, WERROR *werror)
+NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli,
+				   TALLOC_CTX *mem_ctx,
+				   uint16_t *server,
+				   WERROR *werror)
 {
 	struct initshutdown_Abort r;
 	NTSTATUS status;
@@ -52,17 +69,24 @@ NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	/* In parameters */
 	r.in.server = server;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(initshutdown_Abort, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_INITSHUTDOWN, &ndr_table_initshutdown, NDR_INITSHUTDOWN_ABORT, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_INITSHUTDOWN,
+				&ndr_table_initshutdown,
+				NDR_INITSHUTDOWN_ABORT,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(initshutdown_Abort, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
@@ -78,7 +102,15 @@ NTSTATUS rpccli_initshutdown_Abort(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, uint16_t *hostname, struct initshutdown_String *message, uint32_t timeout, uint8_t force_apps, uint8_t reboot, uint32_t reason, WERROR *werror)
+NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli,
+				    TALLOC_CTX *mem_ctx,
+				    uint16_t *hostname,
+				    struct initshutdown_String *message,
+				    uint32_t timeout,
+				    uint8_t force_apps,
+				    uint8_t reboot,
+				    uint32_t reason,
+				    WERROR *werror)
 {
 	struct initshutdown_InitEx r;
 	NTSTATUS status;
@@ -91,17 +123,24 @@ NTSTATUS rpccli_initshutdown_InitEx(struct rpc_pipe_client *cli, TALLOC_CTX *mem
 	r.in.reboot = reboot;
 	r.in.reason = reason;
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(initshutdown_InitEx, &r);
+	}
 
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_INITSHUTDOWN, &ndr_table_initshutdown, NDR_INITSHUTDOWN_INITEX, &r);
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_INITSHUTDOWN,
+				&ndr_table_initshutdown,
+				NDR_INITSHUTDOWN_INITEX,
+				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	if (DEBUGLEVEL >= 10)
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(initshutdown_InitEx, &r);
+	}
 
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
