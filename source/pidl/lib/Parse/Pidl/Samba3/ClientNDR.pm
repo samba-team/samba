@@ -2,6 +2,7 @@
 # Samba3 client generator for IDL structures
 # on top of Samba4 style NDR functions
 # Copyright jelmer@samba.org 2005-2006
+# Copyright gd@samba.org 2008
 # released under the GNU GPL
 
 package Parse::Pidl::Samba3::ClientNDR;
@@ -27,6 +28,15 @@ sub pidl($$) { my ($self,$txt) = @_; $self->{res} .= $txt ? "$self->{tabs}$txt\n
 sub pidl_hdr($$) { my ($self, $txt) = @_; $self->{res_hdr} .= "$txt\n"; } 
 sub fn_declare($$) { my ($self,$n) = @_; $self->pidl($n); $self->pidl_hdr("$n;"); }
 
+sub genpad($)
+{
+	my ($s) = @_;
+	my $nt = int((length($s)+1)/8);
+	my $lt = ($nt*8)-1;
+	my $ns = (length($s)-$lt);
+	return "\t"x($nt)." "x($ns);
+}
+
 sub new($)
 {
 	my ($class) = shift;
@@ -38,20 +48,23 @@ sub ParseFunction($$$)
 {
 	my ($self, $if, $fn) = @_;
 
-	my $inargs = "";
-	my $defargs = "";
+	my $fn_args = "";
 	my $uif = uc($if);
 	my $ufn = "NDR_".uc($fn->{NAME});
+	my $fn_str = "NTSTATUS rpccli_$fn->{NAME}";
+	my $pad = genpad($fn_str);
+
+	$fn_args .= "struct rpc_pipe_client *cli,\n" . $pad . "TALLOC_CTX *mem_ctx";
 
 	foreach (@{$fn->{ELEMENTS}}) {
-		$defargs .= ", " . DeclLong($_);
+		$fn_args .= ",\n" . $pad . DeclLong($_);
 	}
 
 	if (defined($fn->{RETURN_TYPE}) && ($fn->{RETURN_TYPE} eq "WERROR")) {
-		$defargs .= ", WERROR *werror";
+		$fn_args .= ",\n" . $pad . "WERROR *werror";
 	}
 
-	$self->fn_declare("NTSTATUS rpccli_$fn->{NAME}(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx$defargs)");
+	$self->fn_declare("$fn_str($fn_args)");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("struct $fn->{NAME} r;");
@@ -62,7 +75,7 @@ sub ParseFunction($$$)
 	foreach (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/, @{$_->{DIRECTION}})) {
 			$self->pidl("r.in.$_->{NAME} = $_->{NAME};");
-		} 
+		}
 	}
 
 	$self->pidl("");
@@ -72,7 +85,12 @@ sub ParseFunction($$$)
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
-	$self->pidl("status = cli_do_rpc_ndr(cli, mem_ctx, PI_$uif, &ndr_table_$if, $ufn, &r);");
+	$self->pidl("status = cli_do_rpc_ndr(cli,");
+	$self->pidl("\t\t\tmem_ctx,");
+	$self->pidl("\t\t\tPI_$uif,");
+	$self->pidl("\t\t\t&ndr_table_$if,");
+	$self->pidl("\t\t\t$ufn,");
+	$self->pidl("\t\t\t&r);");
 	$self->pidl("");
 
 	$self->pidl("if (!NT_STATUS_IS_OK(status)) {");
