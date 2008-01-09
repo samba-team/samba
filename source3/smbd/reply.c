@@ -6355,6 +6355,7 @@ void reply_copy(struct smb_request *req)
 					directory,
 					dname);
 			if (!fname) {
+				CloseDir(dir_hnd);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				END_PROFILE(SMBcopy);
 				return;
@@ -6365,6 +6366,7 @@ void reply_copy(struct smb_request *req)
 				continue;
 			}
 			if (!destname) {
+				CloseDir(dir_hnd);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				END_PROFILE(SMBcopy);
 				return;
@@ -6372,6 +6374,7 @@ void reply_copy(struct smb_request *req)
 
 			status = check_name(conn, fname);
 			if (!NT_STATUS_IS_OK(status)) {
+				CloseDir(dir_hnd);
 				reply_nterror(req, status);
 				END_PROFILE(SMBcopy);
 				return;
@@ -6379,6 +6382,7 @@ void reply_copy(struct smb_request *req)
 
 			status = check_name(conn, destname);
 			if (!NT_STATUS_IS_OK(status)) {
+				CloseDir(dir_hnd);
 				reply_nterror(req, status);
 				END_PROFILE(SMBcopy);
 				return;
