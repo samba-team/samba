@@ -10,7 +10,7 @@ fi
 
 NODE="$1"
 shift
-SCRIPT="$*"
+SCRIPT="$@"
 
 NODES=/etc/ctdb/nodes
 
@@ -21,9 +21,9 @@ if [ $NODE = "all" ]; then
     for a in `egrep '^[[:alnum:]]' $NODES`; do
 	echo; echo ">> NODE: $a <<"
 	if [ -f "$SCRIPT" ]; then
-	    rsh $a at -f $SCRIPT now
+	    rsh $a at -f "$SCRIPT" now
 	else
-	    rsh $a $SCRIPT
+	    rsh $a "$SCRIPT"
 	fi
     done
     exit 0
@@ -38,7 +38,7 @@ NODEPLUSONE=`expr $NODE + 1`
 a=`egrep '^[[:alnum:]]' $NODES | head -$NODEPLUSONE | tail -1`
 
 if [ -f "$SCRIPT" ]; then
-    exec rsh $a at -f $SCRIPT now
+    exec rsh $a at -f "$SCRIPT" now
 else
-    exec rsh $a $SCRIPT
+    exec rsh $a "$SCRIPT"
 fi

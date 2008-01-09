@@ -280,6 +280,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_st
 		tdb_off_t rec_ptr, last_ptr;
 		tdb_len_t rec_len;
 	} bestfit;
+	float multiplier = 1.0;
 
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1)
 		return 0;
@@ -314,13 +315,27 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_st
 				bestfit.rec_len = rec->rec_len;
 				bestfit.rec_ptr = rec_ptr;
 				bestfit.last_ptr = last_ptr;
-				break;
 			}
 		}
 
 		/* move to the next record */
 		last_ptr = rec_ptr;
 		rec_ptr = rec->next;
+
+		/* if we've found a record that is big enough, then
+		   stop searching if its also not too big. The
+		   definition of 'too big' changes as we scan
+		   through */
+		if (bestfit.rec_len > 0 &&
+		    bestfit.rec_len < length * multiplier) {
+			break;
+		}
+		
+		/* this multiplier means we only extremely rarely
+		   search more than 50 or so records. At 50 records we
+		   accept records up to 11 times larger than what we
+		   want */
+		multiplier *= 1.05;
 	}
 
 	if (bestfit.rec_ptr != 0) {

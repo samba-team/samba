@@ -27,6 +27,20 @@
 #include <sys/time.h>
 #include <time.h>
 
+static struct timeval tp1,tp2;
+
+static void start_timer(void)
+{
+	gettimeofday(&tp1,NULL);
+}
+
+static double end_timer(void)
+{
+	gettimeofday(&tp2,NULL);
+	return (tp2.tv_sec + (tp2.tv_usec*1.0e-6)) - 
+		(tp1.tv_sec + (tp1.tv_usec*1.0e-6));
+}
+
 static int num_records = 10;
 static int delete_pct = 75;
 static int base_rec;
@@ -43,6 +57,8 @@ static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
 	ctdb_db = ctdb_db_handle(ctdb, "test.tdb");
 
 	srandom(time(NULL) ^ getpid());
+
+	start_timer();
 
 	printf("working with %d records\n", num_records);
 	while (1) {
@@ -72,8 +88,9 @@ static void store_records(struct ctdb_context *ctdb, struct event_context *ev)
 			printf("Failed to store record\n");
 		}
 		if (i % 1000 == 0) {
-			printf("%u\r", i);
+			printf("%7.0f recs/second   %u total\r", 1000.0 / end_timer(), i);
 			fflush(stdout);
+			start_timer();
 		}
 		i++;
 	}
@@ -94,6 +111,7 @@ int main(int argc, const char *argv[])
 		POPT_CTDB_CMDLINE
 		{ "num-records", 'r', POPT_ARG_INT, &num_records, 0, "num_records", "integer" },
 		{ "base-rec", 'b', POPT_ARG_INT, &base_rec, 0, "base_rec", "integer" },
+		{ "delete-pct", 'p', POPT_ARG_INT, &delete_pct, 0, "delete_pct", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
