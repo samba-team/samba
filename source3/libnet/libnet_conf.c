@@ -87,7 +87,7 @@ static WERROR libnet_conf_reg_open_path(TALLOC_CTX *mem_ctx,
 					struct registry_key **key)
 {
 	WERROR werr = WERR_OK;
-	NT_USER_TOKEN *token;
+	NT_USER_TOKEN *token = NULL;
 	TALLOC_CTX *tmp_ctx = NULL;
 
 	if (path == NULL) {
@@ -109,11 +109,9 @@ static WERROR libnet_conf_reg_open_path(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	token = registry_create_admin_token(tmp_ctx);
-	if (token == NULL) {
+	werr = ntstatus_to_werror(registry_create_admin_token(tmp_ctx, &token));
+	if (W_ERROR_IS_OK(werr)) {
 		DEBUG(1, ("Error creating admin token\n"));
-		/* what is the appropriate error code here? */
-		werr = WERR_CAN_NOT_COMPLETE;
 		goto done;
 	}
 
