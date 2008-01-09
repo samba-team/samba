@@ -22,6 +22,7 @@
 #include "lib/tdb/include/tdb.h"
 #include "system/network.h"
 #include "system/filesys.h"
+#include "system/wait.h"
 #include "../include/ctdb_private.h"
 
 int LogLevel;
@@ -339,4 +340,22 @@ bool ctdb_same_ip(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2)
 bool ctdb_same_sockaddr(const struct sockaddr_in *ip1, const struct sockaddr_in *ip2)
 {
 	return ctdb_same_ip(ip1, ip2) && ip1->sin_port == ip2->sin_port;
+}
+
+
+
+void ctdb_block_signal(int signum)
+{
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set,signum);
+	sigprocmask(SIG_BLOCK,&set,NULL);
+}
+
+void ctdb_unblock_signal(int signum)
+{
+	sigset_t set;
+	sigemptyset(&set);
+	sigaddset(&set,signum);
+	sigprocmask(SIG_UNBLOCK,&set,NULL);
 }
