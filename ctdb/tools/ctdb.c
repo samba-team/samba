@@ -33,6 +33,7 @@ static struct {
 	int timelimit;
 	uint32_t pnn;
 	int machinereadable;
+	int maxruntime;
 } options;
 
 #define TIMELIMIT() timeval_current_ofs(options.timelimit, 0)
@@ -1094,6 +1095,12 @@ static void usage(void)
 }
 
 
+static void ctdb_alarm(int sig)
+{
+	printf("Maximum runtime exceeded - exiting\n");
+	_exit(0);
+}
+
 /*
   main program
 */
@@ -1107,6 +1114,7 @@ int main(int argc, const char *argv[])
 		{ "timelimit", 't', POPT_ARG_INT, &options.timelimit, 0, "timelimit", "integer" },
 		{ "node",      'n', POPT_ARG_STRING, &nodestring, 0, "node", "integer|all" },
 		{ "machinereadable", 'Y', POPT_ARG_NONE, &options.machinereadable, 0, "enable machinereadable output", NULL },
+		{ "maxruntime", 'T', POPT_ARG_INT, &options.maxruntime, 0, "die if runtime exceeds this limit (in seconds)", "integer" },
 		POPT_TABLEEND
 	};
 	int opt;
@@ -1120,6 +1128,7 @@ int main(int argc, const char *argv[])
 	setlinebuf(stdout);
 	
 	/* set some defaults */
+	options.maxruntime = 0;
 	options.timelimit = 3;
 	options.pnn = CTDB_CURRENT_NODE;
 
@@ -1143,6 +1152,11 @@ int main(int argc, const char *argv[])
 
 	if (extra_argc < 1) {
 		usage();
+	}
+
+	if (options.maxruntime != 0) {
+		signal(SIGALRM, ctdb_alarm);
+		alarm(options.maxruntime);
 	}
 
 	/* setup the node number to contact */

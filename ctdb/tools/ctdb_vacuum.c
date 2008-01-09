@@ -208,7 +208,9 @@ static int ctdb_vacuum_one(struct ctdb_context *ctdb, TDB_DATA key,
 		return 0;
 	}
 
+	ctdb_block_signal(SIGALRM);
 	tdb_delete(ctdb_db->ltdb->tdb, key);
+	ctdb_unblock_signal(SIGALRM);
 	tdb_chainunlock(ctdb_db->ltdb->tdb, key);
 	free(data.dptr);
 

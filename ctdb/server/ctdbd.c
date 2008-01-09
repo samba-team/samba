@@ -26,18 +26,6 @@
 #include "cmdline.h"
 #include "../include/ctdb_private.h"
 
-static void block_signal(int signum)
-{
-	struct sigaction act;
-
-	memset(&act, 0, sizeof(act));
-
-	act.sa_handler = SIG_IGN;
-	sigemptyset(&act.sa_mask);
-	sigaddset(&act.sa_mask, signum);
-	sigaction(signum, &act, NULL);
-}
-
 static struct {
 	const char *nlist;
 	const char *transport;
@@ -149,7 +137,7 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	block_signal(SIGPIPE);
+	ctdb_block_signal(SIGPIPE);
 
 	ev = event_context_init(NULL);
 

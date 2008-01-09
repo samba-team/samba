@@ -18,6 +18,18 @@ PATH=/bin:/usr/bin:$PATH
 cmd="$1"
 shift
 
+# set default samba cleanup period - in minutes
+[ -z "$CTDB_VACUUM_PERIOD" ] && {
+    CTDB_VACUUM_PERIOD=5
+}
+
+###########################
+# periodic vacuum function
+periodic_vacuum() {
+    # this cleans up dead records and repacks the databases
+    ( time ctdb vacuum 200000 -T 30; time ctdb repack -T 30 ) > $CTDB_BASE/state/vacuum.log 2>&1 &
+}
+
 case $cmd in 
      startup)
         # make sure we have a blank state directory for the scripts to work with
@@ -33,6 +45,19 @@ case $cmd in
 	    echo "`date` Set $varname to $value"
 	done || exit 1
 	;;
+
+    monitor)
+	# Create a dummy file to track when we need to do periodic cleanup
+	# of samba databases
+	[ -f $CTDB_BASE/state/periodic_vacuum ] || {
+		touch $CTDB_BASE/state/periodic_vacuum
+	}
+	[ `/usr/bin/find $CTDB_BASE/state/periodic_vacuum -mmin +$CTDB_VACUUM_PERIOD | wc -l` -eq 1 ] && {
+		# vacuum the databases
+		touch $CTDB_BASE/state/periodic_vacuum
+	    	periodic_vacuum
+	}
+	
 esac
 
 # all OK

@@ -1209,5 +1209,7 @@ int ctdb_repack(struct ctdb_context *ctdb, int argc, const char **argv);
 
 int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata);
 
+void ctdb_block_signal(int signum);
+void ctdb_unblock_signal(int signum);
 
 #endif
