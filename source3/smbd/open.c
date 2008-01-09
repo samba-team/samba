@@ -2845,6 +2845,8 @@ NTSTATUS create_file(connection_struct *conn,
 				goto fail;
 			}
 
+			SET_STAT_INVALID(sbuf);
+
 			goto done;
 		}
 	}
