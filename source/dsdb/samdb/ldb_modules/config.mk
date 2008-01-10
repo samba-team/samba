@@ -320,3 +320,16 @@ OBJ_FILES = \
 # End MODULE ldb_anr
 ################################################
 
+################################################
+# Start MODULE ldb_normalise
+[MODULE::ldb_normalise]
+INIT_FUNCTION = ldb_normalise_init
+CFLAGS = -Ilib/ldb/include
+OUTPUT_TYPE = SHARED_LIBRARY
+PRIVATE_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL SAMDB
+SUBSYSTEM = LIBLDB
+OBJ_FILES = \
+		normalise.o
+# End MODULE ldb_normalise
+################################################
+
