@@ -7,6 +7,7 @@ autom4te.cache
 *.x
 *.hd
 *.ho
+*.pyc
 Makefile
 configure
 source/bin/*
