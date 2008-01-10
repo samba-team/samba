@@ -224,7 +224,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		return ctdb_control_set_recmode(ctdb, c, indata, async_reply, errormsg);
 
 	case CTDB_CONTROL_GET_MONMODE: 
-		return ctdb->monitoring_mode;
+		return ctdb_monitoring_mode(ctdb);
 
 	case CTDB_CONTROL_SHUTDOWN:
 		ctdb_stop_recoverd(ctdb);

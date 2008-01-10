@@ -80,7 +80,6 @@ struct ctdb_tunable {
 	uint32_t election_timeout;
 	uint32_t takeover_timeout;
 	uint32_t monitor_interval;
-	uint32_t monitor_retry;
 	uint32_t tickle_update_interval;
 	uint32_t script_timeout;
 	uint32_t recovery_grace_period;
@@ -324,8 +323,6 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 struct ctdb_context {
 	struct event_context *ev;
 	uint32_t recovery_mode;
-	uint32_t monitoring_mode;
-	TALLOC_CTX *monitor_context;
 	TALLOC_CTX *tickle_update_context;
 	struct ctdb_tunable tunable;
 	enum ctdb_freeze_mode freeze_mode;
@@ -370,6 +367,7 @@ struct ctdb_context {
 	pid_t recoverd_pid;
 	bool done_startup;
 	const char *node_ip;
+	struct ctdb_monitor_state *monitor;
 };
 
 struct ctdb_db_context {
@@ -1211,5 +1209,6 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata);
 
 void ctdb_block_signal(int signum);
 void ctdb_unblock_signal(int signum);
+int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 
 #endif
