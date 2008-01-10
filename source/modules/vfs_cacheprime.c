@@ -125,17 +125,16 @@ static int cprime_connect(
 static ssize_t cprime_sendfile(
                 struct vfs_handle_struct *  handle,
                 int                         tofd,
-                files_struct *              fsp,
-                int                         fromfd,
+                files_struct *              fromfsp,
                 const DATA_BLOB *           header,
                 SMB_OFF_T                   offset,
                 size_t                      count)
 {
         if (g_readbuf && offset == 0) {
-                prime_cache(handle, fsp, fromfd, offset, count);
+                prime_cache(handle, fromfsp, fromfsp->fh->fd, offset, count);
         }
 
-        return SMB_VFS_NEXT_SENDFILE(handle, tofd, fsp, fromfd,
+        return SMB_VFS_NEXT_SENDFILE(handle, tofd, fromfsp,
                                      header, offset, count);
 }
 

@@ -149,9 +149,9 @@ static SMB_OFF_T skel_lseek(vfs_handle_struct *handle, files_struct *fsp, SMB_OF
 	return SMB_VFS_NEXT_LSEEK(handle, fsp, offset, whence);
 }
 
-static ssize_t skel_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *hdr, SMB_OFF_T offset, size_t n)
+static ssize_t skel_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *hdr, SMB_OFF_T offset, size_t n)
 {
-	return SMB_VFS_NEXT_SENDFILE(handle, tofd, fsp, fromfd, hdr, offset, n);
+	return SMB_VFS_NEXT_SENDFILE(handle, tofd, fromfsp, hdr, offset, n);
 }
 
 static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd, files_struct *fsp, int tofd, SMB_OFF_T offset, size_t n)
