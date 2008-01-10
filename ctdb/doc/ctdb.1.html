@@ -242,9 +242,10 @@ CTDB version 1
 	This command is used to prune all databases and delete all empty records from the cluster.
       </p><p>
 	 By default, vacuum will delete all empty records from all databases.
-	 If [max_records] is specified, only databases with that many or more empty records will be pruned.
+	 If [max_records] is specified, the command will only delete the first
+	 [max_records] empty records for each database.
       </p><p>
-	 Vacuum only deletes those records where the local node is the lmaster.
+	 Vacuum only deletes records where the local node is the lmaster.
 	 To delete all records from the entire cluster you need to run a vacuum from each node.
 
 	 This command is not disruptive. Samba is unaffected and will still be able to read/write records normally while the database is being vacuumed.
@@ -255,7 +256,7 @@ CTDB version 1
       </p></div></div><div class="refsect1" lang="en"><a name="id2528777"></a><h2>Debugging Commands</h2><p>
       These commands are primarily used for CTDB development and testing and
       should not be used for normal administration.
-    </p><div class="refsect2" lang="en"><a name="id2528787"></a><h3>process-exists &lt;pid&gt;</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2528788"></a><h3>process-exists &lt;pid&gt;</h3><p>
         This command checks if a specific process exists on the CTDB host. This is mainly used by Samba to check if remote instances of samba are still running or not.
       </p></div><div class="refsect2" lang="en"><a name="id2528800"></a><h3>getdbmap</h3><p>
         This command lists all clustered TDB databases that the CTDB daemon has attahced to.
@@ -283,7 +284,7 @@ dbid:0xc0bdde6a name:sessionid.tdb path:/var/ctdb/sessionid.tdb.0
         This is a debugging command. This command will make the CTDB daemon create a new CTDB database and attach to it.
       </p></div><div class="refsect2" lang="en"><a name="id2528902"></a><h3>dumpmemory</h3><p>
         This is a debugging command. This command will make the ctdb daemon to write a fill memory allocation map to the log file.
-      </p></div><div class="refsect2" lang="en"><a name="id2528913"></a><h3>freeze</h3><p>
+      </p></div><div class="refsect2" lang="en"><a name="id2528914"></a><h3>freeze</h3><p>
         This command will lock all the local TDB databases causing clients 
         that are accessing these TDBs such as samba3 to block until the
         databases are thawed.
@@ -293,10 +294,10 @@ dbid:0xc0bdde6a name:sessionid.tdb path:/var/ctdb/sessionid.tdb.0
         and rebuilt.
       </p></div><div class="refsect2" lang="en"><a name="id2528932"></a><h3>thaw</h3><p>
         Thaw a previously frozen node.
-      </p></div></div><div class="refsect1" lang="en"><a name="id2528942"></a><h2>SEE ALSO</h2><p>
+      </p></div></div><div class="refsect1" lang="en"><a name="id2528943"></a><h2>SEE ALSO</h2><p>
       ctdbd(1), onnode(1)
       <a href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" lang="en"><a name="id2528955"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+    </p></div><div class="refsect1" lang="en"><a name="id2528956"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>

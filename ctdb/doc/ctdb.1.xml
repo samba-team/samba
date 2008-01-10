@@ -488,11 +488,12 @@ CTDB version 1
  
       <para>
 	 By default, vacuum will delete all empty records from all databases.
-	 If [max_records] is specified, only databases with that many or more empty records will be pruned.
+	 If [max_records] is specified, the command will only delete the first
+	 [max_records] empty records for each database.
       </para>
  
       <para>
-	 Vacuum only deletes those records where the local node is the lmaster.
+	 Vacuum only deletes records where the local node is the lmaster.
 	 To delete all records from the entire cluster you need to run a vacuum from each node.
 
 	 This command is not disruptive. Samba is unaffected and will still be able to read/write records normally while the database is being vacuumed.

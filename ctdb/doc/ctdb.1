@@ -351,9 +351,9 @@ By default, this operation is issued from the 00.ctdb event script every 5 minut
 .PP
 Over time CTDB databases will fill up with empty deleted records which will lead to a progressive slow down of CTDB database access. This command is used to prune all databases and delete all empty records from the cluster.
 .PP
-By default, vacuum will delete all empty records from all databases. If [max_records] is specified, only databases with that many or more empty records will be pruned.
+By default, vacuum will delete all empty records from all databases. If [max_records] is specified, the command will only delete the first [max_records] empty records for each database.
 .PP
-Vacuum only deletes those records where the local node is the lmaster. To delete all records from the entire cluster you need to run a vacuum from each node. This command is not disruptive. Samba is unaffected and will still be able to read/write records normally while the database is being vacuumed.
+Vacuum only deletes records where the local node is the lmaster. To delete all records from the entire cluster you need to run a vacuum from each node. This command is not disruptive. Samba is unaffected and will still be able to read/write records normally while the database is being vacuumed.
 .PP
 Example: ctdb vacuum
 .PP
