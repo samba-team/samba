@@ -142,16 +142,15 @@ static ssize_t cprime_sendfile(
 static ssize_t cprime_read(
                 vfs_handle_struct * handle,
                 files_struct *      fsp,
-                int                 fd,
                 void *              data,
                 size_t              count)
 {
         SMB_OFF_T offset;
 
-        offset = SMB_VFS_LSEEK(fsp, fd, 0, SEEK_CUR);
+        offset = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
         if (offset >= 0 && g_readbuf)  {
-                prime_cache(handle, fsp, fd, offset, count);
-                SMB_VFS_LSEEK(fsp, fd, offset, SEEK_SET);
+                prime_cache(handle, fsp, fsp->fh->fd, offset, count);
+                SMB_VFS_LSEEK(fsp, offset, SEEK_SET);
         }
 
         return SMB_VFS_NEXT_READ(handle, fsp, data, count);
