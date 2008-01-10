@@ -678,7 +678,8 @@ static ssize_t vfs_write_fn(void *file, const void *buf, size_t len)
 
 SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
 {
-	return transfer_file_internal(in, out, n, vfs_read_fn, vfs_write_fn);
+	return transfer_file_internal((void *)in, (void *)out, n,
+				      vfs_read_fn, vfs_write_fn);
 }
 
 /*******************************************************************
