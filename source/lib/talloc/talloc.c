@@ -866,7 +866,8 @@ void talloc_free_children(void *ptr)
 		}
 	}
 
-	if (tc->flags & TALLOC_FLAG_POOL) {
+	if ((tc->flags & TALLOC_FLAG_POOL)
+	    && (*talloc_pool_objectcount(tc) == 1)) {
 		tc->pool = ((char *)tc + TC_HDR_SIZE + TALLOC_POOL_HDR_SIZE);
 #if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_NOACCESS)
 		VALGRIND_MAKE_MEM_NOACCESS(
