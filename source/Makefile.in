@@ -1046,8 +1046,8 @@ replacetort : SHOWFLAGS bin/replacetort@EXEEXT@
 timelimit : SHOWFLAGS bin/timelimit@EXEEXT@
 
 nsswitch : SHOWFLAGS bin/winbindd@EXEEXT@ bin/wbinfo@EXEEXT@ @WINBIND_NSS@ \
-	@WINBIND_WINS_NSS@ bin/pam_winbind.@SHLIBEXT@ bin/smbcontrol@EXEEXT@ \
-	@WINBIND_KRB5_LOCATOR@
+	@WINBIND_WINS_NSS@ @WINBIND_KRB5_LOCATOR@ \
+	bin/pam_winbind.@SHLIBEXT@ bin/smbcontrol@EXEEXT@
 
 wins : SHOWFLAGS @WINBIND_WINS_NSS@
 
