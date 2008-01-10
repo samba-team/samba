@@ -451,7 +451,7 @@ ssize_t vfs_write_data(struct smb_request *req,
 	}
 
 	while (total < N) {
-		ret = SMB_VFS_WRITE(fsp,fsp->fh->fd,buffer + total,N - total);
+		ret = SMB_VFS_WRITE(fsp, buffer + total, N - total);
 
 		if (ret == -1)
 			return -1;
@@ -673,7 +673,7 @@ static ssize_t vfs_write_fn(void *file, const void *buf, size_t len)
 {
 	struct files_struct *fsp = (struct files_struct *)file;
 
-	return SMB_VFS_WRITE(fsp, fsp->fh->fd, buf, len);
+	return SMB_VFS_WRITE(fsp, buf, len);
 }
 
 SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
