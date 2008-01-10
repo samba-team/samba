@@ -145,6 +145,7 @@
 	<manvolnum>5</manvolnum></citerefentry> man page for details on the contents of this file.</para></listitem>
 		</varlistentry>
 
+		&stdarg.server.debug;
 		&popt.common.samba;
 		
 		<varlistentry>

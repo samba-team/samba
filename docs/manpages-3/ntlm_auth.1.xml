@@ -340,6 +340,7 @@
 	    </listitem>
 	</varlistentry>
 
+	  &stdarg.server.debug;
 	  &popt.common.samba;
 	  &stdarg.help;
 	

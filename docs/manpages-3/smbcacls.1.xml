@@ -143,6 +143,7 @@
 		</varlistentry>
 				
 		&stdarg.help;
+		&stdarg.server.debug;
 		&popt.common.samba;
 	</variablelist>
 </refsect1>

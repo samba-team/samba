@@ -107,6 +107,7 @@
 		</varlistentry>
 				
 		&stdarg.help;
+		&stdarg.server.debug;
 		&popt.common.samba;
 		&popt.common.credentials;
 	</variablelist>
