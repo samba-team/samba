@@ -811,6 +811,9 @@ enum flush_reason_enum {
 #include "srvstr.h"
 #include "safe_string.h"
 
+/* prototypes from lib/util_transfer_file.c */
+#include "transfer_file.h"
+
 #ifdef __COMPAR_FN_T
 #define QSORT_CAST (__compar_fn_t)
 #endif
