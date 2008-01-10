@@ -905,8 +905,12 @@ int set_blocking(int fd, bool set)
 #define TRANSFER_BUF_SIZE 65536
 #endif
 
-ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)(int, void *, size_t),
-						ssize_t (*write_fn)(int, const void *, size_t))
+
+ssize_t transfer_file_internal(void *in_file,
+			       void *out_file,
+			       size_t n,
+			       ssize_t (*read_fn)(void *, void *, size_t),
+			       ssize_t (*write_fn)(void *, void *, size_t))
 {
 	char *buf;
 	size_t total = 0;
@@ -921,7 +925,7 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 	while (total < n) {
 		num_to_read_thistime = MIN((n - total), TRANSFER_BUF_SIZE);
 
-		read_ret = (*read_fn)(infd, buf, num_to_read_thistime);
+		read_ret = (*read_fn)(in_file, buf, num_to_read_thistime);
 		if (read_ret == -1) {
 			DEBUG(0,("transfer_file_internal: read failure. Error = %s\n", strerror(errno) ));
 			SAFE_FREE(buf);
@@ -933,7 +937,7 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 		num_written = 0;
  
 		while (num_written < read_ret) {
-			write_ret = (*write_fn)(outfd,buf + num_written, read_ret - num_written);
+			write_ret = (*write_fn)(out_file, buf + num_written, read_ret - num_written);
  
 			if (write_ret == -1) {
 				DEBUG(0,("transfer_file_internal: write failure. Error = %s\n", strerror(errno) ));
@@ -953,9 +957,23 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 	return (ssize_t)total;		
 }
 
+static ssize_t sys_read_fn(void *file, void *buf, size_t len)
+{
+	int *fd = (int *)file;
+
+	return sys_read(*fd, buf, len);
+}
+
+static ssize_t sys_write_fn(void *file, void *buf, size_t len)
+{
+	int *fd = (int *)file;
+
+	return sys_read(*fd, buf, len);
+}
+
 SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n)
 {
-	return (SMB_OFF_T)transfer_file_internal(infd, outfd, (size_t)n, sys_read, sys_write);
+	return (SMB_OFF_T)transfer_file_internal(&infd, &outfd, (size_t)n, sys_read_fn, sys_write_fn);
 }
 
 /*******************************************************************
