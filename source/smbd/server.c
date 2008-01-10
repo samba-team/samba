@@ -390,8 +390,11 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				}
 
 				s = fd_listenset[num_sockets] =
-					open_socket_in(SOCK_STREAM, port, 0,
-							ifss, True);
+					open_socket_in(SOCK_STREAM,
+							port,
+							num_sockets == 0 ? 0 : 2,
+							ifss,
+							true);
 				if(s == -1) {
 					continue;
 				}
@@ -467,8 +470,11 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 					continue;
 				}
 
-				s = open_socket_in(SOCK_STREAM, port, 0,
-						   &ss, true);
+				s = open_socket_in(SOCK_STREAM,
+						port,
+						num_sockets == 0 ? 0 : 2,
+						&ss,
+						true);
 				if (s == -1) {
 					continue;
 				}
