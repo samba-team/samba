@@ -177,11 +177,11 @@ servicePrincipalName: host/ldaptest2computer28
 servicePrincipalName: host/ldaptest2computer29
 """)
 
-        res = ldb.search(base_dn, expression="(cn=ldaptest2computer))", scope=ldb.SCOPE_SUBTREE, 
+        res = ldb.search(base_dn, expression="(cn=ldaptest2computer))", scope=SCOPE_SUBTREE, 
                          attrs=["servicePrincipalName;range=0-*"])
         assert len(res) == 1, "Could not find (cn=ldaptest2computer)"
 #        print res[0]["servicePrincipalName;range=0-*"].length
-        assertEquals(res[0]["servicePrincipalName;range=0-*"].length, 30)
+        assertEquals(len(res[0]["servicePrincipalName;range=0-*"]), 30)
 
         attrs = ["servicePrincipalName;range=0-19"]
         res = ldb.search(base_dn, "(cn=ldaptest2computer))", SCOPE_SUBTREE, attrs)
@@ -579,9 +579,8 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + base_dn + """
         assertEquals(res[0].dn, res3gc.msgs[0].dn)
 
     print "Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon)) in with 'phantom root' control"
-    attrs = ["cn"]
-    controls = ["search_options:1:2"]
-    res3control = gc_ldb.search("(&(cn=ldaptestuser)(objectCategory=PerSon))", base_dn, ldb.SCOPE_SUBTREE, attrs, controls)
+    
+    res3control = gc_ldb.search(base_dn, "(&(cn=ldaptestuser)(objectCategory=PerSon))", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["search_options:1:2"])
     assert len(res3control) == 1, "Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog"
     
     assertEquals(res[0].dn, res3control.msgs[0].dn)
@@ -809,9 +808,8 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + base_dn + """
 
     if gc_ldb is not None:
         print "Testing that we can get at the configuration DN from the main search base on the GC port with the search_options control == 0"
-        attrs = ["cn"]
-        controls = ["search_options:1:0"]
-        res = gc_ldb.search("objectClass=crossRef", base_dn, gc_ldb.SCOPE_SUBTREE, attrs, controls)
+        
+        res = gc_ldb.search(base_dn, "objectClass=crossRef", SCOPE_SUBTREE, attrs=["cn"], controls=["search_options:1:0"])
         assert(len(res) > 0)
 
         print "Testing that we do find configuration elements in the global catlog"
@@ -827,18 +825,15 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + base_dn + """
         assert (len(res) > 0)
 
     print "Testing that we can get at the configuration DN on the main LDAP port"
-    attrs = ["cn"]
-    res = ldb.search("objectClass=crossRef", configuration_dn, ldb.SCOPE_SUBTREE, attrs)
+    res = ldb.search(configuration_dn, "objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"])
     assert (len(res) > 0)
 
     print "Testing objectCategory canonacolisation"
-    attrs = ["cn"]
-    res = ldb.search("objectCategory=ntDsDSA", configuration_dn, ldb.SCOPE_SUBTREE, attrs)
+    res = ldb.search(configuration_dn, "objectCategory=ntDsDSA", scope=SCOPE_SUBTREE, attrs=["cn"])
     assert len(res) > 0, "Didn't find any records with objectCategory=ntDsDSA"
     assert(len(res) != 0)
     
-    attrs = ["cn"]
-    res = ldb.search("objectCategory=CN=ntDs-DSA," + schema_dn, configuration_dn, ldb.SCOPE_SUBTREE, attrs)
+    res = ldb.search(configuration_dn, "objectCategory=CN=ntDs-DSA," + schema_dn, scope=SCOPE_SUBTREE, attrs=["cn"])
     assert len(res) > 0, "Didn't find any records with objectCategory=CN=ntDs-DSA," + schema_dn
     assert(len(res) != 0)
     
@@ -853,37 +848,29 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + base_dn + """
 
 #  check enumeration
 
-    attrs = ["cn"]
     print "Testing ldb.search for objectCategory=person"
-    res = ldb.search("objectCategory=person", base_dn, ldb.SCOPE_SUBTREE, attrs)
+    res = ldb.search(base_dn, "objectCategory=person", scope=SCOPE_SUBTREE, attrs=["cn"])
     assert(len(res) > 0)
 
-    attrs = ["cn"]
-    controls = ["domain_scope:1"]
     print "Testing ldb.search for objectCategory=person with domain scope control"
-    res = ldb.search("objectCategory=person", base_dn, ldb.SCOPE_SUBTREE, attrs, controls)
+    res = ldb.search(base_dn, "objectCategory=person", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
     assert(len(res) > 0)
  
-    attrs = ["cn"]
     print "Testing ldb.search for objectCategory=user"
-    res = ldb.search("objectCategory=user", base_dn, ldb.SCOPE_SUBTREE, attrs)
+    res = ldb.search(base_dn, "objectCategory=user", scope=SCOPE_SUBTREE, attrs=["cn"])
     assert(len(res) > 0)
 
-    attrs = ["cn"]
-    controls = ["domain_scope:1"]
+    
     print "Testing ldb.search for objectCategory=user with domain scope control"
-    res = ldb.search("objectCategory=user", base_dn, ldb.SCOPE_SUBTREE, attrs, controls)
+    res = ldb.search(base_dn, "objectCategory=user", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
     assert(len(res) > 0)
     
-    attrs = ["cn"]
     print "Testing ldb.search for objectCategory=group"
-    res = ldb.search("objectCategory=group", base_dn, ldb.SCOPE_SUBTREE, attrs)
+    res = ldb.search(base_dn, "objectCategory=group", scope=SCOPE_SUBTREE, attrs=["cn"])
     assert(len(res) > 0)
 
-    attrs = ["cn"]
-    controls = ["domain_scope:1"]
     print "Testing ldb.search for objectCategory=group with domain scope control"
-    res = ldb.search("objectCategory=group", base_dn, ldb.SCOPE_SUBTREE, attrs, controls)
+    res = ldb.search(base_dn, "objectCategory=group", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
     assert(len(res) > 0)
 
 def basedn_tests(ldb, gc_ldb):
@@ -907,19 +894,20 @@ def basedn_tests(ldb, gc_ldb):
     assertEquals(len(res), 0)
 
 def find_basedn(ldb):
-    res = ldb.search(scope=SCOPE_BASE, attrs=["defaultNamingContext"])
+    res = ldb.search(base="", expression="", scope=SCOPE_BASE, 
+                     attrs=["defaultNamingContext"])
     assertEquals(len(res), 1)
-    return res[0]["defaultNamingContext"]
+    return str(res[0]["defaultNamingContext"])
 
 def find_configurationdn(ldb):
-    res = ldb.search(scope=SCOPE_BASE, attrs=["configurationNamingContext"])
+    res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["configurationNamingContext"])
     assertEquals(len(res), 1)
-    return res[0]["configurationNamingContext"]
+    return str(res[0]["configurationNamingContext"])
 
 def find_schemadn(ldb):
-    res = ldb.search(scope=SCOPE_BASE, attrs=["schemaNamingContext"])
+    res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["schemaNamingContext"])
     assertEquals(len(res), 1)
-    return res[0]["schemaNamingContext"]
+    return str(res[0]["schemaNamingContext"])
 
 if not "://" in host:
     host = "ldap://%s" % host
@@ -927,7 +915,6 @@ if not "://" in host:
 ldb = Ldb(host, credentials=creds, session_info=system_session(), 
           lp=lp)
 base_dn = find_basedn(ldb)
-
 configuration_dn = find_configurationdn(ldb)
 schema_dn = find_schemadn(ldb)
 
