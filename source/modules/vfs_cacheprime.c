@@ -154,7 +154,7 @@ static ssize_t cprime_read(
                 SMB_VFS_LSEEK(fsp, fd, offset, SEEK_SET);
         }
 
-        return SMB_VFS_NEXT_READ(handle, fsp, fd, data, count);
+        return SMB_VFS_NEXT_READ(handle, fsp, data, count);
 }
 
 static ssize_t cprime_pread(

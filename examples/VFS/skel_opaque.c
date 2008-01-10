@@ -130,9 +130,9 @@ static int skel_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 	return vfswrap_close(NULL, fsp, fd);
 }
 
-static ssize_t skel_read(vfs_handle_struct *handle, files_struct *fsp, int fd, void *data, size_t n)
+static ssize_t skel_read(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n)
 {
-	return vfswrap_read(NULL, fsp, fd, data, n);
+	return vfswrap_read(NULL, fsp, data, n);
 }
 
 static ssize_t skel_pread(vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, SMB_OFF_T offset)

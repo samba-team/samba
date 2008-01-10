@@ -389,8 +389,8 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
 
 	while (total < byte_count)
 	{
-		ssize_t ret = SMB_VFS_READ(fsp, fsp->fh->fd, buf + total,
-					byte_count - total);
+		ssize_t ret = SMB_VFS_READ(fsp, buf + total,
+					   byte_count - total);
 
 		if (ret == 0) return total;
 		if (ret == -1) {
@@ -666,7 +666,7 @@ static ssize_t vfs_read_fn(void *file, void *buf, size_t len)
 {
 	struct files_struct *fsp = (struct files_struct *)file;
 
-	return SMB_VFS_READ(fsp, fsp->fh->fd, buf, len);
+	return SMB_VFS_READ(fsp, buf, len);
 }
 
 static ssize_t vfs_write_fn(void *file, const void *buf, size_t len)

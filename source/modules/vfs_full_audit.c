@@ -113,7 +113,7 @@ static int smb_full_audit_open(vfs_handle_struct *handle,
 		      const char *fname, files_struct *fsp, int flags, mode_t mode);
 static int smb_full_audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd);
 static ssize_t smb_full_audit_read(vfs_handle_struct *handle, files_struct *fsp,
-			  int fd, void *data, size_t n);
+			  void *data, size_t n);
 static ssize_t smb_full_audit_pread(vfs_handle_struct *handle, files_struct *fsp,
 			   void *data, size_t n, SMB_OFF_T offset);
 static ssize_t smb_full_audit_write(vfs_handle_struct *handle, files_struct *fsp,
@@ -1087,11 +1087,11 @@ static int smb_full_audit_close(vfs_handle_struct *handle, files_struct *fsp, in
 }
 
 static ssize_t smb_full_audit_read(vfs_handle_struct *handle, files_struct *fsp,
-			  int fd, void *data, size_t n)
+			  void *data, size_t n)
 {
 	ssize_t result;
 
-	result = SMB_VFS_NEXT_READ(handle, fsp, fd, data, n);
+	result = SMB_VFS_NEXT_READ(handle, fsp, data, n);
 
 	do_log(SMB_VFS_OP_READ, (result >= 0), handle, "%s", fsp->fsp_name);
 
