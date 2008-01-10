@@ -869,14 +869,13 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				return map_nt_error_from_unix(errno);
 			case ENOENT:
 			{
-				TALLOC_CTX *tmp_ctx = talloc_stackframe();
+				TALLOC_CTX *ctx = talloc_tos();
 				char *tmp_fname = NULL;
 				char *last_component = NULL;
 				/* Last component didn't exist. Remove it and try and canonicalise the directory. */
 
-				tmp_fname = talloc_strdup(tmp_ctx, fname);
+				tmp_fname = talloc_strdup(ctx, fname);
 				if (!tmp_fname) {
-					TALLOC_FREE(tmp_ctx);
 					return NT_STATUS_NO_MEMORY;
 				}
 				p = strrchr_m(tmp_fname, '/');
@@ -885,10 +884,9 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 					last_component = p;
 				} else {
 					last_component = tmp_fname;
-					tmp_fname = talloc_strdup(tmp_ctx,
+					tmp_fname = talloc_strdup(ctx,
 							".");
 					if (!tmp_fname) {
-						TALLOC_FREE(tmp_ctx);
 						return NT_STATUS_NO_MEMORY;
 					}
 				}
@@ -900,15 +898,13 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 #endif
 				if (!resolved_name) {
 					DEBUG(3,("reduce_name: couldn't get realpath for %s\n", fname));
-					TALLOC_FREE(tmp_ctx);
 					return map_nt_error_from_unix(errno);
 				}
-				tmp_fname = talloc_asprintf(tmp_ctx,
+				tmp_fname = talloc_asprintf(ctx,
 						"%s/%s",
 						resolved_name,
 						last_component);
 				if (!tmp_fname) {
-					TALLOC_FREE(tmp_ctx);
 					return NT_STATUS_NO_MEMORY;
 				}
 #ifdef REALPATH_TAKES_NULL
@@ -922,7 +918,6 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				safe_strcpy(resolved_name_buf, tmp_fname, PATH_MAX);
 				resolved_name = resolved_name_buf;
 #endif
-				TALLOC_FREE(tmp_ctx);
 				break;
 			}
 			default:

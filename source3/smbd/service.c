@@ -357,7 +357,6 @@ void load_registry_shares(void)
 int find_service(fstring service)
 {
 	int iService;
-	TALLOC_CTX *frame = talloc_stackframe();
 
 	all_string_sub(service,"\\","/",0);
 
@@ -462,8 +461,6 @@ int find_service(fstring service)
 
 	if (iService < 0)
 		DEBUG(3,("find_service() failed to find service %s\n", service));
-
-	TALLOC_FREE(frame);
 
 	return (iService);
 }
@@ -1150,20 +1147,17 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 #if SOFTLINK_OPTIMISATION
 	/* resolve any soft links early if possible */
 	if (vfs_ChDir(conn,conn->connectpath) == 0) {
-		TALLOC_CTX *ctx = talloc_stackframe();
+		TALLOC_CTX *ctx = talloc_tos();
 		char *s = vfs_GetWd(ctx,s);
 		if (!s) {
 			*status = map_nt_error_from_unix(errno);
-			TALLOC_FREE(ctx);
 			goto err_root_exit;
 		}
 		if (!set_conn_connectpath(conn,s)) {
 			*status = NT_STATUS_NO_MEMORY;
-			TALLOC_FREE(ctx);
 			goto err_root_exit;
 		}
 		vfs_ChDir(conn,conn->connectpath);
-		TALLOC_FREE(ctx);
 	}
 #endif
 

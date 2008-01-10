@@ -125,7 +125,7 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 	char *saved_dir = NULL;
 	SMB_STRUCT_STAT sbuf;
 	SMB_STRUCT_STAT parent_st;
-	TALLOC_CTX *ctx = talloc_stackframe();
+	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
@@ -135,7 +135,6 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		DEBUG(0,("change_dir_owner_to_parent: failed to stat parent "
 			 "directory %s. Error was %s\n",
 			 inherit_from_dir, strerror(errno) ));
-		TALLOC_FREE(ctx);
 		return status;
 	}
 
@@ -152,7 +151,6 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		DEBUG(0,("change_dir_owner_to_parent: failed to get "
 			 "current working directory. Error was %s\n",
 			 strerror(errno)));
-		TALLOC_FREE(ctx);
 		return status;
 	}
 
@@ -202,7 +200,6 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 
  out:
 
-	TALLOC_FREE(ctx);
 	vfs_ChDir(conn,saved_dir);
 	return status;
 }
@@ -2707,7 +2704,6 @@ NTSTATUS create_file(connection_struct *conn,
 		     int *pinfo,
 		     SMB_STRUCT_STAT *psbuf)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
 	struct case_semantics_state *case_state = NULL;
 	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
@@ -2918,7 +2914,6 @@ NTSTATUS create_file(connection_struct *conn,
 	if (psbuf != NULL) {
 		*psbuf = sbuf;
 	}
-	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 
  fail:
@@ -2928,6 +2923,5 @@ NTSTATUS create_file(connection_struct *conn,
 		close_file(fsp, ERROR_CLOSE);
 		fsp = NULL;
 	}
-	TALLOC_FREE(frame);
 	return status;
 }

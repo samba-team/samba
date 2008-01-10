@@ -1604,7 +1604,6 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	uint32 security_info_wanted;
-	TALLOC_CTX *frame;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 	DATA_BLOB blob;
@@ -1631,8 +1630,6 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 		return;
 	}
 
-	frame = talloc_stackframe();
-
 	/*
 	 * Get the permissions to return.
 	 */
@@ -1651,7 +1648,6 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
 		reply_nterror(req, status);
 		return;
 	}
@@ -1665,7 +1661,6 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	if (max_data_count < sd_size) {
 		send_nt_replies(conn, req, NT_STATUS_BUFFER_TOO_SMALL,
 				params, 4, *ppdata, 0);
-		TALLOC_FREE(frame);
 		return;
 	}
 
@@ -1675,7 +1670,6 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 
 	data = nttrans_realloc(ppdata, sd_size);
 	if(data == NULL) {
-		TALLOC_FREE(frame);
 		reply_doserror(req, ERRDOS, ERRnomem);
 		return;
 	}
@@ -1684,7 +1678,6 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 				   &blob.data, &blob.length);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
 		reply_nterror(req, status);
 		return;
 	}
@@ -1694,7 +1687,6 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 
 	send_nt_replies(conn, req, NT_STATUS_OK, params, 4, data, (int)sd_size);
 
-	TALLOC_FREE(frame);
 	return;
 }
 
