@@ -5,7 +5,7 @@ SAMBA_INCL = ../../source/include
 EXTLIB_INCL = -I/usr/include/gtk-1.2 \
 	      -I/usr/include/glib-1.2 \
 	      -I/usr/lib/glib/include
-
+EXTLIB_INCL = `gtk-config --cflags`
 
 DEFS = -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
 CFLAGS = -O0 -g -I$(SAMBA_INCL) $(EXTLIB_INCL) $(DEFS)
@@ -13,7 +13,7 @@ CFLAGS = -O0 -g -I$(SAMBA_INCL) $(EXTLIB_INCL) $(DEFS)
 LDFLAGS = -L/usr/local/samba/lib \
 	  -lldap -lkrb5 -lgssapi_krb5
 #LIBSMBCLIENT = /usr/local/samba/lib/libsmbclient.so
-LIBSMBCLIENT = ../../source/bin/libsmbclient.a -ldl -lresolv
+LIBSMBCLIENT = -lsmbclient -ldl -lresolv
 
 TESTS=	testsmbc \
 	testacl \
