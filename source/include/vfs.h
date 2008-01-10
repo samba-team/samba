@@ -100,6 +100,7 @@
 /* Leave at 22 - not yet released. Remove parameter fd from fsetxattr. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from aio_cancel. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fd from read. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from write. - obnox */
 
 
 
@@ -293,7 +294,7 @@ struct vfs_ops {
 		int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
 		ssize_t (*read)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n);
 		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, SMB_OFF_T offset);
-		ssize_t (*write)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n);
+		ssize_t (*write)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n);
 		ssize_t (*pwrite)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n, SMB_OFF_T offset);
 		SMB_OFF_T (*lseek)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T offset, int whence);
 		ssize_t (*sendfile)(struct vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
