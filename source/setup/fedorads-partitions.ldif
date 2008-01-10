@@ -7,6 +7,7 @@ nsslapd-backend: configData
 cn: ${CONFIGDN}
 
 dn: cn=configData,cn=ldbm database,cn=plugins,cn=config
+objectclass: top
 objectclass: extensibleObject
 objectclass: nsBackendInstance
 nsslapd-suffix: ${CONFIGDN}
@@ -21,6 +22,7 @@ nsslapd-backend: schemaData
 cn: ${SCHEMADN}
 
 dn: cn=schemaData,cn=ldbm database,cn=plugins,cn=config
+objectclass: top
 objectclass: extensibleObject
 objectclass: nsBackendInstance
 nsslapd-suffix: ${SCHEMADN}
