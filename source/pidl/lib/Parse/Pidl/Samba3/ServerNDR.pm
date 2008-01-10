@@ -22,11 +22,11 @@ my $res_hdr;
 my $tabs = "";
 sub indent() { $tabs.="\t"; }
 sub deindent() { $tabs = substr($tabs, 1); }
-sub pidl($) { $res .= $tabs.(shift)."\n"; }
+sub pidl($) { my ($txt) = @_; $res .= $txt?$tabs.(shift)."\n":"\n"; }
 sub pidl_hdr($) { $res_hdr .= (shift)."\n"; }
 sub fn_declare($) { my ($n) = @_; pidl $n; pidl_hdr "$n;"; }
 
-sub DeclLevel($$) 
+sub DeclLevel($$)
 {
 	my ($e, $l) = @_;
 	my $res = "";
@@ -73,7 +73,7 @@ sub AllocOutVar($$$$)
 
 	pidl "if ($name == NULL) {";
 	pidl "\ttalloc_free($mem_ctx);";
-	pidl "\treturn False;";
+	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
 }
@@ -98,29 +98,30 @@ sub ParseFunction($$)
 	pidl "";
 	pidl "r = talloc(NULL, struct $fn->{NAME});";
 	pidl "if (r == NULL) {";
-	pidl "\treturn False;";
+	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
 	pidl "if (!prs_data_blob(&p->in_data.data, &blob, r)) {";
 	pidl "\ttalloc_free(r);";
-	pidl "\treturn False;";
+	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
 	pidl "pull = ndr_pull_init_blob(&blob, r);";
 	pidl "if (pull == NULL) {";
 	pidl "\ttalloc_free(r);";
-	pidl "\treturn False;";
+	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
 	pidl "pull->flags |= LIBNDR_FLAG_REF_ALLOC;";
 	pidl "ndr_err = call->ndr_pull(pull, NDR_IN, r);";
 	pidl "if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {";
 	pidl "\ttalloc_free(r);";
-	pidl "\treturn False;";
+	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
-	pidl "if (DEBUGLEVEL >= 10)";
+	pidl "if (DEBUGLEVEL >= 10) {";
 	pidl "\tNDR_PRINT_IN_DEBUG($fn->{NAME}, r);";
+	pidl "}";
 	pidl "";
 
 	my $env = GenerateFunctionOutEnv($fn);
@@ -137,7 +138,7 @@ sub ParseFunction($$)
 		my @dir = @{$_->{DIRECTION}};
 		if (grep(/in/, @dir) and grep(/out/, @dir)) {
 			pidl "r->out.$_->{NAME} = r->in.$_->{NAME};";
-		} elsif (grep(/out/, @dir) and not 
+		} elsif (grep(/out/, @dir) and not
 				 has_property($_, "represent_as")) {
 			AllocOutVar($_, "r", "r->out.$_->{NAME}", $env);
 		}
@@ -158,34 +159,35 @@ sub ParseFunction($$)
 	pidl "";
 	pidl "if (p->rng_fault_state) {";
 	pidl "\ttalloc_free(r);";
-	pidl "\t/* Return True here, srv_pipe_hnd.c will take care */";
-	pidl "\treturn True;";
+	pidl "\t/* Return true here, srv_pipe_hnd.c will take care */";
+	pidl "\treturn true;";
 	pidl "}";
 	pidl "";
-	pidl "if (DEBUGLEVEL >= 10)";
+	pidl "if (DEBUGLEVEL >= 10) {";
 	pidl "\tNDR_PRINT_OUT_DEBUG($fn->{NAME}, r);";
+	pidl "}";
 	pidl "";
 	pidl "push = ndr_push_init_ctx(r);";
 	pidl "if (push == NULL) {";
 	pidl "\ttalloc_free(r);";
-	pidl "\treturn False;";
+	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
 	pidl "ndr_err = call->ndr_push(push, NDR_OUT, r);";
 	pidl "if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {";
 	pidl "\ttalloc_free(r);";
-	pidl "\treturn False;";
+	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
 	pidl "blob = ndr_push_blob(push);";
-	pidl "if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {";
+	pidl "if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {";
 	pidl "\ttalloc_free(r);";
-	pidl "\treturn False;";
+	pidl "\treturn false;";
 	pidl "}";
 	pidl "";
 	pidl "talloc_free(r);";
 	pidl "";
-	pidl "return True;";
+	pidl "return true;";
 	deindent;
 	pidl "}";
 	pidl "";
@@ -251,7 +253,7 @@ sub Parse($$$)
 	pidl "#include \"$header\"";
 	pidl_hdr "#include \"$ndr_header\"";
 	pidl "";
-	
+
 	foreach (@$ndr) {
 		ParseInterface($_) if ($_->{TYPE} eq "INTERFACE");
 	}

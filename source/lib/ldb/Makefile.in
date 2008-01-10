@@ -112,7 +112,8 @@ lib/libldb.$(SHLIBEXT): $(SOLIB)
 $(SOLIB): $(OBJS)
 	$(SHLD) $(SHLD_FLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LIBS) $(TALLOC_LIBS) $(TDB_LIBS) $(LIBDL) $(LDAP_LIBS) @SONAMEFLAG@$(SONAME)
 
-all: showflags dirs $(OBJS) $(STATICLIB) $(SOLIB) $(BINS) $(EXAMPLES) manpages
+all: showflags dirs $(OBJS) $(STATICLIB) $(SOLIB) $(BINS) $(EXAMPLES) manpages \
+	@PYTHON_BUILD_TARGET@
 
 showflags:
 	@echo 'ldb will be compiled with flags:'
@@ -212,12 +213,23 @@ valgrindtest: all
 
 installcheck: install test
 
-install:: all
+install:: all installdirs installheaders installlibs installbin installdoc \
+		@PYTHON_INSTALL_TARGET@
+
+installdirs:
 	mkdir -p $(DESTDIR)$(includedir) $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)/pkgconfig 
+
+installheaders: installdirs
 	cp $(headers) $(DESTDIR)$(includedir)
+
+installlibs: installdirs
 	cp $(STATICLIB) $(SOLIB) $(DESTDIR)$(libdir)
-	cp $(BINS) $(DESTDIR)$(bindir)
 	cp ldb.pc $(DESTDIR)$(libdir)/pkgconfig
+
+installbin: installdirs
+	cp $(BINS) $(DESTDIR)$(bindir)
+
+installdocs: installdirs
 	$(srcdir)/docs/installdocs.sh $(DESTDIR)$(mandir)
 
 gcov:
@@ -234,15 +246,17 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-%_wrap.c %.py: %.i
-	$(SWIG) -O -Wall -python -keyword $<
+.SUFFIXES: _wrap.c .i
+
+.i_wrap.c:
+	[ "$(SWIG)" == "no" ] || $(SWIG) -O -Wall -python -keyword $<
 
 # Python bindings
-build-python: lib/libldb.$(SHLIBEXT) ldb_wrap.c ldb.py
+build-python: lib/libldb.$(SHLIBEXT) ldb_wrap.c
 	./setup.py build
 
 install-python: build-python
-	./setup.py install --prefix=$(prefix)
+	./setup.py install --prefix=$(DESTDIR)$(prefix)
 
 install-swig: 
 	cp ldb.i `$(SWIG) -swiglib`
