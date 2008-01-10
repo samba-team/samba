@@ -66,7 +66,7 @@ static int talloc_pop(TALLOC_CTX *frame)
 
 static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
 {
-	TALLOC_CTX **tmp, *top;
+	TALLOC_CTX **tmp, *top, *parent;
 
 	if (talloc_stack_arraysize < talloc_stacksize + 1) {
 		tmp = TALLOC_REALLOC_ARRAY(NULL, talloc_stack, TALLOC_CTX *,
@@ -78,10 +78,17 @@ static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
 		talloc_stack_arraysize = talloc_stacksize + 1;
         }
 
+	if (talloc_stacksize == 0) {
+		parent = talloc_stack;
+	}
+	else {
+		parent = talloc_stack[talloc_stacksize-1];
+	}
+
 	if (poolsize) {
-		top = talloc_pool(talloc_stack, poolsize);
+		top = talloc_pool(parent, poolsize);
 	} else {
-		top = talloc_new(talloc_stack);
+		top = talloc_new(parent);
 	}
 
 	if (top == NULL) {
