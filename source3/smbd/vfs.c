@@ -662,25 +662,23 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
  Transfer some data (n bytes) between two file_struct's.
 ****************************************************************************/
 
-static files_struct *in_fsp;
-static files_struct *out_fsp;
-
-static ssize_t read_fn(int fd, void *buf, size_t len)
+static ssize_t vfs_read_fn(void *file, void *buf, size_t len)
 {
-	return SMB_VFS_READ(in_fsp, fd, buf, len);
+	struct files_struct *fsp = (struct files_struct *)file;
+
+	return SMB_VFS_READ(fsp, fsp->fh->fd, buf, len);
 }
 
-static ssize_t write_fn(int fd, const void *buf, size_t len)
+static ssize_t vfs_write_fn(void *file, const void *buf, size_t len)
 {
-	return SMB_VFS_WRITE(out_fsp, fd, buf, len);
+	struct files_struct *fsp = (struct files_struct *)file;
+
+	return SMB_VFS_WRITE(fsp, fsp->fh->fd, buf, len);
 }
 
 SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
 {
-	in_fsp = in;
-	out_fsp = out;
-
-	return transfer_file_internal(in_fsp->fh->fd, out_fsp->fh->fd, n, read_fn, write_fn);
+	return transfer_file_internal(in, out, n, vfs_read_fn, vfs_write_fn);
 }
 
 /*******************************************************************
