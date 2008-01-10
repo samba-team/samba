@@ -85,24 +85,30 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 	struct prefixMapBlob pfm;
 	char *schema_info;
 
-	ndr_err = ndr_pull_struct_blob(prefixMap, schema, lp_iconv_convenience(global_loadparm), &pfm,
+	TALLOC_CTX *mem_ctx = talloc_new(schema);
+	W_ERROR_HAVE_NO_MEMORY(mem_ctx);
+	
+	ndr_err = ndr_pull_struct_blob(prefixMap, mem_ctx, lp_iconv_convenience(global_loadparm), &pfm,
 				       (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
+		talloc_free(mem_ctx);
 		return ntstatus_to_werror(nt_status);
 	}
 
 	if (pfm.version != PREFIX_MAP_VERSION_DSDB) {
+		talloc_free(mem_ctx);
 		return WERR_FOOBAR;
 	}
 
 	if (schemaInfo->length != 21 && schemaInfo->data[0] == 0xFF) {
+		talloc_free(mem_ctx);
 		return WERR_FOOBAR;
 	}
 
 	/* append the schema info as last element */
 	pfm.ctr.dsdb.num_mappings++;
-	pfm.ctr.dsdb.mappings = talloc_realloc(schema, pfm.ctr.dsdb.mappings,
+	pfm.ctr.dsdb.mappings = talloc_realloc(mem_ctx, pfm.ctr.dsdb.mappings,
 					       struct drsuapi_DsReplicaOIDMapping,
 					       pfm.ctr.dsdb.num_mappings);
 	W_ERROR_HAVE_NO_MEMORY(pfm.ctr.dsdb.mappings);
@@ -116,7 +122,8 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 
 	/* call the drsuapi version */
 	status = dsdb_load_oid_mappings_drsuapi(schema, &pfm.ctr.dsdb);
-	talloc_free(pfm.ctr.dsdb.mappings);
+	talloc_free(mem_ctx);
+
 	W_ERROR_NOT_OK_RETURN(status);
 
 	return WERR_OK;
@@ -1164,6 +1171,8 @@ WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf
 	if (!msg) {
 		goto nomem;
 	}
+	talloc_steal(mem_ctx, msg);
+	talloc_free(ldif);
 
 	prefix_val = ldb_msg_find_ldb_val(msg, "prefixMap");
 	if (!prefix_val) {
@@ -1199,6 +1208,9 @@ WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf
 		if (!msg) {
 			goto nomem;
 		}
+
+		talloc_steal(mem_ctx, msg);
+		talloc_free(ldif);
 
 		is_sa = ldb_msg_check_string_attribute(msg, "objectClass", "attributeSchema");
 		is_sc = ldb_msg_check_string_attribute(msg, "objectClass", "classSchema");
