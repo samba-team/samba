@@ -2889,6 +2889,14 @@ SWIG_AsVal_int (PyObject * obj, int *val)
 SWIGINTERN ldb_msg_element *new_ldb_msg_element(PyObject *set_obj,int flags,char const *name){
             return ldb_msg_element_from_pyobject(NULL, set_obj, flags, name);
         }
+SWIGINTERN PyObject *ldb_msg_element_get(ldb_msg_element *self,int i){
+            if (i < 0 || i >= self->num_values)
+                return Py_None;
+
+            return PyString_FromStringAndSize(
+                        (const char *)self->values[i].data, 
+                        self->values[i].length);
+        }
 SWIGINTERN void delete_ldb_msg_element(ldb_msg_element *self){ talloc_free(self); }
 
     PyObject *ldb_msg_list_elements(ldb_msg *msg)
@@ -3667,6 +3675,40 @@ SWIGINTERN PyObject *_wrap_new_MessageElement(PyObject *SWIGUNUSEDPARM(self), Py
   return resultobj;
 fail:
   if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_ldb_msg_element_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  ldb_msg_element *arg1 = (ldb_msg_element *) 0 ;
+  int arg2 ;
+  PyObject *result = 0 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self",(char *) "i", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:ldb_msg_element_get",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_message_element, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_msg_element_get" "', argument " "1"" of type '" "ldb_msg_element *""'"); 
+  }
+  arg1 = (ldb_msg_element *)(argp1);
+  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ldb_msg_element_get" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = (int)(val2);
+  result = (PyObject *)ldb_msg_element_get(arg1,arg2);
+  resultobj = result;
+  return resultobj;
+fail:
   return NULL;
 }
 
@@ -5254,6 +5296,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"ldb_msg_element___iter__", (PyCFunction)_wrap_ldb_msg_element___iter__, METH_O, NULL},
 	 { (char *)"ldb_msg_element___set__", (PyCFunction)_wrap_ldb_msg_element___set__, METH_O, NULL},
 	 { (char *)"new_MessageElement", (PyCFunction) _wrap_new_MessageElement, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"ldb_msg_element_get", (PyCFunction) _wrap_ldb_msg_element_get, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_ldb_msg_element", (PyCFunction)_wrap_delete_ldb_msg_element, METH_O, NULL},
 	 { (char *)"ldb_msg_element___cmp__", (PyCFunction) _wrap_ldb_msg_element___cmp__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ldb_msg_element_swigregister", ldb_msg_element_swigregister, METH_VARARGS, NULL},

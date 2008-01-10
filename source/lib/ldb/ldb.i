@@ -279,10 +279,27 @@ typedef struct ldb_message_element {
             return ldb_msg_element_from_pyobject(NULL, set_obj, flags, name);
         }
 #endif
+
+        PyObject *get(int i)
+        {
+            if (i < 0 || i >= $self->num_values)
+                return Py_None;
+
+            return PyString_FromStringAndSize(
+                        (const char *)$self->values[i].data, 
+                        $self->values[i].length);
+        }
+
         ~ldb_msg_element() { talloc_free($self); }
         int compare(ldb_msg_element *);
     }
     %pythoncode {
+        def __getitem__(self, i):
+            ret = self.get(i)
+            if ret is None:
+                raise KeyError("no such value")
+            return ret
+
         def __eq__(self, other):
             if (isinstance(other, str) and 
                 len(set(self)) == 1 and 
