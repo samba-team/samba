@@ -113,5 +113,5 @@ SAMBA_VERSION_RELEASE_NICKNAME=
 #  ->  "3.0.0rc2-VendorVersion"                        #
 #                                                      #
 ########################################################
-SAMBA_VERSION_VENDOR_SUFFIX=
+SAMBA_VERSION_VENDOR_SUFFIX="test"
 SAMBA_VERSION_VENDOR_PATCH=
