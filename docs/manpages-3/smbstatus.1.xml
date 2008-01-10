@@ -55,8 +55,9 @@
 		<listitem><para>gives brief output.</para></listitem>
 		</varlistentry>
 
+		&stdarg.server.debug;
 		&popt.common.samba;
-
+	
 		<varlistentry>
 		<term>-v|--verbose</term>
 		<listitem><para>gives verbose output.</para></listitem>
