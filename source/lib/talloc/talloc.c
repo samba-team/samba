@@ -968,7 +968,8 @@ void *_talloc_realloc(const void *context, void *ptr, size_t size, const char *n
 	if (tc->flags & TALLOC_FLAG_POOLMEM) {
 
 		new_ptr = talloc_alloc_pool(tc, size + TC_HDR_SIZE);
-		*talloc_pool_objectcount(tc->pool) -= 1;
+		*talloc_pool_objectcount((struct talloc_chunk *)
+					 (tc->pool)) -= 1;
 
 		if (new_ptr == NULL) {
 			new_ptr = malloc(TC_HDR_SIZE+size);
