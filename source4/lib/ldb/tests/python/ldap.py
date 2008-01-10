@@ -11,7 +11,7 @@ sys.path.append("scripting/python")
 import samba.getopt as options
 
 from auth import system_session
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE
+from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
 from samba import Ldb
 import param
 
@@ -40,8 +40,15 @@ def assertEquals(a1, a2):
 def basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn):
     print "Running basic tests"
 
-    ldb.delete("cn=ldaptestuser,cn=users," + base_dn)
-    ldb.delete("cn=ldaptestgroup,cn=users," + base_dn)
+    try:
+        ldb.delete("cn=ldaptestuser,cn=users," + base_dn)
+    except LdbError, (num, _):
+        assert num == 32 # LDAP_NO_SUCH_OBJECT
+
+    try:
+        ldb.delete("cn=ldaptestgroup,cn=users," + base_dn)
+    except LdbError, (num, _):
+        assert num == 32 # LDAP_NO_SUCH_OBJECT
 
     print "Testing group add with invalid member"
     try:
@@ -50,7 +57,7 @@ def basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn):
         "objectclass": "group",
         "member": "cn=ldaptestuser,cn=useRs," + base_dn})
     except LdbError, (num, _):
-        assert error == 32 # LDAP_NO_SUCH_OBJECT
+        assert num == 32 # LDAP_NO_SUCH_OBJECT
     else:
         assert False
 
@@ -897,23 +904,22 @@ def find_basedn(ldb):
     res = ldb.search(base="", expression="", scope=SCOPE_BASE, 
                      attrs=["defaultNamingContext"])
     assertEquals(len(res), 1)
-    return str(res[0]["defaultNamingContext"])
+    return res[0]["defaultNamingContext"][0]
 
 def find_configurationdn(ldb):
     res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["configurationNamingContext"])
     assertEquals(len(res), 1)
-    return str(res[0]["configurationNamingContext"])
+    return res[0]["configurationNamingContext"][0]
 
 def find_schemadn(ldb):
     res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["schemaNamingContext"])
     assertEquals(len(res), 1)
-    return str(res[0]["schemaNamingContext"])
+    return res[0]["schemaNamingContext"][0]
 
 if not "://" in host:
     host = "ldap://%s" % host
 
-ldb = Ldb(host, credentials=creds, session_info=system_session(), 
-          lp=lp)
+ldb = Ldb(host, credentials=creds, session_info=system_session(), lp=lp)
 base_dn = find_basedn(ldb)
 configuration_dn = find_configurationdn(ldb)
 schema_dn = find_schemadn(ldb)
