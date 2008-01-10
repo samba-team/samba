@@ -175,10 +175,6 @@
   <xsl:apply-templates/>
   <xsl:if test="following-sibling::listitem">
     <xsl:text>.TP</xsl:text> 
-    <xsl:if test="not($list-indent = '')">
-      <xsl:text> </xsl:text>
-      <xsl:value-of select="$list-indent"/>
-    </xsl:if>
     <xsl:text>&#10;</xsl:text>
   </xsl:if>
 </xsl:template>

@@ -72,7 +72,7 @@
 	    </varlistentry>
 
 		&stdarg.configfile;
-		&stdarg.debug;
+		&stdarg.server.debug;
 		&stdarg.resolve.order;
 
 	    <varlistentry>
