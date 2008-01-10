@@ -36,7 +36,7 @@ DIRS = bin common tools
 SONAME = libtdb.$(SHLIBEXT).1
 SOLIB = libtdb.$(SHLIBEXT).$(PACKAGE_VERSION)
 
-all: showflags dirs $(PROGS) $(SOLIB) libtdb.a
+all: showflags dirs $(PROGS) $(SOLIB) libtdb.a @PYTHON_BUILD_TARGET@
 
 showflags:
 	@echo 'tdb will be compiled with flags:'
@@ -55,13 +55,21 @@ showflags:
 dirs:
 	@mkdir -p $(DIRS)
 
-install: all
+install: all installdirs installbin installheaders installlibs @PYTHON_INSTALL_TARGET@
+
+installdirs:
 	mkdir -p $(DESTDIR)$(bindir)
 	mkdir -p $(DESTDIR)$(includedir)
 	mkdir -p $(DESTDIR)$(libdir) 
 	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
+
+installbin: installdirs
 	cp $(PROGS) $(DESTDIR)$(bindir)
+
+installheaders: installdirs
 	cp $(srcdir)/include/tdb.h $(DESTDIR)$(includedir)
+
+installlibs: installdirs
 	cp tdb.pc $(DESTDIR)$(libdir)/pkgconfig
 	cp libtdb.a $(SOLIB) $(DESTDIR)$(libdir)
 
@@ -112,14 +120,16 @@ distclean: clean
 realdistclean: distclean
 	rm -f configure include/config.h.in
 
-tdb_wrap.c tdb.py: tdb.i
-	$(SWIG) -O -Wall -python -keyword tdb.i
+.SUFFIXES: .i _wrap.c
 
-build-python: libtdb.$(SHLIBEXT) tdb_wrap.c tdb.py
+.i_wrap.c: 
+	$(SWIG) -O -Wall -python -keyword $<
+
+build-python: libtdb.$(SHLIBEXT) tdb_wrap.c
 	./setup.py build
 
-install-python:
-	./setup.py install --prefix=$(prefix)
+installpython: build-python
+	./setup.py install --prefix=$(DESTDIR)$(prefix)
 
 check-python: build-python
 	# FIXME: Should be more portable:

@@ -12,4 +12,14 @@ AC_LD_SHLIBEXT
 AC_LIBREPLACE_SHLD
 AC_LIBREPLACE_SHLD_FLAGS
 m4_include(libtdb.m4)
+AC_PATH_PROGS([PYTHON_CONFIG], [python2.6-config python2.5-config python2.4-config python-config])
+
+PYTHON_BUILD_TARGET="build-python"
+PYTHON_INSTALL_TARGET="install-python"
+AC_SUBST(PYTHON_BUILD_TARGET)
+AC_SUBST(PYTHON_INSTALL_TARGET)
+if test -z "$PYTHON_CONFIG"; then
+	PYTHON_BUILD_TARGET=""
+	PYTHON_INSTALL_TARGET=""
+fi
 AC_OUTPUT(Makefile tdb.pc)
