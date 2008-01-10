@@ -245,6 +245,7 @@ static struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent,
 	struct talloc_chunk *pool_ctx = NULL;
 	size_t space_left;
 	struct talloc_chunk *result;
+	size_t chunk_size;
 
 	if (parent == NULL) {
 		return NULL;
@@ -267,15 +268,19 @@ static struct talloc_chunk *talloc_alloc_pool(struct talloc_chunk *parent,
 	/*
 	 * Align size to 16 bytes
 	 */
-	size = ((size + 15) & ~15);
+	chunk_size = ((size + 15) & ~15);
 
-	if (space_left < size) {
+	if (space_left < chunk_size) {
 		return NULL;
 	}
 
 	result = (struct talloc_chunk *)pool_ctx->pool;
 
-	pool_ctx->pool = (void *)((char *)result + size);
+#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_UNDEFINED)
+	VALGRIND_MAKE_MEM_UNDEFINED(result, size);
+#endif
+
+	pool_ctx->pool = (void *)((char *)result + chunk_size);
 
 	result->flags = TALLOC_MAGIC | TALLOC_FLAG_POOLMEM;
 	result->pool = pool_ctx;
@@ -357,6 +362,10 @@ void *talloc_pool(const void *context, size_t size)
 	tc->pool = (char *)result + TALLOC_POOL_HDR_SIZE;
 
 	*talloc_pool_objectcount(tc) = 1;
+
+#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_NOACCESS)
+	VALGRIND_MAKE_MEM_NOACCESS(tc->pool, size);
+#endif
 
 	return result;
 }
@@ -859,6 +868,10 @@ void talloc_free_children(void *ptr)
 
 	if (tc->flags & TALLOC_FLAG_POOL) {
 		tc->pool = ((char *)tc + TC_HDR_SIZE + TALLOC_POOL_HDR_SIZE);
+#if defined(DEVELOPER) && defined(VALGRIND_MAKE_MEM_NOACCESS)
+		VALGRIND_MAKE_MEM_NOACCESS(
+			tc->pool, tc->size - TALLOC_POOL_HDR_SIZE);
+#endif
 	}
 }
 
