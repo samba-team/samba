@@ -208,12 +208,12 @@ static int vfswrap_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 	return result;
 }
 
-static ssize_t vfswrap_read(vfs_handle_struct *handle, files_struct *fsp, int fd, void *data, size_t n)
+static ssize_t vfswrap_read(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n)
 {
 	ssize_t result;
 
 	START_PROFILE_BYTES(syscall_read, n);
-	result = sys_read(fd, data, n);
+	result = sys_read(fsp->fh->fd, data, n);
 	END_PROFILE(syscall_read);
 	return result;
 }
@@ -230,7 +230,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
-		result = SMB_VFS_READ(fsp, fsp->fh->fd, data, n);
+		result = SMB_VFS_READ(fsp, data, n);
 		fsp->fh->pos = 0;
 	}
 
@@ -241,7 +241,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 	curr = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
 	if (curr == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
-		result = SMB_VFS_READ(fsp, fsp->fh->fd, data, n);
+		result = SMB_VFS_READ(fsp, data, n);
 		fsp->fh->pos = 0;
 		return result;
 	}
@@ -251,7 +251,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 	}
 
 	errno = 0;
-	result = SMB_VFS_READ(fsp, fsp->fh->fd, data, n);
+	result = SMB_VFS_READ(fsp, data, n);
 	lerrno = errno;
 
 	SMB_VFS_LSEEK(fsp, curr, SEEK_SET);

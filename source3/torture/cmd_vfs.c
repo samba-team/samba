@@ -389,7 +389,7 @@ static NTSTATUS cmd_read(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 	}
 	vfs->data_size = size;
 	
-	rsize = SMB_VFS_READ(vfs->files[fd], fd, vfs->data, size);
+	rsize = SMB_VFS_READ(vfs->files[fd], vfs->data, size);
 	if (rsize == -1) {
 		printf("read: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;

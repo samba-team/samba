@@ -48,7 +48,7 @@
 /* File operations */
 #define SMB_VFS_OPEN(conn, fname, fsp, flags, mode) (((conn)->vfs.ops.open)((conn)->vfs.handles.open, (fname), (fsp), (flags), (mode)))
 #define SMB_VFS_CLOSE(fsp, fd) ((fsp)->conn->vfs.ops.close_fn((fsp)->conn->vfs.handles.close_hnd, (fsp), (fd)))
-#define SMB_VFS_READ(fsp, fd, data, n) ((fsp)->conn->vfs.ops.read((fsp)->conn->vfs.handles.read, (fsp), (fd), (data), (n)))
+#define SMB_VFS_READ(fsp, data, n) ((fsp)->conn->vfs.ops.read((fsp)->conn->vfs.handles.read, (fsp), (data), (n)))
 #define SMB_VFS_PREAD(fsp, data, n, off) ((fsp)->conn->vfs.ops.pread((fsp)->conn->vfs.handles.pread, (fsp), (data), (n), (off)))
 #define SMB_VFS_WRITE(fsp, fd, data, n) ((fsp)->conn->vfs.ops.write((fsp)->conn->vfs.handles.write, (fsp), (fd), (data), (n)))
 #define SMB_VFS_PWRITE(fsp, data, n, off) ((fsp)->conn->vfs.ops.pwrite((fsp)->conn->vfs.handles.pwrite, (fsp), (data), (n), (off)))
@@ -167,7 +167,7 @@
 /* File operations */
 #define SMB_VFS_OPAQUE_OPEN(conn, fname, fsp, flags, mode) (((conn)->vfs_opaque.ops.open)((conn)->vfs_opaque.handles.open, (fname), (fsp), (flags), (mode)))
 #define SMB_VFS_OPAQUE_CLOSE(fsp, fd) ((fsp)->conn->vfs_opaque.ops.close_fn((fsp)->conn->vfs_opaque.handles.close_hnd, (fsp), (fd)))
-#define SMB_VFS_OPAQUE_READ(fsp, fd, data, n) ((fsp)->conn->vfs_opaque.ops.read((fsp)->conn->vfs_opaque.handles.read, (fsp), (fd), (data), (n)))
+#define SMB_VFS_OPAQUE_READ(fsp, data, n) ((fsp)->conn->vfs_opaque.ops.read((fsp)->conn->vfs_opaque.handles.read, (fsp), (data), (n)))
 #define SMB_VFS_OPAQUE_PREAD(fsp, data, n, off) ((fsp)->conn->vfs_opaque.ops.pread((fsp)->conn->vfs_opaque.handles.pread, (fsp), (data), (n), (off)))
 #define SMB_VFS_OPAQUE_WRITE(fsp, fd, data, n) ((fsp)->conn->vfs_opaque.ops.write((fsp)->conn->vfs_opaque.handles.write, (fsp), (fd), (data), (n)))
 #define SMB_VFS_OPAQUE_PWRITE(fsp, data, n, off) ((fsp)->conn->vfs_opaque.ops.pwrite((fsp)->conn->vfs_opaque.handles.pwrite, (fsp), (data), (n), (off)))
@@ -287,7 +287,7 @@
 /* File operations */
 #define SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode) (((handle)->vfs_next.ops.open)((handle)->vfs_next.handles.open, (fname), (fsp), (flags), (mode)))
 #define SMB_VFS_NEXT_CLOSE(handle, fsp, fd) ((handle)->vfs_next.ops.close_fn((handle)->vfs_next.handles.close_hnd, (fsp), (fd)))
-#define SMB_VFS_NEXT_READ(handle, fsp, fd, data, n) ((handle)->vfs_next.ops.read((handle)->vfs_next.handles.read, (fsp), (fd), (data), (n)))
+#define SMB_VFS_NEXT_READ(handle, fsp, data, n) ((handle)->vfs_next.ops.read((handle)->vfs_next.handles.read, (fsp), (data), (n)))
 #define SMB_VFS_NEXT_PREAD(handle, fsp, data, n, off) ((handle)->vfs_next.ops.pread((handle)->vfs_next.handles.pread, (fsp), (data), (n), (off)))
 #define SMB_VFS_NEXT_WRITE(handle, fsp, fd, data, n) ((handle)->vfs_next.ops.write((handle)->vfs_next.handles.write, (fsp), (fd), (data), (n)))
 #define SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, off) ((handle)->vfs_next.ops.pwrite((handle)->vfs_next.handles.pwrite, (fsp), (data), (n), (off)))
