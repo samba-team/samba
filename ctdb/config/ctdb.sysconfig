@@ -42,6 +42,10 @@
 # default is to not manage Samba
 # CTDB_MANAGES_SAMBA=yes
 
+# should ctdb manage starting/stopping the http service for you?
+# default is to not manage http 
+# CTDB_MANAGES_HTTPD=yes
+
 # should ctdb manage starting/stopping Winbind service?
 # if left comented out then it will be autodetected based on smb.conf
 # CTDB_MANAGES_WINBIND=yes

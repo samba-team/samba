@@ -1,0 +1,28 @@
+#!/bin/sh
+# event strict to manage httpd in a cluster environment
+
+. $CTDB_BASE/functions
+loadconfig ctdb
+
+[ "$CTDB_MANAGES_HTTPD" = "yes" ] || exit 0
+
+cmd="$1"
+shift
+
+case $cmd in 
+     startup)
+        service httpd stop > /dev/null 2>&1
+        service httpd start
+        ;;
+
+     shutdown)
+        service httpd stop
+        ;;
+
+     monitor)
+        ctdb_check_tcp_ports "http" 80
+        ;;
+esac
+
+exit 0
+
