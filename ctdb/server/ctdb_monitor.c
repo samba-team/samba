@@ -189,8 +189,9 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 
 	if (ret != 0) {
 		DEBUG(0,("Unable to launch monitor event script\n"));
+		ctdb->monitor->next_interval = 1;
 		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context, 
-				timeval_current_ofs(ctdb->tunable.monitor_retry, 0), 
+				timeval_current_ofs(1, 0), 
 				ctdb_check_health, ctdb);
 	}	
 }
@@ -253,7 +254,7 @@ void ctdb_start_monitoring(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY_FATAL(ctdb, te);
 
 	te = event_add_timed(ctdb->ev, ctdb->monitor->monitor_context,
-			     timeval_current_ofs(ctdb->tunable.monitor_retry, 0), 
+			     timeval_current_ofs(1, 0), 
 			     ctdb_check_health, ctdb);
 	CTDB_NO_MEMORY_FATAL(ctdb, te);
 
