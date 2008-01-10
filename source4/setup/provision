@@ -141,7 +141,7 @@ if (ldapbackend) {
 		subobj.LDAPBACKEND = subobj.LDAPI_URI;
 	}
 	if (!ldapmodule) {
-		subobj.LDAPMODULE = "entryuuid";
+		subobj.LDAPMODULE = "normalise,entryuuid";
 		subobj.TDB_MODULES_LIST = "";
 	}
 	subobj.DOMAINDN_LDB = subobj.LDAPBACKEND;
@@ -188,7 +188,7 @@ if (ldapbase) {
 		message("--ldap-backend='%s' \\\n", subobj.LDAPBACKEND);
 	}
 	if (ldapmodule) {
-		message("--ldap-mdoule='%s' \\\n", + subobj.LDAPMODULE);
+		message("--ldap-module='%s' \\\n", + subobj.LDAPMODULE);
 	}
 	message("--aci='" + subobj.ACI + "' \\\n")
 }
