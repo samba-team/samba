@@ -382,6 +382,12 @@ class MessageElementTests(unittest.TestCase):
         x = ldb.MessageElement(["foo"])
         self.assertEquals(["foo"], list(x))
 
+    def test_get_item(self):
+        x = ldb.MessageElement(["foo", "bar"])
+        self.assertEquals("foo", x[0])
+        self.assertEquals("bar", x[1])
+        self.assertRaises(KeyError, lambda: x[-1])
+
 class ExampleModule:
     name = "example"
 
