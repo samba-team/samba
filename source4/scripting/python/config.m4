@@ -65,8 +65,5 @@ then
 	LIBS="$ac_save_LIBS"
 	CFLAGS="$ac_save_CFLAGS"
 else
-	SMB_ENABLE(EXT_LIB_PYTHON,NO)
-	SMB_ENABLE(LIBPYTHONyy,NO)
-	SMB_ENABLE(smbpython,NO)
-	AC_MSG_RESULT([no])
+	AC_MSG_ERROR([Python not found. Please install Python 2.x and its development headers/libraries.])
 fi
