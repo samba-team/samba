@@ -45,6 +45,7 @@
  */
 
 TALLOC_CTX *talloc_stackframe(void);
+TALLOC_CTX *talloc_stackframe_pool(size_t poolsize);
 
 /*
  * Get us the current top of the talloc stack.

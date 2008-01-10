@@ -64,7 +64,7 @@ static int talloc_pop(TALLOC_CTX *frame)
  * not explicitly freed.
  */
 
-TALLOC_CTX *talloc_stackframe(void)
+static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
 {
 	TALLOC_CTX **tmp, *top;
 
@@ -78,7 +78,11 @@ TALLOC_CTX *talloc_stackframe(void)
 		talloc_stack_arraysize = talloc_stacksize + 1;
         }
 
-	top = talloc_new(talloc_stack);
+	if (poolsize) {
+		top = talloc_pool(talloc_stack, poolsize);
+	} else {
+		top = talloc_new(talloc_stack);
+	}
 
 	if (top == NULL) {
 		goto fail;
@@ -92,6 +96,16 @@ TALLOC_CTX *talloc_stackframe(void)
  fail:
 	smb_panic("talloc_stackframe failed");
 	return NULL;
+}
+
+TALLOC_CTX *talloc_stackframe(void)
+{
+	return talloc_stackframe_internal(0);
+}
+
+TALLOC_CTX *talloc_stackframe_pool(size_t poolsize)
+{
+	return talloc_stackframe_internal(poolsize);
 }
 
 /*
