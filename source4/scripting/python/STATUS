@@ -1,7 +1,6 @@
-dsdb/samdb/ldb_modules/tests/samba3sam.py
-lib/ldb/tests/python/ldap.py
-provisioning in LDAP mode
-SWAT
+dsdb/samdb/ldb_modules/tests/samba3sam.py: Fix remaining failing tests
+lib/ldb/tests/python/ldap.py: Fix remaining failing tests
+provisioning in LDAP mode(TEST_LDAP=yes PROVISION_PYTHON=yes make test)
 command-line vampire
 provisioning: combine some of the python dictionaries
 hierarchy
@@ -21,3 +20,4 @@ DCE/RPC bindings
 not important before making Python the default:
 - scripting/python/samba/upgrade.py
 - install python modules into system
+- SWAT
