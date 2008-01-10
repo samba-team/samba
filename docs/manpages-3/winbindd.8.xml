@@ -160,6 +160,7 @@ hosts:		files wins
 		than a file.</para></listitem>
 		</varlistentry>
 
+		&stdarg.server.debug;
 		&popt.common.samba;
 		&stdarg.help;
 
