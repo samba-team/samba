@@ -20,7 +20,7 @@ import samba
 from samba import Ldb, substitute_var, valid_netbios_name
 from samba.samdb import SamDB
 import security
-from ldb import Dn, SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
+from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
         LDB_ERR_NO_SUCH_OBJECT, timestring, CHANGETYPE_MODIFY, CHANGETYPE_NONE
 
 """Functions for setting up a Samba configuration."""
@@ -64,7 +64,7 @@ def install_ok(lp, session_info, credentials):
         return False
     ldb = Ldb(lp.get("sam database"), session_info=session_info, 
             credentials=credentials, lp=lp)
-    if len(ldb.search(ldb.Dn("(cn=Administrator)"))) != 1:
+    if len(ldb.search("(cn=Administrator)")) != 1:
         return False
     return True
 
@@ -766,9 +766,9 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
         samdb = SamDB(paths.samdb, session_info=session_info, 
                       credentials=credentials, lp=lp)
 
-        domainguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID")
+        domainguid = samdb.searchone(domaindn, "objectGUID")
         assert isinstance(domainguid, str)
-        hostguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID",
+        hostguid = samdb.searchone(domaindn, "objectGUID",
                 expression="(&(objectClass=computer)(cn=%s))" % hostname,
                 scope=SCOPE_SUBTREE)
         assert isinstance(hostguid, str)
