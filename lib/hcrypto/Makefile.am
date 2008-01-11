@@ -180,4 +180,17 @@ CLEANFILES = \
 EXTRA_DIST = \
 	rsakey.der \
 	test_crypto.in \
-	version-script.map
+	version-script.map \
+	DESperate.txt \
+	dllmain.c \
+	gen-des.pl \
+	imath/import.sh \
+	imath/LICENSE \
+	md5crypt_test.c \
+	passwd_dialog.aps \
+	passwd_dialog.clw \
+	passwd_dialog.rc \
+	passwd_dialog.res \
+	passwd_dlg.c \
+	passwd_dlg.h \
+	resource.h
