@@ -2889,6 +2889,9 @@ SWIG_AsVal_int (PyObject * obj, int *val)
 SWIGINTERN ldb_msg_element *new_ldb_msg_element(PyObject *set_obj,int flags,char const *name){
             return ldb_msg_element_from_pyobject(NULL, set_obj, flags, name);
         }
+SWIGINTERN int ldb_msg_element___len__(ldb_msg_element *self){
+            return self->num_values;
+        }
 SWIGINTERN PyObject *ldb_msg_element_get(ldb_msg_element *self,int i){
             if (i < 0 || i >= self->num_values)
                 return Py_None;
@@ -3675,6 +3678,29 @@ SWIGINTERN PyObject *_wrap_new_MessageElement(PyObject *SWIGUNUSEDPARM(self), Py
   return resultobj;
 fail:
   if (alloc3 == SWIG_NEWOBJ) free((char*)buf3);
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_ldb_msg_element___len__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  ldb_msg_element *arg1 = (ldb_msg_element *) 0 ;
+  int result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject *swig_obj[1] ;
+  
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_ldb_message_element, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ldb_msg_element___len__" "', argument " "1"" of type '" "ldb_msg_element *""'"); 
+  }
+  arg1 = (ldb_msg_element *)(argp1);
+  result = (int)ldb_msg_element___len__(arg1);
+  resultobj = SWIG_From_int((int)(result));
+  return resultobj;
+fail:
   return NULL;
 }
 
@@ -5296,6 +5322,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"ldb_msg_element___iter__", (PyCFunction)_wrap_ldb_msg_element___iter__, METH_O, NULL},
 	 { (char *)"ldb_msg_element___set__", (PyCFunction)_wrap_ldb_msg_element___set__, METH_O, NULL},
 	 { (char *)"new_MessageElement", (PyCFunction) _wrap_new_MessageElement, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"ldb_msg_element___len__", (PyCFunction)_wrap_ldb_msg_element___len__, METH_O, NULL},
 	 { (char *)"ldb_msg_element_get", (PyCFunction) _wrap_ldb_msg_element_get, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_ldb_msg_element", (PyCFunction)_wrap_delete_ldb_msg_element, METH_O, NULL},
 	 { (char *)"ldb_msg_element___cmp__", (PyCFunction) _wrap_ldb_msg_element___cmp__, METH_VARARGS | METH_KEYWORDS, NULL},
