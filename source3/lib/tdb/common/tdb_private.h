@@ -38,6 +38,10 @@
 typedef uint32_t tdb_len_t;
 typedef uint32_t tdb_off_t;
 
+#ifndef offsetof
+#define offsetof(t,f) ((unsigned int)&((t *)0)->f)
+#endif
+
 #define TDB_MAGIC_FOOD "TDB file\n"
 #define TDB_VERSION (0x26011967 + 6)
 #define TDB_MAGIC (0x26011999U)
@@ -54,7 +58,7 @@ typedef uint32_t tdb_off_t;
 #define TDB_BAD_MAGIC(r) ((r)->magic != TDB_MAGIC && !TDB_DEAD(r))
 #define TDB_HASH_TOP(hash) (FREELIST_TOP + (BUCKET(hash)+1)*sizeof(tdb_off_t))
 #define TDB_HASHTABLE_SIZE(tdb) ((tdb->header.hash_size+1)*sizeof(tdb_off_t))
-#define TDB_DATA_START(hash_size) TDB_HASH_TOP(hash_size-1)
+#define TDB_DATA_START(hash_size) (TDB_HASH_TOP(hash_size-1) + sizeof(tdb_off_t))
 #define TDB_RECOVERY_HEAD offsetof(struct tdb_header, recovery_start)
 #define TDB_SEQNUM_OFS    offsetof(struct tdb_header, sequence_number)
 #define TDB_PAD_BYTE 0x42
@@ -144,6 +148,7 @@ struct tdb_context {
 	tdb_len_t map_size; /* how much space has been mapped */
 	int read_only; /* opened read-only */
 	int traverse_read; /* read-only traversal */
+	int traverse_write; /* read-write traversal */
 	struct tdb_lock_type global_lock;
 	int num_lockrecs;
 	struct tdb_lock_type *lockrecs; /* only real locks, all with count>0 */
@@ -173,7 +178,6 @@ struct tdb_context {
 int tdb_munmap(struct tdb_context *tdb);
 void tdb_mmap(struct tdb_context *tdb);
 int tdb_lock(struct tdb_context *tdb, int list, int ltype);
-int tdb_lock_nonblock(struct tdb_context *tdb, int list, int ltype);
 int tdb_unlock(struct tdb_context *tdb, int list, int ltype);
 int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, int rw_type, int lck_type, int probe, size_t len);
 int tdb_transaction_lock(struct tdb_context *tdb, int ltype);
