@@ -110,7 +110,7 @@ static WERROR libnet_conf_reg_open_path(TALLOC_CTX *mem_ctx,
 	}
 
 	werr = ntstatus_to_werror(registry_create_admin_token(tmp_ctx, &token));
-	if (W_ERROR_IS_OK(werr)) {
+	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, ("Error creating admin token\n"));
 		goto done;
 	}
@@ -419,6 +419,48 @@ done:
  * The actual net conf api functions, that are exported.
  *
  **********************************************************************/
+
+/**
+ * Open the configuration.
+ *
+ * Upon success, this creates and returns the conf context
+ * that should be passed around in subsequent calls to the other
+ * libnet_conf functions.
+ */
+WERROR libnet_conf_open(TALLOC_CTX *mem_ctx, struct libnet_conf_ctx **conf_ctx)
+{
+	WERROR werr = WERR_OK;
+	struct libnet_conf_ctx *ctx;
+
+	if (conf_ctx == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	ctx = talloc_zero(mem_ctx, struct libnet_conf_ctx);
+	if (ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	talloc_set_destructor(ctx, libnet_conf_destrox_ctx);
+
+	ctx->token = registry_create_admin_token(tmp_ctx);
+	if (ctx->token == NULL) {
+		DEBUG(1, ("Error creating admin token\n"));
+		/* what is the appropriate error code here? */
+		werr = WERR_CAN_NOT_COMPLETE;
+		goto done;
+	}
+
+
+}
+
+/**
+ * Close the configuration.
+ */
+WERROR libnet_conf_close(struct libnet_conf_ctx *ctx)
+{
+	regdb_close();
+}
 
 /**
  * Drop the whole configuration (restarting empty).
