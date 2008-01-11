@@ -57,6 +57,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	const char *myaddress;
 	struct socket_address *socket_address;
 	struct interface *ifaces;
+	bool low_port = true;
 
 	load_interfaces(tctx, lp_interfaces(tctx->lp_ctx), &ifaces);
 
@@ -64,16 +65,27 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 	socket_address = socket_address_from_strings(tctx, 
 						     nbtsock->sock->backend_name,
-						     myaddress, 0);
+						     myaddress, lp_nbt_port(tctx->lp_ctx));
 	torture_assert(tctx, socket_address != NULL, 
 				   "Error getting address");
 
 	/* we do the listen here to ensure the WINS server receives the packets from
 	   the right IP */
 	status = socket_listen(nbtsock->sock, socket_address, 0, 0);
-	torture_assert_ntstatus_ok(tctx, status, 
-							   "socket_listen for WINS failed");
 	talloc_free(socket_address);
+	if (!NT_STATUS_IS_OK(status)) {
+		low_port = false;
+		socket_address = socket_address_from_strings(tctx,
+							     nbtsock->sock->backend_name,
+							     myaddress, 0);
+		torture_assert(tctx, socket_address != NULL,
+			       "Error getting address");
+
+		status = socket_listen(nbtsock->sock, socket_address, 0, 0);
+		talloc_free(socket_address);
+		torture_assert_ntstatus_ok(tctx, status,
+					   "socket_listen for WINS failed");
+	}
 
 	torture_comment(tctx, "Testing name registration to WINS with name %s at %s nb_flags=0x%x\n", 
 	       nbt_name_string(tctx, name), myaddress, nb_flags);
