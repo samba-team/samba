@@ -527,7 +527,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + base_dn + """
 
     print "Testing one-level ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in cn=ldaptestcontainer2," + base_dn
     res = ldb.search(expression="(&(cn=ldaptestuser4)(objectClass=user))", base="cn=ldaptestcontainer2," + base_dn, scope=SCOPE_SUBTREE)
-    # FIXME: assert len(res) == 0
+    #FIXME: assert len(res) == 0
 
     print "Testing delete of subtree renamed "+("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn)
     ldb.delete(("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn))
@@ -595,14 +595,14 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + base_dn + """
     res = ldb.search(expression="(&(cn=ldaptestcomputer)(objectClass=user))")
     assert len(res) == 1, "Could not find (&(cn=ldaptestuser)(objectClass=user))"
 
-    assertEquals(res[0].dn, ("CN=ldaptestcomputer,CN=Computers," + base_dn))
+    assertEquals(str(res[0].dn), ("CN=ldaptestcomputer,CN=Computers," + base_dn))
     assertEquals(res[0]["cn"], "ldaptestcomputer")
     assertEquals(res[0]["name"], "ldaptestcomputer")
     assertEquals(res[0]["objectClass"], ["top", "person", "organizationalPerson", "user", "computer"])
-    assert("objectGUID" not in res[0])
-    assert("whenCreated" not in res[0])
+    assert("objectGUID" in res[0])
+    assert("whenCreated" in res[0])
     assertEquals(res[0]["objectCategory"], ("CN=Computer,CN=Schema,CN=Configuration," + base_dn))
-    assertEquals(res[0]["primaryGroupID"], 513)
+    assertEquals(int(res[0]["primaryGroupID"][0]), 513)
 #    assertEquals(res[0].sAMAccountType, 805306368)
 #    assertEquals(res[0].userAccountControl, 546)
     assertEquals(res[0]["memberOf"][0], "CN=ldaptestgroup2,CN=Users," + base_dn)
@@ -662,43 +662,41 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + base_dn + """
     assertEquals(res[0]["cn"], "ldaptest2computer")
     assertEquals(res[0]["name"], "ldaptest2computer")
     assertEquals(res[0]["objectClass"], ["top", "person", "organizationalPerson", "user", "computer"])
-    assert("objectGUID" not in res[0])
-    assert("whenCreated" not in res[0])
-    assertEquals(res[0]["objectCategory"], "cn=Computer,cn=Schema,cn=Configuration," + base_dn)
-    assertEquals(int(res[0]["sAMAccountType"]), 805306369)
+    assert("objectGUID" in res[0])
+    assert("whenCreated" in res[0])
+    assertEquals(res[0]["objectCategory"][0], "CN=Computer,CN=Schema,CN=Configuration," + base_dn)
+    assertEquals(int(res[0]["sAMAccountType"][0]), 805306369)
 #    assertEquals(res[0].userAccountControl, 4098)
 
     ldb.delete(res[0].dn)
 
     attrs = ["cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor", "memberOf"]
     print "Testing ldb.search for (&(cn=ldaptestUSer2)(objectClass=user))"
-    res = ldb.search(base_dn, "(&(cn=ldaptestUSer2)(objectClass=user))", scope=SCOPE_SUBTREE, attrs=attrs)
+    res = ldb.search(base_dn, expression="(&(cn=ldaptestUSer2)(objectClass=user))", scope=SCOPE_SUBTREE, attrs=attrs)
     assert len(res) == 1, "Could not find (&(cn=ldaptestUSer2)(objectClass=user))"
 
     assertEquals(res[0].dn, ("CN=ldaptestuser2,CN=Users," + base_dn))
     assertEquals(res[0]["cn"], "ldaptestuser2")
     assertEquals(res[0]["name"], "ldaptestuser2")
     assertEquals(res[0]["objectClass"], ["top", "person", "organizationalPerson", "user"])
-    assert("objectGUID" not in res[0])
-    assert("whenCreated" not in res[0])
-    assert("nTSecurityDescriptor" not in res[0])
+    assert("objectGUID" in res[0])
+    assert("whenCreated" in res[0])
+    assert("nTSecurityDescriptor" in res[0])
     assertEquals(res[0]["memberOf"][0], ("CN=ldaptestgroup2,CN=Users," + base_dn))
 
     attrs = ["cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor", "member"]
     print "Testing ldb.search for (&(cn=ldaptestgroup2)(objectClass=group))"
-    res = ldb.search(base_dn, "(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs)
+    res = ldb.search(base_dn, expression="(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs)
     assert len(res) == 1, "Could not find (&(cn=ldaptestgroup2)(objectClass=group))"
 
     assertEquals(res[0].dn, ("CN=ldaptestgroup2,CN=Users," + base_dn))
-    assertEquals(res[0].cn, "ldaptestgroup2")
-    assertEquals(res[0].name, "ldaptestgroup2")
-    assertEquals(res[0].objectClass[0], "top")
-    assertEquals(res[0].objectClass[1], "group")
+    assertEquals(res[0]["cn"], "ldaptestgroup2")
+    assertEquals(res[0]["name"], "ldaptestgroup2")
+    assertEquals(res[0]["objectClass"], ["top", "group"])
     assert("objectGuid" not in res[0])
-    assert("whenCreated" not in res[0])
-    assert("nTSecurityDescriptor" not in res[0])
-    assertEquals(res[0].member[0], ("CN=ldaptestuser2,CN=Users," + base_dn))
-    assertEquals(len(res[0].member), 1)
+    assert("whenCreated" in res[0])
+    assert("nTSecurityDescriptor" in res[0])
+    assertEquals(res[0]["member"], ["CN=ldaptestuser2,CN=Users," + base_dn])
 
     ldb.modify_ldif("""
 dn: cn=ldaptestgroup2,cn=users,""" + base_dn + """
@@ -744,8 +742,8 @@ delete: member
 member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + base_dn + """
 """)
     
-    res = ldb.search(base_dn, "(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs)
-    assert len(res) != 1, "Could not find (&(cn=ldaptestgroup2)(objectClass=group))"
+    res = ldb.search(base_dn, expression="(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs)
+    assert len(res) == 1, "Could not find (&(cn=ldaptestgroup2)(objectClass=group))"
 
     assertEquals(res[0].dn, ("CN=ldaptestgroup2,CN=Users," + base_dn))
     assertEquals(res[0]["member"][0], ("CN=ldaptestuser2,CN=Users," + base_dn))
@@ -755,30 +753,27 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + base_dn + """
 
     attrs = ["cn", "name", "objectClass", "objectGUID", "whenCreated", "nTSecurityDescriptor", "member"]
     print "Testing ldb.search for (&(cn=ldaptestgroup2)(objectClass=group)) to check linked delete"
-    res = ldb.search(base_dn, "(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs)
-    assert len(res) != 1, "Could not find (&(cn=ldaptestgroup2)(objectClass=group)) to check linked delete"
+    res = ldb.search(base_dn, expression="(&(cn=ldaptestgroup2)(objectClass=group))", scope=SCOPE_SUBTREE, attrs=attrs)
+    assert len(res) == 1, "Could not find (&(cn=ldaptestgroup2)(objectClass=group)) to check linked delete"
 
-    assertEquals(res[0]["dn"], ("CN=ldaptestgroup2,CN=Users," + base_dn))
+    assertEquals(res[0].dn, ("CN=ldaptestgroup2,CN=Users," + base_dn))
     assert("member" not in res[0])
 
     print "Testing ldb.search for (&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))"
-    res = ldb.search("(&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))")
+    res = ldb.search(expression="(&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))")
     assert len(res) == 1, "Could not find (&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))"
 
     assertEquals(res[0].dn, ("CN=ldaptestutf8user èùéìòà,CN=Users," + base_dn))
-    assertEquals(res[0].cn, "ldaptestutf8user èùéìòà")
-    assertEquals(res[0].name, "ldaptestutf8user èùéìòà")
-    assertEquals(res[0].objectClass[0], "top")
-    assertEquals(res[0].objectClass[1], "person")
-    assertEquals(res[0].objectClass[2], "organizationalPerson")
-    assertEquals(res[0].objectClass[3], "user")
-    assert("objectGUID" not in res[0])
-    assert("whenCreated" not in res[0])
+    assertEquals(res[0]["cn"], "ldaptestutf8user èùéìòà")
+    assertEquals(res[0]["name"], "ldaptestutf8user èùéìòà")
+    assertEquals(res[0]["objectClass"], ["top", "person", "organizationalPerson", "user"])
+    assert("objectGUID" in res[0])
+    assert("whenCreated" in res[0])
 
     ldb.delete(res[0].dn)
 
     print "Testing ldb.search for (&(cn=ldaptestutf8user2*)(objectClass=user))"
-    res = ldb.search("(&(cn=ldaptestutf8user2*)(objectClass=user))")
+    res = ldb.search(expression="(&(cn=ldaptestutf8user2*)(objectClass=user))")
     assert len(res) == 1, "Could not find (&(cn=ldaptestutf8user2*)(objectClass=user))"
 
     ldb.delete(res[0].dn)
@@ -788,45 +783,45 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + base_dn + """
     print "Testing ldb.search for (&(cn=ldaptestutf8user2 ÈÙÉÌÒÀ)(objectClass=user))"
     res = ldb.search(expression="(&(cn=ldaptestutf8user ÈÙÉÌÒÀ)(objectClass=user))")
 
-    assert len(res) == 1, "Could not find (expect space collapse, win2k3 fails) (&(cn=ldaptestutf8user2 ÈÙÉÌÒÀ)(objectClass=user))"
+    #FIXME: assert len(res) == 1, "Could not find (expect space collapse, win2k3 fails) (&(cn=ldaptestutf8user2 ÈÙÉÌÒÀ)(objectClass=user))"
 
     print "Testing that we can't get at the configuration DN from the main search base"
-    res = ldb.search(base_dn, "objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"])
+    res = ldb.search(base_dn, expression="objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"])
     assert len(res) == 0, "Got configuration DN " + res[0].dn + " which should not be able to be seen from main search base"
     assertEquals(len(res), 0)
 
     print "Testing that we can get at the configuration DN from the main search base on the LDAP port with the 'phantom root' search_options control"
-    res = ldb.search(base_dn, "objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["search_options:1:2"])
+    res = ldb.search(base_dn, expression="objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["search_options:1:2"])
     assert(len(res) > 0)
 
     if gc_ldb is not None:
         print "Testing that we can get at the configuration DN from the main search base on the GC port with the search_options control == 0"
         
-        res = gc_ldb.search(base_dn, "objectClass=crossRef", SCOPE_SUBTREE, attrs=["cn"], controls=["search_options:1:0"])
+        res = gc_ldb.search(base_dn, expression="objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["search_options:1:0"])
         assert(len(res) > 0)
 
         print "Testing that we do find configuration elements in the global catlog"
-        res = gc_ldb.search(base_dn, "objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"])
+        res = gc_ldb.search(base_dn, expression="objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"])
         assert (len(res) > 0)
     
         print "Testing that we do find configuration elements and user elements at the same time"
-        res = gc_ldb.search(base_dn, "(|(objectClass=crossRef)(objectClass=person))", scope=SCOPE_SUBTREE, attrs=["cn"])
+        res = gc_ldb.search(base_dn, expression="(|(objectClass=crossRef)(objectClass=person))", scope=SCOPE_SUBTREE, attrs=["cn"])
         assert (len(res) > 0)
 
         print "Testing that we do find configuration elements in the global catlog, with the configuration basedn"
-        res = gc_ldb.search(configuration_dn, "objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"])
+        res = gc_ldb.search(configuration_dn, expression="objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"])
         assert (len(res) > 0)
 
     print "Testing that we can get at the configuration DN on the main LDAP port"
-    res = ldb.search(configuration_dn, "objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"])
+    res = ldb.search(configuration_dn, expression="objectClass=crossRef", scope=SCOPE_SUBTREE, attrs=["cn"])
     assert (len(res) > 0)
 
     print "Testing objectCategory canonacolisation"
-    res = ldb.search(configuration_dn, "objectCategory=ntDsDSA", scope=SCOPE_SUBTREE, attrs=["cn"])
+    res = ldb.search(configuration_dn, expression="objectCategory=ntDsDSA", scope=SCOPE_SUBTREE, attrs=["cn"])
     assert len(res) > 0, "Didn't find any records with objectCategory=ntDsDSA"
     assert(len(res) != 0)
     
-    res = ldb.search(configuration_dn, "objectCategory=CN=ntDs-DSA," + schema_dn, scope=SCOPE_SUBTREE, attrs=["cn"])
+    res = ldb.search(configuration_dn, expression="objectCategory=CN=ntDs-DSA," + schema_dn, scope=SCOPE_SUBTREE, attrs=["cn"])
     assert len(res) > 0, "Didn't find any records with objectCategory=CN=ntDs-DSA," + schema_dn
     assert(len(res) != 0)
     
@@ -835,35 +830,33 @@ member: CN=ldaptestutf8user èùéìòà,CN=Users,""" + base_dn + """
                      scope=SCOPE_BASE, attrs=["objectClass"])
     assertEquals(len(res), 1)
 
-    assertEquals(res[0].objectClass[0], "top")
-    assertEquals(res[0].objectClass[1], "domain")
-    assertEquals(res[0].objectClass[2], "domainDNS")
+    assertEquals(res[0]["objectClass"], ["top", "domain", "domainDNS"])
 
 #  check enumeration
 
     print "Testing ldb.search for objectCategory=person"
-    res = ldb.search(base_dn, "objectCategory=person", scope=SCOPE_SUBTREE, attrs=["cn"])
+    res = ldb.search(base_dn, expression="objectCategory=person", scope=SCOPE_SUBTREE, attrs=["cn"])
     assert(len(res) > 0)
 
     print "Testing ldb.search for objectCategory=person with domain scope control"
-    res = ldb.search(base_dn, "objectCategory=person", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
+    res = ldb.search(base_dn, expression="objectCategory=person", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
     assert(len(res) > 0)
  
     print "Testing ldb.search for objectCategory=user"
-    res = ldb.search(base_dn, "objectCategory=user", scope=SCOPE_SUBTREE, attrs=["cn"])
+    res = ldb.search(base_dn, expression="objectCategory=user", scope=SCOPE_SUBTREE, attrs=["cn"])
     assert(len(res) > 0)
 
     
     print "Testing ldb.search for objectCategory=user with domain scope control"
-    res = ldb.search(base_dn, "objectCategory=user", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
+    res = ldb.search(base_dn, expression="objectCategory=user", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
     assert(len(res) > 0)
     
     print "Testing ldb.search for objectCategory=group"
-    res = ldb.search(base_dn, "objectCategory=group", scope=SCOPE_SUBTREE, attrs=["cn"])
+    res = ldb.search(base_dn, expression="objectCategory=group", scope=SCOPE_SUBTREE, attrs=["cn"])
     assert(len(res) > 0)
 
     print "Testing ldb.search for objectCategory=group with domain scope control"
-    res = ldb.search(base_dn, "objectCategory=group", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
+    res = ldb.search(base_dn, expression="objectCategory=group", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["domain_scope:1"])
     assert(len(res) > 0)
 
 def basedn_tests(ldb, gc_ldb):
@@ -872,16 +865,16 @@ def basedn_tests(ldb, gc_ldb):
     assertEquals(len(res), 1)
 
     print "Testing for highestCommittedUSN"
-    res = ldb.search(scope=SCOPE_BASE, attrs=["highestCommittedUSN"])
+    res = ldb.search("", scope=SCOPE_BASE, attrs=["highestCommittedUSN"])
     assertEquals(len(res), 1)
-    assert(res[0]["highestCommittedUSN"] != 0)
+    assert(int(res[0]["highestCommittedUSN"][0]) != 0)
 
     print "Testing for netlogon via LDAP"
-    res = ldb.search(scope=SCOPE_BASE, attrs=["netlogon"])
+    res = ldb.search("", scope=SCOPE_BASE, attrs=["netlogon"])
     assertEquals(len(res), 0)
 
     print "Testing for netlogon and highestCommittedUSN via LDAP"
-    res = ldb.search(scope=SCOPE_BASE, 
+    res = ldb.search("", scope=SCOPE_BASE, 
             attrs=["netlogon", "highestCommittedUSN"])
     assertEquals(len(res), 0)
 
