@@ -62,6 +62,11 @@ class SimpleLdb(unittest.TestCase):
         self.assertTrue(l.get_opaque("my_opaque") is not None)
         self.assertEquals(None, l.get_opaque("unknown"))
 
+    def test_parse_control_strings(self):
+        l = ldb.Ldb("foo.tdb")
+        self.assertRaises(ldb.LdbError, l.parse_control_strings, ["foo", "bar"])
+        self.assertTrue(l.parse_control_strings(["paged_results:1:5"]) is not None)
+
     def test_search_scope_base(self):
         l = ldb.Ldb("foo.tdb")
         self.assertEquals(len(l.search(ldb.Dn(l, "dc=foo"), 

@@ -50,6 +50,15 @@ typedef int ldb_error;
 %include "exception.i"
 %import "stdint.i"
 
+/* Don't expose talloc contexts in Python code. Python does reference 
+   counting for us, so just create a new top-level talloc context.
+ */
+%typemap(in, numinputs=0, noblock=1) TALLOC_CTX * {
+    $1 = NULL;
+}
+
+
+
 %constant int SCOPE_DEFAULT = LDB_SCOPE_DEFAULT;
 %constant int SCOPE_BASE = LDB_SCOPE_BASE;
 %constant int SCOPE_ONELEVEL = LDB_SCOPE_ONELEVEL;
@@ -115,7 +124,7 @@ typedef int ldb_error;
     }
 }
 
-%typemap(in,noblock=1,numinputs=1) const char * const *attrs {
+%typemap(in,noblock=1,numinputs=1) const char * const *NULL_STR_LIST {
     if ($input == Py_None) {
         $1 = NULL;
     } else if (PySequence_Check($input)) {
@@ -129,9 +138,13 @@ typedef int ldb_error;
     }
 }
 
-%typemap(freearg,noblock=1) const char * const *attrs {
+%typemap(freearg,noblock=1) const char * const *NULL_STR_LIST {
     talloc_free($1);
 }
+
+%apply const char * const *NULL_STR_LIST { const char * const *attrs }
+%apply const char * const *NULL_STR_LIST { const char * const *control_strings }
+
 #endif
 
 %types(struct ldb_result *);
@@ -472,6 +485,14 @@ PyObject *PyExc_LdbError;
     $result = Py_None;
 };
 
+%typemap(out,noblock=1) struct ldb_control ** {
+    if ($1 == NULL) {
+        PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(s)", ldb_errstring(arg1)));
+        SWIG_fail;
+    }
+    $result = SWIG_NewPointerObj($1, $1_descriptor, 0);
+}
+
 %rename(Ldb) ldb_context;
 
 %typemap(in,noblock=1) struct ldb_dn * {
@@ -500,6 +521,8 @@ typedef struct ldb_context {
                    struct ldb_result **OUT);
         ldb_error delete(ldb_dn *dn);
         ldb_error rename(ldb_dn *olddn, ldb_dn *newdn);
+        struct ldb_control **parse_control_strings(TALLOC_CTX *mem_ctx, 
+                                                   const char * const*control_strings);
         ldb_error add(ldb_msg *add_msg);
         ldb_error add(PyObject *py_msg) 
         {
