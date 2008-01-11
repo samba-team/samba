@@ -50,6 +50,15 @@ typedef int ldb_error;
 %include "exception.i"
 %import "stdint.i"
 
+/* Don't expose talloc contexts in Python code. Python does reference 
+   counting for us, so just create a new top-level talloc context.
+ */
+%typemap(in, numinputs=0, noblock=1) TALLOC_CTX * {
+    $1 = NULL;
+}
+
+
+
 %constant int SCOPE_DEFAULT = LDB_SCOPE_DEFAULT;
 %constant int SCOPE_BASE = LDB_SCOPE_BASE;
 %constant int SCOPE_ONELEVEL = LDB_SCOPE_ONELEVEL;
@@ -115,7 +124,7 @@ typedef int ldb_error;
     }
 }
 
-%typemap(in,noblock=1,numinputs=1) const char * const *attrs {
+%typemap(in,noblock=1,numinputs=1) const char * const *NULL_STR_LIST {
     if ($input == Py_None) {
         $1 = NULL;
     } else if (PySequence_Check($input)) {
@@ -129,9 +138,13 @@ typedef int ldb_error;
     }
 }
 
-%typemap(freearg,noblock=1) const char * const *attrs {
+%typemap(freearg,noblock=1) const char * const *NULL_STR_LIST {
     talloc_free($1);
 }
+
+%apply const char * const *NULL_STR_LIST { const char * const *attrs }
+%apply const char * const *NULL_STR_LIST { const char * const *control_strings }
+
 #endif
 
 %types(struct ldb_result *);
@@ -278,18 +291,43 @@ typedef struct ldb_message_element {
         {
             return ldb_msg_element_from_pyobject(NULL, set_obj, flags, name);
         }
+
+        int __len__()
+        {
+            return $self->num_values;
+        }
 #endif
+
+        PyObject *get(int i)
+        {
+            if (i < 0 || i >= $self->num_values)
+                return Py_None;
+
+            return PyString_FromStringAndSize(
+                        (const char *)$self->values[i].data, 
+                        $self->values[i].length);
+        }
+
         ~ldb_msg_element() { talloc_free($self); }
         int compare(ldb_msg_element *);
     }
     %pythoncode {
+        def __getitem__(self, i):
+            ret = self.get(i)
+            if ret is None:
+                raise KeyError("no such value")
+            return ret
+
         def __eq__(self, other):
-            if (isinstance(other, str) and 
-                len(set(self)) == 1 and 
-                set(self).pop() == other):
+            if (len(self) == 1 and self.get(0) == other):
                 return True
-            return self.__cmp__(other) == 0
-                
+            if isinstance(other, self.__class__):
+                return self.__cmp__(other) == 0
+            o = iter(other)
+            for i in range(len(self)):
+                if self.get(i) != o.next():
+                    return False
+            return True
     }
 } ldb_msg_element;
 
@@ -447,6 +485,14 @@ PyObject *PyExc_LdbError;
     $result = Py_None;
 };
 
+%typemap(out,noblock=1) struct ldb_control ** {
+    if ($1 == NULL) {
+        PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(s)", ldb_errstring(arg1)));
+        SWIG_fail;
+    }
+    $result = SWIG_NewPointerObj($1, $1_descriptor, 0);
+}
+
 %rename(Ldb) ldb_context;
 
 %typemap(in,noblock=1) struct ldb_dn * {
@@ -475,6 +521,8 @@ typedef struct ldb_context {
                    struct ldb_result **OUT);
         ldb_error delete(ldb_dn *dn);
         ldb_error rename(ldb_dn *olddn, ldb_dn *newdn);
+        struct ldb_control **parse_control_strings(TALLOC_CTX *mem_ctx, 
+                                                   const char * const*control_strings);
         ldb_error add(ldb_msg *add_msg);
         ldb_error add(PyObject *py_msg) 
         {

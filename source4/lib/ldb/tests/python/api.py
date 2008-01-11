@@ -62,6 +62,11 @@ class SimpleLdb(unittest.TestCase):
         self.assertTrue(l.get_opaque("my_opaque") is not None)
         self.assertEquals(None, l.get_opaque("unknown"))
 
+    def test_parse_control_strings(self):
+        l = ldb.Ldb("foo.tdb")
+        self.assertRaises(ldb.LdbError, l.parse_control_strings, ["foo", "bar"])
+        self.assertTrue(l.parse_control_strings(["paged_results:1:5"]) is not None)
+
     def test_search_scope_base(self):
         l = ldb.Ldb("foo.tdb")
         self.assertEquals(len(l.search(ldb.Dn(l, "dc=foo"), 
@@ -381,6 +386,22 @@ class MessageElementTests(unittest.TestCase):
     def test_create_iterable(self):
         x = ldb.MessageElement(["foo"])
         self.assertEquals(["foo"], list(x))
+
+    def test_get_item(self):
+        x = ldb.MessageElement(["foo", "bar"])
+        self.assertEquals("foo", x[0])
+        self.assertEquals("bar", x[1])
+        self.assertRaises(KeyError, lambda: x[-1])
+
+    def test_len(self):
+        x = ldb.MessageElement(["foo", "bar"])
+        self.assertEquals(2, len(x))
+
+    def test_eq(self):
+        x = ldb.MessageElement(["foo", "bar"])
+        self.assertEquals(["foo", "bar"], x)
+        x = ldb.MessageElement(["foo"])
+        self.assertEquals("foo", x)
 
 class ExampleModule:
     name = "example"
