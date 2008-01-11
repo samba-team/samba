@@ -121,14 +121,14 @@ class Ldb(ldb.Ldb):
         # and the rest
         for msg in self.search(basedn, ldb.SCOPE_SUBTREE, 
                 "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", 
-                ["dn"]):
+                ["distinguishedName"]):
             try:
                 self.delete(msg.dn)
             except ldb.LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
                 # Ignor eno such object errors
                 pass
 
-        res = self.search(basedn, ldb.SCOPE_SUBTREE, "(&(|(objectclass=*)(distinguishedName=*))(!(distinguisedName=@BASEINFO)))", ["dn"])
+        res = self.search(basedn, ldb.SCOPE_SUBTREE, "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", ["distinguishedName"])
         assert len(res) == 0
 
     def erase_partitions(self):
