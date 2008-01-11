@@ -86,83 +86,121 @@ sub EnumAndBitmapConsts($$$)
 	}
 }
 
-sub FromTypeToPythonFunction($$)
+sub FromUnionToPythonFunction($$)
 {
 	my ($self, $type) = @_;
 
 	#FIXME
+
+	$self->pidl("return NULL;");
 }
 
-sub FromPythonToTypeFunction($$)
+sub FromStructToPythonFunction($$)
 {
 	my ($self, $type) = @_;
 
 	#FIXME
+	$self->pidl("return NULL;");
 }
 
-sub TypeConstructor($$)
+sub FromPythonToUnionFunction($$)
 {
 	my ($self, $type) = @_;
 
-	$self->pidl("staticforward PyTypeObject $type->{NAME}_ObjectType;");
+	#FIXME
+	$self->pidl("return NULL;");
+}
+
+sub FromPythonToStructFunction($$)
+{
+	my ($self, $type) = @_;
+
+	#FIXME
+	$self->pidl("return NULL;");
+}
+
+sub PythonStruct($$$$)
+{
+	my ($self, $name, $cname, $d) = @_;
+
+	$self->pidl("staticforward PyTypeObject $name\_ObjectType;");
 	$self->pidl("typedef struct {");
 	$self->indent;
 	$self->pidl("PyObject_HEAD");
-	$self->pidl("void *object;"); # FIXME: Use real type rather than void
+	$self->pidl("$cname *object;");
 	$self->deindent;
-	$self->pidl("} $type->{NAME}_Object;");
+	$self->pidl("} $name\_Object;");
 
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$type->{NAME}_getattr(PyTypeObject *obj, char *name)");
+	$self->pidl("static PyObject *py_$name\_getattr(PyTypeObject *obj, char *name)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$type->{NAME}_Object *py_object = ($type->{NAME}_Object *)obj;");
-	$self->pidl(mapTypeName($type) . " *object = talloc_get_type(py_object->object, ".mapTypeName($type).");");
-	$self->pidl("return Py_None;");
+	$self->pidl("$name\_Object *py_object = ($name\_Object *)obj;");
+	$self->pidl("$cname *object = talloc_get_type(py_object->object, $cname);");
+	foreach my $e (@{$d->{ELEMENTS}}) {
+		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
+		my $varname = "object->$e->{NAME}";
+		$self->indent;
+		$self->pidl("return ".$self->ConvertObjectToPython($e->{TYPE}, $varname) . ";");
+		$self->deindent;
+		$self->pidl("}");
+	}
+	$self->pidl("PyErr_SetString(PyExc_AttributeError, \"no such attribute\");");
+	$self->pidl("return NULL;");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static void py_$type->{NAME}_dealloc(PyObject* self)");
+	$self->pidl("static void py_$name\_dealloc(PyObject* self)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$type->{NAME}_Object *obj = ($type->{NAME}_Object *)self;");
+	$self->pidl("$name\_Object *obj = ($name\_Object *)self;");
 	$self->pidl("talloc_free(obj->object);");
 	$self->pidl("PyObject_Del(self);");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$type->{NAME}_setattr(PyTypeObject *obj, char *name, PyObject *value)");
+	$self->pidl("static PyObject *py_$name\_setattr(PyTypeObject *obj, char *name, PyObject *value)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$type->{NAME}_Object *py_object = ($type->{NAME}_Object *)obj;");
-	$self->pidl(mapTypeName($type) . " *object = talloc_get_type(py_object->object, ".mapTypeName($type).");");
-	$self->pidl("return Py_None;");
+	$self->pidl("$name\_Object *py_object = ($name\_Object *)obj;");
+	$self->pidl("$cname *object = talloc_get_type(py_object->object, $cname);");
+	foreach my $e (@{$d->{ELEMENTS}}) {
+		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
+		my $varname = "object->$e->{NAME}";
+		$self->indent;
+		$self->pidl("/* FIXME: talloc_free($varname) if necessary */");
+		$self->pidl("$varname = " . $self->ConvertObjectFromPython($e->{TYPE}, "value") . ";");
+		$self->deindent;
+		$self->pidl("}");
+	}
+	$self->pidl("PyErr_SetString(PyExc_AttributeError, \"no such attribute\");");
+	$self->pidl("return NULL;");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyTypeObject $type->{NAME}_ObjectType = {");
+	$self->pidl("static PyTypeObject $name\_ObjectType = {");
 	$self->indent;
 	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
-	$self->pidl(".tp_name = \"$type->{NAME}\",");
-	$self->pidl(".tp_basicsize = sizeof($type->{NAME}_Object),");
-	$self->pidl(".tp_dealloc = (destructor)py_$type->{NAME}_dealloc,");
-	$self->pidl(".tp_getattr = (getattrfunc)py_$type->{NAME}_getattr,");
-	$self->pidl(".tp_setattr = (setattrfunc)py_$type->{NAME}_setattr,");
+	$self->pidl(".tp_name = \"$name\",");
+	$self->pidl(".tp_basicsize = sizeof($name\_Object),");
+	$self->pidl(".tp_dealloc = (destructor)py_$name\_dealloc,");
+	$self->pidl(".tp_getattr = (getattrfunc)py_$name\_getattr,");
+	$self->pidl(".tp_setattr = (setattrfunc)py_$name\_setattr,");
 	$self->deindent;
 	$self->pidl("};");
 
 	$self->pidl("");
 
-	my $py_fnname = "py_$type->{NAME}";
+	my $py_fnname = "py_$name";
 	$self->pidl("static PyObject *$py_fnname(PyObject *self, PyObject *args)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$type->{NAME}\_Object *ret;");
-	$self->pidl("ret = PyObject_New($type->{NAME}_Object, &$type->{NAME}_ObjectType);");
+	$self->pidl("$name\_Object *ret;");
+	$self->pidl("ret = PyObject_New($name\_Object, &$name\_ObjectType);");
 	$self->pidl("return (PyObject *) ret;");
 	$self->deindent;
 	$self->pidl("}");
@@ -180,22 +218,51 @@ sub PythonFunction($$$)
 	$self->indent;
 	$self->pidl("$iface\_InterfaceObject *iface = ($iface\_InterfaceObject *)self;");
 	$self->pidl("NTSTATUS status;");
+	$self->pidl("TALLOC_CTX *mem_ctx = talloc_new(NULL);");
+	$self->pidl("struct dcerpc_$fn->{NAME} r;");
+	$self->pidl("PyObject *result = Py_None;");
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		$self->pidl("PyObject *py_$e->{NAME};");
+	}
+	if ($fn->{RETURN_TYPE}) {
+		$self->pidl("PyObject *py_result;");
+	}
 	$self->pidl("");
-	# FIXME
-	$self->handle_ntstatus("status", "NULL");
-	$self->pidl("return Py_None;");
+	$self->pidl("ZERO_STRUCT(r.out);");
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		if (grep(/in/,@{$e->{DIRECTION}})) {
+			$self->pidl("r.in.$e->{NAME} = " . $self->ConvertObjectFromPython($e->{TYPE}, "py_$e->{NAME}") . ";");
+		}
+	}
+	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, &r);");
+	$self->handle_ntstatus("status", "NULL", "mem_ctx");
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		if (grep(/out/,@{$e->{DIRECTION}})) {
+			$self->pidl("py_$e->{NAME} = " . $self->ConvertObjectToPython($e->{TYPE}, "r.out.$e->{NAME}") . ";");
+		}
+	}
+
+	if ($fn->{RETURN_TYPE}) {
+		$self->pidl("py_result = " . $self->ConvertObjectToPython($fn->{RETURN_TYPE}, "r.out.result") . ";");
+	}
+
+	$self->pidl("talloc_free(mem_ctx);");
+	$self->pidl("return result;");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
 }
 
-sub handle_ntstatus($$$)
+sub handle_ntstatus($$$$)
 {
-	my ($self, $var, $retval) = @_;
+	my ($self, $var, $retval, $mem_ctx) = @_;
 
 	$self->pidl("if (NT_STATUS_IS_ERR($var)) {");
 	$self->indent;
 	$self->pidl("PyErr_SetString(PyExc_RuntimeError, nt_errstr($var));");
+	$self->pidl("talloc_free($mem_ctx);") if ($mem_ctx);
 	$self->pidl("return $retval;");
 	$self->deindent;
 	$self->pidl("}");
@@ -206,11 +273,19 @@ sub PythonType($$$)
 {
 	my ($self, $d, $interface, $basename) = @_;
 
+	my $actual_ctype = $d;
+	if ($actual_ctype->{TYPE} eq "TYPEDEF") {
+		$actual_ctype = $actual_ctype->{DATA};
+	}
+
 	if ($d->{TYPE} eq "STRUCT" or $d->{TYPE} eq "TYPEDEF" and 
 		$d->{DATA}->{TYPE} eq "STRUCT") {
-		$self->FromTypeToPythonFunction($d);
-		$self->FromPythonToTypeFunction($d);
-		my $py_fnname = $self->TypeConstructor($d);
+		my $py_fnname;
+		if ($d->{TYPE} eq "STRUCT") {
+			$py_fnname = $self->PythonStruct($d->{NAME}, mapTypeName($d), $d);
+		} else {
+			$py_fnname = $self->PythonStruct($d->{NAME}, mapTypeName($d), $d->{DATA});
+		}
 
 		my $fn_name = $d->{NAME};
 
@@ -226,6 +301,26 @@ sub PythonType($$$)
 
 	if ($d->{TYPE} eq "TYPEDEF" and ($d->{DATA}->{TYPE} eq "ENUM" or $d->{DATA}->{TYPE} eq "BITMAP")) {
 		$self->EnumAndBitmapConsts($d->{NAME}, $d->{DATA});
+	}
+
+	if ($actual_ctype->{TYPE} eq "UNION" or $actual_ctype->{TYPE} eq "STRUCT") {
+		$self->pidl("PyObject *py_import_$d->{NAME}(" .mapTypeName($d) . "*in)");
+		$self->pidl("{");
+		$self->indent;
+		$self->FromStructToPythonFunction($d) if ($actual_ctype->{TYPE} eq "STRUCT");
+		$self->FromUnionToPythonFunction($d) if ($actual_ctype->{TYPE} eq "UNION");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
+
+		$self->pidl(mapTypeName($d) . " *py_export_$d->{NAME}(TALLOC_CTX *mem_ctx, PyObject *in)");
+		$self->pidl("{");
+		$self->indent;
+		$self->FromPythonToStructFunction($d) if ($actual_ctype->{TYPE} eq "STRUCT");
+		$self->FromPythonToUnionFunction($d) if ($actual_ctype->{TYPE} eq "UNION");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
 	}
 }
 
@@ -319,6 +414,7 @@ sub Interface($$$)
 	$self->pidl("const char *binding_string;");
 	$self->pidl("struct cli_credentials *credentials;");
 	$self->pidl("struct loadparm_context *lp_ctx;");
+	$self->pidl("TALLOC_CTX *mem_ctx = NULL;");
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("");
 
@@ -328,7 +424,7 @@ sub Interface($$$)
 
 	$self->pidl("status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, ");
 	$self->pidl("             &ndr_table_$interface->{NAME}, credentials, NULL, lp_ctx);");
-	$self->handle_ntstatus("status", "NULL");
+	$self->handle_ntstatus("status", "NULL", "mem_ctx");
 
 	$self->pidl("return (PyObject *)ret;");
 	$self->deindent;
@@ -347,6 +443,13 @@ sub register_module_method($$$$$)
 	push (@{$self->{module_methods}}, [$fn_name, $pyfn_name, $flags, $doc])
 }
 
+sub ConvertObjectFromPython($$$)
+{
+	my ($self, $ctype, $cvar) = @_;
+
+	return "FIXME($cvar)";
+}
+
 sub ConvertObjectToPython($$$)
 {
 	my ($self, $ctype, $cvar) = @_;
@@ -355,14 +458,33 @@ sub ConvertObjectToPython($$$)
 		return "PyString_FromString($cvar)";
 	}
 
+	if (ref($ctype) ne "HASH") {
+		$ctype = getType($ctype);
+	}
+
+	my $actual_ctype = $ctype;
+	if ($ctype->{TYPE} eq "TYPEDEF") {
+		$actual_ctype = $ctype->{DATA};
+	}
+
 	if ($cvar =~ /^[0-9]+$/ or 
-		$ctype->{TYPE} eq "ENUM" or $ctype->{TYPE} eq "BITMAP" or 
-		$ctype->{TYPE} eq "TYPEDEF" and 
-		($ctype->{TYPE} eq "ENUM" or $ctype->{TYPE} eq "BITMAP")) {
+		$actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
+		$actual_ctype->{TYPE} eq "SCALAR" and (
+		$actual_ctype->{NAME} =~ /^(uint[0-9]+|hyper)$/)) {
 		return "PyInt_FromLong($cvar)";
 	}
 
-	die("Unknown type for ".mapTypeName($ctype).": $cvar");
+	if ($ctype->{TYPE} eq "TYPEDEF" and (
+			$actual_ctype->{TYPE} eq "STRUCT" or 
+			$actual_ctype->{TYPE} eq "UNION")) {
+		return "py_import_$ctype->{NAME}($cvar)";
+	}
+
+	if ($ctype->{TYPE} eq "STRUCT" or $ctype->{TYPE} eq "UNION") {
+		return "py_import_$ctype->{TYPE}_$ctype->{NAME}($cvar)";
+	}
+
+	die("unknown type ".mapTypeName($ctype) . ": $cvar");
 }
 
 sub Parse($$$$)
