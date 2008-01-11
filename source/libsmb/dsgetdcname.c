@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
 
-   DsGetDcname
+   dsgetdcname
 
    Copyright (C) Gerald Carter 2006
    Copyright (C) Guenther Deschner 2007-2008
@@ -259,7 +259,7 @@ static NTSTATUS unpack_dsdcinfo(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static char *DsGetDcName_cache_key(TALLOC_CTX *mem_ctx, const char *domain)
+static char *dsgetdcname_cache_key(TALLOC_CTX *mem_ctx, const char *domain)
 {
 	if (!mem_ctx || !domain) {
 		return NULL;
@@ -271,7 +271,7 @@ static char *DsGetDcName_cache_key(TALLOC_CTX *mem_ctx, const char *domain)
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS DsGetDcName_cache_delete(TALLOC_CTX *mem_ctx,
+static NTSTATUS dsgetdcname_cache_delete(TALLOC_CTX *mem_ctx,
 					const char *domain_name)
 {
 	char *key;
@@ -280,7 +280,7 @@ static NTSTATUS DsGetDcName_cache_delete(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	key = DsGetDcName_cache_key(mem_ctx, domain_name);
+	key = dsgetdcname_cache_key(mem_ctx, domain_name);
 	if (!key) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -295,13 +295,13 @@ static NTSTATUS DsGetDcName_cache_delete(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS DsGetDcName_cache_store(TALLOC_CTX *mem_ctx,
+static NTSTATUS dsgetdcname_cache_store(TALLOC_CTX *mem_ctx,
 					const char *domain_name,
 					struct DS_DOMAIN_CONTROLLER_INFO *info)
 {
 	time_t expire_time;
 	char *key;
-	bool ret = False;
+	bool ret = false;
 	DATA_BLOB blob;
 	unsigned char *buf = NULL;
 	int len = 0;
@@ -310,7 +310,7 @@ static NTSTATUS DsGetDcName_cache_store(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	key = DsGetDcName_cache_key(mem_ctx, domain_name);
+	key = dsgetdcname_cache_key(mem_ctx, domain_name);
 	if (!key) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -341,7 +341,7 @@ static NTSTATUS DsGetDcName_cache_store(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS DsGetDcName_cache_refresh(TALLOC_CTX *mem_ctx,
+static NTSTATUS dsgetdcname_cache_refresh(TALLOC_CTX *mem_ctx,
 					  const char *domain_name,
 					  struct GUID *domain_guid,
 					  uint32_t flags,
@@ -358,9 +358,9 @@ static NTSTATUS DsGetDcName_cache_refresh(TALLOC_CTX *mem_ctx,
 	if (ads_cldap_netlogon(info->domain_controller_name,
 			       info->domain_name, &r)) {
 
-		DsGetDcName_cache_delete(mem_ctx, domain_name);
+		dsgetdcname_cache_delete(mem_ctx, domain_name);
 
-		return DsGetDcName_cache_store(mem_ctx,
+		return dsgetdcname_cache_store(mem_ctx,
 					       info->domain_name,
 					       info);
 	}
@@ -371,7 +371,7 @@ static NTSTATUS DsGetDcName_cache_refresh(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-#define RETURN_ON_FALSE(x) if (!x) return False;
+#define RETURN_ON_FALSE(x) if (!x) return false;
 
 static bool check_cldap_reply_required_flags(uint32_t ret_flags,
 					     uint32_t req_flags)
@@ -398,13 +398,13 @@ static bool check_cldap_reply_required_flags(uint32_t ret_flags,
 	if (req_flags & DS_WRITABLE_REQUIRED)
 		RETURN_ON_FALSE(ret_flags & ADS_WRITABLE);
 
-	return True;
+	return true;
 }
 
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS DsGetDcName_cache_fetch(TALLOC_CTX *mem_ctx,
+static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 					const char *domain_name,
 					struct GUID *domain_guid,
 					uint32_t flags,
@@ -420,7 +420,7 @@ static NTSTATUS DsGetDcName_cache_fetch(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	key = DsGetDcName_cache_key(mem_ctx, domain_name);
+	key = dsgetdcname_cache_key(mem_ctx, domain_name);
 	if (!key) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -454,7 +454,7 @@ static NTSTATUS DsGetDcName_cache_fetch(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS DsGetDcName_cached(TALLOC_CTX *mem_ctx,
+static NTSTATUS dsgetdcname_cached(TALLOC_CTX *mem_ctx,
 				   const char *domain_name,
 				   struct GUID *domain_guid,
 				   uint32_t flags,
@@ -462,12 +462,12 @@ static NTSTATUS DsGetDcName_cached(TALLOC_CTX *mem_ctx,
 				   struct DS_DOMAIN_CONTROLLER_INFO **info)
 {
 	NTSTATUS status;
-	bool expired = False;
+	bool expired = false;
 
-	status = DsGetDcName_cache_fetch(mem_ctx, domain_name, domain_guid,
+	status = dsgetdcname_cache_fetch(mem_ctx, domain_name, domain_guid,
 					 flags, site_name, info, &expired);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10,("DsGetDcName_cached: cache fetch failed with: %s\n",
+		DEBUG(10,("dsgetdcname_cached: cache fetch failed with: %s\n",
 			nt_errstr(status)));
 		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	}
@@ -477,7 +477,7 @@ static NTSTATUS DsGetDcName_cached(TALLOC_CTX *mem_ctx,
 	}
 
 	if (expired) {
-		status = DsGetDcName_cache_refresh(mem_ctx, domain_name,
+		status = dsgetdcname_cache_refresh(mem_ctx, domain_name,
 						   domain_guid, flags,
 						   site_name, *info);
 		if (!NT_STATUS_IS_OK(status)) {
@@ -503,24 +503,24 @@ static bool check_allowed_required_flags(uint32_t flags)
 	debug_dsdcinfo_flags(10, flags);
 
 	if (return_type == (DS_RETURN_FLAT_NAME|DS_RETURN_DNS_NAME)) {
-		return False;
+		return false;
 	}
 
 	if (offered_type == (DS_IS_DNS_NAME|DS_IS_FLAT_NAME)) {
-		return False;
+		return false;
 	}
 
 	if (query_type == (DS_BACKGROUND_ONLY|DS_FORCE_REDISCOVERY)) {
-		return False;
+		return false;
 	}
 
 #if 0
 	if ((flags & DS_RETURN_DNS_NAME) && (!(flags & DS_IP_REQUIRED))) {
 		printf("gd: here5 \n");
-		return False;
+		return false;
 	}
 #endif
-	return True;
+	return true;
 }
 
 /****************************************************************
@@ -739,7 +739,7 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 			       struct DS_DOMAIN_CONTROLLER_INFO **info)
 {
 	int i = 0;
-	bool valid_dc = False;
+	bool valid_dc = false;
 	struct cldap_netlogon_reply r;
 	const char *dc_hostname, *dc_domain_name;
 	const char *dc_address;
@@ -754,7 +754,7 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 		if ((ads_cldap_netlogon(dclist[i]->hostname,
 					domain_name, &r)) &&
 		    (check_cldap_reply_required_flags(r.flags, flags))) {
-			valid_dc = True;
+			valid_dc = true;
 		    	break;
 		}
 
@@ -837,7 +837,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
-static NTSTATUS DsGetDcName_rediscover(TALLOC_CTX *mem_ctx,
+static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 				       const char *domain_name,
 				       struct GUID *domain_guid,
 				       uint32_t flags,
@@ -848,7 +848,7 @@ static NTSTATUS DsGetDcName_rediscover(TALLOC_CTX *mem_ctx,
 	struct ip_service_name *dclist;
 	int num_dcs;
 
-	DEBUG(10,("DsGetDcName_rediscover\n"));
+	DEBUG(10,("dsgetdcname_rediscover\n"));
 
 	if (flags & DS_IS_FLAT_NAME) {
 
@@ -893,7 +893,7 @@ static NTSTATUS DsGetDcName_rediscover(TALLOC_CTX *mem_ctx,
 /********************************************************************
 ********************************************************************/
 
-NTSTATUS DsGetDcName_remote(TALLOC_CTX *mem_ctx,
+NTSTATUS dsgetdcname_remote(TALLOC_CTX *mem_ctx,
 			    const char *computer_name,
 			    const char *domain_name,
 			    struct GUID *domain_guid,
@@ -946,7 +946,7 @@ NTSTATUS DsGetDcName_remote(TALLOC_CTX *mem_ctx,
 /********************************************************************
 ********************************************************************/
 
-NTSTATUS DsGetDcName_local(TALLOC_CTX *mem_ctx,
+NTSTATUS dsgetdcname_local(TALLOC_CTX *mem_ctx,
 			   const char *computer_name,
 			   const char *domain_name,
 			   struct GUID *domain_guid,
@@ -968,7 +968,7 @@ NTSTATUS DsGetDcName_local(TALLOC_CTX *mem_ctx,
 		goto rediscover;
 	}
 
-	status = DsGetDcName_cached(mem_ctx, domain_name, domain_guid,
+	status = dsgetdcname_cached(mem_ctx, domain_name, domain_guid,
 				    flags, site_name, &myinfo);
 	if (NT_STATUS_IS_OK(status)) {
 		*info = myinfo;
@@ -980,12 +980,12 @@ NTSTATUS DsGetDcName_local(TALLOC_CTX *mem_ctx,
 	}
 
  rediscover:
-	status = DsGetDcName_rediscover(mem_ctx, domain_name,
+	status = dsgetdcname_rediscover(mem_ctx, domain_name,
 					domain_guid, flags, site_name,
 					&myinfo);
 
  	if (NT_STATUS_IS_OK(status)) {
-		DsGetDcName_cache_store(mem_ctx, domain_name, myinfo);
+		dsgetdcname_cache_store(mem_ctx, domain_name, myinfo);
 		*info = myinfo;
 	}
 
@@ -993,12 +993,12 @@ NTSTATUS DsGetDcName_local(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
- DsGetDcName.
+ dsgetdcname.
 
  This will be the only public function here.
 ********************************************************************/
 
-NTSTATUS DsGetDcName(TALLOC_CTX *mem_ctx,
+NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
 		     const char *computer_name,
 		     const char *domain_name,
 		     struct GUID *domain_guid,
@@ -1006,7 +1006,7 @@ NTSTATUS DsGetDcName(TALLOC_CTX *mem_ctx,
 		     uint32_t flags,
 		     struct DS_DOMAIN_CONTROLLER_INFO **info)
 {
-	DEBUG(10,("DsGetDcName: computer_name: %s, domain_name: %s, "
+	DEBUG(10,("dsgetdcname: computer_name: %s, domain_name: %s, "
 		  "domain_guid: %s, site_name: %s, flags: 0x%08x\n",
 		  computer_name, domain_name,
 		  domain_guid ? GUID_string(mem_ctx, domain_guid) : "(null)",
@@ -1015,7 +1015,7 @@ NTSTATUS DsGetDcName(TALLOC_CTX *mem_ctx,
 	*info = NULL;
 
 	if (computer_name) {
-		return DsGetDcName_remote(mem_ctx,
+		return dsgetdcname_remote(mem_ctx,
 					  computer_name,
 					  domain_name,
 					  domain_guid,
@@ -1024,7 +1024,7 @@ NTSTATUS DsGetDcName(TALLOC_CTX *mem_ctx,
 					  info);
 	}
 
-	return DsGetDcName_local(mem_ctx,
+	return dsgetdcname_local(mem_ctx,
 				 computer_name,
 				 domain_name,
 				 domain_guid,
