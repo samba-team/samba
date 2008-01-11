@@ -1,6 +1,6 @@
 ###################################################
 # Python function wrapper generator
-# Copyright jelmer@samba.org 2007
+# Copyright jelmer@samba.org 2007-2008
 # released under the GNU GPL
 
 package Parse::Pidl::Samba4::Python;
@@ -11,6 +11,7 @@ use Exporter;
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName);
 use Parse::Pidl::Util qw(has_property ParseExpr);
+use Parse::Pidl::CUtil qw(get_value_of get_pointer_of);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -220,12 +221,19 @@ sub PythonFunction($$$)
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("TALLOC_CTX *mem_ctx = talloc_new(NULL);");
 	$self->pidl("struct dcerpc_$fn->{NAME} r;");
-	$self->pidl("PyObject *result = Py_None;");
+	$self->pidl("PyObject *result;");
+	my $result_size = 0;
+
 	foreach my $e (@{$fn->{ELEMENTS}}) {
-		$self->pidl("PyObject *py_$e->{NAME};");
+		if (grep(/in/,@{$e->{DIRECTION}})) {
+			$self->pidl("PyObject *py_$e->{NAME};");
+		}
+		if (grep(/out/,@{$e->{DIRECTION}})) {
+			$result_size++;
+		}
 	}
 	if ($fn->{RETURN_TYPE}) {
-		$self->pidl("PyObject *py_result;");
+		$result_size++;
 	}
 	$self->pidl("");
 	$self->pidl("ZERO_STRUCT(r.out);");
@@ -238,14 +246,20 @@ sub PythonFunction($$$)
 	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, &r);");
 	$self->handle_ntstatus("status", "NULL", "mem_ctx");
 
+	$self->pidl("result = PyTuple_New($result_size);");
+
+	my $i = 0;
+
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$e->{DIRECTION}})) {
-			$self->pidl("py_$e->{NAME} = " . $self->ConvertObjectToPython($e->{TYPE}, "r.out.$e->{NAME}") . ";");
+			$self->pidl("PyTuple_SetItem(result, $i, " . $self->ConvertObjectToPython($e->{TYPE}, "r.out.$e->{NAME}") . ");");
+
+			$i++;
 		}
 	}
 
 	if ($fn->{RETURN_TYPE}) {
-		$self->pidl("py_result = " . $self->ConvertObjectToPython($fn->{RETURN_TYPE}, "r.out.result") . ";");
+		$self->pidl("PyTuple_SetItem(result, $i, " . $self->ConvertObjectToPython($fn->{RETURN_TYPE}, "r.out.result") . ");");
 	}
 
 	$self->pidl("talloc_free(mem_ctx);");
@@ -304,7 +318,7 @@ sub PythonType($$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "UNION" or $actual_ctype->{TYPE} eq "STRUCT") {
-		$self->pidl("PyObject *py_import_$d->{NAME}(" .mapTypeName($d) . "*in)");
+		$self->pidl("PyObject *py_import_$d->{NAME}(" .mapTypeName($d) . " *in)");
 		$self->pidl("{");
 		$self->indent;
 		$self->FromStructToPythonFunction($d) if ($actual_ctype->{TYPE} eq "STRUCT");
@@ -447,6 +461,21 @@ sub ConvertObjectFromPython($$$)
 {
 	my ($self, $ctype, $cvar) = @_;
 
+	if (ref($ctype) ne "HASH") {
+		$ctype = getType($ctype);
+	}
+
+	my $actual_ctype = $ctype;
+	if ($ctype->{TYPE} eq "TYPEDEF") {
+		$actual_ctype = $ctype->{DATA};
+	}
+
+	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
+		$actual_ctype->{TYPE} eq "SCALAR" and (
+		$actual_ctype->{NAME} =~ /^(uint[0-9]+|hyper)$/)) {
+		return "PyInt_AsLong($cvar)";
+	}
+
 	return "FIXME($cvar)";
 }
 
@@ -482,6 +511,10 @@ sub ConvertObjectToPython($$$)
 
 	if ($ctype->{TYPE} eq "STRUCT" or $ctype->{TYPE} eq "UNION") {
 		return "py_import_$ctype->{TYPE}_$ctype->{NAME}($cvar)";
+	}
+
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "NTSTATUS") {
+		return "PyInt_FromLong($cvar->v)";
 	}
 
 	die("unknown type ".mapTypeName($ctype) . ": $cvar");
