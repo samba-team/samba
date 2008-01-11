@@ -210,13 +210,12 @@ static int vfswrap_open(vfs_handle_struct *handle,  const char *fname,
 
 static int vfswrap_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 {
-	NTSTATUS result;
+	int result;
 
 	START_PROFILE(syscall_close);
 	result = fd_close_posix(fsp);
 	END_PROFILE(syscall_close);
-
-	return NT_STATUS_IS_OK(result) ? 0 : -1;
+	return result;
 }
 
 static ssize_t vfswrap_read(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n)
