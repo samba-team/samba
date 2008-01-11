@@ -125,6 +125,7 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 	iface->ip_address    = talloc_steal(iface, address);
 	iface->netmask       = talloc_steal(iface, netmask);
 	iface->names         = NULL;
+	iface->wack_queue    = NULL;
 
 	if (strcmp(netmask, "0.0.0.0") != 0) {
 		struct nbt_name_socket *bcast_nbtsock;

@@ -41,6 +41,7 @@ struct nbtd_iface_name {
 	const char *wins_server;
 };
 
+struct nbtd_wins_wack_state;
 
 /* a list of network interfaces we are listening on */
 struct nbtd_interface {
@@ -52,6 +53,7 @@ struct nbtd_interface {
 	struct nbt_name_socket *nbtsock;
 	struct nbt_dgram_socket *dgmsock;
 	struct nbtd_iface_name *names;
+	struct nbtd_wins_wack_state *wack_queue;
 };
 
 

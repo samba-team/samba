@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
 #include "nbt_server/nbt_server.h"
 #include "nbt_server/wins/winsdb.h"
 #include "nbt_server/wins/winsserver.h"
@@ -180,9 +181,11 @@ static uint8_t wins_sgroup_merge(struct nbt_name_socket *nbtsock,
 	return winsdb_modify(winssrv->wins_db, rec, WINSDB_FLAG_ALLOC_VERSION | WINSDB_FLAG_TAKE_OWNERSHIP);
 }
 
-struct wack_state {
+struct nbtd_wins_wack_state {
+	struct nbtd_wins_wack_state *prev, *next;
 	struct wins_server *winssrv;
 	struct nbt_name_socket *nbtsock;
+	struct nbtd_interface *iface;
 	struct nbt_name_packet *request_packet;
 	struct winsdb_record *rec;
 	struct socket_address *src;
@@ -192,10 +195,42 @@ struct wack_state {
 	NTSTATUS status;
 };
 
+static int nbtd_wins_wack_state_destructor(struct nbtd_wins_wack_state *s)
+{
+	DLIST_REMOVE(s->iface->wack_queue, s);
+	return 0;
+}
+
+static bool wins_check_wack_queue(struct nbtd_interface *iface,
+				  struct nbt_name_packet *packet,
+				  struct socket_address *src)
+{
+	struct nbtd_wins_wack_state *s;
+
+	for (s= iface->wack_queue; s; s = s->next) {
+		if (packet->name_trn_id != s->request_packet->name_trn_id) {
+			continue;
+		}
+		if (packet->operation != s->request_packet->operation) {
+			continue;
+		}
+		if (src->port != s->src->port) {
+			continue;
+		}
+		if (strcmp(src->addr, s->src->addr) != 0) {
+			continue;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
 /*
   deny a registration request
 */
-static void wins_wack_deny(struct wack_state *s)
+static void wins_wack_deny(struct nbtd_wins_wack_state *s)
 {
 	nbtd_name_registration_reply(s->nbtsock, s->request_packet, 
 				     s->src, NBT_RCODE_ACT);
@@ -207,7 +242,7 @@ static void wins_wack_deny(struct wack_state *s)
 /*
   allow a registration request
 */
-static void wins_wack_allow(struct wack_state *s)
+static void wins_wack_allow(struct nbtd_wins_wack_state *s)
 {
 	NTSTATUS status;
 	uint32_t ttl = wins_server_ttl(s->winssrv, s->request_packet->additional[0].ttl);
@@ -301,8 +336,8 @@ failed:
 */
 static void wack_wins_challenge_handler(struct composite_context *c_req)
 {
-	struct wack_state *s = talloc_get_type(c_req->async.private_data,
-					       struct wack_state);
+	struct nbtd_wins_wack_state *s = talloc_get_type(c_req->async.private_data,
+					 struct nbtd_wins_wack_state);
 	bool found;
 	uint32_t i;
 
@@ -360,16 +395,17 @@ static void wins_register_wack(struct nbt_name_socket *nbtsock,
 	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
 						       struct nbtd_interface);
 	struct wins_server *winssrv = iface->nbtsrv->winssrv;
-	struct wack_state *s;
+	struct nbtd_wins_wack_state *s;
 	struct composite_context *c_req;
 	uint32_t ttl;
 
-	s = talloc_zero(nbtsock, struct wack_state);
+	s = talloc_zero(nbtsock, struct nbtd_wins_wack_state);
 	if (s == NULL) goto failed;
 
 	/* package up the state variables for this wack request */
 	s->winssrv		= winssrv;
 	s->nbtsock		= nbtsock;
+	s->iface		= iface;
 	s->request_packet	= talloc_steal(s, packet);
 	s->rec			= talloc_steal(s, rec);
 	s->reg_address		= packet->additional[0].rdata.netbios.addresses[0].ipaddr;
@@ -384,6 +420,10 @@ static void wins_register_wack(struct nbt_name_socket *nbtsock,
 	s->io.in.num_addresses	= winsdb_addr_list_length(rec->addresses);
 	s->io.in.addresses	= winsdb_addr_string_list(s, rec->addresses);
 	if (s->io.in.addresses == NULL) goto failed;
+
+	DLIST_ADD_END(iface->wack_queue, s, struct nbtd_wins_wack_state *);
+
+	talloc_set_destructor(s, nbtd_wins_wack_state_destructor);
 
 	/*
 	 * send a WACK to the client, specifying the maximum time it could
@@ -426,6 +466,7 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	bool mhomed = ((packet->operation & NBT_OPCODE) == NBT_OPCODE_MULTI_HOME_REG);
 	enum wrepl_name_type new_type = wrepl_type(nb_flags, name, mhomed);
 	struct winsdb_addr *winsdb_addr = NULL;
+	bool duplicate_packet;
 
 	/*
 	 * as a special case, the local master browser name is always accepted
@@ -453,6 +494,14 @@ static void nbtd_winsserver_register(struct nbt_name_socket *nbtsock,
 	if (name->type == NBT_NAME_BROWSER && !(nb_flags & NBT_NM_GROUP)) {
 		rcode = NBT_RCODE_RFS;
 		goto done;
+	}
+
+	duplicate_packet = wins_check_wack_queue(iface, packet, src);
+	if (duplicate_packet) {
+		/* just ignore the packet */
+		DEBUG(5,("Ignoring duplicate packet while WACK is pending from %s:%d\n",
+			 src->addr, src->port));
+		return;
 	}
 
 	status = winsdb_lookup(winssrv->wins_db, name, packet, &rec);
