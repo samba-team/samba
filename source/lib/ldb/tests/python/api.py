@@ -48,6 +48,10 @@ class SimpleLdb(unittest.TestCase):
         l = ldb.Ldb("foo.tdb")
         self.assertEquals(len(l.search()), 1)
 
+    def test_search_controls(self):
+        l = ldb.Ldb("foo.tdb")
+        self.assertEquals(len(l.search(controls=["paged_results:1:5"])), 1)
+
     def test_search_attrs(self):
         l = ldb.Ldb("foo.tdb")
         self.assertEquals(len(l.search(ldb.Dn(l, ""), ldb.SCOPE_SUBTREE, "(dc=*)", ["dc"])), 0)
@@ -167,54 +171,54 @@ class SimpleLdb(unittest.TestCase):
     def test_modify_delete(self):
         l = ldb.Ldb("foo.tdb")
         m = ldb.Message()
-        m.dn = ldb.Dn(l, "dc=modify")
+        m.dn = ldb.Dn(l, "dc=modifydelete")
         m["bla"] = ["1234"]
         l.add(m)
         rm = l.search(m.dn)[0]
         self.assertEquals(["1234"], list(rm["bla"]))
         try:
             m = ldb.Message()
-            m.dn = ldb.Dn(l, "dc=modify")
+            m.dn = ldb.Dn(l, "dc=modifydelete")
             m["bla"] = ldb.MessageElement([], ldb.CHANGETYPE_DELETE, "bla")
             l.modify(m)
             rm = l.search(m.dn)[0]
             self.assertEquals(1, len(rm))
         finally:
-            l.delete(ldb.Dn(l, "dc=modify"))
+            l.delete(ldb.Dn(l, "dc=modifydelete"))
 
     def test_modify_add(self):
         l = ldb.Ldb("foo.tdb")
         m = ldb.Message()
-        m.dn = ldb.Dn(l, "dc=modify")
+        m.dn = ldb.Dn(l, "dc=add")
         m["bla"] = ["1234"]
         l.add(m)
         try:
             m = ldb.Message()
-            m.dn = ldb.Dn(l, "dc=modify")
+            m.dn = ldb.Dn(l, "dc=add")
             m["bla"] = ldb.MessageElement(["456"], ldb.CHANGETYPE_ADD, "bla")
             l.modify(m)
             rm = l.search(m.dn)[0]
             self.assertEquals(2, len(rm))
             self.assertEquals(["1234", "456"], list(rm["bla"]))
         finally:
-            l.delete(ldb.Dn(l, "dc=modify"))
+            l.delete(ldb.Dn(l, "dc=add"))
 
     def test_modify_modify(self):
         l = ldb.Ldb("foo.tdb")
         m = ldb.Message()
-        m.dn = ldb.Dn(l, "dc=modify")
+        m.dn = ldb.Dn(l, "dc=modify2")
         m["bla"] = ["1234", "456"]
         l.add(m)
         try:
             m = ldb.Message()
-            m.dn = ldb.Dn(l, "dc=modify")
+            m.dn = ldb.Dn(l, "dc=modify2")
             m["bla"] = ldb.MessageElement(["456"], ldb.CHANGETYPE_MODIFY, "bla")
             l.modify(m)
             rm = l.search(m.dn)[0]
             self.assertEquals(2, len(rm))
             self.assertEquals(["1234"], list(rm["bla"]))
         finally:
-            l.delete(ldb.Dn(l, "dc=modify"))
+            l.delete(ldb.Dn(l, "dc=modify2"))
 
     def test_transaction_commit(self):
         l = ldb.Ldb("foo.tdb")

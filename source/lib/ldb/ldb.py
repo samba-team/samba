@@ -192,8 +192,16 @@ class Ldb(object):
         if url is not None:
             self.connect(url, flags, options)
 
+    def search(self, base=None, scope=SCOPE_DEFAULT, expression=None, 
+               attrs=None, controls=None):
+        parsed_controls = None
+        if controls is not None:
+            parsed_controls = self.parse_control_strings(controls)
+        return self.search_ex(base, scope, expression, attrs, 
+                              parsed_controls)
+
 Ldb.connect = new_instancemethod(_ldb.Ldb_connect,None,Ldb)
-Ldb.search = new_instancemethod(_ldb.Ldb_search,None,Ldb)
+Ldb.search_ex = new_instancemethod(_ldb.Ldb_search_ex,None,Ldb)
 Ldb.delete = new_instancemethod(_ldb.Ldb_delete,None,Ldb)
 Ldb.rename = new_instancemethod(_ldb.Ldb_rename,None,Ldb)
 Ldb.parse_control_strings = new_instancemethod(_ldb.Ldb_parse_control_strings,None,Ldb)
