@@ -42,7 +42,7 @@ def delete_force(ldb, dn):
             assert False
 
 def assertEquals(a1, a2):
-    assert a1 == a2
+    assert a1 == a2, "Expected %r == %r" % (a1, a2)
 
 def basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn):
     print "Running basic tests"
@@ -555,39 +555,39 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + base_dn + """
     assertEquals(res[0]["cn"], "ldaptestuser")
     assertEquals(res[0]["name"], "ldaptestuser")
     assertEquals(res[0]["objectClass"], ["top", "person", "organizationalPerson", "user"])
-    assert("objectGUID" not in res[0])
-    assert("whenCreated" not in res[0])
+    assert("objectGUID" in res[0])
+    assert("whenCreated" in res[0])
     assertEquals(res[0]["objectCategory"], ("CN=Person,CN=Schema,CN=Configuration," + base_dn))
-    assertEquals(int(res[0]["sAMAccountType"]), 805306368)
+    assertEquals(int(res[0]["sAMAccountType"][0]), 805306368)
 #    assertEquals(res[0].userAccountControl, 546)
-    assertEquals(len(res[0]["memberOf"][0]), ("CN=ldaptestgroup2,CN=Users," + base_dn))
+    assertEquals(res[0]["memberOf"][0], ("CN=ldaptestgroup2,CN=Users," + base_dn))
     assertEquals(len(res[0]["memberOf"]), 1)
  
     print "Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))"
     res2 = ldb.search(expression="(&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))")
     assert len(res2) == 1, "Could not find (&(cn=ldaptestuser)(objectCategory=cn=person,cn=schema,cn=configuration," + base_dn + "))"
 
-    assertEquals(res[0].dn, res2.msgs[0].dn)
+    assertEquals(res[0].dn, res2[0].dn)
 
     print "Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon))"
     res3 = ldb.search(expression="(&(cn=ldaptestuser)(objectCategory=PerSon))")
     assert len(res3) == 1, "Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)): matched " + len(res3)
 
-    assertEquals(res[0].dn, res3.msgs[0].dn)
+    assertEquals(res[0].dn, res3[0].dn)
 
     if gc_ldb is not None:
         print "Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog"
         res3gc = gc_ldb.search(expression="(&(cn=ldaptestuser)(objectCategory=PerSon))")
         assert len(res3gc) == 1
     
-        assertEquals(res[0].dn, res3gc.msgs[0].dn)
+        assertEquals(res[0].dn, res3gc[0].dn)
 
     print "Testing ldb.search for (&(cn=ldaptestuser)(objectCategory=PerSon)) in with 'phantom root' control"
     
-    res3control = gc_ldb.search(base_dn, "(&(cn=ldaptestuser)(objectCategory=PerSon))", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["search_options:1:2"])
+    res3control = gc_ldb.search(base_dn, expression="(&(cn=ldaptestuser)(objectCategory=PerSon))", scope=SCOPE_SUBTREE, attrs=["cn"], controls=["search_options:1:2"])
     assert len(res3control) == 1, "Could not find (&(cn=ldaptestuser)(objectCategory=PerSon)) in Global Catalog"
     
-    assertEquals(res[0].dn, res3control.msgs[0].dn)
+    assertEquals(res[0].dn, res3control[0].dn)
 
     ldb.delete(res[0].dn)
 
@@ -605,52 +605,52 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + base_dn + """
     assertEquals(res[0]["primaryGroupID"], 513)
 #    assertEquals(res[0].sAMAccountType, 805306368)
 #    assertEquals(res[0].userAccountControl, 546)
-    assertEquals(res[0]["memberOf"][0], ("CN=ldaptestgroup2,CN=Users," + base_dn))
+    assertEquals(res[0]["memberOf"][0], "CN=ldaptestgroup2,CN=Users," + base_dn)
     assertEquals(len(res[0]["memberOf"]), 1)
 
     print "Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))"
     res2 = ldb.search(expression="(&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))")
     assert len(res2) == 1, "Could not find (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))"
 
-    assertEquals(res[0].dn, res2.msgs[0].dn)
+    assertEquals(res[0].dn, res2[0].dn)
 
     if gc_ldb is not None:
         print "Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + ")) in Global Catlog"
         res2gc = gc_ldb.search(expression="(&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + "))")
         assert len(res2gc) == 1, "Could not find (&(cn=ldaptestcomputer)(objectCategory=cn=computer,cn=schema,cn=configuration," + base_dn + ")) in Global Catlog"
 
-        assertEquals(res[0].dn, res2gc.msgs[0].dn)
+        assertEquals(res[0].dn, res2gc[0].dn)
 
     print "Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=compuTER))"
     res3 = ldb.search(expression="(&(cn=ldaptestcomputer)(objectCategory=compuTER))")
     assert len(res3) == 1, "Could not find (&(cn=ldaptestcomputer)(objectCategory=compuTER))"
 
-    assertEquals(res[0].dn, res3.msgs[0].dn)
+    assertEquals(res[0].dn, res3[0].dn)
 
     if gc_ldb is not None:
         print "Testing ldb.search for (&(cn=ldaptestcomputer)(objectCategory=compuTER)) in Global Catalog"
         res3gc = gc_ldb.search(expression="(&(cn=ldaptestcomputer)(objectCategory=compuTER))")
         assert len(res3gc) == 1, "Could not find (&(cn=ldaptestcomputer)(objectCategory=compuTER)) in Global Catalog"
 
-        assertEquals(res[0].dn, res3gc.msgs[0].dn)
+        assertEquals(res[0].dn, res3gc[0].dn)
 
     print "Testing ldb.search for (&(cn=ldaptestcomp*r)(objectCategory=compuTER))"
     res4 = ldb.search(expression="(&(cn=ldaptestcomp*r)(objectCategory=compuTER))")
     assert len(res4) == 1, "Could not find (&(cn=ldaptestcomp*r)(objectCategory=compuTER))"
 
-    assertEquals(res[0].dn, res4.msgs[0].dn)
+    assertEquals(res[0].dn, res4[0].dn)
 
     print "Testing ldb.search for (&(cn=ldaptestcomput*)(objectCategory=compuTER))"
     res5 = ldb.search(expression="(&(cn=ldaptestcomput*)(objectCategory=compuTER))")
     assert len(res5) == 1, "Could not find (&(cn=ldaptestcomput*)(objectCategory=compuTER))"
 
-    assertEquals(res[0].dn, res5.msgs[0].dn)
+    assertEquals(res[0].dn, res5[0].dn)
 
     print "Testing ldb.search for (&(cn=*daptestcomputer)(objectCategory=compuTER))"
     res6 = ldb.search(expression="(&(cn=*daptestcomputer)(objectCategory=compuTER))")
     assert len(res6) == 1, "Could not find (&(cn=*daptestcomputer)(objectCategory=compuTER))"
 
-    assertEquals(res[0].dn, res6.msgs[0].dn)
+    assertEquals(res[0].dn, res6[0].dn)
 
     ldb.delete(res[0].dn)
 
