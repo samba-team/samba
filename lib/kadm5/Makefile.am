@@ -186,4 +186,7 @@ EXTRA_DIST = \
 	kadm5_err.et \
 	iprop-commands.in \
 	$(man_MANS) \
+	check-cracklib.pl \
+	flush.c \
+	sample_passwd_check.c \
 	version-script.map
