@@ -110,6 +110,7 @@ class ldb_msg_element(object):
 
 ldb_msg_element.__iter__ = new_instancemethod(_ldb.ldb_msg_element___iter__,None,ldb_msg_element)
 ldb_msg_element.__set__ = new_instancemethod(_ldb.ldb_msg_element___set__,None,ldb_msg_element)
+ldb_msg_element.__len__ = new_instancemethod(_ldb.ldb_msg_element___len__,None,ldb_msg_element)
 ldb_msg_element.get = new_instancemethod(_ldb.ldb_msg_element_get,None,ldb_msg_element)
 ldb_msg_element.__cmp__ = new_instancemethod(_ldb.ldb_msg_element___cmp__,None,ldb_msg_element)
 ldb_msg_element_swigregister = _ldb.ldb_msg_element_swigregister

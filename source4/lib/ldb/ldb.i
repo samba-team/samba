@@ -278,6 +278,11 @@ typedef struct ldb_message_element {
         {
             return ldb_msg_element_from_pyobject(NULL, set_obj, flags, name);
         }
+
+        int __len__()
+        {
+            return $self->num_values;
+        }
 #endif
 
         PyObject *get(int i)
