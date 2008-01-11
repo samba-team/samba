@@ -187,7 +187,7 @@ servicePrincipalName: host/ldaptest2computer29
         res = ldb.search(base_dn, expression="(cn=ldaptest2computer))", scope=SCOPE_SUBTREE, 
                          attrs=["servicePrincipalName;range=0-*"])
         assert len(res) == 1, "Could not find (cn=ldaptest2computer)"
-#        print res[0]["servicePrincipalName;range=0-*"].length
+        #print len(res[0]["servicePrincipalName;range=0-*"])
         assertEquals(len(res[0]["servicePrincipalName;range=0-*"]), 30)
 
         attrs = ["servicePrincipalName;range=0-19"]
@@ -886,7 +886,6 @@ def basedn_tests(ldb, gc_ldb):
     assertEquals(len(res), 1)
 
     print "Testing for highestCommittedUSN"
-    
     res = ldb.search(scope=SCOPE_BASE, attrs=["highestCommittedUSN"])
     assertEquals(len(res), 1)
     assert(res[0]["highestCommittedUSN"] != 0)
@@ -900,16 +899,19 @@ def basedn_tests(ldb, gc_ldb):
             attrs=["netlogon", "highestCommittedUSN"])
     assertEquals(len(res), 0)
 
+
 def find_basedn(ldb):
     res = ldb.search(base="", expression="", scope=SCOPE_BASE, 
                      attrs=["defaultNamingContext"])
     assertEquals(len(res), 1)
     return res[0]["defaultNamingContext"][0]
 
+
 def find_configurationdn(ldb):
     res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["configurationNamingContext"])
     assertEquals(len(res), 1)
     return res[0]["configurationNamingContext"][0]
+
 
 def find_schemadn(ldb):
     res = ldb.search(base="", expression="", scope=SCOPE_BASE, attrs=["schemaNamingContext"])
