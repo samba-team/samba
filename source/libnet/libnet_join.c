@@ -202,7 +202,15 @@ static ADS_STATUS libnet_unjoin_remove_machine_acct(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	return ads_leave_realm(r->in.ads, r->in.machine_name);
+	status = ads_leave_realm(r->in.ads, r->in.machine_name);
+	if (!ADS_ERR_OK(status)) {
+		libnet_unjoin_set_error_string(mem_ctx, r,
+			"failed to leave realm: %s\n",
+			ads_errstr(status));
+		return status;
+	}
+
+	return ADS_SUCCESS;
 }
 
 /****************************************************************
