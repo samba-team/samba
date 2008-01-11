@@ -445,7 +445,6 @@ ssize_t vfs_write_data(struct smb_request *req,
 		req->unread_bytes = 0;
 		return SMB_VFS_RECVFILE(smbd_server_fd(),
 					fsp,
-					fsp->fh->fd,
 					(SMB_OFF_T)-1,
 					N);
 	}
@@ -479,7 +478,6 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 		req->unread_bytes = 0;
 		return SMB_VFS_RECVFILE(smbd_server_fd(),
 					fsp,
-					fsp->fh->fd,
 					offset,
 					N);
 	}

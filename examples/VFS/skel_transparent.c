@@ -154,9 +154,9 @@ static ssize_t skel_sendfile(vfs_handle_struct *handle, int tofd, files_struct *
 	return SMB_VFS_NEXT_SENDFILE(handle, tofd, fromfsp, hdr, offset, n);
 }
 
-static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd, files_struct *fsp, int tofd, SMB_OFF_T offset, size_t n)
+static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd, files_struct *tofsp, SMB_OFF_T offset, size_t n)
 {
-	return SMB_VFS_NEXT_RECVFILE(handle, fromfd, fsp, tofd, offset, n);
+	return SMB_VFS_NEXT_RECVFILE(handle, fromfd, tofsp, offset, n);
 }
 
 static int skel_rename(vfs_handle_struct *handle,  const char *oldname, const char *newname)
