@@ -620,7 +620,7 @@ NTSTATUS fd_close_posix(struct files_struct *fsp)
 		 * which will lose all locks on all fd's open on this dev/inode,
 		 * just close.
 		 */
-		ret = SMB_VFS_CLOSE(fsp,fsp->fh->fd);
+		ret = close(fsp->fh->fd);
 		fsp->fh->fd = -1;
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
@@ -651,7 +651,7 @@ NTSTATUS fd_close_posix(struct files_struct *fsp)
 		DEBUG(10,("fd_close_posix: doing close on %u fd's.\n", (unsigned int)count ));
 
 		for(i = 0; i < count; i++) {
-			if (SMB_VFS_CLOSE(fsp,fd_array[i]) == -1) {
+			if (close(fd_array[i]) == -1) {
 				saved_errno = errno;
 			}
 		}
@@ -673,7 +673,7 @@ NTSTATUS fd_close_posix(struct files_struct *fsp)
 	 * Finally close the fd associated with this fsp.
 	 */
 
-	ret = SMB_VFS_CLOSE(fsp,fsp->fh->fd);
+	ret = close(fsp->fh->fd);
 
 	if (ret == 0 && saved_errno != 0) {
 		errno = saved_errno;
