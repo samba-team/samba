@@ -1,3 +1,7 @@
+2008-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add extra files missing from dist.
+
 2007-12-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* rsa.c: ENGINE_get_default_RSA can return NULL.
