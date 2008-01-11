@@ -14,6 +14,7 @@ require Exporter;
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName);
 use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid);
+use Parse::Pidl::CUtil qw(get_pointer_to get_value_of);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
 use Parse::Pidl::Samba4 qw(is_intree choose_header);
 use Parse::Pidl qw(warning);
@@ -89,29 +90,6 @@ sub is_charset_array($$)
 	return has_property($e, "charset");
 }
 
-sub get_pointer_to($)
-{
-	my $var_name = shift;
-	
-	if ($var_name =~ /^\*(.*)$/) {
-		return $1;
-	} elsif ($var_name =~ /^\&(.*)$/) {
-		return "&($var_name)";
-	} else {
-		return "&$var_name";
-	}
-}
-
-sub get_value_of($)
-{
-	my $var_name = shift;
-
-	if ($var_name =~ /^\&(.*)$/) {
-		return $1;
-	} else {
-		return "*$var_name";
-	}
-}
 
 ####################################
 # pidl() is our basic output routine

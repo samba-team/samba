@@ -8,10 +8,11 @@ package Parse::Pidl::Samba4::EJS;
 
 use Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(get_pointer_to get_value_of check_null_pointer fn_declare TypeFunctionName);
+@EXPORT_OK = qw(check_null_pointer fn_declare TypeFunctionName);
 
 use strict;
 use Parse::Pidl::Typelist;
+use Parse::Pidl::CUtil qw(get_pointer_to get_value_of);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel);
 use Parse::Pidl::Samba4::NDR::Parser qw(GenerateStructEnv GenerateFunctionInEnv
@@ -52,30 +53,6 @@ sub deindent($)
 {
 	my ($self) = @_;
 	$self->{tabs} = substr($self->{tabs}, 0, -1);
-}
-
-sub get_pointer_to($)
-{
-	my $var_name = shift;
-	
-	if ($var_name =~ /^\*(.*)$/) {
-		return $1;
-	} elsif ($var_name =~ /^\&(.*)$/) {
-		return "&($var_name)";
-	} else {
-		return "&$var_name";
-	}
-}
-
-sub get_value_of($)
-{
-	my $var_name = shift;
-
-	if ($var_name =~ /^\&(.*)$/) {
-		return $1;
-	} else {
-		return "*$var_name";
-	}
 }
 
 #####################################################################
