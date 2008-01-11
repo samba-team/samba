@@ -265,12 +265,11 @@ static ssize_t commit_pwrite(
 
 static int commit_close(
         vfs_handle_struct * handle,
-        files_struct *      fsp,
-        int                 fd)
+        files_struct *      fsp)
 {
         /* Commit errors not checked, close() will find them again */
         commit_all(handle, fsp);
-        return SMB_VFS_NEXT_CLOSE(handle, fsp, fd);
+        return SMB_VFS_NEXT_CLOSE(handle, fsp);
 }
 
 static int commit_ftruncate(

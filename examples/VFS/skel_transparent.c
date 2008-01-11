@@ -119,9 +119,9 @@ static int skel_open(vfs_handle_struct *handle,  const char *fname, files_struct
 	return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 }
 
-static int skel_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
+static int skel_close(vfs_handle_struct *handle, files_struct *fsp)
 {
-	return SMB_VFS_NEXT_CLOSE(handle, fsp, fd);
+	return SMB_VFS_NEXT_CLOSE(handle, fsp);
 }
 
 static ssize_t skel_read(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n)

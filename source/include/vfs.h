@@ -105,6 +105,7 @@
 /* Leave at 22 - not yet released. Remove parameter fromfd from recvfile. - obnox */
 /* Leave at 22 - not yet released. Additional change: add operations for offline files -- ab */
 /* Leave at 22 - not yet released. Add the streaminfo call. -- jpeach, vl */
+/* Leave at 22 - not yet released. Remove parameter fd from close_fn. - obnox */
 
 #define SMB_VFS_INTERFACE_VERSION 22
 
@@ -301,7 +302,7 @@ struct vfs_ops {
 		/* File operations */
 
 		int (*open)(struct vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode);
-		int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
+		int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 		ssize_t (*read)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n);
 		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, SMB_OFF_T offset);
 		ssize_t (*write)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n);

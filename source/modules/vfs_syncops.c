@@ -165,14 +165,14 @@ static int syncops_rmdir(vfs_handle_struct *handle,  const char *fname)
 }
 
 /* close needs to be handled specially */
-static int syncops_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
+static int syncops_close(vfs_handle_struct *handle, files_struct *fsp)
 {
 	if (fsp->can_write && sync_onclose) {
 		/* ideally we'd only do this if we have written some
 		 data, but there is no flag for that in fsp yet. */
-		fsync(fd);
+		fsync(fsp->fh->fd);
 	}
-	return SMB_VFS_NEXT_CLOSE(handle, fsp, fd);
+	return SMB_VFS_NEXT_CLOSE(handle, fsp);
 }
 
 

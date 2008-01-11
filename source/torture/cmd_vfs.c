@@ -355,7 +355,7 @@ static NTSTATUS cmd_close(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 		return NT_STATUS_OK;
 	}
 
-	ret = SMB_VFS_CLOSE(vfs->files[fd], fd);
+	ret = SMB_VFS_CLOSE(vfs->files[fd]);
 	if (ret == -1 )
 		printf("close: error=%d (%s)\n", errno, strerror(errno));
 	else

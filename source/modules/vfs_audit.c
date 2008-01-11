@@ -34,7 +34,7 @@ static SMB_STRUCT_DIR *audit_opendir(vfs_handle_struct *handle, const char *fnam
 static int audit_mkdir(vfs_handle_struct *handle, const char *path, mode_t mode);
 static int audit_rmdir(vfs_handle_struct *handle, const char *path);
 static int audit_open(vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode);
-static int audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd);
+static int audit_close(vfs_handle_struct *handle, files_struct *fsp);
 static int audit_rename(vfs_handle_struct *handle, const char *oldname, const char *newname);
 static int audit_unlink(vfs_handle_struct *handle, const char *path);
 static int audit_chmod(vfs_handle_struct *handle, const char *path, mode_t mode);
@@ -202,14 +202,14 @@ static int audit_open(vfs_handle_struct *handle, const char *fname, files_struct
 	return result;
 }
 
-static int audit_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
+static int audit_close(vfs_handle_struct *handle, files_struct *fsp)
 {
 	int result;
 
-	result = SMB_VFS_NEXT_CLOSE(handle, fsp, fd);
+	result = SMB_VFS_NEXT_CLOSE(handle, fsp);
 
 	syslog(audit_syslog_priority(handle), "close fd %d %s%s\n",
-	       fd,
+	       fsp->fh->fd,
 	       (result < 0) ? "failed: " : "",
 	       (result < 0) ? strerror(errno) : "");
 
