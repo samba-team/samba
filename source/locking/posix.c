@@ -607,7 +607,7 @@ static size_t get_posix_pending_close_entries(TALLOC_CTX *mem_ctx,
  to delete all locks on this fsp before this function is called.
 ****************************************************************************/
 
-NTSTATUS fd_close_posix(struct files_struct *fsp)
+int fd_close_posix(struct files_struct *fsp)
 {
 	int saved_errno = 0;
 	int ret;
@@ -620,11 +620,7 @@ NTSTATUS fd_close_posix(struct files_struct *fsp)
 		 * which will lose all locks on all fd's open on this dev/inode,
 		 * just close.
 		 */
-		ret = close(fsp->fh->fd);
-		if (ret == -1) {
-			return map_nt_error_from_unix(errno);
-		}
-		return NT_STATUS_OK;
+		return close(fsp->fh->fd);
 	}
 
 	if (get_windows_lock_ref_count(fsp)) {
@@ -635,7 +631,7 @@ NTSTATUS fd_close_posix(struct files_struct *fsp)
 		 */
 
 		add_fd_to_close_entry(fsp);
-		return NT_STATUS_OK;
+		return 0;
 	}
 
 	/*
@@ -678,11 +674,7 @@ NTSTATUS fd_close_posix(struct files_struct *fsp)
 		ret = -1;
 	} 
 
-	if (ret == -1) {
-		return map_nt_error_from_unix(errno);
-	}
-
-	return NT_STATUS_OK;
+	return ret;
 }
 
 /****************************************************************************
