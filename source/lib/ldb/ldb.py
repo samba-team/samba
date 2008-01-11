@@ -94,16 +94,27 @@ class ldb_msg_element(object):
     def __init__(self): raise AttributeError, "No constructor defined"
     __repr__ = _swig_repr
     __swig_destroy__ = _ldb.delete_ldb_msg_element
+    def __getitem__(self, i):
+        ret = self.get(i)
+        if ret is None:
+            raise KeyError("no such value")
+        return ret
+
     def __eq__(self, other):
-        if (isinstance(other, str) and 
-            len(set(self)) == 1 and 
-            set(self).pop() == other):
+        if (len(self) == 1 and self.get(0) == other):
             return True
-        return self.__cmp__(other) == 0
-            
+        if isinstance(other, self.__class__):
+            return self.__cmp__(other) == 0
+        o = iter(other)
+        for i in range(len(self)):
+            if self.get(i) != o.next():
+                return False
+        return True
 
 ldb_msg_element.__iter__ = new_instancemethod(_ldb.ldb_msg_element___iter__,None,ldb_msg_element)
 ldb_msg_element.__set__ = new_instancemethod(_ldb.ldb_msg_element___set__,None,ldb_msg_element)
+ldb_msg_element.__len__ = new_instancemethod(_ldb.ldb_msg_element___len__,None,ldb_msg_element)
+ldb_msg_element.get = new_instancemethod(_ldb.ldb_msg_element_get,None,ldb_msg_element)
 ldb_msg_element.__cmp__ = new_instancemethod(_ldb.ldb_msg_element___cmp__,None,ldb_msg_element)
 ldb_msg_element_swigregister = _ldb.ldb_msg_element_swigregister
 ldb_msg_element_swigregister(ldb_msg_element)
@@ -185,6 +196,7 @@ Ldb.connect = new_instancemethod(_ldb.Ldb_connect,None,Ldb)
 Ldb.search = new_instancemethod(_ldb.Ldb_search,None,Ldb)
 Ldb.delete = new_instancemethod(_ldb.Ldb_delete,None,Ldb)
 Ldb.rename = new_instancemethod(_ldb.Ldb_rename,None,Ldb)
+Ldb.parse_control_strings = new_instancemethod(_ldb.Ldb_parse_control_strings,None,Ldb)
 Ldb.add = new_instancemethod(_ldb.Ldb_add,None,Ldb)
 Ldb.modify = new_instancemethod(_ldb.Ldb_modify,None,Ldb)
 Ldb.get_config_basedn = new_instancemethod(_ldb.Ldb_get_config_basedn,None,Ldb)
