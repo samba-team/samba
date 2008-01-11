@@ -3047,6 +3047,42 @@ SWIG_AsVal_unsigned_SS_int (PyObject * obj, unsigned int *val)
 }
 
 SWIGINTERN void delete_ldb(ldb *self){ talloc_free(self); }
+SWIGINTERN ldb_error ldb_search_ex(ldb *self,TALLOC_CTX *mem_ctx,ldb_dn *base,enum ldb_scope scope,char const *expression,char const *const *attrs,struct ldb_control **controls,struct ldb_result **OUT){
+            int ret;
+            struct ldb_result *res;
+            struct ldb_request *req;
+            res = talloc_zero(mem_ctx, struct ldb_result);
+            if (!res) {
+                return 1;
+            }
+
+            ret = ldb_build_search_req(&req, self, mem_ctx,
+                           base?base:ldb_get_default_basedn(self),
+                           scope,
+                           expression,
+                           attrs,
+                           controls,
+                           res,
+                           ldb_search_default_callback);
+
+            if (ret != 0) {
+                talloc_free(res);
+                return ret;
+            }
+
+            ldb_set_timeout(self, req, 0); /* use default timeout */
+                
+            ret = ldb_request(self, req);
+                
+            if (ret == 0) {
+                ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+            }
+
+            talloc_free(req);
+
+            *OUT = res;
+            return ret;
+        }
 SWIGINTERN ldb_error ldb_add__SWIG_1(ldb *self,PyObject *py_msg){
             ldb_error ret;
             int dict_pos, msg_pos;
@@ -4354,95 +4390,108 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_Ldb_search(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+SWIGINTERN PyObject *_wrap_Ldb_search_ex(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   ldb *arg1 = (ldb *) 0 ;
-  ldb_dn *arg2 = (ldb_dn *) NULL ;
-  enum ldb_scope arg3 = (enum ldb_scope) LDB_SCOPE_DEFAULT ;
-  char *arg4 = (char *) NULL ;
-  char **arg5 = (char **) NULL ;
-  struct ldb_result **arg6 = (struct ldb_result **) 0 ;
+  TALLOC_CTX *arg2 = (TALLOC_CTX *) 0 ;
+  ldb_dn *arg3 = (ldb_dn *) NULL ;
+  enum ldb_scope arg4 = (enum ldb_scope) LDB_SCOPE_DEFAULT ;
+  char *arg5 = (char *) NULL ;
+  char **arg6 = (char **) NULL ;
+  struct ldb_control **arg7 = (struct ldb_control **) NULL ;
+  struct ldb_result **arg8 = (struct ldb_result **) 0 ;
   ldb_error result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  int val3 ;
-  int ecode3 = 0 ;
-  int res4 ;
-  char *buf4 = 0 ;
-  int alloc4 = 0 ;
-  struct ldb_result *temp_ldb_result6 ;
-  int i6 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  int res5 ;
+  char *buf5 = 0 ;
+  int alloc5 = 0 ;
+  void *argp7 = 0 ;
+  int res7 = 0 ;
+  struct ldb_result *temp_ldb_result8 ;
+  int i8 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
   PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
   char *  kwnames[] = {
-    (char *) "self",(char *) "base",(char *) "scope",(char *) "expression",(char *) "attrs", NULL 
+    (char *) "self",(char *) "base",(char *) "scope",(char *) "expression",(char *) "attrs",(char *) "controls", NULL 
   };
   
-  arg6 = &temp_ldb_result6;
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOOO:Ldb_search",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
+  arg2 = NULL;
+  arg8 = &temp_ldb_result8;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"O|OOOOO:Ldb_search_ex",kwnames,&obj0,&obj1,&obj2,&obj3,&obj4,&obj5)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_search" "', argument " "1"" of type '" "ldb *""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Ldb_search_ex" "', argument " "1"" of type '" "ldb *""'"); 
   }
   arg1 = (ldb *)(argp1);
   if (obj1) {
-    if (ldb_dn_from_pyobject(NULL, obj1, arg1, &arg2) != 0) {
+    if (ldb_dn_from_pyobject(NULL, obj1, arg1, &arg3) != 0) {
       SWIG_fail;
     }
   }
   if (obj2) {
-    ecode3 = SWIG_AsVal_int(obj2, &val3);
-    if (!SWIG_IsOK(ecode3)) {
-      SWIG_exception_fail(SWIG_ArgError(ecode3), "in method '" "Ldb_search" "', argument " "3"" of type '" "enum ldb_scope""'");
+    ecode4 = SWIG_AsVal_int(obj2, &val4);
+    if (!SWIG_IsOK(ecode4)) {
+      SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "Ldb_search_ex" "', argument " "4"" of type '" "enum ldb_scope""'");
     } 
-    arg3 = (enum ldb_scope)(val3);
+    arg4 = (enum ldb_scope)(val4);
   }
   if (obj3) {
-    res4 = SWIG_AsCharPtrAndSize(obj3, &buf4, NULL, &alloc4);
-    if (!SWIG_IsOK(res4)) {
-      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "Ldb_search" "', argument " "4"" of type '" "char const *""'");
+    res5 = SWIG_AsCharPtrAndSize(obj3, &buf5, NULL, &alloc5);
+    if (!SWIG_IsOK(res5)) {
+      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "Ldb_search_ex" "', argument " "5"" of type '" "char const *""'");
     }
-    arg4 = (char *)(buf4);
+    arg5 = (char *)(buf5);
   }
   if (obj4) {
     if (obj4 == Py_None) {
-      arg5 = NULL;
+      arg6 = NULL;
     } else if (PySequence_Check(obj4)) {
       int i;
-      arg5 = talloc_array(NULL, char *, PySequence_Size(obj4)+1);
+      arg6 = talloc_array(NULL, char *, PySequence_Size(obj4)+1);
       for(i = 0; i < PySequence_Size(obj4); i++)
-      arg5[i] = PyString_AsString(PySequence_GetItem(obj4, i));
-      arg5[i] = NULL;
+      arg6[i] = PyString_AsString(PySequence_GetItem(obj4, i));
+      arg6[i] = NULL;
     } else {
       SWIG_exception(SWIG_TypeError, "expected sequence");
     }
   }
+  if (obj5) {
+    res7 = SWIG_ConvertPtr(obj5, &argp7,SWIGTYPE_p_p_ldb_control, 0 |  0 );
+    if (!SWIG_IsOK(res7)) {
+      SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "Ldb_search_ex" "', argument " "7"" of type '" "struct ldb_control **""'"); 
+    }
+    arg7 = (struct ldb_control **)(argp7);
+  }
   if (arg1 == NULL)
   SWIG_exception(SWIG_ValueError, 
     "ldb context must be non-NULL");
-  result = ldb_search(arg1,arg2,arg3,(char const *)arg4,(char const *const *)arg5,arg6);
+  result = ldb_search_ex(arg1,arg2,arg3,arg4,(char const *)arg5,(char const *const *)arg6,arg7,arg8);
   if (result != 0) {
     PyErr_SetObject(PyExc_LdbError, Py_BuildValue((char *)"(i,s)", result, ldb_strerror(result)));
     SWIG_fail;
   }
   resultobj = Py_None;
-  resultobj = PyList_New((*arg6)->count);
-  for (i6 = 0; i6 < (*arg6)->count; i6++) {
-    PyList_SetItem(resultobj, i6, 
-      SWIG_NewPointerObj((*arg6)->msgs[i6], SWIGTYPE_p_ldb_message, 0)
+  resultobj = PyList_New((*arg8)->count);
+  for (i8 = 0; i8 < (*arg8)->count; i8++) {
+    PyList_SetItem(resultobj, i8, 
+      SWIG_NewPointerObj((*arg8)->msgs[i8], SWIGTYPE_p_ldb_message, 0)
       );
   }
-  talloc_free(arg2);
-  if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
-  talloc_free(arg5);
+  talloc_free(arg3);
+  if (alloc5 == SWIG_NEWOBJ) free((char*)buf5);
+  talloc_free(arg6);
   return resultobj;
 fail:
-  talloc_free(arg2);
-  if (alloc4 == SWIG_NEWOBJ) free((char*)buf4);
-  talloc_free(arg5);
+  talloc_free(arg3);
+  if (alloc5 == SWIG_NEWOBJ) free((char*)buf5);
+  talloc_free(arg6);
   return NULL;
 }
 
@@ -5395,7 +5444,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_Ldb", (PyCFunction)_wrap_new_Ldb, METH_NOARGS, NULL},
 	 { (char *)"Ldb_connect", (PyCFunction) _wrap_Ldb_connect, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_Ldb", (PyCFunction)_wrap_delete_Ldb, METH_O, NULL},
-	 { (char *)"Ldb_search", (PyCFunction) _wrap_Ldb_search, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Ldb_search_ex", (PyCFunction) _wrap_Ldb_search_ex, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_delete", (PyCFunction) _wrap_Ldb_delete, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_rename", (PyCFunction) _wrap_Ldb_rename, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Ldb_parse_control_strings", (PyCFunction) _wrap_Ldb_parse_control_strings, METH_VARARGS | METH_KEYWORDS, NULL},

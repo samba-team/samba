@@ -201,6 +201,14 @@ fail:
 
         /* FIXME: implement __getslice__ */
 #endif
+    %pythoncode {
+        def __eq__(self, other):
+            if isinstance(other, self.__class__):
+                return self.__cmp__(other) == 0
+            if isinstance(other, str):
+                return str(self) == other
+            return False
+    }
     }
 } ldb_dn;
 
@@ -514,11 +522,49 @@ typedef struct ldb_context {
             const char *options[] = NULL);
 
         ~ldb() { talloc_free($self); }
-        ldb_error search(ldb_dn *base = NULL, 
+        ldb_error search_ex(TALLOC_CTX *mem_ctx,
+                   ldb_dn *base = NULL, 
                    enum ldb_scope scope = LDB_SCOPE_DEFAULT, 
                    const char *expression = NULL, 
-                   const char * const *attrs = NULL, 
-                   struct ldb_result **OUT);
+                   const char *const *attrs = NULL, 
+                   struct ldb_control **controls = NULL,
+                   struct ldb_result **OUT) {
+            int ret;
+            struct ldb_result *res;
+            struct ldb_request *req;
+            res = talloc_zero(mem_ctx, struct ldb_result);
+            if (!res) {
+                return LDB_ERR_OPERATIONS_ERROR;
+            }
+
+            ret = ldb_build_search_req(&req, $self, mem_ctx,
+                           base?base:ldb_get_default_basedn($self),
+                           scope,
+                           expression,
+                           attrs,
+                           controls,
+                           res,
+                           ldb_search_default_callback);
+
+            if (ret != LDB_SUCCESS) {
+                talloc_free(res);
+                return ret;
+            }
+
+            ldb_set_timeout($self, req, 0); /* use default timeout */
+                
+            ret = ldb_request($self, req);
+                
+            if (ret == LDB_SUCCESS) {
+                ret = ldb_wait(req->handle, LDB_WAIT_ALL);
+            }
+
+            talloc_free(req);
+
+            *OUT = res;
+            return ret;
+        }
+
         ldb_error delete(ldb_dn *dn);
         ldb_error rename(ldb_dn *olddn, ldb_dn *newdn);
         struct ldb_control **parse_control_strings(TALLOC_CTX *mem_ctx, 
@@ -615,6 +661,14 @@ typedef struct ldb_context {
             _ldb.Ldb_swiginit(self,_ldb.new_Ldb())
             if url is not None:
                 self.connect(url, flags, options)
+
+        def search(self, base=None, scope=SCOPE_DEFAULT, expression=None, 
+                   attrs=None, controls=None):
+            parsed_controls = None
+            if controls is not None:
+                parsed_controls = self.parse_control_strings(controls)
+            return self.search_ex(base, scope, expression, attrs, 
+                                  parsed_controls)
     }
 
 } ldb;
