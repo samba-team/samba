@@ -241,10 +241,10 @@ again:
 	if (sctx->pending)
 		goto again;
 
-	if (sctx->sort && sctx->num_stored != 0) {
+	if (sctx->sort && (sctx->num_stored != 0 || sctx->refs != 0)) {
 		int i;
 
-		ldb_qsort(sctx->store, ret, sizeof(struct ldb_message *),
+		ldb_qsort(sctx->store, sctx->num_stored, sizeof(struct ldb_message *),
 			  ldb, (ldb_qsort_cmp_fn_t)do_compare_msg);
 
 		if (ret != 0) {
