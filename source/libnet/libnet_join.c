@@ -678,14 +678,13 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	memcpy(&pwbuf[516], md5buffer, sizeof(md5buffer));
 
 	acb_info |= ACB_PWNOEXP;
-#if 0
-	if ( dom_type == ND_TYPE_AD ) {
+	if (r->out.domain_is_ad) {
 #if !defined(ENCTYPE_ARCFOUR_HMAC)
 		acb_info |= ACB_USE_DES_KEY_ONLY;
 #endif
 		;;
 	}
-#endif
+
 	ZERO_STRUCT(ctr);
 	ZERO_STRUCT(p25);
 
