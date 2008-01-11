@@ -614,7 +614,9 @@ int fd_close_posix(struct files_struct *fsp)
 	int *fd_array = NULL;
 	size_t count, i;
 
-	if (!lp_locking(fsp->conn->params) || !lp_posix_locking(fsp->conn->params)) {
+	if (!lp_locking(fsp->conn->params) ||
+	    !lp_posix_locking(fsp->conn->params))
+	{
 		/*
 		 * No locking or POSIX to worry about or we want POSIX semantics
 		 * which will lose all locks on all fd's open on this dev/inode,
@@ -626,8 +628,9 @@ int fd_close_posix(struct files_struct *fsp)
 	if (get_windows_lock_ref_count(fsp)) {
 
 		/*
-		 * There are outstanding locks on this dev/inode pair on other fds.
-		 * Add our fd to the pending close tdb and set fsp->fh->fd to -1.
+		 * There are outstanding locks on this dev/inode pair on
+		 * other fds. Add our fd to the pending close tdb and set
+		 * fsp->fh->fd to -1.
 		 */
 
 		add_fd_to_close_entry(fsp);
@@ -642,7 +645,8 @@ int fd_close_posix(struct files_struct *fsp)
 	count = get_posix_pending_close_entries(talloc_tos(), fsp, &fd_array);
 
 	if (count) {
-		DEBUG(10,("fd_close_posix: doing close on %u fd's.\n", (unsigned int)count ));
+		DEBUG(10,("fd_close_posix: doing close on %u fd's.\n",
+			  (unsigned int)count));
 
 		for(i = 0; i < count; i++) {
 			if (close(fd_array[i]) == -1) {
@@ -672,7 +676,7 @@ int fd_close_posix(struct files_struct *fsp)
 	if (ret == 0 && saved_errno != 0) {
 		errno = saved_errno;
 		ret = -1;
-	} 
+	}
 
 	return ret;
 }
