@@ -47,6 +47,7 @@ struct libnet_JoinCtx {
 		bool modified_config;
 		WERROR result;
 		char *error_string;
+		bool domain_is_ad;
 	} out;
 };
 
