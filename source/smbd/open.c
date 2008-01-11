@@ -81,7 +81,7 @@ NTSTATUS fd_close(files_struct *fsp)
 		return NT_STATUS_OK; /* Shared handle. Only close last reference. */
 	}
 
-	ret = SMB_VFS_CLOSE(fsp, fsp->fh->fd);
+	ret = SMB_VFS_CLOSE(fsp);
 	fsp->fh->fd = -1;
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
