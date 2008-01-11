@@ -173,8 +173,6 @@ ntlmsrc = \
 $(srcdir)/ntlm/ntlm-private.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p ntlm/ntlm-private.h $(ntlmsrc) || rm -f ntlm/ntlm-private.h
 
-$(libgssapi_la_OBJECTS): $(srcdir)/ntlm/ntlm-private.h
-
 dist_libgssapi_la_SOURCES  = \
 	$(krb5src) \
 	$(mechsrc) \
@@ -191,7 +189,6 @@ libgssapi_la_LDFLAGS = -version-info 2:0:0
 if versionscript
 libgssapi_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
 endif
-$(libgssapi_la_OBJECTS): $(srcdir)/version-script.map
 
 libgssapi_la_LIBADD = \
 	$(top_builddir)/lib/ntlm/libheimntlm.la \
@@ -201,7 +198,7 @@ libgssapi_la_LIBADD = \
 	$(LIB_hcrypto) \
 	$(LIBADD_roken)
 
-man_MANS = gssapi.3 gss_acquire_cred.3
+man_MANS = gssapi.3 gss_acquire_cred.3 mech/mech.5
 
 include_HEADERS = gssapi.h
 noinst_HEADERS = \
@@ -232,6 +229,9 @@ spnego_files =					\
 
 $(libgssapi_la_OBJECTS): $(srcdir)/krb5/gsskrb5-private.h
 $(libgssapi_la_OBJECTS): $(srcdir)/spnego/spnego-private.h
+$(libgssapi_la_OBJECTS): $(srcdir)/ntlm/ntlm-private.h
+
+$(libgssapi_la_OBJECTS): $(srcdir)/version-script.map
 
 BUILT_SOURCES = $(spnego_files:.x=.c) $(gssapi_files:.x=.c)
 
