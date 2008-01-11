@@ -104,7 +104,34 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	torture_assert_ntstatus_ok(tctx, status, talloc_asprintf(tctx, "Bad response from %s for name query", address));
 	CHECK_VALUE(tctx, release.out.rcode, 0);
 
-	torture_comment(tctx, "register the name\n");
+	if (nb_flags & NBT_NM_GROUP) {
+		/* ignore this for group names */
+	} else if (!low_port) {
+		torture_comment(tctx, "no low port - skip: register the name with a wrong address\n");
+	} else {
+		torture_comment(tctx, "register the name with a wrong address (makes the next request slow!)\n");
+		io.in.name = *name;
+		io.in.wins_port = lp_nbt_port(tctx->lp_ctx);
+		io.in.wins_servers = str_list_make(tctx, address, NULL);
+		io.in.addresses = str_list_make(tctx, "127.64.64.1", NULL);
+		io.in.nb_flags = nb_flags;
+		io.in.ttl = 300000;
+
+		status = nbt_name_register_wins(nbtsock, tctx, &io);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			torture_assert_ntstatus_ok(tctx, status,
+				talloc_asprintf(tctx, "No response from %s for name register\n",
+						address));
+		}
+		torture_assert_ntstatus_ok(tctx, status,
+			talloc_asprintf(tctx, "Bad response from %s for name register\n",
+					address));
+
+		CHECK_STRING(tctx, io.out.wins_server, address);
+		CHECK_VALUE(tctx, io.out.rcode, 0);
+	}
+
+	torture_comment(tctx, "register the name correct address\n");
 	io.in.name = *name;
 	io.in.wins_port = lp_nbt_port(tctx->lp_ctx);
 	io.in.wins_servers = (const char **)str_list_make(tctx, address, NULL);
@@ -186,8 +213,86 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	refresh.in.ttl = 12345;
 	
 	status = nbt_name_refresh_wins(nbtsock, tctx, &refresh);
-	torture_assert_ntstatus_ok(tctx, status, talloc_asprintf(tctx, "Bad response from %s for name refresh", address));
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		torture_assert_ntstatus_ok(tctx, status,
+			talloc_asprintf(tctx, "No response from %s for name refresh",
+					address));
+	}
+	torture_assert_ntstatus_ok(tctx, status,
+		talloc_asprintf(tctx, "Bad response from %s for name refresh",
+				address));
+
+	CHECK_STRING(tctx, refresh.out.wins_server, address);
+	CHECK_VALUE(tctx, refresh.out.rcode, 0);
+
+	printf("release the name\n");
+	release.in.name = *name;
+	release.in.dest_port = lp_nbt_port(tctx->lp_ctx);
+	release.in.dest_addr = address;
+	release.in.address = myaddress;
+	release.in.nb_flags = nb_flags;
+	release.in.broadcast = false;
+	release.in.timeout = 3;
+	release.in.retries = 0;
+
+	status = nbt_name_release(nbtsock, tctx, &release);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		torture_assert_ntstatus_ok(tctx, status,
+			talloc_asprintf(tctx, "No response from %s for name release",
+					address));
+	}
+	torture_assert_ntstatus_ok(tctx, status,
+		talloc_asprintf(tctx, "Bad response from %s for name release",
+				address));
+
+	CHECK_NAME(tctx, release.out.name, *name);
+	CHECK_VALUE(tctx, release.out.rcode, 0);
+
+	if (nb_flags & NBT_NM_GROUP) {
+		/* ignore this for group names */
+	} else if (!low_port) {
+		torture_comment(tctx, "no low port - skip: register the name with a wrong address\n");
+	} else {
+		torture_comment(tctx, "register the name with a wrong address (makes the next request slow!)\n");
+		io.in.name = *name;
+		io.in.wins_port = lp_nbt_port(tctx->lp_ctx);
+		io.in.wins_servers = str_list_make(tctx, address, NULL);
+		io.in.addresses = str_list_make(tctx, "127.64.64.1", NULL);
+		io.in.nb_flags = nb_flags;
+		io.in.ttl = 300000;
 	
+		status = nbt_name_register_wins(nbtsock, tctx, &io);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			torture_assert_ntstatus_ok(tctx, status,
+				talloc_asprintf(tctx, "No response from %s for name register\n",
+						address));
+		}
+		torture_assert_ntstatus_ok(tctx, status,
+			talloc_asprintf(tctx, "Bad response from %s for name register\n",
+					address));
+
+		CHECK_STRING(tctx, io.out.wins_server, address);
+		CHECK_VALUE(tctx, io.out.rcode, 0);
+	}
+
+	torture_comment(tctx, "refresh the name with the correct address\n");
+	refresh.in.name = *name;
+	refresh.in.wins_port = lp_nbt_port(tctx->lp_ctx);
+	refresh.in.wins_servers = str_list_make(tctx, address, NULL);
+	refresh.in.addresses = str_list_make(tctx, myaddress, NULL);
+	refresh.in.nb_flags = nb_flags;
+	refresh.in.ttl = 12345;
+
+	status = nbt_name_refresh_wins(nbtsock, tctx, &refresh);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		torture_assert_ntstatus_ok(tctx, status,
+			talloc_asprintf(tctx, "No response from %s for name refresh",
+					address));
+	}
+	torture_assert_ntstatus_ok(tctx, status,
+		talloc_asprintf(tctx, "Bad response from %s for name refresh",
+				address));
+
 	CHECK_STRING(tctx, refresh.out.wins_server, address);
 	CHECK_VALUE(tctx, refresh.out.rcode, 0);
 
