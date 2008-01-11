@@ -9,7 +9,7 @@ use Exporter;
 @ISA = qw(Exporter);
 
 use strict;
-use Parse::Pidl::Typelist;
+use Parse::Pidl::Typelist qw(hasType getType mapTypeName);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 
 use vars qw($VERSION);
@@ -17,7 +17,8 @@ $VERSION = '0.01';
 
 sub new($) {
 	my ($class) = @_;
-	my $self = { res => "", res_hdr => "", tabs => "", constants => {}};
+	my $self = { res => "", res_hdr => "", tabs => "", constants => {},
+	             module_methods => []};
 	bless($self, $class);
 }
 
@@ -63,7 +64,26 @@ sub Import
 sub Const($$)
 {
     my ($self, $const) = @_;
-    $self->{constants}->{$const->{NAME}} = [$const->{DATA}->{TYPE}, $const->{VALUE}];
+	$self->register_constant($const->{NAME}, $const->{DATA}->{TYPE}, $const->{VALUE});
+}
+
+sub register_constant($$$$)
+{
+	my ($self, $name, $type, $value) = @_;
+
+	$self->{constants}->{$name} = [$type, $value];
+}
+
+sub EnumAndBitmapConsts($$$)
+{
+	my ($self, $name, $d) = @_;
+
+	foreach my $e (@{$d->{ELEMENTS}}) {
+		$e =~ /^([A-Za-z0-9_]+)=(.*)$/;
+		my $cname = $1;
+		
+		$self->register_constant($cname, $d, $cname);
+	}
 }
 
 sub FromTypeToPythonFunction($$)
@@ -97,6 +117,8 @@ sub TypeConstructor($$)
 	$self->pidl("static PyObject *py_$type->{NAME}_getattr(PyTypeObject *obj, char *name)");
 	$self->pidl("{");
 	$self->indent;
+	$self->pidl("$type->{NAME}_Object *py_object = ($type->{NAME}_Object *)obj;");
+	$self->pidl(mapTypeName($type) . " *object = talloc_get_type(py_object->object, ".mapTypeName($type).");");
 	$self->pidl("return Py_None;");
 	$self->deindent;
 	$self->pidl("}");
@@ -115,6 +137,8 @@ sub TypeConstructor($$)
 	$self->pidl("static PyObject *py_$type->{NAME}_setattr(PyTypeObject *obj, char *name, PyObject *value)");
 	$self->pidl("{");
 	$self->indent;
+	$self->pidl("$type->{NAME}_Object *py_object = ($type->{NAME}_Object *)obj;");
+	$self->pidl(mapTypeName($type) . " *object = talloc_get_type(py_object->object, ".mapTypeName($type).");");
 	$self->pidl("return Py_None;");
 	$self->deindent;
 	$self->pidl("}");
@@ -133,7 +157,8 @@ sub TypeConstructor($$)
 
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$type->{NAME}(PyObject *self, PyObject *args)");
+	my $py_fnname = "py_$type->{NAME}";
+	$self->pidl("static PyObject *$py_fnname(PyObject *self, PyObject *args)");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("$type->{NAME}\_Object *ret;");
@@ -142,6 +167,8 @@ sub TypeConstructor($$)
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
+
+	return $py_fnname;
 }
 
 sub PythonFunction($$$)
@@ -175,9 +202,36 @@ sub handle_ntstatus($$$)
 	$self->pidl("");
 }
 
-sub Interface($$)
+sub PythonType($$$)
 {
-	my($self,$interface) = @_;
+	my ($self, $d, $interface, $basename) = @_;
+
+	if ($d->{TYPE} eq "STRUCT" or $d->{TYPE} eq "TYPEDEF" and 
+		$d->{DATA}->{TYPE} eq "STRUCT") {
+		$self->FromTypeToPythonFunction($d);
+		$self->FromPythonToTypeFunction($d);
+		my $py_fnname = $self->TypeConstructor($d);
+
+		my $fn_name = $d->{NAME};
+
+		$fn_name =~ s/^$interface->{NAME}_//;
+		$fn_name =~ s/^$basename\_//;
+
+		$self->register_module_method($fn_name, $py_fnname, "METH_VARARGS|METH_KEYWORDS", "NULL");
+	}
+
+	if ($d->{TYPE} eq "ENUM" or $d->{TYPE} eq "BITMAP") {
+		$self->EnumAndBitmapConsts($d->{NAME}, $d);
+	}
+
+	if ($d->{TYPE} eq "TYPEDEF" and ($d->{DATA}->{TYPE} eq "ENUM" or $d->{DATA}->{TYPE} eq "BITMAP")) {
+		$self->EnumAndBitmapConsts($d->{NAME}, $d->{DATA});
+	}
+}
+
+sub Interface($$$)
+{
+	my($self,$interface,$basename) = @_;
 
 	$self->pidl_hdr("#ifndef _HEADER_PYTHON_$interface->{NAME}\n");
 	$self->pidl_hdr("#define _HEADER_PYTHON_$interface->{NAME}\n\n");
@@ -186,10 +240,10 @@ sub Interface($$)
 
 	$self->Const($_) foreach (@{$interface->{CONSTS}});
 
-	foreach (@{$interface->{TYPES}}) {
-		$self->FromTypeToPythonFunction($_);	
-		$self->FromPythonToTypeFunction($_);	
-		$self->TypeConstructor($_);
+	foreach my $d (@{$interface->{TYPES}}) {
+		next if has_property($d, "nopython");
+
+		$self->PythonType($d, $interface, $basename);
 	}
 
 	$self->pidl("staticforward PyTypeObject $interface->{NAME}_InterfaceType;");
@@ -257,6 +311,7 @@ sub Interface($$)
 
 	$self->pidl("");
 
+	$self->register_module_method($interface->{NAME}, "interface_$interface->{NAME}", "METH_VARARGS|METH_KEYWORDS", "NULL");
 	$self->pidl("static PyObject *interface_$interface->{NAME}(PyObject *self, PyObject *args)");
 	$self->pidl("{");
 	$self->indent;
@@ -285,6 +340,13 @@ sub Interface($$)
 	$self->pidl_hdr("#endif /* _HEADER_NDR_$interface->{NAME} */\n");
 }
 
+sub register_module_method($$$$$)
+{
+	my ($self, $fn_name, $pyfn_name, $flags, $doc) = @_;
+
+	push (@{$self->{module_methods}}, [$fn_name, $pyfn_name, $flags, $doc])
+}
+
 sub Parse($$$$)
 {
     my($self,$basename,$ndr,$hdr) = @_;
@@ -305,27 +367,15 @@ sub Parse($$$$)
 ");
 
 	foreach my $x (@$ndr) {
-	    ($x->{TYPE} eq "INTERFACE") && $self->Interface($x);
+	    ($x->{TYPE} eq "INTERFACE") && $self->Interface($x, $basename);
 		($x->{TYPE} eq "IMPORT") && $self->Import(@{$x->{PATHS}});
 	}
 	
 	$self->pidl("static PyMethodDef $basename\_methods[] = {");
 	$self->indent;
-	foreach my $x (@$ndr) {
-	    next if ($x->{TYPE} ne "INTERFACE");
-		$self->pidl("{ \"$x->{NAME}\", (PyCFunction)interface_$x->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
-
-		foreach my $d (@{$x->{TYPES}}) {
-			next if has_property($d, "nopython");
-			next if ($d->{TYPE} eq "ENUM" or $d->{TYPE} eq "BITMAP");
-
-			my $fn_name = $d->{NAME};
-
-			$fn_name =~ s/^$x->{NAME}_//;
-			$fn_name =~ s/^$basename\_//;
-
-			$self->pidl("{ \"$fn_name\", (PyCFunction)py_$d->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
-		}
+	foreach (@{$self->{module_methods}}) {
+		my ($fn_name, $pyfn_name, $flags, $doc) = @$_;
+		$self->pidl("{ \"$fn_name\", (PyCFunction)$pyfn_name, $flags, $doc },");
 	}
 	
 	$self->pidl("{ NULL, NULL, 0, NULL }");
