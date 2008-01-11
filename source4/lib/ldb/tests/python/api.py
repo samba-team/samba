@@ -249,6 +249,10 @@ class DnTests(unittest.TestCase):
     def setUp(self):
         self.ldb = ldb.Ldb("foo.tdb")
 
+    def test_eq_str(self):
+        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        self.assertEquals("dc=foo,bar=bloe", x)
+
     def test_str(self):
         x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
         self.assertEquals(x.__str__(), "dc=foo,bar=bloe")

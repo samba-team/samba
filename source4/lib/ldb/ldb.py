@@ -71,6 +71,13 @@ class Dn(object):
     def __init__(self, *args, **kwargs): 
         _ldb.Dn_swiginit(self,_ldb.new_Dn(*args, **kwargs))
     __swig_destroy__ = _ldb.delete_Dn
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__cmp__(other) == 0
+        if isinstance(other, str):
+            return str(self) == other
+        return False
+
 Dn.validate = new_instancemethod(_ldb.Dn_validate,None,Dn)
 Dn.get_casefold = new_instancemethod(_ldb.Dn_get_casefold,None,Dn)
 Dn.__str__ = new_instancemethod(_ldb.Dn___str__,None,Dn)

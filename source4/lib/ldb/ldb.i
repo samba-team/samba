@@ -201,6 +201,14 @@ fail:
 
         /* FIXME: implement __getslice__ */
 #endif
+    %pythoncode {
+        def __eq__(self, other):
+            if isinstance(other, self.__class__):
+                return self.__cmp__(other) == 0
+            if isinstance(other, str):
+                return str(self) == other
+            return False
+    }
     }
 } ldb_dn;
 
