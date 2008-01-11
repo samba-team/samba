@@ -376,15 +376,6 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 		}
 	},
 	{
-		.local_name = "dn",
-		.type = MAP_RENAME,
-		.u = {
-			.rename = {
-				 .remote_name = "entryDN"
-			 }
-		}
-	},
-	{
 		.local_name = "groupType",
 		.type = MAP_CONVERT,
 		.u = {
@@ -526,15 +517,6 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "distinguishedName",
-		.type = MAP_RENAME,
-		.u = {
-			.rename = {
-				 .remote_name = "entryDN"
-			 }
-		}
-	},
-	{
-		.local_name = "dn",
 		.type = MAP_RENAME,
 		.u = {
 			.rename = {
