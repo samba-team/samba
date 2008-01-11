@@ -147,13 +147,13 @@ static void callback_apply_description_change(GtkWidget *widget,
 	status = NetServerSetInfo(NULL, 1005, (uint8_t *)&info1005, &parm_err); 
 	if (status) {
 		debug("NetServerSetInfo failed with: %s\n",
-			libnetapi_errstr(state->ctx, status));
+			libnetapi_errstr(status));
 		dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_main),
 						GTK_DIALOG_DESTROY_WITH_PARENT,
 						GTK_MESSAGE_ERROR,
 						GTK_BUTTONS_OK,
 						"Failed to change computer description: %s.",
-						libnetapi_errstr(state->ctx, status));
+						libnetapi_errstr(status));
 		g_signal_connect_swapped(dialog, "response",
 					 G_CALLBACK(gtk_widget_destroy),
 					 dialog);
@@ -439,7 +439,7 @@ static void callback_do_join(GtkWidget *widget,
 					 state->password,
 					 unjoin_flags);
 		if (status != 0) {
-			err_str = libnetapi_errstr(state->ctx, status);
+			err_str = libnetapi_errstr(status);
 			g_print("callback_do_join: failed to unjoin (%s)\n",
 				err_str);
 
@@ -463,7 +463,7 @@ static void callback_do_join(GtkWidget *widget,
 			       state->password,
 			       join_flags);
 	if (status != 0) {
-		err_str = libnetapi_errstr(state->ctx, status);
+		err_str = libnetapi_errstr(status);
 		g_print("callback_do_join: failed to join (%s)\n", err_str);
 
 		dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_parent),
