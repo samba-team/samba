@@ -347,6 +347,24 @@ sub register_module_method($$$$$)
 	push (@{$self->{module_methods}}, [$fn_name, $pyfn_name, $flags, $doc])
 }
 
+sub ConvertObjectToPython($$$)
+{
+	my ($self, $ctype, $cvar) = @_;
+
+	if ($cvar =~ /^".*"$/) {
+		return "PyString_FromString($cvar)";
+	}
+
+	if ($cvar =~ /^[0-9]+$/ or 
+		$ctype->{TYPE} eq "ENUM" or $ctype->{TYPE} eq "BITMAP" or 
+		$ctype->{TYPE} eq "TYPEDEF" and 
+		($ctype->{TYPE} eq "ENUM" or $ctype->{TYPE} eq "BITMAP")) {
+		return "PyInt_FromLong($cvar)";
+	}
+
+	die("Unknown type for ".mapTypeName($ctype).": $cvar");
+}
+
 sub Parse($$$$)
 {
     my($self,$basename,$ndr,$hdr) = @_;
@@ -391,7 +409,7 @@ sub Parse($$$$)
 	$self->pidl("m = Py_InitModule(\"$basename\", $basename\_methods);");
 	foreach (keys %{$self->{constants}}) {
 		# FIXME: Handle non-string constants
-		$self->pidl("PyModule_AddObject(m, \"$_\", PyString_FromString(" . $self->{constants}->{$_}->[1] . "));");
+		$self->pidl("PyModule_AddObject(m, \"$_\", " .  $self->ConvertObjectToPython($self->{constants}->{$_}->[0], $self->{constants}->{$_}->[1]) . ");");
 	}
 	$self->deindent;
 	$self->pidl("}");
