@@ -128,7 +128,7 @@ static ssize_t smb_full_audit_sendfile(vfs_handle_struct *handle, int tofd,
 			      const DATA_BLOB *hdr, SMB_OFF_T offset,
 			      size_t n);
 static ssize_t smb_full_audit_recvfile(vfs_handle_struct *handle, int fromfd,
-			      files_struct *fsp, int tofd,
+			      files_struct *tofsp,
 			      SMB_OFF_T offset,
 			      size_t n);
 static int smb_full_audit_rename(vfs_handle_struct *handle,
@@ -1164,17 +1164,16 @@ static ssize_t smb_full_audit_sendfile(vfs_handle_struct *handle, int tofd,
 }
 
 static ssize_t smb_full_audit_recvfile(vfs_handle_struct *handle, int fromfd,
-			      files_struct *fsp, int tofd,
+		      files_struct *tofsp,
 			      SMB_OFF_T offset,
 			      size_t n)
 {
 	ssize_t result;
 
-	result = SMB_VFS_NEXT_RECVFILE(handle, fromfd, fsp, tofd,
-				       offset, n);
+	result = SMB_VFS_NEXT_RECVFILE(handle, fromfd, tofsp, offset, n);
 
 	do_log(SMB_VFS_OP_RECVFILE, (result >= 0), handle,
-	       "%s", fsp->fsp_name);
+	       "%s", tofsp->fsp_name);
 
 	return result;
 }
