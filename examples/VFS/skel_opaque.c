@@ -155,15 +155,15 @@ static SMB_OFF_T skel_lseek(vfs_handle_struct *handle, files_struct *fsp, SMB_OF
 	return vfswrap_lseek(NULL, fsp, offset, whence);
 }
 
-static ssize_t skel_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *hdr,
+static ssize_t skel_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *hdr,
 		                        SMB_OFF_T offset, size_t n)
 {
-	return vfswrap_sendfile(NULL, tofd, fsp, fromfd, hdr, offset, n);
+	return vfswrap_sendfile(NULL, tofd, fromfsp, hdr, offset, n);
 }
 
-static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd, files_struct *fsp, int tofd, SMB_OFF_T offset, size_t n)
+static ssize_t skel_recvfile(vfs_handle_struct *handle, int fromfd, files_struct *tofsp, SMB_OFF_T offset, size_t n)
 {
-	return vfswrap_recvfile(NULL, fromfd, fsp, tofd, offset, n);
+	return vfswrap_recvfile(NULL, fromfd, tofsp, offset, n);
 }
 
 static int skel_rename(vfs_handle_struct *handle,  const char *oldname, const char *newname)
