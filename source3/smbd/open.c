@@ -1761,14 +1761,16 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
            the kernel refuses the operations then the kernel is wrong.
 	   note that GPFS supports it as well - jmcd */
 
-	ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access);
-	if(ret_flock == -1 ){
+	if (fsp->fh->fd != -1) {
+		ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access);
+		if(ret_flock == -1 ){
 
-		TALLOC_FREE(lck);
-		fd_close(fsp);
-		file_free(fsp);
-		
-		return NT_STATUS_SHARING_VIOLATION;
+			TALLOC_FREE(lck);
+			fd_close(fsp);
+			file_free(fsp);
+
+			return NT_STATUS_SHARING_VIOLATION;
+		}
 	}
 
 	/*
