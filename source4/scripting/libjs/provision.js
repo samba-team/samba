@@ -170,7 +170,7 @@ function ldb_erase(info, ldb)
 	/* and the rest */
 	attrs = new Array("dn");
      	var basedn = "";
-     	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
+     	var res = ldb.search("(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
 	var i;
 	if (res.error != 0) {
 		ldb_delete(info, ldb);
@@ -180,7 +180,7 @@ function ldb_erase(info, ldb)
 		ldb.del(res.msgs[i].dn);
 	}
 
-     	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
+     	var res = ldb.search("(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
 	if (res.error != 0 || res.msgs.length != 0) {
 		ldb_delete(info, ldb);
 		return;
@@ -207,8 +207,8 @@ function ldb_erase_partitions(info, ldb, ldapbackend)
 		return;
 	}	
 	for (j=0; j<res.msgs[0].namingContexts.length; j++) {
-		var anything = "(|(objectclass=*)(dn=*))";
-		var attrs = new Array("dn");
+		var anything = "(|(objectclass=*)(distinguishedName=*))";
+		var attrs = new Array("distinguishedName");
 		var basedn = res.msgs[0].namingContexts[j];
 		var k;
 		var previous_remaining = 1;
