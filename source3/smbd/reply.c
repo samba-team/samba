@@ -2654,7 +2654,7 @@ void send_file_readbraw(connection_struct *conn,
 		_smb_setlen(header,nread);
 		header_blob = data_blob_const(header, 4);
 
-		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd,
+		if (SMB_VFS_SENDFILE(smbd_server_fd(), fsp,
 				&header_blob, startpos, nread) == -1) {
 			/* Returning ENOSYS means no data at all was sent.
 			 * Do this as a normal read. */
@@ -3137,7 +3137,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		construct_reply_common((char *)req->inbuf, (char *)headerbuf);
 		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
-		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, smb_maxcnt)) == -1) {
+		if ((nread = SMB_VFS_SENDFILE(smbd_server_fd(), fsp, &header, startpos, smb_maxcnt)) == -1) {
 			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
 			if (errno == ENOSYS) {
 				goto normal_read;
