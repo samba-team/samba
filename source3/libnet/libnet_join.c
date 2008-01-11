@@ -611,7 +611,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname());
+	acct_name = talloc_asprintf(mem_ctx, "%s$", r->in.machine_name);
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
@@ -773,7 +773,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname());
+	acct_name = talloc_asprintf(mem_ctx, "%s$", r->in.machine_name);
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
