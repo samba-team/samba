@@ -575,6 +575,10 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					       NULL,
 					       &r->out.domain_sid);
 
+	if (NT_STATUS_IS_OK(status)) {
+		r->out.domain_is_ad = true;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		status = rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, &lsa_pol,
 						      5,
@@ -833,7 +837,6 @@ done:
 static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 {
 	WERROR werr;
-	bool is_ad = false;
 
 	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
 
@@ -845,10 +848,6 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 		return werr;
 	}
 
-	if (r->out.dns_domain_name) {
-		is_ad = true;
-	}
-
 	werr = libnet_conf_set_global_parameter("security", "domain");
 	W_ERROR_NOT_OK_RETURN(werr);
 
@@ -856,7 +855,7 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 						r->out.netbios_domain_name);
 	W_ERROR_NOT_OK_RETURN(werr);
 
-	if (is_ad) {
+	if (r->out.domain_is_ad) {
 		werr = libnet_conf_set_global_parameter("security", "ads");
 		W_ERROR_NOT_OK_RETURN(werr);
 
