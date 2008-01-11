@@ -306,12 +306,15 @@ typedef struct ldb_message_element {
             return ret
 
         def __eq__(self, other):
-            if (isinstance(other, str) and 
-                len(set(self)) == 1 and 
-                set(self).pop() == other):
+            if (len(self) == 1 and self.get(0) == other):
                 return True
-            return self.__cmp__(other) == 0
-                
+            if isinstance(other, self.__class__):
+                return self.__cmp__(other) == 0
+            o = iter(other)
+            for i in range(len(self)):
+                if self.get(i) != o.next():
+                    return False
+            return True
     }
 } ldb_msg_element;
 
