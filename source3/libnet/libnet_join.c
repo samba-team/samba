@@ -880,7 +880,7 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
-	werr = libnet_conf_delete_parameter(GLOBAL_NAME, "realm");
+	libnet_conf_delete_parameter(GLOBAL_NAME, "realm");
 
 	return werr;
 }
