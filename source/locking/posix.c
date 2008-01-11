@@ -621,7 +621,6 @@ NTSTATUS fd_close_posix(struct files_struct *fsp)
 		 * just close.
 		 */
 		ret = close(fsp->fh->fd);
-		fsp->fh->fd = -1;
 		if (ret == -1) {
 			return map_nt_error_from_unix(errno);
 		}
@@ -636,7 +635,6 @@ NTSTATUS fd_close_posix(struct files_struct *fsp)
 		 */
 
 		add_fd_to_close_entry(fsp);
-		fsp->fh->fd = -1;
 		return NT_STATUS_OK;
 	}
 
@@ -679,8 +677,6 @@ NTSTATUS fd_close_posix(struct files_struct *fsp)
 		errno = saved_errno;
 		ret = -1;
 	} 
-
-	fsp->fh->fd = -1;
 
 	if (ret == -1) {
 		return map_nt_error_from_unix(errno);
