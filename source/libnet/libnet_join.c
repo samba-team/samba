@@ -491,6 +491,50 @@ static bool libnet_join_derive_salting_principal(TALLOC_CTX *mem_ctx,
 	return kerberos_secrets_store_des_salt(salt);
 }
 
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
+						  struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+
+	status = libnet_join_set_machine_spn(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to set machine spn: %s",
+			ads_errstr(status));
+		return status;
+	}
+
+	status = libnet_join_set_os_attributes(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to set machine os attributes: %s",
+			ads_errstr(status));
+		return status;
+	}
+
+	status = libnet_join_set_machine_upn(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to set machine upn: %s",
+			ads_errstr(status));
+		return status;
+	}
+
+	if (!libnet_join_derive_salting_principal(mem_ctx, r)) {
+		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+	}
+
+	if (!libnet_join_create_keytab(mem_ctx, r)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to create kerberos keytab");
+		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+	}
+
+	return ADS_SUCCESS;
+}
 #endif /* WITH_ADS */
 
 /****************************************************************
@@ -1050,40 +1094,13 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	}
 
 #ifdef WITH_ADS
-	ads_status = libnet_join_set_machine_spn(mem_ctx, r);
-	if (!ADS_ERR_OK(ads_status)) {
-		libnet_join_set_error_string(mem_ctx, r,
-			"failed to set machine spn: %s",
-			ads_errstr(ads_status));
-		return WERR_GENERAL_FAILURE;
-	}
-
-	ads_status = libnet_join_set_os_attributes(mem_ctx, r);
-	if (!ADS_ERR_OK(ads_status)) {
-		libnet_join_set_error_string(mem_ctx, r,
-			"failed to set machine os attributes: %s",
-			ads_errstr(ads_status));
-		return WERR_GENERAL_FAILURE;
-	}
-
-	ads_status = libnet_join_set_machine_upn(mem_ctx, r);
-	if (!ADS_ERR_OK(ads_status)) {
-		libnet_join_set_error_string(mem_ctx, r,
-			"failed to set machine upn: %s",
-			ads_errstr(ads_status));
-		return WERR_GENERAL_FAILURE;
-	}
-
-	if (!libnet_join_derive_salting_principal(mem_ctx, r)) {
-		return WERR_GENERAL_FAILURE;
+	if (r->out.domain_is_ad) {
+		ads_status  = libnet_join_post_processing_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(ads_status)) {
+			return WERR_GENERAL_FAILURE;
+		}
 	}
 #endif /* WITH_ADS */
-
-	if (!libnet_join_create_keytab(mem_ctx, r)) {
-		libnet_join_set_error_string(mem_ctx, r,
-			"failed to create kerberos keytab");
-		return WERR_GENERAL_FAILURE;
-	}
 
 	return WERR_OK;
 }
