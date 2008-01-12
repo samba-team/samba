@@ -234,11 +234,13 @@ man_MANS =					\
 	krb5_krbhst_init.3			\
 	krb5_kuserok.3				\
 	krb5_mk_req.3				\
+	krb5_mk_safe.3				\
 	krb5_openlog.3				\
 	krb5_parse_name.3			\
 	krb5_principal.3			\
 	krb5_rcache.3				\
 	krb5_rd_error.3				\
+	krb5_rd_safe.3				\
 	krb5_set_default_realm.3		\
 	krb5_set_password.3			\
 	krb5_storage.3				\
@@ -282,7 +284,8 @@ EXTRA_DIST = \
 	heim_err.et \
 	k524_err.et \
 	$(man_MANS) \
-	version-script.map
+	version-script.map \
+	krb5.moduli
 
 #sysconf_DATA = krb5.moduli
 
