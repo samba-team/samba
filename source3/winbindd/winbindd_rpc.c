@@ -308,7 +308,7 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 {
 	char **domains;
 	char **names;
-	enum lsa_SidType *types;
+	enum lsa_SidType *types = NULL;
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
