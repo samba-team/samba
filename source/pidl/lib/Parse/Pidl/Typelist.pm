@@ -9,7 +9,7 @@ require Exporter;
 @ISA = qw(Exporter);
 @EXPORT_OK = qw(hasType getType mapTypeName scalar_is_reference expandAlias
 			    mapScalarType addType typeIs is_scalar enum_type_fn
-				bitmap_type_fn mapType
+				bitmap_type_fn mapType typeHasBody
 );
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -205,6 +205,19 @@ sub bitmap_type_fn($)
 		return "hyper";
 	}
 	return "uint32";
+}
+
+sub typeHasBody($)
+{
+	sub typeHasBody($);
+	my ($e) = @_;
+
+	if ($e->{TYPE} eq "TYPEDEF") {
+		return 0 unless(defined($e->{DATA}));
+		return typeHasBody($e->{DATA});
+	}
+
+	return defined($e->{ELEMENTS});
 }
 
 sub mapType($$)
