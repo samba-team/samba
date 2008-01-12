@@ -259,7 +259,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	fstring user;
 	int sess_vuid = req->vuid;
 	NTSTATUS ret = NT_STATUS_OK;
-	PAC_DATA *pac_data;
+	PAC_DATA *pac_data = NULL;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
 	auth_serversupplied_info *server_info = NULL;
 	DATA_BLOB session_key = data_blob_null;
@@ -271,7 +271,6 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	PAC_LOGON_INFO *logon_info = NULL;
 
 	ZERO_STRUCT(ticket);
-	ZERO_STRUCT(pac_data);
 	ZERO_STRUCT(ap_rep);
 	ZERO_STRUCT(ap_rep_wrapped);
 	ZERO_STRUCT(response);
