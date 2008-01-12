@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 39;
+use Test::More tests => 40;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -279,3 +279,5 @@ ok(can_contain_deferred({ TYPE => "STRUCT",
 ok(not defined(ParseType({TYPE => "ENUM", NAME => "foo" }, "ref")->{ELEMENTS}));
 # Make sure the elements for a bitmap without body aren't filled in
 ok(not defined(ParseType({TYPE => "BITMAP", NAME => "foo" }, "ref")->{ELEMENTS}));
+# Make sure the elements for a union without body aren't filled in
+ok(not defined(ParseType({TYPE => "UNION", NAME => "foo" }, "ref")->{ELEMENTS}));
