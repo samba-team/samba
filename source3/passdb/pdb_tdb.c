@@ -1352,8 +1352,7 @@ done:
 
 	tdbsam_close();
 
-	if (new_acct)
-		TALLOC_FREE(new_acct);
+	TALLOC_FREE(new_acct);
 	
 	return NT_STATUS_ACCESS_DENIED;	
 }
