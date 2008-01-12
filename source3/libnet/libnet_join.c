@@ -457,7 +457,8 @@ static bool libnet_join_derive_salting_principal(TALLOC_CTX *mem_ctx,
 	status = ads_domain_func_level(r->in.ads, &domain_func);
 	if (!ADS_ERR_OK(status)) {
 		libnet_join_set_error_string(mem_ctx, r,
-			"Failed to determine domain functional level!");
+			"failed to determine domain functional level: %s",
+			ads_errstr(status));
 		return false;
 	}
 
@@ -1081,8 +1082,12 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		r->in.join_flags &= ~WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
 	}
 #endif /* WITH_ADS */
+
 	status = libnet_join_joindomain_rpc(mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to join domain over rpc: %s",
+			nt_errstr(status));
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 			return WERR_SETUP_ALREADY_JOINED;
 		}
