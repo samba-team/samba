@@ -1064,12 +1064,39 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 #ifdef WITH_ADS
 	ADS_STATUS ads_status;
+#endif /* WITH_ADS */
 
+	if (!r->in.dc_name) {
+		struct DS_DOMAIN_CONTROLLER_INFO *info;
+		status = dsgetdcname(mem_ctx,
+				     NULL,
+				     r->in.domain_name,
+				     NULL,
+				     NULL,
+				     DS_DIRECTORY_SERVICE_REQUIRED |
+				     DS_WRITABLE_REQUIRED |
+				     DS_RETURN_DNS_NAME,
+				     &info);
+		if (!NT_STATUS_IS_OK(status)) {
+			libnet_join_set_error_string(mem_ctx, r,
+				"failed to find DC: %s",
+				nt_errstr(status));
+			return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
+		}
+
+		r->in.dc_name = talloc_strdup(mem_ctx,
+					      info->domain_controller_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
+	}
+
+#ifdef WITH_ADS
 	if (r->in.account_ou) {
+
 		ads_status = libnet_join_connect_ads(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
 			return WERR_DEFAULT_JOIN_REQUIRED;
 		}
+
 		ads_status = libnet_join_precreate_machine_acct(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
 			libnet_join_set_error_string(mem_ctx, r,
