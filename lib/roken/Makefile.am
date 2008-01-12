@@ -105,6 +105,7 @@ libroken_la_SOURCES =		\
 EXTRA_libroken_la_SOURCES =	\
 	err.hin			\
 	glob.hin		\
+	fnmatch.hin		\
 	ifaddrs.hin		\
 	vis.hin	
 
@@ -171,7 +172,7 @@ nodist_include_HEADERS = roken.h
 rokenincludedir = $(includedir)/roken
 nodist_rokeninclude_HEADERS = $(XHEADERS)
 
-man_MANS = getarg.3 parse_time.3 rtbl.3
+man_MANS = getarg.3 parse_time.3 rtbl.3 ecalloc.3
 
 SUFFIXES += .hin
 .hin.h:
