@@ -13,7 +13,7 @@ import "security.idl", "misc.idl", "samr.idl";
 ]
 interface drsuapi
 {
-	declare bitmap samr_GroupAttrs;
+	typedef bitmap samr_GroupAttrs samr_GroupAttrs;
 
 	/*****************/
         /* Function 0x00 */

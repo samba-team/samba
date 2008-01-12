@@ -14,7 +14,7 @@ import "security.idl", "winreg.idl";
   helper("librpc/ndr/ndr_spoolss_buf.h")
 ] interface spoolss
 {
-	declare [v1_enum] enum winreg_Type;
+	typedef [v1_enum] enum winreg_Type winreg_Type;
 	typedef struct {
 		uint16 year;
 		uint16 month;
