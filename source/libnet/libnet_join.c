@@ -30,14 +30,14 @@ static void libnet_join_set_error_string(TALLOC_CTX *mem_ctx,
 					 const char *format, ...)
 {
 	va_list args;
-	char *tmp = NULL;
+
+	if (r->out.error_string) {
+		return;
+	}
 
 	va_start(args, format);
-	tmp = talloc_vasprintf(mem_ctx, format, args);
+	r->out.error_string = talloc_vasprintf(mem_ctx, format, args);
 	va_end(args);
-
-	TALLOC_FREE(r->out.error_string);
-	r->out.error_string = tmp;
 }
 
 /****************************************************************
@@ -48,14 +48,14 @@ static void libnet_unjoin_set_error_string(TALLOC_CTX *mem_ctx,
 					   const char *format, ...)
 {
 	va_list args;
-	char *tmp = NULL;
+
+	if (r->out.error_string) {
+		return;
+	}
 
 	va_start(args, format);
-	tmp = talloc_vasprintf(mem_ctx, format, args);
+	r->out.error_string = talloc_vasprintf(mem_ctx, format, args);
 	va_end(args);
-
-	TALLOC_FREE(r->out.error_string);
-	r->out.error_string = tmp;
 }
 
 #ifdef WITH_ADS
