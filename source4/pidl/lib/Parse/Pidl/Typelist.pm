@@ -238,7 +238,7 @@ sub mapTypeName($)
 
 sub LoadIdl($)
 {
-	my $idl = shift;
+	my ($idl) = @_;
 
 	foreach my $x (@{$idl}) {
 		next if $x->{TYPE} ne "INTERFACE";
@@ -252,6 +252,11 @@ sub LoadIdl($)
 		         or $y->{TYPE} eq "BITMAP");
 		}
 	}
+}
+
+sub GenerateTypeLib()
+{
+	return Parse::Pidl::Util::MyDumper(\%types);
 }
 
 RegisterScalars();

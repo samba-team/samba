@@ -17,7 +17,7 @@ pidl - An IDL compiler written in Perl
 
 pidl --help
 
-pidl [--outputdir[=OUTNAME]] [--includedir DIR...] [--parse-idl-tree] [--dump-idl-tree] [--dump-ndr-tree] [--header[=OUTPUT]] [--ejs[=OUTPUT]] [--python[=OUTPUT]] [--swig[=OUTPUT]] [--ndr-parser[=OUTPUT]] [--client] [--server] [--warn-compat] [--quiet] [--verbose] [--template] [--ws-parser[=OUTPUT]] [--diff] [--dump-idl] [--tdr-parser[=OUTPUT]] [--samba3-ndr-client[=OUTPUT]] [--samba3-ndr-server[=OUTPUT]] [<idlfile>.idl]...
+pidl [--outputdir[=OUTNAME]] [--includedir DIR...] [--parse-idl-tree] [--dump-idl-tree] [--dump-ndr-tree] [--header[=OUTPUT]] [--ejs[=OUTPUT]] [--python[=OUTPUT]] [--swig[=OUTPUT]] [--ndr-parser[=OUTPUT]] [--client] [--server] [--warn-compat] [--quiet] [--verbose] [--template] [--ws-parser[=OUTPUT]] [--diff] [--dump-idl] [--tdr-parser[=OUTPUT]] [--samba3-ndr-client[=OUTPUT]] [--samba3-ndr-server[=OUTPUT]] [--typelib=[OUTPUT]] [<idlfile>.idl]...
 
 =head1 DESCRIPTION
 
@@ -87,6 +87,10 @@ parser filename with the extension changed from .c to .h.
 Generate a C file and C header containing TDR parsers. The filename for 
 the parser defaults to tdr_OUTNAME.c. The header filename will be the 
 parser filename with the extension changed from .c to .h.
+
+=item I<--typelib>
+
+Write type information to the specified file.
 
 =item I<--server>
 
@@ -462,6 +466,7 @@ my($opt_samba3_ndr_client);
 my($opt_samba3_ndr_server);
 my($opt_template) = 0;
 my($opt_client);
+my($opt_typelib);
 my($opt_server);
 my($opt_ndr_parser);
 my($opt_tdr_parser);
@@ -498,6 +503,7 @@ Debugging:
  --dump-ndr-tree[=FILE]  dump internal NDR data tree to file [BASENAME.ndr]
  --dump-idl              regenerate IDL file
  --diff                  run diff on original IDL and dumped output
+ --typelib               print type information
 
 Samba 4 output:
  --header[=OUTFILE]      create generic header file [BASENAME.h]
@@ -534,6 +540,7 @@ my $result = GetOptions (
 		'samba3-ndr-server:s' => \$opt_samba3_ndr_server,
 		'header:s' => \$opt_header,
 	    'server:s' => \$opt_server,
+		'typelib:s' => \$opt_typelib,
 	    'tdr-parser:s' => \$opt_tdr_parser,
 	    'template' => \$opt_template,
 	    'ndr-parser:s' => \$opt_ndr_parser,
@@ -709,6 +716,12 @@ sub process_file($)
 		my ($hdr,$prsr) = $generator->Parser($pidl, $tdr_header, $gen_header);
 		FileSave($tdr_parser, $prsr);
 		FileSave($tdr_header, $hdr);
+	}
+
+	if (defined($opt_typelib)) {
+		my $typelib = ($opt_typelib or "$outputdir/$basename.tlb");
+		require Parse::Pidl::Typelist;
+		FileSave($typelib, Parse::Pidl::Typelist::GenerateTypeLib());
 	}
 
 	if ($opt_template) {
