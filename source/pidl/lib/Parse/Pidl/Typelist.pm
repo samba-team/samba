@@ -138,8 +138,7 @@ sub is_scalar($)
 	return 1 if (ref($type) eq "HASH" and $type->{TYPE} eq "SCALAR");
 
 	if (my $dt = getType($type)) {
-		return is_scalar($dt->{DATA}) if ($dt->{TYPE} eq "TYPEDEF" or 
-		                                  $dt->{TYPE} eq "DECLARE");
+		return is_scalar($dt->{DATA}) if ($dt->{TYPE} eq "TYPEDEF");
 		return 1 if ($dt->{TYPE} eq "SCALAR" or $dt->{TYPE} eq "ENUM" or 
 			         $dt->{TYPE} eq "BITMAP");
 	}
@@ -214,7 +213,6 @@ sub mapType($$)
 	my ($t, $n) = @_;
 
 	return mapType($t->{DATA}, $n) if ($t->{TYPE} eq "TYPEDEF");
-	return mapType($t->{DATA}, $n) if ($t->{TYPE} eq "DECLARE");
 	return mapScalarType($n) if ($t->{TYPE} eq "SCALAR");
 	return "enum $n" if ($t->{TYPE} eq "ENUM");
 	return "struct $n" if ($t->{TYPE} eq "STRUCT");
@@ -248,7 +246,6 @@ sub LoadIdl($)
 		foreach my $y (@{$x->{DATA}}) {
 			addType($y) if (
 				$y->{TYPE} eq "TYPEDEF" 
-			     or $y->{TYPE} eq "DECLARE" 
 		 		 or $y->{TYPE} eq "UNION"
 		 		 or $y->{TYPE} eq "STRUCT"
 		         or $y->{TYPE} eq "ENUM"

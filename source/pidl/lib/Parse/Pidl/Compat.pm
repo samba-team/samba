@@ -152,13 +152,6 @@ sub CheckInterface($)
 		$if->{PROPERTIES}->{pointer_default_top} ne "ref") {
 		warning($if, "pointer_default_top() is pidl-specific");
 	}
-
-	foreach my $x (@{$if->{DATA}}) {
-		if ($x->{TYPE} eq "DECLARE") {
-			warning($if, "the declare keyword is pidl-specific");
-			next;
-		}
-	}
 }
 
 sub Check($)

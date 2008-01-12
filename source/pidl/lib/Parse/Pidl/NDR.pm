@@ -287,8 +287,6 @@ sub can_contain_deferred($)
 
 	return 0 if (Parse::Pidl::Typelist::is_scalar($type));
 
-	return 1 if ($type->{TYPE} eq "DECLARE"); # assume the worst
-
 	return can_contain_deferred($type->{DATA}) if ($type->{TYPE} eq "TYPEDEF");
 
 	return 0 unless defined($type->{ELEMENTS});
@@ -362,7 +360,7 @@ sub align_type($)
 
 	my $dt = getType($e);
 
-	if ($dt->{TYPE} eq "TYPEDEF" or $dt->{TYPE} eq "DECLARE") {
+	if ($dt->{TYPE} eq "TYPEDEF") {
 		return align_type($dt->{DATA});
 	} elsif ($dt->{TYPE} eq "ENUM") {
 		return align_type(Parse::Pidl::Typelist::enum_type_fn($dt));
@@ -650,7 +648,6 @@ sub ParseInterface($)
 	my @consts = ();
 	my @functions = ();
 	my @endpoints;
-	my @declares = ();
 	my $opnum = 0;
 	my $version;
 
@@ -667,9 +664,7 @@ sub ParseInterface($)
 	}
 
 	foreach my $d (@{$idl->{DATA}}) {
-		if ($d->{TYPE} eq "DECLARE") {
-			push (@declares, $d);
-		} elsif ($d->{TYPE} eq "FUNCTION") {
+		if ($d->{TYPE} eq "FUNCTION") {
 			push (@functions, ParseFunction($idl, $d, \$opnum));
 		} elsif ($d->{TYPE} eq "CONST") {
 			push (@consts, ParseConst($idl, $d));
@@ -701,7 +696,6 @@ sub ParseInterface($)
 		FUNCTIONS => \@functions,
 		CONSTS => \@consts,
 		TYPES => \@types,
-		DECLARES => \@declares,
 		ENDPOINTS => \@endpoints
 	};
 }
