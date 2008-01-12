@@ -11,7 +11,7 @@ use Exporter;
 @EXPORT_OK = qw(check_null_pointer fn_declare TypeFunctionName);
 
 use strict;
-use Parse::Pidl::Typelist;
+use Parse::Pidl::Typelist qw(typeHasBody);
 use Parse::Pidl::CUtil qw(get_pointer_to get_value_of);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel);
@@ -274,6 +274,7 @@ sub EjsUnionPull($$$)
 sub EjsEnumConstant($$)
 {
 	my ($self, $d) = @_;
+	return unless (defined($d->{ELEMENTS}));
 	my $v = 0;
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		my $el = $e;
@@ -572,6 +573,7 @@ sub EjsEnumPush($$$)
 sub EjsBitmapPush($$$)
 {
 	my ($self, $d, $varname) = @_;
+	return unless (defined($d->{ELEMENTS}));
 	my $type_fn = $d->{BASE_TYPE};
 	# put the bitmap elements in the constants array
 	foreach my $e (@{$d->{ELEMENTS}}) {
@@ -710,6 +712,7 @@ sub EjsInterface($$$)
 	$self->pidl_hdr("\n");
 
 	foreach my $d (@{$interface->{TYPES}}) {
+		next unless (typeHasBody($d));
 		($needed->{TypeFunctionName("ejs_push", $d)}) && $self->EjsTypePushFunction($d, $d->{NAME});
 		($needed->{TypeFunctionName("ejs_pull", $d)}) && $self->EjsTypePullFunction($d, $d->{NAME});
 	}
@@ -823,8 +826,9 @@ sub NeededType($$$)
 
 	NeededType($t->{DATA}, $needed, $req) if ($t->{TYPE} eq "TYPEDEF");
 
-	return if (($t->{TYPE} ne "STRUCT") and 
-			   ($t->{TYPE} ne "UNION"));
+	return unless (($t->{TYPE} eq "STRUCT") or ($t->{TYPE} eq "UNION"));
+
+	return unless(typeHasBody($t));
 
 	foreach (@{$t->{ELEMENTS}}) {
 		next if (has_property($_, "subcontext")); #FIXME: Support subcontexts

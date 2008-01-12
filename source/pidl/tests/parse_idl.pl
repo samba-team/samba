@@ -4,7 +4,7 @@
 # Published under the GNU General Public License
 use strict;
 
-use Test::More tests => 65 * 2 + 5;
+use Test::More tests => 65 * 2 + 6;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util qw(test_errors);
@@ -143,6 +143,13 @@ $x = Parse::Pidl::IDL::parse_string("interface foo { typedef struct {} y; }", "<
 
 is_deeply($x, 
 	 [ { 'FILE' => '<foo>', 'NAME' => 'foo', 'DATA' => [ 
-		 { 'FILE' => '<foo>', 'LINE' => 0, 'NAME' => 'y', 'TYPE' => 'TYPEDEF', DATA => {
-			 TYPE => 'STRUCT', ELEMENTS => [] } } ], 
+		 { 'FILE' => '<foo>', 'LINE' => 0, 'NAME' => 'y', 'TYPE' => 'TYPEDEF', DATA => { TYPE => 'STRUCT', ELEMENTS => [] } } ], 
+		 'TYPE' => 'INTERFACE', 'LINE' => 0 } ]); 
+
+# A typedef of a bitmap with no body
+$x = Parse::Pidl::IDL::parse_string("interface foo { typedef bitmap x y; }", "<foo>");
+
+is_deeply($x, 
+	 [ { 'FILE' => '<foo>', 'NAME' => 'foo', 'DATA' => [ 
+		 { 'FILE' => '<foo>', 'LINE' => 0, 'NAME' => 'y', 'TYPE' => 'TYPEDEF', DATA => { TYPE => 'BITMAP', NAME => 'x' } } ], 
 		 'TYPE' => 'INTERFACE', 'LINE' => 0 } ]); 

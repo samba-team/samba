@@ -2543,7 +2543,8 @@ sub ParseInterface($$$)
 
 	# Typedefs
 	foreach my $d (@{$interface->{TYPES}}) {
-		next unless typeHasBody($d);
+		next unless(typeHasBody($d));
+
 		($needed->{TypeFunctionName("ndr_push", $d)}) && $self->ParseTypePushFunction($d, "r");
 		($needed->{TypeFunctionName("ndr_pull", $d)}) && $self->ParseTypePullFunction($d, "r");
 		($needed->{TypeFunctionName("ndr_print", $d)}) && $self->ParseTypePrintFunction($d, "r");
