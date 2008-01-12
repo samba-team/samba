@@ -2071,7 +2071,7 @@ void smbd_process(void)
 		char *inbuf;
 		size_t inbuf_len;
 		bool encrypted = false;
-		TALLOC_CTX *frame = talloc_stackframe();
+		TALLOC_CTX *frame = talloc_stackframe_pool(8192);
 
 		errno = 0;
 

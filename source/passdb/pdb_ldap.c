@@ -1973,7 +1973,7 @@ static NTSTATUS ldapsam_rename_sam_account(struct pdb_methods *my_methods,
 
 	/* rename the posix user */
 	rename_script = SMB_STRDUP(lp_renameuser_script());
-	if (rename_script) {
+	if (rename_script == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

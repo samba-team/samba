@@ -592,7 +592,8 @@ void reply_tcon_and_X(struct smb_request *req)
 	}
 
 	if (global_encrypted_passwords_negotiated) {
-		password = data_blob(smb_buf(req->inbuf),passlen);
+		password = data_blob_talloc(talloc_tos(), smb_buf(req->inbuf),
+					    passlen);
 		if (lp_security() == SEC_SHARE) {
 			/*
 			 * Security = share always has a pad byte
@@ -603,7 +604,8 @@ void reply_tcon_and_X(struct smb_request *req)
 			p = smb_buf(req->inbuf) + passlen;
 		}
 	} else {
-		password = data_blob(smb_buf(req->inbuf),passlen+1);
+		password = data_blob_talloc(talloc_tos(), smb_buf(req->inbuf),
+					    passlen+1);
 		/* Ensure correct termination */
 		password.data[passlen]=0;
 		p = smb_buf(req->inbuf) + passlen + 1;
@@ -2652,7 +2654,7 @@ void send_file_readbraw(connection_struct *conn,
 		_smb_setlen(header,nread);
 		header_blob = data_blob_const(header, 4);
 
-		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd,
+		if (SMB_VFS_SENDFILE(smbd_server_fd(), fsp,
 				&header_blob, startpos, nread) == -1) {
 			/* Returning ENOSYS means no data at all was sent.
 			 * Do this as a normal read. */
@@ -3135,7 +3137,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		construct_reply_common((char *)req->inbuf, (char *)headerbuf);
 		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
-		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, smb_maxcnt)) == -1) {
+		if ((nread = SMB_VFS_SENDFILE(smbd_server_fd(), fsp, &header, startpos, smb_maxcnt)) == -1) {
 			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
 			if (errno == ENOSYS) {
 				goto normal_read;
@@ -5508,7 +5510,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
 
 	/*
 	 * We have the file open ourselves, so not being able to get the

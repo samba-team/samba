@@ -4624,7 +4624,7 @@ static int do_message_op(void)
 	set_global_myworkgroup( "" );
 	set_global_myname( "" );
 
-        /* set default debug level to 0 regardless of what smb.conf sets */
+        /* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbclient", true );
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
 	if ((dbf = x_fdup(x_stderr))) {

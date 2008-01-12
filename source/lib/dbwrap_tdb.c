@@ -160,8 +160,7 @@ static int db_tdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 
 	state.mem_ctx = mem_ctx;
 	state.result = 0;
-	state.data.dptr = NULL;
-	state.data.dsize = 0;
+	state.data = tdb_null;
 
 	tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetch_parse, &state);
 

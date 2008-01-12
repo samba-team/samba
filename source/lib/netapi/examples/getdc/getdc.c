@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 
 	status = NetGetDCName(argv[1], argv[2], &buffer);
 	if (status != 0) {
-		printf("GetDcName failed with: %s\n", libnetapi_errstr(ctx, status));
+		printf("GetDcName failed with: %s\n", libnetapi_errstr(status));
 	} else {
 		printf("%s\n", (char *)buffer);
 	}

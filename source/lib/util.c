@@ -897,67 +897,6 @@ int set_blocking(int fd, bool set)
 #undef FLAG_TO_SET
 }
 
-/****************************************************************************
- Transfer some data between two fd's.
-****************************************************************************/
-
-#ifndef TRANSFER_BUF_SIZE
-#define TRANSFER_BUF_SIZE 65536
-#endif
-
-ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)(int, void *, size_t),
-						ssize_t (*write_fn)(int, const void *, size_t))
-{
-	char *buf;
-	size_t total = 0;
-	ssize_t read_ret;
-	ssize_t write_ret;
-	size_t num_to_read_thistime;
-	size_t num_written = 0;
-
-	if ((buf = SMB_MALLOC_ARRAY(char, TRANSFER_BUF_SIZE)) == NULL)
-		return -1;
-
-	while (total < n) {
-		num_to_read_thistime = MIN((n - total), TRANSFER_BUF_SIZE);
-
-		read_ret = (*read_fn)(infd, buf, num_to_read_thistime);
-		if (read_ret == -1) {
-			DEBUG(0,("transfer_file_internal: read failure. Error = %s\n", strerror(errno) ));
-			SAFE_FREE(buf);
-			return -1;
-		}
-		if (read_ret == 0)
-			break;
-
-		num_written = 0;
- 
-		while (num_written < read_ret) {
-			write_ret = (*write_fn)(outfd,buf + num_written, read_ret - num_written);
- 
-			if (write_ret == -1) {
-				DEBUG(0,("transfer_file_internal: write failure. Error = %s\n", strerror(errno) ));
-				SAFE_FREE(buf);
-				return -1;
-			}
-			if (write_ret == 0)
-				return (ssize_t)total;
- 
-			num_written += (size_t)write_ret;
-		}
-
-		total += (size_t)read_ret;
-	}
-
-	SAFE_FREE(buf);
-	return (ssize_t)total;		
-}
-
-SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n)
-{
-	return (SMB_OFF_T)transfer_file_internal(infd, outfd, (size_t)n, sys_read, sys_write);
-}
-
 /*******************************************************************
  Sleep for a specified number of milliseconds.
 ********************************************************************/

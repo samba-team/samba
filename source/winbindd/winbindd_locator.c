@@ -48,7 +48,7 @@ void winbindd_dsgetdcname(struct winbindd_cli_state *state)
 	state->request.domain_name
 		[sizeof(state->request.domain_name)-1] = '\0';
 
-	DEBUG(3, ("[%5lu]: DsGetDcName for %s\n", (unsigned long)state->pid,
+	DEBUG(3, ("[%5lu]: dsgetdcname for %s\n", (unsigned long)state->pid,
 		  state->request.domain_name));
 
 	sendto_child(state, locator_child());
@@ -64,10 +64,10 @@ static enum winbindd_result dual_dsgetdcname(struct winbindd_domain *domain,
 	state->request.domain_name
 		[sizeof(state->request.domain_name)-1] = '\0';
 
-	DEBUG(3, ("[%5lu]: DsGetDcName for %s\n", (unsigned long)state->pid,
+	DEBUG(3, ("[%5lu]: dsgetdcname for %s\n", (unsigned long)state->pid,
 		  state->request.domain_name));
 
-	result = DsGetDcName(state->mem_ctx, NULL, state->request.domain_name,
+	result = dsgetdcname(state->mem_ctx, NULL, state->request.domain_name,
 			     NULL, NULL, state->request.flags, &info);
 
 	if (!NT_STATUS_IS_OK(result)) {

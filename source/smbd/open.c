@@ -125,7 +125,7 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 	char *saved_dir = NULL;
 	SMB_STRUCT_STAT sbuf;
 	SMB_STRUCT_STAT parent_st;
-	TALLOC_CTX *ctx = talloc_stackframe();
+	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
@@ -135,7 +135,6 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		DEBUG(0,("change_dir_owner_to_parent: failed to stat parent "
 			 "directory %s. Error was %s\n",
 			 inherit_from_dir, strerror(errno) ));
-		TALLOC_FREE(ctx);
 		return status;
 	}
 
@@ -152,7 +151,6 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		DEBUG(0,("change_dir_owner_to_parent: failed to get "
 			 "current working directory. Error was %s\n",
 			 strerror(errno)));
-		TALLOC_FREE(ctx);
 		return status;
 	}
 
@@ -202,7 +200,6 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 
  out:
 
-	TALLOC_FREE(ctx);
 	vfs_ChDir(conn,saved_dir);
 	return status;
 }
@@ -1224,7 +1221,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		request_time = pml->request_time;
 
 		/* Remove the deferred open entry under lock. */
-		lck = get_share_mode_lock(NULL, state->id, NULL, NULL);
+		lck = get_share_mode_lock(talloc_tos(), state->id, NULL, NULL);
 		if (lck == NULL) {
 			DEBUG(0, ("could not get share mode lock\n"));
 		} else {
@@ -1454,7 +1451,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (file_existed) {
 		id = vfs_file_id_from_sbuf(conn, psbuf);
 
-		lck = get_share_mode_lock(NULL, id,
+		lck = get_share_mode_lock(talloc_tos(), id,
 					  conn->connectpath,
 					  fname);
 
@@ -1681,7 +1678,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		id = fsp->file_id;
 
-		lck = get_share_mode_lock(NULL, id,
+		lck = get_share_mode_lock(talloc_tos(), id,
 					  conn->connectpath,
 					  fname);
 
@@ -2215,7 +2212,7 @@ NTSTATUS open_directory(connection_struct *conn,
 
 	string_set(&fsp->fsp_name,fname);
 
-	lck = get_share_mode_lock(NULL, fsp->file_id,
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
 				  conn->connectpath,
 				  fname);
 
@@ -2707,7 +2704,6 @@ NTSTATUS create_file(connection_struct *conn,
 		     int *pinfo,
 		     SMB_STRUCT_STAT *psbuf)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
 	struct case_semantics_state *case_state = NULL;
 	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
@@ -2845,6 +2841,8 @@ NTSTATUS create_file(connection_struct *conn,
 				goto fail;
 			}
 
+			SET_STAT_INVALID(sbuf);
+
 			goto done;
 		}
 	}
@@ -2916,7 +2914,6 @@ NTSTATUS create_file(connection_struct *conn,
 	if (psbuf != NULL) {
 		*psbuf = sbuf;
 	}
-	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 
  fail:
@@ -2926,6 +2923,5 @@ NTSTATUS create_file(connection_struct *conn,
 		close_file(fsp, ERROR_CLOSE);
 		fsp = NULL;
 	}
-	TALLOC_FREE(frame);
 	return status;
 }

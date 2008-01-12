@@ -30,14 +30,14 @@ static void libnet_join_set_error_string(TALLOC_CTX *mem_ctx,
 					 const char *format, ...)
 {
 	va_list args;
-	char *tmp = NULL;
+
+	if (r->out.error_string) {
+		return;
+	}
 
 	va_start(args, format);
-	tmp = talloc_vasprintf(mem_ctx, format, args);
+	r->out.error_string = talloc_vasprintf(mem_ctx, format, args);
 	va_end(args);
-
-	TALLOC_FREE(r->out.error_string);
-	r->out.error_string = tmp;
 }
 
 /****************************************************************
@@ -48,17 +48,17 @@ static void libnet_unjoin_set_error_string(TALLOC_CTX *mem_ctx,
 					   const char *format, ...)
 {
 	va_list args;
-	char *tmp = NULL;
+
+	if (r->out.error_string) {
+		return;
+	}
 
 	va_start(args, format);
-	tmp = talloc_vasprintf(mem_ctx, format, args);
+	r->out.error_string = talloc_vasprintf(mem_ctx, format, args);
 	va_end(args);
-
-	TALLOC_FREE(r->out.error_string);
-	r->out.error_string = tmp;
 }
 
-#ifdef HAVE_LDAP
+#ifdef WITH_ADS
 
 /****************************************************************
 ****************************************************************/
@@ -120,7 +120,7 @@ static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
 				    &r->in.ads);
 	if (!ADS_ERR_OK(status)) {
 		libnet_join_set_error_string(mem_ctx, r,
-			"failed to connect to AD: %s\n",
+			"failed to connect to AD: %s",
 			ads_errstr(status));
 	}
 
@@ -147,7 +147,7 @@ static ADS_STATUS libnet_unjoin_connect_ads(TALLOC_CTX *mem_ctx,
 				    &r->in.ads);
 	if (!ADS_ERR_OK(status)) {
 		libnet_unjoin_set_error_string(mem_ctx, r,
-			"failed to connect to AD: %s\n",
+			"failed to connect to AD: %s",
 			ads_errstr(status));
 	}
 
@@ -202,7 +202,15 @@ static ADS_STATUS libnet_unjoin_remove_machine_acct(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	return ads_leave_realm(r->in.ads, r->in.machine_name);
+	status = ads_leave_realm(r->in.ads, r->in.machine_name);
+	if (!ADS_ERR_OK(status)) {
+		libnet_unjoin_set_error_string(mem_ctx, r,
+			"failed to leave realm: %s",
+			ads_errstr(status));
+		return status;
+	}
+
+	return ADS_SUCCESS;
 }
 
 /****************************************************************
@@ -418,8 +426,6 @@ static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
 	return ads_gen_mod(r->in.ads, r->out.dn, mods);
 }
 
-#endif
-
 /****************************************************************
 ****************************************************************/
 
@@ -430,13 +436,107 @@ static bool libnet_join_create_keytab(TALLOC_CTX *mem_ctx,
 		return true;
 	}
 
-#ifdef WITH_KRB5
 	if (!ads_keytab_create_default(r->in.ads)) {
 		return false;
 	}
-#endif
+
 	return true;
 }
+
+/****************************************************************
+****************************************************************/
+
+static bool libnet_join_derive_salting_principal(TALLOC_CTX *mem_ctx,
+						 struct libnet_JoinCtx *r)
+{
+	uint32_t domain_func;
+	ADS_STATUS status;
+	const char *salt = NULL;
+	char *std_salt = NULL;
+
+	status = ads_domain_func_level(r->in.ads, &domain_func);
+	if (!ADS_ERR_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to determine domain functional level: %s",
+			ads_errstr(status));
+		return false;
+	}
+
+	std_salt = kerberos_standard_des_salt();
+	if (!std_salt) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to obtain standard DES salt");
+		return false;
+	}
+
+	salt = talloc_strdup(mem_ctx, std_salt);
+	if (!salt) {
+		return false;
+	}
+
+	SAFE_FREE(std_salt);
+
+	if (domain_func == DS_DOMAIN_FUNCTION_2000) {
+		char *upn;
+
+		upn = ads_get_upn(r->in.ads, mem_ctx,
+				  r->in.machine_name);
+		if (upn) {
+			salt = talloc_strdup(mem_ctx, upn);
+			if (!salt) {
+				return false;
+			}
+		}
+	}
+
+	return kerberos_secrets_store_des_salt(salt);
+}
+
+/****************************************************************
+****************************************************************/
+
+static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
+						  struct libnet_JoinCtx *r)
+{
+	ADS_STATUS status;
+
+	status = libnet_join_set_machine_spn(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to set machine spn: %s",
+			ads_errstr(status));
+		return status;
+	}
+
+	status = libnet_join_set_os_attributes(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to set machine os attributes: %s",
+			ads_errstr(status));
+		return status;
+	}
+
+	status = libnet_join_set_machine_upn(mem_ctx, r);
+	if (!ADS_ERR_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to set machine upn: %s",
+			ads_errstr(status));
+		return status;
+	}
+
+	if (!libnet_join_derive_salting_principal(mem_ctx, r)) {
+		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+	}
+
+	if (!libnet_join_create_keytab(mem_ctx, r)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to create kerberos keytab");
+		return ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
+	}
+
+	return ADS_SUCCESS;
+}
+#endif /* WITH_ADS */
 
 /****************************************************************
 ****************************************************************/
@@ -524,6 +624,10 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					       NULL,
 					       &r->out.domain_sid);
 
+	if (NT_STATUS_IS_OK(status)) {
+		r->out.domain_is_ad = true;
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		status = rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, &lsa_pol,
 						      5,
@@ -556,7 +660,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname());
+	acct_name = talloc_asprintf(mem_ctx, "%s$", r->in.machine_name);
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
@@ -567,7 +671,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 						     0xe005000b, &user_pol,
 						     &user_rid);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED)) {
+			if (!(r->in.join_flags &
+			      WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED)) {
 				goto done;
 			}
 		}
@@ -615,14 +720,13 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	memcpy(&pwbuf[516], md5buffer, sizeof(md5buffer));
 
 	acb_info |= ACB_PWNOEXP;
-#if 0
-	if ( dom_type == ND_TYPE_AD ) {
+	if (r->out.domain_is_ad) {
 #if !defined(ENCTYPE_ARCFOUR_HMAC)
 		acb_info |= ACB_USE_DES_KEY_ONLY;
 #endif
 		;;
 	}
-#endif
+
 	ZERO_STRUCT(ctr);
 	ZERO_STRUCT(p25);
 
@@ -718,7 +822,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname());
+	acct_name = talloc_asprintf(mem_ctx, "%s$", r->in.machine_name);
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
@@ -782,7 +886,6 @@ done:
 static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 {
 	WERROR werr;
-	bool is_ad = false;
 
 	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
 
@@ -794,10 +897,6 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 		return werr;
 	}
 
-	if (r->out.dns_domain_name) {
-		is_ad = true;
-	}
-
 	werr = libnet_conf_set_global_parameter("security", "domain");
 	W_ERROR_NOT_OK_RETURN(werr);
 
@@ -805,12 +904,12 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 						r->out.netbios_domain_name);
 	W_ERROR_NOT_OK_RETURN(werr);
 
-	if (is_ad) {
+	if (r->out.domain_is_ad) {
 		werr = libnet_conf_set_global_parameter("security", "ads");
 		W_ERROR_NOT_OK_RETURN(werr);
 
 		werr = libnet_conf_set_global_parameter("realm",
-						       r->out.dns_domain_name);
+							r->out.dns_domain_name);
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
@@ -830,7 +929,7 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
-	werr = libnet_conf_delete_parameter(GLOBAL_NAME, "realm");
+	libnet_conf_delete_parameter(GLOBAL_NAME, "realm");
 
 	return werr;
 }
@@ -964,28 +1063,59 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				struct libnet_JoinCtx *r)
 {
 	NTSTATUS status;
-#ifdef HAVE_LDAP
+#ifdef WITH_ADS
 	ADS_STATUS ads_status;
+#endif /* WITH_ADS */
 
+	if (!r->in.dc_name) {
+		struct DS_DOMAIN_CONTROLLER_INFO *info;
+		status = dsgetdcname(mem_ctx,
+				     NULL,
+				     r->in.domain_name,
+				     NULL,
+				     NULL,
+				     DS_DIRECTORY_SERVICE_REQUIRED |
+				     DS_WRITABLE_REQUIRED |
+				     DS_RETURN_DNS_NAME,
+				     &info);
+		if (!NT_STATUS_IS_OK(status)) {
+			libnet_join_set_error_string(mem_ctx, r,
+				"failed to find DC: %s",
+				nt_errstr(status));
+			return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
+		}
+
+		r->in.dc_name = talloc_strdup(mem_ctx,
+					      info->domain_controller_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
+	}
+
+#ifdef WITH_ADS
 	if (r->in.account_ou) {
+
 		ads_status = libnet_join_connect_ads(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
-			return WERR_GENERAL_FAILURE;
+			return WERR_DEFAULT_JOIN_REQUIRED;
 		}
+
 		ads_status = libnet_join_precreate_machine_acct(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
 			libnet_join_set_error_string(mem_ctx, r,
-				"failed to precreate account in ou %s: %s\n",
+				"failed to precreate account in ou %s: %s",
 				r->in.account_ou,
 				ads_errstr(ads_status));
-			return WERR_GENERAL_FAILURE;
+			return WERR_DEFAULT_JOIN_REQUIRED;
 		}
 
 		r->in.join_flags &= ~WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
 	}
-#endif
+#endif /* WITH_ADS */
+
 	status = libnet_join_joindomain_rpc(mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to join domain over rpc: %s",
+			nt_errstr(status));
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 			return WERR_SETUP_ALREADY_JOINED;
 		}
@@ -996,36 +1126,14 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		return WERR_SETUP_NOT_JOINED;
 	}
 
-#ifdef HAVE_LDAP
-	ads_status = libnet_join_set_machine_spn(mem_ctx, r);
-	if (!ADS_ERR_OK(ads_status)) {
-		libnet_join_set_error_string(mem_ctx, r,
-			"failed to set machine spn: %s\n",
-			ads_errstr(ads_status));
-		return WERR_GENERAL_FAILURE;
+#ifdef WITH_ADS
+	if (r->out.domain_is_ad) {
+		ads_status  = libnet_join_post_processing_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(ads_status)) {
+			return WERR_GENERAL_FAILURE;
+		}
 	}
-
-	ads_status = libnet_join_set_os_attributes(mem_ctx, r);
-	if (!ADS_ERR_OK(ads_status)) {
-		libnet_join_set_error_string(mem_ctx, r,
-			"failed to set machine os attributes: %s\n",
-			ads_errstr(ads_status));
-		return WERR_GENERAL_FAILURE;
-	}
-
-	ads_status = libnet_join_set_machine_upn(mem_ctx, r);
-	if (!ADS_ERR_OK(ads_status)) {
-		libnet_join_set_error_string(mem_ctx, r,
-			"failed to set machine upn: %s\n",
-			ads_errstr(ads_status));
-		return WERR_GENERAL_FAILURE;
-	}
-#endif
-	if (!libnet_join_create_keytab(mem_ctx, r)) {
-		libnet_join_set_error_string(mem_ctx, r,
-			"failed to create kerberos keytab\n");
-		return WERR_GENERAL_FAILURE;
-	}
+#endif /* WITH_ADS */
 
 	return WERR_OK;
 }
@@ -1076,7 +1184,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 	status = libnet_join_unjoindomain_rpc(mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_unjoin_set_error_string(mem_ctx, r,
-			"failed to unjoin domain: %s\n",
+			"failed to unjoin domain: %s",
 			nt_errstr(status));
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 			return WERR_SETUP_NOT_JOINED;
@@ -1084,18 +1192,19 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		return ntstatus_to_werror(status);
 	}
 
-#ifdef HAVE_LDAP
+#ifdef WITH_ADS
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) {
 		ADS_STATUS ads_status;
 		libnet_unjoin_connect_ads(mem_ctx, r);
 		ads_status = libnet_unjoin_remove_machine_acct(mem_ctx, r);
 		if (!ADS_ERR_OK(ads_status)) {
 			libnet_unjoin_set_error_string(mem_ctx, r,
-				"failed to remove machine account from AD: %s\n",
+				"failed to remove machine account from AD: %s",
 				ads_errstr(ads_status));
 		}
 	}
-#endif
+#endif /* WITH_ADS */
+
 	libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
 
 	return WERR_OK;

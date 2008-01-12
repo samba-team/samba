@@ -401,7 +401,7 @@ static int net_lookup_dsgetdcname(int argc, const char **argv)
 		site_name = sitename_fetch(domain_name);
 	}
 
-	status = DsGetDcName(mem_ctx, NULL, domain_name, NULL, site_name,
+	status = dsgetdcname(mem_ctx, NULL, domain_name, NULL, site_name,
 			     flags, &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("failed with: %s\n", nt_errstr(status));

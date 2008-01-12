@@ -389,8 +389,8 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
 
 	while (total < byte_count)
 	{
-		ssize_t ret = SMB_VFS_READ(fsp, fsp->fh->fd, buf + total,
-					byte_count - total);
+		ssize_t ret = SMB_VFS_READ(fsp, buf + total,
+					   byte_count - total);
 
 		if (ret == 0) return total;
 		if (ret == -1) {
@@ -445,13 +445,12 @@ ssize_t vfs_write_data(struct smb_request *req,
 		req->unread_bytes = 0;
 		return SMB_VFS_RECVFILE(smbd_server_fd(),
 					fsp,
-					fsp->fh->fd,
 					(SMB_OFF_T)-1,
 					N);
 	}
 
 	while (total < N) {
-		ret = SMB_VFS_WRITE(fsp,fsp->fh->fd,buffer + total,N - total);
+		ret = SMB_VFS_WRITE(fsp, buffer + total, N - total);
 
 		if (ret == -1)
 			return -1;
@@ -479,7 +478,6 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 		req->unread_bytes = 0;
 		return SMB_VFS_RECVFILE(smbd_server_fd(),
 					fsp,
-					fsp->fh->fd,
 					offset,
 					N);
 	}
@@ -662,25 +660,24 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
  Transfer some data (n bytes) between two file_struct's.
 ****************************************************************************/
 
-static files_struct *in_fsp;
-static files_struct *out_fsp;
-
-static ssize_t read_fn(int fd, void *buf, size_t len)
+static ssize_t vfs_read_fn(void *file, void *buf, size_t len)
 {
-	return SMB_VFS_READ(in_fsp, fd, buf, len);
+	struct files_struct *fsp = (struct files_struct *)file;
+
+	return SMB_VFS_READ(fsp, buf, len);
 }
 
-static ssize_t write_fn(int fd, const void *buf, size_t len)
+static ssize_t vfs_write_fn(void *file, const void *buf, size_t len)
 {
-	return SMB_VFS_WRITE(out_fsp, fd, buf, len);
+	struct files_struct *fsp = (struct files_struct *)file;
+
+	return SMB_VFS_WRITE(fsp, buf, len);
 }
 
 SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
 {
-	in_fsp = in;
-	out_fsp = out;
-
-	return transfer_file_internal(in_fsp->fh->fd, out_fsp->fh->fd, n, read_fn, write_fn);
+	return transfer_file_internal((void *)in, (void *)out, n,
+				      vfs_read_fn, vfs_write_fn);
 }
 
 /*******************************************************************
@@ -869,14 +866,13 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				return map_nt_error_from_unix(errno);
 			case ENOENT:
 			{
-				TALLOC_CTX *tmp_ctx = talloc_stackframe();
+				TALLOC_CTX *ctx = talloc_tos();
 				char *tmp_fname = NULL;
 				char *last_component = NULL;
 				/* Last component didn't exist. Remove it and try and canonicalise the directory. */
 
-				tmp_fname = talloc_strdup(tmp_ctx, fname);
+				tmp_fname = talloc_strdup(ctx, fname);
 				if (!tmp_fname) {
-					TALLOC_FREE(tmp_ctx);
 					return NT_STATUS_NO_MEMORY;
 				}
 				p = strrchr_m(tmp_fname, '/');
@@ -885,10 +881,9 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 					last_component = p;
 				} else {
 					last_component = tmp_fname;
-					tmp_fname = talloc_strdup(tmp_ctx,
+					tmp_fname = talloc_strdup(ctx,
 							".");
 					if (!tmp_fname) {
-						TALLOC_FREE(tmp_ctx);
 						return NT_STATUS_NO_MEMORY;
 					}
 				}
@@ -900,15 +895,13 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 #endif
 				if (!resolved_name) {
 					DEBUG(3,("reduce_name: couldn't get realpath for %s\n", fname));
-					TALLOC_FREE(tmp_ctx);
 					return map_nt_error_from_unix(errno);
 				}
-				tmp_fname = talloc_asprintf(tmp_ctx,
+				tmp_fname = talloc_asprintf(ctx,
 						"%s/%s",
 						resolved_name,
 						last_component);
 				if (!tmp_fname) {
-					TALLOC_FREE(tmp_ctx);
 					return NT_STATUS_NO_MEMORY;
 				}
 #ifdef REALPATH_TAKES_NULL
@@ -922,7 +915,6 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				safe_strcpy(resolved_name_buf, tmp_fname, PATH_MAX);
 				resolved_name = resolved_name_buf;
 #endif
-				TALLOC_FREE(tmp_ctx);
 				break;
 			}
 			default:
