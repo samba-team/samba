@@ -501,8 +501,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 		DEBUG(3,("ads_verify_ticket: did not retrieve auth data. continuing without PAC\n"));
 	}
 
-	if (got_auth_data && pac_data != NULL) {
-
+	if (got_auth_data) {
 		pac_ret = decode_pac_data(mem_ctx, &auth_data, context, keyblock, client_principal, authtime, pac_data);
 		if (!NT_STATUS_IS_OK(pac_ret)) {
 			DEBUG(3,("ads_verify_ticket: failed to decode PAC_DATA: %s\n", nt_errstr(pac_ret)));
