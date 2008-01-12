@@ -43,6 +43,9 @@ CLEANFILES= \
 	slapd.pid
 
 EXTRA_DIST = \
+	samba.schema \
+	slapd.conf \
+	slapd-stop \
 	check-ldap.in \
 	init.ldif \
 	krb5.conf.in \
