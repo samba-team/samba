@@ -12,7 +12,7 @@ require Exporter;
 @EXPORT_OK = qw(check_null_pointer GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv NeededFunction NeededElement NeededType $res NeededInterface TypeFunctionName ParseElementPrint);
 
 use strict;
-use Parse::Pidl::Typelist qw(hasType getType mapTypeName);
+use Parse::Pidl::Typelist qw(hasType getType mapTypeName typeHasBody);
 use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid);
 use Parse::Pidl::CUtil qw(get_pointer_to get_value_of);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
@@ -2543,6 +2543,7 @@ sub ParseInterface($$$)
 
 	# Typedefs
 	foreach my $d (@{$interface->{TYPES}}) {
+		next unless typeHasBody($d);
 		($needed->{TypeFunctionName("ndr_push", $d)}) && $self->ParseTypePushFunction($d, "r");
 		($needed->{TypeFunctionName("ndr_pull", $d)}) && $self->ParseTypePullFunction($d, "r");
 		($needed->{TypeFunctionName("ndr_print", $d)}) && $self->ParseTypePrintFunction($d, "r");
