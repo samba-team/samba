@@ -42,7 +42,8 @@ EXTRA_DIST = \
 	$(man_MANS) \
 	heimdal-build.sh \
 	krb5-config.in \
-	heimdal-gssapi.pc.in
+	heimdal-gssapi.pc.in \
+	kdc-log-analyze.pl
 
 CLEANFILES = \
 	krb5-config \
