@@ -163,7 +163,8 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 					enum file_close_type close_type)
 {
 	connection_struct *conn = fsp->conn;
-	bool delete_file = False;
+	bool delete_file = false;
+	bool changed_user = false;
 	struct share_mode_lock *lck;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status = NT_STATUS_OK;
@@ -176,7 +177,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_remove_share_mode: Could not get share mode "
@@ -246,18 +247,27 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	DEBUG(5,("close_remove_share_mode: file %s. Delete on close was set "
 		 "- deleting file.\n", fsp->fsp_name));
 
-	/* Become the user who requested the delete. */
+	if (!unix_token_equal(lck->delete_token, &current_user.ut)) {
+		/* Become the user who requested the delete. */
 
-	if (!push_sec_ctx()) {
-		smb_panic("close_remove_share_mode: file %s. failed to push "
-			  "sec_ctx.\n");
+		DEBUG(5,("close_remove_share_mode: file %s. "
+			"Change user to uid %u\n",
+			fsp->fsp_name,
+			(unsigned int)lck->delete_token->uid));
+
+		if (!push_sec_ctx()) {
+			smb_panic("close_remove_share_mode: file %s. failed to push "
+				  "sec_ctx.\n");
+		}
+
+		set_sec_ctx(lck->delete_token->uid,
+			    lck->delete_token->gid,
+			    lck->delete_token->ngroups,
+			    lck->delete_token->groups,
+			    NULL);
+
+		changed_user = true;
 	}
-
-	set_sec_ctx(lck->delete_token->uid,
-		    lck->delete_token->gid,
-		    lck->delete_token->ngroups,
-		    lck->delete_token->groups,
-		    NULL);
 
 	/* We can only delete the file if the name we have is still valid and
 	   hasn't been renamed. */
@@ -326,9 +336,11 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
  done:
 
-	/* unbecome user. */
-	pop_sec_ctx();
-	
+	if (changed_user) {
+		/* unbecome user. */
+		pop_sec_ctx();
+	}
+
 	TALLOC_FREE(lck);
 	return status;
 }
@@ -441,7 +453,7 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
 	 * reference to a directory also.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_directory: Could not get share mode lock for %s\n", fsp->fsp_name));

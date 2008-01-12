@@ -167,7 +167,7 @@ static void enum_file_fn( const struct share_mode_entry *e,
 	ZERO_STRUCT( fsp );
 	fsp.file_id = e->id;
 
-	if ( (brl = brl_get_locks(NULL,&fsp)) != NULL ) {
+	if ( (brl = brl_get_locks(talloc_tos(), &fsp)) != NULL ) {
 		num_locks = brl->num_locks;
 		TALLOC_FREE(brl);
 	}

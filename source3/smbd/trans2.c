@@ -297,9 +297,8 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
 	if (!lp_ea_support(SNUM(conn))) {
 		return 0;
 	}
-	mem_ctx = talloc_init("estimate_ea_size");
+	mem_ctx = talloc_tos();
 	(void)get_ea_list_from_file(mem_ctx, conn, fsp, fname, &total_ea_len);
-	talloc_destroy(mem_ctx);
 	return total_ea_len;
 }
 
@@ -310,7 +309,7 @@ static unsigned int estimate_ea_size(connection_struct *conn, files_struct *fsp,
 static void canonicalize_ea_name(connection_struct *conn, files_struct *fsp, const char *fname, fstring unix_ea_name)
 {
 	size_t total_ea_len;
-	TALLOC_CTX *mem_ctx = talloc_init("canonicalize_ea_name");
+	TALLOC_CTX *mem_ctx = talloc_tos();
 	struct ea_list *ea_list = get_ea_list_from_file(mem_ctx, conn, fsp, fname, &total_ea_len);
 
 	for (; ea_list; ea_list = ea_list->next) {
@@ -321,7 +320,6 @@ static void canonicalize_ea_name(connection_struct *conn, files_struct *fsp, con
 			break;
 		}
 	}
-	talloc_destroy(mem_ctx);
 }
 
 /****************************************************************************
@@ -1955,9 +1953,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			out_of_space = True;
 			finished = False;
 		} else {
-			TALLOC_CTX *sub_ctx = talloc_stackframe();
-
-			finished = !get_lanman2_dir_entry(sub_ctx,
+			finished = !get_lanman2_dir_entry(ctx,
 					conn,
 					req->flags2,
 					mask,dirtype,info_level,
@@ -1966,8 +1962,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 					space_remaining, &out_of_space,
 					&got_exact_match,
 					&last_entry_off, ea_list);
-
-			TALLOC_FREE(sub_ctx);
 		}
 
 		if (finished && out_of_space)
@@ -2303,9 +2297,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			out_of_space = True;
 			finished = False;
 		} else {
-			TALLOC_CTX *sub_ctx = talloc_stackframe();
-
-			finished = !get_lanman2_dir_entry(sub_ctx,
+			finished = !get_lanman2_dir_entry(ctx,
 						conn,
 						req->flags2,
 						mask,dirtype,info_level,
@@ -2314,8 +2306,6 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 						space_remaining, &out_of_space,
 						&got_exact_match,
 						&last_entry_off, ea_list);
-
-			TALLOC_FREE(sub_ctx);
 		}
 
 		if (finished && out_of_space)
@@ -4759,17 +4749,12 @@ static NTSTATUS smb_info_set_ea(connection_struct *conn,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ctx = talloc_init("SMB_INFO_SET_EA");
-	if (!ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	ctx = talloc_tos();
 	ea_list = read_ea_list(ctx, pdata + 4, total_data - 4);
 	if (!ea_list) {
-		talloc_destroy(ctx);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	status = set_ea(conn, fsp, fname, ea_list);
-	talloc_destroy(ctx);
 
 	return status;
 }
@@ -6208,7 +6193,7 @@ static NTSTATUS smb_posix_unlink(connection_struct *conn,
 	 * non-POSIX opens return SHARING_VIOLATION.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
 	if (lck == NULL) {
 		DEBUG(0, ("smb_posix_unlink: Could not get share mode "
 			"lock for file %s\n", fsp->fsp_name));

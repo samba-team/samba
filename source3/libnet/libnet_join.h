@@ -36,6 +36,7 @@ struct libnet_JoinCtx {
 		const char *upn;
 		bool modify_config;
 		struct ads_struct *ads;
+		bool debug;
 	} in;
 
 	struct {
@@ -47,6 +48,7 @@ struct libnet_JoinCtx {
 		bool modified_config;
 		WERROR result;
 		char *error_string;
+		bool domain_is_ad;
 	} out;
 };
 

@@ -47,7 +47,7 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 	OM_uint32 minor;
 	struct dns_update_request *req, *resp;
 
-	if ( (num_addrs <= 0) || !iplist ) {
+	if ( (num_addrs <= 0) || !sslist ) {
 		return ERROR_DNS_INVALID_PARAMETER;
 	}
 
@@ -167,14 +167,16 @@ int get_my_ip_address( struct sockaddr_storage **pp_ss )
 		}
 #if defined(HAVE_IPV6)
 		if ((nics[i].ip.ss_family == AF_INET)) {
-			memcpy(&list[count++], &nics[i].ip);
+			memcpy(&list[count++], &nics[i].ip,
+			       sizeof(struct sockaddr_storage));
 		} else
 #endif
-		if ((nics[i].ip.ss_family == AF_INET)) {
-			memcpy(&list[count++], &nics[i].ip);
+		if (nics[i].ip.ss_family == AF_INET) {
+			memcpy(&list[count++], &nics[i].ip,
+			       sizeof(struct sockaddr_storage));
 		}
 	}
-	*ips = list;
+	*pp_ss = list;
 
 	return count;
 }

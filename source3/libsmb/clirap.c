@@ -297,6 +297,7 @@ bool cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 				STR_TERMINATE|STR_UPPER);
 
 		if (len == (size_t)-1) {
+			SAFE_FREE(last_entry);
 			return false;
 		}
 		p += len;

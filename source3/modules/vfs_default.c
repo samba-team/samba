@@ -208,12 +208,12 @@ static int vfswrap_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 	return result;
 }
 
-static ssize_t vfswrap_read(vfs_handle_struct *handle, files_struct *fsp, int fd, void *data, size_t n)
+static ssize_t vfswrap_read(vfs_handle_struct *handle, files_struct *fsp, void *data, size_t n)
 {
 	ssize_t result;
 
 	START_PROFILE_BYTES(syscall_read, n);
-	result = sys_read(fd, data, n);
+	result = sys_read(fsp->fh->fd, data, n);
 	END_PROFILE(syscall_read);
 	return result;
 }
@@ -230,7 +230,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
-		result = SMB_VFS_READ(fsp, fsp->fh->fd, data, n);
+		result = SMB_VFS_READ(fsp, data, n);
 		fsp->fh->pos = 0;
 	}
 
@@ -241,7 +241,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 	curr = SMB_VFS_LSEEK(fsp, 0, SEEK_CUR);
 	if (curr == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be seeked (sought?) on. */
-		result = SMB_VFS_READ(fsp, fsp->fh->fd, data, n);
+		result = SMB_VFS_READ(fsp, data, n);
 		fsp->fh->pos = 0;
 		return result;
 	}
@@ -251,7 +251,7 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 	}
 
 	errno = 0;
-	result = SMB_VFS_READ(fsp, fsp->fh->fd, data, n);
+	result = SMB_VFS_READ(fsp, data, n);
 	lerrno = errno;
 
 	SMB_VFS_LSEEK(fsp, curr, SEEK_SET);
@@ -262,12 +262,12 @@ static ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, void 
 	return result;
 }
 
-static ssize_t vfswrap_write(vfs_handle_struct *handle, files_struct *fsp, int fd, const void *data, size_t n)
+static ssize_t vfswrap_write(vfs_handle_struct *handle, files_struct *fsp, const void *data, size_t n)
 {
 	ssize_t result;
 
 	START_PROFILE_BYTES(syscall_write, n);
-	result = sys_write(fd, data, n);
+	result = sys_write(fsp->fh->fd, data, n);
 	END_PROFILE(syscall_write);
 	return result;
 }
@@ -284,7 +284,7 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 
 	if (result == -1 && errno == ESPIPE) {
 		/* Maintain the fiction that pipes can be sought on. */
-		result = SMB_VFS_WRITE(fsp, fsp->fh->fd, data, n);
+		result = SMB_VFS_WRITE(fsp, data, n);
 	}
 
 #else /* HAVE_PWRITE */
@@ -300,7 +300,7 @@ static ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, cons
 		return -1;
 	}
 
-	result = SMB_VFS_WRITE(fsp, fsp->fh->fd, data, n);
+	result = SMB_VFS_WRITE(fsp, data, n);
 	lerrno = errno;
 
 	SMB_VFS_LSEEK(fsp, curr, SEEK_SET);
@@ -337,28 +337,27 @@ static SMB_OFF_T vfswrap_lseek(vfs_handle_struct *handle, files_struct *fsp, SMB
 	return result;
 }
 
-static ssize_t vfswrap_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *hdr,
+static ssize_t vfswrap_sendfile(vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *hdr,
 			SMB_OFF_T offset, size_t n)
 {
 	ssize_t result;
 
 	START_PROFILE_BYTES(syscall_sendfile, n);
-	result = sys_sendfile(tofd, fromfd, hdr, offset, n);
+	result = sys_sendfile(tofd, fromfsp->fh->fd, hdr, offset, n);
 	END_PROFILE(syscall_sendfile);
 	return result;
 }
 
 static ssize_t vfswrap_recvfile(vfs_handle_struct *handle,
 			int fromfd,
-			files_struct *fsp,
-			int tofd,
+			files_struct *tofsp,
 			SMB_OFF_T offset,
 			size_t n)
 {
 	ssize_t result;
 
 	START_PROFILE_BYTES(syscall_recvfile, n);
-	result = sys_recvfile(fromfd, tofd, offset, n);
+	result = sys_recvfile(fromfd, tofsp->fh->fd, offset, n);
 	END_PROFILE(syscall_recvfile);
 	return result;
 }
@@ -712,7 +711,7 @@ static int strict_allocate_ftruncate(vfs_handle_struct *handle, files_struct *fs
 		SMB_OFF_T retlen;
 		SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),space_to_write);
 
-		retlen = SMB_VFS_WRITE(fsp,fsp->fh->fd,(char *)zero_space,current_len_to_write);
+		retlen = SMB_VFS_WRITE(fsp,(char *)zero_space,current_len_to_write);
 		if (retlen <= 0)
 			return -1;
 
@@ -787,7 +786,7 @@ static int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, SMB_O
 	if (SMB_VFS_LSEEK(fsp, len-1, SEEK_SET) != len -1)
 		goto done;
 
-	if (SMB_VFS_WRITE(fsp, fsp->fh->fd, &c, 1)!=1)
+	if (SMB_VFS_WRITE(fsp, &c, 1)!=1)
 		goto done;
 
 	/* Seek to where we were */
