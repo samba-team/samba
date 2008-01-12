@@ -58,7 +58,7 @@ static void libnet_unjoin_set_error_string(TALLOC_CTX *mem_ctx,
 	r->out.error_string = tmp;
 }
 
-#ifdef HAVE_LDAP
+#ifdef WITH_ADS
 
 /****************************************************************
 ****************************************************************/
@@ -426,8 +426,6 @@ static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
 	return ads_gen_mod(r->in.ads, r->out.dn, mods);
 }
 
-#endif /* HAVE_LDAP */
-
 /****************************************************************
 ****************************************************************/
 
@@ -437,15 +435,13 @@ static bool libnet_join_create_keytab(TALLOC_CTX *mem_ctx,
 	if (!lp_use_kerberos_keytab()) {
 		return true;
 	}
-#ifdef HAVE_KRB5
+
 	if (!ads_keytab_create_default(r->in.ads)) {
 		return false;
 	}
-#endif /* HAVE_KRB5 */
+
 	return true;
 }
-
-#ifdef HAVE_KRB5
 
 /****************************************************************
 ****************************************************************/
@@ -495,7 +491,7 @@ static bool libnet_join_derive_salting_principal(TALLOC_CTX *mem_ctx,
 	return kerberos_secrets_store_des_salt(salt);
 }
 
-#endif /* HAVE_KRB5 */
+#endif /* WITH_ADS */
 
 /****************************************************************
 ****************************************************************/
@@ -1021,7 +1017,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				struct libnet_JoinCtx *r)
 {
 	NTSTATUS status;
-#ifdef HAVE_LDAP
+#ifdef WITH_ADS
 	ADS_STATUS ads_status;
 
 	if (r->in.account_ou) {
@@ -1040,7 +1036,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 
 		r->in.join_flags &= ~WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE;
 	}
-#endif /* HAVE_LDAP */
+#endif /* WITH_ADS */
 	status = libnet_join_joindomain_rpc(mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
@@ -1053,7 +1049,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		return WERR_SETUP_NOT_JOINED;
 	}
 
-#ifdef HAVE_LDAP
+#ifdef WITH_ADS
 	ads_status = libnet_join_set_machine_spn(mem_ctx, r);
 	if (!ADS_ERR_OK(ads_status)) {
 		libnet_join_set_error_string(mem_ctx, r,
@@ -1078,13 +1074,11 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		return WERR_GENERAL_FAILURE;
 	}
 
-#ifdef HAVE_KRB5
 	if (!libnet_join_derive_salting_principal(mem_ctx, r)) {
 		return WERR_GENERAL_FAILURE;
 	}
-#endif /* HAVE_KRB5 */
+#endif /* WITH_ADS */
 
-#endif /* HAVE_LDAP */
 	if (!libnet_join_create_keytab(mem_ctx, r)) {
 		libnet_join_set_error_string(mem_ctx, r,
 			"failed to create kerberos keytab");
@@ -1148,7 +1142,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		return ntstatus_to_werror(status);
 	}
 
-#ifdef HAVE_LDAP
+#ifdef WITH_ADS
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) {
 		ADS_STATUS ads_status;
 		libnet_unjoin_connect_ads(mem_ctx, r);
@@ -1159,7 +1153,8 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 				ads_errstr(ads_status));
 		}
 	}
-#endif /* HAVE_LDAP */
+#endif /* WITH_ADS */
+
 	libnet_join_unjoindomain_remove_secrets(mem_ctx, r);
 
 	return WERR_OK;
