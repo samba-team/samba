@@ -836,8 +836,6 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	TALLOC_FREE(data.dptr);
-
 	return lck;
 }
 
