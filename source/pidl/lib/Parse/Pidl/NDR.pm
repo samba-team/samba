@@ -352,9 +352,11 @@ sub align_type($)
 		return $scalar_alignment->{$e->{NAME}};
 	}
 
+	return 0 if ($e eq "EMPTY");
+
 	unless (hasType($e)) {
 	    # it must be an external type - all we can do is guess 
-		# print "Warning: assuming alignment of unknown type '$e' is 4\n";
+		# warning($e, "assuming alignment of unknown type '$e' is 4");
 	    return 4;
 	}
 
@@ -367,6 +369,8 @@ sub align_type($)
 	} elsif ($dt->{TYPE} eq "BITMAP") {
 		return align_type(Parse::Pidl::Typelist::bitmap_type_fn($dt));
 	} elsif (($dt->{TYPE} eq "STRUCT") or ($dt->{TYPE} eq "UNION")) {
+		# Struct/union without body: assume 4
+		return 4 unless (defined($dt->{ELEMENTS}));
 		return find_largest_alignment($dt);
 	}
 
