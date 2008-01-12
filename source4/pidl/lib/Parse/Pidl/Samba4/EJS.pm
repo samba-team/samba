@@ -860,7 +860,7 @@ sub TypeFunctionName($$)
 	my ($prefix, $t) = @_;
 
 	return "$prefix\_$t->{NAME}" if (ref($t) eq "HASH" and 
-			($t->{TYPE} eq "TYPEDEF" or $t->{TYPE} eq "DECLARE"));
+			$t->{TYPE} eq "TYPEDEF");
 	return "$prefix\_$t->{TYPE}_$t->{NAME}" if (ref($t) eq "HASH");
 	return "$prefix\_$t";
 }
