@@ -2688,6 +2688,7 @@ sub NeededType($$$)
 	NeededType($t->{DATA}, $needed, $req) if ($t->{TYPE} eq "TYPEDEF");
 
 	if ($t->{TYPE} eq "STRUCT" or $t->{TYPE} eq "UNION") {
+		return unless defined($t->{ELEMENTS});
 		for my $e (@{$t->{ELEMENTS}}) {
 			$e->{PARENT} = $t;
 			if (has_property($e, "compression")) { 

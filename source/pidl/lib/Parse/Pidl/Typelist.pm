@@ -135,7 +135,9 @@ sub is_scalar($)
 	sub is_scalar($);
 	my $type = shift;
 
-	return 1 if (ref($type) eq "HASH" and $type->{TYPE} eq "SCALAR");
+	return 1 if (ref($type) eq "HASH" and 
+		($type->{TYPE} eq "SCALAR" or $type->{TYPE} eq "ENUM" or 
+		 $type->{TYPE} eq "BITMAP"));
 
 	if (my $dt = getType($type)) {
 		return is_scalar($dt->{DATA}) if ($dt->{TYPE} eq "TYPEDEF");
@@ -149,7 +151,7 @@ sub is_scalar($)
 sub scalar_is_reference($)
 {
 	my $name = shift;
-	
+
 	return 1 if (grep(/^$name$/, @reference_scalars));
 	return 0;
 }
