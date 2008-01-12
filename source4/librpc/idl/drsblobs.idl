@@ -9,9 +9,9 @@ import "drsuapi.idl";
   helpstring("Active Directory Replication LDAP Blobs")
 ]
 interface drsblobs {
-	declare bitmap drsuapi_DsReplicaSyncOptions;
-	declare bitmap drsuapi_DsReplicaNeighbourFlags;
-	declare [v1_enum] enum drsuapi_DsAttributeId;
+	typedef bitmap drsuapi_DsReplicaSyncOptions drsuapi_DsReplicaSyncOptions;
+	typedef bitmap drsuapi_DsReplicaNeighbourFlags drsuapi_DsReplicaNeighbourFlags;
+	typedef [v1_enum] enum drsuapi_DsAttributeId drsuapi_DsAttributeId;
 
 	/*
 	 * replPropertyMetaData
