@@ -6,7 +6,6 @@
 - compatibility mode for generating MIDL-readable data:
  - strip out pidl-specific properties
 
-- remove declare in favor of typedef
 - make bitmap an optional attribute on enum
 - support nested elements
 - support typedefs properly (e.g. allow "typedef void **bla;")

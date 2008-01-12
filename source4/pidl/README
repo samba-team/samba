@@ -40,6 +40,7 @@ Parse::Pidl::Samba4::NDR::Server - Generates server side implementation in C
 Parse::Pidl::Samba4::TDR - Parser generator for the "Trivial Data Representation"
 Parse::Pidl::Samba4::Template - Generates stubs in C for server implementation
 Parse::Pidl::Samba4::EJS - Generates bindings for Embedded JavaScript (EJS)
+Parse::Pidl::Samba4::Python - Generates bindings for Python
 
 -- Samba COM / DCOM --
 Parse::Pidl::Samba4::COM::Proxy - Generates proxy object for DCOM (client-side)
