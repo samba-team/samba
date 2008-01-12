@@ -2085,7 +2085,7 @@ void smbd_process(void)
 
 		run_events(smbd_event_context(), 0, NULL, NULL);
 
-		while (!receive_message_or_smb(NULL, &inbuf, &inbuf_len,
+		while (!receive_message_or_smb(talloc_tos(), &inbuf, &inbuf_len,
 						select_timeout,
 						&unread_bytes,
 						&encrypted)) {
