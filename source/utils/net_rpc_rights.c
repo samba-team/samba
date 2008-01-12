@@ -28,9 +28,9 @@ static NTSTATUS sid_to_name(struct rpc_pipe_client *pipe_hnd,
 				fstring name)
 {
 	POLICY_HND pol;
-	enum lsa_SidType *sid_types;
+	enum lsa_SidType *sid_types = NULL;
 	NTSTATUS result;
-	char **domains, **names;
+	char **domains = NULL, **names = NULL;
 
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, True, 
 		SEC_RIGHTS_MAXIMUM_ALLOWED, &pol);
@@ -202,7 +202,7 @@ static NTSTATUS enum_accounts_for_privilege(struct rpc_pipe_client *pipe_hnd,
 	NTSTATUS result;
 	uint32 enum_context=0;
 	uint32 pref_max_length=0x1000;
-	DOM_SID *sids;
+	DOM_SID *sids = NULL;
 	uint32 count=0;
 	int i;
 	fstring name;
