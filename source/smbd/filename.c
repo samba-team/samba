@@ -778,7 +778,7 @@ static bool scan_directory(connection_struct *conn, const char *path,
 	}
 
 	/* open the directory */
-	if (!(cur_dir = OpenDir(conn, path, NULL, 0))) {
+	if (!(cur_dir = OpenDir(talloc_tos(), conn, path, NULL, 0))) {
 		DEBUG(3,("scan dir didn't open dir [%s]\n",path));
 		TALLOC_FREE(unmangled_name);
 		return(False);
@@ -809,7 +809,7 @@ static bool scan_directory(connection_struct *conn, const char *path,
 			/* we've found the file, change it's name and return */
 			*found_name = talloc_strdup(ctx,dname);
 			TALLOC_FREE(unmangled_name);
-			CloseDir(cur_dir);
+			TALLOC_FREE(cur_dir);
 			if (!*found_name) {
 				errno = ENOMEM;
 				return False;
@@ -819,7 +819,7 @@ static bool scan_directory(connection_struct *conn, const char *path,
 	}
 
 	TALLOC_FREE(unmangled_name);
-	CloseDir(cur_dir);
+	TALLOC_FREE(cur_dir);
 	errno = ENOENT;
 	return False;
 }
