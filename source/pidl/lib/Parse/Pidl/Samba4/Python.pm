@@ -11,7 +11,7 @@ use Exporter;
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName);
 use Parse::Pidl::Util qw(has_property ParseExpr);
-use Parse::Pidl::CUtil qw(get_value_of get_pointer_of);
+use Parse::Pidl::CUtil qw(get_value_of get_pointer_to);
 
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -288,12 +288,11 @@ sub PythonType($$$)
 	my ($self, $d, $interface, $basename) = @_;
 
 	my $actual_ctype = $d;
-	if ($actual_ctype->{TYPE} eq "TYPEDEF") {
+	if ($actual_ctype->{TYPE} eq "TYPEDEF" or $actual_ctype->{TYPE} eq "DECLARE") {
 		$actual_ctype = $actual_ctype->{DATA};
 	}
 
-	if ($d->{TYPE} eq "STRUCT" or $d->{TYPE} eq "TYPEDEF" and 
-		$d->{DATA}->{TYPE} eq "STRUCT") {
+	if ($actual_ctype->{TYPE} eq "STRUCT") {
 		my $py_fnname;
 		if ($d->{TYPE} eq "STRUCT") {
 			$py_fnname = $self->PythonStruct($d->{NAME}, mapTypeName($d), $d);
@@ -466,13 +465,13 @@ sub ConvertObjectFromPython($$$)
 	}
 
 	my $actual_ctype = $ctype;
-	if ($ctype->{TYPE} eq "TYPEDEF") {
+	if ($ctype->{TYPE} eq "TYPEDEF" or $ctype->{TYPE} eq "DECLARE") {
 		$actual_ctype = $ctype->{DATA};
 	}
 
 	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
 		$actual_ctype->{TYPE} eq "SCALAR" and (
-		$actual_ctype->{NAME} =~ /^(uint[0-9]+|hyper)$/)) {
+		$actual_ctype->{NAME} =~ /^(uint[0-9]+|hyper|NTTIME|time_t|NTTIME_hyper|NTTIME_1sec|dlong|udlong)$/)) {
 		return "PyInt_AsLong($cvar)";
 	}
 
@@ -488,18 +487,22 @@ sub ConvertObjectToPython($$$)
 	}
 
 	if (ref($ctype) ne "HASH") {
+		if (not hasType($ctype)) {
+			return "py_import_$ctype($cvar)"; # best bet
+		}
+
 		$ctype = getType($ctype);
 	}
 
 	my $actual_ctype = $ctype;
-	if ($ctype->{TYPE} eq "TYPEDEF") {
+	if ($ctype->{TYPE} eq "TYPEDEF" or $ctype->{TYPE} eq "DECLARE") {
 		$actual_ctype = $ctype->{DATA};
 	}
 
 	if ($cvar =~ /^[0-9]+$/ or 
 		$actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
-		$actual_ctype->{TYPE} eq "SCALAR" and (
-		$actual_ctype->{NAME} =~ /^(uint[0-9]+|hyper)$/)) {
+		($actual_ctype->{TYPE} eq "SCALAR" and 
+		$actual_ctype->{NAME} =~ /^(int|long|char|u?int[0-9]+|hyper|dlong|udlong|time_t|NTTIME_hyper|NTTIME|NTTIME_1sec)$/)) {
 		return "PyInt_FromLong($cvar)";
 	}
 
@@ -509,6 +512,11 @@ sub ConvertObjectToPython($$$)
 		return "py_import_$ctype->{NAME}($cvar)";
 	}
 
+	if ($actual_ctype->{TYPE} eq "SCALAR" and 
+		$actual_ctype->{NAME} eq "DATA_BLOB") {
+		return "PyString_FromStringAndSize($cvar->data, $cvar->length)";
+	}
+
 	if ($ctype->{TYPE} eq "STRUCT" or $ctype->{TYPE} eq "UNION") {
 		return "py_import_$ctype->{TYPE}_$ctype->{NAME}($cvar)";
 	}
@@ -516,6 +524,28 @@ sub ConvertObjectToPython($$$)
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "NTSTATUS") {
 		return "PyInt_FromLong($cvar->v)";
 	}
+
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "WERROR") {
+		return "PyInt_FromLong($cvar->v)";
+	}
+
+	if ($actual_ctype->{TYPE} eq "SCALAR" and 
+		($actual_ctype->{NAME} eq "string" or $actual_ctype->{NAME} eq "nbt_string")) {
+		return "PyString_FromString($cvar)";
+	}
+
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "string_array") {
+		return "FIXME($cvar)";
+	}
+
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "ipv4address") {
+		return "FIXME($cvar)";
+		}
+
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "pointer") {
+		return "PyCObject_FromVoidPtr($cvar, talloc_free)";
+	}
+
 
 	die("unknown type ".mapTypeName($ctype) . ": $cvar");
 }
