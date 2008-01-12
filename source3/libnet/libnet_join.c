@@ -671,7 +671,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 						     0xe005000b, &user_pol,
 						     &user_rid);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED)) {
+			if (!(r->in.join_flags &
+			      WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED)) {
 				goto done;
 			}
 		}
@@ -908,7 +909,7 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 		W_ERROR_NOT_OK_RETURN(werr);
 
 		werr = libnet_conf_set_global_parameter("realm",
-						       r->out.dns_domain_name);
+							r->out.dns_domain_name);
 		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
