@@ -108,25 +108,28 @@ sub HeaderEnum($$)
 	my $first = 1;
 
 	pidl "#ifndef USE_UINT_ENUMS\n";
-	pidl "enum $name {\n";
-	$tab_depth++;
+	pidl "enum $name";
 	if (defined($enum->{ELEMENTS})) {
+		pidl " {\n";
+		$tab_depth++;
 		foreach my $e (@{$enum->{ELEMENTS}}) {
 			unless ($first) { pidl ",\n"; }
 			$first = 0;
 			pidl tabs();
 			pidl $e;
 		}
+		pidl "\n";
+		$tab_depth--;
+		pidl "}";
 	}
 	pidl "\n";
-	$tab_depth--;
-	pidl "}\n";
 	pidl "#else\n";
 	my $count = 0;
-	pidl "enum $name { __donnot_use_enum_$name=0x7FFFFFFF}\n";
+	pidl "enum $name";
 	my $with_val = 0;
 	my $without_val = 0;
 	if (defined($enum->{ELEMENTS})) {
+		pidl " { __donnot_use_enum_$name=0x7FFFFFFF}";
 		foreach my $e (@{$enum->{ELEMENTS}}) {
 			my $t = "$e";
 			my $name;
@@ -144,9 +147,10 @@ sub HeaderEnum($$)
 				fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
 					unless ($with_val == 0);
 			}
-			pidl "#define $name ( $value )\n";
+			pidl "\n#define $name ( $value )";
 		}
 	}
+	pidl "\n";
 	pidl "#endif\n";
 }
 
@@ -215,7 +219,7 @@ sub HeaderType($$$)
 sub HeaderTypedef($)
 {
 	my($typedef) = shift;
-	HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME});
+	HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME}) if defined ($typedef->{DATA});
 }
 
 #####################################################################
