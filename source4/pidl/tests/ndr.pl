@@ -4,7 +4,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 34;
+use Test::More tests => 37;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -212,9 +212,16 @@ is(align_type({ TYPE => "STRUCT", "NAME" => "bla",
 			    ELEMENTS => [ { TYPE => "uint16" } ] }), 4);
 is(align_type({ TYPE => "STRUCT", 
 			    ELEMENTS => [ { TYPE => "hyper" } ] }), 8);
-is(align_type({ TYPE => "DECLARE", DATA => { 
+is(align_type({ TYPE => "TYPEDEF", DATA => { 
 				TYPE => "STRUCT", 
 			    ELEMENTS => [ { TYPE => "hyper" } ] }}), 8);
+# typedef of struct without body
+is(align_type({ TYPE => "TYPEDEF", DATA => { 
+				TYPE => "STRUCT", ELEMENTS => undef }}), 4);
+# struct without body
+is(align_type({ TYPE => "STRUCT", ELEMENTS => undef }), 4);
+# empty struct
+is(align_type({ TYPE => "STRUCT", ELEMENTS => [] }), 1);
 is(align_type({ TYPE => "STRUCT", "NAME" => "bla", 
 			    ELEMENTS => [ { TYPE => "uint8" } ] }), 4);
 
