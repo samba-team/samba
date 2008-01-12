@@ -235,6 +235,7 @@ NTSTATUS change_notify_create(struct files_struct *fsp, uint32 filter,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	ZERO_STRUCT(e);
 	e.path = fullpath;
 	e.filter = filter;
 	e.subdir_filter = 0;
