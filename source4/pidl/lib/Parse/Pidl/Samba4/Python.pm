@@ -288,7 +288,7 @@ sub PythonType($$$)
 	my ($self, $d, $interface, $basename) = @_;
 
 	my $actual_ctype = $d;
-	if ($actual_ctype->{TYPE} eq "TYPEDEF" or $actual_ctype->{TYPE} eq "DECLARE") {
+	if ($actual_ctype->{TYPE} eq "TYPEDEF") {
 		$actual_ctype = $actual_ctype->{DATA};
 	}
 
@@ -465,7 +465,7 @@ sub ConvertObjectFromPython($$$)
 	}
 
 	my $actual_ctype = $ctype;
-	if ($ctype->{TYPE} eq "TYPEDEF" or $ctype->{TYPE} eq "DECLARE") {
+	if ($ctype->{TYPE} eq "TYPEDEF") {
 		$actual_ctype = $ctype->{DATA};
 	}
 
@@ -495,7 +495,7 @@ sub ConvertObjectToPython($$$)
 	}
 
 	my $actual_ctype = $ctype;
-	if ($ctype->{TYPE} eq "TYPEDEF" or $ctype->{TYPE} eq "DECLARE") {
+	if ($ctype->{TYPE} eq "TYPEDEF") {
 		$actual_ctype = $ctype->{DATA};
 	}
 
