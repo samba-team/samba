@@ -120,7 +120,7 @@ sub FromPythonToUnionFunction($$$$)
 	$self->indent;
 
 	foreach my $e (@{$type->{ELEMENTS}}) {
-		my $conv = $self->ConvertObjectFromPython($e->{TYPE}, "$name");
+		my $conv = $self->ConvertObjectFromPython($mem_ctx, $e->{TYPE}, "$name");
 		if (defined($e->{CASE})) {
 			$self->pidl("$e->{CASE}: return $conv;");
 		} else {
@@ -143,11 +143,10 @@ sub PythonStruct($$$$)
 
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$name\_getattr(PyTypeObject *obj, char *name)");
+	$self->pidl("static PyObject *py_$name\_getattr(PyObject *obj, char *name)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("py_talloc_Object *py_object = (py_talloc_Object *)obj;");
-	$self->pidl("$cname *object = py_talloc_get_type(py_object, $cname);");
+	$self->pidl("$cname *object = py_talloc_get_type(obj, $cname);");
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
 		my $varname = "object->$e->{NAME}";
@@ -162,17 +161,16 @@ sub PythonStruct($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$name\_setattr(PyTypeObject *obj, char *name, PyObject *value)");
+	$self->pidl("static PyObject *py_$name\_setattr(PyObject *obj, char *name, PyObject *value)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("py_talloc_Object *py_object = (py_talloc_Object *)obj;");
 	$self->pidl("$cname *object = py_talloc_get_type(py_object, $cname);");
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
 		my $varname = "object->$e->{NAME}";
 		$self->indent;
 		$self->pidl("/* FIXME: talloc_free($varname) if necessary */");
-		$self->pidl("$varname = " . $self->ConvertObjectFromPython($e->{TYPE}, "value") . ";");
+		$self->pidl("$varname = " . $self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "value") . ";");
 		$self->deindent;
 		$self->pidl("}");
 	}
@@ -187,9 +185,9 @@ sub PythonStruct($$$$)
 	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
 	$self->pidl(".tp_name = \"$name\",");
 	$self->pidl(".tp_basicsize = sizeof(py_talloc_Object),");
-	$self->pidl(".tp_dealloc = (destructor)py_talloc_dealloc,");
-	$self->pidl(".tp_getattr = (getattrfunc)py_$name\_getattr,");
-	$self->pidl(".tp_setattr = (setattrfunc)py_$name\_setattr,");
+	$self->pidl(".tp_dealloc = py_talloc_dealloc,");
+	$self->pidl(".tp_getattr = py_$name\_getattr,");
+	$self->pidl(".tp_setattr = py_$name\_setattr,");
 	$self->deindent;
 	$self->pidl("};");
 
@@ -240,7 +238,7 @@ sub PythonFunction($$$)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
-			$self->pidl("r.in.$e->{NAME} = " . $self->ConvertObjectFromPython($e->{TYPE}, "py_$e->{NAME}") . ";");
+			$self->pidl("r.in.$e->{NAME} = " . $self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "py_$e->{NAME}") . ";");
 		}
 	}
 	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, &r);");
@@ -396,10 +394,10 @@ sub Interface($$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyObject *interface_$interface->{NAME}_getattr(PyTypeObject *obj, char *name)");
+	$self->pidl("static PyObject *interface_$interface->{NAME}_getattr(PyObject *obj, char *name)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("return Py_FindMethod(interface_$interface->{NAME}\_methods, (PyObject *)obj, name);");
+	$self->pidl("return Py_FindMethod(interface_$interface->{NAME}\_methods, obj, name);");
 	$self->deindent;
 	$self->pidl("}");
 
@@ -454,9 +452,9 @@ sub register_module_method($$$$$)
 	push (@{$self->{module_methods}}, [$fn_name, $pyfn_name, $flags, $doc])
 }
 
-sub ConvertObjectFromPython($$$)
+sub ConvertObjectFromPython($$$$)
 {
-	my ($self, $ctype, $cvar) = @_;
+	my ($self, $mem_ctx, $ctype, $cvar) = @_;
 
 	die("undef type for $cvar") unless(defined($ctype));
 
@@ -475,7 +473,7 @@ sub ConvertObjectFromPython($$$)
 
 	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
 		$actual_ctype->{TYPE} eq "SCALAR" and (
-		expandAlias($actual_ctype->{NAME}) =~ /^(uint[0-9]+|hyper|NTTIME|time_t|NTTIME_hyper|NTTIME_1sec|dlong|udlong)$/)) {
+		expandAlias($actual_ctype->{NAME}) =~ /^(u?int[0-9]+|hyper|NTTIME|time_t|NTTIME_hyper|NTTIME_1sec|dlong|udlong|udlongr)$/)) {
 		return "PyInt_AsLong($cvar)";
 	}
 
@@ -487,7 +485,37 @@ sub ConvertObjectFromPython($$$)
 		return "py_export_$ctype->{NAME}($cvar)";
 	}
 
-	return "FIXME($cvar)";
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "DATA_BLOB") {
+		return "data_blob_talloc($mem_ctx, PyString_AsString($cvar), PyString_Size($cvar))";
+	}
+
+	if ($actual_ctype->{TYPE} eq "SCALAR" and 
+		($actual_ctype->{NAME} eq "string" or $actual_ctype->{NAME} eq "nbt_string" or $actual_ctype->{NAME} eq "nbt_name" or $actual_ctype->{NAME} eq "wrepl_nbt_name")) {
+		return "talloc_strdup($mem_ctx, PyString_AsString($cvar))";
+	}
+
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "ipv4address") {
+		return "FIXME($cvar)";
+		}
+
+
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "NTSTATUS") {
+		return "PyInt_AsLong($cvar)";
+	}
+
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "WERROR") {
+		return "PyInt_AsLong($cvar)";
+	}
+
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "string_array") {
+		return "FIXME($cvar)";
+	}
+
+	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "pointer") {
+		return "PyCObject_AsVoidPtr($cvar)";
+	}
+
+	die("unknown type ".mapTypeName($ctype) . ": $cvar");
 }
 
 sub ConvertObjectToPython($$$)
@@ -546,11 +574,11 @@ sub ConvertObjectToPython($$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "NTSTATUS") {
-		return "PyInt_FromLong($cvar->v)";
+		return "PyInt_FromLong(NT_STATUS_V($cvar))";
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "WERROR") {
-		return "PyInt_FromLong($cvar->v)";
+		return "PyInt_FromLong(W_ERROR_V($cvar))";
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and 
@@ -569,7 +597,6 @@ sub ConvertObjectToPython($$$)
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "pointer") {
 		return "PyCObject_FromVoidPtr($cvar, talloc_free)";
 	}
-
 
 	die("unknown type ".mapTypeName($ctype) . ": $cvar");
 }
