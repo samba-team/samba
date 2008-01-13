@@ -951,7 +951,7 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 		}
 	}
 
-	libnet_conf_delete_parameter(ctx, GLOBAL_NAME, "realm");
+	libnet_conf_delete_global_parameter(ctx, "realm");
 
 done:
 	libnet_conf_close(ctx);
