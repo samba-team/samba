@@ -3036,7 +3036,8 @@ _hx509_cert_get_eku(hx509_context context,
  *
  * @param context A hx509 context.
  * @param c the certificate to encode.
- * @param os the encode certificate, set to NULL, 0 on case of error.
+ * @param os the encode certificate, set to NULL, 0 on case of
+ * error. Free the returned structure with hx509_xfree().
  *
  * @return An hx509 error code, see hx509_get_error_string().
  *
