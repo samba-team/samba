@@ -6241,6 +6241,7 @@ smbc_listxattr_ctx(SMBCCTX *context,
          * the complete set of attribute names, always, rather than only those
          * attribute names which actually exist for a file.  Hmmm...
          */
+        size_t retsize;
         const char supported_old[] =
                 "system.*\0"
                 "system.*+\0"
@@ -6284,22 +6285,24 @@ smbc_listxattr_ctx(SMBCCTX *context,
 
         if (context->internal->_full_time_names) {
                 supported = supported_new;
+                retsize = sizeof(supported_new);
         } else {
                 supported = supported_old;
+                retsize = sizeof(supported_old);
         }
 
         if (size == 0) {
-                return sizeof(supported);
+                return retsize;
         }
 
-        if (sizeof(supported) > size) {
+        if (retsize > size) {
                 errno = ERANGE;
                 return -1;
         }
 
         /* this can't be strcpy() because there are embedded null characters */
-        memcpy(list, supported, sizeof(supported));
-        return sizeof(supported);
+        memcpy(list, supported, retsize);
+        return retsize;
 }
 
 
