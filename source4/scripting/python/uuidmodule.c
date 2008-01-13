@@ -18,7 +18,7 @@
 */
 
 #include "includes.h"
-#include "Python.h"
+#include <Python.h>
 #include "librpc/ndr/libndr.h"
 
 static PyObject *uuid_random(PyObject *self, PyObject *args)
@@ -47,11 +47,9 @@ static PyMethodDef methods[] = {
 	{ NULL, NULL }
 };
 
-PyDoc_STRVAR(param_doc, "UUID helper routines");
-
 PyMODINIT_FUNC inituuid(void)
 {
-	PyObject *mod = Py_InitModule3((char *)"uuid", methods, param_doc);
+	PyObject *mod = Py_InitModule3((char *)"uuid", methods, "UUID helper routines");
 	if (mod == NULL)
 		return;
 }
