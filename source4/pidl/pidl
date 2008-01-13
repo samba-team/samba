@@ -671,7 +671,8 @@ sub process_file($)
 	if (defined($opt_python)) {
 		require Parse::Pidl::Samba4::Python;
 		my $generator = new Parse::Pidl::Samba4::Python(); 
-		my ($hdr,$prsr) = $generator->Parse($basename, $ndr, $h_filename);
+		my ($hdr,$prsr) = $generator->Parse($basename, $ndr, 
+					"$outputdir/ndr_$basename\_c.h", $h_filename);
 		FileSave("$outputdir/py_$basename.c", $prsr);
 		FileSave("$outputdir/py_$basename.h", $hdr);
 	}
