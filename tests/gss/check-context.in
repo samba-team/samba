@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Copyright (c) 2006 Kungliga Tekniska Högskolan
+# Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
 # (Royal Institute of Technology, Stockholm, Sweden). 
 # All rights reserved. 
 #
@@ -105,8 +105,8 @@ exitcode=0
 echo "Getting client initial tickets"
 ${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
 
-echo ======test naming combinations
-echo plain
+echo "======test naming combinations"
+echo "plain"
 ${context} --name-type=hostbased-service host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo test failed; }
 echo "plain (krb5)"
