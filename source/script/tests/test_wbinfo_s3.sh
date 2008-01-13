@@ -35,6 +35,8 @@ tests="$tests:--name-to-sid=$username"
 #Didn't pass yet# tests="$tests:--user-info=$username"
 tests="$tests:--user-groups=$username"
 
+failed=0
+
 OLDIFS=$IFS
 NEWIFS=$':'
 IFS=$NEWIFS
