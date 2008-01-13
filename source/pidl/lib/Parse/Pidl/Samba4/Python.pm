@@ -89,37 +89,39 @@ sub EnumAndBitmapConsts($$$)
 	}
 }
 
-sub FromUnionToPythonFunction($$)
+sub FromUnionToPythonFunction($$$)
 {
-	my ($self, $type) = @_;
+	my ($self, $type, $name) = @_;
 
 	#FIXME
 
 	$self->pidl("return NULL;");
 }
 
-sub FromStructToPythonFunction($$)
+sub FromStructToPythonFunction($$$)
 {
-	my ($self, $type) = @_;
+	my ($self, $type, $name) = @_;
+
+	$self->pidl("$type->{NAME}\_Object *ret;");
+	$self->pidl("ret = PyObject_New($type->{NAME}\_Object, &$type->{NAME}\_ObjectType);");
+	$self->pidl("ret->object = talloc_reference(NULL, $name);");
+	$self->pidl("return (PyObject *) ret;");
+}
+
+sub FromPythonToUnionFunction($$$$)
+{
+	my ($self, $type, $mem_ctx, $name) = @_;
 
 	#FIXME
 	$self->pidl("return NULL;");
 }
 
-sub FromPythonToUnionFunction($$)
+sub FromPythonToStructFunction($$$$)
 {
-	my ($self, $type) = @_;
+	my ($self, $type, $mem_ctx, $name) = @_;
 
-	#FIXME
-	$self->pidl("return NULL;");
-}
-
-sub FromPythonToStructFunction($$)
-{
-	my ($self, $type) = @_;
-
-	#FIXME
-	$self->pidl("return NULL;");
+	$self->pidl("$type->{NAME}\_Object *py_object = ($type->{NAME}_Object *)$name;");
+	$self->pidl("return talloc_reference($mem_ctx, py_object->object);");
 }
 
 sub PythonStruct($$$$)
@@ -222,7 +224,7 @@ sub PythonFunction($$$)
 	$self->pidl("$iface\_InterfaceObject *iface = ($iface\_InterfaceObject *)self;");
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("TALLOC_CTX *mem_ctx = talloc_new(NULL);");
-	$self->pidl("struct dcerpc_$fn->{NAME} r;");
+	$self->pidl("struct $fn->{NAME} r;");
 	$self->pidl("PyObject *result;");
 	my $result_size = 0;
 
@@ -234,11 +236,13 @@ sub PythonFunction($$$)
 			$result_size++;
 		}
 	}
+	if ($result_size > 0) {
+		$self->pidl("");
+		$self->pidl("ZERO_STRUCT(r.out);");
+	}
 	if ($fn->{RETURN_TYPE}) {
 		$result_size++;
 	}
-	$self->pidl("");
-	$self->pidl("ZERO_STRUCT(r.out);");
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
@@ -322,8 +326,8 @@ sub PythonType($$$)
 		$self->pidl("PyObject *py_import_$d->{NAME}(" .mapTypeName($d) . " *in)");
 		$self->pidl("{");
 		$self->indent;
-		$self->FromStructToPythonFunction($d) if ($actual_ctype->{TYPE} eq "STRUCT");
-		$self->FromUnionToPythonFunction($d) if ($actual_ctype->{TYPE} eq "UNION");
+		$self->FromStructToPythonFunction($d, "in") if ($actual_ctype->{TYPE} eq "STRUCT");
+		$self->FromUnionToPythonFunction($d, "in") if ($actual_ctype->{TYPE} eq "UNION");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
@@ -331,8 +335,8 @@ sub PythonType($$$)
 		$self->pidl(mapTypeName($d) . " *py_export_$d->{NAME}(TALLOC_CTX *mem_ctx, PyObject *in)");
 		$self->pidl("{");
 		$self->indent;
-		$self->FromPythonToStructFunction($d) if ($actual_ctype->{TYPE} eq "STRUCT");
-		$self->FromPythonToUnionFunction($d) if ($actual_ctype->{TYPE} eq "UNION");
+		$self->FromPythonToStructFunction($d, "mem_ctx", "in") if ($actual_ctype->{TYPE} eq "STRUCT");
+		$self->FromPythonToUnionFunction($d, "mem_ctx", "in") if ($actual_ctype->{TYPE} eq "UNION");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
@@ -414,8 +418,8 @@ sub Interface($$$)
 	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
 	$self->pidl(".tp_name = \"$interface->{NAME}\",");
 	$self->pidl(".tp_basicsize = sizeof($interface->{NAME}_InterfaceObject),");
-	$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
-	$self->pidl(".tp_getattr = interface_$interface->{NAME}_getattr,");
+	$self->pidl(".tp_dealloc = (destructor)interface_$interface->{NAME}_dealloc,");
+	$self->pidl(".tp_getattr = (getattrfunc)interface_$interface->{NAME}_getattr,");
 	$self->deindent;
 	$self->pidl("};");
 
@@ -567,9 +571,9 @@ sub ConvertObjectToPython($$$)
 	die("unknown type ".mapTypeName($ctype) . ": $cvar");
 }
 
-sub Parse($$$$)
+sub Parse($$$$$)
 {
-    my($self,$basename,$ndr,$hdr) = @_;
+    my($self,$basename,$ndr,$ndr_hdr,$hdr) = @_;
     
     my $py_hdr = $hdr;
     $py_hdr =~ s/ndr_([^\/]+)$/py_$1/g;
@@ -582,6 +586,7 @@ sub Parse($$$$)
 #include <Python.h>
 #include \"librpc/rpc/dcerpc.h\"
 #include \"$hdr\"
+#include \"$ndr_hdr\"
 #include \"$py_hdr\"
 
 ");
