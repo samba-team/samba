@@ -196,7 +196,7 @@ sub PythonStruct($$$$)
 		if ($e->{ORIGINAL}->{POINTERS} > 0) {
 			$self->pidl("talloc_free($varname);");
 		}
-		$self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "value", $varname, "talloc_free(mem_ctx); return -1;");
+		$self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "value", $varname, "return -1;");
 		$self->pidl("return 0;");
 		$self->deindent;
 		$self->pidl("}");
