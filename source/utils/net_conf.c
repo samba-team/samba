@@ -217,6 +217,10 @@ static int import_process_service(TALLOC_CTX *ctx,
 				goto done;
 			}
 		}
+		werr = libnet_conf_create_share(conf_ctx, servicename);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
 	}
 
 	while ((parm = lp_next_parameter(share->service, &pnum, 0)))
