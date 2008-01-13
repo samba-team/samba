@@ -54,9 +54,9 @@ fi
 
 if test x$PYTHON != x
 then
-	PYTHON_CFLAGS=`$PYTHON -c "from distutils import sysconfig; print '-I%s -I%s %s' % (sysconfig.get_python_inc(), sysconfig.get_python_inc(plat_specific=True), sysconfig.get_config_var('CFLAGS'))"`
-	PYTHON_LDFLAGS=`$PYTHON -c "from distutils import sysconfig; print '%s %s -lpython%s -L%s' % (sysconfig.get_config_var('LIBS'), sysconfig.get_config_var('SYSLIBS'), sysconfig.get_config_var('VERSION'), sysconfig.get_config_var('LIBPL'))"`
-	TRY_LINK_PYTHON($PYTHON_LDFLAGS, $PYTHON_CFLAGS)
+	DISTUTILS_CFLAGS=`$PYTHON -c "from distutils import sysconfig; print '-I%s -I%s %s' % (sysconfig.get_python_inc(), sysconfig.get_python_inc(plat_specific=True), sysconfig.get_config_var('CFLAGS'))"`
+	DISTUTILS_LDFLAGS=`$PYTHON -c "from distutils import sysconfig; print '%s %s -lpython%s -L%s' % (sysconfig.get_config_var('LIBS'), sysconfig.get_config_var('SYSLIBS'), sysconfig.get_config_var('VERSION'), sysconfig.get_config_var('LIBPL'))"`
+	TRY_LINK_PYTHON($DISTUTILS_LDFLAGS, $DISTUTILS_CFLAGS)
 fi
 
 SMB_EXT_LIB(EXT_LIB_PYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CFLAGS])
