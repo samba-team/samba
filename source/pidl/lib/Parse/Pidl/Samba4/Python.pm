@@ -138,7 +138,7 @@ sub FromPythonToUnionFunction($$$$$)
 		}
 		$self->indent;
 		if ($e->{NAME}) {
-			$self->ConvertObjectFromPython($mem_ctx, $e->{TYPE}, $name, "ret->$e->{NAME}");
+			$self->ConvertObjectFromPython($mem_ctx, $e->{TYPE}, $name, "ret->$e->{NAME}", "talloc_free(ret); return NULL;");
 		}
 		$self->pidl("break;");
 		$self->deindent;
@@ -164,8 +164,6 @@ sub PythonStruct($$$$)
 {
 	my ($self, $name, $cname, $d) = @_;
 
-	$self->pidl("staticforward PyTypeObject $name\_ObjectType;");
-
 	$self->pidl("");
 
 	$self->pidl("static PyObject *py_$name\_getattr(PyObject *obj, char *name)");
@@ -190,12 +188,15 @@ sub PythonStruct($$$$)
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("$cname *object = py_talloc_get_type(py_obj, $cname);");
+	$self->pidl("TALLOC_CTX *mem_ctx = py_talloc_get_mem_ctx(py_obj);");
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
 		my $varname = "object->$e->{NAME}";
 		$self->indent;
-		$self->pidl("/* FIXME: talloc_free($varname) if necessary */");
-		$self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "value", $varname);
+		if ($e->{ORIGINAL}->{POINTERS} > 0) {
+			$self->pidl("talloc_free($varname);");
+		}
+		$self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "value", $varname, "talloc_free(mem_ctx); return -1;");
 		$self->pidl("return 0;");
 		$self->deindent;
 		$self->pidl("}");
@@ -206,7 +207,11 @@ sub PythonStruct($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyTypeObject $name\_ObjectType = {");
+	$self->pidl_hdr("PyAPI_DATA(PyTypeObject) $name\_Type;\n");
+	$self->pidl_hdr("#define $name\_Check(op) PyObject_TypeCheck(op, &$name\_Type)\n");
+	$self->pidl_hdr("#define $name\_CheckExact(op) ((op)->ob_type == &$name\_Type)\n");
+	$self->pidl_hdr("\n");
+	$self->pidl("PyTypeObject $name\_Type = {");
 	$self->indent;
 	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
 	$self->pidl(".tp_name = \"$name\",");
@@ -225,7 +230,7 @@ sub PythonStruct($$$$)
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("$cname *ret = talloc_zero(NULL, $cname);");
-	$self->pidl("return py_talloc_import(&$name\_ObjectType, ret);");
+	$self->pidl("return py_talloc_import(&$name\_Type, ret);");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
@@ -265,7 +270,7 @@ sub PythonFunction($$$)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
-			$self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "py_$e->{NAME}", "r.in.$e->{NAME}");
+			$self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "py_$e->{NAME}", "r.in.$e->{NAME}", "talloc_free(mem_ctx); return NULL;");
 		}
 	}
 	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, &r);");
@@ -377,7 +382,7 @@ sub Interface($$$)
 		$self->PythonType($d, $interface, $basename);
 	}
 
-	$self->pidl("staticforward PyTypeObject $interface->{NAME}_InterfaceType;");
+	$self->pidl_hdr("PyAPI_DATA(PyTypeObject) $interface->{NAME}_InterfaceType;\n");
 	$self->pidl("typedef struct {");
 	$self->indent;
 	$self->pidl("PyObject_HEAD");
@@ -430,13 +435,13 @@ sub Interface($$$)
 
 	$self->pidl("");
 
-	$self->pidl("static PyTypeObject $interface->{NAME}_InterfaceType = {");
+	$self->pidl("PyTypeObject $interface->{NAME}_InterfaceType = {");
 	$self->indent;
 	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
 	$self->pidl(".tp_name = \"$interface->{NAME}\",");
 	$self->pidl(".tp_basicsize = sizeof($interface->{NAME}_InterfaceObject),");
-	$self->pidl(".tp_dealloc = (destructor)interface_$interface->{NAME}_dealloc,");
-	$self->pidl(".tp_getattr = (getattrfunc)interface_$interface->{NAME}_getattr,");
+	$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
+	$self->pidl(".tp_getattr = interface_$interface->{NAME}_getattr,");
 	$self->deindent;
 	$self->pidl("};");
 
@@ -479,9 +484,9 @@ sub register_module_method($$$$$)
 	push (@{$self->{module_methods}}, [$fn_name, $pyfn_name, $flags, $doc])
 }
 
-sub ConvertObjectFromPython($$$$$)
+sub ConvertObjectFromPython($$$$$$)
 {
-	my ($self, $mem_ctx, $ctype, $cvar, $target) = @_;
+	my ($self, $mem_ctx, $ctype, $cvar, $target, $fail) = @_;
 
 	die("undef type for $cvar") unless(defined($ctype));
 
@@ -502,12 +507,14 @@ sub ConvertObjectFromPython($$$$$)
 	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
 		$actual_ctype->{TYPE} eq "SCALAR" and (
 		expandAlias($actual_ctype->{NAME}) =~ /^(u?int[0-9]+|hyper|NTTIME|time_t|NTTIME_hyper|NTTIME_1sec|dlong|udlong|udlongr)$/)) {
+		$self->pidl("PY_CHECK_TYPE(PyInt, $cvar, $fail);");
 		$self->pidl("$target = PyInt_AsLong($cvar);");
 		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "STRUCT") {
-		$self->pidl("$target = py_talloc_get_type($cvar, " . mapTypeName($ctype) . ");");
+		$self->pidl("PY_CHECK_TYPE($ctype->{NAME}, $cvar, $fail);");
+		$self->pidl("$target = py_talloc_get_ptr($cvar);");
 		return;
 	}
 
@@ -635,7 +642,7 @@ sub ConvertObjectToPython($$$)
 
 	if ($actual_ctype->{TYPE} eq "STRUCT") {
 		# FIXME: if $cvar is not a pointer, do a talloc_dup()
-		return "py_talloc_import(&$ctype->{NAME}_ObjectType, $cvar)";
+		return "py_talloc_import(&$ctype->{NAME}_Type, $cvar)";
 	}
 
 	die("unknown type ".mapTypeName($ctype) . ": $cvar");
@@ -660,6 +667,11 @@ sub Parse($$$$$)
 #include \"$ndr_hdr\"
 #include \"$py_hdr\"
 
+#define PY_CHECK_TYPE(type, var, fail) \\
+	if (!type ## _Check(var)) {\\
+		PyErr_Format(PyExc_TypeError, \"Expected type %s\", type ## _Type.tp_name); \\
+		fail; \\
+	}
 ");
 
 	foreach my $x (@$ndr) {

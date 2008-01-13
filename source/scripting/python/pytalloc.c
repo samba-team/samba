@@ -22,14 +22,16 @@
 void py_talloc_dealloc(PyObject* self)
 {
 	py_talloc_Object *obj = (py_talloc_Object *)self;
-	talloc_free(obj->talloc_ptr);
+	talloc_free(obj->talloc_ctx);
 	PyObject_Del(self);
 }
 
-PyObject *py_talloc_import(PyTypeObject *py_type, void *ptr)
+PyObject *py_talloc_import(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, 
+						   void *ptr)
 {
 	PyObject *ret = PyObject_New(py_talloc_Object, &py_type);
-	ret->talloc_ptr = talloc_reference(NULL, ptr); 
+	ret->talloc_ctx = talloc_reference(mem_ctx, ptr); 
+	ret->ptr = ptr;
 	return ret;
 }
 
@@ -38,5 +40,5 @@ PyObject *py_talloc_default_repr(PyObject *py_obj)
 	py_talloc_Object *obj = (py_talloc_Object *)py_obj;
 
 	return PyString_FromFormat("<talloc: %s>", 
-							   talloc_get_name(obj->talloc_ptr));
+							   talloc_get_name(obj->talloc_ctx));
 }
