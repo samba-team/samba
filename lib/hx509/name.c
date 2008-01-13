@@ -764,8 +764,8 @@ hx509_unparse_der_name(const void *data, size_t length, char **str)
  * Convert a hx509_name object to DER encoded name.
  *
  * @param name name to concert
- * @param data data to a DER encoded name
- * @param length length of data
+ * @param os data to a DER encoded name, free the resulting octet
+ * string with hx509_xfree(os->data).
  *
  * @return An hx509 error code, see hx509_get_error_string().
  *
@@ -773,15 +773,15 @@ hx509_unparse_der_name(const void *data, size_t length, char **str)
  */
 
 int
-hx509_name_to_der_name(const hx509_name name, void **data, size_t *length)
+hx509_name_binary(const hx509_name name, heim_octet_string *os)
 {
     size_t size;
     int ret;
 
-    ASN1_MALLOC_ENCODE(Name, *data, *length, &name->der_name, &size, ret);
+    ASN1_MALLOC_ENCODE(Name, os->data, os->length, &name->der_name, &size, ret);
     if (ret)
 	return ret;
-    if (*length != size)
+    if (os->length != size)
 	_hx509_abort("internal ASN.1 encoder error");
 
     return 0;
