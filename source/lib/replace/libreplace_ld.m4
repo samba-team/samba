@@ -265,7 +265,7 @@ AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_ALLOW_UNDEF_FLAG],
 			LD_SHLIB_ALLOW_UNDEF_FLAG="-Wl,--allow-shlib-undefined"
 			;;
 		*osf*)
-			LD_SHLIB_ALLOW_UNDEF_FLAG="-expect_unresolved '*'"
+			LD_SHLIB_ALLOW_UNDEF_FLAG="-Wl,-expect_unresolved,*"
 			;;
 		*darwin*)
 			LD_SHLIB_ALLOW_UNDEF_FLAG="-undefined dynamic_lookup"
