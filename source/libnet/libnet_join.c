@@ -19,8 +19,7 @@
  */
 
 #include "includes.h"
-#include "libnet/libnet_join.h"
-#include "libnet/libnet_proto.h"
+#include "libnet/libnet.h"
 
 /****************************************************************
 ****************************************************************/
@@ -886,33 +885,48 @@ done:
 static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 {
 	WERROR werr;
+	struct libnet_conf_ctx *ctx;
+
+	werr = libnet_conf_open(r, &ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
 
 	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
 
-		werr = libnet_conf_set_global_parameter("security", "user");
-		W_ERROR_NOT_OK_RETURN(werr);
+		werr = libnet_conf_set_global_parameter(ctx, "security", "user");
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
 
-		werr = libnet_conf_set_global_parameter("workgroup",
+		werr = libnet_conf_set_global_parameter(ctx, "workgroup",
 							r->in.domain_name);
-		return werr;
+		goto done;
 	}
 
-	werr = libnet_conf_set_global_parameter("security", "domain");
-	W_ERROR_NOT_OK_RETURN(werr);
+	werr = libnet_conf_set_global_parameter(ctx, "security", "domain");
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
 
-	werr = libnet_conf_set_global_parameter("workgroup",
+	werr = libnet_conf_set_global_parameter(ctx, "workgroup",
 						r->out.netbios_domain_name);
-	W_ERROR_NOT_OK_RETURN(werr);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
 
 	if (r->out.domain_is_ad) {
-		werr = libnet_conf_set_global_parameter("security", "ads");
-		W_ERROR_NOT_OK_RETURN(werr);
+		werr = libnet_conf_set_global_parameter(ctx, "security", "ads");
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
 
-		werr = libnet_conf_set_global_parameter("realm",
+		werr = libnet_conf_set_global_parameter(ctx, "realm",
 							r->out.dns_domain_name);
-		W_ERROR_NOT_OK_RETURN(werr);
 	}
 
+done:
+	libnet_conf_close(ctx);
 	return werr;
 }
 
@@ -922,15 +936,25 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 {
 	WERROR werr = WERR_OK;
+	struct libnet_conf_ctx *ctx;
+
+	werr = libnet_conf_open(r, &ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
 
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
-		werr = libnet_conf_set_global_parameter("security", "user");
-		W_ERROR_NOT_OK_RETURN(werr);
+		werr = libnet_conf_set_global_parameter(ctx, "security", "user");
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
 	}
 
-	libnet_conf_delete_parameter(GLOBAL_NAME, "realm");
+	libnet_conf_delete_parameter(ctx, GLOBAL_NAME, "realm");
 
+done:
+	libnet_conf_close(ctx);
 	return werr;
 }
 

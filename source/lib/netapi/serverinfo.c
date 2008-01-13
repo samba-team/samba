@@ -149,6 +149,10 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 					 uint8_t *buffer,
 					 uint32_t *parm_error)
 {
+	WERROR werr;
+	struct libnet_conf_ctx *conf_ctx;
+	TALLOC_CTX *mem_ctx;
+
 	struct srvsvc_NetSrvInfo1005 *info1005;
 
 	if (!buffer) {
@@ -167,8 +171,20 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 		return WERR_NOT_SUPPORTED;
 	}
 
-	return libnet_conf_set_global_parameter("server string",
+	mem_ctx = talloc_stackframe();
+	werr = libnet_conf_open(mem_ctx, &conf_ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	werr = libnet_conf_set_global_parameter(conf_ctx,
+						"server string",
 						info1005->comment);
+
+done:
+	libnet_conf_close(conf_ctx);
+	TALLOC_FREE(mem_ctx);
+	return werr;
 }
 
 static WERROR NetServerSetInfoLocal(struct libnetapi_ctx *ctx,
