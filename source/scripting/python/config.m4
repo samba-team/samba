@@ -36,6 +36,8 @@ AC_DEFUN([TRY_LINK_PYTHON],
 	fi
 ])
 
+dnl assume no working python
+working_python=no
 
 if test -z "$PYTHON_VERSION"; then 
 	AC_PATH_PROGS([PYTHON_CONFIG], [python2.6-config python2.5-config python2.4-config python-config])
@@ -44,7 +46,6 @@ else
 fi
 
 if test -z "$PYTHON_CONFIG"; then
-	working_python=no
 	AC_MSG_WARN([No python-config found])
 else
 	TRY_LINK_PYTHON([`$PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --includes`])
