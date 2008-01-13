@@ -91,36 +91,65 @@ sub EnumAndBitmapConsts($$$)
 
 sub FromUnionToPythonFunction($$$)
 {
-	my ($self, $type, $name) = @_;
+	my ($self, $type, $switch, $name) = @_;
 
-	#FIXME
+	$self->pidl("switch ($switch) {");
+	$self->indent;
 
+	foreach my $e (@{$type->{ELEMENTS}}) {
+		my $conv = $self->ConvertObjectToPython($e->{TYPE}, "$name->$e->{NAME}");
+		if (defined($e->{CASE})) {
+			$self->pidl("$e->{CASE}: return $conv;");
+		} else {
+			$self->pidl("default: return $conv;");
+		}
+	}
+
+	$self->deindent;
+	$self->pidl("}");
+
+	$self->pidl("PyErr_SetString(PyExc_TypeError, \"unknown union level\");");
 	$self->pidl("return NULL;");
 }
 
 sub FromStructToPythonFunction($$$)
 {
-	my ($self, $type, $name) = @_;
+	my ($self, $type, $typename, $name) = @_;
 
-	$self->pidl("$type->{NAME}\_Object *ret;");
-	$self->pidl("ret = PyObject_New($type->{NAME}\_Object, &$type->{NAME}\_ObjectType);");
+	$self->pidl("$typename\_Object *ret;");
+	$self->pidl("ret = PyObject_New($typename\_Object, &$typename\_ObjectType);");
 	$self->pidl("ret->object = talloc_reference(NULL, $name);");
 	$self->pidl("return (PyObject *) ret;");
 }
 
 sub FromPythonToUnionFunction($$$$)
 {
-	my ($self, $type, $mem_ctx, $name) = @_;
+	my ($self, $type, $switch, $mem_ctx, $name) = @_;
 
-	#FIXME
+	$self->pidl("switch ($switch) {");
+	$self->indent;
+
+	foreach my $e (@{$type->{ELEMENTS}}) {
+		my $conv = $self->ConvertObjectFromPython($e->{TYPE}, "$name");
+		if (defined($e->{CASE})) {
+			$self->pidl("$e->{CASE}: return $conv;");
+		} else {
+			$self->pidl("default: return $conv;");
+		}
+	}
+
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
+	$self->pidl("PyErr_SetString(PyExc_TypeError, \"invalid union level value\");");
 	$self->pidl("return NULL;");
 }
 
-sub FromPythonToStructFunction($$$$)
+sub FromPythonToStructFunction($$$$$)
 {
-	my ($self, $type, $mem_ctx, $name) = @_;
+	my ($self, $type, $typename, $mem_ctx, $name) = @_;
 
-	$self->pidl("$type->{NAME}\_Object *py_object = ($type->{NAME}_Object *)$name;");
+	$self->pidl("$typename\_Object *py_object = ($typename\_Object *)$name;");
 	$self->pidl("return talloc_reference($mem_ctx, py_object->object);");
 }
 
@@ -326,8 +355,8 @@ sub PythonType($$$)
 		$self->pidl("PyObject *py_import_$d->{NAME}(" .mapTypeName($d) . " *in)");
 		$self->pidl("{");
 		$self->indent;
-		$self->FromStructToPythonFunction($d, "in") if ($actual_ctype->{TYPE} eq "STRUCT");
-		$self->FromUnionToPythonFunction($d, "in") if ($actual_ctype->{TYPE} eq "UNION");
+		$self->FromStructToPythonFunction($actual_ctype, $d->{NAME}, "in") if ($actual_ctype->{TYPE} eq "STRUCT");
+		$self->FromUnionToPythonFunction($actual_ctype, "level", "in") if ($actual_ctype->{TYPE} eq "UNION");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
@@ -335,8 +364,8 @@ sub PythonType($$$)
 		$self->pidl(mapTypeName($d) . " *py_export_$d->{NAME}(TALLOC_CTX *mem_ctx, PyObject *in)");
 		$self->pidl("{");
 		$self->indent;
-		$self->FromPythonToStructFunction($d, "mem_ctx", "in") if ($actual_ctype->{TYPE} eq "STRUCT");
-		$self->FromPythonToUnionFunction($d, "mem_ctx", "in") if ($actual_ctype->{TYPE} eq "UNION");
+		$self->FromPythonToStructFunction($actual_ctype, $d->{NAME}, "mem_ctx", "in") if ($actual_ctype->{TYPE} eq "STRUCT");
+		$self->FromPythonToUnionFunction($actual_ctype, "level", "mem_ctx", "in") if ($actual_ctype->{TYPE} eq "UNION");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
