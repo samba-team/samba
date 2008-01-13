@@ -40,4 +40,7 @@ void py_talloc_dealloc(PyObject* self);
 
 PyObject *py_talloc_import(PyTypeObject *py_type, void *ptr);
 
+/* Sane default implementation of reprfunc. */
+PyObject *py_talloc_default_repr(PyObject *py_obj);
+
 #endif /* _PY_TALLOC_H_ */
