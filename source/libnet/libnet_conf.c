@@ -776,10 +776,8 @@ WERROR libnet_conf_set_parameter(struct libnet_conf_ctx *ctx,
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
 	if (!libnet_conf_share_exists(ctx, service)) {
-		werr = libnet_conf_create_share(ctx, service);
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
+		werr = WERR_NO_SUCH_SERVICE;
+		goto done;
 	}
 
 	werr = libnet_conf_reg_open_service_key(mem_ctx, ctx, service,
