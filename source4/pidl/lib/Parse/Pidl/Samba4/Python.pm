@@ -9,7 +9,7 @@ use Exporter;
 @ISA = qw(Exporter);
 
 use strict;
-use Parse::Pidl::Typelist qw(hasType getType mapTypeName);
+use Parse::Pidl::Typelist qw(hasType getType mapTypeName expandAlias);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::CUtil qw(get_value_of get_pointer_to);
 
@@ -471,7 +471,7 @@ sub ConvertObjectFromPython($$$)
 
 	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
 		$actual_ctype->{TYPE} eq "SCALAR" and (
-		$actual_ctype->{NAME} =~ /^(uint[0-9]+|hyper|NTTIME|time_t|NTTIME_hyper|NTTIME_1sec|dlong|udlong)$/)) {
+		expandAlias($actual_ctype->{NAME}) =~ /^(uint[0-9]+|hyper|NTTIME|time_t|NTTIME_hyper|NTTIME_1sec|dlong|udlong)$/)) {
 		return "PyInt_AsLong($cvar)";
 	}
 
@@ -502,7 +502,7 @@ sub ConvertObjectToPython($$$)
 	if ($cvar =~ /^[0-9]+$/ or 
 		$actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
 		($actual_ctype->{TYPE} eq "SCALAR" and 
-		$actual_ctype->{NAME} =~ /^(int|long|char|u?int[0-9]+|hyper|dlong|udlong|time_t|NTTIME_hyper|NTTIME|NTTIME_1sec)$/)) {
+		expandAlias($actual_ctype->{NAME}) =~ /^(int|long|char|u?int[0-9]+|hyper|dlong|udlong|udlongr|time_t|NTTIME_hyper|NTTIME|NTTIME_1sec)$/)) {
 		return "PyInt_FromLong($cvar)";
 	}
 
@@ -513,7 +513,7 @@ sub ConvertObjectToPython($$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and 
-		$actual_ctype->{NAME} eq "DATA_BLOB") {
+		expandAlias($actual_ctype->{NAME}) eq "DATA_BLOB") {
 		return "PyString_FromStringAndSize($cvar->data, $cvar->length)";
 	}
 
@@ -530,7 +530,7 @@ sub ConvertObjectToPython($$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and 
-		($actual_ctype->{NAME} eq "string" or $actual_ctype->{NAME} eq "nbt_string")) {
+		($actual_ctype->{NAME} eq "string" or $actual_ctype->{NAME} eq "nbt_string" or $actual_ctype->{NAME} eq "nbt_name" or $actual_ctype->{NAME} eq "wrepl_nbt_name")) {
 		return "PyString_FromString($cvar)";
 	}
 
