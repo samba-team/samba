@@ -925,3 +925,24 @@ done:
 	return werr;
 }
 
+/**
+ * Delete a global parameter.
+ *
+ * Create [global] if it does not exist.
+ */
+WERROR libnet_conf_delete_global_parameter(struct libnet_conf_ctx *ctx,
+					   const char *param)
+{
+	WERROR werr;
+
+	if (!libnet_conf_share_exists(ctx, GLOBAL_NAME)) {
+		werr = libnet_conf_create_share(ctx, GLOBAL_NAME);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+	}
+	werr = libnet_conf_delete_parameter(ctx, GLOBAL_NAME, param);
+
+done:
+	return werr;
+}
