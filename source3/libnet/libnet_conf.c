@@ -21,11 +21,6 @@
 #include "includes.h"
 #include "libnet/libnet.h"
 
-/*
- * yuck - static variable to keep track of the registry initialization. 
- */
-static bool registry_initialized = false;
-
 /**********************************************************************
  *
  * Helper functions (mostly registry related)
@@ -59,20 +54,21 @@ static WERROR libnet_conf_add_string_to_array(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
-static WERROR libnet_conf_reg_initialize(void)
+static WERROR libnet_conf_reg_initialize(struct libnet_conf_ctx *ctx)
 {
 	WERROR werr = WERR_OK;
-
-	if (registry_initialized) {
-		goto done;
-	}
 
 	if (!registry_init_regdb()) {
 		werr = WERR_REG_IO_FAILURE;
 		goto done;
 	}
 
-	registry_initialized = true;
+	werr = ntstatus_to_werror(registry_create_admin_token(ctx,
+							      &(ctx->token)));
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Error creating admin token\n"));
+		goto done;
+	}
 
 done:
 	return werr;
@@ -82,13 +78,25 @@ done:
  * Open a registry key specified by "path"
  */
 static WERROR libnet_conf_reg_open_path(TALLOC_CTX *mem_ctx,
+					struct libnet_conf_ctx *ctx,
 					const char *path,
 					uint32 desired_access,
 					struct registry_key **key)
 {
 	WERROR werr = WERR_OK;
-	NT_USER_TOKEN *token = NULL;
-	TALLOC_CTX *tmp_ctx = NULL;
+
+	if (ctx == NULL) {
+		DEBUG(1, ("Error: configuration is not open!\n"));
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
+
+	if (ctx->token == NULL) {
+		DEBUG(1, ("Error: token missing from libnet_conf_ctx. "
+			  "was libnet_conf_open() called?\n"));
+		werr = WERR_INVALID_PARAM;
+		goto done;
+	}
 
 	if (path == NULL) {
 		DEBUG(1, ("Error: NULL path string given\n"));
@@ -96,26 +104,7 @@ static WERROR libnet_conf_reg_open_path(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	tmp_ctx = talloc_new(mem_ctx);
-	if (tmp_ctx == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
-	werr = libnet_conf_reg_initialize();
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Error initializing registry: %s\n",
-			  dos_errstr(werr)));
-		goto done;
-	}
-
-	werr = ntstatus_to_werror(registry_create_admin_token(tmp_ctx, &token));
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Error creating admin token\n"));
-		goto done;
-	}
-
-	werr = reg_open_path(mem_ctx, path, desired_access, token, key);
+	werr = reg_open_path(mem_ctx, path, desired_access, ctx->token, key);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(1, ("Error opening registry path '%s': %s\n",
@@ -123,14 +112,14 @@ static WERROR libnet_conf_reg_open_path(TALLOC_CTX *mem_ctx,
 	}
 
 done:
-	TALLOC_FREE(tmp_ctx);
 	return werr;
 }
 
 /**
  * Open a subkey of KEY_SMBCONF (i.e a service)
  */
-static WERROR libnet_conf_reg_open_service_key(TALLOC_CTX *ctx,
+static WERROR libnet_conf_reg_open_service_key(TALLOC_CTX *mem_ctx,
+					       struct libnet_conf_ctx *ctx,
 					       const char *servicename,
 					       uint32 desired_access,
 					       struct registry_key **key)
@@ -144,9 +133,10 @@ static WERROR libnet_conf_reg_open_service_key(TALLOC_CTX *ctx,
 		goto done;
 	}
 
-	path = talloc_asprintf(ctx, "%s\\%s", KEY_SMBCONF, servicename);
+	path = talloc_asprintf(mem_ctx, "%s\\%s", KEY_SMBCONF, servicename);
 
-	werr = libnet_conf_reg_open_path(ctx, path, desired_access, key);
+	werr = libnet_conf_reg_open_path(mem_ctx, ctx, path, desired_access,
+					 key);
 
 done:
 	TALLOC_FREE(path);
@@ -156,11 +146,13 @@ done:
 /**
  * open the base key KEY_SMBCONF
  */
-static WERROR libnet_conf_reg_open_base_key(TALLOC_CTX *ctx,
+static WERROR libnet_conf_reg_open_base_key(TALLOC_CTX *mem_ctx,
+					    struct libnet_conf_ctx *ctx,
 					    uint32 desired_access,
 					    struct registry_key **key)
 {
-	return libnet_conf_reg_open_path(ctx, KEY_SMBCONF, desired_access, key);
+	return libnet_conf_reg_open_path(mem_ctx, ctx, KEY_SMBCONF,
+					 desired_access, key);
 }
 
 /**
@@ -186,7 +178,8 @@ static bool libnet_conf_value_exists(struct registry_key *key,
 /**
  * create a subkey of KEY_SMBCONF
  */
-static WERROR libnet_conf_reg_create_service_key(TALLOC_CTX *ctx,
+static WERROR libnet_conf_reg_create_service_key(TALLOC_CTX *mem_ctx,
+						 struct libnet_conf_ctx *ctx,
 						 const char * subkeyname,
 						 struct registry_key **newkey)
 {
@@ -198,18 +191,18 @@ static WERROR libnet_conf_reg_create_service_key(TALLOC_CTX *ctx,
 	/* create a new talloc ctx for creation. it will hold
 	 * the intermediate parent key (SMBCONF) for creation
 	 * and will be destroyed when leaving this function... */
-	if (!(create_ctx = talloc_new(ctx))) {
+	if (!(create_ctx = talloc_new(mem_ctx))) {
 		werr = WERR_NOMEM;
 		goto done;
 	}
 
-	werr = libnet_conf_reg_open_base_key(create_ctx, REG_KEY_WRITE,
+	werr = libnet_conf_reg_open_base_key(create_ctx, ctx, REG_KEY_WRITE,
 					     &create_parent);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
-	werr = reg_createkey(ctx, create_parent, subkeyname,
+	werr = reg_createkey(mem_ctx, create_parent, subkeyname,
 			     REG_KEY_WRITE, newkey, &action);
 	if (W_ERROR_IS_OK(werr) && (action != REG_CREATED_NEW_KEY)) {
 		DEBUG(10, ("Key '%s' already exists.\n", subkeyname));
@@ -414,6 +407,11 @@ done:
 	return werr;
 }
 
+static int libnet_conf_destroy_ctx(struct libnet_conf_ctx *ctx)
+{
+	return regdb_close();
+}
+
 /**********************************************************************
  *
  * The actual net conf api functions, that are exported.
@@ -421,9 +419,60 @@ done:
  **********************************************************************/
 
 /**
+ * Open the configuration.
+ *
+ * This should be the first function in a sequence of calls to libnet_conf
+ * functions:
+ *
+ * Upon success, this creates and returns the conf context
+ * that should be passed around in subsequent calls to the other
+ * libnet_conf functions.
+ *
+ * After the work with the configuration is completed, libnet_conf_close()
+ * should be called.
+ */
+WERROR libnet_conf_open(TALLOC_CTX *mem_ctx, struct libnet_conf_ctx **conf_ctx)
+{
+	WERROR werr = WERR_OK;
+	struct libnet_conf_ctx *ctx;
+
+	if (conf_ctx == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	ctx = TALLOC_ZERO_P(mem_ctx, struct libnet_conf_ctx);
+	if (ctx == NULL) {
+		return WERR_NOMEM;
+	}
+
+	werr = libnet_conf_reg_initialize(ctx);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto fail;
+	}
+
+	talloc_set_destructor(ctx, libnet_conf_destroy_ctx);
+
+	*conf_ctx = ctx;
+	return werr;
+
+fail:
+	TALLOC_FREE(ctx);
+	return werr;
+}
+
+/**
+ * Close the configuration.
+ */
+void libnet_conf_close(struct libnet_conf_ctx *ctx)
+{
+	/* this also closes the registry (by destructor): */
+	TALLOC_FREE(ctx);
+}
+
+/**
  * Drop the whole configuration (restarting empty).
  */
-WERROR libnet_conf_drop(void)
+WERROR libnet_conf_drop(struct libnet_conf_ctx *ctx)
 {
 	char *path, *p;
 	WERROR werr = WERR_OK;
@@ -439,7 +488,7 @@ WERROR libnet_conf_drop(void)
 	}
 	p = strrchr(path, '\\');
 	*p = '\0';
-	werr = libnet_conf_reg_open_path(mem_ctx, path, REG_KEY_WRITE,
+	werr = libnet_conf_reg_open_path(mem_ctx, ctx, path, REG_KEY_WRITE,
 					 &parent_key);
 
 	if (!W_ERROR_IS_OK(werr)) {
@@ -469,7 +518,8 @@ done:
  *  param_names  : list of lists of parameter names for each share
  *  param_values : list of lists of parameter values for each share
  */
-WERROR libnet_conf_get_config(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
+WERROR libnet_conf_get_config(TALLOC_CTX *mem_ctx,
+			      struct libnet_conf_ctx *ctx, uint32_t *num_shares,
 			      char ***share_names, uint32_t **num_params,
 			      char ****param_names, char ****param_values)
 {
@@ -496,7 +546,7 @@ WERROR libnet_conf_get_config(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 		goto done;
 	}
 
-	werr = libnet_conf_get_share_names(tmp_ctx, &tmp_num_shares,
+	werr = libnet_conf_get_share_names(tmp_ctx, ctx, &tmp_num_shares,
 					   &tmp_share_names);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -514,7 +564,8 @@ WERROR libnet_conf_get_config(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 	}
 
 	for (count = 0; count < tmp_num_shares; count++) {
-		werr = libnet_conf_get_share(mem_ctx, tmp_share_names[count],
+		werr = libnet_conf_get_share(mem_ctx, ctx,
+					     tmp_share_names[count],
 					     &tmp_num_params[count],
 					     &tmp_param_names[count],
 					     &tmp_param_values[count]);
@@ -543,11 +594,12 @@ done:
 	return werr;
 }
 
-
 /**
  * get the list of share names defined in the configuration.
  */
-WERROR libnet_conf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
+WERROR libnet_conf_get_share_names(TALLOC_CTX *mem_ctx,
+				   struct libnet_conf_ctx *ctx,
+				   uint32_t *num_shares,
 				   char ***share_names)
 {
 	uint32_t count;
@@ -570,7 +622,7 @@ WERROR libnet_conf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 	}
 
 	/* make sure "global" is always listed first */
-	if (libnet_conf_share_exists(GLOBAL_NAME)) {
+	if (libnet_conf_share_exists(ctx, GLOBAL_NAME)) {
 		werr = libnet_conf_add_string_to_array(tmp_ctx,
 						       &tmp_share_names,
 						       0, GLOBAL_NAME);
@@ -580,8 +632,8 @@ WERROR libnet_conf_get_share_names(TALLOC_CTX *mem_ctx, uint32_t *num_shares,
 		added_count++;
 	}
 
-	werr = libnet_conf_reg_open_base_key(tmp_ctx, SEC_RIGHTS_ENUM_SUBKEYS,
-					     &key);
+	werr = libnet_conf_reg_open_base_key(tmp_ctx, ctx,
+					     SEC_RIGHTS_ENUM_SUBKEYS, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -624,14 +676,15 @@ done:
 /**
  * check if a share/service of a given name exists
  */
-bool libnet_conf_share_exists(const char *servicename)
+bool libnet_conf_share_exists(struct libnet_conf_ctx *ctx,
+			      const char *servicename)
 {
 	bool ret = false;
 	WERROR werr = WERR_OK;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct registry_key *key = NULL;
 
-	werr = libnet_conf_reg_open_service_key(mem_ctx, servicename,
+	werr = libnet_conf_reg_open_service_key(mem_ctx, ctx, servicename,
 						REG_KEY_READ, &key);
 	if (W_ERROR_IS_OK(werr)) {
 		ret = true;
@@ -644,18 +697,20 @@ bool libnet_conf_share_exists(const char *servicename)
 /**
  * Add a service if it does not already exist.
  */
-WERROR libnet_conf_create_share(const char *servicename)
+WERROR libnet_conf_create_share(struct libnet_conf_ctx *ctx,
+				const char *servicename)
 {
 	WERROR werr;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 	struct registry_key *key = NULL;
 
-	if (libnet_conf_share_exists(servicename)) {
+	if (libnet_conf_share_exists(ctx, servicename)) {
 		werr = WERR_ALREADY_EXISTS;
 		goto done;
 	}
 
-	werr = libnet_conf_reg_create_service_key(mem_ctx, servicename, &key);
+	werr = libnet_conf_reg_create_service_key(mem_ctx, ctx, servicename,
+						  &key);
 
 done:
 	TALLOC_FREE(mem_ctx);
@@ -665,14 +720,14 @@ done:
 /**
  * get a definition of a share (service) from configuration.
  */
-WERROR libnet_conf_get_share(TALLOC_CTX *mem_ctx, const char *servicename,
-			     uint32_t *num_params, char ***param_names,
-			     char ***param_values)
+WERROR libnet_conf_get_share(TALLOC_CTX *mem_ctx, struct libnet_conf_ctx *ctx,
+			     const char *servicename, uint32_t *num_params,
+			     char ***param_names, char ***param_values)
 {
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
 
-	werr = libnet_conf_reg_open_service_key(mem_ctx, servicename,
+	werr = libnet_conf_reg_open_service_key(mem_ctx, ctx, servicename,
 						REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -689,13 +744,14 @@ done:
 /**
  * delete a service from configuration
  */
-WERROR libnet_conf_delete_share(const char *servicename)
+WERROR libnet_conf_delete_share(struct libnet_conf_ctx *ctx,
+				const char *servicename)
 {
 	WERROR werr = WERR_OK;
 	struct registry_key *key = NULL;
-	TALLOC_CTX *ctx = talloc_stackframe();
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	werr = libnet_conf_reg_open_base_key(ctx, REG_KEY_WRITE, &key);
+	werr = libnet_conf_reg_open_base_key(mem_ctx, ctx, REG_KEY_WRITE, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -703,14 +759,15 @@ WERROR libnet_conf_delete_share(const char *servicename)
 	werr = reg_deletekey_recursive(key, key, servicename);
 
 done:
-	TALLOC_FREE(ctx);
+	TALLOC_FREE(mem_ctx);
 	return werr;
 }
 
 /**
  * set a configuration parameter to the value provided.
  */
-WERROR libnet_conf_set_parameter(const char *service,
+WERROR libnet_conf_set_parameter(struct libnet_conf_ctx *ctx,
+				 const char *service,
 				 const char *param,
 				 const char *valstr)
 {
@@ -718,15 +775,15 @@ WERROR libnet_conf_set_parameter(const char *service,
 	struct registry_key *key = NULL;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (!libnet_conf_share_exists(service)) {
-		werr = libnet_conf_create_share(service);
+	if (!libnet_conf_share_exists(ctx, service)) {
+		werr = libnet_conf_create_share(ctx, service);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
 	}
 
-	werr = libnet_conf_reg_open_service_key(mem_ctx, service, REG_KEY_WRITE,
-						&key);
+	werr = libnet_conf_reg_open_service_key(mem_ctx, ctx, service,
+						REG_KEY_WRITE, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -742,6 +799,7 @@ done:
  * get the value of a configuration parameter as a string
  */
 WERROR libnet_conf_get_parameter(TALLOC_CTX *mem_ctx,
+				 struct libnet_conf_ctx *ctx,
 				 const char *service,
 				 const char *param,
 				 char **valstr)
@@ -755,13 +813,13 @@ WERROR libnet_conf_get_parameter(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	if (!libnet_conf_share_exists(service)) {
+	if (!libnet_conf_share_exists(ctx, service)) {
 		werr = WERR_NO_SUCH_SERVICE;
 		goto done;
 	}
 
-	werr = libnet_conf_reg_open_service_key(mem_ctx, service, REG_KEY_READ,
-						&key);
+	werr = libnet_conf_reg_open_service_key(mem_ctx, ctx, service,
+						REG_KEY_READ, &key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -791,17 +849,19 @@ done:
 /**
  * delete a parameter from configuration
  */
-WERROR libnet_conf_delete_parameter(const char *service, const char *param)
+WERROR libnet_conf_delete_parameter(struct libnet_conf_ctx *ctx,
+				    const char *service, const char *param)
 {
 	struct registry_key *key = NULL;
 	WERROR werr = WERR_OK;
 	TALLOC_CTX *mem_ctx = talloc_stackframe();
 
-	if (!libnet_conf_share_exists(service)) {
+	if (!libnet_conf_share_exists(ctx, service)) {
 		return WERR_NO_SUCH_SERVICE;
 	}
 
-	werr = libnet_conf_reg_open_service_key(mem_ctx, service, REG_KEY_ALL,
+	werr = libnet_conf_reg_open_service_key(mem_ctx, ctx, service,
+						REG_KEY_ALL,
 						&key);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -826,8 +886,9 @@ done:
  *
  **********************************************************************/
 
-WERROR libnet_conf_set_global_parameter(const char *param, const char *val)
+WERROR libnet_conf_set_global_parameter(struct libnet_conf_ctx *ctx,
+					const char *param, const char *val)
 {
-	return libnet_conf_set_parameter(GLOBAL_NAME, param, val);
+	return libnet_conf_set_parameter(ctx, GLOBAL_NAME, param, val);
 }
 

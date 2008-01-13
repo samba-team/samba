@@ -188,6 +188,7 @@ static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
 }
 
 static int import_process_service(TALLOC_CTX *ctx,
+				  struct libnet_conf_ctx *conf_ctx,
 				  struct share_params *share)
 {
 	int ret = -1;
@@ -210,8 +211,8 @@ static int import_process_service(TALLOC_CTX *ctx,
 	if (opt_testmode) {
 		d_printf("[%s]\n", servicename);
 	} else {
-		if (libnet_conf_share_exists(servicename)) {
-			werr = libnet_conf_delete_share(servicename);
+		if (libnet_conf_share_exists(conf_ctx, servicename)) {
+			werr = libnet_conf_delete_share(conf_ctx, servicename);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
 			}
@@ -232,7 +233,8 @@ static int import_process_service(TALLOC_CTX *ctx,
 			if (opt_testmode) {
 				d_printf("\t%s = %s\n", parm->label, valstr);
 			} else {
-				werr = libnet_conf_set_parameter(servicename,
+				werr = libnet_conf_set_parameter(conf_ctx,
+								 servicename,
 								 parm->label,
 								 valstr);
 				if (!W_ERROR_IS_OK(werr)) {
@@ -275,7 +277,8 @@ static bool globals_exist(void)
  * the conf functions
  */
 
-static int net_conf_list(int argc, const char **argv)
+static int net_conf_list(struct libnet_conf_ctx *conf_ctx,
+			 int argc, const char **argv)
 {
 	WERROR werr = WERR_OK;
 	int ret = -1;
@@ -294,9 +297,8 @@ static int net_conf_list(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = libnet_conf_get_config(ctx, &num_shares, &share_names,
-				      &num_params, &param_names,
-				      &param_values);
+	werr = libnet_conf_get_config(ctx, conf_ctx, &num_shares, &share_names,
+				      &num_params, &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error getting config: %s\n",
 			  dos_errstr(werr));
@@ -322,7 +324,8 @@ done:
 	return ret;
 }
 
-static int net_conf_import(int argc, const char **argv)
+static int net_conf_import(struct libnet_conf_ctx *conf_ctx,
+			   int argc, const char **argv)
 {
 	int ret = -1;
 	const char *filename = NULL;
@@ -369,7 +372,7 @@ static int net_conf_import(int argc, const char **argv)
 	    strequal(servicename, GLOBAL_NAME))
 	{
 		service_found = true;
-		if (import_process_service(ctx, &global_share) != 0) {
+		if (import_process_service(ctx, conf_ctx, &global_share) != 0) {
 			goto done;
 		}
 	}
@@ -388,7 +391,7 @@ static int net_conf_import(int argc, const char **argv)
 		    || strequal(servicename, lp_servicename(share->service)))
 		{
 			service_found = true;
-			if (import_process_service(ctx, share)!= 0) {
+			if (import_process_service(ctx, conf_ctx, share)!= 0) {
 				goto done;
 			}
 		}
@@ -408,7 +411,8 @@ done:
 	return ret;
 }
 
-static int net_conf_listshares(int argc, const char **argv)
+static int net_conf_listshares(struct libnet_conf_ctx *conf_ctx,
+			       int argc, const char **argv)
 {
 	WERROR werr = WERR_OK;
 	int ret = -1;
@@ -423,7 +427,8 @@ static int net_conf_listshares(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = libnet_conf_get_share_names(ctx, &num_shares, &share_names);
+	werr = libnet_conf_get_share_names(ctx, conf_ctx, &num_shares,
+					   &share_names);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -440,7 +445,8 @@ done:
 	return ret;
 }
 
-static int net_conf_drop(int argc, const char **argv)
+static int net_conf_drop(struct libnet_conf_ctx *conf_ctx,
+			 int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr;
@@ -450,7 +456,7 @@ static int net_conf_drop(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = libnet_conf_drop();
+	werr = libnet_conf_drop(conf_ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error deleting configuration: %s\n",
 			  dos_errstr(werr));
@@ -463,7 +469,8 @@ done:
 	return ret;
 }
 
-static int net_conf_showshare(int argc, const char **argv)
+static int net_conf_showshare(struct libnet_conf_ctx *conf_ctx,
+			      int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
@@ -483,7 +490,7 @@ static int net_conf_showshare(int argc, const char **argv)
 
 	sharename = argv[0];
 
-	werr = libnet_conf_get_share(ctx, sharename, &num_params,
+	werr = libnet_conf_get_share(ctx, conf_ctx, sharename, &num_params,
 				     &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_printf("error getting share parameters: %s\n",
@@ -511,7 +518,8 @@ done:
  * This is a high level utility function of the net conf utility,
  * not a direct frontend to the libnet_conf API.
  */
-static int net_conf_addshare(int argc, const char **argv)
+static int net_conf_addshare(struct libnet_conf_ctx *conf_ctx,
+			     int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
@@ -599,7 +607,7 @@ static int net_conf_addshare(int argc, const char **argv)
 		goto done;
 	}
 
-	if (libnet_conf_share_exists(sharename)) {
+	if (libnet_conf_share_exists(conf_ctx, sharename)) {
 		d_fprintf(stderr, "ERROR: share %s already exists.\n",
 			  sharename);
 		goto done;
@@ -634,7 +642,7 @@ static int net_conf_addshare(int argc, const char **argv)
 	 * create the share
 	 */
 
-	werr = libnet_conf_create_share(sharename);
+	werr = libnet_conf_create_share(conf_ctx, sharename);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error creating share %s: %s\n",
 			  sharename, dos_errstr(werr));
@@ -645,7 +653,7 @@ static int net_conf_addshare(int argc, const char **argv)
 	 * fill the share with parameters
 	 */
 
-	werr = libnet_conf_set_parameter(sharename, "path", path);
+	werr = libnet_conf_set_parameter(conf_ctx, sharename, "path", path);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting parameter %s: %s\n",
 			  "path", dos_errstr(werr));
@@ -653,7 +661,8 @@ static int net_conf_addshare(int argc, const char **argv)
 	}
 
 	if (comment != NULL) {
-		werr = libnet_conf_set_parameter(sharename, "comment", comment);
+		werr = libnet_conf_set_parameter(conf_ctx, sharename, "comment",
+						 comment);
 		if (!W_ERROR_IS_OK(werr)) {
 			d_fprintf(stderr, "Error setting parameter %s: %s\n",
 				  "comment", dos_errstr(werr));
@@ -661,14 +670,16 @@ static int net_conf_addshare(int argc, const char **argv)
 		}
 	}
 
-	werr = libnet_conf_set_parameter(sharename, "guest ok", guest_ok);
+	werr = libnet_conf_set_parameter(conf_ctx, sharename, "guest ok",
+					 guest_ok);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting parameter %s: %s\n",
 			  "'guest ok'", dos_errstr(werr));
 		goto done;
 	}
 
-	werr = libnet_conf_set_parameter(sharename, "writeable", writeable);
+	werr = libnet_conf_set_parameter(conf_ctx, sharename, "writeable",
+					 writeable);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting parameter %s: %s\n",
 			  "writeable", dos_errstr(werr));
@@ -682,7 +693,8 @@ done:
 	return ret;
 }
 
-static int net_conf_delshare(int argc, const char **argv)
+static int net_conf_delshare(struct libnet_conf_ctx *conf_ctx,
+			     int argc, const char **argv)
 {
 	int ret = -1;
 	const char *sharename = NULL;
@@ -694,7 +706,7 @@ static int net_conf_delshare(int argc, const char **argv)
 	}
 	sharename = argv[0];
 
-	werr = libnet_conf_delete_share(sharename);
+	werr = libnet_conf_delete_share(conf_ctx, sharename);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error deleting share %s: %s\n",
 			  sharename, dos_errstr(werr));
@@ -706,7 +718,8 @@ done:
 	return ret;
 }
 
-static int net_conf_setparm(int argc, const char **argv)
+static int net_conf_setparm(struct libnet_conf_ctx *conf_ctx,
+			    int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
@@ -722,8 +735,8 @@ static int net_conf_setparm(int argc, const char **argv)
 	param = strdup_lower(argv[1]);
 	value_str = argv[2];
 
-	if (!libnet_conf_share_exists(service)) {
-		werr = libnet_conf_create_share(service);
+	if (!libnet_conf_share_exists(conf_ctx, service)) {
+		werr = libnet_conf_create_share(conf_ctx, service);
 		if (!W_ERROR_IS_OK(werr)) {
 			d_fprintf(stderr, "Error creating share '%s': %s\n",
 				  service, dos_errstr(werr));
@@ -731,7 +744,7 @@ static int net_conf_setparm(int argc, const char **argv)
 		}
 	}
 
-	werr = libnet_conf_set_parameter(service, param, value_str);
+	werr = libnet_conf_set_parameter(conf_ctx, service, param, value_str);
 
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting value '%s': %s\n",
@@ -747,7 +760,8 @@ done:
 	return ret;
 }
 
-static int net_conf_getparm(int argc, const char **argv)
+static int net_conf_getparm(struct libnet_conf_ctx *conf_ctx,
+			    int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
@@ -765,7 +779,7 @@ static int net_conf_getparm(int argc, const char **argv)
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	werr = libnet_conf_get_parameter(ctx, service, param, &valstr);
+	werr = libnet_conf_get_parameter(ctx, conf_ctx, service, param, &valstr);
 
 	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,
@@ -793,7 +807,8 @@ done:
 	return ret;
 }
 
-static int net_conf_delparm(int argc, const char **argv)
+static int net_conf_delparm(struct libnet_conf_ctx *conf_ctx,
+			    int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
@@ -807,7 +822,7 @@ static int net_conf_delparm(int argc, const char **argv)
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	werr = libnet_conf_delete_parameter(service, param);
+	werr = libnet_conf_delete_parameter(conf_ctx, service, param);
 
 	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,
@@ -833,6 +848,62 @@ done:
 	return ret;
 }
 
+static int net_conf_wrap_function(int (*fn)(struct libnet_conf_ctx *,
+					    int, const char **),
+				  int argc, const char **argv)
+{
+	WERROR werr;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct libnet_conf_ctx *conf_ctx;
+	int ret = -1;
+
+	werr = libnet_conf_open(mem_ctx, &conf_ctx);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		return -1;
+	}
+
+	ret = fn(conf_ctx, argc, argv);
+
+	libnet_conf_close(conf_ctx);
+
+	return ret;
+}
+
+/*
+ * We need a functable struct of our own, because the
+ * functions are called through a wrapper that handles
+ * the opening and closing of the configuration, and so on.
+ */
+struct conf_functable {
+	const char *funcname;
+	int (*fn)(struct libnet_conf_ctx *ctx, int argc, const char **argv);
+	const char *helptext;
+};
+
+static int net_conf_run_function(int argc, const char **argv,
+				 const char *whoami,
+				 struct conf_functable *table)
+{
+	int i;
+
+	if (argc != 0) {
+		for (i=0; table[i].funcname; i++) {
+			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
+				return net_conf_wrap_function(table[i].fn,
+							      argc-1,
+							      argv+1);
+		}
+	}
+
+	for (i=0; table[i].funcname; i++) {
+		d_printf("%s %-15s %s\n", whoami, table[i].funcname,
+			 table[i].helptext);
+	}
+
+	return -1;
+}
+
 /*
  * Entry-point for all the CONF functions.
  */
@@ -840,7 +911,7 @@ done:
 int net_conf(int argc, const char **argv)
 {
 	int ret = -1;
-	struct functable2 func[] = {
+	struct conf_functable func_table[] = {
 		{"list", net_conf_list,
 		 "Dump the complete configuration in smb.conf like format."},
 		{"import", net_conf_import,
@@ -864,7 +935,7 @@ int net_conf(int argc, const char **argv)
 		{NULL, NULL, NULL}
 	};
 
-	ret = net_run_function2(argc, argv, "net conf", func);
+	ret = net_conf_run_function(argc, argv, "net conf", func_table);
 
 	return ret;
 }
