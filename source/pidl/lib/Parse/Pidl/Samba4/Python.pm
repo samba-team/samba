@@ -214,6 +214,7 @@ sub PythonStruct($$$$)
 	$self->pidl(".tp_dealloc = py_talloc_dealloc,");
 	$self->pidl(".tp_getattr = py_$name\_getattr,");
 	$self->pidl(".tp_setattr = py_$name\_setattr,");
+	$self->pidl(".tp_repr = py_talloc_default_repr,");
 	$self->deindent;
 	$self->pidl("};");
 
@@ -559,6 +560,8 @@ sub ConvertScalarToPython($$$)
 {
 	my ($self, $ctypename, $cvar) = @_;
 
+	die("expected string for $cvar, not $ctypename") if (ref($ctypename) eq "HASH");
+
 	$ctypename = expandAlias($ctypename);
 
 	if ($ctypename =~ /^(int|long|char|u?int[0-9]+|hyper|dlong|udlong|udlongr|time_t|NTTIME_hyper|NTTIME|NTTIME_1sec)$/) {
@@ -583,7 +586,7 @@ sub ConvertScalarToPython($$$)
 
 	if ($ctypename eq "string_array") { return "FIXME($cvar)"; }
 
-	if ($$ctypename eq "ipv4address") { return "FIXME($cvar)"; }
+	if ($ctypename eq "ipv4address") { return "FIXME($cvar)"; }
 	if ($ctypename eq "pointer") {
 		return "PyCObject_FromVoidPtr($cvar, talloc_free)";
 	}
@@ -614,8 +617,15 @@ sub ConvertObjectToPython($$$)
 		$actual_ctype = $ctype->{DATA};
 	}
 
-	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
-		($actual_ctype->{TYPE} eq "SCALAR") {
+	if ($actual_ctype->{TYPE} eq "ENUM") {
+		return $self->ConvertScalarToPython(Parse::Pidl::Typelist::enum_type_fn($actual_ctype), $cvar);
+	}
+
+	if ($actual_ctype->{TYPE} eq "BITMAP") {
+		return $self->ConvertScalarToPython(Parse::Pidl::Typelist::bitmap_type_fn($actual_ctype), $cvar);
+	}
+
+	if ($actual_ctype->{TYPE} eq "SCALAR") {
 		return $self->ConvertScalarToPython($actual_ctype->{NAME}, $cvar);
 	}
 
@@ -675,18 +685,18 @@ sub Parse($$$$$)
 	$self->indent;
 	$self->pidl("PyObject *m;");
 	$self->pidl("m = Py_InitModule(\"$basename\", $basename\_methods);");
-	foreach (keys %{$self->{constants}}) {
+	foreach my $name (keys %{$self->{constants}}) {
 		my $py_obj;
-		my ($ctype, $cvar) = @{$self->{constants}->{$_}};
+		my ($ctype, $cvar) = @{$self->{constants}->{$name}};
 		if ($cvar =~ /^[0-9]+$/ or $cvar =~ /^0x[0-9a-fA-F]+$/) {
 			$py_obj = "PyInt_FromLong($cvar)";
 		} elsif ($cvar =~ /^".*"$/) {
 			$py_obj = "PyString_FromString($cvar)";
 		} else {
-			$py_obj = $self->ConvertScalarToPython($ctype, $cvar);
+			$py_obj = $self->ConvertObjectToPython($ctype, $cvar);
 		}
 
-		$self->pidl("PyModule_AddObject(m, \"$_\", $py_obj);");
+		$self->pidl("PyModule_AddObject(m, \"$name\", $py_obj);");
 	}
 	$self->deindent;
 	$self->pidl("}");
