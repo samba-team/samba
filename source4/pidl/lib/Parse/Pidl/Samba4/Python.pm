@@ -11,6 +11,7 @@ use Exporter;
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName expandAlias);
 use Parse::Pidl::Util qw(has_property ParseExpr);
+use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
 use Parse::Pidl::CUtil qw(get_value_of get_pointer_to);
 
 use vars qw($VERSION);
@@ -100,7 +101,7 @@ sub FromUnionToPythonFunction($$$)
 		my $conv;
 		
 		if ($e->{NAME}) {
-			$conv = $self->ConvertObjectToPython($e->{TYPE}, "$name->$e->{NAME}");
+			$conv = $self->ConvertObjectToPython($e, "$name->$e->{NAME}");
 		} else {
 			$conv = "Py_None";
 		}
@@ -138,7 +139,7 @@ sub FromPythonToUnionFunction($$$$$)
 		}
 		$self->indent;
 		if ($e->{NAME}) {
-			$self->ConvertObjectFromPython($mem_ctx, $e->{TYPE}, $name, "ret->$e->{NAME}", "talloc_free(ret); return NULL;");
+			$self->ConvertObjectFromPython($mem_ctx, $e, $name, "ret->$e->{NAME}", "talloc_free(ret); return NULL;");
 		}
 		$self->pidl("break;");
 		$self->deindent;
@@ -174,7 +175,7 @@ sub PythonStruct($$$$)
 		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
 		my $varname = "object->$e->{NAME}";
 		$self->indent;
-		$self->pidl("return ".$self->ConvertObjectToPython($e->{TYPE}, $varname) . ";");
+		$self->pidl("return ".$self->ConvertObjectToPython($e, $varname) . ";");
 		$self->deindent;
 		$self->pidl("}");
 	}
@@ -188,7 +189,7 @@ sub PythonStruct($$$$)
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("$cname *object = py_talloc_get_type(py_obj, $cname);");
-	$self->pidl("TALLOC_CTX *mem_ctx = py_talloc_get_mem_ctx(py_obj);");
+	my $mem_ctx = "py_talloc_get_mem_ctx(py_obj)";
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
 		my $varname = "object->$e->{NAME}";
@@ -196,7 +197,7 @@ sub PythonStruct($$$$)
 		if ($e->{ORIGINAL}->{POINTERS} > 0) {
 			$self->pidl("talloc_free($varname);");
 		}
-		$self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "value", $varname, "return -1;");
+		$self->ConvertObjectFromPython($mem_ctx, $e, "value", $varname, "return -1;");
 		$self->pidl("return 0;");
 		$self->deindent;
 		$self->pidl("}");
@@ -270,7 +271,7 @@ sub PythonFunction($$$)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
-			$self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "py_$e->{NAME}", "r.in.$e->{NAME}", "talloc_free(mem_ctx); return NULL;");
+			$self->ConvertObjectFromPython("mem_ctx", $e, "py_$e->{NAME}", "r.in.$e->{NAME}", "talloc_free(mem_ctx); return NULL;");
 		}
 	}
 	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, &r);");
@@ -282,14 +283,14 @@ sub PythonFunction($$$)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/out/,@{$e->{DIRECTION}})) {
-			$self->pidl("PyTuple_SetItem(result, $i, " . $self->ConvertObjectToPython($e->{TYPE}, "r.out.$e->{NAME}") . ");");
+			$self->pidl("PyTuple_SetItem(result, $i, " . $self->ConvertObjectToPython($e, "r.out.$e->{NAME}") . ");");
 
 			$i++;
 		}
 	}
 
 	if (defined($fn->{RETURN_TYPE})) {
-		$self->pidl("PyTuple_SetItem(result, $i, " . $self->ConvertObjectToPython($fn->{RETURN_TYPE}, "r.out.result") . ");");
+		$self->pidl("PyTuple_SetItem(result, $i, " . $self->ConvertObjectToPythonData($fn->{RETURN_TYPE}, "r.out.result") . ");");
 	}
 
 	$self->pidl("talloc_free(mem_ctx);");
@@ -484,7 +485,7 @@ sub register_module_method($$$$$)
 	push (@{$self->{module_methods}}, [$fn_name, $pyfn_name, $flags, $doc])
 }
 
-sub ConvertObjectFromPython($$$$$$)
+sub convertObjectFromPythonData($$$$$$)
 {
 	my ($self, $mem_ctx, $ctype, $cvar, $target, $fail) = @_;
 
@@ -561,6 +562,36 @@ sub ConvertObjectFromPython($$$$$$)
 	}
 
 	die("unknown type ".mapTypeName($ctype) . ": $cvar");
+
+}
+
+sub ConvertObjectFromPythonLevel($$$$$$$)
+{
+	my ($self, $mem_ctx, $e, $l, $var_name, $target, $fail) = @_;
+
+	if ($l->{TYPE} eq "POINTER") {
+		$self->ConvertObjectFromPythonLevel($mem_ctx, $e, GetNextLevel($e, $l), get_value_of($var_name), $target, $fail);
+	} elsif ($l->{TYPE} eq "ARRAY") {
+		$self->ConvertObjectFromPythonLevel($mem_ctx, $e, GetNextLevel($e, $l), $var_name."[i]", $target, $fail);
+	} elsif ($l->{TYPE} eq "DATA") {
+		if (not Parse::Pidl::Typelist::is_scalar($l->{DATA_TYPE}) or 
+			Parse::Pidl::Typelist::scalar_is_reference($l->{DATA_TYPE})) {
+			$var_name = get_pointer_to($var_name);
+		}
+		$self->ConvertObjectToPythonData($mem_ctx, $l->{DATA_TYPE}, $var_name, $target, $fail);
+	} elsif ($l->{TYPE} eq "SWITCH") {
+		$self->ConvertObjectFromPythonLevel($mem_ctx, $e, GetNextLevel($e, $l), get_value_of($var_name), $target, $fail);
+	} else {
+		die("unknown level type $l->{TYPE}");
+	}
+}
+
+sub ConvertObjectFromPython($$$$$$)
+{
+	my ($self, $mem_ctx, $ctype, $cvar, $target, $fail) = @_;
+
+	$self->ConvertObjectFromPythonLevel($mem_ctx, $ctype, $ctype->{LEVELS}[0], 
+		                               $cvar, $target, $fail);
 }
 
 sub ConvertScalarToPython($$$)
@@ -601,7 +632,7 @@ sub ConvertScalarToPython($$$)
 	die("Unknown scalar type $ctypename");
 }
 
-sub ConvertObjectToPython($$$)
+sub ConvertObjectToPythonData($$$)
 {
 	my ($self, $ctype, $cvar) = @_;
 
@@ -646,6 +677,34 @@ sub ConvertObjectToPython($$$)
 	}
 
 	die("unknown type ".mapTypeName($ctype) . ": $cvar");
+}
+
+sub ConvertObjectToPythonLevel($$$$)
+{
+	my ($self, $e, $l, $var_name) = @_;
+
+	if ($l->{TYPE} eq "POINTER") {
+		$self->ConvertObjectToPythonLevel($e, GetNextLevel($e, $l), get_value_of($var_name));
+	} elsif ($l->{TYPE} eq "ARRAY") {
+		$self->ConvertObjectToPythonLevel($e, GetNextLevel($e, $l), $var_name."[i]");
+	} elsif ($l->{TYPE} eq "SWITCH") {
+		$self->ConvertObjectToPythonLevel($e, GetNextLevel($e, $l), $var_name);
+	} elsif ($l->{TYPE} eq "DATA") {
+		if (not Parse::Pidl::Typelist::is_scalar($l->{DATA_TYPE}) or 
+			Parse::Pidl::Typelist::scalar_is_reference($l->{DATA_TYPE})) {
+			$var_name = get_pointer_to($var_name);
+		}
+		$self->ConvertObjectToPythonData($l->{DATA_TYPE}, $var_name);
+	} else {
+		die("Unknown level type $l->{TYPE} $var_name");
+	}
+}
+
+sub ConvertObjectToPython($$$)
+{
+	my ($self, $ctype, $cvar) = @_;
+
+	$self->ConvertObjectToPythonLevel($ctype, $ctype->{LEVELS}[0], $cvar);
 }
 
 sub Parse($$$$$)
@@ -705,7 +764,7 @@ sub Parse($$$$$)
 		} elsif ($cvar =~ /^".*"$/) {
 			$py_obj = "PyString_FromString($cvar)";
 		} else {
-			$py_obj = $self->ConvertObjectToPython($ctype, $cvar);
+			$py_obj = $self->ConvertObjectToPythonData($ctype, $cvar);
 		}
 
 		$self->pidl("PyModule_AddObject(m, \"$name\", $py_obj);");

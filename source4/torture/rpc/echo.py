@@ -35,5 +35,5 @@ class RpcEchoTests(unittest.TestCase):
 
     def test_surrounding(self):
         somearray = [1,2,3,4]
-        conn.TestSurrounding(echo.Surrounding(4, somearray))
-        self.assertEquals(8 * [0], somearray)
+        (y) = conn.TestSurrounding(echo.Surrounding(4, somearray)))
+        self.assertEquals(8 * [0], y.surrounding)
