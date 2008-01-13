@@ -122,7 +122,7 @@ HEIMDAL_X509_1.0 {
 		hx509_name_is_null_p;
 		hx509_name_normalize;
 		hx509_name_to_Name;
-		hx509_name_to_der_name;
+		hx509_name_binary;
 		hx509_name_to_string;
 		hx509_ocsp_request;
 		hx509_ocsp_verify;
