@@ -140,15 +140,3 @@ der_get_tag_num(const char *name)
 {
     return get_type(name, tag_names, SIZEOF_ARRAY(tag_names));
 }
-
-void
-der_free(void *ptr)
-{
-    free(ptr);
-}
-
-void *
-der_malloc(size_t size)
-{
-    return malloc(size);
-}
