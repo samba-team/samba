@@ -1,3 +1,10 @@
+2007-12-28  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* heimntlm.h: Add NTLM_TARGET_*
+
+	* ntlm.c: Make heim_ntlm_decode_type3 more useful and provide a
+	username. From Ming Yang.
+
 2007-11-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* move doxygen into the main file
