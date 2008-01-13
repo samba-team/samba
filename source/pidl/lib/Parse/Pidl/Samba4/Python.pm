@@ -79,6 +79,8 @@ sub EnumAndBitmapConsts($$$)
 {
 	my ($self, $name, $d) = @_;
 
+	return unless (defined($d->{ELEMENTS}));
+
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		$e =~ /^([A-Za-z0-9_]+)=(.*)$/;
 		my $cname = $1;
