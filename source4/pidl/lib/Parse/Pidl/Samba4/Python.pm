@@ -112,16 +112,6 @@ sub FromUnionToPythonFunction($$$)
 	$self->pidl("return NULL;");
 }
 
-sub FromStructToPythonFunction($$$)
-{
-	my ($self, $type, $typename, $name) = @_;
-
-	$self->pidl("$typename\_Object *ret;");
-	$self->pidl("ret = PyObject_New($typename\_Object, &$typename\_ObjectType);");
-	$self->pidl("ret->object = talloc_reference(NULL, $name);");
-	$self->pidl("return (PyObject *) ret;");
-}
-
 sub FromPythonToUnionFunction($$$$)
 {
 	my ($self, $type, $switch, $mem_ctx, $name) = @_;
@@ -145,33 +135,19 @@ sub FromPythonToUnionFunction($$$$)
 	$self->pidl("return NULL;");
 }
 
-sub FromPythonToStructFunction($$$$$)
-{
-	my ($self, $type, $typename, $mem_ctx, $name) = @_;
-
-	$self->pidl("$typename\_Object *py_object = ($typename\_Object *)$name;");
-	$self->pidl("return talloc_reference($mem_ctx, py_object->object);");
-}
-
 sub PythonStruct($$$$)
 {
 	my ($self, $name, $cname, $d) = @_;
 
 	$self->pidl("staticforward PyTypeObject $name\_ObjectType;");
-	$self->pidl("typedef struct {");
-	$self->indent;
-	$self->pidl("PyObject_HEAD");
-	$self->pidl("$cname *object;");
-	$self->deindent;
-	$self->pidl("} $name\_Object;");
 
 	$self->pidl("");
 
 	$self->pidl("static PyObject *py_$name\_getattr(PyTypeObject *obj, char *name)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$name\_Object *py_object = ($name\_Object *)obj;");
-	$self->pidl("$cname *object = talloc_get_type(py_object->object, $cname);");
+	$self->pidl("py_talloc_Object *py_object = (py_talloc_Object *)obj;");
+	$self->pidl("$cname *object = py_talloc_get_type(py_object, $cname);");
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
 		my $varname = "object->$e->{NAME}";
@@ -186,21 +162,11 @@ sub PythonStruct($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static void py_$name\_dealloc(PyObject* self)");
-	$self->pidl("{");
-	$self->indent;
-	$self->pidl("$name\_Object *obj = ($name\_Object *)self;");
-	$self->pidl("talloc_free(obj->object);");
-	$self->pidl("PyObject_Del(self);");
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
-
 	$self->pidl("static PyObject *py_$name\_setattr(PyTypeObject *obj, char *name, PyObject *value)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$name\_Object *py_object = ($name\_Object *)obj;");
-	$self->pidl("$cname *object = talloc_get_type(py_object->object, $cname);");
+	$self->pidl("py_talloc_Object *py_object = (py_talloc_Object *)obj;");
+	$self->pidl("$cname *object = py_talloc_get_type(py_object, $cname);");
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
 		my $varname = "object->$e->{NAME}";
@@ -220,8 +186,8 @@ sub PythonStruct($$$$)
 	$self->indent;
 	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
 	$self->pidl(".tp_name = \"$name\",");
-	$self->pidl(".tp_basicsize = sizeof($name\_Object),");
-	$self->pidl(".tp_dealloc = (destructor)py_$name\_dealloc,");
+	$self->pidl(".tp_basicsize = sizeof(py_talloc_Object),");
+	$self->pidl(".tp_dealloc = (destructor)py_talloc_dealloc,");
 	$self->pidl(".tp_getattr = (getattrfunc)py_$name\_getattr,");
 	$self->pidl(".tp_setattr = (setattrfunc)py_$name\_setattr,");
 	$self->deindent;
@@ -233,9 +199,8 @@ sub PythonStruct($$$$)
 	$self->pidl("static PyObject *$py_fnname(PyObject *self, PyObject *args)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$name\_Object *ret;");
-	$self->pidl("ret = PyObject_New($name\_Object, &$name\_ObjectType);");
-	$self->pidl("return (PyObject *) ret;");
+	$self->pidl("$cname *ret = talloc_zero(NULL, $cname);");
+	$self->pidl("return py_talloc_import(&$name\_ObjectType, ret);");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
@@ -351,11 +316,10 @@ sub PythonType($$$)
 		$self->EnumAndBitmapConsts($d->{NAME}, $d->{DATA});
 	}
 
-	if ($actual_ctype->{TYPE} eq "UNION" or $actual_ctype->{TYPE} eq "STRUCT") {
+	if ($actual_ctype->{TYPE} eq "UNION") {
 		$self->pidl("PyObject *py_import_$d->{NAME}(" .mapTypeName($d) . " *in)");
 		$self->pidl("{");
 		$self->indent;
-		$self->FromStructToPythonFunction($actual_ctype, $d->{NAME}, "in") if ($actual_ctype->{TYPE} eq "STRUCT");
 		$self->FromUnionToPythonFunction($actual_ctype, "level", "in") if ($actual_ctype->{TYPE} eq "UNION");
 		$self->deindent;
 		$self->pidl("}");
@@ -364,7 +328,6 @@ sub PythonType($$$)
 		$self->pidl(mapTypeName($d) . " *py_export_$d->{NAME}(TALLOC_CTX *mem_ctx, PyObject *in)");
 		$self->pidl("{");
 		$self->indent;
-		$self->FromPythonToStructFunction($actual_ctype, $d->{NAME}, "mem_ctx", "in") if ($actual_ctype->{TYPE} eq "STRUCT");
 		$self->FromPythonToUnionFunction($actual_ctype, "level", "mem_ctx", "in") if ($actual_ctype->{TYPE} eq "UNION");
 		$self->deindent;
 		$self->pidl("}");
@@ -516,6 +479,14 @@ sub ConvertObjectFromPython($$$)
 		return "PyInt_AsLong($cvar)";
 	}
 
+	if ($actual_ctype->{TYPE} eq "STRUCT") {
+		return "py_talloc_get_type($cvar, " . mapTypeName($ctype) . ")";
+	}
+
+	if ($actual_ctype->{TYPE} eq "UNION") {
+		return "py_export_$ctype->{NAME}($cvar)";
+	}
+
 	return "FIXME($cvar)";
 }
 
@@ -556,10 +527,13 @@ sub ConvertObjectToPython($$$)
 		return "PyInt_FromLong($cvar)";
 	}
 
-	if ($ctype->{TYPE} eq "TYPEDEF" and (
-			$actual_ctype->{TYPE} eq "STRUCT" or 
-			$actual_ctype->{TYPE} eq "UNION")) {
+	if ($ctype->{TYPE} eq "TYPEDEF" and $actual_ctype->{TYPE} eq "UNION") {
 		return "py_import_$ctype->{NAME}($cvar)";
+	}
+
+	if ($ctype->{TYPE} eq "TYPEDEF" and $actual_ctype->{TYPE} eq "STRUCT") {
+		# FIXME: if $cvar is not a pointer, do a talloc_dup()
+		return "py_talloc_import(&$ctype->{NAME}_ObjectType, $cvar)";
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and 
@@ -614,6 +588,7 @@ sub Parse($$$$$)
 #include \"includes.h\"
 #include <Python.h>
 #include \"librpc/rpc/dcerpc.h\"
+#include \"scripting/python/pytalloc.h\"
 #include \"$hdr\"
 #include \"$ndr_hdr\"
 #include \"$py_hdr\"
