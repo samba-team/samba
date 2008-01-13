@@ -15,7 +15,7 @@ use Parse::Pidl::Typelist qw(typeHasBody);
 use Parse::Pidl::CUtil qw(get_pointer_to get_value_of);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel);
-use Parse::Pidl::Samba4::NDR::Parser qw(GenerateStructEnv GenerateFunctionInEnv
+use Parse::Pidl::Samba4::Header qw(GenerateStructEnv GenerateFunctionInEnv
                                         GenerateFunctionOutEnv);
 
 use vars qw($VERSION);
