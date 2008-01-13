@@ -884,6 +884,12 @@ done:
  *
  **********************************************************************/
 
+/**
+ * Set a global parameter
+ * (i.e. a parameter in the [global] service).
+ *
+ * This also creates [global] when it does not exist.
+ */
 WERROR libnet_conf_set_global_parameter(struct libnet_conf_ctx *ctx,
 					const char *param, const char *val)
 {
