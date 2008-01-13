@@ -868,6 +868,31 @@ done:
 }
 
 /**
+ * Get the value of a global parameter.
+ *
+ * Create [global] if it does not exist.
+ */
+WERROR libnet_conf_get_global_parameter(TALLOC_CTX *mem_ctx,
+					struct libnet_conf_ctx *ctx,
+					const char *param,
+					char **valstr)
+{
+	WERROR werr;
+
+	if (!libnet_conf_share_exists(ctx, GLOBAL_NAME)) {
+		werr = libnet_conf_create_share(ctx, GLOBAL_NAME);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+	}
+	werr = libnet_conf_get_parameter(mem_ctx, ctx, GLOBAL_NAME, param,
+					 valstr);
+
+done:
+	return werr;
+}
+
+/**
  * delete a parameter from configuration
  */
 WERROR libnet_conf_delete_parameter(struct libnet_conf_ctx *ctx,
