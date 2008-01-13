@@ -47,7 +47,7 @@ static PyMethodDef methods[] = {
 	{ NULL, NULL }
 };
 
-PyMODINIT_FUNC inituuid(void)
+void inituuid(void)
 {
 	PyObject *mod = Py_InitModule3((char *)"uuid", methods, "UUID helper routines");
 	if (mod == NULL)
