@@ -31,9 +31,11 @@
 #include "utils/net.h"
 #include "libnet/libnet.h"
 
-/*
+/**********************************************************************
+ *
  * usage functions
- */
+ *
+ **********************************************************************/
 
 static int net_conf_list_usage(int argc, const char **argv)
 {
@@ -109,10 +111,16 @@ static int net_conf_delparm_usage(int argc, const char **argv)
 }
 
 
-/*
+/**********************************************************************
+ *
  * Helper functions
- */
+ *
+ **********************************************************************/
 
+/**
+ * This formats an in-memory smbconf parameter to a string.
+ * The result string is allocated with talloc.
+ */
 static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
 			 struct share_params *share)
 {
@@ -187,6 +195,10 @@ static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
 	return valstr;
 }
 
+/**
+ * This functions imports a configuration that has previously
+ * been loaded with lp_load() to registry.
+ */
 static int import_process_service(TALLOC_CTX *ctx,
 				  struct libnet_conf_ctx *conf_ctx,
 				  struct share_params *share)
@@ -263,7 +275,10 @@ done:
 	return ret;
 }
 
-/* return true iff there are nondefault globals */
+/**
+ * Return true iff there are nondefault globals in the
+ * currently loaded configuration.
+ */
 static bool globals_exist(void)
 {
 	int i = 0;
@@ -277,9 +292,12 @@ static bool globals_exist(void)
 	return false;
 }
 
-/*
- * the conf functions
- */
+
+/**********************************************************************
+ *
+ * the main conf functions
+ *
+ **********************************************************************/
 
 static int net_conf_list(struct libnet_conf_ctx *conf_ctx,
 			 int argc, const char **argv)
@@ -852,6 +870,18 @@ done:
 	return ret;
 }
 
+
+/**********************************************************************
+ *
+ * Wrapper and net_conf_run_function mechanism.
+ *
+ **********************************************************************/
+
+/**
+ * Wrapper function to call the main conf functions.
+ * The wrapper calls handles opening and closing of the
+ * configuration.
+ */
 static int net_conf_wrap_function(int (*fn)(struct libnet_conf_ctx *,
 					    int, const char **),
 				  int argc, const char **argv)
@@ -885,6 +915,10 @@ struct conf_functable {
 	const char *helptext;
 };
 
+/**
+ * This imitates net_run_function2 but calls the main functions
+ * through the wrapper net_conf_wrap_function().
+ */
 static int net_conf_run_function(int argc, const char **argv,
 				 const char *whoami,
 				 struct conf_functable *table)
