@@ -151,7 +151,5 @@ unset PASSWD
 USER=$oldUSER
 export USER
 
-printenv
-
 rm -f tmpfile tmpfile-old tmpfilex tmpauthfile tmppassfile
 exit $failed
