@@ -8606,6 +8606,7 @@ static enum ndr_err_code ndr_pull_wkssvc_NetrGetJoinableOus(struct ndr_pull *ndr
 	TALLOC_CTX *_mem_save_unknown_0;
 	TALLOC_CTX *_mem_save_num_ous_0;
 	TALLOC_CTX *_mem_save_ous_1;
+	TALLOC_CTX *_mem_save_ous_2;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -9487,6 +9488,7 @@ static enum ndr_err_code ndr_pull_wkssvc_NetrGetJoinableOus2(struct ndr_pull *nd
 	TALLOC_CTX *_mem_save_EncryptedPassword_0;
 	TALLOC_CTX *_mem_save_num_ous_0;
 	TALLOC_CTX *_mem_save_ous_1;
+	TALLOC_CTX *_mem_save_ous_2;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 

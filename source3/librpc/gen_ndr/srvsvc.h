@@ -11,6 +11,10 @@
 #define STYPE_HIDDEN	( 0x80000000 )
 #define SHARE_1005_CSC_POLICY_MASK	( 0x00000030 )
 #define SHARE_1005_CSC_POLICY_SHIFT	( 4 )
+;
+
+;
+
 struct srvsvc_NetCharDevInfo0 {
 	const char *device;/* [unique,charset(UTF16)] */
 };
@@ -209,8 +213,9 @@ union srvsvc_NetSessCtr {
 	struct srvsvc_NetSessCtr502 *ctr502;/* [unique,case(502)] */
 };
 
+enum srvsvc_ShareType
 #ifndef USE_UINT_ENUMS
-enum srvsvc_ShareType {
+ {
 	STYPE_DISKTREE=0,
 	STYPE_DISKTREE_TEMPORARY=STYPE_DISKTREE|STYPE_TEMPORARY,
 	STYPE_DISKTREE_HIDDEN=STYPE_DISKTREE|STYPE_HIDDEN,
@@ -225,7 +230,7 @@ enum srvsvc_ShareType {
 	STYPE_IPC_HIDDEN=STYPE_IPC|STYPE_HIDDEN
 }
 #else
-enum srvsvc_ShareType { __donnot_use_enum_srvsvc_ShareType=0x7FFFFFFF}
+ { __donnot_use_enum_srvsvc_ShareType=0x7FFFFFFF}
 #define STYPE_DISKTREE ( 0 )
 #define STYPE_DISKTREE_TEMPORARY ( STYPE_DISKTREE|STYPE_TEMPORARY )
 #define STYPE_DISKTREE_HIDDEN ( STYPE_DISKTREE|STYPE_HIDDEN )
@@ -381,8 +386,9 @@ union srvsvc_NetShareCtr {
 	struct srvsvc_NetShareCtr1501 *ctr1501;/* [unique,case(1501)] */
 };
 
+enum srvsvc_PlatformId
 #ifndef USE_UINT_ENUMS
-enum srvsvc_PlatformId {
+ {
 	PLATFORM_ID_DOS=300,
 	PLATFORM_ID_OS2=400,
 	PLATFORM_ID_NT=500,
@@ -390,7 +396,7 @@ enum srvsvc_PlatformId {
 	PLATFORM_ID_VMS=700
 }
 #else
-enum srvsvc_PlatformId { __donnot_use_enum_srvsvc_PlatformId=0x7FFFFFFF}
+ { __donnot_use_enum_srvsvc_PlatformId=0x7FFFFFFF}
 #define PLATFORM_ID_DOS ( 300 )
 #define PLATFORM_ID_OS2 ( 400 )
 #define PLATFORM_ID_NT ( 500 )
