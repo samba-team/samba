@@ -9,6 +9,8 @@
 #define LSA_ENUM_TRUST_DOMAIN_MULTIPLIER	( 60 )
 #define LSA_REF_DOMAIN_LIST_MULTIPLIER	( 32 )
 #define LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER	( 82 )
+;
+
 struct lsa_String {
 	uint16_t length;/* [value(2*strlen_m(string))] */
 	uint16_t size;/* [value(2*strlen_m(string))] */
@@ -130,8 +132,9 @@ struct lsa_DnsDomainInfo {
 	struct dom_sid2 *sid;/* [unique] */
 };
 
+enum lsaPolicyInfo
 #ifndef USE_UINT_ENUMS
-enum lsaPolicyInfo {
+ {
 	LSA_POLICY_INFO_AUDIT_LOG=1,
 	LSA_POLICY_INFO_AUDIT_EVENTS=2,
 	LSA_POLICY_INFO_DOMAIN=3,
@@ -146,7 +149,7 @@ enum lsaPolicyInfo {
 	LSA_POLICY_INFO_DNS=12
 }
 #else
-enum lsaPolicyInfo { __donnot_use_enum_lsaPolicyInfo=0x7FFFFFFF}
+ { __donnot_use_enum_lsaPolicyInfo=0x7FFFFFFF}
 #define LSA_POLICY_INFO_AUDIT_LOG ( 1 )
 #define LSA_POLICY_INFO_AUDIT_EVENTS ( 2 )
 #define LSA_POLICY_INFO_DOMAIN ( 3 )
@@ -191,8 +194,9 @@ struct lsa_DomainList {
 	struct lsa_DomainInfo *domains;/* [unique,size_is(count)] */
 };
 
+enum lsa_SidType
 #ifndef USE_UINT_ENUMS
-enum lsa_SidType {
+ {
 	SID_NAME_USE_NONE=0,
 	SID_NAME_USER=1,
 	SID_NAME_DOM_GRP=2,
@@ -205,7 +209,7 @@ enum lsa_SidType {
 	SID_NAME_COMPUTER=9
 }
 #else
-enum lsa_SidType { __donnot_use_enum_lsa_SidType=0x7FFFFFFF}
+ { __donnot_use_enum_lsa_SidType=0x7FFFFFFF}
 #define SID_NAME_USE_NONE ( 0 )
 #define SID_NAME_USER ( 1 )
 #define SID_NAME_DOM_GRP ( 2 )
@@ -269,8 +273,9 @@ struct lsa_DATA_BUF2 {
 	uint8_t *data;/* [unique,size_is(size)] */
 }/* [flag(LIBNDR_PRINT_ARRAY_HEX)] */;
 
+enum lsa_TrustDomInfoEnum
 #ifndef USE_UINT_ENUMS
-enum lsa_TrustDomInfoEnum {
+ {
 	LSA_TRUSTED_DOMAIN_INFO_NAME=1,
 	LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS_INFO=2,
 	LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET=3,
@@ -283,7 +288,7 @@ enum lsa_TrustDomInfoEnum {
 	LSA_TRUSTED_DOMAIN_INFO_INFO_ALL=12
 }
 #else
-enum lsa_TrustDomInfoEnum { __donnot_use_enum_lsa_TrustDomInfoEnum=0x7FFFFFFF}
+ { __donnot_use_enum_lsa_TrustDomInfoEnum=0x7FFFFFFF}
 #define LSA_TRUSTED_DOMAIN_INFO_NAME ( 1 )
 #define LSA_TRUSTED_DOMAIN_INFO_CONTROLLERS_INFO ( 2 )
 #define LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET ( 3 )
@@ -405,13 +410,14 @@ struct lsa_DomainInfoEfs {
 	uint8_t *efs_blob;/* [unique,size_is(blob_size)] */
 };
 
+enum lsa_DomainInfoEnum
 #ifndef USE_UINT_ENUMS
-enum lsa_DomainInfoEnum {
+ {
 	LSA_DOMAIN_INFO_POLICY_EFS=2,
 	LSA_DOMAIN_INFO_POLICY_KERBEROS=3
 }
 #else
-enum lsa_DomainInfoEnum { __donnot_use_enum_lsa_DomainInfoEnum=0x7FFFFFFF}
+ { __donnot_use_enum_lsa_DomainInfoEnum=0x7FFFFFFF}
 #define LSA_DOMAIN_INFO_POLICY_EFS ( 2 )
 #define LSA_DOMAIN_INFO_POLICY_KERBEROS ( 3 )
 #endif

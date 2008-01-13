@@ -70,12 +70,13 @@ struct ENUM_SERVICE_STATUS {
 
 ;
 
+enum SERVICE_CONTROL
 #ifndef USE_UINT_ENUMS
-enum SERVICE_CONTROL {
+ {
 	FIXME=1
 }
 #else
-enum SERVICE_CONTROL { __donnot_use_enum_SERVICE_CONTROL=0x7FFFFFFF}
+ { __donnot_use_enum_SERVICE_CONTROL=0x7FFFFFFF}
 #define FIXME ( 1 )
 #endif
 ;

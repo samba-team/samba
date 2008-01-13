@@ -14,6 +14,8 @@
 #define NETLOGON_NEG_ARCFOUR	( 0x00000004 )
 #define NETLOGON_NEG_128BIT	( 0x00004000 )
 #define NETLOGON_NEG_SCHANNEL	( 0x40000000 )
+;
+
 struct netr_UasInfo {
 	const char *account_name;/* [unique,charset(UTF16)] */
 	uint32_t priv;
@@ -187,6 +189,10 @@ struct netr_Authenticator {
 	struct netr_Credential cred;
 	time_t timestamp;
 }/* [public] */;
+
+enum netr_SchannelType;
+
+enum netr_SamDatabaseID;
 
 struct netr_DELTA_DELETE_USER {
 	const char *account_name;/* [unique,charset(UTF16)] */
@@ -466,8 +472,9 @@ struct netr_DELTA_SECRET {
 	uint32_t unknown8;
 };
 
+enum netr_DeltaEnum
 #ifndef USE_UINT_ENUMS
-enum netr_DeltaEnum {
+ {
 	NETR_DELTA_DOMAIN=1,
 	NETR_DELTA_GROUP=2,
 	NETR_DELTA_DELETE_GROUP=3,
@@ -492,7 +499,7 @@ enum netr_DeltaEnum {
 	NETR_DELTA_MODIFY_COUNT=22
 }
 #else
-enum netr_DeltaEnum { __donnot_use_enum_netr_DeltaEnum=0x7FFFFFFF}
+ { __donnot_use_enum_netr_DeltaEnum=0x7FFFFFFF}
 #define NETR_DELTA_DOMAIN ( 1 )
 #define NETR_DELTA_GROUP ( 2 )
 #define NETR_DELTA_DELETE_GROUP ( 3 )
@@ -595,15 +602,16 @@ union netr_CONTROL_QUERY_INFORMATION {
 	struct netr_NETLOGON_INFO_3 *info3;/* [unique,case(3)] */
 };
 
+enum netr_LogonControlCode
 #ifndef USE_UINT_ENUMS
-enum netr_LogonControlCode {
+ {
 	NETLOGON_CONTROL_REDISCOVER=5,
 	NETLOGON_CONTROL_TC_QUERY=6,
 	NETLOGON_CONTROL_TRANSPORT_NOTIFY=7,
 	NETLOGON_CONTROL_SET_DBFLAG=65534
 }
 #else
-enum netr_LogonControlCode { __donnot_use_enum_netr_LogonControlCode=0x7FFFFFFF}
+ { __donnot_use_enum_netr_LogonControlCode=0x7FFFFFFF}
 #define NETLOGON_CONTROL_REDISCOVER ( 5 )
 #define NETLOGON_CONTROL_TC_QUERY ( 6 )
 #define NETLOGON_CONTROL_TRANSPORT_NOTIFY ( 7 )
@@ -694,15 +702,16 @@ struct netr_CryptPassword {
 
 ;
 
+enum netr_TrustType
 #ifndef USE_UINT_ENUMS
-enum netr_TrustType {
+ {
 	NETR_TRUST_TYPE_DOWNLEVEL=1,
 	NETR_TRUST_TYPE_UPLEVEL=2,
 	NETR_TRUST_TYPE_MIT=3,
 	NETR_TRUST_TYPE_DCE=4
 }
 #else
-enum netr_TrustType { __donnot_use_enum_netr_TrustType=0x7FFFFFFF}
+ { __donnot_use_enum_netr_TrustType=0x7FFFFFFF}
 #define NETR_TRUST_TYPE_DOWNLEVEL ( 1 )
 #define NETR_TRUST_TYPE_UPLEVEL ( 2 )
 #define NETR_TRUST_TYPE_MIT ( 3 )
