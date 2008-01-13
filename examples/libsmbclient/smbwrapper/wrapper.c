@@ -61,6 +61,7 @@
 #include <dirent.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <string.h>
 #ifdef __USE_GNU
 # define SMBW_USE_GNU
 #endif
