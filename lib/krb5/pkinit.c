@@ -212,8 +212,7 @@ cert2epi(hx509_context context, void *ctx, hx509_cert c)
 	    return ENOMEM;
 	}
     
-	ret = hx509_name_to_der_name(subject, &id.subjectName->data,
-				     &id.subjectName->length);
+	ret = hx509_name_binary(subject, id.subjectName);
 	if (ret) {
 	    hx509_name_free(&subject);
 	    free_ExternalPrincipalIdentifier(&id);
