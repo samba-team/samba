@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -170,11 +170,32 @@ RSA_up_ref(RSA *rsa)
     return ++rsa->references;
 }
 
+/**
+ * Return the RSA_METHOD used for this RSA object.
+ *
+ * @param rsa the object to get the method from.
+ *
+ * @return the method used for this RSA object.
+ *
+ * @ingroup hcrypto_rsa
+ */
+
 const RSA_METHOD *
 RSA_get_method(const RSA *rsa)
 {
     return rsa->meth;
 }
+
+/**
+ * Set a new method for the RSA keypair.
+ *
+ * @param rsa rsa parameter.
+ * @param method the new method for the RSA parameter.
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_rsa
+ */
 
 int
 RSA_set_method(RSA *rsa, const RSA_METHOD *method)
@@ -191,12 +212,33 @@ RSA_set_method(RSA *rsa, const RSA_METHOD *method)
     return 1;
 }
 
+/**
+ * Set the application data for the RSA object.
+ *
+ * @param rsa the rsa object to set the parameter for
+ * @param arg the data object to store
+ *
+ * @return 1 on success.
+ *
+ * @ingroup hcrypto_rsa
+ */
+
 int
 RSA_set_app_data(RSA *rsa, void *arg)
 {
     rsa->ex_data.sk = arg;
     return 1;
 }
+
+/**
+ * Get the application data for the RSA object.
+ *
+ * @param rsa the rsa object to get the parameter for
+ *
+ * @return the data object
+ *
+ * @ingroup hcrypto_rsa
+ */
 
 void *
 RSA_get_app_data(RSA *rsa)
