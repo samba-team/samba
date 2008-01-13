@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2006 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 2006 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -59,12 +59,13 @@ test_libntlm_v1(int flags)
     struct ntlm_type3 type3;
     struct ntlm_buf data;
     krb5_error_code ret;
+    gss_name_t src_name = GSS_C_NO_NAME;
     
     memset(&type1, 0, sizeof(type1));
     memset(&type2, 0, sizeof(type2));
     memset(&type3, 0, sizeof(type3));
 
-    type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_NTLM|flags;
+    type1.flags = NTLM_NEG_UNICODE|NTLM_NEG_TARGET|NTLM_NEG_NTLM|flags;
     type1.domain = strdup(domain);
     type1.hostname = NULL;
     type1.os[0] = 0;
@@ -106,6 +107,8 @@ test_libntlm_v1(int flags)
     if (ret)
 	errx(1, "heim_ntlm_decode_type2");
 
+    gss_release_buffer(&min_stat, &output);
+
     type3.flags = type2.flags;
     type3.username = rk_UNCONST(user);
     type3.targetname = type2.targetname;
@@ -142,7 +145,7 @@ test_libntlm_v1(int flags)
 				      GSS_C_NO_CREDENTIAL,
 				      &input,
 				      GSS_C_NO_CHANNEL_BINDINGS,
-				      NULL,
+				      &src_name,
 				      NULL,
 				      &output,
 				      NULL,
@@ -153,7 +156,18 @@ test_libntlm_v1(int flags)
 	errx(1, "accept_sec_context v1 2 %s",
 	     gssapi_err(maj_stat, min_stat, GSS_C_NO_OID));
 
+    gss_release_buffer(&min_stat, &output);
     gss_delete_sec_context(&min_stat, &ctx, NULL);
+
+    if (src_name == GSS_C_NO_NAME)
+	errx(1, "no source name!");
+
+    gss_display_name(&min_stat, src_name, &output, NULL);
+
+    printf("src_name: %.*s\n", (int)output.length, (char*)output.value);
+
+    gss_release_name(&min_stat, &src_name);
+    gss_release_buffer(&min_stat, &output);
 
     return 0;
 }
