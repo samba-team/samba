@@ -103,7 +103,7 @@ hx509_print_stdout(void *ctx, const char *fmt, va_list va)
     vfprintf(f, fmt, va);
 }
 
-void
+static void
 print_func(hx509_vprint_func func, void *ctx, const char *fmt, ...)
 {
     va_list va;
