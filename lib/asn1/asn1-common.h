@@ -50,14 +50,14 @@ typedef struct heim_octet_string heim_any_set;
 #define ASN1_MALLOC_ENCODE(T, B, BL, S, L, R)                  \
   do {                                                         \
     (BL) = length_##T((S));                                    \
-    (B) = malloc((BL));                                        \
+    (B) = der_malloc((BL));                                    \
     if((B) == NULL) {                                          \
       (R) = ENOMEM;                                            \
     } else {                                                   \
       (R) = encode_##T(((unsigned char*)(B)) + (BL) - 1, (BL), \
                        (S), (L));                              \
       if((R) != 0) {                                           \
-        free((B));                                             \
+        der_free((B));                                         \
         (B) = NULL;                                            \
       }                                                        \
     }                                                          \

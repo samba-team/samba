@@ -316,7 +316,7 @@ encode_type (const char *name, const Type *t, const char *tmpstr)
 		"if(eret) {\n"
 		"i--;\n"
 		"while (i >= 0) {\n"
-		"free(val[i].data);\n"
+		"der_free(val[i].data);\n"
 		"i--;\n"
 		"}\n"
 		"free(val);\n"
