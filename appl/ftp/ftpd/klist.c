@@ -72,7 +72,7 @@ print_tickets (krb5_context context,
 {
     krb5_error_code ret;
     krb5_cc_cursor cursor;
-    krb5_creds creds;
+    krb5_creds cred;
     char *str;
 
     ret = krb5_unparse_name (context, principal, &str);
@@ -99,10 +99,10 @@ print_tickets (krb5_context context,
     while ((ret = krb5_cc_next_cred (context,
 				     ccache,
 				     &cursor,
-				     &creds)) == 0) {
-	if (print_cred(context, &creds))
+				     &cred)) == 0) {
+	if (print_cred(context, &cred))
 	    return 500;		
-	krb5_free_creds_contents (context, &creds);
+	krb5_free_cred_contents (context, &cred);
     }
     if (ret != KRB5_CC_END) {
 	lreply(500, "krb5_cc_get_next: %d", ret);
