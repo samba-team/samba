@@ -65,7 +65,7 @@ sub Import
 sub Const($$)
 {
     my ($self, $const) = @_;
-	$self->register_constant($const->{NAME}, $const->{DATA}->{TYPE}, $const->{VALUE});
+	$self->register_constant($const->{NAME}, $const->{DTYPE}, $const->{VALUE});
 }
 
 sub register_constant($$$$)
@@ -258,7 +258,7 @@ sub PythonFunction($$$)
 		}
 	}
 
-	if ($fn->{RETURN_TYPE}) {
+	if (defined($fn->{RETURN_TYPE})) {
 		$self->pidl("PyTuple_SetItem(result, $i, " . $self->ConvertObjectToPython($fn->{RETURN_TYPE}, "r.out.result") . ");");
 	}
 
@@ -460,8 +460,14 @@ sub ConvertObjectFromPython($$$)
 {
 	my ($self, $ctype, $cvar) = @_;
 
+	die("undef type for $cvar") unless(defined($ctype));
+
 	if (ref($ctype) ne "HASH") {
 		$ctype = getType($ctype);
+	}
+
+	if (ref($ctype) ne "HASH") {
+		return "FIXME($cvar)";
 	}
 
 	my $actual_ctype = $ctype;
@@ -482,13 +488,23 @@ sub ConvertObjectToPython($$$)
 {
 	my ($self, $ctype, $cvar) = @_;
 
+	if ($cvar =~ /^[0-9]+$/ or $cvar =~ /^0x[0-9a-fA-F]+$/) {
+		return "PyInt_FromLong($cvar)";
+	}
+
+	die("undef type for $cvar") unless(defined($ctype));
+
 	if ($cvar =~ /^".*"$/) {
 		return "PyString_FromString($cvar)";
 	}
 
 	if (ref($ctype) ne "HASH") {
 		if (not hasType($ctype)) {
-			return "py_import_$ctype($cvar)"; # best bet
+			if (ref($ctype) eq "HASH") {
+				return "py_import_$ctype->{TYPE}_$ctype->{NAME}($cvar)";
+			} else {
+				return "py_import_$ctype($cvar)"; # best bet
+			}
 		}
 
 		$ctype = getType($ctype);
@@ -499,8 +515,7 @@ sub ConvertObjectToPython($$$)
 		$actual_ctype = $ctype->{DATA};
 	}
 
-	if ($cvar =~ /^[0-9]+$/ or 
-		$actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
+	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
 		($actual_ctype->{TYPE} eq "SCALAR" and 
 		expandAlias($actual_ctype->{NAME}) =~ /^(int|long|char|u?int[0-9]+|hyper|dlong|udlong|udlongr|time_t|NTTIME_hyper|NTTIME|NTTIME_1sec)$/)) {
 		return "PyInt_FromLong($cvar)";
