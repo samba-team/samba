@@ -97,7 +97,13 @@ sub FromUnionToPythonFunction($$$)
 	$self->indent;
 
 	foreach my $e (@{$type->{ELEMENTS}}) {
-		my $conv = $self->ConvertObjectToPython($e->{TYPE}, "$name->$e->{NAME}");
+		my $conv;
+		
+		if ($e->{NAME}) {
+			$conv = $self->ConvertObjectToPython($e->{TYPE}, "$name->$e->{NAME}");
+		} else {
+			$conv = "Py_None";
+		}
 		if (defined($e->{CASE})) {
 			$self->pidl("$e->{CASE}: return $conv;");
 		} else {
@@ -112,27 +118,46 @@ sub FromUnionToPythonFunction($$$)
 	$self->pidl("return NULL;");
 }
 
-sub FromPythonToUnionFunction($$$$)
+sub FromPythonToUnionFunction($$$$$)
 {
-	my ($self, $type, $switch, $mem_ctx, $name) = @_;
+	my ($self, $type, $typename, $switch, $mem_ctx, $name) = @_;
+
+	my $has_default = 0;
+
+	$self->pidl("$typename *ret = talloc_zero($mem_ctx, $typename);");
 
 	$self->pidl("switch ($switch) {");
 	$self->indent;
 
 	foreach my $e (@{$type->{ELEMENTS}}) {
-		my $conv = $self->ConvertObjectFromPython($mem_ctx, $e->{TYPE}, "$name");
 		if (defined($e->{CASE})) {
-			$self->pidl("$e->{CASE}: return $conv;");
+			$self->pidl("$e->{CASE}:");
 		} else {
-			$self->pidl("default: return $conv;");
+			$has_default = 1;
+			$self->pidl("default:");
 		}
+		$self->indent;
+		if ($e->{NAME}) {
+			$self->ConvertObjectFromPython($mem_ctx, $e->{TYPE}, $name, "ret->$e->{NAME}");
+		}
+		$self->pidl("break;");
+		$self->deindent;
+		$self->pidl("");
+	}
+
+	if (!$has_default) {
+		$self->pidl("default:");
+		$self->indent;
+		$self->pidl("PyErr_SetString(PyExc_TypeError, \"invalid union level value\");");
+		$self->pidl("talloc_free(ret);");
+		$self->pidl("ret = NULL;");
+		$self->deindent;
 	}
 
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
-	$self->pidl("PyErr_SetString(PyExc_TypeError, \"invalid union level value\");");
-	$self->pidl("return NULL;");
+	$self->pidl("return ret;");
 }
 
 sub PythonStruct($$$$)
@@ -161,21 +186,22 @@ sub PythonStruct($$$$)
 	$self->pidl("}");
 	$self->pidl("");
 
-	$self->pidl("static PyObject *py_$name\_setattr(PyObject *obj, char *name, PyObject *value)");
+	$self->pidl("static int py_$name\_setattr(PyObject *py_obj, char *name, PyObject *value)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$cname *object = py_talloc_get_type(py_object, $cname);");
+	$self->pidl("$cname *object = py_talloc_get_type(py_obj, $cname);");
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
 		my $varname = "object->$e->{NAME}";
 		$self->indent;
 		$self->pidl("/* FIXME: talloc_free($varname) if necessary */");
-		$self->pidl("$varname = " . $self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "value") . ";");
+		$self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "value", $varname);
+		$self->pidl("return 0;");
 		$self->deindent;
 		$self->pidl("}");
 	}
 	$self->pidl("PyErr_SetString(PyExc_AttributeError, \"no such attribute\");");
-	$self->pidl("return NULL;");
+	$self->pidl("return -1;");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
@@ -238,7 +264,7 @@ sub PythonFunction($$$)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
-			$self->pidl("r.in.$e->{NAME} = " . $self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "py_$e->{NAME}") . ";");
+			$self->ConvertObjectFromPython("mem_ctx", $e->{TYPE}, "py_$e->{NAME}", "r.in.$e->{NAME}");
 		}
 	}
 	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, &r);");
@@ -303,7 +329,7 @@ sub PythonType($$$)
 		$fn_name =~ s/^$interface->{NAME}_//;
 		$fn_name =~ s/^$basename\_//;
 
-		$self->register_module_method($fn_name, $py_fnname, "METH_VARARGS|METH_KEYWORDS", "NULL");
+		$self->register_module_method($fn_name, $py_fnname, "METH_NOARGS", "NULL");
 	}
 
 	if ($d->{TYPE} eq "ENUM" or $d->{TYPE} eq "BITMAP") {
@@ -315,7 +341,7 @@ sub PythonType($$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "UNION") {
-		$self->pidl("PyObject *py_import_$d->{NAME}(" .mapTypeName($d) . " *in)");
+		$self->pidl("PyObject *py_import_$d->{NAME}(int level, " .mapTypeName($d) . " *in)");
 		$self->pidl("{");
 		$self->indent;
 		$self->FromUnionToPythonFunction($actual_ctype, "level", "in") if ($actual_ctype->{TYPE} eq "UNION");
@@ -323,10 +349,10 @@ sub PythonType($$$)
 		$self->pidl("}");
 		$self->pidl("");
 
-		$self->pidl(mapTypeName($d) . " *py_export_$d->{NAME}(TALLOC_CTX *mem_ctx, PyObject *in)");
+		$self->pidl(mapTypeName($d) . " *py_export_$d->{NAME}(TALLOC_CTX *mem_ctx, int level, PyObject *in)");
 		$self->pidl("{");
 		$self->indent;
-		$self->FromPythonToUnionFunction($actual_ctype, "level", "mem_ctx", "in") if ($actual_ctype->{TYPE} eq "UNION");
+		$self->FromPythonToUnionFunction($actual_ctype, mapTypeName($d), "level", "mem_ctx", "in") if ($actual_ctype->{TYPE} eq "UNION");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
@@ -452,9 +478,9 @@ sub register_module_method($$$$$)
 	push (@{$self->{module_methods}}, [$fn_name, $pyfn_name, $flags, $doc])
 }
 
-sub ConvertObjectFromPython($$$$)
+sub ConvertObjectFromPython($$$$$)
 {
-	my ($self, $mem_ctx, $ctype, $cvar) = @_;
+	my ($self, $mem_ctx, $ctype, $cvar, $target) = @_;
 
 	die("undef type for $cvar") unless(defined($ctype));
 
@@ -463,7 +489,8 @@ sub ConvertObjectFromPython($$$$)
 	}
 
 	if (ref($ctype) ne "HASH") {
-		return "FIXME($cvar)";
+		$self->pidl("$target = FIXME($cvar);");
+		return;
 	}
 
 	my $actual_ctype = $ctype;
@@ -474,63 +501,101 @@ sub ConvertObjectFromPython($$$$)
 	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
 		$actual_ctype->{TYPE} eq "SCALAR" and (
 		expandAlias($actual_ctype->{NAME}) =~ /^(u?int[0-9]+|hyper|NTTIME|time_t|NTTIME_hyper|NTTIME_1sec|dlong|udlong|udlongr)$/)) {
-		return "PyInt_AsLong($cvar)";
+		$self->pidl("$target = PyInt_AsLong($cvar);");
+		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "STRUCT") {
-		return "py_talloc_get_type($cvar, " . mapTypeName($ctype) . ")";
+		$self->pidl("$target = py_talloc_get_type($cvar, " . mapTypeName($ctype) . ");");
+		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "UNION") {
-		return "py_export_$ctype->{NAME}($cvar)";
+		$self->pidl("$target = py_export_$ctype->{NAME}($cvar);");
+		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "DATA_BLOB") {
-		return "data_blob_talloc($mem_ctx, PyString_AsString($cvar), PyString_Size($cvar))";
+		$self->pidl("$target = data_blob_talloc($mem_ctx, PyString_AsString($cvar), PyString_Size($cvar));");
+		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and 
 		($actual_ctype->{NAME} eq "string" or $actual_ctype->{NAME} eq "nbt_string" or $actual_ctype->{NAME} eq "nbt_name" or $actual_ctype->{NAME} eq "wrepl_nbt_name")) {
-		return "talloc_strdup($mem_ctx, PyString_AsString($cvar))";
+		$self->pidl("$target = talloc_strdup($mem_ctx, PyString_AsString($cvar));");
+		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "ipv4address") {
-		return "FIXME($cvar)";
+		$self->pidl("$target = FIXME($cvar);");
+		return;
 		}
 
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "NTSTATUS") {
-		return "PyInt_AsLong($cvar)";
+		$self->pidl("$target = PyInt_AsLong($cvar);");
+		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "WERROR") {
-		return "PyInt_AsLong($cvar)";
+		$self->pidl("$target = PyInt_AsLong($cvar);");
+		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "string_array") {
-		return "FIXME($cvar)";
+		$self->pidl("$target = FIXME($cvar);");
+		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "pointer") {
-		return "PyCObject_AsVoidPtr($cvar)";
+		$self->pidl("$target = PyCObject_AsVoidPtr($cvar);");
+		return;
 	}
 
 	die("unknown type ".mapTypeName($ctype) . ": $cvar");
+}
+
+sub ConvertScalarToPython($$$)
+{
+	my ($self, $ctypename, $cvar) = @_;
+
+	$ctypename = expandAlias($ctypename);
+
+	if ($ctypename =~ /^(int|long|char|u?int[0-9]+|hyper|dlong|udlong|udlongr|time_t|NTTIME_hyper|NTTIME|NTTIME_1sec)$/) {
+		return "PyInt_FromLong($cvar)";
+	}
+
+	if ($ctypename eq "DATA_BLOB") {
+		return "PyString_FromStringAndSize($cvar->data, $cvar->length)";
+	}
+
+	if ($ctypename eq "NTSTATUS") {
+		return "PyInt_FromLong(NT_STATUS_V($cvar))";
+	}
+
+	if ($ctypename eq "WERROR") {
+		return "PyInt_FromLong(W_ERROR_V($cvar))";
+	}
+
+	if (($ctypename eq "string" or $ctypename eq "nbt_string" or $ctypename eq "nbt_name" or $ctypename eq "wrepl_nbt_name")) {
+		return "PyString_FromString($cvar)";
+	}
+
+	if ($ctypename eq "string_array") { return "FIXME($cvar)"; }
+
+	if ($$ctypename eq "ipv4address") { return "FIXME($cvar)"; }
+	if ($ctypename eq "pointer") {
+		return "PyCObject_FromVoidPtr($cvar, talloc_free)";
+	}
+
+	die("Unknown scalar type $ctypename");
 }
 
 sub ConvertObjectToPython($$$)
 {
 	my ($self, $ctype, $cvar) = @_;
 
-	if ($cvar =~ /^[0-9]+$/ or $cvar =~ /^0x[0-9a-fA-F]+$/) {
-		return "PyInt_FromLong($cvar)";
-	}
-
 	die("undef type for $cvar") unless(defined($ctype));
-
-	if ($cvar =~ /^".*"$/) {
-		return "PyString_FromString($cvar)";
-	}
 
 	if (ref($ctype) ne "HASH") {
 		if (not hasType($ctype)) {
@@ -550,52 +615,17 @@ sub ConvertObjectToPython($$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
-		($actual_ctype->{TYPE} eq "SCALAR" and 
-		expandAlias($actual_ctype->{NAME}) =~ /^(int|long|char|u?int[0-9]+|hyper|dlong|udlong|udlongr|time_t|NTTIME_hyper|NTTIME|NTTIME_1sec)$/)) {
-		return "PyInt_FromLong($cvar)";
+		($actual_ctype->{TYPE} eq "SCALAR") {
+		return $self->ConvertScalarToPython($actual_ctype->{NAME}, $cvar);
 	}
 
-	if ($ctype->{TYPE} eq "TYPEDEF" and $actual_ctype->{TYPE} eq "UNION") {
+	if ($actual_ctype->{TYPE} eq "UNION") {
 		return "py_import_$ctype->{NAME}($cvar)";
 	}
 
-	if ($ctype->{TYPE} eq "TYPEDEF" and $actual_ctype->{TYPE} eq "STRUCT") {
+	if ($actual_ctype->{TYPE} eq "STRUCT") {
 		# FIXME: if $cvar is not a pointer, do a talloc_dup()
 		return "py_talloc_import(&$ctype->{NAME}_ObjectType, $cvar)";
-	}
-
-	if ($actual_ctype->{TYPE} eq "SCALAR" and 
-		expandAlias($actual_ctype->{NAME}) eq "DATA_BLOB") {
-		return "PyString_FromStringAndSize($cvar->data, $cvar->length)";
-	}
-
-	if ($ctype->{TYPE} eq "STRUCT" or $ctype->{TYPE} eq "UNION") {
-		return "py_import_$ctype->{TYPE}_$ctype->{NAME}($cvar)";
-	}
-
-	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "NTSTATUS") {
-		return "PyInt_FromLong(NT_STATUS_V($cvar))";
-	}
-
-	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "WERROR") {
-		return "PyInt_FromLong(W_ERROR_V($cvar))";
-	}
-
-	if ($actual_ctype->{TYPE} eq "SCALAR" and 
-		($actual_ctype->{NAME} eq "string" or $actual_ctype->{NAME} eq "nbt_string" or $actual_ctype->{NAME} eq "nbt_name" or $actual_ctype->{NAME} eq "wrepl_nbt_name")) {
-		return "PyString_FromString($cvar)";
-	}
-
-	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "string_array") {
-		return "FIXME($cvar)";
-	}
-
-	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "ipv4address") {
-		return "FIXME($cvar)";
-		}
-
-	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "pointer") {
-		return "PyCObject_FromVoidPtr($cvar, talloc_free)";
 	}
 
 	die("unknown type ".mapTypeName($ctype) . ": $cvar");
@@ -646,8 +676,17 @@ sub Parse($$$$$)
 	$self->pidl("PyObject *m;");
 	$self->pidl("m = Py_InitModule(\"$basename\", $basename\_methods);");
 	foreach (keys %{$self->{constants}}) {
-		# FIXME: Handle non-string constants
-		$self->pidl("PyModule_AddObject(m, \"$_\", " .  $self->ConvertObjectToPython($self->{constants}->{$_}->[0], $self->{constants}->{$_}->[1]) . ");");
+		my $py_obj;
+		my ($ctype, $cvar) = @{$self->{constants}->{$_}};
+		if ($cvar =~ /^[0-9]+$/ or $cvar =~ /^0x[0-9a-fA-F]+$/) {
+			$py_obj = "PyInt_FromLong($cvar)";
+		} elsif ($cvar =~ /^".*"$/) {
+			$py_obj = "PyString_FromString($cvar)";
+		} else {
+			$py_obj = $self->ConvertScalarToPython($ctype, $cvar);
+		}
+
+		$self->pidl("PyModule_AddObject(m, \"$_\", $py_obj);");
 	}
 	$self->deindent;
 	$self->pidl("}");
