@@ -9,7 +9,7 @@ use Exporter;
 @ISA = qw(Exporter);
 
 use strict;
-use Parse::Pidl::Typelist qw(hasType getType mapTypeName expandAlias);
+use Parse::Pidl::Typelist qw(hasType resolveType getType mapTypeName expandAlias);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
 use Parse::Pidl::CUtil qw(get_value_of get_pointer_to);
@@ -84,7 +84,7 @@ sub EnumAndBitmapConsts($$$)
 	return unless (defined($d->{ELEMENTS}));
 
 	foreach my $e (@{$d->{ELEMENTS}}) {
-		$e =~ /^([A-Za-z0-9_]+)=(.*)$/;
+		$e =~ /^([A-Za-z0-9_]+)/;
 		my $cname = $1;
 		
 		$self->register_constant($cname, $d, $cname);
@@ -188,7 +188,7 @@ sub PythonStruct($$$$)
 		my $varname = "object->$e->{NAME}";
 		$self->indent;
 		$self->pidl("PyObject *py_$e->{NAME};");
-		$self->ConvertObjectToPython("py_talloc_get_talloc_ctx(obj)", $env, $e, $varname, "py_$e->{NAME}");
+		$self->ConvertObjectToPython("py_talloc_get_mem_ctx(obj)", $env, $e, $varname, "py_$e->{NAME}");
 		$self->pidl("return py_$e->{NAME};");
 		$self->deindent;
 		$self->pidl("}");
@@ -428,133 +428,135 @@ sub Interface($$$)
 		$self->PythonType($d, $interface, $basename);
 	}
 
-	$self->pidl_hdr("PyAPI_DATA(PyTypeObject) $interface->{NAME}_InterfaceType;\n");
-	$self->pidl("typedef struct {");
-	$self->indent;
-	$self->pidl("PyObject_HEAD");
-	$self->pidl("struct dcerpc_pipe *pipe;");
-	$self->deindent;
-	$self->pidl("} $interface->{NAME}_InterfaceObject;");
+	if (defined $interface->{PROPERTIES}->{uuid}) {
+		$self->pidl_hdr("PyAPI_DATA(PyTypeObject) $interface->{NAME}_InterfaceType;\n");
+		$self->pidl("typedef struct {");
+		$self->indent;
+		$self->pidl("PyObject_HEAD");
+		$self->pidl("struct dcerpc_pipe *pipe;");
+		$self->deindent;
+		$self->pidl("} $interface->{NAME}_InterfaceObject;");
 
-	$self->pidl("");
+		$self->pidl("");
 
-	foreach my $d (@{$interface->{FUNCTIONS}}) {
-		next if not defined($d->{OPNUM});
-		next if has_property($d, "nopython");
+		foreach my $d (@{$interface->{FUNCTIONS}}) {
+			next if not defined($d->{OPNUM});
+			next if has_property($d, "nopython");
 
-		$self->PythonFunction($d, $interface->{NAME});
+			$self->PythonFunction($d, $interface->{NAME});
+		}
+
+		$self->pidl("static PyMethodDef interface_$interface->{NAME}\_methods[] = {");
+		$self->indent;
+		foreach my $d (@{$interface->{FUNCTIONS}}) {
+			next if not defined($d->{OPNUM});
+			next if has_property($d, "nopython");
+
+			my $fn_name = $d->{NAME};
+
+			$fn_name =~ s/^$interface->{NAME}_//;
+			$fn_name =~ s/^$basename\_//;
+
+			$self->pidl("{ \"$fn_name\", (PyCFunction)py_$d->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
+		}
+		$self->pidl("{ NULL, NULL, 0, NULL }");
+		$self->deindent;
+		$self->pidl("};");
+		$self->pidl("");
+
+		$self->pidl("static void interface_$interface->{NAME}_dealloc(PyObject* self)");
+		$self->pidl("{");
+		$self->indent;
+		$self->pidl("$interface->{NAME}_InterfaceObject *interface = ($interface->{NAME}_InterfaceObject *)self;");
+		$self->pidl("talloc_free(interface->pipe);");
+		$self->pidl("PyObject_Del(self);");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
+
+		$self->pidl("static PyObject *interface_$interface->{NAME}_getattr(PyObject *obj, char *name)");
+		$self->pidl("{");
+		$self->indent;
+		$self->pidl("return Py_FindMethod(interface_$interface->{NAME}\_methods, obj, name);");
+		$self->deindent;
+		$self->pidl("}");
+
+		$self->pidl("");
+
+		$self->pidl("PyTypeObject $interface->{NAME}_InterfaceType = {");
+		$self->indent;
+		$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
+		$self->pidl(".tp_name = \"$interface->{NAME}\",");
+		$self->pidl(".tp_basicsize = sizeof($interface->{NAME}_InterfaceObject),");
+		$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
+		$self->pidl(".tp_getattr = interface_$interface->{NAME}_getattr,");
+		$self->deindent;
+		$self->pidl("};");
+
+		$self->pidl("");
+
+		$self->register_module_method($interface->{NAME}, "interface_$interface->{NAME}", "METH_VARARGS|METH_KEYWORDS", "NULL");
+		$self->pidl("static PyObject *interface_$interface->{NAME}(PyObject *self, PyObject *args, PyObject *kwargs)");
+		$self->pidl("{");
+		$self->indent;
+		$self->pidl("$interface->{NAME}_InterfaceObject *ret;");
+		$self->pidl("const char *binding_string;");
+		$self->pidl("struct cli_credentials *credentials;");
+		$self->pidl("struct loadparm_context *lp_ctx = NULL;");
+		$self->pidl("PyObject *py_lp_ctx = NULL, *py_credentials = Py_None;");
+		$self->pidl("TALLOC_CTX *mem_ctx = NULL;");
+		$self->pidl("NTSTATUS status;");
+		$self->pidl("");
+		$self->pidl("const char *kwnames[] = {");
+		$self->indent;
+		$self->pidl("\"binding\", \"lp_ctx\", \"credentials\", NULL");
+		$self->deindent;
+		$self->pidl("};");
+		$self->pidl("extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);");
+		$self->pidl("extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);");
+		$self->pidl("");
+		$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"sO|O:$interface->{NAME}\", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials)) {");
+		$self->indent;
+		$self->pidl("return NULL;");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
+		$self->pidl("if (py_lp_ctx != NULL) {");
+		$self->indent;
+		$self->pidl("lp_ctx = lp_from_py_object(py_lp_ctx);");
+		$self->pidl("if (lp_ctx == NULL) {");
+		$self->indent;
+		$self->pidl("PyErr_SetString(PyExc_TypeError, \"Expected loadparm context\");");
+		$self->pidl("return NULL;");
+		$self->deindent;
+		$self->pidl("}");
+		$self->deindent;
+		$self->pidl("}");
+		$self->pidl("");
+
+		$self->pidl("credentials = cli_credentials_from_py_object(py_credentials);");
+		$self->pidl("if (credentials == NULL) {");
+		$self->indent;
+		$self->pidl("PyErr_SetString(PyExc_TypeError, \"Expected credentials\");");
+		$self->pidl("return NULL;");
+		$self->deindent;
+		$self->pidl("}");
+
+		$self->pidl("ret = PyObject_New($interface->{NAME}_InterfaceObject, &$interface->{NAME}_InterfaceType);");
+		$self->pidl("");
+
+		$self->pidl("status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, ");
+		$self->pidl("             &ndr_table_$interface->{NAME}, credentials, NULL, lp_ctx);");
+		$self->handle_ntstatus("status", "NULL", "mem_ctx");
+
+		$self->pidl("ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;");
+
+		$self->pidl("return (PyObject *)ret;");
+		$self->deindent;
+		$self->pidl("}");
+		
+		$self->pidl("");
 	}
-
-	$self->pidl("static PyMethodDef interface_$interface->{NAME}\_methods[] = {");
-	$self->indent;
-	foreach my $d (@{$interface->{FUNCTIONS}}) {
-		next if not defined($d->{OPNUM});
-		next if has_property($d, "nopython");
-
-		my $fn_name = $d->{NAME};
-
-		$fn_name =~ s/^$interface->{NAME}_//;
-		$fn_name =~ s/^$basename\_//;
-
-		$self->pidl("{ \"$fn_name\", (PyCFunction)py_$d->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
-	}
-	$self->pidl("{ NULL, NULL, 0, NULL }");
-	$self->deindent;
-	$self->pidl("};");
-	$self->pidl("");
-
-	$self->pidl("static void interface_$interface->{NAME}_dealloc(PyObject* self)");
-	$self->pidl("{");
-	$self->indent;
-	$self->pidl("$interface->{NAME}_InterfaceObject *interface = ($interface->{NAME}_InterfaceObject *)self;");
-	$self->pidl("talloc_free(interface->pipe);");
-	$self->pidl("PyObject_Del(self);");
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
-
-	$self->pidl("static PyObject *interface_$interface->{NAME}_getattr(PyObject *obj, char *name)");
-	$self->pidl("{");
-	$self->indent;
-	$self->pidl("return Py_FindMethod(interface_$interface->{NAME}\_methods, obj, name);");
-	$self->deindent;
-	$self->pidl("}");
-
-	$self->pidl("");
-
-	$self->pidl("PyTypeObject $interface->{NAME}_InterfaceType = {");
-	$self->indent;
-	$self->pidl("PyObject_HEAD_INIT(NULL) 0,");
-	$self->pidl(".tp_name = \"$interface->{NAME}\",");
-	$self->pidl(".tp_basicsize = sizeof($interface->{NAME}_InterfaceObject),");
-	$self->pidl(".tp_dealloc = interface_$interface->{NAME}_dealloc,");
-	$self->pidl(".tp_getattr = interface_$interface->{NAME}_getattr,");
-	$self->deindent;
-	$self->pidl("};");
-
-	$self->pidl("");
-
-	$self->register_module_method($interface->{NAME}, "interface_$interface->{NAME}", "METH_VARARGS|METH_KEYWORDS", "NULL");
-	$self->pidl("static PyObject *interface_$interface->{NAME}(PyObject *self, PyObject *args, PyObject *kwargs)");
-	$self->pidl("{");
-	$self->indent;
-	$self->pidl("$interface->{NAME}_InterfaceObject *ret;");
-	$self->pidl("const char *binding_string;");
-	$self->pidl("struct cli_credentials *credentials;");
-	$self->pidl("struct loadparm_context *lp_ctx = NULL;");
-	$self->pidl("PyObject *py_lp_ctx = NULL, *py_credentials = Py_None;");
-	$self->pidl("TALLOC_CTX *mem_ctx = NULL;");
-	$self->pidl("NTSTATUS status;");
-	$self->pidl("");
-	$self->pidl("const char *kwnames[] = {");
-	$self->indent;
-	$self->pidl("\"binding\", \"lp_ctx\", \"credentials\", NULL");
-	$self->deindent;
-	$self->pidl("};");
-	$self->pidl("extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);");
-    $self->pidl("extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);");
-	$self->pidl("");
-	$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"sO|O:$interface->{NAME}\", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials)) {");
-	$self->indent;
-	$self->pidl("return NULL;");
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
-	$self->pidl("if (py_lp_ctx != NULL) {");
-	$self->indent;
-	$self->pidl("lp_ctx = lp_from_py_object(py_lp_ctx);");
-	$self->pidl("if (lp_ctx == NULL) {");
-	$self->indent;
-	$self->pidl("PyErr_SetString(PyExc_TypeError, \"Expected loadparm context\");");
-	$self->pidl("return NULL;");
-	$self->deindent;
-	$self->pidl("}");
-	$self->deindent;
-	$self->pidl("}");
-	$self->pidl("");
-
-    $self->pidl("credentials = cli_credentials_from_py_object(py_credentials);");
-    $self->pidl("if (credentials == NULL) {");
-    $self->indent;
-    $self->pidl("PyErr_SetString(PyExc_TypeError, \"Expected credentials\");");
-    $self->pidl("return NULL;");
-    $self->deindent;
-    $self->pidl("}");
-
-	$self->pidl("ret = PyObject_New($interface->{NAME}_InterfaceObject, &$interface->{NAME}_InterfaceType);");
-	$self->pidl("");
-
-	$self->pidl("status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, ");
-	$self->pidl("             &ndr_table_$interface->{NAME}, credentials, NULL, lp_ctx);");
-	$self->handle_ntstatus("status", "NULL", "mem_ctx");
-
-	$self->pidl("ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;");
-
-	$self->pidl("return (PyObject *)ret;");
-	$self->deindent;
-	$self->pidl("}");
-	
-	$self->pidl("");
 
 	$self->pidl_hdr("\n");
 	$self->pidl_hdr("#endif /* _HEADER_NDR_$interface->{NAME} */\n");
@@ -583,9 +585,7 @@ sub ConvertObjectFromPythonData($$$$$$)
 
 	die("undef type for $cvar") unless(defined($ctype));
 
-	if (ref($ctype) ne "HASH") {
-		$ctype = getType($ctype);
-	}
+	$ctype = resolveType($ctype);
 
 	if (ref($ctype) ne "HASH") {
 		$self->pidl("$target = FIXME($cvar);");
@@ -764,38 +764,21 @@ sub ConvertObjectToPythonData($$$$$)
 
 	die("undef type for $cvar") unless(defined($ctype));
 
-	if (ref($ctype) ne "HASH") {
-		if (not hasType($ctype)) {
-			if (ref($ctype) eq "HASH") {
-				return "py_import_$ctype->{TYPE}_$ctype->{NAME}($cvar)";
-			} else {
-				return "py_import_$ctype($cvar)"; # best bet
-			}
-		}
-
-		$ctype = getType($ctype);
-	}
+	$ctype = resolveType($ctype);
 
 	my $actual_ctype = $ctype;
 	if ($ctype->{TYPE} eq "TYPEDEF") {
 		$actual_ctype = $ctype->{DATA};
-	}
-
+	} 
+	
 	if ($actual_ctype->{TYPE} eq "ENUM") {
 		return $self->ConvertScalarToPython(Parse::Pidl::Typelist::enum_type_fn($actual_ctype), $cvar);
-	}
-
-	if ($actual_ctype->{TYPE} eq "BITMAP") {
+	} elsif ($actual_ctype->{TYPE} eq "BITMAP") {
 		return $self->ConvertScalarToPython(Parse::Pidl::Typelist::bitmap_type_fn($actual_ctype), $cvar);
-	}
-
-	if ($actual_ctype->{TYPE} eq "SCALAR") {
+	} elsif ($actual_ctype->{TYPE} eq "SCALAR") {
 		return $self->ConvertScalarToPython($actual_ctype->{NAME}, $cvar);
-	}
-
-	if ($actual_ctype->{TYPE} eq "STRUCT") {
-		# FIXME: if $cvar is not a pointer, do a talloc_dup()
-		return "py_talloc_import(&$ctype->{NAME}_Type, $cvar)";
+	} elsif ($actual_ctype->{TYPE} eq "STRUCT") {
+		return "py_talloc_import_ex(&$ctype->{NAME}_Type, $mem_ctx, $cvar)";
 	}
 
 	die("unknown type ".mapTypeName($ctype) . ": $cvar");
