@@ -49,7 +49,7 @@ static void wreplsrv_pull_handler_creq(struct composite_context *creq)
 
 	if (NT_STATUS_IS_OK(partner->pull.last_status)) {
 		partner->pull.error_count = 0;
-		DEBUG(2,("wreplsrv_pull_cycle(%s): %s\n",
+		DEBUG(1,("wreplsrv_pull_cycle(%s): %s\n",
 			 partner->address, nt_errstr(partner->pull.last_status)));
 		goto done;
 	}
