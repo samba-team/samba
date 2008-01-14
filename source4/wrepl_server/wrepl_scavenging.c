@@ -144,7 +144,7 @@ static NTSTATUS wreplsrv_scavenging_owned_records(struct wreplsrv_service *servi
 		}
 
 		if (ret != NBT_RCODE_OK) {
-			DEBUG(1,("WINS scavenging: failed to %s name %s (owned:%s -> owned:%s): error:%u\n",
+			DEBUG(2,("WINS scavenging: failed to %s name %s (owned:%s -> owned:%s): error:%u\n",
 				action, nbt_name_string(rec, rec->name), old_state, new_state, ret));
 		} else {
 			DEBUG(4,("WINS scavenging: %s name: %s (owned:%s -> owned:%s)\n",
@@ -250,7 +250,7 @@ static NTSTATUS wreplsrv_scavenging_replica_non_active_records(struct wreplsrv_s
 		}
 
 		if (ret != NBT_RCODE_OK) {
-			DEBUG(1,("WINS scavenging: failed to %s name %s (replica:%s -> replica:%s): error:%u\n",
+			DEBUG(2,("WINS scavenging: failed to %s name %s (replica:%s -> replica:%s): error:%u\n",
 				action, nbt_name_string(rec, rec->name), old_state, new_state, ret));
 		} else {
 			DEBUG(4,("WINS scavenging: %s name: %s (replica:%s -> replica:%s)\n",
@@ -326,7 +326,7 @@ static void verify_handler(struct irpc_request *ireq)
 		 * which will then propagate it's own record, so that the current record will
 		 * be replicated to to us
 		 */
-		DEBUG(0,("WINS scavenging: replica %s verify got different addresses from winsserver: %s: tombstoning record\n",
+		DEBUG(2,("WINS scavenging: replica %s verify got different addresses from winsserver: %s: tombstoning record\n",
 			nbt_name_string(rec, rec->name), rec->wins_owner));
 
 		rec->state	= WREPL_STATE_TOMBSTONE;
@@ -361,7 +361,7 @@ static void verify_handler(struct irpc_request *ireq)
 	}
 
 	if (ret != NBT_RCODE_OK) {
-		DEBUG(1,("WINS scavenging: failed to %s name %s (replica:%s -> %s:%s): error:%u\n",
+		DEBUG(2,("WINS scavenging: failed to %s name %s (replica:%s -> %s:%s): error:%u\n",
 			action, nbt_name_string(rec, rec->name), old_state, new_owner, new_state, ret));
 	} else {
 		DEBUG(4,("WINS scavenging: %s name: %s (replica:%s -> %s:%s): %s: %s\n",
@@ -430,7 +430,7 @@ static NTSTATUS wreplsrv_scavenging_replica_active_records(struct wreplsrv_servi
 		 *             DCERPC calls or some WINSREPL packets for this,
 		 *             but we use a wins name query
 		 */
-		DEBUG(0,("ask wins server '%s' if '%s' with version_id:%llu still exists\n",
+		DEBUG(2,("ask wins server '%s' if '%s' with version_id:%llu still exists\n",
 			 rec->wins_owner, nbt_name_string(rec, rec->name), 
 			 (unsigned long long)rec->version));
 
@@ -491,7 +491,7 @@ NTSTATUS wreplsrv_scavenging_run(struct wreplsrv_service *service)
 		return NT_STATUS_OK;
 	}
 
-	DEBUG(4,("wreplsrv_scavenging_run(): start\n"));
+	DEBUG(2,("wreplsrv_scavenging_run(): start\n"));
 
 	tmp_mem = talloc_new(service);
 	NT_STATUS_HAVE_NO_MEMORY(tmp_mem);
@@ -517,7 +517,7 @@ NTSTATUS wreplsrv_scavenging_run(struct wreplsrv_service *service)
 	talloc_free(tmp_mem);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	DEBUG(4,("wreplsrv_scavenging_run(): end\n"));
+	DEBUG(2,("wreplsrv_scavenging_run(): end\n"));
 
 	return NT_STATUS_OK;
 }
