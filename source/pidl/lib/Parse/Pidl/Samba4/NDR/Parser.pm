@@ -15,7 +15,7 @@ use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName typeHasBody);
 use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid);
 use Parse::Pidl::CUtil qw(get_pointer_to get_value_of);
-use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
+use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
 use Parse::Pidl::Samba4 qw(is_intree choose_header);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
 use Parse::Pidl qw(warning);
@@ -76,19 +76,6 @@ sub has_fast_array($$)
 
 	# Only uint8 and string have fast array functions at the moment
 	return ($t->{NAME} eq "uint8") or ($t->{NAME} eq "string");
-}
-
-sub is_charset_array($$)
-{
-	my ($e,$l) = @_;
-
-	return 0 if ($l->{TYPE} ne "ARRAY");
-
-	my $nl = GetNextLevel($e,$l);
-
-	return 0 unless ($nl->{TYPE} eq "DATA");
-
-	return has_property($e, "charset");
 }
 
 
