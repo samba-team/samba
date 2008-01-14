@@ -239,7 +239,11 @@ import "security.idl";
 
 	/******************/
 	/* Function:       0x08 */
-	NTSTATUS lsa_SetInfoPolicy ();
+	NTSTATUS lsa_SetInfoPolicy (
+		[in]                            policy_handle *handle,
+		[in]                            uint16 level,
+		[in,switch_is(level)]           lsa_PolicyInformation *info
+		);
 
 	/******************/
 	/* Function:       0x09 */
@@ -710,7 +714,11 @@ import "security.idl";
 		);
 
 	/* Function 0x2f */
-	NTSTATUS lsa_SetInfoPolicy2();
+	NTSTATUS lsa_SetInfoPolicy2(
+		[in]                            policy_handle *handle,
+		[in]                            uint16 level,
+		[in,switch_is(level)]           lsa_PolicyInformation *info
+		);
 
 	/**********************/
 	/* Function 0x30 */
