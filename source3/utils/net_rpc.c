@@ -5850,24 +5850,30 @@ static NTSTATUS vampire_trusted_domain(struct rpc_pipe_client *pipe_hnd,
 				      const char *trusted_dom_name)
 {
 	NTSTATUS nt_status;
-	LSA_TRUSTED_DOMAIN_INFO *info;
+	union lsa_TrustedDomainInfo info;
 	char *cleartextpwd = NULL;
 	DATA_BLOB data;
 
-	nt_status = rpccli_lsa_query_trusted_domain_info_by_sid(pipe_hnd, mem_ctx, pol, 4, &dom_sid, &info);
-	
+	nt_status = rpccli_lsa_QueryTrustedDomainInfoBySid(pipe_hnd, mem_ctx,
+							   pol,
+							   &dom_sid,
+							   LSA_TRUSTED_DOMAIN_INFO_PASSWORD,
+							   &info);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0,("Could not query trusted domain info. Error was %s\n",
 		nt_errstr(nt_status)));
 		goto done;
 	}
 
-	data = data_blob(NULL, info->password.password.length);
+	data = data_blob(NULL, info.password.password->length);
 
-	memcpy(data.data, info->password.password.data, info->password.password.length);
-	data.length 	= info->password.password.length;
-				
-	cleartextpwd = decrypt_trustdom_secret(pipe_hnd->cli->pwd.password, &data);
+	memcpy(data.data,
+	       info.password.password->data,
+	       info.password.password->length);
+	data.length = info.password.password->length;
+
+	cleartextpwd = decrypt_trustdom_secret(pipe_hnd->cli->pwd.password,
+					       &data);
 
 	if (cleartextpwd == NULL) {
 		DEBUG(0,("retrieved NULL password\n"));
