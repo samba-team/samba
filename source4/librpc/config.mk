@@ -633,5 +633,9 @@ PRIVATE_DEPENDENCIES = RPC_NDR_SVCCTL
 OBJ_FILES = gen_ndr/py_lsa.o
 PRIVATE_DEPENDENCIES = RPC_NDR_LSA
 
+[PYTHON::python_wkssvc]
+OBJ_FILES = gen_ndr/py_wkssvc.o
+PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC
+
 [PYTHON::python_dcerpc_security]
 OBJ_FILES = gen_ndr/py_security.o
