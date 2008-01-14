@@ -203,7 +203,11 @@ sub PythonStruct($$$$)
 			$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
 			my $varname = "object->$e->{NAME}";
 			$self->indent;
-			if ($e->{ORIGINAL}->{POINTERS} > 0) {
+			my $l = $e->{LEVELS}[0];
+			my $nl = GetNextLevel($e, $l);
+			if ($l->{TYPE} eq "POINTER" and 
+				not ($nl->{TYPE} eq "ARRAY" and ($nl->{IS_FIXED} or is_charset_array($e, $nl))) and
+				not ($nl->{TYPE} eq "SCALAR" and $nl->{TYPE} eq "string")) {
 				$self->pidl("talloc_free($varname);");
 			}
 			$self->ConvertObjectFromPython($env, $mem_ctx, $e, "value", $varname, "return -1;");
