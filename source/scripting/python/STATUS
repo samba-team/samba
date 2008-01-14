@@ -10,7 +10,6 @@ DCE/RPC bindings
 	 - wrap struct/bitmap/enum/union types
 	  - __ndr_pack__/__ndr_unpack__ members
  - scripting/bin/smbstatus.py
- - scripting/bin/winreg.py
 
 not important before making Python the default:
 - scripting/python/samba/upgrade.py
