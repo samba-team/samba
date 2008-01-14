@@ -451,7 +451,6 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
 	int ret = 0;
 	files_struct *fsp = aio_ex->fsp;
 	char *outbuf = aio_ex->outbuf;
-	const char *inbuf = aio_ex->inbuf;
 	ssize_t numtowrite = aio_ex->acb.aio_nbytes;
 	ssize_t nwritten = SMB_VFS_AIO_RETURN(fsp,&aio_ex->acb);
 

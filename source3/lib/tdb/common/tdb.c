@@ -102,8 +102,7 @@ static tdb_off_t tdb_find(struct tdb_context *tdb, TDB_DATA key, uint32_t hash,
 }
 
 /* As tdb_find, but if you succeed, keep the lock */
-tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, 
-							 uint32_t hash, int locktype,
+tdb_off_t tdb_find_lock_hash(struct tdb_context *tdb, TDB_DATA key, uint32_t hash, int locktype,
 			   struct list_struct *rec)
 {
 	uint32_t rec_ptr;
@@ -237,14 +236,15 @@ int tdb_exists(struct tdb_context *tdb, TDB_DATA key)
 }
 
 /* actually delete an entry in the database given the offset */
-int tdb_do_delete(struct tdb_context *tdb, tdb_off_t rec_ptr, struct list_struct*rec)
+int tdb_do_delete(struct tdb_context *tdb, tdb_off_t rec_ptr, struct list_struct *rec)
 {
 	tdb_off_t last_ptr, i;
 	struct list_struct lastrec;
 
 	if (tdb->read_only || tdb->traverse_read) return -1;
 
-	if (tdb_write_lock_record(tdb, rec_ptr) == -1) {
+	if (tdb->traverse_write != 0 || 
+	    tdb_write_lock_record(tdb, rec_ptr) == -1) {
 		/* Someone traversing here: mark it as dead */
 		rec->magic = TDB_DEAD_MAGIC;
 		return tdb_rec_write(tdb, rec_ptr, rec);
@@ -666,6 +666,16 @@ int tdb_get_flags(struct tdb_context *tdb)
 	return tdb->flags;
 }
 
+void tdb_add_flags(struct tdb_context *tdb, unsigned flags)
+{
+	tdb->flags |= flags;
+}
+
+void tdb_remove_flags(struct tdb_context *tdb, unsigned flags)
+{
+	tdb->flags &= ~flags;
+}
+
 
 /*
   enable sequence number handling on an open tdb
@@ -673,4 +683,63 @@ int tdb_get_flags(struct tdb_context *tdb)
 void tdb_enable_seqnum(struct tdb_context *tdb)
 {
 	tdb->flags |= TDB_SEQNUM;
+}
+
+
+/*
+  wipe the entire database, deleting all records. This can be done
+  very fast by using a global lock. The entire data portion of the
+  file becomes a single entry in the freelist.
+ */
+int tdb_wipe_all(struct tdb_context *tdb)
+{
+	int i;
+	tdb_off_t offset = 0;
+	ssize_t data_len;
+
+	if (tdb_lockall(tdb) != 0) {
+		return -1;
+	}
+
+	/* wipe the hashes */
+	for (i=0;i<tdb->header.hash_size;i++) {
+		if (tdb_ofs_write(tdb, TDB_HASH_TOP(i), &offset) == -1) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to write hash %d\n", i));
+			goto failed;
+		}
+	}
+
+	/* wipe the freelist */
+	if (tdb_ofs_write(tdb, FREELIST_TOP, &offset) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to write freelist\n"));
+		goto failed;
+	}
+
+	if (tdb_ofs_write(tdb, TDB_RECOVERY_HEAD, &offset) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to write recovery head\n"));
+		goto failed;		
+	}
+
+	/* add all the rest of the file to the freelist */
+	data_len = (tdb->map_size - TDB_DATA_START(tdb->header.hash_size)) - sizeof(struct list_struct);
+	if (data_len > 0) {
+		struct list_struct rec;
+		memset(&rec,'\0',sizeof(rec));
+		rec.rec_len = data_len;
+		if (tdb_free(tdb, TDB_DATA_START(tdb->header.hash_size), &rec) == -1) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to add free record\n"));
+			goto failed;
+		}
+	}
+
+	if (tdb_unlockall(tdb) != 0) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to unlock\n"));
+		goto failed;
+	}
+
+	return 0;
+
+failed:
+	tdb_unlockall(tdb);
+	return -1;
 }

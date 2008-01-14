@@ -836,8 +836,6 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	TALLOC_FREE(data.dptr);
-
 	return lck;
 }
 
@@ -1281,11 +1279,7 @@ static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, UNIX_USER_TOKEN *tok)
 
 void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok)
 {
-	/* Ensure there's no token. */
-	if (lck->delete_token) {
-		TALLOC_FREE(lck->delete_token); /* Also deletes groups... */
-		lck->delete_token = NULL;
-	}
+	TALLOC_FREE(lck->delete_token); /* Also deletes groups... */
 
 	/* Copy the new token (can be NULL). */
 	lck->delete_token = copy_unix_token(lck, tok);

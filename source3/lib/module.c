@@ -57,6 +57,7 @@ static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 	if (error) {
 		DEBUG(0, ("Error trying to resolve symbol 'init_module' in %s: %s\n", 
 			  module_name, error));
+		sys_dlclose(handle);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -66,6 +67,7 @@ static NTSTATUS do_smb_load_module(const char *module_name, bool is_probe)
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("Module '%s' initialization failed: %s\n",
 			    module_name, get_friendly_nt_error_msg(status)));
+		sys_dlclose(handle);
 	}
 
 	return status;

@@ -105,9 +105,9 @@ int main(int argc, char **argv)
 			       join_flags);
 	if (status != 0) {
 		const char *errstr = NULL;
-		errstr = libnetapi_get_error_string(ctx);
+		errstr = libnetapi_get_error_string(ctx, status);
 		if (!errstr) {
-			errstr = libnetapi_errstr(ctx, status);
+			errstr = libnetapi_errstr(status);
 		}
 		printf("Join failed with: %s\n", errstr);
 	} else {

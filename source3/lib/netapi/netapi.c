@@ -192,8 +192,7 @@ NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
-const char *libnetapi_errstr(struct libnetapi_ctx *ctx,
-			     NET_API_STATUS status)
+const char *libnetapi_errstr(NET_API_STATUS status)
 {
 	if (status & 0xc0000000) {
 		return get_friendly_nt_error_msg(NT_STATUS(status));
@@ -220,9 +219,23 @@ NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx,
 /****************************************************************
 ****************************************************************/
 
-const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx)
+const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx,
+				       NET_API_STATUS status)
 {
-	return ctx->error_string;
+	struct libnetapi_ctx *tmp_ctx = ctx;
+
+	if (!tmp_ctx) {
+		status = libnetapi_getctx(&tmp_ctx);
+		if (status != 0) {
+			return NULL;
+		}
+	}
+
+	if (tmp_ctx->error_string) {
+		return tmp_ctx->error_string;
+	}
+
+	return libnetapi_errstr(status);
 }
 
 /****************************************************************
