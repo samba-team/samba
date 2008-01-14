@@ -20,6 +20,8 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
+#include "lib/events/events.h"
 #include "lib/socket/socket.h"
 #include "libcli/resolve/resolve.h"
 #include "system/network.h"
@@ -50,9 +52,11 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 			       bool try_low_port)
 {
 	struct nbt_name_register_wins io;
+	struct nbt_name_register name_register;
 	struct nbt_name_query query;
 	struct nbt_name_refresh_wins refresh;
 	struct nbt_name_release release;
+	struct nbt_name_request *req;
 	NTSTATUS status;
 	struct nbt_name_socket *nbtsock = torture_init_nbt_socket(tctx);
 	const char *myaddress;
@@ -130,6 +134,56 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 
 		CHECK_STRING(tctx, io.out.wins_server, address);
 		CHECK_VALUE(tctx, io.out.rcode, 0);
+
+		torture_comment(tctx, "register the name correct address\n");
+		name_register.in.name		= *name;
+		name_register.in.dest_port	= lp_nbt_port(tctx->lp_ctx);
+		name_register.in.dest_addr	= address;
+		name_register.in.address	= myaddress;
+		name_register.in.nb_flags	= nb_flags;
+		name_register.in.register_demand= false;
+		name_register.in.broadcast	= false;
+		name_register.in.multi_homed	= true;
+		name_register.in.ttl		= 300000;
+		name_register.in.timeout	= 3;
+		name_register.in.retries	= 2;
+
+		/*
+		 * test if the server ignores resent requests
+		 */
+		req = nbt_name_register_send(nbtsock, &name_register);
+		while (true) {
+			event_loop_once(nbtsock->event_ctx);
+			if (req->state != NBT_REQUEST_WAIT) {
+				break;
+			}
+			if (req->received_wack) {
+				/*
+				 * if we received the wack response
+				 * we resend the request and the
+				 * server should ignore that
+				 * and not handle it as new request
+				 */
+				req->state = NBT_REQUEST_SEND;
+				DLIST_ADD_END(nbtsock->send_queue, req,
+					      struct nbt_name_request *);
+				EVENT_FD_WRITEABLE(nbtsock->fde);
+				break;
+			}
+		}
+
+		status = nbt_name_register_recv(req, tctx, &name_register);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			torture_assert_ntstatus_ok(tctx, status,
+				talloc_asprintf(tctx, "No response from %s for name register\n",
+						address));
+		}
+		torture_assert_ntstatus_ok(tctx, status,
+			talloc_asprintf(tctx, "Bad response from %s for name register\n",
+					address));
+
+		CHECK_VALUE(tctx, name_register.out.rcode, 0);
+		CHECK_STRING(tctx, name_register.out.reply_addr, myaddress);
 	}
 
 	torture_comment(tctx, "register the name correct address\n");
