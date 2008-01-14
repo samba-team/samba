@@ -598,3 +598,10 @@ PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG dcerpc_s
 [PYTHON::python_echo]
 OBJ_FILES = gen_ndr/py_echo.o
 PRIVATE_DEPENDENCIES = RPC_NDR_ECHO
+
+[PYTHON::python_winreg]
+OBJ_FILES = gen_ndr/py_winreg.o
+PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc
+
+[PYTHON::python_dcerpc_misc]
+OBJ_FILES = gen_ndr/py_misc.o
