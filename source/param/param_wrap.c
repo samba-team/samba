@@ -2765,7 +2765,16 @@ SWIGINTERN struct param_opt *param_section_next_parameter(param_section *self,st
 struct loadparm_context *lp_from_py_object(PyObject *py_obj)
 {
     struct loadparm_context *lp_ctx;
-    if (SWIG_ConvertPtr(py_obj, &lp_ctx, SWIGTYPE_p_loadparm_context, 0 |  0 ) < 0)
+    if (PyString_Check(py_obj)) {
+        lp_ctx = loadparm_init(NULL);
+        if (!lp_load(lp_ctx, PyString_AsString(py_obj))) {
+            talloc_free(lp_ctx);
+            return NULL;
+        }
+        return lp_ctx;
+    }
+
+    if (SWIG_ConvertPtr(py_obj, (void *)&lp_ctx, SWIGTYPE_p_loadparm_context, 0 |  0 ) < 0)
         return NULL;
     return lp_ctx;
 }
