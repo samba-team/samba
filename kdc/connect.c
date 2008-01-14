@@ -695,7 +695,7 @@ handle_http_tcp (krb5_context context,
 	    "<TITLE>404 Not found</TITLE>\r\n"
 	    "<H1>404 Not found</H1>\r\n"
 	    "That page doesn't exist, maybe you are looking for "
-	    "<A HREF=\"http://www.pdc.kth.se/heimdal/\">Heimdal</A>?\r\n";
+	    "<A HREF=\"http://www.h5l.org/\">Heimdal</A>?\r\n";
 	kdc_log(context, config, 0, "HTTP request from %s is non KDC request", d->addr_string);
 	kdc_log(context, config, 5, "HTTP request: %s", t);
 	free(data);
