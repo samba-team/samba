@@ -18,22 +18,25 @@
 #
 
 import echo
+from param import LoadParm
 import unittest
 
 class RpcEchoTests(unittest.TestCase):
     def setUp(self):
-        self.conn = echo.rpcecho("ncalrpc:")
+        lp_ctx = LoadParm()
+        lp_ctx.load("st/client/client.conf")
+        self.conn = echo.rpcecho("ncalrpc:", lp_ctx)
 
     def test_addone(self):
-        self.assertEquals(2, conn.AddOne(1))
+        self.assertEquals(2, self.conn.AddOne(1))
 
     def test_echodata(self):
-        self.assertEquals("bla", conn.EchoData(3, "bla"))
+        self.assertEquals("bla", self.conn.EchoData(3, "bla"))
 
     def test_call(self):
-        self.assertEquals("foobar", conn.TestCall("foobar"))
+        self.assertEquals("foobar", self.conn.TestCall("foobar"))
 
     def test_surrounding(self):
         somearray = [1,2,3,4]
-        (y,) = conn.TestSurrounding(echo.Surrounding(4, somearray))
+        (y,) = self.conn.TestSurrounding(echo.Surrounding(4, somearray))
         self.assertEquals(8 * [0], y.surrounding)

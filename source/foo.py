@@ -18,5 +18,10 @@
 #
 
 from echo import rpcecho
+from param import LoadParm
 
-x = rpcecho("ncalrpc:")
+lp = LoadParm()
+lp.load("st/client/client.conf")
+
+x = rpcecho("ncalrpc:", lp)
+print x.AddOne(41)
