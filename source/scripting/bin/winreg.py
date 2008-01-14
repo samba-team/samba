@@ -7,87 +7,76 @@
 #
 
 import sys
+import winreg
+import optparse
+import samba.getopt as options
 
-options = GetOptions(ARGV,
-			 "POPT_AUTOHELP",
-			 "POPT_COMMON_SAMBA",
-			 "POPT_COMMON_CREDENTIALS",
-			 "createkey=s")
-if (options == undefined) {
-	print "Failed to parse options"
-	sys.exit(-1)
+parser = optparse.OptionParser("%s <BINDING> [path]" % sys.argv[0])
+parser.add_option_group(options.SambaOptions(parser))
+parser.add_option("--createkey", type="string", metavar="KEYNAME", 
+        help="create a key")
 
-if len(sys.argv < 2:
-	print "Usage: %s <BINDING> [path]" % sys.argv[0]
-	sys.exit(-1)
+opts, args = parser.parse_args()
 
-binding = options.ARGV[0]
-reg = winregObj()
+if len(args) < 1:
+    parser.print_usage()
+    sys.exit(-1)
+
+binding = args[0]
 
 print "Connecting to " + binding
-status = reg.connect(binding)
-if (status.is_ok != true) {
-	print("Failed to connect to " + binding + " - " + status.errstr + "\n")
-	return -1
-}
+conn = winreg.winreg(binding, opts.configfile)
 
-def list_values(path):
-	list = reg.enum_values(path)
-	if (list == undefined) {
-		return
-	}
-	for (i=0;i<list.length;i++) {
-		v = list[i]
-		printf("\ttype=%-30s size=%4d  '%s'\n", reg.typestring(v.type), v.size, v.name)
-		if (v.type == reg.REG_SZ || v.type == reg.REG_EXPAND_SZ) {
-			printf("\t\t'%s'\n", v.value)
-		}
-		if (v.type == reg.REG_MULTI_SZ) {
-			for (j in v.value) {
-				printf("\t\t'%s'\n", v.value[j])
-			}
-		}
-		if (v.type == reg.REG_DWORD || v.type == reg.REG_DWORD_BIG_ENDIAN) {
-			printf("\t\t0x%08x (%d)\n", v.value, v.value)
-		}
-		if (v.type == reg.REG_QWORD) {
-			printf("\t\t0x%llx (%lld)\n", v.value, v.value)
-		}
-	}
+def list_values(key):
+    (num_values, max_valnamelen, max_valbufsize) = conn.QueryInfoKey(key, winreg.String())[4:8]
+    for i in range(num_values):
+        name = winreg.StringBuf()
+        name.size = max_valnamelen
+        (name, type, data, _, data_len) = conn.EnumValue(key, i, name, 0, "", max_valbufsize, 0)
+        print "\ttype=%-30s size=%4d  '%s'" % type, len, name
+        if type in (winreg.REG_SZ, winreg.REG_EXPAND_SZ):
+            print "\t\t'%s'" % data
+#        if (v.type == reg.REG_MULTI_SZ) {
+#            for (j in v.value) {
+#                printf("\t\t'%s'\n", v.value[j])
+#            }
+#        }
+#        if (v.type == reg.REG_DWORD || v.type == reg.REG_DWORD_BIG_ENDIAN) {
+#            printf("\t\t0x%08x (%d)\n", v.value, v.value)
+#        }
+#        if (v.type == reg.REG_QWORD) {
+#            printf("\t\t0x%llx (%lld)\n", v.value, v.value)
+#        }
 
-def list_path(path):
-	count = 0
-	list = reg.enum_path(path)
-	if (list == undefined) {
-		println("Unable to list " + path)
-		return 0
-	}
-	list_values(path)
-	count = count + list.length
-	for (i=0;i<list.length;i++) {
-		if (path) {
-			npath = path + "\\" + list[i]
-		} else {
-			npath = list[i]
-		}
-		println(npath)
-		count = count + list_path(npath)
-	}
-	return count
+def list_path(key, path):
+    count = 0
+    (num_subkeys, max_subkeylen, max_subkeysize) = conn.QueryInfoKey(key, winreg.String())[1:4]
+    for i in range(num_subkeys):
+        name = winreg.StringBuf()
+        name.size = max_subkeysize
+        keyclass = winreg.StringBuf()
+        keyclass.size = max_subkeysize
+        (name, _, _) = conn.EnumKey(key, i, name, keyclass=keyclass, last_changed_time=None)[0]
+        subkey = conn.OpenKey(key, name, 0, winreg.KEY_QUERY_VALUE | winreg.KEY_ENUMERATE_SUB_KEYS)
+        count += list_path(subkey, "%s\\%s" % (path, name))
+        list_values(subkey)
+    return count
 
-if len(sys.argv) > 2:
-	root = sys.argv[2]
+if len(args) > 1:
+    root = args[1]
 else:
-	root = ''
+    root = "HKLM"
 
-if options.createkey:
+if opts.createkey:
+    reg.create_key("HKLM\\SOFTWARE", opt.createkey)
+else:
+    print "Listing registry tree '%s'" % root
     try:
-	    reg.create_key("HKLM\\SOFTWARE", options.createkey)
-    except:
-		print "Failed to create key"
-else:
-	printf("Listing registry tree '%s'\n", root)
-	count = list_path(root)
+        root_key = getattr(conn, "Open%s" % root)(None, winreg.KEY_QUERY_VALUE | winreg.KEY_ENUMERATE_SUB_KEYS)
+    except AttributeError:
+        print "Unknown root key name %s" % root
+        sys.exit(1)
+    count = list_path(root_key, root)
     if count == 0:
-		println("No entries found")
-		sys.exit(1)
+        print "No entries found"
+        sys.exit(1)
