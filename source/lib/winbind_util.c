@@ -201,7 +201,7 @@ bool winbind_lookup_rids(TALLOC_CTX *mem_ctx,
 	*types       = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
 
 	for(i=0; i<num_rids; i++) {
-		(*names)[i] = talloc_strdup(names, namelist[i]);
+		(*names)[i] = talloc_strdup(*names, namelist[i]);
 		(*types)[i] = (enum lsa_SidType)name_types[i];
 	}
 

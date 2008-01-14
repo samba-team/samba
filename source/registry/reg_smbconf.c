@@ -271,5 +271,7 @@ REGISTRY_OPS smbconf_reg_ops = {
 	smbconf_store_values,
 	smbconf_reg_access_check,
 	smbconf_get_secdesc,
-	smbconf_set_secdesc
+	smbconf_set_secdesc,
+	NULL,
+	NULL
 };

@@ -61,6 +61,7 @@ struct registry_value {
 typedef struct {
 	uint32          num_values;
 	REGISTRY_VALUE	**values;
+	int seqnum;
 } REGVAL_CTR;
 
 /* container for registry subkey names */
@@ -68,6 +69,7 @@ typedef struct {
 typedef struct {
 	uint32          num_subkeys;
 	char            **subkeys;
+	int seqnum;
 } REGSUBKEY_CTR;
 
 /*
@@ -128,6 +130,8 @@ typedef struct {
 			      struct security_descriptor **psecdesc);
 	WERROR (*set_secdesc)(const char *key,
 			      struct security_descriptor *sec_desc);
+	bool	(*subkeys_need_update)(REGSUBKEY_CTR *subkeys);
+	bool	(*values_need_update)(REGVAL_CTR *values);
 } REGISTRY_OPS;
 
 typedef struct {

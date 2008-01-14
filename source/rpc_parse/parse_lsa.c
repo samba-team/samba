@@ -909,21 +909,6 @@ bool lsa_io_dom_query_12(const char *desc, DOM_QUERY_12 *info, prs_struct *ps, i
 	
 }
 
-/*******************************************************************
- Inits an LSA_Q_QUERY_INFO structure.
-********************************************************************/
-
-void init_q_set(LSA_Q_SET_INFO *in, POLICY_HND *hnd, uint16 info_class, LSA_INFO_CTR ctr)
-{
-	DEBUG(5,("init_q_set\n"));
-
-	in->info_class = info_class;
-
-	in->pol = *hnd;
-
-	in->ctr = ctr;
-	in->ctr.info_class = info_class;
-}
 
 /*******************************************************************
 reads or writes a structure.
@@ -1054,49 +1039,6 @@ bool lsa_io_r_query(const char *desc, LSA_R_QUERY_INFO *out, prs_struct *ps, int
 		if(!lsa_io_query_info_ctr("", ps, depth, &out->ctr))
 			return False;
 	}
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &out->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes an LSA_Q_SET_INFO structure.
-********************************************************************/
-
-bool lsa_io_q_set(const char *desc, LSA_Q_SET_INFO *in, prs_struct *ps, 
-		  int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_set");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("", &in->pol, ps, depth))
-		return False;
-
-	if(!prs_uint16("info_class", ps, depth, &in->info_class))
-		return False;
-
-	if(!lsa_io_query_info_ctr("", ps, depth, &in->ctr))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes an LSA_R_SET_INFO structure.
-********************************************************************/
-
-bool lsa_io_r_set(const char *desc, LSA_R_SET_INFO *out, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_set");
-	depth++;
 
 	if(!prs_align(ps))
 		return False;

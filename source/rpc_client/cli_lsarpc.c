@@ -716,41 +716,6 @@ NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 	return result;
 }
 
-NTSTATUS rpccli_lsa_set_info_policy(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				    POLICY_HND *pol, uint16 info_class,
-				    LSA_INFO_CTR ctr)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_SET_INFO q;
-	LSA_R_SET_INFO r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	init_q_set(&q, pol, info_class, ctr);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_LSARPC, LSA_SETINFOPOLICY,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_set,
-		lsa_io_r_set,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	/* Return output parameters */
-
- done:
-
-	return result;
-}
-
-
 /**
  * Enumerate list of trusted domains
  *
