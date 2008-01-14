@@ -298,7 +298,7 @@ sub PythonFunction($$$)
 	$self->pidl("}");
 
 	if ($fn->{RETURN_TYPE}) {
-		$result_size++;
+		$result_size++ unless ($fn->{RETURN_TYPE} eq "WERROR" or $fn->{RETURN_TYPE} eq "NTSTATUS");
 	}
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
@@ -329,7 +329,11 @@ sub PythonFunction($$$)
 		}
 	}
 
-	if (defined($fn->{RETURN_TYPE})) {
+	if (defined($fn->{RETURN_TYPE}) and $fn->{RETURN_TYPE} eq "NTSTATUS") {
+		$self->handle_ntstatus("r->out.result", "NULL", "mem_ctx");
+	} elsif (defined($fn->{RETURN_TYPE}) and $fn->{RETURN_TYPE} eq "WERROR") {
+		$self->handle_werror("r->out.result", "NULL", "mem_ctx");
+	} elsif (defined($fn->{RETURN_TYPE})) {
 		my $conv = $self->ConvertObjectToPythonData("r", $fn->{RETURN_TYPE}, "r->out.result");
 		if ($result_size > 1) {
 			$self->pidl("PyTuple_SetItem(result, $i, $conv);");
@@ -340,6 +344,20 @@ sub PythonFunction($$$)
 
 	$self->pidl("talloc_free(mem_ctx);");
 	$self->pidl("return result;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
+}
+
+sub handle_werror($$$$)
+{
+	my ($self, $var, $retval, $mem_ctx) = @_;
+
+	$self->pidl("if (!W_ERROR_IS_OK($var)) {");
+	$self->indent;
+	$self->pidl("PyErr_SetString(PyExc_RuntimeError, win_errstr($var));");
+	$self->pidl("talloc_free($mem_ctx);") if ($mem_ctx);
+	$self->pidl("return $retval;");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
