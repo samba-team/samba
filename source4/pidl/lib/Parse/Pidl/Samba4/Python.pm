@@ -384,7 +384,7 @@ sub PythonType($$$)
 		$self->EnumAndBitmapConsts($d->{NAME}, $d->{DATA});
 	}
 
-	if ($actual_ctype->{TYPE} eq "UNION") {
+	if ($actual_ctype->{TYPE} eq "UNION" and defined($actual_ctype->{ELEMENTS})) {
 		$self->pidl("PyObject *py_import_$d->{NAME}(int level, " .mapTypeName($d) . " *in)");
 		$self->pidl("{");
 		$self->indent;
@@ -486,7 +486,7 @@ sub Interface($$$)
 	$self->pidl("");
 
 	$self->register_module_method($interface->{NAME}, "interface_$interface->{NAME}", "METH_VARARGS|METH_KEYWORDS", "NULL");
-	$self->pidl("static PyObject *interface_$interface->{NAME}(PyObject *self, PyObject *args)");
+	$self->pidl("static PyObject *interface_$interface->{NAME}(PyObject *self, PyObject *args, PyObject *kwargs)");
 	$self->pidl("{");
 	$self->indent;
 	$self->pidl("$interface->{NAME}_InterfaceObject *ret;");
@@ -495,6 +495,18 @@ sub Interface($$$)
 	$self->pidl("struct loadparm_context *lp_ctx;");
 	$self->pidl("TALLOC_CTX *mem_ctx = NULL;");
 	$self->pidl("NTSTATUS status;");
+	$self->pidl("");
+	$self->pidl("const char *kwnames[] = {");
+	$self->indent;
+	$self->pidl("\"binding\", NULL");
+	$self->deindent;
+	$self->pidl("};");
+	$self->pidl("");
+	$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"s:$interface->{NAME}\", discard_const_p(char *, kwnames), &binding_string)) {");
+	$self->indent;
+	$self->pidl("return NULL;");
+	$self->deindent;
+	$self->pidl("}");
 	$self->pidl("");
 
 	# FIXME: Arguments: binding string, credentials, loadparm context
