@@ -342,8 +342,7 @@ LIBWBCLIENT_OBJ = nsswitch/libwbclient/wbclient.o \
 		  nsswitch/libwbclient/wbc_pwd.o \
 		  nsswitch/libwbclient/wbc_idmap.o \
 		  nsswitch/libwbclient/wbc_sid.o \
-		  nsswitch/libwbclient/wbc_pam.o \
-		  $(SOCKET_WRAPPER_OBJ)
+		  nsswitch/libwbclient/wbc_pam.o
 
 
 LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_ini.o libgpo/gpo_util.o \
