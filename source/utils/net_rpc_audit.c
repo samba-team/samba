@@ -72,7 +72,7 @@ static NTSTATUS rpc_audit_get_internal(const DOM_SID *domain_sid,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	LSA_INFO_CTR dom; 
+	union lsa_PolicyInformation info;
 	int i;
 
 	uint32 info_class = 2;
@@ -97,15 +97,16 @@ static NTSTATUS rpc_audit_get_internal(const DOM_SID *domain_sid,
 		goto done;
 	}
 
-	result = rpccli_lsa_query_info_policy_new(pipe_hnd, mem_ctx, &pol, 
-						  info_class,
-						  &dom);
+	result = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+					    &pol,
+					    info_class,
+					    &info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	for (i=0; i < dom.info.id2.count1; i++) {
+	for (i=0; i < info.audit_events.count; i++) {
 
 		const char *val = NULL, *policy = NULL;
 
@@ -113,14 +114,15 @@ static NTSTATUS rpc_audit_get_internal(const DOM_SID *domain_sid,
 			continue;
 		}
 
-		val = audit_policy_str(mem_ctx, dom.info.id2.auditsettings[i]);
+		val = audit_policy_str(mem_ctx, info.audit_events.settings[i]);
 		policy = audit_description_str(i);
 		print_auditing_category(policy, val);
 	}
 
  done:
 	if (!NT_STATUS_IS_OK(result)) {
-		d_printf("failed to get auditing policy: %s\n", nt_errstr(result));
+		d_printf("failed to get auditing policy: %s\n",
+			nt_errstr(result));
 	}
 
 	return result;
@@ -139,7 +141,7 @@ static NTSTATUS rpc_audit_set_internal(const DOM_SID *domain_sid,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	LSA_INFO_CTR dom; 
+	union lsa_PolicyInformation info;
 
 	uint32 info_class = 2;
 	uint32 audit_policy, audit_category;
@@ -178,29 +180,32 @@ static NTSTATUS rpc_audit_set_internal(const DOM_SID *domain_sid,
 		goto done;
 	}
 
-	result = rpccli_lsa_query_info_policy_new(pipe_hnd, mem_ctx, &pol, 
-						  info_class,
-						  &dom);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	dom.info.id2.auditsettings[audit_category] = audit_policy;
-
-	result = rpccli_lsa_set_info_policy(pipe_hnd, mem_ctx, &pol, 
+	result = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+					    &pol,
 					    info_class,
-					    dom);
+					    &info);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	result = rpccli_lsa_query_info_policy_new(pipe_hnd, mem_ctx, &pol, 
-						  info_class,
-						  &dom);
+	info.audit_events.settings[audit_category] = audit_policy;
 
+	result = rpccli_lsa_SetInfoPolicy(pipe_hnd, mem_ctx,
+					  &pol,
+					  info_class,
+					  &info);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+					    &pol,
+					    info_class,
+					    &info);
 	{
-		const char *val = audit_policy_str(mem_ctx, dom.info.id2.auditsettings[audit_category]);
+		const char *val = audit_policy_str(mem_ctx, info.audit_events.settings[audit_category]);
 		const char *policy = audit_description_str(audit_category);
 		print_auditing_category(policy, val);
 	}
@@ -221,7 +226,7 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	LSA_INFO_CTR dom;
+	union lsa_PolicyInformation info;
 
 	uint32 info_class = 2;
 
@@ -233,19 +238,20 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 
-	result = rpccli_lsa_query_info_policy_new(pipe_hnd, mem_ctx, &pol, 
-						  info_class,
-						  &dom);
-
+	result = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+					    &pol,
+					    info_class,
+					    &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	dom.info.id2.auditing_enabled = enable;
+	info.audit_events.auditing_mode = enable;
 
-	result = rpccli_lsa_set_info_policy(pipe_hnd, mem_ctx, &pol, 
-					    info_class,
-					    dom);
+	result = rpccli_lsa_SetInfoPolicy(pipe_hnd, mem_ctx,
+					  &pol,
+					  info_class,
+					  &info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -300,7 +306,7 @@ static NTSTATUS rpc_audit_list_internal(const DOM_SID *domain_sid,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	LSA_INFO_CTR dom;
+	union lsa_PolicyInformation info;
 	int i;
 
 	uint32 info_class = 2;
@@ -313,16 +319,16 @@ static NTSTATUS rpc_audit_list_internal(const DOM_SID *domain_sid,
 		goto done;
 	}
 
-	result = rpccli_lsa_query_info_policy_new(pipe_hnd, mem_ctx, &pol, 
-						  info_class,
-						  &dom);
-
+	result = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+					    &pol,
+					    info_class,
+					    &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
 	printf("Auditing:\t\t");
-	switch (dom.info.id2.auditing_enabled) {
+	switch (info.audit_events.auditing_mode) {
 		case True:
 			printf("Enabled");
 			break;
@@ -330,16 +336,16 @@ static NTSTATUS rpc_audit_list_internal(const DOM_SID *domain_sid,
 			printf("Disabled");
 			break;
 		default:
-			printf("unknown (%d)", dom.info.id2.auditing_enabled);
+			printf("unknown (%d)", info.audit_events.auditing_mode);
 			break;
 	}
 	printf("\n");
 
-	printf("Auditing categories:\t%d\n", dom.info.id2.count1);
+	printf("Auditing categories:\t%d\n", info.audit_events.count);
 	printf("Auditing settings:\n");
 
-	for (i=0; i < dom.info.id2.count1; i++) {
-		const char *val = audit_policy_str(mem_ctx, dom.info.id2.auditsettings[i]);
+	for (i=0; i < info.audit_events.count; i++) {
+		const char *val = audit_policy_str(mem_ctx, info.audit_events.settings[i]);
 		const char *policy = audit_description_str(i);
 		print_auditing_category(policy, val);
 	}
