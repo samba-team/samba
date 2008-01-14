@@ -91,9 +91,9 @@ sub EnumAndBitmapConsts($$$)
 	}
 }
 
-sub FromUnionToPythonFunction($$$)
+sub FromUnionToPythonFunction($$$$)
 {
-	my ($self, $type, $switch, $name) = @_;
+	my ($self, $mem_ctx, $type, $switch, $name) = @_;
 
 	$self->pidl("PyObject *ret;");
 	$self->pidl("");
@@ -111,7 +111,7 @@ sub FromUnionToPythonFunction($$$)
 		$self->indent;
 
 		if ($e->{NAME}) {
-			$self->ConvertObjectToPython({}, $e, "$name->$e->{NAME}", "ret");
+			$self->ConvertObjectToPython($mem_ctx, {}, $e, "$name->$e->{NAME}", "ret");
 		} else {
 			$self->pidl("ret = Py_None;");
 		}
@@ -182,13 +182,13 @@ sub PythonStruct($$$$)
 	$self->pidl("static PyObject *py_$name\_getattr(PyObject *obj, char *name)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$cname *object = py_talloc_get_type(obj, $cname);");
+	$self->pidl("$cname *object = py_talloc_get_ptr(obj);");
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
 		my $varname = "object->$e->{NAME}";
 		$self->indent;
 		$self->pidl("PyObject *py_$e->{NAME};");
-		$self->ConvertObjectToPython($env, $e, $varname, "py_$e->{NAME}");
+		$self->ConvertObjectToPython("py_talloc_get_talloc_ctx(obj)", $env, $e, $varname, "py_$e->{NAME}");
 		$self->pidl("return py_$e->{NAME};");
 		$self->deindent;
 		$self->pidl("}");
@@ -202,7 +202,7 @@ sub PythonStruct($$$$)
 	$self->pidl("static int py_$name\_setattr(PyObject *py_obj, char *name, PyObject *value)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$cname *object = py_talloc_get_type(py_obj, $cname);");
+	$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
 	my $mem_ctx = "py_talloc_get_mem_ctx(py_obj)";
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
@@ -263,10 +263,10 @@ sub PythonFunction($$$)
 	$self->pidl("$iface\_InterfaceObject *iface = ($iface\_InterfaceObject *)self;");
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("TALLOC_CTX *mem_ctx = talloc_new(NULL);");
-	$self->pidl("struct $fn->{NAME} r;");
+	$self->pidl("struct $fn->{NAME} *r = talloc_zero(mem_ctx, struct $fn->{NAME});");
 	$self->pidl("PyObject *result = Py_None;");
-
-	my $env = GenerateFunctionInEnv($fn, "r.");
+	
+	my $env = GenerateFunctionInEnv($fn, "r->");
 	my $result_size = 0;
 
 	my $args_format = "";
@@ -297,23 +297,19 @@ sub PythonFunction($$$)
 	$self->deindent;
 	$self->pidl("}");
 
-	if ($result_size > 0) {
-		$self->pidl("");
-		$self->pidl("ZERO_STRUCT(r.out);");
-	}
 	if ($fn->{RETURN_TYPE}) {
 		$result_size++;
 	}
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (grep(/in/,@{$e->{DIRECTION}})) {
-			$self->ConvertObjectFromPython($env, "mem_ctx", $e, "py_$e->{NAME}", "r.in.$e->{NAME}", "talloc_free(mem_ctx); return NULL;");
+			$self->ConvertObjectFromPython($env, "mem_ctx", $e, "py_$e->{NAME}", "r->in.$e->{NAME}", "talloc_free(mem_ctx); return NULL;");
 		}
 	}
-	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, &r);");
+	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, r);");
 	$self->handle_ntstatus("status", "NULL", "mem_ctx");
 
-	$env = GenerateFunctionOutEnv($fn, "r.");
+	$env = GenerateFunctionOutEnv($fn, "r->");
 	my $i = 0;
 
 	if ($result_size > 1) {
@@ -323,7 +319,7 @@ sub PythonFunction($$$)
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		my $py_name = "py_$e->{NAME}";
 		if (grep(/out/,@{$e->{DIRECTION}})) {
-			$self->ConvertObjectToPython($env, $e, "r.out.$e->{NAME}", $py_name);
+			$self->ConvertObjectToPython("r", $env, $e, "r->out.$e->{NAME}", $py_name);
 			if ($result_size > 1) {
 				$self->pidl("PyTuple_SetItem(result, $i, $py_name);");
 				$i++;
@@ -334,7 +330,7 @@ sub PythonFunction($$$)
 	}
 
 	if (defined($fn->{RETURN_TYPE})) {
-		my $conv = $self->ConvertObjectToPythonData($fn->{RETURN_TYPE}, "r.out.result");
+		my $conv = $self->ConvertObjectToPythonData("r", $fn->{RETURN_TYPE}, "r->out.result");
 		if ($result_size > 1) {
 			$self->pidl("PyTuple_SetItem(result, $i, $conv);");
 		} else {
@@ -397,10 +393,10 @@ sub PythonType($$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "UNION" and defined($actual_ctype->{ELEMENTS})) {
-		$self->pidl("PyObject *py_import_$d->{NAME}(int level, " .mapTypeName($d) . " *in)");
+		$self->pidl("PyObject *py_import_$d->{NAME}(TALLOC_CTX *mem_ctx, int level, " .mapTypeName($d) . " *in)");
 		$self->pidl("{");
 		$self->indent;
-		$self->FromUnionToPythonFunction($actual_ctype, "level", "in") if ($actual_ctype->{TYPE} eq "UNION");
+		$self->FromUnionToPythonFunction("mem_ctx", $actual_ctype, "level", "in") if ($actual_ctype->{TYPE} eq "UNION");
 		$self->deindent;
 		$self->pidl("}");
 		$self->pidl("");
@@ -676,9 +672,11 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 		}
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		if (is_charset_array($e, $l)) {
+			$self->pidl("PY_CHECK_TYPE(PyUnicode, $py_var, $fail);");
 			$self->pidl(get_pointer_to($var_name) . " = PyString_AsString(PyUnicode_AsEncodedString($py_var, \"utf-8\", \"ignore\"));");
 		} else {
 			my $counter = "$e->{NAME}_cntr_$l->{LEVEL_INDEX}";
+			$self->pidl("PY_CHECK_TYPE(PyList, $py_var, $fail);");
 			$self->pidl("{");
 			$self->indent;
 			$self->pidl("int $counter;");
@@ -754,9 +752,9 @@ sub ConvertScalarToPython($$$)
 	die("Unknown scalar type $ctypename");
 }
 
-sub ConvertObjectToPythonData($$$$)
+sub ConvertObjectToPythonData($$$$$)
 {
-	my ($self, $ctype, $cvar) = @_;
+	my ($self, $mem_ctx, $ctype, $cvar) = @_;
 
 	die("undef type for $cvar") unless(defined($ctype));
 
@@ -797,9 +795,9 @@ sub ConvertObjectToPythonData($$$$)
 	die("unknown type ".mapTypeName($ctype) . ": $cvar");
 }
 
-sub ConvertObjectToPythonLevel($$$$)
+sub ConvertObjectToPythonLevel($$$$$)
 {
-	my ($self, $env, $e, $l, $var_name, $py_var) = @_;
+	my ($self, $mem_ctx, $env, $e, $l, $var_name, $py_var) = @_;
 
 	if ($l->{TYPE} eq "POINTER") {
 		if ($l->{POINTER_TYPE} ne "ref") {
@@ -810,7 +808,7 @@ sub ConvertObjectToPythonLevel($$$$)
 			$self->pidl("} else {");
 			$self->indent;
 		}
-		$self->ConvertObjectToPythonLevel($env, $e, GetNextLevel($e, $l), get_value_of($var_name), $py_var);
+		$self->ConvertObjectToPythonLevel($var_name, $env, $e, GetNextLevel($e, $l), get_value_of($var_name), $py_var);
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->deindent;
 			$self->pidl("}");
@@ -836,7 +834,7 @@ sub ConvertObjectToPythonLevel($$$$)
 			$self->indent;
 			my $member_var = "py_$e->{NAME}_$l->{LEVEL_INDEX}";
 			$self->pidl("PyObject *$member_var;");
-			$self->ConvertObjectToPythonLevel($env, $e, GetNextLevel($e, $l), $var_name."[$counter]", $member_var);
+			$self->ConvertObjectToPythonLevel($var_name, $env, $e, GetNextLevel($e, $l), $var_name."[$counter]", $member_var);
 			$self->pidl("PyList_SetItem($py_var, $counter, $member_var);");
 			$self->deindent;
 			$self->pidl("}");
@@ -846,13 +844,13 @@ sub ConvertObjectToPythonLevel($$$$)
 	} elsif ($l->{TYPE} eq "SWITCH") {
 		$var_name = get_pointer_to($var_name);
 		my $switch = ParseExpr($l->{SWITCH_IS}, $env, $e);
-		$self->pidl("$py_var = py_import_" . GetNextLevel($e, $l)->{DATA_TYPE} . "($switch, $var_name);");
+		$self->pidl("$py_var = py_import_" . GetNextLevel($e, $l)->{DATA_TYPE} . "($mem_ctx, $switch, $var_name);");
 	} elsif ($l->{TYPE} eq "DATA") {
 		if (not Parse::Pidl::Typelist::is_scalar($l->{DATA_TYPE}) or 
 			Parse::Pidl::Typelist::scalar_is_reference($l->{DATA_TYPE})) {
 			$var_name = get_pointer_to($var_name);
 		}
-		my $conv = $self->ConvertObjectToPythonData($l->{DATA_TYPE}, $var_name);
+		my $conv = $self->ConvertObjectToPythonData($mem_ctx, $l->{DATA_TYPE}, $var_name);
 		$self->pidl("$py_var = $conv;");
 	} elsif ($l->{TYPE} eq "SUBCONTEXT") {
 		$self->pidl("FIXME");
@@ -861,11 +859,11 @@ sub ConvertObjectToPythonLevel($$$$)
 	}
 }
 
-sub ConvertObjectToPython($$$$$)
+sub ConvertObjectToPython($$$$$$)
 {
-	my ($self, $env, $ctype, $cvar, $py_var) = @_;
+	my ($self, $mem_ctx, $env, $ctype, $cvar, $py_var) = @_;
 
-	$self->ConvertObjectToPythonLevel($env, $ctype, $ctype->{LEVELS}[0], $cvar, $py_var);
+	$self->ConvertObjectToPythonLevel($mem_ctx, $env, $ctype, $ctype->{LEVELS}[0], $cvar, $py_var);
 }
 
 sub Parse($$$$$)
@@ -925,7 +923,7 @@ sub Parse($$$$$)
 		} elsif ($cvar =~ /^".*"$/) {
 			$py_obj = "PyString_FromString($cvar)";
 		} else {
-			$py_obj = $self->ConvertObjectToPythonData($ctype, $cvar);
+			$py_obj = $self->ConvertObjectToPythonData("NULL", $ctype, $cvar);
 		}
 
 		$self->pidl("PyModule_AddObject(m, \"$name\", $py_obj);");
