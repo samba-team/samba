@@ -25,3 +25,5 @@
 
 #define dom_sid2_Type dom_sid_Type
 #define dom_sid28_Type dom_sid_Type
+#define dom_sid2_Check dom_sid_Check
+#define dom_sid28_Check dom_sid28_Check

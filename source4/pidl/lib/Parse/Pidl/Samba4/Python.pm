@@ -886,20 +886,16 @@ sub Parse($$$$$)
 #include <Python.h>
 #include \"librpc/rpc/dcerpc.h\"
 #include \"scripting/python/pytalloc.h\"
+#include \"scripting/python/pyrpc.h\"
 #include \"$hdr\"
 #include \"$ndr_hdr\"
 #include \"$py_hdr\"
 
-#define PY_CHECK_TYPE(type, var, fail) \\
-	if (!type ## _Check(var)) {\\
-		PyErr_Format(PyExc_TypeError, \"Expected type %s\", type ## _Type.tp_name); \\
-		fail; \\
-	}
 ");
 
 	foreach my $x (@$ndr) {
-	    ($x->{TYPE} eq "INTERFACE") && $self->Interface($x, $basename);
 		($x->{TYPE} eq "IMPORT") && $self->Import(@{$x->{PATHS}});
+	    ($x->{TYPE} eq "INTERFACE") && $self->Interface($x, $basename);
 	}
 	
 	$self->pidl("static PyMethodDef $basename\_methods[] = {");
