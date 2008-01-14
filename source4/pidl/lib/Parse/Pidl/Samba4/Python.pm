@@ -102,11 +102,7 @@ sub FromUnionToPythonFunction($$$$)
 	$self->indent;
 
 	foreach my $e (@{$type->{ELEMENTS}}) {
-		if (defined($e->{CASE})) {
-			$self->pidl("$e->{CASE}:");
-		} else {
-			$self->pidl("default:");
-		}
+		$self->pidl("$e->{CASE}:");
 
 		$self->indent;
 
@@ -141,12 +137,8 @@ sub FromPythonToUnionFunction($$$$$)
 	$self->indent;
 
 	foreach my $e (@{$type->{ELEMENTS}}) {
-		if (defined($e->{CASE})) {
-			$self->pidl("$e->{CASE}:");
-		} else {
-			$has_default = 1;
-			$self->pidl("default:");
-		}
+		$self->pidl("$e->{CASE}:");
+		if ($e->{CASE} eq "default") { $has_default = 1; }
 		$self->indent;
 		if ($e->{NAME}) {
 			$self->ConvertObjectFromPython({}, $mem_ctx, $e, $name, "ret->$e->{NAME}", "talloc_free(ret); return NULL;");
@@ -182,16 +174,18 @@ sub PythonStruct($$$$)
 	$self->pidl("static PyObject *py_$name\_getattr(PyObject *obj, char *name)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$cname *object = py_talloc_get_ptr(obj);");
-	foreach my $e (@{$d->{ELEMENTS}}) {
-		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
-		my $varname = "object->$e->{NAME}";
-		$self->indent;
-		$self->pidl("PyObject *py_$e->{NAME};");
-		$self->ConvertObjectToPython("py_talloc_get_mem_ctx(obj)", $env, $e, $varname, "py_$e->{NAME}");
-		$self->pidl("return py_$e->{NAME};");
-		$self->deindent;
-		$self->pidl("}");
+	if ($#{$d->{ELEMENTS}} > -1) {
+		$self->pidl("$cname *object = py_talloc_get_ptr(obj);");
+		foreach my $e (@{$d->{ELEMENTS}}) {
+			$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
+			my $varname = "object->$e->{NAME}";
+			$self->indent;
+			$self->pidl("PyObject *py_$e->{NAME};");
+			$self->ConvertObjectToPython("py_talloc_get_mem_ctx(obj)", $env, $e, $varname, "py_$e->{NAME}");
+			$self->pidl("return py_$e->{NAME};");
+			$self->deindent;
+			$self->pidl("}");
+		}
 	}
 	$self->pidl("PyErr_SetString(PyExc_AttributeError, \"no such attribute\");");
 	$self->pidl("return NULL;");
@@ -202,19 +196,21 @@ sub PythonStruct($$$$)
 	$self->pidl("static int py_$name\_setattr(PyObject *py_obj, char *name, PyObject *value)");
 	$self->pidl("{");
 	$self->indent;
-	$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
-	my $mem_ctx = "py_talloc_get_mem_ctx(py_obj)";
-	foreach my $e (@{$d->{ELEMENTS}}) {
-		$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
-		my $varname = "object->$e->{NAME}";
-		$self->indent;
-		if ($e->{ORIGINAL}->{POINTERS} > 0) {
-			$self->pidl("talloc_free($varname);");
+	if ($#{$d->{ELEMENTS}} > -1) {
+		$self->pidl("$cname *object = py_talloc_get_ptr(py_obj);");
+		my $mem_ctx = "py_talloc_get_mem_ctx(py_obj)";
+		foreach my $e (@{$d->{ELEMENTS}}) {
+			$self->pidl("if (!strcmp(name, \"$e->{NAME}\")) {");
+			my $varname = "object->$e->{NAME}";
+			$self->indent;
+			if ($e->{ORIGINAL}->{POINTERS} > 0) {
+				$self->pidl("talloc_free($varname);");
+			}
+			$self->ConvertObjectFromPython($env, $mem_ctx, $e, "value", $varname, "return -1;");
+			$self->pidl("return 0;");
+			$self->deindent;
+			$self->pidl("}");
 		}
-		$self->ConvertObjectFromPython($env, $mem_ctx, $e, "value", $varname, "return -1;");
-		$self->pidl("return 0;");
-		$self->deindent;
-		$self->pidl("}");
 	}
 	$self->pidl("PyErr_SetString(PyExc_AttributeError, \"no such attribute\");");
 	$self->pidl("return -1;");
@@ -591,7 +587,7 @@ sub assign($$$)
 {
 	my ($self, $dest, $src) = @_;
 	if ($dest =~ /^\&/) {
-		$self->pidl("memcpy($dest, $src, sizeof(*$dest));");
+		$self->pidl("memcpy($dest, $src, sizeof(" . get_value_of($dest) . "));");
 	} else {
 		$self->pidl("$dest = $src;");
 	}
@@ -604,11 +600,6 @@ sub ConvertObjectFromPythonData($$$$$$)
 	die("undef type for $cvar") unless(defined($ctype));
 
 	$ctype = resolveType($ctype);
-
-	if (ref($ctype) ne "HASH") {
-		$self->pidl("$target = FIXME($cvar);");
-		return;
-	}
 
 	my $actual_ctype = $ctype;
 	if ($ctype->{TYPE} eq "TYPEDEF") {
@@ -641,7 +632,7 @@ sub ConvertObjectFromPythonData($$$$$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "ipv4address") {
-		$self->pidl("$target = FIXME($cvar);");
+		$self->pidl("$target = PyString_AsString($cvar);");
 		return;
 		}
 
@@ -657,7 +648,7 @@ sub ConvertObjectFromPythonData($$$$$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "string_array") {
-		$self->pidl("$target = FIXME($cvar);");
+		$self->pidl("$target = PyCObject_AsVoidPtr($cvar);");
 		return;
 	}
 
@@ -725,9 +716,9 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 	} elsif ($l->{TYPE} eq "SWITCH") {
 		$var_name = get_pointer_to($var_name);
 		my $switch = ParseExpr($l->{SWITCH_IS}, $env, $e);
-		$self->pidl("$var_name = py_export_" . GetNextLevel($e, $l)->{DATA_TYPE} . "($mem_ctx, $switch, $py_var);");
+		$self->assign($var_name, "py_export_" . GetNextLevel($e, $l)->{DATA_TYPE} . "($mem_ctx, $switch, $py_var)");
 	} elsif ($l->{TYPE} eq "SUBCONTEXT") {
-		$self->pidl("#error Subcontext not yet supported");
+		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, GetNextLevel($e, $l), $var_name, $fail);
 	} else {
 		die("unknown level type $l->{TYPE}");
 	}
@@ -753,7 +744,7 @@ sub ConvertScalarToPython($$$)
 	}
 
 	if ($ctypename eq "DATA_BLOB") {
-		return "PyString_FromStringAndSize($cvar->data, $cvar->length)";
+		return "PyString_FromStringAndSize((char *)($cvar).data, ($cvar).length)";
 	}
 
 	if ($ctypename eq "NTSTATUS") {
@@ -770,7 +761,7 @@ sub ConvertScalarToPython($$$)
 
 	# Not yet supported
 	if ($ctypename eq "string_array") { return "PyCObject_FromVoidPtr($cvar)"; }
-	if ($ctypename eq "ipv4address") { return "PyCObject_FromVoidPtr($cvar)"; }
+	if ($ctypename eq "ipv4address") { return "PyString_FromString($cvar)"; }
 	if ($ctypename eq "pointer") {
 		return "PyCObject_FromVoidPtr($cvar, talloc_free)";
 	}
@@ -867,7 +858,7 @@ sub ConvertObjectToPythonLevel($$$$$)
 		my $conv = $self->ConvertObjectToPythonData($mem_ctx, $l->{DATA_TYPE}, $var_name);
 		$self->pidl("$py_var = $conv;");
 	} elsif ($l->{TYPE} eq "SUBCONTEXT") {
-		$self->pidl("FIXME");
+		$self->ConvertObjectToPythonLevel($mem_ctx, $env, $e, GetNextLevel($e, $l), $var_name, $py_var);
 	} else {
 		die("Unknown level type $l->{TYPE} $var_name");
 	}
