@@ -2760,6 +2760,17 @@ SWIGINTERN char const *param_opt___str__(param_opt *self){ return self->value; }
 SWIGINTERN void delete_param_opt(param_opt *self){ talloc_free(self); }
 SWIGINTERN struct param_opt *param_section_first_parameter(param_section *self){ return self->parameters; }
 SWIGINTERN struct param_opt *param_section_next_parameter(param_section *self,struct param_opt *s){ return s->next; }
+
+
+struct loadparm_context *lp_from_py_object(PyObject *py_obj)
+{
+    struct loadparm_context *lp_ctx;
+    if (SWIG_ConvertPtr(py_obj, &lp_ctx, SWIGTYPE_p_loadparm_context, 0 |  0 ) < 0)
+        return NULL;
+    return lp_ctx;
+}
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

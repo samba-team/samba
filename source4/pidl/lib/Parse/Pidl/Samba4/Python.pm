@@ -264,7 +264,7 @@ sub PythonFunction($$$)
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("TALLOC_CTX *mem_ctx = talloc_new(NULL);");
 	$self->pidl("struct $fn->{NAME} r;");
-	$self->pidl("PyObject *result;");
+	$self->pidl("PyObject *result = Py_None;");
 
 	my $env = GenerateFunctionInEnv($fn, "r.");
 	my $result_size = 0;
@@ -313,21 +313,33 @@ sub PythonFunction($$$)
 	$self->pidl("status = dcerpc_$fn->{NAME}(iface->pipe, mem_ctx, &r);");
 	$self->handle_ntstatus("status", "NULL", "mem_ctx");
 
-	$self->pidl("result = PyTuple_New($result_size);");
-
 	$env = GenerateFunctionOutEnv($fn, "r.");
 	my $i = 0;
 
+	if ($result_size > 1) {
+		$self->pidl("result = PyTuple_New($result_size);");
+	}
+
 	foreach my $e (@{$fn->{ELEMENTS}}) {
+		my $py_name = "py_$e->{NAME}";
 		if (grep(/out/,@{$e->{DIRECTION}})) {
-			$self->ConvertObjectToPython($env, $e, "r.out.$e->{NAME}", "py_$e->{NAME}");
-			$self->pidl("PyTuple_SetItem(result, $i, py_$e->{NAME});");
-			$i++;
+			$self->ConvertObjectToPython($env, $e, "r.out.$e->{NAME}", $py_name);
+			if ($result_size > 1) {
+				$self->pidl("PyTuple_SetItem(result, $i, $py_name);");
+				$i++;
+			} else {
+				$self->pidl("result = $py_name;");
+			}
 		}
 	}
 
 	if (defined($fn->{RETURN_TYPE})) {
-		$self->pidl("PyTuple_SetItem(result, $i, " . $self->ConvertObjectToPythonData($fn->{RETURN_TYPE}, "r.out.result") . ");");
+		my $conv = $self->ConvertObjectToPythonData($fn->{RETURN_TYPE}, "r.out.result");
+		if ($result_size > 1) {
+			$self->pidl("PyTuple_SetItem(result, $i, $conv);");
+		} else {
+			$self->pidl("result = $conv;");
+		}
 	}
 
 	$self->pidl("talloc_free(mem_ctx);");
@@ -446,6 +458,7 @@ sub Interface($$$)
 		my $fn_name = $d->{NAME};
 
 		$fn_name =~ s/^$interface->{NAME}_//;
+		$fn_name =~ s/^$basename\_//;
 
 		$self->pidl("{ \"$fn_name\", (PyCFunction)py_$d->{NAME}, METH_VARARGS|METH_KEYWORDS, NULL },");
 	}
@@ -491,31 +504,55 @@ sub Interface($$$)
 	$self->indent;
 	$self->pidl("$interface->{NAME}_InterfaceObject *ret;");
 	$self->pidl("const char *binding_string;");
-	$self->pidl("struct cli_credentials *credentials = NULL;");
+	$self->pidl("struct cli_credentials *credentials;");
 	$self->pidl("struct loadparm_context *lp_ctx = NULL;");
+	$self->pidl("PyObject *py_lp_ctx = NULL, *py_credentials = Py_None;");
 	$self->pidl("TALLOC_CTX *mem_ctx = NULL;");
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("");
 	$self->pidl("const char *kwnames[] = {");
 	$self->indent;
-	$self->pidl("\"binding\", NULL");
+	$self->pidl("\"binding\", \"lp_ctx\", \"credentials\", NULL");
 	$self->deindent;
 	$self->pidl("};");
+	$self->pidl("extern struct loadparm_context *lp_from_py_object(PyObject *py_obj);");
+    $self->pidl("extern struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj);");
 	$self->pidl("");
-	$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"s:$interface->{NAME}\", discard_const_p(char *, kwnames), &binding_string)) {");
+	$self->pidl("if (!PyArg_ParseTupleAndKeywords(args, kwargs, \"sO|O:$interface->{NAME}\", discard_const_p(char *, kwnames), &binding_string, &py_lp_ctx, &py_credentials)) {");
 	$self->indent;
 	$self->pidl("return NULL;");
 	$self->deindent;
 	$self->pidl("}");
 	$self->pidl("");
+	$self->pidl("if (py_lp_ctx != NULL) {");
+	$self->indent;
+	$self->pidl("lp_ctx = lp_from_py_object(py_lp_ctx);");
+	$self->pidl("if (lp_ctx == NULL) {");
+	$self->indent;
+	$self->pidl("PyErr_SetString(PyExc_TypeError, \"Expected loadparm context\");");
+	$self->pidl("return NULL;");
+	$self->deindent;
+	$self->pidl("}");
+	$self->deindent;
+	$self->pidl("}");
+	$self->pidl("");
 
-	# FIXME: Arguments: binding string, credentials, loadparm context
+    $self->pidl("credentials = cli_credentials_from_py_object(py_credentials);");
+    $self->pidl("if (credentials == NULL) {");
+    $self->indent;
+    $self->pidl("PyErr_SetString(PyExc_TypeError, \"Expected credentials\");");
+    $self->pidl("return NULL;");
+    $self->deindent;
+    $self->pidl("}");
+
 	$self->pidl("ret = PyObject_New($interface->{NAME}_InterfaceObject, &$interface->{NAME}_InterfaceType);");
 	$self->pidl("");
 
 	$self->pidl("status = dcerpc_pipe_connect(NULL, &ret->pipe, binding_string, ");
 	$self->pidl("             &ndr_table_$interface->{NAME}, credentials, NULL, lp_ctx);");
 	$self->handle_ntstatus("status", "NULL", "mem_ctx");
+
+	$self->pidl("ret->pipe->conn->flags |= DCERPC_NDR_REF_ALLOC;");
 
 	$self->pidl("return (PyObject *)ret;");
 	$self->deindent;

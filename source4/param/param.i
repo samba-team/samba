@@ -290,3 +290,15 @@ typedef struct param_section {
 
 %rename(default_config) global_loadparm;
 struct loadparm_context *global_loadparm;
+
+%{
+
+struct loadparm_context *lp_from_py_object(PyObject *py_obj)
+{
+    struct loadparm_context *lp_ctx;
+    if (SWIG_ConvertPtr(py_obj, &lp_ctx, SWIGTYPE_p_loadparm_context, 0 |  0 ) < 0)
+        return NULL;
+    return lp_ctx;
+}
+
+%}
