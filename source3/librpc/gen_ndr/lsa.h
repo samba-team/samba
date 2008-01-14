@@ -132,7 +132,7 @@ struct lsa_DnsDomainInfo {
 	struct dom_sid2 *sid;/* [unique] */
 };
 
-enum lsaPolicyInfo
+enum lsa_PolicyInfo
 #ifndef USE_UINT_ENUMS
  {
 	LSA_POLICY_INFO_AUDIT_LOG=1,
@@ -149,7 +149,7 @@ enum lsaPolicyInfo
 	LSA_POLICY_INFO_DNS=12
 }
 #else
- { __donnot_use_enum_lsaPolicyInfo=0x7FFFFFFF}
+ { __donnot_use_enum_lsa_PolicyInfo=0x7FFFFFFF}
 #define LSA_POLICY_INFO_AUDIT_LOG ( 1 )
 #define LSA_POLICY_INFO_AUDIT_EVENTS ( 2 )
 #define LSA_POLICY_INFO_DOMAIN ( 3 )
@@ -554,7 +554,7 @@ struct lsa_OpenPolicy {
 struct lsa_QueryInfoPolicy {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint16_t level;
+		enum lsa_PolicyInfo level;
 	} in;
 
 	struct {
@@ -566,6 +566,12 @@ struct lsa_QueryInfoPolicy {
 
 
 struct lsa_SetInfoPolicy {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		enum lsa_PolicyInfo level;
+		union lsa_PolicyInformation *info;/* [ref,switch_is(level)] */
+	} in;
+
 	struct {
 		NTSTATUS result;
 	} out;
@@ -1066,7 +1072,7 @@ struct lsa_GetUserName {
 struct lsa_QueryInfoPolicy2 {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint16_t level;
+		enum lsa_PolicyInfo level;
 	} in;
 
 	struct {
@@ -1078,6 +1084,12 @@ struct lsa_QueryInfoPolicy2 {
 
 
 struct lsa_SetInfoPolicy2 {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		enum lsa_PolicyInfo level;
+		union lsa_PolicyInformation *info;/* [ref,switch_is(level)] */
+	} in;
+
 	struct {
 		NTSTATUS result;
 	} out;
