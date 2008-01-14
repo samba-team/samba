@@ -31,7 +31,7 @@ PyObject *py_talloc_import_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx,
 						   void *ptr)
 {
 	py_talloc_Object *ret = PyObject_New(py_talloc_Object, py_type);
-	ret->talloc_ctx = talloc_reference(mem_ctx, ptr); 
+	ret->talloc_ctx = talloc_reference(NULL, mem_ctx); 
 	ret->ptr = ptr;
 	return (PyObject *)ret;
 }
