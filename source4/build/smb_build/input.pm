@@ -182,7 +182,7 @@ sub check_python($$$)
 
 	$python->{SUBSYSTEM} = "LIBPYTHON";
 
-	check_module($INPUT, $python, $default_ot);
+	check_module($INPUT, $python, ["SHARED_LIBRARY", "STATIC_LIBRARY"]);
 }
 
 sub check_binary($$)
