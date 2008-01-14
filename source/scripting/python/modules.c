@@ -39,6 +39,9 @@ extern void initwinreg(void);
 extern void initepmapper(void);
 extern void initinitshutdown(void);
 static void initdcerpc_misc(void) {} 
+extern void initmgmt(void);
+extern void initatsvc(void);
+extern void initsamr(void);
 
 static struct _inittab py_modules[] = { STATIC_LIBPYTHON_MODULES };
 

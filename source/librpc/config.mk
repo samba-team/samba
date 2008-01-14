@@ -612,3 +612,19 @@ PRIVATE_DEPENDENCIES = RPC_NDR_INITSHUTDOWN
 
 [PYTHON::python_epmapper]
 OBJ_FILES = gen_ndr/py_epmapper.o
+
+[PYTHON::python_mgmt]
+OBJ_FILES = gen_ndr/py_mgmt.o
+PRIVATE_DEPENDENCIES = dcerpc_mgmt
+
+[PYTHON::python_atsvc]
+OBJ_FILES = gen_ndr/py_atsvc.o
+PRIVATE_DEPENDENCIES = dcerpc_atsvc
+
+[PYTHON::python_samr]
+OBJ_FILES = gen_ndr/py_samr.o
+PRIVATE_DEPENDENCIES = dcerpc_samr
+
+[PYTHON::python_lsa]
+OBJ_FILES = gen_ndr/py_lsa.o
+PRIVATE_DEPENDENCIES = RPC_NDR_LSA
