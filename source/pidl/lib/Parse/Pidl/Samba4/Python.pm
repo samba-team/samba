@@ -612,7 +612,7 @@ sub ConvertObjectFromPythonData($$$$$$)
 
 	if ($actual_ctype->{TYPE} eq "ENUM" or $actual_ctype->{TYPE} eq "BITMAP" or 
 		$actual_ctype->{TYPE} eq "SCALAR" and (
-		expandAlias($actual_ctype->{NAME}) =~ /^(u?int[0-9]+|hyper|NTTIME|time_t|NTTIME_hyper|NTTIME_1sec|dlong|udlong|udlongr)$/)) {
+		expandAlias($actual_ctype->{NAME}) =~ /^(u?int[0-9]*|hyper|NTTIME|time_t|NTTIME_hyper|NTTIME_1sec|dlong|udlong|udlongr)$/)) {
 		$self->pidl("PY_CHECK_TYPE(PyInt, $cvar, $fail);");
 		$self->pidl("$target = PyInt_AsLong($cvar);");
 		return;
@@ -748,7 +748,7 @@ sub ConvertScalarToPython($$$)
 
 	$ctypename = expandAlias($ctypename);
 
-	if ($ctypename =~ /^(int|long|char|u?int[0-9]+|hyper|dlong|udlong|udlongr|time_t|NTTIME_hyper|NTTIME|NTTIME_1sec)$/) {
+	if ($ctypename =~ /^(char|u?int[0-9]*|hyper|dlong|udlong|udlongr|time_t|NTTIME_hyper|NTTIME|NTTIME_1sec)$/) {
 		return "PyInt_FromLong($cvar)";
 	}
 
@@ -938,7 +938,7 @@ sub Parse($$$$$)
 		} elsif ($cvar =~ /^".*"$/) {
 			$py_obj = "PyString_FromString($cvar)";
 		} else {
-			$py_obj = $self->ConvertObjectToPythonData("NULL", $ctype, $cvar);
+			$py_obj = $self->ConvertObjectToPythonData("NULL", expandAlias($ctype), $cvar);
 		}
 
 		$self->pidl("PyModule_AddObject(m, \"$name\", $py_obj);");

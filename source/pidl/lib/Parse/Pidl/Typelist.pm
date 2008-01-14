@@ -59,6 +59,7 @@ my %aliases = (
 	"boolean8" => "uint8",
 	"boolean32" => "uint32",
 	"DWORD" => "uint32",
+	"uint" => "uint32",
 	"int" => "int32",
 	"WORD" => "uint16",
 	"char" => "uint8",

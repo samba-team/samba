@@ -42,6 +42,8 @@ static void initdcerpc_misc(void) {}
 extern void initmgmt(void);
 extern void initatsvc(void);
 extern void initsamr(void);
+extern void initsecurity(void);
+extern void initlsa(void);
 
 static struct _inittab py_modules[] = { STATIC_LIBPYTHON_MODULES };
 
