@@ -622,7 +622,15 @@ int regdb_fetch_keys(const char *key, REGSUBKEY_CTR *ctr)
 	}
 	strupper_m(path);
 
+	if (tdb_read_lock_bystring_with_timeout(tdb_reg->tdb, path, 10) == -1) {
+		return 0;
+	}
+
 	dbuf = tdb_fetch_bystring(tdb_reg->tdb, path);
+	ctr->seqnum = regdb_get_seqnum();
+
+	tdb_read_unlock_bystring(tdb_reg->tdb, path);
+
 
 	buf = dbuf.dptr;
 	buflen = dbuf.dsize;
@@ -750,7 +758,14 @@ int regdb_fetch_values( const char* key, REGVAL_CTR *values )
 		return 0;
 	}
 
+	if (tdb_read_lock_bystring_with_timeout(tdb_reg->tdb, keystr, 10) == -1) {
+		return 0;
+	}
+
 	data = tdb_fetch_bystring(tdb_reg->tdb, keystr);
+	values->seqnum = regdb_get_seqnum();
+
+	tdb_read_unlock_bystring(tdb_reg->tdb, keystr);
 
 	if (!data.dptr) {
 		/* all keys have zero values by default */
@@ -907,6 +922,16 @@ static WERROR regdb_set_secdesc(const char *key,
 	return err;
 }
 
+bool regdb_subkeys_need_update(REGSUBKEY_CTR *subkeys)
+{
+	return (regdb_get_seqnum() != subkeys->seqnum);
+}
+
+bool regdb_values_need_update(REGVAL_CTR *values)
+{
+	return (regdb_get_seqnum() != values->seqnum);
+}
+
 /* 
  * Table of function pointers for default access
  */
@@ -918,5 +943,7 @@ REGISTRY_OPS regdb_ops = {
 	regdb_store_values,
 	NULL,
 	regdb_get_secdesc,
-	regdb_set_secdesc
+	regdb_set_secdesc,
+	regdb_subkeys_need_update,
+	regdb_values_need_update
 };

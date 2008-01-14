@@ -27,7 +27,9 @@
 static WERROR fill_value_cache(struct registry_key *key)
 {
 	if (key->values != NULL) {
-		return WERR_OK;
+		if (!reg_values_need_update(key->key, key->values)) {
+			return WERR_OK;
+		}
 	}
 
 	if (!(key->values = TALLOC_ZERO_P(key, REGVAL_CTR))) {
@@ -44,7 +46,9 @@ static WERROR fill_value_cache(struct registry_key *key)
 static WERROR fill_subkey_cache(struct registry_key *key)
 {
 	if (key->subkeys != NULL) {
-		return WERR_OK;
+		if (!reg_subkeys_need_update(key->key, key->subkeys)) {
+			return WERR_OK;
+		}
 	}
 
 	if (!(key->subkeys = TALLOC_ZERO_P(key, REGSUBKEY_CTR))) {
