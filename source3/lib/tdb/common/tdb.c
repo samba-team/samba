@@ -715,6 +715,11 @@ int tdb_wipe_all(struct tdb_context *tdb)
 		goto failed;
 	}
 
+	if (tdb_ofs_write(tdb, TDB_RECOVERY_HEAD, &offset) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to write recovery head\n"));
+		goto failed;		
+	}
+
 	/* add all the rest of the file to the freelist */
 	data_len = (tdb->map_size - TDB_DATA_START(tdb->header.hash_size)) - sizeof(struct list_struct);
 	if (data_len > 0) {
@@ -738,3 +743,45 @@ failed:
 	tdb_unlockall(tdb);
 	return -1;
 }
+
+
+/* 
+   validate the integrity of all tdb hash chains. Useful when debugging
+ */
+int tdb_validate(struct tdb_context *tdb)
+{
+	int h;
+	for (h=-1;h<(int)tdb->header.hash_size;h++) {
+		tdb_off_t rec_ptr;
+		uint32_t count = 0;
+		if (tdb_ofs_read(tdb, TDB_HASH_TOP(h), &rec_ptr) == -1) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_validate: failed ofs_read at top of hash %d\n", h));
+			return -1;
+		}
+		while (rec_ptr) {
+			struct list_struct r;
+			tdb_off_t size;
+
+			if (tdb_rec_read(tdb, rec_ptr, &r) == -1) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_validate: failed rec_read h=%d rec_ptr=%u count=%u\n",
+					 h, rec_ptr, count));
+				return -1;
+			}
+			if (tdb_ofs_read(tdb, rec_ptr + sizeof(r) + r.rec_len - sizeof(tdb_off_t), &size) == -1) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_validate: failed ofs_read h=%d rec_ptr=%u count=%u\n",
+					 h, rec_ptr, count));
+				return -1;
+			}
+			if (size != r.rec_len + sizeof(r)) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_validate: failed size check size=%u h=%d rec_ptr=%u count=%u\n",
+					 size, h, rec_ptr, count));
+				return -1;
+			}
+			rec_ptr = r.next;
+			count++;
+		}		
+	}
+	return 0;
+}
+
+
