@@ -642,12 +642,12 @@ sub ConvertObjectFromPythonData($$$$$$)
 
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "NTSTATUS") {
-		$self->pidl("$target = PyInt_AsLong($cvar);");
+		$self->pidl("$target = NT_STATUS(PyInt_AsLong($cvar));");
 		return;
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "WERROR") {
-		$self->pidl("$target = PyInt_AsLong($cvar);");
+		$self->pidl("$target = W_ERROR(PyInt_AsLong($cvar));");
 		return;
 	}
 
@@ -690,16 +690,16 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 			$self->pidl("}");
 		}
 	} elsif ($l->{TYPE} eq "ARRAY") {
+		my $pl = GetPrevLevel($e, $l);
+		if ($pl && $pl->{TYPE} eq "POINTER") {
+			$var_name = get_pointer_to($var_name);
+		}
+
 		if (is_charset_array($e, $l)) {
 			$self->pidl("PY_CHECK_TYPE(PyUnicode, $py_var, $fail);");
 			# FIXME: Use Unix charset setting rather than utf-8
-			$self->pidl(get_pointer_to($var_name) . " = PyString_AsString(PyUnicode_AsEncodedString($py_var, \"utf-8\", \"ignore\"));");
+			$self->pidl($var_name . " = PyString_AsString(PyUnicode_AsEncodedString($py_var, \"utf-8\", \"ignore\"));");
 		} else {
-			my $pl = GetPrevLevel($e, $l);
-			if ($pl && $pl->{TYPE} eq "POINTER") {
-				$var_name = get_pointer_to($var_name);
-			}
-
 			my $counter = "$e->{NAME}_cntr_$l->{LEVEL_INDEX}";
 			$self->pidl("PY_CHECK_TYPE(PyList, $py_var, $fail);");
 			$self->pidl("{");
