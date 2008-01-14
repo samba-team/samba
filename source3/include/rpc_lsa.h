@@ -988,25 +988,6 @@ typedef struct {
 
 /*******************************************************/
 
-/* LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME - LSA Query Open Trusted Domain by Name*/
-typedef struct lsa_q_open_trusted_domain_by_name
-{
-	POLICY_HND 	pol; 	/* policy handle */
-	LSA_STRING 	name;	/* domain name */
-	uint32 	access_mask;	/* access mask */
-	
-} LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME;
-
-/* LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME - response to LSA Query Open Trusted Domain by Name */
-typedef struct {
-	POLICY_HND	handle;	/* trustdom policy handle */
-	NTSTATUS	status; /* return code */
-} LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME;
-
-
-/*******************************************************/
-
-
 typedef struct {
 	POLICY_HND	handle;	
 	UNISTR4		secretname;
@@ -1086,24 +1067,6 @@ typedef struct lsa_query_trusted_domain_info
 
 } LSA_Q_QUERY_TRUSTED_DOMAIN_INFO;
 
-/* LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_SID - LSA query trusted domain info */
-typedef struct lsa_query_trusted_domain_info_by_sid
-{
-	POLICY_HND 	pol; 		/* policy handle */
-	DOM_SID2 	dom_sid;	/* domain sid */
-	uint16		info_class; 	/* info class */
-	
-} LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_SID;
-
-/* LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_NAME - LSA query trusted domain info */
-typedef struct lsa_query_trusted_domain_info_by_name
-{
-	POLICY_HND 	pol; 		/* policy handle */
-	LSA_STRING 	domain_name;	/* domain name */
-	uint16 		info_class; 	/* info class */
-	
-} LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_NAME;
-
 typedef struct trusted_domain_info_name {
 	LSA_STRING 	netbios_name; 
 } TRUSTED_DOMAIN_INFO_NAME;
@@ -1124,7 +1087,6 @@ typedef struct lsa_data_buf_hdr {
 	uint32 size;
 	uint32 data_ptr;
 } LSA_DATA_BUF_HDR;
-
 
 typedef struct lsa_data_buf2 {
 	uint32 size;

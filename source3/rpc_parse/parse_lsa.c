@@ -3411,76 +3411,6 @@ bool lsa_io_q_open_trusted_domain(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN *i
 
 
 /*******************************************************************
- Inits an LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME structure.
-********************************************************************/
-
-void init_lsa_q_open_trusted_domain_by_name(LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME *q, 
-					    POLICY_HND *hnd, 
-					    const char *name, 
-					    uint32 desired_access)
-{
-	memcpy(&q->pol, hnd, sizeof(q->pol));
-
-	init_lsa_string(&q->name, name);
-	q->access_mask = desired_access;
-}
-
-/*******************************************************************
-********************************************************************/
-
-
-/*******************************************************************
- Reads or writes an LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME structure.
-********************************************************************/
-
-bool lsa_io_q_open_trusted_domain_by_name(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN_BY_NAME *q_o, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_open_trusted_domain_by_name");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
- 
-	if(!smb_io_pol_hnd("pol", &q_o->pol, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_lsa_string("name", &q_o->name, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
- 	if(!prs_uint32("access", ps, depth, &q_o->access_mask))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes an LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME structure.
-********************************************************************/
-
-bool lsa_io_r_open_trusted_domain_by_name(const char *desc, LSA_R_OPEN_TRUSTED_DOMAIN_BY_NAME *out, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_open_trusted_domain_by_name");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if (!smb_io_pol_hnd("handle", &out->handle, ps, depth))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &out->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 ********************************************************************/
 
 bool lsa_io_q_open_trusted_domain(const char *desc, LSA_Q_OPEN_TRUSTED_DOMAIN *q_o, prs_struct *ps, int depth)
@@ -3720,36 +3650,6 @@ void init_q_query_trusted_domain_info(LSA_Q_QUERY_TRUSTED_DOMAIN_INFO *q,
 }
 
 /*******************************************************************
- Inits an LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_NAME structure.
-********************************************************************/
-
-void init_q_query_trusted_domain_info_by_name(LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_NAME *q, 
-					      POLICY_HND *hnd, uint16 info_class, 
-					      const char *dom_name)
-{
-	DEBUG(5, ("init_q_query_trusted_domain_info_by_name\n"));
-	
-	q->pol = *hnd;
-	init_lsa_string(&q->domain_name, dom_name );
-	q->info_class = info_class;
-}
-
-/*******************************************************************
- Inits an LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_SID structure.
-********************************************************************/
-
-void init_q_query_trusted_domain_info_by_sid(LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_SID *q, 
-					     POLICY_HND *hnd, uint16 info_class, 
-					     DOM_SID *dom_sid)
-{
-	DEBUG(5, ("init_q_query_trusted_domain_info_by_sid\n"));
-	
-	q->pol = *hnd;
-	init_dom_sid2(&q->dom_sid, dom_sid);
-	q->info_class = info_class;
-}
-
-/*******************************************************************
  Reads or writes an LSA_Q_QUERY_TRUSTED_DOMAIN_INFO structure.
 ********************************************************************/
 
@@ -3772,64 +3672,6 @@ bool lsa_io_q_query_trusted_domain_info(const char *desc,
 	return True;
 }
 
-
-/*******************************************************************
- Reads or writes an LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_SID structure.
-********************************************************************/
-
-bool lsa_io_q_query_trusted_domain_info_by_sid(const char *desc, 
-					       LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_SID *q_q,
-					       prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_query_trusted_domain_info_by_sid");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("pol", &q_q->pol, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_dom_sid2("dom_sid", &q_q->dom_sid, ps, depth))
-		return False;
-
-	if(!prs_uint16("info_class", ps, depth, &q_q->info_class))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes an LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_NAME structure.
-********************************************************************/
-
-bool lsa_io_q_query_trusted_domain_info_by_name(const char *desc, 
-					        LSA_Q_QUERY_TRUSTED_DOMAIN_INFO_BY_NAME *q_q,
-					        prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_query_trusted_domain_info_by_name");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("pol", &q_q->pol, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_lsa_string("domain_name", &q_q->domain_name, ps, depth))
-		return False;
-
-	if(!prs_uint16("info_class", ps, depth, &q_q->info_class))
-		return False;
-
-	return True;
-}
 
 /*******************************************************************
 ********************************************************************/
