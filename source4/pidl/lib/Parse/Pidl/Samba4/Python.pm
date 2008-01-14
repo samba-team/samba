@@ -491,8 +491,8 @@ sub Interface($$$)
 	$self->indent;
 	$self->pidl("$interface->{NAME}_InterfaceObject *ret;");
 	$self->pidl("const char *binding_string;");
-	$self->pidl("struct cli_credentials *credentials;");
-	$self->pidl("struct loadparm_context *lp_ctx;");
+	$self->pidl("struct cli_credentials *credentials = NULL;");
+	$self->pidl("struct loadparm_context *lp_ctx = NULL;");
 	$self->pidl("TALLOC_CTX *mem_ctx = NULL;");
 	$self->pidl("NTSTATUS status;");
 	$self->pidl("");
