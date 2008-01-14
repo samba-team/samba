@@ -27,6 +27,7 @@ sub new($$$)
 	$self->{torture_progs} = [];
 	$self->{static_libs} = [];
 	$self->{python_dsos} = [];
+	$self->{python_pys} = [];
 	$self->{shared_libs} = [];
 	$self->{installable_shared_libs} = [];
 	$self->{headers} = [];
@@ -345,7 +346,7 @@ sub SharedModule($$)
 
 	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
 
-	if (defined($ctx->{INIT_FUNCTION})) {
+	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{TYPE} ne "PYTHON") {
 		my $init_fn = $ctx->{INIT_FUNCTION_TYPE};
 		$init_fn =~ s/\(\*\)/init_module/;
 		my $proto_fn = $ctx->{INIT_FUNCTION_TYPE};
@@ -539,7 +540,7 @@ sub PythonFiles($$)
 		$self->output("$target: $source\n" .
 					  "\tmkdir -p \$(builddir)/bin/python\n" .
 		              "\tcp $source \$@\n\n");
-		push (@{$self->{python_dsos}}, $target);
+		push (@{$self->{python_pys}}, $target);
 	}
 }
 
@@ -714,6 +715,7 @@ sub write($$)
 	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
 	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");
 	$self->output("PYTHON_DSOS = " . array2oneperline($self->{python_dsos}) . "\n");
+	$self->output("PYTHON_PYS = " . array2oneperline($self->{python_pys}) . "\n");
 	$self->output("INSTALLABLE_SHARED_LIBS = " . array2oneperline($self->{installable_shared_libs}) . "\n");
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
 	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
