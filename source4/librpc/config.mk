@@ -629,5 +629,5 @@ PRIVATE_DEPENDENCIES = dcerpc_samr
 OBJ_FILES = gen_ndr/py_lsa.o
 PRIVATE_DEPENDENCIES = RPC_NDR_LSA
 
-[PYTHON::python_security]
+[PYTHON::python_dcerpc_security]
 OBJ_FILES = gen_ndr/py_security.o
