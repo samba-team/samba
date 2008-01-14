@@ -285,9 +285,12 @@ NSS_WRAPPER_OBJ = @NSS_WRAPPER_OBJS@
 
 TALLOC_OBJ = lib/talloc/talloc.o
 
-LIBSAMBAUTIL_OBJ = $(TALLOC_OBJ) $(LIBREPLACE_OBJ)
+LIBSAMBAUTIL_OBJ = $(TALLOC_OBJ) \
+		$(LIBREPLACE_OBJ) \
+		$(SOCKET_WRAPPER_OBJ) \
+		$(NSS_WRAPPER_OBJ)
 
-LIB_WITHOUT_PROTO_OBJ = $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) $(NSS_WRAPPER_OBJ) $(TALLOC_OBJ) \
+LIB_WITHOUT_PROTO_OBJ = $(LIBSAMBAUTIL_OBJ) \
 	lib/messages.o librpc/gen_ndr/ndr_messaging.o lib/messages_local.o \
 	lib/messages_ctdbd.o lib/packet.o lib/ctdbd_conn.o lib/talloc_stack.o \
 	lib/interfaces.o lib/rbtree.o lib/memcache.o \
@@ -1393,9 +1396,9 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@ @LIBWBCLIENT_SHARED@
 		@POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) \
 		$(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS) @WINBIND_LIBS@
 
-bin/libwbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ) nsswitch/wb_common.o lib/talloc/talloc.o
+bin/libwbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ) nsswitch/wb_common.o $(LIBSAMBAUTIL_OBJ)
 	@echo Linking shared library $@
-	@$(SHLD_DSO) $(LIBWBCLIENT_OBJ) nsswitch/wb_common.o lib/talloc/talloc.o \
+	@$(SHLD_DSO) $(LIBWBCLIENT_OBJ) nsswitch/wb_common.o $(LIBSAMBAUTIL_OBJ) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 	@ln -s -f `basename $@` $@.$(SONAME_VER)
 
