@@ -34,7 +34,10 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy(struct rpc_pipe_client *cli,
 				    uint16_t level,
 				    union lsa_PolicyInformation *info);
 NTSTATUS rpccli_lsa_SetInfoPolicy(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx);
+				  TALLOC_CTX *mem_ctx,
+				  struct policy_handle *handle,
+				  uint16_t level,
+				  union lsa_PolicyInformation *info);
 NTSTATUS rpccli_lsa_ClearAuditLog(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_lsa_CreateAccount(struct rpc_pipe_client *cli,
@@ -215,7 +218,10 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli,
 				     uint16_t level,
 				     union lsa_PolicyInformation *info);
 NTSTATUS rpccli_lsa_SetInfoPolicy2(struct rpc_pipe_client *cli,
-				   TALLOC_CTX *mem_ctx);
+				   TALLOC_CTX *mem_ctx,
+				   struct policy_handle *handle,
+				   uint16_t level,
+				   union lsa_PolicyInformation *info);
 NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
 						 struct policy_handle *handle,
