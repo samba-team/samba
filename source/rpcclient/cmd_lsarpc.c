@@ -926,7 +926,7 @@ static void display_trust_dom_info(union lsa_TrustedDomainInfo *info,
 			break;
 		default:
 			NDR_PRINT_UNION_DEBUG(lsa_TrustedDomainInfo,
-					      info_class, &info);
+					      info_class, info);
 			break;
 	}
 
