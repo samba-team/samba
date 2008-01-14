@@ -89,7 +89,10 @@ static void ctdb_start_transport(struct ctdb_context *ctdb)
 	ctdb_register_message_handler(ctdb, ctdb, CTDB_SRVID_NODE_FLAGS_CHANGED, 
 				      flag_change_handler, NULL);
 
-	/* start monitoring for dead nodes */
+	/* start monitoring for connected/disconnected nodes */
+	ctdb_start_keepalive(ctdb);
+
+	/* start monitoring for node health */
 	ctdb_start_monitoring(ctdb);
 
 	/* start periodic update of tcp tickle lists */
