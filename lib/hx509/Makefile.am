@@ -162,7 +162,7 @@ CLEANFILES = $(BUILT_SOURCES) \
 	cert-proxy.der cert-ca.der cert-ee.der pkcs10-request.der \
 	wca.pem wuser.pem wdc.pem wcrl.crl \
 	random-data statfile crl.crl \
-	test \
+	test p11dbg.log \
 	test-rc-file.rc
 
 clean-local:
