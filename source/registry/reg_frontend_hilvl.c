@@ -214,3 +214,32 @@ WERROR regkey_set_secdesc(REGISTRY_KEY *key,
 
 	return WERR_ACCESS_DENIED;
 }
+
+/**
+ * Check whether the in-memory version of the subkyes of a
+ * registry key needs update from disk.
+ */
+bool reg_subkeys_need_update(REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys)
+{
+	if (key->hook && key->hook->ops && key->hook->ops->subkeys_need_update)
+	{
+		return key->hook->ops->subkeys_need_update(subkeys);
+	}
+
+	return false;
+}
+
+/**
+ * Check whether the in-memory version of the values of a
+ * registry key needs update from disk.
+ */
+bool reg_values_need_update(REGISTRY_KEY *key, REGVAL_CTR *values)
+{
+	if (key->hook && key->hook->ops && key->hook->ops->values_need_update)
+	{
+		return key->hook->ops->values_need_update(values);
+	}
+
+	return false;
+}
+
