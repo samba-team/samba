@@ -1,4 +1,11 @@
+2008-01-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Add a PKCS11 provider supporting signing and verifing sigatures.
+
 2008-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* version-script.map: Replace hx509_name_to_der_name with
+	hx509_name_binary.
 
 	* print.c: make print_func static
 

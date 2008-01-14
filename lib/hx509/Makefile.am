@@ -76,6 +76,7 @@ dist_libhx509_la_SOURCES = \
 	name.c \
 	peer.c \
 	print.c \
+	softp11.c \
 	ref/pkcs11.h \
 	req.c \
 	revoke.c
@@ -117,7 +118,7 @@ crmf_asn1_files: $(asn1_compile) $(srcdir)/crmf.asn1
 $(libhx509_la_OBJECTS): $(srcdir)/hx509-protos.h $(srcdir)/hx509-private.h
 
 $(srcdir)/hx509-protos.h:
-	cd $(srcdir) && perl ../../cf/make-proto.pl -E HX509_LIB_FUNCTION -q -P comment -o hx509-protos.h $(dist_libhx509_la_SOURCES) || rm -f hx509-protos.h
+	cd $(srcdir) && perl ../../cf/make-proto.pl -R '^(_|^C)' -E HX509_LIB_FUNCTION -q -P comment -o hx509-protos.h $(dist_libhx509_la_SOURCES) || rm -f hx509-protos.h
 
 $(srcdir)/hx509-private.h:
 	cd $(srcdir) && perl ../../cf/make-proto.pl -q -P comment -p hx509-private.h $(dist_libhx509_la_SOURCES) || rm -f hx509-private.h
@@ -161,7 +162,8 @@ CLEANFILES = $(BUILT_SOURCES) \
 	cert-proxy.der cert-ca.der cert-ee.der pkcs10-request.der \
 	wca.pem wuser.pem wdc.pem wcrl.crl \
 	random-data statfile crl.crl \
-	test
+	test \
+	test-rc-file.rc
 
 clean-local:
 	@echo "cleaning PKITS" ; rm -rf PKITS_data
@@ -171,9 +173,12 @@ clean-local:
 #
 
 check_SCRIPTS = $(SCRIPT_TESTS)
-check_PROGRAMS = $(PROGRAM_TESTS)
+check_PROGRAMS = $(PROGRAM_TESTS) test_soft_pkcs11
 
 LDADD = libhx509.la
+
+test_soft_pkcs11_LDADD = libhx509.la
+test_soft_pkcs11_CPPFLAGS = -I$(srcdir)/ref
 
 TESTS = $(SCRIPT_TESTS) $(PROGRAM_TESTS)
 
@@ -188,6 +193,7 @@ SCRIPT_TESTS = 			\
 	test_crypto		\
 	test_nist		\
 	test_nist2		\
+	test_pkcs11		\
 	test_nist_cert		\
 	test_nist_pkcs12	\
 	test_req		\
@@ -232,6 +238,11 @@ test_nist2: test_nist2.in Makefile
 	chmod +x test_nist2.tmp
 	mv test_nist2.tmp test_nist2
 
+test_pkcs11: test_pkcs11.in Makefile
+	$(do_subst) < $(srcdir)/test_pkcs11.in > test_pkcs11.tmp
+	chmod +x test_pkcs11.tmp
+	mv test_pkcs11.tmp test_pkcs11
+
 test_nist_cert: test_nist_cert.in Makefile
 	$(do_subst) < $(srcdir)/test_nist_cert.in > test_nist_cert.tmp
 	chmod +x test_nist_cert.tmp
@@ -274,6 +285,7 @@ EXTRA_DIST = \
 	test_nist2.in \
 	test_nist_cert.in \
 	test_nist_pkcs12.in \
+	test_pkcs11.in \
 	test_query.in \
 	test_req.in \
 	test_windows.in \

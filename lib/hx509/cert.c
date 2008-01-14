@@ -1475,6 +1475,13 @@ _hx509_cert_private_key(hx509_cert p)
 }
 
 int
+hx509_cert_have_private_key(hx509_cert p)
+{
+    return p->private_key ? 1 : 0;
+}
+
+
+int
 _hx509_cert_private_key_exportable(hx509_cert p)
 {
     if (p->private_key == NULL)
