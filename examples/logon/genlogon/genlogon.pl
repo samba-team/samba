@@ -45,7 +45,7 @@ if ($ARGV[1] eq "SUPPORT" || $ARGV[0] eq "support")
 }
 
 # Connect shares just used by Administration staff
-If ($ARGV[1] eq "ADMIN" || $ARGV[0] eq "admin")
+if ($ARGV[1] eq "ADMIN" || $ARGV[0] eq "admin")
 {
 	print LOGON "NET USE L: \\\\$ARGV[2]\\ADMIN\r\n";
 	print LOGON "NET USE K: \\\\$ARGV[2]\\MKTING\r\n";

@@ -229,12 +229,11 @@ static int commit_open(
 static ssize_t commit_write(
         vfs_handle_struct * handle,
         files_struct *      fsp,
-        int                 fd,
         void *              data,
         size_t              count)
 {
         ssize_t ret;
-        ret = SMB_VFS_NEXT_WRITE(handle, fsp, fd, data, count);
+        ret = SMB_VFS_NEXT_WRITE(handle, fsp, data, count);
 
         if (ret > 0) {
                 if (commit(handle, fsp, fsp->fh->pos, ret) == -1) {

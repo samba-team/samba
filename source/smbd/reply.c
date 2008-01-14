@@ -2410,7 +2410,8 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			return status;
 		}
 
-		dir_hnd = OpenDir(conn, directory, mask, dirtype);
+		dir_hnd = OpenDir(talloc_tos(), conn, directory, mask,
+				  dirtype);
 		if (dir_hnd == NULL) {
 			return map_nt_error_from_unix(errno);
 		}
@@ -2448,7 +2449,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 
 			status = check_name(conn, fname);
 			if (!NT_STATUS_IS_OK(status)) {
-				CloseDir(dir_hnd);
+				TALLOC_FREE(dir_hnd);
 				return status;
 			}
 
@@ -2464,7 +2465,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 
 			TALLOC_FREE(fname);
 		}
-		CloseDir(dir_hnd);
+		TALLOC_FREE(dir_hnd);
 	}
 
 	if (count == 0 && NT_STATUS_IS_OK(status)) {
@@ -2654,7 +2655,7 @@ void send_file_readbraw(connection_struct *conn,
 		_smb_setlen(header,nread);
 		header_blob = data_blob_const(header, 4);
 
-		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd,
+		if (SMB_VFS_SENDFILE(smbd_server_fd(), fsp,
 				&header_blob, startpos, nread) == -1) {
 			/* Returning ENOSYS means no data at all was sent.
 			 * Do this as a normal read. */
@@ -3137,7 +3138,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		construct_reply_common((char *)req->inbuf, (char *)headerbuf);
 		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
-		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, smb_maxcnt)) == -1) {
+		if ((nread = SMB_VFS_SENDFILE(smbd_server_fd(), fsp, &header, startpos, smb_maxcnt)) == -1) {
 			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
 			if (errno == ENOSYS) {
 				goto normal_read;
@@ -4901,7 +4902,8 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 	const char *dname = NULL;
 	bool ret = True;
 	long offset = 0;
-	struct smb_Dir *dir_hnd = OpenDir(conn, directory, NULL, 0);
+	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn, directory,
+					  NULL, 0);
 
 	if(dir_hnd == NULL)
 		return False;
@@ -4949,7 +4951,7 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 		}
 		TALLOC_FREE(fullname);
 	}
-	CloseDir(dir_hnd);
+	TALLOC_FREE(dir_hnd);
 	return ret;
 }
 
@@ -4997,7 +4999,8 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 		 */
 		const char *dname;
 		long dirpos = 0;
-		struct smb_Dir *dir_hnd = OpenDir(conn, directory, NULL, 0);
+		struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn,
+						  directory, NULL, 0);
 
 		if(dir_hnd == NULL) {
 			errno = ENOTEMPTY;
@@ -5010,7 +5013,7 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 			if (!is_visible_file(conn, directory, dname, &st, False))
 				continue;
 			if(!IS_VETO_PATH(conn, dname)) {
-				CloseDir(dir_hnd);
+				TALLOC_FREE(dir_hnd);
 				errno = ENOTEMPTY;
 				goto err;
 			}
@@ -5055,7 +5058,7 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 			}
 			TALLOC_FREE(fullname);
 		}
-		CloseDir(dir_hnd);
+		TALLOC_FREE(dir_hnd);
 		/* Retry the rmdir */
 		ret = SMB_VFS_RMDIR(conn,directory);
 	}
@@ -5751,7 +5754,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	dir_hnd = OpenDir(conn, directory, mask, attrs);
+	dir_hnd = OpenDir(talloc_tos(), conn, directory, mask, attrs);
 	if (dir_hnd == NULL) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -5851,7 +5854,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		TALLOC_FREE(fname);
 		TALLOC_FREE(destname);
 	}
-	CloseDir(dir_hnd);
+	TALLOC_FREE(dir_hnd);
 
 	if (count == 0 && NT_STATUS_IS_OK(status)) {
 		status = map_nt_error_from_unix(errno);
@@ -6325,7 +6328,7 @@ void reply_copy(struct smb_request *req)
 			return;
 		}
 
-		dir_hnd = OpenDir(conn, directory, mask, 0);
+		dir_hnd = OpenDir(talloc_tos(), conn, directory, mask, 0);
 		if (dir_hnd == NULL) {
 			status = map_nt_error_from_unix(errno);
 			reply_nterror(req, status);
@@ -6357,7 +6360,7 @@ void reply_copy(struct smb_request *req)
 					directory,
 					dname);
 			if (!fname) {
-				CloseDir(dir_hnd);
+				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				END_PROFILE(SMBcopy);
 				return;
@@ -6368,7 +6371,7 @@ void reply_copy(struct smb_request *req)
 				continue;
 			}
 			if (!destname) {
-				CloseDir(dir_hnd);
+				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				END_PROFILE(SMBcopy);
 				return;
@@ -6376,7 +6379,7 @@ void reply_copy(struct smb_request *req)
 
 			status = check_name(conn, fname);
 			if (!NT_STATUS_IS_OK(status)) {
-				CloseDir(dir_hnd);
+				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, status);
 				END_PROFILE(SMBcopy);
 				return;
@@ -6384,7 +6387,7 @@ void reply_copy(struct smb_request *req)
 
 			status = check_name(conn, destname);
 			if (!NT_STATUS_IS_OK(status)) {
-				CloseDir(dir_hnd);
+				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, status);
 				END_PROFILE(SMBcopy);
 				return;
@@ -6400,7 +6403,7 @@ void reply_copy(struct smb_request *req)
 			TALLOC_FREE(fname);
 			TALLOC_FREE(destname);
 		}
-		CloseDir(dir_hnd);
+		TALLOC_FREE(dir_hnd);
 	}
 
 	if (count == 0) {

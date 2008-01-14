@@ -8,8 +8,9 @@
 #define EPMAPPER_STATUS_NO_MORE_ENTRIES	( 0x16c9a0d6 )
 #define EPMAPPER_STATUS_NO_MEMORY	( 0x16C9A012 )
 #define EPMAPPER_STATUS_OK	( 0 )
+enum epm_protocol
 #ifndef USE_UINT_ENUMS
-enum epm_protocol {
+ {
 	EPM_PROTOCOL_DNET_NSP=0x04,
 	EPM_PROTOCOL_OSI_TP4=0x05,
 	EPM_PROTOCOL_OSI_CLNS=0x06,
@@ -38,7 +39,7 @@ enum epm_protocol {
 	EPM_PROTOCOL_NULL=0x21
 }
 #else
-enum epm_protocol { __donnot_use_enum_epm_protocol=0x7FFFFFFF}
+ { __donnot_use_enum_epm_protocol=0x7FFFFFFF}
 #define EPM_PROTOCOL_DNET_NSP ( 0x04 )
 #define EPM_PROTOCOL_OSI_TP4 ( 0x05 )
 #define EPM_PROTOCOL_OSI_CLNS ( 0x06 )

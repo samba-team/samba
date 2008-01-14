@@ -49,7 +49,7 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
 				 DS_RETURN_DNS_NAME;
-		status = DsGetDcName(mem_ctx, NULL, domain_name,
+		status = dsgetdcname(mem_ctx, NULL, domain_name,
 				     NULL, NULL, flags, &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ntstatus_to_werror(status);
@@ -244,7 +244,7 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		} else {
 			domain = lp_workgroup();
 		}
-		status = DsGetDcName(mem_ctx, NULL, domain,
+		status = dsgetdcname(mem_ctx, NULL, domain,
 				     NULL, NULL, flags, &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			return ntstatus_to_werror(status);
