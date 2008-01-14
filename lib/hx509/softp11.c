@@ -873,12 +873,12 @@ C_GetInfo(CK_INFO_PTR args)
     snprintf_fill((char *)args->manufacturerID, 
 		  sizeof(args->manufacturerID),
 		  ' ',
-		  "SoftToken");
+		  "Heimdal hx509 SoftToken");
     snprintf_fill((char *)args->libraryDescription, 
 		  sizeof(args->libraryDescription), ' ',
-		  "SoftToken");
-    args->libraryVersion.major = 1;
-    args->libraryVersion.minor = 8;
+		  "Heimdal hx509 SoftToken");
+    args->libraryVersion.major = 2;
+    args->libraryVersion.minor = 0;
 
     return CKR_OK;
 }
@@ -923,11 +923,11 @@ C_GetSlotInfo(CK_SLOT_ID slotID,
     snprintf_fill((char *)pInfo->slotDescription, 
 		  sizeof(pInfo->slotDescription),
 		  ' ',
-		  "SoftToken (slot)");
+		  "Heimdal hx509 SoftToken (slot)");
     snprintf_fill((char *)pInfo->manufacturerID,
 		  sizeof(pInfo->manufacturerID),
 		  ' ',
-		  "SoftToken (slot)");
+		  "Heimdal hx509 SoftToken (slot)");
     pInfo->flags = CKF_TOKEN_PRESENT;
     if (soft_token.flags.hardware_slot)
 	pInfo->flags |= CKF_HW_SLOT;
@@ -951,15 +951,15 @@ C_GetTokenInfo(CK_SLOT_ID slotID,
     snprintf_fill((char *)pInfo->label, 
 		  sizeof(pInfo->label),
 		  ' ',
-		  "SoftToken (token)");
+		  "Heimdal hx509 SoftToken (token)");
     snprintf_fill((char *)pInfo->manufacturerID, 
 		  sizeof(pInfo->manufacturerID),
 		  ' ',
-		  "SoftToken (token)");
+		  "Heimdal hx509 SoftToken (token)");
     snprintf_fill((char *)pInfo->model,
 		  sizeof(pInfo->model),
 		  ' ',
-		  "SoftToken (token)");
+		  "Heimdal hx509 SoftToken (token)");
     snprintf_fill((char *)pInfo->serialNumber, 
 		  sizeof(pInfo->serialNumber),
 		  ' ',
