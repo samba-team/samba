@@ -341,12 +341,18 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_lsa_SetInfoPolicy(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx)
+				  TALLOC_CTX *mem_ctx,
+				  struct policy_handle *handle,
+				  uint16_t level,
+				  union lsa_PolicyInformation *info)
 {
 	struct lsa_SetInfoPolicy r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.level = level;
+	r.in.info = info;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy, &r);
@@ -2031,12 +2037,18 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_lsa_SetInfoPolicy2(struct rpc_pipe_client *cli,
-				   TALLOC_CTX *mem_ctx)
+				   TALLOC_CTX *mem_ctx,
+				   struct policy_handle *handle,
+				   uint16_t level,
+				   union lsa_PolicyInformation *info)
 {
 	struct lsa_SetInfoPolicy2 r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.level = level;
+	r.in.info = info;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_SetInfoPolicy2, &r);

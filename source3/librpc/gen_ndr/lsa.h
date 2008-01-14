@@ -567,6 +567,12 @@ struct lsa_QueryInfoPolicy {
 
 struct lsa_SetInfoPolicy {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint16_t level;
+		union lsa_PolicyInformation *info;/* [ref,switch_is(level)] */
+	} in;
+
+	struct {
 		NTSTATUS result;
 	} out;
 
@@ -1078,6 +1084,12 @@ struct lsa_QueryInfoPolicy2 {
 
 
 struct lsa_SetInfoPolicy2 {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint16_t level;
+		union lsa_PolicyInformation *info;/* [ref,switch_is(level)] */
+	} in;
+
 	struct {
 		NTSTATUS result;
 	} out;
