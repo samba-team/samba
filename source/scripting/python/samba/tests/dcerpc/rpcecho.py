@@ -31,12 +31,14 @@ class RpcEchoTests(unittest.TestCase):
         self.assertEquals(2, self.conn.AddOne(1))
 
     def test_echodata(self):
-        self.assertEquals("bla", self.conn.EchoData(3, "bla"))
+        self.assertEquals([1,2,3], self.conn.EchoData(3, [1, 2, 3]))
 
     def test_call(self):
-        self.assertEquals("foobar", self.conn.TestCall("foobar"))
+        self.assertEquals(u"foobar", self.conn.TestCall(u"foobar"))
 
     def test_surrounding(self):
-        somearray = [1,2,3,4]
-        (y,) = self.conn.TestSurrounding(echo.Surrounding(4, somearray))
+        surrounding_struct = echo.Surrounding()
+        surrounding_struct.x = 4
+        surrounding_struct.surrounding = [1,2,3,4]
+        y = self.conn.TestSurrounding(surrounding_struct)
         self.assertEquals(8 * [0], y.surrounding)
