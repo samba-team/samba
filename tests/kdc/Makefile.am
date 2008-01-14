@@ -26,7 +26,14 @@ TESTS = $(SCRIPT_TESTS)
 port = 49188
 admport = 49189
 
-do_subst = sed -e 's,[@]srcdir[@],$(srcdir),g' \
+if HAVE_DLOPEN
+do_dlopen = -e 's,[@]DLOPEN[@],true,g'
+else
+do_dlopen = -e 's,[@]DLOPEN[@],false,g'
+endif
+
+do_subst = sed $(do_dlopen) \
+	-e 's,[@]srcdir[@],$(srcdir),g' \
 	-e 's,[@]port[@],$(port),g' \
 	-e 's,[@]admport[@],$(admport),g' \
 	-e 's,[@]objdir[@],$(top_builddir)/tests/kdc,g' \

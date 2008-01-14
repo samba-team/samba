@@ -231,6 +231,39 @@ ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 ${kdestroy}
 
 
+KRB5_CONFIG="${objdir}/krb5-pkinit.conf"
+export KRB5_CONFIG
+
+echo "Trying PKCS11 support"
+
+cat > test-rc-file.rc <<EOF
+certificate	cert	User certificate	FILE:${base}/pkinit.crt,${keyfile2}
+EOF
+
+SOFTPKCS11RC="test-rc-file.rc"
+export SOFTPKCS11RC
+
+dir=${base}/../../lib/hx509
+file=
+
+for a in libhx509.so .libs/libhx509.so libhx509.dylib .libs/libhx509.dylib ; do
+    if [ -f $dir/$a ] ; then
+	file=$dir/$a
+	break
+    fi
+done
+
+if [ X"$file" != X -a @DLOPEN@ ] ; then
+
+    echo "Trying pk-init (principal in pki-mapping file) "; > messages.log
+    ${kinit} -C PKCS11:${file} foo@${R} || \
+	{ ec=1 ; eval "${testfailed}"; }
+    ${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
+    ${kdestroy}
+
+fi
+
+
 echo "killing kdc (${kdcpid})"
 kill $kdcpid || exit 1
 
