@@ -1051,9 +1051,12 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
-	
-	result = rpccli_lsa_open_trusted_domain(cli, mem_ctx, &pol,
-					     &dom_sid, access_mask, &trustdom_pol);
+
+	result = rpccli_lsa_OpenTrustedDomain(cli, mem_ctx,
+					      &pol,
+					      &dom_sid,
+					      access_mask,
+					      &trustdom_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
