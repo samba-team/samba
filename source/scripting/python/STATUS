@@ -9,11 +9,6 @@ DCE/RPC bindings
      Parse::Pidl::Samba::Python
 	 - wrap struct/bitmap/enum/union types
 	  - __ndr_pack__/__ndr_unpack__ members
-	 Parse::Pidl::Samba::NDR::Python
-	 - pidl generated client fns
-	  - one class per interface
-	  - AddOne()
-
  - scripting/bin/smbstatus.py
  - scripting/bin/winreg.py
 

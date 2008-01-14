@@ -17,12 +17,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from echo import rpcecho
+import echo
 import unittest
 
 class RpcEchoTests(unittest.TestCase):
     def setUp(self):
-        self.conn = rpcecho("ncalrpc:")
+        self.conn = echo.rpcecho("ncalrpc:")
 
     def test_addone(self):
         self.assertEquals(2, conn.AddOne(1))
@@ -35,5 +35,5 @@ class RpcEchoTests(unittest.TestCase):
 
     def test_surrounding(self):
         somearray = [1,2,3,4]
-        (y) = conn.TestSurrounding(echo.Surrounding(4, somearray)))
+        (y,) = conn.TestSurrounding(echo.Surrounding(4, somearray))
         self.assertEquals(8 * [0], y.surrounding)
