@@ -1,5 +1,7 @@
 2008-01-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test_pkcs11.in: test debug
+
 	* Add a PKCS11 provider supporting signing and verifing sigatures.
 
 2008-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
