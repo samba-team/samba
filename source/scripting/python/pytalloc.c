@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "scripting/python/pytalloc.h"
 
 void py_talloc_dealloc(PyObject* self)
 {
@@ -26,13 +27,13 @@ void py_talloc_dealloc(PyObject* self)
 	PyObject_Del(self);
 }
 
-PyObject *py_talloc_import(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, 
+PyObject *py_talloc_import_ex(PyTypeObject *py_type, TALLOC_CTX *mem_ctx, 
 						   void *ptr)
 {
-	PyObject *ret = PyObject_New(py_talloc_Object, &py_type);
+	py_talloc_Object *ret = PyObject_New(py_talloc_Object, py_type);
 	ret->talloc_ctx = talloc_reference(mem_ctx, ptr); 
 	ret->ptr = ptr;
-	return ret;
+	return (PyObject *)ret;
 }
 
 PyObject *py_talloc_default_repr(PyObject *py_obj)
