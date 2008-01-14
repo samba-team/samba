@@ -625,6 +625,10 @@ PRIVATE_DEPENDENCIES = dcerpc_atsvc
 OBJ_FILES = gen_ndr/py_samr.o
 PRIVATE_DEPENDENCIES = dcerpc_samr
 
+[PYTHON::python_svcctl]
+OBJ_FILES = gen_ndr/py_svcctl.o
+PRIVATE_DEPENDENCIES = RPC_NDR_SVCCTL
+
 [PYTHON::python_lsa]
 OBJ_FILES = gen_ndr/py_lsa.o
 PRIVATE_DEPENDENCIES = RPC_NDR_LSA
