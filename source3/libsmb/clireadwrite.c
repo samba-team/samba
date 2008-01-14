@@ -404,6 +404,9 @@ ssize_t cli_write(struct cli_state *cli,
 		mpx = 1;
 	}
 
+	/* Default (small) writesize. */
+	writesize = (cli->max_xmit - (smb_size+32)) & ~1023;
+
         if (write_mode == 0 &&
 			!client_is_signing_on(cli) &&
 			!cli_encryption_on(cli) &&
@@ -415,11 +418,11 @@ ssize_t cli_write(struct cli_state *cli,
 	} else if (cli->capabilities & CAP_LARGE_WRITEX) {
 		if (cli->is_samba) {
 			writesize = CLI_SAMBA_MAX_LARGE_WRITEX_SIZE;
-		} else {
+		} else if (!client_is_signing_on(cli)) {
+			/* Windows restricts signed writes to max_xmit.
+			 * Found by Volker. */
 			writesize = CLI_WINDOWS_MAX_LARGE_WRITEX_SIZE;
 		}
-	} else {
-		writesize = (cli->max_xmit - (smb_size+32)) & ~1023;
 	}
 
 	blocks = (size + (writesize-1)) / writesize;
