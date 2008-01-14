@@ -207,7 +207,7 @@ sub PythonStruct($$$$)
 			my $nl = GetNextLevel($e, $l);
 			if ($l->{TYPE} eq "POINTER" and 
 				not ($nl->{TYPE} eq "ARRAY" and ($nl->{IS_FIXED} or is_charset_array($e, $nl))) and
-				not ($nl->{TYPE} eq "SCALAR" and $nl->{TYPE} eq "string")) {
+				not ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE}))) {
 				$self->pidl("talloc_free($varname);");
 			}
 			$self->ConvertObjectFromPython($env, $mem_ctx, $e, "value", $varname, "return -1;");
@@ -668,8 +668,13 @@ sub ConvertObjectFromPythonData($$$$$$)
 sub ConvertObjectFromPythonLevel($$$$$$$$)
 {
 	my ($self, $env, $mem_ctx, $py_var, $e, $l, $var_name, $fail) = @_;
+	my $nl = GetNextLevel($e, $l);
 
 	if ($l->{TYPE} eq "POINTER") {
+		if ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE})) {
+			$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, $nl, $var_name, $fail);
+			return;
+		}
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->pidl("if ($py_var == Py_None) {");
 			$self->indent;
@@ -679,7 +684,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 			$self->indent;
 		}
 		$self->pidl("$var_name = talloc_ptrtype($mem_ctx, $var_name);");
-		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, GetNextLevel($e, $l), get_value_of($var_name), $fail);
+		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, $nl, get_value_of($var_name), $fail);
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->deindent;
 			$self->pidl("}");
@@ -802,8 +807,13 @@ sub ConvertObjectToPythonData($$$$$)
 sub ConvertObjectToPythonLevel($$$$$)
 {
 	my ($self, $mem_ctx, $env, $e, $l, $var_name, $py_var) = @_;
+	my $nl = GetNextLevel($e, $l);
 
 	if ($l->{TYPE} eq "POINTER") {
+		if ($nl->{TYPE} eq "DATA" and Parse::Pidl::Typelist::scalar_is_reference($nl->{DATA_TYPE})) {
+			$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, $var_name, $py_var);
+			return;
+		}
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->pidl("if ($var_name == NULL) {");
 			$self->indent;
@@ -812,7 +822,7 @@ sub ConvertObjectToPythonLevel($$$$$)
 			$self->pidl("} else {");
 			$self->indent;
 		}
-		$self->ConvertObjectToPythonLevel($var_name, $env, $e, GetNextLevel($e, $l), get_value_of($var_name), $py_var);
+		$self->ConvertObjectToPythonLevel($var_name, $env, $e, $nl, get_value_of($var_name), $py_var);
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->deindent;
 			$self->pidl("}");
