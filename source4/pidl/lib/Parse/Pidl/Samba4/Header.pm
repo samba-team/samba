@@ -473,6 +473,4 @@ sub GenerateFunctionOutEnv($;$)
 	return \%env;
 }
 
-
-
 1;
