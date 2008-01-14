@@ -673,8 +673,14 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		if (is_charset_array($e, $l)) {
 			$self->pidl("PY_CHECK_TYPE(PyUnicode, $py_var, $fail);");
+			# FIXME: Use Unix charset setting rather than utf-8
 			$self->pidl(get_pointer_to($var_name) . " = PyString_AsString(PyUnicode_AsEncodedString($py_var, \"utf-8\", \"ignore\"));");
 		} else {
+			my $pl = GetPrevLevel($e, $l);
+			if ($pl && $pl->{TYPE} eq "POINTER") {
+				$var_name = get_pointer_to($var_name);
+			}
+
 			my $counter = "$e->{NAME}_cntr_$l->{LEVEL_INDEX}";
 			$self->pidl("PY_CHECK_TYPE(PyList, $py_var, $fail);");
 			$self->pidl("{");
@@ -816,8 +822,14 @@ sub ConvertObjectToPythonLevel($$$$$)
 	} elsif ($l->{TYPE} eq "ARRAY") {
 		if (is_charset_array($e, $l)) {
 			$var_name = get_pointer_to($var_name);
+			# FIXME: Use Unix charset setting rather than utf-8
 			$self->pidl("$py_var = PyUnicode_Decode($var_name, strlen($var_name), \"utf-8\", \"ignore\");");
 		} else {
+			my $pl = GetPrevLevel($e, $l);
+			if ($pl && $pl->{TYPE} eq "POINTER") {
+				$var_name = get_pointer_to($var_name);
+			}
+
 			die("No SIZE_IS for array $var_name") unless (defined($l->{SIZE_IS}));
 			my $length = $l->{SIZE_IS};
 			if (defined($l->{LENGTH_IS})) {
