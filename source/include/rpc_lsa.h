@@ -334,22 +334,6 @@ typedef struct lsa_info_ctr
 
 typedef LSA_INFO_CTR LSA_INFO_CTR2;
 
-/* LSA_Q_SET_INFO - LSA set info policy */
-typedef struct lsa_set_info
-{
-	POLICY_HND pol; /* policy handle */
-	uint16 info_class; /* info class */
-	LSA_INFO_CTR ctr;
-
-} LSA_Q_SET_INFO;
-
-/* LSA_R_SET_INFO - response to LSA set info policy */
-typedef struct lsa_r_set_info
-{
-	NTSTATUS status; /* return code */
-
-} LSA_R_SET_INFO;
-
 /* LSA_R_QUERY_INFO - response to LSA query info policy */
 typedef struct lsa_r_query_info
 {
