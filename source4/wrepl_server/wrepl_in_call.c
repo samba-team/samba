@@ -445,7 +445,7 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 	switch (repl_in->command) {
 		case WREPL_REPL_TABLE_QUERY:
 			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PUSH)) {
-				DEBUG(2,("Failing WINS replication TABLE_QUERY from non-push-partner %s\n",
+				DEBUG(0,("Failing WINS replication TABLE_QUERY from non-push-partner %s\n",
 					 call->wreplconn->partner->address));
 				return wreplsrv_in_stop_assoc_ctx(call);
 			}
@@ -457,7 +457,7 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 
 		case WREPL_REPL_SEND_REQUEST:
 			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PUSH)) {
-				DEBUG(2,("Failing WINS replication SEND_REQUESET from non-push-partner %s\n",
+				DEBUG(0,("Failing WINS replication SEND_REQUESET from non-push-partner %s\n",
 					 call->wreplconn->partner->address));
 				return wreplsrv_in_stop_assoc_ctx(call);
 			}
@@ -469,7 +469,7 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 	
 		case WREPL_REPL_UPDATE:
 			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PULL)) {
-				DEBUG(2,("Failing WINS replication UPDATE from non-pull-partner %s\n",
+				DEBUG(0,("Failing WINS replication UPDATE from non-pull-partner %s\n",
 					 call->wreplconn->partner->address));
 				return wreplsrv_in_stop_assoc_ctx(call);
 			}
@@ -478,7 +478,7 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 
 		case WREPL_REPL_UPDATE2:
 			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PULL)) {
-				DEBUG(2,("Failing WINS replication UPDATE2 from non-pull-partner %s\n",
+				DEBUG(0,("Failing WINS replication UPDATE2 from non-pull-partner %s\n",
 					 call->wreplconn->partner->address));
 				return wreplsrv_in_stop_assoc_ctx(call);
 			}
@@ -487,7 +487,7 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 
 		case WREPL_REPL_INFORM:
 			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PULL)) {
-				DEBUG(2,("Failing WINS replication INFORM from non-pull-partner %s\n",
+				DEBUG(0,("Failing WINS replication INFORM from non-pull-partner %s\n",
 					 call->wreplconn->partner->address));
 				return wreplsrv_in_stop_assoc_ctx(call);
 			}
@@ -496,7 +496,7 @@ static NTSTATUS wreplsrv_in_replication(struct wreplsrv_in_call *call)
 
 		case WREPL_REPL_INFORM2:
 			if (!(call->wreplconn->partner->type & WINSREPL_PARTNER_PULL)) {
-				DEBUG(2,("Failing WINS replication INFORM2 from non-pull-partner %s\n",
+				DEBUG(0,("Failing WINS replication INFORM2 from non-pull-partner %s\n",
 					 call->wreplconn->partner->address));
 				return wreplsrv_in_stop_assoc_ctx(call);
 			}

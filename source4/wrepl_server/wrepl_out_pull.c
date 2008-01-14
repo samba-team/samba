@@ -62,7 +62,7 @@ static void wreplsrv_pull_handler_creq(struct composite_context *creq)
 		retry_interval = partner->pull.error_count * partner->pull.retry_interval;
 		retry_interval = MIN(retry_interval, partner->pull.interval);
 
-		DEBUG(1,("wreplsrv_pull_cycle(%s): %s: error_count: %u: reschedule(%u)\n",
+		DEBUG(0,("wreplsrv_pull_cycle(%s): %s: error_count: %u: reschedule(%u)\n",
 			 partner->address, nt_errstr(partner->pull.last_status),
 			 partner->pull.error_count, retry_interval));
 
@@ -70,7 +70,7 @@ static void wreplsrv_pull_handler_creq(struct composite_context *creq)
 		goto done;
 	}
 
-	DEBUG(1,("wreplsrv_pull_cycle(%s): %s: error_count:%u retry\n",
+	DEBUG(0,("wreplsrv_pull_cycle(%s): %s: error_count:%u retry\n",
 		 partner->address, nt_errstr(partner->pull.last_status),
 		 partner->pull.error_count));
 	inform_in.partner_count = old_cycle_io->in.num_owners;
