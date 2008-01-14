@@ -665,6 +665,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 			$self->pidl("} else {");
 			$self->indent;
 		}
+		$self->pidl("$var_name = talloc_ptrtype($mem_ctx, $var_name);");
 		$self->ConvertObjectFromPythonLevel($env, $mem_ctx, $py_var, $e, GetNextLevel($e, $l), get_value_of($var_name), $fail);
 		if ($l->{POINTER_TYPE} ne "ref") {
 			$self->deindent;
@@ -686,7 +687,9 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 			$self->pidl("{");
 			$self->indent;
 			$self->pidl("int $counter;");
-			$self->pidl("$var_name = talloc_array_ptrtype($mem_ctx, $var_name, PyList_Size($py_var));");
+			if (!$l->{IS_FIXED}) {
+				$self->pidl("$var_name = talloc_array_ptrtype($mem_ctx, $var_name, PyList_Size($py_var));");
+			}
 			$self->pidl("for ($counter = 0; $counter < PyList_Size($py_var); $counter++) {");
 			$self->indent;
 			$self->ConvertObjectFromPythonLevel($env, $var_name, "PyList_GetItem($py_var, $counter)", $e, GetNextLevel($e, $l), $var_name."[$counter]", $fail);
@@ -697,8 +700,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 		}
 	} elsif ($l->{TYPE} eq "DATA") {
 
-		if (not Parse::Pidl::Typelist::is_scalar($l->{DATA_TYPE}) or 
-			Parse::Pidl::Typelist::scalar_is_reference($l->{DATA_TYPE})) {
+		if (not Parse::Pidl::Typelist::is_scalar($l->{DATA_TYPE})) {
 			$var_name = get_pointer_to($var_name);
 		}
 		$self->ConvertObjectFromPythonData($mem_ctx, $py_var, $l->{DATA_TYPE}, $var_name, $fail);
@@ -841,8 +843,7 @@ sub ConvertObjectToPythonLevel($$$$$)
 		my $switch = ParseExpr($l->{SWITCH_IS}, $env, $e);
 		$self->pidl("$py_var = py_import_" . GetNextLevel($e, $l)->{DATA_TYPE} . "($mem_ctx, $switch, $var_name);");
 	} elsif ($l->{TYPE} eq "DATA") {
-		if (not Parse::Pidl::Typelist::is_scalar($l->{DATA_TYPE}) or 
-			Parse::Pidl::Typelist::scalar_is_reference($l->{DATA_TYPE})) {
+		if (not Parse::Pidl::Typelist::is_scalar($l->{DATA_TYPE})) {
 			$var_name = get_pointer_to($var_name);
 		}
 		my $conv = $self->ConvertObjectToPythonData($mem_ctx, $l->{DATA_TYPE}, $var_name);

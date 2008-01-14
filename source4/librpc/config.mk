@@ -605,3 +605,7 @@ PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc
 
 [PYTHON::python_dcerpc_misc]
 OBJ_FILES = gen_ndr/py_misc.o
+
+[PYTHON::python_dcerpc_initshutdown]
+OBJ_FILES = gen_ndr/py_initshutdown.o
+PRIVATE_DEPENDENCIES = RPC_NDR_INITSHUTDOWN
