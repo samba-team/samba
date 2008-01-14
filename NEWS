@@ -1,5 +1,7 @@
 Changes in release 1.1
 
+ * Read-only PKCS11 provider built-in to hx509.
+
  * Documentation for hx509, hcrypto and ntlm libraries improved.
 
  * Better compatibilty with Windows 2008 Server pre-releases and Vista.
