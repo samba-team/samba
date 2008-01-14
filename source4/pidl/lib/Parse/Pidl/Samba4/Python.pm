@@ -322,7 +322,6 @@ sub PythonFunction($$$)
 		if (grep(/out/,@{$e->{DIRECTION}})) {
 			$self->ConvertObjectToPython($env, $e, "r.out.$e->{NAME}", "py_$e->{NAME}");
 			$self->pidl("PyTuple_SetItem(result, $i, py_$e->{NAME});");
-
 			$i++;
 		}
 	}
@@ -523,6 +522,16 @@ sub register_module_method($$$$$)
 	push (@{$self->{module_methods}}, [$fn_name, $pyfn_name, $flags, $doc])
 }
 
+sub assign($$$)
+{
+	my ($self, $dest, $src) = @_;
+	if ($dest =~ /^\&/) {
+		$self->pidl("memcpy($dest, $src, sizeof(*$dest));");
+	} else {
+		$self->pidl("$dest = $src;");
+	}
+}
+
 sub ConvertObjectFromPythonData($$$$$$)
 {
 	my ($self, $mem_ctx, $cvar, $ctype, $target, $fail) = @_;
@@ -553,7 +562,7 @@ sub ConvertObjectFromPythonData($$$$$$)
 
 	if ($actual_ctype->{TYPE} eq "STRUCT") {
 		$self->pidl("PY_CHECK_TYPE($ctype->{NAME}, $cvar, $fail);");
-		$self->pidl("$target = py_talloc_get_ptr($cvar);");
+		$self->assign($target, "py_talloc_get_ptr($cvar)");
 		return;
 	}
 
@@ -590,7 +599,7 @@ sub ConvertObjectFromPythonData($$$$$$)
 	}
 
 	if ($actual_ctype->{TYPE} eq "SCALAR" and $actual_ctype->{NAME} eq "pointer") {
-		$self->pidl("$target = PyCObject_AsVoidPtr($cvar);");
+		$self->assign($target, "PyCObject_AsVoidPtr($cvar)");
 		return;
 	}
 
@@ -624,7 +633,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 			$self->pidl("{");
 			$self->indent;
 			$self->pidl("int $counter;");
-			$self->pidl("$var_name = talloc_array($mem_ctx, FIXME, PyList_Size($py_var));");
+			$self->pidl("$var_name = talloc_array_ptrtype($mem_ctx, $var_name, PyList_Size($py_var));");
 			$self->pidl("for ($counter = 0; $counter < PyList_Size($py_var); $counter++) {");
 			$self->indent;
 			$self->ConvertObjectFromPythonLevel($env, $var_name, "PyList_GetItem($py_var, $counter)", $e, GetNextLevel($e, $l), $var_name."[$counter]", $fail);
@@ -645,7 +654,7 @@ sub ConvertObjectFromPythonLevel($$$$$$$$)
 		my $switch = ParseExpr($l->{SWITCH_IS}, $env, $e);
 		$self->pidl("$var_name = py_export_" . GetNextLevel($e, $l)->{DATA_TYPE} . "($mem_ctx, $switch, $py_var);");
 	} elsif ($l->{TYPE} eq "SUBCONTEXT") {
-		$self->pidl("FIXME");
+		$self->pidl("#error Subcontext not yet supported");
 	} else {
 		die("unknown level type $l->{TYPE}");
 	}
@@ -686,9 +695,9 @@ sub ConvertScalarToPython($$$)
 		return "PyString_FromString($cvar)";
 	}
 
-	if ($ctypename eq "string_array") { return "FIXME($cvar)"; }
-
-	if ($ctypename eq "ipv4address") { return "FIXME($cvar)"; }
+	# Not yet supported
+	if ($ctypename eq "string_array") { return "PyCObject_FromVoidPtr($cvar)"; }
+	if ($ctypename eq "ipv4address") { return "PyCObject_FromVoidPtr($cvar)"; }
 	if ($ctypename eq "pointer") {
 		return "PyCObject_FromVoidPtr($cvar, talloc_free)";
 	}
@@ -794,7 +803,8 @@ sub ConvertObjectToPythonLevel($$$$)
 			Parse::Pidl::Typelist::scalar_is_reference($l->{DATA_TYPE})) {
 			$var_name = get_pointer_to($var_name);
 		}
-		$self->pidl("$py_var = ".$self->ConvertObjectToPythonData($l->{DATA_TYPE}, $var_name) . ";");
+		my $conv = $self->ConvertObjectToPythonData($l->{DATA_TYPE}, $var_name);
+		$self->pidl("$py_var = $conv;");
 	} elsif ($l->{TYPE} eq "SUBCONTEXT") {
 		$self->pidl("FIXME");
 	} else {
