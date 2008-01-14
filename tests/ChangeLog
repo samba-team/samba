@@ -1,3 +1,15 @@
+2008-01-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* kdc: Test the PKCS11 provider built-in to libhx509.
+
+2007-12-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ldap/init.ldif: Add space to make valid ldiff file, from Buchan
+	Milne
+	
+	* ldap/slapd-init.in: Another place where schemas are installed,
+	from Buchan Milne.
+
 2007-12-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/check-kadmin.in: Check that admin-less principal works.
