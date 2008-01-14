@@ -87,6 +87,7 @@
 
 */
 
+
 /*
   hold the context of any current transaction
 */
@@ -279,6 +280,63 @@ fail:
 	tdb->transaction->transaction_error = 1;
 	return -1;
 }
+
+
+/*
+  write while in a transaction - this varient never expands the transaction blocks, it only
+  updates existing blocks. This means it cannot change the recovery size
+*/
+static int transaction_write_existing(struct tdb_context *tdb, tdb_off_t off, 
+				      const void *buf, tdb_len_t len)
+{
+	uint32_t blk;
+
+	/* break it up into block sized chunks */
+	while (len + (off % tdb->transaction->block_size) > tdb->transaction->block_size) {
+		tdb_len_t len2 = tdb->transaction->block_size - (off % tdb->transaction->block_size);
+		if (transaction_write_existing(tdb, off, buf, len2) != 0) {
+			return -1;
+		}
+		len -= len2;
+		off += len2;
+		if (buf != NULL) {
+			buf = (const void *)(len2 + (const char *)buf);
+		}
+	}
+
+	if (len == 0) {
+		return 0;
+	}
+
+	blk = off / tdb->transaction->block_size;
+	off = off % tdb->transaction->block_size;
+
+	if (tdb->transaction->num_blocks <= blk ||
+	    tdb->transaction->blocks[blk] == NULL) {
+		return 0;
+	}
+
+	/* overwrite part of an existing block */
+	if (buf == NULL) {
+		memset(tdb->transaction->blocks[blk] + off, 0, len);
+	} else {
+		memcpy(tdb->transaction->blocks[blk] + off, buf, len);
+	}
+	if (blk == tdb->transaction->num_blocks-1) {
+		if (len + off > tdb->transaction->last_block_size) {
+			tdb->transaction->last_block_size = len + off;
+		}
+	}
+
+	return 0;
+
+fail:
+	TDB_LOG((tdb, TDB_DEBUG_FATAL, "transaction_write: failed at off=%d len=%d\n", 
+		 (blk*tdb->transaction->block_size) + off, len));
+	tdb->transaction->transaction_error = 1;
+	return -1;
+}
+
 
 /*
   accelerated hash chain head search, using the cached hash heads
@@ -629,6 +687,10 @@ static int tdb_recovery_allocate(struct tdb_context *tdb,
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_recovery_allocate: failed to write recovery head\n"));
 		return -1;
 	}
+	if (transaction_write_existing(tdb, TDB_RECOVERY_HEAD, &recovery_head, sizeof(tdb_off_t)) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_recovery_allocate: failed to write recovery head\n"));
+		return -1;
+	}
 
 	return 0;
 }
@@ -726,6 +788,12 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 		tdb->ecode = TDB_ERR_IO;
 		return -1;
 	}
+	if (transaction_write_existing(tdb, recovery_offset, data, sizeof(*rec) + recovery_size) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_setup_recovery: failed to write secondary recovery data\n"));
+		free(data);
+		tdb->ecode = TDB_ERR_IO;
+		return -1;
+	}
 
 	/* as we don't have ordered writes, we have to sync the recovery
 	   data before we update the magic to indicate that the recovery
@@ -744,6 +812,11 @@ static int transaction_setup_recovery(struct tdb_context *tdb,
 
 	if (methods->tdb_write(tdb, *magic_offset, &magic, sizeof(magic)) == -1) {
 		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_setup_recovery: failed to write recovery magic\n"));
+		tdb->ecode = TDB_ERR_IO;
+		return -1;
+	}
+	if (transaction_write_existing(tdb, *magic_offset, &magic, sizeof(magic)) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_transaction_setup_recovery: failed to write secondary recovery magic\n"));
 		tdb->ecode = TDB_ERR_IO;
 		return -1;
 	}
@@ -777,6 +850,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_transaction_commit: transaction error pending\n"));
 		return -1;
 	}
+
 
 	if (tdb->transaction->nesting != 0) {
 		tdb->transaction->nesting--;
@@ -916,6 +990,7 @@ int tdb_transaction_commit(struct tdb_context *tdb)
 	/* use a transaction cancel to free memory and remove the
 	   transaction locks */
 	tdb_transaction_cancel(tdb);
+
 	return 0;
 }
 
