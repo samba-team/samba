@@ -114,8 +114,9 @@ static bool samba_private_attr_name(const char *unix_ea_name)
  Get one EA value. Fill in a struct ea_struct.
 ****************************************************************************/
 
-static bool get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp,
-				const char *fname, char *ea_name, struct ea_struct *pea)
+NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
+		      files_struct *fsp, const char *fname,
+		      const char *ea_name, struct ea_struct *pea)
 {
 	/* Get the value of this xattr. Max size is 64k. */
 	size_t attr_size = 256;
@@ -126,7 +127,7 @@ static bool get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 
 	val = TALLOC_REALLOC_ARRAY(mem_ctx, val, char, attr_size);
 	if (!val) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (fsp && fsp->fh->fd != -1) {
@@ -141,7 +142,7 @@ static bool get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 	}
 
 	if (sizeret == -1) {
-		return False;
+		return map_nt_error_from_unix(errno);
 	}
 
 	DEBUG(10,("get_ea_value: EA %s is of length %u\n", ea_name, (unsigned int)sizeret));
@@ -149,13 +150,17 @@ static bool get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 
 	pea->flags = 0;
 	if (strnequal(ea_name, "user.", 5)) {
-		pea->name = &ea_name[5];
+		pea->name = talloc_strdup(mem_ctx, &ea_name[5]);
 	} else {
-		pea->name = ea_name;
+		pea->name = talloc_strdup(mem_ctx, ea_name);
+	}
+	if (pea->name == NULL) {
+		TALLOC_FREE(val);
+		return NT_STATUS_NO_MEMORY;
 	}
 	pea->value.data = (unsigned char *)val;
 	pea->value.length = (size_t)sizeret;
-	return True;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -215,7 +220,9 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 			if (!listp)
 				return NULL;
 
-			if (!get_ea_value(mem_ctx, conn, fsp, fname, p, &listp->ea)) {
+			if (!NT_STATUS_IS_OK(get_ea_value(mem_ctx, conn, fsp,
+							  fname, p,
+							  &listp->ea))) {
 				return NULL;
 			}
 
