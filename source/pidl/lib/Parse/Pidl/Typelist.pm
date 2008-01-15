@@ -7,7 +7,7 @@ package Parse::Pidl::Typelist;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(hasType getType mapTypeName scalar_is_reference expandAlias
+@EXPORT_OK = qw(hasType getType resolveType mapTypeName scalar_is_reference expandAlias
 			    mapScalarType addType typeIs is_scalar enum_type_fn
 				bitmap_type_fn mapType typeHasBody
 );
@@ -59,6 +59,7 @@ my %aliases = (
 	"boolean8" => "uint8",
 	"boolean32" => "uint32",
 	"DWORD" => "uint32",
+	"uint" => "uint32",
 	"int" => "int32",
 	"WORD" => "uint16",
 	"char" => "uint8",
@@ -93,6 +94,20 @@ sub addType($)
 {
 	my $t = shift;
 	$types{$t->{NAME}} = $t;
+}
+
+sub resolveType($)
+{
+	my ($ctype) = @_;
+
+	if (not hasType($ctype)) {
+		# assume struct typedef
+		return { TYPE => "TYPEDEF", NAME => $ctype, DATA => { TYPE => "STRUCT" } };
+	} else {
+		return getType($ctype);
+	}
+
+	return $ctype;
 }
 
 sub getType($)

@@ -27,6 +27,12 @@
 
 #include "tdb_private.h"
 
+/* 'right' merges can involve O(n^2) cost when combined with a
+   traverse, so they are disabled until we find a way to do them in 
+   O(1) time
+*/
+#define USE_RIGHT_MERGES 0
+
 /* read a freelist record and check for simple errors */
 int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_struct *rec)
 {
@@ -56,7 +62,7 @@ int tdb_rec_free_read(struct tdb_context *tdb, tdb_off_t off, struct list_struct
 }
 
 
-
+#if USE_RIGHT_MERGES
 /* Remove an element from the freelist.  Must have alloc lock. */
 static int remove_from_freelist(struct tdb_context *tdb, tdb_off_t off, tdb_off_t next)
 {
@@ -75,6 +81,7 @@ static int remove_from_freelist(struct tdb_context *tdb, tdb_off_t off, tdb_off_
 	TDB_LOG((tdb, TDB_DEBUG_FATAL,"remove_from_freelist: not on list at off=%d\n", off));
 	return TDB_ERRCODE(TDB_ERR_CORRUPT, -1);
 }
+#endif
 
 
 /* update a record tailer (must hold allocation lock) */
@@ -93,8 +100,6 @@ static int update_tailer(struct tdb_context *tdb, tdb_off_t offset,
    neccessary. */
 int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 {
-	tdb_off_t right, left;
-
 	/* Allocation and tailer lock */
 	if (tdb_lock(tdb, -1, F_WRLCK) != 0)
 		return -1;
@@ -105,9 +110,10 @@ int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 		goto fail;
 	}
 
+#if USE_RIGHT_MERGES
 	/* Look right first (I'm an Australian, dammit) */
-	right = offset + sizeof(*rec) + rec->rec_len;
-	if (right + sizeof(*rec) <= tdb->map_size) {
+	if (offset + sizeof(*rec) + rec->rec_len + sizeof(*rec) <= tdb->map_size) {
+		tdb_off_t right = offset + sizeof(*rec) + rec->rec_len;
 		struct list_struct r;
 
 		if (tdb->methods->tdb_read(tdb, right, &r, sizeof(r), DOCONV()) == -1) {
@@ -122,13 +128,18 @@ int tdb_free(struct tdb_context *tdb, tdb_off_t offset, struct list_struct *rec)
 				goto left;
 			}
 			rec->rec_len += sizeof(r) + r.rec_len;
+			if (update_tailer(tdb, offset, rec) == -1) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed at %u\n", offset));
+				goto fail;
+			}
 		}
 	}
-
 left:
+#endif
+
 	/* Look left */
-	left = offset - sizeof(tdb_off_t);
-	if (left > TDB_DATA_START(tdb->header.hash_size)) {
+	if (offset - sizeof(tdb_off_t) > TDB_DATA_START(tdb->header.hash_size)) {
+		tdb_off_t left = offset - sizeof(tdb_off_t);
 		struct list_struct l;
 		tdb_off_t leftsize;
 		
@@ -145,7 +156,12 @@ left:
 
 		left = offset - leftsize;
 
-		/* Now read in record */
+		if (leftsize > offset ||
+		    left < TDB_DATA_START(tdb->header.hash_size)) {
+			goto update;
+		}
+
+		/* Now read in the left record */
 		if (tdb->methods->tdb_read(tdb, left, &l, sizeof(l), DOCONV()) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left read failed at %u (%u)\n", left, leftsize));
 			goto update;
@@ -153,21 +169,24 @@ left:
 
 		/* If it's free, expand to include it. */
 		if (l.magic == TDB_FREE_MAGIC) {
-			if (remove_from_freelist(tdb, left, l.next) == -1) {
-				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: left free failed at %u\n", left));
-				goto update;
-			} else {
-				offset = left;
-				rec->rec_len += leftsize;
+			/* we now merge the new record into the left record, rather than the other 
+			   way around. This makes the operation O(1) instead of O(n). This change
+			   prevents traverse from being O(n^2) after a lot of deletes */
+			l.rec_len += sizeof(*rec) + rec->rec_len;
+			if (tdb_rec_write(tdb, left, &l) == -1) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_left failed at %u\n", left));
+				goto fail;
 			}
+			if (update_tailer(tdb, left, &l) == -1) {
+				TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed at %u\n", offset));
+				goto fail;
+			}
+			tdb_unlock(tdb, -1, F_WRLCK);
+			return 0;
 		}
 	}
 
 update:
-	if (update_tailer(tdb, offset, rec) == -1) {
-		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_free: update_tailer failed at %u\n", offset));
-		goto fail;
-	}
 
 	/* Now, prepend to free list */
 	rec->magic = TDB_FREE_MAGIC;
@@ -261,6 +280,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_st
 		tdb_off_t rec_ptr, last_ptr;
 		tdb_len_t rec_len;
 	} bestfit;
+	float multiplier = 1.0;
 
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1)
 		return 0;
@@ -295,18 +315,27 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_st
 				bestfit.rec_len = rec->rec_len;
 				bestfit.rec_ptr = rec_ptr;
 				bestfit.last_ptr = last_ptr;
-				/* consider a fit to be good enough if
-				   we aren't wasting more than half
-				   the space */
-				if (bestfit.rec_len < 2*length) {
-					break;
-				}
 			}
 		}
 
 		/* move to the next record */
 		last_ptr = rec_ptr;
 		rec_ptr = rec->next;
+
+		/* if we've found a record that is big enough, then
+		   stop searching if its also not too big. The
+		   definition of 'too big' changes as we scan
+		   through */
+		if (bestfit.rec_len > 0 &&
+		    bestfit.rec_len < length * multiplier) {
+			break;
+		}
+		
+		/* this multiplier means we only extremely rarely
+		   search more than 50 or so records. At 50 records we
+		   accept records up to 11 times larger than what we
+		   want */
+		multiplier *= 1.05;
 	}
 
 	if (bestfit.rec_ptr != 0) {
@@ -328,3 +357,25 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_st
 	return 0;
 }
 
+
+
+/* 
+   return the size of the freelist - used to decide if we should repack 
+*/
+int tdb_freelist_size(struct tdb_context *tdb)
+{
+	tdb_off_t ptr;
+	int count=0;
+
+	if (tdb_lock(tdb, -1, F_RDLCK) == -1) {
+		return -1;
+	}
+
+	ptr = FREELIST_TOP;
+	while (tdb_ofs_read(tdb, ptr, &ptr) == 0 && ptr != 0) {
+		count++;
+	}
+
+	tdb_unlock(tdb, -1, F_RDLCK);
+	return count;
+}

@@ -23,7 +23,7 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_drsuapi.h"
 #include "librpc/gen_ndr/ndr_misc.h"
-#include "libcli/util/asn_1.h"
+#include "lib/util/asn1.h"
 
 void ndr_print_drsuapi_DsReplicaObjectListItem(struct ndr_print *ndr, const char *name, 
 					       const struct drsuapi_DsReplicaObjectListItem *r)

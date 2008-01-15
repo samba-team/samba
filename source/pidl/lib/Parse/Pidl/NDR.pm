@@ -35,7 +35,7 @@ use vars qw($VERSION);
 $VERSION = '0.01';
 @ISA = qw(Exporter);
 @EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsString);
-@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement align_type mapToScalar ParseType can_contain_deferred);
+@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement align_type mapToScalar ParseType can_contain_deferred is_charset_array);
 
 use strict;
 use Parse::Pidl qw(warning fatal);
@@ -1180,5 +1180,20 @@ sub Validate($)
 			fatal($x, "importlib() not supported");
 	}
 }
+
+sub is_charset_array($$)
+{
+	my ($e,$l) = @_;
+
+	return 0 if ($l->{TYPE} ne "ARRAY");
+
+	my $nl = GetNextLevel($e,$l);
+
+	return 0 unless ($nl->{TYPE} eq "DATA");
+
+	return has_property($e, "charset");
+}
+
+
 
 1;

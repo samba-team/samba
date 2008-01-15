@@ -218,7 +218,7 @@ long nap(long milliseconds) {
 #ifndef HAVE_MEMMOVE
 /*******************************************************************
 safely copies memory, ensuring no overlap problems.
-this is only used if the machine does not have it's own memmove().
+this is only used if the machine does not have its own memmove().
 this is not the fastest algorithm in town, but it will do for our
 needs.
 ********************************************************************/

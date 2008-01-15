@@ -2,6 +2,8 @@
   dcerpc remote management interface
 */
 
+import "misc.idl";
+
 [
   uuid("afa8bd80-7d8a-11c9-bef4-08002b102989"), 
   version(1.0),
