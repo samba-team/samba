@@ -11,7 +11,10 @@ sys.path.append("scripting/python")
 import samba.getopt as options
 
 from auth import system_session
-from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError
+from ldb import (SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError,
+                 LDB_ERR_NO_SUCH_OBJECT, LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS,
+                 LDB_ERR_ENTRY_ALREADY_EXISTS, LDB_ERR_UNWILLING_TO_PERFORM,
+                 LDB_ERR_NOT_ALLOWED_ON_NON_LEAF)
 from samba import Ldb
 import param
 
@@ -38,7 +41,7 @@ def delete_force(ldb, dn):
     try:
         ldb.delete(dn)
     except LdbError, (num, _): 
-        if num != 32: # LDAP_NO_SUCH_OBJECT
+        if num != LDB_ERR_NO_SUCH_OBJECT:
             assert False
 
 def assertEquals(a1, a2):
@@ -57,7 +60,7 @@ def basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn):
         "objectclass": "group",
         "member": "cn=ldaptestuser,cn=useRs," + base_dn})
     except LdbError, (num, _): 
-        if num != 32: # LDAP_NO_SUCH_OBJECT
+        if num != LDB_ERR_NO_SUCH_OBJECT:
             assert False
     else:
         assert False
@@ -122,8 +125,7 @@ servicePrincipalName: host/ldaptest2computer
 servicePrincipalName: cifs/ldaptest2computer
 """)
     except LdbError, (num, msg):
-        #LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS
-        assert num == 20, "Expected error LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS, got : %s" % msg
+        assert num == LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS
 
         ldb.modify_ldif("""
 dn: cn=ldaptest2computer,cn=computers,""" + base_dn + """
@@ -140,7 +142,7 @@ add: servicePrincipalName
 servicePrincipalName: host/ldaptest2computer
 """)
         except LdbError, (num, msg):
-            assert num == 20, "Expected error LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS, got :" + msg
+            assert num == LDB_ERR_ATTRIBUTE_OR_VALUE_EXISTS
         
         print "Testing ranged results"
         ldb.modify_ldif("""
@@ -347,7 +349,7 @@ add: member
 member: cn=ldaptestuser3,cn=users,""" + base_dn + """
 """)
     except LdbError, (num, _):
-        assert num == 32
+        assert num == LDB_ERR_NO_SUCH_OBJECT
     else:
         assert False
 
@@ -391,7 +393,7 @@ member: cn=ldaptestuser3,cn=users,""" + base_dn + """
                   "objectClass": ["person", "user"],
                   "cn": "LDAPtestUSER3"})
     except LdbError, (num, _):
-        assert num == 68 #LDB_ERR_ENTRY_ALREADY_EXISTS
+        assert num == LDB_ERR_ENTRY_ALREADY_EXISTS
     else:
         assert False
 
@@ -402,7 +404,7 @@ member: cn=ldaptestuser3,cn=users,""" + base_dn + """
     try:
         ldb.rename("cn=ldaptestuser3,cn=users," + base_dn, "cn=ldaptestuser2,cn=users," + base_dn)
     except LdbError, (num, _): 
-        assert num == 32 # LDAP_NO_SUCH_OBJECT
+        assert num == LDB_ERR_NO_SUCH_OBJECT
     else:
         assert False
 
@@ -415,7 +417,7 @@ member: cn=ldaptestuser3,cn=users,""" + base_dn + """
     try:
         ldb.rename("cn=ldaptestuser2,cn=users," + base_dn, "cn=ldaptestuser3,cn=users," + base_dn)
     except LdbError, (num, _):
-        assert num == 68 #LDB_ERR_ENTRY_ALREADY_EXISTS
+        assert num == LDB_ERR_ENTRY_ALREADY_EXISTS
     else:
         assert False
     try:
@@ -468,7 +470,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + base_dn + """
                 expression="(&(cn=ldaptestuser4)(objectClass=user))", 
                 scope=SCOPE_SUBTREE)
     except LdbError, (num, _):
-        assert num == 32
+        assert num == LDB_ERR_NO_SUCH_OBJECT
     else:
         assert False
 
@@ -476,7 +478,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + base_dn + """
     try:
         res = ldb.search("cn=ldaptestcontainer," + base_dn, expression="(&(cn=ldaptestuser4)(objectClass=user))", scope=SCOPE_ONELEVEL)
     except LdbError, (num, _):
-        assert num == 32
+        assert num == LDB_ERR_NO_SUCH_OBJECT
     else:
         assert False
 
@@ -495,7 +497,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + base_dn + """
     try:
         ldb.rename("cn=ldaptestcontainer2," + base_dn, "cn=ldaptestcontainer,cn=ldaptestcontainer2," + base_dn)
     except LdbError, (num, _):
-        assert num == 53 # LDAP_UNWILLING_TO_PERFORM
+        assert num == LDB_ERR_UNWILLING_TO_PERFORM
     else:
         assert False
 
@@ -511,7 +513,7 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + base_dn + """
     try:
         ldb.delete("cn=ldaptestcontainer2," + base_dn)
     except LdbError, (num, _):
-        assert num == 66
+        assert num == LDB_ERR_NOT_ALLOWED_ON_NON_LEAF
     else:
         assert False
 
