@@ -108,5 +108,12 @@ echo "Search Options Control Query test returned 0 items"
 failed=`expr $failed + 1`
 fi
 
+echo "Test Search Options Control with Domain Scope Control"
+nentries=`bin/ldbsearch $options $CONFIGURATION -H $p://$SERVER --controls=search_options:1:2,domain_scope:1 '(objectclass=crossRef)' | grep crossRef | wc -l`
+if [ $nentries -lt 1 ]; then
+echo "Search Options Control Query test returned 0 items"
+failed=`expr $failed + 1`
+fi
+
 
 exit $failed
