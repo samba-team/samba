@@ -1,5 +1,11 @@
 2008-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* softp11.c: Support PINs to login to the store.
+
+	* Makefile.am: add java pkcs11 test
+
+	* test_java_pkcs11.in: first version of disable java test
+
 	* softp11.c: Drop unused stuff.
 
 	* cert.c: Spelling, Add hx509_cert_get_SPKI_AlgorithmIdentifier,
