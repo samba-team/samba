@@ -107,10 +107,6 @@ static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
 {
 	ADS_STATUS status;
 
-	if (r->in.ads) {
-		ads_destroy(&r->in.ads);
-	}
-
 	status = libnet_connect_ads(r->in.domain_name,
 				    r->in.domain_name,
 				    r->in.dc_name,
@@ -133,10 +129,6 @@ static ADS_STATUS libnet_unjoin_connect_ads(TALLOC_CTX *mem_ctx,
 					    struct libnet_UnjoinCtx *r)
 {
 	ADS_STATUS status;
-
-	if (r->in.ads) {
-		ads_destroy(&r->in.ads);
-	}
 
 	status = libnet_connect_ads(r->in.domain_name,
 				    r->in.domain_name,
