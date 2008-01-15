@@ -444,7 +444,7 @@ BOOL SMBNTLMv2encrypt_hash(const char *user, const char *domain, const uchar nt_
 	   the username and domain.
 	   This prevents username swapping during the auth exchange
 	*/
-	if (!ntv2_owf_gen(nt_hash, user, domain, True, ntlm_v2_hash)) {
+	if (!ntv2_owf_gen(nt_hash, user, domain, False, ntlm_v2_hash)) {
 		return False;
 	}
 	
