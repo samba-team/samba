@@ -16,7 +16,7 @@
   depends(misc,lsa,security)
 ] interface samr
 {
-	declare bitmap security_secinfo;
+	typedef bitmap security_secinfo security_secinfo;
 
 	/* account control (acct_flags) bits */
 	typedef [public,bitmap32bit] bitmap {
@@ -1158,7 +1158,7 @@
 	/************************/
 	/* Function    0x3f     */
 
-	declare enum samr_RejectReason;
+	typedef enum samr_RejectReason samr_RejectReason;
 
 	typedef struct {
 		samr_RejectReason reason;

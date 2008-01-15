@@ -22,8 +22,7 @@
 /* This is the implementation of the wks interface. */
 
 #include "includes.h"
-#include "libnet/libnet_join.h"
-#include "libnet/libnet_proto.h"
+#include "libnet/libnet.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV

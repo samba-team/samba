@@ -252,6 +252,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
 		DEBUG(5,("close_remove_share_mode: file %s. "
 			"Change user to uid %u\n",
+			fsp->fsp_name,
 			(unsigned int)lck->delete_token->uid));
 
 		if (!push_sec_ctx()) {

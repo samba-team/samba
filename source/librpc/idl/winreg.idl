@@ -13,7 +13,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
   helpstring("Remote Registry Service")
 ] interface winreg
 {
-	declare bitmap security_secinfo;
+	typedef bitmap security_secinfo security_secinfo;
 
 	typedef [bitmap32bit] bitmap {
 		KEY_QUERY_VALUE 		= 0x00001,

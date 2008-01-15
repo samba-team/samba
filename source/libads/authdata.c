@@ -214,7 +214,7 @@ static bool pac_io_group_membership_array(const char *desc,
 static bool pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info, 
 				  prs_struct *ps, int depth)
 {
-	uint32 garbage, i;
+	uint32 garbage = 0, i;
 
 	if (NULL == info)
 		return False;
@@ -398,7 +398,7 @@ static bool pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info,
 static bool pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info, 
 				  prs_struct *ps, int depth)
 {
-	uint32 garbage;
+	uint32 garbage = 0;
 	bool kerb_validation_info = True;
 
 	if (NULL == info)

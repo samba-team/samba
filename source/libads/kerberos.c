@@ -209,7 +209,8 @@ int kerberos_kinit_password_ext(const char *principal,
 		krb5_set_real_time(ctx, time(NULL) + time_offset, 0);
 	}
 
-	DEBUG(10,("kerberos_kinit_password: using [%s] as ccache and config [%s]\n",
+	DEBUG(10,("kerberos_kinit_password: as %s using [%s] as ccache and config [%s]\n",
+			principal,
 			cache_name ? cache_name: krb5_cc_default_name(ctx),
 			getenv("KRB5_CONFIG")));
 

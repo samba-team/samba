@@ -1294,14 +1294,13 @@ static bool net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 #if defined(WITH_DNS_UPDATES)
 #include "dns.h"
 DNS_ERROR DoDNSUpdate(char *pszServerName,
-		      const char *pszDomainName,
-		      const char *pszHostName,
-		      const struct in_addr *iplist, int num_addrs );
-
+		      const char *pszDomainName, const char *pszHostName,
+		      const struct sockaddr_storage *sslist,
+		      size_t num_addrs );
 
 static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 					const char *machine_name,
-					const struct in_addr *addrs,
+					const struct sockaddr_storage *addrs,
 					int num_addrs)
 {
 	struct dns_rr_ns *nameservers = NULL;
@@ -1390,7 +1389,7 @@ done:
 static NTSTATUS net_update_dns(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads)
 {
 	int num_addrs;
-	struct in_addr *iplist = NULL;
+	struct sockaddr_storage *iplist = NULL;
 	fstring machine_name;
 	NTSTATUS status;
 

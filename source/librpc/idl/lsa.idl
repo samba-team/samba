@@ -13,7 +13,7 @@ import "security.idl";
   helpstring("Local Security Authority")
 ] interface lsarpc
 {
-	declare bitmap security_secinfo;
+	typedef bitmap security_secinfo security_secinfo;
 
 	typedef [public,noejs] struct {
 		[value(2*strlen_m(string))] uint16 length;
@@ -214,7 +214,7 @@ import "security.idl";
 		LSA_POLICY_INFO_AUDIT_FULL_SET=10,
 		LSA_POLICY_INFO_AUDIT_FULL_QUERY=11,
 		LSA_POLICY_INFO_DNS=12
-	} lsaPolicyInfo;
+	} lsa_PolicyInfo;
 
 	typedef [switch_type(uint16)] union {
 		[case(LSA_POLICY_INFO_AUDIT_LOG)]        lsa_AuditLogInfo       audit_log;
@@ -233,13 +233,17 @@ import "security.idl";
 
 	NTSTATUS lsa_QueryInfoPolicy (
 		[in]                            policy_handle *handle,
-		[in]                            uint16 level,
+		[in]                            lsa_PolicyInfo level,
 		[out,unique,switch_is(level)]   lsa_PolicyInformation *info
 		);
 
 	/******************/
 	/* Function:       0x08 */
-	NTSTATUS lsa_SetInfoPolicy ();
+	NTSTATUS lsa_SetInfoPolicy (
+		[in]                            policy_handle *handle,
+		[in]                            lsa_PolicyInfo level,
+		[in,switch_is(level)]           lsa_PolicyInformation *info
+		);
 
 	/******************/
 	/* Function:       0x09 */
@@ -705,12 +709,16 @@ import "security.idl";
 
 	NTSTATUS lsa_QueryInfoPolicy2(
 		[in]                 policy_handle *handle,
-		[in]                     uint16 level,
+		[in]                     lsa_PolicyInfo level,
 		[out,unique,switch_is(level)]   lsa_PolicyInformation *info
 		);
 
 	/* Function 0x2f */
-	NTSTATUS lsa_SetInfoPolicy2();
+	NTSTATUS lsa_SetInfoPolicy2(
+		[in]                            policy_handle *handle,
+		[in]                            lsa_PolicyInfo level,
+		[in,switch_is(level)]           lsa_PolicyInformation *info
+		);
 
 	/**********************/
 	/* Function 0x30 */
