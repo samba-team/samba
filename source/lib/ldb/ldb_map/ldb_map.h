@@ -134,6 +134,9 @@ struct ldb_map_context {
 	 * to any wildcard search */
 	const char * const *wildcard_attributes;
 
+	/* ObjectClass (if any) to be added to remote attributes on add */
+	const char *add_objectclass;
+
 	/* struct ldb_context *mapped_ldb; */
 	struct ldb_dn *local_base_dn;
 	struct ldb_dn *remote_base_dn;
@@ -149,6 +152,7 @@ struct map_private {
 int ldb_map_init(struct ldb_module *module, const struct ldb_map_attribute *attrs, 
 		 const struct ldb_map_objectclass *ocls,
 		 const char * const *wildcard_attributes,
+		 const char *add_objectclass,
 		 const char *name);
 
 /* get copy of map_ops */
