@@ -369,6 +369,8 @@ add_pubkey_info(hx509_context hxctx, struct st_object *o,
     
     if (key_type != CKK_RSA)
 	return CKR_OK;
+    if (_hx509_cert_private_key(cert) == NULL)
+	return CKR_OK;
 
     num = _hx509_private_key_get_internal(context, 
 					  _hx509_cert_private_key(cert), 
@@ -600,14 +602,26 @@ add_certificate(const char *cert_file,
 		char *id,
 		char *label)
 {
-    int ret;
     hx509_certs certs;
+    hx509_lock lock = NULL;
+    int ret;
 
     struct foo foo;
     foo.id = id;
     foo.label = label;
 
-    ret = hx509_certs_init(context, cert_file, 0, NULL, &certs);
+    if (pin) {
+	char *str;
+	asprintf(&str, "PASS:%s", pin);
+
+	hx509_lock_init(context, &lock);
+	hx509_lock_command_string(lock, str);
+
+	memset(str, 0, strlen(str));
+	free(str);
+    }
+
+    ret = hx509_certs_init(context, cert_file, 0, lock, &certs);
     if (ret) {
 	st_logf("failed to open file %s\n", cert_file);
 	return CKR_GENERAL_ERROR;
@@ -835,9 +849,15 @@ C_Initialize(CK_VOID_PTR a)
 	soft_token.config_file = fn;
     }
 
+#if 0
+    /*
+     * XXX this should really fail if the password is missing and the
+     * cert-store is protected by a password
+     */
     ret = read_conf_file(soft_token.config_file, CKU_USER, NULL);
     if (ret == CKR_OK)
 	soft_token.flags.login_done = 1;
+#endif
 
     return CKR_OK;
 }
