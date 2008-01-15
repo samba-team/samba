@@ -109,6 +109,7 @@ smb.conf changes
     client plaintext auth		Changed Default	No
     clustering				New		No
     cluster addresses			New		""
+    debug class                         New             No
     ctdb socket				New		""
     lanman auth				Changed Default	No
     mangle map                          Removed
@@ -124,10 +125,18 @@ Changes since 3.2.0pre1:
 -----------------------
 
 o   Michael Adam <obnox@samba.org>
-    * Add vfs_zfsacl plugin.
+    * Add library for access to the registry configuration data.
+    * BUG 5023: Separate NFS4 and POSIX ACL code in file access checks.
+    * BUG 4308: Fix Excel save operation ACL bug.
     * Refactor and consolidate logic for retrieving the machine
       trust password information.
+    * VFS API cleanup.
     * BUG 4801: Correctly implement LSA lookup levels for LookupNames.
+    * Add new option "debug class" to control printing of the debug class.
+      in debug headers.
+    * Enable building of the zfsacl and notify_fam vfs modules.
+    * BUG 5083: Fix memleak in solarisacl module.
+    * BUG 5063: Fix build on RHEL5.
 
 
 o   Jeremy Allison <jra@samba.org>
