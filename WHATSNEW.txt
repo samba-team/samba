@@ -1,6 +1,6 @@
                    =================================
                    Release Notes for Samba 3.2.0pre2
-                               Oct XX, 2007
+                               Jan 16, 2008
                    =================================
 
 This is the second preview release of Samba 3.2.0.  This is *not*
@@ -22,6 +22,7 @@ Major enhancements in Samba 3.2.0 include:
   o Introduction of a registry based configuration system.
   o Improved CIFS Unix Extensions support.
   o Experimental support for file serving clusters.
+  o Support for IPv6 connections.
 
 
   Winbind and Active Directory Integration:
@@ -32,6 +33,7 @@ Major enhancements in Samba 3.2.0 include:
   o Support in pam_winbind for logging on using the userPrincipalName.
   o Expansion of nested domain groups via NSS calls.
   o Support for Active Directory LDAP Signing policy.
+  o New LGPL Winbind client library (libwbclient.so)
 
 
   Users & Groups:
@@ -40,7 +42,7 @@ Major enhancements in Samba 3.2.0 include:
 
 
   Documentation:
-  o Inclusion of an HTLM version of the 3rd edition of "Using Samba"
+  o Inclusion of an HTML version of the 3rd edition of "Using Samba"
     from O'Reilly Publishing.
 
 
@@ -50,12 +52,12 @@ Now Licensed under the GNU GPLv3
 The Samba Team has adopted the Version 3 of the GNU General Public
 License for the 3.2 and later releases.   The GPLv3 is the updated
 version of the GPLv2 license under which Samba is currently
-distributed. It has been updated to improvecompatibility with other 
-licenses and to make it easier to adopt internationally, and is an 
+distributed. It has been updated to improve compatibility with other
+licenses and to make it easier to adopt internationally, and is an
 improved version of the license to better suit the needs of Free
 Software in the 21st Century.
 
-The original announcement is available on-line at 
+The original announcement is available on-line at
 
     http://news.samba.org/announcements/samba_gplv3/
 
@@ -63,12 +65,12 @@ The original announcement is available on-line at
 New Security Defaults for Authentication
 ========================================
 
-Support for LanMan passwords is now disabled in both client and server 
-applications.  Additionally, clear text authentication requests are 
+Support for LanMan passwords is now disabled in both client and server
+applications.  Additionally, clear text authentication requests are
 disabled by default in client utilities such as smbclient and all
-libsmbclient based applications.  This will affect connection both 
-to and from hosts running DOS, Windows 9x/ME, and OS/2.  Please refer 
-to the "Changes" section for details on the exact parameters that were 
+libsmbclient based applications.  This will affect connection both
+to and from hosts running DOS, Windows 9x/ME, and OS/2.  Please refer
+to the "Changes" section for details on the exact parameters that were
 updated.
 
 
@@ -78,10 +80,10 @@ Registry Configuration Backend
 
 Samba is now able to use a registry based configuration backed to
 supplement smb.conf setting.  This feature may be enabled by setting
-"include = registry" and "registry shares = yes" in the [global] 
-section of smb.conf and may be managed using the "net conf" command.  
+"include = registry" and "registry shares = yes" in the [global]
+section of smb.conf and may be managed using the "net conf" command.
 
-More information may be obtained from the smb.conf(5) and net(8) man 
+More information may be obtained from the smb.conf(5) and net(8) man
 pages.
 
 
@@ -110,7 +112,8 @@ smb.conf changes
     ctdb socket				New		""
     lanman auth				Changed Default	No
     mangle map                          Removed
-    open files database hashsize	Removed
+    min receive file size                New             0
+    open files database hash size	Removed
     read bmpx                           Removed
     registry shares			New		No
     winbind expand groups               New             1
@@ -119,6 +122,97 @@ smb.conf changes
 
 Changes since 3.2.0pre1:
 -----------------------
+
+o   Michael Adam <obnox@samba.org>
+    * Add vfs_zfsacl plugin.
+    * Refactor and consolidate logic for retrieving the machine
+      trust password information.
+    * BUG 4801: Correctly implement LSA lookup levels for LookupNames.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * Added support for IPv6 client and server connections.
+    * Add in the recvfile entry to the VFS layer.
+    * Removal of pstring data type.
+    * Remove unused utilities: smbctool and rpctorture.
+    * Fix service principal detection to match Windows Vista
+      (based on work from Andreas Schneider).
+    * Additional work on the session data privacy for clients
+      implementing the Unix CIFS Extensions.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Add Winbind client library.
+    * Decouple static linking between smbd and winbindd's client
+      interface.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Enhance client and server remote registry access.
+    * Add client calls for remotely joining a computer to a domain
+      (including calls from "net dom" command).
+    * Add libnetapi.so library for joining domains including
+      sample GTK+ app.
+
+
+o   Steve Langasek <vorlon@debian.org>
+    * Integrate 2 out of 3 --with-fhs patches from Debian packaging
+      for better adherence to the FHS standard.
+
+
+o   Volker Lendecke <vl@samba.org>
+    * Add talloc_stackframe() and talloc_pool() features.
+    * Removal of pstring data type.
+    * Add generic a in-memory cache.
+    * Import the Linux red-black tree implementation.
+    * Remove large amount of global variables.
+    * Add vfs_ea_tdb module for file systems that do not implement xattrs.
+
+
+o   Stefan Metzmacher <metze@samba.org>
+    * Refactor Winbind internal parent-child interface tables
+      to achieve better unit testing support.
+    * Add nss_wrapper API for local Winbind unit tests.
+    * Networking fixes to the libreplace library.
+    * Pidl fixes.
+    * Remove unused Winbind pipe calls.
+
+
+o   James Peach <jpeach@samba.org>
+    * Add support for DNS Service Discovery.  Based on work from
+      Rishi Srivatsavai <rishisv@gmail.com>.
+
+
+o   Andreas Schneider <anschneider@suse.de>
+    * Don't restart winbind if a corrupted tdb is found during
+      initialization.
+
+
+o   Karolin Seeger <ks@sernet.de>
+    * Add net rap file user.
+
+
+o   David Shaw <dshaw@jabberwocky.com>
+    * BUG 5073: Allow "delete readonly = yes" to correctly override
+      deletion of a file.
+
+
+o   Rishi Srivatsavai <rishisv@gmail.com>
+    * Register the smb service with mDNS if mDNS is supported.
+    * Add smbclient support for basic mDNS browsing.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Fix padding between Winbind 32bit/64bit client library in
+      the request/response structures.
+    * Added a syncops VFS module for file systems which do not
+      guarantee meta-data operations are immediately committed to
+      disk in stable form.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Additional portability support for building shared libraries.
+
 
 
 Original 3.2.0pre1 commits:
@@ -134,16 +228,16 @@ o   Michael Adam <obnox@samba.org>
     * Merged \winreg server code from the SAMBA_3_2 development branch.
     * Fixes for libreplace.
     * Implement new registry configuration backend.
-  
+
 
 o   Jeremy Allison <jra@samba.org>
     * Add support for file system objectIDs.
     * Winbind cache validation support.
     * Add in the UNIX capability for 24-bit readX.
     * Improve Delete-on-Close semantics.
-    * Removal of static file and path name buffers in SMB file serving 
+    * Removal of static file and path name buffers in SMB file serving
       code.
-    
+
 
 o   Danilo Almeida <dalmeida@centeris.com>
     * Move the machine account to the OU specified when running "net
@@ -151,7 +245,7 @@ o   Danilo Almeida <dalmeida@centeris.com>
 
 
 o   Andrew Bartlett <abartlet@samba.org>
-    * Tighten authentication protocol defaults in client tools and 
+    * Tighten authentication protocol defaults in client tools and
       servers.
 
 
@@ -165,7 +259,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix lockups in Winbind when running nscd.
     * UPN logon support in pam_winbind.
     * Add support for GNU linker scripts when build shared libraries
-      (based on work by Julien Cristau <jcristau@debian.org> and James 
+      (based on work by Julien Cristau <jcristau@debian.org> and James
       Peach).
 
 
@@ -182,7 +276,7 @@ o   Guenther Deschner <gd@samba.org>
 
 o   Steve Langasek <vorlon@debian.org>
     * Allow SIGTERM to cause nmbd to exit while awaiting a interface
-      to come up. 
+      to come up.
 
 
 o   Volker Lendecke <vl@samba.org>
@@ -192,7 +286,7 @@ o   Volker Lendecke <vl@samba.org>
     * Add client support for the SamLogonEx() authentication request.
     * Implement RPC proxy stubs in the Samba server code to allow
       replacing implementation functions one by one.
-    * Remove static incoming and outgoing buffers from core server SMB 
+    * Remove static incoming and outgoing buffers from core server SMB
       packet processing code.
     * Add "net sam rights" command.
 
