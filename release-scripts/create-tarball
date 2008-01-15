@@ -1,0 +1,85 @@
+#!/bin/bash
+
+TOPDIR="`dirname $0`/.."
+
+cd $TOPDIR
+
+echo -n "Please enter branch to cut tarball from: "
+read branch
+
+if [ "x$branch" = "x" ]; then
+   echo "You must enter a name!  Exiting...."
+   exit 1
+fi
+
+git-checkout $branch
+if [ $? -ne 0 ]; then
+   echo "Invalid branch name!  Exiting...."
+   exit 2
+fi
+
+VER_H=source/include/version.h
+(cd source && ./autogen.sh)
+
+if [ ! -f $VER_H ]; then
+   echo "Failed to find $VER_H!  Exiting...."
+   exit 1
+fi
+
+version=`grep SAMBA_VERSION_OFFICIAL_STRING $VER_H | awk '{print $3}'`
+version="$version-`grep SAMBA_VERSION_VENDOR_SUFFIX $VER_H | awk '{print $3}'`"
+version=`echo $version | sed 's/\"//g'`
+
+echo "Creating release tarball for Samba $version"
+
+/bin/rm -rf ../samba-${version}
+git-archive --format=tar --prefix=samba-${version}/ HEAD | (cd .. && tar xf -)
+
+pushd ../samba-${version}
+
+echo "Enter the absolute path to the generated Samba docs directory."
+echo -n "Just hit return to exclude the docs from the generate tarball: "
+read docsdir
+
+if [ "x$docsdir" != "x" ]; then
+   if [ ! -d "$docsdir" ]; then
+      echo "$docsdir does not exist!  Exiting...."
+      exit 1
+   fi
+
+   /bin/rm -rf docs
+   mkdir docs
+   rsync -a $docsdir/ docs/
+
+   cd docs
+   /bin/rm -rf test.pdf Samba4*pdf htmldocs/Samba4* htmldocs/test
+   /bin/mv manpages-3 manpages
+   /bin/mv htmldocs/manpages-3 htmldocs/manpages
+   cd ..
+fi
+
+cd ..
+tar cf samba-${version}.tar --exclude=.git* --exclude=CVS --exclude=.svn samba-${version}
+gpg --detach-sign --armor samba-${version}.tar
+gzip -9 samba-${version}.tar
+
+popd
+echo -n "Enter tag name (or hit <enter> to skip): "
+read tagname
+
+if [ "x$tagname" != "x" ]; then
+   if [ "x`git-tag -l $tagname`" != "x" ]; then
+      echo -n "Tag exists.  Do you wish to overwrite? (y/N): "
+      read answer
+
+      if [ "x$answer" != "xy" ]; then
+      	 echo "Tag creation aborted."
+	 exit 1
+      fi
+   fi
+
+   git-tag -s ${tagname}
+fi
+
+echo "Done!"
+exit 0
