@@ -6,14 +6,15 @@
 #define _HEADER_netdfs
 
 #define DFS_STORAGE_STATES	( 0xf )
+enum dfs_ManagerVersion
 #ifndef USE_UINT_ENUMS
-enum dfs_ManagerVersion {
+ {
 	DFS_MANAGER_VERSION_NT4=1,
 	DFS_MANAGER_VERSION_W2K=2,
 	DFS_MANAGER_VERSION_W2K3=4
 }
 #else
-enum dfs_ManagerVersion { __donnot_use_enum_dfs_ManagerVersion=0x7FFFFFFF}
+ { __donnot_use_enum_dfs_ManagerVersion=0x7FFFFFFF}
 #define DFS_MANAGER_VERSION_NT4 ( 1 )
 #define DFS_MANAGER_VERSION_W2K ( 2 )
 #define DFS_MANAGER_VERSION_W2K3 ( 4 )
@@ -96,8 +97,9 @@ struct dfs_Info5 {
 	uint32_t num_stores;
 };
 
+enum dfs_Target_PriorityClass
 #ifndef USE_UINT_ENUMS
-enum dfs_Target_PriorityClass {
+ {
 	DFS_INVALID_PRIORITY_CLASS=-1,
 	DFS_SITE_COST_NORMAL_PRIORITY_CLASS=0,
 	DFS_GLOBAL_HIGH_PRIORITY_CLASS=1,
@@ -106,7 +108,7 @@ enum dfs_Target_PriorityClass {
 	DFS_GLOBAL_LOW_PRIORITY_CLASS=4
 }
 #else
-enum dfs_Target_PriorityClass { __donnot_use_enum_dfs_Target_PriorityClass=0x7FFFFFFF}
+ { __donnot_use_enum_dfs_Target_PriorityClass=0x7FFFFFFF}
 #define DFS_INVALID_PRIORITY_CLASS ( -1 )
 #define DFS_SITE_COST_NORMAL_PRIORITY_CLASS ( 0 )
 #define DFS_GLOBAL_HIGH_PRIORITY_CLASS ( 1 )
@@ -180,13 +182,14 @@ struct dfs_Info200 {
 	const char *dom_root;/* [unique,charset(UTF16)] */
 };
 
+enum dfs_VolumeFlavor
 #ifndef USE_UINT_ENUMS
-enum dfs_VolumeFlavor {
+ {
 	DFS_VOLUME_FLAVOR_STANDALONE=0x100,
 	DFS_VOLUME_FLAVOR_AD_BLOB=0x200
 }
 #else
-enum dfs_VolumeFlavor { __donnot_use_enum_dfs_VolumeFlavor=0x7FFFFFFF}
+ { __donnot_use_enum_dfs_VolumeFlavor=0x7FFFFFFF}
 #define DFS_VOLUME_FLAVOR_STANDALONE ( 0x100 )
 #define DFS_VOLUME_FLAVOR_AD_BLOB ( 0x200 )
 #endif

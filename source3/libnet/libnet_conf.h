@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
- *  libnet Support
- *  Copyright (C) Guenther Deschner 2007
+ *  libnet smbconf registry support
+ *  Copyright (C) Michael Adam 2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,11 +17,11 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __LIBNET_H__
-#define __LIBNET_H__
+#ifndef __LIBNET_CONF_H__
+#define __LIBNET_CONF_H__
 
-#include "libnet/libnet_join.h"
-#include "libnet/libnet_conf.h"
-#include "libnet/libnet_proto.h"
+struct libnet_conf_ctx {
+	NT_USER_TOKEN *token;
+};
 
 #endif

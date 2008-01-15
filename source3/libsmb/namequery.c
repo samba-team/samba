@@ -1422,14 +1422,13 @@ NTSTATUS resolve_ads(const char *name,
  resolve_hosts() when looking up DC's via SRV RR entries in DNS
 **********************************************************************/
 
-NTSTATUS internal_resolve_name(const char *name,
+static NTSTATUS internal_resolve_name(const char *name,
 				int name_type,
 				const char *sitename,
 				struct ip_service **return_iplist,
 				int *return_count,
 				const char *resolve_order)
 {
-	const char *name_resolve_list;
 	char *tok;
 	const char *ptr;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
@@ -1483,16 +1482,10 @@ NTSTATUS internal_resolve_name(const char *name,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!resolve_order) {
-		name_resolve_list = lp_name_resolve_order();
-	} else {
-		name_resolve_list = resolve_order;
-	}
-
-	if (!name_resolve_list[0]) {
+	if (!resolve_order[0]) {
 		ptr = "host";
 	} else {
-		ptr = name_resolve_list;
+		ptr = resolve_order;
 	}
 
 	/* iterate through the name resolution backends */

@@ -197,14 +197,14 @@ static enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUS(struct ndr_pull *ndr, int 
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 			if (r->service_name) {
-				struct ndr_pull_save _relative_save;
-				ndr_pull_save(ndr, &_relative_save);
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
 				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->service_name));
 				_mem_save_service_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->service_name, 0);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->service_name));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_service_name_0, 0);
-				ndr_pull_restore(ndr, &_relative_save);
+				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
 		}
@@ -212,14 +212,14 @@ static enum ndr_err_code ndr_pull_ENUM_SERVICE_STATUS(struct ndr_pull *ndr, int 
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 			if (r->display_name) {
-				struct ndr_pull_save _relative_save;
-				ndr_pull_save(ndr, &_relative_save);
+				uint32_t _relative_save_offset;
+				_relative_save_offset = ndr->offset;
 				NDR_CHECK(ndr_pull_relative_ptr2(ndr, r->display_name));
 				_mem_save_display_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
 				NDR_PULL_SET_MEM_CTX(ndr, r->display_name, 0);
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->display_name));
 				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_display_name_0, 0);
-				ndr_pull_restore(ndr, &_relative_save);
+				ndr->offset = _relative_save_offset;
 			}
 			ndr->flags = _flags_save_string;
 		}

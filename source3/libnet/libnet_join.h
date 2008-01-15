@@ -36,6 +36,7 @@ struct libnet_JoinCtx {
 		const char *upn;
 		bool modify_config;
 		struct ads_struct *ads;
+		bool debug;
 	} in;
 
 	struct {

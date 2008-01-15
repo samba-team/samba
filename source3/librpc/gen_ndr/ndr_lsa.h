@@ -204,6 +204,7 @@ void ndr_print_lsa_ModificationInfo(struct ndr_print *ndr, const char *name, con
 void ndr_print_lsa_AuditFullSetInfo(struct ndr_print *ndr, const char *name, const struct lsa_AuditFullSetInfo *r);
 void ndr_print_lsa_AuditFullQueryInfo(struct ndr_print *ndr, const char *name, const struct lsa_AuditFullQueryInfo *r);
 void ndr_print_lsa_DnsDomainInfo(struct ndr_print *ndr, const char *name, const struct lsa_DnsDomainInfo *r);
+void ndr_print_lsa_PolicyInfo(struct ndr_print *ndr, const char *name, enum lsa_PolicyInfo r);
 void ndr_print_lsa_PolicyInformation(struct ndr_print *ndr, const char *name, const union lsa_PolicyInformation *r);
 void ndr_print_lsa_SidPtr(struct ndr_print *ndr, const char *name, const struct lsa_SidPtr *r);
 enum ndr_err_code ndr_push_lsa_SidArray(struct ndr_push *ndr, int ndr_flags, const struct lsa_SidArray *r);

@@ -1147,6 +1147,41 @@ _PUBLIC_ void ndr_print_lsa_DnsDomainInfo(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_lsa_PolicyInfo(struct ndr_push *ndr, int ndr_flags, enum lsa_PolicyInfo r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_PolicyInfo(struct ndr_pull *ndr, int ndr_flags, enum lsa_PolicyInfo *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_PolicyInfo(struct ndr_print *ndr, const char *name, enum lsa_PolicyInfo r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case LSA_POLICY_INFO_AUDIT_LOG: val = "LSA_POLICY_INFO_AUDIT_LOG"; break;
+		case LSA_POLICY_INFO_AUDIT_EVENTS: val = "LSA_POLICY_INFO_AUDIT_EVENTS"; break;
+		case LSA_POLICY_INFO_DOMAIN: val = "LSA_POLICY_INFO_DOMAIN"; break;
+		case LSA_POLICY_INFO_PD: val = "LSA_POLICY_INFO_PD"; break;
+		case LSA_POLICY_INFO_ACCOUNT_DOMAIN: val = "LSA_POLICY_INFO_ACCOUNT_DOMAIN"; break;
+		case LSA_POLICY_INFO_ROLE: val = "LSA_POLICY_INFO_ROLE"; break;
+		case LSA_POLICY_INFO_REPLICA: val = "LSA_POLICY_INFO_REPLICA"; break;
+		case LSA_POLICY_INFO_QUOTA: val = "LSA_POLICY_INFO_QUOTA"; break;
+		case LSA_POLICY_INFO_DB: val = "LSA_POLICY_INFO_DB"; break;
+		case LSA_POLICY_INFO_AUDIT_FULL_SET: val = "LSA_POLICY_INFO_AUDIT_FULL_SET"; break;
+		case LSA_POLICY_INFO_AUDIT_FULL_QUERY: val = "LSA_POLICY_INFO_AUDIT_FULL_QUERY"; break;
+		case LSA_POLICY_INFO_DNS: val = "LSA_POLICY_INFO_DNS"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 static enum ndr_err_code ndr_push_lsa_PolicyInformation(struct ndr_push *ndr, int ndr_flags, const union lsa_PolicyInformation *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -4517,7 +4552,7 @@ static enum ndr_err_code ndr_push_lsa_QueryInfoPolicy(struct ndr_push *ndr, int 
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_lsa_PolicyInfo(ndr, NDR_SCALARS, r->in.level));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.info));
@@ -4545,7 +4580,7 @@ static enum ndr_err_code ndr_pull_lsa_QueryInfoPolicy(struct ndr_pull *ndr, int 
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_lsa_PolicyInfo(ndr, NDR_SCALARS, &r->in.level));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
@@ -4580,7 +4615,7 @@ _PUBLIC_ void ndr_print_lsa_QueryInfoPolicy(struct ndr_print *ndr, const char *n
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_lsa_PolicyInfo(ndr, "level", r->in.level);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -4602,6 +4637,16 @@ _PUBLIC_ void ndr_print_lsa_QueryInfoPolicy(struct ndr_print *ndr, const char *n
 static enum ndr_err_code ndr_push_lsa_SetInfoPolicy(struct ndr_push *ndr, int flags, const struct lsa_SetInfoPolicy *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_lsa_PolicyInfo(ndr, NDR_SCALARS, r->in.level));
+		if (r->in.info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.info, r->in.level));
+		NDR_CHECK(ndr_push_lsa_PolicyInformation(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
@@ -4611,7 +4656,25 @@ static enum ndr_err_code ndr_push_lsa_SetInfoPolicy(struct ndr_push *ndr, int fl
 
 static enum ndr_err_code ndr_pull_lsa_SetInfoPolicy(struct ndr_pull *ndr, int flags, struct lsa_SetInfoPolicy *r)
 {
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_lsa_PolicyInfo(ndr, NDR_SCALARS, &r->in.level));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.info);
+		}
+		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.info, r->in.level));
+		NDR_CHECK(ndr_pull_lsa_PolicyInformation(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
@@ -4629,6 +4692,16 @@ _PUBLIC_ void ndr_print_lsa_SetInfoPolicy(struct ndr_print *ndr, const char *nam
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "lsa_SetInfoPolicy");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_lsa_PolicyInfo(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "info", r->in.info);
+		ndr->depth++;
+		ndr_print_set_switch_value(ndr, r->in.info, r->in.level);
+		ndr_print_lsa_PolicyInformation(ndr, "info", r->in.info);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -8039,7 +8112,7 @@ static enum ndr_err_code ndr_push_lsa_QueryInfoPolicy2(struct ndr_push *ndr, int
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_lsa_PolicyInfo(ndr, NDR_SCALARS, r->in.level));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.info));
@@ -8067,7 +8140,7 @@ static enum ndr_err_code ndr_pull_lsa_QueryInfoPolicy2(struct ndr_pull *ndr, int
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_lsa_PolicyInfo(ndr, NDR_SCALARS, &r->in.level));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
@@ -8102,7 +8175,7 @@ _PUBLIC_ void ndr_print_lsa_QueryInfoPolicy2(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_lsa_PolicyInfo(ndr, "level", r->in.level);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -8124,6 +8197,16 @@ _PUBLIC_ void ndr_print_lsa_QueryInfoPolicy2(struct ndr_print *ndr, const char *
 static enum ndr_err_code ndr_push_lsa_SetInfoPolicy2(struct ndr_push *ndr, int flags, const struct lsa_SetInfoPolicy2 *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_lsa_PolicyInfo(ndr, NDR_SCALARS, r->in.level));
+		if (r->in.info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.info, r->in.level));
+		NDR_CHECK(ndr_push_lsa_PolicyInformation(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
@@ -8133,7 +8216,25 @@ static enum ndr_err_code ndr_push_lsa_SetInfoPolicy2(struct ndr_push *ndr, int f
 
 static enum ndr_err_code ndr_pull_lsa_SetInfoPolicy2(struct ndr_pull *ndr, int flags, struct lsa_SetInfoPolicy2 *r)
 {
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_lsa_PolicyInfo(ndr, NDR_SCALARS, &r->in.level));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.info);
+		}
+		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.info, r->in.level));
+		NDR_CHECK(ndr_pull_lsa_PolicyInformation(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.info));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
@@ -8151,6 +8252,16 @@ _PUBLIC_ void ndr_print_lsa_SetInfoPolicy2(struct ndr_print *ndr, const char *na
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "lsa_SetInfoPolicy2");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_lsa_PolicyInfo(ndr, "level", r->in.level);
+		ndr_print_ptr(ndr, "info", r->in.info);
+		ndr->depth++;
+		ndr_print_set_switch_value(ndr, r->in.info, r->in.level);
+		ndr_print_lsa_PolicyInformation(ndr, "info", r->in.info);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {

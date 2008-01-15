@@ -1,0 +1,23 @@
+#include "idl_types.h"
+
+/*
+   IDL structures for xattrs
+*/
+
+[
+  pointer_default(unique)
+]
+interface xattr
+{
+	/* xattrs for file systems that don't have any */
+
+	typedef [public] struct {
+		utf8string name;
+		DATA_BLOB value;
+	} tdb_xattr;
+
+	typedef [public] struct {
+		uint32 num_xattrs;
+		tdb_xattr xattrs[num_xattrs];
+	} tdb_xattrs;
+}

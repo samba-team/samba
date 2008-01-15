@@ -1163,6 +1163,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 			char *principal;
 			DATA_BLOB ap_rep;
 			DATA_BLOB session_key;
+			PAC_DATA *pac_data = NULL;
 
 			if ( request.negTokenInit.mechToken.data == NULL ) {
 				DEBUG(1, ("Client did not provide Kerberos data\n"));
@@ -1177,7 +1178,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 
 			status = ads_verify_ticket(mem_ctx, lp_realm(), 0,
 						   &request.negTokenInit.mechToken,
-						   &principal, NULL, &ap_rep,
+						   &principal, &pac_data, &ap_rep,
 						   &session_key, True);
 
 			talloc_destroy(mem_ctx);

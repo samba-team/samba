@@ -598,17 +598,17 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	}
 
 	*file_existed = True;
-	
-	if (is_stat_open(access_mask)) {
-		/* Stat open that doesn't trigger oplock breaks or share mode
-		 * checks... ! JRA. */
-		return NT_STATUS_OK;
-	}
 
 	/* A delete on close prohibits everything */
 
 	if (lck->delete_on_close) {
 		return NT_STATUS_DELETE_PENDING;
+	}
+
+	if (is_stat_open(access_mask)) {
+		/* Stat open that doesn't trigger oplock breaks or share mode
+		 * checks... ! JRA. */
+		return NT_STATUS_OK;
 	}
 
 	/*
@@ -1761,14 +1761,16 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
            the kernel refuses the operations then the kernel is wrong.
 	   note that GPFS supports it as well - jmcd */
 
-	ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access);
-	if(ret_flock == -1 ){
+	if (fsp->fh->fd != -1) {
+		ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access);
+		if(ret_flock == -1 ){
 
-		TALLOC_FREE(lck);
-		fd_close(fsp);
-		file_free(fsp);
-		
-		return NT_STATUS_SHARING_VIOLATION;
+			TALLOC_FREE(lck);
+			fd_close(fsp);
+			file_free(fsp);
+
+			return NT_STATUS_SHARING_VIOLATION;
+		}
 	}
 
 	/*

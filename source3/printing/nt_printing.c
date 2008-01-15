@@ -5326,6 +5326,7 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
 	prs_struct ps;
+	bool prs_init_done = false;
 	TALLOC_CTX *mem_ctx = NULL;
 	TDB_DATA kbuf;
 	WERROR status;
@@ -5394,6 +5395,8 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 		 (uint32)ndr_size_security_descriptor(new_secdesc_ctr->sd, 0)
 		 + sizeof(SEC_DESC_BUF), mem_ctx, MARSHALL);
 
+	prs_init_done = true;
+
 	if (!sec_io_desc_buf("nt_printing_setsec", &new_secdesc_ctr,
 			     &ps, 1)) {
 		status = WERR_BADFUNC;
@@ -5413,7 +5416,9 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 
  out:
 
-	prs_mem_free(&ps);
+	if (prs_init_done) {
+		prs_mem_free(&ps);
+	}
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 	return status;
