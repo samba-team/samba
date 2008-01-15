@@ -1,5 +1,7 @@
 2008-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* softp11.c: Drop unused stuff.
+
 	* cert.c: Spelling, Add hx509_cert_get_SPKI_AlgorithmIdentifier,
 	remove unused stuff, add hx509_context to some functions.
 	
