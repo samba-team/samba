@@ -9,14 +9,15 @@ package Parse::Pidl::Samba4::NDR::Parser;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(check_null_pointer GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv NeededFunction NeededElement NeededType $res NeededInterface TypeFunctionName ParseElementPrint);
+@EXPORT_OK = qw(check_null_pointer NeededFunction NeededElement NeededType $res NeededInterface TypeFunctionName ParseElementPrint);
 
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName typeHasBody);
 use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid);
 use Parse::Pidl::CUtil qw(get_pointer_to get_value_of);
-use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
+use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
 use Parse::Pidl::Samba4 qw(is_intree choose_header);
+use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
 use Parse::Pidl qw(warning);
 
 use vars qw($VERSION);
@@ -75,19 +76,6 @@ sub has_fast_array($$)
 
 	# Only uint8 and string have fast array functions at the moment
 	return ($t->{NAME} eq "uint8") or ($t->{NAME} eq "string");
-}
-
-sub is_charset_array($$)
-{
-	my ($e,$l) = @_;
-
-	return 0 if ($l->{TYPE} ne "ARRAY");
-
-	my $nl = GetNextLevel($e,$l);
-
-	return 0 unless ($nl->{TYPE} eq "DATA");
-
-	return has_property($e, "charset");
 }
 
 
@@ -191,68 +179,6 @@ sub end_flags($$)
 		$self->deindent;
 		$self->pidl("}");
 	}
-}
-
-sub GenerateStructEnv($$)
-{
-	my ($x, $v) = @_;
-	my %env;
-
-	foreach my $e (@{$x->{ELEMENTS}}) {
-		$env{$e->{NAME}} = "$v->$e->{NAME}";
-	}
-
-	$env{"this"} = $v;
-
-	return \%env;
-}
-
-sub EnvSubstituteValue($$)
-{
-	my ($env,$s) = @_;
-
-	# Substitute the value() values in the env
-	foreach my $e (@{$s->{ELEMENTS}}) {
-		next unless (defined(my $v = has_property($e, "value")));
-		
-		$env->{$e->{NAME}} = ParseExpr($v, $env, $e);
-	}
-
-	return $env;
-}
-
-sub GenerateFunctionInEnv($;$)
-{
-	my ($fn, $base) = @_;
-	my %env;
-
-	$base = "r->" unless defined($base);
-
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		if (grep (/in/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = $base."in.$e->{NAME}";
-		}
-	}
-
-	return \%env;
-}
-
-sub GenerateFunctionOutEnv($;$)
-{
-	my ($fn, $base) = @_;
-	my %env;
-
-	$base = "r->" unless defined($base);
-
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		if (grep (/out/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = $base."out.$e->{NAME}";
-		} elsif (grep (/in/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = $base."in.$e->{NAME}";
-		}
-	}
-
-	return \%env;
 }
 
 #####################################################################

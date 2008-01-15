@@ -6,10 +6,15 @@
 
 package Parse::Pidl::Samba4::Header;
 
+require Exporter;
+
+@ISA = qw(Exporter);
+@EXPORT_OK = qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
+
 use strict;
 use Parse::Pidl qw(fatal);
 use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
-use Parse::Pidl::Util qw(has_property is_constant unmake_str);
+use Parse::Pidl::Util qw(has_property is_constant unmake_str ParseExpr);
 use Parse::Pidl::Samba4 qw(is_intree ElementStars ArrayBrackets choose_header);
 
 use vars qw($VERSION);
@@ -404,6 +409,68 @@ sub Parse($)
 	}
 
 	return $res;
+}
+
+sub GenerateStructEnv($$)
+{
+	my ($x, $v) = @_;
+	my %env;
+
+	foreach my $e (@{$x->{ELEMENTS}}) {
+		$env{$e->{NAME}} = "$v->$e->{NAME}";
+	}
+
+	$env{"this"} = $v;
+
+	return \%env;
+}
+
+sub EnvSubstituteValue($$)
+{
+	my ($env,$s) = @_;
+
+	# Substitute the value() values in the env
+	foreach my $e (@{$s->{ELEMENTS}}) {
+		next unless (defined(my $v = has_property($e, "value")));
+		
+		$env->{$e->{NAME}} = ParseExpr($v, $env, $e);
+	}
+
+	return $env;
+}
+
+sub GenerateFunctionInEnv($;$)
+{
+	my ($fn, $base) = @_;
+	my %env;
+
+	$base = "r->" unless defined($base);
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		if (grep (/in/, @{$e->{DIRECTION}})) {
+			$env{$e->{NAME}} = $base."in.$e->{NAME}";
+		}
+	}
+
+	return \%env;
+}
+
+sub GenerateFunctionOutEnv($;$)
+{
+	my ($fn, $base) = @_;
+	my %env;
+
+	$base = "r->" unless defined($base);
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		if (grep (/out/, @{$e->{DIRECTION}})) {
+			$env{$e->{NAME}} = $base."out.$e->{NAME}";
+		} elsif (grep (/in/, @{$e->{DIRECTION}})) {
+			$env{$e->{NAME}} = $base."in.$e->{NAME}";
+		}
+	}
+
+	return \%env;
 }
 
 1;

@@ -4,15 +4,14 @@
 use strict;
 use warnings;
 
-use Test::More tests => 41;
+use Test::More tests => 30;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use strict;
 use Parse::Pidl::Util qw(MyDumper);
 use Parse::Pidl::Samba4::NDR::Parser qw(check_null_pointer 
-	GenerateFunctionInEnv GenerateFunctionOutEnv GenerateStructEnv 
-	EnvSubstituteValue NeededFunction NeededElement NeededType
+	NeededFunction NeededElement NeededType
 	NeededInterface TypeFunctionName ParseElementPrint); 
 
 my $output;
@@ -137,52 +136,6 @@ test_warnings("nofile:2: unknown dereferenced expression `r->in.bla'\n",
 	          sub { $fn->("r->in.bla"); });
 
 is($output, "if (r->in.bla == NULL) return;");
-
-# Make sure GenerateFunctionInEnv and GenerateFunctionOutEnv work
-$fn = { ELEMENTS => [ { DIRECTION => ["in"], NAME => "foo" } ] };
-is_deeply({ "foo" => "r->in.foo" }, GenerateFunctionInEnv($fn));
-
-$fn = { ELEMENTS => [ { DIRECTION => ["out"], NAME => "foo" } ] };
-is_deeply({ "foo" => "r->out.foo" }, GenerateFunctionOutEnv($fn));
-
-$fn = { ELEMENTS => [ { DIRECTION => ["out", "in"], NAME => "foo" } ] };
-is_deeply({ "foo" => "r->in.foo" }, GenerateFunctionInEnv($fn));
-
-$fn = { ELEMENTS => [ { DIRECTION => ["out", "in"], NAME => "foo" } ] };
-is_deeply({ "foo" => "r->out.foo" }, GenerateFunctionOutEnv($fn));
-
-$fn = { ELEMENTS => [ { DIRECTION => ["in"], NAME => "foo" } ] };
-is_deeply({ "foo" => "r->in.foo" }, GenerateFunctionOutEnv($fn));
-
-$fn = { ELEMENTS => [ { DIRECTION => ["out"], NAME => "foo" } ] };
-is_deeply({ }, GenerateFunctionInEnv($fn));
-
-$fn = { ELEMENTS => [ { NAME => "foo" }, { NAME => "bar" } ] };
-is_deeply({ foo => "r->foo", bar => "r->bar", this => "r" }, 
-		GenerateStructEnv($fn, "r"));
-
-$fn = { ELEMENTS => [ { NAME => "foo" }, { NAME => "bar" } ] };
-is_deeply({ foo => "some->complex.variable->foo", 
-		    bar => "some->complex.variable->bar", 
-			this => "some->complex.variable" }, 
-		GenerateStructEnv($fn, "some->complex.variable"));
-
-$fn = { ELEMENTS => [ { NAME => "foo", PROPERTIES => { value => 3 }} ] };
-
-my $env = GenerateStructEnv($fn, "r");
-EnvSubstituteValue($env, $fn);
-is_deeply($env, { foo => 3, this => "r" });
-
-$fn = { ELEMENTS => [ { NAME => "foo" }, { NAME => "bar" } ] };
-$env = GenerateStructEnv($fn, "r");
-EnvSubstituteValue($env, $fn);
-is_deeply($env, { foo => 'r->foo', bar => 'r->bar', this => "r" });
-
-$fn = { ELEMENTS => [ { NAME => "foo", PROPERTIES => { value => 0 }} ] };
-
-$env = GenerateStructEnv($fn, "r");
-EnvSubstituteValue($env, $fn);
-is_deeply($env, { foo => 0, this => "r" });
 
 my $needed = {};
 NeededElement({ TYPE => "foo", REPRESENTATION_TYPE => "foo" }, "pull", $needed); 

@@ -9,7 +9,7 @@ package Parse::Pidl::Samba3::ClientNDR;
 
 use Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(GenerateFunctionInEnv ParseFunction $res $res_hdr);
+@EXPORT_OK = qw(ParseFunction $res $res_hdr);
 
 use strict;
 use Parse::Pidl qw(fatal warning);
@@ -17,7 +17,7 @@ use Parse::Pidl::Typelist qw(hasType getType mapTypeName scalar_is_reference);
 use Parse::Pidl::Util qw(has_property is_constant ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
 use Parse::Pidl::Samba4 qw(DeclLong);
-use Parse::Pidl::Samba4::NDR::Parser qw(GenerateFunctionInEnv);
+use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv);
 
 use vars qw($VERSION);
 $VERSION = '0.01';

@@ -8,11 +8,6 @@ OBJ_FILES = util/doserr.o \
 		    util/errormap.o \
 		    util/nterr.o \
 
-[SUBSYSTEM::ASN1_UTIL]
-PUBLIC_PROTO_HEADER = util/asn1_proto.h
-PUBLIC_HEADERS = util/asn_1.h
-OBJ_FILES = util/asn1.o
-
 [SUBSYSTEM::LIBCLI_LSA]
 PRIVATE_PROTO_HEADER = util/clilsa.h
 OBJ_FILES = util/clilsa.o

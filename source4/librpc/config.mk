@@ -597,4 +597,45 @@ PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG dcerpc_s
 
 [PYTHON::python_echo]
 OBJ_FILES = gen_ndr/py_echo.o
-PRIVATE_DEPENDENCIES = NDR_ECHO
+PRIVATE_DEPENDENCIES = RPC_NDR_ECHO
+
+[PYTHON::python_winreg]
+OBJ_FILES = gen_ndr/py_winreg.o
+PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc
+
+[PYTHON::python_dcerpc_misc]
+OBJ_FILES = gen_ndr/py_misc.o
+
+[PYTHON::python_initshutdown]
+OBJ_FILES = gen_ndr/py_initshutdown.o
+PRIVATE_DEPENDENCIES = RPC_NDR_INITSHUTDOWN
+
+[PYTHON::python_epmapper]
+OBJ_FILES = gen_ndr/py_epmapper.o
+
+[PYTHON::python_mgmt]
+OBJ_FILES = gen_ndr/py_mgmt.o
+PRIVATE_DEPENDENCIES = dcerpc_mgmt
+
+[PYTHON::python_atsvc]
+OBJ_FILES = gen_ndr/py_atsvc.o
+PRIVATE_DEPENDENCIES = dcerpc_atsvc
+
+[PYTHON::python_samr]
+OBJ_FILES = gen_ndr/py_samr.o
+PRIVATE_DEPENDENCIES = dcerpc_samr
+
+[PYTHON::python_svcctl]
+OBJ_FILES = gen_ndr/py_svcctl.o
+PRIVATE_DEPENDENCIES = RPC_NDR_SVCCTL
+
+[PYTHON::python_lsa]
+OBJ_FILES = gen_ndr/py_lsa.o
+PRIVATE_DEPENDENCIES = RPC_NDR_LSA
+
+[PYTHON::python_wkssvc]
+OBJ_FILES = gen_ndr/py_wkssvc.o
+PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC
+
+[PYTHON::python_dcerpc_security]
+OBJ_FILES = gen_ndr/py_security.o

@@ -27,7 +27,7 @@
 #include "auth/credentials/credentials.h"
 #include "librpc/gen_ndr/ndr_samr.h"
 #include "lib/util/dlinklist.h"
-#include "libcli/util/asn_1.h"
+#include "lib/util/asn1.h"
 #include "ldap_server/ldap_server.h"
 #include "smbd/service_task.h"
 #include "smbd/service_stream.h"
