@@ -197,33 +197,6 @@ _hx509_get_cert(hx509_cert cert)
  *
  */
 
-#if 0
-void
-_hx509_print_cert_subject(hx509_cert cert)
-{
-    char *subject_name;
-    hx509_name name;
-    int ret;
-
-    ret = hx509_cert_get_subject(cert, &name);
-    if (ret)
-	abort();
-	
-    ret = hx509_name_to_string(name, &subject_name);
-    hx509_name_free(&name);
-    if (ret)
-	abort();
-
-    printf("name: %s\n", subject_name);
-
-    free(subject_name);
-}
-#endif
-
-/*
- *
- */
-
 int
 _hx509_cert_get_version(const Certificate *t)
 {
@@ -1275,9 +1248,9 @@ _hx509_calculate_path(hx509_context context,
     return 0;
 }
 
-static int
-AlgorithmIdentifier_cmp(const AlgorithmIdentifier *p,
-			const AlgorithmIdentifier *q)
+int
+_hx509_AlgorithmIdentifier_cmp(const AlgorithmIdentifier *p,
+			       const AlgorithmIdentifier *q)
 {
     int diff;
     diff = der_heim_oid_cmp(&p->algorithm, &q->algorithm);
@@ -1304,8 +1277,8 @@ _hx509_Certificate_cmp(const Certificate *p, const Certificate *q)
     diff = der_heim_bit_string_cmp(&p->signatureValue, &q->signatureValue);
     if (diff)
 	return diff;
-    diff = AlgorithmIdentifier_cmp(&p->signatureAlgorithm, 
-				   &q->signatureAlgorithm);
+    diff = _hx509_aAlgorithmIdentifier_cmp(&p->signatureAlgorithm, 
+					  &q->signatureAlgorithm);
     if (diff)
 	return diff;
     diff = der_heim_octet_string_cmp(&p->tbsCertificate._save,
@@ -1452,6 +1425,7 @@ hx509_cert_get_notAfter(hx509_cert p)
 /**
  * Get the SubjectPublicKeyInfo structure from the hx509 certificate.
  *
+ * @param context a hx509 context.
  * @param p a hx509 certificate object.
  * @param spki SubjectPublicKeyInfo, should be freed with
  * free_SubjectPublicKeyInfo().
@@ -1462,11 +1436,43 @@ hx509_cert_get_notAfter(hx509_cert p)
  */
 
 int
-hx509_cert_get_SPKI(hx509_cert p, SubjectPublicKeyInfo *spki)
+hx509_cert_get_SPKI(hx509_context context, hx509_cert p, SubjectPublicKeyInfo *spki)
 {
-    return copy_SubjectPublicKeyInfo(&p->data->tbsCertificate.subjectPublicKeyInfo,
-				     spki);
+    int ret;
+
+    ret = copy_SubjectPublicKeyInfo(&p->data->tbsCertificate.subjectPublicKeyInfo, spki);
+    if (ret)
+	hx509_set_error_string(context, 0, ret, "Failed to copy SPKI");
+    return ret;
 }
+
+/**
+ * Get the AlgorithmIdentifier from the hx509 certificate.
+ *
+ * @param context a hx509 context.
+ * @param p a hx509 certificate object.
+ * @param alg AlgorithmIdentifier, should be freed with
+ * free_AlgorithmIdentifier().
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
+
+int
+hx509_cert_get_SPKI_AlgorithmIdentifier(hx509_context context,
+					hx509_cert p, 
+					AlgorithmIdentifier *alg)
+{
+    int ret;
+
+    ret = copy_AlgorithmIdentifier(&p->data->tbsCertificate.subjectPublicKeyInfo.algorithm, alg);
+    if (ret)
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to copy SPKI AlgorithmIdentifier");
+    return ret;
+}
+
 
 hx509_private_key
 _hx509_cert_private_key(hx509_cert p)
@@ -2173,12 +2179,6 @@ hx509_verify_path(hx509_context context,
 	}
 	hx509_certs_free(&certs);
     }
-
-#if 0
-    for (i = path.len - 1; i >= 0; i--) {
-	_hx509_print_cert_subject(path.val[i]);
-    }
-#endif
 
     /*
      * Verify signatures, do this backward so public key working
