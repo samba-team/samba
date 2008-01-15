@@ -896,7 +896,7 @@ struct ctdb_client_control_state *
 ctdb_control_send(struct ctdb_context *ctdb, 
 		uint32_t destnode, uint64_t srvid, 
 		uint32_t opcode, uint32_t flags, TDB_DATA data, 
-		TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
+		TALLOC_CTX *mem_ctx,
 		struct timeval *timeout,
 		char **errormsg);
 

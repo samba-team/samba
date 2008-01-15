@@ -105,7 +105,7 @@ static int async_control_on_vnnmap(struct ctdb_context *ctdb, enum ctdb_controls
 			continue;
 		}
 		state = ctdb_control_send(ctdb, pnn, 0, opcode, 
-					  0, data, async_data, NULL, &timeout, NULL);
+					  0, data, async_data, &timeout, NULL);
 		if (state == NULL) {
 			DEBUG(0,(__location__ " Failed to call async control %u\n", (unsigned)opcode));
 			talloc_free(async_data);
