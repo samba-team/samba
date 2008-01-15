@@ -1213,6 +1213,10 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 {
 	WERROR werr;
 
+	if (r->in.debug) {
+		NDR_PRINT_IN_DEBUG(libnet_JoinCtx, r);
+	}
+
 	werr = libnet_join_pre_processing(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -1230,6 +1234,9 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
  done:
+	if (r->in.debug) {
+		NDR_PRINT_OUT_DEBUG(libnet_JoinCtx, r);
+	}
 	return werr;
 }
 
@@ -1320,6 +1327,10 @@ WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 {
 	WERROR werr;
 
+	if (r->in.debug) {
+		NDR_PRINT_IN_DEBUG(libnet_UnjoinCtx, r);
+	}
+
 	werr = libnet_unjoin_pre_processing(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
@@ -1338,5 +1349,9 @@ WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 	}
 
  done:
+	if (r->in.debug) {
+		NDR_PRINT_OUT_DEBUG(libnet_UnjoinCtx, r);
+	}
+
 	return werr;
 }
