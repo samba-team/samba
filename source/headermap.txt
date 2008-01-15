@@ -103,8 +103,8 @@ dsdb/samdb/samdb_proto.h: samdb/proto.h
 dsdb/schema/schema.h: samdb/schema.h
 dsdb/schema/proto.h: samdb/schema_proto.h
 dsdb/common/proto.h: samdb/common_proto.h
-libcli/util/asn_1.h: samba/asn1.h
-libcli/util/asn1_proto.h: samba/asn1/proto.h
+lib/util/asn1.h: samba/asn1.h
+lib/util/asn1_proto.h: samba/asn1/proto.h
 libcli/util/error.h: core/error.h
 libcli/util/proto.h: core/error_proto.h
 lib/tdb_wrap.h: tdb_wrap.h
