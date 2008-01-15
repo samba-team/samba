@@ -742,7 +742,7 @@ WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
 	{
 		werr = reg_deletekey_recursive_internal(mem_ctx, key,
 							subkey_name,
-							True);
+							true);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -770,12 +770,12 @@ WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
 			       struct registry_key *parent,
 			       const char *path)
 {
-	return reg_deletekey_recursive_internal(ctx, parent, path, True);
+	return reg_deletekey_recursive_internal(ctx, parent, path, true);
 }
 
 WERROR reg_deletesubkeys_recursive(TALLOC_CTX *ctx,
 				   struct registry_key *parent,
 				   const char *path)
 {
-	return reg_deletekey_recursive_internal(ctx, parent, path, False);
+	return reg_deletekey_recursive_internal(ctx, parent, path, false);
 }
