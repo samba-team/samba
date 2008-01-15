@@ -1277,7 +1277,7 @@ _hx509_Certificate_cmp(const Certificate *p, const Certificate *q)
     diff = der_heim_bit_string_cmp(&p->signatureValue, &q->signatureValue);
     if (diff)
 	return diff;
-    diff = _hx509_aAlgorithmIdentifier_cmp(&p->signatureAlgorithm, 
+    diff = _hx509_AlgorithmIdentifier_cmp(&p->signatureAlgorithm, 
 					  &q->signatureAlgorithm);
     if (diff)
 	return diff;
