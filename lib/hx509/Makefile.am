@@ -162,7 +162,7 @@ CLEANFILES = $(BUILT_SOURCES) \
 	cert-proxy.der cert-ca.der cert-ee.der pkcs10-request.der \
 	wca.pem wuser.pem wdc.pem wcrl.crl \
 	random-data statfile crl.crl \
-	test p11dbg.log \
+	test p11dbg.log pkcs11.cfg \
 	test-rc-file.rc
 
 clean-local:
@@ -194,6 +194,7 @@ SCRIPT_TESTS = 			\
 	test_nist		\
 	test_nist2		\
 	test_pkcs11		\
+	test_java_pkcs11	\
 	test_nist_cert		\
 	test_nist_pkcs12	\
 	test_req		\
@@ -243,6 +244,11 @@ test_pkcs11: test_pkcs11.in Makefile
 	chmod +x test_pkcs11.tmp
 	mv test_pkcs11.tmp test_pkcs11
 
+test_java_pkcs11: test_java_pkcs11.in Makefile
+	$(do_subst) < $(srcdir)/test_java_pkcs11.in > test_java_pkcs11.tmp
+	chmod +x test_java_pkcs11.tmp
+	mv test_java_pkcs11.tmp test_java_pkcs11
+
 test_nist_cert: test_nist_cert.in Makefile
 	$(do_subst) < $(srcdir)/test_nist_cert.in > test_nist_cert.tmp
 	chmod +x test_nist_cert.tmp
@@ -286,6 +292,7 @@ EXTRA_DIST = \
 	test_nist_cert.in \
 	test_nist_pkcs12.in \
 	test_pkcs11.in \
+	test_java_pkcs11.in \
 	test_query.in \
 	test_req.in \
 	test_windows.in \
