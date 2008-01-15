@@ -288,9 +288,37 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	client->ctdb->statistics.pending_calls--;
 }
 
+struct ctdb_daemon_packet_wrap {
+	struct ctdb_context *ctdb;
+	uint32_t client_id;
+};
 
-static void daemon_request_call_from_client(struct ctdb_client *client, 
-					    struct ctdb_req_call *c);
+/*
+  a wrapper to catch disconnected clients
+ */
+static void daemon_incoming_packet_wrap(void *p, struct ctdb_req_header *hdr)
+{
+	struct ctdb_client *client;
+	struct ctdb_daemon_packet_wrap *w = talloc_get_type(p, 
+							    struct ctdb_daemon_packet_wrap);
+	if (w == NULL) {
+		DEBUG(0,(__location__ " Bad packet type '%s'\n", talloc_get_name(p)));
+		return;
+	}
+
+	client = ctdb_reqid_find(w->ctdb, w->client_id, struct ctdb_client);
+	if (client == NULL) {
+		DEBUG(0,(__location__ " Packet for disconnected client %u\n",
+			 w->client_id));
+		talloc_free(w);
+		return;
+	}
+	talloc_free(w);
+
+	/* process it */
+	daemon_incoming_packet(client, hdr);	
+}
+
 
 /*
   this is called when the ctdb daemon received a ctdb request call
@@ -307,6 +335,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	TDB_DATA key, data;
 	int ret;
 	struct ctdb_context *ctdb = client->ctdb;
+	struct ctdb_daemon_packet_wrap *w;
 
 	ctdb->statistics.total_calls++;
 	ctdb->statistics.pending_calls++;
@@ -322,14 +351,22 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	key.dptr = c->data;
 	key.dsize = c->keylen;
 
+	w = talloc(ctdb, struct ctdb_daemon_packet_wrap);
+	CTDB_NO_MEMORY_VOID(ctdb, w);	
+
+	w->ctdb = ctdb;
+	w->client_id = client->client_id;
+
 	ret = ctdb_ltdb_lock_fetch_requeue(ctdb_db, key, &header, 
 					   (struct ctdb_req_header *)c, &data,
-					   daemon_incoming_packet, client, True);
+					   daemon_incoming_packet_wrap, w, True);
 	if (ret == -2) {
 		/* will retry later */
 		ctdb->statistics.pending_calls--;
 		return;
 	}
+
+	talloc_free(w);
 
 	if (ret != 0) {
 		DEBUG(0,(__location__ " Unable to fetch record\n"));
