@@ -71,7 +71,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_STATISTICS: {
 		CHECK_CONTROL_DATA_SIZE(0);
-		ctdb->statistics.memory_used = talloc_total_size(ctdb);
+		ctdb->statistics.memory_used = talloc_total_size(NULL);
 		ctdb->statistics.frozen = (ctdb->freeze_mode == CTDB_FREEZE_FROZEN);
 		ctdb->statistics.recovering = (ctdb->recovery_mode == CTDB_RECOVERY_ACTIVE);
 		outdata->dptr = (uint8_t *)&ctdb->statistics;
