@@ -157,7 +157,7 @@ int netdom_store_machine_account( const char *domain, DOM_SID *sid, const char *
  ********************************************************************/
 
 NTSTATUS netdom_get_domain_sid( TALLOC_CTX *mem_ctx, struct cli_state *cli, 
-				char **domain, DOM_SID **sid )
+				const char **domain, DOM_SID **sid )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	POLICY_HND lsa_pol;
