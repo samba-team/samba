@@ -23,7 +23,32 @@
 #define _WBCLIENT_H
 
 #include <pwd.h>
-#include <nsswitch/libwbclient/wbc_err.h>
+#include <grp.h>
+
+/* Define error types */
+
+/**
+ *  @brief Status codes returned from wbc functions
+ **/
+
+enum _wbcErrType {
+	WBC_ERR_SUCCESS = 0,    /**< Successful completion **/
+	WBC_ERR_NOT_IMPLEMENTED,/**< Function not implemented **/
+	WBC_ERR_UNKNOWN_FAILURE,/**< General failure **/
+	WBC_ERR_NO_MEMORY,      /**< Memory allocation error **/
+	WBC_ERR_INVALID_SID,    /**< Invalid SID format **/
+	WBC_ERR_INVALID_PARAM,  /**< An Invalid parameter was supplied **/
+	WBC_ERR_WINBIND_NOT_AVAILABLE,   /**< Winbind daemon is not available **/
+	WBC_ERR_DOMAIN_NOT_FOUND,        /**< Domain is not trusted or cannot be found **/
+	WBC_INVALID_RESPONSE,        /**< Winbind returned an invalid response **/
+	WBC_ERR_NSS_ERROR            /**< NSS_STATUS error **/
+};
+
+typedef enum _wbcErrType wbcErr;
+
+#define WBC_ERROR_IS_OK(x) ((x) == WBC_ERR_SUCCESS)
+
+char *wbcErrorString(wbcErr error);
 
 /*
  * Data types used by the Winbind Client API
