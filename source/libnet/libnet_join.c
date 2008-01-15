@@ -1250,6 +1250,29 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 
+	if (!r->in.dc_name) {
+		struct DS_DOMAIN_CONTROLLER_INFO *info;
+		status = dsgetdcname(mem_ctx,
+				     NULL,
+				     r->in.domain_name,
+				     NULL,
+				     NULL,
+				     DS_DIRECTORY_SERVICE_REQUIRED |
+				     DS_WRITABLE_REQUIRED |
+				     DS_RETURN_DNS_NAME,
+				     &info);
+		if (!NT_STATUS_IS_OK(status)) {
+			libnet_unjoin_set_error_string(mem_ctx, r,
+				"failed to find DC: %s",
+				nt_errstr(status));
+			return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
+		}
+
+		r->in.dc_name = talloc_strdup(mem_ctx,
+					      info->domain_controller_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
+	}
+
 	status = libnet_join_unjoindomain_rpc(mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_unjoin_set_error_string(mem_ctx, r,
