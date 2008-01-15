@@ -546,4 +546,12 @@ typedef int bool;
 #define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
+
+#ifndef MAX_DNS_NAME_LENGTH
+#define MAX_DNS_NAME_LENGTH 256 /* Actually 255 but +1 for terminating null. */
+#endif
+
 #endif /* _LIBREPLACE_REPLACE_H */
