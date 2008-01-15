@@ -1884,9 +1884,10 @@ installlibaddns: installdirs libaddns
 	-$(INSTALLLIBCMD_A) bin/libaddns.a $(DESTDIR)$(LIBDIR)
 
 installlibwbclient: installdirs libwbclient
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR) $(INCLUDEDIR)/samba
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libwbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/nsswitch/libwbclient/wbclient.h $(DESTDIR)${prefix}/include/samba
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/nsswitch/libwbclient/wbclient.h $(DESTDIR)${prefix}/include
 
 installlibnetapi: installdirs libnetapi
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
