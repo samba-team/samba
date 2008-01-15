@@ -244,6 +244,7 @@ sub mk_openldap($$$)
 modulepath      $olroot/libexec/openldap
 moduleload	syncprov
 moduleload      memberof
+moduleload      refint
 ";
 		close(CONF);
 	}
@@ -255,6 +256,7 @@ modulepath      $olroot/libexec/openldap
 moduleload	back_hdb
 moduleload	syncprov
 moduleload      memberof
+moduleload      refint
 ";
 		close(CONF);
 	}
@@ -266,6 +268,7 @@ moduleload      memberof
 moduleload	back_hdb
 moduleload	syncprov
 moduleload      memberof
+moduleload      refint
 ";
 		close(CONF);
 	}
@@ -278,6 +281,7 @@ modulepath	/usr/lib/ldap
 moduleload	back_hdb
 moduleload	syncprov
 moduleload      memberof
+moduleload      refint
 ";
 		close(CONF);
 	}
@@ -289,6 +293,7 @@ moduleload      memberof
 modulepath	/usr/lib/openldap
 moduleload	syncprov
 moduleload      memberof
+moduleload      refint
 ";
 		close(CONF);
 	}
@@ -300,6 +305,7 @@ moduleload      memberof
 modulepath	/usr/lib64/openldap
 moduleload	syncprov
 moduleload      memberof
+moduleload      refint
 ";
 		close(CONF);
 	}
