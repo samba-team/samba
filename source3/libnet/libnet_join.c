@@ -1013,6 +1013,58 @@ static WERROR do_UnjoinConfig(struct libnet_UnjoinCtx *r)
 /****************************************************************
 ****************************************************************/
 
+static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
+					 struct libnet_JoinCtx *r)
+{
+
+	if (!r->in.domain_name) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (r->in.modify_config && !lp_include_registry_globals()) {
+		return WERR_NOT_SUPPORTED;
+	}
+
+	if (IS_DC) {
+		return WERR_SETUP_DOMAIN_CONTROLLER;
+	}
+
+	if (!secrets_init()) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"Unable to open secrets database");
+		return WERR_CAN_NOT_COMPLETE;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
+					  struct libnet_JoinCtx *r)
+{
+	WERROR werr;
+
+	if (!W_ERROR_IS_OK(r->out.result)) {
+		return r->out.result;
+	}
+
+	werr = do_JoinConfig(r);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
+		saf_store(r->in.domain_name, r->in.dc_name);
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 static int libnet_destroy_JoinCtx(struct libnet_JoinCtx *r)
 {
 	if (r->in.ads) {
@@ -1170,30 +1222,23 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 {
 	WERROR werr;
 
-	if (!r->in.domain_name) {
-		return WERR_INVALID_PARAM;
-	}
-
-	if (r->in.modify_config && !lp_include_registry_globals()) {
-		return WERR_NOT_SUPPORTED;
-	}
-
-	if (IS_DC) {
-		return WERR_SETUP_DOMAIN_CONTROLLER;
+	werr = libnet_join_pre_processing(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
 	}
 
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		werr = libnet_DomainJoin(mem_ctx, r);
 		if (!W_ERROR_IS_OK(werr)) {
-			return werr;
+			goto done;
 		}
 	}
 
-	werr = do_JoinConfig(r);
+	werr = libnet_join_post_processing(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+		goto done;
 	}
-
+ done:
 	return werr;
 }
 
@@ -1237,27 +1282,47 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
+					   struct libnet_UnjoinCtx *r)
+{
+	if (r->in.modify_config && !lp_include_registry_globals()) {
+		return WERR_NOT_SUPPORTED;
+	}
+
+	if (!secrets_init()) {
+		libnet_unjoin_set_error_string(mem_ctx, r,
+			"Unable to open secrets database");
+		return WERR_CAN_NOT_COMPLETE;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 		     struct libnet_UnjoinCtx *r)
 {
 	WERROR werr;
 
-	if (r->in.modify_config && !lp_include_registry_globals()) {
-		return WERR_NOT_SUPPORTED;
+	werr = libnet_unjoin_pre_processing(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
 	}
 
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		werr = libnet_DomainUnjoin(mem_ctx, r);
 		if (!W_ERROR_IS_OK(werr)) {
-			do_UnjoinConfig(r);
-			return werr;
+			goto done;
 		}
 	}
 
 	werr = do_UnjoinConfig(r);
 	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+		goto done;
 	}
 
+ done:
 	return werr;
 }
