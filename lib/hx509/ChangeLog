@@ -1,3 +1,8 @@
+2008-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* softp11.c: Add more glue to figure out what keytype this
+	certificate is using.
+
 2008-01-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_pkcs11.in: test debug
