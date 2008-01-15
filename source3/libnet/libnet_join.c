@@ -236,7 +236,6 @@ static ADS_STATUS libnet_join_find_machine_acct(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	TALLOC_FREE(r->out.dn);
 	r->out.dn = talloc_strdup(mem_ctx, dn);
 	if (!r->out.dn) {
 		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
