@@ -23,7 +23,7 @@
 */
 
 #include "includes.h"
-#include "libcli/util/asn_1.h"
+#include "lib/util/asn1.h"
 #include "lib/util/dlinklist.h"
 #include "lib/events/events.h"
 #include "lib/socket/socket.h"
