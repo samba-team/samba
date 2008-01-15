@@ -756,7 +756,13 @@ static void vacuum_fetch_next(struct vacuum_info *v)
 		}
 
 		data = tdb_fetch(v->ctdb_db->ltdb->tdb, call.key);
-		if (data.dptr == NULL || data.dsize < sizeof(struct ctdb_ltdb_header)) {
+		if (data.dptr == NULL) {
+			tdb_chainunlock(v->ctdb_db->ltdb->tdb, call.key);
+			continue;
+		}
+
+		if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
+			free(data.dptr);
 			tdb_chainunlock(v->ctdb_db->ltdb->tdb, call.key);
 			continue;
 		}
@@ -764,9 +770,12 @@ static void vacuum_fetch_next(struct vacuum_info *v)
 		hdr = (struct ctdb_ltdb_header *)data.dptr;
 		if (hdr->dmaster == v->rec->ctdb->pnn) {
 			/* its already local */
+			free(data.dptr);
 			tdb_chainunlock(v->ctdb_db->ltdb->tdb, call.key);
 			continue;
 		}
+
+		free(data.dptr);
 
 		state = ctdb_call_send(v->ctdb_db, &call);
 		tdb_chainunlock(v->ctdb_db->ltdb->tdb, call.key);
