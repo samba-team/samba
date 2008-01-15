@@ -202,6 +202,7 @@ attributes_match(const struct st_object *obj,
 {
     CK_ULONG i;
     int j;
+
     st_logf("attributes_match: %ld\n", (unsigned long)OBJECT_ID(obj));
 
     for (i = 0; i < num_attributes; i++) {
@@ -746,6 +747,22 @@ read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
 	    ret = add_certificate(cert, pin, id, label);
 	    if (ret)
 		goto out;
+	} else if (strcasecmp("debug", type) == 0) {
+	    char *name;
+
+	    name = strtok_r(NULL, "\t", &s);
+	    if (name == NULL) {
+		st_logf("no filename\n");
+		continue;
+	    }
+
+	    if (strcasecmp(name, "stdout") == 0)
+		soft_token.logfile = stdout;
+	    else
+		soft_token.logfile = fopen(name, "a");
+	    if (soft_token.logfile == NULL)
+		st_logf("failed to open file: %s\n", name);
+		
 	} else {
 	    st_logf("unknown type: %s\n", type);
 	}
