@@ -135,8 +135,8 @@ CLEANFILES= \
 	kdc.crt \
 	ca.crt \
 	uuserver.log \
-	tempfile
-
+	tempfile \
+	test-rc-file.rc
 
 EXTRA_DIST = \
 	check-kadmin.in \
