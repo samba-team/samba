@@ -916,7 +916,8 @@ static void display_trust_dom_info_4(struct lsa_TrustDomainInfoPassword *p, cons
 	data_blob_free(&data_old);
 }
 
-static void display_trust_dom_info(union lsa_TrustedDomainInfo *info,
+static void display_trust_dom_info(TALLOC_CTX *mem_ctx,
+				   union lsa_TrustedDomainInfo *info,
 				   enum lsa_TrustDomInfoEnum info_class,
 				   const char *pass)
 {
@@ -924,12 +925,17 @@ static void display_trust_dom_info(union lsa_TrustedDomainInfo *info,
 		case LSA_TRUSTED_DOMAIN_INFO_PASSWORD:
 			display_trust_dom_info_4(&info->password, pass);
 			break;
-		default:
-			NDR_PRINT_UNION_DEBUG(lsa_TrustedDomainInfo,
-					      info_class, info);
+		default: {
+			const char *str = NULL;
+			str = NDR_PRINT_UNION_STRING(mem_ctx,
+						     lsa_TrustedDomainInfo,
+						     info_class, info);
+			if (str) {
+				d_printf("%s\n", str);
+			}
 			break;
+		}
 	}
-
 }
 
 static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
@@ -967,7 +973,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_trust_dom_info(&info, info_class, cli->pwd.password);
+	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
 
  done:
 	if (&pol)
@@ -1015,7 +1021,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_trust_dom_info(&info, info_class, cli->pwd.password);
+	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
 
  done:
 	if (&pol)
@@ -1069,7 +1075,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_trust_dom_info(&info, info_class, cli->pwd.password);
+	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
 
  done:
 	if (&pol)
