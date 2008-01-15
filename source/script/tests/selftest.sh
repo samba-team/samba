@@ -186,6 +186,7 @@ cat >$SERVERCONFFILE<<EOF
 	map hidden = yes
 	map system = yes
 	create mask = 755
+	vfs objects = $BINDIR/ea_tdb.so
 [hideunread]
 	copy = tmp
 	hide unreadable = yes
