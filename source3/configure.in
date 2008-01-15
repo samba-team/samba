@@ -3051,15 +3051,6 @@ if test x"$samba_cv_HAVE_IFACE_IFREQ" = x"yes"; then
 fi
 fi
 
-dnl AIX 5.3.0.0
-AC_TRY_COMPILE([#include <sys/socket.h>],[
-struct sockaddr_storage s; s.__ss_family = 0],
-samba_cv_have_aix_sockaddr_storage=yes,samba_cv_have_aix_sockaddr_storage=no)
-
-if test x"$samba_cv_have_aix_sockaddr_storage" = x"yes"; then
-   AC_DEFINE(HAVE_AIX_SOCKADDR_STORAGE, 1, [Whether struct sockaddr_storage has __sa_family])
-fi
-
 if test $iface = no; then
 AC_CACHE_CHECK([for iface AIX],samba_cv_HAVE_IFACE_AIX,[
 SAVE_CPPFLAGS="$CPPFLAGS"
