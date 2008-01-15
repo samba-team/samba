@@ -257,12 +257,10 @@ hx509_ca_tbs_set_template(hx509_context context,
 	tbs->notAfter = hx509_cert_get_notAfter(cert);
     if (flags & HX509_CA_TEMPLATE_SPKI) {
 	free_SubjectPublicKeyInfo(&tbs->spki);
-	ret = hx509_cert_get_SPKI(cert, &tbs->spki);
+	ret = hx509_cert_get_SPKI(context, cert, &tbs->spki);
 	tbs->flags.key = !ret;
-	if (ret) {
-	    hx509_set_error_string(context, 0, ret, "Failed to copy SPKI");
+	if (ret)
 	    return ret;
-	}
     }
     if (flags & HX509_CA_TEMPLATE_KU) {
 	KeyUsage ku;
