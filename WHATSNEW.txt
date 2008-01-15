@@ -175,7 +175,7 @@ o   Volker Lendecke <vl@samba.org>
     * Add generic a in-memory cache.
     * Import the Linux red-black tree implementation.
     * Remove large amount of global variables.
-    * Add vfs_ea_tdb module for file systems that do not implement xattrs.
+    * Add vfs_xattr_tdb module for file systems that do not implement xattrs.
 
 
 o   Stefan Metzmacher <metze@samba.org>
