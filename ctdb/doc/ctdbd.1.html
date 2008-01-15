@@ -1,4 +1,4 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>ctdbd</title><meta name="generator" content="DocBook XSL Stylesheets V1.73.2"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="ctdbd.1"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>ctdbd &#8212; The CTDB cluster daemon</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">ctdbd</code> </p></div><div class="cmdsynopsis"><p><code class="command">ctdbd</code>  [-? --help] [-d --debug=&lt;INTEGER&gt;] {--dbdir=&lt;directory&gt;} {--dbdir-persistent=&lt;directory&gt;} [--event-script-dir=&lt;directory&gt;] [-i --interactive] [--listen=&lt;address&gt;] [--logfile=&lt;filename&gt;] {--nlist=&lt;filename&gt;} [--nosetsched] [--public-addresses=&lt;filename&gt;] [--public-interface=&lt;interface&gt;] {--reclock=&lt;filename&gt;} [--single-public-ip=&lt;address&gt;] [--socket=&lt;filename&gt;] [--syslog] [--torture] [--transport=&lt;STRING&gt;] [--usage]</p></div></div><div class="refsect1" lang="en"><a name="id2506368"></a><h2>DESCRIPTION</h2><p>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>ctdbd</title><meta name="generator" content="DocBook XSL Stylesheets V1.71.0"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="ctdbd.1"></a><div class="titlepage"></div><div class="refnamediv"><h2>Name</h2><p>ctdbd &#8212; The CTDB cluster daemon</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><code class="command">ctdbd</code> </p></div><div class="cmdsynopsis"><p><code class="command">ctdbd</code>  [-? --help] [-d --debug=&lt;INTEGER&gt;] {--dbdir=&lt;directory&gt;} {--dbdir-persistent=&lt;directory&gt;} [--event-script-dir=&lt;directory&gt;] [-i --interactive] [--listen=&lt;address&gt;] [--logfile=&lt;filename&gt;] {--nlist=&lt;filename&gt;} [--nosetsched] [--public-addresses=&lt;filename&gt;] [--public-interface=&lt;interface&gt;] {--reclock=&lt;filename&gt;} [--single-public-ip=&lt;address&gt;] [--socket=&lt;filename&gt;] [--syslog] [--torture] [--transport=&lt;STRING&gt;] [--usage]</p></div></div><div class="refsect1" lang="en"><a name="id2481142"></a><h2>DESCRIPTION</h2><p>
       ctdbd is the main ctdb daemon.
     </p><p>
       ctdbd provides a clustered version of the TDB database with automatic rebuild/recovery of the databases upon nodefailures.
@@ -8,7 +8,7 @@
       ctdbd provides monitoring of all nodes in the cluster and automatically reconfigures the cluster and recovers upon node failures.
     </p><p>
       ctdbd is the main component in clustered Samba that provides a high-awailability load-sharing CIFS server cluster.
-    </p></div><div class="refsect1" lang="en"><a name="id2506399"></a><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-? --help</span></dt><dd><p>
+    </p></div><div class="refsect1" lang="en"><a name="id2481175"></a><h2>OPTIONS</h2><div class="variablelist"><dl><dt><span class="term">-? --help</span></dt><dd><p>
             Print some help text to the screen.
           </p></dd><dt><span class="term">-d --debug=&lt;DEBUGLEVEL&gt;</span></dt><dd><p>
             This option sets the debuglevel on the ctdbd daemon which controls what will be written to the logfile. The default is 0 which will only log important events and errors. A larger number will provide additional logging.
@@ -41,9 +41,18 @@
           </p><p>
             This file is usually /etc/ctdb/nodes .
           </p></dd><dt><span class="term">--nosetsched</span></dt><dd><p>
+	    This is a ctdbd debugging option. this option is only used when
+	    debugging ctdbd.
+	  </p><p>
             Normally ctdb will change its scheduler to run as a real-time 
-	    process. This option is used to change this behaviour and have
-	    ctdb run as a normal process.
+	    process. This is the default mode for a normal ctdbd operation
+	    to gurarantee that ctdbd always gets the cpu cycles that it needs.
+          </p><p>
+	    This option is used to tell ctdbd to NOT run as a real-time process
+	    and instead run ctdbd as a normal userspace process.
+	    This is useful for debugging and when you want to run ctdbd under
+	    valgrind or gdb. (You dont want to attach valgrind or gdb to a
+	    real-time process.)
           </p></dd><dt><span class="term">--public_addresses=&lt;filename&gt;</span></dt><dd><p>
             When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains a list of ip addresses netmasks and interfaces. When ctdb is operational it will distribute these public ip addresses evenly across the available nodes.
           </p><p>
@@ -94,10 +103,10 @@
             Suported transports are "tcp" and "infiniband".
           </p></dd><dt><span class="term">--usage</span></dt><dd><p>
             Print useage information to the screen.
-          </p></dd></dl></div></div><div class="refsect1" lang="en"><a name="id2553928"></a><h2>Private vs Public addresses</h2><p>
+          </p></dd></dl></div></div><div class="refsect1" lang="en"><a name="id2528621"></a><h2>Private vs Public addresses</h2><p>
       When used for ip takeover in a HA environment, each node in a ctdb 
       cluster has multiple ip addresses assigned to it. One private and one or more public.
-    </p><div class="refsect2" lang="en"><a name="id2553939"></a><h3>Private address</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2528632"></a><h3>Private address</h3><p>
         This is the physical ip address of the node which is configured in 
         linux and attached to a physical interface. This address uniquely
         identifies a physical node in the cluster and is the ip addresses
@@ -127,7 +136,7 @@
         10.1.1.2
         10.1.1.3
         10.1.1.4
-      </pre></div><div class="refsect2" lang="en"><a name="id2553987"></a><h3>Public address</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528686"></a><h3>Public address</h3><p>
         A public address on the other hand is not attached to an interface.
         This address is managed by ctdbd itself and is attached/detached to
         a physical node at runtime.
@@ -188,7 +197,7 @@
 	unavailable. 10.1.1.1 can not be failed over to node 2 or node 3 since
 	these nodes do not have this ip address listed in their public
 	addresses file.
-	</p></div></div><div class="refsect1" lang="en"><a name="id2554069"></a><h2>Node status</h2><p>
+	</p></div></div><div class="refsect1" lang="en"><a name="id2528768"></a><h2>Node status</h2><p>
       The current status of each node in the cluster can be viewed by the 
       'ctdb status' command.
     </p><p>
@@ -219,10 +228,10 @@
       investigated and require an administrative action to rectify. This node 
       does not perticipate in the CTDB cluster but can still be communicated 
       with. I.e. ctdb commands can be sent to it.
-    </p></div><div class="refsect1" lang="en"><a name="id2554131"></a><h2>SEE ALSO</h2><p>
+    </p></div><div class="refsect1" lang="en"><a name="id2528825"></a><h2>SEE ALSO</h2><p>
       ctdb(1), onnode(1)
-      <a class="ulink" href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" lang="en"><a name="id2554144"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+      <a href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
+    </p></div><div class="refsect1" lang="en"><a name="id2528838"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>

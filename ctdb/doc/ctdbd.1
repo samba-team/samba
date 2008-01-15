@@ -1,17 +1,17 @@
 .\"     Title: ctdbd
 .\"    Author: 
-.\" Generator: DocBook XSL Stylesheets v1.73.2 <http://docbook.sf.net/>
-.\"      Date: 01/07/2008
+.\" Generator: DocBook XSL Stylesheets v1.71.0 <http://docbook.sf.net/>
+.\"      Date: 01/16/2008
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "01/07/2008" "" ""
+.TH "CTDBD" "1" "01/16/2008" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
 .ad l
 .SH "NAME"
-ctdbd - The CTDB cluster daemon
+ctdbd \- The CTDB cluster daemon
 .SH "SYNOPSIS"
 .HP 6
 \fBctdbd\fR
@@ -19,232 +19,236 @@ ctdbd - The CTDB cluster daemon
 \fBctdbd\fR [\-?\ \-\-help] [\-d\ \-\-debug=<INTEGER>] {\-\-dbdir=<directory>} {\-\-dbdir\-persistent=<directory>} [\-\-event\-script\-dir=<directory>] [\-i\ \-\-interactive] [\-\-listen=<address>] [\-\-logfile=<filename>] {\-\-nlist=<filename>} [\-\-nosetsched] [\-\-public\-addresses=<filename>] [\-\-public\-interface=<interface>] {\-\-reclock=<filename>} [\-\-single\-public\-ip=<address>] [\-\-socket=<filename>] [\-\-syslog] [\-\-torture] [\-\-transport=<STRING>] [\-\-usage]
 .SH "DESCRIPTION"
 .PP
-ctdbd is the main ctdb daemon\.
+ctdbd is the main ctdb daemon.
 .PP
-ctdbd provides a clustered version of the TDB database with automatic rebuild/recovery of the databases upon nodefailures\.
+ctdbd provides a clustered version of the TDB database with automatic rebuild/recovery of the databases upon nodefailures.
 .PP
-Combined with a cluster filesystem ctdbd provides a full HA environment for services such as clustered Samba and NFS as well as other services\.
+Combined with a cluster filesystem ctdbd provides a full HA environment for services such as clustered Samba and NFS as well as other services.
 .PP
-ctdbd provides monitoring of all nodes in the cluster and automatically reconfigures the cluster and recovers upon node failures\.
+ctdbd provides monitoring of all nodes in the cluster and automatically reconfigures the cluster and recovers upon node failures.
 .PP
-ctdbd is the main component in clustered Samba that provides a high\-awailability load\-sharing CIFS server cluster\.
+ctdbd is the main component in clustered Samba that provides a high\-awailability load\-sharing CIFS server cluster.
 .SH "OPTIONS"
 .PP
 \-? \-\-help
-.RS 4
-Print some help text to the screen\.
+.RS 3n
+Print some help text to the screen.
 .RE
 .PP
 \-d \-\-debug=<DEBUGLEVEL>
-.RS 4
-This option sets the debuglevel on the ctdbd daemon which controls what will be written to the logfile\. The default is 0 which will only log important events and errors\. A larger number will provide additional logging\.
+.RS 3n
+This option sets the debuglevel on the ctdbd daemon which controls what will be written to the logfile. The default is 0 which will only log important events and errors. A larger number will provide additional logging.
 .RE
 .PP
 \-\-dbdir=<directory>
-.RS 4
-This is the directory on local storage where ctdbd keeps the local copy of the TDB databases\. This directory is local for each node and should not be stored on the shared cluster filesystem\.
+.RS 3n
+This is the directory on local storage where ctdbd keeps the local copy of the TDB databases. This directory is local for each node and should not be stored on the shared cluster filesystem.
 .sp
-This directory would usually be /var/ctdb \.
+This directory would usually be /var/ctdb .
 .RE
 .PP
 \-\-dbdir\-persistent=<directory>
-.RS 4
-This is the directory on local storage where ctdbd keeps the local copy of the persistent TDB databases\. This directory is local for each node and should not be stored on the shared cluster filesystem\.
+.RS 3n
+This is the directory on local storage where ctdbd keeps the local copy of the persistent TDB databases. This directory is local for each node and should not be stored on the shared cluster filesystem.
 .sp
-This directory would usually be /etc/ctdb/persistent \.
+This directory would usually be /etc/ctdb/persistent .
 .RE
 .PP
 \-\-event\-script\-dir=<directory>
-.RS 4
-This option is used to specify the directory where the CTDB event scripts are stored\.
+.RS 3n
+This option is used to specify the directory where the CTDB event scripts are stored.
 .sp
-This will normally be /etc/ctdb/events\.d which is part of the ctdb distribution\.
+This will normally be /etc/ctdb/events.d which is part of the ctdb distribution.
 .RE
 .PP
 \-i \-\-interactive
-.RS 4
-By default ctdbd will detach itself from the shell and run in the background as a daemon\. This option makes ctdbd to start in interactive mode\.
+.RS 3n
+By default ctdbd will detach itself from the shell and run in the background as a daemon. This option makes ctdbd to start in interactive mode.
 .RE
 .PP
 \-\-listen=<address>
-.RS 4
-This specifies which ip address ctdb will bind to\. By default ctdbd will bind to the first address it finds in the /etc/ctdb/nodes file and which is also present on the local system in which case you do not need to provide this option\.
+.RS 3n
+This specifies which ip address ctdb will bind to. By default ctdbd will bind to the first address it finds in the /etc/ctdb/nodes file and which is also present on the local system in which case you do not need to provide this option.
 .sp
-This option is only required when you want to run multiple ctdbd daemons/nodes on the same physical host in which case there would be multiple entries in /etc/ctdb/nodes what would match a local interface\.
+This option is only required when you want to run multiple ctdbd daemons/nodes on the same physical host in which case there would be multiple entries in /etc/ctdb/nodes what would match a local interface.
 .RE
 .PP
 \-\-logfile=<filename>
-.RS 4
-This is the file where ctdbd will write its log\. This is usually /var/log/log\.ctdb \.
+.RS 3n
+This is the file where ctdbd will write its log. This is usually /var/log/log.ctdb .
 .RE
 .PP
 \-\-nlist=<filename>
-.RS 4
-This file contains a list of the private ip addresses of every node in the cluster\. There is one line/ip address for each node\. This file must be the same for all nodes in the cluster\.
+.RS 3n
+This file contains a list of the private ip addresses of every node in the cluster. There is one line/ip address for each node. This file must be the same for all nodes in the cluster.
 .sp
-This file is usually /etc/ctdb/nodes \.
+This file is usually /etc/ctdb/nodes .
 .RE
 .PP
 \-\-nosetsched
-.RS 4
-Normally ctdb will change its scheduler to run as a real\-time process\. This option is used to change this behaviour and have ctdb run as a normal process\.
+.RS 3n
+This is a ctdbd debugging option. this option is only used when debugging ctdbd.
+.sp
+Normally ctdb will change its scheduler to run as a real\-time process. This is the default mode for a normal ctdbd operation to gurarantee that ctdbd always gets the cpu cycles that it needs.
+.sp
+This option is used to tell ctdbd to NOT run as a real\-time process and instead run ctdbd as a normal userspace process. This is useful for debugging and when you want to run ctdbd under valgrind or gdb. (You dont want to attach valgrind or gdb to a real\-time process.)
 .RE
 .PP
 \-\-public_addresses=<filename>
-.RS 4
-When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster\. This file contains a list of ip addresses netmasks and interfaces\. When ctdb is operational it will distribute these public ip addresses evenly across the available nodes\.
+.RS 3n
+When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains a list of ip addresses netmasks and interfaces. When ctdb is operational it will distribute these public ip addresses evenly across the available nodes.
 .sp
 This is usually the file /etc/ctdb/public_addresses
 .RE
 .PP
 \-\-public_interface=<interface>
-.RS 4
-This option tells ctdb which interface to attach public\-addresses to and also where to attach the single\-public\-ip when used\.
+.RS 3n
+This option tells ctdb which interface to attach public\-addresses to and also where to attach the single\-public\-ip when used.
 .RE
 .PP
 \-\-reclock=<filename>
-.RS 4
-This is the name of the lock file stored of the shared cluster filesystem that ctdbd uses to arbitrate which node has the role of recovery\-master\. This file must be stored on shared storage\.
+.RS 3n
+This is the name of the lock file stored of the shared cluster filesystem that ctdbd uses to arbitrate which node has the role of recovery\-master. This file must be stored on shared storage.
 .RE
 .PP
 \-\-single\-public\-ip=<address>
-.RS 4
-This option is used to activate the "ipmux" functionality of ctdb\. In this mode, all nodes of the cluster will expose a single ip address from all nodes with all incoming traffic to the cluster being passed through the current recmaster\. This functionality is similar to using a load\-balancing switch\.
+.RS 3n
+This option is used to activate the "ipmux" functionality of ctdb. In this mode, all nodes of the cluster will expose a single ip address from all nodes with all incoming traffic to the cluster being passed through the current recmaster. This functionality is similar to using a load\-balancing switch.
 .sp
-All incoming packets are sent to the recmaster which will multiplex the clients across all available nodes and pass the packets on to a different node in the cluster to manage the connection based on the clients ip address\. Outgoing packets however are sent directly from the node that was choosen back to the client\. Since all incoming packets are sent through the recmaster this will have a throughput and performance impact when used\. This impact in performance primarily affects write\-performance while read\-performance should be mainly unaffected\. Only use this feature if your environment is mostly\-read (i\.e\. most traffic is from the nodes back to the clients) or if it is not important to get maximum write\-performance to the cluster\.
+All incoming packets are sent to the recmaster which will multiplex the clients across all available nodes and pass the packets on to a different node in the cluster to manage the connection based on the clients ip address. Outgoing packets however are sent directly from the node that was choosen back to the client. Since all incoming packets are sent through the recmaster this will have a throughput and performance impact when used. This impact in performance primarily affects write\-performance while read\-performance should be mainly unaffected. Only use this feature if your environment is mostly\-read (i.e. most traffic is from the nodes back to the clients) or if it is not important to get maximum write\-performance to the cluster.
 .sp
-When using a single public ip, you must also specify the public\-interface so that ctdb knows which interface to attach the single public ip to\.
+When using a single public ip, you must also specify the public\-interface so that ctdb knows which interface to attach the single public ip to.
 .RE
 .PP
 \-\-socket=<filename>
-.RS 4
-This specifies the name of the domain socket that ctdbd will create\. This socket is used for local clients to attach to and communicate with the ctdbd daemon\.
+.RS 3n
+This specifies the name of the domain socket that ctdbd will create. This socket is used for local clients to attach to and communicate with the ctdbd daemon.
 .sp
-The default is /tmp/ctdb\.socket \. You only need to use this option if you plan to run multiple ctdbd daemons on the same physical host\.
+The default is /tmp/ctdb.socket . You only need to use this option if you plan to run multiple ctdbd daemons on the same physical host.
 .RE
 .PP
 \-\-syslog
-.RS 4
-Send all log messages to syslog instead of to the ctdb logfile\.
+.RS 3n
+Send all log messages to syslog instead of to the ctdb logfile.
 .RE
 .PP
 \-\-torture
-.RS 4
-This option is only used for development and testing of ctdbd\. It adds artificial errors and failures to the common codepaths in ctdbd to verify that ctdbd can recover correctly for failures\.
+.RS 3n
+This option is only used for development and testing of ctdbd. It adds artificial errors and failures to the common codepaths in ctdbd to verify that ctdbd can recover correctly for failures.
 .sp
-You do NOT want to use this option unless you are developing and testing new functionality in ctdbd\.
+You do NOT want to use this option unless you are developing and testing new functionality in ctdbd.
 .RE
 .PP
 \-\-transport=<STRING>
-.RS 4
-This option specifies which transport to use for ctdbd internode communications\. The default is "tcp"\.
+.RS 3n
+This option specifies which transport to use for ctdbd internode communications. The default is "tcp".
 .sp
-Suported transports are "tcp" and "infiniband"\.
+Suported transports are "tcp" and "infiniband".
 .RE
 .PP
 \-\-usage
-.RS 4
-Print useage information to the screen\.
+.RS 3n
+Print useage information to the screen.
 .RE
 .SH "PRIVATE VS PUBLIC ADDRESSES"
 .PP
-When used for ip takeover in a HA environment, each node in a ctdb cluster has multiple ip addresses assigned to it\. One private and one or more public\.
+When used for ip takeover in a HA environment, each node in a ctdb cluster has multiple ip addresses assigned to it. One private and one or more public.
 .SS "Private address"
 .PP
-This is the physical ip address of the node which is configured in linux and attached to a physical interface\. This address uniquely identifies a physical node in the cluster and is the ip addresses that ctdbd will use to communicate with the ctdbd daemons on the other nodes in the cluster\.
+This is the physical ip address of the node which is configured in linux and attached to a physical interface. This address uniquely identifies a physical node in the cluster and is the ip addresses that ctdbd will use to communicate with the ctdbd daemons on the other nodes in the cluster.
 .PP
-The private addresses are configured in /etc/ctdb/nodes (unless the \-\-nlist option is used) and contain one line for each node in the cluster\. Each line contains the private ip address for one node in the cluster\. This file must be the same on all nodes in the cluster\.
+The private addresses are configured in /etc/ctdb/nodes (unless the \-\-nlist option is used) and contain one line for each node in the cluster. Each line contains the private ip address for one node in the cluster. This file must be the same on all nodes in the cluster.
 .PP
-Since the private addresses are only available to the network when the corresponding node is up and running you should not use these addresses for clients to connect to services provided by the cluster\. Instead client applications should only attach to the public addresses since these are guaranteed to always be available\.
+Since the private addresses are only available to the network when the corresponding node is up and running you should not use these addresses for clients to connect to services provided by the cluster. Instead client applications should only attach to the public addresses since these are guaranteed to always be available.
 .PP
-When using ip takeover, it is strongly recommended that the private addresses are configured on a private network physically separated from the rest of the network and that this private network is dedicated to CTDB traffic\.
+When using ip takeover, it is strongly recommended that the private addresses are configured on a private network physically separated from the rest of the network and that this private network is dedicated to CTDB traffic.
 
       Example /etc/ctdb/nodes for a four node cluster:
       
 .sp
-.RS 4
+.RS 3n
 .nf
-        10\.1\.1\.1
-        10\.1\.1\.2
-        10\.1\.1\.3
-        10\.1\.1\.4
+        10.1.1.1
+        10.1.1.2
+        10.1.1.3
+        10.1.1.4
       
 .fi
 .RE
 .SS "Public address"
 .PP
-A public address on the other hand is not attached to an interface\. This address is managed by ctdbd itself and is attached/detached to a physical node at runtime\.
+A public address on the other hand is not attached to an interface. This address is managed by ctdbd itself and is attached/detached to a physical node at runtime.
 .PP
-The ctdb cluster will assign/reassign these public addresses across the available healthy nodes in the cluster\. When one node fails, its public address will be migrated to and taken over by a different node in the cluster to ensure that all public addresses are always available to clients as long as there are still nodes available capable of hosting this address\.
+The ctdb cluster will assign/reassign these public addresses across the available healthy nodes in the cluster. When one node fails, its public address will be migrated to and taken over by a different node in the cluster to ensure that all public addresses are always available to clients as long as there are still nodes available capable of hosting this address.
 .PP
-These addresses are not physically attached to a specific node\. The \'ctdb ip\' command can be used to view the current assignment of public addresses and which physical node is currently serving it\.
+These addresses are not physically attached to a specific node. The 'ctdb ip' command can be used to view the current assignment of public addresses and which physical node is currently serving it.
 .PP
-On each node this file contains a list of the public addresses that this node is capable of hosting\. The list also contain the netmask and the interface where this address should be attached for the case where you may want to serve data out through multiple different interfaces\.
+On each node this file contains a list of the public addresses that this node is capable of hosting. The list also contain the netmask and the interface where this address should be attached for the case where you may want to serve data out through multiple different interfaces.
 
       Example /etc/ctdb/public_addresses for a node that can host 4 public addresses:
       
 .sp
-.RS 4
+.RS 3n
 .nf
-        11\.1\.1\.1/24 eth0
-        11\.1\.1\.2/24 eth0
-        11\.1\.2\.1/24 eth1
-        11\.1\.2\.2/24 eth1
+        11.1.1.1/24 eth0
+        11.1.1.2/24 eth0
+        11.1.2.1/24 eth1
+        11.1.2.2/24 eth1
       
 .fi
 .RE
 .PP
-In most cases this file would be the same on all nodes in a cluster but there are exceptions when one may want to use different files on different nodes\.
+In most cases this file would be the same on all nodes in a cluster but there are exceptions when one may want to use different files on different nodes.
 
 	Example: 4 nodes partitioned into two subgroups :
 	
 .sp
-.RS 4
+.RS 3n
 .nf
 	Node 0:/etc/ctdb/public_addresses
-		10\.1\.1\.1/24 eth0
-		10\.1\.1\.2/24 eth0
+		10.1.1.1/24 eth0
+		10.1.1.2/24 eth0
 
 	Node 1:/etc/ctdb/public_addresses
-		10\.1\.1\.1/24 eth0
-		10\.1\.1\.2/24 eth0
+		10.1.1.1/24 eth0
+		10.1.1.2/24 eth0
 
 	Node 2:/etc/ctdb/public_addresses
-		10\.2\.1\.1/24 eth0
-		10\.2\.1\.2/24 eth0
+		10.2.1.1/24 eth0
+		10.2.1.2/24 eth0
 
 	Node 3:/etc/ctdb/public_addresses
-		10\.2\.1\.1/24 eth0
-		10\.2\.1\.2/24 eth0
+		10.2.1.1/24 eth0
+		10.2.1.2/24 eth0
 	
 .fi
 .RE
 .PP
-In this example nodes 0 and 1 host two public addresses on the 10\.1\.1\.x network while nodes 2 and 3 host two public addresses for the 10\.2\.1\.x network\.
+In this example nodes 0 and 1 host two public addresses on the 10.1.1.x network while nodes 2 and 3 host two public addresses for the 10.2.1.x network.
 .PP
-Ip address 10\.1\.1\.1 can be hosted by either of nodes 0 or 1 and will be available to clients as long as at least one of these two nodes are available\. If both nodes 0 and node 1 become unavailable 10\.1\.1\.1 also becomes unavailable\. 10\.1\.1\.1 can not be failed over to node 2 or node 3 since these nodes do not have this ip address listed in their public addresses file\.
+Ip address 10.1.1.1 can be hosted by either of nodes 0 or 1 and will be available to clients as long as at least one of these two nodes are available. If both nodes 0 and node 1 become unavailable 10.1.1.1 also becomes unavailable. 10.1.1.1 can not be failed over to node 2 or node 3 since these nodes do not have this ip address listed in their public addresses file.
 .SH "NODE STATUS"
 .PP
-The current status of each node in the cluster can be viewed by the \'ctdb status\' command\.
+The current status of each node in the cluster can be viewed by the 'ctdb status' command.
 .PP
-There are five possible for a node\.
+There are five possible for a node.
 .PP
-OK \- This node is fully functional\.
+OK \- This node is fully functional.
 .PP
-DISCONNECTED \- This node could not be connected through the network and is currently not particpating in the cluster\. If there is a public IP address associated with this node it should have been taken over by a different node\. No services are running on this node\.
+DISCONNECTED \- This node could not be connected through the network and is currently not particpating in the cluster. If there is a public IP address associated with this node it should have been taken over by a different node. No services are running on this node.
 .PP
-DISABLED \- This node has been administratively disabled\. This node is still functional and participates in the CTDB cluster but its IP addresses have been taken over by a different node and no services are currently being hosted\.
+DISABLED \- This node has been administratively disabled. This node is still functional and participates in the CTDB cluster but its IP addresses have been taken over by a different node and no services are currently being hosted.
 .PP
-UNHEALTHY \- A service provided by this node is malfunctioning and should be investigated\. The CTDB daemon itself is operational and participates in the cluster\. Its public IP address has been taken over by a different node and no services are currently being hosted\. All unhealthy nodes should be investigated and require an administrative action to rectify\.
+UNHEALTHY \- A service provided by this node is malfunctioning and should be investigated. The CTDB daemon itself is operational and participates in the cluster. Its public IP address has been taken over by a different node and no services are currently being hosted. All unhealthy nodes should be investigated and require an administrative action to rectify.
 .PP
-BANNED \- This node failed too many recovery attempts and has been banned from participating in the cluster for a period of RecoveryBanPeriod seconds\. Any public IP address has been taken over by other nodes\. This node does not provide any services\. All banned nodes should be investigated and require an administrative action to rectify\. This node does not perticipate in the CTDB cluster but can still be communicated with\. I\.e\. ctdb commands can be sent to it\.
+BANNED \- This node failed too many recovery attempts and has been banned from participating in the cluster for a period of RecoveryBanPeriod seconds. Any public IP address has been taken over by other nodes. This node does not provide any services. All banned nodes should be investigated and require an administrative action to rectify. This node does not perticipate in the CTDB cluster but can still be communicated with. I.e. ctdb commands can be sent to it.
 .SH "SEE ALSO"
 .PP
 ctdb(1), onnode(1)
 \fI\%http://ctdb.samba.org/\fR
 .SH "COPYRIGHT/LICENSE"
 .sp
-.RS 4
+.RS 3n
 .nf
 Copyright (C) Andrew Tridgell 2007
 Copyright (C) Ronnie sahlberg 2007
@@ -252,14 +256,14 @@ Copyright (C) Ronnie sahlberg 2007
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 3 of the License, or (at
-your option) any later version\.
+your option) any later version.
 
 This program is distributed in the hope that it will be useful, but
 WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE\.  See the GNU
-General Public License for more details\.
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program; if not, see http://www\.gnu\.org/licenses/\.
+along with this program; if not, see http://www.gnu.org/licenses/.
 .fi
 .RE

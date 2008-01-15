@@ -160,9 +160,20 @@
       <varlistentry><term>--nosetsched</term>
         <listitem>
           <para>
+	    This is a ctdbd debugging option. this option is only used when
+	    debugging ctdbd.
+	  </para>
+	  <para>
             Normally ctdb will change its scheduler to run as a real-time 
-	    process. This option is used to change this behaviour and have
-	    ctdb run as a normal process.
+	    process. This is the default mode for a normal ctdbd operation
+	    to gurarantee that ctdbd always gets the cpu cycles that it needs.
+          </para>
+          <para>
+	    This option is used to tell ctdbd to NOT run as a real-time process
+	    and instead run ctdbd as a normal userspace process.
+	    This is useful for debugging and when you want to run ctdbd under
+	    valgrind or gdb. (You dont want to attach valgrind or gdb to a
+	    real-time process.)
           </para>
         </listitem>
       </varlistentry>
