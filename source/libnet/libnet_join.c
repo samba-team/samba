@@ -107,10 +107,6 @@ static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
 {
 	ADS_STATUS status;
 
-	if (r->in.ads) {
-		ads_destroy(&r->in.ads);
-	}
-
 	status = libnet_connect_ads(r->in.domain_name,
 				    r->in.domain_name,
 				    r->in.dc_name,
@@ -133,10 +129,6 @@ static ADS_STATUS libnet_unjoin_connect_ads(TALLOC_CTX *mem_ctx,
 					    struct libnet_UnjoinCtx *r)
 {
 	ADS_STATUS status;
-
-	if (r->in.ads) {
-		ads_destroy(&r->in.ads);
-	}
 
 	status = libnet_connect_ads(r->in.domain_name,
 				    r->in.domain_name,
@@ -244,7 +236,6 @@ static ADS_STATUS libnet_join_find_machine_acct(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	TALLOC_FREE(r->out.dn);
 	r->out.dn = talloc_strdup(mem_ctx, dn);
 	if (!r->out.dn) {
 		status = ADS_ERROR_LDAP(LDAP_NO_MEMORY);
@@ -1013,6 +1004,58 @@ static WERROR do_UnjoinConfig(struct libnet_UnjoinCtx *r)
 /****************************************************************
 ****************************************************************/
 
+static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
+					 struct libnet_JoinCtx *r)
+{
+
+	if (!r->in.domain_name) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (r->in.modify_config && !lp_include_registry_globals()) {
+		return WERR_NOT_SUPPORTED;
+	}
+
+	if (IS_DC) {
+		return WERR_SETUP_DOMAIN_CONTROLLER;
+	}
+
+	if (!secrets_init()) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"Unable to open secrets database");
+		return WERR_CAN_NOT_COMPLETE;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static WERROR libnet_join_post_processing(TALLOC_CTX *mem_ctx,
+					  struct libnet_JoinCtx *r)
+{
+	WERROR werr;
+
+	if (!W_ERROR_IS_OK(r->out.result)) {
+		return r->out.result;
+	}
+
+	werr = do_JoinConfig(r);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
+		saf_store(r->in.domain_name, r->in.dc_name);
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 static int libnet_destroy_JoinCtx(struct libnet_JoinCtx *r)
 {
 	if (r->in.ads) {
@@ -1170,30 +1213,30 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 {
 	WERROR werr;
 
-	if (!r->in.domain_name) {
-		return WERR_INVALID_PARAM;
+	if (r->in.debug) {
+		NDR_PRINT_IN_DEBUG(libnet_JoinCtx, r);
 	}
 
-	if (r->in.modify_config && !lp_include_registry_globals()) {
-		return WERR_NOT_SUPPORTED;
-	}
-
-	if (IS_DC) {
-		return WERR_SETUP_DOMAIN_CONTROLLER;
+	werr = libnet_join_pre_processing(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
 	}
 
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		werr = libnet_DomainJoin(mem_ctx, r);
 		if (!W_ERROR_IS_OK(werr)) {
-			return werr;
+			goto done;
 		}
 	}
 
-	werr = do_JoinConfig(r);
+	werr = libnet_join_post_processing(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+		goto done;
 	}
-
+ done:
+	if (r->in.debug) {
+		NDR_PRINT_OUT_DEBUG(libnet_JoinCtx, r);
+	}
 	return werr;
 }
 
@@ -1204,6 +1247,29 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 				  struct libnet_UnjoinCtx *r)
 {
 	NTSTATUS status;
+
+	if (!r->in.dc_name) {
+		struct DS_DOMAIN_CONTROLLER_INFO *info;
+		status = dsgetdcname(mem_ctx,
+				     NULL,
+				     r->in.domain_name,
+				     NULL,
+				     NULL,
+				     DS_DIRECTORY_SERVICE_REQUIRED |
+				     DS_WRITABLE_REQUIRED |
+				     DS_RETURN_DNS_NAME,
+				     &info);
+		if (!NT_STATUS_IS_OK(status)) {
+			libnet_unjoin_set_error_string(mem_ctx, r,
+				"failed to find DC: %s",
+				nt_errstr(status));
+			return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
+		}
+
+		r->in.dc_name = talloc_strdup(mem_ctx,
+					      info->domain_controller_name);
+		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
+	}
 
 	status = libnet_join_unjoindomain_rpc(mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1237,26 +1303,54 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
+					   struct libnet_UnjoinCtx *r)
+{
+	if (r->in.modify_config && !lp_include_registry_globals()) {
+		return WERR_NOT_SUPPORTED;
+	}
+
+	if (!secrets_init()) {
+		libnet_unjoin_set_error_string(mem_ctx, r,
+			"Unable to open secrets database");
+		return WERR_CAN_NOT_COMPLETE;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 		     struct libnet_UnjoinCtx *r)
 {
 	WERROR werr;
 
-	if (r->in.modify_config && !lp_include_registry_globals()) {
-		return WERR_NOT_SUPPORTED;
+	if (r->in.debug) {
+		NDR_PRINT_IN_DEBUG(libnet_UnjoinCtx, r);
+	}
+
+	werr = libnet_unjoin_pre_processing(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
 	}
 
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		werr = libnet_DomainUnjoin(mem_ctx, r);
 		if (!W_ERROR_IS_OK(werr)) {
-			do_UnjoinConfig(r);
-			return werr;
+			goto done;
 		}
 	}
 
 	werr = do_UnjoinConfig(r);
 	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
+		goto done;
+	}
+
+ done:
+	if (r->in.debug) {
+		NDR_PRINT_OUT_DEBUG(libnet_UnjoinCtx, r);
 	}
 
 	return werr;

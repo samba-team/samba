@@ -1799,9 +1799,9 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 	struct rpc_pipe_client  *cli;
 	POLICY_HND pol;
 
-	char *domain_name = NULL;
-	char *dns_name = NULL;
-	char *forest_name = NULL;	
+	const char *domain_name = NULL;
+	const char *dns_name = NULL;
+	const char *forest_name = NULL;
 	DOM_SID *dom_sid = NULL;	
 
 	ZERO_STRUCT( ctr );

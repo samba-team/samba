@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Virtual Windows Registry Layer
  *  Copyright (C) Volker Lendecke 2006
@@ -7,12 +7,12 @@
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -140,7 +140,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 		result = WERR_BADFILE;
 		goto done;
 	}
-	
+
 	/* check if the path really exists; failed is indicated by -1 */
 	/* if the subkey count failed, bail out */
 
@@ -153,7 +153,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 		result = WERR_BADFILE;
 		goto done;
 	}
-	
+
 	TALLOC_FREE( subkeys );
 
 	if ( !regkey_access_check( key, access_desired, &key->access_granted,
@@ -302,7 +302,7 @@ WERROR reg_enumvalue(TALLOC_CTX *mem_ctx, struct registry_key *key,
 		SAFE_FREE(val);
 		return WERR_NOMEM;
 	}
-		
+
 	*pval = val;
 	return WERR_OK;
 }
@@ -494,7 +494,6 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	TALLOC_FREE(mem_ctx);
 	return err;
 }
-		     
 
 WERROR reg_deletekey(struct registry_key *parent, const char *path)
 {
@@ -712,8 +711,8 @@ WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
 }
 
 /*
- * Utility function to delete a registry key with all its subkeys. 
- * Note that reg_deletekey returns ACCESS_DENIED when called on a 
+ * Utility function to delete a registry key with all its subkeys.
+ * Note that reg_deletekey returns ACCESS_DENIED when called on a
  * key that has subkeys.
  */
 WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
@@ -739,11 +738,11 @@ WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
 	}
 
 	while (W_ERROR_IS_OK(werr = reg_enumkey(mem_ctx, key, 0,
-						&subkey_name, NULL))) 
+						&subkey_name, NULL)))
 	{
 		werr = reg_deletekey_recursive_internal(mem_ctx, key,
 							subkey_name,
-							True);
+							true);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -771,12 +770,12 @@ WERROR reg_deletekey_recursive(TALLOC_CTX *ctx,
 			       struct registry_key *parent,
 			       const char *path)
 {
-	return reg_deletekey_recursive_internal(ctx, parent, path, True);
+	return reg_deletekey_recursive_internal(ctx, parent, path, true);
 }
 
 WERROR reg_deletesubkeys_recursive(TALLOC_CTX *ctx,
 				   struct registry_key *parent,
 				   const char *path)
 {
-	return reg_deletekey_recursive_internal(ctx, parent, path, False);
+	return reg_deletekey_recursive_internal(ctx, parent, path, false);
 }

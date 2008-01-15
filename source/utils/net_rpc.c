@@ -51,7 +51,8 @@ static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);
  **/
 
 NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				   DOM_SID **domain_sid, char **domain_name)
+				   DOM_SID **domain_sid,
+				   const char **domain_name)
 {
 	struct rpc_pipe_client *lsa_pipe;
 	POLICY_HND pol;
@@ -112,7 +113,7 @@ int run_rpc_command(struct cli_state *cli_arg,
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	DOM_SID *domain_sid;
-	char *domain_name;
+	const char *domain_name;
 
 	/* make use of cli_state handed over as an argument, if possible */
 	if (!cli_arg) {
@@ -5607,7 +5608,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	DOM_SID *domain_sid;
 
 	char* domain_name;
-	char* domain_name_pol;
+	const char* domain_name_pol;
 	char* acct_name;
 	fstring pdc_name;
 	char *dc_name;
@@ -5917,7 +5918,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	DOM_SID *domain_sids;
 	char **trusted_dom_names;
 	fstring pdc_name;
-	char *dummy;
+	const char *dummy;
 
 	/*
 	 * Listing trusted domains (stored in secrets.tdb, if local)
@@ -6057,7 +6058,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	DOM_SID *domain_sids;
 	char **trusted_dom_names;
 	fstring pdc_name;
-	char *dummy;
+	const char *dummy;
 	
 	/* trusting domains listing variables */
 	POLICY_HND domain_hnd;
