@@ -472,21 +472,20 @@ add_cert(hx509_context hxctx, void *ctx, hx509_cert cert)
     o->type = STO_T_CERTIFICATE;
     o->cert = hx509_cert_ref(cert);
 
-    key_type = CKK_RSA; /* XXX */
+    {
+	AlgorithmIdentifier alg;
 
-#if 0
-    switch (EVP_PKEY_type(public_key->type)) {
-    case EVP_PKEY_RSA:
-	key_type = CKK_RSA;
-	break;
-    case EVP_PKEY_DSA:
-	key_type = CKK_DSA;
-	break;
-    default:
-	/* XXX */
-	break;
+	hret = hx509_cert_get_SPKI_AlgorithmIdentifier(context, cert, &alg);
+	if (hret) {
+	    ret = CKR_DEVICE_MEMORY;
+	    goto out;
+	}
+
+	key_type = CKK_RSA; /* XXX */
+
+	free_AlgorithmIdentifier(&alg);
     }
-#endif
+
 
     c = CKO_CERTIFICATE;
     add_object_attribute(o, 0, CKA_CLASS, &c, sizeof(c));
