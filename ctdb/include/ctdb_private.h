@@ -324,6 +324,7 @@ struct ctdb_context {
 	struct event_context *ev;
 	uint32_t recovery_mode;
 	TALLOC_CTX *tickle_update_context;
+	TALLOC_CTX *keepalive_ctx;
 	struct ctdb_tunable tunable;
 	enum ctdb_freeze_mode freeze_mode;
 	struct ctdb_freeze_handle *freeze_handle;
@@ -1059,6 +1060,8 @@ void ctdb_stop_monitoring(struct ctdb_context *ctdb);
 void ctdb_start_monitoring(struct ctdb_context *ctdb);
 void ctdb_start_tcp_tickle_update(struct ctdb_context *ctdb);
 void ctdb_send_keepalive(struct ctdb_context *ctdb, uint32_t destnode);
+void ctdb_start_keepalive(struct ctdb_context *ctdb);
+void ctdb_stop_keepalive(struct ctdb_context *ctdb);
 
 void ctdb_daemon_cancel_controls(struct ctdb_context *ctdb, struct ctdb_node *node);
 void ctdb_call_resend_all(struct ctdb_context *ctdb);

@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.71.0 <http://docbook.sf.net/>
-.\"      Date: 09/14/2007
+.\"      Date: 01/10/2008
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "09/14/2007" "" ""
+.TH "CTDB" "1" "01/10/2008" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -16,7 +16,7 @@ ctdb \- clustered tdb database management utility
 .HP 29
 \fBctdb [ OPTIONS ] COMMAND ...\fR
 .HP 5
-\fBctdb\fR [\-n\ <node>] [\-Y] [\-t\ <timeout>] [\-?\ \-\-help] [\-\-usage] [\-d\ \-\-debug=<INTEGER>] [\-\-socket=<filename>]
+\fBctdb\fR [\-n\ <node>] [\-Y] [\-t\ <timeout>] [\-T\ <timelimit>] [\-?\ \-\-help] [\-\-usage] [\-d\ \-\-debug=<INTEGER>] [\-\-socket=<filename>]
 .SH "DESCRIPTION"
 .PP
 ctdb is a utility to view and manage a ctdb cluster.
@@ -36,7 +36,12 @@ Produce output in machine readable form for easier parsing by scripts. Not all c
 .PP
 \-t <timeout>
 .RS 3n
-How long should ctdb wait for a command to complete before timing out. Default is 3 seconds.
+How long should ctdb wait for the local ctdb daemon to respond to a command before timing out. Default is 3 seconds.
+.RE
+.PP
+\-T <timelimit>
+.RS 3n
+A limit on how long the ctdb command will run for before it will be aborted. When this timelimit has been exceeded the ctdb command will terminate.
 .RE
 .PP
 \-? \-\-help
@@ -327,6 +332,32 @@ This command will kill the specified TCP connection by issuing a TCP RST to the 
 This command will will send a TCP tickle to the source host for the specified TCP connection. A TCP tickle is a TCP ACK packet with an invalid sequence and acknowledge number and will when received by the source host result in it sending an immediate correct ACK back to the other end.
 .PP
 TCP tickles are useful to "tickle" clients after a IP failover has occured since this will make the client immediately recognize the TCP connection has been disrupted and that the client will need to reestablish. This greatly speeds up the time it takes for a client to detect and reestablish after an IP failover in the ctdb cluster.
+.SS "repack [max_freelist]"
+.PP
+Over time, when records are created and deleted in a TDB, the TDB list of free space will become fragmented. This can lead to a slowdown in accessing TDB records. This command is used to defragment a TDB database and pruning the freelist.
+.PP
+If [max_freelist] is specified, then a database will only be repacked if it has more than this number of entries in the freelist.
+.PP
+During repacking of the database, the entire TDB database will be locked to prevent writes. If samba tries to write to a record in the database during a repack operation, samba will block until the repacking has completed.
+.PP
+This command can be disruptive and can cause samba to block for the duration of the repack operation. In general, a repack operation will take less than one second to complete.
+.PP
+A repack operation will only defragment the local TDB copy of the CTDB database. You need to run this command on all of the nodes to repack a CTDB database completely.
+.PP
+Example: ctdb repack 1000
+.PP
+By default, this operation is issued from the 00.ctdb event script every 5 minutes.
+.SS "vacuum [max_records]"
+.PP
+Over time CTDB databases will fill up with empty deleted records which will lead to a progressive slow down of CTDB database access. This command is used to prune all databases and delete all empty records from the cluster.
+.PP
+By default, vacuum will delete all empty records from all databases. If [max_records] is specified, the command will only delete the first [max_records] empty records for each database.
+.PP
+Vacuum only deletes records where the local node is the lmaster. To delete all records from the entire cluster you need to run a vacuum from each node. This command is not disruptive. Samba is unaffected and will still be able to read/write records normally while the database is being vacuumed.
+.PP
+Example: ctdb vacuum
+.PP
+By default, this operation is issued from the 00.ctdb event script every 5 minutes.
 .SH "DEBUGGING COMMANDS"
 .PP
 These commands are primarily used for CTDB development and testing and should not be used for normal administration.
