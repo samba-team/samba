@@ -119,15 +119,13 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 		ctdb->log->buf_used += n1;
 	}
 
-	if (ctdb->log->buf_used == sizeof(ctdb->log->buf)) {
-		do_debug("%*.*s\n", 
-			 (int)ctdb->log->buf_used, (int)ctdb->log->buf_used, ctdb->log->buf);
-		ctdb->log->buf_used = 0;
-		return;
-	}
-
 	p = memchr(ctdb->log->buf, '\n', ctdb->log->buf_used);
 	if (!p) {
+		if (ctdb->log->buf_used == sizeof(ctdb->log->buf)) {
+			do_debug("%*.*s\n", 
+				 (int)ctdb->log->buf_used, (int)ctdb->log->buf_used, ctdb->log->buf);
+			ctdb->log->buf_used = 0;
+		}
 		return;
 	}
 
