@@ -43,6 +43,23 @@ enum stdio_helper_mode {
 	NUM_HELPER_MODES
 };
 
+enum ntlm_auth_con_state {
+	CLIENT_INITIAL,
+	CLIENT_RESPONSE,
+	CLIENT_FINISHED,
+	CLIENT_ERROR,
+	SERVER_INITIAL,
+	SERVER_CHALLENGE,
+	SERVER_FINISHED,
+	SERVER_ERROR
+};
+
+struct ntlm_auth_state {
+	TALLOC_CTX *mem_ctx;
+	enum stdio_helper_mode helper_mode;
+	enum ntlm_auth_con_state con_state;
+};
+
 typedef void (*stdio_helper_function)(enum stdio_helper_mode stdio_helper_mode, 
 				     char *buf, int length);
 
@@ -2069,14 +2086,15 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_
 	}
 }
 
-static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helper_function fn) 
+static void manage_squid_request(struct ntlm_auth_state *state,
+		stdio_helper_function fn)
 {
 	char *buf;
 	char tmp[INITIAL_BUFFER_SIZE+1];
 	int length, buf_size = 0;
 	char *c;
 
-	buf = talloc_strdup(NULL, "");
+	buf = talloc_strdup(state->mem_ctx, "");
 	if (!buf) {
 		DEBUG(0, ("Failed to allocate input buffer.\n"));
 		x_fprintf(x_stderr, "ERR\n");
@@ -2123,17 +2141,38 @@ static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helpe
 		return;
 	}
 
-	fn(helper_mode, buf, length);
+	fn(state->helper_mode, buf, length);
 	talloc_free(buf);
 }
 
 
 static void squid_stream(enum stdio_helper_mode stdio_mode, stdio_helper_function fn) {
+	TALLOC_CTX *mem_ctx;
+	struct ntlm_auth_state *state;
+
 	/* initialize FDescs */
 	x_setbuf(x_stdout, NULL);
 	x_setbuf(x_stderr, NULL);
+
+	mem_ctx = talloc_init("ntlm_auth");
+	if (!mem_ctx) {
+		DEBUG(0, ("squid_stream: Failed to create talloc context\n"));
+		x_fprintf(x_stderr, "ERR\n");
+		exit(1);
+	}
+
+	state = talloc(mem_ctx, struct ntlm_auth_state);
+	if (!state) {
+		DEBUG(0, ("squid_stream: Failed to talloc ntlm_auth_state\n"));
+		x_fprintf(x_stderr, "ERR\n");
+		exit(1);
+	}
+
+	state->mem_ctx = mem_ctx;
+	state->helper_mode = stdio_mode;
+
 	while(1) {
-		manage_squid_request(stdio_mode, fn);
+		manage_squid_request(state, fn);
 	}
 }
 
