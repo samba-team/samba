@@ -1,11 +1,11 @@
 .\"     Title: ctdb
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.71.0 <http://docbook.sf.net/>
-.\"      Date: 01/10/2008
+.\"      Date: 01/16/2008
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDB" "1" "01/10/2008" "" ""
+.TH "CTDB" "1" "01/16/2008" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -366,7 +366,9 @@ These commands are primarily used for CTDB development and testing and should no
 This command checks if a specific process exists on the CTDB host. This is mainly used by Samba to check if remote instances of samba are still running or not.
 .SS "getdbmap"
 .PP
-This command lists all clustered TDB databases that the CTDB daemon has attahced to.
+This command lists all clustered TDB databases that the CTDB daemon has attached to. Some databases are flagged as PERSISTENT, this means that the database stores data persistently and the data will remain across reboots. One example of such a database is secrets.tdb where information about how the cluster was joined to the domain is stored.
+.PP
+Most databases are not persistent and only store the state information that the currently running samba daemons need. These databases are always wiped when ctdb/samba starts and when a node is rebooted.
 .PP
 Example: ctdb getdbmap
 .PP
@@ -374,11 +376,16 @@ Example output:
 .sp
 .RS 3n
 .nf
-Number of databases:4
-dbid:0x42fe72c5 name:locking.tdb path:/var/ctdb/locking.tdb.0
-dbid:0x1421fb78 name:brlock.tdb path:/var/ctdb/brlock.tdb.0
-dbid:0x17055d90 name:connections.tdb path:/var/ctdb/connections.tdb.0
-dbid:0xc0bdde6a name:sessionid.tdb path:/var/ctdb/sessionid.tdb.0
+Number of databases:10
+dbid:0x435d3410 name:notify.tdb path:/var/ctdb/notify.tdb.0 
+dbid:0x42fe72c5 name:locking.tdb path:/var/ctdb/locking.tdb.0 dbid:0x1421fb78 name:brlock.tdb path:/var/ctdb/brlock.tdb.0 
+dbid:0x17055d90 name:connections.tdb path:/var/ctdb/connections.tdb.0 
+dbid:0xc0bdde6a name:sessionid.tdb path:/var/ctdb/sessionid.tdb.0 
+dbid:0x122224da name:test.tdb path:/var/ctdb/test.tdb.0 
+dbid:0x2672a57f name:idmap2.tdb path:/var/ctdb/persistent/idmap2.tdb.0 PERSISTENT
+dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT
+dbid:0xe98e08b6 name:group_mapping.tdb path:/var/ctdb/persistent/group_mapping.tdb.0 PERSISTENT
+dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTENT
       
 .fi
 .RE
