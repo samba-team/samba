@@ -690,6 +690,34 @@ _PUBLIC_ void ndr_print_lsa_AuditLogInfo(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_lsa_PolicyAuditPolicy(struct ndr_push *ndr, int ndr_flags, enum lsa_PolicyAuditPolicy r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_PolicyAuditPolicy(struct ndr_pull *ndr, int ndr_flags, enum lsa_PolicyAuditPolicy *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_PolicyAuditPolicy(struct ndr_print *ndr, const char *name, enum lsa_PolicyAuditPolicy r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case LSA_AUDIT_POLICY_NONE: val = "LSA_AUDIT_POLICY_NONE"; break;
+		case LSA_AUDIT_POLICY_SUCCESS: val = "LSA_AUDIT_POLICY_SUCCESS"; break;
+		case LSA_AUDIT_POLICY_FAILURE: val = "LSA_AUDIT_POLICY_FAILURE"; break;
+		case LSA_AUDIT_POLICY_ALL: val = "LSA_AUDIT_POLICY_ALL"; break;
+		case LSA_AUDIT_POLICY_CLEAR: val = "LSA_AUDIT_POLICY_CLEAR"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 static enum ndr_err_code ndr_push_lsa_AuditEventsInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_AuditEventsInfo *r)
 {
 	uint32_t cntr_settings_1;
@@ -703,7 +731,7 @@ static enum ndr_err_code ndr_push_lsa_AuditEventsInfo(struct ndr_push *ndr, int 
 		if (r->settings) {
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
 			for (cntr_settings_1 = 0; cntr_settings_1 < r->count; cntr_settings_1++) {
-				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->settings[cntr_settings_1]));
+				NDR_CHECK(ndr_push_lsa_PolicyAuditPolicy(ndr, NDR_SCALARS, r->settings[cntr_settings_1]));
 			}
 		}
 	}
@@ -736,7 +764,7 @@ static enum ndr_err_code ndr_pull_lsa_AuditEventsInfo(struct ndr_pull *ndr, int 
 			_mem_save_settings_1 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->settings, 0);
 			for (cntr_settings_1 = 0; cntr_settings_1 < r->count; cntr_settings_1++) {
-				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->settings[cntr_settings_1]));
+				NDR_CHECK(ndr_pull_lsa_PolicyAuditPolicy(ndr, NDR_SCALARS, &r->settings[cntr_settings_1]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_settings_1, 0);
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_settings_0, 0);
@@ -763,7 +791,7 @@ _PUBLIC_ void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *n
 			char *idx_1=NULL;
 			asprintf(&idx_1, "[%d]", cntr_settings_1);
 			if (idx_1) {
-				ndr_print_uint32(ndr, "settings", r->settings[cntr_settings_1]);
+				ndr_print_lsa_PolicyAuditPolicy(ndr, "settings", r->settings[cntr_settings_1]);
 				free(idx_1);
 			}
 		}
@@ -1937,6 +1965,35 @@ _PUBLIC_ void ndr_print_lsa_RefDomainList(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 	ndr_print_uint32(ndr, "max_size", r->max_size);
 	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_lsa_LookupNamesLevel(struct ndr_push *ndr, int ndr_flags, enum lsa_LookupNamesLevel r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_LookupNamesLevel(struct ndr_pull *ndr, int ndr_flags, enum lsa_LookupNamesLevel *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_LookupNamesLevel(struct ndr_print *ndr, const char *name, enum lsa_LookupNamesLevel r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case LSA_LOOKUP_NAMES_ALL: val = "LSA_LOOKUP_NAMES_ALL"; break;
+		case LSA_LOOKUP_NAMES_DOMAINS_ONLY: val = "LSA_LOOKUP_NAMES_DOMAINS_ONLY"; break;
+		case LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY: val = "LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY"; break;
+		case LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY: val = "LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY"; break;
+		case LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY: val = "LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY"; break;
+		case LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2: val = "LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
 }
 
 static enum ndr_err_code ndr_push_lsa_TranslatedName(struct ndr_push *ndr, int ndr_flags, const struct lsa_TranslatedName *r)
@@ -4027,6 +4084,434 @@ _PUBLIC_ void ndr_print_lsa_TransSidArray3(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_lsa_ForestTrustBinaryData(struct ndr_push *ndr, int ndr_flags, const struct lsa_ForestTrustBinaryData *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->data));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->data) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->length));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->data, r->length));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_ForestTrustBinaryData(struct ndr_pull *ndr, int ndr_flags, struct lsa_ForestTrustBinaryData *r)
+{
+	uint32_t _ptr_data;
+	TALLOC_CTX *_mem_save_data_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->length));
+		if (r->length < 0 || r->length > 131072) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_data));
+		if (_ptr_data) {
+			NDR_PULL_ALLOC(ndr, r->data);
+		} else {
+			r->data = NULL;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->data) {
+			_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->data, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->data));
+			NDR_PULL_ALLOC_N(ndr, r->data, ndr_get_array_size(ndr, &r->data));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->data, ndr_get_array_size(ndr, &r->data)));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, 0);
+		}
+		if (r->data) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->data, r->length));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ForestTrustBinaryData(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustBinaryData *r)
+{
+	ndr_print_struct(ndr, name, "lsa_ForestTrustBinaryData");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "length", r->length);
+	ndr_print_ptr(ndr, "data", r->data);
+	ndr->depth++;
+	if (r->data) {
+		ndr_print_array_uint8(ndr, "data", r->data, r->length);
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_lsa_ForestTrustDomainInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_ForestTrustDomainInfo *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->domain_sid));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->dns_domain_name));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->netbios_domain_name));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->domain_sid) {
+			NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->domain_sid));
+		}
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dns_domain_name));
+		NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->netbios_domain_name));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_ForestTrustDomainInfo(struct ndr_pull *ndr, int ndr_flags, struct lsa_ForestTrustDomainInfo *r)
+{
+	uint32_t _ptr_domain_sid;
+	TALLOC_CTX *_mem_save_domain_sid_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_sid));
+		if (_ptr_domain_sid) {
+			NDR_PULL_ALLOC(ndr, r->domain_sid);
+		} else {
+			r->domain_sid = NULL;
+		}
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->dns_domain_name));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->netbios_domain_name));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->domain_sid) {
+			_mem_save_domain_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->domain_sid, 0);
+			NDR_CHECK(ndr_pull_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->domain_sid));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_sid_0, 0);
+		}
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->dns_domain_name));
+		NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->netbios_domain_name));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ForestTrustDomainInfo(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustDomainInfo *r)
+{
+	ndr_print_struct(ndr, name, "lsa_ForestTrustDomainInfo");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "domain_sid", r->domain_sid);
+	ndr->depth++;
+	if (r->domain_sid) {
+		ndr_print_dom_sid2(ndr, "domain_sid", r->domain_sid);
+	}
+	ndr->depth--;
+	ndr_print_lsa_StringLarge(ndr, "dns_domain_name", &r->dns_domain_name);
+	ndr_print_lsa_StringLarge(ndr, "netbios_domain_name", &r->netbios_domain_name);
+	ndr->depth--;
+}
+
+static enum ndr_err_code ndr_push_lsa_ForestTrustData(struct ndr_push *ndr, int ndr_flags, const union lsa_ForestTrustData *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
+		switch (level) {
+			case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->top_level_name));
+			break;
+
+			case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+				NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->top_level_name_ex));
+			break;
+
+			case LSA_FOREST_TRUST_DOMAIN_INFO:
+				NDR_CHECK(ndr_push_lsa_ForestTrustDomainInfo(ndr, NDR_SCALARS, &r->domain_info));
+			break;
+
+			default:
+				NDR_CHECK(ndr_push_lsa_ForestTrustBinaryData(ndr, NDR_SCALARS, &r->data));
+			break;
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		int level = ndr_push_get_switch_value(ndr, r);
+		switch (level) {
+			case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_BUFFERS, &r->top_level_name));
+			break;
+
+			case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+				NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_BUFFERS, &r->top_level_name_ex));
+			break;
+
+			case LSA_FOREST_TRUST_DOMAIN_INFO:
+				NDR_CHECK(ndr_push_lsa_ForestTrustDomainInfo(ndr, NDR_BUFFERS, &r->domain_info));
+			break;
+
+			default:
+				NDR_CHECK(ndr_push_lsa_ForestTrustBinaryData(ndr, NDR_BUFFERS, &r->data));
+			break;
+
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_ForestTrustData(struct ndr_pull *ndr, int ndr_flags, union lsa_ForestTrustData *r)
+{
+	int level;
+	uint32_t _level;
+	level = ndr_pull_get_switch_value(ndr, r);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &_level));
+		if (_level != level) {
+			return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u for r", _level);
+		}
+		switch (level) {
+			case LSA_FOREST_TRUST_TOP_LEVEL_NAME: {
+				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS, &r->top_level_name));
+			break; }
+
+			case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX: {
+				NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS, &r->top_level_name_ex));
+			break; }
+
+			case LSA_FOREST_TRUST_DOMAIN_INFO: {
+				NDR_CHECK(ndr_pull_lsa_ForestTrustDomainInfo(ndr, NDR_SCALARS, &r->domain_info));
+			break; }
+
+			default: {
+				NDR_CHECK(ndr_pull_lsa_ForestTrustBinaryData(ndr, NDR_SCALARS, &r->data));
+			break; }
+
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		switch (level) {
+			case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_BUFFERS, &r->top_level_name));
+			break;
+
+			case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+				NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_BUFFERS, &r->top_level_name_ex));
+			break;
+
+			case LSA_FOREST_TRUST_DOMAIN_INFO:
+				NDR_CHECK(ndr_pull_lsa_ForestTrustDomainInfo(ndr, NDR_BUFFERS, &r->domain_info));
+			break;
+
+			default:
+				NDR_CHECK(ndr_pull_lsa_ForestTrustBinaryData(ndr, NDR_BUFFERS, &r->data));
+			break;
+
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ForestTrustData(struct ndr_print *ndr, const char *name, const union lsa_ForestTrustData *r)
+{
+	int level;
+	level = ndr_print_get_switch_value(ndr, r);
+	ndr_print_union(ndr, name, level, "lsa_ForestTrustData");
+	switch (level) {
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+			ndr_print_lsa_String(ndr, "top_level_name", &r->top_level_name);
+		break;
+
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+			ndr_print_lsa_StringLarge(ndr, "top_level_name_ex", &r->top_level_name_ex);
+		break;
+
+		case LSA_FOREST_TRUST_DOMAIN_INFO:
+			ndr_print_lsa_ForestTrustDomainInfo(ndr, "domain_info", &r->domain_info);
+		break;
+
+		default:
+			ndr_print_lsa_ForestTrustBinaryData(ndr, "data", &r->data);
+		break;
+
+	}
+}
+
+static enum ndr_err_code ndr_push_lsa_ForestTrustRecordType(struct ndr_push *ndr, int ndr_flags, enum lsa_ForestTrustRecordType r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_ForestTrustRecordType(struct ndr_pull *ndr, int ndr_flags, enum lsa_ForestTrustRecordType *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ForestTrustRecordType(struct ndr_print *ndr, const char *name, enum lsa_ForestTrustRecordType r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME: val = "LSA_FOREST_TRUST_TOP_LEVEL_NAME"; break;
+		case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX: val = "LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX"; break;
+		case LSA_FOREST_TRUST_DOMAIN_INFO: val = "LSA_FOREST_TRUST_DOMAIN_INFO"; break;
+		case LSA_FOREST_TRUST_RECORD_TYPE_LAST: val = "LSA_FOREST_TRUST_RECORD_TYPE_LAST"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
+static enum ndr_err_code ndr_push_lsa_ForestTrustRecord(struct ndr_push *ndr, int ndr_flags, const struct lsa_ForestTrustRecord *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 8));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->flags));
+		NDR_CHECK(ndr_push_lsa_ForestTrustRecordType(ndr, NDR_SCALARS, r->level));
+		NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->unknown));
+		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->forest_trust_data, r->level));
+		NDR_CHECK(ndr_push_lsa_ForestTrustData(ndr, NDR_SCALARS, &r->forest_trust_data));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_lsa_ForestTrustData(ndr, NDR_BUFFERS, &r->forest_trust_data));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_lsa_ForestTrustRecord(struct ndr_pull *ndr, int ndr_flags, struct lsa_ForestTrustRecord *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 8));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->flags));
+		NDR_CHECK(ndr_pull_lsa_ForestTrustRecordType(ndr, NDR_SCALARS, &r->level));
+		NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->unknown));
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->forest_trust_data, r->level));
+		NDR_CHECK(ndr_pull_lsa_ForestTrustData(ndr, NDR_SCALARS, &r->forest_trust_data));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_lsa_ForestTrustData(ndr, NDR_BUFFERS, &r->forest_trust_data));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ForestTrustRecord(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustRecord *r)
+{
+	ndr_print_struct(ndr, name, "lsa_ForestTrustRecord");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "flags", r->flags);
+	ndr_print_lsa_ForestTrustRecordType(ndr, "level", r->level);
+	ndr_print_hyper(ndr, "unknown", r->unknown);
+	ndr_print_set_switch_value(ndr, &r->forest_trust_data, r->level);
+	ndr_print_lsa_ForestTrustData(ndr, "forest_trust_data", &r->forest_trust_data);
+	ndr->depth--;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_ForestTrustInformation(struct ndr_push *ndr, int ndr_flags, const struct lsa_ForestTrustInformation *r)
+{
+	uint32_t cntr_entries_1;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->entries));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->entries) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->count));
+			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, r->entries[cntr_entries_1]));
+			}
+			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+				if (r->entries[cntr_entries_1]) {
+					NDR_CHECK(ndr_push_lsa_ForestTrustRecord(ndr, NDR_SCALARS|NDR_BUFFERS, r->entries[cntr_entries_1]));
+				}
+			}
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_ForestTrustInformation(struct ndr_pull *ndr, int ndr_flags, struct lsa_ForestTrustInformation *r)
+{
+	uint32_t _ptr_entries;
+	uint32_t cntr_entries_1;
+	TALLOC_CTX *_mem_save_entries_0;
+	TALLOC_CTX *_mem_save_entries_1;
+	TALLOC_CTX *_mem_save_entries_2;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
+		if (r->count < 0 || r->count > 4000) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_entries));
+		if (_ptr_entries) {
+			NDR_PULL_ALLOC(ndr, r->entries);
+		} else {
+			r->entries = NULL;
+		}
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		if (r->entries) {
+			_mem_save_entries_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->entries, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->entries));
+			NDR_PULL_ALLOC_N(ndr, r->entries, ndr_get_array_size(ndr, &r->entries));
+			_mem_save_entries_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->entries, 0);
+			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_entries));
+				if (_ptr_entries) {
+					NDR_PULL_ALLOC(ndr, r->entries[cntr_entries_1]);
+				} else {
+					r->entries[cntr_entries_1] = NULL;
+				}
+			}
+			for (cntr_entries_1 = 0; cntr_entries_1 < r->count; cntr_entries_1++) {
+				if (r->entries[cntr_entries_1]) {
+					_mem_save_entries_2 = NDR_PULL_GET_MEM_CTX(ndr);
+					NDR_PULL_SET_MEM_CTX(ndr, r->entries[cntr_entries_1], 0);
+					NDR_CHECK(ndr_pull_lsa_ForestTrustRecord(ndr, NDR_SCALARS|NDR_BUFFERS, r->entries[cntr_entries_1]));
+					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_2, 0);
+				}
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_1, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_entries_0, 0);
+		}
+		if (r->entries) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->entries, r->count));
+		}
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_ForestTrustInformation(struct ndr_print *ndr, const char *name, const struct lsa_ForestTrustInformation *r)
+{
+	uint32_t cntr_entries_1;
+	ndr_print_struct(ndr, name, "lsa_ForestTrustInformation");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "count", r->count);
+	ndr_print_ptr(ndr, "entries", r->entries);
+	ndr->depth++;
+	if (r->entries) {
+		ndr->print(ndr, "%s: ARRAY(%d)", "entries", r->count);
+		ndr->depth++;
+		for (cntr_entries_1=0;cntr_entries_1<r->count;cntr_entries_1++) {
+			char *idx_1=NULL;
+			asprintf(&idx_1, "[%d]", cntr_entries_1);
+			if (idx_1) {
+				ndr_print_ptr(ndr, "entries", r->entries[cntr_entries_1]);
+				ndr->depth++;
+				if (r->entries[cntr_entries_1]) {
+					ndr_print_lsa_ForestTrustRecord(ndr, "entries", r->entries[cntr_entries_1]);
+				}
+				ndr->depth--;
+				free(idx_1);
+			}
+		}
+		ndr->depth--;
+	}
+	ndr->depth--;
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_lsa_Close(struct ndr_push *ndr, int flags, const struct lsa_Close *r)
 {
 	if (flags & NDR_IN) {
@@ -4103,7 +4588,7 @@ _PUBLIC_ void ndr_print_lsa_Close(struct ndr_print *ndr, const char *name, int f
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_Delete(struct ndr_push *ndr, int flags, const struct lsa_Delete *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_Delete(struct ndr_push *ndr, int flags, const struct lsa_Delete *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -4117,7 +4602,7 @@ static enum ndr_err_code ndr_push_lsa_Delete(struct ndr_push *ndr, int flags, co
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_Delete(struct ndr_pull *ndr, int flags, struct lsa_Delete *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_Delete(struct ndr_pull *ndr, int flags, struct lsa_Delete *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
@@ -4160,7 +4645,7 @@ _PUBLIC_ void ndr_print_lsa_Delete(struct ndr_print *ndr, const char *name, int 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_EnumPrivs(struct ndr_push *ndr, int flags, const struct lsa_EnumPrivs *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_EnumPrivs(struct ndr_push *ndr, int flags, const struct lsa_EnumPrivs *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -4187,7 +4672,7 @@ static enum ndr_err_code ndr_push_lsa_EnumPrivs(struct ndr_push *ndr, int flags,
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_EnumPrivs(struct ndr_pull *ndr, int flags, struct lsa_EnumPrivs *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_EnumPrivs(struct ndr_pull *ndr, int flags, struct lsa_EnumPrivs *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_resume_handle_0;
@@ -4441,7 +4926,7 @@ _PUBLIC_ void ndr_print_lsa_ChangePassword(struct ndr_print *ndr, const char *na
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_OpenPolicy(struct ndr_push *ndr, int flags, const struct lsa_OpenPolicy *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_OpenPolicy(struct ndr_push *ndr, int flags, const struct lsa_OpenPolicy *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -4464,7 +4949,7 @@ static enum ndr_err_code ndr_push_lsa_OpenPolicy(struct ndr_push *ndr, int flags
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_OpenPolicy(struct ndr_pull *ndr, int flags, struct lsa_OpenPolicy *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_OpenPolicy(struct ndr_pull *ndr, int flags, struct lsa_OpenPolicy *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -4754,7 +5239,7 @@ _PUBLIC_ void ndr_print_lsa_ClearAuditLog(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_CreateAccount(struct ndr_push *ndr, int flags, const struct lsa_CreateAccount *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateAccount(struct ndr_push *ndr, int flags, const struct lsa_CreateAccount *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -4777,7 +5262,7 @@ static enum ndr_err_code ndr_push_lsa_CreateAccount(struct ndr_push *ndr, int fl
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_CreateAccount(struct ndr_pull *ndr, int flags, struct lsa_CreateAccount *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_CreateAccount(struct ndr_pull *ndr, int flags, struct lsa_CreateAccount *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sid_0;
@@ -4850,7 +5335,7 @@ _PUBLIC_ void ndr_print_lsa_CreateAccount(struct ndr_print *ndr, const char *nam
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_EnumAccounts(struct ndr_push *ndr, int flags, const struct lsa_EnumAccounts *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_EnumAccounts(struct ndr_push *ndr, int flags, const struct lsa_EnumAccounts *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -4877,7 +5362,7 @@ static enum ndr_err_code ndr_push_lsa_EnumAccounts(struct ndr_push *ndr, int fla
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_EnumAccounts(struct ndr_pull *ndr, int flags, struct lsa_EnumAccounts *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_EnumAccounts(struct ndr_pull *ndr, int flags, struct lsa_EnumAccounts *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_resume_handle_0;
@@ -4966,7 +5451,7 @@ _PUBLIC_ void ndr_print_lsa_EnumAccounts(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_CreateTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_CreateTrustedDomain *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateTrustedDomain(struct ndr_push *ndr, int flags, const struct lsa_CreateTrustedDomain *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -4989,7 +5474,7 @@ static enum ndr_err_code ndr_push_lsa_CreateTrustedDomain(struct ndr_push *ndr, 
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_CreateTrustedDomain(struct ndr_pull *ndr, int flags, struct lsa_CreateTrustedDomain *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_CreateTrustedDomain(struct ndr_pull *ndr, int flags, struct lsa_CreateTrustedDomain *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_info_0;
@@ -5112,9 +5597,6 @@ static enum ndr_err_code ndr_pull_lsa_EnumTrustDom(struct ndr_pull *ndr, int fla
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.resume_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_resume_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.max_size));
-		if (r->in.max_size < 0 || r->in.max_size > 1000) {
-			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
-		}
 		NDR_PULL_ALLOC(ndr, r->out.resume_handle);
 		*r->out.resume_handle = *r->in.resume_handle;
 		NDR_PULL_ALLOC(ndr, r->out.domains);
@@ -5178,7 +5660,7 @@ _PUBLIC_ void ndr_print_lsa_EnumTrustDom(struct ndr_print *ndr, const char *name
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_LookupNames(struct ndr_push *ndr, int flags, const struct lsa_LookupNames *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames(struct ndr_push *ndr, int flags, const struct lsa_LookupNames *r)
 {
 	uint32_t cntr_names_0;
 	if (flags & NDR_IN) {
@@ -5198,7 +5680,7 @@ static enum ndr_err_code ndr_push_lsa_LookupNames(struct ndr_push *ndr, int flag
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_lsa_TransSidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_lsa_LookupNamesLevel(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.count == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -5222,7 +5704,7 @@ static enum ndr_err_code ndr_push_lsa_LookupNames(struct ndr_push *ndr, int flag
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_LookupNames(struct ndr_pull *ndr, int flags, struct lsa_LookupNames *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames(struct ndr_pull *ndr, int flags, struct lsa_LookupNames *r)
 {
 	uint32_t cntr_names_0;
 	uint32_t _ptr_domains;
@@ -5263,7 +5745,7 @@ static enum ndr_err_code ndr_pull_lsa_LookupNames(struct ndr_pull *ndr, int flag
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.sids, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_TransSidArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_lsa_LookupNamesLevel(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.count);
 		}
@@ -5342,7 +5824,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		ndr_print_lsa_TransSidArray(ndr, "sids", r->in.sids);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_lsa_LookupNamesLevel(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "count", r->in.count);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->in.count);
@@ -5372,7 +5854,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_LookupSids(struct ndr_push *ndr, int flags, const struct lsa_LookupSids *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids(struct ndr_push *ndr, int flags, const struct lsa_LookupSids *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -5411,7 +5893,7 @@ static enum ndr_err_code ndr_push_lsa_LookupSids(struct ndr_push *ndr, int flags
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_LookupSids(struct ndr_pull *ndr, int flags, struct lsa_LookupSids *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids(struct ndr_pull *ndr, int flags, struct lsa_LookupSids *r)
 {
 	uint32_t _ptr_domains;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -5540,7 +6022,7 @@ _PUBLIC_ void ndr_print_lsa_LookupSids(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_CreateSecret(struct ndr_push *ndr, int flags, const struct lsa_CreateSecret *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateSecret(struct ndr_push *ndr, int flags, const struct lsa_CreateSecret *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -5560,7 +6042,7 @@ static enum ndr_err_code ndr_push_lsa_CreateSecret(struct ndr_push *ndr, int fla
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_CreateSecret(struct ndr_pull *ndr, int flags, struct lsa_CreateSecret *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_CreateSecret(struct ndr_pull *ndr, int flags, struct lsa_CreateSecret *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sec_handle_0;
@@ -6349,7 +6831,7 @@ _PUBLIC_ void ndr_print_lsa_SetInformationTrustedDomain(struct ndr_print *ndr, c
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_OpenSecret(struct ndr_push *ndr, int flags, const struct lsa_OpenSecret *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_OpenSecret(struct ndr_push *ndr, int flags, const struct lsa_OpenSecret *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -6369,7 +6851,7 @@ static enum ndr_err_code ndr_push_lsa_OpenSecret(struct ndr_push *ndr, int flags
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_OpenSecret(struct ndr_pull *ndr, int flags, struct lsa_OpenSecret *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_OpenSecret(struct ndr_pull *ndr, int flags, struct lsa_OpenSecret *r)
 {
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sec_handle_0;
@@ -6432,7 +6914,7 @@ _PUBLIC_ void ndr_print_lsa_OpenSecret(struct ndr_print *ndr, const char *name, 
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_SetSecret(struct ndr_push *ndr, int flags, const struct lsa_SetSecret *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_SetSecret(struct ndr_push *ndr, int flags, const struct lsa_SetSecret *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.sec_handle == NULL) {
@@ -6454,7 +6936,7 @@ static enum ndr_err_code ndr_push_lsa_SetSecret(struct ndr_push *ndr, int flags,
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_SetSecret(struct ndr_pull *ndr, int flags, struct lsa_SetSecret *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_SetSecret(struct ndr_pull *ndr, int flags, struct lsa_SetSecret *r)
 {
 	uint32_t _ptr_new_val;
 	uint32_t _ptr_old_val;
@@ -6537,7 +7019,7 @@ _PUBLIC_ void ndr_print_lsa_SetSecret(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_QuerySecret(struct ndr_push *ndr, int flags, const struct lsa_QuerySecret *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_QuerySecret(struct ndr_push *ndr, int flags, const struct lsa_QuerySecret *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.sec_handle == NULL) {
@@ -6583,7 +7065,7 @@ static enum ndr_err_code ndr_push_lsa_QuerySecret(struct ndr_push *ndr, int flag
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_QuerySecret(struct ndr_pull *ndr, int flags, struct lsa_QuerySecret *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_QuerySecret(struct ndr_pull *ndr, int flags, struct lsa_QuerySecret *r)
 {
 	uint32_t _ptr_new_val;
 	uint32_t _ptr_new_mtime;
@@ -7824,7 +8306,7 @@ _PUBLIC_ void ndr_print_lsa_RetrievePrivateData(struct ndr_print *ndr, const cha
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_OpenPolicy2(struct ndr_push *ndr, int flags, const struct lsa_OpenPolicy2 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_OpenPolicy2(struct ndr_push *ndr, int flags, const struct lsa_OpenPolicy2 *r)
 {
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.system_name));
@@ -7850,7 +8332,7 @@ static enum ndr_err_code ndr_push_lsa_OpenPolicy2(struct ndr_push *ndr, int flag
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_OpenPolicy2(struct ndr_pull *ndr, int flags, struct lsa_OpenPolicy2 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_OpenPolicy2(struct ndr_pull *ndr, int flags, struct lsa_OpenPolicy2 *r)
 {
 	uint32_t _ptr_system_name;
 	TALLOC_CTX *_mem_save_system_name_0;
@@ -8985,7 +9467,7 @@ _PUBLIC_ void ndr_print_lsa_TestCall(struct ndr_print *ndr, const char *name, in
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_LookupSids2(struct ndr_push *ndr, int flags, const struct lsa_LookupSids2 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids2(struct ndr_push *ndr, int flags, const struct lsa_LookupSids2 *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.handle == NULL) {
@@ -9026,7 +9508,7 @@ static enum ndr_err_code ndr_push_lsa_LookupSids2(struct ndr_push *ndr, int flag
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_LookupSids2(struct ndr_pull *ndr, int flags, struct lsa_LookupSids2 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids2(struct ndr_pull *ndr, int flags, struct lsa_LookupSids2 *r)
 {
 	uint32_t _ptr_domains;
 	TALLOC_CTX *_mem_save_handle_0;
@@ -9159,7 +9641,7 @@ _PUBLIC_ void ndr_print_lsa_LookupSids2(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int flags, const struct lsa_LookupNames2 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int flags, const struct lsa_LookupNames2 *r)
 {
 	uint32_t cntr_names_0;
 	if (flags & NDR_IN) {
@@ -9179,7 +9661,7 @@ static enum ndr_err_code ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int fla
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_lsa_TransSidArray2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_lsa_LookupNamesLevel(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.count == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -9205,7 +9687,7 @@ static enum ndr_err_code ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int fla
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_LookupNames2(struct ndr_pull *ndr, int flags, struct lsa_LookupNames2 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames2(struct ndr_pull *ndr, int flags, struct lsa_LookupNames2 *r)
 {
 	uint32_t cntr_names_0;
 	uint32_t _ptr_domains;
@@ -9246,7 +9728,7 @@ static enum ndr_err_code ndr_pull_lsa_LookupNames2(struct ndr_pull *ndr, int fla
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.sids, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_TransSidArray2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_lsa_LookupNamesLevel(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.count);
 		}
@@ -9327,7 +9809,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames2(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_lsa_TransSidArray2(ndr, "sids", r->in.sids);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_lsa_LookupNamesLevel(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "count", r->in.count);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->in.count);
@@ -9728,7 +10210,7 @@ _PUBLIC_ void ndr_print_lsa_CREDRPROFILELOADED(struct ndr_print *ndr, const char
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int flags, const struct lsa_LookupNames3 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int flags, const struct lsa_LookupNames3 *r)
 {
 	uint32_t cntr_names_0;
 	if (flags & NDR_IN) {
@@ -9748,7 +10230,7 @@ static enum ndr_err_code ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int fla
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_lsa_TransSidArray3(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_lsa_LookupNamesLevel(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.count == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -9774,7 +10256,7 @@ static enum ndr_err_code ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int fla
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int flags, struct lsa_LookupNames3 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int flags, struct lsa_LookupNames3 *r)
 {
 	uint32_t cntr_names_0;
 	uint32_t _ptr_domains;
@@ -9815,7 +10297,7 @@ static enum ndr_err_code ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int fla
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.sids, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_TransSidArray3(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_lsa_LookupNamesLevel(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.count);
 		}
@@ -9896,7 +10378,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames3(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_lsa_TransSidArray3(ndr, "sids", r->in.sids);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_lsa_LookupNamesLevel(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "count", r->in.count);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->in.count);
@@ -10092,41 +10574,112 @@ _PUBLIC_ void ndr_print_lsa_LSARUNREGISTERAUDITEVENT(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct ndr_push *ndr, int flags, const struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r)
+static enum ndr_err_code ndr_push_lsa_lsaRQueryForestTrustInformation(struct ndr_push *ndr, int flags, const struct lsa_lsaRQueryForestTrustInformation *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		if (r->in.trusted_domain_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.trusted_domain_name));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.unknown));
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.forest_trust_info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		if (*r->out.forest_trust_info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_ref_ptr(ndr));
+		NDR_CHECK(ndr_push_lsa_ForestTrustInformation(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.forest_trust_info));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct ndr_pull *ndr, int flags, struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r)
+static enum ndr_err_code ndr_pull_lsa_lsaRQueryForestTrustInformation(struct ndr_pull *ndr, int flags, struct lsa_lsaRQueryForestTrustInformation *r)
 {
+	uint32_t _ptr_forest_trust_info;
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_trusted_domain_name_0;
+	TALLOC_CTX *_mem_save_forest_trust_info_0;
+	TALLOC_CTX *_mem_save_forest_trust_info_1;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.trusted_domain_name);
+		}
+		_mem_save_trusted_domain_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.trusted_domain_name, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.trusted_domain_name));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trusted_domain_name_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.unknown));
+		NDR_PULL_ALLOC(ndr, r->out.forest_trust_info);
+		ZERO_STRUCTP(r->out.forest_trust_info);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.forest_trust_info);
+		}
+		_mem_save_forest_trust_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.forest_trust_info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_forest_trust_info));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, *r->out.forest_trust_info);
+		}
+		_mem_save_forest_trust_info_1 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, *r->out.forest_trust_info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_lsa_ForestTrustInformation(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.forest_trust_info));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_forest_trust_info_1, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_forest_trust_info_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct ndr_print *ndr, const char *name, int flags, const struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r)
+_PUBLIC_ void ndr_print_lsa_lsaRQueryForestTrustInformation(struct ndr_print *ndr, const char *name, int flags, const struct lsa_lsaRQueryForestTrustInformation *r)
 {
-	ndr_print_struct(ndr, name, "lsa_LSARQUERYFORESTTRUSTINFORMATION");
+	ndr_print_struct(ndr, name, "lsa_lsaRQueryForestTrustInformation");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
 		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
 	}
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "lsa_LSARQUERYFORESTTRUSTINFORMATION");
+		ndr_print_struct(ndr, "in", "lsa_lsaRQueryForestTrustInformation");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "trusted_domain_name", r->in.trusted_domain_name);
+		ndr->depth++;
+		ndr_print_lsa_String(ndr, "trusted_domain_name", r->in.trusted_domain_name);
+		ndr->depth--;
+		ndr_print_uint16(ndr, "unknown", r->in.unknown);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "lsa_LSARQUERYFORESTTRUSTINFORMATION");
+		ndr_print_struct(ndr, "out", "lsa_lsaRQueryForestTrustInformation");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "forest_trust_info", r->out.forest_trust_info);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "forest_trust_info", *r->out.forest_trust_info);
+		ndr->depth++;
+		ndr_print_lsa_ForestTrustInformation(ndr, "forest_trust_info", *r->out.forest_trust_info);
+		ndr->depth--;
+		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
@@ -10215,7 +10768,7 @@ _PUBLIC_ void ndr_print_lsa_CREDRRENAME(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int flags, const struct lsa_LookupSids3 *r)
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int flags, const struct lsa_LookupSids3 *r)
 {
 	if (flags & NDR_IN) {
 		if (r->in.sids == NULL) {
@@ -10252,7 +10805,7 @@ static enum ndr_err_code ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int flag
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_lsa_LookupSids3(struct ndr_pull *ndr, int flags, struct lsa_LookupSids3 *r)
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids3(struct ndr_pull *ndr, int flags, struct lsa_LookupSids3 *r)
 {
 	uint32_t _ptr_domains;
 	TALLOC_CTX *_mem_save_sids_0;
@@ -10389,7 +10942,7 @@ static enum ndr_err_code ndr_push_lsa_LookupNames4(struct ndr_push *ndr, int fla
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_lsa_TransSidArray3(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.level));
+		NDR_CHECK(ndr_push_lsa_LookupNamesLevel(ndr, NDR_SCALARS, r->in.level));
 		if (r->in.count == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -10448,7 +11001,7 @@ static enum ndr_err_code ndr_pull_lsa_LookupNames4(struct ndr_pull *ndr, int fla
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.sids, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_TransSidArray3(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sids));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sids_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.level));
+		NDR_CHECK(ndr_pull_lsa_LookupNamesLevel(ndr, NDR_SCALARS, &r->in.level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.count);
 		}
@@ -10525,7 +11078,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames4(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_lsa_TransSidArray3(ndr, "sids", r->in.sids);
 		ndr->depth--;
-		ndr_print_uint16(ndr, "level", r->in.level);
+		ndr_print_lsa_LookupNamesLevel(ndr, "level", r->in.level);
 		ndr_print_ptr(ndr, "count", r->in.count);
 		ndr->depth++;
 		ndr_print_uint32(ndr, "count", *r->in.count);
@@ -11307,11 +11860,11 @@ static const struct ndr_interface_call lsarpc_calls[] = {
 		false,
 	},
 	{
-		"lsa_LSARQUERYFORESTTRUSTINFORMATION",
-		sizeof(struct lsa_LSARQUERYFORESTTRUSTINFORMATION),
-		(ndr_push_flags_fn_t) ndr_push_lsa_LSARQUERYFORESTTRUSTINFORMATION,
-		(ndr_pull_flags_fn_t) ndr_pull_lsa_LSARQUERYFORESTTRUSTINFORMATION,
-		(ndr_print_function_t) ndr_print_lsa_LSARQUERYFORESTTRUSTINFORMATION,
+		"lsa_lsaRQueryForestTrustInformation",
+		sizeof(struct lsa_lsaRQueryForestTrustInformation),
+		(ndr_push_flags_fn_t) ndr_push_lsa_lsaRQueryForestTrustInformation,
+		(ndr_pull_flags_fn_t) ndr_pull_lsa_lsaRQueryForestTrustInformation,
+		(ndr_print_function_t) ndr_print_lsa_lsaRQueryForestTrustInformation,
 		false,
 	},
 	{
