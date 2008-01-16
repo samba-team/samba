@@ -231,6 +231,16 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		return;
 	}
 
+	talloc_steal(req, packet);
+	talloc_steal(req, src);
+	talloc_free(tmp_ctx);
+	nbt_name_socket_handle_response_packet(req, packet, src);
+}
+
+void nbt_name_socket_handle_response_packet(struct nbt_name_request *req,
+					    struct nbt_name_packet *packet,
+					    struct socket_address *src)
+{
 	/* if this is a WACK response, this we need to go back to waiting,
 	   but perhaps increase the timeout */
 	if ((packet->operation & NBT_OPCODE) == NBT_OPCODE_WACK) {
@@ -266,7 +276,6 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		req->te = event_add_timed(req->nbtsock->event_ctx, req,
 					  timeval_current_ofs(req->timeout, 0),
 					  nbt_name_socket_timeout, req);
-		talloc_free(tmp_ctx);
 		return;
 	}
 
@@ -288,7 +297,6 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	/* if we don't want multiple replies then we are done */
 	if (req->allow_multiple_replies &&
 	    req->num_replies < NBT_MAX_REPLIES) {
-		talloc_free(tmp_ctx);
 		return;
 	}
 
@@ -297,7 +305,6 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	req->status = NT_STATUS_OK;
 
 done:
-	talloc_free(tmp_ctx);
 	if (req->async.fn) {
 		req->async.fn(req);
 	}

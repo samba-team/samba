@@ -277,6 +277,9 @@ struct nbt_name_release {
 struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 					     struct tevent_context *event_ctx,
 					     struct smb_iconv_convenience *iconv_convenience);
+void nbt_name_socket_handle_response_packet(struct nbt_name_request *req,
+					    struct nbt_name_packet *packet,
+					    struct socket_address *src);
 struct nbt_name_request *nbt_name_query_send(struct nbt_name_socket *nbtsock,
 					     struct nbt_name_query *io);
 NTSTATUS nbt_name_query_recv(struct nbt_name_request *req,
