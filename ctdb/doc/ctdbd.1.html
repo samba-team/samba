@@ -116,13 +116,14 @@
           </p></dd><dt><span class="term">--transport=&lt;STRING&gt;</span></dt><dd><p>
             This option specifies which transport to use for ctdbd internode communications. The default is "tcp".
           </p><p>
-            Suported transports are "tcp" and "infiniband".
+            Currently only "tcp" is supported but "infiniband" might be
+	    implemented in the future.
           </p></dd><dt><span class="term">--usage</span></dt><dd><p>
             Print useage information to the screen.
           </p></dd></dl></div></div><div class="refsect1" lang="en"><a name="id2528652"></a><h2>Private vs Public addresses</h2><p>
       When used for ip takeover in a HA environment, each node in a ctdb 
       cluster has multiple ip addresses assigned to it. One private and one or more public.
-    </p><div class="refsect2" lang="en"><a name="id2528662"></a><h3>Private address</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2528663"></a><h3>Private address</h3><p>
         This is the physical ip address of the node which is configured in 
         linux and attached to a physical interface. This address uniquely
         identifies a physical node in the cluster and is the ip addresses
