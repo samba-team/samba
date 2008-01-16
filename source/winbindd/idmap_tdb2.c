@@ -610,7 +610,7 @@ static NTSTATUS idmap_tdb2_id_to_sid(struct idmap_tdb2_context *ctx, struct id_m
 			goto done;
 		}
 
-		if (sid_to_string(sidstr, map->sid)) {
+		if (sid_to_fstring(sidstr, map->sid)) {
 			/* both forward and reverse mappings */
 			tdb2_store_bystring(keystr,
 					    string_term_tdb_data(sidstr), 
@@ -648,7 +648,7 @@ static NTSTATUS idmap_tdb2_sid_to_id(struct idmap_tdb2_context *ctx, struct id_m
 	char *keystr;
 	unsigned long rec_id = 0;
 
-	if ((keystr = talloc_asprintf(ctx, "%s", sid_string_static(map->sid))) == NULL) {
+	if ((keystr = sid_string_talloc(ctx, map->sid)) == NULL) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -859,7 +859,7 @@ static NTSTATUS idmap_tdb2_set_mapping(struct idmap_domain *dom, const struct id
 		goto done;
 	}
 
-	if (!(ksidstr = talloc_strdup(ctx, sid_string_static(map->sid)))) {
+	if (!(ksidstr = sid_string_talloc(ctx, map->sid))) {
 		DEBUG(0, ("Out of memory!\n"));
 		ret = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -1008,7 +1008,10 @@ NTSTATUS idmap_tdb2_init(void)
 
 	/* register both backends */
 	ret = smb_register_idmap_alloc(SMB_IDMAP_INTERFACE_VERSION, "tdb2", &db_alloc_methods);
-	NT_STATUS_NOT_OK_RETURN(ret);
+	if (! NT_STATUS_IS_OK(ret)) {
+		DEBUG(0, ("Unable to register idmap alloc tdb2 module: %s\n", get_friendly_nt_error_msg(ret)));
+		return ret;
+	}
 
 	return smb_register_idmap(SMB_IDMAP_INTERFACE_VERSION, "tdb2", &db_methods);
 }
