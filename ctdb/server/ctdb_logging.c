@@ -120,7 +120,8 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 	}
 
 	if (ctdb->log->buf_used == sizeof(ctdb->log->buf)) {
-		do_debug("%*.*s\n", ctdb->log->buf_used, ctdb->log->buf_used, ctdb->log->buf);
+		do_debug("%*.*s\n", 
+			 (int)ctdb->log->buf_used, (int)ctdb->log->buf_used, ctdb->log->buf);
 		ctdb->log->buf_used = 0;
 		return;
 	}
@@ -131,7 +132,7 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 	}
 
 	n = (p - ctdb->log->buf)+1;
-	do_debug("%*.*s", n, n, ctdb->log->buf);
+	do_debug("%*.*s", (int)n, (int)n, ctdb->log->buf);
 	memmove(ctdb->log->buf, ctdb->log->buf+n, sizeof(ctdb->log->buf) - n);
 	ctdb->log->buf_used -= n;
 }
