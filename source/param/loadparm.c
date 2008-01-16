@@ -81,6 +81,11 @@ extern userdom_struct current_user_info;
 static int regdb_last_seqnum = 0;
 static bool include_registry_globals = False;
 
+#define CONFIG_BACKEND_FILE 0
+#define CONFIG_BACKEND_REGISTRY 1
+
+static int config_backend = CONFIG_BACKEND_FILE;
+
 /* some helpful bits */
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && (ServicePtrs != NULL) && ServicePtrs[(i)]->valid)
 #define VALID(i) (ServicePtrs != NULL && ServicePtrs[i]->valid)
@@ -104,6 +109,7 @@ struct _param_opt_struct {
  * This structure describes global (ie., server-wide) parameters.
  */
 typedef struct {
+	int ConfigBackend;
 	char *smb_ports;
 	char *dos_charset;
 	char *unix_charset;
@@ -842,6 +848,14 @@ static const struct enum_list enum_map_to_guest[] = {
 	{-1, NULL}
 };
 
+/* Config backend options */
+
+static const struct enum_list enum_config_backend[] = {
+	{CONFIG_BACKEND_FILE, "file"},
+	{CONFIG_BACKEND_REGISTRY, "registry"},
+	{-1, NULL}
+};
+
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *
  * The FLAG_HIDE is explicit. Paramters set this way do NOT appear in any edit
@@ -879,6 +893,8 @@ static struct parm_struct parm_table[] = {
 	{"server string", P_STRING, P_GLOBAL, &Globals.szServerString, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED }, 
 	{"interfaces", P_LIST, P_GLOBAL, &Globals.szInterfaces, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"bind interfaces only", P_BOOL, P_GLOBAL, &Globals.bBindInterfacesOnly, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
+
+	{"config backend", P_ENUM, P_GLOBAL, &Globals.ConfigBackend, NULL, enum_config_backend, FLAG_ADVANCED},
 
 	{N_("Security Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1529,6 +1545,8 @@ static void init_globals(bool first_time_only)
 	Globals.bLoadPrinters = True;
 	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
 
+	Globals.ConfigBackend = CONFIG_BACKEND_FILE;
+
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
 	Globals.max_xmit = 0x4104;
@@ -2048,6 +2066,7 @@ FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_time, &Globals.iLockSpinTime)
 FN_GLOBAL_INTEGER(lp_usershare_max_shares, &Globals.iUsershareMaxShares)
 FN_GLOBAL_CONST_STRING(lp_socket_options, &Globals.szSocketOptions)
+FN_GLOBAL_INTEGER(lp_config_backend, &Globals.ConfigBackend);
 
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
@@ -3655,7 +3674,7 @@ bool lp_file_list_changed(void)
 
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
-	if (include_registry_globals) {
+	if (config_backend == CONFIG_BACKEND_REGISTRY) {
 		reg_tdb = lp_regdb_open();
 		if (reg_tdb && (regdb_last_seqnum != tdb_get_seqnum(reg_tdb->tdb)))
 		{
@@ -3663,6 +3682,15 @@ bool lp_file_list_changed(void)
 				    regdb_last_seqnum, tdb_get_seqnum(reg_tdb->tdb)));
 			TALLOC_FREE(reg_tdb);
 			return true;
+		} else {
+			/*
+			 * Don't check files when config_backend is registry.
+			 * Remove this to obtain checking of files even with
+			 * registry config backend. That would enable switching
+			 * off registry configuration by changing smb.conf even
+			 * without restarting smbd.
+			 */
+			return false;
 		}
 	}
 
@@ -3697,6 +3725,7 @@ bool lp_file_list_changed(void)
 	}
 	return (False);
 }
+
 
 /***************************************************************************
  Run standard_sub_basic on netbios name... needed because global_myname
@@ -5656,15 +5685,6 @@ bool lp_load(const char *pszFname,
 	bool bRetval;
 	param_opt_struct *data, *pdata;
 
-	n2 = alloc_sub_basic(get_current_username(),
-				current_user_info.domain,
-				pszFname);
-	if (!n2) {
-		smb_panic("lp_load: out of memory");
-	}
-
-	add_to_file_list(pszFname, n2);
-
 	bRetval = False;
 
 	DEBUG(3, ("lp_load: refreshing parameters\n"));
@@ -5693,17 +5713,41 @@ bool lp_load(const char *pszFname,
 		Globals.param_opt = NULL;
 	}
 
-	/* We get sections first, so have to start 'behind' to make up */
-	iServiceIndex = -1;
-	bRetval = pm_process(n2, do_section, do_parameter);
-	SAFE_FREE(n2);
-
-	/* finish up the last section */
-	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
-	if (bRetval) {
-		if (iServiceIndex >= 0) {
-			bRetval = service_ok(iServiceIndex);
+	if (config_backend == CONFIG_BACKEND_FILE) {
+		n2 = alloc_sub_basic(get_current_username(),
+					current_user_info.domain,
+					pszFname);
+		if (!n2) {
+			smb_panic("lp_load: out of memory");
 		}
+
+		add_to_file_list(pszFname, n2);
+
+		/* We get sections first, so have to start 'behind' to make up */
+		iServiceIndex = -1;
+		bRetval = pm_process(n2, do_section, do_parameter);
+		SAFE_FREE(n2);
+
+		/* finish up the last section */
+		DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
+		if (bRetval) {
+			if (iServiceIndex >= 0) {
+				bRetval = service_ok(iServiceIndex);
+			}
+		}
+
+		if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
+			config_backend = CONFIG_BACKEND_REGISTRY;
+			/* start over */
+			return lp_load(pszFname, global_only, save_defaults,
+				       add_ipc, initialize_globals);
+		}
+	} else if (config_backend == CONFIG_BACKEND_REGISTRY) {
+		bRetval = process_registry_globals(do_parameter);
+	} else {
+		DEBUG(0, ("Illegal config  backend given: %d\n",
+			  config_backend));
+		bRetval = false;
 	}
 
 	lp_add_auto_services(lp_auto_services());
