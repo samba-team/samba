@@ -70,16 +70,7 @@ extern userdom_struct current_user_info;
 #define HOMES_NAME "homes"
 #endif
 
-/* the special value for the include parameter
- * to be interpreted not as a file name but to
- * trigger loading of the global smb.conf options
- * from registry. */
-#ifndef INCLUDE_REGISTRY_NAME
-#define INCLUDE_REGISTRY_NAME "registry"
-#endif
-
 static int regdb_last_seqnum = 0;
-static bool include_registry_globals = False;
 
 #define CONFIG_BACKEND_FILE 0
 #define CONFIG_BACKEND_REGISTRY 1
@@ -3443,8 +3434,6 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 	char * valstr;
 	struct registry_value *value = NULL;
 
-	include_registry_globals = True;
-
 	ZERO_STRUCT(data);
 
 	reg_tdb = lp_regdb_open();
@@ -3557,8 +3546,6 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 		smb_panic("Failed to create talloc context!");
 	}
 
-	include_registry_globals = True;
-
 	if (!registry_init_regdb()) {
 		DEBUG(1, ("Error initializing the registry.\n"));
 		goto done;
@@ -3656,11 +3643,6 @@ static void add_to_file_list(const char *fname, const char *subfname)
 		if (t)
 			f->modtime = t;
 	}
-}
-
-bool lp_include_registry_globals(void)
-{
-	return include_registry_globals;
 }
 
 /**
@@ -3803,17 +3785,6 @@ static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **pt
 static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	char *fname;
-
-	if (strequal(pszParmValue, INCLUDE_REGISTRY_NAME)) {
-		if (bInGlobalSection) {
-			return process_registry_globals(do_parameter);
-		}
-		else {
-			DEBUG(1, ("\"include = registry\" only effective "
-				  "in %s section\n", GLOBAL_NAME));
-			return false;
-		}
-	}
 
 	fname = alloc_sub_basic(get_current_username(),
 				current_user_info.domain,
