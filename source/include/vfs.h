@@ -70,6 +70,7 @@
  * timestamp resolition. JRA. */
 /* Changed to version21 to add chflags operation -- jpeach */
 /* Changed to version22 to add lchown operation -- jra */
+/* Additional change: add operations for offline files and remote storage volume abstraction -- ab*/
 /* Leave at 22 - not yet released. But change set_nt_acl to return an NTSTATUS. jra. */
 /* Leave at 22 - not yet released. Add file_id_create operation. --metze */
 /* Leave at 22 - not yet released. Change all BOOL parameters (int) to bool. jra. */
@@ -257,6 +258,12 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_AIO_ERROR,
 	SMB_VFS_OP_AIO_FSYNC,
 	SMB_VFS_OP_AIO_SUSPEND,
+        SMB_VFS_OP_AIO_FORCE,
+
+	/* offline operations */
+	SMB_VFS_OP_IS_OFFLINE,
+	SMB_VFS_OP_SET_OFFLINE,
+	SMB_VFS_OP_IS_REMOTESTORAGE,
 
 	/* This should always be last enum value */
 	
@@ -405,6 +412,12 @@ struct vfs_ops {
 		int (*aio_error_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_suspend)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *timeout);
+		bool (*aio_force)(struct vfs_handle_struct *handle, struct files_struct *fsp);
+		
+		/* offline operations */
+		int (*is_offline)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf, bool *offline);
+		int (*set_offline)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path);
+		bool (*is_remotestorage)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path);
 
 	} ops;
 
@@ -526,6 +539,12 @@ struct vfs_ops {
 		struct vfs_handle_struct *aio_error;
 		struct vfs_handle_struct *aio_fsync;
 		struct vfs_handle_struct *aio_suspend;
+		struct vfs_handle_struct *aio_force;
+		
+		/* offline operations */
+		struct vfs_handle_struct *is_offline;
+		struct vfs_handle_struct *set_offline;
+		struct vfs_handle_struct *is_remotestorage;
 	} handles;
 };
 
