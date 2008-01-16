@@ -345,7 +345,7 @@ static int shadow_copy2_open(vfs_handle_struct *handle,
 static SMB_STRUCT_DIR *shadow_copy2_opendir(vfs_handle_struct *handle,
 			  const char *fname, const char *mask, uint32 attr)
 {
-        SHADOW2_NEXT(OPENDIR, (handle, name, mask, attr), void*, NULL);
+        SHADOW2_NEXT(OPENDIR, (handle, name, mask, attr), SMB_STRUCT_DIR *, NULL);
 }
 
 static int shadow_copy2_stat(vfs_handle_struct *handle,
@@ -413,7 +413,7 @@ static int shadow_copy2_mknod(vfs_handle_struct *handle,
 static char *shadow_copy2_realpath(vfs_handle_struct *handle,
 			    const char *fname, char *resolved_path)
 {
-        SHADOW2_NEXT(REALPATH, (handle, name, resolved_path), void*, NULL);
+        SHADOW2_NEXT(REALPATH, (handle, name, resolved_path), char *, NULL);
 }
 
 static NTSTATUS shadow_copy2_get_nt_acl(vfs_handle_struct *handle,
