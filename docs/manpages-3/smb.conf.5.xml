@@ -716,8 +716,8 @@ chmod 1770 /usr/local/samba/lib/usershares
 
 	<para>
 		Starting with Samba version 3.2.0, the capability to
-		store Samba configuration in the registry is available. 
-		There are two levels of registry configuration. 
+		store Samba configuration in the registry is available.
+		There are two levels of registry configuration.
 	</para>
 
 	<orderedlist continuation="restarts" inheritnum="ignore" numeration="arabic">
@@ -727,54 +727,38 @@ chmod 1770 /usr/local/samba/lib/usershares
 		<quote>yes</quote> in <emphasis>smb.conf</emphasis>.
 		</para>
 
-		<para>Note: Shares defined in <emphasis>smb.conf</emphasis> always take priority over 
+		<para>Note: Shares defined in <emphasis>smb.conf</emphasis>
+		always take priority over
 		shares of the same name defined in registry.
 		</para></listitem>
 
 		<listitem><para>Global <emphasis>smb.conf</emphasis> options stored in
 		registry are used. This
-		is triggered by a new special meaning of the
-		parameter <smbconfoption name="include">registry</smbconfoption> in
-		the [global] section of <emphasis>smb.conf</emphasis>. 
-		This reads the content of
-		the global configuration section from the regsitry
-		and includes the result with the same priorities as
-		an include of a text file. Activation of global
-		registry options automatically activates registry
-		shares.
+		is triggered by a new parameter
+		<smbconfoption name="config backend">registry</smbconfoption> in
+		the [global] section of <emphasis>smb.conf</emphasis>.
+		This this removes everything that has been red from config files
+		to this poing and reads the content of the global configuration
+		section from the regsitry
+		Activation of global registry options automatically
+		activates registry shares. In this case, no share definition
+		from smb.conf are read: This is a registry only configuration
+		with the advantage that share definitions are not read
+		in a bulk at startup time but on demand when a share is
+		accessed.
 		</para></listitem>
 	</orderedlist>
 
-	<para>	
-		Even when global registry options are used, the initial source of
-		configuration is still the <emphasis>smb.conf</emphasis> file. 
-		It is this possible though, to produce a registry-only configuration 
-		with a minimal configuration file like this:
-<programlisting>
-	<smbconfsection name="[global]"/>
-	<smbconfoption name="include">registry</smbconfoption>
-</programlisting>
-		This is also currently the only supported configuration with global
-		registry options activated. More precisely, it is only supported to 
-		specify options in <emphasis>smb.conf</emphasis>
-		<emphasis>before</emphasis> the
-		occurrence of 
-		<smbconfoption name="include">registry</smbconfoption>.
-	</para>
-
 	<para>
 		Caveat: To make registry-based configurations foolprof at least to a
-		certain extent, the use of <parameter>lock directory</parameter>
+		certain extent, the use of
+		<parameter>lock directory</parameter>,
+		<parameter>config backend</parameter>,
 		and <parameter>include</parameter> inside the registry
 		configuration has been disabled. Especially, by changing the
 		<parameter>lock directory</parameter> inside the registry
 		configuration, one would create a broken setup where the daemons
-		do not see the configuration they loaded once it is active. This
-		phenomenon can of course also be triggered by specifying
-		<parameter>lock directory</parameter> after the
-		<smbconfoption name="include">registry</smbconfoption> directive. 
-		This is why
-		this type of configuration is classified "unsupported" above.
+		do not see the configuration they loaded once it is active.
 	</para>
 
 	<para>
@@ -784,7 +768,7 @@ chmod 1770 /usr/local/samba/lib/usershares
 		<emphasis><literal>HKLM\Software\Samba\smbconf</literal></emphasis>.
 
 		More conveniently, the <emphasis>conf</emphasis> subcommand of the
-		<citerefentry><refentrytitle>net</refentrytitle> 
+		<citerefentry><refentrytitle>net</refentrytitle>
 		<manvolnum>8</manvolnum></citerefentry> utility
 		offers a dedicated interface to read and write the
 		registry based configuration locally, i.e. directly

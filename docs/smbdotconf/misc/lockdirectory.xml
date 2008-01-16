@@ -9,6 +9,11 @@
 	files will be placed.  The lock files are used to implement the 
 	<smbconfoption name="max connections"/> option.
 	</para>
+
+	<para>
+		Note: This option can not be set inside registry
+		configurations.
+	</para>
 </description>
 
 <value type="default">${prefix}/var/locks</value>
