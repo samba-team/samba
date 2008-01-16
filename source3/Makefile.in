@@ -268,7 +268,8 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_srvsvc.o \
 		 librpc/gen_ndr/ndr_svcctl.o \
 		 librpc/gen_ndr/ndr_eventlog.o \
-		 librpc/gen_ndr/ndr_notify.o
+		 librpc/gen_ndr/ndr_notify.o \
+		 librpc/gen_ndr/ndr_libnet_join.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -307,7 +308,7 @@ LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/util_str.o lib/clobber.o lib/util_sid.o lib/util_uuid.o \
 	  lib/util_unistr.o lib/util_file.o lib/data_blob.o \
 	  lib/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
-	  lib/substitute.o lib/fsusage.o \
+	  lib/substitute.o lib/fsusage.o lib/dbwrap_util.o \
 	  lib/ms_fnmatch.o lib/select.o lib/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
 	  lib/md5.o lib/hmacmd5.o lib/arc4.o lib/iconv.o \
@@ -340,13 +341,13 @@ LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
 	       libaddns/dnsgss.o libaddns/dnsmarshall.o
 LIBADDNS_OBJ = $(LIBADDNS_OBJ0) $(TALLOC_OBJ)
 
-LIBWBCLIENT_OBJ = nsswitch/libwbclient/wbclient.o \
+LIBWBCLIENT_OBJ0 = nsswitch/libwbclient/wbclient.o \
 		  nsswitch/libwbclient/wbc_util.o \
 		  nsswitch/libwbclient/wbc_pwd.o \
 		  nsswitch/libwbclient/wbc_idmap.o \
 		  nsswitch/libwbclient/wbc_sid.o \
 		  nsswitch/libwbclient/wbc_pam.o
-
+LIBWBCLIENT_OBJ = $(LIBWBCLIENT_OBJ0) $(WBCOMMON_OBJ) $(TALLOC_OBJ) $(LIBREPLACE_OBJ)
 
 LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_ini.o libgpo/gpo_util.o \
 	      libgpo/gpo_fetch.o libgpo/gpo_filesync.o libgpo/gpo_sec.o
@@ -502,7 +503,9 @@ VFS_READONLY_OBJ = modules/vfs_readonly.o modules/getdate.o
 VFS_CAP_OBJ = modules/vfs_cap.o
 VFS_EXPAND_MSDFS_OBJ = modules/vfs_expand_msdfs.o
 VFS_SHADOW_COPY_OBJ = modules/vfs_shadow_copy.o
+VFS_SHADOW_COPY2_OBJ = modules/vfs_shadow_copy2.o
 VFS_AFSACL_OBJ = modules/vfs_afsacl.o
+VFS_XATTR_TDB_OBJ = modules/vfs_xattr_tdb.o librpc/gen_ndr/ndr_xattr.o
 VFS_POSIXACL_OBJ = modules/vfs_posixacl.o
 VFS_AIXACL_OBJ = modules/vfs_aixacl.o modules/vfs_aixacl_util.o
 VFS_AIXACL2_OBJ = modules/vfs_aixacl2.o modules/vfs_aixacl_util.o modules/nfs4_acls.o
@@ -518,6 +521,7 @@ VFS_COMMIT_OBJ = modules/vfs_commit.o
 VFS_GPFS_OBJ = modules/vfs_gpfs.o modules/gpfs.o modules/nfs4_acls.o
 VFS_NOTIFY_FAM_OBJ = modules/vfs_notify_fam.o
 VFS_READAHEAD_OBJ = modules/vfs_readahead.o
+VFS_TSMSM_OBJ = modules/vfs_tsmsm.o
 VFS_FILEID_OBJ = modules/vfs_fileid.o
 VFS_SYNCOPS_OBJ = modules/vfs_syncops.o
 
@@ -671,7 +675,7 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 	     $(SMBLDAP_OBJ) $(DCUTIL_OBJ) $(LDB_OBJ) 
 
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
-		  $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) @BUILD_INIPARSER@
+		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
 
 LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
 		   libsmb/libsmb_cache.o \
@@ -928,7 +932,7 @@ WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(SECRETS_OBJ) $(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) $(RPC_PARSE_OBJ1) \
 		$(DOSERR_OBJ) lib/winbind_util.o @LIBWBCLIENT_STATIC@
 
-WINBIND_NSS_OBJ = $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ) @WINBIND_NSS_EXTRA_OBJS@
+WINBIND_NSS_OBJ = $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ) @WINBIND_NSS_EXTRA_OBJS@
 
 LDB_COMMON_OBJ=lib/ldb/common/ldb.o lib/ldb/common/ldb_ldif.o \
           lib/ldb/common/ldb_parse.o lib/ldb/common/ldb_msg.o lib/ldb/common/ldb_utf8.o \
@@ -966,7 +970,7 @@ LDBDEL_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbdel.o
 LDBMODIFY_OBJ = $(LDB_CMDLINE_OBJ) lib/ldb/tools/ldbmodify.o
 
 WINBIND_KRB5_LOCATOR_OBJ1 = nsswitch/winbind_krb5_locator.o
-WINBIND_KRB5_LOCATOR_OBJ = $(WINBIND_KRB5_LOCATOR_OBJ1) $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ)
+WINBIND_KRB5_LOCATOR_OBJ = $(WINBIND_KRB5_LOCATOR_OBJ1) $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ)
 
 POPT_OBJ=popt/findme.o popt/popt.o popt/poptconfig.o \
           popt/popthelp.o popt/poptparse.o
@@ -1060,7 +1064,7 @@ modules: SHOWFLAGS $(MODULES)
 ## Perl IDL Compiler
 IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
 	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
-	epmapper.idl messaging.idl
+	epmapper.idl messaging.idl xattr.idl
 
 idl:
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
@@ -1396,15 +1400,15 @@ bin/ldbdel: $(BINARY_PREREQS) $(LDBDEL_OBJ) @BUILD_POPT@ @LIBWBCLIENT_SHARED@
 		@POPTLIBS@ $(KRB5LIBS) $(UUID_LIBS) $(LDAP_LIBS) $(PASSDB_LIBS) \
 		$(TERMLDFLAGS) $(TERMLIBS) $(NSCD_LIBS) @WINBIND_LIBS@
 
-bin/libwbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ) nsswitch/wb_common.o $(LIBSAMBAUTIL_OBJ)
+bin/libwbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ)
 	@echo Linking shared library $@
-	@$(SHLD_DSO) $(LIBWBCLIENT_OBJ) nsswitch/wb_common.o $(LIBSAMBAUTIL_OBJ) \
+	@$(SHLD_DSO) $(LIBWBCLIENT_OBJ) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 	@ln -s -f `basename $@` $@.$(SONAME_VER)
 
-bin/libwbclient.a: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ)
+bin/libwbclient.a: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ0)
 	@echo Linking non-shared library $@
-	@-$(AR) -rc $@ $(LIBWBCLIENT_OBJ)
+	@-$(AR) -rc $@ $(LIBWBCLIENT_OBJ0)
 
 bin/libaddns.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 	@echo Linking shared library $@
@@ -1609,6 +1613,10 @@ bin/ad.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ad.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) winbindd/idmap_ad.o
 
+bin/tdb2.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_tdb2.o
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) winbindd/idmap_tdb2.o
+
 bin/ldap.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ldap.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) winbindd/idmap_ldap.o
@@ -1668,6 +1676,10 @@ bin/shadow_copy.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SHADOW_COPY_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_SHADOW_COPY_OBJ)
 
+bin/shadow_copy2.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SHADOW_COPY2_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_SHADOW_COPY2_OBJ)
+
 bin/syncops.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SYNCOPS_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_SYNCOPS_OBJ)
@@ -1683,6 +1695,10 @@ bin/expand_msdfs.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_EXPAND_MSDFS_OBJ)
 bin/afsacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AFSACL_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_AFSACL_OBJ)
+
+bin/xattr_tdb.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_XATTR_TDB_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_XATTR_TDB_OBJ)
 
 bin/posixacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_POSIXACL_OBJ)
 	@echo "Building plugin $@"
@@ -1743,6 +1759,10 @@ bin/notify_fam.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_NOTIFY_FAM_OBJ)
 bin/readahead.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_READAHEAD_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_READAHEAD_OBJ)
+
+bin/tsmsm.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_TSMSM_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_TSMSM_OBJ)
 
 bin/fileid.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FILEID_OBJ)
 	@echo "Building plugin $@"
@@ -1884,9 +1904,10 @@ installlibaddns: installdirs libaddns
 	-$(INSTALLLIBCMD_A) bin/libaddns.a $(DESTDIR)$(LIBDIR)
 
 installlibwbclient: installdirs libwbclient
-	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR) $(INCLUDEDIR)/samba
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libwbclient.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/nsswitch/libwbclient/wbclient.h $(DESTDIR)${prefix}/include/samba
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/nsswitch/libwbclient/wbclient.h $(DESTDIR)${prefix}/include
 
 installlibnetapi: installdirs libnetapi
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)

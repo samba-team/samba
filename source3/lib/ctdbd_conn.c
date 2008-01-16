@@ -1203,6 +1203,42 @@ NTSTATUS ctdbd_register_reconfigure(struct ctdbd_connection *conn)
 	return register_with_ctdbd(conn, CTDB_SRVID_RECONFIGURE);
 }
 
+/*
+  persstent store. Used when we update a record in a persistent database
+ */
+NTSTATUS ctdbd_persistent_store(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key, TDB_DATA data)
+{
+       int cstatus=0;
+       struct ctdb_rec_data *rec;
+       TDB_DATA recdata;
+       size_t length;
+       NTSTATUS status;
+
+       length = offsetof(struct ctdb_rec_data, data) + key.dsize + data.dsize;
+
+       rec = (struct ctdb_rec_data *)talloc_size(conn, length);
+       NT_STATUS_HAVE_NO_MEMORY(rec);
+
+       rec->length = length;
+       rec->reqid  = db_id;
+       rec->keylen = key.dsize;
+       rec->datalen= data.dsize;
+       memcpy(&rec->data[0], key.dptr, key.dsize);
+       memcpy(&rec->data[key.dsize], data.dptr, data.dsize);
+
+       recdata.dptr  = (uint8_t *)rec;
+       recdata.dsize = length;
+
+       status = ctdbd_control(conn, CTDB_CURRENT_NODE, 
+                              CTDB_CONTROL_PERSISTENT_STORE, 
+                              0, recdata, NULL, NULL, &cstatus);
+       if (cstatus != 0) {
+               return NT_STATUS_INTERNAL_DB_CORRUPTION;
+       }
+       return status;
+}
+
+
 #else
 
 NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,

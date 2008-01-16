@@ -2373,8 +2373,8 @@ static void call_trans2qfsinfo(connection_struct *conn,
 	const char *vname = volume_label(SNUM(conn));
 	int snum = SNUM(conn);
 	char *fstype = lp_fstype(SNUM(conn));
-	int quota_flag = 0;
-
+	uint32 additional_flags = 0;
+	
 	if (total_params < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
@@ -2487,16 +2487,23 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 		case SMB_QUERY_FS_ATTRIBUTE_INFO:
 		case SMB_FS_ATTRIBUTE_INFORMATION:
 
-
+			additional_flags = 0;
 #if defined(HAVE_SYS_QUOTAS)
-			quota_flag = FILE_VOLUME_QUOTAS;
+			additional_flags |= FILE_VOLUME_QUOTAS;
 #endif
 
+			if(lp_nt_acl_support(SNUM(conn))) {
+				additional_flags |= FILE_PERSISTENT_ACLS;
+			}
+			
+			if(SMB_VFS_IS_REMOTESTORAGE(conn, lp_pathname(SNUM(conn)))) {
+				additional_flags |= FILE_SUPPORTS_REMOTE_STORAGE;
+				additional_flags |= FILE_SUPPORTS_REPARSE_POINTS;
+			}
+			
 			SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
-				(lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)|
-				FILE_SUPPORTS_OBJECT_IDS|
-				FILE_UNICODE_ON_DISK|
-				quota_flag); /* FS ATTRIBUTES */
+				FILE_SUPPORTS_OBJECT_IDS|FILE_UNICODE_ON_DISK|
+				additional_flags); /* FS ATTRIBUTES */
 
 			SIVAL(pdata,4,255); /* Max filename component length */
 			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it

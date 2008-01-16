@@ -7,6 +7,7 @@
 
 enum acl_mode
 {
+    SMB_ACL_LIST,
     SMB_ACL_GET,
     SMB_ACL_SET,
     SMB_ACL_DELETE,
@@ -24,7 +25,7 @@ int main(int argc, const char *argv[])
     int debug = 0;
     int numeric = 0;
     int full_time_names = 0;
-    enum acl_mode mode = SMB_ACL_GET;
+    enum acl_mode mode = SMB_ACL_LIST;
     static char *the_acl = NULL;
     int ret;
     char *p;
@@ -149,6 +150,30 @@ int main(int argc, const char *argv[])
     
     switch(mode)
     {
+    case SMB_ACL_LIST:
+        ret = smbc_listxattr(path, value, sizeof(value)-2);
+        if (ret < 0)
+        {
+            printf("Could not get attribute list for [%s] %d: %s\n",
+                   path, errno, strerror(errno));
+            return 1;
+        }
+
+        /*
+         * The list of attributes has a series of null-terminated strings.
+         * The list of strings terminates with an extra null byte, thus two in
+         * a row.  Ensure that our buffer, which is conceivably shorter than
+         * the list of attributes, actually ends with two null bytes in a row.
+         */
+        value[sizeof(value) - 2] = '\0';
+        value[sizeof(value) - 1] = '\0';
+        printf("Supported attributes:\n");
+        for (p = value; *p; p += strlen(p) + 1)
+        {
+            printf("\t%s\n", p);
+        }
+        break;
+
     case SMB_ACL_GET:
         if (the_acl == NULL)
         {

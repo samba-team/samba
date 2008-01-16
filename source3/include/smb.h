@@ -322,6 +322,8 @@ struct id_map {
 #include "librpc/gen_ndr/wkssvc.h"
 #include "librpc/gen_ndr/echo.h"
 #include "librpc/gen_ndr/svcctl.h"
+#include "librpc/gen_ndr/libnet_join.h"
+
 
 struct lsa_dom_info {
 	bool valid;

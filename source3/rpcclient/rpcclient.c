@@ -134,7 +134,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;
 	uint32 info_class = 5;
-	char *domain_name = NULL;
+	const char *domain_name = NULL;
 	static bool got_domain_sid;
 	TALLOC_CTX *mem_ctx;
 	DOM_SID *dom_sid = NULL;
