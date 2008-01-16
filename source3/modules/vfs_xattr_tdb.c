@@ -28,9 +28,9 @@
  * unmarshall tdb_xattrs
  */
 
-static NTSTATUS ea_tdb_pull_attrs(TALLOC_CTX *mem_ctx,
-				  const TDB_DATA *data,
-				  struct tdb_xattrs **presult)
+static NTSTATUS xattr_tdb_pull_attrs(TALLOC_CTX *mem_ctx,
+				     const TDB_DATA *data,
+				     struct tdb_xattrs **presult)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
@@ -66,9 +66,9 @@ static NTSTATUS ea_tdb_pull_attrs(TALLOC_CTX *mem_ctx,
  * marshall tdb_xattrs
  */
 
-static NTSTATUS ea_tdb_push_attrs(TALLOC_CTX *mem_ctx,
-				  const struct tdb_xattrs *attribs,
-				  TDB_DATA *data)
+static NTSTATUS xattr_tdb_push_attrs(TALLOC_CTX *mem_ctx,
+				     const struct tdb_xattrs *attribs,
+				     TDB_DATA *data)
 {
 	DATA_BLOB blob;
 	enum ndr_err_code ndr_err;
@@ -91,10 +91,10 @@ static NTSTATUS ea_tdb_push_attrs(TALLOC_CTX *mem_ctx,
  * Load tdb_xattrs for a file from the tdb
  */
 
-static NTSTATUS ea_tdb_load_attrs(TALLOC_CTX *mem_ctx,
-				  struct db_context *db_ctx,
-				  const struct file_id *id,
-				  struct tdb_xattrs **presult)
+static NTSTATUS xattr_tdb_load_attrs(TALLOC_CTX *mem_ctx,
+				     struct db_context *db_ctx,
+				     const struct file_id *id,
+				     struct tdb_xattrs **presult)
 {
 	uint8 id_buf[16];
 	NTSTATUS status;
@@ -108,7 +108,7 @@ static NTSTATUS ea_tdb_load_attrs(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = ea_tdb_pull_attrs(mem_ctx, &data, presult);
+	status = xattr_tdb_pull_attrs(mem_ctx, &data, presult);
 	TALLOC_FREE(data.dptr);
 	return NT_STATUS_OK;
 }
@@ -117,9 +117,9 @@ static NTSTATUS ea_tdb_load_attrs(TALLOC_CTX *mem_ctx,
  * fetch_lock the tdb_ea record for a file
  */
 
-static struct db_record *ea_tdb_lock_attrs(TALLOC_CTX *mem_ctx,
-					   struct db_context *db_ctx,
-					   const struct file_id *id)
+static struct db_record *xattr_tdb_lock_attrs(TALLOC_CTX *mem_ctx,
+					      struct db_context *db_ctx,
+					      const struct file_id *id)
 {
 	uint8 id_buf[16];
 	push_file_id_16((char *)id_buf, id);
@@ -131,16 +131,16 @@ static struct db_record *ea_tdb_lock_attrs(TALLOC_CTX *mem_ctx,
  * Save tdb_xattrs to a previously fetch_locked record
  */
 
-static NTSTATUS ea_tdb_save_attrs(struct db_record *rec,
-				  const struct tdb_xattrs *attribs)
+static NTSTATUS xattr_tdb_save_attrs(struct db_record *rec,
+				     const struct tdb_xattrs *attribs)
 {
 	TDB_DATA data;
 	NTSTATUS status;
 
-	status = ea_tdb_push_attrs(talloc_tos(), attribs, &data);
+	status = xattr_tdb_push_attrs(talloc_tos(), attribs, &data);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("ea_tdb_push_attrs failed: %s\n",
+		DEBUG(0, ("xattr_tdb_push_attrs failed: %s\n",
 			  nt_errstr(status)));
 		return status;
 	}
@@ -156,19 +156,19 @@ static NTSTATUS ea_tdb_save_attrs(struct db_record *rec,
  * Worker routine for getxattr and fgetxattr
  */
 
-static ssize_t ea_tdb_getattr(struct db_context *db_ctx,
-			      const struct file_id *id,
-			      const char *name, void *value, size_t size)
+static ssize_t xattr_tdb_getattr(struct db_context *db_ctx,
+				 const struct file_id *id,
+				 const char *name, void *value, size_t size)
 {
 	struct tdb_xattrs *attribs;
 	uint32_t i;
 	ssize_t result = -1;
 	NTSTATUS status;
 
-	status = ea_tdb_load_attrs(talloc_tos(), db_ctx, id, &attribs);
+	status = xattr_tdb_load_attrs(talloc_tos(), db_ctx, id, &attribs);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("ea_tdb_fetch_attrs failed: %s\n",
+		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
 			   nt_errstr(status)));
 		errno = EINVAL;
 		return -1;
@@ -199,9 +199,9 @@ static ssize_t ea_tdb_getattr(struct db_context *db_ctx,
 	return result;
 }
 
-static ssize_t ea_tdb_getxattr(struct vfs_handle_struct *handle,
-			       const char *path, const char *name,
-			       void *value, size_t size)
+static ssize_t xattr_tdb_getxattr(struct vfs_handle_struct *handle,
+				  const char *path, const char *name,
+				  void *value, size_t size)
 {
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
@@ -215,12 +215,12 @@ static ssize_t ea_tdb_getxattr(struct vfs_handle_struct *handle,
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
 
-	return ea_tdb_getattr(db, &id, name, value, size);
+	return xattr_tdb_getattr(db, &id, name, value, size);
 }
 
-static ssize_t ea_tdb_fgetxattr(struct vfs_handle_struct *handle,
-				struct files_struct *fsp,
-				const char *name, void *value, size_t size)
+static ssize_t xattr_tdb_fgetxattr(struct vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   const char *name, void *value, size_t size)
 {
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
@@ -234,34 +234,34 @@ static ssize_t ea_tdb_fgetxattr(struct vfs_handle_struct *handle,
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
 
-	return ea_tdb_getattr(db, &id, name, value, size);
+	return xattr_tdb_getattr(db, &id, name, value, size);
 }
 
 /*
  * Worker routine for setxattr and fsetxattr
  */
 
-static int ea_tdb_setattr(struct db_context *db_ctx,
-			  const struct file_id *id, const char *name,
-			  const void *value, size_t size, int flags)
+static int xattr_tdb_setattr(struct db_context *db_ctx,
+			     const struct file_id *id, const char *name,
+			     const void *value, size_t size, int flags)
 {
 	NTSTATUS status;
 	struct db_record *rec;
 	struct tdb_xattrs *attribs;
 	uint32_t i;
 
-	rec = ea_tdb_lock_attrs(talloc_tos(), db_ctx, id);
+	rec = xattr_tdb_lock_attrs(talloc_tos(), db_ctx, id);
 
 	if (rec == NULL) {
-		DEBUG(0, ("ea_tdb_lock_attrs failed\n"));
+		DEBUG(0, ("xattr_tdb_lock_attrs failed\n"));
 		errno = EINVAL;
 		return -1;
 	}
 
-	status = ea_tdb_pull_attrs(rec, &rec->value, &attribs);
+	status = xattr_tdb_pull_attrs(rec, &rec->value, &attribs);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("ea_tdb_fetch_attrs failed: %s\n",
+		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
 			   nt_errstr(status)));
 		TALLOC_FREE(rec);
 		return -1;
@@ -295,7 +295,7 @@ static int ea_tdb_setattr(struct db_context *db_ctx,
 	attribs->xattrs[i].value.data = CONST_DISCARD(uint8 *, value);
 	attribs->xattrs[i].value.length = size;
 
-	status = ea_tdb_save_attrs(rec, attribs);
+	status = xattr_tdb_save_attrs(rec, attribs);
 
 	TALLOC_FREE(rec);
 
@@ -307,9 +307,9 @@ static int ea_tdb_setattr(struct db_context *db_ctx,
 	return 0;
 }
 
-static int ea_tdb_setxattr(struct vfs_handle_struct *handle,
-			   const char *path, const char *name,
-			   const void *value, size_t size, int flags)
+static int xattr_tdb_setxattr(struct vfs_handle_struct *handle,
+			      const char *path, const char *name,
+			      const void *value, size_t size, int flags)
 {
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
@@ -323,13 +323,13 @@ static int ea_tdb_setxattr(struct vfs_handle_struct *handle,
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
 
-	return ea_tdb_setattr(db, &id, name, value, size, flags);
+	return xattr_tdb_setattr(db, &id, name, value, size, flags);
 }
 
-static int ea_tdb_fsetxattr(struct vfs_handle_struct *handle,
-			    struct files_struct *fsp,
-			    const char *name, const void *value,
-			    size_t size, int flags)
+static int xattr_tdb_fsetxattr(struct vfs_handle_struct *handle,
+			       struct files_struct *fsp,
+			       const char *name, const void *value,
+			       size_t size, int flags)
 {
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
@@ -343,37 +343,38 @@ static int ea_tdb_fsetxattr(struct vfs_handle_struct *handle,
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
 
-	return ea_tdb_setattr(db, &id, name, value, size, flags);
+	return xattr_tdb_setattr(db, &id, name, value, size, flags);
 }
 
 /*
  * Worker routine for listxattr and flistxattr
  */
 
-static ssize_t ea_tdb_listattr(struct db_context *db_ctx,
-			       const struct file_id *id, char *list,
-			       size_t size)
+static ssize_t xattr_tdb_listattr(struct db_context *db_ctx,
+				  const struct file_id *id, char *list,
+				  size_t size)
 {
 	NTSTATUS status;
 	struct tdb_xattrs *attribs;
 	uint32_t i;
 	size_t len = 0;
 
-	status = ea_tdb_load_attrs(talloc_tos(), db_ctx, id, &attribs);
+	status = xattr_tdb_load_attrs(talloc_tos(), db_ctx, id, &attribs);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("ea_tdb_fetch_attrs failed: %s\n",
+		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
 			   nt_errstr(status)));
 		errno = EINVAL;
 		return -1;
 	}
 
-	DEBUG(10, ("ea_tdb_listattr: Found %d xattrs\n", attribs->num_xattrs));
+	DEBUG(10, ("xattr_tdb_listattr: Found %d xattrs\n",
+		   attribs->num_xattrs));
 
 	for (i=0; i<attribs->num_xattrs; i++) {
 		size_t tmp;
 
-		DEBUG(10, ("ea_tdb_listattr: xattrs[i].name: %s\n",
+		DEBUG(10, ("xattr_tdb_listattr: xattrs[i].name: %s\n",
 			   attribs->xattrs[i].name));
 
 		tmp = strlen(attribs->xattrs[i].name);
@@ -412,8 +413,8 @@ static ssize_t ea_tdb_listattr(struct db_context *db_ctx,
 	return len;
 }
 
-static ssize_t ea_tdb_listxattr(struct vfs_handle_struct *handle,
-				const char *path, char *list, size_t size)
+static ssize_t xattr_tdb_listxattr(struct vfs_handle_struct *handle,
+				   const char *path, char *list, size_t size)
 {
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
@@ -427,12 +428,12 @@ static ssize_t ea_tdb_listxattr(struct vfs_handle_struct *handle,
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
 
-	return ea_tdb_listattr(db, &id, list, size);
+	return xattr_tdb_listattr(db, &id, list, size);
 }
 
-static ssize_t ea_tdb_flistxattr(struct vfs_handle_struct *handle,
-				 struct files_struct *fsp, char *list,
-				 size_t size)
+static ssize_t xattr_tdb_flistxattr(struct vfs_handle_struct *handle,
+				    struct files_struct *fsp, char *list,
+				    size_t size)
 {
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
@@ -446,33 +447,33 @@ static ssize_t ea_tdb_flistxattr(struct vfs_handle_struct *handle,
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
 
-	return ea_tdb_listattr(db, &id, list, size);
+	return xattr_tdb_listattr(db, &id, list, size);
 }
 
 /*
  * Worker routine for removexattr and fremovexattr
  */
 
-static int ea_tdb_removeattr(struct db_context *db_ctx,
-			     const struct file_id *id, const char *name)
+static int xattr_tdb_removeattr(struct db_context *db_ctx,
+				const struct file_id *id, const char *name)
 {
 	NTSTATUS status;
 	struct db_record *rec;
 	struct tdb_xattrs *attribs;
 	uint32_t i;
 
-	rec = ea_tdb_lock_attrs(talloc_tos(), db_ctx, id);
+	rec = xattr_tdb_lock_attrs(talloc_tos(), db_ctx, id);
 
 	if (rec == NULL) {
-		DEBUG(0, ("ea_tdb_lock_attrs failed\n"));
+		DEBUG(0, ("xattr_tdb_lock_attrs failed\n"));
 		errno = EINVAL;
 		return -1;
 	}
 
-	status = ea_tdb_pull_attrs(rec, &rec->value, &attribs);
+	status = xattr_tdb_pull_attrs(rec, &rec->value, &attribs);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(10, ("ea_tdb_fetch_attrs failed: %s\n",
+		DEBUG(10, ("xattr_tdb_fetch_attrs failed: %s\n",
 			   nt_errstr(status)));
 		TALLOC_FREE(rec);
 		return -1;
@@ -500,7 +501,7 @@ static int ea_tdb_removeattr(struct db_context *db_ctx,
 		return 0;
 	}
 
-	status = ea_tdb_save_attrs(rec, attribs);
+	status = xattr_tdb_save_attrs(rec, attribs);
 
 	TALLOC_FREE(rec);
 
@@ -512,8 +513,8 @@ static int ea_tdb_removeattr(struct db_context *db_ctx,
 	return 0;
 }
 
-static int ea_tdb_removexattr(struct vfs_handle_struct *handle,
-			      const char *path, const char *name)
+static int xattr_tdb_removexattr(struct vfs_handle_struct *handle,
+				 const char *path, const char *name)
 {
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
@@ -527,11 +528,11 @@ static int ea_tdb_removexattr(struct vfs_handle_struct *handle,
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
 
-	return ea_tdb_removeattr(db, &id, name);
+	return xattr_tdb_removeattr(db, &id, name);
 }
 
-static int ea_tdb_fremovexattr(struct vfs_handle_struct *handle,
-			       struct files_struct *fsp, const char *name)
+static int xattr_tdb_fremovexattr(struct vfs_handle_struct *handle,
+				  struct files_struct *fsp, const char *name)
 {
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
@@ -545,14 +546,14 @@ static int ea_tdb_fremovexattr(struct vfs_handle_struct *handle,
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
 
-	return ea_tdb_removeattr(db, &id, name);
+	return xattr_tdb_removeattr(db, &id, name);
 }
 
 /*
  * Open the tdb file upon VFS_CONNECT
  */
 
-static bool ea_tdb_init(int snum, struct db_context **p_db)
+static bool xattr_tdb_init(int snum, struct db_context **p_db)
 {
 	struct db_context *db;
 	const char *dbname;
@@ -580,7 +581,7 @@ static bool ea_tdb_init(int snum, struct db_context **p_db)
 /*
  * On unlink we need to delete the tdb record
  */
-static int ea_tdb_unlink(vfs_handle_struct *handle, const char *path)
+static int xattr_tdb_unlink(vfs_handle_struct *handle, const char *path)
 {
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
@@ -602,7 +603,7 @@ static int ea_tdb_unlink(vfs_handle_struct *handle, const char *path)
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
 
-	rec = ea_tdb_lock_attrs(talloc_tos(), db, &id);
+	rec = xattr_tdb_lock_attrs(talloc_tos(), db, &id);
 
 	/*
 	 * If rec == NULL there's not much we can do about it
@@ -619,7 +620,7 @@ static int ea_tdb_unlink(vfs_handle_struct *handle, const char *path)
 /*
  * On rmdir we need to delete the tdb record
  */
-static int ea_tdb_rmdir(vfs_handle_struct *handle, const char *path)
+static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
 {
 	SMB_STRUCT_STAT sbuf;
 	struct file_id id;
@@ -641,7 +642,7 @@ static int ea_tdb_rmdir(vfs_handle_struct *handle, const char *path)
 
 	id = SMB_VFS_FILE_ID_CREATE(handle->conn, sbuf.st_dev, sbuf.st_ino);
 
-	rec = ea_tdb_lock_attrs(talloc_tos(), db, &id);
+	rec = xattr_tdb_lock_attrs(talloc_tos(), db, &id);
 
 	/*
 	 * If rec == NULL there's not much we can do about it
@@ -665,7 +666,7 @@ static void close_ea_db(void **data)
 	TALLOC_FREE(*p_db);
 }
 
-static int ea_tdb_connect(vfs_handle_struct *handle, const char *service,
+static int xattr_tdb_connect(vfs_handle_struct *handle, const char *service,
 			  const char *user)
 {
 	fstring sname;
@@ -686,7 +687,7 @@ static int ea_tdb_connect(vfs_handle_struct *handle, const char *service,
 		return 0;
 	}
 
-	if (!ea_tdb_init(snum, &db)) {
+	if (!xattr_tdb_init(snum, &db)) {
 		DEBUG(5, ("Could not init ea tdb\n"));
 		lp_do_parameter(snum, "ea support", "False");
 		return 0;
@@ -702,35 +703,35 @@ static int ea_tdb_connect(vfs_handle_struct *handle, const char *service,
 
 /* VFS operations structure */
 
-static const vfs_op_tuple ea_tdb_ops[] = {
-	{SMB_VFS_OP(ea_tdb_getxattr), SMB_VFS_OP_GETXATTR,
+static const vfs_op_tuple xattr_tdb_ops[] = {
+	{SMB_VFS_OP(xattr_tdb_getxattr), SMB_VFS_OP_GETXATTR,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(ea_tdb_fgetxattr), SMB_VFS_OP_FGETXATTR,
+	{SMB_VFS_OP(xattr_tdb_fgetxattr), SMB_VFS_OP_FGETXATTR,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(ea_tdb_setxattr), SMB_VFS_OP_SETXATTR,
+	{SMB_VFS_OP(xattr_tdb_setxattr), SMB_VFS_OP_SETXATTR,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(ea_tdb_fsetxattr), SMB_VFS_OP_FSETXATTR,
+	{SMB_VFS_OP(xattr_tdb_fsetxattr), SMB_VFS_OP_FSETXATTR,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(ea_tdb_listxattr), SMB_VFS_OP_LISTXATTR,
+	{SMB_VFS_OP(xattr_tdb_listxattr), SMB_VFS_OP_LISTXATTR,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(ea_tdb_flistxattr), SMB_VFS_OP_FLISTXATTR,
+	{SMB_VFS_OP(xattr_tdb_flistxattr), SMB_VFS_OP_FLISTXATTR,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(ea_tdb_removexattr), SMB_VFS_OP_REMOVEXATTR,
+	{SMB_VFS_OP(xattr_tdb_removexattr), SMB_VFS_OP_REMOVEXATTR,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(ea_tdb_fremovexattr), SMB_VFS_OP_FREMOVEXATTR,
+	{SMB_VFS_OP(xattr_tdb_fremovexattr), SMB_VFS_OP_FREMOVEXATTR,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(ea_tdb_unlink), SMB_VFS_OP_UNLINK,
+	{SMB_VFS_OP(xattr_tdb_unlink), SMB_VFS_OP_UNLINK,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(ea_tdb_rmdir), SMB_VFS_OP_RMDIR,
+	{SMB_VFS_OP(xattr_tdb_rmdir), SMB_VFS_OP_RMDIR,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(ea_tdb_connect), SMB_VFS_OP_CONNECT,
+	{SMB_VFS_OP(xattr_tdb_connect), SMB_VFS_OP_CONNECT,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(NULL), SMB_VFS_OP_NOOP, SMB_VFS_LAYER_NOOP}
 };
 
-NTSTATUS vfs_ea_tdb_init(void);
-NTSTATUS vfs_ea_tdb_init(void)
+NTSTATUS vfs_xattr_tdb_init(void);
+NTSTATUS vfs_xattr_tdb_init(void)
 {
-	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "ea_tdb",
-				ea_tdb_ops);
+	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION, "xattr_tdb",
+				xattr_tdb_ops);
 }

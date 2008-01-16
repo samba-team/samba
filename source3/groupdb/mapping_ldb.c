@@ -492,7 +492,7 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 		NULL
 	};
 	int ret, i;
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 	struct ldb_result *res=NULL;
 	struct ldb_dn *dn;
 	struct ldb_message_element *el;

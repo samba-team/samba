@@ -268,7 +268,8 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_srvsvc.o \
 		 librpc/gen_ndr/ndr_svcctl.o \
 		 librpc/gen_ndr/ndr_eventlog.o \
-		 librpc/gen_ndr/ndr_notify.o
+		 librpc/gen_ndr/ndr_notify.o \
+		 librpc/gen_ndr/ndr_libnet_join.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -503,7 +504,7 @@ VFS_CAP_OBJ = modules/vfs_cap.o
 VFS_EXPAND_MSDFS_OBJ = modules/vfs_expand_msdfs.o
 VFS_SHADOW_COPY_OBJ = modules/vfs_shadow_copy.o
 VFS_AFSACL_OBJ = modules/vfs_afsacl.o
-VFS_EA_TDB_OBJ = modules/vfs_ea_tdb.o librpc/gen_ndr/ndr_xattr.o
+VFS_XATTR_TDB_OBJ = modules/vfs_xattr_tdb.o librpc/gen_ndr/ndr_xattr.o
 VFS_POSIXACL_OBJ = modules/vfs_posixacl.o
 VFS_AIXACL_OBJ = modules/vfs_aixacl.o modules/vfs_aixacl_util.o
 VFS_AIXACL2_OBJ = modules/vfs_aixacl2.o modules/vfs_aixacl_util.o modules/nfs4_acls.o
@@ -1403,9 +1404,9 @@ bin/libwbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ)
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 	@ln -s -f `basename $@` $@.$(SONAME_VER)
 
-bin/libwbclient.a: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ)
+bin/libwbclient.a: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ0)
 	@echo Linking non-shared library $@
-	@-$(AR) -rc $@ $(LIBWBCLIENT_OBJ)
+	@-$(AR) -rc $@ $(LIBWBCLIENT_OBJ0)
 
 bin/libaddns.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBADDNS_OBJ)
 	@echo Linking shared library $@
@@ -1433,9 +1434,9 @@ bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
-bin/libsmbclient.a: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ0)
+bin/libsmbclient.a: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
 	@echo Linking non-shared library $@
-	@-$(AR) -rc $@ $(LIBSMBCLIENT_OBJ0)
+	@-$(AR) -rc $@ $(LIBSMBCLIENT_OBJ)
 
 bin/libsmbsharemodes.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking shared library $@
@@ -1685,9 +1686,9 @@ bin/afsacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AFSACL_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_AFSACL_OBJ)
 
-bin/ea_tdb.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_EA_TDB_OBJ)
+bin/xattr_tdb.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_XATTR_TDB_OBJ)
 	@echo "Building plugin $@"
-	@$(SHLD_MODULE) $(VFS_EA_TDB_OBJ)
+	@$(SHLD_MODULE) $(VFS_XATTR_TDB_OBJ)
 
 bin/posixacl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_POSIXACL_OBJ)
 	@echo "Building plugin $@"
