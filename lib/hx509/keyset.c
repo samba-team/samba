@@ -101,6 +101,7 @@ _hx509_ks_register(hx509_context context, struct hx509_keyset_ops *ops)
  * if NULL is used the MEMORY store is used.
  * @param flags list of flags:
  * - HX509_CERTS_CREATE create a new keystore of the specific TYPE.
+ * - HX509_CERTS_UNPROTECT_ALL fails if any private key failed to be extracted.
  * @param lock a lock that unlocks the certificates store, use NULL to
  * select no password/certifictes/prompt lock (see @ref page_lock).
  * @param certs return pointer, free with hx509_certs_free().
