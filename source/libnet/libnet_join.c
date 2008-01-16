@@ -1280,6 +1280,17 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 
+	if (!r->in.domain_sid) {
+		struct dom_sid sid;
+		if (!secrets_fetch_domain_sid(lp_workgroup(), &sid)) {
+			libnet_unjoin_set_error_string(mem_ctx, r,
+				"Unable to fetch domain sid: are we joined?");
+			return WERR_SETUP_NOT_JOINED;
+		}
+		r->in.domain_sid = sid_dup_talloc(mem_ctx, &sid);
+		W_ERROR_HAVE_NO_MEMORY(r->in.domain_sid);
+	}
+
 	if (!r->in.dc_name) {
 		struct DS_DOMAIN_CONTROLLER_INFO *info;
 		status = dsgetdcname(mem_ctx,
