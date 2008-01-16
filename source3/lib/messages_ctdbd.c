@@ -22,6 +22,10 @@
 #ifdef CLUSTER_SUPPORT
 
 #include "librpc/gen_ndr/messaging.h"
+#include "ctdb.h"
+#include "ctdb_private.h"
+#include "ctdbd_conn.h"
+
 
 struct messaging_ctdbd_context {
 	struct ctdbd_connection *conn;

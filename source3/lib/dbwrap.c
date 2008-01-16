@@ -20,7 +20,9 @@
 */
 
 #include "includes.h"
-
+#ifdef CLUSTER_SUPPORT
+#include "ctdb_private.h"
+#endif
 /*
  * Fall back using fetch_locked if no genuine fetch operation is provided
  */
@@ -46,10 +48,16 @@ struct db_context *db_open(TALLOC_CTX *mem_ctx,
 			   int open_flags, mode_t mode)
 {
 	struct db_context *result = NULL;
+#ifdef CLUSTER_SUPPORT
+	const char *sockname = lp_ctdbd_socket();
+#endif
 
 #ifdef CLUSTER_SUPPORT
+	if(!sockname || !*sockname) {
+		sockname = CTDB_PATH;
+	}
 
-	if (lp_clustering()) {
+	if (lp_clustering() && socket_exist(sockname)) {
 		const char *partname;
 		/* ctdb only wants the file part of the name */
 		partname = strrchr(name, '/');
