@@ -2508,6 +2508,11 @@ int ctdb_start_recoverd(struct ctdb_context *ctdb)
 
 	srandom(getpid() ^ time(NULL));
 
+	/* the recovery daemon does not need to be realtime */
+	if (ctdb->do_setsched) {
+		ctdb_restore_scheduler(ctdb);
+	}
+
 	/* initialise ctdb */
 	ret = ctdb_socket_connect(ctdb);
 	if (ret != 0) {
