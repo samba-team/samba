@@ -78,7 +78,7 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
 	}
 
 	if (geteuid() != 0) {
-		_log_err(pamh, LOG_DEBUG, "Cannot access samba password database, not running as root.");
+		_log_err( LOG_DEBUG, "Cannot access samba password database, not running as root.");
 		return PAM_AUTHINFO_UNAVAIL;
 	}
 
