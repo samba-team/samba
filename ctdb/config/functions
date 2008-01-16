@@ -38,7 +38,7 @@ ctdb_wait_command() {
   wait_cmd="$2"
   [ -z "$wait_cmd" ] && return;
   all_ok=0
-  echo "`/bin/date` Waiting for service $service_name to start"
+  echo "Waiting for service $service_name to start"
   while [ $all_ok -eq 0 ]; do
 	  $wait_cmd > /dev/null 2>&1 && all_ok=1
 	  ctdb status > /dev/null 2>&1 || {
@@ -47,7 +47,7 @@ ctdb_wait_command() {
 	  }
 	  [ $all_ok -eq 1 ] || sleep 1
   done
-  echo "`/bin/date` Local service $service_name is up"
+  echo "Local service $service_name is up"
 }
 
 
@@ -61,7 +61,7 @@ ctdb_wait_tcp_ports() {
   wait_ports="$*"
   [ -z "$wait_ports" ] && return;
   all_ok=0
-  echo "`/bin/date` Waiting for tcp service $service_name to start"
+  echo "Waiting for tcp service $service_name to start"
   while [ $all_ok -eq 0 ]; do
   	  all_ok=1
   	  for p in $wait_ports; do
@@ -72,7 +72,7 @@ ctdb_wait_tcp_ports() {
 	      elif [ -x /usr/bin/netstat ]; then
 	          (/usr/bin/netstat -a -n | egrep "0.0.0.0:$p\s*LISTEN" > /dev/null) || all_ok=0
 	      else 
-		  echo "`date` - No tool to check tcp ports availabe. can not check in ctdb_wait_tcp_ports"
+		  echo "No tool to check tcp ports availabe. can not check in ctdb_wait_tcp_ports"
 		  return
 	      fi
 	  done
@@ -82,7 +82,7 @@ ctdb_wait_tcp_ports() {
 		exit 1
 	  }
   done
-  echo "`/bin/date` Local tcp services for $service_name are up"
+  echo "Local tcp services for $service_name are up"
 }
 
 
@@ -97,7 +97,7 @@ ctdb_wait_directories() {
   wait_dirs="$*"
   [ -z "$wait_dirs" ] && return;
   all_ok=0
-  echo "`/bin/date` Waiting for local directories for $service_name"
+  echo "Waiting for local directories for $service_name"
   while [ $all_ok -eq 0 ]; do
   	  all_ok=1
   	  for d in $wait_dirs; do
@@ -109,7 +109,7 @@ ctdb_wait_directories() {
 		exit 1
 	  }
   done
-  echo "`/bin/date` Local directories for $service_name are available"
+  echo "Local directories for $service_name are available"
 }
 
 
@@ -123,7 +123,7 @@ ctdb_check_rpc() {
     prognum="$2"
     version="$3"
     rpcinfo -u localhost $prognum $version > /dev/null || {
-	    echo "`date` ERROR: $service_name not responding to rpc requests"
+	    echo "ERROR: $service_name not responding to rpc requests"
 	    exit 1
     }
 }
@@ -139,7 +139,7 @@ ctdb_check_directories() {
   [ -z "$wait_dirs" ] && return;
   for d in $wait_dirs; do
       [ -d $d ] || {
-	  echo "`date` ERROR: $service_name directory $d not available"
+	  echo "ERROR: $service_name directory $d not available"
 	  exit 1
       }
   done
@@ -164,7 +164,7 @@ ctdb_check_tcp_ports() {
           (/usr/bin/netstat -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ) || all_ok=0
       fi
       [ $all_ok -eq 1 ] || {
-	  echo "`date` ERROR: $service_name tcp port $p is not responding"
+	  echo "ERROR: $service_name tcp port $p is not responding"
 	  exit 1
       }
   done
@@ -179,7 +179,7 @@ ctdb_check_command() {
   wait_cmd="$2"
   [ -z "$wait_cmd" ] && return;
   $wait_cmd > /dev/null 2>&1 || {
-      echo "`date` ERROR: $service_name - $wait_cmd returned error"
+      echo "ERROR: $service_name - $wait_cmd returned error"
       exit 1
   }
 }
@@ -200,12 +200,12 @@ kill_tcp_connections() {
 	destip=`echo $dest | cut -d: -f1`
 	destport=`echo $dest | cut -d: -f2`
 	ctdb killtcp $srcip:$srcport $destip:$destport >/dev/null 2>&1 || _failed=1
-	echo "`date` Killing TCP connection $srcip:$srcport $destip:$destport"
+	echo "Killing TCP connection $srcip:$srcport $destip:$destport"
 	_killcount=`expr $_killcount + 1`
     done < $connfile
     /bin/rm -f $connfile
     [ $_failed = 0 ] || {
-	echo "`date` Failed to send killtcp control"
+	echo "Failed to send killtcp control"
 	return;
     }
     [ $_killcount -gt 0 ] || {
@@ -216,10 +216,10 @@ kill_tcp_connections() {
 	sleep 1
 	_count=`expr $_count + 1`
 	[ $_count -gt 3 ] && {
-	    echo "`date` Timed out killing tcp connections for IP $_IP"
+	    echo "Timed out killing tcp connections for IP $_IP"
 	    return;
 	}
     done
-    echo "`date` killed $_killcount TCP connections to released IP $_IP"
+    echo "killed $_killcount TCP connections to released IP $_IP"
 }
 

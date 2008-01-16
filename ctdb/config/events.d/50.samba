@@ -35,7 +35,7 @@ shift
 periodic_cleanup() {
     # running smbstatus scrubs any dead entries from the connections
     # and sessionid database
-    echo "`date` Running periodic cleanup of samba databases"
+    echo "Running periodic cleanup of samba databases"
     smbstatus -n > /dev/null 2>&1 &
 }
 
@@ -105,7 +105,7 @@ case $cmd in
 	}
 
 	testparm -s 2>&1 | egrep '^WARNING|^ERROR|^Unknown' && {
-	    echo "`date` ERROR: testparm shows smb.conf is not clean"
+	    echo "ERROR: testparm shows smb.conf is not clean"
 	    exit 1
 	}
 

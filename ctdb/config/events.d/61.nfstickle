@@ -31,7 +31,7 @@ case $cmd in
 			dip=`echo $dest | cut -d: -f1`
 			dport=`echo $dest | cut -d: -f2`
 			# send three, in case of lost packets
-			echo "`date` Sending NFS tickle ack for $ip to $dip:$dport"
+			echo "Sending NFS tickle ack for $ip to $dip:$dport"
 			for i in `seq 1 3`; do
 				ctdb tickle $dip:$dport $ip:2049
 			done
