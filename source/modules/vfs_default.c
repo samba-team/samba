@@ -1225,6 +1225,38 @@ static int vfswrap_aio_suspend(struct vfs_handle_struct *handle, struct files_st
 	return sys_aio_suspend(aiocb, n, timeout);
 }
 
+static int vfswrap_aio_force(struct vfs_handle_struct *handle, struct files_struct *fsp)
+{
+	return False;
+}
+
+static int vfswrap_is_offline(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf, bool *offline)
+{
+	if (ISDOT(path) || ISDOTDOT(path)) {
+		return 1;
+	}
+	
+	if (!lp_dmapi_support(SNUM(conn)) || !dmapi_have_session()) {
+		return -1;
+	}
+	
+	*offline = (dmapi_file_flags(path) & FILE_ATTRIBUTE_OFFLINE) != 0;
+	return 0;
+}
+
+static int vfswrap_set_offline(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path)
+{
+	/* We don't know how to set offline bit by default, needs to be overriden in the vfs modules */
+	return -1;
+}
+
+static bool vfswrap_is_remotestorage(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path)
+{
+	/* We don't know how to detect that volume is remote storage. VFS modules should redefine it. */
+	return False;
+}
+
+
 static vfs_op_tuple vfs_default_ops[] = {
 
 	/* Disk operations */
@@ -1442,6 +1474,16 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_aio_suspend),SMB_VFS_OP_AIO_SUSPEND,
 	 SMB_VFS_LAYER_OPAQUE},
 
+	{SMB_VFS_OP(vfswrap_aio_force), SMB_VFS_OP_AIO_FORCE,
+	 SMB_VFS_LAYER_OPAQUE},
+	
+	{SMB_VFS_OP(vfswrap_is_offline),SMB_VFS_OP_IS_OFFLINE,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_set_offline),SMB_VFS_OP_SET_OFFLINE,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_is_remotestorage),SMB_VFS_OP_IS_REMOTESTORAGE,
+	 SMB_VFS_LAYER_OPAQUE},
+	
 	/* Finish VFS operations definition */
 
 	{SMB_VFS_OP(NULL),		SMB_VFS_OP_NOOP,

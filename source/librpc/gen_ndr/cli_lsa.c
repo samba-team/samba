@@ -609,7 +609,7 @@ NTSTATUS rpccli_lsa_LookupNames(struct rpc_pipe_client *cli,
 				struct lsa_String *names,
 				struct lsa_RefDomainList *domains,
 				struct lsa_TransSidArray *sids,
-				uint16_t level,
+				enum lsa_LookupNamesLevel level,
 				uint32_t *count)
 {
 	struct lsa_LookupNames r;
@@ -2528,7 +2528,7 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 				 struct lsa_String *names,
 				 struct lsa_RefDomainList *domains,
 				 struct lsa_TransSidArray2 *sids,
-				 uint16_t level,
+				 enum lsa_LookupNamesLevel level,
 				 uint32_t *count,
 				 uint32_t unknown1,
 				 uint32_t unknown2)
@@ -2920,7 +2920,7 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 				 struct lsa_String *names,
 				 struct lsa_RefDomainList *domains,
 				 struct lsa_TransSidArray3 *sids,
-				 uint16_t level,
+				 enum lsa_LookupNamesLevel level,
 				 uint32_t *count,
 				 uint32_t unknown1,
 				 uint32_t unknown2)
@@ -3120,16 +3120,23 @@ NTSTATUS rpccli_lsa_LSARUNREGISTERAUDITEVENT(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
-NTSTATUS rpccli_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
-						    TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_lsa_lsaRQueryForestTrustInformation(struct rpc_pipe_client *cli,
+						    TALLOC_CTX *mem_ctx,
+						    struct policy_handle *handle,
+						    struct lsa_String *trusted_domain_name,
+						    uint16_t unknown,
+						    struct lsa_ForestTrustInformation **forest_trust_info)
 {
-	struct lsa_LSARQUERYFORESTTRUSTINFORMATION r;
+	struct lsa_lsaRQueryForestTrustInformation r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.trusted_domain_name = trusted_domain_name;
+	r.in.unknown = unknown;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, &r);
+		NDR_PRINT_IN_DEBUG(lsa_lsaRQueryForestTrustInformation, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
@@ -3144,7 +3151,7 @@ NTSTATUS rpccli_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, &r);
+		NDR_PRINT_OUT_DEBUG(lsa_lsaRQueryForestTrustInformation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3152,6 +3159,7 @@ NTSTATUS rpccli_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*forest_trust_info = *r.out.forest_trust_info;
 
 	/* Return result */
 	return r.out.result;
@@ -3292,7 +3300,7 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 				 struct lsa_String *names,
 				 struct lsa_RefDomainList *domains,
 				 struct lsa_TransSidArray3 *sids,
-				 uint16_t level,
+				 enum lsa_LookupNamesLevel level,
 				 uint32_t *count,
 				 uint32_t unknown1,
 				 uint32_t unknown2)
