@@ -134,7 +134,7 @@ static struct db_record *xattr_tdb_lock_attrs(TALLOC_CTX *mem_ctx,
 static NTSTATUS xattr_tdb_save_attrs(struct db_record *rec,
 				     const struct tdb_xattrs *attribs)
 {
-	TDB_DATA data;
+	TDB_DATA data = tdb_null;
 	NTSTATUS status;
 
 	status = xattr_tdb_push_attrs(talloc_tos(), attribs, &data);
