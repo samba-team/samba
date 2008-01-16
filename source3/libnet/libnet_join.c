@@ -24,6 +24,35 @@
 /****************************************************************
 ****************************************************************/
 
+#define LIBNET_JOIN_DUMP_CTX(ctx, r, f) \
+	do { \
+		char *str = NULL; \
+		str = NDR_PRINT_FUNCTION_STRING(ctx, libnet_JoinCtx, f, r); \
+		DEBUG(1,("libnet_Join:\n%s", str)); \
+		talloc_free(str); \
+	} while (0)
+
+#define LIBNET_JOIN_IN_DUMP_CTX(ctx, r) \
+	LIBNET_JOIN_DUMP_CTX(ctx, r, NDR_IN | NDR_SET_VALUES)
+#define LIBNET_JOIN_OUT_DUMP_CTX(ctx, r) \
+	LIBNET_JOIN_DUMP_CTX(ctx, r, NDR_OUT)
+
+#define LIBNET_UNJOIN_DUMP_CTX(ctx, r, f) \
+	do { \
+		char *str = NULL; \
+		str = NDR_PRINT_FUNCTION_STRING(ctx, libnet_UnjoinCtx, f, r); \
+		DEBUG(1,("libnet_Unjoin:\n%s", str)); \
+		talloc_free(str); \
+	} while (0)
+
+#define LIBNET_UNJOIN_IN_DUMP_CTX(ctx, r) \
+	LIBNET_UNJOIN_DUMP_CTX(ctx, r, NDR_IN | NDR_SET_VALUES)
+#define LIBNET_UNJOIN_OUT_DUMP_CTX(ctx, r) \
+	LIBNET_UNJOIN_DUMP_CTX(ctx, r, NDR_OUT)
+
+/****************************************************************
+****************************************************************/
+
 static void libnet_join_set_error_string(TALLOC_CTX *mem_ctx,
 					 struct libnet_JoinCtx *r,
 					 const char *format, ...)
@@ -1214,7 +1243,7 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 
 	if (r->in.debug) {
-		NDR_PRINT_IN_DEBUG(libnet_JoinCtx, r);
+		LIBNET_JOIN_IN_DUMP_CTX(mem_ctx, r);
 	}
 
 	werr = libnet_join_pre_processing(mem_ctx, r);
@@ -1234,8 +1263,10 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
  done:
+	r->out.result = werr;
+
 	if (r->in.debug) {
-		NDR_PRINT_OUT_DEBUG(libnet_JoinCtx, r);
+		LIBNET_JOIN_OUT_DUMP_CTX(mem_ctx, r);
 	}
 	return werr;
 }
@@ -1328,7 +1359,7 @@ WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 
 	if (r->in.debug) {
-		NDR_PRINT_IN_DEBUG(libnet_UnjoinCtx, r);
+		LIBNET_UNJOIN_IN_DUMP_CTX(mem_ctx, r);
 	}
 
 	werr = libnet_unjoin_pre_processing(mem_ctx, r);
@@ -1349,8 +1380,10 @@ WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 	}
 
  done:
+	r->out.result = werr;
+
 	if (r->in.debug) {
-		NDR_PRINT_OUT_DEBUG(libnet_UnjoinCtx, r);
+		LIBNET_UNJOIN_OUT_DUMP_CTX(mem_ctx, r);
 	}
 
 	return werr;
