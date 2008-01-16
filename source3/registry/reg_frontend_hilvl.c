@@ -1,25 +1,25 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  Virtual Windows Registry Layer
  *  Copyright (C) Gerald Carter                     2002-2005
- *  Copyright (C) Michael Adam 2006
+ *  Copyright (C) Michael Adam                      2006-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-/* 
- * Implementation of registry frontend view functions. 
+/*
+ * Implementation of registry frontend view functions.
  * Functions moved from reg_frontend.c to minimize linker deps.
  */
 
@@ -44,12 +44,12 @@ static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
 	size_t sd_size;
 
 	/* basic access for Everyone */
-	
+
 	init_sec_access(&mask, REG_KEY_READ );
 	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-	
+
 	/* Full Access 'BUILTIN\Administrators' */
-	
+
 	init_sec_access(&mask, REG_KEY_ALL );
 	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
@@ -58,9 +58,8 @@ static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
 	init_sec_access(&mask, REG_KEY_ALL );
 	init_sec_ace(&ace[i++], &global_sid_System, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
-	
 	/* create the security descriptor */
-	
+
 	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
 		return NULL;
 
@@ -73,20 +72,19 @@ static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
 /***********************************************************************
  High level wrapper function for storing registry subkeys
  ***********************************************************************/
- 
+
 bool store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
 {
 	if ( key->hook && key->hook->ops && key->hook->ops->store_subkeys )
 		return key->hook->ops->store_subkeys( key->name, subkeys );
-		
-	return False;
 
+	return False;
 }
 
 /***********************************************************************
  High level wrapper function for storing registry values
  ***********************************************************************/
- 
+
 bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
 	if ( check_dynamic_reg_values( key ) )
@@ -106,7 +104,7 @@ bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 int fetch_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkey_ctr )
 {
 	int result = -1;
-	
+
 	if ( key->hook && key->hook->ops && key->hook->ops->fetch_subkeys )
 		result = key->hook->ops->fetch_subkeys( key->name, subkey_ctr );
 
@@ -120,23 +118,23 @@ int fetch_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkey_ctr )
 int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
 	int result = -1;
-	
+
 	if ( key->hook && key->hook->ops && key->hook->ops->fetch_values )
 		result = key->hook->ops->fetch_values( key->name, val );
-	
+
 	/* if the backend lookup returned no data, try the dynamic overlay */
-	
+
 	if ( result == 0 ) {
 		result = fetch_dynamic_reg_values( key, val );
 
 		return ( result != -1 ) ? result : 0;
 	}
-	
+
 	return result;
 }
 
 /***********************************************************************
- High level access check for passing the required access mask to the 
+ High level access check for passing the required access mask to the
  underlying registry backend
  ***********************************************************************/
 
