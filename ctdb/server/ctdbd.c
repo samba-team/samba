@@ -40,6 +40,7 @@ static struct {
 	const char *single_public_ip;
 	const char *node_ip;
 	int         no_setsched;
+	int         use_syslog;
 } options = {
 	.nlist = ETCDIR "/ctdb/nodes",
 	.transport = "tcp",
@@ -106,6 +107,7 @@ int main(int argc, const char *argv[])
 		{ "dbdir-persistent", 0, POPT_ARG_STRING, &options.db_dir_persistent, 0, "directory for persistent tdb files", NULL },
 		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock_file, 0, "location of recovery lock file", "filename" },
 		{ "nosetsched", 0, POPT_ARG_NONE, &options.no_setsched, 0, "disable setscheduler SCHED_FIFO call", NULL },
+		{ "syslog", 0, POPT_ARG_NONE, &options.use_syslog, 0, "log messages to syslog", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -145,9 +147,10 @@ int main(int argc, const char *argv[])
 
 	ctdb = ctdb_cmdline_init(ev);
 
-	ret = ctdb_set_logfile(ctdb, options.logfile);
+	ret = ctdb_set_logfile(ctdb, options.logfile, options.use_syslog);
 	if (ret == -1) {
-		printf("ctdb_set_logfile to %s failed - %s\n", options.logfile, ctdb_errstr(ctdb));
+		printf("ctdb_set_logfile to %s failed - %s\n", 
+		       options.use_syslog?"syslog":options.logfile, ctdb_errstr(ctdb));
 		exit(1);
 	}
 
@@ -259,14 +262,6 @@ int main(int argc, const char *argv[])
 	if (ret == -1) {
 		DEBUG(0,("Unable to setup event script directory\n"));
 		exit(1);
-	}
-
-	/* useful default logfile */
-	if (ctdb->logfile == NULL) {
-		char *name = talloc_asprintf(ctdb, "%s/log.ctdb.pnn%u", 
-					     VARDIR, ctdb->pnn);
-		ctdb_set_logfile(ctdb, name);
-		talloc_free(name);
 	}
 
 	ctdb->do_setsched = !options.no_setsched;

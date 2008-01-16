@@ -407,7 +407,7 @@ uint32_t *ctdb_get_connected_nodes(struct ctdb_context *ctdb,
 
 int ctdb_statistics_reset(struct ctdb_context *ctdb, uint32_t destnode);
 
-int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile);
+int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile, bool use_syslog);
 
 typedef int (*ctdb_traverse_func)(struct ctdb_context *, TDB_DATA, TDB_DATA, void *);
 int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *private_data);

@@ -656,6 +656,8 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 
 	ctdb->ev = event_context_init(NULL);
 
+	ctdb_set_child_logging(ctdb);
+
 	/* force initial recovery for election */
 	ctdb->recovery_mode = CTDB_RECOVERY_ACTIVE;
 

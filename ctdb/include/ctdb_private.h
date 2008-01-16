@@ -369,6 +369,7 @@ struct ctdb_context {
 	bool done_startup;
 	const char *node_ip;
 	struct ctdb_monitor_state *monitor;
+	struct ctdb_log_state *log;
 };
 
 struct ctdb_db_context {
@@ -1213,5 +1214,6 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata);
 void ctdb_block_signal(int signum);
 void ctdb_unblock_signal(int signum);
 int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
+int ctdb_set_child_logging(struct ctdb_context *ctdb);
 
 #endif
