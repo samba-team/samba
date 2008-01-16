@@ -5579,18 +5579,18 @@ static bool api_lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p)
 	return true;
 }
 
-static bool api_lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p)
+static bool api_lsa_lsaRQueryForestTrustInformation(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r;
+	struct lsa_lsaRQueryForestTrustInformation *r;
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LSARQUERYFORESTTRUSTINFORMATION];
 
-	r = talloc(NULL, struct lsa_LSARQUERYFORESTTRUSTINFORMATION);
+	r = talloc(NULL, struct lsa_lsaRQueryForestTrustInformation);
 	if (r == NULL) {
 		return false;
 	}
@@ -5614,10 +5614,17 @@ static bool api_lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, r);
+		NDR_PRINT_IN_DEBUG(lsa_lsaRQueryForestTrustInformation, r);
 	}
 
-	r->out.result = _lsa_LSARQUERYFORESTTRUSTINFORMATION(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.forest_trust_info = talloc_zero(r, struct lsa_ForestTrustInformation *);
+	if (r->out.forest_trust_info == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.result = _lsa_lsaRQueryForestTrustInformation(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -5626,7 +5633,7 @@ static bool api_lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, r);
+		NDR_PRINT_OUT_DEBUG(lsa_lsaRQueryForestTrustInformation, r);
 	}
 
 	push = ndr_push_init_ctx(r);
@@ -6331,7 +6338,7 @@ static struct api_struct api_lsarpc_cmds[] =
 	{"LSA_LSARREGISTERAUDITEVENT", NDR_LSA_LSARREGISTERAUDITEVENT, api_lsa_LSARREGISTERAUDITEVENT},
 	{"LSA_LSARGENAUDITEVENT", NDR_LSA_LSARGENAUDITEVENT, api_lsa_LSARGENAUDITEVENT},
 	{"LSA_LSARUNREGISTERAUDITEVENT", NDR_LSA_LSARUNREGISTERAUDITEVENT, api_lsa_LSARUNREGISTERAUDITEVENT},
-	{"LSA_LSARQUERYFORESTTRUSTINFORMATION", NDR_LSA_LSARQUERYFORESTTRUSTINFORMATION, api_lsa_LSARQUERYFORESTTRUSTINFORMATION},
+	{"LSA_LSARQUERYFORESTTRUSTINFORMATION", NDR_LSA_LSARQUERYFORESTTRUSTINFORMATION, api_lsa_lsaRQueryForestTrustInformation},
 	{"LSA_LSARSETFORESTTRUSTINFORMATION", NDR_LSA_LSARSETFORESTTRUSTINFORMATION, api_lsa_LSARSETFORESTTRUSTINFORMATION},
 	{"LSA_CREDRRENAME", NDR_LSA_CREDRRENAME, api_lsa_CREDRRENAME},
 	{"LSA_LOOKUPSIDS3", NDR_LSA_LOOKUPSIDS3, api_lsa_LookupSids3},

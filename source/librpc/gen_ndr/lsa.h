@@ -75,9 +75,55 @@ struct lsa_AuditLogInfo {
 	uint32_t unknown;
 };
 
+enum lsa_PolicyAuditPolicy
+#ifndef USE_UINT_ENUMS
+ {
+	LSA_AUDIT_POLICY_NONE=0,
+	LSA_AUDIT_POLICY_SUCCESS=1,
+	LSA_AUDIT_POLICY_FAILURE=2,
+	LSA_AUDIT_POLICY_ALL=(LSA_AUDIT_POLICY_SUCCESS|LSA_AUDIT_POLICY_FAILURE),
+	LSA_AUDIT_POLICY_CLEAR=4
+}
+#else
+ { __donnot_use_enum_lsa_PolicyAuditPolicy=0x7FFFFFFF}
+#define LSA_AUDIT_POLICY_NONE ( 0 )
+#define LSA_AUDIT_POLICY_SUCCESS ( 1 )
+#define LSA_AUDIT_POLICY_FAILURE ( 2 )
+#define LSA_AUDIT_POLICY_ALL ( (LSA_AUDIT_POLICY_SUCCESS|LSA_AUDIT_POLICY_FAILURE) )
+#define LSA_AUDIT_POLICY_CLEAR ( 4 )
+#endif
+;
+
+enum lsa_PolicyAuditEventType
+#ifndef USE_UINT_ENUMS
+ {
+	LSA_AUDIT_CATEGORY_SYSTEM=0,
+	LSA_AUDIT_CATEGORY_LOGON=1,
+	LSA_AUDIT_CATEGORY_FILE_AND_OBJECT_ACCESS=2,
+	LSA_AUDIT_CATEGORY_USE_OF_USER_RIGHTS=3,
+	LSA_AUDIT_CATEGORY_PROCCESS_TRACKING=4,
+	LSA_AUDIT_CATEGORY_SECURITY_POLICY_CHANGES=5,
+	LSA_AUDIT_CATEGORY_ACCOUNT_MANAGEMENT=6,
+	LSA_AUDIT_CATEGORY_DIRECTORY_SERVICE_ACCESS=7,
+	LSA_AUDIT_CATEGORY_ACCOUNT_LOGON=8
+}
+#else
+ { __donnot_use_enum_lsa_PolicyAuditEventType=0x7FFFFFFF}
+#define LSA_AUDIT_CATEGORY_SYSTEM ( 0 )
+#define LSA_AUDIT_CATEGORY_LOGON ( 1 )
+#define LSA_AUDIT_CATEGORY_FILE_AND_OBJECT_ACCESS ( 2 )
+#define LSA_AUDIT_CATEGORY_USE_OF_USER_RIGHTS ( 3 )
+#define LSA_AUDIT_CATEGORY_PROCCESS_TRACKING ( 4 )
+#define LSA_AUDIT_CATEGORY_SECURITY_POLICY_CHANGES ( 5 )
+#define LSA_AUDIT_CATEGORY_ACCOUNT_MANAGEMENT ( 6 )
+#define LSA_AUDIT_CATEGORY_DIRECTORY_SERVICE_ACCESS ( 7 )
+#define LSA_AUDIT_CATEGORY_ACCOUNT_LOGON ( 8 )
+#endif
+;
+
 struct lsa_AuditEventsInfo {
 	uint32_t auditing_mode;
-	uint32_t *settings;/* [unique,size_is(count)] */
+	enum lsa_PolicyAuditPolicy *settings;/* [unique,size_is(count)] */
 	uint32_t count;
 };
 
@@ -239,6 +285,27 @@ struct lsa_RefDomainList {
 	struct lsa_DomainInfo *domains;/* [unique,size_is(count)] */
 	uint32_t max_size;
 };
+
+enum lsa_LookupNamesLevel
+#ifndef USE_UINT_ENUMS
+ {
+	LSA_LOOKUP_NAMES_ALL=1,
+	LSA_LOOKUP_NAMES_DOMAINS_ONLY=2,
+	LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY=3,
+	LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY=4,
+	LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY=5,
+	LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2=6
+}
+#else
+ { __donnot_use_enum_lsa_LookupNamesLevel=0x7FFFFFFF}
+#define LSA_LOOKUP_NAMES_ALL ( 1 )
+#define LSA_LOOKUP_NAMES_DOMAINS_ONLY ( 2 )
+#define LSA_LOOKUP_NAMES_PRIMARY_DOMAIN_ONLY ( 3 )
+#define LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY ( 4 )
+#define LSA_LOOKUP_NAMES_FOREST_TRUSTS_ONLY ( 5 )
+#define LSA_LOOKUP_NAMES_UPLEVEL_TRUSTS_ONLY2 ( 6 )
+#endif
+;
 
 struct lsa_TranslatedName {
 	enum lsa_SidType sid_type;
@@ -464,6 +531,53 @@ struct lsa_TransSidArray3 {
 	struct lsa_TranslatedSid3 *sids;/* [unique,size_is(count)] */
 };
 
+struct lsa_ForestTrustBinaryData {
+	uint32_t length;/* [range(0 131072)] */
+	uint8_t *data;/* [unique,size_is(length)] */
+};
+
+struct lsa_ForestTrustDomainInfo {
+	struct dom_sid2 *domain_sid;/* [unique] */
+	struct lsa_StringLarge dns_domain_name;
+	struct lsa_StringLarge netbios_domain_name;
+};
+
+union lsa_ForestTrustData {
+	struct lsa_String top_level_name;/* [case(LSA_FOREST_TRUST_TOP_LEVEL_NAME)] */
+	struct lsa_StringLarge top_level_name_ex;/* [case(LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX)] */
+	struct lsa_ForestTrustDomainInfo domain_info;/* [case(LSA_FOREST_TRUST_DOMAIN_INFO)] */
+	struct lsa_ForestTrustBinaryData data;/* [default] */
+}/* [switch_type(uint32)] */;
+
+enum lsa_ForestTrustRecordType
+#ifndef USE_UINT_ENUMS
+ {
+	LSA_FOREST_TRUST_TOP_LEVEL_NAME=0,
+	LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX=1,
+	LSA_FOREST_TRUST_DOMAIN_INFO=2,
+	LSA_FOREST_TRUST_RECORD_TYPE_LAST=3
+}
+#else
+ { __donnot_use_enum_lsa_ForestTrustRecordType=0x7FFFFFFF}
+#define LSA_FOREST_TRUST_TOP_LEVEL_NAME ( 0 )
+#define LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX ( 1 )
+#define LSA_FOREST_TRUST_DOMAIN_INFO ( 2 )
+#define LSA_FOREST_TRUST_RECORD_TYPE_LAST ( 3 )
+#endif
+;
+
+struct lsa_ForestTrustRecord {
+	uint32_t flags;
+	enum lsa_ForestTrustRecordType level;
+	uint64_t unknown;
+	union lsa_ForestTrustData forest_trust_data;/* [switch_is(level)] */
+};
+
+struct lsa_ForestTrustInformation {
+	uint32_t count;/* [range(0 4000)] */
+	struct lsa_ForestTrustRecord **entries;/* [unique,size_is(count)] */
+}/* [public] */;
+
 
 struct lsa_Close {
 	struct {
@@ -636,7 +750,7 @@ struct lsa_CreateTrustedDomain {
 struct lsa_EnumTrustDom {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t max_size;/* [range(0 1000)] */
+		uint32_t max_size;
 		uint32_t *resume_handle;/* [ref] */
 	} in;
 
@@ -654,7 +768,7 @@ struct lsa_LookupNames {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t num_names;/* [range(0 1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
-		uint16_t level;
+		enum lsa_LookupNamesLevel level;
 		struct lsa_TransSidArray *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 	} in;
@@ -1241,7 +1355,7 @@ struct lsa_LookupNames2 {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t num_names;/* [range(0 1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
-		uint16_t level;
+		enum lsa_LookupNamesLevel level;
 		uint32_t unknown1;
 		uint32_t unknown2;
 		struct lsa_TransSidArray2 *sids;/* [ref] */
@@ -1335,7 +1449,7 @@ struct lsa_LookupNames3 {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t num_names;/* [range(0 1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
-		uint16_t level;
+		enum lsa_LookupNamesLevel level;
 		uint32_t unknown1;
 		uint32_t unknown2;
 		struct lsa_TransSidArray3 *sids;/* [ref] */
@@ -1384,8 +1498,15 @@ struct lsa_LSARUNREGISTERAUDITEVENT {
 };
 
 
-struct lsa_LSARQUERYFORESTTRUSTINFORMATION {
+struct lsa_lsaRQueryForestTrustInformation {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		struct lsa_String *trusted_domain_name;/* [ref] */
+		uint16_t unknown;
+	} in;
+
+	struct {
+		struct lsa_ForestTrustInformation **forest_trust_info;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -1432,7 +1553,7 @@ struct lsa_LookupNames4 {
 	struct {
 		uint32_t num_names;/* [range(0 1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
-		uint16_t level;
+		enum lsa_LookupNamesLevel level;
 		uint32_t unknown1;
 		uint32_t unknown2;
 		struct lsa_TransSidArray3 *sids;/* [ref] */
