@@ -817,7 +817,7 @@ static int net_ads_leave(int argc, const char **argv)
 	struct cli_state *cli = NULL;
 	TALLOC_CTX *ctx;
 	DOM_SID *dom_sid = NULL;
-	char *short_domain_name = NULL;
+	const char *short_domain_name = NULL;
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
@@ -961,7 +961,8 @@ static NTSTATUS check_ads_config( void )
  ********************************************************************/
 
 static NTSTATUS net_join_domain(TALLOC_CTX *ctx, const char *servername,
-				struct sockaddr_storage *pss, char **domain,
+				struct sockaddr_storage *pss,
+				const char **domain,
 				DOM_SID **dom_sid,
 				const char *password)
 {
@@ -1445,7 +1446,7 @@ int net_ads_join(int argc, const char **argv)
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
 	NTSTATUS nt_status;
-	char *short_domain_name = NULL;
+	const char *short_domain_name = NULL;
 	char *tmp_password, *password;
 	TALLOC_CTX *ctx = NULL;
 	DOM_SID *domain_sid = NULL;

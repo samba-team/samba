@@ -592,13 +592,58 @@ smbc_remove_unused_server(SMBCCTX * context,
 	return 0;
 }
 
+/****************************************************************
+ * Call the auth_fn with fixed size (fstring) buffers.
+ ***************************************************************/
+
+static void call_auth_fn(TALLOC_CTX *ctx,
+			SMBCCTX *context,
+			const char *server,
+			const char *share,
+			char **pp_workgroup,
+			char **pp_username,
+			char **pp_password)
+{
+	fstring workgroup;
+	fstring username;
+	fstring password;
+
+	strlcpy(workgroup, *pp_workgroup, sizeof(workgroup));
+	strlcpy(username, *pp_username, sizeof(username));
+	strlcpy(password, *pp_password, sizeof(password));
+
+	if (context->internal->_auth_fn_with_context != NULL) {
+			(context->internal->_auth_fn_with_context)(
+				context,
+				server, share,
+				workgroup, sizeof(workgroup),
+				username, sizeof(username),
+				password, sizeof(password));
+	} else {
+		(context->callbacks.auth_fn)(
+			server, share,
+			workgroup, sizeof(workgroup),
+			username, sizeof(username),
+			password, sizeof(password));
+	}
+
+	TALLOC_FREE(*pp_workgroup);
+	TALLOC_FREE(*pp_username);
+	TALLOC_FREE(*pp_password);
+
+	*pp_workgroup = talloc_strdup(ctx, workgroup);
+	*pp_username = talloc_strdup(ctx, username);
+	*pp_password = talloc_strdup(ctx, password);
+}
+
 static SMBCSRV *
-find_server(SMBCCTX *context,
+find_server(TALLOC_CTX *ctx,
+		SMBCCTX *context,
 		const char *server,
 		const char *share,
-		char *workgroup,
-		char *username,
-		char *password)
+		char **pp_workgroup,
+		char **pp_username,
+		char **pp_password)
 {
         SMBCSRV *srv;
         int auth_called = 0;
@@ -606,22 +651,15 @@ find_server(SMBCCTX *context,
  check_server_cache:
 
 	srv = (context->callbacks.get_cached_srv_fn)(context, server, share,
-                                                     workgroup, username);
+						*pp_workgroup, *pp_username);
 
-	if (!auth_called && !srv && (!username[0] || !password[0])) {
-                if (context->internal->_auth_fn_with_context != NULL) {
-                        (context->internal->_auth_fn_with_context)(
-                                context,
-                                server, share,
-                                workgroup, strlen(workgroup)+1,
-                                username, strlen(username)+1,
-                                password, strlen(password)+1);
-                } else {
-                        (context->callbacks.auth_fn)(
-                                server, share,
-                                workgroup, strlen(workgroup)+1,
-                                username, strlen(username)+1,
-                                password, strlen(password)+1);
+	if (!auth_called && !srv && (!*pp_username || !(*pp_username)[0] ||
+				!*pp_password || !(*pp_password)[0])) {
+		call_auth_fn(ctx, context, server, share,
+				pp_workgroup, pp_username, pp_password);
+
+		if (!pp_workgroup || !pp_username || !pp_password) {
+			return NULL;
 		}
 
 		/*
@@ -652,12 +690,12 @@ find_server(SMBCCTX *context,
 				(context->callbacks.remove_cached_srv_fn)(context,
                                                                           srv);
 			}
-			
+
 			/*
                          * Maybe there are more cached connections to this
                          * server
                          */
-			goto check_server_cache; 
+			goto check_server_cache;
 		}
 
 		return srv;
@@ -678,13 +716,14 @@ find_server(SMBCCTX *context,
  */
 
 static SMBCSRV *
-smbc_server(SMBCCTX *context,
+smbc_server(TALLOC_CTX *ctx,
+		SMBCCTX *context,
 		bool connect_if_not_found,
 		const char *server,
 		const char *share,
-		char *workgroup,
-		char *username,
-		char *password)
+		char **pp_workgroup,
+		char **pp_username,
+		char **pp_password)
 {
 	SMBCSRV *srv=NULL;
 	struct cli_state *c;
@@ -706,8 +745,8 @@ smbc_server(SMBCCTX *context,
 	}
 
         /* Look for a cached connection */
-        srv = find_server(context, server, share,
-                          workgroup, username, password);
+        srv = find_server(ctx, context, server, share,
+                          pp_workgroup, pp_username, pp_password);
 
         /*
          * If we found a connection and we're only allowed one share per
@@ -725,20 +764,17 @@ smbc_server(SMBCCTX *context,
                  */
                 if (srv->cli->cnum == (uint16) -1) {
                         /* Ensure we have accurate auth info */
-                        if (context->internal->_auth_fn_with_context != NULL) {
-                                (context->internal->_auth_fn_with_context)(
-                                        context,
-                                        server, share,
-                                        workgroup, strlen(workgroup)+1,
-                                        username, strlen(username)+1,
-                                        password, strlen(password)+1);
-                        } else {
-                                (context->callbacks.auth_fn)(
-                                        server, share,
-                                        workgroup, strlen(workgroup)+1,
-                                        username, strlen(username)+1,
-                                        password, strlen(password)+1);
-                        }
+			call_auth_fn(ctx, context, server, share,
+				pp_workgroup, pp_username, pp_password);
+
+			if (!*pp_workgroup || !*pp_username || !*pp_password) {
+				errno = ENOMEM;
+				cli_shutdown(srv->cli);
+				srv->cli = NULL;
+				(context->callbacks.remove_cached_srv_fn)(context,
+									srv);
+				return NULL;
+			}
 
 			/*
 			 * We don't need to renegotiate encryption
@@ -746,8 +782,9 @@ smbc_server(SMBCCTX *context,
 			 * tid.
 			 */
 
-                        if (! cli_send_tconX(srv->cli, share, "?????",
-                                             password, strlen(password)+1)) {
+			if (!cli_send_tconX(srv->cli, share, "?????",
+						*pp_password,
+						strlen(*pp_password)+1)) {
 
                                 errno = smbc_errno(context, srv->cli);
                                 cli_shutdown(srv->cli);
@@ -780,6 +817,11 @@ smbc_server(SMBCCTX *context,
                 /* ... then we're done here. */
                 return NULL;
         }
+
+	if (!*pp_workgroup || !*pp_username || !*pp_password) {
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	make_nmb_name(&calling, context->netbios_name, 0x0);
 	make_nmb_name(&called , server, 0x20);
@@ -877,21 +919,21 @@ smbc_server(SMBCCTX *context,
 		return NULL;
 	}
 
-        username_used = username;
+        username_used = *pp_username;
 
 	if (!NT_STATUS_IS_OK(cli_session_setup(c, username_used,
-					       password, strlen(password),
-					       password, strlen(password),
-					       workgroup))) {
+					       *pp_password, strlen(*pp_password),
+					       *pp_password, strlen(*pp_password),
+					       *pp_workgroup))) {
 
                 /* Failed.  Try an anonymous login, if allowed by flags. */
                 username_used = "";
 
                 if ((context->flags & SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON) ||
                      !NT_STATUS_IS_OK(cli_session_setup(c, username_used,
-							password, 1,
-							password, 0,
-							workgroup))) {
+							*pp_password, 1,
+							*pp_password, 0,
+							*pp_workgroup))) {
 
                         cli_shutdown(c);
                         errno = EPERM;
@@ -902,7 +944,7 @@ smbc_server(SMBCCTX *context,
 	DEBUG(4,(" session setup ok\n"));
 
 	if (!cli_send_tconX(c, share, "?????",
-			    password, strlen(password)+1)) {
+			    *pp_password, strlen(*pp_password)+1)) {
 		errno = smbc_errno(context, c);
 		cli_shutdown(c);
 		return NULL;
@@ -914,8 +956,8 @@ smbc_server(SMBCCTX *context,
 		/* Attempt UNIX smb encryption. */
 		if (!NT_STATUS_IS_OK(cli_force_encryption(c,
 						username_used,
-						password,
-						workgroup))) {
+						*pp_password,
+						*pp_workgroup))) {
 
 			/*
 			 * context->internal->_smb_encryption_level == 1
@@ -956,8 +998,9 @@ smbc_server(SMBCCTX *context,
 	/* Let the cache function set errno if it wants to */
 	errno = 0;
 	if ((context->callbacks.add_cached_srv_fn)(context, srv,
-                                                   server, share,
-                                                   workgroup, username)) {
+						server, share,
+						*pp_workgroup,
+						*pp_username)) {
 		int saved_errno = errno;
 		DEBUG(3, (" Failed to add server to cache\n"));
 		errno = saved_errno;
@@ -988,13 +1031,14 @@ smbc_server(SMBCCTX *context,
  * connection.  This works similarly to smbc_server().
  */
 static SMBCSRV *
-smbc_attr_server(SMBCCTX *context,
-                 const char *server,
-                 const char *share,
-                 char *workgroup,
-                 char *username,
-                 char *password,
-                 POLICY_HND *pol)
+smbc_attr_server(TALLOC_CTX *ctx,
+		SMBCCTX *context,
+		const char *server,
+		const char *share,
+		char **pp_workgroup,
+		char **pp_username,
+		char **pp_password,
+		POLICY_HND *pol)
 {
         int flags;
         struct sockaddr_storage ss;
@@ -1008,27 +1052,19 @@ smbc_attr_server(SMBCCTX *context,
          * our "special" share name '*IPC$', which is an impossible real share
          * name due to the leading asterisk.
          */
-        ipc_srv = find_server(context, server, "*IPC$",
-                              workgroup, username, password);
+        ipc_srv = find_server(ctx, context, server, "*IPC$",
+                              pp_workgroup, pp_username, pp_password);
         if (!ipc_srv) {
 
                 /* We didn't find a cached connection.  Get the password */
-                if (*password == '\0') {
+		if (!*pp_password || (*pp_password)[0] == '\0') {
                         /* ... then retrieve it now. */
-                        if (context->internal->_auth_fn_with_context != NULL) {
-                                (context->internal->_auth_fn_with_context)(
-                                        context,
-                                        server, share,
-                                        workgroup, strlen(workgroup)+1,
-                                        username, strlen(username)+1,
-                                        password, strlen(password)+1);
-                        } else {
-                                (context->callbacks.auth_fn)(
-                                        server, share,
-                                        workgroup, strlen(workgroup)+1,
-                                        username, strlen(username)+1,
-                                        password, strlen(password)+1);
-                        }
+			call_auth_fn(ctx, context, server, share,
+				pp_workgroup, pp_username, pp_password);
+			if (!*pp_workgroup || !*pp_username || !*pp_password) {
+				errno = ENOMEM;
+				return NULL;
+			}
                 }
 
                 flags = 0;
@@ -1038,11 +1074,13 @@ smbc_attr_server(SMBCCTX *context,
 
                 zero_addr(&ss);
                 nt_status = cli_full_connection(&ipc_cli,
-                                                global_myname(), server,
-                                                &ss, 0, "IPC$", "?????",
-                                                username, workgroup,
-                                                password, flags,
-                                                Undefined, NULL);
+						global_myname(), server,
+						&ss, 0, "IPC$", "?????",
+						*pp_username,
+						*pp_workgroup,
+						*pp_password,
+						flags,
+						Undefined, NULL);
                 if (! NT_STATUS_IS_OK(nt_status)) {
                         DEBUG(1,("cli_full_connection failed! (%s)\n",
                                  nt_errstr(nt_status)));
@@ -1053,9 +1091,9 @@ smbc_attr_server(SMBCCTX *context,
 		if (context->internal->_smb_encryption_level) {
 			/* Attempt UNIX smb encryption. */
 			if (!NT_STATUS_IS_OK(cli_force_encryption(ipc_cli,
-						username,
-						password,
-						workgroup))) {
+						*pp_username,
+						*pp_password,
+						*pp_workgroup))) {
 
 				/*
 				 * context->internal->_smb_encryption_level == 1
@@ -1101,14 +1139,14 @@ smbc_attr_server(SMBCCTX *context,
                          * SEC_RIGHTS_MAXIMUM_ALLOWED, but NT sends 0x2000000
                          * so we might as well do it too.
                          */
-        
+
                         nt_status = rpccli_lsa_open_policy(
                                 pipe_hnd,
                                 talloc_tos(),
-                                True, 
+                                True,
                                 GENERIC_EXECUTE_ACCESS,
                                 pol);
-        
+
                         if (!NT_STATUS_IS_OK(nt_status)) {
                                 errno = smbc_errno(context, ipc_srv->cli);
                                 cli_shutdown(ipc_srv->cli);
@@ -1120,10 +1158,10 @@ smbc_attr_server(SMBCCTX *context,
 
                 errno = 0;      /* let cache function set errno if it likes */
                 if ((context->callbacks.add_cached_srv_fn)(context, ipc_srv,
-                                                           server,
-                                                           "*IPC$",
-                                                           workgroup,
-                                                           username)) {
+							server,
+							"*IPC$",
+							*pp_workgroup,
+							*pp_username)) {
                         DEBUG(3, (" Failed to add server to cache\n"));
                         if (errno == 0) {
                                 errno = ENOMEM;
@@ -1149,10 +1187,10 @@ smbc_open_ctx(SMBCCTX *context,
               int flags,
               mode_t mode)
 {
-	char *server, *share, *user, *password, *workgroup;
-	char *path;
+	char *server = NULL, *share = NULL, *user = NULL, *password = NULL, *workgroup = NULL;
+	char *path = NULL;
 	char *targetpath = NULL;
-	struct cli_state *targetcli;
+	struct cli_state *targetcli = NULL;
 	SMBCSRV *srv   = NULL;
 	SMBCFILE *file = NULL;
 	int fd;
@@ -1199,8 +1237,8 @@ smbc_open_ctx(SMBCCTX *context,
 		}
 	}
 
-	srv = smbc_server(context, True,
-                          server, share, workgroup, user, password);
+	srv = smbc_server(frame, context, True,
+                          server, share, &workgroup, &user, &password);
 
 	if (!srv) {
 		if (errno == EPERM) errno = EACCES;
@@ -1343,10 +1381,10 @@ smbc_read_ctx(SMBCCTX *context,
               size_t count)
 {
 	int ret;
-	char *server, *share, *user, *password;
-	char *path;
+	char *server = NULL, *share = NULL, *user = NULL, *password = NULL;
+	char *path = NULL;
 	char *targetpath = NULL;
-	struct cli_state *targetcli;
+	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
         /*
@@ -1444,10 +1482,10 @@ smbc_write_ctx(SMBCCTX *context,
 {
 	int ret;
         off_t offset;
-	char *server, *share, *user, *password;
-	char *path;
+	char *server = NULL, *share = NULL, *user = NULL, *password = NULL;
+	char *path = NULL;
 	char *targetpath = NULL;
-	struct cli_state *targetcli;
+	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	/* First check all pointers before dereferencing them */
@@ -1526,10 +1564,10 @@ smbc_close_ctx(SMBCCTX *context,
                SMBCFILE *file)
 {
         SMBCSRV *srv;
-	char *server, *share, *user, *password;
-	char *path;
+	char *server = NULL, *share = NULL, *user = NULL, *password = NULL;
+	char *path = NULL;
 	char *targetpath = NULL;
-	struct cli_state *targetcli;
+	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal ||
@@ -1618,9 +1656,9 @@ smbc_getatr(SMBCCTX * context,
             struct timespec *change_time_ts,
             SMB_INO_T *ino)
 {
-	char *fixedpath;
+	char *fixedpath = NULL;
 	char *targetpath = NULL;
-	struct cli_state *targetcli;
+	struct cli_state *targetcli = NULL;
 	time_t write_time;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -1689,11 +1727,11 @@ smbc_getatr(SMBCCTX * context,
                 if (create_time_ts != NULL) {
                         *create_time_ts = w_time_ts;
                 }
-                
+
                 if (access_time_ts != NULL) {
                         *access_time_ts = w_time_ts;
                 }
-                
+
                 if (change_time_ts != NULL) {
                         *change_time_ts = w_time_ts;
                 }
@@ -1804,10 +1842,10 @@ static int
 smbc_unlink_ctx(SMBCCTX *context,
                 const char *fname)
 {
-	char *server, *share, *user, *password, *workgroup;
-	char *path;
-	char *targetpath;
-	struct cli_state *targetcli;
+	char *server = NULL, *share = NULL, *user = NULL, *password = NULL, *workgroup = NULL;
+	char *path = NULL;
+	char *targetpath = NULL;
+	struct cli_state *targetcli = NULL;
 	SMBCSRV *srv = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -1850,8 +1888,8 @@ smbc_unlink_ctx(SMBCCTX *context,
 		}
 	}
 
-	srv = smbc_server(context, True,
-                          server, share, workgroup, user, password);
+	srv = smbc_server(frame, context, True,
+                          server, share, &workgroup, &user, &password);
 
 	if (!srv) {
 		TALLOC_FREE(frame);
@@ -1926,21 +1964,21 @@ smbc_rename_ctx(SMBCCTX *ocontext,
                 SMBCCTX *ncontext,
                 const char *nname)
 {
-	char *server1;
-        char *share1;
-        char *server2;
-        char *share2;
-        char *user1;
-        char *user2;
-        char *password1;
-        char *password2;
-        char *workgroup;
-	char *path1;
-        char *path2;
-        char *targetpath1;
-        char *targetpath2;
-	struct cli_state *targetcli1;
-        struct cli_state *targetcli2;
+	char *server1 = NULL;
+        char *share1 = NULL;
+        char *server2 = NULL;
+        char *share2 = NULL;
+        char *user1 = NULL;
+        char *user2 = NULL;
+        char *password1 = NULL;
+        char *password2 = NULL;
+        char *workgroup = NULL;
+	char *path1 = NULL;
+        char *path2 = NULL;
+        char *targetpath1 = NULL;
+        char *targetpath2 = NULL;
+	struct cli_state *targetcli1 = NULL;
+        struct cli_state *targetcli2 = NULL;
 	SMBCSRV *srv = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -2017,8 +2055,8 @@ smbc_rename_ctx(SMBCCTX *ocontext,
 		return -1;
 	}
 
-	srv = smbc_server(ocontext, True,
-                          server1, share1, workgroup, user1, password1);
+	srv = smbc_server(frame, ocontext, True,
+                          server1, share1, &workgroup, &user1, &password1);
 	if (!srv) {
 		TALLOC_FREE(frame);
 		return -1;
@@ -2080,10 +2118,10 @@ smbc_lseek_ctx(SMBCCTX *context,
                int whence)
 {
 	SMB_OFF_T size;
-	char *server, *share, *user, *password;
-	char *path;
-	char *targetpath;
-	struct cli_state *targetcli;
+	char *server = NULL, *share = NULL, *user = NULL, *password = NULL;
+	char *path = NULL;
+	char *targetpath = NULL;
+	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal ||
@@ -2253,13 +2291,13 @@ smbc_stat_ctx(SMBCCTX *context,
               const char *fname,
               struct stat *st)
 {
-	SMBCSRV *srv;
-	char *server;
-	char *share;
-	char *user;
-	char *password;
-	char *workgroup;
-	char *path;
+	SMBCSRV *srv = NULL;
+	char *server = NULL;
+	char *share = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	char *workgroup = NULL;
+	char *path = NULL;
 	struct timespec write_time_ts;
         struct timespec access_time_ts;
         struct timespec change_time_ts;
@@ -2308,8 +2346,8 @@ smbc_stat_ctx(SMBCCTX *context,
 		}
 	}
 
-	srv = smbc_server(context, True,
-                          server, share, workgroup, user, password);
+	srv = smbc_server(frame, context, True,
+                          server, share, &workgroup, &user, &password);
 
 	if (!srv) {
 		TALLOC_FREE(frame);
@@ -2355,13 +2393,13 @@ smbc_fstat_ctx(SMBCCTX *context,
         struct timespec write_time_ts;
 	SMB_OFF_T size;
 	uint16 mode;
-	char *server;
-	char *share;
-	char *user;
-	char *password;
-	char *path;
-        char *targetpath;
-	struct cli_state *targetcli;
+	char *server = NULL;
+	char *share = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	char *path = NULL;
+        char *targetpath = NULL;
+	struct cli_state *targetcli = NULL;
 	SMB_INO_T ino = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -2743,14 +2781,14 @@ smbc_opendir_ctx(SMBCCTX *context,
                  const char *fname)
 {
         int saved_errno;
-	char *server, *share, *user, *password, *options;
-	char *workgroup;
-	char *path;
+	char *server = NULL, *share = NULL, *user = NULL, *password = NULL, *options = NULL;
+	char *workgroup = NULL;
+	char *path = NULL;
         uint16 mode;
-        char *p;
+        char *p = NULL;
 	SMBCSRV *srv  = NULL;
 	SMBCFILE *dir = NULL;
-        struct _smbc_callbacks *cb;
+        struct _smbc_callbacks *cb = NULL;
 	struct sockaddr_storage rem_ss;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -2939,8 +2977,8 @@ smbc_opendir_ctx(SMBCCTX *context,
                          * workgroups/domains that it knows about.
                          */
 
-                        srv = smbc_server(context, True, server, "IPC$",
-                                          workgroup, user, password);
+                        srv = smbc_server(frame, context, True, server, "IPC$",
+                                          &workgroup, &user, &password);
                         if (!srv) {
                                 continue;
                         }
@@ -2993,8 +3031,8 @@ smbc_opendir_ctx(SMBCCTX *context,
                          * establish a connection if one does not already
                          * exist.
                          */
-                        srv = smbc_server(context, False, server, "IPC$",
-                                          workgroup, user, password);
+                        srv = smbc_server(frame, context, False, server, "IPC$",
+                                          &workgroup, &user, &password);
 
                         /*
                          * If no existing server and not an IP addr, look for
@@ -3032,9 +3070,9 @@ smbc_opendir_ctx(SMBCCTX *context,
                                  * Get a connection to IPC$ on the server if
                                  * we do not already have one
                                  */
-				srv = smbc_server(context, True,
+				srv = smbc_server(frame, context, True,
                                                   buserver, "IPC$",
-                                                  workgroup, user, password);
+                                                  &workgroup, &user, &password);
 				if (!srv) {
 				        DEBUG(0, ("got no contact to IPC$\n"));
 					if (dir) {
@@ -3065,10 +3103,10 @@ smbc_opendir_ctx(SMBCCTX *context,
 
                                 /* If we hadn't found the server, get one now */
                                 if (!srv) {
-                                        srv = smbc_server(context, True,
+                                        srv = smbc_server(frame, context, True,
                                                           server, "IPC$",
-                                                          workgroup,
-                                                          user, password);
+                                                          &workgroup,
+                                                          &user, &password);
                                 }
 
                                 if (!srv) {
@@ -3127,8 +3165,8 @@ smbc_opendir_ctx(SMBCCTX *context,
 			/* We connect to the server and list the directory */
 			dir->dir_type = SMBC_FILE_SHARE;
 
-			srv = smbc_server(context, True, server, share,
-                                          workgroup, user, password);
+			srv = smbc_server(frame, context, True, server, share,
+                                          &workgroup, &user, &password);
 
 			if (!srv) {
 				if (dir) {
@@ -3495,15 +3533,15 @@ smbc_mkdir_ctx(SMBCCTX *context,
                const char *fname,
                mode_t mode)
 {
-	SMBCSRV *srv;
-	char *server;
-        char *share;
-        char *user;
-        char *password;
-        char *workgroup;
-	char *path;
-	char *targetpath;
-	struct cli_state *targetcli;
+	SMBCSRV *srv = NULL;
+	char *server = NULL;
+        char *share = NULL;
+        char *user = NULL;
+        char *password = NULL;
+        char *workgroup = NULL;
+	char *path = NULL;
+	char *targetpath = NULL;
+	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal ||
@@ -3545,8 +3583,8 @@ smbc_mkdir_ctx(SMBCCTX *context,
 		}
 	}
 
-	srv = smbc_server(context, True,
-                          server, share, workgroup, user, password);
+	srv = smbc_server(frame, context, True,
+                          server, share, &workgroup, &user, &password);
 
 	if (!srv) {
 
@@ -3603,15 +3641,15 @@ static int
 smbc_rmdir_ctx(SMBCCTX *context,
                const char *fname)
 {
-	SMBCSRV *srv;
-	char *server;
-        char *share;
-        char *user;
-        char *password;
-        char *workgroup;
-	char *path;
-        char *targetpath;
-	struct cli_state *targetcli;
+	SMBCSRV *srv = NULL;
+	char *server = NULL;
+        char *share = NULL;
+        char *user = NULL;
+        char *password = NULL;
+        char *workgroup = NULL;
+	char *path = NULL;
+        char *targetpath = NULL;
+	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!context || !context->internal ||
@@ -3653,8 +3691,8 @@ smbc_rmdir_ctx(SMBCCTX *context,
 		}
 	}
 
-	srv = smbc_server(context, True,
-                          server, share, workgroup, user, password);
+	srv = smbc_server(frame, context, True,
+                          server, share, &workgroup, &user, &password);
 
 	if (!srv) {
 
@@ -3888,13 +3926,13 @@ smbc_chmod_ctx(SMBCCTX *context,
                const char *fname,
                mode_t newmode)
 {
-        SMBCSRV *srv;
-	char *server;
-        char *share;
-        char *user;
-        char *password;
-        char *workgroup;
-	char *path;
+        SMBCSRV *srv = NULL;
+	char *server = NULL;
+        char *share = NULL;
+        char *user = NULL;
+        char *password = NULL;
+        char *workgroup = NULL;
+	char *path = NULL;
 	uint16 mode;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -3937,8 +3975,8 @@ smbc_chmod_ctx(SMBCCTX *context,
 		}
 	}
 
-	srv = smbc_server(context, True,
-                          server, share, workgroup, user, password);
+	srv = smbc_server(frame, context, True,
+                          server, share, &workgroup, &user, &password);
 
 	if (!srv) {
 		TALLOC_FREE(frame);
@@ -3967,13 +4005,13 @@ smbc_utimes_ctx(SMBCCTX *context,
                 const char *fname,
                 struct timeval *tbuf)
 {
-        SMBCSRV *srv;
-	char *server;
-	char *share;
-	char *user;
-	char *password;
-	char *workgroup;
-	char *path;
+        SMBCSRV *srv = NULL;
+	char *server = NULL;
+	char *share = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	char *workgroup = NULL;
+	char *path = NULL;
         time_t access_time;
         time_t write_time;
 	TALLOC_CTX *frame = talloc_stackframe();
@@ -4043,8 +4081,8 @@ smbc_utimes_ctx(SMBCCTX *context,
 		}
 	}
 
-	srv = smbc_server(context, True,
-                          server, share, workgroup, user, password);
+	srv = smbc_server(frame, context, True,
+                          server, share, &workgroup, &user, &password);
 
 	if (!srv) {
 		TALLOC_FREE(frame);
@@ -5679,16 +5717,16 @@ smbc_setxattr_ctx(SMBCCTX *context,
 {
         int ret;
         int ret2;
-        SMBCSRV *srv;
-        SMBCSRV *ipc_srv;
-	char *server;
-	char *share;
-	char *user;
-	char *password;
-	char *workgroup;
-	char *path;
+        SMBCSRV *srv = NULL;
+        SMBCSRV *ipc_srv = NULL;
+	char *server = NULL;
+	char *share = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	char *workgroup = NULL;
+	char *path = NULL;
         POLICY_HND pol;
-        DOS_ATTR_DESC *dad;
+        DOS_ATTR_DESC *dad = NULL;
         struct {
                 const char * create_time_attr;
                 const char * access_time_attr;
@@ -5737,16 +5775,16 @@ smbc_setxattr_ctx(SMBCCTX *context,
 		}
 	}
 
-	srv = smbc_server(context, True,
-                          server, share, workgroup, user, password);
+	srv = smbc_server(frame, context, True,
+                          server, share, &workgroup, &user, &password);
 	if (!srv) {
 		TALLOC_FREE(frame);
 		return -1;  /* errno set by smbc_server */
 	}
 
         if (! srv->no_nt_session) {
-                ipc_srv = smbc_attr_server(context, server, share,
-                                           workgroup, user, password,
+                ipc_srv = smbc_attr_server(frame, context, server, share,
+                                           &workgroup, &user, &password,
                                            &pol);
                 if (! ipc_srv) {
                         srv->no_nt_session = True;
@@ -5977,14 +6015,14 @@ smbc_getxattr_ctx(SMBCCTX *context,
                   size_t size)
 {
         int ret;
-        SMBCSRV *srv;
-        SMBCSRV *ipc_srv;
-	char *server;
-	char *share;
-	char *user;
-	char *password;
-	char *workgroup;
-	char *path;
+        SMBCSRV *srv = NULL;
+        SMBCSRV *ipc_srv = NULL;
+	char *server = NULL;
+	char *share = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	char *workgroup = NULL;
+	char *path = NULL;
         POLICY_HND pol;
         struct {
                 const char * create_time_attr;
@@ -6033,16 +6071,16 @@ smbc_getxattr_ctx(SMBCCTX *context,
 		}
 	}
 
-        srv = smbc_server(context, True,
-                          server, share, workgroup, user, password);
+        srv = smbc_server(frame, context, True,
+                          server, share, &workgroup, &user, &password);
         if (!srv) {
 		TALLOC_FREE(frame);
                 return -1;  /* errno set by smbc_server */
         }
 
         if (! srv->no_nt_session) {
-                ipc_srv = smbc_attr_server(context, server, share,
-                                           workgroup, user, password,
+                ipc_srv = smbc_attr_server(frame, context, server, share,
+                                           &workgroup, &user, &password,
                                            &pol);
                 if (! ipc_srv) {
                         srv->no_nt_session = True;
@@ -6119,14 +6157,14 @@ smbc_removexattr_ctx(SMBCCTX *context,
                      const char *name)
 {
         int ret;
-        SMBCSRV *srv;
-        SMBCSRV *ipc_srv;
-	char *server;
-	char *share;
-	char *user;
-	char *password;
-	char *workgroup;
-	char *path;
+        SMBCSRV *srv = NULL;
+        SMBCSRV *ipc_srv = NULL;
+	char *server = NULL;
+	char *share = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	char *workgroup = NULL;
+	char *path = NULL;
         POLICY_HND pol;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -6169,16 +6207,16 @@ smbc_removexattr_ctx(SMBCCTX *context,
 		}
 	}
 
-        srv = smbc_server(context, True,
-                          server, share, workgroup, user, password);
+        srv = smbc_server(frame, context, True,
+                          server, share, &workgroup, &user, &password);
         if (!srv) {
 		TALLOC_FREE(frame);
                 return -1;  /* errno set by smbc_server */
         }
 
         if (! srv->no_nt_session) {
-                ipc_srv = smbc_attr_server(context, server, share,
-                                           workgroup, user, password,
+                ipc_srv = smbc_attr_server(frame, context, server, share,
+                                           &workgroup, &user, &password,
                                            &pol);
                 if (! ipc_srv) {
                         srv->no_nt_session = True;
@@ -6314,11 +6352,11 @@ static SMBCFILE *
 smbc_open_print_job_ctx(SMBCCTX *context,
                         const char *fname)
 {
-	char *server;
-	char *share;
-	char *user;
-	char *password;
-	char *path;
+	char *server = NULL;
+	char *share = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	char *path = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
         if (!context || !context->internal ||
@@ -6457,13 +6495,13 @@ smbc_list_print_jobs_ctx(SMBCCTX *context,
                          const char *fname,
                          smbc_list_print_job_fn fn)
 {
-	SMBCSRV *srv;
-	char *server;
-	char *share;
-	char *user;
-	char *password;
-	char *workgroup;
-	char *path;
+	SMBCSRV *srv = NULL;
+	char *server = NULL;
+	char *share = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	char *workgroup = NULL;
+	char *path = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
         if (!context || !context->internal ||
@@ -6505,8 +6543,8 @@ smbc_list_print_jobs_ctx(SMBCCTX *context,
 		}
 	}
 
-        srv = smbc_server(context, True,
-                          server, share, workgroup, user, password);
+        srv = smbc_server(frame, context, True,
+                          server, share, &workgroup, &user, &password);
 
         if (!srv) {
 		TALLOC_FREE(frame);
@@ -6534,13 +6572,13 @@ smbc_unlink_print_job_ctx(SMBCCTX *context,
                           const char *fname,
                           int id)
 {
-	SMBCSRV *srv;
-	char *server;
-	char *share;
-	char *user;
-	char *password;
-	char *workgroup;
-	char *path;
+	SMBCSRV *srv = NULL;
+	char *server = NULL;
+	char *share = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	char *workgroup = NULL;
+	char *path = NULL;
         int err;
 	TALLOC_CTX *frame = talloc_stackframe();
 
@@ -6583,8 +6621,8 @@ smbc_unlink_print_job_ctx(SMBCCTX *context,
 		}
 	}
 
-        srv = smbc_server(context, True,
-                          server, share, workgroup, user, password);
+        srv = smbc_server(frame, context, True,
+                          server, share, &workgroup, &user, &password);
 
         if (!srv) {
 

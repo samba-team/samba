@@ -155,7 +155,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	NTSTATUS result;
 	int retval = 1;
-	char *domain = NULL;
+	const char *domain = NULL;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
 	char *acct_name;
@@ -413,7 +413,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Now store the secret in the secrets database */
 
-	strupper_m(domain);
+	strupper_m(CONST_DISCARD(char *, domain));
 
 	if (!secrets_store_domain_sid(domain, domain_sid)) {
 		DEBUG(0, ("error storing domain sid for %s\n", domain));

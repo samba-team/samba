@@ -42,7 +42,7 @@ struct rpc_sh_ctx {
 	struct cli_state *cli;
 
 	DOM_SID *domain_sid;
-	char *domain_name;
+	const char *domain_name;
 
 	const char *whoami;
 	const char *thiscmd;
