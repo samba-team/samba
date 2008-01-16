@@ -67,6 +67,7 @@ source/lib/util/pidfile.h
 source/lib/util/unix_privs.h
 source/lib/util/util_proto.h
 source/lib/util/wrap_xattr.h
+source/lib/util/asn1_proto.h
 source/libcli/finddcs.h
 source/libcli/libcli_proto.h
 source/libcli/auth/proto.h
@@ -79,7 +80,6 @@ source/libcli/resolve/proto.h
 source/libcli/security/proto.h
 source/libcli/smb2/smb2_proto.h
 source/libcli/smb_composite/proto.h
-source/libcli/util/asn1_proto.h
 source/libcli/util/clilsa.h
 source/libcli/util/proto.h
 source/libcli/wrepl/winsrepl_proto.h
