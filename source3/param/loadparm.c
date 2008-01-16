@@ -3663,6 +3663,14 @@ bool lp_include_registry_globals(void)
 	return include_registry_globals;
 }
 
+/**
+ * Utility function for outsiders to check if we're running on registry.
+ */
+bool lp_config_backend_is_registry(void)
+{
+	return (lp_config_backend() == CONFIG_BACKEND_REGISTRY);
+}
+
 /*******************************************************************
  Check if a config file has changed date.
 ********************************************************************/
