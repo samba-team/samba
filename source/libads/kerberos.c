@@ -689,25 +689,31 @@ static char *print_kdc_line(char *mem_ctx,
 			   krb5 port with an address, as this requires a ':'.
 			   Resolve to a name. */
 			char hostname[MAX_DNS_NAME_LENGTH];
-			if (sys_getnameinfo((const struct sockaddr *)pss,
+			int ret = sys_getnameinfo((const struct sockaddr *)pss,
 					sizeof(*pss),
 					hostname, sizeof(hostname),
 					NULL, 0,
-					NI_NAMEREQD) == 0) {
-				/* Success, use host:port */
-				kdc_str = talloc_asprintf(mem_ctx,
+					NI_NAMEREQD);
+			if (ret) {
+				DEBUG(0,("print_kdc_line: can't resolve name "
+					"for kdc with non-default port %s. "
+					"Error %s\n.",
+					print_canonical_sockaddr(mem_ctx, pss),
+					gai_strerror(ret)));
+			}
+			/* Success, use host:port */
+			kdc_str = talloc_asprintf(mem_ctx,
 					"%s\tkdc = %s:%u\n",
-                                        prev_line,
+					prev_line,
 					hostname,
 					(unsigned int)port);
-				return kdc_str;
-			}
-		}
-		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+		} else {
+			kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
 					prev_line,
 					print_sockaddr(addr,
 						sizeof(addr),
 						pss));
+		}
 	}
 	return kdc_str;
 }
