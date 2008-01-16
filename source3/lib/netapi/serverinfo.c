@@ -167,7 +167,7 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (!lp_include_registry_globals()) {
+	if (!lp_config_backend_is_registry()) {
 		return WERR_NOT_SUPPORTED;
 	}
 

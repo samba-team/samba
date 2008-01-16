@@ -2583,7 +2583,7 @@ NTSTATUS _lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p, struct lsa_LSARUNREGISTE
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS _lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p, struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r)
+NTSTATUS _lsa_lsaRQueryForestTrustInformation(pipes_struct *p, struct lsa_lsaRQueryForestTrustInformation *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;

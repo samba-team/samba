@@ -1041,7 +1041,7 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (r->in.modify_config && !lp_include_registry_globals()) {
+	if (r->in.modify_config && !lp_config_backend_is_registry()) {
 		return WERR_NOT_SUPPORTED;
 	}
 
@@ -1350,7 +1350,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 					   struct libnet_UnjoinCtx *r)
 {
-	if (r->in.modify_config && !lp_include_registry_globals()) {
+	if (r->in.modify_config && !lp_config_backend_is_registry()) {
 		return WERR_NOT_SUPPORTED;
 	}
 

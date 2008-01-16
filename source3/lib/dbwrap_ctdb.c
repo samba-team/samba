@@ -18,24 +18,20 @@
 */
 
 #include "includes.h"
-
 #ifdef CLUSTER_SUPPORT
-
 #include "ctdb.h"
 #include "ctdb_private.h"
+#include "ctdbd_conn.h"
 
 struct db_ctdb_ctx {
 	struct tdb_wrap *wtdb;
 	uint32 db_id;
-	struct ctdbd_connection *conn;
 };
 
 struct db_ctdb_rec {
 	struct db_ctdb_ctx *ctdb_ctx;
 	struct ctdb_ltdb_header header;
 };
-
-static struct ctdbd_connection *db_ctdbd_conn(struct db_ctdb_ctx *ctx);
 
 static NTSTATUS db_ctdb_store(struct db_record *rec, TDB_DATA data, int flag)
 {
@@ -58,6 +54,42 @@ static NTSTATUS db_ctdb_store(struct db_record *rec, TDB_DATA data, int flag)
 	SAFE_FREE(cdata.dptr);
 
 	return (ret == 0) ? NT_STATUS_OK : NT_STATUS_INTERNAL_DB_CORRUPTION;
+}
+
+
+/* for persistent databases the store is a bit different. We have to
+   ask the ctdb daemon to push the record to all nodes after the
+   store */
+static NTSTATUS db_ctdb_store_persistent(struct db_record *rec, TDB_DATA data, int flag)
+{
+	struct db_ctdb_rec *crec = talloc_get_type_abort(
+		rec->private_data, struct db_ctdb_rec);
+	TDB_DATA cdata;
+	int ret;
+	NTSTATUS status;
+
+	cdata.dsize = sizeof(crec->header) + data.dsize;
+
+	if (!(cdata.dptr = SMB_MALLOC_ARRAY(uint8, cdata.dsize))) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	crec->header.rsn++;
+
+	memcpy(cdata.dptr, &crec->header, sizeof(crec->header));
+	memcpy(cdata.dptr + sizeof(crec->header), data.dptr, data.dsize);
+
+	ret = tdb_store(crec->ctdb_ctx->wtdb->tdb, rec->key, cdata, TDB_REPLACE);
+	status = (ret == 0) ? NT_STATUS_OK : NT_STATUS_INTERNAL_DB_CORRUPTION;
+	
+	/* now tell ctdbd to update this record on all other nodes */
+	if (NT_STATUS_IS_OK(status)) {
+		status = ctdbd_persistent_store(messaging_ctdbd_connection(), crec->ctdb_ctx->db_id, rec->key, cdata);
+	}
+
+	SAFE_FREE(cdata.dptr);
+
+	return status;
 }
 
 static NTSTATUS db_ctdb_delete(struct db_record *rec)
@@ -110,6 +142,7 @@ static struct db_record *db_ctdb_fetch_locked(struct db_context *db,
 	struct db_ctdb_rec *crec;
 	NTSTATUS status;
 	TDB_DATA ctdb_data;
+	int migrate_attempts = 0;
 
 	if (!(result = talloc(mem_ctx, struct db_record))) {
 		DEBUG(0, ("talloc failed\n"));
@@ -153,7 +186,11 @@ again:
 		return NULL;
 	}
 
-	result->store = db_ctdb_store;
+	if (db->persistent) {
+		result->store = db_ctdb_store_persistent;
+	} else {
+		result->store = db_ctdb_store;
+	}
 	result->delete_rec = db_ctdb_delete;
 	talloc_set_destructor(result, db_ctdb_record_destr);
 
@@ -175,12 +212,14 @@ again:
 		tdb_chainunlock(ctx->wtdb->tdb, key);
 		talloc_set_destructor(result, NULL);
 
+		migrate_attempts += 1;
+
 		DEBUG(10, ("ctdb_data.dptr = %p, dmaster = %u (%u)\n",
 			   ctdb_data.dptr, ctdb_data.dptr ?
 			   ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster : -1,
 			   get_my_vnn()));
 
-		status = ctdbd_migrate(db_ctdbd_conn(ctx), ctx->db_id, key);
+		status = ctdbd_migrate(messaging_ctdbd_connection(),ctx->db_id, key);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(5, ("ctdb_migrate failed: %s\n",
 				  nt_errstr(status)));
@@ -189,6 +228,11 @@ again:
 		}
 		/* now its migrated, try again */
 		goto again;
+	}
+
+	if (migrate_attempts > 10) {
+		DEBUG(0, ("db_ctdb_fetch_locked needed %d attempts\n",
+			  migrate_attempts));
 	}
 
 	memcpy(&crec->header, ctdb_data.dptr, sizeof(crec->header));
@@ -226,10 +270,12 @@ static int db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	/*
 	 * See if we have a valid record and we are the dmaster. If so, we can
 	 * take the shortcut and just return it.
+	 * we bypass the dmaster check for persistent databases
 	 */
 	if ((ctdb_data.dptr != NULL) &&
 	    (ctdb_data.dsize >= sizeof(struct ctdb_ltdb_header)) &&
-	    ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster == get_my_vnn()) {
+	    (db->persistent ||
+	     ((struct ctdb_ltdb_header *)ctdb_data.dptr)->dmaster == get_my_vnn())) {
 		/* we are the dmaster - avoid the ctdb protocol op */
 
 		data->dsize = ctdb_data.dsize - sizeof(struct ctdb_ltdb_header);
@@ -254,8 +300,7 @@ static int db_ctdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	SAFE_FREE(ctdb_data.dptr);
 
 	/* we weren't able to get it locally - ask ctdb to fetch it for us */
-	status = ctdbd_fetch(db_ctdbd_conn(ctx), ctx->db_id, key, mem_ctx,
-			     data);
+	status = ctdbd_fetch(messaging_ctdbd_connection(),ctx->db_id, key, mem_ctx, data);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("ctdbd_fetch failed: %s\n", nt_errstr(status)));
 		return -1;
@@ -283,6 +328,22 @@ static void traverse_callback(TDB_DATA key, TDB_DATA data, void *private_data)
 	talloc_free(tmp_ctx);
 }
 
+static int traverse_persistent_callback(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
+					void *private_data)
+{
+	struct traverse_state *state = (struct traverse_state *)private_data;
+	struct db_record *rec;
+	TALLOC_CTX *tmp_ctx = talloc_new(state->db);
+	int ret = 0;
+	/* we have to give them a locked record to prevent races */
+	rec = db_ctdb_fetch_locked(state->db, tmp_ctx, kbuf);
+	if (rec && rec->value.dsize > 0) {
+		ret = state->fn(rec, state->private_data);
+	}
+	talloc_free(tmp_ctx);
+	return ret;
+}
+
 static int db_ctdb_traverse(struct db_context *db,
 			    int (*fn)(struct db_record *rec,
 				      void *private_data),
@@ -295,6 +356,13 @@ static int db_ctdb_traverse(struct db_context *db,
 	state.db = db;
 	state.fn = fn;
 	state.private_data = private_data;
+
+	if (db->persistent) {
+		/* for persistent databases we don't need to do a ctdb traverse,
+		   we can do a faster local traverse */
+		return tdb_traverse(ctx->wtdb->tdb, traverse_persistent_callback, &state);
+	}
+
 
 	ctdbd_traverse(ctx->db_id, traverse_callback, &state);
 	return 0;
@@ -322,6 +390,27 @@ static void traverse_read_callback(TDB_DATA key, TDB_DATA data, void *private_da
 	state->fn(&rec, state->private_data);
 }
 
+static int traverse_persistent_callback_read(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf,
+					void *private_data)
+{
+	struct traverse_state *state = (struct traverse_state *)private_data;
+	struct db_record rec;
+	rec.key = kbuf;
+	rec.value = dbuf;
+	rec.store = db_ctdb_store_deny;
+	rec.delete_rec = db_ctdb_delete_deny;
+	rec.private_data = state->db;
+
+	if (rec.value.dsize <= sizeof(struct ctdb_ltdb_header)) {
+		/* a deleted record */
+		return 0;
+	}
+	rec.value.dsize -= sizeof(struct ctdb_ltdb_header);
+	rec.value.dptr += sizeof(struct ctdb_ltdb_header);
+
+	return state->fn(&rec, state->private_data);
+}
+
 static int db_ctdb_traverse_read(struct db_context *db,
 				 int (*fn)(struct db_record *rec,
 					   void *private_data),
@@ -335,6 +424,12 @@ static int db_ctdb_traverse_read(struct db_context *db,
 	state.fn = fn;
 	state.private_data = private_data;
 
+	if (db->persistent) {
+		/* for persistent databases we don't need to do a ctdb traverse,
+		   we can do a faster local traverse */
+		return tdb_traverse_read(ctx->wtdb->tdb, traverse_persistent_callback_read, &state);
+	}
+
 	ctdbd_traverse(ctx->db_id, traverse_read_callback, &state);
 	return 0;
 }
@@ -346,41 +441,6 @@ static int db_ctdb_get_seqnum(struct db_context *db)
 	return tdb_get_seqnum(ctx->wtdb->tdb);
 }
 
-/*
- * Get the ctdbd connection for a database. If possible, re-use the messaging
- * ctdbd connection
- */
-static struct ctdbd_connection *db_ctdbd_conn(struct db_ctdb_ctx *ctx)
-{
-	struct ctdbd_connection *result;
-
-	result = messaging_ctdbd_connection();
-
-	if (result != NULL) {
-
-		if (ctx->conn == NULL) {
-			/*
-			 * Someone has initialized messaging since we
-			 * initialized our own connection, we don't need it
-			 * anymore.
-			 */
-			TALLOC_FREE(ctx->conn);
-		}
-
-		return result;
-	}
-
-	if (ctx->conn == NULL) {
-		NTSTATUS status;
-		status = ctdbd_init_connection(ctx, &ctx->conn);
-		if (!NT_STATUS_IS_OK(status)) {
-			return NULL;
-		}
-		set_my_vnn(ctdbd_vnn(ctx->conn));
-	}
-
-	return ctx->conn;
-}
 
 struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 				const char *name,
@@ -390,7 +450,6 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 	struct db_context *result;
 	struct db_ctdb_ctx *db_ctdb;
 	char *db_path;
-	NTSTATUS status;
 
 	if (!lp_clustering()) {
 		DEBUG(10, ("Clustering disabled -- no ctdb\n"));
@@ -409,20 +468,15 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	db_ctdb->conn = NULL;
-
-	status = ctdbd_db_attach(db_ctdbd_conn(db_ctdb), name,
-				 &db_ctdb->db_id, tdb_flags);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("ctdbd_db_attach failed for %s: %s\n", name,
-			  nt_errstr(status)));
+	if (!NT_STATUS_IS_OK(ctdbd_db_attach(messaging_ctdbd_connection(),name, &db_ctdb->db_id, tdb_flags))) {
+		DEBUG(0, ("ctdbd_db_attach failed for %s\n", name));
 		TALLOC_FREE(result);
 		return NULL;
 	}
 
-	db_path = ctdbd_dbpath(db_ctdbd_conn(db_ctdb), db_ctdb,
-			       db_ctdb->db_id);
+	db_path = ctdbd_dbpath(messaging_ctdbd_connection(), db_ctdb, db_ctdb->db_id);
+
+	result->persistent = ((tdb_flags & TDB_CLEAR_IF_FIRST) == 0);
 
 	/* only pass through specific flags */
 	tdb_flags &= TDB_SEQNUM;
@@ -447,16 +501,4 @@ struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
 
 	return result;
 }
-
-#else
-
-struct db_context *db_open_ctdb(TALLOC_CTX *mem_ctx,
-				const char *name,
-				int hash_size, int tdb_flags,
-				int open_flags, mode_t mode)
-{
-	DEBUG(0, ("no clustering compiled in\n"));
-	return NULL;
-}
-
 #endif
