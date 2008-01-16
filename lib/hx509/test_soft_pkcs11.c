@@ -116,13 +116,19 @@ main(int argc, char **argv)
     if (ret != CKR_OK)
 	errx(1, "C_OpenSession failed: %d", (int)ret);
     
-    ret = C_Login(session, CKU_USER, (unsigned char*)"foobar", 6);
-    if (ret != CKR_OK)
-	errx(1, "C_Login failed: %d", (int)ret);
+    ret = C_GetTokenInfo(slot, &token_info);
+    if (ret)
+	errx(1, "C_GetTokenInfo1 failed: %d", (int)ret);
+
+    if (token_info.flags & CKF_LOGIN_REQUIRED) {
+	ret = C_Login(session, CKU_USER, (unsigned char*)"foobar", 6);
+	if (ret != CKR_OK)
+	    errx(1, "C_Login failed: %d", (int)ret);
+    }
 
     ret = C_GetTokenInfo(slot, &token_info);
     if (ret)
-	errx(1, "C_GetTokenInfo failed: %d", (int)ret);
+	errx(1, "C_GetTokenInfo2 failed: %d", (int)ret);
 
     if (token_info.flags & CKF_LOGIN_REQUIRED)
 	errx(1, "login required, even after C_Login");
