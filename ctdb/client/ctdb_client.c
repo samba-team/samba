@@ -802,7 +802,7 @@ static void control_timeout_func(struct event_context *ev, struct timed_event *t
 struct ctdb_client_control_state *ctdb_control_send(struct ctdb_context *ctdb, 
 		uint32_t destnode, uint64_t srvid, 
 		uint32_t opcode, uint32_t flags, TDB_DATA data, 
-		TALLOC_CTX *mem_ctx, TDB_DATA *outdata,
+		TALLOC_CTX *mem_ctx,
 		struct timeval *timeout,
 		char **errormsg)
 {
@@ -944,7 +944,7 @@ int ctdb_control(struct ctdb_context *ctdb, uint32_t destnode, uint64_t srvid,
 	struct ctdb_client_control_state *state;
 
 	state = ctdb_control_send(ctdb, destnode, srvid, opcode, 
-			flags, data, mem_ctx, outdata,
+			flags, data, mem_ctx,
 			timeout, errormsg);
 	return ctdb_control_recv(ctdb, state, mem_ctx, outdata, status, 
 			errormsg);
@@ -1014,7 +1014,7 @@ int ctdb_ctrl_shutdown(struct ctdb_context *ctdb, struct timeval timeout, uint32
 
 	state = ctdb_control_send(ctdb, destnode, 0, 
 			   CTDB_CONTROL_SHUTDOWN, 0, tdb_null, 
-			   NULL, NULL, &timeout, NULL);
+			   NULL, &timeout, NULL);
 	if (state == NULL) {
 		DEBUG(0,(__location__ " ctdb_control for shutdown failed\n"));
 		return -1;
@@ -1070,7 +1070,7 @@ ctdb_ctrl_getrecmode_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct
 {
 	return ctdb_control_send(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_RECMODE, 0, tdb_null, 
-			   mem_ctx, NULL, &timeout, NULL);
+			   mem_ctx, &timeout, NULL);
 }
 
 int ctdb_ctrl_getrecmode_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *recmode)
@@ -1136,7 +1136,7 @@ ctdb_ctrl_getrecmaster_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx,
 {
 	return ctdb_control_send(ctdb, destnode, 0, 
 			   CTDB_CONTROL_GET_RECMASTER, 0, tdb_null, 
-			   mem_ctx, NULL, &timeout, NULL);
+			   mem_ctx, &timeout, NULL);
 }
 
 int ctdb_ctrl_getrecmaster_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, uint32_t *recmaster)
@@ -1300,7 +1300,7 @@ struct ctdb_client_control_state *ctdb_ctrl_pulldb_send(
 
 	state = ctdb_control_send(ctdb, destnode, 0, 
 				  CTDB_CONTROL_PULL_DB, 0, indata, 
-				  mem_ctx, NULL, &timeout, NULL);
+				  mem_ctx, &timeout, NULL);
 	talloc_free(pull);
 
 	return state;
@@ -1842,7 +1842,7 @@ ctdb_ctrl_freeze_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct tim
 {
 	return ctdb_control_send(ctdb, destnode, 0, 
 			   CTDB_CONTROL_FREEZE, 0, tdb_null, 
-			   mem_ctx, NULL, &timeout, NULL);
+			   mem_ctx, &timeout, NULL);
 }
 
 /* 

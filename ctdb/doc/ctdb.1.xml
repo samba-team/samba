@@ -161,6 +161,25 @@
           The generation id is a number that indicates the current generation 
           of a cluster instance. Each time a cluster goes through a 
           reconfiguration or a recovery its generation id will be changed.
+	  </para>
+	  <para>
+	  This number does not have any particular meaning other than to keep
+	  track of when a cluster has gone through a recovery. It is a random
+	  number that represents the current instance of a ctdb cluster
+	  and its databases.
+	  CTDBD uses this number internally to be able to tell when commands 
+	  to operate on the cluster and the databases was issued in a different
+	  generation of the cluster, to ensure that commands that operate
+	  on the databases will not survive across a cluster database recovery.
+	  After a recovery, all old outstanding commands will automatically
+	  become invalid. 
+        </para>
+        <para>
+	  Sometimes this number will be shown as "INVALID". This only means that
+	  the ctdbd daemon has started but it has not yet merged with the cluster through a recovery.
+	  All nodes start with generation "INVALID" and are not assigned a real
+	  generation id until they have successfully been merged with a cluster
+	  through a recovery.
         </para>
       </refsect3>
 
@@ -181,11 +200,32 @@
         <para>
           RECOVERY - The cluster databases have all been frozen, pausing all services while the cluster awaits a recovery process to complete. A recovery process should finish within seconds. If a cluster is stuck in the RECOVERY state this would indicate a cluster malfunction which needs to be investigated.
         </para>
+	<para>
+	Once the recovery master detects an inconsistency, for example a node 
+	becomes disconnected/connected, the recovery daemon will trigger a 
+	cluster recovery process, where all databases are remerged across the
+	cluster. When this process starts, the recovery master will first
+	"freeze" all databases to prevent applications such as samba from 
+	accessing the databases and it will also mark the recovery mode as
+	RECOVERY.
+	</para>
+	<para>
+	When CTDBD starts up, it will start in RECOVERY mode.
+	Once the node has been merged into a cluster and all databases
+	have been recovered, the node mode will change into NORMAL mode
+	and the databases will be "thawed", allowing samba to access the
+	databases again.
+	</para>
       </refsect3>
 
       <refsect3><title>Recovery master</title>
         <para>
           This is the cluster node that is currently designated as the recovery master. This node is responsible of monitoring the consistency of the cluster and to perform the actual recovery process when reqired.
+        </para>
+        <para>
+	Only one node at a time can be the designated recovery master. Which
+	node is designated the recovery master is decided by an election
+	process in the recovery daemons running on each node.
         </para>
       </refsect3>
 
@@ -524,7 +564,10 @@ CTDB version 1
 
     <refsect2><title>getdbmap</title>
       <para>
-        This command lists all clustered TDB databases that the CTDB daemon has attahced to.
+        This command lists all clustered TDB databases that the CTDB daemon has attached to. Some databases are flagged as PERSISTENT, this means that the database stores data persistently and the data will remain across reboots. One example of such a database is secrets.tdb where information about how the cluster was joined to the domain is stored.
+	</para>
+	<para>
+	Most databases are not persistent and only store the state information that the currently running samba daemons need. These databases are always wiped when ctdb/samba starts and when a node is rebooted.
       </para>
       <para>
 	Example: ctdb getdbmap
@@ -533,11 +576,16 @@ CTDB version 1
 	Example output:
       </para>
       <screen format="linespecific">
-Number of databases:4
-dbid:0x42fe72c5 name:locking.tdb path:/var/ctdb/locking.tdb.0
-dbid:0x1421fb78 name:brlock.tdb path:/var/ctdb/brlock.tdb.0
-dbid:0x17055d90 name:connections.tdb path:/var/ctdb/connections.tdb.0
-dbid:0xc0bdde6a name:sessionid.tdb path:/var/ctdb/sessionid.tdb.0
+Number of databases:10
+dbid:0x435d3410 name:notify.tdb path:/var/ctdb/notify.tdb.0 
+dbid:0x42fe72c5 name:locking.tdb path:/var/ctdb/locking.tdb.0 dbid:0x1421fb78 name:brlock.tdb path:/var/ctdb/brlock.tdb.0 
+dbid:0x17055d90 name:connections.tdb path:/var/ctdb/connections.tdb.0 
+dbid:0xc0bdde6a name:sessionid.tdb path:/var/ctdb/sessionid.tdb.0 
+dbid:0x122224da name:test.tdb path:/var/ctdb/test.tdb.0 
+dbid:0x2672a57f name:idmap2.tdb path:/var/ctdb/persistent/idmap2.tdb.0 PERSISTENT
+dbid:0xb775fff6 name:secrets.tdb path:/var/ctdb/persistent/secrets.tdb.0 PERSISTENT
+dbid:0xe98e08b6 name:group_mapping.tdb path:/var/ctdb/persistent/group_mapping.tdb.0 PERSISTENT
+dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTENT
       </screen>
     </refsect2>
 

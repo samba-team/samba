@@ -160,9 +160,20 @@
       <varlistentry><term>--nosetsched</term>
         <listitem>
           <para>
+	    This is a ctdbd debugging option. this option is only used when
+	    debugging ctdbd.
+	  </para>
+	  <para>
             Normally ctdb will change its scheduler to run as a real-time 
-	    process. This option is used to change this behaviour and have
-	    ctdb run as a normal process.
+	    process. This is the default mode for a normal ctdbd operation
+	    to gurarantee that ctdbd always gets the cpu cycles that it needs.
+          </para>
+          <para>
+	    This option is used to tell ctdbd to NOT run as a real-time process
+	    and instead run ctdbd as a normal userspace process.
+	    This is useful for debugging and when you want to run ctdbd under
+	    valgrind or gdb. (You dont want to attach valgrind or gdb to a
+	    real-time process.)
           </para>
         </listitem>
       </varlistentry>
@@ -178,11 +189,18 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry><term>--public_interface=&lt;interface&gt;</term>
+      <varlistentry><term>--public-interface=&lt;interface&gt;</term>
         <listitem>
           <para>
             This option tells ctdb which interface to attach public-addresses
 	    to and also where to attach the single-public-ip when used.
+	    </para>
+	    <para>
+	    This is only required when using public ip addresses and only when
+	    you dont specify the interface explicitely on in /etc/ctdb/public_addresses or when you are using --single-public-ip.
+          </para>
+          <para>
+	  If you omit this argument when using public addresses or single public ip, ctdb will not be able to send out Gratious ARPs correctly or be able to kill tcp connections correctly which will lead to application failures. 
           </para>
         </listitem>
       </varlistentry>
@@ -199,7 +217,12 @@
       <varlistentry><term>--single-public-ip=&lt;address&gt;</term>
         <listitem>
           <para>
-            This option is used to activate the "ipmux" functionality of ctdb.
+            This option is used to activate the "ipmux" or the "lvs"
+	    functionality of ctdb where the cluster provides a single 
+	    public ip address for the entire cluster. When using this option
+	    you must also use the --public-interface option.
+	    </para>
+	    <para>
             In this mode, all nodes of the cluster will expose a single
             ip address from all nodes with all incoming traffic to the cluster
             being passed through the current recmaster. This functionality
@@ -220,11 +243,19 @@
             if it is not important to get maximum write-performance to the
 	    cluster.
           </para>
-          <para>
-            When using a single public ip, you must also specify the 
-            public-interface so that ctdb knows which interface to attach the 
-            single public ip to.
-          </para>
+	  <para>
+	    This feature is completely controlled from the eventscripts and 
+	    does not require any CTDBD involvement. However, the CTDBD daemon
+	    does need to know that the "single public ip" exists so that the 
+	    CTDBD daemon will allow clients to set up killtcp to work on this
+	    ip address.
+	    </para>
+	    <para>
+	    CTDBD only allows clients to use killtcp to kill off (RST) tcp
+	    connections to/from an ip address that is either a normal public
+	    address or to/from the ip address specified by --single-public-ip.
+	    No other tcp connections are allowed to be specified with killtcp.
+	  </para>
         </listitem>
       </varlistentry>
 
@@ -264,7 +295,8 @@
             This option specifies which transport to use for ctdbd internode communications. The default is "tcp".
           </para>
           <para>
-            Suported transports are "tcp" and "infiniband".
+            Currently only "tcp" is supported but "infiniband" might be
+	    implemented in the future.
           </para>
         </listitem>
       </varlistentry>
