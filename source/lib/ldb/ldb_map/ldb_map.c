@@ -737,6 +737,7 @@ static struct ldb_val map_objectclass_convert_local(struct ldb_module *module, v
 /* Generate a remote message with a mapped objectClass. */
 static void map_objectclass_generate_remote(struct ldb_module *module, const char *local_attr, const struct ldb_message *old, struct ldb_message *remote, struct ldb_message *local)
 {
+	const struct ldb_map_context *data = map_get_context(module);
 	struct ldb_message_element *el, *oc;
 	struct ldb_val val;
 	bool found_extensibleObject = false;
@@ -770,16 +771,16 @@ static void map_objectclass_generate_remote(struct ldb_module *module, const cha
 	/* Convert all local objectClasses */
 	for (i = 0; i < el->num_values - 1; i++) {
 		el->values[i] = map_objectclass_convert_local(module, el->values, &oc->values[i]);
-		if (ldb_attr_cmp((char *)el->values[i].data, "extensibleObject") == 0) {
+		if (ldb_attr_cmp((char *)el->values[i].data, data->add_objectclass) == 0) {
 			found_extensibleObject = true;
 		}
 	}
 
 	if (!found_extensibleObject) {
-		val.data = (uint8_t *)talloc_strdup(el->values, "extensibleObject");
+		val.data = (uint8_t *)talloc_strdup(el->values, data->add_objectclass);
 		val.length = strlen((char *)val.data);
 
-		/* Append additional objectClass "extensibleObject" */
+		/* Append additional objectClass data->add_objectclass */
 		el->values[i] = val;
 	} else {
 		el->num_values--;
@@ -860,6 +861,19 @@ static struct ldb_message_element *map_objectclass_generate_local(struct ldb_mod
 	return el;
 }
 
+static const struct ldb_map_attribute objectclass_convert_map = {
+	.local_name = "objectClass",
+	.type = MAP_CONVERT,
+	.u = {
+		.convert = {
+			.remote_name = "objectClass",
+			.convert_local = map_objectclass_convert_local,
+			.convert_remote = map_objectclass_convert_remote,
+		},
+	},
+};
+
+
 /* Mappings for searches on objectClass= assuming a one-to-one
  * mapping.  Needed because this is a generate operator for the
  * add/modify code */
@@ -867,19 +881,7 @@ static int map_objectclass_convert_operator(struct ldb_module *module, void *mem
 					    struct ldb_parse_tree **new, const struct ldb_parse_tree *tree) 
 {
 	
-	static const struct ldb_map_attribute objectclass_map = {
-		.local_name = "objectClass",
-		.type = MAP_CONVERT,
-		.u = {
-			.convert = {
-				 .remote_name = "objectClass",
-				 .convert_local = map_objectclass_convert_local,
-				 .convert_remote = map_objectclass_convert_remote,
-			 },
-		},
-	};
-
-	return map_subtree_collect_remote_simple(module, mem_ctx, new, tree, &objectclass_map);
+	return map_subtree_collect_remote_simple(module, mem_ctx, new, tree, &objectclass_convert_map);
 }
 
 /* Auxiliary request construction
@@ -1222,21 +1224,23 @@ static const struct ldb_map_attribute builtin_attribute_maps[] = {
 		},
 	},
 	{
-		.local_name = "objectClass",
-		.type = MAP_GENERATE,
-		.convert_operator = map_objectclass_convert_operator,
-		.u = {
-			.generate = {
-				 .remote_names = { "objectClass", NULL },
-				 .generate_local = map_objectclass_generate_local,
-				 .generate_remote = map_objectclass_generate_remote,
-			 },
-		},
-	},
-	{
 		.local_name = NULL,
 	}
 };
+
+static const struct ldb_map_attribute objectclass_attribute_map	= {
+	.local_name = "objectClass",
+	.type = MAP_GENERATE,
+	.convert_operator = map_objectclass_convert_operator,
+	.u = {
+		.generate = {
+			.remote_names = { "objectClass", NULL },
+			.generate_local = map_objectclass_generate_local,
+			.generate_remote = map_objectclass_generate_remote,
+		},
+	},
+};
+
 
 /* Find the special 'MAP_DN_NAME' record and store local and remote
  * base DNs in private data. */
@@ -1302,7 +1306,7 @@ static int map_init_maps(struct ldb_module *module, struct ldb_map_context *data
 	for (j = 0; builtin_attribute_maps[j].local_name; j++) /* noop */ ;
 
 	/* Store list of attribute maps */
-	data->attribute_maps = talloc_array(data, struct ldb_map_attribute, i+j+1);
+	data->attribute_maps = talloc_array(data, struct ldb_map_attribute, i+j+2);
 	if (data->attribute_maps == NULL) {
 		map_oom(module);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -1317,6 +1321,15 @@ static int map_init_maps(struct ldb_module *module, struct ldb_map_context *data
 	/* Built-in ones go last */
 	for (i = 0; builtin_attribute_maps[i].local_name; i++) {
 		data->attribute_maps[last] = builtin_attribute_maps[i];
+		last++;
+	}
+
+	if (data->add_objectclass) {
+		/* ObjectClass one is very last, if required */
+		data->attribute_maps[last] = objectclass_attribute_map;
+		last++;
+	} else if (ocls) {
+		data->attribute_maps[last] = objectclass_convert_map;
 		last++;
 	}
 
@@ -1339,9 +1352,10 @@ _PUBLIC_ struct ldb_module_ops ldb_map_get_ops(void)
 
 /* Initialize global private data. */
 _PUBLIC_ int ldb_map_init(struct ldb_module *module, const struct ldb_map_attribute *attrs, 
-		 const struct ldb_map_objectclass *ocls,
-		 const char * const *wildcard_attributes,
-		 const char *name)
+			  const struct ldb_map_objectclass *ocls,
+			  const char * const *wildcard_attributes,
+			  const char *add_objectclass,
+			  const char *name)
 {
 	struct map_private *data;
 	int ret;
@@ -1367,6 +1381,8 @@ _PUBLIC_ int ldb_map_init(struct ldb_module *module, const struct ldb_map_attrib
 		talloc_free(data);
 		return ret;
 	}
+
+	data->context->add_objectclass = add_objectclass;
 
 	/* Store list of attribute and objectClass maps */
 	ret = map_init_maps(module, data->context, attrs, ocls, wildcard_attributes);
