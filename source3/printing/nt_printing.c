@@ -3315,8 +3315,13 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 
 	/* publish it */
 	ads_rc = ads_mod_printer_entry(ads, prt_dn, ctx, &mods);
-	if (ads_rc.err.rc == LDAP_NO_SUCH_OBJECT)
+	if (ads_rc.err.rc == LDAP_NO_SUCH_OBJECT) {
+		int i;
+		for (i=0; mods[i] != 0; i++)
+			;
+		mods[i] = (LDAPMod *)-1;
 		ads_rc = ads_add_printer_entry(ads, prt_dn, ctx, &mods);
+	}
 
 	if (!ADS_ERR_OK(ads_rc))
 		DEBUG(3, ("error publishing %s: %s\n", printer->info_2->sharename, ads_errstr(ads_rc)));
