@@ -28,7 +28,8 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
-#define SQUID_BUFFER_SIZE 2010
+#define INITIAL_BUFFER_SIZE 300
+#define MAX_BUFFER_SIZE 630000
 
 enum stdio_helper_mode {
 	SQUID_2_4_BASIC,
@@ -2070,46 +2071,60 @@ static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_
 
 static void manage_squid_request(enum stdio_helper_mode helper_mode, stdio_helper_function fn) 
 {
-	char buf[SQUID_BUFFER_SIZE+1];
-	int length;
+	char *buf;
+	char tmp[INITIAL_BUFFER_SIZE+1];
+	int length, buf_size = 0;
 	char *c;
-	static bool err;
 
-	/* this is not a typo - x_fgets doesn't work too well under squid */
-	if (fgets(buf, sizeof(buf)-1, stdin) == NULL) {
-		if (ferror(stdin)) {
-			DEBUG(1, ("fgets() failed! dying..... errno=%d (%s)\n", ferror(stdin),
-				  strerror(ferror(stdin))));
-			
-			exit(1);    /* BIIG buffer */
-		}
-		exit(0);
-	}
-    
-	c=(char *)memchr(buf,'\n',sizeof(buf)-1);
-	if (c) {
-		*c = '\0';
-		length = c-buf;
-	} else {
-		err = 1;
-		return;
-	}
-	if (err) {
-		DEBUG(2, ("Oversized message\n"));
+	buf = talloc_strdup(NULL, "");
+	if (!buf) {
+		DEBUG(0, ("Failed to allocate input buffer.\n"));
 		x_fprintf(x_stderr, "ERR\n");
-		err = 0;
-		return;
+		exit(1);
 	}
+
+	do {
+
+		/* this is not a typo - x_fgets doesn't work too well under
+		 * squid */
+		if (fgets(tmp, sizeof(tmp)-1, stdin) == NULL) {
+			if (ferror(stdin)) {
+				DEBUG(1, ("fgets() failed! dying..... errno=%d "
+					  "(%s)\n", ferror(stdin),
+					  strerror(ferror(stdin))));
+
+				exit(1);
+			}
+			exit(0);
+		}
+
+		buf = talloc_strdup_append_buffer(buf, tmp);
+		buf_size += INITIAL_BUFFER_SIZE;
+
+		if (buf_size > MAX_BUFFER_SIZE) {
+			DEBUG(2, ("Oversized message\n"));
+			x_fprintf(x_stderr, "ERR\n");
+			talloc_free(buf);
+			return;
+		}
+
+		c = strchr(buf, '\n');
+	} while (c == NULL);
+
+	*c = '\0';
+	length = c-buf;
 
 	DEBUG(10, ("Got '%s' from squid (length: %d).\n",buf,length));
 
 	if (buf[0] == '\0') {
 		DEBUG(2, ("Invalid Request\n"));
 		x_fprintf(x_stderr, "ERR\n");
+		talloc_free(buf);
 		return;
 	}
-	
+
 	fn(helper_mode, buf, length);
+	talloc_free(buf);
 }
 
 
