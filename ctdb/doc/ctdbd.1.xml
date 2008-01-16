@@ -295,7 +295,8 @@
             This option specifies which transport to use for ctdbd internode communications. The default is "tcp".
           </para>
           <para>
-            Suported transports are "tcp" and "infiniband".
+            Currently only "tcp" is supported but "infiniband" might be
+	    implemented in the future.
           </para>
         </listitem>
       </varlistentry>
