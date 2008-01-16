@@ -24,6 +24,11 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
+
+/**********************************************************************
+ * Helper functions
+ **********************************************************************/
+
 static WERROR fill_value_cache(struct registry_key *key)
 {
 	if (key->values != NULL) {
@@ -185,6 +190,11 @@ WERROR reg_openhive(TALLOC_CTX *mem_ctx, const char *hive,
 	return regkey_open_onelevel(mem_ctx, NULL, hive, token, desired_access,
 				    pkey);
 }
+
+
+/**********************************************************************
+ * The API functions
+ **********************************************************************/
 
 WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 		   const char *name, uint32 desired_access,
@@ -626,6 +636,11 @@ WERROR reg_deletevalue(struct registry_key *key, const char *name)
 
 	return WERR_OK;
 }
+
+
+/**********************************************************************
+ * Higher level utility functions
+ **********************************************************************/
 
 WERROR reg_deleteallvalues(struct registry_key *key)
 {
