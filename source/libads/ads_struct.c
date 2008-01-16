@@ -32,18 +32,23 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 	
 	r = SMB_STRDUP(realm);
 
-	if (!r || !*r)
+	if (!r || !*r) {
 		return r;
+	}
 
-	for (p=r; *p; p++)
-		if (strchr(sep, *p))
+	for (p=r; *p; p++) {
+		if (strchr(sep, *p)) {
 			numbits++;
+		}
+	}
 
 	len = (numbits+1)*(strlen(field)+1) + strlen(r) + 1;
 
 	ret = (char *)SMB_MALLOC(len);
-	if (!ret)
+	if (!ret) {
+		free(r);
 		return NULL;
+	}
 
 	strlcpy(ret,field, len);
 	p=strtok(r,sep); 
@@ -57,7 +62,8 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 			else
 				asprintf(&s, "%s,%s%s", ret, field, p);
 			free(ret);
-			ret = s;
+			ret = SMB_STRDUP(s);
+			free(s);
 		}
 	}
 

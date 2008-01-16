@@ -1299,11 +1299,11 @@ static NTSTATUS resolve_hosts(const char *name, int name_type,
  Resolve via "ADS" method.
 *********************************************************/
 
-NTSTATUS resolve_ads(const char *name,
-			int name_type,
-			const char *sitename,
-			struct ip_service **return_iplist,
-			int *return_count)
+static NTSTATUS resolve_ads(const char *name,
+			    int name_type,
+			    const char *sitename,
+			    struct ip_service **return_iplist,
+			    int *return_count)
 {
 	int 			i, j;
 	NTSTATUS  		status;

@@ -542,7 +542,8 @@ NTSTATUS rpccli_lsa_query_info_policy2_new(struct rpc_pipe_client *cli, TALLOC_C
 NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      POLICY_HND *pol, uint16 info_class,
-				      char **domain_name, DOM_SID **domain_sid)
+				      const char **domain_name,
+				      DOM_SID **domain_sid)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_QUERY_INFO q;
@@ -632,8 +633,9 @@ NTSTATUS rpccli_lsa_query_info_policy(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_query_info_policy2(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       POLICY_HND *pol, uint16 info_class,
-				       char **domain_name, char **dns_name,
-				       char **forest_name,
+				       const char **domain_name,
+				       const char **dns_name,
+				       const char **forest_name,
 				       struct GUID **domain_guid,
 				       DOM_SID **domain_sid)
 {
