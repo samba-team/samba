@@ -24,6 +24,35 @@
 /****************************************************************
 ****************************************************************/
 
+#define LIBNET_JOIN_DUMP_CTX(ctx, r, f) \
+	do { \
+		char *str = NULL; \
+		str = NDR_PRINT_FUNCTION_STRING(ctx, libnet_JoinCtx, f, r); \
+		DEBUG(1,("libnet_Join:\n%s", str)); \
+		talloc_free(str); \
+	} while (0)
+
+#define LIBNET_JOIN_IN_DUMP_CTX(ctx, r) \
+	LIBNET_JOIN_DUMP_CTX(ctx, r, NDR_IN | NDR_SET_VALUES)
+#define LIBNET_JOIN_OUT_DUMP_CTX(ctx, r) \
+	LIBNET_JOIN_DUMP_CTX(ctx, r, NDR_OUT)
+
+#define LIBNET_UNJOIN_DUMP_CTX(ctx, r, f) \
+	do { \
+		char *str = NULL; \
+		str = NDR_PRINT_FUNCTION_STRING(ctx, libnet_UnjoinCtx, f, r); \
+		DEBUG(1,("libnet_Unjoin:\n%s", str)); \
+		talloc_free(str); \
+	} while (0)
+
+#define LIBNET_UNJOIN_IN_DUMP_CTX(ctx, r) \
+	LIBNET_UNJOIN_DUMP_CTX(ctx, r, NDR_IN | NDR_SET_VALUES)
+#define LIBNET_UNJOIN_OUT_DUMP_CTX(ctx, r) \
+	LIBNET_UNJOIN_DUMP_CTX(ctx, r, NDR_OUT)
+
+/****************************************************************
+****************************************************************/
+
 static void libnet_join_set_error_string(TALLOC_CTX *mem_ctx,
 					 struct libnet_JoinCtx *r,
 					 const char *format, ...)
@@ -1147,8 +1176,9 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				     &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnet_join_set_error_string(mem_ctx, r,
-				"failed to find DC: %s",
-				nt_errstr(status));
+				"failed to find DC for domain %s",
+				r->in.domain_name,
+				get_friendly_nt_error_msg(status));
 			return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
 		}
 
@@ -1182,7 +1212,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_join_set_error_string(mem_ctx, r,
 			"failed to join domain over rpc: %s",
-			nt_errstr(status));
+			get_friendly_nt_error_msg(status));
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 			return WERR_SETUP_ALREADY_JOINED;
 		}
@@ -1214,7 +1244,7 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 
 	if (r->in.debug) {
-		NDR_PRINT_IN_DEBUG(libnet_JoinCtx, r);
+		LIBNET_JOIN_IN_DUMP_CTX(mem_ctx, r);
 	}
 
 	werr = libnet_join_pre_processing(mem_ctx, r);
@@ -1234,8 +1264,10 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
  done:
+	r->out.result = werr;
+
 	if (r->in.debug) {
-		NDR_PRINT_OUT_DEBUG(libnet_JoinCtx, r);
+		LIBNET_JOIN_OUT_DUMP_CTX(mem_ctx, r);
 	}
 	return werr;
 }
@@ -1247,6 +1279,17 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 				  struct libnet_UnjoinCtx *r)
 {
 	NTSTATUS status;
+
+	if (!r->in.domain_sid) {
+		struct dom_sid sid;
+		if (!secrets_fetch_domain_sid(lp_workgroup(), &sid)) {
+			libnet_unjoin_set_error_string(mem_ctx, r,
+				"Unable to fetch domain sid: are we joined?");
+			return WERR_SETUP_NOT_JOINED;
+		}
+		r->in.domain_sid = sid_dup_talloc(mem_ctx, &sid);
+		W_ERROR_HAVE_NO_MEMORY(r->in.domain_sid);
+	}
 
 	if (!r->in.dc_name) {
 		struct DS_DOMAIN_CONTROLLER_INFO *info;
@@ -1261,8 +1304,9 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 				     &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnet_unjoin_set_error_string(mem_ctx, r,
-				"failed to find DC: %s",
-				nt_errstr(status));
+				"failed to find DC for domain %s",
+				r->in.domain_name,
+				get_friendly_nt_error_msg(status));
 			return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
 		}
 
@@ -1274,8 +1318,8 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 	status = libnet_join_unjoindomain_rpc(mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_unjoin_set_error_string(mem_ctx, r,
-			"failed to unjoin domain: %s",
-			nt_errstr(status));
+			"failed to disable machine account via rpc: %s",
+			get_friendly_nt_error_msg(status));
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 			return WERR_SETUP_NOT_JOINED;
 		}
@@ -1319,6 +1363,7 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+
 /****************************************************************
 ****************************************************************/
 
@@ -1328,7 +1373,7 @@ WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 	WERROR werr;
 
 	if (r->in.debug) {
-		NDR_PRINT_IN_DEBUG(libnet_UnjoinCtx, r);
+		LIBNET_UNJOIN_IN_DUMP_CTX(mem_ctx, r);
 	}
 
 	werr = libnet_unjoin_pre_processing(mem_ctx, r);
@@ -1349,8 +1394,10 @@ WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 	}
 
  done:
+	r->out.result = werr;
+
 	if (r->in.debug) {
-		NDR_PRINT_OUT_DEBUG(libnet_UnjoinCtx, r);
+		LIBNET_UNJOIN_OUT_DUMP_CTX(mem_ctx, r);
 	}
 
 	return werr;
