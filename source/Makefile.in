@@ -308,7 +308,7 @@ LIB_WITH_PROTO_OBJ = $(VERSION_OBJ) lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/util_str.o lib/clobber.o lib/util_sid.o lib/util_uuid.o \
 	  lib/util_unistr.o lib/util_file.o lib/data_blob.o \
 	  lib/util.o lib/util_sock.o lib/sock_exec.o lib/util_sec.o \
-	  lib/substitute.o lib/fsusage.o \
+	  lib/substitute.o lib/fsusage.o lib/dbwrap_util.o \
 	  lib/ms_fnmatch.o lib/select.o lib/errmap_unix.o \
 	  lib/tallocmsg.o lib/dmallocmsg.o libsmb/smb_signing.o \
 	  lib/md5.o lib/hmacmd5.o lib/arc4.o lib/iconv.o \
@@ -503,6 +503,7 @@ VFS_READONLY_OBJ = modules/vfs_readonly.o modules/getdate.o
 VFS_CAP_OBJ = modules/vfs_cap.o
 VFS_EXPAND_MSDFS_OBJ = modules/vfs_expand_msdfs.o
 VFS_SHADOW_COPY_OBJ = modules/vfs_shadow_copy.o
+VFS_SHADOW_COPY2_OBJ = modules/vfs_shadow_copy2.o
 VFS_AFSACL_OBJ = modules/vfs_afsacl.o
 VFS_XATTR_TDB_OBJ = modules/vfs_xattr_tdb.o librpc/gen_ndr/ndr_xattr.o
 VFS_POSIXACL_OBJ = modules/vfs_posixacl.o
@@ -520,6 +521,7 @@ VFS_COMMIT_OBJ = modules/vfs_commit.o
 VFS_GPFS_OBJ = modules/vfs_gpfs.o modules/gpfs.o modules/nfs4_acls.o
 VFS_NOTIFY_FAM_OBJ = modules/vfs_notify_fam.o
 VFS_READAHEAD_OBJ = modules/vfs_readahead.o
+VFS_TSMSM_OBJ = modules/vfs_tsmsm.o
 VFS_FILEID_OBJ = modules/vfs_fileid.o
 VFS_SYNCOPS_OBJ = modules/vfs_syncops.o
 
@@ -1611,6 +1613,10 @@ bin/ad.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ad.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) winbindd/idmap_ad.o
 
+bin/tdb2.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_tdb2.o
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) winbindd/idmap_tdb2.o
+
 bin/ldap.@SHLIBEXT@: $(BINARY_PREREQS) winbindd/idmap_ldap.o
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) winbindd/idmap_ldap.o
@@ -1669,6 +1675,10 @@ bin/readonly.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_READONLY_OBJ)
 bin/shadow_copy.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SHADOW_COPY_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_SHADOW_COPY_OBJ)
+
+bin/shadow_copy2.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SHADOW_COPY2_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_SHADOW_COPY2_OBJ)
 
 bin/syncops.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_SYNCOPS_OBJ)
 	@echo "Building plugin $@"
@@ -1749,6 +1759,10 @@ bin/notify_fam.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_NOTIFY_FAM_OBJ)
 bin/readahead.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_READAHEAD_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_READAHEAD_OBJ)
+
+bin/tsmsm.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_TSMSM_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_TSMSM_OBJ)
 
 bin/fileid.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FILEID_OBJ)
 	@echo "Building plugin $@"

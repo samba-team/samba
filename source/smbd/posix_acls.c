@@ -3413,6 +3413,9 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	bool acl_perms = False;
 	mode_t orig_mode = (mode_t)0;
 	NTSTATUS status;
+	uid_t orig_uid;
+	gid_t orig_gid;
+	bool need_chown = False;
 
 	DEBUG(10,("set_nt_acl: called for file %s\n", fsp->fsp_name ));
 
@@ -3435,6 +3438,8 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 	/* Save the original elements we check against. */
 	orig_mode = sbuf.st_mode;
+	orig_uid = sbuf.st_uid;
+	orig_gid = sbuf.st_gid;
 
 	/*
 	 * Unpack the user/group/world id's.
@@ -3449,7 +3454,11 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	 * Do we need to chown ?
 	 */
 
-	if (((user != (uid_t)-1) && (sbuf.st_uid != user)) || (( grp != (gid_t)-1) && (sbuf.st_gid != grp))) {
+	if (((user != (uid_t)-1) && (orig_uid != user)) || (( grp != (gid_t)-1) && (orig_gid != grp))) {
+		need_chown = True;
+	}
+
+	if (need_chown && (user == (uid_t)-1 || user == current_user.ut.uid)) {
 
 		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
 				fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
@@ -3487,6 +3496,11 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 		/* Save the original elements we check against. */
 		orig_mode = sbuf.st_mode;
+		orig_uid = sbuf.st_uid;
+		orig_gid = sbuf.st_gid;
+
+		/* We did chown already, drop the flag */
+		need_chown = False;
 	}
 
 	create_file_sids(&sbuf, &file_owner_sid, &file_grp_sid);
@@ -3630,6 +3644,21 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 		free_canon_ace_list(dir_ace_list); 
 	}
 
+	/* Any chown pending? */
+	if (need_chown) {
+		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
+			 fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
+		
+		if(try_chown( fsp->conn, fsp->fsp_name, user, grp) == -1) {
+			DEBUG(3,("set_nt_acl: chown %s, %u, %u failed. Error = %s.\n",
+				 fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
+			if (errno == EPERM) {
+				return NT_STATUS_INVALID_OWNER;
+			}
+			return map_nt_error_from_unix(errno);
+		}
+	}
+	
 	return NT_STATUS_OK;
 }
 
