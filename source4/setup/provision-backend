@@ -169,9 +169,10 @@ memberof-dangling-error 32
 		}
 	}
 
-	memberof_config = "overlay refint
+	memberof_config = memberof_config + "
+overlay refint
 refint_attributes" + refint_attributes + "
-" + memberof_config;
+";
 	
 	ok = sys.file_save(subobj.LDAPDIR + "/memberof.conf", memberof_config);
 	if (!ok) {
