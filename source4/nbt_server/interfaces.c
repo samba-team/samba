@@ -109,6 +109,8 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 	struct socket_address *bcast_address;
 	struct socket_address *unicast_address;
 
+	DEBUG(6,("nbtd_add_socket(%s, %s, %s, %s)\n", bind_address, address, bcast, netmask));
+
 	/*
 	  we actually create two sockets. One listens on the broadcast address
 	  for the interface, and the other listens on our specific address. This
@@ -326,17 +328,25 @@ struct nbtd_interface *nbtd_find_request_iface(struct nbtd_server *nbtd_server,
 	/* try to find a exact match */
 	for (cur=nbtd_server->interfaces;cur;cur=cur->next) {
 		if (iface_same_net(address, cur->ip_address, cur->netmask)) {
+			DEBUG(10,("find interface for dst[%s] ip: %s/%s (iface[%p])\n",
+				  address, cur->ip_address, cur->netmask, cur));
 			return cur;
 		}
 	}
 
 	/* no exact match, if we have the broadcast interface, use that */
 	if (allow_bcast_iface && nbtd_server->bcast_interface) {
-		return nbtd_server->bcast_interface;
+		cur = nbtd_server->bcast_interface;
+		DEBUG(10,("find interface for dst[%s] ip: %s/%s (bcast iface[%p])\n",
+			address, cur->ip_address, cur->netmask, cur));
+		return cur;
 	}
 
 	/* fallback to first interface */
-	return nbtd_server->interfaces;
+	cur = nbtd_server->interfaces;
+	DEBUG(10,("find interface for dst[%s] ip: %s/%s (default iface[%p])\n",
+		address, cur->ip_address, cur->netmask, cur));
+	return cur;
 }
 
 /*
