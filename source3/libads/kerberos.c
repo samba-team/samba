@@ -25,6 +25,8 @@
 
 #ifdef HAVE_KRB5
 
+#define DEFAULT_KRB5_PORT 88
+
 #define LIBADS_CCACHE_NAME "MEMORY:libads"
 
 /*
@@ -666,6 +668,51 @@ int kerberos_kinit_password(const char *principal,
 }
 
 /************************************************************************
+************************************************************************/
+
+static char *print_kdc_line(char *mem_ctx,
+			const char *prev_line,
+			const struct sockaddr_storage *pss)
+{
+	char *kdc_str = NULL;
+
+	if (pss->ss_family == AF_INET) {
+		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+					prev_line,
+                                        print_canonical_sockaddr(mem_ctx, pss));
+	} else {
+		char addr[INET6_ADDRSTRLEN];
+		uint16_t port = get_sockaddr_port(pss);
+
+		if (port != 0 && port != DEFAULT_KRB5_PORT) {
+			/* Currently for IPv6 we can't specify a non-default
+			   krb5 port with an address, as this requires a ':'.
+			   Resolve to a name. */
+			char hostname[MAX_DNS_NAME_LENGTH];
+			if (sys_getnameinfo((const struct sockaddr *)pss,
+					sizeof(*pss),
+					hostname, sizeof(hostname),
+					NULL, 0,
+					NI_NAMEREQD) == 0) {
+				/* Success, use host:port */
+				kdc_str = talloc_asprintf(mem_ctx,
+					"%s\tkdc = %s:%u\n",
+                                        prev_line,
+					hostname,
+					(unsigned int)port);
+				return kdc_str;
+			}
+		}
+		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+					prev_line,
+					print_sockaddr(addr,
+						sizeof(addr),
+						pss));
+	}
+	return kdc_str;
+}
+
+/************************************************************************
  Create a string list of available kdc's, possibly searching by sitename.
  Does DNS queries.
 ************************************************************************/
@@ -677,12 +724,10 @@ static char *get_kdc_ip_string(char *mem_ctx,
 {
 	int i;
 	struct ip_service *ip_srv_site = NULL;
-	struct ip_service *ip_srv_nonsite;
+	struct ip_service *ip_srv_nonsite = NULL;
 	int count_site = 0;
 	int count_nonsite;
-	char *kdc_str = talloc_asprintf(mem_ctx, "\tkdc = %s\n",
-					print_canonical_sockaddr(mem_ctx,
-							pss));
+	char *kdc_str = print_kdc_line(mem_ctx, "", pss);
 
 	if (kdc_str == NULL) {
 		return NULL;
@@ -700,10 +745,9 @@ static char *get_kdc_ip_string(char *mem_ctx,
 			}
 			/* Append to the string - inefficient
 			 * but not done often. */
-			kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
-				kdc_str,
-				print_canonical_sockaddr(mem_ctx,
-							&ip_srv_site[i].ss));
+			kdc_str = print_kdc_line(mem_ctx,
+						kdc_str,
+						&ip_srv_site[i].ss);
 			if (!kdc_str) {
 				SAFE_FREE(ip_srv_site);
 				return NULL;
@@ -738,10 +782,9 @@ static char *get_kdc_ip_string(char *mem_ctx,
 		}
 
 		/* Append to the string - inefficient but not done often. */
-		kdc_str = talloc_asprintf(mem_ctx, "%s\tkdc = %s\n",
+		kdc_str = print_kdc_line(mem_ctx,
 				kdc_str,
-				print_canonical_sockaddr(mem_ctx,
-						&ip_srv_nonsite[i].ss));
+				&ip_srv_nonsite[i].ss);
 		if (!kdc_str) {
 			SAFE_FREE(ip_srv_site);
 			SAFE_FREE(ip_srv_nonsite);
@@ -873,8 +916,8 @@ bool create_local_private_krb5_conf_for_domain(const char *realm,
 	}
 
 	DEBUG(5,("create_local_private_krb5_conf_for_domain: wrote "
-		"file %s with realm %s KDC = %s\n",
-		fname, realm_upper, print_canonical_sockaddr(dname, pss) ));
+		"file %s with realm %s KDC list = %s\n",
+		fname, realm_upper, kdc_ip_string));
 
 	/* Set the environment variable to this file. */
 	setenv("KRB5_CONFIG", fname, 1);
