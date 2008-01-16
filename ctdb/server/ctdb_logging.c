@@ -106,17 +106,17 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 			     uint16_t flags, void *private)
 {
 	struct ctdb_context *ctdb = talloc_get_type(private, struct ctdb_context);
-	ssize_t n;
+	int n1, n2;
 	char *p;
 
 	if (!(flags & EVENT_FD_READ)) {
 		return;
 	}
 	
-	n = read(ctdb->log->pfd, &ctdb->log->buf[ctdb->log->buf_used],
+	n1 = read(ctdb->log->pfd, &ctdb->log->buf[ctdb->log->buf_used],
 		 sizeof(ctdb->log->buf) - ctdb->log->buf_used);
-	if (n > 0) {
-		ctdb->log->buf_used += n;
+	if (n1 > 0) {
+		ctdb->log->buf_used += n1;
 	}
 
 	if (ctdb->log->buf_used == sizeof(ctdb->log->buf)) {
@@ -131,10 +131,15 @@ static void ctdb_log_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
-	n = (p - ctdb->log->buf)+1;
-	do_debug("%*.*s", (int)n, (int)n, ctdb->log->buf);
-	memmove(ctdb->log->buf, ctdb->log->buf+n, sizeof(ctdb->log->buf) - n);
-	ctdb->log->buf_used -= n;
+	n1 = (p - ctdb->log->buf)+1;
+	n2 = n1 - 1;
+	/* swallow \r from child processes */
+	if (n2 > 0 && ctdb->log->buf[n2-1] == '\r') {
+		n2--;
+	}
+	do_debug("%*.*s\n", n2, n2, ctdb->log->buf);
+	memmove(ctdb->log->buf, p+1, sizeof(ctdb->log->buf) - n1);
+	ctdb->log->buf_used -= n1;
 }
 
 
