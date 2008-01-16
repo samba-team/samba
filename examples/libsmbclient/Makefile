@@ -13,7 +13,7 @@ CFLAGS = -O0 -g -I$(SAMBA_INCL) $(EXTLIB_INCL) $(DEFS)
 LDFLAGS = -L/usr/local/samba/lib \
 	  -lldap -lkrb5 -lgssapi_krb5
 #LIBSMBCLIENT = /usr/local/samba/lib/libsmbclient.so
-LIBSMBCLIENT = -lsmbclient -ldl -lresolv
+LIBSMBCLIENT = -lwbclient -lsmbclient -ldl -lresolv
 
 TESTS=	testsmbc \
 	testacl \
