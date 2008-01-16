@@ -17,6 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _CTDBD_CONN_H
+#define _CTDBD_CONN_H
+
 struct ctdbd_connection;
 
 NTSTATUS ctdbd_init_connection(TALLOC_CTX *mem_ctx,
@@ -62,3 +65,6 @@ NTSTATUS ctdbd_register_ips(struct ctdbd_connection *conn,
 
 NTSTATUS ctdbd_register_reconfigure(struct ctdbd_connection *conn);
 
+NTSTATUS ctdbd_persistent_store(struct ctdbd_connection *conn, uint32_t db_id, TDB_DATA key, TDB_DATA data);
+
+#endif /* _CTDBD_CONN_H */

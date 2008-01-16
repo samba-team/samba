@@ -506,6 +506,19 @@ bool file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
 }
 
 /*******************************************************************
+ Check if a unix domain socket exists - call vfs_file_exist for samba files.
+********************************************************************/
+
+bool socket_exist(const char *fname)
+{
+	SMB_STRUCT_STAT st;
+	if (sys_stat(fname,&st) != 0) 
+		return(False);
+
+	return S_ISSOCK(st.st_mode);
+}
+
+/*******************************************************************
  Check a files mod time.
 ********************************************************************/
 
