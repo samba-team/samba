@@ -75,6 +75,58 @@ static void nbtd_request_handler(struct nbt_name_socket *nbtsock,
 	}
 }
 
+static void nbtd_unexpected_handler(struct nbt_name_socket *nbtsock,
+				    struct nbt_name_packet *packet,
+				    struct socket_address *src)
+{
+	struct nbtd_interface *iface = talloc_get_type(nbtsock->incoming.private_data,
+						       struct nbtd_interface);
+	struct nbtd_server *nbtsrv = iface->nbtsrv;
+	struct nbtd_interface *i;
+	struct nbt_name_request *req = NULL;
+
+	nbtsrv->stats.total_received++;
+
+	DEBUG(10,("unexpected from src[%s] on interface[%p] %s/%s\n",
+		src->addr, iface, iface->ip_address, iface->netmask));
+
+	/* try the broadcast interface */
+	if (nbtsrv->bcast_interface) {
+		i = nbtsrv->bcast_interface;
+		req = idr_find(i->nbtsock->idr, packet->name_trn_id);
+	}
+
+	/* try the wins server client interface */
+	if (!req && nbtsrv->wins_interface) {
+		i = nbtsrv->wins_interface;
+		req = idr_find(i->nbtsock->idr, packet->name_trn_id);
+	}
+
+	/* try all other interfaces... */
+	if (!req) {
+		for (i = nbtsrv->interfaces; i; i = i->next) {
+			if (i == iface) {
+				continue;
+			}
+			req = idr_find(i->nbtsock->idr, packet->name_trn_id);
+			if (req) break;
+		}
+	}
+
+	if (!req) {
+		DEBUG(10,("unexpected from src[%s] unable to redirected\n", src->addr));
+		return;
+	}
+
+	DEBUG(10,("unexpected from src[%s] redirected to interface[%p] %s/%s\n",
+		src->addr, i, i->ip_address, i->netmask));
+
+	/*
+	 * redirect the incoming response to the socket
+	 * we sent the matching request
+	 */
+	nbt_name_socket_handle_response_packet(req, packet, src);
+}
 
 /*
   find a registered name on an interface
@@ -180,6 +232,7 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 	talloc_free(unicast_address);
 
 	nbt_set_incoming_handler(iface->nbtsock, nbtd_request_handler, iface);
+	nbt_set_unexpected_handler(iface->nbtsock, nbtd_unexpected_handler, iface);
 
 	/* also setup the datagram listeners */
 	status = nbtd_dgram_setup(iface, bind_address);
