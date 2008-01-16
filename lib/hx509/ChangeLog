@@ -6,6 +6,8 @@
 
 	* ks_file.c: Support HX509_CERTS_UNPROTECT_ALL.
 
+	* hx509.h: Add HX509_CERTS_UNPROTECT_ALL.
+
 	* test_soft_pkcs11.c: Only log in if needed.
 
 2008-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
