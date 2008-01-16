@@ -101,9 +101,13 @@ When used with IP takeover this specifies a file containing the public ip addres
 This is usually the file /etc/ctdb/public_addresses
 .RE
 .PP
-\-\-public_interface=<interface>
+\-\-public\-interface=<interface>
 .RS 3n
 This option tells ctdb which interface to attach public\-addresses to and also where to attach the single\-public\-ip when used.
+.sp
+This is only required when using public ip addresses and only when you dont specify the interface explicitely on in /etc/ctdb/public_addresses or when you are using \-\-single\-public\-ip.
+.sp
+If you omit this argument when using public addresses or single public ip, ctdb will not be able to send out Gratious ARPs correctly or be able to kill tcp connections correctly which will lead to application failures.
 .RE
 .PP
 \-\-reclock=<filename>
@@ -113,11 +117,15 @@ This is the name of the lock file stored of the shared cluster filesystem that c
 .PP
 \-\-single\-public\-ip=<address>
 .RS 3n
-This option is used to activate the "ipmux" functionality of ctdb. In this mode, all nodes of the cluster will expose a single ip address from all nodes with all incoming traffic to the cluster being passed through the current recmaster. This functionality is similar to using a load\-balancing switch.
+This option is used to activate the "ipmux" or the "lvs" functionality of ctdb where the cluster provides a single public ip address for the entire cluster. When using this option you must also use the \-\-public\-interface option.
+.sp
+In this mode, all nodes of the cluster will expose a single ip address from all nodes with all incoming traffic to the cluster being passed through the current recmaster. This functionality is similar to using a load\-balancing switch.
 .sp
 All incoming packets are sent to the recmaster which will multiplex the clients across all available nodes and pass the packets on to a different node in the cluster to manage the connection based on the clients ip address. Outgoing packets however are sent directly from the node that was choosen back to the client. Since all incoming packets are sent through the recmaster this will have a throughput and performance impact when used. This impact in performance primarily affects write\-performance while read\-performance should be mainly unaffected. Only use this feature if your environment is mostly\-read (i.e. most traffic is from the nodes back to the clients) or if it is not important to get maximum write\-performance to the cluster.
 .sp
-When using a single public ip, you must also specify the public\-interface so that ctdb knows which interface to attach the single public ip to.
+This feature is completely controlled from the eventscripts and does not require any CTDBD involvement. However, the CTDBD daemon does need to know that the "single public ip" exists so that the CTDBD daemon will allow clients to set up killtcp to work on this ip address.
+.sp
+CTDBD only allows clients to use killtcp to kill off (RST) tcp connections to/from an ip address that is either a normal public address or to/from the ip address specified by \-\-single\-public\-ip. No other tcp connections are allowed to be specified with killtcp.
 .RE
 .PP
 \-\-socket=<filename>

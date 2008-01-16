@@ -57,14 +57,23 @@
             When used with IP takeover this specifies a file containing the public ip addresses to use on the cluster. This file contains a list of ip addresses netmasks and interfaces. When ctdb is operational it will distribute these public ip addresses evenly across the available nodes.
           </p><p>
             This is usually the file /etc/ctdb/public_addresses
-          </p></dd><dt><span class="term">--public_interface=&lt;interface&gt;</span></dt><dd><p>
+          </p></dd><dt><span class="term">--public-interface=&lt;interface&gt;</span></dt><dd><p>
             This option tells ctdb which interface to attach public-addresses
 	    to and also where to attach the single-public-ip when used.
+	    </p><p>
+	    This is only required when using public ip addresses and only when
+	    you dont specify the interface explicitely on in /etc/ctdb/public_addresses or when you are using --single-public-ip.
+          </p><p>
+	  If you omit this argument when using public addresses or single public ip, ctdb will not be able to send out Gratious ARPs correctly or be able to kill tcp connections correctly which will lead to application failures. 
           </p></dd><dt><span class="term">--reclock=&lt;filename&gt;</span></dt><dd><p>
             This is the name of the lock file stored of the shared cluster filesystem that ctdbd uses to arbitrate which node has the role of recovery-master.
             This file must be stored on shared storage.
           </p></dd><dt><span class="term">--single-public-ip=&lt;address&gt;</span></dt><dd><p>
-            This option is used to activate the "ipmux" functionality of ctdb.
+            This option is used to activate the "ipmux" or the "lvs"
+	    functionality of ctdb where the cluster provides a single 
+	    public ip address for the entire cluster. When using this option
+	    you must also use the --public-interface option.
+	    </p><p>
             In this mode, all nodes of the cluster will expose a single
             ip address from all nodes with all incoming traffic to the cluster
             being passed through the current recmaster. This functionality
@@ -84,10 +93,17 @@
             if it is not important to get maximum write-performance to the
 	    cluster.
           </p><p>
-            When using a single public ip, you must also specify the 
-            public-interface so that ctdb knows which interface to attach the 
-            single public ip to.
-          </p></dd><dt><span class="term">--socket=&lt;filename&gt;</span></dt><dd><p>
+	    This feature is completely controlled from the eventscripts and 
+	    does not require any CTDBD involvement. However, the CTDBD daemon
+	    does need to know that the "single public ip" exists so that the 
+	    CTDBD daemon will allow clients to set up killtcp to work on this
+	    ip address.
+	    </p><p>
+	    CTDBD only allows clients to use killtcp to kill off (RST) tcp
+	    connections to/from an ip address that is either a normal public
+	    address or to/from the ip address specified by --single-public-ip.
+	    No other tcp connections are allowed to be specified with killtcp.
+	  </p></dd><dt><span class="term">--socket=&lt;filename&gt;</span></dt><dd><p>
             This specifies the name of the domain socket that ctdbd will create. This socket is used for local clients to attach to and communicate with the ctdbd daemon.
           </p><p>
             The default is /tmp/ctdb.socket . You only need to use this option if you plan to run multiple ctdbd daemons on the same physical host.
@@ -103,10 +119,10 @@
             Suported transports are "tcp" and "infiniband".
           </p></dd><dt><span class="term">--usage</span></dt><dd><p>
             Print useage information to the screen.
-          </p></dd></dl></div></div><div class="refsect1" lang="en"><a name="id2528621"></a><h2>Private vs Public addresses</h2><p>
+          </p></dd></dl></div></div><div class="refsect1" lang="en"><a name="id2528652"></a><h2>Private vs Public addresses</h2><p>
       When used for ip takeover in a HA environment, each node in a ctdb 
       cluster has multiple ip addresses assigned to it. One private and one or more public.
-    </p><div class="refsect2" lang="en"><a name="id2528632"></a><h3>Private address</h3><p>
+    </p><div class="refsect2" lang="en"><a name="id2528662"></a><h3>Private address</h3><p>
         This is the physical ip address of the node which is configured in 
         linux and attached to a physical interface. This address uniquely
         identifies a physical node in the cluster and is the ip addresses
@@ -136,7 +152,7 @@
         10.1.1.2
         10.1.1.3
         10.1.1.4
-      </pre></div><div class="refsect2" lang="en"><a name="id2528686"></a><h3>Public address</h3><p>
+      </pre></div><div class="refsect2" lang="en"><a name="id2528711"></a><h3>Public address</h3><p>
         A public address on the other hand is not attached to an interface.
         This address is managed by ctdbd itself and is attached/detached to
         a physical node at runtime.
@@ -197,7 +213,7 @@
 	unavailable. 10.1.1.1 can not be failed over to node 2 or node 3 since
 	these nodes do not have this ip address listed in their public
 	addresses file.
-	</p></div></div><div class="refsect1" lang="en"><a name="id2528768"></a><h2>Node status</h2><p>
+	</p></div></div><div class="refsect1" lang="en"><a name="id2528793"></a><h2>Node status</h2><p>
       The current status of each node in the cluster can be viewed by the 
       'ctdb status' command.
     </p><p>
@@ -228,10 +244,10 @@
       investigated and require an administrative action to rectify. This node 
       does not perticipate in the CTDB cluster but can still be communicated 
       with. I.e. ctdb commands can be sent to it.
-    </p></div><div class="refsect1" lang="en"><a name="id2528825"></a><h2>SEE ALSO</h2><p>
+    </p></div><div class="refsect1" lang="en"><a name="id2528850"></a><h2>SEE ALSO</h2><p>
       ctdb(1), onnode(1)
       <a href="http://ctdb.samba.org/" target="_top">http://ctdb.samba.org/</a>
-    </p></div><div class="refsect1" lang="en"><a name="id2528838"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
+    </p></div><div class="refsect1" lang="en"><a name="id2528863"></a><h2>COPYRIGHT/LICENSE</h2><div class="literallayout"><p><br>
 Copyright (C) Andrew Tridgell 2007<br>
 Copyright (C) Ronnie sahlberg 2007<br>
 <br>
