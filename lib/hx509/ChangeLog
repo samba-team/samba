@@ -1,3 +1,13 @@
+2008-01-16  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_pkcs11.in: Test password less certificates too
+
+	* keyset.c: document HX509_CERTS_UNPROTECT_ALL
+
+	* ks_file.c: Support HX509_CERTS_UNPROTECT_ALL.
+
+	* test_soft_pkcs11.c: Only log in if needed.
+
 2008-01-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* softp11.c: Support PINs to login to the store.
