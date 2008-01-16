@@ -287,7 +287,7 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r
 {
 #if 0
 	struct libnet_JoinCtx *j = NULL;
-	char *pwd = NULL;
+	char *cleartext_pwd = NULL;
 	char *admin_domain = NULL;
 	char *admin_account = NULL;
 	WERROR werr;
@@ -308,12 +308,7 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r
 	werr = decode_wkssvc_join_password_buffer(p->mem_ctx,
 						  r->in.encrypted_password,
 						  &p->session_key,
-						  &pwd);
-	if (!W_ERROR_IS_OK(werr)) {
-		return werr;
-	}
-
-	werr = libnet_init_JoinCtx(p->mem_ctx, &j);
+						  &cleartext_pwd);
 	if (!W_ERROR_IS_OK(werr)) {
 		return werr;
 	}
@@ -323,7 +318,7 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r
 			  &admin_domain,
 			  &admin_account);
 
-	status = DsGetDcName(p->mem_ctx,
+	status = dsgetdcname(p->mem_ctx,
 			     NULL,
 			     r->in.domain_name,
 			     NULL,
@@ -336,14 +331,18 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r
 		return ntstatus_to_werror(status);
 	}
 
-	j->in.server_name	= info->domain_controller_name;
+	werr = libnet_init_JoinCtx(p->mem_ctx, &j);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	j->in.dc_name		= info->domain_controller_name;
 	j->in.domain_name	= r->in.domain_name;
 	j->in.account_ou	= r->in.account_ou;
 	j->in.join_flags	= r->in.join_flags;
-
-	j->in.admin_account = admin_account;
-	j->in.password = pwd;
-	j->in.modify_config = true;
+	j->in.admin_account	= admin_account;
+	j->in.admin_password	= cleartext_pwd;
+	j->in.modify_config	= true;
 
 	become_root();
 	werr = libnet_Join(p->mem_ctx, j);
