@@ -1545,7 +1545,7 @@ static void init_globals(bool first_time_only)
 	Globals.bLoadPrinters = True;
 	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
 
-	Globals.ConfigBackend = CONFIG_BACKEND_FILE;
+	Globals.ConfigBackend = config_backend;
 
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
@@ -3674,7 +3674,7 @@ bool lp_file_list_changed(void)
 
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
-	if (config_backend == CONFIG_BACKEND_REGISTRY) {
+	if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
 		reg_tdb = lp_regdb_open();
 		if (reg_tdb && (regdb_last_seqnum != tdb_get_seqnum(reg_tdb->tdb)))
 		{
@@ -5713,7 +5713,7 @@ bool lp_load(const char *pszFname,
 		Globals.param_opt = NULL;
 	}
 
-	if (config_backend == CONFIG_BACKEND_FILE) {
+	if (lp_config_backend() == CONFIG_BACKEND_FILE) {
 		n2 = alloc_sub_basic(get_current_username(),
 					current_user_info.domain,
 					pszFname);
@@ -5737,16 +5737,22 @@ bool lp_load(const char *pszFname,
 		}
 
 		if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
+			/*
+			 * We need to use this extra global variable here to
+			 * survive restart: init_globals usese this as a default
+			 * for ConfigBackend. Otherwise, init_globals would
+			 *  send us into an endless loop here.
+			 */
 			config_backend = CONFIG_BACKEND_REGISTRY;
 			/* start over */
 			return lp_load(pszFname, global_only, save_defaults,
 				       add_ipc, initialize_globals);
 		}
-	} else if (config_backend == CONFIG_BACKEND_REGISTRY) {
+	} else if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
 		bRetval = process_registry_globals(do_parameter);
 	} else {
 		DEBUG(0, ("Illegal config  backend given: %d\n",
-			  config_backend));
+			  lp_config_backend()));
 		bRetval = false;
 	}
 
