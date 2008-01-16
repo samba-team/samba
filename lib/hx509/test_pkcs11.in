@@ -35,13 +35,26 @@
 srcdir="@srcdir@"
 objdir="@objdir@"
 
+SOFTPKCS11RC="test-rc-file.rc" \
+export SOFTPKCS11RC
+
+echo "password less"
+
 cat > test-rc-file.rc <<EOF
 certificate	cert	User certificate	FILE:$srcdir/data/test.crt,$srcdir/data/test.key
 debug	p11dbg.log
 EOF
 
-env SOFTPKCS11RC="test-rc-file.rc" \
-	./test_soft_pkcs11 || exit 1
+./test_soft_pkcs11 || exit 1
+
+echo "password"
+
+cat > test-rc-file.rc <<EOF
+certificate	cert	User certificate	FILE:$srcdir/data/test.crt,$srcdir/data/test-pw.key
+debug	p11dbg.log
+EOF
+
+./test_soft_pkcs11 || exit 1
 
 echo "done"
 exit 0
