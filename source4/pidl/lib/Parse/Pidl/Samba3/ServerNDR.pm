@@ -6,6 +6,10 @@
 
 package Parse::Pidl::Samba3::ServerNDR;
 
+use Exporter;
+@ISA = qw(Exporter);
+@EXPORT_OK = qw(DeclLevel);
+
 use strict;
 use Parse::Pidl qw(warning fatal);
 use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
