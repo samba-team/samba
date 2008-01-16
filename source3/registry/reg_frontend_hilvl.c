@@ -78,7 +78,7 @@ bool store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
 	if ( key->hook && key->hook->ops && key->hook->ops->store_subkeys )
 		return key->hook->ops->store_subkeys( key->name, subkeys );
 
-	return False;
+	return false;
 }
 
 /***********************************************************************
@@ -88,12 +88,12 @@ bool store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
 bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
 	if ( check_dynamic_reg_values( key ) )
-		return False;
+		return false;
 
 	if ( key->hook && key->hook->ops && key->hook->ops->store_values )
 		return key->hook->ops->store_values( key->name, val );
 
-	return False;
+	return false;
 }
 
 /***********************************************************************
@@ -159,21 +159,21 @@ bool regkey_access_check( REGISTRY_KEY *key, uint32 requested, uint32 *granted,
 	 */
 
 	if (!(mem_ctx = talloc_init("regkey_access_check"))) {
-		return False;
+		return false;
 	}
 
 	err = regkey_get_secdesc(mem_ctx, key, &sec_desc);
 
 	if (!W_ERROR_IS_OK(err)) {
 		TALLOC_FREE(mem_ctx);
-		return False;
+		return false;
 	}
 
 	se_map_generic( &requested, &reg_generic_map );
 
 	if (!se_access_check(sec_desc, token, requested, granted, &status)) {
 		TALLOC_FREE(mem_ctx);
-		return False;
+		return false;
 	}
 
 	TALLOC_FREE(mem_ctx);
