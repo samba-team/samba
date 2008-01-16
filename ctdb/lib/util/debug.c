@@ -22,7 +22,7 @@
 #include <unistd.h>
 
 
-void do_debug_v(const char *format, va_list ap)
+static void _do_debug_v(const char *format, va_list ap)
 {
 	struct timeval t;
 	char *s = NULL;
@@ -41,6 +41,9 @@ void do_debug_v(const char *format, va_list ap)
 	free(s);
 }
 
+/* default logging function */
+void (*do_debug_v)(const char *, va_list ap) = _do_debug_v;
+
 void do_debug(const char *format, ...)
 {
 	va_list ap;
@@ -49,3 +52,4 @@ void do_debug(const char *format, ...)
 	do_debug_v(format, ap);
 	va_end(ap);
 }
+

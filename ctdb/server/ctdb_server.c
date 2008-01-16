@@ -61,32 +61,6 @@ int ctdb_set_recovery_lock_file(struct ctdb_context *ctdb, const char *file)
 }
 
 /*
-  choose the logfile location
-*/
-int ctdb_set_logfile(struct ctdb_context *ctdb, const char *logfile)
-{
-	ctdb->logfile = talloc_strdup(ctdb, logfile);
-	if (ctdb->logfile != NULL && strcmp(logfile, "-") != 0) {
-		int fd;
-		fd = open(ctdb->logfile, O_WRONLY|O_APPEND|O_CREAT, 0666);
-		if (fd == -1) {
-			printf("Failed to open logfile %s\n", ctdb->logfile);
-			abort();
-		}
-		close(1);
-		close(2);
-		if (fd != 1) {
-			dup2(fd, 1);
-			close(fd);
-		}
-		/* also catch stderr of subcommands to the log file */
-		dup2(1, 2);
-	}
-	return 0;
-}
-
-
-/*
   set the directory for the local databases
 */
 int ctdb_set_tdb_dir(struct ctdb_context *ctdb, const char *dir)

@@ -6,11 +6,12 @@ shift
 
 case $cmd in 
     monitor)
-	echo "`date` monitor event"
+	echo "monitor event"
+	echo "monitor event stderr" >&2
 	exit 0
 	;;
      startup)
-	echo "`date` ctdb startup event"
+	echo "ctdb startup event"
 	exit 0;	
 	;;
 	
@@ -25,7 +26,7 @@ case $cmd in
 
 	[ `id -u` = 0 ] && {
 	    /sbin/ip addr add $ip/$maskbits dev $iface || {
-		echo "`/bin/date` Failed to add $ip/$maskbits on dev $iface"
+		echo "Failed to add $ip/$maskbits on dev $iface"
 		exit 1
 	    }
 	}
@@ -37,7 +38,7 @@ case $cmd in
      # called when ctdbd wants to release an IP address
      releaseip)
 	if [ $# != 3 ]; then
-	   echo "`/bin/date` must supply interface, IP and maskbits"
+	   echo "must supply interface, IP and maskbits"
 	   exit 1
 	fi
 	iface=$1
@@ -45,24 +46,24 @@ case $cmd in
 	maskbits=$3
 	[ `id -u` = 0 ] && {
 	    /sbin/ip addr del $ip/$maskbits dev $iface || {
-		echo "`/bin/date` Failed to del $ip on dev $iface"
+		echo "Failed to del $ip on dev $iface"
 		exit 1
 	    }
 	}
-	echo "`date` ctdb takeip event for $1 $2 $3"
+	echo "ctdb takeip event for $1 $2 $3"
 	exit 0
 	;;
 
      recovered)
-	echo "`date` ctdb recovered event"
+	echo "ctdb recovered event"
 	exit 0
 	;;
 
      shutdown)
-	echo "`date` ctdb shutdown event"
+	echo "ctdb shutdown event"
 	exit 0
 	;;
 esac
 
-echo "`/bin/date` Invalid command $cmd"
+echo "Invalid command $cmd"
 exit 1

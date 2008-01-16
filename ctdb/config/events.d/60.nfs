@@ -83,7 +83,7 @@ case $cmd in
 	# mount needs special handling since it is sometimes not started
 	# correctly on RHEL5
 	rpcinfo -u localhost 100005 1 > /dev/null || {
-		echo "`date` ERROR: MOUNTD is not running. Trying to restart it."
+		echo "ERROR: MOUNTD is not running. Trying to restart it."
 		RPCMOUNTDOPTS=""
 		[ -n "$MOUNTD_PORT" ] && RPCMOUNTDOPTS="$RPCMOUNTDOPTS -p $MOUNTD_PORT"
 		killall -q -9 rpc.mountd

@@ -16,7 +16,7 @@ shift
 }
 
 [ ! -f "$CTDB_PUBLIC_ADDRESSES" ] && {
-	echo "`date` No public addresses file found. Nothing to do for 10.interfaces"
+	echo "No public addresses file found. Nothing to do for 10.interfaces"
 	exit 0
 }
 
@@ -34,7 +34,7 @@ case $cmd in
 		[ -z "$_IP_HELD" ] || {
 			_IFACE=`echo $_IP_HELD | sed -e "s/.*\s//"`
 			_NM=`echo $_IP_HELD | sed -e "s/.*$_IP\///" -e "s/\s.*//"`
-			echo "`date` Removing public address $_IP/$_NM from device $_IFACE"
+			echo "Removing public address $_IP/$_NM from device $_IFACE"
 			/sbin/ip addr del $_IP/$_NM dev $_IFACE
 		}
 	done
@@ -45,7 +45,7 @@ case $cmd in
      # called when ctdbd wants to claim an IP address
      takeip)
 	if [ $# != 3 ]; then
-	   echo "`date` must supply interface, IP and maskbits"
+	   echo "must supply interface, IP and maskbits"
 	   exit 1
 	fi
 	iface=$1
@@ -54,11 +54,11 @@ case $cmd in
 
 	# we make sure the interface is up first
 	/sbin/ip link set $iface up || {
-		 echo "`/bin/date` Failed to bringup interface $iface"
+		 echo "Failed to bringup interface $iface"
 		 exit 1
 	}
 	/sbin/ip addr add $ip/$maskbits dev $iface || {
-		 echo "`/bin/date` Failed to add $ip/$maskbits on dev $iface"
+		 echo "Failed to add $ip/$maskbits on dev $iface"
 		 exit 1
 	}
 	# cope with the script being killed while we have the interface blocked
@@ -73,7 +73,7 @@ case $cmd in
      # called when ctdbd wants to release an IP address
      releaseip)
 	if [ $# != 3 ]; then
-	   echo "`/bin/date` must supply interface, IP and maskbits"
+	   echo "must supply interface, IP and maskbits"
 	   exit 1
 	fi
 
@@ -108,16 +108,16 @@ case $cmd in
 	[ -z "$secondaries" ] || {
 	    for i in $secondaries; do
 		if /sbin/ip addr list dev $iface | grep "inet $i" > /dev/null; then
-		    echo "`date` kept secondary $i on dev $iface"
+		    echo "kept secondary $i on dev $iface"
 		else 
-		    echo "`date` re-adding secondary address $i to dev $iface"
+		    echo "re-adding secondary address $i to dev $iface"
 		    /sbin/ip addr add $i dev $iface || failed=1		
 		fi
 	    done
 	}
 	/sbin/iptables -D INPUT -i $iface -d $ip -j DROP
 	[ $failed = 0 ] || {
-		 echo "`/bin/date` Failed to del $ip on dev $iface"
+		 echo "Failed to del $ip on dev $iface"
 		 exit 1
 	}
 
@@ -148,13 +148,13 @@ case $cmd in
 	for IFACE in $INTERFACES ; do
 	    if [ `echo $IFACE | grep '^bond*'` ] ; then
 		grep '^MII Status: up' /proc/net/bonding/$IFACE > /dev/null || {
-			echo "`date` ERROR: public network interface $IFACE is down"
+			echo "ERROR: public network interface $IFACE is down"
 			exit 1
 		}
 	    else
 		[ -z "$IFACE" ] || {
 	    	    /usr/sbin/ethtool $IFACE | grep 'Link detected: yes' > /dev/null || {
-			echo "`date` ERROR: No link on the public network interface $IFACE"
+			echo "ERROR: No link on the public network interface $IFACE"
 			exit 1
 	    	    }
 		}

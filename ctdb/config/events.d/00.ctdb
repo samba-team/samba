@@ -42,7 +42,7 @@ case $cmd in
 	    varname=`echo $v | cut -d= -f1`
 	    value=`echo $v | cut -d= -f2`
 	    ctdb setvar $varname $value || exit 1
-	    echo "`date` Set $varname to $value"
+	    echo "Set $varname to $value"
 	done || exit 1
 	;;
 
