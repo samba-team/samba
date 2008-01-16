@@ -1176,8 +1176,9 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 				     &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnet_join_set_error_string(mem_ctx, r,
-				"failed to find DC: %s",
-				nt_errstr(status));
+				"failed to find DC for domain %s",
+				r->in.domain_name,
+				get_friendly_nt_error_msg(status));
 			return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
 		}
 
@@ -1211,7 +1212,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_join_set_error_string(mem_ctx, r,
 			"failed to join domain over rpc: %s",
-			nt_errstr(status));
+			get_friendly_nt_error_msg(status));
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 			return WERR_SETUP_ALREADY_JOINED;
 		}
@@ -1292,8 +1293,9 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 				     &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			libnet_unjoin_set_error_string(mem_ctx, r,
-				"failed to find DC: %s",
-				nt_errstr(status));
+				"failed to find DC for domain %s",
+				r->in.domain_name,
+				get_friendly_nt_error_msg(status));
 			return WERR_DOMAIN_CONTROLLER_NOT_FOUND;
 		}
 
@@ -1305,8 +1307,8 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 	status = libnet_join_unjoindomain_rpc(mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_unjoin_set_error_string(mem_ctx, r,
-			"failed to unjoin domain: %s",
-			nt_errstr(status));
+			"failed to disable machine account via rpc: %s",
+			get_friendly_nt_error_msg(status));
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
 			return WERR_SETUP_NOT_JOINED;
 		}
@@ -1349,6 +1351,7 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 
 	return WERR_OK;
 }
+
 
 /****************************************************************
 ****************************************************************/
