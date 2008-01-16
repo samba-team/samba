@@ -31,23 +31,6 @@ static int set_sparse_flag(const SMB_STRUCT_STAT * const sbuf)
 }
 
 /****************************************************************************
- Work out whether this file is offline
-****************************************************************************/
-
-static uint32 set_offline_flag(connection_struct *conn, const char *const path)
-{
-	if (ISDOT(path) || ISDOTDOT(path)) {
-		return 0;
-	}
-
-	if (!lp_dmapi_support(SNUM(conn)) || !dmapi_have_session()) {
-		return 0;
-	}
-
-	return dmapi_file_flags(path);
-}
-
-/****************************************************************************
  Change a dos mode to a unix mode.
     Base permission for files:
          if creating file and inheriting (i.e. parent_dir != NULL)
@@ -366,6 +349,8 @@ uint32 dos_mode_msdfs(connection_struct *conn, const char *path,SMB_STRUCT_STAT 
 uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 {
 	uint32 result = 0;
+	bool offline;
+	int ret;
 
 	DEBUG(8,("dos_mode: %s\n", path));
 
@@ -395,8 +380,10 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 		result |= dos_mode_from_sbuf(conn, path, sbuf);
 	}
 
-	if (S_ISREG(sbuf->st_mode)) {
-		result |= set_offline_flag(conn, path);
+	
+	ret = SMB_VFS_IS_OFFLINE(conn, path, sbuf, &offline);
+	if (S_ISREG(sbuf->st_mode) && (ret == 0) && offline) {
+		result |= FILE_ATTRIBUTE_OFFLINE;
 	}
 
 	/* Optimization : Only call is_hidden_path if it's not already
@@ -432,7 +419,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	int mask=0;
 	mode_t tmp;
 	mode_t unixmode;
-	int ret = -1;
+	int ret = -1, lret = -1;
 
 	/* We only allow READONLY|HIDDEN|SYSTEM|DIRECTORY|ARCHIVE here. */
 	dosmode &= SAMBA_ATTRIBUTES_MASK;
@@ -505,10 +492,21 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		unixmode |= (st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
 	}
 
-	if ((ret = SMB_VFS_CHMOD(conn,fname,unixmode)) == 0) {
-		if (!newfile) {
+	if (dosmode & FILE_ATTRIBUTE_OFFLINE) {
+		lret = SMB_VFS_SET_OFFLINE(conn, fname);
+		if (lret == -1) {
+			DEBUG(0, ("set_dos_mode: client has asked to set "
+				  "FILE_ATTRIBUTE_OFFLINE to %s/%s but there was "
+				  "an error while setting it or it is not supported.\n", 
+				  parent_dir, fname));
+		}
+	}
+
+	ret = SMB_VFS_CHMOD(conn, fname, unixmode);
+	if (ret == 0) {
+		if(!newfile || (lret != -1)) {
 			notify_fname(conn, NOTIFY_ACTION_MODIFIED,
-				FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
+				     FILE_NOTIFY_CHANGE_ATTRIBUTES, fname);
 		}
 		st->st_mode = unixmode;
 		return 0;

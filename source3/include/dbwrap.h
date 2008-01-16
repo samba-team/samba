@@ -43,6 +43,7 @@ struct db_context {
 			     void *private_data);
 	int (*get_seqnum)(struct db_context *db);
 	void *private_data;
+	bool persistent;
 };
 
 struct db_context *db_open(TALLOC_CTX *mem_ctx,

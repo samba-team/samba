@@ -138,6 +138,12 @@
 #define SMB_VFS_AIO_ERROR(fsp,aiocb) ((fsp)->conn->vfs.ops.aio_error_fn((fsp)->conn->vfs.handles.aio_error,(fsp),(aiocb)))
 #define SMB_VFS_AIO_FSYNC(fsp,op,aiocb) ((fsp)->conn->vfs.ops.aio_fsync((fsp)->conn->vfs.handles.aio_fsync,(fsp),(op),(aiocb)))
 #define SMB_VFS_AIO_SUSPEND(fsp,aiocb,n,ts) ((fsp)->conn->vfs.ops.aio_suspend((fsp)->conn->vfs.handles.aio_suspend,(fsp),(aiocb),(n),(ts)))
+#define SMB_VFS_AIO_FORCE(fsp) ((fsp)->conn->vfs.ops.aio_force((fsp)->conn->vfs.handles.aio_force,(fsp)))
+
+/* Offline operations */
+#define SMB_VFS_IS_OFFLINE(conn,path,sbuf,offline) ((conn)->vfs.ops.is_offline((conn)->vfs.handles.is_offline,(conn),(path),(sbuf),(offline)))
+#define SMB_VFS_SET_OFFLINE(conn,path) ((conn)->vfs.ops.set_offline((conn)->vfs.handles.set_offline,(conn),(path)))
+#define SMB_VFS_IS_REMOTESTORAGE(conn,path) ((conn)->vfs.ops.is_remotestorage((conn)->vfs.handles.is_remotestorage,(conn),(path)))
 
 /*******************************************************************
  Don't access conn->vfs_opaque.ops directly!!!
@@ -257,6 +263,12 @@
 #define SMB_VFS_OPAQUE_AIO_ERROR(fsp,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_error_fn((fsp)->conn->vfs_opaque.handles.aio_error,(fsp),(aiocb)))
 #define SMB_VFS_OPAQUE_AIO_FSYNC(fsp,op,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_fsync((fsp)->conn->vfs_opaque.handles.aio_fsync,(fsp),(op),(aiocb)))
 #define SMB_VFS_OPAQUE_AIO_SUSPEND(fsp,aiocb,n,ts) ((fsp)->conn->vfs_opaque.ops.aio_suspend((fsp)->conn->vfs_opaque.handles.aio_suspend,(fsp),(aiocb),(n),(ts)))
+#define SMB_VFS_OPAQUE_AIO_FORCE(fsp) ((fsp)->conn->vfs_opaque.ops.aio_force((fsp)->conn->vfs_opaque.handles.aio_force,(fsp)))
+
+/* Offline operations */
+#define SMB_VFS_OPAQUE_IS_OFFLINE(conn,path,sbuf,offline) ((conn)->vfs_opaque.ops.is_offline((conn)->vfs_opaque.handles.is_offline,(conn),(path),(sbuf),(offline)))
+#define SMB_VFS_OPAQUE_SET_OFFLINE(conn,path) ((conn)->vfs_opaque.ops.set_offline((conn)->vfs_opaque.handles.set_offline,(conn),(path)))
+#define SMB_VFS_OPAQUE_IS_REMOTESTORAGE(conn,path) ((conn)->vfs_opaque.ops.is_remotestorage((conn)->vfs_opaque.handles.is_remotestorage,(conn),(path)))
 
 /*******************************************************************
  Don't access handle->vfs_next.ops.* directly!!!
@@ -377,5 +389,11 @@
 #define SMB_VFS_NEXT_AIO_ERROR(handle,fsp,aiocb) ((handle)->vfs_next.ops.aio_error_fn((handle)->vfs_next.handles.aio_error,(fsp),(aiocb)))
 #define SMB_VFS_NEXT_AIO_FSYNC(handle,fsp,op,aiocb) ((handle)->vfs_next.ops.aio_fsync((handle)->vfs_next.handles.aio_fsync,(fsp),(op),(aiocb)))
 #define SMB_VFS_NEXT_AIO_SUSPEND(handle,fsp,aiocb,n,ts) ((handle)->vfs_next.ops.aio_suspend((handle)->vfs_next.handles.aio_suspend,(fsp),(aiocb),(n),(ts)))
+#define SMB_VFS_NEXT_AIO_FORCE(handle,fsp) ((handle)->vfs_next.ops.aio_force((handle)->vfs_next.handles.aio_force,(fsp)))
+
+/* Offline operations */
+#define SMB_VFS_NEXT_IS_OFFLINE(conn,path,sbuf,offline) ((conn)->vfs_next.ops.is_offline((conn)->vfs_next.handles.is_offline,(conn),(path),(sbuf),(offline)))
+#define SMB_VFS_NEXT_SET_OFFLINE(conn,path) ((conn)->vfs_next.ops.set_offline((conn)->vfs_next.handles.set_offline,(conn),(path)))
+#define SMB_VFS_NEXT_IS_REMOTESTORAGE(conn,path) ((conn)->vfs_next.ops.is_remotestorage((conn)->vfs_next.handles.is_remotestorage,(conn),(path)))
 
 #endif /* _VFS_MACROS_H */
