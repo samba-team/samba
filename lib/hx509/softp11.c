@@ -604,11 +604,14 @@ add_certificate(const char *cert_file,
 {
     hx509_certs certs;
     hx509_lock lock = NULL;
-    int ret;
+    int ret, flags = 0;
 
     struct foo foo;
     foo.id = id;
     foo.label = label;
+
+    if (pin == NULL)
+	flags |= HX509_CERTS_UNPROTECT_ALL;
 
     if (pin) {
 	char *str;
@@ -621,7 +624,7 @@ add_certificate(const char *cert_file,
 	free(str);
     }
 
-    ret = hx509_certs_init(context, cert_file, 0, lock, &certs);
+    ret = hx509_certs_init(context, cert_file, flags, lock, &certs);
     if (ret) {
 	st_logf("failed to open file %s\n", cert_file);
 	return CKR_GENERAL_ERROR;
@@ -694,6 +697,7 @@ read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
     int anchor;
     FILE *f;
     CK_RV ret = CKR_OK;
+    CK_RV failed = CKR_OK;
 
     f = fopen(fn, "r");
     if (f == NULL) {
@@ -745,7 +749,7 @@ read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
 	    
 	    ret = add_certificate(cert, pin, id, label);
 	    if (ret)
-		goto out;
+		failed = ret;
 	} else if (strcasecmp("debug", type) == 0) {
 	    char *name;
 
@@ -754,6 +758,9 @@ read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
 		st_logf("no filename\n");
 		continue;
 	    }
+
+	    if (soft_token.logfile)
+		fclose(soft_token.logfile);
 
 	    if (strcasecmp(name, "stdout") == 0)
 		soft_token.logfile = stdout;
@@ -769,7 +776,7 @@ read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
 out:
     fclose(f);
 
-    return ret;
+    return failed;
 }
 
 static CK_RV
@@ -849,7 +856,6 @@ C_Initialize(CK_VOID_PTR a)
 	soft_token.config_file = fn;
     }
 
-#if 0
     /*
      * XXX this should really fail if the password is missing and the
      * cert-store is protected by a password
@@ -857,7 +863,6 @@ C_Initialize(CK_VOID_PTR a)
     ret = read_conf_file(soft_token.config_file, CKU_USER, NULL);
     if (ret == CKR_OK)
 	soft_token.flags.login_done = 1;
-#endif
 
     return CKR_OK;
 }
