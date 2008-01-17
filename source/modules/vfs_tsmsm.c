@@ -136,25 +136,23 @@ static int tsmsm_connect(struct vfs_handle_struct *handle,
         return SMB_VFS_NEXT_CONNECT(handle, service, user); 
 }
 
-static int tsmsm_is_offline(struct vfs_handle_struct *handle, 
-			    struct connection_struct *conn,
+static bool tsmsm_is_offline(struct vfs_handle_struct *handle, 
 			    const char *path,
-			    SMB_STRUCT_STAT *stbuf,
-			    bool *offline) {
+			    SMB_STRUCT_STAT *stbuf) {
 	struct tsmsm_struct *tsmd = (struct tsmsm_struct *) handle->data;
 	void *dmhandle = NULL;
 	size_t dmhandle_len = 0;
 	size_t rlen;
 	dm_attrname_t dmname;
 	int ret;
+	bool offline;
 
         /* if the file has more than FILE_IS_ONLINE_RATIO of blocks available,
 	   then assume it is not offline (it may not be 100%, as it could be sparse) */
 	if (512 * (off_t)stbuf->st_blocks >= stbuf->st_size * tsmd->online_ratio) {
-		*offline = false;
 		DEBUG(10,("%s not offline: st_blocks=%ld st_size=%ld online_ratio=%.2f\n", 
 			  path, stbuf->st_blocks, stbuf->st_size, tsmd->online_ratio));
-		return 0;
+		return false;
 	}
 	
         /* using POSIX capabilities does not work here. It's a slow path, so 
@@ -168,10 +166,9 @@ static int tsmsm_is_offline(struct vfs_handle_struct *handle,
 
 	/* go the slow DMAPI route */
 	if (dm_path_to_handle((char*)path, &dmhandle, &dmhandle_len) != 0) {
-		ret = -1;
 		DEBUG(2,("dm_path_to_handle failed - assuming offline (%s) - %s\n", 
 			 path, strerror(errno)));
-		*offline = True;
+		offline = true;
 		goto done;
 	}
 
@@ -182,7 +179,7 @@ static int tsmsm_is_offline(struct vfs_handle_struct *handle,
 			    DM_NO_TOKEN, &dmname, 0, NULL, &rlen);
 
 	/* its offline if the IBMObj attribute exists */
-	*offline = (ret == 0 || (ret == -1 && errno == E2BIG));
+	offline = (ret == 0 || (ret == -1 && errno == E2BIG));
 
 	DEBUG(10,("dm_get_dmattr %s ret=%d (%s)\n", path, ret, strerror(errno)));
 
@@ -192,7 +189,7 @@ static int tsmsm_is_offline(struct vfs_handle_struct *handle,
 
 done:
 	unbecome_root();
-	return ret;
+	return offline;
 }
 
 
@@ -210,7 +207,7 @@ static bool tsmsm_aio_force(struct vfs_handle_struct *handle, struct files_struc
 			  sbuf.st_blocks, sbuf.st_size, tsmd->online_ratio));
 		return !(512 * (off_t)sbuf.st_blocks >= sbuf.st_size * tsmd->online_ratio);
 	}
-	return False;
+	return false;
 }
 
 static ssize_t tsmsm_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, 
@@ -277,7 +274,7 @@ static ssize_t tsmsm_pwrite(struct vfs_handle_struct *handle, struct files_struc
 	return result;
 }
 
-static int tsmsm_set_offline(struct vfs_handle_struct *handle, struct connection_struct *conn, 
+static int tsmsm_set_offline(struct vfs_handle_struct *handle, 
 			     const char *path) {
 	struct tsmsm_struct *tsmd = (struct tsmsm_struct *) handle->data;
 	int result = 0;
@@ -297,8 +294,14 @@ static int tsmsm_set_offline(struct vfs_handle_struct *handle, struct connection
 	return result;
 }
 
-static bool tsmsm_is_remotestorage(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path) {
-	return True;
+static bool tsmsm_statvfs(struct vfs_handle_struct *handle,  const char *path, vfs_statvfs_struct *statbuf)
+{
+	bool result;
+
+	result = SMB_VFS_NEXT_STATVFS(handle, path, statbuf);
+	statbuf->FsCapabilities | = FILE_SUPPORTS_REMOTE_STORAGE | FILE_SUPPORTS_REPARSE_POINTS;
+
+	return result;
 }
 
 static vfs_op_tuple vfs_tsmsm_ops[] = {
@@ -306,6 +309,8 @@ static vfs_op_tuple vfs_tsmsm_ops[] = {
 	/* Disk operations */
 
 	{SMB_VFS_OP(tsmsm_connect),	SMB_VFS_OP_CONNECT,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(tsmsm_statvfs),	SMB_VFS_OP_STATVFS,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(tsmsm_aio_force),	SMB_VFS_OP_AIO_FORCE,
 	 SMB_VFS_LAYER_TRANSPARENT},
@@ -317,11 +322,9 @@ static vfs_op_tuple vfs_tsmsm_ops[] = {
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(tsmsm_sendfile),	SMB_VFS_OP_SENDFILE,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(tsmsm_is_offline),SMB_VFS_OP_IS_OFFLINE,
+	{SMB_VFS_OP(tsmsm_is_offline),	SMB_VFS_OP_IS_OFFLINE,
 	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(tsmsm_set_offline),SMB_VFS_OP_SET_OFFLINE,
-	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(tsmsm_is_remotestorage),SMB_VFS_OP_IS_REMOTESTORAGE,
+	{SMB_VFS_OP(tsmsm_set_offline),	SMB_VFS_OP_SET_OFFLINE,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* Finish VFS operations definition */
