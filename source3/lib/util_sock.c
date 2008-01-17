@@ -476,6 +476,29 @@ bool is_address_any(const struct sockaddr_storage *psa)
 }
 
 /****************************************************************************
+ Get a port number in host byte order from a sockaddr_storage.
+****************************************************************************/
+
+uint16_t get_sockaddr_port(const struct sockaddr_storage *pss)
+{
+	uint16_t port = 0;
+
+	if (pss->ss_family != AF_INET) {
+#if defined(HAVE_IPV6)
+		/* IPv6 */
+		const struct sockaddr_in6 *sa6 =
+			(const struct sockaddr_in6 *)pss;
+		port = ntohs(sa6->sin6_port);
+#endif
+	} else {
+		const struct sockaddr_in *sa =
+			(const struct sockaddr_in *)pss;
+		port = ntohs(sa->sin_port);
+	}
+	return port;
+}
+
+/****************************************************************************
  Print out an IPv4 or IPv6 address from a struct sockaddr_storage.
 ****************************************************************************/
 
@@ -518,7 +541,7 @@ char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 	char *dest = NULL;
 	int ret;
 
-	ret = getnameinfo((const struct sockaddr *)pss,
+	ret = sys_getnameinfo((const struct sockaddr *)pss,
 			sizeof(struct sockaddr_storage),
 			addr, sizeof(addr),
 			NULL, 0,
@@ -1847,7 +1870,7 @@ const char *get_peer_name(int fd, bool force_lookup)
 	}
 
 	/* Look up the remote host name. */
-	ret = getnameinfo((struct sockaddr *)&ss,
+	ret = sys_getnameinfo((struct sockaddr *)&ss,
 			length,
 			name_buf,
 			sizeof(name_buf),

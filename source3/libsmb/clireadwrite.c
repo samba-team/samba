@@ -134,6 +134,8 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
                                 return -1;
 		}
 
+		/* size2 is the number of bytes the server returned.
+		 * Might be zero. */
 		size2 = SVAL(cli->inbuf, smb_vwv5);
 		size2 |= (((unsigned int)(SVAL(cli->inbuf, smb_vwv7))) << 16);
 
@@ -145,27 +147,32 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 			return -1;
 		}
 
-		if (!direct_reads) {
-			/* Copy data into buffer */
-			p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
-			memcpy(buf + total, p, size2);
-		} else {
-			/* Ensure the remaining data matches the return size. */
-			ssize_t toread = smb_len_large(cli->inbuf) - SVAL(cli->inbuf,smb_vwv6);
+		if (size2) {
+			/* smb_vwv6 is the offset in the packet of the returned
+			 * data bytes. Only valid if size2 != 0. */
 
-			/* Ensure the size is correct. */
-			if (toread != size2) {
-				DEBUG(5,("direct read logic fail toread (%d) != size2 (%u)\n",
-					(int)toread, (unsigned int)size2 ));
-				return -1;
-			}
+			if (!direct_reads) {
+				/* Copy data into buffer */
+				p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
+				memcpy(buf + total, p, size2);
+			} else {
+				/* Ensure the remaining data matches the return size. */
+				ssize_t toread = smb_len_large(cli->inbuf) - SVAL(cli->inbuf,smb_vwv6);
 
-			/* Read data directly into buffer */
-			toread = cli_receive_smb_data(cli,buf+total,size2);
-			if (toread != size2) {
-				DEBUG(5,("direct read read failure toread (%d) != size2 (%u)\n",
-					(int)toread, (unsigned int)size2 ));
-				return -1;
+				/* Ensure the size is correct. */
+				if (toread != size2) {
+					DEBUG(5,("direct read logic fail toread (%d) != size2 (%u)\n",
+						(int)toread, (unsigned int)size2 ));
+					return -1;
+				}
+
+				/* Read data directly into buffer */
+				toread = cli_receive_smb_data(cli,buf+total,size2);
+				if (toread != size2) {
+					DEBUG(5,("direct read read failure toread (%d) != size2 (%u)\n",
+						(int)toread, (unsigned int)size2 ));
+					return -1;
+				}
 			}
 		}
 

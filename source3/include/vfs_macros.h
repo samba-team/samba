@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    VFS wrapper macros
    Copyright (C) Stefan (metze) Metzmacher	2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -26,7 +26,7 @@
  (Fixes should go also into the vfs_opaque_* and vfs_next_* macros!)
 ********************************************************************/
 
-/* Disk operations */    
+/* Disk operations */
 #define SMB_VFS_CONNECT(conn, service, user) ((conn)->vfs.ops.connect_fn((conn)->vfs.handles.connect_hnd, (service), (user)))
 #define SMB_VFS_DISCONNECT(conn) ((conn)->vfs.ops.disconnect((conn)->vfs.handles.disconnect))
 #define SMB_VFS_DISK_FREE(conn, path, small_query, bsize, dfree ,dsize) ((conn)->vfs.ops.disk_free((conn)->vfs.handles.disk_free, (path), (small_query), (bsize), (dfree), (dsize)))
@@ -44,7 +44,7 @@
 #define SMB_VFS_MKDIR(conn, path, mode) ((conn)->vfs.ops.mkdir((conn)->vfs.handles.mkdir,(path), (mode)))
 #define SMB_VFS_RMDIR(conn, path) ((conn)->vfs.ops.rmdir((conn)->vfs.handles.rmdir, (path)))
 #define SMB_VFS_CLOSEDIR(conn, dir) ((conn)->vfs.ops.closedir((conn)->vfs.handles.closedir, dir))
-    
+
 /* File operations */
 #define SMB_VFS_OPEN(conn, fname, fsp, flags, mode) (((conn)->vfs.ops.open)((conn)->vfs.handles.open, (fname), (fsp), (flags), (mode)))
 #define SMB_VFS_CLOSE(fsp, fd) ((fsp)->conn->vfs.ops.close_fn((fsp)->conn->vfs.handles.close_hnd, (fsp), (fd)))
@@ -141,9 +141,9 @@
 #define SMB_VFS_AIO_FORCE(fsp) ((fsp)->conn->vfs.ops.aio_force((fsp)->conn->vfs.handles.aio_force,(fsp)))
 
 /* Offline operations */
-#define SMB_VFS_IS_OFFLINE(conn,path,sbuf,offline) ((conn)->vfs.ops.is_offline((conn)->vfs.handles.is_offline,(conn),(path),(sbuf),(offline)))
-#define SMB_VFS_SET_OFFLINE(conn,path) ((conn)->vfs.ops.set_offline((conn)->vfs.handles.set_offline,(conn),(path)))
-#define SMB_VFS_IS_REMOTESTORAGE(conn,path) ((conn)->vfs.ops.is_remotestorage((conn)->vfs.handles.is_remotestorage,(conn),(path)))
+#define SMB_VFS_IS_OFFLINE(conn,path,sbuf,offline) ((conn)->vfs.ops.is_offline((conn)->vfs.handles.is_offline,(path),(sbuf),(offline)))
+#define SMB_VFS_SET_OFFLINE(conn,path) ((conn)->vfs.ops.set_offline((conn)->vfs.handles.set_offline,(path)))
+#define SMB_VFS_IS_REMOTESTORAGE(conn,path) ((conn)->vfs.ops.is_remotestorage((conn)->vfs.handles.is_remotestorage,(path)))
 
 /*******************************************************************
  Don't access conn->vfs_opaque.ops directly!!!
@@ -151,7 +151,7 @@
  (Fixes should also go into the vfs_* and vfs_next_* macros!)
 ********************************************************************/
 
-/* Disk operations */    
+/* Disk operations */
 #define SMB_VFS_OPAQUE_CONNECT(conn, service, user) ((conn)->vfs_opaque.ops.connect_fn((conn)->vfs_opaque.handles.connect_hnd, (service), (user)))
 #define SMB_VFS_OPAQUE_DISCONNECT(conn) ((conn)->vfs_opaque.ops.disconnect((conn)->vfs_opaque.handles.disconnect))
 #define SMB_VFS_OPAQUE_DISK_FREE(conn, path, small_query, bsize, dfree ,dsize) ((conn)->vfs_opaque.ops.disk_free((conn)->vfs_opaque.handles.disk_free, (path), (small_query), (bsize), (dfree), (dsize)))
@@ -169,7 +169,7 @@
 #define SMB_VFS_OPAQUE_MKDIR(conn, path, mode) ((conn)->vfs_opaque.ops.mkdir((conn)->vfs_opaque.handles.mkdir,(path), (mode)))
 #define SMB_VFS_OPAQUE_RMDIR(conn, path) ((conn)->vfs_opaque.ops.rmdir((conn)->vfs_opaque.handles.rmdir, (path)))
 #define SMB_VFS_OPAQUE_CLOSEDIR(conn, dir) ((conn)->vfs_opaque.ops.closedir((conn)->vfs_opaque.handles.closedir, dir))
-    
+
 /* File operations */
 #define SMB_VFS_OPAQUE_OPEN(conn, fname, fsp, flags, mode) (((conn)->vfs_opaque.ops.open)((conn)->vfs_opaque.handles.open, (fname), (fsp), (flags), (mode)))
 #define SMB_VFS_OPAQUE_CLOSE(fsp, fd) ((fsp)->conn->vfs_opaque.ops.close_fn((fsp)->conn->vfs_opaque.handles.close_hnd, (fsp), (fd)))
@@ -266,9 +266,9 @@
 #define SMB_VFS_OPAQUE_AIO_FORCE(fsp) ((fsp)->conn->vfs_opaque.ops.aio_force((fsp)->conn->vfs_opaque.handles.aio_force,(fsp)))
 
 /* Offline operations */
-#define SMB_VFS_OPAQUE_IS_OFFLINE(conn,path,sbuf,offline) ((conn)->vfs_opaque.ops.is_offline((conn)->vfs_opaque.handles.is_offline,(conn),(path),(sbuf),(offline)))
-#define SMB_VFS_OPAQUE_SET_OFFLINE(conn,path) ((conn)->vfs_opaque.ops.set_offline((conn)->vfs_opaque.handles.set_offline,(conn),(path)))
-#define SMB_VFS_OPAQUE_IS_REMOTESTORAGE(conn,path) ((conn)->vfs_opaque.ops.is_remotestorage((conn)->vfs_opaque.handles.is_remotestorage,(conn),(path)))
+#define SMB_VFS_OPAQUE_IS_OFFLINE(conn,path,sbuf,offline) ((conn)->vfs_opaque.ops.is_offline((conn)->vfs_opaque.handles.is_offline,(path),(sbuf),(offline)))
+#define SMB_VFS_OPAQUE_SET_OFFLINE(conn,path) ((conn)->vfs_opaque.ops.set_offline((conn)->vfs_opaque.handles.set_offline,(path)))
+#define SMB_VFS_OPAQUE_IS_REMOTESTORAGE(conn,path) ((conn)->vfs_opaque.ops.is_remotestorage((conn)->vfs_opaque.handles.is_remotestorage,(path)))
 
 /*******************************************************************
  Don't access handle->vfs_next.ops.* directly!!!
@@ -276,7 +276,7 @@
  (Fixes should go also into the vfs_* and vfs_opaque_* macros!)
 ********************************************************************/
 
-/* Disk operations */    
+/* Disk operations */
 #define SMB_VFS_NEXT_CONNECT(handle, service, user) ((handle)->vfs_next.ops.connect_fn((handle)->vfs_next.handles.connect_hnd, (service), (user)))
 #define SMB_VFS_NEXT_DISCONNECT(handle) ((handle)->vfs_next.ops.disconnect((handle)->vfs_next.handles.disconnect))
 #define SMB_VFS_NEXT_DISK_FREE(handle, path, small_query, bsize, dfree ,dsize) ((handle)->vfs_next.ops.disk_free((handle)->vfs_next.handles.disk_free, (path), (small_query), (bsize), (dfree), (dsize)))
@@ -295,7 +295,7 @@
 #define SMB_VFS_NEXT_MKDIR(handle, path, mode) ((handle)->vfs_next.ops.mkdir((handle)->vfs_next.handles.mkdir,(path), (mode)))
 #define SMB_VFS_NEXT_RMDIR(handle, path) ((handle)->vfs_next.ops.rmdir((handle)->vfs_next.handles.rmdir, (path)))
 #define SMB_VFS_NEXT_CLOSEDIR(handle, dir) ((handle)->vfs_next.ops.closedir((handle)->vfs_next.handles.closedir, dir))
-    
+
 /* File operations */
 #define SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode) (((handle)->vfs_next.ops.open)((handle)->vfs_next.handles.open, (fname), (fsp), (flags), (mode)))
 #define SMB_VFS_NEXT_CLOSE(handle, fsp, fd) ((handle)->vfs_next.ops.close_fn((handle)->vfs_next.handles.close_hnd, (fsp), (fd)))
@@ -392,8 +392,8 @@
 #define SMB_VFS_NEXT_AIO_FORCE(handle,fsp) ((handle)->vfs_next.ops.aio_force((handle)->vfs_next.handles.aio_force,(fsp)))
 
 /* Offline operations */
-#define SMB_VFS_NEXT_IS_OFFLINE(conn,path,sbuf,offline) ((conn)->vfs_next.ops.is_offline((conn)->vfs_next.handles.is_offline,(conn),(path),(sbuf),(offline)))
-#define SMB_VFS_NEXT_SET_OFFLINE(conn,path) ((conn)->vfs_next.ops.set_offline((conn)->vfs_next.handles.set_offline,(conn),(path)))
-#define SMB_VFS_NEXT_IS_REMOTESTORAGE(conn,path) ((conn)->vfs_next.ops.is_remotestorage((conn)->vfs_next.handles.is_remotestorage,(conn),(path)))
+#define SMB_VFS_NEXT_IS_OFFLINE(handle,path,sbuf,offline) ((handle)->vfs_next.ops.is_offline((handle)->vfs_next.handles.is_offline,(path),(sbuf),(offline)))
+#define SMB_VFS_NEXT_SET_OFFLINE(handle,path) ((handle)->vfs_next.ops.set_offline((handle)->vfs_next.handles.set_offline,(path)))
+#define SMB_VFS_NEXT_IS_REMOTESTORAGE(handle,path) ((handle)->vfs_next.ops.is_remotestorage((handle)->vfs_next.handles.is_remotestorage,(path)))
 
 #endif /* _VFS_MACROS_H */
