@@ -965,6 +965,7 @@ _PUBLIC_ void ndr_print_netr_UserFlags(struct ndr_print *ndr, const char *name, 
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_NTLMV2_ENABLED", NETLOGON_NTLMV2_ENABLED, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_RESOURCE_GROUPS", NETLOGON_RESOURCE_GROUPS, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_PROFILE_PATH_RETURNED", NETLOGON_PROFILE_PATH_RETURNED, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "NETLOGON_GRACE_LOGON", NETLOGON_GRACE_LOGON, r);
 	ndr->depth--;
 }
 
