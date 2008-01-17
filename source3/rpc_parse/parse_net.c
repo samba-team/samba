@@ -1656,8 +1656,8 @@ static void dump_acct_flags(uint32 acct_flags) {
 	if (acct_flags & ACB_NO_AUTH_DATA_REQD) {
 		DEBUGADD(lvl,("\taccount has ACB_NO_AUTH_DATA_REQD set\n"));
 	}
-	if (acct_flags & ACB_PWEXPIRED) {
-		DEBUGADD(lvl,("\taccount has ACB_PWEXPIRED set\n"));
+	if (acct_flags & ACB_PW_EXPIRED) {
+		DEBUGADD(lvl,("\taccount has ACB_PW_EXPIRED set\n"));
 	}
 }
 
@@ -1665,23 +1665,23 @@ static void dump_user_flgs(uint32 user_flags) {
 
 	int lvl = 10;
 	DEBUG(lvl,("dump_user_flgs\n"));
-	if (user_flags & LOGON_EXTRA_SIDS) {
-		DEBUGADD(lvl,("\taccount has LOGON_EXTRA_SIDS\n"));
+	if (user_flags & NETLOGON_EXTRA_SIDS) {
+		DEBUGADD(lvl,("\taccount has NETLOGON_EXTRA_SIDS\n"));
 	}
-	if (user_flags & LOGON_RESOURCE_GROUPS) {
-		DEBUGADD(lvl,("\taccount has LOGON_RESOURCE_GROUPS\n"));
+	if (user_flags & NETLOGON_RESOURCE_GROUPS) {
+		DEBUGADD(lvl,("\taccount has NETLOGON_RESOURCE_GROUPS\n"));
 	}
-	if (user_flags & LOGON_NTLMV2_ENABLED) {
-		DEBUGADD(lvl,("\taccount has LOGON_NTLMV2_ENABLED\n"));
+	if (user_flags & NETLOGON_NTLMV2_ENABLED) {
+		DEBUGADD(lvl,("\taccount has NETLOGON_NTLMV2_ENABLED\n"));
 	}
-	if (user_flags & LOGON_CACHED_ACCOUNT) {
-		DEBUGADD(lvl,("\taccount has LOGON_CACHED_ACCOUNT\n"));
+	if (user_flags & NETLOGON_CACHED_ACCOUNT) {
+		DEBUGADD(lvl,("\taccount has NETLOGON_CACHED_ACCOUNT\n"));
 	}
-	if (user_flags & LOGON_PROFILE_PATH_RETURNED) {
-		DEBUGADD(lvl,("\taccount has LOGON_PROFILE_PATH_RETURNED\n"));
+	if (user_flags & NETLOGON_PROFILE_PATH_RETURNED) {
+		DEBUGADD(lvl,("\taccount has NETLOGON_PROFILE_PATH_RETURNED\n"));
 	}
-	if (user_flags & LOGON_SERVER_TRUST_ACCOUNT) {
-		DEBUGADD(lvl,("\taccount has LOGON_SERVER_TRUST_ACCOUNT\n"));
+	if (user_flags & NETLOGON_SERVER_TRUST_ACCOUNT) {
+		DEBUGADD(lvl,("\taccount has NETLOGON_SERVER_TRUST_ACCOUNT\n"));
 	}
 
 
@@ -1859,8 +1859,8 @@ bool net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 
 		uint32 num_other_sids = usr->num_other_sids;
 
-		if (!(usr->user_flgs & LOGON_EXTRA_SIDS)) {
-			DEBUG(10,("net_io_user_info3: user_flgs attribute does not have LOGON_EXTRA_SIDS\n"));
+		if (!(usr->user_flgs & NETLOGON_EXTRA_SIDS)) {
+			DEBUG(10,("net_io_user_info3: user_flgs attribute does not have NETLOGON_EXTRA_SIDS\n"));
 			/* return False; */
 		}
 

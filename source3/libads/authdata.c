@@ -429,8 +429,8 @@ static bool pac_io_pac_logon_info(const char *desc, PAC_LOGON_INFO *info,
 
 	if (info->info3.ptr_res_groups) {
 
-		if (!(info->info3.user_flgs & LOGON_RESOURCE_GROUPS)) {
-			DEBUG(0,("user_flgs attribute does not have LOGON_RESOURCE_GROUPS\n"));
+		if (!(info->info3.user_flgs & NETLOGON_RESOURCE_GROUPS)) {
+			DEBUG(0,("user_flgs attribute does not have NETLOGON_RESOURCE_GROUPS\n"));
 			/* return False; */
 		}
 
@@ -738,10 +738,10 @@ void dump_pac_logon_info(int lvl, PAC_LOGON_INFO *logon_info)
 	DEBUG(lvl,("The PAC:\n"));
 
 	DEBUGADD(lvl,("\tUser Flags: 0x%x (%d)\n", user_flgs, user_flgs));
-	if (user_flgs & LOGON_EXTRA_SIDS)
-		DEBUGADD(lvl,("\tUser Flags: LOGON_EXTRA_SIDS 0x%x (%d)\n", LOGON_EXTRA_SIDS, LOGON_EXTRA_SIDS));
-	if (user_flgs & LOGON_RESOURCE_GROUPS)
-		DEBUGADD(lvl,("\tUser Flags: LOGON_RESOURCE_GROUPS 0x%x (%d)\n", LOGON_RESOURCE_GROUPS, LOGON_RESOURCE_GROUPS));
+	if (user_flgs & NETLOGON_EXTRA_SIDS)
+		DEBUGADD(lvl,("\tUser Flags: NETLOGON_EXTRA_SIDS 0x%x (%d)\n", NETLOGON_EXTRA_SIDS, NETLOGON_EXTRA_SIDS));
+	if (user_flgs & NETLOGON_RESOURCE_GROUPS)
+		DEBUGADD(lvl,("\tUser Flags: NETLOGON_RESOURCE_GROUPS 0x%x (%d)\n", NETLOGON_RESOURCE_GROUPS, NETLOGON_RESOURCE_GROUPS));
 	DEBUGADD(lvl,("\tUser SID: %s-%d\n", sid_string_dbg(&dom_sid),
 		      logon_info->info3.user_rid));
 	DEBUGADD(lvl,("\tGroup SID: %s-%d\n", sid_string_dbg(&dom_sid),
