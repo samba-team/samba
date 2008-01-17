@@ -19,6 +19,48 @@
 
 /* Attempt to wrap the existing API in a more winreg.idl-like way */
 
+/*
+ * Here is a list of winreg.idl functions and corresponding implementations
+ * provided here:
+ *
+ * 0x00		winreg_OpenHKCR
+ * 0x01		winreg_OpenHKCU
+ * 0x02		winreg_OpenHKLM
+ * 0x03		winreg_OpenHKPD
+ * 0x04		winreg_OpenHKU
+ * 0x05		winreg_CloseKey
+ * 0x06		winreg_CreateKey			reg_createkey
+ * 0x07		winreg_DeleteKey			reg_deletekey
+ * 0x08		winreg_DeleteValue			reg_deletevalue
+ * 0x09		winreg_EnumKey				reg_enumkey
+ * 0x0a		winreg_EnumValue			reg_enumvalue
+ * 0x0b		winreg_FlushKey
+ * 0x0c		winreg_GetKeySecurity			reg_getkeysecurity
+ * 0x0d		winreg_LoadKey
+ * 0x0e		winreg_NotifyChangeKeyValue
+ * 0x0f		winreg_OpenKey				reg_openkey
+ * 0x10		winreg_QueryInfoKey			reg_queryinfokey
+ * 0x11		winreg_QueryValue			reg_queryvalue
+ * 0x12		winreg_ReplaceKey
+ * 0x13		winreg_RestoreKey
+ * 0x14		winreg_SaveKey
+ * 0x15		winreg_SetKeySecurity			reg_setkeysecurity
+ * 0x16		winreg_SetValue				reg_setvalue
+ * 0x17		winreg_UnLoadKey
+ * 0x18		winreg_InitiateSystemShutdown
+ * 0x19		winreg_AbortSystemShutdown
+ * 0x1a		winreg_GetVersion
+ * 0x1b		winreg_OpenHKCC
+ * 0x1c		winreg_OpenHKDD
+ * 0x1d		winreg_QueryMultipleValues
+ * 0x1e		winreg_InitiateSystemShutdownEx
+ * 0x1f		winreg_SaveKeyEx
+ * 0x20		winreg_OpenHKPT
+ * 0x21		winreg_OpenHKPN
+ * 0x22		winreg_QueryMultipleValues2
+ *
+ */
+
 #include "includes.h"
 
 #undef DBGC_CLASS
