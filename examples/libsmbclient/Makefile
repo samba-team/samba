@@ -22,9 +22,11 @@ TESTS=	testsmbc \
 	testbrowse2 \
 	teststat \
 	teststat2 \
+	teststat3 \
 	testchmod \
 	testutime \
-	testread
+	testread \
+	testwrite
 
 #	tree \
 
@@ -62,6 +64,10 @@ teststat2: teststat2.o
 	@echo Linking teststat2
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
 
+teststat3: teststat3.o
+	@echo Linking teststat3
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
+
 testchmod: testchmod.o
 	@echo Linking testchmod
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
@@ -72,6 +78,10 @@ testutime: testutime.o
 
 testread: testread.o
 	@echo Linking testread
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
+
+testwrite: testwrite.o
+	@echo Linking testwrite
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
 
 smbsh:
