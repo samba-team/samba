@@ -46,9 +46,7 @@ NTSTATUS rpccli_netr_LogonUasLogon(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	if (werror) {
@@ -410,9 +408,7 @@ NTSTATUS rpccli_netr_DatabaseDeltas(struct rpc_pipe_client *cli,
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
 	*sequence_num = *r.out.sequence_num;
-	if (delta_enum_array && r.out.delta_enum_array) {
-		*delta_enum_array = *r.out.delta_enum_array;
-	}
+	*delta_enum_array = *r.out.delta_enum_array;
 
 	/* Return result */
 	return r.out.result;
@@ -467,9 +463,7 @@ NTSTATUS rpccli_netr_DatabaseSync(struct rpc_pipe_client *cli,
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
 	*sync_context = *r.out.sync_context;
-	if (delta_enum_array && r.out.delta_enum_array) {
-		*delta_enum_array = *r.out.delta_enum_array;
-	}
+	*delta_enum_array = *r.out.delta_enum_array;
 
 	/* Return result */
 	return r.out.result;
@@ -895,9 +889,7 @@ NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli,
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
 	*sync_context = *r.out.sync_context;
-	if (delta_enum_array && r.out.delta_enum_array) {
-		*delta_enum_array = *r.out.delta_enum_array;
-	}
+	*delta_enum_array = *r.out.delta_enum_array;
 
 	/* Return result */
 	return r.out.result;
@@ -949,9 +941,7 @@ NTSTATUS rpccli_netr_DatabaseRedo(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*return_authenticator = *r.out.return_authenticator;
-	if (delta_enum_array && r.out.delta_enum_array) {
-		*delta_enum_array = *r.out.delta_enum_array;
-	}
+	*delta_enum_array = *r.out.delta_enum_array;
 
 	/* Return result */
 	return r.out.result;
@@ -1009,17 +999,20 @@ NTSTATUS rpccli_netr_LogonControl2Ex(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINS(struct rpc_pipe_client *cli,
+NTSTATUS rpccli_netr_NetrEnumerateTrustedDomains(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
+						 const char *server_name,
+						 struct netr_Blob *trusted_domains_blob,
 						 WERROR *werror)
 {
-	struct netr_NETRENUMERATETRUSTEDDOMAINS r;
+	struct netr_NetrEnumerateTrustedDomains r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINS, &r);
+		NDR_PRINT_IN_DEBUG(netr_NetrEnumerateTrustedDomains, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
@@ -1034,7 +1027,7 @@ NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINS(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINS, &r);
+		NDR_PRINT_OUT_DEBUG(netr_NetrEnumerateTrustedDomains, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1042,6 +1035,7 @@ NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINS(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*trusted_domains_blob = *r.out.trusted_domains_blob;
 
 	/* Return result */
 	if (werror) {
@@ -1095,9 +1089,7 @@ NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	if (werror) {
@@ -1414,9 +1406,7 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	if (werror) {
@@ -1575,24 +1565,36 @@ NTSTATUS rpccli_netr_ServerPasswordSet2(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_NETRSERVERPASSWORDGET(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx,
-					   WERROR *werror)
+NTSTATUS rpccli_netr_ServerPasswordGet(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       const char *server_name,
+				       const char *account_name,
+				       enum netr_SchannelType secure_channel_type,
+				       const char *computer_name,
+				       struct netr_Authenticator *credential,
+				       struct netr_Authenticator *return_authenticator,
+				       struct samr_Password *password,
+				       WERROR *werror)
 {
-	struct netr_NETRSERVERPASSWORDGET r;
+	struct netr_ServerPasswordGet r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.account_name = account_name;
+	r.in.secure_channel_type = secure_channel_type;
+	r.in.computer_name = computer_name;
+	r.in.credential = credential;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRSERVERPASSWORDGET, &r);
+		NDR_PRINT_IN_DEBUG(netr_ServerPasswordGet, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
 				PI_NETLOGON,
 				&ndr_table_netlogon,
-				NDR_NETR_NETRSERVERPASSWORDGET,
+				NDR_NETR_SERVERPASSWORDGET,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1600,7 +1602,7 @@ NTSTATUS rpccli_netr_NETRSERVERPASSWORDGET(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRSERVERPASSWORDGET, &r);
+		NDR_PRINT_OUT_DEBUG(netr_ServerPasswordGet, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1608,6 +1610,8 @@ NTSTATUS rpccli_netr_NETRSERVERPASSWORDGET(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*return_authenticator = *r.out.return_authenticator;
+	*password = *r.out.password;
 
 	/* Return result */
 	if (werror) {
@@ -1659,17 +1663,24 @@ NTSTATUS rpccli_netr_NETRLOGONSENDTOSAM(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESW(struct rpc_pipe_client *cli,
+NTSTATUS rpccli_netr_DsRAddressToSitenamesW(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
+					    const char *server_name,
+					    uint32_t count,
+					    struct netr_DsRAddress *addresses,
+					    struct netr_DsRAddressToSitenamesWCtr **ctr,
 					    WERROR *werror)
 {
-	struct netr_DSRADDRESSTOSITENAMESW r;
+	struct netr_DsRAddressToSitenamesW r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.count = count;
+	r.in.addresses = addresses;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DSRADDRESSTOSITENAMESW, &r);
+		NDR_PRINT_IN_DEBUG(netr_DsRAddressToSitenamesW, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
@@ -1684,7 +1695,7 @@ NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESW(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DSRADDRESSTOSITENAMESW, &r);
+		NDR_PRINT_OUT_DEBUG(netr_DsRAddressToSitenamesW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1692,6 +1703,7 @@ NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*ctr = *r.out.ctr;
 
 	/* Return result */
 	if (werror) {
@@ -1749,9 +1761,7 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	if (werror) {
@@ -1803,17 +1813,20 @@ NTSTATUS rpccli_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct rpc_pipe_client 
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct rpc_pipe_client *cli,
+NTSTATUS rpccli_netr_NetrEnumerateTrustedDomainsEx(struct rpc_pipe_client *cli,
 						   TALLOC_CTX *mem_ctx,
+						   const char *server_name,
+						   struct netr_DomainTrustList *dom_trust_list,
 						   WERROR *werror)
 {
-	struct netr_NETRENUMERATETRUSTEDDOMAINSEX r;
+	struct netr_NetrEnumerateTrustedDomainsEx r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINSEX, &r);
+		NDR_PRINT_IN_DEBUG(netr_NetrEnumerateTrustedDomainsEx, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
@@ -1828,7 +1841,7 @@ NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRENUMERATETRUSTEDDOMAINSEX, &r);
+		NDR_PRINT_OUT_DEBUG(netr_NetrEnumerateTrustedDomainsEx, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1836,6 +1849,7 @@ NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*dom_trust_list = *r.out.dom_trust_list;
 
 	/* Return result */
 	if (werror) {
@@ -1845,17 +1859,24 @@ NTSTATUS rpccli_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESEXW(struct rpc_pipe_client *cli,
+NTSTATUS rpccli_netr_DsRAddressToSitenamesExW(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
+					      const char *server_name,
+					      uint32_t count,
+					      struct netr_DsRAddress *addresses,
+					      struct netr_DsRAddressToSitenamesExWCtr **ctr,
 					      WERROR *werror)
 {
-	struct netr_DSRADDRESSTOSITENAMESEXW r;
+	struct netr_DsRAddressToSitenamesExW r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.count = count;
+	r.in.addresses = addresses;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DSRADDRESSTOSITENAMESEXW, &r);
+		NDR_PRINT_IN_DEBUG(netr_DsRAddressToSitenamesExW, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
@@ -1870,7 +1891,7 @@ NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESEXW(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DSRADDRESSTOSITENAMESEXW, &r);
+		NDR_PRINT_OUT_DEBUG(netr_DsRAddressToSitenamesExW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1878,6 +1899,7 @@ NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESEXW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*ctr = *r.out.ctr;
 
 	/* Return result */
 	if (werror) {
@@ -1887,17 +1909,20 @@ NTSTATUS rpccli_netr_DSRADDRESSTOSITENAMESEXW(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DSRGETDCSITECOVERAGEW(struct rpc_pipe_client *cli,
+NTSTATUS rpccli_netr_DsrGetDcSiteCoverageW(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
+					   const char *server_name,
+					   struct DcSitesCtr *ctr,
 					   WERROR *werror)
 {
-	struct netr_DSRGETDCSITECOVERAGEW r;
+	struct netr_DsrGetDcSiteCoverageW r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DSRGETDCSITECOVERAGEW, &r);
+		NDR_PRINT_IN_DEBUG(netr_DsrGetDcSiteCoverageW, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
@@ -1912,7 +1937,7 @@ NTSTATUS rpccli_netr_DSRGETDCSITECOVERAGEW(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DSRGETDCSITECOVERAGEW, &r);
+		NDR_PRINT_OUT_DEBUG(netr_DsrGetDcSiteCoverageW, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1920,6 +1945,7 @@ NTSTATUS rpccli_netr_DSRGETDCSITECOVERAGEW(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*ctr = *r.out.ctr;
 
 	/* Return result */
 	if (werror) {
@@ -1987,8 +2013,7 @@ NTSTATUS rpccli_netr_DsrEnumerateDomainTrusts(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      const char *server_name,
 					      uint32_t trust_flags,
-					      uint32_t *count,
-					      struct netr_DomainTrust **trusts,
+					      struct netr_DomainTrustList **trusts,
 					      WERROR *werror)
 {
 	struct netr_DsrEnumerateDomainTrusts r;
@@ -2022,8 +2047,7 @@ NTSTATUS rpccli_netr_DsrEnumerateDomainTrusts(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*count = *r.out.count;
-	memcpy(trusts, r.out.trusts, count);
+	*trusts = *r.out.trusts;
 
 	/* Return result */
 	if (werror) {
@@ -2075,24 +2099,36 @@ NTSTATUS rpccli_netr_DSRDEREGISTERDNSHOSTRECORDS(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRSERVERTRUSTPASSWORDSGET(struct rpc_pipe_client *cli,
-						 TALLOC_CTX *mem_ctx,
-						 WERROR *werror)
+NTSTATUS rpccli_netr_ServerTrustPasswordsGet(struct rpc_pipe_client *cli,
+					     TALLOC_CTX *mem_ctx,
+					     const char *server_name,
+					     const char *account_name,
+					     enum netr_SchannelType secure_channel_type,
+					     const char *computer_name,
+					     struct netr_Authenticator *credential,
+					     struct netr_Authenticator *return_authenticator,
+					     struct samr_Password *password,
+					     struct samr_Password *password2)
 {
-	struct netr_NETRSERVERTRUSTPASSWORDSGET r;
+	struct netr_ServerTrustPasswordsGet r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.account_name = account_name;
+	r.in.secure_channel_type = secure_channel_type;
+	r.in.computer_name = computer_name;
+	r.in.credential = credential;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRSERVERTRUSTPASSWORDSGET, &r);
+		NDR_PRINT_IN_DEBUG(netr_ServerTrustPasswordsGet, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
 				PI_NETLOGON,
 				&ndr_table_netlogon,
-				NDR_NETR_NETRSERVERTRUSTPASSWORDSGET,
+				NDR_NETR_SERVERTRUSTPASSWORDSGET,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2100,7 +2136,7 @@ NTSTATUS rpccli_netr_NETRSERVERTRUSTPASSWORDSGET(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRSERVERTRUSTPASSWORDSGET, &r);
+		NDR_PRINT_OUT_DEBUG(netr_ServerTrustPasswordsGet, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2108,26 +2144,32 @@ NTSTATUS rpccli_netr_NETRSERVERTRUSTPASSWORDSGET(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*return_authenticator = *r.out.return_authenticator;
+	*password = *r.out.password;
+	*password2 = *r.out.password2;
 
 	/* Return result */
-	if (werror) {
-		*werror = r.out.result;
-	}
-
-	return werror_to_ntstatus(r.out.result);
+	return r.out.result;
 }
 
-NTSTATUS rpccli_netr_DSRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
+NTSTATUS rpccli_netr_DsRGetForestTrustInformation(struct rpc_pipe_client *cli,
 						  TALLOC_CTX *mem_ctx,
+						  const char *server_name,
+						  const char *trusted_domain_name,
+						  uint32_t flags,
+						  struct lsa_ForestTrustInformation **forest_trust_info,
 						  WERROR *werror)
 {
-	struct netr_DSRGETFORESTTRUSTINFORMATION r;
+	struct netr_DsRGetForestTrustInformation r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.trusted_domain_name = trusted_domain_name;
+	r.in.flags = flags;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DSRGETFORESTTRUSTINFORMATION, &r);
+		NDR_PRINT_IN_DEBUG(netr_DsRGetForestTrustInformation, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
@@ -2142,7 +2184,7 @@ NTSTATUS rpccli_netr_DSRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DSRGETFORESTTRUSTINFORMATION, &r);
+		NDR_PRINT_OUT_DEBUG(netr_DsRGetForestTrustInformation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2150,6 +2192,7 @@ NTSTATUS rpccli_netr_DSRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*forest_trust_info = *r.out.forest_trust_info;
 
 	/* Return result */
 	if (werror) {
@@ -2159,24 +2202,34 @@ NTSTATUS rpccli_netr_DSRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
-						   TALLOC_CTX *mem_ctx,
-						   WERROR *werror)
+NTSTATUS rpccli_netr_GetForestTrustInformation(struct rpc_pipe_client *cli,
+					       TALLOC_CTX *mem_ctx,
+					       const char *server_name,
+					       const char *trusted_domain_name,
+					       struct netr_Authenticator *credential,
+					       struct netr_Authenticator *return_authenticator,
+					       uint32_t flags,
+					       struct lsa_ForestTrustInformation **forest_trust_info,
+					       WERROR *werror)
 {
-	struct netr_NETRGETFORESTTRUSTINFORMATION r;
+	struct netr_GetForestTrustInformation r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.trusted_domain_name = trusted_domain_name;
+	r.in.credential = credential;
+	r.in.flags = flags;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRGETFORESTTRUSTINFORMATION, &r);
+		NDR_PRINT_IN_DEBUG(netr_GetForestTrustInformation, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
 				PI_NETLOGON,
 				&ndr_table_netlogon,
-				NDR_NETR_NETRGETFORESTTRUSTINFORMATION,
+				NDR_NETR_GETFORESTTRUSTINFORMATION,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -2184,7 +2237,7 @@ NTSTATUS rpccli_netr_NETRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRGETFORESTTRUSTINFORMATION, &r);
+		NDR_PRINT_OUT_DEBUG(netr_GetForestTrustInformation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -2192,6 +2245,8 @@ NTSTATUS rpccli_netr_NETRGETFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*return_authenticator = *r.out.return_authenticator;
+	*forest_trust_info = *r.out.forest_trust_info;
 
 	/* Return result */
 	if (werror) {
