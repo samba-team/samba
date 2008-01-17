@@ -1230,22 +1230,20 @@ static bool vfswrap_aio_force(struct vfs_handle_struct *handle, struct files_str
 	return false;
 }
 
-static int vfswrap_is_offline(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf, bool *offline)
+static bool vfswrap_is_offline(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf)
 {
 	if (ISDOT(path) || ISDOTDOT(path)) {
-		*offline = false;
-		return 0;
+		return false;
 	}
 
 	if (!lp_dmapi_support(SNUM(handle->conn)) || !dmapi_have_session()) {
 #if defined(ENOTSUP)
 		errno = ENOTSUP;
 #endif
-		return -1;
+		return false;
 	}
 
-	*offline = (dmapi_file_flags(path) & FILE_ATTRIBUTE_OFFLINE) != 0;
-	return 0;
+	return (dmapi_file_flags(path) & FILE_ATTRIBUTE_OFFLINE) != 0;
 }
 
 static int vfswrap_set_offline(struct vfs_handle_struct *handle, const char *path)

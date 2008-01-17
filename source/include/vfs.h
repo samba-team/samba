@@ -413,7 +413,7 @@ struct vfs_ops {
 		bool (*aio_force)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 
 		/* offline operations */
-		int (*is_offline)(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf, bool *offline);
+		bool (*is_offline)(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf);
 		int (*set_offline)(struct vfs_handle_struct *handle, const char *path);
 		bool (*is_remotestorage)(struct vfs_handle_struct *handle, const char *path);
 
