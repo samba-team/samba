@@ -4,6 +4,5 @@
 dn: ${SCHEMADN}
 objectClass: top
 objectClass: dMD
-${EXTENSIBLEOBJECT}
 ${ACI}
 cn: Schema
