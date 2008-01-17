@@ -141,7 +141,7 @@ SMB_ACL_T hpuxacl_sys_acl_get_file(vfs_handle_struct *handle,
 {
 	SMB_ACL_T result = NULL;
 	int count;
-	HPUX_ACL_T hpux_acl;
+	HPUX_ACL_T hpux_acl = NULL;
 	
 	DEBUG(10, ("hpuxacl_sys_acl_get_file called for file '%s'.\n", 
 		   path_p));
@@ -215,7 +215,7 @@ int hpuxacl_sys_acl_set_file(vfs_handle_struct *handle,
 {
 	int ret = -1;
 	SMB_STRUCT_STAT s;
-	HPUX_ACL_T hpux_acl;
+	HPUX_ACL_T hpux_acl = NULL;
 	int count;
 	
 	DEBUG(10, ("hpuxacl_sys_acl_set_file called for file '%s'\n",
