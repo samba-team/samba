@@ -238,6 +238,7 @@ echo "Trying PKCS11 support"
 
 cat > test-rc-file.rc <<EOF
 certificate	cert	User certificate	FILE:${base}/pkinit.crt,${keyfile2}
+app-fatal	true
 EOF
 
 SOFTPKCS11RC="test-rc-file.rc"
