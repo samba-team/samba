@@ -135,8 +135,8 @@ static void display_password_properties(uint32 password_properties)
 	if (password_properties & DOMAIN_PASSWORD_NO_CLEAR_CHANGE)
 		printf("\tDOMAIN_PASSWORD_NO_CLEAR_CHANGE\n");
 			
-	if (password_properties & DOMAIN_LOCKOUT_ADMINS)
-		printf("\tDOMAIN_LOCKOUT_ADMINS\n");
+	if (password_properties & DOMAIN_PASSWORD_LOCKOUT_ADMINS)
+		printf("\tDOMAIN_PASSWORD_LOCKOUT_ADMINS\n");
 			
 	if (password_properties & DOMAIN_PASSWORD_STORE_CLEARTEXT)
 		printf("\tDOMAIN_PASSWORD_STORE_CLEARTEXT\n");
@@ -2228,17 +2228,17 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 		display_sam_unk_info_1(&info);
 
 		switch (reject.reject_reason) {
-			case REJECT_REASON_TOO_SHORT:
-				d_printf("REJECT_REASON_TOO_SHORT\n");
+			case SAMR_REJECT_TOO_SHORT:
+				d_printf("SAMR_REJECT_TOO_SHORT\n");
 				break;
-			case REJECT_REASON_IN_HISTORY:
-				d_printf("REJECT_REASON_IN_HISTORY\n");
+			case SAMR_REJECT_IN_HISTORY:
+				d_printf("SAMR_REJECT_IN_HISTORY\n");
 				break;
-			case REJECT_REASON_NOT_COMPLEX:
-				d_printf("REJECT_REASON_NOT_COMPLEX\n");
+			case SAMR_REJECT_COMPLEXITY:
+				d_printf("SAMR_REJECT_COMPLEXITY\n");
 				break;
-			case REJECT_REASON_OTHER:
-				d_printf("REJECT_REASON_OTHER\n");
+			case SAMR_REJECT_OTHER:
+				d_printf("SAMR_REJECT_OTHER\n");
 				break;
 			default:
 				d_printf("unknown reject reason: %d\n", reject.reject_reason);

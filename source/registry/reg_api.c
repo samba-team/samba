@@ -2,6 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  Virtual Windows Registry Layer
  *  Copyright (C) Volker Lendecke 2006
+ *  Copyright (C) Michael Adam 2007-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,10 +20,57 @@
 
 /* Attempt to wrap the existing API in a more winreg.idl-like way */
 
+/*
+ * Here is a list of winreg.idl functions and corresponding implementations
+ * provided here:
+ *
+ * 0x00		winreg_OpenHKCR
+ * 0x01		winreg_OpenHKCU
+ * 0x02		winreg_OpenHKLM
+ * 0x03		winreg_OpenHKPD
+ * 0x04		winreg_OpenHKU
+ * 0x05		winreg_CloseKey
+ * 0x06		winreg_CreateKey			reg_createkey
+ * 0x07		winreg_DeleteKey			reg_deletekey
+ * 0x08		winreg_DeleteValue			reg_deletevalue
+ * 0x09		winreg_EnumKey				reg_enumkey
+ * 0x0a		winreg_EnumValue			reg_enumvalue
+ * 0x0b		winreg_FlushKey
+ * 0x0c		winreg_GetKeySecurity			reg_getkeysecurity
+ * 0x0d		winreg_LoadKey
+ * 0x0e		winreg_NotifyChangeKeyValue
+ * 0x0f		winreg_OpenKey				reg_openkey
+ * 0x10		winreg_QueryInfoKey			reg_queryinfokey
+ * 0x11		winreg_QueryValue			reg_queryvalue
+ * 0x12		winreg_ReplaceKey
+ * 0x13		winreg_RestoreKey
+ * 0x14		winreg_SaveKey
+ * 0x15		winreg_SetKeySecurity			reg_setkeysecurity
+ * 0x16		winreg_SetValue				reg_setvalue
+ * 0x17		winreg_UnLoadKey
+ * 0x18		winreg_InitiateSystemShutdown
+ * 0x19		winreg_AbortSystemShutdown
+ * 0x1a		winreg_GetVersion			reg_getversion
+ * 0x1b		winreg_OpenHKCC
+ * 0x1c		winreg_OpenHKDD
+ * 0x1d		winreg_QueryMultipleValues
+ * 0x1e		winreg_InitiateSystemShutdownEx
+ * 0x1f		winreg_SaveKeyEx
+ * 0x20		winreg_OpenHKPT
+ * 0x21		winreg_OpenHKPN
+ * 0x22		winreg_QueryMultipleValues2
+ *
+ */
+
 #include "includes.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
+
+
+/**********************************************************************
+ * Helper functions
+ **********************************************************************/
 
 static WERROR fill_value_cache(struct registry_key *key)
 {
@@ -185,6 +233,11 @@ WERROR reg_openhive(TALLOC_CTX *mem_ctx, const char *hive,
 	return regkey_open_onelevel(mem_ctx, NULL, hive, token, desired_access,
 				    pkey);
 }
+
+
+/**********************************************************************
+ * The API functions
+ **********************************************************************/
 
 WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 		   const char *name, uint32 desired_access,
@@ -627,6 +680,32 @@ WERROR reg_deletevalue(struct registry_key *key, const char *name)
 	return WERR_OK;
 }
 
+WERROR reg_getkeysecurity(TALLOC_CTX *mem_ctx, struct registry_key *key,
+			  struct security_descriptor **psecdesc)
+{
+	return regkey_get_secdesc(mem_ctx, key->key, psecdesc);
+}
+
+WERROR reg_setkeysecurity(struct registry_key *key,
+			  struct security_descriptor *psecdesc)
+{
+	return regkey_set_secdesc(key->key, psecdesc);
+}
+
+WERROR reg_getversion(uint32_t *version)
+{
+	if (version == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	*version = 0x00000005; /* Windows 2000 registry API version */
+	return WERR_OK;
+}
+
+/**********************************************************************
+ * Higher level utility functions
+ **********************************************************************/
+
 WERROR reg_deleteallvalues(struct registry_key *key)
 {
 	WERROR err;
@@ -715,10 +794,10 @@ WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
  * Note that reg_deletekey returns ACCESS_DENIED when called on a
  * key that has subkeys.
  */
-WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
-					struct registry_key *parent,
-					const char *path,
-					bool del_key)
+static WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
+					       struct registry_key *parent,
+					       const char *path,
+					       bool del_key)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 	WERROR werr = WERR_OK;
@@ -779,3 +858,102 @@ WERROR reg_deletesubkeys_recursive(TALLOC_CTX *ctx,
 {
 	return reg_deletekey_recursive_internal(ctx, parent, path, false);
 }
+
+#if 0
+/* these two functions are unused. */
+
+/**
+ * Utility function to create a registry key without opening the hive
+ * before. Assumes the hive already exists.
+ */
+
+WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
+		       uint32 desired_access,
+		       const struct nt_user_token *token,
+		       enum winreg_CreateAction *paction,
+		       struct registry_key **pkey)
+{
+	struct registry_key *hive;
+	char *path, *p;
+	WERROR err;
+
+	if (!(path = SMB_STRDUP(orig_path))) {
+		return WERR_NOMEM;
+	}
+
+	p = strchr(path, '\\');
+
+	if ((p == NULL) || (p[1] == '\0')) {
+		/*
+		 * No key behind the hive, just return the hive
+		 */
+
+		err = reg_openhive(mem_ctx, path, desired_access, token,
+				   &hive);
+		if (!W_ERROR_IS_OK(err)) {
+			SAFE_FREE(path);
+			return err;
+		}
+		SAFE_FREE(path);
+		*pkey = hive;
+		*paction = REG_OPENED_EXISTING_KEY;
+		return WERR_OK;
+	}
+
+	*p = '\0';
+
+	err = reg_openhive(mem_ctx, path,
+			   (strchr(p+1, '\\') != NULL) ?
+			   SEC_RIGHTS_ENUM_SUBKEYS : SEC_RIGHTS_CREATE_SUBKEY,
+			   token, &hive);
+	if (!W_ERROR_IS_OK(err)) {
+		SAFE_FREE(path);
+		return err;
+	}
+
+	err = reg_createkey(mem_ctx, hive, p+1, desired_access, pkey, paction);
+	SAFE_FREE(path);
+	TALLOC_FREE(hive);
+	return err;
+}
+
+/*
+ * Utility function to create a registry key without opening the hive
+ * before. Will not delete a hive.
+ */
+
+WERROR reg_delete_path(const struct nt_user_token *token,
+		       const char *orig_path)
+{
+	struct registry_key *hive;
+	char *path, *p;
+	WERROR err;
+
+	if (!(path = SMB_STRDUP(orig_path))) {
+		return WERR_NOMEM;
+	}
+
+	p = strchr(path, '\\');
+
+	if ((p == NULL) || (p[1] == '\0')) {
+		SAFE_FREE(path);
+		return WERR_INVALID_PARAM;
+	}
+
+	*p = '\0';
+
+	err = reg_openhive(NULL, path,
+			   (strchr(p+1, '\\') != NULL) ?
+			   SEC_RIGHTS_ENUM_SUBKEYS : SEC_RIGHTS_CREATE_SUBKEY,
+			   token, &hive);
+	if (!W_ERROR_IS_OK(err)) {
+		SAFE_FREE(path);
+		return err;
+	}
+
+	err = reg_deletekey(hive, p+1);
+	SAFE_FREE(path);
+	TALLOC_FREE(hive);
+	return err;
+}
+#endif /* #if 0 */

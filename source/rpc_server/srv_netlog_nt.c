@@ -1062,7 +1062,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 				    0, /* bad_pw_count */
 				    num_gids,    /* uint32 num_groups */
 				    gids    , /* DOM_GID *gids */
-				    LOGON_EXTRA_SIDS, /* uint32 user_flgs (?) */
+				    NETLOGON_EXTRA_SIDS, /* uint32 user_flgs (?) */
 				    pdb_get_acct_ctrl(sampw),
 				    server_info->user_session_key.length ? user_session_key : NULL,
 				    server_info->lm_session_key.length ? lm_session_key : NULL,

@@ -32,8 +32,8 @@ struct dfs_Info1 {
 /* bitmap dfs_VolumeState */
 #define DFS_VOLUME_STATE_OK ( 0x1 )
 #define DFS_VOLUME_STATE_INCONSISTENT ( 0x2 )
-#define DFS_VOLUME_STATE_OFFLINE ( 0x4 )
-#define DFS_VOLUME_STATE_ONLINE ( 0x8 )
+#define DFS_VOLUME_STATE_OFFLINE ( 0x3 )
+#define DFS_VOLUME_STATE_ONLINE ( 0x4 )
 #define DFS_VOLUME_STATE_STANDALONE ( DFS_VOLUME_FLAVOR_STANDALONE )
 #define DFS_VOLUME_STATE_AD_BLOB ( DFS_VOLUME_FLAVOR_AD_BLOB )
 
@@ -238,6 +238,16 @@ struct dfs_EnumArray4 {
 	struct dfs_Info4 *s;/* [unique,size_is(count)] */
 };
 
+struct dfs_EnumArray5 {
+	uint32_t count;
+	struct dfs_Info5 *s;/* [unique,size_is(count)] */
+};
+
+struct dfs_EnumArray6 {
+	uint32_t count;
+	struct dfs_Info6 *s;/* [unique,size_is(count)] */
+};
+
 struct dfs_EnumArray200 {
 	uint32_t count;
 	struct dfs_Info200 *s;/* [unique,size_is(count)] */
@@ -253,6 +263,8 @@ union dfs_EnumInfo {
 	struct dfs_EnumArray2 *info2;/* [unique,case(2)] */
 	struct dfs_EnumArray3 *info3;/* [unique,case(3)] */
 	struct dfs_EnumArray4 *info4;/* [unique,case(4)] */
+	struct dfs_EnumArray5 *info5;/* [unique,case(5)] */
+	struct dfs_EnumArray6 *info6;/* [unique,case(6)] */
 	struct dfs_EnumArray200 *info200;/* [unique,case(200)] */
 	struct dfs_EnumArray300 *info300;/* [unique,case(300)] */
 };
@@ -485,6 +497,16 @@ struct dfs_AddStdRootForced {
 
 struct dfs_GetDcAddress {
 	struct {
+		const char *servername;/* [charset(UTF16)] */
+		const char **server_fullname;/* [ref,charset(UTF16)] */
+		uint8_t *is_root;/* [ref] */
+		uint32_t *ttl;/* [ref] */
+	} in;
+
+	struct {
+		const char **server_fullname;/* [ref,charset(UTF16)] */
+		uint8_t *is_root;/* [ref] */
+		uint32_t *ttl;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -492,6 +514,13 @@ struct dfs_GetDcAddress {
 
 
 struct dfs_SetDcAddress {
+	struct {
+		const char *servername;/* [charset(UTF16)] */
+		const char *server_fullname;/* [charset(UTF16)] */
+		uint32_t flags;
+		uint32_t ttl;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;

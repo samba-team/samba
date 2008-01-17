@@ -1233,6 +1233,10 @@ static bool api_dfs_GetDcAddress(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(dfs_GetDcAddress, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.server_fullname = r->in.server_fullname;
+	r->out.is_root = r->in.is_root;
+	r->out.ttl = r->in.ttl;
 	r->out.result = _dfs_GetDcAddress(p, r);
 
 	if (p->rng_fault_state) {

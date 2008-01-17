@@ -923,7 +923,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		/* User *DOES* know the password, update logon_time and reset
 		 * bad_pw_count */
 	
-		my_info3->user_flgs |= LOGON_CACHED_ACCOUNT;
+		my_info3->user_flgs |= NETLOGON_CACHED_ACCOUNT;
 	
 		if (my_info3->acct_flags & ACB_AUTOLOCK) {
 			return NT_STATUS_ACCOUNT_LOCKED_OUT;
@@ -959,7 +959,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		must_change_time = nt_time_to_unix(my_info3->pass_must_change_time);
 		if (must_change_time != 0 && must_change_time < time(NULL)) {
 			/* we allow grace logons when the password has expired */
-			my_info3->user_flgs |= LOGON_GRACE_LOGON;
+			my_info3->user_flgs |= NETLOGON_GRACE_LOGON;
 			/* return NT_STATUS_PASSWORD_EXPIRED; */
 			goto success;
 		}
@@ -1075,7 +1075,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		}
 
 		if ((my_info3->user_rid != DOMAIN_USER_RID_ADMIN) || 
-		    (password_properties & DOMAIN_LOCKOUT_ADMINS)) {
+		    (password_properties & DOMAIN_PASSWORD_LOCKOUT_ADMINS)) {
 			my_info3->acct_flags |= ACB_AUTOLOCK;
 		}
 	}

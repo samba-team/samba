@@ -45,11 +45,6 @@
 #define NET_DSR_GETDCNAMEEX2	0x22
 #define NET_SAMLOGON_EX		0x27
 
-/* Secure Channel types.  used in NetrServerAuthenticate negotiation */
-#define SEC_CHAN_WKSTA   2
-#define SEC_CHAN_DOMAIN  4
-#define SEC_CHAN_BDC     6
-
 /* Returned delta types */
 #define SAM_DELTA_DOMAIN_INFO    0x01
 #define SAM_DELTA_GROUP_INFO     0x02
@@ -89,32 +84,15 @@
 #define NL_CTRL_REPL_IN_PROGRESS 0x0002
 #define NL_CTRL_FULL_SYNC        0x0004
 
-#define LOGON_GUEST			0x00000001
-#define LOGON_NOENCRYPTION		0x00000002
-#define LOGON_CACHED_ACCOUNT		0x00000004
-#define LOGON_USED_LM_PASSWORD		0x00000008
-#define LOGON_EXTRA_SIDS		0x00000020
-#define LOGON_SUBAUTH_SESSION_KEY	0x00000040
-#define LOGON_SERVER_TRUST_ACCOUNT	0x00000080
-#define LOGON_NTLMV2_ENABLED		0x00000100
-#define LOGON_RESOURCE_GROUPS		0x00000200
-#define LOGON_PROFILE_PATH_RETURNED	0x00000400
-#define LOGON_GRACE_LOGON		0x01000000
 #define LOGON_KRB5_FAIL_CLOCK_SKEW	0x02000000
-
-#define SE_GROUP_MANDATORY		0x00000001
-#define SE_GROUP_ENABLED_BY_DEFAULT	0x00000002
-#define SE_GROUP_ENABLED		0x00000004
-#define SE_GROUP_OWNER 			0x00000008
-#define SE_GROUP_USE_FOR_DENY_ONLY 	0x00000010
-#define SE_GROUP_LOGON_ID 		0xC0000000
-#define SE_GROUP_RESOURCE 		0x20000000	/* Domain Local Group */
 
 /* Flags for controlling the behaviour of a particular logon */
 
-/* sets LOGON_SERVER_TRUST_ACCOUNT user_flag */
+/* sets NETLOGON_SERVER_TRUST_ACCOUNT user_flag */
+#if 0
 #define MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT	0x00000020
 #define MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT	0x00000800
+#endif
 
 /* updates the "logon time" on network logon */
 #define MSV1_0_UPDATE_LOGON_STATISTICS		0x00000004
@@ -1053,31 +1031,6 @@ typedef struct net_r_sam_deltas_info {
 
 	NTSTATUS status;
 } NET_R_SAM_DELTAS;
-
-#define DS_FORCE_REDISCOVERY            0x00000001
-#define DS_DIRECTORY_SERVICE_REQUIRED   0x00000010
-#define DS_DIRECTORY_SERVICE_PREFERRED  0x00000020
-#define DS_GC_SERVER_REQUIRED           0x00000040
-#define DS_PDC_REQUIRED                 0x00000080
-#define DS_BACKGROUND_ONLY              0x00000100
-#define DS_IP_REQUIRED                  0x00000200
-#define DS_KDC_REQUIRED                 0x00000400
-#define DS_TIMESERV_REQUIRED            0x00000800
-#define DS_WRITABLE_REQUIRED            0x00001000
-#define DS_GOOD_TIMESERV_PREFERRED      0x00002000
-#define DS_AVOID_SELF                   0x00004000
-#define DS_ONLY_LDAP_NEEDED             0x00008000
-
-#define DS_IS_FLAT_NAME                 0x00010000
-#define DS_IS_DNS_NAME                  0x00020000
-
-#define DS_RETURN_DNS_NAME              0x40000000
-#define DS_RETURN_FLAT_NAME             0x80000000
-
-#if 0 /* unknown yet */
-#define DS_IP_VERSION_AGNOSTIC
-#define DS_TRY_NEXTCLOSEST_SITE
-#endif
 
 #define DSGETDC_VALID_FLAGS ( \
     DS_FORCE_REDISCOVERY | \

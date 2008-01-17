@@ -95,6 +95,8 @@ void ndr_print_dfs_EnumArray1(struct ndr_print *ndr, const char *name, const str
 void ndr_print_dfs_EnumArray2(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray2 *r);
 void ndr_print_dfs_EnumArray3(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray3 *r);
 void ndr_print_dfs_EnumArray4(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray4 *r);
+void ndr_print_dfs_EnumArray5(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray5 *r);
+void ndr_print_dfs_EnumArray6(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray6 *r);
 void ndr_print_dfs_EnumArray200(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray200 *r);
 void ndr_print_dfs_EnumArray300(struct ndr_print *ndr, const char *name, const struct dfs_EnumArray300 *r);
 void ndr_print_dfs_EnumInfo(struct ndr_print *ndr, const char *name, const union dfs_EnumInfo *r);

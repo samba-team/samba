@@ -101,9 +101,17 @@ NTSTATUS rpccli_dfs_AddStdRootForced(struct rpc_pipe_client *cli,
 				     WERROR *werror);
 NTSTATUS rpccli_dfs_GetDcAddress(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
+				 const char *servername,
+				 const char **server_fullname,
+				 uint8_t *is_root,
+				 uint32_t *ttl,
 				 WERROR *werror);
 NTSTATUS rpccli_dfs_SetDcAddress(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
+				 const char *servername,
+				 const char *server_fullname,
+				 uint32_t flags,
+				 uint32_t ttl,
 				 WERROR *werror);
 NTSTATUS rpccli_dfs_FlushFtTable(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
