@@ -325,6 +325,9 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_DELETE_RECORD:
 		return ctdb_control_delete_record(ctdb, indata);
 
+	case CTDB_CONTROL_UPTIME:
+		return ctdb_control_uptime(ctdb, outdata);
+
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

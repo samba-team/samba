@@ -21,6 +21,7 @@
 #include "lib/events/events.h"
 #include "system/filesys.h"
 #include "popt.h"
+#include "system/time.h"
 #include "system/wait.h"
 #include "system/network.h"
 #include "cmdline.h"
@@ -155,7 +156,8 @@ int main(int argc, const char *argv[])
 	}
 
 	DEBUG(0,("Starting CTDB daemon\n"));
-
+	gettimeofday(&ctdb->ctdbd_start_time, NULL);
+	gettimeofday(&ctdb->last_recovery_time, NULL);
 	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
 	ctdb->recovery_master  = (uint32_t)-1;
 	ctdb->upcalls          = &ctdb_upcalls;
