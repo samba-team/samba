@@ -43,6 +43,7 @@ echo "password less"
 cat > test-rc-file.rc <<EOF
 certificate	cert	User certificate	FILE:$srcdir/data/test.crt,$srcdir/data/test.key
 debug	p11dbg.log
+app-fatal	true
 EOF
 
 ./test_soft_pkcs11 || exit 1
@@ -52,6 +53,7 @@ echo "password"
 cat > test-rc-file.rc <<EOF
 certificate	cert	User certificate	FILE:$srcdir/data/test.crt,$srcdir/data/test-pw.key
 debug	p11dbg.log
+app-fatal	true
 EOF
 
 ./test_soft_pkcs11 || exit 1
