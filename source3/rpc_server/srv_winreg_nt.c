@@ -370,9 +370,7 @@ WERROR _winreg_GetVersion(pipes_struct *p, struct winreg_GetVersion *r)
 	if ( !regkey )
 		return WERR_BADFID;
 	
-	*r->out.version = 0x00000005;	/* Windows 2000 registry API version */
-	
-	return WERR_OK;
+	return reg_getversion(r->out.version);
 }
 
 
@@ -1115,7 +1113,7 @@ WERROR _winreg_GetKeySecurity(pipes_struct *p, struct winreg_GetKeySecurity *r)
 	if ( !(key->key->access_granted & STD_RIGHT_READ_CONTROL_ACCESS) )
 		return WERR_ACCESS_DENIED;
 
-	err = regkey_get_secdesc(p->mem_ctx, key->key, &secdesc);
+	err = reg_getkeysecurity(p->mem_ctx, key, &secdesc);
 	if (!W_ERROR_IS_OK(err)) {
 		return err;
 	}
@@ -1161,7 +1159,7 @@ WERROR _winreg_SetKeySecurity(pipes_struct *p, struct winreg_SetKeySecurity *r)
 		return err;
 	}
 
-	return regkey_set_secdesc(key->key, secdesc);
+	return reg_setkeysecurity(key, secdesc);
 }
 
 /*******************************************************************

@@ -29,7 +29,7 @@ int main(int argc, char **argv)
 {
 	NET_API_STATUS status;
 	struct libnetapi_ctx *ctx = NULL;
-	uint8_t *buffer;
+	uint8_t *buffer = NULL;
 
 	if (argc < 3) {
 		printf("usage: getdc <hostname> <domain>\n");
@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 	} else {
 		printf("%s\n", (char *)buffer);
 	}
-
+	NetApiBufferFree(buffer);
 	libnetapi_free(ctx);
 
 	return status;

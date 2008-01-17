@@ -253,8 +253,13 @@ ERRORMAP_OBJ = libsmb/errormap.o
 PASSCHANGE_OBJ = libsmb/passchange.o
 
 
-LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
-	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o \
+LIBNDR_OBJ = librpc/ndr/ndr_basic.o \
+	     librpc/ndr/ndr.o \
+	     librpc/ndr/ndr_misc.o \
+	     librpc/gen_ndr/ndr_misc.o \
+	     librpc/ndr/ndr_sec_helper.o \
+	     librpc/ndr/ndr_string.o \
+	     librpc/ndr/sid.o \
 	     librpc/ndr/uuid.o
 
 RPCCLIENT_NDR_OBJ = rpc_client/ndr.o
@@ -268,6 +273,8 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_srvsvc.o \
 		 librpc/gen_ndr/ndr_svcctl.o \
 		 librpc/gen_ndr/ndr_eventlog.o \
+		 librpc/gen_ndr/ndr_netlogon.o \
+		 librpc/gen_ndr/ndr_samr.o \
 		 librpc/gen_ndr/ndr_notify.o \
 		 librpc/gen_ndr/ndr_libnet_join.o
 
@@ -398,6 +405,8 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_initshutdown.o \
 		   librpc/gen_ndr/cli_eventlog.o \
 		   librpc/gen_ndr/cli_wkssvc.o \
+		   librpc/gen_ndr/cli_netlogon.o \
+		   librpc/gen_ndr/cli_samr.o \
 		   $(LIBNDR_GEN_OBJ) \
 		   $(RPCCLIENT_NDR_OBJ)
 
@@ -1064,7 +1073,7 @@ modules: SHOWFLAGS $(MODULES)
 ## Perl IDL Compiler
 IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
 	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
-	epmapper.idl messaging.idl xattr.idl
+	epmapper.idl messaging.idl xattr.idl misc.idl samr.idl
 
 idl:
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
