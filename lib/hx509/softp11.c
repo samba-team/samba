@@ -769,6 +769,22 @@ read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
 	    if (soft_token.logfile == NULL)
 		st_logf("failed to open file: %s\n", name);
 		
+	} else if (strcasecmp("app-fatal", type) == 0) {
+	    char *name;
+
+	    name = strtok_r(NULL, "\t", &s);
+	    if (name == NULL) {
+		st_logf("argument to app-fatal\n");
+		continue;
+	    }
+
+	    if (strcmp(name, "true") == 0 || strcmp(name, "on") == 0)
+		soft_token.flags.app_error_fatal = 1;
+	    else if (strcmp(name, "false") == 0 || strcmp(name, "off") == 0)
+		soft_token.flags.app_error_fatal = 0;
+	    else
+		st_logf("unknown app-fatal: %s\n", name);
+
 	} else {
 	    st_logf("unknown type: %s\n", type);
 	}
