@@ -482,6 +482,21 @@ int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
 		struct timeval timeout, uint32_t destnode, 
 		struct ctdb_server_id_list **svid_list);
 
+struct ctdb_uptime {
+	struct timeval current_time;
+	struct timeval ctdbd_start_time;
+	struct timeval last_recovery_time;
+};
+
 int ctdb_socket_connect(struct ctdb_context *ctdb);
+
+/*
+  get the uptime of a remote node
+ */
+int ctdb_ctrl_uptime(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, struct ctdb_uptime **uptime);
+
+struct ctdb_client_control_state *ctdb_ctrl_uptime_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode);
+
+int ctdb_ctrl_uptime_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, struct ctdb_uptime **uptime);
 
 #endif

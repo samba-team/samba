@@ -322,6 +322,8 @@ enum ctdb_freeze_mode {CTDB_FREEZE_NONE, CTDB_FREEZE_PENDING, CTDB_FREEZE_FROZEN
 /* main state of the ctdb daemon */
 struct ctdb_context {
 	struct event_context *ev;
+	struct timeval ctdbd_start_time;
+	struct timeval last_recovery_time;
 	uint32_t recovery_mode;
 	TALLOC_CTX *tickle_update_context;
 	TALLOC_CTX *keepalive_ctx;
@@ -485,6 +487,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_TRANSACTION_COMMIT      = 66,
 		    CTDB_CONTROL_WIPE_DATABASE           = 67,
 		    CTDB_CONTROL_DELETE_RECORD           = 68,
+		    CTDB_CONTROL_UPTIME                  = 69,
 };	
 
 /*
@@ -1190,6 +1193,8 @@ int32_t ctdb_control_check_server_id(struct ctdb_context *ctdb,
 int32_t ctdb_control_unregister_server_id(struct ctdb_context *ctdb, 
 		      TDB_DATA indata);
 int32_t ctdb_control_get_server_id_list(struct ctdb_context *ctdb, 
+		      TDB_DATA *outdata);
+int32_t ctdb_control_uptime(struct ctdb_context *ctdb, 
 		      TDB_DATA *outdata);
 
 int ctdb_attach_persistent(struct ctdb_context *ctdb);

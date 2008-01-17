@@ -20,6 +20,7 @@
 #include "includes.h"
 #include "lib/events/events.h"
 #include "lib/tdb/include/tdb.h"
+#include "system/time.h"
 #include "system/network.h"
 #include "system/filesys.h"
 #include "system/wait.h"
@@ -412,6 +413,8 @@ static void ctdb_recovered_callback(struct ctdb_context *ctdb, int status, void 
 
 	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
 	talloc_free(state);
+
+	gettimeofday(&ctdb->last_recovery_time, NULL);
 }
 
 /*

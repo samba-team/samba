@@ -20,6 +20,7 @@
 
 #include "includes.h"
 #include "lib/events/events.h"
+#include "system/time.h"
 #include "system/filesys.h"
 #include "system/network.h"
 #include "popt.h"
@@ -209,6 +210,52 @@ static int control_statistics_reset(struct ctdb_context *ctdb, int argc, const c
 	return 0;
 }
 
+
+/*
+  display uptime of remote node
+ */
+static int control_uptime(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	int mypnn;
+	struct ctdb_uptime *uptime = NULL;
+	int tmp, days, hours, minutes, seconds;
+
+	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), options.pnn);
+	if (mypnn == -1) {
+		return -1;
+	}
+
+	ret = ctdb_ctrl_uptime(ctdb, ctdb, TIMELIMIT(), options.pnn, &uptime);
+	if (ret != 0) {
+		DEBUG(0, ("Unable to get uptime from node %u\n", options.pnn));
+		return ret;
+	}
+
+	printf("Current time of node  : %s", ctime(&uptime->current_time.tv_sec));
+
+	tmp = uptime->current_time.tv_sec - uptime->ctdbd_start_time.tv_sec;
+	seconds = tmp%60;
+	tmp    /= 60;
+	minutes = tmp%60;
+	tmp    /= 60;
+	hours   = tmp%24;
+	tmp    /= 24;
+	days    = tmp;
+	printf("Ctdbd start time      : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&uptime->ctdbd_start_time.tv_sec));
+
+	tmp = uptime->current_time.tv_sec - uptime->last_recovery_time.tv_sec;
+	seconds = tmp%60;
+	tmp    /= 60;
+	minutes = tmp%60;
+	tmp    /= 60;
+	hours   = tmp%24;
+	tmp    /= 24;
+	days    = tmp;
+	printf("Time of last recovery : (%03d %02d:%02d:%02d) %s", days, hours, minutes, seconds, ctime(&uptime->last_recovery_time.tv_sec));
+
+	return 0;
+}
 
 /*
   display remote ctdb status
@@ -1034,6 +1081,7 @@ static const struct {
 	const char *args;
 } ctdb_commands[] = {
 	{ "status",          control_status,            true,  "show node status" },
+	{ "uptime",          control_uptime,            true,  "show node uptime" },
 	{ "ping",            control_ping,              true,  "ping all nodes" },
 	{ "getvar",          control_getvar,            true,  "get a tunable variable",               "<name>"},
 	{ "setvar",          control_setvar,            true,  "set a tunable variable",               "<name> <value>"},

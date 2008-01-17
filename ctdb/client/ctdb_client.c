@@ -2449,3 +2449,40 @@ uint32_t ctdb_get_pnn(struct ctdb_context *ctdb)
 	return ctdb->pnn;
 }
 
+
+/*
+  get the uptime of a remote node
+ */
+struct ctdb_client_control_state *
+ctdb_ctrl_uptime_send(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode)
+{
+	return ctdb_control_send(ctdb, destnode, 0, 
+			   CTDB_CONTROL_UPTIME, 0, tdb_null, 
+			   mem_ctx, &timeout, NULL);
+}
+
+int ctdb_ctrl_uptime_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, struct ctdb_uptime **uptime)
+{
+	int ret;
+	int32_t res;
+	TDB_DATA outdata;
+
+	ret = ctdb_control_recv(ctdb, state, mem_ctx, &outdata, &res, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,(__location__ " ctdb_ctrl_uptime_recv failed\n"));
+		return -1;
+	}
+
+	*uptime = (struct ctdb_uptime *)talloc_steal(mem_ctx, outdata.dptr);
+
+	return 0;
+}
+
+int ctdb_ctrl_uptime(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct timeval timeout, uint32_t destnode, struct ctdb_uptime **uptime)
+{
+	struct ctdb_client_control_state *state;
+
+	state = ctdb_ctrl_uptime_send(ctdb, mem_ctx, timeout, destnode);
+	return ctdb_ctrl_uptime_recv(ctdb, mem_ctx, state, uptime);
+}
+
