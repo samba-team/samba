@@ -18,8 +18,8 @@
 	} initshutdown_String_sub;
 
 	typedef [public] struct {
-		[value(strlen_m(r->name->name)*2)] uint16 name_len;
-		[value(strlen_m_term(r->name->name)*2)] uint16 name_size;
+		[value(strlen_m(name->name)*2)] uint16 name_len;
+		[value(strlen_m_term(name->name)*2)] uint16 name_size;
 		initshutdown_String_sub *name;
 	} initshutdown_String;
 
