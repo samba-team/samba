@@ -3745,11 +3745,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 
 	nlink = sbuf.st_nlink;
 
-	if ((nlink > 0) && S_ISDIR(sbuf.st_mode)) {
-		/* NTFS does not seem to count ".." */
-		nlink -= 1;
-	}
-
 	if ((nlink > 0) && delete_pending) {
 		nlink -= 1;
 	}
@@ -4018,7 +4013,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			data_size = 24;
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,file_size);
-			SIVAL(pdata,16,nlink);
+			SIVAL(pdata,16,(mode&aDIR)?1:nlink);
 			SCVAL(pdata,20,delete_pending?1:0);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			SSVAL(pdata,22,0); /* Padding. */
@@ -4096,7 +4091,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			pdata += 40;
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,file_size);
-			SIVAL(pdata,16,nlink);
+			SIVAL(pdata,16,(mode&aDIR)?1:nlink);
 			SCVAL(pdata,20,delete_pending);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			SSVAL(pdata,22,0);
