@@ -423,12 +423,12 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 	char *path = NULL;
 	uint32 uiMaxSize;
 	uint32 uiRetention;
-	REGISTRY_KEY *keyinfo;
-	REGISTRY_VALUE *val;
-	REGVAL_CTR *values;
+	struct registry_key *key;
+	struct registry_value *value;
 	WERROR wresult;
 	char *elogname = info->logname;
 	TALLOC_CTX *ctx = talloc_tos();
+	bool ret = false;
 
 	DEBUG( 4, ( "sync_eventlog_params with %s\n", elogname ) );
 
@@ -451,36 +451,42 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 		return false;
 	}
 
-	wresult = regkey_open_internal( NULL, &keyinfo, path,
-					get_root_nt_token(  ), REG_KEY_READ );
+	wresult = reg_open_path(ctx, path, REG_KEY_READ, get_root_nt_token(),
+				&key);
 
 	if ( !W_ERROR_IS_OK( wresult ) ) {
 		DEBUG( 4,
 		       ( "sync_eventlog_params: Failed to open key [%s] (%s)\n",
 			 path, dos_errstr( wresult ) ) );
-		return False;
+		return false;
 	}
 
-	if ( !( values = TALLOC_ZERO_P( keyinfo, REGVAL_CTR ) ) ) {
-		TALLOC_FREE( keyinfo );
-		DEBUG( 0, ( "control_eventlog_hook: talloc() failed!\n" ) );
-
-		return False;
+	wresult = reg_queryvalue(key, key, "Retention", &value);
+	if (!W_ERROR_IS_OK(wresult)) {
+		DEBUG(4, ("Failed to query value \"Retention\": %s\n",
+			  dos_errstr(wresult)));
+		ret = false;
+		goto done;
 	}
-	fetch_reg_values( keyinfo, values );
+	uiRetention = value->v.dword;
 
-	if ( ( val = regval_ctr_getvalue( values, "Retention" ) ) != NULL )
-		uiRetention = IVAL( regval_data_p( val ), 0 );
-
-	if ( ( val = regval_ctr_getvalue( values, "MaxSize" ) ) != NULL )
-		uiMaxSize = IVAL( regval_data_p( val ), 0 );
-
-	TALLOC_FREE( keyinfo );
+	wresult = reg_queryvalue(key, key, "MaxSize", &value);
+	if (!W_ERROR_IS_OK(wresult)) {
+		DEBUG(4, ("Failed to query value \"MaxSize\": %s\n",
+			  dos_errstr(wresult)));
+		ret = false;
+		goto done;
+	}
+	uiMaxSize = value->v.dword;
 
 	tdb_store_int32( ELOG_TDB_CTX(info->etdb), EVT_MAXSIZE, uiMaxSize );
 	tdb_store_int32( ELOG_TDB_CTX(info->etdb), EVT_RETENTION, uiRetention );
 
-	return True;
+	ret = true;
+
+done:
+	TALLOC_FREE(ctx);
+	return true;
 }
 
 /********************************************************************
