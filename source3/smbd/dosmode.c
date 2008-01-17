@@ -350,7 +350,6 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 {
 	uint32 result = 0;
 	bool offline;
-	int ret;
 
 	DEBUG(8,("dos_mode: %s\n", path));
 
@@ -381,8 +380,8 @@ uint32 dos_mode(connection_struct *conn, const char *path,SMB_STRUCT_STAT *sbuf)
 	}
 
 	
-	ret = SMB_VFS_IS_OFFLINE(conn, path, sbuf, &offline);
-	if (S_ISREG(sbuf->st_mode) && (ret == 0) && offline) {
+	offline = SMB_VFS_IS_OFFLINE(conn, path, sbuf);
+	if (S_ISREG(sbuf->st_mode) && offline) {
 		result |= FILE_ATTRIBUTE_OFFLINE;
 	}
 

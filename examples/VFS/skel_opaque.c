@@ -585,9 +585,9 @@ static bool skel_aio_force(struct vfs_handle_struct *handle, struct files_struct
 	return vfswrap_aio_force(NULL, fsp);
 }
 
-static int skel_is_offline(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf, bool *offline)
+static bool skel_is_offline(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf)
 {
-	return vfswrap_set_offline(NULL, path, sbuf, offline);
+	return vfswrap_is_offline(NULL, path, sbuf);
 }
 
 static int skel_set_offline(struct vfs_handle_struct *handle, const char *path)
