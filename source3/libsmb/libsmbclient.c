@@ -1037,8 +1037,7 @@ smbc_attr_server(TALLOC_CTX *ctx,
 		const char *share,
 		char **pp_workgroup,
 		char **pp_username,
-		char **pp_password,
-		POLICY_HND *pol)
+		char **pp_password)
 {
         int flags;
         struct sockaddr_storage ss;
@@ -1122,36 +1121,34 @@ smbc_attr_server(TALLOC_CTX *ctx,
                 ZERO_STRUCTP(ipc_srv);
                 ipc_srv->cli = ipc_cli;
 
-                if (pol) {
-                        pipe_hnd = cli_rpc_pipe_open_noauth(ipc_srv->cli,
-                                                            PI_LSARPC,
-                                                            &nt_status);
-                        if (!pipe_hnd) {
-                                DEBUG(1, ("cli_nt_session_open fail!\n"));
-                                errno = ENOTSUP;
-                                cli_shutdown(ipc_srv->cli);
-                                free(ipc_srv);
-                                return NULL;
-                        }
+                pipe_hnd = cli_rpc_pipe_open_noauth(ipc_srv->cli,
+                                                    PI_LSARPC,
+                                                    &nt_status);
+                if (!pipe_hnd) {
+                    DEBUG(1, ("cli_nt_session_open fail!\n"));
+                    errno = ENOTSUP;
+                    cli_shutdown(ipc_srv->cli);
+                    free(ipc_srv);
+                    return NULL;
+                }
 
-                        /*
-                         * Some systems don't support
-                         * SEC_RIGHTS_MAXIMUM_ALLOWED, but NT sends 0x2000000
-                         * so we might as well do it too.
-                         */
+                /*
+                 * Some systems don't support
+                 * SEC_RIGHTS_MAXIMUM_ALLOWED, but NT sends 0x2000000
+                 * so we might as well do it too.
+                 */
 
-                        nt_status = rpccli_lsa_open_policy(
-                                pipe_hnd,
-                                talloc_tos(),
-                                True,
-                                GENERIC_EXECUTE_ACCESS,
-                                pol);
+                nt_status = rpccli_lsa_open_policy(
+                    pipe_hnd,
+                    talloc_tos(),
+                    True,
+                    GENERIC_EXECUTE_ACCESS,
+                    &ipc_srv->pol);
 
-                        if (!NT_STATUS_IS_OK(nt_status)) {
-                                errno = smbc_errno(context, ipc_srv->cli);
-                                cli_shutdown(ipc_srv->cli);
-                                return NULL;
-                        }
+                if (!NT_STATUS_IS_OK(nt_status)) {
+                    errno = smbc_errno(context, ipc_srv->cli);
+                    cli_shutdown(ipc_srv->cli);
+                    return NULL;
                 }
 
                 /* now add it to the cache (internal or external) */
@@ -5728,7 +5725,6 @@ smbc_setxattr_ctx(SMBCCTX *context,
 	char *password = NULL;
 	char *workgroup = NULL;
 	char *path = NULL;
-        POLICY_HND pol;
         DOS_ATTR_DESC *dad = NULL;
         struct {
                 const char * create_time_attr;
@@ -5787,8 +5783,7 @@ smbc_setxattr_ctx(SMBCCTX *context,
 
         if (! srv->no_nt_session) {
                 ipc_srv = smbc_attr_server(frame, context, server, share,
-                                           &workgroup, &user, &password,
-                                           &pol);
+                                           &workgroup, &user, &password);
                 if (! ipc_srv) {
                         srv->no_nt_session = True;
                 }
@@ -5814,7 +5809,7 @@ smbc_setxattr_ctx(SMBCCTX *context,
 
                 if (ipc_srv) {
                         ret = cacl_set(talloc_tos(), srv->cli,
-                                       ipc_srv->cli, &pol, path,
+                                       ipc_srv->cli, &ipc_srv->pol, path,
                                        namevalue,
                                        (*namevalue == '*'
                                         ? SMBC_XATTR_MODE_SET
@@ -5878,7 +5873,7 @@ smbc_setxattr_ctx(SMBCCTX *context,
                         ret = -1;
                 } else {
                         ret = cacl_set(talloc_tos(), srv->cli,
-                                       ipc_srv->cli, &pol, path,
+                                       ipc_srv->cli, &ipc_srv->pol, path,
                                        namevalue,
                                        (*namevalue == '*'
                                         ? SMBC_XATTR_MODE_SET
@@ -5908,7 +5903,7 @@ smbc_setxattr_ctx(SMBCCTX *context,
                         ret = -1;
                 } else {
                         ret = cacl_set(talloc_tos(), srv->cli,
-                                       ipc_srv->cli, &pol, path,
+                                       ipc_srv->cli, &ipc_srv->pol, path,
                                        namevalue, SMBC_XATTR_MODE_CHOWN, 0);
                 }
 		TALLOC_FREE(frame);
@@ -5935,7 +5930,7 @@ smbc_setxattr_ctx(SMBCCTX *context,
                         ret = -1;
                 } else {
                         ret = cacl_set(talloc_tos(), srv->cli,
-                                       ipc_srv->cli, &pol, path,
+                                       ipc_srv->cli, &ipc_srv->pol, path,
                                        namevalue, SMBC_XATTR_MODE_CHOWN, 0);
                 }
 		TALLOC_FREE(frame);
@@ -6026,7 +6021,6 @@ smbc_getxattr_ctx(SMBCCTX *context,
 	char *password = NULL;
 	char *workgroup = NULL;
 	char *path = NULL;
-        POLICY_HND pol;
         struct {
                 const char * create_time_attr;
                 const char * access_time_attr;
@@ -6083,8 +6077,7 @@ smbc_getxattr_ctx(SMBCCTX *context,
 
         if (! srv->no_nt_session) {
                 ipc_srv = smbc_attr_server(frame, context, server, share,
-                                           &workgroup, &user, &password,
-                                           &pol);
+                                           &workgroup, &user, &password);
                 if (! ipc_srv) {
                         srv->no_nt_session = True;
                 }
@@ -6137,7 +6130,7 @@ smbc_getxattr_ctx(SMBCCTX *context,
                 /* Yup. */
                 ret = cacl_get(context, talloc_tos(), srv,
                                ipc_srv == NULL ? NULL : ipc_srv->cli, 
-                               &pol, path,
+                               &ipc_srv->pol, path,
                                CONST_DISCARD(char *, name),
                                CONST_DISCARD(char *, value), size);
                 if (ret < 0 && errno == 0) {
@@ -6168,7 +6161,6 @@ smbc_removexattr_ctx(SMBCCTX *context,
 	char *password = NULL;
 	char *workgroup = NULL;
 	char *path = NULL;
-        POLICY_HND pol;
 	TALLOC_CTX *frame = talloc_stackframe();
 
         if (!context || !context->internal ||
@@ -6219,8 +6211,7 @@ smbc_removexattr_ctx(SMBCCTX *context,
 
         if (! srv->no_nt_session) {
                 ipc_srv = smbc_attr_server(frame, context, server, share,
-                                           &workgroup, &user, &password,
-                                           &pol);
+                                           &workgroup, &user, &password);
                 if (! ipc_srv) {
                         srv->no_nt_session = True;
                 }
@@ -6239,7 +6230,7 @@ smbc_removexattr_ctx(SMBCCTX *context,
 
                 /* Yup. */
                 ret = cacl_set(talloc_tos(), srv->cli,
-                               ipc_srv->cli, &pol, path,
+                               ipc_srv->cli, &ipc_srv->pol, path,
                                NULL, SMBC_XATTR_MODE_REMOVE_ALL, 0);
 		TALLOC_FREE(frame);
                 return ret;
@@ -6259,7 +6250,7 @@ smbc_removexattr_ctx(SMBCCTX *context,
 
                 /* Yup. */
                 ret = cacl_set(talloc_tos(), srv->cli,
-                               ipc_srv->cli, &pol, path,
+                               ipc_srv->cli, &ipc_srv->pol, path,
                                name + 19, SMBC_XATTR_MODE_REMOVE, 0);
 		TALLOC_FREE(frame);
                 return ret;
