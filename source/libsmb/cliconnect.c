@@ -872,13 +872,26 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			!strequal(star_smbserver_name,
 				cli->desthost)) {
 			char *realm = NULL;
+			char *machine = NULL;
+			char *host = NULL;
 			DEBUG(3,("cli_session_setup_spnego: got a "
 				"bad server principal, trying to guess ...\n"));
+
+			host = strchr(cli->desthost, '.');
+			if (host) {
+				machine = SMB_STRNDUP(cli->desthost,
+					host - cli->desthost);
+			} else {
+				machine = SMB_STRDUP(cli->desthost);
+			}
+			if (machine == NULL) {
+				return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+			}
 
 			realm = kerberos_get_default_realm_from_ccache();
 			if (realm && *realm) {
 				if (asprintf(&principal, "%s$@%s",
-						cli->desthost, realm) < 0) {
+						machine, realm) < 0) {
 					SAFE_FREE(realm);
 					return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 				}
@@ -886,6 +899,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 					"server principal=%s\n",
 					principal ? principal : "<null>"));
 			}
+			SAFE_FREE(machine);
 			SAFE_FREE(realm);
 		}
 
