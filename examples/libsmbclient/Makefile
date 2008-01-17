@@ -18,6 +18,7 @@ LIBSMBCLIENT = -lwbclient -lsmbclient -ldl -lresolv
 TESTS=	testsmbc \
 	testacl \
 	testacl2 \
+	testacl3 \
 	testbrowse \
 	testbrowse2 \
 	teststat \
@@ -46,6 +47,10 @@ testacl: testacl.o
 
 testacl2: testacl2.o
 	@echo Linking testacl2
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
+
+testacl3: testacl3.o
+	@echo Linking testacl3
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
 
 testbrowse: testbrowse.o
