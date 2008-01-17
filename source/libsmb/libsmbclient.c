@@ -2264,6 +2264,9 @@ smbc_setup_stat(SMBCCTX *context,
 #ifdef HAVE_STAT_ST_BLOCKS
 	st->st_blocks = (size+511)/512;
 #endif
+#ifdef HAVE_STRUCT_STAT_ST_RDEV
+	st->st_rdev = 0;
+#endif
 	st->st_uid = getuid();
 	st->st_gid = getgid();
 
@@ -2367,7 +2370,7 @@ smbc_stat_ctx(SMBCCTX *context,
 
 	st->st_ino = ino;
 
-	smbc_setup_stat(context, st, path, size, mode);
+	smbc_setup_stat(context, st, (char *) fname, size, mode);
 
 	set_atimespec(st, access_time_ts);
 	set_ctimespec(st, change_time_ts);
