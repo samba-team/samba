@@ -143,7 +143,6 @@
 /* Offline operations */
 #define SMB_VFS_IS_OFFLINE(conn,path,sbuf) ((conn)->vfs.ops.is_offline((conn)->vfs.handles.is_offline,(path),(sbuf)))
 #define SMB_VFS_SET_OFFLINE(conn,path) ((conn)->vfs.ops.set_offline((conn)->vfs.handles.set_offline,(path)))
-#define SMB_VFS_IS_REMOTESTORAGE(conn,path) ((conn)->vfs.ops.is_remotestorage((conn)->vfs.handles.is_remotestorage,(path)))
 
 /*******************************************************************
  Don't access conn->vfs_opaque.ops directly!!!
@@ -268,7 +267,6 @@
 /* Offline operations */
 #define SMB_VFS_OPAQUE_IS_OFFLINE(conn,path,sbuf) ((conn)->vfs_opaque.ops.is_offline((conn)->vfs_opaque.handles.is_offline,(path),(sbuf)))
 #define SMB_VFS_OPAQUE_SET_OFFLINE(conn,path) ((conn)->vfs_opaque.ops.set_offline((conn)->vfs_opaque.handles.set_offline,(path)))
-#define SMB_VFS_OPAQUE_IS_REMOTESTORAGE(conn,path) ((conn)->vfs_opaque.ops.is_remotestorage((conn)->vfs_opaque.handles.is_remotestorage,(path)))
 
 /*******************************************************************
  Don't access handle->vfs_next.ops.* directly!!!
@@ -394,6 +392,5 @@
 /* Offline operations */
 #define SMB_VFS_NEXT_IS_OFFLINE(handle,path,sbuf) ((handle)->vfs_next.ops.is_offline((handle)->vfs_next.handles.is_offline,(path),(sbuf)))
 #define SMB_VFS_NEXT_SET_OFFLINE(handle,path) ((handle)->vfs_next.ops.set_offline((handle)->vfs_next.handles.set_offline,(path)))
-#define SMB_VFS_NEXT_IS_REMOTESTORAGE(handle,path) ((handle)->vfs_next.ops.is_remotestorage((handle)->vfs_next.handles.is_remotestorage,(path)))
 
 #endif /* _VFS_MACROS_H */

@@ -294,8 +294,14 @@ static int tsmsm_set_offline(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static bool tsmsm_is_remotestorage(struct vfs_handle_struct *handle, const char *path) {
-	return True;
+static bool tsmsm_statvfs(struct vfs_handle_struct *handle,  const char *path, vfs_statvfs_struct *statbuf)
+{
+	bool result;
+
+	result = SMB_VFS_NEXT_STATVFS(handle, path, statbuf);
+	statbuf->FsCapabilities | = FILE_SUPPORTS_REMOTE_STORAGE | FILE_SUPPORTS_REPARSE_POINTS;
+
+	return result;
 }
 
 static vfs_op_tuple vfs_tsmsm_ops[] = {
@@ -303,6 +309,8 @@ static vfs_op_tuple vfs_tsmsm_ops[] = {
 	/* Disk operations */
 
 	{SMB_VFS_OP(tsmsm_connect),	SMB_VFS_OP_CONNECT,
+	 SMB_VFS_LAYER_TRANSPARENT},
+	{SMB_VFS_OP(tsmsm_statvfs),	SMB_VFS_OP_STATVFS,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(tsmsm_aio_force),	SMB_VFS_OP_AIO_FORCE,
 	 SMB_VFS_LAYER_TRANSPARENT},
@@ -314,11 +322,9 @@ static vfs_op_tuple vfs_tsmsm_ops[] = {
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(tsmsm_sendfile),	SMB_VFS_OP_SENDFILE,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(tsmsm_is_offline),SMB_VFS_OP_IS_OFFLINE,
+	{SMB_VFS_OP(tsmsm_is_offline),	SMB_VFS_OP_IS_OFFLINE,
 	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(tsmsm_set_offline),SMB_VFS_OP_SET_OFFLINE,
-	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(tsmsm_is_remotestorage),SMB_VFS_OP_IS_REMOTESTORAGE,
+	{SMB_VFS_OP(tsmsm_set_offline),	SMB_VFS_OP_SET_OFFLINE,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* Finish VFS operations definition */

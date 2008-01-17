@@ -2495,12 +2495,10 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 			if(lp_nt_acl_support(SNUM(conn))) {
 				additional_flags |= FILE_PERSISTENT_ACLS;
 			}
-			
-			if(SMB_VFS_IS_REMOTESTORAGE(conn, lp_pathname(SNUM(conn)))) {
-				additional_flags |= FILE_SUPPORTS_REMOTE_STORAGE;
-				additional_flags |= FILE_SUPPORTS_REPARSE_POINTS;
-			}
-			
+
+			/* Capabilities are filled in at connection time through STATVFS call */
+			additional_flags |= conn->fs_capabilities;
+
 			SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
 				FILE_SUPPORTS_OBJECT_IDS|FILE_UNICODE_ON_DISK|
 				additional_flags); /* FS ATTRIBUTES */
