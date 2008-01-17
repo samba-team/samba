@@ -253,8 +253,13 @@ ERRORMAP_OBJ = libsmb/errormap.o
 PASSCHANGE_OBJ = libsmb/passchange.o
 
 
-LIBNDR_OBJ = librpc/ndr/ndr_basic.o librpc/ndr/ndr.o librpc/ndr/ndr_misc.o \
-	     librpc/ndr/ndr_sec_helper.o librpc/ndr/ndr_string.o librpc/ndr/sid.o \
+LIBNDR_OBJ = librpc/ndr/ndr_basic.o \
+	     librpc/ndr/ndr.o \
+	     librpc/ndr/ndr_misc.o \
+	     librpc/gen_ndr/ndr_misc.o \
+	     librpc/ndr/ndr_sec_helper.o \
+	     librpc/ndr/ndr_string.o \
+	     librpc/ndr/sid.o \
 	     librpc/ndr/uuid.o
 
 RPCCLIENT_NDR_OBJ = rpc_client/ndr.o
@@ -1064,7 +1069,7 @@ modules: SHOWFLAGS $(MODULES)
 ## Perl IDL Compiler
 IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
 	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
-	epmapper.idl messaging.idl xattr.idl
+	epmapper.idl messaging.idl xattr.idl misc.idl
 
 idl:
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \

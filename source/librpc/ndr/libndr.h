@@ -22,7 +22,7 @@
 
 #define _PRINTF_ATTRIBUTE(a,b) 
 
-#include "librpc/ndr/misc.h"
+#include "librpc/gen_ndr/misc.h"
 #include "librpc/ndr/security.h"
 
 /*
