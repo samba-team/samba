@@ -215,10 +215,10 @@ struct netr_USER_KEY16 {
 
 struct netr_PasswordHistory {
 	uint16_t nt_length;
-	uint16_t nt_size;
+	uint16_t nt_size;/* [value(nt_length)] */
 	uint32_t nt_flags;
 	uint16_t lm_length;
-	uint16_t lm_size;
+	uint16_t lm_size;/* [value(lm_length)] */
 	uint32_t lm_flags;
 	uint8_t *nt_history;
 	uint8_t *lm_history;

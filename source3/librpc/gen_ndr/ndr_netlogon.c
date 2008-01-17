@@ -2042,10 +2042,10 @@ static enum ndr_err_code ndr_push_netr_PasswordHistory(struct ndr_push *ndr, int
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->nt_length));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->nt_size));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->nt_length));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->nt_flags));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm_length));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm_size));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->lm_length));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->lm_flags));
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->nt_history, r->nt_length));
 		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->lm_history, r->lm_length));
@@ -2080,10 +2080,10 @@ _PUBLIC_ void ndr_print_netr_PasswordHistory(struct ndr_print *ndr, const char *
 	ndr_print_struct(ndr, name, "netr_PasswordHistory");
 	ndr->depth++;
 	ndr_print_uint16(ndr, "nt_length", r->nt_length);
-	ndr_print_uint16(ndr, "nt_size", r->nt_size);
+	ndr_print_uint16(ndr, "nt_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->nt_length:r->nt_size);
 	ndr_print_uint32(ndr, "nt_flags", r->nt_flags);
 	ndr_print_uint16(ndr, "lm_length", r->lm_length);
-	ndr_print_uint16(ndr, "lm_size", r->lm_size);
+	ndr_print_uint16(ndr, "lm_size", (ndr->flags & LIBNDR_PRINT_SET_VALUES)?r->lm_length:r->lm_size);
 	ndr_print_uint32(ndr, "lm_flags", r->lm_flags);
 	ndr_print_array_uint8(ndr, "nt_history", r->nt_history, r->nt_length);
 	ndr_print_array_uint8(ndr, "lm_history", r->lm_history, r->lm_length);

@@ -330,10 +330,10 @@ interface netlogon
 
 	typedef struct {
 		uint16 nt_length;
-		uint16 nt_size;
+		[value(nt_length)] uint16 nt_size;
 		uint32 nt_flags;
 		uint16 lm_length;
-		uint16 lm_size;
+		[value(lm_length)] uint16 lm_size;
 		uint32 lm_flags;
 		uint8 nt_history[nt_length];
 		uint8 lm_history[lm_length];
