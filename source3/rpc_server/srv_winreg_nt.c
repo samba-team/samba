@@ -370,9 +370,7 @@ WERROR _winreg_GetVersion(pipes_struct *p, struct winreg_GetVersion *r)
 	if ( !regkey )
 		return WERR_BADFID;
 	
-	*r->out.version = 0x00000005;	/* Windows 2000 registry API version */
-	
-	return WERR_OK;
+	return reg_getversion(r->out.version);
 }
 
 

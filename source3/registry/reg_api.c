@@ -50,7 +50,7 @@
  * 0x17		winreg_UnLoadKey
  * 0x18		winreg_InitiateSystemShutdown
  * 0x19		winreg_AbortSystemShutdown
- * 0x1a		winreg_GetVersion
+ * 0x1a		winreg_GetVersion			reg_getversion
  * 0x1b		winreg_OpenHKCC
  * 0x1c		winreg_OpenHKDD
  * 0x1d		winreg_QueryMultipleValues
@@ -690,6 +690,16 @@ WERROR reg_setkeysecurity(struct registry_key *key,
 			  struct security_descriptor *psecdesc)
 {
 	return regkey_set_secdesc(key->key, psecdesc);
+}
+
+WERROR reg_getversion(uint32_t *version)
+{
+	if (version == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	*version = 0x00000005; /* Windows 2000 registry API version */
+	return WERR_OK;
 }
 
 /**********************************************************************
