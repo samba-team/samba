@@ -35,6 +35,9 @@
 #include "pkcs11.h"
 #include <err.h>
 
+static CK_FUNCTION_LIST_PTR func;
+
+
 static CK_RV
 find_object(CK_SESSION_HANDLE session, 
 	    char *id,
@@ -86,9 +89,13 @@ main(int argc, char **argv)
     CK_SESSION_HANDLE session;
     CK_OBJECT_HANDLE public, private;
 
-    C_Initialize(NULL_PTR);
+    ret = C_GetFunctionList(&func);
+    if (ret != CKR_OK)
+	errx(1, "C_GetFunctionList failed: %d", (int)ret);
 
-    ret = C_GetSlotList(FALSE, NULL, &num_slots);
+    (*func->C_Initialize)(NULL_PTR);
+
+    ret = (*func->C_GetSlotList)(FALSE, NULL, &num_slots);
     if (ret != CKR_OK)
 	errx(1, "C_GetSlotList1 failed: %d", (int)ret);
 
@@ -98,35 +105,37 @@ main(int argc, char **argv)
     if ((slot_ids = calloc(1, num_slots * sizeof(*slot_ids))) == NULL)
 	err(1, "alloc slots failed");
 
-    ret = C_GetSlotList(FALSE, slot_ids, &num_slots);
+    ret = (*func->C_GetSlotList)(FALSE, slot_ids, &num_slots);
     if (ret != CKR_OK)
 	errx(1, "C_GetSlotList2 failed: %d", (int)ret);
 
     slot = slot_ids[0];
     free(slot_ids);
 
-    ret = C_GetSlotInfo(slot, &slot_info);
+    ret = (*func->C_GetSlotInfo)(slot, &slot_info);
     if (ret)
 	errx(1, "C_GetSlotInfo failed: %d", (int)ret);
 
     if ((slot_info.flags & CKF_TOKEN_PRESENT) == 0)
 	errx(1, "no token present");
 
-    ret = C_OpenSession(slot, CKF_SERIAL_SESSION, NULL, NULL, &session);
+    ret = (*func->C_OpenSession)(slot, CKF_SERIAL_SESSION, 
+				 NULL, NULL, &session);
     if (ret != CKR_OK)
 	errx(1, "C_OpenSession failed: %d", (int)ret);
     
-    ret = C_GetTokenInfo(slot, &token_info);
+    ret = (*func->C_GetTokenInfo)(slot, &token_info);
     if (ret)
 	errx(1, "C_GetTokenInfo1 failed: %d", (int)ret);
 
     if (token_info.flags & CKF_LOGIN_REQUIRED) {
-	ret = C_Login(session, CKU_USER, (unsigned char*)"foobar", 6);
+	ret = (*func->C_Login)(session, CKU_USER,
+			       (unsigned char*)"foobar", 6);
 	if (ret != CKR_OK)
 	    errx(1, "C_Login failed: %d", (int)ret);
     }
 
-    ret = C_GetTokenInfo(slot, &token_info);
+    ret = (*func->C_GetTokenInfo)(slot, &token_info);
     if (ret)
 	errx(1, "C_GetTokenInfo2 failed: %d", (int)ret);
 
@@ -147,24 +156,24 @@ main(int argc, char **argv)
 	memset(&mechanism, 0, sizeof(mechanism));
 	mechanism.mechanism = CKM_RSA_PKCS;
 
-	ret = C_SignInit(session, &mechanism, private);
+	ret = (*func->C_SignInit)(session, &mechanism, private);
 	if (ret != CKR_OK)
 	    return 1;
 	
 	ck_sigsize = sizeof(signature);
-	ret = C_Sign(session, (CK_BYTE *)sighash, strlen(sighash),
-		     (CK_BYTE *)signature, &ck_sigsize);
+	ret = (*func->C_Sign)(session, (CK_BYTE *)sighash, strlen(sighash),
+			      (CK_BYTE *)signature, &ck_sigsize);
 	if (ret != CKR_OK) {
 	    printf("C_Sign failed with: %d\n", (int)ret);
 	    return 1;
 	}
 
-	ret = C_VerifyInit(session, &mechanism, public);
+	ret = (*func->C_VerifyInit)(session, &mechanism, public);
 	if (ret != CKR_OK)
 	    return 1;
 
-	ret = C_Verify(session, (CK_BYTE *)signature, ck_sigsize, 
-		       (CK_BYTE *)sighash, strlen(sighash));
+	ret = (*func->C_Verify)(session, (CK_BYTE *)signature, ck_sigsize, 
+				(CK_BYTE *)sighash, strlen(sighash));
 	if (ret != CKR_OK) {
 	    printf("message: %d\n", (int)ret);
 	    return 1;
@@ -180,25 +189,25 @@ main(int argc, char **argv)
 	memset(&mechanism, 0, sizeof(mechanism));
 	mechanism.mechanism = CKM_RSA_PKCS;
 
-	ret = C_EncryptInit(session, &mechanism, public);
+	ret = (*func->C_EncryptInit)(session, &mechanism, public);
 	if (ret != CKR_OK)
 	    return 1;
 	
 	ck_sigsize = sizeof(signature);
-	ret = C_Encrypt(session, (CK_BYTE *)sighash, strlen(sighash),
-		     (CK_BYTE *)signature, &ck_sigsize);
+	ret = (*func->C_Encrypt)(session, (CK_BYTE *)sighash, strlen(sighash),
+				 (CK_BYTE *)signature, &ck_sigsize);
 	if (ret != CKR_OK) {
 	    printf("message: %d\n", (int)ret);
 	    return 1;
 	}
 
-	ret = C_DecryptInit(session, &mechanism, private);
+	ret = (*func->C_DecryptInit)(session, &mechanism, private);
 	if (ret != CKR_OK)
 	    return 1;
 
 	outsize = sizeof(outdata);
-	ret = C_Decrypt(session, (CK_BYTE *)signature, ck_sigsize, 
-		       (CK_BYTE *)outdata, &outsize);
+	ret = (*func->C_Decrypt)(session, (CK_BYTE *)signature, ck_sigsize, 
+				 (CK_BYTE *)outdata, &outsize);
 	if (ret != CKR_OK) {
 	    printf("message: %d\n", (int)ret);
 	    return 1;
@@ -209,11 +218,11 @@ main(int argc, char **argv)
     }
 #endif
 
-    ret = C_CloseSession(session);
+    ret = (*func->C_CloseSession)(session);
     if (ret != CKR_OK)
 	return 1;
 
-    C_Finalize(NULL_PTR);
+    (*func->C_Finalize)(NULL_PTR);
 
     return 0;
 }
