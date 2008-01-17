@@ -137,7 +137,6 @@ static int tsmsm_connect(struct vfs_handle_struct *handle,
 }
 
 static int tsmsm_is_offline(struct vfs_handle_struct *handle, 
-			    struct connection_struct *conn,
 			    const char *path,
 			    SMB_STRUCT_STAT *stbuf,
 			    bool *offline) {
@@ -171,7 +170,7 @@ static int tsmsm_is_offline(struct vfs_handle_struct *handle,
 		ret = -1;
 		DEBUG(2,("dm_path_to_handle failed - assuming offline (%s) - %s\n", 
 			 path, strerror(errno)));
-		*offline = True;
+		*offline = true;
 		goto done;
 	}
 
@@ -210,7 +209,7 @@ static bool tsmsm_aio_force(struct vfs_handle_struct *handle, struct files_struc
 			  sbuf.st_blocks, sbuf.st_size, tsmd->online_ratio));
 		return !(512 * (off_t)sbuf.st_blocks >= sbuf.st_size * tsmd->online_ratio);
 	}
-	return False;
+	return false;
 }
 
 static ssize_t tsmsm_aio_return(struct vfs_handle_struct *handle, struct files_struct *fsp, 
@@ -277,7 +276,7 @@ static ssize_t tsmsm_pwrite(struct vfs_handle_struct *handle, struct files_struc
 	return result;
 }
 
-static int tsmsm_set_offline(struct vfs_handle_struct *handle, struct connection_struct *conn, 
+static int tsmsm_set_offline(struct vfs_handle_struct *handle, 
 			     const char *path) {
 	struct tsmsm_struct *tsmd = (struct tsmsm_struct *) handle->data;
 	int result = 0;
@@ -297,7 +296,7 @@ static int tsmsm_set_offline(struct vfs_handle_struct *handle, struct connection
 	return result;
 }
 
-static bool tsmsm_is_remotestorage(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path) {
+static bool tsmsm_is_remotestorage(struct vfs_handle_struct *handle, const char *path) {
 	return True;
 }
 
