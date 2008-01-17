@@ -121,6 +121,8 @@ interface security
 	const string SID_NULL = "S-1-0-0";
 
 	/* the world domain */
+	const string NAME_WORLD       = "WORLD";
+
 	const string SID_WORLD_DOMAIN = "S-1-1";
 	const string SID_WORLD        = "S-1-1-0";
 
@@ -130,6 +132,8 @@ interface security
 	const string SID_CREATOR_GROUP        = "S-1-3-1";
 
 	/* SECURITY_NT_AUTHORITY */
+	const string NAME_NT_AUTHORITY            = "NT AUTHORITY";
+
 	const string SID_NT_AUTHORITY             = "S-1-5";
 	const string SID_NT_DIALUP                = "S-1-5-1";
 	const string SID_NT_NETWORK               = "S-1-5-2";
@@ -150,6 +154,8 @@ interface security
 	const string SID_NT_NETWORK_SERVICE       = "S-1-5-20";
 
 	/* SECURITY_BUILTIN_DOMAIN_RID */
+	const string NAME_BUILTIN                  = "BUILTIN";
+
 	const string SID_BUILTIN                   = "S-1-5-32";
 	const string SID_BUILTIN_ADMINISTRATORS    = "S-1-5-32-544";
 	const string SID_BUILTIN_USERS             = "S-1-5-32-545";
@@ -169,6 +175,7 @@ interface security
 	const int DOMAIN_RID_GUEST                 = 501;
 	const int DOMAIN_RID_ADMINS                = 512;
 	const int DOMAIN_RID_USERS                 = 513;
+	const int DOMAIN_RID_DOMAIN_MEMBERS        = 515;
 	const int DOMAIN_RID_DCS                   = 516;
 	const int DOMAIN_RID_CERT_ADMINS           = 517;
 	const int DOMAIN_RID_SCHEMA_ADMINS         = 518;
@@ -239,7 +246,7 @@ interface security
 		SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT	= 8
 	} security_ace_type;
 
-	typedef bitmap {
+	typedef [bitmap32bit] bitmap {
 		SEC_ACE_OBJECT_TYPE_PRESENT		= 0x00000001,
 		SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT	= 0x00000002
 	} security_ace_object_flags;
