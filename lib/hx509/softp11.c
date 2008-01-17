@@ -48,11 +48,6 @@ struct st_object {
     CK_OBJECT_HANDLE object_handle;
     struct st_attr *attrs;
     int num_attributes;
-    enum {
-	STO_T_CERTIFICATE,
-	STO_T_PRIVATE_KEY,
-	STO_T_PUBLIC_KEY
-    } type;
     hx509_cert cert;
 };
 
@@ -420,9 +415,9 @@ add_cert(hx509_context hxctx, void *ctx, hx509_cert cert)
 {
     struct foo *foo = (struct foo *)ctx;
     struct st_object *o = NULL;
+    CK_OBJECT_CLASS type;
     CK_BBOOL bool_true = CK_TRUE;
     CK_BBOOL bool_false = CK_FALSE;
-    CK_OBJECT_CLASS c;
     CK_CERTIFICATE_TYPE cert_type = CKC_X_509;
     CK_KEY_TYPE key_type;
     CK_MECHANISM_TYPE mech_type;
@@ -460,15 +455,6 @@ add_cert(hx509_context hxctx, void *ctx, hx509_cert cert)
 		goto out;
     }
 
-
-    o = add_st_object();
-    if (o == NULL) {
-	ret = CKR_DEVICE_MEMORY;
-	goto out;
-    }
-    o->type = STO_T_CERTIFICATE;
-    o->cert = hx509_cert_ref(cert);
-
     {
 	AlgorithmIdentifier alg;
 
@@ -484,8 +470,16 @@ add_cert(hx509_context hxctx, void *ctx, hx509_cert cert)
     }
 
 
-    c = CKO_CERTIFICATE;
-    add_object_attribute(o, 0, CKA_CLASS, &c, sizeof(c));
+    type = CKO_CERTIFICATE;
+    o = add_st_object();
+    if (o == NULL) {
+	ret = CKR_DEVICE_MEMORY;
+	goto out;
+    }
+
+    o->cert = hx509_cert_ref(cert);
+
+    add_object_attribute(o, 0, CKA_CLASS, &type, sizeof(type));
     add_object_attribute(o, 0, CKA_TOKEN, &bool_true, sizeof(bool_true));
     add_object_attribute(o, 0, CKA_PRIVATE, &bool_false, sizeof(bool_false));
     add_object_attribute(o, 0, CKA_MODIFIABLE, &bool_false, sizeof(bool_false));
@@ -502,16 +496,15 @@ add_cert(hx509_context hxctx, void *ctx, hx509_cert cert)
 
     st_logf("add cert ok: %lx\n", (unsigned long)OBJECT_ID(o));
 
+    type = CKO_PUBLIC_KEY;
     o = add_st_object();
     if (o == NULL) {
 	ret = CKR_DEVICE_MEMORY;
 	goto out;
     }
-    o->type = STO_T_PUBLIC_KEY;
     o->cert = hx509_cert_ref(cert);
 
-    c = CKO_PUBLIC_KEY;
-    add_object_attribute(o, 0, CKA_CLASS, &c, sizeof(c));
+    add_object_attribute(o, 0, CKA_CLASS, &type, sizeof(type));
     add_object_attribute(o, 0, CKA_TOKEN, &bool_true, sizeof(bool_true));
     add_object_attribute(o, 0, CKA_PRIVATE, &bool_false, sizeof(bool_false));
     add_object_attribute(o, 0, CKA_MODIFIABLE, &bool_false, sizeof(bool_false));
@@ -540,16 +533,15 @@ add_cert(hx509_context hxctx, void *ctx, hx509_cert cert)
     if (hx509_cert_have_private_key(cert)) {
 	CK_FLAGS flags;
 
+	type = CKO_PRIVATE_KEY;
 	o = add_st_object();
 	if (o == NULL) {
 	    ret = CKR_DEVICE_MEMORY;
 	    goto out;
 	}
-	o->type = STO_T_PRIVATE_KEY;
 	o->cert = hx509_cert_ref(cert);
 
-	c = CKO_PRIVATE_KEY;
-	add_object_attribute(o, 0, CKA_CLASS, &c, sizeof(c));
+	add_object_attribute(o, 0, CKA_CLASS, &type, sizeof(type));
 	add_object_attribute(o, 0, CKA_TOKEN, &bool_true, sizeof(bool_true));
 	add_object_attribute(o, 0, CKA_PRIVATE, &bool_true, sizeof(bool_false));
 	add_object_attribute(o, 0, CKA_MODIFIABLE, &bool_false, sizeof(bool_false));
