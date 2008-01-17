@@ -1013,9 +1013,9 @@ function provision_guess()
 	subobj.DOMAINDN_LDB = "users.ldb";
 	subobj.CONFIGDN_LDB = "configuration.ldb";
 	subobj.SCHEMADN_LDB = "schema.ldb";
-	subobj.DOMAINDN_MOD = "pdc_fsmo,password_hash";
-	subobj.CONFIGDN_MOD = "naming_fsmo";
-	subobj.SCHEMADN_MOD = "schema_fsmo";
+	subobj.DOMAINDN_MOD = "pdc_fsmo,password_hash,instancetype";
+	subobj.CONFIGDN_MOD = "naming_fsmo,instancetype";
+	subobj.SCHEMADN_MOD = "schema_fsmo,instancetype";
 	subobj.DOMAINDN_MOD2 = ",objectguid";
 	subobj.CONFIGDN_MOD2 = ",objectguid";
 	subobj.SCHEMADN_MOD2 = ",objectguid";
