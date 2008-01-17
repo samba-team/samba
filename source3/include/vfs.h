@@ -261,7 +261,6 @@ typedef enum _vfs_op_type {
 	/* offline operations */
 	SMB_VFS_OP_IS_OFFLINE,
 	SMB_VFS_OP_SET_OFFLINE,
-	SMB_VFS_OP_IS_REMOTESTORAGE,
 
 	/* This should always be last enum value */
 
@@ -415,8 +414,6 @@ struct vfs_ops {
 		/* offline operations */
 		bool (*is_offline)(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf);
 		int (*set_offline)(struct vfs_handle_struct *handle, const char *path);
-		bool (*is_remotestorage)(struct vfs_handle_struct *handle, const char *path);
-
 	} ops;
 
 	struct vfs_handles_pointers {
@@ -542,7 +539,6 @@ struct vfs_ops {
 		/* offline operations */
 		struct vfs_handle_struct *is_offline;
 		struct vfs_handle_struct *set_offline;
-		struct vfs_handle_struct *is_remotestorage;
 	} handles;
 };
 

@@ -595,11 +595,6 @@ static int skel_set_offline(struct vfs_handle_struct *handle, const char *path)
 	return vfswrap_set_offline(NULL, path);
 }
 
-static bool skel_is_remotestorage(struct vfs_handle_struct *handle, const char *path)
-{
-	return vfswrap_is_remotestorage(NULL, path);
-}
-
 /* VFS operations structure */
 
 static vfs_op_tuple skel_op_tuples[] = {
@@ -724,7 +719,6 @@ static vfs_op_tuple skel_op_tuples[] = {
         /* offline operations */
 	{SMB_VFS_OP(skel_is_offline),		        SMB_VFS_OP_IS_OFFLINE,			SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_set_offline),			SMB_VFS_OP_SET_OFFLINE,			SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(skel_is_remotestorage),		SMB_VFS_OP_IS_REMOTESTORAGE,		SMB_VFS_LAYER_OPAQUE},
 
 	{NULL,						SMB_VFS_OP_NOOP,			SMB_VFS_LAYER_NOOP}
 };

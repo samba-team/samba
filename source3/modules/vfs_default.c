@@ -1255,13 +1255,6 @@ static int vfswrap_set_offline(struct vfs_handle_struct *handle, const char *pat
 	return -1;
 }
 
-static bool vfswrap_is_remotestorage(struct vfs_handle_struct *handle, const char *path)
-{
-	/* We don't know how to detect that volume is remote storage. VFS modules should redefine it. */
-	return false;
-}
-
-
 static vfs_op_tuple vfs_default_ops[] = {
 
 	/* Disk operations */
@@ -1485,8 +1478,6 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_is_offline),SMB_VFS_OP_IS_OFFLINE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_set_offline),SMB_VFS_OP_SET_OFFLINE,
-	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(vfswrap_is_remotestorage),SMB_VFS_OP_IS_REMOTESTORAGE,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* Finish VFS operations definition */

@@ -681,7 +681,6 @@ static vfs_op_tuple skel_op_tuples[] = {
 	/* offline operations */
 	{SMB_VFS_OP(skel_is_offline),			SMB_VFS_OP_IS_OFFLINE,			SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(skel_set_offline),			SMB_VFS_OP_SET_OFFLINE,			SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(skel_is_remotestorage),		SMB_VFS_OP_IS_REMOTESTORAGE,		SMB_VFS_LAYER_TRANSPARENT},
 
 	{NULL,						SMB_VFS_OP_NOOP,			SMB_VFS_LAYER_NOOP}
 };
