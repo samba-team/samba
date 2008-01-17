@@ -637,6 +637,17 @@ WERROR reg_deletevalue(struct registry_key *key, const char *name)
 	return WERR_OK;
 }
 
+WERROR reg_getkeysecurity(TALLOC_CTX *mem_ctx, struct registry_key *key,
+			  struct security_descriptor **psecdesc)
+{
+	return regkey_get_secdesc(mem_ctx, key->key, psecdesc);
+}
+
+WERROR reg_setkeysecurity(struct registry_key *key,
+			  struct security_descriptor *psecdesc)
+{
+	return regkey_set_secdesc(key->key, psecdesc);
+}
 
 /**********************************************************************
  * Higher level utility functions
