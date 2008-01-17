@@ -98,11 +98,6 @@ enum RPC_PKT_TYPE {
 #define RPC_AUTH_SCHANNEL_SIGN_OR_SEAL_CHK_LEN 	0x20
 #define RPC_AUTH_SCHANNEL_SIGN_ONLY_CHK_LEN 	0x18
 
-
-#define NETLOGON_NEG_ARCFOUR			0x00000004
-#define NETLOGON_NEG_128BIT			0x00004000
-#define NETLOGON_NEG_SCHANNEL			0x40000000
-
 /* The 7 here seems to be required to get Win2k not to downgrade us
    to NT4.  Actually, anything other than 1ff would seem to do... */
 #define NETLOGON_NEG_AUTH2_FLAGS 0x000701ff

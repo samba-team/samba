@@ -843,8 +843,8 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
 	if (result == NSS_STATUS_SUCCESS) {
 
 		if (request.flags & WBFLAG_PAM_INFO3_TEXT) {
-			if (response.data.auth.info3.user_flgs & LOGON_CACHED_ACCOUNT) {
-				d_printf("user_flgs: LOGON_CACHED_ACCOUNT\n");
+			if (response.data.auth.info3.user_flgs & NETLOGON_CACHED_ACCOUNT) {
+				d_printf("user_flgs: NETLOGON_CACHED_ACCOUNT\n");
 			}
 		}
 
