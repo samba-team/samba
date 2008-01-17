@@ -1,3 +1,8 @@
+2008-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* softp11.c: Add option app-fatal to control if softtoken should
+	abort() on erroneous input from applications.
+
 2008-01-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_pkcs11.in: Test password less certificates too
