@@ -70,7 +70,6 @@
  * timestamp resolition. JRA. */
 /* Changed to version21 to add chflags operation -- jpeach */
 /* Changed to version22 to add lchown operation -- jra */
-/* Additional change: add operations for offline files and remote storage volume abstraction -- ab*/
 /* Leave at 22 - not yet released. But change set_nt_acl to return an NTSTATUS. jra. */
 /* Leave at 22 - not yet released. Add file_id_create operation. --metze */
 /* Leave at 22 - not yet released. Change all BOOL parameters (int) to bool. jra. */
@@ -104,8 +103,7 @@
 /* Leave at 22 - not yet released. Remove parameter fd from write. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fromfd from sendfile. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fromfd from recvfile. - obnox */
-
-
+/* Leave at 22 - not yet released. Additional change: add operations for offline files and remote storage volume abstraction -- ab*/
 
 #define SMB_VFS_INTERFACE_VERSION 22
 
@@ -266,7 +264,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_IS_REMOTESTORAGE,
 
 	/* This should always be last enum value */
-	
+
 	SMB_VFS_OP_LAST
 } vfs_op_type;
 
@@ -276,7 +274,7 @@ typedef enum _vfs_op_type {
 struct vfs_ops {
 	struct vfs_fn_pointers {
 		/* Disk operations */
-		
+
 		int (*connect_fn)(struct vfs_handle_struct *handle, const char *service, const char *user);
 		void (*disconnect)(struct vfs_handle_struct *handle);
 		SMB_BIG_UINT (*disk_free)(struct vfs_handle_struct *handle, const char *path, bool small_query, SMB_BIG_UINT *bsize,
@@ -285,9 +283,9 @@ struct vfs_ops {
 		int (*set_quota)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 		int (*get_shadow_copy_data)(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels);
 		int (*statvfs)(struct vfs_handle_struct *handle, const char *path, struct vfs_statvfs_struct *statbuf);
-		
+
 		/* Directory operations */
-		
+
 		SMB_STRUCT_DIR *(*opendir)(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attributes);
 		SMB_STRUCT_DIRENT *(*readdir)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);
 		void (*seekdir)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset);
@@ -296,9 +294,9 @@ struct vfs_ops {
 		int (*mkdir)(struct vfs_handle_struct *handle, const char *path, mode_t mode);
 		int (*rmdir)(struct vfs_handle_struct *handle, const char *path);
 		int (*closedir)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dir);
-		
+
 		/* File operations */
-		
+
 		int (*open)(struct vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode);
 		int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
 		ssize_t (*read)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n);
@@ -343,7 +341,7 @@ struct vfs_ops {
 		struct file_id (*file_id_create)(struct vfs_handle_struct *handle, SMB_DEV_T dev, SMB_INO_T inode);
 
 		/* NT ACL operations. */
-		
+
 		NTSTATUS (*fget_nt_acl)(struct vfs_handle_struct *handle,
 					struct files_struct *fsp,
 					uint32 security_info,
@@ -361,12 +359,12 @@ struct vfs_ops {
 				       const char *name,
 				       uint32 security_info_sent,
 				       struct security_descriptor *psd);
-		
+
 		/* POSIX ACL operations. */
-		
+
 		int (*chmod_acl)(struct vfs_handle_struct *handle, const char *name, mode_t mode);
 		int (*fchmod_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
-		
+
 		int (*sys_acl_get_entry)(struct vfs_handle_struct *handle, SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 		int (*sys_acl_get_tag_type)(struct vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
 		int (*sys_acl_get_permset)(struct vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
@@ -413,11 +411,11 @@ struct vfs_ops {
 		int (*aio_fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_suspend)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *timeout);
 		bool (*aio_force)(struct vfs_handle_struct *handle, struct files_struct *fsp);
-		
+
 		/* offline operations */
-		int (*is_offline)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf, bool *offline);
-		int (*set_offline)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path);
-		bool (*is_remotestorage)(struct vfs_handle_struct *handle, struct connection_struct *conn, const char *path);
+		int (*is_offline)(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf, bool *offline);
+		int (*set_offline)(struct vfs_handle_struct *handle, const char *path);
+		bool (*is_remotestorage)(struct vfs_handle_struct *handle, const char *path);
 
 	} ops;
 
@@ -540,7 +538,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *aio_fsync;
 		struct vfs_handle_struct *aio_suspend;
 		struct vfs_handle_struct *aio_force;
-		
+
 		/* offline operations */
 		struct vfs_handle_struct *is_offline;
 		struct vfs_handle_struct *set_offline;
@@ -550,22 +548,22 @@ struct vfs_ops {
 
 /*
     Possible VFS operation layers (per-operation)
-    
+
     These values are used by VFS subsystem when building vfs_ops for connection
     from multiple VFS modules. Internally, Samba differentiates only opaque and
     transparent layers at this process. Other types are used for providing better
     diagnosing facilities.
-    
+
     Most modules will provide transparent layers. Opaque layer is for modules
     which implement actual file system calls (like DB-based VFS). For example,
     default POSIX VFS which is built in into Samba is an opaque VFS module.
-    
+
     Other layer types (audit, splitter, scanner) were designed to provide different 
     degree of transparency and for diagnosing VFS module behaviour.
-    
+
     Each module can implement several layers at the same time provided that only
     one layer is used per each operation.
-    
+
 */
 
 typedef enum _vfs_op_layer {
@@ -584,7 +582,7 @@ typedef enum _vfs_op_layer {
 
 /*
     VFS operation description. Each VFS module registers an array of vfs_op_tuple to VFS subsystem,
-    which describes all operations this module is willing to intercept. 
+    which describes all operations this module is willing to intercept.
     VFS subsystem initializes then the conn->vfs_ops and conn->vfs_opaque_ops structs
     using this information.
 */
@@ -609,12 +607,12 @@ typedef struct vfs_handle_struct {
 typedef struct vfs_statvfs_struct {
 	/* For undefined recommended transfer size return -1 in that field */
 	uint32 OptimalTransferSize;  /* bsize on some os, iosize on other os */
-	uint32 BlockSize; 
+	uint32 BlockSize;
 
 	/*
 	 The next three fields are in terms of the block size.
 	 (above). If block size is unknown, 4096 would be a
-	 reasonable block size for a server to report. 
+	 reasonable block size for a server to report.
 	 Note that returning the blocks/blocksavail removes need
 	 to make a second call (to QFSInfo level 0x103 to get this info.
 	 UserBlockAvail is typically less than or equal to BlocksAvail,
