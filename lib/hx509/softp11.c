@@ -595,7 +595,6 @@ add_cert(hx509_context hxctx, void *ctx, hx509_cert cert)
     return 0;
 }
 
-
 static CK_RV
 add_certificate(const char *cert_file,
 		const char *pin,
@@ -789,7 +788,7 @@ read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
 	    st_logf("unknown type: %s\n", type);
 	}
     }
-out:
+
     fclose(f);
 
     return failed;
@@ -873,8 +872,8 @@ C_Initialize(CK_VOID_PTR a)
     }
 
     /*
-     * XXX this should really fail if the password is missing and the
-     * cert-store is protected by a password
+     * This operations doesn't return CKR_OK if any of the
+     * certificates failes to be unparsed (ie password protected).
      */
     ret = read_conf_file(soft_token.config_file, CKU_USER, NULL);
     if (ret == CKR_OK)
