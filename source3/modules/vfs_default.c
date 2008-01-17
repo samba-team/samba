@@ -1230,22 +1230,20 @@ static bool vfswrap_aio_force(struct vfs_handle_struct *handle, struct files_str
 	return false;
 }
 
-static int vfswrap_is_offline(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf, bool *offline)
+static bool vfswrap_is_offline(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf)
 {
 	if (ISDOT(path) || ISDOTDOT(path)) {
-		*offline = false;
-		return 0;
+		return false;
 	}
 
 	if (!lp_dmapi_support(SNUM(handle->conn)) || !dmapi_have_session()) {
 #if defined(ENOTSUP)
 		errno = ENOTSUP;
 #endif
-		return -1;
+		return false;
 	}
 
-	*offline = (dmapi_file_flags(path) & FILE_ATTRIBUTE_OFFLINE) != 0;
-	return 0;
+	return (dmapi_file_flags(path) & FILE_ATTRIBUTE_OFFLINE) != 0;
 }
 
 static int vfswrap_set_offline(struct vfs_handle_struct *handle, const char *path)
@@ -1256,13 +1254,6 @@ static int vfswrap_set_offline(struct vfs_handle_struct *handle, const char *pat
 #endif
 	return -1;
 }
-
-static bool vfswrap_is_remotestorage(struct vfs_handle_struct *handle, const char *path)
-{
-	/* We don't know how to detect that volume is remote storage. VFS modules should redefine it. */
-	return false;
-}
-
 
 static vfs_op_tuple vfs_default_ops[] = {
 
@@ -1487,8 +1478,6 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_is_offline),SMB_VFS_OP_IS_OFFLINE,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_set_offline),SMB_VFS_OP_SET_OFFLINE,
-	 SMB_VFS_LAYER_OPAQUE},
-	{SMB_VFS_OP(vfswrap_is_remotestorage),SMB_VFS_OP_IS_REMOTESTORAGE,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* Finish VFS operations definition */
