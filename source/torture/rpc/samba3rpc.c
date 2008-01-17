@@ -529,7 +529,7 @@ static bool create_user(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 				username, domain_name, &samr_pipe, &wks_handle,
 				user_sid);
 	if (!NT_STATUS_IS_OK(status)) {
-		d_printf("get_wks_handle failed: %s\n", nt_errstr(status));
+		d_printf("get_usr_handle failed: %s\n", nt_errstr(status));
 		goto done;
 	}
 
