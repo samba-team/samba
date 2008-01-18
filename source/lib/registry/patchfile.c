@@ -132,10 +132,10 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 				continue;
 		} else {
 			t1 = NULL;
-			error2 = WERR_DEST_NOT_FOUND;
+			error2 = WERR_NOT_FOUND;
 		}
 
-		if (!W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
+		if (!W_ERROR_EQUAL(error2, WERR_NOT_FOUND)) {
 			DEBUG(0, ("Error occured while getting subkey by name: %s\n",
 				win_errstr(error2)));
 			talloc_free(mem_ctx);
@@ -174,10 +174,10 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 							   name, &type2,
 							   &contents2);
 		} else
-			error2 = WERR_DEST_NOT_FOUND;
+			error2 = WERR_BADFILE;
 
 		if(!W_ERROR_IS_OK(error2) &&
-		   !W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
+		   !W_ERROR_EQUAL(error2, WERR_BADFILE)) {
 			DEBUG(0, ("Error occured while getting value by name: %s\n",
 				win_errstr(error2)));
 			talloc_free(mem_ctx);
@@ -210,7 +210,7 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 		if (W_ERROR_IS_OK(error2))
 			continue;
 
-		if (!W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
+		if (!W_ERROR_EQUAL(error2, WERR_BADFILE)) {
 			DEBUG(0, ("Error occured while getting value by name: %s\n",
 				win_errstr(error2)));
 			return error2;

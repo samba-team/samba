@@ -282,7 +282,7 @@ static WERROR reg_dir_get_value(TALLOC_CTX *mem_ctx,
 	contents = file_load(path, &size, mem_ctx);
 	talloc_free(path);
 	if (contents == NULL)
-		return WERR_NOT_FOUND;
+		return WERR_BADFILE;
 
 	if (type != NULL)
 		*type = 4; /* FIXME */
