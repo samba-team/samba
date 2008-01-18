@@ -46,13 +46,5 @@ static int netlogon_params_fetch_reg_values(const char *key,
 
 
 REGISTRY_OPS netlogon_params_reg_ops = {
-	NULL,
-	netlogon_params_fetch_reg_values,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL
+	.fetch_values = netlogon_params_fetch_reg_values,
 };
