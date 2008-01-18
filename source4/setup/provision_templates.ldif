@@ -66,7 +66,6 @@ sAMAccountType: 268435456
 #
 # dn: CN=TemplateAlias,CN=Templates
 # cn: TemplateAlias
-# instanceType: 4
 # groupType: -2147483644
 # sAMAccountType: 268435456
 

@@ -2,14 +2,12 @@ dn: CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: container
 showInAdvancedViewOnly: TRUE
-instanceType: 4
 
 dn: CN=409,CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: container
 cn: 409
 name: 409
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 
 dn: CN=user-Display,CN=409,CN=DisplaySpecifiers,${CONFIGDN}

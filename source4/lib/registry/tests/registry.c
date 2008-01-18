@@ -53,7 +53,7 @@ static bool test_get_predefined_unknown(struct torture_context *tctx,
 	WERROR error;
 
 	error = reg_get_predefined_key(rctx, 1337, &root);
-	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND,
+	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 				  "getting predefined key failed");
 	return true;
 }
@@ -195,16 +195,16 @@ static bool test_del_key(struct torture_context *tctx, void *_data)
 	torture_assert_werr_ok(tctx, error,
 			       "getting predefined key failed");
 
-	error = reg_key_add_name(rctx, root, "Hamburg", NULL, NULL, &newkey);
+	error = reg_key_add_name(rctx, root, "Polen", NULL, NULL, &newkey);
 
 	torture_assert_werr_ok(tctx, error, "Creating key return code");
 	torture_assert(tctx, newkey != NULL, "Creating new key");
 
-	error = reg_key_del(root, "Hamburg");
+	error = reg_key_del(root, "Polen");
 	torture_assert_werr_ok(tctx, error, "Delete key");
 
-	error = reg_key_del(root, "Hamburg");
-	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND,
+	error = reg_key_del(root, "Polen");
+	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 				  "Delete missing key");
 
 	return true;
@@ -239,7 +239,7 @@ static bool test_flush_key(struct torture_context *tctx, void *_data)
 	struct registry_key *root, *subkey;
 	WERROR error;
 
-	if (!create_test_key(tctx, rctx, "Munchen", &root, &subkey))
+	if (!create_test_key(tctx, rctx, "Bremen", &root, &subkey))
 		return false;
 
 	error = reg_key_flush(subkey);
@@ -416,7 +416,7 @@ static bool test_get_value(struct torture_context *tctx, void *_data)
 
 	error = reg_key_get_value_by_name(tctx, subkey, __FUNCTION__, &type,
 					  &data);
-	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND,
+	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 				  "getting missing value");
 
 	error = reg_val_set(subkey, __FUNCTION__, REG_DWORD,
@@ -447,12 +447,12 @@ static bool test_del_value(struct torture_context *tctx, void *_data)
 	uint32_t value = 42;
 	uint32_t type;
 
-	if (!create_test_key(tctx, rctx, "Duisburg", &root, &subkey))
+	if (!create_test_key(tctx, rctx, "Warschau", &root, &subkey))
 		return false;
 
 	error = reg_key_get_value_by_name(tctx, subkey, __FUNCTION__, &type,
 					  &data);
-	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND,
+	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 				  "getting missing value");
 
 	error = reg_val_set(subkey, __FUNCTION__, REG_DWORD,
@@ -464,7 +464,7 @@ static bool test_del_value(struct torture_context *tctx, void *_data)
 
 	error = reg_key_get_value_by_name(tctx, subkey, __FUNCTION__,
 					  &type, &data);
-	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND,
+	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 				  "getting missing value");
 
 	return true;

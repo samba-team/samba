@@ -43,7 +43,6 @@ dn: CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: server
 cn: ${NETBIOSNAME}
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 1375731712
 dNSHostName: ${DNSNAME}
@@ -55,7 +54,6 @@ objectClass: applicationSettings
 objectClass: nTDSDSA
 cn: NTDS Settings
 options: 1
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 33554432
 dMDLocation: ${SCHEMADN}

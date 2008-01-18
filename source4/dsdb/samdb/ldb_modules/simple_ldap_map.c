@@ -448,6 +448,7 @@ static const char * const entryuuid_wildcard_attributes[] = {
 	"whenChanged",
 	"usnCreated",
 	"usnChanged",
+	"memberOf",
 	NULL
 };
 
