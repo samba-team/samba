@@ -3,8 +3,8 @@
   Samba VFS module for handling offline files
   with Tivoli Storage Manager Space Management
 
-  (c) Alexander Bokovoy, 2007
-  (c) Andrew Tridgell, 2007
+  (c) Alexander Bokovoy, 2007, 2008
+  (c) Andrew Tridgell, 2007, 2008
   
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,18 +21,20 @@
  */
 /*
   This VFS module accepts following options:
-  tsmsm: hsm script = <path to hsm script> (/bin/true by default, i.e. does nothing)
+  tsmsm: hsm script = <path to hsm script> (default does nothing)
          hsm script should point to a shell script which accepts two arguments:
 	 <operation> <filepath>
 	 where <operation> is currently 'offline' to set offline status of the <filepath>
 
   tsmsm: online ratio = ratio to check reported size against actual file size (0.5 by default)
+  tsmsm: attribute name = name of DMAPI attribute that is present when a file is offline. 
+  Default is "IBMobj" (which is what GPFS uses)
 
   The TSMSM VFS module tries to avoid calling expensive DMAPI calls with some heuristics
   based on the fact that number of blocks reported of a file multiplied by 512 will be
   bigger than 'online ratio' of actual size for online (non-migrated) files.
 
-  If checks fail, we call DMAPI and ask for specific IBM attribute which present for
+  If checks fail, we call DMAPI and ask for specific attribute which present for
   offline (migrated) files. If this attribute presents, we consider file offline.
  */
 
@@ -62,17 +64,15 @@
 
 /* optimisation tunables - used to avoid the DMAPI slow path */
 #define FILE_IS_ONLINE_RATIO      0.5
+
+/* default attribute name to look for */
 #define DM_ATTRIB_OBJECT "IBMObj"
-#define DM_ATTRIB_MIGRATED "IBMMig"
 
 struct tsmsm_struct {
-	dm_sessid_t sid;
 	float online_ratio;
 	char *hsmscript;
+	const char *attrib_name;
 };
-
-#define TSM_STRINGIFY(a) #a
-#define TSM_TOSTRING(a) TSM_STRINGIFY(a)
 
 static void tsmsm_free_data(void **pptr) {
 	struct tsmsm_struct **tsmd = (struct tsmsm_struct **)pptr;
@@ -80,54 +80,50 @@ static void tsmsm_free_data(void **pptr) {
 	TALLOC_FREE(*tsmd);
 }
 
+/* 
+   called when a client connects to a share
+*/
 static int tsmsm_connect(struct vfs_handle_struct *handle,
 			 const char *service,
 			 const char *user) {
 	struct tsmsm_struct *tsmd = TALLOC_ZERO_P(handle, struct tsmsm_struct);
-	const char *hsmscript, *tsmname;
 	const char *fres;
+	const char *tsmname;
 	
 	if (!tsmd) {
 		DEBUG(0,("tsmsm_connect: out of memory!\n"));
 		return -1;
 	}
 
-	tsmd->sid = *(dm_sessid_t*) dmapi_get_current_session();
-
-	if (tsmd->sid == DM_NO_SESSION) {
+	if (!dmapi_have_session()) {
 		DEBUG(0,("tsmsm_connect: no DMAPI session for Samba is available!\n"));
 		TALLOC_FREE(tsmd);
 		return -1;
 	}
 
 	tsmname = (handle->param ? handle->param : "tsmsm");
-	hsmscript = lp_parm_const_string(SNUM(handle->conn), tsmname,
-					 "hsm script", NULL);
-	if (hsmscript) {
-		tsmd->hsmscript = talloc_strdup(tsmd, hsmscript);
-		if(!tsmd->hsmscript) {
-			DEBUG(1, ("tsmsm_connect: can't allocate memory for hsm script path"));
-			TALLOC_FREE(tsmd);
-			return -1;
-		}
-	} else {
-		DEBUG(1, ("tsmsm_connect: can't call hsm script because it "
-			  "is not set to anything in the smb.conf\n"
-			  "Use %s: 'hsm script = path' to set it\n",
-			  tsmname));
-		TALLOC_FREE(tsmd);
-		return -1;
-	}
+	
+	/* Get 'hsm script' and 'dmapi attribute' parameters to tsmd context */
+	tsmd->hsmscript = lp_parm_talloc_string(SNUM(handle->conn), tsmname,
+						"hsm script", NULL);
+	talloc_steal(tsmd, tsmd->hsmscript);
+	
+	tsmd->attrib_name = lp_parm_talloc_string(SNUM(handle->conn), tsmname, 
+						  "dmapi attribute", DM_ATTRIB_OBJECT);
+	talloc_steal(tsmd, tsmd->attrib_name);
 
+	/* retrieve 'online ratio'. In case of error default to FILE_IS_ONLINE_RATIO */
 	fres = lp_parm_const_string(SNUM(handle->conn), tsmname, 
-				    "online ratio", TSM_TOSTRING(FILE_IS_ONLINE_RATIO));
-	tsmd->online_ratio = strtof(fres, NULL);
-	if((tsmd->online_ratio == (float)0) || ((errno == ERANGE) &&
-						((tsmd->online_ratio == HUGE_VALF) ||
-						 (tsmd->online_ratio == HUGE_VALL)))) {
-		DEBUG(1, ("tsmsm_connect: error while getting online ratio from smb.conf."
-			  "Default to %s.\n", TSM_TOSTRING(FILE_IS_ONLINE_RATIO)));
+				    "online ratio", NULL);
+	if (fres == NULL) {
 		tsmd->online_ratio = FILE_IS_ONLINE_RATIO;
+	} else {
+		tsmd->online_ratio = strtof(fres, NULL);
+		if (tsmd->online_ration > 1.0 ||
+		    tsmd->online_ration <= 0.0) {
+			DEBUG(1, ("tsmsm_connect: invalid online ration %f - using %f.\n",
+				  tsmd->online_ration, (float)FILE_IS_ONLINE_RATIO));
+		}
 	}
 
         /* Store the private data. */
@@ -140,6 +136,7 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 			    const char *path,
 			    SMB_STRUCT_STAT *stbuf) {
 	struct tsmsm_struct *tsmd = (struct tsmsm_struct *) handle->data;
+	const dm_sessid_t *dmsession_id;
 	void *dmhandle = NULL;
 	size_t dmhandle_len = 0;
 	size_t rlen;
@@ -154,7 +151,14 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 			  path, stbuf->st_blocks, stbuf->st_size, tsmd->online_ratio));
 		return false;
 	}
-	
+
+	dmsession_id = dmapi_get_current_session();
+	if (dmsession_id == NULL) {
+		DEBUG(2, ("tsmsm_is_offline: no DMAPI session available? "
+			  "Assume file is online.\n"));
+		return false;
+	}
+
         /* using POSIX capabilities does not work here. It's a slow path, so 
 	 * become_root() is just as good anyway (tridge) 
 	 */
@@ -173,12 +177,12 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 	}
 
 	memset(&dmname, 0, sizeof(dmname));
-	strlcpy((char *)&dmname.an_chars[0], DM_ATTRIB_OBJECT, sizeof(dmname.an_chars));
+	strlcpy((char *)&dmname.an_chars[0], tsmd->attrib_name, sizeof(dmname.an_chars));
 
-	ret = dm_get_dmattr(tsmd->sid, dmhandle, dmhandle_len, 
+	ret = dm_get_dmattr(*dmsession_id, dmhandle, dmhandle_len, 
 			    DM_NO_TOKEN, &dmname, 0, NULL, &rlen);
 
-	/* its offline if the IBMObj attribute exists */
+	/* its offline if the specified DMAPI attribute exists */
 	offline = (ret == 0 || (ret == -1 && errno == E2BIG));
 
 	DEBUG(10,("dm_get_dmattr %s ret=%d (%s)\n", path, ret, strerror(errno)));
@@ -279,6 +283,12 @@ static int tsmsm_set_offline(struct vfs_handle_struct *handle,
 	struct tsmsm_struct *tsmd = (struct tsmsm_struct *) handle->data;
 	int result = 0;
 	char *command;
+
+	if (tsmd->hsmscript == NULL) {
+		/* no script enabled */
+		DEBUG(1, ("tsmsm_set_offline: No tsmsm:hsmscript configured\n"));
+		return 0;
+	}
 
 	/* Now, call the script */
 	command = talloc_asprintf(tsmd, "%s offline \"%s\"", tsmd->hsmscript, path);
