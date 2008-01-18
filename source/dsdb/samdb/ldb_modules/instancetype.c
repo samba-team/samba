@@ -31,7 +31,7 @@
  *
  *  Description: add an instanceType onto every new record
  *
- *  Author: Simo Sorce
+ *  Author: Andrew Bartlett
  */
 
 #include "includes.h"
