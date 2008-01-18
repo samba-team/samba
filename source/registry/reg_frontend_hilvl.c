@@ -116,6 +116,9 @@ int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
 	int result = -1;
 
+	DEBUG(10, ("fetch_reg_values called for key '%s' (ops %p)\n", key->name,
+		   (key->hook && key->hook->ops) ? (void *)key->hook->ops : NULL));
+
 	if ( key->hook && key->hook->ops && key->hook->ops->fetch_values )
 		result = key->hook->ops->fetch_values( key->name, val );
 
