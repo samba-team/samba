@@ -31,6 +31,10 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 				    struct winbindd_cli_state *state,
 				    NET_USER_INFO_3 *info3)
 {
+	char *ex;
+	size_t size;
+	uint32_t i;
+
 	state->response.data.auth.info3.logon_time =
 		nt_time_to_unix(info3->logon_time);
 	state->response.data.auth.info3.logoff_time =
@@ -82,6 +86,42 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 	unistr2_to_ascii(state->response.data.auth.info3.logon_dom,
 		&info3->uni_logon_dom,
 		sizeof(state->response.data.auth.info3.logon_dom));
+
+	ex = talloc_strdup(mem_ctx, "");
+	NT_STATUS_HAVE_NO_MEMORY(ex);
+
+	for (i=0; i < info3->num_groups; i++) {
+		ex = talloc_asprintf_append_buffer(ex, "0x%08X:0x%08X\n",
+						   info3->gids[i].g_rid,
+						   info3->gids[i].attr);
+		NT_STATUS_HAVE_NO_MEMORY(ex);
+	}
+
+	for (i=0; i < info3->num_other_sids; i++) {
+		char *sid;
+
+		sid = dom_sid_string(mem_ctx, &info3->other_sids[i].sid);
+		NT_STATUS_HAVE_NO_MEMORY(sid);
+
+		ex = talloc_asprintf_append_buffer(ex, "%s:0x%08X\n",
+						   sid,
+						   info3->other_sids_attrib[i]);
+		NT_STATUS_HAVE_NO_MEMORY(ex);
+
+		talloc_free(sid);
+	}
+
+	size = talloc_get_size(ex);
+
+	SAFE_FREE(state->response.extra_data.data);
+	state->response.extra_data.data = SMB_MALLOC(size);
+	if (!state->response.extra_data.data) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	memcpy(state->response.extra_data.data, ex, size);
+	talloc_free(ex);
+
+	state->response.length += size;
 
 	return NT_STATUS_OK;
 }
@@ -703,16 +743,18 @@ static bool check_request_flags(uint32_t flags)
 {
 	uint32_t flags_edata = WBFLAG_PAM_AFS_TOKEN |
 			       WBFLAG_PAM_UNIX_NAME |
+			       WBFLAG_PAM_INFO3_TEXT |
 			       WBFLAG_PAM_INFO3_NDR;
 
 	if ( ( (flags & flags_edata) == WBFLAG_PAM_AFS_TOKEN) ||
 	     ( (flags & flags_edata) == WBFLAG_PAM_INFO3_NDR) ||
+	     ( (flags & flags_edata) == WBFLAG_PAM_INFO3_TEXT)||
 	     ( (flags & flags_edata) == WBFLAG_PAM_UNIX_NAME) ||
 	      !(flags & flags_edata) ) {
 		return True;
 	}
 
-	DEBUG(1,("check_request_flags: invalid request flags\n"));
+	DEBUG(1,("check_request_flags: invalid request flags[0x%08X]\n",flags));
 
 	return False;
 }
