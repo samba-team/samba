@@ -5725,6 +5725,7 @@ bool lp_load(const char *pszFname,
 			 */
 			config_backend = CONFIG_BACKEND_REGISTRY;
 			/* start over */
+			init_globals(false);
 			return lp_load(pszFname, global_only, save_defaults,
 				       add_ipc, initialize_globals);
 		}
