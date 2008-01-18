@@ -82,11 +82,11 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 			if (W_ERROR_IS_OK(error2))
 				continue;
 		} else {
-			error2 = WERR_DEST_NOT_FOUND;
+			error2 = WERR_BADFILE;
 			t2 = NULL;
 		}
 
-		if (!W_ERROR_EQUAL(error2, WERR_DEST_NOT_FOUND)) {
+		if (!W_ERROR_EQUAL(error2, WERR_BADFILE)) {
 			DEBUG(0, ("Error occured while getting subkey by name: %s\n",
 				win_errstr(error2)));
 			talloc_free(mem_ctx);
@@ -132,10 +132,10 @@ WERROR reg_generate_diff_key(struct registry_key *oldkey,
 				continue;
 		} else {
 			t1 = NULL;
-			error2 = WERR_NOT_FOUND;
+			error2 = WERR_BADFILE;
 		}
 
-		if (!W_ERROR_EQUAL(error2, WERR_NOT_FOUND)) {
+		if (!W_ERROR_EQUAL(error2, WERR_BADFILE)) {
 			DEBUG(0, ("Error occured while getting subkey by name: %s\n",
 				win_errstr(error2)));
 			talloc_free(mem_ctx);
@@ -238,14 +238,14 @@ _PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
 		struct registry_key *r1 = NULL, *r2 = NULL;
 		error = reg_get_predefined_key(ctx1, i, &r1);
 		if (!W_ERROR_IS_OK(error) &&
-		    !W_ERROR_EQUAL(error, WERR_NOT_FOUND)) {
+		    !W_ERROR_EQUAL(error, WERR_BADFILE)) {
 			DEBUG(0, ("Unable to open hive %s for backend 1\n",
 				reg_get_predef_name(i)));
 		}
 
 		error = reg_get_predefined_key(ctx2, i, &r2);
 		if (!W_ERROR_IS_OK(error) &&
-		    !W_ERROR_EQUAL(error, WERR_NOT_FOUND)) {
+		    !W_ERROR_EQUAL(error, WERR_BADFILE)) {
 			DEBUG(0, ("Unable to open hive %s for backend 2\n",
 				reg_get_predef_name(i)));
 		}
@@ -356,7 +356,7 @@ static WERROR reg_diff_apply_set_value(void *_ctx, const char *path,
 	/* Open key */
 	error = reg_open_key_abs(ctx, ctx, path, &tmp);
 
-	if (W_ERROR_EQUAL(error, WERR_DEST_NOT_FOUND)) {
+	if (W_ERROR_EQUAL(error, WERR_BADFILE)) {
 		DEBUG(0, ("Error opening key '%s'\n", path));
 		return error;
 	}

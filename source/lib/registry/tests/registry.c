@@ -204,7 +204,7 @@ static bool test_del_key(struct torture_context *tctx, void *_data)
 	torture_assert_werr_ok(tctx, error, "Delete key");
 
 	error = reg_key_del(root, "Polen");
-	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND,
+	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 				  "Delete missing key");
 
 	return true;
