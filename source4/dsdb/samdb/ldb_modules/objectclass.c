@@ -532,6 +532,10 @@ static int objectclass_do_add(struct ldb_handle *h)
 					ldb_msg_add_string(msg, "objectCategory", 
 							   current->objectclass->defaultObjectCategory);
 				}
+				if (!ldb_msg_find_element(msg, "showInAdvancedViewOnly")) {
+					ldb_msg_add_string(msg, "showInAdvancedViewOnly", 
+							   current->objectclass->defaultHidingValue ? "TRUE" : "FALSE");
+				}
 				if (!ldb_msg_find_element(msg, "nTSecurityDescriptor")) {
 					DATA_BLOB *sd = get_sd(ac->module, mem_ctx, current->objectclass);
 					ldb_msg_add_steal_value(msg, "nTSecurityDescriptor", sd);
