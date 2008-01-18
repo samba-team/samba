@@ -183,7 +183,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 	/* Look up the table of registry I/O operations */
 
 	if ( !(key->hook = reghook_cache_find( key->name )) ) {
-		DEBUG(0,("reg_open_onelevel: Failed to assigned a "
+		DEBUG(0,("reg_open_onelevel: Failed to assign a "
 			 "REGISTRY_HOOK to [%s]\n", key->name ));
 		result = WERR_BADFILE;
 		goto done;
