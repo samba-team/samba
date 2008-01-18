@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <netdb.h>
 
 #include <gtk/gtk.h>
 #include <glib/gprintf.h>
@@ -1263,28 +1264,44 @@ static int initialize_join_state(struct join_state *state,
 	{
 		char my_hostname[HOST_NAME_MAX];
 		const char *p = NULL;
-		if (gethostname(my_hostname, sizeof(my_hostname)) == -1) {
-			return -1;
-		}
+		struct hostent *hp = NULL;
 
-		state->my_fqdn = strdup(my_hostname);
-		if (!state->my_fqdn) {
+		if (gethostname(my_hostname, sizeof(my_hostname)) == -1) {
 			return -1;
 		}
 
 		p = strchr(my_hostname, '.');
 		if (p) {
-			my_hostname[strlen(my_hostname) - strlen(p)] = '\0';
-			state->my_hostname = strdup(my_hostname);
-			if (!state->my_hostname) {
-				return -1;
-			}
+			my_hostname[strlen(my_hostname)-strlen(p)] = '\0';
+		}
+		state->my_hostname = strdup(my_hostname);
+		if (!state->my_hostname) {
+			return -1;
+		}
+		debug("state->my_hostname: %s\n", state->my_hostname);
+
+		hp = gethostbyname(my_hostname);
+		if (!hp || !hp->h_name || !*hp->h_name) {
+			return -1;
+		}
+
+		state->my_fqdn = strdup(hp->h_name);
+		if (!state->my_fqdn) {
+			return -1;
+		}
+		debug("state->my_fqdn: %s\n", state->my_fqdn);
+
+		p = strchr(state->my_fqdn, '.');
+		if (p) {
 			p++;
 			state->my_dnsdomain = strdup(p);
-			if (!state->my_dnsdomain) {
-				return -1;
-			}
+		} else {
+			state->my_dnsdomain = strdup("");
 		}
+		if (!state->my_dnsdomain) {
+			return -1;
+		}
+		debug("state->my_dnsdomain: %s\n", state->my_dnsdomain);
 	}
 
 	{
