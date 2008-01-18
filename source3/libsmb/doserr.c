@@ -74,7 +74,7 @@ werror_code_struct dos_errs[] =
 	{ "WERR_DFS_INTERNAL_ERROR", WERR_DFS_INTERNAL_ERROR },
 	{ "WERR_DFS_CANT_CREATE_JUNCT", WERR_DFS_CANT_CREATE_JUNCT },
 	{ "WERR_MACHINE_LOCKED", WERR_MACHINE_LOCKED },
-	{ "WERR_DOMAIN_CONTROLLER_NOT_FOUND", WERR_DOMAIN_CONTROLLER_NOT_FOUND },
+	{ "WERR_DC_NOT_FOUND", WERR_DC_NOT_FOUND },
 	{ "WERR_SETUP_NOT_JOINED", WERR_SETUP_NOT_JOINED },
 	{ "WERR_SETUP_ALREADY_JOINED", WERR_SETUP_ALREADY_JOINED },
 	{ "WERR_SETUP_DOMAIN_CONTROLLER", WERR_SETUP_DOMAIN_CONTROLLER },
@@ -96,6 +96,9 @@ werror_code_struct dos_errs[] =
 	{ "WERR_SERVICE_DISABLED", WERR_SERVICE_DISABLED },
 	{ "WERR_CAN_NOT_COMPLETE", WERR_CAN_NOT_COMPLETE},
 	{ "WERR_INVALID_FLAGS", WERR_INVALID_FLAGS},
+	{ "WERR_PASSWORD_MUST_CHANGE", WERR_PASSWORD_MUST_CHANGE },
+	{ "WERR_DOMAIN_CONTROLLER_NOT_FOUND", WERR_DOMAIN_CONTROLLER_NOT_FOUND },
+	{ "WERR_ACCOUNT_LOCKED_OUT", WERR_ACCOUNT_LOCKED_OUT },
 	{ NULL, W_ERROR(0) }
 };
 
@@ -109,11 +112,14 @@ werror_str_struct dos_err_strs[] = {
 	{ WERR_NO_LOGON_SERVERS, "No logon servers found" },
 	{ WERR_NO_SUCH_LOGON_SESSION, "No such logon session" },
 	{ WERR_DOMAIN_CONTROLLER_NOT_FOUND, "A domain controller could not be found" },
+	{ WERR_DC_NOT_FOUND, "A domain controller could not be found" },
 	{ WERR_SETUP_NOT_JOINED, "Join failed" },
 	{ WERR_SETUP_ALREADY_JOINED, "Machine is already joined" },
 	{ WERR_SETUP_DOMAIN_CONTROLLER, "Machine is a Domain Controller" },
 	{ WERR_LOGON_FAILURE, "Invalid logon credentials" },
 	{ WERR_USER_EXISTS, "User account already exists" },
+	{ WERR_PASSWORD_MUST_CHANGE, "The password must be changed" },
+	{ WERR_ACCOUNT_LOCKED_OUT, "Account locked out" },
 };
 
 /*****************************************************************************
