@@ -112,6 +112,16 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 }
 
 
+static char *reg_ldb_escape(TALLOC_CTX *mem_ctx, const char *value)
+{
+	struct ldb_val val;
+
+	val.data = discard_const_p(uint8_t, value);
+	val.length = strlen(value);
+
+	return ldb_dn_escape_value(mem_ctx, val);
+}
+
 static int reg_close_ldb_key(struct ldb_key_data *key)
 {
 	if (key->subkeys != NULL) {
@@ -447,7 +457,12 @@ static WERROR ldb_del_value (struct hive_key *key, const char *child)
 	struct ldb_dn *childdn;
 
 	childdn = ldb_dn_copy(kd->ldb, kd->dn);
-	ldb_dn_add_child_fmt(childdn, "value=%s", child);
+	if (!ldb_dn_add_child_fmt(childdn, "value=%s",
+				  reg_ldb_escape(childdn, child)))
+	{
+		talloc_free(childdn);
+		return WERR_FOOBAR;
+	}
 
 	ret = ldb_delete(kd->ldb, childdn);
 
@@ -475,7 +490,12 @@ static WERROR ldb_set_value(struct hive_key *parent,
 	msg = reg_ldb_pack_value(kd->ldb, mem_ctx, name, type, data);
 
 	msg->dn = ldb_dn_copy(msg, kd->dn);
-	ldb_dn_add_child_fmt(msg->dn, "value=%s", name);
+	if (!ldb_dn_add_child_fmt(msg->dn, "value=%s",
+				  reg_ldb_escape(mem_ctx, name)))
+	{
+		talloc_free(mem_ctx);
+		return WERR_FOOBAR;
+	}
 
 	ret = ldb_add(kd->ldb, msg);
 	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
