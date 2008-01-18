@@ -57,46 +57,73 @@ NET_API_STATUS libnetapi_set_username(struct libnetapi_ctx *ctx, const char *use
 NET_API_STATUS libnetapi_set_password(struct libnetapi_ctx *ctx, const char *password);
 NET_API_STATUS libnetapi_set_workgroup(struct libnetapi_ctx *ctx, const char *workgroup);
 const char *libnetapi_errstr(NET_API_STATUS status);
-NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx, const char *error_string);
+NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx, const char *format, ...);
 const char *libnetapi_get_error_string(struct libnetapi_ctx *ctx, NET_API_STATUS status);
 
 
 /****************************************************************
+ NetApiBufferFree
 ****************************************************************/
 
 NET_API_STATUS NetApiBufferFree(void *buffer);
 
 /****************************************************************
+ NetJoinDomain
 ****************************************************************/
 
-/* wkssvc */
 NET_API_STATUS NetJoinDomain(const char *server,
 			     const char *domain,
 			     const char *account_ou,
 			     const char *account,
 			     const char *password,
 			     uint32_t join_options);
+
+/****************************************************************
+ NetUnjoinDomain
+****************************************************************/
+
 NET_API_STATUS NetUnjoinDomain(const char *server_name,
 			       const char *account,
 			       const char *password,
 			       uint32_t unjoin_flags);
+
+/****************************************************************
+ NetGetJoinInformation
+****************************************************************/
+
 NET_API_STATUS NetGetJoinInformation(const char *server_name,
 				     const char **name_buffer,
 				     uint16_t *name_type);
 
-/* srvsvc */
+/****************************************************************
+ NetServerGetInfo
+****************************************************************/
+
 NET_API_STATUS NetServerGetInfo(const char *server_name,
 				uint32_t level,
 				uint8_t **buffer);
+
+/****************************************************************
+ NetServerSetInfo
+****************************************************************/
+
 NET_API_STATUS NetServerSetInfo(const char *server_name,
 				uint32_t level,
 				uint8_t *buffer,
 				uint32_t *parm_error);
 
-/* netlogon */
+/****************************************************************
+ NetGetDCName
+****************************************************************/
+
 NET_API_STATUS NetGetDCName(const char *server_name,
 			    const char *domain_name,
 			    uint8_t **buffer);
+
+/****************************************************************
+ NetGetAnyDCName
+****************************************************************/
+
 NET_API_STATUS NetGetAnyDCName(const char *server_name,
 			       const char *domain_name,
 			       uint8_t **buffer);
