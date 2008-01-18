@@ -28,6 +28,7 @@ extern REGISTRY_OPS printing_ops;
 extern REGISTRY_OPS eventlog_ops;
 extern REGISTRY_OPS shares_reg_ops;
 extern REGISTRY_OPS smbconf_reg_ops;
+extern REGISTRY_OPS netlogon_params_reg_ops;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
 /* array of REGISTRY_HOOK's which are read into a tree for easy access */
@@ -40,6 +41,7 @@ REGISTRY_HOOK reg_hooks[] = {
   { KEY_PRINTING_PORTS, 	&printing_ops },
   { KEY_SHARES,      		&shares_reg_ops },
   { KEY_SMBCONF,      		&smbconf_reg_ops },
+  { KEY_NETLOGON_PARAMS,	&netlogon_params_reg_ops },
 #endif
   { NULL, NULL }
 };
