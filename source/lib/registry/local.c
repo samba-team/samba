@@ -140,7 +140,7 @@ WERROR local_get_predefined_key(struct registry_context *ctx,
 	}
 
 	if (mp == NULL)
-		return WERR_NOT_FOUND;
+		return WERR_BADFILE;
 
 	*key = reg_import_hive_key(ctx, mp->key,
 				   mp->path.predefined_key,

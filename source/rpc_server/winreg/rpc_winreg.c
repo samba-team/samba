@@ -356,13 +356,6 @@ static WERROR dcesrv_winreg_OpenKey(struct dcesrv_call_state *dce_call,
 		r->out.handle = &newh->wire_handle;
 	} else {
 		talloc_free(newh);
-		/*
-		 * Windows expects WERR_BADFILE when a particular key
-		 * is not found.  If we receive WERR_NOT_FOUND from the lower
-		 * layer calls, translate it here to return what is expected.
-		 */
-		if (W_ERROR_EQUAL(result, WERR_NOT_FOUND))
-			return WERR_BADFILE;
 	}
 
 	return result;
