@@ -208,62 +208,61 @@ update:
 }
 
 
+
 /* 
    the core of tdb_allocate - called when we have decided which
    free list entry to use
+
+   Note that we try to allocate by grabbing data from the end of an existing record,
+   not the beginning. This is so the left merge in a free is more likely to be
+   able to free up the record without fragmentation
  */
-static tdb_off_t tdb_allocate_ofs(struct tdb_context *tdb, tdb_len_t length, tdb_off_t rec_ptr,
-				struct list_struct *rec, tdb_off_t last_ptr)
+static tdb_off_t tdb_allocate_ofs(struct tdb_context *tdb, 
+				  tdb_len_t length, tdb_off_t rec_ptr,
+				  struct list_struct *rec, tdb_off_t last_ptr)
 {
-	struct list_struct newrec;
-	tdb_off_t newrec_ptr;
+#define MIN_REC_SIZE (sizeof(struct list_struct) + sizeof(tdb_off_t) + 8)
 
-	memset(&newrec, '\0', sizeof(newrec));
+	if (rec->rec_len < length + MIN_REC_SIZE) {
+		/* we have to grab the whole record */
 
-	/* found it - now possibly split it up  */
-	if (rec->rec_len > length + MIN_REC_SIZE) {
-		/* Length of left piece */
-		length = TDB_ALIGN(length, TDB_ALIGNMENT);
-		
-		/* Right piece to go on free list */
-		newrec.rec_len = rec->rec_len - (sizeof(*rec) + length);
-		newrec_ptr = rec_ptr + sizeof(*rec) + length;
-		
-		/* And left record is shortened */
-		rec->rec_len = length;
-	} else {
-		newrec_ptr = 0;
+		/* unlink it from the previous record */
+		if (tdb_ofs_write(tdb, last_ptr, &rec->next) == -1) {
+			return 0;
+		}
+
+		/* mark it not free */
+		rec->magic = TDB_MAGIC;
+		if (tdb_rec_write(tdb, rec_ptr, rec) == -1) {
+			return 0;
+		}
+		return rec_ptr;
 	}
-	
-	/* Remove allocated record from the free list */
-	if (tdb_ofs_write(tdb, last_ptr, &rec->next) == -1) {
-		return 0;
-	}
-	
-	/* Update header: do this before we drop alloc
-	   lock, otherwise tdb_free() might try to
-	   merge with us, thinking we're free.
-	   (Thanks Jeremy Allison). */
-	rec->magic = TDB_MAGIC;
+
+	/* we're going to just shorten the existing record */
+	rec->rec_len -= (length + sizeof(*rec));
 	if (tdb_rec_write(tdb, rec_ptr, rec) == -1) {
 		return 0;
 	}
-	
-	/* Did we create new block? */
-	if (newrec_ptr) {
-		/* Update allocated record tailer (we
-		   shortened it). */
-		if (update_tailer(tdb, rec_ptr, rec) == -1) {
-			return 0;
-		}
-		
-		/* Free new record */
-		if (tdb_free(tdb, newrec_ptr, &newrec) == -1) {
-			return 0;
-		}
+	if (update_tailer(tdb, rec_ptr, rec) == -1) {
+		return 0;
 	}
-	
-	/* all done - return the new record offset */
+
+	/* and setup the new record */
+	rec_ptr += sizeof(*rec) + rec->rec_len;	
+
+	memset(rec, '\0', sizeof(*rec));
+	rec->rec_len = length;
+	rec->magic = TDB_MAGIC;
+
+	if (tdb_rec_write(tdb, rec_ptr, rec) == -1) {
+		return 0;
+	}
+
+	if (update_tailer(tdb, rec_ptr, rec) == -1) {
+		return 0;
+	}
+
 	return rec_ptr;
 }
 
@@ -287,6 +286,7 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_st
 
 	/* Extra bytes required for tailer */
 	length += sizeof(tdb_off_t);
+	length = TDB_ALIGN(length, TDB_ALIGNMENT);
 
  again:
 	last_ptr = FREELIST_TOP;
@@ -343,7 +343,8 @@ tdb_off_t tdb_allocate(struct tdb_context *tdb, tdb_len_t length, struct list_st
 			goto fail;
 		}
 
-		newrec_ptr = tdb_allocate_ofs(tdb, length, bestfit.rec_ptr, rec, bestfit.last_ptr);
+		newrec_ptr = tdb_allocate_ofs(tdb, length, bestfit.rec_ptr, 
+					      rec, bestfit.last_ptr);
 		tdb_unlock(tdb, -1, F_WRLCK);
 		return newrec_ptr;
 	}
