@@ -411,7 +411,15 @@ static WERROR dcesrv_winreg_QueryValue(struct dcesrv_call_state *dce_call,
 					   &value_type, &value_data);
 
 	if (!W_ERROR_IS_OK(result)) {
-		return result;
+		/*
+		 * Windows expects WERR_BADFILE when a particular value
+		 * is not found.  If we receive WERR_NOT_FOUND from the lower
+		 * layer calls, translate it here to return what is expected.
+		 */
+		if (W_ERROR_EQUAL(result, WERR_NOT_FOUND))
+			return WERR_BADFILE;
+		else
+			return result;
 	}
 
 	/* Just asking for the size of the buffer */
