@@ -179,9 +179,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 		tdb->page_size = 0x2000;
 	}
 
-	if (open_flags & TDB_VOLATILE) {
-		tdb->max_dead_records = 5;
-	}
+	tdb->max_dead_records = (tdb_flags & TDB_VOLATILE) ? 5 : 0;
 
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
 		TDB_LOG((tdb, TDB_DEBUG_ERROR, "tdb_open_ex: can't open tdb %s write-only\n",
@@ -229,6 +227,7 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 
 	/* we need to zero database if we are the only one with it open */
 	if ((tdb_flags & TDB_CLEAR_IF_FIRST) &&
+	    (!tdb->read_only) &&
 	    (locked = (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_WRLCK, F_SETLK, 0, 1) == 0))) {
 		open_flags |= O_CREAT;
 		if (ftruncate(tdb->fd, 0) == -1) {
@@ -288,7 +287,6 @@ struct tdb_context *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	tdb->map_size = st.st_size;
 	tdb->device = st.st_dev;
 	tdb->inode = st.st_ino;
-	tdb->max_dead_records = 0;
 	tdb_mmap(tdb);
 	if (locked) {
 		if (tdb->methods->tdb_brlock(tdb, ACTIVE_LOCK, F_UNLCK, F_SETLK, 0, 1) == -1) {

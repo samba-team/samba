@@ -575,7 +575,7 @@ static WERROR regf_get_value_by_name(TALLOC_CTX *mem_ctx,
 	}
 
 	if (W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS))
-		return WERR_NOT_FOUND;
+		return WERR_BADFILE;
 
 	return error;
 }
@@ -870,7 +870,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 				break;
 		}
 		if (key_off == 0)
-			return WERR_NOT_FOUND;
+			return WERR_BADFILE;
 	} else if (!strncmp((char *)data.data, "lf", 2)) {
 		struct lf_block lf;
 		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
@@ -905,7 +905,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 				break;
 		}
 		if (key_off == 0)
-			return WERR_NOT_FOUND;
+			return WERR_BADFILE;
 	} else if (!strncmp((char *)data.data, "lh", 2)) {
 		struct lh_block lh;
 		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
@@ -942,7 +942,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 				break;
 		}
 		if (key_off == 0)
-			return WERR_NOT_FOUND;
+			return WERR_BADFILE;
 	} else if (!strncmp((char *)data.data, "ri", 2)) {
 		struct ri_block ri;
 		struct tdr_pull *pull = tdr_pull_init(ctx, private_data->hive->iconv_convenience);
@@ -1022,7 +1022,7 @@ static WERROR regf_get_subkey_by_name(TALLOC_CTX *ctx,
 		}
 		talloc_free(pull);
 		if (!key_off)
-			return WERR_NOT_FOUND;
+			return WERR_BADFILE;
 	} else {
 		DEBUG(0, ("Unknown subkey list type.\n"));
 		return WERR_GENERAL_FAILURE;
@@ -1419,7 +1419,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		}
 		if (!found_offset) {
 			DEBUG(2, ("Subkey not found\n"));
-			return WERR_NOT_FOUND;
+			return WERR_BADFILE;
 		}
 		li.key_count--;
 
@@ -1464,7 +1464,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		}
 		if (!found_offset) {
 			DEBUG(2, ("Subkey not found\n"));
-			return WERR_NOT_FOUND;
+			return WERR_BADFILE;
 		}
 		lf.key_count--;
 
@@ -1510,7 +1510,7 @@ static WERROR regf_sl_del_entry(struct regf_data *regf, uint32_t list_offset,
 		}
 		if (!found_offset) {
 			DEBUG(0, ("Subkey not found\n"));
-			return WERR_NOT_FOUND;
+			return WERR_BADFILE;
 		}
 		lh.key_count--;
 
@@ -1548,7 +1548,7 @@ static WERROR regf_del_value (struct hive_key *key, const char *name)
 	uint32_t i;
 
 	if (nk->values_offset == -1) {
-		return WERR_NOT_FOUND;
+		return WERR_BADFILE;
 	}
 
 	values = hbin_get(regf, nk->values_offset);
@@ -1572,7 +1572,7 @@ static WERROR regf_del_value (struct hive_key *key, const char *name)
 		}
 	}
 	if (!found_offset) {
-		return WERR_NOT_FOUND;
+		return WERR_BADFILE;
 	} else {
 		nk->num_values--;
 		values.length = (nk->num_values)*4;
@@ -1608,14 +1608,14 @@ static WERROR regf_del_key(const struct hive_key *parent, const char *name)
 
 	if (parent_nk->subkeys_offset == -1) {
 		DEBUG(4, ("Subkey list is empty, this key cannot contain subkeys.\n"));
-		return WERR_NOT_FOUND;
+		return WERR_BADFILE;
 	}
 
 	/* Find the key */
 	if (!W_ERROR_IS_OK(regf_get_subkey_by_name(parent_nk, parent, name,
 						   (struct hive_key **)&key))) {
 		DEBUG(2, ("Key '%s' not found\n", name));
-		return WERR_NOT_FOUND;
+		return WERR_BADFILE;
 	}
 
 	if (key->nk->subkeys_offset != -1 ||

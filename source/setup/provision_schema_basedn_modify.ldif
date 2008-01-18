@@ -3,9 +3,6 @@
 ###############################
 dn: ${SCHEMADN}
 changetype: modify
-replace: instanceType
-instanceType: 13
--
 replace: showInAdvancedViewOnly
 showInAdvancedViewOnly: TRUE
 -

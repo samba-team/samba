@@ -134,7 +134,6 @@ objectClass: top
 objectClass: group
 cn: RAS and IAS Servers
 description: Servers in this group can access remote access properties of users
-instanceType: 4
 objectSid: ${DOMAINSID}-553
 sAMAccountName: RAS and IAS Servers
 sAMAccountType: 536870912
@@ -307,7 +306,6 @@ objectClass: top
 objectClass: group
 cn: Server Operators
 description: Members can administer domain servers
-instanceType: 4
 objectSid: S-1-5-32-549
 adminCount: 1
 sAMAccountName: Server Operators
@@ -327,7 +325,6 @@ objectClass: top
 objectClass: group
 cn: Account Operators
 description: Members can administer domain user and group accounts
-instanceType: 4
 objectSid: S-1-5-32-548
 adminCount: 1
 sAMAccountName: Account Operators
