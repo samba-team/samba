@@ -400,7 +400,7 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 				   talloc_strdup(mem_ctx, classname));
 
 	ret = ldb_add(parentkd->ldb, msg);
-	if (ret < 0) {
+	if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("ldb_msg_add: %s\n", ldb_errstring(parentkd->ldb)));
 		return WERR_FOOBAR;
 	}
@@ -432,7 +432,7 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *child)
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		return WERR_NOT_FOUND;
-	} else if (ret < 0) {
+	} else if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("ldb_del_key: %s\n", ldb_errstring(parentkd->ldb)));
 		return WERR_FOOBAR;
 	}
@@ -455,7 +455,7 @@ static WERROR ldb_del_value (struct hive_key *key, const char *child)
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		return WERR_NOT_FOUND;
-	} else if (ret < 0) {
+	} else if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("ldb_del_value: %s\n", ldb_errstring(kd->ldb)));
 		return WERR_FOOBAR;
 	}
