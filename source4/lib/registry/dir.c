@@ -64,7 +64,7 @@ static WERROR reg_dir_del_key(const struct hive_key *k, const char *name)
 	if (rmdir(child) == 0)
 		ret = WERR_OK;
 	else if (errno == ENOENT)
-		ret = WERR_NOT_FOUND;
+		ret = WERR_BADFILE;
 	else
 		ret = WERR_GENERAL_FAILURE;
 
@@ -339,7 +339,7 @@ static WERROR reg_dir_del_value (struct hive_key *key, const char *name)
 	if (unlink(path) < 0) {
 		talloc_free(path);
 		if (errno == ENOENT)
-			return WERR_NOT_FOUND;
+			return WERR_BADFILE;
 		return WERR_GENERAL_FAILURE;
 	}
 	talloc_free(path);

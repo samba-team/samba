@@ -31,7 +31,7 @@ static bool test_del_nonexistant_key(struct torture_context *tctx,
 {
 	const struct hive_key *root = (const struct hive_key *)test_data;
 	WERROR error = hive_key_del(root, "bla");
-	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND,
+	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 				  "invalid return code");
 
 	return true;
@@ -134,7 +134,7 @@ static bool test_del_key(struct torture_context *tctx, const void *test_data)
 	torture_assert_werr_ok(tctx, error, "reg_key_del");
 
 	error = hive_key_del(root, "Nested Key");
-	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND, "reg_key_del");
+	torture_assert_werr_equal(tctx, error, WERR_BADFILE, "reg_key_del");
 
 	return true;
 }
@@ -218,7 +218,7 @@ static bool test_del_value(struct torture_context *tctx, const void *test_data)
 	torture_assert_werr_equal(tctx, error, WERR_BADFILE, "getting value");
 
 	error = hive_key_del_value(subkey, "Answer");
-	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND,
+	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 				  "deleting value");
 
 	return true;

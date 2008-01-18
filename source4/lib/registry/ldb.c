@@ -337,7 +337,7 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, const struct hive_key *h,
 		DEBUG(3, ("Key '%s' not found\n",
 			ldb_dn_get_linearized(ldap_path)));
 		talloc_free(res);
-		return WERR_NOT_FOUND;
+		return WERR_BADFILE;
 	}
 
 	newkd = talloc_zero(mem_ctx, struct ldb_key_data);
@@ -400,7 +400,7 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 			  struct security_descriptor *sd,
 			  struct hive_key **newkey)
 {
-	const struct ldb_key_data *parentkd = (const struct ldb_key_data *)parent;
+	struct ldb_key_data *parentkd = (const struct ldb_key_data *)parent;
 	struct ldb_message *msg;
 	struct ldb_key_data *newkd;
 	int ret;
@@ -433,6 +433,10 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 
 	*newkey = (struct hive_key *)newkd;
 
+	/* reset cache */
+	talloc_free(parentkd->subkeys);
+	parentkd->subkeys = NULL;
+
 	return WERR_OK;
 }
 
@@ -450,11 +454,15 @@ static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 	talloc_free(mem_ctx);
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		return WERR_NOT_FOUND;
+		return WERR_BADFILE;
 	} else if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("ldb_del_key: %s\n", ldb_errstring(parentkd->ldb)));
 		return WERR_FOOBAR;
 	}
+
+	/* reset cache */
+	talloc_free(parentkd->subkeys);
+	parentkd->subkeys = NULL;
 
 	return WERR_OK;
 }
@@ -478,11 +486,15 @@ static WERROR ldb_del_value (struct hive_key *key, const char *child)
 	talloc_free(childdn);
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
-		return WERR_NOT_FOUND;
+		return WERR_BADFILE;
 	} else if (ret != LDB_SUCCESS) {
 		DEBUG(1, ("ldb_del_value: %s\n", ldb_errstring(kd->ldb)));
 		return WERR_FOOBAR;
 	}
+
+	/* reset cache */
+	talloc_free(kd->values);
+	kd->values = NULL;
 
 	return WERR_OK;
 }
@@ -521,6 +533,10 @@ static WERROR ldb_set_value(struct hive_key *parent,
 		return WERR_FOOBAR;
 	}
 
+	/* reset cache */
+	talloc_free(kd->values);
+	kd->values = NULL;
+
 	talloc_free(mem_ctx);
 	return WERR_OK;
 }
@@ -537,17 +553,23 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 {
 	struct ldb_key_data *kd = talloc_get_type(key, struct ldb_key_data);
 
+	if (kd->subkeys == NULL) {
+		W_ERROR_NOT_OK_RETURN(cache_subkeys(kd));
+	}
+
+	if (kd->values == NULL) {
+		W_ERROR_NOT_OK_RETURN(cache_values(kd));
+	}
+
 	/* FIXME */
 	if (classname != NULL)
 		*classname = NULL;
 
 	if (num_subkeys != NULL) {
-		W_ERROR_NOT_OK_RETURN(cache_subkeys(kd));
 		*num_subkeys = kd->subkey_count;
 	}
 
 	if (num_values != NULL) {
-		W_ERROR_NOT_OK_RETURN(cache_values(kd));
 		*num_values = kd->value_count;
 	}
 
@@ -557,7 +579,6 @@ static WERROR ldb_get_key_info(TALLOC_CTX *mem_ctx,
 	if (max_subkeynamelen != NULL) {
 		int i;
 		struct ldb_message_element *el;
-		W_ERROR_NOT_OK_RETURN(cache_subkeys(kd));
 
 		*max_subkeynamelen = 0;
 
