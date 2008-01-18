@@ -168,7 +168,13 @@ static struct ldb_dn *reg_path_to_ldb(TALLOC_CTX *mem_ctx,
 		else keyname = mypath;
 
 		if(strlen(keyname)) {
-			ldb_dn_add_base_fmt(ret, "key=%s", keyname);
+			if (!ldb_dn_add_base_fmt(ret, "key=%s",
+						 reg_ldb_escape(local_ctx,
+								keyname)))
+			{
+				talloc_free(local_ctx);
+				return NULL;
+			}
 		}
 
 		if(begin) {
@@ -430,18 +436,18 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 	return WERR_OK;
 }
 
-static WERROR ldb_del_key(const struct hive_key *key, const char *child)
+static WERROR ldb_del_key(const struct hive_key *key, const char *name)
 {
 	int ret;
 	struct ldb_key_data *parentkd = talloc_get_type(key, struct ldb_key_data);
-	struct ldb_dn *childdn;
+	struct ldb_dn *ldap_path;
+	TALLOC_CTX *mem_ctx = talloc_init("ldb_del_key");
 
-	childdn = ldb_dn_copy(parentkd->ldb, parentkd->dn);
-	ldb_dn_add_child_fmt(childdn, "key=%s", child);
+	ldap_path = reg_path_to_ldb(mem_ctx, key, name, NULL);
 
-	ret = ldb_delete(parentkd->ldb, childdn);
+	ret = ldb_delete(parentkd->ldb, ldap_path);
 
-	talloc_free(childdn);
+	talloc_free(mem_ctx);
 
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
 		return WERR_NOT_FOUND;
