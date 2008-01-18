@@ -62,6 +62,12 @@ struct ntlm_auth_state {
 	enum stdio_helper_mode helper_mode;
 	enum ntlm_auth_cli_state cli_state;
 	enum ntlm_auth_svr_state svr_state;
+	struct ntlmssp_state *ntlmssp_state;
+	uint32_t neg_flags;
+	char *want_feature_list;
+	bool have_session_key;
+	DATA_BLOB session_key;
+	DATA_BLOB initial_message;
 };
 
 typedef void (*stdio_helper_function)(struct ntlm_auth_state *state, char *buf,
@@ -824,20 +830,9 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 					 	char *buf, int length)
 {
-	/* The statics here are *HORRIBLE* and this entire concept
-	   needs to be rewritten. Essentially it's using these statics
-	   as the state in a state machine. BLEEEGH ! JRA. */
-
-	static NTLMSSP_STATE *ntlmssp_state = NULL;
-	static DATA_BLOB initial_message;
-	static char* want_feature_list = NULL;
-	static uint32 neg_flags = 0;
-	static bool have_session_key = False;
-	static DATA_BLOB session_key;
 	DATA_BLOB request, reply;
 	NTSTATUS nt_status;
-	bool first = False;
-	
+
 	if (!opt_username || !*opt_username) {
 		x_fprintf(x_stderr, "username must be specified!\n\n");
 		exit(1);
@@ -852,8 +847,9 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 	if (strlen(buf) > 3) {
 		if(strncmp(buf, "SF ", 3) == 0) {
 			DEBUG(10, ("Looking for flags to negotiate\n"));
-			SAFE_FREE(want_feature_list);
-			want_feature_list = SMB_STRNDUP(buf+3, strlen(buf)-3);
+			talloc_free(state->want_feature_list);
+			state->want_feature_list = talloc_strdup(state->mem_ctx,
+					buf+3);
 			x_fprintf(x_stdout, "OK\n");
 			return;
 		}
@@ -865,7 +861,8 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 	if (strncmp(buf, "PW ", 3) == 0) {
 		/* We asked for a password and obviously got it :-) */
 
-		opt_password = SMB_STRNDUP((const char *)request.data, request.length);
+		opt_password = SMB_STRNDUP((const char *)request.data,
+				request.length);
 
 		if (opt_password == NULL) {
 			DEBUG(1, ("Out of memory\n"));
@@ -879,8 +876,8 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 		return;
 	}
 
-	if (!ntlmssp_state && use_cached_creds) {
-		/* check whether credentials are usable. */
+	if (!state->ntlmssp_state && use_cached_creds) {
+		/* check whether cached credentials are usable. */
 		DATA_BLOB empty_blob = data_blob_null;
 
 		nt_status = do_ccache_ntlm_auth(empty_blob, empty_blob, NULL);
@@ -891,31 +888,39 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 	}
 
 	if (opt_password == NULL && !use_cached_creds) {
-		
 		/* Request a password from the calling process.  After
-		   sending it, the calling process should retry asking for the negotiate. */
-		
+		   sending it, the calling process should retry asking for the
+		   negotiate. */
+
 		DEBUG(10, ("Requesting password\n"));
 		x_fprintf(x_stdout, "PW\n");
 		return;
 	}
 
 	if (strncmp(buf, "YR", 2) == 0) {
-		if (ntlmssp_state)
-			ntlmssp_end(&ntlmssp_state);
+		if (state->ntlmssp_state)
+			ntlmssp_end(&state->ntlmssp_state);
+		state->cli_state = CLIENT_INITIAL;
 	} else if (strncmp(buf, "TT", 2) == 0) {
-		
+		/* No special preprocessing required */
 	} else if (strncmp(buf, "GF", 2) == 0) {
 		DEBUG(10, ("Requested negotiated NTLMSSP flags\n"));
-		x_fprintf(x_stdout, "GF 0x%08lx\n", have_session_key?neg_flags:0l);
+
+		if(state->cli_state == CLIENT_FINISHED) {
+			x_fprintf(x_stdout, "GF 0x%08x\n", state->neg_flags);
+		}
+		else {
+			x_fprintf(x_stdout, "BH\n");
+		}
+
 		data_blob_free(&request);
 		return;
 	} else if (strncmp(buf, "GK", 2) == 0 ) {
 		DEBUG(10, ("Requested session key\n"));
 
-		if(have_session_key) {
-			char *key64 = base64_encode_data_blob(talloc_tos(),
-					session_key);
+		if(state->cli_state == CLIENT_FINISHED) {
+			char *key64 = base64_encode_data_blob(state->mem_ctx,
+					state->session_key);
 			x_fprintf(x_stdout, "GK %s\n", key64?key64:"<NULL>");
 			TALLOC_FREE(key64);
 		}
@@ -931,39 +936,42 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 		return;
 	}
 
-	if (!ntlmssp_state) {
-		if (!NT_STATUS_IS_OK(nt_status = ntlm_auth_start_ntlmssp_client(&ntlmssp_state))) {
+	if (!state->ntlmssp_state) {
+		nt_status = ntlm_auth_start_ntlmssp_client(
+				&state->ntlmssp_state);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
 			return;
 		}
-		ntlmssp_want_feature_list(ntlmssp_state, want_feature_list);
-		first = True;
-		initial_message = data_blob_null;
+		ntlmssp_want_feature_list(state->ntlmssp_state,
+				state->want_feature_list);
+		state->initial_message = data_blob_null;
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
 	dump_data(10, request.data, request.length);
 
-	if (use_cached_creds && !opt_password && !first) {
-		nt_status = do_ccache_ntlm_auth(initial_message, request, &reply);
+	if (use_cached_creds && !opt_password &&
+			(state->cli_state == CLIENT_RESPONSE)) {
+		nt_status = do_ccache_ntlm_auth(state->initial_message, request,
+				&reply);
 	} else {
-		nt_status = ntlmssp_update(ntlmssp_state, request, &reply);
+		nt_status = ntlmssp_update(state->ntlmssp_state, request,
+				&reply);
 	}
-	
+
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		char *reply_base64 = base64_encode_data_blob(talloc_tos(),
+		char *reply_base64 = base64_encode_data_blob(state->mem_ctx,
 				reply);
-		if (first) {
+		if (state->cli_state == CLIENT_INITIAL) {
 			x_fprintf(x_stdout, "YR %s\n", reply_base64);
-		} else { 
-			x_fprintf(x_stdout, "KK %s\n", reply_base64);
-		}
-		TALLOC_FREE(reply_base64);
-		if (first) {
-			initial_message = reply;
+			state->initial_message = reply;
+			state->cli_state = CLIENT_RESPONSE;
 		} else {
+			x_fprintf(x_stdout, "KK %s\n", reply_base64);
 			data_blob_free(&reply);
 		}
+		TALLOC_FREE(reply_base64);
 		DEBUG(10, ("NTLMSSP challenge\n"));
 	} else if (NT_STATUS_IS_OK(nt_status)) {
 		char *reply_base64 = base64_encode_data_blob(talloc_tos(),
@@ -971,22 +979,25 @@ static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
 		x_fprintf(x_stdout, "AF %s\n", reply_base64);
 		TALLOC_FREE(reply_base64);
 
-		if(have_session_key)
-			data_blob_free(&session_key);
+		if(state->have_session_key)
+			data_blob_free(&state->session_key);
 
-		session_key = data_blob(ntlmssp_state->session_key.data, 
-				ntlmssp_state->session_key.length);
-		neg_flags = ntlmssp_state->neg_flags;
-		have_session_key = True;
+		state->session_key = data_blob(
+				state->ntlmssp_state->session_key.data,
+				state->ntlmssp_state->session_key.length);
+		state->neg_flags = state->ntlmssp_state->neg_flags;
+		state->have_session_key = true;
 
 		DEBUG(10, ("NTLMSSP OK!\n"));
-		if (ntlmssp_state)
-			ntlmssp_end(&ntlmssp_state);
+		state->cli_state = CLIENT_FINISHED;
+		if (state->ntlmssp_state)
+			ntlmssp_end(&state->ntlmssp_state);
 	} else {
 		x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
 		DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
-		if (ntlmssp_state)
-			ntlmssp_end(&ntlmssp_state);
+		state->cli_state = CLIENT_ERROR;
+		if (state->ntlmssp_state)
+			ntlmssp_end(&state->ntlmssp_state);
 	}
 
 	data_blob_free(&request);
@@ -2167,7 +2178,7 @@ static void squid_stream(enum stdio_helper_mode stdio_mode, stdio_helper_functio
 		exit(1);
 	}
 
-	state = talloc(mem_ctx, struct ntlm_auth_state);
+	state = talloc_zero(mem_ctx, struct ntlm_auth_state);
 	if (!state) {
 		DEBUG(0, ("squid_stream: Failed to talloc ntlm_auth_state\n"));
 		x_fprintf(x_stderr, "ERR\n");
