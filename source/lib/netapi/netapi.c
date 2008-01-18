@@ -205,15 +205,20 @@ const char *libnetapi_errstr(NET_API_STATUS status)
 ****************************************************************/
 
 NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx,
-					  const char *error_string)
+					  const char *format, ...)
 {
+	va_list args;
+
 	TALLOC_FREE(ctx->error_string);
-	ctx->error_string = talloc_strdup(ctx, error_string);
+
+	va_start(args, format);
+	ctx->error_string = talloc_vasprintf(ctx, format, args);
+	va_end(args);
+
 	if (!ctx->error_string) {
 		return W_ERROR_V(WERR_NOMEM);
 	}
 	return NET_API_STATUS_SUCCESS;
-
 }
 
 /****************************************************************
