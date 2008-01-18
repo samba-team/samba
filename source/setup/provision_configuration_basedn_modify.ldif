@@ -3,8 +3,5 @@
 ###############################
 dn: ${CONFIGDN}
 changetype: modify
-replace: showInAdvancedViewOnly
-showInAdvancedViewOnly: TRUE
--
 replace: subRefs
 subRefs: ${SCHEMADN}
