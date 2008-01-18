@@ -316,25 +316,15 @@ static int transaction_write_existing(struct tdb_context *tdb, tdb_off_t off,
 		return 0;
 	}
 
+	if (blk == tdb->transaction->num_blocks-1 &&
+	    off + len > tdb->transaction->last_block_size) {
+		len = tdb->transaction->last_block_size - off;
+	}
+
 	/* overwrite part of an existing block */
-	if (buf == NULL) {
-		memset(tdb->transaction->blocks[blk] + off, 0, len);
-	} else {
-		memcpy(tdb->transaction->blocks[blk] + off, buf, len);
-	}
-	if (blk == tdb->transaction->num_blocks-1) {
-		if (len + off > tdb->transaction->last_block_size) {
-			tdb->transaction->last_block_size = len + off;
-		}
-	}
+	memcpy(tdb->transaction->blocks[blk] + off, buf, len);
 
 	return 0;
-
-fail:
-	TDB_LOG((tdb, TDB_DEBUG_FATAL, "transaction_write: failed at off=%d len=%d\n", 
-		 (blk*tdb->transaction->block_size) + off, len));
-	tdb->transaction->transaction_error = 1;
-	return -1;
 }
 
 
