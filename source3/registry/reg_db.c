@@ -47,7 +47,7 @@ static const char *builtin_registry_paths[] = {
 	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib",
 	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib\\009",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print\\Monitors",
-	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\ProductOptions",
+	KEY_PROD_OPTIONS,
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\DefaultUserConfiguration",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\TcpIp\\Parameters",
 	KEY_NETLOGON_PARAMS,
