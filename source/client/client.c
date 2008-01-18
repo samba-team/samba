@@ -1600,7 +1600,7 @@ static int cmd_allinfo(void)
 	}
 
 	if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
-		d_printf("altname <file>\n");
+		d_printf("allinfo <file>\n");
 		return 1;
 	}
 	name = talloc_asprintf_append(name, buf);
