@@ -101,6 +101,7 @@ typedef struct {
 #define KEY_SHARES		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares"
 #define KEY_SMBCONF		"HKLM\\SOFTWARE\\Samba\\smbconf"
 #define KEY_NETLOGON_PARAMS	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters"
+#define KEY_PROD_OPTIONS	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\ProductOptions"
 #define KEY_TREE_ROOT		""
 
 /*

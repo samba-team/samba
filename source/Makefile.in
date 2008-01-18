@@ -419,6 +419,7 @@ REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_pri
 	       registry/reg_smbconf.o registry/reg_api.o \
 	       registry/reg_frontend_hilvl.o \
 	       registry/reg_backend_netlogon_params.o \
+	       registry/reg_backend_prod_options.o \
 	       $(UTIL_REG_API_OBJ) $(UTIL_REG_SMBCONF_OBJ)
 
 RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o librpc/gen_ndr/srv_lsa.o
