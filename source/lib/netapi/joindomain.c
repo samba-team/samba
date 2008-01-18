@@ -22,6 +22,9 @@
 #include "lib/netapi/netapi.h"
 #include "libnet/libnet.h"
 
+/****************************************************************
+****************************************************************/
+
 static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 				 const char *server_name,
 				 const char *domain_name,
@@ -52,6 +55,8 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		status = dsgetdcname(mem_ctx, NULL, domain_name,
 				     NULL, NULL, flags, &info);
 		if (!NT_STATUS_IS_OK(status)) {
+			libnetapi_set_error_string(mem_ctx,
+				"%s", get_friendly_nt_error_msg(status));
 			return ntstatus_to_werror(status);
 		}
 		r->in.dc_name = talloc_strdup(mem_ctx,
@@ -79,12 +84,15 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 
 	werr = libnet_Join(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr) && r->out.error_string) {
-		libnetapi_set_error_string(mem_ctx, r->out.error_string);
+		libnetapi_set_error_string(mem_ctx, "%s", r->out.error_string);
 	}
 	TALLOC_FREE(r);
 
 	return werr;
 }
+
+/****************************************************************
+****************************************************************/
 
 static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
 				  const char *server_name,
@@ -149,6 +157,9 @@ static WERROR NetJoinDomainRemote(struct libnetapi_ctx *ctx,
 	return werr;
 }
 
+/****************************************************************
+****************************************************************/
+
 static WERROR libnetapi_NetJoinDomain(struct libnetapi_ctx *ctx,
 				      const char *server_name,
 				      const char *domain_name,
@@ -181,6 +192,10 @@ static WERROR libnetapi_NetJoinDomain(struct libnetapi_ctx *ctx,
 				   join_flags);
 }
 
+/****************************************************************
+ NetJoinDomain
+****************************************************************/
+
 NET_API_STATUS NetJoinDomain(const char *server_name,
 			     const char *domain_name,
 			     const char *account_ou,
@@ -208,8 +223,11 @@ NET_API_STATUS NetJoinDomain(const char *server_name,
 		return W_ERROR_V(werr);
 	}
 
-	return 0;
+	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
 
 static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 				   const char *server_name,
@@ -232,7 +250,6 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		r->in.dc_name = talloc_strdup(mem_ctx, server_name);
 		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	} else {
-
 		NTSTATUS status;
 		const char *domain = NULL;
 		struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
@@ -247,6 +264,8 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 		status = dsgetdcname(mem_ctx, NULL, domain,
 				     NULL, NULL, flags, &info);
 		if (!NT_STATUS_IS_OK(status)) {
+			libnetapi_set_error_string(mem_ctx,
+				"%s", get_friendly_nt_error_msg(status));
 			return ntstatus_to_werror(status);
 		}
 		r->in.dc_name = talloc_strdup(mem_ctx,
@@ -266,12 +285,21 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 
 	r->in.unjoin_flags = unjoin_flags;
 	r->in.modify_config = true;
+	r->in.debug = true;
 
 	r->in.domain_sid = &domain_sid;
 
-	return libnet_Unjoin(mem_ctx, r);
+	werr = libnet_Unjoin(mem_ctx, r);
+	if (!W_ERROR_IS_OK(werr) && r->out.error_string) {
+		libnetapi_set_error_string(mem_ctx, "%s", r->out.error_string);
+	}
+	TALLOC_FREE(r);
 
+	return werr;
 }
+
+/****************************************************************
+****************************************************************/
 
 static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 				    const char *server_name,
@@ -335,6 +363,9 @@ static WERROR NetUnjoinDomainRemote(struct libnetapi_ctx *ctx,
 	return werr;
 }
 
+/****************************************************************
+****************************************************************/
+
 static WERROR libnetapi_NetUnjoinDomain(struct libnetapi_ctx *ctx,
 					const char *server_name,
 					const char *account,
@@ -356,6 +387,10 @@ static WERROR libnetapi_NetUnjoinDomain(struct libnetapi_ctx *ctx,
 				     password,
 				     unjoin_flags);
 }
+
+/****************************************************************
+ NetUnjoinDomain
+****************************************************************/
 
 NET_API_STATUS NetUnjoinDomain(const char *server_name,
 			       const char *account,
@@ -380,8 +415,11 @@ NET_API_STATUS NetUnjoinDomain(const char *server_name,
 		return W_ERROR_V(werr);
 	}
 
-	return 0;
+	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
 
 static WERROR NetGetJoinInformationRemote(struct libnetapi_ctx *ctx,
 					  const char *server_name,
@@ -431,6 +469,9 @@ static WERROR NetGetJoinInformationRemote(struct libnetapi_ctx *ctx,
 	return werr;
 }
 
+/****************************************************************
+****************************************************************/
+
 static WERROR NetGetJoinInformationLocal(struct libnetapi_ctx *ctx,
 					 const char *server_name,
 					 const char **name_buffer,
@@ -478,6 +519,10 @@ static WERROR libnetapi_NetGetJoinInformation(struct libnetapi_ctx *ctx,
 					   name_type);
 }
 
+/****************************************************************
+ NetGetJoinInformation
+****************************************************************/
+
 NET_API_STATUS NetGetJoinInformation(const char *server_name,
 				     const char **name_buffer,
 				     uint16_t *name_type)
@@ -499,5 +544,5 @@ NET_API_STATUS NetGetJoinInformation(const char *server_name,
 		return W_ERROR_V(werr);
 	}
 
-	return 0;
+	return NET_API_STATUS_SUCCESS;
 }

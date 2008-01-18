@@ -22,6 +22,9 @@
 #include "lib/netapi/netapi.h"
 #include "libnet/libnet.h"
 
+/********************************************************************
+********************************************************************/
+
 static WERROR NetGetDCNameLocal(struct libnetapi_ctx *ctx,
 				const char *server_name,
 				const char *domain_name,
@@ -29,6 +32,9 @@ static WERROR NetGetDCNameLocal(struct libnetapi_ctx *ctx,
 {
 	return WERR_NOT_SUPPORTED;
 }
+
+/********************************************************************
+********************************************************************/
 
 static WERROR NetGetDCNameRemote(struct libnetapi_ctx *ctx,
 				 const char *server_name,
@@ -73,6 +79,9 @@ static WERROR NetGetDCNameRemote(struct libnetapi_ctx *ctx,
 	return werr;
 }
 
+/********************************************************************
+********************************************************************/
+
 static WERROR libnetapi_NetGetDCName(struct libnetapi_ctx *ctx,
 				     const char *server_name,
 				     const char *domain_name,
@@ -90,6 +99,10 @@ static WERROR libnetapi_NetGetDCName(struct libnetapi_ctx *ctx,
 				  domain_name,
 				  buffer);
 }
+
+/****************************************************************
+ NetGetDCName
+****************************************************************/
 
 NET_API_STATUS NetGetDCName(const char *server_name,
 			    const char *domain_name,
@@ -112,8 +125,11 @@ NET_API_STATUS NetGetDCName(const char *server_name,
 		return W_ERROR_V(werr);
 	}
 
-	return 0;
+	return NET_API_STATUS_SUCCESS;
 }
+
+/********************************************************************
+********************************************************************/
 
 static WERROR NetGetAnyDCNameLocal(struct libnetapi_ctx *ctx,
 				   const char *server_name,
@@ -122,6 +138,9 @@ static WERROR NetGetAnyDCNameLocal(struct libnetapi_ctx *ctx,
 {
 	return WERR_NOT_SUPPORTED;
 }
+
+/********************************************************************
+********************************************************************/
 
 static WERROR NetGetAnyDCNameRemote(struct libnetapi_ctx *ctx,
 				    const char *server_name,
@@ -170,6 +189,9 @@ static WERROR NetGetAnyDCNameRemote(struct libnetapi_ctx *ctx,
 
 }
 
+/********************************************************************
+********************************************************************/
+
 static WERROR libnetapi_NetGetAnyDCName(struct libnetapi_ctx *ctx,
 					const char *server_name,
 					const char *domain_name,
@@ -187,6 +209,10 @@ static WERROR libnetapi_NetGetAnyDCName(struct libnetapi_ctx *ctx,
 				     domain_name,
 				     buffer);
 }
+
+/****************************************************************
+ NetGetAnyDCName
+****************************************************************/
 
 NET_API_STATUS NetGetAnyDCName(const char *server_name,
 			       const char *domain_name,
@@ -209,5 +235,5 @@ NET_API_STATUS NetGetAnyDCName(const char *server_name,
 		return W_ERROR_V(werr);
 	}
 
-	return 0;
+	return NET_API_STATUS_SUCCESS;
 }
