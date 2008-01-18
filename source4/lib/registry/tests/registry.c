@@ -53,7 +53,7 @@ static bool test_get_predefined_unknown(struct torture_context *tctx,
 	WERROR error;
 
 	error = reg_get_predefined_key(rctx, 1337, &root);
-	torture_assert_werr_equal(tctx, error, WERR_NOT_FOUND,
+	torture_assert_werr_equal(tctx, error, WERR_BADFILE,
 				  "getting predefined key failed");
 	return true;
 }
