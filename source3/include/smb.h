@@ -574,6 +574,16 @@ struct trans_state {
 	char *data;
 };
 
+/*
+ * Info about an alternate data stream
+ */
+
+struct stream_struct {
+	SMB_OFF_T size;
+	SMB_OFF_T alloc_size;
+	char *name;
+};
+
 /* Include VFS stuff */
 
 #include "smb_acls.h"
