@@ -52,6 +52,10 @@ both marshalling/unmarshalling and debugging purposes).
 =item I<--help>
 
 Show list of available options.
+
+=item I<--version>
+
+Show pidl version
 		
 =item I<--outputdir OUTNAME>
 
@@ -403,7 +407,7 @@ use lib "$RealBin";
 use lib "$RealBin/lib";
 use Getopt::Long;
 use File::Basename;
-use Parse::Pidl;
+use Parse::Pidl qw ( $VERSION );
 use Parse::Pidl::Util;
 
 #####################################################################
@@ -453,6 +457,7 @@ sub FileSave($$)
 
 my(@opt_incdirs) = (); 
 my($opt_help) = 0;
+my($opt_version) = 0;
 my($opt_parse_idl_tree) = 0;
 my($opt_dump_idl_tree);
 my($opt_dump_ndr_tree);
@@ -483,7 +488,9 @@ my($opt_warn_compat) = 0;
 # display help text
 sub ShowHelp()
 {
-print "perl IDL parser and code generator
+print "perl IDL parser and code generator\n";
+ShowVersion();
+print"
 Copyright (C) Andrew Tridgell <tridge\@samba.org>
 Copyright (C) Jelmer Vernooij <jelmer\@samba.org>
 
@@ -491,6 +498,7 @@ Usage: $Script [options] [--] <idlfile> [<idlfile>...]
 
 Generic Options:
  --help                  this help page
+ --version               show pidl version
  --outputdir=OUTDIR      put output in OUTDIR/ [.]
  --warn-compat           warn about incompatibility with other compilers
  --quiet                 be quiet
@@ -528,9 +536,17 @@ Wireshark parsers:
     exit(0);
 }
 
+#########################################
+# Display version
+sub ShowVersion()
+{
+    print "perl IDL version $VERSION\n";
+}
+
 # main program
 my $result = GetOptions (
 	    'help|h|?' => \$opt_help, 
+            'version' => \$opt_version,
 	    'outputdir=s' => \$opt_outputdir,
 	    'dump-idl' => \$opt_dump_idl,
 		'dump-idl-tree:s' => \$opt_dump_idl_tree,
@@ -562,6 +578,11 @@ if (not $result) {
 
 if ($opt_help) {
     ShowHelp();
+    exit(0);
+}
+
+if ($opt_version) {
+    ShowVersion();
     exit(0);
 }
 
