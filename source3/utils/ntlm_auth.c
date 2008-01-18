@@ -43,12 +43,15 @@ enum stdio_helper_mode {
 	NUM_HELPER_MODES
 };
 
-enum ntlm_auth_con_state {
-	CLIENT_INITIAL,
+enum ntlm_auth_cli_state {
+	CLIENT_INITIAL = 0,
 	CLIENT_RESPONSE,
 	CLIENT_FINISHED,
-	CLIENT_ERROR,
-	SERVER_INITIAL,
+	CLIENT_ERROR
+};
+
+enum ntlm_auth_svr_state {
+	SERVER_INITIAL = 0,
 	SERVER_CHALLENGE,
 	SERVER_FINISHED,
 	SERVER_ERROR
@@ -57,31 +60,33 @@ enum ntlm_auth_con_state {
 struct ntlm_auth_state {
 	TALLOC_CTX *mem_ctx;
 	enum stdio_helper_mode helper_mode;
-	enum ntlm_auth_con_state con_state;
+	enum ntlm_auth_cli_state cli_state;
+	enum ntlm_auth_svr_state svr_state;
 };
 
-typedef void (*stdio_helper_function)(enum stdio_helper_mode stdio_helper_mode, 
-				     char *buf, int length);
+typedef void (*stdio_helper_function)(struct ntlm_auth_state *state, char *buf,
+					int length);
 
-static void manage_squid_basic_request (enum stdio_helper_mode stdio_helper_mode, 
+static void manage_squid_basic_request (struct ntlm_auth_state *state,
 					char *buf, int length);
 
-static void manage_squid_ntlmssp_request (enum stdio_helper_mode stdio_helper_mode, 
-					  char *buf, int length);
+static void manage_squid_ntlmssp_request (struct ntlm_auth_state *state,
+					char *buf, int length);
 
-static void manage_client_ntlmssp_request (enum stdio_helper_mode stdio_helper_mode, 
-					   char *buf, int length);
+static void manage_client_ntlmssp_request (struct ntlm_auth_state *state,
+					char *buf, int length);
 
-static void manage_gss_spnego_request (enum stdio_helper_mode stdio_helper_mode, 
-				       char *buf, int length);
+static void manage_gss_spnego_request (struct ntlm_auth_state *state,
+					char *buf, int length);
 
-static void manage_gss_spnego_client_request (enum stdio_helper_mode stdio_helper_mode, 
-					      char *buf, int length);
+static void manage_gss_spnego_client_request (struct ntlm_auth_state *state,
+					char *buf, int length);
 
-static void manage_ntlm_server_1_request (enum stdio_helper_mode stdio_helper_mode, 
-					  char *buf, int length);
+static void manage_ntlm_server_1_request (struct ntlm_auth_state *state,
+					char *buf, int length);
 
-static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_mode, char *buf, int length);
+static void manage_ntlm_change_password_1_request(struct ntlm_auth_state *state,
+					char *buf, int length);
 
 static const struct {
 	enum stdio_helper_mode mode;
@@ -697,8 +702,8 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
-static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode, 
-					 char *buf, int length) 
+static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
+						char *buf, int length)
 {
 	static NTLMSSP_STATE *ntlmssp_state = NULL;
 	static char* want_feature_list = NULL;
@@ -816,8 +821,8 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	data_blob_free(&request);
 }
 
-static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mode, 
-					 char *buf, int length) 
+static void manage_client_ntlmssp_request(struct ntlm_auth_state *state,
+					 	char *buf, int length)
 {
 	/* The statics here are *HORRIBLE* and this entire concept
 	   needs to be rewritten. Essentially it's using these statics
@@ -987,8 +992,8 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 	data_blob_free(&request);
 }
 
-static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode, 
-				       char *buf, int length) 
+static void manage_squid_basic_request(struct ntlm_auth_state *state,
+					char *buf, int length)
 {
 	char *user, *pass;	
 	user=buf;
@@ -1002,7 +1007,7 @@ static void manage_squid_basic_request(enum stdio_helper_mode stdio_helper_mode,
 	*pass='\0';
 	pass++;
 	
-	if (stdio_helper_mode == SQUID_2_5_BASIC) {
+	if (state->helper_mode == SQUID_2_5_BASIC) {
 		rfc1738_unescape(user);
 		rfc1738_unescape(pass);
 	}
@@ -1071,8 +1076,8 @@ static void offer_gss_spnego_mechs(void) {
 	return;
 }
 
-static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode, 
-				      char *buf, int length) 
+static void manage_gss_spnego_request(struct ntlm_auth_state *state,
+					char *buf, int length)
 {
 	static NTLMSSP_STATE *ntlmssp_state = NULL;
 	SPNEGO_DATA request, response;
@@ -1545,8 +1550,8 @@ static void manage_client_krb5_targ(SPNEGO_DATA spnego)
 
 #endif
 
-static void manage_gss_spnego_client_request(enum stdio_helper_mode stdio_helper_mode, 
-					     char *buf, int length) 
+static void manage_gss_spnego_client_request(struct ntlm_auth_state *state,
+						char *buf, int length)
 {
 	DATA_BLOB request;
 	SPNEGO_DATA spnego;
@@ -1683,8 +1688,8 @@ static void manage_gss_spnego_client_request(enum stdio_helper_mode stdio_helper
 	return;
 }
 
-static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mode, 
-					 char *buf, int length) 
+static void manage_ntlm_server_1_request(struct ntlm_auth_state *state,
+						char *buf, int length)
 {
 	char *request, *parameter;	
 	static DATA_BLOB challenge;
@@ -1876,7 +1881,8 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 	}
 }
 
-static void manage_ntlm_change_password_1_request(enum stdio_helper_mode helper_mode, char *buf, int length)
+static void manage_ntlm_change_password_1_request(struct ntlm_auth_state *state,
+							char *buf, int length)
 {
 	char *request, *parameter;	
 	static DATA_BLOB new_nt_pswd;
@@ -2141,7 +2147,7 @@ static void manage_squid_request(struct ntlm_auth_state *state,
 		return;
 	}
 
-	fn(state->helper_mode, buf, length);
+	fn(state, buf, length);
 	talloc_free(buf);
 }
 
