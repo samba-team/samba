@@ -56,7 +56,7 @@ bool reghook_cache_add( REGISTRY_HOOK *hook )
 		return false;
 	}
 
-	key = talloc_asprintf(ctx, "//%s", hook->keyname);
+	key = talloc_asprintf(ctx, "\\%s", hook->keyname);
 	if (!key) {
 		return false;
 	}
