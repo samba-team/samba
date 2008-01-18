@@ -440,7 +440,7 @@ static void callback_do_join(GtkWidget *widget,
 					 state->password,
 					 unjoin_flags);
 		if (status != 0) {
-			err_str = libnetapi_errstr(status);
+			err_str = libnetapi_get_error_string(state->ctx, status);
 			g_print("callback_do_join: failed to unjoin (%s)\n",
 				err_str);
 
@@ -464,7 +464,7 @@ static void callback_do_join(GtkWidget *widget,
 			       state->password,
 			       join_flags);
 	if (status != 0) {
-		err_str = libnetapi_errstr(status);
+		err_str = libnetapi_get_error_string(state->ctx, status);
 		g_print("callback_do_join: failed to join (%s)\n", err_str);
 
 		dialog = gtk_message_dialog_new(GTK_WINDOW(state->window_parent),
@@ -1308,9 +1308,12 @@ static int initialize_join_state(struct join_state *state,
 		const char *buffer = NULL;
 		uint16_t type = 0;
 		status = NetGetJoinInformation(NULL, &buffer, &type);
-		if (status) {
+		if (status != 0) {
+			printf("NetGetJoinInformation failed with: %s\n",
+				libnetapi_get_error_string(state->ctx, status));
 			return status;
 		}
+		debug("NetGetJoinInformation gave: %s and %d\n", buffer, type);
 		state->name_buffer_initial = strdup(buffer);
 		if (!state->name_buffer_initial) {
 			return -1;
@@ -1324,7 +1327,9 @@ static int initialize_join_state(struct join_state *state,
 		uint8_t *buffer = NULL;
 
 		status = NetServerGetInfo(NULL, 1005, &buffer);
-		if (status) {
+		if (status != 0) {
+			printf("NetServerGetInfo failed with: %s\n",
+				libnetapi_get_error_string(state->ctx, status));
 			return status;
 		}
 
