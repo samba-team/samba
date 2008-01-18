@@ -5931,7 +5931,7 @@ smbc_setxattr_ctx(SMBCCTX *context,
                 } else {
                         ret = cacl_set(talloc_tos(), srv->cli,
                                        ipc_srv->cli, &ipc_srv->pol, path,
-                                       namevalue, SMBC_XATTR_MODE_CHOWN, 0);
+                                       namevalue, SMBC_XATTR_MODE_CHGRP, 0);
                 }
 		TALLOC_FREE(frame);
                 return ret;
