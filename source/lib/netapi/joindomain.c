@@ -546,3 +546,195 @@ NET_API_STATUS NetGetJoinInformation(const char *server_name,
 
 	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
+
+static WERROR NetGetJoinableOUsLocal(struct libnetapi_ctx *ctx,
+				     const char *server_name,
+				     const char *domain,
+				     const char *account,
+				     const char *password,
+				     uint32_t *ou_count,
+				     const char ***ous)
+{
+	NTSTATUS status;
+	ADS_STATUS ads_status;
+	ADS_STRUCT *ads = NULL;
+	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+	uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
+			 DS_RETURN_DNS_NAME;
+
+	status = dsgetdcname(ctx, NULL, domain,
+			     NULL, NULL, flags, &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		libnetapi_set_error_string(ctx, "%s",
+			get_friendly_nt_error_msg(status));
+		return ntstatus_to_werror(status);
+	}
+
+	ads = ads_init(domain, domain, info->domain_controller_name);
+	if (!ads) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	SAFE_FREE(ads->auth.user_name);
+	if (account) {
+		ads->auth.user_name = SMB_STRDUP(account);
+	} else if (ctx->username) {
+		ads->auth.user_name = SMB_STRDUP(ctx->username);
+	}
+
+	SAFE_FREE(ads->auth.password);
+	if (password) {
+		ads->auth.password = SMB_STRDUP(password);
+	} else if (ctx->password) {
+		ads->auth.password = SMB_STRDUP(ctx->password);
+	}
+
+	ads_status = ads_connect(ads);
+	if (!ADS_ERR_OK(ads_status)) {
+		ads_destroy(&ads);
+		return WERR_DEFAULT_JOIN_REQUIRED;
+	}
+
+	ads_status = ads_get_joinable_ous(ads, ctx,
+					  (char ***)ous,
+					  (size_t *)ou_count);
+	if (!ADS_ERR_OK(ads_status)) {
+		ads_destroy(&ads);
+		return WERR_DEFAULT_JOIN_REQUIRED;
+	}
+
+	ads_destroy(&ads);
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static WERROR NetGetJoinableOUsRemote(struct libnetapi_ctx *ctx,
+				      const char *server_name,
+				      const char *domain,
+				      const char *account,
+				      const char *password,
+				      uint32_t *ou_count,
+				      const char ***ous)
+{
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_cli = NULL;
+	struct wkssvc_PasswordBuffer *encrypted_password = NULL;
+	NTSTATUS status;
+	WERROR werr;
+
+	status = cli_full_connection(&cli, NULL, server_name,
+				     NULL, 0,
+				     "IPC$", "IPC",
+				     ctx->username,
+				     ctx->workgroup,
+				     ctx->password,
+				     0, Undefined, NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_WKSSVC,
+					    &status);
+	if (!pipe_cli) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+	if (password) {
+		encode_wkssvc_join_password_buffer(ctx,
+						   password,
+						   &cli->user_session_key,
+						   &encrypted_password);
+	}
+
+	status = rpccli_wkssvc_NetrGetJoinableOus2(pipe_cli, ctx,
+						   server_name,
+						   domain,
+						   account,
+						   encrypted_password,
+						   ou_count,
+						   ous,
+						   &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		werr = ntstatus_to_werror(status);
+		goto done;
+	}
+
+ done:
+	if (cli) {
+		cli_shutdown(cli);
+	}
+
+	return werr;
+}
+
+/****************************************************************
+****************************************************************/
+
+static WERROR libnetapi_NetGetJoinableOUs(struct libnetapi_ctx *ctx,
+					  const char *server_name,
+					  const char *domain,
+					  const char *account,
+					  const char *password,
+					  uint32_t *ou_count,
+					  const char ***ous)
+{
+	if (!server_name || is_myname_or_ipaddr(server_name)) {
+		return NetGetJoinableOUsLocal(ctx,
+					      server_name,
+					      domain,
+					      account,
+					      password,
+					      ou_count,
+					      ous);
+	}
+
+	return NetGetJoinableOUsRemote(ctx,
+				       server_name,
+				       domain,
+				       account,
+				       password,
+				       ou_count,
+				       ous);
+}
+
+/****************************************************************
+ NetGetJoinableOUs
+****************************************************************/
+
+NET_API_STATUS NetGetJoinableOUs(const char *server_name,
+				 const char *domain,
+				 const char *account,
+				 const char *password,
+				 uint32_t *ou_count,
+				 const char ***ous)
+{
+	struct libnetapi_ctx *ctx = NULL;
+	NET_API_STATUS status;
+	WERROR werr;
+
+	status = libnetapi_getctx(&ctx);
+	if (status != 0) {
+		return status;
+	}
+
+	werr = libnetapi_NetGetJoinableOUs(ctx,
+					   server_name,
+					   domain,
+					   account,
+					   password,
+					   ou_count,
+					   ous);
+	if (!W_ERROR_IS_OK(werr)) {
+		return W_ERROR_V(werr);
+	}
+
+	return NET_API_STATUS_SUCCESS;
+}
