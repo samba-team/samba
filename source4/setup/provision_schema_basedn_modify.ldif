@@ -3,9 +3,6 @@
 ###############################
 dn: ${SCHEMADN}
 changetype: modify
-replace: showInAdvancedViewOnly
-showInAdvancedViewOnly: TRUE
--
 replace: fSMORoleOwner
 fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 -

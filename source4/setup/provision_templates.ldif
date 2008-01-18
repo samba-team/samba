@@ -70,7 +70,6 @@ sAMAccountType: 268435456
 # sAMAccountType: 268435456
 
 dn: CN=TemplateForeignSecurityPrincipal,CN=Templates
-showInAdvancedViewOnly: TRUE
 
 dn: CN=TemplateSecret,CN=Templates
 

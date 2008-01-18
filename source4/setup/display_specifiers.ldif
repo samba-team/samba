@@ -1,13 +1,11 @@
 dn: CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: container
-showInAdvancedViewOnly: TRUE
 
 dn: CN=409,CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
 objectClass: container
 cn: 409
-showInAdvancedViewOnly: TRUE
 
 dn: CN=user-Display,CN=409,CN=DisplaySpecifiers,${CONFIGDN}
 objectClass: top
