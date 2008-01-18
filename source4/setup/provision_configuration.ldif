@@ -5,7 +5,6 @@ dn: CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRefContainer
 cn: Partitions
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 2147483648
 msDS-Behavior-Version: 0
@@ -15,7 +14,6 @@ dn: CN=Enterprise Configuration,CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRef
 cn: Enterprise Configuration
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 1
 nCName: ${CONFIGDN}
@@ -25,7 +23,6 @@ dn: CN=Enterprise Schema,CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRef
 cn: Enterprise Schema
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 1
 nCName: ${SCHEMADN}
@@ -35,7 +32,6 @@ dn: CN=${DOMAIN},CN=Partitions,${CONFIGDN}
 objectClass: top
 objectClass: crossRef
 cn: ${DOMAIN}
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 3
 nCName: ${DOMAINDN}
@@ -46,7 +42,6 @@ dn: CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: sitesContainer
 cn: Sites
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 2181038080
 
@@ -54,7 +49,6 @@ dn: CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: site
 cn: ${DEFAULTSITE}
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 2181038080
 
@@ -62,7 +56,6 @@ dn: CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: serversContainer
 cn: Servers
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 2181038080
 
@@ -70,7 +63,6 @@ dn: CN=Services,${CONFIGDN}
 objectClass: top
 objectClass: container
 cn: Services
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 systemFlags: 2147483648
 
@@ -78,14 +70,12 @@ dn: CN=Windows NT,CN=Services,${CONFIGDN}
 objectClass: top
 objectClass: container
 cn: Windows NT
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 
 dn: CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
 objectClass: top
 objectClass: nTDSService
 cn: Directory Service
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 sPNMappings: host=ldap,dns,cifs,http
 
@@ -93,14 +83,12 @@ dn: CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
 objectClass: top
 objectClass: container
 cn: Query-Policies
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 
 dn: CN=Default Query Policy,CN=Query-Policies,CN=Directory Service,CN=Windows NT,CN=Services,${CONFIGDN}
 objectClass: top
 objectClass: queryPolicy
 cn: Default Query Policy
-instanceType: 4
 showInAdvancedViewOnly: TRUE
 lDAPAdminLimits: MaxValRange=1500
 lDAPAdminLimits: MaxReceiveBuffer=10485760
