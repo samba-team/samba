@@ -13,4 +13,5 @@
 	</para>
 </description>
 <value type="example">yes</value>
+<value type="default">no</value>
 </samba:parameter>
