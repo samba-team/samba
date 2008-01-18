@@ -50,7 +50,7 @@ static const char *builtin_registry_paths[] = {
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\ProductOptions",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\DefaultUserConfiguration",
 	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\TcpIp\\Parameters",
-	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters",
+	KEY_NETLOGON_PARAMS,
 	"HKU",
 	"HKCR",
 	"HKPD",
