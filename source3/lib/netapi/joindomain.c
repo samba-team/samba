@@ -558,6 +558,7 @@ static WERROR NetGetJoinableOUsLocal(struct libnetapi_ctx *ctx,
 				     uint32_t *ou_count,
 				     const char ***ous)
 {
+#ifdef WITH_ADS
 	NTSTATUS status;
 	ADS_STATUS ads_status;
 	ADS_STRUCT *ads = NULL;
@@ -608,6 +609,9 @@ static WERROR NetGetJoinableOUsLocal(struct libnetapi_ctx *ctx,
 
 	ads_destroy(&ads);
 	return WERR_OK;
+#else
+	return WERR_NOT_SUPPORTED;
+#endif
 }
 
 /****************************************************************
