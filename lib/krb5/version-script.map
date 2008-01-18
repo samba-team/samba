@@ -207,6 +207,7 @@ HEIMDAL_KRB5_1.0 {
 		krb5_digest_get_session_key;
 		krb5_digest_get_tickets;
 		krb5_digest_init_request;
+		krb5_digest_probe;
 		krb5_digest_rep_get_status;
 		krb5_digest_request;
 		krb5_digest_set_authentication_user;
