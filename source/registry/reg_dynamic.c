@@ -29,24 +29,6 @@ struct reg_dyn_values {
 	int (*fetch_values) ( REGVAL_CTR *val );
 };
 
-#if 0
-/***********************************************************************
-***********************************************************************/
-
-static int netlogon_params( REGVAL_CTR *regvals )
-{
-	uint32 dwValue;
-	
-	if ( !pdb_get_account_policy(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue) )
-		dwValue = 0;
-		
-	regval_ctr_addvalue( regvals, "RefusePasswordChange", REG_DWORD,
-		(char*)&dwValue, sizeof(dwValue) );
-
-	return regval_ctr_numvals( regvals );
-}
-#endif
-
 /***********************************************************************
 ***********************************************************************/
 
@@ -202,9 +184,6 @@ static int current_version( REGVAL_CTR *values )
 ***********************************************************************/
 
 static struct reg_dyn_values dynamic_values[] = {
-#if 0
-	{ "HKLM/SYSTEM/CURRENTCONTROLSET/SERVICES/NETLOGON/PARAMETERS", &netlogon_params  },
-#endif
 	{ "HKLM/SYSTEM/CURRENTCONTROLSET/CONTROL/PRODUCTOPTIONS",       &prod_options     },
 	{ "HKLM/SYSTEM/CURRENTCONTROLSET/SERVICES/TCPIP/PARAMETERS",    &tcpip_params     },
 	{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB",  &perflib_params   }, 
