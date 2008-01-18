@@ -5,7 +5,7 @@ KRB5LIBS=@KRB5_LIBS@
 LDAP_LIBS=@LDAP_LIBS@
 LIBS=@LIBS@ -lnetapi
 DEVELOPER_CFLAGS=@DEVELOPER_CFLAGS@
-FLAGS=@CFLAGS@ $(GTK_FLAGS)
+FLAGS=-I../ -L../../../bin @CFLAGS@ $(GTK_FLAGS)
 CC=@CC@
 LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 DYNEXP=@DYNEXP@
@@ -36,14 +36,22 @@ MAKEDIR = || exec false; \
 GETDC_OBJ = getdc/getdc.o
 NETDOMJOIN_OBJ = netdomjoin/netdomjoin.o
 NETDOMJOIN_GUI_OBJ = netdomjoin-gui/netdomjoin-gui.o
+GETJOINABLEOUS_OBJ = getjoinableous/getjoinableous.o
 
-PROGS = bin/getdc@EXEEXT@ bin/netdomjoin@EXEEXT@ bin/netdomjoin-gui@EXEEXT@
+PROGS = bin/getdc@EXEEXT@ \
+	bin/netdomjoin@EXEEXT@ \
+	bin/netdomjoin-gui@EXEEXT@ \
+	bin/getjoinableous@EXEEXT@
 
 all: $(PROGS)
 
 bin/getdc@EXEEXT@: $(GETDC_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(GETDC_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+
+bin/getjoinableous@EXEEXT@: $(GETJOINABLEOUS_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(GETJOINABLEOUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
 bin/netdomjoin@EXEEXT@: $(NETDOMJOIN_OBJ)
 	@echo Linking $@
@@ -54,4 +62,6 @@ bin/netdomjoin-gui@EXEEXT@: $(NETDOMJOIN_GUI_OBJ)
 	@$(CC) $(FLAGS) $(GTK_FLAGS) -o $@ $(NETDOMJOIN_GUI_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(GTK_LIBS)
 
 clean:
-	@rm -f $(PROGS)
+	-rm -f $(PROGS)
+	-rm -f core */*~ *~ \
+		*/*.o */*/*.o */*/*/*.o \
