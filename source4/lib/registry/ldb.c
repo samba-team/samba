@@ -111,7 +111,6 @@ static struct ldb_message *reg_ldb_pack_value(struct ldb_context *ctx,
 	return msg;
 }
 
-
 static char *reg_ldb_escape(TALLOC_CTX *mem_ctx, const char *value)
 {
 	struct ldb_val val;
@@ -303,7 +302,7 @@ static WERROR ldb_get_value(TALLOC_CTX *mem_ctx, struct hive_key *k,
 	}
 
 	if (res->count == 0)
-		return WERR_NOT_FOUND;
+		return WERR_BADFILE;
 
 	reg_ldb_unpack_value(mem_ctx, res->msgs[0], NULL, data_type, data);
 
@@ -410,8 +409,12 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 				   talloc_strdup(mem_ctx, classname));
 
 	ret = ldb_add(parentkd->ldb, msg);
+	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		return WERR_ALREADY_EXISTS;
+	}
+
 	if (ret != LDB_SUCCESS) {
-		DEBUG(1, ("ldb_msg_add: %s\n", ldb_errstring(parentkd->ldb)));
+		DEBUG(1, ("ldb_add: %s\n", ldb_errstring(parentkd->ldb)));
 		return WERR_FOOBAR;
 	}
 

@@ -575,7 +575,7 @@ static WERROR regf_get_value_by_name(TALLOC_CTX *mem_ctx,
 	}
 
 	if (W_ERROR_EQUAL(error, WERR_NO_MORE_ITEMS))
-		return WERR_NOT_FOUND;
+		return WERR_BADFILE;
 
 	return error;
 }
