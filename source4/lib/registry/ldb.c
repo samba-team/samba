@@ -478,13 +478,18 @@ static WERROR ldb_set_value(struct hive_key *parent,
 	ldb_dn_add_child_fmt(msg->dn, "value=%s", name);
 
 	ret = ldb_add(kd->ldb, msg);
-	if (ret < 0) {
-		ret = ldb_modify(kd->ldb, msg);
-		if (ret < 0) {
-			DEBUG(1, ("ldb_msg_add: %s\n", ldb_errstring(kd->ldb)));
-			talloc_free(mem_ctx);
-			return WERR_FOOBAR;
+	if (ret == LDB_ERR_ENTRY_ALREADY_EXISTS) {
+		int i;
+		for (i = 0; i < msg->num_elements; i++) {
+			msg->elements[i].flags = LDB_FLAG_MOD_REPLACE;
 		}
+		ret = ldb_modify(kd->ldb, msg);
+	}
+
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("ldb_msg_add: %s\n", ldb_errstring(kd->ldb)));
+		talloc_free(mem_ctx);
+		return WERR_FOOBAR;
 	}
 
 	talloc_free(mem_ctx);
