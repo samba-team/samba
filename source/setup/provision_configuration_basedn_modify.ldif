@@ -3,14 +3,8 @@
 ###############################
 dn: ${CONFIGDN}
 changetype: modify
-replace: instanceType
-instanceType: 13
--
 replace: showInAdvancedViewOnly
 showInAdvancedViewOnly: TRUE
--
-replace: objectCategory
-objectCategory: CN=Configuration,${SCHEMADN}
 -
 replace: subRefs
 subRefs: ${SCHEMADN}
