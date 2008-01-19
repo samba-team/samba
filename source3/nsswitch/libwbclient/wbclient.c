@@ -72,10 +72,10 @@ wbcErr wbcRequestResponse(int cmd,
 		wbc_status = WBC_ERR_SUCCESS;
 		break;
 	case NSS_STATUS_UNAVAIL:
-		return WBC_ERR_WINBIND_NOT_AVAILABLE;
+		wbc_status = WBC_ERR_WINBIND_NOT_AVAILABLE;
 		break;
 	case NSS_STATUS_NOTFOUND:
-		return WBC_ERR_DOMAIN_NOT_FOUND;
+		wbc_status = WBC_ERR_DOMAIN_NOT_FOUND;
 		break;
 	default:
 		wbc_status = WBC_ERR_NSS_ERROR;
