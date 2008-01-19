@@ -702,6 +702,7 @@ typedef char fstring[FSTRING_LEN];
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
 #include "librpc/gen_ndr/notify.h"
+#include "librpc/gen_ndr/xattr.h"
 #include "nt_printing.h"
 #include "idmap.h"
 #include "client.h"
