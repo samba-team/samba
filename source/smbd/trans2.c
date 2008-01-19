@@ -3299,12 +3299,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		}
 	}
 
-	nlink = sbuf.st_nlink;
-
-	if ((nlink > 0) && delete_pending) {
-		nlink -= 1;
-	}
-
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
 		return ERROR_NT(NT_STATUS_INVALID_LEVEL);
 	}
@@ -3321,6 +3315,16 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	mode = dos_mode(conn,fname,&sbuf);
 	if (!mode)
 		mode = FILE_ATTRIBUTE_NORMAL;
+
+	nlink = sbuf.st_nlink;
+
+	if (nlink && (mode&aDIR)) {
+		nlink = 1;
+	}
+
+	if ((nlink > 0) && delete_pending) {
+		nlink -= 1;
+	}
 
 	fullpathname = fname;
 	if (!(mode & aDIR))
@@ -3560,7 +3564,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			data_size = 24;
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,file_size);
-			SIVAL(pdata,16,(mode&aDIR)?1:nlink);
+			SIVAL(pdata,16,nlink);
 			SCVAL(pdata,20,delete_pending?1:0);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			SSVAL(pdata,22,0); /* Padding. */
@@ -3632,7 +3636,7 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			pdata += 40;
 			SOFF_T(pdata,0,allocation_size);
 			SOFF_T(pdata,8,file_size);
-			SIVAL(pdata,16,(mode&aDIR)?1:nlink);
+			SIVAL(pdata,16,nlink);
 			SCVAL(pdata,20,delete_pending);
 			SCVAL(pdata,21,(mode&aDIR)?1:0);
 			SSVAL(pdata,22,0);
