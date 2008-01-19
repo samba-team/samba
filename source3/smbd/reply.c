@@ -167,6 +167,10 @@ static NTSTATUS check_path_syntax_internal(char *path,
 	}
 
 	*d = '\0';
+
+	if (NT_STATUS_IS_OK(ret) && !posix_path) {
+		ret = split_ntfs_stream_name(NULL, path, NULL, NULL);
+	}
 	return ret;
 }
 
@@ -2289,14 +2293,22 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	/* On open checks the open itself will check the share mode, so
 	   don't do it here as we'll get it wrong. */
 
-	status = open_file_ntcreate(conn, req, fname, &sbuf,
-				    DELETE_ACCESS,
-				    FILE_SHARE_NONE,
-				    FILE_OPEN,
-				    0,
-				    FILE_ATTRIBUTE_NORMAL,
-				    req != NULL ? 0 : INTERNAL_OPEN_ONLY,
-				    NULL, &fsp);
+	status = create_file_unixpath
+		(conn,			/* conn */
+		 req,			/* req */
+		 fname,			/* fname */
+		 DELETE_ACCESS,		/* access_mask */
+		 FILE_SHARE_NONE,	/* share_access */
+		 FILE_OPEN,		/* create_disposition*/
+		 FILE_NON_DIRECTORY_FILE, /* create_options */
+		 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
+		 0,			/* oplock_request */
+		 0,			/* allocation_size */
+		 NULL,			/* sd */
+		 NULL,			/* ea_list */
+		 &fsp,			/* result */
+		 NULL,			/* pinfo */
+		 &sbuf);		/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("open_file_ntcreate failed: %s\n",

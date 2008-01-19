@@ -513,6 +513,8 @@ typedef struct files_struct {
  	FAKE_FILE_HANDLE *fake_file_handle;
 
 	struct notify_change_buf *notify;
+
+	struct files_struct *base_fsp; /* placeholder for delete on close */
 } files_struct;
 
 #include "ntquotas.h"
@@ -1368,6 +1370,9 @@ struct bitmap {
 /* Private create options used by the ntcreatex processing code. From Samba4. */
 #define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS     0x01000000
 #define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x02000000
+
+/* Private options for streams support */
+#define NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE 0x04000000
 
 /* Responses when opening a file. */
 #define FILE_WAS_SUPERSEDED 0
