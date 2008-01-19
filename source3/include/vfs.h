@@ -104,6 +104,7 @@
 /* Leave at 22 - not yet released. Remove parameter fromfd from sendfile. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fromfd from recvfile. - obnox */
 /* Leave at 22 - not yet released. Additional change: add operations for offline files -- ab */
+/* Leave at 22 - not yet released. Add the streaminfo call. -- jpeach, vl */
 
 #define SMB_VFS_INTERFACE_VERSION 22
 
@@ -198,6 +199,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_NOTIFY_WATCH,
 	SMB_VFS_OP_CHFLAGS,
 	SMB_VFS_OP_FILE_ID_CREATE,
+	SMB_VFS_OP_STREAMINFO,
 
 	/* NT ACL operations. */
 
@@ -339,6 +341,13 @@ struct vfs_ops {
 		int (*chflags)(struct vfs_handle_struct *handle, const char *path, unsigned int flags);
 		struct file_id (*file_id_create)(struct vfs_handle_struct *handle, SMB_DEV_T dev, SMB_INO_T inode);
 
+		NTSTATUS (*streaminfo)(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       const char *fname,
+				       TALLOC_CTX *mem_ctx,
+				       unsigned int *num_streams,
+				       struct stream_struct **streams);
+
 		/* NT ACL operations. */
 
 		NTSTATUS (*fget_nt_acl)(struct vfs_handle_struct *handle,
@@ -476,6 +485,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *notify_watch;
 		struct vfs_handle_struct *chflags;
 		struct vfs_handle_struct *file_id_create;
+		struct vfs_handle_struct *streaminfo;
 
 		/* NT ACL operations. */
 

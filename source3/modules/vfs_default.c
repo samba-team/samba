@@ -942,6 +942,63 @@ static struct file_id vfswrap_file_id_create(struct vfs_handle_struct *handle, S
 	return file_id_create_dev(dev, inode);
 }
 
+static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   const char *fname,
+				   TALLOC_CTX *mem_ctx,
+				   unsigned int *pnum_streams,
+				   struct stream_struct **pstreams)
+{
+	SMB_STRUCT_STAT sbuf;
+	NTSTATUS status;
+	unsigned int num_streams = 0;
+	struct stream_struct *streams = NULL;
+	int ret;
+
+	if ((fsp != NULL) && (fsp->is_directory)) {
+		/*
+		 * No default streams on directories
+		 */
+		goto done;
+	}
+
+	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
+		ret = SMB_VFS_FSTAT(fsp, &sbuf);
+	}
+	else {
+		ret = SMB_VFS_STAT(handle->conn, fname, &sbuf);
+	}
+
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	if (S_ISDIR(sbuf.st_mode)) {
+		goto done;
+	}
+
+	streams = talloc(mem_ctx, struct stream_struct);
+
+	if (streams == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	streams->size = sbuf.st_size;
+	streams->alloc_size = get_allocation_size(handle->conn, fsp, &sbuf);
+
+	streams->name = talloc_strdup(streams, "::$DATA");
+	if (streams->name == NULL) {
+		TALLOC_FREE(streams);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	num_streams = 1;
+ done:
+	*pnum_streams = num_streams;
+	*pstreams = streams;
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 				    files_struct *fsp,
 				    uint32 security_info, SEC_DESC **ppdesc)
@@ -1366,6 +1423,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_chflags),	SMB_VFS_OP_CHFLAGS,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_file_id_create),	SMB_VFS_OP_FILE_ID_CREATE,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_streaminfo),	SMB_VFS_OP_STREAMINFO,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* NT ACL operations. */

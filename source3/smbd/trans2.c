@@ -5,7 +5,7 @@
    Copyright (C) Stefan (metze) Metzmacher	2003
    Copyright (C) Volker Lendecke		2005-2007
    Copyright (C) Steve French			2005
-   Copyright (C) James Peach			2007
+   Copyright (C) James Peach			2006-2007
 
    Extensively modified by Andrew Tridgell, 1995
 
@@ -3568,6 +3568,72 @@ static char *store_file_unix_basic_info2(connection_struct *conn,
 	return pdata;
 }
 
+static NTSTATUS marshall_stream_info(unsigned int num_streams,
+				     const struct stream_struct *streams,
+				     char *data,
+				     unsigned int max_data_bytes,
+				     unsigned int *data_size)
+{
+	unsigned int i;
+	unsigned int ofs = 0;
+
+	for (i=0; i<num_streams; i++) {
+		unsigned int next_offset;
+		size_t namelen;
+		smb_ucs2_t *namebuf;
+
+		namelen = push_ucs2_talloc(talloc_tos(), &namebuf,
+					    streams[i].name);
+
+		if ((namelen == (size_t)-1) || (namelen <= 2)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		/*
+		 * name_buf is now null-terminated, we need to marshall as not
+		 * terminated
+		 */
+
+		namelen -= 2;
+
+		if (ofs + 24 + namelen > max_data_bytes) {
+			TALLOC_FREE(namebuf);
+			return NT_STATUS_BUFFER_TOO_SMALL;
+		}
+
+		SIVAL(data, ofs+4, namelen);
+		SOFF_T(data, ofs+8, streams[i].size);
+		SOFF_T(data, ofs+16, streams[i].alloc_size);
+		memcpy(data+ofs+24, namebuf, namelen);
+		TALLOC_FREE(namebuf);
+
+		next_offset = ofs + 24 + namelen;
+
+		if (i == num_streams-1) {
+			SIVAL(data, ofs, 0);
+		}
+		else {
+			unsigned int align = ndr_align_size(next_offset, 8);
+
+			if (next_offset + align > max_data_bytes) {
+				return NT_STATUS_BUFFER_TOO_SMALL;
+			}
+
+			memset(data+next_offset, 0, align);
+			next_offset += align;
+
+			SIVAL(data, ofs, next_offset - ofs);
+			ofs = next_offset;
+		}
+
+		ofs = next_offset;
+	}
+
+	*data_size = ofs;
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Reply to a TRANSACT2_QFILEINFO on a PIPE !
 ****************************************************************************/
@@ -4273,20 +4339,40 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 		 */
 		case SMB_QUERY_FILE_STREAM_INFO:
 #endif
-		case SMB_FILE_STREAM_INFORMATION:
-			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_STREAM_INFORMATION\n"));
-			if (mode & aDIR) {
-				data_size = 0;
-			} else {
-				size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", (size_t)0xE, False);
-				SIVAL(pdata,0,0); /* ??? */
-				SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
-				SOFF_T(pdata,8,file_size);
-				SOFF_T(pdata,16,allocation_size);
-				data_size = 24 + byte_len;
-			}
-			break;
+		case SMB_FILE_STREAM_INFORMATION: {
+			unsigned int num_streams;
+			struct stream_struct *streams;
+			NTSTATUS status;
 
+			DEBUG(10,("call_trans2qfilepathinfo: "
+				  "SMB_FILE_STREAM_INFORMATION\n"));
+
+			status = SMB_VFS_STREAMINFO(
+				conn, fsp, fname, talloc_tos(),
+				&num_streams, &streams);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10, ("could not get stream info: %s\n",
+					   nt_errstr(status)));
+				reply_nterror(req, status);
+				return;
+			}
+
+			status = marshall_stream_info(num_streams, streams,
+						      pdata, max_data_bytes,
+						      &data_size);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10, ("marshall_stream_info failed: %s\n",
+					   nt_errstr(status)));
+				reply_nterror(req, status);
+				return;
+			}
+
+			TALLOC_FREE(streams);
+
+			break;
+		}
 		case SMB_QUERY_COMPRESSION_INFO:
 		case SMB_FILE_COMPRESSION_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_COMPRESSION_INFORMATION\n"));
