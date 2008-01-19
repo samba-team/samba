@@ -1108,6 +1108,14 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
 #define VXFS_QUOTA
 #endif
 
+#ifndef XATTR_CREATE
+#define XATTR_CREATE  0x1       /* set value, fail if attr already exists */
+#endif
+
+#ifndef XATTR_REPLACE
+#define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
+#endif
+
 #if defined(HAVE_KRB5)
 
 krb5_error_code smb_krb5_parse_name(krb5_context context,
