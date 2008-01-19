@@ -1,23 +1,24 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    Winbind status program.
 
    Copyright (C) Tim Potter      2000-2003
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003-2004
-   Copyright (C) Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it> 2000 
+   Copyright (C) Francesco Chemolli <kinkie@kame.usr.dsi.unimi.it> 2000
    Copyright (C) Robert O'Callahan 2006 (added cached credential code).
+   Copyright (C) Kai Blin <kai@samba.org> 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -152,7 +153,7 @@ static char winbind_separator(void)
 		d_printf("winbind separator was NULL!\n");
 		return *lp_winbind_separator();
 	}
-	
+
 	return sep;
 }
 
@@ -711,11 +712,6 @@ static NTSTATUS do_ccache_ntlm_auth(DATA_BLOB initial_msg, DATA_BLOB challenge_m
 static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 						char *buf, int length)
 {
-	static NTLMSSP_STATE *ntlmssp_state = NULL;
-	static char* want_feature_list = NULL;
-	static uint32 neg_flags = 0;
-	static bool have_session_key = False;
-	static DATA_BLOB session_key;
 	DATA_BLOB request, reply;
 	NTSTATUS nt_status;
 
@@ -728,8 +724,9 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 	if (strlen(buf) > 3) {
 		if(strncmp(buf, "SF ", 3) == 0){
 			DEBUG(10, ("Setting flags to negotioate\n"));
-			SAFE_FREE(want_feature_list);
-			want_feature_list = SMB_STRNDUP(buf+3, strlen(buf)-3);
+			TALLOC_FREE(state->want_feature_list);
+			state->want_feature_list = talloc_strdup(state->mem_ctx,
+					buf+3);
 			x_fprintf(x_stdout, "OK\n");
 			return;
 		}
@@ -739,9 +736,11 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 	}
 
 	if ((strncmp(buf, "PW ", 3) == 0)) {
-		/* The calling application wants us to use a local password (rather than winbindd) */
+		/* The calling application wants us to use a local password
+		 * (rather than winbindd) */
 
-		opt_password = SMB_STRNDUP((const char *)request.data, request.length);
+		opt_password = SMB_STRNDUP((const char *)request.data,
+				request.length);
 
 		if (opt_password == NULL) {
 			DEBUG(1, ("Out of memory\n"));
@@ -756,26 +755,33 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 	}
 
 	if (strncmp(buf, "YR", 2) == 0) {
-		if (ntlmssp_state)
-			ntlmssp_end(&ntlmssp_state);
+		if (state->ntlmssp_state)
+			ntlmssp_end(&state->ntlmssp_state);
+		state->svr_state = SERVER_INITIAL;
 	} else if (strncmp(buf, "KK", 2) == 0) {
-		
+		/* No special preprocessing required */
 	} else if (strncmp(buf, "GF", 2) == 0) {
 		DEBUG(10, ("Requested negotiated NTLMSSP flags\n"));
-		x_fprintf(x_stdout, "GF 0x%08lx\n", have_session_key?neg_flags:0l);
+
+		if (state->svr_state == SERVER_FINISHED) {
+			x_fprintf(x_stdout, "GF 0x%08x\n", state->neg_flags);
+		}
+		else {
+			x_fprintf(x_stdout, "BH\n");
+		}
 		data_blob_free(&request);
 		return;
 	} else if (strncmp(buf, "GK", 2) == 0) {
 		DEBUG(10, ("Requested NTLMSSP session key\n"));
-		if(have_session_key) {
-			char *key64 = base64_encode_data_blob(talloc_tos(),
-					session_key);
+		if(state->have_session_key) {
+			char *key64 = base64_encode_data_blob(state->mem_ctx,
+					state->session_key);
 			x_fprintf(x_stdout, "GK %s\n", key64?key64:"<NULL>");
 			TALLOC_FREE(key64);
 		} else {
 			x_fprintf(x_stdout, "BH\n");
 		}
-			
+
 		data_blob_free(&request);
 		return;
 	} else {
@@ -784,44 +790,51 @@ static void manage_squid_ntlmssp_request(struct ntlm_auth_state *state,
 		return;
 	}
 
-	if (!ntlmssp_state) {
-		if (!NT_STATUS_IS_OK(nt_status = ntlm_auth_start_ntlmssp_server(&ntlmssp_state))) {
+	if (!state->ntlmssp_state) {
+		nt_status = ntlm_auth_start_ntlmssp_server(
+				&state->ntlmssp_state);
+		if (!NT_STATUS_IS_OK(nt_status)) {
 			x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
 			return;
 		}
-		ntlmssp_want_feature_list(ntlmssp_state, want_feature_list);
+		ntlmssp_want_feature_list(state->ntlmssp_state,
+				state->want_feature_list);
 	}
 
 	DEBUG(10, ("got NTLMSSP packet:\n"));
 	dump_data(10, request.data, request.length);
 
-	nt_status = ntlmssp_update(ntlmssp_state, request, &reply);
-	
+	nt_status = ntlmssp_update(state->ntlmssp_state, request, &reply);
+
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		char *reply_base64 = base64_encode_data_blob(talloc_tos(),
+		char *reply_base64 = base64_encode_data_blob(state->mem_ctx,
 				reply);
 		x_fprintf(x_stdout, "TT %s\n", reply_base64);
 		TALLOC_FREE(reply_base64);
 		data_blob_free(&reply);
+		state->svr_state = SERVER_CHALLENGE;
 		DEBUG(10, ("NTLMSSP challenge\n"));
 	} else if (NT_STATUS_EQUAL(nt_status, NT_STATUS_ACCESS_DENIED)) {
 		x_fprintf(x_stdout, "BH %s\n", nt_errstr(nt_status));
 		DEBUG(0, ("NTLMSSP BH: %s\n", nt_errstr(nt_status)));
 
-		ntlmssp_end(&ntlmssp_state);
+		ntlmssp_end(&state->ntlmssp_state);
 	} else if (!NT_STATUS_IS_OK(nt_status)) {
 		x_fprintf(x_stdout, "NA %s\n", nt_errstr(nt_status));
 		DEBUG(10, ("NTLMSSP %s\n", nt_errstr(nt_status)));
 	} else {
-		x_fprintf(x_stdout, "AF %s\n", (char *)ntlmssp_state->auth_context);
+		x_fprintf(x_stdout, "AF %s\n",
+				(char *)state->ntlmssp_state->auth_context);
 		DEBUG(10, ("NTLMSSP OK!\n"));
-		
-		if(have_session_key)
-			data_blob_free(&session_key);
-		session_key = data_blob(ntlmssp_state->session_key.data, 
-				ntlmssp_state->session_key.length);
-		neg_flags = ntlmssp_state->neg_flags;
-		have_session_key = True;
+
+		if(state->have_session_key)
+			data_blob_free(&state->session_key);
+		state->session_key = data_blob(
+				state->ntlmssp_state->session_key.data,
+				state->ntlmssp_state->session_key.length);
+		state->neg_flags = state->ntlmssp_state->neg_flags;
+		state->have_session_key = true;
+		state->svr_state = SERVER_FINISHED;
 	}
 
 	data_blob_free(&request);
