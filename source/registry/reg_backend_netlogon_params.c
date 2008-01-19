@@ -31,8 +31,7 @@
 
 extern REGISTRY_OPS regdb_ops;
 
-static int netlogon_params_fetch_reg_values(const char *key,
-					    REGVAL_CTR *regvals)
+static int netlogon_params_fetch_values(const char *key, REGVAL_CTR *regvals)
 {
 	uint32 dwValue;
 	
@@ -52,6 +51,6 @@ static int netlogon_params_fetch_subkeys(const char *key,
 }
 
 REGISTRY_OPS netlogon_params_reg_ops = {
-	.fetch_values = netlogon_params_fetch_reg_values,
+	.fetch_values = netlogon_params_fetch_values,
 	.fetch_subkeys = netlogon_params_fetch_subkeys,
 };
