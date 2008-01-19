@@ -110,7 +110,7 @@ static NTSTATUS xattr_tdb_load_attrs(TALLOC_CTX *mem_ctx,
 
 	status = xattr_tdb_pull_attrs(mem_ctx, &data, presult);
 	TALLOC_FREE(data.dptr);
-	return NT_STATUS_OK;
+	return status;
 }
 
 /*
