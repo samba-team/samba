@@ -739,7 +739,8 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	} else if (strncmp(buf, "GK", 2) == 0) {
 		DEBUG(10, ("Requested NTLMSSP session key\n"));
 		if(have_session_key) {
-			char *key64 = base64_encode_data_blob(session_key);
+			char *key64 = base64_encode_data_blob(talloc_tos(),
+					session_key);
 			x_fprintf(x_stdout, "GK %s\n", key64?key64:"<NULL>");
 			TALLOC_FREE(key64);
 		} else {
@@ -768,7 +769,8 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	nt_status = ntlmssp_update(ntlmssp_state, request, &reply);
 	
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		char *reply_base64 = base64_encode_data_blob(reply);
+		char *reply_base64 = base64_encode_data_blob(talloc_tos(),
+				reply);
 		x_fprintf(x_stdout, "TT %s\n", reply_base64);
 		TALLOC_FREE(reply_base64);
 		data_blob_free(&reply);
@@ -889,7 +891,8 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		DEBUG(10, ("Requested session key\n"));
 
 		if(have_session_key) {
-			char *key64 = base64_encode_data_blob(session_key);
+			char *key64 = base64_encode_data_blob(talloc_tos(),
+					session_key);
 			x_fprintf(x_stdout, "GK %s\n", key64?key64:"<NULL>");
 			TALLOC_FREE(key64);
 		}
@@ -925,7 +928,8 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 	}
 	
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		char *reply_base64 = base64_encode_data_blob(reply);
+		char *reply_base64 = base64_encode_data_blob(talloc_tos(),
+				reply);
 		if (first) {
 			x_fprintf(x_stdout, "YR %s\n", reply_base64);
 		} else { 
@@ -939,7 +943,8 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 		}
 		DEBUG(10, ("NTLMSSP challenge\n"));
 	} else if (NT_STATUS_IS_OK(nt_status)) {
-		char *reply_base64 = base64_encode_data_blob(reply);
+		char *reply_base64 = base64_encode_data_blob(talloc_tos(),
+				reply);
 		x_fprintf(x_stdout, "AF %s\n", reply_base64);
 		TALLOC_FREE(reply_base64);
 
@@ -1039,7 +1044,7 @@ static void offer_gss_spnego_mechs(void) {
 		return;
 	}
 
-	reply_base64 = base64_encode_data_blob(token);
+	reply_base64 = base64_encode_data_blob(talloc_tos(), token);
 	x_fprintf(x_stdout, "TT %s *\n", reply_base64);
 
 	TALLOC_FREE(reply_base64);
@@ -1276,7 +1281,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 		return;
 	}
 
-	reply_base64 = base64_encode_data_blob(token);
+	reply_base64 = base64_encode_data_blob(talloc_tos(), token);
 
 	x_fprintf(x_stdout, "%s %s %s\n",
 		  reply_code, reply_base64, reply_argument);
@@ -1343,7 +1348,7 @@ static bool manage_client_ntlmssp_init(SPNEGO_DATA spnego)
 	write_spnego_data(&to_server, &spnego);
 	data_blob_free(&spnego.negTokenInit.mechToken);
 
-	to_server_base64 = base64_encode_data_blob(to_server);
+	to_server_base64 = base64_encode_data_blob(talloc_tos(), to_server);
 	data_blob_free(&to_server);
 	x_fprintf(x_stdout, "KK %s\n", to_server_base64);
 	TALLOC_FREE(to_server_base64);
@@ -1401,7 +1406,7 @@ static void manage_client_ntlmssp_targ(SPNEGO_DATA spnego)
 	write_spnego_data(&to_server, &spnego);
 	data_blob_free(&request);
 
-	to_server_base64 = base64_encode_data_blob(to_server);
+	to_server_base64 = base64_encode_data_blob(talloc_tos(), to_server);
 	data_blob_free(&to_server);
 	x_fprintf(x_stdout, "KK %s\n", to_server_base64);
 	TALLOC_FREE(to_server_base64);
@@ -1490,7 +1495,7 @@ static bool manage_client_krb5_init(SPNEGO_DATA spnego)
 		return False;
 	}
 
-	reply_base64 = base64_encode_data_blob(to_server);
+	reply_base64 = base64_encode_data_blob(talloc_tos(), to_server);
 	x_fprintf(x_stdout, "KK %s *\n", reply_base64);
 
 	TALLOC_FREE(reply_base64);
