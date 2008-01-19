@@ -527,6 +527,7 @@ VFS_IRIXACL_OBJ = modules/vfs_irixacl.o
 VFS_TRU64ACL_OBJ = modules/vfs_tru64acl.o
 VFS_CATIA_OBJ = modules/vfs_catia.o
 VFS_STREAMS_XATTR_OBJ = modules/vfs_streams_xattr.o
+VFS_STREAMS_DEPOT_OBJ = modules/vfs_streams_depot.o
 VFS_CACHEPRIME_OBJ = modules/vfs_cacheprime.o
 VFS_PREALLOC_OBJ = modules/vfs_prealloc.o
 VFS_COMMIT_OBJ = modules/vfs_commit.o
@@ -1751,6 +1752,10 @@ bin/catia.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_CATIA_OBJ)
 bin/streams_xattr.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_STREAMS_XATTR_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_STREAMS_XATTR_OBJ)
+
+bin/streams_depot.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_STREAMS_DEPOT_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_STREAMS_DEPOT_OBJ)
 
 bin/cacheprime.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_CACHEPRIME_OBJ)
 	@echo "Building plugin $@"
