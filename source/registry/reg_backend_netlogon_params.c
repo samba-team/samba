@@ -29,6 +29,7 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
+extern REGISTRY_OPS regdb_ops;
 
 static int netlogon_params_fetch_reg_values(const char *key,
 					    REGVAL_CTR *regvals)
@@ -44,7 +45,13 @@ static int netlogon_params_fetch_reg_values(const char *key,
 	return regval_ctr_numvals( regvals );
 }
 
+static int netlogon_params_fetch_subkeys(const char *key,
+					 REGSUBKEY_CTR *subkey_ctr)
+{
+	return regdb_ops.fetch_subkeys(key, subkey_ctr);
+}
 
 REGISTRY_OPS netlogon_params_reg_ops = {
 	.fetch_values = netlogon_params_fetch_reg_values,
+	.fetch_subkeys = netlogon_params_fetch_subkeys,
 };
