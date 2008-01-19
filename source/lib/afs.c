@@ -48,7 +48,7 @@ static char *afs_encode_token(const char *cell, const DATA_BLOB ticket,
 	char *base64_key;
 	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init("afs_encode_token");
+	mem_ctx = talloc_stackframe();
 	if (mem_ctx == NULL)
 		goto done;
 
