@@ -163,6 +163,113 @@ NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
+NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
+				files_struct *fsp, const char *fname,
+				char ***pnames, size_t *pnum_names)
+{
+	/* Get a list of all xattrs. Max namesize is 64k. */
+	size_t ea_namelist_size = 1024;
+	char *ea_namelist = NULL;
+
+	char *p;
+	char **names, **tmp;
+	size_t num_names;
+	ssize_t sizeret;
+
+	if (!lp_ea_support(SNUM(conn))) {
+		*pnames = NULL;
+		*pnum_names = 0;
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * TALLOC the result early to get the talloc hierarchy right.
+	 */
+
+	names = TALLOC_ARRAY(mem_ctx, char *, 1);
+	if (names == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	while (ea_namelist_size <= 65536) {
+
+		ea_namelist = TALLOC_REALLOC_ARRAY(
+			names, ea_namelist, char, ea_namelist_size);
+		if (ea_namelist == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			TALLOC_FREE(names);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (fsp && fsp->fh->fd != -1) {
+			sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist,
+						     ea_namelist_size);
+		} else {
+			sizeret = SMB_VFS_LISTXATTR(conn, fname, ea_namelist,
+						    ea_namelist_size);
+		}
+
+		if ((sizeret == -1) && (errno = ERANGE)) {
+			ea_namelist_size *= 2;
+		}
+		else {
+			break;
+		}
+	}
+
+	if (sizeret == -1) {
+		TALLOC_FREE(names);
+		return map_nt_error_from_unix(errno);
+	}
+
+	DEBUG(10, ("get_ea_list_from_file: ea_namelist size = %u\n",
+		   (unsigned int)sizeret));
+
+	if (sizeret == 0) {
+		TALLOC_FREE(names);
+		*pnames = NULL;
+		*pnum_names = 0;
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * Ensure the result is 0-terminated
+	 */
+
+	if (ea_namelist[sizeret-1] != '\0') {
+		TALLOC_FREE(names);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/*
+	 * count the names
+	 */
+	num_names = 0;
+
+	for (p = ea_namelist; p - ea_namelist < sizeret; p += strlen(p)+1) {
+		num_names += 1;
+	}
+
+	tmp = TALLOC_REALLOC_ARRAY(mem_ctx, names, char *, num_names);
+	if (tmp == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(names);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	names = tmp;
+	num_names = 0;
+
+	for (p = ea_namelist; p - ea_namelist < sizeret; p += strlen(p)+1) {
+		names[num_names++] = p;
+	}
+
+	*pnames = names;
+	*pnum_names = num_names;
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Return a linked list of the total EA's. Plus the total size
 ****************************************************************************/
@@ -171,12 +278,10 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 					const char *fname, size_t *pea_total_len)
 {
 	/* Get a list of all xattrs. Max namesize is 64k. */
-	size_t ea_namelist_size = 1024;
-	char *ea_namelist;
-	char *p;
-	ssize_t sizeret;
-	int i;
+	size_t i, num_names;
+	char **names;
 	struct ea_list *ea_list_head = NULL;
+	NTSTATUS status;
 
 	*pea_total_len = 0;
 
@@ -184,65 +289,53 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 		return NULL;
 	}
 
-	for (i = 0, ea_namelist = TALLOC_ARRAY(mem_ctx, char, ea_namelist_size); i < 6;
-	     ea_namelist = TALLOC_REALLOC_ARRAY(mem_ctx, ea_namelist, char, ea_namelist_size), i++) {
+	status = get_ea_names_from_file(talloc_tos(), conn, fsp, fname,
+					&names, &num_names);
 
-		if (!ea_namelist) {
+	if (!NT_STATUS_IS_OK(status) || (num_names == 0)) {
+		return NULL;
+	}
+
+	for (i=0; i<num_names; i++) {
+		struct ea_list *listp;
+		fstring dos_ea_name;
+
+		if (strnequal(names[i], "system.", 7)
+		    || samba_private_attr_name(names[i]))
+			continue;
+
+		listp = TALLOC_P(mem_ctx, struct ea_list);
+		if (listp == NULL) {
 			return NULL;
 		}
 
-		if (fsp && fsp->fh->fd != -1) {
-			sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist, ea_namelist_size);
-		} else {
-			sizeret = SMB_VFS_LISTXATTR(conn, fname, ea_namelist, ea_namelist_size);
+		if (!NT_STATUS_IS_OK(get_ea_value(mem_ctx, conn, fsp,
+						  fname, names[i],
+						  &listp->ea))) {
+			return NULL;
 		}
 
-		if (sizeret == -1 && errno == ERANGE) {
-			ea_namelist_size *= 2;
-		} else {
-			break;
-		}
+		push_ascii_fstring(dos_ea_name, listp->ea.name);
+
+		*pea_total_len +=
+			4 + strlen(dos_ea_name) + 1 + listp->ea.value.length;
+
+		DEBUG(10,("get_ea_list_from_file: total_len = %u, %s, val len "
+			  "= %u\n", (unsigned int)*pea_total_len, dos_ea_name,
+			  (unsigned int)listp->ea.value.length));
+
+		DLIST_ADD_END(ea_list_head, listp, struct ea_list *);
+
 	}
 
-	if (sizeret == -1)
-		return NULL;
-
-	DEBUG(10,("get_ea_list_from_file: ea_namelist size = %u\n", (unsigned int)sizeret ));
-
-	if (sizeret) {
-		for (p = ea_namelist; p - ea_namelist < sizeret; p += strlen(p) + 1) {
-			struct ea_list *listp;
-
-			if (strnequal(p, "system.", 7) || samba_private_attr_name(p))
-				continue;
-
-			listp = TALLOC_P(mem_ctx, struct ea_list);
-			if (!listp)
-				return NULL;
-
-			if (!NT_STATUS_IS_OK(get_ea_value(mem_ctx, conn, fsp,
-							  fname, p,
-							  &listp->ea))) {
-				return NULL;
-			}
-
-			{
-				fstring dos_ea_name;
-				push_ascii_fstring(dos_ea_name, listp->ea.name);
-				*pea_total_len += 4 + strlen(dos_ea_name) + 1 + listp->ea.value.length;
-				DEBUG(10,("get_ea_list_from_file: total_len = %u, %s, val len = %u\n",
-					(unsigned int)*pea_total_len, dos_ea_name,
-					(unsigned int)listp->ea.value.length ));
-			}
-			DLIST_ADD_END(ea_list_head, listp, struct ea_list *);
-		}
-		/* Add on 4 for total length. */
-		if (*pea_total_len) {
-			*pea_total_len += 4;
-		}
+	/* Add on 4 for total length. */
+	if (*pea_total_len) {
+		*pea_total_len += 4;
 	}
 
-	DEBUG(10,("get_ea_list_from_file: total_len = %u\n", (unsigned int)*pea_total_len));
+	DEBUG(10, ("get_ea_list_from_file: total_len = %u\n",
+		   (unsigned int)*pea_total_len));
+
 	return ea_list_head;
 }
 
