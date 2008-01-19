@@ -32,31 +32,6 @@ struct reg_dyn_values {
 /***********************************************************************
 ***********************************************************************/
 
-static int tcpip_params( REGVAL_CTR *regvals )
-{
-	fstring                 value;
-	int                     value_length;
-	char   			*hname;
-	char *mydomainname = NULL;
-
-	hname = myhostname();
-	value_length = push_ucs2( value, value, hname, sizeof(value), STR_TERMINATE|STR_NOALIGN);		
-	regval_ctr_addvalue( regvals, "Hostname",REG_SZ, value, value_length );
-
-	mydomainname = get_mydnsdomname(talloc_tos());
-	if (!mydomainname) {
-		return -1;
-	}
-
-	value_length = push_ucs2( value, value, mydomainname, sizeof(value), STR_TERMINATE|STR_NOALIGN);		
-	regval_ctr_addvalue( regvals, "Domain", REG_SZ, value, value_length );
-
-	return regval_ctr_numvals( regvals );
-}
-
-/***********************************************************************
-***********************************************************************/
-
 static int perflib_params( REGVAL_CTR *regvals )
 {
 	int base_index = -1;
@@ -154,7 +129,6 @@ static int current_version( REGVAL_CTR *values )
 ***********************************************************************/
 
 static struct reg_dyn_values dynamic_values[] = {
-	{ "HKLM/SYSTEM/CURRENTCONTROLSET/SERVICES/TCPIP/PARAMETERS",    &tcpip_params     },
 	{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB",  &perflib_params   }, 
 	{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB/009", &perflib_009_params }, 
 	{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION",          &current_version }, 
