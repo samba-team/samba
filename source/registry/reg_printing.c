@@ -1262,9 +1262,8 @@ static bool regprint_store_reg_values( const char *key, REGVAL_CTR *values )
  */
 
 REGISTRY_OPS printing_ops = {
-	regprint_fetch_reg_keys,
-	regprint_fetch_reg_values,
-	regprint_store_reg_keys,
-	regprint_store_reg_values,
-	NULL, NULL, NULL, NULL, NULL
+	.fetch_subkeys = regprint_fetch_reg_keys,
+	.fetch_values = regprint_fetch_reg_values,
+	.store_subkeys = regprint_store_reg_keys,
+	.store_values = regprint_store_reg_values,
 };
