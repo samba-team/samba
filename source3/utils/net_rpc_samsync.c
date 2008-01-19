@@ -365,7 +365,8 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 		old_string = pdb_get_munged_dial(account);
 		mung.length = delta->hdr_parameters.uni_str_len;
 		mung.data = (uint8 *) delta->uni_parameters.buffer;
-		newstr = (mung.length == 0) ? NULL : base64_encode_data_blob(mung);
+		newstr = (mung.length == 0) ? NULL :
+			base64_encode_data_blob(talloc_tos(), mung);
 
 		if (STRING_CHANGED_NC(old_string, newstr))
 			pdb_set_munged_dial(account, newstr, PDB_CHANGED);
@@ -1422,12 +1423,11 @@ static int fprintf_attr(FILE *add_fd, const char *attr_name,
 	base64_blob.data = (unsigned char *)value;
 	base64_blob.length = strlen(value);
 
-	base64 = base64_encode_data_blob(base64_blob);
+	base64 = base64_encode_data_blob(value, base64_blob);
 	SMB_ASSERT(base64 != NULL);
 
 	res = fprintf(add_fd, "%s:: %s\n", attr_name, base64);
 	TALLOC_FREE(value);
-	TALLOC_FREE(base64);
 	return res;
 }
 
