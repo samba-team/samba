@@ -103,7 +103,7 @@
 /* Leave at 22 - not yet released. Remove parameter fd from write. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fromfd from sendfile. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fromfd from recvfile. - obnox */
-/* Leave at 22 - not yet released. Additional change: add operations for offline files and remote storage volume abstraction -- ab*/
+/* Leave at 22 - not yet released. Additional change: add operations for offline files -- ab */
 
 #define SMB_VFS_INTERFACE_VERSION 22
 
