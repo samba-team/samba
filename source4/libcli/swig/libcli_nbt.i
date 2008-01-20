@@ -31,6 +31,7 @@
 #include "lib/talloc/talloc.h"
 #include "libcli/nbt/libnbt.h"
 #include "param/param.h"
+#include "lib/events/events.h"
 
 /* Undo strcpy safety macro as it's used by swig )-: */
 

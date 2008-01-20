@@ -9,7 +9,7 @@
  * ----------------------------------------------------------------------------- */
 
 #define SWIGPYTHON
-#define SWIG_PYTHON_DIRECTOR_NO_VTABLE
+#define SWIG_PYTHON_NO_BUILD_NONE
 /* -----------------------------------------------------------------------------
  *  This section contains generic SWIG labels for method/variable
  *  declarations/attributes, and other compiler dependent labels.
@@ -2485,6 +2485,19 @@ static swig_module_info swig_module = {swig_types, 17, 0, 0, 0, 0};
 #  error "This python version requires swig to be run with the '-classic' option"
 # endif
 #endif
+#if (PY_VERSION_HEX <= 0x02020000)
+# error "This python version requires swig to be run with the '-nomodern' option"
+#endif
+#if (PY_VERSION_HEX <= 0x02020000)
+# error "This python version requires swig to be run with the '-nomodernargs' option"
+#endif
+#ifndef METH_O
+# error "This python version requires swig to be run with the '-nofastunpack' option"
+#endif
+#ifdef SWIG_TypeQuery
+# undef SWIG_TypeQuery
+#endif
+#define SWIG_TypeQuery SWIG_Python_TypeQuery
 
 /*-----------------------------------------------
               @(target):= _libcli_nbt.so
@@ -2506,6 +2519,7 @@ static swig_module_info swig_module = {swig_types, 17, 0, 0, 0, 0};
 #include "lib/talloc/talloc.h"
 #include "libcli/nbt/libnbt.h"
 #include "param/param.h"
+#include "lib/events/events.h"
 
 /* Undo strcpy safety macro as it's used by swig )-: */
 
@@ -2912,12 +2926,8 @@ SWIGINTERN PyObject *_wrap_nbt_name_socket_init(PyObject *SWIGUNUSEDPARM(self), 
     (char *) "event_ctx", NULL 
   };
   
-  {
-    arg2 = event_context_init(NULL);
-  }
-  {
-    arg1 = NULL;
-  }
+  arg2 = event_context_init(NULL);
+  arg1 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:nbt_name_socket_init",kwnames,&obj0)) SWIG_fail;
   if (obj0) {
     res2 = SWIG_ConvertPtr(obj0, &argp2,SWIGTYPE_p_event_context, 0 |  0 );
@@ -2943,16 +2953,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_name_set(PyObject *SWIGUNUSEDPARM(self), PyO
   int res2 ;
   char *buf2 = 0 ;
   int alloc2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_name_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_name_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_name_set" "', argument " "1"" of type '" "struct nbt_name *""'"); 
   }
   arg1 = (struct nbt_name *)(argp1);
-  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+  res2 = SWIG_AsCharPtrAndSize(swig_obj[1], &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "nbt_name_name_set" "', argument " "2"" of type '" "char const *""'");
   }
@@ -2978,10 +2987,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_name_get(PyObject *SWIGUNUSEDPARM(self), PyO
   char *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_name_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_name_get" "', argument " "1"" of type '" "struct nbt_name *""'"); 
   }
@@ -3003,16 +3013,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_scope_set(PyObject *SWIGUNUSEDPARM(self), Py
   int res2 ;
   char *buf2 = 0 ;
   int alloc2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_scope_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_scope_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_scope_set" "', argument " "1"" of type '" "struct nbt_name *""'"); 
   }
   arg1 = (struct nbt_name *)(argp1);
-  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+  res2 = SWIG_AsCharPtrAndSize(swig_obj[1], &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "nbt_name_scope_set" "', argument " "2"" of type '" "char const *""'");
   }
@@ -3038,10 +3047,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_scope_get(PyObject *SWIGUNUSEDPARM(self), Py
   char *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_scope_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_scope_get" "', argument " "1"" of type '" "struct nbt_name *""'"); 
   }
@@ -3062,16 +3072,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_type_set(PyObject *SWIGUNUSEDPARM(self), PyO
   int res1 = 0 ;
   int val2 ;
   int ecode2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_type_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_type_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_type_set" "', argument " "1"" of type '" "struct nbt_name *""'"); 
   }
   arg1 = (struct nbt_name *)(argp1);
-  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
   if (!SWIG_IsOK(ecode2)) {
     SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "nbt_name_type_set" "', argument " "2"" of type '" "enum nbt_name_type""'");
   } 
@@ -3091,10 +3100,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_type_get(PyObject *SWIGUNUSEDPARM(self), PyO
   enum nbt_name_type result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_type_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_type_get" "', argument " "1"" of type '" "struct nbt_name *""'"); 
   }
@@ -3111,7 +3121,7 @@ SWIGINTERN PyObject *_wrap_new_nbt_name(PyObject *SWIGUNUSEDPARM(self), PyObject
   PyObject *resultobj = 0;
   struct nbt_name *result = 0 ;
   
-  if (!PyArg_ParseTuple(args,(char *)":new_nbt_name")) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args,"new_nbt_name",0,0,0)) SWIG_fail;
   result = (struct nbt_name *)(struct nbt_name *) calloc(1, sizeof(struct nbt_name));
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_nbt_name, SWIG_POINTER_NEW |  0 );
   return resultobj;
@@ -3125,10 +3135,11 @@ SWIGINTERN PyObject *_wrap_delete_nbt_name(PyObject *SWIGUNUSEDPARM(self), PyObj
   struct nbt_name *arg1 = (struct nbt_name *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:delete_nbt_name",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name, SWIG_POINTER_DISOWN |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name, SWIG_POINTER_DISOWN |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_nbt_name" "', argument " "1"" of type '" "struct nbt_name *""'"); 
   }
@@ -3144,9 +3155,13 @@ fail:
 
 SWIGINTERN PyObject *nbt_name_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
-  if (!PyArg_ParseTuple(args,(char*)"O|swigregister", &obj)) return NULL;
+  if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
   SWIG_TypeNewClientData(SWIGTYPE_p_nbt_name, SWIG_NewClientData(obj));
   return SWIG_Py_Void();
+}
+
+SWIGINTERN PyObject *nbt_name_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  return SWIG_Python_InitShadowInstance(args);
 }
 
 SWIGINTERN PyObject *_wrap_nbt_name_query_data_out_get(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
@@ -3155,10 +3170,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_data_out_get(PyObject *SWIGUNUSEDPARM(
   nbt_name_query_out *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_query_data_out_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_data_out_get" "', argument " "1"" of type '" "struct nbt_name_query *""'"); 
   }
@@ -3177,10 +3193,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_data_in_get(PyObject *SWIGUNUSEDPARM(s
   nbt_name_query_in *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_query_data_in_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_data_in_get" "', argument " "1"" of type '" "struct nbt_name_query *""'"); 
   }
@@ -3197,7 +3214,7 @@ SWIGINTERN PyObject *_wrap_new_nbt_name_query(PyObject *SWIGUNUSEDPARM(self), Py
   PyObject *resultobj = 0;
   struct nbt_name_query *result = 0 ;
   
-  if (!PyArg_ParseTuple(args,(char *)":new_nbt_name_query")) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args,"new_nbt_name_query",0,0,0)) SWIG_fail;
   result = (struct nbt_name_query *)(struct nbt_name_query *) calloc(1, sizeof(struct nbt_name_query));
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_nbt_name_query, SWIG_POINTER_NEW |  0 );
   return resultobj;
@@ -3211,10 +3228,11 @@ SWIGINTERN PyObject *_wrap_delete_nbt_name_query(PyObject *SWIGUNUSEDPARM(self),
   struct nbt_name_query *arg1 = (struct nbt_name_query *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:delete_nbt_name_query",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query, SWIG_POINTER_DISOWN |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query, SWIG_POINTER_DISOWN |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_nbt_name_query" "', argument " "1"" of type '" "struct nbt_name_query *""'"); 
   }
@@ -3230,9 +3248,13 @@ fail:
 
 SWIGINTERN PyObject *nbt_name_query_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
-  if (!PyArg_ParseTuple(args,(char*)"O|swigregister", &obj)) return NULL;
+  if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
   SWIG_TypeNewClientData(SWIGTYPE_p_nbt_name_query, SWIG_NewClientData(obj));
   return SWIG_Py_Void();
+}
+
+SWIGINTERN PyObject *nbt_name_query_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  return SWIG_Python_InitShadowInstance(args);
 }
 
 SWIGINTERN PyObject *_wrap_nbt_name_query_out_reply_from_set(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
@@ -3244,16 +3266,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_out_reply_from_set(PyObject *SWIGUNUSE
   int res2 ;
   char *buf2 = 0 ;
   int alloc2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_query_out_reply_from_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_query_out_reply_from_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_out_reply_from_set" "', argument " "1"" of type '" "nbt_name_query_out *""'"); 
   }
   arg1 = (nbt_name_query_out *)(argp1);
-  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+  res2 = SWIG_AsCharPtrAndSize(swig_obj[1], &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "nbt_name_query_out_reply_from_set" "', argument " "2"" of type '" "char const *""'");
   }
@@ -3279,10 +3300,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_out_reply_from_get(PyObject *SWIGUNUSE
   char *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_query_out_reply_from_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_out_reply_from_get" "', argument " "1"" of type '" "nbt_name_query_out *""'"); 
   }
@@ -3303,16 +3325,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_out_name_set(PyObject *SWIGUNUSEDPARM(
   int res1 = 0 ;
   void *argp2 = 0 ;
   int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_query_out_name_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_query_out_name_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_out_name_set" "', argument " "1"" of type '" "nbt_name_query_out *""'"); 
   }
   arg1 = (nbt_name_query_out *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_nbt_name, 0 |  0 );
+  res2 = SWIG_ConvertPtr(swig_obj[1], &argp2,SWIGTYPE_p_nbt_name, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "nbt_name_query_out_name_set" "', argument " "2"" of type '" "struct nbt_name *""'"); 
   }
@@ -3332,10 +3353,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_out_name_get(PyObject *SWIGUNUSEDPARM(
   struct nbt_name *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_query_out_name_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_out_name_get" "', argument " "1"" of type '" "nbt_name_query_out *""'"); 
   }
@@ -3356,16 +3378,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_out_num_addrs_set(PyObject *SWIGUNUSED
   int res1 = 0 ;
   short val2 ;
   int ecode2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_query_out_num_addrs_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_query_out_num_addrs_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_out_num_addrs_set" "', argument " "1"" of type '" "nbt_name_query_out *""'"); 
   }
   arg1 = (nbt_name_query_out *)(argp1);
-  ecode2 = SWIG_AsVal_short(obj1, &val2);
+  ecode2 = SWIG_AsVal_short(swig_obj[1], &val2);
   if (!SWIG_IsOK(ecode2)) {
     SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "nbt_name_query_out_num_addrs_set" "', argument " "2"" of type '" "int16_t""'");
   } 
@@ -3385,10 +3406,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_out_num_addrs_get(PyObject *SWIGUNUSED
   int16_t result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_query_out_num_addrs_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_out_num_addrs_get" "', argument " "1"" of type '" "nbt_name_query_out *""'"); 
   }
@@ -3409,16 +3431,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_out_reply_addrs_set(PyObject *SWIGUNUS
   int res1 = 0 ;
   void *argp2 = 0 ;
   int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_query_out_reply_addrs_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_query_out_reply_addrs_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_out_reply_addrs_set" "', argument " "1"" of type '" "nbt_name_query_out *""'"); 
   }
   arg1 = (nbt_name_query_out *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_p_char, 0 |  0 );
+  res2 = SWIG_ConvertPtr(swig_obj[1], &argp2,SWIGTYPE_p_p_char, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "nbt_name_query_out_reply_addrs_set" "', argument " "2"" of type '" "char const **""'"); 
   }
@@ -3438,10 +3459,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_out_reply_addrs_get(PyObject *SWIGUNUS
   char **result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_query_out_reply_addrs_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_out, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_out_reply_addrs_get" "', argument " "1"" of type '" "nbt_name_query_out *""'"); 
   }
@@ -3458,7 +3480,7 @@ SWIGINTERN PyObject *_wrap_new_nbt_name_query_out(PyObject *SWIGUNUSEDPARM(self)
   PyObject *resultobj = 0;
   nbt_name_query_out *result = 0 ;
   
-  if (!PyArg_ParseTuple(args,(char *)":new_nbt_name_query_out")) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args,"new_nbt_name_query_out",0,0,0)) SWIG_fail;
   result = (nbt_name_query_out *)(nbt_name_query_out *) calloc(1, sizeof(nbt_name_query_out));
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_nbt_name_query_out, SWIG_POINTER_NEW |  0 );
   return resultobj;
@@ -3472,10 +3494,11 @@ SWIGINTERN PyObject *_wrap_delete_nbt_name_query_out(PyObject *SWIGUNUSEDPARM(se
   nbt_name_query_out *arg1 = (nbt_name_query_out *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:delete_nbt_name_query_out",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_out, SWIG_POINTER_DISOWN |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_out, SWIG_POINTER_DISOWN |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_nbt_name_query_out" "', argument " "1"" of type '" "nbt_name_query_out *""'"); 
   }
@@ -3491,9 +3514,13 @@ fail:
 
 SWIGINTERN PyObject *nbt_name_query_out_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
-  if (!PyArg_ParseTuple(args,(char*)"O|swigregister", &obj)) return NULL;
+  if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
   SWIG_TypeNewClientData(SWIGTYPE_p_nbt_name_query_out, SWIG_NewClientData(obj));
   return SWIG_Py_Void();
+}
+
+SWIGINTERN PyObject *nbt_name_query_out_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  return SWIG_Python_InitShadowInstance(args);
 }
 
 SWIGINTERN PyObject *_wrap_nbt_name_query_in_name_set(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
@@ -3504,16 +3531,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_in_name_set(PyObject *SWIGUNUSEDPARM(s
   int res1 = 0 ;
   void *argp2 = 0 ;
   int res2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_query_in_name_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_query_in_name_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_in_name_set" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
   arg1 = (nbt_name_query_in *)(argp1);
-  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_nbt_name, 0 |  0 );
+  res2 = SWIG_ConvertPtr(swig_obj[1], &argp2,SWIGTYPE_p_nbt_name, 0 |  0 );
   if (!SWIG_IsOK(res2)) {
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "nbt_name_query_in_name_set" "', argument " "2"" of type '" "struct nbt_name *""'"); 
   }
@@ -3533,10 +3559,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_in_name_get(PyObject *SWIGUNUSEDPARM(s
   struct nbt_name *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_query_in_name_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_in_name_get" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
@@ -3558,16 +3585,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_in_dest_addr_set(PyObject *SWIGUNUSEDP
   int res2 ;
   char *buf2 = 0 ;
   int alloc2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_query_in_dest_addr_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_query_in_dest_addr_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_in_dest_addr_set" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
   arg1 = (nbt_name_query_in *)(argp1);
-  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+  res2 = SWIG_AsCharPtrAndSize(swig_obj[1], &buf2, NULL, &alloc2);
   if (!SWIG_IsOK(res2)) {
     SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "nbt_name_query_in_dest_addr_set" "', argument " "2"" of type '" "char const *""'");
   }
@@ -3593,10 +3619,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_in_dest_addr_get(PyObject *SWIGUNUSEDP
   char *result = 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_query_in_dest_addr_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_in_dest_addr_get" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
@@ -3617,16 +3644,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_in_broadcast_set(PyObject *SWIGUNUSEDP
   int res1 = 0 ;
   bool val2 ;
   int ecode2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_query_in_broadcast_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_query_in_broadcast_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_in_broadcast_set" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
   arg1 = (nbt_name_query_in *)(argp1);
-  ecode2 = SWIG_AsVal_bool(obj1, &val2);
+  ecode2 = SWIG_AsVal_bool(swig_obj[1], &val2);
   if (!SWIG_IsOK(ecode2)) {
     SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "nbt_name_query_in_broadcast_set" "', argument " "2"" of type '" "bool""'");
   } 
@@ -3646,10 +3672,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_in_broadcast_get(PyObject *SWIGUNUSEDP
   bool result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_query_in_broadcast_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_in_broadcast_get" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
@@ -3670,16 +3697,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_in_wins_lookup_set(PyObject *SWIGUNUSE
   int res1 = 0 ;
   bool val2 ;
   int ecode2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_query_in_wins_lookup_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_query_in_wins_lookup_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_in_wins_lookup_set" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
   arg1 = (nbt_name_query_in *)(argp1);
-  ecode2 = SWIG_AsVal_bool(obj1, &val2);
+  ecode2 = SWIG_AsVal_bool(swig_obj[1], &val2);
   if (!SWIG_IsOK(ecode2)) {
     SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "nbt_name_query_in_wins_lookup_set" "', argument " "2"" of type '" "bool""'");
   } 
@@ -3699,10 +3725,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_in_wins_lookup_get(PyObject *SWIGUNUSE
   bool result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_query_in_wins_lookup_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_in_wins_lookup_get" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
@@ -3723,16 +3750,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_in_timeout_set(PyObject *SWIGUNUSEDPAR
   int res1 = 0 ;
   int val2 ;
   int ecode2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_query_in_timeout_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_query_in_timeout_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_in_timeout_set" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
   arg1 = (nbt_name_query_in *)(argp1);
-  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
   if (!SWIG_IsOK(ecode2)) {
     SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "nbt_name_query_in_timeout_set" "', argument " "2"" of type '" "int""'");
   } 
@@ -3752,10 +3778,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_in_timeout_get(PyObject *SWIGUNUSEDPAR
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_query_in_timeout_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_in_timeout_get" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
@@ -3776,16 +3803,15 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_in_retries_set(PyObject *SWIGUNUSEDPAR
   int res1 = 0 ;
   int val2 ;
   int ecode2 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
+  PyObject *swig_obj[2] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OO:nbt_name_query_in_retries_set",&obj0,&obj1)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
+  if (!SWIG_Python_UnpackTuple(args,"nbt_name_query_in_retries_set",2,2,swig_obj)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_in_retries_set" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
   arg1 = (nbt_name_query_in *)(argp1);
-  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  ecode2 = SWIG_AsVal_int(swig_obj[1], &val2);
   if (!SWIG_IsOK(ecode2)) {
     SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "nbt_name_query_in_retries_set" "', argument " "2"" of type '" "int""'");
   } 
@@ -3805,10 +3831,11 @@ SWIGINTERN PyObject *_wrap_nbt_name_query_in_retries_get(PyObject *SWIGUNUSEDPAR
   int result;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:nbt_name_query_in_retries_get",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "nbt_name_query_in_retries_get" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
@@ -3825,7 +3852,7 @@ SWIGINTERN PyObject *_wrap_new_nbt_name_query_in(PyObject *SWIGUNUSEDPARM(self),
   PyObject *resultobj = 0;
   nbt_name_query_in *result = 0 ;
   
-  if (!PyArg_ParseTuple(args,(char *)":new_nbt_name_query_in")) SWIG_fail;
+  if (!SWIG_Python_UnpackTuple(args,"new_nbt_name_query_in",0,0,0)) SWIG_fail;
   result = (nbt_name_query_in *)(nbt_name_query_in *) calloc(1, sizeof(nbt_name_query_in));
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_nbt_name_query_in, SWIG_POINTER_NEW |  0 );
   return resultobj;
@@ -3839,10 +3866,11 @@ SWIGINTERN PyObject *_wrap_delete_nbt_name_query_in(PyObject *SWIGUNUSEDPARM(sel
   nbt_name_query_in *arg1 = (nbt_name_query_in *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
-  PyObject * obj0 = 0 ;
+  PyObject *swig_obj[1] ;
   
-  if (!PyArg_ParseTuple(args,(char *)"O:delete_nbt_name_query_in",&obj0)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_query_in, SWIG_POINTER_DISOWN |  0 );
+  if (!args) SWIG_fail;
+  swig_obj[0] = args;
+  res1 = SWIG_ConvertPtr(swig_obj[0], &argp1,SWIGTYPE_p_nbt_name_query_in, SWIG_POINTER_DISOWN |  0 );
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "delete_nbt_name_query_in" "', argument " "1"" of type '" "nbt_name_query_in *""'"); 
   }
@@ -3858,9 +3886,13 @@ fail:
 
 SWIGINTERN PyObject *nbt_name_query_in_swigregister(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *obj;
-  if (!PyArg_ParseTuple(args,(char*)"O|swigregister", &obj)) return NULL;
+  if (!SWIG_Python_UnpackTuple(args,(char*)"swigregister", 1, 1,&obj)) return NULL;
   SWIG_TypeNewClientData(SWIGTYPE_p_nbt_name_query_in, SWIG_NewClientData(obj));
   return SWIG_Py_Void();
+}
+
+SWIGINTERN PyObject *nbt_name_query_in_swiginit(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  return SWIG_Python_InitShadowInstance(args);
 }
 
 SWIGINTERN PyObject *_wrap_new_char_ptr_array(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
@@ -4007,9 +4039,7 @@ SWIGINTERN PyObject *_wrap_do_nbt_name_query(PyObject *SWIGUNUSEDPARM(self), PyO
     (char *) "nbtsock",(char *) "io", NULL 
   };
   
-  {
-    arg2 = NULL;
-  }
+  arg2 = NULL;
   if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:do_nbt_name_query",kwnames,&obj0,&obj1)) SWIG_fail;
   res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_nbt_name_socket, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
@@ -4022,13 +4052,12 @@ SWIGINTERN PyObject *_wrap_do_nbt_name_query(PyObject *SWIGUNUSEDPARM(self), PyO
   }
   arg3 = (struct nbt_name_query *)(argp3);
   result = do_nbt_name_query(arg1,arg2,arg3);
-  {
-    if (NT_STATUS_IS_ERR(result)) {
-      PyObject *obj = Py_BuildValue("(i,s)", (&result)->v, nt_errstr(result));
-      PyErr_SetObject(PyExc_RuntimeError, obj);
-    } else if (resultobj == NULL) {
-      resultobj = Py_None;
-    }
+  if (NT_STATUS_IS_ERR(result)) {
+    PyObject *obj = Py_BuildValue((char *)"(i,s)", (&result)->v, nt_errstr(result));
+    PyErr_SetObject(PyExc_RuntimeError, obj);
+    SWIG_fail;
+  } else if (resultobj == NULL) {
+    resultobj = Py_None;
   }
   return resultobj;
 fail:
@@ -4039,45 +4068,49 @@ fail:
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"nbt_name_socket_init", (PyCFunction) _wrap_nbt_name_socket_init, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"nbt_name_name_set", _wrap_nbt_name_name_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_name_get", _wrap_nbt_name_name_get, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_name_get", (PyCFunction)_wrap_nbt_name_name_get, METH_O, NULL},
 	 { (char *)"nbt_name_scope_set", _wrap_nbt_name_scope_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_scope_get", _wrap_nbt_name_scope_get, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_scope_get", (PyCFunction)_wrap_nbt_name_scope_get, METH_O, NULL},
 	 { (char *)"nbt_name_type_set", _wrap_nbt_name_type_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_type_get", _wrap_nbt_name_type_get, METH_VARARGS, NULL},
-	 { (char *)"new_nbt_name", _wrap_new_nbt_name, METH_VARARGS, NULL},
-	 { (char *)"delete_nbt_name", _wrap_delete_nbt_name, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_type_get", (PyCFunction)_wrap_nbt_name_type_get, METH_O, NULL},
+	 { (char *)"new_nbt_name", (PyCFunction)_wrap_new_nbt_name, METH_NOARGS, NULL},
+	 { (char *)"delete_nbt_name", (PyCFunction)_wrap_delete_nbt_name, METH_O, NULL},
 	 { (char *)"nbt_name_swigregister", nbt_name_swigregister, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_query_data_out_get", _wrap_nbt_name_query_data_out_get, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_query_data_in_get", _wrap_nbt_name_query_data_in_get, METH_VARARGS, NULL},
-	 { (char *)"new_nbt_name_query", _wrap_new_nbt_name_query, METH_VARARGS, NULL},
-	 { (char *)"delete_nbt_name_query", _wrap_delete_nbt_name_query, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_swiginit", nbt_name_swiginit, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_data_out_get", (PyCFunction)_wrap_nbt_name_query_data_out_get, METH_O, NULL},
+	 { (char *)"nbt_name_query_data_in_get", (PyCFunction)_wrap_nbt_name_query_data_in_get, METH_O, NULL},
+	 { (char *)"new_nbt_name_query", (PyCFunction)_wrap_new_nbt_name_query, METH_NOARGS, NULL},
+	 { (char *)"delete_nbt_name_query", (PyCFunction)_wrap_delete_nbt_name_query, METH_O, NULL},
 	 { (char *)"nbt_name_query_swigregister", nbt_name_query_swigregister, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_swiginit", nbt_name_query_swiginit, METH_VARARGS, NULL},
 	 { (char *)"nbt_name_query_out_reply_from_set", _wrap_nbt_name_query_out_reply_from_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_query_out_reply_from_get", _wrap_nbt_name_query_out_reply_from_get, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_out_reply_from_get", (PyCFunction)_wrap_nbt_name_query_out_reply_from_get, METH_O, NULL},
 	 { (char *)"nbt_name_query_out_name_set", _wrap_nbt_name_query_out_name_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_query_out_name_get", _wrap_nbt_name_query_out_name_get, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_out_name_get", (PyCFunction)_wrap_nbt_name_query_out_name_get, METH_O, NULL},
 	 { (char *)"nbt_name_query_out_num_addrs_set", _wrap_nbt_name_query_out_num_addrs_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_query_out_num_addrs_get", _wrap_nbt_name_query_out_num_addrs_get, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_out_num_addrs_get", (PyCFunction)_wrap_nbt_name_query_out_num_addrs_get, METH_O, NULL},
 	 { (char *)"nbt_name_query_out_reply_addrs_set", _wrap_nbt_name_query_out_reply_addrs_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_query_out_reply_addrs_get", _wrap_nbt_name_query_out_reply_addrs_get, METH_VARARGS, NULL},
-	 { (char *)"new_nbt_name_query_out", _wrap_new_nbt_name_query_out, METH_VARARGS, NULL},
-	 { (char *)"delete_nbt_name_query_out", _wrap_delete_nbt_name_query_out, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_out_reply_addrs_get", (PyCFunction)_wrap_nbt_name_query_out_reply_addrs_get, METH_O, NULL},
+	 { (char *)"new_nbt_name_query_out", (PyCFunction)_wrap_new_nbt_name_query_out, METH_NOARGS, NULL},
+	 { (char *)"delete_nbt_name_query_out", (PyCFunction)_wrap_delete_nbt_name_query_out, METH_O, NULL},
 	 { (char *)"nbt_name_query_out_swigregister", nbt_name_query_out_swigregister, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_out_swiginit", nbt_name_query_out_swiginit, METH_VARARGS, NULL},
 	 { (char *)"nbt_name_query_in_name_set", _wrap_nbt_name_query_in_name_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_query_in_name_get", _wrap_nbt_name_query_in_name_get, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_in_name_get", (PyCFunction)_wrap_nbt_name_query_in_name_get, METH_O, NULL},
 	 { (char *)"nbt_name_query_in_dest_addr_set", _wrap_nbt_name_query_in_dest_addr_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_query_in_dest_addr_get", _wrap_nbt_name_query_in_dest_addr_get, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_in_dest_addr_get", (PyCFunction)_wrap_nbt_name_query_in_dest_addr_get, METH_O, NULL},
 	 { (char *)"nbt_name_query_in_broadcast_set", _wrap_nbt_name_query_in_broadcast_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_query_in_broadcast_get", _wrap_nbt_name_query_in_broadcast_get, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_in_broadcast_get", (PyCFunction)_wrap_nbt_name_query_in_broadcast_get, METH_O, NULL},
 	 { (char *)"nbt_name_query_in_wins_lookup_set", _wrap_nbt_name_query_in_wins_lookup_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_query_in_wins_lookup_get", _wrap_nbt_name_query_in_wins_lookup_get, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_in_wins_lookup_get", (PyCFunction)_wrap_nbt_name_query_in_wins_lookup_get, METH_O, NULL},
 	 { (char *)"nbt_name_query_in_timeout_set", _wrap_nbt_name_query_in_timeout_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_query_in_timeout_get", _wrap_nbt_name_query_in_timeout_get, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_in_timeout_get", (PyCFunction)_wrap_nbt_name_query_in_timeout_get, METH_O, NULL},
 	 { (char *)"nbt_name_query_in_retries_set", _wrap_nbt_name_query_in_retries_set, METH_VARARGS, NULL},
-	 { (char *)"nbt_name_query_in_retries_get", _wrap_nbt_name_query_in_retries_get, METH_VARARGS, NULL},
-	 { (char *)"new_nbt_name_query_in", _wrap_new_nbt_name_query_in, METH_VARARGS, NULL},
-	 { (char *)"delete_nbt_name_query_in", _wrap_delete_nbt_name_query_in, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_in_retries_get", (PyCFunction)_wrap_nbt_name_query_in_retries_get, METH_O, NULL},
+	 { (char *)"new_nbt_name_query_in", (PyCFunction)_wrap_new_nbt_name_query_in, METH_NOARGS, NULL},
+	 { (char *)"delete_nbt_name_query_in", (PyCFunction)_wrap_delete_nbt_name_query_in, METH_O, NULL},
 	 { (char *)"nbt_name_query_in_swigregister", nbt_name_query_in_swigregister, METH_VARARGS, NULL},
+	 { (char *)"nbt_name_query_in_swiginit", nbt_name_query_in_swiginit, METH_VARARGS, NULL},
 	 { (char *)"new_char_ptr_array", (PyCFunction) _wrap_new_char_ptr_array, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_char_ptr_array", (PyCFunction) _wrap_delete_char_ptr_array, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"char_ptr_array_getitem", (PyCFunction) _wrap_char_ptr_array_getitem, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -4091,7 +4124,7 @@ static PyMethodDef SwigMethods[] = {
 
 static swig_type_info _swigt__p_TALLOC_CTX = {"_p_TALLOC_CTX", "TALLOC_CTX *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_event_context = {"_p_event_context", "struct event_context *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_event_context = {"_p_event_context", "struct event_context *|event *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_int = {"_p_int", "intptr_t *|int *|int_least32_t *|int_fast32_t *|int32_t *|int_fast16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_long_long = {"_p_long_long", "int_least64_t *|int_fast64_t *|int64_t *|long long *|intmax_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_nbt_name = {"_p_nbt_name", "struct nbt_name *|nbt_name *", 0, 0, (void*)0, 0};
