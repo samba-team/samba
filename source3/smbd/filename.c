@@ -214,16 +214,18 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	stream = strchr_m(name, ':');
+	if (!lp_posix_pathnames()) {
+		stream = strchr_m(name, ':');
 
-	if (stream != NULL) {
-		char *tmp = talloc_strdup(ctx, stream);
-		if (tmp == NULL) {
-			TALLOC_FREE(name);
-			return NT_STATUS_NO_MEMORY;
+		if (stream != NULL) {
+			char *tmp = talloc_strdup(ctx, stream);
+			if (tmp == NULL) {
+				TALLOC_FREE(name);
+				return NT_STATUS_NO_MEMORY;
+			}
+			*stream = '\0';
+			stream = tmp;
 		}
-		*stream = '\0';
-		stream = tmp;
 	}
 
 	/*
