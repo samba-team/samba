@@ -75,33 +75,6 @@ static int perflib_009_params( REGVAL_CTR *regvals )
 /***********************************************************************
 ***********************************************************************/
 
-static int hkpt_params( REGVAL_CTR *regvals )
-{
-	uint32 base_index;
-	uint32 buffer_size;
-	char *buffer = NULL;
-
-	/* This is ALMOST the same as perflib_009_params, but HKPT has
-	   a "Counters" entry instead of a "Counter" key. <Grrrr> */
-	   
-	base_index = reg_perfcount_get_base_index();
-	buffer_size = reg_perfcount_get_counter_names(base_index, &buffer);
-	regval_ctr_addvalue(regvals, "Counters", REG_MULTI_SZ, buffer, buffer_size);
-	
-	if(buffer_size > 0)
-		SAFE_FREE(buffer);
-		
-	buffer_size = reg_perfcount_get_counter_help(base_index, &buffer);
-	regval_ctr_addvalue(regvals, "Help", REG_MULTI_SZ, buffer, buffer_size);
-	if(buffer_size > 0)
-		SAFE_FREE(buffer);
-	
-	return regval_ctr_numvals( regvals );
-}
-
-/***********************************************************************
-***********************************************************************/
-
 static int current_version( REGVAL_CTR *values )
 {
 	const char *sysroot_string = "c:\\Windows";
@@ -122,7 +95,6 @@ static int current_version( REGVAL_CTR *values )
 	return regval_ctr_numvals( values );
 }
 
-
 /***********************************************************************
  Structure holding the registry paths and pointers to the value 
  enumeration functions
@@ -132,7 +104,6 @@ static struct reg_dyn_values dynamic_values[] = {
 	{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB",  &perflib_params   }, 
 	{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB/009", &perflib_009_params }, 
 	{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION",          &current_version }, 
-	{ "HKPT", &hkpt_params },
 	{ NULL, NULL }
 };
 
