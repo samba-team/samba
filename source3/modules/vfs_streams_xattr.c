@@ -92,6 +92,8 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	struct stream_io *io = (struct stream_io *)
 		VFS_FETCH_FSP_EXTENSION(handle, fsp);
 
+	DEBUG(10, ("streams_xattr_fstat called for %d\n", fsp->fh->fd));
+
 	if (io == NULL) {
 		return SMB_VFS_NEXT_FSTAT(handle, fsp, sbuf);
 	}
@@ -104,6 +106,8 @@ static int streams_xattr_fstat(vfs_handle_struct *handle, files_struct *fsp,
 	if (sbuf->st_size == -1) {
 		return -1;
 	}
+
+	DEBUG(10, ("sbuf->st_size = %d\n", (int)sbuf->st_size));
 
 	sbuf->st_ino = stream_inode(sbuf, io->xattr_name);
 	sbuf->st_mode &= ~S_IFMT;
@@ -219,6 +223,8 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 	int baseflags;
 	int hostfd = -1;
 
+	DEBUG(10, ("streams_xattr_open called for %s\n", fname));
+
 	if (!is_ntfs_stream_name(fname)) {
 		return SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode);
 	}
@@ -267,6 +273,8 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 	status = get_ea_value(talloc_tos(), handle->conn, fsp, base,
 			      xattr_name, &ea);
 
+	DEBUG(10, ("get_ea_value returned %s\n", nt_errstr(status)));
+
 	if (!NT_STATUS_IS_OK(status)
 	    && !NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		/*
@@ -274,6 +282,8 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 		 * O_CREAT, the higher levels should have created the base
 		 * file for us.
 		 */
+		DEBUG(10, ("streams_xattr_open: base file %s not around, "
+			   "returning ENOENT\n", base));
 		errno = ENOENT;
 		goto fail;
 	}
@@ -571,6 +581,8 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 	struct ea_struct ea;
 	NTSTATUS status;
 	int ret;
+
+	DEBUG(10, ("streams_xattr_pwrite called for %d bytes\n", (int)n));
 
 	if (sio == NULL) {
 		return SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
