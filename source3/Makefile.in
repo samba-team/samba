@@ -423,7 +423,7 @@ REGFIO_OBJ = registry/regfio.o
 REGOBJS_OBJ = registry/reg_objects.o
 
 REGISTRY_BACKENDS = registry/reg_backend_printing.o \
-		    registry/reg_db.o \
+		    registry/reg_backend_db.o \
 		    registry/reg_backend_smbconf.o \
 		    registry/reg_backend_shares.o \
 		    registry/reg_backend_netlogon_params.o \
@@ -448,7 +448,7 @@ REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o \
 REG_API_OBJ = registry/reg_api.o \
 	      registry/reg_frontend_hilvl.o \
 	      registry/reg_backend_smbconf.o \
-	      registry/reg_db.o \
+	      registry/reg_backend_db.o \
 	      registry/reg_util.o \
 	      \
 	      registry/reg_cachehook.o \
@@ -861,7 +861,7 @@ EVTLOGADM_OBJ	= $(EVTLOGADM_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(REGOBJS_OBJ)
 		$(ERRORMAP_OBJ) $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(DOSERR_OBJ) \
 		$(SECRETS_OBJ) \
 	        registry/reg_eventlog.o rpc_server/srv_eventlog_lib.o registry/reg_util.o \
-		registry/reg_db.o
+		registry/reg_backend_db.o
 
 SHARESEC_OBJ0 = utils/sharesec.o
 SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(REGOBJS_OBJ) \
