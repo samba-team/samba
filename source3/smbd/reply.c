@@ -168,9 +168,6 @@ static NTSTATUS check_path_syntax_internal(char *path,
 
 	*d = '\0';
 
-	if (NT_STATUS_IS_OK(ret) && !posix_path) {
-		ret = split_ntfs_stream_name(NULL, path, NULL, NULL);
-	}
 	return ret;
 }
 
