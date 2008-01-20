@@ -558,7 +558,8 @@ static bool xattr_tdb_init(int snum, struct db_context **p_db)
 	struct db_context *db;
 	const char *dbname;
 
-	dbname = lp_parm_const_string(snum, "ea", "tdb", lock_path("eas.tdb"));
+	dbname = lp_parm_const_string(snum, "xattr", "tdb",
+				      lock_path("xattr.tdb"));
 
 	if (dbname == NULL) {
 		errno = ENOTSUP;
@@ -660,7 +661,7 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
  * Destructor for the VFS private data
  */
 
-static void close_ea_db(void **data)
+static void close_xattr_db(void **data)
 {
 	struct db_context **p_db = (struct db_context **)data;
 	TALLOC_FREE(*p_db);
@@ -688,14 +689,14 @@ static int xattr_tdb_connect(vfs_handle_struct *handle, const char *service,
 	}
 
 	if (!xattr_tdb_init(snum, &db)) {
-		DEBUG(5, ("Could not init ea tdb\n"));
+		DEBUG(5, ("Could not init xattr tdb\n"));
 		lp_do_parameter(snum, "ea support", "False");
 		return 0;
 	}
 
 	lp_do_parameter(snum, "ea support", "True");
 
-	SMB_VFS_HANDLE_SET_DATA(handle, db, close_ea_db,
+	SMB_VFS_HANDLE_SET_DATA(handle, db, close_xattr_db,
 				struct db_context, return -1);
 
 	return 0;
