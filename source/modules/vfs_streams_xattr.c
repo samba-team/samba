@@ -131,7 +131,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle, const char *fname,
 		goto fail;
 	}
 
-	if (SMB_VFS_NEXT_STAT(handle, base, sbuf) == -1) {
+	if (SMB_VFS_STAT(handle->conn, base, sbuf) == -1) {
 		goto fail;
 	}
 
@@ -178,7 +178,7 @@ static int streams_xattr_lstat(vfs_handle_struct *handle, const char *fname,
 		goto fail;
 	}
 
-	if (SMB_VFS_NEXT_LSTAT(handle, base, sbuf) == -1) {
+	if (SMB_VFS_LSTAT(handle->conn, base, sbuf) == -1) {
 		goto fail;
 	}
 
@@ -248,7 +248,7 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
         baseflags &= ~O_EXCL;
         baseflags &= ~O_CREAT;
 
-        hostfd = SMB_VFS_NEXT_OPEN(handle, base, fsp, baseflags, mode);
+        hostfd = SMB_VFS_OPEN(handle->conn, base, fsp, baseflags, mode);
 
         /* It is legit to open a stream on a directory, but the base
          * fd has to be read-only.
@@ -256,8 +256,8 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
         if ((hostfd == -1) && (errno == EISDIR)) {
                 baseflags &= ~O_ACCMODE;
                 baseflags |= O_RDONLY;
-                hostfd = SMB_VFS_NEXT_OPEN(handle, fname, fsp, baseflags,
-					   mode);
+                hostfd = SMB_VFS_OPEN(handle->conn, fname, fsp, baseflags,
+				      mode);
         }
 
         if (hostfd == -1) {
@@ -289,8 +289,12 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 			 */
                         char null = '\0';
 
-                        if (SMB_VFS_NEXT_SETXATTR(
-				handle, base, xattr_name, &null, sizeof(null),
+			DEBUG(10, ("creating attribute %s on file %s\n",
+				   xattr_name, base));
+
+                        if (SMB_VFS_SETXATTR(
+				handle->conn, base, xattr_name,
+				&null, sizeof(null),
 				flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
 				goto fail;
 			}
@@ -299,8 +303,9 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 
 	if (flags & O_TRUNC) {
 		char null = '\0';
-		if (SMB_VFS_NEXT_SETXATTR(
-			    handle, base, xattr_name, &null, sizeof(null),
+		if (SMB_VFS_SETXATTR(
+			    handle->conn, base, xattr_name,
+			    &null, sizeof(null),
 			    flags & O_EXCL ? XATTR_CREATE : 0) == -1) {
 			goto fail;
 		}
@@ -332,7 +337,7 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 		 * BUGBUGBUG -- we would need to call fd_close_posix here, but
 		 * we don't have a full fsp yet
 		 */
-		SMB_VFS_NEXT_CLOSE(handle, fsp, hostfd);
+		SMB_VFS_CLOSE(fsp, hostfd);
 	}
 
 	TALLOC_FREE(frame);
@@ -364,7 +369,7 @@ static int streams_xattr_unlink(vfs_handle_struct *handle,  const char *fname)
 		goto fail;
 	}
 
-	ret = SMB_VFS_NEXT_REMOVEXATTR(handle, base, xattr_name);
+	ret = SMB_VFS_REMOVEXATTR(handle->conn, base, xattr_name);
 
 	if ((ret == -1) && (errno == ENOATTR)) {
 		errno = ENOENT;
@@ -497,13 +502,13 @@ static NTSTATUS streams_xattr_streaminfo(vfs_handle_struct *handle,
 		if (is_ntfs_stream_name(fsp->fsp_name)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		ret = SMB_VFS_NEXT_FSTAT(handle, fsp, &sbuf);
+		ret = SMB_VFS_FSTAT(fsp, &sbuf);
 	}
 	else {
 		if (is_ntfs_stream_name(fname)) {
 			return NT_STATUS_INVALID_PARAMETER;
 		}
-		ret = SMB_VFS_NEXT_STAT(handle, fname, &sbuf);
+		ret = SMB_VFS_STAT(handle->conn, fname, &sbuf);
 	}
 
 	if (ret == -1) {
@@ -595,8 +600,8 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 
         memcpy(ea.value.data + offset, data, n);
 
-	ret = SMB_VFS_NEXT_FSETXATTR(handle, fsp, sio->xattr_name,
-				     ea.value.data, ea.value.length, 0);
+	ret = SMB_VFS_FSETXATTR(fsp->base_fsp, sio->xattr_name,
+				ea.value.data, ea.value.length, 0);
 
 	TALLOC_FREE(ea.value.data);
 
