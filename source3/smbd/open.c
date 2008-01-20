@@ -2464,7 +2464,8 @@ static NTSTATUS open_streams_for_delete(connection_struct *conn,
 	status = SMB_VFS_STREAMINFO(conn, NULL, fname, talloc_tos(),
 				    &num_streams, &stream_info);
 
-	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)
+	    || NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 		DEBUG(10, ("no streams around\n"));
 		TALLOC_FREE(frame);
 		return NT_STATUS_OK;
