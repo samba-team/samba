@@ -55,17 +55,18 @@ static int current_version_fetch_values(const char *key, REGVAL_CTR *values)
 		return 0;
 	}
 
-	value_length = push_ucs2( value, value, sysroot_string, sizeof(value), 
-		STR_TERMINATE|STR_NOALIGN );
-	regval_ctr_addvalue( values, "SystemRoot", REG_SZ, value, value_length );
-	
-	fstr_sprintf( sysversion, "%d.%d", lp_major_announce_version(), lp_minor_announce_version() );
-	value_length = push_ucs2( value, value, sysversion, sizeof(value), 
-		STR_TERMINATE|STR_NOALIGN );
-	regval_ctr_addvalue( values, "CurrentVersion", REG_SZ, value, value_length );
-	
-		
-	return regval_ctr_numvals( values );
+	value_length = push_ucs2(value, value, sysroot_string, sizeof(value),
+				 STR_TERMINATE|STR_NOALIGN );
+	regval_ctr_addvalue(values, "SystemRoot", REG_SZ, value, value_length);
+
+	fstr_sprintf(sysversion, "%d.%d", lp_major_announce_version(),
+		     lp_minor_announce_version());
+	value_length = push_ucs2(value, value, sysversion, sizeof(value),
+				 STR_TERMINATE|STR_NOALIGN);
+	regval_ctr_addvalue(values, "CurrentVersion", REG_SZ, value,
+			    value_length);
+
+	return regval_ctr_numvals(values);
 }
 
 static int current_version_fetch_subkeys(const char *key,
