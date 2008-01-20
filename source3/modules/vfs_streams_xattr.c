@@ -121,7 +121,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle, const char *fname,
 			      SMB_STRUCT_STAT *sbuf)
 {
 	NTSTATUS status;
-	char *base, *sname;
+	char *base = NULL, *sname = NULL;
 	int result = -1;
 	char *xattr_name;
 
@@ -132,7 +132,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle, const char *fname,
 	status = split_ntfs_stream_name(talloc_tos(), fname, &base, &sname);
 	if (!NT_STATUS_IS_OK(status)) {
 		errno = EINVAL;
-		goto fail;
+		return -1;
 	}
 
 	if (SMB_VFS_STAT(handle->conn, base, sbuf) == -1) {
