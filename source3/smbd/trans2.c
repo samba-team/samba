@@ -4331,14 +4331,15 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			data_size = 4;
 			break;
 
-#if 0
 		/*
-		 * NT4 server just returns "invalid query" to this - if we try to answer
-		 * it then NTws gets a BSOD! (tridge).
-		 * W2K seems to want this. JRA.
+		 * NT4 server just returns "invalid query" to this - if we try
+		 * to answer it then NTws gets a BSOD! (tridge).  W2K seems to
+		 * want this. JRA.
+		 */
+		/* The first statement above is false - verified using Thursby
+		 * client against NT4 -- gcolley.
 		 */
 		case SMB_QUERY_FILE_STREAM_INFO:
-#endif
 		case SMB_FILE_STREAM_INFORMATION: {
 			unsigned int num_streams;
 			struct stream_struct *streams;
