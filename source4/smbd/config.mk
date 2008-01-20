@@ -10,9 +10,7 @@ PRIVATE_DEPENDENCIES = \
 # End MODULE server_auth
 ################################################
 
-#######################
-# Start SUBSERVICE
-[LIBRARY::service]
+[SUBSYSTEM::service]
 PRIVATE_PROTO_HEADER = service_proto.h
 OBJ_FILES = \
 		service.o \
@@ -20,8 +18,6 @@ OBJ_FILES = \
 		service_task.o
 PRIVATE_DEPENDENCIES = \
 		MESSAGING samba-socket
-# End SUBSYSTEM SERVER
-#######################
 
 [SUBSYSTEM::PIDFILE]
 OBJ_FILES = pidfile.o

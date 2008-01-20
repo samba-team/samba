@@ -36,10 +36,7 @@ MANPAGE = tools/ndrdump.1
 
 ################################################
 # Start SUBSYSTEM NDR_COMPRESSION
-[LIBRARY::NDR_COMPRESSION]
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = NDR support for compressed subcontexts
+[SUBSYSTEM::NDR_COMPRESSION]
 PRIVATE_PROTO_HEADER = ndr/ndr_compression.h
 OBJ_FILES = \
 		ndr/ndr_compression.o
@@ -370,13 +367,10 @@ OBJ_FILES = gen_ndr/ndr_svcctl_c.o
 PUBLIC_HEADERS = gen_ndr/ndr_svcctl_c.h
 PUBLIC_DEPENDENCIES = dcerpc NDR_SVCCTL
 
-[LIBRARY::dcerpc_atsvc]
+[SUBSYSTEM::dcerpc_atsvc]
 OBJ_FILES = gen_ndr/ndr_atsvc_c.o
 PUBLIC_HEADERS = gen_ndr/ndr_atsvc_c.h
 PUBLIC_DEPENDENCIES = dcerpc NDR_ATSVC
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = DCE/RPC client library - ATSVC
 
 [SUBSYSTEM::RPC_NDR_EVENTLOG]
 OBJ_FILES = gen_ndr/ndr_eventlog_c.o
@@ -410,12 +404,9 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_WINREG
 OBJ_FILES = gen_ndr/ndr_initshutdown_c.o
 PUBLIC_DEPENDENCIES = dcerpc NDR_INITSHUTDOWN
 
-[LIBRARY::dcerpc_mgmt]
+[SUBSYSTEM::dcerpc_mgmt]
 OBJ_FILES = gen_ndr/ndr_mgmt_c.o
 PRIVATE_DEPENDENCIES = NDR_MGMT
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = DCE/RPC client library - MGMT
 
 [SUBSYSTEM::RPC_NDR_PROTECTED_STORAGE]
 OBJ_FILES = gen_ndr/ndr_protected_storage_c.o
