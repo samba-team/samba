@@ -165,6 +165,9 @@ static ssize_t xattr_tdb_getattr(struct db_context *db_ctx,
 	ssize_t result = -1;
 	NTSTATUS status;
 
+	DEBUG(10, ("xattr_tdb_getattr called for file %s, name %s\n",
+		   file_id_string_tos(id), name));
+
 	status = xattr_tdb_load_attrs(talloc_tos(), db_ctx, id, &attribs);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -249,6 +252,9 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 	struct db_record *rec;
 	struct tdb_xattrs *attribs;
 	uint32_t i;
+
+	DEBUG(10, ("xattr_tdb_setattr called for file %s, name %s\n",
+		   file_id_string_tos(id), name));
 
 	rec = xattr_tdb_lock_attrs(talloc_tos(), db_ctx, id);
 
