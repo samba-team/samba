@@ -2,7 +2,6 @@
 # Version 1.3.33
 #
 # Don't modify this file, modify the SWIG interface instead.
-# This file is compatible with both classic and new-style classes.
 
 import _libcli_nbt
 import new
@@ -48,6 +47,16 @@ except AttributeError:
 del types
 
 
+def _swig_setattr_nondynamic_method(set):
+    def set_attr(self,name,value):
+        if (name == "thisown"): return self.this.own(value)
+        if hasattr(self,name) or (name == "this"):
+            set(self,name,value)
+        else:
+            raise AttributeError("You cannot add attributes to %s" % self)
+    return set_attr
+
+
 import events
 nbt_name_socket_init = _libcli_nbt.nbt_name_socket_init
 NBT_NAME_CLIENT = _libcli_nbt.NBT_NAME_CLIENT
@@ -58,106 +67,54 @@ NBT_NAME_PDC = _libcli_nbt.NBT_NAME_PDC
 NBT_NAME_LOGON = _libcli_nbt.NBT_NAME_LOGON
 NBT_NAME_MASTER = _libcli_nbt.NBT_NAME_MASTER
 NBT_NAME_BROWSER = _libcli_nbt.NBT_NAME_BROWSER
-class nbt_name(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, nbt_name, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, nbt_name, name)
+class nbt_name(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
-    __swig_setmethods__["name"] = _libcli_nbt.nbt_name_name_set
-    __swig_getmethods__["name"] = _libcli_nbt.nbt_name_name_get
-    if _newclass:name = _swig_property(_libcli_nbt.nbt_name_name_get, _libcli_nbt.nbt_name_name_set)
-    __swig_setmethods__["scope"] = _libcli_nbt.nbt_name_scope_set
-    __swig_getmethods__["scope"] = _libcli_nbt.nbt_name_scope_get
-    if _newclass:scope = _swig_property(_libcli_nbt.nbt_name_scope_get, _libcli_nbt.nbt_name_scope_set)
-    __swig_setmethods__["type"] = _libcli_nbt.nbt_name_type_set
-    __swig_getmethods__["type"] = _libcli_nbt.nbt_name_type_get
-    if _newclass:type = _swig_property(_libcli_nbt.nbt_name_type_get, _libcli_nbt.nbt_name_type_set)
+    name = _swig_property(_libcli_nbt.nbt_name_name_get, _libcli_nbt.nbt_name_name_set)
+    scope = _swig_property(_libcli_nbt.nbt_name_scope_get, _libcli_nbt.nbt_name_scope_set)
+    type = _swig_property(_libcli_nbt.nbt_name_type_get, _libcli_nbt.nbt_name_type_set)
     def __init__(self, *args, **kwargs): 
-        this = _libcli_nbt.new_nbt_name(*args, **kwargs)
-        try: self.this.append(this)
-        except: self.this = this
+        _libcli_nbt.nbt_name_swiginit(self,_libcli_nbt.new_nbt_name(*args, **kwargs))
     __swig_destroy__ = _libcli_nbt.delete_nbt_name
-    __del__ = lambda self : None;
 nbt_name_swigregister = _libcli_nbt.nbt_name_swigregister
 nbt_name_swigregister(nbt_name)
 
-class nbt_name_query(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, nbt_name_query, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, nbt_name_query, name)
+class nbt_name_query(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
-    __swig_getmethods__["data_out"] = _libcli_nbt.nbt_name_query_data_out_get
-    if _newclass:data_out = _swig_property(_libcli_nbt.nbt_name_query_data_out_get)
-    __swig_getmethods__["data_in"] = _libcli_nbt.nbt_name_query_data_in_get
-    if _newclass:data_in = _swig_property(_libcli_nbt.nbt_name_query_data_in_get)
+    data_out = _swig_property(_libcli_nbt.nbt_name_query_data_out_get)
+    data_in = _swig_property(_libcli_nbt.nbt_name_query_data_in_get)
     def __init__(self, *args, **kwargs): 
-        this = _libcli_nbt.new_nbt_name_query(*args, **kwargs)
-        try: self.this.append(this)
-        except: self.this = this
+        _libcli_nbt.nbt_name_query_swiginit(self,_libcli_nbt.new_nbt_name_query(*args, **kwargs))
     __swig_destroy__ = _libcli_nbt.delete_nbt_name_query
-    __del__ = lambda self : None;
 nbt_name_query_swigregister = _libcli_nbt.nbt_name_query_swigregister
 nbt_name_query_swigregister(nbt_name_query)
 
-class nbt_name_query_out(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, nbt_name_query_out, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, nbt_name_query_out, name)
+class nbt_name_query_out(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
-    __swig_setmethods__["reply_from"] = _libcli_nbt.nbt_name_query_out_reply_from_set
-    __swig_getmethods__["reply_from"] = _libcli_nbt.nbt_name_query_out_reply_from_get
-    if _newclass:reply_from = _swig_property(_libcli_nbt.nbt_name_query_out_reply_from_get, _libcli_nbt.nbt_name_query_out_reply_from_set)
-    __swig_setmethods__["name"] = _libcli_nbt.nbt_name_query_out_name_set
-    __swig_getmethods__["name"] = _libcli_nbt.nbt_name_query_out_name_get
-    if _newclass:name = _swig_property(_libcli_nbt.nbt_name_query_out_name_get, _libcli_nbt.nbt_name_query_out_name_set)
-    __swig_setmethods__["num_addrs"] = _libcli_nbt.nbt_name_query_out_num_addrs_set
-    __swig_getmethods__["num_addrs"] = _libcli_nbt.nbt_name_query_out_num_addrs_get
-    if _newclass:num_addrs = _swig_property(_libcli_nbt.nbt_name_query_out_num_addrs_get, _libcli_nbt.nbt_name_query_out_num_addrs_set)
-    __swig_setmethods__["reply_addrs"] = _libcli_nbt.nbt_name_query_out_reply_addrs_set
-    __swig_getmethods__["reply_addrs"] = _libcli_nbt.nbt_name_query_out_reply_addrs_get
-    if _newclass:reply_addrs = _swig_property(_libcli_nbt.nbt_name_query_out_reply_addrs_get, _libcli_nbt.nbt_name_query_out_reply_addrs_set)
+    reply_from = _swig_property(_libcli_nbt.nbt_name_query_out_reply_from_get, _libcli_nbt.nbt_name_query_out_reply_from_set)
+    name = _swig_property(_libcli_nbt.nbt_name_query_out_name_get, _libcli_nbt.nbt_name_query_out_name_set)
+    num_addrs = _swig_property(_libcli_nbt.nbt_name_query_out_num_addrs_get, _libcli_nbt.nbt_name_query_out_num_addrs_set)
+    reply_addrs = _swig_property(_libcli_nbt.nbt_name_query_out_reply_addrs_get, _libcli_nbt.nbt_name_query_out_reply_addrs_set)
     def __init__(self, *args, **kwargs): 
-        this = _libcli_nbt.new_nbt_name_query_out(*args, **kwargs)
-        try: self.this.append(this)
-        except: self.this = this
+        _libcli_nbt.nbt_name_query_out_swiginit(self,_libcli_nbt.new_nbt_name_query_out(*args, **kwargs))
     __swig_destroy__ = _libcli_nbt.delete_nbt_name_query_out
-    __del__ = lambda self : None;
 nbt_name_query_out_swigregister = _libcli_nbt.nbt_name_query_out_swigregister
 nbt_name_query_out_swigregister(nbt_name_query_out)
 
-class nbt_name_query_in(_object):
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, nbt_name_query_in, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, nbt_name_query_in, name)
+class nbt_name_query_in(object):
+    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
-    __swig_setmethods__["name"] = _libcli_nbt.nbt_name_query_in_name_set
-    __swig_getmethods__["name"] = _libcli_nbt.nbt_name_query_in_name_get
-    if _newclass:name = _swig_property(_libcli_nbt.nbt_name_query_in_name_get, _libcli_nbt.nbt_name_query_in_name_set)
-    __swig_setmethods__["dest_addr"] = _libcli_nbt.nbt_name_query_in_dest_addr_set
-    __swig_getmethods__["dest_addr"] = _libcli_nbt.nbt_name_query_in_dest_addr_get
-    if _newclass:dest_addr = _swig_property(_libcli_nbt.nbt_name_query_in_dest_addr_get, _libcli_nbt.nbt_name_query_in_dest_addr_set)
-    __swig_setmethods__["broadcast"] = _libcli_nbt.nbt_name_query_in_broadcast_set
-    __swig_getmethods__["broadcast"] = _libcli_nbt.nbt_name_query_in_broadcast_get
-    if _newclass:broadcast = _swig_property(_libcli_nbt.nbt_name_query_in_broadcast_get, _libcli_nbt.nbt_name_query_in_broadcast_set)
-    __swig_setmethods__["wins_lookup"] = _libcli_nbt.nbt_name_query_in_wins_lookup_set
-    __swig_getmethods__["wins_lookup"] = _libcli_nbt.nbt_name_query_in_wins_lookup_get
-    if _newclass:wins_lookup = _swig_property(_libcli_nbt.nbt_name_query_in_wins_lookup_get, _libcli_nbt.nbt_name_query_in_wins_lookup_set)
-    __swig_setmethods__["timeout"] = _libcli_nbt.nbt_name_query_in_timeout_set
-    __swig_getmethods__["timeout"] = _libcli_nbt.nbt_name_query_in_timeout_get
-    if _newclass:timeout = _swig_property(_libcli_nbt.nbt_name_query_in_timeout_get, _libcli_nbt.nbt_name_query_in_timeout_set)
-    __swig_setmethods__["retries"] = _libcli_nbt.nbt_name_query_in_retries_set
-    __swig_getmethods__["retries"] = _libcli_nbt.nbt_name_query_in_retries_get
-    if _newclass:retries = _swig_property(_libcli_nbt.nbt_name_query_in_retries_get, _libcli_nbt.nbt_name_query_in_retries_set)
+    name = _swig_property(_libcli_nbt.nbt_name_query_in_name_get, _libcli_nbt.nbt_name_query_in_name_set)
+    dest_addr = _swig_property(_libcli_nbt.nbt_name_query_in_dest_addr_get, _libcli_nbt.nbt_name_query_in_dest_addr_set)
+    broadcast = _swig_property(_libcli_nbt.nbt_name_query_in_broadcast_get, _libcli_nbt.nbt_name_query_in_broadcast_set)
+    wins_lookup = _swig_property(_libcli_nbt.nbt_name_query_in_wins_lookup_get, _libcli_nbt.nbt_name_query_in_wins_lookup_set)
+    timeout = _swig_property(_libcli_nbt.nbt_name_query_in_timeout_get, _libcli_nbt.nbt_name_query_in_timeout_set)
+    retries = _swig_property(_libcli_nbt.nbt_name_query_in_retries_get, _libcli_nbt.nbt_name_query_in_retries_set)
     def __init__(self, *args, **kwargs): 
-        this = _libcli_nbt.new_nbt_name_query_in(*args, **kwargs)
-        try: self.this.append(this)
-        except: self.this = this
+        _libcli_nbt.nbt_name_query_in_swiginit(self,_libcli_nbt.new_nbt_name_query_in(*args, **kwargs))
     __swig_destroy__ = _libcli_nbt.delete_nbt_name_query_in
-    __del__ = lambda self : None;
 nbt_name_query_in_swigregister = _libcli_nbt.nbt_name_query_in_swigregister
 nbt_name_query_in_swigregister(nbt_name_query_in)
 
