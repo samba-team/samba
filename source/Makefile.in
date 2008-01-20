@@ -424,7 +424,7 @@ REGOBJS_OBJ = registry/reg_objects.o
 
 REGISTRY_BACKENDS = registry/reg_backend_printing.o \
 		    registry/reg_db.o \
-		    registry/reg_smbconf.o \
+		    registry/reg_backend_smbconf.o \
 		    registry/reg_shares.o \
 		    registry/reg_backend_netlogon_params.o \
 		    registry/reg_backend_prod_options.o \
@@ -447,7 +447,7 @@ REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o \
 # using smbconf (registry) - full access
 REG_API_OBJ = registry/reg_api.o \
 	      registry/reg_frontend_hilvl.o \
-	      registry/reg_smbconf.o \
+	      registry/reg_backend_smbconf.o \
 	      registry/reg_db.o \
 	      registry/reg_util.o \
 	      \
