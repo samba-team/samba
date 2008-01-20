@@ -439,7 +439,7 @@ REGISTRY_OBJ = registry/reg_init_full.o registry/reg_cachehook.o \
                registry/reg_util.o registry/reg_perfcount.o \
 	       registry/reg_util_legacy.o \
 	       registry/reg_api.o \
-	       registry/reg_frontend_hilvl.o \
+	       registry/reg_dispatcher.o \
 	       $(REGISTRY_BACKENDS) \
 	       $(UTIL_REG_API_OBJ) $(UTIL_REG_SMBCONF_OBJ)
 
@@ -447,7 +447,7 @@ REGISTRY_OBJ = registry/reg_init_full.o registry/reg_cachehook.o \
 # loaded but only the portion needed by reg_api, typically for
 # using smbconf (registry) - full access
 REG_API_OBJ = registry/reg_api.o \
-	      registry/reg_frontend_hilvl.o \
+	      registry/reg_dispatcher.o \
 	      registry/reg_backend_smbconf.o \
 	      registry/reg_backend_db.o \
 	      registry/reg_util.o \
