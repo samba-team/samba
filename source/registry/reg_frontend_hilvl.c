@@ -87,9 +87,6 @@ bool store_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkeys )
 
 bool store_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 {
-	if ( check_dynamic_reg_values( key ) )
-		return false;
-
 	if ( key->hook && key->hook->ops && key->hook->ops->store_values )
 		return key->hook->ops->store_values( key->name, val );
 
@@ -121,14 +118,6 @@ int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
 
 	if ( key->hook && key->hook->ops && key->hook->ops->fetch_values )
 		result = key->hook->ops->fetch_values( key->name, val );
-
-	/* if the backend lookup returned no data, try the dynamic overlay */
-
-	if ( result == 0 ) {
-		result = fetch_dynamic_reg_values( key, val );
-
-		return ( result != -1 ) ? result : 0;
-	}
 
 	return result;
 }
