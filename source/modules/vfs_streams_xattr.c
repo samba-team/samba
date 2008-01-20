@@ -576,8 +576,8 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_PWRITE(handle, fsp, data, n, offset);
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, fsp, sio->base,
-			      sio->xattr_name, &ea);
+	status = get_ea_value(talloc_tos(), handle->conn, fsp->base_fsp,
+			      sio->base, sio->xattr_name, &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
@@ -622,8 +622,8 @@ static ssize_t streams_xattr_pread(vfs_handle_struct *handle,
 		return SMB_VFS_NEXT_PREAD(handle, fsp, data, n, offset);
 	}
 
-	status = get_ea_value(talloc_tos(), handle->conn, fsp, sio->base,
-			      sio->xattr_name, &ea);
+	status = get_ea_value(talloc_tos(), handle->conn, fsp->base_fsp,
+			      sio->base, sio->xattr_name, &ea);
 	if (!NT_STATUS_IS_OK(status)) {
 		return -1;
 	}
