@@ -51,10 +51,10 @@ static const char *builtin_registry_paths[] = {
 	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\DefaultUserConfiguration",
 	KEY_TCPIP_PARAMS,
 	KEY_NETLOGON_PARAMS,
-	"HKU",
-	"HKCR",
-	"HKPD",
-	"HKPT",
+	KEY_HKU,
+	KEY_HKCR,
+	KEY_HKPD,
+	KEY_HKPT,
 	 NULL };
 
 struct builtin_regkey_value {
