@@ -570,24 +570,21 @@ sub PkgConfig($$$)
 	my $pubs;
 	my $privs;
 	my $privlibs;
+	my $publibs = "";
 
 	if (defined($ctx->{PUBLIC_DEPENDENCIES})) {
 		foreach (@{$ctx->{PUBLIC_DEPENDENCIES}}) {
 			next if ($other->{$_}->{ENABLE} eq "NO");
-			if ($other->{$_}->{TYPE} eq "EXT_LIB") {
+			if (defined($other->{$_}->{PC_NAME})) {
+				$pubs .= "$other->{$_}->{PC_NAME} ";
+			} elsif ($other->{$_}->{TYPE} eq "EXT_LIB") {
 				my $e = $other->{$_};
-
 				my $ldflags = join(" ", @{$e->{LDFLAGS}});
 				$ldflags .= " " unless $ldflags eq "";
 				my $libs = join(" ", @{$e->{LIBS}});
 				$libs .= " " unless $libs eq "";
 
-				$pubs .= $ldflags.$libs;
-			} elsif ($other->{$_}->{TYPE} eq "LIBRARY") {
-				s/^LIB//g;
-				$_ = lc($_);
-
-				$pubs .= "$_ ";
+				$publibs .= $ldflags.$libs;
 			} else {
 				s/^LIB//g;
 				$_ = lc($_);
@@ -626,7 +623,7 @@ sub PkgConfig($$$)
 	smb_build::env::PkgConfig($self,
 		$path,
 		$link_name,
-		"-L\${libdir} -l$link_name",
+		"-L\${libdir} -l$link_name $publibs",
 		$privlibs,
 		"",
 		"$ctx->{VERSION}",
