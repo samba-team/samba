@@ -618,6 +618,10 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 
 	TALLOC_FREE(ea.value.data);
 
+	if (ret == -1) {
+		return -1;
+	}
+
 	return n;
 }
 

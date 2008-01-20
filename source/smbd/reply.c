@@ -3375,7 +3375,6 @@ void error_to_writebrawerr(struct smb_request *req)
 void reply_writebraw(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	int outsize = 0;
 	char *buf = NULL;
 	ssize_t nwritten=0;
 	ssize_t total_written=0;
@@ -3485,8 +3484,7 @@ void reply_writebraw(struct smb_request *req)
 	 * it to send more bytes */
 
 	memcpy(buf, req->inbuf, smb_size);
-	outsize = srv_set_message(buf,
-			Protocol>PROTOCOL_COREPLUS?1:0,0,True);
+	srv_set_message(buf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
 	SCVAL(buf,smb_com,SMBwritebraw);
 	SSVALS(buf,smb_vwv0,0xFFFF);
 	show_msg(buf);
