@@ -269,12 +269,23 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 
 	for (i=0; i<attribs->num_xattrs; i++) {
 		if (strcmp(attribs->xattrs[i].name, name) == 0) {
+			if (flags & XATTR_CREATE) {
+				TALLOC_FREE(rec);
+				errno = EEXIST;
+				return -1;
+			}
 			break;
 		}
 	}
 
 	if (i == attribs->num_xattrs) {
 		struct tdb_xattr *tmp;
+
+		if (flags & XATTR_REPLACE) {
+			TALLOC_FREE(rec);
+			errno = ENOATTR;
+			return -1;
+		}
 
 		tmp = TALLOC_REALLOC_ARRAY(
 			attribs, attribs->xattrs, struct tdb_xattr,
