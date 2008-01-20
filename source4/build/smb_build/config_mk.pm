@@ -27,6 +27,7 @@ my $section_types = {
 		"OBJ_FILES" => "list",
 		"ENABLE"		=> "bool",
 		"LDFLAGS"		=> "list",
+		"CFLAGS"		=> "list",
 	},
 	"SUBSYSTEM" => {
 		"OBJ_FILES"		=> "list",
