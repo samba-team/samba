@@ -34,14 +34,15 @@ extern REGISTRY_OPS regdb_ops;
 static int netlogon_params_fetch_values(const char *key, REGVAL_CTR *regvals)
 {
 	uint32 dwValue;
-	
-	if ( !pdb_get_account_policy(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue) )
-		dwValue = 0;
-		
-	regval_ctr_addvalue( regvals, "RefusePasswordChange", REG_DWORD,
-		(char*)&dwValue, sizeof(dwValue) );
 
-	return regval_ctr_numvals( regvals );
+	if (!pdb_get_account_policy(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue)) {
+		dwValue = 0;
+	}
+
+	regval_ctr_addvalue(regvals, "RefusePasswordChange", REG_DWORD,
+			    (char*)&dwValue, sizeof(dwValue));
+
+	return regval_ctr_numvals(regvals);
 }
 
 static int netlogon_params_fetch_subkeys(const char *key,
