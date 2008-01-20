@@ -18,6 +18,7 @@ my $section_types = {
 		"CFLAGS"		=> "list",
 		"CPPFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
+		"PC_NAME" => "string",
 		},
 	"PYTHON" => {
 		SWIG_FILE => "string",
@@ -87,6 +88,8 @@ my $section_types = {
 		"VERSION"		=> "string",
 		"SO_VERSION"		=> "string",
 		"LIBRARY_REALNAME" => "string",
+
+		"PC_NAME" => "string",
 		
 		"INIT_FUNCTION_TYPE"	=> "string",
 		"INIT_FUNCTION_SENTINEL" => "string",
