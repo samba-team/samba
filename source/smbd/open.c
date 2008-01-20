@@ -3080,6 +3080,8 @@ NTSTATUS create_file(connection_struct *conn,
 		fname = converted_fname;
 	}
 
+	TALLOC_FREE(case_state);
+
 	/* All file access must go through check_name() */
 
 	status = check_name(conn, fname);
