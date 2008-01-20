@@ -39,19 +39,22 @@ static int hkpt_params_fetch_values(const char *key, REGVAL_CTR *regvals)
 
 	/* This is ALMOST the same as perflib_009_params, but HKPT has
 	   a "Counters" entry instead of a "Counter" key. <Grrrr> */
-	   
+
 	base_index = reg_perfcount_get_base_index();
 	buffer_size = reg_perfcount_get_counter_names(base_index, &buffer);
-	regval_ctr_addvalue(regvals, "Counters", REG_MULTI_SZ, buffer, buffer_size);
-	
-	if(buffer_size > 0)
+	regval_ctr_addvalue(regvals, "Counters", REG_MULTI_SZ, buffer,
+			    buffer_size);
+
+	if(buffer_size > 0) {
 		SAFE_FREE(buffer);
-		
+	}
+
 	buffer_size = reg_perfcount_get_counter_help(base_index, &buffer);
 	regval_ctr_addvalue(regvals, "Help", REG_MULTI_SZ, buffer, buffer_size);
-	if(buffer_size > 0)
+	if(buffer_size > 0) {
 		SAFE_FREE(buffer);
-	
+	}
+
 	return regval_ctr_numvals( regvals );
 }
 
