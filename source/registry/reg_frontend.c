@@ -33,6 +33,7 @@ extern REGISTRY_OPS prod_options_reg_ops;
 extern REGISTRY_OPS tcpip_params_reg_ops;
 extern REGISTRY_OPS hkpt_params_reg_ops;
 extern REGISTRY_OPS current_version_reg_ops;
+extern REGISTRY_OPS perflib_reg_ops;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
 /* array of REGISTRY_HOOK's which are read into a tree for easy access */
@@ -50,6 +51,7 @@ REGISTRY_HOOK reg_hooks[] = {
   { KEY_TCPIP_PARAMS,		&tcpip_params_reg_ops },
   { KEY_HKPT,			&hkpt_params_reg_ops },
   { KEY_CURRENT_VERSION,	&current_version_reg_ops },
+  { KEY_PERFLIB,		&perflib_reg_ops },
 #endif
   { NULL, NULL }
 };

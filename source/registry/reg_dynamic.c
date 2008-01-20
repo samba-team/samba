@@ -30,56 +30,11 @@ struct reg_dyn_values {
 };
 
 /***********************************************************************
-***********************************************************************/
-
-static int perflib_params( REGVAL_CTR *regvals )
-{
-	int base_index = -1;
-	int last_counter = -1;
-	int last_help = -1;
-	int version = 0x00010001;
-	
-	base_index = reg_perfcount_get_base_index();
-	regval_ctr_addvalue(regvals, "Base Index", REG_DWORD, (char *)&base_index, sizeof(base_index));
-	last_counter = reg_perfcount_get_last_counter(base_index);
-	regval_ctr_addvalue(regvals, "Last Counter", REG_DWORD, (char *)&last_counter, sizeof(last_counter));
-	last_help = reg_perfcount_get_last_help(last_counter);
-	regval_ctr_addvalue(regvals, "Last Help", REG_DWORD, (char *)&last_help, sizeof(last_help));
-	regval_ctr_addvalue(regvals, "Version", REG_DWORD, (char *)&version, sizeof(version));
-
-	return regval_ctr_numvals( regvals );
-}
-
-/***********************************************************************
-***********************************************************************/
-
-static int perflib_009_params( REGVAL_CTR *regvals )
-{
-	int base_index;
-	int buffer_size;
-	char *buffer = NULL;
-
-	base_index = reg_perfcount_get_base_index();
-	buffer_size = reg_perfcount_get_counter_names(base_index, &buffer);
-	regval_ctr_addvalue(regvals, "Counter", REG_MULTI_SZ, buffer, buffer_size);
-	if(buffer_size > 0)
-		SAFE_FREE(buffer);
-	buffer_size = reg_perfcount_get_counter_help(base_index, &buffer);
-	regval_ctr_addvalue(regvals, "Help", REG_MULTI_SZ, buffer, buffer_size);
-	if(buffer_size > 0)
-		SAFE_FREE(buffer);
-	
-	return regval_ctr_numvals( regvals );
-}
-
-/***********************************************************************
  Structure holding the registry paths and pointers to the value 
  enumeration functions
 ***********************************************************************/
 
 static struct reg_dyn_values dynamic_values[] = {
-	{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB",  &perflib_params   }, 
-	{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB/009", &perflib_009_params }, 
 	{ NULL, NULL }
 };
 
