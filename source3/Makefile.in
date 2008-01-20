@@ -739,8 +739,6 @@ REG_API_OBJ = registry/reg_api.o \
 	      registry/reg_util.o \
 	      \
 	      registry/reg_cachehook.o \
-	      registry/reg_eventlog.o \
-	      registry/reg_perfcount.o \
 	      \
 	      lib/util_nttoken.o \
 	      $(UTIL_REG_API_OBJ) \
