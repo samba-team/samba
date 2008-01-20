@@ -33,10 +33,10 @@ extern REGISTRY_OPS regdb_ops;
 
 static int prod_options_fetch_values(const char *key, REGVAL_CTR *regvals)
 {
-	const char              *value_ascii = "";
-	fstring                 value;
-	int                     value_length;
-	
+	const char *value_ascii = "";
+	fstring value;
+	int value_length;
+
 	switch (lp_server_role()) {
 		case ROLE_DOMAIN_PDC:
 		case ROLE_DOMAIN_BDC:
@@ -49,12 +49,12 @@ static int prod_options_fetch_values(const char *key, REGVAL_CTR *regvals)
 			value_ascii = "WinNT";
 			break;
 	}
-		
-	value_length = push_ucs2( value, value, value_ascii, sizeof(value), 
-		STR_TERMINATE|STR_NOALIGN );
-	regval_ctr_addvalue( regvals, "ProductType", REG_SZ, value, 
-		value_length );
-	
+
+	value_length = push_ucs2(value, value, value_ascii, sizeof(value),
+				 STR_TERMINATE|STR_NOALIGN );
+	regval_ctr_addvalue(regvals, "ProductType", REG_SZ, value,
+			    value_length);
+
 	return regval_ctr_numvals( regvals );
 }
 
