@@ -186,7 +186,7 @@ cat >$SERVERCONFFILE<<EOF
 	map hidden = yes
 	map system = yes
 	create mask = 755
-	vfs objects = $BINDIR/xattr_tdb.so
+	vfs objects = $BINDIR/xattr_tdb.so $BINDIR/streams_xattr.so
 [hideunread]
 	copy = tmp
 	hide unreadable = yes
