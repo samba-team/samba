@@ -73,29 +73,6 @@ static int perflib_009_params( REGVAL_CTR *regvals )
 }
 
 /***********************************************************************
-***********************************************************************/
-
-static int current_version( REGVAL_CTR *values )
-{
-	const char *sysroot_string = "c:\\Windows";
-	fstring sysversion;
-	fstring value;
-	uint32 value_length;
-	
-	value_length = push_ucs2( value, value, sysroot_string, sizeof(value), 
-		STR_TERMINATE|STR_NOALIGN );
-	regval_ctr_addvalue( values, "SystemRoot", REG_SZ, value, value_length );
-	
-	fstr_sprintf( sysversion, "%d.%d", lp_major_announce_version(), lp_minor_announce_version() );
-	value_length = push_ucs2( value, value, sysversion, sizeof(value), 
-		STR_TERMINATE|STR_NOALIGN );
-	regval_ctr_addvalue( values, "CurrentVersion", REG_SZ, value, value_length );
-	
-		
-	return regval_ctr_numvals( values );
-}
-
-/***********************************************************************
  Structure holding the registry paths and pointers to the value 
  enumeration functions
 ***********************************************************************/
@@ -103,7 +80,6 @@ static int current_version( REGVAL_CTR *values )
 static struct reg_dyn_values dynamic_values[] = {
 	{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB",  &perflib_params   }, 
 	{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION/PERFLIB/009", &perflib_009_params }, 
-	{ "HKLM/SOFTWARE/MICROSOFT/WINDOWS NT/CURRENTVERSION",          &current_version }, 
 	{ NULL, NULL }
 };
 
