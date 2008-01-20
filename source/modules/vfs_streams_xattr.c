@@ -612,7 +612,8 @@ static ssize_t streams_xattr_pwrite(vfs_handle_struct *handle,
 
         memcpy(ea.value.data + offset, data, n);
 
-	ret = SMB_VFS_FSETXATTR(fsp->base_fsp, sio->xattr_name,
+	ret = SMB_VFS_SETXATTR(fsp->conn, fsp->base_fsp->fsp_name,
+				sio->xattr_name,
 				ea.value.data, ea.value.length, 0);
 
 	TALLOC_FREE(ea.value.data);
