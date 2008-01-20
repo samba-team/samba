@@ -2,6 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  Virtual Windows Registry Layer
  *  Copyright (C) Gerald Carter                     2002-2005
+ *  Copyright (C) Michael Adam                      2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,7 +18,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Implementation of registry frontend view functions. */
+/* Initialize the registry with all available backends. */
 
 #include "includes.h"
 
@@ -58,6 +59,7 @@ REGISTRY_HOOK reg_hooks[] = {
 
 /***********************************************************************
  Open the registry database and initialize the REGISTRY_HOOK cache
+ with all available backens.
  ***********************************************************************/
  
 bool init_registry( void )

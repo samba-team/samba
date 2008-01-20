@@ -434,7 +434,7 @@ REGISTRY_BACKENDS = registry/reg_backend_printing.o \
 		    registry/reg_backend_perflib.o
 
 
-REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o \
+REGISTRY_OBJ = registry/reg_init_full.o registry/reg_cachehook.o \
                registry/reg_eventlog.o \
                registry/reg_util.o registry/reg_perfcount.o \
 	       registry/reg_util_legacy.o \
