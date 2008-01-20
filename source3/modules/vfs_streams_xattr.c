@@ -270,7 +270,7 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 		goto fail;
         }
 
-	status = get_ea_value(talloc_tos(), handle->conn, fsp, base,
+	status = get_ea_value(talloc_tos(), handle->conn, NULL, base,
 			      xattr_name, &ea);
 
 	DEBUG(10, ("get_ea_value returned %s\n", nt_errstr(status)));
