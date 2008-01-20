@@ -422,7 +422,7 @@ REGFIO_OBJ = registry/regfio.o
 
 REGOBJS_OBJ = registry/reg_objects.o
 
-REGISTRY_BACKENDS = registry/reg_printing.o \
+REGISTRY_BACKENDS = registry/reg_backend_printing.o \
 		    registry/reg_db.o \
 		    registry/reg_smbconf.o \
 		    registry/reg_shares.o \
