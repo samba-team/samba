@@ -99,21 +99,3 @@ bool init_registry( void )
 	TALLOC_FREE(frame);
 	return ret;
 }
-
-WERROR regkey_open_internal( TALLOC_CTX *ctx, REGISTRY_KEY **regkey,
-			     const char *path,
-                             const struct nt_user_token *token,
-			     uint32 access_desired )
-{
-	struct registry_key *key;
-	WERROR err;
-
-	err = reg_open_path(NULL, path, access_desired, token, &key);
-	if (!W_ERROR_IS_OK(err)) {
-		return err;
-	}
-
-	*regkey = talloc_move(ctx, &key->key);
-	TALLOC_FREE(key);
-	return WERR_OK;
-}
