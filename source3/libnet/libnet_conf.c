@@ -138,6 +138,10 @@ static WERROR libnet_conf_reg_open_service_key(TALLOC_CTX *mem_ctx,
 	}
 
 	path = talloc_asprintf(mem_ctx, "%s\\%s", KEY_SMBCONF, servicename);
+	if (path == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
 
 	werr = libnet_conf_reg_open_path(mem_ctx, ctx, path, desired_access,
 					 key);
