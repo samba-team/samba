@@ -49,7 +49,6 @@ typedef uint32_t tdb_off_t;
 #define TDB_DEAD_MAGIC (0xFEE1DEAD)
 #define TDB_RECOVERY_MAGIC (0xf53bc0e7U)
 #define TDB_ALIGNMENT 4
-#define MIN_REC_SIZE (2*sizeof(struct list_struct) + TDB_ALIGNMENT)
 #define DEFAULT_HASH_SIZE 131
 #define FREELIST_TOP (sizeof(struct tdb_header))
 #define TDB_ALIGN(x,a) (((x) + (a)-1) & ~((a)-1))
@@ -178,6 +177,7 @@ struct tdb_context {
 int tdb_munmap(struct tdb_context *tdb);
 void tdb_mmap(struct tdb_context *tdb);
 int tdb_lock(struct tdb_context *tdb, int list, int ltype);
+int tdb_lock_nonblock(struct tdb_context *tdb, int list, int ltype);
 int tdb_unlock(struct tdb_context *tdb, int list, int ltype);
 int tdb_brlock(struct tdb_context *tdb, tdb_off_t offset, int rw_type, int lck_type, int probe, size_t len);
 int tdb_transaction_lock(struct tdb_context *tdb, int ltype);

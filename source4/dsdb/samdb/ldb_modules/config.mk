@@ -333,3 +333,16 @@ OBJ_FILES = \
 # End MODULE ldb_normalise
 ################################################
 
+################################################
+# Start MODULE ldb_instancetype
+[MODULE::ldb_instancetype]
+INIT_FUNCTION = ldb_instancetype_init
+CFLAGS = -Ilib/ldb/include
+OUTPUT_TYPE = SHARED_LIBRARY
+PRIVATE_DEPENDENCIES = LIBTALLOC
+SUBSYSTEM = LIBLDB
+OBJ_FILES = \
+		instancetype.o
+# End MODULE ldb_instancetype
+################################################
+

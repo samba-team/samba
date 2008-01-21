@@ -112,6 +112,8 @@ static enum ndr_err_code ndr_pull_compression_mszip(struct ndr_pull *subndr,
 	comndr->data_size	= uncompressed.length;
 	comndr->offset		= 0;
 
+	comndr->iconv_convenience = talloc_reference(comndr, subndr->iconv_convenience);
+
 	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[0]));
 	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[1]));
 	NDR_CHECK(ndr_pull_uint32(comndr, NDR_SCALARS, &payload_header[2]));
@@ -214,6 +216,8 @@ static enum ndr_err_code ndr_pull_compression_xpress(struct ndr_pull *subndr,
 	comndr->data		= uncompressed.data;
 	comndr->data_size	= uncompressed.length;
 	comndr->offset		= 0;
+
+	comndr->iconv_convenience = talloc_reference(comndr, subndr->iconv_convenience);
 
 	*_comndr = comndr;
 	return NDR_ERR_SUCCESS;

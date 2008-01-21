@@ -101,7 +101,7 @@ var backend_schema;
 var slapd_command;
 if (options["ldap-backend-type"] == "fedora-ds") {
 	mapping = "schema-map-fedora-ds-1.0";
-	backend_schema = "backend-schema.ldif";
+	backend_schema = "99_ad.ldif";
 	if (options["ldap-backend-port"] != undefined) {
 		message("Will listen on TCP port " + options["ldap-backend-port"] + "\n");
 		subobj.SERVERPORT="ServerPort = " + options["ldap-backend-port"];
@@ -114,9 +114,8 @@ if (options["ldap-backend-type"] == "fedora-ds") {
 
 	slapd_command = "(see documentation)";
 } else if (options["ldap-backend-type"] == "openldap") {
-	provision_ldapbase(subobj, message, paths);
 	mapping = "schema-map-openldap-2.3";
-	backend_schema = "99_ad.ldif";
+	backend_schema = "backend-schema.schema";
 	setup_file("slapd.conf", message, subobj.LDAPDIR + "/slapd.conf", subobj);
 	setup_file("modules.conf", message, subobj.LDAPDIR + "/modules.conf", subobj);
 	sys.mkdir(subobj.LDAPDIR + "/db", 0700);
@@ -169,9 +168,10 @@ memberof-dangling-error 32
 		}
 	}
 
-	memberof_config = "overlay refint
+	memberof_config = memberof_config + "
+overlay refint
 refint_attributes" + refint_attributes + "
-" + memberof_config;
+";
 	
 	ok = sys.file_save(subobj.LDAPDIR + "/memberof.conf", memberof_config);
 	if (!ok) {

@@ -1,10 +1,6 @@
-#######################
-# Start LIBRARY EJSRPC
 [SUBSYSTEM::EJSRPC]
 OBJ_FILES = \
 		ejsrpc.o
-# End SUBSYSTEM EJSRPC
-#######################
 
 [MODULE::smbcalls_config]
 OBJ_FILES = smbcalls_config.o
@@ -79,11 +75,7 @@ INIT_FUNCTION = smb_setup_ejs_system
 
 include ejsnet/config.mk
 
-#######################
-# Start LIBRARY smbcalls
-[LIBRARY::smbcalls]
-SO_VERSION = 0
-VERSION = 0.0.1
+[SUBSYSTEM::smbcalls]
 PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		smbcalls.o \
@@ -101,8 +93,6 @@ PRIVATE_DEPENDENCIES = \
 		CREDENTIALS POPT_CREDENTIALS POPT_SAMBA \
 		dcerpc \
 		NDR_TABLE
-# End SUBSYSTEM smbcalls
-#######################
 
 #######################
 # Start BINARY SMBSCRIPT

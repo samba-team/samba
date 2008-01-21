@@ -67,7 +67,7 @@ these tests will be counted as successes, successes will be counted as failures.
 
 The format for the file is, one entry per line:
 
-TESTSUITE-NAME/TEST-NAME
+TESTSUITE-NAME.TEST-NAME
 
 The reason for a test can also be specified, by adding a hash sign (#) and the reason 
 after the test name.
@@ -130,9 +130,6 @@ use POSIX;
 use Cwd qw(abs_path);
 use lib "$RealBin";
 use Subunit qw(parse_results);
-use env::Samba3;
-use env::Samba4;
-use env::Windows;
 use SocketWrapper;
 
 my $opt_help = 0;
@@ -429,17 +426,20 @@ my $testenv_default = "none";
 
 if ($opt_target eq "samba4") {
 	$testenv_default = "member";
+	require target::Samba4;
 	$target = new Samba4($opt_bindir or "$srcdir/bin", $ldap, "$srcdir/setup");
 } elsif ($opt_target eq "samba3") {
 	if ($opt_socket_wrapper and `$opt_bindir/smbd -b | grep SOCKET_WRAPPER` eq "") {
 		die("You must include --enable-socket-wrapper when compiling Samba in order to execute 'make test'.  Exiting....");
 	}
 	$testenv_default = "dc";
+	require target::Samba3;
 	$target = new Samba3($opt_bindir);
 } elsif ($opt_target eq "win") {
 	die("Windows tests will not run with socket wrapper enabled.") 
 		if ($opt_socket_wrapper);
 	$testenv_default = "dc";
+	require target::Windows;
 	$target = new Windows();
 }
 
@@ -740,7 +740,6 @@ sub teardown_env($)
 	$target->teardown_env($running_envs{$envname});
 	delete $running_envs{$envname};
 }
-
 
 if ($opt_no_lazy_setup) {
 	setup_env($_) foreach (keys %required_envs);

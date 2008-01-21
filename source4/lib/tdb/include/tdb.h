@@ -32,9 +32,9 @@ extern "C" {
 
 
 /* flags to tdb_store() */
-#define TDB_REPLACE 1
-#define TDB_INSERT 2
-#define TDB_MODIFY 3
+#define TDB_REPLACE 1		/* Unused */
+#define TDB_INSERT 2 		/* Don't overwrite an existing entry */
+#define TDB_MODIFY 3		/* Don't create an existing entry    */
 
 /* flags for tdb_open() */
 #define TDB_DEFAULT 0 /* just a readability place holder */
@@ -157,7 +157,6 @@ int tdb_printfreelist(struct tdb_context *tdb);
 int tdb_validate_freelist(struct tdb_context *tdb, int *pnum_entries);
 int tdb_wipe_all(struct tdb_context *tdb);
 int tdb_freelist_size(struct tdb_context *tdb);
-int tdb_validate(struct tdb_context *tdb);
 
 extern TDB_DATA tdb_null;
 

@@ -4,6 +4,5 @@
 dn: ${CONFIGDN}
 objectClass: top
 objectClass: configuration
-${EXTENSIBLEOBJECT}
 ${ACI}
 cn: Configuration

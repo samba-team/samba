@@ -490,9 +490,16 @@ static bool test_stream_delete(struct torture_context *tctx,
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
 	CHECK_STATUS(status, NT_STATUS_DELETE_PENDING);
 
-	finfo.generic.in.file.path = sname1;
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
-	CHECK_STATUS(status, NT_STATUS_DELETE_PENDING);
+	if (!torture_setting_bool(tctx, "samba3", false)) {
+
+		/*
+		 * S3 doesn't do this yet
+		 */
+
+		finfo.generic.in.file.path = sname1;
+		status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo);
+		CHECK_STATUS(status, NT_STATUS_DELETE_PENDING);
+	}
 
 	/*
 	 * fd-based qfileinfo on the stream still works, the stream does not

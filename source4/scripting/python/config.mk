@@ -16,7 +16,7 @@ PRIVATE_DEPENDENCIES = LIBNDR LIBLDB SAMDB CREDENTIALS
 SWIG_FILE = misc.i
 
 # Swig extensions
-swig: pythonmods
+swig:: pythonmods
 
 .SUFFIXES: _wrap.c .i
 
@@ -28,12 +28,18 @@ realdistclean::
 	@-rm -f bin/python/*
 	# FIXME: Remove _wrap.c files
 
-pythonmods: $(PYTHON_DSOS)
+pythonmods:: $(PYTHON_DSOS) $(PYTHON_PYS)
 
 PYDOCTOR_MODULES=bin/python/ldb.py bin/python/auth.py bin/python/credentials.py bin/python/registry.py bin/python/tdb.py bin/python/security.py bin/python/events.py bin/python/net.py
 
 pydoctor:: pythonmods
 	LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --make-html --docformat=restructuredtext --add-package scripting/python/samba/ $(addprefix --add-module , $(PYDOCTOR_MODULES))
+
+installpython:: pythonmods
+	@$(SHELL) $(srcdir)/script/installpython.sh \
+		$(INSTALLPERMS) \
+		$(DESTDIR)$(PYTHONDIR) \
+		scripting/python bin/python
 
 clean::
 	@echo "Removing python modules"
