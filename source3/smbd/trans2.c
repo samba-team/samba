@@ -105,9 +105,13 @@ static bool samba_private_attr_name(const char *unix_ea_name)
 
 	for (i = 0; prohibited_ea_names[i]; i++) {
 		if (strequal( prohibited_ea_names[i], unix_ea_name))
-			return True;
+			return true;
 	}
-	return False;
+	if (StrnCaseCmp(unix_ea_name, SAMBA_XATTR_DOSSTREAM_PREFIX,
+			strlen(SAMBA_XATTR_DOSSTREAM_PREFIX)) == 0) {
+		return true;
+	}
+	return false;
 }
 
 /****************************************************************************
