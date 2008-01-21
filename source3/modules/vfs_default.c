@@ -93,10 +93,10 @@ static int vfswrap_statvfs(struct vfs_handle_struct *handle,  const char *path, 
 static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle)
 {
 #if defined(DARWINOS)
-	struct statfs sbuf;
-	ZERO_STRUCT(sbuf);
-	sys_statvfs(handle->conn->connectpath, &sbuf);
-	return sbuf.FsCapabilities;
+	struct vfs_statvfs_struct statbuf;
+	ZERO_STRUCT(statbuf);
+	sys_statvfs(handle->conn->connectpath, &statbuf);
+	return statbuf.FsCapabilities;
 #endif
 	return FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
 }
