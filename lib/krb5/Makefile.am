@@ -12,7 +12,8 @@ noinst_PROGRAMS =				\
 	test_crypto				\
 	test_get_addrs				\
 	test_kuserok				\
-	test_renew
+	test_renew				\
+	test_forward
 
 TESTS =						\
 	aes-test				\
