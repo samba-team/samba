@@ -48,6 +48,10 @@ static WERROR libnet_conf_add_string_to_array(TALLOC_CTX *mem_ctx,
 	}
 
 	new_array[count] = talloc_strdup(new_array, string);
+	if (new_array[count] == NULL) {
+		TALLOC_FREE(new_array);
+		return WERR_NOMEM;
+	}
 
 	*array = new_array;
 
