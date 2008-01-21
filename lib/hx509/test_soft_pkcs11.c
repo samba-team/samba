@@ -66,7 +66,7 @@ find_object(CK_SESSION_HANDLE session,
 	return 1;
     }
 
-    ret = (*func->C_FindObjectsFinal(session);
+    ret = (*func->C_FindObjectsFinal)(session);
     if (ret != CKR_OK)
 	return ret;
 
