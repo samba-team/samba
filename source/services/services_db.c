@@ -526,7 +526,7 @@ SEC_DESC *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	SAFE_FREE(path);
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
-		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
+		DEBUG(0,("svcctl_get_secdesc: talloc() failed!\n"));
 		TALLOC_FREE( key );
 		return NULL;
 	}
@@ -582,7 +582,7 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 	SAFE_FREE(path);
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
-		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
+		DEBUG(0,("svcctl_set_secdesc: talloc() failed!\n"));
 		TALLOC_FREE( key );
 		return False;
 	}
