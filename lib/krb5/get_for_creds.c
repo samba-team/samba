@@ -209,9 +209,6 @@ krb5_get_forwarded_creds (krb5_context	    context,
     struct addrinfo *ai;
     int save_errno;
     krb5_creds *ticket;
-    char *realm;
-
-    realm = in_creds->client->realm;
 
     paddrs = NULL;
     addrs.len = 0;
@@ -224,7 +221,9 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	krb5_free_creds (context, ticket);
     } else {
 	krb5_boolean noaddr;
-	krb5_appdefault_boolean(context, NULL, realm,
+	krb5_appdefault_boolean(context, NULL,
+				krb5_principal_get_realm(context, 
+							 in_creds->client),
 				"no-addresses", KRB5_ADDRESSLESS_DEFAULT,
 				&noaddr);
 	if (!noaddr)
