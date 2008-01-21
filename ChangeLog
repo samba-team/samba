@@ -1,3 +1,9 @@
+2008-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/Makefile.am: drop CHECK_SYMBOLS
+
+	* kdc/Makefile.am: drop CHECK_SYMBOLS
+
 2008-01-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/version-script.map: Add krb5_digest_probe.
