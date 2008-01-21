@@ -1,5 +1,8 @@
 2008-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/test_forward.c: Used for testing
+	krb5_get_forwarded_creds().
+	
 	* lib/krb5/Makefile.am: noinst_PROGRAMS += test_forward
 
 	* lib/krb5/Makefile.am: drop CHECK_SYMBOLS
