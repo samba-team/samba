@@ -32,15 +32,8 @@ PRIVATE_DEPENDENCIES = PTHREAD
 # End MODULE process_model_thread
 ################################################
 
-################################################
-# Start SUBSYSTEM process_model
-[LIBRARY::process_model]
-VERSION = 0.0.1
-SO_VERSION = 0
+[SUBSYSTEM::process_model]
 PRIVATE_PROTO_HEADER = process_model_proto.h
 OBJ_FILES = \
 		process_model.o
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBSAMBA-CONFIG
-#
-# End SUBSYSTEM process_model
-################################################

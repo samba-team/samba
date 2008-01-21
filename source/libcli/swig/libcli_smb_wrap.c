@@ -9,7 +9,7 @@
  * ----------------------------------------------------------------------------- */
 
 #define SWIGPYTHON
-#define SWIG_PYTHON_DIRECTOR_NO_VTABLE
+#define SWIG_PYTHON_NO_BUILD_NONE
 /* -----------------------------------------------------------------------------
  *  This section contains generic SWIG labels for method/variable
  *  declarations/attributes, and other compiler dependent labels.
@@ -2459,9 +2459,11 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_TALLOC_CTX swig_types[0]
 #define SWIGTYPE_p_char swig_types[1]
 #define SWIGTYPE_p_event_context swig_types[2]
-#define SWIGTYPE_p_smbcli_socket swig_types[3]
-static swig_type_info *swig_types[5];
-static swig_module_info swig_module = {swig_types, 4, 0, 0, 0, 0};
+#define SWIGTYPE_p_p_char swig_types[3]
+#define SWIGTYPE_p_resolve_context swig_types[4]
+#define SWIGTYPE_p_smbcli_socket swig_types[5]
+static swig_type_info *swig_types[7];
+static swig_module_info swig_module = {swig_types, 6, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2472,6 +2474,19 @@ static swig_module_info swig_module = {swig_types, 4, 0, 0, 0, 0};
 #  error "This python version requires swig to be run with the '-classic' option"
 # endif
 #endif
+#if (PY_VERSION_HEX <= 0x02020000)
+# error "This python version requires swig to be run with the '-nomodern' option"
+#endif
+#if (PY_VERSION_HEX <= 0x02020000)
+# error "This python version requires swig to be run with the '-nomodernargs' option"
+#endif
+#ifndef METH_O
+# error "This python version requires swig to be run with the '-nofastunpack' option"
+#endif
+#ifdef SWIG_TypeQuery
+# undef SWIG_TypeQuery
+#endif
+#define SWIG_TypeQuery SWIG_Python_TypeQuery
 
 /*-----------------------------------------------
               @(target):= _libcli_smb.so
@@ -2560,200 +2575,60 @@ SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
 
 
 
-
-#include <limits.h>
-#if !defined(SWIG_NO_LLONG_MAX)
-# if !defined(LLONG_MAX) && defined(__GNUC__) && defined (__LONG_LONG_MAX__)
-#   define LLONG_MAX __LONG_LONG_MAX__
-#   define LLONG_MIN (-LLONG_MAX - 1LL)
-#   define ULLONG_MAX (LLONG_MAX * 2ULL + 1ULL)
-# endif
-#endif
-
-
-SWIGINTERN int
-SWIG_AsVal_double (PyObject *obj, double *val)
-{
-  int res = SWIG_TypeError;
-  if (PyFloat_Check(obj)) {
-    if (val) *val = PyFloat_AsDouble(obj);
-    return SWIG_OK;
-  } else if (PyInt_Check(obj)) {
-    if (val) *val = PyInt_AsLong(obj);
-    return SWIG_OK;
-  } else if (PyLong_Check(obj)) {
-    double v = PyLong_AsDouble(obj);
-    if (!PyErr_Occurred()) {
-      if (val) *val = v;
-      return SWIG_OK;
-    } else {
-      PyErr_Clear();
-    }
-  }
-#ifdef SWIG_PYTHON_CAST_MODE
-  {
-    int dispatch = 0;
-    double d = PyFloat_AsDouble(obj);
-    if (!PyErr_Occurred()) {
-      if (val) *val = d;
-      return SWIG_AddCast(SWIG_OK);
-    } else {
-      PyErr_Clear();
-    }
-    if (!dispatch) {
-      long v = PyLong_AsLong(obj);
-      if (!PyErr_Occurred()) {
-	if (val) *val = v;
-	return SWIG_AddCast(SWIG_AddCast(SWIG_OK));
-      } else {
-	PyErr_Clear();
-      }
-    }
-  }
-#endif
-  return res;
-}
-
-
-#include <float.h>
-
-
-#include <math.h>
-
-
-SWIGINTERNINLINE int
-SWIG_CanCastAsInteger(double *d, double min, double max) {
-  double x = *d;
-  if ((min <= x && x <= max)) {
-   double fx = floor(x);
-   double cx = ceil(x);
-   double rd =  ((x - fx) < 0.5) ? fx : cx; /* simple rint */
-   if ((errno == EDOM) || (errno == ERANGE)) {
-     errno = 0;
-   } else {
-     double summ, reps, diff;
-     if (rd < x) {
-       diff = x - rd;
-     } else if (rd > x) {
-       diff = rd - x;
-     } else {
-       return 1;
-     }
-     summ = rd + x;
-     reps = diff/summ;
-     if (reps < 8*DBL_EPSILON) {
-       *d = rd;
-       return 1;
-     }
-   }
-  }
-  return 0;
-}
-
-
-SWIGINTERN int
-SWIG_AsVal_long (PyObject *obj, long* val)
-{
-  if (PyInt_Check(obj)) {
-    if (val) *val = PyInt_AsLong(obj);
-    return SWIG_OK;
-  } else if (PyLong_Check(obj)) {
-    long v = PyLong_AsLong(obj);
-    if (!PyErr_Occurred()) {
-      if (val) *val = v;
-      return SWIG_OK;
-    } else {
-      PyErr_Clear();
-    }
-  }
-#ifdef SWIG_PYTHON_CAST_MODE
-  {
-    int dispatch = 0;
-    long v = PyInt_AsLong(obj);
-    if (!PyErr_Occurred()) {
-      if (val) *val = v;
-      return SWIG_AddCast(SWIG_OK);
-    } else {
-      PyErr_Clear();
-    }
-    if (!dispatch) {
-      double d;
-      int res = SWIG_AddCast(SWIG_AsVal_double (obj,&d));
-      if (SWIG_IsOK(res) && SWIG_CanCastAsInteger(&d, LONG_MIN, LONG_MAX)) {
-	if (val) *val = (long)(d);
-	return res;
-      }
-    }
-  }
-#endif
-  return SWIG_TypeError;
-}
-
-
-SWIGINTERN int
-SWIG_AsVal_int (PyObject * obj, int *val)
-{
-  long v;
-  int res = SWIG_AsVal_long (obj, &v);
-  if (SWIG_IsOK(res)) {
-    if ((v < INT_MIN || v > INT_MAX)) {
-      return SWIG_OverflowError;
-    } else {
-      if (val) *val = (int)(v);
-    }
-  }  
-  return res;
-}
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 SWIGINTERN PyObject *_wrap_smbcli_sock_connect_byname(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   char *arg1 = (char *) 0 ;
-  int arg2 ;
+  char **arg2 = (char **) 0 ;
   TALLOC_CTX *arg3 = (TALLOC_CTX *) 0 ;
-  struct event_context *arg4 = (struct event_context *) 0 ;
+  struct resolve_context *arg4 = (struct resolve_context *) 0 ;
+  struct event_context *arg5 = (struct event_context *) 0 ;
   struct smbcli_socket *result = 0 ;
   int res1 ;
   char *buf1 = 0 ;
   int alloc1 = 0 ;
-  int val2 ;
-  int ecode2 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
   void *argp4 = 0 ;
   int res4 = 0 ;
+  void *argp5 = 0 ;
+  int res5 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
   char *  kwnames[] = {
-    (char *) "host",(char *) "port",(char *) "event_ctx", NULL 
+    (char *) "host",(char *) "ports",(char *) "resolve_ctx",(char *) "event_ctx", NULL 
   };
   
-  {
-    arg4 = event_context_init(NULL);
-  }
-  {
-    arg3 = NULL;
-  }
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO|O:smbcli_sock_connect_byname",kwnames,&obj0,&obj1,&obj2)) SWIG_fail;
+  arg5 = event_context_init(NULL);
+  arg3 = NULL;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OOO|O:smbcli_sock_connect_byname",kwnames,&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
   res1 = SWIG_AsCharPtrAndSize(obj0, &buf1, NULL, &alloc1);
   if (!SWIG_IsOK(res1)) {
     SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "smbcli_sock_connect_byname" "', argument " "1"" of type '" "char const *""'");
   }
   arg1 = (char *)(buf1);
-  ecode2 = SWIG_AsVal_int(obj1, &val2);
-  if (!SWIG_IsOK(ecode2)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "smbcli_sock_connect_byname" "', argument " "2"" of type '" "int""'");
-  } 
-  arg2 = (int)(val2);
-  if (obj2) {
-    res4 = SWIG_ConvertPtr(obj2, &argp4,SWIGTYPE_p_event_context, 0 |  0 );
-    if (!SWIG_IsOK(res4)) {
-      SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "smbcli_sock_connect_byname" "', argument " "4"" of type '" "struct event_context *""'"); 
-    }
-    arg4 = (struct event_context *)(argp4);
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_p_char, 0 |  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "smbcli_sock_connect_byname" "', argument " "2"" of type '" "char const **""'"); 
   }
-  result = (struct smbcli_socket *)smbcli_sock_connect_byname((char const *)arg1,arg2,arg3,arg4);
+  arg2 = (char **)(argp2);
+  res4 = SWIG_ConvertPtr(obj2, &argp4,SWIGTYPE_p_resolve_context, 0 |  0 );
+  if (!SWIG_IsOK(res4)) {
+    SWIG_exception_fail(SWIG_ArgError(res4), "in method '" "smbcli_sock_connect_byname" "', argument " "4"" of type '" "struct resolve_context *""'"); 
+  }
+  arg4 = (struct resolve_context *)(argp4);
+  if (obj3) {
+    res5 = SWIG_ConvertPtr(obj3, &argp5,SWIGTYPE_p_event_context, 0 |  0 );
+    if (!SWIG_IsOK(res5)) {
+      SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "smbcli_sock_connect_byname" "', argument " "5"" of type '" "struct event_context *""'"); 
+    }
+    arg5 = (struct event_context *)(argp5);
+  }
+  result = (struct smbcli_socket *)smbcli_sock_connect_byname((char const *)arg1,(char const **)arg2,arg3,arg4,arg5);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_smbcli_socket, 0 |  0 );
   if (alloc1 == SWIG_NEWOBJ) free((char*)buf1);
   return resultobj;
@@ -2798,25 +2673,33 @@ static PyMethodDef SwigMethods[] = {
 
 static swig_type_info _swigt__p_TALLOC_CTX = {"_p_TALLOC_CTX", "TALLOC_CTX *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_event_context = {"_p_event_context", "struct event_context *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_event_context = {"_p_event_context", "struct event_context *|event *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_p_char = {"_p_p_char", "char **", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_resolve_context = {"_p_resolve_context", "struct resolve_context *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_smbcli_socket = {"_p_smbcli_socket", "struct smbcli_socket *", 0, 0, (void*)0, 0};
 
 static swig_type_info *swig_type_initial[] = {
   &_swigt__p_TALLOC_CTX,
   &_swigt__p_char,
   &_swigt__p_event_context,
+  &_swigt__p_p_char,
+  &_swigt__p_resolve_context,
   &_swigt__p_smbcli_socket,
 };
 
 static swig_cast_info _swigc__p_TALLOC_CTX[] = {  {&_swigt__p_TALLOC_CTX, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_event_context[] = {  {&_swigt__p_event_context, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_p_char[] = {  {&_swigt__p_p_char, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_resolve_context[] = {  {&_swigt__p_resolve_context, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_smbcli_socket[] = {  {&_swigt__p_smbcli_socket, 0, 0, 0},{0, 0, 0, 0}};
 
 static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_TALLOC_CTX,
   _swigc__p_char,
   _swigc__p_event_context,
+  _swigc__p_p_char,
+  _swigc__p_resolve_context,
   _swigc__p_smbcli_socket,
 };
 
