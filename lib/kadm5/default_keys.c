@@ -91,7 +91,7 @@ parse_file(krb5_context context, krb5_principal principal, int no_salt)
 
     print_keys(context, keys, nkeys);
 
-    _kadm5_free_keys(context, nkeys, keys);
+    hdb_free_keys(context, nkeys, keys);
 }
 
 int
