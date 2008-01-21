@@ -195,7 +195,7 @@ static WERROR libnet_conf_reg_create_service_key(TALLOC_CTX *mem_ctx,
 	/* create a new talloc ctx for creation. it will hold
 	 * the intermediate parent key (SMBCONF) for creation
 	 * and will be destroyed when leaving this function... */
-	if (!(create_ctx = talloc_new(mem_ctx))) {
+	if (!(create_ctx = talloc_stackframe())) {
 		werr = WERR_NOMEM;
 		goto done;
 	}
@@ -361,7 +361,7 @@ static WERROR libnet_conf_reg_get_values(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		werr = WERR_NOMEM;
 		goto done;
@@ -544,7 +544,7 @@ WERROR libnet_conf_get_config(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		werr = WERR_NOMEM;
 		goto done;
@@ -619,7 +619,7 @@ WERROR libnet_conf_get_share_names(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		werr = WERR_NOMEM;
 		goto done;
