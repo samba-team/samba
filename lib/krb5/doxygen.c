@@ -59,6 +59,7 @@ RCSID("$Id$");
 /** @defgroup krb5 Heimdal Kerberos 5 library */
 /** @defgroup krb5_address Heimdal Kerberos 5 address functions */
 /** @defgroup krb5_ccache Heimdal Kerberos 5 credential cache functions */
+/** @defgroup krb5_credential Heimdal Kerberos 5 credential handing functions */
 /** @defgroup krb5_deprecated Heimdal Kerberos 5 deprecated functions */
 /** @defgroup krb5_digest Heimdal Kerberos 5 digest service */
 /** @defgroup krb5_error Heimdal Kerberos 5 error reporting functions */
