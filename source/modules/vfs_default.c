@@ -90,6 +90,17 @@ static int vfswrap_statvfs(struct vfs_handle_struct *handle,  const char *path, 
 	return sys_statvfs(path, statbuf);
 }
 
+static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle)
+{
+#if defined(DARWINOS)
+	struct statfs sbuf;
+	ZERO_STRUCT(sbuf);
+	sys_statvfs(handle->conn->connectpath, &sbuf);
+	return sbuf.FsCapabilities;
+#endif
+	return FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+}
+
 /* Directory operations */
 
 static SMB_STRUCT_DIR *vfswrap_opendir(vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
@@ -1329,6 +1340,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_get_shadow_copy_data), SMB_VFS_OP_GET_SHADOW_COPY_DATA,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_statvfs),	SMB_VFS_OP_STATVFS,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_fs_capabilities), SMB_VFS_OP_FS_CAPABILITIES,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* Directory operations */

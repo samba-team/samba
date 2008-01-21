@@ -1171,16 +1171,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 * assumes that all the filesystem mounted withing a share path have
 	 * the same characteristics, which is likely but not guaranteed.
 	 */
-	{
-		vfs_statvfs_struct svfs;
 
-		conn->fs_capabilities =
-		    FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
-
-		if (SMB_VFS_STATVFS(conn, conn->connectpath, &svfs) == 0) {
-			conn->fs_capabilities = svfs.FsCapabilities;
-		}
-	}
+	conn->fs_capabilities = SMB_VFS_FS_CAPABILITIES(conn);
 
 	/*
 	 * Print out the 'connected as' stuff here as we need
