@@ -30,7 +30,6 @@ EXTRA_DIST = \
 	autogen.sh \
 	krb5.conf \
 	cf/make-proto.pl \
-	cf/check-symbols.sh \
 	cf/install-catman.sh \
 	cf/ChangeLog \
 	cf/c-function.m4 \
