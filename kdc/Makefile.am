@@ -57,8 +57,6 @@ libkdc_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
 endif
 $(libkdc_la_OBJECTS): $(srcdir)/version-script.map
 
-CHECK_SYMBOLS = -lib kdc -version krb5_kdc kdc_ _kdc_
-
 $(srcdir)/kdc-protos.h:
 	cd $(srcdir) && perl ../cf/make-proto.pl -q -P comment -o kdc-protos.h $(libkdc_la_SOURCES) || rm -f kdc-protos.h
 
