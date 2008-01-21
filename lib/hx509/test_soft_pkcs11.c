@@ -54,11 +54,11 @@ find_object(CK_SESSION_HANDLE session,
 
     search_data[0].ulValueLen = strlen(id);
 
-    ret = C_FindObjectsInit(session, search_data, num_search_data);
+    ret = (*func->C_FindObjectsInit)(session, search_data, num_search_data);
     if (ret != CKR_OK)
 	return ret;
 
-    ret = C_FindObjects(session, object, 1, &object_count);
+    ret = (*func->C_FindObjects)(session, object, 1, &object_count);
     if (ret != CKR_OK)
 	return ret;
     if (object_count == 0) {
@@ -66,7 +66,7 @@ find_object(CK_SESSION_HANDLE session,
 	return 1;
     }
 
-    ret = C_FindObjectsFinal(session);
+    ret = (*func->C_FindObjectsFinal(session);
     if (ret != CKR_OK)
 	return ret;
 
