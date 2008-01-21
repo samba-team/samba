@@ -2,7 +2,6 @@
 # Version 1.3.33
 #
 # Don't modify this file, modify the SWIG interface instead.
-# This file is compatible with both classic and new-style classes.
 
 import _libcli_smb
 import new
@@ -46,6 +45,16 @@ except AttributeError:
     class _object : pass
     _newclass = 0
 del types
+
+
+def _swig_setattr_nondynamic_method(set):
+    def set_attr(self,name,value):
+        if (name == "thisown"): return self.this.own(value)
+        if hasattr(self,name) or (name == "this"):
+            set(self,name,value)
+        else:
+            raise AttributeError("You cannot add attributes to %s" % self)
+    return set_attr
 
 
 import events

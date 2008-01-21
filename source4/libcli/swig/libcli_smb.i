@@ -9,8 +9,9 @@
 #include "libcli/raw/libcliraw.h"
 %}
 
-struct smbcli_socket *smbcli_sock_connect_byname(const char *host, int port,
+struct smbcli_socket *smbcli_sock_connect_byname(const char *host, const char **ports,
 						 TALLOC_CTX *mem_ctx,
+                         struct resolve_context *resolve_ctx,
 						 struct event_context *event_ctx);
 
 void smbcli_sock_dead(struct smbcli_socket *sock);
