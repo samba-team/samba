@@ -610,22 +610,15 @@ static NTSTATUS streams_depot_streaminfo(vfs_handle_struct *handle,
 	return NT_STATUS_OK;
 }
 
-static int streams_depot_statvfs(struct vfs_handle_struct *handle,
-				 const char *path,
-				 struct vfs_statvfs_struct *statbuf)
+static uint32_t streams_depot_fs_capabilities(struct vfs_handle_struct *handle)
 {
-	int ret;
-
-	ret = SMB_VFS_NEXT_STATVFS(handle, path, statbuf);
-	statbuf->FsCapabilities |= FILE_NAMED_STREAMS;
-	return ret;
-
+	return SMB_VFS_NEXT_FS_CAPABILITIES(handle) | FILE_NAMED_STREAMS;
 }
 
 /* VFS operations structure */
 
 static vfs_op_tuple streams_depot_ops[] = {
-	{SMB_VFS_OP(streams_depot_statvfs), SMB_VFS_OP_STATVFS,
+	{SMB_VFS_OP(streams_depot_fs_capabilities), SMB_VFS_OP_FS_CAPABILITIES,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(streams_depot_open), SMB_VFS_OP_OPEN,
 	 SMB_VFS_LAYER_TRANSPARENT},
