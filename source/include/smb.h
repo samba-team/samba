@@ -1904,6 +1904,8 @@ struct ea_list {
 #define SAMBA_POSIX_INHERITANCE_EA_NAME "user.SAMBA_PAI"
 /* EA to use for DOS attributes */
 #define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
+/* Prefix for DosStreams in the vfs_streams_xattr module */
+#define SAMBA_XATTR_DOSSTREAM_PREFIX "user.DosStream."
 
 #define UUID_SIZE 16
 

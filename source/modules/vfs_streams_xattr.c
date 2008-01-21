@@ -26,8 +26,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_VFS
 
-#define XATTR_DOSSTREAM_PREFIX "user.DosStream."
-
 struct stream_io {
 	char *base;
 	char *xattr_name;
@@ -140,7 +138,7 @@ static int streams_xattr_stat(vfs_handle_struct *handle, const char *fname,
 	}
 
 	xattr_name = talloc_asprintf(talloc_tos(), "%s%s",
-				     XATTR_DOSSTREAM_PREFIX, sname);
+				     SAMBA_XATTR_DOSSTREAM_PREFIX, sname);
 	if (xattr_name == NULL) {
 		errno = ENOMEM;
 		goto fail;
@@ -187,7 +185,7 @@ static int streams_xattr_lstat(vfs_handle_struct *handle, const char *fname,
 	}
 
 	xattr_name = talloc_asprintf(talloc_tos(), "%s%s",
-				     XATTR_DOSSTREAM_PREFIX, sname);
+				     SAMBA_XATTR_DOSSTREAM_PREFIX, sname);
 	if (xattr_name == NULL) {
 		errno = ENOMEM;
 		goto fail;
@@ -239,7 +237,7 @@ static int streams_xattr_open(vfs_handle_struct *handle,  const char *fname,
 	}
 
 	xattr_name = talloc_asprintf(talloc_tos(), "%s%s",
-				     XATTR_DOSSTREAM_PREFIX, sname);
+				     SAMBA_XATTR_DOSSTREAM_PREFIX, sname);
 	if (xattr_name == NULL) {
 		errno = ENOMEM;
 		goto fail;
@@ -373,7 +371,7 @@ static int streams_xattr_unlink(vfs_handle_struct *handle,  const char *fname)
 	}
 
 	xattr_name = talloc_asprintf(talloc_tos(), "%s%s",
-				     XATTR_DOSSTREAM_PREFIX, sname);
+				     SAMBA_XATTR_DOSSTREAM_PREFIX, sname);
 	if (xattr_name == NULL) {
 		errno = ENOMEM;
 		goto fail;
@@ -403,7 +401,7 @@ static NTSTATUS walk_xattr_streams(connection_struct *conn, files_struct *fsp,
 	NTSTATUS status;
 	char **names;
 	size_t i, num_names;
-	size_t prefix_len = strlen(XATTR_DOSSTREAM_PREFIX);
+	size_t prefix_len = strlen(SAMBA_XATTR_DOSSTREAM_PREFIX);
 
 	status = get_ea_names_from_file(talloc_tos(), conn, fsp, fname,
 					&names, &num_names);
@@ -414,7 +412,7 @@ static NTSTATUS walk_xattr_streams(connection_struct *conn, files_struct *fsp,
 	for (i=0; i<num_names; i++) {
 		struct ea_struct ea;
 
-		if (strncmp(names[i], XATTR_DOSSTREAM_PREFIX,
+		if (strncmp(names[i], SAMBA_XATTR_DOSSTREAM_PREFIX,
 			    prefix_len) != 0) {
 			continue;
 		}
