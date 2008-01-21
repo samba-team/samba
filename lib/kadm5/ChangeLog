@@ -1,3 +1,7 @@
+2008-01-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* default_keys.c: Use hdb_free_keys().
+
 2008-01-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add check-cracklib.pl, flush.c,
