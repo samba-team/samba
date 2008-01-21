@@ -6,13 +6,17 @@
 
 package Parse::Pidl::Samba3::ServerNDR;
 
+use Exporter;
+@ISA = qw(Exporter);
+@EXPORT_OK = qw(DeclLevel);
+
 use strict;
 use Parse::Pidl qw(warning fatal);
 use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
 use Parse::Pidl::Util qw(ParseExpr has_property is_constant);
 use Parse::Pidl::NDR qw(GetNextLevel);
 use Parse::Pidl::Samba4 qw(ElementStars DeclLong);
-use Parse::Pidl::Samba4::NDR::Parser qw(GenerateFunctionOutEnv);
+use Parse::Pidl::Samba4::Header qw(GenerateFunctionOutEnv);
 
 use vars qw($VERSION);
 $VERSION = '0.01';

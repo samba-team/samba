@@ -34,7 +34,7 @@ from auth import system_session
 import samba.getopt as options
 import param
 from samba.provision import (provision,  
-                             provision_paths_from_lp, provision_ldapbase)
+                             provision_paths_from_lp)
 
 parser = optparse.OptionParser("provision [options]")
 parser.add_option_group(options.SambaOptions(parser))
@@ -81,9 +81,6 @@ parser.add_option("--users", type="string", metavar="GROUPNAME",
 parser.add_option("--quiet", help="Be quiet", action="store_true")
 parser.add_option("--blank", action="store_true",
 		help="do not add users or groups, just the structure")
-parser.add_option("--ldap-base", 
-		help="output only an LDIF file, suitable for creating an LDAP baseDN",
-        action="store_true")
 parser.add_option("--ldap-backend", type="string", metavar="LDAPSERVER", 
 		help="LDAP server to use for this provision")
 parser.add_option("--ldap-module=", type="string", metavar="MODULE", 
@@ -152,10 +149,7 @@ creds = credopts.get_credentials()
 setup_dir = opts.setupdir
 if setup_dir is None:
 	setup_dir = "setup"
-if opts.ldap_base:
-	provision_ldapbase(setup_dir, message, paths)
-	message("Please install the LDIF located in %s, %s and  into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server" % (paths.ldap_basedn_ldif, paths.ldap_config_basedn_ldif, paths.ldap_schema_basedn_ldif))
-elif opts.partitions_only:
+if opts.partitions_only:
     provision_become_dc(setup_dir, message, False, 
                         paths, lp, system_session(), creds)
 else:
