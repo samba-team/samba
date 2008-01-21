@@ -2083,7 +2083,8 @@ const char *get_mydnsfullname(void)
 	if (!memcache_lookup(NULL, SINGLETON_CACHE,
 			data_blob_string_const("get_mydnsfullname"),
 			&tmp)) {
-		tmp = data_blob_string_const(res->ai_canonname);
+		tmp = data_blob_talloc(talloc_tos(), res->ai_canonname,
+				strlen(res->ai_canonname) + 1);
 	}
 
 	freeaddrinfo(res);
