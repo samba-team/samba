@@ -130,6 +130,7 @@ VERSION = 0.0.1
 SO_VERSION = 0
 OUTPUT_TYPE = SHARED_LIBRARY
 CFLAGS = -Ilib/ldb/include
+PC_FILE = ldb.pc
 DESCRIPTION = LDAP-like embedded database library
 INIT_FUNCTION_TYPE = int (*) (void)
 OBJ_FILES = \
