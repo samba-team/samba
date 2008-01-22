@@ -2481,7 +2481,9 @@ static void samba_extended_info_version(struct smb_extended_info *extended_info)
 	extended_info->samba_subversion |= (SAMBA_VERSION_VENDOR_PATCH & 0xffff);
 #endif
 	/* FIXME: samba_gitcommitdate should contain the git commit date. */
-	unix_to_nt_time(&extended_info->samba_gitcommitdate, time(NULL));
+#ifdef SAMBA_VERSION_GIT_COMMIT_TIME
+	unix_to_nt_time(&extended_info->samba_gitcommitdate, SAMBA_VERSION_GIT_COMMIT_TIME);
+#endif
 
 	memset(extended_info->samba_version_string, 0,
 	       sizeof(extended_info->samba_version_string));
