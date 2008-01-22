@@ -1,3 +1,4 @@
+source/test-results
 source/lib/gencache/gencache.h
 source/lib/ldb/bin
 *.pc
@@ -7,6 +8,7 @@ autom4te.cache
 *.x
 *.hd
 *.ho
+*.pyc
 Makefile
 configure
 source/bin/*
@@ -65,6 +67,7 @@ source/lib/util/pidfile.h
 source/lib/util/unix_privs.h
 source/lib/util/util_proto.h
 source/lib/util/wrap_xattr.h
+source/lib/util/asn1_proto.h
 source/libcli/finddcs.h
 source/libcli/libcli_proto.h
 source/libcli/auth/proto.h
@@ -77,7 +80,6 @@ source/libcli/resolve/proto.h
 source/libcli/security/proto.h
 source/libcli/smb2/smb2_proto.h
 source/libcli/smb_composite/proto.h
-source/libcli/util/asn1_proto.h
 source/libcli/util/clilsa.h
 source/libcli/util/proto.h
 source/libcli/wrepl/winsrepl_proto.h
@@ -179,3 +181,15 @@ source/lib/registry/tools/common.h
 source/librpc/ndr/ndr_table.h
 source/rpc_server/lsa/proto.h
 source/torture/winbind/proto.h
+*~
+source/auth/auth_sam_reply.h
+source/auth/session_proto.h
+source/auth/system_session_proto.h
+source/dsdb/common/proto.h
+source/dsdb/schema/proto.h
+source/lib/crypto/test_proto.h
+source/lib/registry/tests/proto.h
+source/lib/util/apidocs
+source/lib/util/util_ldb.h
+source/libcli/ldap/ldap_ndr.h
+source/libcli/resolve/lp_proto.h

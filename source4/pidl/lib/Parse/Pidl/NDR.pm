@@ -35,7 +35,7 @@ use vars qw($VERSION);
 $VERSION = '0.01';
 @ISA = qw(Exporter);
 @EXPORT = qw(GetPrevLevel GetNextLevel ContainsDeferred ContainsString);
-@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement align_type mapToScalar ParseType can_contain_deferred);
+@EXPORT_OK = qw(GetElementLevelTable ParseElement ValidElement align_type mapToScalar ParseType can_contain_deferred is_charset_array);
 
 use strict;
 use Parse::Pidl qw(warning fatal);
@@ -287,8 +287,6 @@ sub can_contain_deferred($)
 
 	return 0 if (Parse::Pidl::Typelist::is_scalar($type));
 
-	return 1 if ($type->{TYPE} eq "DECLARE"); # assume the worst
-
 	return can_contain_deferred($type->{DATA}) if ($type->{TYPE} eq "TYPEDEF");
 
 	return 0 unless defined($type->{ELEMENTS});
@@ -354,21 +352,25 @@ sub align_type($)
 		return $scalar_alignment->{$e->{NAME}};
 	}
 
+	return 0 if ($e eq "EMPTY");
+
 	unless (hasType($e)) {
 	    # it must be an external type - all we can do is guess 
-		# print "Warning: assuming alignment of unknown type '$e' is 4\n";
+		# warning($e, "assuming alignment of unknown type '$e' is 4");
 	    return 4;
 	}
 
 	my $dt = getType($e);
 
-	if ($dt->{TYPE} eq "TYPEDEF" or $dt->{TYPE} eq "DECLARE") {
+	if ($dt->{TYPE} eq "TYPEDEF") {
 		return align_type($dt->{DATA});
 	} elsif ($dt->{TYPE} eq "ENUM") {
 		return align_type(Parse::Pidl::Typelist::enum_type_fn($dt));
 	} elsif ($dt->{TYPE} eq "BITMAP") {
 		return align_type(Parse::Pidl::Typelist::bitmap_type_fn($dt));
 	} elsif (($dt->{TYPE} eq "STRUCT") or ($dt->{TYPE} eq "UNION")) {
+		# Struct/union without body: assume 4
+		return 4 unless (defined($dt->{ELEMENTS}));
 		return find_largest_alignment($dt);
 	}
 
@@ -631,7 +633,7 @@ sub FindNestedTypes($$)
 	sub FindNestedTypes($$);
 	my ($l, $t) = @_;
 
-	return if not defined($t->{ELEMENTS});
+	return unless defined($t->{ELEMENTS});
 	return if ($t->{TYPE} eq "ENUM");
 	return if ($t->{TYPE} eq "BITMAP");
 
@@ -650,7 +652,6 @@ sub ParseInterface($)
 	my @consts = ();
 	my @functions = ();
 	my @endpoints;
-	my @declares = ();
 	my $opnum = 0;
 	my $version;
 
@@ -667,9 +668,7 @@ sub ParseInterface($)
 	}
 
 	foreach my $d (@{$idl->{DATA}}) {
-		if ($d->{TYPE} eq "DECLARE") {
-			push (@declares, $d);
-		} elsif ($d->{TYPE} eq "FUNCTION") {
+		if ($d->{TYPE} eq "FUNCTION") {
 			push (@functions, ParseFunction($idl, $d, \$opnum));
 		} elsif ($d->{TYPE} eq "CONST") {
 			push (@consts, ParseConst($idl, $d));
@@ -701,7 +700,6 @@ sub ParseInterface($)
 		FUNCTIONS => \@functions,
 		CONSTS => \@consts,
 		TYPES => \@types,
-		DECLARES => \@declares,
 		ENDPOINTS => \@endpoints
 	};
 }
@@ -1182,5 +1180,20 @@ sub Validate($)
 			fatal($x, "importlib() not supported");
 	}
 }
+
+sub is_charset_array($$)
+{
+	my ($e,$l) = @_;
+
+	return 0 if ($l->{TYPE} ne "ARRAY");
+
+	my $nl = GetNextLevel($e,$l);
+
+	return 0 unless ($nl->{TYPE} eq "DATA");
+
+	return has_property($e, "charset");
+}
+
+
 
 1;

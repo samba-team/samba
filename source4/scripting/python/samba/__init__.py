@@ -112,28 +112,28 @@ class Ldb(ldb.Ldb):
         for attr in ["@INDEXLIST", "@ATTRIBUTES", "@SUBCLASSES", "@MODULES", 
                      "@OPTIONS", "@PARTITION", "@KLUDGEACL"]:
             try:
-                self.delete(ldb.Dn(self, attr))
+                self.delete(attr)
             except ldb.LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
                 # Ignore missing dn errors
                 pass
 
-        basedn = ldb.Dn(self, "")
+        basedn = ""
         # and the rest
         for msg in self.search(basedn, ldb.SCOPE_SUBTREE, 
-                "(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", 
-                ["dn"]):
+                "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", 
+                ["distinguishedName"]):
             try:
                 self.delete(msg.dn)
             except ldb.LdbError, (LDB_ERR_NO_SUCH_OBJECT, _):
                 # Ignor eno such object errors
                 pass
 
-        res = self.search(basedn, ldb.SCOPE_SUBTREE, "(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", ["dn"])
+        res = self.search(basedn, ldb.SCOPE_SUBTREE, "(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", ["distinguishedName"])
         assert len(res) == 0
 
     def erase_partitions(self):
         """Erase an ldb, removing all records."""
-        res = self.search(ldb.Dn(self, ""), ldb.SCOPE_BASE, "(objectClass=*)", 
+        res = self.search("", ldb.SCOPE_BASE, "(objectClass=*)", 
                          ["namingContexts"])
         assert len(res) == 1
         if not "namingContexts" in res[0]:
@@ -145,7 +145,7 @@ class Ldb(ldb.Ldb):
             k = 0
             while ++k < 10 and (previous_remaining != current_remaining):
                 # and the rest
-                res2 = self.search(ldb.Dn(self, basedn), ldb.SCOPE_SUBTREE, "(|(objectclass=*)(dn=*))", ["dn"])
+                res2 = self.search(basedn, ldb.SCOPE_SUBTREE, "(|(objectclass=*)(distinguishedName=*))", ["distinguishedName"])
                 previous_remaining = current_remaining
                 current_remaining = len(res2)
                 for msg in res2:

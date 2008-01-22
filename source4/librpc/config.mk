@@ -36,10 +36,7 @@ MANPAGE = tools/ndrdump.1
 
 ################################################
 # Start SUBSYSTEM NDR_COMPRESSION
-[LIBRARY::NDR_COMPRESSION]
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = NDR support for compressed subcontexts
+[SUBSYSTEM::NDR_COMPRESSION]
 PRIVATE_PROTO_HEADER = ndr/ndr_compression.h
 OBJ_FILES = \
 		ndr/ndr_compression.o
@@ -370,13 +367,10 @@ OBJ_FILES = gen_ndr/ndr_svcctl_c.o
 PUBLIC_HEADERS = gen_ndr/ndr_svcctl_c.h
 PUBLIC_DEPENDENCIES = dcerpc NDR_SVCCTL
 
-[LIBRARY::dcerpc_atsvc]
+[SUBSYSTEM::dcerpc_atsvc]
 OBJ_FILES = gen_ndr/ndr_atsvc_c.o
 PUBLIC_HEADERS = gen_ndr/ndr_atsvc_c.h
 PUBLIC_DEPENDENCIES = dcerpc NDR_ATSVC
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = DCE/RPC client library - ATSVC
 
 [SUBSYSTEM::RPC_NDR_EVENTLOG]
 OBJ_FILES = gen_ndr/ndr_eventlog_c.o
@@ -410,12 +404,9 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_WINREG
 OBJ_FILES = gen_ndr/ndr_initshutdown_c.o
 PUBLIC_DEPENDENCIES = dcerpc NDR_INITSHUTDOWN
 
-[LIBRARY::dcerpc_mgmt]
+[SUBSYSTEM::dcerpc_mgmt]
 OBJ_FILES = gen_ndr/ndr_mgmt_c.o
 PRIVATE_DEPENDENCIES = NDR_MGMT
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = DCE/RPC client library - MGMT
 
 [SUBSYSTEM::RPC_NDR_PROTECTED_STORAGE]
 OBJ_FILES = gen_ndr/ndr_protected_storage_c.o
@@ -597,4 +588,45 @@ PUBLIC_DEPENDENCIES = LIBCLI_SMB NDR_MISC LIBSAMBA-UTIL LIBSAMBA-CONFIG dcerpc_s
 
 [PYTHON::python_echo]
 OBJ_FILES = gen_ndr/py_echo.o
-PRIVATE_DEPENDENCIES = NDR_ECHO
+PRIVATE_DEPENDENCIES = RPC_NDR_ECHO
+
+[PYTHON::python_winreg]
+OBJ_FILES = gen_ndr/py_winreg.o
+PRIVATE_DEPENDENCIES = RPC_NDR_WINREG python_misc
+
+[PYTHON::python_dcerpc_misc]
+OBJ_FILES = gen_ndr/py_misc.o
+
+[PYTHON::python_initshutdown]
+OBJ_FILES = gen_ndr/py_initshutdown.o
+PRIVATE_DEPENDENCIES = RPC_NDR_INITSHUTDOWN
+
+[PYTHON::python_epmapper]
+OBJ_FILES = gen_ndr/py_epmapper.o
+
+[PYTHON::python_mgmt]
+OBJ_FILES = gen_ndr/py_mgmt.o
+PRIVATE_DEPENDENCIES = dcerpc_mgmt
+
+[PYTHON::python_atsvc]
+OBJ_FILES = gen_ndr/py_atsvc.o
+PRIVATE_DEPENDENCIES = dcerpc_atsvc
+
+[PYTHON::python_samr]
+OBJ_FILES = gen_ndr/py_samr.o
+PRIVATE_DEPENDENCIES = dcerpc_samr
+
+[PYTHON::python_svcctl]
+OBJ_FILES = gen_ndr/py_svcctl.o
+PRIVATE_DEPENDENCIES = RPC_NDR_SVCCTL
+
+[PYTHON::python_lsa]
+OBJ_FILES = gen_ndr/py_lsa.o
+PRIVATE_DEPENDENCIES = RPC_NDR_LSA
+
+[PYTHON::python_wkssvc]
+OBJ_FILES = gen_ndr/py_wkssvc.o
+PRIVATE_DEPENDENCIES = RPC_NDR_WKSSVC
+
+[PYTHON::python_dcerpc_security]
+OBJ_FILES = gen_ndr/py_security.o

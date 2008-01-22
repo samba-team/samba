@@ -244,6 +244,7 @@ sub mk_openldap($$$)
 modulepath      $olroot/libexec/openldap
 moduleload	syncprov
 moduleload      memberof
+moduleload      refint
 ";
 		close(CONF);
 	}
@@ -255,6 +256,7 @@ modulepath      $olroot/libexec/openldap
 moduleload	back_hdb
 moduleload	syncprov
 moduleload      memberof
+moduleload      refint
 ";
 		close(CONF);
 	}
@@ -266,6 +268,7 @@ moduleload      memberof
 moduleload	back_hdb
 moduleload	syncprov
 moduleload      memberof
+moduleload      refint
 ";
 		close(CONF);
 	}
@@ -278,6 +281,7 @@ modulepath	/usr/lib/ldap
 moduleload	back_hdb
 moduleload	syncprov
 moduleload      memberof
+moduleload      refint
 ";
 		close(CONF);
 	}
@@ -289,6 +293,7 @@ moduleload      memberof
 modulepath	/usr/lib/openldap
 moduleload	syncprov
 moduleload      memberof
+moduleload      refint
 ";
 		close(CONF);
 	}
@@ -300,6 +305,7 @@ moduleload      memberof
 modulepath	/usr/lib64/openldap
 moduleload	syncprov
 moduleload      memberof
+moduleload      refint
 ";
 		close(CONF);
 	}
@@ -712,7 +718,7 @@ nogroup:x:65534:nobody
 	        } elsif ($self->{ldap} eq "fedora-ds") {
 		       ($ret->{FEDORA_DS_DIR}, $ret->{FEDORA_DS_PIDFILE}) = $self->mk_fedora_ds($ldapdir, $configuration) or die("Unable to create fedora ds directories");
 		       push (@provision_options, "--ldap-module=nsuniqueid");
-		       push (@provision_options, "--aci=aci:: KHRhcmdldGF0dHIgPSAiKiIpICh2ZXJzaW9uIDMuMDthY2wgImZ1bGwgYWNjZXNzIHRvIGFsbCBieSBhbGwiO2FsbG93IChhbGwpKHVzZXJkbiA9ICJsZGFwOi8vL2FueW9uZSIpOykK");
+		       push (@provision_options, "'--aci=aci:: KHRhcmdldGF0dHIgPSAiKiIpICh2ZXJzaW9uIDMuMDthY2wgImZ1bGwgYWNjZXNzIHRvIGFsbCBieSBhbGwiO2FsbG93IChhbGwpKHVzZXJkbiA9ICJsZGFwOi8vL2FueW9uZSIpOykK'");
                  }
 
 		$self->slapd_start($ret) or 

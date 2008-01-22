@@ -20,7 +20,7 @@ import samba
 from samba import Ldb, substitute_var, valid_netbios_name
 from samba.samdb import SamDB
 import security
-from ldb import Dn, SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
+from ldb import SCOPE_SUBTREE, SCOPE_ONELEVEL, SCOPE_BASE, LdbError, \
         LDB_ERR_NO_SUCH_OBJECT, timestring, CHANGETYPE_MODIFY, CHANGETYPE_NONE
 
 """Functions for setting up a Samba configuration."""
@@ -64,7 +64,7 @@ def install_ok(lp, session_info, credentials):
         return False
     ldb = Ldb(lp.get("sam database"), session_info=session_info, 
             credentials=credentials, lp=lp)
-    if len(ldb.search(ldb.Dn("(cn=Administrator)"))) != 1:
+    if len(ldb.search("(cn=Administrator)")) != 1:
         return False
     return True
 
@@ -180,12 +180,6 @@ def provision_paths_from_lp(lp, dnsdomain):
     paths.dns_keytab = os.path.join(private_dir, "dns.keytab")
     paths.dns = os.path.join(private_dir, dnsdomain + ".zone")
     paths.winsdb = os.path.join(private_dir, "wins.ldb")
-    paths.ldap_basedn_ldif = os.path.join(private_dir, 
-                                          dnsdomain + ".ldif")
-    paths.ldap_config_basedn_ldif = os.path.join(private_dir, 
-                                             dnsdomain + "-config.ldif")
-    paths.ldap_schema_basedn_ldif = os.path.join(private_dir, 
-                                              dnsdomain + "-schema.ldif")
     paths.s4_ldapi_path = os.path.join(private_dir, "ldapi")
     paths.phpldapadminconfig = os.path.join(private_dir, 
                                             "phpldapadmin-config.php")
@@ -465,7 +459,6 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         setup_add_ldif(samdb, setup_path("provision_basedn.ldif"), {
             "DOMAINDN": domaindn,
             "ACI": aci,
-            "EXTENSIBLEOBJECT": "# no objectClass: extensibleObject for local ldb",
             "RDN_DC": rdn_dc,
             })
 
@@ -766,9 +759,9 @@ def provision(lp, setup_dir, message, blank, paths, session_info,
         samdb = SamDB(paths.samdb, session_info=session_info, 
                       credentials=credentials, lp=lp)
 
-        domainguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID")
+        domainguid = samdb.searchone(domaindn, "objectGUID")
         assert isinstance(domainguid, str)
-        hostguid = samdb.searchone(Dn(samdb, domaindn), "objectGUID",
+        hostguid = samdb.searchone(domaindn, "objectGUID",
                 expression="(&(objectClass=computer)(cn=%s))" % hostname,
                 scope=SCOPE_SUBTREE)
         assert isinstance(hostguid, str)
@@ -821,31 +814,6 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
             "DEFAULTSITE": DEFAULTSITE,
             "HOSTGUID": hostguid,
         })
-
-
-def provision_ldapbase(setup_dir, message, paths):
-    """Write out a DNS zone file, from the info in the current database."""
-    message("Setting up LDAP base entry: %s" % domaindn)
-    rdns = domaindn.split(",")
-
-    rdn_dc = rdns[0][len("DC="):]
-
-    def setup_path(file):
-        return os.path.join(setup_dir, file)
-
-    setup_file(setup_path("provision_basedn.ldif"), 
-           paths.ldap_basedn_ldif)
-
-    setup_file(setup_path("provision_configuration_basedn.ldif"), 
-           paths.ldap_config_basedn_ldif)
-
-    setup_file(setup_path("provision_schema_basedn.ldif"), 
-           paths.ldap_schema_basedn_ldif, {
-            "SCHEMADN": schemadn,
-            "ACI": "# no aci for local ldb",
-            "EXTENSIBLEOBJECT": "objectClass: extensibleObject"})
-
-    message("Please install the LDIF located in " + paths.ldap_basedn_ldif + ", " + paths.ldap_config_basedn_ldif + " and " + paths.ldap_schema_basedn_ldif + " into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server")
 
 
 def load_schema(setup_path, samdb, schemadn, netbiosname, configdn):

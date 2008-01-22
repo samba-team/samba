@@ -30,7 +30,6 @@ objectClass: organizationalPerson
 objectClass: user
 cn: dns
 description: DNS Service Account
-showInAdvancedViewOnly: TRUE
 userAccountControl: 514
 accountExpires: 9223372036854775807
 sAMAccountName: dns
@@ -38,13 +37,12 @@ sAMAccountType: 805306368
 servicePrincipalName: DNS/${DNSDOMAIN}
 isCriticalSystemObject: TRUE
 sambaPassword:: ${DNSPASS_B64}
+showInAdvancedViewOnly: TRUE
 
 dn: CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
 objectClass: top
 objectClass: server
 cn: ${NETBIOSNAME}
-instanceType: 4
-showInAdvancedViewOnly: TRUE
 systemFlags: 1375731712
 dNSHostName: ${DNSNAME}
 serverReference: CN=${NETBIOSNAME},OU=Domain Controllers,${DOMAINDN}
@@ -55,8 +53,6 @@ objectClass: applicationSettings
 objectClass: nTDSDSA
 cn: NTDS Settings
 options: 1
-instanceType: 4
-showInAdvancedViewOnly: TRUE
 systemFlags: 33554432
 dMDLocation: ${SCHEMADN}
 invocationId: ${INVOCATIONID}

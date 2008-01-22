@@ -60,7 +60,7 @@ description: %s
         :param sid: SID of the NT-side of the mapping.
         :param unixname: Unix name to map to.
         """
-        res = self.search(ldb.Dn(self, domaindn), ldb.SCOPE_SUBTREE, 
+        res = self.search(domaindn, ldb.SCOPE_SUBTREE, 
                          "objectSid=%s" % sid, ["dn"])
         assert len(res) == 1, "Failed to find record for objectSid %s" % sid
 
@@ -103,7 +103,7 @@ userAccountControl: %u
         res = self.search("", SCOPE_BASE, "defaultNamingContext=*", 
                          ["defaultNamingContext"])
         assert(len(res) == 1 and res[0].defaultNamingContext is not None)
-        domain_dn = res[0].defaultNamingContext
+        domain_dn = res[0]["defaultNamingContext"][0]
         assert(domain_dn is not None)
         dom_users = self.searchone(domain_dn, "dn", "name=Domain Users")
         assert(dom_users is not None)

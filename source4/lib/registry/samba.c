@@ -42,7 +42,7 @@ static WERROR mount_samba_hive(struct registry_context *ctx,
 
 	error = reg_open_hive(ctx, location, auth_info, creds, lp_ctx, &hive);
 
-	if (W_ERROR_EQUAL(error, WERR_NOT_FOUND))
+	if (W_ERROR_EQUAL(error, WERR_BADFILE))
 		error = reg_open_ldb_file(ctx, location, auth_info,
 					  creds, lp_ctx, &hive);
 

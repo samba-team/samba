@@ -1,5 +1,22 @@
+# vim: ft=rst
+
 This directory contains test scripts that are useful for running a
 bunch of tests all at once. 
+
+===============
+Available tests
+===============
+The available tests are obtained from a script, usually 
+selftest/samba{3,4}_tests.sh. This script should for each test output 
+the name of the test, the command to run and the environment that should be 
+provided.
+
+============
+Environments
+============
+Tests often need to run against a server with particular things set up, 
+a "environment". This environment is provided by the test "target": Samba 3, 
+Samba 4 or Windows.
 
 The following environments are currently available:
 

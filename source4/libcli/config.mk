@@ -8,11 +8,6 @@ OBJ_FILES = util/doserr.o \
 		    util/errormap.o \
 		    util/nterr.o \
 
-[SUBSYSTEM::ASN1_UTIL]
-PUBLIC_PROTO_HEADER = util/asn1_proto.h
-PUBLIC_HEADERS = util/asn_1.h
-OBJ_FILES = util/asn1.o
-
 [SUBSYSTEM::LIBCLI_LSA]
 PRIVATE_PROTO_HEADER = util/clilsa.h
 OBJ_FILES = util/clilsa.o
@@ -55,17 +50,13 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NBT LIBCLI_COMPOSITE LIBEVENTS \
 	NDR_SECURITY samba-socket LIBSAMBA-UTIL
 
-[LIBRARY::swig_libcli_nbt]
-LIBRARY_REALNAME = swig/_libcli_nbt.$(SHLIBEXT)
-OBJ_FILES = swig/libcli_nbt_wrap.o
+[PYTHON::python_libcli_nbt]
+SWIG_FILE = swig/libcli_nbt.i
 PUBLIC_DEPENDENCIES = LIBCLI_NBT DYNCONFIG LIBSAMBA-CONFIG
-ENABLE = NO
 
-[LIBRARY::swig_libcli_smb]
-LIBRARY_REALNAME = swig/_libcli_smb.$(SHLIBEXT)
-OBJ_FILES = swig/libcli_smb_wrap.o
+[PYTHON::python_libcli_smb]
+SWIG_FILE = swig/libcli_smb.i
 PUBLIC_DEPENDENCIES = LIBCLI_SMB DYNCONFIG LIBSAMBA-CONFIG
-ENABLE = NO
 
 [SUBSYSTEM::LIBCLI_DGRAM]
 OBJ_FILES = \
@@ -76,20 +67,14 @@ OBJ_FILES = \
 	dgram/browse.o
 PUBLIC_DEPENDENCIES = LIBCLI_NBT LIBNDR LIBCLI_RESOLVE
 
-[LIBRARY::LIBCLI_CLDAP]
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = CLDAP client library
+[SUBSYSTEM::LIBCLI_CLDAP]
 OBJ_FILES = cldap/cldap.o
 PUBLIC_HEADERS = cldap/cldap.h
 PUBLIC_DEPENDENCIES = LIBCLI_LDAP
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBLDB
 
-[LIBRARY::LIBCLI_WREPL]
+[SUBSYSTEM::LIBCLI_WREPL]
 PRIVATE_PROTO_HEADER = wrepl/winsrepl_proto.h
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = WINS Replication client library
 OBJ_FILES = \
 	wrepl/winsrepl.o
 PUBLIC_DEPENDENCIES = NDR_WINSREPL samba-socket LIBCLI_RESOLVE LIBEVENTS \
@@ -117,12 +102,9 @@ OBJ_FILES = \
 	finddcs.o
 PUBLIC_DEPENDENCIES = LIBCLI_NBT MESSAGING
 
-[LIBRARY::LIBCLI_SMB]
+[SUBSYSTEM::LIBCLI_SMB]
 PUBLIC_HEADERS = libcli.h
 PUBLIC_PROTO_HEADER = libcli_proto.h
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = SMB/CIFS client library
 OBJ_FILES = clireadwrite.o \
 		cliconnect.o \
 		clifile.o \

@@ -4,11 +4,11 @@
 use strict;
 use warnings;
 
-use Test::More tests => 53;
+use Test::More tests => 54;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
-use Parse::Pidl::Typelist qw(hasType getType mapTypeName expandAlias
+use Parse::Pidl::Typelist qw(hasType typeHasBody getType mapTypeName expandAlias
 	mapScalarType addType typeIs is_scalar scalar_is_reference
 	enum_type_fn bitmap_type_fn mapType);
 
@@ -56,7 +56,6 @@ is(1, is_scalar({TYPE => "ENUM"}));
 is(0, is_scalar({TYPE => "STRUCT"}));
 is(1, is_scalar({TYPE => "TYPEDEF", DATA => {TYPE => "ENUM" }}));
 is(1, is_scalar("mytypedef"));
-is(1, is_scalar({TYPE => "DECLARE", DATA => {TYPE => "ENUM" }}));
 
 is(1, scalar_is_reference("string"));
 is(0, scalar_is_reference("uint32"));
@@ -81,3 +80,6 @@ is("uint32_t", mapType({TYPE => "TYPEDEF", DATA => {TYPE => "SCALAR"}}, "uint32"
 is("void", mapTypeName(undef));
 is("uint32_t", mapTypeName("uint32"));
 is("int32_t", mapTypeName("int"));
+
+ok(not typeHasBody({TYPE => "TYPEDEF", DATA => { TYPE => "STRUCT" }}));
+ok(typeHasBody({TYPE => "TYPEDEF", DATA => { TYPE => "STRUCT", ELEMENTS => [] }}));

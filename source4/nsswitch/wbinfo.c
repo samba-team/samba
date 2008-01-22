@@ -653,6 +653,7 @@ static const char *sid_type_lookup(enum lsa_SidType r)
 		case SID_NAME_DELETED: return "SID_NAME_DELETED"; break;
 		case SID_NAME_INVALID: return "SID_NAME_INVALID"; break;
 		case SID_NAME_UNKNOWN: return "SID_NAME_UNKNOWN"; break;
+		case SID_NAME_COMPUTER: return "SID_NAME_COMPUTER"; break;
 	}
 	return "Invalid sid type\n";
 }

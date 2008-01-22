@@ -6,10 +6,15 @@
 
 package Parse::Pidl::Samba4::Header;
 
+require Exporter;
+
+@ISA = qw(Exporter);
+@EXPORT_OK = qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
+
 use strict;
 use Parse::Pidl qw(fatal);
 use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
-use Parse::Pidl::Util qw(has_property is_constant unmake_str);
+use Parse::Pidl::Util qw(has_property is_constant unmake_str ParseExpr);
 use Parse::Pidl::Samba4 qw(is_intree ElementStars ArrayBrackets choose_header);
 
 use vars qw($VERSION);
@@ -107,47 +112,49 @@ sub HeaderEnum($$)
 	my($enum,$name) = @_;
 	my $first = 1;
 
-	pidl "#ifndef USE_UINT_ENUMS\n";
-	pidl "enum $name {\n";
-	$tab_depth++;
+	pidl "enum $name";
 	if (defined($enum->{ELEMENTS})) {
+		pidl "\n#ifndef USE_UINT_ENUMS\n";
+		pidl " {\n";
+		$tab_depth++;
 		foreach my $e (@{$enum->{ELEMENTS}}) {
 			unless ($first) { pidl ",\n"; }
 			$first = 0;
 			pidl tabs();
 			pidl $e;
 		}
-	}
-	pidl "\n";
-	$tab_depth--;
-	pidl "}\n";
-	pidl "#else\n";
-	my $count = 0;
-	pidl "enum $name { __donnot_use_enum_$name=0x7FFFFFFF}\n";
-	my $with_val = 0;
-	my $without_val = 0;
-	if (defined($enum->{ELEMENTS})) {
-		foreach my $e (@{$enum->{ELEMENTS}}) {
-			my $t = "$e";
-			my $name;
-			my $value;
-			if ($t =~ /(.*)=(.*)/) {
-				$name = $1;
-				$value = $2;
-				$with_val = 1;
-				fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
-					unless ($without_val == 0);
-			} else {
-				$name = $t;
-				$value = $count++;
-				$without_val = 1;
-				fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
-					unless ($with_val == 0);
+		pidl "\n";
+		$tab_depth--;
+		pidl "}";
+		pidl "\n";
+		pidl "#else\n";
+		my $count = 0;
+		my $with_val = 0;
+		my $without_val = 0;
+		if (defined($enum->{ELEMENTS})) {
+			pidl " { __donnot_use_enum_$name=0x7FFFFFFF}\n";
+			foreach my $e (@{$enum->{ELEMENTS}}) {
+				my $t = "$e";
+				my $name;
+				my $value;
+				if ($t =~ /(.*)=(.*)/) {
+					$name = $1;
+					$value = $2;
+					$with_val = 1;
+					fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
+						unless ($without_val == 0);
+				} else {
+					$name = $t;
+					$value = $count++;
+					$without_val = 1;
+					fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
+						unless ($with_val == 0);
+				}
+				pidl "#define $name ( $value )\n";
 			}
-			pidl "#define $name ( $value )\n";
 		}
+		pidl "#endif\n";
 	}
-	pidl "#endif\n";
 }
 
 #####################################################################
@@ -215,7 +222,7 @@ sub HeaderType($$$)
 sub HeaderTypedef($)
 {
 	my($typedef) = shift;
-	HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME});
+	HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME}) if defined ($typedef->{DATA});
 }
 
 #####################################################################
@@ -402,6 +409,68 @@ sub Parse($)
 	}
 
 	return $res;
+}
+
+sub GenerateStructEnv($$)
+{
+	my ($x, $v) = @_;
+	my %env;
+
+	foreach my $e (@{$x->{ELEMENTS}}) {
+		$env{$e->{NAME}} = "$v->$e->{NAME}";
+	}
+
+	$env{"this"} = $v;
+
+	return \%env;
+}
+
+sub EnvSubstituteValue($$)
+{
+	my ($env,$s) = @_;
+
+	# Substitute the value() values in the env
+	foreach my $e (@{$s->{ELEMENTS}}) {
+		next unless (defined(my $v = has_property($e, "value")));
+		
+		$env->{$e->{NAME}} = ParseExpr($v, $env, $e);
+	}
+
+	return $env;
+}
+
+sub GenerateFunctionInEnv($;$)
+{
+	my ($fn, $base) = @_;
+	my %env;
+
+	$base = "r->" unless defined($base);
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		if (grep (/in/, @{$e->{DIRECTION}})) {
+			$env{$e->{NAME}} = $base."in.$e->{NAME}";
+		}
+	}
+
+	return \%env;
+}
+
+sub GenerateFunctionOutEnv($;$)
+{
+	my ($fn, $base) = @_;
+	my %env;
+
+	$base = "r->" unless defined($base);
+
+	foreach my $e (@{$fn->{ELEMENTS}}) {
+		if (grep (/out/, @{$e->{DIRECTION}})) {
+			$env{$e->{NAME}} = $base."out.$e->{NAME}";
+		} elsif (grep (/in/, @{$e->{DIRECTION}})) {
+			$env{$e->{NAME}} = $base."in.$e->{NAME}";
+		}
+	}
+
+	return \%env;
 }
 
 1;

@@ -2774,6 +2774,22 @@ SWIGINTERNINLINE PyObject*
 }
 
 SWIGINTERN void delete_cli_credentials(cli_credentials *self){ talloc_free(self); }
+
+struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj)
+{
+    struct cli_credentials *ret;
+
+    if (py_obj == Py_None) {
+        return cli_credentials_init_anon(NULL);
+    }
+
+    if (SWIG_ConvertPtr(py_obj, (void *)&ret, SWIGTYPE_p_cli_credentials, 0 |  0 ) < 0) {
+        return NULL; 
+    }
+    return ret;
+}
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif

@@ -376,15 +376,6 @@ static const struct ldb_map_attribute entryuuid_attributes[] =
 		}
 	},
 	{
-		.local_name = "dn",
-		.type = MAP_RENAME,
-		.u = {
-			.rename = {
-				 .remote_name = "entryDN"
-			 }
-		}
-	},
-	{
 		.local_name = "groupType",
 		.type = MAP_CONVERT,
 		.u = {
@@ -457,6 +448,7 @@ static const char * const entryuuid_wildcard_attributes[] = {
 	"whenChanged",
 	"usnCreated",
 	"usnChanged",
+	"memberOf",
 	NULL
 };
 
@@ -526,15 +518,6 @@ static const struct ldb_map_attribute nsuniqueid_attributes[] =
 	},
 	{
 		.local_name = "distinguishedName",
-		.type = MAP_RENAME,
-		.u = {
-			.rename = {
-				 .remote_name = "entryDN"
-			 }
-		}
-	},
-	{
-		.local_name = "dn",
 		.type = MAP_RENAME,
 		.u = {
 			.rename = {
@@ -685,7 +668,7 @@ static int entryuuid_init(struct ldb_module *module)
 	struct map_private *map_private;
 	struct entryuuid_private *entryuuid_private;
 
-	ret = ldb_map_init(module, entryuuid_attributes, entryuuid_objectclasses, entryuuid_wildcard_attributes, NULL);
+	ret = ldb_map_init(module, entryuuid_attributes, entryuuid_objectclasses, entryuuid_wildcard_attributes, "extensibleObject", NULL);
         if (ret != LDB_SUCCESS)
                 return ret;
 
@@ -706,7 +689,7 @@ static int nsuniqueid_init(struct ldb_module *module)
 	struct map_private *map_private;
 	struct entryuuid_private *entryuuid_private;
 
-	ret = ldb_map_init(module, nsuniqueid_attributes, NULL, nsuniqueid_wildcard_attributes, NULL);
+	ret = ldb_map_init(module, nsuniqueid_attributes, NULL, nsuniqueid_wildcard_attributes, "extensibleObject", NULL);
         if (ret != LDB_SUCCESS)
                 return ret;
 

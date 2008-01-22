@@ -279,6 +279,27 @@ static int linked_attributes_add(struct ldb_module *module, struct ldb_request *
 	return setup_modifies(module->ldb, ac, ac, req->op.add.message, NULL, req->op.add.message->dn);
 }
 
+struct merge {
+	struct ldb_dn *dn;
+	bool add;
+	bool ignore;
+};
+
+static int merge_cmp(struct merge *merge1, struct merge *merge2) {
+	int ret;
+	ret = ldb_dn_compare(merge1->dn, merge2->dn);
+	if (ret == 0) {
+		if (merge1->add == merge2->add) {
+			return 0;
+		}
+		if (merge1->add == true) {
+			return 1;
+		}
+		return -1;
+	}
+	return ret;
+}
+
 static int linked_attributes_mod_replace_search_callback(struct ldb_context *ldb, void *context, struct ldb_reply *ares) 
 {
 	struct replace_context *ac2 = talloc_get_type(context, struct replace_context);
@@ -296,16 +317,63 @@ static int linked_attributes_mod_replace_search_callback(struct ldb_context *ldb
 		
 		/* See if this element already exists */
 		if (search_el) {
-			int ret;
+
+			struct merge *merged_list = NULL;
+
+			int ret, size = 0, i;
 			struct ldb_message *msg = ldb_msg_new(ac);
 			if (!msg) {
 				ldb_oom(ac->module->ldb);
 				return LDB_ERR_OPERATIONS_ERROR;
 			}
 
-			/* Lazy option:  Delete and add the elements on all members */
-			msg->num_elements = 1;
-			msg->elements = search_el;
+			/* Add all the existing elements, marking as 'proposed for delete' by setting .add = false */
+			for (i=0; i < search_el->num_values; i++) {
+				merged_list = talloc_realloc(ares, merged_list, struct merge, size + 1);
+				merged_list[size].dn = ldb_dn_new(merged_list, ldb, (char *)search_el->values[i].data);
+				merged_list[size].add = false;
+				merged_list[size].ignore = false;
+				size++;
+			}
+
+			/* Add all the new replacement elements, marking as 'proposed for add' by setting .add = true */
+			for (i=0; i < ac2->el->num_values; i++) {
+				merged_list = talloc_realloc(ares, merged_list, struct merge, size + 1);
+				merged_list[size].dn = ldb_dn_new(merged_list, ldb, (char *)ac2->el->values[i].data);
+				merged_list[size].add = true;
+				merged_list[size].ignore = false;
+				size++;
+			}
+
+			/* Sort the list, so we can pick out an add and delete for the same DN, and eliminate them */
+			qsort(merged_list, size,
+			      sizeof(*merged_list),
+			      (comparison_fn_t)merge_cmp);
+
+			/* Now things are sorted, it is trivial to mark pairs of DNs as 'ignore' */
+			for (i=0; i + 1 < size; i++) {
+				if (ldb_dn_compare(merged_list[i].dn, 
+						   merged_list[i+1].dn) == 0 
+				    /* Fortunetly the sort also sorts 'add == false' first */
+				    && merged_list[i].add == false
+				    && merged_list[i+1].add == true) {
+
+					/* Mark as ignore, so we include neither in the actual operations */
+					merged_list[i].ignore = true;
+					merged_list[i+1].ignore = true;
+				}
+			}
+
+			/* Arrange to delete anything the search found that we don't re-add */
+			for (i=0; i < size; i++) {
+				if (merged_list[i].ignore == false
+				    && merged_list[i].add == false) {
+					ldb_msg_add_steal_string(msg, search_el->name, 
+								 ldb_dn_get_linearized(merged_list[i].dn));
+				}
+			}
+
+			/* The DN to set on the linked attributes is the original DN of the modify message */
 			msg->dn = ac->orig_req->op.mod.message->dn;
 			
 			ret = setup_modifies(ac->module->ldb, ac2, ac, msg, ares->message->dn, NULL);
@@ -313,13 +381,21 @@ static int linked_attributes_mod_replace_search_callback(struct ldb_context *ldb
 				return ret;
 			}
 
-			msg->elements = ac2->el;
+			/* Now add links for all the actually new elements */
+			for (i=0; i < size; i++) {
+				if (merged_list[i].ignore == false && merged_list[i].add == true) {
+					ldb_msg_add_steal_string(msg, search_el->name, 
+								 ldb_dn_get_linearized(merged_list[i].dn));
+				}
+			}
 
 			ret = setup_modifies(ac->module->ldb, ac2, ac, msg, NULL, ares->message->dn);
 			if (ret != LDB_SUCCESS) {
 				return ret;
 			}
 			
+			talloc_free(merged_list);
+
 		} else {
 			/* Looks like it doesn't exist, process like an 'add' */
 			struct ldb_message *msg = ldb_msg_new(ac);
@@ -411,6 +487,7 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			return LDB_ERR_OBJECT_CLASS_VIOLATION;			
 		}
 
+		/* Replace with new set of values */
 		if (((el->flags & LDB_FLAG_MOD_MASK) == LDB_FLAG_MOD_REPLACE)
 		    && el->num_values > 0) {
 			struct replace_context *ac2 = talloc(ac, struct replace_context);
@@ -461,6 +538,8 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			}
 			
 			continue;
+
+			/* Delete all values case */
 		} else if (((el->flags & LDB_FLAG_MOD_MASK) & (LDB_FLAG_MOD_DELETE|LDB_FLAG_MOD_REPLACE)) 
 			   && el->num_values == 0) {
 			const char **attrs = talloc_array(ac, const char *, 2);
@@ -508,7 +587,8 @@ static int linked_attributes_modify(struct ldb_module *module, struct ldb_reques
 			
 			continue;
 		}
-		/* Prepare the modify (mod element) on the targets */
+
+		/* Prepare the modify (mod element) on the targets, for a normal modify request */
 
 		/* For each value being moded, we need to setup the modify */
 		for (j=0; j < el->num_values; j++) {

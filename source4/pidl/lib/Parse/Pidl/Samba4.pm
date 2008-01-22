@@ -12,6 +12,7 @@ require Exporter;
 use Parse::Pidl::Util qw(has_property is_constant);
 use Parse::Pidl::NDR qw(GetNextLevel);
 use Parse::Pidl::Typelist qw(mapTypeName scalar_is_reference);
+use Parse::Pidl qw(fatal);
 use strict;
 
 use vars qw($VERSION);

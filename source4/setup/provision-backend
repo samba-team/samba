@@ -101,7 +101,7 @@ var backend_schema;
 var slapd_command;
 if (options["ldap-backend-type"] == "fedora-ds") {
 	mapping = "schema-map-fedora-ds-1.0";
-	backend_schema = "backend-schema.ldif";
+	backend_schema = "99_ad.ldif";
 	if (options["ldap-backend-port"] != undefined) {
 		message("Will listen on TCP port " + options["ldap-backend-port"] + "\n");
 		subobj.SERVERPORT="ServerPort = " + options["ldap-backend-port"];
@@ -114,9 +114,8 @@ if (options["ldap-backend-type"] == "fedora-ds") {
 
 	slapd_command = "(see documentation)";
 } else if (options["ldap-backend-type"] == "openldap") {
-	provision_ldapbase(subobj, message, paths);
 	mapping = "schema-map-openldap-2.3";
-	backend_schema = "99_ad.ldif";
+	backend_schema = "backend-schema.schema";
 	setup_file("slapd.conf", message, subobj.LDAPDIR + "/slapd.conf", subobj);
 	setup_file("modules.conf", message, subobj.LDAPDIR + "/modules.conf", subobj);
 	sys.mkdir(subobj.LDAPDIR + "/db", 0700);
@@ -151,10 +150,12 @@ if (options["ldap-backend-type"] == "fedora-ds") {
 	var res = ldb.search("(&(&(linkID=*)(!(linkID:1.2.840.113556.1.4.803:=1)))(objectclass=attributeSchema))", subobj.SCHEMADN, ldb.SCOPE_SUBTREE, attrs);
 	assert(res.error == 0);
 	var memberof_config = "";
+	var refint_attributes = "";
 	for (i=0; i < res.msgs.length; i++) {
 searchone(ldb, subobj.DOMAINDN, "(&(objectClass=computer)(cn=" + subobj.NETBIOSNAME + "))", "objectGUID");
 		var target = searchone(ldb, subobj.SCHEMADN, "(&(objectclass=attributeSchema)(linkID=" + (res.msgs[i].linkID + 1) + "))", "lDAPDisplayName");
 		if (target != undefined) {
+			refint_attributes = refint_attributes + " " + target + " " + res.msgs[i].lDAPDisplayName;
 			memberof_config = memberof_config + "overlay memberof
 memberof-dangling error
 memberof-refint TRUE
@@ -166,6 +167,12 @@ memberof-dangling-error 32
 ";
 		}
 	}
+
+	memberof_config = memberof_config + "
+overlay refint
+refint_attributes" + refint_attributes + "
+";
+	
 	ok = sys.file_save(subobj.LDAPDIR + "/memberof.conf", memberof_config);
 	if (!ok) {
 		message("failed to create file: " + f + "\n");

@@ -1,23 +1,15 @@
-dsdb/samdb/ldb_modules/tests/samba3sam.py
-lib/ldb/tests/python/ldap.py
-provisioning in LDAP mode
-SWAT
+dsdb/samdb/ldb_modules/tests/samba3sam.py: Fix remaining failing tests
+lib/ldb/tests/python/ldap.py: Fix remaining 3 FIXME's
+provisioning in LDAP mode(TEST_LDAP=yes PROVISION_PYTHON=yes make test)
 command-line vampire
 provisioning: combine some of the python dictionaries
-hierarchy
-DCE/RPC bindings
- - pidl:
-     Parse::Pidl::Samba::Python
-	 - wrap struct/bitmap/enum/union types
-	  - __ndr_pack__/__ndr_unpack__ members
-	 Parse::Pidl::Samba::NDR::Python
-	 - pidl generated client fns
-	  - one class per interface
-	  - AddOne()
-
- - scripting/bin/smbstatus.py
- - scripting/bin/winreg.py
+finish scripting/bin/smbstatus.py
 
 not important before making Python the default:
+- hierarchy (rename samr -> dcerpc.samr, misc -> samba.misc, etc)
 - scripting/python/samba/upgrade.py
 - install python modules into system
+- SWAT
+- __ndr_pack__/__ndr_unpack__ members for the NDR struct bindings
+- generate docstrings in DCE/RPC bindings
+- eliminate some variables from the python interface because they can be induced

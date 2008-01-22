@@ -320,9 +320,12 @@ then
 	plantest "samba.python" none $SUBUNITRUN samba.tests
 	plantest "provision.python" none $SUBUNITRUN samba.tests.provision
 	plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
+	plantest "samr.python" dc $SUBUNITRUN samba.tests.dcerpc.sam
 	plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
 	plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
-	plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py \$SERVER -U\$USERNAME%\$PASSWORD
+	plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho
+	plantest "winreg.python" dc $SUBUNITRUN samba.tests.dcerpc.registry
+	plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
 	plantest "blackbox.samba3dump" none $PYTHON scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
 	rm -rf $PREFIX/upgrade
 	plantest "blackbox.upgrade" none $PYTHON setup/upgrade.py $CONFIGURATION --targetdir=$PREFIX/upgrade ../testdata/samba3 ../testdata/samba3/smb.conf
