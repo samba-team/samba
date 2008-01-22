@@ -4,7 +4,6 @@
 VERSION = 0.0.1
 SO_VERSION = 0
 PC_FILE = tdb.pc
-DESCRIPTION = Trivial Database Library
 OBJ_FILES = \
 	common/tdb.o common/dump.o common/io.o common/lock.o \
 	common/open.o common/traverse.o common/freelist.o \
