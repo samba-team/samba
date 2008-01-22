@@ -210,7 +210,7 @@ NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
 						    ea_namelist_size);
 		}
 
-		if ((sizeret == -1) && (errno = ERANGE)) {
+		if ((sizeret == -1) && (errno == ERANGE)) {
 			ea_namelist_size *= 2;
 		}
 		else {
