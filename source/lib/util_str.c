@@ -394,7 +394,11 @@ BOOL strisnormal(const char *s, int case_default)
  NOTE: oldc and newc must be 7 bit characters
 **/
 
-void string_replace( pstring s, char oldc, char newc )
+/**
+ String replace.
+ NOTE: oldc and newc must be 7 bit characters
+**/
+void string_replace( char *s, char oldc, char newc )
 {
 	char *p;
 
@@ -406,8 +410,9 @@ void string_replace( pstring s, char oldc, char newc )
 	for (p = s; *p; p++) {
 		if (*p & 0x80) /* mb string - slow path. */
 			break;
-		if (*p == oldc)
+		if (*p == oldc) {
 			*p = newc;
+		}
 	}
 
 	if (!*p)
@@ -418,9 +423,18 @@ void string_replace( pstring s, char oldc, char newc )
 	/* With compose characters we must restart from the beginning. JRA. */
 	p = s;
 #endif
-	push_ucs2(NULL, tmpbuf, p, sizeof(tmpbuf), STR_TERMINATE);
-	string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
-	pull_ucs2(NULL, p, tmpbuf, -1, sizeof(tmpbuf), STR_TERMINATE);
+
+	while (*p) {
+		size_t c_size;
+		next_codepoint(p, &c_size);
+
+		if (c_size == 1) {
+			if (*p == oldc) {
+				*p = newc;
+			}
+		}
+		p += c_size;
+	}
 }
 
 /**
