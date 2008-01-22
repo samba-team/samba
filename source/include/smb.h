@@ -1946,6 +1946,5 @@ struct smb_extended_info {
 	NTTIME samba_gitcommitdate;
 	char   samba_version_string[SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH];
 };
-extern void samba_extended_info_version(struct smb_extended_info *);
 
 #endif /* _SMB_H */
