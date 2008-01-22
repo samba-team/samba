@@ -99,8 +99,6 @@ my $section_types = {
 
 		"OBJ_FILES"		=> "list",
 
-		"DESCRIPTION"		=> "string",
-
 		"PRIVATE_DEPENDENCIES"	=> "list",
 		"PUBLIC_DEPENDENCIES"	=> "list",
 
