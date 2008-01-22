@@ -33,6 +33,7 @@ AC_OUTPUT(librpc/ndr.pc)
 AC_OUTPUT(torture/torture.pc)
 AC_OUTPUT(auth/gensec/gensec.pc)
 AC_OUTPUT(param/samba-config.pc)
+AC_OUTPUT(librpc/dcerpc_samr.pc)
 
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.1.0,
 	[],

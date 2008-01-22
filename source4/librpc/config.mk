@@ -346,6 +346,7 @@ PUBLIC_DEPENDENCIES = dcerpc NDR_UNIXINFO
 
 [LIBRARY::dcerpc_samr]
 OBJ_FILES = gen_ndr/ndr_samr_c.o
+PC_FILE = dcerpc_samr.pc
 PUBLIC_DEPENDENCIES = dcerpc NDR_SAMR 
 VERSION = 0.0.1
 SO_VERSION = 0
