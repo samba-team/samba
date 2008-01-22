@@ -2797,7 +2797,14 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		case SMB_FS_OBJECTID_INFORMATION:
 		{
 			unsigned char objid[16];
+			struct smb_extended_info extended_info;
 			memcpy(pdata,create_volume_objectid(conn, objid),16);
+			samba_extended_info_version (&extended_info);
+			SIVAL(pdata,16,extended_info.samba_magic);
+			SIVAL(pdata,20,extended_info.samba_version);
+			SIVAL(pdata,24,extended_info.samba_subversion);
+			SBIG_UINT(pdata,28,extended_info.samba_gitcommitdate);
+			memcpy(pdata+36,extended_info.samba_version_string,28);
 			data_len = 64;
 			break;
 		}
