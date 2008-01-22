@@ -3034,8 +3034,7 @@ NTSTATUS create_file(connection_struct *conn,
 				goto fail;
 			}
 
-			SET_STAT_INVALID(sbuf);
-
+			ZERO_STRUCT(sbuf);
 			goto done;
 		}
 	}
