@@ -30,6 +30,7 @@ m4_include(nsswitch/nsstest.m4)
 AC_OUTPUT(lib/registry/registry.pc)
 AC_OUTPUT(librpc/dcerpc.pc)
 AC_OUTPUT(librpc/ndr.pc)
+AC_OUTPUT(torture/torture.pc)
 
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.1.0,
 	[],
