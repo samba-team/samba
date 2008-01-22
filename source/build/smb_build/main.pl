@@ -60,8 +60,12 @@ foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
 	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
-	$mkenv->PkgConfig($key, $OUTPUT) if $key->{TYPE} eq "LIBRARY" 
-		                    and defined($key->{VERSION});
+	if (defined($key->{PC_FILE})) {
+		push(@{$mkenv->{pc_files}}, $key->{PC_FILE});
+	} else {
+		$mkenv->PkgConfig($key, $OUTPUT) if $key->{TYPE} eq "LIBRARY" 
+								and defined($key->{VERSION});
+	} 
 	$mkenv->SharedLibrary($key) if ($key->{TYPE} eq "LIBRARY") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	if ($key->{TYPE} eq "LIBRARY" and 

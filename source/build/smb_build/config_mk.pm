@@ -91,6 +91,7 @@ my $section_types = {
 		"LIBRARY_REALNAME" => "string",
 
 		"PC_NAME" => "string",
+		"PC_FILE" => "string",
 		
 		"INIT_FUNCTION_TYPE"	=> "string",
 		"INIT_FUNCTION_SENTINEL" => "string",
