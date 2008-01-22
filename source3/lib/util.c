@@ -2182,7 +2182,7 @@ void dump_data_pw(const char *msg, const uchar * data, size_t len)
 
 const char *tab_depth(int level, int depth)
 {
-	if( DEBUGLVL(level) ) {
+	if( CHECK_DEBUGLVL(level) ) {
 		dbgtext("%*s", depth*4, "");
 	}
 	return "";
