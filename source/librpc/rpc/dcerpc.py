@@ -57,34 +57,8 @@ def _swig_setattr_nondynamic_method(set):
     return set_attr
 
 
+import credentials
 import param
-class Credentials(object):
-    thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
-    __repr__ = _swig_repr
-    def __init__(self, *args, **kwargs): 
-        _dcerpc.Credentials_swiginit(self,_dcerpc.new_Credentials(*args, **kwargs))
-    __swig_destroy__ = _dcerpc.delete_Credentials
-Credentials.get_username = new_instancemethod(_dcerpc.Credentials_get_username,None,Credentials)
-Credentials.set_username = new_instancemethod(_dcerpc.Credentials_set_username,None,Credentials)
-Credentials.get_password = new_instancemethod(_dcerpc.Credentials_get_password,None,Credentials)
-Credentials.set_password = new_instancemethod(_dcerpc.Credentials_set_password,None,Credentials)
-Credentials.get_domain = new_instancemethod(_dcerpc.Credentials_get_domain,None,Credentials)
-Credentials.set_domain = new_instancemethod(_dcerpc.Credentials_set_domain,None,Credentials)
-Credentials.get_realm = new_instancemethod(_dcerpc.Credentials_get_realm,None,Credentials)
-Credentials.set_realm = new_instancemethod(_dcerpc.Credentials_set_realm,None,Credentials)
-Credentials.parse_string = new_instancemethod(_dcerpc.Credentials_parse_string,None,Credentials)
-Credentials.get_bind_dn = new_instancemethod(_dcerpc.Credentials_get_bind_dn,None,Credentials)
-Credentials.set_bind_dn = new_instancemethod(_dcerpc.Credentials_set_bind_dn,None,Credentials)
-Credentials.get_workstation = new_instancemethod(_dcerpc.Credentials_get_workstation,None,Credentials)
-Credentials.set_workstation = new_instancemethod(_dcerpc.Credentials_set_workstation,None,Credentials)
-Credentials.guess = new_instancemethod(_dcerpc.Credentials_guess,None,Credentials)
-Credentials.is_anonymous = new_instancemethod(_dcerpc.Credentials_is_anonymous,None,Credentials)
-Credentials.get_nt_hash = new_instancemethod(_dcerpc.Credentials_get_nt_hash,None,Credentials)
-Credentials.authentication_requested = new_instancemethod(_dcerpc.Credentials_authentication_requested,None,Credentials)
-Credentials.wrong_password = new_instancemethod(_dcerpc.Credentials_wrong_password,None,Credentials)
-Credentials_swigregister = _dcerpc.Credentials_swigregister
-Credentials_swigregister(Credentials)
-
 pipe_connect = _dcerpc.pipe_connect
 dcerpc_server_name = _dcerpc.dcerpc_server_name
 
