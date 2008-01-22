@@ -30,7 +30,12 @@ function basic_tests(ldb, gc_ldb, base_dn, configuration_dn, schema_dn)
 	println("Running basic tests");
 
 	ldb.del("cn=ldaptestuser,cn=users," + base_dn);
-
+	ldb.del("cn=ldaptestuser2,cn=users," + base_dn);
+	ldb.del("cn=ldaptestuser3,cn=users," + base_dn);
+	ldb.del("cn=ldaptestuser4,cn=users," + base_dn);
+	ldb.del("cn=ldaptestuser5,cn=users," + base_dn);
+	ldb.del("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn);
+	ldb.del("CN=ldaptestcontainer2," + base_dn);
 	ldb.del("cn=ldaptestgroup,cn=users," + base_dn);
 
 	println("Testing group add with invalid member");

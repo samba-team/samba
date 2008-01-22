@@ -14,10 +14,7 @@ PUBLIC_HEADERS = param.h
 
 #################################
 # Start SUBSYSTEM share
-[LIBRARY::share]
-VERSION = 0.0.1
-SO_VERSION = 0
-DESCRIPTION = Services Configuration Library
+[SUBSYSTEM::share]
 PUBLIC_HEADERS = share.h
 PUBLIC_PROTO_HEADER = share_proto.h
 OBJ_FILES = share.o

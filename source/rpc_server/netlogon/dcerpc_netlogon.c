@@ -669,7 +669,8 @@ static NTSTATUS dcesrv_netr_DatabaseDeltas(struct dcesrv_call_state *dce_call, T
 static NTSTATUS dcesrv_netr_DatabaseSync(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DatabaseSync *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	/* win2k3 native mode returns  "NOT IMPLEMENTED" for this call */
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
@@ -741,7 +742,8 @@ static WERROR dcesrv_netr_LogonControl2(struct dcesrv_call_state *dce_call, TALL
 static NTSTATUS dcesrv_netr_DatabaseSync2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct netr_DatabaseSync2 *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	/* win2k3 native mode returns  "NOT IMPLEMENTED" for this call */
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
@@ -867,6 +869,9 @@ static NTSTATUS fill_domain_trust_info(TALLOC_CTX *mem_ctx,
 /* 
   netr_LogonGetDomainInfo
   this is called as part of the ADS domain logon procedure.
+
+  It has an important role in convaying details about the client, such
+  as Operating System, Version, Service Pack etc.
 */
 static NTSTATUS dcesrv_netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_LogonGetDomainInfo *r)

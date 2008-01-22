@@ -48,6 +48,10 @@ class SimpleLdb(unittest.TestCase):
         l = ldb.Ldb("foo.tdb")
         self.assertEquals(len(l.search()), 1)
 
+    def test_search_controls(self):
+        l = ldb.Ldb("foo.tdb")
+        self.assertEquals(len(l.search(controls=["paged_results:1:5"])), 1)
+
     def test_search_attrs(self):
         l = ldb.Ldb("foo.tdb")
         self.assertEquals(len(l.search(ldb.Dn(l, ""), ldb.SCOPE_SUBTREE, "(dc=*)", ["dc"])), 0)
@@ -61,6 +65,11 @@ class SimpleLdb(unittest.TestCase):
         l.set_opaque("my_opaque", l)
         self.assertTrue(l.get_opaque("my_opaque") is not None)
         self.assertEquals(None, l.get_opaque("unknown"))
+
+    def test_parse_control_strings(self):
+        l = ldb.Ldb("foo.tdb")
+        self.assertRaises(ldb.LdbError, l.parse_control_strings, ["foo", "bar"])
+        self.assertTrue(l.parse_control_strings(["paged_results:1:5"]) is not None)
 
     def test_search_scope_base(self):
         l = ldb.Ldb("foo.tdb")
@@ -162,54 +171,54 @@ class SimpleLdb(unittest.TestCase):
     def test_modify_delete(self):
         l = ldb.Ldb("foo.tdb")
         m = ldb.Message()
-        m.dn = ldb.Dn(l, "dc=modify")
+        m.dn = ldb.Dn(l, "dc=modifydelete")
         m["bla"] = ["1234"]
         l.add(m)
         rm = l.search(m.dn)[0]
         self.assertEquals(["1234"], list(rm["bla"]))
         try:
             m = ldb.Message()
-            m.dn = ldb.Dn(l, "dc=modify")
+            m.dn = ldb.Dn(l, "dc=modifydelete")
             m["bla"] = ldb.MessageElement([], ldb.CHANGETYPE_DELETE, "bla")
             l.modify(m)
             rm = l.search(m.dn)[0]
             self.assertEquals(1, len(rm))
         finally:
-            l.delete(ldb.Dn(l, "dc=modify"))
+            l.delete(ldb.Dn(l, "dc=modifydelete"))
 
     def test_modify_add(self):
         l = ldb.Ldb("foo.tdb")
         m = ldb.Message()
-        m.dn = ldb.Dn(l, "dc=modify")
+        m.dn = ldb.Dn(l, "dc=add")
         m["bla"] = ["1234"]
         l.add(m)
         try:
             m = ldb.Message()
-            m.dn = ldb.Dn(l, "dc=modify")
+            m.dn = ldb.Dn(l, "dc=add")
             m["bla"] = ldb.MessageElement(["456"], ldb.CHANGETYPE_ADD, "bla")
             l.modify(m)
             rm = l.search(m.dn)[0]
             self.assertEquals(2, len(rm))
             self.assertEquals(["1234", "456"], list(rm["bla"]))
         finally:
-            l.delete(ldb.Dn(l, "dc=modify"))
+            l.delete(ldb.Dn(l, "dc=add"))
 
     def test_modify_modify(self):
         l = ldb.Ldb("foo.tdb")
         m = ldb.Message()
-        m.dn = ldb.Dn(l, "dc=modify")
+        m.dn = ldb.Dn(l, "dc=modify2")
         m["bla"] = ["1234", "456"]
         l.add(m)
         try:
             m = ldb.Message()
-            m.dn = ldb.Dn(l, "dc=modify")
+            m.dn = ldb.Dn(l, "dc=modify2")
             m["bla"] = ldb.MessageElement(["456"], ldb.CHANGETYPE_MODIFY, "bla")
             l.modify(m)
             rm = l.search(m.dn)[0]
             self.assertEquals(2, len(rm))
             self.assertEquals(["1234"], list(rm["bla"]))
         finally:
-            l.delete(ldb.Dn(l, "dc=modify"))
+            l.delete(ldb.Dn(l, "dc=modify2"))
 
     def test_transaction_commit(self):
         l = ldb.Ldb("foo.tdb")
@@ -239,6 +248,10 @@ class SimpleLdb(unittest.TestCase):
 class DnTests(unittest.TestCase):
     def setUp(self):
         self.ldb = ldb.Ldb("foo.tdb")
+
+    def test_eq_str(self):
+        x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
+        self.assertEquals("dc=foo,bar=bloe", x)
 
     def test_str(self):
         x = ldb.Dn(self.ldb, "dc=foo,bar=bloe")
@@ -381,6 +394,22 @@ class MessageElementTests(unittest.TestCase):
     def test_create_iterable(self):
         x = ldb.MessageElement(["foo"])
         self.assertEquals(["foo"], list(x))
+
+    def test_get_item(self):
+        x = ldb.MessageElement(["foo", "bar"])
+        self.assertEquals("foo", x[0])
+        self.assertEquals("bar", x[1])
+        self.assertRaises(KeyError, lambda: x[-1])
+
+    def test_len(self):
+        x = ldb.MessageElement(["foo", "bar"])
+        self.assertEquals(2, len(x))
+
+    def test_eq(self):
+        x = ldb.MessageElement(["foo", "bar"])
+        self.assertEquals(["foo", "bar"], x)
+        x = ldb.MessageElement(["foo"])
+        self.assertEquals("foo", x)
 
 class ExampleModule:
     name = "example"

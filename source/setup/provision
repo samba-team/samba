@@ -123,7 +123,6 @@ for (r in options) {
 }
 
 var blank = (options["blank"] != undefined);
-var ldapbase = (options["ldap-base"] != undefined);
 var ldapbackend = (options["ldap-backend"] != undefined);
 var ldapmodule = (options["ldap-module"] != undefined);
 var partitions_only = (options["partitions-only"] != undefined);
@@ -141,7 +140,7 @@ if (ldapbackend) {
 		subobj.LDAPBACKEND = subobj.LDAPI_URI;
 	}
 	if (!ldapmodule) {
-		subobj.LDAPMODULE = "entryuuid";
+		subobj.LDAPMODULE = "normalise,entryuuid";
 		subobj.TDB_MODULES_LIST = "";
 	}
 	subobj.DOMAINDN_LDB = subobj.LDAPBACKEND;
@@ -161,10 +160,7 @@ var system_session = system_session();
 var creds = options.get_credentials();
 message("Provisioning for %s in realm %s\n", subobj.DOMAIN, subobj.REALM);
 message("Using administrator password: %s\n", subobj.ADMINPASS);
-if (ldapbase) {
-	provision_ldapbase(subobj, message, paths);
-	message("Please install the LDIF located in " + paths.ldap_basedn_ldif + ", " + paths.ldap_config_basedn_ldif + " and " + paths.ldap_schema_basedn_ldif + " into your LDAP server, and re-run with --ldap-backend=ldap://my.ldap.server\n");
-} else if (partitions_only) {
+if (partitions_only) {
 	provision_become_dc(subobj, message, false, paths, system_session);
 } else {
 	provision(subobj, message, blank, paths, system_session, creds, ldapbackend);
@@ -188,7 +184,7 @@ if (ldapbase) {
 		message("--ldap-backend='%s' \\\n", subobj.LDAPBACKEND);
 	}
 	if (ldapmodule) {
-		message("--ldap-mdoule='%s' \\\n", + subobj.LDAPMODULE);
+		message("--ldap-module='%s' \\\n", + subobj.LDAPMODULE);
 	}
 	message("--aci='" + subobj.ACI + "' \\\n")
 }

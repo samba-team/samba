@@ -95,3 +95,20 @@ typedef struct cli_credentials {
         bool wrong_password(void);
     }
 } cli_credentials;
+
+%{
+struct cli_credentials *cli_credentials_from_py_object(PyObject *py_obj)
+{
+    struct cli_credentials *ret;
+
+    if (py_obj == Py_None) {
+        return cli_credentials_init_anon(NULL);
+    }
+
+    if (SWIG_ConvertPtr(py_obj, (void *)&ret, SWIGTYPE_p_cli_credentials, 0 |  0 ) < 0) {
+        return NULL; 
+    }
+    return ret;
+}
+
+%}

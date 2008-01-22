@@ -543,9 +543,7 @@ clean::
 
 #######################
 # Start SUBSYSTEM HEIMDAL
-[LIBRARY::HEIMDAL]
-VERSION = 0.0.1
-SO_VERSION = 0
+[SUBSYSTEM::HEIMDAL]
 CFLAGS = -Iheimdal_build
 OBJ_FILES = ../heimdal/lib/vers/print_version.o
 PUBLIC_DEPENDENCIES = \

@@ -13,6 +13,32 @@ if test -z "$PYTHON"; then
 	AC_MSG_WARN([No python found])
 fi
 
+AC_DEFUN([TRY_LINK_PYTHON],
+[
+	if test $working_python = no; then
+		ac_save_LIBS="$LIBS"
+		ac_save_CFLAGS="$CFLAGS"
+		LIBS="$LIBS $1"
+		CFLAGS="$CFLAGS $2"
+
+		AC_TRY_LINK([
+				#include <Python.h>
+				#include <stdlib.h>
+			],[
+				Py_InitModule(NULL, NULL);
+			],[
+				PYTHON_LDFLAGS="$1"
+				PYTHON_CFLAGS="$2"
+				working_python=yes
+			])
+		LIBS="$ac_save_LIBS"
+		CFLAGS="$ac_save_CFLAGS"
+	fi
+])
+
+dnl assume no working python
+working_python=no
+
 if test -z "$PYTHON_VERSION"; then 
 	AC_PATH_PROGS([PYTHON_CONFIG], [python2.6-config python2.5-config python2.4-config python-config])
 else 
@@ -20,50 +46,28 @@ else
 fi
 
 if test -z "$PYTHON_CONFIG"; then
-	working_python=no
 	AC_MSG_WARN([No python-config found])
 else
-	working_python=yes
-	PYTHON_LDFLAGS=`$PYTHON_CONFIG --ldflags`
-	PYTHON_CFLAGS=`$PYTHON_CONFIG --cflags`
+	TRY_LINK_PYTHON([`$PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --includes`])
+	TRY_LINK_PYTHON([`$PYTHON_CONFIG --ldflags`], [`$PYTHON_CONFIG --cflags`])
 fi
 
-if test $working_python = no && test x$PYTHON != x
+if test x$PYTHON != x
 then
-	PYTHON_CFLAGS=`$PYTHON -c "from distutils import sysconfig; print '-I%s -I%s %s' % (sysconfig.get_python_inc(), sysconfig.get_python_inc(plat_specific=True), sysconfig.get_config_var('CFLAGS'))"`
-	PYTHON_LDFLAGS=`$PYTHON -c "from distutils import sysconfig; print '%s %s -lpython%s -L%s' % (sysconfig.get_config_var('LIBS'), sysconfig.get_config_var('SYSLIBS'), sysconfig.get_config_var('VERSION'), sysconfig.get_config_var('LIBPL'))"`
-	working_python=yes
+	DISTUTILS_CFLAGS=`$PYTHON -c "from distutils import sysconfig; print '-I%s -I%s %s' % (sysconfig.get_python_inc(), sysconfig.get_python_inc(plat_specific=True), sysconfig.get_config_var('CFLAGS'))"`
+	DISTUTILS_LDFLAGS=`$PYTHON -c "from distutils import sysconfig; print '%s %s -lpython%s -L%s' % (sysconfig.get_config_var('LIBS'), sysconfig.get_config_var('SYSLIBS'), sysconfig.get_config_var('VERSION'), sysconfig.get_config_var('LIBPL'))"`
+	TRY_LINK_PYTHON($DISTUTILS_LDFLAGS, $DISTUTILS_CFLAGS)
 fi
 
 SMB_EXT_LIB(EXT_LIB_PYTHON, [$PYTHON_LDFLAGS], [$PYTHON_CFLAGS])
 
 AC_MSG_CHECKING(working python module support)
-if test x$working_python = xyes
-then
-	ac_save_LIBS="$LIBS"
-	ac_save_CFLAGS="$CFLAGS"
-	LIBS="$LIBS $PYTHON_LDFLAGS"
-	CFLAGS="$CFLAGS $PYTHON_CFLAGS"
-
-	AC_TRY_LINK([
-			#include <Python.h>
-			#include <stdlib.h>
-		],[
-			Py_InitModule(NULL, NULL);
-		],[
-			SMB_ENABLE(EXT_LIB_PYTHON,YES)
-			SMB_ENABLE(smbpython,YES)
-			SMB_ENABLE(LIBPYTHON,YES)
-			AC_MSG_RESULT([yes])
-		],[
-			SMB_ENABLE(EXT_LIB_PYTHON,NO)
-			SMB_ENABLE(LIBPYTHON,NO)
-			SMB_ENABLE(smbpython,NO)
-			AC_MSG_RESULT([no])
-		])
-
-	LIBS="$ac_save_LIBS"
-	CFLAGS="$ac_save_CFLAGS"
+if test $working_python = yes; then
+	SMB_ENABLE(EXT_LIB_PYTHON,YES)
+	SMB_ENABLE(smbpython,YES)
+	SMB_ENABLE(LIBPYTHON,YES)
+	AC_MSG_RESULT([yes])
 else
 	AC_MSG_ERROR([Python not found. Please install Python 2.x and its development headers/libraries.])
 fi
+

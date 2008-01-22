@@ -7,9 +7,9 @@ package Parse::Pidl::Typelist;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(hasType getType mapTypeName scalar_is_reference expandAlias
+@EXPORT_OK = qw(hasType getType resolveType mapTypeName scalar_is_reference expandAlias
 			    mapScalarType addType typeIs is_scalar enum_type_fn
-				bitmap_type_fn mapType
+				bitmap_type_fn mapType typeHasBody
 );
 use vars qw($VERSION);
 $VERSION = '0.01';
@@ -59,6 +59,7 @@ my %aliases = (
 	"boolean8" => "uint8",
 	"boolean32" => "uint32",
 	"DWORD" => "uint32",
+	"uint" => "uint32",
 	"int" => "int32",
 	"WORD" => "uint16",
 	"char" => "uint8",
@@ -93,6 +94,20 @@ sub addType($)
 {
 	my $t = shift;
 	$types{$t->{NAME}} = $t;
+}
+
+sub resolveType($)
+{
+	my ($ctype) = @_;
+
+	if (not hasType($ctype)) {
+		# assume struct typedef
+		return { TYPE => "TYPEDEF", NAME => $ctype, DATA => { TYPE => "STRUCT" } };
+	} else {
+		return getType($ctype);
+	}
+
+	return $ctype;
 }
 
 sub getType($)
@@ -135,11 +150,12 @@ sub is_scalar($)
 	sub is_scalar($);
 	my $type = shift;
 
-	return 1 if (ref($type) eq "HASH" and $type->{TYPE} eq "SCALAR");
+	return 1 if (ref($type) eq "HASH" and 
+		($type->{TYPE} eq "SCALAR" or $type->{TYPE} eq "ENUM" or 
+		 $type->{TYPE} eq "BITMAP"));
 
 	if (my $dt = getType($type)) {
-		return is_scalar($dt->{DATA}) if ($dt->{TYPE} eq "TYPEDEF" or 
-		                                  $dt->{TYPE} eq "DECLARE");
+		return is_scalar($dt->{DATA}) if ($dt->{TYPE} eq "TYPEDEF");
 		return 1 if ($dt->{TYPE} eq "SCALAR" or $dt->{TYPE} eq "ENUM" or 
 			         $dt->{TYPE} eq "BITMAP");
 	}
@@ -150,7 +166,7 @@ sub is_scalar($)
 sub scalar_is_reference($)
 {
 	my $name = shift;
-	
+
 	return 1 if (grep(/^$name$/, @reference_scalars));
 	return 0;
 }
@@ -208,13 +224,25 @@ sub bitmap_type_fn($)
 	return "uint32";
 }
 
+sub typeHasBody($)
+{
+	sub typeHasBody($);
+	my ($e) = @_;
+
+	if ($e->{TYPE} eq "TYPEDEF") {
+		return 0 unless(defined($e->{DATA}));
+		return typeHasBody($e->{DATA});
+	}
+
+	return defined($e->{ELEMENTS});
+}
+
 sub mapType($$)
 {
 	sub mapType($$);
 	my ($t, $n) = @_;
 
 	return mapType($t->{DATA}, $n) if ($t->{TYPE} eq "TYPEDEF");
-	return mapType($t->{DATA}, $n) if ($t->{TYPE} eq "DECLARE");
 	return mapScalarType($n) if ($t->{TYPE} eq "SCALAR");
 	return "enum $n" if ($t->{TYPE} eq "ENUM");
 	return "struct $n" if ($t->{TYPE} eq "STRUCT");
@@ -240,7 +268,7 @@ sub mapTypeName($)
 
 sub LoadIdl($)
 {
-	my $idl = shift;
+	my ($idl) = @_;
 
 	foreach my $x (@{$idl}) {
 		next if $x->{TYPE} ne "INTERFACE";
@@ -248,13 +276,17 @@ sub LoadIdl($)
 		foreach my $y (@{$x->{DATA}}) {
 			addType($y) if (
 				$y->{TYPE} eq "TYPEDEF" 
-			     or $y->{TYPE} eq "DECLARE" 
 		 		 or $y->{TYPE} eq "UNION"
 		 		 or $y->{TYPE} eq "STRUCT"
 		         or $y->{TYPE} eq "ENUM"
 		         or $y->{TYPE} eq "BITMAP");
 		}
 	}
+}
+
+sub GenerateTypeLib()
+{
+	return Parse::Pidl::Util::MyDumper(\%types);
 }
 
 RegisterScalars();

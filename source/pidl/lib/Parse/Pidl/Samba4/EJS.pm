@@ -8,13 +8,14 @@ package Parse::Pidl::Samba4::EJS;
 
 use Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(get_pointer_to get_value_of check_null_pointer fn_declare TypeFunctionName);
+@EXPORT_OK = qw(check_null_pointer fn_declare TypeFunctionName);
 
 use strict;
-use Parse::Pidl::Typelist;
+use Parse::Pidl::Typelist qw(typeHasBody);
+use Parse::Pidl::CUtil qw(get_pointer_to get_value_of);
 use Parse::Pidl::Util qw(has_property ParseExpr);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel);
-use Parse::Pidl::Samba4::NDR::Parser qw(GenerateStructEnv GenerateFunctionInEnv
+use Parse::Pidl::Samba4::Header qw(GenerateStructEnv GenerateFunctionInEnv
                                         GenerateFunctionOutEnv);
 
 use vars qw($VERSION);
@@ -52,30 +53,6 @@ sub deindent($)
 {
 	my ($self) = @_;
 	$self->{tabs} = substr($self->{tabs}, 0, -1);
-}
-
-sub get_pointer_to($)
-{
-	my $var_name = shift;
-	
-	if ($var_name =~ /^\*(.*)$/) {
-		return $1;
-	} elsif ($var_name =~ /^\&(.*)$/) {
-		return "&($var_name)";
-	} else {
-		return "&$var_name";
-	}
-}
-
-sub get_value_of($)
-{
-	my $var_name = shift;
-
-	if ($var_name =~ /^\&(.*)$/) {
-		return $1;
-	} else {
-		return "*$var_name";
-	}
 }
 
 #####################################################################
@@ -297,6 +274,7 @@ sub EjsUnionPull($$$)
 sub EjsEnumConstant($$)
 {
 	my ($self, $d) = @_;
+	return unless (defined($d->{ELEMENTS}));
 	my $v = 0;
 	foreach my $e (@{$d->{ELEMENTS}}) {
 		my $el = $e;
@@ -595,6 +573,7 @@ sub EjsEnumPush($$$)
 sub EjsBitmapPush($$$)
 {
 	my ($self, $d, $varname) = @_;
+	return unless (defined($d->{ELEMENTS}));
 	my $type_fn = $d->{BASE_TYPE};
 	# put the bitmap elements in the constants array
 	foreach my $e (@{$d->{ELEMENTS}}) {
@@ -733,6 +712,7 @@ sub EjsInterface($$$)
 	$self->pidl_hdr("\n");
 
 	foreach my $d (@{$interface->{TYPES}}) {
+		next unless (typeHasBody($d));
 		($needed->{TypeFunctionName("ejs_push", $d)}) && $self->EjsTypePushFunction($d, $d->{NAME});
 		($needed->{TypeFunctionName("ejs_pull", $d)}) && $self->EjsTypePullFunction($d, $d->{NAME});
 	}
@@ -846,8 +826,9 @@ sub NeededType($$$)
 
 	NeededType($t->{DATA}, $needed, $req) if ($t->{TYPE} eq "TYPEDEF");
 
-	return if (($t->{TYPE} ne "STRUCT") and 
-			   ($t->{TYPE} ne "UNION"));
+	return unless (($t->{TYPE} eq "STRUCT") or ($t->{TYPE} eq "UNION"));
+
+	return unless(typeHasBody($t));
 
 	foreach (@{$t->{ELEMENTS}}) {
 		next if (has_property($_, "subcontext")); #FIXME: Support subcontexts
@@ -883,7 +864,7 @@ sub TypeFunctionName($$)
 	my ($prefix, $t) = @_;
 
 	return "$prefix\_$t->{NAME}" if (ref($t) eq "HASH" and 
-			($t->{TYPE} eq "TYPEDEF" or $t->{TYPE} eq "DECLARE"));
+			$t->{TYPE} eq "TYPEDEF");
 	return "$prefix\_$t->{TYPE}_$t->{NAME}" if (ref($t) eq "HASH");
 	return "$prefix\_$t";
 }

@@ -13,8 +13,8 @@ import "netlogon.idl";
 ]
 interface winbind
 {
-	declare [switch_type(uint16)] union netr_LogonLevel;
-	declare [switch_type(uint16)] union netr_Validation;
+	typedef [switch_type(uint16)] union netr_LogonLevel netr_LogonLevel;
+	typedef [switch_type(uint16)] union netr_Validation netr_Validation;
 
 	/* a call to get runtime informations */
 	void winbind_information(/* TODO */);

@@ -647,6 +647,10 @@ static bool test_DatabaseSync(struct torture_context *tctx,
 			if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
 			    break;
 
+			/* Native mode servers don't do this */
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+				return true;
+			}
 			torture_assert_ntstatus_ok(tctx, status, "DatabaseSync");
 
 			if (!creds_client_check(creds, &r.out.return_authenticator.cred)) {
@@ -967,6 +971,11 @@ static bool test_DatabaseSync2(struct torture_context *tctx,
 			status = dcerpc_netr_DatabaseSync2(p, tctx, &r);
 			if (NT_STATUS_EQUAL(status, STATUS_MORE_ENTRIES))
 			    break;
+
+			/* Native mode servers don't do this */
+			if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_SUPPORTED)) {
+				return true;
+			}
 
 			torture_assert_ntstatus_ok(tctx, status, "DatabaseSync2");
 

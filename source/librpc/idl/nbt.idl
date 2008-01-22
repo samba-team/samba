@@ -418,7 +418,7 @@ interface nbt
 		uint16               lm20_token;
 	} nbt_netlogon_response_from_pdc2;
 
-	declare enum netr_SamDatabaseID;
+	typedef enum netr_SamDatabaseID netr_SamDatabaseID;
 
 	/* announce change to UAS or SAM */
 	typedef struct {
@@ -592,7 +592,7 @@ interface nbt
 	/* \MAILSLOT\BROWSE mailslot requests			*/
 	/* for details see http://ubiqx.org/cifs/Browsing.html  */
 	/********************************************************/
-	declare bitmap svcctl_ServerType;
+	typedef bitmap svcctl_ServerType svcctl_ServerType;
 
 	typedef [enum8bit] enum { 
 		HostAnnouncement 	= 1,

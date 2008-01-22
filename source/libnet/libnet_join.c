@@ -1064,7 +1064,7 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	} else {
 		const struct ldb_val *private_keytab;
-		const struct ldb_val *krb5_keytab;
+		const struct ldb_val *krb5_main_keytab;
 		const struct ldb_val *prior_secret;
 		const struct ldb_val *prior_modified_time;
 		int i;
@@ -1125,9 +1125,10 @@ static NTSTATUS libnet_Join_primary_domain(struct libnet_context *ctx,
 				return NT_STATUS_NO_MEMORY;
 			}
 		}
-		krb5_keytab = ldb_msg_find_ldb_val(msgs[0], "krb5Keytab");
-		if (krb5_keytab) {
-			rtn = samdb_msg_set_value(ldb, tmp_mem, msg, "krb5Keytab", krb5_keytab);
+		krb5_main_keytab = ldb_msg_find_ldb_val(msgs[0], "krb5Keytab");
+		if (krb5_main_keytab) {
+			rtn = samdb_msg_set_value(ldb, tmp_mem, msg,
+					"krb5Keytab", krb5_main_keytab);
 			if (rtn == -1) {
 				r->out.error_string = NULL;
 				talloc_free(tmp_mem);

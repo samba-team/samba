@@ -3,28 +3,24 @@ objectClass: top
 objectClass: organizationalUnit
 cn: Domain Controllers
 description: Default container for domain controllers
-instanceType: 4
-showInAdvancedViewOnly: FALSE
 systemFlags: 2348810240
 isCriticalSystemObject: TRUE
+showInAdvancedViewOnly: FALSE
 
 dn: CN=ForeignSecurityPrincipals,${DOMAINDN}
 objectClass: top
 objectClass: container
 cn: ForeignSecurityPrincipals
 description: Default container for security identifiers (SIDs) associated with objects from external, trusted domains
-instanceType: 4
-showInAdvancedViewOnly: FALSE
 systemFlags: 2348810240
 isCriticalSystemObject: TRUE
+showInAdvancedViewOnly: FALSE
 
 dn: CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 cn: System
 description: Builtin system settings
-instanceType: 4
-showInAdvancedViewOnly: TRUE
 systemFlags: 2348810240
 isCriticalSystemObject: TRUE
 
@@ -32,8 +28,6 @@ dn: CN=RID Manager$,CN=System,${DOMAINDN}
 objectclass: top
 objectclass: rIDManager
 cn: RID Manager$
-instanceType: 4
-showInAdvancedViewOnly: TRUE
 systemFlags: 2348810240
 isCriticalSystemObject: TRUE
 fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
@@ -43,23 +37,17 @@ dn: CN=DomainUpdates,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 cn: DomainUpdates
-instanceType: 4
-showInAdvancedViewOnly: TRUE
 
 dn: CN=Windows2003Update,CN=DomainUpdates,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 cn: Windows2003Update
-instanceType: 4
-showInAdvancedViewOnly: TRUE
 revision: 8
 
 dn: CN=Infrastructure,${DOMAINDN}
 objectclass: top
 objectclass: infrastructureUpdate
 cn: Infrastructure
-instanceType: 4
-showInAdvancedViewOnly: TRUE
 systemFlags: 2348810240
 isCriticalSystemObject: TRUE
 fSMORoleOwner: CN=NTDS Settings,CN=${NETBIOSNAME},CN=Servers,CN=${DEFAULTSITE},CN=Sites,${CONFIGDN}
@@ -68,8 +56,6 @@ dn: CN=Builtin,${DOMAINDN}
 objectClass: top
 objectClass: builtinDomain
 cn: Builtin
-instanceType: 4
-showInAdvancedViewOnly: FALSE
 forceLogoff: 9223372036854775808
 lockoutDuration: -18000000000
 lockOutObservationWindow: -18000000000
@@ -86,6 +72,7 @@ serverState: 1
 uASCompat: 1
 modifiedCount: 1
 isCriticalSystemObject: TRUE
+showInAdvancedViewOnly: FALSE
 
 dn: CN=Policies,CN=System,${DOMAINDN}
 objectClass: top

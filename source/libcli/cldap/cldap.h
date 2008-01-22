@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "libcli/util/asn_1.h"
+#include "lib/util/asn1.h"
 #include "librpc/gen_ndr/nbt.h"
 
 struct ldap_message;

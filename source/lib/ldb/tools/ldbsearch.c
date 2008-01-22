@@ -61,6 +61,7 @@ struct search_context {
 	int sort;
 	int num_stored;
 	struct ldb_message **store;
+	int refs_stored;
 	char **refs_store;
 
 	int entries;
@@ -87,15 +88,15 @@ static int store_message(struct ldb_message *msg, struct search_context *sctx) {
 
 static int store_referral(char *referral, struct search_context *sctx) {
 
-	sctx->refs_store = talloc_realloc(sctx, sctx->refs_store, char *, sctx->refs + 2);
+	sctx->refs_store = talloc_realloc(sctx, sctx->refs_store, char *, sctx->refs_stored + 2);
 	if (!sctx->refs_store) {
 		fprintf(stderr, "talloc_realloc failed while storing referrals\n");
 		return -1;
 	}
 
-	sctx->refs_store[sctx->refs] = talloc_move(sctx->refs_store, &referral);
-	sctx->refs++;
-	sctx->refs_store[sctx->refs] = NULL;
+	sctx->refs_store[sctx->refs_stored] = talloc_move(sctx->refs_store, &referral);
+	sctx->refs_stored++;
+	sctx->refs_store[sctx->refs_stored] = NULL;
 
 	return 0;
 }
@@ -199,6 +200,7 @@ static int do_search(struct ldb_context *ldb,
 
 	sctx->sort = options->sorted;
 	sctx->num_stored = 0;
+	sctx->refs_stored = 0;
 	sctx->store = NULL;
 	sctx->req_ctrls = ldb_parse_control_strings(ldb, sctx, (const char **)options->controls);
 	if (options->controls != NULL &&  sctx->req_ctrls== NULL) {
@@ -241,22 +243,18 @@ again:
 	if (sctx->pending)
 		goto again;
 
-	if (sctx->sort && sctx->num_stored != 0) {
+	if (sctx->sort && (sctx->num_stored != 0 || sctx->refs != 0)) {
 		int i;
 
-		ldb_qsort(sctx->store, ret, sizeof(struct ldb_message *),
-			  ldb, (ldb_qsort_cmp_fn_t)do_compare_msg);
-
-		if (ret != 0) {
-			fprintf(stderr, "An error occurred while sorting messages\n");
-			exit(1);
+		if (sctx->num_stored) {
+			ldb_qsort(sctx->store, sctx->num_stored, sizeof(struct ldb_message *),
+				  ldb, (ldb_qsort_cmp_fn_t)do_compare_msg);
 		}
-
 		for (i = 0; i < sctx->num_stored; i++) {
 			display_message(ldb, sctx->store[i], sctx);
 		}
 
-		for (i = 0; i < sctx->refs; i++) {
+		for (i = 0; i < sctx->refs_stored; i++) {
 			display_referral(sctx->refs_store[i], sctx);
 		}
 	}

@@ -134,7 +134,7 @@ int samdb_copy_template(struct ldb_context *ldb,
 	}
 	
 	/* pull the template record */
-	ret = ldb_search(templates_ldb, basedn, LDB_SCOPE_BASE, "(dn=*)", NULL, &res);	
+	ret = ldb_search(templates_ldb, basedn, LDB_SCOPE_BASE, "distinguishedName=*", NULL, &res);	
 	talloc_free(basedn);
 	if (ret != LDB_SUCCESS) {
 		*errstring = talloc_steal(msg, ldb_errstring(templates_ldb));

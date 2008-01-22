@@ -13,7 +13,7 @@ import "security.idl";
   helpstring("Local Security Authority")
 ] interface lsarpc
 {
-	declare bitmap security_secinfo;
+	typedef bitmap security_secinfo security_secinfo;
 
 	typedef [public,noejs] struct {
 		[value(2*strlen_m(string))] uint16 length;
@@ -138,9 +138,29 @@ import "security.idl";
 		uint32 unknown;
 	} lsa_AuditLogInfo;
 
+	typedef [v1_enum] enum {
+		LSA_AUDIT_POLICY_NONE=0,
+		LSA_AUDIT_POLICY_SUCCESS=1,
+		LSA_AUDIT_POLICY_FAILURE=2,
+		LSA_AUDIT_POLICY_ALL=(LSA_AUDIT_POLICY_SUCCESS|LSA_AUDIT_POLICY_FAILURE),
+		LSA_AUDIT_POLICY_CLEAR=4
+	} lsa_PolicyAuditPolicy;
+
+	typedef enum {
+		LSA_AUDIT_CATEGORY_SYSTEM = 0,
+		LSA_AUDIT_CATEGORY_LOGON = 1,
+		LSA_AUDIT_CATEGORY_FILE_AND_OBJECT_ACCESS = 2,
+		LSA_AUDIT_CATEGORY_USE_OF_USER_RIGHTS = 3,
+		LSA_AUDIT_CATEGORY_PROCCESS_TRACKING = 4,
+		LSA_AUDIT_CATEGORY_SECURITY_POLICY_CHANGES = 5,
+		LSA_AUDIT_CATEGORY_ACCOUNT_MANAGEMENT = 6,
+		LSA_AUDIT_CATEGORY_DIRECTORY_SERVICE_ACCESS = 7,	/* only in win2k/2k3 */
+		LSA_AUDIT_CATEGORY_ACCOUNT_LOGON = 8			/* only in win2k/2k3 */
+	} lsa_PolicyAuditEventType;
+
 	typedef struct {
 		uint32 auditing_mode;
-		[size_is(count)] uint32 *settings;
+		[size_is(count)] lsa_PolicyAuditPolicy *settings;
 		uint32 count;
 	} lsa_AuditEventsInfo;
 
@@ -214,7 +234,7 @@ import "security.idl";
 		LSA_POLICY_INFO_AUDIT_FULL_SET=10,
 		LSA_POLICY_INFO_AUDIT_FULL_QUERY=11,
 		LSA_POLICY_INFO_DNS=12
-	} lsaPolicyInfo;
+	} lsa_PolicyInfo;
 
 	typedef [switch_type(uint16)] union {
 		[case(LSA_POLICY_INFO_AUDIT_LOG)]        lsa_AuditLogInfo       audit_log;
@@ -233,13 +253,17 @@ import "security.idl";
 
 	NTSTATUS lsa_QueryInfoPolicy (
 		[in]                            policy_handle *handle,
-		[in]                            uint16 level,
+		[in]                            lsa_PolicyInfo level,
 		[out,unique,switch_is(level)]   lsa_PolicyInformation *info
 		);
 
 	/******************/
 	/* Function:       0x08 */
-	NTSTATUS lsa_SetInfoPolicy ();
+	NTSTATUS lsa_SetInfoPolicy (
+		[in]                            policy_handle *handle,
+		[in]                            lsa_PolicyInfo level,
+		[in,switch_is(level)]           lsa_PolicyInformation *info
+		);
 
 	/******************/
 	/* Function:       0x09 */
@@ -722,12 +746,16 @@ import "security.idl";
 
 	NTSTATUS lsa_QueryInfoPolicy2(
 		[in]                 policy_handle *handle,
-		[in]                     uint16 level,
+		[in]                     lsa_PolicyInfo level,
 		[out,unique,switch_is(level)]   lsa_PolicyInformation *info
 		);
 
 	/* Function 0x2f */
-	NTSTATUS lsa_SetInfoPolicy2();
+	NTSTATUS lsa_SetInfoPolicy2(
+		[in]                            policy_handle *handle,
+		[in]                            lsa_PolicyInfo level,
+		[in,switch_is(level)]           lsa_PolicyInformation *info
+		);
 
 	/**********************/
 	/* Function 0x30 */

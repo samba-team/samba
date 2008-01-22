@@ -9,13 +9,15 @@ package Parse::Pidl::Samba4::NDR::Parser;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT_OK = qw(check_null_pointer GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv NeededFunction NeededElement NeededType $res NeededInterface TypeFunctionName ParseElementPrint);
+@EXPORT_OK = qw(check_null_pointer NeededFunction NeededElement NeededType $res NeededInterface TypeFunctionName ParseElementPrint);
 
 use strict;
-use Parse::Pidl::Typelist qw(hasType getType mapTypeName);
+use Parse::Pidl::Typelist qw(hasType getType mapTypeName typeHasBody);
 use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid);
-use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred);
+use Parse::Pidl::CUtil qw(get_pointer_to get_value_of);
+use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
 use Parse::Pidl::Samba4 qw(is_intree choose_header);
+use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
 use Parse::Pidl qw(warning);
 
 use vars qw($VERSION);
@@ -76,42 +78,6 @@ sub has_fast_array($$)
 	return ($t->{NAME} eq "uint8") or ($t->{NAME} eq "string");
 }
 
-sub is_charset_array($$)
-{
-	my ($e,$l) = @_;
-
-	return 0 if ($l->{TYPE} ne "ARRAY");
-
-	my $nl = GetNextLevel($e,$l);
-
-	return 0 unless ($nl->{TYPE} eq "DATA");
-
-	return has_property($e, "charset");
-}
-
-sub get_pointer_to($)
-{
-	my $var_name = shift;
-	
-	if ($var_name =~ /^\*(.*)$/) {
-		return $1;
-	} elsif ($var_name =~ /^\&(.*)$/) {
-		return "&($var_name)";
-	} else {
-		return "&$var_name";
-	}
-}
-
-sub get_value_of($)
-{
-	my $var_name = shift;
-
-	if ($var_name =~ /^\&(.*)$/) {
-		return $1;
-	} else {
-		return "*$var_name";
-	}
-}
 
 ####################################
 # pidl() is our basic output routine
@@ -213,68 +179,6 @@ sub end_flags($$)
 		$self->deindent;
 		$self->pidl("}");
 	}
-}
-
-sub GenerateStructEnv($$)
-{
-	my ($x, $v) = @_;
-	my %env;
-
-	foreach my $e (@{$x->{ELEMENTS}}) {
-		$env{$e->{NAME}} = "$v->$e->{NAME}";
-	}
-
-	$env{"this"} = $v;
-
-	return \%env;
-}
-
-sub EnvSubstituteValue($$)
-{
-	my ($env,$s) = @_;
-
-	# Substitute the value() values in the env
-	foreach my $e (@{$s->{ELEMENTS}}) {
-		next unless (defined(my $v = has_property($e, "value")));
-		
-		$env->{$e->{NAME}} = ParseExpr($v, $env, $e);
-	}
-
-	return $env;
-}
-
-sub GenerateFunctionInEnv($;$)
-{
-	my ($fn, $base) = @_;
-	my %env;
-
-	$base = "r->" unless defined($base);
-
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		if (grep (/in/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = $base."in.$e->{NAME}";
-		}
-	}
-
-	return \%env;
-}
-
-sub GenerateFunctionOutEnv($;$)
-{
-	my ($fn, $base) = @_;
-	my %env;
-
-	$base = "r->" unless defined($base);
-
-	foreach my $e (@{$fn->{ELEMENTS}}) {
-		if (grep (/out/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = $base."out.$e->{NAME}";
-		} elsif (grep (/in/, @{$e->{DIRECTION}})) {
-			$env{$e->{NAME}} = $base."in.$e->{NAME}";
-		}
-	}
-
-	return \%env;
 }
 
 #####################################################################
@@ -2565,6 +2469,8 @@ sub ParseInterface($$$)
 
 	# Typedefs
 	foreach my $d (@{$interface->{TYPES}}) {
+		next unless(typeHasBody($d));
+
 		($needed->{TypeFunctionName("ndr_push", $d)}) && $self->ParseTypePushFunction($d, "r");
 		($needed->{TypeFunctionName("ndr_pull", $d)}) && $self->ParseTypePullFunction($d, "r");
 		($needed->{TypeFunctionName("ndr_print", $d)}) && $self->ParseTypePrintFunction($d, "r");
@@ -2708,6 +2614,7 @@ sub NeededType($$$)
 	NeededType($t->{DATA}, $needed, $req) if ($t->{TYPE} eq "TYPEDEF");
 
 	if ($t->{TYPE} eq "STRUCT" or $t->{TYPE} eq "UNION") {
+		return unless defined($t->{ELEMENTS});
 		for my $e (@{$t->{ELEMENTS}}) {
 			$e->{PARENT} = $t;
 			if (has_property($e, "compression")) { 
@@ -2745,7 +2652,7 @@ sub TypeFunctionName($$)
 	my ($prefix, $t) = @_;
 
 	return "$prefix\_$t->{NAME}" if (ref($t) eq "HASH" and 
-			($t->{TYPE} eq "TYPEDEF" or $t->{TYPE} eq "DECLARE"));
+			$t->{TYPE} eq "TYPEDEF");
 	return "$prefix\_$t->{TYPE}_$t->{NAME}" if (ref($t) eq "HASH");
 	return "$prefix\_$t";
 }

@@ -2910,6 +2910,9 @@ static NTSTATUS dcesrv_samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLO
 
 	ret = ldb_delete(a_state->sam_ctx, a_state->account_dn);
 	if (ret != 0) {
+		DEBUG(1, ("Failed to delete user: %s: %s\n", 
+			  ldb_dn_get_linearized(a_state->account_dn), 
+			  ldb_errstring(a_state->sam_ctx)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 

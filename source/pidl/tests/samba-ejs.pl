@@ -4,22 +4,13 @@
 use strict;
 use warnings;
 
-use Test::More tests => 17;
+use Test::More tests => 10;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
 use Parse::Pidl::Util qw(MyDumper);
-use Parse::Pidl::Samba4::EJS qw(get_pointer_to get_value_of check_null_pointer
+use Parse::Pidl::Samba4::EJS qw(check_null_pointer
         fn_declare TypeFunctionName);
-
-is("&foo", get_pointer_to("foo"));
-is("&(&foo)", get_pointer_to(get_pointer_to("foo")));
-is("*foo", get_pointer_to("**foo"));
-is("foo", get_pointer_to("*foo"));
-
-is("foo", get_value_of("&foo"));
-is("*foo", get_value_of("foo"));
-is("**foo", get_value_of("*foo"));
 
 my $ejs = new Parse::Pidl::Samba4::EJS();
 

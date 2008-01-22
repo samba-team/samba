@@ -170,7 +170,7 @@ function ldb_erase(info, ldb)
 	/* and the rest */
 	attrs = new Array("dn");
      	var basedn = "";
-     	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
+     	var res = ldb.search("(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
 	var i;
 	if (res.error != 0) {
 		ldb_delete(info, ldb);
@@ -180,7 +180,7 @@ function ldb_erase(info, ldb)
 		ldb.del(res.msgs[i].dn);
 	}
 
-     	var res = ldb.search("(&(|(objectclass=*)(dn=*))(!(dn=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
+     	var res = ldb.search("(&(|(objectclass=*)(distinguishedName=*))(!(distinguishedName=@BASEINFO)))", basedn, ldb.SCOPE_SUBTREE, attrs);
 	if (res.error != 0 || res.msgs.length != 0) {
 		ldb_delete(info, ldb);
 		return;
@@ -207,8 +207,8 @@ function ldb_erase_partitions(info, ldb, ldapbackend)
 		return;
 	}	
 	for (j=0; j<res.msgs[0].namingContexts.length; j++) {
-		var anything = "(|(objectclass=*)(dn=*))";
-		var attrs = new Array("dn");
+		var anything = "(|(objectclass=*)(distinguishedName=*))";
+		var attrs = new Array("distinguishedName");
 		var basedn = res.msgs[0].namingContexts[j];
 		var k;
 		var previous_remaining = 1;
@@ -398,9 +398,6 @@ function provision_default_paths(subobj)
 	paths.named_conf = lp.get("private dir") + "/named.conf";
 	paths.winsdb = "wins.ldb";
 	paths.ldapdir = lp.get("private dir") + "/ldap";
-	paths.ldap_basedn_ldif = paths.ldapdir + "/" + dnsdomain + ".ldif";
-	paths.ldap_config_basedn_ldif = paths.ldapdir + "/" + dnsdomain + "-config.ldif";
-	paths.ldap_schema_basedn_ldif = paths.ldapdir + "/" + dnsdomain + "-schema.ldif";
 
 	paths.s4_ldapi_socket = lp.get("private dir") + "/ldapi";
 	paths.phpldapadminconfig = lp.get("private dir") + "/phpldapadmin-config.php";
@@ -866,6 +863,12 @@ function provision_schema(subobj, message, tmp_schema_path, paths)
 	/* This will erase anything in the tmp db */
 	var samdb = open_ldb(info, tmp_schema_path, true);
 
+	message("Setting up sam.ldb attributes\n");
+	setup_add_ldif("provision_init.ldif", info, samdb, false);
+
+	message("Setting up sam.ldb rootDSE\n");
+	setup_add_ldif("provision_rootdse_add.ldif", info, samdb, false);
+
 	message("Adding schema container (permitted to fail)\n");
 	var add_ok = setup_add_ldif("provision_schema_basedn.ldif", info, samdb, true);
 	message("Modifying schema container\n");
@@ -932,34 +935,6 @@ function provision_dns(subobj, message, paths, session_info, credentials)
 		   subobj);
 
 	message("Please install the zone located in " + paths.dns + " into your DNS server.  A sample BIND configuration snippit is at " + paths.named_conf + "\n");
-}
-
-/* Write out a DNS zone file, from the info in the current database */
-function provision_ldapbase(subobj, message, paths)
-{
-	var ok = provision_fix_subobj(subobj, paths);
-	assert(ok);
-
-	message("Setting up LDAP base entry: " + subobj.DOMAINDN + " \n");
-	var rdns = split(",", subobj.DOMAINDN);
-	subobj.EXTENSIBLEOBJECT = "objectClass: extensibleObject";
-
-	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
-
-	sys.mkdir(paths.ldapdir, 0700);
-
-	setup_file("provision_basedn.ldif", 
-		   message, paths.ldap_basedn_ldif, 
-		   subobj);
-
-	setup_file("provision_configuration_basedn.ldif", 
-		   message, paths.ldap_config_basedn_ldif, 
-		   subobj);
-
-	setup_file("provision_schema_basedn.ldif", 
-		   message, paths.ldap_schema_basedn_ldif, 
-		   subobj);
-
 }
 
 
@@ -1038,14 +1013,13 @@ function provision_guess()
 	subobj.DOMAINDN_LDB = "users.ldb";
 	subobj.CONFIGDN_LDB = "configuration.ldb";
 	subobj.SCHEMADN_LDB = "schema.ldb";
-	subobj.DOMAINDN_MOD = "pdc_fsmo,password_hash";
-	subobj.CONFIGDN_MOD = "naming_fsmo";
-	subobj.SCHEMADN_MOD = "schema_fsmo";
+	subobj.DOMAINDN_MOD = "pdc_fsmo,password_hash,instancetype";
+	subobj.CONFIGDN_MOD = "naming_fsmo,instancetype";
+	subobj.SCHEMADN_MOD = "schema_fsmo,instancetype";
 	subobj.DOMAINDN_MOD2 = ",objectguid";
 	subobj.CONFIGDN_MOD2 = ",objectguid";
 	subobj.SCHEMADN_MOD2 = ",objectguid";
 
-	subobj.EXTENSIBLEOBJECT = "# no objectClass: extensibleObject for local ldb";
 	subobj.ACI		= "# no aci for local ldb";
 
 	return subobj;

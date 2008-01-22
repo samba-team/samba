@@ -18,7 +18,7 @@ import "lsa.idl", "samr.idl", "security.idl", "nbt.idl";
 
 interface netlogon
 {
-	declare bitmap samr_AcctFlags;
+	typedef bitmap samr_AcctFlags samr_AcctFlags;
 
 	/*****************/
 	/* Function 0x00 */
@@ -278,7 +278,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x05 */
 
-	declare enum netr_SchannelType;
+	typedef enum netr_SchannelType netr_SchannelType;
 
 	NTSTATUS netr_ServerAuthenticate(
 		[in,string,charset(UTF16)] uint16 *server_name,
@@ -306,7 +306,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x07 */
 
-	declare enum netr_SamDatabaseID;
+	typedef enum netr_SamDatabaseID netr_SamDatabaseID;
 
 	typedef struct {
 		[string,charset(UTF16)] uint16 *account_name;
