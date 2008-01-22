@@ -1936,4 +1936,16 @@ enum usershare_err {
 /* Different reasons for closing a file. */
 enum file_close_type {NORMAL_CLOSE=0,SHUTDOWN_CLOSE,ERROR_CLOSE};
 
+/* Used in SMB_FS_OBJECTID_INFORMATION requests.  Must be exactly 48 bytes. */
+#define SAMBA_EXTENDED_INFO_MAGIC 0x536d4261 /* "SmBa" */
+#define SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH 28
+struct smb_extended_info {
+	uint32 samba_magic;		/* Always SAMBA_EXTRA_INFO_MAGIC */
+	uint32 samba_version;		/* Major/Minor/Release/Revision */
+	uint32 samba_subversion;	/* Prerelease/RC/Vendor patch */
+	NTTIME samba_gitcommitdate;
+	char   samba_version_string[SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH];
+};
+extern void samba_extended_info_version(struct smb_extended_info *);
+
 #endif /* _SMB_H */
