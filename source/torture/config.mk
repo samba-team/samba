@@ -3,6 +3,7 @@
 DESCRIPTION = Samba torture (test) suite
 SO_VERSION = 0
 VERSION = 0.0.1
+PC_FILE = torture.pc
 PUBLIC_HEADERS = torture.h ui.h
 PUBLIC_PROTO_HEADER = proto.h
 OBJ_FILES = \
