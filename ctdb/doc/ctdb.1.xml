@@ -622,7 +622,8 @@ dbid:0x7bbbd26c name:passdb.tdb path:/var/ctdb/persistent/passdb.tdb.0 PERSISTEN
 
     <refsect2><title>dumpmemory</title>
       <para>
-        This is a debugging command. This command will make the ctdb daemon to write a fill memory allocation map to the log file.
+        This is a debugging command. This command will make the ctdb
+        daemon to write a fill memory allocation map to standard output.
       </para>
     </refsect2>
 

@@ -37,6 +37,34 @@ struct ctdb_control_state {
 
 
 /*
+  dump talloc memory hierarchy, returning it as a blob to the client
+ */
+static int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata)
+{
+	/* dump to a file, then send the file as a blob */
+	FILE *f;
+	long fsize;
+	f = tmpfile();
+	if (f == NULL) {
+		DEBUG(0,(__location__ " Unable to open tmpfile - %s\n", strerror(errno)));
+		return -1;
+	}
+	talloc_report_full(NULL, f);
+	fsize = ftell(f);
+	rewind(f);
+	outdata->dptr = talloc_size(outdata, fsize);
+	CTDB_NO_MEMORY(ctdb, outdata->dptr);
+	outdata->dsize = fread(outdata->dptr, 1, fsize, f);
+	fclose(f);
+	if (outdata->dsize != fsize) {
+		DEBUG(0,(__location__ " Unable to read tmpfile\n"));
+		return -1;
+	}
+	return 0;
+}
+
+
+/*
   process a control request
  */
 static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb, 
@@ -88,8 +116,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_DUMP_MEMORY: {
 		CHECK_CONTROL_DATA_SIZE(0);
-		talloc_report_full(ctdb, stdout);
-		return 0;
+		return ctdb_dump_memory(ctdb, outdata);
 	}
 
 	case CTDB_CONTROL_STATISTICS_RESET: {

@@ -1069,8 +1069,21 @@ static int control_attach(struct ctdb_context *ctdb, int argc, const char **argv
  */
 static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	return ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_DUMP_MEMORY,
-			    CTDB_CTRL_FLAG_NOREPLY, tdb_null, NULL, NULL, NULL, NULL, NULL);
+	TDB_DATA data;
+	int ret;
+	int32_t res;
+	char *errmsg;
+	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
+	ret = ctdb_control(ctdb, options.pnn, 0, CTDB_CONTROL_DUMP_MEMORY,
+			   0, tdb_null, tmp_ctx, &data, &res, NULL, &errmsg);
+	if (ret != 0 || res != 0) {
+		DEBUG(0,("Failed to dump memory - %s\n", errmsg));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	write(1, data.dptr, data.dsize);
+	talloc_free(tmp_ctx);
+	return 0;
 }
 
 static const struct {
@@ -1096,7 +1109,7 @@ static const struct {
 	{ "setdebug",        control_setdebug,          true,  "set debug level",                      "<debuglevel>" },
 	{ "getdebug",        control_getdebug,          true,  "get debug level" },
 	{ "attach",          control_attach,            true,  "attach to a database",                 "<dbname>" },
-	{ "dumpmemory",      control_dumpmemory,        true,  "dump memory map to logs" },
+	{ "dumpmemory",      control_dumpmemory,        true,  "dump memory map to stdout" },
 	{ "getpid",          control_getpid,            true,  "get ctdbd process ID" },
 	{ "disable",         control_disable,           true,  "disable a nodes public IP" },
 	{ "enable",          control_enable,            true,  "enable a nodes public IP" },
