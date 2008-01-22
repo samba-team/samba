@@ -4,6 +4,7 @@
 VERSION = 0.0.1
 SO_VERSION = 0
 DESCRIPTION = Network Data Representation Core Library
+PC_FILE = ndr.pc
 PUBLIC_HEADERS = ndr/libndr.h
 PUBLIC_PROTO_HEADER = ndr/libndr_proto.h
 OBJ_FILES = \
@@ -458,6 +459,7 @@ PUBLIC_HEADERS = gen_ndr/dcerpc.h gen_ndr/ndr_dcerpc.h
 [LIBRARY::dcerpc]
 VERSION = 0.0.1
 SO_VERSION = 0
+PC_FILE = dcerpc.pc
 DESCRIPTION = DCE/RPC client library
 PUBLIC_HEADERS = rpc/dcerpc.h \
 			gen_ndr/mgmt.h gen_ndr/ndr_mgmt.h gen_ndr/ndr_mgmt_c.h \
