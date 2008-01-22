@@ -84,7 +84,10 @@ void samba_extended_info_version(struct smb_extended_info *extended_info)
 	/* FIXME: samba_gitcommitdate should contain the git commit date. */
 	unix_to_nt_time(&extended_info->samba_gitcommitdate, time(NULL));
 
+	memset(extended_info->samba_version_string, 0,
+	       sizeof(extended_info->samba_version_string));
+
 	snprintf (extended_info->samba_version_string,
-		  SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH,
+		  sizeof(extended_info->samba_version_string),
 		  "%s", samba_version_string());
 }
