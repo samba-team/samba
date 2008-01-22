@@ -3,7 +3,6 @@
 [LIBRARY::LIBNDR]
 VERSION = 0.0.1
 SO_VERSION = 0
-DESCRIPTION = Network Data Representation Core Library
 PC_FILE = ndr.pc
 PUBLIC_HEADERS = ndr/libndr.h
 PUBLIC_PROTO_HEADER = ndr/libndr_proto.h
@@ -350,7 +349,6 @@ PC_FILE = dcerpc_samr.pc
 PUBLIC_DEPENDENCIES = dcerpc NDR_SAMR 
 VERSION = 0.0.1
 SO_VERSION = 0
-DESCRIPTION = DCE/RPC client library - SAMR
 
 [SUBSYSTEM::RPC_NDR_SPOOLSS]
 OBJ_FILES = gen_ndr/ndr_spoolss_c.o
@@ -461,7 +459,6 @@ PUBLIC_HEADERS = gen_ndr/dcerpc.h gen_ndr/ndr_dcerpc.h
 VERSION = 0.0.1
 SO_VERSION = 0
 PC_FILE = dcerpc.pc
-DESCRIPTION = DCE/RPC client library
 PUBLIC_HEADERS = rpc/dcerpc.h \
 			gen_ndr/mgmt.h gen_ndr/ndr_mgmt.h gen_ndr/ndr_mgmt_c.h \
 			gen_ndr/epmapper.h gen_ndr/ndr_epmapper.h gen_ndr/ndr_epmapper_c.h
