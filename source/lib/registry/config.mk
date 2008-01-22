@@ -18,6 +18,7 @@ clean::
 # Start SUBSYSTEM registry
 [LIBRARY::registry]
 VERSION = 0.0.1
+PC_FILE = registry.pc
 SO_VERSION = 0
 DESCRIPTION = Windows-style registry library
 OBJ_FILES = \
