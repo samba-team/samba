@@ -36,13 +36,14 @@
 #include "includes.h"
 #include "dynconfig.h"
 #include "librpc/rpc/dcerpc.h"
+#include "param/param.h"
 
 #undef strcpy
 
 %}
 
-%include "../../lib/talloc/talloc.i"
-%include "../../auth/credentials/credentials.i"
+%import "../../lib/talloc/talloc.i"
+%import "../../auth/credentials/credentials.i"
 
 %typemap(in,noblock=1, numinputs=0) struct dcerpc_pipe **OUT (struct dcerpc_pipe *temp_dcerpc_pipe) {
         $1 = &temp_dcerpc_pipe;
