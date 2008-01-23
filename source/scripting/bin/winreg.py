@@ -12,7 +12,8 @@ import optparse
 import samba.getopt as options
 
 parser = optparse.OptionParser("%s <BINDING> [path]" % sys.argv[0])
-parser.add_option_group(options.SambaOptions(parser))
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
 parser.add_option("--createkey", type="string", metavar="KEYNAME", 
         help="create a key")
 
@@ -25,7 +26,7 @@ if len(args) < 1:
 binding = args[0]
 
 print "Connecting to " + binding
-conn = winreg.winreg(binding, opts.configfile)
+conn = winreg.winreg(binding, sambaopts.get_loadparm())
 
 def list_values(key):
     (num_values, max_valnamelen, max_valbufsize) = conn.QueryInfoKey(key, winreg.String())[4:8]
