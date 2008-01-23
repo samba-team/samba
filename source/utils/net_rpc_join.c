@@ -114,7 +114,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
         uint32 acb_info = ACB_WSTRUST;
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|(lp_client_schannel() ? NETLOGON_NEG_SCHANNEL : 0);
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|(lp_client_schannel() ? NETLOGON_NEG_SCHANNEL : 0);
 	uint32 sec_channel_type;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 

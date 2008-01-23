@@ -238,7 +238,7 @@ NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
 
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uchar trust_password[16];
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS;
 	uint32 sec_channel_type = 0;
 
 	if (!secrets_fetch_trust_account_password(domain_name,

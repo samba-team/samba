@@ -568,7 +568,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		}
 
 		if (cmd_entry->pipe_idx == PI_NETLOGON) {
-			uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+			uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS;
 			uint32 sec_channel_type;
 			uchar trust_password[16];
 	

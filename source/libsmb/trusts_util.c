@@ -41,7 +41,7 @@ static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX
 	   already have valid creds. If not we must set them up. */
 
 	if (cli->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
-		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+		uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS;
 
 		result = rpccli_netlogon_setup_creds(cli, 
 					cli->cli->desthost, /* server name */

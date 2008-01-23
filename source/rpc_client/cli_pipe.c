@@ -2595,7 +2595,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state
 						const char *password,
 						NTSTATUS *perr)
 {
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 
@@ -2629,7 +2629,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
                                                 const char *domain,
 						NTSTATUS *perr)
 {
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 
