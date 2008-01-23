@@ -694,11 +694,15 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 
 	/* this is at least correct when domain is our domain,
 	 * which is the only case, when this is currently used: */
-	if ((machine_krb5_principal != NULL) &&
-	    (asprintf(machine_krb5_principal, "%s$@%s", account_name,
-		      domain->alt_name) == -1))
+	if (machine_krb5_principal != NULL)
 	{
-		return NT_STATUS_NO_MEMORY;
+		if (asprintf(machine_krb5_principal, "%s$@%s",
+			     account_name, domain->alt_name) == -1)
+		{
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		strupper_m(*machine_krb5_principal);
 	}
 
 	return NT_STATUS_OK;
