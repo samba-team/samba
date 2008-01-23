@@ -1054,44 +1054,7 @@ ssize_t read_socket_with_timeout(int fd,
 
 ssize_t read_data(int fd,char *buffer,size_t N, enum smb_read_errors *pre)
 {
-	ssize_t ret;
-	size_t total=0;
-	char addr[INET6_ADDRSTRLEN];
-
-	set_smb_read_error(pre,SMB_READ_OK);
-
-	while (total < N) {
-		ret = sys_read(fd,buffer + total,N - total);
-
-		if (ret == 0) {
-			DEBUG(10,("read_data: read of %d returned 0. "
-				"Error = %s\n",
-				(int)(N - total), strerror(errno) ));
-			set_smb_read_error(pre,SMB_READ_EOF);
-			return 0;
-		}
-
-		if (ret == -1) {
-			if (fd == get_client_fd()) {
-				/* Try and give an error message saying
-				 * what client failed. */
-				DEBUG(0,("read_data: read failure for %d "
-					"bytes to client %s. Error = %s\n",
-					(int)(N - total),
-					get_peer_addr(fd,addr,sizeof(addr)),
-					strerror(errno) ));
-			} else {
-				DEBUG(0,("read_data: read failure for %d. "
-					"Error = %s\n",
-					(int)(N - total),
-					strerror(errno) ));
-			}
-			set_smb_read_error(pre,SMB_READ_ERROR);
-			return -1;
-		}
-		total += ret;
-	}
-	return (ssize_t)total;
+	return read_socket_with_timeout(fd, buffer, N, N, 0, pre);
 }
 
 /****************************************************************************

@@ -155,16 +155,8 @@ static ssize_t read_packet_remainder(int fd,
 		return len;
 	}
 
-	if (timeout > 0) {
-		ret = read_socket_with_timeout(fd,
-						buffer,
-						len,
-						len,
-						timeout,
-						get_srv_read_error());
-	} else {
-		ret = read_data(fd, buffer, len, get_srv_read_error());
-	}
+	ret = read_socket_with_timeout(fd, buffer, len, len, timeout,
+				       get_srv_read_error());
 
 	if (ret != len) {
 		cond_set_smb_read_error(get_srv_read_error(),
@@ -206,19 +198,10 @@ static ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 
 	memcpy(writeX_header, lenbuf, sizeof(lenbuf));
 
-	if (timeout > 0) {
-		ret = read_socket_with_timeout(fd,
-					writeX_header + 4,
-					STANDARD_WRITE_AND_X_HEADER_SIZE,
-					STANDARD_WRITE_AND_X_HEADER_SIZE,
-					timeout,
-					get_srv_read_error());
-	} else {
-		ret = read_data(fd,
-				writeX_header+4,
-				STANDARD_WRITE_AND_X_HEADER_SIZE,
-				get_srv_read_error());
-	}
+	ret = read_socket_with_timeout(fd, writeX_header + 4,
+				       STANDARD_WRITE_AND_X_HEADER_SIZE,
+				       STANDARD_WRITE_AND_X_HEADER_SIZE,
+				       timeout,	get_srv_read_error());
 
 	if (ret != STANDARD_WRITE_AND_X_HEADER_SIZE) {
 		cond_set_smb_read_error(get_srv_read_error(),
