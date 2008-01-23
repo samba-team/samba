@@ -180,12 +180,8 @@ bool cli_receive_smb(struct cli_state *cli)
 
 ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len)
 {
-	if (cli->timeout > 0) {
-		return read_socket_with_timeout(cli->fd, buffer, len,
-						len, cli->timeout, &cli->smb_rw_error);
-	} else {
-		return read_data(cli->fd, buffer, len, &cli->smb_rw_error);
-	}
+	return read_socket_with_timeout(cli->fd, buffer, len, len,
+					cli->timeout, &cli->smb_rw_error);
 }
 
 /****************************************************************************
