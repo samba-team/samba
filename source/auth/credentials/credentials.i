@@ -51,7 +51,7 @@ typedef struct cli_credentials cli_credentials;
 typedef struct cli_credentials {
     %extend {
         cli_credentials(void) {
-            return cli_credentials_init(NULL);
+            return cli_credentials_init_anon(NULL);
         }
         /* username */
         const char *get_username(void);

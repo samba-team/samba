@@ -2527,7 +2527,7 @@ typedef struct cli_credentials cli_credentials;
 #include "librpc/gen_ndr/samr.h" /* for struct samr_Password */
 
 SWIGINTERN cli_credentials *new_cli_credentials(){
-            return cli_credentials_init(NULL);
+            return cli_credentials_init_anon(NULL);
         }
 
 SWIGINTERN swig_type_info*
