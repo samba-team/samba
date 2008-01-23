@@ -1126,12 +1126,7 @@ ssize_t read_smb_length_return_keepalive(int fd,
 	bool ok = false;
 
 	while (!ok) {
-		if (timeout > 0) {
-			ok = (read_socket_with_timeout(fd,inbuf,4,4,
-						timeout,pre) == 4);
-		} else {
-			ok = (read_data(fd,inbuf,4,pre) == 4);
-		}
+		ok = (read_socket_with_timeout(fd,inbuf,4,4,timeout,pre) == 4);
 		if (!ok) {
 			return -1;
 		}
@@ -1237,16 +1232,8 @@ ssize_t receive_smb_raw(int fd,
 			len = MIN(len,maxlen);
 		}
 
-		if (timeout > 0) {
-			ret = read_socket_with_timeout(fd,
-					buffer+4,
-					len,
-					len,
-					timeout,
-					pre);
-		} else {
-			ret = read_data(fd,buffer+4,len,pre);
-		}
+		ret = read_socket_with_timeout(fd, buffer+4, len, len, timeout,
+					       pre);
 
 		if (ret != len) {
 			cond_set_smb_read_error(pre,SMB_READ_ERROR);
