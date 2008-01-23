@@ -50,6 +50,7 @@ typedef struct loadparm_context {
     %extend {
         loadparm_context(TALLOC_CTX *mem_ctx) { return loadparm_init(mem_ctx); }
         bool load(const char *filename) { return lp_load($self, filename); }
+        bool load_default() { return lp_load_default($self); }
 #ifdef SWIGPYTHON
         int __len__() { return lp_numservices($self); }
         struct loadparm_service *__getitem__(const char *name) { return lp_service($self, name); }
