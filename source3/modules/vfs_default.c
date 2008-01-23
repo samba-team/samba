@@ -961,7 +961,6 @@ static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
 				   struct stream_struct **pstreams)
 {
 	SMB_STRUCT_STAT sbuf;
-	NTSTATUS status;
 	unsigned int num_streams = 0;
 	struct stream_struct *streams = NULL;
 	int ret;
