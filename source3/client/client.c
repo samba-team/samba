@@ -1528,6 +1528,92 @@ static int cmd_altname(void)
 }
 
 /****************************************************************************
+ Show all info we can get
+****************************************************************************/
+
+static int do_allinfo(const char *name)
+{
+	fstring altname;
+	struct timespec b_time, a_time, m_time, c_time;
+	SMB_OFF_T size;
+	uint16_t mode;
+	SMB_INO_T ino;
+	NTTIME tmp;
+	unsigned int num_streams;
+	struct stream_struct *streams;
+	unsigned int i;
+
+	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, altname))) {
+		d_printf("%s getting alt name for %s\n",
+			 cli_errstr(cli),name);
+		return false;
+	}
+	d_printf("altname: %s\n", altname);
+
+	if (!cli_qpathinfo2(cli, name, &b_time, &a_time, &m_time, &c_time,
+			    &size, &mode, &ino)) {
+		d_printf("%s getting pathinfo for %s\n",
+			 cli_errstr(cli),name);
+		return false;
+	}
+
+	unix_timespec_to_nt_time(&tmp, b_time);
+	d_printf("create_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+
+	unix_timespec_to_nt_time(&tmp, a_time);
+	d_printf("access_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+
+	unix_timespec_to_nt_time(&tmp, m_time);
+	d_printf("write_time:     %s\n", nt_time_string(talloc_tos(), tmp));
+
+	unix_timespec_to_nt_time(&tmp, c_time);
+	d_printf("change_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+
+	if (!cli_qpathinfo_streams(cli, name, talloc_tos(), &num_streams,
+				   &streams)) {
+		d_printf("%s getting streams for %s\n",
+			 cli_errstr(cli),name);
+		return false;
+	}
+
+	for (i=0; i<num_streams; i++) {
+		d_printf("stream: [%s], %lld bytes\n", streams[i].name,
+			 (unsigned long long)streams[i].size);
+	}
+
+	return 0;
+}
+
+/****************************************************************************
+ Show all info we can get
+****************************************************************************/
+
+static int cmd_allinfo(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *name;
+	char *buf;
+
+	name = talloc_strdup(ctx, client_get_cur_dir());
+	if (!name) {
+		return 1;
+	}
+
+	if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+		d_printf("allinfo <file>\n");
+		return 1;
+	}
+	name = talloc_asprintf_append(name, buf);
+	if (!name) {
+		return 1;
+	}
+
+	do_allinfo(name);
+
+	return 0;
+}
+
+/****************************************************************************
  Put a single file.
 ****************************************************************************/
 
@@ -3839,6 +3925,8 @@ static struct {
 	char compl_args[2];      /* Completion argument info */
 } commands[] = {
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
+  {"allinfo",cmd_allinfo,"<file> show all available info",
+   {COMPL_NONE,COMPL_NONE}},
   {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
   {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},

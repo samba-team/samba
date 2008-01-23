@@ -613,7 +613,13 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 						     DS_RETURN_DNS_NAME,
 						     &domain_info);
 		if (W_ERROR_IS_OK(werr)) {
-			fstrcpy(tmp, domain_info->domain_controller_name);
+			tmp = talloc_strdup(
+				mem_ctx, domain_info->domain_controller_name);
+			if (tmp == NULL) {
+				DEBUG(0, ("talloc_strdup failed\n"));
+				talloc_destroy(mem_ctx);
+				return false;
+			}
 			if (strlen(domain->alt_name) == 0) {
 				fstrcpy(domain->alt_name,
 					domain_info->domain_name);
@@ -635,11 +641,10 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	/* And restore our original timeout. */
 	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
 
-	talloc_destroy(mem_ctx);
-
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(10, ("rpccli_netlogon_getanydcname failed: %s\n",
 			   dos_errstr(werr)));
+		talloc_destroy(mem_ctx);
 		return False;
 	}
 
@@ -653,6 +658,8 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	}
 
 	fstrcpy(dcname, p);
+
+	talloc_destroy(mem_ctx);
 
 	DEBUG(10, ("rpccli_netlogon_getanydcname returned %s\n", dcname));
 

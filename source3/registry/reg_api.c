@@ -183,7 +183,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 	/* Look up the table of registry I/O operations */
 
 	if ( !(key->hook = reghook_cache_find( key->name )) ) {
-		DEBUG(0,("reg_open_onelevel: Failed to assigned a "
+		DEBUG(0,("reg_open_onelevel: Failed to assign a "
 			 "REGISTRY_HOOK to [%s]\n", key->name ));
 		result = WERR_BADFILE;
 		goto done;
@@ -453,7 +453,6 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	TALLOC_CTX *mem_ctx;
 	char *path, *end;
 	WERROR err;
-	REGSUBKEY_CTR *subkeys;
 
 	if (!(mem_ctx = talloc_new(ctx))) return WERR_NOMEM;
 
@@ -516,11 +515,6 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	/*
 	 * Actually create the subkey
 	 */
-
-	if (!(subkeys = TALLOC_ZERO_P(mem_ctx, REGSUBKEY_CTR))) {
-		err = WERR_NOMEM;
-		goto done;
-	}
 
 	err = fill_subkey_cache(create_parent);
 	if (!W_ERROR_IS_OK(err)) goto done;

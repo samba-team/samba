@@ -1917,11 +1917,6 @@ int sys_fremovexattr (int filedes, const char *name)
 #endif
 }
 
-#if !defined(HAVE_SETXATTR)
-#define XATTR_CREATE  0x1       /* set value, fail if attr already exists */
-#define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
-#endif
-
 int sys_setxattr (const char *path, const char *name, const void *value, size_t size, int flags)
 {
 #if defined(HAVE_SETXATTR)
