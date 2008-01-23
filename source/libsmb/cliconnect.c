@@ -877,7 +877,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			DEBUG(3,("cli_session_setup_spnego: got a "
 				"bad server principal, trying to guess ...\n"));
 
-			host = strchr(cli->desthost, '.');
+			host = strchr_m(cli->desthost, '.');
 			if (host) {
 				machine = SMB_STRNDUP(cli->desthost,
 					host - cli->desthost);
