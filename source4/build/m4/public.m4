@@ -34,21 +34,20 @@ ENABLE = YES
 "
 ])
 
-dnl SMB_LIBRARY(name,description,obj_files,required_subsystems,version,so_version,cflags,ldflags,pcname)
+dnl SMB_LIBRARY(name,obj_files,required_subsystems,version,so_version,cflags,ldflags,pcname)
 AC_DEFUN([SMB_LIBRARY],
 [
 SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
 @<:@LIBRARY::$1@:>@
-DESCRIPTION = $2
-OBJ_FILES = $3
-PRIVATE_DEPENDENCIES = $4
-VERSION = $5
-SO_VERSION = $6 
-CFLAGS = $7
-LDFLAGS = $8
-PC_NAME = $9
+OBJ_FILES = $2
+PRIVATE_DEPENDENCIES = $3
+VERSION = $4
+SO_VERSION = $5 
+CFLAGS = $6
+LDFLAGS = $7
+PC_NAME = $8
 ENABLE = YES
 # End Library $1
 ###################################
