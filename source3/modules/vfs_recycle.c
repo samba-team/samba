@@ -269,6 +269,7 @@ static bool recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 	char *token;
 	char *tok_str;
 	bool ret = False;
+	char *saveptr;
 
 	mode = recycle_directory_mode(handle);
 
@@ -286,7 +287,8 @@ static bool recycle_create_dir(vfs_handle_struct *handle, const char *dname)
 	}
 
 	/* Create directory tree if neccessary */
-	for(token = strtok(tok_str, "/"); token; token = strtok(NULL, "/")) {
+	for(token = strtok_r(tok_str, "/", &saveptr); token;
+	    token = strtok_r(NULL, "/", &saveptr)) {
 		safe_strcat(new_dir, token, len);
 		if (recycle_directory_exist(handle, new_dir))
 			DEBUG(10, ("recycle: dir %s already exists\n", new_dir));

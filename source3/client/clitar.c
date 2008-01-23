@@ -513,6 +513,7 @@ static bool ensurepath(const char *fname)
 	char *partpath, *ffname;
 	const char *p=fname;
 	char *basehack;
+	char *saveptr;
 
 	DEBUG(5, ( "Ensurepath called with: %s\n", fname));
 
@@ -528,7 +529,7 @@ static bool ensurepath(const char *fname)
 
 	*partpath = 0;
 
-	/* fname copied to ffname so can strtok */
+	/* fname copied to ffname so can strtok_r */
 
 	safe_strcpy(ffname, fname, strlen(fname));
 
@@ -541,7 +542,7 @@ static bool ensurepath(const char *fname)
 		*basehack='\0';
 	}
 
-	p=strtok(ffname, "\\");
+	p=strtok_r(ffname, "\\", &saveptr);
 
 	while (p) {
 		safe_strcat(partpath, p, strlen(fname) + 1);
@@ -558,7 +559,7 @@ static bool ensurepath(const char *fname)
 		}
 
 		safe_strcat(partpath, "\\", strlen(fname) + 1);
-		p = strtok(NULL,"/\\");
+		p = strtok_r(NULL, "/\\", &saveptr);
 	}
 
 	SAFE_FREE(partpath);
