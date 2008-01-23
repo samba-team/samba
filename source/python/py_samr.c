@@ -463,7 +463,7 @@ static PyObject *samr_create_dom_user(PyObject *self, PyObject *args,
 	static char *kwlist[] = { "account_name", "acb_info", NULL };
 	char *account_name;
 	NTSTATUS ntstatus;
-	uint32 unknown = 0xe005000b; /* Access mask? */
+	uint32 acct_flags = 0;
 	uint32 user_rid;
 	PyObject *result = NULL;
 	TALLOC_CTX *mem_ctx;
@@ -479,9 +479,14 @@ static PyObject *samr_create_dom_user(PyObject *self, PyObject *args,
 		return NULL;
 	}
 
+	acct_flags = SAMR_GENERIC_READ | SAMR_GENERIC_WRITE |
+                SAMR_GENERIC_EXECUTE | SAMR_STANDARD_WRITEDAC |
+                SAMR_STANDARD_DELETE | SAMR_USER_SETPASS | SAMR_USER_GETATTR |
+                SAMR_USER_SETATTR;
+	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
 	ntstatus = rpccli_samr_create_dom_user(
 		domain_hnd->cli, mem_ctx, &domain_hnd->domain_pol,
-		account_name, acb_info, unknown, &user_pol, &user_rid);
+		account_name, acb_info, acct_flags, &user_pol, &user_rid);
 
 	if (!NT_STATUS_IS_OK(ntstatus)) {
 		PyErr_SetObject(samr_ntstatus, py_ntstatus_tuple(ntstatus));

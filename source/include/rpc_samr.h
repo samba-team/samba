@@ -146,6 +146,31 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CHGPASSWD_USER3   0x3F
 #define SAMR_CONNECT5          0x40
 
+/* SAMR account creation flags/permissions */
+#define SAMR_USER_GETNAME               0x1
+#define SAMR_USER_GETLOCALE             0x2
+#define SAMR_USER_GETLOCCOM             0x4
+#define SAMR_USER_GETLOGONINFO          0x8
+#define SAMR_USER_GETATTR               0x10
+#define SAMR_USER_SETATTR               0x20
+#define SAMR_USER_CHPASS                0x40
+#define SAMR_USER_SETPASS               0x80
+#define SAMR_USER_GETGROUPS             0x100
+#define SAMR_USER_GETMEMBERSHIP         0x200
+#define SAMR_USER_CHMEMBERSHIP          0x400
+#define SAMR_STANDARD_DELETE            0x10000
+#define SAMR_STANDARD_READCTRL          0x20000
+#define SAMR_STANDARD_WRITEDAC          0x40000
+#define SAMR_STANDARD_WRITEOWNER        0x80000
+#define SAMR_STANDARD_SYNC              0x100000
+#define SAMR_GENERIC_ACCESSSACL         0x800000
+#define SAMR_GENERIC_MAXALLOWED         0x2000000
+#define SAMR_GENERIC_ALL                0x10000000
+#define SAMR_GENERIC_EXECUTE            0x20000000
+#define SAMR_GENERIC_WRITE              0x40000000
+#define SAMR_GENERIC_READ               0x80000000
+
+
 typedef struct logon_hours_info
 {
 	uint32 max_len; /* normally 1260 bytes */
@@ -1557,7 +1582,7 @@ typedef struct q_samr_create_user_info
 	UNISTR2 uni_name;       /* unicode account name */
 
 	uint32 acb_info;      /* account control info */
-	uint32 access_mask;     /* 0xe005 00b0 */
+	uint32 acct_flags;     /* 0xe005 00b0 */
 
 } SAMR_Q_CREATE_USER;
 

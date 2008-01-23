@@ -581,7 +581,8 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	const char *acct_name;
 	uint32 acb_info;
-	uint32 unknown, user_rid;
+	uint32 acct_flags=0;
+	uint32 user_rid;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
@@ -611,10 +612,14 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	/* Create domain user */
 
 	acb_info = ACB_NORMAL;
-	unknown = 0xe005000b; /* No idea what this is - a permission mask? */
+        acct_flags = SAMR_GENERIC_READ | SAMR_GENERIC_WRITE |
+                SAMR_GENERIC_EXECUTE | SAMR_STANDARD_WRITEDAC |
+                SAMR_STANDARD_DELETE | SAMR_USER_SETPASS | SAMR_USER_GETATTR |
+                SAMR_USER_SETATTR;
+	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
 
 	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-					  acct_name, acb_info, unknown,
+					  acct_name, acb_info, acct_flags,
 					  &user_pol, &user_rid);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -5335,7 +5340,8 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	uint32 acb_info;
-	uint32 unknown, user_rid;
+	uint32 user_rid;
+	uint32 acct_flags=0;
 
 	if (argc != 2) {
 		d_printf("Usage: net rpc trustdom add <domain_name> <pw>\n");
@@ -5369,11 +5375,13 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 
 	/* Create trusting domain's account */
 	acb_info = ACB_NORMAL; 
-	unknown = 0xe00500b0; /* No idea what this is - a permission mask?
-	                         mimir: yes, most probably it is */
+        acct_flags = SAMR_GENERIC_READ | SAMR_GENERIC_WRITE |
+                SAMR_GENERIC_EXECUTE | SAMR_STANDARD_WRITEDAC |
+                SAMR_STANDARD_DELETE | SAMR_USER_SETPASS | SAMR_USER_GETATTR |
+                SAMR_USER_SETATTR;
 
 	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-					  acct_name, acb_info, unknown,
+					  acct_name, acb_info, acct_flags,
 					  &user_pol, &user_rid);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;

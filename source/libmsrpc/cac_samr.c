@@ -365,9 +365,7 @@ int cac_SamCreateUser( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 
 	POLICY_HND *user_out = NULL;
 	uint32 rid_out;
-
-   /**found in rpcclient/cmd_samr.c*/
-	uint32 unknown = 0xe005000b;
+	uint32 acct_flags=0;
 
 	if ( !hnd )
 		return CAC_FAILURE;
@@ -395,10 +393,16 @@ int cac_SamCreateUser( CacServerHandle * hnd, TALLOC_CTX * mem_ctx,
 		return CAC_FAILURE;
 	}
 
+	acct_flags = SAMR_GENERIC_READ | SAMR_GENERIC_WRITE |
+                SAMR_GENERIC_EXECUTE | SAMR_STANDARD_WRITEDAC |
+                SAMR_STANDARD_DELETE | SAMR_USER_SETPASS | SAMR_USER_GETATTR |
+                SAMR_USER_SETATTR;
+	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
+
 	hnd->status =
 		rpccli_samr_create_dom_user( pipe_hnd, mem_ctx,
 					     op->in.dom_hnd, op->in.name,
-					     op->in.acb_mask, unknown,
+					     op->in.acb_mask, acct_flags,
 					     user_out, &rid_out );
 
 	if ( !NT_STATUS_IS_OK( hnd->status ) )

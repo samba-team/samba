@@ -5182,7 +5182,7 @@ reads or writes a structure.
 void init_samr_q_create_user(SAMR_Q_CREATE_USER * q_u,
 			     POLICY_HND *pol,
 			     const char *name,
-			     uint32 acb_info, uint32 access_mask)
+			     uint32 acb_info, uint32 acct_flags)
 {
 	DEBUG(5, ("samr_init_samr_q_create_user\n"));
 
@@ -5192,7 +5192,7 @@ void init_samr_q_create_user(SAMR_Q_CREATE_USER * q_u,
 	init_uni_hdr(&q_u->hdr_name, &q_u->uni_name);
 
 	q_u->acb_info = acb_info;
-	q_u->access_mask = access_mask;
+	q_u->acct_flags = acct_flags;
 }
 
 /*******************************************************************
@@ -5223,7 +5223,7 @@ BOOL samr_io_q_create_user(const char *desc, SAMR_Q_CREATE_USER * q_u,
 		return False;
 	if(!prs_uint32("acb_info   ", ps, depth, &q_u->acb_info))
 		return False;
-	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
+	if(!prs_uint32("acct_flags", ps, depth, &q_u->acct_flags))
 		return False;
 
 	return True;
