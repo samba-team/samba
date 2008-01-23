@@ -41,7 +41,7 @@ extern struct winbindd_methods passdb_methods;
    individual winbindd_domain structures cannot be made.  Keep a copy of
    the domain name instead. */
 
-static struct winbindd_domain *_domain_list;
+static struct winbindd_domain *_domain_list = NULL;
 
 /**
    When was the last scan of trusted domains done?
