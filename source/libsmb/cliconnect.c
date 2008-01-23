@@ -892,6 +892,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			if (realm && *realm) {
 				if (asprintf(&principal, "%s$@%s",
 						machine, realm) < 0) {
+					SAFE_FREE(machine);
 					SAFE_FREE(realm);
 					return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 				}
