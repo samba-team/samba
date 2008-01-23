@@ -27,11 +27,20 @@ m4_include(lib/charset/config.m4)
 m4_include(lib/socket/config.m4)
 m4_include(nsswitch/nsstest.m4)
 
+AC_OUTPUT(lib/registry/registry.pc)
+AC_OUTPUT(librpc/dcerpc.pc)
+AC_OUTPUT(librpc/ndr.pc)
+AC_OUTPUT(torture/torture.pc)
+AC_OUTPUT(auth/gensec/gensec.pc)
+AC_OUTPUT(param/samba-config.pc)
+AC_OUTPUT(librpc/dcerpc_samr.pc)
+
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.1.0,
 	[],
 	[
 		m4_include(lib/talloc/libtalloc.m4)
 		SMB_INCLUDE_MK(lib/talloc/config.mk)
+		AC_OUTPUT(lib/talloc/talloc.pc)
 	]
 )
 
@@ -40,6 +49,7 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.0,
 	[
 		m4_include(lib/tdb/libtdb.m4)
 		SMB_INCLUDE_MK(lib/tdb/config.mk)
+		AC_OUTPUT(lib/tdb/tdb.pc)
 	]
 )
 
@@ -50,6 +60,7 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 		SMB_INCLUDE_MK(lib/ldb/ldb_ildap/config.mk)
 		SMB_INCLUDE_MK(lib/ldb/tools/config.mk)
 		SMB_SUBSYSTEM(ldb_map, [], [LIBLDB])
+		AC_OUTPUT(lib/ldb/ldb.pc)
 		define_ldb_modulesdir=no
 	],
 	[
