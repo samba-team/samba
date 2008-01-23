@@ -96,6 +96,17 @@ NET_API_STATUS NetGetJoinInformation(const char *server_name,
 				     uint16_t *name_type);
 
 /****************************************************************
+ NetGetJoinableOUs
+****************************************************************/
+
+NET_API_STATUS NetGetJoinableOUs(const char *server_name,
+				 const char *domain,
+				 const char *account,
+				 const char *password,
+				 uint32_t *ou_count,
+				 const char ***ous);
+
+/****************************************************************
  NetServerGetInfo
 ****************************************************************/
 

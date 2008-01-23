@@ -50,7 +50,7 @@ skipped="BASE-CHARSET BASE-DELAYWRITE BASE-TCONDEV"
 skipped="$skipped RAW-ACLS RAW-COMPOSITE RAW-CONTEXT"
 skipped="$skipped RAW-IOCTL"
 skipped="$skipped RAW-QFILEINFO RAW-QFSINFO RAW-SEARCH"
-skipped="$skipped RAW-SFILEINFO RAW-STREAMS"
+skipped="$skipped RAW-SFILEINFO"
 
 echo "WARNING: Skipping tests $skipped"
 

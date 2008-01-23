@@ -92,6 +92,9 @@ const struct unix_error_map unix_dos_nt_errmap[] = {
 #ifdef EWOULDBLOCK
 	{ EWOULDBLOCK, ERRDOS, 111, NT_STATUS_NETWORK_BUSY },
 #endif
+#ifdef ENOATTR
+	{ ENOATTR, ERRDOS, ERRbadfile, NT_STATUS_NOT_FOUND },
+#endif
 
 	{ 0, 0, 0, NT_STATUS_OK }
 };

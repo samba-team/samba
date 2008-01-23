@@ -265,13 +265,11 @@ static WERROR smbconf_set_secdesc(const char *key,
  */
 
 REGISTRY_OPS smbconf_reg_ops = {
-	smbconf_fetch_keys,
-	smbconf_fetch_values,
-	smbconf_store_keys,
-	smbconf_store_values,
-	smbconf_reg_access_check,
-	smbconf_get_secdesc,
-	smbconf_set_secdesc,
-	NULL,
-	NULL
+	.fetch_subkeys = smbconf_fetch_keys,
+	.fetch_values = smbconf_fetch_values,
+	.store_subkeys = smbconf_store_keys,
+	.store_values = smbconf_store_values,
+	.reg_access_check = smbconf_reg_access_check,
+	.get_secdesc = smbconf_get_secdesc,
+	.set_secdesc = smbconf_set_secdesc,
 };

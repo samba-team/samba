@@ -271,6 +271,9 @@ void send_nt_replies(connection_struct *conn,
 
 /****************************************************************************
  Is it an NTFS stream name ?
+ An NTFS file name is <path>.<extention>:<stream name>:<stream type>
+ $DATA can be used as both a stream name and a stream type. A missing stream
+ name or type implies $DATA.
 ****************************************************************************/
 
 bool is_ntfs_stream_name(const char *fname)

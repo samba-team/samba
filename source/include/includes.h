@@ -702,6 +702,7 @@ typedef char fstring[FSTRING_LEN];
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
 #include "librpc/gen_ndr/notify.h"
+#include "librpc/gen_ndr/xattr.h"
 #include "nt_printing.h"
 #include "idmap.h"
 #include "client.h"
@@ -1105,6 +1106,14 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
  */
 #if defined(HAVE_SYS_FS_VX_QUOTA_H)
 #define VXFS_QUOTA
+#endif
+
+#ifndef XATTR_CREATE
+#define XATTR_CREATE  0x1       /* set value, fail if attr already exists */
+#endif
+
+#ifndef XATTR_REPLACE
+#define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
 #endif
 
 #if defined(HAVE_KRB5)

@@ -513,6 +513,8 @@ typedef struct files_struct {
  	FAKE_FILE_HANDLE *fake_file_handle;
 
 	struct notify_change_buf *notify;
+
+	struct files_struct *base_fsp; /* placeholder for delete on close */
 } files_struct;
 
 #include "ntquotas.h"
@@ -572,6 +574,16 @@ struct trans_state {
 
 	size_t total_data;
 	char *data;
+};
+
+/*
+ * Info about an alternate data stream
+ */
+
+struct stream_struct {
+	SMB_OFF_T size;
+	SMB_OFF_T alloc_size;
+	char *name;
 };
 
 /* Include VFS stuff */
@@ -1359,6 +1371,9 @@ struct bitmap {
 #define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS     0x01000000
 #define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x02000000
 
+/* Private options for streams support */
+#define NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE 0x04000000
+
 /* Responses when opening a file. */
 #define FILE_WAS_SUPERSEDED 0
 #define FILE_WAS_OPENED 1
@@ -1889,6 +1904,8 @@ struct ea_list {
 #define SAMBA_POSIX_INHERITANCE_EA_NAME "user.SAMBA_PAI"
 /* EA to use for DOS attributes */
 #define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
+/* Prefix for DosStreams in the vfs_streams_xattr module */
+#define SAMBA_XATTR_DOSSTREAM_PREFIX "user.DosStream."
 
 #define UUID_SIZE 16
 
@@ -1918,5 +1935,16 @@ enum usershare_err {
 
 /* Different reasons for closing a file. */
 enum file_close_type {NORMAL_CLOSE=0,SHUTDOWN_CLOSE,ERROR_CLOSE};
+
+/* Used in SMB_FS_OBJECTID_INFORMATION requests.  Must be exactly 48 bytes. */
+#define SAMBA_EXTENDED_INFO_MAGIC 0x536d4261 /* "SmBa" */
+#define SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH 28
+struct smb_extended_info {
+	uint32 samba_magic;		/* Always SAMBA_EXTRA_INFO_MAGIC */
+	uint32 samba_version;		/* Major/Minor/Release/Revision */
+	uint32 samba_subversion;	/* Prerelease/RC/Vendor patch */
+	NTTIME samba_gitcommitdate;
+	char   samba_version_string[SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH];
+};
 
 #endif /* _SMB_H */

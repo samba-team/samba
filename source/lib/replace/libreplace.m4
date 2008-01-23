@@ -153,6 +153,26 @@ AC_HAVE_TYPE([struct sockaddr_in6], [
 #include <netinet/in.h>
 ])
 
+if test x"$ac_cv_type_struct_sockaddr_storage" = x"yes"; then
+AC_CHECK_MEMBER(struct sockaddr_storage.ss_family,
+                AC_DEFINE(HAVE_SS_FAMILY, 1, [Defined if struct sockaddr_storage has ss_family field]),,
+                [
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+		])
+
+if test x"$ac_cv_member_struct_sockaddr_storage_ss_family" != x"yes"; then
+AC_CHECK_MEMBER(struct sockaddr_storage.__ss_family,
+                AC_DEFINE(HAVE___SS_FAMILY, 1, [Defined if struct sockaddr_storage has __ss_family field]),,
+                [
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+		])
+fi
+fi
+
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)
 AC_CHECK_FUNCS(waitpid strlcpy strlcat initgroups memmove strdup)

@@ -156,6 +156,75 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
 }
 
 /****************************************************************************
+ Delete all streams
+****************************************************************************/
+
+static NTSTATUS delete_all_streams(connection_struct *conn, const char *fname)
+{
+	struct stream_struct *stream_info;
+	int i;
+	unsigned int num_streams;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+
+	status = SMB_VFS_STREAMINFO(conn, NULL, fname, talloc_tos(),
+				    &num_streams, &stream_info);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+		DEBUG(10, ("no streams around\n"));
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("SMB_VFS_STREAMINFO failed: %s\n",
+			   nt_errstr(status)));
+		goto fail;
+	}
+
+	DEBUG(10, ("delete_all_streams found %d streams\n",
+		   num_streams));
+
+	if (num_streams == 0) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	for (i=0; i<num_streams; i++) {
+		int res;
+		char *streamname;
+
+		if (strequal(stream_info[i].name, "::$DATA")) {
+			continue;
+		}
+
+		streamname = talloc_asprintf(talloc_tos(), "%s%s", fname,
+					     stream_info[i].name);
+
+		if (streamname == NULL) {
+			DEBUG(0, ("talloc_aprintf failed\n"));
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+
+		res = SMB_VFS_UNLINK(conn, streamname);
+
+		TALLOC_FREE(streamname);
+
+		if (res == -1) {
+			status = map_nt_error_from_unix(errno);
+			DEBUG(10, ("Could not delete stream %s: %s\n",
+				   streamname, strerror(errno)));
+			break;
+		}
+	}
+
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+/****************************************************************************
  Deal with removing a share mode on last close.
 ****************************************************************************/
 
@@ -304,6 +373,19 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		 */
 		goto done;
 	}
+
+	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
+	    && !is_ntfs_stream_name(fsp->fsp_name)) {
+
+		status = delete_all_streams(conn, fsp->fsp_name);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(5, ("delete_all_streams failed: %s\n",
+				  nt_errstr(status)));
+			goto done;
+		}
+	}
+
 
 	if (SMB_VFS_UNLINK(conn,fsp->fsp_name) != 0) {
 		/*
@@ -570,12 +652,37 @@ static NTSTATUS close_stat(files_struct *fsp)
   
 NTSTATUS close_file(files_struct *fsp, enum file_close_type close_type)
 {
+	NTSTATUS status;
+	struct files_struct *base_fsp = fsp->base_fsp;
+
 	if(fsp->is_directory) {
-		return close_directory(fsp, close_type);
+		status = close_directory(fsp, close_type);
 	} else if (fsp->is_stat) {
-		return close_stat(fsp);
+		status = close_stat(fsp);
 	} else if (fsp->fake_file_handle != NULL) {
-		return close_fake_file(fsp);
+		status = close_fake_file(fsp);
+	} else {
+		status = close_normal_file(fsp, close_type);
 	}
-	return close_normal_file(fsp, close_type);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if ((base_fsp != NULL) && (close_type != SHUTDOWN_CLOSE)) {
+
+		/*
+		 * fsp was a stream, the base fsp can't be a stream as well
+		 *
+		 * For SHUTDOWN_CLOSE this is not possible here, because
+		 * SHUTDOWN_CLOSE only happens from files.c which walks the
+		 * complete list of files. If we mess with more than one fsp
+		 * those loops will become confused.
+		 */
+
+		SMB_ASSERT(base_fsp->base_fsp == NULL);
+		close_file(base_fsp, close_type);
+	}
+
+	return status;
 }

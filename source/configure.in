@@ -707,7 +707,7 @@ dnl These have to be built static:
 default_static_modules="pdb_smbpasswd pdb_tdbsam rpc_lsa rpc_samr rpc_winreg rpc_initshutdown rpc_lsa_ds rpc_wkssvc rpc_svcctl2 rpc_ntsvcs rpc_net rpc_netdfs rpc_srvsvc2 rpc_spoolss rpc_eventlog2 auth_sam auth_unix auth_winbind auth_server auth_domain auth_builtin vfs_default nss_info_template"
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_syncops vfs_xattr_tdb"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_full_audit vfs_netatalk vfs_fake_perms vfs_default_quota vfs_readonly vfs_cap vfs_expand_msdfs vfs_shadow_copy vfs_shadow_copy2 charset_CP850 charset_CP437 auth_script vfs_readahead vfs_syncops vfs_xattr_tdb vfs_streams_xattr"
 
 if test "x$developer" = xyes; then
    default_static_modules="$default_static_modules rpc_rpcecho"
@@ -1864,7 +1864,7 @@ DSO_EXPORTS=""
 		*aix*) AC_DEFINE(AIX,1,[Whether the host os is aix])
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-G,-bexpall,-bbigtoc"
-			DYNEXP="-Wl,-brtl,-bexpall,-bbigtoc"
+			DYNEXP="-Wl,-brtl,-bexpfull,-bbigtoc"
 			PICFLAG="-O2"
 			# as AIX code is always position independent...
 			# .po will just create compile warnings, use po.o:
@@ -3049,15 +3049,6 @@ CPPFLAGS="$SAVE_CPPFLAGS"
 if test x"$samba_cv_HAVE_IFACE_IFREQ" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_IFREQ,1,[Whether iface ifreq is available])
 fi
-fi
-
-dnl AIX 5.3.0.0
-AC_TRY_COMPILE([#include <sys/socket.h>],[
-struct sockaddr_storage s; s.__ss_family = 0],
-samba_cv_have_aix_sockaddr_storage=yes,samba_cv_have_aix_sockaddr_storage=no)
-
-if test x"$samba_cv_have_aix_sockaddr_storage" = x"yes"; then
-   AC_DEFINE(HAVE_AIX_SOCKADDR_STORAGE, 1, [Whether struct sockaddr_storage has __sa_family])
 fi
 
 if test $iface = no; then
@@ -6506,6 +6497,8 @@ SMB_MODULE(vfs_irixacl, \$(VFS_IRIXACL_OBJ), "bin/irixacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_hpuxacl, \$(VFS_HPUXACL_OBJ), "bin/hpuxacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_tru64acl, \$(VFS_TRU64ACL_OBJ), "bin/tru64acl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_catia, \$(VFS_CATIA_OBJ), "bin/catia.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_streams_xattr, \$(VFS_STREAMS_XATTR_OBJ), "bin/streams_xattr.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_streams_depot, \$(VFS_STREAMS_DEPOT_OBJ), "bin/streams_depot.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_cacheprime, \$(VFS_CACHEPRIME_OBJ), "bin/cacheprime.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_prealloc, \$(VFS_PREALLOC_OBJ), "bin/prealloc.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_commit, \$(VFS_COMMIT_OBJ), "bin/commit.$SHLIBEXT", VFS)

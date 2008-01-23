@@ -2415,13 +2415,13 @@ void base64_decode_inplace(char *s)
 }
 
 /**
- * Encode a base64 string into a malloc()ed string caller to free.
+ * Encode a base64 string into a talloc()ed string caller to free.
  *
  * From SQUID: adopted from http://ftp.sunet.se/pub2/gnu/vm/base64-encode.c
  * with adjustments
  **/
 
-char *base64_encode_data_blob(DATA_BLOB data)
+char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
 {
 	int bits = 0;
 	int char_count = 0;
@@ -2434,7 +2434,7 @@ char *base64_encode_data_blob(DATA_BLOB data)
 	out_cnt = 0;
 	len = data.length;
 	output_len = data.length * 2;
-	result = TALLOC_ARRAY(talloc_tos(), char, output_len); /* get us plenty of space */
+	result = TALLOC_ARRAY(mem_ctx, char, output_len); /* get us plenty of space */
 	SMB_ASSERT(result != NULL);
 
 	while (len-- && out_cnt < (data.length * 2) - 5) {

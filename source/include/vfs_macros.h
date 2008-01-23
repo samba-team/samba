@@ -34,6 +34,7 @@
 #define SMB_VFS_SET_QUOTA(conn, qtype, id, qt) ((conn)->vfs.ops.set_quota((conn)->vfs.handles.set_quota, (qtype), (id), (qt)))
 #define SMB_VFS_GET_SHADOW_COPY_DATA(fsp,shadow_copy_data,labels) ((fsp)->conn->vfs.ops.get_shadow_copy_data((fsp)->conn->vfs.handles.get_shadow_copy_data,(fsp),(shadow_copy_data),(labels)))
 #define SMB_VFS_STATVFS(conn, path, statbuf) ((conn)->vfs.ops.statvfs((conn)->vfs.handles.statvfs, (path), (statbuf)))
+#define SMB_VFS_FS_CAPABILITIES(conn) ((conn)->vfs.ops.fs_capabilities((conn)->vfs.handles.fs_capabilities))
 
 /* Directory operations */
 #define SMB_VFS_OPENDIR(conn, fname, mask, attr) ((conn)->vfs.ops.opendir((conn)->vfs.handles.opendir, (fname), (mask), (attr)))
@@ -82,6 +83,7 @@
 #define SMB_VFS_NOTIFY_WATCH(conn, ctx, e, callback, private_data, handle_p) ((conn)->vfs.ops.notify_watch((conn)->vfs.handles.notify_watch, (ctx), (e), (callback), (private_data), (handle_p)))
 #define SMB_VFS_CHFLAGS(conn, path, flags) ((conn)->vfs.ops.chflags((conn)->vfs.handles.chflags, (path), (flags)))
 #define SMB_VFS_FILE_ID_CREATE(conn, dev, inode) ((conn)->vfs.ops.file_id_create((conn)->vfs.handles.file_id_create, (dev), (inode)))
+#define SMB_VFS_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams) ((conn)->vfs.ops.streaminfo((conn)->vfs.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
 
 /* NT ACL operations. */
 #define SMB_VFS_FGET_NT_ACL(fsp, security_info, ppdesc) ((fsp)->conn->vfs.ops.fget_nt_acl((fsp)->conn->vfs.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -158,6 +160,7 @@
 #define SMB_VFS_OPAQUE_SET_QUOTA(conn, qtype, id, qt) ((conn)->vfs_opaque.ops.set_quota((conn)->vfs_opaque.handles.set_quota, (qtype), (id), (qt)))
 #define SMB_VFS_OPAQUE_GET_SHADOW_COPY_DATA(fsp,shadow_copy_data,labels) ((fsp)->conn->vfs_opaque.ops.get_shadow_copy_data((fsp)->conn->vfs_opaque.handles.get_shadow_copy_data,(fsp),(shadow_copy_data),(labels)))
 #define SMB_VFS_OPAQUE_STATVFS(conn, path, statbuf) ((conn)->vfs_opaque.ops.statvfs((conn)->vfs_opaque.handles.statvfs, (path), (statbuf)))
+#define SMB_VFS_OPAQUE_FS_CAPABILITIES(conn) ((conn)->vfs_opaque.ops.fs_capabilities((conn)->vfs_opaque.handles.fs_capabilities))
 
 /* Directory operations */
 #define SMB_VFS_OPAQUE_OPENDIR(conn, fname, mask, attr) ((conn)->vfs_opaque.ops.opendir((conn)->vfs_opaque.handles.opendir, (fname), (mask), (attr)))
@@ -206,6 +209,7 @@
 #define SMB_VFS_OPAQUE_NOTIFY_WATCH(conn, ctx, e, callback, private_data, handle_p) ((conn)->vfs_opaque.ops.notify_watch((conn)->vfs_opaque.handles.notify_watch, (ctx), (e), (callback), (private_data), (handle_p)))
 #define SMB_VFS_OPAQUE_CHFLAGS(conn, path, flags) ((conn)->vfs_opaque.ops.chflags((conn)->vfs_opaque.handles.chflags, (path), (flags)))
 #define SMB_VFS_OPAQUE_FILE_ID_CREATE(conn, dev, inode) ((conn)->vfs.ops_opaque.file_id_create((conn)->vfs_opaque.handles.file_id_create, (dev), (inode)))
+#define SMB_VFS_OPAQUE_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams) ((conn)->vfs_opaque.ops.streaminfo((conn)->vfs_opaque.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
 
 /* NT ACL operations. */
 #define SMB_VFS_OPAQUE_FGET_NT_ACL(fsp, security_info, ppdesc) ((fsp)->conn->vfs_opaque.ops.fget_nt_acl((fsp)->conn->vfs_opaque.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -282,6 +286,7 @@
 #define SMB_VFS_NEXT_SET_QUOTA(handle, qtype, id, qt) ((handle)->vfs_next.ops.set_quota((handle)->vfs_next.handles.set_quota, (qtype), (id), (qt)))
 #define SMB_VFS_NEXT_GET_SHADOW_COPY_DATA(handle, fsp, shadow_copy_data ,labels) ((handle)->vfs_next.ops.get_shadow_copy_data((handle)->vfs_next.handles.get_shadow_copy_data,(fsp),(shadow_copy_data),(labels)))
 #define SMB_VFS_NEXT_STATVFS(handle, path, statbuf) ((handle)->vfs_next.ops.statvfs((handle)->vfs_next.handles.statvfs, (path), (statbuf)))
+#define SMB_VFS_NEXT_FS_CAPABILITIES(handle) ((handle)->vfs_next.ops.fs_capabilities((handle)->vfs_next.handles.fs_capabilities))
 
 /* Directory operations */
 #define SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr) ((handle)->vfs_next.ops.opendir((handle)->vfs_next.handles.opendir, (fname), (mask), (attr)))
@@ -331,6 +336,7 @@
 #define SMB_VFS_NEXT_NOTIFY_WATCH(conn, ctx, e, callback, private_data, handle_p) ((conn)->vfs_next.ops.notify_watch((conn)->vfs_next.handles.notify_watch, (ctx), (e), (callback), (private_data), (handle_p)))
 #define SMB_VFS_NEXT_CHFLAGS(handle, path, flags) ((handle)->vfs_next.ops.chflags((handle)->vfs_next.handles.chflags, (path), (flags)))
 #define SMB_VFS_NEXT_FILE_ID_CREATE(handle, dev, inode) ((handle)->vfs_next.ops.file_id_create((handle)->vfs_next.handles.file_id_create, (dev), (inode)))
+#define SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx, num_streams, streams) ((handle)->vfs.ops.streaminfo((handle)->vfs.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
 
 /* NT ACL operations. */
 #define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc) ((handle)->vfs_next.ops.fget_nt_acl((handle)->vfs_next.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
