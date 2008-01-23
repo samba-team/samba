@@ -480,7 +480,6 @@ void winbind_child_died(pid_t pid)
 	child->event.fd = 0;
 	child->event.flags = 0;
 	child->pid = 0;
-	SAFE_FREE(child->logfilename);
 
 	schedule_async_request(child);
 }
