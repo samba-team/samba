@@ -23,9 +23,25 @@ from credentials import Credentials
 class SambaOptions(optparse.OptionGroup):
     def __init__(self, parser):
         optparse.OptionGroup.__init__(self, parser, "Samba Common Options")
-        self.add_option("-s", "--configfile", type="string", metavar="FILE",
-                        help="Configuration file")
+        self.add_option("-s", "--configfile", action="callback",
+                        type=str, metavar="FILE", help="Configuration file", 
+                        callback=self._load_configfile)
+        self._configfile = None
 
+    def get_loadparm_path(self):
+        return self._configfile
+
+    def _load_configfile(self, option, opt_str, arg, parser):
+        self._configfile = arg
+
+    def get_loadparm(self):
+        import param
+        lp = param.LoadParm()
+        if self._configfile is None:
+            lp.load_default()
+        else:
+            lp.load(self._configfile)
+        return lp
 
 class VersionOptions(optparse.OptionGroup):
     def __init__(self, parser):

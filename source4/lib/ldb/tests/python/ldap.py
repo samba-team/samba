@@ -19,7 +19,8 @@ from samba import Ldb
 import param
 
 parser = optparse.OptionParser("ldap [options] <host>")
-parser.add_option_group(options.SambaOptions(parser))
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 # use command line creds if available
 credopts = options.CredentialsOptions(parser)
@@ -33,9 +34,7 @@ if len(args) < 1:
 
 host = args[0]
 
-lp = param.LoadParm()
-if opts.configfile:
-    lp.load(opts.configfile)
+lp = sambaopts.get_loadparm()
 
 def delete_force(ldb, dn):
     try:

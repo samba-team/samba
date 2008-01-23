@@ -37,7 +37,8 @@ from samba.provision import (provision,
                              provision_paths_from_lp)
 
 parser = optparse.OptionParser("provision [options]")
-parser.add_option_group(options.SambaOptions(parser))
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
@@ -111,9 +112,7 @@ if opts.realm is None or opts.domain is None:
 	sys.exit(1)
 
 # cope with an initially blank smb.conf 
-lp = param.LoadParm()
-if opts.configfile:
-    lp.load(opts.configfile)
+lp = sambaopts.get_loadparm()
 if opts.targetdir is not None:
     if not os.path.exists(opts.targetdir):
         os.mkdir(opts.targetdir)
@@ -127,7 +126,7 @@ if opts.aci is not None:
 	print "set ACI: %s" % opts.aci
 
 paths = provision_paths_from_lp(lp, opts.realm.lower())
-paths.smbconf = opts.configfile
+paths.smbconf = sambaopts.get_loadparm_path()
 
 if opts.ldap_backend:
 	if opts.ldap_backend == "ldapi":

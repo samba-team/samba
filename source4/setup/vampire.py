@@ -26,7 +26,8 @@ from auth import system_session
 import sys
 
 parser = optparse.OptionParser("vampire [options] <domain>")
-parser.add_option_group(options.SambaOptions(parser))
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
@@ -47,8 +48,6 @@ def vampire(domain, session_info, credentials, lp):
     ctx.samsync_ldb(vampire_ctx, machine_creds=machine_creds, 
                     session_info=session_info)
 
-lp = param.LoadParm()
-if opts.configfile:
-    lp.load(opts.configfile)
+lp = sambaopts.get_loadparm()
 vampire(args[0], session_info=system_session(), 
         credentials=credopts.get_credentials(), lp=lp)
