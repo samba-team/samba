@@ -759,6 +759,7 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 	if (!ok) {
 		char *auser;
 		char *user_list = NULL;
+		char *saveptr;
 
 		if ( session_userlist )
 			user_list = SMB_STRDUP(session_userlist);
@@ -768,8 +769,9 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 		if (!user_list)
 			return(False);
 
-		for (auser=strtok(user_list,LIST_SEP); !ok && auser;
-		     auser = strtok(NULL,LIST_SEP)) {
+		for (auser = strtok_r(user_list, LIST_SEP, &saveptr);
+		     !ok && auser;
+		     auser = strtok_r(NULL, LIST_SEP, &saveptr)) {
 			fstring user2;
 			fstrcpy(user2,auser);
 			if (!user_ok(user2,snum))
@@ -792,6 +794,7 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 		TALLOC_CTX *ctx = talloc_tos();
 		char *auser;
 		char *user_list = talloc_strdup(ctx, lp_username(snum));
+		char *saveptr;
 
 		if (!user_list) {
 			goto check_guest;
@@ -806,8 +809,9 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 			goto check_guest;
 		}
 
-		for (auser=strtok(user_list,LIST_SEP); auser && !ok;
-		     auser = strtok(NULL,LIST_SEP)) {
+		for (auser = strtok_r(user_list, LIST_SEP, &saveptr);
+		     auser && !ok;
+		     auser = strtok_r(NULL, LIST_SEP, &saveptr)) {
 			if (*auser == '@') {
 				auser = validate_group(auser+1,password,snum);
 				if (auser) {

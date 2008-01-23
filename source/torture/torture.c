@@ -890,6 +890,7 @@ static bool run_netbench(int client)
 	}
 
 	while (fgets(line, sizeof(line)-1, f)) {
+		char *saveptr;
 		line_count++;
 
 		line[strlen(line)-1] = 0;
@@ -899,9 +900,9 @@ static bool run_netbench(int client)
 		all_string_sub(line,"client1", cname, sizeof(line));
 
 		/* parse the command parameters */
-		params[0] = strtok(line," ");
+		params[0] = strtok_r(line, " ", &saveptr);
 		i = 0;
-		while (params[i]) params[++i] = strtok(NULL," ");
+		while (params[i]) params[++i] = strtok_r(NULL, " ", &saveptr);
 
 		params[i] = "";
 

@@ -4709,6 +4709,7 @@ static void lp_add_auto_services(char *str)
 	char *s;
 	char *p;
 	int homes;
+	char *saveptr;
 
 	if (!str)
 		return;
@@ -4719,7 +4720,8 @@ static void lp_add_auto_services(char *str)
 
 	homes = lp_servicenumber(HOMES_NAME);
 
-	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
+	for (p = strtok_r(s, LIST_SEP, &saveptr); p;
+	     p = strtok_r(NULL, LIST_SEP, &saveptr)) {
 		char *home;
 
 		if (lp_servicenumber(p) >= 0)
