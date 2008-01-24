@@ -1,3 +1,8 @@
+2008-01-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* ntlm/accept_sec_context.c: Avoid free-ing type1 message before
+	its allocated.
+	
 2008-01-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_ntlm.c: Test source name (and make the acceptor in ntlm gss
