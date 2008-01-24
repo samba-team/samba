@@ -67,6 +67,10 @@ class SubstituteVarTestCase(unittest.TestCase):
     def test_unknown_var(self):
         self.assertEquals("foo ${bla} gsff", 
                 samba.substitute_var("foo ${bla} gsff", {"bar": "bla"}))
+                
+    def test_check_all_substituted(self):
+    	check_all_substituted("nothing to see here")
+    	self.assertRaises(Exception, check_all_substituted, "Not subsituted: ${FOOBAR}")
 
 
 class LdbExtensionTests(TestCaseInTempDir):
