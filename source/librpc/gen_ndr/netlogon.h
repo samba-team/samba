@@ -8,15 +8,10 @@
 #ifndef _HEADER_netlogon
 #define _HEADER_netlogon
 
-#define MSV1_0_CLEARTEXT_PASSWORD_ALLOWED	( 0x002 )
-#define MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT	( 0x020 )
-#define MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT	( 0x800 )
 #define NETLOGON_NEG_ARCFOUR	( 0x00000004 )
 #define NETLOGON_NEG_128BIT	( 0x00004000 )
 #define NETLOGON_NEG_SCHANNEL	( 0x40000000 )
 #define DS_GFTI_UPDATE_TDO	( 0x1 )
-;
-
 struct netr_UasInfo {
 	const char *account_name;/* [unique,charset(UTF16)] */
 	uint32_t priv;
@@ -46,6 +41,14 @@ struct netr_AcctLockStr {
 	uint16_t length;
 	uint16_t *bindata;/* [unique,length_is(length/2),size_is(size/2)] */
 };
+
+/* bitmap netr_LogonParameterControl */
+#define MSV1_0_CLEARTEXT_PASSWORD_ALLOWED ( 0x00000002 )
+#define MSV1_0_UPDATE_LOGON_STATISTICS ( 0x00000004 )
+#define MSV1_0_RETURN_USER_PARAMETERS ( 0x00000008 )
+#define MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT ( 0x00000020 )
+#define MSV1_0_RETURN_PROFILE_PATH ( 0x00000200 )
+#define MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT ( 0x00000800 )
 
 struct netr_IdentityInfo {
 	struct lsa_String domain_name;
@@ -80,11 +83,6 @@ union netr_LogonLevel {
 	struct netr_NetworkInfo *network;/* [unique,case(2)] */
 }/* [public,switch_type(uint16)] */;
 
-struct netr_GroupMembership {
-	uint32_t rid;
-	uint32_t attributes;
-}/* [public] */;
-
 struct netr_UserSessionKey {
 	uint8_t key[16];
 }/* [public,flag(LIBNDR_PRINT_ARRAY_HEX)] */;
@@ -105,8 +103,6 @@ struct netr_LMSessionKey {
 #define NETLOGON_RESOURCE_GROUPS ( 0x00000200 )
 #define NETLOGON_PROFILE_PATH_RETURNED ( 0x00000400 )
 #define NETLOGON_GRACE_LOGON ( 0x01000000 )
-
-;
 
 struct netr_SamBaseInfo {
 	NTTIME last_logon;
@@ -142,7 +138,7 @@ struct netr_SamInfo2 {
 
 struct netr_SidAttr {
 	struct dom_sid2 *sid;/* [unique] */
-	uint32_t attribute;
+	uint32_t attributes;
 };
 
 struct netr_SamInfo3 {
@@ -650,8 +646,6 @@ struct netr_Blob {
 #define DS_RETURN_DNS_NAME ( 0x40000000 )
 #define DS_RETURN_FLAT_NAME ( 0x80000000 )
 
-;
-
 enum netr_DsRGetDCNameInfo_AddressType
 #ifndef USE_UINT_ENUMS
  {
@@ -679,8 +673,6 @@ enum netr_DsRGetDCNameInfo_AddressType
 #define DS_DNS_CONTROLLER ( 0x20000000 )
 #define DS_DNS_DOMAIN ( 0x40000000 )
 #define DS_DNS_FOREST ( 0x80000000 )
-
-;
 
 struct netr_DsRGetDCNameInfo {
 	const char *dc_unc;/* [unique,charset(UTF16)] */
@@ -763,8 +755,6 @@ struct netr_DsRAddress {
 #define NETR_TRUST_FLAG_NATIVE ( 0x00000010 )
 #define NETR_TRUST_FLAG_INBOUND ( 0x00000020 )
 
-;
-
 enum netr_TrustType
 #ifndef USE_UINT_ENUMS
  {
@@ -790,8 +780,6 @@ enum netr_TrustType
 #define NETR_TRUST_ATTRIBUTE_CROSS_ORGANIZATION ( 0x00000010 )
 #define NETR_TRUST_ATTRIBUTE_WITHIN_FOREST ( 0x00000020 )
 #define NETR_TRUST_ATTRIBUTE_TREAT_AS_EXTERNAL ( 0x00000040 )
-
-;
 
 struct netr_DomainTrust {
 	const char *netbios_name;/* [unique,charset(UTF16)] */
