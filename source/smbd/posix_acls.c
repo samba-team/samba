@@ -3194,11 +3194,21 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 		if (fsp->is_directory) {
 			if (!(se->flags & SEC_ACE_FLAG_CONTAINER_INHERIT)) {
 				/* Doesn't apply to a directory - ignore. */
+				DEBUG(10,("append_parent_acl: directory %s "
+					"ignoring non container "
+					"inherit flags %u\n",
+					fsp->fsp_name,
+					(unsigned int)se->flags ));
 				continue;
 			}
 		} else {
 			if (!(se->flags & SEC_ACE_FLAG_OBJECT_INHERIT)) {
 				/* Doesn't apply to a file - ignore. */
+				DEBUG(10,("append_parent_acl: file %s "
+					"ignoring non object "
+					"inherit flags %u\n",
+					fsp->fsp_name,
+					(unsigned int)se->flags ));
 				continue;
 			}
 		}
@@ -3216,6 +3226,10 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 			}
 			if (k < psd->dacl->num_aces) {
 				/* SID matched. Ignore. */
+				DEBUG(10,("append_parent_acl: path %s "
+					"ignoring protected sid %s\n",
+					fsp->fsp_name,
+					sid_string_static(&se->trustee)));
 				continue;
 			}
 		}
