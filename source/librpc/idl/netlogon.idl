@@ -19,6 +19,7 @@ import "lsa.idl", "samr.idl", "security.idl", "nbt.idl";
 interface netlogon
 {
 	typedef bitmap samr_AcctFlags samr_AcctFlags;
+	typedef bitmap samr_GroupAttrs samr_GroupAttrs;
 
 	/*****************/
 	/* Function 0x00 */
@@ -86,13 +87,18 @@ interface netlogon
 		[size_is(size/2),length_is(length/2)] uint16 *bindata;
 	} netr_AcctLockStr;
 
-	const int MSV1_0_CLEARTEXT_PASSWORD_ALLOWED = 0x002;
-	const int MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT = 0x020;
-	const int MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT = 0x800;
+	typedef [public,bitmap32bit] bitmap {
+		MSV1_0_CLEARTEXT_PASSWORD_ALLOWED	= 0x00000002,
+		MSV1_0_UPDATE_LOGON_STATISTICS		= 0x00000004,
+		MSV1_0_RETURN_USER_PARAMETERS		= 0x00000008,
+		MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT	= 0x00000020,
+		MSV1_0_RETURN_PROFILE_PATH		= 0x00000200,
+		MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT	= 0x00000800
+	} netr_LogonParameterControl;
 
 	typedef struct {
 		lsa_String  domain_name;
-		uint32      parameter_control; /* see MSV1_0_* */
+		netr_LogonParameterControl parameter_control; /* see MSV1_0_* */
 		uint32      logon_id_low;
 		uint32      logon_id_high;
 		lsa_String  account_name;
@@ -125,11 +131,6 @@ interface netlogon
 		[case(5)] netr_PasswordInfo *password;
 		[case(6)] netr_NetworkInfo  *network;
 	} netr_LogonLevel;
-
-	typedef [public] struct {
-		uint32 rid;
-		uint32 attributes;
-	} netr_GroupMembership;
 
 	typedef [public,flag(NDR_PAHEX)] struct {
 		uint8 key[16];
@@ -187,7 +188,7 @@ interface netlogon
 
 	typedef struct {
 		dom_sid2 *sid;
-		uint32 attribute;
+		samr_GroupAttrs attributes;
 	} netr_SidAttr;
 
 	typedef [public] struct {

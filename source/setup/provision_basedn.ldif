@@ -6,5 +6,4 @@ objectClass: top
 objectClass: domain
 objectClass: domainDNS
 ${ACI}
-dc: ${RDN_DC}
 

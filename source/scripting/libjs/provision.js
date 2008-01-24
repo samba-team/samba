@@ -484,9 +484,6 @@ function provision_fix_subobj(subobj, paths)
 	subobj.ADMINPASS_B64   = ldb.encode(subobj.ADMINPASS);
 	subobj.DNSPASS_B64     = ldb.encode(subobj.DNSPASS);
 
-	var rdns = split(",", subobj.DOMAINDN);
-	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
-
 	subobj.SAM_LDB		= "tdb://" + paths.samdb;
 	subobj.SECRETS_KEYTAB	= paths.keytab;
 	subobj.DNS_KEYTAB	= paths.dns_keytab;
@@ -526,6 +523,10 @@ function provision_become_dc(subobj, message, erase, paths, session_info)
 
 	var ok = provision_fix_subobj(subobj, paths);
 	assert(ok);
+
+	if (subobj.BACKEND_MOD == undefined) {
+		subobj.BACKEND_MOD = "repl_meta_data";
+	}
 
 	info.subobj = subobj;
 	info.message = message;
@@ -613,9 +614,20 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	var lp = loadparm_init();
 	var sys = sys_init();
 	var info = new Object();
+	random_init(local);
 
 	var ok = provision_fix_subobj(subobj, paths);
 	assert(ok);
+
+	if (strlower(subobj.SERVERROLE) == strlower("domain controller")) {
+		if (subobj.BACKEND_MOD == undefined) {
+			subobj.BACKEND_MOD = "repl_meta_data";
+		}
+	} else {
+		if (subobj.BACKEND_MOD == undefined) {
+			subobj.BACKEND_MOD = "objectguid";
+		}
+	}
 
 	if (subobj.DOMAINGUID != undefined) {
 		subobj.DOMAINGUID_MOD = sprintf("replace: objectGUID\nobjectGUID: %s\n-", subobj.DOMAINGUID);
@@ -695,6 +707,20 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 	samdb = open_ldb(info, paths.samdb, false);
 
 	samdb.set_domain_sid(subobj.DOMAINSID);
+
+	if (strlower(subobj.SERVERROLE) == strlower("domain controller")) {
+		if (subobj.INVOCATIONID == undefined) {
+			subobj.INVOCATIONID = randguid();
+		}
+		samdb.set_ntds_invocationId(subobj.INVOCATIONID);
+		if (subobj.BACKEND_MOD == undefined) {
+			subobj.BACKEND_MOD = "repl_meta_data";
+		}
+	} else {
+		if (subobj.BACKEND_MOD == undefined) {
+			subobj.BACKEND_MOD = "objectguid";
+		}
+	}
 
 	var load_schema_ok = load_schema(subobj, message, samdb);
 	assert(load_schema_ok.is_ok);
@@ -961,7 +987,6 @@ function provision_guess()
 	subobj.VERSION      = version();
 	subobj.HOSTIP       = hostip();
 	subobj.DOMAINSID    = randsid();
-	subobj.INVOCATIONID = randguid();
 	subobj.POLICYGUID   = randguid();
 	subobj.KRBTGTPASS   = randpass(12);
 	subobj.MACHINEPASS  = randpass(12);
@@ -969,9 +994,6 @@ function provision_guess()
 	subobj.ADMINPASS    = randpass(12);
 	subobj.LDAPMANAGERPASS     = randpass(12);
 	subobj.DEFAULTSITE  = "Default-First-Site-Name";
-	subobj.NEWGUID      = randguid;
-	subobj.NTTIME       = nttime;
-	subobj.LDAPTIME     = ldaptime;
 	subobj.DATESTRING   = datestring;
 	subobj.ROOT         = findnss(nss.getpwnam, "root");
 	subobj.NOBODY       = findnss(nss.getpwnam, "nobody");
@@ -1016,9 +1038,6 @@ function provision_guess()
 	subobj.DOMAINDN_MOD = "pdc_fsmo,password_hash,instancetype";
 	subobj.CONFIGDN_MOD = "naming_fsmo,instancetype";
 	subobj.SCHEMADN_MOD = "schema_fsmo,instancetype";
-	subobj.DOMAINDN_MOD2 = ",objectguid";
-	subobj.CONFIGDN_MOD2 = ",objectguid";
-	subobj.SCHEMADN_MOD2 = ",objectguid";
 
 	subobj.ACI		= "# no aci for local ldb";
 
