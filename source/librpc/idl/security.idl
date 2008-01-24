@@ -230,16 +230,6 @@ interface security
 		SEC_PRIV_REMOTE_INTERACTIVE_LOGON  = 24
 	} sec_privilege;
 
-
-	/* a domain SID. Note that unlike Samba3 this contains a pointer,
-	   so you can't copy them using assignment */
-	typedef [public,gensize,noprint,noejs,nosize] struct {
-		uint8  sid_rev_num;             /**< SID revision number */
-		[range(0,15)] int8  num_auths;  /**< Number of sub-authorities */
-		uint8  id_auth[6];              /**< Identifier Authority */
-		uint32 sub_auths[num_auths];
-	} dom_sid;
-
 	typedef [bitmap8bit] bitmap {
 		SEC_ACE_FLAG_OBJECT_INHERIT		= 0x01,
 		SEC_ACE_FLAG_CONTAINER_INHERIT		= 0x02,

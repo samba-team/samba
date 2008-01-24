@@ -259,9 +259,6 @@ typedef struct dom_sid {
 	uint32 sub_auths[MAXSUBAUTHS];  
 } DOM_SID;
 
-#define dom_sid2 dom_sid
-#define dom_sid28 dom_sid
-
 enum id_mapping {
 	ID_UNKNOWN = 0,
 	ID_MAPPED,
@@ -296,7 +293,7 @@ typedef struct data_blob {
 extern const DATA_BLOB data_blob_null;
 
 #include "librpc/gen_ndr/misc.h"
-#include "librpc/ndr/security.h"
+#include "librpc/gen_ndr/security.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/dfs.h"
