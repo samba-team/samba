@@ -27,6 +27,7 @@
 #include "includes.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
+#include "lib/cmdline/credentials.h"
 typedef struct cli_credentials cli_credentials;
 %}
 
@@ -93,6 +94,8 @@ typedef struct cli_credentials {
         bool authentication_requested(void);
 
         bool wrong_password(void);
+
+        bool set_cmdline_callbacks();
     }
 } cli_credentials;
 
