@@ -114,7 +114,6 @@ _gss_ntlm_accept_sec_context
 	/* check if the mechs is allowed by remote service */
 	major_status = (*ctx->server->nsi_probe)(minor_status, ctx->ictx, NULL);
 	if (major_status) {
-	    heim_ntlm_free_type1(&type1);
 	    _gss_ntlm_delete_sec_context(minor_status, context_handle, NULL);
 	    return major_status;
 	}
