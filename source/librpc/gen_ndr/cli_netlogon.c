@@ -1183,24 +1183,29 @@ NTSTATUS rpccli_netr_NETRLOGONSETSERVICEBITS(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_NETRLOGONGETTRUSTRID(struct rpc_pipe_client *cli,
-					  TALLOC_CTX *mem_ctx,
-					  WERROR *werror)
+NTSTATUS rpccli_netr_LogonGetTrustRid(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      const char *server_name,
+				      const char *domain_name,
+				      uint32_t *rid,
+				      WERROR *werror)
 {
-	struct netr_NETRLOGONGETTRUSTRID r;
+	struct netr_LogonGetTrustRid r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.domain_name = domain_name;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONGETTRUSTRID, &r);
+		NDR_PRINT_IN_DEBUG(netr_LogonGetTrustRid, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
 				mem_ctx,
 				PI_NETLOGON,
 				&ndr_table_netlogon,
-				NDR_NETR_NETRLOGONGETTRUSTRID,
+				NDR_NETR_LOGONGETTRUSTRID,
 				&r);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1208,7 +1213,7 @@ NTSTATUS rpccli_netr_NETRLOGONGETTRUSTRID(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONGETTRUSTRID, &r);
+		NDR_PRINT_OUT_DEBUG(netr_LogonGetTrustRid, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -1216,6 +1221,7 @@ NTSTATUS rpccli_netr_NETRLOGONGETTRUSTRID(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*rid = *r.out.rid;
 
 	/* Return result */
 	if (werror) {
