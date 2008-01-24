@@ -797,11 +797,11 @@ static WERROR dcesrv_netr_NETRLOGONSETSERVICEBITS(struct dcesrv_call_state *dce_
 }
 
 
-/* 
-  netr_NETRLOGONGETTRUSTRID 
+/*
+  netr_LogonGetTrustRid
 */
-static WERROR dcesrv_netr_NETRLOGONGETTRUSTRID(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct netr_NETRLOGONGETTRUSTRID *r)
+static WERROR dcesrv_netr_LogonGetTrustRid(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct netr_LogonGetTrustRid *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
