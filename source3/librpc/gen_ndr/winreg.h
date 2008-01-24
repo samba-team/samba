@@ -8,8 +8,6 @@
 #ifndef _HEADER_winreg
 #define _HEADER_winreg
 
-;
-
 /* bitmap winreg_AccessMask */
 #define KEY_QUERY_VALUE ( 0x00001 )
 #define KEY_SET_VALUE ( 0x00002 )
@@ -19,8 +17,6 @@
 #define KEY_CREATE_LINK ( 0x00020 )
 #define KEY_WOW64_64KEY ( 0x00100 )
 #define KEY_WOW64_32KEY ( 0x00200 )
-
-;
 
 enum winreg_Type
 #ifndef USE_UINT_ENUMS

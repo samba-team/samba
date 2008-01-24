@@ -37,8 +37,6 @@ struct dfs_Info1 {
 #define DFS_VOLUME_STATE_STANDALONE ( DFS_VOLUME_FLAVOR_STANDALONE )
 #define DFS_VOLUME_STATE_AD_BLOB ( DFS_VOLUME_FLAVOR_AD_BLOB )
 
-;
-
 struct dfs_Info2 {
 	const char *path;/* [unique,charset(UTF16)] */
 	const char *comment;/* [unique,charset(UTF16)] */
@@ -50,8 +48,6 @@ struct dfs_Info2 {
 #define DFS_STORAGE_STATE_OFFLINE ( 1 )
 #define DFS_STORAGE_STATE_ONLINE ( 2 )
 #define DFS_STORAGE_STATE_ACTIVE ( 4 )
-
-;
 
 struct dfs_StorageInfo {
 	uint32_t state;
@@ -83,8 +79,6 @@ struct dfs_Info4 {
 #define DFS_PROPERTY_FLAG_SITE_COSTING ( 0x04 )
 #define DFS_PROPERTY_FLAG_TARGET_FAILBACK ( 0x08 )
 #define DFS_PROPERTY_FLAG_CLUSTER_ENABLED ( 0x10 )
-
-;
 
 struct dfs_Info5 {
 	const char *path;/* [unique,charset(UTF16)] */

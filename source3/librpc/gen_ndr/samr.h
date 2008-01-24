@@ -9,8 +9,6 @@
 #define _HEADER_samr
 
 #define SAMR_ENUM_USERS_MULTIPLIER	( 54 )
-;
-
 /* bitmap samr_AcctFlags */
 #define ACB_DISABLED ( 0x00000001 )
 #define ACB_HOMDIRREQ ( 0x00000002 )
@@ -32,8 +30,6 @@
 #define ACB_PW_EXPIRED ( 0x00020000 )
 #define ACB_NO_AUTH_DATA_REQD ( 0x00080000 )
 
-;
-
 /* bitmap samr_ConnectAccessMask */
 #define SAMR_ACCESS_CONNECT_TO_SERVER ( 0x00000001 )
 #define SAMR_ACCESS_SHUTDOWN_SERVER ( 0x00000002 )
@@ -41,8 +37,6 @@
 #define SAMR_ACCESS_CREATE_DOMAIN ( 0x00000008 )
 #define SAMR_ACCESS_ENUM_DOMAINS ( 0x00000010 )
 #define SAMR_ACCESS_OPEN_DOMAIN ( 0x00000020 )
-
-;
 
 /* bitmap samr_UserAccessMask */
 #define USER_ACCESS_GET_NAME_ETC ( 0x00000001 )
@@ -57,8 +51,6 @@
 #define USER_ACCESS_GET_GROUP_MEMBERSHIP ( 0x00000200 )
 #define USER_ACCESS_CHANGE_GROUP_MEMBERSHIP ( 0x00000400 )
 
-;
-
 /* bitmap samr_DomainAccessMask */
 #define DOMAIN_ACCESS_LOOKUP_INFO_1 ( 0x00000001 )
 #define DOMAIN_ACCESS_SET_INFO_1 ( 0x00000002 )
@@ -72,8 +64,6 @@
 #define DOMAIN_ACCESS_OPEN_ACCOUNT ( 0x00000200 )
 #define DOMAIN_ACCESS_SET_INFO_3 ( 0x00000400 )
 
-;
-
 /* bitmap samr_GroupAccessMask */
 #define GROUP_ACCESS_LOOKUP_INFO ( 0x00000001 )
 #define GROUP_ACCESS_SET_INFO ( 0x00000002 )
@@ -81,16 +71,12 @@
 #define GROUP_ACCESS_REMOVE_MEMBER ( 0x00000008 )
 #define GROUP_ACCESS_GET_MEMBERS ( 0x00000010 )
 
-;
-
 /* bitmap samr_AliasAccessMask */
 #define ALIAS_ACCESS_ADD_MEMBER ( 0x00000001 )
 #define ALIAS_ACCESS_REMOVE_MEMBER ( 0x00000002 )
 #define ALIAS_ACCESS_GET_MEMBERS ( 0x00000004 )
 #define ALIAS_ACCESS_LOOKUP_INFO ( 0x00000008 )
 #define ALIAS_ACCESS_SET_INFO ( 0x00000010 )
-
-;
 
 struct samr_SamEntry {
 	uint32_t idx;
@@ -126,8 +112,6 @@ enum samr_Role
 #define DOMAIN_PASSWORD_LOCKOUT_ADMINS ( 0x00000008 )
 #define DOMAIN_PASSWORD_STORE_CLEARTEXT ( 0x00000010 )
 #define DOMAIN_REFUSE_PASSWORD_CHANGE ( 0x00000020 )
-
-;
 
 struct samr_DomInfo1 {
 	uint16_t min_password_length;
@@ -228,8 +212,6 @@ struct samr_Ids {
 #define SE_GROUP_USE_FOR_DENY_ONLY ( 0x00000010 )
 #define SE_GROUP_RESOURCE ( 0x20000000 )
 #define SE_GROUP_LOGON_ID ( 0xC0000000 )
-
-;
 
 struct samr_GroupInfoAll {
 	struct lsa_String name;
@@ -454,8 +436,6 @@ struct samr_UserInfo20 {
 #define SAMR_FIELD_SEC_DESC ( 0x10000000 )
 #define SAMR_FIELD_OWF_PWD ( 0x20000000 )
 
-;
-
 struct samr_UserInfo21 {
 	NTTIME last_logon;
 	NTTIME last_logoff;
@@ -647,8 +627,6 @@ union samr_ConnectInfo {
 #define SAMR_VALIDATE_FIELD_BAD_PASSWORD_COUNT ( 0x00000008 )
 #define SAMR_VALIDATE_FIELD_PASSWORD_HISTORY_LENGTH ( 0x00000010 )
 #define SAMR_VALIDATE_FIELD_PASSWORD_HISTORY ( 0x00000020 )
-
-;
 
 enum samr_ValidatePasswordLevel
 #ifndef USE_UINT_ENUMS

@@ -415,8 +415,6 @@ struct wkssvc_NetrWorkstationStatistics {
 /* bitmap wkssvc_renameflags */
 #define WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE ( 0x00000002 )
 
-;
-
 enum wkssvc_NetValidateNameType
 #ifndef USE_UINT_ENUMS
  {
@@ -470,8 +468,6 @@ struct wkssvc_PasswordBuffer {
 #define WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE ( 0x00000004 )
 #define WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE ( 0x00000002 )
 #define WKSSVC_JOIN_FLAGS_JOIN_TYPE ( 0x00000001 )
-
-;
 
 enum wkssvc_ComputerNameType
 #ifndef USE_UINT_ENUMS
