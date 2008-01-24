@@ -349,7 +349,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          samr_AcctFlags acct_flags,
 		[in]          uint32 max_size,
-		[out,ref]     samr_SamArray *sam,
+		[out]         samr_SamArray *sam,
 		[out,ref]     uint32 *num_entries
 		);
 

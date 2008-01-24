@@ -946,7 +946,7 @@ struct samr_EnumDomainUsers {
 	} in;
 
 	struct {
-		struct samr_SamArray *sam;/* [ref] */
+		struct samr_SamArray *sam;/* [unique] */
 		uint32_t *num_entries;/* [ref] */
 		uint32_t *resume_handle;/* [ref] */
 		NTSTATUS result;
