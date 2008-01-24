@@ -539,6 +539,47 @@ static NTSTATUS cmd_netlogon_change_trust_pw(struct rpc_pipe_client *cli,
         return result;
 }
 
+static WERROR cmd_netlogon_gettrustrid(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx, int argc,
+				       const char **argv)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	WERROR werr = WERR_GENERAL_FAILURE;
+	const char *server_name = cli->cli->desthost;
+	const char *domain_name = lp_workgroup();
+	uint32_t rid = 0;
+
+	if (argc < 1 || argc > 3) {
+		fprintf(stderr, "Usage: %s <server_name> <domain_name>\n",
+			argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		server_name = argv[1];
+	}
+
+	if (argc >= 3) {
+		domain_name = argv[2];
+	}
+
+	status = rpccli_netr_LogonGetTrustRid(cli, mem_ctx,
+					      server_name,
+					      domain_name,
+					      &rid,
+					      &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (W_ERROR_IS_OK(werr)) {
+		printf("Rid: %d\n", rid);
+	}
+ done:
+	return werr;
+}
+
+
 
 /* List of commands exported by this module */
 
@@ -558,6 +599,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "samdeltas",  RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_deltas,  NULL, PI_NETLOGON, NULL, "Query Sam Deltas",    "" },
 	{ "samlogon",   RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_logon,   NULL, PI_NETLOGON, NULL, "Sam Logon",           "" },
 	{ "change_trust_pw",   RPC_RTYPE_NTSTATUS, cmd_netlogon_change_trust_pw,   NULL, PI_NETLOGON, NULL, "Change Trust Account Password",           "" },
+	{ "gettrustrid", RPC_RTYPE_WERROR, NULL, cmd_netlogon_gettrustrid, PI_NETLOGON, NULL, "Get trust rid",     "" },
 
 	{ NULL }
 };
