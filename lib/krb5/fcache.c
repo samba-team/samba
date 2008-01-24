@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2007 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2008 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -772,12 +772,64 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 {
     krb5_error_code ret = 0;
 
-    if (rename(FILENAME(from), FILENAME(to)) != 0) {
+    ret = rename(FILENAME(from), FILENAME(to));
+    if (ret && errno != EXDEV) {
 	ret = errno;
-	krb5_set_error_string(context, "Rename of file failed: %s", 
+	krb5_set_error_string(context,
+			      "Rename of file from %s to %s failed: %s", 
+			      FILENAME(from), FILENAME(to),
 			      strerror(ret));
 	return ret;
+    } else if (ret && errno == EXDEV) {
+	/* make a copy and delete the orignal */
+	krb5_ssize_t sz1, sz2;
+	int fd1, fd2;
+	char buf[BUFSIZ];
+
+	ret = fcc_open(context, from, &fd1, O_RDONLY | O_BINARY, 0);
+	if(ret)
+	    return ret;
+
+	unlink(FILENAME(to));
+
+	ret = fcc_open(context, to, &fd2, 
+		       O_WRONLY | O_CREAT | O_EXCL | O_BINARY, 0600);
+	if(ret)
+	    goto out1;
+
+	while((sz1 = read(fd1, buf, sizeof(buf))) > 0) {
+	    sz2 = write(fd2, buf, sz1);
+	    if (sz1 != sz2) {
+		ret = EIO;
+		krb5_set_error_string(context,
+				      "Failed to write data from one file "
+				      "credential cache to the other");
+		goto out2;
+	    }
+	}
+	if (sz1 < 0) {
+	    ret = EIO;
+	    krb5_set_error_string(context,
+				  "Failed to read data from one file "
+				  "credential cache to the other");
+	    goto out2;
+	}
+	erase_file(FILENAME(from));
+	    
+    out2:
+	fcc_unlock(context, fd2);
+	close(fd2);
+
+    out1:
+	fcc_unlock(context, fd1);
+	close(fd1);
+
+	if (ret) {
+	    erase_file(FILENAME(to));
+	    return ret;
+	}
     }
+
     /* make sure ->version is uptodate */
     {
 	krb5_storage *sp;
@@ -786,8 +838,7 @@ fcc_move(krb5_context context, krb5_ccache from, krb5_ccache to)
 	krb5_storage_free(sp);
 	fcc_unlock(context, fd);
 	close(fd);
-    }
-
+    }    
     return ret;
 }
 
