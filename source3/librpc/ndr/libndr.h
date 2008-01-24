@@ -23,7 +23,7 @@
 #define _PRINTF_ATTRIBUTE(a,b) 
 
 #include "librpc/gen_ndr/misc.h"
-#include "librpc/ndr/security.h"
+#include "librpc/gen_ndr/security.h"
 
 /*
   this provides definitions for the libcli/rpc/ MSRPC library
