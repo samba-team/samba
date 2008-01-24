@@ -43,7 +43,7 @@
  **/
 int net_rpc_join_ok(const char *domain, const char *server, struct in_addr *ip )
 {
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
