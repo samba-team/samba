@@ -289,6 +289,14 @@ def provision_become_dc(setup_dir, message, paths, lp, session_info,
 
 
 def setup_secretsdb(path, setup_path, session_info, credentials, lp):
+    """Setup the secrets database.
+
+    :param path: Path to the secrets database.
+    :param setup_path: Get the path to a setup file.
+    :param session_info: Session info.
+    :param credentials: Credentials
+    :param lp: Loadparm context
+    """
     if os.path.exists(path):
         os.unlink(path)
     secrets_ldb = Ldb(path, session_info=session_info, credentials=credentials, lp=lp)
@@ -299,6 +307,14 @@ def setup_secretsdb(path, setup_path, session_info, credentials, lp):
 
 
 def setup_templatesdb(path, setup_path, session_info, credentials, lp):
+    """Setup the templates database.
+
+    :param path: Path to the database.
+    :param setup_path: Function for obtaining the path to setup files.
+    :param session_info: Session info
+    :param credentials: Credentials
+    :param lp: Loadparm context
+    """
     templates_ldb = SamDB(path, session_info=session_info,
                         credentials=credentials, lp=lp)
     templates_ldb.erase()
@@ -306,6 +322,14 @@ def setup_templatesdb(path, setup_path, session_info, credentials, lp):
 
 
 def setup_registry(path, setup_path, session_info, credentials, lp):
+    """Setup the registry.
+    
+    :param path: Path to the registry database
+    :param setup_path: Function that returns the path to a setup.
+    :param session_info: Session information
+    :param credentials: Credentials
+    :param lp: Loadparm context
+    """
     reg = registry.Registry()
     hive = registry.open_ldb(path, session_info=session_info, 
                          credentials=credentials, lp_ctx=lp)
@@ -317,6 +341,12 @@ def setup_registry(path, setup_path, session_info, credentials, lp):
 
 def setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname, 
                         dnsdomain, realm, rootdn, configdn, netbiosname):
+    """Setup the SamDB rootdse.
+
+    :param samdb: Sam Database handle
+    :param setup_path: Obtain setup path
+    ...
+    """
     setup_add_ldif(samdb, setup_path("provision_rootdse_add.ldif"), {
         "SCHEMADN": schemadn, 
         "NETBIOSNAME": netbiosname,
@@ -332,6 +362,14 @@ def setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname,
 
 
 def setup_samdb_partitions(samdb, setup_path, schemadn, configdn, domaindn):
+    """Setup SAM database partitions.
+
+    :param samdb: Sam Database handle
+    :param setup_path: Setup path function
+    :param schemadn: Schema DN.
+    :param configdn: Configuration DN.
+    :param domaindn: Domain DN.
+    """
     #Add modules to the list to activate them by default
     #beware often order is important
     #
@@ -561,11 +599,14 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
 
             if lp.get("server role") == "domain controller":
                 message("Setting up self join")
-                setup_self_join(samdb, configdn=configdn, schemadn=schemadn, domaindn=domaindn, 
-                                invocationid=invocationid, dnspass=dnspass, netbiosname=netbiosname,
-                                dnsdomain=dnsdomain, realm=realm, machinepass=machinepass, 
-                                domainname=domainname, domainsid=domainsid, policyguid=policyguid,
-                                hostname=hostname, hostguid=hostguid, setup_path=setup_path)
+                setup_self_join(samdb, configdn=configdn, schemadn=schemadn, 
+                                domaindn=domaindn, invocationid=invocationid, 
+                                dnspass=dnspass, netbiosname=netbiosname, 
+                                dnsdomain=dnsdomain, realm=realm, 
+                                machinepass=machinepass, domainname=domainname, 
+                                domainsid=domainsid, policyguid=policyguid,
+                                hostname=hostname, hostguid=hostguid, 
+                                setup_path=setup_path)
 
         message("Setting up sam.ldb index")
         samdb.load_ldif_file_add(setup_path("provision_index.ldif"))
