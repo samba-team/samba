@@ -196,8 +196,15 @@ static NTSTATUS db_tdb_delete(struct db_record *rec)
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
 						       struct db_tdb_ctx);
 
-	return (tdb_delete(ctx->wtdb->tdb, rec->key) == 0) ?
-		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+	if (tdb_delete(ctx->wtdb->tdb, rec->key) == 0) {
+		return NT_STATUS_OK;
+	}
+
+	if (tdb_error(ctx->wtdb->tdb) == TDB_ERR_NOEXIST) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 struct db_tdb_traverse_ctx {
