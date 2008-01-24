@@ -91,7 +91,6 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(db->private_data,
 						       struct db_tdb_ctx);
 	struct tdb_fetch_locked_state state;
-	int res;
 
 	/* Do not accidently allocate/deallocate w/o need when debug level is lower than needed */
 	if(DEBUGLEVEL >= 10) {
@@ -110,8 +109,7 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	state.mem_ctx = mem_ctx;
 	state.result = NULL;
 
-	res = tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetchlock_parse,
-			       &state);
+	tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetchlock_parse, &state);
 
 	if (state.result == NULL) {
 		db_tdb_fetchlock_parse(key, tdb_null, &state);

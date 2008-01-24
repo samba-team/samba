@@ -613,7 +613,13 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 						     DS_RETURN_DNS_NAME,
 						     &domain_info);
 		if (W_ERROR_IS_OK(werr)) {
-			fstrcpy(tmp, domain_info->domain_controller_name);
+			tmp = talloc_strdup(
+				mem_ctx, domain_info->domain_controller_name);
+			if (tmp == NULL) {
+				DEBUG(0, ("talloc_strdup failed\n"));
+				talloc_destroy(mem_ctx);
+				return false;
+			}
 			if (strlen(domain->alt_name) == 0) {
 				fstrcpy(domain->alt_name,
 					domain_info->domain_name);
@@ -635,11 +641,10 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	/* And restore our original timeout. */
 	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
 
-	talloc_destroy(mem_ctx);
-
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(10, ("rpccli_netlogon_getanydcname failed: %s\n",
 			   dos_errstr(werr)));
+		talloc_destroy(mem_ctx);
 		return False;
 	}
 
@@ -653,6 +658,8 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	}
 
 	fstrcpy(dcname, p);
+
+	talloc_destroy(mem_ctx);
 
 	DEBUG(10, ("rpccli_netlogon_getanydcname returned %s\n", dcname));
 
@@ -687,11 +694,15 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 
 	/* this is at least correct when domain is our domain,
 	 * which is the only case, when this is currently used: */
-	if ((machine_krb5_principal != NULL) &&
-	    (asprintf(machine_krb5_principal, "%s$@%s", account_name,
-		      domain->alt_name) == -1))
+	if (machine_krb5_principal != NULL)
 	{
-		return NT_STATUS_NO_MEMORY;
+		if (asprintf(machine_krb5_principal, "%s$@%s",
+			     account_name, domain->alt_name) == -1)
+		{
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		strupper_m(*machine_krb5_principal);
 	}
 
 	return NT_STATUS_OK;
@@ -2291,7 +2302,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
 
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS;
 	uint8  mach_pwd[16];
 	uint32  sec_chan_type;
 	const char *account_name;

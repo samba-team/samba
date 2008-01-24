@@ -429,8 +429,9 @@ static bool debug_parse_params(char **params)
 
 	/* Fill in new debug class levels */
 	for (; i < debug_num_classes && params[i]; i++) {
-		if ((class_name=strtok(params[i],":")) &&
-			(class_level=strtok(NULL, "\0")) &&
+		char *saveptr;
+		if ((class_name = strtok_r(params[i],":", &saveptr)) &&
+			(class_level = strtok_r(NULL, "\0", &saveptr)) &&
             ((ndx = debug_lookup_classname(class_name)) != -1)) {
 				DEBUGLEVEL_CLASS[ndx] = atoi(class_level);
 				DEBUGLEVEL_CLASS_ISSET[ndx] = True;

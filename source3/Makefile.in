@@ -276,6 +276,7 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_netlogon.o \
 		 librpc/gen_ndr/ndr_samr.o \
 		 librpc/gen_ndr/ndr_notify.o \
+		 librpc/gen_ndr/ndr_xattr.o \
 		 librpc/gen_ndr/ndr_libnet_join.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
@@ -410,15 +411,54 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   $(LIBNDR_GEN_OBJ) \
 		   $(RPCCLIENT_NDR_OBJ)
 
+#
+# registry-related objects
+#
+UTIL_REG_OBJ = lib/util_reg.o
+UTIL_REG_API_OBJ = lib/util_reg_api.o
+REG_INIT_SMBCONF_OBJ = registry/reg_init_smbconf.o
+
+REGFIO_OBJ = registry/regfio.o
+
 REGOBJS_OBJ = registry/reg_objects.o
 
-REGISTRY_OBJ = registry/reg_frontend.o registry/reg_cachehook.o registry/reg_printing.o \
-               registry/reg_db.o registry/reg_eventlog.o registry/reg_shares.o \
-               registry/reg_util.o registry/reg_dynamic.o registry/reg_perfcount.o \
-	       registry/reg_smbconf.o registry/reg_api.o \
-	       registry/reg_frontend_hilvl.o \
-	       registry/reg_backend_netlogon_params.o \
-	       $(UTIL_REG_API_OBJ) $(UTIL_REG_SMBCONF_OBJ)
+REGISTRY_BACKENDS = registry/reg_backend_printing.o \
+		    registry/reg_backend_db.o \
+		    registry/reg_backend_smbconf.o \
+		    registry/reg_backend_shares.o \
+		    registry/reg_backend_netlogon_params.o \
+		    registry/reg_backend_prod_options.o \
+		    registry/reg_backend_tcpip_params.o \
+		    registry/reg_backend_hkpt_params.o \
+		    registry/reg_backend_current_version.o \
+		    registry/reg_backend_perflib.o
+
+
+REGISTRY_OBJ = registry/reg_init_full.o registry/reg_cachehook.o \
+               registry/reg_eventlog.o \
+               registry/reg_util.o registry/reg_perfcount.o \
+	       registry/reg_util_legacy.o \
+	       registry/reg_api.o \
+	       registry/reg_dispatcher.o \
+	       $(REGISTRY_BACKENDS) \
+	       $(UTIL_REG_API_OBJ) \
+	       $(REG_INIT_SMBCONF_OBJ)
+
+# objects to be used when not all of the registry code should be
+# loaded but only the portion needed by reg_api, typically for
+# using smbconf (registry) - full access
+REG_API_OBJ = registry/reg_api.o \
+	      registry/reg_dispatcher.o \
+	      registry/reg_backend_smbconf.o \
+	      registry/reg_backend_db.o \
+	      registry/reg_util.o \
+	      \
+	      registry/reg_cachehook.o \
+	      \
+	      lib/util_nttoken.o \
+	      $(UTIL_REG_API_OBJ) \
+	      $(REG_INIT_SMBCONF_OBJ)
+
 
 RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o librpc/gen_ndr/srv_lsa.o
 
@@ -426,8 +466,6 @@ RPC_NETLOG_OBJ = rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o
 
 RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
                rpc_server/srv_samr_util.o
-
-REGFIO_OBJ = registry/regfio.o
 
 RPC_INITSHUTDOWN_OBJ =  librpc/gen_ndr/srv_initshutdown.o rpc_server/srv_initshutdown_nt.o
 
@@ -515,7 +553,7 @@ VFS_EXPAND_MSDFS_OBJ = modules/vfs_expand_msdfs.o
 VFS_SHADOW_COPY_OBJ = modules/vfs_shadow_copy.o
 VFS_SHADOW_COPY2_OBJ = modules/vfs_shadow_copy2.o
 VFS_AFSACL_OBJ = modules/vfs_afsacl.o
-VFS_XATTR_TDB_OBJ = modules/vfs_xattr_tdb.o librpc/gen_ndr/ndr_xattr.o
+VFS_XATTR_TDB_OBJ = modules/vfs_xattr_tdb.o
 VFS_POSIXACL_OBJ = modules/vfs_posixacl.o
 VFS_AIXACL_OBJ = modules/vfs_aixacl.o modules/vfs_aixacl_util.o
 VFS_AIXACL2_OBJ = modules/vfs_aixacl2.o modules/vfs_aixacl_util.o modules/nfs4_acls.o
@@ -525,6 +563,8 @@ VFS_HPUXACL_OBJ = modules/vfs_hpuxacl.o
 VFS_IRIXACL_OBJ = modules/vfs_irixacl.o
 VFS_TRU64ACL_OBJ = modules/vfs_tru64acl.o
 VFS_CATIA_OBJ = modules/vfs_catia.o
+VFS_STREAMS_XATTR_OBJ = modules/vfs_streams_xattr.o
+VFS_STREAMS_DEPOT_OBJ = modules/vfs_streams_depot.o
 VFS_CACHEPRIME_OBJ = modules/vfs_cacheprime.o
 VFS_PREALLOC_OBJ = modules/vfs_prealloc.o
 VFS_COMMIT_OBJ = modules/vfs_commit.o
@@ -717,29 +757,6 @@ CLIENT_OBJ = $(CLIENT_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
              $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
 	     $(DISPLAY_SEC_OBJ) 
 
-UTIL_REG_OBJ = lib/util_reg.o
-UTIL_REG_API_OBJ = lib/util_reg_api.o
-UTIL_REG_SMBCONF_OBJ = lib/util_reg_smbconf.o
-
-# objects to be used when not all of the registry code should be
-# loaded but only the portion needed by reg_api, typically for
-# using smbconf (registry) - full access
-REG_API_OBJ = registry/reg_api.o \
-	      registry/reg_frontend_hilvl.o \
-	      registry/reg_smbconf.o \
-	      registry/reg_db.o \
-	      registry/reg_util.o \
-	      \
-	      registry/reg_cachehook.o \
-	      registry/reg_eventlog.o \
-	      registry/reg_perfcount.o \
-	      registry/reg_dynamic.o \
-	      \
-	      lib/util_nttoken.o \
-	      $(UTIL_REG_API_OBJ) \
-	      $(UTIL_REG_SMBCONF_OBJ)
-
-
 LIBNETAPI_OBJ1 = lib/netapi/netapi.o \
 		 lib/netapi/joindomain.o \
 		 lib/netapi/serverinfo.o \
@@ -846,7 +863,7 @@ EVTLOGADM_OBJ	= $(EVTLOGADM_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(REGOBJS_OBJ)
 		$(ERRORMAP_OBJ) $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(DOSERR_OBJ) \
 		$(SECRETS_OBJ) \
 	        registry/reg_eventlog.o rpc_server/srv_eventlog_lib.o registry/reg_util.o \
-		registry/reg_db.o
+		registry/reg_backend_db.o
 
 SHARESEC_OBJ0 = utils/sharesec.o
 SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(REGOBJS_OBJ) \
@@ -1745,6 +1762,14 @@ bin/tru64acl.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_TRU64ACL_OBJ)
 bin/catia.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_CATIA_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_CATIA_OBJ)
+
+bin/streams_xattr.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_STREAMS_XATTR_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_STREAMS_XATTR_OBJ)
+
+bin/streams_depot.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_STREAMS_DEPOT_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_STREAMS_DEPOT_OBJ)
 
 bin/cacheprime.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_CACHEPRIME_OBJ)
 	@echo "Building plugin $@"

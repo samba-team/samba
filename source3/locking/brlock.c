@@ -1539,11 +1539,6 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 
 static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 {
-	TDB_DATA key;
-
-	key.dptr = (uint8 *)&br_lck->key;
-	key.dsize = sizeof(struct file_id);
-
 	if (br_lck->read_only) {
 		SMB_ASSERT(!br_lck->modified);
 	}

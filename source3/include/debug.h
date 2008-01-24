@@ -176,11 +176,14 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
 #define unlikely(x) (x)
 #endif
 
-#define DEBUGLVL( level ) \
+#define CHECK_DEBUGLVL( level ) \
   ( ((level) <= MAX_DEBUG_LEVEL) && \
      unlikely((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
      (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
-      DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
+      DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) )
+
+#define DEBUGLVL( level ) \
+  ( CHECK_DEBUGLVL(level) \
    && dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
 
 

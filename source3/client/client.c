@@ -1463,6 +1463,7 @@ static int cmd_mkdir(void)
 		struct cli_state *targetcli;
 		char *targetname = NULL;
 		char *p = NULL;
+		char *saveptr;
 
 		ddir2 = talloc_strdup(ctx, "");
 		if (!ddir2) {
@@ -1478,7 +1479,7 @@ static int cmd_mkdir(void)
 			return 1;
 		}
 		trim_char(ddir,'.','\0');
-		p = strtok(ddir,"/\\");
+		p = strtok_r(ddir, "/\\", &saveptr);
 		while (p) {
 			ddir2 = talloc_asprintf_append(ddir2, p);
 			if (!ddir2) {
@@ -1491,7 +1492,7 @@ static int cmd_mkdir(void)
 			if (!ddir2) {
 				return 1;
 			}
-			p = strtok(NULL,"/\\");
+			p = strtok_r(NULL, "/\\", &saveptr);
 		}
 	} else {
 		do_mkdir(mask);
@@ -1600,7 +1601,7 @@ static int cmd_allinfo(void)
 	}
 
 	if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
-		d_printf("altname <file>\n");
+		d_printf("allinfo <file>\n");
 		return 1;
 	}
 	name = talloc_asprintf_append(name, buf);

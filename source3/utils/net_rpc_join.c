@@ -45,7 +45,7 @@ NTSTATUS net_rpc_join_ok(const char *domain, const char *server,
 {
 	enum security_types sec;
 	unsigned int conn_flags = NET_FLAGS_PDC;
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -132,7 +132,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
         uint32 acb_info = ACB_WSTRUST;
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|(lp_client_schannel() ? NETLOGON_NEG_SCHANNEL : 0);
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|(lp_client_schannel() ? NETLOGON_NEG_SCHANNEL : 0);
 	uint32 sec_channel_type;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 
@@ -160,6 +160,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	uint32 flags = 0x3e8;
 	char *acct_name;
 	const char *const_acct_name;
+	uint32 acct_flags=0;
 
 	/* check what type of join */
 	if (argc >= 0) {
@@ -249,9 +250,14 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
+        acct_flags = SAMR_GENERIC_READ | SAMR_GENERIC_WRITE |
+                SAMR_GENERIC_EXECUTE | SAMR_STANDARD_WRITEDAC |
+                SAMR_STANDARD_DELETE | SAMR_USER_SETPASS | SAMR_USER_GETATTR |
+                SAMR_USER_SETATTR;
+	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
 	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
 					  acct_name, acb_info,
-					  0xe005000b, &user_pol, 
+					  acct_flags, &user_pol, 
 					  &user_rid);
 
 	if (!NT_STATUS_IS_OK(result) && 
