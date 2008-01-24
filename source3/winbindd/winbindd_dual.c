@@ -676,6 +676,88 @@ void winbind_msg_dump_event_list(struct messaging_context *msg_ctx,
 
 }
 
+void winbind_msg_dump_domain_list(struct messaging_context *msg_ctx,
+				  void *private_data,
+				  uint32_t msg_type,
+				  struct server_id server_id,
+				  DATA_BLOB *data)
+{
+	TALLOC_CTX *mem_ctx;
+	const char *message = NULL;
+	struct server_id *sender = NULL;
+	const char *domain = NULL;
+	char *s = NULL;
+	NTSTATUS status;
+	struct winbindd_domain *dom = NULL;
+
+	DEBUG(5,("winbind_msg_dump_domain_list received.\n"));
+
+	if (!data || !data->data) {
+		return;
+	}
+
+	if (data->length < sizeof(struct server_id)) {
+		return;
+	}
+
+	mem_ctx = talloc_init("winbind_msg_dump_domain_list");
+	if (!mem_ctx) {
+		return;
+	}
+
+	sender = (struct server_id *)data->data;
+	if (data->length > sizeof(struct server_id)) {
+		domain = (const char *)data->data+sizeof(struct server_id);
+	}
+
+	if (domain) {
+
+		DEBUG(5,("winbind_msg_dump_domain_list for domain: %s\n",
+			domain));
+
+		message = NDR_PRINT_STRUCT_STRING(mem_ctx, winbindd_domain,
+						  find_domain_from_name_noinit(domain));
+		if (!message) {
+			talloc_destroy(mem_ctx);
+			return;
+		}
+
+		messaging_send_buf(msg_ctx, *sender,
+				   MSG_WINBIND_DUMP_DOMAIN_LIST,
+				   (uint8_t *)message, strlen(message) + 1);
+
+		talloc_destroy(mem_ctx);
+
+		return;
+	}
+
+	DEBUG(5,("winbind_msg_dump_domain_list all domains\n"));
+
+	for (dom = domain_list(); dom; dom=dom->next) {
+		message = NDR_PRINT_STRUCT_STRING(mem_ctx, winbindd_domain, dom);
+		if (!message) {
+			talloc_destroy(mem_ctx);
+			return;
+		}
+
+		s = talloc_asprintf_append(s, "%s\n", message);
+		if (!s) {
+			talloc_destroy(mem_ctx);
+			return;
+		}
+	}
+
+	status = messaging_send_buf(msg_ctx, *sender,
+				    MSG_WINBIND_DUMP_DOMAIN_LIST,
+				    (uint8_t *)s, strlen(s) + 1);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("failed to send message: %s\n",
+		nt_errstr(status)));
+	}
+
+	talloc_destroy(mem_ctx);
+}
+
 static void account_lockout_policy_handler(struct event_context *ctx,
 					   struct timed_event *te,
 					   const struct timeval *now,
@@ -946,6 +1028,8 @@ static bool fork_domain_child(struct winbindd_child *child)
 			     MSG_WINBIND_ONLINESTATUS, NULL);
 	messaging_deregister(winbind_messaging_context(),
 			     MSG_DUMP_EVENT_LIST, NULL);
+	messaging_deregister(winbind_messaging_context(),
+			     MSG_WINBIND_DUMP_DOMAIN_LIST, NULL);
 
 	/* Handle online/offline messages. */
 	messaging_register(winbind_messaging_context(), NULL,
