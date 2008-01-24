@@ -3099,57 +3099,8 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 	return ret;
 }
 
-static NTSTATUS append_ugw_ace(files_struct *fsp,
-			SMB_STRUCT_STAT *psbuf,
-			mode_t unx_mode,
-			int ugw,
-			SEC_ACE *se)
-{
-	mode_t perms;
-	SEC_ACCESS acc;
-	int nt_acl_type; /* Tru64 has "acl_type" as a macro.. */
-	DOM_SID trustee;
-
-	switch (ugw) {
-		case S_IRUSR:
-			perms = unix_perms_to_acl_perms(unx_mode,
-							S_IRUSR,
-							S_IWUSR,
-							S_IXUSR);
-			uid_to_sid(&trustee, psbuf->st_uid );
-			break;
-		case S_IRGRP:
-			perms = unix_perms_to_acl_perms(unx_mode,
-							S_IRGRP,
-							S_IWGRP,
-							S_IXGRP);
-			gid_to_sid(&trustee, psbuf->st_gid );
-			break;
-		case S_IROTH:
-			perms = unix_perms_to_acl_perms(unx_mode,
-							S_IROTH,
-							S_IWOTH,
-							S_IXOTH);
-			sid_copy(&trustee, &global_sid_World);
-			break;
-		default:
-			return NT_STATUS_INVALID_PARAMETER;
-	}
-	acc = map_canon_ace_perms(SNUM(fsp->conn),
-				&nt_acl_type,
-				perms,
-				fsp->is_directory);
-
-	init_sec_ace(se,
-		&trustee,
-		nt_acl_type,
-		acc,
-		0);
-	return NT_STATUS_OK;
-}
-
 /****************************************************************************
- If this is an
+ Take care of parent ACL inheritance.
 ****************************************************************************/
 
 static NTSTATUS append_parent_acl(files_struct *fsp,
@@ -3168,7 +3119,7 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 	int info;
 	size_t sd_size;
 	unsigned int i, j;
-	mode_t unx_mode;
+	BOOL is_dacl_protected = (psd->type & SE_DESC_DACL_PROTECTED);
 
 	ZERO_STRUCT(sbuf);
 
@@ -3182,12 +3133,6 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 				NULL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	/* Create a default mode for u/g/w. */
-	unx_mode = unix_mode(fsp->conn,
-			aARCH | (fsp->is_directory ? aDIR : 0),
-			fsp->fsp_name,
-			parent_name);
 
 	status = open_directory(fsp->conn,
 				parent_name,
@@ -3213,21 +3158,24 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/*
+        /*
 	 * Make room for potentially all the ACLs from
-	 * the parent, plus the user/group/other triple.
+	 * the parent. We used to add the ugw triple here,
+	 * as we knew we were dealing with POSIX ACLs.
+	 * We no longer need to do so as we can guarentee
+	 * that a default ACL from the parent directory will
+	 * be well formed for POSIX ACLs if it came from a
+	 * POSIX ACL source, and if we're not writing to a
+	 * POSIX ACL sink then we don't care if it's not well
+	 * formed. JRA.
 	 */
 
-	num_aces += parent_sd->dacl->num_aces + 3;
+	num_aces += parent_sd->dacl->num_aces;
 
 	if((new_ace = TALLOC_ZERO_ARRAY(mem_ctx, SEC_ACE,
 					num_aces)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	DEBUG(10,("append_parent_acl: parent ACL has %u entries. New "
-		"ACL has %u entries\n",
-		parent_sd->dacl->num_aces, num_aces ));
 
 	/* Start by copying in all the given ACE entries. */
 	for (i = 0; i < psd->dacl->num_aces; i++) {
@@ -3238,23 +3186,6 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 	 * Note that we're ignoring "inherit permissions" here
 	 * as that really only applies to newly created files. JRA.
 	 */
-
-	 /*
-	  * Append u/g/w.
-	  */
-
-	status = append_ugw_ace(fsp, psbuf, unx_mode, S_IRUSR, &new_ace[i++]);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = append_ugw_ace(fsp, psbuf, unx_mode, S_IRGRP, &new_ace[i++]);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = append_ugw_ace(fsp, psbuf, unx_mode, S_IROTH, &new_ace[i++]);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
 
 	/* Finally append any inherited ACEs. */
 	for (j = 0; j < parent_sd->dacl->num_aces; j++) {
@@ -3276,6 +3207,24 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 				continue;
 			}
 		}
+
+		if (is_dacl_protected) {
+			/* If the DACL is protected it means we must
+			 * not overwrite an existing ACE entry with the
+			 * same SID. This is order N^2. Ouch :-(. JRA. */
+			unsigned int k;
+			for (k = 0; k < psd->dacl->num_aces; k++) {
+				if (sid_equal(&psd->dacl->aces[k].trustee,
+						&se->trustee)) {
+					break;
+				}
+			}
+			if (k < psd->dacl->num_aces) {
+				/* SID matched. Ignore. */
+				continue;
+			}
+		}
+
 		sec_ace_copy(&new_ace[i], se);
 		if (se->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
 			new_ace[i].flags &= ~(SEC_ACE_FLAG_VALID_INHERIT);
