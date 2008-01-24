@@ -969,9 +969,6 @@ function provision_guess()
 	subobj.ADMINPASS    = randpass(12);
 	subobj.LDAPMANAGERPASS     = randpass(12);
 	subobj.DEFAULTSITE  = "Default-First-Site-Name";
-	subobj.NEWGUID      = randguid;
-	subobj.NTTIME       = nttime;
-	subobj.LDAPTIME     = ldaptime;
 	subobj.DATESTRING   = datestring;
 	subobj.ROOT         = findnss(nss.getpwnam, "root");
 	subobj.NOBODY       = findnss(nss.getpwnam, "nobody");
