@@ -184,8 +184,6 @@ enum sec_privilege
 #define SEC_ACE_FLAG_SUCCESSFUL_ACCESS ( 0x40 )
 #define SEC_ACE_FLAG_FAILED_ACCESS ( 0x80 )
 
-;
-
 enum security_ace_type
 #ifndef USE_UINT_ENUMS
  {
@@ -216,8 +214,6 @@ enum security_ace_type
 /* bitmap security_ace_object_flags */
 #define SEC_ACE_OBJECT_TYPE_PRESENT ( 0x00000001 )
 #define SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT ( 0x00000002 )
-
-;
 
 union security_ace_object_type {
 	struct GUID type;/* [case(SEC_ACE_OBJECT_TYPE_PRESENT)] */
@@ -295,8 +291,6 @@ enum security_descriptor_revision
 #define SEC_DESC_RM_CONTROL_VALID ( 0x4000 )
 #define SEC_DESC_SELF_RELATIVE ( 0x8000 )
 
-;
-
 struct security_descriptor {
 	enum security_descriptor_revision revision;
 	uint16_t type;
@@ -328,7 +322,5 @@ struct security_token {
 #define SECINFO_UNPROTECTED_DACL ( 0x20000000 )
 #define SECINFO_PROTECTED_SACL ( 0x40000000 )
 #define SECINFO_PROTECTED_DACL ( 0x80000000 )
-
-;
 
 #endif /* _HEADER_security */
