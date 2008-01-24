@@ -621,7 +621,9 @@ NTSTATUS rpccli_samr_EnumDomainUsers(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*resume_handle = *r.out.resume_handle;
-	*sam = *r.out.sam;
+	if (sam && r.out.sam) {
+		*sam = *r.out.sam;
+	}
 	*num_entries = *r.out.num_entries;
 
 	/* Return result */
