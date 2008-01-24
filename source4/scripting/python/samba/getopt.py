@@ -50,6 +50,7 @@ class VersionOptions(optparse.OptionGroup):
 
 class CredentialsOptions(optparse.OptionGroup):
     def __init__(self, parser):
+        self.no_pass = False
         optparse.OptionGroup.__init__(self, parser, "Credentials Options")
         self.add_option("--simple-bind-dn", metavar="DN", action="callback",
                         callback=self._set_simple_bind_dn, type=str,
@@ -62,6 +63,8 @@ class CredentialsOptions(optparse.OptionGroup):
         self.add_option("-W", "--workgroup", metavar="WORKGROUP", 
                         action="callback", type=str,
                         help="Workgroup", callback=self._parse_workgroup)
+        self.add_option("-N", "--no-pass", action="store_true",
+                        help="Don't ask for a password")
         self.creds = Credentials()
 
     def _parse_username(self, option, opt_str, arg, parser):
@@ -77,4 +80,7 @@ class CredentialsOptions(optparse.OptionGroup):
         self.creds.set_bind_dn(arg)
 
     def get_credentials(self):
+        self.creds.guess()
+        if not self.no_pass:
+            self.creds.set_cmdline_callbacks()
         return self.creds
