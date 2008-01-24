@@ -192,6 +192,21 @@ def substitute_var(text, values):
     return text
 
 
+def check_all_substituted(text):
+    """Make sure that all substitution variables in a string have been replaced.
+    If not, raise an exception.
+    
+    :param text: The text to search for substitution variables
+    """
+    if not "${" in text:
+    	return
+    
+    var_start = text.find("${")
+    var_end = text.find("}", var_start)
+    
+    raise Exception("Not all variables substituted: %s" % text[var_start:var_end])
+
+
 def valid_netbios_name(name):
     """Check whether a name is valid as a NetBIOS name. """
     # FIXME: There are probably more constraints here. 
