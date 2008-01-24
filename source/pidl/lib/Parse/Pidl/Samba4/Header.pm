@@ -131,27 +131,25 @@ sub HeaderEnum($$)
 		my $count = 0;
 		my $with_val = 0;
 		my $without_val = 0;
-		if (defined($enum->{ELEMENTS})) {
-			pidl " { __donnot_use_enum_$name=0x7FFFFFFF}\n";
-			foreach my $e (@{$enum->{ELEMENTS}}) {
-				my $t = "$e";
-				my $name;
-				my $value;
-				if ($t =~ /(.*)=(.*)/) {
-					$name = $1;
-					$value = $2;
-					$with_val = 1;
-					fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
-						unless ($without_val == 0);
-				} else {
-					$name = $t;
-					$value = $count++;
-					$without_val = 1;
-					fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
-						unless ($with_val == 0);
-				}
-				pidl "#define $name ( $value )\n";
+		pidl " { __donnot_use_enum_$name=0x7FFFFFFF}\n";
+		foreach my $e (@{$enum->{ELEMENTS}}) {
+			my $t = "$e";
+			my $name;
+			my $value;
+			if ($t =~ /(.*)=(.*)/) {
+				$name = $1;
+				$value = $2;
+				$with_val = 1;
+				fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
+					unless ($without_val == 0);
+			} else {
+				$name = $t;
+				$value = $count++;
+				$without_val = 1;
+				fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
+					unless ($with_val == 0);
 			}
+			pidl "#define $name ( $value )\n";
 		}
 		pidl "#endif\n";
 	}
