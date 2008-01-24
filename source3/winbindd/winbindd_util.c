@@ -571,7 +571,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 		/* The primary domain has to find the DC name itself */
 		request->cmd = WINBINDD_INIT_CONNECTION;
 		fstrcpy(request->domain_name, domain->name);
-		request->data.init_conn.is_primary = domain->internal ? False : True;
+		request->data.init_conn.is_primary = domain->primary ? true : false;
 		fstrcpy(request->data.init_conn.dcname, "");
 		async_request(mem_ctx, &domain->child, request, response,
 			      init_child_recv, state);
