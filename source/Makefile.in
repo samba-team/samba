@@ -944,6 +944,7 @@ WINBINDD_OBJ1 = \
 		winbindd/winbindd_domain.o \
 		winbindd/winbindd_idmap.o \
 		winbindd/winbindd_locator.o \
+		winbindd/winbindd_ndr.o \
 		auth/token_util.o
 
 WINBINDD_OBJ = \
