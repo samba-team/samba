@@ -74,7 +74,9 @@ void ndr_print_winbindd_methods(struct ndr_print *ndr,
 				const char *name,
 				const struct winbindd_methods *r)
 {
+#ifdef HAVE_ADS
 	extern struct winbindd_methods ads_methods;
+#endif
 	extern struct winbindd_methods msrpc_methods;
 	extern struct winbindd_methods passdb_methods;
 	extern struct winbindd_methods reconnect_methods;
@@ -89,10 +91,12 @@ void ndr_print_winbindd_methods(struct ndr_print *ndr,
 		return;
 	}
 
-	if (r == &ads_methods) {
-		ndr_print_string(ndr, name, "ads_methods");
-	} else if (r == &msrpc_methods) {
+	if (r == &msrpc_methods) {
 		ndr_print_string(ndr, name, "msrpc_methods");
+#ifdef HAVE_ADS
+	} else if (r == &ads_methods) {
+		ndr_print_string(ndr, name, "ads_methods");
+#endif
 	} else if (r == &passdb_methods) {
 		ndr_print_string(ndr, name, "passdb_methods");
 	} else if (r == &reconnect_methods) {
