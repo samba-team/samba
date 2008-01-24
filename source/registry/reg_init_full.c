@@ -2,6 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  Virtual Windows Registry Layer
  *  Copyright (C) Gerald Carter                     2002-2005
+ *  Copyright (C) Michael Adam                      2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,7 +18,7 @@
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Implementation of registry frontend view functions. */
+/* Initialize the registry with all available backends. */
 
 #include "includes.h"
 
@@ -29,6 +30,11 @@ extern REGISTRY_OPS eventlog_ops;
 extern REGISTRY_OPS shares_reg_ops;
 extern REGISTRY_OPS smbconf_reg_ops;
 extern REGISTRY_OPS netlogon_params_reg_ops;
+extern REGISTRY_OPS prod_options_reg_ops;
+extern REGISTRY_OPS tcpip_params_reg_ops;
+extern REGISTRY_OPS hkpt_params_reg_ops;
+extern REGISTRY_OPS current_version_reg_ops;
+extern REGISTRY_OPS perflib_reg_ops;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 
 /* array of REGISTRY_HOOK's which are read into a tree for easy access */
@@ -42,12 +48,18 @@ REGISTRY_HOOK reg_hooks[] = {
   { KEY_SHARES,      		&shares_reg_ops },
   { KEY_SMBCONF,      		&smbconf_reg_ops },
   { KEY_NETLOGON_PARAMS,	&netlogon_params_reg_ops },
+  { KEY_PROD_OPTIONS,		&prod_options_reg_ops },
+  { KEY_TCPIP_PARAMS,		&tcpip_params_reg_ops },
+  { KEY_HKPT,			&hkpt_params_reg_ops },
+  { KEY_CURRENT_VERSION,	&current_version_reg_ops },
+  { KEY_PERFLIB,		&perflib_reg_ops },
 #endif
   { NULL, NULL }
 };
 
 /***********************************************************************
  Open the registry database and initialize the REGISTRY_HOOK cache
+ with all available backens.
  ***********************************************************************/
  
 bool init_registry( void )
@@ -88,22 +100,4 @@ bool init_registry( void )
  fail:
 	TALLOC_FREE(frame);
 	return ret;
-}
-
-WERROR regkey_open_internal( TALLOC_CTX *ctx, REGISTRY_KEY **regkey,
-			     const char *path,
-                             const struct nt_user_token *token,
-			     uint32 access_desired )
-{
-	struct registry_key *key;
-	WERROR err;
-
-	err = reg_open_path(NULL, path, access_desired, token, &key);
-	if (!W_ERROR_IS_OK(err)) {
-		return err;
-	}
-
-	*regkey = talloc_move(ctx, &key->key);
-	TALLOC_FREE(key);
-	return WERR_OK;
 }

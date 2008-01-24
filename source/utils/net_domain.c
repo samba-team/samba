@@ -208,6 +208,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
 	uint32 acb_info = ACB_WSTRUST;
+	uint32 acct_flags;
 	uint32 fields_present;
 	uchar pwbuf[532];
 	SAM_USERINFO_CTR ctr;
@@ -245,8 +246,13 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 	/* Don't try to set any acb_info flags other than ACB_WSTRUST */
 
+        acct_flags = SAMR_GENERIC_READ | SAMR_GENERIC_WRITE |
+                SAMR_GENERIC_EXECUTE | SAMR_STANDARD_WRITEDAC |
+                SAMR_STANDARD_DELETE | SAMR_USER_SETPASS | SAMR_USER_GETATTR |
+                SAMR_USER_SETATTR;
+	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
 	status = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-			acct_name, acb_info, 0xe005000b, &user_pol, &user_rid);
+			acct_name, acb_info, acct_flags, &user_pol, &user_rid);
 
 	if ( !NT_STATUS_IS_OK(status) 
 		&& !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) 

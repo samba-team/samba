@@ -227,14 +227,19 @@ typedef unsigned short int sa_family_t;
 #ifdef HAVE_STRUCT_SOCKADDR_IN6
 #define sockaddr_storage sockaddr_in6
 #define ss_family sin6_family
+#define HAVE_SS_FAMILY 1
 #else
 #define sockaddr_storage sockaddr_in
 #define ss_family sin_family
+#define HAVE_SS_FAMILY 1
 #endif
 #endif
 
-#ifdef HAVE_AIX_SOCKADDR_STORAGE
+#ifndef HAVE_SS_FAMILY
+#ifdef HAVE___SS_FAMILY
 #define ss_family __ss_family
+#define HAVE_SS_FAMILY 1
+#endif
 #endif
 
 #ifndef HAVE_STRUCT_ADDRINFO

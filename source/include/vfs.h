@@ -103,7 +103,8 @@
 /* Leave at 22 - not yet released. Remove parameter fd from write. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fromfd from sendfile. - obnox */
 /* Leave at 22 - not yet released. Remove parameter fromfd from recvfile. - obnox */
-/* Leave at 22 - not yet released. Additional change: add operations for offline files and remote storage volume abstraction -- ab*/
+/* Leave at 22 - not yet released. Additional change: add operations for offline files -- ab */
+/* Leave at 22 - not yet released. Add the streaminfo call. -- jpeach, vl */
 
 #define SMB_VFS_INTERFACE_VERSION 22
 
@@ -148,6 +149,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_SET_QUOTA,
 	SMB_VFS_OP_GET_SHADOW_COPY_DATA,
 	SMB_VFS_OP_STATVFS,
+	SMB_VFS_OP_FS_CAPABILITIES,
 
 	/* Directory operations */
 
@@ -198,6 +200,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_NOTIFY_WATCH,
 	SMB_VFS_OP_CHFLAGS,
 	SMB_VFS_OP_FILE_ID_CREATE,
+	SMB_VFS_OP_STREAMINFO,
 
 	/* NT ACL operations. */
 
@@ -282,6 +285,7 @@ struct vfs_ops {
 		int (*set_quota)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 		int (*get_shadow_copy_data)(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels);
 		int (*statvfs)(struct vfs_handle_struct *handle, const char *path, struct vfs_statvfs_struct *statbuf);
+		uint32_t (*fs_capabilities)(struct vfs_handle_struct *handle);
 
 		/* Directory operations */
 
@@ -338,6 +342,13 @@ struct vfs_ops {
 					 void *private_data, void *handle_p);
 		int (*chflags)(struct vfs_handle_struct *handle, const char *path, unsigned int flags);
 		struct file_id (*file_id_create)(struct vfs_handle_struct *handle, SMB_DEV_T dev, SMB_INO_T inode);
+
+		NTSTATUS (*streaminfo)(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       const char *fname,
+				       TALLOC_CTX *mem_ctx,
+				       unsigned int *num_streams,
+				       struct stream_struct **streams);
 
 		/* NT ACL operations. */
 
@@ -426,6 +437,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *set_quota;
 		struct vfs_handle_struct *get_shadow_copy_data;
 		struct vfs_handle_struct *statvfs;
+		struct vfs_handle_struct *fs_capabilities;
 
 		/* Directory operations */
 
@@ -476,6 +488,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *notify_watch;
 		struct vfs_handle_struct *chflags;
 		struct vfs_handle_struct *file_id_create;
+		struct vfs_handle_struct *streaminfo;
 
 		/* NT ACL operations. */
 

@@ -1054,44 +1054,7 @@ ssize_t read_socket_with_timeout(int fd,
 
 ssize_t read_data(int fd,char *buffer,size_t N, enum smb_read_errors *pre)
 {
-	ssize_t ret;
-	size_t total=0;
-	char addr[INET6_ADDRSTRLEN];
-
-	set_smb_read_error(pre,SMB_READ_OK);
-
-	while (total < N) {
-		ret = sys_read(fd,buffer + total,N - total);
-
-		if (ret == 0) {
-			DEBUG(10,("read_data: read of %d returned 0. "
-				"Error = %s\n",
-				(int)(N - total), strerror(errno) ));
-			set_smb_read_error(pre,SMB_READ_EOF);
-			return 0;
-		}
-
-		if (ret == -1) {
-			if (fd == get_client_fd()) {
-				/* Try and give an error message saying
-				 * what client failed. */
-				DEBUG(0,("read_data: read failure for %d "
-					"bytes to client %s. Error = %s\n",
-					(int)(N - total),
-					get_peer_addr(fd,addr,sizeof(addr)),
-					strerror(errno) ));
-			} else {
-				DEBUG(0,("read_data: read failure for %d. "
-					"Error = %s\n",
-					(int)(N - total),
-					strerror(errno) ));
-			}
-			set_smb_read_error(pre,SMB_READ_ERROR);
-			return -1;
-		}
-		total += ret;
-	}
-	return (ssize_t)total;
+	return read_socket_with_timeout(fd, buffer, N, N, 0, pre);
 }
 
 /****************************************************************************
@@ -1163,12 +1126,7 @@ ssize_t read_smb_length_return_keepalive(int fd,
 	bool ok = false;
 
 	while (!ok) {
-		if (timeout > 0) {
-			ok = (read_socket_with_timeout(fd,inbuf,4,4,
-						timeout,pre) == 4);
-		} else {
-			ok = (read_data(fd,inbuf,4,pre) == 4);
-		}
+		ok = (read_socket_with_timeout(fd,inbuf,4,4,timeout,pre) == 4);
 		if (!ok) {
 			return -1;
 		}
@@ -1274,16 +1232,8 @@ ssize_t receive_smb_raw(int fd,
 			len = MIN(len,maxlen);
 		}
 
-		if (timeout > 0) {
-			ret = read_socket_with_timeout(fd,
-					buffer+4,
-					len,
-					len,
-					timeout,
-					pre);
-		} else {
-			ret = read_data(fd,buffer+4,len,pre);
-		}
+		ret = read_socket_with_timeout(fd, buffer+4, len, len, timeout,
+					       pre);
 
 		if (ret != len) {
 			cond_set_smb_read_error(pre,SMB_READ_ERROR);
@@ -2080,13 +2030,14 @@ const char *get_mydnsfullname(void)
 			data_blob_string_const("get_mydnsfullname"),
 			data_blob_string_const(res->ai_canonname));
 
-	freeaddrinfo(res);
-
 	if (!memcache_lookup(NULL, SINGLETON_CACHE,
 			data_blob_string_const("get_mydnsfullname"),
 			&tmp)) {
-		return NULL;
+		tmp = data_blob_talloc(talloc_tos(), res->ai_canonname,
+				strlen(res->ai_canonname) + 1);
 	}
+
+	freeaddrinfo(res);
 
 	return (const char *)tmp.data;
 }

@@ -19,9 +19,9 @@
  */
 
 /*
- * Netlogon parameters registry backend.
+ * HKPT parameters registry backend.
  *
- * This replaces the former dynamic netlogon parameters overlay.
+ * This replaces the former dynamic hkpt parameters overlay.
  */
 
 #include "includes.h"
@@ -31,27 +31,40 @@
 
 extern REGISTRY_OPS regdb_ops;
 
-static int netlogon_params_fetch_values(const char *key, REGVAL_CTR *regvals)
+static int hkpt_params_fetch_values(const char *key, REGVAL_CTR *regvals)
 {
-	uint32 dwValue;
+	uint32 base_index;
+	uint32 buffer_size;
+	char *buffer = NULL;
 
-	if (!pdb_get_account_policy(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue)) {
-		dwValue = 0;
+	/* This is ALMOST the same as perflib_009_params, but HKPT has
+	   a "Counters" entry instead of a "Counter" key. <Grrrr> */
+
+	base_index = reg_perfcount_get_base_index();
+	buffer_size = reg_perfcount_get_counter_names(base_index, &buffer);
+	regval_ctr_addvalue(regvals, "Counters", REG_MULTI_SZ, buffer,
+			    buffer_size);
+
+	if(buffer_size > 0) {
+		SAFE_FREE(buffer);
 	}
 
-	regval_ctr_addvalue(regvals, "RefusePasswordChange", REG_DWORD,
-			    (char*)&dwValue, sizeof(dwValue));
+	buffer_size = reg_perfcount_get_counter_help(base_index, &buffer);
+	regval_ctr_addvalue(regvals, "Help", REG_MULTI_SZ, buffer, buffer_size);
+	if(buffer_size > 0) {
+		SAFE_FREE(buffer);
+	}
 
-	return regval_ctr_numvals(regvals);
+	return regval_ctr_numvals( regvals );
 }
 
-static int netlogon_params_fetch_subkeys(const char *key,
+static int hkpt_params_fetch_subkeys(const char *key,
 					 REGSUBKEY_CTR *subkey_ctr)
 {
 	return regdb_ops.fetch_subkeys(key, subkey_ctr);
 }
 
-REGISTRY_OPS netlogon_params_reg_ops = {
-	.fetch_values = netlogon_params_fetch_values,
-	.fetch_subkeys = netlogon_params_fetch_subkeys,
+REGISTRY_OPS hkpt_params_reg_ops = {
+	.fetch_values = hkpt_params_fetch_values,
+	.fetch_subkeys = hkpt_params_fetch_subkeys,
 };

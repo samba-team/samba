@@ -4689,7 +4689,15 @@ dos_attr_parse(SMBCCTX *context,
 	frame = talloc_stackframe();
 	while (next_token_talloc(frame, &p, &tok, "\t,\r\n")) {
 		if (StrnCaseCmp(tok, "MODE:", 5) == 0) {
-			dad->mode = strtol(tok+5, NULL, 16);
+                        long request = strtol(tok+5, NULL, 16);
+                        if (request == 0) {
+                                dad->mode = (request |
+                                             (IS_DOS_DIR(dad->mode)
+                                              ? FILE_ATTRIBUTE_DIRECTORY
+                                              : FILE_ATTRIBUTE_NORMAL));
+                        } else {
+                                dad->mode = request;
+                        }
 			continue;
 		}
 
@@ -5931,7 +5939,7 @@ smbc_setxattr_ctx(SMBCCTX *context,
                 } else {
                         ret = cacl_set(talloc_tos(), srv->cli,
                                        ipc_srv->cli, &ipc_srv->pol, path,
-                                       namevalue, SMBC_XATTR_MODE_CHOWN, 0);
+                                       namevalue, SMBC_XATTR_MODE_CHGRP, 0);
                 }
 		TALLOC_FREE(frame);
                 return ret;

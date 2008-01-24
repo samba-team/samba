@@ -162,6 +162,7 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
 	char *release, *major, *minor;
 	char *data1, *data2;
 	int ret;
+	char *saveptr;
 
 	if (asprintf(&opts,
 			"version=7,uid=%d,gid=%d,file_mode=0%o,dir_mode=0%o,%s",
@@ -172,8 +173,8 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
 
 	uname(&uts);
 	release = uts.release;
-	major = strtok(release, ".");
-	minor = strtok(NULL, ".");
+	major = strtok_r(release, ".", &saveptr);
+	minor = strtok_r(NULL, ".", &saveptr);
 	if (major && minor && atoi(major) == 2 && atoi(minor) < 4) {
 		/* < 2.4, assume struct */
 		data1 = (char *) data;

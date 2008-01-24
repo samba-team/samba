@@ -155,11 +155,10 @@ static bool shares_store_value( const char *key, REGVAL_CTR *val )
  */
  
 REGISTRY_OPS shares_reg_ops = {
-	shares_subkey_info,
-	shares_value_info,
-	shares_store_subkey,
-	shares_store_value,
-	NULL, NULL, NULL, NULL, NULL
+	.fetch_subkeys = shares_subkey_info,
+	.fetch_values = shares_value_info,
+	.store_subkeys = shares_store_subkey,
+	.store_values = shares_store_value,
 };
 
 

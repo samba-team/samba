@@ -28,6 +28,13 @@
 
 static bool scan_directory(connection_struct *conn, const char *path,
 			   char *name, char **found_name);
+static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
+				  connection_struct *conn,
+				  const char *orig_path,
+				  const char *basepath,
+				  const char *streamname,
+				  SMB_STRUCT_STAT *pst,
+				  char **path);
 
 /****************************************************************************
  Mangle the 2nd name and check if it is then equal to the first name.
@@ -119,6 +126,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	char *start, *end;
 	char *dirpath = NULL;
 	char *name = NULL;
+	char *stream = NULL;
 	bool component_was_mangled = False;
 	bool name_has_wildcard = False;
 	NTSTATUS result;
@@ -204,6 +212,20 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	if (!(name = talloc_strdup(ctx, orig_path))) {
 		DEBUG(0, ("talloc_strdup failed\n"));
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!lp_posix_pathnames()) {
+		stream = strchr_m(name, ':');
+
+		if (stream != NULL) {
+			char *tmp = talloc_strdup(ctx, stream);
+			if (tmp == NULL) {
+				TALLOC_FREE(name);
+				return NT_STATUS_NO_MEMORY;
+			}
+			*stream = '\0';
+			stream = tmp;
+		}
 	}
 
 	/*
@@ -653,6 +675,20 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
 
  done:
+	if (stream != NULL) {
+		char *tmp = NULL;
+
+		result = build_stream_path(ctx, conn, orig_path, name, stream,
+					   pst, &tmp);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto fail;
+		}
+
+		DEBUG(10, ("build_stream_path returned %s\n", tmp));
+
+		TALLOC_FREE(name);
+		name = tmp;
+	}
 	*pp_conv_path = name;
 	TALLOC_FREE(dirpath);
 	return NT_STATUS_OK;
@@ -822,4 +858,91 @@ static bool scan_directory(connection_struct *conn, const char *path,
 	TALLOC_FREE(cur_dir);
 	errno = ENOENT;
 	return False;
+}
+
+static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
+				  connection_struct *conn,
+				  const char *orig_path,
+				  const char *basepath,
+				  const char *streamname,
+				  SMB_STRUCT_STAT *pst,
+				  char **path)
+{
+	SMB_STRUCT_STAT st;
+	char *result = NULL;
+	NTSTATUS status;
+	unsigned int i, num_streams;
+	struct stream_struct *streams = NULL;
+
+	result = talloc_asprintf(mem_ctx, "%s%s", basepath, streamname);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (SMB_VFS_STAT(conn, result, &st) == 0) {
+		*pst = st;
+		*path = result;
+		return NT_STATUS_OK;
+	}
+
+	if (errno != ENOENT) {
+		status = map_nt_error_from_unix(errno);
+		DEBUG(10, ("vfs_stat failed: %s\n", nt_errstr(status)));
+		goto fail;
+	}
+
+	status = SMB_VFS_STREAMINFO(conn, NULL, basepath, mem_ctx,
+				    &num_streams, &streams);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		SET_STAT_INVALID(*pst);
+		*path = result;
+		return NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("vfs_streaminfo failed: %s\n", nt_errstr(status)));
+		goto fail;
+	}
+
+	for (i=0; i<num_streams; i++) {
+		DEBUG(10, ("comparing [%s] and [%s]: ",
+			   streamname, streams[i].name));
+		if (fname_equal(streamname, streams[i].name,
+				conn->case_sensitive)) {
+			DEBUGADD(10, ("equal\n"));
+			break;
+		}
+		DEBUGADD(10, ("not equal\n"));
+	}
+
+	if (i == num_streams) {
+		SET_STAT_INVALID(*pst);
+		*path = result;
+		TALLOC_FREE(streams);
+		return NT_STATUS_OK;
+	}
+
+	TALLOC_FREE(result);
+
+	result = talloc_asprintf(mem_ctx, "%s%s", basepath, streams[i].name);
+	if (result == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	SET_STAT_INVALID(*pst);
+
+	if (SMB_VFS_STAT(conn, result, pst) == 0) {
+		stat_cache_add(orig_path, result, conn->case_sensitive);
+	}
+
+	*path = result;
+	TALLOC_FREE(streams);
+	return NT_STATUS_OK;
+
+ fail:
+	TALLOC_FREE(result);
+	TALLOC_FREE(streams);
+	return status;
 }
