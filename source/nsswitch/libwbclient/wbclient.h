@@ -41,7 +41,8 @@ enum _wbcErrType {
 	WBC_ERR_WINBIND_NOT_AVAILABLE,   /**< Winbind daemon is not available **/
 	WBC_ERR_DOMAIN_NOT_FOUND,        /**< Domain is not trusted or cannot be found **/
 	WBC_INVALID_RESPONSE,        /**< Winbind returned an invalid response **/
-	WBC_ERR_NSS_ERROR            /**< NSS_STATUS error **/
+	WBC_ERR_NSS_ERROR,            /**< NSS_STATUS error **/
+	WBC_ERR_AUTH_ERROR        /**< Authentication failed **/
 };
 
 typedef enum _wbcErrType wbcErr;
@@ -88,6 +89,25 @@ enum wbcSidType {
 };
 
 /**
+ * @brief Security Identifier with attributes
+ **/
+
+struct wbcSidWithAttr {
+	struct wbcDomainSid sid;
+	uint32_t attributes;
+};
+
+/* wbcSidWithAttr->attributes */
+
+#define WBC_SID_ATTR_GROUP_MANDATORY		0x00000001
+#define WBC_SID_ATTR_GROUP_ENABLED_BY_DEFAULT	0x00000002
+#define WBC_SID_ATTR_GROUP_ENABLED 		0x00000004
+#define WBC_SID_ATTR_GROUP_OWNER 		0x00000008
+#define WBC_SID_ATTR_GROUP_USEFOR_DENY_ONLY 	0x00000010
+#define WBC_SID_ATTR_GROUP_RESOURCE 		0x20000000
+#define WBC_SID_ATTR_GROUP_LOGON_ID 		0xC0000000
+
+/**
  * @brief Domain Information
  **/
 
@@ -103,6 +123,140 @@ struct wbcDomainInfo {
 #define WBC_DOMINFO_NATIVE            0x00000001
 #define WBC_DOMINFO_AD                0x00000002
 #define WBC_DOMINFO_PRIMARY           0x00000004
+
+/**
+ * @brief Auth User Parameters
+ **/
+
+struct wbcAuthUserParams {
+	const char *account_name;
+	const char *domain_name;
+	const char *workstation_name;
+
+	uint32_t flags;
+
+	uint32_t parameter_control;
+
+	enum wbcAuthUserLevel {
+		WBC_AUTH_USER_LEVEL_PLAIN = 1,
+		WBC_AUTH_USER_LEVEL_HASH = 2,
+		WBC_AUTH_USER_LEVEL_RESPONSE = 3
+	} level;
+	union {
+		const char *plaintext;
+		struct {
+			uint8_t nt_hash[16];
+			uint8_t lm_hash[16];
+		} hash;
+		struct {
+			uint8_t challenge[8];
+			uint32_t nt_length;
+			uint8_t *nt_data;
+			uint32_t lm_length;
+			uint8_t *lm_data;
+		} response;
+	} password;
+};
+
+/* wbcAuthUserParams->parameter_control */
+
+#define WBC_MSV1_0_CLEARTEXT_PASSWORD_ALLOWED		0x00000002
+#define WBC_MSV1_0_UPDATE_LOGON_STATISTICS		0x00000004
+#define WBC_MSV1_0_RETURN_USER_PARAMETERS		0x00000008
+#define WBC_MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT		0x00000020
+#define WBC_MSV1_0_RETURN_PROFILE_PATH			0x00000200
+#define WBC_MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT	0x00000800
+
+/* wbcAuthUserParams->flags */
+
+#define WBC_AUTH_PARAM_FLAGS_INTERACTIVE_LOGON		0x00000001
+
+/**
+ * @brief Auth User Information
+ *
+ * Some of the strings are maybe NULL
+ **/
+
+struct wbcAuthUserInfo {
+	uint32_t user_flags;
+
+	char *account_name;
+	char *user_principal;
+	char *full_name;
+	char *domain_name;
+	char *dns_domain_name;
+
+	uint32_t acct_flags;
+	uint8_t user_session_key[16];
+	uint8_t lm_session_key[8];
+
+	uint16_t logon_count;
+	uint16_t bad_password_count;
+
+	uint64_t logon_time;
+	uint64_t logoff_time;
+	uint64_t kickoff_time;
+	uint64_t pass_last_set_time;
+	uint64_t pass_can_change_time;
+	uint64_t pass_must_change_time;
+
+	char *logon_server;
+	char *logon_script;
+	char *profile_path;
+	char *home_directory;
+	char *home_drive;
+
+	/*
+	 * the 1st one is the account sid
+	 * the 2nd one is the primary_group sid
+	 * followed by the rest of the groups
+	 */
+	uint32_t num_sids;
+	struct wbcSidWithAttr *sids;
+};
+
+/* wbcAuthUserInfo->user_flags */
+
+#define WBC_AUTH_USER_INFO_GUEST			0x00000001
+#define WBC_AUTH_USER_INFO_NOENCRYPTION			0x00000002
+#define WBC_AUTH_USER_INFO_CACHED_ACCOUNT		0x00000004
+#define WBC_AUTH_USER_INFO_USED_LM_PASSWORD		0x00000008
+#define WBC_AUTH_USER_INFO_EXTRA_SIDS 			0x00000020
+#define WBC_AUTH_USER_INFO_SUBAUTH_SESSION_KEY		0x00000040
+#define WBC_AUTH_USER_INFO_SERVER_TRUST_ACCOUNT		0x00000080
+#define WBC_AUTH_USER_INFO_NTLMV2_ENABLED		0x00000100
+#define WBC_AUTH_USER_INFO_RESOURCE_GROUPS		0x00000200
+#define WBC_AUTH_USER_INFO_PROFILE_PATH_RETURNED	0x00000400
+#define WBC_AUTH_USER_INFO_GRACE_LOGON			0x01000000
+
+/* wbcAuthUserInfo->acct_flags */
+
+#define WBC_ACB_DISABLED			0x00000001 /* 1 User account disabled */
+#define WBC_ACB_HOMDIRREQ			0x00000002 /* 1 Home directory required */
+#define WBC_ACB_PWNOTREQ			0x00000004 /* 1 User password not required */
+#define WBC_ACB_TEMPDUP				0x00000008 /* 1 Temporary duplicate account */
+#define WBC_ACB_NORMAL				0x00000010 /* 1 Normal user account */
+#define WBC_ACB_MNS				0x00000020 /* 1 MNS logon user account */
+#define WBC_ACB_DOMTRUST			0x00000040 /* 1 Interdomain trust account */
+#define WBC_ACB_WSTRUST				0x00000080 /* 1 Workstation trust account */
+#define WBC_ACB_SVRTRUST			0x00000100 /* 1 Server trust account */
+#define WBC_ACB_PWNOEXP				0x00000200 /* 1 User password does not expire */
+#define WBC_ACB_AUTOLOCK			0x00000400 /* 1 Account auto locked */
+#define WBC_ACB_ENC_TXT_PWD_ALLOWED		0x00000800 /* 1 Encryped text password is allowed */
+#define WBC_ACB_SMARTCARD_REQUIRED		0x00001000 /* 1 Smart Card required */
+#define WBC_ACB_TRUSTED_FOR_DELEGATION		0x00002000 /* 1 Trusted for Delegation */
+#define WBC_ACB_NOT_DELEGATED			0x00004000 /* 1 Not delegated */
+#define WBC_ACB_USE_DES_KEY_ONLY		0x00008000 /* 1 Use DES key only */
+#define WBC_ACB_DONT_REQUIRE_PREAUTH		0x00010000 /* 1 Preauth not required */
+#define WBC_ACB_PW_EXPIRED              	0x00020000 /* 1 Password Expired */
+#define WBC_ACB_NO_AUTH_DATA_REQD		0x00080000   /* 1 = No authorization data required */
+
+struct wbcAuthErrorInfo {
+	uint32_t nt_status;
+	char *nt_string;
+	int32_t pam_error;
+	char *display_string;
+};
 
 /*
  * Memory Management
@@ -205,5 +359,8 @@ wbcErr wbcDomainSequenceNumbers(void);
 wbcErr wbcAuthenticateUser(const char *username,
 			   const char *password);
 
+wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
+			     struct wbcAuthUserInfo **info,
+			     struct wbcAuthErrorInfo **error);
 
 #endif      /* _WBCLIENT_H */
