@@ -19,6 +19,7 @@ import "lsa.idl", "samr.idl", "security.idl", "nbt.idl";
 interface netlogon
 {
 	typedef bitmap samr_AcctFlags samr_AcctFlags;
+	typedef bitmap samr_GroupAttrs samr_GroupAttrs;
 
 	/*****************/
 	/* Function 0x00 */
@@ -182,7 +183,7 @@ interface netlogon
 
 	typedef struct {
 		dom_sid2 *sid;
-		uint32 attribute;
+		samr_GroupAttrs attributes;
 	} netr_SidAttr;
 
 	typedef [public] struct {
