@@ -1866,18 +1866,18 @@ static bool api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
 	return true;
 }
 
-static bool api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
+static bool api_netr_LogonGetTrustRid(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct netr_NETRLOGONGETTRUSTRID *r;
+	struct netr_LogonGetTrustRid *r;
 
-	call = &ndr_table_netlogon.calls[NDR_NETR_NETRLOGONGETTRUSTRID];
+	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONGETTRUSTRID];
 
-	r = talloc(NULL, struct netr_NETRLOGONGETTRUSTRID);
+	r = talloc(NULL, struct netr_LogonGetTrustRid);
 	if (r == NULL) {
 		return false;
 	}
@@ -1901,10 +1901,17 @@ static bool api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_NETRLOGONGETTRUSTRID, r);
+		NDR_PRINT_IN_DEBUG(netr_LogonGetTrustRid, r);
 	}
 
-	r->out.result = _netr_NETRLOGONGETTRUSTRID(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.rid = talloc_zero(r, uint32_t);
+	if (r->out.rid == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.result = _netr_LogonGetTrustRid(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1913,7 +1920,7 @@ static bool api_netr_NETRLOGONGETTRUSTRID(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_NETRLOGONGETTRUSTRID, r);
+		NDR_PRINT_OUT_DEBUG(netr_LogonGetTrustRid, r);
 	}
 
 	push = ndr_push_init_ctx(r);
@@ -3806,7 +3813,7 @@ static struct api_struct api_netlogon_cmds[] =
 	{"NETR_DSRGETDCNAME", NDR_NETR_DSRGETDCNAME, api_netr_DsRGetDCName},
 	{"NETR_NETRLOGONDUMMYROUTINE1", NDR_NETR_NETRLOGONDUMMYROUTINE1, api_netr_NETRLOGONDUMMYROUTINE1},
 	{"NETR_NETRLOGONSETSERVICEBITS", NDR_NETR_NETRLOGONSETSERVICEBITS, api_netr_NETRLOGONSETSERVICEBITS},
-	{"NETR_NETRLOGONGETTRUSTRID", NDR_NETR_NETRLOGONGETTRUSTRID, api_netr_NETRLOGONGETTRUSTRID},
+	{"NETR_LOGONGETTRUSTRID", NDR_NETR_LOGONGETTRUSTRID, api_netr_LogonGetTrustRid},
 	{"NETR_NETRLOGONCOMPUTESERVERDIGEST", NDR_NETR_NETRLOGONCOMPUTESERVERDIGEST, api_netr_NETRLOGONCOMPUTESERVERDIGEST},
 	{"NETR_NETRLOGONCOMPUTECLIENTDIGEST", NDR_NETR_NETRLOGONCOMPUTECLIENTDIGEST, api_netr_NETRLOGONCOMPUTECLIENTDIGEST},
 	{"NETR_SERVERAUTHENTICATE3", NDR_NETR_SERVERAUTHENTICATE3, api_netr_ServerAuthenticate3},

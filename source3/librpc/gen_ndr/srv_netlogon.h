@@ -24,7 +24,7 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p, struct netr_NetrEnumer
 WERROR _netr_DsRGetDCName(pipes_struct *p, struct netr_DsRGetDCName *r);
 WERROR _netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p, struct netr_NETRLOGONDUMMYROUTINE1 *r);
 WERROR _netr_NETRLOGONSETSERVICEBITS(pipes_struct *p, struct netr_NETRLOGONSETSERVICEBITS *r);
-WERROR _netr_NETRLOGONGETTRUSTRID(pipes_struct *p, struct netr_NETRLOGONGETTRUSTRID *r);
+WERROR _netr_LogonGetTrustRid(pipes_struct *p, struct netr_LogonGetTrustRid *r);
 WERROR _netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p, struct netr_NETRLOGONCOMPUTESERVERDIGEST *r);
 WERROR _netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p, struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r);
 NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p, struct netr_ServerAuthenticate3 *r);
