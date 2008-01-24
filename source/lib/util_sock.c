@@ -913,12 +913,10 @@ ssize_t read_udp_v4_socket(int fd,
  time_out = timeout in milliseconds
 ****************************************************************************/
 
-ssize_t read_socket_with_timeout(int fd,
-				char *buf,
-				size_t mincnt,
-				size_t maxcnt,
-				unsigned int time_out,
-				enum smb_read_errors *pre)
+NTSTATUS read_socket_with_timeout_ntstatus(int fd, char *buf,
+					   size_t mincnt, size_t maxcnt,
+					   unsigned int time_out,
+					   size_t *size_ret)
 {
 	fd_set fds;
 	int selrtn;
@@ -929,9 +927,7 @@ ssize_t read_socket_with_timeout(int fd,
 
 	/* just checking .... */
 	if (maxcnt <= 0)
-		return(0);
-
-	set_smb_read_error(pre,SMB_READ_OK);
+		return NT_STATUS_OK;
 
 	/* Blocking read */
 	if (time_out == 0) {
@@ -945,8 +941,7 @@ ssize_t read_socket_with_timeout(int fd,
 			if (readret == 0) {
 				DEBUG(5,("read_socket_with_timeout: "
 					"blocking read. EOF from client.\n"));
-				set_smb_read_error(pre,SMB_READ_EOF);
-				return -1;
+				return NT_STATUS_END_OF_FILE;
 			}
 
 			if (readret == -1) {
@@ -962,12 +957,11 @@ ssize_t read_socket_with_timeout(int fd,
 						"read error = %s.\n",
 						strerror(errno) ));
 				}
-				set_smb_read_error(pre,SMB_READ_ERROR);
-				return -1;
+				return map_nt_error_from_unix(errno);
 			}
 			nread += readret;
 		}
-		return((ssize_t)nread);
+		goto done;
 	}
 
 	/* Most difficult - timeout read */
@@ -1001,16 +995,14 @@ ssize_t read_socket_with_timeout(int fd,
 				"read. select error = %s.\n",
 				strerror(errno) ));
 			}
-			set_smb_read_error(pre,SMB_READ_ERROR);
-			return -1;
+			return map_nt_error_from_unix(errno);
 		}
 
 		/* Did we timeout ? */
 		if (selrtn == 0) {
 			DEBUG(10,("read_socket_with_timeout: timeout read. "
 				"select timed out.\n"));
-			set_smb_read_error(pre,SMB_READ_TIMEOUT);
-			return -1;
+			return NT_STATUS_IO_TIMEOUT;
 		}
 
 		readret = sys_read(fd, buf+nread, maxcnt-nread);
@@ -1019,8 +1011,7 @@ ssize_t read_socket_with_timeout(int fd,
 			/* we got EOF on the file descriptor */
 			DEBUG(5,("read_socket_with_timeout: timeout read. "
 				"EOF from client.\n"));
-			set_smb_read_error(pre,SMB_READ_EOF);
-			return -1;
+			return NT_STATUS_END_OF_FILE;
 		}
 
 		if (readret == -1) {
@@ -1037,15 +1028,49 @@ ssize_t read_socket_with_timeout(int fd,
 					"read. read error = %s.\n",
 					strerror(errno) ));
 			}
-			set_smb_read_error(pre,SMB_READ_ERROR);
-			return -1;
+			return map_nt_error_from_unix(errno);
 		}
 
 		nread += readret;
 	}
 
+ done:
 	/* Return the number we got */
-	return (ssize_t)nread;
+	if (size_ret) {
+		*size_ret = nread;
+	}
+	return NT_STATUS_OK;
+}
+
+ssize_t read_socket_with_timeout(int fd, char *buf,
+				 size_t mincnt, size_t maxcnt,
+				 unsigned int time_out,
+				 enum smb_read_errors *pre)
+{
+	NTSTATUS status;
+	size_t size_ret;
+
+	set_smb_read_error(pre, SMB_READ_OK);
+
+	status = read_socket_with_timeout_ntstatus(fd, buf, mincnt, maxcnt,
+						   time_out, &size_ret);
+
+	if (NT_STATUS_IS_OK(status)) {
+		return size_ret;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+		set_smb_read_error(pre, SMB_READ_EOF);
+		return -1;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		set_smb_read_error(pre, SMB_READ_TIMEOUT);
+		return -1;
+	}
+
+	set_smb_read_error(pre, SMB_READ_ERROR);
+	return -1;
 }
 
 /****************************************************************************
