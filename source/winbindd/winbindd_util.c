@@ -1404,6 +1404,8 @@ bool winbindd_can_contact_domain( struct winbindd_domain *domain )
 	if ( domain->active_directory && 
 	     ((domain->domain_flags&DS_DOMAIN_DIRECT_INBOUND) != DS_DOMAIN_DIRECT_INBOUND) ) 
 	{
+		DEBUG(10, ("Domain is an AD domain and we have no inbound "
+			   "trust.\n"));
 		return False;
 	}
 	
