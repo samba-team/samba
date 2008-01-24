@@ -126,11 +126,6 @@ interface netlogon
 		[case(6)] netr_NetworkInfo  *network;
 	} netr_LogonLevel;
 
-	typedef [public] struct {
-		uint32 rid;
-		uint32 attributes;
-	} netr_GroupMembership;
-
 	typedef [public,flag(NDR_PAHEX)] struct {
 		uint8 key[16];
 	} netr_UserSessionKey;
