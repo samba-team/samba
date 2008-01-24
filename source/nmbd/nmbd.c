@@ -676,11 +676,18 @@ static bool open_sockets(bool isdaemon, int port)
 		ClientNMB = 0;
 	}
 
+	if (ClientNMB == -1) {
+		return false;
+	}
+
 	ClientDGRAM = open_socket_in(SOCK_DGRAM, DGRAM_PORT,
 					   3, &ss,
 					   true);
 
-	if (ClientNMB == -1) {
+	if (ClientDGRAM == -1) {
+		if (ClientNMB != 0) {
+			close(ClientNMB);
+		}
 		return false;
 	}
 
