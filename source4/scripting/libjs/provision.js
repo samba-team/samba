@@ -524,6 +524,10 @@ function provision_become_dc(subobj, message, erase, paths, session_info)
 	var ok = provision_fix_subobj(subobj, paths);
 	assert(ok);
 
+	if (subobj.BACKEND_MOD == undefined) {
+		subobj.BACKEND_MOD = "repl_meta_data";
+	}
+
 	info.subobj = subobj;
 	info.message = message;
 	info.session_info = session_info;
