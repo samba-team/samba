@@ -92,7 +92,6 @@
 #if 0
 #define MSV1_0_ALLOW_SERVER_TRUST_ACCOUNT	0x00000020
 #define MSV1_0_ALLOW_WORKSTATION_TRUST_ACCOUNT	0x00000800
-#endif
 
 /* updates the "logon time" on network logon */
 #define MSV1_0_UPDATE_LOGON_STATISTICS		0x00000004
@@ -103,6 +102,7 @@
 /* returns the profilepath in the driveletter and 
  * sets LOGON_PROFILE_PATH_RETURNED user_flag */
 #define MSV1_0_RETURN_PROFILE_PATH		0x00000200
+#endif
 
 #if 0
 /* I think this is correct - it's what gets parsed on the wire. JRA. */
