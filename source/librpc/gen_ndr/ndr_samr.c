@@ -91,17 +91,17 @@ _PUBLIC_ void ndr_print_samr_UserAccessMask(struct ndr_print *ndr, const char *n
 {
 	ndr_print_uint32(ndr, name, r);
 	ndr->depth++;
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "USER_ACCESS_GET_NAME_ETC", USER_ACCESS_GET_NAME_ETC, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "USER_ACCESS_GET_LOCALE", USER_ACCESS_GET_LOCALE, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "USER_ACCESS_SET_LOC_COM", USER_ACCESS_SET_LOC_COM, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "USER_ACCESS_GET_LOGONINFO", USER_ACCESS_GET_LOGONINFO, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "USER_ACCESS_GET_ATTRIBUTES", USER_ACCESS_GET_ATTRIBUTES, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "USER_ACCESS_SET_ATTRIBUTES", USER_ACCESS_SET_ATTRIBUTES, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "USER_ACCESS_CHANGE_PASSWORD", USER_ACCESS_CHANGE_PASSWORD, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "USER_ACCESS_SET_PASSWORD", USER_ACCESS_SET_PASSWORD, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "USER_ACCESS_GET_GROUPS", USER_ACCESS_GET_GROUPS, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "USER_ACCESS_GET_GROUP_MEMBERSHIP", USER_ACCESS_GET_GROUP_MEMBERSHIP, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "USER_ACCESS_CHANGE_GROUP_MEMBERSHIP", USER_ACCESS_CHANGE_GROUP_MEMBERSHIP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_USER_ACCESS_GET_NAME_ETC", SAMR_USER_ACCESS_GET_NAME_ETC, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_USER_ACCESS_GET_LOCALE", SAMR_USER_ACCESS_GET_LOCALE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_USER_ACCESS_SET_LOC_COM", SAMR_USER_ACCESS_SET_LOC_COM, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_USER_ACCESS_GET_LOGONINFO", SAMR_USER_ACCESS_GET_LOGONINFO, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_USER_ACCESS_GET_ATTRIBUTES", SAMR_USER_ACCESS_GET_ATTRIBUTES, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_USER_ACCESS_SET_ATTRIBUTES", SAMR_USER_ACCESS_SET_ATTRIBUTES, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_USER_ACCESS_CHANGE_PASSWORD", SAMR_USER_ACCESS_CHANGE_PASSWORD, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_USER_ACCESS_SET_PASSWORD", SAMR_USER_ACCESS_SET_PASSWORD, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_USER_ACCESS_GET_GROUPS", SAMR_USER_ACCESS_GET_GROUPS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_USER_ACCESS_GET_GROUP_MEMBERSHIP", SAMR_USER_ACCESS_GET_GROUP_MEMBERSHIP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_USER_ACCESS_CHANGE_GROUP_MEMBERSHIP", SAMR_USER_ACCESS_CHANGE_GROUP_MEMBERSHIP, r);
 	ndr->depth--;
 }
 
@@ -123,17 +123,17 @@ _PUBLIC_ void ndr_print_samr_DomainAccessMask(struct ndr_print *ndr, const char 
 {
 	ndr_print_uint32(ndr, name, r);
 	ndr->depth++;
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DOMAIN_ACCESS_LOOKUP_INFO_1", DOMAIN_ACCESS_LOOKUP_INFO_1, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DOMAIN_ACCESS_SET_INFO_1", DOMAIN_ACCESS_SET_INFO_1, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DOMAIN_ACCESS_LOOKUP_INFO_2", DOMAIN_ACCESS_LOOKUP_INFO_2, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DOMAIN_ACCESS_SET_INFO_2", DOMAIN_ACCESS_SET_INFO_2, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DOMAIN_ACCESS_CREATE_USER", DOMAIN_ACCESS_CREATE_USER, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DOMAIN_ACCESS_CREATE_GROUP", DOMAIN_ACCESS_CREATE_GROUP, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DOMAIN_ACCESS_CREATE_ALIAS", DOMAIN_ACCESS_CREATE_ALIAS, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DOMAIN_ACCESS_LOOKUP_ALIAS", DOMAIN_ACCESS_LOOKUP_ALIAS, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DOMAIN_ACCESS_ENUM_ACCOUNTS", DOMAIN_ACCESS_ENUM_ACCOUNTS, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DOMAIN_ACCESS_OPEN_ACCOUNT", DOMAIN_ACCESS_OPEN_ACCOUNT, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DOMAIN_ACCESS_SET_INFO_3", DOMAIN_ACCESS_SET_INFO_3, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1", SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_DOMAIN_ACCESS_SET_INFO_1", SAMR_DOMAIN_ACCESS_SET_INFO_1, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2", SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_DOMAIN_ACCESS_SET_INFO_2", SAMR_DOMAIN_ACCESS_SET_INFO_2, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_DOMAIN_ACCESS_CREATE_USER", SAMR_DOMAIN_ACCESS_CREATE_USER, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_DOMAIN_ACCESS_CREATE_GROUP", SAMR_DOMAIN_ACCESS_CREATE_GROUP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_DOMAIN_ACCESS_CREATE_ALIAS", SAMR_DOMAIN_ACCESS_CREATE_ALIAS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS", SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS", SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT", SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_DOMAIN_ACCESS_SET_INFO_3", SAMR_DOMAIN_ACCESS_SET_INFO_3, r);
 	ndr->depth--;
 }
 
@@ -155,11 +155,11 @@ _PUBLIC_ void ndr_print_samr_GroupAccessMask(struct ndr_print *ndr, const char *
 {
 	ndr_print_uint32(ndr, name, r);
 	ndr->depth++;
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "GROUP_ACCESS_LOOKUP_INFO", GROUP_ACCESS_LOOKUP_INFO, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "GROUP_ACCESS_SET_INFO", GROUP_ACCESS_SET_INFO, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "GROUP_ACCESS_ADD_MEMBER", GROUP_ACCESS_ADD_MEMBER, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "GROUP_ACCESS_REMOVE_MEMBER", GROUP_ACCESS_REMOVE_MEMBER, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "GROUP_ACCESS_GET_MEMBERS", GROUP_ACCESS_GET_MEMBERS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_GROUP_ACCESS_LOOKUP_INFO", SAMR_GROUP_ACCESS_LOOKUP_INFO, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_GROUP_ACCESS_SET_INFO", SAMR_GROUP_ACCESS_SET_INFO, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_GROUP_ACCESS_ADD_MEMBER", SAMR_GROUP_ACCESS_ADD_MEMBER, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_GROUP_ACCESS_REMOVE_MEMBER", SAMR_GROUP_ACCESS_REMOVE_MEMBER, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_GROUP_ACCESS_GET_MEMBERS", SAMR_GROUP_ACCESS_GET_MEMBERS, r);
 	ndr->depth--;
 }
 
@@ -181,11 +181,11 @@ _PUBLIC_ void ndr_print_samr_AliasAccessMask(struct ndr_print *ndr, const char *
 {
 	ndr_print_uint32(ndr, name, r);
 	ndr->depth++;
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ALIAS_ACCESS_ADD_MEMBER", ALIAS_ACCESS_ADD_MEMBER, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ALIAS_ACCESS_REMOVE_MEMBER", ALIAS_ACCESS_REMOVE_MEMBER, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ALIAS_ACCESS_GET_MEMBERS", ALIAS_ACCESS_GET_MEMBERS, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ALIAS_ACCESS_LOOKUP_INFO", ALIAS_ACCESS_LOOKUP_INFO, r);
-	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ALIAS_ACCESS_SET_INFO", ALIAS_ACCESS_SET_INFO, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_ALIAS_ACCESS_ADD_MEMBER", SAMR_ALIAS_ACCESS_ADD_MEMBER, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_ALIAS_ACCESS_REMOVE_MEMBER", SAMR_ALIAS_ACCESS_REMOVE_MEMBER, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_ALIAS_ACCESS_GET_MEMBERS", SAMR_ALIAS_ACCESS_GET_MEMBERS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_ALIAS_ACCESS_LOOKUP_INFO", SAMR_ALIAS_ACCESS_LOOKUP_INFO, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "SAMR_ALIAS_ACCESS_SET_INFO", SAMR_ALIAS_ACCESS_SET_INFO, r);
 	ndr->depth--;
 }
 
