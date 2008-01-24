@@ -1471,8 +1471,10 @@ int cmd_tar(void)
 	}
 
 	argl=toktocliplist(&argcl, NULL);
-	if (!tar_parseargs(argcl, argl, buf, 0))
+	if (!tar_parseargs(argcl, argl, buf, 0)) {
+		SAFE_FREE(argl);
 		return 1;
+	}
 
 	ret = process_tar();
 	SAFE_FREE(argl);
