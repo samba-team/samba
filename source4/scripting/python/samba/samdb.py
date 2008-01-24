@@ -145,3 +145,10 @@ member: %s
 
     def attach_schema_from_ldif(self, pf, df):
         misc.dsdb_attach_schema_from_ldif_file(self, pf, df)
+
+    def set_invocation_id(self, invocation_id):
+    	"""Set the invocation id for this SamDB handle.
+    	
+    	:param invocation_id: GUID of the invocation id.
+    	"""
+    	misc.samdb_set_ntds_invocation_id(self, invocation_id)

@@ -2459,35 +2459,36 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 
 /* -------- TYPES TABLE (BEGIN) -------- */
 
-#define SWIGTYPE_p_TALLOC_CTX swig_types[0]
-#define SWIGTYPE_p_auth_session_info swig_types[1]
-#define SWIGTYPE_p_char swig_types[2]
-#define SWIGTYPE_p_cli_credentials swig_types[3]
-#define SWIGTYPE_p_dom_sid swig_types[4]
-#define SWIGTYPE_p_int swig_types[5]
-#define SWIGTYPE_p_ldb_context swig_types[6]
-#define SWIGTYPE_p_ldb_dn swig_types[7]
-#define SWIGTYPE_p_ldb_ldif swig_types[8]
-#define SWIGTYPE_p_ldb_message swig_types[9]
-#define SWIGTYPE_p_ldb_message_element swig_types[10]
-#define SWIGTYPE_p_ldb_result swig_types[11]
-#define SWIGTYPE_p_loadparm_context swig_types[12]
-#define SWIGTYPE_p_loadparm_service swig_types[13]
-#define SWIGTYPE_p_long_long swig_types[14]
-#define SWIGTYPE_p_param_context swig_types[15]
-#define SWIGTYPE_p_param_opt swig_types[16]
-#define SWIGTYPE_p_param_section swig_types[17]
-#define SWIGTYPE_p_security_descriptor swig_types[18]
-#define SWIGTYPE_p_security_token swig_types[19]
-#define SWIGTYPE_p_short swig_types[20]
-#define SWIGTYPE_p_signed_char swig_types[21]
-#define SWIGTYPE_p_unsigned_char swig_types[22]
-#define SWIGTYPE_p_unsigned_int swig_types[23]
-#define SWIGTYPE_p_unsigned_long swig_types[24]
-#define SWIGTYPE_p_unsigned_long_long swig_types[25]
-#define SWIGTYPE_p_unsigned_short swig_types[26]
-static swig_type_info *swig_types[28];
-static swig_module_info swig_module = {swig_types, 27, 0, 0, 0, 0};
+#define SWIGTYPE_p_GUID swig_types[0]
+#define SWIGTYPE_p_TALLOC_CTX swig_types[1]
+#define SWIGTYPE_p_auth_session_info swig_types[2]
+#define SWIGTYPE_p_char swig_types[3]
+#define SWIGTYPE_p_cli_credentials swig_types[4]
+#define SWIGTYPE_p_dom_sid swig_types[5]
+#define SWIGTYPE_p_int swig_types[6]
+#define SWIGTYPE_p_ldb_context swig_types[7]
+#define SWIGTYPE_p_ldb_dn swig_types[8]
+#define SWIGTYPE_p_ldb_ldif swig_types[9]
+#define SWIGTYPE_p_ldb_message swig_types[10]
+#define SWIGTYPE_p_ldb_message_element swig_types[11]
+#define SWIGTYPE_p_ldb_result swig_types[12]
+#define SWIGTYPE_p_loadparm_context swig_types[13]
+#define SWIGTYPE_p_loadparm_service swig_types[14]
+#define SWIGTYPE_p_long_long swig_types[15]
+#define SWIGTYPE_p_param_context swig_types[16]
+#define SWIGTYPE_p_param_opt swig_types[17]
+#define SWIGTYPE_p_param_section swig_types[18]
+#define SWIGTYPE_p_security_descriptor swig_types[19]
+#define SWIGTYPE_p_security_token swig_types[20]
+#define SWIGTYPE_p_short swig_types[21]
+#define SWIGTYPE_p_signed_char swig_types[22]
+#define SWIGTYPE_p_unsigned_char swig_types[23]
+#define SWIGTYPE_p_unsigned_int swig_types[24]
+#define SWIGTYPE_p_unsigned_long swig_types[25]
+#define SWIGTYPE_p_unsigned_long_long swig_types[26]
+#define SWIGTYPE_p_unsigned_short swig_types[27]
+static swig_type_info *swig_types[29];
+static swig_module_info swig_module = {swig_types, 28, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -3102,6 +3103,43 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_samdb_set_ntds_invocation_id(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  struct ldb_context *arg1 = (struct ldb_context *) 0 ;
+  struct GUID *arg2 = (struct GUID *) 0 ;
+  bool result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  void *argp2 = 0 ;
+  int res2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "ldb",(char *) "invocation_id_in", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:samdb_set_ntds_invocation_id",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "samdb_set_ntds_invocation_id" "', argument " "1"" of type '" "struct ldb_context *""'"); 
+  }
+  arg1 = (struct ldb_context *)(argp1);
+  res2 = SWIG_ConvertPtr(obj1, &argp2,SWIGTYPE_p_GUID, 0 |  0 );
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "samdb_set_ntds_invocation_id" "', argument " "2"" of type '" "struct GUID const *""'"); 
+  }
+  arg2 = (struct GUID *)(argp2);
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
+  result = (bool)samdb_set_ntds_invocation_id(arg1,(struct GUID const *)arg2);
+  resultobj = SWIG_From_bool((bool)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"random_password", (PyCFunction) _wrap_random_password, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ldb_set_credentials", (PyCFunction) _wrap_ldb_set_credentials, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -3112,12 +3150,14 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"version", (PyCFunction)_wrap_version, METH_NOARGS, NULL},
 	 { (char *)"dsdb_set_global_schema", (PyCFunction) _wrap_dsdb_set_global_schema, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ldb_register_samba_handlers", (PyCFunction) _wrap_ldb_register_samba_handlers, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"samdb_set_ntds_invocation_id", (PyCFunction) _wrap_samdb_set_ntds_invocation_id, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 
 
 /* -------- TYPE CONVERSION AND EQUIVALENCE RULES (BEGIN) -------- */
 
+static swig_type_info _swigt__p_GUID = {"_p_GUID", "struct GUID *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_TALLOC_CTX = {"_p_TALLOC_CTX", "TALLOC_CTX *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_auth_session_info = {"_p_auth_session_info", "struct auth_session_info *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
@@ -3147,6 +3187,7 @@ static swig_type_info _swigt__p_unsigned_long_long = {"_p_unsigned_long_long", "
 static swig_type_info _swigt__p_unsigned_short = {"_p_unsigned_short", "unsigned short *|uint_least16_t *|uint16_t *", 0, 0, (void*)0, 0};
 
 static swig_type_info *swig_type_initial[] = {
+  &_swigt__p_GUID,
   &_swigt__p_TALLOC_CTX,
   &_swigt__p_auth_session_info,
   &_swigt__p_char,
@@ -3176,6 +3217,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_unsigned_short,
 };
 
+static swig_cast_info _swigc__p_GUID[] = {  {&_swigt__p_GUID, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_TALLOC_CTX[] = {  {&_swigt__p_TALLOC_CTX, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_auth_session_info[] = {  {&_swigt__p_auth_session_info, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
@@ -3205,6 +3247,7 @@ static swig_cast_info _swigc__p_unsigned_long_long[] = {  {&_swigt__p_unsigned_l
 static swig_cast_info _swigc__p_unsigned_short[] = {  {&_swigt__p_unsigned_short, 0, 0, 0},{0, 0, 0, 0}};
 
 static swig_cast_info *swig_cast_initial[] = {
+  _swigc__p_GUID,
   _swigc__p_TALLOC_CTX,
   _swigc__p_auth_session_info,
   _swigc__p_char,
