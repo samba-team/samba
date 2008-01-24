@@ -464,6 +464,9 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 {
 	int i;
 
+	DEBUG(10, ("lookup_rids called for domain sid '%s'\n",
+		   sid_string_dbg(domain_sid)));
+
 	if (num_rids) {
 		*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
 		*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
