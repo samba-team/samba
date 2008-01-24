@@ -391,6 +391,10 @@ static int replmd_add_originating(struct ldb_module *module,
 		m->originating_usn		= seq_num;
 		m->local_usn			= seq_num;
 		ni++;
+
+		if (ldb_attr_cmp(e->name, ldb_dn_get_rdn_name(msg->dn))) {
+			rdn_attr = sa;
+		}
 	}
 
 	/* fix meta data count */

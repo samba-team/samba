@@ -693,6 +693,8 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 
 	samdb.set_domain_sid(subobj.DOMAINSID);
 
+	samdb.set_ntds_invocationId(subobj.INVOCATIONID);
+
 	var load_schema_ok = load_schema(subobj, message, samdb);
 	assert(load_schema_ok.is_ok);
 
@@ -1010,9 +1012,9 @@ function provision_guess()
 	subobj.DOMAINDN_MOD = "pdc_fsmo,password_hash,instancetype";
 	subobj.CONFIGDN_MOD = "naming_fsmo,instancetype";
 	subobj.SCHEMADN_MOD = "schema_fsmo,instancetype";
-	subobj.DOMAINDN_MOD2 = ",objectguid";
-	subobj.CONFIGDN_MOD2 = ",objectguid";
-	subobj.SCHEMADN_MOD2 = ",objectguid";
+	subobj.DOMAINDN_MOD2 = ",repl_meta_data";
+	subobj.CONFIGDN_MOD2 = ",repl_meta_data";
+	subobj.SCHEMADN_MOD2 = ",repl_meta_data";
 
 	subobj.ACI		= "# no aci for local ldb";
 
