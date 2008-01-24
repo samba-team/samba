@@ -4,9 +4,6 @@
 dn: ${DOMAINDN}
 changetype: modify
 -
-replace: dc
-dc: ${RDN_DC}
--
 replace: forceLogoff
 forceLogoff: 9223372036854775808
 -

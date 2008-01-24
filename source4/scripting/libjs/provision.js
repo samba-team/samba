@@ -484,9 +484,6 @@ function provision_fix_subobj(subobj, paths)
 	subobj.ADMINPASS_B64   = ldb.encode(subobj.ADMINPASS);
 	subobj.DNSPASS_B64     = ldb.encode(subobj.DNSPASS);
 
-	var rdns = split(",", subobj.DOMAINDN);
-	subobj.RDN_DC = substr(rdns[0], strlen("DC="));
-
 	subobj.SAM_LDB		= "tdb://" + paths.samdb;
 	subobj.SECRETS_KEYTAB	= paths.keytab;
 	subobj.DNS_KEYTAB	= paths.dns_keytab;
