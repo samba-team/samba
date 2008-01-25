@@ -1123,20 +1123,16 @@ ssize_t read_smb_length_return_keepalive(int fd,
 {
 	ssize_t len=0;
 	int msg_type;
-	bool ok = false;
 
-	while (!ok) {
-		ok = (read_socket_with_timeout(fd,inbuf,4,4,timeout,pre) == 4);
-		if (!ok) {
-			return -1;
-		}
+	if (read_socket_with_timeout(fd, inbuf, 4, 4, timeout, pre) != 4) {
+		return -1;
+	}
 
-		len = smb_len(inbuf);
-		msg_type = CVAL(inbuf,0);
+	len = smb_len(inbuf);
+	msg_type = CVAL(inbuf,0);
 
-		if (msg_type == SMBkeepalive) {
-			DEBUG(5,("Got keepalive packet\n"));
-		}
+	if (msg_type == SMBkeepalive) {
+		DEBUG(5,("Got keepalive packet\n"));
 	}
 
 	DEBUG(10,("got smb length of %lu\n",(unsigned long)len));
