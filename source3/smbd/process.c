@@ -148,22 +148,34 @@ static ssize_t read_packet_remainder(int fd,
 					unsigned int timeout,
 					ssize_t len)
 {
-	ssize_t ret;
+	NTSTATUS status;
 
-	if(len <= 0) {
+	if (len <= 0) {
 		return len;
 	}
 
-	ret = read_socket_with_timeout(fd, buffer, len, len, timeout,
-				       get_srv_read_error());
+	set_smb_read_error(get_srv_read_error(), SMB_READ_OK);
 
-	if (ret != len) {
-		cond_set_smb_read_error(get_srv_read_error(),
-					SMB_READ_ERROR);
+	status = read_socket_with_timeout_ntstatus(fd, buffer, len, len,
+						   timeout, NULL);
+
+	if (NT_STATUS_IS_OK(status)) {
+		return len;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+		set_smb_read_error(get_srv_read_error(), SMB_READ_EOF);
 		return -1;
 	}
 
-	return len;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		set_smb_read_error(get_srv_read_error(),
+				   SMB_READ_TIMEOUT);
+		return -1;
+	}
+
+	set_smb_read_error(get_srv_read_error(), SMB_READ_ERROR);
+	return -1;
 }
 
 /****************************************************************************
