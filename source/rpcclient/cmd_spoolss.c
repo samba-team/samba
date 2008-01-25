@@ -1252,7 +1252,7 @@ static bool init_drv_info_3_members ( TALLOC_CTX *mem_ctx, DRIVER_INFO_3 *info,
 {
 	char	*str, *str2;
 	uint32	len, i;
-	char *saveptr;
+	char *saveptr = NULL;
 
 	/* fill in the UNISTR fields */
 	str = get_driver_3_param (args, ":", &info->name);

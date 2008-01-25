@@ -162,7 +162,7 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
 	char *release, *major, *minor;
 	char *data1, *data2;
 	int ret;
-	char *saveptr;
+	char *saveptr = NULL;
 
 	if (asprintf(&opts,
 			"version=7,uid=%d,gid=%d,file_mode=0%o,dir_mode=0%o,%s",
