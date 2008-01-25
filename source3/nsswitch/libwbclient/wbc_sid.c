@@ -355,6 +355,7 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 					&request,
 					&response);
 	talloc_free(ridlist);
+	BAIL_ON_WBC_ERROR(wbc_status);
 
 	domain_name = talloc_strdup(NULL, response.data.domain_name);
 	BAIL_ON_PTR_ERROR(domain_name, wbc_status);
