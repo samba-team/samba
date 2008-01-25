@@ -79,7 +79,7 @@ class LdbExtensionTests(TestCaseInTempDir):
         l = samba.Ldb(path)
         try:
             l.add({"dn": "foo=dc", "bar": "bla"})
-            self.assertEquals("bla", l.searchone(ldb.Dn(l, "foo=dc"), "bar"))
+            self.assertEquals("bla", l.searchone(basedn=ldb.Dn(l, "foo=dc"), attribute="bar"))
         finally:
             del l
             os.unlink(path)

@@ -91,7 +91,7 @@ class Ldb(ldb.Ldb):
     set_session_info = misc.ldb_set_session_info
     set_loadparm = misc.ldb_set_loadparm
 
-    def searchone(self, basedn, attribute, expression=None, 
+    def searchone(self, attribute, basedn=None, expression=None, 
                   scope=ldb.SCOPE_BASE):
         """Search for one attribute as a string.
         
@@ -106,7 +106,7 @@ class Ldb(ldb.Ldb):
             return None
         values = set(res[0][attribute])
         assert len(values) == 1
-        return values.pop()
+        return self.schema_format_value(attribute, values.pop())
 
     def erase(self):
         """Erase this ldb, removing all records."""
