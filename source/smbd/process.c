@@ -128,15 +128,6 @@ static bool valid_packet_size(size_t len)
 		DEBUG(0,("Invalid packet length! (%lu bytes).\n",
 					(unsigned long)len));
 		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
-
-			/*
-			 * Correct fix. smb_read_error may have already been
-			 * set. Only set it here if not already set. Global
-			 * variables still suck :-). JRA.
-			 */
-
-			cond_set_smb_read_error(get_srv_read_error(),
-						SMB_READ_ERROR);
 			return false;
 		}
 	}
@@ -170,30 +161,29 @@ static NTSTATUS read_packet_remainder(int fd, char *buffer,
 				(2*14) + /* word count (including bcc) */ \
 				1 /* pad byte */)
 
-static ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
-					const char lenbuf[4],
-					int fd,
-					char **buffer,
-					unsigned int timeout,
-					size_t *p_unread)
+static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
+						    const char lenbuf[4],
+						    int fd, char **buffer,
+						    unsigned int timeout,
+						    size_t *p_unread,
+						    size_t *len_ret)
 {
 	/* Size of a WRITEX call (+4 byte len). */
 	char writeX_header[4 + STANDARD_WRITE_AND_X_HEADER_SIZE];
 	ssize_t len = smb_len_large(lenbuf); /* Could be a UNIX large writeX. */
 	ssize_t toread;
-	ssize_t ret;
+	NTSTATUS status;
 
 	memcpy(writeX_header, lenbuf, sizeof(lenbuf));
 
-	ret = read_socket_with_timeout(fd, writeX_header + 4,
-				       STANDARD_WRITE_AND_X_HEADER_SIZE,
-				       STANDARD_WRITE_AND_X_HEADER_SIZE,
-				       timeout,	get_srv_read_error());
+	status = read_socket_with_timeout_ntstatus(
+		fd, writeX_header + 4,
+		STANDARD_WRITE_AND_X_HEADER_SIZE,
+		STANDARD_WRITE_AND_X_HEADER_SIZE,
+		timeout, NULL);
 
-	if (ret != STANDARD_WRITE_AND_X_HEADER_SIZE) {
-		cond_set_smb_read_error(get_srv_read_error(),
-					SMB_READ_ERROR);
-		return -1;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/*
@@ -232,19 +222,17 @@ static ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 		if (*buffer == NULL) {
 			DEBUG(0, ("Could not allocate inbuf of length %d\n",
 				  (int)sizeof(writeX_header)));
-			cond_set_smb_read_error(get_srv_read_error(),
-						SMB_READ_ERROR);
-			return -1;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		/* Work out the remaining bytes. */
 		*p_unread = len - STANDARD_WRITE_AND_X_HEADER_SIZE;
-
-		return newlen + 4;
+		*len_ret = newlen + 4;
+		return NT_STATUS_OK;
 	}
 
 	if (!valid_packet_size(len)) {
-		return -1;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/*
@@ -257,9 +245,7 @@ static ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	if (*buffer == NULL) {
 		DEBUG(0, ("Could not allocate inbuf of length %d\n",
 			  (int)len+4));
-		cond_set_smb_read_error(get_srv_read_error(),
-					SMB_READ_ERROR);
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Copy in what we already read. */
@@ -269,34 +255,17 @@ static ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	toread = len - STANDARD_WRITE_AND_X_HEADER_SIZE;
 
 	if(toread > 0) {
-		NTSTATUS status;
-
-		set_smb_read_error(get_srv_read_error(), SMB_READ_OK);
-
 		status = read_packet_remainder(
 			fd, (*buffer) + 4 + STANDARD_WRITE_AND_X_HEADER_SIZE,
 			timeout, toread);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-				set_smb_read_error(get_srv_read_error(),
-						   SMB_READ_EOF);
-				return -1;
-			}
-
-			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-				set_smb_read_error(get_srv_read_error(),
-						   SMB_READ_TIMEOUT);
-				return -1;
-			}
-
-			set_smb_read_error(get_srv_read_error(),
-					   SMB_READ_ERROR);
-			return -1;
+			return status;
 		}
 	}
 
-	return len + 4;
+	*len_ret = len + 4;
+	return NT_STATUS_OK;
 }
 
 static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
@@ -337,15 +306,34 @@ static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 			smb_len_large(lenbuf) > min_recv_size && /* Could be a UNIX large writeX. */
 			!srv_is_signing_active()) {
 
-		return receive_smb_raw_talloc_partial_read(mem_ctx,
-							lenbuf,
-							fd,
-							buffer,
-							timeout,
-							p_unread);
+		status = receive_smb_raw_talloc_partial_read(
+			mem_ctx, lenbuf, fd, buffer, timeout, p_unread, &len);
+
+		if (!NT_STATUS_IS_OK(status)) {
+
+			DEBUG(10, ("receive_smb_raw: %s\n",
+				   nt_errstr(status)));
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+				set_smb_read_error(get_srv_read_error(),
+						   SMB_READ_EOF);
+				return -1;
+			}
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+				set_smb_read_error(get_srv_read_error(),
+						   SMB_READ_TIMEOUT);
+				return -1;
+			}
+
+			set_smb_read_error(get_srv_read_error(),
+					   SMB_READ_ERROR);
+			return -1;
+		}
 	}
 
 	if (!valid_packet_size(len)) {
+		cond_set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
 		return -1;
 	}
 
