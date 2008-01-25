@@ -725,7 +725,7 @@ def provision(lp, setup_dir, message, paths, session_info,
     
     if ldap_backend == "ldapi":
     	# provision-backend will set this path suggested slapd command line / fedorads.inf
-    	ldap_backend = "ldapi://" % urllib.quote(os.path.join(lp.get("private dir"), "ldap", "ldapi"))
+    	ldap_backend = "ldapi://" % urllib.quote(os.path.join(lp.get("private dir"), "ldap", "ldapi"), "")
 
     assert realm is not None
     realm = realm.upper()
@@ -860,9 +860,9 @@ def provision(lp, setup_dir, message, paths, session_info,
         samdb = SamDB(paths.samdb, session_info=session_info, 
                       credentials=credentials, lp=lp)
 
-        domainguid = samdb.searchone(domaindn, "objectGUID")
+        domainguid = samdb.searchone(basedn=domaindn, attribute="objectGUID")
         assert isinstance(domainguid, str)
-        hostguid = samdb.searchone(domaindn, "objectGUID",
+        hostguid = samdb.searchone(basedn=domaindn, attribute="objectGUID",
                 expression="(&(objectClass=computer)(cn=%s))" % hostname,
                 scope=SCOPE_SUBTREE)
         assert isinstance(hostguid, str)
@@ -877,14 +877,14 @@ def provision(lp, setup_dir, message, paths, session_info,
     return domaindn
 
 
-def create_phpldapadmin_config(path, setup_path, ldap_backend):
+def create_phpldapadmin_config(path, setup_path, ldapi_uri):
     """Create a PHP LDAP admin configuration file.
 
     :param path: Path to write the configuration to.
     :param setup_path: Function to generate setup paths.
     """
     setup_file(setup_path("phpldapadmin-config.php"), path, 
-            {"S4_LDAPI_URI": ldap_backend})
+            {"S4_LDAPI_URI": ldapi_uri})
 
 
 def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn, 
@@ -903,6 +903,7 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
     :param domainguid: GUID of the domain.
     :param hostguid: GUID of the host.
     """
+    assert isinstance(domainguid, str)
 
     setup_file(setup_path("provision.zone"), path, {
             "DNSPASS_B64": b64encode(dnspass),

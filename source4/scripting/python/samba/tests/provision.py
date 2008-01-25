@@ -33,7 +33,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
         ldb = setup_secretsdb(path, setup_path, None, None, None)
         try:
             self.assertEquals("LSA Secrets",
-                 ldb.searchone(Dn(ldb, "CN=LSA Secrets"), "CN"))
+                 ldb.searchone(basedn="CN=LSA Secrets", attribute="CN"))
         finally:
             del ldb
             os.unlink(path)
@@ -50,6 +50,14 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
                            machinepass="machinepass", dnsdomain="example.com")
             self.assertEquals(1, 
                     len(secrets_ldb.search("samAccountName=krbtgt,flatname=EXAMPLE,CN=Principals")))
+	    self.assertEquals("keytab.path",
+                    secrets_ldb.searchone(basedn="flatname=EXAMPLE,CN=primary domains", 
+                                          expression="(privateKeytab=*)", 
+                                          attribute="privateKeytab"))
+            self.assertEquals("S-5-22",
+                    secrets_ldb.searchone(basedn="flatname=EXAMPLE,CN=primary domains",
+                                          expression="objectSid=*", attribute="objectSid"))
+
         finally:
             del secrets_ldb
             os.unlink(path)
