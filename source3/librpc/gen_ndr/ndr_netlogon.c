@@ -11184,41 +11184,127 @@ _PUBLIC_ void ndr_print_netr_NETRLOGONSETSERVICEBITS(struct ndr_print *ndr, cons
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_netr_NETRLOGONGETTRUSTRID(struct ndr_push *ndr, int flags, const struct netr_NETRLOGONGETTRUSTRID *r)
+static enum ndr_err_code ndr_push_netr_LogonGetTrustRid(struct ndr_push *ndr, int flags, const struct netr_LogonGetTrustRid *r)
 {
 	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
+		if (r->in.server_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.server_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.server_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.server_name, ndr_charset_length(r->in.server_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.domain_name));
+		if (r->in.domain_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.domain_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.domain_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.domain_name, ndr_charset_length(r->in.domain_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.rid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.rid));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_netr_NETRLOGONGETTRUSTRID(struct ndr_pull *ndr, int flags, struct netr_NETRLOGONGETTRUSTRID *r)
+static enum ndr_err_code ndr_pull_netr_LogonGetTrustRid(struct ndr_pull *ndr, int flags, struct netr_LogonGetTrustRid *r)
 {
+	uint32_t _ptr_server_name;
+	uint32_t _ptr_domain_name;
+	TALLOC_CTX *_mem_save_server_name_0;
+	TALLOC_CTX *_mem_save_domain_name_0;
+	TALLOC_CTX *_mem_save_rid_0;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server_name));
+		if (_ptr_server_name) {
+			NDR_PULL_ALLOC(ndr, r->in.server_name);
+		} else {
+			r->in.server_name = NULL;
+		}
+		if (r->in.server_name) {
+			_mem_save_server_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
+			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_name));
+		if (_ptr_domain_name) {
+			NDR_PULL_ALLOC(ndr, r->in.domain_name);
+		} else {
+			r->in.domain_name = NULL;
+		}
+		if (r->in.domain_name) {
+			_mem_save_domain_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.domain_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.domain_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.domain_name));
+			if (ndr_get_array_length(ndr, &r->in.domain_name) > ndr_get_array_size(ndr, &r->in.domain_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.domain_name), ndr_get_array_length(ndr, &r->in.domain_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.domain_name), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain_name, ndr_get_array_length(ndr, &r->in.domain_name), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_name_0, 0);
+		}
+		NDR_PULL_ALLOC(ndr, r->out.rid);
+		ZERO_STRUCTP(r->out.rid);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.rid);
+		}
+		_mem_save_rid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.rid, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.rid));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_rid_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_netr_NETRLOGONGETTRUSTRID(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONGETTRUSTRID *r)
+_PUBLIC_ void ndr_print_netr_LogonGetTrustRid(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonGetTrustRid *r)
 {
-	ndr_print_struct(ndr, name, "netr_NETRLOGONGETTRUSTRID");
+	ndr_print_struct(ndr, name, "netr_LogonGetTrustRid");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
 		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
 	}
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "netr_NETRLOGONGETTRUSTRID");
+		ndr_print_struct(ndr, "in", "netr_LogonGetTrustRid");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "server_name", r->in.server_name);
+		ndr->depth++;
+		if (r->in.server_name) {
+			ndr_print_string(ndr, "server_name", r->in.server_name);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "domain_name", r->in.domain_name);
+		ndr->depth++;
+		if (r->in.domain_name) {
+			ndr_print_string(ndr, "domain_name", r->in.domain_name);
+		}
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "netr_NETRLOGONGETTRUSTRID");
+		ndr_print_struct(ndr, "out", "netr_LogonGetTrustRid");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "rid", r->out.rid);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "rid", *r->out.rid);
+		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
@@ -14376,11 +14462,11 @@ static const struct ndr_interface_call netlogon_calls[] = {
 		false,
 	},
 	{
-		"netr_NETRLOGONGETTRUSTRID",
-		sizeof(struct netr_NETRLOGONGETTRUSTRID),
-		(ndr_push_flags_fn_t) ndr_push_netr_NETRLOGONGETTRUSTRID,
-		(ndr_pull_flags_fn_t) ndr_pull_netr_NETRLOGONGETTRUSTRID,
-		(ndr_print_function_t) ndr_print_netr_NETRLOGONGETTRUSTRID,
+		"netr_LogonGetTrustRid",
+		sizeof(struct netr_LogonGetTrustRid),
+		(ndr_push_flags_fn_t) ndr_push_netr_LogonGetTrustRid,
+		(ndr_pull_flags_fn_t) ndr_pull_netr_LogonGetTrustRid,
+		(ndr_print_function_t) ndr_print_netr_LogonGetTrustRid,
 		false,
 	},
 	{

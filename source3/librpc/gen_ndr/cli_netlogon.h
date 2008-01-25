@@ -185,9 +185,12 @@ NTSTATUS rpccli_netr_NETRLOGONDUMMYROUTINE1(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_netr_NETRLOGONSETSERVICEBITS(struct rpc_pipe_client *cli,
 					     TALLOC_CTX *mem_ctx,
 					     WERROR *werror);
-NTSTATUS rpccli_netr_NETRLOGONGETTRUSTRID(struct rpc_pipe_client *cli,
-					  TALLOC_CTX *mem_ctx,
-					  WERROR *werror);
+NTSTATUS rpccli_netr_LogonGetTrustRid(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      const char *server_name,
+				      const char *domain_name,
+				      uint32_t *rid,
+				      WERROR *werror);
 NTSTATUS rpccli_netr_NETRLOGONCOMPUTESERVERDIGEST(struct rpc_pipe_client *cli,
 						  TALLOC_CTX *mem_ctx,
 						  WERROR *werror);

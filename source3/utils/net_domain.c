@@ -245,12 +245,14 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	const_acct_name = acct_name;
 
 	/* Don't try to set any acb_info flags other than ACB_WSTRUST */
+	acct_flags = SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
+		     SEC_STD_WRITE_DAC | SEC_STD_DELETE |
+		     SAMR_USER_ACCESS_SET_PASSWORD |
+		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
+		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
 
-        acct_flags = SAMR_GENERIC_READ | SAMR_GENERIC_WRITE |
-                SAMR_GENERIC_EXECUTE | SAMR_STANDARD_WRITEDAC |
-                SAMR_STANDARD_DELETE | SAMR_USER_SETPASS | SAMR_USER_GETATTR |
-                SAMR_USER_SETATTR;
 	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
+
 	status = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
 			acct_name, acb_info, acct_flags, &user_pol, &user_rid);
 
