@@ -86,6 +86,7 @@ sub HeaderStruct($$;$)
 {
 	my($struct,$name,$tail) = @_;
 	pidl "struct $name";
+	pidl $tail if defined($tail) and not defined($struct->{ELEMENTS});
 	return if (not defined($struct->{ELEMENTS}));
 	pidl " {\n";
 	$tab_depth++;
@@ -178,6 +179,7 @@ sub HeaderUnion($$;$)
 	my %done = ();
 
 	pidl "union $name";
+	pidl $tail if defined($tail) and not defined($union->{ELEMENTS});
 	return if (not defined($union->{ELEMENTS}));
 	pidl " {\n";
 	$tab_depth++;
