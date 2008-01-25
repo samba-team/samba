@@ -1200,8 +1200,14 @@ struct netr_NETRLOGONSETSERVICEBITS {
 };
 
 
-struct netr_NETRLOGONGETTRUSTRID {
+struct netr_LogonGetTrustRid {
 	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *domain_name;/* [unique,charset(UTF16)] */
+	} in;
+
+	struct {
+		uint32_t *rid;/* [ref] */
 		WERROR result;
 	} out;
 

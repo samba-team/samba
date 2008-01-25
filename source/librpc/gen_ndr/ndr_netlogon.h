@@ -57,7 +57,7 @@ extern const struct ndr_interface_table ndr_table_netlogon;
 
 #define NDR_NETR_NETRLOGONSETSERVICEBITS (0x16)
 
-#define NDR_NETR_NETRLOGONGETTRUSTRID (0x17)
+#define NDR_NETR_LOGONGETTRUSTRID (0x17)
 
 #define NDR_NETR_NETRLOGONCOMPUTESERVERDIGEST (0x18)
 
@@ -227,7 +227,7 @@ void ndr_print_netr_NetrEnumerateTrustedDomains(struct ndr_print *ndr, const cha
 void ndr_print_netr_DsRGetDCName(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetDCName *r);
 void ndr_print_netr_NETRLOGONDUMMYROUTINE1(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONDUMMYROUTINE1 *r);
 void ndr_print_netr_NETRLOGONSETSERVICEBITS(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONSETSERVICEBITS *r);
-void ndr_print_netr_NETRLOGONGETTRUSTRID(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONGETTRUSTRID *r);
+void ndr_print_netr_LogonGetTrustRid(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonGetTrustRid *r);
 void ndr_print_netr_NETRLOGONCOMPUTESERVERDIGEST(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONCOMPUTESERVERDIGEST *r);
 void ndr_print_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r);
 void ndr_print_netr_ServerAuthenticate3(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerAuthenticate3 *r);
