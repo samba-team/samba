@@ -1408,12 +1408,12 @@ static bool create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 
 				psa1->flags |= (psa2->flags & (SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_OBJECT_INHERIT));
 				psa2->flags &= ~(SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_OBJECT_INHERIT);
-				
+
 			} else if (psa2->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
 
 				psa2->flags |= (psa1->flags & (SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_OBJECT_INHERIT));
 				psa1->flags &= ~(SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_OBJECT_INHERIT);
-				
+
 			}
 		}
 	}
@@ -1477,7 +1477,13 @@ static bool create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 			current_ace->type = SMB_ACL_USER;
 		} else if (sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid)) {
 			current_ace->owner_type = GID_ACE;
-			current_ace->type = SMB_ACL_GROUP;
+			/* If it's the primary group, this is a group_obj, not
+			 * a group. */
+			if (current_ace->unix_ug.gid == pst->st_gid) {
+				current_ace->type = SMB_ACL_GROUP_OBJ;
+			} else {
+				current_ace->type = SMB_ACL_GROUP;
+			}
 		} else {
 			/*
 			 * Silently ignore map failures in non-mappable SIDs (NT Authority, BUILTIN etc).
