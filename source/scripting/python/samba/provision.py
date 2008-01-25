@@ -188,12 +188,16 @@ def provision_paths_from_lp(lp, dnsdomain, private_dir=None):
     paths = ProvisionPaths()
     if private_dir is None:
         private_dir = lp.get("private dir")
+        paths.keytab = "secrets.keytab"
+        paths.dns_keytab = "dns.keytab"
+    else:
+        paths.keytab = os.path.join(private_dir, "secrets.keytab")
+        paths.dns_keytab = os.path.join(private_dir, "dns.keytab")
+
     paths.shareconf = os.path.join(private_dir, "share.ldb")
     paths.samdb = os.path.join(private_dir, lp.get("sam database") or "samdb.ldb")
     paths.secrets = os.path.join(private_dir, lp.get("secrets database") or "secrets.ldb")
     paths.templates = os.path.join(private_dir, "templates.ldb")
-    paths.keytab = os.path.join(private_dir, "secrets.keytab")
-    paths.dns_keytab = "dns.keytab"
     paths.dns = os.path.join(private_dir, dnsdomain + ".zone")
     paths.winsdb = os.path.join(private_dir, "wins.ldb")
     paths.s4_ldapi_path = os.path.join(private_dir, "ldapi")
@@ -723,11 +727,11 @@ def provision(lp, setup_dir, message, paths, session_info,
         raise Exception("realm '%s' in smb.conf must match chosen realm '%s'" %
                 (lp.get("realm"), realm))
 
-    ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path)
+    ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
     
     if ldap_backend == "ldapi":
     	# provision-backend will set this path suggested slapd command line / fedorads.inf
-    	ldap_backend = "ldapi://" % urllib.quote(os.path.join(lp.get("private dir"), "ldap", "ldapi"), "")
+    	ldap_backend = "ldapi://" % urllib.quote(os.path.join(lp.get("private dir"), "ldap", "ldapi"), safe="")
 
     assert realm is not None
     realm = realm.upper()
