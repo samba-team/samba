@@ -250,11 +250,14 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
-        acct_flags = SAMR_GENERIC_READ | SAMR_GENERIC_WRITE |
-                SAMR_GENERIC_EXECUTE | SAMR_STANDARD_WRITEDAC |
-                SAMR_STANDARD_DELETE | SAMR_USER_SETPASS | SAMR_USER_GETATTR |
-                SAMR_USER_SETATTR;
+	acct_flags = SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
+		     SEC_STD_WRITE_DAC | SEC_STD_DELETE |
+		     SAMR_USER_ACCESS_SET_PASSWORD |
+		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
+		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
+
 	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
+
 	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
 					  acct_name, acb_info,
 					  acct_flags, &user_pol, 
