@@ -1042,21 +1042,20 @@ NTSTATUS read_socket_with_timeout_ntstatus(int fd, char *buf,
 	return NT_STATUS_OK;
 }
 
-ssize_t read_socket_with_timeout(int fd, char *buf,
-				 size_t mincnt, size_t maxcnt,
-				 unsigned int time_out,
-				 enum smb_read_errors *pre)
+/****************************************************************************
+ Read data from the client, reading exactly N bytes.
+****************************************************************************/
+
+ssize_t read_data(int fd,char *buffer,size_t N, enum smb_read_errors *pre)
 {
 	NTSTATUS status;
-	size_t size_ret;
 
 	set_smb_read_error(pre, SMB_READ_OK);
 
-	status = read_socket_with_timeout_ntstatus(fd, buf, mincnt, maxcnt,
-						   time_out, &size_ret);
+	status = read_socket_with_timeout_ntstatus(fd, buffer, N, N, 0, NULL);
 
 	if (NT_STATUS_IS_OK(status)) {
-		return size_ret;
+		return N;
 	}
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
@@ -1071,15 +1070,6 @@ ssize_t read_socket_with_timeout(int fd, char *buf,
 
 	set_smb_read_error(pre, SMB_READ_ERROR);
 	return -1;
-}
-
-/****************************************************************************
- Read data from the client, reading exactly N bytes.
-****************************************************************************/
-
-ssize_t read_data(int fd,char *buffer,size_t N, enum smb_read_errors *pre)
-{
-	return read_socket_with_timeout(fd, buffer, N, N, 0, pre);
 }
 
 /****************************************************************************
@@ -1214,7 +1204,6 @@ ssize_t receive_smb_raw(int fd,
 			enum smb_read_errors *pre)
 {
 	size_t len;
-	ssize_t ret;
 	NTSTATUS status;
 
 	set_smb_read_error(pre,SMB_READ_OK);
@@ -1264,11 +1253,23 @@ ssize_t receive_smb_raw(int fd,
 			len = MIN(len,maxlen);
 		}
 
-		ret = read_socket_with_timeout(fd, buffer+4, len, len, timeout,
-					       pre);
+		set_smb_read_error(pre, SMB_READ_OK);
 
-		if (ret != len) {
-			cond_set_smb_read_error(pre,SMB_READ_ERROR);
+		status = read_socket_with_timeout_ntstatus(
+			fd, buffer+4, len, len, timeout, &len);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+				set_smb_read_error(pre, SMB_READ_EOF);
+				return -1;
+			}
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+				set_smb_read_error(pre, SMB_READ_TIMEOUT);
+				return -1;
+			}
+
+			set_smb_read_error(pre, SMB_READ_ERROR);
 			return -1;
 		}
 
