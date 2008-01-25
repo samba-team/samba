@@ -1150,16 +1150,15 @@ ssize_t read_smb_length_return_keepalive(int fd,
 ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout, enum smb_read_errors *pre)
 {
 	ssize_t len;
+	uint8_t msgtype = SMBkeepalive;
 
-	for(;;) {
-		len = read_smb_length_return_keepalive(fd, inbuf, timeout, pre);
-
-		if(len < 0)
+	while (msgtype == SMBkeepalive) {
+		len = read_smb_length_return_keepalive(fd, inbuf, timeout,
+						       pre);
+		if (len < 0) {
 			return len;
-
-		/* Ignore session keepalives. */
-		if(CVAL(inbuf,0) != SMBkeepalive)
-			break;
+		}
+		msgtype = CVAL(inbuf, 0);
 	}
 
 	DEBUG(10,("read_smb_length: got smb length of %lu\n",
