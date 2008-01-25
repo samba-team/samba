@@ -2,7 +2,8 @@
 #
 # Unix SMB/CIFS implementation.
 # provision a Samba4 server
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
+# Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
 #
 # Based on the original in EJS:
 # Copyright (C) Andrew Tridgell 2005
@@ -115,11 +116,15 @@ if opts.realm is None or opts.domain is None:
 	sys.exit(1)
 
 # cope with an initially blank smb.conf 
+private_dir = None
 lp = sambaopts.get_loadparm()
 if opts.targetdir is not None:
     if not os.path.exists(opts.targetdir):
         os.mkdir(opts.targetdir)
-    lp.set("private dir", os.path.abspath(opts.targetdir))
+    private_dir = os.path.join(opts.targetdir, "private")
+    if not os.path.exists(private_dir):
+        os.mkdir(private_dir)
+    lp.set("private dir", os.path.abspath(private_dir))
     lp.set("lock dir", os.path.abspath(opts.targetdir))
 lp.set("realm", opts.realm)
 lp.set("workgroup", opts.domain)
@@ -129,9 +134,6 @@ lp.set("server role", opts.server_role or "domain controller")
 if opts.aci is not None:
 	print "set ACI: %s" % opts.aci
 
-private_dir = None
-if opts.targetdir is not None:
-    private_dir = os.path.join(opts.targetdir, "private")
 paths = provision_paths_from_lp(lp, opts.realm.lower(), private_dir)
 paths.smbconf = sambaopts.get_loadparm_path()
 
