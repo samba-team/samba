@@ -327,36 +327,20 @@ static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
 	return NT_STATUS_OK;
 }
 
-static ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx,
-				int fd,
-				char **buffer,
-				unsigned int timeout,
-				size_t *p_unread,
-				bool *p_encrypted)
+static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
+				   char **buffer, unsigned int timeout,
+				   size_t *p_unread, bool *p_encrypted,
+				   size_t *p_len)
 {
 	size_t len;
 	NTSTATUS status;
 
 	*p_encrypted = false;
 
-	set_smb_read_error(get_srv_read_error(), SMB_READ_OK);
-
 	status = receive_smb_raw_talloc(mem_ctx, fd, buffer, timeout,
 					p_unread, &len);
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-			set_smb_read_error(get_srv_read_error(), SMB_READ_EOF);
-			return -1;
-		}
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-			set_smb_read_error(get_srv_read_error(),
-					   SMB_READ_TIMEOUT);
-			return -1;
-		}
-
-		set_smb_read_error(get_srv_read_error(), SMB_READ_ERROR);
-		return -1;
+		return status;
 	}
 
 	if (is_encrypted_packet((uint8_t *)*buffer)) {
@@ -365,9 +349,7 @@ static ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx,
 			DEBUG(0, ("receive_smb_talloc: SMB decryption failed on "
 				"incoming packet! Error %s\n",
 				nt_errstr(status) ));
-			cond_set_smb_read_error(get_srv_read_error(),
-					SMB_READ_BAD_DECRYPT);
-			return -1;
+			return status;
 		}
 		*p_encrypted = true;
 	}
@@ -376,11 +358,11 @@ static ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx,
 	if (!srv_check_sign_mac(*buffer, true)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification failed on "
 			  "incoming packet!\n"));
-		cond_set_smb_read_error(get_srv_read_error(),SMB_READ_BAD_SIG);
-		return -1;
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	return len;
+	*p_len = len;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -748,7 +730,8 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 	int selrtn;
 	struct timeval to;
 	int maxfd = 0;
-	ssize_t len;
+	size_t len;
+	NTSTATUS status;
 
 	*p_unread = 0;
 	set_smb_read_error(get_srv_read_error(),SMB_READ_OK);
@@ -926,14 +909,26 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 		goto again;
 	}
 
-	len = receive_smb_talloc(mem_ctx, smbd_server_fd(),
-				buffer, 0, p_unread, p_encrypted);
+	status = receive_smb_talloc(mem_ctx, smbd_server_fd(), buffer, 0,
+				    p_unread, p_encrypted, &len);
 
-	if (len == -1) {
-		return False;
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+			set_smb_read_error(get_srv_read_error(), SMB_READ_EOF);
+			return false;
+		}
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			set_smb_read_error(get_srv_read_error(),
+					   SMB_READ_TIMEOUT);
+			return false;
+		}
+
+		set_smb_read_error(get_srv_read_error(), SMB_READ_ERROR);
+		return false;
 	}
 
-	*buffer_len = (size_t)len;
+	*buffer_len = len;
 
 	return True;
 }
