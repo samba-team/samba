@@ -1270,7 +1270,13 @@ interface netlogon
 
 	/****************/
 	/* Function 0x29 */
-	WERROR netr_DSRDEREGISTERDNSHOSTRECORDS();
+	WERROR netr_DsrDeregisterDNSHostRecords(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *domain,
+		[in] GUID *domain_guid,
+		[in] GUID *dsa_guid,
+		[in,ref] [string,charset(UTF16)] uint16 *dns_host
+		);
 
 	/****************/
 	/* Function 0x2a */
