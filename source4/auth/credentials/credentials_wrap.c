@@ -2521,6 +2521,7 @@ static swig_module_info swig_module = {swig_types, 16, 0, 0, 0, 0};
 #include "includes.h"
 #include "auth/credentials/credentials.h"
 #include "param/param.h"
+#include "lib/cmdline/credentials.h"
 typedef struct cli_credentials cli_credentials;
 
 
@@ -3486,6 +3487,34 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_Credentials_set_cmdline_callbacks(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  cli_credentials *arg1 = (cli_credentials *) 0 ;
+  bool result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self", NULL 
+  };
+  
+  arg1 = NULL;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:Credentials_set_cmdline_callbacks",kwnames,&obj0)) SWIG_fail;
+  if (obj0) {
+    res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_cli_credentials, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "Credentials_set_cmdline_callbacks" "', argument " "1"" of type '" "cli_credentials *""'"); 
+    }
+    arg1 = (cli_credentials *)(argp1);
+  }
+  result = (bool)cli_credentials_set_cmdline_callbacks(arg1);
+  resultobj = SWIG_From_bool((bool)(result));
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_delete_Credentials(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
   PyObject *resultobj = 0;
   cli_credentials *arg1 = (cli_credentials *) 0 ;
@@ -3545,6 +3574,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"Credentials_get_nt_hash", (PyCFunction) _wrap_Credentials_get_nt_hash, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_authentication_requested", (PyCFunction) _wrap_Credentials_authentication_requested, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_wrong_password", (PyCFunction) _wrap_Credentials_wrong_password, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"Credentials_set_cmdline_callbacks", (PyCFunction) _wrap_Credentials_set_cmdline_callbacks, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"delete_Credentials", (PyCFunction) _wrap_delete_Credentials, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"Credentials_swigregister", Credentials_swigregister, METH_VARARGS, NULL},
 	 { (char *)"Credentials_swiginit", Credentials_swiginit, METH_VARARGS, NULL},

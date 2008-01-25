@@ -66,3 +66,14 @@ WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf
 const char *samba_version_string(void);
 int dsdb_set_global_schema(struct ldb_context *ldb);
 int ldb_register_samba_handlers(struct ldb_context *ldb);
+
+%inline %{
+bool dsdb_set_ntds_invocation_id(struct ldb_context *ldb, const char *guid)
+{
+    struct GUID invocation_id_in;
+    if (NT_STATUS_IS_ERR(GUID_from_string(guid, &invocation_id_in))) {
+        return false;
+    }
+    return samdb_set_ntds_invocation_id(ldb, &invocation_id_in);
+}
+%}

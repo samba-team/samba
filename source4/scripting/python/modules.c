@@ -62,7 +62,7 @@ void py_load_samba_modules(void)
 void py_update_path(const char *bindir)
 {
 	char *newpath;
-	asprintf(&newpath, "%s:%s/python:%s/../scripting/python", Py_GetPath(), bindir, bindir);
+	asprintf(&newpath, "%s/python:%s/../scripting/python:%s", bindir, bindir, Py_GetPath());
 	PySys_SetPath(newpath);
 	free(newpath);
 }

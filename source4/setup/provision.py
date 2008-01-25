@@ -2,7 +2,8 @@
 #
 # Unix SMB/CIFS implementation.
 # provision a Samba4 server
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
+# Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
 #
 # Based on the original in EJS:
 # Copyright (C) Andrew Tridgell 2005
@@ -33,8 +34,10 @@ import samba
 from auth import system_session
 import samba.getopt as options
 import param
-from samba.provision import (provision,  
-                             provision_paths_from_lp)
+from samba.provision import (provision, 
+                             provision_paths_from_lp,
+                             FILL_FULL, FILL_NT4SYNC,
+                             FILL_DRS)
 
 parser = optparse.OptionParser("provision [options]")
 sambaopts = options.SambaOptions(parser)
@@ -84,8 +87,9 @@ parser.add_option("--blank", action="store_true",
 		help="do not add users or groups, just the structure")
 parser.add_option("--ldap-backend", type="string", metavar="LDAPSERVER", 
 		help="LDAP server to use for this provision")
-parser.add_option("--ldap-module=", type="string", metavar="MODULE", 
-		help="LDB mapping module to use for the LDAP backend")
+parser.add_option("--ldap-backend-type", type="choice", metavar="LDAP-BACKEND-TYPE", 
+		help="LDB mapping module to use for the LDAP backend",
+		choices=["fedora-ds", "openldap"])
 parser.add_option("--aci", type="string", metavar="ACI", 
 		help="An arbitary LDIF fragment, particularly useful to loading a backend ACI value into a target LDAP server. You must provide at least a realm and domain")
 parser.add_option("--server-role", type="choice", metavar="ROLE",
@@ -112,61 +116,58 @@ if opts.realm is None or opts.domain is None:
 	sys.exit(1)
 
 # cope with an initially blank smb.conf 
+private_dir = None
 lp = sambaopts.get_loadparm()
 if opts.targetdir is not None:
     if not os.path.exists(opts.targetdir):
         os.mkdir(opts.targetdir)
-    lp.set("private dir", os.path.abspath(opts.targetdir))
+    private_dir = os.path.join(opts.targetdir, "private")
+    if not os.path.exists(private_dir):
+        os.mkdir(private_dir)
+    lp.set("private dir", os.path.abspath(private_dir))
     lp.set("lock dir", os.path.abspath(opts.targetdir))
 lp.set("realm", opts.realm)
 lp.set("workgroup", opts.domain)
 lp.set("server role", opts.server_role or "domain controller")
 
+
 if opts.aci is not None:
 	print "set ACI: %s" % opts.aci
 
-paths = provision_paths_from_lp(lp, opts.realm.lower())
+paths = provision_paths_from_lp(lp, opts.realm.lower(), private_dir)
 paths.smbconf = sambaopts.get_loadparm_path()
-
-if opts.ldap_backend:
-	if opts.ldap_backend == "ldapi":
-		subobj.ldap_backend = subobj.ldapi_uri
-
-	if not opts.ldap_module:
-		subobj.ldapmodule = "entryuuid"
-
-	subobj.domaindn_ldb = subobj.ldap_backend
-	subobj.domaindn_mod2 = ",%s,paged_searches" % subobj.ldapmodule
-	subobj.configdn_ldb = subobj.ldap_backend
-	subobj.configdn_mod2 = ",%s,paged_searches" % subobj.ldapmodule
-	subobj.schemadn_ldb = subobj.ldap_backend
-	subobj.schemadn_mod2 = ",%s,paged_searches" % subobj.ldapmodule
-	message("LDAP module: %s on backend: %s" % (subobj.ldapmodule, subobj.ldap_backend))
 
 creds = credopts.get_credentials()
 
 setup_dir = opts.setupdir
 if setup_dir is None:
 	setup_dir = "setup"
-if opts.partitions_only:
-    provision_become_dc(setup_dir, message, False, 
-                        paths, lp, system_session(), creds)
-else:
-    provision(lp, setup_dir, message, opts.blank, paths, 
-              system_session(), creds, opts.ldap_backend, realm=opts.realm,
-              domainguid=opts.domain_guid, domainsid=opts.domain_sid,
-              policyguid=opts.policy_guid, hostname=opts.host_name,
-              hostip=opts.host_ip, hostguid=opts.host_guid, 
-              invocationid=opts.invocationid, adminpass=opts.adminpass,
-              krbtgtpass=opts.krbtgtpass, machinepass=opts.machinepass,
-              dnspass=opts.dnspass, root=opts.root, nobody=opts.nobody,
-              nogroup=opts.nogroup, wheel=opts.wheel, users=opts.users,
-              aci=opts.aci, serverrole=opts.server_role)
-    message("To reproduce this provision, run with:")
-    def shell_escape(arg):
-        if " " in arg:
-            return '"%s"' % arg
-        return arg
-    message(" ".join([shell_escape(arg) for arg in sys.argv]))
+
+samdb_fill = FILL_FULL
+if opts.blank:
+    samdb_fill = FILL_NT4SYNC
+elif opts.partitions_only:
+    samdb_fill = FILL_DRS
+
+provision(lp, setup_dir, message, paths, 
+          system_session(), creds, opts.ldap_backend, 
+          samdb_fill=samdb_fill, realm=opts.realm,
+          domainguid=opts.domain_guid, domainsid=opts.domain_sid,
+          policyguid=opts.policy_guid, hostname=opts.host_name,
+          hostip=opts.host_ip, hostguid=opts.host_guid, 
+          invocationid=opts.invocationid, adminpass=opts.adminpass,
+          krbtgtpass=opts.krbtgtpass, machinepass=opts.machinepass,
+          dnspass=opts.dnspass, root=opts.root, nobody=opts.nobody,
+          nogroup=opts.nogroup, wheel=opts.wheel, users=opts.users,
+          aci=opts.aci, serverrole=opts.server_role, 
+          ldap_backend=opts.ldap_backend, 
+          ldap_backend_type=opts.ldap_backend_type)
+
+message("To reproduce this provision, run with:")
+def shell_escape(arg):
+    if " " in arg:
+        return '"%s"' % arg
+    return arg
+message(" ".join([shell_escape(arg) for arg in sys.argv]))
 
 message("All OK")
