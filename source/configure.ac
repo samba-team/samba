@@ -60,7 +60,6 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 		SMB_INCLUDE_MK(lib/ldb/ldb_ildap/config.mk)
 		SMB_INCLUDE_MK(lib/ldb/tools/config.mk)
 		SMB_SUBSYSTEM(ldb_map, [], [LIBLDB])
-		AC_OUTPUT(lib/ldb/ldb.pc)
 		define_ldb_modulesdir=no
 	],
 	[
@@ -84,6 +83,7 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 		m4_include(lib/ldb/sqlite3.m4)
 		m4_include(lib/ldb/libldb.m4)
 		SMB_INCLUDE_MK(lib/ldb/config.mk)
+		AC_OUTPUT(lib/ldb/ldb.pc)
 	]
 )
 SMB_INCLUDE_MK(lib/ldb/python.mk) 
