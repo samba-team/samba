@@ -1,8 +1,10 @@
 #!/usr/bin/python
 
 # Unix SMB/CIFS implementation.
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
+# 
+# Based on the original in EJS:
 # Copyright (C) Andrew Tridgell <tridge@samba.org> 2005
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
 #   
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -204,7 +206,7 @@ def check_all_substituted(text):
     var_start = text.find("${")
     var_end = text.find("}", var_start)
     
-    raise Exception("Not all variables substituted: %s" % text[var_start:var_end])
+    raise Exception("Not all variables substituted: %s" % text[var_start:var_end+1])
 
 
 def valid_netbios_name(name):
