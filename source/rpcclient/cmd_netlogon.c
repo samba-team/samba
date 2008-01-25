@@ -579,6 +579,53 @@ static WERROR cmd_netlogon_gettrustrid(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_netlogon_dsr_enumtrustdom(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx, int argc,
+					    const char **argv)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	WERROR werr = WERR_GENERAL_FAILURE;
+	const char *server_name = cli->cli->desthost;
+	uint32_t trust_flags = NETR_TRUST_FLAG_IN_FOREST;
+	struct netr_DomainTrustList trusts;
+
+	if (argc < 1 || argc > 3) {
+		fprintf(stderr, "Usage: %s <server_name> <trust_flags>\n",
+			argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		server_name = argv[1];
+	}
+
+	if (argc >= 3) {
+		sscanf(argv[2], "%x", &trust_flags);
+	}
+
+	status = rpccli_netr_DsrEnumerateDomainTrusts(cli, mem_ctx,
+						      server_name,
+						      trust_flags,
+						      &trusts,
+						      &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (W_ERROR_IS_OK(werr)) {
+		int i;
+
+		printf("%d domains returned\n", trusts.count);
+
+		for (i=0; i<trusts.count; i++ ) {
+			printf("%s (%s)\n",
+				trusts.array[i].dns_name,
+				trusts.array[i].netbios_name);
+		}
+	}
+ done:
+	return werr;
+}
 
 
 /* List of commands exported by this module */
@@ -600,6 +647,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "samlogon",   RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_logon,   NULL, PI_NETLOGON, NULL, "Sam Logon",           "" },
 	{ "change_trust_pw",   RPC_RTYPE_NTSTATUS, cmd_netlogon_change_trust_pw,   NULL, PI_NETLOGON, NULL, "Change Trust Account Password",           "" },
 	{ "gettrustrid", RPC_RTYPE_WERROR, NULL, cmd_netlogon_gettrustrid, PI_NETLOGON, NULL, "Get trust rid",     "" },
+	{ "dsr_enumtrustdom", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_enumtrustdom, PI_NETLOGON, NULL, "Enumerate trusted domains",     "" },
 
 	{ NULL }
 };
