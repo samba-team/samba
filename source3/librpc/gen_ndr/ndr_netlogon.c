@@ -13350,11 +13350,7 @@ static enum ndr_err_code ndr_push_netr_DsrEnumerateDomainTrusts(struct ndr_push 
 		if (r->out.trusts == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		if (*r->out.trusts == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
-		}
-		NDR_CHECK(ndr_push_ref_ptr(ndr));
-		NDR_CHECK(ndr_push_netr_DomainTrustList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.trusts));
+		NDR_CHECK(ndr_push_netr_DomainTrustList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.trusts));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -13363,10 +13359,8 @@ static enum ndr_err_code ndr_push_netr_DsrEnumerateDomainTrusts(struct ndr_push 
 static enum ndr_err_code ndr_pull_netr_DsrEnumerateDomainTrusts(struct ndr_pull *ndr, int flags, struct netr_DsrEnumerateDomainTrusts *r)
 {
 	uint32_t _ptr_server_name;
-	uint32_t _ptr_trusts;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_trusts_0;
-	TALLOC_CTX *_mem_save_trusts_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -13398,14 +13392,7 @@ static enum ndr_err_code ndr_pull_netr_DsrEnumerateDomainTrusts(struct ndr_pull 
 		}
 		_mem_save_trusts_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.trusts, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_trusts));
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, *r->out.trusts);
-		}
-		_mem_save_trusts_1 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, *r->out.trusts, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_netr_DomainTrustList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.trusts));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trusts_1, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_DomainTrustList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.trusts));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_trusts_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -13436,10 +13423,7 @@ _PUBLIC_ void ndr_print_netr_DsrEnumerateDomainTrusts(struct ndr_print *ndr, con
 		ndr->depth++;
 		ndr_print_ptr(ndr, "trusts", r->out.trusts);
 		ndr->depth++;
-		ndr_print_ptr(ndr, "trusts", *r->out.trusts);
-		ndr->depth++;
-		ndr_print_netr_DomainTrustList(ndr, "trusts", *r->out.trusts);
-		ndr->depth--;
+		ndr_print_netr_DomainTrustList(ndr, "trusts", r->out.trusts);
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;

@@ -3253,7 +3253,7 @@ static bool api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.trusts = talloc_zero(r, struct netr_DomainTrustList *);
+	r->out.trusts = talloc_zero(r, struct netr_DomainTrustList);
 	if (r->out.trusts == NULL) {
 		talloc_free(r);
 		return false;

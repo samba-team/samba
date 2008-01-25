@@ -2019,7 +2019,7 @@ NTSTATUS rpccli_netr_DsrEnumerateDomainTrusts(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      const char *server_name,
 					      uint32_t trust_flags,
-					      struct netr_DomainTrustList **trusts,
+					      struct netr_DomainTrustList *trusts,
 					      WERROR *werror)
 {
 	struct netr_DsrEnumerateDomainTrusts r;
