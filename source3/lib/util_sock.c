@@ -1174,31 +1174,18 @@ NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
  Timeout is in milliseconds.
 ****************************************************************************/
 
-ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout, enum smb_read_errors *pre)
+NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
+			 size_t *len)
 {
-	size_t len;
 	uint8_t msgtype = SMBkeepalive;
-
-	set_smb_read_error(pre, SMB_READ_OK);
 
 	while (msgtype == SMBkeepalive) {
 		NTSTATUS status;
 
 		status = read_smb_length_return_keepalive(fd, inbuf, timeout,
-							  &len);
+							  len);
 		if (!NT_STATUS_IS_OK(status)) {
-			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-				set_smb_read_error(pre, SMB_READ_EOF);
-				return -1;
-			}
-
-			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-				set_smb_read_error(pre, SMB_READ_TIMEOUT);
-				return -1;
-			}
-
-			set_smb_read_error(pre, SMB_READ_ERROR);
-			return -1;
+			return status;
 		}
 
 		msgtype = CVAL(inbuf, 0);
@@ -1207,7 +1194,7 @@ ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout, enum smb_read
 	DEBUG(10,("read_smb_length: got smb length of %lu\n",
 		  (unsigned long)len));
 
-	return len;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
