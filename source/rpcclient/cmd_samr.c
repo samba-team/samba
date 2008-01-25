@@ -122,7 +122,7 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 }
 
 
-static void display_password_properties(uint32 password_properties) 
+static void display_password_properties(uint32_t password_properties)
 {
 	printf("password_properties: 0x%08x\n", password_properties);
 		
@@ -2012,14 +2012,14 @@ static NTSTATUS cmd_samr_get_usrdom_pwinfo(struct rpc_pipe_client *cli,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol, user_pol;
-	uint16 min_pwd_length;
-	uint32 password_properties, unknown1, rid;
+	struct samr_PwInfo info;
+	uint32_t rid;
 
 	if (argc != 2) {
 		printf("Usage: %s rid\n", argv[0]);
 		return NT_STATUS_OK;
 	}
-	
+
 	sscanf(argv[1], "%i", &rid);
 
 	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
@@ -2044,14 +2044,10 @@ static NTSTATUS cmd_samr_get_usrdom_pwinfo(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	result = rpccli_samr_get_usrdom_pwinfo(cli, mem_ctx, &user_pol,
-					       &min_pwd_length, &password_properties, 
-					       &unknown1) ;
-
+	result = rpccli_samr_GetUserPwInfo(cli, mem_ctx, &user_pol, &info);
 	if (NT_STATUS_IS_OK(result)) {
-		printf("min_pwd_length: %d\n", min_pwd_length);
-		printf("unknown1: %d\n", unknown1);
-		display_password_properties(password_properties);
+		printf("min_password_length: %d\n", info.min_password_length);
+		display_password_properties(info.password_properties);
 	}
 
  done:
@@ -2062,25 +2058,31 @@ static NTSTATUS cmd_samr_get_usrdom_pwinfo(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
 
-static NTSTATUS cmd_samr_get_dom_pwinfo(struct rpc_pipe_client *cli, 
+static NTSTATUS cmd_samr_get_dom_pwinfo(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
-					int argc, const char **argv) 
+					int argc, const char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint16 min_pwd_length;
-	uint32 password_properties;
+	struct lsa_String domain_name;
+	struct samr_PwInfo info;
 
-	if (argc != 1) {
-		printf("Usage: %s\n", argv[0]);
+	if (argc < 1 || argc > 3) {
+		printf("Usage: %s <domain>\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	result = rpccli_samr_get_dom_pwinfo(cli, mem_ctx, &min_pwd_length, &password_properties) ;
-	
+	init_lsa_String(&domain_name, argv[1]);
+
+	result = rpccli_samr_GetDomPwInfo(cli, mem_ctx, &domain_name, &info);
+
 	if (NT_STATUS_IS_OK(result)) {
-		printf("min_pwd_length: %d\n", min_pwd_length);
-		display_password_properties(password_properties);
+		printf("min_password_length: %d\n", info.min_password_length);
+		display_password_properties(info.password_properties);
 	}
 
 	return result;
