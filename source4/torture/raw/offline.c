@@ -57,6 +57,8 @@ struct offline_state {
 	uint32_t count;
 	uint32_t lastcount;
 	uint32_t fnumber;
+	uint32_t offline_count;
+	uint32_t online_count;
 	char *fname;
 	struct smb_composite_loadfile *loadfile;
 	struct smb_composite_savefile *savefile;
@@ -176,13 +178,19 @@ static void getoffline_callback(struct smbcli_request *req)
 	NTSTATUS status;
 	union smb_fileinfo io;
 
-	io.standard.level = RAW_FILEINFO_GETATTR;
+	io.getattr.level = RAW_FILEINFO_GETATTR;
 	
 	status = smb_raw_pathinfo_recv(req, state->mem_ctx, &io);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to get offline file '%s' - %s\n", 
 		       state->fname, nt_errstr(status));
 		test_failed++;
+	}
+
+	if (io.getattr.out.attrib & FILE_ATTRIBUTE_OFFLINE) {
+		state->offline_count++;
+	} else {
+		state->online_count++;
 	}
 
 	state->req = NULL;
@@ -265,8 +273,8 @@ static void test_offline(struct offline_state *state)
 	case OP_GETOFFLINE: {
 		union smb_fileinfo io;
 		ZERO_STRUCT(io);
-		io.standard.level = RAW_FILEINFO_GETATTR;
-		io.standard.in.file.path = state->fname;
+		io.getattr.level = RAW_FILEINFO_GETATTR;
+		io.getattr.in.file.path = state->fname;
 
 		state->req = smb_raw_pathinfo_send(state->tree, &io);
 		if (state->req == NULL) {
@@ -308,11 +316,13 @@ static void report_rate(struct event_context *ev, struct timed_event *te,
 	struct offline_state *state = talloc_get_type(private_data, 
 							struct offline_state);
 	int i;
+	uint32_t total=0;
 	for (i=0;i<numstates;i++) {
-		printf("%5u ", (unsigned)(state[i].count - state[i].lastcount));
-		state[i].lastcount = state[i].count;
+		total += state[i].count - state[i].lastcount;
+		state[i].lastcount = state[i].count;		
 	}
-	printf("\r");
+	printf("ops=%6u   offline_count=%6u   online_count=%6u\r",
+	       total, state->offline_count, state->online_count);
 	fflush(stdout);
 	event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
 
@@ -347,7 +357,6 @@ bool torture_test_offline(struct torture_context *torture)
 	struct timeval tv;
 	struct event_context *ev = event_context_find(mem_ctx);
 	struct offline_state *state;
-	int total = 0;
 	struct smbcli_state *cli;
 	bool progress;
 	progress = torture_setting_bool(torture, "progress", true);
@@ -432,9 +441,7 @@ bool torture_test_offline(struct torture_context *torture)
 		}
 	}
 
-	printf("%.2f ops/second\n", total/timeval_elapsed(&tv));
-
-	printf("Waiting for completion\n");
+	printf("\nWaiting for completion\n");
 	test_finished = true;
 	for (i=0;i<numstates;i++) {
 		while (state[i].loadfile || 
