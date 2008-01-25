@@ -992,7 +992,11 @@ interface netlogon
 
 	/****************/
 	/* Function 0x17 */
-	WERROR netr_NETRLOGONGETTRUSTRID();
+	WERROR netr_LogonGetTrustRid(
+		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in] [string,charset(UTF16)] uint16 *domain_name,
+		[out,ref] uint32 *rid
+	);
 
 	/****************/
 	/* Function 0x18 */
