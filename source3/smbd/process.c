@@ -43,7 +43,7 @@ extern int max_send;
 
 /* Accessor function for smb_read_error for smbd functions. */
 
-enum smb_read_errors *get_srv_read_error(void)
+static enum smb_read_errors *get_srv_read_error(void)
 {
 	return &smb_read_error;
 }
