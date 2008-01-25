@@ -1375,7 +1375,7 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx(struct rpc_pipe_client *cli,
 				    struct GUID *domain_guid,
 				    const char *site_name,
 				    uint32_t flags,
-				    struct netr_DsRGetDCNameInfo *info,
+				    struct netr_DsRGetDCNameInfo **info,
 				    WERROR *werror)
 {
 	struct netr_DsRGetDCNameEx r;
@@ -1728,7 +1728,7 @@ NTSTATUS rpccli_netr_DsRGetDCNameEx2(struct rpc_pipe_client *cli,
 				     struct GUID *domain_guid,
 				     const char *site_name,
 				     uint32_t flags,
-				     struct netr_DsRGetDCNameInfo *info,
+				     struct netr_DsRGetDCNameInfo **info,
 				     WERROR *werror)
 {
 	struct netr_DsRGetDCNameEx2 r;
@@ -2063,17 +2063,27 @@ NTSTATUS rpccli_netr_DsrEnumerateDomainTrusts(struct rpc_pipe_client *cli,
 	return werror_to_ntstatus(r.out.result);
 }
 
-NTSTATUS rpccli_netr_DSRDEREGISTERDNSHOSTRECORDS(struct rpc_pipe_client *cli,
+NTSTATUS rpccli_netr_DsrDeregisterDNSHostRecords(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
+						 const char *server_name,
+						 const char *domain,
+						 struct GUID *domain_guid,
+						 struct GUID *dsa_guid,
+						 const char *dns_host,
 						 WERROR *werror)
 {
-	struct netr_DSRDEREGISTERDNSHOSTRECORDS r;
+	struct netr_DsrDeregisterDNSHostRecords r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.server_name = server_name;
+	r.in.domain = domain;
+	r.in.domain_guid = domain_guid;
+	r.in.dsa_guid = dsa_guid;
+	r.in.dns_host = dns_host;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DSRDEREGISTERDNSHOSTRECORDS, &r);
+		NDR_PRINT_IN_DEBUG(netr_DsrDeregisterDNSHostRecords, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
@@ -2088,7 +2098,7 @@ NTSTATUS rpccli_netr_DSRDEREGISTERDNSHOSTRECORDS(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DSRDEREGISTERDNSHOSTRECORDS, &r);
+		NDR_PRINT_OUT_DEBUG(netr_DsrDeregisterDNSHostRecords, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {

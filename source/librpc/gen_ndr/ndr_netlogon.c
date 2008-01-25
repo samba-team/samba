@@ -11614,7 +11614,11 @@ static enum ndr_err_code ndr_push_netr_DsRGetDCNameEx(struct ndr_push *ndr, int 
 		if (r->out.info == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+		if (*r->out.info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_ref_ptr(ndr));
+		NDR_CHECK(ndr_push_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.info));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -11626,11 +11630,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx(struct ndr_pull *ndr, int 
 	uint32_t _ptr_domain_name;
 	uint32_t _ptr_domain_guid;
 	uint32_t _ptr_site_name;
+	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_server_unc_0;
 	TALLOC_CTX *_mem_save_domain_name_0;
 	TALLOC_CTX *_mem_save_domain_guid_0;
 	TALLOC_CTX *_mem_save_site_name_0;
 	TALLOC_CTX *_mem_save_info_0;
+	TALLOC_CTX *_mem_save_info_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -11710,7 +11716,14 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx(struct ndr_pull *ndr, int 
 		}
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_info));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, *r->out.info);
+		}
+		_mem_save_info_1 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, *r->out.info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.info));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_1, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -11759,7 +11772,10 @@ _PUBLIC_ void ndr_print_netr_DsRGetDCNameEx(struct ndr_print *ndr, const char *n
 		ndr->depth++;
 		ndr_print_ptr(ndr, "info", r->out.info);
 		ndr->depth++;
-		ndr_print_netr_DsRGetDCNameInfo(ndr, "info", r->out.info);
+		ndr_print_ptr(ndr, "info", *r->out.info);
+		ndr->depth++;
+		ndr_print_netr_DsRGetDCNameInfo(ndr, "info", *r->out.info);
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -12571,7 +12587,11 @@ static enum ndr_err_code ndr_push_netr_DsRGetDCNameEx2(struct ndr_push *ndr, int
 		if (r->out.info == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+		if (*r->out.info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_ref_ptr(ndr));
+		NDR_CHECK(ndr_push_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.info));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -12584,12 +12604,14 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx2(struct ndr_pull *ndr, int
 	uint32_t _ptr_domain_name;
 	uint32_t _ptr_domain_guid;
 	uint32_t _ptr_site_name;
+	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_server_unc_0;
 	TALLOC_CTX *_mem_save_client_account_0;
 	TALLOC_CTX *_mem_save_domain_name_0;
 	TALLOC_CTX *_mem_save_domain_guid_0;
 	TALLOC_CTX *_mem_save_site_name_0;
 	TALLOC_CTX *_mem_save_info_0;
+	TALLOC_CTX *_mem_save_info_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -12688,7 +12710,14 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCNameEx2(struct ndr_pull *ndr, int
 		}
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_info));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, *r->out.info);
+		}
+		_mem_save_info_1 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, *r->out.info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.info));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_1, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -12744,7 +12773,10 @@ _PUBLIC_ void ndr_print_netr_DsRGetDCNameEx2(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		ndr_print_ptr(ndr, "info", r->out.info);
 		ndr->depth++;
-		ndr_print_netr_DsRGetDCNameInfo(ndr, "info", r->out.info);
+		ndr_print_ptr(ndr, "info", *r->out.info);
+		ndr->depth++;
+		ndr_print_netr_DsRGetDCNameInfo(ndr, "info", *r->out.info);
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -13431,9 +13463,38 @@ _PUBLIC_ void ndr_print_netr_DsrEnumerateDomainTrusts(struct ndr_print *ndr, con
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_netr_DSRDEREGISTERDNSHOSTRECORDS(struct ndr_push *ndr, int flags, const struct netr_DSRDEREGISTERDNSHOSTRECORDS *r)
+static enum ndr_err_code ndr_push_netr_DsrDeregisterDNSHostRecords(struct ndr_push *ndr, int flags, const struct netr_DsrDeregisterDNSHostRecords *r)
 {
 	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
+		if (r->in.server_name) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.server_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.server_name, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.server_name, ndr_charset_length(r->in.server_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.domain));
+		if (r->in.domain) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.domain, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.domain, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.domain, ndr_charset_length(r->in.domain, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.domain_guid));
+		if (r->in.domain_guid) {
+			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.domain_guid));
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.dsa_guid));
+		if (r->in.dsa_guid) {
+			NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.dsa_guid));
+		}
+		if (r->in.dns_host == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.dns_host, CH_UTF16)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.dns_host, CH_UTF16)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.dns_host, ndr_charset_length(r->in.dns_host, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -13441,9 +13502,84 @@ static enum ndr_err_code ndr_push_netr_DSRDEREGISTERDNSHOSTRECORDS(struct ndr_pu
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_netr_DSRDEREGISTERDNSHOSTRECORDS(struct ndr_pull *ndr, int flags, struct netr_DSRDEREGISTERDNSHOSTRECORDS *r)
+static enum ndr_err_code ndr_pull_netr_DsrDeregisterDNSHostRecords(struct ndr_pull *ndr, int flags, struct netr_DsrDeregisterDNSHostRecords *r)
 {
+	uint32_t _ptr_server_name;
+	uint32_t _ptr_domain;
+	uint32_t _ptr_domain_guid;
+	uint32_t _ptr_dsa_guid;
+	TALLOC_CTX *_mem_save_server_name_0;
+	TALLOC_CTX *_mem_save_domain_0;
+	TALLOC_CTX *_mem_save_domain_guid_0;
+	TALLOC_CTX *_mem_save_dsa_guid_0;
 	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_server_name));
+		if (_ptr_server_name) {
+			NDR_PULL_ALLOC(ndr, r->in.server_name);
+		} else {
+			r->in.server_name = NULL;
+		}
+		if (r->in.server_name) {
+			_mem_save_server_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.server_name, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.server_name));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.server_name));
+			if (ndr_get_array_length(ndr, &r->in.server_name) > ndr_get_array_size(ndr, &r->in.server_name)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.server_name), ndr_get_array_length(ndr, &r->in.server_name));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.server_name, ndr_get_array_length(ndr, &r->in.server_name), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_server_name_0, 0);
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain));
+		if (_ptr_domain) {
+			NDR_PULL_ALLOC(ndr, r->in.domain);
+		} else {
+			r->in.domain = NULL;
+		}
+		if (r->in.domain) {
+			_mem_save_domain_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.domain, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.domain));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.domain));
+			if (ndr_get_array_length(ndr, &r->in.domain) > ndr_get_array_size(ndr, &r->in.domain)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.domain), ndr_get_array_length(ndr, &r->in.domain));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.domain), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.domain, ndr_get_array_length(ndr, &r->in.domain), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_0, 0);
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domain_guid));
+		if (_ptr_domain_guid) {
+			NDR_PULL_ALLOC(ndr, r->in.domain_guid);
+		} else {
+			r->in.domain_guid = NULL;
+		}
+		if (r->in.domain_guid) {
+			_mem_save_domain_guid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.domain_guid, 0);
+			NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.domain_guid));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domain_guid_0, 0);
+		}
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_dsa_guid));
+		if (_ptr_dsa_guid) {
+			NDR_PULL_ALLOC(ndr, r->in.dsa_guid);
+		} else {
+			r->in.dsa_guid = NULL;
+		}
+		if (r->in.dsa_guid) {
+			_mem_save_dsa_guid_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.dsa_guid, 0);
+			NDR_CHECK(ndr_pull_GUID(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.dsa_guid));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dsa_guid_0, 0);
+		}
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.dns_host));
+		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.dns_host));
+		if (ndr_get_array_length(ndr, &r->in.dns_host) > ndr_get_array_size(ndr, &r->in.dns_host)) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.dns_host), ndr_get_array_length(ndr, &r->in.dns_host));
+		}
+		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.dns_host), sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.dns_host, ndr_get_array_length(ndr, &r->in.dns_host), sizeof(uint16_t), CH_UTF16));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -13451,20 +13587,48 @@ static enum ndr_err_code ndr_pull_netr_DSRDEREGISTERDNSHOSTRECORDS(struct ndr_pu
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_netr_DSRDEREGISTERDNSHOSTRECORDS(struct ndr_print *ndr, const char *name, int flags, const struct netr_DSRDEREGISTERDNSHOSTRECORDS *r)
+_PUBLIC_ void ndr_print_netr_DsrDeregisterDNSHostRecords(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsrDeregisterDNSHostRecords *r)
 {
-	ndr_print_struct(ndr, name, "netr_DSRDEREGISTERDNSHOSTRECORDS");
+	ndr_print_struct(ndr, name, "netr_DsrDeregisterDNSHostRecords");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
 		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
 	}
 	if (flags & NDR_IN) {
-		ndr_print_struct(ndr, "in", "netr_DSRDEREGISTERDNSHOSTRECORDS");
+		ndr_print_struct(ndr, "in", "netr_DsrDeregisterDNSHostRecords");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "server_name", r->in.server_name);
+		ndr->depth++;
+		if (r->in.server_name) {
+			ndr_print_string(ndr, "server_name", r->in.server_name);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "domain", r->in.domain);
+		ndr->depth++;
+		if (r->in.domain) {
+			ndr_print_string(ndr, "domain", r->in.domain);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "domain_guid", r->in.domain_guid);
+		ndr->depth++;
+		if (r->in.domain_guid) {
+			ndr_print_GUID(ndr, "domain_guid", r->in.domain_guid);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "dsa_guid", r->in.dsa_guid);
+		ndr->depth++;
+		if (r->in.dsa_guid) {
+			ndr_print_GUID(ndr, "dsa_guid", r->in.dsa_guid);
+		}
+		ndr->depth--;
+		ndr_print_ptr(ndr, "dns_host", r->in.dns_host);
+		ndr->depth++;
+		ndr_print_string(ndr, "dns_host", r->in.dns_host);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
-		ndr_print_struct(ndr, "out", "netr_DSRDEREGISTERDNSHOSTRECORDS");
+		ndr_print_struct(ndr, "out", "netr_DsrDeregisterDNSHostRecords");
 		ndr->depth++;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -14590,11 +14754,11 @@ static const struct ndr_interface_call netlogon_calls[] = {
 		false,
 	},
 	{
-		"netr_DSRDEREGISTERDNSHOSTRECORDS",
-		sizeof(struct netr_DSRDEREGISTERDNSHOSTRECORDS),
-		(ndr_push_flags_fn_t) ndr_push_netr_DSRDEREGISTERDNSHOSTRECORDS,
-		(ndr_pull_flags_fn_t) ndr_pull_netr_DSRDEREGISTERDNSHOSTRECORDS,
-		(ndr_print_function_t) ndr_print_netr_DSRDEREGISTERDNSHOSTRECORDS,
+		"netr_DsrDeregisterDNSHostRecords",
+		sizeof(struct netr_DsrDeregisterDNSHostRecords),
+		(ndr_push_flags_fn_t) ndr_push_netr_DsrDeregisterDNSHostRecords,
+		(ndr_pull_flags_fn_t) ndr_pull_netr_DsrDeregisterDNSHostRecords,
+		(ndr_print_function_t) ndr_print_netr_DsrDeregisterDNSHostRecords,
 		false,
 	},
 	{
