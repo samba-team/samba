@@ -1234,7 +1234,7 @@ static void regfio_mem_free( REGF_FILE *file )
 
 	/* cleanup for a file opened for write */
 
-	if ( file->open_flags & (O_WRONLY|O_RDWR) ) {
+	if ((file->fd != -1) && (file->open_flags & (O_WRONLY|O_RDWR))) {
 		prs_struct ps;
 		REGF_SK_REC *sk;
 
