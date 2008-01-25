@@ -193,7 +193,7 @@ typedef uint32 codepoint_t;
 #define PIPE_NETLOGON_PLAIN "\\NETLOGON"
 
 #define PI_LSARPC		0
-#define PI_LSARPC_DS		1
+#define PI_DSSETUP		1
 #define PI_SAMR			2
 #define PI_NETLOGON		3
 #define PI_SRVSVC		4
@@ -306,6 +306,7 @@ extern const DATA_BLOB data_blob_null;
 #include "librpc/gen_ndr/svcctl.h"
 #include "librpc/gen_ndr/netlogon.h"
 #include "librpc/gen_ndr/samr.h"
+#include "librpc/gen_ndr/dssetup.h"
 #include "librpc/gen_ndr/libnet_join.h"
 
 struct lsa_dom_info {

@@ -23,48 +23,6 @@
 /* implementations of client side DsXXX() functions */
 
 /********************************************************************
- Get information about the server and directory services
-********************************************************************/
-
-NTSTATUS rpccli_ds_getprimarydominfo(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx, 
-				     uint16 level, DS_DOMINFO_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	DS_Q_GETPRIMDOMINFO q;
-	DS_R_GETPRIMDOMINFO r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	q.level = level;
-	
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC_DS, DS_GETPRIMDOMINFO,
-		q, r,
-		qbuf, rbuf,
-		ds_io_q_getprimdominfo,
-		ds_io_r_getprimdominfo,
-		NT_STATUS_UNSUCCESSFUL);
-	
-	/* Return basic info - if we are requesting at info != 1 then
-	   there could be trouble. */ 
-
-	result = r.status;
-
-	if ( r.ptr && ctr ) {
-		ctr->basic = TALLOC_P(mem_ctx, DSROLE_PRIMARY_DOMAIN_INFO_BASIC);
-		if (!ctr->basic)
-			goto done;
-		memcpy(ctr->basic, r.info.basic, sizeof(DSROLE_PRIMARY_DOMAIN_INFO_BASIC));
-	}
-	
-done:
-
-	return result;
-}
-
-/********************************************************************
  Enumerate trusted domains in an AD forest
 ********************************************************************/
 
