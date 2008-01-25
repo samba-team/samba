@@ -579,7 +579,7 @@ static bool xattr_tdb_init(int snum, struct db_context **p_db)
 				      lock_path("xattr.tdb"));
 
 	if (dbname == NULL) {
-		errno = ENOTSUP;
+		errno = ENOSYS;
 		return false;
 	}
 
