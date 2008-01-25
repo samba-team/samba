@@ -44,15 +44,20 @@ static int test_failed;
 extern int torture_numops;
 static bool test_finished;
 
+enum offline_op {OP_LOADFILE, OP_SAVEFILE, OP_SETOFFLINE, OP_GETOFFLINE, OP_ENDOFLIST};
+
+static double latencies[OP_ENDOFLIST];
+static double worst_latencies[OP_ENDOFLIST];
+
 #define FILE_SIZE 8192
 
-enum offline_op {OP_LOADFILE, OP_SAVEFILE, OP_SETOFFLINE, OP_GETOFFLINE, OP_ENDOFLIST};
 
 struct offline_state {
 	struct torture_context *tctx;
 	struct event_context *ev;
 	struct smbcli_tree *tree;
 	TALLOC_CTX *mem_ctx;
+	int client;
 	int fnum;
 	uint32_t count;
 	uint32_t lastcount;
@@ -64,6 +69,7 @@ struct offline_state {
 	struct smb_composite_savefile *savefile;
 	struct smbcli_request *req;
 	enum offline_op op;
+	struct timeval tv_start;
 };
 
 static void test_offline(struct offline_state *state);
@@ -208,12 +214,20 @@ static void getoffline_callback(struct smbcli_request *req)
 static void test_offline(struct offline_state *state)
 {
 	struct composite_context *ctx;
+	double lat;
+
+	lat = timeval_elapsed(&state->tv_start);
+	if (latencies[state->op] < lat) {
+		latencies[state->op] = lat;
+	}
 
 	state->op = (enum offline_op) (random() % OP_ENDOFLIST);
 	
 	state->fnumber = random() % torture_numops;
 	talloc_free(state->fname);
 	state->fname = filename(state->mem_ctx, state->fnumber);
+
+	state->tv_start = timeval_current();
 
 	switch (state->op) {
 	case OP_LOADFILE:
@@ -258,6 +272,9 @@ static void test_offline(struct offline_state *state)
 		io.setattr.level = RAW_SFILEINFO_SETATTR;
 		io.setattr.in.attrib = FILE_ATTRIBUTE_OFFLINE;
 		io.setattr.in.file.path = state->fname;
+		/* make the file 1 hour old, to get past mininum age restrictions 
+		   for HSM systems */
+		io.setattr.in.write_time = time(NULL) - 60*60;
 
 		state->req = smb_raw_setpathinfo_send(state->tree, &io);
 		if (state->req == NULL) {
@@ -316,15 +333,31 @@ static void report_rate(struct event_context *ev, struct timed_event *te,
 	struct offline_state *state = talloc_get_type(private_data, 
 							struct offline_state);
 	int i;
-	uint32_t total=0;
+	uint32_t total=0, total_offline=0, total_online=0;
 	for (i=0;i<numstates;i++) {
 		total += state[i].count - state[i].lastcount;
+		if (timeval_elapsed(&state[i].tv_start) > latencies[state[i].op]) {
+			latencies[state[i].op] = timeval_elapsed(&state[i].tv_start);
+		}
 		state[i].lastcount = state[i].count;		
+		total_online += state[i].online_count;
+		total_offline += state[i].offline_count;
 	}
-	printf("ops=%6u   offline_count=%6u   online_count=%6u\r",
-	       total, state->offline_count, state->online_count);
+	printf("ops/s=%4u  offline=%5u online=%4u  set_lat=%.1f get_lat=%.1f save_lat=%.1f load_lat=%.1f\r",
+	       total, total_offline, total_online,
+	       latencies[OP_SETOFFLINE],
+	       latencies[OP_GETOFFLINE],
+	       latencies[OP_SAVEFILE],
+	       latencies[OP_LOADFILE]);
 	fflush(stdout);
 	event_add_timed(ev, state, timeval_current_ofs(1, 0), report_rate, state);
+
+	for (i=0;i<OP_ENDOFLIST;i++) {
+		if (latencies[i] > worst_latencies[i]) {
+			worst_latencies[i] = latencies[i];
+		}
+		latencies[i] = 0;
+	}
 
 	/* send an echo on each interface to ensure it stays alive - this helps
 	   with IP takeover */
@@ -361,12 +394,12 @@ bool torture_test_offline(struct torture_context *torture)
 	bool progress;
 	progress = torture_setting_bool(torture, "progress", true);
 
-	nconnections = torture_setting_int(torture, "nconnections", 4);
+	nconnections = torture_setting_int(torture, "nprocs", 4);
 	numstates = nconnections * 5;
 
 	state = talloc_zero_array(mem_ctx, struct offline_state, numstates);
 
-	printf("Opening %d connections with %d simultaneous operations\n", nconnections, numstates);
+	printf("Opening %d connections with %d simultaneous operations and %u files\n", nconnections, numstates, torture_numops);
 	for (i=0;i<nconnections;i++) {
 		state[i].tctx = torture;
 		state[i].mem_ctx = talloc_new(state);
@@ -375,6 +408,9 @@ bool torture_test_offline(struct torture_context *torture)
 			return false;
 		}
 		state[i].tree = cli->tree;
+		state[i].client = i;
+		/* allow more time for offline files */
+		state[i].tree->session->transport->options.request_timeout = 200;
 	}
 
 	/* the others are repeats on the earlier connections */
@@ -383,6 +419,7 @@ bool torture_test_offline(struct torture_context *torture)
 		state[i].mem_ctx = talloc_new(state);
 		state[i].ev = ev;
 		state[i].tree = state[i % nconnections].tree;
+		state[i].client = i;
 	}
 
 	num_connected = i;
@@ -392,6 +429,7 @@ bool torture_test_offline(struct torture_context *torture)
 	}
 
 	/* pre-create files */
+	printf("Pre-creating %u files ....\n", torture_numops);
 	for (i=0;i<torture_numops;i++) {
 		int fnum;
 		char *fname = filename(mem_ctx, i);
@@ -422,6 +460,7 @@ bool torture_test_offline(struct torture_context *torture)
 
 	/* start the async ops */
 	for (i=0;i<numstates;i++) {
+		state[i].tv_start = timeval_current();
 		test_offline(&state[i]);
 	}
 
@@ -450,6 +489,12 @@ bool torture_test_offline(struct torture_context *torture)
 			event_loop_once(ev);
 		}
 	}	
+
+	printf("worst latencies: set_lat=%.1f get_lat=%.1f save_lat=%.1f load_lat=%.1f\n",
+	       worst_latencies[OP_SETOFFLINE],
+	       worst_latencies[OP_GETOFFLINE],
+	       worst_latencies[OP_SAVEFILE],
+	       worst_latencies[OP_LOADFILE]);
 
 	smbcli_deltree(state[0].tree, BASEDIR);
 	talloc_free(mem_ctx);
