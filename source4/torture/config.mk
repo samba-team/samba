@@ -88,7 +88,8 @@ OBJ_FILES = \
 		raw/samba3hide.o \
 		raw/samba3misc.o \
 		raw/composite.o \
-		raw/raw.o
+		raw/raw.o \
+		raw/offline.o
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB LIBCLI_LSA LIBCLI_SMB_COMPOSITE \
 		POPT_CREDENTIALS TORTURE_UTIL
