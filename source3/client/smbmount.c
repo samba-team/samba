@@ -764,7 +764,7 @@ static void parse_mount_smb(int argc, char **argv)
 	char *opts;
 	char *opteq;
 	int val;
-	char *saveptr;
+	char *saveptr = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	/* FIXME: This function can silently fail if the arguments are
