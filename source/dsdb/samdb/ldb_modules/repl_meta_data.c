@@ -509,6 +509,18 @@ static int replmd_modify_originating(struct ldb_module *module,
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
+	/* TODO:
+	 * - get the whole old object
+	 * - if the old object doesn't exist report an error
+	 * - give an error when a readonly attribute should
+	 *   be modified
+	 * - merge the changed into the old object
+	 *   if the caller set values to the same value
+	 *   ignore the attribute, return success when no
+	 *   attribute was changed
+	 * - calculate the new replPropertyMetaData attribute
+	 */
+
 	if (add_time_element(msg, "whenChanged", t) != 0) {
 		talloc_free(down_req);
 		return LDB_ERR_OPERATIONS_ERROR;
@@ -522,6 +534,11 @@ static int replmd_modify_originating(struct ldb_module *module,
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 	}
+
+	/* TODO:
+	 * - sort the attributes by attid with replmd_ldb_message_sort()
+	 * - replace the old object with the newly constructed one
+	 */
 
 	ldb_set_timeout_from_prev_req(module->ldb, req, down_req);
 
