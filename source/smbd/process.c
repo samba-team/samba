@@ -268,24 +268,82 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	return NT_STATUS_OK;
 }
 
-static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
-					int fd,
-					char **buffer,
-					unsigned int timeout,
-					size_t *p_unread)
+static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
+				       char **buffer, unsigned int timeout,
+				       size_t *p_unread, size_t *plen)
 {
 	char lenbuf[4];
 	size_t len;
 	int min_recv_size = lp_min_receive_file_size();
 	NTSTATUS status;
 
-	set_smb_read_error(get_srv_read_error(),SMB_READ_OK);
 	*p_unread = 0;
 
 	status = read_smb_length_return_keepalive(fd, lenbuf, timeout, &len);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("receive_smb_raw: %s\n", nt_errstr(status)));
+		return status;
+	}
 
+	if (CVAL(lenbuf,0) == 0 &&
+			min_recv_size &&
+			smb_len_large(lenbuf) > min_recv_size && /* Could be a UNIX large writeX. */
+			!srv_is_signing_active()) {
+
+		status = receive_smb_raw_talloc_partial_read(
+			mem_ctx, lenbuf, fd, buffer, timeout, p_unread, &len);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("receive_smb_raw: %s\n",
+				   nt_errstr(status)));
+			return status;
+		}
+	}
+
+	if (!valid_packet_size(len)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/*
+	 * The +4 here can't wrap, we've checked the length above already.
+	 */
+
+	*buffer = TALLOC_ARRAY(mem_ctx, char, len+4);
+
+	if (*buffer == NULL) {
+		DEBUG(0, ("Could not allocate inbuf of length %d\n",
+			  (int)len+4));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	memcpy(*buffer, lenbuf, sizeof(lenbuf));
+
+	status = read_packet_remainder(fd, (*buffer)+4, timeout, len);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	*plen = len + 4;
+	return NT_STATUS_OK;
+}
+
+static ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx,
+				int fd,
+				char **buffer,
+				unsigned int timeout,
+				size_t *p_unread,
+				bool *p_encrypted)
+{
+	size_t len;
+	NTSTATUS status;
+
+	*p_encrypted = false;
+
+	set_smb_read_error(get_srv_read_error(), SMB_READ_OK);
+
+	status = receive_smb_raw_talloc(mem_ctx, fd, buffer, timeout,
+					p_unread, &len);
+	if (!NT_STATUS_IS_OK(status)) {
 		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
 			set_smb_read_error(get_srv_read_error(), SMB_READ_EOF);
 			return -1;
@@ -301,98 +359,8 @@ static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 		return -1;
 	}
 
-	if (CVAL(lenbuf,0) == 0 &&
-			min_recv_size &&
-			smb_len_large(lenbuf) > min_recv_size && /* Could be a UNIX large writeX. */
-			!srv_is_signing_active()) {
-
-		status = receive_smb_raw_talloc_partial_read(
-			mem_ctx, lenbuf, fd, buffer, timeout, p_unread, &len);
-
-		if (!NT_STATUS_IS_OK(status)) {
-
-			DEBUG(10, ("receive_smb_raw: %s\n",
-				   nt_errstr(status)));
-
-			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-				set_smb_read_error(get_srv_read_error(),
-						   SMB_READ_EOF);
-				return -1;
-			}
-
-			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-				set_smb_read_error(get_srv_read_error(),
-						   SMB_READ_TIMEOUT);
-				return -1;
-			}
-
-			set_smb_read_error(get_srv_read_error(),
-					   SMB_READ_ERROR);
-			return -1;
-		}
-	}
-
-	if (!valid_packet_size(len)) {
-		cond_set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
-		return -1;
-	}
-
-	/*
-	 * The +4 here can't wrap, we've checked the length above already.
-	 */
-
-	*buffer = TALLOC_ARRAY(mem_ctx, char, len+4);
-
-	if (*buffer == NULL) {
-		DEBUG(0, ("Could not allocate inbuf of length %d\n",
-			  (int)len+4));
-		cond_set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
-		return -1;
-	}
-
-	memcpy(*buffer, lenbuf, sizeof(lenbuf));
-
-	status = read_packet_remainder(fd, (*buffer)+4, timeout, len);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-			set_smb_read_error(get_srv_read_error(),
-					   SMB_READ_EOF);
-			return -1;
-		}
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-			set_smb_read_error(get_srv_read_error(),
-					   SMB_READ_TIMEOUT);
-			return -1;
-		}
-
-		set_smb_read_error(get_srv_read_error(),
-				   SMB_READ_ERROR);
-		return -1;
-	}
-
-	return len + 4;
-}
-
-static ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx,
-				int fd,
-				char **buffer,
-				unsigned int timeout,
-				size_t *p_unread,
-				bool *p_encrypted)
-{
-	ssize_t len;
-
-	*p_encrypted = false;
-
-	len = receive_smb_raw_talloc(mem_ctx, fd, buffer, timeout, p_unread);
-
-	if (len < 0) {
-		return -1;
-	}
-
 	if (is_encrypted_packet((uint8_t *)*buffer)) {
-		NTSTATUS status = srv_decrypt_buffer(*buffer);
+		status = srv_decrypt_buffer(*buffer);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("receive_smb_talloc: SMB decryption failed on "
 				"incoming packet! Error %s\n",
