@@ -3299,9 +3299,11 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 				/* Doesn't apply to a directory - ignore. */
 				DEBUG(10,("append_parent_acl: directory %s "
 					"ignoring non container "
-					"inherit flags %u from parent %s\n",
+					"inherit flags %u on ACE with sid %s "
+					"from parent %s\n",
 					fsp->fsp_name,
 					(unsigned int)se->flags,
+					sid_string_dbg(&se->trustee),
 					parent_name));
 				continue;
 			}
@@ -3310,9 +3312,11 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 				/* Doesn't apply to a file - ignore. */
 				DEBUG(10,("append_parent_acl: file %s "
 					"ignoring non object "
-					"inherit flags %u from parent %s\n",
+					"inherit flags %u on ACE with sid %s "
+					"from parent %s\n",
 					fsp->fsp_name,
 					(unsigned int)se->flags,
+					sid_string_dbg(&se->trustee),
 					parent_name));
 				continue;
 			}
@@ -3332,7 +3336,7 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 			if (k < psd->dacl->num_aces) {
 				/* SID matched. Ignore. */
 				DEBUG(10,("append_parent_acl: path %s "
-					"ignoring protected sid %s "
+					"ignoring ACE with protected sid %s "
 					"from parent %s\n",
 					fsp->fsp_name,
 					sid_string_dbg(&se->trustee),
@@ -3346,7 +3350,35 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 			new_ace[i].flags &= ~(SEC_ACE_FLAG_VALID_INHERIT);
 		}
 		new_ace[i].flags |= SEC_ACE_FLAG_INHERITED_ACE;
+
+		if (fsp->is_directory) {
+			/*
+			 * Strip off any inherit only. It's applied.
+			 */
+			new_ace[i].flags &= ~(SEC_ACE_FLAG_INHERIT_ONLY);
+			if (se->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
+				/* No further inheritance. */
+				new_ace[i].flags &=
+					~(SEC_ACE_FLAG_CONTAINER_INHERIT|
+					SEC_ACE_FLAG_OBJECT_INHERIT);
+			}
+		} else {
+			/*
+			 * Strip off any container or inherit
+			 * flags, they can't apply to objects.
+			 */
+			new_ace[i].flags &= ~(SEC_ACE_FLAG_CONTAINER_INHERIT|
+						SEC_ACE_FLAG_INHERIT_ONLY|
+						SEC_ACE_FLAG_NO_PROPAGATE_INHERIT);
+		}
 		i++;
+
+		DEBUG(10,("append_parent_acl: path %s "
+			"inheriting ACE with sid %s "
+			"from parent %s\n",
+			fsp->fsp_name,
+			sid_string_dbg(&se->trustee),
+			parent_name));
 	}
 
 	parent_sd->dacl->aces = new_ace;
