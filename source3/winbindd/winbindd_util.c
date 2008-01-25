@@ -1386,36 +1386,56 @@ void ws_name_return( char *name, char replace )
 /*********************************************************************
  ********************************************************************/
 
-bool winbindd_can_contact_domain( struct winbindd_domain *domain )
+bool winbindd_can_contact_domain(struct winbindd_domain *domain)
 {
+	struct winbindd_tdc_domain *tdc = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	bool ret = false;
+
 	/* We can contact the domain if it is our primary domain */
 
-	if ( domain->primary )
-		return True;
+	if (domain->primary) {
+		return true;
+	}
+
+	/* Trust the TDC cache and not the winbindd_domain flags */
+
+	if ((tdc = wcache_tdc_fetch_domain(frame, domain->name)) == NULL) {
+		DEBUG(10,("winbindd_can_contact_domain: %s not found in cache\n",
+			  domain->name));
+		return false;
+	}
 
 	/* Can always contact a domain that is in out forest */
 
-	if ( domain->domain_flags & DS_DOMAIN_IN_FOREST )
-		return True;	
-
+	if (tdc->trust_flags & DS_DOMAIN_IN_FOREST) {
+		ret = true;
+		goto done;
+	}
+	
 	/*
 	 * On a _member_ server, we cannot contact the domain if it
 	 * is running AD and we have no inbound trust.
 	 */
 
-	if ( !IS_DC &&
+	if (!IS_DC && 
 	     domain->active_directory &&
-	     ((domain->domain_flags&DS_DOMAIN_DIRECT_INBOUND) != DS_DOMAIN_DIRECT_INBOUND) ) 
+	    ((tdc->trust_flags&DS_DOMAIN_DIRECT_INBOUND) != DS_DOMAIN_DIRECT_INBOUND))
 	{
-		DEBUG(10, ("Domain is an AD domain and we have no inbound "
-			   "trust.\n"));
-		return False;
+		DEBUG(10, ("winbindd_can_contact_domain: %s is an AD domain "
+			   "and we have no inbound trust.\n", domain->name));
+		goto done;
 	}
-	
+
 	/* Assume everything else is ok (probably not true but what
 	   can you do?) */
+
+	ret = true;	
+
+done:	
+	talloc_destroy(frame);
 	
-	return True;	
+	return ret;	
 }
 
 /*********************************************************************
