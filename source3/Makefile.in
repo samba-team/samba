@@ -1093,7 +1093,8 @@ modules: SHOWFLAGS $(MODULES)
 ## Perl IDL Compiler
 IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
 	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
-	epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl
+	epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl \
+	dssetup.idl
 
 idl:
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
