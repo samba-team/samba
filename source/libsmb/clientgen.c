@@ -69,15 +69,36 @@ int cli_set_port(struct cli_state *cli, int port)
 
 static ssize_t client_receive_smb(struct cli_state *cli, size_t maxlen)
 {
-	ssize_t len;
+	size_t len;
 
 	for(;;) {
-		len = receive_smb_raw(cli->fd, cli->inbuf, cli->timeout,
-				maxlen, &cli->smb_rw_error);
+		NTSTATUS status;
 
-		if (len < 0) {
+		set_smb_read_error(&cli->smb_rw_error, SMB_READ_OK);
+
+		status = receive_smb_raw(cli->fd, cli->inbuf, cli->timeout,
+					 maxlen, &len);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10,("client_receive_smb failed\n"));
 			show_msg(cli->inbuf);
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+				set_smb_read_error(&cli->smb_rw_error,
+						   SMB_READ_EOF);
+				return -1;
+			}
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+				set_smb_read_error(&cli->smb_rw_error,
+						   SMB_READ_TIMEOUT);
+				return -1;
+			}
+
+			set_smb_read_error(&cli->smb_rw_error, SMB_READ_ERROR);
+			return -1;
+		}
+
+		if (len < 0) {
 			return len;
 		}
 

@@ -1196,34 +1196,17 @@ NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
  Doesn't check the MAC on signed packets.
 ****************************************************************************/
 
-ssize_t receive_smb_raw(int fd,
-			char *buffer,
-			unsigned int timeout,
-			size_t maxlen,
-			enum smb_read_errors *pre)
+NTSTATUS receive_smb_raw(int fd, char *buffer, unsigned int timeout,
+			 size_t maxlen, size_t *p_len)
 {
 	size_t len;
 	NTSTATUS status;
-
-	set_smb_read_error(pre,SMB_READ_OK);
 
 	status = read_smb_length_return_keepalive(fd,buffer,timeout,&len);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("receive_smb_raw: %s!\n", nt_errstr(status)));
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-			set_smb_read_error(pre, SMB_READ_EOF);
-			return -1;
-		}
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-			set_smb_read_error(pre, SMB_READ_TIMEOUT);
-			return -1;
-		}
-
-		set_smb_read_error(pre, SMB_READ_ERROR);
-		return -1;
+		return status;
 	}
 
 	/*
@@ -1235,15 +1218,7 @@ ssize_t receive_smb_raw(int fd,
 		DEBUG(0,("Invalid packet length! (%lu bytes).\n",
 					(unsigned long)len));
 		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
-
-			/*
-			 * Correct fix. smb_read_error may have already been
-			 * set. Only set it here if not already set. Global
-			 * variables still suck :-). JRA.
-			 */
-
-			cond_set_smb_read_error(pre,SMB_READ_ERROR);
-			return -1;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
 
@@ -1252,24 +1227,11 @@ ssize_t receive_smb_raw(int fd,
 			len = MIN(len,maxlen);
 		}
 
-		set_smb_read_error(pre, SMB_READ_OK);
-
 		status = read_socket_with_timeout(
 			fd, buffer+4, len, len, timeout, &len);
 
 		if (!NT_STATUS_IS_OK(status)) {
-			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-				set_smb_read_error(pre, SMB_READ_EOF);
-				return -1;
-			}
-
-			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-				set_smb_read_error(pre, SMB_READ_TIMEOUT);
-				return -1;
-			}
-
-			set_smb_read_error(pre, SMB_READ_ERROR);
-			return -1;
+			return status;
 		}
 
 		/* not all of samba3 properly checks for packet-termination
@@ -1278,7 +1240,8 @@ ssize_t receive_smb_raw(int fd,
 		SSVAL(buffer+4,len, 0);
 	}
 
-	return len;
+	*p_len = len;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************

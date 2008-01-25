@@ -4422,9 +4422,30 @@ static void readline_callback(void)
 	   session keepalives and then drop them here.
 	*/
 	if (FD_ISSET(cli->fd,&fds)) {
-		if (receive_smb_raw(cli->fd,cli->inbuf,0,0,&cli->smb_rw_error) == -1) {
-			DEBUG(0, ("Read from server failed, maybe it closed the "
-				"connection\n"));
+		NTSTATUS status;
+		size_t len;
+
+		set_smb_read_error(&cli->smb_rw_error, SMB_READ_OK);
+
+		status = receive_smb_raw(cli->fd, cli->inbuf, 0, 0, &len);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Read from server failed, maybe it closed "
+				  "the connection\n"));
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+				set_smb_read_error(&cli->smb_rw_error,
+						   SMB_READ_EOF);
+				return;
+			}
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+				set_smb_read_error(&cli->smb_rw_error,
+						   SMB_READ_TIMEOUT);
+				return;
+			}
+
+			set_smb_read_error(&cli->smb_rw_error, SMB_READ_ERROR);
 			return;
 		}
 		if(CVAL(cli->inbuf,0) != SMBkeepalive) {
