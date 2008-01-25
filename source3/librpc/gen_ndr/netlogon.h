@@ -1260,7 +1260,7 @@ struct netr_DsRGetDCNameEx {
 	} in;
 
 	struct {
-		struct netr_DsRGetDCNameInfo *info;/* [ref] */
+		struct netr_DsRGetDCNameInfo **info;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1370,7 +1370,7 @@ struct netr_DsRGetDCNameEx2 {
 	} in;
 
 	struct {
-		struct netr_DsRGetDCNameInfo *info;/* [ref] */
+		struct netr_DsRGetDCNameInfo **info;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -1460,7 +1460,15 @@ struct netr_DsrEnumerateDomainTrusts {
 };
 
 
-struct netr_DSRDEREGISTERDNSHOSTRECORDS {
+struct netr_DsrDeregisterDNSHostRecords {
+	struct {
+		const char *server_name;/* [unique,charset(UTF16)] */
+		const char *domain;/* [unique,charset(UTF16)] */
+		struct GUID *domain_guid;/* [unique] */
+		struct GUID *dsa_guid;/* [unique] */
+		const char *dns_host;/* [ref,charset(UTF16)] */
+	} in;
+
 	struct {
 		WERROR result;
 	} out;

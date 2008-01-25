@@ -2213,7 +2213,7 @@ static bool api_netr_DsRGetDCNameEx(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, struct netr_DsRGetDCNameInfo);
+	r->out.info = talloc_zero(r, struct netr_DsRGetDCNameInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -2773,7 +2773,7 @@ static bool api_netr_DsRGetDCNameEx2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, struct netr_DsRGetDCNameInfo);
+	r->out.info = talloc_zero(r, struct netr_DsRGetDCNameInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -3294,18 +3294,18 @@ static bool api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 	return true;
 }
 
-static bool api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
+static bool api_netr_DsrDeregisterDNSHostRecords(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct netr_DSRDEREGISTERDNSHOSTRECORDS *r;
+	struct netr_DsrDeregisterDNSHostRecords *r;
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DSRDEREGISTERDNSHOSTRECORDS];
 
-	r = talloc(NULL, struct netr_DSRDEREGISTERDNSHOSTRECORDS);
+	r = talloc(NULL, struct netr_DsrDeregisterDNSHostRecords);
 	if (r == NULL) {
 		return false;
 	}
@@ -3329,10 +3329,10 @@ static bool api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(netr_DSRDEREGISTERDNSHOSTRECORDS, r);
+		NDR_PRINT_IN_DEBUG(netr_DsrDeregisterDNSHostRecords, r);
 	}
 
-	r->out.result = _netr_DSRDEREGISTERDNSHOSTRECORDS(p, r);
+	r->out.result = _netr_DsrDeregisterDNSHostRecords(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3341,7 +3341,7 @@ static bool api_netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(netr_DSRDEREGISTERDNSHOSTRECORDS, r);
+		NDR_PRINT_OUT_DEBUG(netr_DsrDeregisterDNSHostRecords, r);
 	}
 
 	push = ndr_push_init_ctx(r);
@@ -3831,7 +3831,7 @@ static struct api_struct api_netlogon_cmds[] =
 	{"NETR_DSRGETDCSITECOVERAGEW", NDR_NETR_DSRGETDCSITECOVERAGEW, api_netr_DsrGetDcSiteCoverageW},
 	{"NETR_LOGONSAMLOGONEX", NDR_NETR_LOGONSAMLOGONEX, api_netr_LogonSamLogonEx},
 	{"NETR_DSRENUMERATEDOMAINTRUSTS", NDR_NETR_DSRENUMERATEDOMAINTRUSTS, api_netr_DsrEnumerateDomainTrusts},
-	{"NETR_DSRDEREGISTERDNSHOSTRECORDS", NDR_NETR_DSRDEREGISTERDNSHOSTRECORDS, api_netr_DSRDEREGISTERDNSHOSTRECORDS},
+	{"NETR_DSRDEREGISTERDNSHOSTRECORDS", NDR_NETR_DSRDEREGISTERDNSHOSTRECORDS, api_netr_DsrDeregisterDNSHostRecords},
 	{"NETR_SERVERTRUSTPASSWORDSGET", NDR_NETR_SERVERTRUSTPASSWORDSGET, api_netr_ServerTrustPasswordsGet},
 	{"NETR_DSRGETFORESTTRUSTINFORMATION", NDR_NETR_DSRGETFORESTTRUSTINFORMATION, api_netr_DsRGetForestTrustInformation},
 	{"NETR_GETFORESTTRUSTINFORMATION", NDR_NETR_GETFORESTTRUSTINFORMATION, api_netr_GetForestTrustInformation},

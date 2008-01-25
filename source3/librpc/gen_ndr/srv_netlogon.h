@@ -42,7 +42,7 @@ WERROR _netr_DsRAddressToSitenamesExW(pipes_struct *p, struct netr_DsRAddressToS
 WERROR _netr_DsrGetDcSiteCoverageW(pipes_struct *p, struct netr_DsrGetDcSiteCoverageW *r);
 NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p, struct netr_LogonSamLogonEx *r);
 WERROR _netr_DsrEnumerateDomainTrusts(pipes_struct *p, struct netr_DsrEnumerateDomainTrusts *r);
-WERROR _netr_DSRDEREGISTERDNSHOSTRECORDS(pipes_struct *p, struct netr_DSRDEREGISTERDNSHOSTRECORDS *r);
+WERROR _netr_DsrDeregisterDNSHostRecords(pipes_struct *p, struct netr_DsrDeregisterDNSHostRecords *r);
 NTSTATUS _netr_ServerTrustPasswordsGet(pipes_struct *p, struct netr_ServerTrustPasswordsGet *r);
 WERROR _netr_DsRGetForestTrustInformation(pipes_struct *p, struct netr_DsRGetForestTrustInformation *r);
 WERROR _netr_GetForestTrustInformation(pipes_struct *p, struct netr_GetForestTrustInformation *r);
