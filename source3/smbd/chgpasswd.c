@@ -265,7 +265,7 @@ static int expect(int master, char *issue, char *expected)
 
 		while (True) {
 			NTSTATUS status;
-			status = read_socket_with_timeout_ntstatus(
+			status = read_socket_with_timeout(
 				master, buffer + nread, 1,
 				sizeof(buffer) - nread - 1,
 				timeout, &len);

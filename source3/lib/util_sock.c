@@ -913,10 +913,10 @@ ssize_t read_udp_v4_socket(int fd,
  time_out = timeout in milliseconds
 ****************************************************************************/
 
-NTSTATUS read_socket_with_timeout_ntstatus(int fd, char *buf,
-					   size_t mincnt, size_t maxcnt,
-					   unsigned int time_out,
-					   size_t *size_ret)
+NTSTATUS read_socket_with_timeout(int fd, char *buf,
+				  size_t mincnt, size_t maxcnt,
+				  unsigned int time_out,
+				  size_t *size_ret)
 {
 	fd_set fds;
 	int selrtn;
@@ -1052,7 +1052,7 @@ ssize_t read_data(int fd,char *buffer,size_t N, enum smb_read_errors *pre)
 
 	set_smb_read_error(pre, SMB_READ_OK);
 
-	status = read_socket_with_timeout_ntstatus(fd, buffer, N, N, 0, NULL);
+	status = read_socket_with_timeout(fd, buffer, N, N, 0, NULL);
 
 	if (NT_STATUS_IS_OK(status)) {
 		return N;
@@ -1138,8 +1138,7 @@ NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
 	int msg_type;
 	NTSTATUS status;
 
-	status = read_socket_with_timeout_ntstatus(fd, inbuf, 4, 4, timeout,
-						   NULL);
+	status = read_socket_with_timeout(fd, inbuf, 4, 4, timeout, NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -1255,7 +1254,7 @@ ssize_t receive_smb_raw(int fd,
 
 		set_smb_read_error(pre, SMB_READ_OK);
 
-		status = read_socket_with_timeout_ntstatus(
+		status = read_socket_with_timeout(
 			fd, buffer+4, len, len, timeout, &len);
 
 		if (!NT_STATUS_IS_OK(status)) {
