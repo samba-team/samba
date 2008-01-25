@@ -1141,36 +1141,21 @@ bool send_keepalive(int client)
  Timeout is in milliseconds.
 ****************************************************************************/
 
-ssize_t read_smb_length_return_keepalive(int fd,
-					char *inbuf,
-					unsigned int timeout,
-					enum smb_read_errors *pre)
+NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
+					  unsigned int timeout,
+					  size_t *len)
 {
-	size_t len=0;
 	int msg_type;
 	NTSTATUS status;
-
-	set_smb_read_error(pre, SMB_READ_OK);
 
 	status = read_socket_with_timeout_ntstatus(fd, inbuf, 4, 4, timeout,
 						   NULL);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-			set_smb_read_error(pre, SMB_READ_EOF);
-			return -1;
-		}
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-			set_smb_read_error(pre, SMB_READ_TIMEOUT);
-			return -1;
-		}
-
-		set_smb_read_error(pre, SMB_READ_ERROR);
-		return -1;
+		return status;
 	}
 
-	len = smb_len(inbuf);
+	*len = smb_len(inbuf);
 	msg_type = CVAL(inbuf,0);
 
 	if (msg_type == SMBkeepalive) {
@@ -1179,7 +1164,7 @@ ssize_t read_smb_length_return_keepalive(int fd,
 
 	DEBUG(10,("got smb length of %lu\n",(unsigned long)len));
 
-	return len;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1191,15 +1176,31 @@ ssize_t read_smb_length_return_keepalive(int fd,
 
 ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout, enum smb_read_errors *pre)
 {
-	ssize_t len;
+	size_t len;
 	uint8_t msgtype = SMBkeepalive;
 
+	set_smb_read_error(pre, SMB_READ_OK);
+
 	while (msgtype == SMBkeepalive) {
-		len = read_smb_length_return_keepalive(fd, inbuf, timeout,
-						       pre);
-		if (len < 0) {
-			return len;
+		NTSTATUS status;
+
+		status = read_smb_length_return_keepalive(fd, inbuf, timeout,
+							  &len);
+		if (!NT_STATUS_IS_OK(status)) {
+			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+				set_smb_read_error(pre, SMB_READ_EOF);
+				return -1;
+			}
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+				set_smb_read_error(pre, SMB_READ_TIMEOUT);
+				return -1;
+			}
+
+			set_smb_read_error(pre, SMB_READ_ERROR);
+			return -1;
 		}
+
 		msgtype = CVAL(inbuf, 0);
 	}
 
@@ -1225,21 +1226,28 @@ ssize_t receive_smb_raw(int fd,
 			size_t maxlen,
 			enum smb_read_errors *pre)
 {
-	ssize_t len,ret;
+	size_t len;
+	ssize_t ret;
+	NTSTATUS status;
 
 	set_smb_read_error(pre,SMB_READ_OK);
 
-	len = read_smb_length_return_keepalive(fd,buffer,timeout,pre);
-	if (len < 0) {
-		DEBUG(10,("receive_smb_raw: length < 0!\n"));
+	status = read_smb_length_return_keepalive(fd,buffer,timeout,&len);
 
-		/*
-		 * Correct fix. smb_read_error may have already been
-		 * set. Only set it here if not already set. Global
-		 * variables still suck :-). JRA.
-		 */
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("receive_smb_raw: %s!\n", nt_errstr(status)));
 
-		cond_set_smb_read_error(pre,SMB_READ_ERROR);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+			set_smb_read_error(pre, SMB_READ_EOF);
+			return -1;
+		}
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			set_smb_read_error(pre, SMB_READ_TIMEOUT);
+			return -1;
+		}
+
+		set_smb_read_error(pre, SMB_READ_ERROR);
 		return -1;
 	}
 

@@ -300,24 +300,30 @@ static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 					size_t *p_unread)
 {
 	char lenbuf[4];
-	ssize_t len,ret;
+	size_t len;
+	ssize_t ret;
 	int min_recv_size = lp_min_receive_file_size();
+	NTSTATUS status;
 
 	set_smb_read_error(get_srv_read_error(),SMB_READ_OK);
 	*p_unread = 0;
 
-	len = read_smb_length_return_keepalive(fd, lenbuf,
-			timeout, get_srv_read_error());
-	if (len < 0) {
-		DEBUG(10,("receive_smb_raw: length < 0!\n"));
+	status = read_smb_length_return_keepalive(fd, lenbuf, timeout, &len);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("receive_smb_raw: %s\n", nt_errstr(status)));
 
-		/*
-		 * Correct fix. smb_read_error may have already been
-		 * set. Only set it here if not already set. Global
-		 * variables still suck :-). JRA.
-		 */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+			set_smb_read_error(get_srv_read_error(), SMB_READ_EOF);
+			return -1;
+		}
 
-		cond_set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			set_smb_read_error(get_srv_read_error(),
+					   SMB_READ_TIMEOUT);
+			return -1;
+		}
+
+		set_smb_read_error(get_srv_read_error(), SMB_READ_ERROR);
 		return -1;
 	}
 
