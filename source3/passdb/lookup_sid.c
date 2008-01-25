@@ -925,6 +925,8 @@ bool lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	TALLOC_CTX *tmp_ctx;
 	bool ret = false;
 
+	DEBUG(10, ("lookup_sid called for SID '%s'\n", sid_string_dbg(sid)));
+
 	if (!(tmp_ctx = talloc_new(mem_ctx))) {
 		DEBUG(0, ("talloc_new failed\n"));
 		return false;
