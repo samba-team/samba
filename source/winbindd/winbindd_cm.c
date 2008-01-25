@@ -679,8 +679,22 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 				char **machine_krb5_principal)
 {
 	const char *account_name;
+	const char *name = NULL;
+	
+	/* If we are a DC and this is not our own domain */
 
-	if (!get_trust_pw_clear(domain->name, machine_password,
+	if (IS_DC) {
+		name = domain->name;
+	} else {
+		struct winbindd_domain *our_domain = find_our_domain();
+
+		if (!our_domain)
+			return NT_STATUS_INVALID_SERVER_STATE;		
+		
+		name = our_domain->name;		
+	}	
+	
+	if (!get_trust_pw_clear(name, machine_password,
 				&account_name, NULL))
 	{
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
