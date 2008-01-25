@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
 #   
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 #
 
 import os
-from samba.provision import setup_secretsdb
+from samba.provision import setup_secretsdb, secretsdb_become_dc
 import samba.tests
 from ldb import Dn
 
@@ -37,7 +37,22 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
         finally:
             del ldb
             os.unlink(path)
-
+            
+    def test_become_dc(self):
+        path = os.path.join(self.tempdir, "secrets.ldb")
+        secrets_ldb = setup_secretsdb(path, setup_path, None, None, None)
+        try:
+            secretsdb_become_dc(secrets_ldb, setup_path, domain="EXAMPLE", 
+                   realm="example", netbiosname="myhost", 
+                   domainsid="S-5-22", keytab_path="keytab.path", 
+                   samdb_url="ldap://url/", 
+                   dns_keytab_path="dns.keytab", dnspass="bla", 
+                           machinepass="machinepass", dnsdomain="example.com")
+            self.assertEquals(1, 
+                    len(secrets_ldb.search("samAccountName=krbtgt,flatname=EXAMPLE,CN=Principals")))
+        finally:
+            del secrets_ldb
+            os.unlink(path)
 
 class Disabled:
     def test_setup_templatesdb(self):
