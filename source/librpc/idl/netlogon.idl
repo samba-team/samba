@@ -1028,7 +1028,7 @@ interface netlogon
 		[in] GUID *domain_guid,
 		[in] [string,charset(UTF16)] uint16 *site_name,
 		[in] netr_DsRGetDCName_flags flags,
-		[out,ref] netr_DsRGetDCNameInfo *info
+		[out,ref] netr_DsRGetDCNameInfo **info
 		);
 
 	/****************/
@@ -1161,7 +1161,7 @@ interface netlogon
 		[in] GUID *domain_guid,
 		[in] [string,charset(UTF16)] uint16 *site_name,
 		[in] netr_DsRGetDCName_flags flags,
-		[out,ref] netr_DsRGetDCNameInfo *info
+		[out,ref] netr_DsRGetDCNameInfo **info
 		);
 
 	/****************/
