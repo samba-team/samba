@@ -1453,7 +1453,7 @@ struct netr_DsrEnumerateDomainTrusts {
 	} in;
 
 	struct {
-		struct netr_DomainTrustList **trusts;/* [ref] */
+		struct netr_DomainTrustList *trusts;/* [ref] */
 		WERROR result;
 	} out;
 
