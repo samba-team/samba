@@ -693,6 +693,53 @@ static WERROR cmd_netlogon_deregisterdnsrecords(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_netlogon_dsr_getforesttrustinfo(struct rpc_pipe_client *cli,
+						  TALLOC_CTX *mem_ctx, int argc,
+						  const char **argv)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	WERROR werr = WERR_GENERAL_FAILURE;
+	const char *server_name = cli->cli->desthost;
+	const char *trusted_domain_name = NULL;
+	struct lsa_ForestTrustInformation *info = NULL;
+	uint32_t flags = 0;
+
+	if (argc < 1 || argc > 4) {
+		fprintf(stderr, "Usage: %s <server_name> <trusted_domain_name> "
+			"<flags>\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		server_name = argv[1];
+	}
+
+	if (argc >= 3) {
+		trusted_domain_name = argv[2];
+	}
+
+	if (argc >= 4) {
+		sscanf(argv[3], "%x", &flags);
+	}
+
+	status = rpccli_netr_DsRGetForestTrustInformation(cli, mem_ctx,
+							 server_name,
+							 trusted_domain_name,
+							 flags,
+							 &info,
+							 &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (W_ERROR_IS_OK(werr)) {
+		printf("success\n");
+	}
+ done:
+	return werr;
+}
+
+
 /* List of commands exported by this module */
 
 struct cmd_set netlogon_commands[] = {
@@ -706,6 +753,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "dsr_getdcnameex", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getdcnameex, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
 	{ "dsr_getdcnameex2", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getdcnameex2, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
 	{ "dsr_getsitename", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getsitename, PI_NETLOGON, NULL, "Get sitename",     "" },
+	{ "dsr_getforesttrustinfo", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getforesttrustinfo, PI_NETLOGON, NULL, "Get Forest Trust Info",     "" },
 	{ "logonctrl",  RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl,  NULL, PI_NETLOGON, NULL, "Logon Control",       "" },
 	{ "samsync",    RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_sync,    NULL, PI_NETLOGON, NULL, "Sam Synchronisation", "" },
 	{ "samdeltas",  RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_deltas,  NULL, PI_NETLOGON, NULL, "Query Sam Deltas",    "" },
@@ -713,6 +761,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "change_trust_pw",   RPC_RTYPE_NTSTATUS, cmd_netlogon_change_trust_pw,   NULL, PI_NETLOGON, NULL, "Change Trust Account Password",           "" },
 	{ "gettrustrid", RPC_RTYPE_WERROR, NULL, cmd_netlogon_gettrustrid, PI_NETLOGON, NULL, "Get trust rid",     "" },
 	{ "dsr_enumtrustdom", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_enumtrustdom, PI_NETLOGON, NULL, "Enumerate trusted domains",     "" },
+	{ "deregisterdnsrecords", RPC_RTYPE_WERROR, NULL, cmd_netlogon_deregisterdnsrecords, PI_NETLOGON, NULL, "Deregister DNS records",     "" },
 
 	{ NULL }
 };
