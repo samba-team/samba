@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
 #
 # Based on the original in EJS:
-# Copyright (C) Andrew Tridgell 2005
+# Copyright (C) Andrew Tridgell <tridge@samba.org> 2005
 #   
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -151,4 +151,4 @@ member: %s
     	
     	:param invocation_id: GUID of the invocation id.
     	"""
-    	misc.samdb_set_ntds_invocation_id(self, invocation_id)
+    	misc.dsdb_set_ntds_invocation_id(self, invocation_id)
