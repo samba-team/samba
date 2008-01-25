@@ -141,8 +141,7 @@ static NTSTATUS read_packet_remainder(int fd, char *buffer,
 		return NT_STATUS_OK;
 	}
 
-	return read_socket_with_timeout_ntstatus(fd, buffer, len, len,
-						 timeout, NULL);
+	return read_socket_with_timeout(fd, buffer, len, len, timeout, NULL);
 }
 
 /****************************************************************************
@@ -176,7 +175,7 @@ static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 
 	memcpy(writeX_header, lenbuf, sizeof(lenbuf));
 
-	status = read_socket_with_timeout_ntstatus(
+	status = read_socket_with_timeout(
 		fd, writeX_header + 4,
 		STANDARD_WRITE_AND_X_HEADER_SIZE,
 		STANDARD_WRITE_AND_X_HEADER_SIZE,
