@@ -1096,41 +1096,6 @@ typedef struct net_r_dsr_getdcname {
 	WERROR result;
 } NET_R_DSR_GETDCNAME;
 
-/* NET_Q_DSR_GETDCNAMEEX */
-typedef struct net_q_dsr_getdcnameex {
-	uint32 ptr_server_unc;
-	UNISTR2 uni_server_unc;
-	uint32 ptr_domain_name;
-	UNISTR2 uni_domain_name;
-	uint32 ptr_domain_guid;
-	struct GUID *domain_guid;
-	uint32 ptr_site_name;
-	UNISTR2 uni_site_name;
-	uint32 flags;
-} NET_Q_DSR_GETDCNAMEEX;
-
-/* NET_R_DSR_GETDCNAMEEX */
-typedef struct net_r_dsr_getdcnameex NET_R_DSR_GETDCNAMEEX;
-
-/* NET_Q_DSR_GETDCNAMEEX2 */
-typedef struct net_q_dsr_getdcnameex2 {
-	uint32 ptr_server_unc;
-	UNISTR2 uni_server_unc;
-	uint32 ptr_client_account;
-	UNISTR2 uni_client_account;
-	uint32 mask;
-	uint32 ptr_domain_name;
-	UNISTR2 uni_domain_name;
-	uint32 ptr_domain_guid;
-	struct GUID *domain_guid;
-	uint32 ptr_site_name;
-	UNISTR2 uni_site_name;
-	uint32 flags;
-} NET_Q_DSR_GETDCNAMEEX2;
-
-/* NET_R_DSR_GETDCNAMEEX2 */
-typedef struct net_r_dsr_getdcnameex2 NET_R_DSR_GETDCNAMEEX2;
-
 /* NET_Q_DSR_GESITENAME */
 typedef struct net_q_dsr_getsitename {
 	uint32 ptr_computer_name;
