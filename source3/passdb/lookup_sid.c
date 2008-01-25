@@ -599,6 +599,16 @@ static bool lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
 		return true;
 	}
 
+	if (sid_check_is_unix_users(sid)) {
+		*name = talloc_strdup(mem_ctx, unix_users_domain_name());
+		return true;
+	}
+
+	if (sid_check_is_unix_groups(sid)) {
+		*name = talloc_strdup(mem_ctx, unix_groups_domain_name());
+		return true;
+	}
+
 	if (sid->num_auths != 4) {
 		/* This can't be a domain */
 		return false;
