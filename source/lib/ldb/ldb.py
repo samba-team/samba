@@ -65,6 +65,7 @@ CHANGETYPE_NONE = _ldb.CHANGETYPE_NONE
 CHANGETYPE_ADD = _ldb.CHANGETYPE_ADD
 CHANGETYPE_DELETE = _ldb.CHANGETYPE_DELETE
 CHANGETYPE_MODIFY = _ldb.CHANGETYPE_MODIFY
+ldb_val_to_py_object = _ldb.ldb_val_to_py_object
 class Dn(object):
     thisown = _swig_property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc='The membership flag')
     __repr__ = _swig_repr
@@ -218,6 +219,7 @@ Ldb.get_config_basedn = new_instancemethod(_ldb.Ldb_get_config_basedn,None,Ldb)
 Ldb.get_root_basedn = new_instancemethod(_ldb.Ldb_get_root_basedn,None,Ldb)
 Ldb.get_schema_basedn = new_instancemethod(_ldb.Ldb_get_schema_basedn,None,Ldb)
 Ldb.get_default_basedn = new_instancemethod(_ldb.Ldb_get_default_basedn,None,Ldb)
+Ldb.schema_format_value = new_instancemethod(_ldb.Ldb_schema_format_value,None,Ldb)
 Ldb.errstring = new_instancemethod(_ldb.Ldb_errstring,None,Ldb)
 Ldb.set_create_perms = new_instancemethod(_ldb.Ldb_set_create_perms,None,Ldb)
 Ldb.set_modules_dir = new_instancemethod(_ldb.Ldb_set_modules_dir,None,Ldb)
@@ -227,6 +229,9 @@ Ldb.get_opaque = new_instancemethod(_ldb.Ldb_get_opaque,None,Ldb)
 Ldb.transaction_start = new_instancemethod(_ldb.Ldb_transaction_start,None,Ldb)
 Ldb.transaction_commit = new_instancemethod(_ldb.Ldb_transaction_commit,None,Ldb)
 Ldb.transaction_cancel = new_instancemethod(_ldb.Ldb_transaction_cancel,None,Ldb)
+Ldb.schema_attribute_remove = new_instancemethod(_ldb.Ldb_schema_attribute_remove,None,Ldb)
+Ldb.schema_attribute_add = new_instancemethod(_ldb.Ldb_schema_attribute_add,None,Ldb)
+Ldb.setup_wellknown_attributes = new_instancemethod(_ldb.Ldb_setup_wellknown_attributes,None,Ldb)
 Ldb.__contains__ = new_instancemethod(_ldb.Ldb___contains__,None,Ldb)
 Ldb.parse_ldif = new_instancemethod(_ldb.Ldb_parse_ldif,None,Ldb)
 Ldb_swigregister = _ldb.Ldb_swigregister
