@@ -3299,9 +3299,10 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 				/* Doesn't apply to a directory - ignore. */
 				DEBUG(10,("append_parent_acl: directory %s "
 					"ignoring non container "
-					"inherit flags %u\n",
+					"inherit flags %u from parent %s\n",
 					fsp->fsp_name,
-					(unsigned int)se->flags ));
+					(unsigned int)se->flags,
+					parent_name));
 				continue;
 			}
 		} else {
@@ -3309,9 +3310,10 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 				/* Doesn't apply to a file - ignore. */
 				DEBUG(10,("append_parent_acl: file %s "
 					"ignoring non object "
-					"inherit flags %u\n",
+					"inherit flags %u from parent %s\n",
 					fsp->fsp_name,
-					(unsigned int)se->flags ));
+					(unsigned int)se->flags,
+					parent_name));
 				continue;
 			}
 		}
@@ -3330,9 +3332,11 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 			if (k < psd->dacl->num_aces) {
 				/* SID matched. Ignore. */
 				DEBUG(10,("append_parent_acl: path %s "
-					"ignoring protected sid %s\n",
+					"ignoring protected sid %s "
+					"from parent %s\n",
 					fsp->fsp_name,
-					sid_string_dbg(&se->trustee)));
+					sid_string_dbg(&se->trustee),
+					parent_name));
 				continue;
 			}
 		}
