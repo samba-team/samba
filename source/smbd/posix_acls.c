@@ -1474,7 +1474,13 @@ static bool create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 
 		} else if (sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid)) {
 			current_ace->owner_type = UID_ACE;
-			current_ace->type = SMB_ACL_USER;
+			/* If it's the owning user, this is a user_obj, not
+			 * a user. */
+			if (current_ace->unix_ug.uid == pst->st_uid) {
+				current_ace->type = SMB_ACL_USER_OBJ;
+			} else {
+				current_ace->type = SMB_ACL_USER;
+			}
 		} else if (sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid)) {
 			current_ace->owner_type = GID_ACE;
 			/* If it's the primary group, this is a group_obj, not
