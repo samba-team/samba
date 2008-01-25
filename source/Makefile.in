@@ -276,6 +276,7 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_eventlog.o \
 		 librpc/gen_ndr/ndr_netlogon.o \
 		 librpc/gen_ndr/ndr_samr.o \
+		 librpc/gen_ndr/ndr_dssetup.o \
 		 librpc/gen_ndr/ndr_notify.o \
 		 librpc/gen_ndr/ndr_xattr.o \
 		 librpc/gen_ndr/ndr_libnet_join.o
@@ -409,6 +410,7 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_wkssvc.o \
 		   librpc/gen_ndr/cli_netlogon.o \
 		   librpc/gen_ndr/cli_samr.o \
+		   librpc/gen_ndr/cli_dssetup.o \
 		   $(LIBNDR_GEN_OBJ) \
 		   $(RPCCLIENT_NDR_OBJ)
 
@@ -474,7 +476,7 @@ RPC_REG_OBJ =  rpc_server/srv_winreg_nt.o \
 	       librpc/gen_ndr/srv_winreg.o \
 	       $(REGFIO_OBJ)
 
-RPC_LSA_DS_OBJ =  rpc_server/srv_lsa_ds.o rpc_server/srv_lsa_ds_nt.o
+RPC_DSSETUP_OBJ =  rpc_server/srv_dssetup_nt.o librpc/gen_ndr/srv_dssetup.o
 
 RPC_SVC_OBJ = rpc_server/srv_srvsvc.o rpc_server/srv_srvsvc_nt.o \
 	      librpc/gen_ndr/srv_srvsvc.o
@@ -900,7 +902,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
 	    $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
 	    $(AUTH_SAM_OBJ) $(REGISTRY_OBJ) $(POPT_LIB_OBJ) \
-	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) $(RPC_LSA_DS_OBJ) \
+	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) $(RPC_DSSETUP_OBJ) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
             $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) $(RPC_UNIXINFO_OBJ) \
@@ -1543,9 +1545,9 @@ bin/librpc_initshutdown.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_INITSHUTDOWN_OBJ)
 	@echo "Linking $@"
 	@$(SHLD_MODULE) $(RPC_INITSHUTDOWN_OBJ)
 
-bin/librpc_lsa_ds.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_LSA_DS_OBJ)
+bin/librpc_dssetup.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_DSSETUP_OBJ)
 	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_LSA_DS_OBJ)
+	@$(SHLD_MODULE) $(RPC_DSSETUP_OBJ)
 
 bin/librpc_spoolss.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SPOOLSS_OBJ)
 	@echo "Linking $@"

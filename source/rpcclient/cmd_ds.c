@@ -3,6 +3,7 @@
    RPC pipe client
 
    Copyright (C) Gerald Carter 2002
+   Copyright (C) Guenther Deschner 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,27 +24,37 @@
 
 /* Look up domain related information on a remote host */
 
-static NTSTATUS cmd_ds_dsrole_getprimarydominfo(struct rpc_pipe_client *cli, 
-				     TALLOC_CTX *mem_ctx, int argc, 
-				     const char **argv) 
+static WERROR cmd_ds_dsrole_getprimarydominfo(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx, int argc,
+					      const char **argv)
 {
-	NTSTATUS result;
-	DS_DOMINFO_CTR	ctr;
-	
-	result = rpccli_ds_getprimarydominfo( cli, mem_ctx, DsRolePrimaryDomainInfoBasic, &ctr );
-	if ( NT_STATUS_IS_OK(result) )
-	{
-		printf ("Machine Role = [%d]\n", ctr.basic->machine_role);
-		
-		if ( ctr.basic->flags & DSROLE_PRIMARY_DS_RUNNING )	{
-			printf( "Directory Service is running.\n");
-			printf( "Domain is in %s mode.\n", (ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE) ? "mixed" : "native" );
-		}
-		else
-			printf( "Directory Service not running on server\n");
+	NTSTATUS status;
+	WERROR werr;
+	union dssetup_DsRoleInfo info;
+
+	status = rpccli_dssetup_DsRoleGetPrimaryDomainInformation(cli, mem_ctx,
+								  DS_ROLE_BASIC_INFORMATION,
+								  &info,
+								  &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
 	}
-	
-	return result;
+
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	printf ("Machine Role = [%d]\n", info.basic.role);
+
+	if (info.basic.flags & DS_ROLE_PRIMARY_DS_RUNNING) {
+		printf("Directory Service is running.\n");
+		printf("Domain is in %s mode.\n",
+			(info.basic.flags & DS_ROLE_PRIMARY_DS_MIXED_MODE) ? "mixed" : "native" );
+	} else {
+		printf("Directory Service not running on server\n");
+	}
+
+	return werr;
 }
 
 static NTSTATUS cmd_ds_enum_domain_trusts(struct rpc_pipe_client *cli,
@@ -77,7 +88,7 @@ struct cmd_set ds_commands[] = {
 
 	{ "LSARPC-DS" },
 
-	{ "dsroledominfo",   RPC_RTYPE_NTSTATUS, cmd_ds_dsrole_getprimarydominfo, NULL, PI_LSARPC_DS, NULL, "Get Primary Domain Information", "" },
+	{ "dsroledominfo",   RPC_RTYPE_WERROR, NULL, cmd_ds_dsrole_getprimarydominfo, PI_DSSETUP, NULL, "Get Primary Domain Information", "" },
 	{ "dsenumdomtrusts", RPC_RTYPE_NTSTATUS, cmd_ds_enum_domain_trusts,       NULL, PI_NETLOGON,  NULL, "Enumerate all trusted domains in an AD forest", "" },
 
 { NULL }
