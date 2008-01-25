@@ -193,7 +193,7 @@ def provision_paths_from_lp(lp, dnsdomain, private_dir=None):
     paths.secrets = os.path.join(private_dir, lp.get("secrets database") or "secrets.ldb")
     paths.templates = os.path.join(private_dir, "templates.ldb")
     paths.keytab = os.path.join(private_dir, "secrets.keytab")
-    paths.dns_keytab = os.path.join(private_dir, "dns.keytab")
+    paths.dns_keytab = "dns.keytab"
     paths.dns = os.path.join(private_dir, dnsdomain + ".zone")
     paths.winsdb = os.path.join(private_dir, "wins.ldb")
     paths.s4_ldapi_path = os.path.join(private_dir, "ldapi")
@@ -407,6 +407,8 @@ def setup_secretsdb(path, setup_path, session_info, credentials, lp):
                       lp=lp)
     secrets_ldb.erase()
     secrets_ldb.load_ldif_file_add(setup_path("secrets_init.ldif"))
+    secrets_ldb = Ldb(path, session_info=session_info, credentials=credentials,
+                      lp=lp)
     secrets_ldb.load_ldif_file_add(setup_path("secrets.ldif"))
     return secrets_ldb
 
@@ -695,18 +697,18 @@ def provision(lp, setup_dir, message, paths, session_info,
     if dnspass is None:
         dnspass = misc.random_password(12)
     if root is None:
-        root = findnss(pwd.getpwnam, "root")[4]
+        root = findnss(pwd.getpwnam, "root")[0]
     if nobody is None:
-        nobody = findnss(pwd.getpwnam, "nobody")[4]
+        nobody = findnss(pwd.getpwnam, "nobody")[0]
     if nogroup is None:
-        nogroup = findnss(grp.getgrnam, "nogroup", "nobody")[2]
+        nogroup = findnss(grp.getgrnam, "nogroup", "nobody")[0]
     if users is None:
         users = findnss(grp.getgrnam, "users", "guest", "other", "unknown", 
-                        "usr")[2]
+                        "usr")[0]
     if wheel is None:
-        wheel = findnss(grp.getgrnam, "wheel", "root", "staff", "adm")[2]
+        wheel = findnss(grp.getgrnam, "wheel", "root", "staff", "adm")[0]
     if backup is None:
-        backup = findnss(grp.getgrnam, "backup", "wheel", "root", "staff")[2]
+        backup = findnss(grp.getgrnam, "backup", "wheel", "root", "staff")[0]
     if aci is None:
         aci = "# no aci for local ldb"
     if serverrole is None:
