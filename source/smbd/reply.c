@@ -3516,8 +3516,8 @@ void reply_writebraw(struct smb_request *req)
 				(int)tcount,(int)nwritten,(int)numtowrite));
 		}
 
-		if (read_data(smbd_server_fd(), buf+4, numtowrite,get_srv_read_error())
-					!= numtowrite ) {
+		if (read_data(smbd_server_fd(), buf+4, numtowrite, NULL)
+		    != numtowrite ) {
 			DEBUG(0,("reply_writebraw: Oversize secondary write "
 				"raw read failed (%s). Terminating\n",
 				strerror(errno) ));
