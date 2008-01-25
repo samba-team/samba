@@ -1146,10 +1146,27 @@ ssize_t read_smb_length_return_keepalive(int fd,
 					unsigned int timeout,
 					enum smb_read_errors *pre)
 {
-	ssize_t len=0;
+	size_t len=0;
 	int msg_type;
+	NTSTATUS status;
 
-	if (read_socket_with_timeout(fd, inbuf, 4, 4, timeout, pre) != 4) {
+	set_smb_read_error(pre, SMB_READ_OK);
+
+	status = read_socket_with_timeout_ntstatus(fd, inbuf, 4, 4, timeout,
+						   NULL);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+			set_smb_read_error(pre, SMB_READ_EOF);
+			return -1;
+		}
+
+		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+			set_smb_read_error(pre, SMB_READ_TIMEOUT);
+			return -1;
+		}
+
+		set_smb_read_error(pre, SMB_READ_ERROR);
 		return -1;
 	}
 
