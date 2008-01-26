@@ -72,6 +72,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 
 	down_req = talloc(req, struct ldb_request);
 	if (down_req == NULL) {
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -81,6 +82,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	down_req->op.add.message = msg = ldb_msg_copy_shallow(down_req, req->op.add.message);
 	if (msg == NULL) {
 		talloc_free(down_req);
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
