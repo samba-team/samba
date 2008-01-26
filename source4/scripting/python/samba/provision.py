@@ -203,7 +203,13 @@ def provision_paths_from_lp(lp, dnsdomain, private_dir=None):
     paths.s4_ldapi_path = os.path.join(private_dir, "ldapi")
     paths.phpldapadminconfig = os.path.join(private_dir, 
                                             "phpldapadmin-config.php")
-    paths.hklm = os.path.join(private_dir, "hklm.ldb")
+    paths.hklm = "hklm.ldb"
+    paths.hkcr = "hkcr.ldb"
+    paths.hkcu = "hkcu.ldb"
+    paths.hku = "hku.ldb"
+    paths.hkpd = "hkpd.ldb"
+    paths.hkpt = "hkpt.ldb"
+
     paths.sysvol = lp.get("sysvol", "path")
     if paths.sysvol is None:
         paths.sysvol = os.path.join(lp.get("lock dir"), "sysvol")
@@ -442,6 +448,7 @@ def setup_registry(path, setup_path, session_info, credentials, lp):
     :param lp: Loadparm context
     """
     reg = registry.Registry()
+    print path
     hive = registry.open_ldb(path, session_info=session_info, 
                          credentials=credentials, lp_ctx=lp)
     reg.mount_hive(hive, "HKEY_LOCAL_MACHINE")
