@@ -67,7 +67,7 @@ static enum winbindd_result dual_dsgetdcname(struct winbindd_domain *domain,
 	DEBUG(3, ("[%5lu]: dsgetdcname for %s\n", (unsigned long)state->pid,
 		  state->request.domain_name));
 
-	result = dsgetdcname(state->mem_ctx, NULL, state->request.domain_name,
+	result = dsgetdcname(state->mem_ctx, state->request.domain_name,
 			     NULL, NULL, state->request.flags, &info);
 
 	if (!NT_STATUS_IS_OK(result)) {
