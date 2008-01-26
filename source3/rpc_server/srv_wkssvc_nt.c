@@ -319,7 +319,6 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r
 			  &admin_account);
 
 	status = dsgetdcname(p->mem_ctx,
-			     NULL,
 			     r->in.domain_name,
 			     NULL,
 			     NULL,
