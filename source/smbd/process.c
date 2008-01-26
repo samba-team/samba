@@ -22,8 +22,6 @@
 
 extern int smb_echo_count;
 
-static enum smb_read_errors smb_read_error = SMB_READ_OK;
-
 /*
  * Size of data we can send to client. Set
  *  by the client for all protocols above CORE.
@@ -42,11 +40,6 @@ extern bool global_machine_password_needs_changing;
 extern int max_send;
 
 /* Accessor function for smb_read_error for smbd functions. */
-
-static enum smb_read_errors *get_srv_read_error(void)
-{
-	return &smb_read_error;
-}
 
 /****************************************************************************
  Send an smb to a fd.
