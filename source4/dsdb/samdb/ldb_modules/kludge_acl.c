@@ -316,6 +316,7 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac = talloc(req, struct kludge_acl_context);
 	if (ac == NULL) {
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -329,6 +330,7 @@ static int kludge_acl_search(struct ldb_module *module, struct ldb_request *req)
 
 	down_req = talloc_zero(req, struct ldb_request);
 	if (down_req == NULL) {
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -417,6 +419,7 @@ static int kludge_acl_init(struct ldb_module *module)
 
 	data = talloc(module, struct kludge_private_data);
 	if (data == NULL) {
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -424,6 +427,7 @@ static int kludge_acl_init(struct ldb_module *module)
 	module->private_data = data;
 
 	if (!mem_ctx) {
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -453,6 +457,7 @@ static int kludge_acl_init(struct ldb_module *module)
 	data->password_attrs = talloc_array(data, const char *, password_attributes->num_values + 1);
 	if (!data->password_attrs) {
 		talloc_free(mem_ctx);
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	for (i=0; i < password_attributes->num_values; i++) {

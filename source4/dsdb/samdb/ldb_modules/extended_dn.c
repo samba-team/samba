@@ -256,6 +256,7 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 
 	ac = talloc(req, struct extended_context);
 	if (ac == NULL) {
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -273,6 +274,7 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 
 	down_req = talloc_zero(req, struct ldb_request);
 	if (down_req == NULL) {
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -291,8 +293,10 @@ static int extended_search(struct ldb_module *module, struct ldb_request *req)
 		}
 		if (ac->remove_guid || ac->remove_sid) {
 			new_attrs = copy_attrs(down_req, req->op.search.attrs);
-			if (new_attrs == NULL)
+			if (new_attrs == NULL) {
+				ldb_oom(module->ldb);
 				return LDB_ERR_OPERATIONS_ERROR;
+			}
 			
 			if (ac->remove_guid) {
 				if (!add_attrs(down_req, &new_attrs, "objectGUID"))
@@ -339,6 +343,7 @@ static int extended_init(struct ldb_module *module)
 
 	req = talloc(module, struct ldb_request);
 	if (req == NULL) {
+		ldb_oom(module->ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
