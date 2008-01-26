@@ -1888,26 +1888,10 @@ void check_reload(time_t t)
  Process any timeout housekeeping. Return False if the caller should exit.
 ****************************************************************************/
 
-static bool timeout_processing(int *select_timeout,
+static void timeout_processing(int *select_timeout,
 			       time_t *last_timeout_processing_time)
 {
 	time_t t;
-
-	if (*get_srv_read_error() == SMB_READ_EOF) {
-		DEBUG(3,("timeout_processing: End of file from client (client has disconnected).\n"));
-		return false;
-	}
-
-	if (*get_srv_read_error() == SMB_READ_ERROR) {
-		DEBUG(3,("timeout_processing: receive_smb error (%s) Exiting\n",
-			strerror(errno)));
-		return false;
-	}
-
-	if (*get_srv_read_error() == SMB_READ_BAD_SIG) {
-		DEBUG(3,("timeout_processing: receive_smb error bad smb signature. Exiting\n"));
-		return false;
-	}
 
 	*last_timeout_processing_time = t = time(NULL);
 
@@ -1938,14 +1922,14 @@ static bool timeout_processing(int *select_timeout,
 		if (secrets_lock_trust_account_password(lp_workgroup(), True) == False) {
 			DEBUG(0,("process: unable to lock the machine account password for \
 machine %s in domain %s.\n", global_myname(), lp_workgroup() ));
-			return True;
+			return;
 		}
 
 		if(!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd_hash, &lct, NULL)) {
 			DEBUG(0,("process: unable to read the machine account password for \
 machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 			secrets_lock_trust_account_password(lp_workgroup(), False);
-			return True;
+			return;
 		}
 
 		/*
@@ -1955,7 +1939,7 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 		if(t < lct + lp_machine_password_timeout()) {
 			global_machine_password_needs_changing = False;
 			secrets_lock_trust_account_password(lp_workgroup(), False);
-			return True;
+			return;
 		}
 
 		/* always just contact the PDC here */
@@ -1987,7 +1971,7 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 
 	*select_timeout = setup_select_timeout();
 
-	return True;
+	return;
 }
 
 /****************************************************************************
@@ -2014,9 +1998,8 @@ void smbd_process(void)
 
 		/* Did someone ask for immediate checks on things like blocking locks ? */
 		if (select_timeout == 0) {
-			if(!timeout_processing(&select_timeout,
-					       &last_timeout_processing_time))
-				return;
+			timeout_processing(&select_timeout,
+					   &last_timeout_processing_time);
 			num_smbs = 0; /* Reset smb counter. */
 		}
 
@@ -2024,8 +2007,6 @@ void smbd_process(void)
 
 		while (True) {
 			NTSTATUS status;
-
-			set_smb_read_error(get_srv_read_error(), SMB_READ_OK);
 
 			status = receive_message_or_smb(
 				talloc_tos(), &inbuf, &inbuf_len,
@@ -2035,25 +2016,16 @@ void smbd_process(void)
 				break;
 			}
 
-			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-				set_smb_read_error(get_srv_read_error(),
-						   SMB_READ_EOF);
-			}
-			else if (NT_STATUS_EQUAL(status,
-						 NT_STATUS_IO_TIMEOUT)) {
-				set_smb_read_error(get_srv_read_error(),
-						   SMB_READ_TIMEOUT);
-			}
-			else {
-				set_smb_read_error(get_srv_read_error(),
-						   SMB_READ_ERROR);
+			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+				timeout_processing(
+					&select_timeout,
+					&last_timeout_processing_time);
+				continue;
 			}
 
-			if (!timeout_processing(
-				    &select_timeout,
-				    &last_timeout_processing_time)) {
-				return;
-			}
+			DEBUG(3, ("receive_message_or_smb failed: %s, "
+				  "exiting\n", nt_errstr(status)));
+			return;
 
 			num_smbs = 0; /* Reset smb counter. */
 		}
@@ -2075,8 +2047,8 @@ void smbd_process(void)
 		TALLOC_FREE(inbuf);
 
 		if (smb_echo_count != num_echos) {
-			if(!timeout_processing( &select_timeout, &last_timeout_processing_time))
-				return;
+			timeout_processing(&select_timeout,
+					   &last_timeout_processing_time);
 			num_smbs = 0; /* Reset smb counter. */
 		}
 
@@ -2092,10 +2064,9 @@ void smbd_process(void)
 		if ((num_smbs % 200) == 0) {
 			time_t new_check_time = time(NULL);
 			if(new_check_time - last_timeout_processing_time >= (select_timeout/1000)) {
-				if(!timeout_processing(
-					   &select_timeout,
-					   &last_timeout_processing_time))
-					return;
+				timeout_processing(
+					&select_timeout,
+					&last_timeout_processing_time);
 				num_smbs = 0; /* Reset smb counter. */
 				last_timeout_processing_time = new_check_time; /* Reset time. */
 			}
