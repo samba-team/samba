@@ -40,15 +40,16 @@ extern struct winbindd_methods cache_methods;
 
 static void child_read_request(struct winbindd_cli_state *state)
 {
-	ssize_t len;
+	NTSTATUS status;
 
 	/* Read data */
 
-	len = read_data(state->sock, (char *)&state->request,
-			sizeof(state->request), NULL);
+	status = read_data(state->sock, (char *)&state->request,
+			   sizeof(state->request));
 
-	if (len != sizeof(state->request)) {
-		DEBUG(len > 0 ? 0 : 3, ("Got invalid request length: %d\n", (int)len));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(3, ("child_read_request: read_data failed: %s\n",
+			  nt_errstr(status)));
 		state->finished = True;
 		return;
 	}
@@ -72,11 +73,12 @@ static void child_read_request(struct winbindd_cli_state *state)
 	/* Ensure null termination */
 	state->request.extra_data.data[state->request.extra_len] = '\0';
 
-	len = read_data(state->sock, state->request.extra_data.data,
-			state->request.extra_len, NULL);
+	status= read_data(state->sock, state->request.extra_data.data,
+			  state->request.extra_len);
 
-	if (len != state->request.extra_len) {
-		DEBUG(0, ("Could not read extra data\n"));
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("Could not read extra data: %s\n",
+			  nt_errstr(status)));
 		state->finished = True;
 		return;
 	}

@@ -87,8 +87,13 @@ static void asyncdns_process(void)
 	DEBUGLEVEL = -1;
 
 	while (1) {
-		if (read_data(fd_in, (char *)&r, sizeof(r), NULL) != sizeof(r)) 
+		NTSTATUS status;
+
+		status = read_data(fd_in, (char *)&r, sizeof(r));
+
+		if (!NT_STATUS_IS_OK(status)) {
 			break;
+		}
 
 		pull_ascii_nstring( qname, sizeof(qname), r.name.name);
 		r.result.s_addr = interpret_addr(qname);
@@ -194,7 +199,7 @@ void run_dns_queue(void)
 	struct query_record r;
 	struct packet_struct *p, *p2;
 	struct name_record *namerec;
-	int size;
+	NTSTATUS status;
 
 	if (fd_in == -1)
 		return;
@@ -208,11 +213,11 @@ void run_dns_queue(void)
 		start_async_dns();
 	}
 
-	if ((size=read_data(fd_in, (char *)&r, sizeof(r), NULL)) != sizeof(r)) {
-		if (size) {
-			DEBUG(0,("Incomplete DNS answer from child!\n"));
-			fd_in = -1;
-		}
+	status = read_data(fd_in, (char *)&r, sizeof(r));
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0, ("read from child failed: %s\n", nt_errstr(status)));
+		fd_in = -1;
                 BlockSignals(True, SIGTERM);
 		return;
 	}
