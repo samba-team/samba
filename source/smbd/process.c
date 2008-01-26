@@ -20,7 +20,6 @@
 
 #include "includes.h"
 
-extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
 
 static enum smb_read_errors smb_read_error = SMB_READ_OK;
