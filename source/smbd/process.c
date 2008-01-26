@@ -718,12 +718,9 @@ static int select_on_fd(int fd, int maxfd, fd_set *fds)
 The timeout is in milliseconds
 ****************************************************************************/
 
-static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
-				char **buffer,
-				size_t *buffer_len,
-				int timeout,
-				size_t *p_unread,
-				bool *p_encrypted)
+static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
+				       size_t *buffer_len, int timeout,
+				       size_t *p_unread, bool *p_encrypted)
 {
 	fd_set r_fds, w_fds;
 	int selrtn;
@@ -733,7 +730,6 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 
 	*p_unread = 0;
-	set_smb_read_error(get_srv_read_error(),SMB_READ_OK);
 
  again:
 
@@ -787,8 +783,7 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 							msg->buf.length);
 			if (*buffer == NULL) {
 				DEBUG(0, ("talloc failed\n"));
-				set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
-				return False;
+				return NT_STATUS_NO_MEMORY;
 			}
 			*buffer_len = msg->buf.length;
 			*p_encrypted = msg->encrypted;
@@ -796,7 +791,7 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 			/* We leave this message on the queue so the open code can
 			   know this is a retry. */
 			DEBUG(5,("receive_message_or_smb: returning deferred open smb message.\n"));
-			return True;
+			return NT_STATUS_OK;
 		}
 	}
 
@@ -882,14 +877,12 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 	/* Check if error */
 	if (selrtn == -1) {
 		/* something is wrong. Maybe the socket is dead? */
-		set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
-		return False;
+		return map_nt_error_from_unix(errno);
 	} 
     
 	/* Did we timeout ? */
 	if (selrtn == 0) {
-		set_smb_read_error(get_srv_read_error(),SMB_READ_TIMEOUT);
-		return False;
+		return NT_STATUS_IO_TIMEOUT;
 	}
 
 	/*
@@ -912,24 +905,12 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 				    p_unread, p_encrypted, &len);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-			set_smb_read_error(get_srv_read_error(), SMB_READ_EOF);
-			return false;
-		}
-
-		if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-			set_smb_read_error(get_srv_read_error(),
-					   SMB_READ_TIMEOUT);
-			return false;
-		}
-
-		set_smb_read_error(get_srv_read_error(), SMB_READ_ERROR);
-		return false;
+		return status;
 	}
 
 	*buffer_len = len;
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -2024,8 +2005,8 @@ void smbd_process(void)
 	while (True) {
 		int select_timeout = setup_select_timeout();
 		int num_echos;
-		char *inbuf;
-		size_t inbuf_len;
+		char *inbuf = NULL;
+		size_t inbuf_len = 0;
 		bool encrypted = false;
 		TALLOC_CTX *frame = talloc_stackframe_pool(8192);
 
@@ -2041,13 +2022,39 @@ void smbd_process(void)
 
 		run_events(smbd_event_context(), 0, NULL, NULL);
 
-		while (!receive_message_or_smb(talloc_tos(), &inbuf, &inbuf_len,
-						select_timeout,
-						&unread_bytes,
-						&encrypted)) {
-			if(!timeout_processing(&select_timeout,
-					       &last_timeout_processing_time))
+		while (True) {
+			NTSTATUS status;
+
+			set_smb_read_error(get_srv_read_error(), SMB_READ_OK);
+
+			status = receive_message_or_smb(
+				talloc_tos(), &inbuf, &inbuf_len,
+				select_timeout,	&unread_bytes, &encrypted);
+
+			if (NT_STATUS_IS_OK(status)) {
+				break;
+			}
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+				set_smb_read_error(get_srv_read_error(),
+						   SMB_READ_EOF);
+			}
+			else if (NT_STATUS_EQUAL(status,
+						 NT_STATUS_IO_TIMEOUT)) {
+				set_smb_read_error(get_srv_read_error(),
+						   SMB_READ_TIMEOUT);
+			}
+			else {
+				set_smb_read_error(get_srv_read_error(),
+						   SMB_READ_ERROR);
+			}
+
+			if (!timeout_processing(
+				    &select_timeout,
+				    &last_timeout_processing_time)) {
 				return;
+			}
+
 			num_smbs = 0; /* Reset smb counter. */
 		}
 
