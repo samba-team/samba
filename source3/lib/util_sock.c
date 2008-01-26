@@ -1046,30 +1046,9 @@ NTSTATUS read_socket_with_timeout(int fd, char *buf,
  Read data from the client, reading exactly N bytes.
 ****************************************************************************/
 
-ssize_t read_data(int fd,char *buffer,size_t N, enum smb_read_errors *pre)
+NTSTATUS read_data(int fd, char *buffer, size_t N)
 {
-	NTSTATUS status;
-
-	set_smb_read_error(pre, SMB_READ_OK);
-
-	status = read_socket_with_timeout(fd, buffer, N, N, 0, NULL);
-
-	if (NT_STATUS_IS_OK(status)) {
-		return N;
-	}
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
-		set_smb_read_error(pre, SMB_READ_EOF);
-		return -1;
-	}
-
-	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
-		set_smb_read_error(pre, SMB_READ_TIMEOUT);
-		return -1;
-	}
-
-	set_smb_read_error(pre, SMB_READ_ERROR);
-	return -1;
+	return read_socket_with_timeout(fd, buffer, N, N, 0, NULL);
 }
 
 /****************************************************************************
