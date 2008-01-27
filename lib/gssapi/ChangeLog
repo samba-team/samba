@@ -1,3 +1,7 @@
+2008-01-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test_common.c: Improve the error message.
+
 2008-01-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ntlm/accept_sec_context.c: Avoid free-ing type1 message before
