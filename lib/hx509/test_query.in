@@ -44,7 +44,14 @@ hxtool="${TESTS_ENVIRONMENT} ./hxtool ${stat}"
 echo "try printing"
 ${hxtool} print \
 	--pass=PASS:foobar \
+        --info --content \
 	PKCS12:$srcdir/data/test.p12 >/dev/null 2>/dev/null || exit 1
+
+echo "try printing"
+${hxtool} print \
+	--pass=PASS:foobar \
+        --info --content \
+	FILE:$srcdir/data/kdc.crt || exit 1
 
 ${hxtool} print \
 	--pass=PASS:foobar \
@@ -62,6 +69,16 @@ ${hxtool} query \
 	--pass=PASS:foobar \
 	--friendlyname=friendlyname-test-not  \
 	PKCS12:$srcdir/data/test.p12 >/dev/null 2>/dev/null && exit 1
+
+echo "make sure entry is found (eku)"
+${hxtool} query \
+	--eku=1.3.6.1.5.2.3.5  \
+	FILE:$srcdir/data/kdc.crt  >/dev/null 2>/dev/null || exit 1
+
+echo "make sure entry is not found  (eku)"
+${hxtool} query \
+	--eku=1.3.6.1.5.2.3.6  \
+	FILE:$srcdir/data/kdc.crt >/dev/null 2>/dev/null && exit 1
 
 echo "make sure entry is found (friendlyname, no-pw)"
 ${hxtool} query \

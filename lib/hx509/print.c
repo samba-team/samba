@@ -335,9 +335,6 @@ check_authorityKeyIdentifier(hx509_validate_ctx ctx,
     status->haveAKI = 1;
     check_Null(ctx, status, cf, e);
 
-    status->haveSKI = 1;
-    check_Null(ctx, status, cf, e);
-
     ret = decode_AuthorityKeyIdentifier(e->extnValue.data, 
 					e->extnValue.length,
 					&ai, &size);
@@ -365,6 +362,56 @@ check_authorityKeyIdentifier(hx509_validate_ctx ctx,
     return 0;
 }
 
+static int
+check_extKeyUsage(hx509_validate_ctx ctx, 
+		  struct cert_status *status,
+		  enum critical_flag cf,
+		  const Extension *e)
+{
+    ExtKeyUsage eku;
+    size_t size, i;
+    int ret;
+
+    check_Null(ctx, status, cf, e);
+
+    ret = decode_ExtKeyUsage(e->extnValue.data, 
+			     e->extnValue.length,
+			     &eku, &size);
+    if (ret) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Decoding ExtKeyUsage failed: %d", ret);
+	return 1;
+    }
+    if (size != e->extnValue.length) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "Padding data in EKU");
+	free_ExtKeyUsage(&eku);
+	return 1;
+    }
+    if (eku.len == 0) {
+	validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+		       "ExtKeyUsage length is 0");
+	return 1;
+    }
+
+    for (i = 0; i < eku.len; i++) {
+	char *str;
+	ret = der_print_heim_oid (&eku.val[i], '.', &str);
+	if (ret) {
+	    validate_print(ctx, HX509_VALIDATE_F_VALIDATE,
+			   "\tEKU: failed to print oid %d", i);
+	    free_ExtKeyUsage(&eku);
+	    return 1;
+	}
+	validate_print(ctx, HX509_VALIDATE_F_VERBOSE,
+		       "\teku-%d: %s\n", i, str);;
+	free(str);
+    }
+
+    free_ExtKeyUsage(&eku);
+
+    return 0;
+}
 
 static int
 check_pkinit_san(hx509_validate_ctx ctx, heim_any *a)
@@ -731,7 +778,7 @@ struct {
     { ext(policyMappings, Null), M_N_C },
     { ext(authorityKeyIdentifier, authorityKeyIdentifier), M_N_C },
     { ext(policyConstraints, Null), D_C },
-    { ext(extKeyUsage, Null), D_C },
+    { ext(extKeyUsage, extKeyUsage), D_C },
     { ext(freshestCRL, Null), M_N_C },
     { ext(inhibitAnyPolicy, Null), M_C },
 #undef ext

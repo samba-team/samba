@@ -438,6 +438,12 @@ command = {
 		help = "match on friendly name"
 	}
 	option = {
+		long = "eku"
+		type = "string"
+		argument = "oid-string"
+		help = "match on EKU"
+	}
+	option = {
 		long = "keyEncipherment"
 		type = "flag"
 		help = "match keyEncipherment certificates"

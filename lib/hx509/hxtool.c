@@ -885,6 +885,17 @@ query(struct query_options *opt, int argc, char **argv)
     if (opt->friendlyname_string)
 	hx509_query_match_friendly_name(q, opt->friendlyname_string);
 
+    if (opt->eku_string) {
+	heim_oid oid;
+
+	parse_oid(opt->eku_string, NULL, &oid);
+
+	ret = hx509_query_match_eku(q, &oid);
+	if (ret)
+	    errx(1, "hx509_query_match_eku: %d", ret);
+	der_free_oid(&oid);
+    }
+
     if (opt->private_key_flag)
 	hx509_query_match_option(q, HX509_QUERY_OPTION_PRIVATE_KEY);
 

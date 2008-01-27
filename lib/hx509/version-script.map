@@ -139,6 +139,7 @@ HEIMDAL_X509_1.0 {
 		hx509_query_alloc;
 		hx509_query_free;
 		hx509_query_match_cmp_func;
+		hx509_query_match_eku;
 		hx509_query_match_friendly_name;
 		hx509_query_match_issuer_serial;
 		hx509_query_match_option;

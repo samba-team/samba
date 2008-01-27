@@ -2610,6 +2610,40 @@ hx509_query_match_friendly_name(hx509_query *q, const char *name)
 }
 
 /**
+ * Set the query controller to require an specific EKU (extended key
+ * usage).
+ *
+ * @param q a hx509 query controller.
+ * @param eku an EKU to match on
+ *
+ * @return An hx509 error code, see hx509_get_error_string().
+ *
+ * @ingroup hx509_cert
+ */
+
+int
+hx509_query_match_eku(hx509_query *q, const heim_oid *eku)
+{
+    int ret;
+
+    if (q->eku) {
+	der_free_oid(q->eku);
+    } else {
+	q->eku = calloc(1, sizeof(*q->eku));
+	if (q->eku == NULL)
+	    return ENOMEM;
+    }
+    ret = der_copy_oid(eku, q->eku);
+    if (ret) {
+	free(q->eku);
+	q->eku = NULL;
+	return ret;
+    }
+    q->match |= HX509_QUERY_MATCH_EKU;
+    return 0;
+}
+
+/**
  * Set the query controller to match using a specific match function.
  *
  * @param q a hx509 query controller.
@@ -2648,20 +2682,24 @@ hx509_query_match_cmp_func(hx509_query *q,
 void
 hx509_query_free(hx509_context context, hx509_query *q)
 {
+    if (q == NULL)
+	return;
+
     if (q->serial) {
 	der_free_heim_integer(q->serial);
 	free(q->serial);
-	q->serial = NULL;
     }
     if (q->issuer_name) {
 	free_Name(q->issuer_name);
 	free(q->issuer_name);
-	q->issuer_name = NULL;
     }
-    if (q) {
+    if (q->eku) {
+	der_free_oid(q->eku);
+	free(q->eku);
+    }
+    if (q->friendlyname)
 	free(q->friendlyname);
-	memset(q, 0, sizeof(*q));
-    }
+    memset(q, 0, sizeof(*q));
     free(q);
 }
 
@@ -2789,6 +2827,11 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 	if (t < q->timenow)
 	    return 0;
     }
+
+    /* If an EKU is required, check the cert for it. */
+    if ((q->match & HX509_QUERY_MATCH_EKU) &&
+	hx509_cert_check_eku(context, cert, q->eku, 0))
+	return 0;
 
     if (q->match & ~HX509_QUERY_MASK)
 	return 0;
