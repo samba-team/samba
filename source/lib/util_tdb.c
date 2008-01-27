@@ -656,6 +656,7 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 	return PTR_DIFF(buf, buf0);
 
  no_space:
+	va_end(ap);
 	return -1;
 }
 
