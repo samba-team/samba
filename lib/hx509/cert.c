@@ -2610,11 +2610,12 @@ hx509_query_match_friendly_name(hx509_query *q, const char *name)
 }
 
 /**
- * Set the query controller to require an specific EKU (extended key
- * usage).
+ * Set the query controller to require an one specific EKU (extended
+ * key usage). Any previous EKU matching is overwitten. If NULL is
+ * passed in as the eku, the EKU requirement is reset.
  *
  * @param q a hx509 query controller.
- * @param eku an EKU to match on
+ * @param eku an EKU to match on.
  *
  * @return An hx509 error code, see hx509_get_error_string().
  *
@@ -2626,20 +2627,29 @@ hx509_query_match_eku(hx509_query *q, const heim_oid *eku)
 {
     int ret;
 
-    if (q->eku) {
-	der_free_oid(q->eku);
+    if (eku == NULL) {
+	if (q->eku) {
+	    der_free_oid(q->eku);
+	    free(q->eku);
+	    q->eku = NULL;
+	}
+	q->match &= ~HX509_QUERY_MATCH_EKU;
     } else {
-	q->eku = calloc(1, sizeof(*q->eku));
-	if (q->eku == NULL)
-	    return ENOMEM;
+	if (q->eku) {
+	    der_free_oid(q->eku);
+	} else {
+	    q->eku = calloc(1, sizeof(*q->eku));
+	    if (q->eku == NULL)
+		return ENOMEM;
+	}
+	ret = der_copy_oid(eku, q->eku);
+	if (ret) {
+	    free(q->eku);
+	    q->eku = NULL;
+	    return ret;
+	}
+	q->match |= HX509_QUERY_MATCH_EKU;
     }
-    ret = der_copy_oid(eku, q->eku);
-    if (ret) {
-	free(q->eku);
-	q->eku = NULL;
-	return ret;
-    }
-    q->match |= HX509_QUERY_MATCH_EKU;
     return 0;
 }
 
