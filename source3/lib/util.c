@@ -2431,6 +2431,7 @@ char *smb_xstrndup(const char *s, size_t n)
 	if (n == -1 || ! *ptr) {
 		smb_panic("smb_xvasprintf: out of memory");
 	}
+	va_end(ap2);
 	return n;
 }
 
