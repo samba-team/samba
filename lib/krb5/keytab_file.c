@@ -334,8 +334,8 @@ fkt_start_seq_get_int(krb5_context context,
     c->fd = open (d->filename, flags);
     if (c->fd < 0) {
 	ret = errno;
-	krb5_set_error_string(context, "%s: %s", d->filename,
-			      strerror(ret));
+	krb5_set_error_string(context, "keytab %s open failed: %s", 
+			      d->filename, strerror(ret));
 	return ret;
     }
     ret = _krb5_xlock(context, c->fd, exclusive, d->filename);

@@ -197,8 +197,8 @@ akf_start_seq_get(krb5_context context,
     c->fd = open (d->filename, O_RDONLY|O_BINARY, 0600);
     if (c->fd < 0) {
 	ret = errno;
-	krb5_set_error_string(context, "open(%s): %s", d->filename,
-			      strerror(ret));
+	krb5_set_error_string(context, "keytab afs keyfil open %s failed: %s",
+			      d->filename, strerror(ret));
 	return ret;
     }
 
