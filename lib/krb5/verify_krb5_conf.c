@@ -344,6 +344,7 @@ struct entry {
     const char *name;
     int type;
     void *check_data;
+    int deprecated;
 };
 
 struct entry all_strings[] = {
@@ -365,7 +366,7 @@ struct entry v4_name_convert_entries[] = {
 
 struct entry libdefaults_entries[] = {
     { "accept_null_addresses", krb5_config_string, check_boolean },
-    { "capath", krb5_config_list, all_strings },
+    { "capath", krb5_config_list, all_strings, 1 },
     { "check_pac", krb5_config_string, check_boolean },
     { "clockskew", krb5_config_string, check_time },
     { "date_format", krb5_config_string, NULL },
@@ -591,6 +592,10 @@ check_section(krb5_context context, const char *path, krb5_config_section *cf,
 		    error |= (*(check_func_t)e->check_data)(context, local, p->u.string);
 		} else if(p->type == krb5_config_list && e->check_data != NULL) {
 		    error |= check_section(context, local, p->u.list, e->check_data);
+		}
+		if(e->deprecated) {
+		    krb5_warnx(context, "%s: is a deprecated entry", local);
+		    error |= 1;
 		}
 		break;
 	    }
