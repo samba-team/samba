@@ -1,5 +1,9 @@
 2008-01-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* cert.c (hx509_query_match_eku): update to support the NULL
+	eku (reset), clearify the old behaivor with regards repetitive
+	calls.
+
 	* Add matching on EKU, validate EKUs, add hxtool matching glue,
 	add check. Adapted from pach from Tim Miller of Mitre
 
