@@ -132,7 +132,6 @@ void dump_core_setup(const char *progname)
 	sys_chown(corepath,getuid(),getgid());
 	chmod(corepath,0700);
 
-	SAFE_FREE(corepath);
 	SAFE_FREE(logbase);
 
 #ifdef HAVE_GETRLIMIT
