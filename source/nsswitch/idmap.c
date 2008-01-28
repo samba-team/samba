@@ -367,7 +367,7 @@ NTSTATUS idmap_init(void)
 		/* terminate */
 		dl[1] = NULL;
 
-		dom_list = dl;
+		dom_list = (const char **)dl;
 		default_domain = dl[0];
 	}
 
