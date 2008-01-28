@@ -237,6 +237,8 @@ typedef struct {
 	int ldap_ssl;
 	char *szLdapSuffix;
 	char *szLdapAdminDn;
+	int ldap_debug_level;
+	int ldap_debug_threshold;
 	int iAclCompat;
 	char *szCupsServer;
 	char *szIPrintServer;
@@ -634,6 +636,7 @@ static BOOL handle_netbios_aliases( int snum, const char *pszParmValue, char **p
 static BOOL handle_netbios_scope( int snum, const char *pszParmValue, char **ptr );
 static BOOL handle_charset( int snum, const char *pszParmValue, char **ptr );
 static BOOL handle_printing( int snum, const char *pszParmValue, char **ptr);
+static BOOL handle_ldap_debug_level( int snum, const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -1189,6 +1192,10 @@ static struct parm_struct parm_table[] = {
 	{"ldap page size", P_INTEGER, P_GLOBAL, &Globals.ldap_page_size, NULL, NULL, FLAG_ADVANCED},
 	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, NULL, NULL, FLAG_ADVANCED}, 
 
+	{"ldap debug level", P_INTEGER, P_GLOBAL, &Globals.ldap_debug_level, handle_ldap_debug_level, NULL, FLAG_ADVANCED},
+	{"ldap debug threshold", P_INTEGER, P_GLOBAL, &Globals.ldap_debug_threshold, NULL, NULL, FLAG_ADVANCED},
+
+
 	{N_("Miscellaneous Options"), P_SEP, P_SEPARATOR}, 
 	{"add share command", P_STRING, P_GLOBAL, &Globals.szAddShareCommand, NULL, NULL, FLAG_ADVANCED}, 
 	{"change share command", P_STRING, P_GLOBAL, &Globals.szChangeShareCommand, NULL, NULL, FLAG_ADVANCED}, 
@@ -1592,6 +1599,9 @@ static void init_globals(BOOL first_time_only)
 	Globals.ldap_timeout = LDAP_CONNECT_DEFAULT_TIMEOUT;
 	Globals.ldap_page_size = LDAP_PAGE_SIZE;
 
+	Globals.ldap_debug_level = 0;
+	Globals.ldap_debug_threshold = 10;
+
 	/* This is what we tell the afs client. in reality we set the token 
 	 * to never expire, though, when this runs out the afs client will 
 	 * forget the token. Set to 0 to get NEVERDATE.*/
@@ -1918,6 +1928,8 @@ FN_GLOBAL_BOOL(lp_ldap_delete_dn, &Globals.ldap_delete_dn)
 FN_GLOBAL_INTEGER(lp_ldap_replication_sleep, &Globals.ldap_replication_sleep)
 FN_GLOBAL_INTEGER(lp_ldap_timeout, &Globals.ldap_timeout)
 FN_GLOBAL_INTEGER(lp_ldap_page_size, &Globals.ldap_page_size)
+FN_GLOBAL_INTEGER(lp_ldap_debug_level, &Globals.ldap_debug_level)
+FN_GLOBAL_INTEGER(lp_ldap_debug_threshold, &Globals.ldap_debug_threshold)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
@@ -3225,6 +3237,13 @@ static BOOL handle_copy(int snum, const char *pszParmValue, char **ptr)
 
 	free_service(&serviceTemp);
 	return (bRetval);
+}
+
+static BOOL handle_ldap_debug_level(int snum, const char *pszParmValue, char **ptr)
+{
+	Globals.ldap_debug_level = lp_int(pszParmValue);
+	init_ldap_debugging();
+	return True;
 }
 
 /***************************************************************************

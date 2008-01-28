@@ -270,7 +270,7 @@ READLINE_OBJ = lib/readline.o
 # Be sure to include them into your application
 POPT_LIB_OBJ = lib/popt_common.o
 
-PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o lib/sharesec.o
+PARAM_OBJ = dynconfig.o param/loadparm.o param/params.o lib/sharesec.o lib/ldap_debug_handler.o
 
 KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
 
