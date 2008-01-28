@@ -324,7 +324,7 @@ struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state,
 	if (IS_DC) {
 		domain = find_domain_from_name_noinit(domain_name);
 		if (domain == NULL) {
-			DEBUG(3, ("Authentication for domain [%s] refused"
+			DEBUG(3, ("Authentication for domain [%s] refused "
 				  "as it is not a trusted domain\n", 
 				  domain_name));
 		}
