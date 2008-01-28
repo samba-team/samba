@@ -72,7 +72,7 @@ static int samldb_set_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 
 	if (new_id == 0) {
 		/* out of IDs ! */
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "Are we out of valid IDs ?\n");
+		ldb_set_errstring(ldb, "Are we out of valid IDs ?\n");
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -81,6 +81,7 @@ static int samldb_set_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(msg);
 	msg.dn = ldb_dn_copy(mem_ctx, dn);
 	if (!msg.dn) {
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	msg.num_elements = 2;
@@ -91,6 +92,7 @@ static int samldb_set_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 	els[0].flags = LDB_FLAG_MOD_DELETE;
 	els[0].name = talloc_strdup(mem_ctx, "nextRid");
 	if (!els[0].name) {
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
@@ -101,12 +103,14 @@ static int samldb_set_next_rid(struct ldb_context *ldb, TALLOC_CTX *mem_ctx,
 
 	vals[0].data = (uint8_t *)talloc_asprintf(mem_ctx, "%u", old_id);
 	if (!vals[0].data) {
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	vals[0].length = strlen((char *)vals[0].data);
 
 	vals[1].data = (uint8_t *)talloc_asprintf(mem_ctx, "%u", new_id);
 	if (!vals[1].data) {
+		ldb_oom(ldb);
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 	vals[1].length = strlen((char *)vals[1].data);
