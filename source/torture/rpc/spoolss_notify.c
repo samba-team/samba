@@ -69,7 +69,8 @@ static NTSTATUS spoolss__op_ndr_pull(struct dcesrv_call_state *dce_call, TALLOC_
 	return NT_STATUS_OK;
 }
 
-/* FIXME: What context does this belong in ? -- JRV20070903 */
+/* Note that received_packets are allocated in talloc_autofree_context(), 
+ * because no other context appears to stay around long enough. */
 static struct received_packet {
 	uint16_t opnum;
 	void *r;
@@ -82,9 +83,9 @@ static NTSTATUS spoolss__op_dispatch(struct dcesrv_call_state *dce_call, TALLOC_
 	uint16_t opnum = dce_call->pkt.u.request.opnum;
 	struct received_packet *rp;
 
-	rp = talloc_zero(mem_ctx, struct received_packet);
+	rp = talloc_zero(talloc_autofree_context(), struct received_packet);
 	rp->opnum = opnum;
-	rp->r = talloc_reference(mem_ctx, r);
+	rp->r = talloc_reference(rp, r);
 
 	DLIST_ADD_END(received_packets, rp, struct received_packet *);
 
@@ -195,6 +196,8 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	const char *address;
 	struct interface *ifaces;
 
+	received_packets = NULL;
+
 	ntvfs_init(tctx->lp_ctx);
 
 	ZERO_STRUCT(q);
@@ -239,7 +242,6 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 	torture_assert_ntstatus_ok(tctx, status, 
 				   "unable to initialize DCE/RPC server");
 
-
 	r.in.flags = 0;
 	r.in.str = talloc_asprintf(tctx, "\\\\%s", address);
 	r.in.options = 0;
@@ -260,7 +262,6 @@ static bool test_RFFPCNEx(struct torture_context *tctx,
 
 	r.in.t1 = &t1;
 	r.in.handle = &handle;
-
 
 	status = dcerpc_spoolss_RemoteFindFirstPrinterChangeNotifyEx(p, tctx, &r);
 
