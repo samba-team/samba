@@ -143,12 +143,10 @@ if (ldapbackend) {
 		subobj.LDAPMODULE = "normalise,entryuuid";
 		subobj.TDB_MODULES_LIST = "";
 	}
+	subobj.BACKEND_MOD = subobj.LDAPMODULE + ",paged_searches";
 	subobj.DOMAINDN_LDB = subobj.LDAPBACKEND;
-	subobj.DOMAINDN_MOD2 = "," + subobj.LDAPMODULE + ",paged_searches";
 	subobj.CONFIGDN_LDB = subobj.LDAPBACKEND;
-	subobj.CONFIGDN_MOD2 = "," + subobj.LDAPMODULE + ",paged_searches";
 	subobj.SCHEMADN_LDB = subobj.LDAPBACKEND;
-	subobj.SCHEMADN_MOD2 = "," + subobj.LDAPMODULE + ",paged_searches";
 	message("LDAP module: %s on backend: %s\n", subobj.LDAPMODULE, subobj.LDAPBACKEND);
 }
 
@@ -175,7 +173,9 @@ if (partitions_only) {
 		 message("--host-guid='%s' \\\n", subobj.HOSTGUID);
 	}
 	message("--policy-guid='%s' --host-name='%s' --host-ip='%s' \\\n", subobj.POLICYGUID, subobj.HOSTNAME, subobj.HOSTIP);
-	message("--invocationid='%s' \\\n", subobj.INVOCATIONID);
+	if (subobj.INVOCATIONID != undefined) {
+		message("--invocationid='%s' \\\n", subobj.INVOCATIONID);
+	}
 	message("--adminpass='%s' --krbtgtpass='%s' \\\n", subobj.ADMINPASS, subobj.KRBTGTPASS);
 	message("--machinepass='%s' --dnspass='%s' \\\n", subobj.MACHINEPASS, subobj.DNSPASS);
 	message("--root='%s' --nobody='%s' --nogroup='%s' \\\n", subobj.ROOT, subobj.NOBODY, subobj.NOGROUP);

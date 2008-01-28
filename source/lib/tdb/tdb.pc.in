@@ -8,3 +8,4 @@ Description: A trivial database
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -ltdb
 Cflags: -I${includedir} 
+URL: http://tdb.samba.org/

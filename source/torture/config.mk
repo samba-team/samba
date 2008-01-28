@@ -1,8 +1,8 @@
 # TORTURE subsystem
 [LIBRARY::torture]
-DESCRIPTION = Samba torture (test) suite
 SO_VERSION = 0
 VERSION = 0.0.1
+PC_FILE = torture.pc
 PUBLIC_HEADERS = torture.h ui.h
 PUBLIC_PROTO_HEADER = proto.h
 OBJ_FILES = \
@@ -88,7 +88,8 @@ OBJ_FILES = \
 		raw/samba3hide.o \
 		raw/samba3misc.o \
 		raw/composite.o \
-		raw/raw.o
+		raw/raw.o \
+		raw/offline.o
 PRIVATE_DEPENDENCIES = \
 		LIBCLI_SMB LIBCLI_LSA LIBCLI_SMB_COMPOSITE \
 		POPT_CREDENTIALS TORTURE_UTIL
@@ -296,7 +297,8 @@ PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-NET \
 		smbcalls \
 		POPT_CREDENTIALS \
-		torture_rpc
+		torture_rpc \
+		LIBPYTHON
 # End SUBSYSTEM TORTURE_NET
 #################################
 

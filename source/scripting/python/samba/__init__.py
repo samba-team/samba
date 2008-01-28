@@ -1,8 +1,10 @@
 #!/usr/bin/python
 
 # Unix SMB/CIFS implementation.
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
+# 
+# Based on the original in EJS:
 # Copyright (C) Andrew Tridgell <tridge@samba.org> 2005
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
 #   
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -89,7 +91,7 @@ class Ldb(ldb.Ldb):
     set_session_info = misc.ldb_set_session_info
     set_loadparm = misc.ldb_set_loadparm
 
-    def searchone(self, basedn, attribute, expression=None, 
+    def searchone(self, attribute, basedn=None, expression=None, 
                   scope=ldb.SCOPE_BASE):
         """Search for one attribute as a string.
         
@@ -104,7 +106,7 @@ class Ldb(ldb.Ldb):
             return None
         values = set(res[0][attribute])
         assert len(values) == 1
-        return values.pop()
+        return self.schema_format_value(attribute, values.pop())
 
     def erase(self):
         """Erase this ldb, removing all records."""
@@ -190,6 +192,21 @@ def substitute_var(text, values):
         text = text.replace("${%s}" % name, value)
 
     return text
+
+
+def check_all_substituted(text):
+    """Make sure that all substitution variables in a string have been replaced.
+    If not, raise an exception.
+    
+    :param text: The text to search for substitution variables
+    """
+    if not "${" in text:
+    	return
+    
+    var_start = text.find("${")
+    var_end = text.find("}", var_start)
+    
+    raise Exception("Not all variables substituted: %s" % text[var_start:var_end+1])
 
 
 def valid_netbios_name(name):

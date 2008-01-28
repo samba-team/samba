@@ -60,7 +60,9 @@ struct test_become_dc_state {
 		const char *configdn_ldb;
 		const char *schemadn_ldb;
 		const char *secrets_ldb;
+		const char *templates_ldb;
 		const char *secrets_keytab;
+		const char *dns_keytab;
 	} path;
 };
 
@@ -88,7 +90,6 @@ static NTSTATUS test_become_dc_check_options(void *private_data,
 	return NT_STATUS_OK;
 }
 
-#ifndef PROVISION_PYTHON
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/appweb/ejs/ejsInternal.h"
 #include "scripting/ejs/smbcalls.h"
@@ -146,13 +147,15 @@ failed:
 	return ejs_error;
 }
 
-static NTSTATUS test_become_dc_prepare_db(void *private_data,
-					  const struct libnet_BecomeDC_PrepareDB *p)
+static NTSTATUS test_become_dc_prepare_db_ejs(void *private_data,
+					      const struct libnet_BecomeDC_PrepareDB *p)
 {
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
 	char *ejs;
 	int ret;
 	bool ok;
+
+	DEBUG(0,("Provision for Become-DC test using EJS\n"));
 
 	DEBUG(0,("New Server[%s] in Site[%s]\n",
 		p->dest_dsa->dns_name, p->dest_dsa->site_name));
@@ -195,25 +198,9 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		"subobj.SCHEMADN     = \"%s\";\n"
 		"subobj.SCHEMADN_LDB = \"%s\";\n"
 		"subobj.HOSTNAME     = \"%s\";\n"
-		"subobj.DNSNAME      = \"%s\";\n"
+		"subobj.REALM        = \"%s\";\n"
+		"subobj.DOMAIN       = \"%s\";\n"
 		"subobj.DEFAULTSITE  = \"%s\";\n"
-		"\n"
-		"modules_list        = new Array(\"rootdse\",\n"
-		"                                \"kludge_acl\",\n"
-		"                                \"paged_results\",\n"
-		"                                \"server_sort\",\n"
-		"                                \"extended_dn\",\n"
-		"                                \"asq\",\n"
-		"                                \"samldb\",\n"
-		"                                \"operational\",\n"
-		"                                \"objectclass\",\n"
-		"                                \"rdn_name\",\n"
-		"                                \"show_deleted\",\n"
-		"                                \"partition\");\n"
-		"subobj.MODULES_LIST = join(\",\", modules_list);\n"
-		"subobj.DOMAINDN_MOD = \"pdc_fsmo,password_hash,repl_meta_data\";\n"
-		"subobj.CONFIGDN_MOD = \"naming_fsmo,repl_meta_data\";\n"
-		"subobj.SCHEMADN_MOD = \"schema_fsmo,repl_meta_data\";\n"
 		"\n"
 		"subobj.KRBTGTPASS   = \"_NOT_USED_\";\n"
 		"subobj.MACHINEPASS  = \"%s\";\n"
@@ -222,7 +209,9 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		"var paths = provision_default_paths(subobj);\n"
 		"paths.samdb = \"%s\";\n"
 		"paths.secrets = \"%s\";\n"
+		"paths.templates = \"%s\";\n"
 		"paths.keytab = \"%s\";\n"
+		"paths.dns_keytab = \"%s\";\n"
 		"\n"
 		"var system_session = system_session();\n"
 		"\n"
@@ -238,12 +227,15 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 		p->forest->schema_dn_str,	/* subobj.SCHEMADN */
 		s->path.schemadn_ldb,		/* subobj.SCHEMADN_LDB */
 		p->dest_dsa->netbios_name,	/* subobj.HOSTNAME */
-		p->dest_dsa->dns_name,		/* subobj.DNSNAME */
+		torture_join_dom_dns_name(s->tj),/* subobj.REALM */
+		torture_join_dom_netbios_name(s->tj),/* subobj.DOMAIN */
 		p->dest_dsa->site_name,		/* subobj.DEFAULTSITE */
 		cli_credentials_get_password(s->machine_account),/* subobj.MACHINEPASS */
 		s->path.samdb_ldb,		/* paths.samdb */
+		s->path.templates_ldb,		/* paths.templates */
 		s->path.secrets_ldb,		/* paths.secrets */
-		s->path.secrets_keytab);	/* paths.keytab */
+		s->path.secrets_keytab,	        /* paths.keytab */
+		s->path.dns_keytab);	        /* paths.dns_keytab */
 	NT_STATUS_HAVE_NO_MEMORY(ejs);
 
 	ret = test_run_ejs(ejs);
@@ -283,17 +275,19 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 	return NT_STATUS_OK;
 }
 
-#else 
+#ifdef HAVE_WORKING_PYTHON
 #include "param/param.h"
 #include <Python.h>
 #include "scripting/python/modules.h"
 
-static NTSTATUS test_become_dc_prepare_db(void *private_data,
-					  const struct libnet_BecomeDC_PrepareDB *p)
+static NTSTATUS test_become_dc_prepare_db_py(void *private_data,
+					     const struct libnet_BecomeDC_PrepareDB *p)
 {
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
 	bool ok;
 	PyObject *provision_fn, *result, *parameters;
+
+	DEBUG(0,("Provision for Become-DC test using PYTHON\n"));
 
 	py_load_samba_modules();
 	Py_Initialize();
@@ -387,8 +381,7 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 
 	return NT_STATUS_OK;
 }
-
-#endif
+#endif /* HAVE_WORKING_PYTHON */
 
 static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 				  const struct libnet_BecomeDC_StoreChunk *c)
@@ -854,8 +847,12 @@ bool torture_net_become_dc(struct torture_context *torture)
 	if (!s->path.schemadn_ldb) return false;
 	s->path.secrets_ldb	= talloc_asprintf(s, "%s_secrets.ldb", s->netbios_name);
 	if (!s->path.secrets_ldb) return false;
+	s->path.templates_ldb	= talloc_asprintf(s, "%s_templates.ldb", s->netbios_name);
+	if (!s->path.templates_ldb) return false;
 	s->path.secrets_keytab	= talloc_asprintf(s, "%s_secrets.keytab", s->netbios_name);
 	if (!s->path.secrets_keytab) return false;
+	s->path.dns_keytab	= talloc_asprintf(s, "%s_dns.keytab", s->netbios_name);
+	if (!s->path.dns_keytab) return false;
 
 	/* Join domain as a member server. */
 	s->tj = torture_join_domain(torture, s->netbios_name,
@@ -881,7 +878,12 @@ bool torture_net_become_dc(struct torture_context *torture)
 
 	b.in.callbacks.private_data	= s;
 	b.in.callbacks.check_options	= test_become_dc_check_options;
-	b.in.callbacks.prepare_db	= test_become_dc_prepare_db;
+	b.in.callbacks.prepare_db	= test_become_dc_prepare_db_ejs;
+#ifdef HAVE_WORKING_PYTHON
+	if (getenv("PROVISION_PYTHON")) {
+		b.in.callbacks.prepare_db = test_become_dc_prepare_db_py;
+	}
+#endif
 	b.in.callbacks.schema_chunk	= test_become_dc_schema_chunk;
 	b.in.callbacks.config_chunk	= test_become_dc_store_chunk;
 	b.in.callbacks.domain_chunk	= test_become_dc_store_chunk;
