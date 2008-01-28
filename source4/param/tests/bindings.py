@@ -46,6 +46,9 @@ class LoadParmTestCase(unittest.TestCase):
         self.assertTrue(file.is_myname("BLA"))
         self.assertFalse(file.is_myname("FOOBAR"))
 
+    def test_load_default(self):
+        file = param.LoadParm()
+        file.load_default()
 
 class ParamTestCase(unittest.TestCase):
     def test_init(self):

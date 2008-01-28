@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
 #   
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -67,6 +67,10 @@ class SubstituteVarTestCase(unittest.TestCase):
     def test_unknown_var(self):
         self.assertEquals("foo ${bla} gsff", 
                 samba.substitute_var("foo ${bla} gsff", {"bar": "bla"}))
+                
+    def test_check_all_substituted(self):
+    	samba.check_all_substituted("nothing to see here")
+    	self.assertRaises(Exception, samba.check_all_substituted, "Not subsituted: ${FOOBAR}")
 
 
 class LdbExtensionTests(TestCaseInTempDir):
@@ -75,7 +79,7 @@ class LdbExtensionTests(TestCaseInTempDir):
         l = samba.Ldb(path)
         try:
             l.add({"dn": "foo=dc", "bar": "bla"})
-            self.assertEquals("bla", l.searchone(ldb.Dn(l, "foo=dc"), "bar"))
+            self.assertEquals("bla", l.searchone(basedn=ldb.Dn(l, "foo=dc"), attribute="bar"))
         finally:
             del l
             os.unlink(path)

@@ -153,8 +153,10 @@ static int rr_search(struct ldb_module *module, struct ldb_request *req)
 		if (strncasecmp(p, ";range=", strlen(";range=")) != 0) {
 			continue;
 		}
-		if (sscanf(p, ";range=%u-*", &start) == 1) {
-		} else if (sscanf(p, ";range=%u-%u", &start, &end) != 2) {
+		if (sscanf(p, ";range=%u-%u", &start, &end) == 2) {
+		} else if (sscanf(p, ";range=%u-*", &start) == 1) {
+			end = (unsigned int)-1;
+		} else {
 			ldb_asprintf_errstring(module->ldb, "range request error: range requst malformed");
 			return LDB_ERR_UNWILLING_TO_PERFORM;
 		}

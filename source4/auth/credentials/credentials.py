@@ -82,6 +82,7 @@ Credentials.is_anonymous = new_instancemethod(_credentials.Credentials_is_anonym
 Credentials.get_nt_hash = new_instancemethod(_credentials.Credentials_get_nt_hash,None,Credentials)
 Credentials.authentication_requested = new_instancemethod(_credentials.Credentials_authentication_requested,None,Credentials)
 Credentials.wrong_password = new_instancemethod(_credentials.Credentials_wrong_password,None,Credentials)
+Credentials.set_cmdline_callbacks = new_instancemethod(_credentials.Credentials_set_cmdline_callbacks,None,Credentials)
 Credentials_swigregister = _credentials.Credentials_swigregister
 Credentials_swigregister(Credentials)
 

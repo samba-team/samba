@@ -14,7 +14,8 @@ import samba.getopt as options
 from auth import system_session
 
 parser = optparse.OptionParser("upgrade [options] <libdir> <smbconf>")
-parser.add_option_group(options.SambaOptions(parser))
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
 parser.add_option_group(options.VersionOptions(parser))
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
@@ -59,15 +60,13 @@ if setup_dir is None:
 	setup_dir = "setup"
 
 creds = credopts.get_credentials()
-lp = param.LoadParm()
-if opts.configfile:
-    lp.load(opts.configfile)
+lp = sambaopts.get_loadparm()
 if opts.targetdir is not None:
     if not os.path.exists(opts.targetdir):
         os.mkdir(opts.targetdir)
     lp.set("private dir", os.path.abspath(opts.targetdir))
     lp.set("lock dir", os.path.abspath(opts.targetdir))
 paths = provision_paths_from_lp(lp, "")
-paths.smbconf = opts.configfile
+paths.smbconf = sambaopts.get_loadparm_path()
 upgrade_provision(samba3, setup_dir, message, credentials=creds, session_info=system_session(), 
                   lp=lp, paths=paths)

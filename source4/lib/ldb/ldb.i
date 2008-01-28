@@ -5,7 +5,7 @@
 
    Copyright (C) 2005,2006 Tim Potter <tpot@samba.org>
    Copyright (C) 2006 Simo Sorce <idra@samba.org>
-   Copyright (C) 2007 Jelmer Vernooij <jelmer@samba.org>
+   Copyright (C) 2007-2008 Jelmer Vernooij <jelmer@samba.org>
 
      ** NOTE! The following LGPL license applies to the ldb
      ** library. This does NOT imply that all of Samba is released
@@ -102,8 +102,44 @@ typedef int ldb_error;
 	$1->data = PyString_AsString($input);
 }
 
+%inline %{
+PyObject *ldb_val_to_py_object(struct ldb_context *ldb_ctx, 
+                               struct ldb_message_element *el, 
+                               struct ldb_val *val)
+{
+        const struct ldb_schema_attribute *a;
+        struct ldb_val new_val;
+        TALLOC_CTX *mem_ctx = talloc_new(NULL);
+        PyObject *ret;
+        
+        new_val = *val;
+        
+        if (ldb_ctx != NULL) {        
+        	a = ldb_schema_attribute_by_name(ldb_ctx, el->name);
+        
+        	if (a != NULL) {
+        		if (a->syntax->ldif_write_fn(ldb_ctx, mem_ctx, val, &new_val) != 0) {
+        			talloc_free(mem_ctx);
+        			return NULL;
+        		}
+        	}
+        } 
+        
+	ret = PyString_FromStringAndSize((const char *)new_val.data, new_val.length);
+	
+	talloc_free(mem_ctx);
+	
+	return ret;
+}
+
+%}
+
+%typemap(out,noblock=1) struct ldb_val * {
+	$result = PyString_FromStringAndSize((const char *)$1->data, $1->length)
+}
+
 %typemap(out,noblock=1) struct ldb_val {
-	$result = PyString_FromStringAndSize((const char *)$1.data, $1.length);
+	$result = PyString_FromStringAndSize((const char *)$1.data, $1.length)
 }
 
 /*
@@ -259,7 +295,8 @@ ldb_msg_element *ldb_msg_element_from_pyobject(TALLOC_CTX *mem_ctx,
     return me;
 }
 
-PyObject *ldb_msg_element_to_set(ldb_msg_element *me)
+PyObject *ldb_msg_element_to_set(struct ldb_context *ldb_ctx, 
+                                 ldb_msg_element *me)
 {
     int i;
     PyObject *result;
@@ -269,8 +306,7 @@ PyObject *ldb_msg_element_to_set(ldb_msg_element *me)
 
     for (i = 0; i < me->num_values; i++) {
         PyList_SetItem(result, i,
-            PyString_FromStringAndSize((const char *)me->values[i].data, 
-                                       me->values[i].length));
+            ldb_val_to_py_object(ldb_ctx, me, &me->values[i]));
     }
 
     return result;
@@ -287,12 +323,12 @@ typedef struct ldb_message_element {
 #ifdef SWIGPYTHON
         PyObject *__iter__(void)
         {
-            return PyObject_GetIter(ldb_msg_element_to_set($self));
+            return PyObject_GetIter(ldb_msg_element_to_set(NULL, $self));
         }
 
         PyObject *__set__(void)
         {
-            return ldb_msg_element_to_set($self);
+            return ldb_msg_element_to_set(NULL, $self);
         }
 
         ldb_msg_element(PyObject *set_obj, int flags=0, const char *name = NULL)
@@ -311,9 +347,7 @@ typedef struct ldb_message_element {
             if (i < 0 || i >= $self->num_values)
                 return Py_None;
 
-            return PyString_FromStringAndSize(
-                        (const char *)$self->values[i].data, 
-                        $self->values[i].length);
+            return ldb_val_to_py_object(NULL, $self, &$self->values[i]);
         }
 
         ~ldb_msg_element() { talloc_free($self); }
@@ -622,6 +656,35 @@ typedef struct ldb_context {
         ldb_dn *get_root_basedn();
         ldb_dn *get_schema_basedn();
         ldb_dn *get_default_basedn();
+        PyObject *schema_format_value(const char *element_name, PyObject *val)
+        {
+        	const struct ldb_schema_attribute *a;
+        	struct ldb_val old_val;
+        	struct ldb_val new_val;
+        	TALLOC_CTX *mem_ctx = talloc_new(NULL);
+        	PyObject *ret;
+        	
+        	old_val.data = PyString_AsString(val);
+        	old_val.length = PyString_Size(val);
+                
+        	a = ldb_schema_attribute_by_name($self, element_name);
+        
+        	if (a == NULL) {
+        		return Py_None;
+        	}
+        	
+        	if (a->syntax->ldif_write_fn($self, mem_ctx, &old_val, &new_val) != 0) {
+        		talloc_free(mem_ctx);
+        		return Py_None;
+        	 }
+        
+		ret = PyString_FromStringAndSize((const char *)new_val.data, new_val.length);
+		
+		talloc_free(mem_ctx);
+		
+		return ret;
+        }
+
         const char *errstring();
         void set_create_perms(unsigned int perms);
         void set_modules_dir(const char *path);
@@ -633,7 +696,10 @@ typedef struct ldb_context {
         ldb_error transaction_start();
         ldb_error transaction_commit();
         ldb_error transaction_cancel();
-
+        void schema_attribute_remove(const char *name);
+        ldb_error schema_attribute_add(const char *attribute, unsigned flags, const char *syntax);
+	ldb_error setup_wellknown_attributes(void);
+	
 #ifdef SWIGPYTHON
         %typemap(in,numinputs=0,noblock=1) struct ldb_result **result_as_bool (struct ldb_result *tmp) { $1 = &tmp; }
         %typemap(argout,noblock=1) struct ldb_result **result_as_bool { $result = ((*$1)->count > 0)?Py_True:Py_False; }

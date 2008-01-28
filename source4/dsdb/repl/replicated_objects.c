@@ -400,8 +400,8 @@ WERROR dsdb_extended_replicated_objects_commit(struct ldb_context *ldb,
 
 	ret = ldb_extended(ldb, DSDB_EXTENDED_REPLICATED_OBJECTS_OID, out, &ext_res);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(0,("Failed to apply records: %d: %s\n",
-			ret, ldb_strerror(ret)));
+		DEBUG(0,("Failed to apply records: %s: %s\n",
+			 ldb_errstring(ldb), ldb_strerror(ret)));
 		talloc_free(out);
 		return WERR_FOOBAR;
 	}

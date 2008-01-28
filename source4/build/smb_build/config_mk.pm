@@ -91,14 +91,13 @@ my $section_types = {
 		"LIBRARY_REALNAME" => "string",
 
 		"PC_NAME" => "string",
+		"PC_FILE" => "string",
 		
 		"INIT_FUNCTION_TYPE"	=> "string",
 		"INIT_FUNCTION_SENTINEL" => "string",
 		"OUTPUT_TYPE"		=> "list",
 
 		"OBJ_FILES"		=> "list",
-
-		"DESCRIPTION"		=> "string",
 
 		"PRIVATE_DEPENDENCIES"	=> "list",
 		"PUBLIC_DEPENDENCIES"	=> "list",

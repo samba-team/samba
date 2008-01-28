@@ -7,7 +7,7 @@
 
 """Support code for upgrading from Samba 3 to Samba 4."""
 
-from provision import findnss, provision
+from provision import findnss, provision, FILL_DRS
 import grp
 import ldb
 import pwd
@@ -245,7 +245,8 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info, lp,
     else:
         machinepass = None
     
-    domaindn = provision(lp=lp, setup_dir=setup_dir, message=message, blank=True, ldapbackend=None, 
+    domaindn = provision(lp=lp, setup_dir=setup_dir, message=message, 
+                         samdb_fill=FILL_DRS, ldapbackend=None, 
                          paths=paths, session_info=session_info, credentials=credentials, realm=realm, 
                          domain=domainname, domainsid=domainsid, domainguid=domainguid, 
                          machinepass=machinepass, serverrole=serverrole)

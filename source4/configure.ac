@@ -27,11 +27,20 @@ m4_include(lib/charset/config.m4)
 m4_include(lib/socket/config.m4)
 m4_include(nsswitch/nsstest.m4)
 
+AC_CONFIG_FILES(lib/registry/registry.pc)
+AC_CONFIG_FILES(librpc/dcerpc.pc)
+AC_CONFIG_FILES(librpc/ndr.pc)
+AC_CONFIG_FILES(torture/torture.pc)
+AC_CONFIG_FILES(auth/gensec/gensec.pc)
+AC_CONFIG_FILES(param/samba-config.pc)
+AC_CONFIG_FILES(librpc/dcerpc_samr.pc)
+
 SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.1.0,
 	[],
 	[
 		m4_include(lib/talloc/libtalloc.m4)
 		SMB_INCLUDE_MK(lib/talloc/config.mk)
+		AC_CONFIG_FILES(lib/talloc/talloc.pc)
 	]
 )
 
@@ -40,6 +49,7 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.0,
 	[
 		m4_include(lib/tdb/libtdb.m4)
 		SMB_INCLUDE_MK(lib/tdb/config.mk)
+		AC_CONFIG_FILES(lib/tdb/tdb.pc)
 	]
 )
 
@@ -73,6 +83,7 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBLDB, ldb >= 0.9.1,
 		m4_include(lib/ldb/sqlite3.m4)
 		m4_include(lib/ldb/libldb.m4)
 		SMB_INCLUDE_MK(lib/ldb/config.mk)
+		AC_CONFIG_FILES(lib/ldb/ldb.pc)
 	]
 )
 SMB_INCLUDE_MK(lib/ldb/python.mk) 
