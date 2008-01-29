@@ -396,4 +396,11 @@ typedef struct {
 
 #define ADS_IGNORE_PRINCIPAL "not_defined_in_RFC4178@please_ignore"
 
+/* Settings for the domainFunctionality attribute in the rootDSE */
+
+#define DS_DOMAIN_FUNCTION_2000		0
+#define DS_DOMAIN_FUCNTION_2003_MIXED	1
+#define DS_DOMAIN_FUNCTION_2003		2
+#define DS_DOMAIN_FUNCTION_2008		3
+
 #endif	/* _INCLUDE_ADS_H_ */
