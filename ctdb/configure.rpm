@@ -1,0 +1,7 @@
+
+CFLAGS="-Wall -g -D_GNU_SOURCE" ./configure \
+	--prefix=/usr \
+	--sysconfdir=/etc \
+	--mandir=/usr/man \
+	--localstatedir=/var \
+	$*
