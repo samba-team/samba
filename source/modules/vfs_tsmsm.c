@@ -119,10 +119,10 @@ static int tsmsm_connect(struct vfs_handle_struct *handle,
 		tsmd->online_ratio = FILE_IS_ONLINE_RATIO;
 	} else {
 		tsmd->online_ratio = strtof(fres, NULL);
-		if (tsmd->online_ration > 1.0 ||
-		    tsmd->online_ration <= 0.0) {
+		if (tsmd->online_ratio > 1.0 ||
+		    tsmd->online_ratio <= 0.0) {
 			DEBUG(1, ("tsmsm_connect: invalid online ration %f - using %f.\n",
-				  tsmd->online_ration, (float)FILE_IS_ONLINE_RATIO));
+				  tsmd->online_ratio, (float)FILE_IS_ONLINE_RATIO));
 		}
 	}
 
@@ -189,7 +189,7 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 			DEBUG(0, ("Stale DMAPI session, re-creating it.\n"));
 			lerrno = EINVAL;
 			if (dmapi_new_session()) {
-				sessionp = dmapi_get_current_session();
+				dmsession_id = dmapi_get_current_session();
 			} else {
 				DEBUG(0, 
 				      ("Unable to re-create DMAPI session, assuming offline (%s) - %s\n", 
@@ -323,14 +323,9 @@ static int tsmsm_set_offline(struct vfs_handle_struct *handle,
 	return result;
 }
 
-static bool tsmsm_statvfs(struct vfs_handle_struct *handle,  const char *path, vfs_statvfs_struct *statbuf)
+static uint32_t tsmsm_fs_capabilities(struct vfs_handle_struct *handle)
 {
-	bool result;
-
-	result = SMB_VFS_NEXT_STATVFS(handle, path, statbuf);
-	statbuf->FsCapabilities | = FILE_SUPPORTS_REMOTE_STORAGE | FILE_SUPPORTS_REPARSE_POINTS;
-
-	return result;
+	return SMB_VFS_NEXT_FS_CAPABILITIES(handle) | FILE_SUPPORTS_REMOTE_STORAGE | FILE_SUPPORTS_REPARSE_POINTS;
 }
 
 static vfs_op_tuple vfs_tsmsm_ops[] = {
@@ -339,7 +334,7 @@ static vfs_op_tuple vfs_tsmsm_ops[] = {
 
 	{SMB_VFS_OP(tsmsm_connect),	SMB_VFS_OP_CONNECT,
 	 SMB_VFS_LAYER_TRANSPARENT},
-	{SMB_VFS_OP(tsmsm_statvfs),	SMB_VFS_OP_STATVFS,
+	{SMB_VFS_OP(tsmsm_fs_capabilities),	SMB_VFS_OP_FS_CAPABILITIES,
 	 SMB_VFS_LAYER_TRANSPARENT},
 	{SMB_VFS_OP(tsmsm_aio_force),	SMB_VFS_OP_AIO_FORCE,
 	 SMB_VFS_LAYER_TRANSPARENT},
