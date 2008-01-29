@@ -24,12 +24,6 @@
 
 #define DS_ENUM_DOM_TRUSTS      0x28
 
-/* Settings for the domainFunctionality attribute in the rootDSE */
-
-#define DS_DOMAIN_FUNCTION_2000		0
-#define DS_DOMAIN_FUCNTION_2003_MIXED	1
-#define DS_DOMAIN_FUNCTION_2003		2
-
 typedef struct {
 	/* static portion of structure */
 	uint32		netbios_ptr;
