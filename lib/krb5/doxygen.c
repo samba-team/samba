@@ -53,10 +53,12 @@ RCSID("$Id$");
  *
  *
  * - @ref page_introduction
- * - @ref page_fileformats
+ * - @ref page_principal
  *
- * The project web page:\n
- * http://www.h5l.org/
+ * If you want to know more about the file formats that is used by
+ * Heimdal, please see: @ref page_fileformats
+ *
+ * The project web page: http://www.h5l.org/
  *
  */
 
@@ -117,7 +119,8 @@ RCSID("$Id$");
  * The are several ways to create a principal (with different degree of
  * portability), and one way to free it.
  * 
- * See also module @ref krb5_principal for more information about the functions.
+ * See also the page @ref page_principal for more information and also
+ * module @ref krb5_principal.
  * 
  * @subsection intro_krb5_ccache Credential cache
  * 
