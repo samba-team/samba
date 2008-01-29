@@ -486,7 +486,7 @@ static bool sync_eventlog_params( EVENTLOG_INFO *info )
 
 done:
 	TALLOC_FREE(ctx);
-	return true;
+	return ret;
 }
 
 /********************************************************************
