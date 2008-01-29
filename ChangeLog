@@ -1,3 +1,17 @@
+2008-01-29  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* doc/programming.texi: See the Kerberos 5 API introduction and
+	documentation on the Heimdal webpage.
+	
+2008-01-27  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5: better error strings for the keytab fetching functions
+
+	* lib/krb5/verify_krb5_conf.c: Catch deprecated entries.
+
+	* lib/krb5/get_cred.c: Remove support
+	for [libdefaults]capath (not [libdefaults] capaths though).
+
 2008-01-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* tools/heimdal-gssapi.pc.in: Fix caps of prefix, from Joakim
