@@ -53,6 +53,7 @@ RCSID("$Id$");
  *
  *
  * - @ref page_introduction
+ * - @ref page_fileformats
  *
  * The project web page:\n
  * http://www.h5l.org/
@@ -428,6 +429,14 @@ global com_err table isn't initialised.  Then
 error_message returns quite a boring error string (just
 the error code itself).
 
+
+*/
+
+
+/*!
+
+
+@page page_fileformats File formats
 
 @section fileformats File formats
 
