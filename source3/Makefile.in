@@ -278,8 +278,7 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_samr.o \
 		 librpc/gen_ndr/ndr_dssetup.o \
 		 librpc/gen_ndr/ndr_notify.o \
-		 librpc/gen_ndr/ndr_xattr.o \
-		 librpc/gen_ndr/ndr_libnet_join.o
+		 librpc/gen_ndr/ndr_xattr.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -368,7 +367,7 @@ LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o \
 	     libads/krb5_setpw.o libads/ldap_user.o \
 	     libads/ads_struct.o libads/kerberos_keytab.o \
              libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \
-	     libads/cldap.o libads/ldap_schema.o libads/util.o
+	     libads/cldap.o libads/ldap_schema.o libads/util.o libads/ndr.o
 
 LIBADS_SERVER_OBJ = libads/kerberos_verify.o libads/authdata.o
 
@@ -773,7 +772,8 @@ LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
 		 $(SECRETS_OBJ) $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
 		 $(DCUTIL_OBJ) $(LIBADS_OBJ)
 
-LIBNET_OBJ = libnet/libnet_conf.o libnet/libnet_join.o
+LIBNET_OBJ = libnet/libnet_conf.o libnet/libnet_join.o \
+	     librpc/gen_ndr/ndr_libnet_join.o
 
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
