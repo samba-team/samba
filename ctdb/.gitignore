@@ -14,4 +14,6 @@ config.log
 utils/smnotify/gen_smnotify.c
 utils/smnotify/gen_xdr.c
 utils/smnotify/smnotify.h
-
+nodes.txt
+rec.lock
+test.db
