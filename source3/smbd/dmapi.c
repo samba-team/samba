@@ -198,7 +198,7 @@ bool dmapi_have_session(void)
   session you are using is invalid. This destroys the existing session
   and creates a new one.
  */
-BOOL dmapi_new_session(void)
+bool dmapi_new_session(void)
 {
 	if (dmapi_have_session()) {
 		/* try to destroy the old one - this may not succeed */
