@@ -1,0 +1,17 @@
+*.[oa]
+*~
+config.status
+configure
+publish*.sh
+push*.sh
+web/packages
+TAGS
+bin
+Makefile
+config.h
+config.h.in
+config.log
+utils/smnotify/gen_smnotify.c
+utils/smnotify/gen_xdr.c
+utils/smnotify/smnotify.h
+
