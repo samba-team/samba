@@ -761,6 +761,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "change_trust_pw",   RPC_RTYPE_NTSTATUS, cmd_netlogon_change_trust_pw,   NULL, PI_NETLOGON, NULL, "Change Trust Account Password",           "" },
 	{ "gettrustrid", RPC_RTYPE_WERROR, NULL, cmd_netlogon_gettrustrid, PI_NETLOGON, NULL, "Get trust rid",     "" },
 	{ "dsr_enumtrustdom", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_enumtrustdom, PI_NETLOGON, NULL, "Enumerate trusted domains",     "" },
+	{ "dsenumdomtrusts",  RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_enumtrustdom, PI_NETLOGON, NULL, "Enumerate all trusted domains in an AD forest",     "" },
 	{ "deregisterdnsrecords", RPC_RTYPE_WERROR, NULL, cmd_netlogon_deregisterdnsrecords, PI_NETLOGON, NULL, "Deregister DNS records",     "" },
 
 	{ NULL }
