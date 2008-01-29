@@ -25,9 +25,9 @@
 
 #ifndef USE_DMAPI
 
-int dmapi_init_session(void) { return -1; }
 uint32 dmapi_file_flags(const char * const path) { return 0; }
 bool dmapi_have_session(void) { return False; }
+const void * dmapi_get_current_session(void) { return NULL; }
 
 #else /* USE_DMAPI */
 
@@ -48,90 +48,48 @@ bool dmapi_have_session(void) { return False; }
 
 static dm_sessid_t samba_dmapi_session = DM_NO_SESSION;
 
-/* Initialise the DMAPI interface. Make sure that we only end up initialising
- * once per process to avoid resource leaks across different DMAPI
- * implementations.
- */
-static int init_dmapi_service(void)
-{
-	static pid_t lastpid;
 
-	pid_t mypid;
-
-	mypid = sys_getpid();
-	if (mypid != lastpid) {
-		char *version;
-
-		lastpid = mypid;
-		if (dm_init_service(&version) < 0) {
-			return -1;
-		}
-
-		DEBUG(0, ("Initializing DMAPI: %s\n", version));
-	}
-
-	return 0;
-}
-
-bool dmapi_have_session(void)
-{
-	return samba_dmapi_session != DM_NO_SESSION;
-}
-
-static dm_sessid_t *realloc_session_list(dm_sessid_t * sessions, int count)
-{
-	dm_sessid_t *nsessions;
-
-	nsessions = TALLOC_REALLOC_ARRAY(NULL, sessions, dm_sessid_t, count);
-	if (nsessions == NULL) {
-		TALLOC_FREE(sessions);
-		return NULL;
-	}
-
-	return nsessions;
-}
-
-/* Initialise DMAPI session. The session is persistant kernel state, so it
- * might already exist, in which case we merely want to reconnect to it. This
- * function should be called as root.
- */
-int dmapi_init_session(void)
+/* 
+   Initialise DMAPI session. The session is persistant kernel state, 
+   so it might already exist, in which case we merely want to 
+   reconnect to it. This function should be called as root.
+*/
+static int dmapi_init_session(void)
 {
 	char	buf[DM_SESSION_INFO_LEN];
 	size_t	buflen;
-
-	uint	    nsessions = 10;
+	uint	    nsessions = 5;
 	dm_sessid_t *sessions = NULL;
+	char    *version;
 
 	int i, err;
 
-	/* If we aren't root, something in the following will fail due to lack
-	 * of privileges. Aborting seems a little extreme.
-	 */
-	SMB_WARN(getuid() == 0, "dmapi_init_session must be called as root");
-
-	samba_dmapi_session = DM_NO_SESSION;
-	if (init_dmapi_service() < 0) {
+	if (dm_init_service(&version) < 0) {
+		DEBUG(0, ("dm_init_service failed - disabling DMAPI\n"));
 		return -1;
 	}
 
-retry:
+	ZERO_STRUCT(buf);
 
-	if ((sessions = realloc_session_list(sessions, nsessions)) == NULL) {
-		return -1;
-	}
-
-	err = dm_getall_sessions(nsessions, sessions, &nsessions);
-	if (err < 0) {
-		if (errno == E2BIG) {
-			nsessions *= 2;
-			goto retry;
+	do {
+		dm_sessid_t *new_sessions;
+		nsessions *= 2;
+		new_sessions = TALLOC_REALLOC_ARRAY(NULL, sessions, 
+						    dm_sessid_t, nsessions);
+		if (new_sessions == NULL) {
+			talloc_free(sessions);
+			return -1;
 		}
 
+		sessions = new_sessions;
+		err = dm_getall_sessions(nsessions, sessions, &nsessions);
+	} while (err == -1 && errno == E2BIG);
+
+	if (err == -1) {
 		DEBUGADD(DMAPI_TRACE,
 			("failed to retrieve DMAPI sessions: %s\n",
 			strerror(errno)));
-		TALLOC_FREE(sessions);
+		talloc_free(sessions);
 		return -1;
 	}
 
@@ -147,7 +105,7 @@ retry:
 		}
 	}
 
-	TALLOC_FREE(sessions);
+	talloc_free(sessions);
 
 	/* No session already defined. */
 	if (samba_dmapi_session == DM_NO_SESSION) {
@@ -162,91 +120,84 @@ retry:
 			return -1;
 		}
 
-		DEBUGADD(DMAPI_TRACE,
-			("created new DMAPI session named '%s'\n",
-			DMAPI_SESSION_NAME));
+		DEBUG(0, ("created new DMAPI session named '%s' for %s\n",
+			  DMAPI_SESSION_NAME, version));
 	}
 
-	/* Note that we never end the DMAPI session. This enables child
-	 * processes to continue to use the session after we exit. It also lets
-	 * you run a second Samba server on different ports without any
-	 * conflict.
+	if (samba_dmapi_session != DM_NO_SESSION) {
+		set_effective_capability(DMAPI_ACCESS_CAPABILITY);
+	}
+
+	/* 
+	   Note that we never end the DMAPI session. It gets re-used if possiblie. 
+	   DMAPI session is a kernel resource that is usually lives until server reboot
+	   and doesn't get destroed when an application finishes.
 	 */
 
 	return 0;
 }
 
-/* Reattach to an existing dmapi session. Called from service processes that
- * might not be running as root.
- */
-static int reattach_dmapi_session(void)
+/*
+  Return a pointer to our DMAPI session, if available.
+  This assumes that you have called dmapi_have_session() first.
+*/
+const void *dmapi_get_current_session(void)
 {
-	char	buf[DM_SESSION_INFO_LEN];
-	size_t	buflen;
+	if (samba_dmapi_session == DM_NO_SESSION) {
+		return NULL;
+	}
 
-	if (samba_dmapi_session != DM_NO_SESSION ) {
+	return (void *)&samba_dmapi_session;
+}
+	
+/*
+  dmapi_have_session() must be the first DMAPI call you make in Samba. It will
+  initialize DMAPI, if available, and tell you if you can get a DMAPI session.
+  This should be called in the client-specific child process.
+*/
+
+bool dmapi_have_session(void)
+{
+	static bool initialized;
+	if (!initialized) {
+		initialized = true;
+
 		become_root();
-
-		/* NOTE: On Linux, this call opens /dev/dmapi, costing us a
-		 * file descriptor. Ideally, we would close this when we fork.
-		 */
-		if (init_dmapi_service() < 0) {
-			samba_dmapi_session = DM_NO_SESSION;
-			unbecome_root();
-			return -1;
-		}
-
-		if (dm_query_session(samba_dmapi_session, sizeof(buf),
-			    buf, &buflen) < 0) {
-			/* Session is stale. Disable DMAPI. */
-			samba_dmapi_session = DM_NO_SESSION;
-			unbecome_root();
-			return -1;
-		}
-
-		set_effective_capability(DMAPI_ACCESS_CAPABILITY);
-
-		DEBUG(DMAPI_TRACE, ("reattached DMAPI session\n"));
+		dmapi_init_session();
 		unbecome_root();
+
 	}
 
-	return 0;
+	return samba_dmapi_session != DM_NO_SESSION;
 }
 
-/* If a DMAPI session has been initialised, then we need to make sure
- * we are attached to it and have the correct privileges. This is
- * necessary to be able to do DMAPI operations across a fork(2). If
- * it fails, there is no likelihood of that failure being transient.
- *
- * Note that this use of the static attached flag relies on the fact
- * that dmapi_file_flags() is never called prior to forking the
- * per-client server process.
- */
-const void * dmapi_get_current_session(void) 
-{
-	static int attached = 0;
-	if (dmapi_have_session() && !attached) {
-		attached++;
-		if (reattach_dmapi_session() < 0) {
-			return DM_NO_SESSION;
-		}
-	}
-	return &samba_dmapi_session;
-}
-
+/* 
+   This is default implementation of dmapi_file_flags() that is 
+   called from VFS is_offline() call to know whether file is offline.
+   For GPFS-specific version see modules/vfs_tsmsm.c. It might be
+   that approach on quering existence of a specific attribute that
+   is used in vfs_tsmsm.c will work with other DMAPI-based HSM 
+   implementations as well.
+*/
 uint32 dmapi_file_flags(const char * const path)
 {
-	dm_sessid_t dmapi_session;
 	int		err;
 	dm_eventset_t   events = {0};
 	uint		nevents;
 
+	dm_sessid_t dmapi_session;
+	void    *dmapi_session_ptr;
 	void	*dm_handle = NULL;
 	size_t	dm_handle_len = 0;
 
 	uint32	flags = 0;
 
-	dmapi_session = *(dm_sessid_t*) dmapi_get_current_session();
+	dmapi_session_ptr = dmapi_get_current_session();
+	if (dmapi_session_ptr == NULL) {
+		return 0;
+	}
+
+	dmapi_session = *(dm_sessid_t *)dmapi_session_ptr;
 	if (dmapi_session == DM_NO_SESSION) {
 		return 0;
 	}
