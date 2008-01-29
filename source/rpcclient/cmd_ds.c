@@ -57,31 +57,6 @@ static WERROR cmd_ds_dsrole_getprimarydominfo(struct rpc_pipe_client *cli,
 	return werr;
 }
 
-static NTSTATUS cmd_ds_enum_domain_trusts(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx, int argc, 
-				     const char **argv) 
-{
-	NTSTATUS 		result;
-	uint32 			flags = DS_DOMAIN_IN_FOREST;
-	struct ds_domain_trust	 *trusts = NULL;
-	unsigned int 			num_domains = 0;
-	int i;
-	
-	if (argc > 1) {
-		flags = atoi(argv[1]);
-	}
-
-	result = rpccli_ds_enum_domain_trusts( cli, mem_ctx, cli->cli->desthost, flags, 
-		&trusts, &num_domains );
-	
-	printf( "%d domains returned\n", num_domains );
-
-	for (i=0; i<num_domains; i++ ) 
-		printf("%s (%s)\n", trusts[i].dns_domain, trusts[i].netbios_domain);
-	
-	return result;
-}
-
 /* List of commands exported by this module */
 
 struct cmd_set ds_commands[] = {
@@ -89,7 +64,6 @@ struct cmd_set ds_commands[] = {
 	{ "LSARPC-DS" },
 
 	{ "dsroledominfo",   RPC_RTYPE_WERROR, NULL, cmd_ds_dsrole_getprimarydominfo, PI_DSSETUP, NULL, "Get Primary Domain Information", "" },
-	{ "dsenumdomtrusts", RPC_RTYPE_NTSTATUS, cmd_ds_enum_domain_trusts,       NULL, PI_NETLOGON,  NULL, "Enumerate all trusted domains in an AD forest", "" },
 
 { NULL }
 };
