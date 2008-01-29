@@ -86,6 +86,21 @@ void ndr_print_server_id(struct ndr_print *ndr, const char *name, const struct s
 	ndr->depth--;
 }
 
+void ndr_print_ads_auth_flags(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ADS_AUTH_DISABLE_KERBEROS", ADS_AUTH_DISABLE_KERBEROS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ADS_AUTH_NO_BIND", ADS_AUTH_NO_BIND, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ADS_AUTH_ANON_BIND", ADS_AUTH_ANON_BIND, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ADS_AUTH_SIMPLE_BIND", ADS_AUTH_SIMPLE_BIND, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ADS_AUTH_ALLOW_NTLMSSP", ADS_AUTH_ALLOW_NTLMSSP, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ADS_AUTH_SASL_SIGN", ADS_AUTH_SASL_SIGN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ADS_AUTH_SASL_SEAL", ADS_AUTH_SASL_SEAL, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "ADS_AUTH_SASL_FORCE", ADS_AUTH_SASL_FORCE, r);
+	ndr->depth--;
+}
+
 void ndr_print_ads_struct(struct ndr_print *ndr, const char *name, const struct ads_struct *r)
 {
 	if (!r) { return; }
@@ -110,7 +125,7 @@ void ndr_print_ads_struct(struct ndr_print *ndr, const char *name, const struct 
 #endif
 	ndr_print_string(ndr, "user_name", r->auth.user_name);
 	ndr_print_string(ndr, "kdc_server", r->auth.kdc_server);
-	ndr_print_uint32(ndr, "flags", r->auth.flags);
+	ndr_print_ads_auth_flags(ndr, "flags", r->auth.flags);
 	ndr_print_uint32(ndr, "time_offset", r->auth.time_offset);
 	ndr_print_time_t(ndr, "tgt_expire", r->auth.tgt_expire);
 	ndr_print_time_t(ndr, "tgs_expire", r->auth.tgs_expire);
@@ -118,7 +133,7 @@ void ndr_print_ads_struct(struct ndr_print *ndr, const char *name, const struct 
 	ndr->depth--;
 	ndr_print_struct(ndr, name, "config");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "flags", r->config.flags);
+	ndr_print_netr_DsR_DcFlags(ndr, "flags", r->config.flags);
 	ndr_print_string(ndr, "realm", r->config.realm);
 	ndr_print_string(ndr, "bind_path", r->config.bind_path);
 	ndr_print_string(ndr, "ldap_server_name", r->config.ldap_server_name);
