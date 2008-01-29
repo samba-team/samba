@@ -641,11 +641,14 @@ create_merged_ip_list(struct ctdb_context *ctdb, TALLOC_CTX *tmp_ctx)
 int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 {
 	int i, num_healthy, retries;
-	int ret;
 	struct ctdb_public_ip ip;
 	uint32_t mask;
 	struct ctdb_public_ip_list *all_ips, *tmp_ip;
 	int maxnode, maxnum=0, minnode, minnum=0, num;
+	TDB_DATA data;
+	struct timeval timeout;
+	struct client_async_data *async_data;
+	struct ctdb_client_control_state *state;
 	TALLOC_CTX *tmp_ctx = talloc_new(ctdb);
 
 
@@ -813,6 +816,9 @@ try_again:
 	/* now tell all nodes to delete any alias that they should not
 	   have.  This will be a NOOP on nodes that don't currently
 	   hold the given alias */
+	async_data = talloc_zero(tmp_ctx, struct client_async_data);
+	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
+
 	for (i=0;i<nodemap->num;i++) {
 		/* don't talk to unconnected nodes, but do talk to banned nodes */
 		if (nodemap->nodes[i].flags & NODE_FLAGS_DISCONNECTED) {
@@ -830,21 +836,33 @@ try_again:
 			ip.sin.sin_family = AF_INET;
 			ip.sin.sin_addr   = tmp_ip->sin.sin_addr;
 
-			ret = ctdb_ctrl_release_ip(ctdb, TAKEOVER_TIMEOUT(),
-						   nodemap->nodes[i].pnn, 
-						   &ip);
-			if (ret != 0) {
-				DEBUG(0,("Failed to tell vnn %u to release IP %s\n",
-					 nodemap->nodes[i].pnn,
-					 inet_ntoa(tmp_ip->sin.sin_addr)));
+			timeout = TAKEOVER_TIMEOUT();
+			data.dsize = sizeof(ip);
+			data.dptr  = (uint8_t *)&ip;
+			state = ctdb_control_send(ctdb, nodemap->nodes[i].pnn,
+					0, CTDB_CONTROL_RELEASE_IP, 0,
+					data, async_data,
+					&timeout, NULL);
+			if (state == NULL) {
+				DEBUG(0,(__location__ " Failed to call async control CTDB_CONTROL_RELEASE_IP to node %u\n", nodemap->nodes[i].pnn));
 				talloc_free(tmp_ctx);
 				return -1;
 			}
+		
+			ctdb_client_async_add(async_data, state);
 		}
 	}
+	if (ctdb_client_async_wait(ctdb, async_data) != 0) {
+		DEBUG(0,(__location__ " Async control CTDB_CONTROL_RELEASE_IP failed\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+	talloc_free(async_data);
 
 
 	/* tell all nodes to get their own IPs */
+	async_data = talloc_zero(tmp_ctx, struct client_async_data);
+	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
 	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
 		if (tmp_ip->pnn == -1) {
 			/* this IP won't be taken over */
@@ -854,16 +872,25 @@ try_again:
 		ip.sin.sin_family = AF_INET;
 		ip.sin.sin_addr = tmp_ip->sin.sin_addr;
 
-		ret = ctdb_ctrl_takeover_ip(ctdb, TAKEOVER_TIMEOUT(), 
-					    tmp_ip->pnn, 
-					    &ip);
-		if (ret != 0) {
-			DEBUG(0,("Failed asking vnn %u to take over IP %s\n",
-				 tmp_ip->pnn, 
-				 inet_ntoa(tmp_ip->sin.sin_addr)));
+		timeout = TAKEOVER_TIMEOUT();
+		data.dsize = sizeof(ip);
+		data.dptr  = (uint8_t *)&ip;
+		state = ctdb_control_send(ctdb, tmp_ip->pnn,
+				0, CTDB_CONTROL_TAKEOVER_IP, 0,
+				data, async_data,
+				&timeout, NULL);
+		if (state == NULL) {
+			DEBUG(0,(__location__ " Failed to call async control CTDB_CONTROL_TAKEOVER_IP to node %u\n", tmp_ip->pnn));
 			talloc_free(tmp_ctx);
 			return -1;
 		}
+		
+		ctdb_client_async_add(async_data, state);
+	}
+	if (ctdb_client_async_wait(ctdb, async_data) != 0) {
+		DEBUG(0,(__location__ " Async control CTDB_CONTROL_TAKEOVER_IP failed\n"));
+		talloc_free(tmp_ctx);
+		return -1;
 	}
 
 	talloc_free(tmp_ctx);

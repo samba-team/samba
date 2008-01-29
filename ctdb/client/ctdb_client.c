@@ -2486,3 +2486,194 @@ int ctdb_ctrl_uptime(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct time
 	return ctdb_ctrl_uptime_recv(ctdb, mem_ctx, state, uptime);
 }
 
+/*
+  send a control to execute the "recovered" event script on a node
+ */
+int ctdb_ctrl_end_recovery(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode)
+{
+	int ret;
+	int32_t status;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_END_RECOVERY, 0, tdb_null, 
+			   NULL, NULL, &status, &timeout, NULL);
+	if (ret != 0 || status != 0) {
+		DEBUG(0,(__location__ " ctdb_control for end_recovery failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+/* 
+  callback for the async helpers used when sending the same control
+  to multiple nodes in parallell.
+*/
+static void async_callback(struct ctdb_client_control_state *state)
+{
+	struct client_async_data *data = talloc_get_type(state->async.private_data, struct client_async_data);
+	int ret;
+	int32_t res;
+
+	/* one more node has responded with recmode data */
+	data->count--;
+
+	/* if we failed to push the db, then return an error and let
+	   the main loop try again.
+	*/
+	if (state->state != CTDB_CONTROL_DONE) {
+		if ( !data->dont_log_errors) {
+			DEBUG(0,("Async operation failed with state %d\n", state->state));
+		}
+		data->fail_count++;
+		return;
+	}
+	
+	state->async.fn = NULL;
+
+	ret = ctdb_control_recv(state->ctdb, state, data, NULL, &res, NULL);
+	if ((ret != 0) || (res != 0)) {
+		if ( !data->dont_log_errors) {
+			DEBUG(0,("Async operation failed with ret=%d res=%d\n", ret, (int)res));
+		}
+		data->fail_count++;
+	}
+}
+
+
+void ctdb_client_async_add(struct client_async_data *data, struct ctdb_client_control_state *state)
+{
+	/* set up the callback functions */
+	state->async.fn = async_callback;
+	state->async.private_data = data;
+	
+	/* one more control to wait for to complete */
+	data->count++;
+}
+
+
+/* wait for up to the maximum number of seconds allowed
+   or until all nodes we expect a response from has replied
+*/
+int ctdb_client_async_wait(struct ctdb_context *ctdb, struct client_async_data *data)
+{
+	while (data->count > 0) {
+		event_loop_once(ctdb->ev);
+	}
+	if (data->fail_count != 0) {
+		if (!data->dont_log_errors) {
+			DEBUG(0,("Async wait failed - fail_count=%u\n", 
+				 data->fail_count));
+		}
+		return -1;
+	}
+	return 0;
+}
+
+
+/* 
+   perform a simple control on the listed nodes
+   The control cannot return data
+ */
+int ctdb_client_async_control(struct ctdb_context *ctdb,
+				enum ctdb_controls opcode,
+				uint32_t *nodes,
+				struct timeval timeout,
+				bool dont_log_errors,
+				TDB_DATA data)
+{
+	struct client_async_data *async_data;
+	struct ctdb_client_control_state *state;
+	int j, num_nodes;
+	
+	async_data = talloc_zero(ctdb, struct client_async_data);
+	CTDB_NO_MEMORY_FATAL(ctdb, async_data);
+	async_data->dont_log_errors = dont_log_errors;
+
+	num_nodes = talloc_get_size(nodes) / sizeof(uint32_t);
+
+	/* loop over all nodes and send an async control to each of them */
+	for (j=0; j<num_nodes; j++) {
+		uint32_t pnn = nodes[j];
+
+		state = ctdb_control_send(ctdb, pnn, 0, opcode, 
+					  0, data, async_data, &timeout, NULL);
+		if (state == NULL) {
+			DEBUG(0,(__location__ " Failed to call async control %u\n", (unsigned)opcode));
+			talloc_free(async_data);
+			return -1;
+		}
+		
+		ctdb_client_async_add(async_data, state);
+	}
+
+	if (ctdb_client_async_wait(ctdb, async_data) != 0) {
+		talloc_free(async_data);
+		return -1;
+	}
+
+	talloc_free(async_data);
+	return 0;
+}
+
+uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
+				struct ctdb_vnn_map *vnn_map,
+				TALLOC_CTX *mem_ctx,
+				bool include_self)
+{
+	int i, j, num_nodes;
+	uint32_t *nodes;
+
+	for (i=num_nodes=0;i<vnn_map->size;i++) {
+		if (vnn_map->map[i] == ctdb->pnn && !include_self) {
+			continue;
+		}
+		num_nodes++;
+	} 
+
+	nodes = talloc_array(mem_ctx, uint32_t, num_nodes);
+	CTDB_NO_MEMORY_FATAL(ctdb, nodes);
+
+	for (i=j=0;i<vnn_map->size;i++) {
+		if (vnn_map->map[i] == ctdb->pnn && !include_self) {
+			continue;
+		}
+		nodes[j++] = vnn_map->map[i];
+	} 
+
+	return nodes;
+}
+
+uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
+				struct ctdb_node_map *node_map,
+				TALLOC_CTX *mem_ctx,
+				bool include_self)
+{
+	int i, j, num_nodes;
+	uint32_t *nodes;
+
+	for (i=num_nodes=0;i<node_map->num;i++) {
+		if (node_map->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (node_map->nodes[i].pnn == ctdb->pnn && !include_self) {
+			continue;
+		}
+		num_nodes++;
+	} 
+
+	nodes = talloc_array(mem_ctx, uint32_t, num_nodes);
+	CTDB_NO_MEMORY_FATAL(ctdb, nodes);
+
+	for (i=j=0;i<node_map->num;i++) {
+		if (node_map->nodes[i].flags & NODE_FLAGS_INACTIVE) {
+			continue;
+		}
+		if (node_map->nodes[i].pnn == ctdb->pnn && !include_self) {
+			continue;
+		}
+		nodes[j++] = node_map->nodes[i].pnn;
+	} 
+
+	return nodes;
+}

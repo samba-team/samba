@@ -355,6 +355,11 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_UPTIME:
 		return ctdb_control_uptime(ctdb, outdata);
 
+	case CTDB_CONTROL_START_RECOVERY:
+		return ctdb_control_start_recovery(ctdb, c, async_reply);
+
+	case CTDB_CONTROL_END_RECOVERY:
+		return ctdb_control_end_recovery(ctdb, c, async_reply);
 	default:
 		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

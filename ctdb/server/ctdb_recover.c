@@ -397,27 +397,6 @@ struct ctdb_set_recmode_state {
 };
 
 /*
-  called when the 'recovered' event script has finished
- */
-static void ctdb_recovered_callback(struct ctdb_context *ctdb, int status, void *p)
-{
-	struct ctdb_set_recmode_state *state = talloc_get_type(p, struct ctdb_set_recmode_state);
-
-	ctdb_enable_monitoring(state->ctdb);
-
-	if (status == 0) {
-		ctdb->recovery_mode = state->recmode;
-	} else {
-		DEBUG(0,(__location__ " recovered event script failed (status %d)\n", status));
-	}
-
-	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
-	talloc_free(state);
-
-	gettimeofday(&ctdb->last_recovery_time, NULL);
-}
-
-/*
   called if our set_recmode child times out. this would happen if
   ctdb_recovery_lock() would block.
  */
@@ -473,23 +452,11 @@ static void set_recmode_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
+	state->ctdb->recovery_mode = state->recmode;
 
-	ctdb_disable_monitoring(state->ctdb);
-
-	/* call the events script to tell all subsystems that we have recovered */
-	ret = ctdb_event_script_callback(state->ctdb, 
-					 timeval_current_ofs(state->ctdb->tunable.script_timeout, 0),
-					 state, 
-					 ctdb_recovered_callback, 
-					 state, "recovered");
-
-	if (ret != 0) {
-		ctdb_enable_monitoring(state->ctdb);
-
-		ctdb_request_control_reply(state->ctdb, state->c, NULL, -1, "failed to run eventscript from set_recmode");
-		talloc_free(state);
-		return;
-	}
+	ctdb_request_control_reply(state->ctdb, state->c, NULL, 0, NULL);
+	talloc_free(state);
+	return;
 }
 
 /*
@@ -742,3 +709,122 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 	free(data.dptr);
 	return 0;	
 }
+
+
+struct recovery_callback_state {
+	struct ctdb_req_control *c;
+};
+
+
+/*
+  called when the 'recovered' event script has finished
+ */
+static void ctdb_end_recovery_callback(struct ctdb_context *ctdb, int status, void *p)
+{
+	struct recovery_callback_state *state = talloc_get_type(p, struct recovery_callback_state);
+
+	ctdb_enable_monitoring(ctdb);
+
+	if (status != 0) {
+		DEBUG(0,(__location__ " recovered event script failed (status %d)\n", status));
+	}
+
+	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
+	talloc_free(state);
+
+	gettimeofday(&ctdb->last_recovery_time, NULL);
+}
+
+/*
+  recovery has finished
+ */
+int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb, 
+				struct ctdb_req_control *c,
+				bool *async_reply)
+{
+	int ret;
+	struct recovery_callback_state *state;
+
+	DEBUG(0,("Recovery has finished\n"));
+
+	state = talloc(ctdb, struct recovery_callback_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->c    = talloc_steal(state, c);
+
+	ctdb_disable_monitoring(ctdb);
+
+	ret = ctdb_event_script_callback(ctdb, 
+					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 state, 
+					 ctdb_end_recovery_callback, 
+					 state, "recovered");
+
+	if (ret != 0) {
+		ctdb_enable_monitoring(ctdb);
+
+		DEBUG(0,(__location__ " Failed to end recovery\n"));
+		talloc_free(state);
+		return -1;
+	}
+
+	/* tell the control that we will be reply asynchronously */
+	*async_reply = true;
+	return 0;
+}
+
+/*
+  called when the 'startrecovery' event script has finished
+ */
+static void ctdb_start_recovery_callback(struct ctdb_context *ctdb, int status, void *p)
+{
+	struct recovery_callback_state *state = talloc_get_type(p, struct recovery_callback_state);
+
+	ctdb_enable_monitoring(ctdb);
+
+	if (status != 0) {
+		DEBUG(0,(__location__ " startrecovery event script failed (status %d)\n", status));
+	}
+
+	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
+	talloc_free(state);
+}
+
+/*
+  start a recuvery
+ */
+int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb, 
+				struct ctdb_req_control *c,
+				bool *async_reply)
+{
+	int ret;
+	struct recovery_callback_state *state;
+
+	DEBUG(0,("Recovery has started\n"));
+
+	state = talloc(ctdb, struct recovery_callback_state);
+	CTDB_NO_MEMORY(ctdb, state);
+
+	state->c    = talloc_steal(state, c);
+
+	ctdb_disable_monitoring(ctdb);
+
+	ret = ctdb_event_script_callback(ctdb, 
+					 timeval_current_ofs(ctdb->tunable.script_timeout, 0),
+					 state, 
+					 ctdb_start_recovery_callback, 
+					 state, "startrecovery");
+
+	if (ret != 0) {
+		ctdb_enable_monitoring(ctdb);
+
+		DEBUG(0,(__location__ " Failed to start recovery\n"));
+		talloc_free(state);
+		return -1;
+	}
+
+	/* tell the control that we will be reply asynchronously */
+	*async_reply = true;
+	return 0;
+}
+

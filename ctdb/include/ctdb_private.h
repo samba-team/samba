@@ -488,6 +488,8 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_WIPE_DATABASE           = 67,
 		    CTDB_CONTROL_DELETE_RECORD           = 68,
 		    CTDB_CONTROL_UPTIME                  = 69,
+		    CTDB_CONTROL_START_RECOVERY          = 70,
+		    CTDB_CONTROL_END_RECOVERY            = 71,
 };	
 
 /*
@@ -1082,6 +1084,12 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 				 struct ctdb_req_control *c,
 				 TDB_DATA indata, 
 				 bool *async_reply);
+int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb, 
+				 struct ctdb_req_control *c,
+				 bool *async_reply);
+int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb, 
+				 struct ctdb_req_control *c,
+				 bool *async_reply);
 
 struct ctdb_public_ip {
 	uint32_t pnn;
@@ -1220,5 +1228,21 @@ void ctdb_block_signal(int signum);
 void ctdb_unblock_signal(int signum);
 int32_t ctdb_monitoring_mode(struct ctdb_context *ctdb);
 int ctdb_set_child_logging(struct ctdb_context *ctdb);
+
+
+struct client_async_data {
+	bool dont_log_errors;
+	uint32_t count;
+	uint32_t fail_count;
+};
+void ctdb_client_async_add(struct client_async_data *data, struct ctdb_client_control_state *state);
+int ctdb_client_async_wait(struct ctdb_context *ctdb, struct client_async_data *data);
+int ctdb_client_async_control(struct ctdb_context *ctdb,
+				enum ctdb_controls opcode,
+				uint32_t *nodes,
+				struct timeval timeout,
+				bool dont_log_errors,
+				TDB_DATA data);
+
 
 #endif

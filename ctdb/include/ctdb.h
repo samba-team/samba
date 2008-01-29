@@ -499,4 +499,15 @@ struct ctdb_client_control_state *ctdb_ctrl_uptime_send(struct ctdb_context *ctd
 
 int ctdb_ctrl_uptime_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct ctdb_client_control_state *state, struct ctdb_uptime **uptime);
 
+int ctdb_ctrl_end_recovery(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
+
+uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
+				struct ctdb_node_map *node_map,
+				TALLOC_CTX *mem_ctx,
+				bool include_self);
+uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
+				struct ctdb_vnn_map *vnn_map,
+				TALLOC_CTX *mem_ctx,
+				bool include_self);
+
 #endif

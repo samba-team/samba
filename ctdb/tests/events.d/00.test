@@ -10,6 +10,12 @@ case $cmd in
 	echo "monitor event stderr" >&2
 	exit 0
 	;;
+
+     startrecovery)
+	echo "ctdb startrecovery event"
+	exit 0;	
+	;;
+
      startup)
 	echo "ctdb startup event"
 	exit 0;	
