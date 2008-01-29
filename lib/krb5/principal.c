@@ -31,6 +31,22 @@
  * SUCH DAMAGE. 
  */
 
+/**
+ * @page page_principal The principal handing functions.
+ *
+ * A Kerberos principal is a email address looking string that
+ * contains to parts separeted by a @.  The later part is the kerbero
+ * realm the principal belongs to and the former is a list of 0 or
+ * more components. For example 
+ * @verbatim
+lha@SU.SE
+host/hummel.it.su.se@SU.SE
+host/admin@H5L.ORG
+@endverbatim
+ *
+ * See the library functions here: @ref krb5_principal
+ */
+
 #include "krb5_locl.h"
 #ifdef HAVE_RES_SEARCH
 #define USE_RESOLVER
@@ -48,6 +64,21 @@ RCSID("$Id$");
 #define princ_comp(P) ((P)->name.name_string.val)
 #define princ_ncomp(P, N) ((P)->name.name_string.val[(N)])
 #define princ_realm(P) ((P)->realm)
+
+/**
+ * Frees a Kerberos principal allocated by the library with
+ * krb5_parse_name(), krb5_make_principal() or any other related
+ * principal functions.
+ *
+ * @param context A Kerberos context.
+ * @param p a principal to free.
+ *
+ * @return An krb5 error code, see krb5_get_error_message().
+ *
+ * @ingroup krb5_principal
+ */
+
+
 
 void KRB5_LIB_FUNCTION
 krb5_free_principal(krb5_context context,
