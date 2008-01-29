@@ -164,9 +164,9 @@ struct winbindd_domain {
 	fstring alt_name;                      /* alt Domain name, if any (FQDN for ADS) */
 	fstring forest_name;                   /* Name of the AD forest we're in */
 	DOM_SID sid;                           /* SID for this domain */
-	uint32 domain_flags;                   /* Domain flags from rpc_ds.h */
-	uint32 domain_type;                    /* Domain type from rpc_ds.h */
-	uint32 domain_trust_attribs;           /* Trust attribs from rpc_ds.h */
+	uint32 domain_flags;                   /* Domain flags from netlogon.h */
+	uint32 domain_type;                    /* Domain type from netlogon.h */
+	uint32 domain_trust_attribs;           /* Trust attribs from netlogon.h */
 	bool initialized;		       /* Did we already ask for the domain mode? */
 	bool native_mode;                      /* is this a win2k domain in native mode ? */
 	bool active_directory;                 /* is this a win2k active directory ? */

@@ -1161,7 +1161,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	int			i;
 	uint32			flags;	
 	struct rpc_pipe_client *cli;
-	uint32                 fr_flags = (DS_DOMAIN_IN_FOREST | DS_DOMAIN_TREE_ROOT);	
+	uint32                 fr_flags = (NETR_TRUST_FLAG_IN_FOREST | NETR_TRUST_FLAG_TREEROOT);
 	int ret_count;
 	
 	DEBUG(3,("ads: trusted_domains\n"));
@@ -1178,11 +1178,11 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	if ( domain->primary ||
 		((domain->domain_flags&fr_flags) == fr_flags) ) 
 	{
-		flags = DS_DOMAIN_DIRECT_OUTBOUND | 
-			DS_DOMAIN_DIRECT_INBOUND | 
-			DS_DOMAIN_IN_FOREST;
+		flags = NETR_TRUST_FLAG_OUTBOUND |
+			NETR_TRUST_FLAG_INBOUND |
+			NETR_TRUST_FLAG_IN_FOREST;
 	} else {
-		flags = DS_DOMAIN_IN_FOREST;
+		flags = NETR_TRUST_FLAG_IN_FOREST;
 	}	
 
 	result = cm_connect_netlogon(domain, &cli);
@@ -1230,7 +1230,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			   domains may be less that the ones actually trusted
 			   by the DC. */
 
-			if ( (trusts.array[i].trust_attributes == DS_DOMAIN_TRUST_ATTRIB_QUARANTINED_DOMAIN) &&
+			if ( (trusts.array[i].trust_attributes == NETR_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN) &&
 			     !domain->primary ) 
 			{
 				DEBUG(10,("trusted_domains: Skipping external trusted domain "
