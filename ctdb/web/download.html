@@ -6,51 +6,48 @@
 You need two source trees, one is a copy of Samba3 with clustering
 patches, and the other is the ctdb code itself.<p>
 
-Both source trees are stored in bzr repositories.<p>
-
-See http://bazaar-vcs.org/ for more information on bzr.<p>
+Both source trees are stored in git repositories.<p>
 
 <h2>CTDB</h2>
 To get an initial checkout of the ctdb code do this:
 <pre>
-   rsync -avz samba.org::ftp/unpacked/ctdb .
+   git clone git://git.samba.org/tridge/ctdb.git ctdb
 </pre>
 
 To update this tree when improvements are made in the upstream code do this:
 <pre>
     cd ctdb
-    bzr merge http://samba.org/~tridge/ctdb
+    git pull
 </pre>
 
-If you don't have bzr and can't easily install it, then you can instead use the following command to update your tree to the latest version:
+If you don't have git and can't easily install it, then you can
+instead use the following command to fetch ctdb or update it:
 <pre>
-    cd ctdb
-    rsync -avz samba.org::ftp/unpacked/ctdb/ .
+    rsync -avz samba.org::ftp/unpacked/ctdb .
 </pre>
 
 
 <h2>Samba3 ctdb version</h2>
-The fastest way to checkout an initial copy of the Samba3 tree with clustering patches is:
+To checkout the samba-ctdb tree do this:
 <pre>
-  rsync -avz samba.org::ftp/unpacked/samba_3_0_ctdb .
+   git clone git://git.samba.org/tridge/samba-ctdb.git samba_3_0_ctdb
 </pre>
 
 To update this tree when improvements are made in the upstream code do this:
 <pre>
    cd samba_3_0_ctdb
-   bzr merge http://samba.org/~tridge/samba_3_0_ctdb
+   git pull
 </pre>
 
 If you don't have bzr and can't easily install it, then you can instead use the following command to update your tree to the latest version:
 <pre>
-    cd samba_3_0_ctdb
-    rsync -avz samba.org::ftp/unpacked/samba_3_0_ctdb/ .
+    rsync -avz samba.org::ftp/unpacked/samba_3_0_ctdb .
 </pre>
 
 <h2>Binary Packages</h2>
 
 Note that packages are so far only available for RHEL5. Other packages
-will come later. <p>
+may come later. <p>
 
 See <a href="packages/">packages</a> directory for package
 downloads.
