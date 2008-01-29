@@ -140,8 +140,8 @@ int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
  return True if we made enough room to accommodate needed bytes
 ********************************************************************/
 
-bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
-			     bool whack_by_date )
+static bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
+				    bool whack_by_date )
 {
 	int start_record, i, new_start;
 	int end_record;
