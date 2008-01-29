@@ -280,13 +280,14 @@ static int control_status(struct ctdb_context *ctdb, int argc, const char **argv
 	}
 
 	if(options.machinereadable){
-		printf(":Node:IP:Disonnected:Disabled:Permanently Disabled:\n");
+		printf(":Node:IP:Disconnected:Banned:Disabled:Unhealthy:\n");
 		for(i=0;i<nodemap->num;i++){
-			printf(":%d:%s:%d:%d:%d:\n", nodemap->nodes[i].pnn,
+			printf(":%d:%s:%d:%d:%d:%d:\n", nodemap->nodes[i].pnn,
 				inet_ntoa(nodemap->nodes[i].sin.sin_addr),
 			       !!(nodemap->nodes[i].flags&NODE_FLAGS_DISCONNECTED),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY),
-			       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED));
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_BANNED),
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_PERMANENTLY_DISABLED),
+			       !!(nodemap->nodes[i].flags&NODE_FLAGS_UNHEALTHY));
 		}
 		return 0;
 	}

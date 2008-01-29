@@ -72,6 +72,8 @@ takeip
 	This event takes three additional arguments :
 	'interface' 'ipaddress' and 'netmask'
 
+	Before this event there will always be a 'startrecovery' event.
+
 	This event will always be followed by a 'recovered' event onse
 	all ipaddresses have been reassigned to new nodes and the ctdb database
 	has been recovered.
@@ -100,9 +102,14 @@ releaseip
 
 	Example: 60.nfs
 
+startrecovery
+	This event is triggered everytime we start a recovery process
+	or before we start changing ip address allocations.
+
 recovered
-	This event is triggered everytime a full ctdb recovery has completed
-	and all public ip addresses have been reassigned among the nodes.
+	This event is triggered every time we have finished a full recovery
+	and also after we have finished reallocating the public ip addresses
+	across the cluster.
 
 	Example: 60.nfs which if the ip address configuration has changed
 	during the recovery (i.e. if addresses have been taken over or

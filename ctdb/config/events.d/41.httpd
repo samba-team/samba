@@ -3,6 +3,7 @@
 
 . $CTDB_BASE/functions
 loadconfig ctdb
+loadconfig http
 
 [ "$CTDB_MANAGES_HTTPD" = "yes" ] || exit 0
 
