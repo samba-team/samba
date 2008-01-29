@@ -141,8 +141,9 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 	size_t dmhandle_len = 0;
 	size_t rlen;
 	dm_attrname_t dmname;
-	int ret;
+	int ret, lerrno;
 	bool offline;
+	char buf[1];
 
         /* if the file has more than FILE_IS_ONLINE_RATIO of blocks available,
 	   then assume it is not offline (it may not be 100%, as it could be sparse) */
@@ -179,8 +180,26 @@ static bool tsmsm_is_offline(struct vfs_handle_struct *handle,
 	memset(&dmname, 0, sizeof(dmname));
 	strlcpy((char *)&dmname.an_chars[0], tsmd->attrib_name, sizeof(dmname.an_chars));
 
-	ret = dm_get_dmattr(*dmsession_id, dmhandle, dmhandle_len, 
-			    DM_NO_TOKEN, &dmname, 0, NULL, &rlen);
+	lerrno = 0;
+
+	do {
+		ret = dm_get_dmattr(*dmsession_id, dmhandle, dmhandle_len, 
+				    DM_NO_TOKEN, &dmname, sizeof(buf), buf, &rlen);
+		if (ret == -1 && errno == EINVAL) {
+			DEBUG(0, ("Stale DMAPI session, re-creating it.\n"));
+			lerrno = EINVAL;
+			if (dmapi_new_session()) {
+				sessionp = dmapi_get_current_session();
+			} else {
+				DEBUG(0, 
+				      ("Unable to re-create DMAPI session, assuming offline (%s) - %s\n", 
+				       path, strerror(errno)));
+				offline = true;
+				dm_handle_free(dmhandle, dmhandle_len);
+				goto done;
+			}
+		}
+	} while (ret == -1 && lerrno == EINVAL);
 
 	/* its offline if the specified DMAPI attribute exists */
 	offline = (ret == 0 || (ret == -1 && errno == E2BIG));

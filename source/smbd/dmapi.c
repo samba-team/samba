@@ -47,7 +47,7 @@ const void * dmapi_get_current_session(void) { return NULL; }
 #define DMAPI_TRACE 10
 
 static dm_sessid_t samba_dmapi_session = DM_NO_SESSION;
-
+static unsigned session_num;
 
 /* 
    Initialise DMAPI session. The session is persistant kernel state, 
@@ -61,23 +61,41 @@ static int dmapi_init_session(void)
 	uint	    nsessions = 5;
 	dm_sessid_t *sessions = NULL;
 	char    *version;
+	char    *session_name;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
 
 	int i, err;
 
+	if (session_num == 0) {
+		session_name = DMAPI_SESSION_NAME;
+	} else {
+		session_name = talloc_asprintf(tmp_ctx, "%s%u", DMAPI_SESSION_NAME,
+					       session_num);
+	}
+
+	if (session_name == NULL) {
+		DEBUG(0,("Out of memory in dmapi_init_session\n"));
+		talloc_free(tmp_ctx);
+		return -1;
+	}
+ 
+
 	if (dm_init_service(&version) < 0) {
 		DEBUG(0, ("dm_init_service failed - disabling DMAPI\n"));
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
 	ZERO_STRUCT(buf);
 
+	/* Fetch kernel DMAPI sessions until we get any of them */
 	do {
 		dm_sessid_t *new_sessions;
 		nsessions *= 2;
-		new_sessions = TALLOC_REALLOC_ARRAY(NULL, sessions, 
+		new_sessions = TALLOC_REALLOC_ARRAY(tmp_ctx, sessions, 
 						    dm_sessid_t, nsessions);
 		if (new_sessions == NULL) {
-			talloc_free(sessions);
+			talloc_free(tmp_ctx);
 			return -1;
 		}
 
@@ -89,14 +107,15 @@ static int dmapi_init_session(void)
 		DEBUGADD(DMAPI_TRACE,
 			("failed to retrieve DMAPI sessions: %s\n",
 			strerror(errno)));
-		talloc_free(sessions);
+		talloc_free(tmp_ctx);
 		return -1;
 	}
 
+	/* Look through existing kernel DMAPI sessions to find out ours */
 	for (i = 0; i < nsessions; ++i) {
 		err = dm_query_session(sessions[i], sizeof(buf), buf, &buflen);
 		buf[sizeof(buf) - 1] = '\0';
-		if (err == 0 && strcmp(DMAPI_SESSION_NAME, buf) == 0) {
+		if (err == 0 && strcmp(session_name, buf) == 0) {
 			samba_dmapi_session = sessions[i];
 			DEBUGADD(DMAPI_TRACE,
 				("attached to existing DMAPI session "
@@ -105,23 +124,22 @@ static int dmapi_init_session(void)
 		}
 	}
 
-	talloc_free(sessions);
-
 	/* No session already defined. */
 	if (samba_dmapi_session == DM_NO_SESSION) {
 		err = dm_create_session(DM_NO_SESSION, 
-					CONST_DISCARD(char *, DMAPI_SESSION_NAME),
+					session_name,
 					&samba_dmapi_session);
 		if (err < 0) {
 			DEBUGADD(DMAPI_TRACE,
 				("failed to create new DMAPI session: %s\n",
 				strerror(errno)));
 			samba_dmapi_session = DM_NO_SESSION;
+			talloc_free(tmp_ctx);
 			return -1;
 		}
 
 		DEBUG(0, ("created new DMAPI session named '%s' for %s\n",
-			  DMAPI_SESSION_NAME, version));
+			  session_name, version));
 	}
 
 	if (samba_dmapi_session != DM_NO_SESSION) {
@@ -132,8 +150,12 @@ static int dmapi_init_session(void)
 	   Note that we never end the DMAPI session. It gets re-used if possiblie. 
 	   DMAPI session is a kernel resource that is usually lives until server reboot
 	   and doesn't get destroed when an application finishes.
+
+	   However, we free list of references to DMAPI sessions we've got from the kernel
+	   as it is not needed anymore once we have found (or created) our session.
 	 */
 
+	talloc_free(tmp_ctx);
 	return 0;
 }
 
@@ -171,6 +193,25 @@ bool dmapi_have_session(void)
 	return samba_dmapi_session != DM_NO_SESSION;
 }
 
+/*
+  only call this when you get back an EINVAL error indicating that the
+  session you are using is invalid. This destroys the existing session
+  and creates a new one.
+ */
+BOOL dmapi_new_session(void)
+{
+	if (dmapi_have_session()) {
+		/* try to destroy the old one - this may not succeed */
+		dm_destroy_session(samba_dmapi_session);
+	}
+	samba_dmapi_session = DM_NO_SESSION;
+	become_root();
+	session_num++;
+	dmapi_init_session();
+	unbecome_root();
+	return samba_dmapi_session != DM_NO_SESSION;    
+}
+
 /* 
    This is default implementation of dmapi_file_flags() that is 
    called from VFS is_offline() call to know whether file is offline.
@@ -185,12 +226,12 @@ uint32 dmapi_file_flags(const char * const path)
 	dm_eventset_t   events = {0};
 	uint		nevents;
 
-	dm_sessid_t dmapi_session;
-	void    *dmapi_session_ptr;
-	void	*dm_handle = NULL;
-	size_t	dm_handle_len = 0;
+	dm_sessid_t     dmapi_session;
+	const void      *dmapi_session_ptr;
+	void	        *dm_handle = NULL;
+	size_t	        dm_handle_len = 0;
 
-	uint32	flags = 0;
+	uint32	        flags = 0;
 
 	dmapi_session_ptr = dmapi_get_current_session();
 	if (dmapi_session_ptr == NULL) {
@@ -251,8 +292,7 @@ uint32 dmapi_file_flags(const char * const path)
 	 * interested in trapping read events is that part of the file is
 	 * offline.
 	 */
-	DEBUG(DMAPI_TRACE, ("DMAPI event list for %s is %#llx\n",
-		    path, events));
+	DEBUG(DMAPI_TRACE, ("DMAPI event list for %s\n", path));
 	if (DMEV_ISSET(DM_EVENT_READ, events)) {
 		flags = FILE_ATTRIBUTE_OFFLINE;
 	}
