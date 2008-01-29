@@ -53,6 +53,7 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 	char *s = NULL;
 	struct tm *tm;
 	char tbuf[100];
+	char *s2 = NULL;
 
 	vasprintf(&s, format, ap);
 
@@ -61,9 +62,13 @@ static void ctdb_logfile_log(const char *format, va_list ap)
 
 	strftime(tbuf,sizeof(tbuf)-1,"%Y/%m/%d %H:%M:%S", tm);
 
-	dprintf(log_state->fd, "%s.%06u [%5u]: %s", 
-		tbuf, (unsigned)t.tv_usec, (unsigned)getpid(), s);
-	free(s);	
+	asprintf(&s2, "%s.%06u [%5u]: %s", 
+		 tbuf, (unsigned)t.tv_usec, (unsigned)getpid(), s);
+	free(s);
+	if (s2) {
+		write(log_state->fd, s2, strlen(s2));
+		free(s2);	
+	}
 }
 
 /*
