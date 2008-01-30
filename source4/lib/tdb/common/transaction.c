@@ -321,6 +321,9 @@ static int transaction_write_existing(struct tdb_context *tdb, tdb_off_t off,
 
 	if (blk == tdb->transaction->num_blocks-1 &&
 	    off + len > tdb->transaction->last_block_size) {
+		if (off >= tdb->transaction->last_block_size) {
+			return 0;
+		}
 		len = tdb->transaction->last_block_size - off;
 	}
 
