@@ -1806,24 +1806,6 @@ typedef struct r_samr_connect_info5
 } SAMR_R_CONNECT5;
 
 
-/* SAMR_Q_GET_DOM_PWINFO */
-typedef struct q_samr_get_dom_pwinfo
-{
-	uint32 ptr; 
-	UNIHDR  hdr_srv_name;
-	UNISTR2 uni_srv_name;
-
-} SAMR_Q_GET_DOM_PWINFO;
-
-/* SAMR_R_GET_DOM_PWINFO */
-typedef struct r_samr_get_dom_pwinfo
-{
-	uint16 min_pwd_length;
-	uint32 password_properties;
-	NTSTATUS status;
-
-} SAMR_R_GET_DOM_PWINFO;
-
 /* SAMR_ENC_PASSWD */
 typedef struct enc_passwd_info
 {
