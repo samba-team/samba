@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 25
+Release: 26
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -119,6 +119,8 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Jan 31 2008 : Version 1.0.26
+ - Fix crashbug in tdb transaction code
 * Tue Jan 29 2008 : Version 1.0.25
  - added async recovery code
  - make event scripts more portable
