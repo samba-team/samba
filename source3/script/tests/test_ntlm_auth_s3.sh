@@ -5,9 +5,9 @@ incdir=`dirname $0`
 
 failed=0
 
-(/usr/bin/env python --version > /dev/null 2&>1)
+(/usr/bin/env python --version > /dev/null 2>&1)
 
-if $? -ne 0:
+if test $? -ne 0;
 then
 	echo "Python binary not found in path. Skipping ntlm_auth tests."
 	exit 0
