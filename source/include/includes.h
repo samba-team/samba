@@ -698,7 +698,6 @@ typedef char fstring[FSTRING_LEN];
 #include "rpc_srvsvc.h"
 #include "rpc_spoolss.h"
 #include "rpc_eventlog.h"
-#include "rpc_ds.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
 #include "librpc/gen_ndr/notify.h"

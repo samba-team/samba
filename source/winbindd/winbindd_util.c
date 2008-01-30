@@ -218,7 +218,7 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
-	uint32 fr_flags = (DS_DOMAIN_TREE_ROOT|DS_DOMAIN_IN_FOREST);	
+	uint32 fr_flags = (NETR_TRUST_FLAG_TREEROOT|NETR_TRUST_FLAG_IN_FOREST);
 
 	struct trustdom_state *state;
 
@@ -391,8 +391,8 @@ static void rescan_forest_root_trusts( void )
 		   the domain_list() as our primary domain may not 
 		   have been initialized. */
 
-		if ( !(dom_list[i].trust_flags & DS_DOMAIN_TREE_ROOT) )	{
-			continue;			
+		if ( !(dom_list[i].trust_flags & NETR_TRUST_FLAG_TREEROOT) ) {
+			continue;
 		}
 	
 		/* Here's the forest root */
@@ -456,10 +456,10 @@ static void rescan_forest_trusts( void )
 
 		if ( d && (d->internal || d->primary ) )
 			continue;		
-		
-		if ( (flags & DS_DOMAIN_DIRECT_INBOUND) &&
-		     (type == DS_DOMAIN_TRUST_TYPE_UPLEVEL) &&
-		     (attribs == DS_DOMAIN_TRUST_ATTRIB_FOREST_TRANSITIVE) )
+
+		if ( (flags & NETR_TRUST_FLAG_INBOUND) &&
+		     (type == NETR_TRUST_TYPE_UPLEVEL) &&
+		     (attribs == NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) )
 		{
 			/* add the trusted domain if we don't know
 			   about it */
@@ -770,8 +770,8 @@ void check_domain_trusted( const char *name, const DOM_SID *user_sid )
 	   forest trust */
 
 	domain->active_directory = True;
-	domain->domain_flags = DS_DOMAIN_DIRECT_OUTBOUND;
-	domain->domain_type  = DS_DOMAIN_TRUST_TYPE_UPLEVEL;
+	domain->domain_flags = NETR_TRUST_FLAG_OUTBOUND;
+	domain->domain_type  = NETR_TRUST_TYPE_UPLEVEL;
 	domain->internal = False;
 	domain->online = True;	
 
@@ -1408,7 +1408,7 @@ bool winbindd_can_contact_domain(struct winbindd_domain *domain)
 
 	/* Can always contact a domain that is in out forest */
 
-	if (tdc->trust_flags & DS_DOMAIN_IN_FOREST) {
+	if (tdc->trust_flags & NETR_TRUST_FLAG_IN_FOREST) {
 		ret = true;
 		goto done;
 	}
@@ -1420,7 +1420,7 @@ bool winbindd_can_contact_domain(struct winbindd_domain *domain)
 
 	if (!IS_DC && 
 	     domain->active_directory &&
-	    ((tdc->trust_flags&DS_DOMAIN_DIRECT_INBOUND) != DS_DOMAIN_DIRECT_INBOUND))
+	    ((tdc->trust_flags & NETR_TRUST_FLAG_INBOUND) != NETR_TRUST_FLAG_INBOUND))
 	{
 		DEBUG(10, ("winbindd_can_contact_domain: %s is an AD domain "
 			   "and we have no inbound trust.\n", domain->name));

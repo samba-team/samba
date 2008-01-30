@@ -1130,7 +1130,7 @@ NTSTATUS _net_sam_logon_ex(pipes_struct *p, NET_Q_SAM_LOGON_EX *q_u, NET_R_SAM_L
  _ds_enum_dom_trusts
  *************************************************************************/
 #if 0	/* JERRY -- not correct */
-NTSTATUS _ds_enum_dom_trusts(pipes_struct *p, DS_Q_ENUM_DOM_TRUSTS *q_u,
+ NTSTATUS _ds_enum_dom_trusts(pipes_struct *p, DS_Q_ENUM_DOM_TRUSTS *q_u,
 			     DS_R_ENUM_DOM_TRUSTS *r_u)
 {
 	NTSTATUS status = NT_STATUS_OK;

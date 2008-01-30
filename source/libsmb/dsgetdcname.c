@@ -891,71 +891,26 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
+ dsgetdcname.
+
+ This will be the only public function here.
 ********************************************************************/
 
-NTSTATUS dsgetdcname_remote(TALLOC_CTX *mem_ctx,
-			    const char *computer_name,
-			    const char *domain_name,
-			    struct GUID *domain_guid,
-			    const char *site_name,
-			    uint32_t flags,
-			    struct DS_DOMAIN_CONTROLLER_INFO **info)
-{
-	WERROR werr;
-	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-	struct cli_state *cli = NULL;
-	struct rpc_pipe_client *pipe_cli = NULL;
-
-	status = cli_full_connection(&cli, NULL, computer_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     "",
-				     "",
-				     "",
-				     0, Undefined, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON,
-					    &status);
-	if (!pipe_cli) {
-		goto done;
-	}
-
-	werr = rpccli_netlogon_dsr_getdcname(pipe_cli,
-					     mem_ctx,
-					     computer_name,
-					     domain_name,
-					     domain_guid,
-					     NULL,
-					     flags,
-					     info);
-	status = werror_to_ntstatus(werr);
-
- done:
-	cli_rpc_pipe_close(pipe_cli);
-	if (cli) {
-		cli_shutdown(cli);
-	}
-
-	return status;
-}
-
-/********************************************************************
-********************************************************************/
-
-NTSTATUS dsgetdcname_local(TALLOC_CTX *mem_ctx,
-			   const char *computer_name,
-			   const char *domain_name,
-			   struct GUID *domain_guid,
-			   const char *site_name,
-			   uint32_t flags,
-			   struct DS_DOMAIN_CONTROLLER_INFO **info)
+NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
+		     const char *domain_name,
+		     struct GUID *domain_guid,
+		     const char *site_name,
+		     uint32_t flags,
+		     struct DS_DOMAIN_CONTROLLER_INFO **info)
 {
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	struct DS_DOMAIN_CONTROLLER_INFO *myinfo = NULL;
+
+	DEBUG(10,("dsgetdcname: domain_name: %s, "
+		  "domain_guid: %s, site_name: %s, flags: 0x%08x\n",
+		  domain_name,
+		  domain_guid ? GUID_string(mem_ctx, domain_guid) : "(null)",
+		  site_name, flags));
 
 	*info = NULL;
 
@@ -990,45 +945,4 @@ NTSTATUS dsgetdcname_local(TALLOC_CTX *mem_ctx,
 	}
 
 	return status;
-}
-
-/********************************************************************
- dsgetdcname.
-
- This will be the only public function here.
-********************************************************************/
-
-NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
-		     const char *computer_name,
-		     const char *domain_name,
-		     struct GUID *domain_guid,
-		     const char *site_name,
-		     uint32_t flags,
-		     struct DS_DOMAIN_CONTROLLER_INFO **info)
-{
-	DEBUG(10,("dsgetdcname: computer_name: %s, domain_name: %s, "
-		  "domain_guid: %s, site_name: %s, flags: 0x%08x\n",
-		  computer_name, domain_name,
-		  domain_guid ? GUID_string(mem_ctx, domain_guid) : "(null)",
-		  site_name, flags));
-
-	*info = NULL;
-
-	if (computer_name) {
-		return dsgetdcname_remote(mem_ctx,
-					  computer_name,
-					  domain_name,
-					  domain_guid,
-					  site_name,
-					  flags,
-					  info);
-	}
-
-	return dsgetdcname_local(mem_ctx,
-				 computer_name,
-				 domain_name,
-				 domain_guid,
-				 site_name,
-				 flags,
-				 info);
 }

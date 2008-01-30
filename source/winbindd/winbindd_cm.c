@@ -1716,12 +1716,11 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 {
 	struct winbindd_domain *our_domain;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	struct ds_domain_trust *domains = NULL;
-	int count = 0;
+	struct netr_DomainTrustList trusts;
 	int i;
-	uint32 flags = (DS_DOMAIN_IN_FOREST | 
-			DS_DOMAIN_DIRECT_OUTBOUND | 
-			DS_DOMAIN_DIRECT_INBOUND);
+	uint32 flags = (NETR_TRUST_FLAG_IN_FOREST |
+			NETR_TRUST_FLAG_OUTBOUND |
+			NETR_TRUST_FLAG_INBOUND);
 	struct rpc_pipe_client *cli;
 	TALLOC_CTX *mem_ctx = NULL;
 
@@ -1763,27 +1762,35 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 		return False;
 	}	
 
-	result = rpccli_ds_enum_domain_trusts(cli, mem_ctx,
-					      cli->cli->desthost, 
-					      flags, &domains,
-					      (unsigned int *)&count);
+	result = rpccli_netr_DsrEnumerateDomainTrusts(cli, mem_ctx,
+						      cli->cli->desthost,
+						      flags,
+						      &trusts,
+						      NULL);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0,("set_dc_type_and_flags_trustinfo: "
+			"failed to query trusted domain list: %s\n",
+			nt_errstr(result)));
+		talloc_destroy(mem_ctx);
+		return false;
+	}
 
 	/* Now find the domain name and get the flags */
 
-	for ( i=0; i<count; i++ ) {
-		if ( strequal( domain->name, domains[i].netbios_domain ) ) {			
-			domain->domain_flags          = domains[i].flags;
-			domain->domain_type           = domains[i].trust_type;
-			domain->domain_trust_attribs  = domains[i].trust_attributes;
-						
-			if ( domain->domain_type == DS_DOMAIN_TRUST_TYPE_UPLEVEL )
+	for ( i=0; i<trusts.count; i++ ) {
+		if ( strequal( domain->name, trusts.array[i].netbios_name) ) {
+			domain->domain_flags          = trusts.array[i].trust_flags;
+			domain->domain_type           = trusts.array[i].trust_type;
+			domain->domain_trust_attribs  = trusts.array[i].trust_attributes;
+
+			if ( domain->domain_type == NETR_TRUST_TYPE_UPLEVEL )
 				domain->active_directory = True;
 
 			/* This flag is only set if the domain is *our* 
 			   primary domain and the primary domain is in
 			   native mode */
 
-			domain->native_mode = (domain->domain_flags & DS_DOMAIN_NATIVE_MODE);
+			domain->native_mode = (domain->domain_flags & NETR_TRUST_FLAG_NATIVE);
 
 			DEBUG(5, ("set_dc_type_and_flags_trustinfo: domain %s is %sin "
 				  "native mode.\n", domain->name, 
@@ -1930,7 +1937,7 @@ no_dssetup:
 			fstrcpy(domain->forest_name, forest_name);		
 
 			if (strequal(domain->forest_name, domain->alt_name)) {
-				domain->domain_flags = DS_DOMAIN_TREE_ROOT;
+				domain->domain_flags = NETR_TRUST_FLAG_TREEROOT;
 			}
 		}
 
