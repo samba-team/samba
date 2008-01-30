@@ -1350,28 +1350,7 @@ static bool api_samr_set_aliasinfo(pipes_struct *p)
 
 static bool api_samr_get_dom_pwinfo(pipes_struct *p)
 {
-	SAMR_Q_GET_DOM_PWINFO q_u;
-	SAMR_R_GET_DOM_PWINFO r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_get_dom_pwinfo("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_get_dom_pwinfo: unable to unmarshall SAMR_Q_GET_DOM_PWINFO.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_get_dom_pwinfo(p, &q_u, &r_u);
-
-	if (!samr_io_r_get_dom_pwinfo("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_get_dom_pwinfo: unable to marshall SAMR_R_GET_DOM_PWINFO.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_GETDOMPWINFO);
 }
 
 /*******************************************************************

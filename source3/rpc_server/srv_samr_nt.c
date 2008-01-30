@@ -4810,23 +4810,24 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 	return status;
 }
 
-/*********************************************************************
- _samr_get_dom_pwinfo
-*********************************************************************/
+/****************************************************************
+ _samr_GetDomPwInfo
+****************************************************************/
 
-NTSTATUS _samr_get_dom_pwinfo(pipes_struct *p, SAMR_Q_GET_DOM_PWINFO *q_u, SAMR_R_GET_DOM_PWINFO *r_u)
+NTSTATUS _samr_GetDomPwInfo(pipes_struct *p,
+			    struct samr_GetDomPwInfo *r)
 {
 	/* Perform access check.  Since this rpc does not require a
 	   policy handle it will not be caught by the access checks on
 	   SAMR_CONNECT or SAMR_CONNECT_ANON. */
 
 	if (!pipe_access_check(p)) {
-		DEBUG(3, ("access denied to samr_get_dom_pwinfo\n"));
-		r_u->status = NT_STATUS_ACCESS_DENIED;
-		return r_u->status;
+		DEBUG(3, ("access denied to _samr_GetDomPwInfo\n"));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Actually, returning zeros here works quite well :-). */
+	ZERO_STRUCTP(r->out.info);
 
 	return NT_STATUS_OK;
 }
@@ -5603,16 +5604,6 @@ NTSTATUS _samr_OemChangePasswordUser2(pipes_struct *p,
 
 NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
 				   struct samr_ChangePasswordUser2 *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_GetDomPwInfo(pipes_struct *p,
-			    struct samr_GetDomPwInfo *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
