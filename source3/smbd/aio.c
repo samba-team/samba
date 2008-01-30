@@ -202,7 +202,8 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 	size_t bufsize;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 
-	if (!min_aio_read_size || (smb_maxcnt < min_aio_read_size)) {
+	if ((!min_aio_read_size || (smb_maxcnt < min_aio_read_size))
+	    && !SMB_VFS_AIO_FORCE(fsp)) {
 		/* Too small a read for aio request. */
 		DEBUG(10,("schedule_aio_read_and_X: read size (%u) too small "
 			  "for minimum aio_read of %u\n",
@@ -284,7 +285,8 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	bool write_through = BITSETW(req->inbuf+smb_vwv7,0);
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 
-	if (!min_aio_write_size || (numtowrite < min_aio_write_size)) {
+	if ((!min_aio_write_size || (numtowrite < min_aio_write_size))
+	    && !SMB_VFS_AIO_FORCE(fsp)) {
 		/* Too small a write for aio request. */
 		DEBUG(10,("schedule_aio_write_and_X: write size (%u) too "
 			  "small for minimum aio_write of %u\n",
