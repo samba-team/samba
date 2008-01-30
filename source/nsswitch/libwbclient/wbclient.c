@@ -78,7 +78,6 @@ wbcErr wbcRequestResponse(int cmd,
 		break;
 	}
 
-done:
 	return wbc_status;
 }
 
