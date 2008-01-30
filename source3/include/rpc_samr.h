@@ -445,23 +445,6 @@ typedef struct sam_user_info_9
 } SAM_USER_INFO_9;
 
 
-/* SAMR_Q_CLOSE_HND - probably a policy handle close */
-typedef struct q_samr_close_hnd_info
-{
-    POLICY_HND pol;          /* policy handle */
-
-} SAMR_Q_CLOSE_HND;
-
-
-/* SAMR_R_CLOSE_HND - probably a policy handle close */
-typedef struct r_samr_close_hnd_info
-{
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_CLOSE_HND;
-
-
 /****************************************************************************
 SAMR_Q_GET_USRDOM_PWINFO - a "set user info" occurs just after this
 *****************************************************************************/

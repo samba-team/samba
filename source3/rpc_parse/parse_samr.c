@@ -29,61 +29,6 @@
 #define DBGC_CLASS DBGC_RPC_PARSE
 
 /*******************************************************************
-inits a SAMR_Q_CLOSE_HND structure.
-********************************************************************/
-
-void init_samr_q_close_hnd(SAMR_Q_CLOSE_HND * q_c, POLICY_HND *hnd)
-{
-	DEBUG(5, ("init_samr_q_close_hnd\n"));
-	
-	q_c->pol = *hnd;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_q_close_hnd(const char *desc, SAMR_Q_CLOSE_HND * q_u,
-			 prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_q_close_hnd");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	return smb_io_pol_hnd("pol", &q_u->pol, ps, depth);
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_r_close_hnd(const char *desc, SAMR_R_CLOSE_HND * r_u,
-			 prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_r_close_hnd");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 inits a SAMR_Q_LOOKUP_DOMAIN structure.
 ********************************************************************/
 
