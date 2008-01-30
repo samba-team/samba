@@ -739,6 +739,75 @@ static WERROR cmd_netlogon_dsr_getforesttrustinfo(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_netlogon_enumtrusteddomains(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx, int argc,
+					      const char **argv)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	WERROR werr = WERR_GENERAL_FAILURE;
+	const char *server_name = cli->cli->desthost;
+	struct netr_Blob blob;
+
+
+	if (argc < 1 || argc > 3) {
+		fprintf(stderr, "Usage: %s <server_name>\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		server_name = argv[1];
+	}
+
+	status = rpccli_netr_NetrEnumerateTrustedDomains(cli, mem_ctx,
+							 server_name,
+							 &blob,
+							 &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (W_ERROR_IS_OK(werr)) {
+		printf("success\n");
+		dump_data(1, blob.data, blob.length);
+	}
+ done:
+	return werr;
+}
+
+static WERROR cmd_netlogon_enumtrusteddomainsex(struct rpc_pipe_client *cli,
+						TALLOC_CTX *mem_ctx, int argc,
+						const char **argv)
+{
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	WERROR werr = WERR_GENERAL_FAILURE;
+	const char *server_name = cli->cli->desthost;
+	struct netr_DomainTrustList list;
+
+	if (argc < 1 || argc > 3) {
+		fprintf(stderr, "Usage: %s <server_name>\n", argv[0]);
+		return WERR_OK;
+	}
+
+	if (argc >= 2) {
+		server_name = argv[1];
+	}
+
+	status = rpccli_netr_NetrEnumerateTrustedDomainsEx(cli, mem_ctx,
+							   server_name,
+							   &list,
+							   &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		goto done;
+	}
+
+	if (W_ERROR_IS_OK(werr)) {
+		printf("success\n");
+	}
+ done:
+	return werr;
+}
+
+
 
 /* List of commands exported by this module */
 
@@ -761,7 +830,10 @@ struct cmd_set netlogon_commands[] = {
 	{ "change_trust_pw",   RPC_RTYPE_NTSTATUS, cmd_netlogon_change_trust_pw,   NULL, PI_NETLOGON, NULL, "Change Trust Account Password",           "" },
 	{ "gettrustrid", RPC_RTYPE_WERROR, NULL, cmd_netlogon_gettrustrid, PI_NETLOGON, NULL, "Get trust rid",     "" },
 	{ "dsr_enumtrustdom", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_enumtrustdom, PI_NETLOGON, NULL, "Enumerate trusted domains",     "" },
+	{ "dsenumdomtrusts",  RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_enumtrustdom, PI_NETLOGON, NULL, "Enumerate all trusted domains in an AD forest",     "" },
 	{ "deregisterdnsrecords", RPC_RTYPE_WERROR, NULL, cmd_netlogon_deregisterdnsrecords, PI_NETLOGON, NULL, "Deregister DNS records",     "" },
+	{ "netrenumtrusteddomains", RPC_RTYPE_WERROR, NULL, cmd_netlogon_enumtrusteddomains, PI_NETLOGON, NULL, "Enumerate trusted domains",     "" },
+	{ "netrenumtrusteddomainsex", RPC_RTYPE_WERROR, NULL, cmd_netlogon_enumtrusteddomainsex, PI_NETLOGON, NULL, "Enumerate trusted domains",     "" },
 
 	{ NULL }
 };

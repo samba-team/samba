@@ -59,11 +59,7 @@ wbcErr wbcRequestResponse(int cmd,
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	NSS_STATUS nss_status;
 
-	if (!request || !response) {
-		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
-
+	/* for some calls the request and/or response cna be NULL */
 
 	nss_status = winbindd_request_response(cmd, request, response);
 

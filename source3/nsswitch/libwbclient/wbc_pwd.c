@@ -209,15 +209,15 @@ wbcErr wbcGetgrnam(const char *name, struct group **grp)
 	struct winbindd_request request;
 	struct winbindd_response response;
 
-	if (!name || !grp) {
-		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
-
 	/* Initialize request */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
+
+	if (!name || !grp) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
 
 	/* dst is already null terminated from the memset above */
 
@@ -254,15 +254,15 @@ wbcErr wbcGetgrgid(gid_t gid, struct group **grp)
 	struct winbindd_request request;
 	struct winbindd_response response;
 
-	if (!grp) {
-		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
-
 	/* Initialize request */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
+
+	if (!grp) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
 
 	request.data.gid = gid;
 
