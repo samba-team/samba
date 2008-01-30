@@ -71,6 +71,8 @@ char *attrib_string(TALLOC_CTX *mem_ctx, uint32_t attrib)
 
 	ret[len] = 0;
 
+	talloc_set_name_const(ret, ret);
+
 	return ret;
 }
 

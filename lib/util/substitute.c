@@ -120,6 +120,8 @@ _PUBLIC_ char *string_sub_talloc(TALLOC_CTX *mem_ctx, const char *s,
 
 	SMB_ASSERT(ret[len] == '\0');
 
+	talloc_set_name_const(ret, ret);
+
 	return ret;
 }
 

@@ -153,6 +153,8 @@ _PUBLIC_ const char *str_format_nbt_domain(TALLOC_CTX *mem_ctx, const char *s)
 		}
 	}
 
+	talloc_set_name_const(ret, ret);
+
 	return ret;
 }
 
