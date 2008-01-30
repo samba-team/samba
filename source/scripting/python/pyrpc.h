@@ -27,3 +27,8 @@
 #define dom_sid28_Type dom_sid_Type
 #define dom_sid2_Check dom_sid_Check
 #define dom_sid28_Check dom_sid28_Check
+
+/* This macro is only provided by Python >= 2.3 */
+#ifndef PyAPI_DATA
+#   define PyAPI_DATA(RTYPE) extern RTYPE
+#endif

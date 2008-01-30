@@ -90,7 +90,6 @@ static NTSTATUS test_become_dc_check_options(void *private_data,
 	return NT_STATUS_OK;
 }
 
-#ifndef PROVISION_PYTHON
 #include "lib/appweb/ejs/ejs.h"
 #include "lib/appweb/ejs/ejsInternal.h"
 #include "scripting/ejs/smbcalls.h"
@@ -148,13 +147,15 @@ failed:
 	return ejs_error;
 }
 
-static NTSTATUS test_become_dc_prepare_db(void *private_data,
-					  const struct libnet_BecomeDC_PrepareDB *p)
+static NTSTATUS test_become_dc_prepare_db_ejs(void *private_data,
+					      const struct libnet_BecomeDC_PrepareDB *p)
 {
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
 	char *ejs;
 	int ret;
 	bool ok;
+
+	DEBUG(0,("Provision for Become-DC test using EJS\n"));
 
 	DEBUG(0,("New Server[%s] in Site[%s]\n",
 		p->dest_dsa->dns_name, p->dest_dsa->site_name));
@@ -274,17 +275,19 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 	return NT_STATUS_OK;
 }
 
-#else 
+#ifdef HAVE_WORKING_PYTHON
 #include "param/param.h"
 #include <Python.h>
 #include "scripting/python/modules.h"
 
-static NTSTATUS test_become_dc_prepare_db(void *private_data,
-					  const struct libnet_BecomeDC_PrepareDB *p)
+static NTSTATUS test_become_dc_prepare_db_py(void *private_data,
+					     const struct libnet_BecomeDC_PrepareDB *p)
 {
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
 	bool ok;
 	PyObject *provision_fn, *result, *parameters;
+
+	DEBUG(0,("Provision for Become-DC test using PYTHON\n"));
 
 	py_load_samba_modules();
 	Py_Initialize();
@@ -378,8 +381,7 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 
 	return NT_STATUS_OK;
 }
-
-#endif
+#endif /* HAVE_WORKING_PYTHON */
 
 static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 				  const struct libnet_BecomeDC_StoreChunk *c)
@@ -876,7 +878,12 @@ bool torture_net_become_dc(struct torture_context *torture)
 
 	b.in.callbacks.private_data	= s;
 	b.in.callbacks.check_options	= test_become_dc_check_options;
-	b.in.callbacks.prepare_db	= test_become_dc_prepare_db;
+	b.in.callbacks.prepare_db	= test_become_dc_prepare_db_ejs;
+#ifdef HAVE_WORKING_PYTHON
+	if (getenv("PROVISION_PYTHON")) {
+		b.in.callbacks.prepare_db = test_become_dc_prepare_db_py;
+	}
+#endif
 	b.in.callbacks.schema_chunk	= test_become_dc_schema_chunk;
 	b.in.callbacks.config_chunk	= test_become_dc_store_chunk;
 	b.in.callbacks.domain_chunk	= test_become_dc_store_chunk;
