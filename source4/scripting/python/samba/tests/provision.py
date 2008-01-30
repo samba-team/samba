@@ -21,6 +21,10 @@ import os
 from samba.provision import setup_secretsdb, secretsdb_become_dc
 import samba.tests
 from ldb import Dn
+import param
+
+lp = param.LoadParm()
+lp.load("st/dc/etc/smb.conf")
 
 setup_dir = "setup"
 def setup_path(file):
@@ -30,7 +34,7 @@ def setup_path(file):
 class ProvisionTestCase(samba.tests.TestCaseInTempDir):
     def test_setup_secretsdb(self):
         path = os.path.join(self.tempdir, "secrets.ldb")
-        ldb = setup_secretsdb(path, setup_path, None, None, None)
+        ldb = setup_secretsdb(path, setup_path, None, None, lp=lp)
         try:
             self.assertEquals("LSA Secrets",
                  ldb.searchone(basedn="CN=LSA Secrets", attribute="CN"))
@@ -40,7 +44,7 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
             
     def test_become_dc(self):
         path = os.path.join(self.tempdir, "secrets.ldb")
-        secrets_ldb = setup_secretsdb(path, setup_path, None, None, None)
+        secrets_ldb = setup_secretsdb(path, setup_path, None, None, lp=lp)
         try:
             secretsdb_become_dc(secrets_ldb, setup_path, domain="EXAMPLE", 
                    realm="example", netbiosname="myhost", 
