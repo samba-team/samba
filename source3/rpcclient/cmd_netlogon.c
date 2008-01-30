@@ -348,30 +348,52 @@ static WERROR cmd_netlogon_dsr_getsitename(struct rpc_pipe_client *cli,
 	return WERR_OK;
 }
 
-static NTSTATUS cmd_netlogon_logon_ctrl(struct rpc_pipe_client *cli, 
-                                        TALLOC_CTX *mem_ctx, int argc, 
-                                        const char **argv)
+static WERROR cmd_netlogon_logon_ctrl(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx, int argc,
+				      const char **argv)
 {
-#if 0
-	uint32 query_level = 1;
-#endif
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	WERROR werr;
+	const char *logon_server = cli->cli->desthost;
+	enum netr_LogonControlCode function_code = 1;
+	uint32_t level = 1;
+	union netr_CONTROL_QUERY_INFORMATION info;
 
-	if (argc > 1) {
-		fprintf(stderr, "Usage: %s\n", argv[0]);
-		return NT_STATUS_OK;
+	if (argc > 4) {
+		fprintf(stderr, "Usage: %s <logon_server> <function_code> "
+			"<level>\n", argv[0]);
+		return WERR_OK;
 	}
 
-#if 0
-	result = cli_netlogon_logon_ctrl(cli, mem_ctx, query_level);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
+	if (argc >= 2) {
+		logon_server = argv[1];
 	}
-#endif
+
+	if (argc >= 3) {
+		function_code = atoi(argv[2]);
+	}
+
+	if (argc >= 4) {
+		level = atoi(argv[3]);
+	}
+
+	status = rpccli_netr_LogonControl(cli, mem_ctx,
+					  logon_server,
+					  function_code,
+					  level,
+					  &info,
+					  &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 
 	/* Display results */
 
-	return result;
+	return werr;
 }
 
 /* Display sam synchronisation information */
@@ -852,7 +874,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "dsr_getdcnameex2", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getdcnameex2, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
 	{ "dsr_getsitename", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getsitename, PI_NETLOGON, NULL, "Get sitename",     "" },
 	{ "dsr_getforesttrustinfo", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getforesttrustinfo, PI_NETLOGON, NULL, "Get Forest Trust Info",     "" },
-	{ "logonctrl",  RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl,  NULL, PI_NETLOGON, NULL, "Logon Control",       "" },
+	{ "logonctrl",  RPC_RTYPE_WERROR, NULL, cmd_netlogon_logon_ctrl, PI_NETLOGON, NULL, "Logon Control",       "" },
 	{ "samsync",    RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_sync,    NULL, PI_NETLOGON, NULL, "Sam Synchronisation", "" },
 	{ "samdeltas",  RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_deltas,  NULL, PI_NETLOGON, NULL, "Query Sam Deltas",    "" },
 	{ "samlogon",   RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_logon,   NULL, PI_NETLOGON, NULL, "Sam Logon",           "" },
