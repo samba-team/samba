@@ -1136,3 +1136,475 @@ NTSTATUS _net_sam_logon_ex(pipes_struct *p, NET_Q_SAM_LOGON_EX *q_u, NET_R_SAM_L
 	return status;
 }
 #endif	/* JERRY */
+
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_LogonUasLogon(pipes_struct *p,
+			   struct netr_LogonUasLogon *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_LogonUasLogoff(pipes_struct *p,
+			    struct netr_LogonUasLogoff *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
+			     struct netr_LogonSamLogon *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
+			      struct netr_LogonSamLogoff *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
+				  struct netr_ServerReqChallenge *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
+				  struct netr_ServerAuthenticate *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
+				 struct netr_ServerPasswordSet *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_DatabaseDeltas(pipes_struct *p,
+			      struct netr_DatabaseDeltas *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_DatabaseSync(pipes_struct *p,
+			    struct netr_DatabaseSync *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_AccountDeltas(pipes_struct *p,
+			     struct netr_AccountDeltas *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_AccountSync(pipes_struct *p,
+			   struct netr_AccountSync *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_LogonControl(pipes_struct *p,
+			  struct netr_LogonControl *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_GetDcName(pipes_struct *p,
+		       struct netr_GetDcName *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_GetAnyDCName(pipes_struct *p,
+			  struct netr_GetAnyDCName *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_LogonControl2(pipes_struct *p,
+			   struct netr_LogonControl2 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
+				   struct netr_ServerAuthenticate2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_DatabaseSync2(pipes_struct *p,
+			     struct netr_DatabaseSync2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_DatabaseRedo(pipes_struct *p,
+			    struct netr_DatabaseRedo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_LogonControl2Ex(pipes_struct *p,
+			     struct netr_LogonControl2Ex *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
+					 struct netr_NetrEnumerateTrustedDomains *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRGetDCName(pipes_struct *p,
+			  struct netr_DsRGetDCName *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p,
+				    struct netr_NETRLOGONDUMMYROUTINE1 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRLOGONSETSERVICEBITS(pipes_struct *p,
+				     struct netr_NETRLOGONSETSERVICEBITS *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_LogonGetTrustRid(pipes_struct *p,
+			      struct netr_LogonGetTrustRid *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p,
+					  struct netr_NETRLOGONCOMPUTESERVERDIGEST *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p,
+					  struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
+				   struct netr_ServerAuthenticate3 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRGetDCNameEx(pipes_struct *p,
+			    struct netr_DsRGetDCNameEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRGetSiteName(pipes_struct *p,
+			    struct netr_DsRGetSiteName *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_LogonGetDomainInfo(pipes_struct *p,
+				  struct netr_LogonGetDomainInfo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
+				  struct netr_ServerPasswordSet2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_ServerPasswordGet(pipes_struct *p,
+			       struct netr_ServerPasswordGet *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRLOGONSENDTOSAM(pipes_struct *p,
+				struct netr_NETRLOGONSENDTOSAM *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRAddressToSitenamesW(pipes_struct *p,
+				    struct netr_DsRAddressToSitenamesW *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRGetDCNameEx2(pipes_struct *p,
+			     struct netr_DsRGetDCNameEx2 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p,
+						 struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NetrEnumerateTrustedDomainsEx(pipes_struct *p,
+					   struct netr_NetrEnumerateTrustedDomainsEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRAddressToSitenamesExW(pipes_struct *p,
+				      struct netr_DsRAddressToSitenamesExW *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsrGetDcSiteCoverageW(pipes_struct *p,
+				   struct netr_DsrGetDcSiteCoverageW *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
+			       struct netr_LogonSamLogonEx *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsrEnumerateDomainTrusts(pipes_struct *p,
+				      struct netr_DsrEnumerateDomainTrusts *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsrDeregisterDNSHostRecords(pipes_struct *p,
+					 struct netr_DsrDeregisterDNSHostRecords *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_ServerTrustPasswordsGet(pipes_struct *p,
+				       struct netr_ServerTrustPasswordsGet *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRGetForestTrustInformation(pipes_struct *p,
+					  struct netr_DsRGetForestTrustInformation *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_GetForestTrustInformation(pipes_struct *p,
+				       struct netr_GetForestTrustInformation *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_LogonSamLogonWithFlags(pipes_struct *p,
+				      struct netr_LogonSamLogonWithFlags *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRSERVERGETTRUSTINFO(pipes_struct *p,
+				    struct netr_NETRSERVERGETTRUSTINFO *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
