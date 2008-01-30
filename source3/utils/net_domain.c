@@ -108,7 +108,7 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 	status = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, &user_pol, 16, &qctr);
 	if ( !NT_STATUS_IS_OK(status) ) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 		goto done;
 	}
 
@@ -123,11 +123,11 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	status = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol, 16, 
 					&cli->user_session_key, &ctr);
 
-	rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 
 done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
-	rpccli_samr_close(pipe_hnd, mem_ctx, &sam_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &sam_pol);
 	
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
 	
@@ -274,7 +274,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	/* We *must* do this.... don't ask... */
 
 	if (NT_STATUS_IS_OK(status)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	}
 
 	status = rpccli_samr_lookup_names(pipe_hnd, mem_ctx,
@@ -344,7 +344,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		return status;
 	}
 
-	rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
 	
 	return status;

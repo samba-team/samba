@@ -1401,13 +1401,13 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 
  done:
 	if (is_valid_policy_hnd(&user_pol)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	}
 	if (is_valid_policy_hnd(&domain_pol)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 	}
 	if (is_valid_policy_hnd(&connect_pol)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
 	}
 	return result;
 }
@@ -1824,7 +1824,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 				group_is_primary = True;
                         }
 
-			rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+			rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 		}
                 
 		if (group_is_primary) {
@@ -2131,7 +2131,7 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 	result = rpccli_samr_add_groupmem(pipe_hnd, mem_ctx, &group_pol, rids[0]);
 
  done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
 	return result;
 }
 
@@ -2194,7 +2194,7 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	}
 
  done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
 	return result;
 }
 
@@ -2308,7 +2308,7 @@ static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
 	result = rpccli_samr_del_groupmem(pipe_hnd, mem_ctx, &group_pol, rids[0]);
 
  done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
 	return result;
 }
 
@@ -2368,7 +2368,7 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 		return result;
 
  done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
 	return result;
 }
 
@@ -2571,7 +2571,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 				    (NT_STATUS_IS_OK(rpccli_samr_query_alias_info(pipe_hnd, mem_ctx,
 									       &alias_pol, 3,
 									       &ctr))) &&
-				    (NT_STATUS_IS_OK(rpccli_samr_close(pipe_hnd, mem_ctx,
+				    (NT_STATUS_IS_OK(rpccli_samr_Close(pipe_hnd, mem_ctx,
 								    &alias_pol)))) {
 					description = unistr2_to_ascii_talloc(mem_ctx,
 								   ctr.alias.info3.description.string);
@@ -2587,7 +2587,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 			}
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
-	rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 	/* Get builtin policy handle */
 	
 	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
@@ -2626,7 +2626,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 				    (NT_STATUS_IS_OK(rpccli_samr_query_alias_info(pipe_hnd, mem_ctx,
 									       &alias_pol, 3,
 									       &ctr))) &&
-				    (NT_STATUS_IS_OK(rpccli_samr_close(pipe_hnd, mem_ctx,
+				    (NT_STATUS_IS_OK(rpccli_samr_Close(pipe_hnd, mem_ctx,
 								    &alias_pol)))) {
 					description = unistr2_to_ascii_talloc(mem_ctx,
 								   ctr.alias.info3.description.string);
@@ -2838,7 +2838,7 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 
 		DOM_SID sid_Builtin;
 
-		rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 
 		string_to_sid(&sid_Builtin, "S-1-5-32");		
 
@@ -4045,7 +4045,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 			if (!NT_STATUS_IS_OK(result))
 				goto done;
 
-			result = rpccli_samr_close(pipe_hnd, mem_ctx, &alias_pol);
+			result = rpccli_samr_Close(pipe_hnd, mem_ctx, &alias_pol);
 			if (!NT_STATUS_IS_OK(result))
 				goto done;
 
@@ -4069,7 +4069,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 	result = NT_STATUS_OK;
 
  done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 
 	return result;
 }
@@ -4169,7 +4169,7 @@ static NTSTATUS rpc_aliaslist_internals(const DOM_SID *domain_sid,
 	result = rpc_fetch_domain_aliases(pipe_hnd, mem_ctx, &connect_pol,
 					  domain_sid);
 
-	rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
  done:
 	return result;
 }
@@ -6286,12 +6286,12 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
 	/* close opened samr and domain policy handles */
-	nt_status = rpccli_samr_close(pipe_hnd, mem_ctx, &domain_hnd);
+	nt_status = rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't properly close domain policy handle for domain %s\n", domain_name));
 	};
 	
-	nt_status = rpccli_samr_close(pipe_hnd, mem_ctx, &connect_hnd);
+	nt_status = rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't properly close samr policy handle for domain %s\n", domain_name));
 	};

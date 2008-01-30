@@ -280,7 +280,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* We *must* do this.... don't ask... */
 
 	if (NT_STATUS_IS_OK(result)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	}
 
 	CHECK_RPC_ERR_DEBUG(rpccli_samr_lookup_names(pipe_hnd, mem_ctx,
@@ -353,7 +353,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	result = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol, 16, 
 					&cli->user_session_key, &ctr);
 
-	rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
 
 	/* Now check the whole process from top-to-bottom */

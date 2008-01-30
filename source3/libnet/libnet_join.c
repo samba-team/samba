@@ -704,7 +704,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		}
 
 		if (NT_STATUS_IS_OK(status)) {
-			rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+			rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 		}
 	}
 
@@ -769,7 +769,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	cli_rpc_pipe_close(pipe_hnd);
 
 	status = NT_STATUS_OK;
@@ -877,7 +877,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	status = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx,
 					    &user_pol, 16, &qctr);
 	if (!NT_STATUS_IS_OK(status)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 		goto done;
 	}
 
@@ -890,12 +890,12 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	status = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol, 16,
 					   &cli->user_session_key, &ctr);
 
-	rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 
 done:
 	if (pipe_hnd) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
-		rpccli_samr_close(pipe_hnd, mem_ctx, &sam_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &sam_pol);
 		cli_rpc_pipe_close(pipe_hnd);
 	}
 
