@@ -70,6 +70,7 @@ def parseCommandLine():
 	parser.set_defaults(server_password="secret")
 	parser.set_defaults(server_domain="FOO")
 	parser.set_defaults(server_helper="squid-2.5-ntlmssp")
+	parser.set_defaults(config_file="/etc/samba/smb.conf")
 
 	parser.add_option("--client-username", dest="client_username",\
 				help="User name for the client. [default: foo]")
@@ -88,6 +89,9 @@ def parseCommandLine():
 				help="Domain server uses for local auth. [default: FOO]")
 	parser.add_option("--server-helper", dest="server_helper",\
 				help="Helper mode for the ntlm_auth server. [default: squid-2.5-server]")
+
+	parser.add_option("-s", "--configfile", dest="config_file",\
+				help="Path to smb.conf file. [default:/etc/samba/smb.conf")
 
 	(opts, args) = parser.parse_args()
 	if len(args) != 1:
@@ -129,6 +133,7 @@ def main():
 		client_args.append("--username=%s" % opts.client_username)
 		client_args.append("--password=%s" % opts.client_password)
 		client_args.append("--domain=%s" % opts.client_domain)
+		client_args.append("--configfile=%s" % opts.config_file)
 
 		os.execv(ntlm_auth_path, client_args)
 
@@ -161,6 +166,7 @@ def main():
 		server_args.append("--username=%s" % opts.server_username)
 		server_args.append("--password=%s" % opts.server_password)
 		server_args.append("--domain=%s" % opts.server_domain)
+		server_args.append("--configfile=%s" % opts.config_file)
 
 		os.execv(ntlm_auth_path, server_args)
 
