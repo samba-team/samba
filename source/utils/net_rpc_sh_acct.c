@@ -118,10 +118,10 @@ static NTSTATUS rpc_sh_acct_do(TALLOC_CTX *mem_ctx,
 
  done:
 	if (is_valid_policy_hnd(&domain_pol)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 	}
 	if (is_valid_policy_hnd(&connect_pol)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
 	}
 
 	return result;
