@@ -375,7 +375,7 @@ sub ParseArrayPullHeader($$$$$$)
 	}
 
 	if (not $l->{IS_FIXED} and not is_charset_array($e, $l)) {
-		$self->AllocateArrayLevel($e,$l,$ndr,$env,$size);
+		$self->AllocateArrayLevel($e,$l,$ndr,$var_name,$size);
 	}
 
 	return $length;
@@ -2058,9 +2058,7 @@ sub ParseFunctionPush($$)
 
 sub AllocateArrayLevel($$$$$$)
 {
-	my ($self,$e,$l,$ndr,$env,$size) = @_;
-
-	my $var = ParseExpr($e->{NAME}, $env, $e->{ORIGINAL});
+	my ($self,$e,$l,$ndr,$var,$size) = @_;
 
 	my $pl = GetPrevLevel($e, $l);
 	if (defined($pl) and 
