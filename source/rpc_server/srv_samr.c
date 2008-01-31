@@ -761,29 +761,7 @@ static bool api_samr_enum_domains(pipes_struct *p)
 
 static bool api_samr_open_alias(pipes_struct *p)
 {
-	SAMR_Q_OPEN_ALIAS q_u;
-	SAMR_R_OPEN_ALIAS r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the samr open policy */
-	if(!samr_io_q_open_alias("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_open_alias: Unable to unmarshall SAMR_Q_OPEN_ALIAS.\n"));
-		return False;
-	}
-
-	r_u.status=_samr_open_alias(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_open_alias("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_open_alias: Unable to marshall SAMR_R_OPEN_ALIAS.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_OPENALIAS);
 }
 
 /*******************************************************************
