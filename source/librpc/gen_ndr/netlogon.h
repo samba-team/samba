@@ -643,6 +643,8 @@ struct netr_Blob {
 #define DS_ONLY_LDAP_NEEDED ( 0x00008000 )
 #define DS_IS_FLAT_NAME ( 0x00010000 )
 #define DS_IS_DNS_NAME ( 0x00020000 )
+#define DS_TRY_NEXTCLOSEST_SITE ( 0x00040000 )
+#define DS_DIRECTORY_SERVICE_6_REQUIRED ( 0x00080000 )
 #define DS_RETURN_DNS_NAME ( 0x40000000 )
 #define DS_RETURN_FLAT_NAME ( 0x80000000 )
 
@@ -670,6 +672,8 @@ enum netr_DsRGetDCNameInfo_AddressType
 #define DS_SERVER_WRITABLE ( 0x00000100 )
 #define DS_SERVER_GOOD_TIMESERV ( 0x00000200 )
 #define DS_SERVER_NDNC ( 0x00000400 )
+#define DS_SERVER_SELECT_SECRET_DOMAIN_6 ( 0x00000800 )
+#define DS_SERVER_FULL_SECRET_DOMAIN_6 ( 0x00001000 )
 #define DS_DNS_CONTROLLER ( 0x20000000 )
 #define DS_DNS_DOMAIN ( 0x40000000 )
 #define DS_DNS_FOREST ( 0x80000000 )
@@ -1027,7 +1031,7 @@ struct netr_GetDcName {
 
 	struct {
 		const char **dcname;/* [ref,charset(UTF16)] */
-		NTSTATUS result;
+		WERROR result;
 	} out;
 
 };
