@@ -2977,24 +2977,23 @@ NTSTATUS _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_EN
 }
 
 /*******************************************************************
- api_samr_open_alias
+ _samr_OpenAlias
  ********************************************************************/
 
-NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_ALIAS *r_u)
+NTSTATUS _samr_OpenAlias(pipes_struct *p,
+			 struct samr_OpenAlias *r)
 {
 	DOM_SID sid;
-	POLICY_HND domain_pol = q_u->dom_pol;
-	uint32 alias_rid = q_u->rid_alias;
-	POLICY_HND *alias_pol = &r_u->pol;
+	POLICY_HND domain_pol = *r->in.domain_handle;
+	uint32 alias_rid = r->in.rid;
+	POLICY_HND *alias_pol = r->out.alias_handle;
 	struct    samr_info *info = NULL;
 	SEC_DESC *psd = NULL;
 	uint32    acc_granted;
-	uint32    des_access = q_u->access_mask;
+	uint32    des_access = r->in.access_mask;
 	size_t    sd_size;
 	NTSTATUS  status;
 	SE_PRIV se_rights;
-
-	r_u->status = NT_STATUS_OK;
 
 	/* find the domain policy and get the SID / access bits stored in the domain policy */
 	
@@ -3002,7 +3001,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 		return NT_STATUS_INVALID_HANDLE;
 	
 	status = access_check_samr_function(acc_granted, 
-		SA_RIGHT_DOMAIN_OPEN_ACCOUNT, "_samr_open_alias");
+		SA_RIGHT_DOMAIN_OPEN_ACCOUNT, "_samr_OpenAlias");
 		
 	if ( !NT_STATUS_IS_OK(status) ) 
 		return status;
@@ -3022,7 +3021,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 	
 	status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
 		&se_rights, GENERIC_RIGHTS_ALIAS_WRITE, des_access, 
-		&acc_granted, "_samr_open_alias");
+		&acc_granted, "_samr_OpenAlias");
 		
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
@@ -3059,7 +3058,7 @@ NTSTATUS _samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OPEN_A
 	if (!create_policy_hnd(p, alias_pol, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -5302,16 +5301,6 @@ NTSTATUS _samr_QueryGroupMember(pipes_struct *p,
 
 NTSTATUS _samr_SetMemberAttributesOfGroup(pipes_struct *p,
 					  struct samr_SetMemberAttributesOfGroup *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_OpenAlias(pipes_struct *p,
-			 struct samr_OpenAlias *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
