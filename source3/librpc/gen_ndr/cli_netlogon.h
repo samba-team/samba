@@ -107,7 +107,8 @@ NTSTATUS rpccli_netr_GetDcName(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
 			       const char *logon_server,
 			       const char *domainname,
-			       const char **dcname);
+			       const char **dcname,
+			       WERROR *werror);
 NTSTATUS rpccli_netr_LogonControl(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  const char *logon_server,

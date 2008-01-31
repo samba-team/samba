@@ -552,7 +552,7 @@ NTSTATUS _samr_Close(pipes_struct *p, struct samr_Close *r)
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	ZERO_STRUCT(r->out.handle);
+	ZERO_STRUCTP(r->out.handle);
 
 	return NT_STATUS_OK;
 }

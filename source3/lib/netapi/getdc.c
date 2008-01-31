@@ -69,8 +69,8 @@ static WERROR NetGetDCNameRemote(struct libnetapi_ctx *ctx,
 	status = rpccli_netr_GetDcName(pipe_cli, ctx,
 				       server_name,
 				       domain_name,
-				       (const char **)buffer);
-	werr = ntstatus_to_werror(status);
+				       (const char **)buffer,
+				       &werr);
  done:
 	if (cli) {
 		cli_shutdown(cli);
