@@ -598,7 +598,8 @@ NTSTATUS rpccli_netr_GetDcName(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
 			       const char *logon_server,
 			       const char *domainname,
-			       const char **dcname)
+			       const char **dcname,
+			       WERROR *werror)
 {
 	struct netr_GetDcName r;
 	NTSTATUS status;
@@ -634,7 +635,11 @@ NTSTATUS rpccli_netr_GetDcName(struct rpc_pipe_client *cli,
 	*dcname = *r.out.dcname;
 
 	/* Return result */
-	return r.out.result;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_netr_LogonControl(struct rpc_pipe_client *cli,

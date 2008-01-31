@@ -12,7 +12,7 @@ NTSTATUS _netr_DatabaseDeltas(pipes_struct *p, struct netr_DatabaseDeltas *r);
 NTSTATUS _netr_DatabaseSync(pipes_struct *p, struct netr_DatabaseSync *r);
 NTSTATUS _netr_AccountDeltas(pipes_struct *p, struct netr_AccountDeltas *r);
 NTSTATUS _netr_AccountSync(pipes_struct *p, struct netr_AccountSync *r);
-NTSTATUS _netr_GetDcName(pipes_struct *p, struct netr_GetDcName *r);
+WERROR _netr_GetDcName(pipes_struct *p, struct netr_GetDcName *r);
 WERROR _netr_LogonControl(pipes_struct *p, struct netr_LogonControl *r);
 WERROR _netr_GetAnyDCName(pipes_struct *p, struct netr_GetAnyDCName *r);
 WERROR _netr_LogonControl2(pipes_struct *p, struct netr_LogonControl2 *r);

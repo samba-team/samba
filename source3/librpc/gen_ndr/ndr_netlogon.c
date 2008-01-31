@@ -6030,6 +6030,8 @@ _PUBLIC_ void ndr_print_netr_DsRGetDCName_flags(struct ndr_print *ndr, const cha
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_ONLY_LDAP_NEEDED", DS_ONLY_LDAP_NEEDED, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_IS_FLAT_NAME", DS_IS_FLAT_NAME, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_IS_DNS_NAME", DS_IS_DNS_NAME, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_TRY_NEXTCLOSEST_SITE", DS_TRY_NEXTCLOSEST_SITE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_DIRECTORY_SERVICE_6_REQUIRED", DS_DIRECTORY_SERVICE_6_REQUIRED, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_RETURN_DNS_NAME", DS_RETURN_DNS_NAME, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_RETURN_FLAT_NAME", DS_RETURN_FLAT_NAME, r);
 	ndr->depth--;
@@ -6088,6 +6090,8 @@ _PUBLIC_ void ndr_print_netr_DsR_DcFlags(struct ndr_print *ndr, const char *name
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_SERVER_WRITABLE", DS_SERVER_WRITABLE, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_SERVER_GOOD_TIMESERV", DS_SERVER_GOOD_TIMESERV, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_SERVER_NDNC", DS_SERVER_NDNC, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_SERVER_SELECT_SECRET_DOMAIN_6", DS_SERVER_SELECT_SECRET_DOMAIN_6, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_SERVER_FULL_SECRET_DOMAIN_6", DS_SERVER_FULL_SECRET_DOMAIN_6, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_DNS_CONTROLLER", DS_DNS_CONTROLLER, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_DNS_DOMAIN", DS_DNS_DOMAIN, r);
 	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "DS_DNS_FOREST", DS_DNS_FOREST, r);
@@ -9781,7 +9785,7 @@ static enum ndr_err_code ndr_push_netr_GetDcName(struct ndr_push *ndr, int flags
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.dcname, CH_UTF16)));
 		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.dcname, ndr_charset_length(*r->out.dcname, CH_UTF16), sizeof(uint16_t), CH_UTF16));
-		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -9838,7 +9842,7 @@ static enum ndr_err_code ndr_pull_netr_GetDcName(struct ndr_pull *ndr, int flags
 		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.dcname), sizeof(uint16_t)));
 		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.dcname, ndr_get_array_length(ndr, r->out.dcname), sizeof(uint16_t), CH_UTF16));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dcname_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -9872,7 +9876,7 @@ _PUBLIC_ void ndr_print_netr_GetDcName(struct ndr_print *ndr, const char *name, 
 		ndr_print_string(ndr, "dcname", *r->out.dcname);
 		ndr->depth--;
 		ndr->depth--;
-		ndr_print_NTSTATUS(ndr, "result", r->out.result);
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
