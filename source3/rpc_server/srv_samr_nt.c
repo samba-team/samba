@@ -4830,10 +4830,12 @@ NTSTATUS _samr_GetDomPwInfo(pipes_struct *p,
 }
 
 /*********************************************************************
- _samr_open_group
+ _samr_OpenGroup
 *********************************************************************/
 
-NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_GROUP *r_u)
+NTSTATUS _samr_OpenGroup(pipes_struct *p,
+			 struct samr_OpenGroup *r)
+
 {
 	DOM_SID sid;
 	DOM_SID info_sid;
@@ -4841,18 +4843,18 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 	struct samr_info *info;
 	SEC_DESC         *psd = NULL;
 	uint32            acc_granted;
-	uint32            des_access = q_u->access_mask;
+	uint32            des_access = r->in.access_mask;
 	size_t            sd_size;
 	NTSTATUS          status;
 	fstring sid_string;
 	bool ret;
 	SE_PRIV se_rights;
 
-	if (!get_lsa_policy_samr_sid(p, &q_u->domain_pol, &sid, &acc_granted, NULL)) 
+	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &sid, &acc_granted, NULL)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
 	status = access_check_samr_function(acc_granted, 
-		SA_RIGHT_DOMAIN_OPEN_ACCOUNT, "_samr_open_group");
+		SA_RIGHT_DOMAIN_OPEN_ACCOUNT, "_samr_OpenGroup");
 		
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
@@ -4865,7 +4867,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 
 	status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
 		&se_rights, GENERIC_RIGHTS_GROUP_WRITE, des_access, 
-		&acc_granted, "_samr_open_group");
+		&acc_granted, "_samr_OpenGroup");
 		
 	if ( !NT_STATUS_IS_OK(status) ) 
 		return status;
@@ -4876,7 +4878,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 		return NT_STATUS_ACCESS_DENIED;
 
 	sid_copy(&info_sid, get_global_sam_sid());
-	sid_append_rid(&info_sid, q_u->rid_group);
+	sid_append_rid(&info_sid, r->in.rid);
 	sid_to_fstring(sid_string, &info_sid);
 
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
@@ -4884,7 +4886,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 		
 	info->acc_granted = acc_granted;
 
-	DEBUG(10, ("_samr_open_group:Opening SID: %s\n", sid_string));
+	DEBUG(10, ("_samr_OpenGroup:Opening SID: %s\n", sid_string));
 
 	/* check if that group really exists */
 	become_root();
@@ -4894,7 +4896,7 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 		return NT_STATUS_NO_SUCH_GROUP;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, &r_u->pol, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.group_handle, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -5221,16 +5223,6 @@ NTSTATUS _samr_LookupNames(pipes_struct *p,
 
 NTSTATUS _samr_LookupRids(pipes_struct *p,
 			  struct samr_LookupRids *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_OpenGroup(pipes_struct *p,
-			 struct samr_OpenGroup *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
