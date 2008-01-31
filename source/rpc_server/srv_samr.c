@@ -71,29 +71,7 @@ static bool api_samr_close_hnd(pipes_struct *p)
 
 static bool api_samr_open_domain(pipes_struct *p)
 {
-	SAMR_Q_OPEN_DOMAIN q_u;
-	SAMR_R_OPEN_DOMAIN r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!samr_io_q_open_domain("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_open_domain: unable to unmarshall SAMR_Q_OPEN_DOMAIN.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_open_domain(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_open_domain("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_open_domain: unable to marshall SAMR_R_OPEN_DOMAIN.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_OPENDOMAIN);
 }
 
 /*******************************************************************
