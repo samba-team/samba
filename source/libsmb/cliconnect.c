@@ -866,8 +866,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 		/* If we get a bad principal, try to guess it if
 		   we have a valid host NetBIOS name.
 		 */
-		if (strequal(principal,
-				"not_defined_in_RFC4178@please_ignore")) {
+		if (strequal(principal, ADS_IGNORE_PRINCIPAL)) {
 			SAFE_FREE(principal);
 		}
 		if (principal == NULL &&
