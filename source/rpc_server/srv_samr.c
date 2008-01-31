@@ -36,33 +36,33 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 /*******************************************************************
+ ********************************************************************/
+
+static bool proxy_samr_call(pipes_struct *p, uint8 opnum)
+{
+	struct api_struct *fns;
+	int n_fns;
+
+	samr_get_pipe_fns(&fns, &n_fns);
+
+	if (opnum >= n_fns) {
+		return false;
+	}
+
+	if (fns[opnum].opnum != opnum) {
+		smb_panic("SAMR function table not sorted");
+	}
+
+	return fns[opnum].fn(p);
+}
+
+/*******************************************************************
  api_samr_close_hnd
  ********************************************************************/
 
 static bool api_samr_close_hnd(pipes_struct *p)
 {
-	SAMR_Q_CLOSE_HND q_u;
-	SAMR_R_CLOSE_HND r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!samr_io_q_close_hnd("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_close_hnd: unable to unmarshall SAMR_Q_CLOSE_HND.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_close_hnd(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_close_hnd("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_close_hnd: unable to marshall SAMR_R_CLOSE_HND.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_CLOSE);
 }
 
 /*******************************************************************
@@ -1350,28 +1350,7 @@ static bool api_samr_set_aliasinfo(pipes_struct *p)
 
 static bool api_samr_get_dom_pwinfo(pipes_struct *p)
 {
-	SAMR_Q_GET_DOM_PWINFO q_u;
-	SAMR_R_GET_DOM_PWINFO r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_get_dom_pwinfo("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_get_dom_pwinfo: unable to unmarshall SAMR_Q_GET_DOM_PWINFO.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_get_dom_pwinfo(p, &q_u, &r_u);
-
-	if (!samr_io_r_get_dom_pwinfo("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_get_dom_pwinfo: unable to marshall SAMR_R_GET_DOM_PWINFO.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_GETDOMPWINFO);
 }
 
 /*******************************************************************
@@ -1557,14 +1536,14 @@ static struct api_struct api_samr_cmds [] =
       {"SAMR_CONNECT5"          , SAMR_CONNECT5         , api_samr_connect5         }
 };
 
-void samr_get_pipe_fns( struct api_struct **fns, int *n_fns )
+void samr2_get_pipe_fns( struct api_struct **fns, int *n_fns )
 {
 	*fns = api_samr_cmds;
 	*n_fns = sizeof(api_samr_cmds) / sizeof(struct api_struct);
 }
 
 
-NTSTATUS rpc_samr_init(void)
+NTSTATUS rpc_samr2_init(void)
 {
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "samr", "lsass", api_samr_cmds,
 				    sizeof(api_samr_cmds) / sizeof(struct api_struct));

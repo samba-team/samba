@@ -435,9 +435,9 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 		break;
 	}
 
-	rpccli_samr_close(cli, mem_ctx, &user_pol);
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &user_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 
 done:
 	return result;
@@ -589,9 +589,9 @@ static NTSTATUS cmd_samr_query_group(struct rpc_pipe_client *cli,
 
 	display_group_info_ctr(group_ctr);
 
-	rpccli_samr_close(cli, mem_ctx, &group_pol);
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &group_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 done:
 	return result;
 }
@@ -657,9 +657,9 @@ static NTSTATUS cmd_samr_query_usergroups(struct rpc_pipe_client *cli,
 		       user_gids[i].g_rid, user_gids[i].attr);
 	}
 
-	rpccli_samr_close(cli, mem_ctx, &user_pol);
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &user_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
  done:
 	return result;
 }
@@ -750,8 +750,8 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 		printf("\tgroup rid:[0x%x]\n", alias_rids[i]);
 	}
 
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
  done:
 	return result;
 }
@@ -820,9 +820,9 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 		       group_attrs[i]);
 	}
 
-	rpccli_samr_close(cli, mem_ctx, &group_pol);
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &group_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
  done:
 	return result;
 }
@@ -896,10 +896,10 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 
  done:
 	if (got_domain_pol)
-		rpccli_samr_close(cli, mem_ctx, &domain_pol);
+		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 
 	if (got_connect_pol)
-		rpccli_samr_close(cli, mem_ctx, &connect_pol);
+		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 
 	return result;
 }
@@ -969,10 +969,10 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 
  done:
 	if (got_domain_pol)
-		rpccli_samr_close(cli, mem_ctx, &domain_pol);
+		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 
 	if (got_connect_pol)
-		rpccli_samr_close(cli, mem_ctx, &connect_pol);
+		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 
 	return result;
 }
@@ -1048,10 +1048,10 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 
  done:
 	if (got_domain_pol)
-		rpccli_samr_close(cli, mem_ctx, &domain_pol);
+		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 	
 	if (got_connect_pol)
-		rpccli_samr_close(cli, mem_ctx, &connect_pol);
+		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 	
 	return result;
 }
@@ -1123,9 +1123,9 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
 		printf("\tsid:[%s]\n", sid_str);
 	}
 
-	rpccli_samr_close(cli, mem_ctx, &alias_pol);
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &alias_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
  done:
 	return result;
 }
@@ -1200,8 +1200,8 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
  done:
 	return result;
 }
@@ -1336,8 +1336,8 @@ static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli,
 		}
 	} while ( NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
  done:
 	return result;
 }
@@ -1434,9 +1434,9 @@ static NTSTATUS cmd_samr_query_dominfo(struct rpc_pipe_client *cli,
 	}
 
  done:
- 
- 	rpccli_samr_close(cli, mem_ctx, &domain_pol);
- 	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 	return result;
 }
 
@@ -1496,13 +1496,13 @@ static NTSTATUS cmd_samr_create_dom_user(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &user_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &user_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &domain_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
  done:
@@ -1556,13 +1556,13 @@ static NTSTATUS cmd_samr_create_dom_group(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &group_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &group_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &domain_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
  done:
@@ -1615,13 +1615,13 @@ static NTSTATUS cmd_samr_create_dom_alias(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &alias_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &alias_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &domain_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
  done:
@@ -1675,8 +1675,8 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 	num_names = argc - 2;
 
 	if ((names = TALLOC_ARRAY(mem_ctx, const char *, num_names)) == NULL) {
-		rpccli_samr_close(cli, mem_ctx, &domain_pol);
-		rpccli_samr_close(cli, mem_ctx, &connect_pol);
+		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -1697,8 +1697,8 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 		printf("name %s: 0x%x (%d)\n", names[i], rids[i], 
 		       name_types[i]);
 
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
  done:
 	return result;
 }
@@ -1747,8 +1747,8 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	num_rids = argc - 2;
 
 	if ((rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids)) == NULL) {
-		rpccli_samr_close(cli, mem_ctx, &domain_pol);
-		rpccli_samr_close(cli, mem_ctx, &connect_pol);
+		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
@@ -1768,8 +1768,8 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	for (i = 0; i < num_names; i++)
 		printf("rid 0x%x: %s (%d)\n", rids[i], names[i], name_types[i]);
 
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
  done:
 	return result;
 }
@@ -1838,9 +1838,9 @@ static NTSTATUS cmd_samr_delete_dom_group(struct rpc_pipe_client *cli,
 
 	/* Display results */
 
-	rpccli_samr_close(cli, mem_ctx, &group_pol);
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &group_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 
  done:
 	return result;
@@ -1910,9 +1910,9 @@ static NTSTATUS cmd_samr_delete_dom_user(struct rpc_pipe_client *cli,
 
 	/* Display results */
 
-	rpccli_samr_close(cli, mem_ctx, &user_pol);
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &user_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 
  done:
 	return result;
@@ -1998,9 +1998,9 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 
 	display_sec_desc(sec_desc_buf->sd);
 
-	rpccli_samr_close(cli, mem_ctx, &user_pol);
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &user_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 done:
 	talloc_destroy(ctx);
 	return result;
@@ -2047,13 +2047,15 @@ static NTSTATUS cmd_samr_get_usrdom_pwinfo(struct rpc_pipe_client *cli,
 	result = rpccli_samr_GetUserPwInfo(cli, mem_ctx, &user_pol, &info);
 	if (NT_STATUS_IS_OK(result)) {
 		printf("min_password_length: %d\n", info.min_password_length);
-		display_password_properties(info.password_properties);
+		printf("%s\n",
+			NDR_PRINT_STRUCT_STRING(mem_ctx,
+				samr_PasswordProperties, &info.password_properties));
 	}
 
  done:
-	rpccli_samr_close(cli, mem_ctx, &user_pol);
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &user_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 
 	return result;
 }
@@ -2127,8 +2129,8 @@ static NTSTATUS cmd_samr_lookup_domain(struct rpc_pipe_client *cli,
 		       domain_name,sid_string);
 	}
 
-	rpccli_samr_close(cli, mem_ctx, &domain_pol);
-	rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 done:
 	return result;
 }
@@ -2176,10 +2178,10 @@ static NTSTATUS cmd_samr_chgpasswd2(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &domain_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
  done:
@@ -2255,10 +2257,10 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &domain_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_close(cli, mem_ctx, &connect_pol);
+	result = rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
  done:

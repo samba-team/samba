@@ -480,7 +480,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	result = rpccli_samr_query_userinfo(cli, mem_ctx, &user_pol,
 					    0x15, &ctr);
 
-	rpccli_samr_close(cli, mem_ctx, &user_pol);
+	rpccli_samr_Close(cli, mem_ctx, &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -555,7 +555,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	result = rpccli_samr_query_usergroups(cli, mem_ctx, &user_pol, 
 					   num_groups, &user_groups);
 
-	rpccli_samr_close(cli, mem_ctx, &user_pol);
+	rpccli_samr_Close(cli, mem_ctx, &user_pol);
 
 	if (!NT_STATUS_IS_OK(result) || (*num_groups) == 0)
 		return result;
@@ -721,7 +721,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	/* And restore our original timeout. */
 	cli_set_timeout(cli->cli, orig_timeout);
 
-	rpccli_samr_close(cli, mem_ctx, &group_pol);
+	rpccli_samr_Close(cli, mem_ctx, &group_pol);
 
         if (!NT_STATUS_IS_OK(result))
 		return result;

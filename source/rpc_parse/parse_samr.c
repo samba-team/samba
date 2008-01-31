@@ -29,61 +29,6 @@
 #define DBGC_CLASS DBGC_RPC_PARSE
 
 /*******************************************************************
-inits a SAMR_Q_CLOSE_HND structure.
-********************************************************************/
-
-void init_samr_q_close_hnd(SAMR_Q_CLOSE_HND * q_c, POLICY_HND *hnd)
-{
-	DEBUG(5, ("init_samr_q_close_hnd\n"));
-	
-	q_c->pol = *hnd;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_q_close_hnd(const char *desc, SAMR_Q_CLOSE_HND * q_u,
-			 prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_q_close_hnd");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	return smb_io_pol_hnd("pol", &q_u->pol, ps, depth);
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_r_close_hnd(const char *desc, SAMR_R_CLOSE_HND * r_u,
-			 prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_r_close_hnd");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 inits a SAMR_Q_LOOKUP_DOMAIN structure.
 ********************************************************************/
 
@@ -7330,77 +7275,6 @@ bool samr_io_r_connect_anon(const char *desc, SAMR_R_CONNECT_ANON * r_u,
 		return False;
 
 	if(!smb_io_pol_hnd("connect_pol", &r_u->connect_pol, ps, depth))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-inits a SAMR_Q_GET_DOM_PWINFO structure.
-********************************************************************/
-
-void init_samr_q_get_dom_pwinfo(SAMR_Q_GET_DOM_PWINFO * q_u,
-				char *srv_name)
-{
-	DEBUG(5, ("init_samr_q_get_dom_pwinfo\n"));
-
-	q_u->ptr = 1;
-	init_unistr2(&q_u->uni_srv_name, srv_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&q_u->hdr_srv_name, &q_u->uni_srv_name);
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_q_get_dom_pwinfo(const char *desc, SAMR_Q_GET_DOM_PWINFO * q_u,
-			      prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_q_get_dom_pwinfo");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("ptr", ps, depth, &q_u->ptr))
-		return False;
-	if (q_u->ptr != 0) {
-		if(!smb_io_unihdr("", &q_u->hdr_srv_name, ps, depth))
-			return False;
-		if(!smb_io_unistr2("", &q_u->uni_srv_name, q_u->hdr_srv_name.buffer, ps, depth))
-			return False;
-	}
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_r_get_dom_pwinfo(const char *desc, SAMR_R_GET_DOM_PWINFO * r_u,
-			      prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_r_get_dom_pwinfo");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint16("min_pwd_length", ps, depth, &r_u->min_pwd_length))
-		return False;
-	if(!prs_align(ps))
-		return False;
-	if(!prs_uint32("password_properties", ps, depth, &r_u->password_properties))
 		return False;
 
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))

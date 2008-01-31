@@ -1356,14 +1356,14 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		if (!NT_STATUS_IS_OK(status_tmp)) {
 			DEBUG(3, ("could not query user info on SAMR pipe: %s\n",
 				nt_errstr(status_tmp)));
-			rpccli_samr_close(samr_pipe, state->mem_ctx, &user_pol);
+			rpccli_samr_Close(samr_pipe, state->mem_ctx, &user_pol);
 			goto done;
 		}
 
 		acct_flags = user_ctr->info.id16->acb_info;
 
 		if (acct_flags == 0) {
-			rpccli_samr_close(samr_pipe, state->mem_ctx, &user_pol);
+			rpccli_samr_Close(samr_pipe, state->mem_ctx, &user_pol);
 			goto done;
 		}
 
@@ -1371,7 +1371,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 
 		DEBUG(10,("successfully retrieved acct_flags 0x%x\n", acct_flags));
 
-		rpccli_samr_close(samr_pipe, state->mem_ctx, &user_pol);
+		rpccli_samr_Close(samr_pipe, state->mem_ctx, &user_pol);
 	}
 
 	*info3 = my_info3;

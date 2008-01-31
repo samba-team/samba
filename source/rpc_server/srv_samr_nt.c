@@ -543,20 +543,18 @@ static uint32 count_sam_aliases(struct disp_info *info)
 }
 
 /*******************************************************************
- _samr_close_hnd
+ _samr_Close
  ********************************************************************/
 
-NTSTATUS _samr_close_hnd(pipes_struct *p, SAMR_Q_CLOSE_HND *q_u, SAMR_R_CLOSE_HND *r_u)
+NTSTATUS _samr_Close(pipes_struct *p, struct samr_Close *r)
 {
-	r_u->status = NT_STATUS_OK;
+	if (!close_policy_hnd(p, r->in.handle)) {
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
-	/* close the policy handle */
-	if (!close_policy_hnd(p, &q_u->pol))
-		return NT_STATUS_OBJECT_NAME_INVALID;
+	ZERO_STRUCT(r->out.handle);
 
-	DEBUG(5,("samr_reply_close_hnd: %d\n", __LINE__));
-
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -4812,23 +4810,24 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 	return status;
 }
 
-/*********************************************************************
- _samr_get_dom_pwinfo
-*********************************************************************/
+/****************************************************************
+ _samr_GetDomPwInfo
+****************************************************************/
 
-NTSTATUS _samr_get_dom_pwinfo(pipes_struct *p, SAMR_Q_GET_DOM_PWINFO *q_u, SAMR_R_GET_DOM_PWINFO *r_u)
+NTSTATUS _samr_GetDomPwInfo(pipes_struct *p,
+			    struct samr_GetDomPwInfo *r)
 {
 	/* Perform access check.  Since this rpc does not require a
 	   policy handle it will not be caught by the access checks on
 	   SAMR_CONNECT or SAMR_CONNECT_ANON. */
 
 	if (!pipe_access_check(p)) {
-		DEBUG(3, ("access denied to samr_get_dom_pwinfo\n"));
-		r_u->status = NT_STATUS_ACCESS_DENIED;
-		return r_u->status;
+		DEBUG(3, ("access denied to _samr_GetDomPwInfo\n"));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Actually, returning zeros here works quite well :-). */
+	ZERO_STRUCTP(r->out.info);
 
 	return NT_STATUS_OK;
 }
@@ -5058,4 +5057,664 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 	DEBUG(5,("_samr_set_dom_info: %d\n", __LINE__));
 
 	return r_u->status;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_Connect(pipes_struct *p,
+		       struct samr_Connect *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_SetSecurity(pipes_struct *p,
+			   struct samr_SetSecurity *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_QuerySecurity(pipes_struct *p,
+			     struct samr_QuerySecurity *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_Shutdown(pipes_struct *p,
+			struct samr_Shutdown *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_LookupDomain(pipes_struct *p,
+			    struct samr_LookupDomain *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_EnumDomains(pipes_struct *p,
+			   struct samr_EnumDomains *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_OpenDomain(pipes_struct *p,
+			  struct samr_OpenDomain *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
+			       struct samr_QueryDomainInfo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_SetDomainInfo(pipes_struct *p,
+			     struct samr_SetDomainInfo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_CreateDomainGroup(pipes_struct *p,
+				 struct samr_CreateDomainGroup *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_EnumDomainGroups(pipes_struct *p,
+				struct samr_EnumDomainGroups *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_CreateUser(pipes_struct *p,
+			  struct samr_CreateUser *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
+			       struct samr_EnumDomainUsers *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
+			      struct samr_CreateDomAlias *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_EnumDomainAliases(pipes_struct *p,
+				 struct samr_EnumDomainAliases *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_GetAliasMembership(pipes_struct *p,
+				  struct samr_GetAliasMembership *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_LookupNames(pipes_struct *p,
+			   struct samr_LookupNames *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_LookupRids(pipes_struct *p,
+			  struct samr_LookupRids *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_OpenGroup(pipes_struct *p,
+			 struct samr_OpenGroup *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_QueryGroupInfo(pipes_struct *p,
+			      struct samr_QueryGroupInfo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_SetGroupInfo(pipes_struct *p,
+			    struct samr_SetGroupInfo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_AddGroupMember(pipes_struct *p,
+			      struct samr_AddGroupMember *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_DeleteDomainGroup(pipes_struct *p,
+				 struct samr_DeleteDomainGroup *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_DeleteGroupMember(pipes_struct *p,
+				 struct samr_DeleteGroupMember *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_QueryGroupMember(pipes_struct *p,
+				struct samr_QueryGroupMember *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_SetMemberAttributesOfGroup(pipes_struct *p,
+					  struct samr_SetMemberAttributesOfGroup *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_OpenAlias(pipes_struct *p,
+			 struct samr_OpenAlias *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
+			      struct samr_QueryAliasInfo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
+			    struct samr_SetAliasInfo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_DeleteDomAlias(pipes_struct *p,
+			      struct samr_DeleteDomAlias *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_AddAliasMember(pipes_struct *p,
+			      struct samr_AddAliasMember *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_DeleteAliasMember(pipes_struct *p,
+				 struct samr_DeleteAliasMember *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_GetMembersInAlias(pipes_struct *p,
+				 struct samr_GetMembersInAlias *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_OpenUser(pipes_struct *p,
+			struct samr_OpenUser *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_DeleteUser(pipes_struct *p,
+			  struct samr_DeleteUser *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
+			     struct samr_QueryUserInfo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_SetUserInfo(pipes_struct *p,
+			   struct samr_SetUserInfo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_ChangePasswordUser(pipes_struct *p,
+				  struct samr_ChangePasswordUser *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_GetGroupsForUser(pipes_struct *p,
+				struct samr_GetGroupsForUser *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
+				struct samr_QueryDisplayInfo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_GetDisplayEnumerationIndex(pipes_struct *p,
+					  struct samr_GetDisplayEnumerationIndex *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_TestPrivateFunctionsDomain(pipes_struct *p,
+					  struct samr_TestPrivateFunctionsDomain *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_TestPrivateFunctionsUser(pipes_struct *p,
+					struct samr_TestPrivateFunctionsUser *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_GetUserPwInfo(pipes_struct *p,
+			     struct samr_GetUserPwInfo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_RemoveMemberFromForeignDomain(pipes_struct *p,
+					     struct samr_RemoveMemberFromForeignDomain *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_QueryDomainInfo2(pipes_struct *p,
+				struct samr_QueryDomainInfo2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_QueryUserInfo2(pipes_struct *p,
+			      struct samr_QueryUserInfo2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_QueryDisplayInfo2(pipes_struct *p,
+				 struct samr_QueryDisplayInfo2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_GetDisplayEnumerationIndex2(pipes_struct *p,
+					   struct samr_GetDisplayEnumerationIndex2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_CreateUser2(pipes_struct *p,
+			   struct samr_CreateUser2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_QueryDisplayInfo3(pipes_struct *p,
+				 struct samr_QueryDisplayInfo3 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_AddMultipleMembersToAlias(pipes_struct *p,
+					 struct samr_AddMultipleMembersToAlias *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_RemoveMultipleMembersFromAlias(pipes_struct *p,
+					      struct samr_RemoveMultipleMembersFromAlias *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_OemChangePasswordUser2(pipes_struct *p,
+				      struct samr_OemChangePasswordUser2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
+				   struct samr_ChangePasswordUser2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_Connect2(pipes_struct *p,
+			struct samr_Connect2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_SetUserInfo2(pipes_struct *p,
+			    struct samr_SetUserInfo2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_SetBootKeyInformation(pipes_struct *p,
+				     struct samr_SetBootKeyInformation *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_GetBootKeyInformation(pipes_struct *p,
+				     struct samr_GetBootKeyInformation *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_Connect3(pipes_struct *p,
+			struct samr_Connect3 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_Connect4(pipes_struct *p,
+			struct samr_Connect4 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
+				   struct samr_ChangePasswordUser3 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_Connect5(pipes_struct *p,
+			struct samr_Connect5 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_RidToSid(pipes_struct *p,
+			struct samr_RidToSid *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_SetDsrmPassword(pipes_struct *p,
+			       struct samr_SetDsrmPassword *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _samr_ValidatePassword(pipes_struct *p,
+				struct samr_ValidatePassword *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
