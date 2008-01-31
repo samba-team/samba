@@ -929,7 +929,7 @@ sub ParseMemCtxPullFlags($$$$)
 					($nl->{DATA_TYPE} eq "string"));
 		if ($next_is_array or $next_is_string) {
 			return undef;
-		} else {
+		} elsif ($l->{LEVEL} eq "TOP") {
 			$mem_flags = "LIBNDR_FLAG_REF_ALLOC";
 		}
 	}
@@ -1129,10 +1129,7 @@ sub ParsePtrPull($$$$$)
 	my $next_is_string = (($nl->{TYPE} eq "DATA") and 
 						 ($nl->{DATA_TYPE} eq "string"));
 
-	if ($l->{POINTER_TYPE} eq "ref") {
-		if ($l->{LEVEL} eq "EMBEDDED") {
-			$self->pidl("NDR_CHECK(ndr_pull_ref_ptr($ndr, &_ptr_$e->{NAME}));");
-		}
+	if ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "TOP") {
 
 		if (!$next_is_array and !$next_is_string) {
 			$self->pidl("if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {");
@@ -1141,15 +1138,18 @@ sub ParsePtrPull($$$$$)
 		}
 		
 		return;
+	} elsif ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "EMBEDDED") {
+		$self->pidl("NDR_CHECK(ndr_pull_ref_ptr($ndr, &_ptr_$e->{NAME}));");
 	} elsif (($l->{POINTER_TYPE} eq "unique") or 
 		 ($l->{POINTER_TYPE} eq "relative") or
 		 ($l->{POINTER_TYPE} eq "full")) {
 		$self->pidl("NDR_CHECK(ndr_pull_generic_ptr($ndr, &_ptr_$e->{NAME}));");
-		$self->pidl("if (_ptr_$e->{NAME}) {");
-		$self->indent;
 	} else {
 		die("Unhandled pointer type $l->{POINTER_TYPE}");
 	}
+
+	$self->pidl("if (_ptr_$e->{NAME}) {");
+	$self->indent;
 
 	# Don't do this for arrays, they're allocated at the actual level 
 	# of the array
