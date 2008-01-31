@@ -758,7 +758,7 @@ interface netlogon
 	/*****************/
 	/* Function 0x0B */
 
-	NTSTATUS netr_GetDcName(
+	WERROR netr_GetDcName(
 		[in]  [string,charset(UTF16)] uint16 logon_server[],
 		[in]  [string,charset(UTF16)] uint16 *domainname,
 		[out,ref] [string,charset(UTF16)] uint16 **dcname

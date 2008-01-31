@@ -3338,11 +3338,7 @@ void reply_read_and_X(struct smb_request *req)
 		return;
 	}
 
-	/* It is possible for VFS modules to selectively decide whether Async I/O should be used
-	   for the file or not.
-        */
-	if ((SMB_VFS_AIO_FORCE(fsp)) &&
-	    !big_readX &&
+	if (!big_readX &&
 	    schedule_aio_read_and_X(conn, req, fsp, startpos, smb_maxcnt)) {
 		END_PROFILE(SMBreadX);
 		return;
@@ -4012,10 +4008,7 @@ void reply_write_and_X(struct smb_request *req)
 		nwritten = 0;
 	} else {
 
-		/* It is possible for VFS modules to selectively decide whether Async I/O
-		   should be used for the file or not.
-		*/
-		if ((SMB_VFS_AIO_FORCE(fsp)) && (req->unread_bytes == 0) &&
+		if ((req->unread_bytes == 0) &&
 		    schedule_aio_write_and_X(conn, req, fsp, data, startpos,
 					     numtowrite)) {
 			END_PROFILE(SMBwriteX);

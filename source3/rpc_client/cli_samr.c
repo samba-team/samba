@@ -95,44 +95,6 @@ NTSTATUS rpccli_samr_connect4(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Close SAMR handle */
-
-NTSTATUS rpccli_samr_close(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			   POLICY_HND *connect_pol)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_CLOSE_HND q;
-	SAMR_R_CLOSE_HND r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_close\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_close_hnd(&q, connect_pol);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CLOSE_HND,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_close_hnd,
-		samr_io_r_close_hnd,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	if (NT_STATUS_IS_OK(result = r.status)) {
-#ifdef __INSURE__
-		SAFE_FREE(connect_pol->marker);
-#endif
-		*connect_pol = r.pol;
-	}
-
-	return result;
-}
-
 /* Open handle on a domain */
 
 NTSTATUS rpccli_samr_open_domain(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
