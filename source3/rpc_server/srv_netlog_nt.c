@@ -43,14 +43,6 @@ static void init_net_r_req_chal(NET_R_REQ_CHAL *r_c,
 }
 
 /*************************************************************************
- error messages cropping up when using nltest.exe...
- *************************************************************************/
-
-#define ERROR_NO_SUCH_DOMAIN   0x54b
-#define ERROR_NO_LOGON_SERVERS 0x51f
-#define NO_ERROR               0x0
-
-/*************************************************************************
  net_reply_logon_ctrl:
  *************************************************************************/
 
@@ -97,7 +89,7 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
 
 	r_u->status = NT_STATUS_OK;
 	
-	tc_status = ERROR_NO_SUCH_DOMAIN;
+	tc_status = W_ERROR_V(WERR_NO_SUCH_DOMAIN);
 	fstrcpy( dc_name, "" );
 	
 	switch ( q_u->function_code ) {
@@ -108,13 +100,13 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
 				break;
 				
 			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
-				tc_status = ERROR_NO_LOGON_SERVERS;
+				tc_status = W_ERROR_V(WERR_NO_LOGON_SERVERS);
 				break;
 			}
 
 			fstr_sprintf( dc_name, "\\\\%s", dc_name2 );
 				
-			tc_status = NO_ERROR;
+			tc_status = W_ERROR_V(WERR_OK);
 			
 			break;
 			
@@ -125,13 +117,13 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
 				break;
 				
 			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
-				tc_status = ERROR_NO_LOGON_SERVERS;
+				tc_status = W_ERROR_V(WERR_NO_LOGON_SERVERS);
 				break;
 			}
 
 			fstr_sprintf( dc_name, "\\\\%s", dc_name2 );
 				
-			tc_status = NO_ERROR;
+			tc_status = W_ERROR_V(WERR_OK);
 			
 			break;
 			
