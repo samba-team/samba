@@ -6,7 +6,7 @@ package Parse::Pidl::CUtil;
 
 require Exporter;
 @ISA = qw(Exporter);
-@EXPORT = qw(get_pointer_to get_value_of);
+@EXPORT = qw(get_pointer_to get_value_of get_array_element);
 use vars qw($VERSION);
 $VERSION = '0.01';
 
@@ -34,6 +34,19 @@ sub get_value_of($)
 	} else {
 		return "*$var_name";
 	}
+}
+
+sub get_array_element($$)
+{
+	my ($var_name, $idx) = @_;
+
+	if ($var_name =~ /^\*.*$/) {
+		$var_name = "($var_name)";
+	} elsif ($var_name =~ /^\&.*$/) {
+		$var_name = "($var_name)";
+	}
+
+	return "$var_name"."[$idx]";
 }
 
 1;
