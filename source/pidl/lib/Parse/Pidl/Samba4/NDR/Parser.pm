@@ -384,7 +384,7 @@ sub ParseArrayPullHeader($$$$$$)
 sub compression_alg($$)
 {
 	my ($e, $l) = @_;
-	my ($alg, $clen, $dlen) = split(/ /, $l->{COMPRESSION});
+	my ($alg, $clen, $dlen) = split(/,/, $l->{COMPRESSION});
 
 	return $alg;
 }
@@ -392,7 +392,7 @@ sub compression_alg($$)
 sub compression_clen($$$)
 {
 	my ($e, $l, $env) = @_;
-	my ($alg, $clen, $dlen) = split(/ /, $l->{COMPRESSION});
+	my ($alg, $clen, $dlen) = split(/,/, $l->{COMPRESSION});
 
 	return ParseExpr($clen, $env, $e->{ORIGINAL});
 }
@@ -400,7 +400,7 @@ sub compression_clen($$$)
 sub compression_dlen($$$)
 {
 	my ($e,$l,$env) = @_;
-	my ($alg, $clen, $dlen) = split(/ /, $l->{COMPRESSION});
+	my ($alg, $clen, $dlen) = split(/,/, $l->{COMPRESSION});
 
 	return ParseExpr($dlen, $env, $e->{ORIGINAL});
 }
@@ -830,7 +830,7 @@ sub ParseDataPull($$$$$$$)
 
 		if (my $range = has_property($e, "range")) {
 			$var_name = get_value_of($var_name);
-			my ($low, $high) = split(/ /, $range, 2);
+			my ($low, $high) = split(/,/, $range, 2);
 			$self->pidl("if ($var_name < $low || $var_name > $high) {");
 			$self->pidl("\treturn ndr_pull_error($ndr, NDR_ERR_RANGE, \"value out of range\");");
 			$self->pidl("}");
@@ -2218,7 +2218,7 @@ sub FunctionTable($$)
 		$interface->{PROPERTIES}->{authservice} = "\"host\"";
 	}
 
-	my @a = split / /, $interface->{PROPERTIES}->{authservice};
+	my @a = split /,/, $interface->{PROPERTIES}->{authservice};
 	my $authservice_count = $#a + 1;
 
 	$self->pidl("static const char * const $interface->{NAME}\_authservice_strings[] = {");
@@ -2293,7 +2293,7 @@ sub HeaderInterface($$$)
 	}
 
 	if (defined $interface->{PROPERTIES}->{helper}) {
-		$self->HeaderInclude(split / /, $interface->{PROPERTIES}->{helper});
+		$self->HeaderInclude(split /,/, $interface->{PROPERTIES}->{helper});
 	}
 
 	if (defined $interface->{PROPERTIES}->{uuid}) {
