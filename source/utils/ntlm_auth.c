@@ -2322,7 +2322,8 @@ enum {
 		{ "use-cached-creds", 0, POPT_ARG_NONE, &use_cached_creds, OPT_USE_CACHED_CREDS, "Use cached credentials if no password is given"},
 		{ "diagnostics", 0, POPT_ARG_NONE, &diagnostics, OPT_DIAGNOSTICS, "Perform diagnostics on the authentictaion chain"},
 		{ "require-membership-of", 0, POPT_ARG_STRING, &require_membership_of, OPT_REQUIRE_MEMBERSHIP, "Require that a user be a member of this group (either name or SID) for authentication to succeed" },
-		POPT_COMMON_SAMBA
+		POPT_COMMON_CONFIGFILE
+		POPT_COMMON_VERSION
 		POPT_TABLEEND
 	};
 
@@ -2330,14 +2331,6 @@ enum {
 	load_case_tables();
 
 	dbf = x_stderr;
-	
-	/* Samba client initialisation */
-
-	if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, True)) {
-		d_fprintf(stderr, "ntlm_auth: error opening config file %s. Error was %s\n",
-			get_dyn_CONFIGFILE(), strerror(errno));
-		exit(1);
-	}
 
 	/* Parse options */
 
@@ -2348,6 +2341,18 @@ enum {
 	if (argc == 1) {
 		poptPrintHelp(pc, stderr, 0);
 		return 1;
+	}
+
+	while((opt = poptGetNextOpt(pc)) != -1) {
+		/* Get generic config options like --configfile */
+	}
+
+	poptFreeContext(pc);
+
+	if (!lp_load(get_dyn_CONFIGFILE(), True, False, False, True)) {
+		d_fprintf(stderr, "ntlm_auth: error opening config file %s. Error was %s\n",
+			get_dyn_CONFIGFILE(), strerror(errno));
+		exit(1);
 	}
 
 	pc = poptGetContext(NULL, argc, (const char **)argv, long_options, 
