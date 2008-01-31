@@ -1766,25 +1766,24 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 }
 
 /*******************************************************************
- _samr_open_user. Safe - gives out no passwd info.
- ********************************************************************/
+ _samr_OpenUser
+********************************************************************/
 
-NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USER *r_u)
+NTSTATUS _samr_OpenUser(pipes_struct *p,
+			struct samr_OpenUser *r)
 {
 	struct samu *sampass=NULL;
 	DOM_SID sid;
-	POLICY_HND domain_pol = q_u->domain_pol;
-	POLICY_HND *user_pol = &r_u->user_pol;
+	POLICY_HND domain_pol = *r->in.domain_handle;
+	POLICY_HND *user_pol = r->out.user_handle;
 	struct samr_info *info = NULL;
 	SEC_DESC *psd = NULL;
 	uint32    acc_granted;
-	uint32    des_access = q_u->access_mask;
+	uint32    des_access = r->in.access_mask;
 	size_t    sd_size;
 	bool ret;
 	NTSTATUS nt_status;
 	SE_PRIV se_rights;
-
-	r_u->status = NT_STATUS_OK;
 
 	/* find the domain policy handle and get domain SID / access bits in the domain policy. */
 	
@@ -1792,7 +1791,7 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
 		return NT_STATUS_INVALID_HANDLE;
 	
 	nt_status = access_check_samr_function( acc_granted, 
-		SA_RIGHT_DOMAIN_OPEN_ACCOUNT, "_samr_open_user" );
+		SA_RIGHT_DOMAIN_OPEN_ACCOUNT, "_samr_OpenUser" );
 		
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return nt_status;
@@ -1803,7 +1802,7 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
 
 	/* append the user's RID to it */
 	
-	if (!sid_append_rid(&sid, q_u->user_rid))
+	if (!sid_append_rid(&sid, r->in.rid))
 		return NT_STATUS_NO_SUCH_USER;
 	
 	/* check if access can be granted as requested by client. */
@@ -1816,7 +1815,7 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
 	
 	nt_status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
 		&se_rights, GENERIC_RIGHTS_USER_WRITE, des_access, 
-		&acc_granted, "_samr_open_user");
+		&acc_granted, "_samr_OpenUser");
 		
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return nt_status;
@@ -1841,7 +1840,7 @@ NTSTATUS _samr_open_user(pipes_struct *p, SAMR_Q_OPEN_USER *q_u, SAMR_R_OPEN_USE
 	if (!create_policy_hnd(p, user_pol, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /*************************************************************************
@@ -5373,16 +5372,6 @@ NTSTATUS _samr_DeleteAliasMember(pipes_struct *p,
 
 NTSTATUS _samr_GetMembersInAlias(pipes_struct *p,
 				 struct samr_GetMembersInAlias *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_OpenUser(pipes_struct *p,
-			struct samr_OpenUser *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
