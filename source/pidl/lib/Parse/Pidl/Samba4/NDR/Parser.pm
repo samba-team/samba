@@ -14,7 +14,7 @@ require Exporter;
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName typeHasBody);
 use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid);
-use Parse::Pidl::CUtil qw(get_pointer_to get_value_of);
+use Parse::Pidl::CUtil qw(get_pointer_to get_value_of get_array_element);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
 use Parse::Pidl::Samba4 qw(is_intree choose_header);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
@@ -584,7 +584,7 @@ sub ParseElementPushLevel
 		my $length = ParseExpr($l->{LENGTH_IS}, $env, $e->{ORIGINAL});
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
-		$var_name = $var_name . "[$counter]";
+		$var_name = get_array_element($var_name, $counter);
 
 		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
 			$self->pidl("for ($counter = 0; $counter < $length; $counter++) {");
@@ -779,7 +779,7 @@ sub ParseElementPrint($$$$)
 				$self->pidl("if (idx_$l->{LEVEL_INDEX}) {");
 				$self->indent;
 
-				$var_name = $var_name . "[$counter]";
+				$var_name = get_array_element($var_name, $counter);
 			}
 		} elsif ($l->{TYPE} eq "DATA") {
 			$self->ParseDataPrint($e, $l, $var_name);
@@ -1048,7 +1048,7 @@ sub ParseElementPullLevel
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 		my $array_name = $var_name;
 
-		$var_name = $var_name . "[$counter]";
+		$var_name = get_array_element($var_name, $counter);
 
 		$self->ParseMemCtxPullStart($e, $l, $array_name);
 
