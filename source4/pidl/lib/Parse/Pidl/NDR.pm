@@ -688,7 +688,7 @@ sub ParseInterface($)
 	if (!defined $idl->{PROPERTIES}->{endpoint}) {
 		push @endpoints, "\"ncacn_np:[\\\\pipe\\\\" . $idl->{NAME} . "]\"";
 	} else {
-		@endpoints = split / /, $idl->{PROPERTIES}->{endpoint};
+		@endpoints = split /,/, $idl->{PROPERTIES}->{endpoint};
 	}
 
 	return { 

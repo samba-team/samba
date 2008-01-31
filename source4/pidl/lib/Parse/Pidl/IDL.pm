@@ -124,7 +124,7 @@ sub new {
 		}
 	},
 	{#State 16
-		DEFAULT => -116
+		DEFAULT => -114
 	},
 	{#State 17
 		DEFAULT => -11
@@ -184,7 +184,7 @@ sub new {
 		}
 	},
 	{#State 26
-		DEFAULT => -112
+		DEFAULT => -110
 	},
 	{#State 27
 		ACTIONS => {
@@ -263,17 +263,17 @@ sub new {
 	},
 	{#State 40
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
 			'text' => 61,
-			'listtext' => 57,
 			'anytext' => 56,
-			'constant' => 58
+			'constant' => 57,
+			'commalisttext' => 59
 		}
 	},
 	{#State 41
@@ -392,28 +392,28 @@ sub new {
 		DEFAULT => -89
 	},
 	{#State 57
+		DEFAULT => -93
+	},
+	{#State 58
+		DEFAULT => -113
+	},
+	{#State 59
 		ACTIONS => {
 			"," => 97,
 			")" => 98
 		}
 	},
-	{#State 58
-		DEFAULT => -95
-	},
-	{#State 59
-		DEFAULT => -115
-	},
 	{#State 60
-		DEFAULT => -94
+		DEFAULT => -92
 	},
 	{#State 61
-		DEFAULT => -96
+		DEFAULT => -94
 	},
 	{#State 62
 		ACTIONS => {
 			";" => 99
 		},
-		DEFAULT => -117,
+		DEFAULT => -115,
 		GOTOS => {
 			'optional_semicolon' => 100
 		}
@@ -430,7 +430,7 @@ sub new {
 		ACTIONS => {
 			";" => 99
 		},
-		DEFAULT => -117,
+		DEFAULT => -115,
 		GOTOS => {
 			'optional_semicolon' => 102
 		}
@@ -466,7 +466,7 @@ sub new {
 		ACTIONS => {
 			'IDENTIFIER' => 104
 		},
-		DEFAULT => -114,
+		DEFAULT => -112,
 		GOTOS => {
 			'optional_identifier' => 105
 		}
@@ -501,7 +501,7 @@ sub new {
 		ACTIONS => {
 			'IDENTIFIER' => 104
 		},
-		DEFAULT => -114,
+		DEFAULT => -112,
 		GOTOS => {
 			'optional_identifier' => 107
 		}
@@ -516,7 +516,7 @@ sub new {
 		ACTIONS => {
 			'IDENTIFIER' => 104
 		},
-		DEFAULT => -114,
+		DEFAULT => -112,
 		GOTOS => {
 			'optional_identifier' => 108
 		}
@@ -525,7 +525,7 @@ sub new {
 		ACTIONS => {
 			'IDENTIFIER' => 104
 		},
-		DEFAULT => -114,
+		DEFAULT => -112,
 		GOTOS => {
 			'optional_identifier' => 109
 		}
@@ -549,242 +549,242 @@ sub new {
 	},
 	{#State 82
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
 			'anytext' => 112,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 83
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
 			'anytext' => 113,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 84
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
 			'anytext' => 114,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 85
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
 			'anytext' => 115,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 86
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
 			'anytext' => 116,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 87
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
 			'anytext' => 117,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 88
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
 			'anytext' => 118,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 89
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
-			'anytext' => 119,
+			'anytext' => 56,
 			'text' => 61,
-			'constant' => 58,
-			'commalisttext' => 120
+			'constant' => 57,
+			'commalisttext' => 119
 		}
 	},
 	{#State 90
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
-			'anytext' => 121,
+			'anytext' => 120,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 91
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
-			'anytext' => 122,
+			'anytext' => 121,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 92
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
-			'anytext' => 123,
+			'anytext' => 122,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 93
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
-			'anytext' => 119,
+			'anytext' => 56,
 			'text' => 61,
-			'constant' => 58,
-			'commalisttext' => 124
+			'constant' => 57,
+			'commalisttext' => 123
 		}
 	},
 	{#State 94
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
-			'anytext' => 125,
+			'anytext' => 124,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 95
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
-			'anytext' => 126,
+			'anytext' => 125,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 96
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
-			'anytext' => 127,
+			'anytext' => 126,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 97
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
-			'anytext' => 128,
+			'anytext' => 127,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 98
 		DEFAULT => -88
 	},
 	{#State 99
-		DEFAULT => -118
+		DEFAULT => -116
 	},
 	{#State 100
 		DEFAULT => -13
 	},
 	{#State 101
 		ACTIONS => {
-			";" => 129
+			";" => 128
 		}
 	},
 	{#State 102
@@ -795,20 +795,20 @@ sub new {
 			'IDENTIFIER' => 26
 		},
 		GOTOS => {
-			'identifier' => 130
+			'identifier' => 129
 		}
 	},
 	{#State 104
-		DEFAULT => -113
+		DEFAULT => -111
 	},
 	{#State 105
 		ACTIONS => {
-			"{" => 132
+			"{" => 131
 		},
 		DEFAULT => -68,
 		GOTOS => {
-			'union_body' => 133,
-			'opt_union_body' => 131
+			'union_body' => 132,
+			'opt_union_body' => 130
 		}
 	},
 	{#State 106
@@ -816,46 +816,46 @@ sub new {
 	},
 	{#State 107
 		ACTIONS => {
-			"{" => 135
+			"{" => 134
 		},
 		DEFAULT => -58,
 		GOTOS => {
-			'struct_body' => 134,
-			'opt_struct_body' => 136
+			'struct_body' => 133,
+			'opt_struct_body' => 135
 		}
 	},
 	{#State 108
 		ACTIONS => {
-			"{" => 137
+			"{" => 136
 		},
 		DEFAULT => -41,
 		GOTOS => {
-			'opt_enum_body' => 139,
-			'enum_body' => 138
+			'opt_enum_body' => 138,
+			'enum_body' => 137
 		}
 	},
 	{#State 109
 		ACTIONS => {
-			"{" => 141
+			"{" => 140
 		},
 		DEFAULT => -49,
 		GOTOS => {
-			'bitmap_body' => 142,
-			'opt_bitmap_body' => 140
+			'bitmap_body' => 141,
+			'opt_bitmap_body' => 139
 		}
 	},
 	{#State 110
 		ACTIONS => {
-			"(" => 143
+			"(" => 142
 		}
 	},
 	{#State 111
 		ACTIONS => {
 			'IDENTIFIER' => 26,
-			"*" => 145
+			"*" => 144
 		},
 		GOTOS => {
-			'identifier' => 144
+			'identifier' => 143
 		}
 	},
 	{#State 112
@@ -876,7 +876,7 @@ sub new {
 			"." => 95,
 			">" => 96
 		},
-		DEFAULT => -106
+		DEFAULT => -104
 	},
 	{#State 113
 		ACTIONS => {
@@ -887,7 +887,7 @@ sub new {
 			"{" => 89,
 			"=" => 92
 		},
-		DEFAULT => -97
+		DEFAULT => -95
 	},
 	{#State 114
 		ACTIONS => {
@@ -907,7 +907,7 @@ sub new {
 			"." => 95,
 			">" => 96
 		},
-		DEFAULT => -101
+		DEFAULT => -99
 	},
 	{#State 115
 		ACTIONS => {
@@ -927,7 +927,7 @@ sub new {
 			"." => 95,
 			">" => 96
 		},
-		DEFAULT => -109
+		DEFAULT => -107
 	},
 	{#State 116
 		ACTIONS => {
@@ -938,7 +938,7 @@ sub new {
 			"{" => 89,
 			"=" => 92
 		},
-		DEFAULT => -108
+		DEFAULT => -106
 	},
 	{#State 117
 		ACTIONS => {
@@ -949,7 +949,7 @@ sub new {
 			"{" => 89,
 			"=" => 92
 		},
-		DEFAULT => -99
+		DEFAULT => -97
 	},
 	{#State 118
 		ACTIONS => {
@@ -969,33 +969,24 @@ sub new {
 			"." => 95,
 			">" => 96
 		},
-		DEFAULT => -105
+		DEFAULT => -103
 	},
 	{#State 119
 		ACTIONS => {
-			"-" => 83,
-			":" => 82,
-			"<" => 84,
-			"+" => 86,
-			"~" => 85,
-			"*" => 87,
-			"?" => 88,
-			"{" => 89,
-			"&" => 90,
-			"/" => 91,
-			"=" => 92,
-			"(" => 93,
-			"|" => 94,
-			"." => 95,
-			">" => 96
-		},
-		DEFAULT => -91
+			"}" => 145,
+			"," => 97
+		}
 	},
 	{#State 120
 		ACTIONS => {
-			"}" => 146,
-			"," => 147
-		}
+			":" => 82,
+			"<" => 84,
+			"~" => 85,
+			"?" => 88,
+			"{" => 89,
+			"=" => 92
+		},
+		DEFAULT => -101
 	},
 	{#State 121
 		ACTIONS => {
@@ -1006,20 +997,9 @@ sub new {
 			"{" => 89,
 			"=" => 92
 		},
-		DEFAULT => -103
+		DEFAULT => -102
 	},
 	{#State 122
-		ACTIONS => {
-			":" => 82,
-			"<" => 84,
-			"~" => 85,
-			"?" => 88,
-			"{" => 89,
-			"=" => 92
-		},
-		DEFAULT => -104
-	},
-	{#State 123
 		ACTIONS => {
 			"-" => 83,
 			":" => 82,
@@ -1037,13 +1017,24 @@ sub new {
 			"." => 95,
 			">" => 96
 		},
-		DEFAULT => -107
+		DEFAULT => -105
+	},
+	{#State 123
+		ACTIONS => {
+			"," => 97,
+			")" => 146
+		}
 	},
 	{#State 124
 		ACTIONS => {
-			"," => 147,
-			")" => 148
-		}
+			":" => 82,
+			"<" => 84,
+			"~" => 85,
+			"?" => 88,
+			"{" => 89,
+			"=" => 92
+		},
+		DEFAULT => -100
 	},
 	{#State 125
 		ACTIONS => {
@@ -1054,7 +1045,7 @@ sub new {
 			"{" => 89,
 			"=" => 92
 		},
-		DEFAULT => -102
+		DEFAULT => -96
 	},
 	{#State 126
 		ACTIONS => {
@@ -1068,17 +1059,6 @@ sub new {
 		DEFAULT => -98
 	},
 	{#State 127
-		ACTIONS => {
-			":" => 82,
-			"<" => 84,
-			"~" => 85,
-			"?" => 88,
-			"{" => 89,
-			"=" => 92
-		},
-		DEFAULT => -100
-	},
-	{#State 128
 		ACTIONS => {
 			"-" => 83,
 			":" => 82,
@@ -1098,221 +1078,207 @@ sub new {
 		},
 		DEFAULT => -90
 	},
-	{#State 129
+	{#State 128
 		DEFAULT => -15
 	},
-	{#State 130
+	{#State 129
 		ACTIONS => {
-			"[" => 149
+			"[" => 147
 		},
 		DEFAULT => -80,
 		GOTOS => {
-			'array_len' => 150
+			'array_len' => 148
 		}
 	},
-	{#State 131
+	{#State 130
 		DEFAULT => -70
 	},
-	{#State 132
+	{#State 131
 		DEFAULT => -65,
 		GOTOS => {
-			'union_elements' => 151
+			'union_elements' => 149
 		}
 	},
-	{#State 133
+	{#State 132
 		DEFAULT => -69
 	},
-	{#State 134
+	{#State 133
 		DEFAULT => -59
 	},
-	{#State 135
+	{#State 134
 		DEFAULT => -74,
 		GOTOS => {
-			'element_list1' => 152
+			'element_list1' => 150
 		}
 	},
-	{#State 136
+	{#State 135
 		DEFAULT => -60
 	},
-	{#State 137
+	{#State 136
 		ACTIONS => {
 			'IDENTIFIER' => 26
 		},
 		GOTOS => {
-			'identifier' => 153,
-			'enum_element' => 154,
-			'enum_elements' => 155
+			'identifier' => 151,
+			'enum_element' => 152,
+			'enum_elements' => 153
 		}
 	},
-	{#State 138
+	{#State 137
 		DEFAULT => -42
 	},
-	{#State 139
+	{#State 138
 		DEFAULT => -43
 	},
-	{#State 140
+	{#State 139
 		DEFAULT => -51
 	},
-	{#State 141
+	{#State 140
 		ACTIONS => {
 			'IDENTIFIER' => 26
 		},
 		DEFAULT => -54,
 		GOTOS => {
-			'identifier' => 158,
-			'bitmap_element' => 157,
-			'bitmap_elements' => 156,
-			'opt_bitmap_elements' => 159
+			'identifier' => 156,
+			'bitmap_element' => 155,
+			'bitmap_elements' => 154,
+			'opt_bitmap_elements' => 157
 		}
 	},
-	{#State 142
+	{#State 141
 		DEFAULT => -50
 	},
-	{#State 143
+	{#State 142
 		ACTIONS => {
 			"," => -76,
-			"void" => 163,
+			"void" => 161,
 			")" => -76
 		},
 		DEFAULT => -83,
 		GOTOS => {
-			'base_element' => 160,
-			'element_list2' => 162,
-			'property_list' => 161
+			'base_element' => 158,
+			'element_list2' => 160,
+			'property_list' => 159
+		}
+	},
+	{#State 143
+		ACTIONS => {
+			"[" => 147,
+			"=" => 163
+		},
+		GOTOS => {
+			'array_len' => 162
 		}
 	},
 	{#State 144
-		ACTIONS => {
-			"[" => 149,
-			"=" => 165
-		},
-		GOTOS => {
-			'array_len' => 164
-		}
-	},
-	{#State 145
 		DEFAULT => -73
 	},
-	{#State 146
+	{#State 145
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
-			'anytext' => 166,
+			'anytext' => 164,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
+		}
+	},
+	{#State 146
+		ACTIONS => {
+			'CONSTANT' => 58,
+			'TEXT' => 16,
+			'IDENTIFIER' => 26
+		},
+		DEFAULT => -91,
+		GOTOS => {
+			'identifier' => 60,
+			'anytext' => 165,
+			'text' => 61,
+			'constant' => 57
 		}
 	},
 	{#State 147
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
+			"]" => 166,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
 			'anytext' => 167,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
 	{#State 148
 		ACTIONS => {
-			'CONSTANT' => 59,
-			'TEXT' => 16,
-			'IDENTIFIER' => 26
-		},
-		DEFAULT => -93,
-		GOTOS => {
-			'identifier' => 60,
-			'anytext' => 168,
-			'text' => 61,
-			'constant' => 58
+			";" => 168
 		}
 	},
 	{#State 149
 		ACTIONS => {
-			'CONSTANT' => 59,
-			'TEXT' => 16,
-			"]" => 169,
-			'IDENTIFIER' => 26
+			"}" => 169
 		},
-		DEFAULT => -93,
+		DEFAULT => -83,
 		GOTOS => {
-			'identifier' => 60,
-			'anytext' => 170,
-			'text' => 61,
-			'constant' => 58
+			'optional_base_element' => 171,
+			'property_list' => 170
 		}
 	},
 	{#State 150
-		ACTIONS => {
-			";" => 171
-		}
-	},
-	{#State 151
 		ACTIONS => {
 			"}" => 172
 		},
 		DEFAULT => -83,
 		GOTOS => {
-			'optional_base_element' => 174,
-			'property_list' => 173
+			'base_element' => 173,
+			'property_list' => 159
 		}
 	},
-	{#State 152
+	{#State 151
 		ACTIONS => {
-			"}" => 175
-		},
-		DEFAULT => -83,
-		GOTOS => {
-			'base_element' => 176,
-			'property_list' => 161
-		}
-	},
-	{#State 153
-		ACTIONS => {
-			"=" => 177
+			"=" => 174
 		},
 		DEFAULT => -46
 	},
-	{#State 154
+	{#State 152
 		DEFAULT => -44
 	},
-	{#State 155
+	{#State 153
 		ACTIONS => {
-			"}" => 178,
-			"," => 179
+			"}" => 175,
+			"," => 176
 		}
 	},
-	{#State 156
+	{#State 154
 		ACTIONS => {
-			"," => 180
+			"," => 177
 		},
 		DEFAULT => -55
 	},
-	{#State 157
+	{#State 155
 		DEFAULT => -52
 	},
+	{#State 156
+		ACTIONS => {
+			"=" => 178
+		}
+	},
+	{#State 157
+		ACTIONS => {
+			"}" => 179
+		}
+	},
 	{#State 158
-		ACTIONS => {
-			"=" => 181
-		}
-	},
-	{#State 159
-		ACTIONS => {
-			"}" => 182
-		}
-	},
-	{#State 160
 		DEFAULT => -78
 	},
-	{#State 161
+	{#State 159
 		ACTIONS => {
 			'IDENTIFIER' => 26,
 			"signed" => 75,
@@ -1329,40 +1295,40 @@ sub new {
 			'identifier' => 72,
 			'struct' => 49,
 			'enum' => 52,
-			'type' => 183,
+			'type' => 180,
 			'union' => 54,
 			'sign' => 73
 		}
 	},
+	{#State 160
+		ACTIONS => {
+			"," => 181,
+			")" => 182
+		}
+	},
+	{#State 161
+		DEFAULT => -77
+	},
 	{#State 162
 		ACTIONS => {
-			"," => 184,
-			")" => 185
+			"=" => 183
 		}
 	},
 	{#State 163
-		DEFAULT => -77
-	},
-	{#State 164
 		ACTIONS => {
-			"=" => 186
-		}
-	},
-	{#State 165
-		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
-			'anytext' => 187,
+			'anytext' => 184,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
-	{#State 166
+	{#State 164
 		ACTIONS => {
 			"-" => 83,
 			":" => 82,
@@ -1380,29 +1346,9 @@ sub new {
 			"." => 95,
 			">" => 96
 		},
-		DEFAULT => -111
+		DEFAULT => -109
 	},
-	{#State 167
-		ACTIONS => {
-			"-" => 83,
-			":" => 82,
-			"<" => 84,
-			"+" => 86,
-			"~" => 85,
-			"*" => 87,
-			"?" => 88,
-			"{" => 89,
-			"&" => 90,
-			"/" => 91,
-			"=" => 92,
-			"(" => 93,
-			"|" => 94,
-			"." => 95,
-			">" => 96
-		},
-		DEFAULT => -92
-	},
-	{#State 168
+	{#State 165
 		ACTIONS => {
 			":" => 82,
 			"<" => 84,
@@ -1411,18 +1357,18 @@ sub new {
 			"{" => 89,
 			"=" => 92
 		},
-		DEFAULT => -110
+		DEFAULT => -108
 	},
-	{#State 169
+	{#State 166
 		ACTIONS => {
-			"[" => 149
+			"[" => 147
 		},
 		DEFAULT => -80,
 		GOTOS => {
-			'array_len' => 188
+			'array_len' => 185
 		}
 	},
-	{#State 170
+	{#State 167
 		ACTIONS => {
 			"-" => 83,
 			":" => 82,
@@ -1438,130 +1384,130 @@ sub new {
 			"(" => 93,
 			"*" => 87,
 			"." => 95,
-			"]" => 189,
+			"]" => 186,
 			">" => 96
 		}
 	},
-	{#State 171
+	{#State 168
 		DEFAULT => -27
 	},
-	{#State 172
+	{#State 169
 		DEFAULT => -67
 	},
-	{#State 173
+	{#State 170
 		ACTIONS => {
 			"[" => 20
 		},
 		DEFAULT => -83,
 		GOTOS => {
-			'base_or_empty' => 190,
-			'base_element' => 191,
-			'empty_element' => 192,
-			'property_list' => 193
+			'base_or_empty' => 187,
+			'base_element' => 188,
+			'empty_element' => 189,
+			'property_list' => 190
+		}
+	},
+	{#State 171
+		DEFAULT => -66
+	},
+	{#State 172
+		DEFAULT => -57
+	},
+	{#State 173
+		ACTIONS => {
+			";" => 191
 		}
 	},
 	{#State 174
-		DEFAULT => -66
+		ACTIONS => {
+			'CONSTANT' => 58,
+			'TEXT' => 16,
+			'IDENTIFIER' => 26
+		},
+		DEFAULT => -91,
+		GOTOS => {
+			'identifier' => 60,
+			'anytext' => 192,
+			'text' => 61,
+			'constant' => 57
+		}
 	},
 	{#State 175
-		DEFAULT => -57
+		DEFAULT => -40
 	},
 	{#State 176
 		ACTIONS => {
-			";" => 194
+			'IDENTIFIER' => 26
+		},
+		GOTOS => {
+			'identifier' => 151,
+			'enum_element' => 193
 		}
 	},
 	{#State 177
 		ACTIONS => {
-			'CONSTANT' => 59,
+			'IDENTIFIER' => 26
+		},
+		GOTOS => {
+			'identifier' => 156,
+			'bitmap_element' => 194
+		}
+	},
+	{#State 178
+		ACTIONS => {
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
 			'anytext' => 195,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
-	},
-	{#State 178
-		DEFAULT => -40
 	},
 	{#State 179
-		ACTIONS => {
-			'IDENTIFIER' => 26
-		},
-		GOTOS => {
-			'identifier' => 153,
-			'enum_element' => 196
-		}
+		DEFAULT => -48
 	},
 	{#State 180
-		ACTIONS => {
-			'IDENTIFIER' => 26
-		},
+		DEFAULT => -72,
 		GOTOS => {
-			'identifier' => 158,
-			'bitmap_element' => 197
+			'pointers' => 196
 		}
 	},
 	{#State 181
-		ACTIONS => {
-			'CONSTANT' => 59,
-			'TEXT' => 16,
-			'IDENTIFIER' => 26
-		},
-		DEFAULT => -93,
+		DEFAULT => -83,
 		GOTOS => {
-			'identifier' => 60,
-			'anytext' => 198,
-			'text' => 61,
-			'constant' => 58
+			'base_element' => 197,
+			'property_list' => 159
 		}
 	},
 	{#State 182
-		DEFAULT => -48
+		ACTIONS => {
+			";" => 198
+		}
 	},
 	{#State 183
-		DEFAULT => -72,
-		GOTOS => {
-			'pointers' => 199
-		}
-	},
-	{#State 184
-		DEFAULT => -83,
-		GOTOS => {
-			'base_element' => 200,
-			'property_list' => 161
-		}
-	},
-	{#State 185
 		ACTIONS => {
-			";" => 201
-		}
-	},
-	{#State 186
-		ACTIONS => {
-			'CONSTANT' => 59,
+			'CONSTANT' => 58,
 			'TEXT' => 16,
 			'IDENTIFIER' => 26
 		},
-		DEFAULT => -93,
+		DEFAULT => -91,
 		GOTOS => {
 			'identifier' => 60,
-			'anytext' => 202,
+			'anytext' => 199,
 			'text' => 61,
-			'constant' => 58
+			'constant' => 57
 		}
 	},
-	{#State 187
+	{#State 184
 		ACTIONS => {
 			"-" => 83,
 			":" => 82,
 			"?" => 88,
 			"<" => 84,
-			";" => 203,
+			";" => 200,
 			"+" => 86,
 			"~" => 85,
 			"&" => 90,
@@ -1575,34 +1521,34 @@ sub new {
 			">" => 96
 		}
 	},
-	{#State 188
+	{#State 185
 		DEFAULT => -81
 	},
-	{#State 189
+	{#State 186
 		ACTIONS => {
-			"[" => 149
+			"[" => 147
 		},
 		DEFAULT => -80,
 		GOTOS => {
-			'array_len' => 204
+			'array_len' => 201
 		}
 	},
-	{#State 190
+	{#State 187
 		DEFAULT => -64
 	},
-	{#State 191
+	{#State 188
 		ACTIONS => {
-			";" => 205
+			";" => 202
 		}
 	},
-	{#State 192
+	{#State 189
 		DEFAULT => -63
 	},
-	{#State 193
+	{#State 190
 		ACTIONS => {
 			'IDENTIFIER' => 26,
 			"signed" => 75,
-			";" => 206,
+			";" => 203,
 			'void' => 69,
 			"unsigned" => 79,
 			"[" => 20
@@ -1616,15 +1562,15 @@ sub new {
 			'identifier' => 72,
 			'struct' => 49,
 			'enum' => 52,
-			'type' => 183,
+			'type' => 180,
 			'union' => 54,
 			'sign' => 73
 		}
 	},
-	{#State 194
+	{#State 191
 		DEFAULT => -75
 	},
-	{#State 195
+	{#State 192
 		ACTIONS => {
 			"-" => 83,
 			":" => 82,
@@ -1644,13 +1590,13 @@ sub new {
 		},
 		DEFAULT => -47
 	},
-	{#State 196
+	{#State 193
 		DEFAULT => -45
 	},
-	{#State 197
+	{#State 194
 		DEFAULT => -53
 	},
-	{#State 198
+	{#State 195
 		ACTIONS => {
 			"-" => 83,
 			":" => 82,
@@ -1670,28 +1616,28 @@ sub new {
 		},
 		DEFAULT => -56
 	},
-	{#State 199
+	{#State 196
 		ACTIONS => {
 			'IDENTIFIER' => 26,
-			"*" => 145
+			"*" => 144
 		},
 		GOTOS => {
-			'identifier' => 207
+			'identifier' => 204
 		}
 	},
-	{#State 200
+	{#State 197
 		DEFAULT => -79
 	},
-	{#State 201
+	{#State 198
 		DEFAULT => -26
 	},
-	{#State 202
+	{#State 199
 		ACTIONS => {
 			"-" => 83,
 			":" => 82,
 			"?" => 88,
 			"<" => 84,
-			";" => 208,
+			";" => 205,
 			"+" => 86,
 			"~" => 85,
 			"&" => 90,
@@ -1705,31 +1651,31 @@ sub new {
 			">" => 96
 		}
 	},
-	{#State 203
+	{#State 200
 		DEFAULT => -24
 	},
-	{#State 204
+	{#State 201
 		DEFAULT => -82
 	},
-	{#State 205
+	{#State 202
 		DEFAULT => -62
 	},
-	{#State 206
+	{#State 203
 		DEFAULT => -61
 	},
-	{#State 207
+	{#State 204
 		ACTIONS => {
-			"[" => 149
+			"[" => 147
 		},
 		DEFAULT => -80,
 		GOTOS => {
-			'array_len' => 209
+			'array_len' => 206
 		}
 	},
-	{#State 208
+	{#State 205
 		DEFAULT => -25
 	},
-	{#State 209
+	{#State 206
 		DEFAULT => -71
 	}
 ],
@@ -1744,43 +1690,43 @@ sub new {
 	[#Rule 2
 		 'idl', 2,
 sub
-#line 19 "idl.yp"
+#line 19 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 3
 		 'idl', 2,
 sub
-#line 20 "idl.yp"
+#line 20 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 4
 		 'idl', 2,
 sub
-#line 21 "idl.yp"
+#line 21 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 5
 		 'idl', 2,
 sub
-#line 22 "idl.yp"
+#line 22 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 6
 		 'idl', 2,
 sub
-#line 23 "idl.yp"
+#line 23 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 7
 		 'idl', 2,
 sub
-#line 24 "idl.yp"
+#line 24 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 8
 		 'import', 3,
 sub
-#line 27 "idl.yp"
+#line 27 "pidl/idl.yp"
 {{
 			"TYPE" => "IMPORT", 
 			"PATHS" => $_[2],
@@ -1791,7 +1737,7 @@ sub
 	[#Rule 9
 		 'include', 3,
 sub
-#line 34 "idl.yp"
+#line 34 "pidl/idl.yp"
 {{ 
 			"TYPE" => "INCLUDE", 
 			"PATHS" => $_[2],
@@ -1802,7 +1748,7 @@ sub
 	[#Rule 10
 		 'importlib', 3,
 sub
-#line 41 "idl.yp"
+#line 41 "pidl/idl.yp"
 {{ 
 			"TYPE" => "IMPORTLIB", 
 			"PATHS" => $_[2],
@@ -1813,19 +1759,19 @@ sub
 	[#Rule 11
 		 'commalist', 1,
 sub
-#line 50 "idl.yp"
+#line 50 "pidl/idl.yp"
 { [ $_[1] ] }
 	],
 	[#Rule 12
 		 'commalist', 3,
 sub
-#line 51 "idl.yp"
+#line 51 "pidl/idl.yp"
 { push(@{$_[1]}, $_[3]); $_[1] }
 	],
 	[#Rule 13
 		 'coclass', 7,
 sub
-#line 55 "idl.yp"
+#line 55 "pidl/idl.yp"
 {{
                "TYPE" => "COCLASS", 
 	       "PROPERTIES" => $_[1],
@@ -1841,13 +1787,13 @@ sub
 	[#Rule 15
 		 'interface_names', 4,
 sub
-#line 67 "idl.yp"
+#line 67 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 16
 		 'interface', 7,
 sub
-#line 71 "idl.yp"
+#line 71 "pidl/idl.yp"
 {{
                "TYPE" => "INTERFACE", 
 	       "PROPERTIES" => $_[1],
@@ -1860,7 +1806,7 @@ sub
 	[#Rule 17
 		 'cpp_quote', 4,
 sub
-#line 82 "idl.yp"
+#line 82 "pidl/idl.yp"
 {{
 		 "TYPE" => "CPP_QUOTE",
 		 "FILE" => $_[0]->YYData->{FILE},
@@ -1871,13 +1817,13 @@ sub
 	[#Rule 18
 		 'definitions', 1,
 sub
-#line 91 "idl.yp"
+#line 91 "pidl/idl.yp"
 { [ $_[1] ] }
 	],
 	[#Rule 19
 		 'definitions', 2,
 sub
-#line 92 "idl.yp"
+#line 92 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 20
@@ -1895,7 +1841,7 @@ sub
 	[#Rule 24
 		 'const', 7,
 sub
-#line 100 "idl.yp"
+#line 100 "pidl/idl.yp"
 {{
                      "TYPE"  => "CONST", 
 		     "DTYPE"  => $_[2],
@@ -1909,7 +1855,7 @@ sub
 	[#Rule 25
 		 'const', 8,
 sub
-#line 110 "idl.yp"
+#line 110 "pidl/idl.yp"
 {{
                      "TYPE"  => "CONST", 
 		     "DTYPE"  => $_[2],
@@ -1924,7 +1870,7 @@ sub
 	[#Rule 26
 		 'function', 7,
 sub
-#line 124 "idl.yp"
+#line 124 "pidl/idl.yp"
 {{
 		"TYPE" => "FUNCTION",
 		"NAME" => $_[3],
@@ -1938,7 +1884,7 @@ sub
 	[#Rule 27
 		 'typedef', 6,
 sub
-#line 136 "idl.yp"
+#line 136 "pidl/idl.yp"
 {{
 	             "TYPE" => "TYPEDEF", 
                      "PROPERTIES" => $_[1],
@@ -1964,7 +1910,7 @@ sub
 	[#Rule 32
 		 'typedecl', 2,
 sub
-#line 149 "idl.yp"
+#line 149 "pidl/idl.yp"
 { $_[1] }
 	],
 	[#Rule 33
@@ -1976,7 +1922,7 @@ sub
 	[#Rule 35
 		 'existingtype', 2,
 sub
-#line 154 "idl.yp"
+#line 154 "pidl/idl.yp"
 { ($_[1]?$_[1]:"signed") ." $_[2]" }
 	],
 	[#Rule 36
@@ -1991,13 +1937,13 @@ sub
 	[#Rule 39
 		 'type', 1,
 sub
-#line 158 "idl.yp"
+#line 158 "pidl/idl.yp"
 { "void" }
 	],
 	[#Rule 40
 		 'enum_body', 3,
 sub
-#line 160 "idl.yp"
+#line 160 "pidl/idl.yp"
 { $_[2] }
 	],
 	[#Rule 41
@@ -2009,7 +1955,7 @@ sub
 	[#Rule 43
 		 'enum', 4,
 sub
-#line 163 "idl.yp"
+#line 163 "pidl/idl.yp"
 {{
              "TYPE" => "ENUM", 
 			 "PROPERTIES" => $_[1],
@@ -2020,13 +1966,13 @@ sub
 	[#Rule 44
 		 'enum_elements', 1,
 sub
-#line 172 "idl.yp"
+#line 172 "pidl/idl.yp"
 { [ $_[1] ] }
 	],
 	[#Rule 45
 		 'enum_elements', 3,
 sub
-#line 173 "idl.yp"
+#line 173 "pidl/idl.yp"
 { push(@{$_[1]}, $_[3]); $_[1] }
 	],
 	[#Rule 46
@@ -2035,13 +1981,13 @@ sub
 	[#Rule 47
 		 'enum_element', 3,
 sub
-#line 177 "idl.yp"
+#line 177 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 48
 		 'bitmap_body', 3,
 sub
-#line 180 "idl.yp"
+#line 180 "pidl/idl.yp"
 { $_[2] }
 	],
 	[#Rule 49
@@ -2053,7 +1999,7 @@ sub
 	[#Rule 51
 		 'bitmap', 4,
 sub
-#line 183 "idl.yp"
+#line 183 "pidl/idl.yp"
 {{
              "TYPE" => "BITMAP", 
 		     "PROPERTIES" => $_[1],
@@ -2064,13 +2010,13 @@ sub
 	[#Rule 52
 		 'bitmap_elements', 1,
 sub
-#line 192 "idl.yp"
+#line 192 "pidl/idl.yp"
 { [ $_[1] ] }
 	],
 	[#Rule 53
 		 'bitmap_elements', 3,
 sub
-#line 193 "idl.yp"
+#line 193 "pidl/idl.yp"
 { push(@{$_[1]}, $_[3]); $_[1] }
 	],
 	[#Rule 54
@@ -2082,13 +2028,13 @@ sub
 	[#Rule 56
 		 'bitmap_element', 3,
 sub
-#line 198 "idl.yp"
+#line 198 "pidl/idl.yp"
 { "$_[1] ( $_[3] )" }
 	],
 	[#Rule 57
 		 'struct_body', 3,
 sub
-#line 201 "idl.yp"
+#line 201 "pidl/idl.yp"
 { $_[2] }
 	],
 	[#Rule 58
@@ -2100,7 +2046,7 @@ sub
 	[#Rule 60
 		 'struct', 4,
 sub
-#line 205 "idl.yp"
+#line 205 "pidl/idl.yp"
 {{
              "TYPE" => "STRUCT", 
 			 "PROPERTIES" => $_[1],
@@ -2111,7 +2057,7 @@ sub
 	[#Rule 61
 		 'empty_element', 2,
 sub
-#line 214 "idl.yp"
+#line 214 "pidl/idl.yp"
 {{
 		 "NAME" => "",
 		 "TYPE" => "EMPTY",
@@ -2131,7 +2077,7 @@ sub
 	[#Rule 64
 		 'optional_base_element', 2,
 sub
-#line 228 "idl.yp"
+#line 228 "pidl/idl.yp"
 { $_[2]->{PROPERTIES} = FlattenHash([$_[1],$_[2]->{PROPERTIES}]); $_[2] }
 	],
 	[#Rule 65
@@ -2140,13 +2086,13 @@ sub
 	[#Rule 66
 		 'union_elements', 2,
 sub
-#line 233 "idl.yp"
+#line 233 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 67
 		 'union_body', 3,
 sub
-#line 236 "idl.yp"
+#line 236 "pidl/idl.yp"
 { $_[2] }
 	],
 	[#Rule 68
@@ -2158,7 +2104,7 @@ sub
 	[#Rule 70
 		 'union', 4,
 sub
-#line 240 "idl.yp"
+#line 240 "pidl/idl.yp"
 {{
              "TYPE" => "UNION", 
 			 "PROPERTIES" => $_[1],
@@ -2169,7 +2115,7 @@ sub
 	[#Rule 71
 		 'base_element', 5,
 sub
-#line 249 "idl.yp"
+#line 249 "pidl/idl.yp"
 {{
 			   "NAME" => $_[4],
 			   "TYPE" => $_[2],
@@ -2183,25 +2129,25 @@ sub
 	[#Rule 72
 		 'pointers', 0,
 sub
-#line 263 "idl.yp"
+#line 263 "pidl/idl.yp"
 { 0 }
 	],
 	[#Rule 73
 		 'pointers', 2,
 sub
-#line 264 "idl.yp"
+#line 264 "pidl/idl.yp"
 { $_[1]+1 }
 	],
 	[#Rule 74
 		 'element_list1', 0,
 sub
-#line 268 "idl.yp"
+#line 268 "pidl/idl.yp"
 { [] }
 	],
 	[#Rule 75
 		 'element_list1', 3,
 sub
-#line 269 "idl.yp"
+#line 269 "pidl/idl.yp"
 { push(@{$_[1]}, $_[2]); $_[1] }
 	],
 	[#Rule 76
@@ -2213,13 +2159,13 @@ sub
 	[#Rule 78
 		 'element_list2', 1,
 sub
-#line 275 "idl.yp"
+#line 275 "pidl/idl.yp"
 { [ $_[1] ] }
 	],
 	[#Rule 79
 		 'element_list2', 3,
 sub
-#line 276 "idl.yp"
+#line 276 "pidl/idl.yp"
 { push(@{$_[1]}, $_[3]); $_[1] }
 	],
 	[#Rule 80
@@ -2228,13 +2174,13 @@ sub
 	[#Rule 81
 		 'array_len', 3,
 sub
-#line 281 "idl.yp"
+#line 281 "pidl/idl.yp"
 { push(@{$_[3]}, "*"); $_[3] }
 	],
 	[#Rule 82
 		 'array_len', 4,
 sub
-#line 282 "idl.yp"
+#line 282 "pidl/idl.yp"
 { push(@{$_[4]}, "$_[2]"); $_[4] }
 	],
 	[#Rule 83
@@ -2243,178 +2189,169 @@ sub
 	[#Rule 84
 		 'property_list', 4,
 sub
-#line 288 "idl.yp"
+#line 288 "pidl/idl.yp"
 { FlattenHash([$_[1],$_[3]]); }
 	],
 	[#Rule 85
 		 'properties', 1,
 sub
-#line 291 "idl.yp"
+#line 291 "pidl/idl.yp"
 { $_[1] }
 	],
 	[#Rule 86
 		 'properties', 3,
 sub
-#line 292 "idl.yp"
+#line 292 "pidl/idl.yp"
 { FlattenHash([$_[1], $_[3]]); }
 	],
 	[#Rule 87
 		 'property', 1,
 sub
-#line 295 "idl.yp"
+#line 295 "pidl/idl.yp"
 {{ "$_[1]" => "1"     }}
 	],
 	[#Rule 88
 		 'property', 4,
 sub
-#line 296 "idl.yp"
+#line 296 "pidl/idl.yp"
 {{ "$_[1]" => "$_[3]" }}
 	],
 	[#Rule 89
-		 'listtext', 1, undef
-	],
-	[#Rule 90
-		 'listtext', 3,
-sub
-#line 301 "idl.yp"
-{ "$_[1] $_[3]" }
-	],
-	[#Rule 91
 		 'commalisttext', 1, undef
 	],
-	[#Rule 92
+	[#Rule 90
 		 'commalisttext', 3,
 sub
-#line 306 "idl.yp"
+#line 301 "pidl/idl.yp"
 { "$_[1],$_[3]" }
 	],
-	[#Rule 93
+	[#Rule 91
 		 'anytext', 0,
 sub
-#line 310 "idl.yp"
+#line 305 "pidl/idl.yp"
 { "" }
+	],
+	[#Rule 92
+		 'anytext', 1, undef
+	],
+	[#Rule 93
+		 'anytext', 1, undef
 	],
 	[#Rule 94
 		 'anytext', 1, undef
 	],
 	[#Rule 95
-		 'anytext', 1, undef
+		 'anytext', 3,
+sub
+#line 307 "pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 96
-		 'anytext', 1, undef
+		 'anytext', 3,
+sub
+#line 308 "pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 97
 		 'anytext', 3,
 sub
-#line 312 "idl.yp"
+#line 309 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 98
 		 'anytext', 3,
 sub
-#line 313 "idl.yp"
+#line 310 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 99
 		 'anytext', 3,
 sub
-#line 314 "idl.yp"
+#line 311 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 100
 		 'anytext', 3,
 sub
-#line 315 "idl.yp"
+#line 312 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 101
 		 'anytext', 3,
 sub
-#line 316 "idl.yp"
+#line 313 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 102
 		 'anytext', 3,
 sub
-#line 317 "idl.yp"
+#line 314 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 103
 		 'anytext', 3,
 sub
-#line 318 "idl.yp"
+#line 315 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 104
 		 'anytext', 3,
 sub
-#line 319 "idl.yp"
+#line 316 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 105
 		 'anytext', 3,
 sub
-#line 320 "idl.yp"
+#line 317 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 106
 		 'anytext', 3,
 sub
-#line 321 "idl.yp"
+#line 318 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 107
 		 'anytext', 3,
 sub
-#line 322 "idl.yp"
+#line 319 "pidl/idl.yp"
 { "$_[1]$_[2]$_[3]" }
 	],
 	[#Rule 108
-		 'anytext', 3,
+		 'anytext', 5,
 sub
-#line 323 "idl.yp"
-{ "$_[1]$_[2]$_[3]" }
+#line 320 "pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]$_[4]$_[5]" }
 	],
 	[#Rule 109
-		 'anytext', 3,
+		 'anytext', 5,
 sub
-#line 324 "idl.yp"
-{ "$_[1]$_[2]$_[3]" }
+#line 321 "pidl/idl.yp"
+{ "$_[1]$_[2]$_[3]$_[4]$_[5]" }
 	],
 	[#Rule 110
-		 'anytext', 5,
-sub
-#line 325 "idl.yp"
-{ "$_[1]$_[2]$_[3]$_[4]$_[5]" }
-	],
-	[#Rule 111
-		 'anytext', 5,
-sub
-#line 326 "idl.yp"
-{ "$_[1]$_[2]$_[3]$_[4]$_[5]" }
-	],
-	[#Rule 112
 		 'identifier', 1, undef
 	],
-	[#Rule 113
+	[#Rule 111
 		 'optional_identifier', 1, undef
 	],
-	[#Rule 114
+	[#Rule 112
 		 'optional_identifier', 0, undef
 	],
-	[#Rule 115
+	[#Rule 113
 		 'constant', 1, undef
 	],
-	[#Rule 116
+	[#Rule 114
 		 'text', 1,
 sub
-#line 340 "idl.yp"
+#line 335 "pidl/idl.yp"
 { "\"$_[1]\"" }
 	],
-	[#Rule 117
+	[#Rule 115
 		 'optional_semicolon', 0, undef
 	],
-	[#Rule 118
+	[#Rule 116
 		 'optional_semicolon', 1, undef
 	]
 ],
@@ -2422,7 +2359,7 @@ sub
     bless($self,$class);
 }
 
-#line 351 "idl.yp"
+#line 346 "pidl/idl.yp"
 
 
 use Parse::Pidl qw(error);
