@@ -558,28 +558,27 @@ NTSTATUS _samr_Close(pipes_struct *p, struct samr_Close *r)
 }
 
 /*******************************************************************
- samr_reply_open_domain
+ _samr_OpenDomain
  ********************************************************************/
 
-NTSTATUS _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN_DOMAIN *r_u)
+NTSTATUS _samr_OpenDomain(pipes_struct *p,
+			  struct samr_OpenDomain *r)
 {
 	struct    samr_info *info;
 	SEC_DESC *psd = NULL;
 	uint32    acc_granted;
-	uint32    des_access = q_u->flags;
+	uint32    des_access = r->in.access_mask;
 	NTSTATUS  status;
 	size_t    sd_size;
 	SE_PRIV se_rights;
 
-	r_u->status = NT_STATUS_OK;
-
 	/* find the connection policy handle. */
 	
-	if ( !find_policy_by_hnd(p, &q_u->pol, (void**)(void *)&info) )
+	if ( !find_policy_by_hnd(p, r->in.connect_handle, (void**)(void *)&info) )
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function( info->acc_granted, 
-		SA_RIGHT_SAM_OPEN_DOMAIN, "_samr_open_domain" );
+		SA_RIGHT_SAM_OPEN_DOMAIN, "_samr_OpenDomain" );
 		
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
@@ -594,28 +593,28 @@ NTSTATUS _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN
 
 	status = access_check_samr_object( psd, p->pipe_user.nt_user_token, 
 		&se_rights, GENERIC_RIGHTS_DOMAIN_WRITE, des_access, 
-		&acc_granted, "_samr_open_domain" );
+		&acc_granted, "_samr_OpenDomain" );
 		
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	if (!sid_check_is_domain(&q_u->dom_sid.sid) &&
-	    !sid_check_is_builtin(&q_u->dom_sid.sid)) {
+	if (!sid_check_is_domain(r->in.sid) &&
+	    !sid_check_is_builtin(r->in.sid)) {
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
 	/* associate the domain SID with the (unique) handle. */
-	if ((info = get_samr_info_by_sid(&q_u->dom_sid.sid))==NULL)
+	if ((info = get_samr_info_by_sid(r->in.sid))==NULL)
 		return NT_STATUS_NO_MEMORY;
 	info->acc_granted = acc_granted;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, &r_u->domain_pol, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.domain_handle, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	DEBUG(5,("samr_open_domain: %d\n", __LINE__));
+	DEBUG(5,("_samr_OpenDomain: %d\n", __LINE__));
 
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -5114,16 +5113,6 @@ NTSTATUS _samr_LookupDomain(pipes_struct *p,
 
 NTSTATUS _samr_EnumDomains(pipes_struct *p,
 			   struct samr_EnumDomains *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_OpenDomain(pipes_struct *p,
-			  struct samr_OpenDomain *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
