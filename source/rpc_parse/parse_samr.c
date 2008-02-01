@@ -298,45 +298,6 @@ bool samr_io_q_set_sec_obj(const char *desc, SAMR_Q_SET_SEC_OBJ * q_u,
 reads or writes a structure.
 ********************************************************************/
 
-void init_samr_q_query_sec_obj(SAMR_Q_QUERY_SEC_OBJ * q_u,
-			       POLICY_HND *user_pol, uint32 sec_info)
-{
-	DEBUG(5, ("samr_init_samr_q_query_sec_obj\n"));
-
-	q_u->user_pol = *user_pol;
-	q_u->sec_info = sec_info;
-}
-
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_q_query_sec_obj(const char *desc, SAMR_Q_QUERY_SEC_OBJ * q_u,
-			     prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_q_query_sec_obj");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("user_pol", &q_u->user_pol, ps, depth))
-		return False;
-
-	if(!prs_uint32("sec_info", ps, depth, &q_u->sec_info))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
 void init_samr_q_query_domain_info(SAMR_Q_QUERY_DOMAIN_INFO * q_u,
 				   POLICY_HND *domain_pol, uint16 switch_value)
 {
@@ -925,35 +886,6 @@ bool samr_io_r_set_sec_obj(const char *desc, SAMR_R_SET_SEC_OBJ * r_u,
 
 	if(!prs_align(ps))
 		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a SAMR_R_QUERY_SEC_OBJ structure.
-********************************************************************/
-
-bool samr_io_r_query_sec_obj(const char *desc, SAMR_R_QUERY_SEC_OBJ * r_u,
-			     prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-  
-	prs_debug(ps, depth, desc, "samr_io_r_query_sec_obj");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("ptr", ps, depth, &r_u->ptr))
-		return False;
-	if (r_u->ptr != 0) {
-		if(!sec_io_desc_buf("sec", &r_u->buf, ps, depth))
-			return False;
-	}
 
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
