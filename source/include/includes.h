@@ -250,6 +250,10 @@ typedef int ber_int_t;
 #include <langinfo.h>
 #endif
 
+#if HAVE_NETGROUP_H
+#include <netgroup.h>
+#endif
+
 #if defined(HAVE_AIO_H) && defined(WITH_AIO)
 #include <aio.h>
 #endif
