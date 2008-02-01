@@ -4254,11 +4254,13 @@ NTSTATUS _samr_DeleteUser(pipes_struct *p,
 }
 
 /*********************************************************************
- _samr_delete_dom_group
+ _samr_DeleteDomainGroup
 *********************************************************************/
 
-NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, SAMR_R_DELETE_DOM_GROUP *r_u)
+NTSTATUS _samr_DeleteDomainGroup(pipes_struct *p,
+				 struct samr_DeleteDomainGroup *r)
 {
+	NTSTATUS status;
 	DOM_SID group_sid;
 	uint32 group_rid;
 	uint32 acc_granted;
@@ -4266,14 +4268,15 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	bool can_add_accounts;
 	DISP_INFO *disp_info = NULL;
 
-	DEBUG(5, ("samr_delete_dom_group: %d\n", __LINE__));
+	DEBUG(5, ("samr_DeleteDomainGroup: %d\n", __LINE__));
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->group_pol, &group_sid, &acc_granted, &disp_info)) 
+	if (!get_lsa_policy_samr_sid(p, r->in.group_handle, &group_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
-		
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_delete_dom_group"))) {
-		return r_u->status;
+
+	status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_DeleteDomainGroup");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	DEBUG(10, ("sid is %s\n", sid_string_dbg(&group_sid)));
@@ -4291,22 +4294,22 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	if ( can_add_accounts )
 		become_root();
 
-	r_u->status = pdb_delete_dom_group(p->mem_ctx, group_rid);
+	status = pdb_delete_dom_group(p->mem_ctx, group_rid);
 
 	if ( can_add_accounts )
 		unbecome_root();
 		
 	/******** END SeAddUsers BLOCK *********/
 	
-	if ( !NT_STATUS_IS_OK(r_u->status) ) {
-		DEBUG(5,("_samr_delete_dom_group: Failed to delete mapping "
+	if ( !NT_STATUS_IS_OK(status) ) {
+		DEBUG(5,("_samr_DeleteDomainGroup: Failed to delete mapping "
 			 "entry for group %s: %s\n",
 			 sid_string_dbg(&group_sid),
-			 nt_errstr(r_u->status)));
-		return r_u->status;
+			 nt_errstr(status)));
+		return status;
 	}
 	
-	if (!close_policy_hnd(p, &q_u->group_pol))
+	if (!close_policy_hnd(p, r->in.group_handle))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
 	force_flush_samr_cache(disp_info);
@@ -5256,16 +5259,6 @@ NTSTATUS _samr_SetGroupInfo(pipes_struct *p,
 
 NTSTATUS _samr_AddGroupMember(pipes_struct *p,
 			      struct samr_AddGroupMember *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_DeleteDomainGroup(pipes_struct *p,
-				 struct samr_DeleteDomainGroup *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
