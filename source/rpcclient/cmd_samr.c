@@ -1195,7 +1195,8 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 		}
 	}
 
-	result = rpccli_samr_delete_dom_alias(cli, mem_ctx, &alias_pol);
+	result = rpccli_samr_DeleteDomAlias(cli, mem_ctx,
+					    &alias_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
