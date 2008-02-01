@@ -2518,19 +2518,17 @@ static NTSTATUS can_create(TALLOC_CTX *mem_ctx, const char *new_name)
 }
 
 /*******************************************************************
- _samr_create_user
- Create an account, can be either a normal user or a machine.
- This funcion will need to be updated for bdc/domain trusts.
+ _samr_CreateUser2
  ********************************************************************/
 
-NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
-			   SAMR_R_CREATE_USER *r_u)
+NTSTATUS _samr_CreateUser2(pipes_struct *p,
+			   struct samr_CreateUser2 *r)
 {
-	char *account;
+	const char *account = NULL;
 	DOM_SID sid;
-	POLICY_HND dom_pol = q_u->domain_pol;
-	uint16 acb_info = q_u->acb_info;
-	POLICY_HND *user_pol = &r_u->user_pol;
+	POLICY_HND dom_pol = *r->in.domain_handle;
+	uint32_t acb_info = r->in.acct_flags;
+	POLICY_HND *user_pol = r->out.user_handle;
 	struct samr_info *info = NULL;
 	NTSTATUS nt_status;
 	uint32 acc_granted;
@@ -2549,7 +2547,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 
 	nt_status = access_check_samr_function(acc_granted,
 					       SA_RIGHT_DOMAIN_CREATE_USER,
-					       "_samr_create_user");
+					       "_samr_CreateUser2");
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		return nt_status;
 	}
@@ -2561,7 +2559,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	account = rpcstr_pull_unistr2_talloc(p->mem_ctx, &q_u->uni_name);
+	account = r->in.account_name->string;
 	if (account == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -2600,7 +2598,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 		}
 	}
 		
-	DEBUG(5, ("_samr_create_user: %s can add this account : %s\n",
+	DEBUG(5, ("_samr_CreateUser2: %s can add this account : %s\n",
 		  uidtoname(p->pipe_user.ut.uid),
 		  can_add_account ? "True":"False" ));
 		
@@ -2610,7 +2608,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 		become_root();
 
 	nt_status = pdb_create_user(p->mem_ctx, account, acb_info,
-				    &r_u->user_rid);
+				    r->out.rid);
 
 	if ( can_add_account )
 		unbecome_root();
@@ -2624,7 +2622,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 			
 	/* Get the user's SID */
 
-	sid_compose(&sid, get_global_sam_sid(), r_u->user_rid);
+	sid_compose(&sid, get_global_sam_sid(), *r->out.rid);
 	
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping,
 			    &sid, SAMR_USR_RIGHTS_WRITE_PW);
@@ -2632,7 +2630,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 	
 	nt_status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
 		&se_rights, GENERIC_RIGHTS_USER_WRITE, des_access, 
-		&acc_granted, "_samr_create_user");
+		&acc_granted, "_samr_CreateUser2");
 		
 	if ( !NT_STATUS_IS_OK(nt_status) ) {
 		return nt_status;
@@ -2655,7 +2653,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u,
 	/* After a "set" ensure we have no cached display info. */
 	force_flush_samr_cache(info->disp_info);
 
-	r_u->access_granted = acc_granted;
+	*r->out.access_granted = acc_granted;
 
 	return NT_STATUS_OK;
 }
@@ -5467,16 +5465,6 @@ NTSTATUS _samr_QueryDisplayInfo2(pipes_struct *p,
 
 NTSTATUS _samr_GetDisplayEnumerationIndex2(pipes_struct *p,
 					   struct samr_GetDisplayEnumerationIndex2 *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_CreateUser2(pipes_struct *p,
-			   struct samr_CreateUser2 *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;

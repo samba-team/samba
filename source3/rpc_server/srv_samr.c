@@ -516,30 +516,7 @@ static bool api_samr_query_domain_info(pipes_struct *p)
 
 static bool api_samr_create_user(pipes_struct *p)
 {
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	SAMR_Q_CREATE_USER q_u;
-	SAMR_R_CREATE_USER r_u;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the samr create user */
-	if (!samr_io_q_create_user("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_create_user: Unable to unmarshall SAMR_Q_CREATE_USER.\n"));
-		return False;
-	}
-
-	r_u.status=_samr_create_user(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_create_user("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_create_user: Unable to marshall SAMR_R_CREATE_USER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_CREATEUSER2);
 }
 
 /*******************************************************************
