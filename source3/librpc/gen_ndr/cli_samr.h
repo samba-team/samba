@@ -18,7 +18,7 @@ NTSTATUS rpccli_samr_QuerySecurity(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *handle,
 				   uint32_t sec_info,
-				   struct sec_desc_buf *sdbuf);
+				   struct sec_desc_buf **sdbuf);
 NTSTATUS rpccli_samr_Shutdown(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      struct policy_handle *connect_handle);

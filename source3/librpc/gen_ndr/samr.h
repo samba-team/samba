@@ -773,7 +773,7 @@ struct samr_QuerySecurity {
 	} in;
 
 	struct {
-		struct sec_desc_buf *sdbuf;/* [ref] */
+		struct sec_desc_buf **sdbuf;/* [ref] */
 		NTSTATUS result;
 	} out;
 
