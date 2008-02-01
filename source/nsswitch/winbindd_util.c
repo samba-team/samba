@@ -83,9 +83,6 @@ static BOOL is_internal_domain(const DOM_SID *sid)
 	if (sid == NULL)
 		return False;
 
-	if ( IS_DC )
-		return sid_check_is_builtin(sid);
-
 	return (sid_check_is_domain(sid) || sid_check_is_builtin(sid));
 }
 
@@ -93,9 +90,6 @@ static BOOL is_in_internal_domain(const DOM_SID *sid)
 {
 	if (sid == NULL)
 		return False;
-
-	if ( IS_DC )
-		return sid_check_is_in_builtin(sid);
 
 	return (sid_check_is_in_our_domain(sid) || sid_check_is_in_builtin(sid));
 }
