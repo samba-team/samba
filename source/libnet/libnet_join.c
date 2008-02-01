@@ -724,9 +724,11 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	user_rid = user_rids[0];
 
-	status = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				       SEC_RIGHTS_MAXIMUM_ALLOWED, user_rid,
-				       &user_pol);
+	status = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -869,9 +871,11 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	user_rid = user_rids[0];
 
-	status = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				       SEC_RIGHTS_MAXIMUM_ALLOWED,
-				       user_rid, &user_pol);
+	status = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}

@@ -469,9 +469,11 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		return result;
 
 	/* Get user handle */
-	result = rpccli_samr_open_user(cli, mem_ctx, &dom_pol,
-				       SEC_RIGHTS_MAXIMUM_ALLOWED, user_rid,
-				       &user_pol);
+	result = rpccli_samr_OpenUser(cli, mem_ctx,
+				      &dom_pol,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -545,8 +547,11 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		return result;
 
 	/* Get user handle */
-	result = rpccli_samr_open_user(cli, mem_ctx, &dom_pol,
-					des_access, user_rid, &user_pol);
+	result = rpccli_samr_OpenUser(cli, mem_ctx,
+				      &dom_pol,
+				      des_access,
+				      user_rid,
+				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;

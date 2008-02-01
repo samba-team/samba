@@ -652,9 +652,11 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 			goto done;
 		}
 
-		result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-					       MAXIMUM_ALLOWED_ACCESS,
-					       user_rids[0], &user_pol);
+		result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+					      &domain_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      user_rids[0],
+					      &user_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
@@ -786,9 +788,11 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 			goto done;
 		}
 
-		result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-					    MAXIMUM_ALLOWED_ACCESS,
-					    user_rids[0], &user_pol);
+		result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+					      &domain_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      user_rids[0],
+					      &user_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
@@ -896,8 +900,11 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Open domain user */
-	result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				    MAXIMUM_ALLOWED_ACCESS, user_rid[0], &user_pol);
+	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      user_rid[0],
+				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -1049,9 +1056,11 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 			goto done;
 		}
 
-		result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-					    MAXIMUM_ALLOWED_ACCESS,
-					    user_rids[0], &user_pol);
+		result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+					      &domain_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      user_rids[0],
+					      &user_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
@@ -1160,9 +1169,11 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				    MAXIMUM_ALLOWED_ACCESS,
-				    rids[0], &user_pol);
+	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      rids[0],
+				      &user_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
 	result = rpccli_samr_query_usergroups(pipe_hnd, mem_ctx, &user_pol,
@@ -1408,9 +1419,11 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				       MAXIMUM_ALLOWED_ACCESS,
-				       rid, &user_pol);
+	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      rid,
+				      &user_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -1819,9 +1832,11 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		/* Check if group is anyone's primary group */
                 for (i = 0; i < num_members; i++)
 		{
-	                result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-					            MAXIMUM_ALLOWED_ACCESS,
-					            group_rids[i], &user_pol);
+	                result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+						      &domain_pol,
+						      MAXIMUM_ALLOWED_ACCESS,
+						      group_rids[i],
+						      &user_pol);
 	
 	        	if (!NT_STATUS_IS_OK(result)) {
 				d_fprintf(stderr, "Unable to open group member %d\n",group_rids[i]);
@@ -5603,9 +5618,11 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 		goto done;
 	}
 
-	result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				    MAXIMUM_ALLOWED_ACCESS,
-				    user_rids[0], &user_pol);
+	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      user_rids[0],
+				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
