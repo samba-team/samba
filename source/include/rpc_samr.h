@@ -1059,23 +1059,6 @@ typedef struct r_samr_get_dispenum_index
 	
 } SAMR_R_GET_DISPENUM_INDEX;
 
-/* SAMR_Q_DELETE_DOM_GROUP - delete domain group */
-typedef struct q_samr_delete_dom_group_info
-{
-    POLICY_HND group_pol;          /* policy handle */
-
-} SAMR_Q_DELETE_DOM_GROUP;
-
-
-/* SAMR_R_DELETE_DOM_GROUP - delete domain group */
-typedef struct r_samr_delete_dom_group_info
-{
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;        /* return status */
-
-} SAMR_R_DELETE_DOM_GROUP;
-
-
 /* SAMR_Q_CREATE_DOM_GROUP - SAM create group */
 typedef struct q_samr_create_dom_group_info
 {

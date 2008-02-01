@@ -2541,65 +2541,6 @@ bool samr_io_r_create_dom_group(const char *desc, SAMR_R_CREATE_DOM_GROUP * r_u,
 }
 
 /*******************************************************************
-inits a SAMR_Q_DELETE_DOM_GROUP structure.
-********************************************************************/
-
-void init_samr_q_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP * q_c,
-				  POLICY_HND *hnd)
-{
-	DEBUG(5, ("init_samr_q_delete_dom_group\n"));
-
-	q_c->group_pol = *hnd;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_q_delete_dom_group(const char *desc, SAMR_Q_DELETE_DOM_GROUP * q_u,
-				prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_q_delete_dom_group");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("group_pol", &q_u->group_pol, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_r_delete_dom_group(const char *desc, SAMR_R_DELETE_DOM_GROUP * r_u,
-				prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_r_delete_dom_group");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 inits a SAMR_Q_DEL_GROUPMEM structure.
 ********************************************************************/
 
