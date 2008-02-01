@@ -1184,23 +1184,6 @@ typedef struct r_samr_set_group_info
 } SAMR_R_SET_GROUPINFO;
 
 
-/* SAMR_Q_DELETE_DOM_ALIAS - delete domain alias */
-typedef struct q_samr_delete_dom_alias_info
-{
-    POLICY_HND alias_pol;          /* policy handle */
-
-} SAMR_Q_DELETE_DOM_ALIAS;
-
-
-/* SAMR_R_DELETE_DOM_ALIAS - delete domain alias */
-typedef struct r_samr_delete_dom_alias_info
-{
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;        /* return status */
-
-} SAMR_R_DELETE_DOM_ALIAS;
-
-
 /* SAMR_Q_CREATE_DOM_ALIAS - SAM create alias */
 typedef struct q_samr_create_dom_alias_info
 {
