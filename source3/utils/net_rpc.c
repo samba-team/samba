@@ -23,6 +23,11 @@
 #include "includes.h"
 #include "utils/net.h"
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
 static int net_mode_share;
 static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);
 
@@ -589,8 +594,10 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	const char *acct_name;
+	struct lsa_String lsa_acct_name;
 	uint32 acb_info;
 	uint32 acct_flags, user_rid;
+	uint32_t access_granted = 0;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
@@ -599,6 +606,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	}
 
 	acct_name = argv[0];
+	init_lsa_String(&lsa_acct_name, acct_name);
 
 	/* Get sam policy handle */
 	
@@ -628,9 +636,15 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
 		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
 
-	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-					  acct_name, acb_info, acct_flags,
-					  &user_pol, &user_rid);
+	result = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 &lsa_acct_name,
+					 acb_info,
+					 acct_flags,
+					 &user_pol,
+					 &access_granted,
+					 &user_rid);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -1933,11 +1947,6 @@ static int rpc_group_delete(int argc, const char **argv)
 {
 	return run_rpc_command(NULL, PI_SAMR, 0, rpc_group_delete_internals,
                                argc,argv);
-}
-
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
 }
 
 static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
@@ -5445,9 +5454,11 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
+	struct lsa_String lsa_acct_name;
 	uint32 acb_info;
 	uint32 acct_flags=0;
 	uint32 user_rid;
+	uint32_t access_granted = 0;
 
 	if (argc != 2) {
 		d_printf("Usage: net rpc trustdom add <domain_name> <pw>\n");
@@ -5457,12 +5468,14 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 	/* 
 	 * Make valid trusting domain account (ie. uppercased and with '$' appended)
 	 */
-	 
+
 	if (asprintf(&acct_name, "%s$", argv[0]) < 0) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	strupper_m(acct_name);
+
+	init_lsa_String(&lsa_acct_name, acct_name);
 
 	/* Get samr policy handle */
 	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
@@ -5489,9 +5502,14 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
 		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
 
-	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-					  acct_name, acb_info, acct_flags,
-					  &user_pol, &user_rid);
+	result = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 &lsa_acct_name,
+					 acb_info,
+					 acct_flags,
+					 &user_pol,
+					 &access_granted,
+					 &user_rid);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}

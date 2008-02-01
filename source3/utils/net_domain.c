@@ -37,6 +37,11 @@
                 goto done; \
         }
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
 /*******************************************************************
  Leave an AD domain.  Windows XP disables the machine account.
  We'll try the same.  The old code would do an LDAP delete.
@@ -210,6 +215,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	const char *const_acct_name;
+	struct lsa_String lsa_acct_name;
 	uint32 user_rid;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
@@ -224,6 +230,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	uchar md5buffer[16];
 	DATA_BLOB digested_session_key;
 	uchar md4_trust_password[16];
+	uint32_t access_granted = 0;
 
 	/* Open the domain */
 	
@@ -253,6 +260,8 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
+	init_lsa_String(&lsa_acct_name, acct_name);
+
 	/* Don't try to set any acb_info flags other than ACB_WSTRUST */
 	acct_flags = SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
 		     SEC_STD_WRITE_DAC | SEC_STD_DELETE |
@@ -262,8 +271,14 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
 
-	status = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-			acct_name, acb_info, acct_flags, &user_pol, &user_rid);
+	status = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 &lsa_acct_name,
+					 acb_info,
+					 acct_flags,
+					 &user_pol,
+					 &access_granted,
+					 &user_rid);
 
 	if ( !NT_STATUS_IS_OK(status) 
 		&& !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) 

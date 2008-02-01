@@ -34,6 +34,12 @@
                 goto done; \
         }
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
+
 /**
  * confirm that a domain join is still valid
  *
@@ -160,7 +166,9 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	uint32 flags = 0x3e8;
 	char *acct_name;
 	const char *const_acct_name;
+	struct lsa_String lsa_acct_name;
 	uint32 acct_flags=0;
+	uint32_t access_granted = 0;
 
 	/* check what type of join */
 	if (argc >= 0) {
@@ -252,6 +260,8 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
+	init_lsa_String(&lsa_acct_name, acct_name);
+
 	acct_flags = SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
 		     SEC_STD_WRITE_DAC | SEC_STD_DELETE |
 		     SAMR_USER_ACCESS_SET_PASSWORD |
@@ -260,10 +270,14 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
 
-	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-					  acct_name, acb_info,
-					  acct_flags, &user_pol, 
-					  &user_rid);
+	result = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 &lsa_acct_name,
+					 acb_info,
+					 acct_flags,
+					 &user_pol,
+					 &access_granted,
+					 &user_rid);
 
 	if (!NT_STATUS_IS_OK(result) && 
 	    !NT_STATUS_EQUAL(result, NT_STATUS_USER_EXISTS)) {
