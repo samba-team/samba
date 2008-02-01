@@ -623,7 +623,7 @@ sub CheckPointerTypes($$)
 
 	foreach my $e (@{$s->{ELEMENTS}}) {
 		if ($e->{POINTERS} and not defined(pointer_type($e))) {
-			$e->{PROPERTIES}->{$default} = 1;
+			$e->{PROPERTIES}->{$default} = '1';
 		}
 	}
 }
