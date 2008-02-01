@@ -1618,27 +1618,6 @@ typedef struct r_samr_del_alias_mem_info
 } SAMR_R_DEL_ALIASMEM;
 
 
-
-/* SAMR_Q_OPEN_ALIAS - probably an open */
-typedef struct q_samr_open_alias_info
-{
-	POLICY_HND dom_pol;
-
-	uint32 access_mask;         
-	uint32 rid_alias;
-
-} SAMR_Q_OPEN_ALIAS;
-
-
-/* SAMR_R_OPEN_ALIAS - probably an open */
-typedef struct r_samr_open_alias_info
-{
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_OPEN_ALIAS;
-
-
 /* SAMR_Q_CONNECT_ANON - probably an open */
 typedef struct q_samr_connect_anon_info {
 	uint32 ptr;                  /* ptr? */
