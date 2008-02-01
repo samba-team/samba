@@ -577,9 +577,11 @@ static NTSTATUS cmd_samr_query_group(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_open_group(cli, mem_ctx, &domain_pol,
-				     access_mask,
-				     group_rid, &group_pol);
+	result = rpccli_samr_OpenGroup(cli, mem_ctx,
+				       &domain_pol,
+				       access_mask,
+				       group_rid,
+				       &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -804,9 +806,11 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_open_group(cli, mem_ctx, &domain_pol,
-				     access_mask,
-				     group_rid, &group_pol);
+	result = rpccli_samr_OpenGroup(cli, mem_ctx,
+				       &domain_pol,
+				       access_mask,
+				       group_rid,
+				       &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1866,9 +1870,11 @@ static NTSTATUS cmd_samr_delete_dom_group(struct rpc_pipe_client *cli,
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
 
-		result = rpccli_samr_open_group(cli, mem_ctx, &domain_pol,
-						access_mask,
-						group_rids[0], &group_pol);
+		result = rpccli_samr_OpenGroup(cli, mem_ctx,
+					       &domain_pol,
+					       access_mask,
+					       group_rids[0],
+					       &group_pol);
 
 		if (!NT_STATUS_IS_OK(result))
 			goto done;

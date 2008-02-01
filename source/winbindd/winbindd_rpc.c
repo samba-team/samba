@@ -700,8 +700,11 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-        result = rpccli_samr_open_group(cli, mem_ctx, &dom_pol,
-					des_access, group_rid, &group_pol);
+        result = rpccli_samr_OpenGroup(cli, mem_ctx,
+				       &dom_pol,
+				       des_access,
+				       group_rid,
+				       &group_pol);
 
         if (!NT_STATUS_IS_OK(result))
 		return result;
