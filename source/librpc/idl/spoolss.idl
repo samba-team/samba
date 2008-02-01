@@ -9,7 +9,6 @@ import "security.idl", "winreg.idl";
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\spoolss]"),
   pointer_default(unique),
-  pointer_default_top(unique),
   helpstring("Spooler SubSystem"),
   helper("librpc/ndr/ndr_spoolss_buf.h")
 ] interface spoolss
@@ -254,11 +253,11 @@ import "security.idl", "winreg.idl";
 	/* we are using this as internal parsing code */
 	[public,noopnum,noprint] WERROR _spoolss_EnumPrinters(
 		[in] spoolss_EnumPrinterFlags flags,
-		[in] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out] DATA_BLOB *info,
+		[out,unique] DATA_BLOB *info,
 		[out] uint32 needed,
 		[out] uint32 count
 	);
@@ -269,14 +268,14 @@ import "security.idl", "winreg.idl";
 	);
 	[nopull,nopush] WERROR spoolss_EnumPrinters(
 		[in] spoolss_EnumPrinterFlags flags,
-		[in] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
 		/* what we have here is a subcontext containing an array of no discriminant unions
 		 * and the array has no size in front
 		 */
-		[out,switch_is(level),size_is(count)] spoolss_PrinterInfo *info,
+		[out,unique,switch_is(level),size_is(count)] spoolss_PrinterInfo *info,
 		[out] uint32 needed,
 		[out] uint32 count
 	);
@@ -289,8 +288,8 @@ import "security.idl", "winreg.idl";
 	} spoolss_DevmodeContainer;
 
 	[public] WERROR spoolss_OpenPrinter(
-		[in] [string,charset(UTF16)] uint16 *printername,
-		[in] [string,charset(UTF16)] uint16 *datatype,
+		[in,unique] [string,charset(UTF16)] uint16 *printername,
+		[in,unique] [string,charset(UTF16)] uint16 *datatype,
 		[in] spoolss_DevmodeContainer devmode_ctr,
 		[in] uint32 access_mask,
 		[out,ref] policy_handle *handle
@@ -339,7 +338,7 @@ import "security.idl", "winreg.idl";
 	WERROR spoolss_SetJob(
 		[in,ref] policy_handle *handle,
 		[in] uint32 job_id,
-		[in] spoolss_JobInfoContainer *ctr,
+		[in,unique] spoolss_JobInfoContainer *ctr,
 		[in] spoolss_JobControl command
 	);
 
@@ -349,9 +348,9 @@ import "security.idl", "winreg.idl";
 		[in,ref] policy_handle *handle,
 		[in] 	 uint32 job_id,
 		[in] 	 uint32 level,
-		[in] 	 DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_JobInfo *info,
+		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_JobInfo *info,
 		[out] 	 uint32 needed
 	);
 
@@ -362,9 +361,9 @@ import "security.idl", "winreg.idl";
 		[in] 	 uint32 firstjob,
 		[in] 	 uint32 numjobs,
 		[in] 	 uint32 level,
-		[in] 	 DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out] 	 DATA_BLOB *info,
+		[out,unique] DATA_BLOB *info,
 		[out] 	 uint32 needed,
 		[out] 	 uint32 count
 	);
@@ -378,9 +377,9 @@ import "security.idl", "winreg.idl";
 		[in]	 uint32 firstjob,
 		[in]	 uint32 numjobs,
 		[in]	 uint32 level,
-		[in]     DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out,switch_is(level),size_is(count)] spoolss_JobInfo *info,
+		[out,unique,switch_is(level),size_is(count)] spoolss_JobInfo *info,
 		[out] 	 uint32 needed,
 		[out]	 uint32 count
 	);
@@ -435,9 +434,9 @@ import "security.idl", "winreg.idl";
 	[public] WERROR spoolss_GetPrinter(
 		[in,ref] policy_handle *handle,
 		[in] 	 uint32 level,
-		[in] 	 DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_PrinterInfo *info,
+		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_PrinterInfo *info,
 		[out] 	 uint32 needed
 	);
 
@@ -538,12 +537,12 @@ import "security.idl", "winreg.idl";
 	/******************/
 	/* Function: 0x0a */
 	[public,noopnum,noprint] WERROR _spoolss_EnumPrinterDrivers(
-		[in] [string,charset(UTF16)] uint16 *server,
-		[in] [string,charset(UTF16)] uint16 *environment,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *environment,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out] DATA_BLOB *info,
+		[out,unique] DATA_BLOB *info,
 		[out] uint32 needed,
 		[out] uint32 count
 	);
@@ -553,12 +552,12 @@ import "security.idl", "winreg.idl";
 		[out,switch_is(level)] spoolss_DriverInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumPrinterDrivers(
-		[in] [string,charset(UTF16)] uint16 *server,
-		[in] [string,charset(UTF16)] uint16 *environment,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *environment,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,switch_is(level),size_is(count)] spoolss_DriverInfo *info,
+		[out,unique,switch_is(level),size_is(count)] spoolss_DriverInfo *info,
 		[out] uint32 needed,
 		[out] uint32 count
 	);
@@ -583,12 +582,12 @@ import "security.idl", "winreg.idl";
 	} spoolss_DriverDirectoryInfo;
 
 	[public] WERROR spoolss_GetPrinterDriverDirectory(
-		[in] [string,charset(UTF16)] uint16 *server,
-		[in] [string,charset(UTF16)] uint16 *environment,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *environment,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_DriverDirectoryInfo *info,
+		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_DriverDirectoryInfo *info,
 		[out] uint32 needed
 	);
 
@@ -596,7 +595,7 @@ import "security.idl", "winreg.idl";
 	/* Function: 0x0d */
 	WERROR spoolss_DeletePrinterDriver(
 		[in,ref] policy_handle *handle,
-		[in] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
 		[in] [string,charset(UTF16)] uint16 architecture[],
 		[in] [string,charset(UTF16)] uint16 driver[]
 	);
@@ -618,12 +617,12 @@ import "security.idl", "winreg.idl";
 	} spoolss_PrintProcessorInfo;
 
 	[public,noopnum,noprint] WERROR _spoolss_EnumPrintProcessors(
-		[in] [string,charset(UTF16)] uint16 *servername,
-		[in] [string,charset(UTF16)] uint16 *environment,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *environment,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out] DATA_BLOB *info,
+		[out,unique] DATA_BLOB *info,
 		[out] uint32 needed,
 		[out] uint32 count
 	);
@@ -633,12 +632,12 @@ import "security.idl", "winreg.idl";
 		[out,switch_is(level)] spoolss_PrintProcessorInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumPrintProcessors(
-		[in] [string,charset(UTF16)] uint16 *servername,
-		[in] [string,charset(UTF16)] uint16 *environment,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *environment,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,switch_is(level),size_is(count)] spoolss_PrintProcessorInfo *info,
+		[out,unique,switch_is(level),size_is(count)] spoolss_PrintProcessorInfo *info,
 		[out] uint32 needed,
 		[out] uint32 count
 	);
@@ -878,9 +877,9 @@ import "security.idl", "winreg.idl";
 		[in,ref] policy_handle *handle,
 		[in] [string,charset(UTF16)] uint16 form_name[],
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_FormInfo *info,
+		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_FormInfo *info,
 		[out] uint32 needed
 	);
 
@@ -898,9 +897,9 @@ import "security.idl", "winreg.idl";
 	[public,noopnum,noprint] WERROR _spoolss_EnumForms(
 		[in,ref] policy_handle *handle,
 		[in] 	 uint32 level,
-		[in] 	 DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out]	 DATA_BLOB *info,
+		[out,unique] DATA_BLOB *info,
 		[out]	 uint32 needed,
 		[out]	 uint32 count
 	);
@@ -912,9 +911,9 @@ import "security.idl", "winreg.idl";
 	[nopull,nopush] WERROR spoolss_EnumForms(
 		[in,ref] policy_handle *handle,
 		[in] 	 uint32 level,
-		[in] 	 DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out,switch_is(level),size_is(count)] spoolss_FormInfo *info,
+		[out,unique,switch_is(level),size_is(count)] spoolss_FormInfo *info,
 		[out] uint32 needed,
 		[out] uint32 count
 	);
@@ -948,11 +947,11 @@ import "security.idl", "winreg.idl";
 	/******************/
 	/* Function: 0x23 */
 	[public,noopnum,noprint] WERROR _spoolss_EnumPorts(
-		[in] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out] DATA_BLOB *info,
+		[out,unique] DATA_BLOB *info,
 		[out] uint32 needed,
 		[out] uint32 count
 	);
@@ -962,11 +961,11 @@ import "security.idl", "winreg.idl";
 		[out,switch_is(level)] spoolss_PortInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumPorts(
-		[in] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,switch_is(level),size_is(count)] spoolss_PortInfo *info,
+		[out,unique,switch_is(level),size_is(count)] spoolss_PortInfo *info,
 		[out] uint32 needed,
 		[out] uint32 count
 	);
@@ -990,11 +989,11 @@ import "security.idl", "winreg.idl";
 	} spoolss_MonitorInfo;
 
 	[public,noopnum,noprint] WERROR _spoolss_EnumMonitors(
-		[in] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out] DATA_BLOB *info,
+		[out,unique] DATA_BLOB *info,
 		[out] uint32 needed,
 		[out] uint32 count
 	);
@@ -1004,11 +1003,11 @@ import "security.idl", "winreg.idl";
 		[out,switch_is(level)] spoolss_MonitorInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumMonitors(
-		[in] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,switch_is(level),size_is(count)] spoolss_MonitorInfo *info,
+		[out,unique,switch_is(level),size_is(count)] spoolss_MonitorInfo *info,
 		[out] uint32 needed,
 		[out] uint32 count
 	);
@@ -1016,7 +1015,7 @@ import "security.idl", "winreg.idl";
 	/******************/
 	/* Function: 0x25 */
 	WERROR spoolss_AddPort(
-	       [in] [string,charset(UTF16)] uint16 *server_name,
+	       [in,unique] [string,charset(UTF16)] uint16 *server_name,
 	       [in] uint32 unknown,
 	       [in] [string,charset(UTF16)] uint16 monitor_name[]
 	);
@@ -1102,13 +1101,13 @@ import "security.idl", "winreg.idl";
 	/* Function: 0x35 */
 	WERROR spoolss_GetPrinterDriver2(
 		[in,ref] policy_handle *handle,
-		[in] 	 [string,charset(UTF16)] uint16 *architecture,
+		[in,unique] [string,charset(UTF16)] uint16 *architecture,
 		[in] 	 uint32 level,
-		[in] 	 DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
 		[in] 	 uint32 client_major_version,
 		[in] 	 uint32 client_minor_version,
-		[out] 	 DATA_BLOB *info,
+		[out,unique] DATA_BLOB *info,
 		[out] 	 uint32 needed,
 		[out] 	 uint32 server_major_version,
 		[out] 	 uint32 server_minor_version
@@ -1233,9 +1232,9 @@ import "security.idl", "winreg.idl";
 		[in,ref] policy_handle *handle,
 		[in] uint32 flags,
 		[in] uint32 options,
-		[in] [string,charset(UTF16)] uint16 *str,
+		[in,unique] [string,charset(UTF16)] uint16 *str,
 		[in] uint32 printer_local,
-		[in] spoolss_NotifyOptionsContainer *t1
+		[in,unique] spoolss_NotifyOptionsContainer *t1
 	);
 
 	/******************/
@@ -1377,8 +1376,8 @@ import "security.idl", "winreg.idl";
 	/******************/
 	/* Function: 0x45 */
 	[public] WERROR spoolss_OpenPrinterEx(
-		[in]                  [string,charset(UTF16)] uint16 *printername,
-		[in]                  [string,charset(UTF16)] uint16 *datatype,
+		[in,unique]           [string,charset(UTF16)] uint16 *printername,
+		[in,unique]           [string,charset(UTF16)] uint16 *datatype,
 		[in]	              spoolss_DevmodeContainer devmode_ctr,
 		[in]	              uint32 access_mask,
 		[in]	              uint32 level,
@@ -1389,11 +1388,11 @@ import "security.idl", "winreg.idl";
 	/******************/
 	/* Function: 0x46 */
 	WERROR spoolss_AddPrinterEx(
-		[in] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
 		[in] uint32 level,
-		[in,switch_is(level)] spoolss_PrinterInfo *info,
+		[in,unique,switch_is(level)] spoolss_PrinterInfo *info,
 		[in] spoolss_DevmodeContainer devmode_ctr,
-		[in] security_descriptor *secdesc,
+		[in,unique] security_descriptor *secdesc,
 		[in] uint32 ulevel,
 		[in,switch_is(ulevel)] spoolss_UserLevel userlevel
 	);
