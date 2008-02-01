@@ -26,6 +26,11 @@
 
 extern DOM_SID domain_sid;
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
 /****************************************************************************
  display sam_user_info_7 structure
  ****************************************************************************/
@@ -1491,17 +1496,18 @@ static NTSTATUS cmd_samr_create_dom_user(struct rpc_pipe_client *cli,
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	const char *acct_name;
+	struct lsa_String acct_name;
 	uint32 acb_info;
 	uint32 acct_flags, user_rid;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t access_granted = 0;
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s username [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	acct_name = argv[1];
+	init_lsa_String(&acct_name, argv[1]);
 
 	if (argc > 2)
                 sscanf(argv[2], "%x", &access_mask);
@@ -1534,9 +1540,14 @@ static NTSTATUS cmd_samr_create_dom_user(struct rpc_pipe_client *cli,
 		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
 		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
 
-	result = rpccli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
-					  acct_name, acb_info, acct_flags,
-					  &user_pol, &user_rid);
+	result = rpccli_samr_CreateUser2(cli, mem_ctx,
+					 &domain_pol,
+					 &acct_name,
+					 acb_info,
+					 acct_flags,
+					 &user_pol,
+					 &access_granted,
+					 &user_rid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1552,11 +1563,6 @@ static NTSTATUS cmd_samr_create_dom_user(struct rpc_pipe_client *cli,
 
  done:
 	return result;
-}
-
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
 }
 
 /* Create domain group */
