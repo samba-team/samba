@@ -56,6 +56,10 @@ static void gotalarm_sig(void)
 {
 	LDAP *ldp = NULL;
 
+
+	DEBUG(10, ("Opening connection to LDAP server '%s:%d', timeout "
+		   "%u seconds\n", server, port, to));
+
 	/* Setup timeout */
 	gotalarm = 0;
 	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
@@ -65,8 +69,10 @@ static void gotalarm_sig(void)
 	ldp = ldap_open(server, port);
 
 	if (ldp == NULL) {
-		DEBUG(2,("Could not open LDAP connection to %s:%d: %s\n",
+		DEBUG(2,("Could not open connection to LDAP server %s:%d: %s\n",
 			 server, port, strerror(errno)));
+	} else {
+		DEBUG(10, ("Connected to LDAP server '%s:%d'\n", server, port));
 	}
 
 	/* Teardown timeout. */
@@ -385,6 +391,13 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 
 	/* try with a user specified server */
 
+	if (DEBUGLEVEL >= 11) {
+		char *s = NDR_PRINT_STRUCT_STRING(talloc_tos(), ads_struct, ads);
+		DEBUG(11,("ads_connect: entering\n"));
+		DEBUGADD(11,("%s\n", s));
+		TALLOC_FREE(s);
+	}
+
 	if (ads->server.ldap_server &&
 	    ads_try_connect(ads, ads->server.ldap_server)) {
 		goto got_connection;
@@ -395,12 +408,13 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		goto got_connection;
 	}
 
-	return ADS_ERROR_NT(ntstatus);
+	status = ADS_ERROR_NT(ntstatus);
+	goto out;
 
 got_connection:
 
 	print_sockaddr(addr, sizeof(addr), &ads->ldap.ss);
-	DEBUG(3,("Connected to LDAP server %s\n", addr));
+	DEBUG(3,("Successfully contacted LDAP server %s\n", addr));
 
 	if (!ads->auth.user_name) {
 		/* Must use the userPrincipalName value here or sAMAccountName
@@ -432,21 +446,25 @@ got_connection:
 	/* If the caller() requested no LDAP bind, then we are done */
 	
 	if (ads->auth.flags & ADS_AUTH_NO_BIND) {
-		return ADS_SUCCESS;
+		status = ADS_SUCCESS;
+		goto out;
 	}
 
 	ads->ldap.mem_ctx = talloc_init("ads LDAP connection memory");
 	if (!ads->ldap.mem_ctx) {
-		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		goto out;
 	}
 	
 	/* Otherwise setup the TCP LDAP session */
 
-	if ( (ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name, 
-		LDAP_PORT, lp_ldap_timeout())) == NULL )
-	{
-		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
+	ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name,
+					      LDAP_PORT, lp_ldap_timeout());
+	if (ads->ldap.ld == NULL) {
+		status = ADS_ERROR(LDAP_OPERATIONS_ERROR);
+		goto out;
 	}
+	DEBUG(3,("Connected to LDAP server %s\n", ads->config.ldap_server_name));
 
 	/* cache the successful connection for workgroup and realm */
 	if (ads_closest_dc(ads)) {
@@ -459,27 +477,40 @@ got_connection:
 
 	status = ADS_ERROR(smb_ldap_start_tls(ads->ldap.ld, version));
 	if (!ADS_ERR_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	/* fill in the current time and offsets */
 	
 	status = ads_current_time( ads );
 	if ( !ADS_ERR_OK(status) ) {
-		return status;
+		goto out;
 	}
 
 	/* Now do the bind */
 	
 	if (ads->auth.flags & ADS_AUTH_ANON_BIND) {
-		return ADS_ERROR(ldap_simple_bind_s( ads->ldap.ld, NULL, NULL));
+		status = ADS_ERROR(ldap_simple_bind_s(ads->ldap.ld, NULL, NULL));
+		goto out;
 	}
 
 	if (ads->auth.flags & ADS_AUTH_SIMPLE_BIND) {
-		return ADS_ERROR(ldap_simple_bind_s( ads->ldap.ld, ads->auth.user_name, ads->auth.password));
+		status = ADS_ERROR(ldap_simple_bind_s(ads->ldap.ld, ads->auth.user_name, ads->auth.password));
+		goto out;
 	}
 
-	return ads_sasl_bind(ads);
+	status = ads_sasl_bind(ads);
+
+ out:
+	if (DEBUGLEVEL >= 11) {
+		char *s = NDR_PRINT_STRUCT_STRING(talloc_tos(), ads_struct, ads);
+		DEBUG(11,("ads_connect: leaving with: %s\n",
+			ads_errstr(status)));
+		DEBUGADD(11,("%s\n", s));
+		TALLOC_FREE(s);
+	}
+
+	return status;
 }
 
 /**
@@ -2384,20 +2415,22 @@ int ads_count_replies(ADS_STRUCT *ads, void *res)
 		  LDAPMessage *msg, const char *field, SEC_DESC **sd)
 {
 	struct berval **values;
-	bool ret = False;
+	bool ret = true;
 
 	values = ldap_get_values_len(ads->ldap.ld, msg, field);
 
-	if (!values) return False;
+	if (!values) return false;
 
 	if (values[0]) {
-		prs_struct ps;
-		prs_init(&ps, values[0]->bv_len, mem_ctx, UNMARSHALL);
-		prs_copy_data_in(&ps, values[0]->bv_val, values[0]->bv_len);
-		prs_set_offset(&ps,0);
-
-		ret = sec_io_desc("sd", sd, &ps, 1);
-		prs_mem_free(&ps);
+		NTSTATUS status;
+		status = unmarshall_sec_desc(mem_ctx,
+					     (uint8 *)values[0]->bv_val,
+					     values[0]->bv_len, sd);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("unmarshall_sec_desc failed: %s\n",
+				  nt_errstr(status)));
+			ret = false;
+		}
 	}
 	
 	ldap_value_free_len(values);
@@ -2789,6 +2822,66 @@ ADS_STATUS ads_upn_suffixes(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx, char ***suffix
 }
 
 /**
+ * get the joinable ous for a domain
+ * @param ads connection to ads server
+ * @param mem_ctx Pointer to talloc context
+ * @param ous Pointer to an array of ous
+ * @param num_ous Pointer to the number of ous
+ * @return status of search
+ **/
+ADS_STATUS ads_get_joinable_ous(ADS_STRUCT *ads,
+				TALLOC_CTX *mem_ctx,
+				char ***ous,
+				size_t *num_ous)
+{
+	ADS_STATUS status;
+	LDAPMessage *res = NULL;
+	LDAPMessage *msg = NULL;
+	const char *attrs[] = { "dn", NULL };
+	int count = 0;
+
+	status = ads_search(ads, &res,
+			    "(|(objectClass=domain)(objectclass=organizationalUnit))",
+			    attrs);
+	if (!ADS_ERR_OK(status)) {
+		return status;
+	}
+
+	count = ads_count_replies(ads, res);
+	if (count < 1) {
+		ads_msgfree(ads, res);
+		return ADS_ERROR(LDAP_NO_RESULTS_RETURNED);
+	}
+
+	for (msg = ads_first_entry(ads, res); msg;
+	     msg = ads_next_entry(ads, msg)) {
+
+		char *dn = NULL;
+
+		dn = ads_get_dn(ads, msg);
+		if (!dn) {
+			ads_msgfree(ads, res);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
+		if (!add_string_to_array(mem_ctx, dn,
+					 (const char ***)ous,
+					 (int *)num_ous)) {
+			ads_memfree(ads, dn);
+			ads_msgfree(ads, res);
+			return ADS_ERROR(LDAP_NO_MEMORY);
+		}
+
+		ads_memfree(ads, dn);
+	}
+
+	ads_msgfree(ads, res);
+
+	return status;
+}
+
+
+/**
  * pull a DOM_SID from an extended dn string
  * @param mem_ctx TALLOC_CTX 
  * @param extended_dn string
@@ -2957,26 +3050,26 @@ char* ads_get_upn( ADS_STRUCT *ads, TALLOC_CTX *ctx, const char *machine_name )
 	ADS_STATUS status;
 	int count = 0;
 	char *name = NULL;
-	
-	status = ads_find_machine_acct(ads, &res, global_myname());
+
+	status = ads_find_machine_acct(ads, &res, machine_name);
 	if (!ADS_ERR_OK(status)) {
 		DEBUG(0,("ads_get_upn: Failed to find account for %s\n",
 			global_myname()));
 		goto out;
 	}
-		
+
 	if ( (count = ads_count_replies(ads, res)) != 1 ) {
 		DEBUG(1,("ads_get_upn: %d entries returned!\n", count));
 		goto out;
 	}
-		
+
 	if ( (name = ads_pull_string(ads, ctx, res, "userPrincipalName")) == NULL ) {
 		DEBUG(2,("ads_get_upn: No userPrincipalName attribute!\n"));
 	}
 
 out:
 	ads_msgfree(ads, res);
-	
+
 	return name;
 }
 

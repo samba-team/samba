@@ -121,7 +121,24 @@ static void flush_caches(void)
            otherwise cached access denied errors due to restrict anonymous
            hang around until the sequence number changes. */
 
-	wcache_invalidate_cache();
+	if (!wcache_invalidate_cache()) {
+		DEBUG(0, ("invalidating the cache failed; revalidate the cache\n"));
+		/* Close the cache to be able to valdite the cache */
+		close_winbindd_cache();
+		/*
+		 * Ensure all cache and idmap caches are consistent
+		 * before we initialize the cache again.
+		 */
+		if (winbindd_validate_cache() < 0) {
+			DEBUG(0, ("winbindd cache tdb corrupt and no backup "
+				  "could be restore.\n"));
+		}
+
+		/* Initialize cache again. */
+		if (!initialize_winbindd_cache()) {
+			exit(1);
+		}
+	}
 }
 
 /* Handle the signal by unlinking socket and exiting */
@@ -1209,6 +1226,10 @@ int main(int argc, char **argv, char **envp)
 	messaging_register(winbind_messaging_context(), NULL,
 			   MSG_WINBIND_VALIDATE_CACHE,
 			   winbind_msg_validate_cache);
+
+	messaging_register(winbind_messaging_context(), NULL,
+			   MSG_WINBIND_DUMP_DOMAIN_LIST,
+			   winbind_msg_dump_domain_list);
 
 	netsamlogon_cache_init(); /* Non-critical */
 	

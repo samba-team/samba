@@ -19,7 +19,7 @@
 
 #include "includes.h"
 #include "utils/net.h"
-#include "lib/netapi/joindomain.h"
+#include "lib/netapi/netapi.h"
 
 static int net_dom_usage(int argc, const char **argv)
 {
@@ -43,6 +43,7 @@ int net_help_dom(int argc, const char **argv)
 
 static int net_dom_unjoin(int argc, const char **argv)
 {
+	struct libnetapi_ctx *ctx = NULL;
 	const char *server_name = NULL;
 	const char *account = NULL;
 	const char *password = NULL;
@@ -50,8 +51,8 @@ static int net_dom_unjoin(int argc, const char **argv)
 				WKSSVC_JOIN_FLAGS_JOIN_TYPE;
 	struct cli_state *cli = NULL;
 	bool reboot = false;
-	NTSTATUS status;
-	WERROR werr;
+	NTSTATUS ntstatus;
+	NET_API_STATUS status;
 	int ret = -1;
 	int i;
 
@@ -82,17 +83,25 @@ static int net_dom_unjoin(int argc, const char **argv)
 	}
 
 	if (reboot) {
-		status = net_make_ipc_connection_ex(opt_workgroup, server_name,
-						    NULL, 0, &cli);
-		if (!NT_STATUS_IS_OK(status)) {
+		ntstatus = net_make_ipc_connection_ex(opt_workgroup, server_name,
+						      NULL, 0, &cli);
+		if (!NT_STATUS_IS_OK(ntstatus)) {
 			return -1;
 		}
 	}
 
-	werr = NetUnjoinDomain(server_name, account, password, unjoin_flags);
-	if (!W_ERROR_IS_OK(werr)) {
+	status = libnetapi_init(&ctx);
+	if (status != 0) {
+		return -1;
+	}
+
+	libnetapi_set_username(ctx, opt_user_name);
+	libnetapi_set_password(ctx, opt_password);
+
+	status = NetUnjoinDomain(server_name, account, password, unjoin_flags);
+	if (status != 0) {
 		printf("Failed to unjoin domain: %s\n",
-			get_friendly_nt_error_msg(werror_to_ntstatus(werr)));
+			libnetapi_errstr(status));
 		goto done;
 	}
 
@@ -121,11 +130,13 @@ static int net_dom_unjoin(int argc, const char **argv)
 		cli_shutdown(cli);
 	}
 
+	/* libnetapi_free(ctx); */
 	return ret;
 }
 
 static int net_dom_join(int argc, const char **argv)
 {
+	struct libnetapi_ctx *ctx = NULL;
 	const char *server_name = NULL;
 	const char *domain_name = NULL;
 	const char *account_ou = NULL;
@@ -135,8 +146,8 @@ static int net_dom_join(int argc, const char **argv)
 			      WKSSVC_JOIN_FLAGS_JOIN_TYPE;
 	struct cli_state *cli = NULL;
 	bool reboot = false;
-	NTSTATUS status;
-	WERROR werr;
+	NTSTATUS ntstatus;
+	NET_API_STATUS status;
 	int ret = -1;
 	int i;
 
@@ -183,21 +194,28 @@ static int net_dom_join(int argc, const char **argv)
 	}
 
 	if (reboot) {
-		status = net_make_ipc_connection_ex(opt_workgroup, server_name,
-						    NULL, 0, &cli);
-		if (!NT_STATUS_IS_OK(status)) {
+		ntstatus = net_make_ipc_connection_ex(opt_workgroup, server_name,
+						      NULL, 0, &cli);
+		if (!NT_STATUS_IS_OK(ntstatus)) {
 			return -1;
 		}
 	}
 
 	/* check if domain is a domain or a workgroup */
 
-	werr = NetJoinDomain(server_name, domain_name, account_ou,
-			     Account, password, join_flags);
-	if (!W_ERROR_IS_OK(werr)) {
-		printf("Failed to join domain: %s (WERROR: %s)\n",
-			get_friendly_nt_error_msg(werror_to_ntstatus(werr)),
-			dos_errstr(werr));
+	status = libnetapi_init(&ctx);
+	if (status != 0) {
+		return -1;
+	}
+
+	libnetapi_set_username(ctx, opt_user_name);
+	libnetapi_set_password(ctx, opt_password);
+
+	status = NetJoinDomain(server_name, domain_name, account_ou,
+			       Account, password, join_flags);
+	if (status != 0) {
+		printf("Failed to join domain: %s\n",
+			libnetapi_errstr(status));
 		goto done;
 	}
 
@@ -226,6 +244,7 @@ static int net_dom_join(int argc, const char **argv)
 		cli_shutdown(cli);
 	}
 
+	/* libnetapi_free(ctx); */
 	return ret;
 }
 

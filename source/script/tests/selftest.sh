@@ -62,13 +62,26 @@ export PATH SOCKET_WRAPPER_DIR DOMAIN
 export PRIVATEDIR LIBDIR PIDDIR LOCKDIR LOGDIR SERVERCONFFILE
 export SRCDIR SCRIPTDIR BINDIR
 export USERNAME PASSWORD
-export SMBTORTURE4
 export WORKGROUP SERVER SERVER_IP
 export NSS_WRAPPER_PASSWD NSS_WRAPPER_GROUP
 export WINBINDD_SOCKET_DIR WINBINDD_PRIV_PIPE_DIR
 
 PATH=bin:$PATH
 export PATH
+
+if test x"$LD_LIBRARY_PATH" != x""; then
+	LD_LIBRARY_PATH="$BINDIR:$LD_LIBRARY_PATH"
+else
+	LD_LIBRARY_PATH="$BINDIR"
+fi
+echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH
+
+SAMBA4BINDIR=`dirname $SMBTORTURE4`
+SAMBA4SHAREDDIR="$SAMBA4BINDIR/shared"
+
+export SAMBA4SHAREDDIR
+export SMBTORTURE4
 
 ##
 ## verify that we were built with --enable-socket-wrapper
@@ -173,6 +186,7 @@ cat >$SERVERCONFFILE<<EOF
 	map hidden = yes
 	map system = yes
 	create mask = 755
+	vfs objects = $BINDIR/xattr_tdb.so $BINDIR/streams_xattr.so
 [hideunread]
 	copy = tmp
 	hide unreadable = yes

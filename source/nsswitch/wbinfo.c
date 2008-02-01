@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "winbind_client.h"
+#include "libwbclient/wbclient.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
@@ -73,25 +74,26 @@ static char winbind_separator(void)
 
 static const char *get_winbind_domain(void)
 {
-	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;	
+	struct wbcDomainInfo *dinfo = NULL;
 	static fstring winbind_domain;
 
-	ZERO_STRUCT(response);
+	ZERO_STRUCT(dinfo);
+	
+	wbc_status = wbcDomainInfo(".", &dinfo);
 
-	/* Send off request */
-
-	if (winbindd_request_response(WINBINDD_DOMAIN_NAME, NULL, &response) !=
-	    NSS_STATUS_SUCCESS) {
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
 		d_fprintf(stderr, "could not obtain winbind domain name!\n");
 		
 		/* HACK: (this module should not call lp_ funtions) */
 		return lp_workgroup();
 	}
 
-	fstrcpy(winbind_domain, response.data.domain_name);
+	fstrcpy(winbind_domain, dinfo->short_name);	
+
+	wbcFreeMemory(dinfo);
 
 	return winbind_domain;
-
 }
 
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
@@ -128,61 +130,47 @@ static bool parse_wbinfo_domain_user(const char *domuser, fstring domain,
 
 static bool wbinfo_get_userinfo(char *user)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
-	
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct passwd *pwd = NULL;	
 
-	/* Send request */
+	wbc_status = wbcGetpwnam(user, &pwd);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
 	
-	fstrcpy(request.data.username, user);
-
-	result = winbindd_request_response(WINBINDD_GETPWNAM, &request, &response);
+	d_printf("%s:%s:%d:%d:%s:%s:%s\n",
+		 pwd->pw_name,
+		 pwd->pw_passwd,
+		 pwd->pw_uid,
+		 pwd->pw_gid,
+		 pwd->pw_gecos,
+		 pwd->pw_dir,
+		 pwd->pw_shell);
 	
-	if (result != NSS_STATUS_SUCCESS)
-		return False;
-	
-	d_printf( "%s:%s:%d:%d:%s:%s:%s\n",
-			  response.data.pw.pw_name,
-			  response.data.pw.pw_passwd,
-			  response.data.pw.pw_uid,
-			  response.data.pw.pw_gid,
-			  response.data.pw.pw_gecos,
-			  response.data.pw.pw_dir,
-			  response.data.pw.pw_shell );
-	
-	return True;
+	return true;
 }
 
 /* pull pwent info for a given uid */
 static bool wbinfo_get_uidinfo(int uid)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-	NSS_STATUS result;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	struct passwd *pwd = NULL;	
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	request.data.uid = uid;
-
-	result = winbindd_request_response(WINBINDD_GETPWUID, &request, &response);
-
-	if (result != NSS_STATUS_SUCCESS)
-		return False;
-
-	d_printf( "%s:%s:%d:%d:%s:%s:%s\n",
-		response.data.pw.pw_name,
-		response.data.pw.pw_passwd,
-		response.data.pw.pw_uid,
-		response.data.pw.pw_gid,
-		response.data.pw.pw_gecos,
-		response.data.pw.pw_dir,
-		response.data.pw.pw_shell );
-
-	return True;
+	wbc_status = wbcGetpwuid(uid, &pwd);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return false;
+	}
+	
+	d_printf("%s:%s:%d:%d:%s:%s:%s\n",
+		 pwd->pw_name,
+		 pwd->pw_passwd,
+		 pwd->pw_uid,
+		 pwd->pw_gid,
+		 pwd->pw_gecos,
+		 pwd->pw_dir,
+		 pwd->pw_shell);
+	
+	return true;
 }
 
 /* pull grent for a given group */
@@ -855,8 +843,8 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
 	if (result == NSS_STATUS_SUCCESS) {
 
 		if (request.flags & WBFLAG_PAM_INFO3_TEXT) {
-			if (response.data.auth.info3.user_flgs & LOGON_CACHED_ACCOUNT) {
-				d_printf("user_flgs: LOGON_CACHED_ACCOUNT\n");
+			if (response.data.auth.info3.user_flgs & NETLOGON_CACHED_ACCOUNT) {
+				d_printf("user_flgs: NETLOGON_CACHED_ACCOUNT\n");
 			}
 		}
 
@@ -874,40 +862,40 @@ static bool wbinfo_auth_krb5(char *username, const char *cctype, uint32 flags)
 
 static bool wbinfo_auth(char *username)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-        NSS_STATUS result;
-        char *p;
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	char *s = NULL;	
+        char *p = NULL;	
+	char *password = NULL;
+	char *name = NULL;	
 
-	/* Send off request */
+	if ((s = SMB_STRDUP(username)) == NULL) {
+		return false;
+	}
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-        p = strchr(username, '%');
-
-        if (p) {
+	if ((p = strchr(s, '%')) != NULL) {
                 *p = 0;
-                fstrcpy(request.data.auth.user, username);
-                fstrcpy(request.data.auth.pass, p + 1);
-                *p = '%';
-        } else
-                fstrcpy(request.data.auth.user, username);
+		p++;
+	}
 
-	result = winbindd_request_response(WINBINDD_PAM_AUTH, &request, &response);
+	name = s;
+	password = p;	
 
-	/* Display response */
+	wbc_status = wbcAuthenticateUser(name, password);
 
         d_printf("plaintext password authentication %s\n", 
-               (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
+		 WBC_ERROR_IS_OK(wbc_status) ? "succeeded" : "failed");
 
+#if 0
 	if (response.data.auth.nt_status)
 		d_fprintf(stderr, "error code was %s (0x%x)\nerror messsage was: %s\n", 
 			 response.data.auth.nt_status_string, 
 			 response.data.auth.nt_status,
 			 response.data.auth.error_string);
+#endif
 
-        return result == NSS_STATUS_SUCCESS;
+	SAFE_FREE(s);
+
+        return WBC_ERROR_IS_OK(wbc_status);
 }
 
 /* Authenticate a user with a challenge/response */

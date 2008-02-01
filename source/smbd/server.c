@@ -27,12 +27,6 @@ static_decl_rpc;
 
 static int am_parent = 1;
 
-/* the last message the was processed */
-int last_message = -1;
-
-/* a useful macro to debug the last message processed */
-#define LAST_MESSAGE() smb_fn_name(last_message)
-
 extern struct auth_context *negprot_global_auth_context;
 extern SIG_ATOMIC_T got_sig_term;
 extern SIG_ATOMIC_T reload_after_sighup;
@@ -84,6 +78,19 @@ struct messaging_context *smbd_messaging_context(void)
 		smb_panic("Could not init smbd messaging context");
 	}
 	return ctx;
+}
+
+struct memcache *smbd_memcache(void)
+{
+	static struct memcache *cache;
+
+	if (!cache
+	    && !(cache = memcache_init(NULL,
+				       lp_max_stat_cache_size()*1024))) {
+
+		smb_panic("Could not init smbd memcache");
+	}
+	return cache;
 }
 
 /*******************************************************************
@@ -261,9 +268,19 @@ static void add_child_pid(pid_t pid)
 	num_children += 1;
 }
 
-static void remove_child_pid(pid_t pid)
+static void remove_child_pid(pid_t pid, bool unclean_shutdown)
 {
 	struct child_pid *child;
+
+	if (unclean_shutdown) {
+		/* a child terminated uncleanly so tickle all processes to see 
+		   if they can grab any of the pending locks
+		*/
+		messaging_send_buf(smbd_messaging_context(), procid_self(), 
+				   MSG_SMB_BRL_VALIDATE, NULL, 0);
+		message_send_all(smbd_messaging_context(), 
+				 MSG_SMB_UNLOCK, NULL, 0, NULL);
+	}
 
 	if (lp_max_smbd_processes() == 0) {
 		/* Don't bother with the child list if we don't care anyway */
@@ -383,8 +400,11 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 				}
 
 				s = fd_listenset[num_sockets] =
-					open_socket_in(SOCK_STREAM, port, 0,
-							ifss, True);
+					open_socket_in(SOCK_STREAM,
+							port,
+							num_sockets == 0 ? 0 : 2,
+							ifss,
+							true);
 				if(s == -1) {
 					continue;
 				}
@@ -460,8 +480,11 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 					continue;
 				}
 
-				s = open_socket_in(SOCK_STREAM, port, 0,
-						   &ss, true);
+				s = open_socket_in(SOCK_STREAM,
+						port,
+						num_sockets == 0 ? 0 : 2,
+						&ss,
+						true);
 				if (s == -1) {
 					continue;
 				}
@@ -547,10 +570,27 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 
 		if (got_sig_cld) {
 			pid_t pid;
+			int status;
+
 			got_sig_cld = False;
 
-			while ((pid = sys_waitpid(-1, NULL, WNOHANG)) > 0) {
-				remove_child_pid(pid);
+			while ((pid = sys_waitpid(-1, &status, WNOHANG)) > 0) {
+				bool unclean_shutdown = False;
+				
+				/* If the child terminated normally, assume
+				   it was an unclean shutdown unless the
+				   status is 0 
+				*/
+				if (WIFEXITED(status)) {
+					unclean_shutdown = WEXITSTATUS(status);
+				}
+				/* If the child terminated due to a signal
+				   we always assume it was unclean.
+				*/
+				if (WIFSIGNALED(status)) {
+					unclean_shutdown = True;
+				}
+				remove_child_pid(pid, unclean_shutdown);
 			}
 		}
 
@@ -589,6 +629,15 @@ static bool open_sockets_smbd(bool is_daemon, bool interactive, const char *smb_
 			}
 
 			continue;
+		}
+		
+
+		/* If the idle timeout fired and we don't have any connected
+		 * users, exit gracefully. We should be running under a process
+		 * controller that will restart us if necessry.
+		 */
+		if (num == 0 && count_all_current_connections() == 0) {
+			exit_server_cleanly("idle timeout");
 		}
 
 		/* process pending nDNS responses */
@@ -893,6 +942,29 @@ void exit_server_fault(void)
 	exit_server("critical server fault");
 }
 
+
+/****************************************************************************
+received when we should release a specific IP
+****************************************************************************/
+static void msg_release_ip(struct messaging_context *msg_ctx, void *private_data, 
+                    	   uint32_t msg_type, struct server_id server_id, DATA_BLOB *data)
+{
+	const char *ip = (const char *)data->data;
+	char addr[INET6_ADDRSTRLEN];
+
+	if (strcmp(client_socket_addr(get_client_fd(),addr,sizeof(addr)), ip) == 0) {
+		/* we can't afford to do a clean exit - that involves
+		   database writes, which would potentially mean we
+		   are still running after the failover has finished -
+		   we have to get rid of this process ID straight
+		   away */
+		DEBUG(0,("Got release IP message for our IP %s - exiting immediately\n",
+			ip));
+		_exit(0);
+	}
+}
+
+
 /****************************************************************************
  Initialise connect, service and file structs.
 ****************************************************************************/
@@ -1184,6 +1256,12 @@ extern void build_options(bool screen);
 	if (smbd_messaging_context() == NULL)
 		exit(1);
 
+	if (smbd_memcache() == NULL) {
+		exit(1);
+	}
+
+	memcache_set_global(smbd_memcache());
+
 	/* Initialise the password backed before the global_sam_sid
 	   to ensure that we fetch from ldap before we make a domain sid up */
 
@@ -1286,6 +1364,8 @@ extern void build_options(bool screen);
 	/* register our message handlers */
 	messaging_register(smbd_messaging_context(), NULL,
 			   MSG_SMB_FORCE_TDIS, msg_force_tdis);
+	messaging_register(smbd_messaging_context(), NULL,
+			   MSG_SMB_RELEASE_IP, msg_release_ip);
 
 	if ((lp_keepalive() != 0)
 	    && !(event_add_idle(smbd_event_context(), NULL,

@@ -160,7 +160,6 @@
 
 #define ERROR_DOS(class,code) error_packet(outbuf,class,code,NT_STATUS_OK,__LINE__,__FILE__)
 #define ERROR_NT(status) error_packet(outbuf,0,0,status,__LINE__,__FILE__)
-#define ERROR_OPEN(status) error_open(outbuf,status,__LINE__,__FILE__)
 #define ERROR_FORCE_NT(status) error_packet(outbuf,-1,-1,status,__LINE__,__FILE__)
 #define ERROR_BOTH(status,class,code) error_packet(outbuf,class,code,status,__LINE__,__FILE__)
 
@@ -169,9 +168,6 @@
 #define reply_doserror(req,eclass,ecode) reply_dos_error(req,eclass,ecode,__LINE__,__FILE__)
 #define reply_botherror(req,status,eclass,ecode) reply_both_error(req,eclass,ecode,status,__LINE__,__FILE__)
 #define reply_unixerror(req,defclass,deferror) reply_unix_error(req,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
-
-/* this is how errors are generated */
-#define UNIXERROR(defclass,deferror) unix_error_packet(outbuf,defclass,deferror,NT_STATUS_OK,__LINE__,__FILE__)
 
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10
@@ -189,12 +185,15 @@
 #define smb_offset(p,buf) (PTR_DIFF(p,buf+4) + chain_size)
 
 #define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|((PVAL(buf,1)&1)<<16))
-#define _smb_setlen(buf,len) do { buf[0] = 0; buf[1] = (len&0x10000)>>16; \
-        buf[2] = (len&0xFF00)>>8; buf[3] = len&0xFF; } while (0)
+#define _smb_setlen(buf,len) do { buf[0] = 0; buf[1] = ((len)&0x10000)>>16; \
+        buf[2] = ((len)&0xFF00)>>8; buf[3] = (len)&0xFF; } while (0)
 
 #define smb_len_large(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|(PVAL(buf,1)<<16))
 #define _smb_setlen_large(buf,len) do { buf[0] = 0; buf[1] = ((len)&0xFF0000)>>16; \
         buf[2] = ((len)&0xFF00)>>8; buf[3] = (len)&0xFF; } while (0)
+
+#define ENCRYPTION_REQUIRED(conn) ((conn) ? ((conn)->encrypt_level == Required) : false)
+#define IS_CONN_ENCRYPTED(conn) ((conn) ? (conn)->encrypted_tid : false)
 
 /*******************************************************************
 find the difference in milliseconds between two struct timeval
@@ -385,5 +384,13 @@ do { \
 #ifndef ISDOTDOT
 #define ISDOTDOT(p) (*(p) == '.' && *((p) + 1) == '.' && *((p) + 2) == '\0')
 #endif /* ISDOTDOT */
+
+#ifndef toupper_ascii_fast
+/* Warning - this must only be called with 0 <= c < 128. IT WILL
+ * GIVE GARBAGE if c > 128 or c < 0. JRA.
+ */
+extern char toupper_ascii_fast_table[];
+#define toupper_ascii_fast(c) toupper_ascii_fast_table[(unsigned int)(c)];
+#endif
 
 #endif /* _SMB_MACROS_H */

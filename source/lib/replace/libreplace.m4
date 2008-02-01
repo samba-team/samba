@@ -100,6 +100,7 @@ AC_CHECK_HEADERS(sys/socket.h netinet/in.h netdb.h arpa/inet.h)
 AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinet/in_systm.h netinet/in_ip.h)
 AC_CHECK_HEADERS(sys/sockio.h sys/un.h)
 AC_CHECK_HEADERS(sys/mount.h mntent.h)
+AC_CHECK_HEADERS(stropts.h)
 
 dnl we need to check that net/if.h really can be used, to cope with hpux
 dnl where including it always fails
@@ -151,6 +152,26 @@ AC_HAVE_TYPE([struct sockaddr_in6], [
 #include <sys/types.h>
 #include <netinet/in.h>
 ])
+
+if test x"$ac_cv_type_struct_sockaddr_storage" = x"yes"; then
+AC_CHECK_MEMBER(struct sockaddr_storage.ss_family,
+                AC_DEFINE(HAVE_SS_FAMILY, 1, [Defined if struct sockaddr_storage has ss_family field]),,
+                [
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+		])
+
+if test x"$ac_cv_member_struct_sockaddr_storage_ss_family" != x"yes"; then
+AC_CHECK_MEMBER(struct sockaddr_storage.__ss_family,
+                AC_DEFINE(HAVE___SS_FAMILY, 1, [Defined if struct sockaddr_storage has __ss_family field]),,
+                [
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+		])
+fi
+fi
 
 AC_CHECK_FUNCS(seteuid setresuid setegid setresgid chroot bzero strerror)
 AC_CHECK_FUNCS(vsyslog setlinebuf mktime ftruncate chsize rename)

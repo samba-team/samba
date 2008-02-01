@@ -7,6 +7,8 @@
 #ifndef _HEADER_wkssvc
 #define _HEADER_wkssvc
 
+enum srvsvc_PlatformId;
+
 struct wkssvc_NetWkstaInfo100 {
 	enum srvsvc_PlatformId platform_id;
 	const char *server_name;/* [unique,charset(UTF16)] */
@@ -413,10 +415,9 @@ struct wkssvc_NetrWorkstationStatistics {
 /* bitmap wkssvc_renameflags */
 #define WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE ( 0x00000002 )
 
-;
-
+enum wkssvc_NetValidateNameType
 #ifndef USE_UINT_ENUMS
-enum wkssvc_NetValidateNameType {
+ {
 	NetSetupUnknown=0,
 	NetSetupMachine=1,
 	NetSetupWorkgroup=2,
@@ -425,7 +426,7 @@ enum wkssvc_NetValidateNameType {
 	NetSetupDnsMachine=5
 }
 #else
-enum wkssvc_NetValidateNameType { __donnot_use_enum_wkssvc_NetValidateNameType=0x7FFFFFFF}
+ { __donnot_use_enum_wkssvc_NetValidateNameType=0x7FFFFFFF}
 #define NetSetupUnknown ( 0 )
 #define NetSetupMachine ( 1 )
 #define NetSetupWorkgroup ( 2 )
@@ -435,15 +436,16 @@ enum wkssvc_NetValidateNameType { __donnot_use_enum_wkssvc_NetValidateNameType=0
 #endif
 ;
 
+enum wkssvc_NetJoinStatus
 #ifndef USE_UINT_ENUMS
-enum wkssvc_NetJoinStatus {
+ {
 	NetSetupUnknownStatus=0,
 	NetSetupUnjoined=1,
 	NetSetupWorkgroupName=2,
 	NetSetupDomainName=3
 }
 #else
-enum wkssvc_NetJoinStatus { __donnot_use_enum_wkssvc_NetJoinStatus=0x7FFFFFFF}
+ { __donnot_use_enum_wkssvc_NetJoinStatus=0x7FFFFFFF}
 #define NetSetupUnknownStatus ( 0 )
 #define NetSetupUnjoined ( 1 )
 #define NetSetupWorkgroupName ( 2 )
@@ -467,17 +469,16 @@ struct wkssvc_PasswordBuffer {
 #define WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE ( 0x00000002 )
 #define WKSSVC_JOIN_FLAGS_JOIN_TYPE ( 0x00000001 )
 
-;
-
+enum wkssvc_ComputerNameType
 #ifndef USE_UINT_ENUMS
-enum wkssvc_ComputerNameType {
+ {
 	NetPrimaryComputerName=0,
 	NetAlternateComputerNames=1,
 	NetAllComputerNames=2,
 	NetComputerNameTypeMax=3
 }
 #else
-enum wkssvc_ComputerNameType { __donnot_use_enum_wkssvc_ComputerNameType=0x7FFFFFFF}
+ { __donnot_use_enum_wkssvc_ComputerNameType=0x7FFFFFFF}
 #define NetPrimaryComputerName ( 0 )
 #define NetAlternateComputerNames ( 1 )
 #define NetAllComputerNames ( 2 )

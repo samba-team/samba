@@ -234,7 +234,7 @@ WERROR _winreg_QueryValue(pipes_struct *p, struct winreg_QueryValue *r)
 	if ( !regkey )
 		return WERR_BADFID;
 
-	*r->out.value_length = *r->out.type = 0;
+	*r->out.value_length = *r->out.type = REG_NONE;
 	
 	DEBUG(7,("_reg_info: policy key name = [%s]\n", regkey->key->name));
 	DEBUG(7,("_reg_info: policy key type = [%08x]\n", regkey->key->type));
@@ -370,9 +370,7 @@ WERROR _winreg_GetVersion(pipes_struct *p, struct winreg_GetVersion *r)
 	if ( !regkey )
 		return WERR_BADFID;
 	
-	*r->out.version = 0x00000005;	/* Windows 2000 registry API version */
-	
-	return WERR_OK;
+	return reg_getversion(r->out.version);
 }
 
 
@@ -934,7 +932,9 @@ static WERROR make_default_reg_sd( TALLOC_CTX *ctx, SEC_DESC **psd )
         if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 2, ace)) == NULL)
                 return WERR_NOMEM;
 
-        if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, &owner_sid, NULL, NULL, psa, &sd_size)) == NULL)
+        if ((*psd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
+				  SEC_DESC_SELF_RELATIVE, &owner_sid, NULL,
+				  NULL, psa, &sd_size)) == NULL)
                 return WERR_NOMEM;
 
 	return WERR_OK;
@@ -1113,7 +1113,7 @@ WERROR _winreg_GetKeySecurity(pipes_struct *p, struct winreg_GetKeySecurity *r)
 	if ( !(key->key->access_granted & STD_RIGHT_READ_CONTROL_ACCESS) )
 		return WERR_ACCESS_DENIED;
 
-	err = regkey_get_secdesc(p->mem_ctx, key->key, &secdesc);
+	err = reg_getkeysecurity(p->mem_ctx, key, &secdesc);
 	if (!W_ERROR_IS_OK(err)) {
 		return err;
 	}
@@ -1159,7 +1159,7 @@ WERROR _winreg_SetKeySecurity(pipes_struct *p, struct winreg_SetKeySecurity *r)
 		return err;
 	}
 
-	return regkey_set_secdesc(key->key, secdesc);
+	return reg_setkeysecurity(key, secdesc);
 }
 
 /*******************************************************************

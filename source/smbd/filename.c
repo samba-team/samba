@@ -28,6 +28,13 @@
 
 static bool scan_directory(connection_struct *conn, const char *path,
 			   char *name, char **found_name);
+static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
+				  connection_struct *conn,
+				  const char *orig_path,
+				  const char *basepath,
+				  const char *streamname,
+				  SMB_STRUCT_STAT *pst,
+				  char **path);
 
 /****************************************************************************
  Mangle the 2nd name and check if it is then equal to the first name.
@@ -119,6 +126,7 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	char *start, *end;
 	char *dirpath = NULL;
 	char *name = NULL;
+	char *stream = NULL;
 	bool component_was_mangled = False;
 	bool name_has_wildcard = False;
 	NTSTATUS result;
@@ -206,6 +214,20 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (!lp_posix_pathnames()) {
+		stream = strchr_m(name, ':');
+
+		if (stream != NULL) {
+			char *tmp = talloc_strdup(ctx, stream);
+			if (tmp == NULL) {
+				TALLOC_FREE(name);
+				return NT_STATUS_NO_MEMORY;
+			}
+			*stream = '\0';
+			stream = tmp;
+		}
+	}
+
 	/*
 	 * Large directory fix normalization. If we're case sensitive, and
 	 * the case preserving parameters are set to "no", normalize the case of
@@ -222,8 +244,14 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	start = name;
 
-	if(!conn->case_sensitive
-	   && stat_cache_lookup(conn, &name, &dirpath, &start, &st)) {
+	/* If we're providing case insentive semantics or
+	 * the underlying filesystem is case insensitive,
+	 * then a case-normalized hit in the stat-cache is
+	 * authoratitive. JRA.
+	 */
+
+	if((!conn->case_sensitive || !(conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH)) &&
+			stat_cache_lookup(conn, &name, &dirpath, &start, &st)) {
 		*pst = st;
 		goto done;
 	}
@@ -269,10 +297,11 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 
 	/*
 	 * A special case - if we don't have any mangling chars and are case
-	 * sensitive then searching won't help.
+	 * sensitive or the underlying filesystem is case insentive then searching
+	 * won't help.
 	 */
 
-	if (conn->case_sensitive &&
+	if ((conn->case_sensitive || !(conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH)) &&
 			!mangle_is_mangled(name, conn->params)) {
 		goto done;
 	}
@@ -646,6 +675,20 @@ NTSTATUS unix_convert(TALLOC_CTX *ctx,
 	DEBUG(5,("conversion finished %s -> %s\n",orig_path, name));
 
  done:
+	if (stream != NULL) {
+		char *tmp = NULL;
+
+		result = build_stream_path(ctx, conn, orig_path, name, stream,
+					   pst, &tmp);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto fail;
+		}
+
+		DEBUG(10, ("build_stream_path returned %s\n", tmp));
+
+		TALLOC_FREE(name);
+		name = tmp;
+	}
 	*pp_conv_path = name;
 	TALLOC_FREE(dirpath);
 	return NT_STATUS_OK;
@@ -735,6 +778,15 @@ static bool scan_directory(connection_struct *conn, const char *path,
 		path = ".";
 	}
 
+	/* If we have a case-sensitive filesystem, it doesn't do us any
+	 * good to search for a name. If a case variation of the name was
+	 * there, then the original stat(2) would have found it.
+	 */
+	if (!mangled && !(conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH)) {
+		errno = ENOENT;
+		return False;
+	}
+
 	/*
 	 * The incoming name can be mangled, and if we de-mangle it
 	 * here it will not compare correctly against the filename (name2)
@@ -762,7 +814,7 @@ static bool scan_directory(connection_struct *conn, const char *path,
 	}
 
 	/* open the directory */
-	if (!(cur_dir = OpenDir(conn, path, NULL, 0))) {
+	if (!(cur_dir = OpenDir(talloc_tos(), conn, path, NULL, 0))) {
 		DEBUG(3,("scan dir didn't open dir [%s]\n",path));
 		TALLOC_FREE(unmangled_name);
 		return(False);
@@ -793,7 +845,7 @@ static bool scan_directory(connection_struct *conn, const char *path,
 			/* we've found the file, change it's name and return */
 			*found_name = talloc_strdup(ctx,dname);
 			TALLOC_FREE(unmangled_name);
-			CloseDir(cur_dir);
+			TALLOC_FREE(cur_dir);
 			if (!*found_name) {
 				errno = ENOMEM;
 				return False;
@@ -803,7 +855,94 @@ static bool scan_directory(connection_struct *conn, const char *path,
 	}
 
 	TALLOC_FREE(unmangled_name);
-	CloseDir(cur_dir);
+	TALLOC_FREE(cur_dir);
 	errno = ENOENT;
 	return False;
+}
+
+static NTSTATUS build_stream_path(TALLOC_CTX *mem_ctx,
+				  connection_struct *conn,
+				  const char *orig_path,
+				  const char *basepath,
+				  const char *streamname,
+				  SMB_STRUCT_STAT *pst,
+				  char **path)
+{
+	SMB_STRUCT_STAT st;
+	char *result = NULL;
+	NTSTATUS status;
+	unsigned int i, num_streams;
+	struct stream_struct *streams = NULL;
+
+	result = talloc_asprintf(mem_ctx, "%s%s", basepath, streamname);
+	if (result == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (SMB_VFS_STAT(conn, result, &st) == 0) {
+		*pst = st;
+		*path = result;
+		return NT_STATUS_OK;
+	}
+
+	if (errno != ENOENT) {
+		status = map_nt_error_from_unix(errno);
+		DEBUG(10, ("vfs_stat failed: %s\n", nt_errstr(status)));
+		goto fail;
+	}
+
+	status = SMB_VFS_STREAMINFO(conn, NULL, basepath, mem_ctx,
+				    &num_streams, &streams);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		SET_STAT_INVALID(*pst);
+		*path = result;
+		return NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("vfs_streaminfo failed: %s\n", nt_errstr(status)));
+		goto fail;
+	}
+
+	for (i=0; i<num_streams; i++) {
+		DEBUG(10, ("comparing [%s] and [%s]: ",
+			   streamname, streams[i].name));
+		if (fname_equal(streamname, streams[i].name,
+				conn->case_sensitive)) {
+			DEBUGADD(10, ("equal\n"));
+			break;
+		}
+		DEBUGADD(10, ("not equal\n"));
+	}
+
+	if (i == num_streams) {
+		SET_STAT_INVALID(*pst);
+		*path = result;
+		TALLOC_FREE(streams);
+		return NT_STATUS_OK;
+	}
+
+	TALLOC_FREE(result);
+
+	result = talloc_asprintf(mem_ctx, "%s%s", basepath, streams[i].name);
+	if (result == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	SET_STAT_INVALID(*pst);
+
+	if (SMB_VFS_STAT(conn, result, pst) == 0) {
+		stat_cache_add(orig_path, result, conn->case_sensitive);
+	}
+
+	*path = result;
+	TALLOC_FREE(streams);
+	return NT_STATUS_OK;
+
+ fail:
+	TALLOC_FREE(result);
+	TALLOC_FREE(streams);
+	return status;
 }

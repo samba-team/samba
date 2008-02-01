@@ -93,15 +93,6 @@ static unsigned char char_flags[256];
 */
 static unsigned mangle_prefix;
 
-/* we will use a very simple direct mapped prefix cache. The big
-   advantage of this cache structure is speed and low memory usage 
-
-   The cache is indexed by the low-order bits of the hash, and confirmed by
-   hashing the resulting cache entry to match the known hash
-*/
-static char **prefix_cache;
-static unsigned int *prefix_cache_hashes;
-
 /* these are the characters we use in the 8.3 hash. Must be 36 chars long */
 static const char *basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 static unsigned char base_reverse[256];
@@ -147,57 +138,39 @@ static unsigned int mangle_hash(const char *key, unsigned int length)
 	return value & ~0x80000000;  
 }
 
-/* 
-   initialise (ie. allocate) the prefix cache
- */
-static bool cache_init(void)
-{
-	if (prefix_cache) {
-		return True;
-	}
-
-	prefix_cache = SMB_CALLOC_ARRAY(char *,MANGLE_CACHE_SIZE);
-	if (!prefix_cache) {
-		return False;
-	}
-
-	prefix_cache_hashes = SMB_CALLOC_ARRAY(unsigned int, MANGLE_CACHE_SIZE);
-	if (!prefix_cache_hashes) {
-		SAFE_FREE(prefix_cache);
-		return False;
-	}
-
-	return True;
-}
-
 /*
   insert an entry into the prefix cache. The string might not be null
   terminated */
 static void cache_insert(const char *prefix, int length, unsigned int hash)
 {
-	int i = hash % MANGLE_CACHE_SIZE;
+	char *str = SMB_STRNDUP(prefix, length);
 
-	if (prefix_cache[i]) {
-		free(prefix_cache[i]);
+	if (str == NULL) {
+		return;
 	}
 
-	prefix_cache[i] = SMB_STRNDUP(prefix, length);
-	prefix_cache_hashes[i] = hash;
+	memcache_add(smbd_memcache(), MANGLE_HASH2_CACHE,
+		     data_blob_const(&hash, sizeof(hash)),
+		     data_blob_const(str, length+1));
+	SAFE_FREE(str);
 }
 
 /*
   lookup an entry in the prefix cache. Return NULL if not found.
 */
-static const char *cache_lookup(unsigned int hash)
+static char *cache_lookup(TALLOC_CTX *mem_ctx, unsigned int hash)
 {
-	int i = hash % MANGLE_CACHE_SIZE;
+	DATA_BLOB value;
 
-	if (!prefix_cache[i] || hash != prefix_cache_hashes[i]) {
+	if (!memcache_lookup(smbd_memcache(), MANGLE_HASH2_CACHE,
+			     data_blob_const(&hash, sizeof(hash)), &value)) {
 		return NULL;
 	}
 
-	/* yep, it matched */
-	return prefix_cache[i];
+	SMB_ASSERT((value.length > 0)
+		   && (value.data[value.length-1] == '\0'));
+
+	return talloc_strdup(mem_ctx, (char *)value.data);
 }
 
 
@@ -377,7 +350,7 @@ static bool lookup_name_from_8_3(TALLOC_CTX *ctx,
 {
 	unsigned int hash, multiplier;
 	unsigned int i;
-	const char *prefix;
+	char *prefix;
 	char extension[4];
 
 	*pp_out = NULL;
@@ -397,7 +370,7 @@ static bool lookup_name_from_8_3(TALLOC_CTX *ctx,
 	}
 
 	/* now look in the prefix cache for that hash */
-	prefix = cache_lookup(hash);
+	prefix = cache_lookup(ctx, hash);
 	if (!prefix) {
 		M_DEBUG(10,("lookup_name_from_8_3: %s -> %08X -> not found\n",
 					name, hash));
@@ -421,7 +394,9 @@ static bool lookup_name_from_8_3(TALLOC_CTX *ctx,
 		*pp_out = talloc_strdup(ctx, prefix);
 	}
 
-	if (!pp_out) {
+	TALLOC_FREE(prefix);
+
+	if (!*pp_out) {
 		M_DEBUG(0,("talloc_fail"));
 		return False;
 	}
@@ -727,10 +702,6 @@ struct mangle_fns *mangle_hash2_init(void)
 
 	init_tables();
 	mangle_reset();
-
-	if (!cache_init()) {
-		return NULL;
-	}
 
 	return &mangle_fns;
 }

@@ -291,7 +291,7 @@ void reply_pipe_read_and_X(struct smb_request *req)
 		return;
 	}
 
-	set_message((char *)req->outbuf, 12, nread, False);
+	srv_set_message((char *)req->outbuf, 12, nread, False);
   
 	SSVAL(req->outbuf,smb_vwv5,nread);
 	SSVAL(req->outbuf,smb_vwv6,smb_offset(data,req->outbuf));

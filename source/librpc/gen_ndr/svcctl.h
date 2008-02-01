@@ -68,14 +68,13 @@ struct ENUM_SERVICE_STATUS {
 #define SV_TYPE_LOCAL_LIST_ONLY ( 0x40000000 )
 #define SV_TYPE_DOMAIN_ENUM ( 0x80000000 )
 
-;
-
+enum SERVICE_CONTROL
 #ifndef USE_UINT_ENUMS
-enum SERVICE_CONTROL {
+ {
 	FIXME=1
 }
 #else
-enum SERVICE_CONTROL { __donnot_use_enum_SERVICE_CONTROL=0x7FFFFFFF}
+ { __donnot_use_enum_SERVICE_CONTROL=0x7FFFFFFF}
 #define FIXME ( 1 )
 #endif
 ;

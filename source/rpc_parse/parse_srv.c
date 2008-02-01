@@ -507,7 +507,8 @@ static bool srv_io_share_info502_str(const char *desc, SH_INFO_502_STR *sh502, p
 
 		if(UNMARSHALLING(ps)) {
 
-			sh502->ptrs->sd_size = sh502->sd_size = sec_desc_size(sh502->sd);
+			sh502->ptrs->sd_size = sh502->sd_size =
+				ndr_size_security_descriptor(sh502->sd, 0);
 
 			prs_set_offset(ps, old_offset + sh502->reserved);
 		}
@@ -1018,7 +1019,7 @@ static bool srv_io_srv_share_ctr(const char *desc, SRV_SHARE_INFO_CTR *ctr, prs_
 
 	default:
 		DEBUG(5,("%s no share info at switch_value %d\n",
-			 tab_depth(depth), ctr->switch_value));
+			 tab_depth(5,depth), ctr->switch_value));
 		break;
 	}
 
@@ -1267,7 +1268,7 @@ static bool srv_io_srv_share_info(const char *desc, prs_struct *ps, int depth, S
 				return False;
 		default:
 		        DEBUG(5,("%s no share info at switch_value %d\n",
-			         tab_depth(depth), r_n->switch_value));
+			         tab_depth(5,depth), r_n->switch_value));
 			break;
 		}
 	}
@@ -1460,7 +1461,7 @@ void init_srv_q_net_share_add(SRV_Q_NET_SHARE_ADD *q, const char *srvname,
 {
 	switch(level) {
 	case 502: {
-		size_t sd_size = sec_desc_size(sd);
+		size_t sd_size = ndr_size_security_descriptor(sd, 0);
 		q->ptr_srv_name = 1;
 		init_unistr2(&q->uni_srv_name, srvname, UNI_STR_TERMINATE);
 		q->info.switch_value = q->info_level = level;
@@ -1796,7 +1797,7 @@ static bool srv_io_srv_sess_ctr(const char *desc, SRV_SESS_INFO_CTR **pp_ctr, pr
 			break;
 		default:
 			DEBUG(5,("%s no session info at switch_value %d\n",
-			         tab_depth(depth), ctr->switch_value));
+			         tab_depth(5,depth), ctr->switch_value));
 			break;
 		}
 	}
@@ -2216,7 +2217,7 @@ static bool srv_io_srv_conn_ctr(const char *desc, SRV_CONN_INFO_CTR **pp_ctr, pr
 			break;
 		default:
 			DEBUG(5,("%s no connection info at switch_value %d\n",
-			         tab_depth(depth), ctr->switch_value));
+			         tab_depth(5,depth), ctr->switch_value));
 			break;
 		}
 	}
@@ -2486,7 +2487,7 @@ static bool srv_io_srv_file_ctr(const char *desc, SRV_FILE_INFO_CTR *ctr, prs_st
 		break;
 	}
 	default:
-		DEBUG(5,("%s no file info at switch_value %d\n", tab_depth(depth), ctr->level));
+		DEBUG(5,("%s no file info at switch_value %d\n", tab_depth(5,depth), ctr->level));
 		break;
 	}
 			
@@ -2839,7 +2840,7 @@ static bool srv_io_info_ctr(const char *desc, SRV_INFO_CTR *ctr, prs_struct *ps,
 			break;
 		default:
 			DEBUG(5,("%s no server info at switch_value %d\n",
-					 tab_depth(depth), ctr->switch_value));
+					 tab_depth(5,depth), ctr->switch_value));
 			break;
 		}
 		if(!prs_align(ps))

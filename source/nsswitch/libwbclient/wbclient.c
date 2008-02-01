@@ -1,0 +1,100 @@
+/*
+   Unix SMB/CIFS implementation.
+
+   Winbind client API
+
+   Copyright (C) Gerald (Jerry) Carter 2007
+
+
+   This library is free software; you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public
+   License as published by the Free Software Foundation; either
+   version 3 of the License, or (at your option) any later version.
+
+   This library is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+   Library General Public License for more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/* Required Headers */
+
+#include "libwbclient.h"
+
+/* From wb_common.c */
+
+NSS_STATUS winbindd_request_response(int req_type,
+				     struct winbindd_request *request,
+				     struct winbindd_response *response);
+
+/** @brief Wrapper around Winbind's send/receive API call
+ *
+ * @param cmd       Winbind command operation to perform
+ * @param request   Send structure
+ * @param response  Receive structure
+ *
+ * @return #wbcErr
+ **/
+
+/**********************************************************************
+ result == NSS_STATUS_UNAVAIL: winbind not around
+ result == NSS_STATUS_NOTFOUND: winbind around, but domain missing
+
+ Due to a bad API NSS_STATUS_NOTFOUND is returned both when winbind_off
+ and when winbind return WINBINDD_ERROR. So the semantics of this
+ routine depends on winbind_on. Grepping for winbind_off I just
+ found 3 places where winbind is turned off, and this does not conflict
+ (as far as I have seen) with the callers of is_trusted_domains.
+
+ --Volker
+**********************************************************************/
+
+wbcErr wbcRequestResponse(int cmd,
+			  struct winbindd_request *request,
+			  struct winbindd_response *response)
+{
+	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
+	NSS_STATUS nss_status;
+
+	/* for some calls the request and/or response cna be NULL */
+
+	nss_status = winbindd_request_response(cmd, request, response);
+
+	switch (nss_status) {
+	case NSS_STATUS_SUCCESS:
+		wbc_status = WBC_ERR_SUCCESS;
+		break;
+	case NSS_STATUS_UNAVAIL:
+		wbc_status = WBC_ERR_WINBIND_NOT_AVAILABLE;
+		break;
+	case NSS_STATUS_NOTFOUND:
+		wbc_status = WBC_ERR_DOMAIN_NOT_FOUND;
+		break;
+	default:
+		wbc_status = WBC_ERR_NSS_ERROR;
+		break;
+	}
+
+	return wbc_status;
+}
+
+/** @brief Free library allocated memory
+ *
+ * @param *p Pointer to free
+ *
+ * @return void
+ **/
+
+void wbcFreeMemory(void *p)
+{
+	if (p)
+		talloc_free(p);
+
+	return;
+}
+
+
+

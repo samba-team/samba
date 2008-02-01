@@ -2363,11 +2363,11 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 		case PI_LSARPC:
 			lsa_get_pipe_fns( &cmds, &n_cmds );
 			break;
-		case PI_LSARPC_DS:
-			lsa_ds_get_pipe_fns( &cmds, &n_cmds );
+		case PI_DSSETUP:
+			dssetup_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_SAMR:
-			samr_get_pipe_fns( &cmds, &n_cmds );
+			samr2_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_NETLOGON:
 			netlog_get_pipe_fns( &cmds, &n_cmds );

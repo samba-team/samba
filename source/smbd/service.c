@@ -219,44 +219,6 @@ bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir)
 	return(True);
 }
 
-/****************************************************************************
- Add a home service. Returns the new service number or -1 if fail.
-****************************************************************************/
-
-int add_home_service(const char *service, const char *username, const char *homedir)
-{
-	int iHomeService;
-
-	if (!service || !homedir)
-		return -1;
-
-	if ((iHomeService = lp_servicenumber(HOMES_NAME)) < 0)
-		return -1;
-
-	/*
-	 * If this is a winbindd provided username, remove
-	 * the domain component before adding the service.
-	 * Log a warning if the "path=" parameter does not
-	 * include any macros.
-	 */
-
-	{
-		const char *p = strchr(service,*lp_winbind_separator());
-
-		/* We only want the 'user' part of the string */
-		if (p) {
-			service = p + 1;
-		}
-	}
-
-	if (!lp_add_home(service, iHomeService, username, homedir)) {
-		return -1;
-	}
-	
-	return lp_servicenumber(service);
-
-}
-
 static int load_registry_service(const char *servicename)
 {
 	struct registry_key *key;
@@ -348,6 +310,47 @@ void load_registry_shares(void)
 	return;
 }
 
+/****************************************************************************
+ Add a home service. Returns the new service number or -1 if fail.
+****************************************************************************/
+
+int add_home_service(const char *service, const char *username, const char *homedir)
+{
+	int iHomeService;
+
+	if (!service || !homedir)
+		return -1;
+
+	if ((iHomeService = lp_servicenumber(HOMES_NAME)) < 0) {
+		if ((iHomeService = load_registry_service(HOMES_NAME)) < 0) {
+			return -1;
+		}
+	}
+
+	/*
+	 * If this is a winbindd provided username, remove
+	 * the domain component before adding the service.
+	 * Log a warning if the "path=" parameter does not
+	 * include any macros.
+	 */
+
+	{
+		const char *p = strchr(service,*lp_winbind_separator());
+
+		/* We only want the 'user' part of the string */
+		if (p) {
+			service = p + 1;
+		}
+	}
+
+	if (!lp_add_home(service, iHomeService, username, homedir)) {
+		return -1;
+	}
+	
+	return lp_servicenumber(service);
+
+}
+
 /**
  * Find a service entry.
  *
@@ -364,7 +367,7 @@ int find_service(fstring service)
 
 	/* now handle the special case of a home directory */
 	if (iService < 0) {
-		char *phome_dir = get_user_home_dir(service);
+		char *phome_dir = get_user_home_dir(talloc_tos(), service);
 
 		if(!phome_dir) {
 			/*
@@ -372,7 +375,8 @@ int find_service(fstring service)
 			 * be a Windows to unix mapped user name.
 			 */
 			if(map_username(service))
-				phome_dir = get_user_home_dir(service);
+				phome_dir = get_user_home_dir(
+					talloc_tos(), service);
 		}
 
 		DEBUG(3,("checking for home directory %s gave %s\n",service,
@@ -385,7 +389,10 @@ int find_service(fstring service)
 	if (iService < 0) {
 		int iPrinterService;
 
-		if ((iPrinterService = lp_servicenumber(PRINTERS_NAME)) >= 0) {
+		if ((iPrinterService = lp_servicenumber(PRINTERS_NAME)) < 0) {
+			iPrinterService = load_registry_service(PRINTERS_NAME);
+		}
+		if (iPrinterService) {
 			DEBUG(3,("checking whether %s is a valid printer name...\n", service));
 			if (pcap_printername_ok(service)) {
 				DEBUG(3,("%s is a valid printer name\n", service));
@@ -744,11 +751,12 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			*status = NT_STATUS_WRONG_PASSWORD;
 			return NULL;
 		}
-		pass = Get_Pwnam(user);
+		pass = Get_Pwnam_alloc(talloc_tos(), user);
 		status2 = create_token_from_username(conn->mem_ctx, pass->pw_name, True,
 						     &conn->uid, &conn->gid,
 						     &found_username,
 						     &conn->nt_user_token);
+		TALLOC_FREE(pass);
 		if (!NT_STATUS_IS_OK(status2)) {
 			conn_free(conn);
 			*status = status2;
@@ -789,6 +797,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	conn->case_preserve = lp_preservecase(snum);
 	conn->short_case_preserve = lp_shortpreservecase(snum);
+
+	conn->encrypt_level = lp_smb_encrypt(snum);
 
 	conn->veto_list = NULL;
 	conn->hide_list = NULL;
@@ -1143,22 +1153,26 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 #if SOFTLINK_OPTIMISATION
 	/* resolve any soft links early if possible */
 	if (vfs_ChDir(conn,conn->connectpath) == 0) {
-		TALLOC_CTX *ctx = talloc_stackframe();
+		TALLOC_CTX *ctx = talloc_tos();
 		char *s = vfs_GetWd(ctx,s);
 		if (!s) {
 			*status = map_nt_error_from_unix(errno);
-			TALLOC_FREE(ctx);
 			goto err_root_exit;
 		}
 		if (!set_conn_connectpath(conn,s)) {
 			*status = NT_STATUS_NO_MEMORY;
-			TALLOC_FREE(ctx);
 			goto err_root_exit;
 		}
 		vfs_ChDir(conn,conn->connectpath);
-		TALLOC_FREE(ctx);
 	}
 #endif
+
+	/* Figure out the characteristics of the underlying filesystem. This
+	 * assumes that all the filesystem mounted withing a share path have
+	 * the same characteristics, which is likely but not guaranteed.
+	 */
+
+	conn->fs_capabilities = SMB_VFS_FS_CAPABILITIES(conn);
 
 	/*
 	 * Print out the 'connected as' stuff here as we need

@@ -33,6 +33,23 @@ static struct sec_ctx sec_ctx_stack[MAX_SEC_CTX_DEPTH + 1];
 static int sec_ctx_stack_ndx;
 
 /****************************************************************************
+ Are two UNIX tokens equal ?
+****************************************************************************/
+
+bool unix_token_equal(const UNIX_USER_TOKEN *t1, const UNIX_USER_TOKEN *t2)
+{
+	if (t1->uid != t2->uid || t1->gid != t2->gid ||
+			t1->ngroups != t2->ngroups) {
+		return false;
+	}
+	if (memcmp(t1->groups, t2->groups,
+			t1->ngroups*sizeof(gid_t)) != 0) {
+		return false;
+	}
+	return true;
+}
+
+/****************************************************************************
  Become the specified uid.
 ****************************************************************************/
 

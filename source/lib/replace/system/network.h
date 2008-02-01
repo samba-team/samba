@@ -78,6 +78,10 @@
 #include <sys/ioctl.h>
 #endif
 
+#ifdef HAVE_STROPTS_H
+#include <stropts.h>
+#endif
+
 #ifdef REPLACE_INET_NTOA
 /* define is in "replace.h" */
 char *rep_inet_ntoa(struct in_addr ip);
@@ -133,7 +137,14 @@ const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #endif
 
 #ifndef AI_ADDRCONFIG
+/*
+ * logic copied from AI_NUMERICHOST
+ */
+#if defined(HAVE_STRUCT_ADDRINFO) && defined(HAVE_GETADDRINFO)
+#define AI_ADDRCONFIG	0
+#else
 #define AI_ADDRCONFIG	0x0020
+#endif
 #endif
 
 #ifndef AI_NUMERICSERV
@@ -223,9 +234,18 @@ typedef unsigned short int sa_family_t;
 #ifdef HAVE_STRUCT_SOCKADDR_IN6
 #define sockaddr_storage sockaddr_in6
 #define ss_family sin6_family
+#define HAVE_SS_FAMILY 1
 #else
 #define sockaddr_storage sockaddr_in
 #define ss_family sin_family
+#define HAVE_SS_FAMILY 1
+#endif
+#endif
+
+#ifndef HAVE_SS_FAMILY
+#ifdef HAVE___SS_FAMILY
+#define ss_family __ss_family
+#define HAVE_SS_FAMILY 1
 #endif
 #endif
 

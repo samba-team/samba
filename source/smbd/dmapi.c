@@ -46,7 +46,7 @@ bool dmapi_have_session(void) { return False; }
 #define DMAPI_SESSION_NAME "samba"
 #define DMAPI_TRACE 10
 
-static dm_sessid_t dmapi_session = DM_NO_SESSION;
+static dm_sessid_t samba_dmapi_session = DM_NO_SESSION;
 
 /* Initialise the DMAPI interface. Make sure that we only end up initialising
  * once per process to avoid resource leaks across different DMAPI
@@ -75,7 +75,7 @@ static int init_dmapi_service(void)
 
 bool dmapi_have_session(void)
 {
-	return dmapi_session != DM_NO_SESSION;
+	return samba_dmapi_session != DM_NO_SESSION;
 }
 
 static dm_sessid_t *realloc_session_list(dm_sessid_t * sessions, int count)
@@ -110,7 +110,7 @@ int dmapi_init_session(void)
 	 */
 	SMB_WARN(getuid() == 0, "dmapi_init_session must be called as root");
 
-	dmapi_session = DM_NO_SESSION;
+	samba_dmapi_session = DM_NO_SESSION;
 	if (init_dmapi_service() < 0) {
 		return -1;
 	}
@@ -139,7 +139,7 @@ retry:
 		err = dm_query_session(sessions[i], sizeof(buf), buf, &buflen);
 		buf[sizeof(buf) - 1] = '\0';
 		if (err == 0 && strcmp(DMAPI_SESSION_NAME, buf) == 0) {
-			dmapi_session = sessions[i];
+			samba_dmapi_session = sessions[i];
 			DEBUGADD(DMAPI_TRACE,
 				("attached to existing DMAPI session "
 				 "named '%s'\n", buf));
@@ -150,16 +150,15 @@ retry:
 	TALLOC_FREE(sessions);
 
 	/* No session already defined. */
-	if (dmapi_session == DM_NO_SESSION) {
-		err = dm_create_session(DM_NO_SESSION,
-					CONST_DISCARD(char *,
-						      DMAPI_SESSION_NAME),
-					&dmapi_session);
+	if (samba_dmapi_session == DM_NO_SESSION) {
+		err = dm_create_session(DM_NO_SESSION, 
+					CONST_DISCARD(char *, DMAPI_SESSION_NAME),
+					&samba_dmapi_session);
 		if (err < 0) {
 			DEBUGADD(DMAPI_TRACE,
 				("failed to create new DMAPI session: %s\n",
 				strerror(errno)));
-			dmapi_session = DM_NO_SESSION;
+			samba_dmapi_session = DM_NO_SESSION;
 			return -1;
 		}
 
@@ -185,22 +184,22 @@ static int reattach_dmapi_session(void)
 	char	buf[DM_SESSION_INFO_LEN];
 	size_t	buflen;
 
-	if (dmapi_session != DM_NO_SESSION ) {
+	if (samba_dmapi_session != DM_NO_SESSION ) {
 		become_root();
 
 		/* NOTE: On Linux, this call opens /dev/dmapi, costing us a
 		 * file descriptor. Ideally, we would close this when we fork.
 		 */
 		if (init_dmapi_service() < 0) {
-			dmapi_session = DM_NO_SESSION;
+			samba_dmapi_session = DM_NO_SESSION;
 			unbecome_root();
 			return -1;
 		}
 
-		if (dm_query_session(dmapi_session, sizeof(buf),
+		if (dm_query_session(samba_dmapi_session, sizeof(buf),
 			    buf, &buflen) < 0) {
 			/* Session is stale. Disable DMAPI. */
-			dmapi_session = DM_NO_SESSION;
+			samba_dmapi_session = DM_NO_SESSION;
 			unbecome_root();
 			return -1;
 		}
@@ -214,33 +213,42 @@ static int reattach_dmapi_session(void)
 	return 0;
 }
 
-uint32 dmapi_file_flags(const char * const path)
+/* If a DMAPI session has been initialised, then we need to make sure
+ * we are attached to it and have the correct privileges. This is
+ * necessary to be able to do DMAPI operations across a fork(2). If
+ * it fails, there is no likelihood of that failure being transient.
+ *
+ * Note that this use of the static attached flag relies on the fact
+ * that dmapi_file_flags() is never called prior to forking the
+ * per-client server process.
+ */
+const void * dmapi_get_current_session(void) 
 {
 	static int attached = 0;
+	if (dmapi_have_session() && !attached) {
+		attached++;
+		if (reattach_dmapi_session() < 0) {
+			return DM_NO_SESSION;
+		}
+	}
+	return &samba_dmapi_session;
+}
 
+uint32 dmapi_file_flags(const char * const path)
+{
+	dm_sessid_t dmapi_session;
 	int		err;
 	dm_eventset_t   events = {0};
 	uint		nevents;
 
-	void	*dm_handle;
-	size_t	dm_handle_len;
+	void	*dm_handle = NULL;
+	size_t	dm_handle_len = 0;
 
 	uint32	flags = 0;
 
-	/* If a DMAPI session has been initialised, then we need to make sure
-	 * we are attached to it and have the correct privileges. This is
-	 * necessary to be able to do DMAPI operations across a fork(2). If
-	 * it fails, there is no liklihood of that failure being transient.
-	 *
-	 * Note that this use of the static attached flag relies on the fact
-	 * that dmapi_file_flags() is never called prior to forking the
-	 * per-client server process.
-	 */
-	if (dmapi_have_session() && !attached) {
-		attached++;
-		if (reattach_dmapi_session() < 0) {
-			return 0;
-		}
+	dmapi_session = *(dm_sessid_t*) dmapi_get_current_session();
+	if (dmapi_session == DM_NO_SESSION) {
+		return 0;
 	}
 
 	/* AIX has DMAPI but no POSIX capablities support. In this case,
@@ -312,5 +320,6 @@ done:
 
 	return flags;
 }
+
 
 #endif /* USE_DMAPI */

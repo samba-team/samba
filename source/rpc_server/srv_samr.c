@@ -36,33 +36,33 @@
 #define DBGC_CLASS DBGC_RPC_SRV
 
 /*******************************************************************
+ ********************************************************************/
+
+static bool proxy_samr_call(pipes_struct *p, uint8 opnum)
+{
+	struct api_struct *fns;
+	int n_fns;
+
+	samr_get_pipe_fns(&fns, &n_fns);
+
+	if (opnum >= n_fns) {
+		return false;
+	}
+
+	if (fns[opnum].opnum != opnum) {
+		smb_panic("SAMR function table not sorted");
+	}
+
+	return fns[opnum].fn(p);
+}
+
+/*******************************************************************
  api_samr_close_hnd
  ********************************************************************/
 
 static bool api_samr_close_hnd(pipes_struct *p)
 {
-	SAMR_Q_CLOSE_HND q_u;
-	SAMR_R_CLOSE_HND r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!samr_io_q_close_hnd("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_close_hnd: unable to unmarshall SAMR_Q_CLOSE_HND.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_close_hnd(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_close_hnd("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_close_hnd: unable to marshall SAMR_R_CLOSE_HND.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_CLOSE);
 }
 
 /*******************************************************************
@@ -71,29 +71,7 @@ static bool api_samr_close_hnd(pipes_struct *p)
 
 static bool api_samr_open_domain(pipes_struct *p)
 {
-	SAMR_Q_OPEN_DOMAIN q_u;
-	SAMR_R_OPEN_DOMAIN r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!samr_io_q_open_domain("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_open_domain: unable to unmarshall SAMR_Q_OPEN_DOMAIN.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_open_domain(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_open_domain("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_open_domain: unable to marshall SAMR_R_OPEN_DOMAIN.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_OPENDOMAIN);
 }
 
 /*******************************************************************
@@ -439,28 +417,7 @@ static bool api_samr_lookup_rids(pipes_struct *p)
 
 static bool api_samr_open_user(pipes_struct *p)
 {
-	SAMR_Q_OPEN_USER q_u;
-	SAMR_R_OPEN_USER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!samr_io_q_open_user("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_open_user: unable to unmarshall SAMR_Q_OPEN_USER.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_open_user(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_open_user("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_open_user: unable to marshall SAMR_R_OPEN_USER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_OPENUSER);
 }
 
 /*******************************************************************
@@ -559,30 +516,7 @@ static bool api_samr_query_domain_info(pipes_struct *p)
 
 static bool api_samr_create_user(pipes_struct *p)
 {
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	SAMR_Q_CREATE_USER q_u;
-	SAMR_R_CREATE_USER r_u;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the samr create user */
-	if (!samr_io_q_create_user("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_create_user: Unable to unmarshall SAMR_Q_CREATE_USER.\n"));
-		return False;
-	}
-
-	r_u.status=_samr_create_user(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_create_user("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_create_user: Unable to marshall SAMR_R_CREATE_USER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_CREATEUSER2);
 }
 
 /*******************************************************************
@@ -804,29 +738,7 @@ static bool api_samr_enum_domains(pipes_struct *p)
 
 static bool api_samr_open_alias(pipes_struct *p)
 {
-	SAMR_Q_OPEN_ALIAS q_u;
-	SAMR_R_OPEN_ALIAS r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the samr open policy */
-	if(!samr_io_q_open_alias("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_open_alias: Unable to unmarshall SAMR_Q_OPEN_ALIAS.\n"));
-		return False;
-	}
-
-	r_u.status=_samr_open_alias(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_open_alias("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_open_alias: Unable to marshall SAMR_R_OPEN_ALIAS.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_OPENALIAS);
 }
 
 /*******************************************************************
@@ -1110,28 +1022,7 @@ static bool api_samr_del_groupmem(pipes_struct *p)
 
 static bool api_samr_delete_dom_user(pipes_struct *p)
 {
-	SAMR_Q_DELETE_DOM_USER q_u;
-	SAMR_R_DELETE_DOM_USER r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_delete_dom_user("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_delete_dom_user: unable to unmarshall SAMR_Q_DELETE_DOM_USER.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_delete_dom_user(p, &q_u, &r_u);
-
-	if (!samr_io_r_delete_dom_user("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_delete_dom_user: unable to marshall SAMR_R_DELETE_DOM_USER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_DELETEUSER);
 }
 
 /*******************************************************************
@@ -1140,28 +1031,7 @@ static bool api_samr_delete_dom_user(pipes_struct *p)
 
 static bool api_samr_delete_dom_group(pipes_struct *p)
 {
-	SAMR_Q_DELETE_DOM_GROUP q_u;
-	SAMR_R_DELETE_DOM_GROUP r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_delete_dom_group("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_delete_dom_group: unable to unmarshall SAMR_Q_DELETE_DOM_GROUP.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_delete_dom_group(p, &q_u, &r_u);
-
-	if (!samr_io_r_delete_dom_group("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_delete_dom_group: unable to marshall SAMR_R_DELETE_DOM_GROUP.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_DELETEDOMAINGROUP);
 }
 
 /*******************************************************************
@@ -1170,28 +1040,7 @@ static bool api_samr_delete_dom_group(pipes_struct *p)
 
 static bool api_samr_delete_dom_alias(pipes_struct *p)
 {
-	SAMR_Q_DELETE_DOM_ALIAS q_u;
-	SAMR_R_DELETE_DOM_ALIAS r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_delete_dom_alias("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_delete_dom_alias: unable to unmarshall SAMR_Q_DELETE_DOM_ALIAS.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_delete_dom_alias(p, &q_u, &r_u);
-
-	if (!samr_io_r_delete_dom_alias("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_delete_dom_alias: unable to marshall SAMR_R_DELETE_DOM_ALIAS.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_DELETEDOMALIAS);
 }
 
 /*******************************************************************
@@ -1200,28 +1049,7 @@ static bool api_samr_delete_dom_alias(pipes_struct *p)
 
 static bool api_samr_create_dom_group(pipes_struct *p)
 {
-	SAMR_Q_CREATE_DOM_GROUP q_u;
-	SAMR_R_CREATE_DOM_GROUP r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_create_dom_group("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_create_dom_group: unable to unmarshall SAMR_Q_CREATE_DOM_GROUP.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_create_dom_group(p, &q_u, &r_u);
-
-	if (!samr_io_r_create_dom_group("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_create_dom_group: unable to marshall SAMR_R_CREATE_DOM_GROUP.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_CREATEDOMAINGROUP);
 }
 
 /*******************************************************************
@@ -1230,28 +1058,7 @@ static bool api_samr_create_dom_group(pipes_struct *p)
 
 static bool api_samr_create_dom_alias(pipes_struct *p)
 {
-	SAMR_Q_CREATE_DOM_ALIAS q_u;
-	SAMR_R_CREATE_DOM_ALIAS r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_create_dom_alias("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_create_dom_alias: unable to unmarshall SAMR_Q_CREATE_DOM_ALIAS.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_create_dom_alias(p, &q_u, &r_u);
-
-	if (!samr_io_r_create_dom_alias("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_create_dom_alias: unable to marshall SAMR_R_CREATE_DOM_ALIAS.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_CREATEDOMALIAS);
 }
 
 /*******************************************************************
@@ -1350,28 +1157,7 @@ static bool api_samr_set_aliasinfo(pipes_struct *p)
 
 static bool api_samr_get_dom_pwinfo(pipes_struct *p)
 {
-	SAMR_Q_GET_DOM_PWINFO q_u;
-	SAMR_R_GET_DOM_PWINFO r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_get_dom_pwinfo("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_get_dom_pwinfo: unable to unmarshall SAMR_Q_GET_DOM_PWINFO.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_get_dom_pwinfo(p, &q_u, &r_u);
-
-	if (!samr_io_r_get_dom_pwinfo("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_get_dom_pwinfo: unable to marshall SAMR_R_GET_DOM_PWINFO.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_GETDOMPWINFO);
 }
 
 /*******************************************************************
@@ -1380,28 +1166,7 @@ static bool api_samr_get_dom_pwinfo(pipes_struct *p)
 
 static bool api_samr_open_group(pipes_struct *p)
 {
-	SAMR_Q_OPEN_GROUP q_u;
-	SAMR_R_OPEN_GROUP r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_open_group("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_open_group: unable to unmarshall SAMR_Q_OPEN_GROUP.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_open_group(p, &q_u, &r_u);
-
-	if (!samr_io_r_open_group("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_open_group: unable to marshall SAMR_R_OPEN_GROUP.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_OPENGROUP);
 }
 
 /*******************************************************************
@@ -1557,14 +1322,14 @@ static struct api_struct api_samr_cmds [] =
       {"SAMR_CONNECT5"          , SAMR_CONNECT5         , api_samr_connect5         }
 };
 
-void samr_get_pipe_fns( struct api_struct **fns, int *n_fns )
+void samr2_get_pipe_fns( struct api_struct **fns, int *n_fns )
 {
 	*fns = api_samr_cmds;
 	*n_fns = sizeof(api_samr_cmds) / sizeof(struct api_struct);
 }
 
 
-NTSTATUS rpc_samr_init(void)
+NTSTATUS rpc_samr2_init(void)
 {
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "samr", "lsass", api_samr_cmds,
 				    sizeof(api_samr_cmds) / sizeof(struct api_struct));

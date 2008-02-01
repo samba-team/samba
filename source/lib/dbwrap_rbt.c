@@ -1,7 +1,7 @@
 /*
    Unix SMB/CIFS implementation.
    Database interface wrapper around red-black trees
-   Copyright (C) Volker Lendecke 2007
+   Copyright (C) Volker Lendecke 2007, 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
 
 #include "includes.h"
 #include "rbtree.h"
+
+#define ALIGN(_size_) (((_size_)+15)&~15)
 
 struct db_rbt_ctx {
 	struct rb_root tree;
@@ -44,6 +46,35 @@ struct db_rbt_node {
 };
 
 /*
+ * Hide the ugly pointer calculations in a function
+ */
+
+static struct db_rbt_node *db_rbt2node(struct rb_node *node)
+{
+	return (struct db_rbt_node *)
+		((char *)node - offsetof(struct db_rbt_node, rb_node));
+}
+
+/*
+ * Compare two keys
+ */
+
+static int db_rbt_compare(TDB_DATA a, TDB_DATA b)
+{
+	int res;
+
+	res = memcmp(a.dptr, b.dptr, MIN(a.dsize, b.dsize));
+
+	if ((res < 0) || ((res == 0) && (a.dsize < b.dsize))) {
+		return -1;
+	}
+	if ((res > 0) || ((res == 0) && (a.dsize > b.dsize))) {
+		return 1;
+	}
+	return 0;
+}
+
+/*
  * dissect a db_rbt_node into its implicit key and value parts
  */
 
@@ -58,9 +89,7 @@ static void db_rbt_parse_node(struct db_rbt_node *node,
 
 static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 {
-	struct db_rbt_rec *rec_priv = talloc_get_type_abort(
-		rec->private_data, struct db_rbt_rec);
-
+	struct db_rbt_rec *rec_priv = (struct db_rbt_rec *)rec->private_data;
 	struct db_rbt_node *node;
 
 	struct rb_node ** p;
@@ -95,7 +124,11 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		 */
 
 		rb_erase(&rec_priv->node->rb_node, &rec_priv->db_ctx->tree);
-		SAFE_FREE(rec_priv->node);
+
+		/*
+		 * Keep the existing node around for a while: If the record
+		 * existed before, we reference the key data in there.
+		 */
 	}
 
 	node = (struct db_rbt_node *)SMB_MALLOC(
@@ -103,6 +136,7 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 		+ data.dsize);
 
 	if (node == NULL) {
+		SAFE_FREE(rec_priv->node);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -114,6 +148,8 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 	db_rbt_parse_node(node, &this_key, &this_val);
 
 	memcpy(this_key.dptr, rec->key.dptr, node->keysize);
+	SAFE_FREE(rec_priv->node);
+
 	memcpy(this_val.dptr, data.dptr, node->valuesize);
 
 	parent = NULL;
@@ -126,22 +162,16 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 
 		parent = (*p);
 
-		r = (struct db_rbt_node *)
-			((char *)(*p) - offsetof(struct db_rbt_node, rb_node));
+		r = db_rbt2node(*p);
 
 		db_rbt_parse_node(r, &search_key, &search_val);
 
-		res = memcmp(this_key.dptr, search_key.dptr,
-			     MIN(this_key.dsize, search_key.dsize));
+		res = db_rbt_compare(this_key, search_key);
 
-		if ((res < 0)
-		    || ((res == 0)
-			&& (this_key.dsize < search_key.dsize))) {
+		if (res == -1) {
 			p = &(*p)->rb_left;
 		}
-		else if ((res > 0)
-			 || ((res == 0)
-			     && (this_key.dsize > search_key.dsize))) {
+		else if (res == 1) {
 			p = &(*p)->rb_right;
 		}
 		else {
@@ -157,8 +187,7 @@ static NTSTATUS db_rbt_store(struct db_record *rec, TDB_DATA data, int flag)
 
 static NTSTATUS db_rbt_delete(struct db_record *rec)
 {
-	struct db_rbt_rec *rec_priv = talloc_get_type_abort(
-		rec->private_data, struct db_rbt_rec);
+	struct db_rbt_rec *rec_priv = (struct db_rbt_rec *)rec->private_data;
 
 	if (rec_priv->node == NULL) {
 		return NT_STATUS_OK;
@@ -180,85 +209,128 @@ static struct db_record *db_rbt_fetch_locked(struct db_context *db_ctx,
 	struct db_rbt_rec *rec_priv;
 	struct db_record *result;
 	struct rb_node *n;
+	size_t size;
+	bool found = false;
+	struct db_rbt_node *r = NULL;
+	TDB_DATA search_key = tdb_null, search_val = tdb_null;
 
-	result = talloc(mem_ctx, struct db_record);
+	n = ctx->tree.rb_node;
 
+	while (n != NULL) {
+		int res;
+
+		r = db_rbt2node(n);
+
+		db_rbt_parse_node(r, &search_key, &search_val);
+
+		res = db_rbt_compare(key, search_key);
+
+		if (res == -1) {
+			n = n->rb_left;
+		}
+		else if (res == 1) {
+			n = n->rb_right;
+		}
+		else {
+			found = true;
+			break;
+		}
+	}
+
+	/*
+	 * In this low-level routine, play tricks to reduce the number of
+	 * tallocs to one. Not recommened for general use, but here it pays
+	 * off.
+	 */
+
+	size = ALIGN(sizeof(struct db_record)) + sizeof(struct db_rbt_rec);
+
+	if (!found) {
+		/*
+		 * We need to keep the key around for later store
+		 */
+		size += key.dsize;
+	}
+
+	result = (struct db_record *)talloc_size(mem_ctx, size);
 	if (result == NULL) {
 		return NULL;
 	}
 
-	rec_priv = talloc(result, struct db_rbt_rec);
-
-	if (rec_priv == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
+	rec_priv = (struct db_rbt_rec *)
+		((char *)result + ALIGN(sizeof(struct db_record)));
 	rec_priv->db_ctx = ctx;
 
 	result->store = db_rbt_store;
 	result->delete_rec = db_rbt_delete;
 	result->private_data = rec_priv;
 
-	n = ctx->tree.rb_node;
+	if (found) {
+		rec_priv->node = r;
+		result->key = search_key;
+		result->value = search_val;
+	}
+	else {
+		rec_priv->node = NULL;
+		result->key.dptr = (uint8 *)
+			((char *)rec_priv + sizeof(*rec_priv));
+		result->key.dsize = key.dsize;
+		memcpy(result->key.dptr, key.dptr, key.dsize);
 
-	while (n != NULL) {
-		struct db_rbt_node *r;
-		TDB_DATA search_key, search_val;
-		int res;
-
-		r = (struct db_rbt_node *)
-			((char *)n - offsetof(struct db_rbt_node, rb_node));
-
-		db_rbt_parse_node(r, &search_key, &search_val);
-
-		res = memcmp(key.dptr, search_key.dptr,
-			     MIN(key.dsize, search_key.dsize));
-
-		if ((res < 0)
-		    || ((res == 0) && (key.dsize < search_key.dsize))) {
-			n = n->rb_left;
-		}
-		else if ((res > 0)
-			 || ((res == 0) && (key.dsize > search_key.dsize))) {
-			n = n->rb_right;
-		}
-		else {
-			rec_priv->node = r;
-			result->key = search_key;
-			result->value = search_val;
-			return result;
-		}
+		result->value = tdb_null;
 	}
 
-	result->key.dsize = key.dsize;
-	result->key.dptr = (uint8_t *)talloc_memdup(
-		result, key.dptr, key.dsize);
-
-	if (result->key.dptr == NULL) {
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	rec_priv->node = NULL;
-	result->value.dsize = 0;
-	result->value.dptr = NULL;
 	return result;
 }
 
 static int db_rbt_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 			TDB_DATA key, TDB_DATA *data)
 {
-	struct db_record *rec;
+	struct db_rbt_ctx *ctx = talloc_get_type_abort(
+		db->private_data, struct db_rbt_ctx);
 
-	if (!(rec = db->fetch_locked(db, mem_ctx, key))) {
+	struct rb_node *n;
+	bool found = false;
+	struct db_rbt_node *r = NULL;
+	TDB_DATA search_key, search_val;
+	uint8_t *result;
+
+	n = ctx->tree.rb_node;
+
+	while (n != NULL) {
+		int res;
+
+		r = db_rbt2node(n);
+
+		db_rbt_parse_node(r, &search_key, &search_val);
+
+		res = db_rbt_compare(key, search_key);
+
+		if (res == -1) {
+			n = n->rb_left;
+		}
+		else if (res == 1) {
+			n = n->rb_right;
+		}
+		else {
+			found = true;
+			break;
+		}
+	}
+
+	if (!found) {
+		*data = tdb_null;
+		return 0;
+	}
+
+	result = (uint8 *)talloc_memdup(mem_ctx, search_val.dptr,
+					search_val.dsize);
+	if (result == NULL) {
 		return -1;
 	}
 
-	data->dsize = rec->value.dsize;
-	data->dptr = (uint8 *)talloc_memdup(mem_ctx, rec->value.dptr,
-					    rec->value.dsize);
-	TALLOC_FREE(rec);
+	data->dptr = result;
+	data->dsize = search_val.dsize;
 	return 0;
 }
 
@@ -268,6 +340,9 @@ static int db_rbt_traverse(struct db_context *db,
 				    void *private_data),
 			   void *private_data)
 {
+	/*
+	 * Nobody uses this so far, and unused code is broken code :-)
+	 */
 	return -1;
 }
 

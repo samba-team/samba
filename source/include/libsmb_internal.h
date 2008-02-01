@@ -15,6 +15,7 @@ struct _SMBCSRV {
 	bool no_pathinfo;
 	bool no_pathinfo2;
         bool no_nt_session;
+        POLICY_HND pol;
 
 	SMBCSRV *next, *prev;
 	
@@ -106,6 +107,13 @@ struct smbc_internal_data {
          * and retrieved with smbc_option_set() and smbc_option_get().
          */
         void * _user_data;
+
+        /*
+         * Should we attempt UNIX smb encryption ? 
+         * Set to 0 if we should never attempt, set to 1 if
+         * encryption requested, set to 2 if encryption required.
+         */
+        int _smb_encryption_level;
 };	
 
 

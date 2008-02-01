@@ -25,67 +25,6 @@ extern struct current_user current_user;
 #undef  DBGC_CLASS
 #define DBGC_CLASS DBGC_ACLS
 
-/****************************************************************************
- Helper function that gets a security descriptor by connection and
- file name.
- NOTE: This is transitional, in the sense that SMB_VFS_GET_NT_ACL really
- should *not* get a files_struct pointer but a connection_struct ptr
- (automatic by the vfs handle) and the file name and _use_ that!
-****************************************************************************/
-static NTSTATUS conn_get_nt_acl(TALLOC_CTX *mem_ctx,
-				struct connection_struct *conn,
-				const char *fname,
-				SMB_STRUCT_STAT *psbuf,
-				struct security_descriptor **psd)
-{
-	NTSTATUS status;
-	struct files_struct *fsp = NULL;
-	struct security_descriptor *secdesc = NULL;
-
-	if (!VALID_STAT(*psbuf)) {
-		if (SMB_VFS_STAT(conn, fname, psbuf) != 0) {
-			return map_nt_error_from_unix(errno);
-		}
-	}
-
-	/* fake a files_struct ptr: */
-
-	if (S_ISDIR(psbuf->st_mode)) {
-		status = open_directory(conn, NULL, fname, psbuf,
-					READ_CONTROL_ACCESS,
-					FILE_SHARE_READ|FILE_SHARE_WRITE,
-					FILE_OPEN,
-					0,
-					FILE_ATTRIBUTE_DIRECTORY,
-					NULL, &fsp);
-	}
-	else {
-		status = open_file_stat(conn, NULL, fname, psbuf, &fsp);
-	}
-
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("Unable to open file %s: %s\n", fname,
-			  nt_errstr(status)));
-		return status;
-	}
-
-	status = SMB_VFS_GET_NT_ACL(fsp, fname,
-				    (OWNER_SECURITY_INFORMATION |
-				     GROUP_SECURITY_INFORMATION |
-				     DACL_SECURITY_INFORMATION),
-				    &secdesc);
-	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(5, ("Unable to get NT ACL for file %s\n", fname));
-		goto done;
-	}
-
-	*psd = talloc_move(mem_ctx, &secdesc);
-
-done:
-	close_file(fsp, NORMAL_CLOSE);
-	return status;
-}
-
 static bool can_access_file_acl(struct connection_struct *conn,
 				const char * fname, SMB_STRUCT_STAT *psbuf,
 				uint32_t access_mask)
@@ -95,7 +34,11 @@ static bool can_access_file_acl(struct connection_struct *conn,
 	uint32_t access_granted;
 	struct security_descriptor *secdesc = NULL;
 
-	status = conn_get_nt_acl(talloc_tos(), conn, fname, psbuf, &secdesc);
+	status = SMB_VFS_GET_NT_ACL(conn, fname,
+				    (OWNER_SECURITY_INFORMATION |
+				     GROUP_SECURITY_INFORMATION |
+				     DACL_SECURITY_INFORMATION),
+				    &secdesc);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(5, ("Could not get acl: %s\n", nt_errstr(status)));
 		return false;

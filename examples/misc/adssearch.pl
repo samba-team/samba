@@ -3,7 +3,7 @@
 # adssearch.pl 	- query an Active Directory server and
 #		  display objects in a human readable format
 #
-# Copyright (C) Guenther Deschner <gd@samba.org> 2003-2007
+# Copyright (C) Guenther Deschner <gd@samba.org> 2003-2008
 #
 # TODO: add range retrieval
 #	write sddl-converter, decode userParameters
@@ -230,6 +230,7 @@ my %ads_mixed_domain = (
 my %ads_ds_func = (
 "DS_BEHAVIOR_WIN2000"			=> 0,	# untested
 "DS_BEHAVIOR_WIN2003"			=> 2,
+"DS_BEHAVIOR_WIN2008"			=> 3,
 );
 
 my %ads_instance_type = (
@@ -242,6 +243,14 @@ my %ads_uacc = (
 	"ACCOUNT_NEVER_EXPIRES"		=> 0x000000, # 0 
 	"ACCOUNT_OK"			=> 0x800000, # 8388608
 	"ACCOUNT_LOCKED_OUT"		=> 0x800010, # 8388624
+);
+
+my %ads_enctypes = (
+	"DES-CBC-CRC"				=> 0x01,
+	"DES-CBC-MD5"				=> 0x02,
+	"RC4_HMAC_MD5"				=> 0x04,
+	"AES128_CTS_HMAC_SHA1_96"		=> 0x08,
+	"AES128_CTS_HMAC_SHA1_128"		=> 0x10,
 );
 
 my %ads_gpoptions = (
@@ -518,6 +527,7 @@ my %attr_handler = (
 	"modifyTimeStamp"		=> \&dump_timestr,
 	"msDS-Behavior-Version"		=> \&dump_ds_func,	#unsure
 	"msDS-User-Account-Control-Computed" => \&dump_uacc,
+	"msDS-SupportedEncryptionTypes"	=> \&dump_enctypes,
 	"mS-DS-CreatorSID"		=> \&dump_sid,
 #	"msRADIUSFramedIPAddress"	=> \&dump_ipaddr,
 #	"msRASSavedFramedIPAddress" 	=> \&dump_ipaddr,
@@ -1207,6 +1217,10 @@ sub dump_gpflags {
 
 sub dump_uacc {
 	return dump_bitmask_equal(@_,%ads_uacc); 
+}
+
+sub dump_enctypes {
+	return dump_bitmask_and(@_,%ads_enctypes);
 }
 
 sub dump_uf {

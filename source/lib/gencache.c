@@ -32,7 +32,6 @@
 #define BLOB_TYPE_LEN 9
 
 static TDB_CONTEXT *cache;
-static bool cache_readonly;
 
 /**
  * @file gencache.c
@@ -67,7 +66,6 @@ bool gencache_init(void)
 	if (!cache && (errno == EACCES)) {
 		cache = tdb_open_log(cache_fname, 0, TDB_DEFAULT, O_RDONLY, 0644);
 		if (cache) {
-			cache_readonly = True;
 			DEBUG(5, ("gencache_init: Opening cache file %s read-only.\n", cache_fname));
 		}
 	}
@@ -95,7 +93,6 @@ bool gencache_shutdown(void)
 	DEBUG(5, ("Closing cache file\n"));
 	ret = tdb_close(cache);
 	cache = NULL;
-	cache_readonly = False;
 	return ret != -1;
 }
 
@@ -123,10 +120,6 @@ bool gencache_set(const char *keystr, const char *value, time_t timeout)
 
 	if (!gencache_init()) return False;
 	
-	if (cache_readonly) {
-		return False;
-	}
-
 	asprintf(&valstr, CACHE_DATA_FMT, (int)timeout, value);
 	if (!valstr)
 		return False;
@@ -161,10 +154,6 @@ bool gencache_del(const char *keystr)
 
 	if (!gencache_init()) return False;	
 	
-	if (cache_readonly) {
-		return False;
-	}
-
 	DEBUG(10, ("Deleting cache entry (key = %s)\n", keystr));
 	ret = tdb_delete_bystring(cache, keystr);
 	
@@ -348,10 +337,6 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB *blob, time_t timeout)
 	SMB_ASSERT(keystr && blob);
 
 	if (!gencache_init()) {
-		return False;
-	}
-
-	if (cache_readonly) {
 		return False;
 	}
 

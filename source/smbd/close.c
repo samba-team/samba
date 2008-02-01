@@ -27,7 +27,7 @@ extern struct current_user current_user;
  Run a file if it is a magic script.
 ****************************************************************************/
 
-static void check_magic(files_struct *fsp,connection_struct *conn)
+static void check_magic(struct files_struct *fsp)
 {
 	int ret;
 	const char *magic_output = NULL;
@@ -35,6 +35,7 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
 	int tmp_fd, outfd;
 	TALLOC_CTX *ctx = NULL;
 	const char *p;
+	struct connection_struct *conn = fsp->conn;
 
 	if (!*lp_magicscript(SNUM(conn))) {
 		return;
@@ -155,6 +156,75 @@ static void notify_deferred_opens(struct share_mode_lock *lck)
 }
 
 /****************************************************************************
+ Delete all streams
+****************************************************************************/
+
+static NTSTATUS delete_all_streams(connection_struct *conn, const char *fname)
+{
+	struct stream_struct *stream_info;
+	int i;
+	unsigned int num_streams;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+
+	status = SMB_VFS_STREAMINFO(conn, NULL, fname, talloc_tos(),
+				    &num_streams, &stream_info);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)) {
+		DEBUG(10, ("no streams around\n"));
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("SMB_VFS_STREAMINFO failed: %s\n",
+			   nt_errstr(status)));
+		goto fail;
+	}
+
+	DEBUG(10, ("delete_all_streams found %d streams\n",
+		   num_streams));
+
+	if (num_streams == 0) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	for (i=0; i<num_streams; i++) {
+		int res;
+		char *streamname;
+
+		if (strequal(stream_info[i].name, "::$DATA")) {
+			continue;
+		}
+
+		streamname = talloc_asprintf(talloc_tos(), "%s%s", fname,
+					     stream_info[i].name);
+
+		if (streamname == NULL) {
+			DEBUG(0, ("talloc_aprintf failed\n"));
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+
+		res = SMB_VFS_UNLINK(conn, streamname);
+
+		TALLOC_FREE(streamname);
+
+		if (res == -1) {
+			status = map_nt_error_from_unix(errno);
+			DEBUG(10, ("Could not delete stream %s: %s\n",
+				   streamname, strerror(errno)));
+			break;
+		}
+	}
+
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+/****************************************************************************
  Deal with removing a share mode on last close.
 ****************************************************************************/
 
@@ -162,7 +232,8 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 					enum file_close_type close_type)
 {
 	connection_struct *conn = fsp->conn;
-	bool delete_file = False;
+	bool delete_file = false;
+	bool changed_user = false;
 	struct share_mode_lock *lck;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status = NT_STATUS_OK;
@@ -175,7 +246,7 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	 * This prevents race conditions with the file being created. JRA.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_remove_share_mode: Could not get share mode "
@@ -245,18 +316,27 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 	DEBUG(5,("close_remove_share_mode: file %s. Delete on close was set "
 		 "- deleting file.\n", fsp->fsp_name));
 
-	/* Become the user who requested the delete. */
+	if (!unix_token_equal(lck->delete_token, &current_user.ut)) {
+		/* Become the user who requested the delete. */
 
-	if (!push_sec_ctx()) {
-		smb_panic("close_remove_share_mode: file %s. failed to push "
-			  "sec_ctx.\n");
+		DEBUG(5,("close_remove_share_mode: file %s. "
+			"Change user to uid %u\n",
+			fsp->fsp_name,
+			(unsigned int)lck->delete_token->uid));
+
+		if (!push_sec_ctx()) {
+			smb_panic("close_remove_share_mode: file %s. failed to push "
+				  "sec_ctx.\n");
+		}
+
+		set_sec_ctx(lck->delete_token->uid,
+			    lck->delete_token->gid,
+			    lck->delete_token->ngroups,
+			    lck->delete_token->groups,
+			    NULL);
+
+		changed_user = true;
 	}
-
-	set_sec_ctx(lck->delete_token->uid,
-		    lck->delete_token->gid,
-		    lck->delete_token->ngroups,
-		    lck->delete_token->groups,
-		    NULL);
 
 	/* We can only delete the file if the name we have is still valid and
 	   hasn't been renamed. */
@@ -294,6 +374,19 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 		goto done;
 	}
 
+	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
+	    && !is_ntfs_stream_name(fsp->fsp_name)) {
+
+		status = delete_all_streams(conn, fsp->fsp_name);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(5, ("delete_all_streams failed: %s\n",
+				  nt_errstr(status)));
+			goto done;
+		}
+	}
+
+
 	if (SMB_VFS_UNLINK(conn,fsp->fsp_name) != 0) {
 		/*
 		 * This call can potentially fail as another smbd may
@@ -325,9 +418,11 @@ static NTSTATUS close_remove_share_mode(files_struct *fsp,
 
  done:
 
-	/* unbecome user. */
-	pop_sec_ctx();
-	
+	if (changed_user) {
+		/* unbecome user. */
+		pop_sec_ctx();
+	}
+
 	TALLOC_FREE(lck);
 	return status;
 }
@@ -389,11 +484,11 @@ static NTSTATUS close_normal_file(files_struct *fsp, enum file_close_type close_
 
 	locking_close_file(smbd_messaging_context(), fsp);
 
-	status = fd_close(conn, fsp);
+	status = fd_close(fsp);
 
 	/* check for magic scripts */
 	if (close_type == NORMAL_CLOSE) {
-		check_magic(fsp,conn);
+		check_magic(fsp);
 	}
 
 	/*
@@ -440,7 +535,7 @@ static NTSTATUS close_directory(files_struct *fsp, enum file_close_type close_ty
 	 * reference to a directory also.
 	 */
 
-	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
 
 	if (lck == NULL) {
 		DEBUG(0, ("close_directory: Could not get share mode lock for %s\n", fsp->fsp_name));
@@ -557,12 +652,37 @@ static NTSTATUS close_stat(files_struct *fsp)
   
 NTSTATUS close_file(files_struct *fsp, enum file_close_type close_type)
 {
+	NTSTATUS status;
+	struct files_struct *base_fsp = fsp->base_fsp;
+
 	if(fsp->is_directory) {
-		return close_directory(fsp, close_type);
+		status = close_directory(fsp, close_type);
 	} else if (fsp->is_stat) {
-		return close_stat(fsp);
+		status = close_stat(fsp);
 	} else if (fsp->fake_file_handle != NULL) {
-		return close_fake_file(fsp);
+		status = close_fake_file(fsp);
+	} else {
+		status = close_normal_file(fsp, close_type);
 	}
-	return close_normal_file(fsp, close_type);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if ((base_fsp != NULL) && (close_type != SHUTDOWN_CLOSE)) {
+
+		/*
+		 * fsp was a stream, the base fsp can't be a stream as well
+		 *
+		 * For SHUTDOWN_CLOSE this is not possible here, because
+		 * SHUTDOWN_CLOSE only happens from files.c which walks the
+		 * complete list of files. If we mess with more than one fsp
+		 * those loops will become confused.
+		 */
+
+		SMB_ASSERT(base_fsp->base_fsp == NULL);
+		close_file(base_fsp, close_type);
+	}
+
+	return status;
 }

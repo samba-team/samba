@@ -98,7 +98,7 @@ static AIXJFS2_ACL_T *aixjfs2_getacl_alloc(const char *fname, acl_type_t *type)
 	return acl;
 }
 
-static bool aixjfs2_get_nfs4_acl(files_struct *fsp,
+static bool aixjfs2_get_nfs4_acl(const char *name,
 	SMB4ACL_T **ppacl, bool *pretryPosix)
 {
 	int32_t i;
@@ -108,15 +108,15 @@ static bool aixjfs2_get_nfs4_acl(files_struct *fsp,
 	nfs4_ace_int_t *jfs2_ace = NULL;
 	acl_type_t type;
 
-	DEBUG(10,("jfs2 get_nt_acl invoked for %s\n", fsp->fsp_name));
+	DEBUG(10,("jfs2 get_nt_acl invoked for %s\n", name));
 
 	memset(&type, 0, sizeof(acl_type_t));
 	type.u64 = ACL_NFS4;
 
-	pacl = aixjfs2_getacl_alloc(fsp->fsp_name, &type);
+	pacl = aixjfs2_getacl_alloc(name, &type);
         if (pacl == NULL) {
 		DEBUG(9, ("aixjfs2_getacl_alloc failed for %s with %s\n",
-				fsp->fsp_name, strerror(errno)));
+				name, strerror(errno)));
 		if (errno==ENOSYS)
 			*pretryPosix = True;
 		return False;
@@ -158,7 +158,29 @@ static bool aixjfs2_get_nfs4_acl(files_struct *fsp,
 	return True;
 }
 
-static NTSTATUS aixjfs2_get_nt_acl_common(files_struct *fsp,
+static NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
+	files_struct *fsp, uint32 security_info,
+	SEC_DESC **ppdesc)
+{
+	SMB4ACL_T *pacl = NULL;
+	bool	result;
+	bool	retryPosix = False;
+
+	*ppdesc = NULL;
+	result = aixjfs2_get_nfs4_acl(fsp->fsp_name, &pacl, &retryPosix);
+	if (retryPosix)
+	{
+		DEBUG(10, ("retrying with posix acl...\n"));
+		return posix_fget_nt_acl(fsp, security_info, ppdesc);
+	}
+	if (result==False)
+		return NT_STATUS_ACCESS_DENIED;
+
+	return smb_fget_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
+}
+
+static NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
+	files_struct *fsp, const char *name,
 	uint32 security_info, SEC_DESC **ppdesc)
 {
 	SMB4ACL_T *pacl = NULL;
@@ -166,30 +188,18 @@ static NTSTATUS aixjfs2_get_nt_acl_common(files_struct *fsp,
 	bool	retryPosix = False;
 
 	*ppdesc = NULL;
-	result = aixjfs2_get_nfs4_acl(fsp, &pacl, &retryPosix);
+	result = aixjfs2_get_nfs4_acl(name, &pacl, &retryPosix);
 	if (retryPosix)
 	{
 		DEBUG(10, ("retrying with posix acl...\n"));
-		return get_nt_acl(fsp, security_info, ppdesc);
+		return posix_get_nt_acl(handle->conn, name security_info,
+					ppdesc);
 	}
 	if (result==False)
 		return NT_STATUS_ACCESS_DENIED;
 
-	return smb_get_nt_acl_nfs4(fsp, security_info, ppdesc, pacl);
-}
-
-NTSTATUS aixjfs2_fget_nt_acl(vfs_handle_struct *handle,
-	files_struct *fsp, int fd, uint32 security_info,
-	SEC_DESC **ppdesc)
-{
-	return aixjfs2_get_nt_acl_common(fsp, security_info, ppdesc);
-}
-
-NTSTATUS aixjfs2_get_nt_acl(vfs_handle_struct *handle,
-	files_struct *fsp, const char *name,
-	uint32 security_info, SEC_DESC **ppdesc)
-{
-	return aixjfs2_get_nt_acl_common(fsp, security_info, ppdesc);
+	return smb_get_nt_acl_nfs4(handle->conn, name, security_info, ppdesc,
+				   pacl);
 }
 
 static SMB_ACL_T aixjfs2_get_posix_acl(const char *path, acl_type_t type)
@@ -248,8 +258,7 @@ SMB_ACL_T aixjfs2_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T aixjfs2_sys_acl_get_fd(vfs_handle_struct *handle,
-                                  files_struct *fsp,
-                                  int fd)
+                                  files_struct *fsp)
 {
         acl_type_t aixjfs2_type;
         aixjfs2_type.u64 = ACL_AIXC;
@@ -389,7 +398,7 @@ static NTSTATUS aixjfs2_set_nt_acl_common(files_struct *fsp, uint32 security_inf
 	return result;
 }
 
-NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, int fd, uint32 security_info_sent, SEC_DESC *psd)
+NTSTATUS aixjfs2_fset_nt_acl(vfs_handle_struct *handle, files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 {
 	return aixjfs2_set_nt_acl_common(fsp, security_info_sent, psd);
 }
@@ -439,7 +448,7 @@ int aixjfs2_sys_acl_set_file(vfs_handle_struct *handle,
 
 int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
-			    int fd, SMB_ACL_T theacl)
+			    SMB_ACL_T theacl)
 {
 	struct acl	*acl_aixc;
 	acl_type_t	acl_type_info;
@@ -458,7 +467,7 @@ int aixjfs2_sys_acl_set_fd(vfs_handle_struct *handle,
 		return -1;
 
 	rc = aclx_fput(
-		fd,
+		fsp->fh->fd,
 		SET_ACL, /* set only the ACL, not mode bits */
 		acl_type_info,
 		acl_aixc,

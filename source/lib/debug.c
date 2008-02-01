@@ -199,6 +199,8 @@ void gfree_debugsyms(void)
 
 	if ( DEBUGLEVEL_CLASS_ISSET != &debug_all_class_isset_hack )
 		SAFE_FREE( DEBUGLEVEL_CLASS_ISSET );
+
+	SAFE_FREE(format_bufr);
 }
 
 /****************************************************************************
@@ -427,8 +429,9 @@ static bool debug_parse_params(char **params)
 
 	/* Fill in new debug class levels */
 	for (; i < debug_num_classes && params[i]; i++) {
-		if ((class_name=strtok(params[i],":")) &&
-			(class_level=strtok(NULL, "\0")) &&
+		char *saveptr;
+		if ((class_name = strtok_r(params[i],":", &saveptr)) &&
+			(class_level = strtok_r(NULL, "\0", &saveptr)) &&
             ((ndx = debug_lookup_classname(class_name)) != -1)) {
 				DEBUGLEVEL_CLASS[ndx] = atoi(class_level);
 				DEBUGLEVEL_CLASS_ISSET[ndx] = True;
@@ -785,13 +788,13 @@ void check_log_size( void )
 			(void)x_vfprintf( dbf, format_str, ap );
 		va_end( ap );
 		errno = old_errno;
-		return( 0 );
+		goto done;
 	}
 
 	/* prevent recursion by checking if reopen_logs() has temporaily
 	   set the debugf string to NULL */
 	if( debugf == NULL)
-		return( 0 );
+		goto done;
 
 #ifdef WITH_SYSLOG
 	if( !lp_syslog_only() )
@@ -806,7 +809,7 @@ void check_log_size( void )
 				x_setbuf( dbf, NULL );
 			} else {
 				errno = old_errno;
-				return(0);
+				goto done;
 			}
 		}
 	}
@@ -855,9 +858,10 @@ void check_log_size( void )
 			(void)x_fflush( dbf );
 	}
 
-	errno = old_errno;
-
+ done:
 	TALLOC_FREE(tmp_debug_ctx);
+
+	errno = old_errno;
 
 	return( 0 );
 }

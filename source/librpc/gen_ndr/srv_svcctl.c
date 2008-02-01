@@ -14,69 +14,71 @@ static bool api_svcctl_CloseServiceHandle(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_CloseServiceHandle *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CLOSESERVICEHANDLE];
-	
+
 	r = talloc(NULL, struct svcctl_CloseServiceHandle);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_CloseServiceHandle, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.handle = r->in.handle;
 	r->out.result = _svcctl_CloseServiceHandle(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_CloseServiceHandle, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_ControlService(pipes_struct *p)
@@ -87,74 +89,76 @@ static bool api_svcctl_ControlService(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_ControlService *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CONTROLSERVICE];
-	
+
 	r = talloc(NULL, struct svcctl_ControlService);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_ControlService, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.service_status = talloc_zero(r, struct SERVICE_STATUS);
 	if (r->out.service_status == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_ControlService(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_ControlService, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_DeleteService(pipes_struct *p)
@@ -165,67 +169,69 @@ static bool api_svcctl_DeleteService(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_DeleteService *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_DELETESERVICE];
-	
+
 	r = talloc(NULL, struct svcctl_DeleteService);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_DeleteService, r);
-	
+	}
+
 	r->out.result = _svcctl_DeleteService(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_DeleteService, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_LockServiceDatabase(pipes_struct *p)
@@ -236,74 +242,76 @@ static bool api_svcctl_LockServiceDatabase(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_LockServiceDatabase *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_LOCKSERVICEDATABASE];
-	
+
 	r = talloc(NULL, struct svcctl_LockServiceDatabase);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_LockServiceDatabase, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.lock = talloc_zero(r, struct policy_handle);
 	if (r->out.lock == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_LockServiceDatabase(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_LockServiceDatabase, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_QueryServiceObjectSecurity(pipes_struct *p)
@@ -314,67 +322,69 @@ static bool api_svcctl_QueryServiceObjectSecurity(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceObjectSecurity *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY];
-	
+
 	r = talloc(NULL, struct svcctl_QueryServiceObjectSecurity);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceObjectSecurity, r);
-	
+	}
+
 	r->out.result = _svcctl_QueryServiceObjectSecurity(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceObjectSecurity, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_SetServiceObjectSecurity(pipes_struct *p)
@@ -385,67 +395,69 @@ static bool api_svcctl_SetServiceObjectSecurity(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_SetServiceObjectSecurity *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SETSERVICEOBJECTSECURITY];
-	
+
 	r = talloc(NULL, struct svcctl_SetServiceObjectSecurity);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_SetServiceObjectSecurity, r);
-	
+	}
+
 	r->out.result = _svcctl_SetServiceObjectSecurity(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_SetServiceObjectSecurity, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_QueryServiceStatus(pipes_struct *p)
@@ -456,74 +468,76 @@ static bool api_svcctl_QueryServiceStatus(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceStatus *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICESTATUS];
-	
+
 	r = talloc(NULL, struct svcctl_QueryServiceStatus);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceStatus, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.service_status = talloc_zero(r, struct SERVICE_STATUS);
 	if (r->out.service_status == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_QueryServiceStatus(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceStatus, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_SetServiceStatus(pipes_struct *p)
@@ -534,67 +548,69 @@ static bool api_svcctl_SetServiceStatus(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_SetServiceStatus *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SETSERVICESTATUS];
-	
+
 	r = talloc(NULL, struct svcctl_SetServiceStatus);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_SetServiceStatus, r);
-	
+	}
+
 	r->out.result = _svcctl_SetServiceStatus(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_SetServiceStatus, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_UnlockServiceDatabase(pipes_struct *p)
@@ -605,69 +621,71 @@ static bool api_svcctl_UnlockServiceDatabase(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_UnlockServiceDatabase *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_UNLOCKSERVICEDATABASE];
-	
+
 	r = talloc(NULL, struct svcctl_UnlockServiceDatabase);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_UnlockServiceDatabase, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.lock = r->in.lock;
 	r->out.result = _svcctl_UnlockServiceDatabase(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_UnlockServiceDatabase, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_NotifyBootConfigStatus(pipes_struct *p)
@@ -678,67 +696,69 @@ static bool api_svcctl_NotifyBootConfigStatus(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_NotifyBootConfigStatus *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_NOTIFYBOOTCONFIGSTATUS];
-	
+
 	r = talloc(NULL, struct svcctl_NotifyBootConfigStatus);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_NotifyBootConfigStatus, r);
-	
+	}
+
 	r->out.result = _svcctl_NotifyBootConfigStatus(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_NotifyBootConfigStatus, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_SCSetServiceBitsW(pipes_struct *p)
@@ -749,67 +769,69 @@ static bool api_svcctl_SCSetServiceBitsW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_SCSetServiceBitsW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SCSETSERVICEBITSW];
-	
+
 	r = talloc(NULL, struct svcctl_SCSetServiceBitsW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_SCSetServiceBitsW, r);
-	
+	}
+
 	r->out.result = _svcctl_SCSetServiceBitsW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_SCSetServiceBitsW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_ChangeServiceConfigW(pipes_struct *p)
@@ -820,74 +842,76 @@ static bool api_svcctl_ChangeServiceConfigW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_ChangeServiceConfigW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CHANGESERVICECONFIGW];
-	
+
 	r = talloc(NULL, struct svcctl_ChangeServiceConfigW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfigW, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.tag_id = talloc_zero(r, uint32_t);
 	if (r->out.tag_id == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_ChangeServiceConfigW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_ChangeServiceConfigW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_CreateServiceW(pipes_struct *p)
@@ -898,75 +922,77 @@ static bool api_svcctl_CreateServiceW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_CreateServiceW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CREATESERVICEW];
-	
+
 	r = talloc(NULL, struct svcctl_CreateServiceW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_CreateServiceW, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.TagId = r->in.TagId;
 	r->out.handle = talloc_zero(r, struct policy_handle);
 	if (r->out.handle == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_CreateServiceW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_CreateServiceW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_EnumDependentServicesW(pipes_struct *p)
@@ -977,86 +1003,88 @@ static bool api_svcctl_EnumDependentServicesW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_EnumDependentServicesW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMDEPENDENTSERVICESW];
-	
+
 	r = talloc(NULL, struct svcctl_EnumDependentServicesW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_EnumDependentServicesW, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.service_status = talloc_zero(r, struct ENUM_SERVICE_STATUS);
 	if (r->out.service_status == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.bytes_needed = talloc_zero(r, uint32_t);
 	if (r->out.bytes_needed == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.services_returned = talloc_zero(r, uint32_t);
 	if (r->out.services_returned == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_EnumDependentServicesW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_EnumDependentServicesW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_EnumServicesStatusW(pipes_struct *p)
@@ -1067,87 +1095,89 @@ static bool api_svcctl_EnumServicesStatusW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_EnumServicesStatusW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMSERVICESSTATUSW];
-	
+
 	r = talloc(NULL, struct svcctl_EnumServicesStatusW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_EnumServicesStatusW, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.service = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.service == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.bytes_needed = talloc_zero(r, uint32_t);
 	if (r->out.bytes_needed == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.services_returned = talloc_zero(r, uint32_t);
 	if (r->out.services_returned == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _svcctl_EnumServicesStatusW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_EnumServicesStatusW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_OpenSCManagerW(pipes_struct *p)
@@ -1158,74 +1188,76 @@ static bool api_svcctl_OpenSCManagerW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_OpenSCManagerW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_OPENSCMANAGERW];
-	
+
 	r = talloc(NULL, struct svcctl_OpenSCManagerW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_OpenSCManagerW, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.handle = talloc_zero(r, struct policy_handle);
 	if (r->out.handle == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_OpenSCManagerW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_OpenSCManagerW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_OpenServiceW(pipes_struct *p)
@@ -1236,74 +1268,76 @@ static bool api_svcctl_OpenServiceW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_OpenServiceW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_OPENSERVICEW];
-	
+
 	r = talloc(NULL, struct svcctl_OpenServiceW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_OpenServiceW, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.handle = talloc_zero(r, struct policy_handle);
 	if (r->out.handle == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_OpenServiceW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_OpenServiceW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_QueryServiceConfigW(pipes_struct *p)
@@ -1314,80 +1348,82 @@ static bool api_svcctl_QueryServiceConfigW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceConfigW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICECONFIGW];
-	
+
 	r = talloc(NULL, struct svcctl_QueryServiceConfigW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfigW, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.query = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.query == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.bytes_needed = talloc_zero(r, uint32_t);
 	if (r->out.bytes_needed == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_QueryServiceConfigW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceConfigW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_QueryServiceLockStatusW(pipes_struct *p)
@@ -1398,80 +1434,82 @@ static bool api_svcctl_QueryServiceLockStatusW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceLockStatusW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICELOCKSTATUSW];
-	
+
 	r = talloc(NULL, struct svcctl_QueryServiceLockStatusW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceLockStatusW, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.lock_status = talloc_zero(r, struct SERVICE_LOCK_STATUS);
 	if (r->out.lock_status == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.required_buf_size = talloc_zero(r, uint32_t);
 	if (r->out.required_buf_size == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_QueryServiceLockStatusW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceLockStatusW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_StartServiceW(pipes_struct *p)
@@ -1482,67 +1520,69 @@ static bool api_svcctl_StartServiceW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_StartServiceW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_STARTSERVICEW];
-	
+
 	r = talloc(NULL, struct svcctl_StartServiceW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_StartServiceW, r);
-	
+	}
+
 	r->out.result = _svcctl_StartServiceW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_StartServiceW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_GetServiceDisplayNameW(pipes_struct *p)
@@ -1553,75 +1593,77 @@ static bool api_svcctl_GetServiceDisplayNameW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_GetServiceDisplayNameW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETSERVICEDISPLAYNAMEW];
-	
+
 	r = talloc(NULL, struct svcctl_GetServiceDisplayNameW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceDisplayNameW, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.display_name = talloc_zero(r, const char *);
 	if (r->out.display_name == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.display_name_length = r->in.display_name_length;
 	r->out.result = _svcctl_GetServiceDisplayNameW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_GetServiceDisplayNameW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_GetServiceKeyNameW(pipes_struct *p)
@@ -1632,75 +1674,77 @@ static bool api_svcctl_GetServiceKeyNameW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_GetServiceKeyNameW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETSERVICEKEYNAMEW];
-	
+
 	r = talloc(NULL, struct svcctl_GetServiceKeyNameW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceKeyNameW, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.key_name = talloc_zero(r, const char *);
 	if (r->out.key_name == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.display_name_length = r->in.display_name_length;
 	r->out.result = _svcctl_GetServiceKeyNameW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_GetServiceKeyNameW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_SCSetServiceBitsA(pipes_struct *p)
@@ -1711,67 +1755,69 @@ static bool api_svcctl_SCSetServiceBitsA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_SCSetServiceBitsA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SCSETSERVICEBITSA];
-	
+
 	r = talloc(NULL, struct svcctl_SCSetServiceBitsA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_SCSetServiceBitsA, r);
-	
+	}
+
 	r->out.result = _svcctl_SCSetServiceBitsA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_SCSetServiceBitsA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_ChangeServiceConfigA(pipes_struct *p)
@@ -1782,74 +1828,76 @@ static bool api_svcctl_ChangeServiceConfigA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_ChangeServiceConfigA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CHANGESERVICECONFIGA];
-	
+
 	r = talloc(NULL, struct svcctl_ChangeServiceConfigA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfigA, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.tag_id = talloc_zero(r, uint32_t);
 	if (r->out.tag_id == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_ChangeServiceConfigA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_ChangeServiceConfigA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_CreateServiceA(pipes_struct *p)
@@ -1860,74 +1908,76 @@ static bool api_svcctl_CreateServiceA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_CreateServiceA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CREATESERVICEA];
-	
+
 	r = talloc(NULL, struct svcctl_CreateServiceA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_CreateServiceA, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.TagId = talloc_zero(r, uint32_t);
 	if (r->out.TagId == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_CreateServiceA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_CreateServiceA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_EnumDependentServicesA(pipes_struct *p)
@@ -1938,86 +1988,88 @@ static bool api_svcctl_EnumDependentServicesA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_EnumDependentServicesA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMDEPENDENTSERVICESA];
-	
+
 	r = talloc(NULL, struct svcctl_EnumDependentServicesA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_EnumDependentServicesA, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.service_status = talloc_zero(r, struct ENUM_SERVICE_STATUS);
 	if (r->out.service_status == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.bytes_needed = talloc_zero(r, uint32_t);
 	if (r->out.bytes_needed == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.services_returned = talloc_zero(r, uint32_t);
 	if (r->out.services_returned == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_EnumDependentServicesA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_EnumDependentServicesA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_EnumServicesStatusA(pipes_struct *p)
@@ -2028,87 +2080,89 @@ static bool api_svcctl_EnumServicesStatusA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_EnumServicesStatusA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMSERVICESSTATUSA];
-	
+
 	r = talloc(NULL, struct svcctl_EnumServicesStatusA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_EnumServicesStatusA, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.service = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.service == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.bytes_needed = talloc_zero(r, uint32_t);
 	if (r->out.bytes_needed == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.services_returned = talloc_zero(r, uint32_t);
 	if (r->out.services_returned == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.resume_handle = r->in.resume_handle;
 	r->out.result = _svcctl_EnumServicesStatusA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_EnumServicesStatusA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_OpenSCManagerA(pipes_struct *p)
@@ -2119,74 +2173,76 @@ static bool api_svcctl_OpenSCManagerA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_OpenSCManagerA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_OPENSCMANAGERA];
-	
+
 	r = talloc(NULL, struct svcctl_OpenSCManagerA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_OpenSCManagerA, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.handle = talloc_zero(r, struct policy_handle);
 	if (r->out.handle == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_OpenSCManagerA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_OpenSCManagerA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_OpenServiceA(pipes_struct *p)
@@ -2197,67 +2253,69 @@ static bool api_svcctl_OpenServiceA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_OpenServiceA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_OPENSERVICEA];
-	
+
 	r = talloc(NULL, struct svcctl_OpenServiceA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_OpenServiceA, r);
-	
+	}
+
 	r->out.result = _svcctl_OpenServiceA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_OpenServiceA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_QueryServiceConfigA(pipes_struct *p)
@@ -2268,80 +2326,82 @@ static bool api_svcctl_QueryServiceConfigA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceConfigA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICECONFIGA];
-	
+
 	r = talloc(NULL, struct svcctl_QueryServiceConfigA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfigA, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.query = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.query == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.bytes_needed = talloc_zero(r, uint32_t);
 	if (r->out.bytes_needed == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_QueryServiceConfigA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceConfigA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_QueryServiceLockStatusA(pipes_struct *p)
@@ -2352,80 +2412,82 @@ static bool api_svcctl_QueryServiceLockStatusA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceLockStatusA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICELOCKSTATUSA];
-	
+
 	r = talloc(NULL, struct svcctl_QueryServiceLockStatusA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceLockStatusA, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.lock_status = talloc_zero(r, struct SERVICE_LOCK_STATUS);
 	if (r->out.lock_status == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.required_buf_size = talloc_zero(r, uint32_t);
 	if (r->out.required_buf_size == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_QueryServiceLockStatusA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceLockStatusA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_StartServiceA(pipes_struct *p)
@@ -2436,67 +2498,69 @@ static bool api_svcctl_StartServiceA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_StartServiceA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_STARTSERVICEA];
-	
+
 	r = talloc(NULL, struct svcctl_StartServiceA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_StartServiceA, r);
-	
+	}
+
 	r->out.result = _svcctl_StartServiceA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_StartServiceA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_GetServiceDisplayNameA(pipes_struct *p)
@@ -2507,75 +2571,77 @@ static bool api_svcctl_GetServiceDisplayNameA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_GetServiceDisplayNameA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETSERVICEDISPLAYNAMEA];
-	
+
 	r = talloc(NULL, struct svcctl_GetServiceDisplayNameA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceDisplayNameA, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.display_name = talloc_zero(r, const char *);
 	if (r->out.display_name == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.display_name_length = r->in.display_name_length;
 	r->out.result = _svcctl_GetServiceDisplayNameA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_GetServiceDisplayNameA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_GetServiceKeyNameA(pipes_struct *p)
@@ -2586,75 +2652,77 @@ static bool api_svcctl_GetServiceKeyNameA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_GetServiceKeyNameA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETSERVICEKEYNAMEA];
-	
+
 	r = talloc(NULL, struct svcctl_GetServiceKeyNameA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_GetServiceKeyNameA, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.key_name = talloc_zero(r, const char *);
 	if (r->out.key_name == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.display_name_length = r->in.display_name_length;
 	r->out.result = _svcctl_GetServiceKeyNameA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_GetServiceKeyNameA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_GetCurrentGroupeStateW(pipes_struct *p)
@@ -2665,67 +2733,69 @@ static bool api_svcctl_GetCurrentGroupeStateW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_GetCurrentGroupeStateW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETCURRENTGROUPESTATEW];
-	
+
 	r = talloc(NULL, struct svcctl_GetCurrentGroupeStateW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_GetCurrentGroupeStateW, r);
-	
+	}
+
 	r->out.result = _svcctl_GetCurrentGroupeStateW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_GetCurrentGroupeStateW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_EnumServiceGroupW(pipes_struct *p)
@@ -2736,67 +2806,69 @@ static bool api_svcctl_EnumServiceGroupW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_EnumServiceGroupW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMSERVICEGROUPW];
-	
+
 	r = talloc(NULL, struct svcctl_EnumServiceGroupW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_EnumServiceGroupW, r);
-	
+	}
+
 	r->out.result = _svcctl_EnumServiceGroupW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_EnumServiceGroupW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_ChangeServiceConfig2A(pipes_struct *p)
@@ -2807,67 +2879,69 @@ static bool api_svcctl_ChangeServiceConfig2A(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_ChangeServiceConfig2A *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CHANGESERVICECONFIG2A];
-	
+
 	r = talloc(NULL, struct svcctl_ChangeServiceConfig2A);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfig2A, r);
-	
+	}
+
 	r->out.result = _svcctl_ChangeServiceConfig2A(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_ChangeServiceConfig2A, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_ChangeServiceConfig2W(pipes_struct *p)
@@ -2878,67 +2952,69 @@ static bool api_svcctl_ChangeServiceConfig2W(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_ChangeServiceConfig2W *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CHANGESERVICECONFIG2W];
-	
+
 	r = talloc(NULL, struct svcctl_ChangeServiceConfig2W);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_ChangeServiceConfig2W, r);
-	
+	}
+
 	r->out.result = _svcctl_ChangeServiceConfig2W(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_ChangeServiceConfig2W, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_QueryServiceConfig2A(pipes_struct *p)
@@ -2949,80 +3025,82 @@ static bool api_svcctl_QueryServiceConfig2A(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceConfig2A *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICECONFIG2A];
-	
+
 	r = talloc(NULL, struct svcctl_QueryServiceConfig2A);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfig2A, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.bytes_needed = talloc_zero(r, uint32_t);
 	if (r->out.bytes_needed == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_QueryServiceConfig2A(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceConfig2A, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_QueryServiceConfig2W(pipes_struct *p)
@@ -3033,80 +3111,82 @@ static bool api_svcctl_QueryServiceConfig2W(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceConfig2W *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICECONFIG2W];
-	
+
 	r = talloc(NULL, struct svcctl_QueryServiceConfig2W);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceConfig2W, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.bytes_needed = talloc_zero(r, uint32_t);
 	if (r->out.bytes_needed == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_QueryServiceConfig2W(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceConfig2W, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_QueryServiceStatusEx(pipes_struct *p)
@@ -3117,80 +3197,82 @@ static bool api_svcctl_QueryServiceStatusEx(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_QueryServiceStatusEx *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICESTATUSEX];
-	
+
 	r = talloc(NULL, struct svcctl_QueryServiceStatusEx);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceStatusEx, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.buffer == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.bytes_needed = talloc_zero(r, uint32_t);
 	if (r->out.bytes_needed == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _svcctl_QueryServiceStatusEx(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_QueryServiceStatusEx, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_EnumServicesStatusExA(pipes_struct *p)
@@ -3201,93 +3283,95 @@ static bool api_EnumServicesStatusExA(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct EnumServicesStatusExA *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_ENUMSERVICESSTATUSEXA];
-	
+
 	r = talloc(NULL, struct EnumServicesStatusExA);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(EnumServicesStatusExA, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.services = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.services == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.bytes_needed = talloc_zero(r, uint32_t);
 	if (r->out.bytes_needed == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.service_returned = talloc_zero(r, uint32_t);
 	if (r->out.service_returned == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.resume_handle = r->in.resume_handle;
 	r->out.group_name = talloc_zero(r, const char *);
 	if (r->out.group_name == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _EnumServicesStatusExA(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(EnumServicesStatusExA, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_EnumServicesStatusExW(pipes_struct *p)
@@ -3298,93 +3382,95 @@ static bool api_EnumServicesStatusExW(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct EnumServicesStatusExW *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_ENUMSERVICESSTATUSEXW];
-	
+
 	r = talloc(NULL, struct EnumServicesStatusExW);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(EnumServicesStatusExW, r);
-	
+	}
+
 	ZERO_STRUCT(r->out);
 	r->out.services = talloc_zero_array(r, uint8_t, r->in.buf_size);
 	if (r->out.services == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.bytes_needed = talloc_zero(r, uint32_t);
 	if (r->out.bytes_needed == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.service_returned = talloc_zero(r, uint32_t);
 	if (r->out.service_returned == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.resume_handle = r->in.resume_handle;
 	r->out.group_name = talloc_zero(r, const char *);
 	if (r->out.group_name == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	r->out.result = _EnumServicesStatusExW(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(EnumServicesStatusExW, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 static bool api_svcctl_SCSendTSMessage(pipes_struct *p)
@@ -3395,67 +3481,69 @@ static bool api_svcctl_SCSendTSMessage(pipes_struct *p)
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
 	struct svcctl_SCSendTSMessage *r;
-	
+
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SCSENDTSMESSAGE];
-	
+
 	r = talloc(NULL, struct svcctl_SCSendTSMessage);
 	if (r == NULL) {
-		return False;
+		return false;
 	}
-	
+
 	if (!prs_data_blob(&p->in_data.data, &blob, r)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull = ndr_pull_init_blob(&blob, r);
 	if (pull == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = call->ndr_pull(pull, NDR_IN, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_SCSendTSMessage, r);
-	
+	}
+
 	r->out.result = _svcctl_SCSendTSMessage(p, r);
-	
+
 	if (p->rng_fault_state) {
 		talloc_free(r);
-		/* Return True here, srv_pipe_hnd.c will take care */
-		return True;
+		/* Return true here, srv_pipe_hnd.c will take care */
+		return true;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(svcctl_SCSendTSMessage, r);
-	
+	}
+
 	push = ndr_push_init_ctx(r);
 	if (push == NULL) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	ndr_err = call->ndr_push(push, NDR_OUT, r);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	blob = ndr_push_blob(push);
-	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32)blob.length)) {
+	if (!prs_copy_data_in(&p->out_data.rdata, (const char *)blob.data, (uint32_t)blob.length)) {
 		talloc_free(r);
-		return False;
+		return false;
 	}
-	
+
 	talloc_free(r);
-	
-	return True;
+
+	return true;
 }
 
 

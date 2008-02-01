@@ -188,7 +188,7 @@ static bool posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 
 	DEBUG(8,("posix_fcntl_lock %d %d %.0f %.0f %d\n",fsp->fh->fd,op,(double)offset,(double)count,type));
 
-	ret = SMB_VFS_LOCK(fsp,fsp->fh->fd,op,offset,count,type);
+	ret = SMB_VFS_LOCK(fsp, op, offset, count, type);
 
 	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
 
@@ -212,7 +212,7 @@ static bool posix_fcntl_lock(files_struct *fsp, int op, SMB_OFF_T offset, SMB_OF
 			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
 			errno = 0;
 			count &= 0x7fffffff;
-			ret = SMB_VFS_LOCK(fsp,fsp->fh->fd,op,offset,count,type);
+			ret = SMB_VFS_LOCK(fsp, op, offset, count, type);
 		}
 	}
 
@@ -233,7 +233,7 @@ static bool posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T
 	DEBUG(8,("posix_fcntl_getlock %d %.0f %.0f %d\n",
 		fsp->fh->fd,(double)*poffset,(double)*pcount,*ptype));
 
-	ret = SMB_VFS_GETLOCK(fsp,fsp->fh->fd,poffset,pcount,ptype,&pid);
+	ret = SMB_VFS_GETLOCK(fsp, poffset, pcount, ptype, &pid);
 
 	if (!ret && ((errno == EFBIG) || (errno == ENOLCK) || (errno ==  EINVAL))) {
 
@@ -257,7 +257,7 @@ static bool posix_fcntl_getlock(files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T
 			DEBUG(0,("Count greater than 31 bits - retrying with 31 bit truncated length.\n"));
 			errno = 0;
 			*pcount &= 0x7fffffff;
-			ret = SMB_VFS_GETLOCK(fsp,fsp->fh->fd,poffset,pcount,ptype,&pid);
+			ret = SMB_VFS_GETLOCK(fsp,poffset,pcount,ptype,&pid);
 		}
 	}
 
@@ -607,14 +607,14 @@ static size_t get_posix_pending_close_entries(TALLOC_CTX *mem_ctx,
  to delete all locks on this fsp before this function is called.
 ****************************************************************************/
 
-NTSTATUS fd_close_posix(struct connection_struct *conn, files_struct *fsp)
+NTSTATUS fd_close_posix(struct files_struct *fsp)
 {
 	int saved_errno = 0;
 	int ret;
 	int *fd_array = NULL;
 	size_t count, i;
 
-	if (!lp_locking(fsp->conn->params) || !lp_posix_locking(conn->params)) {
+	if (!lp_locking(fsp->conn->params) || !lp_posix_locking(fsp->conn->params)) {
 		/*
 		 * No locking or POSIX to worry about or we want POSIX semantics
 		 * which will lose all locks on all fd's open on this dev/inode,

@@ -183,6 +183,7 @@ void gfree_names(void)
 	SAFE_FREE( smb_myworkgroup );
 	SAFE_FREE( smb_scope );
 	free_netbios_names_array();
+	free_local_machine_name();
 }
 
 void gfree_all( void )
@@ -289,7 +290,8 @@ static struct user_auth_info cmdline_auth_info = {
 	NULL,	/* password */
 	false,	/* got_pass */
 	false,	/* use_kerberos */
-	Undefined /* signing state */
+	Undefined, /* signing state */
+	false	/* smb_encrypt */
 };
 
 const char *get_cmdline_auth_info_username(void)
@@ -362,9 +364,20 @@ void set_cmdline_auth_info_use_krb5_ticket(void)
 	cmdline_auth_info.got_pass = true;
 }
 
+/* This should only be used by lib/popt_common.c JRA */
+void set_cmdline_auth_info_smb_encrypt(void)
+{
+	cmdline_auth_info.smb_encrypt = true;
+}
+
 bool get_cmdline_auth_info_got_pass(void)
 {
 	return cmdline_auth_info.got_pass;
+}
+
+bool get_cmdline_auth_info_smb_encrypt(void)
+{
+	return cmdline_auth_info.smb_encrypt;
 }
 
 bool get_cmdline_auth_info_copy(struct user_auth_info *info)
@@ -493,6 +506,19 @@ bool file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
 }
 
 /*******************************************************************
+ Check if a unix domain socket exists - call vfs_file_exist for samba files.
+********************************************************************/
+
+bool socket_exist(const char *fname)
+{
+	SMB_STRUCT_STAT st;
+	if (sys_stat(fname,&st) != 0) 
+		return(False);
+
+	return S_ISSOCK(st.st_mode);
+}
+
+/*******************************************************************
  Check a files mod time.
 ********************************************************************/
 
@@ -605,6 +631,19 @@ void show_msg(char *buf)
 }
 
 /*******************************************************************
+ Set the length and marker of an encrypted smb packet.
+********************************************************************/
+
+void smb_set_enclen(char *buf,int len,uint16 enc_ctx_num)
+{
+	_smb_setlen(buf,len);
+
+	SCVAL(buf,4,0xFF);
+	SCVAL(buf,5,'E');
+	SSVAL(buf,6,enc_ctx_num);
+}
+
+/*******************************************************************
  Set the length and marker of an smb packet.
 ********************************************************************/
 
@@ -619,21 +658,6 @@ void smb_setlen(char *buf,int len)
 }
 
 /*******************************************************************
- Setup the word count and byte count for a smb message.
-********************************************************************/
-
-int set_message(char *buf,int num_words,int num_bytes,bool zero)
-{
-	if (zero && (num_words || num_bytes)) {
-		memset(buf + smb_size,'\0',num_words*2 + num_bytes);
-	}
-	SCVAL(buf,smb_wct,num_words);
-	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);  
-	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
-	return (smb_size + num_words*2 + num_bytes);
-}
-
-/*******************************************************************
  Setup only the byte count for a smb message.
 ********************************************************************/
 
@@ -641,18 +665,8 @@ int set_message_bcc(char *buf,int num_bytes)
 {
 	int num_words = CVAL(buf,smb_wct);
 	SSVAL(buf,smb_vwv + num_words*SIZEOFWORD,num_bytes);
-	smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
+	_smb_setlen(buf,smb_size + num_words*2 + num_bytes - 4);
 	return (smb_size + num_words*2 + num_bytes);
-}
-
-/*******************************************************************
- Setup only the byte count for a smb message, using the end of the
- message as a marker.
-********************************************************************/
-
-int set_message_end(void *outbuf,void *end_ptr)
-{
-	return set_message_bcc((char *)outbuf,PTR_DIFF(end_ptr,smb_buf((char *)outbuf)));
 }
 
 /*******************************************************************
@@ -894,67 +908,6 @@ int set_blocking(int fd, bool set)
 		val |= FLAG_TO_SET;
 	return sys_fcntl_long( fd, F_SETFL, val);
 #undef FLAG_TO_SET
-}
-
-/****************************************************************************
- Transfer some data between two fd's.
-****************************************************************************/
-
-#ifndef TRANSFER_BUF_SIZE
-#define TRANSFER_BUF_SIZE 65536
-#endif
-
-ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)(int, void *, size_t),
-						ssize_t (*write_fn)(int, const void *, size_t))
-{
-	char *buf;
-	size_t total = 0;
-	ssize_t read_ret;
-	ssize_t write_ret;
-	size_t num_to_read_thistime;
-	size_t num_written = 0;
-
-	if ((buf = SMB_MALLOC_ARRAY(char, TRANSFER_BUF_SIZE)) == NULL)
-		return -1;
-
-	while (total < n) {
-		num_to_read_thistime = MIN((n - total), TRANSFER_BUF_SIZE);
-
-		read_ret = (*read_fn)(infd, buf, num_to_read_thistime);
-		if (read_ret == -1) {
-			DEBUG(0,("transfer_file_internal: read failure. Error = %s\n", strerror(errno) ));
-			SAFE_FREE(buf);
-			return -1;
-		}
-		if (read_ret == 0)
-			break;
-
-		num_written = 0;
- 
-		while (num_written < read_ret) {
-			write_ret = (*write_fn)(outfd,buf + num_written, read_ret - num_written);
- 
-			if (write_ret == -1) {
-				DEBUG(0,("transfer_file_internal: write failure. Error = %s\n", strerror(errno) ));
-				SAFE_FREE(buf);
-				return -1;
-			}
-			if (write_ret == 0)
-				return (ssize_t)total;
- 
-			num_written += (size_t)write_ret;
-		}
-
-		total += (size_t)read_ret;
-	}
-
-	SAFE_FREE(buf);
-	return (ssize_t)total;		
-}
-
-SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n)
-{
-	return (SMB_OFF_T)transfer_file_internal(infd, outfd, (size_t)n, sys_read, sys_write);
 }
 
 /*******************************************************************
@@ -2227,17 +2180,12 @@ void dump_data_pw(const char *msg, const uchar * data, size_t len)
 #endif
 }
 
-char *tab_depth(int depth)
+const char *tab_depth(int level, int depth)
 {
-	static fstring spaces;
-	size_t len = depth * 4;
-	if (len > sizeof(fstring)-1) {
-		len = sizeof(fstring)-1;
+	if( CHECK_DEBUGLVL(level) ) {
+		dbgtext("%*s", depth*4, "");
 	}
-
-	memset(spaces, ' ', len);
-	spaces[len] = 0;
-	return spaces;
+	return "";
 }
 
 /*****************************************************************************
@@ -2483,6 +2431,7 @@ char *smb_xstrndup(const char *s, size_t n)
 	if (n == -1 || ! *ptr) {
 		smb_panic("smb_xvasprintf: out of memory");
 	}
+	va_end(ap2);
 	return n;
 }
 
@@ -3325,3 +3274,93 @@ void *talloc_zeronull(const void *context, size_t size, const char *name)
 	return talloc_named_const(context, size, name);
 }
 #endif
+
+/* Split a path name into filename and stream name components. Canonicalise
+ * such that an implicit $DATA token is always explicit.
+ *
+ * The "specification" of this function can be found in the
+ * run_local_stream_name() function in torture.c, I've tried those
+ * combinations against a W2k3 server.
+ */
+
+NTSTATUS split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
+				char **pbase, char **pstream)
+{
+	char *base = NULL;
+	char *stream = NULL;
+	char *sname; /* stream name */
+	const char *stype; /* stream type */
+
+	DEBUG(10, ("split_ntfs_stream_name called for [%s]\n", fname));
+
+	sname = strchr_m(fname, ':');
+
+	if (lp_posix_pathnames() || (sname == NULL)) {
+		if (pbase != NULL) {
+			base = talloc_strdup(mem_ctx, fname);
+			NT_STATUS_HAVE_NO_MEMORY(base);
+		}
+		goto done;
+	}
+
+	if (pbase != NULL) {
+		base = talloc_strndup(mem_ctx, fname, PTR_DIFF(sname, fname));
+		NT_STATUS_HAVE_NO_MEMORY(base);
+	}
+
+	sname += 1;
+
+	stype = strchr_m(sname, ':');
+
+	if (stype == NULL) {
+		sname = talloc_strdup(mem_ctx, sname);
+		stype = "$DATA";
+	}
+	else {
+		if (StrCaseCmp(stype, ":$DATA") != 0) {
+			/*
+			 * If there is an explicit stream type, so far we only
+			 * allow $DATA. Is there anything else allowed? -- vl
+			 */
+			DEBUG(10, ("[%s] is an invalid stream type\n", stype));
+			TALLOC_FREE(base);
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+		sname = talloc_strndup(mem_ctx, sname, PTR_DIFF(stype, sname));
+		stype += 1;
+	}
+
+	if (sname == NULL) {
+		TALLOC_FREE(base);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (sname[0] == '\0') {
+		/*
+		 * no stream name, so no stream
+		 */
+		goto done;
+	}
+
+	if (pstream != NULL) {
+		stream = talloc_asprintf(mem_ctx, "%s:%s", sname, stype);
+		if (stream == NULL) {
+			TALLOC_FREE(sname);
+			TALLOC_FREE(base);
+			return NT_STATUS_NO_MEMORY;
+		}
+		/*
+		 * upper-case the type field
+		 */
+		strupper_m(strchr_m(stream, ':')+1);
+	}
+
+ done:
+	if (pbase != NULL) {
+		*pbase = base;
+	}
+	if (pstream != NULL) {
+		*pstream = stream;
+	}
+	return NT_STATUS_OK;
+}

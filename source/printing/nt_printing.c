@@ -429,7 +429,8 @@ static int sec_desc_upg_fn( TDB_CONTEXT *the_tdb, TDB_DATA key,
 
 	/* store it back */
 	
-	sd_size = sec_desc_size(sd_store->sd) + sizeof(SEC_DESC_BUF);
+	sd_size = ndr_size_security_descriptor(sd_store->sd, 0)
+		+ sizeof(SEC_DESC_BUF);
 	prs_init(&ps, sd_size, ctx, MARSHALL);
 
 	if ( !sec_io_desc_buf( "sec_desc_upg_fn", &sd_store, &ps, 1 ) ) {
@@ -1096,7 +1097,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 	}
 
 	/* Skip OEM header (if any) and the DOS stub to start of Windows header */
-	if (SMB_VFS_LSEEK(fsp, fsp->fh->fd, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
+	if (SMB_VFS_LSEEK(fsp, SVAL(buf,DOS_HEADER_LFANEW_OFFSET), SEEK_SET) == (SMB_OFF_T)-1) {
 		DEBUG(3,("get_file_version: File [%s] too short, errno = %d\n",
 				fname, errno));
 		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
@@ -1117,7 +1118,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 		unsigned int section_table_bytes;
 
 		/* Just skip over optional header to get to section table */
-		if (SMB_VFS_LSEEK(fsp, fsp->fh->fd,
+		if (SMB_VFS_LSEEK(fsp,
 				SVAL(buf,PE_HEADER_OPTIONAL_HEADER_SIZE)-(NE_HEADER_SIZE-PE_HEADER_SIZE),
 				SEEK_CUR) == (SMB_OFF_T)-1) {
 			DEBUG(3,("get_file_version: File [%s] Windows optional header too short, errno = %d\n",
@@ -1163,7 +1164,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 				}
 
 				/* Seek to the start of the .rsrc section info */
-				if (SMB_VFS_LSEEK(fsp, fsp->fh->fd, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
+				if (SMB_VFS_LSEEK(fsp, section_pos, SEEK_SET) == (SMB_OFF_T)-1) {
 					DEBUG(3,("get_file_version: PE file [%s] too short for section info, errno = %d\n",
 							fname, errno));
 					goto error_exit;
@@ -1259,7 +1260,7 @@ static int get_file_version(files_struct *fsp, char *fname,uint32 *major, uint32
 				 * twice, as it is simpler to read the code. */
 				if (strcmp(&buf[i], VS_SIGNATURE) == 0) {
 					/* Compute skip alignment to next long address */
-					int skip = -(SMB_VFS_LSEEK(fsp, fsp->fh->fd, 0, SEEK_CUR) - (byte_count - i) +
+					int skip = -(SMB_VFS_LSEEK(fsp, 0, SEEK_CUR) - (byte_count - i) +
 								 sizeof(VS_SIGNATURE)) & 3;
 					if (IVAL(buf,i+sizeof(VS_SIGNATURE)+skip) != 0xfeef04bd) continue;
 
@@ -1359,7 +1360,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 old_file));
 			use_version = false;
-			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) {
+			if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 				 goto error_exit;
 			}
 			old_create_time = st.st_mtime;
@@ -1399,7 +1400,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file, fstr
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 new_file));
 			use_version = false;
-			if (SMB_VFS_FSTAT(fsp, fsp->fh->fd, &st) == -1) {
+			if (SMB_VFS_FSTAT(fsp, &st) == -1) {
 				goto error_exit;
 			}
 			new_create_time = st.st_mtime;
@@ -1866,7 +1867,7 @@ WERROR move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract
 		goto err_exit;
 	}
 
-	create_directory(conn, new_dir);
+	create_directory(conn, NULL, new_dir);
 
 	/* For each driver file, archi\filexxx.yyy, if there is a duplicate file
 	 * listed for this driver which has already been moved, skip it (note:
@@ -3314,8 +3315,13 @@ static WERROR nt_printer_publish_ads(ADS_STRUCT *ads,
 
 	/* publish it */
 	ads_rc = ads_mod_printer_entry(ads, prt_dn, ctx, &mods);
-	if (ads_rc.err.rc == LDAP_NO_SUCH_OBJECT)
+	if (ads_rc.err.rc == LDAP_NO_SUCH_OBJECT) {
+		int i;
+		for (i=0; mods[i] != 0; i++)
+			;
+		mods[i] = (LDAPMod *)-1;
 		ads_rc = ads_add_printer_entry(ads, prt_dn, ctx, &mods);
+	}
 
 	if (!ADS_ERR_OK(ads_rc))
 		DEBUG(3, ("error publishing %s: %s\n", printer->info_2->sharename, ads_errstr(ads_rc)));
@@ -3849,10 +3855,46 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, const uint8 *buf, int bu
 /****************************************************************************
  ***************************************************************************/
 
+static char *last_from;
+static char *last_to;
+
+static const char *get_last_from(void)
+{
+	if (!last_from) {
+		return "";
+	}
+	return last_from;
+}
+
+static const char *get_last_to(void)
+{
+	if (!last_to) {
+		return "";
+	}
+	return last_to;
+}
+
+static bool set_last_from_to(const char *from, const char *to)
+{
+	char *orig_from = last_from;
+	char *orig_to = last_to;
+
+	last_from = SMB_STRDUP(from);
+	last_to = SMB_STRDUP(to);
+
+	SAFE_FREE(orig_from);
+	SAFE_FREE(orig_to);
+
+	if (!last_from || !last_to) {
+		SAFE_FREE(last_from);
+		SAFE_FREE(last_to);
+		return false;
+	}
+	return true;
+}
+
 static void map_to_os2_driver(fstring drivername)
 {
-	static bool initialised=False;
-	static fstring last_from,last_to;
 	char *mapfile = lp_os2_driver_map();
 	char **lines = NULL;
 	int numlines = 0;
@@ -3864,14 +3906,10 @@ static void map_to_os2_driver(fstring drivername)
 	if (!*mapfile)
 		return;
 
-	if (!initialised) {
-		*last_from = *last_to = 0;
-		initialised = True;
-	}
-
-	if (strequal(drivername,last_from)) {
-		DEBUG(3,("Mapped Windows driver %s to OS/2 driver %s\n",drivername,last_to));
-		fstrcpy(drivername,last_to);
+	if (strequal(drivername,get_last_from())) {
+		DEBUG(3,("Mapped Windows driver %s to OS/2 driver %s\n",
+			drivername,get_last_to()));
+		fstrcpy(drivername,get_last_to());
 		return;
 	}
 
@@ -3920,8 +3958,7 @@ static void map_to_os2_driver(fstring drivername)
 
 		if (strequal(nt_name,drivername)) {
 			DEBUG(3,("Mapped windows driver %s to os2 driver%s\n",drivername,os2_name));
-			fstrcpy(last_from,drivername);
-			fstrcpy(last_to,os2_name);
+			set_last_from_to(drivername,os2_name);
 			fstrcpy(drivername,os2_name);
 			file_lines_free(lines);
 			return;
@@ -5294,6 +5331,7 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
 	SEC_DESC_BUF *old_secdesc_ctr = NULL;
 	prs_struct ps;
+	bool prs_init_done = false;
 	TALLOC_CTX *mem_ctx = NULL;
 	TDB_DATA kbuf;
 	WERROR status;
@@ -5358,8 +5396,11 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 
 	/* Store the security descriptor in a tdb */
 
-	prs_init(&ps, (uint32)sec_desc_size(new_secdesc_ctr->sd) +
-		 sizeof(SEC_DESC_BUF), mem_ctx, MARSHALL);
+	prs_init(&ps,
+		 (uint32)ndr_size_security_descriptor(new_secdesc_ctr->sd, 0)
+		 + sizeof(SEC_DESC_BUF), mem_ctx, MARSHALL);
+
+	prs_init_done = true;
 
 	if (!sec_io_desc_buf("nt_printing_setsec", &new_secdesc_ctr,
 			     &ps, 1)) {
@@ -5380,7 +5421,9 @@ WERROR nt_printing_setsec(const char *sharename, SEC_DESC_BUF *secdesc_ctr)
 
  out:
 
-	prs_mem_free(&ps);
+	if (prs_init_done) {
+		prs_mem_free(&ps);
+	}
 	if (mem_ctx)
 		talloc_destroy(mem_ctx);
 	return status;
@@ -5503,7 +5546,7 @@ bool nt_printing_getsec(TALLOC_CTX *ctx, const char *sharename, SEC_DESC_BUF **s
 
 		/* Save default security descriptor for later */
 
-		prs_init(&ps, (uint32)sec_desc_size((*secdesc_ctr)->sd) +
+		prs_init(&ps, (uint32)ndr_size_security_descriptor((*secdesc_ctr)->sd, 0) +
 				sizeof(SEC_DESC_BUF), ctx, MARSHALL);
 
 		if (sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {

@@ -1,0 +1,67 @@
+GTK_FLAGS=`pkg-config gtk+-2.0 --cflags`
+GTK_LIBS=`pkg-config gtk+-2.0 --libs`
+
+KRB5LIBS=@KRB5_LIBS@
+LDAP_LIBS=@LDAP_LIBS@
+LIBS=@LIBS@ -lnetapi
+DEVELOPER_CFLAGS=@DEVELOPER_CFLAGS@
+FLAGS=-I../ -L../../../bin @CFLAGS@ $(GTK_FLAGS)
+CC=@CC@
+LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
+DYNEXP=@DYNEXP@
+
+# Compile a source file.
+COMPILE_CC = $(CC) -I. $(FLAGS) $(PICFLAG) -c $< -o $@
+COMPILE = $(COMPILE_CC)
+
+BINARY_PREREQS = proto_exists bin/.dummy
+
+MAKEDIR = || exec false; \
+	  if test -d "$$dir"; then :; else \
+	  echo mkdir "$$dir"; \
+	  mkdir -p "$$dir" >/dev/null 2>&1 || \
+	  test -d "$$dir" || \
+	  mkdir "$$dir" || \
+	  exec false; fi || exec false
+
+.c.o:
+	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
+	 dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` $(MAKEDIR); fi
+	@echo Compiling $*.c
+	@$(COMPILE) && exit 0;\
+		echo "The following command failed:" 1>&2;\
+		echo "$(COMPILE_CC)" 1>&2;\
+		$(COMPILE_CC) >/dev/null 2>&1
+
+GETDC_OBJ = getdc/getdc.o
+NETDOMJOIN_OBJ = netdomjoin/netdomjoin.o
+NETDOMJOIN_GUI_OBJ = netdomjoin-gui/netdomjoin-gui.o
+GETJOINABLEOUS_OBJ = getjoinableous/getjoinableous.o
+
+PROGS = bin/getdc@EXEEXT@ \
+	bin/netdomjoin@EXEEXT@ \
+	bin/netdomjoin-gui@EXEEXT@ \
+	bin/getjoinableous@EXEEXT@
+
+all: $(PROGS)
+
+bin/getdc@EXEEXT@: $(GETDC_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(GETDC_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+
+bin/getjoinableous@EXEEXT@: $(GETJOINABLEOUS_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(GETJOINABLEOUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+
+bin/netdomjoin@EXEEXT@: $(NETDOMJOIN_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(NETDOMJOIN_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+
+bin/netdomjoin-gui@EXEEXT@: $(NETDOMJOIN_GUI_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) $(GTK_FLAGS) -o $@ $(NETDOMJOIN_GUI_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(GTK_LIBS)
+
+clean:
+	-rm -f $(PROGS)
+	-rm -f core */*~ *~ \
+		*/*.o */*/*.o */*/*/*.o \

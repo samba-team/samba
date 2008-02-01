@@ -25,19 +25,26 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
 
-static SORTED_TREE *cache_tree;
+static SORTED_TREE *cache_tree = NULL;
 extern REGISTRY_OPS regdb_ops;		/* these are the default */
 static REGISTRY_HOOK default_hook = { KEY_TREE_ROOT, &regdb_ops };
 
 /**********************************************************************
- Initialize the cache tree
+ Initialize the cache tree if it has not been initialized yet.
  *********************************************************************/
 
 bool reghook_cache_init( void )
 {
-	cache_tree = pathtree_init( &default_hook, NULL );
+	if (cache_tree == NULL) {
+		cache_tree = pathtree_init(&default_hook, NULL);
+		if (cache_tree !=0) {
+			DEBUG(10, ("reghook_cache_init: new tree with default "
+				   "ops %p for key [%s]\n", (void *)&regdb_ops,
+				   KEY_TREE_ROOT));
+		}
+	}
 
-	return ( cache_tree == NULL );
+	return (cache_tree != NULL);
 }
 
 /**********************************************************************
@@ -54,7 +61,7 @@ bool reghook_cache_add( REGISTRY_HOOK *hook )
 		return false;
 	}
 
-	key = talloc_asprintf(ctx, "//%s", hook->keyname);
+	key = talloc_asprintf(ctx, "\\%s", hook->keyname);
 	if (!key) {
 		return false;
 	}
@@ -63,7 +70,8 @@ bool reghook_cache_add( REGISTRY_HOOK *hook )
 		return false;
 	}
 
-	DEBUG(10,("reghook_cache_add: Adding key [%s]\n", key));
+	DEBUG(10, ("reghook_cache_add: Adding ops %p for key [%s]\n",
+		   (void *)hook->ops, key));
 
 	return pathtree_add( cache_tree, key, hook );
 }
@@ -100,6 +108,9 @@ REGISTRY_HOOK* reghook_cache_find( const char *keyname )
 	DEBUG(10,("reghook_cache_find: Searching for keyname [%s]\n", key));
 	
 	hook = (REGISTRY_HOOK *)pathtree_find( cache_tree, key ) ;
+
+	DEBUG(10, ("reghook_cache_find: found ops %p for key [%s]\n",
+		   hook ? (void *)hook->ops : 0, key));
 	
 	SAFE_FREE( key );
 	

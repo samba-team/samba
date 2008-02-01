@@ -817,7 +817,7 @@ static int net_ads_leave(int argc, const char **argv)
 	struct cli_state *cli = NULL;
 	TALLOC_CTX *ctx;
 	DOM_SID *dom_sid = NULL;
-	char *short_domain_name = NULL;
+	const char *short_domain_name = NULL;
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
@@ -961,7 +961,8 @@ static NTSTATUS check_ads_config( void )
  ********************************************************************/
 
 static NTSTATUS net_join_domain(TALLOC_CTX *ctx, const char *servername,
-				struct sockaddr_storage *pss, char **domain,
+				struct sockaddr_storage *pss,
+				const char **domain,
 				DOM_SID **dom_sid,
 				const char *password)
 {
@@ -1255,7 +1256,6 @@ static bool net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 	ADS_STATUS status;
 	fstring salt;
 	char *std_salt;
-	LDAPMessage *res = NULL;
 	const char *machine_name = global_myname();
 
 	status = ads_domain_func_level( ads, &domain_func );
@@ -1278,24 +1278,11 @@ static bool net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 
 	if ( domain_func == DS_DOMAIN_FUNCTION_2000 ) {
 		char *upn;
-		int count;
 
-		status = ads_find_machine_acct(ads, &res, machine_name);
-		if (!ADS_ERR_OK(status)) {
-			return False;
-		}
-
-		if ( (count = ads_count_replies(ads, res)) != 1 ) {
-			DEBUG(1,("net_set_machine_spn: %d entries returned!\n", count));
-			return False;
-		}
-
-		upn = ads_pull_string(ads, ctx, res, "userPrincipalName");
+		upn = ads_get_upn(ads, ctx, machine_name);
 		if ( upn ) {
 			fstrcpy( salt, upn );
 		}
-
-		ads_msgfree(ads, res);
 	}
 
 	return kerberos_secrets_store_des_salt( salt );
@@ -1308,14 +1295,13 @@ static bool net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 #if defined(WITH_DNS_UPDATES)
 #include "dns.h"
 DNS_ERROR DoDNSUpdate(char *pszServerName,
-		      const char *pszDomainName,
-		      const char *pszHostName,
-		      const struct in_addr *iplist, int num_addrs );
-
+		      const char *pszDomainName, const char *pszHostName,
+		      const struct sockaddr_storage *sslist,
+		      size_t num_addrs );
 
 static NTSTATUS net_update_dns_internal(TALLOC_CTX *ctx, ADS_STRUCT *ads,
 					const char *machine_name,
-					const struct in_addr *addrs,
+					const struct sockaddr_storage *addrs,
 					int num_addrs)
 {
 	struct dns_rr_ns *nameservers = NULL;
@@ -1404,7 +1390,7 @@ done:
 static NTSTATUS net_update_dns(TALLOC_CTX *mem_ctx, ADS_STRUCT *ads)
 {
 	int num_addrs;
-	struct in_addr *iplist = NULL;
+	struct sockaddr_storage *iplist = NULL;
 	fstring machine_name;
 	NTSTATUS status;
 
@@ -1460,8 +1446,7 @@ int net_ads_join(int argc, const char **argv)
 	ADS_STRUCT *ads = NULL;
 	ADS_STATUS status;
 	NTSTATUS nt_status;
-	char *machine_account = NULL;
-	char *short_domain_name = NULL;
+	const char *short_domain_name = NULL;
 	char *tmp_password, *password;
 	TALLOC_CTX *ctx = NULL;
 	DOM_SID *domain_sid = NULL;
@@ -1698,7 +1683,6 @@ int net_ads_join(int argc, const char **argv)
 
 	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->server.realm);
 
-	SAFE_FREE(machine_account);
 	TALLOC_FREE( ctx );
 	ads_destroy(&ads);
 
@@ -1708,7 +1692,6 @@ fail:
 	/* issue an overall failure message at the end. */
 	d_printf("Failed to join domain: %s\n", get_friendly_nt_error_msg(nt_status));
 
-	SAFE_FREE(machine_account);
 	TALLOC_FREE( ctx );
         ads_destroy(&ads);
 

@@ -94,6 +94,19 @@ bool secrets_init(void)
 	return True;
 }
 
+/*
+ * close secrets.tdb
+ */
+void secrets_shutdown(void)
+{
+	if (!tdb) {
+		return;
+	}
+
+	tdb_close(tdb);
+	tdb = NULL;
+}
+
 /* read a entry from the secrets database - the caller must free the result
    if size is non-null then the size of the entry is put in there
  */
@@ -132,14 +145,31 @@ bool secrets_delete(const char *key)
 	return tdb_trans_delete(tdb, string_tdb_data(key)) == 0;
 }
 
+/**
+ * Form a key for fetching the domain sid
+ *
+ * @param domain domain name
+ *
+ * @return keystring
+ **/
+static const char *domain_sid_keystr(const char *domain)
+{
+	char *keystr;
+
+	keystr = talloc_asprintf(talloc_tos(), "%s/%s",
+				 SECRETS_DOMAIN_SID, domain);
+	SMB_ASSERT(keystr != NULL);
+
+	strupper_m(keystr);
+
+	return keystr;
+}
+
 bool secrets_store_domain_sid(const char *domain, const DOM_SID *sid)
 {
-	fstring key;
 	bool ret;
 
-	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
-	strupper_m(key);
-	ret = secrets_store(key, sid, sizeof(DOM_SID));
+	ret = secrets_store(domain_sid_keystr(domain), sid, sizeof(DOM_SID));
 
 	/* Force a re-query, in case we modified our domain */
 	if (ret)
@@ -150,12 +180,9 @@ bool secrets_store_domain_sid(const char *domain, const DOM_SID *sid)
 bool secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
 {
 	DOM_SID *dyn_sid;
-	fstring key;
 	size_t size = 0;
 
-	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
-	strupper_m(key);
-	dyn_sid = (DOM_SID *)secrets_fetch(key, &size);
+	dyn_sid = (DOM_SID *)secrets_fetch(domain_sid_keystr(domain), &size);
 
 	if (dyn_sid == NULL)
 		return False;
@@ -211,6 +238,67 @@ bool secrets_fetch_domain_guid(const char *domain, struct GUID *guid)
 	*guid = *dyn_guid;
 	SAFE_FREE(dyn_guid);
 	return True;
+}
+
+/**
+ * Form a key for fetching the machine trust account sec channel type
+ *
+ * @param domain domain name
+ *
+ * @return keystring
+ **/
+static const char *machine_sec_channel_type_keystr(const char *domain)
+{
+	char *keystr;
+
+	keystr = talloc_asprintf(talloc_tos(), "%s/%s",
+				 SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
+	SMB_ASSERT(keystr != NULL);
+
+	strupper_m(keystr);
+
+	return keystr;
+}
+
+/**
+ * Form a key for fetching the machine trust account last change time
+ *
+ * @param domain domain name
+ *
+ * @return keystring
+ **/
+static const char *machine_last_change_time_keystr(const char *domain)
+{
+	char *keystr;
+
+	keystr = talloc_asprintf(talloc_tos(), "%s/%s",
+				 SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
+	SMB_ASSERT(keystr != NULL);
+
+	strupper_m(keystr);
+
+	return keystr;
+}
+
+
+/**
+ * Form a key for fetching the machine trust account password
+ *
+ * @param domain domain name
+ *
+ * @return keystring
+ **/
+static const char *machine_password_keystr(const char *domain)
+{
+	char *keystr;
+
+	keystr = talloc_asprintf(talloc_tos(), "%s/%s",
+				 SECRETS_MACHINE_PASSWORD, domain);
+	SMB_ASSERT(keystr != NULL);
+
+	strupper_m(keystr);
+
+	return keystr;
 }
 
 /**
@@ -633,45 +721,59 @@ bool secrets_store_trusted_domain_password(const char* domain, const char* pwd,
 }
 
 /************************************************************************
+ Routine to delete the plaintext machine account password
+************************************************************************/
+
+bool secrets_delete_machine_password(const char *domain)
+{
+	return secrets_delete(machine_password_keystr(domain));
+}
+
+/************************************************************************
+ Routine to delete the plaintext machine account password, sec channel type and
+ last change time from secrets database
+************************************************************************/
+
+bool secrets_delete_machine_password_ex(const char *domain)
+{
+	if (!secrets_delete(machine_password_keystr(domain))) {
+		return false;
+	}
+	if (!secrets_delete(machine_sec_channel_type_keystr(domain))) {
+		return false;
+	}
+	return secrets_delete(machine_last_change_time_keystr(domain));
+}
+
+/************************************************************************
+ Routine to delete the domain sid
+************************************************************************/
+
+bool secrets_delete_domain_sid(const char *domain)
+{
+	return secrets_delete(domain_sid_keystr(domain));
+}
+
+/************************************************************************
  Routine to set the plaintext machine account password for a realm
 the password is assumed to be a null terminated ascii string
 ************************************************************************/
 
 bool secrets_store_machine_password(const char *pass, const char *domain, uint32 sec_channel)
 {
-	char *key = NULL;
 	bool ret;
 	uint32 last_change_time;
 	uint32 sec_channel_type;
 
-	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain);
-	if (!key)
-		return False;
-	strupper_m(key);
-
-	ret = secrets_store(key, pass, strlen(pass)+1);
-	SAFE_FREE(key);
-
+	ret = secrets_store(machine_password_keystr(domain), pass, strlen(pass)+1);
 	if (!ret)
 		return ret;
 
-	asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
-	if (!key)
-		return False;
-	strupper_m(key);
-
 	SIVAL(&last_change_time, 0, time(NULL));
-	ret = secrets_store(key, &last_change_time, sizeof(last_change_time));
-	SAFE_FREE(key);
-
-	asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
-	if (!key)
-		return False;
-	strupper_m(key);
+	ret = secrets_store(machine_last_change_time_keystr(domain), &last_change_time, sizeof(last_change_time));
 
 	SIVAL(&sec_channel_type, 0, sec_channel);
-	ret = secrets_store(key, &sec_channel_type, sizeof(sec_channel_type));
-	SAFE_FREE(key);
+	ret = secrets_store(machine_sec_channel_type_keystr(domain), &sec_channel_type, sizeof(sec_channel_type));
 
 	return ret;
 }
@@ -685,41 +787,31 @@ char *secrets_fetch_machine_password(const char *domain,
 				     time_t *pass_last_set_time,
 				     uint32 *channel)
 {
-	char *key = NULL;
 	char *ret;
-	asprintf(&key, "%s/%s", SECRETS_MACHINE_PASSWORD, domain);
-	strupper_m(key);
-	ret = (char *)secrets_fetch(key, NULL);
-	SAFE_FREE(key);
+	ret = (char *)secrets_fetch(machine_password_keystr(domain), NULL);
 
 	if (pass_last_set_time) {
 		size_t size;
 		uint32 *last_set_time;
-		asprintf(&key, "%s/%s", SECRETS_MACHINE_LAST_CHANGE_TIME, domain);
-		strupper_m(key);
-		last_set_time = (unsigned int *)secrets_fetch(key, &size);
+		last_set_time = (unsigned int *)secrets_fetch(machine_last_change_time_keystr(domain), &size);
 		if (last_set_time) {
 			*pass_last_set_time = IVAL(last_set_time,0);
 			SAFE_FREE(last_set_time);
 		} else {
 			*pass_last_set_time = 0;
 		}
-		SAFE_FREE(key);
 	}
 
 	if (channel) {
 		size_t size;
 		uint32 *channel_type;
-		asprintf(&key, "%s/%s", SECRETS_MACHINE_SEC_CHANNEL_TYPE, domain);
-		strupper_m(key);
-		channel_type = (unsigned int *)secrets_fetch(key, &size);
+		channel_type = (unsigned int *)secrets_fetch(machine_sec_channel_type_keystr(domain), &size);
 		if (channel_type) {
 			*channel = IVAL(channel_type,0);
 			SAFE_FREE(channel_type);
 		} else {
 			*channel = get_default_sec_channel();
 		}
-		SAFE_FREE(key);
 	}
 
 	return ret;

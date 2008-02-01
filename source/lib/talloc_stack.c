@@ -39,18 +39,21 @@
 #include "includes.h"
 
 static int talloc_stacksize;
+static int talloc_stack_arraysize;
 static TALLOC_CTX **talloc_stack;
 
-static int talloc_pop(int *ptr)
+static int talloc_pop(TALLOC_CTX *frame)
 {
-	int tos = *ptr;
 	int i;
 
-	for (i=talloc_stacksize-1; i>=tos; i--) {
+	for (i=talloc_stacksize-1; i>0; i--) {
+		if (frame == talloc_stack[i]) {
+			break;
+		}
 		talloc_free(talloc_stack[i]);
 	}
 
-	talloc_stacksize = tos;
+	talloc_stacksize = i;
 	return 0;
 }
 
@@ -61,36 +64,55 @@ static int talloc_pop(int *ptr)
  * not explicitly freed.
  */
 
-TALLOC_CTX *talloc_stackframe(void)
+static TALLOC_CTX *talloc_stackframe_internal(size_t poolsize)
 {
-	TALLOC_CTX **tmp, *top;
-	int *cleanup;
+	TALLOC_CTX **tmp, *top, *parent;
 
-	if (!(tmp = TALLOC_REALLOC_ARRAY(NULL, talloc_stack, TALLOC_CTX *,
-					 talloc_stacksize + 1))) {
+	if (talloc_stack_arraysize < talloc_stacksize + 1) {
+		tmp = TALLOC_REALLOC_ARRAY(NULL, talloc_stack, TALLOC_CTX *,
+					   talloc_stacksize + 1);
+		if (tmp == NULL) {
+			goto fail;
+		}
+		talloc_stack = tmp;
+		talloc_stack_arraysize = talloc_stacksize + 1;
+        }
+
+	if (talloc_stacksize == 0) {
+		parent = talloc_stack;
+	}
+	else {
+		parent = talloc_stack[talloc_stacksize-1];
+	}
+
+	if (poolsize) {
+		top = talloc_pool(parent, poolsize);
+	} else {
+		top = talloc_new(parent);
+	}
+
+	if (top == NULL) {
 		goto fail;
 	}
 
-	talloc_stack = tmp;
-
-	if (!(top = talloc_new(talloc_stack))) {
-		goto fail;
-	}
-
-	if (!(cleanup = talloc(top, int))) {
-		goto fail;
-	}
-
-	*cleanup = talloc_stacksize;
-	talloc_set_destructor(cleanup, talloc_pop);
+	talloc_set_destructor(top, talloc_pop);
 
 	talloc_stack[talloc_stacksize++] = top;
-
 	return top;
 
  fail:
 	smb_panic("talloc_stackframe failed");
 	return NULL;
+}
+
+TALLOC_CTX *talloc_stackframe(void)
+{
+	return talloc_stackframe_internal(0);
+}
+
+TALLOC_CTX *talloc_stackframe_pool(size_t poolsize)
+{
+	return talloc_stackframe_internal(poolsize);
 }
 
 /*

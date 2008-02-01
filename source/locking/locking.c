@@ -102,7 +102,7 @@ bool is_locked(files_struct *fsp,
 			DEBUG(10,("is_locked: optimisation - level II oplock on file %s\n", fsp->fsp_name ));
 			ret = False;
 		} else {
-			struct byte_range_lock *br_lck = brl_get_locks_readonly(NULL, fsp);
+			struct byte_range_lock *br_lck = brl_get_locks_readonly(talloc_tos(), fsp);
 			if (!br_lck) {
 				return False;
 			}
@@ -116,7 +116,7 @@ bool is_locked(files_struct *fsp,
 			TALLOC_FREE(br_lck);
 		}
 	} else {
-		struct byte_range_lock *br_lck = brl_get_locks_readonly(NULL, fsp);
+		struct byte_range_lock *br_lck = brl_get_locks_readonly(talloc_tos(), fsp);
 		if (!br_lck) {
 			return False;
 		}
@@ -160,7 +160,7 @@ NTSTATUS query_lock(files_struct *fsp,
 		return NT_STATUS_OK;
 	}
 
-	br_lck = brl_get_locks_readonly(NULL, fsp);
+	br_lck = brl_get_locks_readonly(talloc_tos(), fsp);
 	if (!br_lck) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -210,7 +210,7 @@ struct byte_range_lock *do_lock(struct messaging_context *msg_ctx,
 		lock_flav_name(lock_flav), lock_type_name(lock_type),
 		(double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
 
-	br_lck = brl_get_locks(NULL, fsp);
+	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {
 		*perr = NT_STATUS_NO_MEMORY;
 		return NULL;
@@ -269,7 +269,7 @@ NTSTATUS do_unlock(struct messaging_context *msg_ctx,
 	DEBUG(10,("do_unlock: unlock start=%.0f len=%.0f requested for fnum %d file %s\n",
 		  (double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
 
-	br_lck = brl_get_locks(NULL, fsp);
+	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -323,7 +323,7 @@ NTSTATUS do_lock_cancel(files_struct *fsp,
 	DEBUG(10,("do_lock_cancel: cancel start=%.0f len=%.0f requested for fnum %d file %s\n",
 		  (double)offset, (double)count, fsp->fnum, fsp->fsp_name ));
 
-	br_lck = brl_get_locks(NULL, fsp);
+	br_lck = brl_get_locks(talloc_tos(), fsp);
 	if (!br_lck) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -372,7 +372,7 @@ void locking_close_file(struct messaging_context *msg_ctx,
 		return;
 	}
 
-	br_lck = brl_get_locks(NULL,fsp);
+	br_lck = brl_get_locks(talloc_tos(),fsp);
 
 	if (br_lck) {
 		cancel_pending_lock_requests_by_fid(fsp, br_lck);
@@ -585,22 +585,14 @@ static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 	}
 
 	/* Save off the associated service path and filename. */
-	lck->servicepath = talloc_strdup(lck, (const char *)dbuf.dptr + sizeof(*data) +
-					(lck->num_share_modes *
-					sizeof(struct share_mode_entry)) +
-					data->u.s.delete_token_size );
-	if (lck->servicepath == NULL) {
-		smb_panic("parse_share_modes: talloc_strdup failed");
-	}
+	lck->servicepath = (const char *)dbuf.dptr + sizeof(*data) +
+		(lck->num_share_modes *	sizeof(struct share_mode_entry)) +
+		data->u.s.delete_token_size;
 
-	lck->filename = talloc_strdup(lck, (const char *)dbuf.dptr + sizeof(*data) +
-					(lck->num_share_modes *
-					sizeof(struct share_mode_entry)) +
-					data->u.s.delete_token_size +
-					strlen(lck->servicepath) + 1 );
-	if (lck->filename == NULL) {
-		smb_panic("parse_share_modes: talloc_strdup failed");
-	}
+	lck->filename = (const char *)dbuf.dptr + sizeof(*data) +
+		(lck->num_share_modes *	sizeof(struct share_mode_entry)) +
+		data->u.s.delete_token_size +
+		strlen(lck->servicepath) + 1;
 
 	/*
 	 * Ensure that each entry has a real process attached.
@@ -608,7 +600,10 @@ static bool parse_share_modes(TDB_DATA dbuf, struct share_mode_lock *lck)
 
 	for (i = 0; i < lck->num_share_modes; i++) {
 		struct share_mode_entry *entry_p = &lck->share_modes[i];
-		char *str = share_mode_str(NULL, i, entry_p);
+		char *str = NULL;
+		if (DEBUGLEVEL >= 10) {
+			str = share_mode_str(NULL, i, entry_p);
+		}
 		DEBUG(10,("parse_share_modes: %s\n",
 			str ? str : ""));
 		if (!process_exists(entry_p->pid)) {
@@ -841,8 +836,6 @@ struct share_mode_lock *fetch_share_mode_unlocked(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	TALLOC_FREE(data.dptr);
-
 	return lck;
 }
 
@@ -930,7 +923,7 @@ bool get_delete_on_close_flag(struct file_id id)
 	bool result;
 	struct share_mode_lock *lck;
   
-	if (!(lck = fetch_share_mode_unlocked(NULL, id, NULL, NULL))) {
+	if (!(lck = fetch_share_mode_unlocked(talloc_tos(), id, NULL, NULL))) {
 		return False;
 	}
 	result = lck->delete_on_close;
@@ -1286,11 +1279,7 @@ static UNIX_USER_TOKEN *copy_unix_token(TALLOC_CTX *ctx, UNIX_USER_TOKEN *tok)
 
 void set_delete_on_close_token(struct share_mode_lock *lck, UNIX_USER_TOKEN *tok)
 {
-	/* Ensure there's no token. */
-	if (lck->delete_token) {
-		TALLOC_FREE(lck->delete_token); /* Also deletes groups... */
-		lck->delete_token = NULL;
-	}
+	TALLOC_FREE(lck->delete_token); /* Also deletes groups... */
 
 	/* Copy the new token (can be NULL). */
 	lck->delete_token = copy_unix_token(lck, tok);
@@ -1333,7 +1322,7 @@ bool set_delete_on_close(files_struct *fsp, bool delete_on_close, UNIX_USER_TOKE
 		return True;
 	}
 
-	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
 	if (lck == NULL) {
 		return False;
 	}

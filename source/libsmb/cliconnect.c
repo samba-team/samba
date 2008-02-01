@@ -98,7 +98,7 @@ static NTSTATUS cli_session_setup_lanman2(struct cli_state *cli,
 
 	/* send a session setup command */
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(cli->outbuf,10, 0, True);
+	cli_set_message(cli->outbuf,10, 0, True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 	
@@ -168,7 +168,7 @@ static NTSTATUS cli_session_setup_guest(struct cli_state *cli)
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 
 	memset(cli->outbuf, '\0', smb_size);
-	set_message(cli->outbuf,13,0,True);
+	cli_set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
@@ -228,7 +228,7 @@ static NTSTATUS cli_session_setup_plaintext(struct cli_state *cli,
 	fstr_sprintf( lanman, "Samba %s", SAMBA_VERSION_STRING);
 
 	memset(cli->outbuf, '\0', smb_size);
-	set_message(cli->outbuf,13,0,True);
+	cli_set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
@@ -377,7 +377,7 @@ static NTSTATUS cli_session_setup_nt1(struct cli_state *cli, const char *user,
 	/* send a session setup command */
 	memset(cli->outbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,13,0,True);
+	cli_set_message(cli->outbuf,13,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 	cli_setup_packet(cli);
 			
@@ -457,7 +457,7 @@ static bool cli_session_setup_blob_send(struct cli_state *cli, DATA_BLOB blob)
 	/* send a session setup command */
 	memset(cli->outbuf,'\0',smb_size);
 
-	set_message(cli->outbuf,12,0,True);
+	cli_set_message(cli->outbuf,12,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBsesssetupX);
 
 	cli_setup_packet(cli);
@@ -863,8 +863,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 		/* If we get a bad principal, try to guess it if
 		   we have a valid host NetBIOS name.
 		 */
-		if (strequal(principal,
-				"not_defined_in_RFC4178@please_ignore")) {
+		if (strequal(principal, ADS_IGNORE_PRINCIPAL)) {
 			SAFE_FREE(principal);
 		}
 
@@ -873,13 +872,27 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			!strequal(star_smbserver_name,
 				cli->desthost)) {
 			char *realm = NULL;
+			char *machine = NULL;
+			char *host = NULL;
 			DEBUG(3,("cli_session_setup_spnego: got a "
 				"bad server principal, trying to guess ...\n"));
+
+			host = strchr_m(cli->desthost, '.');
+			if (host) {
+				machine = SMB_STRNDUP(cli->desthost,
+					host - cli->desthost);
+			} else {
+				machine = SMB_STRDUP(cli->desthost);
+			}
+			if (machine == NULL) {
+				return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+			}
 
 			realm = kerberos_get_default_realm_from_ccache();
 			if (realm && *realm) {
 				if (asprintf(&principal, "%s$@%s",
-						cli->desthost, realm) < 0) {
+						machine, realm) < 0) {
+					SAFE_FREE(machine);
 					SAFE_FREE(realm);
 					return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 				}
@@ -887,6 +900,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 					"server principal=%s\n",
 					principal ? principal : "<null>"));
 			}
+			SAFE_FREE(machine);
 			SAFE_FREE(realm);
 		}
 
@@ -959,8 +973,8 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 		if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0 &&
 		    !lp_client_plaintext_auth() && (*pass)) {
-			DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
-				  " is disabled\n"));
+			DEBUG(1, ("Server requested plaintext password but "
+				  "'client plaintext auth' is disabled\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
@@ -986,8 +1000,8 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
 		if (!lp_client_plaintext_auth() && (*pass)) {
-			DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
-				  " is disabled\n"));
+			DEBUG(1, ("Server requested plaintext password but "
+				  "'client plaintext auth' is disabled\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		return cli_session_setup_plaintext(cli, user, pass, workgroup);
@@ -1029,7 +1043,7 @@ NTSTATUS cli_session_setup(struct cli_state *cli,
 bool cli_ulogoff(struct cli_state *cli)
 {
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(cli->outbuf,2,0,True);
+	cli_set_message(cli->outbuf,2,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBulogoffX);
 	cli_setup_packet(cli);
 	SSVAL(cli->outbuf,smb_vwv0,0xFF);
@@ -1086,8 +1100,9 @@ bool cli_send_tconX(struct cli_state *cli,
 	} else {
 		if((cli->sec_mode & (NEGOTIATE_SECURITY_USER_LEVEL|NEGOTIATE_SECURITY_CHALLENGE_RESPONSE)) == 0) {
 			if (!lp_client_plaintext_auth() && (*pass)) {
-				DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
-					  " is disabled\n"));
+				DEBUG(1, ("Server requested plaintext "
+					  "password but 'client plaintext "
+					  "auth' is disabled\n"));
 				return False;
 			}
 
@@ -1106,7 +1121,7 @@ bool cli_send_tconX(struct cli_state *cli,
 	slprintf(fullshare, sizeof(fullshare)-1,
 		 "\\\\%s\\%s", cli->desthost, share);
 
-	set_message(cli->outbuf,4, 0, True);
+	cli_set_message(cli->outbuf,4, 0, True);
 	SCVAL(cli->outbuf,smb_com,SMBtconX);
 	cli_setup_packet(cli);
 
@@ -1157,7 +1172,7 @@ bool cli_send_tconX(struct cli_state *cli,
 bool cli_tdis(struct cli_state *cli)
 {
 	memset(cli->outbuf,'\0',smb_size);
-	set_message(cli->outbuf,0,0,True);
+	cli_set_message(cli->outbuf,0,0,True);
 	SCVAL(cli->outbuf,smb_com,SMBtdis);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
 	cli_setup_packet(cli);
@@ -1189,7 +1204,7 @@ void cli_negprot_send(struct cli_state *cli)
 	memset(cli->outbuf,'\0',smb_size);
 
 	/* setup the protocol strings */
-	set_message(cli->outbuf,0,0,True);
+	cli_set_message(cli->outbuf,0,0,True);
 
 	p = smb_buf(cli->outbuf);
 	for (numprots=0;
@@ -1229,7 +1244,7 @@ bool cli_negprot(struct cli_state *cli)
 	     numprots++)
 		plength += strlen(prots[numprots].name)+2;
     
-	set_message(cli->outbuf,0,plength,True);
+	cli_set_message(cli->outbuf,0,plength,True);
 
 	p = smb_buf(cli->outbuf);
 	for (numprots=0;
@@ -1798,15 +1813,15 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 	char *p;
 
 	if (!lp_client_plaintext_auth() && (*pass)) {
-		DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
-			  " is disabled\n"));
+		DEBUG(1, ("Server requested plaintext password but 'client "
+			  "plaintext auth' is disabled\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
 
-	set_message(cli->outbuf, 0, 0, True);
+	cli_set_message(cli->outbuf, 0, 0, True);
 	SCVAL(cli->outbuf,smb_com,SMBtcon);
 	cli_setup_packet(cli);
 

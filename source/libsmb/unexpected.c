@@ -63,6 +63,8 @@ void unexpected_packet(struct packet_struct *p)
 
 	len = build_packet(&buf[6], sizeof(buf)-6, p) + 6;
 
+	ZERO_STRUCT(key);	/* needed for potential alignment */
+
 	key.packet_type = p->packet_type;
 	key.timestamp = p->timestamp;
 	key.count = count++;
@@ -85,6 +87,10 @@ static time_t lastt;
 static int traverse_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct unexpected_key key;
+
+	if (kbuf.dsize != sizeof(key)) {
+		tdb_delete(ttdb, kbuf);
+	}
 
 	memcpy(&key, kbuf.dptr, sizeof(key));
 
@@ -133,6 +139,10 @@ static int traverse_match(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf,
 	uint32_t enc_ip;
 	int port;
 	struct packet_struct *p;
+
+	if (kbuf.dsize != sizeof(key)) {
+		return 0;
+	}
 
 	memcpy(&key, kbuf.dptr, sizeof(key));
 

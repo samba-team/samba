@@ -66,7 +66,8 @@ static char *nttrans_realloc(char **ptr, size_t size)
  HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
 
-void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
+void send_nt_replies(connection_struct *conn,
+			struct smb_request *req, NTSTATUS nt_error,
 		     char *params, int paramsize,
 		     char *pdata, int datasize)
 {
@@ -242,8 +243,10 @@ void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
 
 		/* Send the packet */
 		show_msg((char *)req->outbuf);
-		if (!send_smb(smbd_server_fd(),(char *)req->outbuf)) {
-			exit_server_cleanly("send_nt_replies: send_smb failed.");
+		if (!srv_send_smb(smbd_server_fd(),
+				(char *)req->outbuf,
+				IS_CONN_ENCRYPTED(conn))) {
+			exit_server_cleanly("send_nt_replies: srv_send_smb failed.");
 		}
 
 		TALLOC_FREE(req->outbuf);
@@ -268,6 +271,9 @@ void send_nt_replies(struct smb_request *req, NTSTATUS nt_error,
 
 /****************************************************************************
  Is it an NTFS stream name ?
+ An NTFS file name is <path>.<extention>:<stream name>:<stream type>
+ $DATA can be used as both a stream name and a stream type. A missing stream
+ name or type implies $DATA.
 ****************************************************************************/
 
 bool is_ntfs_stream_name(const char *fname)
@@ -410,8 +416,9 @@ static void do_ntcreate_pipe_open(connection_struct *conn,
  Reply to an NT create and X call.
 ****************************************************************************/
 
-void reply_ntcreate_and_X(connection_struct *conn, struct smb_request *req)
+void reply_ntcreate_and_X(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *fname = NULL;
 	uint32 flags;
 	uint32 access_mask;
@@ -726,7 +733,7 @@ static void do_nt_transact_create_pipe(connection_struct *conn,
 	DEBUG(5,("do_nt_transact_create_pipe: open name = %s\n", fname));
 
 	/* Send the required number of replies */
-	send_nt_replies(req, NT_STATUS_OK, params, param_len, *ppdata, 0);
+	send_nt_replies(conn, req, NT_STATUS_OK, params, param_len, *ppdata, 0);
 
 	return;
 }
@@ -765,8 +772,7 @@ static NTSTATUS set_sd(files_struct *fsp, uint8 *data, uint32 sd_len,
 	}
 
 	if (fsp->fh->fd != -1) {
-		status = SMB_VFS_FSET_NT_ACL(fsp, fsp->fh->fd,
-					     security_info_sent, psd);
+		status = SMB_VFS_FSET_NT_ACL(fsp, security_info_sent, psd);
 	}
 	else {
 		status = SMB_VFS_SET_NT_ACL(fsp, fsp->fsp_name,
@@ -1080,7 +1086,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
 	/* Send the required number of replies */
-	send_nt_replies(req, NT_STATUS_OK, params, param_len, *ppdata, 0);
+	send_nt_replies(conn, req, NT_STATUS_OK, params, param_len, *ppdata, 0);
 
 	return;
 }
@@ -1090,7 +1096,7 @@ static void call_nt_transact_create(connection_struct *conn,
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_ntcancel(connection_struct *conn, struct smb_request *req)
+void reply_ntcancel(struct smb_request *req)
 {
 	/*
 	 * Go through and cancel any pending change notifies.
@@ -1252,8 +1258,9 @@ static NTSTATUS copy_internals(TALLOC_CTX *ctx,
  Reply to a NT rename request.
 ****************************************************************************/
 
-void reply_ntrename(connection_struct *conn, struct smb_request *req)
+void reply_ntrename(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *oldname = NULL;
 	char *newname = NULL;
 	char *p;
@@ -1474,7 +1481,7 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 		 * here.
 		 */
 
-		change_notify_reply(req->inbuf, max_param_count, fsp->notify);
+		change_notify_reply(fsp->conn, req->inbuf, max_param_count, fsp->notify);
 
 		/*
 		 * change_notify_reply() above has independently sent its
@@ -1487,7 +1494,9 @@ static void call_nt_transact_notify_change(connection_struct *conn,
 	 * No changes pending, queue the request
 	 */
 
-	status = change_notify_add_request(req->inbuf, max_param_count, filter,
+	status = change_notify_add_request(req,
+			max_param_count,
+			filter,
 			recursive, fsp);
 	if (!NT_STATUS_IS_OK(status)) {
 		reply_nterror(req, status);
@@ -1554,7 +1563,7 @@ static void call_nt_transact_rename(connection_struct *conn,
 	/*
 	 * Rename was successful.
 	 */
-	send_nt_replies(req, NT_STATUS_OK, NULL, 0, NULL, 0);
+	send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
 
 	DEBUG(3,("nt transact rename from = %s, to = %s succeeded.\n",
 		 fsp->fsp_name, new_name));
@@ -1598,7 +1607,6 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	uint32 security_info_wanted;
-	TALLOC_CTX *frame;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 	DATA_BLOB blob;
@@ -1625,8 +1633,6 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 		return;
 	}
 
-	frame = talloc_stackframe();
-
 	/*
 	 * Get the permissions to return.
 	 */
@@ -1636,30 +1642,28 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	} else {
 		if (fsp->fh->fd != -1) {
 			status = SMB_VFS_FGET_NT_ACL(
-				fsp, fsp->fh->fd, security_info_wanted, &psd);
+				fsp, security_info_wanted, &psd);
 		}
 		else {
 			status = SMB_VFS_GET_NT_ACL(
-				fsp, fsp->fsp_name, security_info_wanted, &psd);
+				conn, fsp->fsp_name, security_info_wanted, &psd);
 		}
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
 		reply_nterror(req, status);
 		return;
 	}
 
-	sd_size = sec_desc_size(psd);
+	sd_size = ndr_size_security_descriptor(psd, 0);
 
 	DEBUG(3,("call_nt_transact_query_security_desc: sd_size = %lu.\n",(unsigned long)sd_size));
 
 	SIVAL(params,0,(uint32)sd_size);
 
 	if (max_data_count < sd_size) {
-		send_nt_replies(req, NT_STATUS_BUFFER_TOO_SMALL,
+		send_nt_replies(conn, req, NT_STATUS_BUFFER_TOO_SMALL,
 				params, 4, *ppdata, 0);
-		TALLOC_FREE(frame);
 		return;
 	}
 
@@ -1669,7 +1673,6 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 
 	data = nttrans_realloc(ppdata, sd_size);
 	if(data == NULL) {
-		TALLOC_FREE(frame);
 		reply_doserror(req, ERRDOS, ERRnomem);
 		return;
 	}
@@ -1678,7 +1681,6 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 				   &blob.data, &blob.length);
 
 	if (!NT_STATUS_IS_OK(status)) {
-		TALLOC_FREE(frame);
 		reply_nterror(req, status);
 		return;
 	}
@@ -1686,9 +1688,8 @@ static void call_nt_transact_query_security_desc(connection_struct *conn,
 	SMB_ASSERT(sd_size == blob.length);
 	memcpy(data, blob.data, sd_size);
 
-	send_nt_replies(req, NT_STATUS_OK, params, 4, data, (int)sd_size);
+	send_nt_replies(conn, req, NT_STATUS_OK, params, 4, data, (int)sd_size);
 
-	TALLOC_FREE(frame);
 	return;
 }
 
@@ -1744,7 +1745,7 @@ static void call_nt_transact_set_security_desc(connection_struct *conn,
 	}
 
   done:
-	send_nt_replies(req, NT_STATUS_OK, NULL, 0, NULL, 0);
+	send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
 	return;
 }
 
@@ -1793,7 +1794,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		   so we can know if we need to pre-allocate or not */
 
 		DEBUG(10,("FSCTL_SET_SPARSE: called on FID[0x%04X](but not implemented)\n", fidnum));
-		send_nt_replies(req, NT_STATUS_OK, NULL, 0, NULL, 0);
+		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
 		return;
 
 	case FSCTL_CREATE_OR_GET_OBJECT_ID:
@@ -1819,7 +1820,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		push_file_id_16(pdata, &fsp->file_id);
 		memcpy(pdata+16,create_volume_objectid(conn,objid),16);
 		push_file_id_16(pdata+32, &fsp->file_id);
-		send_nt_replies(req, NT_STATUS_OK, NULL, 0,
+		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0,
 				pdata, data_count);
 		return;
 	}
@@ -1964,7 +1965,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 
 		talloc_destroy(shadow_data->mem_ctx);
 
-		send_nt_replies(req, NT_STATUS_OK, NULL, 0,
+		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0,
 				pdata, data_count);
 
 		return;
@@ -2020,7 +2021,7 @@ static void call_nt_transact_ioctl(connection_struct *conn,
 		 */
 
 		/* this works for now... */
-		send_nt_replies(req, NT_STATUS_OK, NULL, 0, NULL, 0);
+		send_nt_replies(conn, req, NT_STATUS_OK, NULL, 0, NULL, 0);
 		return;
 	}
 	default:
@@ -2174,7 +2175,8 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 			for (;((tmp_list!=NULL)&&((qt_len +40+SID_MAX_SIZE)<max_data_count));
 				tmp_list=tmp_list->next,entry+=entry_len,qt_len+=entry_len) {
 
-				sid_len = sid_size(&tmp_list->quotas->sid);
+				sid_len = ndr_size_dom_sid(
+					&tmp_list->quotas->sid, 0);
 				entry_len = 40 + sid_len;
 
 				/* nextoffset entry 4 bytes */
@@ -2305,7 +2307,7 @@ static void call_nt_transact_get_user_quota(connection_struct *conn,
 			break;
 	}
 
-	send_nt_replies(req, nt_status, params, param_len,
+	send_nt_replies(conn, req, nt_status, params, param_len,
 			pdata, data_len);
 }
 
@@ -2435,7 +2437,7 @@ static void call_nt_transact_set_user_quota(connection_struct *conn,
 		return;
 	}
 
-	send_nt_replies(req, NT_STATUS_OK, params, param_len,
+	send_nt_replies(conn, req, NT_STATUS_OK, params, param_len,
 			pdata, data_len);
 }
 #endif /* HAVE_SYS_QUOTAS */
@@ -2572,8 +2574,9 @@ static void handle_nttrans(connection_struct *conn,
  Reply to a SMBNTtrans.
 ****************************************************************************/
 
-void reply_nttrans(connection_struct *conn, struct smb_request *req)
+void reply_nttrans(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	uint32 pscnt;
 	uint32 psoff;
 	uint32 dscnt;
@@ -2763,8 +2766,9 @@ void reply_nttrans(connection_struct *conn, struct smb_request *req)
  Reply to a SMBnttranss
  ****************************************************************************/
 
-void reply_nttranss(connection_struct *conn, struct smb_request *req)
+void reply_nttranss(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	unsigned int pcnt,poff,dcnt,doff,pdisp,ddisp;
 	struct trans_state *state;
 

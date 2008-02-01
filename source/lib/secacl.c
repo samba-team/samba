@@ -26,7 +26,8 @@
  Create a SEC_ACL structure.  
 ********************************************************************/
 
-SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, uint16 revision, int num_aces, SEC_ACE *ace_list)
+SEC_ACL *make_sec_acl(TALLOC_CTX *ctx, enum security_acl_revision revision,
+		      int num_aces, SEC_ACE *ace_list)
 {
 	SEC_ACL *dst;
 	int i;

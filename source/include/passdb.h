@@ -242,20 +242,15 @@ struct pdb_search {
  * changed to version 14 to move lookup_rids and lookup_names to return
  * enum lsa_SidType rather than uint32.
  * Changed to 16 for access to the trusted domain passwords (obnox).
+ * Changed to 17, the sampwent interface is gone.
  */
 
-#define PASSDB_INTERFACE_VERSION 16
+#define PASSDB_INTERFACE_VERSION 17
 
 struct pdb_methods 
 {
 	const char *name; /* What name got this module */
 
-	NTSTATUS (*setsampwent)(struct pdb_methods *, bool update, uint32 acb_mask);
-	
-	void (*endsampwent)(struct pdb_methods *);
-	
-	NTSTATUS (*getsampwent)(struct pdb_methods *, struct samu *user);
-	
 	NTSTATUS (*getsampwnam)(struct pdb_methods *, struct samu *sam_acct, const char *username);
 	
 	NTSTATUS (*getsampwsid)(struct pdb_methods *, struct samu *sam_acct, const DOM_SID *sid);

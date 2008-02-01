@@ -1382,7 +1382,7 @@ void unix_to_nt_time_abs(NTTIME *nt, time_t t)
 	d = (double)(t);
 	d *= 1.0e7;
 
-	*nt = d;
+	*nt = (NTTIME)d;
 
 	/* convert to a negative value */
 	*nt=~*nt;
@@ -1443,7 +1443,7 @@ const char *display_time(NTTIME nttime)
 	low = ~(nttime & 0xFFFFFFFF);
 	low = low/(1000*1000*10);
 
-	sec=high+low;
+	sec=(int)(high+low);
 
 	days=sec/(60*60*24);
 	hours=(sec - (days*60*60*24)) / (60*60);

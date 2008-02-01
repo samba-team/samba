@@ -93,17 +93,27 @@ static void set_capability(unsigned capability)
 		return;
 	}
 
-	data.effective |= (1<<capability);
+	if (0 == (data.effective & (1<<capability))) {
+		data.effective |= (1<<capability);
 
-	if (capset(&header, &data) == -1) {
-		DEBUG(3,("Unable to set %d capability (%s)\n", 
-			 capability, strerror(errno)));
+		if (capset(&header, &data) == -1) {
+			DEBUG(3,("Unable to set %d capability (%s)\n", 
+				 capability, strerror(errno)));
+		}
 	}
 }
 
 /*
- Call to set the kernel lease signal handler
-*/
+ * public function to get linux lease capability. Needed by some VFS modules (eg. gpfs.c)
+ */
+void linux_set_lease_capability(void)
+{
+	set_capability(CAP_LEASE);
+}
+
+/* 
+ * Call to set the kernel lease signal handler
+ */
 int linux_set_lease_sighandler(int fd)
 {
         if (fcntl(fd, F_SETSIG, RT_SIGNAL_LEASE) == -1) {
@@ -164,7 +174,7 @@ static files_struct *linux_oplock_receive_message(fd_set *fds)
 
 static bool linux_set_kernel_oplock(files_struct *fsp, int oplock_type)
 {
-	if ( SMB_VFS_LINUX_SETLEASE(fsp,fsp->fh->fd, F_WRLCK) == -1) {
+	if ( SMB_VFS_LINUX_SETLEASE(fsp, F_WRLCK) == -1) {
 		DEBUG(3,("linux_set_kernel_oplock: Refused oplock on file %s, "
 			 "fd = %d, file_id = %s. (%s)\n",
 			 fsp->fsp_name, fsp->fh->fd, 
@@ -202,7 +212,7 @@ static void linux_release_kernel_oplock(files_struct *fsp)
 	/*
 	 * Remove the kernel oplock on this file.
 	 */
-	if ( SMB_VFS_LINUX_SETLEASE(fsp,fsp->fh->fd, F_UNLCK) == -1) {
+	if ( SMB_VFS_LINUX_SETLEASE(fsp, F_UNLCK) == -1) {
 		if (DEBUGLVL(0)) {
 			dbgtext("linux_release_kernel_oplock: Error when "
 				"removing kernel oplock on file " );

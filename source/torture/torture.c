@@ -37,6 +37,7 @@ static const char *client_txt = "client_oplocks.txt";
 static bool use_kerberos;
 static fstring multishare_conn_fname;
 static bool use_multishare_conn = False;
+static bool do_encrypt;
 
 bool torture_showall = False;
 
@@ -93,6 +94,57 @@ void *shm_setup(int size)
 	shmctl(shmid, IPC_RMID, 0);
 	
 	return ret;
+}
+
+/********************************************************************
+ Ensure a connection is encrypted.
+********************************************************************/
+
+static bool force_cli_encryption(struct cli_state *c,
+			const char *sharename)
+{
+	uint16 major, minor;
+	uint32 caplow, caphigh;
+	NTSTATUS status;
+
+	if (!SERVER_HAS_UNIX_CIFS(c)) {
+		d_printf("Encryption required and "
+			"server that doesn't support "
+			"UNIX extensions - failing connect\n");
+			return false;
+	}
+
+	if (!cli_unix_extensions_version(c, &major, &minor, &caplow, &caphigh)) {
+		d_printf("Encryption required and "
+			"can't get UNIX CIFS extensions "
+			"version from server.\n");
+		return false;
+	}
+
+	if (!(caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP)) {
+		d_printf("Encryption required and "
+			"share %s doesn't support "
+			"encryption.\n", sharename);
+		return false;
+	}
+
+	if (c->use_kerberos) {
+		status = cli_gss_smb_encryption_start(c);
+	} else {
+		status = cli_raw_ntlm_smb_encryption_start(c,
+						username,
+						password,
+						workgroup);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("Encryption required and "
+			"setup failed with error %s.\n",
+			nt_errstr(status));
+		return false;
+	}
+
+	return true;
 }
 
 
@@ -235,6 +287,10 @@ static bool torture_open_connection_share(struct cli_state **c,
 	if (use_level_II_oplocks) (*c)->use_level_II_oplocks = True;
 	(*c)->timeout = 120000; /* set a really long timeout (2 minutes) */
 
+	if (do_encrypt) {
+		return force_cli_encryption(*c,
+					sharename);
+	}
 	return True;
 }
 
@@ -834,6 +890,7 @@ static bool run_netbench(int client)
 	}
 
 	while (fgets(line, sizeof(line)-1, f)) {
+		char *saveptr;
 		line_count++;
 
 		line[strlen(line)-1] = 0;
@@ -843,9 +900,9 @@ static bool run_netbench(int client)
 		all_string_sub(line,"client1", cname, sizeof(line));
 
 		/* parse the command parameters */
-		params[0] = strtok(line," ");
+		params[0] = strtok_r(line, " ", &saveptr);
 		i = 0;
-		while (params[i]) params[++i] = strtok(NULL," ");
+		while (params[i]) params[++i] = strtok_r(NULL, " ", &saveptr);
 
 		params[i] = "";
 
@@ -5042,6 +5099,149 @@ static bool run_local_rbtree(int dummy)
 	return ret;
 }
 
+static bool test_stream_name(const char *fname, const char *expected_base,
+			     const char *expected_stream,
+			     NTSTATUS expected_status)
+{
+	NTSTATUS status;
+	char *base = NULL;
+	char *stream = NULL;
+
+	status = split_ntfs_stream_name(talloc_tos(), fname, &base, &stream);
+	if (!NT_STATUS_EQUAL(status, expected_status)) {
+		goto error;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return true;
+	}
+
+	if (base == NULL) goto error;
+
+	if (strcmp(expected_base, base) != 0) goto error;
+
+	if ((expected_stream != NULL) && (stream == NULL)) goto error;
+	if ((expected_stream == NULL) && (stream != NULL)) goto error;
+
+	if ((stream != NULL) && (strcmp(expected_stream, stream) != 0))
+		goto error;
+
+	TALLOC_FREE(base);
+	TALLOC_FREE(stream);
+	return true;
+
+ error:
+	d_fprintf(stderr, "test_stream(%s, %s, %s, %s)\n",
+		  fname, expected_base ? expected_base : "<NULL>",
+		  expected_stream ? expected_stream : "<NULL>",
+		  nt_errstr(expected_status));
+	d_fprintf(stderr, "-> base=%s, stream=%s, status=%s\n",
+		  base ? base : "<NULL>", stream ? stream : "<NULL>",
+		  nt_errstr(status));
+	TALLOC_FREE(base);
+	TALLOC_FREE(stream);
+	return false;
+}
+
+static bool run_local_stream_name(int dummy)
+{
+	bool ret = true;
+
+	ret &= test_stream_name(
+		"bla", "bla", NULL, NT_STATUS_OK);
+	ret &= test_stream_name(
+		"bla::$DATA", "bla", NULL, NT_STATUS_OK);
+	ret &= test_stream_name(
+		"bla:blub:", "bla", NULL, NT_STATUS_OBJECT_NAME_INVALID);
+	ret &= test_stream_name(
+		"bla::", NULL, NULL, NT_STATUS_OBJECT_NAME_INVALID);
+	ret &= test_stream_name(
+		"bla::123", "bla", NULL, NT_STATUS_OBJECT_NAME_INVALID);
+	ret &= test_stream_name(
+		"bla:$DATA", "bla", "$DATA:$DATA", NT_STATUS_OK);
+	ret &= test_stream_name(
+		"bla:x:$DATA", "bla", "x:$DATA", NT_STATUS_OK);
+	ret &= test_stream_name(
+		"bla:x", "bla", "x:$DATA", NT_STATUS_OK);
+
+	return ret;
+}
+
+static bool data_blob_equal(DATA_BLOB a, DATA_BLOB b)
+{
+	if (a.length != b.length) {
+		printf("a.length=%d != b.length=%d\n",
+		       (int)a.length, (int)b.length);
+		return false;
+	}
+	if (memcmp(a.data, b.data, a.length) != 0) {
+		printf("a.data and b.data differ\n");
+		return false;
+	}
+	return true;
+}
+
+static bool run_local_memcache(int dummy)
+{
+	struct memcache *cache;
+	DATA_BLOB k1, k2;
+	DATA_BLOB d1, d2, d3;
+	DATA_BLOB v1, v2, v3;
+
+	cache = memcache_init(NULL, 100);
+
+	if (cache == NULL) {
+		printf("memcache_init failed\n");
+		return false;
+	}
+
+	d1 = data_blob_const("d1", 2);
+	d2 = data_blob_const("d2", 2);
+	d3 = data_blob_const("d3", 2);
+
+	k1 = data_blob_const("d1", 2);
+	k2 = data_blob_const("d2", 2);
+
+	memcache_add(cache, STAT_CACHE, k1, d1);
+	memcache_add(cache, GETWD_CACHE, k2, d2);
+
+	if (!memcache_lookup(cache, STAT_CACHE, k1, &v1)) {
+		printf("could not find k1\n");
+		return false;
+	}
+	if (!data_blob_equal(d1, v1)) {
+		return false;
+	}
+
+	if (!memcache_lookup(cache, GETWD_CACHE, k2, &v2)) {
+		printf("could not find k2\n");
+		return false;
+	}
+	if (!data_blob_equal(d2, v2)) {
+		return false;
+	}
+
+	memcache_add(cache, STAT_CACHE, k1, d3);
+
+	if (!memcache_lookup(cache, STAT_CACHE, k1, &v3)) {
+		printf("could not find replaced k1\n");
+		return false;
+	}
+	if (!data_blob_equal(d3, v3)) {
+		return false;
+	}
+
+	memcache_add(cache, GETWD_CACHE, k1, d1);
+
+	if (memcache_lookup(cache, GETWD_CACHE, k2, &v2)) {
+		printf("Did find k2, should have been purged\n");
+		return false;
+	}
+
+	TALLOC_FREE(cache);
+	return true;
+}
+
 static double create_procs(bool (*fn)(int), bool *result)
 {
 	int i, status;
@@ -5196,6 +5396,8 @@ static struct {
 	{ "LOCAL-SUBSTITUTE", run_local_substitute, 0},
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},
+	{ "LOCAL-MEMCACHE", run_local_memcache, 0},
+	{ "LOCAL-STREAM-NAME", run_local_stream_name, 0},
 	{NULL, NULL, 0}};
 
 
@@ -5349,7 +5551,7 @@ static void usage(void)
 
 	fstrcpy(workgroup, lp_workgroup());
 
-	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ld:Ac:ks:b:")) != EOF) {
+	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:m:Ld:Aec:ks:b:")) != EOF) {
 		switch (opt) {
 		case 'p':
 			port_to_use = atoi(optarg);
@@ -5386,6 +5588,9 @@ static void usage(void)
 			break;
 		case 'c':
 			client_txt = optarg;
+			break;
+		case 'e':
+			do_encrypt = true;
 			break;
 		case 'k':
 #ifdef HAVE_KRB5

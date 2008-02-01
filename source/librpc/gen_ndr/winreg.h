@@ -18,10 +18,9 @@
 #define KEY_WOW64_64KEY ( 0x00100 )
 #define KEY_WOW64_32KEY ( 0x00200 )
 
-;
-
+enum winreg_Type
 #ifndef USE_UINT_ENUMS
-enum winreg_Type {
+ {
 	REG_NONE=0,
 	REG_SZ=1,
 	REG_EXPAND_SZ=2,
@@ -36,7 +35,7 @@ enum winreg_Type {
 	REG_QWORD=11
 }
 #else
-enum winreg_Type { __donnot_use_enum_winreg_Type=0x7FFFFFFF}
+ { __donnot_use_enum_winreg_Type=0x7FFFFFFF}
 #define REG_NONE ( 0 )
 #define REG_SZ ( 1 )
 #define REG_EXPAND_SZ ( 2 )
@@ -70,14 +69,15 @@ struct winreg_SecBuf {
 	uint8_t inherit;
 };
 
+enum winreg_CreateAction
 #ifndef USE_UINT_ENUMS
-enum winreg_CreateAction {
+ {
 	REG_ACTION_NONE=0,
 	REG_CREATED_NEW_KEY=1,
 	REG_OPENED_EXISTING_KEY=2
 }
 #else
-enum winreg_CreateAction { __donnot_use_enum_winreg_CreateAction=0x7FFFFFFF}
+ { __donnot_use_enum_winreg_CreateAction=0x7FFFFFFF}
 #define REG_ACTION_NONE ( 0 )
 #define REG_CREATED_NEW_KEY ( 1 )
 #define REG_OPENED_EXISTING_KEY ( 2 )

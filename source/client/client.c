@@ -28,16 +28,20 @@
 #define REGISTER 0
 #endif
 
+extern int do_smb_browse(void); /* mDNS browsing */
+
 extern bool AllowDebugChange;
 extern bool override_logfile;
 extern char tar_type;
 extern bool in_client;
+
 static int port = 0;
 static char *service;
 static char *desthost;
 static char *calling_name;
 static bool grepable = false;
 static char *cmdstr = NULL;
+static const char *cmd_ptr = NULL;
 
 static int io_bufsize = 64512;
 
@@ -88,6 +92,9 @@ static unsigned int put_total_time_ms = 0;
 
 /* totals globals */
 static double dir_total;
+
+/* encrypted state. */
+static bool smb_encrypt;
 
 /* root cli_state connection */
 
@@ -422,7 +429,7 @@ static int cmd_cd(void)
 	char *buf = NULL;
 	int rc = 0;
 
-	if (next_token_nr_talloc(talloc_tos(), NULL, &buf,NULL)) {
+	if (next_token_talloc(talloc_tos(), &cmd_ptr, &buf,NULL)) {
 		rc = do_cd(buf);
 	} else {
 		d_printf("Current directory is %s\n",client_get_cur_dir());
@@ -860,7 +867,7 @@ static int cmd_dir(void)
 		return 1;
 	}
 
-	if (next_token_nr_talloc(ctx, NULL,&buf,NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		string_replace(buf,'/','\\');
 		if (*buf == CLI_DIRSEP_CHAR) {
 			mask = talloc_strdup(ctx, buf + 1);
@@ -912,7 +919,7 @@ static int cmd_du(void)
 		}
 	}
 
-	if (next_token_nr_talloc(ctx, NULL,&buf,NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		string_replace(buf,'/','\\');
 		if (*buf == CLI_DIRSEP_CHAR) {
 			mask = talloc_strdup(ctx, buf);
@@ -938,8 +945,8 @@ static int cmd_echo(void)
 	char *num;
 	char *data;
 
-	if (!next_token_nr_talloc(ctx, NULL, &num, NULL)
-	    || !next_token_nr_talloc(ctx, NULL, &data, NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr, &num, NULL)
+	    || !next_token_talloc(ctx, &cmd_ptr, &data, NULL)) {
 		d_printf("echo <num> <data>\n");
 		return 1;
 	}
@@ -1113,7 +1120,7 @@ static int cmd_get(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx, NULL,&fname,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&fname,NULL)) {
 		d_printf("get <filename> [localname]\n");
 		return 1;
 	}
@@ -1126,7 +1133,7 @@ static int cmd_get(void)
 		return 1;
 	}
 
-	next_token_nr_talloc(ctx, NULL,&lname,NULL);
+	next_token_talloc(ctx, &cmd_ptr,&lname,NULL);
 	if (!lname) {
 		lname = fname;
 	}
@@ -1274,7 +1281,7 @@ static int cmd_more(void)
 	}
 	close(fd);
 
-	if (!next_token_nr_talloc(ctx,NULL,&fname,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&fname,NULL)) {
 		d_printf("more <filename>\n");
 		unlink(lname);
 		return 1;
@@ -1322,7 +1329,7 @@ static int cmd_mget(void)
 
 	abort_mget = false;
 
-	while (next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	while (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		mget_mask = talloc_strdup(ctx, client_get_cur_dir());
 		if (!mget_mask) {
 			return 1;
@@ -1439,7 +1446,7 @@ static int cmd_mkdir(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx, NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		if (!recurse) {
 			d_printf("mkdir <dirname>\n");
 		}
@@ -1456,6 +1463,7 @@ static int cmd_mkdir(void)
 		struct cli_state *targetcli;
 		char *targetname = NULL;
 		char *p = NULL;
+		char *saveptr;
 
 		ddir2 = talloc_strdup(ctx, "");
 		if (!ddir2) {
@@ -1471,7 +1479,7 @@ static int cmd_mkdir(void)
 			return 1;
 		}
 		trim_char(ddir,'.','\0');
-		p = strtok(ddir,"/\\");
+		p = strtok_r(ddir, "/\\", &saveptr);
 		while (p) {
 			ddir2 = talloc_asprintf_append(ddir2, p);
 			if (!ddir2) {
@@ -1484,7 +1492,7 @@ static int cmd_mkdir(void)
 			if (!ddir2) {
 				return 1;
 			}
-			p = strtok(NULL,"/\\");
+			p = strtok_r(NULL, "/\\", &saveptr);
 		}
 	} else {
 		do_mkdir(mask);
@@ -1508,7 +1516,7 @@ static int cmd_altname(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx, NULL, &buf, NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
 		d_printf("altname <file>\n");
 		return 1;
 	}
@@ -1517,6 +1525,92 @@ static int cmd_altname(void)
 		return 1;
 	}
 	do_altname(name);
+	return 0;
+}
+
+/****************************************************************************
+ Show all info we can get
+****************************************************************************/
+
+static int do_allinfo(const char *name)
+{
+	fstring altname;
+	struct timespec b_time, a_time, m_time, c_time;
+	SMB_OFF_T size;
+	uint16_t mode;
+	SMB_INO_T ino;
+	NTTIME tmp;
+	unsigned int num_streams;
+	struct stream_struct *streams;
+	unsigned int i;
+
+	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, altname))) {
+		d_printf("%s getting alt name for %s\n",
+			 cli_errstr(cli),name);
+		return false;
+	}
+	d_printf("altname: %s\n", altname);
+
+	if (!cli_qpathinfo2(cli, name, &b_time, &a_time, &m_time, &c_time,
+			    &size, &mode, &ino)) {
+		d_printf("%s getting pathinfo for %s\n",
+			 cli_errstr(cli),name);
+		return false;
+	}
+
+	unix_timespec_to_nt_time(&tmp, b_time);
+	d_printf("create_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+
+	unix_timespec_to_nt_time(&tmp, a_time);
+	d_printf("access_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+
+	unix_timespec_to_nt_time(&tmp, m_time);
+	d_printf("write_time:     %s\n", nt_time_string(talloc_tos(), tmp));
+
+	unix_timespec_to_nt_time(&tmp, c_time);
+	d_printf("change_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+
+	if (!cli_qpathinfo_streams(cli, name, talloc_tos(), &num_streams,
+				   &streams)) {
+		d_printf("%s getting streams for %s\n",
+			 cli_errstr(cli),name);
+		return false;
+	}
+
+	for (i=0; i<num_streams; i++) {
+		d_printf("stream: [%s], %lld bytes\n", streams[i].name,
+			 (unsigned long long)streams[i].size);
+	}
+
+	return 0;
+}
+
+/****************************************************************************
+ Show all info we can get
+****************************************************************************/
+
+static int cmd_allinfo(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *name;
+	char *buf;
+
+	name = talloc_strdup(ctx, client_get_cur_dir());
+	if (!name) {
+		return 1;
+	}
+
+	if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+		d_printf("allinfo <file>\n");
+		return 1;
+	}
+	name = talloc_asprintf_append(name, buf);
+	if (!name) {
+		return 1;
+	}
+
+	do_allinfo(name);
+
 	return 0;
 }
 
@@ -1674,12 +1768,12 @@ static int cmd_put(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx,NULL,&lname,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&lname,NULL)) {
 		d_printf("put <filename>\n");
 		return 1;
 	}
 
-	if (next_token_nr_talloc(ctx, NULL,&buf,NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		rname = talloc_asprintf_append(rname, buf);
 	} else {
 		rname = talloc_asprintf_append(rname, lname);
@@ -1759,7 +1853,7 @@ static int cmd_select(void)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	char *new_fs = NULL;
-	next_token_nr_talloc(ctx, NULL,&new_fs,NULL)
+	next_token_talloc(ctx, &cmd_ptr,&new_fs,NULL)
 		;
 	if (new_fs) {
 		client_set_fileselection(new_fs);
@@ -1845,7 +1939,7 @@ static int cmd_mput(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *p = NULL;
 
-	while (next_token_nr_talloc(ctx, NULL,&p,NULL)) {
+	while (next_token_talloc(ctx, &cmd_ptr,&p,NULL)) {
 		int ret;
 		struct file_list *temp_list;
 		char *quest, *lname, *rname;
@@ -1956,14 +2050,14 @@ static int cmd_cancel(void)
 	char *buf = NULL;
 	int job;
 
-	if (!next_token_nr_talloc(ctx, NULL, &buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr, &buf,NULL)) {
 		d_printf("cancel <jobid> ...\n");
 		return 1;
 	}
 	do {
 		job = atoi(buf);
 		do_cancel(job);
-	} while (next_token_nr_talloc(ctx,NULL,&buf,NULL));
+	} while (next_token_talloc(ctx, &cmd_ptr,&buf,NULL));
 
 	return 0;
 }
@@ -1979,7 +2073,7 @@ static int cmd_print(void)
 	char *rname = NULL;
 	char *p = NULL;
 
-	if (!next_token_nr_talloc(ctx, NULL, &lname,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr, &lname,NULL)) {
 		d_printf("print <filename>\n");
 		return 1;
 	}
@@ -2075,7 +2169,7 @@ static int cmd_del(void)
 	if (!mask) {
 		return 1;
 	}
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("del <filename>\n");
 		return 1;
 	}
@@ -2101,14 +2195,14 @@ static int cmd_wdel(void)
 	struct cli_state *targetcli;
 	char *targetname = NULL;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("wdel 0x<attrib> <wcard>\n");
 		return 1;
 	}
 
 	attribute = (uint16)strtol(buf, (char **)NULL, 16);
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("wdel 0x<attrib> <wcard>\n");
 		return 1;
 	}
@@ -2143,7 +2237,7 @@ static int cmd_open(void)
 	struct cli_state *targetcli;
 	int fnum;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("open <filename>\n");
 		return 1;
 	}
@@ -2174,6 +2268,49 @@ static int cmd_open(void)
 	return 0;
 }
 
+static int cmd_posix_encrypt(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+
+	if (cli->use_kerberos) {
+		status = cli_gss_smb_encryption_start(cli);
+	} else {
+		char *domain = NULL;
+		char *user = NULL;
+		char *password = NULL;
+
+		if (!next_token_talloc(ctx, &cmd_ptr,&domain,NULL)) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+
+		if (!next_token_talloc(ctx, &cmd_ptr,&user,NULL)) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+
+		if (!next_token_talloc(ctx, &cmd_ptr,&password,NULL)) {
+			d_printf("posix_encrypt domain user password\n");
+			return 1;
+		}
+
+		status = cli_raw_ntlm_smb_encryption_start(cli,
+							user,
+							password,
+							domain);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		d_printf("posix_encrypt failed with error %s\n", nt_errstr(status));
+	} else {
+		d_printf("encryption on\n");
+		smb_encrypt = true;
+	}
+
+	return 0;
+}
+
 /****************************************************************************
 ****************************************************************************/
 
@@ -2187,7 +2324,7 @@ static int cmd_posix_open(void)
 	mode_t mode;
 	int fnum;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_open <filename> 0<mode>\n");
 		return 1;
 	}
@@ -2199,7 +2336,7 @@ static int cmd_posix_open(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_open <filename> 0<mode>\n");
 		return 1;
 	}
@@ -2235,7 +2372,7 @@ static int cmd_posix_mkdir(void)
 	mode_t mode;
 	int fnum;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_mkdir <filename> 0<mode>\n");
 		return 1;
 	}
@@ -2247,7 +2384,7 @@ static int cmd_posix_mkdir(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_mkdir <filename> 0<mode>\n");
 		return 1;
 	}
@@ -2275,7 +2412,7 @@ static int cmd_posix_unlink(void)
 	char *targetname = NULL;
 	struct cli_state *targetcli;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_unlink <filename>\n");
 		return 1;
 	}
@@ -2309,7 +2446,7 @@ static int cmd_posix_rmdir(void)
 	char *targetname = NULL;
 	struct cli_state *targetcli;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("posix_rmdir <filename>\n");
 		return 1;
 	}
@@ -2341,7 +2478,7 @@ static int cmd_close(void)
 	char *buf = NULL;
 	int fnum;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("close <fnum>\n");
 		return 1;
 	}
@@ -2420,16 +2557,29 @@ static int cmd_posix(void)
 			return 1;
 		}
 	}
+	if (caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP) {
+		caps = talloc_asprintf_append(caps, "posix_encrypt ");
+		if (!caps) {
+			return 1;
+		}
+	}
+	if (caplow & CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP) {
+		caps = talloc_asprintf_append(caps, "mandatory_posix_encrypt ");
+		if (!caps) {
+			return 1;
+		}
+	}
 
 	if (*caps && caps[strlen(caps)-1] == ' ') {
 		caps[strlen(caps)-1] = '\0';
 	}
+
+	d_printf("Server supports CIFS capabilities %s\n", caps);
+
 	if (!cli_set_unix_extensions_capabilities(cli, major, minor, caplow, caphigh)) {
 		d_printf("Can't set UNIX CIFS extensions capabilities. %s.\n", cli_errstr(cli));
 		return 1;
 	}
-
-	d_printf("Selecting server supported CIFS capabilities %s\n", caps);
 
 	if (caplow & CIFS_UNIX_POSIX_PATHNAMES_CAP) {
 		CLI_DIRSEP_CHAR = '/';
@@ -2448,13 +2598,13 @@ static int cmd_lock(void)
 	enum brl_type lock_type;
 	int fnum;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
 		return 1;
 	}
 	fnum = atoi(buf);
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
 		return 1;
 	}
@@ -2468,14 +2618,14 @@ static int cmd_lock(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
 		return 1;
 	}
 
 	start = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("lock <fnum> [r|w] <hex-start> <hex-len>\n");
 		return 1;
 	}
@@ -2496,20 +2646,20 @@ static int cmd_unlock(void)
 	SMB_BIG_UINT start, len;
 	int fnum;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
 		return 1;
 	}
 	fnum = atoi(buf);
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
 		return 1;
 	}
 
 	start = (SMB_BIG_UINT)strtol(buf, (char **)NULL, 16);
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("unlock <fnum> <hex-start> <hex-len>\n");
 		return 1;
 	}
@@ -2536,7 +2686,7 @@ static int cmd_rmdir(void)
 	char *targetname = NULL;
 	struct cli_state *targetcli;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("rmdir <dirname>\n");
 		return 1;
 	}
@@ -2575,8 +2725,8 @@ static int cmd_link(void)
 	char *targetname = NULL;
 	struct cli_state *targetcli;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf2,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
 		d_printf("link <oldname> <newname>\n");
 		return 1;
 	}
@@ -2626,8 +2776,8 @@ static int cmd_symlink(void)
 	char *targetname = NULL;
 	struct cli_state *targetcli;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf2,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
 		d_printf("symlink <oldname> <newname>\n");
 		return 1;
 	}
@@ -2679,8 +2829,8 @@ static int cmd_chmod(void)
 	struct cli_state *targetcli;
 	mode_t mode;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf2,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
 		d_printf("chmod mode file\n");
 		return 1;
 	}
@@ -2835,7 +2985,7 @@ static int cmd_getfacl(void)
 	uint16 num_dir_acls = 0;
 	uint16 i;
 
-	if (!next_token_nr_talloc(ctx,NULL,&name,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&name,NULL)) {
 		d_printf("getfacl filename\n");
 		return 1;
 	}
@@ -3001,7 +3151,7 @@ static int cmd_stat(void)
 	SMB_STRUCT_STAT sbuf;
 	struct tm *lt;
 
-	if (!next_token_nr_talloc(ctx,NULL,&name,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&name,NULL)) {
 		d_printf("stat file\n");
 		return 1;
 	}
@@ -3097,9 +3247,9 @@ static int cmd_chown(void)
 	struct cli_state *targetcli;
 	char *targetname = NULL;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf2,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf3,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf3,NULL)) {
 		d_printf("chown uid gid file\n");
 		return 1;
 	}
@@ -3146,8 +3296,8 @@ static int cmd_rename(void)
 	char *targetsrc;
 	char *targetdest;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf2,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
 		d_printf("rename <src> <dest>\n");
 		return 1;
 	}
@@ -3221,8 +3371,8 @@ static int cmd_hardlink(void)
 	struct cli_state *targetcli;
 	char *targetname;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL) ||
-	    !next_token_nr_talloc(ctx,NULL,&buf2,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL) ||
+	    !next_token_talloc(ctx, &cmd_ptr,&buf2,NULL)) {
 		d_printf("hardlink <src> <dest>\n");
 		return 1;
 	}
@@ -3278,7 +3428,7 @@ static int cmd_newer(void)
 	bool ok;
 	SMB_STRUCT_STAT sbuf;
 
-	ok = next_token_nr_talloc(ctx,NULL,&buf,NULL);
+	ok = next_token_talloc(ctx, &cmd_ptr,&buf,NULL);
 	if (ok && (sys_stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
@@ -3304,7 +3454,7 @@ static int cmd_archive(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf;
 
-	if (next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		archive_level = atoi(buf);
 	} else {
 		d_printf("Archive level is %d\n",archive_level);
@@ -3383,7 +3533,7 @@ static int cmd_lcd(void)
 	char *buf;
 	char *d;
 
-	if (next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		chdir(buf);
 	}
 	d = TALLOC_ARRAY(ctx, char, PATH_MAX+1);
@@ -3414,7 +3564,7 @@ static int cmd_reget(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx, NULL, &fname, NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr, &fname, NULL)) {
 		d_printf("reget <filename>\n");
 		return 1;
 	}
@@ -3428,7 +3578,7 @@ static int cmd_reget(void)
 	}
 
 	local_name = fname;
-	next_token_nr_talloc(ctx, NULL, &p, NULL);
+	next_token_talloc(ctx, &cmd_ptr, &p, NULL);
 	if (p) {
 		local_name = p;
 	}
@@ -3456,7 +3606,7 @@ static int cmd_reput(void)
 		return 1;
 	}
 
-	if (!next_token_nr_talloc(ctx, NULL, &local_name, NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr, &local_name, NULL)) {
 		d_printf("reput <filename>\n");
 		return 1;
 	}
@@ -3466,7 +3616,7 @@ static int cmd_reput(void)
 		return 1;
 	}
 
-	if (next_token_nr_talloc(ctx, NULL, &buf, NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
 		remote_name = talloc_asprintf_append(remote_name,
 						buf);
 	} else {
@@ -3640,7 +3790,7 @@ static int cmd_vuid(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		d_printf("Current VUID is %d\n", cli->vuid);
 		return 0;
 	}
@@ -3658,12 +3808,12 @@ static int cmd_logon(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *l_username, *l_password;
 
-	if (!next_token_nr_talloc(ctx,NULL,&l_username,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&l_username,NULL)) {
 		d_printf("logon <username> [<password>]\n");
 		return 0;
 	}
 
-	if (!next_token_nr_talloc(ctx,NULL,&l_password,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&l_password,NULL)) {
 		char *pass = getpass("Password: ");
 		if (pass) {
 			l_password = talloc_strdup(ctx,pass);
@@ -3726,17 +3876,29 @@ int cmd_iosize(void)
 	char *buf;
 	int iosize;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
-		d_printf("iosize <n> or iosize 0x<n>. "
-			"Minimum is 16384 (0x4000), "
-			"max is 16776960 (0xFFFF00)\n");
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
+		if (!smb_encrypt) {
+			d_printf("iosize <n> or iosize 0x<n>. "
+				"Minimum is 16384 (0x4000), "
+				"max is 16776960 (0xFFFF00)\n");
+		} else {
+			d_printf("iosize <n> or iosize 0x<n>. "
+				"(Encrypted connection) ,"
+				"Minimum is 16384 (0x4000), "
+				"max is 130048 (0x1FC00)\n");
+		}
 		return 1;
 	}
 
 	iosize = strtol(buf,NULL,0);
-	if (iosize < 0 || iosize > 0xFFFF00) {
+	if (smb_encrypt && (iosize < 0x4000 || iosize > 0xFC00)) {
+		d_printf("iosize out of range for encrypted "
+			"connection (min = 16384 (0x4000), "
+			"max = 130048 (0x1FC00)");
+		return 1;
+	} else if (!smb_encrypt && (iosize < 0x4000 || iosize > 0xFFFF00)) {
 		d_printf("iosize out of range (min = 16384 (0x4000), "
-			"max = 16776960 (0x0xFFFF00)");
+			"max = 16776960 (0xFFFF00)");
 		return 1;
 	}
 
@@ -3764,6 +3926,8 @@ static struct {
 	char compl_args[2];      /* Completion argument info */
 } commands[] = {
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
+  {"allinfo",cmd_allinfo,"<file> show all available info",
+   {COMPL_NONE,COMPL_NONE}},
   {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
   {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
@@ -3799,6 +3963,7 @@ static struct {
   {"newer",cmd_newer,"<file> only mget files newer than the specified local file",{COMPL_LOCAL,COMPL_NONE}},
   {"open",cmd_open,"<mask> open a file",{COMPL_REMOTE,COMPL_NONE}},
   {"posix", cmd_posix, "turn on all POSIX capabilities", {COMPL_REMOTE,COMPL_NONE}},
+  {"posix_encrypt",cmd_posix_encrypt,"<domain> <user> <password> start up transport encryption",{COMPL_REMOTE,COMPL_NONE}},
   {"posix_open",cmd_posix_open,"<name> 0<mode> open_flags mode open a file using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
   {"posix_mkdir",cmd_posix_mkdir,"<name> 0<mode> creates a directory using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
   {"posix_rmdir",cmd_posix_rmdir,"<name> removes a directory using POSIX interface",{COMPL_REMOTE,COMPL_NONE}},
@@ -3879,7 +4044,7 @@ static int cmd_help(void)
 	int i=0,j;
 	char *buf;
 
-	if (next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		if ((i = process_tok(buf)) >= 0)
 			d_printf("HELP %s:\n\t%s\n\n",
 				commands[i].name,commands[i].description);
@@ -3911,7 +4076,8 @@ static int process_command_string(const char *cmd_in)
 	/* establish the connection if not already */
 
 	if (!cli) {
-		cli = cli_cm_open(talloc_tos(), NULL, desthost, service, true);
+		cli = cli_cm_open(talloc_tos(), NULL, desthost,
+				service, true, smb_encrypt);
 		if (!cli) {
 			return 1;
 		}
@@ -3919,7 +4085,6 @@ static int process_command_string(const char *cmd_in)
 
 	while (cmd[0] != '\0')    {
 		char *line;
-		const char *ptr;
 		char *p;
 		char *tok;
 		int i;
@@ -3934,8 +4099,8 @@ static int process_command_string(const char *cmd_in)
 		}
 
 		/* and get the first part of the command */
-		ptr = line;
-		if (!next_token_nr_talloc(ctx,&ptr,&tok,NULL)) {
+		cmd_ptr = line;
+		if (!next_token_talloc(ctx, &cmd_ptr,&tok,NULL)) {
 			continue;
 		}
 
@@ -4252,16 +4417,22 @@ static void readline_callback(void)
 	timeout.tv_usec = 0;
 	sys_select_intr(cli->fd+1,&fds,NULL,NULL,&timeout);
 
-	/* We deliberately use receive_smb instead of
+	/* We deliberately use receive_smb_raw instead of
 	   client_receive_smb as we want to receive
 	   session keepalives and then drop them here.
 	*/
 	if (FD_ISSET(cli->fd,&fds)) {
-		if (!receive_smb(cli->fd,cli->inbuf,0,&cli->smb_rw_error)) {
+		if (receive_smb_raw(cli->fd,cli->inbuf,0,0,&cli->smb_rw_error) == -1) {
 			DEBUG(0, ("Read from server failed, maybe it closed the "
 				"connection\n"));
 			return;
 		}
+		if(CVAL(cli->inbuf,0) != SMBkeepalive) {
+			DEBUG(0, ("Read from server "
+				"returned unexpected packet!\n"));
+			return;
+		}
+
 		goto again;
 	}
 
@@ -4279,7 +4450,6 @@ static void readline_callback(void)
 
 static int process_stdin(void)
 {
-	const char *ptr;
 	int rc = 0;
 
 	while (1) {
@@ -4310,8 +4480,8 @@ static int process_stdin(void)
 		}
 
 		/* and get the first part of the command */
-		ptr = line;
-		if (!next_token_nr_talloc(frame,&ptr,&tok,NULL)) {
+		cmd_ptr = line;
+		if (!next_token_talloc(frame, &cmd_ptr,&tok,NULL)) {
 			TALLOC_FREE(frame);
 			SAFE_FREE(line);
 			continue;
@@ -4338,7 +4508,8 @@ static int process(const char *base_directory)
 {
 	int rc = 0;
 
-	cli = cli_cm_open(talloc_tos(), NULL, desthost, service, true);
+	cli = cli_cm_open(talloc_tos(), NULL,
+			desthost, service, true, smb_encrypt);
 	if (!cli) {
 		return 1;
 	}
@@ -4367,7 +4538,8 @@ static int process(const char *base_directory)
 
 static int do_host_query(const char *query_host)
 {
-	cli = cli_cm_open(talloc_tos(), NULL, query_host, "IPC$", true);
+	cli = cli_cm_open(talloc_tos(), NULL,
+			query_host, "IPC$", true, smb_encrypt);
 	if (!cli)
 		return 1;
 
@@ -4380,7 +4552,8 @@ static int do_host_query(const char *query_host)
 
 		cli_cm_shutdown();
 		cli_cm_set_port( 139 );
-		cli = cli_cm_open(talloc_tos(), NULL, query_host, "IPC$", true);
+		cli = cli_cm_open(talloc_tos(), NULL,
+				query_host, "IPC$", true, smb_encrypt);
 	}
 
 	if (cli == NULL) {
@@ -4405,7 +4578,8 @@ static int do_tar_op(const char *base_directory)
 
 	/* do we already have a connection? */
 	if (!cli) {
-		cli = cli_cm_open(talloc_tos(), NULL, desthost, service, true);
+		cli = cli_cm_open(talloc_tos(), NULL,
+			desthost, service, true, smb_encrypt);
 		if (!cli)
 			return 1;
 	}
@@ -4512,6 +4686,7 @@ static int do_message_op(void)
 		{ "send-buffer", 'b', POPT_ARG_INT, &io_bufsize, 'b', "Changes the transmit/send buffer", "BYTES" },
 		{ "port", 'p', POPT_ARG_INT, &port, 'p', "Port to connect to", "PORT" },
 		{ "grepable", 'g', POPT_ARG_NONE, NULL, 'g', "Produce grepable output" },
+                { "browse", 'B', POPT_ARG_NONE, NULL, 'B', "Browse SMB servers using DNS" },
 		POPT_COMMON_SAMBA
 		POPT_COMMON_CONNECTION
 		POPT_COMMON_CREDENTIALS
@@ -4538,7 +4713,7 @@ static int do_message_op(void)
 	set_global_myworkgroup( "" );
 	set_global_myname( "" );
 
-        /* set default debug level to 0 regardless of what smb.conf sets */
+        /* set default debug level to 1 regardless of what smb.conf sets */
 	setup_logging( "smbclient", true );
 	DEBUGLEVEL_CLASS[DBGC_ALL] = 1;
 	if ((dbf = x_fdup(x_stderr))) {
@@ -4654,6 +4829,12 @@ static int do_message_op(void)
 		case 'g':
 			grepable=true;
 			break;
+		case 'e':
+			smb_encrypt=true;
+			break;
+		case 'B':
+			return(do_smb_browse());
+
 		}
 	}
 
@@ -4741,6 +4922,7 @@ static int do_message_op(void)
 		calling_name = talloc_strdup(frame, global_myname() );
 	}
 
+	smb_encrypt = get_cmdline_auth_info_smb_encrypt();
 	init_names();
 
 	if(new_name_resolve_order)

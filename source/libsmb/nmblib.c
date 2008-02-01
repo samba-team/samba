@@ -740,6 +740,8 @@ struct packet_struct *parse_packet(char *buf,int length,
 	if (!p)
 		return(NULL);
 
+	ZERO_STRUCTP(p);	/* initialize for possible padding */
+
 	p->next = NULL;
 	p->prev = NULL;
 	p->ip = ip;

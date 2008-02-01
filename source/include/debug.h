@@ -161,17 +161,35 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
  * will remove the extra conditional test.
  */
 
-#define DEBUGLVL( level ) \
+/*
+ * From talloc.c:
+ */
+
+/* these macros gain us a few percent of speed on gcc */
+#if (__GNUC__ >= 3)
+/* the strange !! is to ensure that __builtin_expect() takes either 0 or 1
+   as its first argument */
+#define likely(x)   __builtin_expect(!!(x), 1)
+#define unlikely(x) __builtin_expect(!!(x), 0)
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
+#endif
+
+#define CHECK_DEBUGLVL( level ) \
   ( ((level) <= MAX_DEBUG_LEVEL) && \
-     ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
+     unlikely((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
      (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
-      DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
+      DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) )
+
+#define DEBUGLVL( level ) \
+  ( CHECK_DEBUGLVL(level) \
    && dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
 
 
 #define DEBUGLVLC( dbgc_class, level ) \
   ( ((level) <= MAX_DEBUG_LEVEL) && \
-     ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
+     unlikely((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
      (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
       DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
    && dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) ) )
@@ -179,7 +197,7 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
 
 #define DEBUG( level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-           ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
+           unlikely((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
             DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) )) \
@@ -187,7 +205,7 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
 
 #define DEBUGC( dbgc_class, level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-           ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
+           unlikely((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
 	    DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbghdr( level, DBGC_CLASS, __FILE__, FUNCTION_MACRO, (__LINE__) )) \
@@ -195,14 +213,14 @@ extern bool *DEBUGLEVEL_CLASS_ISSET;
 
 #define DEBUGADD( level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-           ((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
+           unlikely((DEBUGLEVEL_CLASS[ DBGC_CLASS ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ DBGC_CLASS ] && \
             DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbgtext body) )
 
 #define DEBUGADDC( dbgc_class, level, body ) \
   (void)( ((level) <= MAX_DEBUG_LEVEL) && \
-          ((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
+          unlikely((DEBUGLEVEL_CLASS[ dbgc_class ] >= (level))||  \
            (!DEBUGLEVEL_CLASS_ISSET[ dbgc_class ] && \
             DEBUGLEVEL_CLASS[ DBGC_ALL   ] >= (level))  ) \
        && (dbgtext body) )

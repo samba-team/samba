@@ -2,7 +2,7 @@
  *  Samba Unix/Linux SMB client library
  *  Distributed SMB/CIFS Server Management Utility
  *  Local configuration interface
- *  Copyright (C) Michael Adam 2007
+ *  Copyright (C) Michael Adam 2007-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,17 +19,23 @@
  */
 
 /*
- * This is an interface to the configuration stored inside the
- * samba registry. In the future there might be support for other
- * configuration backends as well.
+ * This is an interface to Samba's configuration as made available
+ * by the libnet_conf interface (source/libnet/libnet_conf.c).
+ *
+ * This currently supports local interaction with the configuration
+ * stored in the registry. But other backends and remote access via
+ * rpc might get implemented in the future.
  */
 
 #include "includes.h"
 #include "utils/net.h"
+#include "libnet/libnet.h"
 
-/*
+/**********************************************************************
+ *
  * usage functions
- */
+ *
+ **********************************************************************/
 
 static int net_conf_list_usage(int argc, const char **argv)
 {
@@ -42,9 +48,9 @@ static int net_conf_import_usage(int argc, const char**argv)
 	d_printf("USAGE: net conf import [--test|-T] <filename> "
 		 "[<servicename>]\n"
 		 "\t[--test|-T]    testmode - do not act, just print "
-		                   "what would be done\n"
+			"what would be done\n"
 		 "\t<servicename>  only import service <servicename>, "
-		                   "ignore the rest\n");
+			"ignore the rest\n");
 	return -1;
 }
 
@@ -105,356 +111,16 @@ static int net_conf_delparm_usage(int argc, const char **argv)
 }
 
 
-/*
+/**********************************************************************
+ *
  * Helper functions
+ *
+ **********************************************************************/
+
+/**
+ * This formats an in-memory smbconf parameter to a string.
+ * The result string is allocated with talloc.
  */
-
-static char *format_value(TALLOC_CTX *mem_ctx, struct registry_value *value)
-{
-	char *result = NULL;
-
-	/* what if mem_ctx = NULL? */
-
-	switch (value->type) {
-	case REG_DWORD:
-		result = talloc_asprintf(mem_ctx, "%d", value->v.dword);
-		break;
-	case REG_SZ:
-	case REG_EXPAND_SZ:
-		result = talloc_asprintf(mem_ctx, "%s", value->v.sz.str);
-		break;
-	case REG_MULTI_SZ: {
-                uint32 j;
-                for (j = 0; j < value->v.multi_sz.num_strings; j++) {
-                        result = talloc_asprintf(mem_ctx, "\"%s\" ",
-						 value->v.multi_sz.strings[j]);
-                }
-                break;
-        }
-	case REG_BINARY:
-                result = talloc_asprintf(mem_ctx, "binary (%d bytes)",
-					 (int)value->v.binary.length);
-                break;
-        default:
-                result = talloc_asprintf(mem_ctx, "<unprintable>");
-                break;
-        }
-	return result;
-}
-
-/*
- * add a value to a key.
- */
-static WERROR reg_setvalue_internal(struct registry_key *key,
-				    const char *valname,
-				    const char *valstr)
-{
-	struct registry_value val;
-	WERROR werr = WERR_OK;
-	char *subkeyname;
-	const char *canon_valname;
-	const char *canon_valstr;
-
-	if (!lp_canonicalize_parameter_with_value(valname, valstr,
-						  &canon_valname,
-						  &canon_valstr))
-	{
-		if (canon_valname == NULL) {
-			d_fprintf(stderr, "invalid parameter '%s' given\n",
-			  	  valname);
-		} else {
-			d_fprintf(stderr, "invalid value '%s' given for "
-				  "parameter '%s'\n", valstr, valname);
-		}
-		werr = WERR_INVALID_PARAM;
-		goto done;
-	}
-
-	ZERO_STRUCT(val);
-
-	val.type = REG_SZ;
-	val.v.sz.str = CONST_DISCARD(char *, canon_valstr);
-	val.v.sz.len = strlen(canon_valstr) + 1;
-
-	if (registry_smbconf_valname_forbidden(canon_valname)) {
-		d_fprintf(stderr, "Parameter '%s' not allowed in registry.\n",
-			  canon_valname);
-		werr = WERR_INVALID_PARAM;
-		goto done;
-	}
-
-	subkeyname = strrchr_m(key->key->name, '\\');
-	if ((subkeyname == NULL) || (*(subkeyname +1) == '\0')) {
-		d_fprintf(stderr, "Invalid registry key '%s' given as "
-			  "smbconf section.\n", key->key->name);
-		werr = WERR_INVALID_PARAM;
-		goto done;
-	}
-	subkeyname++;
-	if (!strequal(subkeyname, GLOBAL_NAME) &&
-	    lp_parameter_is_global(valname))
-	{
-		d_fprintf(stderr, "Global paramter '%s' not allowed in "
-			  "service definition ('%s').\n", canon_valname,
-			  subkeyname);
-		werr = WERR_INVALID_PARAM;
-		goto done;
-	}
-
-	werr = reg_setvalue(key, canon_valname, &val);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr,
-			  "Error adding value '%s' to "
-			  "key '%s': %s\n",
-			  canon_valname, key->key->name, dos_errstr(werr));
-	}
-
-done:
-	return werr;
-}
-
-/*
- * Open a subkey of KEY_SMBCONF (i.e a service)
- * - variant without error output (q = quiet)-
- */
-static WERROR smbconf_open_path_q(TALLOC_CTX *ctx, const char *subkeyname,
-			 	  uint32 desired_access,
-				  struct registry_key **key)
-{
-	WERROR werr = WERR_OK;
-	char *path = NULL;
-	NT_USER_TOKEN *token;
-
-	if (!(token = registry_create_admin_token(ctx))) {
-		DEBUG(1, ("Error creating admin token\n"));
-		goto done;
-	}
-
-	if (subkeyname == NULL) {
-		path = talloc_strdup(ctx, KEY_SMBCONF);
-	} else {
-		path = talloc_asprintf(ctx, "%s\\%s", KEY_SMBCONF, subkeyname);
-	}
-
-	werr = reg_open_path(ctx, path, desired_access,
-			     token, key);
-
-done:
-	TALLOC_FREE(path);
-	return werr;
-}
-
-/*
- * Open a subkey of KEY_SMBCONF (i.e a service)
- * - variant with error output -
- */
-static WERROR smbconf_open_path(TALLOC_CTX *ctx, const char *subkeyname,
-				uint32 desired_access,
-				struct registry_key **key)
-{
-	WERROR werr = WERR_OK;
-
-	werr = smbconf_open_path_q(ctx, subkeyname, desired_access, key);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Error opening registry path '%s\\%s': %s\n",
-			  KEY_SMBCONF,
-			  (subkeyname == NULL) ? "" : subkeyname,
-			  dos_errstr(werr));
-	}
-
-	return werr;
-}
-
-/*
- * open the base key KEY_SMBCONF
- */
-static WERROR smbconf_open_basepath(TALLOC_CTX *ctx, uint32 desired_access,
-			     	    struct registry_key **key)
-{
-	return smbconf_open_path(ctx, NULL, desired_access, key);
-}
-
-/*
- * delete a subkey of KEY_SMBCONF
- */
-static WERROR reg_delkey_internal(TALLOC_CTX *ctx, const char *keyname)
-{
-	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
-
-	werr = smbconf_open_basepath(ctx, REG_KEY_WRITE, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = reg_deletekey_recursive(key, key, keyname);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Error deleting registry key %s\\%s: %s\n",
-			  KEY_SMBCONF, keyname, dos_errstr(werr));
-	}
-
-done:
-	TALLOC_FREE(key);
-	return werr;
-}
-
-/*
- * create a subkey of KEY_SMBCONF
- */
-static WERROR reg_createkey_internal(TALLOC_CTX *ctx,
-				     const char * subkeyname,
-				     struct registry_key **newkey)
-{
-	WERROR werr = WERR_OK;
-	struct registry_key *create_parent = NULL;
-	TALLOC_CTX *create_ctx;
-	enum winreg_CreateAction action = REG_ACTION_NONE;
-
-	/* create a new talloc ctx for creation. it will hold
-	 * the intermediate parent key (SMBCONF) for creation
-	 * and will be destroyed when leaving this function... */
-	if (!(create_ctx = talloc_new(ctx))) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
-	werr = smbconf_open_basepath(create_ctx, REG_KEY_WRITE, &create_parent);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = reg_createkey(ctx, create_parent, subkeyname,
-			     REG_KEY_WRITE, newkey, &action);
-	if (W_ERROR_IS_OK(werr) && (action != REG_CREATED_NEW_KEY)) {
-		d_fprintf(stderr, "Key '%s' already exists.\n", subkeyname);
-		werr = WERR_ALREADY_EXISTS;
-	}
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Error creating key %s: %s\n",
-			 subkeyname, dos_errstr(werr));
-	}
-
-done:
-	TALLOC_FREE(create_ctx);
-	return werr;
-}
-
-/*
- * check if a subkey of KEY_SMBCONF of a given name exists
- */
-static bool smbconf_key_exists(TALLOC_CTX *ctx, const char *subkeyname)
-{
-	bool ret = False;
-	WERROR werr = WERR_OK;
-	TALLOC_CTX *mem_ctx;
-	struct registry_key *key;
-
-	if (!(mem_ctx = talloc_new(ctx))) {
-		d_fprintf(stderr, "ERROR: Out of memory...!\n");
-		goto done;
-	}
-
-	werr = smbconf_open_path_q(mem_ctx, subkeyname, REG_KEY_READ, &key);
-	if (W_ERROR_IS_OK(werr)) {
-		ret = True;
-	}
-
-done:
-	TALLOC_FREE(mem_ctx);
-	return ret;
-}
-
-static bool smbconf_value_exists(TALLOC_CTX *ctx, struct registry_key *key,
-				 const char *param)
-{
-	bool ret = False;
-	WERROR werr = WERR_OK;
-	struct registry_value *value = NULL;
-
-	werr = reg_queryvalue(ctx, key, param, &value);
-	if (W_ERROR_IS_OK(werr)) {
-		ret = True;
-	}
-
-	TALLOC_FREE(value);
-	return ret;
-}
-
-static WERROR list_values(TALLOC_CTX *ctx, struct registry_key *key)
-{
-	WERROR werr = WERR_OK;
-	uint32 idx = 0;
-	struct registry_value *valvalue = NULL;
-	char *valname = NULL;
-
-	for (idx = 0;
-	     W_ERROR_IS_OK(werr = reg_enumvalue(ctx, key, idx, &valname,
-			                        &valvalue));
-	     idx++)
-	{
-		d_printf("\t%s = %s\n", valname, format_value(ctx, valvalue));
-	}
-	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
-                d_fprintf(stderr, "Error enumerating values: %s\n",
-                          dos_errstr(werr));
-		goto done;
-        }
-	werr = WERR_OK;
-
-done:
-	return werr;
-}
-
-static WERROR drop_smbconf_internal(TALLOC_CTX *ctx)
-{
-	char *path, *p;
-	WERROR werr = WERR_OK;
-	NT_USER_TOKEN *token;
-	struct registry_key *parent_key = NULL;
-	struct registry_key *new_key = NULL;
-	TALLOC_CTX* tmp_ctx = NULL;
-	enum winreg_CreateAction action;
-
-	tmp_ctx = talloc_new(ctx);
-	if (tmp_ctx == NULL) {
-		werr = WERR_NOMEM;
-		goto done;
-	}
-
-	if (!(token = registry_create_admin_token(tmp_ctx))) {
-		/* what is the appropriate error code here? */
-		werr = WERR_CAN_NOT_COMPLETE;
-		goto done;
-	}
-
-	path = talloc_strdup(tmp_ctx, KEY_SMBCONF);
-	if (path == NULL) {
-		d_fprintf(stderr, "ERROR: out of memory!\n");
-		werr = WERR_NOMEM;
-		goto done;
-	}
-	p = strrchr(path, '\\');
-	*p = '\0';
-	werr = reg_open_path(tmp_ctx, path, REG_KEY_WRITE, token, &parent_key);
-
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = reg_deletekey_recursive(tmp_ctx, parent_key, p+1);
-
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	werr = reg_createkey(tmp_ctx, parent_key, p+1, REG_KEY_WRITE,
-			     &new_key, &action);
-
-done:
-	TALLOC_FREE(tmp_ctx);
-	return werr;
-}
-
 static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
 			 struct share_params *share)
 {
@@ -481,14 +147,14 @@ static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
 		valstr = talloc_asprintf(ctx, "%s", BOOLSTR(!*(bool *)ptr));
 		break;
 	case P_ENUM:
-        	for (i = 0; parm->enum_list[i].name; i++) {
-        	        if (*(int *)ptr == parm->enum_list[i].value)
+		for (i = 0; parm->enum_list[i].name; i++) {
+			if (*(int *)ptr == parm->enum_list[i].value)
 			{
 				valstr = talloc_asprintf(ctx, "%s",
-        	                         parm->enum_list[i].name);
-        	                break;
-        	        }
-        	}
+					parm->enum_list[i].name);
+				break;
+			}
+		}
 		break;
 	case P_OCTAL: {
 		char *o = octal_string(*(int *)ptr);
@@ -529,14 +195,18 @@ static char *parm_valstr(TALLOC_CTX *ctx, struct parm_struct *parm,
 	return valstr;
 }
 
+/**
+ * This functions imports a configuration that has previously
+ * been loaded with lp_load() to registry.
+ */
 static int import_process_service(TALLOC_CTX *ctx,
+				  struct libnet_conf_ctx *conf_ctx,
 				  struct share_params *share)
 {
 	int ret = -1;
 	struct parm_struct *parm;
 	int pnum = 0;
 	const char *servicename;
-	struct registry_key *key;
 	WERROR werr;
 	char *valstr = NULL;
 	TALLOC_CTX *tmp_ctx = NULL;
@@ -553,13 +223,13 @@ static int import_process_service(TALLOC_CTX *ctx,
 	if (opt_testmode) {
 		d_printf("[%s]\n", servicename);
 	} else {
-		if (smbconf_key_exists(tmp_ctx, servicename)) {
-			werr = reg_delkey_internal(tmp_ctx, servicename);
+		if (libnet_conf_share_exists(conf_ctx, servicename)) {
+			werr = libnet_conf_delete_share(conf_ctx, servicename);
 			if (!W_ERROR_IS_OK(werr)) {
 				goto done;
 			}
 		}
-		werr = reg_createkey_internal(tmp_ctx, servicename, &key);
+		werr = libnet_conf_create_share(conf_ctx, servicename);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
@@ -567,9 +237,11 @@ static int import_process_service(TALLOC_CTX *ctx,
 
 	while ((parm = lp_next_parameter(share->service, &pnum, 0)))
 	{
-		if ((share->service < 0 && parm->p_class == P_LOCAL)
+		if ((share->service < 0) && (parm->p_class == P_LOCAL)
 		    && !(parm->flags & FLAG_GLOBAL))
+		{
 			continue;
+		}
 
 		valstr = parm_valstr(tmp_ctx, parm, share);
 
@@ -577,9 +249,15 @@ static int import_process_service(TALLOC_CTX *ctx,
 			if (opt_testmode) {
 				d_printf("\t%s = %s\n", parm->label, valstr);
 			} else {
-				werr = reg_setvalue_internal(key, parm->label,
-							     valstr);
+				werr = libnet_conf_set_parameter(conf_ctx,
+								 servicename,
+								 parm->label,
+								 valstr);
 				if (!W_ERROR_IS_OK(werr)) {
+					d_fprintf(stderr,
+						  "Error setting parameter '%s'"
+						  ": %s\n", parm->label,
+						   dos_errstr(werr));
 					goto done;
 				}
 			}
@@ -597,7 +275,10 @@ done:
 	return ret;
 }
 
-/* return True iff there are nondefault globals */
+/**
+ * Return true iff there are nondefault globals in the
+ * currently loaded configuration.
+ */
 static bool globals_exist(void)
 {
 	int i = 0;
@@ -605,25 +286,31 @@ static bool globals_exist(void)
 
 	while ((parm = lp_next_parameter(GLOBAL_SECTION_SNUM, &i, 0)) != NULL) {
 		if (parm->type != P_SEP) {
-			return True;
+			return true;
 		}
 	}
-	return False;
+	return false;
 }
 
-/*
- * the conf functions
- */
 
-int net_conf_list(int argc, const char **argv)
+/**********************************************************************
+ *
+ * the main conf functions
+ *
+ **********************************************************************/
+
+static int net_conf_list(struct libnet_conf_ctx *conf_ctx,
+			 int argc, const char **argv)
 {
 	WERROR werr = WERR_OK;
 	int ret = -1;
 	TALLOC_CTX *ctx;
-	struct registry_key *base_key = NULL;
-	struct registry_key *sub_key = NULL;
-	uint32 idx_key = 0;
-	char *subkey_name = NULL;
+	uint32_t num_shares;
+	char **share_names;
+	uint32_t *num_params;
+	char ***param_names;
+	char ***param_values;
+	uint32_t share_count, param_count;
 
 	ctx = talloc_init("list");
 
@@ -632,53 +319,24 @@ int net_conf_list(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = smbconf_open_basepath(ctx, REG_KEY_READ, &base_key);
+	werr = libnet_conf_get_config(ctx, conf_ctx, &num_shares, &share_names,
+				      &num_params, &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	if (smbconf_key_exists(ctx, GLOBAL_NAME))  {
-		werr = reg_openkey(ctx, base_key, GLOBAL_NAME,
-				   REG_KEY_READ, &sub_key);
-		if (!W_ERROR_IS_OK(werr)) {
-			d_fprintf(stderr, "Error opening subkey '%s' : %s\n",
-				  subkey_name, dos_errstr(werr));
-			goto done;
-		}
-		d_printf("[%s]\n", GLOBAL_NAME);
-		if (!W_ERROR_IS_OK(list_values(ctx, sub_key))) {
-			goto done;
-		}
-		d_printf("\n");
-	}
-
-	for (idx_key = 0;
-	     W_ERROR_IS_OK(werr = reg_enumkey(ctx, base_key, idx_key,
-			     		      &subkey_name, NULL));
-	     idx_key++)
-	{
-		if (strequal(subkey_name, GLOBAL_NAME)) {
-			continue;
-		}
-		d_printf("[%s]\n", subkey_name);
-
-		werr = reg_openkey(ctx, base_key, subkey_name,
-				   REG_KEY_READ, &sub_key);
-		if (!W_ERROR_IS_OK(werr)) {
-			d_fprintf(stderr,
-				  "Error opening subkey '%s': %s\n",
-				  subkey_name, dos_errstr(werr));
-			goto done;
-		}
-		if (!W_ERROR_IS_OK(list_values(ctx, sub_key))) {
-			goto done;
-		}
-		d_printf("\n");
-	}
-	if (!W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
-		d_fprintf(stderr, "Error enumerating subkeys: %s\n",
+		d_fprintf(stderr, "Error getting config: %s\n",
 			  dos_errstr(werr));
 		goto done;
+	}
+
+	for (share_count = 0; share_count < num_shares; share_count++) {
+		d_printf("[%s]\n", share_names[share_count]);
+		for (param_count = 0; param_count < num_params[share_count];
+		     param_count++)
+		{
+			d_printf("\t%s = %s\n",
+				 param_names[share_count][param_count],
+				 param_values[share_count][param_count]);
+		}
+		d_printf("\n");
 	}
 
 	ret = 0;
@@ -688,12 +346,13 @@ done:
 	return ret;
 }
 
-int net_conf_import(int argc, const char **argv)
+static int net_conf_import(struct libnet_conf_ctx *conf_ctx,
+			   int argc, const char **argv)
 {
 	int ret = -1;
 	const char *filename = NULL;
 	const char *servicename = NULL;
-	bool service_found = False;
+	bool service_found = false;
 	TALLOC_CTX *ctx;
 	struct share_iterator *shares;
 	struct share_params *share;
@@ -717,10 +376,10 @@ int net_conf_import(int argc, const char **argv)
 		filename));
 
 	if (!lp_load(filename,
-		     False,     /* global_only */
-		     True,      /* save_defaults */
-		     False,     /* add_ipc */
-		     True))     /* initialize_globals */
+		     false,     /* global_only */
+		     true,      /* save_defaults */
+		     false,     /* add_ipc */
+		     true))     /* initialize_globals */
 	{
 		d_fprintf(stderr, "Error parsing configuration file.\n");
 		goto done;
@@ -734,8 +393,8 @@ int net_conf_import(int argc, const char **argv)
 	if (((servicename == NULL) && globals_exist()) ||
 	    strequal(servicename, GLOBAL_NAME))
 	{
-		service_found = True;
-		if (import_process_service(ctx, &global_share) != 0) {
+		service_found = true;
+		if (import_process_service(ctx, conf_ctx, &global_share) != 0) {
 			goto done;
 		}
 	}
@@ -753,8 +412,8 @@ int net_conf_import(int argc, const char **argv)
 		if ((servicename == NULL)
 		    || strequal(servicename, lp_servicename(share->service)))
 		{
-			service_found = True;
-			if (import_process_service(ctx, share)!= 0) {
+			service_found = true;
+			if (import_process_service(ctx, conf_ctx, share)!= 0) {
 				goto done;
 			}
 		}
@@ -774,13 +433,13 @@ done:
 	return ret;
 }
 
-int net_conf_listshares(int argc, const char **argv)
+static int net_conf_listshares(struct libnet_conf_ctx *conf_ctx,
+			       int argc, const char **argv)
 {
 	WERROR werr = WERR_OK;
 	int ret = -1;
-	struct registry_key *key;
-	uint32 idx = 0;
-	char *subkey_name = NULL;
+	uint32_t count, num_shares = 0;
+	char **share_names = NULL;
 	TALLOC_CTX *ctx;
 
 	ctx = talloc_init("listshares");
@@ -790,22 +449,15 @@ int net_conf_listshares(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = smbconf_open_basepath(ctx, SEC_RIGHTS_ENUM_SUBKEYS, &key);
+	werr = libnet_conf_get_share_names(ctx, conf_ctx, &num_shares,
+					   &share_names);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
 
-	for (idx = 0;
-	     W_ERROR_IS_OK(werr = reg_enumkey(ctx, key, idx,
-			    		      &subkey_name, NULL));
-	     idx++)
+	for (count = 0; count < num_shares; count++)
 	{
-		d_printf("%s\n", subkey_name);
-	}
-	if (! W_ERROR_EQUAL(WERR_NO_MORE_ITEMS, werr)) {
-		d_fprintf(stderr, "Error enumerating subkeys: %s\n",
-			  dos_errstr(werr));
-		goto done;
+		d_printf("%s\n", share_names[count]);
 	}
 
 	ret = 0;
@@ -815,7 +467,8 @@ done:
 	return ret;
 }
 
-int net_conf_drop(int argc, const char **argv)
+static int net_conf_drop(struct libnet_conf_ctx *conf_ctx,
+			 int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr;
@@ -825,7 +478,7 @@ int net_conf_drop(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = drop_smbconf_internal(NULL);
+	werr = libnet_conf_drop(conf_ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error deleting configuration: %s\n",
 			  dos_errstr(werr));
@@ -838,12 +491,17 @@ done:
 	return ret;
 }
 
-int net_conf_showshare(int argc, const char **argv)
+static int net_conf_showshare(struct libnet_conf_ctx *conf_ctx,
+			      int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
+	const char *sharename = NULL;
 	TALLOC_CTX *ctx;
+	uint32_t num_params;
+	uint32_t count;
+	char **param_names;
+	char **param_values;
 
 	ctx = talloc_init("showshare");
 
@@ -852,15 +510,21 @@ int net_conf_showshare(int argc, const char **argv)
 		goto done;
 	}
 
-	werr = smbconf_open_path(ctx, argv[0], REG_KEY_READ, &key);
+	sharename = argv[0];
+
+	werr = libnet_conf_get_share(ctx, conf_ctx, sharename, &num_params,
+				     &param_names, &param_values);
 	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("error getting share parameters: %s\n",
+			 dos_errstr(werr));
 		goto done;
 	}
 
-	d_printf("[%s]\n", argv[0]);
+	d_printf("[%s]\n", sharename);
 
-	if (!W_ERROR_IS_OK(list_values(ctx, key))) {
-		goto done;
+	for (count = 0; count < num_params; count++) {
+		d_printf("\t%s = %s\n", param_names[count],
+			 param_values[count]);
 	}
 
 	ret = 0;
@@ -870,11 +534,17 @@ done:
 	return ret;
 }
 
-int net_conf_addshare(int argc, const char **argv)
+/**
+ * Add a share, with a couple of standard parameters, partly optional.
+ *
+ * This is a high level utility function of the net conf utility,
+ * not a direct frontend to the libnet_conf API.
+ */
+static int net_conf_addshare(struct libnet_conf_ctx *conf_ctx,
+			     int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
-	struct registry_key *newkey = NULL;
 	char *sharename = NULL;
 	const char *path = NULL;
 	const char *comment = NULL;
@@ -926,7 +596,6 @@ int net_conf_addshare(int argc, const char **argv)
 					net_conf_addshare_usage(argc, argv);
 					goto done;
 			}
-
 		case 2:
 			path = argv[1];
 			sharename = strdup_lower(argv[0]);
@@ -960,6 +629,12 @@ int net_conf_addshare(int argc, const char **argv)
 		goto done;
 	}
 
+	if (libnet_conf_share_exists(conf_ctx, sharename)) {
+		d_fprintf(stderr, "ERROR: share %s already exists.\n",
+			  sharename);
+		goto done;
+	}
+
 	/* validate path */
 
 	if (path[0] != '/') {
@@ -989,43 +664,63 @@ int net_conf_addshare(int argc, const char **argv)
 	 * create the share
 	 */
 
-	werr = reg_createkey_internal(NULL, argv[0], &newkey);
+	werr = libnet_conf_create_share(conf_ctx, sharename);
 	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error creating share %s: %s\n",
+			  sharename, dos_errstr(werr));
 		goto done;
 	}
 
-	/* add config params as values */
+	/*
+	 * fill the share with parameters
+	 */
 
-	werr = reg_setvalue_internal(newkey, "path", path);
-	if (!W_ERROR_IS_OK(werr))
+	werr = libnet_conf_set_parameter(conf_ctx, sharename, "path", path);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error setting parameter %s: %s\n",
+			  "path", dos_errstr(werr));
 		goto done;
+	}
 
 	if (comment != NULL) {
-		werr = reg_setvalue_internal(newkey, "comment", comment);
-		if (!W_ERROR_IS_OK(werr))
+		werr = libnet_conf_set_parameter(conf_ctx, sharename, "comment",
+						 comment);
+		if (!W_ERROR_IS_OK(werr)) {
+			d_fprintf(stderr, "Error setting parameter %s: %s\n",
+				  "comment", dos_errstr(werr));
 			goto done;
+		}
 	}
 
-	werr = reg_setvalue_internal(newkey, "guest ok", guest_ok);
-	if (!W_ERROR_IS_OK(werr))
+	werr = libnet_conf_set_parameter(conf_ctx, sharename, "guest ok",
+					 guest_ok);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error setting parameter %s: %s\n",
+			  "'guest ok'", dos_errstr(werr));
 		goto done;
+	}
 
-	werr = reg_setvalue_internal(newkey, "writeable", writeable);
-	if (!W_ERROR_IS_OK(werr))
+	werr = libnet_conf_set_parameter(conf_ctx, sharename, "writeable",
+					 writeable);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error setting parameter %s: %s\n",
+			  "writeable", dos_errstr(werr));
 		goto done;
+	}
 
 	ret = 0;
 
 done:
-	TALLOC_FREE(newkey);
 	SAFE_FREE(sharename);
 	return ret;
 }
 
-int net_conf_delshare(int argc, const char **argv)
+static int net_conf_delshare(struct libnet_conf_ctx *conf_ctx,
+			     int argc, const char **argv)
 {
 	int ret = -1;
 	const char *sharename = NULL;
+	WERROR werr = WERR_OK;
 
 	if (argc != 1) {
 		net_conf_delshare_usage(argc, argv);
@@ -1033,24 +728,26 @@ int net_conf_delshare(int argc, const char **argv)
 	}
 	sharename = argv[0];
 
-	if (W_ERROR_IS_OK(reg_delkey_internal(NULL, sharename))) {
-		ret = 0;
+	werr = libnet_conf_delete_share(conf_ctx, sharename);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error deleting share %s: %s\n",
+			  sharename, dos_errstr(werr));
+		goto done;
 	}
+
+	ret = 0;
 done:
 	return ret;
 }
 
-static int net_conf_setparm(int argc, const char **argv)
+static int net_conf_setparm(struct libnet_conf_ctx *conf_ctx,
+			    int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
 	char *service = NULL;
 	char *param = NULL;
 	const char *value_str = NULL;
-	TALLOC_CTX *ctx;
-
-	ctx = talloc_init("setparm");
 
 	if (argc != 3) {
 		net_conf_setparm_usage(argc, argv);
@@ -1060,39 +757,39 @@ static int net_conf_setparm(int argc, const char **argv)
 	param = strdup_lower(argv[1]);
 	value_str = argv[2];
 
-	if (!smbconf_key_exists(ctx, service)) {
-		werr = reg_createkey_internal(ctx, service, &key);
-	} else {
-		werr = smbconf_open_path(ctx, service, REG_KEY_READ, &key);
-	}
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
+	if (!libnet_conf_share_exists(conf_ctx, service)) {
+		werr = libnet_conf_create_share(conf_ctx, service);
+		if (!W_ERROR_IS_OK(werr)) {
+			d_fprintf(stderr, "Error creating share '%s': %s\n",
+				  service, dos_errstr(werr));
+			goto done;
+		}
 	}
 
-	werr = reg_setvalue_internal(key, param, value_str);
+	werr = libnet_conf_set_parameter(conf_ctx, service, param, value_str);
+
 	if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error setting value '%s': %s\n",
 			  param, dos_errstr(werr));
 		goto done;
 	}
 
-
 	ret = 0;
 
 done:
 	SAFE_FREE(service);
-	TALLOC_FREE(ctx);
+	SAFE_FREE(param);
 	return ret;
 }
 
-static int net_conf_getparm(int argc, const char **argv)
+static int net_conf_getparm(struct libnet_conf_ctx *conf_ctx,
+			    int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
 	char *service = NULL;
 	char *param = NULL;
-	struct registry_value *value = NULL;
+	char *valstr = NULL;
 	TALLOC_CTX *ctx;
 
 	ctx = talloc_init("getparm");
@@ -1104,26 +801,25 @@ static int net_conf_getparm(int argc, const char **argv)
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	if (!smbconf_key_exists(ctx, service)) {
+	werr = libnet_conf_get_parameter(ctx, conf_ctx, service, param, &valstr);
+
+	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,
-			  "ERROR: given service '%s' does not exist.\n",
+			  "Error: given service '%s' does not exist.\n",
 			  service);
 		goto done;
-	}
-
-	werr = smbconf_open_path(ctx, service, REG_KEY_READ, &key);
-	if (!W_ERROR_IS_OK(werr)) {
+	} else if (W_ERROR_EQUAL(werr, WERR_INVALID_PARAM)) {
+		d_fprintf(stderr,
+			  "Error: given parameter '%s' is not set.\n",
+			  param);
 		goto done;
-	}
-
-	werr = reg_queryvalue(ctx, key, param, &value);
-	if (!W_ERROR_IS_OK(werr)) {
-		d_fprintf(stderr, "Error querying value '%s': %s.\n",
+	} else if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Error getting value '%s': %s.\n",
 			  param, dos_errstr(werr));
 		goto done;
 	}
 
-	d_printf("%s\n", format_value(ctx, value));
+	d_printf("%s\n", valstr);
 
 	ret = 0;
 done:
@@ -1133,16 +829,13 @@ done:
 	return ret;
 }
 
-static int net_conf_delparm(int argc, const char **argv)
+static int net_conf_delparm(struct libnet_conf_ctx *conf_ctx,
+			    int argc, const char **argv)
 {
 	int ret = -1;
 	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
 	char *service = NULL;
 	char *param = NULL;
-	TALLOC_CTX *ctx;
-
-	ctx = talloc_init("delparm");
 
 	if (argc != 2) {
 		net_conf_delparm_usage(argc, argv);
@@ -1151,26 +844,19 @@ static int net_conf_delparm(int argc, const char **argv)
 	service = strdup_lower(argv[0]);
 	param = strdup_lower(argv[1]);
 
-	if (!smbconf_key_exists(ctx, service)) {
+	werr = libnet_conf_delete_parameter(conf_ctx, service, param);
+
+	if (W_ERROR_EQUAL(werr, WERR_NO_SUCH_SERVICE)) {
 		d_fprintf(stderr,
 			  "Error: given service '%s' does not exist.\n",
 			  service);
 		goto done;
-	}
-
-	werr = smbconf_open_path(ctx, service, REG_KEY_READ, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
-
-	if (!smbconf_value_exists(ctx, key, param)) {
+	} else if (W_ERROR_EQUAL(werr, WERR_INVALID_PARAM)) {
 		d_fprintf(stderr,
 			  "Error: given parameter '%s' is not set.\n",
 			  param);
 		goto done;
-	}
-	werr = reg_deletevalue(key, param);
-	if (!W_ERROR_IS_OK(werr)) {
+	} else if (!W_ERROR_IS_OK(werr)) {
 		d_fprintf(stderr, "Error deleting value '%s': %s.\n",
 			  param, dos_errstr(werr));
 		goto done;
@@ -1179,7 +865,81 @@ static int net_conf_delparm(int argc, const char **argv)
 	ret = 0;
 
 done:
+	SAFE_FREE(service);
+	SAFE_FREE(param);
 	return ret;
+}
+
+
+/**********************************************************************
+ *
+ * Wrapper and net_conf_run_function mechanism.
+ *
+ **********************************************************************/
+
+/**
+ * Wrapper function to call the main conf functions.
+ * The wrapper calls handles opening and closing of the
+ * configuration.
+ */
+static int net_conf_wrap_function(int (*fn)(struct libnet_conf_ctx *,
+					    int, const char **),
+				  int argc, const char **argv)
+{
+	WERROR werr;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	struct libnet_conf_ctx *conf_ctx;
+	int ret = -1;
+
+	werr = libnet_conf_open(mem_ctx, &conf_ctx);
+
+	if (!W_ERROR_IS_OK(werr)) {
+		return -1;
+	}
+
+	ret = fn(conf_ctx, argc, argv);
+
+	libnet_conf_close(conf_ctx);
+
+	return ret;
+}
+
+/*
+ * We need a functable struct of our own, because the
+ * functions are called through a wrapper that handles
+ * the opening and closing of the configuration, and so on.
+ */
+struct conf_functable {
+	const char *funcname;
+	int (*fn)(struct libnet_conf_ctx *ctx, int argc, const char **argv);
+	const char *helptext;
+};
+
+/**
+ * This imitates net_run_function2 but calls the main functions
+ * through the wrapper net_conf_wrap_function().
+ */
+static int net_conf_run_function(int argc, const char **argv,
+				 const char *whoami,
+				 struct conf_functable *table)
+{
+	int i;
+
+	if (argc != 0) {
+		for (i=0; table[i].funcname; i++) {
+			if (StrCaseCmp(argv[0], table[i].funcname) == 0)
+				return net_conf_wrap_function(table[i].fn,
+							      argc-1,
+							      argv+1);
+		}
+	}
+
+	for (i=0; table[i].funcname; i++) {
+		d_printf("%s %-15s %s\n", whoami, table[i].funcname,
+			 table[i].helptext);
+	}
+
+	return -1;
 }
 
 /*
@@ -1189,21 +949,21 @@ done:
 int net_conf(int argc, const char **argv)
 {
 	int ret = -1;
-	struct functable2 func[] = {
+	struct conf_functable func_table[] = {
 		{"list", net_conf_list,
 		 "Dump the complete configuration in smb.conf like format."},
 		{"import", net_conf_import,
 		 "Import configuration from file in smb.conf format."},
 		{"listshares", net_conf_listshares,
-		 "List the registry shares."},
+		 "List the share names."},
 		{"drop", net_conf_drop,
-		 "Delete the complete configuration from registry."},
+		 "Delete the complete configuration."},
 		{"showshare", net_conf_showshare,
-		 "Show the definition of a registry share."},
+		 "Show the definition of a share."},
 		{"addshare", net_conf_addshare,
-		 "Create a new registry share."},
+		 "Create a new share."},
 		{"delshare", net_conf_delshare,
-		 "Delete a registry share."},
+		 "Delete a share."},
 		{"setparm", net_conf_setparm,
 		 "Store a parameter."},
 		{"getparm", net_conf_getparm,
@@ -1213,16 +973,8 @@ int net_conf(int argc, const char **argv)
 		{NULL, NULL, NULL}
 	};
 
-	if (!registry_init_regdb()) {
-		d_fprintf(stderr, "Error initializing the registry!\n");
-		goto done;
-	}
+	ret = net_conf_run_function(argc, argv, "net conf", func_table);
 
-	ret = net_run_function2(argc, argv, "net conf", func);
-
-	regdb_close();
-
-done:
 	return ret;
 }
 

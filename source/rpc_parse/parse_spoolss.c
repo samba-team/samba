@@ -3098,7 +3098,7 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 		
 	size += 4;
 	
-	size += sec_desc_size( info->secdesc );
+	size += ndr_size_security_descriptor( info->secdesc, 0 );
 
 	size+=size_of_device_mode( info->devmode );
 	
@@ -3185,7 +3185,7 @@ return the size required by a struct in the stream
 uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info)
 {
 	/* The 8 is for the self relative pointer - 8 byte aligned.. */
-	return 8 + (uint32)sec_desc_size( info->secdesc );
+	return 8 + (uint32)ndr_size_security_descriptor( info->secdesc, 0 );
 }
 
 /*******************************************************************

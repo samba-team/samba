@@ -596,8 +596,9 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 	num_groups = 0;
 
 	/* always add the primary group to the sid array */
-	if (!add_sid_to_array(mem_ctx, primary_group, user_sids, &num_groups)) {
-		status = NT_STATUS_NO_MEMORY;
+	status = add_sid_to_array(mem_ctx, primary_group, user_sids,
+				  &num_groups);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
@@ -615,10 +616,10 @@ static NTSTATUS lookup_usergroups_member(struct winbindd_domain *domain,
 			if (sid_check_is_in_builtin(&group_sid)) {
 				continue;
 			}
-			       
-			if (!add_sid_to_array(mem_ctx, &group_sid, user_sids,
-					 &num_groups)) {
-				status = NT_STATUS_NO_MEMORY;
+
+			status = add_sid_to_array(mem_ctx, &group_sid,
+						  user_sids, &num_groups);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
 		}
@@ -684,8 +685,9 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 	num_groups = 0;
 
 	/* always add the primary group to the sid array */
-	if (!add_sid_to_array(mem_ctx, primary_group, user_sids, &num_groups)) {
-		status = NT_STATUS_NO_MEMORY;
+	status = add_sid_to_array(mem_ctx, primary_group, user_sids,
+				  &num_groups);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
@@ -720,10 +722,10 @@ static NTSTATUS lookup_usergroups_memberof(struct winbindd_domain *domain,
 		if (sid_check_is_in_builtin(&group_sids[i])) {
 			continue;
 		}
-		       
-		if (!add_sid_to_array(mem_ctx, &group_sids[i], user_sids,
-				 &num_groups)) {
-			status = NT_STATUS_NO_MEMORY;
+
+		status = add_sid_to_array(mem_ctx, &group_sids[i], user_sids,
+					  &num_groups);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 	
@@ -861,8 +863,9 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	*user_sids = NULL;
 	num_groups = 0;
 
-	if (!add_sid_to_array(mem_ctx, &primary_group, user_sids, &num_groups)) {
-		status = NT_STATUS_NO_MEMORY;
+	status = add_sid_to_array(mem_ctx, &primary_group, user_sids,
+				  &num_groups);
+	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 	
@@ -872,10 +875,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		if (sid_check_is_in_builtin(&sids[i])) {
 			continue;
 		}
-			       
-		if (!add_sid_to_array_unique(mem_ctx, &sids[i],
-					user_sids, &num_groups)) {
-			status = NT_STATUS_NO_MEMORY;
+
+		status = add_sid_to_array_unique(mem_ctx, &sids[i],
+						 user_sids, &num_groups);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
 	}
@@ -1154,12 +1157,11 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				DOM_SID **dom_sids)
 {
 	NTSTATUS 		result = NT_STATUS_UNSUCCESSFUL;
-	struct ds_domain_trust	*domains = NULL;
-	int			count = 0;
+	struct netr_DomainTrustList trusts;
 	int			i;
 	uint32			flags;	
 	struct rpc_pipe_client *cli;
-	uint32                 fr_flags = (DS_DOMAIN_IN_FOREST | DS_DOMAIN_TREE_ROOT);	
+	uint32                 fr_flags = (NETR_TRUST_FLAG_IN_FOREST | NETR_TRUST_FLAG_TREEROOT);
 	int ret_count;
 	
 	DEBUG(3,("ads: trusted_domains\n"));
@@ -1176,11 +1178,11 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	if ( domain->primary ||
 		((domain->domain_flags&fr_flags) == fr_flags) ) 
 	{
-		flags = DS_DOMAIN_DIRECT_OUTBOUND | 
-			DS_DOMAIN_DIRECT_INBOUND | 
-			DS_DOMAIN_IN_FOREST;
+		flags = NETR_TRUST_FLAG_OUTBOUND |
+			NETR_TRUST_FLAG_INBOUND |
+			NETR_TRUST_FLAG_IN_FOREST;
 	} else {
-		flags = DS_DOMAIN_IN_FOREST;
+		flags = NETR_TRUST_FLAG_IN_FOREST;
 	}	
 
 	result = cm_connect_netlogon(domain, &cli);
@@ -1191,29 +1193,27 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			  domain->name, nt_errstr(result)));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
-	if ( NT_STATUS_IS_OK(result) ) {
-		result = rpccli_ds_enum_domain_trusts(cli, mem_ctx,
-						      cli->cli->desthost, 
-						      flags, &domains,
-						      (unsigned int *)&count);
-	}
-	
-	if ( NT_STATUS_IS_OK(result) && count) {
+
+	result = rpccli_netr_DsrEnumerateDomainTrusts(cli, mem_ctx,
+						      cli->cli->desthost,
+						      flags,
+						      &trusts,
+						      NULL);
+	if ( NT_STATUS_IS_OK(result) && trusts.count) {
 
 		/* Allocate memory for trusted domain names and sids */
 
-		if ( !(*names = TALLOC_ARRAY(mem_ctx, char *, count)) ) {
+		if ( !(*names = TALLOC_ARRAY(mem_ctx, char *, trusts.count)) ) {
 			DEBUG(0, ("trusted_domains: out of memory\n"));
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if ( !(*alt_names = TALLOC_ARRAY(mem_ctx, char *, count)) ) {
+		if ( !(*alt_names = TALLOC_ARRAY(mem_ctx, char *, trusts.count)) ) {
 			DEBUG(0, ("trusted_domains: out of memory\n"));
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if ( !(*dom_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, count)) ) {
+		if ( !(*dom_sids = TALLOC_ARRAY(mem_ctx, DOM_SID, trusts.count)) ) {
 			DEBUG(0, ("trusted_domains: out of memory\n"));
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1222,7 +1222,7 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 
 		ret_count = 0;		
-		for (i = 0; i < count; i++) {
+		for (i = 0; i < trusts.count; i++) {
 			struct winbindd_domain d;
 			
 			/* drop external trusts if this is not our primary 
@@ -1230,24 +1230,24 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			   domains may be less that the ones actually trusted
 			   by the DC. */
 
-			if ( (domains[i].trust_attributes == DS_DOMAIN_TRUST_ATTRIB_QUARANTINED_DOMAIN) && 
+			if ( (trusts.array[i].trust_attributes == NETR_TRUST_ATTRIBUTE_QUARANTINED_DOMAIN) &&
 			     !domain->primary ) 
 			{
 				DEBUG(10,("trusted_domains: Skipping external trusted domain "
 					  "%s because it is outside of our primary domain\n",
-					  domains[i].netbios_domain));				
+					  trusts.array[i].netbios_name));
 				continue;				
 			}
 			
-			(*names)[ret_count] = domains[i].netbios_domain;
-			(*alt_names)[ret_count] = domains[i].dns_domain;
-			sid_copy(&(*dom_sids)[ret_count], &domains[i].sid);
+			(*names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].netbios_name);
+			(*alt_names)[ret_count] = CONST_DISCARD(char *, trusts.array[i].dns_name);
+			sid_copy(&(*dom_sids)[ret_count], trusts.array[i].sid);
 
 			/* add to the trusted domain cache */
 
-			fstrcpy( d.name,  domains[i].netbios_domain );
-			fstrcpy( d.alt_name, domains[i].dns_domain );			
-			sid_copy( &d.sid, &domains[i].sid );
+			fstrcpy( d.name,  trusts.array[i].netbios_name);
+			fstrcpy( d.alt_name, trusts.array[i].dns_name);
+			sid_copy( &d.sid, trusts.array[i].sid);
 
 			/* This gets a little tricky.  If we are
 			   following a transitive forest trust, then
@@ -1266,15 +1266,27 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 				   we have the current trust flags and
 				   attributes */
 
-				d.domain_flags = domains[i].flags;
-				d.domain_type = domains[i].trust_type;
-				d.domain_trust_attribs = domains[i].trust_attributes;
+				d.domain_flags = trusts.array[i].trust_flags;
+				d.domain_type = trusts.array[i].trust_type;
+				d.domain_trust_attribs = trusts.array[i].trust_attributes;
 			} else {
+				/* Look up the record in the cache */
+				struct winbindd_tdc_domain *parent;
+
 				DEBUG(10,("trusted_domains(ads):  Inheriting trust "
 					  "flags for domain %s\n", d.alt_name));				
+
+				parent = wcache_tdc_fetch_domain(NULL, domain->name);
+				if (parent) {
+					d.domain_flags = parent->trust_flags;
+					d.domain_type  = parent->trust_type;
+					d.domain_trust_attribs = parent->trust_attribs;
+				} else {
 				d.domain_flags = domain->domain_flags;				
 				d.domain_type  = domain->domain_type;
 				d.domain_trust_attribs = domain->domain_trust_attribs;
+			}
+				TALLOC_FREE(parent);
 			}
 
 			wcache_tdc_add_domain( &d );

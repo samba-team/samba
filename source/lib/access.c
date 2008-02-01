@@ -97,12 +97,28 @@ static bool string_match(const char *tok,const char *s)
 		}
 	} else if (tok[0] == '@') { /* netgroup: look it up */
 #ifdef	HAVE_NETGROUP
-		static char *mydomain = NULL;
+		DATA_BLOB tmp;
+		char *mydomain = NULL;
 		char *hostname = NULL;
 		bool netgroup_ok = false;
 
-		if (!mydomain)
+		if (memcache_lookup(
+			    NULL, SINGLETON_CACHE,
+			    data_blob_string_const("yp_default_domain"),
+			    &tmp)) {
+
+			SMB_ASSERT(tmp.length > 0);
+			mydomain = (tmp.data[0] == '\0')
+				? NULL : (char *)tmp.data;
+		}
+		else {
 			yp_get_default_domain(&mydomain);
+
+			memcache_add(
+				NULL, SINGLETON_CACHE,
+				data_blob_string_const("yp_default_domain"),
+				data_blob_string_const(mydomain?mydomain:""));
+		}
 
 		if (!mydomain) {
 			DEBUG(0,("Unable to get default yp domain. "

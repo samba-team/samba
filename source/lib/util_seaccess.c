@@ -350,7 +350,9 @@ NTSTATUS samr_make_sam_obj_sd(TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size)
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if ((*psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, sd_size)) == NULL)
+	if ((*psd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
+				  SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL,
+				  psa, sd_size)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	return NT_STATUS_OK;

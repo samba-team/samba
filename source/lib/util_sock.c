@@ -476,6 +476,29 @@ bool is_address_any(const struct sockaddr_storage *psa)
 }
 
 /****************************************************************************
+ Get a port number in host byte order from a sockaddr_storage.
+****************************************************************************/
+
+uint16_t get_sockaddr_port(const struct sockaddr_storage *pss)
+{
+	uint16_t port = 0;
+
+	if (pss->ss_family != AF_INET) {
+#if defined(HAVE_IPV6)
+		/* IPv6 */
+		const struct sockaddr_in6 *sa6 =
+			(const struct sockaddr_in6 *)pss;
+		port = ntohs(sa6->sin6_port);
+#endif
+	} else {
+		const struct sockaddr_in *sa =
+			(const struct sockaddr_in *)pss;
+		port = ntohs(sa->sin_port);
+	}
+	return port;
+}
+
+/****************************************************************************
  Print out an IPv4 or IPv6 address from a struct sockaddr_storage.
 ****************************************************************************/
 
@@ -518,7 +541,7 @@ char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 	char *dest = NULL;
 	int ret;
 
-	ret = getnameinfo((const struct sockaddr *)pss,
+	ret = sys_getnameinfo((const struct sockaddr *)pss,
 			sizeof(struct sockaddr_storage),
 			addr, sizeof(addr),
 			NULL, 0,
@@ -1031,44 +1054,7 @@ ssize_t read_socket_with_timeout(int fd,
 
 ssize_t read_data(int fd,char *buffer,size_t N, enum smb_read_errors *pre)
 {
-	ssize_t ret;
-	size_t total=0;
-	char addr[INET6_ADDRSTRLEN];
-
-	set_smb_read_error(pre,SMB_READ_OK);
-
-	while (total < N) {
-		ret = sys_read(fd,buffer + total,N - total);
-
-		if (ret == 0) {
-			DEBUG(10,("read_data: read of %d returned 0. "
-				"Error = %s\n",
-				(int)(N - total), strerror(errno) ));
-			set_smb_read_error(pre,SMB_READ_EOF);
-			return 0;
-		}
-
-		if (ret == -1) {
-			if (fd == get_client_fd()) {
-				/* Try and give an error message saying
-				 * what client failed. */
-				DEBUG(0,("read_data: read failure for %d "
-					"bytes to client %s. Error = %s\n",
-					(int)(N - total),
-					get_peer_addr(fd,addr,sizeof(addr)),
-					strerror(errno) ));
-			} else {
-				DEBUG(0,("read_data: read failure for %d. "
-					"Error = %s\n",
-					(int)(N - total),
-					strerror(errno) ));
-			}
-			set_smb_read_error(pre,SMB_READ_ERROR);
-			return -1;
-		}
-		total += ret;
-	}
-	return (ssize_t)total;
+	return read_socket_with_timeout(fd, buffer, N, N, 0, pre);
 }
 
 /****************************************************************************
@@ -1137,25 +1123,16 @@ ssize_t read_smb_length_return_keepalive(int fd,
 {
 	ssize_t len=0;
 	int msg_type;
-	bool ok = false;
 
-	while (!ok) {
-		if (timeout > 0) {
-			ok = (read_socket_with_timeout(fd,inbuf,4,4,
-						timeout,pre) == 4);
-		} else {
-			ok = (read_data(fd,inbuf,4,pre) == 4);
-		}
-		if (!ok) {
-			return -1;
-		}
+	if (read_socket_with_timeout(fd, inbuf, 4, 4, timeout, pre) != 4) {
+		return -1;
+	}
 
-		len = smb_len(inbuf);
-		msg_type = CVAL(inbuf,0);
+	len = smb_len(inbuf);
+	msg_type = CVAL(inbuf,0);
 
-		if (msg_type == SMBkeepalive) {
-			DEBUG(5,("Got keepalive packet\n"));
-		}
+	if (msg_type == SMBkeepalive) {
+		DEBUG(5,("Got keepalive packet\n"));
 	}
 
 	DEBUG(10,("got smb length of %lu\n",(unsigned long)len));
@@ -1173,16 +1150,15 @@ ssize_t read_smb_length_return_keepalive(int fd,
 ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout, enum smb_read_errors *pre)
 {
 	ssize_t len;
+	uint8_t msgtype = SMBkeepalive;
 
-	for(;;) {
-		len = read_smb_length_return_keepalive(fd, inbuf, timeout, pre);
-
-		if(len < 0)
+	while (msgtype == SMBkeepalive) {
+		len = read_smb_length_return_keepalive(fd, inbuf, timeout,
+						       pre);
+		if (len < 0) {
 			return len;
-
-		/* Ignore session keepalives. */
-		if(CVAL(inbuf,0) != SMBkeepalive)
-			break;
+		}
+		msgtype = CVAL(inbuf, 0);
 	}
 
 	DEBUG(10,("read_smb_length: got smb length of %lu\n",
@@ -1251,16 +1227,8 @@ ssize_t receive_smb_raw(int fd,
 			len = MIN(len,maxlen);
 		}
 
-		if (timeout > 0) {
-			ret = read_socket_with_timeout(fd,
-					buffer+4,
-					len,
-					len,
-					timeout,
-					pre);
-		} else {
-			ret = read_data(fd,buffer+4,len,pre);
-		}
+		ret = read_socket_with_timeout(fd, buffer+4, len, len, timeout,
+					       pre);
 
 		if (ret != len) {
 			cond_set_smb_read_error(pre,SMB_READ_ERROR);
@@ -1274,56 +1242,6 @@ ssize_t receive_smb_raw(int fd,
 	}
 
 	return len;
-}
-
-/****************************************************************************
- Wrapper for receive_smb_raw().
- Checks the MAC on signed packets.
-****************************************************************************/
-
-bool receive_smb(int fd, char *buffer, unsigned int timeout, enum smb_read_errors *pre)
-{
-	if (receive_smb_raw(fd, buffer, timeout, 0, pre) < 0) {
-		return false;
-	}
-
-	/* Check the incoming SMB signature. */
-	if (!srv_check_sign_mac(buffer, true)) {
-		DEBUG(0, ("receive_smb: SMB Signature verification "
-			"failed on incoming packet!\n"));
-		cond_set_smb_read_error(pre,SMB_READ_BAD_SIG);
-		return false;
-	}
-
-	return true;
-}
-
-/****************************************************************************
- Send an smb to a fd.
-****************************************************************************/
-
-bool send_smb(int fd, char *buffer)
-{
-	size_t len;
-	size_t nwritten=0;
-	ssize_t ret;
-
-	/* Sign the outgoing packet if required. */
-	srv_calculate_sign_mac(buffer);
-
-	len = smb_len(buffer) + 4;
-
-	while (nwritten < len) {
-		ret = write_data(fd,buffer+nwritten,len - nwritten);
-		if (ret <= 0) {
-			DEBUG(0,("Error writing %d bytes to client. %d. (%s)\n",
-				(int)len,(int)ret, strerror(errno) ));
-			return false;
-		}
-		nwritten += ret;
-	}
-
-	return true;
 }
 
 /****************************************************************************
@@ -1800,18 +1718,66 @@ static bool matchname(const char *remotehost,
 	return false;
 }
 
-static struct {
-        struct sockaddr_storage ss;
-        char *name;
-} nc;
+/*******************************************************************
+ Deal with the singleton cache.
+******************************************************************/
+
+struct name_addr_pair {
+	struct sockaddr_storage ss;
+	const char *name;
+};
+
+/*******************************************************************
+ Lookup a name/addr pair. Returns memory allocated from memcache.
+******************************************************************/
+
+static bool lookup_nc(struct name_addr_pair *nc)
+{
+	DATA_BLOB tmp;
+
+	ZERO_STRUCTP(nc);
+
+	if (!memcache_lookup(
+			NULL, SINGLETON_CACHE,
+			data_blob_string_const("get_peer_name"),
+			&tmp)) {
+		return false;
+	}
+
+	memcpy(&nc->ss, tmp.data, sizeof(nc->ss));
+	nc->name = (const char *)tmp.data + sizeof(nc->ss);
+	return true;
+}
+
+/*******************************************************************
+ Save a name/addr pair.
+******************************************************************/
+
+static void store_nc(const struct name_addr_pair *nc)
+{
+	DATA_BLOB tmp;
+	size_t namelen = strlen(nc->name);
+
+	tmp = data_blob(NULL, sizeof(nc->ss) + namelen + 1);
+	if (!tmp.data) {
+		return;
+	}
+	memcpy(tmp.data, &nc->ss, sizeof(nc->ss));
+	memcpy(tmp.data+sizeof(nc->ss), nc->name, namelen+1);
+
+	memcache_add(NULL, SINGLETON_CACHE,
+			data_blob_string_const("get_peer_name"),
+			tmp);
+	data_blob_free(&tmp);
+}
 
 /*******************************************************************
  Return the DNS name of the remote end of a socket.
 ******************************************************************/
 
-const char *get_peer_name(int fd,
-				bool force_lookup)
+const char *get_peer_name(int fd, bool force_lookup)
 {
+	struct name_addr_pair nc;
 	char addr_buf[INET6_ADDRSTRLEN];
 	struct sockaddr_storage ss;
 	socklen_t length = sizeof(ss);
@@ -1826,12 +1792,14 @@ const char *get_peer_name(int fd,
 	   possible */
 	if (!lp_hostname_lookups() && (force_lookup == false)) {
 		length = sizeof(nc.ss);
-		p = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf),
+		nc.name = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf),
 			&nc.ss, &length);
-		SAFE_FREE(nc.name);
-		nc.name = SMB_STRDUP(p);
+		store_nc(&nc);
+		lookup_nc(&nc);
 		return nc.name ? nc.name : "UNKNOWN";
 	}
+
+	lookup_nc(&nc);
 
 	memset(&ss, '\0', sizeof(ss));
 	p = get_peer_addr_internal(fd, addr_buf, sizeof(addr_buf), &ss, &length);
@@ -1841,15 +1809,13 @@ const char *get_peer_name(int fd,
 		return nc.name ? nc.name : "UNKNOWN";
 	}
 
-	/* Not the same. Reset the cache. */
-	zero_addr(&nc.ss);
-	SAFE_FREE(nc.name);
+	/* Not the same. We need to lookup. */
 	if (fd == -1) {
 		return "UNKNOWN";
 	}
 
 	/* Look up the remote host name. */
-	ret = getnameinfo((struct sockaddr *)&ss,
+	ret = sys_getnameinfo((struct sockaddr *)&ss,
 			length,
 			name_buf,
 			sizeof(name_buf),
@@ -1880,7 +1846,11 @@ const char *get_peer_name(int fd,
 		strlcpy(name_buf, "UNKNOWN", sizeof(name_buf));
 	}
 
-	nc.name = SMB_STRDUP(name_buf);
+	nc.name = name_buf;
+	nc.ss = ss;
+
+	store_nc(&nc);
+	lookup_nc(&nc);
 	return nc.name ? nc.name : "UNKNOWN";
 }
 
@@ -2002,50 +1972,69 @@ out_umask:
 
 const char *get_mydnsfullname(void)
 {
-	static char *dnshostname_cache;
+	struct addrinfo *res = NULL;
+	char my_hostname[HOST_NAME_MAX];
+	bool ret;
+	DATA_BLOB tmp;
 
-	if (dnshostname_cache == NULL || !*dnshostname_cache) {
-		struct addrinfo *res = NULL;
-		char my_hostname[HOST_NAME_MAX];
-		bool ret;
-
-		/* get my host name */
-		if (gethostname(my_hostname, sizeof(my_hostname)) == -1) {
-			DEBUG(0,("get_mydnsfullname: gethostname failed\n"));
-			return NULL;
-		}
-
-		/* Ensure null termination. */
-		my_hostname[sizeof(my_hostname)-1] = '\0';
-
-		ret = interpret_string_addr_internal(&res,
-					my_hostname,
-					AI_ADDRCONFIG|AI_CANONNAME);
-
-		if (!ret || res == NULL) {
-			DEBUG(3,("get_mydnsfullname: getaddrinfo failed for "
-				"name %s [%s]\n",
-				my_hostname,
-				gai_strerror(ret) ));
-			return NULL;
-		}
-
-		/*
-		 * Make sure that getaddrinfo() returns the "correct" host name.
-		 */
-
-		if (res->ai_canonname == NULL) {
-			DEBUG(3,("get_mydnsfullname: failed to get "
-				"canonical name for %s\n",
-				my_hostname));
-			freeaddrinfo(res);
-			return NULL;
-		}
-
-		dnshostname_cache = SMB_STRDUP(res->ai_canonname);
-		freeaddrinfo(res);
+	if (memcache_lookup(NULL, SINGLETON_CACHE,
+			data_blob_string_const("get_mydnsfullname"),
+			&tmp)) {
+		SMB_ASSERT(tmp.length > 0);
+		return (const char *)tmp.data;
 	}
-	return dnshostname_cache;
+
+	/* get my host name */
+	if (gethostname(my_hostname, sizeof(my_hostname)) == -1) {
+		DEBUG(0,("get_mydnsfullname: gethostname failed\n"));
+		return NULL;
+	}
+
+	/* Ensure null termination. */
+	my_hostname[sizeof(my_hostname)-1] = '\0';
+
+	ret = interpret_string_addr_internal(&res,
+				my_hostname,
+				AI_ADDRCONFIG|AI_CANONNAME);
+
+	if (!ret || res == NULL) {
+		DEBUG(3,("get_mydnsfullname: getaddrinfo failed for "
+			"name %s [%s]\n",
+			my_hostname,
+			gai_strerror(ret) ));
+		return NULL;
+	}
+
+	/*
+	 * Make sure that getaddrinfo() returns the "correct" host name.
+	 */
+
+	if (res->ai_canonname == NULL) {
+		DEBUG(3,("get_mydnsfullname: failed to get "
+			"canonical name for %s\n",
+			my_hostname));
+		freeaddrinfo(res);
+		return NULL;
+	}
+
+	/* This copies the data, so we must do a lookup
+	 * afterwards to find the value to return.
+	 */
+
+	memcache_add(NULL, SINGLETON_CACHE,
+			data_blob_string_const("get_mydnsfullname"),
+			data_blob_string_const(res->ai_canonname));
+
+	if (!memcache_lookup(NULL, SINGLETON_CACHE,
+			data_blob_string_const("get_mydnsfullname"),
+			&tmp)) {
+		tmp = data_blob_talloc(talloc_tos(), res->ai_canonname,
+				strlen(res->ai_canonname) + 1);
+	}
+
+	freeaddrinfo(res);
+
+	return (const char *)tmp.data;
 }
 
 /************************************************************

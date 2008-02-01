@@ -257,7 +257,7 @@ void process_local_master_announce(struct subnet_record *subrec, struct packet_s
 	uint32 servertype = IVAL(buf,23);
 	fstring comment;
 	unstring work_name;
-	struct work_record *work;
+	struct work_record *work = NULL;
 	struct server_record *servrec;
 	unstring source_name;
 
@@ -344,7 +344,7 @@ a local master browser for workgroup %s and we think we are master. Forcing elec
 		 * This server is announcing it is going down. Remove it from the
 		 * workgroup.
 		 */
-		if(!is_myname(server_name) && (work != NULL) &&
+		if(!is_myname(server_name) &&
 				((servrec = find_server_in_workgroup( work, server_name))!=NULL)) {
 			remove_server_from_workgroup( work, servrec);
 		}

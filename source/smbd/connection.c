@@ -118,6 +118,15 @@ int count_current_connections( const char *sharename, bool clear  )
 }
 
 /****************************************************************************
+ Count the number of connections open across all shares.
+****************************************************************************/
+
+int count_all_current_connections(void)
+{
+        return count_current_connections(NULL, True /* clear stale entries */);
+}
+
+/****************************************************************************
  Claim an entry in the connections database.
 ****************************************************************************/
 
@@ -132,7 +141,7 @@ bool claim_connection(connection_struct *conn, const char *name,
 
 	DEBUG(5,("claiming [%s]\n", name));
 
-	if (!(rec = connections_fetch_entry(NULL, conn, name))) {
+	if (!(rec = connections_fetch_entry(talloc_tos(), conn, name))) {
 		DEBUG(0, ("connections_fetch_entry failed\n"));
 		return False;
 	}

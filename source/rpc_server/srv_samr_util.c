@@ -44,16 +44,16 @@ void copy_id20_to_sam_passwd(struct samu *to, SAM_USER_INFO_20 *from)
 	char *new_string;
 	DATA_BLOB mung;
 
-	if (from == NULL || to == NULL) 
+	if (from == NULL || to == NULL)
 		return;
-	
+
 	if (from->hdr_munged_dial.buffer) {
 		old_string = pdb_get_munged_dial(to);
 		mung.length = from->hdr_munged_dial.uni_str_len;
 		mung.data = (uint8 *) from->uni_munged_dial.buffer;
 		mung.free = NULL;
 		new_string = (mung.length == 0) ?
-			NULL : base64_encode_data_blob(mung);
+			NULL : base64_encode_data_blob(talloc_tos(), mung);
 		DEBUG(10,("INFO_20 UNI_MUNGED_DIAL: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED_NC(old_string,new_string))
 			pdb_set_munged_dial(to   , new_string, PDB_CHANGED);
@@ -196,7 +196,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		mung.data = (uint8 *) from->uni_munged_dial.buffer;
 		mung.free = NULL;
 		newstr = (mung.length == 0) ?
-			NULL : base64_encode_data_blob(mung);
+			NULL : base64_encode_data_blob(talloc_tos(), mung);
 		DEBUG(10,("INFO_21 UNI_MUNGED_DIAL: %s -> %s\n",old_string, newstr));
 		if (STRING_CHANGED_NC(old_string,newstr))
 			pdb_set_munged_dial(to   , newstr, PDB_CHANGED);
@@ -421,7 +421,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		mung.data = (uint8 *) from->uni_munged_dial.buffer;
 		mung.free = NULL;
 		newstr = (mung.length == 0) ?
-			NULL : base64_encode_data_blob(mung);
+			NULL : base64_encode_data_blob(talloc_tos(), mung);
 		DEBUG(10,("INFO_23 UNI_MUNGED_DIAL: %s -> %s\n",old_string, newstr));
 		if (STRING_CHANGED_NC(old_string, newstr))
 			pdb_set_munged_dial(to   , newstr, PDB_CHANGED);
@@ -633,7 +633,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 		mung.data = (uint8 *) from->uni_munged_dial.buffer;
 		mung.free = NULL;
 		newstr = (mung.length == 0) ?
-			NULL : base64_encode_data_blob(mung);
+			NULL : base64_encode_data_blob(talloc_tos(), mung);
 		DEBUG(10,("INFO_25 UNI_MUNGED_DIAL: %s -> %s\n",old_string, newstr));
 		if (STRING_CHANGED_NC(old_string,newstr))
 			pdb_set_munged_dial(to   , newstr, PDB_CHANGED);

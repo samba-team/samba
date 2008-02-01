@@ -11,8 +11,8 @@ struct initshutdown_String_sub {
 };
 
 struct initshutdown_String {
-	uint16_t name_len;/* [value(strlen_m(r->name->name)*2)] */
-	uint16_t name_size;/* [value(strlen_m_term(r->name->name)*2)] */
+	uint16_t name_len;/* [value(strlen_m(name->name)*2)] */
+	uint16_t name_size;/* [value(strlen_m_term(name->name)*2)] */
 	struct initshutdown_String_sub *name;/* [unique] */
 }/* [public] */;
 

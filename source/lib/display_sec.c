@@ -23,34 +23,92 @@
 /****************************************************************************
 convert a security permissions into a string
 ****************************************************************************/
-char *get_sec_mask_str(uint32 type)
+
+char *get_sec_mask_str(TALLOC_CTX *ctx, uint32 type)
 {
-	static fstring typestr="";
+	char *typestr = talloc_strdup(ctx, "");
 
-	typestr[0] = 0;
+	if (!typestr) {
+		return NULL;
+	}
 
-	if (type & GENERIC_ALL_ACCESS)
-		fstrcat(typestr, "Generic all access ");
-	if (type & GENERIC_EXECUTE_ACCESS)
-		fstrcat(typestr, "Generic execute access ");
-	if (type & GENERIC_WRITE_ACCESS)
-		fstrcat(typestr, "Generic write access ");
-	if (type & GENERIC_READ_ACCESS)
-		fstrcat(typestr, "Generic read access ");
-	if (type & MAXIMUM_ALLOWED_ACCESS)
-		fstrcat(typestr, "MAXIMUM_ALLOWED_ACCESS ");
-	if (type & SYSTEM_SECURITY_ACCESS)
-		fstrcat(typestr, "SYSTEM_SECURITY_ACCESS ");
-	if (type & SYNCHRONIZE_ACCESS)
-		fstrcat(typestr, "SYNCHRONIZE_ACCESS ");
-	if (type & WRITE_OWNER_ACCESS)
-		fstrcat(typestr, "WRITE_OWNER_ACCESS ");
-	if (type & WRITE_DAC_ACCESS)
-		fstrcat(typestr, "WRITE_DAC_ACCESS ");
-	if (type & READ_CONTROL_ACCESS)
-		fstrcat(typestr, "READ_CONTROL_ACCESS ");
-	if (type & DELETE_ACCESS)
-		fstrcat(typestr, "DELETE_ACCESS ");
+	if (type & GENERIC_ALL_ACCESS) {
+		typestr = talloc_asprintf_append(typestr,
+				"Generic all access ");
+		if (!typestr) {
+			return NULL;
+		}
+	}
+	if (type & GENERIC_EXECUTE_ACCESS) {
+		typestr = talloc_asprintf_append(typestr,
+				"Generic execute access");
+		if (!typestr) {
+			return NULL;
+		}
+	}
+	if (type & GENERIC_WRITE_ACCESS) {
+		typestr = talloc_asprintf_append(typestr,
+				"Generic write access ");
+		if (!typestr) {
+			return NULL;
+		}
+	}
+	if (type & GENERIC_READ_ACCESS) {
+		typestr = talloc_asprintf_append(typestr,
+				"Generic read access ");
+		if (!typestr) {
+			return NULL;
+		}
+	}
+	if (type & MAXIMUM_ALLOWED_ACCESS) {
+		typestr = talloc_asprintf_append(typestr,
+				"MAXIMUM_ALLOWED_ACCESS ");
+		if (!typestr) {
+			return NULL;
+		}
+	}
+	if (type & SYSTEM_SECURITY_ACCESS) {
+		typestr = talloc_asprintf_append(typestr,
+				"SYSTEM_SECURITY_ACCESS ");
+		if (!typestr) {
+			return NULL;
+		}
+	}
+	if (type & SYNCHRONIZE_ACCESS) {
+		typestr = talloc_asprintf_append(typestr,
+				"SYNCHRONIZE_ACCESS ");
+		if (!typestr) {
+			return NULL;
+		}
+	}
+	if (type & WRITE_OWNER_ACCESS) {
+		typestr = talloc_asprintf_append(typestr,
+				"WRITE_OWNER_ACCESS ");
+		if (!typestr) {
+			return NULL;
+		}
+	}
+	if (type & WRITE_DAC_ACCESS) {
+		typestr = talloc_asprintf_append(typestr,
+				"WRITE_DAC_ACCESS ");
+		if (!typestr) {
+			return NULL;
+		}
+	}
+	if (type & READ_CONTROL_ACCESS) {
+		typestr = talloc_asprintf_append(typestr,
+				"READ_CONTROL_ACCESS ");
+		if (!typestr) {
+			return NULL;
+		}
+	}
+	if (type & DELETE_ACCESS) {
+		typestr = talloc_asprintf_append(typestr,
+				"DELETE_ACCESS ");
+		if (!typestr) {
+			return NULL;
+		}
+	}
 
 	printf("\t\tSpecific bits: 0x%lx\n", (unsigned long)type&SPECIFIC_RIGHTS_MASK);
 
@@ -62,7 +120,9 @@ char *get_sec_mask_str(uint32 type)
  ****************************************************************************/
 void display_sec_access(SEC_ACCESS *info)
 {
-	printf("\t\tPermissions: 0x%x: %s\n", *info, get_sec_mask_str(*info));
+	char *mask_str = get_sec_mask_str(NULL, *info);
+	printf("\t\tPermissions: 0x%x: %s\n", *info, mask_str ? mask_str : "");
+	TALLOC_FREE(mask_str);
 }
 
 /****************************************************************************
