@@ -1865,8 +1865,9 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 			d_fprintf(stderr, "Request open_alias failed\n");
    			goto done;
 		}
-		
-		result = rpccli_samr_delete_dom_alias(pipe_hnd, mem_ctx, &group_pol);
+
+		result = rpccli_samr_DeleteDomAlias(pipe_hnd, mem_ctx,
+						    &group_pol);
 		break;
 	default:
 		d_fprintf(stderr, "%s is of type %s. This command is only for deleting local or global groups\n",
