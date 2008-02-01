@@ -4318,10 +4318,11 @@ NTSTATUS _samr_DeleteDomainGroup(pipes_struct *p,
 }
 
 /*********************************************************************
- _samr_delete_dom_alias
+ _samr_DeleteDomAlias
 *********************************************************************/
 
-NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, SAMR_R_DELETE_DOM_ALIAS *r_u)
+NTSTATUS _samr_DeleteDomAlias(pipes_struct *p,
+			      struct samr_DeleteDomAlias *r)
 {
 	DOM_SID alias_sid;
 	uint32 acc_granted;
@@ -4330,18 +4331,19 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 	NTSTATUS status;
 	DISP_INFO *disp_info = NULL;
 
-	DEBUG(5, ("_samr_delete_dom_alias: %d\n", __LINE__));
+	DEBUG(5, ("_samr_DeleteDomAlias: %d\n", __LINE__));
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted, &disp_info)) 
+	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &alias_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
 	/* copy the handle to the outgoing reply */
 
-	memcpy( &r_u->pol, &q_u->alias_pol, sizeof(r_u->pol) );
+	memcpy(r->out.alias_handle, r->in.alias_handle, sizeof(r->out.alias_handle));
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_delete_dom_alias"))) {
-		return r_u->status;
+	status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_DeleteDomAlias");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	DEBUG(10, ("sid is %s\n", sid_string_dbg(&alias_sid)));
@@ -4376,7 +4378,7 @@ NTSTATUS _samr_delete_dom_alias(pipes_struct *p, SAMR_Q_DELETE_DOM_ALIAS *q_u, S
 	if ( !NT_STATUS_IS_OK(status))
 		return status;
 
-	if (!close_policy_hnd(p, &q_u->alias_pol))
+	if (!close_policy_hnd(p, r->in.alias_handle))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
 	force_flush_samr_cache(disp_info);
@@ -5309,16 +5311,6 @@ NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
 
 NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
 			    struct samr_SetAliasInfo *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_DeleteDomAlias(pipes_struct *p,
-			      struct samr_DeleteDomAlias *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
