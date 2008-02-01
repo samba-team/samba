@@ -1451,25 +1451,6 @@ typedef struct r_samr_lookup_rids_info
 } SAMR_R_LOOKUP_RIDS;
 
 
-/* SAMR_Q_OPEN_USER - probably an open */
-typedef struct q_samr_open_user_info
-{
-	POLICY_HND domain_pol;       /* policy handle */
-	uint32 access_mask;     /* 32 bit unknown - 0x02011b */
-	uint32 user_rid;      /* user RID */
-
-} SAMR_Q_OPEN_USER;
-
-
-/* SAMR_R_OPEN_USER - probably an open */
-typedef struct r_samr_open_user_info
-{
-	POLICY_HND user_pol;       /* policy handle associated with unknown id */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_OPEN_USER;
-
-
 /* SAMR_Q_CREATE_USER - probably a create */
 typedef struct q_samr_create_user_info
 {
