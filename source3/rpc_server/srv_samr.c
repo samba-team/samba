@@ -1072,28 +1072,7 @@ static bool api_samr_delete_dom_alias(pipes_struct *p)
 
 static bool api_samr_create_dom_group(pipes_struct *p)
 {
-	SAMR_Q_CREATE_DOM_GROUP q_u;
-	SAMR_R_CREATE_DOM_GROUP r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_create_dom_group("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_create_dom_group: unable to unmarshall SAMR_Q_CREATE_DOM_GROUP.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_create_dom_group(p, &q_u, &r_u);
-
-	if (!samr_io_r_create_dom_group("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_create_dom_group: unable to marshall SAMR_R_CREATE_DOM_GROUP.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_CREATEDOMAINGROUP);
 }
 
 /*******************************************************************
