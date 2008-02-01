@@ -4168,11 +4168,13 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 }
 
 /*********************************************************************
- _samr_delete_dom_user
+ _samr_DeleteUser
 *********************************************************************/
 
-NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAMR_R_DELETE_DOM_USER *r_u )
+NTSTATUS _samr_DeleteUser(pipes_struct *p,
+			  struct samr_DeleteUser *r)
 {
+	NTSTATUS status;
 	DOM_SID user_sid;
 	struct samu *sam_pass=NULL;
 	uint32 acc_granted;
@@ -4181,14 +4183,15 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	DISP_INFO *disp_info = NULL;
 	bool ret;
 
-	DEBUG(5, ("_samr_delete_dom_user: %d\n", __LINE__));
+	DEBUG(5, ("_samr_DeleteUser: %d\n", __LINE__));
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->user_pol, &user_sid, &acc_granted, &disp_info)) 
+	if (!get_lsa_policy_samr_sid(p, r->in.user_handle, &user_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 		
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_delete_dom_user"))) {
-		return r_u->status;
+	status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_DeleteUser");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 		
 	if (!sid_check_is_in_our_domain(&user_sid))
@@ -4204,7 +4207,7 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	unbecome_root();
 
 	if( !ret ) {
-		DEBUG(5,("_samr_delete_dom_user:User %s doesn't exist.\n", 
+		DEBUG(5,("_samr_DeleteUser: User %s doesn't exist.\n", 
 			sid_string_dbg(&user_sid)));
 		TALLOC_FREE(sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
@@ -4224,25 +4227,25 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	if ( can_add_accounts )
 		become_root();
 
-	r_u->status = pdb_delete_user(p->mem_ctx, sam_pass);
+	status = pdb_delete_user(p->mem_ctx, sam_pass);
 
 	if ( can_add_accounts )
 		unbecome_root();
 		
 	/******** END SeAddUsers BLOCK *********/
 		
-	if ( !NT_STATUS_IS_OK(r_u->status) ) {
-		DEBUG(5,("_samr_delete_dom_user: Failed to delete entry for "
+	if ( !NT_STATUS_IS_OK(status) ) {
+		DEBUG(5,("_samr_DeleteUser: Failed to delete entry for "
 			 "user %s: %s.\n", pdb_get_username(sam_pass),
-			 nt_errstr(r_u->status)));
+			 nt_errstr(status)));
 		TALLOC_FREE(sam_pass);
-		return r_u->status;
+		return status;
 	}
 
 
 	TALLOC_FREE(sam_pass);
 
-	if (!close_policy_hnd(p, &q_u->user_pol))
+	if (!close_policy_hnd(p, r->in.user_handle))
 		return NT_STATUS_OBJECT_NAME_INVALID;
 
 	force_flush_samr_cache(disp_info);
@@ -5353,16 +5356,6 @@ NTSTATUS _samr_DeleteAliasMember(pipes_struct *p,
 
 NTSTATUS _samr_GetMembersInAlias(pipes_struct *p,
 				 struct samr_GetMembersInAlias *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_DeleteUser(pipes_struct *p,
-			  struct samr_DeleteUser *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
