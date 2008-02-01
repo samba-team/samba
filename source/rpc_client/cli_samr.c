@@ -751,42 +751,6 @@ NTSTATUS rpccli_samr_query_aliasmem(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/* Create an alias */
-
-NTSTATUS rpccli_samr_create_dom_alias(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-				   POLICY_HND *domain_pol, const char *name,
-				   POLICY_HND *alias_pol)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_CREATE_DOM_ALIAS q;
-	SAMR_R_CREATE_DOM_ALIAS r;
-	NTSTATUS result;
-
-	DEBUG(10,("cli_samr_create_dom_alias named %s\n", name));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_create_dom_alias(&q, domain_pol, name);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CREATE_DOM_ALIAS,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_create_dom_alias,
-		samr_io_r_create_dom_alias,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	if (NT_STATUS_IS_OK(result = r.status)) {
-		*alias_pol = r.alias_pol;
-	}
-
-	return result;
-}
-
 /* Add an alias member */
 
 NTSTATUS rpccli_samr_add_aliasmem(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 

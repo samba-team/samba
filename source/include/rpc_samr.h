@@ -1159,29 +1159,6 @@ typedef struct r_samr_set_group_info
 } SAMR_R_SET_GROUPINFO;
 
 
-/* SAMR_Q_CREATE_DOM_ALIAS - SAM create alias */
-typedef struct q_samr_create_dom_alias_info
-{
-	POLICY_HND dom_pol;        /* policy handle */
-
-	UNIHDR hdr_acct_desc;
-	UNISTR2 uni_acct_desc;
-
-	uint32 access_mask;    /* 0x001f000f */
-
-} SAMR_Q_CREATE_DOM_ALIAS;
-
-/* SAMR_R_CREATE_DOM_ALIAS - SAM create alias */
-typedef struct r_samr_create_dom_alias_info
-{
-	POLICY_HND alias_pol;        /* policy handle */
-
-	uint32 rid;    
-	NTSTATUS status;    
-
-} SAMR_R_CREATE_DOM_ALIAS;
-
-
 /********************************************************/
 
 typedef struct {
