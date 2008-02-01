@@ -1740,39 +1740,6 @@ NTSTATUS rpccli_samr_set_userinfo2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return result;
 }
 
-/* Delete domain group */
-
-NTSTATUS rpccli_samr_delete_dom_group(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-                                  POLICY_HND *group_pol)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_DELETE_DOM_GROUP q;
-	SAMR_R_DELETE_DOM_GROUP r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_delete_dom_group\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_delete_dom_group(&q, group_pol);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_DELETE_DOM_GROUP,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_delete_dom_group,
-		samr_io_r_delete_dom_group,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	return result;
-}
-
 /* Delete domain alias */
 
 NTSTATUS rpccli_samr_delete_dom_alias(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
