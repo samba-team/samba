@@ -1879,9 +1879,11 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		break;
 	/* removing a local group is easier... */
 	case SID_NAME_ALIAS:
-		result = rpccli_samr_open_alias(pipe_hnd, mem_ctx, &domain_pol,
-					     MAXIMUM_ALLOWED_ACCESS,
-					     group_rids[0], &group_pol);
+		result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+					       &domain_pol,
+					       MAXIMUM_ALLOWED_ACCESS,
+					       group_rids[0],
+					       &group_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, "Request open_alias failed\n");
@@ -2213,9 +2215,11 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 
-	result = rpccli_samr_open_alias(pipe_hnd, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
-				     alias_rid, &alias_pol);
+	result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+				       &domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       alias_rid,
+				       &alias_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
@@ -2395,9 +2399,11 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 
-	result = rpccli_samr_open_alias(pipe_hnd, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
-				     alias_rid, &alias_pol);
+	result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+				       &domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       alias_rid,
+				       &alias_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -2605,11 +2611,11 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 				POLICY_HND alias_pol;
 				ALIAS_INFO_CTR ctr;
 
-				if ((NT_STATUS_IS_OK(rpccli_samr_open_alias(pipe_hnd, mem_ctx,
-									 &domain_pol,
-									 0x8,
-									 groups[i].rid,
-									 &alias_pol))) &&
+				if ((NT_STATUS_IS_OK(rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+									   &domain_pol,
+									   0x8,
+									   groups[i].rid,
+									   &alias_pol))) &&
 				    (NT_STATUS_IS_OK(rpccli_samr_query_alias_info(pipe_hnd, mem_ctx,
 									       &alias_pol, 3,
 									       &ctr))) &&
@@ -2662,11 +2668,11 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 				POLICY_HND alias_pol;
 				ALIAS_INFO_CTR ctr;
 
-				if ((NT_STATUS_IS_OK(rpccli_samr_open_alias(pipe_hnd, mem_ctx,
-									 &domain_pol,
-									 0x8,
-									 groups[i].rid,
-									 &alias_pol))) &&
+				if ((NT_STATUS_IS_OK(rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+									   &domain_pol,
+									   0x8,
+									   groups[i].rid,
+									   &alias_pol))) &&
 				    (NT_STATUS_IS_OK(rpccli_samr_query_alias_info(pipe_hnd, mem_ctx,
 									       &alias_pol, 3,
 									       &ctr))) &&
@@ -2781,8 +2787,11 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 	enum lsa_SidType *types;
 	int i;
 
-	result = rpccli_samr_open_alias(pipe_hnd, mem_ctx, domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS, rid, &alias_pol);
+	result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+				       domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       rid,
+				       &alias_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -4087,10 +4096,11 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 			DOM_SID *members;
 			int j;
 
-			result = rpccli_samr_open_alias(pipe_hnd, mem_ctx, &domain_pol,
-						     MAXIMUM_ALLOWED_ACCESS,
-						     groups[i].rid,
-						     &alias_pol);
+			result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+						       &domain_pol,
+						       MAXIMUM_ALLOWED_ACCESS,
+						       groups[i].rid,
+						       &alias_pol);
 			if (!NT_STATUS_IS_OK(result))
 				goto done;
 

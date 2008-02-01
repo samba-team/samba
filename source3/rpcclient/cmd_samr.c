@@ -1128,9 +1128,11 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
 
 	/* Open handle on alias */
 
-	result = rpccli_samr_open_alias(cli, mem_ctx, &domain_pol,
-				     access_mask,
-				     alias_rid, &alias_pol);
+	result = rpccli_samr_OpenAlias(cli, mem_ctx,
+				       &domain_pol,
+				       access_mask,
+				       alias_rid,
+				       &alias_pol);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
@@ -1202,9 +1204,11 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 
 	/* Open handle on alias */
 
-	result = rpccli_samr_open_alias(cli, mem_ctx, &domain_pol,
-				     access_mask,
-				     alias_rid, &alias_pol);
+	result = rpccli_samr_OpenAlias(cli, mem_ctx,
+				       &domain_pol,
+				       access_mask,
+				       alias_rid,
+				       &alias_pol);
 	if (!NT_STATUS_IS_OK(result) && (alias_rid == 0)) {
 		/* Probably this was a user name, try lookupnames */
 		uint32 num_rids;
@@ -1216,10 +1220,11 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 						  &types);
 
 		if (NT_STATUS_IS_OK(result)) {
-			result = rpccli_samr_open_alias(cli, mem_ctx,
+			result = rpccli_samr_OpenAlias(cli, mem_ctx,
 						       &domain_pol,
 						       access_mask,
-						       rids[0], &alias_pol);
+						       rids[0],
+						       &alias_pol);
 		}
 	}
 
