@@ -27,7 +27,7 @@
 #define _SMB_H
 
 /* logged when starting the various Samba daemons */
-#define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2007"
+#define COPYRIGHT_STARTUP_MESSAGE	"Copyright Andrew Tridgell and the Samba Team 1992-2008"
 
 
 #if defined(LARGE_SMB_OFF_T)
@@ -80,7 +80,8 @@ enum smb_read_errors {
 	SMB_WRITE_ERROR, /* This error code can go into the client smb_rw_error. */
 	SMB_READ_BAD_SIG,
 	SMB_NO_MEMORY,
-	SMB_DO_NOT_DO_TDIS /* cli_close_connection() check for this when smbfs wants to keep tree connected */
+	SMB_DO_NOT_DO_TDIS, /* cli_close_connection() check for this when smbfs wants to keep tree connected */
+	SMB_READ_BAD_DECRYPT
 };
 
 #define DIR_STRUCT_SIZE 43
@@ -192,7 +193,7 @@ typedef uint32 codepoint_t;
 #define PIPE_NETLOGON_PLAIN "\\NETLOGON"
 
 #define PI_LSARPC		0
-#define PI_LSARPC_DS		1
+#define PI_DSSETUP		1
 #define PI_SAMR			2
 #define PI_NETLOGON		3
 #define PI_SRVSVC		4
@@ -209,30 +210,6 @@ typedef uint32 codepoint_t;
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef uint64_t NTTIME;
-
-
-/* Allowable account control bits */
-#define ACB_DISABLED			0x00000001  /* 1 = User account disabled */
-#define ACB_HOMDIRREQ			0x00000002  /* 1 = Home directory required */
-#define ACB_PWNOTREQ			0x00000004  /* 1 = User password not required */
-#define ACB_TEMPDUP			0x00000008  /* 1 = Temporary duplicate account */
-#define ACB_NORMAL			0x00000010  /* 1 = Normal user account */
-#define ACB_MNS				0x00000020  /* 1 = MNS logon user account */
-#define ACB_DOMTRUST			0x00000040  /* 1 = Interdomain trust account */
-#define ACB_WSTRUST			0x00000080  /* 1 = Workstation trust account */
-#define ACB_SVRTRUST			0x00000100  /* 1 = Server trust account (BDC) */
-#define ACB_PWNOEXP			0x00000200  /* 1 = User password does not expire */
-#define ACB_AUTOLOCK			0x00000400  /* 1 = Account auto locked */
-
-/* only valid for > Windows 2000 */
-#define ACB_ENC_TXT_PWD_ALLOWED		0x00000800  /* 1 = Text password encryped */
-#define ACB_SMARTCARD_REQUIRED		0x00001000  /* 1 = Smart Card required */
-#define ACB_TRUSTED_FOR_DELEGATION	0x00002000  /* 1 = Trusted for Delegation */
-#define ACB_NOT_DELEGATED		0x00004000  /* 1 = Not delegated */
-#define ACB_USE_DES_KEY_ONLY		0x00008000  /* 1 = Use DES key only */
-#define ACB_DONT_REQUIRE_PREAUTH	0x00010000  /* 1 = Preauth not required */
-#define ACB_PWEXPIRED			0x00020000  /* 1 = Password is expired */
-#define ACB_NO_AUTH_DATA_REQD		0x00080000  /* 1 = No authorization data required */
 
 #define MAX_HOURS_LEN 32
 
@@ -282,9 +259,6 @@ typedef struct dom_sid {
 	uint32 sub_auths[MAXSUBAUTHS];  
 } DOM_SID;
 
-#define dom_sid2 dom_sid
-#define dom_sid28 dom_sid
-
 enum id_mapping {
 	ID_UNKNOWN = 0,
 	ID_MAPPED,
@@ -309,8 +283,17 @@ struct id_map {
 	enum id_mapping status;
 };
 
-#include "librpc/ndr/misc.h"
-#include "librpc/ndr/security.h"
+/* used to hold an arbitrary blob of data */
+typedef struct data_blob {
+	uint8 *data;
+	size_t length;
+	void (*free)(struct data_blob *data_blob);
+} DATA_BLOB;
+
+extern const DATA_BLOB data_blob_null;
+
+#include "librpc/gen_ndr/misc.h"
+#include "librpc/gen_ndr/security.h"
 #include "librpc/ndr/libndr.h"
 #include "librpc/gen_ndr/lsa.h"
 #include "librpc/gen_ndr/dfs.h"
@@ -321,6 +304,10 @@ struct id_map {
 #include "librpc/gen_ndr/wkssvc.h"
 #include "librpc/gen_ndr/echo.h"
 #include "librpc/gen_ndr/svcctl.h"
+#include "librpc/gen_ndr/netlogon.h"
+#include "librpc/gen_ndr/samr.h"
+#include "librpc/gen_ndr/dssetup.h"
+#include "librpc/gen_ndr/libnet_join.h"
 
 struct lsa_dom_info {
 	bool valid;
@@ -524,19 +511,12 @@ typedef struct files_struct {
  	FAKE_FILE_HANDLE *fake_file_handle;
 
 	struct notify_change_buf *notify;
+
+	struct files_struct *base_fsp; /* placeholder for delete on close */
 } files_struct;
 
 #include "ntquotas.h"
 #include "sysquotas.h"
-
-/* used to hold an arbitrary blob of data */
-typedef struct data_blob {
-	uint8 *data;
-	size_t length;
-	void (*free)(struct data_blob *data_blob);
-} DATA_BLOB;
-
-extern const DATA_BLOB data_blob_null;
 
 /*
  * Structure used to keep directory state information around.
@@ -592,6 +572,16 @@ struct trans_state {
 
 	size_t total_data;
 	char *data;
+};
+
+/*
+ * Info about an alternate data stream
+ */
+
+struct stream_struct {
+	SMB_OFF_T size;
+	SMB_OFF_T alloc_size;
+	char *name;
 };
 
 /* Include VFS stuff */
@@ -657,10 +647,16 @@ typedef struct connection_struct {
 	bool used;
 	int num_files_open;
 	unsigned int num_smb_operations; /* Count of smb operations on this tree. */
+	int encrypt_level;
+	bool encrypted_tid;
 
+	/* Semantics requested by the client or forced by the server config. */
 	bool case_sensitive;
 	bool case_preserve;
 	bool short_case_preserve;
+
+	/* Semantics provided by the underlying filesystem. */
+	int fs_capabilities;
 
 	name_compare_entry *hide_list; /* Per-share list of files to return as hidden. */
 	name_compare_entry *veto_list; /* Per-share list of files to veto (never show). */
@@ -688,6 +684,8 @@ struct smb_request {
 	const uint8 *inbuf;
 	uint8 *outbuf;
 	size_t unread_bytes;
+	bool encrypted;
+	connection_struct *conn;
 };
 
 /* Defines for the sent_oplock_break field above. */
@@ -751,6 +749,7 @@ struct pending_message_list {
 	struct pending_message_list *next, *prev;
 	struct timeval request_time; /* When was this first issued? */
 	struct timeval end_time; /* When does this time out? */
+	bool encrypted;
 	DATA_BLOB buf;
 	DATA_BLOB private_data;
 };
@@ -1370,6 +1369,9 @@ struct bitmap {
 #define NTCREATEX_OPTIONS_PRIVATE_DENY_DOS     0x01000000
 #define NTCREATEX_OPTIONS_PRIVATE_DENY_FCB     0x02000000
 
+/* Private options for streams support */
+#define NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE 0x04000000
+
 /* Responses when opening a file. */
 #define FILE_WAS_SUPERSEDED 0
 #define FILE_WAS_OPENED 1
@@ -1900,6 +1902,8 @@ struct ea_list {
 #define SAMBA_POSIX_INHERITANCE_EA_NAME "user.SAMBA_PAI"
 /* EA to use for DOS attributes */
 #define SAMBA_XATTR_DOS_ATTRIB "user.DOSATTRIB"
+/* Prefix for DosStreams in the vfs_streams_xattr module */
+#define SAMBA_XATTR_DOSSTREAM_PREFIX "user.DosStream."
 
 #define UUID_SIZE 16
 
@@ -1929,5 +1933,16 @@ enum usershare_err {
 
 /* Different reasons for closing a file. */
 enum file_close_type {NORMAL_CLOSE=0,SHUTDOWN_CLOSE,ERROR_CLOSE};
+
+/* Used in SMB_FS_OBJECTID_INFORMATION requests.  Must be exactly 48 bytes. */
+#define SAMBA_EXTENDED_INFO_MAGIC 0x536d4261 /* "SmBa" */
+#define SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH 28
+struct smb_extended_info {
+	uint32 samba_magic;		/* Always SAMBA_EXTRA_INFO_MAGIC */
+	uint32 samba_version;		/* Major/Minor/Release/Revision */
+	uint32 samba_subversion;	/* Prerelease/RC/Vendor patch */
+	NTTIME samba_gitcommitdate;
+	char   samba_version_string[SAMBA_EXTENDED_INFO_VERSION_STRING_LENGTH];
+};
 
 #endif /* _SMB_H */

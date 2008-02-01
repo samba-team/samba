@@ -1,7 +1,7 @@
 /*
    Unix SMB/Netbios implementation.
    VFS module to get and set irix acls
-   Copyright (C) Michael Adam 2006
+   Copyright (C) Michael Adam 2006,2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -32,8 +32,7 @@ SMB_ACL_T irixacl_sys_acl_get_file(vfs_handle_struct *handle,
 }
 
 SMB_ACL_T irixacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				  files_struct *fsp,
-				  int fd)
+				 files_struct *fsp)
 {
 	errno = ENOTSUP;
 	return NULL;
@@ -50,7 +49,7 @@ int irixacl_sys_acl_set_file(vfs_handle_struct *handle,
 
 int irixacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			    files_struct *fsp,
-			    int fd, SMB_ACL_T theacl)
+			    SMB_ACL_T theacl)
 {
 	errno = ENOTSUP;
 	return -1;

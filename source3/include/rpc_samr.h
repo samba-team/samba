@@ -445,23 +445,6 @@ typedef struct sam_user_info_9
 } SAM_USER_INFO_9;
 
 
-/* SAMR_Q_CLOSE_HND - probably a policy handle close */
-typedef struct q_samr_close_hnd_info
-{
-    POLICY_HND pol;          /* policy handle */
-
-} SAMR_Q_CLOSE_HND;
-
-
-/* SAMR_R_CLOSE_HND - probably a policy handle close */
-typedef struct r_samr_close_hnd_info
-{
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_CLOSE_HND;
-
-
 /****************************************************************************
 SAMR_Q_GET_USRDOM_PWINFO - a "set user info" occurs just after this
 *****************************************************************************/
@@ -700,31 +683,6 @@ typedef struct r_samr_lookup_domain_info
 
 } SAMR_R_LOOKUP_DOMAIN;
 
-
-/****************************************************************************
-SAMR_Q_OPEN_DOMAIN - unknown_0 values seen associated with SIDs:
-
-0x0000 03f1 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
-0x0000 0200 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
-*****************************************************************************/
-
-/* SAMR_Q_OPEN_DOMAIN */
-typedef struct q_samr_open_domain_info
-{
-	POLICY_HND pol;   /* policy handle */
-	uint32 flags;               /* 0x2000 0000; 0x0000 0211; 0x0000 0280; 0x0000 0200 - flags? */
-	DOM_SID2 dom_sid;         /* domain SID */
-
-} SAMR_Q_OPEN_DOMAIN;
-
-
-/* SAMR_R_OPEN_DOMAIN - probably an open */
-typedef struct r_samr_open_domain_info
-{
-	POLICY_HND domain_pol; /* policy handle associated with the SID */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_OPEN_DOMAIN;
 
 #define MAX_SAM_ENTRIES_W2K 0x400
 #define MAX_SAM_ENTRIES_W95 50
@@ -1076,45 +1034,6 @@ typedef struct r_samr_get_dispenum_index
 	
 } SAMR_R_GET_DISPENUM_INDEX;
 
-/* SAMR_Q_DELETE_DOM_GROUP - delete domain group */
-typedef struct q_samr_delete_dom_group_info
-{
-    POLICY_HND group_pol;          /* policy handle */
-
-} SAMR_Q_DELETE_DOM_GROUP;
-
-
-/* SAMR_R_DELETE_DOM_GROUP - delete domain group */
-typedef struct r_samr_delete_dom_group_info
-{
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;        /* return status */
-
-} SAMR_R_DELETE_DOM_GROUP;
-
-
-/* SAMR_Q_CREATE_DOM_GROUP - SAM create group */
-typedef struct q_samr_create_dom_group_info
-{
-	POLICY_HND pol;        /* policy handle */
-
-	UNIHDR hdr_acct_desc;
-	UNISTR2 uni_acct_desc;
-
-	uint32 access_mask;    
-
-} SAMR_Q_CREATE_DOM_GROUP;
-
-/* SAMR_R_CREATE_DOM_GROUP - SAM create group */
-typedef struct r_samr_create_dom_group_info
-{
-	POLICY_HND pol;        /* policy handle */
-
-	uint32 rid;    
-	NTSTATUS status;    
-
-} SAMR_R_CREATE_DOM_GROUP;
-
 /* SAMR_Q_QUERY_GROUPINFO - SAM Group Info */
 typedef struct q_samr_query_group_info
 {
@@ -1216,46 +1135,6 @@ typedef struct r_samr_set_group_info
 	NTSTATUS status;
 
 } SAMR_R_SET_GROUPINFO;
-
-
-/* SAMR_Q_DELETE_DOM_ALIAS - delete domain alias */
-typedef struct q_samr_delete_dom_alias_info
-{
-    POLICY_HND alias_pol;          /* policy handle */
-
-} SAMR_Q_DELETE_DOM_ALIAS;
-
-
-/* SAMR_R_DELETE_DOM_ALIAS - delete domain alias */
-typedef struct r_samr_delete_dom_alias_info
-{
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;        /* return status */
-
-} SAMR_R_DELETE_DOM_ALIAS;
-
-
-/* SAMR_Q_CREATE_DOM_ALIAS - SAM create alias */
-typedef struct q_samr_create_dom_alias_info
-{
-	POLICY_HND dom_pol;        /* policy handle */
-
-	UNIHDR hdr_acct_desc;
-	UNISTR2 uni_acct_desc;
-
-	uint32 access_mask;    /* 0x001f000f */
-
-} SAMR_Q_CREATE_DOM_ALIAS;
-
-/* SAMR_R_CREATE_DOM_ALIAS - SAM create alias */
-typedef struct r_samr_create_dom_alias_info
-{
-	POLICY_HND alias_pol;        /* policy handle */
-
-	uint32 rid;    
-	NTSTATUS status;    
-
-} SAMR_R_CREATE_DOM_ALIAS;
 
 
 /********************************************************/
@@ -1527,68 +1406,6 @@ typedef struct r_samr_lookup_rids_info
 } SAMR_R_LOOKUP_RIDS;
 
 
-/* SAMR_Q_OPEN_USER - probably an open */
-typedef struct q_samr_open_user_info
-{
-	POLICY_HND domain_pol;       /* policy handle */
-	uint32 access_mask;     /* 32 bit unknown - 0x02011b */
-	uint32 user_rid;      /* user RID */
-
-} SAMR_Q_OPEN_USER;
-
-
-/* SAMR_R_OPEN_USER - probably an open */
-typedef struct r_samr_open_user_info
-{
-	POLICY_HND user_pol;       /* policy handle associated with unknown id */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_OPEN_USER;
-
-
-/* SAMR_Q_CREATE_USER - probably a create */
-typedef struct q_samr_create_user_info
-{
-	POLICY_HND domain_pol;       /* policy handle */
-
-	UNIHDR  hdr_name;       /* unicode account name header */
-	UNISTR2 uni_name;       /* unicode account name */
-
-	uint32 acb_info;      /* account control info */
-	uint32 access_mask;     /* 0xe005 00b0 */
-
-} SAMR_Q_CREATE_USER;
-
-
-/* SAMR_R_CREATE_USER - probably a create */
-typedef struct r_samr_create_user_info
-{
-	POLICY_HND user_pol;       /* policy handle associated with user */
-
-	uint32 access_granted;
-	uint32 user_rid;      /* user RID */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_CREATE_USER;
-
-
-/* SAMR_Q_DELETE_DOM_USER - delete domain user */
-typedef struct q_samr_delete_dom_user_info
-{
-    POLICY_HND user_pol;          /* policy handle */
-
-} SAMR_Q_DELETE_DOM_USER;
-
-
-/* SAMR_R_DELETE_DOM_USER - delete domain user */
-typedef struct r_samr_delete_dom_user_info
-{
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;        /* return status */
-
-} SAMR_R_DELETE_DOM_USER;
-
-
 /* SAMR_Q_QUERY_GROUPMEM - query group members */
 typedef struct q_samr_query_groupmem_info
 {
@@ -1653,25 +1470,6 @@ typedef struct r_samr_add_group_mem_info
 } SAMR_R_ADD_GROUPMEM;
 
 
-/* SAMR_Q_OPEN_GROUP - probably an open */
-typedef struct q_samr_open_group_info
-{
-	POLICY_HND domain_pol;       /* policy handle */
-	uint32 access_mask;         /* 0x0000 0001, 0x0000 0003, 0x0000 001f */
-	uint32 rid_group;        /* rid */
-
-} SAMR_Q_OPEN_GROUP;
-
-
-/* SAMR_R_OPEN_GROUP - probably an open */
-typedef struct r_samr_open_group_info
-{
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_OPEN_GROUP;
-
-
 /* SAMR_Q_QUERY_ALIASMEM - query alias members */
 typedef struct q_samr_query_aliasmem_info
 {
@@ -1728,27 +1526,6 @@ typedef struct r_samr_del_alias_mem_info
 	NTSTATUS status;         /* return status */
 
 } SAMR_R_DEL_ALIASMEM;
-
-
-
-/* SAMR_Q_OPEN_ALIAS - probably an open */
-typedef struct q_samr_open_alias_info
-{
-	POLICY_HND dom_pol;
-
-	uint32 access_mask;         
-	uint32 rid_alias;
-
-} SAMR_Q_OPEN_ALIAS;
-
-
-/* SAMR_R_OPEN_ALIAS - probably an open */
-typedef struct r_samr_open_alias_info
-{
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_OPEN_ALIAS;
 
 
 /* SAMR_Q_CONNECT_ANON - probably an open */
@@ -1823,31 +1600,6 @@ typedef struct r_samr_connect_info5
 } SAMR_R_CONNECT5;
 
 
-/* SAMR_Q_GET_DOM_PWINFO */
-typedef struct q_samr_get_dom_pwinfo
-{
-	uint32 ptr; 
-	UNIHDR  hdr_srv_name;
-	UNISTR2 uni_srv_name;
-
-} SAMR_Q_GET_DOM_PWINFO;
-
-#define DOMAIN_PASSWORD_COMPLEX		0x00000001
-#define DOMAIN_PASSWORD_NO_ANON_CHANGE	0x00000002
-#define DOMAIN_PASSWORD_NO_CLEAR_CHANGE	0x00000004
-#define DOMAIN_LOCKOUT_ADMINS		0x00000008
-#define DOMAIN_PASSWORD_STORE_CLEARTEXT	0x00000010
-#define DOMAIN_REFUSE_PASSWORD_CHANGE	0x00000020
-
-/* SAMR_R_GET_DOM_PWINFO */
-typedef struct r_samr_get_dom_pwinfo
-{
-	uint16 min_pwd_length;
-	uint32 password_properties;
-	NTSTATUS status;
-
-} SAMR_R_GET_DOM_PWINFO;
-
 /* SAMR_ENC_PASSWD */
 typedef struct enc_passwd_info
 {
@@ -1914,11 +1666,6 @@ typedef struct q_samr_chgpasswd_user3
 	SAMR_ENC_PASSWD password3;
 
 } SAMR_Q_CHGPASSWD_USER3;
-
-#define REJECT_REASON_OTHER		0x00000000
-#define REJECT_REASON_TOO_SHORT		0x00000001
-#define REJECT_REASON_IN_HISTORY	0x00000002
-#define REJECT_REASON_NOT_COMPLEX	0x00000005
 
 /* SAMR_CHANGE_REJECT */
 typedef struct samr_change_reject

@@ -100,6 +100,7 @@ char tar_type='\0';
 static char **cliplist=NULL;
 static int clipn=0;
 static bool must_free_cliplist = False;
+static const char *cmd_ptr = NULL;
 
 extern bool lowercase;
 extern uint16 cnum;
@@ -512,6 +513,7 @@ static bool ensurepath(const char *fname)
 	char *partpath, *ffname;
 	const char *p=fname;
 	char *basehack;
+	char *saveptr;
 
 	DEBUG(5, ( "Ensurepath called with: %s\n", fname));
 
@@ -527,7 +529,7 @@ static bool ensurepath(const char *fname)
 
 	*partpath = 0;
 
-	/* fname copied to ffname so can strtok */
+	/* fname copied to ffname so can strtok_r */
 
 	safe_strcpy(ffname, fname, strlen(fname));
 
@@ -540,7 +542,7 @@ static bool ensurepath(const char *fname)
 		*basehack='\0';
 	}
 
-	p=strtok(ffname, "\\");
+	p=strtok_r(ffname, "\\", &saveptr);
 
 	while (p) {
 		safe_strcat(partpath, p, strlen(fname) + 1);
@@ -557,7 +559,7 @@ static bool ensurepath(const char *fname)
 		}
 
 		safe_strcat(partpath, "\\", strlen(fname) + 1);
-		p = strtok(NULL,"/\\");
+		p = strtok_r(NULL, "/\\", &saveptr);
 	}
 
 	SAFE_FREE(partpath);
@@ -1273,7 +1275,7 @@ int cmd_block(void)
 	char *buf;
 	int block;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		DEBUG(0, ("blocksize <n>\n"));
 		return 1;
 	}
@@ -1298,7 +1300,7 @@ int cmd_tarmode(void)
 	TALLOC_CTX *ctx = talloc_tos();
 	char *buf;
 
-	while (next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	while (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		if (strequal(buf, "full"))
 			tar_inc=False;
 		else if (strequal(buf, "inc"))
@@ -1348,7 +1350,7 @@ int cmd_setmode(void)
 
 	attra[0] = attra[1] = 0;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		DEBUG(0, ("setmode <filename> <[+|-]rsha>\n"));
 		return 1;
 	}
@@ -1361,7 +1363,7 @@ int cmd_setmode(void)
 		return 1;
 	}
 
-	while (next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	while (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		q=buf;
 
 		while(*q) {
@@ -1402,6 +1404,55 @@ int cmd_setmode(void)
 	return 0;
 }
 
+/**
+ Convert list of tokens to array; dependent on above routine.
+ Uses the global cmd_ptr from above - bit of a hack.
+**/
+
+static char **toktocliplist(int *ctok, const char *sep)
+{
+	char *s=(char *)cmd_ptr;
+	int ictok=0;
+	char **ret, **iret;
+
+	if (!sep)
+		sep = " \t\n\r";
+
+	while(*s && strchr_m(sep,*s))
+		s++;
+
+	/* nothing left? */
+	if (!*s)
+		return(NULL);
+
+	do {
+		ictok++;
+		while(*s && (!strchr_m(sep,*s)))
+			s++;
+		while(*s && strchr_m(sep,*s))
+			*s++=0;
+	} while(*s);
+
+	*ctok=ictok;
+	s=(char *)cmd_ptr;
+
+	if (!(ret=iret=SMB_MALLOC_ARRAY(char *,ictok+1)))
+		return NULL;
+
+	while(ictok--) {
+		*iret++=s;
+		if (ictok > 0) {
+			while(*s++)
+				;
+			while(!*s)
+				s++;
+		}
+	}
+
+	ret[*ctok] = NULL;
+	return ret;
+}
+
 /****************************************************************************
 Principal command for creating / extracting
 ***************************************************************************/
@@ -1414,14 +1465,16 @@ int cmd_tar(void)
 	int argcl = 0;
 	int ret;
 
-	if (!next_token_nr_talloc(ctx,NULL,&buf,NULL)) {
+	if (!next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
 		DEBUG(0,("tar <c|x>[IXbgan] <filename>\n"));
 		return 1;
 	}
 
 	argl=toktocliplist(&argcl, NULL);
-	if (!tar_parseargs(argcl, argl, buf, 0))
+	if (!tar_parseargs(argcl, argl, buf, 0)) {
+		SAFE_FREE(argl);
 		return 1;
+	}
 
 	ret = process_tar();
 	SAFE_FREE(argl);

@@ -383,7 +383,7 @@ NTSTATUS rpccli_netlogon_logon_ctrl2(struct rpc_pipe_client *cli, TALLOC_CTX *me
 
 WERROR rpccli_netlogon_getanydcname(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx, const char *mydcname,
-				    const char *domainname, fstring newdcname)
+				    const char *domainname, char **newdcname)
 {
 	prs_struct qbuf, rbuf;
 	NET_Q_GETANYDCNAME q;
@@ -410,8 +410,9 @@ WERROR rpccli_netlogon_getanydcname(struct rpc_pipe_client *cli,
 
 	result = r.status;
 
-	if (W_ERROR_IS_OK(result)) {
-		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
+	if (W_ERROR_IS_OK(result) && newdcname) {
+		*newdcname = rpcstr_pull_unistr2_talloc(mem_ctx, &r.uni_dcname);
+		W_ERROR_HAVE_NO_MEMORY(*newdcname);
 	}
 
 	return result;
@@ -421,7 +422,7 @@ WERROR rpccli_netlogon_getanydcname(struct rpc_pipe_client *cli,
 
 WERROR rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx, const char *mydcname,
-				 const char *domainname, fstring newdcname)
+				 const char *domainname, char **newdcname)
 {
 	prs_struct qbuf, rbuf;
 	NET_Q_GETDCNAME q;
@@ -448,8 +449,9 @@ WERROR rpccli_netlogon_getdcname(struct rpc_pipe_client *cli,
 
 	result = r.status;
 
-	if (W_ERROR_IS_OK(result)) {
-		rpcstr_pull_unistr2_fstring(newdcname, &r.uni_dcname);
+	if (W_ERROR_IS_OK(result) && newdcname) {
+		*newdcname = rpcstr_pull_unistr2_talloc(mem_ctx, &r.uni_dcname);
+		W_ERROR_HAVE_NO_MEMORY(*newdcname);
 	}
 
 	return result;
@@ -590,109 +592,6 @@ WERROR rpccli_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 
 	return WERR_OK;
 }
-
-/* Dsr_GetDCNameEx */
-
-WERROR rpccli_netlogon_dsr_getdcnameex(struct rpc_pipe_client *cli,
-				       TALLOC_CTX *mem_ctx,
-				       const char *server_name,
-				       const char *domain_name,
-				       struct GUID *domain_guid,
-				       const char *site_name,
-				       uint32_t flags,
-				       struct DS_DOMAIN_CONTROLLER_INFO **info_out)
-{
-	prs_struct qbuf, rbuf;
-	NET_Q_DSR_GETDCNAMEEX q;
-	NET_R_DSR_GETDCNAME r;
-	char *tmp_str;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialize input parameters */
-
-	tmp_str = talloc_asprintf(mem_ctx, "\\\\%s", server_name);
-	if (tmp_str == NULL) {
-		return WERR_NOMEM;
-	}
-
-	init_net_q_dsr_getdcnameex(&q, server_name, domain_name, domain_guid,
-				   site_name, flags);
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC_WERR(cli, mem_ctx, PI_NETLOGON, NET_DSR_GETDCNAMEEX,
-			q, r,
-			qbuf, rbuf,
-			net_io_q_dsr_getdcnameex,
-			net_io_r_dsr_getdcname,
-			WERR_GENERAL_FAILURE);
-
-	if (!W_ERROR_IS_OK(r.result)) {
-		return r.result;
-	}
-
-	r.result = pull_domain_controller_info_from_getdcname_reply(mem_ctx, info_out, &r);
-	if (!W_ERROR_IS_OK(r.result)) {
-		return r.result;
-	}
-
-	return WERR_OK;
-}
-
-/* Dsr_GetDCNameEx */
-
-WERROR rpccli_netlogon_dsr_getdcnameex2(struct rpc_pipe_client *cli,
-					TALLOC_CTX *mem_ctx,
-					const char *server_name,
-					const char *client_account,
-					uint32 mask,
-					const char *domain_name,
-					struct GUID *domain_guid,
-					const char *site_name,
-					uint32_t flags,
-					struct DS_DOMAIN_CONTROLLER_INFO **info_out)
-{
-	prs_struct qbuf, rbuf;
-	NET_Q_DSR_GETDCNAMEEX2 q;
-	NET_R_DSR_GETDCNAME r;
-	char *tmp_str;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialize input parameters */
-
-	tmp_str = talloc_asprintf(mem_ctx, "\\\\%s", server_name);
-	if (tmp_str == NULL) {
-		return WERR_NOMEM;
-	}
-
-	init_net_q_dsr_getdcnameex2(&q, server_name, domain_name, client_account,
-				    mask, domain_guid, site_name, flags);
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC_WERR(cli, mem_ctx, PI_NETLOGON, NET_DSR_GETDCNAMEEX2,
-			q, r,
-			qbuf, rbuf,
-			net_io_q_dsr_getdcnameex2,
-			net_io_r_dsr_getdcname,
-			WERR_GENERAL_FAILURE);
-
-	if (!W_ERROR_IS_OK(r.result)) {
-		return r.result;
-	}
-
-	r.result = pull_domain_controller_info_from_getdcname_reply(mem_ctx, info_out, &r);
-	if (!W_ERROR_IS_OK(r.result)) {
-		return r.result;
-	}
-
-	return WERR_OK;
-}
-
 
 /* Dsr_GetSiteName */
 
@@ -976,11 +875,12 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 	int validation_level = 3;
 	const char *workstation_name_slash;
 	const char *server_name_slash;
-	static uint8 zeros[16];
+	uint8 zeros[16];
 	DOM_CRED clnt_creds;
 	DOM_CRED ret_creds;
 	int i;
-	
+
+	ZERO_STRUCT(zeros);
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 	ZERO_STRUCT(ret_creds);
@@ -1082,9 +982,10 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 	int validation_level = 3;
 	const char *workstation_name_slash;
 	const char *server_name_slash;
-	static uint8 zeros[16];
+	uint8 zeros[16];
 	int i;
-	
+
+	ZERO_STRUCT(zeros);
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 

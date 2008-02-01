@@ -92,7 +92,9 @@ SEC_DESC *get_share_security_default( TALLOC_CTX *ctx, size_t *psize, uint32 def
 	init_sec_ace(&ace, &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, sa, 0);
 
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, 1, &ace)) != NULL) {
-		psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, psize);
+		psd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
+				    SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL,
+				    psa, psize);
 	}
 
 	if (!psd) {
@@ -142,7 +144,7 @@ SEC_DESC *get_share_security( TALLOC_CTX *ctx, const char *servicename,
 	}
 
 	if (psd)
-		*psize = sec_desc_size(psd);
+		*psize = ndr_size_security_descriptor(psd, 0);
 
 	return psd;
 }
@@ -226,25 +228,20 @@ bool share_access_check(const NT_USER_TOKEN *token, const char *sharename,
 {
 	uint32 granted;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx = NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	bool ret = True;
 
-	if (!(mem_ctx = talloc_init("share_access_check"))) {
-		return False;
-	}
-
-	psd = get_share_security(mem_ctx, sharename, &sd_size);
+	psd = get_share_security(talloc_tos(), sharename, &sd_size);
 
 	if (!psd) {
-		TALLOC_FREE(mem_ctx);
 		return True;
 	}
 
 	ret = se_access_check(psd, token, desired_access, &granted, &status);
 
-	talloc_destroy(mem_ctx);
+	TALLOC_FREE(psd);
+
 	return ret;
 }
 
@@ -291,7 +288,7 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 		uint32 s_access;
 		DOM_SID sid;
 		char *sidstr;
-		uint8 type = SEC_ACE_TYPE_ACCESS_ALLOWED;
+		enum security_ace_type type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 
 		if (!next_token_talloc(ctx, &pacl, &sidstr, ":")) {
 			DEBUG(0,("parse_usershare_acl: malformed usershare acl looking "
@@ -339,7 +336,9 @@ bool parse_usershare_acl(TALLOC_CTX *ctx, const char *acl_str, SEC_DESC **ppsd)
 	}
 
 	if ((psa = make_sec_acl(ctx, NT4_ACL_REVISION, num_aces, ace_list)) != NULL) {
-		psd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, psa, &sd_size);
+		psd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
+				    SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL,
+				    psa, &sd_size);
 	}
 
 	if (!psd) {

@@ -25,10 +25,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_PASSDB
 
-/* Cache of latest SAM lookup query */
-
-static struct samu *csamuser = NULL;
-
 static_decl_pdb;
 
 static struct pdb_init_function_entry *backends = NULL;
@@ -208,54 +204,31 @@ static struct pdb_methods *pdb_get_methods(void)
 	return pdb_get_methods_reload(False);
 }
 
-/******************************************************************
- Backward compatibility functions for the original passdb interface
-*******************************************************************/
-
-bool pdb_setsampwent(bool update, uint16 acb_mask) 
-{
-	struct pdb_methods *pdb = pdb_get_methods();
-	return NT_STATUS_IS_OK(pdb->setsampwent(pdb, update, acb_mask));
-}
-
-void pdb_endsampwent(void) 
-{
-	struct pdb_methods *pdb = pdb_get_methods();
-	pdb->endsampwent(pdb);
-}
-
-bool pdb_getsampwent(struct samu *user) 
-{
-	struct pdb_methods *pdb = pdb_get_methods();
-
-	if ( !NT_STATUS_IS_OK(pdb->getsampwent(pdb, user) ) ) {
-		return False;
-	}
-
-	return True;
-}
-
 bool pdb_getsampwnam(struct samu *sam_acct, const char *username) 
 {
 	struct pdb_methods *pdb = pdb_get_methods();
+	struct samu *cache_copy;
+	const struct dom_sid *user_sid;
 
 	if (!NT_STATUS_IS_OK(pdb->getsampwnam(pdb, sam_acct, username))) {
 		return False;
 	}
 
-	if ( csamuser ) {
-		TALLOC_FREE(csamuser);
-	}
-
-	csamuser = samu_new( NULL );
-	if (!csamuser) {
+	cache_copy = samu_new(NULL);
+	if (cache_copy == NULL) {
 		return False;
 	}
 
-	if (!pdb_copy_sam_account(csamuser, sam_acct)) {
-		TALLOC_FREE(csamuser);
+	if (!pdb_copy_sam_account(cache_copy, sam_acct)) {
+		TALLOC_FREE(cache_copy);
 		return False;
 	}
+
+	user_sid = pdb_get_user_sid(cache_copy);
+
+	memcache_add_talloc(NULL, PDB_GETPWSID_CACHE,
+			    data_blob_const(user_sid, sizeof(*user_sid)),
+			    cache_copy);
 
 	return True;
 }
@@ -289,6 +262,7 @@ bool pdb_getsampwsid(struct samu *sam_acct, const DOM_SID *sid)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 	uint32 rid;
+	void *cache_data;
 
 	/* hard code the Guest RID of 501 */
 
@@ -301,9 +275,16 @@ bool pdb_getsampwsid(struct samu *sam_acct, const DOM_SID *sid)
 	}
 	
 	/* check the cache first */
-	
-	if ( csamuser && sid_equal(sid, pdb_get_user_sid(csamuser) ) )
-		return pdb_copy_sam_account(sam_acct, csamuser);
+
+	cache_data = memcache_lookup_talloc(
+		NULL, PDB_GETPWSID_CACHE, data_blob_const(sid, sizeof(*sid)));
+
+	if (cache_data != NULL) {
+		struct samu *cache_copy = talloc_get_type_abort(
+			cache_data, struct samu);
+
+		return pdb_copy_sam_account(sam_acct, cache_copy);
+	}
 
 	return NT_STATUS_IS_OK(pdb->getsampwsid(pdb, sam_acct, sid));
 }
@@ -498,10 +479,7 @@ NTSTATUS pdb_update_sam_account(struct samu *sam_acct)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 
-	if (csamuser != NULL) {
-		TALLOC_FREE(csamuser);
-		csamuser = NULL;
-	}
+	memcache_flush(NULL, PDB_GETPWSID_CACHE);
 
 	return pdb->update_sam_account(pdb, sam_acct);
 }
@@ -510,10 +488,7 @@ NTSTATUS pdb_delete_sam_account(struct samu *sam_acct)
 {
 	struct pdb_methods *pdb = pdb_get_methods();
 
-	if (csamuser != NULL) {
-		TALLOC_FREE(csamuser);
-		csamuser = NULL;
-	}
+	memcache_flush(NULL, PDB_GETPWSID_CACHE);
 
 	return pdb->delete_sam_account(pdb, sam_acct);
 }
@@ -524,10 +499,7 @@ NTSTATUS pdb_rename_sam_account(struct samu *oldname, const char *newname)
 	uid_t uid;
 	NTSTATUS status;
 
-	if (csamuser != NULL) {
-		TALLOC_FREE(csamuser);
-		csamuser = NULL;
-	}
+	memcache_flush(NULL, PDB_GETPWSID_CACHE);
 
 	/* sanity check to make sure we don't rename root */
 
@@ -1181,21 +1153,6 @@ static NTSTATUS pdb_default_update_login_attempts (struct pdb_methods *methods, 
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS pdb_default_setsampwent(struct pdb_methods *methods, bool update, uint32 acb_mask)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static NTSTATUS pdb_default_getsampwent(struct pdb_methods *methods, struct samu *user)
-{
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-static void pdb_default_endsampwent(struct pdb_methods *methods)
-{
-	return; /* NT_STATUS_NOT_IMPLEMENTED; */
-}
-
 static NTSTATUS pdb_default_get_account_policy(struct pdb_methods *methods, int policy_index, uint32 *value)
 {
 	return account_policy_get(policy_index, value) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
@@ -1570,11 +1527,12 @@ static bool lookup_global_sam_rid(TALLOC_CTX *mem_ctx, uint32 rid,
 			return True;
 		}
 
-		pw = Get_Pwnam(*name);
+		pw = Get_Pwnam_alloc(talloc_tos(), *name);
 		if (pw == NULL) {
 			return False;
 		}
 		unix_id->uid = pw->pw_uid;
+		TALLOC_FREE(pw);
 		return True;
 	}
 	TALLOC_FREE(sam_account);
@@ -1737,7 +1695,7 @@ static NTSTATUS pdb_default_lookup_names(struct pdb_methods *methods,
 }
 #endif
 
-static struct pdb_search *pdb_search_init(enum pdb_search_type type)
+struct pdb_search *pdb_search_init(enum pdb_search_type type)
 {
 	TALLOC_CTX *mem_ctx;
 	struct pdb_search *result;
@@ -1792,81 +1750,6 @@ static void fill_displayentry(TALLOC_CTX *mem_ctx, uint32 rid,
 		entry->description = talloc_strdup(mem_ctx, description);
 	else
 		entry->description = "";
-}
-
-static bool user_search_in_progress = False;
-struct user_search {
-	uint16 acct_flags;
-};
-
-static bool next_entry_users(struct pdb_search *s,
-			     struct samr_displayentry *entry)
-{
-	struct user_search *state = (struct user_search *)s->private_data;
-	struct samu *user = NULL;
-
- next:
-	if ( !(user = samu_new( NULL )) ) {
-		DEBUG(0, ("next_entry_users: samu_new() failed!\n"));
-		return False;
-	}
-
-	if (!pdb_getsampwent(user)) {
-		TALLOC_FREE(user);
-		return False;
-	}
-
- 	if ((state->acct_flags != 0) &&
-	    ((pdb_get_acct_ctrl(user) & state->acct_flags) == 0)) {
-		TALLOC_FREE(user);
-		goto next;
-	}
-
-	fill_displayentry(s->mem_ctx, pdb_get_user_rid(user),
-			  pdb_get_acct_ctrl(user), pdb_get_username(user),
-			  pdb_get_fullname(user), pdb_get_acct_desc(user),
-			  entry);
-
-	TALLOC_FREE(user);
-	return True;
-}
-
-static void search_end_users(struct pdb_search *search)
-{
-	pdb_endsampwent();
-	user_search_in_progress = False;
-}
-
-static bool pdb_default_search_users(struct pdb_methods *methods,
-				     struct pdb_search *search,
-				     uint32 acct_flags)
-{
-	struct user_search *state;
-
-	if (user_search_in_progress) {
-		DEBUG(1, ("user search in progress\n"));
-		return False;
-	}
-
-	if (!pdb_setsampwent(False, acct_flags)) {
-		DEBUG(5, ("Could not start search\n"));
-		return False;
-	}
-
-	user_search_in_progress = True;
-
-	state = TALLOC_P(search->mem_ctx, struct user_search);
-	if (state == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return False;
-	}
-
-	state->acct_flags = acct_flags;
-
-	search->private_data = state;
-	search->next_entry = next_entry_users;
-	search->search_end = search_end_users;
-	return True;
 }
 
 struct group_search {
@@ -2135,9 +2018,6 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*methods)->setsampwent = pdb_default_setsampwent;
-	(*methods)->endsampwent = pdb_default_endsampwent;
-	(*methods)->getsampwent = pdb_default_getsampwent;
 	(*methods)->getsampwnam = pdb_default_getsampwnam;
 	(*methods)->getsampwsid = pdb_default_getsampwsid;
 	(*methods)->create_user = pdb_default_create_user;
@@ -2179,7 +2059,6 @@ NTSTATUS make_pdb_method( struct pdb_methods **methods )
 	(*methods)->gid_to_sid = pdb_default_gid_to_sid;
 	(*methods)->sid_to_id = pdb_default_sid_to_id;
 
-	(*methods)->search_users = pdb_default_search_users;
 	(*methods)->search_groups = pdb_default_search_groups;
 	(*methods)->search_aliases = pdb_default_search_aliases;
 

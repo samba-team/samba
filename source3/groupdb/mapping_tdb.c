@@ -394,6 +394,7 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 	char *string_sid;
 	TDB_DATA dbuf;
 	const char *p;
+	NTSTATUS status = NT_STATUS_OK;
 	TALLOC_CTX *frame;
 
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX,
@@ -413,15 +414,16 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 		if (!string_to_sid(&alias, string_sid))
 			continue;
 
-		if (!add_sid_to_array_unique(NULL, &alias, sids, num)) {
-			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
+		status= add_sid_to_array_unique(NULL, &alias, sids, num);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
 		}
 	}
 
+done:
 	TALLOC_FREE(frame);
 	SAFE_FREE(dbuf.dptr);
-	return NT_STATUS_OK;
+	return status;
 }
 
 static NTSTATUS alias_memberships(const DOM_SID *members, size_t num_members,
@@ -558,7 +560,10 @@ static int collect_aliasmem(TDB_CONTEXT *tdb_ctx, TDB_DATA key, TDB_DATA data,
 		if (!string_to_sid(&member, member_string))
 			continue;
 
-		if (!add_sid_to_array(NULL, &member, closure->sids, closure->num)) {
+		if (!NT_STATUS_IS_OK(add_sid_to_array(NULL, &member,
+						      closure->sids,
+						      closure->num)))
+		{
 			/* talloc fail. */
 			break;
 		}

@@ -398,8 +398,8 @@ static NTSTATUS one_alias_membership(const DOM_SID *member,
 			goto failed;
 		}
 		string_to_sid(&alias, (char *)el->values[0].data);
-		if (!add_sid_to_array_unique(NULL, &alias, sids, num)) {
-			status = NT_STATUS_NO_MEMORY;
+		status = add_sid_to_array_unique(NULL, &alias, sids, num);
+		if (!NT_STATUS_IS_OK(status)) {
 			goto failed;
 		}
 	}
@@ -492,6 +492,7 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 		NULL
 	};
 	int ret, i;
+	NTSTATUS status = NT_STATUS_OK;
 	struct ldb_result *res=NULL;
 	struct ldb_dn *dn;
 	struct ldb_message_element *el;
@@ -524,14 +525,15 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, size_t *num)
 	for (i=0;i<el->num_values;i++) {
 		DOM_SID sid;
 		string_to_sid(&sid, (const char *)el->values[i].data);
-		if (!add_sid_to_array_unique(NULL, &sid, sids, num)) {
-			talloc_free(dn);
-			return NT_STATUS_NO_MEMORY;
+		status = add_sid_to_array_unique(NULL, &sid, sids, num);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto done;
 		}
 	}
-	talloc_free(dn);
 
-	return NT_STATUS_OK;
+done:
+	talloc_free(dn);
+	return status;
 }
 
 /*

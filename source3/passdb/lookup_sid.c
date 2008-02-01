@@ -464,6 +464,9 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 {
 	int i;
 
+	DEBUG(10, ("lookup_rids called for domain sid '%s'\n",
+		   sid_string_dbg(domain_sid)));
+
 	if (num_rids) {
 		*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
 		*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
@@ -593,6 +596,16 @@ static bool lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
 
 	if (sid_check_is_wellknown_domain(sid, &tmp)) {
 		*name = talloc_strdup(mem_ctx, tmp);
+		return true;
+	}
+
+	if (sid_check_is_unix_users(sid)) {
+		*name = talloc_strdup(mem_ctx, unix_users_domain_name());
+		return true;
+	}
+
+	if (sid_check_is_unix_groups(sid)) {
+		*name = talloc_strdup(mem_ctx, unix_groups_domain_name());
 		return true;
 	}
 
@@ -922,6 +935,8 @@ bool lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	TALLOC_CTX *tmp_ctx;
 	bool ret = false;
 
+	DEBUG(10, ("lookup_sid called for SID '%s'\n", sid_string_dbg(sid)));
+
 	if (!(tmp_ctx = talloc_new(mem_ctx))) {
 		DEBUG(0, ("talloc_new failed\n"));
 		return false;
@@ -971,184 +986,112 @@ bool lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
  modified to use linked lists by jra.
 *****************************************************************/  
 
-#define MAX_UID_SID_CACHE_SIZE 100
-#define TURNOVER_UID_SID_CACHE_SIZE 10
-#define MAX_GID_SID_CACHE_SIZE 100
-#define TURNOVER_GID_SID_CACHE_SIZE 10
-
-static size_t n_uid_sid_cache = 0;
-static size_t n_gid_sid_cache = 0;
-
-static struct uid_sid_cache {
-	struct uid_sid_cache *next, *prev;
-	uid_t uid;
-	DOM_SID sid;
-	enum lsa_SidType sidtype;
-} *uid_sid_cache_head;
-
-static struct gid_sid_cache {
-	struct gid_sid_cache *next, *prev;
-	gid_t gid;
-	DOM_SID sid;
-	enum lsa_SidType sidtype;
-} *gid_sid_cache_head;
-
 /*****************************************************************
   Find a SID given a uid.
-*****************************************************************/  
+*****************************************************************/
 
 static bool fetch_sid_from_uid_cache(DOM_SID *psid, uid_t uid)
 {
-	struct uid_sid_cache *pc;
+	DATA_BLOB cache_value;
 
-	for (pc = uid_sid_cache_head; pc; pc = pc->next) {
-		if (pc->uid == uid) {
-			*psid = pc->sid;
-			DEBUG(3,("fetch sid from uid cache %u -> %s\n",
-				 (unsigned int)uid, sid_string_dbg(psid)));
-			DLIST_PROMOTE(uid_sid_cache_head, pc);
-			return true;
-		}
+	if (!memcache_lookup(NULL, UID_SID_CACHE,
+			     data_blob_const(&uid, sizeof(uid)),
+			     &cache_value)) {
+		return false;
 	}
-	return false;
+
+	SMB_ASSERT(cache_value.length == sizeof(*psid));
+	memcpy(psid, cache_value.data, sizeof(*psid));
+
+	return true;
 }
 
 /*****************************************************************
   Find a uid given a SID.
-*****************************************************************/  
+*****************************************************************/
 
 static bool fetch_uid_from_cache( uid_t *puid, const DOM_SID *psid )
 {
-	struct uid_sid_cache *pc;
+	DATA_BLOB cache_value;
 
-	for (pc = uid_sid_cache_head; pc; pc = pc->next) {
-		if (sid_compare(&pc->sid, psid) == 0) {
-			*puid = pc->uid;
-			DEBUG(3,("fetch uid from cache %u -> %s\n",
-				 (unsigned int)*puid, sid_string_dbg(psid)));
-			DLIST_PROMOTE(uid_sid_cache_head, pc);
-			return true;
-		}
+	if (!memcache_lookup(NULL, SID_UID_CACHE,
+			     data_blob_const(psid, sizeof(*psid)),
+			     &cache_value)) {
+		return false;
 	}
-	return false;
+
+	SMB_ASSERT(cache_value.length == sizeof(*puid));
+	memcpy(puid, cache_value.data, sizeof(*puid));
+
+	return true;
 }
 
 /*****************************************************************
  Store uid to SID mapping in cache.
-*****************************************************************/  
+*****************************************************************/
 
 void store_uid_sid_cache(const DOM_SID *psid, uid_t uid)
 {
-	struct uid_sid_cache *pc;
-
-	/* do not store SIDs in the "Unix Group" domain */
-	
-	if ( sid_check_is_in_unix_users( psid ) )
-		return;
-
-	if (n_uid_sid_cache >= MAX_UID_SID_CACHE_SIZE && n_uid_sid_cache > TURNOVER_UID_SID_CACHE_SIZE) {
-		/* Delete the last TURNOVER_UID_SID_CACHE_SIZE entries. */
-		struct uid_sid_cache *pc_next;
-		size_t i;
-
-		for (i = 0, pc = uid_sid_cache_head; i < (n_uid_sid_cache - TURNOVER_UID_SID_CACHE_SIZE); i++, pc = pc->next)
-			;
-		for(; pc; pc = pc_next) {
-			pc_next = pc->next;
-			DLIST_REMOVE(uid_sid_cache_head,pc);
-			SAFE_FREE(pc);
-			n_uid_sid_cache--;
-		}
-	}
-
-	pc = SMB_MALLOC_P(struct uid_sid_cache);
-	if (!pc)
-		return;
-	pc->uid = uid;
-	sid_copy(&pc->sid, psid);
-	DLIST_ADD(uid_sid_cache_head, pc);
-	n_uid_sid_cache++;
+	memcache_add(NULL, SID_UID_CACHE,
+		     data_blob_const(psid, sizeof(*psid)),
+		     data_blob_const(&uid, sizeof(uid)));
+	memcache_add(NULL, UID_SID_CACHE,
+		     data_blob_const(&uid, sizeof(uid)),
+		     data_blob_const(psid, sizeof(*psid)));
 }
 
 /*****************************************************************
   Find a SID given a gid.
-*****************************************************************/  
+*****************************************************************/
 
 static bool fetch_sid_from_gid_cache(DOM_SID *psid, gid_t gid)
 {
-	struct gid_sid_cache *pc;
+	DATA_BLOB cache_value;
 
-	for (pc = gid_sid_cache_head; pc; pc = pc->next) {
-		if (pc->gid == gid) {
-			*psid = pc->sid;
-			DEBUG(3,("fetch sid from gid cache %u -> %s\n",
-				 (unsigned int)gid, sid_string_dbg(psid)));
-			DLIST_PROMOTE(gid_sid_cache_head, pc);
-			return true;
-		}
+	if (!memcache_lookup(NULL, GID_SID_CACHE,
+			     data_blob_const(&gid, sizeof(gid)),
+			     &cache_value)) {
+		return false;
 	}
-	return false;
+
+	SMB_ASSERT(cache_value.length == sizeof(*psid));
+	memcpy(psid, cache_value.data, sizeof(*psid));
+
+	return true;
 }
 
 /*****************************************************************
   Find a gid given a SID.
-*****************************************************************/  
+*****************************************************************/
 
 static bool fetch_gid_from_cache(gid_t *pgid, const DOM_SID *psid)
 {
-	struct gid_sid_cache *pc;
+	DATA_BLOB cache_value;
 
-	for (pc = gid_sid_cache_head; pc; pc = pc->next) {
-		if (sid_compare(&pc->sid, psid) == 0) {
-			*pgid = pc->gid;
-			DEBUG(3,("fetch gid from cache %u -> %s\n",
-				 (unsigned int)*pgid, sid_string_dbg(psid)));
-			DLIST_PROMOTE(gid_sid_cache_head, pc);
-			return true;
-		}
+	if (!memcache_lookup(NULL, SID_UID_CACHE,
+			     data_blob_const(psid, sizeof(*psid)),
+			     &cache_value)) {
+		return false;
 	}
-	return false;
+
+	SMB_ASSERT(cache_value.length == sizeof(*pgid));
+	memcpy(pgid, cache_value.data, sizeof(*pgid));
+
+	return true;
 }
 
 /*****************************************************************
  Store gid to SID mapping in cache.
-*****************************************************************/  
+*****************************************************************/
 
 void store_gid_sid_cache(const DOM_SID *psid, gid_t gid)
 {
-	struct gid_sid_cache *pc;
-	
-	/* do not store SIDs in the "Unix Group" domain */
-	
-	if ( sid_check_is_in_unix_groups( psid ) )
-		return;
-
-	if (n_gid_sid_cache >= MAX_GID_SID_CACHE_SIZE && n_gid_sid_cache > TURNOVER_GID_SID_CACHE_SIZE) {
-		/* Delete the last TURNOVER_GID_SID_CACHE_SIZE entries. */
-		struct gid_sid_cache *pc_next;
-		size_t i;
-
-		for (i = 0, pc = gid_sid_cache_head; i < (n_gid_sid_cache - TURNOVER_GID_SID_CACHE_SIZE); i++, pc = pc->next)
-			;
-		for(; pc; pc = pc_next) {
-			pc_next = pc->next;
-			DLIST_REMOVE(gid_sid_cache_head,pc);
-			SAFE_FREE(pc);
-			n_gid_sid_cache--;
-		}
-	}
-
-	pc = SMB_MALLOC_P(struct gid_sid_cache);
-	if (!pc)
-		return;
-	pc->gid = gid;
-	sid_copy(&pc->sid, psid);
-	DLIST_ADD(gid_sid_cache_head, pc);
-
-	DEBUG(3,("store_gid_sid_cache: gid %u in cache -> %s\n",
-		 (unsigned int)gid, sid_string_dbg(psid)));
-
-	n_gid_sid_cache++;
+	memcache_add(NULL, SID_GID_CACHE,
+		     data_blob_const(psid, sizeof(*psid)),
+		     data_blob_const(&gid, sizeof(gid)));
+	memcache_add(NULL, GID_SID_CACHE,
+		     data_blob_const(&gid, sizeof(gid)),
+		     data_blob_const(psid, sizeof(*psid)));
 }
 
 /*****************************************************************

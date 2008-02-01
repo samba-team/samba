@@ -34,6 +34,11 @@ fstring remote_proto="UNKNOWN";
 
 static char *local_machine;
 
+void free_local_machine_name(void)
+{
+	SAFE_FREE(local_machine);
+}
+
 bool set_local_machine_name(const char *local_name, bool perm)
 {
 	static bool already_perm = false;
@@ -408,7 +413,7 @@ static const char *automount_path(const char *user_name)
 	/* use the passwd entry as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
 
-	server_path = talloc_strdup(ctx, get_user_home_dir(user_name));
+	server_path = talloc_strdup(ctx, get_user_home_dir(ctx, user_name));
 	if (!server_path) {
 		return "";
 	}
@@ -541,7 +546,6 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 {
 	char *b, *p, *s, *r, *a_string;
 	fstring pidstr, vnnstr;
-	struct passwd *pass;
 	char addr[INET6_ADDRSTRLEN];
 	const char *local_machine_name = get_local_machine_name();
 
@@ -571,15 +575,21 @@ char *alloc_sub_basic(const char *smb_name, const char *domain_name,
 			}
 			a_string = realloc_string_sub(a_string, "%U", r);
 			break;
-		case 'G' :
+		case 'G' : {
+			struct passwd *pass;
 			r = SMB_STRDUP(smb_name);
 			if (r == NULL) {
 				goto error;
 			}
-			if ((pass = Get_Pwnam(r))!=NULL) {
-				a_string = realloc_string_sub(a_string, "%G", gidtoname(pass->pw_gid));
-			} 
+			pass = Get_Pwnam_alloc(talloc_tos(), r);
+			if (pass != NULL) {
+				a_string = realloc_string_sub(
+					a_string, "%G",
+					gidtoname(pass->pw_gid));
+			}
+			TALLOC_FREE(pass);
 			break;
+		}
 		case 'D' :
 			r = strdup_upper(domain_name);
 			if (r == NULL) {
@@ -766,7 +776,7 @@ static char *alloc_sub_advanced(const char *servicename, const char *user,
 			 const char *str)
 {
 	char *a_string, *ret_string;
-	char *b, *p, *s, *h;
+	char *b, *p, *s;
 
 	a_string = SMB_STRDUP(str);
 	if (a_string == NULL) {
@@ -782,10 +792,13 @@ static char *alloc_sub_advanced(const char *servicename, const char *user,
 		case 'N' :
 			a_string = realloc_string_sub(a_string, "%N", automount_server(user));
 			break;
-		case 'H':
-			if ((h = get_user_home_dir(user)))
+		case 'H': {
+			char *h;
+			if ((h = get_user_home_dir(talloc_tos(), user)))
 				a_string = realloc_string_sub(a_string, "%H", h);
+			TALLOC_FREE(h);
 			break;
+		}
 		case 'P': 
 			a_string = realloc_string_sub(a_string, "%P", connectpath); 
 			break;

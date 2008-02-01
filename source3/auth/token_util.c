@@ -77,12 +77,19 @@ bool nt_token_check_domain_rid( NT_USER_TOKEN *token, uint32 rid )
 
 NT_USER_TOKEN *get_root_nt_token( void )
 {
-	static NT_USER_TOKEN *token = NULL;
+	struct nt_user_token *token = NULL;
 	DOM_SID u_sid, g_sid;
 	struct passwd *pw;
+	void *cache_data;
 
-	if ( token )
-		return token;
+	cache_data = memcache_lookup_talloc(
+		NULL, SINGLETON_CACHE_TALLOC,
+		data_blob_string_const("root_nt_token"));
+
+	if (cache_data != NULL) {
+		return talloc_get_type_abort(
+			cache_data, struct nt_user_token);
+	}
 
 	if ( !(pw = sys_getpwnam( "root" )) ) {
 		DEBUG(0,("get_root_nt_token: getpwnam(\"root\") failed!\n"));
@@ -97,6 +104,11 @@ NT_USER_TOKEN *get_root_nt_token( void )
 
 	token = create_local_nt_token(NULL, &u_sid, False,
 				      1, &global_sid_Builtin_Administrators);
+
+	memcache_add_talloc(
+		NULL, SINGLETON_CACHE_TALLOC,
+		data_blob_string_const("root_nt_token"), token);
+
 	return token;
 }
 
@@ -128,22 +140,22 @@ NTSTATUS add_aliases(const DOM_SID *domain_sid,
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("pdb_enum_alias_memberships failed: %s\n",
 			   nt_errstr(status)));
-		TALLOC_FREE(tmp_ctx);
-		return status;
+		goto done;
 	}
 
 	for (i=0; i<num_aliases; i++) {
 		DOM_SID alias_sid;
 		sid_compose(&alias_sid, domain_sid, aliases[i]);
-		if (!add_sid_to_array_unique(token, &alias_sid,
-					&token->user_sids,
-					&token->num_sids)) {
+		status = add_sid_to_array_unique(token, &alias_sid,
+						 &token->user_sids,
+						 &token->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("add_sid_to_array failed\n"));
-			TALLOC_FREE(tmp_ctx);
-			return NT_STATUS_NO_MEMORY;
+			goto done;
 		}
 	}
 
+done:
 	TALLOC_FREE(tmp_ctx);
 	return NT_STATUS_OK;
 }
@@ -154,6 +166,7 @@ NTSTATUS add_aliases(const DOM_SID *domain_sid,
 static NTSTATUS add_builtin_administrators( struct nt_user_token *token )
 {
 	DOM_SID domadm;
+	NTSTATUS status;
 
 	/* nothing to do if we aren't in a domain */
 
@@ -174,9 +187,11 @@ static NTSTATUS add_builtin_administrators( struct nt_user_token *token )
 	/* Add Administrators if the user beloongs to Domain Admins */
 
 	if ( nt_token_check_sid( &domadm, token ) ) {
-		if (!add_sid_to_array(token, &global_sid_Builtin_Administrators,
-					 &token->user_sids, &token->num_sids)) {
-			return NT_STATUS_NO_MEMORY;
+		status = add_sid_to_array(token,
+					  &global_sid_Builtin_Administrators,
+					  &token->user_sids, &token->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 	}
 
@@ -284,45 +299,55 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	DEBUG(10, ("Create local NT token for %s\n",
 		   sid_string_dbg(user_sid)));
 
-	if (!(result = TALLOC_ZERO_P(mem_ctx, NT_USER_TOKEN))) {
+	if (!(result = TALLOC_ZERO_P(mem_ctx, struct nt_user_token))) {
 		DEBUG(0, ("talloc failed\n"));
 		return NULL;
 	}
 
 	/* Add the user and primary group sid */
 
-	if (!add_sid_to_array(result, user_sid,
-			 &result->user_sids, &result->num_sids)) {
+	status = add_sid_to_array(result, user_sid,
+				  &result->user_sids, &result->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
 
 	/* For guest, num_groupsids may be zero. */
 	if (num_groupsids) {
-		if (!add_sid_to_array(result, &groupsids[0],
-				 &result->user_sids, &result->num_sids)) {
+		status = add_sid_to_array(result, &groupsids[0],
+					  &result->user_sids,
+					  &result->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
 		}
 	}
 
 	/* Add in BUILTIN sids */
 
-	if (!add_sid_to_array(result, &global_sid_World,
-			 &result->user_sids, &result->num_sids)) {
+	status = add_sid_to_array(result, &global_sid_World,
+				  &result->user_sids, &result->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
-	if (!add_sid_to_array(result, &global_sid_Network,
-			 &result->user_sids, &result->num_sids)) {
+	status = add_sid_to_array(result, &global_sid_Network,
+				  &result->user_sids, &result->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
 	}
 
 	if (is_guest) {
-		if (!add_sid_to_array(result, &global_sid_Builtin_Guests,
-				 &result->user_sids, &result->num_sids)) {
+		status = add_sid_to_array(result, &global_sid_Builtin_Guests,
+					  &result->user_sids,
+					  &result->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
 		}
 	} else {
-		if (!add_sid_to_array(result, &global_sid_Authenticated_Users,
-				 &result->user_sids, &result->num_sids)) {
+		status = add_sid_to_array(result,
+					  &global_sid_Authenticated_Users,
+					  &result->user_sids,
+					  &result->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
 		}
 	}
@@ -334,8 +359,10 @@ struct nt_user_token *create_local_nt_token(TALLOC_CTX *mem_ctx,
 	 * first group sid as primary above. */
 
 	for (i=1; i<num_groupsids; i++) {
-		if (!add_sid_to_array_unique(result, &groupsids[i],
-					&result->user_sids, &result->num_sids)) {
+		status = add_sid_to_array_unique(result, &groupsids[i],
+						 &result->user_sids,
+						 &result->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
 			return NULL;
 		}
 	}

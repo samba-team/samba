@@ -1,7 +1,7 @@
 /*
    Unix SMB/Netbios implementation.
    VFS module to get and set Solaris ACLs
-   Copyright (C) Michael Adam 2006
+   Copyright (C) Michael Adam 2006,2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -100,8 +100,7 @@ SMB_ACL_T solarisacl_sys_acl_get_file(vfs_handle_struct *handle,
  * get the access ACL of a file referred to by a fd
  */
 SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
-				    files_struct *fsp,
-				    int fd)
+				    files_struct *fsp)
 {
 	SMB_ACL_T result = NULL;
 	int count;
@@ -109,7 +108,7 @@ SMB_ACL_T solarisacl_sys_acl_get_fd(vfs_handle_struct *handle,
 
 	DEBUG(10, ("entering solarisacl_sys_acl_get_fd.\n"));
 
-	if (!solaris_acl_get_fd(fd, &solaris_acl, &count)) {
+	if (!solaris_acl_get_fd(fsp->fh->fd, &solaris_acl, &count)) {
 		goto done;
 	}
 	/* 
@@ -219,7 +218,7 @@ int solarisacl_sys_acl_set_file(vfs_handle_struct *handle,
  */
 int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			      files_struct *fsp,
-			      int fd, SMB_ACL_T theacl)
+			      SMB_ACL_T theacl)
 {
 	SOLARIS_ACL_T solaris_acl = NULL;
 	SOLARIS_ACL_T default_acl = NULL;
@@ -242,7 +241,7 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 			   strerror(errno)));
 		goto done;
 	}
-	if (!solaris_acl_get_fd(fd, &default_acl, &default_count)) {
+	if (!solaris_acl_get_fd(fsp->fh->fd, &default_acl, &default_count)) {
 		DEBUG(10, ("error getting (default) acl from fd\n"));
 		goto done;
 	}
@@ -258,14 +257,14 @@ int solarisacl_sys_acl_set_fd(vfs_handle_struct *handle,
 		goto done;
 	}
 
-	ret = facl(fd, SETACL, count, solaris_acl);
+	ret = facl(fsp->fh->fd, SETACL, count, solaris_acl);
 	if (ret != 0) {
 		DEBUG(10, ("call of facl failed (%s).\n", strerror(errno)));
 	}
 
  done:
-	DEBUG(10, ("solarisacl_sys_acl_st_fd %s.\n",
-		   ((ret == 0) ? "succeded" : "failed" )));
+	DEBUG(10, ("solarisacl_sys_acl_set_fd %s.\n",
+		   ((ret == 0) ? "succeeded" : "failed" )));
 	SAFE_FREE(solaris_acl);
 	SAFE_FREE(default_acl);
 	return ret;

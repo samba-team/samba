@@ -6,718 +6,929 @@
 #include "includes.h"
 #include "librpc/gen_ndr/cli_eventlog.h"
 
-NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, struct lsa_String *unknown)
+NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx,
+					struct policy_handle *handle,
+					struct lsa_String *unknown)
 {
 	struct eventlog_ClearEventLogW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.unknown = unknown;
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogW, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_CLEAREVENTLOGW, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_CLEAREVENTLOGW,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogW, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_BackupEventLogW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_BackupEventLogW(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_BackupEventLogW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogW, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_BACKUPEVENTLOGW, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_BACKUPEVENTLOGW,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogW, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_CloseEventLog(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle)
+NTSTATUS rpccli_eventlog_CloseEventLog(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       struct policy_handle *handle)
 {
 	struct eventlog_CloseEventLog r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_CloseEventLog, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_CLOSEEVENTLOG, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_CLOSEEVENTLOG,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_CloseEventLog, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*handle = *r.out.handle;
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_DeregisterEventSource(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_DeregisterEventSource(struct rpc_pipe_client *cli,
+					       TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_DeregisterEventSource r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_DeregisterEventSource, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_DEREGISTEREVENTSOURCE, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_DEREGISTEREVENTSOURCE,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterEventSource, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_GetNumRecords(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t *number)
+NTSTATUS rpccli_eventlog_GetNumRecords(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       struct policy_handle *handle,
+				       uint32_t *number)
 {
 	struct eventlog_GetNumRecords r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_GetNumRecords, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_GETNUMRECORDS, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_GETNUMRECORDS,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_GetNumRecords, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*number = *r.out.number;
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_GetOldestRecord(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_GetOldestRecord(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_GetOldestRecord r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_GetOldestRecord, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_GETOLDESTRECORD, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_GETOLDESTRECORD,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_GetOldestRecord, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_ChangeNotify(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_ChangeNotify(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_ChangeNotify r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_ChangeNotify, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_CHANGENOTIFY, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_CHANGENOTIFY,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_ChangeNotify, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct eventlog_OpenUnknown0 *unknown0, struct lsa_String logname, struct lsa_String servername, uint32_t unknown2, uint32_t unknown3, struct policy_handle *handle)
+NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       struct eventlog_OpenUnknown0 *unknown0,
+				       struct lsa_String logname,
+				       struct lsa_String servername,
+				       uint32_t unknown2,
+				       uint32_t unknown3,
+				       struct policy_handle *handle)
 {
 	struct eventlog_OpenEventLogW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.unknown0 = unknown0;
 	r.in.logname = logname;
 	r.in.servername = servername;
 	r.in.unknown2 = unknown2;
 	r.in.unknown3 = unknown3;
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogW, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_OPENEVENTLOGW, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_OPENEVENTLOGW,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogW, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	*handle = *r.out.handle;
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_RegisterEventSourceW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_RegisterEventSourceW(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_RegisterEventSourceW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceW, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_REGISTEREVENTSOURCEW, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_REGISTEREVENTSOURCEW,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceW, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_OpenBackupEventLogW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_OpenBackupEventLogW(struct rpc_pipe_client *cli,
+					     TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_OpenBackupEventLogW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogW, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_OPENBACKUPEVENTLOGW, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_OPENBACKUPEVENTLOGW,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogW, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_ReadEventLogW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle, uint32_t flags, uint32_t offset, uint32_t number_of_bytes, uint8_t *data, uint32_t *sent_size, uint32_t *real_size)
+NTSTATUS rpccli_eventlog_ReadEventLogW(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       struct policy_handle *handle,
+				       uint32_t flags,
+				       uint32_t offset,
+				       uint32_t number_of_bytes,
+				       uint8_t *data,
+				       uint32_t *sent_size,
+				       uint32_t *real_size)
 {
 	struct eventlog_ReadEventLogW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.flags = flags;
 	r.in.offset = offset;
 	r.in.number_of_bytes = number_of_bytes;
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogW, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_READEVENTLOGW, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_READEVENTLOGW,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogW, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
 	memcpy(data, r.out.data, r.in.number_of_bytes);
 	*sent_size = *r.out.sent_size;
 	*real_size = *r.out.real_size;
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_ReportEventW(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_ReportEventW(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_ReportEventW r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_ReportEventW, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_REPORTEVENTW, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_REPORTEVENTW,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventW, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_ClearEventLogA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_ClearEventLogA(struct rpc_pipe_client *cli,
+					TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_ClearEventLogA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogA, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_CLEAREVENTLOGA, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_CLEAREVENTLOGA,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_ClearEventLogA, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_BackupEventLogA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_BackupEventLogA(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_BackupEventLogA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_BackupEventLogA, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_BACKUPEVENTLOGA, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_BACKUPEVENTLOGA,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_BackupEventLogA, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_OpenEventLogA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_OpenEventLogA(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_OpenEventLogA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_OpenEventLogA, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_OPENEVENTLOGA, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_OPENEVENTLOGA,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_OpenEventLogA, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_RegisterEventSourceA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_RegisterEventSourceA(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_RegisterEventSourceA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_RegisterEventSourceA, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_REGISTEREVENTSOURCEA, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_REGISTEREVENTSOURCEA,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_RegisterEventSourceA, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_OpenBackupEventLogA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_OpenBackupEventLogA(struct rpc_pipe_client *cli,
+					     TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_OpenBackupEventLogA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_OpenBackupEventLogA, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_OPENBACKUPEVENTLOGA, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_OPENBACKUPEVENTLOGA,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_OpenBackupEventLogA, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_ReadEventLogA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_ReadEventLogA(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_ReadEventLogA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_ReadEventLogA, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_READEVENTLOGA, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_READEVENTLOGA,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_ReadEventLogA, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_ReportEventA(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_ReportEventA(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_ReportEventA r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_ReportEventA, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_REPORTEVENTA, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_REPORTEVENTA,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_ReportEventA, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_RegisterClusterSvc(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_RegisterClusterSvc(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_RegisterClusterSvc r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_RegisterClusterSvc, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_REGISTERCLUSTERSVC, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_REGISTERCLUSTERSVC,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_RegisterClusterSvc, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_DeregisterClusterSvc(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_DeregisterClusterSvc(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_DeregisterClusterSvc r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_DeregisterClusterSvc, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_DEREGISTERCLUSTERSVC, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_DEREGISTERCLUSTERSVC,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_DeregisterClusterSvc, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_WriteClusterEvents(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_WriteClusterEvents(struct rpc_pipe_client *cli,
+					    TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_WriteClusterEvents r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_WriteClusterEvents, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_WRITECLUSTEREVENTS, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_WRITECLUSTEREVENTS,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_WriteClusterEvents, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_GetLogIntormation(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_eventlog_GetLogIntormation(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx)
 {
 	struct eventlog_GetLogIntormation r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_GetLogIntormation, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_GETLOGINTORMATION, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_GETLOGINTORMATION,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_GetLogIntormation, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }
 
-NTSTATUS rpccli_eventlog_FlushEventLog(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, struct policy_handle *handle)
+NTSTATUS rpccli_eventlog_FlushEventLog(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx,
+				       struct policy_handle *handle)
 {
 	struct eventlog_FlushEventLog r;
 	NTSTATUS status;
-	
+
 	/* In parameters */
 	r.in.handle = handle;
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_FlushEventLog, &r);
-	
-	status = cli_do_rpc_ndr(cli, mem_ctx, PI_EVENTLOG, &ndr_table_eventlog, NDR_EVENTLOG_FLUSHEVENTLOG, &r);
-	
+	}
+
+	status = cli_do_rpc_ndr(cli,
+				mem_ctx,
+				PI_EVENTLOG,
+				&ndr_table_eventlog,
+				NDR_EVENTLOG_FLUSHEVENTLOG,
+				&r);
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-	
-	if (DEBUGLEVEL >= 10)
+
+	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_OUT_DEBUG(eventlog_FlushEventLog, &r);
-	
+	}
+
 	if (NT_STATUS_IS_ERR(status)) {
 		return status;
 	}
-	
+
 	/* Return variables */
-	
+
 	/* Return result */
 	return r.out.result;
 }

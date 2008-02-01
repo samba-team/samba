@@ -70,7 +70,7 @@ static NTSTATUS fd_open(struct connection_struct *conn,
  Close the file associated with a fsp.
 ****************************************************************************/
 
-NTSTATUS fd_close(struct connection_struct *conn, files_struct *fsp)
+NTSTATUS fd_close(files_struct *fsp)
 {
 	if (fsp->fh->fd == -1) {
 		return NT_STATUS_OK; /* What we used to call a stat open. */
@@ -78,7 +78,7 @@ NTSTATUS fd_close(struct connection_struct *conn, files_struct *fsp)
 	if (fsp->fh->ref_count > 1) {
 		return NT_STATUS_OK; /* Shared handle. Only close last reference. */
 	}
-	return fd_close_posix(conn, fsp);
+	return fd_close_posix(fsp);
 }
 
 /****************************************************************************
@@ -102,7 +102,7 @@ static void change_file_owner_to_parent(connection_struct *conn,
 	}
 
 	become_root();
-	ret = SMB_VFS_FCHOWN(fsp, fsp->fh->fd, parent_st.st_uid, (gid_t)-1);
+	ret = SMB_VFS_FCHOWN(fsp, parent_st.st_uid, (gid_t)-1);
 	unbecome_root();
 	if (ret == -1) {
 		DEBUG(0,("change_file_owner_to_parent: failed to fchown "
@@ -125,7 +125,7 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 	char *saved_dir = NULL;
 	SMB_STRUCT_STAT sbuf;
 	SMB_STRUCT_STAT parent_st;
-	TALLOC_CTX *ctx = talloc_stackframe();
+	TALLOC_CTX *ctx = talloc_tos();
 	NTSTATUS status = NT_STATUS_OK;
 	int ret;
 
@@ -135,7 +135,6 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		DEBUG(0,("change_dir_owner_to_parent: failed to stat parent "
 			 "directory %s. Error was %s\n",
 			 inherit_from_dir, strerror(errno) ));
-		TALLOC_FREE(ctx);
 		return status;
 	}
 
@@ -152,7 +151,6 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 		DEBUG(0,("change_dir_owner_to_parent: failed to get "
 			 "current working directory. Error was %s\n",
 			 strerror(errno)));
-		TALLOC_FREE(ctx);
 		return status;
 	}
 
@@ -202,7 +200,6 @@ static NTSTATUS change_dir_owner_to_parent(connection_struct *conn,
 
  out:
 
-	TALLOC_FREE(ctx);
 	vfs_ChDir(conn,saved_dir);
 	return status;
 }
@@ -342,7 +339,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		if (fsp->fh->fd == -1) {
 			ret = SMB_VFS_STAT(conn, path, psbuf);
 		} else {
-			ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf);
+			ret = SMB_VFS_FSTAT(fsp, psbuf);
 			/* If we have an fd, this stat should succeed. */
 			if (ret == -1) {
 				DEBUG(0,("Error doing fstat on open file %s "
@@ -353,7 +350,7 @@ static NTSTATUS open_file(files_struct *fsp,
 		/* For a non-io open, this stat failing means file not found. JRA */
 		if (ret == -1) {
 			status = map_nt_error_from_unix(errno);
-			fd_close(conn, fsp);
+			fd_close(fsp);
 			return status;
 		}
 	}
@@ -365,7 +362,7 @@ static NTSTATUS open_file(files_struct *fsp,
 	 */
 
 	if(S_ISDIR(psbuf->st_mode)) {
-		fd_close(conn, fsp);
+		fd_close(fsp);
 		errno = EISDIR;
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
@@ -601,17 +598,17 @@ static NTSTATUS open_mode_check(connection_struct *conn,
 	}
 
 	*file_existed = True;
-	
-	if (is_stat_open(access_mask)) {
-		/* Stat open that doesn't trigger oplock breaks or share mode
-		 * checks... ! JRA. */
-		return NT_STATUS_OK;
-	}
 
 	/* A delete on close prohibits everything */
 
 	if (lck->delete_on_close) {
 		return NT_STATUS_DELETE_PENDING;
+	}
+
+	if (is_stat_open(access_mask)) {
+		/* Stat open that doesn't trigger oplock breaks or share mode
+		 * checks... ! JRA. */
+		return NT_STATUS_OK;
 	}
 
 	/*
@@ -1224,7 +1221,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		request_time = pml->request_time;
 
 		/* Remove the deferred open entry under lock. */
-		lck = get_share_mode_lock(NULL, state->id, NULL, NULL);
+		lck = get_share_mode_lock(talloc_tos(), state->id, NULL, NULL);
 		if (lck == NULL) {
 			DEBUG(0, ("could not get share mode lock\n"));
 		} else {
@@ -1405,7 +1402,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	}
 #endif /* O_SYNC */
   
-	if (posix_open & (access_mask & FILE_APPEND_DATA)) {
+	if (posix_open && (access_mask & FILE_APPEND_DATA)) {
 		flags2 |= O_APPEND;
 	}
 
@@ -1454,7 +1451,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	if (file_existed) {
 		id = vfs_file_id_from_sbuf(conn, psbuf);
 
-		lck = get_share_mode_lock(NULL, id,
+		lck = get_share_mode_lock(talloc_tos(), id,
 					  conn->connectpath,
 					  fname);
 
@@ -1681,14 +1678,14 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 
 		id = fsp->file_id;
 
-		lck = get_share_mode_lock(NULL, id,
+		lck = get_share_mode_lock(talloc_tos(), id,
 					  conn->connectpath,
 					  fname);
 
 		if (lck == NULL) {
 			DEBUG(0, ("open_file_ntcreate: Could not get share "
 				  "mode lock for %s\n", fname));
-			fd_close(conn, fsp);
+			fd_close(fsp);
 			file_free(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
@@ -1699,7 +1696,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 					 oplock_request)) {
 			schedule_defer_open(lck, request_time, req);
 			TALLOC_FREE(lck);
-			fd_close(conn, fsp);
+			fd_close(fsp);
 			file_free(fsp);
 			return NT_STATUS_SHARING_VIOLATION;
 		}
@@ -1718,7 +1715,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 						 oplock_request)) {
 				schedule_defer_open(lck, request_time, req);
 				TALLOC_FREE(lck);
-				fd_close(conn, fsp);
+				fd_close(fsp);
 				file_free(fsp);
 				return NT_STATUS_SHARING_VIOLATION;
 			}
@@ -1727,7 +1724,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (!NT_STATUS_IS_OK(status)) {
 			struct deferred_open_record state;
 
-			fd_close(conn, fsp);
+			fd_close(fsp);
 			file_free(fsp);
 
 			state.delayed_for_oplocks = False;
@@ -1764,14 +1761,16 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
            the kernel refuses the operations then the kernel is wrong.
 	   note that GPFS supports it as well - jmcd */
 
-	ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, fsp->fh->fd, share_access);
-	if(ret_flock == -1 ){
+	if (fsp->fh->fd != -1) {
+		ret_flock = SMB_VFS_KERNEL_FLOCK(fsp, share_access);
+		if(ret_flock == -1 ){
 
-		TALLOC_FREE(lck);
-		fd_close(conn, fsp);
-		file_free(fsp);
-		
-		return NT_STATUS_SHARING_VIOLATION;
+			TALLOC_FREE(lck);
+			fd_close(fsp);
+			file_free(fsp);
+
+			return NT_STATUS_SHARING_VIOLATION;
+		}
 	}
 
 	/*
@@ -1789,11 +1788,11 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		 * We are modifing the file after open - update the stat
 		 * struct..
 		 */
-		if ((SMB_VFS_FTRUNCATE(fsp,fsp->fh->fd,0) == -1) ||
-		    (SMB_VFS_FSTAT(fsp,fsp->fh->fd,psbuf)==-1)) {
+		if ((SMB_VFS_FTRUNCATE(fsp, 0) == -1) ||
+		    (SMB_VFS_FSTAT(fsp, psbuf)==-1)) {
 			status = map_nt_error_from_unix(errno);
 			TALLOC_FREE(lck);
-			fd_close(conn,fsp);
+			fd_close(fsp);
 			file_free(fsp);
 			return status;
 		}
@@ -1843,14 +1842,16 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	set_share_mode(lck, fsp, current_user.ut.uid, 0, fsp->oplock_type, new_file_created);
 
 	/* Handle strange delete on close create semantics. */
-	if ((create_options & FILE_DELETE_ON_CLOSE) && can_set_initial_delete_on_close(lck)) {
+	if ((create_options & FILE_DELETE_ON_CLOSE)
+	    && (is_ntfs_stream_name(fname)
+		|| can_set_initial_delete_on_close(lck))) {
 		status = can_set_delete_on_close(fsp, True, new_dos_attributes);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			/* Remember to delete the mode we just added. */
 			del_share_mode(lck, fsp);
 			TALLOC_FREE(lck);
-			fd_close(conn,fsp);
+			fd_close(fsp);
 			file_free(fsp);
 			return status;
 		}
@@ -1864,10 +1865,15 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		if (lp_map_archive(SNUM(conn)) ||
 		    lp_store_dos_attributes(SNUM(conn))) {
 			if (!posix_open) {
-				file_set_dosmode(conn, fname,
-					 new_dos_attributes | aARCH, NULL,
-					 parent_dir,
-					 true);
+				SMB_STRUCT_STAT tmp_sbuf;
+				SET_STAT_INVALID(tmp_sbuf);
+				if (file_set_dosmode(
+					    conn, fname,
+					    new_dos_attributes | aARCH,
+					    &tmp_sbuf, parent_dir,
+					    true) == 0) {
+					unx_mode = tmp_sbuf.st_mode;
+				}
 			}
 		}
 	}
@@ -1882,7 +1888,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		int saved_errno = errno; /* We might get ENOSYS in the next
 					  * call.. */
 
-		if (SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd, unx_mode) == -1 &&
+		if (SMB_VFS_FCHMOD_ACL(fsp, unx_mode) == -1 &&
 		    errno == ENOSYS) {
 			errno = saved_errno; /* Ignore ENOSYS */
 		}
@@ -1896,8 +1902,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		{
 			int saved_errno = errno; /* We might get ENOSYS in the
 						  * next call.. */
-			ret = SMB_VFS_FCHMOD_ACL(fsp, fsp->fh->fd,
-						 new_unx_mode);
+			ret = SMB_VFS_FCHMOD_ACL(fsp, new_unx_mode);
 
 			if (ret == -1 && errno == ENOSYS) {
 				errno = saved_errno; /* Ignore ENOSYS */
@@ -1910,7 +1915,7 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 		}
 
 		if ((ret == -1) &&
-		    (SMB_VFS_FCHMOD(fsp, fsp->fh->fd, new_unx_mode) == -1))
+		    (SMB_VFS_FCHMOD(fsp, new_unx_mode) == -1))
 			DEBUG(5, ("open_file_ntcreate: failed to reset "
 				  "attributes of file %s to 0%o\n",
 				  fname, (unsigned int)new_unx_mode));
@@ -1974,7 +1979,7 @@ NTSTATUS open_file_fchmod(connection_struct *conn, const char *fname,
 
 NTSTATUS close_file_fchmod(files_struct *fsp)
 {
-	NTSTATUS status = fd_close(fsp->conn, fsp);
+	NTSTATUS status = fd_close(fsp);
 	file_free(fsp);
 	return status;
 }
@@ -2101,7 +2106,7 @@ NTSTATUS open_directory(connection_struct *conn,
 		 (unsigned int)create_disposition,
 		 (unsigned int)file_attributes));
 
-	if (is_ntfs_stream_name(fname)) {
+	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS) && is_ntfs_stream_name(fname)) {
 		DEBUG(2, ("open_directory: %s is a stream name!\n", fname));
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
@@ -2211,7 +2216,7 @@ NTSTATUS open_directory(connection_struct *conn,
 
 	string_set(&fsp->fsp_name,fname);
 
-	lck = get_share_mode_lock(NULL, fsp->file_id,
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id,
 				  conn->connectpath,
 				  fname);
 
@@ -2262,7 +2267,7 @@ NTSTATUS open_directory(connection_struct *conn,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS create_directory(connection_struct *conn, const char *directory)
+NTSTATUS create_directory(connection_struct *conn, struct smb_request *req, const char *directory)
 {
 	NTSTATUS status;
 	SMB_STRUCT_STAT sbuf;
@@ -2270,7 +2275,7 @@ NTSTATUS create_directory(connection_struct *conn, const char *directory)
 
 	SET_STAT_INVALID(sbuf);
 	
-	status = open_directory(conn, NULL, directory, &sbuf,
+	status = open_directory(conn, req, directory, &sbuf,
 				FILE_READ_ATTRIBUTES, /* Just a stat open */
 				FILE_SHARE_NONE, /* Ignored for stat opens */
 				FILE_CREATE,
@@ -2441,6 +2446,116 @@ static struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx
 }
 
 /*
+ * If a main file is opened for delete, all streams need to be checked for
+ * !FILE_SHARE_DELETE. Do this by opening with DELETE_ACCESS.
+ * If that works, delete them all by setting the delete on close and close.
+ */
+
+static NTSTATUS open_streams_for_delete(connection_struct *conn,
+					const char *fname)
+{
+	struct stream_struct *stream_info;
+	files_struct **streams;
+	int i;
+	unsigned int num_streams;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+
+	status = SMB_VFS_STREAMINFO(conn, NULL, fname, talloc_tos(),
+				    &num_streams, &stream_info);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)
+	    || NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		DEBUG(10, ("no streams around\n"));
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("SMB_VFS_STREAMINFO failed: %s\n",
+			   nt_errstr(status)));
+		goto fail;
+	}
+
+	DEBUG(10, ("open_streams_for_delete found %d streams\n",
+		   num_streams));
+
+	if (num_streams == 0) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	streams = TALLOC_ARRAY(talloc_tos(), files_struct *, num_streams);
+	if (streams == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	for (i=0; i<num_streams; i++) {
+		char *streamname;
+
+		if (strequal(stream_info[i].name, "::$DATA")) {
+			streams[i] = NULL;
+			continue;
+		}
+
+		streamname = talloc_asprintf(talloc_tos(), "%s%s", fname,
+					     stream_info[i].name);
+
+		if (streamname == NULL) {
+			DEBUG(0, ("talloc_aprintf failed\n"));
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+
+		status = create_file_unixpath
+			(conn,			/* conn */
+			 NULL,			/* req */
+			 streamname,		/* fname */
+			 DELETE_ACCESS,		/* access_mask */
+			 FILE_SHARE_READ | FILE_SHARE_WRITE
+			 | FILE_SHARE_DELETE,	/* share_access */
+			 FILE_OPEN,		/* create_disposition*/
+			 NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE, /* create_options */
+			 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
+			 0,			/* oplock_request */
+			 0,			/* allocation_size */
+			 NULL,			/* sd */
+			 NULL,			/* ea_list */
+			 &streams[i],		/* result */
+			 NULL,			/* pinfo */
+			 NULL);			/* psbuf */
+
+		TALLOC_FREE(streamname);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("Could not open stream %s: %s\n",
+				   streamname, nt_errstr(status)));
+			break;
+		}
+	}
+
+	/*
+	 * don't touch the variable "status" beyond this point :-)
+	 */
+
+	for (i -= 1 ; i >= 0; i--) {
+		if (streams[i] == NULL) {
+			continue;
+		}
+
+		DEBUG(10, ("Closing stream # %d, %s\n", i,
+			   streams[i]->fsp_name));
+		close_file(streams[i], NORMAL_CLOSE);
+	}
+
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+/*
  * Wrapper around open_file_ntcreate and open_directory
  */
 
@@ -2463,6 +2578,7 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 {
 	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
+	files_struct *base_fsp = NULL;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 
@@ -2492,7 +2608,23 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		sbuf = *psbuf;
 	}
 	else {
-		SET_STAT_INVALID(sbuf);
+		if (SMB_VFS_STAT(conn, fname, &sbuf) == -1) {
+			SET_STAT_INVALID(sbuf);
+		}
+	}
+
+	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
+	    && (access_mask & DELETE_ACCESS)
+	    && !is_ntfs_stream_name(fname)) {
+		/*
+		 * We can't open a file with DELETE access if any of the
+		 * streams is open without FILE_SHARE_DELETE
+		 */
+		status = open_streams_for_delete(conn, fname);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
 	}
 
 	/* This is the correct thing to do (check every time) but can_delete
@@ -2525,11 +2657,60 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 #endif
 
+	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
+	    && is_ntfs_stream_name(fname)
+	    && (!(create_options & NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE))) {
+		char *base;
+		uint32 base_create_disposition;
+
+		if (create_options & FILE_DIRECTORY_FILE) {
+			status = NT_STATUS_NOT_A_DIRECTORY;
+			goto fail;
+		}
+
+		status = split_ntfs_stream_name(talloc_tos(), fname,
+						&base, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("split_ntfs_stream_name failed: %s\n",
+				   nt_errstr(status)));
+			goto fail;
+		}
+
+		SMB_ASSERT(!is_ntfs_stream_name(base));	/* paranoia.. */
+
+		switch (create_disposition) {
+		case FILE_OPEN:
+			base_create_disposition = FILE_OPEN;
+			break;
+		default:
+			base_create_disposition = FILE_OPEN_IF;
+			break;
+		}
+
+		status = create_file_unixpath(conn, NULL, base, 0,
+					      FILE_SHARE_READ
+					      | FILE_SHARE_WRITE
+					      | FILE_SHARE_DELETE,
+					      base_create_disposition,
+					      0, 0, 0, 0, NULL, NULL,
+					      &base_fsp, NULL, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("create_file_unixpath for base %s failed: "
+				   "%s\n", base, nt_errstr(status)));
+			goto fail;
+		}
+	}
+
 	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
 
 	if (create_options & FILE_DIRECTORY_FILE) {
+
+		if (create_options & FILE_NON_DIRECTORY_FILE) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto fail;
+		}
 
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
@@ -2601,23 +2782,22 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		uint32_t sec_info_sent = ALL_SECURITY_INFORMATION;
 		uint32_t saved_access_mask = fsp->access_mask;
 
-		if (sd->owner_sid==0) {
+		if (sd->owner_sid == NULL) {
 			sec_info_sent &= ~OWNER_SECURITY_INFORMATION;
 		}
-		if (sd->group_sid==0) {
+		if (sd->group_sid == NULL) {
 			sec_info_sent &= ~GROUP_SECURITY_INFORMATION;
 		}
-		if (sd->sacl==0) {
+		if (sd->sacl == NULL) {
 			sec_info_sent &= ~SACL_SECURITY_INFORMATION;
 		}
-		if (sd->dacl==0) {
+		if (sd->dacl == NULL) {
 			sec_info_sent &= ~DACL_SECURITY_INFORMATION;
 		}
 
 		fsp->access_mask = FILE_GENERIC_ALL;
 
-		status = SMB_VFS_FSET_NT_ACL(
-			fsp, fsp->fh->fd, sec_info_sent, sd);
+		status = SMB_VFS_FSET_NT_ACL(fsp, sec_info_sent, sd);
 
 		fsp->access_mask = saved_access_mask;
 
@@ -2662,12 +2842,27 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 
 	DEBUG(10, ("create_file: info=%d\n", info));
 
+	/*
+	 * Set fsp->base_fsp late enough that we can't "goto fail" anymore. In
+	 * the fail: branch we call close_file(fsp, ERROR_CLOSE) which would
+	 * also close fsp->base_fsp which we have to also do explicitly in
+	 * this routine here, as not in all "goto fail:" we have the fsp set
+	 * up already to be initialized with the base_fsp.
+	 */
+
+	fsp->base_fsp = base_fsp;
+
 	*result = fsp;
 	if (pinfo != NULL) {
 		*pinfo = info;
 	}
 	if (psbuf != NULL) {
-		*psbuf = sbuf;
+		if ((fsp->fh == NULL) || (fsp->fh->fd == -1)) {
+			*psbuf = sbuf;
+		}
+		else {
+			SMB_VFS_FSTAT(fsp, psbuf);
+		}
 	}
 	return NT_STATUS_OK;
 
@@ -2677,6 +2872,10 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 	if (fsp != NULL) {
 		close_file(fsp, ERROR_CLOSE);
 		fsp = NULL;
+	}
+	if (base_fsp != NULL) {
+		close_file(base_fsp, ERROR_CLOSE);
+		base_fsp = NULL;
 	}
 	return status;
 }
@@ -2699,7 +2898,6 @@ NTSTATUS create_file(connection_struct *conn,
 		     int *pinfo,
 		     SMB_STRUCT_STAT *psbuf)
 {
-	TALLOC_CTX *frame = talloc_stackframe();
 	struct case_semantics_state *case_state = NULL;
 	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
@@ -2806,19 +3004,18 @@ NTSTATUS create_file(connection_struct *conn,
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
-	} else {
-		/*
-		 * Check to see if this is a mac fork of some kind.
-		 */
+	}
 
-		if (is_ntfs_stream_name(fname)) {
-			enum FAKE_FILE_TYPE fake_file_type;
+	/*
+	 * Check to see if this is a mac fork of some kind.
+	 */
 
-			fake_file_type = is_fake_file(fname);
+	if (is_ntfs_stream_name(fname)) {
+		enum FAKE_FILE_TYPE fake_file_type;
 
-			if (fake_file_type == FAKE_FILE_TYPE_NONE) {
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
+		fake_file_type = is_fake_file(fname);
+
+		if (fake_file_type != FAKE_FILE_TYPE_NONE) {
 
 			/*
 			 * Here we go! support for changing the disk quotas
@@ -2837,6 +3034,7 @@ NTSTATUS create_file(connection_struct *conn,
 				goto fail;
 			}
 
+			ZERO_STRUCT(sbuf);
 			goto done;
 		}
 	}
@@ -2881,6 +3079,8 @@ NTSTATUS create_file(connection_struct *conn,
 		fname = converted_fname;
 	}
 
+	TALLOC_FREE(case_state);
+
 	/* All file access must go through check_name() */
 
 	status = check_name(conn, fname);
@@ -2908,7 +3108,6 @@ NTSTATUS create_file(connection_struct *conn,
 	if (psbuf != NULL) {
 		*psbuf = sbuf;
 	}
-	TALLOC_FREE(frame);
 	return NT_STATUS_OK;
 
  fail:
@@ -2918,6 +3117,5 @@ NTSTATUS create_file(connection_struct *conn,
 		close_file(fsp, ERROR_CLOSE);
 		fsp = NULL;
 	}
-	TALLOC_FREE(frame);
 	return status;
 }

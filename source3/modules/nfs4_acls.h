@@ -129,7 +129,12 @@ SMB4ACE_T *smb_next_ace4(SMB4ACE_T *ace);
 
 uint32 smb_get_naces(SMB4ACL_T *acl);
 
-NTSTATUS smb_get_nt_acl_nfs4(files_struct *fsp,
+NTSTATUS smb_fget_nt_acl_nfs4(files_struct *fsp,
+	uint32 security_info,
+	SEC_DESC **ppdesc, SMB4ACL_T *acl);
+
+NTSTATUS smb_get_nt_acl_nfs4(connection_struct *conn,
+	const char *name,
 	uint32 security_info,
 	SEC_DESC **ppdesc, SMB4ACL_T *acl);
 

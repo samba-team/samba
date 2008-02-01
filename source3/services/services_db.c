@@ -112,7 +112,9 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
 		return NULL;
 
-	if ( !(sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, acl, &sd_size)) )
+	if ( !(sd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
+				  SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL,
+				  acl, &sd_size)) )
 		return NULL;
 
 	return sd;
@@ -125,22 +127,22 @@ static SEC_DESC* construct_service_sd( TALLOC_CTX *ctx )
 
 static char *get_common_service_dispname( const char *servicename )
 {
-	static fstring dispname;
 	int i;
 
 	for ( i=0; common_unix_svcs[i].servicename; i++ ) {
 		if (strequal(servicename, common_unix_svcs[i].servicename)) {
-			fstr_sprintf( dispname, "%s (%s)",
+			char *dispname;
+			if (asprintf(&dispname,
+				"%s (%s)",
 				common_unix_svcs[i].dispname,
-				common_unix_svcs[i].servicename );
-
+				common_unix_svcs[i].servicename) < 0) {
+				return NULL;
+			}
 			return dispname;
 		}
 	}
 
-	fstrcpy( dispname, servicename );
-
-	return dispname;
+	return SMB_STRDUP(servicename );
 }
 
 /********************************************************************
@@ -292,6 +294,7 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 
 	if ( builtin_svcs[i].servicename == NULL ) {
 		char *pstr = NULL;
+		char *dispname = NULL;
 		struct rcinit_file_information *init_info = NULL;
 
 		if (asprintf(&pstr, "%s/%s/%s",get_dyn_LIBDIR(),
@@ -303,7 +306,9 @@ static void fill_service_values( const char *name, REGVAL_CTR *values )
 		}
 
 		/* lookup common unix display names */
-		init_unistr2( &dname, get_common_service_dispname( name ), UNI_STR_TERMINATE );
+		dispname = get_common_service_dispname(name);
+		init_unistr2( &dname, dispname ? dispname : "", UNI_STR_TERMINATE );
+		SAFE_FREE(dispname);
 
 		/* get info from init file itself */
 		if ( read_init_file( name, &init_info ) ) {
@@ -521,7 +526,7 @@ SEC_DESC *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 	SAFE_FREE(path);
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
-		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
+		DEBUG(0,("svcctl_get_secdesc: talloc() failed!\n"));
 		TALLOC_FREE( key );
 		return NULL;
 	}
@@ -577,7 +582,7 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 	SAFE_FREE(path);
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
-		DEBUG(0,("add_new_svc_name: talloc() failed!\n"));
+		DEBUG(0,("svcctl_set_secdesc: talloc() failed!\n"));
 		TALLOC_FREE( key );
 		return False;
 	}
@@ -602,9 +607,9 @@ bool svcctl_set_secdesc( TALLOC_CTX *ctx, const char *name, SEC_DESC *sec_desc, 
 /********************************************************************
 ********************************************************************/
 
-char *svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )
+const char *svcctl_lookup_dispname(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
-	static fstring display_name;
+	char *display_name = NULL;
 	REGISTRY_KEY *key = NULL;
 	REGVAL_CTR *values;
 	REGISTRY_VALUE *val;
@@ -637,7 +642,7 @@ char *svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )
 	if ( !(val = regval_ctr_getvalue( values, "DisplayName" )) )
 		goto fail;
 
-	rpcstr_pull( display_name, regval_data_p(val), sizeof(display_name), regval_size(val), 0 );
+	rpcstr_pull_talloc(ctx, &display_name, regval_data_p(val), regval_size(val), 0 );
 
 	TALLOC_FREE( key );
 
@@ -646,16 +651,15 @@ char *svcctl_lookup_dispname( const char *name, NT_USER_TOKEN *token )
 fail:
 	/* default to returning the service name */
 	TALLOC_FREE( key );
-	fstrcpy( display_name, name );
-	return display_name;
+	return talloc_strdup(ctx, name);
 }
 
 /********************************************************************
 ********************************************************************/
 
-char *svcctl_lookup_description( const char *name, NT_USER_TOKEN *token )
+const char *svcctl_lookup_description(TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *token )
 {
-	static fstring description;
+	char *description = NULL;
 	REGISTRY_KEY *key = NULL;
 	REGVAL_CTR *values;
 	REGISTRY_VALUE *val;
@@ -670,7 +674,7 @@ char *svcctl_lookup_description( const char *name, NT_USER_TOKEN *token )
 	wresult = regkey_open_internal( NULL, &key, path, token,
 					REG_KEY_READ );
 	if ( !W_ERROR_IS_OK(wresult) ) {
-		DEBUG(0,("svcctl_lookup_dispname: key lookup failed! [%s] (%s)\n", 
+		DEBUG(0,("svcctl_lookup_description: key lookup failed! [%s] (%s)\n", 
 			path, dos_errstr(wresult)));
 		SAFE_FREE(path);
 		return NULL;
@@ -678,19 +682,19 @@ char *svcctl_lookup_description( const char *name, NT_USER_TOKEN *token )
 	SAFE_FREE(path);
 
 	if ( !(values = TALLOC_ZERO_P( key, REGVAL_CTR )) ) {
-		DEBUG(0,("svcctl_lookup_dispname: talloc() failed!\n"));
+		DEBUG(0,("svcctl_lookup_description: talloc() failed!\n"));
 		TALLOC_FREE( key );
 		return NULL;
 	}
 
 	fetch_reg_values( key, values );
 
-	if ( !(val = regval_ctr_getvalue( values, "Description" )) )
-		fstrcpy( description, "Unix Service");
-	else
-		rpcstr_pull( description, regval_data_p(val), sizeof(description), regval_size(val), 0 );
-
-	TALLOC_FREE( key );
+	if ( !(val = regval_ctr_getvalue( values, "Description" )) ) {
+		TALLOC_FREE( key );
+		return "Unix Service";
+	}
+	rpcstr_pull_talloc(ctx, &description, regval_data_p(val), regval_size(val), 0 );
+	TALLOC_FREE(key);
 
 	return description;
 }

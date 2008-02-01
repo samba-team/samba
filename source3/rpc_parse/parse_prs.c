@@ -85,7 +85,7 @@ void prs_dump_region(const char *name, int v, prs_struct *ps,
 
 void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name)
 {
-	DEBUG(5+depth, ("%s%06x %s %s\n", tab_depth(depth), ps->data_offset, fn_name, desc));
+	DEBUG(5+depth, ("%s%06x %s %s\n", tab_depth(5+depth,depth), ps->data_offset, fn_name, desc));
 }
 
 /**
@@ -621,7 +621,7 @@ bool prs_uint8(const char *name, prs_struct *ps, int depth, uint8 *data8)
 	else
 		SCVAL(q,0,*data8);
 
-	DEBUG(5,("%s%04x %s: %02x\n", tab_depth(depth), ps->data_offset, name, *data8));
+	DEBUG(5,("%s%04x %s: %02x\n", tab_depth(5,depth), ps->data_offset, name, *data8));
 
 	ps->data_offset += 1;
 
@@ -686,7 +686,7 @@ bool prs_uint16(const char *name, prs_struct *ps, int depth, uint16 *data16)
 			SSVAL(q,0,*data16);
 	}
 
-	DEBUG(5,("%s%04x %s: %04x\n", tab_depth(depth), ps->data_offset, name, *data16));
+	DEBUG(5,("%s%04x %s: %04x\n", tab_depth(5,depth), ps->data_offset, name, *data16));
 
 	ps->data_offset += sizeof(uint16);
 
@@ -715,7 +715,7 @@ bool prs_uint32(const char *name, prs_struct *ps, int depth, uint32 *data32)
 			SIVAL(q,0,*data32);
 	}
 
-	DEBUG(5,("%s%04x %s: %08x\n", tab_depth(depth), ps->data_offset, name, *data32));
+	DEBUG(5,("%s%04x %s: %08x\n", tab_depth(5,depth), ps->data_offset, name, *data32));
 
 	ps->data_offset += sizeof(uint32);
 
@@ -744,7 +744,7 @@ bool prs_int32(const char *name, prs_struct *ps, int depth, int32 *data32)
 			SIVALS(q,0,*data32);
 	}
 
-	DEBUG(5,("%s%04x %s: %08x\n", tab_depth(depth), ps->data_offset, name, *data32));
+	DEBUG(5,("%s%04x %s: %08x\n", tab_depth(5,depth), ps->data_offset, name, *data32));
 
 	ps->data_offset += sizeof(int32);
 
@@ -773,7 +773,7 @@ bool prs_ntstatus(const char *name, prs_struct *ps, int depth, NTSTATUS *status)
 			SIVAL(q,0,NT_STATUS_V(*status));
 	}
 
-	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth), ps->data_offset, name, 
+	DEBUG(5,("%s%04x %s: %s\n", tab_depth(5,depth), ps->data_offset, name, 
 		 nt_errstr(*status)));
 
 	ps->data_offset += sizeof(uint32);
@@ -803,7 +803,7 @@ bool prs_dcerpc_status(const char *name, prs_struct *ps, int depth, NTSTATUS *st
 			SIVAL(q,0,NT_STATUS_V(*status));
 	}
 
-	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth), ps->data_offset, name, 
+	DEBUG(5,("%s%04x %s: %s\n", tab_depth(5,depth), ps->data_offset, name, 
 		 dcerpc_errstr(NT_STATUS_V(*status))));
 
 	ps->data_offset += sizeof(uint32);
@@ -834,7 +834,7 @@ bool prs_werror(const char *name, prs_struct *ps, int depth, WERROR *status)
 			SIVAL(q,0,W_ERROR_V(*status));
 	}
 
-	DEBUG(5,("%s%04x %s: %s\n", tab_depth(depth), ps->data_offset, name, 
+	DEBUG(5,("%s%04x %s: %s\n", tab_depth(5,depth), ps->data_offset, name, 
 		 dos_errstr(*status)));
 
 	ps->data_offset += sizeof(uint32);
@@ -862,7 +862,7 @@ bool prs_uint8s(bool charmode, const char *name, prs_struct *ps, int depth, uint
 			SCVAL(q, i, data8s[i]);
 	}
 
-	DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset ,name));
+	DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset ,name));
 	if (charmode)
 		print_asc(5, (unsigned char*)data8s, len);
 	else {
@@ -905,7 +905,7 @@ bool prs_uint16s(bool charmode, const char *name, prs_struct *ps, int depth, uin
 		}
 	}
 
-	DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset, name));
+	DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
 	if (charmode)
 		print_asc(5, (unsigned char*)data16s, 2*len);
 	else {
@@ -947,7 +947,7 @@ static void dbg_rw_punival(bool charmode, const char *name, int depth, prs_struc
 		}
 	}
 
-	DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset, name));
+	DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
 	if (charmode)
 		print_asc(5, (unsigned char*)out_buf, 2*len);
 	else {
@@ -1002,7 +1002,7 @@ bool prs_uint32s(bool charmode, const char *name, prs_struct *ps, int depth, uin
 		}
 	}
 
-	DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset, name));
+	DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
 	if (charmode)
 		print_asc(5, (unsigned char*)data32s, 4*len);
 	else {
@@ -1103,7 +1103,7 @@ bool prs_string2(bool charmode, const char *name, prs_struct *ps, int depth, STR
 		} else {
 			str->buffer = NULL;
 			/* Return early to ensure Coverity isn't confused. */
-			DEBUG(5,("%s%04x %s: \n", tab_depth(depth), ps->data_offset, name));
+			DEBUG(5,("%s%04x %s: \n", tab_depth(5,depth), ps->data_offset, name));
 			return True;
 		}
 	}
@@ -1116,7 +1116,7 @@ bool prs_string2(bool charmode, const char *name, prs_struct *ps, int depth, STR
 			SCVAL(q, i, str->buffer[i]);
 	}
 
-	DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset, name));
+	DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
 	if (charmode)
 		print_asc(5, (unsigned char*)str->buffer, str->str_str_len);
 	else {
@@ -1252,7 +1252,7 @@ bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 
 		len++;
 
-		DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset, name));
+		DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
 		print_asc(5, (unsigned char*)start, 2*len);	
 		DEBUG(5, ("\n"));
 	}
@@ -1309,7 +1309,7 @@ bool prs_unistr(const char *name, prs_struct *ps, int depth, UNISTR *str)
 			str->buffer[len++] = '\0';
 		}
 
-		DEBUG(5,("%s%04x %s: ", tab_depth(depth), ps->data_offset, name));
+		DEBUG(5,("%s%04x %s: ", tab_depth(5,depth), ps->data_offset, name));
 		print_asc(5, (unsigned char*)str->buffer, 2*len);	
 		DEBUG(5, ("\n"));
 	}
@@ -1544,9 +1544,11 @@ static void schannel_digest(struct schannel_auth_struct *a,
 			  uchar digest_final[16]) 
 {
 	uchar whole_packet_digest[16];
-	static const uchar zeros[4] = { 0, };
+	uchar zeros[4];
 	struct MD5Context ctx3;
-	
+
+	ZERO_STRUCT(zeros);
+
 	/* verfiy the signature on the packet by MD5 over various bits */
 	MD5Init(&ctx3);
 	/* use our sequence number, which ensures the packet is not
@@ -1573,10 +1575,12 @@ static void schannel_get_sealing_key(struct schannel_auth_struct *a,
 				   RPC_AUTH_SCHANNEL_CHK *verf,
 				   uchar sealing_key[16]) 
 {
-	static const uchar zeros[4] = { 0, };
+	uchar zeros[4];
 	uchar digest2[16];
 	uchar sess_kf0[16];
 	int i;
+
+	ZERO_STRUCT(zeros);
 
 	for (i = 0; i < sizeof(sess_kf0); i++) {
 		sess_kf0[i] = a->sess_key[i] ^ 0xf0;
@@ -1600,9 +1604,11 @@ static void schannel_get_sealing_key(struct schannel_auth_struct *a,
 static void schannel_deal_with_seq_num(struct schannel_auth_struct *a,
 				     RPC_AUTH_SCHANNEL_CHK *verf)
 {
-	static const uchar zeros[4] = { 0, };
+	uchar zeros[4];
 	uchar sequence_key[16];
 	uchar digest1[16];
+
+	ZERO_STRUCT(zeros);
 
 	hmac_md5(a->sess_key, zeros, sizeof(zeros), digest1);
 	dump_data_pw("(sequence key) digest1:\n", digest1, sizeof(digest1));

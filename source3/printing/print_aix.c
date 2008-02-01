@@ -59,8 +59,9 @@ bool aix_cache_reload(void)
 				continue;
 
 			if ((p = strchr_m(line, ':'))) {
+				char *saveptr;
 				*p = '\0';
-				p = strtok(line, ":");
+				p = strtok_r(line, ":", &saveptr);
 				if (strcmp(p, "bsh") != 0) {
 					name = talloc_strdup(ctx, p);
 					if (!name) {

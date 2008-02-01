@@ -167,6 +167,7 @@ static NTSTATUS check_path_syntax_internal(char *path,
 	}
 
 	*d = '\0';
+
 	return ret;
 }
 
@@ -391,7 +392,7 @@ void reply_special(char *inbuf)
 
 	/*
 	 * We only really use 4 bytes of the outbuf, but for the smb_setlen
-	 * calculation & friends (send_smb uses that) we need the full smb
+	 * calculation & friends (srv_send_smb uses that) we need the full smb
 	 * header.
 	 */
 	char outbuf[smb_size];
@@ -470,7 +471,7 @@ void reply_special(char *inbuf)
 	DEBUG(5,("init msg_type=0x%x msg_flags=0x%x\n",
 		    msg_type, msg_flags));
 
-	send_smb(smbd_server_fd(), outbuf);
+	srv_send_smb(smbd_server_fd(), outbuf, false);
 	return;
 }
 
@@ -479,8 +480,9 @@ void reply_special(char *inbuf)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_tcon(connection_struct *conn, struct smb_request *req)
+void reply_tcon(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	const char *service;
 	char *service_buf = NULL;
 	char *password = NULL;
@@ -523,6 +525,7 @@ void reply_tcon(connection_struct *conn, struct smb_request *req)
 	password_blob = data_blob(password, pwlen+1);
 
 	conn = make_connection(service,password_blob,dev,req->vuid,&nt_status);
+	req->conn = conn;
 
 	data_blob_clear_free(&password_blob);
 
@@ -549,8 +552,9 @@ void reply_tcon(connection_struct *conn, struct smb_request *req)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_tcon_and_X(connection_struct *conn, struct smb_request *req)
+void reply_tcon_and_X(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *service = NULL;
 	DATA_BLOB password;
 	TALLOC_CTX *ctx = talloc_tos();
@@ -578,6 +582,8 @@ void reply_tcon_and_X(connection_struct *conn, struct smb_request *req)
 	/* we might have to close an old one */
 	if ((tcon_flags & 0x1) && conn) {
 		close_cnum(conn,req->vuid);
+		req->conn = NULL;
+		conn = NULL;
 	}
 
 	if ((passlen > MAX_PASS_LEN) || (passlen >= smb_buflen(req->inbuf))) {
@@ -587,7 +593,8 @@ void reply_tcon_and_X(connection_struct *conn, struct smb_request *req)
 	}
 
 	if (global_encrypted_passwords_negotiated) {
-		password = data_blob(smb_buf(req->inbuf),passlen);
+		password = data_blob_talloc(talloc_tos(), smb_buf(req->inbuf),
+					    passlen);
 		if (lp_security() == SEC_SHARE) {
 			/*
 			 * Security = share always has a pad byte
@@ -598,7 +605,8 @@ void reply_tcon_and_X(connection_struct *conn, struct smb_request *req)
 			p = smb_buf(req->inbuf) + passlen;
 		}
 	} else {
-		password = data_blob(smb_buf(req->inbuf),passlen+1);
+		password = data_blob_talloc(talloc_tos(), smb_buf(req->inbuf),
+					    passlen+1);
 		/* Ensure correct termination */
 		password.data[passlen]=0;
 		p = smb_buf(req->inbuf) + passlen + 1;
@@ -646,6 +654,7 @@ void reply_tcon_and_X(connection_struct *conn, struct smb_request *req)
 
 	conn = make_connection(service, password, client_devicetype,
 			       req->vuid, &nt_status);
+	req->conn =conn;
 
 	data_blob_clear_free(&password);
 
@@ -731,17 +740,6 @@ void reply_tcon_and_X(connection_struct *conn, struct smb_request *req)
  Reply to an unknown type.
 ****************************************************************************/
 
-int reply_unknown(char *inbuf,char *outbuf)
-{
-	int type;
-	type = CVAL(inbuf,smb_com);
-  
-	DEBUG(0,("unknown command type (%s): type=%d (0x%X)\n",
-		 smb_fn_name(type), type, type));
-  
-	return(ERROR_DOS(ERRSRV,ERRunknownsmb));
-}
-
 void reply_unknown_new(struct smb_request *req, uint8 type)
 {
 	DEBUG(0, ("unknown command type (%s): type=%d (0x%X)\n",
@@ -755,8 +753,9 @@ void reply_unknown_new(struct smb_request *req, uint8 type)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_ioctl(connection_struct *conn, struct smb_request *req)
+void reply_ioctl(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	uint16 device;
 	uint16 function;
 	uint32 ioctl_code;
@@ -844,8 +843,9 @@ static NTSTATUS map_checkpath_error(const char *inbuf, NTSTATUS status)
  Reply to a checkpath.
 ****************************************************************************/
 
-void reply_checkpath(connection_struct *conn, struct smb_request *req)
+void reply_checkpath(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *name = NULL;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
@@ -938,8 +938,9 @@ void reply_checkpath(connection_struct *conn, struct smb_request *req)
  Reply to a getatr.
 ****************************************************************************/
 
-void reply_getatr(connection_struct *conn, struct smb_request *req)
+void reply_getatr(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *fname = NULL;
 	SMB_STRUCT_STAT sbuf;
 	int mode=0;
@@ -1039,8 +1040,9 @@ void reply_getatr(connection_struct *conn, struct smb_request *req)
  Reply to a setatr.
 ****************************************************************************/
 
-void reply_setatr(connection_struct *conn, struct smb_request *req)
+void reply_setatr(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *fname = NULL;
 	int mode;
 	time_t mtime;
@@ -1139,8 +1141,9 @@ void reply_setatr(connection_struct *conn, struct smb_request *req)
  Reply to a dskattr.
 ****************************************************************************/
 
-void reply_dskattr(connection_struct *conn, struct smb_request *req)
+void reply_dskattr(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	SMB_BIG_UINT dfree,dsize,bsize;
 	START_PROFILE(SMBdskattr);
 
@@ -1163,8 +1166,8 @@ void reply_dskattr(connection_struct *conn, struct smb_request *req)
 		total_space = dsize * (double)bsize;
 		free_space = dfree * (double)bsize;
 
-		dsize = (total_space+63*512) / (64*512);
-		dfree = (free_space+63*512) / (64*512);
+		dsize = (SMB_BIG_UINT)((total_space+63*512) / (64*512));
+		dfree = (SMB_BIG_UINT)((free_space+63*512) / (64*512));
 		
 		if (dsize > 0xFFFF) dsize = 0xFFFF;
 		if (dfree > 0xFFFF) dfree = 0xFFFF;
@@ -1191,8 +1194,9 @@ void reply_dskattr(connection_struct *conn, struct smb_request *req)
  Can be called from SMBsearch, SMBffirst or SMBfunique.
 ****************************************************************************/
 
-void reply_search(connection_struct *conn, struct smb_request *req)
+void reply_search(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *mask = NULL;
 	char *directory = NULL;
 	char *fname = NULL;
@@ -1493,7 +1497,7 @@ void reply_search(connection_struct *conn, struct smb_request *req)
  Reply to a fclose (stop directory search).
 ****************************************************************************/
 
-void reply_fclose(connection_struct *conn, struct smb_request *req)
+void reply_fclose(struct smb_request *req)
 {
 	int status_len;
 	char status[21];
@@ -1557,8 +1561,9 @@ void reply_fclose(connection_struct *conn, struct smb_request *req)
  Reply to an open.
 ****************************************************************************/
 
-void reply_open(connection_struct *conn, struct smb_request *req)
+void reply_open(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *fname = NULL;
 	uint32 fattr=0;
 	SMB_OFF_T size = 0;
@@ -1597,51 +1602,30 @@ void reply_open(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = resolve_dfspath(ctx, conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
-				fname,
-				&fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			END_PROFILE(SMBopen);
-			return;
-		}
-		reply_nterror(req, status);
-		END_PROFILE(SMBopen);
-		return;
-	}
-
-	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		END_PROFILE(SMBopen);
-		return;
-	}
-
-	status = check_name(conn, fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		END_PROFILE(SMBopen);
-		return;
-	}
-
-	if (!map_open_params_to_ntcreate(fname, deny_mode, OPENX_FILE_EXISTS_OPEN,
-			&access_mask, &share_mode, &create_disposition, &create_options)) {
+	if (!map_open_params_to_ntcreate(
+		    fname, deny_mode, OPENX_FILE_EXISTS_OPEN, &access_mask,
+		    &share_mode, &create_disposition, &create_options)) {
 		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 		END_PROFILE(SMBopen);
 		return;
 	}
 
-	status = open_file_ntcreate(conn, req, fname, &sbuf,
-			access_mask,
-			share_mode,
-			create_disposition,
-			create_options,
-			dos_attr,
-			oplock_request,
-			&info, &fsp);
+	status = create_file(conn,			/* conn */
+			     req,			/* req */
+			     0,				/* root_dir_fid */
+			     fname,			/* fname */
+			     access_mask,		/* access_mask */
+			     share_mode,		/* share_access */
+			     create_disposition,	/* create_disposition*/
+			     create_options,		/* create_options */
+			     dos_attr,			/* file_attributes */
+			     oplock_request,		/* oplock_request */
+			     0,				/* allocation_size */
+			     NULL,			/* sd */
+			     NULL,			/* ea_list */
+			     &fsp,			/* result */
+			     &info,			/* pinfo */
+			     &sbuf);			/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(req->mid)) {
@@ -1694,8 +1678,9 @@ void reply_open(connection_struct *conn, struct smb_request *req)
  Reply to an open and X.
 ****************************************************************************/
 
-void reply_open_and_X(connection_struct *conn, struct smb_request *req)
+void reply_open_and_X(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *fname = NULL;
 	uint16 open_flags;
 	int deny_mode;
@@ -1762,53 +1747,30 @@ void reply_open_and_X(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = resolve_dfspath(ctx, conn,
-				req->flags2 & FLAGS2_DFS_PATHNAMES,
-				fname,
-				&fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBopenX);
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			return;
-		}
-		reply_nterror(req, status);
-		return;
-	}
-
-	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		END_PROFILE(SMBopenX);
-		return;
-	}
-
-	status = check_name(conn, fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		END_PROFILE(SMBopenX);
-		return;
-	}
-
-	if (!map_open_params_to_ntcreate(fname, deny_mode, smb_ofun,
-				&access_mask,
-				&share_mode,
-				&create_disposition,
-				&create_options)) {
+	if (!map_open_params_to_ntcreate(
+		    fname, deny_mode, smb_ofun, &access_mask,
+		    &share_mode, &create_disposition, &create_options)) {
 		reply_nterror(req, NT_STATUS_DOS(ERRDOS, ERRbadaccess));
 		END_PROFILE(SMBopenX);
 		return;
 	}
 
-	status = open_file_ntcreate(conn, req, fname, &sbuf,
-			access_mask,
-			share_mode,
-			create_disposition,
-			create_options,
-			smb_attr,
-			oplock_request,
-			&smb_action, &fsp);
+	status = create_file(conn,			/* conn */
+			     req,			/* req */
+			     0,				/* root_dir_fid */
+			     fname,			/* fname */
+			     access_mask,		/* access_mask */
+			     share_mode,		/* share_access */
+			     create_disposition,	/* create_disposition*/
+			     create_options,		/* create_options */
+			     smb_attr,			/* file_attributes */
+			     oplock_request,		/* oplock_request */
+			     0,				/* allocation_size */
+			     NULL,			/* sd */
+			     NULL,			/* ea_list */
+			     &fsp,			/* result */
+			     &smb_action,		/* pinfo */
+			     &sbuf);			/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBopenX);
@@ -1905,10 +1867,9 @@ void reply_open_and_X(connection_struct *conn, struct smb_request *req)
 
 /****************************************************************************
  Reply to a SMBulogoffX.
- conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_ulogoffX(connection_struct *conn, struct smb_request *req)
+void reply_ulogoffX(struct smb_request *req)
 {
 	user_struct *vuser;
 
@@ -1941,8 +1902,9 @@ void reply_ulogoffX(connection_struct *conn, struct smb_request *req)
  Reply to a mknew or a create.
 ****************************************************************************/
 
-void reply_mknew(connection_struct *conn, struct smb_request *req)
+void reply_mknew(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *fname = NULL;
 	int com;
 	uint32 fattr = 0;
@@ -1982,35 +1944,6 @@ void reply_mknew(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = resolve_dfspath(ctx, conn,
-			req->flags2 & FLAGS2_DFS_PATHNAMES,
-			fname,
-			&fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		END_PROFILE(SMBcreate);
-		if (NT_STATUS_EQUAL(status,NT_STATUS_PATH_NOT_COVERED)) {
-			reply_botherror(req, NT_STATUS_PATH_NOT_COVERED,
-					ERRSRV, ERRbadpath);
-			return;
-		}
-		reply_nterror(req, status);
-		return;
-	}
-
-	status = unix_convert(ctx, conn, fname, False, &fname, NULL, &sbuf);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		END_PROFILE(SMBcreate);
-		return;
-	}
-
-	status = check_name(conn, fname);
-	if (!NT_STATUS_IS_OK(status)) {
-		reply_nterror(req, status);
-		END_PROFILE(SMBcreate);
-		return;
-	}
-
 	if (fattr & aVOLID) {
 		DEBUG(0,("Attempt to create file (%s) with volid set - "
 			"please report this\n", fname));
@@ -2024,15 +1957,22 @@ void reply_mknew(connection_struct *conn, struct smb_request *req)
 		create_disposition = FILE_OVERWRITE_IF;
 	}
 
-	/* Open file using ntcreate. */
-	status = open_file_ntcreate(conn, req, fname, &sbuf,
-				access_mask,
-				share_mode,
-				create_disposition,
-				create_options,
-				fattr,
-				oplock_request,
-				NULL, &fsp);
+	status = create_file(conn,			/* conn */
+			     req,			/* req */
+			     0,				/* root_dir_fid */
+			     fname,			/* fname */
+			     access_mask,		/* access_mask */
+			     share_mode,		/* share_access */
+			     create_disposition,	/* create_disposition*/
+			     create_options,		/* create_options */
+			     fattr,			/* file_attributes */
+			     oplock_request,		/* oplock_request */
+			     0,				/* allocation_size */
+			     NULL,			/* sd */
+			     NULL,			/* ea_list */
+			     &fsp,			/* result */
+			     NULL,			/* pinfo */
+			     &sbuf);			/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		END_PROFILE(SMBcreate);
@@ -2072,8 +2012,9 @@ void reply_mknew(connection_struct *conn, struct smb_request *req)
  Reply to a create temporary file.
 ****************************************************************************/
 
-void reply_ctemp(connection_struct *conn, struct smb_request *req)
+void reply_ctemp(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *fname = NULL;
 	uint32 fattr;
 	files_struct *fsp;
@@ -2349,14 +2290,22 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	/* On open checks the open itself will check the share mode, so
 	   don't do it here as we'll get it wrong. */
 
-	status = open_file_ntcreate(conn, req, fname, &sbuf,
-				    DELETE_ACCESS,
-				    FILE_SHARE_NONE,
-				    FILE_OPEN,
-				    0,
-				    FILE_ATTRIBUTE_NORMAL,
-				    req != NULL ? 0 : INTERNAL_OPEN_ONLY,
-				    NULL, &fsp);
+	status = create_file_unixpath
+		(conn,			/* conn */
+		 req,			/* req */
+		 fname,			/* fname */
+		 DELETE_ACCESS,		/* access_mask */
+		 FILE_SHARE_NONE,	/* share_access */
+		 FILE_OPEN,		/* create_disposition*/
+		 FILE_NON_DIRECTORY_FILE, /* create_options */
+		 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
+		 0,			/* oplock_request */
+		 0,			/* allocation_size */
+		 NULL,			/* sd */
+		 NULL,			/* ea_list */
+		 &fsp,			/* result */
+		 NULL,			/* pinfo */
+		 &sbuf);		/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("open_file_ntcreate failed: %s\n",
@@ -2470,7 +2419,8 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			return status;
 		}
 
-		dir_hnd = OpenDir(conn, directory, mask, dirtype);
+		dir_hnd = OpenDir(talloc_tos(), conn, directory, mask,
+				  dirtype);
 		if (dir_hnd == NULL) {
 			return map_nt_error_from_unix(errno);
 		}
@@ -2508,7 +2458,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 
 			status = check_name(conn, fname);
 			if (!NT_STATUS_IS_OK(status)) {
-				CloseDir(dir_hnd);
+				TALLOC_FREE(dir_hnd);
 				return status;
 			}
 
@@ -2524,7 +2474,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 
 			TALLOC_FREE(fname);
 		}
-		CloseDir(dir_hnd);
+		TALLOC_FREE(dir_hnd);
 	}
 
 	if (count == 0 && NT_STATUS_IS_OK(status)) {
@@ -2538,8 +2488,9 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
  Reply to a unlink
 ****************************************************************************/
 
-void reply_unlink(connection_struct *conn, struct smb_request *req)
+void reply_unlink(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *name = NULL;
 	uint32 dirtype;
 	NTSTATUS status;
@@ -2713,7 +2664,7 @@ void send_file_readbraw(connection_struct *conn,
 		_smb_setlen(header,nread);
 		header_blob = data_blob_const(header, 4);
 
-		if ( SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd,
+		if (SMB_VFS_SENDFILE(smbd_server_fd(), fsp,
 				&header_blob, startpos, nread) == -1) {
 			/* Returning ENOSYS means no data at all was sent.
 			 * Do this as a normal read. */
@@ -2780,8 +2731,9 @@ normal_readbraw:
  Reply to a readbraw (core+ protocol).
 ****************************************************************************/
 
-void reply_readbraw(connection_struct *conn, struct smb_request *req)
+void reply_readbraw(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	ssize_t maxcount,mincount;
 	size_t nread = 0;
 	SMB_OFF_T startpos;
@@ -2791,8 +2743,8 @@ void reply_readbraw(connection_struct *conn, struct smb_request *req)
 
 	START_PROFILE(SMBreadbraw);
 
-	if (srv_is_signing_active()) {
-		exit_server_cleanly("reply_readbraw: SMB signing is active - "
+	if (srv_is_signing_active() || is_encrypted_packet(req->inbuf)) {
+		exit_server_cleanly("reply_readbraw: SMB signing/sealing is active - "
 			"raw reads/writes are disallowed.");
 	}
 
@@ -2895,7 +2847,7 @@ void reply_readbraw(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st) == 0) {
+	if (SMB_VFS_FSTAT(fsp, &st) == 0) {
 		size = st.st_size;
 	}
 
@@ -2930,8 +2882,9 @@ void reply_readbraw(connection_struct *conn, struct smb_request *req)
  Reply to a lockread (core+ protocol).
 ****************************************************************************/
 
-void reply_lockread(connection_struct *conn, struct smb_request *req)
+void reply_lockread(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	ssize_t nread = -1;
 	char *data;
 	SMB_OFF_T startpos;
@@ -3017,7 +2970,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 		return;
 	}
 	
-	set_message((char *)req->outbuf, 5, nread+3, False);
+	srv_set_message((char *)req->outbuf, 5, nread+3, False);
 
 	SSVAL(req->outbuf,smb_vwv0,nread);
 	SSVAL(req->outbuf,smb_vwv5,nread+3);
@@ -3039,8 +2992,9 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
  Reply to a read.
 ****************************************************************************/
 
-void reply_read(connection_struct *conn, struct smb_request *req)
+void reply_read(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	size_t numtoread;
 	ssize_t nread = 0;
 	char *data;
@@ -3104,7 +3058,7 @@ Returning short read of maximum allowed for compatibility with Windows 2000.\n",
 		return;
 	}
 
-	set_message((char *)req->outbuf, 5, nread+3, False);
+	srv_set_message((char *)req->outbuf, 5, nread+3, False);
 
 	SSVAL(req->outbuf,smb_vwv0,nread);
 	SSVAL(req->outbuf,smb_vwv5,nread+3);
@@ -3127,7 +3081,7 @@ static int setup_readX_header(char *outbuf, size_t smb_maxcnt)
 	int outsize;
 	char *data;
 
-	outsize = set_message(outbuf,12,smb_maxcnt,False);
+	outsize = srv_set_message(outbuf,12,smb_maxcnt,False);
 	data = smb_buf(outbuf);
 
 	memset(outbuf+smb_vwv0,'\0',24); /* valgrind init. */
@@ -3154,7 +3108,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	SMB_STRUCT_STAT sbuf;
 	ssize_t nread = -1;
 
-	if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
+	if(SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
 		reply_unixerror(req, ERRDOS, ERRnoaccess);
 		return;
 	}
@@ -3177,6 +3131,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 	 */
 
 	if ((chain_size == 0) && (CVAL(req->inbuf,smb_vwv0) == 0xFF) &&
+	    !is_encrypted_packet(req->inbuf) &&
 	    lp_use_sendfile(SNUM(conn)) && (fsp->wcp == NULL) ) {
 		uint8 headerbuf[smb_size + 12 * 2];
 		DATA_BLOB header;
@@ -3192,7 +3147,7 @@ static void send_file_readX(connection_struct *conn, struct smb_request *req,
 		construct_reply_common((char *)req->inbuf, (char *)headerbuf);
 		setup_readX_header((char *)headerbuf, smb_maxcnt);
 
-		if ((nread = SMB_VFS_SENDFILE( smbd_server_fd(), fsp, fsp->fh->fd, &header, startpos, smb_maxcnt)) == -1) {
+		if ((nread = SMB_VFS_SENDFILE(smbd_server_fd(), fsp, &header, startpos, smb_maxcnt)) == -1) {
 			/* Returning ENOSYS means no data at all was sent. Do this as a normal read. */
 			if (errno == ENOSYS) {
 				goto normal_read;
@@ -3283,8 +3238,9 @@ normal_read:
  Reply to a read and X.
 ****************************************************************************/
 
-void reply_read_and_X(connection_struct *conn, struct smb_request *req)
+void reply_read_and_X(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	files_struct *fsp;
 	SMB_OFF_T startpos;
 	size_t smb_maxcnt;
@@ -3332,8 +3288,8 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 				END_PROFILE(SMBreadX);
 				return;
 			}
-			/* We currently don't do this on signed data. */
-			if (srv_is_signing_active()) {
+			/* We currently don't do this on signed or sealed data. */
+			if (srv_is_signing_active() || is_encrypted_packet(req->inbuf)) {
 				reply_nterror(req, NT_STATUS_NOT_SUPPORTED);
 				END_PROFILE(SMBreadX);
 				return;
@@ -3382,8 +3338,8 @@ void reply_read_and_X(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	if (!big_readX
-	    && schedule_aio_read_and_X(conn, req, fsp, startpos, smb_maxcnt)) {
+	if (!big_readX &&
+	    schedule_aio_read_and_X(conn, req, fsp, startpos, smb_maxcnt)) {
 		END_PROFILE(SMBreadX);
 		return;
 	}
@@ -3412,9 +3368,9 @@ void error_to_writebrawerr(struct smb_request *req)
  Reply to a writebraw (core+ or LANMAN1.0 protocol).
 ****************************************************************************/
 
-void reply_writebraw(connection_struct *conn, struct smb_request *req)
+void reply_writebraw(struct smb_request *req)
 {
-	int outsize = 0;
+	connection_struct *conn = req->conn;
 	char *buf = NULL;
 	ssize_t nwritten=0;
 	ssize_t total_written=0;
@@ -3524,13 +3480,14 @@ void reply_writebraw(connection_struct *conn, struct smb_request *req)
 	 * it to send more bytes */
 
 	memcpy(buf, req->inbuf, smb_size);
-	outsize = set_message(buf,
-			Protocol>PROTOCOL_COREPLUS?1:0,0,True);
+	srv_set_message(buf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
 	SCVAL(buf,smb_com,SMBwritebraw);
 	SSVALS(buf,smb_vwv0,0xFFFF);
 	show_msg(buf);
-	if (!send_smb(smbd_server_fd(),buf)) {
-		exit_server_cleanly("reply_writebraw: send_smb "
+	if (!srv_send_smb(smbd_server_fd(),
+			buf,
+			IS_CONN_ENCRYPTED(conn))) {
+		exit_server_cleanly("reply_writebraw: srv_send_smb "
 			"failed.");
 	}
 
@@ -3639,8 +3596,9 @@ void reply_writebraw(connection_struct *conn, struct smb_request *req)
  Reply to a writeunlock (core+).
 ****************************************************************************/
 
-void reply_writeunlock(connection_struct *conn, struct smb_request *req)
+void reply_writeunlock(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	ssize_t nwritten = -1;
 	size_t numtowrite;
 	SMB_OFF_T startpos;
@@ -3738,8 +3696,9 @@ void reply_writeunlock(connection_struct *conn, struct smb_request *req)
  Reply to a write.
 ****************************************************************************/
 
-void reply_write(connection_struct *conn, struct smb_request *req)
+void reply_write(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	size_t numtowrite;
 	ssize_t nwritten = -1;
 	SMB_OFF_T startpos;
@@ -3849,12 +3808,18 @@ void reply_write(connection_struct *conn, struct smb_request *req)
 						(2*14) + /* word count (including bcc) */ \
 						1 /* pad byte */)
 
-bool is_valid_writeX_buffer(const char *inbuf)
+bool is_valid_writeX_buffer(const uint8_t *inbuf)
 {
 	size_t numtowrite;
 	connection_struct *conn = NULL;
 	unsigned int doff = 0;
 	size_t len = smb_len_large(inbuf);
+
+	if (is_encrypted_packet(inbuf)) {
+		/* Can't do this on encrypted
+		 * connections. */
+		return false;
+	}
 
 	if (CVAL(inbuf,smb_com) != SMBwriteX) {
 		return false;
@@ -3920,8 +3885,9 @@ bool is_valid_writeX_buffer(const char *inbuf)
  Reply to a write and X.
 ****************************************************************************/
 
-void reply_write_and_X(connection_struct *conn, struct smb_request *req)
+void reply_write_and_X(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	files_struct *fsp;
 	SMB_OFF_T startpos;
 	size_t numtowrite;
@@ -4042,13 +4008,13 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
 		nwritten = 0;
 	} else {
 
-		if (req->unread_bytes == 0 &&
-				schedule_aio_write_and_X(conn, req, fsp, data,
-							startpos, numtowrite)) {
+		if ((req->unread_bytes == 0) &&
+		    schedule_aio_write_and_X(conn, req, fsp, data, startpos,
+					     numtowrite)) {
 			END_PROFILE(SMBwriteX);
 			return;
 		}
-
+		
 		nwritten = write_file(req,fsp,data,startpos,numtowrite);
 	}
 
@@ -4088,8 +4054,9 @@ void reply_write_and_X(connection_struct *conn, struct smb_request *req)
  Reply to a lseek.
 ****************************************************************************/
 
-void reply_lseek(connection_struct *conn, struct smb_request *req)
+void reply_lseek(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	SMB_OFF_T startpos;
 	SMB_OFF_T res= -1;
 	int mode,umode;
@@ -4134,12 +4101,12 @@ void reply_lseek(connection_struct *conn, struct smb_request *req)
 	}
 
 	if (umode == SEEK_END) {
-		if((res = SMB_VFS_LSEEK(fsp,fsp->fh->fd,startpos,umode)) == -1) {
+		if((res = SMB_VFS_LSEEK(fsp,startpos,umode)) == -1) {
 			if(errno == EINVAL) {
 				SMB_OFF_T current_pos = startpos;
 				SMB_STRUCT_STAT sbuf;
 
-				if(SMB_VFS_FSTAT(fsp,fsp->fh->fd, &sbuf) == -1) {
+				if(SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
 					reply_unixerror(req, ERRDOS,
 							ERRnoaccess);
 					END_PROFILE(SMBlseek);
@@ -4148,7 +4115,7 @@ void reply_lseek(connection_struct *conn, struct smb_request *req)
 
 				current_pos += sbuf.st_size;
 				if(current_pos < 0)
-					res = SMB_VFS_LSEEK(fsp,fsp->fh->fd,0,SEEK_SET);
+					res = SMB_VFS_LSEEK(fsp,0,SEEK_SET);
 			}
 		}
 
@@ -4175,8 +4142,9 @@ void reply_lseek(connection_struct *conn, struct smb_request *req)
  Reply to a flush.
 ****************************************************************************/
 
-void reply_flush(connection_struct *conn, struct smb_request *req)
+void reply_flush(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	uint16 fnum;
 	files_struct *fsp;
 
@@ -4219,7 +4187,7 @@ void reply_flush(connection_struct *conn, struct smb_request *req)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_exit(connection_struct *conn, struct smb_request *req)
+void reply_exit(struct smb_request *req)
 {
 	START_PROFILE(SMBexit);
 
@@ -4237,8 +4205,9 @@ void reply_exit(connection_struct *conn, struct smb_request *req)
  Reply to a close - has to deal with closing a directory opened by NT SMB's.
 ****************************************************************************/
 
-void reply_close(connection_struct *conn, struct smb_request *req)
+void reply_close(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	NTSTATUS status = NT_STATUS_OK;
 	files_struct *fsp = NULL;
 	START_PROFILE(SMBclose);
@@ -4315,8 +4284,9 @@ void reply_close(connection_struct *conn, struct smb_request *req)
  Reply to a writeclose (Core+ protocol).
 ****************************************************************************/
 
-void reply_writeclose(connection_struct *conn, struct smb_request *req)
+void reply_writeclose(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	size_t numtowrite;
 	ssize_t nwritten = -1;
 	NTSTATUS close_status = NT_STATUS_OK;
@@ -4404,8 +4374,9 @@ void reply_writeclose(connection_struct *conn, struct smb_request *req)
  Reply to a lock.
 ****************************************************************************/
 
-void reply_lock(connection_struct *conn, struct smb_request *req)
+void reply_lock(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	SMB_BIG_UINT count,offset;
 	NTSTATUS status;
 	files_struct *fsp;
@@ -4463,8 +4434,9 @@ void reply_lock(connection_struct *conn, struct smb_request *req)
  Reply to a unlock.
 ****************************************************************************/
 
-void reply_unlock(connection_struct *conn, struct smb_request *req)
+void reply_unlock(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	SMB_BIG_UINT count,offset;
 	NTSTATUS status;
 	files_struct *fsp;
@@ -4517,8 +4489,9 @@ void reply_unlock(connection_struct *conn, struct smb_request *req)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_tdis(connection_struct *conn, struct smb_request *req)
+void reply_tdis(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	START_PROFILE(SMBtdis);
 
 	if (!conn) {
@@ -4531,6 +4504,7 @@ void reply_tdis(connection_struct *conn, struct smb_request *req)
 	conn->used = False;
 
 	close_cnum(conn,req->vuid);
+	req->conn = NULL;
 
 	reply_outbuf(req, 0, 0);
 	END_PROFILE(SMBtdis);
@@ -4542,8 +4516,9 @@ void reply_tdis(connection_struct *conn, struct smb_request *req)
  conn POINTER CAN BE NULL HERE !
 ****************************************************************************/
 
-void reply_echo(connection_struct *conn, struct smb_request *req)
+void reply_echo(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	int smb_reverb;
 	int seq_num;
 	unsigned int data_len = smb_buflen(req->inbuf);
@@ -4581,8 +4556,10 @@ void reply_echo(connection_struct *conn, struct smb_request *req)
 		SSVAL(req->outbuf,smb_vwv0,seq_num);
 
 		show_msg((char *)req->outbuf);
-		if (!send_smb(smbd_server_fd(),(char *)req->outbuf))
-			exit_server_cleanly("reply_echo: send_smb failed.");
+		if (!srv_send_smb(smbd_server_fd(),
+				(char *)req->outbuf,
+				IS_CONN_ENCRYPTED(conn)||req->encrypted))
+			exit_server_cleanly("reply_echo: srv_send_smb failed.");
 	}
 
 	DEBUG(3,("echo %d times\n", smb_reverb));
@@ -4599,8 +4576,9 @@ void reply_echo(connection_struct *conn, struct smb_request *req)
  Reply to a printopen.
 ****************************************************************************/
 
-void reply_printopen(connection_struct *conn, struct smb_request *req)
+void reply_printopen(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	files_struct *fsp;
 	NTSTATUS status;
 	
@@ -4641,8 +4619,9 @@ void reply_printopen(connection_struct *conn, struct smb_request *req)
  Reply to a printclose.
 ****************************************************************************/
 
-void reply_printclose(connection_struct *conn, struct smb_request *req)
+void reply_printclose(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	files_struct *fsp;
 	NTSTATUS status;
 
@@ -4686,8 +4665,9 @@ void reply_printclose(connection_struct *conn, struct smb_request *req)
  Reply to a printqueue.
 ****************************************************************************/
 
-void reply_printqueue(connection_struct *conn, struct smb_request *req)
+void reply_printqueue(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	int max_count;
 	int start_index;
 
@@ -4778,8 +4758,9 @@ void reply_printqueue(connection_struct *conn, struct smb_request *req)
  Reply to a printwrite.
 ****************************************************************************/
 
-void reply_printwrite(connection_struct *conn, struct smb_request *req)
+void reply_printwrite(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	int numtowrite;
 	char *data;
 	files_struct *fsp;
@@ -4837,8 +4818,9 @@ void reply_printwrite(connection_struct *conn, struct smb_request *req)
  Reply to a mkdir.
 ****************************************************************************/
 
-void reply_mkdir(connection_struct *conn, struct smb_request *req)
+void reply_mkdir(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *directory = NULL;
 	NTSTATUS status;
 	SMB_STRUCT_STAT sbuf;
@@ -4885,7 +4867,7 @@ void reply_mkdir(connection_struct *conn, struct smb_request *req)
 		return;
 	}
 
-	status = create_directory(conn, directory);
+	status = create_directory(conn, req, directory);
 
 	DEBUG(5, ("create_directory returned %s\n", nt_errstr(status)));
 
@@ -4927,7 +4909,8 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 	const char *dname = NULL;
 	bool ret = True;
 	long offset = 0;
-	struct smb_Dir *dir_hnd = OpenDir(conn, directory, NULL, 0);
+	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn, directory,
+					  NULL, 0);
 
 	if(dir_hnd == NULL)
 		return False;
@@ -4975,7 +4958,7 @@ static bool recursive_rmdir(TALLOC_CTX *ctx,
 		}
 		TALLOC_FREE(fullname);
 	}
-	CloseDir(dir_hnd);
+	TALLOC_FREE(dir_hnd);
 	return ret;
 }
 
@@ -5023,7 +5006,8 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 		 */
 		const char *dname;
 		long dirpos = 0;
-		struct smb_Dir *dir_hnd = OpenDir(conn, directory, NULL, 0);
+		struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn,
+						  directory, NULL, 0);
 
 		if(dir_hnd == NULL) {
 			errno = ENOTEMPTY;
@@ -5036,7 +5020,7 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 			if (!is_visible_file(conn, directory, dname, &st, False))
 				continue;
 			if(!IS_VETO_PATH(conn, dname)) {
-				CloseDir(dir_hnd);
+				TALLOC_FREE(dir_hnd);
 				errno = ENOTEMPTY;
 				goto err;
 			}
@@ -5081,7 +5065,7 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
 			}
 			TALLOC_FREE(fullname);
 		}
-		CloseDir(dir_hnd);
+		TALLOC_FREE(dir_hnd);
 		/* Retry the rmdir */
 		ret = SMB_VFS_RMDIR(conn,directory);
 	}
@@ -5105,8 +5089,9 @@ NTSTATUS rmdir_internals(TALLOC_CTX *ctx,
  Reply to a rmdir.
 ****************************************************************************/
 
-void reply_rmdir(connection_struct *conn, struct smb_request *req)
+void reply_rmdir(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *directory = NULL;
 	SMB_STRUCT_STAT sbuf;
 	NTSTATUS status;
@@ -5512,7 +5497,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 
 	/* Ensure we have a valid stat struct for the source. */
 	if (fsp->fh->fd != -1) {
-		if (SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) == -1) {
+		if (SMB_VFS_FSTAT(fsp, &sbuf) == -1) {
 			return map_nt_error_from_unix(errno);
 		}
 	} else {
@@ -5535,7 +5520,7 @@ NTSTATUS rename_internals_fsp(connection_struct *conn,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	lck = get_share_mode_lock(NULL, fsp->file_id, NULL, NULL);
+	lck = get_share_mode_lock(talloc_tos(), fsp->file_id, NULL, NULL);
 
 	/*
 	 * We have the file open ourselves, so not being able to get the
@@ -5776,7 +5761,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		return status;
 	}
 
-	dir_hnd = OpenDir(conn, directory, mask, attrs);
+	dir_hnd = OpenDir(talloc_tos(), conn, directory, mask, attrs);
 	if (dir_hnd == NULL) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -5876,7 +5861,7 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
 		TALLOC_FREE(fname);
 		TALLOC_FREE(destname);
 	}
-	CloseDir(dir_hnd);
+	TALLOC_FREE(dir_hnd);
 
 	if (count == 0 && NT_STATUS_IS_OK(status)) {
 		status = map_nt_error_from_unix(errno);
@@ -5889,8 +5874,9 @@ NTSTATUS rename_internals(TALLOC_CTX *ctx,
  Reply to a mv.
 ****************************************************************************/
 
-void reply_mv(connection_struct *conn, struct smb_request *req)
+void reply_mv(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *name = NULL;
 	char *newname = NULL;
 	char *p;
@@ -6078,7 +6064,7 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
 	}
 
 	if ((ofun&3) == 1) {
-		if(SMB_VFS_LSEEK(fsp2,fsp2->fh->fd,0,SEEK_END) == -1) {
+		if(SMB_VFS_LSEEK(fsp2,0,SEEK_END) == -1) {
 			DEBUG(0,("copy_file: error - vfs lseek returned error %s\n", strerror(errno) ));
 			/*
 			 * Stop the copy from occurring.
@@ -6120,8 +6106,9 @@ NTSTATUS copy_file(TALLOC_CTX *ctx,
  Reply to a file copy.
 ****************************************************************************/
 
-void reply_copy(connection_struct *conn, struct smb_request *req)
+void reply_copy(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	char *name = NULL;
 	char *newname = NULL;
 	char *directory = NULL;
@@ -6348,7 +6335,7 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 			return;
 		}
 
-		dir_hnd = OpenDir(conn, directory, mask, 0);
+		dir_hnd = OpenDir(talloc_tos(), conn, directory, mask, 0);
 		if (dir_hnd == NULL) {
 			status = map_nt_error_from_unix(errno);
 			reply_nterror(req, status);
@@ -6380,6 +6367,7 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 					directory,
 					dname);
 			if (!fname) {
+				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				END_PROFILE(SMBcopy);
 				return;
@@ -6390,6 +6378,7 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 				continue;
 			}
 			if (!destname) {
+				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, NT_STATUS_NO_MEMORY);
 				END_PROFILE(SMBcopy);
 				return;
@@ -6397,6 +6386,7 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 
 			status = check_name(conn, fname);
 			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, status);
 				END_PROFILE(SMBcopy);
 				return;
@@ -6404,6 +6394,7 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 
 			status = check_name(conn, destname);
 			if (!NT_STATUS_IS_OK(status)) {
+				TALLOC_FREE(dir_hnd);
 				reply_nterror(req, status);
 				END_PROFILE(SMBcopy);
 				return;
@@ -6419,7 +6410,7 @@ void reply_copy(connection_struct *conn, struct smb_request *req)
 			TALLOC_FREE(fname);
 			TALLOC_FREE(destname);
 		}
-		CloseDir(dir_hnd);
+		TALLOC_FREE(dir_hnd);
 	}
 
 	if (count == 0) {
@@ -6583,8 +6574,9 @@ SMB_BIG_UINT get_lock_offset( char *data, int data_offset, bool large_file_forma
  Reply to a lockingX request.
 ****************************************************************************/
 
-void reply_lockingX(connection_struct *conn, struct smb_request *req)
+void reply_lockingX(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	files_struct *fsp;
 	unsigned char locktype;
 	unsigned char oplocklevel;
@@ -6858,8 +6850,7 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
 				 * onto the blocking lock queue.
 				 */
 				if(push_blocking_lock_request(br_lck,
-							(char *)req->inbuf,
-							smb_len(req->inbuf)+4,
+							req,
 							fsp,
 							lock_timeout,
 							i,
@@ -6942,7 +6933,7 @@ void reply_lockingX(connection_struct *conn, struct smb_request *req)
  please contact vl@samba.org
 ****************************************************************************/
 
-void reply_readbmpx(connection_struct *conn, struct smb_request *req)
+void reply_readbmpx(struct smb_request *req)
 {
 	START_PROFILE(SMBreadBmpx);
 	reply_doserror(req, ERRSRV, ERRuseSTD);
@@ -6956,7 +6947,7 @@ void reply_readbmpx(connection_struct *conn, struct smb_request *req)
  please contact vl@samba.org
 ****************************************************************************/
 
-void reply_readbs(connection_struct *conn, struct smb_request *req)
+void reply_readbs(struct smb_request *req)
 {
 	START_PROFILE(SMBreadBs);
 	reply_doserror(req, ERRSRV, ERRuseSTD);
@@ -6968,8 +6959,9 @@ void reply_readbs(connection_struct *conn, struct smb_request *req)
  Reply to a SMBsetattrE.
 ****************************************************************************/
 
-void reply_setattrE(connection_struct *conn, struct smb_request *req)
+void reply_setattrE(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	struct timespec ts[2];
 	files_struct *fsp;
 
@@ -7046,7 +7038,7 @@ void reply_setattrE(connection_struct *conn, struct smb_request *req)
  please contact vl@samba.org
 ****************************************************************************/
 
-void reply_writebmpx(connection_struct *conn, struct smb_request *req)
+void reply_writebmpx(struct smb_request *req)
 {
 	START_PROFILE(SMBwriteBmpx);
 	reply_doserror(req, ERRSRV, ERRuseSTD);
@@ -7060,7 +7052,7 @@ void reply_writebmpx(connection_struct *conn, struct smb_request *req)
  please contact vl@samba.org
 ****************************************************************************/
 
-void reply_writebs(connection_struct *conn, struct smb_request *req)
+void reply_writebs(struct smb_request *req)
 {
 	START_PROFILE(SMBwriteBs);
 	reply_doserror(req, ERRSRV, ERRuseSTD);
@@ -7072,8 +7064,9 @@ void reply_writebs(connection_struct *conn, struct smb_request *req)
  Reply to a SMBgetattrE.
 ****************************************************************************/
 
-void reply_getattrE(connection_struct *conn, struct smb_request *req)
+void reply_getattrE(struct smb_request *req)
 {
+	connection_struct *conn = req->conn;
 	SMB_STRUCT_STAT sbuf;
 	int mode;
 	files_struct *fsp;

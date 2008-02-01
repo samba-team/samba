@@ -250,6 +250,10 @@ typedef int ber_int_t;
 #include <langinfo.h>
 #endif
 
+#if HAVE_NETGROUP_H
+#include <netgroup.h>
+#endif
+
 #if defined(HAVE_AIO_H) && defined(WITH_AIO)
 #include <aio.h>
 #endif
@@ -698,10 +702,10 @@ typedef char fstring[FSTRING_LEN];
 #include "rpc_srvsvc.h"
 #include "rpc_spoolss.h"
 #include "rpc_eventlog.h"
-#include "rpc_ds.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
 #include "librpc/gen_ndr/notify.h"
+#include "librpc/gen_ndr/xattr.h"
 #include "nt_printing.h"
 #include "idmap.h"
 #include "client.h"
@@ -719,6 +723,7 @@ typedef char fstring[FSTRING_LEN];
 #include "packet.h"
 #include "ctdbd_conn.h"
 #include "talloc_stack.h"
+#include "memcache.h"
 
 /* used in net.c */
 struct functable {
@@ -783,6 +788,7 @@ enum flush_reason_enum {
     NUM_FLUSH_REASONS};
 
 #include "nss_info.h"
+#include "nsswitch/libwbclient/wbclient.h"
 
 /* generated rpc server implementation functions */
 #include "librpc/gen_ndr/srv_echo.h"
@@ -808,6 +814,9 @@ enum flush_reason_enum {
 
 #include "srvstr.h"
 #include "safe_string.h"
+
+/* prototypes from lib/util_transfer_file.c */
+#include "transfer_file.h"
 
 #ifdef __COMPAR_FN_T
 #define QSORT_CAST (__compar_fn_t)
@@ -1100,6 +1109,14 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
  */
 #if defined(HAVE_SYS_FS_VX_QUOTA_H)
 #define VXFS_QUOTA
+#endif
+
+#ifndef XATTR_CREATE
+#define XATTR_CREATE  0x1       /* set value, fail if attr already exists */
+#endif
+
+#ifndef XATTR_REPLACE
+#define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
 #endif
 
 #if defined(HAVE_KRB5)

@@ -17,10 +17,6 @@
 
 #include "includes.h"
 
-#if !defined(HAVE_LINUX_READAHEAD) && !defined(HAVE_POSIX_FADVISE)
-static bool didmsg;
-#endif
-
 struct readahead_data {
 	SMB_OFF_T off_bound;
 	SMB_OFF_T len;
@@ -39,8 +35,7 @@ struct readahead_data {
 
 static ssize_t readahead_sendfile(struct vfs_handle_struct *handle,
 					int tofd,
-					files_struct *fsp,
-					int fromfd,
+					files_struct *fromfsp,
 					const DATA_BLOB *header,
 					SMB_OFF_T offset,
 					size_t count)
@@ -49,16 +44,16 @@ static ssize_t readahead_sendfile(struct vfs_handle_struct *handle,
 
 	if ( offset % rhd->off_bound == 0) {
 #if defined(HAVE_LINUX_READAHEAD)
-		int err = readahead(fromfd, offset, (size_t)rhd->len);
+		int err = readahead(fromfsp->fh->fd, offset, (size_t)rhd->len);
 		DEBUG(10,("readahead_sendfile: readahead on fd %u, offset %llu, len %u returned %d\n",
-			(unsigned int)fromfd,
+			(unsigned int)fromfsp->fh->fd,
 			(unsigned long long)offset,
 			(unsigned int)rhd->len,
 		        err ));
 #elif defined(HAVE_POSIX_FADVISE)
-		int err = posix_fadvise(fromfd, offset, (off_t)rhd->len, POSIX_FADV_WILLNEED);
+		int err = posix_fadvise(fromfsp->fh->fd, offset, (off_t)rhd->len, POSIX_FADV_WILLNEED);
 		DEBUG(10,("readahead_sendfile: posix_fadvise on fd %u, offset %llu, len %u returned %d\n",
-			(unsigned int)fromfd,
+			(unsigned int)fromfsp->fh->fd,
 			(unsigned long long)offset,
 			(unsigned int)rhd->len,
 			err ));
@@ -71,8 +66,7 @@ static ssize_t readahead_sendfile(struct vfs_handle_struct *handle,
 	}
 	return SMB_VFS_NEXT_SENDFILE(handle,
 					tofd,
-					fsp,
-					fromfd,
+					fromfsp,
 					header,
 					offset,
 					count);
@@ -84,7 +78,6 @@ static ssize_t readahead_sendfile(struct vfs_handle_struct *handle,
 
 static ssize_t readahead_pread(vfs_handle_struct *handle,
 				files_struct *fsp,
-				int fd,
 				void *data,
 				size_t count,
 				SMB_OFF_T offset)
@@ -93,16 +86,16 @@ static ssize_t readahead_pread(vfs_handle_struct *handle,
 
 	if ( offset % rhd->off_bound == 0) {
 #if defined(HAVE_LINUX_READAHEAD)
-		int err = readahead(fd, offset, (size_t)rhd->len);
+		int err = readahead(fsp->fh->fd, offset, (size_t)rhd->len);
 		DEBUG(10,("readahead_pread: readahead on fd %u, offset %llu, len %u returned %d\n",
-			(unsigned int)fd,
+			(unsigned int)fsp->fh->fd,
 			(unsigned long long)offset,
 			(unsigned int)rhd->len,
 			err ));
 #elif defined(HAVE_POSIX_FADVISE)
-		int err = posix_fadvise(fd, offset, (off_t)rhd->len, POSIX_FADV_WILLNEED);
+		int err = posix_fadvise(fsp->fh->fd, offset, (off_t)rhd->len, POSIX_FADV_WILLNEED);
 		DEBUG(10,("readahead_pread: posix_fadvise on fd %u, offset %llu, len %u returned %d\n",
-			(unsigned int)fd,
+			(unsigned int)fsp->fh->fd,
 			(unsigned long long)offset,
 			(unsigned int)rhd->len,
 			err ));
@@ -113,7 +106,7 @@ static ssize_t readahead_pread(vfs_handle_struct *handle,
 		}
 #endif
         }
-        return SMB_VFS_NEXT_PREAD(handle, fsp, fd, data, count, offset);
+        return SMB_VFS_NEXT_PREAD(handle, fsp, data, count, offset);
 }
 
 /*******************************************************************

@@ -51,6 +51,8 @@ const char *samba_version_string(void)
 	 */
 	assert(res != -1);
 
+	SAFE_FREE(samba_version);
+
 	samba_version = tmp_version;
 #endif
 

@@ -530,7 +530,8 @@ findfirst/findnext is SMB_FIND_FILE_UNIX_INFO2.
 #define CIFS_UNIX_POSIX_PATH_OPERATIONS_CAP	   0x20 /* We can cope with POSIX open/mkdir/unlink etc. */
 #define CIFS_UNIX_LARGE_READ_CAP           0x40 /* We can cope with 24 bit reads in readX. */
 #define CIFS_UNIX_LARGE_WRITE_CAP          0x80 /* We can cope with 24 bit writes in writeX. */
-
+#define CIFS_UNIX_TRANSPORT_ENCRYPTION_CAP      0x100 /* We can do SPNEGO negotiations for encryption. */
+#define CIFS_UNIX_TRANSPORT_ENCRYPTION_MANDATORY_CAP    0x200 /* We *must* SPNEGO negotiations for encryption. */
 
 #define SMB_QUERY_POSIX_FS_INFO     0x201
 
@@ -565,7 +566,6 @@ findfirst/findnext is SMB_FIND_FILE_UNIX_INFO2.
         __u64 gid_array[0];  may be empty 
         __u8 * psid_list  may be empty
 */
-
 
 /* ... more as we think of them :-). */
 
@@ -652,6 +652,29 @@ enum smb_whoami_flags {
 	8 bytes unsigned[] -	list of GIDs (may be empty)
 	DOM_SID[] -		list of SIDs (may be empty)
 */
+
+/*
+ * The following trans2 is done between client and server
+ * as a FSINFO call to set up the encryption state for transport
+ * encryption.
+ * This is a subcommand of the TRANS2_QFSINFO.
+ *
+ * The request looks like :
+ *
+ * [data block] -> SPNEGO framed GSSAPI request.
+ *
+ * The reply looks like :
+ *
+ * [data block] -> SPNEGO framed GSSAPI reply - if error
+ *                 is NT_STATUS_OK then we're done, if it's
+ *                 NT_STATUS_MORE_PROCESSING_REQUIRED then the
+ *                 client needs to keep going. If it's an
+ *                 error it can be any NT_STATUS error.
+ *
+ */
+
+#define SMB_REQUEST_TRANSPORT_ENCRYPTION     0x203 /* QFSINFO */
+
 
 /* The query/set info levels for POSIX ACLs. */
 #define SMB_QUERY_POSIX_ACL  0x204

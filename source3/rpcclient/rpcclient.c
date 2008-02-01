@@ -134,7 +134,7 @@ static void fetch_machine_sid(struct cli_state *cli)
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;
 	uint32 info_class = 5;
-	char *domain_name = NULL;
+	const char *domain_name = NULL;
 	static bool got_domain_sid;
 	TALLOC_CTX *mem_ctx;
 	DOM_SID *dom_sid = NULL;
@@ -605,7 +605,7 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 		}
 
 		if (cmd_entry->pipe_idx == PI_NETLOGON) {
-			uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+			uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS;
 			uint32 sec_channel_type;
 			uchar trust_password[16];
 	
@@ -848,6 +848,18 @@ out_free:
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
 		result = 1;
 		goto done;
+	}
+
+	if (get_cmdline_auth_info_smb_encrypt()) {
+		nt_status = cli_cm_force_encryption(cli,
+					get_cmdline_auth_info_username(),
+					get_cmdline_auth_info_password(),
+					lp_workgroup(),
+					"IPC$");
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			result = 1;
+			goto done;
+		}
 	}
 
 #if 0	/* COMMENT OUT FOR TESTING */

@@ -75,6 +75,37 @@
 /* Leave at 22 - not yet released. Change all BOOL parameters (int) to bool. jra. */
 /* Leave at 22 - not yet released. Added recvfile. */
 /* Leave at 22 - not yet released. Change get_nt_acl to return NTSTATUS - vl */
+/* Leave at 22 - not yet released. Change get_nt_acl to *not* take a
+ * files_struct. - obnox.*/
+/* Leave at 22 - not yet released. Remove parameter fd from fget_nt_acl. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from gset_nt_acl. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from pread. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from pwrite. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from lseek. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fsync. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fstat. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fchmod. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fchown. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from ftruncate. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from lock. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from kernel_flock. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from linux_setlease. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from getlock. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from sys_acl_get_fd. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fchmod_acl. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from sys_acl_set_fd. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fgetxattr. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from flistxattr. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fremovexattr. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from fsetxattr. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from aio_cancel. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from read. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fd from write. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fromfd from sendfile. - obnox */
+/* Leave at 22 - not yet released. Remove parameter fromfd from recvfile. - obnox */
+/* Leave at 22 - not yet released. Additional change: add operations for offline files -- ab */
+/* Leave at 22 - not yet released. Add the streaminfo call. -- jpeach, vl */
+
 #define SMB_VFS_INTERFACE_VERSION 22
 
 
@@ -118,6 +149,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_SET_QUOTA,
 	SMB_VFS_OP_GET_SHADOW_COPY_DATA,
 	SMB_VFS_OP_STATVFS,
+	SMB_VFS_OP_FS_CAPABILITIES,
 
 	/* Directory operations */
 
@@ -168,6 +200,7 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_NOTIFY_WATCH,
 	SMB_VFS_OP_CHFLAGS,
 	SMB_VFS_OP_FILE_ID_CREATE,
+	SMB_VFS_OP_STREAMINFO,
 
 	/* NT ACL operations. */
 
@@ -226,9 +259,14 @@ typedef enum _vfs_op_type {
 	SMB_VFS_OP_AIO_ERROR,
 	SMB_VFS_OP_AIO_FSYNC,
 	SMB_VFS_OP_AIO_SUSPEND,
+        SMB_VFS_OP_AIO_FORCE,
+
+	/* offline operations */
+	SMB_VFS_OP_IS_OFFLINE,
+	SMB_VFS_OP_SET_OFFLINE,
 
 	/* This should always be last enum value */
-	
+
 	SMB_VFS_OP_LAST
 } vfs_op_type;
 
@@ -238,7 +276,7 @@ typedef enum _vfs_op_type {
 struct vfs_ops {
 	struct vfs_fn_pointers {
 		/* Disk operations */
-		
+
 		int (*connect_fn)(struct vfs_handle_struct *handle, const char *service, const char *user);
 		void (*disconnect)(struct vfs_handle_struct *handle);
 		SMB_BIG_UINT (*disk_free)(struct vfs_handle_struct *handle, const char *path, bool small_query, SMB_BIG_UINT *bsize,
@@ -247,9 +285,10 @@ struct vfs_ops {
 		int (*set_quota)(struct vfs_handle_struct *handle, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt);
 		int (*get_shadow_copy_data)(struct vfs_handle_struct *handle, struct files_struct *fsp, SHADOW_COPY_DATA *shadow_copy_data, bool labels);
 		int (*statvfs)(struct vfs_handle_struct *handle, const char *path, struct vfs_statvfs_struct *statbuf);
-		
+		uint32_t (*fs_capabilities)(struct vfs_handle_struct *handle);
+
 		/* Directory operations */
-		
+
 		SMB_STRUCT_DIR *(*opendir)(struct vfs_handle_struct *handle, const char *fname, const char *mask, uint32 attributes);
 		SMB_STRUCT_DIRENT *(*readdir)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp);
 		void (*seekdir)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dirp, long offset);
@@ -258,37 +297,37 @@ struct vfs_ops {
 		int (*mkdir)(struct vfs_handle_struct *handle, const char *path, mode_t mode);
 		int (*rmdir)(struct vfs_handle_struct *handle, const char *path);
 		int (*closedir)(struct vfs_handle_struct *handle, SMB_STRUCT_DIR *dir);
-		
+
 		/* File operations */
-		
+
 		int (*open)(struct vfs_handle_struct *handle, const char *fname, files_struct *fsp, int flags, mode_t mode);
 		int (*close_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
-		ssize_t (*read)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n);
-		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, void *data, size_t n, SMB_OFF_T offset);
-		ssize_t (*write)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n);
-		ssize_t (*pwrite)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, const void *data, size_t n, SMB_OFF_T offset);
-		SMB_OFF_T (*lseek)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T offset, int whence);
-		ssize_t (*sendfile)(struct vfs_handle_struct *handle, int tofd, files_struct *fsp, int fromfd, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
-		ssize_t (*recvfile)(struct vfs_handle_struct *handle, int fromfd, files_struct *fsp, int tofd, SMB_OFF_T offset, size_t count);
+		ssize_t (*read)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n);
+		ssize_t (*pread)(struct vfs_handle_struct *handle, struct files_struct *fsp, void *data, size_t n, SMB_OFF_T offset);
+		ssize_t (*write)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n);
+		ssize_t (*pwrite)(struct vfs_handle_struct *handle, struct files_struct *fsp, const void *data, size_t n, SMB_OFF_T offset);
+		SMB_OFF_T (*lseek)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T offset, int whence);
+		ssize_t (*sendfile)(struct vfs_handle_struct *handle, int tofd, files_struct *fromfsp, const DATA_BLOB *header, SMB_OFF_T offset, size_t count);
+		ssize_t (*recvfile)(struct vfs_handle_struct *handle, int fromfd, files_struct *tofsp, SMB_OFF_T offset, size_t count);
 		int (*rename)(struct vfs_handle_struct *handle, const char *oldname, const char *newname);
-		int (*fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
+		int (*fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 		int (*stat)(struct vfs_handle_struct *handle, const char *fname, SMB_STRUCT_STAT *sbuf);
-		int (*fstat)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf);
+		int (*fstat)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_STAT *sbuf);
 		int (*lstat)(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf);
 		int (*unlink)(struct vfs_handle_struct *handle, const char *path);
 		int (*chmod)(struct vfs_handle_struct *handle, const char *path, mode_t mode);
-		int (*fchmod)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, mode_t mode);
+		int (*fchmod)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
 		int (*chown)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);
-		int (*fchown)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uid_t uid, gid_t gid);
+		int (*fchown)(struct vfs_handle_struct *handle, struct files_struct *fsp, uid_t uid, gid_t gid);
 		int (*lchown)(struct vfs_handle_struct *handle, const char *path, uid_t uid, gid_t gid);
 		int (*chdir)(struct vfs_handle_struct *handle, const char *path);
 		char *(*getwd)(struct vfs_handle_struct *handle, char *buf);
 		int (*ntimes)(struct vfs_handle_struct *handle, const char *path, const struct timespec ts[2]);
-		int (*ftruncate)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T offset);
-		bool (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
-		int (*kernel_flock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 share_mode);
-		int (*linux_setlease)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, int leasetype);
-		bool (*getlock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
+		int (*ftruncate)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T offset);
+		bool (*lock)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_OFF_T offset, SMB_OFF_T count, int type);
+		int (*kernel_flock)(struct vfs_handle_struct *handle, struct files_struct *fsp, uint32 share_mode);
+		int (*linux_setlease)(struct vfs_handle_struct *handle, struct files_struct *fsp, int leasetype);
+		bool (*getlock)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_OFF_T *poffset, SMB_OFF_T *pcount, int *ptype, pid_t *ppid);
 		int (*symlink)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
 		int (*readlink)(struct vfs_handle_struct *handle, const char *path, char *buf, size_t bufsiz);
 		int (*link)(struct vfs_handle_struct *handle, const char *oldpath, const char *newpath);
@@ -304,31 +343,44 @@ struct vfs_ops {
 		int (*chflags)(struct vfs_handle_struct *handle, const char *path, unsigned int flags);
 		struct file_id (*file_id_create)(struct vfs_handle_struct *handle, SMB_DEV_T dev, SMB_INO_T inode);
 
+		NTSTATUS (*streaminfo)(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       const char *fname,
+				       TALLOC_CTX *mem_ctx,
+				       unsigned int *num_streams,
+				       struct stream_struct **streams);
+
 		/* NT ACL operations. */
-		
+
 		NTSTATUS (*fget_nt_acl)(struct vfs_handle_struct *handle,
-					struct files_struct *fsp, int fd,
+					struct files_struct *fsp,
 					uint32 security_info,
 					struct security_descriptor **ppdesc);
 		NTSTATUS (*get_nt_acl)(struct vfs_handle_struct *handle,
-				       struct files_struct *fsp,
 				       const char *name,
 				       uint32 security_info,
 				       struct security_descriptor **ppdesc);
-		NTSTATUS (*fset_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, uint32 security_info_sent, struct security_descriptor *psd);
-		NTSTATUS (*set_nt_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, uint32 security_info_sent, struct security_descriptor *psd);
-		
+		NTSTATUS (*fset_nt_acl)(struct vfs_handle_struct *handle,
+					struct files_struct *fsp,
+					uint32 security_info_sent,
+					struct security_descriptor *psd);
+		NTSTATUS (*set_nt_acl)(struct vfs_handle_struct *handle,
+				       struct files_struct *fsp,
+				       const char *name,
+				       uint32 security_info_sent,
+				       struct security_descriptor *psd);
+
 		/* POSIX ACL operations. */
-		
+
 		int (*chmod_acl)(struct vfs_handle_struct *handle, const char *name, mode_t mode);
-		int (*fchmod_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, mode_t mode);
-		
+		int (*fchmod_acl)(struct vfs_handle_struct *handle, struct files_struct *fsp, mode_t mode);
+
 		int (*sys_acl_get_entry)(struct vfs_handle_struct *handle, SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 		int (*sys_acl_get_tag_type)(struct vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
 		int (*sys_acl_get_permset)(struct vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
 		void * (*sys_acl_get_qualifier)(struct vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry_d);
 		SMB_ACL_T (*sys_acl_get_file)(struct vfs_handle_struct *handle, const char *path_p, SMB_ACL_TYPE_T type);
-		SMB_ACL_T (*sys_acl_get_fd)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd);
+		SMB_ACL_T (*sys_acl_get_fd)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 		int (*sys_acl_clear_perms)(struct vfs_handle_struct *handle, SMB_ACL_PERMSET_T permset);
 		int (*sys_acl_add_perm)(struct vfs_handle_struct *handle, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 		char * (*sys_acl_to_text)(struct vfs_handle_struct *handle, SMB_ACL_T theacl, ssize_t *plen);
@@ -339,7 +391,7 @@ struct vfs_ops {
 		int (*sys_acl_set_permset)(struct vfs_handle_struct *handle, SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
 		int (*sys_acl_valid)(struct vfs_handle_struct *handle, SMB_ACL_T theacl );
 		int (*sys_acl_set_file)(struct vfs_handle_struct *handle, const char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
-		int (*sys_acl_set_fd)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_ACL_T theacl);
+		int (*sys_acl_set_fd)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_ACL_T theacl);
 		int (*sys_acl_delete_def_file)(struct vfs_handle_struct *handle, const char *path);
 		int (*sys_acl_get_perm)(struct vfs_handle_struct *handle, SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
 		int (*sys_acl_free_text)(struct vfs_handle_struct *handle, char *text);
@@ -349,26 +401,30 @@ struct vfs_ops {
 		/* EA operations. */
 		ssize_t (*getxattr)(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size);
 		ssize_t (*lgetxattr)(struct vfs_handle_struct *handle,const char *path, const char *name, void *value, size_t size);
-		ssize_t (*fgetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, const char *name, void *value, size_t size);
+		ssize_t (*fgetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, void *value, size_t size);
 		ssize_t (*listxattr)(struct vfs_handle_struct *handle, const char *path, char *list, size_t size);
 		ssize_t (*llistxattr)(struct vfs_handle_struct *handle, const char *path, char *list, size_t size);
-		ssize_t (*flistxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int fd, char *list, size_t size);
+		ssize_t (*flistxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp, char *list, size_t size);
 		int (*removexattr)(struct vfs_handle_struct *handle, const char *path, const char *name);
 		int (*lremovexattr)(struct vfs_handle_struct *handle, const char *path, const char *name);
-		int (*fremovexattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int filedes, const char *name);
+		int (*fremovexattr)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name);
 		int (*setxattr)(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags);
 		int (*lsetxattr)(struct vfs_handle_struct *handle, const char *path, const char *name, const void *value, size_t size, int flags);
-		int (*fsetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp,int filedes, const char *name, const void *value, size_t size, int flags);
+		int (*fsetxattr)(struct vfs_handle_struct *handle, struct files_struct *fsp, const char *name, const void *value, size_t size, int flags);
 
 		/* aio operations */
 		int (*aio_read)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_write)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 		ssize_t (*aio_return_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
-		int (*aio_cancel)(struct vfs_handle_struct *handle, struct files_struct *fsp, int fd, SMB_STRUCT_AIOCB *aiocb);
+		int (*aio_cancel)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_error_fn)(struct vfs_handle_struct *handle, struct files_struct *fsp, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_fsync)(struct vfs_handle_struct *handle, struct files_struct *fsp, int op, SMB_STRUCT_AIOCB *aiocb);
 		int (*aio_suspend)(struct vfs_handle_struct *handle, struct files_struct *fsp, const SMB_STRUCT_AIOCB * const aiocb[], int n, const struct timespec *timeout);
+		bool (*aio_force)(struct vfs_handle_struct *handle, struct files_struct *fsp);
 
+		/* offline operations */
+		bool (*is_offline)(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf);
+		int (*set_offline)(struct vfs_handle_struct *handle, const char *path);
 	} ops;
 
 	struct vfs_handles_pointers {
@@ -381,6 +437,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *set_quota;
 		struct vfs_handle_struct *get_shadow_copy_data;
 		struct vfs_handle_struct *statvfs;
+		struct vfs_handle_struct *fs_capabilities;
 
 		/* Directory operations */
 
@@ -431,6 +488,7 @@ struct vfs_ops {
 		struct vfs_handle_struct *notify_watch;
 		struct vfs_handle_struct *chflags;
 		struct vfs_handle_struct *file_id_create;
+		struct vfs_handle_struct *streaminfo;
 
 		/* NT ACL operations. */
 
@@ -489,27 +547,32 @@ struct vfs_ops {
 		struct vfs_handle_struct *aio_error;
 		struct vfs_handle_struct *aio_fsync;
 		struct vfs_handle_struct *aio_suspend;
+		struct vfs_handle_struct *aio_force;
+
+		/* offline operations */
+		struct vfs_handle_struct *is_offline;
+		struct vfs_handle_struct *set_offline;
 	} handles;
 };
 
 /*
     Possible VFS operation layers (per-operation)
-    
+
     These values are used by VFS subsystem when building vfs_ops for connection
     from multiple VFS modules. Internally, Samba differentiates only opaque and
     transparent layers at this process. Other types are used for providing better
     diagnosing facilities.
-    
+
     Most modules will provide transparent layers. Opaque layer is for modules
     which implement actual file system calls (like DB-based VFS). For example,
     default POSIX VFS which is built in into Samba is an opaque VFS module.
-    
+
     Other layer types (audit, splitter, scanner) were designed to provide different 
     degree of transparency and for diagnosing VFS module behaviour.
-    
+
     Each module can implement several layers at the same time provided that only
     one layer is used per each operation.
-    
+
 */
 
 typedef enum _vfs_op_layer {
@@ -528,7 +591,7 @@ typedef enum _vfs_op_layer {
 
 /*
     VFS operation description. Each VFS module registers an array of vfs_op_tuple to VFS subsystem,
-    which describes all operations this module is willing to intercept. 
+    which describes all operations this module is willing to intercept.
     VFS subsystem initializes then the conn->vfs_ops and conn->vfs_opaque_ops structs
     using this information.
 */
@@ -553,12 +616,12 @@ typedef struct vfs_handle_struct {
 typedef struct vfs_statvfs_struct {
 	/* For undefined recommended transfer size return -1 in that field */
 	uint32 OptimalTransferSize;  /* bsize on some os, iosize on other os */
-	uint32 BlockSize; 
+	uint32 BlockSize;
 
 	/*
 	 The next three fields are in terms of the block size.
 	 (above). If block size is unknown, 4096 would be a
-	 reasonable block size for a server to report. 
+	 reasonable block size for a server to report.
 	 Note that returning the blocks/blocksavail removes need
 	 to make a second call (to QFSInfo level 0x103 to get this info.
 	 UserBlockAvail is typically less than or equal to BlocksAvail,
@@ -575,14 +638,25 @@ typedef struct vfs_statvfs_struct {
 	SMB_BIG_UINT FsIdentifier;   /* fsid */
 	/* NB Namelen comes from FILE_SYSTEM_ATTRIBUTE_INFO call */
 	/* NB flags can come from FILE_SYSTEM_DEVICE_INFO call   */
+
+	int FsCapabilities;
 } vfs_statvfs_struct;
 
+/* Add a new FSP extension of the given type. Returns a pointer to the
+ * extenstion data.
+ */
 #define VFS_ADD_FSP_EXTENSION(handle, fsp, type) \
     vfs_add_fsp_extension_notype(handle, (fsp), sizeof(type))
 
+/* Return a pointer to the existing FSP extension data. */
 #define VFS_FETCH_FSP_EXTENSION(handle, fsp) \
     vfs_fetch_fsp_extension(handle, (fsp))
 
+/* Return the talloc context associated with an FSP extension. */
+#define VFS_MEMCTX_FSP_EXTENSION(handle, fsp) \
+    vfs_memctx_fsp_extension(handle, (fsp))
+
+/* Remove and destroy an FSP extension. */
 #define VFS_REMOVE_FSP_EXTENSION(handle, fsp) \
     vfs_remove_fsp_extension((handle), (fsp))
 

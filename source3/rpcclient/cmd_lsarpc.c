@@ -893,25 +893,15 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 	return result;
 }
 
-static void display_trust_dom_info_1(TRUSTED_DOMAIN_INFO_NAME *n)
-{
-	printf("NetBIOS Name:\t%s\n", unistr2_static(&n->netbios_name.unistring));
-}
-
-static void display_trust_dom_info_3(TRUSTED_DOMAIN_INFO_POSIX_OFFSET *p)
-{
-	printf("Posix Offset:\t%08x (%d)\n", p->posix_offset, p->posix_offset);
-}
-
-static void display_trust_dom_info_4(TRUSTED_DOMAIN_INFO_PASSWORD *p, const char *password)
+static void display_trust_dom_info_4(struct lsa_TrustDomainInfoPassword *p, const char *password)
 {
 	char *pwd, *pwd_old;
 	
-	DATA_BLOB data 	   = data_blob(NULL, p->password.length);
-	DATA_BLOB data_old = data_blob(NULL, p->old_password.length);
+	DATA_BLOB data 	   = data_blob(NULL, p->password->length);
+	DATA_BLOB data_old = data_blob(NULL, p->old_password->length);
 
-	memcpy(data.data, p->password.data, p->password.length);
-	memcpy(data_old.data, p->old_password.data, p->old_password.length);
+	memcpy(data.data, p->password->data, p->password->length);
+	memcpy(data_old.data, p->old_password->data, p->old_password->length);
 	
 	pwd 	= decrypt_trustdom_secret(password, &data);
 	pwd_old = decrypt_trustdom_secret(password, &data_old);
@@ -926,35 +916,25 @@ static void display_trust_dom_info_4(TRUSTED_DOMAIN_INFO_PASSWORD *p, const char
 	data_blob_free(&data_old);
 }
 
-static void display_trust_dom_info_6(TRUSTED_DOMAIN_INFO_EX *i)
-{
-	printf("Domain Name:\t\t%s\n", unistr2_static(&i->domain_name.unistring));
-	printf("NetBIOS Name:\t\t%s\n", unistr2_static(&i->netbios_name.unistring));
-	printf("SID:\t\t\t%s\n", sid_string_tos(&i->sid.sid));
-	printf("Trust Direction:\t0x%08x\n", i->trust_direction);
-	printf("Trust Type:\t\t0x%08x\n", i->trust_type);
-	printf("Trust Attributes:\t0x%08x\n", i->trust_attributes);
-}
-
-
-static void display_trust_dom_info(LSA_TRUSTED_DOMAIN_INFO *info, uint32 info_class, const char *pass)
+static void display_trust_dom_info(TALLOC_CTX *mem_ctx,
+				   union lsa_TrustedDomainInfo *info,
+				   enum lsa_TrustDomInfoEnum info_class,
+				   const char *pass)
 {
 	switch (info_class) {
-	case 1:
-		display_trust_dom_info_1(&info->name);
-		break;
-	case 3:
-		display_trust_dom_info_3(&info->posix_offset);
-		break;
-	case 4:
-		display_trust_dom_info_4(&info->password, pass);
-		break;
-	case 6:
-		display_trust_dom_info_6(&info->info_ex);
-		break;
-	default:
-		printf("unsupported info-class: %d\n", info_class);
-		break;
+		case LSA_TRUSTED_DOMAIN_INFO_PASSWORD:
+			display_trust_dom_info_4(&info->password, pass);
+			break;
+		default: {
+			const char *str = NULL;
+			str = NDR_PRINT_UNION_STRING(mem_ctx,
+						     lsa_TrustedDomainInfo,
+						     info_class, info);
+			if (str) {
+				d_printf("%s\n", str);
+			}
+			break;
+		}
 	}
 }
 
@@ -966,9 +946,8 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID dom_sid;
 	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	LSA_TRUSTED_DOMAIN_INFO *info;
-
-	uint32 info_class = 1; 
+	union lsa_TrustedDomainInfo info;
+	enum lsa_TrustDomInfoEnum info_class = 1;
 
 	if (argc > 3 || argc < 2) {
 		printf("Usage: %s [sid] [info_class]\n", argv[0]);
@@ -986,19 +965,26 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_query_trusted_domain_info_by_sid(cli, mem_ctx, &pol,
-							  info_class, &dom_sid, &info);
-
+	result = rpccli_lsa_QueryTrustedDomainInfoBySid(cli, mem_ctx,
+							&pol,
+							&dom_sid,
+							info_class,
+							&info);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_trust_dom_info(info, info_class, cli->pwd.password);
+	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
 
  done:
 	if (&pol)
 		rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
+}
+
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
 }
 
 static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
@@ -1008,8 +994,9 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	LSA_TRUSTED_DOMAIN_INFO *info;
-	uint32 info_class = 1; 
+	union lsa_TrustedDomainInfo info;
+	enum lsa_TrustDomInfoEnum info_class = 1;
+	struct lsa_String trusted_domain;
 
 	if (argc > 3 || argc < 2) {
 		printf("Usage: %s [name] [info_class]\n", argv[0]);
@@ -1024,13 +1011,17 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_query_trusted_domain_info_by_name(cli, mem_ctx, &pol, 
-							   info_class, argv[1], &info);
+	init_lsa_String(&trusted_domain, argv[1]);
 
+	result = rpccli_lsa_QueryTrustedDomainInfoByName(cli, mem_ctx,
+							 &pol,
+							 trusted_domain,
+							 info_class,
+							 &info);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_trust_dom_info(info, info_class, cli->pwd.password);
+	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
 
  done:
 	if (&pol)
@@ -1046,9 +1037,9 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	POLICY_HND pol, trustdom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	LSA_TRUSTED_DOMAIN_INFO *info;
+	union lsa_TrustedDomainInfo info;
 	DOM_SID dom_sid;
-	uint32 info_class = 1; 
+	enum lsa_TrustDomInfoEnum info_class = 1;
 
 	if (argc > 3 || argc < 2) {
 		printf("Usage: %s [sid] [info_class]\n", argv[0]);
@@ -1066,20 +1057,25 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
-	
-	result = rpccli_lsa_open_trusted_domain(cli, mem_ctx, &pol,
-					     &dom_sid, access_mask, &trustdom_pol);
+
+	result = rpccli_lsa_OpenTrustedDomain(cli, mem_ctx,
+					      &pol,
+					      &dom_sid,
+					      access_mask,
+					      &trustdom_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_query_trusted_domain_info(cli, mem_ctx, &trustdom_pol, 
-						   info_class, &info);
+	result = rpccli_lsa_QueryTrustedDomainInfo(cli, mem_ctx,
+						   &trustdom_pol,
+						   info_class,
+						   &info);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	display_trust_dom_info(info, info_class, cli->pwd.password);
+	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
 
  done:
 	if (&pol)

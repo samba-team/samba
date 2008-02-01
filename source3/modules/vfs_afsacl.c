@@ -585,15 +585,14 @@ static uint32 nt_to_afs_file_rights(const char *filename, const SEC_ACE *ace)
 	return result;
 }
 
-static size_t afs_to_nt_acl(struct afs_acl *afs_acl, 
-			    struct files_struct *fsp,
-			    uint32 security_info,
-			    struct security_descriptor **ppdesc)
+static size_t afs_to_nt_acl_common(struct afs_acl *afs_acl,
+				   SMB_STRUCT_STAT *psbuf,
+				   uint32 security_info,
+				   struct security_descriptor **ppdesc)
 {
 	SEC_ACE *nt_ace_list;
 	DOM_SID owner_sid, group_sid;
 	SEC_ACCESS mask;
-	SMB_STRUCT_STAT sbuf;
 	SEC_ACL *psa = NULL;
 	int good_aces;
 	size_t sd_size;
@@ -601,19 +600,8 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 
 	struct afs_ace *afs_ace;
 
-	if (fsp->is_directory || fsp->fh->fd == -1) {
-		/* Get the stat struct for the owner info. */
-		if(SMB_VFS_STAT(fsp->conn,fsp->fsp_name, &sbuf) != 0) {
-			return 0;
-		}
-	} else {
-		if(SMB_VFS_FSTAT(fsp,fsp->fh->fd,&sbuf) != 0) {
-			return 0;
-		}
-	}
-
-	uid_to_sid(&owner_sid, sbuf.st_uid);
-	gid_to_sid(&group_sid, sbuf.st_gid);
+	uid_to_sid(&owner_sid, psbuf->st_uid);
+	gid_to_sid(&group_sid, psbuf->st_gid);
 
 	if (afs_acl->num_aces) {
 		nt_ace_list = TALLOC_ARRAY(mem_ctx, SEC_ACE, afs_acl->num_aces);
@@ -639,7 +627,7 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 			continue;
 		}
 
-		if (fsp->is_directory)
+		if (S_ISDIR(psbuf->st_mode))
 			afs_to_nt_dir_rights(afs_ace->rights, &nt_rights,
 					     &flag);
 		else
@@ -656,7 +644,6 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 	if (psa == NULL)
 		return 0;
 
-	
 	*ppdesc = make_sec_desc(mem_ctx, SEC_DESC_REVISION,
 				SEC_DESC_SELF_RELATIVE,
 				(security_info & OWNER_SECURITY_INFORMATION)
@@ -666,6 +653,42 @@ static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
 				NULL, psa, &sd_size);
 
 	return sd_size;
+}
+
+static size_t afs_to_nt_acl(struct afs_acl *afs_acl,
+			    struct connection_struct *conn,
+			    const char *name,
+			    uint32 security_info,
+			    struct security_descriptor **ppdesc)
+{
+	SMB_STRUCT_STAT sbuf;
+
+	/* Get the stat struct for the owner info. */
+	if(SMB_VFS_STAT(conn, name, &sbuf) != 0) {
+		return 0;
+	}
+
+	return afs_to_nt_acl_common(afs_acl, &sbuf, security_info, ppdesc);
+}
+
+static size_t afs_fto_nt_acl(struct afs_acl *afs_acl,
+			     struct files_struct *fsp,
+			     uint32 security_info,
+			     struct security_descriptor **ppdesc)
+{
+	SMB_STRUCT_STAT sbuf;
+
+	if (fsp->is_directory || fsp->fh->fd == -1) {
+		/* Get the stat struct for the owner info. */
+		return afs_to_nt_acl(afs_acl, fsp->conn, fsp->fsp_name,
+				     security_info, ppdesc);
+	}
+
+	if(SMB_VFS_FSTAT(fsp, &sbuf) != 0) {
+		return 0;
+	}
+
+	return afs_to_nt_acl_common(afs_acl, &sbuf, security_info, ppdesc);
 }
 
 static bool mappable_sid(const DOM_SID *sid)
@@ -830,27 +853,6 @@ static bool afs_get_afs_acl(char *filename, struct afs_acl *acl)
 	return True;
 }
 
-static NTSTATUS afs_get_nt_acl(struct files_struct *fsp, uint32 security_info,
-			       struct security_descriptor **ppdesc)
-{
-	struct afs_acl acl;
-	size_t sd_size;
-
-	DEBUG(5, ("afs_get_nt_acl: %s\n", fsp->fsp_name));
-
-	sidpts = lp_parm_bool(SNUM(fsp->conn), "afsacl", "sidpts", False);
-
-	if (!afs_get_afs_acl(fsp->fsp_name, &acl)) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	sd_size = afs_to_nt_acl(&acl, fsp, security_info, ppdesc);
-
-	free_afs_acl(&acl);
-
-	return (sd_size != 0) ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
-}
-
 /* For setting an AFS ACL we have to take care of the ACEs we could
  * not properly map to SIDs. Merge all of them into the new ACL. */
 
@@ -991,22 +993,53 @@ static NTSTATUS afs_set_nt_acl(vfs_handle_struct *handle, files_struct *fsp,
 
 static NTSTATUS afsacl_fget_nt_acl(struct vfs_handle_struct *handle,
 				   struct files_struct *fsp,
-				   int fd,  uint32 security_info,
+				   uint32 security_info,
 				   struct security_descriptor **ppdesc)
 {
-	return afs_get_nt_acl(fsp, security_info, ppdesc);
+	struct afs_acl acl;
+	size_t sd_size;
+
+	DEBUG(5, ("afsacl_fget_nt_acl: %s\n", fsp->fsp_name));
+
+	sidpts = lp_parm_bool(SNUM(fsp->conn), "afsacl", "sidpts", False);
+
+	if (!afs_get_afs_acl(fsp->fsp_name, &acl)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	sd_size = afs_fto_nt_acl(&acl, fsp, security_info, ppdesc);
+
+	free_afs_acl(&acl);
+
+	return (sd_size != 0) ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
+
 static NTSTATUS afsacl_get_nt_acl(struct vfs_handle_struct *handle,
-				  struct files_struct *fsp,
 				  const char *name,  uint32 security_info,
 				  struct security_descriptor **ppdesc)
 {
-	return afs_get_nt_acl(fsp, security_info, ppdesc);
+	struct afs_acl acl;
+	size_t sd_size;
+
+	DEBUG(5, ("afsacl_get_nt_acl: %s\n", name));
+
+	sidpts = lp_parm_bool(SNUM(handle->conn), "afsacl", "sidpts", False);
+
+	if (!afs_get_afs_acl(name, &acl)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	sd_size = afs_to_nt_acl(&acl, handle->conn, name, security_info,
+				ppdesc);
+
+	free_afs_acl(&acl);
+
+	return (sd_size != 0) ? NT_STATUS_OK : NT_STATUS_ACCESS_DENIED;
 }
 
 NTSTATUS afsacl_fset_nt_acl(vfs_handle_struct *handle,
 			 files_struct *fsp,
-			 int fd, uint32 security_info_sent,
+			 uint32 security_info_sent,
 			 SEC_DESC *psd)
 {
 	return afs_set_nt_acl(handle, fsp, security_info_sent, psd);

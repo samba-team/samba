@@ -308,7 +308,7 @@ NTSTATUS msrpc_sid_to_name(struct winbindd_domain *domain,
 {
 	char **domains;
 	char **names;
-	enum lsa_SidType *types;
+	enum lsa_SidType *types = NULL;
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
 	POLICY_HND lsa_policy;
@@ -456,6 +456,12 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 	
+	if ( !winbindd_can_contact_domain( domain ) ) {
+		DEBUG(10,("query_user: No incoming trust for domain %s\n",
+			  domain->name));
+		return NT_STATUS_OK;
+	}
+	
 	/* no cache; hit the wire */
 		
 	result = cm_connect_sam(domain, mem_ctx, &cli, &dom_pol);
@@ -463,9 +469,11 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		return result;
 
 	/* Get user handle */
-	result = rpccli_samr_open_user(cli, mem_ctx, &dom_pol,
-				       SEC_RIGHTS_MAXIMUM_ALLOWED, user_rid,
-				       &user_pol);
+	result = rpccli_samr_OpenUser(cli, mem_ctx,
+				      &dom_pol,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -474,7 +482,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	result = rpccli_samr_query_userinfo(cli, mem_ctx, &user_pol,
 					    0x15, &ctr);
 
-	rpccli_samr_close(cli, mem_ctx, &user_pol);
+	rpccli_samr_Close(cli, mem_ctx, &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -539,8 +547,11 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		return result;
 
 	/* Get user handle */
-	result = rpccli_samr_open_user(cli, mem_ctx, &dom_pol,
-					des_access, user_rid, &user_pol);
+	result = rpccli_samr_OpenUser(cli, mem_ctx,
+				      &dom_pol,
+				      des_access,
+				      user_rid,
+				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -549,7 +560,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	result = rpccli_samr_query_usergroups(cli, mem_ctx, &user_pol, 
 					   num_groups, &user_groups);
 
-	rpccli_samr_close(cli, mem_ctx, &user_pol);
+	rpccli_samr_Close(cli, mem_ctx, &user_pol);
 
 	if (!NT_STATUS_IS_OK(result) || (*num_groups) == 0)
 		return result;
@@ -694,8 +705,11 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-        result = rpccli_samr_open_group(cli, mem_ctx, &dom_pol,
-					des_access, group_rid, &group_pol);
+        result = rpccli_samr_OpenGroup(cli, mem_ctx,
+				       &dom_pol,
+				       des_access,
+				       group_rid,
+				       &group_pol);
 
         if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -715,7 +729,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	/* And restore our original timeout. */
 	cli_set_timeout(cli->cli, orig_timeout);
 
-	rpccli_samr_close(cli, mem_ctx, &group_pol);
+	rpccli_samr_Close(cli, mem_ctx, &group_pol);
 
         if (!NT_STATUS_IS_OK(result))
 		return result;

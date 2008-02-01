@@ -291,14 +291,14 @@ bool sec_io_desc(const char *desc, SEC_DESC **ppsd, prs_struct *ps, int depth)
 
 		if (psd->owner_sid != NULL) {
 			off_owner_sid = offset;
-			offset += sid_size(psd->owner_sid);
+			offset += ndr_size_dom_sid(psd->owner_sid, 0);
 		} else {
 			off_owner_sid = 0;
 		}
 
 		if (psd->group_sid != NULL) {
 			off_grp_sid = offset;
-			offset += sid_size(psd->group_sid);
+			offset += ndr_size_dom_sid(psd->group_sid, 0);
 		} else {
 			off_grp_sid = 0;
 		}
@@ -426,7 +426,7 @@ bool sec_io_desc_buf(const char *desc, SEC_DESC_BUF **ppsdb, prs_struct *ps, int
 	if(!prs_uint32    ("ptr  ", ps, depth, &ptr))
 		return False;
 
-	len = sec_desc_size(psdb->sd);
+	len = ndr_size_security_descriptor(psdb->sd, 0);
 	if(!prs_uint32_pre("len    ", ps, depth, &len, &off_len))
 		return False;
 

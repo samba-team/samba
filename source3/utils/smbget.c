@@ -521,9 +521,11 @@ int main(int argc, const char **argv)
 	int c = 0;
 	const char *file = NULL;
 	char *rcfile = NULL;
+	bool smb_encrypt = false;
 	TALLOC_CTX *frame = talloc_stackframe();
 	struct poptOption long_options[] = {
 		{"guest", 'a', POPT_ARG_NONE, NULL, 'a', "Work as user guest" },	
+		{"encrypt", 'e', POPT_ARG_NONE, NULL, 'e', "Encrypt SMB transport (UNIX extended servers only)" },	
 		{"resume", 'r', POPT_ARG_NONE, &_resume, 0, "Automatically resume aborted files" },
 		{"recursive", 'R',  POPT_ARG_NONE, &_recursive, 0, "Recursively download files" },
 		{"username", 'u', POPT_ARG_STRING, &username, 'u', "Username to use" },
@@ -568,6 +570,9 @@ int main(int argc, const char **argv)
 		case 'a':
 			username = ""; password = "";
 			break;
+		case 'e':
+			smb_encrypt = true;
+			break;
 		}
 	}
 
@@ -586,6 +591,13 @@ int main(int argc, const char **argv)
 		return 1;
 	}
 
+	if (smb_encrypt) {
+		SMBCCTX *smb_ctx = smbc_set_context(NULL);
+		smbc_option_set(smb_ctx,
+			CONST_DISCARD(char *, "smb_encrypt_level"),
+			"require");
+	}
+	
 	columns = get_num_cols();
 
 	total_start_time = time(NULL);

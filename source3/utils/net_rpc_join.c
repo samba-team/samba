@@ -34,6 +34,12 @@
                 goto done; \
         }
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
+
 /**
  * confirm that a domain join is still valid
  *
@@ -45,7 +51,7 @@ NTSTATUS net_rpc_join_ok(const char *domain, const char *server,
 {
 	enum security_types sec;
 	unsigned int conn_flags = NET_FLAGS_PDC;
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -132,7 +138,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
         uint32 acb_info = ACB_WSTRUST;
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|(lp_client_schannel() ? NETLOGON_NEG_SCHANNEL : 0);
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|(lp_client_schannel() ? NETLOGON_NEG_SCHANNEL : 0);
 	uint32 sec_channel_type;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 
@@ -155,11 +161,14 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	NTSTATUS result;
 	int retval = 1;
-	char *domain = NULL;
+	const char *domain = NULL;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
 	char *acct_name;
 	const char *const_acct_name;
+	struct lsa_String lsa_acct_name;
+	uint32 acct_flags=0;
+	uint32_t access_granted = 0;
 
 	/* check what type of join */
 	if (argc >= 0) {
@@ -235,10 +244,12 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 				       &sam_pol),
 		      "could not connect to SAM database");
 
-	
-	CHECK_RPC_ERR(rpccli_samr_open_domain(pipe_hnd, mem_ctx, &sam_pol,
-					   SEC_RIGHTS_MAXIMUM_ALLOWED,
-					   domain_sid, &domain_pol),
+
+	CHECK_RPC_ERR(rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					     &sam_pol,
+					     SEC_RIGHTS_MAXIMUM_ALLOWED,
+					     domain_sid,
+					     &domain_pol),
 		      "could not open domain");
 
 	/* Create domain user */
@@ -249,10 +260,24 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
-	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-					  acct_name, acb_info,
-					  0xe005000b, &user_pol, 
-					  &user_rid);
+	init_lsa_String(&lsa_acct_name, acct_name);
+
+	acct_flags = SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
+		     SEC_STD_WRITE_DAC | SEC_STD_DELETE |
+		     SAMR_USER_ACCESS_SET_PASSWORD |
+		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
+		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
+
+	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
+
+	result = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 &lsa_acct_name,
+					 acb_info,
+					 acct_flags,
+					 &user_pol,
+					 &access_granted,
+					 &user_rid);
 
 	if (!NT_STATUS_IS_OK(result) && 
 	    !NT_STATUS_EQUAL(result, NT_STATUS_USER_EXISTS)) {
@@ -271,7 +296,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* We *must* do this.... don't ask... */
 
 	if (NT_STATUS_IS_OK(result)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	}
 
 	CHECK_RPC_ERR_DEBUG(rpccli_samr_lookup_names(pipe_hnd, mem_ctx,
@@ -292,9 +317,11 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* Open handle on user */
 
 	CHECK_RPC_ERR_DEBUG(
-		rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				   SEC_RIGHTS_MAXIMUM_ALLOWED,
-				   user_rid, &user_pol),
+		rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				     &domain_pol,
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     user_rid,
+				     &user_pol),
 		("could not re-open existing user %s: %s\n",
 		 acct_name, nt_errstr(result)));
 	
@@ -344,7 +371,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	result = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol, 16, 
 					&cli->user_session_key, &ctr);
 
-	rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
 
 	/* Now check the whole process from top-to-bottom */
@@ -413,7 +440,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Now store the secret in the secrets database */
 
-	strupper_m(domain);
+	strupper_m(CONST_DISCARD(char *, domain));
 
 	if (!secrets_store_domain_sid(domain, domain_sid)) {
 		DEBUG(0, ("error storing domain sid for %s\n", domain));

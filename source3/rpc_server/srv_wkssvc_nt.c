@@ -22,6 +22,7 @@
 /* This is the implementation of the wks interface. */
 
 #include "includes.h"
+#include "libnet/libnet.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -32,7 +33,7 @@
 
 static void create_wks_info_100(struct wkssvc_NetWkstaInfo100 *info100)
 {
-	info100->platform_id	 = 0x000001f4;	/* unknown */
+	info100->platform_id	 = PLATFORM_ID_NT;	/* unknown */
 	info100->version_major	 = lp_major_announce_version();
 	info100->version_minor	 = lp_minor_announce_version();
 
@@ -284,7 +285,70 @@ WERROR _wkssvc_NetrGetJoinableOus(pipes_struct *p, struct wkssvc_NetrGetJoinable
 
 WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r)
 {
-	/* FIXME: Add implementation code here */
+#if 0
+	struct libnet_JoinCtx *j = NULL;
+	char *cleartext_pwd = NULL;
+	char *admin_domain = NULL;
+	char *admin_account = NULL;
+	WERROR werr;
+	NTSTATUS status;
+	struct nt_user_token *token = p->pipe_user.nt_user_token;
+	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+
+	if (!r->in.domain_name) {
+		return WERR_INVALID_PARAM;
+	}
+
+	if (!user_has_privileges(token, &se_machine_account) &&
+	    !nt_token_check_domain_rid(token, DOMAIN_GROUP_RID_ADMINS) &&
+	    !nt_token_check_domain_rid(token, BUILTIN_ALIAS_RID_ADMINS)) {
+		return WERR_ACCESS_DENIED;
+	}
+
+	werr = decode_wkssvc_join_password_buffer(p->mem_ctx,
+						  r->in.encrypted_password,
+						  &p->session_key,
+						  &cleartext_pwd);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	split_domain_user(p->mem_ctx,
+			  r->in.admin_account,
+			  &admin_domain,
+			  &admin_account);
+
+	status = dsgetdcname(p->mem_ctx,
+			     r->in.domain_name,
+			     NULL,
+			     NULL,
+			     DS_DIRECTORY_SERVICE_REQUIRED |
+			     DS_WRITABLE_REQUIRED |
+			     DS_RETURN_DNS_NAME,
+			     &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	werr = libnet_init_JoinCtx(p->mem_ctx, &j);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	j->in.dc_name		= info->domain_controller_name;
+	j->in.domain_name	= r->in.domain_name;
+	j->in.account_ou	= r->in.account_ou;
+	j->in.join_flags	= r->in.join_flags;
+	j->in.admin_account	= admin_account;
+	j->in.admin_password	= cleartext_pwd;
+	j->in.modify_config	= true;
+
+	become_root();
+	werr = libnet_Join(p->mem_ctx, j);
+	unbecome_root();
+
+	return werr;
+#endif
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
 }

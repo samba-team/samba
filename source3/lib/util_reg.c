@@ -130,6 +130,7 @@ bool registry_smbconf_valname_forbidden(const char *valname)
 		"include",
 		"lock directory",
 		"lock dir",
+		"config backend",
 		NULL
 	};
 	const char **forbidden = NULL;

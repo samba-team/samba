@@ -9,6 +9,7 @@
    Copyright (C) Alexander Bokovoy 2002
    Copyright (C) Stefan (metze) Metzmacher 2002
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
+   Copyright (C) Michael Adam 2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -70,16 +71,12 @@ extern userdom_struct current_user_info;
 #define HOMES_NAME "homes"
 #endif
 
-/* the special value for the include parameter
- * to be interpreted not as a file name but to
- * trigger loading of the global smb.conf options
- * from registry. */
-#ifndef INCLUDE_REGISTRY_NAME
-#define INCLUDE_REGISTRY_NAME "registry"
-#endif
-
 static int regdb_last_seqnum = 0;
-static bool include_registry_globals = False;
+
+#define CONFIG_BACKEND_FILE 0
+#define CONFIG_BACKEND_REGISTRY 1
+
+static int config_backend = CONFIG_BACKEND_FILE;
 
 /* some helpful bits */
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && (ServicePtrs != NULL) && ServicePtrs[(i)]->valid)
@@ -87,8 +84,6 @@ static bool include_registry_globals = False;
 
 #define USERSHARE_VALID 1
 #define USERSHARE_PENDING_DELETE 2
-
-bool use_getwd_cache = True;
 
 extern int extra_time_offset;
 
@@ -106,6 +101,7 @@ struct _param_opt_struct {
  * This structure describes global (ie., server-wide) parameters.
  */
 typedef struct {
+	int ConfigBackend;
 	char *smb_ports;
 	char *dos_charset;
 	char *unix_charset;
@@ -215,6 +211,7 @@ typedef struct {
 	int pwordlevel;
 	int unamelevel;
 	int deadtime;
+	bool getwd_cache;
 	int maxprotocol;
 	int minprotocol;
 	int security;
@@ -473,6 +470,7 @@ typedef struct {
 	int iAioWriteSize;
 	int iMap_readonly;
 	int iDirectoryNameCacheSize;
+	int ismb_encrypt;
 	param_opt_struct *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -618,6 +616,7 @@ static service sDefault = {
 #else
 	100,			/* iDirectoryNameCacheSize */
 #endif
+	Auto,			/* ismb_encrypt */
 	NULL,			/* Parametric options */
 
 	""			/* dummy */
@@ -841,6 +840,14 @@ static const struct enum_list enum_map_to_guest[] = {
 	{-1, NULL}
 };
 
+/* Config backend options */
+
+static const struct enum_list enum_config_backend[] = {
+	{CONFIG_BACKEND_FILE, "file"},
+	{CONFIG_BACKEND_REGISTRY, "registry"},
+	{-1, NULL}
+};
+
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *
  * The FLAG_HIDE is explicit. Paramters set this way do NOT appear in any edit
@@ -878,6 +885,8 @@ static struct parm_struct parm_table[] = {
 	{"server string", P_STRING, P_GLOBAL, &Globals.szServerString, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED }, 
 	{"interfaces", P_LIST, P_GLOBAL, &Globals.szInterfaces, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"bind interfaces only", P_BOOL, P_GLOBAL, &Globals.bBindInterfacesOnly, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
+
+	{"config backend", P_ENUM, P_GLOBAL, &Globals.ConfigBackend, NULL, enum_config_backend, FLAG_ADVANCED},
 
 	{N_("Security Options"), P_SEP, P_SEPARATOR}, 
 
@@ -1028,6 +1037,7 @@ static struct parm_struct parm_table[] = {
 	{"use spnego", P_BOOL, P_GLOBAL, &Globals.bUseSpnego, NULL, NULL, FLAG_ADVANCED}, 
 	{"client signing", P_ENUM, P_GLOBAL, &Globals.client_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
 	{"server signing", P_ENUM, P_GLOBAL, &Globals.server_signing, NULL, enum_smb_signing_vals, FLAG_ADVANCED}, 
+	{"smb encrypt", P_ENUM, P_LOCAL, &sDefault.ismb_encrypt, NULL, enum_smb_signing_vals, FLAG_ADVANCED},
 	{"client use spnego", P_BOOL, P_GLOBAL, &Globals.bClientUseSpnego, NULL, NULL, FLAG_ADVANCED}, 
 	{"client ldap sasl wrapping", P_ENUM, P_GLOBAL, &Globals.client_ldap_sasl_wrapping, NULL, enum_ldap_sasl_wrapping, FLAG_ADVANCED},
 	{"enable asu support", P_BOOL, P_GLOBAL, &Globals.bASUSupport, NULL, NULL, FLAG_ADVANCED}, 
@@ -1037,7 +1047,7 @@ static struct parm_struct parm_table[] = {
 
 	{"block size", P_INTEGER, P_LOCAL, &sDefault.iBlock_size, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_GLOBAL}, 
 	{"deadtime", P_INTEGER, P_GLOBAL, &Globals.deadtime, NULL, NULL, FLAG_ADVANCED}, 
-	{"getwd cache", P_BOOL, P_GLOBAL, &use_getwd_cache, NULL, NULL, FLAG_ADVANCED}, 
+	{"getwd cache", P_BOOL, P_GLOBAL, &Globals.getwd_cache, NULL, NULL, FLAG_ADVANCED},
 	{"keepalive", P_INTEGER, P_GLOBAL, &Globals.iKeepalive, NULL, NULL, FLAG_ADVANCED},
 	{"change notify", P_BOOL, P_LOCAL, &sDefault.bChangeNotify, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
 	{"directory name cache size", P_INTEGER, P_LOCAL, &sDefault.iDirectoryNameCacheSize, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE },
@@ -1213,14 +1223,14 @@ static struct parm_struct parm_table[] = {
 	{"ldap page size", P_INTEGER, P_GLOBAL, &Globals.ldap_page_size, NULL, NULL, FLAG_ADVANCED},
 	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, NULL, NULL, FLAG_ADVANCED}, 
 
+	{N_("EventLog Options"), P_SEP, P_SEPARATOR}, 
+	{"eventlog list",  P_LIST, P_GLOBAL, &Globals.szEventLogs, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
+
 	{N_("Miscellaneous Options"), P_SEP, P_SEPARATOR}, 
 	{"add share command", P_STRING, P_GLOBAL, &Globals.szAddShareCommand, NULL, NULL, FLAG_ADVANCED}, 
 	{"change share command", P_STRING, P_GLOBAL, &Globals.szChangeShareCommand, NULL, NULL, FLAG_ADVANCED}, 
 	{"delete share command", P_STRING, P_GLOBAL, &Globals.szDeleteShareCommand, NULL, NULL, FLAG_ADVANCED}, 
 
-	{N_("EventLog Options"), P_SEP, P_SEPARATOR}, 
-	{"eventlog list",  P_LIST, P_GLOBAL, &Globals.szEventLogs, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
-	
 	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE}, 
 	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED}, 
 	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED}, 
@@ -1291,6 +1301,8 @@ static struct parm_struct parm_table[] = {
 	{"vfs objects", P_LIST, P_LOCAL, &sDefault.szVfsObjects, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"vfs object", P_LIST, P_LOCAL, &sDefault.szVfsObjects, NULL, NULL, FLAG_HIDE}, 
 
+
+	{N_("MSDFS options"), P_SEP, P_SEPARATOR},
 
 	{"msdfs root", P_BOOL, P_LOCAL, &sDefault.bMSDfsRoot, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"msdfs proxy", P_STRING, P_LOCAL, &sDefault.szMSDfsProxy, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1525,6 +1537,8 @@ static void init_globals(bool first_time_only)
 	Globals.bLoadPrinters = True;
 	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
 
+	Globals.ConfigBackend = config_backend;
+
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
 	Globals.max_xmit = 0x4104;
@@ -1535,6 +1549,7 @@ static void init_globals(bool first_time_only)
 	Globals.pwordlevel = 0;
 	Globals.unamelevel = 0;
 	Globals.deadtime = 0;
+	Globals.getwd_cache = true;
 	Globals.bLargeReadwrite = True;
 	Globals.max_log_size = 5000;
 	Globals.max_open_files = MAX_OPEN_FILES;
@@ -1585,7 +1600,7 @@ static void init_globals(bool first_time_only)
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
 	Globals.bNTStatusSupport = True; /* Use NT status by default. */
 	Globals.bStatCache = True;	/* use stat cache by default */
-	Globals.iMaxStatCacheSize = 1024; /* one Meg by default. */
+	Globals.iMaxStatCacheSize = 256; /* 256k by default */
 	Globals.restrict_anonymous = 0;
 	Globals.bClientLanManAuth = False;	/* Do NOT use the LanMan hash if it is available */
 	Globals.bClientPlaintextAuth = False;	/* Do NOT use a plaintext password even if is requested by the server */
@@ -2023,6 +2038,7 @@ FN_GLOBAL_INTEGER(lp_maxmux, &Globals.max_mux)
 FN_GLOBAL_INTEGER(lp_passwordlevel, &Globals.pwordlevel)
 FN_GLOBAL_INTEGER(lp_usernamelevel, &Globals.unamelevel)
 FN_GLOBAL_INTEGER(lp_deadtime, &Globals.deadtime)
+FN_GLOBAL_BOOL(lp_getwd_cache, &Globals.getwd_cache)
 FN_GLOBAL_INTEGER(lp_maxprotocol, &Globals.maxprotocol)
 FN_GLOBAL_INTEGER(lp_minprotocol, &Globals.minprotocol)
 FN_GLOBAL_INTEGER(lp_security, &Globals.security)
@@ -2042,6 +2058,7 @@ FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_time, &Globals.iLockSpinTime)
 FN_GLOBAL_INTEGER(lp_usershare_max_shares, &Globals.iUsershareMaxShares)
 FN_GLOBAL_CONST_STRING(lp_socket_options, &Globals.szSocketOptions)
+FN_GLOBAL_INTEGER(lp_config_backend, &Globals.ConfigBackend);
 
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
@@ -2172,6 +2189,7 @@ FN_LOCAL_INTEGER(lp_aio_read_size, iAioReadSize)
 FN_LOCAL_INTEGER(lp_aio_write_size, iAioWriteSize)
 FN_LOCAL_INTEGER(lp_map_readonly, iMap_readonly)
 FN_LOCAL_INTEGER(lp_directory_name_cache_size, iDirectoryNameCacheSize)
+FN_LOCAL_INTEGER(lp_smb_encrypt, ismb_encrypt)
 FN_LOCAL_CHAR(lp_magicchar, magic_char)
 FN_GLOBAL_INTEGER(lp_winbind_cache_time, &Globals.winbind_cache_time)
 FN_GLOBAL_LIST(lp_winbind_nss_info, &Globals.szWinbindNssInfo)
@@ -3417,8 +3435,6 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 	char * valstr;
 	struct registry_value *value = NULL;
 
-	include_registry_globals = True;
-
 	ZERO_STRUCT(data);
 
 	reg_tdb = lp_regdb_open();
@@ -3472,7 +3488,7 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 		if (size && data_p) {
 			err = registry_pull_value(reg_tdb,
 						  &value,
-						  type,
+						  (enum winreg_Type)type,
 						  data_p,
 						  size,
 						  size);
@@ -3509,7 +3525,9 @@ done:
 /*
  * this is process_registry_globals as it _should_ be (roughly)
  * using the reg_api functions...
- * 
+ *
+ * We are *not* currently doing it like this due to the large
+ * linker dependecies of the registry code (see above).
  */
 static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 {
@@ -3522,22 +3540,21 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 	char *valname = NULL;
 	char *valstr = NULL;
 	uint32 idx = 0;
-	NT_USER_TOKEN *token;
+	NT_USER_TOKEN *token = NULL;
 
 	ctx = talloc_init("process_registry_globals");
 	if (!ctx) {
 		smb_panic("Failed to create talloc context!");
 	}
 
-	include_registry_globals = True;
-
 	if (!registry_init_regdb()) {
 		DEBUG(1, ("Error initializing the registry.\n"));
 		goto done;
 	}
 
-	if (!(token = registry_create_admin_token(ctx))) {
-		DEBUG(1, ("Error creating admin token\n"));
+	werr = ntstatus_to_werror(registry_create_admin_token(ctx, &token));
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(1, ("Error creating admin token: %s\n",dos_errstr(werr)));
 		goto done;
 	}
 
@@ -3629,9 +3646,12 @@ static void add_to_file_list(const char *fname, const char *subfname)
 	}
 }
 
-bool lp_include_registry_globals(void)
+/**
+ * Utility function for outsiders to check if we're running on registry.
+ */
+bool lp_config_backend_is_registry(void)
 {
-	return include_registry_globals;
+	return (lp_config_backend() == CONFIG_BACKEND_REGISTRY);
 }
 
 /*******************************************************************
@@ -3645,7 +3665,7 @@ bool lp_file_list_changed(void)
 
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
-	if (include_registry_globals) {
+	if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
 		reg_tdb = lp_regdb_open();
 		if (reg_tdb && (regdb_last_seqnum != tdb_get_seqnum(reg_tdb->tdb)))
 		{
@@ -3653,6 +3673,15 @@ bool lp_file_list_changed(void)
 				    regdb_last_seqnum, tdb_get_seqnum(reg_tdb->tdb)));
 			TALLOC_FREE(reg_tdb);
 			return true;
+		} else {
+			/*
+			 * Don't check files when config_backend is registry.
+			 * Remove this to obtain checking of files even with
+			 * registry config backend. That would enable switching
+			 * off registry configuration by changing smb.conf even
+			 * without restarting smbd.
+			 */
+			return false;
 		}
 	}
 
@@ -3687,6 +3716,7 @@ bool lp_file_list_changed(void)
 	}
 	return (False);
 }
+
 
 /***************************************************************************
  Run standard_sub_basic on netbios name... needed because global_myname
@@ -3756,17 +3786,6 @@ static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **pt
 static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	char *fname;
-
-	if (strequal(pszParmValue, INCLUDE_REGISTRY_NAME)) {
-		if (bInGlobalSection) {
-			return process_registry_globals(do_parameter);
-		}
-		else {
-			DEBUG(1, ("\"include = registry\" only effective "
-				  "in %s section\n", GLOBAL_NAME));
-			return false;
-		}
-	}
 
 	fname = alloc_sub_basic(get_current_username(),
 				current_user_info.domain,
@@ -4690,6 +4709,7 @@ static void lp_add_auto_services(char *str)
 	char *s;
 	char *p;
 	int homes;
+	char *saveptr;
 
 	if (!str)
 		return;
@@ -4700,14 +4720,19 @@ static void lp_add_auto_services(char *str)
 
 	homes = lp_servicenumber(HOMES_NAME);
 
-	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
-		char *home = get_user_home_dir(p);
+	for (p = strtok_r(s, LIST_SEP, &saveptr); p;
+	     p = strtok_r(NULL, LIST_SEP, &saveptr)) {
+		char *home;
 
 		if (lp_servicenumber(p) >= 0)
 			continue;
 
+		home = get_user_home_dir(talloc_tos(), p);
+
 		if (home && homes >= 0)
 			lp_add_home(p, homes, p, home);
+
+		TALLOC_FREE(home);
 	}
 	SAFE_FREE(s);
 }
@@ -5642,15 +5667,6 @@ bool lp_load(const char *pszFname,
 	bool bRetval;
 	param_opt_struct *data, *pdata;
 
-	n2 = alloc_sub_basic(get_current_username(),
-				current_user_info.domain,
-				pszFname);
-	if (!n2) {
-		smb_panic("lp_load: out of memory");
-	}
-
-	add_to_file_list(pszFname, n2);
-
 	bRetval = False;
 
 	DEBUG(3, ("lp_load: refreshing parameters\n"));
@@ -5679,17 +5695,48 @@ bool lp_load(const char *pszFname,
 		Globals.param_opt = NULL;
 	}
 
-	/* We get sections first, so have to start 'behind' to make up */
-	iServiceIndex = -1;
-	bRetval = pm_process(n2, do_section, do_parameter);
-	SAFE_FREE(n2);
-
-	/* finish up the last section */
-	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
-	if (bRetval) {
-		if (iServiceIndex >= 0) {
-			bRetval = service_ok(iServiceIndex);
+	if (lp_config_backend() == CONFIG_BACKEND_FILE) {
+		n2 = alloc_sub_basic(get_current_username(),
+					current_user_info.domain,
+					pszFname);
+		if (!n2) {
+			smb_panic("lp_load: out of memory");
 		}
+
+		add_to_file_list(pszFname, n2);
+
+		/* We get sections first, so have to start 'behind' to make up */
+		iServiceIndex = -1;
+		bRetval = pm_process(n2, do_section, do_parameter);
+		SAFE_FREE(n2);
+
+		/* finish up the last section */
+		DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
+		if (bRetval) {
+			if (iServiceIndex >= 0) {
+				bRetval = service_ok(iServiceIndex);
+			}
+		}
+
+		if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
+			/*
+			 * We need to use this extra global variable here to
+			 * survive restart: init_globals usese this as a default
+			 * for ConfigBackend. Otherwise, init_globals would
+			 *  send us into an endless loop here.
+			 */
+			config_backend = CONFIG_BACKEND_REGISTRY;
+			/* start over */
+			init_globals(false);
+			return lp_load(pszFname, global_only, save_defaults,
+				       add_ipc, initialize_globals);
+		}
+	} else if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
+		bRetval = process_registry_globals(do_parameter);
+	} else {
+		DEBUG(0, ("Illegal config  backend given: %d\n",
+			  lp_config_backend()));
+		bRetval = false;
 	}
 
 	lp_add_auto_services(lp_auto_services());
@@ -6213,7 +6260,9 @@ bool lp_use_sendfile(int snum)
 	if (Protocol < PROTOCOL_NT1) {
 		return False;
 	}
-	return (_lp_use_sendfile(snum) && (get_remote_arch() != RA_WIN95) && !srv_is_signing_active());
+	return (_lp_use_sendfile(snum) &&
+			(get_remote_arch() != RA_WIN95) &&
+			!srv_is_signing_active());
 }
 
 /*******************************************************************

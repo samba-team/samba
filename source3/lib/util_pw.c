@@ -37,74 +37,36 @@ struct passwd *tcopy_passwd(TALLOC_CTX *mem_ctx, const struct passwd *from)
 	return ret;
 }
 
-#define PWNAMCACHE_SIZE 4
-static struct passwd **pwnam_cache = NULL;
-
-static void init_pwnam_cache(void)
-{
-	if (pwnam_cache != NULL)
-		return;
-
-	pwnam_cache = TALLOC_ZERO_ARRAY(NULL, struct passwd *,
-					PWNAMCACHE_SIZE);
-	if (pwnam_cache == NULL) {
-		smb_panic("Could not init pwnam_cache");
-	}
-
-	return;
-}
-
 void flush_pwnam_cache(void)
 {
-	TALLOC_FREE(pwnam_cache);
-	pwnam_cache = NULL;
-	init_pwnam_cache();
+	memcache_flush(NULL, GETPWNAM_CACHE);
 }
 
 struct passwd *getpwnam_alloc(TALLOC_CTX *mem_ctx, const char *name)
 {
-	int i;
+	struct passwd *temp, *cached;
 
-	struct passwd *temp;
-
-	init_pwnam_cache();
-
-	for (i=0; i<PWNAMCACHE_SIZE; i++) {
-		if ((pwnam_cache[i] != NULL) && 
-		    (strcmp(name, pwnam_cache[i]->pw_name) == 0)) {
-			DEBUG(10, ("Got %s from pwnam_cache\n", name));
-			return tcopy_passwd(mem_ctx, pwnam_cache[i]);
-		}
+	temp = (struct passwd *)memcache_lookup_talloc(
+		NULL, GETPWNAM_CACHE, data_blob_string_const(name));
+	if (temp != NULL) {
+		return tcopy_passwd(mem_ctx, temp);
 	}
 
 	temp = sys_getpwnam(name);
-	
-	if (!temp) {
-#if 0
-		if (errno == ENOMEM) {
-			/* what now? */
-		}
-#endif
+	if (temp == NULL) {
 		return NULL;
 	}
 
-	for (i=0; i<PWNAMCACHE_SIZE; i++) {
-		if (pwnam_cache[i] == NULL)
-			break;
+	cached = tcopy_passwd(NULL, temp);
+	if (cached == NULL) {
+		/*
+		 * Just don't add this into the cache, ignore the failure
+		 */
+		return temp;
 	}
 
-	if (i == PWNAMCACHE_SIZE)
-		i = rand() % PWNAMCACHE_SIZE;
-
-	if (pwnam_cache[i] != NULL) {
-		/* Remove this old cache entry, from the cache.  We
-		 * use talloc_unlink here because we want to be very
-		 * clear which referece we are removing */
-		talloc_unlink(pwnam_cache, pwnam_cache[i]);
-	}
-
-	pwnam_cache[i] = tcopy_passwd(pwnam_cache, temp);
-
+	memcache_add_talloc(NULL, GETPWNAM_CACHE, data_blob_string_const(name),
+			    cached);
 	return tcopy_passwd(mem_ctx, temp);
 }
 

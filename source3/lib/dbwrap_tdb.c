@@ -31,6 +31,11 @@ static int db_tdb_record_destr(struct db_record* data)
 	struct db_tdb_ctx *ctx =
 		talloc_get_type_abort(data->private_data, struct db_tdb_ctx);
 
+	/* This hex_encode() call allocates memory on data context. By way how current 
+	   __talloc_free() code works, it is OK to allocate in the destructor as 
+	   the children of data will be freed after call to the destructor and this 
+	   new 'child' will be caught and freed correctly.
+	 */
 	DEBUG(10, (DEBUGLEVEL > 10
 		   ? "Unlocking key %s\n" : "Unlocking key %.20s\n",
 		   hex_encode(data, (unsigned char *)data->key.dptr,
@@ -43,36 +48,53 @@ static int db_tdb_record_destr(struct db_record* data)
 	return 0;
 }
 
+struct tdb_fetch_locked_state {
+	TALLOC_CTX *mem_ctx;
+	struct db_record *result;
+};
+
+static int db_tdb_fetchlock_parse(TDB_DATA key, TDB_DATA data,
+				  void *private_data)
+{
+	struct tdb_fetch_locked_state *state =
+		(struct tdb_fetch_locked_state *)private_data;
+
+	state->result = (struct db_record *)talloc_size(
+		state->mem_ctx,
+		sizeof(struct db_record) + key.dsize + data.dsize);
+
+	if (state->result == NULL) {
+		return 0;
+	}
+
+	state->result->key.dsize = key.dsize;
+	state->result->key.dptr = ((uint8 *)state->result)
+		+ sizeof(struct db_record);
+	memcpy(state->result->key.dptr, key.dptr, key.dsize);
+
+	state->result->value.dsize = data.dsize;
+
+	if (data.dsize > 0) {
+		state->result->value.dptr = state->result->key.dptr+key.dsize;
+		memcpy(state->result->value.dptr, data.dptr, data.dsize);
+	}
+	else {
+		state->result->value.dptr = NULL;
+	}
+
+	return 0;
+}
+
 static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 				     TALLOC_CTX *mem_ctx, TDB_DATA key)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(db->private_data,
 						       struct db_tdb_ctx);
-	struct db_record *result;
-	TDB_DATA value;
+	struct tdb_fetch_locked_state state;
 
-	result = TALLOC_P(mem_ctx, struct db_record);
-	if (result == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		return NULL;
-	}
-
-	result->key.dsize = key.dsize;
-	result->key.dptr = (uint8 *)talloc_memdup(result, key.dptr, key.dsize);
-	if (result->key.dptr == NULL) {
-		DEBUG(0, ("talloc failed\n"));
-		TALLOC_FREE(result);
-		return NULL;
-	}
-
-	result->value.dptr = NULL;
-	result->value.dsize = 0;
-	result->private_data = talloc_reference(result, ctx);
-	result->store = db_tdb_store;
-	result->delete_rec = db_tdb_delete;
-
-	if (DEBUGLEVEL >= 10) {
-		char *keystr = hex_encode(NULL, key.dptr, key.dsize);
+	/* Do not accidently allocate/deallocate w/o need when debug level is lower than needed */
+	if(DEBUGLEVEL >= 10) {
+		char *keystr = hex_encode(NULL, (unsigned char*)key.dptr, key.dsize);
 		DEBUG(10, (DEBUGLEVEL > 10
 			   ? "Locking key %s\n" : "Locking key %.20s\n",
 			   keystr));
@@ -81,32 +103,55 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 
 	if (tdb_chainlock(ctx->wtdb->tdb, key) != 0) {
 		DEBUG(3, ("tdb_chainlock failed\n"));
-		TALLOC_FREE(result);
 		return NULL;
 	}
 
-	talloc_set_destructor(result, db_tdb_record_destr);
+	state.mem_ctx = mem_ctx;
+	state.result = NULL;
 
-	value = tdb_fetch(ctx->wtdb->tdb, key);
+	tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetchlock_parse, &state);
 
-	if (value.dptr == NULL) {
-		return result;
+	if (state.result == NULL) {
+		db_tdb_fetchlock_parse(key, tdb_null, &state);
 	}
 
-	result->value.dsize = value.dsize;
-	result->value.dptr = (uint8 *)talloc_memdup(result, value.dptr,
-						    value.dsize);
-	if (result->value.dptr == NULL) {
-		DEBUG(3, ("talloc failed\n"));
-		TALLOC_FREE(result);
+	if (state.result == NULL) {
+		tdb_chainunlock(ctx->wtdb->tdb, key);
 		return NULL;
 	}
 
-	SAFE_FREE(value.dptr);
+	talloc_set_destructor(state.result, db_tdb_record_destr);
 
-	DEBUG(10, ("Allocated locked data 0x%p\n", result));
+	state.result->private_data = talloc_reference(state.result, ctx);
+	state.result->store = db_tdb_store;
+	state.result->delete_rec = db_tdb_delete;
 
-	return result;
+	DEBUG(10, ("Allocated locked data 0x%p\n", state.result));
+
+	return state.result;
+}
+
+struct tdb_fetch_state {
+	TALLOC_CTX *mem_ctx;
+	int result;
+	TDB_DATA data;
+};
+
+static int db_tdb_fetch_parse(TDB_DATA key, TDB_DATA data,
+			      void *private_data)
+{
+	struct tdb_fetch_state *state =
+		(struct tdb_fetch_state *)private_data;
+
+	state->data.dptr = (uint8 *)talloc_memdup(state->mem_ctx, data.dptr,
+						  data.dsize);
+	if (state->data.dptr == NULL) {
+		state->result = -1;
+		return 0;
+	}
+
+	state->data.dsize = data.dsize;
+	return 0;
 }
 
 static int db_tdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
@@ -115,23 +160,19 @@ static int db_tdb_fetch(struct db_context *db, TALLOC_CTX *mem_ctx,
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(
 		db->private_data, struct db_tdb_ctx);
 
-	TDB_DATA data;
+	struct tdb_fetch_state state;
 
-	data = tdb_fetch(ctx->wtdb->tdb, key);
+	state.mem_ctx = mem_ctx;
+	state.result = 0;
+	state.data = tdb_null;
 
-	if (data.dptr == NULL) {
-		pdata->dptr = NULL;
-		pdata->dsize = 0;
-		return 0;
-	}
+	tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetch_parse, &state);
 
-	pdata->dptr = (uint8 *)talloc_memdup(mem_ctx, data.dptr, data.dsize);
-	SAFE_FREE(data.dptr);
-
-	if (pdata->dptr == NULL) {
+	if (state.result == -1) {
 		return -1;
 	}
-	pdata->dsize = data.dsize;
+
+	*pdata = state.data;
 	return 0;
 }
 
@@ -154,15 +195,9 @@ static NTSTATUS db_tdb_delete(struct db_record *rec)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
 						       struct db_tdb_ctx);
-	int res;
-	
-	res = tdb_delete(ctx->wtdb->tdb, rec->key);
 
-	if (res == 0) {
-		return NT_STATUS_OK;
-	}
-
-	return map_nt_error_from_tdb(tdb_error(ctx->wtdb->tdb));
+	return (tdb_delete(ctx->wtdb->tdb, rec->key) == 0) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
 struct db_tdb_traverse_ctx {
@@ -281,6 +316,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	result->traverse = db_tdb_traverse;
 	result->traverse_read = db_tdb_traverse_read;
 	result->get_seqnum = db_tdb_get_seqnum;
+	result->persistent = ((tdb_flags & TDB_CLEAR_IF_FIRST) == 0);
 	return result;
 
  fail:

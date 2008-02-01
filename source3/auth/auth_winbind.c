@@ -134,7 +134,9 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 			}
 			
 			if (NT_STATUS_IS_OK(nt_status)) {
-				(*server_info)->was_mapped |= user_info->was_mapped;
+				if (user_info->was_mapped) {
+					(*server_info)->was_mapped = user_info->was_mapped;
+				}
 			}
 		}
 	} else if (NT_STATUS_IS_OK(nt_status)) {

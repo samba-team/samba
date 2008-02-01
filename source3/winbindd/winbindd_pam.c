@@ -31,8 +31,6 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 				    struct winbindd_cli_state *state,
 				    NET_USER_INFO_3 *info3)
 {
-	fstring str_sid;
-
 	state->response.data.auth.info3.logon_time =
 		nt_time_to_unix(info3->logon_time);
 	state->response.data.auth.info3.logoff_time =
@@ -51,8 +49,7 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 
 	state->response.data.auth.info3.user_rid = info3->user_rid;
 	state->response.data.auth.info3.group_rid = info3->group_rid;
-	sid_to_fstring(str_sid, &(info3->dom_sid.sid));
-	fstrcpy(state->response.data.auth.info3.dom_sid, str_sid);
+	sid_to_fstring(state->response.data.auth.info3.dom_sid, &(info3->dom_sid.sid));
 
 	state->response.data.auth.info3.num_groups = info3->num_groups;
 	state->response.data.auth.info3.user_flgs = info3->user_flgs;
@@ -273,12 +270,13 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
-		if (!add_sid_to_array(mem_ctx, &sid,
-				      &require_membership_of_sid,
-				      &num_require_membership_of_sid)) {
+		status = add_sid_to_array(mem_ctx, &sid,
+					  &require_membership_of_sid,
+					  &num_require_membership_of_sid);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("add_sid_to_array failed\n"));
 			TALLOC_FREE(frame);
-			return NT_STATUS_NO_MEMORY;
+			return status;
 		}
 	}
 
@@ -922,7 +920,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		/* User *DOES* know the password, update logon_time and reset
 		 * bad_pw_count */
 	
-		my_info3->user_flgs |= LOGON_CACHED_ACCOUNT;
+		my_info3->user_flgs |= NETLOGON_CACHED_ACCOUNT;
 	
 		if (my_info3->acct_flags & ACB_AUTOLOCK) {
 			return NT_STATUS_ACCOUNT_LOCKED_OUT;
@@ -958,7 +956,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		must_change_time = nt_time_to_unix(my_info3->pass_must_change_time);
 		if (must_change_time != 0 && must_change_time < time(NULL)) {
 			/* we allow grace logons when the password has expired */
-			my_info3->user_flgs |= LOGON_GRACE_LOGON;
+			my_info3->user_flgs |= NETLOGON_GRACE_LOGON;
 			/* return NT_STATUS_PASSWORD_EXPIRED; */
 			goto success;
 		}
@@ -966,7 +964,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 #ifdef HAVE_KRB5
 		if ((state->request.flags & WBFLAG_PAM_KRB5) &&
 		    ((tdc_domain = wcache_tdc_fetch_domain(state->mem_ctx, name_domain)) != NULL) &&
-		    (tdc_domain->trust_type & DS_DOMAIN_TRUST_TYPE_UPLEVEL)) {
+		    (tdc_domain->trust_type & NETR_TRUST_TYPE_UPLEVEL)) {
 
 			uid_t uid = -1;
 			const char *cc = NULL;
@@ -1074,7 +1072,7 @@ NTSTATUS winbindd_dual_pam_auth_cached(struct winbindd_domain *domain,
 		}
 
 		if ((my_info3->user_rid != DOMAIN_USER_RID_ADMIN) || 
-		    (password_properties & DOMAIN_LOCKOUT_ADMINS)) {
+		    (password_properties & DOMAIN_PASSWORD_LOCKOUT_ADMINS)) {
 			my_info3->acct_flags |= ACB_AUTOLOCK;
 		}
 	}
@@ -1341,10 +1339,11 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		status_tmp = rpccli_samr_open_user(samr_pipe, state->mem_ctx, 
-						   &samr_domain_handle,
-						   MAXIMUM_ALLOWED_ACCESS,
-						   my_info3->user_rid, &user_pol);
+		status_tmp = rpccli_samr_OpenUser(samr_pipe, state->mem_ctx,
+						  &samr_domain_handle,
+						  MAXIMUM_ALLOWED_ACCESS,
+						  my_info3->user_rid,
+						  &user_pol);
 
 		if (!NT_STATUS_IS_OK(status_tmp)) {
 			DEBUG(3, ("could not open user handle on SAMR pipe: %s\n",
@@ -1358,14 +1357,14 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 		if (!NT_STATUS_IS_OK(status_tmp)) {
 			DEBUG(3, ("could not query user info on SAMR pipe: %s\n",
 				nt_errstr(status_tmp)));
-			rpccli_samr_close(samr_pipe, state->mem_ctx, &user_pol);
+			rpccli_samr_Close(samr_pipe, state->mem_ctx, &user_pol);
 			goto done;
 		}
 
 		acct_flags = user_ctr->info.id16->acb_info;
 
 		if (acct_flags == 0) {
-			rpccli_samr_close(samr_pipe, state->mem_ctx, &user_pol);
+			rpccli_samr_Close(samr_pipe, state->mem_ctx, &user_pol);
 			goto done;
 		}
 
@@ -1373,7 +1372,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 
 		DEBUG(10,("successfully retrieved acct_flags 0x%x\n", acct_flags));
 
-		rpccli_samr_close(samr_pipe, state->mem_ctx, &user_pol);
+		rpccli_samr_Close(samr_pipe, state->mem_ctx, &user_pol);
 	}
 
 	*info3 = my_info3;
@@ -1593,13 +1592,16 @@ process_result:
 			}
 		}
 
-		result = fillup_password_policy(domain, state);
 
-		if (!NT_STATUS_IS_OK(result) 
-		    && !NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED) ) 
-		{
-			DEBUG(10,("Failed to get password policies: %s\n", nt_errstr(result)));
-			goto done;
+		if (state->request.flags & WBFLAG_PAM_GET_PWD_POLICY) {
+			result = fillup_password_policy(domain, state);
+
+			if (!NT_STATUS_IS_OK(result) 
+			    && !NT_STATUS_EQUAL(result, NT_STATUS_NOT_SUPPORTED) ) 
+			{
+				DEBUG(10,("Failed to get password policies: %s\n", nt_errstr(result)));
+				goto done;
+			}
 		}
 
 		result = NT_STATUS_OK;		

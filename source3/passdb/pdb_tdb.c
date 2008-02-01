@@ -44,13 +44,6 @@ static int tdbsam_debug_level = DBGC_ALL;
 #define RIDPREFIX		"RID_"
 #define PRIVPREFIX		"PRIV_"
 
-struct pwent_list {
-	struct pwent_list *prev, *next;
-	TDB_DATA key;
-};
-static struct pwent_list *tdbsam_pwent_list;
-static bool pwent_initialized;
-
 /* GLOBAL TDB SAM CONTEXT */
 
 static TDB_CONTEXT *tdbsam;
@@ -891,134 +884,6 @@ void tdbsam_close( void )
 	return;
 }
 
-/****************************************************************************
- creates a list of user keys
-****************************************************************************/
-
-static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *state)
-{
-	const char *prefix = USERPREFIX;
-	int  prefixlen = strlen (prefix);
-	struct pwent_list *ptr;
-	
-	if ( strncmp((const char *)key.dptr, prefix, prefixlen) == 0 ) {
-		if ( !(ptr=SMB_MALLOC_P(struct pwent_list)) ) {
-			DEBUG(0,("tdbsam_traverse_setpwent: Failed to malloc new entry for list\n"));
-			
-			/* just return 0 and let the traversal continue */
-			return 0;
-		}
-		ZERO_STRUCTP(ptr);
-		
-		/* save a copy of the key */
-		
-		ptr->key.dptr = (uint8 *)memdup( key.dptr, key.dsize );
-		if (!ptr->key.dptr) {
-			DEBUG(0,("tdbsam_traverse_setpwent: memdup failed\n"));
-			/* just return 0 and let the traversal continue */
-			SAFE_FREE(ptr);
-			return 0;
-		}
-
-		ptr->key.dsize = key.dsize;
-		
-		DLIST_ADD( tdbsam_pwent_list, ptr );
-	
-	}
-	
-	return 0;
-}
-
-/***************************************************************
- Open the TDB passwd database for SAM account enumeration.
- Save a list of user keys for iteration.
-****************************************************************/
-
-static NTSTATUS tdbsam_setsampwent(struct pdb_methods *my_methods, bool update, uint32 acb_mask)
-{
-	if ( !tdbsam_open( tdbsam_filename ) ) {
-		DEBUG(0,("tdbsam_getsampwnam: failed to open %s!\n", tdbsam_filename));
-		return NT_STATUS_ACCESS_DENIED;
-	}
-
-	tdb_traverse( tdbsam, tdbsam_traverse_setpwent, NULL );
-	pwent_initialized = True;
-
-	return NT_STATUS_OK;
-}
-
-
-/***************************************************************
- End enumeration of the TDB passwd list.
-****************************************************************/
-
-static void tdbsam_endsampwent(struct pdb_methods *my_methods)
-{
-	struct pwent_list *ptr, *ptr_next;
-	
-	/* close the tdb only if we have a valid pwent state */
-	
-	if ( pwent_initialized ) {
-		DEBUG(7, ("endtdbpwent: closed sam database.\n"));
-		tdbsam_close();
-	}
-	
-	/* clear out any remaining entries in the list */
-	
-	for ( ptr=tdbsam_pwent_list; ptr; ptr = ptr_next ) {
-		ptr_next = ptr->next;
-		DLIST_REMOVE( tdbsam_pwent_list, ptr );
-		SAFE_FREE( ptr->key.dptr);
-		SAFE_FREE( ptr );
-	}	
-	
-	pwent_initialized = False;
-}
-
-/*****************************************************************
- Get one struct samu from the TDB (next in line)
-*****************************************************************/
-
-static NTSTATUS tdbsam_getsampwent(struct pdb_methods *my_methods, struct samu *user)
-{
-	NTSTATUS 		nt_status = NT_STATUS_UNSUCCESSFUL;
-	TDB_DATA 		data;
-	struct pwent_list	*pkey;
-
-	if ( !user ) {
-		DEBUG(0,("tdbsam_getsampwent: struct samu is NULL.\n"));
-		return nt_status;
-	}
-
-	if ( !tdbsam_pwent_list ) {
-		DEBUG(4,("tdbsam_getsampwent: end of list\n"));
-		return nt_status;
-	}
-	
-	/* pull the next entry */
-		
-	pkey = tdbsam_pwent_list;
-	DLIST_REMOVE( tdbsam_pwent_list, pkey );
-	
-	data = tdb_fetch(tdbsam, pkey->key);
-
-	SAFE_FREE( pkey->key.dptr);
-	SAFE_FREE( pkey);
-	
-	if ( !data.dptr ) {
-		DEBUG(5,("pdb_getsampwent: database entry not found.  Was the user deleted?\n"));
-		return nt_status;
-	}
-  
-	if ( !init_sam_from_buffer(user, (unsigned char *)data.dptr, data.dsize) ) {
-		DEBUG(0,("pdb_getsampwent: Bad struct samu entry returned from TDB!\n"));
-	}
-	
-	SAFE_FREE( data.dptr );
-
-	return NT_STATUS_OK;
-}
-
 /******************************************************************
  Lookup a name in the SAM TDB
 ******************************************************************/
@@ -1306,10 +1171,6 @@ static bool tdb_update_sam(struct pdb_methods *my_methods, struct samu* newpwd, 
 {
 	bool            result = True;
 
-	/* invalidate the existing TDB iterator if it is open */
-	
-	tdbsam_endsampwent( my_methods );
-	
 #if 0 
 	if ( !pdb_get_group_rid(newpwd) ) {
 		DEBUG (0,("tdb_update_sam: Failing to store a struct samu for [%s] "
@@ -1395,10 +1256,6 @@ static NTSTATUS tdbsam_rename_sam_account(struct pdb_methods *my_methods,
 	if (!*rename_script) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
-
-	/* invalidate the existing TDB iterator if it is open */
-
-	tdbsam_endsampwent( my_methods );
 
 	if ( !(new_acct = samu_new( NULL )) ) {
 		return NT_STATUS_NO_MEMORY;
@@ -1495,8 +1352,7 @@ done:
 
 	tdbsam_close();
 
-	if (new_acct)
-		TALLOC_FREE(new_acct);
+	TALLOC_FREE(new_acct);
 	
 	return NT_STATUS_ACCESS_DENIED;	
 }
@@ -1592,6 +1448,139 @@ static bool tdbsam_new_rid(struct pdb_methods *methods, uint32 *prid)
 	return ret;
 }
 
+struct tdbsam_search_state {
+	struct pdb_methods *methods;
+	uint32_t acct_flags;
+
+	uint32_t *rids;
+	uint32_t num_rids;
+	ssize_t array_size;
+	uint32_t current;
+};
+
+static int tdbsam_collect_rids(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
+			       void *private_data)
+{
+	struct tdbsam_search_state *state = talloc_get_type_abort(
+		private_data, struct tdbsam_search_state);
+	size_t prefixlen = strlen(RIDPREFIX);
+	uint32 rid;
+
+	if ((key.dsize < prefixlen)
+	    || (strncmp((char *)key.dptr, RIDPREFIX, prefixlen))) {
+		return 0;
+	}
+
+	rid = strtoul((char *)key.dptr+prefixlen, NULL, 16);
+
+	ADD_TO_LARGE_ARRAY(state, uint32, rid, &state->rids, &state->num_rids,
+			   &state->array_size);
+
+	return 0;
+}
+
+static void tdbsam_search_end(struct pdb_search *search)
+{
+	struct tdbsam_search_state *state = talloc_get_type_abort(
+		search->private_data, struct tdbsam_search_state);
+	TALLOC_FREE(state);
+}
+
+static bool tdbsam_search_next_entry(struct pdb_search *search,
+				     struct samr_displayentry *entry)
+{
+	struct tdbsam_search_state *state = talloc_get_type_abort(
+		search->private_data, struct tdbsam_search_state);
+	struct samu *user = NULL;
+	NTSTATUS status;
+	uint32_t rid;
+
+ again:
+	TALLOC_FREE(user);
+	user = samu_new(talloc_tos());
+	if (user == NULL) {
+		DEBUG(0, ("samu_new failed\n"));
+		return false;
+	}
+
+	if (state->current == state->num_rids) {
+		return false;
+	}
+
+	rid = state->rids[state->current++];
+
+	status = tdbsam_getsampwrid(state->methods, user, rid);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		/*
+		 * Someone has deleted that user since we listed the RIDs
+		 */
+		goto again;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("tdbsam_getsampwrid failed: %s\n",
+			   nt_errstr(status)));
+		TALLOC_FREE(user);
+		return false;
+	}
+
+	if ((state->acct_flags != 0) &&
+	    ((state->acct_flags & pdb_get_acct_ctrl(user)) == 0)) {
+		goto again;
+	}
+
+	entry->acct_flags = pdb_get_acct_ctrl(user);
+	entry->rid = rid;
+	entry->account_name = talloc_strdup(
+		search->mem_ctx, pdb_get_username(user));
+	entry->fullname = talloc_strdup(
+		search->mem_ctx, pdb_get_fullname(user));
+	entry->description = talloc_strdup(
+		search->mem_ctx, pdb_get_acct_desc(user));
+
+	TALLOC_FREE(user);
+
+	if ((entry->account_name == NULL) || (entry->fullname == NULL)
+	    || (entry->description == NULL)) {
+		DEBUG(0, ("talloc_strdup failed\n"));
+		return false;
+	}
+
+	return true;
+}
+
+static bool tdbsam_search_users(struct pdb_methods *methods,
+				struct pdb_search *search,
+				uint32 acct_flags)
+{
+	struct tdbsam_search_state *state;
+
+	if (!tdbsam_open(tdbsam_filename)) {
+		DEBUG(0,("tdbsam_getsampwnam: failed to open %s!\n",
+			 tdbsam_filename));
+		return false;
+	}
+
+	state = TALLOC_ZERO_P(search->mem_ctx, struct tdbsam_search_state);
+	if (state == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return false;
+	}
+	state->acct_flags = acct_flags;
+	state->methods = methods;
+
+	tdb_traverse(tdbsam, tdbsam_collect_rids, state);
+
+	tdbsam_close();
+
+	search->private_data = state;
+	search->next_entry = tdbsam_search_next_entry;
+	search->search_end = tdbsam_search_end;
+
+	return true;
+}
+
 /*********************************************************************
  Initialize the tdb sam backend.  Setup the dispath table of methods,
  open the tdb, etc...
@@ -1609,15 +1598,13 @@ static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *loc
 
 	(*pdb_method)->name = "tdbsam";
 
-	(*pdb_method)->setsampwent = tdbsam_setsampwent;
-	(*pdb_method)->endsampwent = tdbsam_endsampwent;
-	(*pdb_method)->getsampwent = tdbsam_getsampwent;
 	(*pdb_method)->getsampwnam = tdbsam_getsampwnam;
 	(*pdb_method)->getsampwsid = tdbsam_getsampwsid;
 	(*pdb_method)->add_sam_account = tdbsam_add_sam_account;
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
 	(*pdb_method)->rename_sam_account = tdbsam_rename_sam_account;
+	(*pdb_method)->search_users = tdbsam_search_users;
 
 	(*pdb_method)->rid_algorithm = tdbsam_rid_algorithm;
 	(*pdb_method)->new_rid = tdbsam_new_rid;
@@ -1625,7 +1612,8 @@ static NTSTATUS pdb_init_tdbsam(struct pdb_methods **pdb_method, const char *loc
 	/* save the path for later */
 
 	if (!location) {
-		if (asprintf(&tdbfile, "%s/%s", get_dyn_STATEDIR(), PASSDB_FILE_NAME) < 0) {
+		if (asprintf(&tdbfile, "%s/%s", lp_private_dir(),
+			     PASSDB_FILE_NAME) < 0) {
 			return NT_STATUS_NO_MEMORY;
 		}
 		pfile = tdbfile;

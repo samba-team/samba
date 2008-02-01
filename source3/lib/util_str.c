@@ -24,6 +24,17 @@
 
 #include "includes.h"
 
+char toupper_ascii_fast_table[128] = {
+	0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf,
+	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+	0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+	0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f,
+	0x40, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
+	0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f,
+	0x60, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f,
+	0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x7b, 0x7c, 0x7d, 0x7e, 0x7f
+};
+
 /**
  * @file
  * @brief String utilities.
@@ -137,83 +148,6 @@ bool next_token_no_ltrim_talloc(TALLOC_CTX *ctx,
 }
 
 /**
-This is like next_token but is not re-entrant and "remembers" the first
-parameter so you can pass NULL. This is useful for user interface code
-but beware the fact that it is not re-entrant!
-**/
-
-static const char *last_ptr=NULL;
-
-bool next_token_nr_talloc(TALLOC_CTX *ctx,
-				const char **ptr,
-				char **pp_buff,
-				const char *sep)
-{
-	bool ret;
-	if (!ptr) {
-		ptr = &last_ptr;
-	}
-
-	ret = next_token_talloc(ctx, ptr, pp_buff, sep);
-	last_ptr = *ptr;
-	return ret;
-}
-
-void set_first_token(char *ptr)
-{
-	last_ptr = ptr;
-}
-
-/**
- Convert list of tokens to array; dependent on above routine.
- Uses last_ptr from above - bit of a hack.
-**/
-
-char **toktocliplist(int *ctok, const char *sep)
-{
-	char *s=(char *)last_ptr;
-	int ictok=0;
-	char **ret, **iret;
-
-	if (!sep)
-		sep = " \t\n\r";
-
-	while(*s && strchr_m(sep,*s))
-		s++;
-
-	/* nothing left? */
-	if (!*s)
-		return(NULL);
-
-	do {
-		ictok++;
-		while(*s && (!strchr_m(sep,*s)))
-			s++;
-		while(*s && strchr_m(sep,*s))
-			*s++=0;
-	} while(*s);
-
-	*ctok=ictok;
-	s=(char *)last_ptr;
-
-	if (!(ret=iret=SMB_MALLOC_ARRAY(char *,ictok+1)))
-		return NULL;
-
-	while(ictok--) {
-		*iret++=s;
-		if (ictok > 0) {
-			while(*s++)
-				;
-			while(!*s)
-				s++;
-		}
-	}
-
-	ret[*ctok] = NULL;
-	return ret;
-}
-
-/**
  * Case insensitive string compararison.
  *
  * iconv does not directly give us a way to compare strings in
@@ -264,8 +198,8 @@ int StrCaseCmp(const char *s, const char *t)
 			 * from here on in */
 			break;
 
-		us = toupper_ascii(*ps);
-		ut = toupper_ascii(*pt);
+		us = toupper_ascii_fast(*ps);
+		ut = toupper_ascii_fast(*pt);
 		if (us == ut)
 			continue;
 		else if (us < ut)
@@ -323,8 +257,8 @@ int StrnCaseCmp(const char *s, const char *t, size_t len)
 			 * hard way from here on in */
 			break;
 
-		us = toupper_ascii(*ps);
-		ut = toupper_ascii(*pt);
+		us = toupper_ascii_fast(*ps);
+		ut = toupper_ascii_fast(*pt);
 		if (us == ut)
 			continue;
 		else if (us < ut)
@@ -1756,7 +1690,7 @@ void strupper_m(char *s)
 	   (ie. they match for the first 128 chars) */
 
 	while (*s && !(((unsigned char)s[0]) & 0x80)) {
-		*s = toupper_ascii((unsigned char)*s);
+		*s = toupper_ascii_fast((unsigned char)*s);
 		s++;
 	}
 
@@ -2481,13 +2415,13 @@ void base64_decode_inplace(char *s)
 }
 
 /**
- * Encode a base64 string into a malloc()ed string caller to free.
+ * Encode a base64 string into a talloc()ed string caller to free.
  *
  * From SQUID: adopted from http://ftp.sunet.se/pub2/gnu/vm/base64-encode.c
  * with adjustments
  **/
 
-char *base64_encode_data_blob(DATA_BLOB data)
+char *base64_encode_data_blob(TALLOC_CTX *mem_ctx, DATA_BLOB data)
 {
 	int bits = 0;
 	int char_count = 0;
@@ -2500,7 +2434,7 @@ char *base64_encode_data_blob(DATA_BLOB data)
 	out_cnt = 0;
 	len = data.length;
 	output_len = data.length * 2;
-	result = TALLOC_ARRAY(talloc_tos(), char, output_len); /* get us plenty of space */
+	result = TALLOC_ARRAY(mem_ctx, char, output_len); /* get us plenty of space */
 	SMB_ASSERT(result != NULL);
 
 	while (len-- && out_cnt < (data.length * 2) - 5) {

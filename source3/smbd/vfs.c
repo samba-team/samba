@@ -31,7 +31,7 @@ static_decl_vfs;
 
 struct vfs_init_function_entry {
 	char *name;
- 	vfs_op_tuple *vfs_op_tuples;
+	const vfs_op_tuple *vfs_op_tuples;
 	struct vfs_init_function_entry *prev, *next;
 };
 
@@ -55,7 +55,7 @@ static struct vfs_init_function_entry *vfs_find_backend_entry(const char *name)
 	return NULL;
 }
 
-NTSTATUS smb_register_vfs(int version, const char *name, vfs_op_tuple *vfs_op_tuples)
+NTSTATUS smb_register_vfs(int version, const char *name, const vfs_op_tuple *vfs_op_tuples)
 {
 	struct vfs_init_function_entry *entry = backends;
 
@@ -110,13 +110,13 @@ static inline void vfs_set_operation(struct vfs_ops * vfs, vfs_op_type which,
 
 bool vfs_init_custom(connection_struct *conn, const char *vfs_object)
 {
-	vfs_op_tuple *ops;
+	const vfs_op_tuple *ops;
 	char *module_path = NULL;
 	char *module_name = NULL;
 	char *module_param = NULL, *p;
 	int i;
 	vfs_handle_struct *handle;
-	struct vfs_init_function_entry *entry;
+	const struct vfs_init_function_entry *entry;
 	
 	if (!conn||!vfs_object||!vfs_object[0]) {
 		DEBUG(0,("vfs_init_custon() called with NULL pointer or emtpy vfs_object!\n"));
@@ -263,14 +263,26 @@ void vfs_remove_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
 	}
 }
 
-void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
+void *vfs_memctx_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
 {
 	struct vfs_fsp_data *head;
 
 	for (head = fsp->vfs_extension; head; head = head->next) {
 		if (head->owner == handle) {
-			return EXT_DATA_AREA(head);
+			return head;
 		}
+	}
+
+	return NULL;
+}
+
+void *vfs_fetch_fsp_extension(vfs_handle_struct *handle, files_struct *fsp)
+{
+	struct vfs_fsp_data *head;
+
+	head = (struct vfs_fsp_data *)vfs_memctx_fsp_extension(handle, fsp);
+	if (head != NULL) {
+		return EXT_DATA_AREA(head);
 	}
 
 	return NULL;
@@ -377,8 +389,8 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
 
 	while (total < byte_count)
 	{
-		ssize_t ret = SMB_VFS_READ(fsp, fsp->fh->fd, buf + total,
-					byte_count - total);
+		ssize_t ret = SMB_VFS_READ(fsp, buf + total,
+					   byte_count - total);
 
 		if (ret == 0) return total;
 		if (ret == -1) {
@@ -399,7 +411,7 @@ ssize_t vfs_pread_data(files_struct *fsp, char *buf,
 
 	while (total < byte_count)
 	{
-		ssize_t ret = SMB_VFS_PREAD(fsp, fsp->fh->fd, buf + total,
+		ssize_t ret = SMB_VFS_PREAD(fsp, buf + total,
 					byte_count - total, offset + total);
 
 		if (ret == 0) return total;
@@ -433,13 +445,12 @@ ssize_t vfs_write_data(struct smb_request *req,
 		req->unread_bytes = 0;
 		return SMB_VFS_RECVFILE(smbd_server_fd(),
 					fsp,
-					fsp->fh->fd,
 					(SMB_OFF_T)-1,
 					N);
 	}
 
 	while (total < N) {
-		ret = SMB_VFS_WRITE(fsp,fsp->fh->fd,buffer + total,N - total);
+		ret = SMB_VFS_WRITE(fsp, buffer + total, N - total);
 
 		if (ret == -1)
 			return -1;
@@ -467,14 +478,13 @@ ssize_t vfs_pwrite_data(struct smb_request *req,
 		req->unread_bytes = 0;
 		return SMB_VFS_RECVFILE(smbd_server_fd(),
 					fsp,
-					fsp->fh->fd,
 					offset,
 					N);
 	}
 
 	while (total < N) {
-		ret = SMB_VFS_PWRITE(fsp, fsp->fh->fd, buffer + total,
-                                N - total, offset + total);
+		ret = SMB_VFS_PWRITE(fsp, buffer + total, N - total,
+				     offset + total);
 
 		if (ret == -1)
 			return -1;
@@ -513,7 +523,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 		return -1;
 	}
 
-	ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st);
+	ret = SMB_VFS_FSTAT(fsp, &st);
 	if (ret == -1)
 		return ret;
 
@@ -527,7 +537,7 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_BIG_UINT len)
 				fsp->fsp_name, (double)st.st_size ));
 
 		flush_write_cache(fsp, SIZECHANGE_FLUSH);
-		if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fh->fd, (SMB_OFF_T)len)) != -1) {
+		if ((ret = SMB_VFS_FTRUNCATE(fsp, (SMB_OFF_T)len)) != -1) {
 			set_filelen_write_cache(fsp, len);
 		}
 		return ret;
@@ -569,7 +579,7 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 	release_level_2_oplocks_on_change(fsp);
 	DEBUG(10,("vfs_set_filelen: ftruncate %s to len %.0f\n", fsp->fsp_name, (double)len));
 	flush_write_cache(fsp, SIZECHANGE_FLUSH);
-	if ((ret = SMB_VFS_FTRUNCATE(fsp, fsp->fh->fd, len)) != -1) {
+	if ((ret = SMB_VFS_FTRUNCATE(fsp, len)) != -1) {
 		set_filelen_write_cache(fsp, len);
 		notify_fname(fsp->conn, NOTIFY_ACTION_MODIFIED,
 			     FILE_NOTIFY_CHANGE_SIZE
@@ -600,7 +610,7 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 	ssize_t pwrite_ret;
 
 	release_level_2_oplocks_on_change(fsp);
-	ret = SMB_VFS_FSTAT(fsp,fsp->fh->fd,&st);
+	ret = SMB_VFS_FSTAT(fsp, &st);
 	if (ret == -1) {
 		return ret;
 	}
@@ -629,7 +639,7 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
 	while (total < num_to_write) {
 		size_t curr_write_size = MIN(SPARSE_BUF_WRITE_SIZE, (num_to_write - total));
 
-		pwrite_ret = SMB_VFS_PWRITE(fsp, fsp->fh->fd, sparse_buf, curr_write_size, offset + total);
+		pwrite_ret = SMB_VFS_PWRITE(fsp, sparse_buf, curr_write_size, offset + total);
 		if (pwrite_ret == -1) {
 			DEBUG(10,("vfs_fill_sparse: SMB_VFS_PWRITE for file %s failed with error %s\n",
 				fsp->fsp_name, strerror(errno) ));
@@ -650,25 +660,24 @@ int vfs_fill_sparse(files_struct *fsp, SMB_OFF_T len)
  Transfer some data (n bytes) between two file_struct's.
 ****************************************************************************/
 
-static files_struct *in_fsp;
-static files_struct *out_fsp;
-
-static ssize_t read_fn(int fd, void *buf, size_t len)
+static ssize_t vfs_read_fn(void *file, void *buf, size_t len)
 {
-	return SMB_VFS_READ(in_fsp, fd, buf, len);
+	struct files_struct *fsp = (struct files_struct *)file;
+
+	return SMB_VFS_READ(fsp, buf, len);
 }
 
-static ssize_t write_fn(int fd, const void *buf, size_t len)
+static ssize_t vfs_write_fn(void *file, const void *buf, size_t len)
 {
-	return SMB_VFS_WRITE(out_fsp, fd, buf, len);
+	struct files_struct *fsp = (struct files_struct *)file;
+
+	return SMB_VFS_WRITE(fsp, buf, len);
 }
 
 SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
 {
-	in_fsp = in;
-	out_fsp = out;
-
-	return transfer_file_internal(in_fsp->fh->fd, out_fsp->fh->fd, n, read_fn, write_fn);
+	return transfer_file_internal((void *)in, (void *)out, n,
+				      vfs_read_fn, vfs_write_fn);
 }
 
 /*******************************************************************
@@ -731,152 +740,98 @@ int vfs_ChDir(connection_struct *conn, const char *path)
 	return(res);
 }
 
-/* number of list structures for a caching GetWd function. */
-#define MAX_GETWDCACHE (50)
-
-static struct {
-	SMB_DEV_T dev; /* These *must* be compatible with the types returned in a stat() call. */
-	SMB_INO_T inode; /* These *must* be compatible with the types returned in a stat() call. */
-	char *path; /* The pathname. */
-	bool valid;
-} ino_list[MAX_GETWDCACHE];
-
-extern bool use_getwd_cache;
-
-/****************************************************************************
- Prompte a ptr (to make it recently used)
-****************************************************************************/
-
-static void array_promote(char *array,int elsize,int element)
-{
-	char *p;
-	if (element == 0)
-		return;
-
-	p = (char *)SMB_MALLOC(elsize);
-
-	if (!p) {
-		DEBUG(5,("array_promote: malloc fail\n"));
-		return;
-	}
-
-	memcpy(p,array + element * elsize, elsize);
-	memmove(array + elsize,array,elsize*element);
-	memcpy(array,p,elsize);
-	SAFE_FREE(p);
-}
-
 /*******************************************************************
  Return the absolute current directory path - given a UNIX pathname.
  Note that this path is returned in DOS format, not UNIX
  format. Note this can be called with conn == NULL.
 ********************************************************************/
 
+struct getwd_cache_key {
+	SMB_DEV_T dev;
+	SMB_INO_T ino;
+};
+
 char *vfs_GetWd(TALLOC_CTX *ctx, connection_struct *conn)
 {
         char s[PATH_MAX+1];
-	static bool getwd_cache_init = False;
 	SMB_STRUCT_STAT st, st2;
-	int i;
-	char *ret = NULL;
+	char *result;
+	DATA_BLOB cache_value;
+	struct getwd_cache_key key;
 
 	*s = 0;
 
-	if (!use_getwd_cache) {
- nocache:
-		ret = SMB_VFS_GETWD(conn,s);
-		if (!ret) {
-			DEBUG(0,("vfs_GetWd: SMB_VFS_GETWD call failed, "
-				"errno %s\n",strerror(errno)));
-			return NULL;
-		}
-		return talloc_strdup(ctx, ret);
-	}
-
-	/* init the cache */
-	if (!getwd_cache_init) {
-		getwd_cache_init = True;
-		for (i=0;i<MAX_GETWDCACHE;i++) {
-			string_set(&ino_list[i].path,"");
-			ino_list[i].valid = False;
-		}
-	}
-
-	/*  Get the inode of the current directory, if this doesn't work we're
-		in trouble :-) */
-
-	if (SMB_VFS_STAT(conn, ".",&st) == -1) {
-		/* Known to fail for root: the directory may be
-		 * NFS-mounted and exported with root_squash (so has no root access). */
-		DEBUG(1,("vfs_GetWd: couldn't stat \".\" error %s "
-			"(NFS problem ?)\n",
-			strerror(errno) ));
+	if (!lp_getwd_cache()) {
 		goto nocache;
 	}
 
+	SET_STAT_INVALID(st);
 
-	for (i=0; i<MAX_GETWDCACHE; i++) {
-		if (ino_list[i].valid) {
-
-			/*  If we have found an entry with a matching inode and dev number
-				then find the inode number for the directory in the cached string.
-				If this agrees with that returned by the stat for the current
-				directory then all is o.k. (but make sure it is a directory all
-				the same...) */
-
-			if (st.st_ino == ino_list[i].inode && st.st_dev == ino_list[i].dev) {
-				if (SMB_VFS_STAT(conn,ino_list[i].path,&st2) == 0) {
-					if (st.st_ino == st2.st_ino && st.st_dev == st2.st_dev &&
-							(st2.st_mode & S_IFMT) == S_IFDIR) {
-
-						ret = talloc_strdup(ctx,
-							ino_list[i].path);
-
-						/* promote it for future use */
-						array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
-						if (ret == NULL) {
-							errno = ENOMEM;
-						}
-						return ret;
-					} else {
-						/*  If the inode is different then something's changed,
-							scrub the entry and start from scratch. */
-						ino_list[i].valid = False;
-					}
-				}
-			}
-		}
+	if (SMB_VFS_STAT(conn, ".",&st) == -1) {
+		/*
+		 * Known to fail for root: the directory may be NFS-mounted
+		 * and exported with root_squash (so has no root access).
+		 */
+		DEBUG(1,("vfs_GetWd: couldn't stat \".\" error %s "
+			 "(NFS problem ?)\n", strerror(errno) ));
+		goto nocache;
 	}
 
-	/*  We don't have the information to hand so rely on traditional
-	 *  methods. The very slow getcwd, which spawns a process on some
-	 *  systems, or the not quite so bad getwd. */
+	ZERO_STRUCT(key); /* unlikely, but possible padding */
+	key.dev = st.st_dev;
+	key.ino = st.st_ino;
+
+	if (!memcache_lookup(smbd_memcache(), GETWD_CACHE,
+			     data_blob_const(&key, sizeof(key)),
+			     &cache_value)) {
+		goto nocache;
+	}
+
+	SMB_ASSERT((cache_value.length > 0)
+		   && (cache_value.data[cache_value.length-1] == '\0'));
+
+	if ((SMB_VFS_STAT(conn, (char *)cache_value.data, &st2) == 0)
+	    && (st.st_dev == st2.st_dev) && (st.st_ino == st2.st_ino)
+	    && (S_ISDIR(st.st_mode))) {
+		/*
+		 * Ok, we're done
+		 */
+		result = talloc_strdup(ctx, (char *)cache_value.data);
+		if (result == NULL) {
+			errno = ENOMEM;
+		}
+		return result;
+	}
+
+ nocache:
+
+	/*
+	 * We don't have the information to hand so rely on traditional
+	 * methods. The very slow getcwd, which spawns a process on some
+	 * systems, or the not quite so bad getwd.
+	 */
 
 	if (!SMB_VFS_GETWD(conn,s)) {
-		DEBUG(0,("vfs_GetWd: SMB_VFS_GETWD call failed, errno %s\n",
-				strerror(errno)));
-		return (NULL);
+		DEBUG(0, ("vfs_GetWd: SMB_VFS_GETWD call failed: %s\n",
+			  strerror(errno)));
+		return NULL;
 	}
 
-	ret = talloc_strdup(ctx,s);
+	if (lp_getwd_cache() && VALID_STAT(st)) {
+		ZERO_STRUCT(key); /* unlikely, but possible padding */
+		key.dev = st.st_dev;
+		key.ino = st.st_ino;
 
-	DEBUG(5,("vfs_GetWd %s, inode %.0f, dev %.0f\n",
-				s,(double)st.st_ino,(double)st.st_dev));
+		memcache_add(smbd_memcache(), GETWD_CACHE,
+			     data_blob_const(&key, sizeof(key)),
+			     data_blob_const(s, strlen(s)+1));
+	}
 
-	/* add it to the cache */
-	i = MAX_GETWDCACHE - 1;
-	string_set(&ino_list[i].path,s);
-	ino_list[i].dev = st.st_dev;
-	ino_list[i].inode = st.st_ino;
-	ino_list[i].valid = True;
-
-	/* put it at the top of the list */
-	array_promote((char *)&ino_list[0],sizeof(ino_list[0]),i);
-
-	if (ret == NULL) {
+	result = talloc_strdup(ctx, s);
+	if (result == NULL) {
 		errno = ENOMEM;
 	}
-	return ret;
+	return result;
 }
 
 /*******************************************************************
@@ -911,14 +866,13 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				return map_nt_error_from_unix(errno);
 			case ENOENT:
 			{
-				TALLOC_CTX *tmp_ctx = talloc_stackframe();
+				TALLOC_CTX *ctx = talloc_tos();
 				char *tmp_fname = NULL;
 				char *last_component = NULL;
 				/* Last component didn't exist. Remove it and try and canonicalise the directory. */
 
-				tmp_fname = talloc_strdup(tmp_ctx, fname);
+				tmp_fname = talloc_strdup(ctx, fname);
 				if (!tmp_fname) {
-					TALLOC_FREE(tmp_ctx);
 					return NT_STATUS_NO_MEMORY;
 				}
 				p = strrchr_m(tmp_fname, '/');
@@ -927,10 +881,9 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 					last_component = p;
 				} else {
 					last_component = tmp_fname;
-					tmp_fname = talloc_strdup(tmp_ctx,
+					tmp_fname = talloc_strdup(ctx,
 							".");
 					if (!tmp_fname) {
-						TALLOC_FREE(tmp_ctx);
 						return NT_STATUS_NO_MEMORY;
 					}
 				}
@@ -942,15 +895,13 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 #endif
 				if (!resolved_name) {
 					DEBUG(3,("reduce_name: couldn't get realpath for %s\n", fname));
-					TALLOC_FREE(tmp_ctx);
 					return map_nt_error_from_unix(errno);
 				}
-				tmp_fname = talloc_asprintf(tmp_ctx,
+				tmp_fname = talloc_asprintf(ctx,
 						"%s/%s",
 						resolved_name,
 						last_component);
 				if (!tmp_fname) {
-					TALLOC_FREE(tmp_ctx);
 					return NT_STATUS_NO_MEMORY;
 				}
 #ifdef REALPATH_TAKES_NULL
@@ -964,7 +915,6 @@ NTSTATUS check_reduced_name(connection_struct *conn, const char *fname)
 				safe_strcpy(resolved_name_buf, tmp_fname, PATH_MAX);
 				resolved_name = resolved_name_buf;
 #endif
-				TALLOC_FREE(tmp_ctx);
 				break;
 			}
 			default:

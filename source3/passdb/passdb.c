@@ -1552,7 +1552,9 @@ bool get_trust_pw_clear(const char *domain, char **ret_pwd,
 			return false;
 		}
 
-		*channel = SEC_CHAN_DOMAIN;
+		if (channel != NULL) {
+			*channel = SEC_CHAN_DOMAIN;
+		}
 
 		if (account_name != NULL) {
 			*account_name = lp_workgroup();

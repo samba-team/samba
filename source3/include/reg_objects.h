@@ -61,6 +61,7 @@ struct registry_value {
 typedef struct {
 	uint32          num_values;
 	REGISTRY_VALUE	**values;
+	int seqnum;
 } REGVAL_CTR;
 
 /* container for registry subkey names */
@@ -68,6 +69,7 @@ typedef struct {
 typedef struct {
 	uint32          num_subkeys;
 	char            **subkeys;
+	int seqnum;
 } REGSUBKEY_CTR;
 
 /*
@@ -92,11 +94,17 @@ typedef struct {
 #define KEY_HKCU		"HKCU"
 #define KEY_HKDD		"HKDD"
 #define KEY_SERVICES		"HKLM\\SYSTEM\\CurrentControlSet\\Services"
+#define KEY_EVENTLOG 		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog"
+#define KEY_SHARES		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares"
+#define KEY_NETLOGON_PARAMS	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Netlogon\\Parameters"
+#define KEY_TCPIP_PARAMS	"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Tcpip\\Parameters"
+#define KEY_PROD_OPTIONS	"HKLM\\SYSTEM\\CurrentControlSet\\Control\\ProductOptions"
 #define KEY_PRINTING 		"HKLM\\SYSTEM\\CurrentControlSet\\Control\\Print"
 #define KEY_PRINTING_2K		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Print\\Printers"
 #define KEY_PRINTING_PORTS	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Ports"
-#define KEY_EVENTLOG 		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\Eventlog"
-#define KEY_SHARES		"HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Shares"
+#define KEY_CURRENT_VERSION	"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion"
+#define KEY_PERFLIB		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib"
+#define KEY_PERFLIB_009		"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Perflib\\009"
 #define KEY_SMBCONF		"HKLM\\SOFTWARE\\Samba\\smbconf"
 #define KEY_TREE_ROOT		""
 
@@ -128,6 +136,8 @@ typedef struct {
 			      struct security_descriptor **psecdesc);
 	WERROR (*set_secdesc)(const char *key,
 			      struct security_descriptor *sec_desc);
+	bool	(*subkeys_need_update)(REGSUBKEY_CTR *subkeys);
+	bool	(*values_need_update)(REGVAL_CTR *values);
 } REGISTRY_OPS;
 
 typedef struct {

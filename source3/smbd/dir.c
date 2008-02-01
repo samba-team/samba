@@ -142,8 +142,7 @@ static void dptr_idle(struct dptr_struct *dptr)
 {
 	if (dptr->dir_hnd) {
 		DEBUG(4,("Idling dptr dnum %d\n",dptr->dnum));
-		CloseDir(dptr->dir_hnd);
-		dptr->dir_hnd = NULL;
+		TALLOC_FREE(dptr->dir_hnd);
 	}
 }
 
@@ -192,7 +191,9 @@ static struct dptr_struct *dptr_get(int key, bool forclose)
 				if (dirhandles_open >= MAX_OPEN_DIRECTORIES)
 					dptr_idleoldest();
 				DEBUG(4,("dptr_get: Reopening dptr key %d\n",key));
-				if (!(dptr->dir_hnd = OpenDir(dptr->conn, dptr->path, dptr->wcard, dptr->attr))) {
+				if (!(dptr->dir_hnd = OpenDir(
+					      NULL, dptr->conn, dptr->path,
+					      dptr->wcard, dptr->attr))) {
 					DEBUG(4,("dptr_get: Failed to open %s (%s)\n",dptr->path,
 						strerror(errno)));
 					return False;
@@ -263,9 +264,7 @@ static void dptr_close_internal(struct dptr_struct *dptr)
 
 	bitmap_clear(dptr_bmap, dptr->dnum - 1);
 
-	if (dptr->dir_hnd) {
-		CloseDir(dptr->dir_hnd);
-	}
+	TALLOC_FREE(dptr->dir_hnd);
 
 	/* Lanman 2 specific code */
 	SAFE_FREE(dptr->wcard);
@@ -411,7 +410,7 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 		return status;
 	}
 
-	dir_hnd = OpenDir(conn, path, wcard, attr);
+	dir_hnd = OpenDir(NULL, conn, path, wcard, attr);
 	if (!dir_hnd) {
 		return map_nt_error_from_unix(errno);
 	}
@@ -425,7 +424,7 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 	dptr = SMB_MALLOC_P(struct dptr_struct);
 	if(!dptr) {
 		DEBUG(0,("malloc fail in dptr_create.\n"));
-		CloseDir(dir_hnd);
+		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -455,7 +454,7 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 			if(dptr->dnum == -1 || dptr->dnum > 254) {
 				DEBUG(0,("dptr_create: returned %d: Error - all old dirptrs in use ?\n", dptr->dnum));
 				SAFE_FREE(dptr);
-				CloseDir(dir_hnd);
+				TALLOC_FREE(dir_hnd);
 				return NT_STATUS_TOO_MANY_OPENED_FILES;
 			}
 		}
@@ -485,7 +484,7 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 			if(dptr->dnum == -1 || dptr->dnum < 255) {
 				DEBUG(0,("dptr_create: returned %d: Error - all new dirptrs in use ?\n", dptr->dnum));
 				SAFE_FREE(dptr);
-				CloseDir(dir_hnd);
+				TALLOC_FREE(dir_hnd);
 				return NT_STATUS_TOO_MANY_OPENED_FILES;
 			}
 		}
@@ -504,7 +503,7 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 	if (!dptr->wcard) {
 		bitmap_clear(dptr_bmap, dptr->dnum - 1);
 		SAFE_FREE(dptr);
-		CloseDir(dir_hnd);
+		TALLOC_FREE(dir_hnd);
 		return NT_STATUS_NO_MEMORY;
 	}
 	if (lp_posix_pathnames() || (wcard[0] == '.' && wcard[1] == 0)) {
@@ -533,7 +532,8 @@ NTSTATUS dptr_create(connection_struct *conn, const char *path, bool old_handle,
 int dptr_CloseDir(struct dptr_struct *dptr)
 {
 	DLIST_REMOVE(dirptrs, dptr);
-	return CloseDir(dptr->dir_hnd);
+	TALLOC_FREE(dptr->dir_hnd);
+	return 0;
 }
 
 void dptr_SeekDir(struct dptr_struct *dptr, long offset)
@@ -646,10 +646,13 @@ const char *dptr_ReadDirName(TALLOC_CTX *ctx,
 
 		TALLOC_FREE(pathreal);
 
-		/* In case sensitive mode we don't search - we know if it doesn't exist 
-		   with a stat we will fail. */
+		/* Stat failed. We know this is authoratiative if we are
+		 * providing case sensitive semantics or the underlying
+		 * filesystem is case sensitive.
+		 */
 
-		if (dptr->conn->case_sensitive) {
+		if (dptr->conn->case_sensitive ||
+		    !(dptr->conn->fs_capabilities & FILE_CASE_SENSITIVE_SEARCH)) {
 			/* We need to set the underlying dir_hnd offset to -1 also as
 			   this function is usually called with the output from TellDir. */
 			dptr->dir_hnd->offset = *poffset = END_OF_DIRECTORY_OFFSET;
@@ -924,12 +927,7 @@ static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 		return True;
 	}
 
-	/* If we can't stat it does not show it */
-	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0)) {
-		DEBUG(10,("user_can_read_file: SMB_VFS_STAT failed for file %s with error %s\n",
-			name, strerror(errno) ));
-		return False;
-	}
+	SMB_ASSERT(VALID_STAT(*pst));
 
 	/* Pseudo-open the file (note - no fd's created). */
 
@@ -950,7 +948,7 @@ static bool user_can_read_file(connection_struct *conn, char *name, SMB_STRUCT_S
 	}
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	status = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd,
+	status = SMB_VFS_FGET_NT_ACL(fsp,
 			(OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
 	close_file(fsp, NORMAL_CLOSE);
 
@@ -987,10 +985,7 @@ static bool user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 		return True;
 	}
 
-	/* If we can't stat it does not show it */
-	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0)) {
-		return False;
-	}
+	SMB_ASSERT(VALID_STAT(*pst));
 
 	/* Pseudo-open the file */
 
@@ -1012,7 +1007,7 @@ static bool user_can_write_file(connection_struct *conn, char *name, SMB_STRUCT_
 	}
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
-	status = SMB_VFS_FGET_NT_ACL(fsp, fsp->fh->fd,
+	status = SMB_VFS_FGET_NT_ACL(fsp,
 			(OWNER_SECURITY_INFORMATION|GROUP_SECURITY_INFORMATION|DACL_SECURITY_INFORMATION), &psd);
 	close_file(fsp, NORMAL_CLOSE);
 
@@ -1039,9 +1034,7 @@ static bool file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
 	if (conn->admin_user)
 		return False;
 
-	/* If we can't stat it does not show it */
-	if (!VALID_STAT(*pst) && (SMB_VFS_STAT(conn, name, pst) != 0))
-		return True;
+	SMB_ASSERT(VALID_STAT(*pst));
 
 	if (S_ISREG(pst->st_mode) || S_ISDIR(pst->st_mode) || S_ISLNK(pst->st_mode))
 		return False;
@@ -1050,7 +1043,9 @@ static bool file_is_special(connection_struct *conn, char *name, SMB_STRUCT_STAT
 }
 
 /*******************************************************************
- Should the file be seen by the client ?
+ Should the file be seen by the client ? NOTE: A successful return
+ is no guarantee of the file's existence ... you also have to check
+ whether pst is valid.
 ********************************************************************/
 
 bool is_visible_file(connection_struct *conn, const char *dir_path, const char *name, SMB_STRUCT_STAT *pst, bool use_veto)
@@ -1086,6 +1081,15 @@ bool is_visible_file(connection_struct *conn, const char *dir_path, const char *
 			return True;
 		}
 
+		/* If the file name does not exist, there's no point checking
+		 * the configuration options. We succeed, on the basis that the
+		 * checks *might* have passed if the file was present.
+		 */
+		if (SMB_VFS_STAT(conn, entry, pst) != 0) {
+		        SAFE_FREE(entry);
+		        return True;
+		}
+
 		/* Honour _hide unreadable_ option */
 		if (hide_unreadable && !user_can_read_file(conn, entry, pst)) {
 			DEBUG(10,("is_visible_file: file %s is unreadable.\n", entry ));
@@ -1109,80 +1113,51 @@ bool is_visible_file(connection_struct *conn, const char *dir_path, const char *
 	return True;
 }
 
+static int smb_Dir_destructor(struct smb_Dir *dirp)
+{
+	if (dirp->dir) {
+		SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
+	}
+	dirhandles_open--;
+	return 0;
+}
+
 /*******************************************************************
  Open a directory.
 ********************************************************************/
 
-struct smb_Dir *OpenDir(connection_struct *conn, const char *name, const char *mask, uint32 attr)
+struct smb_Dir *OpenDir(TALLOC_CTX *mem_ctx, connection_struct *conn,
+			const char *name, const char *mask, uint32 attr)
 {
-	struct smb_Dir *dirp = SMB_MALLOC_P(struct smb_Dir);
+	struct smb_Dir *dirp = TALLOC_ZERO_P(mem_ctx, struct smb_Dir);
 
 	if (!dirp) {
 		return NULL;
 	}
-	ZERO_STRUCTP(dirp);
 
 	dirp->conn = conn;
 	dirp->name_cache_size = lp_directory_name_cache_size(SNUM(conn));
 
-	dirp->dir_path = SMB_STRDUP(name);
+	dirp->dir_path = talloc_strdup(dirp, name);
 	if (!dirp->dir_path) {
 		goto fail;
 	}
+
+	dirhandles_open++;
+	talloc_set_destructor(dirp, smb_Dir_destructor);
+
 	dirp->dir = SMB_VFS_OPENDIR(conn, dirp->dir_path, mask, attr);
 	if (!dirp->dir) {
-		DEBUG(5,("OpenDir: Can't open %s. %s\n", dirp->dir_path, strerror(errno) ));
+		DEBUG(5,("OpenDir: Can't open %s. %s\n", dirp->dir_path,
+			 strerror(errno) ));
 		goto fail;
 	}
 
-	if (dirp->name_cache_size) {
-		dirp->name_cache = SMB_CALLOC_ARRAY(struct name_cache_entry,
-				dirp->name_cache_size);
-		if (!dirp->name_cache) {
-			goto fail;
-		}
-	} else {
-		dirp->name_cache = NULL;
-	}
-
-	dirhandles_open++;
 	return dirp;
 
   fail:
-
-	if (dirp) {
-		if (dirp->dir) {
-			SMB_VFS_CLOSEDIR(conn,dirp->dir);
-		}
-		SAFE_FREE(dirp->dir_path);
-		SAFE_FREE(dirp->name_cache);
-		SAFE_FREE(dirp);
-	}
+	TALLOC_FREE(dirp);
 	return NULL;
-}
-
-
-/*******************************************************************
- Close a directory.
-********************************************************************/
-
-int CloseDir(struct smb_Dir *dirp)
-{
-	int i, ret = 0;
-
-	if (dirp->dir) {
-		ret = SMB_VFS_CLOSEDIR(dirp->conn,dirp->dir);
-	}
-	SAFE_FREE(dirp->dir_path);
-	if (dirp->name_cache) {
-		for (i = 0; i < dirp->name_cache_size; i++) {
-			SAFE_FREE(dirp->name_cache[i].name);
-		}
-	}
-	SAFE_FREE(dirp->name_cache);
-	SAFE_FREE(dirp);
-	dirhandles_open--;
-	return ret;
 }
 
 /*******************************************************************
@@ -1291,15 +1266,24 @@ void DirCacheAdd(struct smb_Dir *dirp, const char *name, long offset)
 {
 	struct name_cache_entry *e;
 
-	if (!dirp->name_cache_size || !dirp->name_cache) {
+	if (dirp->name_cache_size == 0) {
 		return;
+	}
+
+	if (dirp->name_cache == NULL) {
+		dirp->name_cache = TALLOC_ZERO_ARRAY(
+			dirp, struct name_cache_entry, dirp->name_cache_size);
+
+		if (dirp->name_cache == NULL) {
+			return;
+		}
 	}
 
 	dirp->name_cache_index = (dirp->name_cache_index+1) %
 					dirp->name_cache_size;
 	e = &dirp->name_cache[dirp->name_cache_index];
-	SAFE_FREE(e->name);
-	e->name = SMB_STRDUP(name);
+	TALLOC_FREE(e->name);
+	e->name = talloc_strdup(dirp, name);
 	e->offset = offset;
 }
 
@@ -1356,7 +1340,8 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 	NTSTATUS status = NT_STATUS_OK;
 	long dirpos = 0;
 	const char *dname;
-	struct smb_Dir *dir_hnd = OpenDir(conn, dirname, NULL, 0);
+	struct smb_Dir *dir_hnd = OpenDir(talloc_tos(), conn, dirname,
+					  NULL, 0);
 
 	if (!dir_hnd) {
 		return map_nt_error_from_unix(errno);
@@ -1380,7 +1365,7 @@ NTSTATUS can_delete_directory(struct connection_struct *conn,
 		status = NT_STATUS_DIRECTORY_NOT_EMPTY;
 		break;
 	}
-	CloseDir(dir_hnd);
+	TALLOC_FREE(dir_hnd);
 
 	return status;
 }

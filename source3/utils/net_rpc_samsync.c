@@ -237,7 +237,7 @@ NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
 
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uchar trust_password[16];
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS;
 	uint32 sec_channel_type = 0;
 
 	if (!secrets_fetch_trust_account_password(domain_name,
@@ -365,7 +365,8 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 		old_string = pdb_get_munged_dial(account);
 		mung.length = delta->hdr_parameters.uni_str_len;
 		mung.data = (uint8 *) delta->uni_parameters.buffer;
-		newstr = (mung.length == 0) ? NULL : base64_encode_data_blob(mung);
+		newstr = (mung.length == 0) ? NULL :
+			base64_encode_data_blob(talloc_tos(), mung);
 
 		if (STRING_CHANGED_NC(old_string, newstr))
 			pdb_set_munged_dial(account, newstr, PDB_CHANGED);
@@ -486,7 +487,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!(passwd = Get_Pwnam(account))) {
+	if (!(passwd = Get_Pwnam_alloc(sam_account, account))) {
 		/* Create appropriate user */
 		if (delta->acb_info & ACB_NORMAL) {
 			add_script = talloc_strdup(sam_account,
@@ -525,7 +526,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 		}
 
 		/* try and find the possible unix account again */
-		if ( !(passwd = Get_Pwnam(account)) ) {
+		if ( !(passwd = Get_Pwnam_alloc(sam_account, account)) ) {
 			d_fprintf(stderr, "Could not create posix account info for '%s'\n", account);
 			nt_ret = NT_STATUS_NO_SUCH_USER;
 			goto done;
@@ -1422,12 +1423,11 @@ static int fprintf_attr(FILE *add_fd, const char *attr_name,
 	base64_blob.data = (unsigned char *)value;
 	base64_blob.length = strlen(value);
 
-	base64 = base64_encode_data_blob(base64_blob);
+	base64 = base64_encode_data_blob(value, base64_blob);
 	SMB_ASSERT(base64 != NULL);
 
 	res = fprintf(add_fd, "%s:: %s\n", attr_name, base64);
 	TALLOC_FREE(value);
-	TALLOC_FREE(base64);
 	return res;
 }
 

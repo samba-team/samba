@@ -124,7 +124,7 @@ machine %s. Error was : %s.\n", dc_name, nt_errstr(result)));
 
 	if (!lp_client_schannel()) {
 		/* We need to set up a creds chain on an unauthenticated netlogon pipe. */
-		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+		uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS;
 		uint32 sec_chan_type = 0;
 		unsigned char machine_pwd[16];
 		const char *account_name;
@@ -270,7 +270,9 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 						&info3);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
-			(*server_info)->was_mapped |= user_info->was_mapped;
+			if (user_info->was_mapped) {
+				(*server_info)->was_mapped = user_info->was_mapped;
+			}
 
 			if ( ! (*server_info)->guest) {
 				/* if a real user check pam account restrictions */

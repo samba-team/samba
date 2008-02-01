@@ -745,8 +745,8 @@ bool srv_oplock_set_signing(bool onoff)
 
 bool srv_check_sign_mac(const char *inbuf, bool must_be_ok)
 {
-	/* Check if it's a session keepalive. */
-	if(CVAL(inbuf,0) == SMBkeepalive) {
+	/* Check if it's a non-session message. */
+	if(CVAL(inbuf,0)) {
 		return True;
 	}
 
@@ -759,8 +759,8 @@ bool srv_check_sign_mac(const char *inbuf, bool must_be_ok)
 
 void srv_calculate_sign_mac(char *outbuf)
 {
-	/* Check if it's a session keepalive. */
-	if(CVAL(outbuf,0) == SMBkeepalive) {
+	/* Check if it's a non-session message. */
+	if(CVAL(outbuf,0)) {
 		return;
 	}
 

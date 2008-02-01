@@ -614,10 +614,16 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
   out:
 
 	destlen = destlen - o_len;
-	if (ctx) {
-		ob = (char *)TALLOC_REALLOC(ctx,ob,destlen);
-	} else {
-		ob = (char *)SMB_REALLOC(ob,destlen);
+	/* Don't shrink unless we're reclaiming a lot of
+	 * space. This is in the hot codepath and these
+	 * reallocs *cost*. JRA.
+	 */
+	if (o_len > 1024) {
+		if (ctx) {
+			ob = (char *)TALLOC_REALLOC(ctx,ob,destlen);
+		} else {
+			ob = (char *)SMB_REALLOC(ob,destlen);
+		}
 	}
 
 	if (destlen && !ob) {
@@ -778,7 +784,7 @@ char *strdup_upper(const char *s)
 	while (*p) {
 		if (*p & 0x80)
 			break;
-		*q++ = toupper_ascii(*p);
+		*q++ = toupper_ascii_fast(*p);
 		p++;
 	}
 
@@ -844,7 +850,7 @@ char *talloc_strdup_upper(TALLOC_CTX *ctx, const char *s)
 	while (*p) {
 		if (*p & 0x80)
 			break;
-		*q++ = toupper_ascii(*p);
+		*q++ = toupper_ascii_fast(*p);
 		p++;
 	}
 

@@ -34,7 +34,7 @@ void _dfs_GetManagerVersion(pipes_struct *p, struct dfs_GetManagerVersion *r)
 	if (lp_host_msdfs()) {
 		*r->out.version = DFS_MANAGER_VERSION_NT4;
 	} else {
-		*r->out.version = 0;
+		*r->out.version = (enum dfs_ManagerVersion)0;
 	}
 }
 
@@ -133,10 +133,10 @@ WERROR _dfs_Remove(pipes_struct *p, struct dfs_Remove *r)
 		altpath = talloc_asprintf(ctx, "%s\\%s",
 			r->in.servername,
 			r->in.sharename);
-		strlower_m(altpath);
 		if (!altpath) {
 			return WERR_NOMEM;
 		}
+		strlower_m(altpath);
 		DEBUG(5,("init_reply_dfs_remove: Request to remove %s -> %s\\%s.\n",
 			r->in.dfs_entry_path, r->in.servername, r->in.sharename));
 	}

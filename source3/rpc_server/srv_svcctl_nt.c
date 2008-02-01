@@ -162,7 +162,9 @@ static SEC_DESC* construct_scm_sd( TALLOC_CTX *ctx )
 	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
 		return NULL;
 
-	if ( !(sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, acl, &sd_size)) )
+	if ( !(sd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
+				  SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL,
+				  acl, &sd_size)) )
 		return NULL;
 
 	return sd;
@@ -346,8 +348,8 @@ WERROR _svcctl_get_display_name(pipes_struct *p, SVCCTL_Q_GET_DISPLAY_NAME *q_u,
 		
 	rpcstr_pull(service, q_u->servicename.buffer, sizeof(service), q_u->servicename.uni_str_len*2, 0);
 	
-	display_name = svcctl_lookup_dispname( service, p->pipe_user.nt_user_token );
-	init_svcctl_r_get_display_name( r_u, display_name );
+	display_name = svcctl_lookup_dispname(p->mem_ctx, service, p->pipe_user.nt_user_token );
+	init_svcctl_r_get_display_name( r_u, display_name ? display_name : "");
 
 	return WERR_OK;
 }
@@ -394,8 +396,8 @@ static int enumerate_status( TALLOC_CTX *ctx, ENUM_SERVICES_STATUS **status, NT_
 	for ( i=0; i<num_services; i++ ) {
 		init_unistr( &st[i].servicename, svcctl_ops[i].name );
 		
-		display_name = svcctl_lookup_dispname( svcctl_ops[i].name, token );
-		init_unistr( &st[i].displayname, display_name );
+		display_name = svcctl_lookup_dispname(ctx, svcctl_ops[i].name, token );
+		init_unistr( &st[i].displayname, display_name ? display_name : "");
 		
 		svcctl_ops[i].ops->service_status( svcctl_ops[i].name, &st[i].status );
 	}
@@ -688,16 +690,16 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 {
 	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
 	uint32 buffer_size;
-	
+
 	/* perform access checks */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
-		return WERR_BADFID;	
-	
+		return WERR_BADFID;
+
 	if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_CONFIG) )
 		return WERR_ACCESS_DENIED;
- 
-	/* we have to set the outgoing buffer size to the same as the 
+
+	/* we have to set the outgoing buffer size to the same as the
 	   incoming buffer size (even in the case of failure */
 
 	rpcbuf_init( &r_u->buffer, q_u->buffer_size, p->mem_ctx );
@@ -708,12 +710,12 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 		{
 			SERVICE_DESCRIPTION desc_buf;
 			const char *description;
-			
-			description = svcctl_lookup_description( info->name, p->pipe_user.nt_user_token );
-			
+
+			description = svcctl_lookup_description(p->mem_ctx, info->name, p->pipe_user.nt_user_token );
+
 			ZERO_STRUCTP( &desc_buf );
 
-			init_service_description_buffer( &desc_buf, description );
+			init_service_description_buffer( &desc_buf, description ? description : "");
 			svcctl_io_service_description( "", &desc_buf, &r_u->buffer, 0 );
 	                buffer_size = svcctl_sizeof_service_description( &desc_buf );
 
@@ -737,7 +739,7 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}
-	
+
 	buffer_size += buffer_size % 4;
 	r_u->needed = (buffer_size > q_u->buffer_size) ? buffer_size : q_u->buffer_size;
 
@@ -811,7 +813,7 @@ WERROR _svcctl_query_service_sec( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_SEC *q
 	if ( !(sec_desc = svcctl_get_secdesc( p->mem_ctx, info->name, get_root_nt_token() )) )
                 return WERR_NOMEM;
 
-	r_u->needed = sec_desc_size( sec_desc );
+	r_u->needed = ndr_size_security_descriptor( sec_desc, 0 );
 
 	if ( r_u->needed > q_u->buffer_size ) {
 		ZERO_STRUCTP( &r_u->buffer );

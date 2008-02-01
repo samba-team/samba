@@ -37,6 +37,11 @@
                 goto done; \
         }
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
 /*******************************************************************
  Leave an AD domain.  Windows XP disables the machine account.
  We'll try the same.  The old code would do an LDAP delete.
@@ -71,9 +76,12 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	
-	status = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &sam_pol,
-			SEC_RIGHTS_MAXIMUM_ALLOWED, dom_sid, &domain_pol);
+
+	status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&sam_pol,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					dom_sid,
+					&domain_pol);
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
@@ -98,8 +106,11 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		
 	/* Open handle on user */
 
-	status = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-			SEC_RIGHTS_MAXIMUM_ALLOWED, user_rid, &user_pol);
+	status = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_pol);
 	if ( !NT_STATUS_IS_OK(status) ) {
 		goto done;
 	}
@@ -108,7 +119,7 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 	status = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, &user_pol, 16, &qctr);
 	if ( !NT_STATUS_IS_OK(status) ) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 		goto done;
 	}
 
@@ -123,11 +134,11 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	status = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol, 16, 
 					&cli->user_session_key, &ctr);
 
-	rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 
 done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
-	rpccli_samr_close(pipe_hnd, mem_ctx, &sam_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &sam_pol);
 	
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
 	
@@ -157,7 +168,7 @@ int netdom_store_machine_account( const char *domain, DOM_SID *sid, const char *
  ********************************************************************/
 
 NTSTATUS netdom_get_domain_sid( TALLOC_CTX *mem_ctx, struct cli_state *cli, 
-				char **domain, DOM_SID **sid )
+				const char **domain, DOM_SID **sid )
 {
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	POLICY_HND lsa_pol;
@@ -204,10 +215,12 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	const char *const_acct_name;
+	struct lsa_String lsa_acct_name;
 	uint32 user_rid;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
 	uint32 acb_info = ACB_WSTRUST;
+	uint32 acct_flags;
 	uint32 fields_present;
 	uchar pwbuf[532];
 	SAM_USERINFO_CTR ctr;
@@ -217,6 +230,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	uchar md5buffer[16];
 	DATA_BLOB digested_session_key;
 	uchar md4_trust_password[16];
+	uint32_t access_granted = 0;
 
 	/* Open the domain */
 	
@@ -231,9 +245,12 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	
-	status = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &sam_pol,
-			SEC_RIGHTS_MAXIMUM_ALLOWED, dom_sid, &domain_pol);
+
+	status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&sam_pol,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					dom_sid,
+					&domain_pol);
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
@@ -243,10 +260,25 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
-	/* Don't try to set any acb_info flags other than ACB_WSTRUST */
+	init_lsa_String(&lsa_acct_name, acct_name);
 
-	status = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-			acct_name, acb_info, 0xe005000b, &user_pol, &user_rid);
+	/* Don't try to set any acb_info flags other than ACB_WSTRUST */
+	acct_flags = SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
+		     SEC_STD_WRITE_DAC | SEC_STD_DELETE |
+		     SAMR_USER_ACCESS_SET_PASSWORD |
+		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
+		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
+
+	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
+
+	status = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 &lsa_acct_name,
+					 acb_info,
+					 acct_flags,
+					 &user_pol,
+					 &access_granted,
+					 &user_rid);
 
 	if ( !NT_STATUS_IS_OK(status) 
 		&& !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) 
@@ -266,7 +298,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	/* We *must* do this.... don't ask... */
 
 	if (NT_STATUS_IS_OK(status)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	}
 
 	status = rpccli_samr_lookup_names(pipe_hnd, mem_ctx,
@@ -284,8 +316,11 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		
 	/* Open handle on user */
 
-	status = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-			SEC_RIGHTS_MAXIMUM_ALLOWED, user_rid, &user_pol);
+	status = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -336,7 +371,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		return status;
 	}
 
-	rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
 	
 	return status;

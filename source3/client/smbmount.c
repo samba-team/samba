@@ -764,6 +764,7 @@ static void parse_mount_smb(int argc, char **argv)
 	char *opts;
 	char *opteq;
 	int val;
+	char *saveptr = NULL;
 	TALLOC_CTX *ctx = talloc_tos();
 
 	/* FIXME: This function can silently fail if the arguments are
@@ -813,7 +814,8 @@ static void parse_mount_smb(int argc, char **argv)
 	/*
 	 * option parsing from nfsmount.c (util-linux-2.9u)
 	 */
-        for (opts = strtok(optarg, ","); opts; opts = strtok(NULL, ",")) {
+        for (opts = strtok_r(optarg, ",", &saveptr); opts;
+	     opts = strtok_r(NULL, ",", &saveptr)) {
 		DEBUG(3, ("opts: %s\n", opts));
                 if ((opteq = strchr_m(opts, '='))) {
                         val = atoi(opteq + 1);

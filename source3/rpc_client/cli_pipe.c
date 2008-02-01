@@ -2263,7 +2263,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_noauth(struct cli_state *cli, int pipe
 	*perr = rpc_pipe_bind(result, PIPE_AUTH_TYPE_NONE, PIPE_AUTH_LEVEL_NONE);
 	if (!NT_STATUS_IS_OK(*perr)) {
 		int lvl = 0;
-		if (pipe_idx == PI_LSARPC_DS) {
+		if (pipe_idx == PI_DSSETUP) {
 			/* non AD domains just don't have this pipe, avoid
 			 * level 0 statement in that case - gd */
 			lvl = 3;
@@ -2364,8 +2364,8 @@ static struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_internal(struct cli_sta
 		goto err;
 	}
 
-	DEBUG(10,("cli_rpc_pipe_open_ntlmssp_internal: opened pipe %s to machine %s and"
-		"bound NTLMSSP as user %s\\%s.\n",
+	DEBUG(10,("cli_rpc_pipe_open_ntlmssp_internal: opened pipe %s to "
+		"machine %s and bound NTLMSSP as user %s\\%s.\n",
 		result->pipe_name, cli->desthost,
 		domain, username ));
 
@@ -2466,7 +2466,6 @@ static bool get_schannel_session_key_common(struct rpc_pipe_client *netlogon_pip
 	if (((*pneg_flags) & NETLOGON_NEG_SCHANNEL) == 0) {
 		DEBUG(3, ("get_schannel_session_key: Server %s did not offer schannel\n",
 			cli->desthost));
-		cli_rpc_pipe_close(netlogon_pipe);
 		*perr = NT_STATUS_INVALID_NETWORK_RESPONSE;
 		return false;
 	}
@@ -2597,7 +2596,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_ntlmssp_auth_schannel(struct cli_state
 						const char *password,
 						NTSTATUS *perr)
 {
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 
@@ -2631,7 +2630,7 @@ struct rpc_pipe_client *cli_rpc_pipe_open_schannel(struct cli_state *cli,
                                                 const char *domain,
 						NTSTATUS *perr)
 {
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	struct rpc_pipe_client *result = NULL;
 

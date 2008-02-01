@@ -1961,7 +1961,7 @@ int smbc_fremovexattr(int fd,
  *                            extended attributes
  *
  * @note            This function always returns all attribute names supported
- *                  by NT file systems, regardless of wether the referenced
+ *                  by NT file systems, regardless of whether the referenced
  *                  file system supports extended attributes (e.g. a Windows
  *                  2000 machine supports extended attributes if NTFS is used,
  *                  but not if FAT is used, and Windows 98 doesn't support

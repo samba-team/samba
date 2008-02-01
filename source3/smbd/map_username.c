@@ -28,14 +28,49 @@
  any incoming or new username - in order to canonicalize the name.
  This is being done to de-couple the case conversions from the user mapping
  function. Previously, the map_username was being called
- every time Get_Pwnam was called.
+ every time Get_Pwnam_alloc was called.
  Returns True if username was changed, false otherwise.
 ********************************************************************/
 
+static char *last_from, *last_to;
+
+static const char *get_last_from(void)
+{
+	if (!last_from) {
+		return "";
+	}
+	return last_from;
+}
+
+static const char *get_last_to(void)
+{
+	if (!last_to) {
+		return "";
+	}
+	return last_to;
+}
+
+static bool set_last_from_to(const char *from, const char *to)
+{
+	char *orig_from = last_from;
+	char *orig_to = last_to;
+
+	last_from = SMB_STRDUP(from);
+	last_to = SMB_STRDUP(to);
+
+	SAFE_FREE(orig_from);
+	SAFE_FREE(orig_to);
+
+	if (!last_from || !last_to) {
+		SAFE_FREE(last_from);
+		SAFE_FREE(last_to);
+		return false;
+	}
+	return true;
+}
+
 bool map_username(fstring user)
 {
-	static bool initialised=False;
-	static fstring last_from,last_to;
 	XFILE *f;
 	char *mapfile = lp_username_map();
 	char *s;
@@ -46,12 +81,12 @@ bool map_username(fstring user)
 	if (!*user)
 		return false;
 
-	if (strequal(user,last_to))
+	if (strequal(user,get_last_to()))
 		return false;
 
-	if (strequal(user,last_from)) {
-		DEBUG(3,("Mapped user %s to %s\n",user,last_to));
-		fstrcpy(user,last_to);
+	if (strequal(user,get_last_from())) {
+		DEBUG(3,("Mapped user %s to %s\n",user,get_last_to()));
+		fstrcpy(user,get_last_to());
 		return true;
 	}
 
@@ -98,15 +133,9 @@ bool map_username(fstring user)
 	}
 
 	/* ok.  let's try the mapfile */
-	
 	if (!*mapfile)
 		return False;
 
-	if (!initialised) {
-		*last_from = *last_to = 0;
-		initialised = True;
-	}
-  
 	f = x_fopen(mapfile,O_RDONLY, 0);
 	if (!f) {
 		DEBUG(0,("can't open username map %s. Error %s\n",mapfile, strerror(errno) ));
@@ -135,7 +164,7 @@ bool map_username(fstring user)
 			while (*unixname && isspace((int)*unixname))
 				unixname++;
 		}
-    
+
 		if (!*unixname || strchr_m("#;",*unixname))
 			continue;
 
@@ -159,27 +188,28 @@ bool map_username(fstring user)
 		    user_in_list(user, (const char **)dosuserlist)) {
 			DEBUG(3,("Mapped user %s to %s\n",user,unixname));
 			mapped_user = True;
-			fstrcpy( last_from,user );
+
+			set_last_from_to(user, unixname);
 			fstrcpy( user, unixname );
-			fstrcpy( last_to,user );
+
 			if ( return_if_mapped ) {
 				str_list_free (&dosuserlist);
 				x_fclose(f);
 				return True;
 			}
 		}
-    
+
 		str_list_free (&dosuserlist);
 	}
 
 	x_fclose(f);
 
 	/*
-	 * Setup the last_from and last_to as an optimization so 
+	 * Setup the last_from and last_to as an optimization so
 	 * that we don't scan the file again for the same user.
 	 */
-	fstrcpy(last_from,user);
-	fstrcpy(last_to,user);
+
+	set_last_from_to(user, user);
 
 	return mapped_user;
 }

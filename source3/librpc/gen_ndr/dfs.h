@@ -6,14 +6,15 @@
 #define _HEADER_netdfs
 
 #define DFS_STORAGE_STATES	( 0xf )
+enum dfs_ManagerVersion
 #ifndef USE_UINT_ENUMS
-enum dfs_ManagerVersion {
+ {
 	DFS_MANAGER_VERSION_NT4=1,
 	DFS_MANAGER_VERSION_W2K=2,
 	DFS_MANAGER_VERSION_W2K3=4
 }
 #else
-enum dfs_ManagerVersion { __donnot_use_enum_dfs_ManagerVersion=0x7FFFFFFF}
+ { __donnot_use_enum_dfs_ManagerVersion=0x7FFFFFFF}
 #define DFS_MANAGER_VERSION_NT4 ( 1 )
 #define DFS_MANAGER_VERSION_W2K ( 2 )
 #define DFS_MANAGER_VERSION_W2K3 ( 4 )
@@ -31,12 +32,10 @@ struct dfs_Info1 {
 /* bitmap dfs_VolumeState */
 #define DFS_VOLUME_STATE_OK ( 0x1 )
 #define DFS_VOLUME_STATE_INCONSISTENT ( 0x2 )
-#define DFS_VOLUME_STATE_OFFLINE ( 0x4 )
-#define DFS_VOLUME_STATE_ONLINE ( 0x8 )
+#define DFS_VOLUME_STATE_OFFLINE ( 0x3 )
+#define DFS_VOLUME_STATE_ONLINE ( 0x4 )
 #define DFS_VOLUME_STATE_STANDALONE ( DFS_VOLUME_FLAVOR_STANDALONE )
 #define DFS_VOLUME_STATE_AD_BLOB ( DFS_VOLUME_FLAVOR_AD_BLOB )
-
-;
 
 struct dfs_Info2 {
 	const char *path;/* [unique,charset(UTF16)] */
@@ -49,8 +48,6 @@ struct dfs_Info2 {
 #define DFS_STORAGE_STATE_OFFLINE ( 1 )
 #define DFS_STORAGE_STATE_ONLINE ( 2 )
 #define DFS_STORAGE_STATE_ACTIVE ( 4 )
-
-;
 
 struct dfs_StorageInfo {
 	uint32_t state;
@@ -83,8 +80,6 @@ struct dfs_Info4 {
 #define DFS_PROPERTY_FLAG_TARGET_FAILBACK ( 0x08 )
 #define DFS_PROPERTY_FLAG_CLUSTER_ENABLED ( 0x10 )
 
-;
-
 struct dfs_Info5 {
 	const char *path;/* [unique,charset(UTF16)] */
 	const char *comment;/* [unique,charset(UTF16)] */
@@ -96,8 +91,9 @@ struct dfs_Info5 {
 	uint32_t num_stores;
 };
 
+enum dfs_Target_PriorityClass
 #ifndef USE_UINT_ENUMS
-enum dfs_Target_PriorityClass {
+ {
 	DFS_INVALID_PRIORITY_CLASS=-1,
 	DFS_SITE_COST_NORMAL_PRIORITY_CLASS=0,
 	DFS_GLOBAL_HIGH_PRIORITY_CLASS=1,
@@ -106,7 +102,7 @@ enum dfs_Target_PriorityClass {
 	DFS_GLOBAL_LOW_PRIORITY_CLASS=4
 }
 #else
-enum dfs_Target_PriorityClass { __donnot_use_enum_dfs_Target_PriorityClass=0x7FFFFFFF}
+ { __donnot_use_enum_dfs_Target_PriorityClass=0x7FFFFFFF}
 #define DFS_INVALID_PRIORITY_CLASS ( -1 )
 #define DFS_SITE_COST_NORMAL_PRIORITY_CLASS ( 0 )
 #define DFS_GLOBAL_HIGH_PRIORITY_CLASS ( 1 )
@@ -180,13 +176,14 @@ struct dfs_Info200 {
 	const char *dom_root;/* [unique,charset(UTF16)] */
 };
 
+enum dfs_VolumeFlavor
 #ifndef USE_UINT_ENUMS
-enum dfs_VolumeFlavor {
+ {
 	DFS_VOLUME_FLAVOR_STANDALONE=0x100,
 	DFS_VOLUME_FLAVOR_AD_BLOB=0x200
 }
 #else
-enum dfs_VolumeFlavor { __donnot_use_enum_dfs_VolumeFlavor=0x7FFFFFFF}
+ { __donnot_use_enum_dfs_VolumeFlavor=0x7FFFFFFF}
 #define DFS_VOLUME_FLAVOR_STANDALONE ( 0x100 )
 #define DFS_VOLUME_FLAVOR_AD_BLOB ( 0x200 )
 #endif
@@ -235,6 +232,16 @@ struct dfs_EnumArray4 {
 	struct dfs_Info4 *s;/* [unique,size_is(count)] */
 };
 
+struct dfs_EnumArray5 {
+	uint32_t count;
+	struct dfs_Info5 *s;/* [unique,size_is(count)] */
+};
+
+struct dfs_EnumArray6 {
+	uint32_t count;
+	struct dfs_Info6 *s;/* [unique,size_is(count)] */
+};
+
 struct dfs_EnumArray200 {
 	uint32_t count;
 	struct dfs_Info200 *s;/* [unique,size_is(count)] */
@@ -250,6 +257,8 @@ union dfs_EnumInfo {
 	struct dfs_EnumArray2 *info2;/* [unique,case(2)] */
 	struct dfs_EnumArray3 *info3;/* [unique,case(3)] */
 	struct dfs_EnumArray4 *info4;/* [unique,case(4)] */
+	struct dfs_EnumArray5 *info5;/* [unique,case(5)] */
+	struct dfs_EnumArray6 *info6;/* [unique,case(6)] */
 	struct dfs_EnumArray200 *info200;/* [unique,case(200)] */
 	struct dfs_EnumArray300 *info300;/* [unique,case(300)] */
 };
@@ -482,6 +491,16 @@ struct dfs_AddStdRootForced {
 
 struct dfs_GetDcAddress {
 	struct {
+		const char *servername;/* [charset(UTF16)] */
+		const char **server_fullname;/* [ref,charset(UTF16)] */
+		uint8_t *is_root;/* [ref] */
+		uint32_t *ttl;/* [ref] */
+	} in;
+
+	struct {
+		const char **server_fullname;/* [ref,charset(UTF16)] */
+		uint8_t *is_root;/* [ref] */
+		uint32_t *ttl;/* [ref] */
 		WERROR result;
 	} out;
 
@@ -489,6 +508,13 @@ struct dfs_GetDcAddress {
 
 
 struct dfs_SetDcAddress {
+	struct {
+		const char *servername;/* [charset(UTF16)] */
+		const char *server_fullname;/* [charset(UTF16)] */
+		uint32_t flags;
+		uint32_t ttl;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;

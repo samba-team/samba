@@ -93,7 +93,7 @@ _PUBLIC_ void ndr_print_echo_info3(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_echo_info4(struct ndr_push *ndr, int ndr_flags, const struct echo_info4 *r)
+static enum ndr_err_code ndr_push_STRUCT_echo_info4(struct ndr_push *ndr, int ndr_flags, const struct echo_info4 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
@@ -104,7 +104,7 @@ static enum ndr_err_code ndr_push_echo_info4(struct ndr_push *ndr, int ndr_flags
 	return NDR_ERR_SUCCESS;
 }
 
-static enum ndr_err_code ndr_pull_echo_info4(struct ndr_pull *ndr, int ndr_flags, struct echo_info4 *r)
+static enum ndr_err_code ndr_pull_STRUCT_echo_info4(struct ndr_pull *ndr, int ndr_flags, struct echo_info4 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
@@ -115,7 +115,7 @@ static enum ndr_err_code ndr_pull_echo_info4(struct ndr_pull *ndr, int ndr_flags
 	return NDR_ERR_SUCCESS;
 }
 
-_PUBLIC_ void ndr_print_echo_info4(struct ndr_print *ndr, const char *name, const struct echo_info4 *r)
+_PUBLIC_ void ndr_print_STRUCT_echo_info4(struct ndr_print *ndr, const char *name, const struct echo_info4 *r)
 {
 	ndr_print_struct(ndr, name, "echo_info4");
 	ndr->depth++;
@@ -194,7 +194,7 @@ static enum ndr_err_code ndr_push_echo_info7(struct ndr_push *ndr, int ndr_flags
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 8));
 		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->v1));
-		NDR_CHECK(ndr_push_echo_info4(ndr, NDR_SCALARS, &r->info4));
+		NDR_CHECK(ndr_push_STRUCT_echo_info4(ndr, NDR_SCALARS, &r->info4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -206,7 +206,7 @@ static enum ndr_err_code ndr_pull_echo_info7(struct ndr_pull *ndr, int ndr_flags
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 8));
 		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->v1));
-		NDR_CHECK(ndr_pull_echo_info4(ndr, NDR_SCALARS, &r->info4));
+		NDR_CHECK(ndr_pull_STRUCT_echo_info4(ndr, NDR_SCALARS, &r->info4));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
 	}
@@ -218,7 +218,7 @@ _PUBLIC_ void ndr_print_echo_info7(struct ndr_print *ndr, const char *name, cons
 	ndr_print_struct(ndr, name, "echo_info7");
 	ndr->depth++;
 	ndr_print_uint8(ndr, "v1", r->v1);
-	ndr_print_echo_info4(ndr, "info4", &r->info4);
+	ndr_print_STRUCT_echo_info4(ndr, "info4", &r->info4);
 	ndr->depth--;
 }
 
@@ -241,7 +241,7 @@ static enum ndr_err_code ndr_push_echo_Info(struct ndr_push *ndr, int ndr_flags,
 			break;
 
 			case 4:
-				NDR_CHECK(ndr_push_echo_info4(ndr, NDR_SCALARS, &r->info4));
+				NDR_CHECK(ndr_push_STRUCT_echo_info4(ndr, NDR_SCALARS, &r->info4));
 			break;
 
 			case 5:
@@ -315,7 +315,7 @@ static enum ndr_err_code ndr_pull_echo_Info(struct ndr_pull *ndr, int ndr_flags,
 			break; }
 
 			case 4: {
-				NDR_CHECK(ndr_pull_echo_info4(ndr, NDR_SCALARS, &r->info4));
+				NDR_CHECK(ndr_pull_STRUCT_echo_info4(ndr, NDR_SCALARS, &r->info4));
 			break; }
 
 			case 5: {
@@ -383,7 +383,7 @@ _PUBLIC_ void ndr_print_echo_Info(struct ndr_print *ndr, const char *name, const
 		break;
 
 		case 4:
-			ndr_print_echo_info4(ndr, "info4", &r->info4);
+			ndr_print_STRUCT_echo_info4(ndr, "info4", &r->info4);
 		break;
 
 		case 5:

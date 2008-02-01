@@ -32,14 +32,15 @@
 
 DNS_ERROR DoDNSUpdate(char *pszServerName,
 		      const char *pszDomainName, const char *pszHostName,
-		      const struct in_addr *iplist, size_t num_addrs );
+		      const struct sockaddr_storage *sslist,
+		      size_t num_addrs );
 
 /*********************************************************************
 *********************************************************************/
 
 DNS_ERROR DoDNSUpdate(char *pszServerName,
 		      const char *pszDomainName, const char *pszHostName,
-		      const struct in_addr *iplist, size_t num_addrs )
+		      const struct sockaddr_storage *sslist, size_t num_addrs )
 {
 	DNS_ERROR err;
 	struct dns_connection *conn;
@@ -47,7 +48,7 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 	OM_uint32 minor;
 	struct dns_update_request *req, *resp;
 
-	if ( (num_addrs <= 0) || !iplist ) {
+	if ( (num_addrs <= 0) || !sslist ) {
 		return ERROR_DNS_INVALID_PARAMETER;
 	}
 
@@ -65,7 +66,7 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 	 */
 
 	err = dns_create_probe(mem_ctx, pszDomainName, pszHostName,
-			       num_addrs, iplist, &req);
+			       num_addrs, sslist, &req);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
 	err = dns_update_transaction(mem_ctx, conn, req, &resp);
@@ -81,7 +82,7 @@ DNS_ERROR DoDNSUpdate(char *pszServerName,
 	 */
 
 	err = dns_create_update_request(mem_ctx, pszDomainName, pszHostName,
-					iplist, num_addrs, &req);
+					sslist, num_addrs, &req);
 	if (!ERR_DNS_IS_OK(err)) goto error;
 
 	err = dns_update_transaction(mem_ctx, conn, req, &resp);
@@ -141,33 +142,42 @@ error:
 /*********************************************************************
 *********************************************************************/
 
-int get_my_ip_address( struct in_addr **ips )
+int get_my_ip_address( struct sockaddr_storage **pp_ss )
+
 {
 	struct iface_struct nics[MAX_INTERFACES];
 	int i, n;
-	struct in_addr *list;
+	struct sockaddr_storage *list = NULL;
 	int count = 0;
 
 	/* find the first non-loopback address from our list of interfaces */
 
 	n = get_interfaces(nics, MAX_INTERFACES);
-	
-	if ( (list = SMB_MALLOC_ARRAY( struct in_addr, n )) == NULL ) {
+
+	if (n <= 0) {
+		return -1;
+	}
+
+	if ( (list = SMB_MALLOC_ARRAY( struct sockaddr_storage, n )) == NULL ) {
 		return -1;
 	}
 
 	for ( i=0; i<n; i++ ) {
+		if (is_loopback_addr(&nics[i].ip)) {
+			continue;
+		}
+#if defined(HAVE_IPV6)
 		if ((nics[i].ip.ss_family == AF_INET)) {
-			struct in_addr ifip;
-
-			ifip = ((const struct sockaddr_in *)&nics[i].ip)->sin_addr;
-
-			if (!is_loopback_ip_v4(ifip)) {
-				memcpy(&list[count++], &ifip, sizeof(struct in_addr));
-			}
+			memcpy(&list[count++], &nics[i].ip,
+			       sizeof(struct sockaddr_storage));
+		} else
+#endif
+		if (nics[i].ip.ss_family == AF_INET) {
+			memcpy(&list[count++], &nics[i].ip,
+			       sizeof(struct sockaddr_storage));
 		}
 	}
-	*ips = list;
+	*pp_ss = list;
 
 	return count;
 }

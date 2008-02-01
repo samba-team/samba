@@ -549,11 +549,13 @@ NTSTATUS make_server_info_sam(auth_serversupplied_info **server_info,
 				"for gid %d!\n", gids[i]));
 			continue;
 		}
-		if (!add_sid_to_array_unique( result, &unix_group_sid,
-				&result->sids, &result->num_sids )) {
+		status = add_sid_to_array_unique(result, &unix_group_sid,
+						 &result->sids,
+						 &result->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
 			result->sam_account = NULL; /* Don't free on error exit. */
 			TALLOC_FREE(result);
-			return NT_STATUS_NO_MEMORY;
+			return status;
 		}
 	}
 
@@ -895,9 +897,9 @@ NTSTATUS create_token_from_username(TALLOC_CTX *mem_ctx, const char *username,
 				"for gid %d!\n", gids[i]));
 			continue;
 		}
-		if (!add_sid_to_array_unique(tmp_ctx, &unix_group_sid,
-				&group_sids, &num_group_sids )) {
-			result = NT_STATUS_NO_MEMORY;
+		result = add_sid_to_array_unique(tmp_ctx, &unix_group_sid,
+						 &group_sids, &num_group_sids);
+		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}
 	}
@@ -1074,11 +1076,12 @@ NTSTATUS make_server_info_pw(auth_serversupplied_info **server_info,
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	if (!add_sid_to_array_unique(result, &u_sid,
-					&result->sids,
-					&result->num_sids)) {
+	status = add_sid_to_array_unique(result, &u_sid,
+					 &result->sids,
+					 &result->num_sids);
+	if (!NT_STATUS_IS_OK(status)) {
 		TALLOC_FREE(result);
-		return NT_STATUS_NO_MEMORY;
+		return status;
 	}
 
 	/* For now we throw away the gids and convert via sid_to_gid
@@ -1103,7 +1106,7 @@ static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_inf
 	struct samu *sampass = NULL;
 	DOM_SID guest_sid;
 	bool ret;
-	static const char zeros[16] = { 0, };
+	char zeros[16];
 
 	if ( !(sampass = samu_new( NULL )) ) {
 		return NT_STATUS_NO_MEMORY;
@@ -1138,6 +1141,7 @@ static NTSTATUS make_new_server_info_guest(auth_serversupplied_info **server_inf
 
 	/* annoying, but the Guest really does have a session key, and it is
 	   all zeros! */
+	ZERO_STRUCT(zeros);
 	(*server_info)->user_session_key = data_blob(zeros, sizeof(zeros));
 	(*server_info)->lm_session_key = data_blob(zeros, sizeof(zeros));
 
@@ -1420,10 +1424,10 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				auth_serversupplied_info **server_info, 
 				NET_USER_INFO_3 *info3) 
 {
-	static const char zeros[16] = { 0, };
+	char zeros[16];
 
 	NTSTATUS nt_status = NT_STATUS_OK;
-	char *found_username;
+	char *found_username = NULL;
 	const char *nt_domain;
 	const char *nt_username;
 	struct samu *sam_account = NULL;
@@ -1431,8 +1435,8 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	DOM_SID group_sid;
 	bool username_was_mapped;
 
-	uid_t uid;
-	gid_t gid;
+	uid_t uid = (uid_t)-1;
+	gid_t gid = (gid_t)-1;
 
 	auth_serversupplied_info *result;
 
@@ -1624,7 +1628,9 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 					    &(info3->uni_logon_srv));
 
 	/* ensure we are never given NULL session keys */
-	
+
+	ZERO_STRUCT(zeros);
+
 	if (memcmp(info3->user_sess_key, zeros, sizeof(zeros)) == 0) {
 		result->user_session_key = data_blob_null;
 	} else {
@@ -1731,17 +1737,17 @@ bool is_trusted_domain(const char* dom_name)
 			return True;
 	}
 	else {
-		NSS_STATUS result;
+		wbcErr result;
 
 		/* If winbind is around, ask it */
 
 		result = wb_is_trusted_domain(dom_name);
 
-		if (result == NSS_STATUS_SUCCESS) {
+		if (result == WBC_ERR_SUCCESS) {
 			return True;
 		}
 
-		if (result == NSS_STATUS_NOTFOUND) {
+		if (result == WBC_ERR_DOMAIN_NOT_FOUND) {
 			/* winbind could not find the domain */
 			return False;
 		}

@@ -54,11 +54,12 @@ void sec_ace_copy(SEC_ACE *ace_dest, SEC_ACE *ace_src)
  Sets up a SEC_ACE structure.
 ********************************************************************/
 
-void init_sec_ace(SEC_ACE *t, const DOM_SID *sid, uint8 type, uint32 mask, uint8 flag)
+void init_sec_ace(SEC_ACE *t, const DOM_SID *sid, enum security_ace_type type,
+		  uint32 mask, uint8 flag)
 {
 	t->type = type;
 	t->flags = flag;
-	t->size = sid_size(sid) + 8;
+	t->size = ndr_size_dom_sid(sid, 0) + 8;
 	t->access_mask = mask;
 
 	ZERO_STRUCTP(&t->trustee);
@@ -83,9 +84,9 @@ NTSTATUS sec_ace_add_sid(TALLOC_CTX *ctx, SEC_ACE **pp_new, SEC_ACE *old, unsign
 	for (i = 0; i < *num - 1; i ++)
 		sec_ace_copy(&(*pp_new)[i], &old[i]);
 
-	(*pp_new)[i].type  = 0;
+	(*pp_new)[i].type  = SEC_ACE_TYPE_ACCESS_ALLOWED;
 	(*pp_new)[i].flags = 0;
-	(*pp_new)[i].size  = SEC_ACE_HEADER_SIZE + sid_size(sid);
+	(*pp_new)[i].size  = SEC_ACE_HEADER_SIZE + ndr_size_dom_sid(sid, 0);
 	(*pp_new)[i].access_mask = mask;
 	sid_copy(&(*pp_new)[i].trustee, sid);
 	return NT_STATUS_OK;

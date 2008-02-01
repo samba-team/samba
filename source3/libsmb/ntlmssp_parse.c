@@ -170,6 +170,7 @@ bool msrpc_gen(DATA_BLOB *blob,
 /* a helpful macro to avoid running over the end of our blob */
 #define NEED_DATA(amount) \
 if ((head_ofs + amount) > blob->length) { \
+        va_end(ap); \
         return False; \
 }
 
@@ -216,16 +217,20 @@ bool msrpc_parse(const DATA_BLOB *blob,
 				if ((len1 != len2) || (ptr + len1 < ptr) ||
 						(ptr + len1 < len1) ||
 						(ptr + len1 > blob->length)) {
+					va_end(ap);
 					return false;
 				}
 				if (len1 & 1) {
 					/* if odd length and unicode */
+					va_end(ap);
 					return false;
 				}
 				if (blob->data + ptr <
 						(uint8 *)(unsigned long)ptr ||
-						blob->data + ptr < blob->data)
+				    blob->data + ptr < blob->data) {
+					va_end(ap);
 					return false;
+				}
 
 				if (0 < len1) {
 					char *p = NULL;
@@ -261,13 +266,16 @@ bool msrpc_parse(const DATA_BLOB *blob,
 				if ((len1 != len2) || (ptr + len1 < ptr) ||
 						(ptr + len1 < len1) ||
 						(ptr + len1 > blob->length)) {
+					va_end(ap);
 					return false;
 				}
 
 				if (blob->data + ptr <
 						(uint8 *)(unsigned long)ptr ||
-						blob->data + ptr < blob->data)
+				    blob->data + ptr < blob->data) {
+					va_end(ap);
 					return false;
+				}
 
 				if (0 < len1) {
 					char *p = NULL;
@@ -304,13 +312,16 @@ bool msrpc_parse(const DATA_BLOB *blob,
 				if ((len1 != len2) || (ptr + len1 < ptr) ||
 						(ptr + len1 < len1) ||
 						(ptr + len1 > blob->length)) {
+					va_end(ap);
 					return false;
 				}
 
 				if (blob->data + ptr <
 						(uint8 *)(unsigned long)ptr ||
-						blob->data + ptr < blob->data)
+				    blob->data + ptr < blob->data) {
+					va_end(ap);
 					return false;
+				}
 
 				*b = data_blob(blob->data + ptr, len1);
 			}
@@ -322,6 +333,7 @@ bool msrpc_parse(const DATA_BLOB *blob,
 			NEED_DATA(len1);
 			if (blob->data + head_ofs < (uint8 *)head_ofs ||
 					blob->data + head_ofs < blob->data) {
+				va_end(ap);
 				return false;
 			}
 
@@ -337,7 +349,8 @@ bool msrpc_parse(const DATA_BLOB *blob,
 			s = va_arg(ap, char *);
 
 			if (blob->data + head_ofs < (uint8 *)head_ofs ||
-					blob->data + head_ofs < blob->data) {
+			    blob->data + head_ofs < blob->data) {
+				va_end(ap);
 				return false;
 			}
 
@@ -351,11 +364,13 @@ bool msrpc_parse(const DATA_BLOB *blob,
 						blob->length - head_ofs,
 						STR_ASCII|STR_TERMINATE);
 				if (ret == (size_t)-1 || p == NULL) {
+					va_end(ap);
 					return false;
 				}
 				head_ofs += ret;
 				if (strcmp(s, p) != 0) {
 					TALLOC_FREE(p);
+					va_end(ap);
 					return false;
 				}
 				TALLOC_FREE(p);

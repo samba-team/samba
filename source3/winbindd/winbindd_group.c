@@ -438,18 +438,15 @@ static NTSTATUS expand_groups( TALLOC_CTX *ctx,
 			if ( name_types[j] == SID_NAME_DOM_GRP ||
 			     name_types[j] == SID_NAME_ALIAS )
 			{
-				bool ret;
-				
-				ret = add_sid_to_array_unique( ctx, 
-							       &sid_mem[j],
-							       &new_groups, 
-							       &new_groups_size );
-				if ( !ret ) {
-					status = NT_STATUS_NO_MEMORY;
+				status = add_sid_to_array_unique(ctx,
+							         &sid_mem[j],
+							         &new_groups,
+							         &new_groups_size);
+				if (NT_STATUS_IS_OK(status)) {
 					goto out;
 				}
 
-				continue;				
+				continue;
 			}
 		}
 
@@ -1045,7 +1042,10 @@ static bool get_sam_group_entries(struct getent_state *ent)
 		status = domain->methods->enum_local_groups(domain, mem_ctx, &num_entries, &sam_grp_entries);
 		
 		if ( !NT_STATUS_IS_OK(status) ) { 
-			DEBUG(3,("get_sam_group_entries: Failed to enumerate domain local groups!\n"));
+			DEBUG(3,("get_sam_group_entries: "
+				"Failed to enumerate "
+				"domain local groups with error %s!\n",
+				nt_errstr(status)));
 			num_entries = 0;
 		}
 		else
@@ -1491,9 +1491,18 @@ void winbindd_getgroups(struct winbindd_cli_state *state)
 		s->username = talloc_strdup( state->mem_ctx, state->request.data.username );
 	}
 	
-	/* Get info for the domain */
+	/* Get info for the domain (either by short domain name or 
+	   DNS name in the case of a UPN) */
 
 	s->domain = find_domain_from_name_noinit(s->domname);
+	if (!s->domain) {
+		char *p = strchr(s->username, '@');
+		
+		if (p) {
+			s->domain = find_domain_from_name_noinit(p+1);			
+		}
+		
+	}
 
 	if (s->domain == NULL) {
 		DEBUG(7, ("could not find domain entry for domain %s\n", 
