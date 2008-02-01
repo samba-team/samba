@@ -382,9 +382,11 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_open_user(cli, mem_ctx, &domain_pol,
-				    access_mask,
-				    user_rid, &user_pol);
+	result = rpccli_samr_OpenUser(cli, mem_ctx,
+				      &domain_pol,
+				      access_mask,
+				      user_rid,
+				      &user_pol);
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_NO_SUCH_USER) &&
 	    (user_rid == 0)) {
@@ -399,10 +401,11 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 						  &types);
 
 		if (NT_STATUS_IS_OK(result)) {
-			result = rpccli_samr_open_user(cli, mem_ctx,
-						       &domain_pol,
-						       access_mask,
-						       rids[0], &user_pol);
+			result = rpccli_samr_OpenUser(cli, mem_ctx,
+						      &domain_pol,
+						      access_mask,
+						      rids[0],
+						      &user_pol);
 		}
 	}
 
@@ -645,9 +648,11 @@ static NTSTATUS cmd_samr_query_usergroups(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_open_user(cli, mem_ctx, &domain_pol,
-				    access_mask,
-				    user_rid, &user_pol);
+	result = rpccli_samr_OpenUser(cli, mem_ctx,
+				      &domain_pol,
+				      access_mask,
+				      user_rid,
+				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1952,9 +1957,11 @@ static NTSTATUS cmd_samr_delete_dom_user(struct rpc_pipe_client *cli,
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
 
-		result = rpccli_samr_open_user(cli, mem_ctx, &domain_pol,
-					    access_mask,
-					    user_rids[0], &user_pol);
+		result = rpccli_samr_OpenUser(cli, mem_ctx,
+					      &domain_pol,
+					      access_mask,
+					      user_rids[0],
+					      &user_pol);
 
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
@@ -2033,9 +2040,11 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 		goto done;
 
 	if (user_rid)
-		result = rpccli_samr_open_user(cli, mem_ctx, &domain_pol,
-					    MAXIMUM_ALLOWED_ACCESS,
-					    user_rid, &user_pol);
+		result = rpccli_samr_OpenUser(cli, mem_ctx,
+					      &domain_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      user_rid,
+					      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -2101,9 +2110,11 @@ static NTSTATUS cmd_samr_get_usrdom_pwinfo(struct rpc_pipe_client *cli,
 		goto done;
 	}
 
-	result = rpccli_samr_open_user(cli, mem_ctx, &domain_pol,
-				       MAXIMUM_ALLOWED_ACCESS,
-				       rid, &user_pol);
+	result = rpccli_samr_OpenUser(cli, mem_ctx,
+				      &domain_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      rid,
+				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;

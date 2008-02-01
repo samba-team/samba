@@ -1339,10 +1339,11 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		status_tmp = rpccli_samr_open_user(samr_pipe, state->mem_ctx, 
-						   &samr_domain_handle,
-						   MAXIMUM_ALLOWED_ACCESS,
-						   my_info3->user_rid, &user_pol);
+		status_tmp = rpccli_samr_OpenUser(samr_pipe, state->mem_ctx,
+						  &samr_domain_handle,
+						  MAXIMUM_ALLOWED_ACCESS,
+						  my_info3->user_rid,
+						  &user_pol);
 
 		if (!NT_STATUS_IS_OK(status_tmp)) {
 			DEBUG(3, ("could not open user handle on SAMR pipe: %s\n",

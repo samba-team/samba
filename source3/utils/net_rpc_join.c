@@ -303,9 +303,11 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* Open handle on user */
 
 	CHECK_RPC_ERR_DEBUG(
-		rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				   SEC_RIGHTS_MAXIMUM_ALLOWED,
-				   user_rid, &user_pol),
+		rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				     &domain_pol,
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     user_rid,
+				     &user_pol),
 		("could not re-open existing user %s: %s\n",
 		 acct_name, nt_errstr(result)));
 	
