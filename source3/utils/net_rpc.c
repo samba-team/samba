@@ -1851,7 +1851,8 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 			}	
 		}
 
-		result = rpccli_samr_delete_dom_group(pipe_hnd, mem_ctx, &group_pol);
+		result = rpccli_samr_DeleteDomainGroup(pipe_hnd, mem_ctx,
+						       &group_pol);
 
 		break;
 	/* removing a local group is easier... */

@@ -1829,9 +1829,10 @@ static NTSTATUS cmd_samr_delete_dom_group(struct rpc_pipe_client *cli,
 			goto done;
 	}
 
-	/* Delete user */
+	/* Delete group */
 
-	result = rpccli_samr_delete_dom_group(cli, mem_ctx, &group_pol);
+	result = rpccli_samr_DeleteDomainGroup(cli, mem_ctx,
+					       &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
