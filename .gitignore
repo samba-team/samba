@@ -28,4 +28,4 @@ source/config.cache
 source/library-versions
 source/nsswitch/*.so
 source/proto_exists
-source/winbindd/winbindd_proto.h
+source/nsswitch/winbindd_proto.h
