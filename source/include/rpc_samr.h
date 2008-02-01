@@ -1560,25 +1560,6 @@ typedef struct r_samr_add_group_mem_info
 } SAMR_R_ADD_GROUPMEM;
 
 
-/* SAMR_Q_OPEN_GROUP - probably an open */
-typedef struct q_samr_open_group_info
-{
-	POLICY_HND domain_pol;       /* policy handle */
-	uint32 access_mask;         /* 0x0000 0001, 0x0000 0003, 0x0000 001f */
-	uint32 rid_group;        /* rid */
-
-} SAMR_Q_OPEN_GROUP;
-
-
-/* SAMR_R_OPEN_GROUP - probably an open */
-typedef struct r_samr_open_group_info
-{
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_OPEN_GROUP;
-
-
 /* SAMR_Q_QUERY_ALIASMEM - query alias members */
 typedef struct q_samr_query_aliasmem_info
 {
