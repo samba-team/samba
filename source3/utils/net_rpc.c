@@ -1935,6 +1935,11 @@ static int rpc_group_delete(int argc, const char **argv)
                                argc,argv);
 }
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
 static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 					const char *domain_name, 
 					struct cli_state *cli,
@@ -1946,12 +1951,16 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	GROUP_INFO_CTR group_info;
+	struct lsa_String grp_name;
+	uint32_t rid = 0;
 
 	if (argc != 1) {
 		d_printf("Group name must be specified\n");
 		rpc_group_usage(argc, argv);
 		return NT_STATUS_OK;
 	}
+
+	init_lsa_String(&grp_name, argv[0]);
 
 	/* Get sam policy handle */
 	
@@ -1970,9 +1979,12 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 
 	/* Create the group */
 
-	result = rpccli_samr_create_dom_group(pipe_hnd, mem_ctx, &domain_pol,
-					   argv[0], MAXIMUM_ALLOWED_ACCESS,
-					   &group_pol);
+	result = rpccli_samr_CreateDomainGroup(pipe_hnd, mem_ctx,
+					       &domain_pol,
+					       &grp_name,
+					       MAXIMUM_ALLOWED_ACCESS,
+					       &group_pol,
+					       &rid);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
 	if (strlen(opt_comment) == 0) goto done;
