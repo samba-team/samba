@@ -173,9 +173,9 @@ sub GetElementLevelTable($$)
 		#
 		# --metze
 		#
-		if ($i == 1) {
-			$pt = pointer_type($e);
-		} else {
+		$pt = pointer_type($e);
+		if ($i > 1) {
+			$is_deferred = 1 if ($pt ne "ref" and $e->{PARENT}->{TYPE} eq "FUNCTION");
 			$pt = $pointer_default;
 		}
 
@@ -195,7 +195,7 @@ sub GetElementLevelTable($$)
 		$pointer_idx++;
 		
 		# everything that follows will be deferred
-		$is_deferred = 1 if ($e->{PARENT}->{TYPE} ne "FUNCTION");
+		$is_deferred = 1 if ($level ne "TOP");
 
 		my $array_size = shift @size_is;
 		my $array_length;
