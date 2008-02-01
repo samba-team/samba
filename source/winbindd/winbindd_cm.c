@@ -2176,12 +2176,12 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	}
 
  open_domain:
-	result = rpccli_samr_open_domain(conn->samr_pipe,
-					 mem_ctx,
-					 &conn->sam_connect_handle,
-					 SEC_RIGHTS_MAXIMUM_ALLOWED,
-					 &domain->sid,
-					 &conn->sam_domain_handle);
+	result = rpccli_samr_OpenDomain(conn->samr_pipe,
+					mem_ctx,
+					&conn->sam_connect_handle,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&domain->sid,
+					&conn->sam_domain_handle);
 
  done:
 
