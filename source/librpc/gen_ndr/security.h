@@ -258,7 +258,7 @@ enum security_acl_revision
 struct security_acl {
 	enum security_acl_revision revision;
 	uint16_t size;/* [value(ndr_size_security_acl(r,ndr->flags))] */
-	uint32_t num_aces;/* [range(0 1000)] */
+	uint32_t num_aces;/* [range(0,1000)] */
 	struct security_ace *aces;
 }/* [gensize,public,nosize] */;
 
@@ -301,7 +301,7 @@ struct security_descriptor {
 }/* [gensize,public,flag(LIBNDR_FLAG_LITTLE_ENDIAN),nosize] */;
 
 struct sec_desc_buf {
-	uint32_t sd_size;/* [value(ndr_size_security_descriptor(sd,ndr->flags)),range(0 0x40000)] */
+	uint32_t sd_size;/* [value(ndr_size_security_descriptor(sd,ndr->flags)),range(0,0x40000)] */
 	struct security_descriptor *sd;/* [unique,subcontext(4)] */
 }/* [public] */;
 
