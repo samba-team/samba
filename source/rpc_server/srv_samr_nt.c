@@ -4387,11 +4387,14 @@ NTSTATUS _samr_DeleteDomAlias(pipes_struct *p,
 }
 
 /*********************************************************************
- _samr_create_dom_group
+ _samr_CreateDomainGroup
 *********************************************************************/
 
-NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, SAMR_R_CREATE_DOM_GROUP *r_u)
+NTSTATUS _samr_CreateDomainGroup(pipes_struct *p,
+				 struct samr_CreateDomainGroup *r)
+
 {
+	NTSTATUS status;
 	DOM_SID dom_sid;
 	DOM_SID info_sid;
 	const char *name;
@@ -4402,24 +4405,25 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &dom_sid, &acc_granted, &disp_info)) 
+	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &dom_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_DOMAIN_CREATE_GROUP, "_samr_create_dom_group"))) {
-		return r_u->status;
+	status = access_check_samr_function(acc_granted, SA_RIGHT_DOMAIN_CREATE_GROUP, "_samr_CreateDomainGroup");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 		
 	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
 
-	name = rpcstr_pull_unistr2_talloc(p->mem_ctx, &q_u->uni_acct_desc);
+	name = r->in.name->string;
 	if (name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r_u->status = can_create(p->mem_ctx, name);
-	if (!NT_STATUS_IS_OK(r_u->status)) {
-		return r_u->status;
+	status = can_create(p->mem_ctx, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	se_priv_copy( &se_rights, &se_add_users );
@@ -4432,7 +4436,7 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	
 	/* check that we successfully create the UNIX group */
 	
-	r_u->status = pdb_create_dom_group(p->mem_ctx, name, &r_u->rid);
+	status = pdb_create_dom_group(p->mem_ctx, name, r->out.rid);
 
 	if ( can_add_accounts )
 		unbecome_root();
@@ -4441,10 +4445,10 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	
 	/* check if we should bail out here */
 	
-	if ( !NT_STATUS_IS_OK(r_u->status) )
-		return r_u->status;
+	if ( !NT_STATUS_IS_OK(status) )
+		return status;
 
-	sid_compose(&info_sid, get_global_sam_sid(), r_u->rid);
+	sid_compose(&info_sid, get_global_sam_sid(), *r->out.rid);
 	
 	if ((info = get_samr_info_by_sid(&info_sid)) == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -4454,7 +4458,7 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 	info->acc_granted = GENERIC_RIGHTS_GROUP_ALL_ACCESS;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, &r_u->pol, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.group_handle, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	force_flush_samr_cache(disp_info);
@@ -5143,16 +5147,6 @@ NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
 
 NTSTATUS _samr_SetDomainInfo(pipes_struct *p,
 			     struct samr_SetDomainInfo *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_CreateDomainGroup(pipes_struct *p,
-				 struct samr_CreateDomainGroup *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
