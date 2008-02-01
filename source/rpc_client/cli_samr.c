@@ -95,47 +95,6 @@ NTSTATUS rpccli_samr_connect4(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Open handle on a domain */
-
-NTSTATUS rpccli_samr_open_domain(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				 POLICY_HND *connect_pol, uint32 access_mask, 
-				 const DOM_SID *domain_sid,
-				 POLICY_HND *domain_pol)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_OPEN_DOMAIN q;
-	SAMR_R_OPEN_DOMAIN r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_open_domain with sid %s\n",
-		  sid_string_dbg(domain_sid) ));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_open_domain(&q, connect_pol, access_mask, domain_sid);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_OPEN_DOMAIN,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_open_domain,
-		samr_io_r_open_domain,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	if (NT_STATUS_IS_OK(result = r.status)) {
-		*domain_pol = r.domain_pol;
-#ifdef __INSURE__
-		domain_pol->marker = malloc(1);
-#endif
-	}
-
-	return result;
-}
-
 NTSTATUS rpccli_samr_open_user(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
 			       POLICY_HND *domain_pol, uint32 access_mask, 
