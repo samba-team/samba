@@ -1624,16 +1624,17 @@ static NTSTATUS cmd_samr_create_dom_alias(struct rpc_pipe_client *cli,
 {
 	POLICY_HND connect_pol, domain_pol, alias_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	const char *alias_name;
+	struct lsa_String alias_name;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint32_t rid = 0;
 
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s aliasname [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
 	}
 
-	alias_name = argv[1];
-	
+	init_lsa_String(&alias_name, argv[1]);
+
 	if (argc > 2)
                 sscanf(argv[2], "%x", &access_mask);
 
@@ -1658,8 +1659,12 @@ static NTSTATUS cmd_samr_create_dom_alias(struct rpc_pipe_client *cli,
 
 	/* Create domain user */
 
-	result = rpccli_samr_create_dom_alias(cli, mem_ctx, &domain_pol,
-					      alias_name, &alias_pol);
+	result = rpccli_samr_CreateDomAlias(cli, mem_ctx,
+					    &domain_pol,
+					    &alias_name,
+					    MAXIMUM_ALLOWED_ACCESS,
+					    &alias_pol,
+					    &rid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
