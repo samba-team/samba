@@ -95,44 +95,6 @@ NTSTATUS rpccli_samr_connect4(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-NTSTATUS rpccli_samr_open_user(struct rpc_pipe_client *cli,
-			       TALLOC_CTX *mem_ctx,
-			       POLICY_HND *domain_pol, uint32 access_mask, 
-			       uint32 user_rid, POLICY_HND *user_pol)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_OPEN_USER q;
-	SAMR_R_OPEN_USER r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_open_user with rid 0x%x\n", user_rid ));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_open_user(&q, domain_pol, access_mask, user_rid);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_OPEN_USER,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_open_user,
-		samr_io_r_open_user,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	if (NT_STATUS_IS_OK(result = r.status)) {
-		*user_pol = r.user_pol;
-#ifdef __INSURE__
-		user_pol->marker = malloc(1);
-#endif
-	}
-
-	return result;
-}
-
 /* Create domain group */
 
 NTSTATUS rpccli_samr_create_dom_group(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
