@@ -1740,39 +1740,6 @@ NTSTATUS rpccli_samr_set_userinfo2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 	return result;
 }
 
-/* Delete domain alias */
-
-NTSTATUS rpccli_samr_delete_dom_alias(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-                                  POLICY_HND *alias_pol)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_DELETE_DOM_ALIAS q;
-	SAMR_R_DELETE_DOM_ALIAS r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_delete_dom_alias\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_delete_dom_alias(&q, alias_pol);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_DELETE_DOM_ALIAS,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_delete_dom_alias,
-		samr_io_r_delete_dom_alias,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	return result;
-}
-
 /* Delete domain user */
 
 NTSTATUS rpccli_samr_delete_dom_user(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
