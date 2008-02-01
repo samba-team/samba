@@ -2005,12 +2005,16 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, alias_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	ALIAS_INFO_CTR alias_info;
+	struct lsa_String alias_name;
+	uint32_t rid = 0;
 
 	if (argc != 1) {
 		d_printf("Alias name must be specified\n");
 		rpc_group_usage(argc, argv);
 		return NT_STATUS_OK;
 	}
+
+	init_lsa_String(&alias_name, argv[0]);
 
 	/* Get sam policy handle */
 	
@@ -2029,8 +2033,12 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 
 	/* Create the group */
 
-	result = rpccli_samr_create_dom_alias(pipe_hnd, mem_ctx, &domain_pol,
-					   argv[0], &alias_pol);
+	result = rpccli_samr_CreateDomAlias(pipe_hnd, mem_ctx,
+					    &domain_pol,
+					    &alias_name,
+					    MAXIMUM_ALLOWED_ACCESS,
+					    &alias_pol,
+					    &rid);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
 	if (strlen(opt_comment) == 0) goto done;
