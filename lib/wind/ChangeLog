@@ -1,5 +1,7 @@
 2008-02-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Add and use com_err error codes
+
 	* libwind from Assar. stringprep library supporting nameprep,
 	saslprep and ldapprep. Added libwind to Heimdal repository.
 	
