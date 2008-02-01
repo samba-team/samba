@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 AC_REVISION($Revision$)
 AC_PREREQ([2.59])
 test -z "$CFLAGS" && CFLAGS="-g"
-AC_INIT([Heimdal],[1.1.99pre],[heimdal-bugs@h5l.org])
+AC_INIT([Heimdal],[1.1.99],[heimdal-bugs@h5l.org])
 AC_CONFIG_SRCDIR([kuser/kinit.c])
 AC_CONFIG_HEADERS(include/config.h)
 
@@ -475,6 +475,7 @@ AC_CONFIG_FILES(Makefile 		\
 	lib/roken/Makefile		\
 	lib/sl/Makefile			\
 	lib/vers/Makefile		\
+	lib/wind/Makefile		\
 	kuser/Makefile			\
 	kpasswd/Makefile		\
 	kadmin/Makefile			\
