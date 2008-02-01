@@ -54,10 +54,12 @@ static NTSTATUS rpc_sh_acct_do(TALLOC_CTX *mem_ctx,
 	}
 	
 	/* Get domain policy handle */
-	
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-					 MAXIMUM_ALLOWED_ACCESS,
-					 ctx->domain_sid, &domain_pol);
+
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					ctx->domain_sid,
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}

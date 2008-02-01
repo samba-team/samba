@@ -236,10 +236,12 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 				       &sam_pol),
 		      "could not connect to SAM database");
 
-	
-	CHECK_RPC_ERR(rpccli_samr_open_domain(pipe_hnd, mem_ctx, &sam_pol,
-					   SEC_RIGHTS_MAXIMUM_ALLOWED,
-					   domain_sid, &domain_pol),
+
+	CHECK_RPC_ERR(rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					     &sam_pol,
+					     SEC_RIGHTS_MAXIMUM_ALLOWED,
+					     domain_sid,
+					     &domain_pol),
 		      "could not open domain");
 
 	/* Create domain user */
