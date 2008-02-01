@@ -1368,51 +1368,6 @@ NTSTATUS rpccli_samr_lookup_names(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return result;
 }
 
-/* Create a domain user */
-
-NTSTATUS rpccli_samr_create_dom_user(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-                                  POLICY_HND *domain_pol, const char *acct_name,
-                                  uint32 acb_info, uint32 acct_flags,
-                                  POLICY_HND *user_pol, uint32 *rid)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_CREATE_USER q;
-	SAMR_R_CREATE_USER r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_create_dom_user %s\n", acct_name));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_create_user(&q, domain_pol, acct_name, acb_info, acct_flags);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CREATE_USER,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_create_user,
-		samr_io_r_create_user,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	if (!NT_STATUS_IS_OK(result = r.status)) {
-		goto done;
-	}
-
-	if (user_pol)
-		*user_pol = r.user_pol;
-
-	if (rid)
-		*rid = r.user_rid;
-
- done:
-
-	return result;
-}
-
 /* Set userinfo */
 
 NTSTATUS rpccli_samr_set_userinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
