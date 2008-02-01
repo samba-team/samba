@@ -675,7 +675,8 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 			d_fprintf(stderr, "Failed to set password for user %s - %s\n", 
 				 acct_name, nt_errstr(result));
 
-			result = rpccli_samr_delete_dom_user(pipe_hnd, mem_ctx, &user_pol);
+			result = rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
+							&user_pol);
 
 			if (!NT_STATUS_IS_OK(result)) {
 				d_fprintf(stderr, "Failed to delete user %s - %s\n", 
@@ -790,7 +791,8 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 
 	/* Delete user */
 
-	result = rpccli_samr_delete_dom_user(pipe_hnd, mem_ctx, &user_pol);
+	result = rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
+					&user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -5560,7 +5562,8 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 
 	/* Delete user */
 
-	result = rpccli_samr_delete_dom_user(pipe_hnd, mem_ctx, &user_pol);
+	result = rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
+					&user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
