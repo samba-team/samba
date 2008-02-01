@@ -95,44 +95,6 @@ NTSTATUS rpccli_samr_connect4(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/* Create domain group */
-
-NTSTATUS rpccli_samr_create_dom_group(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				   POLICY_HND *domain_pol,
-				   const char *group_name,
-				   uint32 access_mask, POLICY_HND *group_pol)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_CREATE_DOM_GROUP q;
-	SAMR_R_CREATE_DOM_GROUP r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_create_dom_group\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_create_dom_group(&q, domain_pol, group_name, access_mask);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CREATE_DOM_GROUP,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_create_dom_group,
-		samr_io_r_create_dom_group,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	if (NT_STATUS_IS_OK(result))
-		*group_pol = r.pol;
-
-	return result;
-}
-
 /* Add a domain group member */
 
 NTSTATUS rpccli_samr_add_groupmem(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
