@@ -4463,14 +4463,15 @@ NTSTATUS _samr_create_dom_group(pipes_struct *p, SAMR_Q_CREATE_DOM_GROUP *q_u, S
 }
 
 /*********************************************************************
- _samr_create_dom_alias
+ _samr_CreateDomAlias
 *********************************************************************/
 
-NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, SAMR_R_CREATE_DOM_ALIAS *r_u)
+NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
+			      struct samr_CreateDomAlias *r)
 {
 	DOM_SID dom_sid;
 	DOM_SID info_sid;
-	fstring name;
+	const char *name = NULL;
 	struct samr_info *info;
 	uint32 acc_granted;
 	gid_t gid;
@@ -4480,17 +4481,18 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &dom_sid, &acc_granted, &disp_info)) 
+	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &dom_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 		
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_DOMAIN_CREATE_ALIAS, "_samr_create_alias"))) {
-		return r_u->status;
+	result = access_check_samr_function(acc_granted, SA_RIGHT_DOMAIN_CREATE_ALIAS, "_samr_CreateDomAlias");
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
 	}
 		
 	if (!sid_equal(&dom_sid, get_global_sam_sid()))
 		return NT_STATUS_ACCESS_DENIED;
 
-	unistr2_to_ascii(name, &q_u->uni_acct_desc, sizeof(name));
+	name = r->in.alias_name->string;
 
 	se_priv_copy( &se_rights, &se_add_users );
 	can_add_accounts = user_has_privileges( p->pipe_user.nt_user_token, &se_rights );
@@ -4506,7 +4508,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 		become_root();
 
 	/* Have passdb create the alias */
-	result = pdb_create_alias(name, &r_u->rid);
+	result = pdb_create_alias(name, r->out.rid);
 
 	if ( can_add_accounts )
 		unbecome_root();
@@ -4520,7 +4522,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	}
 
 	sid_copy(&info_sid, get_global_sam_sid());
-	sid_append_rid(&info_sid, r_u->rid);
+	sid_append_rid(&info_sid, *r->out.rid);
 
 	if (!sid_to_gid(&info_sid, &gid)) {
 		DEBUG(10, ("Could not find alias just created\n"));
@@ -4542,7 +4544,7 @@ NTSTATUS _samr_create_dom_alias(pipes_struct *p, SAMR_Q_CREATE_DOM_ALIAS *q_u, S
 	info->acc_granted = GENERIC_RIGHTS_ALIAS_ALL_ACCESS;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, &r_u->alias_pol, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.alias_handle, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	force_flush_samr_cache(disp_info);
@@ -5181,16 +5183,6 @@ NTSTATUS _samr_CreateUser(pipes_struct *p,
 
 NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
 			       struct samr_EnumDomainUsers *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
-			      struct samr_CreateDomAlias *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
