@@ -42,19 +42,21 @@ sub append_prefix($$)
 {
 	my ($e, $var_name) = @_;
 	my $pointers = 0;
+	my $arrays = 0;
 
 	foreach my $l (@{$e->{LEVELS}}) {
 		if ($l->{TYPE} eq "POINTER") {
 			$pointers++;
 		} elsif ($l->{TYPE} eq "ARRAY") {
+			$arrays++;
 			if (($pointers == 0) and 
 			    (not $l->{IS_FIXED}) and
 			    (not $l->{IS_INLINE})) {
-				return get_value_of($var_name); 
+				return get_value_of($var_name);
 			}
 		} elsif ($l->{TYPE} eq "DATA") {
 			if (Parse::Pidl::Typelist::scalar_is_reference($l->{DATA_TYPE})) {
-				return get_value_of($var_name) unless ($pointers);
+				return get_value_of($var_name) unless ($pointers or $arrays);
 			}
 		}
 	}
@@ -684,8 +686,17 @@ sub need_pointer_to($$$)
 		return 1 if $scalar_only;
 	}
 
+	my $arrays = 0;
+
+	foreach my $tl (@{$e->{LEVELS}}) {
+		last if $l == $tl;
+		if ($tl->{TYPE} eq "ARRAY") {
+			$arrays++;
+		}
+	}
+
 	if (Parse::Pidl::Typelist::scalar_is_reference($t)) {
-		return 1;
+		return 1 unless $arrays;
 	}
 
 	return 0;
