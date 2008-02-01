@@ -2080,8 +2080,10 @@ static NTSTATUS cmd_samr_query_sec_obj(struct rpc_pipe_client *cli,
 
 	/* Query SAM security object */
 
-	result = rpccli_samr_query_sec_obj(cli, mem_ctx, pol, sec_info, ctx, 
-					&sec_desc_buf);
+	result = rpccli_samr_QuerySecurity(cli, mem_ctx,
+					   pol,
+					   sec_info,
+					   &sec_desc_buf);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
