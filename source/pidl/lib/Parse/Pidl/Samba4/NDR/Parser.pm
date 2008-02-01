@@ -890,15 +890,17 @@ sub CalcNdrFlags($$$)
 	return undef;
 }
 
-sub ParseMemCtxPullStart($$$$)
+sub ParseMemCtxPullFlags($$$$)
 {
-	my ($self, $e, $l, $ptr_name) = @_;
+	my ($self, $e, $l) = @_;
 
-	my $mem_r_ctx = "_mem_save_$e->{NAME}_$l->{LEVEL_INDEX}";
-	my $mem_c_ctx = $ptr_name;
-	my $mem_c_flags = "0";
+	return undef unless ($l->{TYPE} eq "POINTER" or $l->{TYPE} eq "ARRAY");
 
-	return if ($l->{TYPE} eq "ARRAY" and $l->{IS_FIXED});
+	return undef if ($l->{TYPE} eq "ARRAY" and $l->{IS_FIXED});
+	return undef if has_fast_array($e, $l);
+	return undef if is_charset_array($e, $l);
+
+	my $mem_flags = "0";
 
 	if (($l->{TYPE} eq "POINTER") and ($l->{POINTER_TYPE} eq "ref")) {
 		my $nl = GetNextLevel($e, $l);
@@ -906,11 +908,24 @@ sub ParseMemCtxPullStart($$$$)
 		my $next_is_string = (($nl->{TYPE} eq "DATA") and 
 					($nl->{DATA_TYPE} eq "string"));
 		if ($next_is_array or $next_is_string) {
-			return;
+			return undef;
 		} else {
-			$mem_c_flags = "LIBNDR_FLAG_REF_ALLOC";
+			$mem_flags = "LIBNDR_FLAG_REF_ALLOC";
 		}
 	}
+
+	return $mem_flags;
+}
+
+sub ParseMemCtxPullStart($$$$)
+{
+	my ($self, $e, $l, $ptr_name) = @_;
+
+	my $mem_r_ctx = "_mem_save_$e->{NAME}_$l->{LEVEL_INDEX}";
+	my $mem_c_ctx = $ptr_name;
+	my $mem_c_flags = $self->ParseMemCtxPullFlags($e, $l);
+
+	return unless defined($mem_c_flags);
 
 	$self->pidl("$mem_r_ctx = NDR_PULL_GET_MEM_CTX(ndr);");
 	$self->pidl("NDR_PULL_SET_MEM_CTX(ndr, $mem_c_ctx, $mem_c_flags);");
@@ -921,21 +936,9 @@ sub ParseMemCtxPullEnd($$$)
 	my ($self, $e, $l) = @_;
 
 	my $mem_r_ctx = "_mem_save_$e->{NAME}_$l->{LEVEL_INDEX}";
-	my $mem_r_flags = "0";
+	my $mem_r_flags = $self->ParseMemCtxPullFlags($e, $l);
 
-	return if ($l->{TYPE} eq "ARRAY" and $l->{IS_FIXED});
-
-	if (($l->{TYPE} eq "POINTER") and ($l->{POINTER_TYPE} eq "ref")) {
-		my $nl = GetNextLevel($e, $l);
-		my $next_is_array = ($nl->{TYPE} eq "ARRAY");
-		my $next_is_string = (($nl->{TYPE} eq "DATA") and 
-					($nl->{DATA_TYPE} eq "string"));
-		if ($next_is_array or $next_is_string) {
-			return;
-		} else {
-			$mem_r_flags = "LIBNDR_FLAG_REF_ALLOC";
-		}
-	}
+	return unless defined($mem_r_flags);
 
 	$self->pidl("NDR_PULL_SET_MEM_CTX(ndr, $mem_r_ctx, $mem_r_flags);");
 }
@@ -1441,31 +1444,12 @@ sub DeclareArrayVariables($$)
 	}
 }
 
-sub need_decl_mem_ctx($$)
-{
-	my ($e,$l) = @_;
-
-	return 0 if has_fast_array($e,$l);
-	return 0 if is_charset_array($e,$l);
-	return 1 if (($l->{TYPE} eq "ARRAY") and not $l->{IS_FIXED});
-
-	if (($l->{TYPE} eq "POINTER") and ($l->{POINTER_TYPE} eq "ref")) {
-		my $nl = GetNextLevel($e, $l);
-		my $next_is_array = ($nl->{TYPE} eq "ARRAY");
-		my $next_is_string = (($nl->{TYPE} eq "DATA") and 
-					($nl->{DATA_TYPE} eq "string"));
-		return 0 if ($next_is_array or $next_is_string);
-	}
-	return 1 if ($l->{TYPE} eq "POINTER");
-
-	return 0;
-}
-
 sub DeclareMemCtxVariables($$)
 {
 	my ($self,$e) = @_;
 	foreach my $l (@{$e->{LEVELS}}) {
-		if (need_decl_mem_ctx($e, $l)) {
+		my $mem_flags = $self->ParseMemCtxPullFlags($e, $l);
+		if (defined($mem_flags)) {
 			$self->pidl("TALLOC_CTX *_mem_save_$e->{NAME}_$l->{LEVEL_INDEX};");
 		}
 	}
