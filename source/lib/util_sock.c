@@ -112,7 +112,7 @@ static bool interpret_string_addr_internal(struct addrinfo **ppres,
 			&hints,
 			ppres);
 	if (ret) {
-		DEBUG(3,("interpret_string_addr_interal: getaddrinfo failed "
+		DEBUG(3,("interpret_string_addr_internal: getaddrinfo failed "
 			"for name %s [%s]\n",
 			str,
 			gai_strerror(ret) ));
