@@ -264,36 +264,6 @@ bool samr_io_r_get_usrdom_pwinfo(const char *desc, SAMR_R_GET_USRDOM_PWINFO * r_
 	return True;
 }
 
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_q_set_sec_obj(const char *desc, SAMR_Q_SET_SEC_OBJ * q_u,
-			     prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_q_set_sec_obj");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("pol", &q_u->pol, ps, depth))
-		return False;
-
-	if(!prs_uint32("sec_info", ps, depth, &q_u->sec_info))
-		return False;
-		
-	if(!sec_io_desc_buf("sec_desc", &q_u->buf, ps, depth))
-		return False;
-	
-	return True;
-}
-
-
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
@@ -853,43 +823,6 @@ bool samr_io_r_query_domain_info(const char *desc, SAMR_R_QUERY_DOMAIN_INFO * r_
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 	
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-void init_samr_q_set_sec_obj(SAMR_Q_SET_SEC_OBJ * q_u,
-			     POLICY_HND *pol, uint32 sec_info, SEC_DESC_BUF *buf)
-{
-	DEBUG(5, ("samr_init_samr_q_set_sec_obj\n"));
-
-	q_u->pol = *pol;
-	q_u->sec_info = sec_info;
-	q_u->buf = buf;
-}
-
-
-/*******************************************************************
-reads or writes a SAMR_R_SET_SEC_OBJ structure.
-********************************************************************/
-
-bool samr_io_r_set_sec_obj(const char *desc, SAMR_R_SET_SEC_OBJ * r_u,
-			     prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-  
-	prs_debug(ps, depth, desc, "samr_io_r_set_sec_obj");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
-		return False;
-
 	return True;
 }
 
