@@ -72,9 +72,9 @@ my $scalar_alignment = {
 	'ipv4address' => 4
 };
 
-sub GetElementLevelTable($)
+sub GetElementLevelTable($$)
 {
-	my $e = shift;
+	my ($e, $pointer_default) = @_;
 
 	my $order = [];
 	my $is_deferred = 0;
@@ -157,25 +157,38 @@ sub GetElementLevelTable($)
 
 	# Next, all the pointers
 	foreach my $i (1..$e->{POINTERS}) {
-		my $pt = pointer_type($e);
-
 		my $level = "EMBEDDED";
 		# Top level "ref" pointers do not have a referrent identifier
-		$level = "TOP" if ( defined($pt) 
-				and $i == 1
-				and $e->{PARENT}->{TYPE} eq "FUNCTION");
+		$level = "TOP" if ($i == 1 and $e->{PARENT}->{TYPE} eq "FUNCTION");
+
+		my $pt;
+		#
+		# Only the first level gets the pointer type from the
+		# pointer property, the others get them from
+		# the pointer_default() interface property
+		#
+		# see http://msdn2.microsoft.com/en-us/library/aa378984(VS.85).aspx
+		# (Here they talk about the rightmost pointer, but testing shows
+		#  they mean the leftmost pointer.)
+		#
+		# --metze
+		#
+		if ($i == 1) {
+			$pt = pointer_type($e);
+		} else {
+			$pt = $pointer_default;
+		}
 
 		push (@$order, { 
 			TYPE => "POINTER",
-			# for now, there can only be one pointer type per element
-			POINTER_TYPE => pointer_type($e),
+			POINTER_TYPE => $pt,
 			POINTER_INDEX => $pointer_idx,
 			IS_DEFERRED => "$is_deferred",
 			LEVEL => $level
 		});
 
 		warning($e, "top-level \[out\] pointer `$e->{NAME}' is not a \[ref\] pointer") 
-			if ($i == 1 and pointer_type($e) ne "ref" and 
+			if ($i == 1 and $pt ne "ref" and
 				$e->{PARENT}->{TYPE} eq "FUNCTION" and 
 				not has_property($e, "in"));
 
@@ -391,7 +404,7 @@ sub ParseElement($$)
 		NAME => $e->{NAME},
 		TYPE => $e->{TYPE},
 		PROPERTIES => $e->{PROPERTIES},
-		LEVELS => GetElementLevelTable($e),
+		LEVELS => GetElementLevelTable($e, $pointer_default),
 		REPRESENTATION_TYPE => ($e->{PROPERTIES}->{represent_as} or $e->{TYPE}),
 		ALIGN => align_type($e->{TYPE}),
 		ORIGINAL => $e
