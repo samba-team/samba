@@ -1529,22 +1529,22 @@ NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LO
 }
 
 /*******************************************************************
- _samr_chgpasswd_user
+ _samr_ChangePasswordUser2
  ********************************************************************/
+NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
+				   struct samr_ChangePasswordUser2 *r)
 
-NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_R_CHGPASSWD_USER *r_u)
 {
+	NTSTATUS status;
 	fstring user_name;
 	fstring wks;
 
-	DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
+	DEBUG(5,("_samr_ChangePasswordUser2: %d\n", __LINE__));
 
-	r_u->status = NT_STATUS_OK;
+	fstrcpy(user_name, r->in.account->string);
+	fstrcpy(wks, r->in.server->string);
 
-	rpcstr_pull(user_name, q_u->uni_user_name.buffer, sizeof(user_name), q_u->uni_user_name.uni_str_len*2, 0);
-	rpcstr_pull(wks, q_u->uni_dest_host.buffer, sizeof(wks), q_u->uni_dest_host.uni_str_len*2,0);
-
-	DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
+	DEBUG(5,("_samr_ChangePasswordUser2: user: %s wks: %s\n", user_name, wks));
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -1558,14 +1558,12 @@ NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_
 	 * is case insensitive.
 	 */
 
-	r_u->status = pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
-				q_u->nt_newpass.pass, q_u->nt_oldhash.hash, NULL);
+	status = pass_oem_change(user_name, r->in.lm_password->data, r->in.lm_verifier->hash,
+				r->in.nt_password->data, r->in.nt_verifier->hash, NULL);
 
-	init_samr_r_chgpasswd_user(r_u, r_u->status);
+	DEBUG(5,("_samr_ChangePasswordUser2: %d\n", __LINE__));
 
-	DEBUG(5,("_samr_chgpasswd_user: %d\n", __LINE__));
-
-	return r_u->status;
+	return status;
 }
 
 /*******************************************************************
@@ -5505,16 +5503,6 @@ NTSTATUS _samr_RemoveMultipleMembersFromAlias(pipes_struct *p,
 
 NTSTATUS _samr_OemChangePasswordUser2(pipes_struct *p,
 				      struct samr_OemChangePasswordUser2 *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
-				   struct samr_ChangePasswordUser2 *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
