@@ -1,3 +1,8 @@
+2008-02-01  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* libwind from Assar. stringprep library supporting nameprep,
+	saslprep and ldapprep. Added libwind to Heimdal repository.
+	
 2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test-utf8.c: spelling
