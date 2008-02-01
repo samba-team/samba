@@ -493,29 +493,6 @@ typedef struct r_samr_set_sec_obj_info
 
 
 /****************************************************************************
-SAMR_Q_QUERY_SEC_OBJ - info level 4.  returns SIDs.
-*****************************************************************************/
-
-/* SAMR_Q_QUERY_SEC_OBJ - probably get domain info... */
-typedef struct q_samr_query_sec_obj_info
-{
-	POLICY_HND user_pol;          /* policy handle */
-	uint32 sec_info;     /* xxxx_SECURITY_INFORMATION 0x0000 0004 */
-
-} SAMR_Q_QUERY_SEC_OBJ;
-
-/* SAMR_R_QUERY_SEC_OBJ - probably an open */
-typedef struct r_samr_query_sec_obj_info
-{
-	uint32 ptr;
-	SEC_DESC_BUF *buf;
-
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_QUERY_SEC_OBJ;
-
-
-/****************************************************************************
 SAMR_Q_QUERY_DOMAIN_INFO - probably a query on domain group info.
 *****************************************************************************/
 
