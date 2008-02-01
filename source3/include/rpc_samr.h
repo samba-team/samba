@@ -684,31 +684,6 @@ typedef struct r_samr_lookup_domain_info
 } SAMR_R_LOOKUP_DOMAIN;
 
 
-/****************************************************************************
-SAMR_Q_OPEN_DOMAIN - unknown_0 values seen associated with SIDs:
-
-0x0000 03f1 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
-0x0000 0200 and a specific   domain sid - S-1-5-21-44c01ca6-797e5c3d-33f83fd0
-*****************************************************************************/
-
-/* SAMR_Q_OPEN_DOMAIN */
-typedef struct q_samr_open_domain_info
-{
-	POLICY_HND pol;   /* policy handle */
-	uint32 flags;               /* 0x2000 0000; 0x0000 0211; 0x0000 0280; 0x0000 0200 - flags? */
-	DOM_SID2 dom_sid;         /* domain SID */
-
-} SAMR_Q_OPEN_DOMAIN;
-
-
-/* SAMR_R_OPEN_DOMAIN - probably an open */
-typedef struct r_samr_open_domain_info
-{
-	POLICY_HND domain_pol; /* policy handle associated with the SID */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_OPEN_DOMAIN;
-
 #define MAX_SAM_ENTRIES_W2K 0x400
 #define MAX_SAM_ENTRIES_W95 50
 /* The following should be the greater of the preceeding two. */
