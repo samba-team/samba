@@ -110,28 +110,7 @@ static bool api_samr_get_usrdom_pwinfo(pipes_struct *p)
 
 static bool api_samr_set_sec_obj(pipes_struct *p)
 {
-	SAMR_Q_SET_SEC_OBJ q_u;
-	SAMR_R_SET_SEC_OBJ r_u;
-	
-	prs_struct *data  = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-	
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-	
-	if(!samr_io_q_set_sec_obj("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_set_sec_obj: unable to unmarshall SAMR_Q_SET_SEC_OBJ.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_set_sec_obj(p, &q_u, &r_u);
-
-	if(!samr_io_r_set_sec_obj("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_set_sec_obj: unable to marshall SAMR_R_SET_SEC_OBJ.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_SETSECURITY);
 }
 
 /*******************************************************************

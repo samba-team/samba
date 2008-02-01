@@ -672,10 +672,11 @@ static bool get_lsa_policy_samr_sid( pipes_struct *p, POLICY_HND *pol,
 }
 
 /*******************************************************************
- _samr_set_sec_obj
+ _samr_SetSecurity
  ********************************************************************/
 
-NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_SEC_OBJ *r_u)
+NTSTATUS _samr_SetSecurity(pipes_struct *p,
+			   struct samr_SetSecurity *r)
 {
 	DOM_SID pol_sid;
 	uint32 acc_granted, i;
@@ -684,9 +685,7 @@ NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_
 	struct samu *sampass=NULL;
 	NTSTATUS status;
 
-	r_u->status = NT_STATUS_OK;
-
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid, &acc_granted, NULL))
+	if (!get_lsa_policy_samr_sid(p, r->in.handle, &pol_sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (!(sampass = samu_new( p->mem_ctx))) {
@@ -705,7 +704,7 @@ NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	dacl = q_u->buf->sd->dacl;
+	dacl = r->in.sdbuf->sd->dacl;
 	for (i=0; i < dacl->num_aces; i++) {
 		if (sid_equal(&pol_sid, &dacl->aces[i].trustee)) {
 			ret = pdb_set_pass_can_change(sampass, 
@@ -721,7 +720,7 @@ NTSTATUS _samr_set_sec_obj(pipes_struct *p, SAMR_Q_SET_SEC_OBJ *q_u, SAMR_R_SET_
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = access_check_samr_function(acc_granted, SA_RIGHT_USER_SET_ATTRIBUTES, "_samr_set_sec_obj");
+	status = access_check_samr_function(acc_granted, SA_RIGHT_USER_SET_ATTRIBUTES, "_samr_SetSecurity");
 	if (NT_STATUS_IS_OK(status)) {
 		become_root();
 		status = pdb_update_sam_account(sampass);
@@ -5070,16 +5069,6 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 
 NTSTATUS _samr_Connect(pipes_struct *p,
 		       struct samr_Connect *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_SetSecurity(pipes_struct *p,
-			   struct samr_SetSecurity *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
