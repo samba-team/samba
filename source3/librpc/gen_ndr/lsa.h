@@ -229,7 +229,7 @@ struct lsa_SidPtr {
 };
 
 struct lsa_SidArray {
-	uint32_t num_sids;/* [range(0 1000)] */
+	uint32_t num_sids;/* [range(0,1000)] */
 	struct lsa_SidPtr *sids;/* [unique,size_is(num_sids)] */
 }/* [public] */;
 
@@ -274,12 +274,12 @@ struct lsa_TranslatedSid {
 };
 
 struct lsa_TransSidArray {
-	uint32_t count;/* [range(0 1000)] */
+	uint32_t count;/* [range(0,1000)] */
 	struct lsa_TranslatedSid *sids;/* [unique,size_is(count)] */
 };
 
 struct lsa_RefDomainList {
-	uint32_t count;/* [range(0 1000)] */
+	uint32_t count;/* [range(0,1000)] */
 	struct lsa_DomainInfo *domains;/* [unique,size_is(count)] */
 	uint32_t max_size;
 };
@@ -312,7 +312,7 @@ struct lsa_TranslatedName {
 };
 
 struct lsa_TransNameArray {
-	uint32_t count;/* [range(0 1000)] */
+	uint32_t count;/* [range(0,1000)] */
 	struct lsa_TranslatedName *names;/* [unique,size_is(count)] */
 };
 
@@ -322,7 +322,7 @@ struct lsa_LUIDAttribute {
 };
 
 struct lsa_PrivilegeSet {
-	uint32_t count;/* [range(0 1000)] */
+	uint32_t count;/* [range(0,1000)] */
 	uint32_t unknown;
 	struct lsa_LUIDAttribute *set;/* [size_is(count)] */
 };
@@ -334,7 +334,7 @@ struct lsa_DATA_BUF {
 }/* [flag(LIBNDR_PRINT_ARRAY_HEX)] */;
 
 struct lsa_DATA_BUF2 {
-	uint32_t size;/* [range(0 65536)] */
+	uint32_t size;/* [range(0,65536)] */
 	uint8_t *data;/* [unique,size_is(size)] */
 }/* [flag(LIBNDR_PRINT_ARRAY_HEX)] */;
 
@@ -501,7 +501,7 @@ struct lsa_TranslatedName2 {
 };
 
 struct lsa_TransNameArray2 {
-	uint32_t count;/* [range(0 1000)] */
+	uint32_t count;/* [range(0,1000)] */
 	struct lsa_TranslatedName2 *names;/* [unique,size_is(count)] */
 };
 
@@ -513,7 +513,7 @@ struct lsa_TranslatedSid2 {
 };
 
 struct lsa_TransSidArray2 {
-	uint32_t count;/* [range(0 1000)] */
+	uint32_t count;/* [range(0,1000)] */
 	struct lsa_TranslatedSid2 *sids;/* [unique,size_is(count)] */
 };
 
@@ -525,12 +525,12 @@ struct lsa_TranslatedSid3 {
 };
 
 struct lsa_TransSidArray3 {
-	uint32_t count;/* [range(0 1000)] */
+	uint32_t count;/* [range(0,1000)] */
 	struct lsa_TranslatedSid3 *sids;/* [unique,size_is(count)] */
 };
 
 struct lsa_ForestTrustBinaryData {
-	uint32_t length;/* [range(0 131072)] */
+	uint32_t length;/* [range(0,131072)] */
 	uint8_t *data;/* [unique,size_is(length)] */
 };
 
@@ -572,7 +572,7 @@ struct lsa_ForestTrustRecord {
 };
 
 struct lsa_ForestTrustInformation {
-	uint32_t count;/* [range(0 4000)] */
+	uint32_t count;/* [range(0,4000)] */
 	struct lsa_ForestTrustRecord **entries;/* [unique,size_is(count)] */
 }/* [public] */;
 
@@ -717,7 +717,7 @@ struct lsa_CreateAccount {
 struct lsa_EnumAccounts {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t num_entries;/* [range(0 8192)] */
+		uint32_t num_entries;/* [range(0,8192)] */
 		uint32_t *resume_handle;/* [ref] */
 	} in;
 
@@ -764,7 +764,7 @@ struct lsa_EnumTrustDom {
 struct lsa_LookupNames {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t num_names;/* [range(0 1000)] */
+		uint32_t num_names;/* [range(0,1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
 		enum lsa_LookupNamesLevel level;
 		struct lsa_TransSidArray *sids;/* [ref] */
@@ -1351,7 +1351,7 @@ struct lsa_LookupSids2 {
 struct lsa_LookupNames2 {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t num_names;/* [range(0 1000)] */
+		uint32_t num_names;/* [range(0,1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
 		enum lsa_LookupNamesLevel level;
 		uint32_t unknown1;
@@ -1445,7 +1445,7 @@ struct lsa_CREDRPROFILELOADED {
 struct lsa_LookupNames3 {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		uint32_t num_names;/* [range(0 1000)] */
+		uint32_t num_names;/* [range(0,1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
 		enum lsa_LookupNamesLevel level;
 		uint32_t unknown1;
@@ -1549,7 +1549,7 @@ struct lsa_LookupSids3 {
 
 struct lsa_LookupNames4 {
 	struct {
-		uint32_t num_names;/* [range(0 1000)] */
+		uint32_t num_names;/* [range(0,1000)] */
 		struct lsa_String *names;/* [size_is(num_names)] */
 		enum lsa_LookupNamesLevel level;
 		uint32_t unknown1;

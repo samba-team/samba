@@ -200,7 +200,7 @@ union samr_DomainInfo {
 }/* [switch_type(uint16)] */;
 
 struct samr_Ids {
-	uint32_t count;/* [range(0 1024)] */
+	uint32_t count;/* [range(0,1024)] */
 	uint32_t *ids;/* [unique,size_is(count)] */
 };
 
@@ -983,7 +983,7 @@ struct samr_GetAliasMembership {
 struct samr_LookupNames {
 	struct {
 		struct policy_handle *domain_handle;/* [ref] */
-		uint32_t num_names;/* [range(0 1000)] */
+		uint32_t num_names;/* [range(0,1000)] */
 		struct lsa_String *names;/* [length_is(num_names),size_is(1000)] */
 	} in;
 
@@ -999,7 +999,7 @@ struct samr_LookupNames {
 struct samr_LookupRids {
 	struct {
 		struct policy_handle *domain_handle;/* [ref] */
-		uint32_t num_rids;/* [range(0 1000)] */
+		uint32_t num_rids;/* [range(0,1000)] */
 		uint32_t *rids;/* [length_is(num_rids),size_is(1000)] */
 	} in;
 
