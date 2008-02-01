@@ -1521,23 +1521,6 @@ typedef struct r_samr_create_user_info
 } SAMR_R_CREATE_USER;
 
 
-/* SAMR_Q_DELETE_DOM_USER - delete domain user */
-typedef struct q_samr_delete_dom_user_info
-{
-    POLICY_HND user_pol;          /* policy handle */
-
-} SAMR_Q_DELETE_DOM_USER;
-
-
-/* SAMR_R_DELETE_DOM_USER - delete domain user */
-typedef struct r_samr_delete_dom_user_info
-{
-	POLICY_HND pol;       /* policy handle */
-	NTSTATUS status;        /* return status */
-
-} SAMR_R_DELETE_DOM_USER;
-
-
 /* SAMR_Q_QUERY_GROUPMEM - query group members */
 typedef struct q_samr_query_groupmem_info
 {
