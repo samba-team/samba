@@ -669,23 +669,39 @@ sub ParsePtrPush($$$$)
 	}
 }
 
+sub need_pointer_to($$$)
+{
+	my ($e, $l, $scalar_only) = @_;
+
+	my $t;
+	if (ref($l->{DATA_TYPE})) {
+		$t = "$l->{DATA_TYPE}->{TYPE}_$l->{DATA_TYPE}->{NAME}";
+	} else {
+		$t = $l->{DATA_TYPE};
+	}
+
+	if (not Parse::Pidl::Typelist::is_scalar($t)) {
+		return 1 if $scalar_only;
+	}
+
+	if (Parse::Pidl::Typelist::scalar_is_reference($t)) {
+		return 1;
+	}
+
+	return 0;
+}
+
 sub ParseDataPrint($$$$)
 {
 	my ($self, $e, $l, $var_name) = @_;
 	
-	if (not ref($l->{DATA_TYPE}) or 
-		defined($l->{DATA_TYPE}->{NAME})) {
-		my $t;
-		if (ref($l->{DATA_TYPE})) {
-			$t = "$l->{DATA_TYPE}->{TYPE}_$l->{DATA_TYPE}->{NAME}";
-		} else {
-			$t = $l->{DATA_TYPE};
-		}
-		if (not Parse::Pidl::Typelist::is_scalar($t) or 
-			Parse::Pidl::Typelist::scalar_is_reference($t)) {
+	if (not ref($l->{DATA_TYPE}) or defined($l->{DATA_TYPE}->{NAME})) {
+
+		if (need_pointer_to($e, $l, 1)) {
 			$var_name = get_pointer_to($var_name);
 		}
-		$self->pidl("ndr_print_$t(ndr, \"$e->{NAME}\", $var_name);");
+
+		$self->pidl(TypeFunctionName("ndr_print", $l->{DATA_TYPE})."(ndr, \"$e->{NAME}\", $var_name);");
 	} else {
 		$self->ParseTypePrint($l->{DATA_TYPE}, $var_name);
 	}
@@ -815,12 +831,11 @@ sub ParseDataPull($$$$$$$)
 {
 	my ($self,$e,$l,$ndr,$var_name,$primitives,$deferred) = @_;
 
-	if (not ref($l->{DATA_TYPE}) or 
-		defined($l->{DATA_TYPE}->{NAME})) {
+	if (not ref($l->{DATA_TYPE}) or defined($l->{DATA_TYPE}->{NAME})) {
 
 		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 
-		if (Parse::Pidl::Typelist::scalar_is_reference($l->{DATA_TYPE})) {
+		if (need_pointer_to($e, $l, 0)) {
 			$var_name = get_pointer_to($var_name);
 		}
 
@@ -845,21 +860,15 @@ sub ParseDataPush($$$$$$$)
 	my ($self,$e,$l,$ndr,$var_name,$primitives,$deferred) = @_;
 
 	if (not ref($l->{DATA_TYPE}) or defined($l->{DATA_TYPE}->{NAME})) {
-		my $t;
-		if (ref($l->{DATA_TYPE}) eq "HASH") {
-			$t = "$l->{DATA_TYPE}->{TYPE}_$l->{DATA_TYPE}->{NAME}";
-		} else {
-			$t = $l->{DATA_TYPE};
-		}
-				
+
+		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
+
 		# strings are passed by value rather than reference
-		if (not Parse::Pidl::Typelist::is_scalar($t) or 
-			Parse::Pidl::Typelist::scalar_is_reference($t)) {
+		if (need_pointer_to($e, $l, 1)) {
 			$var_name = get_pointer_to($var_name);
 		}
 
-		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
-		$self->pidl("NDR_CHECK(ndr_push_$t($ndr, $ndr_flags, $var_name));");
+		$self->pidl("NDR_CHECK(".TypeFunctionName("ndr_push", $l->{DATA_TYPE})."($ndr, $ndr_flags, $var_name));");
 	} else {
 		$self->ParseTypePush($l->{DATA_TYPE}, $var_name, $primitives, $deferred);
 	}
