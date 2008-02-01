@@ -299,14 +299,14 @@ is_deeply(GetElementLevelTable($e, "unique"), [
 	},
 	{
 		LEVEL_INDEX => 2,
-		IS_DEFERRED => 0,
+		IS_DEFERRED => 1,
 		TYPE => 'POINTER',
 		POINTER_TYPE => "unique",
 		POINTER_INDEX => 2,
 		LEVEL => 'EMBEDDED'
 	},
 	{
-		'IS_DEFERRED' => 0,
+		'IS_DEFERRED' => 1,
 		'LEVEL_INDEX' => 3,
 		'DATA_TYPE' => 'uint8',
 		'CONTAINS_DEFERRED' => 0,
@@ -337,7 +337,7 @@ is_deeply(GetElementLevelTable($e, "unique"), [
 	},
 	{
 		LEVEL_INDEX => 1,
-		IS_DEFERRED => 0,
+		IS_DEFERRED => 1,
 		TYPE => 'POINTER',
 		POINTER_TYPE => "unique",
 		POINTER_INDEX => 1,
@@ -345,14 +345,14 @@ is_deeply(GetElementLevelTable($e, "unique"), [
 	},
 	{
 		LEVEL_INDEX => 2,
-		IS_DEFERRED => 0,
+		IS_DEFERRED => 1,
 		TYPE => 'POINTER',
 		POINTER_TYPE => "unique",
 		POINTER_INDEX => 2,
 		LEVEL => 'EMBEDDED'
 	},
 	{
-		'IS_DEFERRED' => 0,
+		'IS_DEFERRED' => 1,
 		'LEVEL_INDEX' => 3,
 		'DATA_TYPE' => 'uint8',
 		'CONTAINS_DEFERRED' => 0,
@@ -383,7 +383,7 @@ is_deeply(GetElementLevelTable($e, "ref"), [
 	},
 	{
 		LEVEL_INDEX => 1,
-		IS_DEFERRED => 0,
+		IS_DEFERRED => 1,
 		TYPE => 'POINTER',
 		POINTER_TYPE => "ref",
 		POINTER_INDEX => 1,
@@ -391,14 +391,14 @@ is_deeply(GetElementLevelTable($e, "ref"), [
 	},
 	{
 		LEVEL_INDEX => 2,
-		IS_DEFERRED => 0,
+		IS_DEFERRED => 1,
 		TYPE => 'POINTER',
 		POINTER_TYPE => "ref",
 		POINTER_INDEX => 2,
 		LEVEL => 'EMBEDDED'
 	},
 	{
-		'IS_DEFERRED' => 0,
+		'IS_DEFERRED' => 1,
 		'LEVEL_INDEX' => 3,
 		'DATA_TYPE' => 'uint8',
 		'CONTAINS_DEFERRED' => 0,
@@ -437,14 +437,14 @@ is_deeply(GetElementLevelTable($e, "ref"), [
 	},
 	{
 		LEVEL_INDEX => 2,
-		IS_DEFERRED => 0,
+		IS_DEFERRED => 1,
 		TYPE => 'POINTER',
 		POINTER_TYPE => "ref",
 		POINTER_INDEX => 2,
 		LEVEL => 'EMBEDDED'
 	},
 	{
-		'IS_DEFERRED' => 0,
+		'IS_DEFERRED' => 1,
 		'LEVEL_INDEX' => 3,
 		'DATA_TYPE' => 'uint8',
 		'CONTAINS_DEFERRED' => 0,
