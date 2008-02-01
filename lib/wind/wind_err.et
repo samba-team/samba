@@ -1,0 +1,14 @@
+#
+# Error messages for the wind library
+#
+# This might look like a com_err file, but is not
+#
+id "$Id$"
+
+error_table wind
+
+prefix WIND
+error_code NONE,		"No error"
+error_code FOO,			"Random error"
+
+end

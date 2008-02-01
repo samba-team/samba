@@ -1,0 +1,33 @@
+2007-01-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* test-utf8.c: spelling
+	
+	* utf8.c: Add wind_ucs4toutf8
+	
+2006-10-08  Love Hörnquist Åstrand  <lha@it.su.se>
+	
+	* test-utf8.c: Add test for wind_ucs4toutf8.
+
+	* wind.h (wind_ucs4toutf8): New function.
+	
+	* utf8.c (wind_utf8toucs4): allow calculation of length by passing
+	in NULL as out buffer.
+	(wind_ucs4toutf8): new function.
+	
+2004-12-20  Assar Westerlund <assar@kth.se>
+	
+	* util.py: 
+	* rfc3454.py: 
+	* generate.py: 
+	* gen-punycode-examples.py: 
+	* gen-normalize.py: 
+	* gen-map.py: 
+	* gen-errorlist.py: 
+	* gen-combining.py: 
+	* gen-bidi.py: 
+	* UnicodeData.py:
+	Add encoding.
+
+2004-12-20  Assar Westerlund  <assar@kth.se>
+
+	* First version of stringprep library.

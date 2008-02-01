@@ -1,0 +1,24 @@
+# $Id$
+
+HEIMDAL_WIND_1.0 {
+	global:
+		wind_stringprep;
+		wind_profile;
+		wind_punycode_toascii;
+		wind_utf8ucs4;
+		wind_utf8ucs4_length;
+		wind_ucs4utf8;
+		wind_ucs4utf8_length;
+		wind_ucs2utf8;
+		wind_ucs2utf8_length;
+		# testing
+		_wind_combining_class;
+		_wind_stringprep_testbidi;
+		_wind_stringprep_error;
+		_wind_stringprep_prohibited;
+		_wind_stringprep_map;
+		_wind_stringprep_normalize;
+		_wind_ucs2read;
+	local:
+		*;
+};
