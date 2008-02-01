@@ -1790,9 +1790,11 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	switch (name_types[0])
 	{
 	case SID_NAME_DOM_GRP:
-		result = rpccli_samr_open_group(pipe_hnd, mem_ctx, &domain_pol,
-					     MAXIMUM_ALLOWED_ACCESS,
-					     group_rids[0], &group_pol);
+		result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+					       &domain_pol,
+					       MAXIMUM_ALLOWED_ACCESS,
+					       group_rids[0],
+					       &group_pol);
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, "Request open_group failed");
    			goto done;
@@ -2148,9 +2150,11 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 
-	result = rpccli_samr_open_group(pipe_hnd, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
-				     group_rid, &group_pol);
+	result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+				       &domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       group_rid,
+				       &group_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -2330,9 +2334,11 @@ static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 
-	result = rpccli_samr_open_group(pipe_hnd, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
-				     group_rid, &group_pol);
+	result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+				       &domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       group_rid,
+				       &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -2710,9 +2716,11 @@ static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
 	fstring sid_str;
 	sid_to_fstring(sid_str, domain_sid);
 
-	result = rpccli_samr_open_group(pipe_hnd, mem_ctx, domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
-				     rid, &group_pol);
+	result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+				       domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       rid,
+				       &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -2983,9 +2991,11 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	result = rpccli_samr_open_group(pipe_hnd, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
-				     rids[0], &group_pol);
+	result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+				       &domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       rids[0],
+				       &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
