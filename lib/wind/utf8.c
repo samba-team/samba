@@ -71,7 +71,7 @@ wind_utf8ucs4(const char *in, uint32_t *out, size_t *out_len)
 		    u =  ((c  & 0x1F) << 6)
 			| (c2 & 0x3F);
 		} else {
-		    return -1;
+		    return WIND_ERR_INVALID_UTF8;
 		}
 	    } else if ((c & 0xF0) == 0xE0) {
 		const unsigned c2 = *++p;
@@ -82,10 +82,10 @@ wind_utf8ucs4(const char *in, uint32_t *out, size_t *out_len)
 			    | ((c2 & 0x3F) << 6)
 			    |  (c3 & 0x3F);
 		    } else {
-			return -1;
+			return WIND_ERR_INVALID_UTF8;
 		    }
 		} else {
-		    return -1;
+		    return WIND_ERR_INVALID_UTF8;
 		}
 	    } else if ((c & 0xF8) == 0xF0) {
 		const unsigned c2 = *++p;
@@ -99,23 +99,23 @@ wind_utf8ucs4(const char *in, uint32_t *out, size_t *out_len)
 				| ((c3 & 0x3F) <<  6)
 				|  (c4 & 0x3F);
 			} else {
-			    return -1;
+			    return WIND_ERR_INVALID_UTF8;
 			}
 		    } else {
-			return -1;
+			return WIND_ERR_INVALID_UTF8;
 		    }
 		} else {
-		    return -1;
+		    return WIND_ERR_INVALID_UTF8;
 		}
 	    } else {
-		return -1;
+		return WIND_ERR_INVALID_UTF8;
 	    }
 	} else {
 	    u = c;
 	}
 	if (out) {
 	    if (o >= *out_len)
-		return -1;
+		return WIND_ERR_OVERRUN;
 	    out[o++] = u;
 	}
     }
@@ -178,13 +178,13 @@ wind_ucs4utf8(const uint32_t *in, size_t in_len, char *out, size_t *out_len)
 	} else if (ch <= 0x10FFFF) {
 	    len = 4;
 	} else
-	    return -1;
+	    return WIND_ERR_INVALID_UTF32;
 	
 	o += len;
 
 	if (out) {
 	    if (o >= *out_len)
-		return -1;
+		return WIND_ERR_OVERRUN;
 
 	    switch(len) {
 	    case 4:
@@ -204,7 +204,7 @@ wind_ucs4utf8(const uint32_t *in, size_t in_len, char *out, size_t *out_len)
     }
     if (out) {
 	if (o + 1 >= *out_len)
-	    return -1;
+	    return WIND_ERR_OVERRUN;
 	*out = '\0';
     }
     *out_len = o;
@@ -246,7 +246,7 @@ _wind_ucs2read(void *ptr, size_t len, uint16_t *out)
     int little = 1;
 
     if (len & 1)
-	return -1;
+	return WIND_ERR_LENGTH_NOT_EVEN;
     /* check for BOM */
 
     while (len) {
@@ -296,7 +296,7 @@ wind_ucs2utf8(const uint16_t *in, size_t in_len, char *out, size_t *out_len)
 
 	if (out) {
 	    if (o >= *out_len)
-		return -1;
+		return WIND_ERR_OVERRUN;
 
 	    switch(len) {
 	    case 3:
@@ -313,7 +313,7 @@ wind_ucs2utf8(const uint16_t *in, size_t in_len, char *out, size_t *out_len)
     }
     if (out) {
 	if (o + 1 >= *out_len)
-	    return -1;
+	    return WIND_ERR_OVERRUN;
 	*out = '\0';
     }
     *out_len = o;

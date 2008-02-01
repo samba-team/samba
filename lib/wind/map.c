@@ -72,12 +72,12 @@ _wind_stringprep_map(const uint32_t *in, size_t in_len,
 
 	    for (j = 0; j < s->val_len; ++j) {
 		if (o >= *out_len)
-		    return -1;
+		    return WIND_ERR_OVERRUN;
 		out[o++] = _wind_map_table_val[s->val_offset + j];
 	    }
 	} else {
 	    if (o >= *out_len)
-		return -1;
+		return WIND_ERR_OVERRUN;
 	    out[o++] = in[i];
 
 	}

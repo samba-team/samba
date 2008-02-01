@@ -115,7 +115,7 @@ main(void)
     for (s = failing_testcases; *s != NULL; ++s) {
 	len = MAX_LENGTH;
 	ret = wind_utf8ucs4(*s, u, &len);
-	if (ret != -1) {
+	if (ret == 0) {
 	    printf("utf8 decode of \"%s\" should have failed\n", *s);
 	    ++failures;
 	}

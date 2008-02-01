@@ -46,8 +46,7 @@ BUILT_SOURCES =					\
 	wind_err.c				\
 	wind_err.h
 
-include_HEADERS = wind.h
-
+dist_include_HEADERS = wind.h
 nodist_include_HEADERS = wind_err.h
 
 TESTS =						\

@@ -88,14 +88,14 @@ wind_punycode_toascii(const uint32_t *in, size_t in_len,
 	if (in[i] < 0x80) {
 	    ++h;
 	    if (o >= *out_len)
-		return -1;
+		return WIND_ERR_OVERRUN;
 	    out[o++] = in[i];
 	}
     }
     b = h;
     if (b > 0) {
 	if (o >= *out_len)
-	    return -1;
+	    return WIND_ERR_OVERRUN;
 	out[o++] = 0x2D;
     }
     while (h < in_len) {
@@ -124,12 +124,12 @@ wind_punycode_toascii(const uint32_t *in, size_t in_len,
 		    if (q < t)
 			break;
 		    if (o >= *out_len)
-			return -1;
+			return WIND_ERR_OVERRUN;
 		    out[o++] = digit(t + ((q - t) % (base - t)));
 		    q = (q - t) / (base - t);
 		}
 		if (o >= *out_len)
-		    return -1;
+		    return WIND_ERR_OVERRUN;
 		out[o++] = digit(q);
 		/* output */
 		bias = adapt(delta, h + 1, h == b);

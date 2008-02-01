@@ -41,6 +41,7 @@
 #endif
 
 #include "wind.h"
+#include "wind_err.h"
 
 int _wind_combining_class(uint32_t);
 

@@ -38,6 +38,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <errno.h>
 
 #include "normalize_table.h"
 
@@ -81,7 +82,7 @@ hangul_decomp(const uint32_t *in, size_t in_len,
     if (t != t_base)
 	++o;
     if (*out_len < o)
-	return -1;
+	return WIND_ERR_OVERRUN;
     out[0] = l;
     out[1] = v;
     if (t != t_base)
@@ -132,7 +133,7 @@ compat_decomp(const uint32_t *in, size_t in_len,
 	ret = hangul_decomp(in + i, in_len - i,
 			    out + o, &sub_len);
 	if (ret) {
-	    if (ret == -1)
+	    if (ret == WIND_ERR_OVERRUN)
 		return ret;
 	    o += sub_len;
 	} else {
@@ -152,7 +153,7 @@ compat_decomp(const uint32_t *in, size_t in_len,
 		o += sub_len;
 	    } else {
 		if (o >= *out_len)
-		    return -1;
+		    return WIND_ERR_OVERRUN;
 		out[o++] = in[i];
 
 	    }
@@ -274,7 +275,7 @@ _wind_stringprep_normalize(const uint32_t *in, size_t in_len,
 	tmp_len = MAX_LENGTH;
     tmp = malloc(tmp_len * sizeof(uint32_t));
     if (tmp == NULL)
-	return -1;
+	return ENOMEM;
 
     ret = compat_decomp(in, in_len, tmp, &tmp_len);
     if (ret) {

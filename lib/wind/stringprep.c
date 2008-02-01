@@ -37,6 +37,7 @@
 #include "windlocl.h"
 #include <stdlib.h>
 #include <strings.h>
+#include <errno.h>
 
 RCSID("$Id$");
 
@@ -63,7 +64,7 @@ wind_stringprep(const uint32_t *in, size_t in_len,
     int ret;
 
     if (tmp == NULL)
-	return -1;
+	return ENOMEM;
 
     ret = _wind_stringprep_map(in, in_len, tmp, &tmp_len, flags);
     if (ret) {
@@ -113,5 +114,5 @@ wind_profile(const char *name, wind_profile_flags *flags)
 	    return 0;
 	}
     }
-    return -1;
+    return WIND_ERR_NO_PROFILE;
 }
