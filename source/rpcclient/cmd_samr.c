@@ -1905,7 +1905,8 @@ static NTSTATUS cmd_samr_delete_dom_user(struct rpc_pipe_client *cli,
 
 	/* Delete user */
 
-	result = rpccli_samr_delete_dom_user(cli, mem_ctx, &user_pol);
+	result = rpccli_samr_DeleteUser(cli, mem_ctx,
+					&user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
