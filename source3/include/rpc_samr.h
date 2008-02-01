@@ -1406,32 +1406,6 @@ typedef struct r_samr_lookup_rids_info
 } SAMR_R_LOOKUP_RIDS;
 
 
-/* SAMR_Q_CREATE_USER - probably a create */
-typedef struct q_samr_create_user_info
-{
-	POLICY_HND domain_pol;       /* policy handle */
-
-	UNIHDR  hdr_name;       /* unicode account name header */
-	UNISTR2 uni_name;       /* unicode account name */
-
-	uint32 acb_info;      /* account control info */
-	uint32 acct_flags;     /* 0xe005 00b0 */
-
-} SAMR_Q_CREATE_USER;
-
-
-/* SAMR_R_CREATE_USER - probably a create */
-typedef struct r_samr_create_user_info
-{
-	POLICY_HND user_pol;       /* policy handle associated with user */
-
-	uint32 access_granted;
-	uint32 user_rid;      /* user RID */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_CREATE_USER;
-
-
 /* SAMR_Q_QUERY_GROUPMEM - query group members */
 typedef struct q_samr_query_groupmem_info
 {
