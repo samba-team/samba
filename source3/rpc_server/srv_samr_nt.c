@@ -768,66 +768,63 @@ static bool check_change_pw_access(TALLOC_CTX *mem_ctx, DOM_SID *user_sid)
 
 
 /*******************************************************************
- _samr_query_sec_obj
+ _samr_QuerySecurity
  ********************************************************************/
 
-NTSTATUS _samr_query_sec_obj(pipes_struct *p, SAMR_Q_QUERY_SEC_OBJ *q_u, SAMR_R_QUERY_SEC_OBJ *r_u)
+NTSTATUS _samr_QuerySecurity(pipes_struct *p,
+			     struct samr_QuerySecurity *r)
 {
+	NTSTATUS status;
 	DOM_SID pol_sid;
 	SEC_DESC * psd = NULL;
 	uint32 acc_granted;
 	size_t sd_size;
 
-	r_u->status = NT_STATUS_OK;
-
 	/* Get the SID. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->user_pol, &pol_sid, &acc_granted, NULL))
+	if (!get_lsa_policy_samr_sid(p, r->in.handle, &pol_sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	DEBUG(10,("_samr_query_sec_obj: querying security on SID: %s\n",
+	DEBUG(10,("_samr_QuerySecurity: querying security on SID: %s\n",
 		  sid_string_dbg(&pol_sid)));
 
 	/* Check what typ of SID is beeing queried (e.g Domain SID, User SID, Group SID) */
 
 	/* To query the security of the SAM it self an invalid SID with S-0-0 is passed to this function */
 	if (pol_sid.sid_rev_num == 0) {
-		DEBUG(5,("_samr_query_sec_obj: querying security on SAM\n"));
-		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
+		DEBUG(5,("_samr_QuerySecurity: querying security on SAM\n"));
+		status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
 	} else if (sid_equal(&pol_sid,get_global_sam_sid())) { 
 		/* check if it is our domain SID */
-		DEBUG(5,("_samr_query_sec_obj: querying security on Domain "
+		DEBUG(5,("_samr_QuerySecurity: querying security on Domain "
 			 "with SID: %s\n", sid_string_dbg(&pol_sid)));
-		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0);
+		status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0);
 	} else if (sid_equal(&pol_sid,&global_sid_Builtin)) {
 		/* check if it is the Builtin  Domain */
 		/* TODO: Builtin probably needs a different SD with restricted write access*/
-		DEBUG(5,("_samr_query_sec_obj: querying security on Builtin "
+		DEBUG(5,("_samr_QuerySecurity: querying security on Builtin "
 			 "Domain with SID: %s\n", sid_string_dbg(&pol_sid)));
-		r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0);
+		status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &dom_generic_mapping, NULL, 0);
 	} else if (sid_check_is_in_our_domain(&pol_sid) ||
 	    	 sid_check_is_in_builtin(&pol_sid)) {
 		/* TODO: different SDs have to be generated for aliases groups and users.
 		         Currently all three get a default user SD  */
-		DEBUG(10,("_samr_query_sec_obj: querying security on Object "
+		DEBUG(10,("_samr_QuerySecurity: querying security on Object "
 			  "with SID: %s\n", sid_string_dbg(&pol_sid)));
 		if (check_change_pw_access(p->mem_ctx, &pol_sid)) {
-			r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping, 
+			status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_generic_mapping,
 							  &pol_sid, SAMR_USR_RIGHTS_WRITE_PW);
 		} else {
-			r_u->status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_nopwchange_generic_mapping, 
+			status = make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &usr_nopwchange_generic_mapping,
 							  &pol_sid, SAMR_USR_RIGHTS_CANT_WRITE_PW);
 		}
 	} else {
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
-	if ((r_u->buf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
+	if ((*r->out.sdbuf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	if (NT_STATUS_IS_OK(r_u->status))
-		r_u->ptr = 1;
-
-	return r_u->status;
+	return status;
 }
 
 /*******************************************************************
@@ -5083,16 +5080,6 @@ NTSTATUS _samr_Connect(pipes_struct *p,
 
 NTSTATUS _samr_SetSecurity(pipes_struct *p,
 			   struct samr_SetSecurity *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_QuerySecurity(pipes_struct *p,
-			     struct samr_QuerySecurity *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
