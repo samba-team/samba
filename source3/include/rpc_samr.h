@@ -1034,28 +1034,6 @@ typedef struct r_samr_get_dispenum_index
 	
 } SAMR_R_GET_DISPENUM_INDEX;
 
-/* SAMR_Q_CREATE_DOM_GROUP - SAM create group */
-typedef struct q_samr_create_dom_group_info
-{
-	POLICY_HND pol;        /* policy handle */
-
-	UNIHDR hdr_acct_desc;
-	UNISTR2 uni_acct_desc;
-
-	uint32 access_mask;    
-
-} SAMR_Q_CREATE_DOM_GROUP;
-
-/* SAMR_R_CREATE_DOM_GROUP - SAM create group */
-typedef struct r_samr_create_dom_group_info
-{
-	POLICY_HND pol;        /* policy handle */
-
-	uint32 rid;    
-	NTSTATUS status;    
-
-} SAMR_R_CREATE_DOM_GROUP;
-
 /* SAMR_Q_QUERY_GROUPINFO - SAM Group Info */
 typedef struct q_samr_query_group_info
 {
