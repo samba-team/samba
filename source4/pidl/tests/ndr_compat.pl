@@ -19,9 +19,3 @@ sub parse_idl($)
 
 test_warnings("", sub {parse_idl("void x();"); });
 test_warnings("nofile:0: top-level [out] pointer `x' is not a [ref] pointer\n", sub {parse_idl("void x([out,unique] int *x);"); });
-
-test_warnings("nofile:0: pointer_default_top() is a pidl extension and should not be used\n", sub {
-	my $pidl = Parse::Pidl::IDL::parse_string("[pointer_default_top(unique)] interface echo { void x(); }; ", "nofile");
-	Parse::Pidl::NDR::Parse($pidl);
-});
-
