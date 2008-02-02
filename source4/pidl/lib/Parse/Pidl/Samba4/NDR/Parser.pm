@@ -14,7 +14,7 @@ require Exporter;
 use strict;
 use Parse::Pidl::Typelist qw(hasType getType mapTypeName typeHasBody);
 use Parse::Pidl::Util qw(has_property ParseExpr ParseExprExt print_uuid);
-use Parse::Pidl::CUtil qw(get_pointer_to get_value_of get_array_element);
+use Parse::Pidl::CUtil qw(get_pointer_to get_value_of);
 use Parse::Pidl::NDR qw(GetPrevLevel GetNextLevel ContainsDeferred is_charset_array);
 use Parse::Pidl::Samba4 qw(is_intree choose_header);
 use Parse::Pidl::Samba4::Header qw(GenerateFunctionInEnv GenerateFunctionOutEnv EnvSubstituteValue GenerateStructEnv);
@@ -42,21 +42,19 @@ sub append_prefix($$)
 {
 	my ($e, $var_name) = @_;
 	my $pointers = 0;
-	my $arrays = 0;
 
 	foreach my $l (@{$e->{LEVELS}}) {
 		if ($l->{TYPE} eq "POINTER") {
 			$pointers++;
 		} elsif ($l->{TYPE} eq "ARRAY") {
-			$arrays++;
 			if (($pointers == 0) and 
 			    (not $l->{IS_FIXED}) and
 			    (not $l->{IS_INLINE})) {
-				return get_value_of($var_name);
+				return get_value_of($var_name); 
 			}
 		} elsif ($l->{TYPE} eq "DATA") {
 			if (Parse::Pidl::Typelist::scalar_is_reference($l->{DATA_TYPE})) {
-				return get_value_of($var_name) unless ($pointers or $arrays);
+				return get_value_of($var_name) unless ($pointers);
 			}
 		}
 	}
@@ -584,7 +582,7 @@ sub ParseElementPushLevel
 		my $length = ParseExpr($l->{LENGTH_IS}, $env, $e->{ORIGINAL});
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 
-		$var_name = get_array_element($var_name, $counter);
+		$var_name = $var_name . "[$counter]";
 
 		if (($primitives and not $l->{IS_DEFERRED}) or ($deferred and $l->{IS_DEFERRED})) {
 			$self->pidl("for ($counter = 0; $counter < $length; $counter++) {");
@@ -671,48 +669,23 @@ sub ParsePtrPush($$$$)
 	}
 }
 
-sub need_pointer_to($$$)
-{
-	my ($e, $l, $scalar_only) = @_;
-
-	my $t;
-	if (ref($l->{DATA_TYPE})) {
-		$t = "$l->{DATA_TYPE}->{TYPE}_$l->{DATA_TYPE}->{NAME}";
-	} else {
-		$t = $l->{DATA_TYPE};
-	}
-
-	if (not Parse::Pidl::Typelist::is_scalar($t)) {
-		return 1 if $scalar_only;
-	}
-
-	my $arrays = 0;
-
-	foreach my $tl (@{$e->{LEVELS}}) {
-		last if $l == $tl;
-		if ($tl->{TYPE} eq "ARRAY") {
-			$arrays++;
-		}
-	}
-
-	if (Parse::Pidl::Typelist::scalar_is_reference($t)) {
-		return 1 unless $arrays;
-	}
-
-	return 0;
-}
-
 sub ParseDataPrint($$$$)
 {
 	my ($self, $e, $l, $var_name) = @_;
 	
-	if (not ref($l->{DATA_TYPE}) or defined($l->{DATA_TYPE}->{NAME})) {
-
-		if (need_pointer_to($e, $l, 1)) {
+	if (not ref($l->{DATA_TYPE}) or 
+		defined($l->{DATA_TYPE}->{NAME})) {
+		my $t;
+		if (ref($l->{DATA_TYPE})) {
+			$t = "$l->{DATA_TYPE}->{TYPE}_$l->{DATA_TYPE}->{NAME}";
+		} else {
+			$t = $l->{DATA_TYPE};
+		}
+		if (not Parse::Pidl::Typelist::is_scalar($t) or 
+			Parse::Pidl::Typelist::scalar_is_reference($t)) {
 			$var_name = get_pointer_to($var_name);
 		}
-
-		$self->pidl(TypeFunctionName("ndr_print", $l->{DATA_TYPE})."(ndr, \"$e->{NAME}\", $var_name);");
+		$self->pidl("ndr_print_$t(ndr, \"$e->{NAME}\", $var_name);");
 	} else {
 		$self->ParseTypePrint($l->{DATA_TYPE}, $var_name);
 	}
@@ -779,7 +752,7 @@ sub ParseElementPrint($$$$)
 				$self->pidl("if (idx_$l->{LEVEL_INDEX}) {");
 				$self->indent;
 
-				$var_name = get_array_element($var_name, $counter);
+				$var_name = $var_name . "[$counter]";
 			}
 		} elsif ($l->{TYPE} eq "DATA") {
 			$self->ParseDataPrint($e, $l, $var_name);
@@ -842,11 +815,12 @@ sub ParseDataPull($$$$$$$)
 {
 	my ($self,$e,$l,$ndr,$var_name,$primitives,$deferred) = @_;
 
-	if (not ref($l->{DATA_TYPE}) or defined($l->{DATA_TYPE}->{NAME})) {
+	if (not ref($l->{DATA_TYPE}) or 
+		defined($l->{DATA_TYPE}->{NAME})) {
 
 		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
 
-		if (need_pointer_to($e, $l, 0)) {
+		if (Parse::Pidl::Typelist::scalar_is_reference($l->{DATA_TYPE})) {
 			$var_name = get_pointer_to($var_name);
 		}
 
@@ -871,15 +845,21 @@ sub ParseDataPush($$$$$$$)
 	my ($self,$e,$l,$ndr,$var_name,$primitives,$deferred) = @_;
 
 	if (not ref($l->{DATA_TYPE}) or defined($l->{DATA_TYPE}->{NAME})) {
-
-		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
-
+		my $t;
+		if (ref($l->{DATA_TYPE}) eq "HASH") {
+			$t = "$l->{DATA_TYPE}->{TYPE}_$l->{DATA_TYPE}->{NAME}";
+		} else {
+			$t = $l->{DATA_TYPE};
+		}
+				
 		# strings are passed by value rather than reference
-		if (need_pointer_to($e, $l, 1)) {
+		if (not Parse::Pidl::Typelist::is_scalar($t) or 
+			Parse::Pidl::Typelist::scalar_is_reference($t)) {
 			$var_name = get_pointer_to($var_name);
 		}
 
-		$self->pidl("NDR_CHECK(".TypeFunctionName("ndr_push", $l->{DATA_TYPE})."($ndr, $ndr_flags, $var_name));");
+		my $ndr_flags = CalcNdrFlags($l, $primitives, $deferred);
+		$self->pidl("NDR_CHECK(ndr_push_$t($ndr, $ndr_flags, $var_name));");
 	} else {
 		$self->ParseTypePush($l->{DATA_TYPE}, $var_name, $primitives, $deferred);
 	}
@@ -929,7 +909,7 @@ sub ParseMemCtxPullFlags($$$$)
 					($nl->{DATA_TYPE} eq "string"));
 		if ($next_is_array or $next_is_string) {
 			return undef;
-		} elsif ($l->{LEVEL} eq "TOP") {
+		} else {
 			$mem_flags = "LIBNDR_FLAG_REF_ALLOC";
 		}
 	}
@@ -1048,7 +1028,7 @@ sub ParseElementPullLevel
 		my $counter = "cntr_$e->{NAME}_$l->{LEVEL_INDEX}";
 		my $array_name = $var_name;
 
-		$var_name = get_array_element($var_name, $counter);
+		$var_name = $var_name . "[$counter]";
 
 		$self->ParseMemCtxPullStart($e, $l, $array_name);
 
@@ -1129,7 +1109,10 @@ sub ParsePtrPull($$$$$)
 	my $next_is_string = (($nl->{TYPE} eq "DATA") and 
 						 ($nl->{DATA_TYPE} eq "string"));
 
-	if ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "TOP") {
+	if ($l->{POINTER_TYPE} eq "ref") {
+		if ($l->{LEVEL} eq "EMBEDDED") {
+			$self->pidl("NDR_CHECK(ndr_pull_ref_ptr($ndr, &_ptr_$e->{NAME}));");
+		}
 
 		if (!$next_is_array and !$next_is_string) {
 			$self->pidl("if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {");
@@ -1138,18 +1121,15 @@ sub ParsePtrPull($$$$$)
 		}
 		
 		return;
-	} elsif ($l->{POINTER_TYPE} eq "ref" and $l->{LEVEL} eq "EMBEDDED") {
-		$self->pidl("NDR_CHECK(ndr_pull_ref_ptr($ndr, &_ptr_$e->{NAME}));");
 	} elsif (($l->{POINTER_TYPE} eq "unique") or 
 		 ($l->{POINTER_TYPE} eq "relative") or
 		 ($l->{POINTER_TYPE} eq "full")) {
 		$self->pidl("NDR_CHECK(ndr_pull_generic_ptr($ndr, &_ptr_$e->{NAME}));");
+		$self->pidl("if (_ptr_$e->{NAME}) {");
+		$self->indent;
 	} else {
 		die("Unhandled pointer type $l->{POINTER_TYPE}");
 	}
-
-	$self->pidl("if (_ptr_$e->{NAME}) {");
-	$self->indent;
 
 	# Don't do this for arrays, they're allocated at the actual level 
 	# of the array
