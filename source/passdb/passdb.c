@@ -443,10 +443,7 @@ bool pdb_gethexhours(const char *p, unsigned char *hours)
 
 int algorithmic_rid_base(void)
 {
-	static int rid_offset = 0;
-
-	if (rid_offset != 0)
-		return rid_offset;
+	int rid_offset;
 
 	rid_offset = lp_algorithmic_rid_base();
 
