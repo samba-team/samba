@@ -1,3 +1,8 @@
+2008-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* spnego/accept_sec_context.c: Make error reporting somewhat more
+	correct for SPNEGO.
+
 2008-01-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_common.c: Improve the error message.
