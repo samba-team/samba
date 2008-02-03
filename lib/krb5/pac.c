@@ -32,6 +32,7 @@
  */
 
 #include "krb5_locl.h"
+#include <wind.h>
 
 RCSID("$Id$");
 
@@ -564,51 +565,48 @@ verify_logonname(krb5_context context,
     ret = krb5_storage_read(sp, s, len);
     if (ret != len) {
 	krb5_storage_free(sp);
-	krb5_set_error_string(context, "Failed to read pac logon name");
+	krb5_set_error_string(context, "Failed to read PAC logon name");
 	return EINVAL;
     }
     krb5_storage_free(sp);
-#if 1 /* cheat for now */
     {
-	size_t i;
-
-	if (len & 1) {
-	    krb5_set_error_string(context, "PAC logon name malformed");
-	    return EINVAL;
-	}
-
-	for (i = 0; i < len / 2; i++) {
-	    if (s[(i * 2) + 1]) {
-		krb5_set_error_string(context, "PAC logon name not ASCII");
-		return EINVAL;
-	    }
-	    s[i] = s[i * 2];
-	}
-	s[i] = '\0';
-    }
-#else
-    {
+	size_t ucs2len = len / 2;
 	uint16_t *ucs2;
-	ssize_t ucs2len;
 	size_t u8len;
+	unsigned int flags = WIND_RW_LE;
 
-	ucs2 = malloc(sizeof(ucs2[0]) * len / 2);
-	if (ucs2)
-	    abort();
-	ucs2len = wind_ucs2read(s, len / 2, ucs2);
+	ucs2 = malloc(sizeof(ucs2[0]) * ucs2len);
+	if (ucs2 == NULL) {
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    return ENOMEM;
+	}
+	ret = wind_ucs2read(s, len, &flags, ucs2, &ucs2len);
 	free(s);
-	if (len < 0)
-	    return -1;
-	ret = wind_ucs2toutf8(ucs2, ucs2len, NULL, &u8len);
-	if (ret < 0)
-	    abort();
-	s = malloc(u8len + 1);
-	if (s == NULL)
-	    abort();
-	wind_ucs2toutf8(ucs2, ucs2len, s, &u8len);
+	if (ret) {
+	    free(ucs2);
+	    krb5_set_error_string(context, "Failed to convert string to UCS-2");
+	    return ret;
+	}
+	ret = wind_ucs2utf8_length(ucs2, ucs2len, &u8len);
+	if (ret) {
+	    free(ucs2);
+	    krb5_set_error_string(context, "Failed to count length of UCS-2 string");
+	    return ret;
+	}
+	u8len += 1; /* Add space for NUL */
+	s = malloc(u8len);
+	if (s == NULL) {
+	    free(ucs2);
+	    krb5_set_error_string(context, "malloc: out of memory");
+	    return ENOMEM;
+	}
+	ret = wind_ucs2utf8(ucs2, ucs2len, s, &u8len);
 	free(ucs2);
+	if (ret) {
+	    krb5_set_error_string(context, "Failed to convert to UTF-8");
+	    return ret;
+	}
     }
-#endif
     ret = krb5_parse_name_flags(context, s, KRB5_PRINCIPAL_PARSE_NO_REALM, &p2);
     free(s);
     if (ret)
