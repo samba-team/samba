@@ -55,6 +55,7 @@ TESTS =						\
 check_PROGRAMS =				\
 	test-bidi				\
 	test-map				\
+	test-rw					\
 	test-normalize				\
 	test-prohibited				\
 	test-punycode				\

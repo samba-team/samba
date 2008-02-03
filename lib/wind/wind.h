@@ -45,6 +45,11 @@ typedef unsigned int wind_profile_flags;
 #define WIND_PROFILE_LDAP 2
 #define WIND_PROFILE_SASL 4
 
+/* flags to wind_ucs2read/wind_ucs2write */
+#define WIND_RW_LE	1
+#define WIND_RW_BE	2
+#define WIND_RW_BOM	4
+
 int wind_stringprep(const unsigned *in, size_t in_len,
 		    unsigned *out, size_t *out_len,
 		    wind_profile_flags flags);
@@ -61,5 +66,9 @@ int wind_ucs4utf8_length(const uint32_t *, size_t, size_t *);
 
 int wind_ucs2utf8(const uint16_t *, size_t, char *, size_t *);
 int wind_ucs2utf8_length(const uint16_t *, size_t, size_t *);
+
+
+int wind_ucs2read(const void *, size_t, unsigned int *, uint16_t *, size_t *);
+int wind_ucs2write(const uint16_t *, size_t, unsigned int *, void *, size_t *);
 
 #endif /* _WIND_H_ */

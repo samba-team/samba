@@ -1,3 +1,7 @@
+2008-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Add UCS-2 reading and writing functions
+
 2008-02-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Add and use com_err error codes

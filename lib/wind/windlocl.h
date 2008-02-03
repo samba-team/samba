@@ -55,9 +55,6 @@ int _wind_stringprep_map(const uint32_t *, size_t,
 			 uint32_t *, size_t *,
 			 wind_profile_flags);
 
-int _wind_stringprep_normalize(const uint32_t *in, size_t in_len,
-			       uint32_t *out, size_t *out_len);
-
-ssize_t _wind_ucs2read(void *, size_t, uint16_t *);
+int _wind_stringprep_normalize(const uint32_t *, size_t, uint32_t *, size_t *);
 
 #endif /* _WINDLOCL_H_ */

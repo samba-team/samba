@@ -231,33 +231,135 @@ wind_ucs4utf8_length(const uint32_t *in, size_t in_len, size_t *out_len)
 /**
  * Read in an UCS2 from a buffer.
  *
- * @param ptr The input buffer to read from
- * @param len the length of the input buffer, must be an even number.
+ * @param ptr The input buffer to read from.
+ * @param len the length of the input buffer.
+ * @param flags Flags to control the behavior of the function.
  * @param out the output UCS2, the array must be at least out/2 long.
+ * @param out_len the output length
  * 
  * @return returns 0 on success, an wind error code otherwise.
  * @ingroup wind
  */
 
-ssize_t
-_wind_ucs2read(void *ptr, size_t len, uint16_t *out)
+int
+wind_ucs2read(const void *ptr, size_t len, unsigned int *flags,
+	      uint16_t *out, size_t *out_len)
 {
-    unsigned char *p = ptr;
-    int little = 1;
+    const unsigned char *p = ptr;
+    int little = ((*flags) & WIND_RW_LE);
+    size_t olen = *out_len;
 
+    /** if len is zero, flags are unchanged */
+    if (len == 0) {
+	*out_len = 0;
+	return 0;
+    }
+
+    /** if len is odd, WIND_ERR_LENGTH_NOT_MOD2 is returned */
     if (len & 1)
-	return WIND_ERR_LENGTH_NOT_EVEN;
-    /* check for BOM */
+	return WIND_ERR_LENGTH_NOT_MOD2;
+    
+    /**
+     * If the flags WIND_RW_BOM is set, check for BOM. If not BOM is
+     * found, check is LE/BE flag is already and use that otherwise
+     * fail with WIND_ERR_NO_BOM. When done, clear WIND_RW_BOM and
+     * the LE/BE flag and set the resulting LE/BE flag.
+     */
+    if ((*flags) & WIND_RW_BOM) {
+	uint16_t bom = (p[0] << 8) + p[1];
+	if (bom == 0xfffe || bom == 0xfeff) {
+	    little = (bom == 0xfffe);
+	    p += 2;
+	    len -= 2;
+	} else if (((*flags) & (WIND_RW_LE|WIND_RW_BE)) != 0) {
+	    /* little already set */
+	} else
+	    return WIND_ERR_NO_BOM;
+	*flags = ((*flags) & ~(WIND_RW_BOM|WIND_RW_LE|WIND_RW_BE));
+	*flags |= little ? WIND_RW_LE : WIND_RW_BE;
+    }
 
     while (len) {
+	if (olen < 1)
+	    return WIND_ERR_OVERRUN;
 	if (little)
 	    *out = (p[1] << 8) + p[0];
 	else
 	    *out = (p[0] << 8) + p[1];
-	out++; p += 2;
+	out++; p += 2; len -= 2; olen--;
     }
-    return (p - (unsigned char *)ptr) >> 1;
+    *out_len -= olen;
+    return 0;
 }
+
+/**
+ * Write an UCS2 string to a buffer.
+ *
+ * @param in The input UCS2 string.
+ * @param in_len the length of the input buffer.
+ * @param flags Flags to control the behavior of the function.
+ * @param ptr The input buffer to write to, the array must be at least
+ * (in + 1) * 2 bytes long.
+ * @param out_len the output length
+ * 
+ * @return returns 0 on success, an wind error code otherwise.
+ * @ingroup wind
+ */
+
+int
+wind_ucs2write(const uint16_t *in, size_t in_len, unsigned int *flags,
+	       void *ptr, size_t *out_len)
+{
+    unsigned char *p = ptr;
+    size_t len = *out_len;
+
+    /** If in buffer is not of length be mod 2, WIND_ERR_LENGTH_NOT_MOD2 is returned*/
+    if (len & 1)
+	return WIND_ERR_LENGTH_NOT_MOD2;
+
+    /** On zero input length, flags are preserved */
+    if (in_len == 0) {
+	*out_len = 0;
+	return 0;
+    }
+    /** If flags have WIND_RW_BOM set, the byte order mark is written
+     * first to the output data */
+    if ((*flags) & WIND_RW_BOM) {
+	uint16_t bom = 0xfffe;
+	
+	if (len < 2)
+	    return WIND_ERR_OVERRUN;
+
+	if ((*flags) & WIND_RW_LE) {
+	    p[0] = (bom >> 8) & 0xff;
+	    p[1] = (bom     ) & 0xff;
+	} else {
+	    p[1] = (bom     ) & 0xff;
+	    p[0] = (bom >> 8) & 0xff;
+	}
+	len -= 2;
+    }
+
+    while (in_len) {
+	/** If the output wont fit into out_len, WIND_ERR_OVERRUN is returned */
+	if (len < 2)
+	    return WIND_ERR_OVERRUN;
+	if ((*flags) & WIND_RW_LE) {
+	    p[0] = (in[0] >> 8) & 0xff;
+	    p[1] = (in[0]     ) & 0xff;
+	} else {
+	    p[1] = (in[0]     ) & 0xff;
+	    p[0] = (in[0] >> 8) & 0xff;
+	}
+	len -= 2;
+	in_len--;
+	p += 2;
+	in++;
+    }
+    *out_len -= len;
+    return 0;
+}
+
 
 /**
  * Convert an UCS2 string to a UTF-8 string.
