@@ -647,7 +647,11 @@ import "srvsvc.idl", "lsa.idl";
 		[in,unique] [string,charset(UTF16)] uint16 *Account,
 		[in,unique] [string,charset(UTF16)] uint16 *unknown,
 		[in,out,ref] uint32 *num_ous,
-		[out,ref] [size_is(*num_ous)] [string,charset(UTF16)] uint16 ***ous
+		/*
+		 * this is a [ref] pointer to a [unique] pointer to an
+		 * array of [unique] pointers to a string array
+		 */
+		[out,ref] [size_is(,*num_ous)] [string,charset(UTF16)] uint16 ***ous
 		);
 
 	typedef [flag(NDR_PAHEX)] struct {
@@ -731,7 +735,11 @@ import "srvsvc.idl", "lsa.idl";
 		[in,unique] [string,charset(UTF16)] uint16 *Account,
 		[in,unique] wkssvc_PasswordBuffer *EncryptedPassword,
 		[in,out,ref] uint32 *num_ous,
-		[out,ref] [size_is(*num_ous)] [string,charset(UTF16)] uint16 ***ous
+		/*
+		 * this is a [ref] pointer to a [unique] pointer to an
+		 * array of [unique] pointers to a string array
+		 */
+		[out,ref] [size_is(,*num_ous)] [string,charset(UTF16)] uint16 ***ous
 		);
 
 	/*****************************/
