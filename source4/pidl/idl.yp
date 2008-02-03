@@ -293,12 +293,7 @@ properties: property          { $_[1] }
 ;
 
 property: identifier                   {{ "$_[1]" => "1"     }}
-          | identifier '(' listtext ')' {{ "$_[1]" => "$_[3]" }}
-;
-
-listtext:
-    anytext 
-    | listtext ',' anytext { "$_[1] $_[3]" }
+          | identifier '(' commalisttext ')' {{ "$_[1]" => "$_[3]" }}
 ;
 
 commalisttext:
