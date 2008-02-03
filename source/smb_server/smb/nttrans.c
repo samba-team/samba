@@ -527,7 +527,7 @@ static void reply_nttrans_send(struct ntvfs_request *ntvfs)
 			this_req = req;
 		}
 
-		req_grow_data(req, this_param + this_data + (align1 + align2));
+		req_grow_data(this_req, this_param + this_data + (align1 + align2));
 
 		SSVAL(this_req->out.vwv, 0, 0); /* reserved */
 		SCVAL(this_req->out.vwv, 2, 0); /* reserved */
