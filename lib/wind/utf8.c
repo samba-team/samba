@@ -148,10 +148,12 @@ static const char first_char[4] =
  *
  * @param in an UCS4 string to convert.
  * @param in_len the length input array.
+
  * @param out the resulting UTF-8 strint, must be at least
- * wind_ucs4utf8_length() long.  If out is NULL, the function will
- * calculate the needed space for the out variable (just like
- * wind_ucs4utf8_length()).
+ * wind_ucs4utf8_length() + 1 long (the extra char for the NUL).  If
+ * out is NULL, the function will calculate the needed space for the
+ * out variable (just like wind_ucs4utf8_length()).
+
  * @param out_len before processing out_len should be the length of
  * the out variable, after processing it will be the length of the out
  * string.
@@ -410,11 +412,11 @@ wind_ucs2utf8(const uint16_t *in, size_t in_len, char *out, size_t *out_len)
 	    case 1:
 		out[0] = ch | first_char[len - 1];
 	    }
+	    out += len;
 	}
-	out += len;
     }
     if (out) {
-	if (o + 1 >= *out_len)
+	if (o >= *out_len)
 	    return WIND_ERR_OVERRUN;
 	*out = '\0';
     }
