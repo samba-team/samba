@@ -43,6 +43,7 @@ check_PROGRAMS = $(TESTS) test_hostname
 LDADD = libkrb5.la \
 	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
+	$(top_builddir)/lib/wind/libwind.la \
 	$(LIB_roken)
 
 if PKINIT
