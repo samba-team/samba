@@ -176,12 +176,14 @@ int register_vuid(auth_serversupplied_info *server_info,
 	/* Limit allowed vuids to 16bits - VUID_OFFSET. */
 	if (num_validated_vuids >= 0xFFFF-VUID_OFFSET) {
 		data_blob_free(&session_key);
+		TALLOC_FREE(server_info);
 		return UID_FIELD_INVALID;
 	}
 
 	if((vuser = SMB_MALLOC_P(user_struct)) == NULL) {
 		DEBUG(0,("Failed to malloc users struct!\n"));
 		data_blob_free(&session_key);
+		TALLOC_FREE(server_info);
 		return UID_FIELD_INVALID;
 	}
 
