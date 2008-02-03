@@ -1,3 +1,7 @@
+2008-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss/check-context.in: Does not work yet error case.
+
 2008-01-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* gss/check-context.in: Test unreadable/non existant keytab and
