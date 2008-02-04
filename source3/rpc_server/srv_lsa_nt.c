@@ -1396,9 +1396,11 @@ NTSTATUS _lsa_SetSecret(pipes_struct *p, struct lsa_SetSecret *r)
 }
 
 /***************************************************************************
+ _lsa_DeleteObject
  ***************************************************************************/
 
-NTSTATUS _lsa_delete_object(pipes_struct *p, LSA_Q_DELETE_OBJECT *q_u, LSA_R_DELETE_OBJECT *r_u)
+NTSTATUS _lsa_DeleteObject(pipes_struct *p,
+			   struct lsa_DeleteObject *r)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -2331,12 +2333,6 @@ NTSTATUS _lsa_LookupPrivName(pipes_struct *p, struct lsa_LookupPrivName *r)
 }
 
 NTSTATUS _lsa_LookupPrivDisplayName(pipes_struct *p, struct lsa_LookupPrivDisplayName *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_DeleteObject(pipes_struct *p, struct lsa_DeleteObject *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
