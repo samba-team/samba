@@ -31,11 +31,12 @@
 /*
   server a server_id for the local node
 */
-static struct server_id local_id(struct cluster_ops *ops, uint32_t id)
+static struct server_id local_id(struct cluster_ops *ops, uint64_t id, uint32_t id2)
 {
 	struct server_id server_id;
 	ZERO_STRUCT(server_id);
 	server_id.id = id;
+	server_id.id2 = id2;
 	return server_id;
 }
 
@@ -46,7 +47,7 @@ static struct server_id local_id(struct cluster_ops *ops, uint32_t id)
 static const char *local_id_string(struct cluster_ops *ops,
 				   TALLOC_CTX *mem_ctx, struct server_id id)
 {
-	return talloc_asprintf(mem_ctx, "%u.%u", id.node, id.id);
+	return talloc_asprintf(mem_ctx, "%u.%llu.%u", id.node, (unsigned long long)id.id, id.id2);
 }
 
 

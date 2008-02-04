@@ -73,7 +73,7 @@ static bool test_ping_speed(struct torture_context *tctx)
 
 	msg_server_ctx = messaging_init(tctx, 
 					lp_messaging_path(tctx, tctx->lp_ctx), 
-					cluster_id(1), 
+					cluster_id(0, 1), 
 				        lp_iconv_convenience(tctx->lp_ctx),
 					ev);
 	
@@ -84,7 +84,7 @@ static bool test_ping_speed(struct torture_context *tctx)
 
 	msg_client_ctx = messaging_init(tctx, 
 					lp_messaging_path(tctx, tctx->lp_ctx), 
-					cluster_id(2), 
+					cluster_id(0, 2), 
 				        lp_iconv_convenience(tctx->lp_ctx),
 					ev);
 
@@ -103,8 +103,8 @@ static bool test_ping_speed(struct torture_context *tctx)
 		data.data = discard_const_p(uint8_t, "testing");
 		data.length = strlen((const char *)data.data);
 
-		status1 = messaging_send(msg_client_ctx, cluster_id(1), msg_ping, &data);
-		status2 = messaging_send(msg_client_ctx, cluster_id(1), msg_ping, NULL);
+		status1 = messaging_send(msg_client_ctx, cluster_id(0, 1), msg_ping, &data);
+		status2 = messaging_send(msg_client_ctx, cluster_id(0, 1), msg_ping, NULL);
 
 		torture_assert_ntstatus_ok(tctx, status1, "msg1 failed");
 		ping_count++;
@@ -124,7 +124,7 @@ static bool test_ping_speed(struct torture_context *tctx)
 	}
 
 	torture_comment(tctx, "sending exit\n");
-	messaging_send(msg_client_ctx, cluster_id(1), msg_exit, NULL);
+	messaging_send(msg_client_ctx, cluster_id(0, 1), msg_exit, NULL);
 
 	torture_assert_int_equal(tctx, ping_count, pong_count, "ping test failed");
 
