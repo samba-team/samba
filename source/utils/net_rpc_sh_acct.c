@@ -45,10 +45,11 @@ static NTSTATUS rpc_sh_acct_do(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(domain_pol);
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx,
-				     MAXIMUM_ALLOWED_ACCESS, 
-				     &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}

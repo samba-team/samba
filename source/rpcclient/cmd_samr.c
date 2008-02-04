@@ -326,7 +326,7 @@ static void display_sam_info_5(SAM_ENTRY5 *e5, SAM_STR5 *s5)
 }
 
 /****************************************************************************
- Try samr_connect4 first, then samr_conenct if it fails
+ Try samr_connect4 first, then samr_connect2 if it fails
  ****************************************************************************/
 static NTSTATUS try_samr_connects(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
 				  uint32 access_mask, POLICY_HND *connect_pol)
@@ -339,8 +339,10 @@ static NTSTATUS try_samr_connects(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 				      access_mask,
 				      connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
-		result = rpccli_samr_connect(cli, mem_ctx, access_mask,
-					  connect_pol);
+		result = rpccli_samr_Connect2(cli, mem_ctx,
+					      cli->cli->desthost,
+					      access_mask,
+					      connect_pol);
 	}
 	return result;
 }

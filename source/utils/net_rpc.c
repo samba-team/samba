@@ -450,9 +450,11 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
 
 	sid_to_fstring(sid_str, domain_sid);
 
-	/* Get sam policy handle */	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	/* Get sam policy handle */
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not connect to SAM: %s\n", nt_errstr(result));
 		goto done;
@@ -609,9 +611,11 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	init_lsa_String(&lsa_acct_name, acct_name);
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -770,8 +774,10 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 
 	/* Get sam policy and domain handles */
 
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -883,9 +889,12 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 	ZERO_STRUCT(user_ctr);
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -1038,8 +1047,10 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 
 	/* Get sam policy and domain handles */
 
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -1161,9 +1172,11 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_OK;
 	}
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 	
 	/* Get domain policy handle */
@@ -1270,9 +1283,11 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 	SAM_DISPINFO_1 info1;
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -1418,8 +1433,10 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx,
-				     MAXIMUM_ALLOWED_ACCESS, &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -1785,11 +1802,13 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_OK; /* ok? */
 	}
 
-        result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
-                                  &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 
         if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, "Request samr_connect failed\n");
+		d_fprintf(stderr, "Request samr_Connect2 failed\n");
         	goto done;
         }
 
@@ -1974,9 +1993,11 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 	init_lsa_String(&grp_name, argv[0]);
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 	
 	/* Get domain policy handle */
@@ -2040,9 +2061,11 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 	init_lsa_String(&alias_name, argv[0]);
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 	
 	/* Get domain policy handle */
@@ -2172,9 +2195,11 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* Get sam policy handle */	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	/* Get sam policy handle */
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
@@ -2247,9 +2272,11 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 		return result;
 	}
 
-	/* Get sam policy handle */	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	/* Get sam policy handle */
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -2363,9 +2390,11 @@ static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
 	if (!sid_split_rid(&sid, &group_rid))
 		return NT_STATUS_UNSUCCESSFUL;
 
-	/* Get sam policy handle */	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	/* Get sam policy handle */
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
@@ -2433,9 +2462,11 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 		return result;
 	}
 
-	/* Get sam policy handle */	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	/* Get sam policy handle */
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -2576,9 +2607,11 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -2919,9 +2952,11 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 	uint32 num_rids, *rids, *rid_types;
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -3020,9 +3055,11 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -4271,8 +4308,10 @@ static NTSTATUS rpc_aliaslist_internals(const DOM_SID *domain_sid,
 	NTSTATUS result;
 	POLICY_HND connect_pol;
 
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -5485,8 +5524,10 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 	init_lsa_String(&lsa_acct_name, acct_name);
 
 	/* Get samr policy handle */
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
-				  &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -5639,8 +5680,10 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 
 
 	/* Get samr policy handle */
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
-				  &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -6327,10 +6370,12 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
-	
-	/* SamrConnect */
-	nt_status = rpccli_samr_connect(pipe_hnd, mem_ctx, SA_RIGHT_SAM_OPEN_DOMAIN,
-								 &connect_hnd);
+
+	/* SamrConnect2 */
+	nt_status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+					 pipe_hnd->cli->desthost,
+					 SA_RIGHT_SAM_OPEN_DOMAIN,
+					 &connect_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open SAMR policy handle. Error was %s\n",
 			nt_errstr(nt_status)));

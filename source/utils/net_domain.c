@@ -71,8 +71,10 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		return status;
 	}
 
-	status = rpccli_samr_connect(pipe_hnd, mem_ctx, 
-			SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_pol);
+	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &sam_pol);
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
@@ -240,8 +242,10 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		return status;
 	}
 
-	status = rpccli_samr_connect(pipe_hnd, mem_ctx, 
-			SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_pol);
+	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &sam_pol);
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
