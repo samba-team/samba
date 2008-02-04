@@ -55,8 +55,8 @@ const char *get_dyn_CONFIGFILE(void);
 const char *set_dyn_CONFIGFILE(const char *newpath);
 bool is_default_dyn_CONFIGFILE(void);
 
-const char *get_dyn_dyn_LOGFILEBASE(void);
-const char *set_dyn_dyn_LOGFILEBASE(const char *newpath);
+const char *get_dyn_LOGFILEBASE(void);
+const char *set_dyn_LOGFILEBASE(const char *newpath);
 bool is_default_dyn_LOGFILEBASE(void);
 
 const char *get_dyn_LMHOSTSFILE(void);
@@ -92,7 +92,9 @@ const char *set_dyn_PRIVATE_DIR(const char *newpath);
 bool is_default_dyn_PRIVATE_DIR(void);
 
 const char *get_dyn_STATEDIR(void);
+const char *set_dyn_STATEDIR(const char *newpath);
 bool is_default_dyn_STATEDIR(void);
 
 const char *get_dyn_CACHEDIR(void);
+const char *set_dyn_CACHEDIR(const char *newpath);
 bool is_default_dyn_CACHEDIR(bool);
