@@ -2793,37 +2793,34 @@ NTSTATUS _samr_Connect4(pipes_struct *p,
 }
 
 /*******************************************************************
- samr_connect5
+ _samr_Connect5
  ********************************************************************/
 
-NTSTATUS _samr_connect5(pipes_struct *p, SAMR_Q_CONNECT5 *q_u, SAMR_R_CONNECT5 *r_u)
+NTSTATUS _samr_Connect5(pipes_struct *p,
+			struct samr_Connect5 *r)
 {
 	struct samr_info *info = NULL;
 	SEC_DESC *psd = NULL;
 	uint32    acc_granted;
-	uint32    des_access = q_u->access_mask;
+	uint32    des_access = r->in.access_mask;
 	NTSTATUS  nt_status;
-	POLICY_HND pol;
 	size_t    sd_size;
+	struct samr_ConnectInfo1 info1;
 
-
-	DEBUG(5,("_samr_connect5: %d\n", __LINE__));
-
-	ZERO_STRUCTP(r_u);
+	DEBUG(5,("_samr_Connect5: %d\n", __LINE__));
 
 	/* Access check */
 
 	if (!pipe_access_check(p)) {
-		DEBUG(3, ("access denied to samr_connect5\n"));
-		r_u->status = NT_STATUS_ACCESS_DENIED;
-		return r_u->status;
+		DEBUG(3, ("access denied to samr_Connect5\n"));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	make_samr_object_sd(p->mem_ctx, &psd, &sd_size, &sam_generic_mapping, NULL, 0);
 	se_map_generic(&des_access, &sam_generic_mapping);
 	
 	nt_status = access_check_samr_object(psd, p->pipe_user.nt_user_token, 
-		NULL, 0, des_access, &acc_granted, "_samr_connect5");
+		NULL, 0, des_access, &acc_granted, "_samr_Connect5");
 	
 	if ( !NT_STATUS_IS_OK(nt_status) ) 
 		return nt_status;
@@ -2833,17 +2830,21 @@ NTSTATUS _samr_connect5(pipes_struct *p, SAMR_Q_CONNECT5 *q_u, SAMR_R_CONNECT5 *
 		return NT_STATUS_NO_MEMORY;
 
 	info->acc_granted = acc_granted;
-	info->status = q_u->access_mask;
+	info->status = r->in.access_mask; /* ??? */
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, &pol, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.connect_handle, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	DEBUG(5,("_samr_connect: %d\n", __LINE__));
+	DEBUG(5,("_samr_Connect5: %d\n", __LINE__));
 
-	init_samr_r_connect5(r_u, &pol, NT_STATUS_OK);
+	info1.unknown1 = 3;
+	info1.unknown2 = 0;
 
-	return r_u->status;
+	*r->out.level_out = 1;
+	r->out.info_out->info1 = info1;
+
+	return NT_STATUS_OK;
 }
 
 /**********************************************************************
@@ -5511,16 +5512,6 @@ NTSTATUS _samr_Connect3(pipes_struct *p,
 
 NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
 				   struct samr_ChangePasswordUser3 *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_Connect5(pipes_struct *p,
-			struct samr_Connect5 *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
