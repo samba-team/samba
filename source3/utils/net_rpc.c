@@ -2301,7 +2301,9 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 		return result;
 	}
 
-	result = rpccli_samr_add_aliasmem(pipe_hnd, mem_ctx, &alias_pol, &member_sid);
+	result = rpccli_samr_AddAliasMember(pipe_hnd, mem_ctx,
+					    &alias_pol,
+					    &member_sid);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
