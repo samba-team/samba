@@ -879,8 +879,10 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_query_secobj(cli, mem_ctx, &pol, sec_info, &sdb);
-
+	result = rpccli_lsa_QuerySecurity(cli, mem_ctx,
+					  &pol,
+					  sec_info,
+					  &sdb);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
