@@ -332,8 +332,12 @@ static NTSTATUS try_samr_connects(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 				  uint32 access_mask, POLICY_HND *connect_pol)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	
-	result = rpccli_samr_connect4(cli, mem_ctx, access_mask, connect_pol);
+
+	result = rpccli_samr_Connect4(cli, mem_ctx,
+				      cli->cli->desthost,
+				      2, /* unknown */
+				      access_mask,
+				      connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		result = rpccli_samr_connect(cli, mem_ctx, access_mask,
 					  connect_pol);
