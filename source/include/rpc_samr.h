@@ -1425,24 +1425,6 @@ typedef struct r_samr_add_alias_mem_info
 } SAMR_R_ADD_ALIASMEM;
 
 
-/* SAMR_Q_DEL_ALIASMEM - add an add alias member */
-typedef struct q_samr_del_alias_mem_info
-{
-	POLICY_HND alias_pol;       /* policy handle */
-
-	DOM_SID2 sid; /* member sid to be added to alias */
-
-} SAMR_Q_DEL_ALIASMEM;
-
-
-/* SAMR_R_DEL_ALIASMEM - delete alias member */
-typedef struct r_samr_del_alias_mem_info
-{
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_DEL_ALIASMEM;
-
-
 /* SAMR_ENC_PASSWD */
 typedef struct enc_passwd_info
 {
