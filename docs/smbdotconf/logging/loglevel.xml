@@ -8,7 +8,7 @@
     <para>
     The value of the parameter (a astring) allows the debug level (logging level) to be specified in the 
     <filename moreinfo="none">smb.conf</filename> file. This parameter has been extended since the 2.2.x 
-    series, now it allow to specify the debug level for multiple debug classes. This is to give greater 
+    series, now it allows to specify the debug level for multiple debug classes. This is to give greater 
     flexibility in the configuration of the system.
     </para>
 
