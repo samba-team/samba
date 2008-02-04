@@ -128,9 +128,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_eventlog_Record(struct ndr_pull *ndr, int nd
 		{
 			uint32_t _flags_save_string = ndr->flags;
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
-			NDR_PULL_ALLOC_N(ndr, *r->strings, r->num_of_strings);
+			NDR_PULL_ALLOC_N(ndr, r->strings, r->num_of_strings);
 			_mem_save_strings_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, *r->strings, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, r->strings, 0);
 			for (cntr_strings_0 = 0; cntr_strings_0 < r->num_of_strings; cntr_strings_0++) {
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->strings[cntr_strings_0]));
 			}
