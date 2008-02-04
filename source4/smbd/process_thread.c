@@ -148,6 +148,7 @@ static void *thread_task_fn(void *thread_parm)
 */
 static void thread_new_task(struct event_context *ev, 
 			    struct loadparm_context *lp_ctx,
+			    const char *service_name,
 			    void (*new_task)(struct event_context *, 
 					     struct loadparm_context *,
 					     uint32_t , void *), 
@@ -178,10 +179,10 @@ static void thread_new_task(struct event_context *ev,
 	rc = pthread_create(&thread_id, &thread_attr, thread_task_fn, state);
 	pthread_attr_destroy(&thread_attr);
 	if (rc == 0) {
-		DEBUG(4,("thread_new_task: created thread_id=%lu\n", 
-			 (unsigned long int)thread_id));
+		DEBUG(4,("thread_new_task: created %s thread_id=%lu\n", 
+			 service_name, (unsigned long int)thread_id));
 	} else {
-		DEBUG(0,("thread_new_task: thread create failed rc=%d\n", rc));
+		DEBUG(0,("thread_new_task: thread create for %s failed rc=%d\n", service_name, rc));
 		talloc_free(ev2);
 	}
 }
