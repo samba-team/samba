@@ -493,8 +493,6 @@ done:
  ********************************************************************/
 
 static Eventlog_entry *read_package_entry( prs_struct * ps,
-					   EVENTLOG_Q_READ_EVENTLOG * q_u,
-					   EVENTLOG_R_READ_EVENTLOG * r_u,
 					   Eventlog_entry * entry )
 {
 	uint8 *offset;
@@ -773,7 +771,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 
 		/* Now see if there is enough room to add */
 
-		if ( !(ee_new = read_package_entry( ps, q_u, r_u, entry )) )
+		if ( !(ee_new = read_package_entry( ps, entry )) )
 			return NT_STATUS_NO_MEMORY;
 
 		if ( r_u->num_bytes_in_resp + ee_new->record.length > q_u->max_read_size ) {
