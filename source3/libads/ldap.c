@@ -801,7 +801,7 @@ done:
 	}
  
 	/* if/when we decide to utf8-encode attrs, take out this next line */
-	str_list_free(&search_attrs);
+	TALLOC_FREE(search_attrs);
 
 	return ADS_ERROR(rc);
 }
@@ -998,7 +998,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
  done:
 	talloc_destroy(ctx);
 	/* if/when we decide to utf8-encode attrs, take out this next line */
-	str_list_free(&search_attrs);
+	TALLOC_FREE(search_attrs);
 	return ADS_ERROR(rc);
 }
 /**

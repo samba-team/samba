@@ -137,12 +137,8 @@ bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 	ret = True;
 
  parse_error:
-	if (ext_list) {
-		str_list_free_talloc(mem_ctx, &ext_list);
-	}
-	if (ext_strings) {
-		str_list_free_talloc(mem_ctx, &ext_strings);
-	}
+	TALLOC_FREE(ext_list);
+	TALLOC_FREE(ext_strings);
 
 	return ret;
 }
@@ -226,10 +222,7 @@ static ADS_STATUS gpo_parse_gplink(TALLOC_CTX *mem_ctx,
 	status = ADS_SUCCESS;
 
  parse_error:
-
-	if (link_list) {
-		str_list_free_talloc(mem_ctx, &link_list);
-	}
+	TALLOC_FREE(link_list);
 
 	return status;
 }

@@ -595,8 +595,7 @@ static bool user_ok(const char *user, int snum)
 			}
 		}
 	}
-	if (invalid)
-		str_list_free (&invalid);
+	TALLOC_FREE(invalid);
 
 	if (ret && lp_valid_users(snum)) {
 		str_list_copy(talloc_tos(), &valid, lp_valid_users(snum));
@@ -611,8 +610,7 @@ static bool user_ok(const char *user, int snum)
 			}
 		}
 	}
-	if (valid)
-		str_list_free (&valid);
+	TALLOC_FREE(valid);
 
 	if (ret && lp_onlyuser(snum)) {
 		char **user_list = str_list_make(
