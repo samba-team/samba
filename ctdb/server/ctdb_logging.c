@@ -40,7 +40,34 @@ static struct ctdb_log_state *log_state;
  */
 static void ctdb_syslog_log(const char *format, va_list ap)
 {
-	vsyslog(LOG_NOTICE, format, ap);
+	int level = LOG_DEBUG;
+	switch (this_log_level) {
+	case DEBUG_EMERG: 
+		level = LOG_EMERG; 
+		break;
+	case DEBUG_ALERT: 
+		level = LOG_ALERT; 
+		break;
+	case DEBUG_CRIT: 
+		level = LOG_CRIT; 
+		break;
+	case DEBUG_ERR: 
+		level = LOG_ERR; 
+		break;
+	case DEBUG_WARNING: 
+		level = LOG_WARNING; 
+		break;
+	case DEBUG_NOTICE: 
+		level = LOG_NOTICE;
+		break;
+	case DEBUG_INFO: 
+		level = LOG_INFO;
+		break;
+	default:
+		level = LOG_DEBUG;
+		break;		
+	}
+	vsyslog(level, format, ap);
 }
 
 

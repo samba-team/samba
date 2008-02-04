@@ -68,7 +68,7 @@ static void lock_fetch_callback(void *p)
 		return;
 	}
 	state->recv_pkt(state->recv_context, state->hdr);
-	DEBUG(2,(__location__ " PACKET REQUEUED\n"));
+	DEBUG(DEBUG_INFO,(__location__ " PACKET REQUEUED\n"));
 }
 
 
@@ -285,7 +285,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 		return -1;
 	}
 
-	DEBUG(1,("Attached to database '%s'\n", ctdb_db->db_path));
+	DEBUG(DEBUG_INFO,("Attached to database '%s'\n", ctdb_db->db_path));
 	
 	/* success */
 	return 0;

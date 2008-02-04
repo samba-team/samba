@@ -156,7 +156,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 				script, options);
 		CTDB_NO_MEMORY(ctdb, cmdstr);
 
-		DEBUG(1,("Executing event script %s\n",cmdstr));
+		DEBUG(DEBUG_INFO,("Executing event script %s\n",cmdstr));
 
 		child_state.start = timeval_current();
 		child_state.script_running = cmdstr;

@@ -14,8 +14,20 @@ typedef bool BOOL;
 #define False 0
 
 extern int LogLevel;
+extern int this_log_level;
 
-#define DEBUG(lvl, x) if ((lvl) <= LogLevel) (do_debug x)
+enum debug_level { 
+	DEBUG_EMERG   = -3, 
+	DEBUG_ALERT   = -2, 
+	DEBUG_CRIT    = -1,
+	DEBUG_ERR     =  0,
+	DEBUG_WARNING =  1,
+	DEBUG_NOTICE  =  2,	
+	DEBUG_INFO    =  3,
+	DEBUG_DEBUG   =  4,
+};
+
+#define DEBUG(lvl, x) do { if ((lvl) <= LogLevel) { this_log_level = (lvl); do_debug x; }} while (0)
 
 #define _PUBLIC_
 

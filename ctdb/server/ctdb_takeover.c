@@ -87,7 +87,7 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 	tcparray = arp->tcparray;
 	if (tcparray) {
 		for (i=0;i<tcparray->num;i++) {
-			DEBUG(2,("sending tcp tickle ack for %u->%s:%u\n",
+			DEBUG(DEBUG_INFO,("sending tcp tickle ack for %u->%s:%u\n",
 				 (unsigned)ntohs(tcparray->connections[i].daddr.sin_port), 
 				 inet_ntoa(tcparray->connections[i].saddr.sin_addr),
 				 (unsigned)ntohs(tcparray->connections[i].saddr.sin_port)));
@@ -269,16 +269,16 @@ static void release_kill_clients(struct ctdb_context *ctdb, struct sockaddr_in i
 {
 	struct ctdb_client_ip *ip;
 
-	DEBUG(1,("release_kill_clients for ip %s\n", inet_ntoa(in.sin_addr)));
+	DEBUG(DEBUG_INFO,("release_kill_clients for ip %s\n", inet_ntoa(in.sin_addr)));
 
 	for (ip=ctdb->client_ip_list; ip; ip=ip->next) {
-		DEBUG(2,("checking for client %u with IP %s\n", 
+		DEBUG(DEBUG_INFO,("checking for client %u with IP %s\n", 
 			 ip->client_id, inet_ntoa(ip->ip.sin_addr)));
 		if (ctdb_same_ip(&ip->ip, &in)) {
 			struct ctdb_client *client = ctdb_reqid_find(ctdb, 
 								     ip->client_id, 
 								     struct ctdb_client);
-			DEBUG(1,("matched client %u with IP %s and pid %u\n", 
+			DEBUG(DEBUG_INFO,("matched client %u with IP %s and pid %u\n", 
 				 ip->client_id, inet_ntoa(ip->ip.sin_addr), client->pid));
 			if (client->pid != 0) {
 				DEBUG(0,(__location__ " Killing client pid %u for IP %s on client_id %u\n",
@@ -346,7 +346,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	vnn->takeover_ctx = NULL;
 
 	if (!ctdb_sys_have_ip(pip->sin)) {
-		DEBUG(2,("Redundant release of IP %s/%u on interface %s (ip not held)\n", 
+		DEBUG(DEBUG_INFO,("Redundant release of IP %s/%u on interface %s (ip not held)\n", 
 			 inet_ntoa(pip->sin.sin_addr), vnn->public_netmask_bits, 
 			 vnn->iface));
 		return 0;
@@ -903,7 +903,7 @@ try_again:
  */
 static int ctdb_client_ip_destructor(struct ctdb_client_ip *ip)
 {
-	DEBUG(3,("destroying client tcp for %s:%u (client_id %u)\n",
+	DEBUG(DEBUG_DEBUG,("destroying client tcp for %s:%u (client_id %u)\n",
 		 inet_ntoa(ip->ip.sin_addr), ntohs(ip->ip.sin_port), ip->client_id));
 	DLIST_REMOVE(ip->ctdb->client_ip_list, ip);
 	return 0;
@@ -965,7 +965,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	data.dptr = (uint8_t *)&t;
 	data.dsize = sizeof(t);
 
-	DEBUG(1,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
+	DEBUG(DEBUG_INFO,("registered tcp client for %u->%s:%u (client_id %u pid %u)\n",
 		 (unsigned)ntohs(p->dest.sin_port), 
 		 inet_ntoa(p->src.sin_addr),
 		 (unsigned)ntohs(p->src.sin_port), client_id, client->pid));
@@ -1058,7 +1058,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 	tcp.saddr = p->src;
 	tcp.daddr = p->dest;
 	if (ctdb_tcp_find(vnn->tcp_array, &tcp) != NULL) {
-		DEBUG(4,("Already had tickle info for %s:%u for vnn:%u\n",
+		DEBUG(DEBUG_DEBUG,("Already had tickle info for %s:%u for vnn:%u\n",
 			 inet_ntoa(tcp.daddr.sin_addr),
 			 ntohs(tcp.daddr.sin_port),
 			 vnn->pnn));
@@ -1076,7 +1076,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 	tcparray->connections[tcparray->num].daddr = p->dest;
 	tcparray->num++;
 				
-	DEBUG(2,("Added tickle info for %s:%u from vnn %u\n",
+	DEBUG(DEBUG_INFO,("Added tickle info for %s:%u from vnn %u\n",
 		 inet_ntoa(tcp.daddr.sin_addr),
 		 ntohs(tcp.daddr.sin_port),
 		 vnn->pnn));
@@ -1104,7 +1104,7 @@ static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tc
 	   and we dont need to do anything
 	 */
 	if (vnn->tcp_array == NULL) {
-		DEBUG(2,("Trying to remove tickle that doesnt exist (array is empty) %s:%u\n",
+		DEBUG(DEBUG_INFO,("Trying to remove tickle that doesnt exist (array is empty) %s:%u\n",
 			 inet_ntoa(conn->daddr.sin_addr),
 			 ntohs(conn->daddr.sin_port)));
 		return;
@@ -1116,7 +1116,7 @@ static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tc
 	 */
 	tcpp = ctdb_tcp_find(vnn->tcp_array, conn);
 	if (tcpp == NULL) {
-		DEBUG(2,("Trying to remove tickle that doesnt exist %s:%u\n",
+		DEBUG(DEBUG_INFO,("Trying to remove tickle that doesnt exist %s:%u\n",
 			 inet_ntoa(conn->daddr.sin_addr),
 			 ntohs(conn->daddr.sin_port)));
 		return;
@@ -1141,7 +1141,7 @@ static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tc
 
 	vnn->tcp_update_needed = true;
 
-	DEBUG(2,("Removed tickle info for %s:%u\n",
+	DEBUG(DEBUG_INFO,("Removed tickle info for %s:%u\n",
 		 inet_ntoa(conn->saddr.sin_addr),
 		 ntohs(conn->saddr.sin_port)));
 }
@@ -1307,7 +1307,7 @@ static void capture_tcp_handler(struct event_context *ev, struct fd_event *fde,
 	/* This one has been tickled !
 	   now reset him and remove him from the list.
 	 */
-	DEBUG(1, ("sending a tcp reset to kill connection :%d -> %s:%d\n", ntohs(con->dst.sin_port), inet_ntoa(con->src.sin_addr), ntohs(con->src.sin_port)));
+	DEBUG(DEBUG_INFO, ("sending a tcp reset to kill connection :%d -> %s:%d\n", ntohs(con->dst.sin_port), inet_ntoa(con->src.sin_addr), ntohs(con->src.sin_port)));
 
 	ctdb_sys_send_tcp(killtcp->sending_fd, &con->dst, 
 			  &con->src, ack_seq, seq, 1);

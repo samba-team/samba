@@ -51,7 +51,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 		node->flags |= NODE_FLAGS_UNHEALTHY;
 		ctdb->monitor->next_interval = 1;
 	} else if (status == 0 && (node->flags & NODE_FLAGS_UNHEALTHY)) {
-		DEBUG(0,("monitor event OK - node re-enabled\n"));
+		DEBUG(DEBUG_NOTICE,("monitor event OK - node re-enabled\n"));
 		node->flags &= ~NODE_FLAGS_UNHEALTHY;
 		ctdb->monitor->next_interval = 1;
 	}
@@ -147,7 +147,7 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 void ctdb_disable_monitoring(struct ctdb_context *ctdb)
 {
 	ctdb->monitor->monitoring_mode = CTDB_MONITORING_DISABLED;
-	DEBUG(2,("Monitoring has been disabled\n"));
+	DEBUG(DEBUG_INFO,("Monitoring has been disabled\n"));
 }
 
 /* 
@@ -157,7 +157,7 @@ void ctdb_enable_monitoring(struct ctdb_context *ctdb)
 {
 	ctdb->monitor->monitoring_mode  = CTDB_MONITORING_ACTIVE;
 	ctdb->monitor->next_interval = 1;
-	DEBUG(2,("Monitoring has been enabled\n"));
+	DEBUG(DEBUG_INFO,("Monitoring has been enabled\n"));
 }
 
 /* stop any monitoring 
@@ -217,7 +217,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 	node->flags &= ~m->clear;
 
 	if (node->flags == old_flags) {
-		DEBUG(2, ("Control modflags on node %u - Unchanged - flags 0x%x\n", ctdb->pnn, node->flags));
+		DEBUG(DEBUG_INFO, ("Control modflags on node %u - Unchanged - flags 0x%x\n", ctdb->pnn, node->flags));
 		return 0;
 	}
 

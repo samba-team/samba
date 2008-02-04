@@ -308,7 +308,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 				     ctdb->address.port);
 	ctdb->pnn = ctdb->nodes[i]->pnn;
 	ctdb->nodes[i]->flags &= ~NODE_FLAGS_DISCONNECTED;
-	DEBUG(1,("ctdb chose network address %s:%u pnn %u\n", 
+	DEBUG(DEBUG_INFO,("ctdb chose network address %s:%u pnn %u\n", 
 		 ctdb->address.address, 
 		 ctdb->address.port, 
 		 ctdb->pnn));
