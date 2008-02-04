@@ -1890,7 +1890,9 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		{
 			if (opt_verbose) 
 				d_printf("Remove group member %d...",group_rids[i]);
-			result = rpccli_samr_del_groupmem(pipe_hnd, mem_ctx, &group_pol, group_rids[i]);
+			result = rpccli_samr_DeleteGroupMember(pipe_hnd, mem_ctx,
+							       &group_pol,
+							       group_rids[i]);
 
 			if (NT_STATUS_IS_OK(result)) {
 				if (opt_verbose)
@@ -2391,7 +2393,9 @@ static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_del_groupmem(pipe_hnd, mem_ctx, &group_pol, rids[0]);
+	result = rpccli_samr_DeleteGroupMember(pipe_hnd, mem_ctx,
+					       &group_pol,
+					       rids[0]);
 
  done:
 	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
