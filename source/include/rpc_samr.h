@@ -1505,21 +1505,6 @@ typedef struct r_samr_del_alias_mem_info
 } SAMR_R_DEL_ALIASMEM;
 
 
-/* SAMR_Q_CONNECT_ANON - probably an open */
-typedef struct q_samr_connect_anon_info {
-	uint32 ptr;                  /* ptr? */
-	uint16 unknown_0;	     /* Only pushed if ptr is non-zero. */
-	uint32 access_mask;
-} SAMR_Q_CONNECT_ANON;
-
-/* SAMR_R_CONNECT_ANON - probably an open */
-typedef struct r_samr_connect_anon_info
-{
-	POLICY_HND connect_pol;       /* policy handle */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_CONNECT_ANON;
-
 /* SAMR_Q_CONNECT - probably an open */
 typedef struct q_samr_connect_info
 {
