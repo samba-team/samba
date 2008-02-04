@@ -60,7 +60,7 @@ import "lsa.idl", "security.idl";
 	/* Function: 0x00 */
 	NTSTATUS eventlog_ClearEventLogW(
 		[in] policy_handle *handle,
-		[in,unique] lsa_String *unknown
+		[in,unique] lsa_String *backupfile
 	);
 
 	/******************/
