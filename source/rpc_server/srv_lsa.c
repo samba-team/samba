@@ -547,29 +547,7 @@ static bool api_lsa_removeprivs(pipes_struct *p)
 
 static bool api_lsa_query_secobj(pipes_struct *p)
 {
-	LSA_Q_QUERY_SEC_OBJ q_u;
-	LSA_R_QUERY_SEC_OBJ r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_query_sec_obj("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_query_secobj: failed to unmarshall LSA_Q_QUERY_SEC_OBJ.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_query_secobj(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_query_sec_obj("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_query_secobj: Failed to marshall LSA_R_QUERY_SEC_OBJ.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_QUERYSECURITY);
 }
 
 /***************************************************************************

@@ -1866,20 +1866,19 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 }
 
 /***************************************************************************
- For a given SID, remove some privileges.
+ _lsa_QuerySecurity
  ***************************************************************************/
 
-NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUERY_SEC_OBJ *r_u)
+NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
+			    struct lsa_QuerySecurity *r)
 {
 	struct lsa_info *handle=NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	NTSTATUS status;
 
-	r_u->status = NT_STATUS_OK;
-
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
@@ -1887,7 +1886,7 @@ NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUER
 		return NT_STATUS_ACCESS_DENIED;
 
 
-	switch (q_u->sec_info) {
+	switch (r->in.sec_info) {
 	case 1:
 		/* SD contains only the owner */
 
@@ -1896,7 +1895,7 @@ NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUER
 			return NT_STATUS_NO_MEMORY;
 
 
-		if((r_u->buf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
+		if((*r->out.sdbuf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
 			return NT_STATUS_NO_MEMORY;
 		break;
 	case 4:
@@ -1906,16 +1905,14 @@ NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUER
 		if(!NT_STATUS_IS_OK(status))
 			return NT_STATUS_NO_MEMORY;
 
-		if((r_u->buf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
+		if((*r->out.sdbuf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
 			return NT_STATUS_NO_MEMORY;
 		break;
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	r_u->ptr=1;
-
-	return r_u->status;
+	return status;
 }
 
 #if 0 	/* AD DC work in ongoing in Samba 4 */
@@ -2190,12 +2187,6 @@ NTSTATUS _lsa_Delete(pipes_struct *p, struct lsa_Delete *r)
 }
 
 NTSTATUS _lsa_EnumPrivs(pipes_struct *p, struct lsa_EnumPrivs *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_QuerySecurity(pipes_struct *p, struct lsa_QuerySecurity *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
