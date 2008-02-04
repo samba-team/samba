@@ -107,6 +107,11 @@ struct eventlog_GetNumRecords {
 
 struct eventlog_GetOldestRecord {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *oldest_entry;/* [ref] */
 		NTSTATUS result;
 	} out;
 

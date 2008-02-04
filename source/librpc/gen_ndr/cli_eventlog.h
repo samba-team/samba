@@ -17,7 +17,9 @@ NTSTATUS rpccli_eventlog_GetNumRecords(struct rpc_pipe_client *cli,
 				       struct policy_handle *handle,
 				       uint32_t *number);
 NTSTATUS rpccli_eventlog_GetOldestRecord(struct rpc_pipe_client *cli,
-					 TALLOC_CTX *mem_ctx);
+					 TALLOC_CTX *mem_ctx,
+					 struct policy_handle *handle,
+					 uint32_t *oldest_entry);
 NTSTATUS rpccli_eventlog_ChangeNotify(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
