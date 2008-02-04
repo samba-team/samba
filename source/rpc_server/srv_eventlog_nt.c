@@ -610,28 +610,23 @@ static bool add_record_to_resp( EVENTLOG_R_READ_EVENTLOG * r_u,
 }
 
 /********************************************************************
+ _eventlog_OpenEventLogW
  ********************************************************************/
 
-NTSTATUS _eventlog_open_eventlog( pipes_struct * p,
-				EVENTLOG_Q_OPEN_EVENTLOG * q_u,
-				EVENTLOG_R_OPEN_EVENTLOG * r_u )
+NTSTATUS _eventlog_OpenEventLogW(pipes_struct *p,
+				 struct eventlog_OpenEventLogW *r)
 {
-	fstring servername, logname;
+	const char *servername = "";
+	const char *logname = "";
 	EVENTLOG_INFO *info;
 	NTSTATUS result;
 
-	fstrcpy( servername, "" );
-	if ( q_u->servername.string ) {
-		rpcstr_pull( servername, q_u->servername.string->buffer,
-			     sizeof( servername ),
-			     q_u->servername.string->uni_str_len * 2, 0 );
+	if (r->in.servername->string) {
+		servername = r->in.servername->string;
 	}
 
-	fstrcpy( logname, "" );
-	if ( q_u->logname.string ) {
-		rpcstr_pull( logname, q_u->logname.string->buffer,
-			     sizeof( logname ),
-			     q_u->logname.string->uni_str_len * 2, 0 );
+	if (r->in.logname->string) {
+		logname = r->in.logname->string;
 	}
 	
 	DEBUG( 10,("_eventlog_open_eventlog: Server [%s], Log [%s]\n",
@@ -640,13 +635,13 @@ NTSTATUS _eventlog_open_eventlog( pipes_struct * p,
 	/* according to MSDN, if the logfile cannot be found, we should
 	  default to the "Application" log */
 	  
-	if ( !NT_STATUS_IS_OK( result = elog_open( p, logname, &r_u->handle )) )
+	if ( !NT_STATUS_IS_OK( result = elog_open( p, logname, r->out.handle )) )
 		return result;
 
-	if ( !(info = find_eventlog_info_by_hnd( p, &r_u->handle )) ) {
+	if ( !(info = find_eventlog_info_by_hnd( p, r->out.handle )) ) {
 		DEBUG(0,("_eventlog_open_eventlog: eventlog (%s) opened but unable to find handle!\n",
 			logname ));
-		elog_close( p, &r_u->handle );
+		elog_close( p, r->out.handle );
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
@@ -872,12 +867,6 @@ NTSTATUS _eventlog_DeregisterEventSource(pipes_struct *p, struct eventlog_Deregi
 }
 
 NTSTATUS _eventlog_ChangeNotify(pipes_struct *p, struct eventlog_ChangeNotify *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _eventlog_OpenEventLogW(pipes_struct *p, struct eventlog_OpenEventLogW *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
