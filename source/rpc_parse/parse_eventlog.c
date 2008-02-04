@@ -95,45 +95,6 @@ bool eventlog_io_r_open_eventlog(const char *desc, EVENTLOG_R_OPEN_EVENTLOG *r_u
 	return True;
 }
 
-bool eventlog_io_q_get_oldest_entry(const char *desc, EVENTLOG_Q_GET_OLDEST_ENTRY *q_u,
-				    prs_struct *ps, int depth)
-{
-	if(q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "eventlog_io_q_get_oldest_entry");
-	depth++;
-    
-	if(!(prs_align(ps)))
-		return False;
-
-	if(!(smb_io_pol_hnd("log handle", &(q_u->handle), ps, depth)))
-		return False;
-
-	return True;
-}
-
-bool eventlog_io_r_get_oldest_entry(const char *desc, EVENTLOG_R_GET_OLDEST_ENTRY *r_u,
-				    prs_struct *ps, int depth)
-{
-	if(r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "eventlog_io_r_get_oldest_entry");
-	depth++;
-
-	if(!(prs_align(ps)))
-		return False;
-
-	if(!(prs_uint32("oldest entry", ps, depth, &(r_u->oldest_entry))))
-		return False;
-
-	if(!(prs_ntstatus("status code", ps, depth, &r_u->status)))
-		return False;
-
-	return True;
-}
-
 bool eventlog_io_q_read_eventlog(const char *desc, EVENTLOG_Q_READ_EVENTLOG *q_u,
 				 prs_struct *ps, int depth)
 {
