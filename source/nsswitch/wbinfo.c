@@ -875,10 +875,12 @@ static bool wbinfo_auth(char *username)
 	if ((p = strchr(s, '%')) != NULL) {
                 *p = 0;
 		p++;
+		password = p;
+	} else {
+		password = "";
 	}
 
 	name = s;
-	password = p;	
 
 	wbc_status = wbcAuthenticateUser(name, password);
 
