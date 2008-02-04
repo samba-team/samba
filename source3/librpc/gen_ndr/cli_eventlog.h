@@ -4,7 +4,7 @@
 NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					struct policy_handle *handle,
-					struct lsa_String *unknown);
+					struct lsa_String *backupfile);
 NTSTATUS rpccli_eventlog_BackupEventLogW(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_eventlog_CloseEventLog(struct rpc_pipe_client *cli,

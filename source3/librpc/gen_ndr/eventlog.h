@@ -53,7 +53,7 @@ struct eventlog_Record {
 struct eventlog_ClearEventLogW {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		struct lsa_String *unknown;/* [unique] */
+		struct lsa_String *backupfile;/* [unique] */
 	} in;
 
 	struct {

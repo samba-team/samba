@@ -9,14 +9,14 @@
 NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					struct policy_handle *handle,
-					struct lsa_String *unknown)
+					struct lsa_String *backupfile)
 {
 	struct eventlog_ClearEventLogW r;
 	NTSTATUS status;
 
 	/* In parameters */
 	r.in.handle = handle;
-	r.in.unknown = unknown;
+	r.in.backupfile = backupfile;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogW, &r);
