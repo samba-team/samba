@@ -625,7 +625,7 @@ struct lsa_QuerySecurity {
 	} in;
 
 	struct {
-		struct sec_desc_buf *sdbuf;/* [unique] */
+		struct sec_desc_buf **sdbuf;/* [ref] */
 		NTSTATUS result;
 	} out;
 

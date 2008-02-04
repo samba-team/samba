@@ -4768,10 +4768,14 @@ static enum ndr_err_code ndr_push_lsa_QuerySecurity(struct ndr_push *ndr, int fl
 		NDR_CHECK(ndr_push_security_secinfo(ndr, NDR_SCALARS, r->in.sec_info));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.sdbuf));
-		if (r->out.sdbuf) {
-			NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sdbuf));
+		if (r->out.sdbuf == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
+		if (*r->out.sdbuf == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_ref_ptr(ndr));
+		NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.sdbuf));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -4782,6 +4786,7 @@ static enum ndr_err_code ndr_pull_lsa_QuerySecurity(struct ndr_pull *ndr, int fl
 	uint32_t _ptr_sdbuf;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sdbuf_0;
+	TALLOC_CTX *_mem_save_sdbuf_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -4793,20 +4798,24 @@ static enum ndr_err_code ndr_pull_lsa_QuerySecurity(struct ndr_pull *ndr, int fl
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_security_secinfo(ndr, NDR_SCALARS, &r->in.sec_info));
+		NDR_PULL_ALLOC(ndr, r->out.sdbuf);
+		ZERO_STRUCTP(r->out.sdbuf);
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sdbuf));
-		if (_ptr_sdbuf) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.sdbuf);
-		} else {
-			r->out.sdbuf = NULL;
 		}
-		if (r->out.sdbuf) {
-			_mem_save_sdbuf_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.sdbuf, 0);
-			NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sdbuf));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sdbuf_0, 0);
+		_mem_save_sdbuf_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.sdbuf, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_sdbuf));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, *r->out.sdbuf);
 		}
+		_mem_save_sdbuf_1 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, *r->out.sdbuf, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.sdbuf));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sdbuf_1, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sdbuf_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -4834,9 +4843,10 @@ _PUBLIC_ void ndr_print_lsa_QuerySecurity(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_ptr(ndr, "sdbuf", r->out.sdbuf);
 		ndr->depth++;
-		if (r->out.sdbuf) {
-			ndr_print_sec_desc_buf(ndr, "sdbuf", r->out.sdbuf);
-		}
+		ndr_print_ptr(ndr, "sdbuf", *r->out.sdbuf);
+		ndr->depth++;
+		ndr_print_sec_desc_buf(ndr, "sdbuf", *r->out.sdbuf);
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
