@@ -759,28 +759,7 @@ static bool api_samr_add_aliasmem(pipes_struct *p)
 
 static bool api_samr_del_aliasmem(pipes_struct *p)
 {
-	SAMR_Q_DEL_ALIASMEM q_u;
-	SAMR_R_DEL_ALIASMEM r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_del_aliasmem("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_del_aliasmem: unable to unmarshall SAMR_Q_DEL_ALIASMEM.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_del_aliasmem(p, &q_u, &r_u);
-
-	if (!samr_io_r_del_aliasmem("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_del_aliasmem: unable to marshall SAMR_R_DEL_ALIASMEM.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_DELETEALIASMEMBER);
 }
 
 /*******************************************************************
