@@ -470,29 +470,7 @@ static bool api_samr_connect_anon(pipes_struct *p)
 
 static bool api_samr_connect(pipes_struct *p)
 {
-	SAMR_Q_CONNECT q_u;
-	SAMR_R_CONNECT r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the samr open policy */
-	if(!samr_io_q_connect("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_connect: unable to unmarshall SAMR_Q_CONNECT.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_connect(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_connect("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_connect: unable to marshall SAMR_R_CONNECT.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_CONNECT2);
 }
 
 /*******************************************************************
