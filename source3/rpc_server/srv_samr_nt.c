@@ -3846,34 +3846,35 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 }
 
 /*********************************************************************
- _samr_query_aliasmem
+ _samr_GetMembersInAlias
 *********************************************************************/
 
-NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_R_QUERY_ALIASMEM *r_u)
+NTSTATUS _samr_GetMembersInAlias(pipes_struct *p,
+				 struct samr_GetMembersInAlias *r)
 {
 	NTSTATUS status;
 	size_t i;
 	size_t num_sids = 0;
-	DOM_SID2 *sid;
-	DOM_SID *sids=NULL;
+	struct lsa_SidPtr *sids = NULL;
+	DOM_SID *pdb_sids = NULL;
 
 	DOM_SID alias_sid;
 
 	uint32 acc_granted;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted, NULL)) 
+	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &alias_sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
-	
-	if (!NT_STATUS_IS_OK(r_u->status = 
-		access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_GET_MEMBERS, "_samr_query_aliasmem"))) {
-		return r_u->status;
+
+	status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_GET_MEMBERS, "_samr_GetMembersInAlias");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	DEBUG(10, ("sid is %s\n", sid_string_dbg(&alias_sid)));
 
 	become_root();
-	status = pdb_enum_aliasmem(&alias_sid, &sids, &num_sids);
+	status = pdb_enum_aliasmem(&alias_sid, &pdb_sids, &num_sids);
 	unbecome_root();
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -3881,22 +3882,25 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 	}
 
 	if (num_sids) {
-		sid = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_SID2, num_sids);	
-		if (sid == NULL) {
-			SAFE_FREE(sids);
+		sids = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_SidPtr, num_sids);
+		if (sids == NULL) {
+			TALLOC_FREE(pdb_sids);
 			return NT_STATUS_NO_MEMORY;
 		}
-	} else {
-		sid = NULL;
 	}
 
 	for (i = 0; i < num_sids; i++) {
-		init_dom_sid2(&sid[i], &sids[i]);
+		sids[i].sid = sid_dup_talloc(p->mem_ctx, &pdb_sids[i]);
+		if (!sids[i].sid) {
+			TALLOC_FREE(pdb_sids);
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
-	init_samr_r_query_aliasmem(r_u, num_sids, sid, NT_STATUS_OK);
+	r->out.sids->num_sids = num_sids;
+	r->out.sids->sids = sids;
 
-	TALLOC_FREE(sids);
+	TALLOC_FREE(pdb_sids);
 
 	return NT_STATUS_OK;
 }
@@ -5242,16 +5246,6 @@ NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
 
 NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
 			    struct samr_SetAliasInfo *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_GetMembersInAlias(pipes_struct *p,
-				 struct samr_GetMembersInAlias *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
