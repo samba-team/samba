@@ -347,8 +347,8 @@ int ctdb_ctrl_ping(struct ctdb_context *ctdb, uint32_t destnode);
 
 int ctdb_ctrl_get_config(struct ctdb_context *ctdb);
 
-int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *level);
-int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t level);
+int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32_t *level);
+int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32_t level);
 
 /*
   change dmaster for all keys in the database to the new value

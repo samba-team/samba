@@ -973,20 +973,67 @@ static int control_listvars(struct ctdb_context *ctdb, int argc, const char **ar
 	return 0;
 }
 
+struct debug_levels {
+	int32_t	level;
+	const char *description;
+};
+
+static struct debug_levels debug_levels[] = {
+	{DEBUG_EMERG,	"EMERG"},
+	{DEBUG_ALERT,	"ALERT"},
+	{DEBUG_CRIT,	"CRIT"},
+	{DEBUG_ERR,	"ERR"},
+	{DEBUG_WARNING,	"WARNING"},
+	{DEBUG_NOTICE,	"NOTICE"},
+	{DEBUG_INFO,	"INFO"},
+	{DEBUG_DEBUG,	"DEBUG"},
+	{0, NULL}
+};
+
+static const char *get_debug_by_level(int32_t level)
+{
+	int i;
+
+	for (i=0;1;i++) {
+		if (debug_levels[i].description == NULL) {
+			return "Unknown";
+		}
+		if (debug_levels[i].level == level) {
+			return debug_levels[i].description;
+		}
+	}
+	return NULL;
+}
+
+static int32_t get_debug_by_desc(const char *desc)
+{
+	int i;
+
+	for (i=0;1;i++) {
+		if (debug_levels[i].description == NULL) {
+			return DEBUG_ERR;
+		}
+		if (!strcmp(debug_levels[i].description, desc)) {
+			return debug_levels[i].level;
+		}
+	}
+	return DEBUG_ERR;
+}
+
 /*
   display debug level on a node
  */
 static int control_getdebug(struct ctdb_context *ctdb, int argc, const char **argv)
 {
 	int ret;
-	uint32_t level;
+	int32_t level;
 
 	ret = ctdb_ctrl_get_debuglevel(ctdb, options.pnn, &level);
 	if (ret != 0) {
 	  DEBUG(DEBUG_ERR, ("Unable to get debuglevel response from node %u\n", 
 		       options.pnn));
 	} else {
-		printf("Node %u is at debug level %u\n", options.pnn, level);
+		printf("Node %u is at debug level %s (%u)\n", options.pnn, get_debug_by_level(level), level);
 	}
 	return 0;
 }
@@ -1004,7 +1051,11 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
 		usage();
 	}
 
-	level = strtoul(argv[0], NULL, 0);
+	if ( (argv[0][0]>='A') && (argv[0][0]<='Z') ) { 
+		level = get_debug_by_desc(argv[0]);
+	} else {
+		level = strtoul(argv[0], NULL, 0);
+	}
 
 	ret = ctdb_ctrl_set_debuglevel(ctdb, options.pnn, level);
 	if (ret != 0) {
@@ -1107,7 +1158,7 @@ static const struct {
 	{ "getdbmap",        control_getdbmap,          true,  "show the database map" },
 	{ "catdb",           control_catdb,             true,  "dump a database" ,                     "<dbname>"},
 	{ "getmonmode",      control_getmonmode,        true,  "show monitoring mode" },
-	{ "setdebug",        control_setdebug,          true,  "set debug level",                      "<debuglevel>" },
+	{ "setdebug",        control_setdebug,          true,  "set debug level",                      "<EMERG|ALERT|CRIT|ERR|WARNING|NOTICE|INFO|DEBUG>" },
 	{ "getdebug",        control_getdebug,          true,  "get debug level" },
 	{ "attach",          control_attach,            true,  "attach to a database",                 "<dbname>" },
 	{ "dumpmemory",      control_dumpmemory,        true,  "dump memory map to stdout" },

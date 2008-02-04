@@ -402,11 +402,25 @@ CTDB version 1
       <para>
         Get the current debug level for the node. the debug level controls what information is written to the log file.
       </para>
+      <para>
+	The debug levels are mapped to the corresponding syslog levels.
+	When a debug level is set, only those messages at that level and higher
+	levels will be printed.
+      </para>
+      <para>
+	The list of debug levels from highest to lowest are :
+      </para>
+      <para>
+	EMERG ALERT CRIT ERR WARNING NOTICE INFO DEBUG
+      </para>
     </refsect2>
 
     <refsect2><title>setdebug &lt;debuglevel&gt;</title>
       <para>
-        Set the debug level of a node. This is a number between 0 and 9 and controls what information will be written to the logfile.
+        Set the debug level of a node. This controls what information will be logged.
+      </para>
+      <para>
+	The debuglevel is one of EMERG ALERT CRIT ERR WARNING NOTICE INFO DEBUG
       </para>
     </refsect2>
 

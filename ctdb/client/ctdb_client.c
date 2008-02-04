@@ -1474,7 +1474,7 @@ int ctdb_ctrl_createdb(struct ctdb_context *ctdb, struct timeval timeout, uint32
 /*
   get debug level on a node
  */
-int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t *level)
+int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32_t *level)
 {
 	int ret;
 	int32_t res;
@@ -1485,12 +1485,12 @@ int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint3
 	if (ret != 0 || res != 0) {
 		return -1;
 	}
-	if (data.dsize != sizeof(uint32_t)) {
+	if (data.dsize != sizeof(int32_t)) {
 		DEBUG(DEBUG_ERR,("Bad control reply size in ctdb_get_debuglevel (got %u)\n",
 			 (unsigned)data.dsize));
 		return -1;
 	}
-	*level = *(uint32_t *)data.dptr;
+	*level = *(int32_t *)data.dptr;
 	talloc_free(data.dptr);
 	return 0;
 }
@@ -1498,7 +1498,7 @@ int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint3
 /*
   set debug level on a node
  */
-int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint32_t level)
+int ctdb_ctrl_set_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, int32_t level)
 {
 	int ret;
 	int32_t res;
