@@ -460,14 +460,14 @@ bool debug_parse_levels(const char *params_str)
 	if (AllowDebugChange == False)
 		return True;
 
-	params = str_list_make(params_str, NULL);
+	params = str_list_make(talloc_tos(), params_str, NULL);
 
 	if (debug_parse_params(params)) {
 		debug_dump_status(5);
-		str_list_free(&params);
+		TALLOC_FREE(params);
 		return True;
 	} else {
-		str_list_free(&params);
+		TALLOC_FREE(params);
 		return False;
 	}
 }

@@ -178,7 +178,7 @@ bool map_username(fstring user)
 
 		/* skip lines like 'user = ' */
 
-		dosuserlist = str_list_make(dosname, NULL);
+		dosuserlist = str_list_make(talloc_tos(), dosname, NULL);
 		if (!dosuserlist) {
 			DEBUG(0,("Bad username map entry.  Unable to build user list.  Ignoring.\n"));
 			continue;
@@ -193,13 +193,13 @@ bool map_username(fstring user)
 			fstrcpy( user, unixname );
 
 			if ( return_if_mapped ) {
-				str_list_free (&dosuserlist);
+				TALLOC_FREE(dosuserlist);
 				x_fclose(f);
 				return True;
 			}
 		}
 
-		str_list_free (&dosuserlist);
+		TALLOC_FREE(dosuserlist);
 	}
 
 	x_fclose(f);

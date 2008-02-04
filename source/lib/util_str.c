@@ -1902,19 +1902,12 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string,
 	return list;
 }
 
-char **str_list_make_talloc(TALLOC_CTX *mem_ctx,
-		const char *string,
-		const char *sep)
+char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
 {
 	return str_list_make_internal(mem_ctx, string, sep);
 }
 
-char **str_list_make(const char *string, const char *sep)
-{
-	return str_list_make_internal(NULL, string, sep);
-}
-
-bool str_list_copy(char ***dest, const char **src)
+bool str_list_copy(TALLOC_CTX *mem_ctx, char ***dest, const char **src)
 {
 	char **list;
 	int i, num;
@@ -1928,7 +1921,7 @@ bool str_list_copy(char ***dest, const char **src)
 		num += 1;
 	}
 
-	list = TALLOC_ARRAY(NULL, char *, num+1);
+	list = TALLOC_ARRAY(mem_ctx, char *, num+1);
 	if (list == NULL) {
 		return false;
 	}

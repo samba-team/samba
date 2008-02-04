@@ -1691,7 +1691,7 @@ static void init_globals(bool first_time_only)
 	Globals.bWinbindTrustedDomainsOnly = False;
 	Globals.bWinbindNestedGroups = True;
 	Globals.winbind_expand_groups = 1;
-	Globals.szWinbindNssInfo = str_list_make("template", NULL);
+	Globals.szWinbindNssInfo = str_list_make(NULL, "template", NULL);
 	Globals.bWinbindRefreshTickets = False;
 	Globals.bWinbindOfflineLogon = False;
 
@@ -2397,7 +2397,7 @@ const char **lp_parm_string_list(int snum, const char *type, const char *option,
 		return (const char **)def;
 		
 	if (data->list==NULL) {
-		data->list = str_list_make(data->value, NULL);
+		data->list = str_list_make(NULL, data->value, NULL);
 	}
 
 	return (const char **)data->list;
@@ -3276,7 +3276,8 @@ static void copy_service(service * pserviceDest, service * pserviceSource,
 					break;
 				case P_LIST:
 					str_list_free((char ***)dest_ptr);
-					str_list_copy((char ***)dest_ptr, *(const char ***)src_ptr);
+					str_list_copy(NULL, (char ***)dest_ptr,
+						      *(const char ***)src_ptr);
 					break;
 				default:
 					break;
@@ -3775,7 +3776,7 @@ static bool handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
 static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **ptr)
 {
 	str_list_free(&Globals.szNetbiosAliases);
-	Globals.szNetbiosAliases = str_list_make(pszParmValue, NULL);
+	Globals.szNetbiosAliases = str_list_make(NULL, pszParmValue, NULL);
 	return set_netbios_aliases((const char **)Globals.szNetbiosAliases);
 }
 
@@ -4193,7 +4194,8 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 
 		case P_LIST:
 			str_list_free((char ***)parm_ptr);
-			*(char ***)parm_ptr = str_list_make(pszParmValue, NULL);
+			*(char ***)parm_ptr = str_list_make(
+				NULL, pszParmValue, NULL);
 			break;
 
 		case P_STRING:
@@ -4812,8 +4814,9 @@ static void lp_save_defaults(void)
 			continue;
 		switch (parm_table[i].type) {
 			case P_LIST:
-				str_list_copy(&(parm_table[i].def.lvalue),
-					    *(const char ***)parm_table[i].ptr);
+				str_list_copy(
+					NULL, &(parm_table[i].def.lvalue),
+					*(const char ***)parm_table[i].ptr);
 				break;
 			case P_STRING:
 			case P_USTRING:
