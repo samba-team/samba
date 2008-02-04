@@ -25,31 +25,6 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-static NTSTATUS get_info3_from_ndr(TALLOC_CTX *mem_ctx, struct winbindd_response *response, NET_USER_INFO_3 *info3)
-{
-	uint8 *info3_ndr;
-	size_t len = response->length - sizeof(struct winbindd_response);
-	prs_struct ps;
-	if (len > 0) {
-		info3_ndr = (uint8 *)response->extra_data.data;
-		if (!prs_init(&ps, len, mem_ctx, UNMARSHALL)) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		prs_copy_data_in(&ps, (char *)info3_ndr, len);
-		prs_set_offset(&ps,0);
-		if (!net_io_user_info3("", info3, &ps, 1, 3, False)) {
-			DEBUG(2, ("get_info3_from_ndr: could not parse info3 struct!\n"));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-		prs_mem_free(&ps);
-
-		return NT_STATUS_OK;
-	} else {
-		DEBUG(2, ("get_info3_from_ndr: No info3 struct found!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-}
-
 /* Authenticate a user with a challenge/response */
 
 static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
@@ -58,11 +33,11 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 				       const auth_usersupplied_info *user_info, 
 				       auth_serversupplied_info **server_info)
 {
-	struct winbindd_request request;
-	struct winbindd_response response;
-        NSS_STATUS result;
 	NTSTATUS nt_status;
-        NET_USER_INFO_3 info3;
+	wbcErr wbc_status;
+	struct wbcAuthUserParams params;
+	struct wbcAuthUserInfo *info = NULL;
+	struct wbcAuthErrorInfo *err = NULL;
 
 	if (!user_info) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -82,36 +57,34 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 
 	/* Send off request */
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
+	params.account_name	= user_info->smb_name;
+	params.domain_name	= user_info->domain;
+	params.workstation_name	= user_info->wksta_name;
 
-	request.flags = WBFLAG_PAM_INFO3_NDR;
+	params.flags		= 0;
+	params.parameter_control= user_info->logon_parameters;
 
-	request.data.auth_crap.logon_parameters = user_info->logon_parameters;
+	params.level		= WBC_AUTH_USER_LEVEL_RESPONSE;
 
-	fstrcpy(request.data.auth_crap.user, user_info->smb_name);
-	fstrcpy(request.data.auth_crap.domain, user_info->domain);
-	fstrcpy(request.data.auth_crap.workstation, user_info->wksta_name);
+	memcpy(params.password.response.challenge,
+	       auth_context->challenge.data,
+	       sizeof(params.password.response.challenge));
 
-	memcpy(request.data.auth_crap.chal, auth_context->challenge.data, sizeof(request.data.auth_crap.chal));
-	
-	request.data.auth_crap.lm_resp_len = MIN(user_info->lm_resp.length, 
-						 sizeof(request.data.auth_crap.lm_resp));
-	request.data.auth_crap.nt_resp_len = MIN(user_info->nt_resp.length, 
-						 sizeof(request.data.auth_crap.nt_resp));
-	
-	memcpy(request.data.auth_crap.lm_resp, user_info->lm_resp.data, 
-	       request.data.auth_crap.lm_resp_len);
-	memcpy(request.data.auth_crap.nt_resp, user_info->nt_resp.data, 
-	       request.data.auth_crap.nt_resp_len);
+	params.password.response.nt_length	= user_info->nt_resp.length;
+	params.password.response.nt_data	= user_info->nt_resp.data;
+	params.password.response.lm_length	= user_info->lm_resp.length;
+	params.password.response.lm_data	= user_info->lm_resp.data;
 
 	/* we are contacting the privileged pipe */
 	become_root();
-	result = winbindd_priv_request_response(WINBINDD_PAM_AUTH_CRAP,
-						&request, &response);
+	wbc_status = wbcAuthenticateUserEx(&params, &info, &err);
 	unbecome_root();
 
-	if ( result == NSS_STATUS_UNAVAIL )  {
+	if (wbc_status == WBC_ERR_NO_MEMORY) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (wbc_status == WBC_ERR_WINBIND_NOT_AVAILABLE) {
 		struct auth_methods *auth_method =
 			(struct auth_methods *)my_private_data;
 
@@ -123,27 +96,29 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 			DEBUG(0,("check_winbind_security: ERROR!  my_private_data == NULL!\n"));
 	}
 
-	nt_status = NT_STATUS(response.data.auth.nt_status);
-
-	if (result == NSS_STATUS_SUCCESS && response.extra_data.data) {
-		if (NT_STATUS_IS_OK(nt_status)) {
-			if (NT_STATUS_IS_OK(nt_status = get_info3_from_ndr(mem_ctx, &response, &info3))) { 
-				nt_status = make_server_info_info3(mem_ctx, 
-					user_info->smb_name, user_info->domain, 
-					server_info, &info3); 
-			}
-			
-			if (NT_STATUS_IS_OK(nt_status)) {
-				if (user_info->was_mapped) {
-					(*server_info)->was_mapped = user_info->was_mapped;
-				}
-			}
-		}
-	} else if (NT_STATUS_IS_OK(nt_status)) {
-		nt_status = NT_STATUS_NO_LOGON_SERVERS;
+	if (wbc_status == WBC_ERR_AUTH_ERROR) {
+		nt_status = NT_STATUS(err->nt_status);
+		wbcFreeMemory(err);
+		return nt_status;
 	}
 
-	SAFE_FREE(response.extra_data.data);
+	if (!WBC_ERROR_IS_OK(wbc_status)) {
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	nt_status = make_server_info_wbcAuthUserInfo(mem_ctx,
+						     user_info->smb_name,
+						     user_info->domain,
+						     info, server_info);
+	wbcFreeMemory(info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
+
+	if (user_info->was_mapped) {
+		(*server_info)->was_mapped = user_info->was_mapped;
+	}
+
         return nt_status;
 }
 
