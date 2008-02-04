@@ -669,28 +669,7 @@ static bool api_samr_query_useraliases(pipes_struct *p)
 
 static bool api_samr_query_aliasmem(pipes_struct *p)
 {
-	SAMR_Q_QUERY_ALIASMEM q_u;
-	SAMR_R_QUERY_ALIASMEM r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_query_aliasmem("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_query_aliasmem: unable to unmarshall SAMR_Q_QUERY_ALIASMEM.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_query_aliasmem(p, &q_u, &r_u);
-
-	if (!samr_io_r_query_aliasmem("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_query_aliasmem: unable to marshall SAMR_R_QUERY_ALIASMEM.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_GETMEMBERSINALIAS);
 }
 
 /*******************************************************************
