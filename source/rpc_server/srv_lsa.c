@@ -711,29 +711,7 @@ static bool api_lsa_set_secret(pipes_struct *p)
 
 static bool api_lsa_delete_object(pipes_struct *p)
 {
-	LSA_Q_DELETE_OBJECT q_u;
-	LSA_R_DELETE_OBJECT r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_delete_object("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_delete_object: failed to unmarshall LSA_Q_DELETE_OBJECT.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_delete_object(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_delete_object("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_delete_object: Failed to marshall LSA_R_DELETE_OBJECT.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_DELETEOBJECT);
 }
 
 /***************************************************************************
