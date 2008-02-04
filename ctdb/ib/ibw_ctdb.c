@@ -56,13 +56,13 @@ int ctdb_ibw_node_connect(struct ctdb_node *node)
 	sock_out.sin_port = htons(node->address.port);
 	sock_out.sin_family = PF_INET;
 	if (ctdb_ibw_get_address(node->ctdb, node->address.address, &sock_out.sin_addr)) {
-		DEBUG(0, ("ctdb_ibw_node_connect failed\n"));
+		DEBUG(DEBUG_ERR, ("ctdb_ibw_node_connect failed\n"));
 		return -1;
 	}
 
 	rc = ibw_connect(cn->conn, &sock_out, node);
 	if (rc) {
-		DEBUG(0, ("ctdb_ibw_node_connect/ibw_connect failed - retrying...\n"));
+		DEBUG(DEBUG_ERR, ("ctdb_ibw_node_connect/ibw_connect failed - retrying...\n"));
 		/* try again once a second */
 		event_add_timed(node->ctdb->ev, node, timeval_current_ofs(1, 0), 
 			ctdb_ibw_node_connect_event, node);
@@ -92,7 +92,7 @@ int ctdb_ibw_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 		case IBWS_CONNECT_REQUEST: /* after [IBWS_READY + incoming request] */
 				/* => [(ibw_accept)IBWS_READY | (ibw_disconnect)STOPPED | ERROR] */
 			if (ibw_accept(ctx, conn, NULL)) {
-				DEBUG(0, ("connstate_handler/ibw_accept failed\n"));
+				DEBUG(DEBUG_ERR, ("connstate_handler/ibw_accept failed\n"));
 				return -1;
 			} /* else continue in IBWC_CONNECTED */
 			break;

@@ -63,7 +63,7 @@ static void lock_fetch_callback(void *p)
 	struct lock_fetch_state *state = talloc_get_type(p, struct lock_fetch_state);
 	if (!state->ignore_generation &&
 	    state->generation != state->ctdb->vnn_map->generation) {
-		DEBUG(0,("Discarding previous generation lockwait packet\n"));
+		DEBUG(DEBUG_NOTICE,("Discarding previous generation lockwait packet\n"));
 		talloc_free(state->hdr);
 		return;
 	}
@@ -181,7 +181,7 @@ static void ctdb_check_db_empty(struct ctdb_db_context *ctdb_db)
 	struct tdb_context *tdb = ctdb_db->ltdb->tdb;
 	int count = tdb_traverse_read(tdb, NULL, NULL);
 	if (count != 0) {
-		DEBUG(0,(__location__ " tdb '%s' not empty on attach! aborting\n",
+		DEBUG(DEBUG_ALERT,(__location__ " tdb '%s' not empty on attach! aborting\n",
 			 ctdb_db->db_path));
 		ctdb_fatal(ctdb_db->ctdb, "database not empty on attach");
 	}
@@ -213,7 +213,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 	/* check for hash collisions */
 	for (tmp_db=ctdb->db_list;tmp_db;tmp_db=tmp_db->next) {
 		if (tmp_db->db_id == ctdb_db->db_id) {
-			DEBUG(0,("db_id 0x%x hash collision. name1='%s' name2='%s'\n",
+			DEBUG(DEBUG_CRIT,("db_id 0x%x hash collision. name1='%s' name2='%s'\n",
 				 tmp_db->db_id, db_name, tmp_db->db_name));
 			talloc_free(ctdb_db);
 			return -1;
@@ -226,14 +226,14 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 
 	/* make sure the db directory exists */
 	if (mkdir(ctdb->db_directory, 0700) == -1 && errno != EEXIST) {
-		DEBUG(0,(__location__ " Unable to create ctdb directory '%s'\n", 
+		DEBUG(DEBUG_CRIT,(__location__ " Unable to create ctdb directory '%s'\n", 
 			 ctdb->db_directory));
 		talloc_free(ctdb_db);
 		return -1;
 	}
 
 	if (persistent && mkdir(ctdb->db_directory_persistent, 0700) == -1 && errno != EEXIST) {
-		DEBUG(0,(__location__ " Unable to create ctdb persistent directory '%s'\n", 
+		DEBUG(DEBUG_CRIT,(__location__ " Unable to create ctdb persistent directory '%s'\n", 
 			 ctdb->db_directory_persistent));
 		talloc_free(ctdb_db);
 		return -1;
@@ -249,7 +249,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 				      persistent? TDB_DEFAULT : TDB_CLEAR_IF_FIRST | TDB_NOSYNC, 
 				      O_CREAT|O_RDWR, 0666);
 	if (ctdb_db->ltdb == NULL) {
-		DEBUG(0,("Failed to open tdb '%s'\n", ctdb_db->db_path));
+		DEBUG(DEBUG_CRIT,("Failed to open tdb '%s'\n", ctdb_db->db_path));
 		talloc_free(ctdb_db);
 		return -1;
 	}
@@ -269,7 +269,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 	*/
 	ret = ctdb_daemon_set_call(ctdb, ctdb_db->db_id, ctdb_null_func, CTDB_NULL_FUNC);
 	if (ret != 0) {
-		DEBUG(0,("Failed to setup null function for '%s'\n", ctdb_db->db_name));
+		DEBUG(DEBUG_CRIT,("Failed to setup null function for '%s'\n", ctdb_db->db_name));
 		talloc_free(ctdb_db);
 		return -1;
 	}
@@ -280,7 +280,7 @@ static int ctdb_local_attach(struct ctdb_context *ctdb, const char *db_name, boo
 	*/
 	ret = ctdb_daemon_set_call(ctdb, ctdb_db->db_id, ctdb_fetch_func, CTDB_FETCH_FUNC);
 	if (ret != 0) {
-		DEBUG(0,("Failed to setup fetch function for '%s'\n", ctdb_db->db_name));
+		DEBUG(DEBUG_CRIT,("Failed to setup fetch function for '%s'\n", ctdb_db->db_name));
 		talloc_free(ctdb_db);
 		return -1;
 	}
@@ -307,7 +307,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 	   databases
 	*/
 	if (node->flags & NODE_FLAGS_INACTIVE) {
-		DEBUG(0,("DB Attach to database %s refused since node is inactive (disconnected or banned)\n", db_name));
+		DEBUG(DEBUG_ERR,("DB Attach to database %s refused since node is inactive (disconnected or banned)\n", db_name));
 		return -1;
 	}
 
@@ -326,7 +326,7 @@ int32_t ctdb_control_db_attach(struct ctdb_context *ctdb, TDB_DATA indata,
 
 	db = ctdb_db_handle(ctdb, db_name);
 	if (!db) {
-		DEBUG(0,("Failed to find db handle for name '%s'\n", db_name));
+		DEBUG(DEBUG_ERR,("Failed to find db handle for name '%s'\n", db_name));
 		return -1;
 	}
 
@@ -380,12 +380,12 @@ int ctdb_attach_persistent(struct ctdb_context *ctdb)
 		p[4] = 0;
 
 		if (ctdb_local_attach(ctdb, s, true) != 0) {
-			DEBUG(0,("Failed to attach to persistent database '%s'\n", de->d_name));
+			DEBUG(DEBUG_ERR,("Failed to attach to persistent database '%s'\n", de->d_name));
 			closedir(d);
 			talloc_free(s);
 			return -1;
 		}
-		DEBUG(0,("Attached to persistent database %s\n", s));
+		DEBUG(DEBUG_NOTICE,("Attached to persistent database %s\n", s));
 
 		talloc_free(s);
 	}
@@ -406,7 +406,7 @@ int32_t ctdb_ltdb_update_seqnum(struct ctdb_context *ctdb, uint32_t db_id, uint3
 
 	ctdb_db = find_ctdb_db(ctdb, db_id);
 	if (!ctdb_db) {
-		DEBUG(0,("Unknown db_id 0x%x in ctdb_ltdb_update_seqnum\n", db_id));
+		DEBUG(DEBUG_ERR,("Unknown db_id 0x%x in ctdb_ltdb_update_seqnum\n", db_id));
 		return -1;
 	}
 
@@ -450,7 +450,7 @@ int32_t ctdb_ltdb_enable_seqnum(struct ctdb_context *ctdb, uint32_t db_id)
 	struct ctdb_db_context *ctdb_db;
 	ctdb_db = find_ctdb_db(ctdb, db_id);
 	if (!ctdb_db) {
-		DEBUG(0,("Unknown db_id 0x%x in ctdb_ltdb_enable_seqnum\n", db_id));
+		DEBUG(DEBUG_ERR,("Unknown db_id 0x%x in ctdb_ltdb_enable_seqnum\n", db_id));
 		return -1;
 	}
 

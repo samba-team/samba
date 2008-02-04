@@ -49,13 +49,13 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 
 	/* for now, we only handle AF_INET addresses */
 	if (saddr->sin_family != AF_INET) {
-		DEBUG(0,(__location__ " not an ipv4 address (family is %u)\n", saddr->sin_family));
+		DEBUG(DEBUG_CRIT,(__location__ " not an ipv4 address (family is %u)\n", saddr->sin_family));
 		return -1;
 	}
 
 	s = socket(AF_INET, SOCK_PACKET, htons(ETHERTYPE_ARP));
 	if (s == -1){
-		DEBUG(0,(__location__ " failed to open raw socket\n"));
+		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
 		return -1;
 	}
 
@@ -64,7 +64,7 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 	ret = ioctl(s, SIOCGIFHWADDR, &if_hwaddr);
 	if ( ret < 0 ) {
 		close(s);
-		DEBUG(0,(__location__ " ioctl failed\n"));
+		DEBUG(DEBUG_CRIT,(__location__ " ioctl failed\n"));
 		return -1;
 	}
 	if (ARPHRD_LOOPBACK == if_hwaddr.ifr_hwaddr.sa_family) {
@@ -75,7 +75,7 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 	if (if_hwaddr.ifr_hwaddr.sa_family != AF_LOCAL) {
 		close(s);
 		errno = EINVAL;
-		DEBUG(0,(__location__ " not an ethernet address family (0x%x)\n",
+		DEBUG(DEBUG_CRIT,(__location__ " not an ethernet address family (0x%x)\n",
 			 if_hwaddr.ifr_hwaddr.sa_family));
 		return -1;
 	}
@@ -109,7 +109,7 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 	ret = sendto(s, buffer, 64, 0, &sa, sizeof(sa));
 	if (ret < 0 ){
 		close(s);
-		DEBUG(0,(__location__ " failed sendto\n"));
+		DEBUG(DEBUG_CRIT,(__location__ " failed sendto\n"));
 		return -1;
 	}
 
@@ -128,7 +128,7 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 	strncpy(sa.sa_data, iface, sizeof(sa.sa_data));
 	ret = sendto(s, buffer, 64, 0, &sa, sizeof(sa));
 	if (ret < 0 ){
-		DEBUG(0,(__location__ " failed sendto\n"));
+		DEBUG(DEBUG_CRIT,(__location__ " failed sendto\n"));
 		return -1;
 	}
 
@@ -200,7 +200,7 @@ int ctdb_sys_send_tcp(int s,
 
 	/* for now, we only handle AF_INET addresses */
 	if (src->sin_family != AF_INET || dest->sin_family != AF_INET) {
-		DEBUG(0,(__location__ " not an ipv4 address\n"));
+		DEBUG(DEBUG_CRIT,(__location__ " not an ipv4 address\n"));
 		return -1;
 	}
 
@@ -228,7 +228,7 @@ int ctdb_sys_send_tcp(int s,
 
 	ret = sendto(s, &pkt, sizeof(pkt), 0, dest, sizeof(*dest));
 	if (ret != sizeof(pkt)) {
-		DEBUG(0,(__location__ " failed sendto (%s)\n", strerror(errno)));
+		DEBUG(DEBUG_CRIT,(__location__ " failed sendto (%s)\n", strerror(errno)));
 		return -1;
 	}
 
@@ -270,7 +270,7 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 	/* Open a socket to capture all traffic */
 	s = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 	if (s == -1) {
-		DEBUG(0,(__location__ " failed to open raw socket\n"));
+		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket\n"));
 		return -1;
 	}
 
@@ -300,14 +300,14 @@ int ctdb_sys_open_sending_socket(void)
 
 	s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
 	if (s == -1) {
-		DEBUG(0,(__location__ " failed to open raw socket (%s)\n",
+		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket (%s)\n",
 			 strerror(errno)));
 		return -1;
 	}
 
 	ret = setsockopt(s, SOL_IP, IP_HDRINCL, &one, sizeof(one));
 	if (ret != 0) {
-		DEBUG(0,(__location__ " failed to setup IP headers (%s)\n",
+		DEBUG(DEBUG_CRIT,(__location__ " failed to setup IP headers (%s)\n",
 			 strerror(errno)));
 		close(s);
 		return -1;

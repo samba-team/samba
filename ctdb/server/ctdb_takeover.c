@@ -75,12 +75,12 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 
 	ret = ctdb_sys_send_arp(&arp->sin, arp->vnn->iface);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " sending of arp failed (%s)\n", strerror(errno)));
+		DEBUG(DEBUG_CRIT,(__location__ " sending of arp failed (%s)\n", strerror(errno)));
 	}
 
 	s = ctdb_sys_open_sending_socket();
 	if (s == -1) {
-		DEBUG(0,(__location__ " failed to open raw socket for sending tickles\n"));
+		DEBUG(DEBUG_CRIT,(__location__ " failed to open raw socket for sending tickles\n"));
 		return;
 	}
 
@@ -94,7 +94,7 @@ static void ctdb_control_send_arp(struct event_context *ev, struct timed_event *
 			ret = ctdb_sys_send_tcp(s, &tcparray->connections[i].saddr, 
 						&tcparray->connections[i].daddr, 0, 0, 0);
 			if (ret != 0) {
-				DEBUG(0,(__location__ " Failed to send tcp tickle ack for %s\n",
+				DEBUG(DEBUG_CRIT,(__location__ " Failed to send tcp tickle ack for %s\n",
 					 inet_ntoa(tcparray->connections[i].saddr.sin_addr)));
 			}
 		}
@@ -134,7 +134,7 @@ static void takeover_ip_callback(struct ctdb_context *ctdb, int status,
 	ctdb_enable_monitoring(ctdb);
 
 	if (status != 0) {
-		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
+		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
 			 ip, state->vnn->iface));
 		ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
 		talloc_free(state);
@@ -213,7 +213,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 	/* update out vnn list */
 	vnn = find_public_ip_vnn(ctdb, pip->sin);
 	if (vnn == NULL) {
-		DEBUG(0,("takeoverip called for an ip '%s' that is not a public address\n", 
+		DEBUG(DEBUG_ERR,("takeoverip called for an ip '%s' that is not a public address\n", 
 			 inet_ntoa(pip->sin.sin_addr)));
 		return 0;
 	}
@@ -234,7 +234,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 
 	state->vnn = vnn;
 
-	DEBUG(0,("Takeover of IP %s/%u on interface %s\n", 
+	DEBUG(DEBUG_NOTICE,("Takeover of IP %s/%u on interface %s\n", 
 		 inet_ntoa(pip->sin.sin_addr), vnn->public_netmask_bits, 
 		 vnn->iface));
 
@@ -250,7 +250,7 @@ int32_t ctdb_control_takeover_ip(struct ctdb_context *ctdb,
 
 	if (ret != 0) {
 		ctdb_enable_monitoring(ctdb);
-		DEBUG(0,(__location__ " Failed to takeover IP %s on interface %s\n",
+		DEBUG(DEBUG_ERR,(__location__ " Failed to takeover IP %s on interface %s\n",
 			 inet_ntoa(pip->sin.sin_addr), vnn->iface));
 		talloc_free(state);
 		return -1;
@@ -281,7 +281,7 @@ static void release_kill_clients(struct ctdb_context *ctdb, struct sockaddr_in i
 			DEBUG(DEBUG_INFO,("matched client %u with IP %s and pid %u\n", 
 				 ip->client_id, inet_ntoa(ip->ip.sin_addr), client->pid));
 			if (client->pid != 0) {
-				DEBUG(0,(__location__ " Killing client pid %u for IP %s on client_id %u\n",
+				DEBUG(DEBUG_INFO,(__location__ " Killing client pid %u for IP %s on client_id %u\n",
 					 (unsigned)client->pid, inet_ntoa(in.sin_addr),
 					 ip->client_id));
 				kill(client->pid, SIGKILL);
@@ -335,7 +335,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	/* update our vnn list */
 	vnn = find_public_ip_vnn(ctdb, pip->sin);
 	if (vnn == NULL) {
-		DEBUG(0,("releaseip called for an ip '%s' that is not a public address\n", 
+		DEBUG(DEBUG_ERR,("releaseip called for an ip '%s' that is not a public address\n", 
 			 inet_ntoa(pip->sin.sin_addr)));
 		return 0;
 	}
@@ -352,7 +352,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 		return 0;
 	}
 
-	DEBUG(0,("Release of IP %s/%u on interface %s\n", 
+	DEBUG(DEBUG_NOTICE,("Release of IP %s/%u on interface %s\n", 
 		 inet_ntoa(pip->sin.sin_addr), vnn->public_netmask_bits, 
 		 vnn->iface));
 
@@ -378,7 +378,7 @@ int32_t ctdb_control_release_ip(struct ctdb_context *ctdb,
 	if (ret != 0) {
 		ctdb_enable_monitoring(ctdb);
 
-		DEBUG(0,(__location__ " Failed to release IP %s on interface %s\n",
+		DEBUG(DEBUG_ERR,(__location__ " Failed to release IP %s on interface %s\n",
 			 inet_ntoa(pip->sin.sin_addr), vnn->iface));
 		talloc_free(state);
 		return -1;
@@ -398,7 +398,7 @@ static int add_public_address(struct ctdb_context *ctdb, struct sockaddr_in addr
 	/* Verify that we dont have an entry for this ip yet */
 	for (vnn=ctdb->vnn;vnn;vnn=vnn->next) {
 		if (ctdb_same_sockaddr(&addr, &vnn->public_address)) {
-			DEBUG(0,("Same ip '%s' specified multiple times in the public address list \n", 
+			DEBUG(DEBUG_CRIT,("Same ip '%s' specified multiple times in the public address list \n", 
 				 inet_ntoa(addr.sin_addr)));
 			exit(1);
 		}		
@@ -454,14 +454,14 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 
 		tok = strtok(lines[i], " \t");
 		if (!tok || !parse_ip_mask(tok, &addr, &mask)) {
-			DEBUG(0,("Badly formed line %u in public address list\n", i+1));
+			DEBUG(DEBUG_CRIT,("Badly formed line %u in public address list\n", i+1));
 			talloc_free(lines);
 			return -1;
 		}
 		tok = strtok(NULL, " \t");
 		if (tok == NULL) {
 			if (NULL == ctdb->default_public_interface) {
-				DEBUG(0,("No default public interface and no interface specified at line %u of public address list\n",
+				DEBUG(DEBUG_CRIT,("No default public interface and no interface specified at line %u of public address list\n",
 					 i+1));
 				talloc_free(lines);
 				return -1;
@@ -472,7 +472,7 @@ int ctdb_set_public_addresses(struct ctdb_context *ctdb, const char *alist)
 		}
 
 		if (add_public_address(ctdb, addr, mask, iface)) {
-			DEBUG(0,("Failed to add line %u to the public address list\n", i+1));
+			DEBUG(DEBUG_CRIT,("Failed to add line %u to the public address list\n", i+1));
 			talloc_free(lines);
 			return -1;
 		}
@@ -576,7 +576,7 @@ static int find_takeover_node(struct ctdb_context *ctdb,
 		}
 	}	
 	if (pnn == -1) {
-		DEBUG(0,(__location__ " Could not find node to take over public address '%s'\n", inet_ntoa(ip->sin.sin_addr)));
+		DEBUG(DEBUG_WARNING,(__location__ " Could not find node to take over public address '%s'\n", inet_ntoa(ip->sin.sin_addr)));
 		return -1;
 	}
 
@@ -687,7 +687,7 @@ int ctdb_takeover_run(struct ctdb_context *ctdb, struct ctdb_node_map *nodemap)
 	   available/unavailable nodes.
 	*/
 	if (1 == ctdb->tunable.deterministic_public_ips) {		
-		DEBUG(0,("Deterministic IPs enabled. Resetting all ip allocations\n"));
+		DEBUG(DEBUG_NOTICE,("Deterministic IPs enabled. Resetting all ip allocations\n"));
 		for (i=0,tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next,i++) {
 			tmp_ip->pnn = i%nodemap->num;
 		}
@@ -718,7 +718,7 @@ try_again:
 	for (tmp_ip=all_ips;tmp_ip;tmp_ip=tmp_ip->next) {
 		if (tmp_ip->pnn == -1) {
 			if (find_takeover_node(ctdb, nodemap, mask, tmp_ip, all_ips)) {
-				DEBUG(0,("Failed to find node to cover ip %s\n", inet_ntoa(tmp_ip->sin.sin_addr)));
+				DEBUG(DEBUG_WARNING,("Failed to find node to cover ip %s\n", inet_ntoa(tmp_ip->sin.sin_addr)));
 			}
 		}
 	}
@@ -773,7 +773,7 @@ try_again:
 			}
 		}
 		if (maxnode == -1) {
-			DEBUG(0,(__location__ " Could not find maxnode. May not be able to serve ip '%s'\n", inet_ntoa(tmp_ip->sin.sin_addr)));
+			DEBUG(DEBUG_WARNING,(__location__ " Could not find maxnode. May not be able to serve ip '%s'\n", inet_ntoa(tmp_ip->sin.sin_addr)));
 			continue;
 		}
 
@@ -844,7 +844,7 @@ try_again:
 					data, async_data,
 					&timeout, NULL);
 			if (state == NULL) {
-				DEBUG(0,(__location__ " Failed to call async control CTDB_CONTROL_RELEASE_IP to node %u\n", nodemap->nodes[i].pnn));
+				DEBUG(DEBUG_ERR,(__location__ " Failed to call async control CTDB_CONTROL_RELEASE_IP to node %u\n", nodemap->nodes[i].pnn));
 				talloc_free(tmp_ctx);
 				return -1;
 			}
@@ -853,7 +853,7 @@ try_again:
 		}
 	}
 	if (ctdb_client_async_wait(ctdb, async_data) != 0) {
-		DEBUG(0,(__location__ " Async control CTDB_CONTROL_RELEASE_IP failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Async control CTDB_CONTROL_RELEASE_IP failed\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -880,7 +880,7 @@ try_again:
 				data, async_data,
 				&timeout, NULL);
 		if (state == NULL) {
-			DEBUG(0,(__location__ " Failed to call async control CTDB_CONTROL_TAKEOVER_IP to node %u\n", tmp_ip->pnn));
+			DEBUG(DEBUG_ERR,(__location__ " Failed to call async control CTDB_CONTROL_TAKEOVER_IP to node %u\n", tmp_ip->pnn));
 			talloc_free(tmp_ctx);
 			return -1;
 		}
@@ -888,7 +888,7 @@ try_again:
 		ctdb_client_async_add(async_data, state);
 	}
 	if (ctdb_client_async_wait(ctdb, async_data) != 0) {
-		DEBUG(0,(__location__ " Async control CTDB_CONTROL_TAKEOVER_IP failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Async control CTDB_CONTROL_TAKEOVER_IP failed\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -928,14 +928,14 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 	vnn = find_public_ip_vnn(ctdb, p->dest);
 	if (vnn == NULL) {
 		if (ntohl(p->dest.sin_addr.s_addr) != INADDR_LOOPBACK) {
-			DEBUG(0,("Could not add client IP %s. This is not a public address.\n", 
+			DEBUG(DEBUG_ERR,("Could not add client IP %s. This is not a public address.\n", 
 				 inet_ntoa(p->dest.sin_addr))); 
 		}
 		return 0;
 	}
 
 	if (vnn->pnn != ctdb->pnn) {
-		DEBUG(0,("Attempt to register tcp client for IP %s we don't hold - failing (client_id %u pid %u)\n",
+		DEBUG(DEBUG_ERR,("Attempt to register tcp client for IP %s we don't hold - failing (client_id %u pid %u)\n",
 			 inet_ntoa(p->dest.sin_addr),
 			 client_id, client->pid));
 		/* failing this call will tell smbd to die */
@@ -975,7 +975,7 @@ int32_t ctdb_control_tcp_client(struct ctdb_context *ctdb, uint32_t client_id,
 				       CTDB_CONTROL_TCP_ADD,
 				       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " Failed to send CTDB_CONTROL_TCP_ADD\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to send CTDB_CONTROL_TCP_ADD\n"));
 		return -1;
 	}
 
@@ -1027,7 +1027,7 @@ int32_t ctdb_control_tcp_add(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	vnn = find_public_ip_vnn(ctdb, p->dest);
 	if (vnn == NULL) {
-		DEBUG(0,(__location__ " got TCP_ADD control for an address which is not a public address '%s'\n", 
+		DEBUG(DEBUG_ERR,(__location__ " got TCP_ADD control for an address which is not a public address '%s'\n", 
 			 inet_ntoa(p->dest.sin_addr)));
 		return -1;
 	}
@@ -1096,7 +1096,7 @@ static void ctdb_remove_tcp_connection(struct ctdb_context *ctdb, struct ctdb_tc
 	struct ctdb_vnn *vnn = find_public_ip_vnn(ctdb, conn->daddr);
 
 	if (vnn == NULL) {
-		DEBUG(0,(__location__ " unable to find public address %s\n", inet_ntoa(conn->daddr.sin_addr)));
+		DEBUG(DEBUG_ERR,(__location__ " unable to find public address %s\n", inet_ntoa(conn->daddr.sin_addr)));
 		return;
 	}
 
@@ -1414,7 +1414,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 		}
 	}
 	if (vnn == NULL) {
-		DEBUG(0,(__location__ " Could not killtcp, not a public address\n")); 
+		DEBUG(DEBUG_ERR,(__location__ " Could not killtcp, not a public address\n")); 
 		return -1;
 	}
 
@@ -1460,7 +1460,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	if (killtcp->sending_fd == -1) {
 		killtcp->sending_fd = ctdb_sys_open_sending_socket();
 		if (killtcp->sending_fd == -1) {
-			DEBUG(0,(__location__ " Failed to open sending socket for killtcp\n"));
+			DEBUG(DEBUG_CRIT,(__location__ " Failed to open sending socket for killtcp\n"));
 			goto failed;
 		}
 	}
@@ -1471,7 +1471,7 @@ static int ctdb_killtcp_add_connection(struct ctdb_context *ctdb,
 	if (killtcp->capture_fd == -1) {
 		killtcp->capture_fd = ctdb_sys_open_capture_socket(vnn->iface, &killtcp->private_data);
 		if (killtcp->capture_fd == -1) {
-			DEBUG(0,(__location__ " Failed to open capturing socket for killtcp\n"));
+			DEBUG(DEBUG_CRIT,(__location__ " Failed to open capturing socket for killtcp\n"));
 			goto failed;
 		}
 	}
@@ -1527,7 +1527,7 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 	 */
 	if (indata.dsize < offsetof(struct ctdb_control_tcp_tickle_list, 
 					tickles.connections)) {
-		DEBUG(0,("Bad indata in ctdb_control_set_tcp_tickle_list. Not enough data for the tickle.num field\n"));
+		DEBUG(DEBUG_ERR,("Bad indata in ctdb_control_set_tcp_tickle_list. Not enough data for the tickle.num field\n"));
 		return -1;
 	}
 
@@ -1536,13 +1536,13 @@ int32_t ctdb_control_set_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 				tickles.connections)
 			 + sizeof(struct ctdb_tcp_connection)
 				 * list->tickles.num) {
-		DEBUG(0,("Bad indata in ctdb_control_set_tcp_tickle_list\n"));
+		DEBUG(DEBUG_ERR,("Bad indata in ctdb_control_set_tcp_tickle_list\n"));
 		return -1;
 	}	
 
 	vnn = find_public_ip_vnn(ctdb, list->ip);
 	if (vnn == NULL) {
-		DEBUG(0,(__location__ " Could not set tcp tickle list, '%s' is not a public address\n", 
+		DEBUG(DEBUG_ERR,(__location__ " Could not set tcp tickle list, '%s' is not a public address\n", 
 			 inet_ntoa(list->ip.sin_addr))); 
 		return 1;
 	}
@@ -1582,7 +1582,7 @@ int32_t ctdb_control_get_tcp_tickle_list(struct ctdb_context *ctdb, TDB_DATA ind
 
 	vnn = find_public_ip_vnn(ctdb, *ip);
 	if (vnn == NULL) {
-		DEBUG(0,(__location__ " Could not get tcp tickle list, '%s' is not a public address\n", 
+		DEBUG(DEBUG_ERR,(__location__ " Could not get tcp tickle list, '%s' is not a public address\n", 
 			 inet_ntoa(ip->sin_addr))); 
 		return 1;
 	}
@@ -1648,7 +1648,7 @@ static int ctdb_ctrl_set_tcp_tickles(struct ctdb_context *ctdb,
 				       CTDB_CONTROL_SET_TCP_TICKLE_LIST,
 				       0, CTDB_CTRL_FLAG_NOREPLY, data, NULL, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for set tcp tickles failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for set tcp tickles failed\n"));
 		return -1;
 	}
 
@@ -1686,7 +1686,7 @@ static void ctdb_update_tcp_tickles(struct event_context *ev,
 				&vnn->public_address,
 				vnn->tcp_array);
 		if (ret != 0) {
-			DEBUG(0,("Failed to send the tickle update for public address %s\n", 
+			DEBUG(DEBUG_ERR,("Failed to send the tickle update for public address %s\n", 
 				 inet_ntoa(vnn->public_address.sin_addr)));
 		}
 	}
@@ -1731,7 +1731,7 @@ static void send_gratious_arp(struct event_context *ev, struct timed_event *te,
 
 	ret = ctdb_sys_send_arp(&arp->sin, arp->iface);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " sending of gratious arp failed (%s)\n", strerror(errno)));
+		DEBUG(DEBUG_ERR,(__location__ " sending of gratious arp failed (%s)\n", strerror(errno)));
 	}
 
 
@@ -1758,14 +1758,14 @@ int32_t ctdb_control_send_gratious_arp(struct ctdb_context *ctdb, TDB_DATA indat
 
 	/* verify the size of indata */
 	if (indata.dsize < offsetof(struct ctdb_control_gratious_arp, iface)) {
-		DEBUG(0,(__location__ " Too small indata to hold a ctdb_control_gratious_arp structure\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Too small indata to hold a ctdb_control_gratious_arp structure\n"));
 		return -1;
 	}
 	if (indata.dsize != 
 		( offsetof(struct ctdb_control_gratious_arp, iface)
 		+ gratious_arp->len ) ){
 
-		DEBUG(0,(__location__ " Wrong size of indata. Was %u bytes "
+		DEBUG(DEBUG_ERR,(__location__ " Wrong size of indata. Was %u bytes "
 			"but should be %u bytes\n", 
 			 (unsigned)indata.dsize, 
 			 (unsigned)(offsetof(struct ctdb_control_gratious_arp, iface)+gratious_arp->len)));

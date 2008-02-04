@@ -59,7 +59,7 @@ static void ctdb_check_for_dead_nodes(struct event_context *ev, struct timed_eve
 		node->rx_cnt = 0;
 
 		if (node->dead_count >= ctdb->tunable.keepalive_limit) {
-			DEBUG(0,("dead count reached for node %u\n", node->pnn));
+			DEBUG(DEBUG_NOTICE,("dead count reached for node %u\n", node->pnn));
 			ctdb_node_dead(node);
 			ctdb_send_keepalive(ctdb, node->pnn);
 			/* maybe tell the transport layer to kill the
@@ -94,7 +94,7 @@ void ctdb_start_keepalive(struct ctdb_context *ctdb)
 			     ctdb_check_for_dead_nodes, ctdb);
 	CTDB_NO_MEMORY_FATAL(ctdb, te);
 
-	DEBUG(0,("Keepalive monitoring has been started\n"));
+	DEBUG(DEBUG_NOTICE,("Keepalive monitoring has been started\n"));
 }
 
 void ctdb_stop_keepalive(struct ctdb_context *ctdb)

@@ -106,7 +106,7 @@ int ibwtest_send_id(struct ibw_conn *conn)
 	DEBUG(DEBUG_DEBUG, ("ibwtest_send_id\n"));
 	len = sizeof(uint32_t)+strlen(tcx->id)+2;
 	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, len)) {
-		DEBUG(0, ("send_id: ibw_alloc_send_buf failed\n"));
+		DEBUG(DEBUG_ERR, ("send_id: ibw_alloc_send_buf failed\n"));
 		return -1;
 	}
 
@@ -116,7 +116,7 @@ int ibwtest_send_id(struct ibw_conn *conn)
 	strcpy(buf+sizeof(uint32_t)+1, tcx->id);
 
 	if (ibw_send(conn, buf, key, len)) {
-		DEBUG(0, ("send_id: ibw_send error\n"));
+		DEBUG(DEBUG_ERR, ("send_id: ibw_send error\n"));
 		return -1;
 	}
 	tcx->nsent++;
@@ -147,7 +147,7 @@ int ibwtest_send_test_msg(struct ibwtest_ctx *tcx, struct ibw_conn *conn, const 
 	strcpy(p, msg);
 
 	if (ibw_send(conn, buf, key, len)) {
-		DEBUG(0, ("send_test_msg: ibw_send error\n"));
+		DEBUG(DEBUG_ERR, ("send_test_msg: ibw_send error\n"));
 		return -1;
 	}
 	tcx->nsent++;
@@ -190,7 +190,7 @@ int ibwtest_do_varsize_scenario_conn_size(struct ibwtest_ctx *tcx, struct ibw_co
 
 	len = sizeof(uint32_t) + 1 + size + 1;
 	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, len)) {
-		DEBUG(0, ("varsize/ibw_alloc_send_buf failed\n"));
+		DEBUG(DEBUG_ERR, ("varsize/ibw_alloc_send_buf failed\n"));
 		return -1;
 	}
 	*((uint32_t *)buf) = len;
@@ -198,7 +198,7 @@ int ibwtest_do_varsize_scenario_conn_size(struct ibwtest_ctx *tcx, struct ibw_co
 	sum = ibwtest_fill_random(buf + sizeof(uint32_t) + 1, size);
 	buf[sizeof(uint32_t) + 1 + size] = sum;
 	if (ibw_send(conn, buf, key, len)) {
-		DEBUG(0, ("varsize/ibw_send failed\n"));
+		DEBUG(DEBUG_ERR, ("varsize/ibw_send failed\n"));
 		return -1;
 	}
 	tcx->nsent++;
@@ -254,7 +254,7 @@ int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 			DEBUG(DEBUG_DEBUG, ("test IBWS_CONNECT_REQUEST\n"));
 			tconn = talloc_zero(conn, struct ibwtest_conn);
 			if (ibw_accept(ctx, conn, tconn)) {
-				DEBUG(0, ("error accepting the connect request\n"));
+				DEBUG(DEBUG_ERR, ("error accepting the connect request\n"));
 			}
 			break;
 		case IBWS_STOPPED:
@@ -279,7 +279,7 @@ int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 			break;
 		case IBWC_CONNECTED:
 			if (gettimeofday(&tcx->start_time, NULL)) {
-				DEBUG(0, ("gettimeofday error %d", errno));
+				DEBUG(DEBUG_ERR, ("gettimeofday error %d", errno));
 				return -1;
 			}
 			ibwtest_send_id(conn);
@@ -330,7 +330,7 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 				(uint32_t)sum,
 				tconn->id ? tconn->id : "NULL"));
 			if (sum!=((unsigned char *)buf)[n-1]) {
-				DEBUG(0, ("ERROR: checksum mismatch %u!=%u\n",
+				DEBUG(DEBUG_ERR, ("ERROR: checksum mismatch %u!=%u\n",
 					(uint32_t)sum, (uint32_t)((unsigned char *)buf)[n-1]));
 				ibw_stop(tcx->ibwctx);
 				goto error;
@@ -404,7 +404,7 @@ static struct ibwtest_ctx *testctx = NULL;
 
 void ibwtest_sigint_handler(int sig)
 {
-	DEBUG(0, ("got SIGINT\n"));
+	DEBUG(DEBUG_ERR, ("got SIGINT\n"));
 	if (testctx) {
 		if (testctx->ibwctx->state==IBWS_READY ||
 			testctx->ibwctx->state==IBWS_CONNECT_REQUEST ||
@@ -470,7 +470,7 @@ static int ibwtest_get_address(const char *address, struct in_addr *addr)
 	if (inet_pton(AF_INET, address, addr) <= 0) {
 		struct hostent *he = gethostbyname(address);
 		if (he == NULL || he->h_length > sizeof(*addr)) {
-			DEBUG(0, ("invalid nework address '%s'\n", address));
+			DEBUG(DEBUG_ERR, ("invalid nework address '%s'\n", address));
 			return -1;
 		}
 		memcpy(addr, he->h_addr, he->h_length);
@@ -511,12 +511,12 @@ int ibwtest_init_server(struct ibwtest_ctx *tcx)
 	}
 
 	if (ibw_bind(tcx->ibwctx, &tcx->addrs[0])) {
-		DEBUG(0, ("ERROR: ibw_bind failed\n"));
+		DEBUG(DEBUG_ERR, ("ERROR: ibw_bind failed\n"));
 		return -1;
 	}
 	
 	if (ibw_listen(tcx->ibwctx, 1)) {
-		DEBUG(0, ("ERROR: ibw_listen failed\n"));
+		DEBUG(DEBUG_ERR, ("ERROR: ibw_listen failed\n"));
 		return -1;
 	}
 
@@ -637,7 +637,7 @@ int main(int argc, char *argv[])
 
 	if (!tcx->is_server && tcx->nsent!=0 && !tcx->error) {
 		if (gettimeofday(&tcx->end_time, NULL)) {
-			DEBUG(0, ("gettimeofday error %d\n", errno));
+			DEBUG(DEBUG_ERR, ("gettimeofday error %d\n", errno));
 			goto cleanup;
 		}
 		usec = (tcx->end_time.tv_sec - tcx->start_time.tv_sec) * 1000000 +
@@ -654,6 +654,6 @@ cleanup:
 		talloc_free(tcx);
 	if (ev)
 		talloc_free(ev);
-	DEBUG(0, ("exited with code %d\n", result));
+	DEBUG(DEBUG_ERR, ("exited with code %d\n", result));
 	return result;
 }

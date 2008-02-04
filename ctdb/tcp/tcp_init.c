@@ -58,7 +58,7 @@ static int ctdb_tcp_initialise(struct ctdb_context *ctdb)
 
 	for (i=0; i<ctdb->num_nodes; i++) {
 		if (ctdb_tcp_add_node(ctdb->nodes[i]) != 0) {
-			DEBUG(0, ("methods->add_node failed at %d\n", i));
+			DEBUG(DEBUG_CRIT, ("methods->add_node failed at %d\n", i));
 			return -1;
 		}
 	}
@@ -98,7 +98,7 @@ static void ctdb_tcp_restart(struct ctdb_node *node)
 	struct ctdb_tcp_node *tnode = talloc_get_type(
 		node->private_data, struct ctdb_tcp_node);
 
-	DEBUG(0,("Tearing down connection to dead node :%d\n", node->pnn));
+	DEBUG(DEBUG_NOTICE,("Tearing down connection to dead node :%d\n", node->pnn));
 
 	ctdb_tcp_stop_connection(node);
 

@@ -67,7 +67,7 @@ static void test_store_records(struct ctdb_context *ctdb, struct event_context *
 		
 		ret = ctdb_record_store(h, data);
 		if (ret != 0) {
-			DEBUG(0,("Failed to store record\n"));
+			DEBUG(DEBUG_ERR,("Failed to store record\n"));
 			exit(1);
 		}
 		talloc_free(h);

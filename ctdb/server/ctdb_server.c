@@ -230,7 +230,7 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	case CTDB_REPLY_DMASTER:
 		/* we dont allow these calls when banned */
 		if (ctdb->nodes[ctdb->pnn]->flags & NODE_FLAGS_BANNED) {
-			DEBUG(0,(__location__ " ctdb operation %u"
+			DEBUG(DEBUG_DEBUG,(__location__ " ctdb operation %u"
 				" request %u"
 				" length %u from node %u to %u while node"
 				" is banned\n",
@@ -245,7 +245,7 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		   same generation instance as this node
 		*/
 		if (ctdb->vnn_map->generation != hdr->generation) {
-			DEBUG(0,(__location__ " ctdb operation %u"
+			DEBUG(DEBUG_DEBUG,(__location__ " ctdb operation %u"
 				" request %u"
 				" length %u from node %u to %u had an"
 				" invalid generation id:%u while our"
@@ -304,7 +304,7 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		break;
 
 	default:
-		DEBUG(0,("%s: Packet with unknown operation %u\n", 
+		DEBUG(DEBUG_CRIT,("%s: Packet with unknown operation %u\n", 
 			 __location__, hdr->operation));
 		break;
 	}
@@ -330,7 +330,7 @@ void ctdb_node_dead(struct ctdb_node *node)
 	node->rx_cnt = 0;
 	node->dead_count = 0;
 
-	DEBUG(0,("%s: node %s is dead: %u connected\n", 
+	DEBUG(DEBUG_NOTICE,("%s: node %s is dead: %u connected\n", 
 		 node->ctdb->name, node->name, node->ctdb->num_connected));
 	ctdb_daemon_cancel_controls(node->ctdb, node);
 
@@ -382,13 +382,13 @@ static void ctdb_defer_packet(struct ctdb_context *ctdb, struct ctdb_req_header 
 	struct queue_next *q;
 	q = talloc(ctdb, struct queue_next);
 	if (q == NULL) {
-		DEBUG(0,(__location__ " Failed to allocate deferred packet\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to allocate deferred packet\n"));
 		return;
 	}
 	q->ctdb = ctdb;
 	q->hdr = talloc_memdup(ctdb, hdr, hdr->length);
 	if (q->hdr == NULL) {
-		DEBUG(0,("Error copying deferred packet to self\n"));
+		DEBUG(DEBUG_ERR,("Error copying deferred packet to self\n"));
 		return;
 	}
 #if 0
@@ -463,7 +463,7 @@ void ctdb_queue_packet(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	ctdb->statistics.node_packets_sent++;
 
 	if (!ctdb_validate_pnn(ctdb, hdr->destnode)) {
-	  	DEBUG(0,(__location__ " cant send to node %u that does not exist\n", 
+	  	DEBUG(DEBUG_CRIT,(__location__ " cant send to node %u that does not exist\n", 
 			 hdr->destnode));
 		return;
 	}

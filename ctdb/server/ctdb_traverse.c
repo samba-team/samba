@@ -283,7 +283,7 @@ static void traverse_all_callback(void *p, TDB_DATA key, TDB_DATA data)
 	d = ctdb_marshall_record(state, state->reqid, key, NULL, data);
 	if (d == NULL) {
 		/* darn .... */
-		DEBUG(0,("Out of memory in traverse_all_callback\n"));
+		DEBUG(DEBUG_ERR,("Out of memory in traverse_all_callback\n"));
 		return;
 	}
 
@@ -293,7 +293,7 @@ static void traverse_all_callback(void *p, TDB_DATA key, TDB_DATA data)
 	ret = ctdb_daemon_send_control(state->ctdb, state->srcnode, 0, CTDB_CONTROL_TRAVERSE_DATA,
 				       0, CTDB_CTRL_FLAG_NOREPLY, cdata, NULL, NULL);
 	if (ret != 0) {
-		DEBUG(0,("Failed to send traverse data\n"));
+		DEBUG(DEBUG_ERR,("Failed to send traverse data\n"));
 	}
 
 	if (key.dsize == 0 && data.dsize == 0) {
@@ -314,7 +314,7 @@ int32_t ctdb_control_traverse_all(struct ctdb_context *ctdb, TDB_DATA data, TDB_
 	struct ctdb_db_context *ctdb_db;
 
 	if (data.dsize != sizeof(struct ctdb_traverse_all)) {
-		DEBUG(0,("Invalid size in ctdb_control_traverse_all\n"));
+		DEBUG(DEBUG_ERR,("Invalid size in ctdb_control_traverse_all\n"));
 		return -1;
 	}
 
@@ -355,7 +355,7 @@ int32_t ctdb_control_traverse_data(struct ctdb_context *ctdb, TDB_DATA data, TDB
 	void *private_data;
 
 	if (data.dsize < sizeof(uint32_t) || data.dsize != d->length) {
-		DEBUG(0,("Bad record size in ctdb_control_traverse_data\n"));
+		DEBUG(DEBUG_ERR,("Bad record size in ctdb_control_traverse_data\n"));
 		return -1;
 	}
 
@@ -434,7 +434,7 @@ int32_t ctdb_control_traverse_start(struct ctdb_context *ctdb, TDB_DATA data,
 	struct ctdb_db_context *ctdb_db;
 
 	if (data.dsize != sizeof(*d)) {
-		DEBUG(0,("Bad record size in ctdb_control_traverse_start\n"));
+		DEBUG(DEBUG_ERR,("Bad record size in ctdb_control_traverse_start\n"));
 		return -1;
 	}
 

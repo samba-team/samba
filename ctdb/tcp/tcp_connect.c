@@ -217,7 +217,7 @@ static void ctdb_listen_event(struct event_context *ev, struct fd_event *fde,
 	nodeid = ctdb_ip_to_nodeid(ctdb, incoming_node);
 
 	if (nodeid == -1) {
-		DEBUG(0, ("Refused connection from unknown node %s\n", incoming_node));
+		DEBUG(DEBUG_WARNING, ("Refused connection from unknown node %s\n", incoming_node));
 		close(fd);
 		return;
 	}
@@ -254,7 +254,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	   binds if the first socket is in LISTEN state  */
 	lock_fd = open(lock_path, O_RDWR|O_CREAT, 0666);
 	if (lock_fd == -1) {
-		DEBUG(0,("Unable to open %s\n", lock_path));
+		DEBUG(DEBUG_CRIT,("Unable to open %s\n", lock_path));
 		return -1;
 	}
 
@@ -265,7 +265,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	lock.l_pid = 0;
 
 	if (fcntl(lock_fd, F_SETLKW, &lock) != 0) {
-		DEBUG(0,("Unable to lock %s\n", lock_path));
+		DEBUG(DEBUG_CRIT,("Unable to lock %s\n", lock_path));
 		close(lock_fd);
 		return -1;
 	}
@@ -299,7 +299,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 	}
 	
 	if (i == ctdb->num_nodes) {
-		DEBUG(0,("Unable to bind to any of the node addresses - giving up\n"));
+		DEBUG(DEBUG_CRIT,("Unable to bind to any of the node addresses - giving up\n"));
 		goto failed;
 	}
 	ctdb->address = ctdb->nodes[i]->address;

@@ -39,12 +39,12 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	struct ctdb_node_flag_change *c = (struct ctdb_node_flag_change *)data.dptr;
 
 	if (data.dsize != sizeof(*c) || !ctdb_validate_pnn(ctdb, c->pnn)) {
-		DEBUG(0,(__location__ "Invalid data in ctdb_node_flag_change\n"));
+		DEBUG(DEBUG_CRIT,(__location__ "Invalid data in ctdb_node_flag_change\n"));
 		return;
 	}
 
 	if (!ctdb_validate_pnn(ctdb, c->pnn)) {
-		DEBUG(0,("Bad pnn %u in flag_change_handler\n", c->pnn));
+		DEBUG(DEBUG_CRIT,("Bad pnn %u in flag_change_handler\n", c->pnn));
 		return;
 	}
 
@@ -63,7 +63,7 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 
 static void print_exit_message(void)
 {
-	DEBUG(0,("CTDB daemon shutting down\n"));
+	DEBUG(DEBUG_NOTICE,("CTDB daemon shutting down\n"));
 }
 
 
@@ -72,13 +72,13 @@ static void ctdb_start_transport(struct ctdb_context *ctdb)
 {
 	/* start the transport running */
 	if (ctdb->methods->start(ctdb) != 0) {
-		DEBUG(0,("transport failed to start!\n"));
+		DEBUG(DEBUG_ALERT,("transport failed to start!\n"));
 		ctdb_fatal(ctdb, "transport failed to start");
 	}
 
 	/* start the recovery daemon process */
 	if (ctdb_start_recoverd(ctdb) != 0) {
-		DEBUG(0,("Failed to start recovery daemon\n"));
+		DEBUG(DEBUG_ALERT,("Failed to start recovery daemon\n"));
 		exit(11);
 	}
 
@@ -159,12 +159,12 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
 	int res;
 	if (client == NULL) {
-		DEBUG(0,("Bad client_id in daemon_request_register_message_handler\n"));
+		DEBUG(DEBUG_ERR,("Bad client_id in daemon_request_register_message_handler\n"));
 		return -1;
 	}
 	res = ctdb_register_message_handler(ctdb, client, srvid, daemon_message_handler, client);
 	if (res != 0) {
-		DEBUG(0,(__location__ " Failed to register handler %llu in daemon\n", 
+		DEBUG(DEBUG_ERR,(__location__ " Failed to register handler %llu in daemon\n", 
 			 (unsigned long long)srvid));
 	} else {
 		DEBUG(DEBUG_INFO,(__location__ " Registered message handler for srvid=%llu\n", 
@@ -189,7 +189,7 @@ int daemon_deregister_message_handler(struct ctdb_context *ctdb, uint32_t client
 {
 	struct ctdb_client *client = ctdb_reqid_find(ctdb, client_id, struct ctdb_client);
 	if (client == NULL) {
-		DEBUG(0,("Bad client_id in daemon_request_deregister_message_handler\n"));
+		DEBUG(DEBUG_ERR,("Bad client_id in daemon_request_deregister_message_handler\n"));
 		return -1;
 	}
 	return ctdb_deregister_message_handler(ctdb, srvid, client);
@@ -230,7 +230,7 @@ static void daemon_request_message_from_client(struct ctdb_client *client,
 	res = ctdb_daemon_send_message(client->ctdb, c->hdr.destnode,
 				       c->srvid, data);
 	if (res != 0) {
-		DEBUG(0,(__location__ " Failed to send message to remote node %u\n",
+		DEBUG(DEBUG_ERR,(__location__ " Failed to send message to remote node %u\n",
 			 c->hdr.destnode));
 	}
 }
@@ -260,7 +260,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 
 	res = ctdb_daemon_call_recv(state, dstate->call);
 	if (res != 0) {
-		DEBUG(0, (__location__ " ctdbd_call_recv() returned error\n"));
+		DEBUG(DEBUG_ERR, (__location__ " ctdbd_call_recv() returned error\n"));
 		client->ctdb->statistics.pending_calls--;
 		ctdb_latency(&client->ctdb->statistics.max_call_latency, dstate->start_time);
 		return;
@@ -270,7 +270,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 	r = ctdbd_allocate_pkt(client->ctdb, dstate, CTDB_REPLY_CALL, 
 			       length, struct ctdb_reply_call);
 	if (r == NULL) {
-		DEBUG(0, (__location__ " Failed to allocate reply_call in ctdb daemon\n"));
+		DEBUG(DEBUG_ERR, (__location__ " Failed to allocate reply_call in ctdb daemon\n"));
 		client->ctdb->statistics.pending_calls--;
 		ctdb_latency(&client->ctdb->statistics.max_call_latency, dstate->start_time);
 		return;
@@ -281,7 +281,7 @@ static void daemon_call_from_client_callback(struct ctdb_call_state *state)
 
 	res = daemon_queue_send(client, &r->hdr);
 	if (res != 0) {
-		DEBUG(0, (__location__ " Failed to queue packet from daemon to client\n"));
+		DEBUG(DEBUG_ERR, (__location__ " Failed to queue packet from daemon to client\n"));
 	}
 	ctdb_latency(&client->ctdb->statistics.max_call_latency, dstate->start_time);
 	talloc_free(dstate);
@@ -302,13 +302,13 @@ static void daemon_incoming_packet_wrap(void *p, struct ctdb_req_header *hdr)
 	struct ctdb_daemon_packet_wrap *w = talloc_get_type(p, 
 							    struct ctdb_daemon_packet_wrap);
 	if (w == NULL) {
-		DEBUG(0,(__location__ " Bad packet type '%s'\n", talloc_get_name(p)));
+		DEBUG(DEBUG_CRIT,(__location__ " Bad packet type '%s'\n", talloc_get_name(p)));
 		return;
 	}
 
 	client = ctdb_reqid_find(w->ctdb, w->client_id, struct ctdb_client);
 	if (client == NULL) {
-		DEBUG(0,(__location__ " Packet for disconnected client %u\n",
+		DEBUG(DEBUG_ERR,(__location__ " Packet for disconnected client %u\n",
 			 w->client_id));
 		talloc_free(w);
 		return;
@@ -342,7 +342,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 
 	ctdb_db = find_ctdb_db(client->ctdb, c->db_id);
 	if (!ctdb_db) {
-		DEBUG(0, (__location__ " Unknown database in request. db_id==0x%08x",
+		DEBUG(DEBUG_ERR, (__location__ " Unknown database in request. db_id==0x%08x",
 			  c->db_id));
 		ctdb->statistics.pending_calls--;
 		return;
@@ -369,7 +369,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	talloc_free(w);
 
 	if (ret != 0) {
-		DEBUG(0,(__location__ " Unable to fetch record\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Unable to fetch record\n"));
 		ctdb->statistics.pending_calls--;
 		return;
 	}
@@ -377,7 +377,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	dstate = talloc(client, struct daemon_call_state);
 	if (dstate == NULL) {
 		ctdb_ltdb_unlock(ctdb_db, key);
-		DEBUG(0,(__location__ " Unable to allocate dstate\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate dstate\n"));
 		ctdb->statistics.pending_calls--;
 		return;
 	}
@@ -389,7 +389,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	call = dstate->call = talloc_zero(dstate, struct ctdb_call);
 	if (call == NULL) {
 		ctdb_ltdb_unlock(ctdb_db, key);
-		DEBUG(0,(__location__ " Unable to allocate call\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Unable to allocate call\n"));
 		ctdb->statistics.pending_calls--;
 		ctdb_latency(&ctdb->statistics.max_call_latency, dstate->start_time);
 		return;
@@ -410,7 +410,7 @@ static void daemon_request_call_from_client(struct ctdb_client *client,
 	ctdb_ltdb_unlock(ctdb_db, key);
 
 	if (state == NULL) {
-		DEBUG(0,(__location__ " Unable to setup call send\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Unable to setup call send\n"));
 		ctdb->statistics.pending_calls--;
 		ctdb_latency(&ctdb->statistics.max_call_latency, dstate->start_time);
 		return;
@@ -467,7 +467,7 @@ static void daemon_incoming_packet(void *p, struct ctdb_req_header *hdr)
 		break;
 
 	default:
-		DEBUG(0,(__location__ " daemon: unrecognized operation %u\n",
+		DEBUG(DEBUG_CRIT,(__location__ " daemon: unrecognized operation %u\n",
 			 hdr->operation));
 	}
 
@@ -573,7 +573,7 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	/* AIX doesn't like this :( */
 	if (fchown(ctdb->daemon.sd, geteuid(), getegid()) != 0 ||
 	    fchmod(ctdb->daemon.sd, 0700) != 0) {
-		DEBUG(0,("Unable to secure ctdb socket '%s', ctdb->daemon.name\n"));
+		DEBUG(DEBUG_CRIT,("Unable to secure ctdb socket '%s', ctdb->daemon.name\n"));
 		goto failed;
 	}
 #endif
@@ -585,11 +585,11 @@ static int ux_socket_bind(struct ctdb_context *ctdb)
 	strncpy(addr.sun_path, ctdb->daemon.name, sizeof(addr.sun_path));
 
 	if (bind(ctdb->daemon.sd, (struct sockaddr *)&addr, sizeof(addr)) == -1) {
-		DEBUG(0,("Unable to bind on ctdb socket '%s'\n", ctdb->daemon.name));
+		DEBUG(DEBUG_CRIT,("Unable to bind on ctdb socket '%s'\n", ctdb->daemon.name));
 		goto failed;
 	}	
 	if (listen(ctdb->daemon.sd, 10) != 0) {
-		DEBUG(0,("Unable to listen on ctdb socket '%s'\n", ctdb->daemon.name));
+		DEBUG(DEBUG_CRIT,("Unable to listen on ctdb socket '%s'\n", ctdb->daemon.name));
 		goto failed;
 	}
 
@@ -625,7 +625,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	/* create a unix domain stream socket to listen to */
 	res = ux_socket_bind(ctdb);
 	if (res!=0) {
-		DEBUG(0,(__location__ " Failed to open CTDB unix domain socket\n"));
+		DEBUG(DEBUG_ALERT,(__location__ " Failed to open CTDB unix domain socket\n"));
 		exit(10);
 	}
 
@@ -639,7 +639,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 		setsid();
 		close(0);
 		if (open("/dev/null", O_RDONLY) != 0) {
-			DEBUG(0,(__location__ " Failed to setup stdin on /dev/null\n"));
+			DEBUG(DEBUG_ALERT,(__location__ " Failed to setup stdin on /dev/null\n"));
 			exit(11);
 		}
 	}
@@ -672,13 +672,12 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	}
 #endif
 	if (ret != 0) {
-		DEBUG(0,("Failed to initialise transport '%s'\n", ctdb->transport));
+		DEBUG(DEBUG_ERR,("Failed to initialise transport '%s'\n", ctdb->transport));
 		return -1;
 	}
 
 	/* initialise the transport  */
 	if (ctdb->methods->initialise(ctdb) != 0) {
-		DEBUG(0,("transport failed to initialise!\n"));
 		ctdb_fatal(ctdb, "transport failed to initialise");
 	}
 
@@ -712,7 +711,7 @@ int ctdb_start_daemon(struct ctdb_context *ctdb, bool do_fork)
 	/* go into a wait loop to allow other nodes to complete */
 	event_loop_wait(ctdb->ev);
 
-	DEBUG(0,("event_loop_wait() returned. this should not happen\n"));
+	DEBUG(DEBUG_CRIT,("event_loop_wait() returned. this should not happen\n"));
 	exit(1);
 }
 
@@ -733,7 +732,7 @@ struct ctdb_req_header *_ctdb_transport_allocate(struct ctdb_context *ctdb,
 
 	hdr = (struct ctdb_req_header *)ctdb->methods->allocate_pkt(mem_ctx, size);
 	if (hdr == NULL) {
-		DEBUG(0,("Unable to allocate transport packet for operation %u of length %u\n",
+		DEBUG(DEBUG_ERR,("Unable to allocate transport packet for operation %u of length %u\n",
 			 operation, (unsigned)length));
 		return NULL;
 	}
@@ -862,7 +861,7 @@ static void daemon_request_control_from_client(struct ctdb_client *client,
 				       data, daemon_control_callback,
 				       state);
 	if (res != 0) {
-		DEBUG(0,(__location__ " Failed to send control to remote node %u\n",
+		DEBUG(DEBUG_ERR,(__location__ " Failed to send control to remote node %u\n",
 			 c->hdr.destnode));
 	}
 
@@ -913,7 +912,7 @@ static void ctdb_local_message_trigger(struct event_context *ev, struct timed_ev
 
 	res = ctdb_dispatch_message(m->ctdb, m->srvid, m->data);
 	if (res != 0) {
-		DEBUG(0, (__location__ " Failed to dispatch message for srvid=%llu\n", 
+		DEBUG(DEBUG_ERR, (__location__ " Failed to dispatch message for srvid=%llu\n", 
 			  (unsigned long long)m->srvid));
 	}
 	talloc_free(m);

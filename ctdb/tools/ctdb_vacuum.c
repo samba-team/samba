@@ -192,7 +192,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	/* add the record to the blob ready to send to the nodes */
 	rec = ctdb_marshall_record(vdata->list[lmaster], vdata->ctdb->pnn, key, NULL, tdb_null);
 	if (rec == NULL) {
-		DEBUG(0,(__location__ " Out of memory\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		vdata->traverse_error = true;
 		return -1;
 	}
@@ -200,7 +200,7 @@ static int vacuum_traverse(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	vdata->list[lmaster] = talloc_realloc_size(NULL, vdata->list[lmaster], 
 						   old_size + rec->length);
 	if (vdata->list[lmaster] == NULL) {
-		DEBUG(0,(__location__ " Failed to expand\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to expand\n"));
 		vdata->traverse_error = true;
 		return -1;
 	}
@@ -231,7 +231,7 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 
 	vdata = talloc_zero(ctdb, struct vacuum_data);
 	if (vdata == NULL) {
-		DEBUG(0,(__location__ " Out of memory\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		return -1;
 	}
 
@@ -239,14 +239,14 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 	vdata->vacuum_limit = vacuum_limit;
 
 	if (ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, db_id, vdata, &name) != 0) {
-		DEBUG(0,(__location__ " Failed to get name of db 0x%x\n", db_id));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get name of db 0x%x\n", db_id));
 		talloc_free(vdata);
 		return -1;
 	}
 
 	ctdb_db = ctdb_attach(ctdb, name, persistent);
 	if (ctdb_db == NULL) {
-		DEBUG(0,(__location__ " Failed to attach to database '%s'\n", name));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to attach to database '%s'\n", name));
 		talloc_free(vdata);
 		return -1;
 	}
@@ -254,7 +254,7 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 	/* the list needs to be of length num_nodes */
 	vdata->list = talloc_array(vdata, struct ctdb_control_pulldb_reply *, ctdb->vnn_map->size);
 	if (vdata->list == NULL) {
-		DEBUG(0,(__location__ " Out of memory\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 		talloc_free(vdata);
 		return -1;
 	}
@@ -263,7 +263,7 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 			talloc_zero_size(vdata->list, 
 				    offsetof(struct ctdb_control_pulldb_reply, data));
 		if (vdata->list[i] == NULL) {
-			DEBUG(0,(__location__ " Out of memory\n"));
+			DEBUG(DEBUG_ERR,(__location__ " Out of memory\n"));
 			talloc_free(vdata);
 			return -1;
 		}
@@ -273,7 +273,7 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 	/* traverse, looking for records that might be able to be vacuumed */
 	if (tdb_traverse_read(ctdb_db->ltdb->tdb, vacuum_traverse, vdata) == -1 ||
 	    vdata->traverse_error) {
-		DEBUG(0,(__location__ " Traverse error in vacuuming '%s'\n", name));
+		DEBUG(DEBUG_ERR,(__location__ " Traverse error in vacuuming '%s'\n", name));
 		talloc_free(vdata);
 		return -1;		
 	}
@@ -292,7 +292,7 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 			data.dsize = talloc_get_size(vdata->list[i]);
 			data.dptr  = (void *)vdata->list[i];
 			if (ctdb_send_message(ctdb, ctdb->vnn_map->map[i], CTDB_SRVID_VACUUM_FETCH, data) != 0) {
-				DEBUG(0,(__location__ " Failed to send vacuum fetch message to %u\n",
+				DEBUG(DEBUG_ERR,(__location__ " Failed to send vacuum fetch message to %u\n",
 					 ctdb->vnn_map->map[i]));
 				talloc_free(vdata);
 				return -1;		
@@ -310,7 +310,7 @@ static int ctdb_vacuum_db(struct ctdb_context *ctdb, uint32_t db_id, struct ctdb
 
 		/* for records where we are the lmaster, we can try to delete them */
 		if (ctdb_vacuum_local(ctdb, vdata->list[i], ctdb_db, &count) != 0) {
-			DEBUG(0,(__location__ " Deletion error in vacuuming '%s'\n", name));
+			DEBUG(DEBUG_ERR,(__location__ " Deletion error in vacuuming '%s'\n", name));
 			talloc_free(vdata);
 			return -1;					
 		}
@@ -344,25 +344,25 @@ int ctdb_vacuum(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &dbmap);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get dbids from local node\n"));
+		DEBUG(DEBUG_ERR, ("Unable to get dbids from local node\n"));
 		return ret;
 	}
 
 	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get nodemap from local node\n"));
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
 		return ret;
 	}
 
 	ret = ctdb_ctrl_getvnnmap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &ctdb->vnn_map);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get vnnmap from local node\n"));
+		DEBUG(DEBUG_ERR, ("Unable to get vnnmap from local node\n"));
 		return ret;
 	}
 
 	pnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
 	if (pnn == -1) {
-		DEBUG(0, ("Unable to get pnn from local node\n"));
+		DEBUG(DEBUG_ERR, ("Unable to get pnn from local node\n"));
 		return -1;
 	}
 	ctdb->pnn = pnn;
@@ -370,7 +370,7 @@ int ctdb_vacuum(struct ctdb_context *ctdb, int argc, const char **argv)
 	for (i=0;i<dbmap->num;i++) {
 		if (ctdb_vacuum_db(ctdb, dbmap->dbs[i].dbid, nodemap, 
 				   dbmap->dbs[i].persistent, vacuum_limit) != 0) {
-			DEBUG(0,("Failed to vacuum db 0x%x\n", dbmap->dbs[i].dbid));
+			DEBUG(DEBUG_ERR,("Failed to vacuum db 0x%x\n", dbmap->dbs[i].dbid));
 			return -1;
 		}
 	}
@@ -405,13 +405,13 @@ static int ctdb_repack_tdb(struct tdb_context *tdb)
 	struct traverse_state state;
 
 	if (tdb_transaction_start(tdb) != 0) {
-		DEBUG(0,(__location__ " Failed to start transaction\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to start transaction\n"));
 		return -1;
 	}
 
 	tmp_db = tdb_open("tmpdb", tdb_hash_size(tdb), TDB_INTERNAL, O_RDWR|O_CREAT, 0);
 	if (tmp_db == NULL) {
-		DEBUG(0,(__location__ " Failed to create tmp_db\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to create tmp_db\n"));
 		tdb_transaction_cancel(tdb);
 		return -1;
 	}
@@ -420,21 +420,21 @@ static int ctdb_repack_tdb(struct tdb_context *tdb)
 	state.dest_db = tmp_db;
 
 	if (tdb_traverse_read(tdb, repack_traverse, &state) == -1) {
-		DEBUG(0,(__location__ " Failed to traverse copying out\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to traverse copying out\n"));
 		tdb_transaction_cancel(tdb);
 		tdb_close(tmp_db);
 		return -1;		
 	}
 
 	if (state.error) {
-		DEBUG(0,(__location__ " Error during traversal\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Error during traversal\n"));
 		tdb_transaction_cancel(tdb);
 		tdb_close(tmp_db);
 		return -1;
 	}
 
 	if (tdb_wipe_all(tdb) != 0) {
-		DEBUG(0,(__location__ " Failed to wipe database\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to wipe database\n"));
 		tdb_transaction_cancel(tdb);
 		tdb_close(tmp_db);
 		return -1;
@@ -444,14 +444,14 @@ static int ctdb_repack_tdb(struct tdb_context *tdb)
 	state.dest_db = tdb;
 
 	if (tdb_traverse_read(tmp_db, repack_traverse, &state) == -1) {
-		DEBUG(0,(__location__ " Failed to traverse copying back\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to traverse copying back\n"));
 		tdb_transaction_cancel(tdb);
 		tdb_close(tmp_db);
 		return -1;		
 	}
 
 	if (state.error) {
-		DEBUG(0,(__location__ " Error during second traversal\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Error during second traversal\n"));
 		tdb_transaction_cancel(tdb);
 		tdb_close(tmp_db);
 		return -1;
@@ -460,7 +460,7 @@ static int ctdb_repack_tdb(struct tdb_context *tdb)
 	tdb_close(tmp_db);
 
 	if (tdb_transaction_commit(tdb) != 0) {
-		DEBUG(0,(__location__ " Failed to commit\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to commit\n"));
 		return -1;
 	}
 
@@ -477,19 +477,19 @@ static int ctdb_repack_db(struct ctdb_context *ctdb, uint32_t db_id,
 	int size;
 
 	if (ctdb_ctrl_getdbname(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, db_id, ctdb, &name) != 0) {
-		DEBUG(0,(__location__ " Failed to get name of db 0x%x\n", db_id));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get name of db 0x%x\n", db_id));
 		return -1;
 	}
 
 	ctdb_db = ctdb_attach(ctdb, name, persistent);
 	if (ctdb_db == NULL) {
-		DEBUG(0,(__location__ " Failed to attach to database '%s'\n", name));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to attach to database '%s'\n", name));
 		return -1;
 	}
 
 	size = tdb_freelist_size(ctdb_db->ltdb->tdb);
 	if (size == -1) {
-		DEBUG(0,(__location__ " Failed to get freelist size for '%s'\n", name));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get freelist size for '%s'\n", name));
 		return -1;
 	}
 
@@ -500,7 +500,7 @@ static int ctdb_repack_db(struct ctdb_context *ctdb, uint32_t db_id,
 	printf("Repacking %s with %u freelist entries\n", name, size);
 
 	if (ctdb_repack_tdb(ctdb_db->ltdb->tdb) != 0) {
-		DEBUG(0,(__location__ " Failed to repack '%s'\n", name));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to repack '%s'\n", name));
 		return -1;
 	}
 
@@ -524,14 +524,14 @@ int ctdb_repack(struct ctdb_context *ctdb, int argc, const char **argv)
 
 	ret = ctdb_ctrl_getdbmap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &dbmap);
 	if (ret != 0) {
-		DEBUG(0, ("Unable to get dbids from local node\n"));
+		DEBUG(DEBUG_ERR, ("Unable to get dbids from local node\n"));
 		return ret;
 	}
 
 	for (i=0;i<dbmap->num;i++) {
 		if (ctdb_repack_db(ctdb, dbmap->dbs[i].dbid, 
 				   dbmap->dbs[i].persistent, repack_limit) != 0) {
-			DEBUG(0,("Failed to repack db 0x%x\n", dbmap->dbs[i].dbid));
+			DEBUG(DEBUG_ERR,("Failed to repack db 0x%x\n", dbmap->dbs[i].dbid));
 			return -1;
 		}
 	}
