@@ -4101,11 +4101,14 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 }
 
 /*********************************************************************
- _samr_del_groupmem
+ _samr_DeleteGroupMember
 *********************************************************************/
 
-NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DEL_GROUPMEM *r_u)
+NTSTATUS _samr_DeleteGroupMember(pipes_struct *p,
+				 struct samr_DeleteGroupMember *r)
+
 {
+	NTSTATUS status;
 	DOM_SID group_sid;
 	uint32 group_rid;
 	uint32 acc_granted;
@@ -4114,17 +4117,18 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	DISP_INFO *disp_info = NULL;
 
 	/*
-	 * delete the group member named q_u->rid
+	 * delete the group member named r->in.rid
 	 * who is a member of the sid associated with the handle
 	 * the rid is a user's rid as the group is a domain group.
 	 */
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted, &disp_info)) 
+	if (!get_lsa_policy_samr_sid(p, r->in.group_handle, &group_sid, &acc_granted, &disp_info)) 
 		return NT_STATUS_INVALID_HANDLE;
 	
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_REMOVE_MEMBER, "_samr_del_groupmem"))) {
-		return r_u->status;
+	status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_REMOVE_MEMBER, "_samr_DeleteGroupMember");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (!sid_peek_check_rid(get_global_sam_sid(), &group_sid,
@@ -4140,7 +4144,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	if ( can_add_accounts )
 		become_root();
 		
-	r_u->status = pdb_del_groupmem(p->mem_ctx, group_rid, q_u->rid);
+	status = pdb_del_groupmem(p->mem_ctx, group_rid, r->in.rid);
 
 	if ( can_add_accounts )
 		unbecome_root();
@@ -4149,7 +4153,7 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 	
 	force_flush_samr_cache(disp_info);
 
-	return r_u->status;
+	return status;
 }
 
 /*********************************************************************
@@ -5202,16 +5206,6 @@ NTSTATUS _samr_SetGroupInfo(pipes_struct *p,
 
 NTSTATUS _samr_AddGroupMember(pipes_struct *p,
 			      struct samr_AddGroupMember *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_DeleteGroupMember(pipes_struct *p,
-				 struct samr_DeleteGroupMember *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
