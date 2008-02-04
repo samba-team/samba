@@ -2208,7 +2208,10 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 
-	result = rpccli_samr_add_groupmem(pipe_hnd, mem_ctx, &group_pol, rids[0]);
+	result = rpccli_samr_AddGroupMember(pipe_hnd, mem_ctx,
+					    &group_pol,
+					    rids[0],
+					    0x0005); /* unknown flags */
 
  done:
 	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
