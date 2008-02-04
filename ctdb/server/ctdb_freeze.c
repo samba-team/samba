@@ -84,18 +84,18 @@ static void ctdb_freeze_lock_handler(struct event_context *ev, struct fd_event *
 	struct ctdb_freeze_waiter *w;
 
 	if (h->ctdb->freeze_mode == CTDB_FREEZE_FROZEN) {
-		DEBUG(0,("freeze child died - unfreezing\n"));
+		DEBUG(DEBUG_INFO,("freeze child died - unfreezing\n"));
 		talloc_free(h);
 		return;
 	}
 
 	if (read(h->fd, &status, sizeof(status)) != sizeof(status)) {
-		DEBUG(0,("read error from freeze lock child\n"));
+		DEBUG(DEBUG_ERR,("read error from freeze lock child\n"));
 		status = -1;
 	}
 
 	if (status == -1) {
-		DEBUG(0,("Failed to get locks in ctdb_freeze_child\n"));
+		DEBUG(DEBUG_ERR,("Failed to get locks in ctdb_freeze_child\n"));
 		/* we didn't get the locks - destroy the handle */
 		talloc_free(h);
 		return;
@@ -128,14 +128,14 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb)
 
 	/* use socketpair() instead of pipe() so we have bi-directional fds */
 	if (socketpair(AF_UNIX, SOCK_STREAM, 0, fd) != 0) {
-		DEBUG(0,("Failed to create pipe for ctdb_freeze_lock\n"));
+		DEBUG(DEBUG_ERR,("Failed to create pipe for ctdb_freeze_lock\n"));
 		talloc_free(h);
 		return NULL;
 	}
 	
 	h->child = fork();
 	if (h->child == -1) {
-		DEBUG(0,("Failed to fork child for ctdb_freeze_lock\n"));
+		DEBUG(DEBUG_ERR,("Failed to fork child for ctdb_freeze_lock\n"));
 		talloc_free(h);
 		return NULL;
 	}
@@ -163,7 +163,7 @@ static struct ctdb_freeze_handle *ctdb_freeze_lock(struct ctdb_context *ctdb)
 	fde = event_add_fd(ctdb->ev, h, h->fd, EVENT_FD_READ|EVENT_FD_AUTOCLOSE, 
 			   ctdb_freeze_lock_handler, h);
 	if (fde == NULL) {
-		DEBUG(0,("Failed to setup fd event for ctdb_freeze_lock\n"));
+		DEBUG(DEBUG_ERR,("Failed to setup fd event for ctdb_freeze_lock\n"));
 		close(fd[0]);
 		talloc_free(h);
 		return NULL;
@@ -258,7 +258,7 @@ int32_t ctdb_control_thaw(struct ctdb_context *ctdb)
 		for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
 			tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 			if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
-				DEBUG(0,(__location__ " Failed to cancel transaction for db '%s'\n",
+				DEBUG(DEBUG_ERR,(__location__ " Failed to cancel transaction for db '%s'\n",
 					 ctdb_db->db_name));
 			}
 			tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
@@ -291,7 +291,7 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 	struct ctdb_db_context *ctdb_db;
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,(__location__ " Failed transaction_start while not frozen\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed transaction_start while not frozen\n"));
 		return -1;
 	}
 
@@ -303,7 +303,7 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 
 		if (ctdb->freeze_handle->transaction_started) {
 			if (tdb_transaction_cancel(ctdb_db->ltdb->tdb) != 0) {
-				DEBUG(0,(__location__ " Failed to cancel transaction for db '%s'\n",
+				DEBUG(DEBUG_ERR,(__location__ " Failed to cancel transaction for db '%s'\n",
 					 ctdb_db->db_name));
 				/* not a fatal error */
 			}
@@ -314,7 +314,7 @@ int32_t ctdb_control_transaction_start(struct ctdb_context *ctdb, uint32_t id)
 		tdb_remove_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 
 		if (ret != 0) {
-			DEBUG(0,(__location__ " Failed to start transaction for db '%s'\n",
+			DEBUG(DEBUG_ERR,(__location__ " Failed to start transaction for db '%s'\n",
 				 ctdb_db->db_name));
 			return -1;
 		}
@@ -334,24 +334,24 @@ int32_t ctdb_control_transaction_commit(struct ctdb_context *ctdb, uint32_t id)
 	struct ctdb_db_context *ctdb_db;
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,(__location__ " Failed transaction_start while not frozen\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed transaction_start while not frozen\n"));
 		return -1;
 	}
 
 	if (!ctdb->freeze_handle->transaction_started) {
-		DEBUG(0,(__location__ " transaction not started\n"));
+		DEBUG(DEBUG_ERR,(__location__ " transaction not started\n"));
 		return -1;
 	}
 
 	if (id != ctdb->freeze_handle->transaction_id) {
-		DEBUG(0,(__location__ " incorrect transaction id 0x%x in commit\n", id));
+		DEBUG(DEBUG_ERR,(__location__ " incorrect transaction id 0x%x in commit\n", id));
 		return -1;
 	}
 
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
 		tdb_add_flags(ctdb_db->ltdb->tdb, TDB_NOLOCK);
 		if (tdb_transaction_commit(ctdb_db->ltdb->tdb) != 0) {
-			DEBUG(0,(__location__ " Failed to commit transaction for db '%s'\n",
+			DEBUG(DEBUG_ERR,(__location__ " Failed to commit transaction for db '%s'\n",
 				 ctdb_db->db_name));
 			/* this has to be fatal to maintain integrity - it should only
 			   happen if we run out of disk space */
@@ -376,28 +376,28 @@ int32_t ctdb_control_wipe_database(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct ctdb_db_context *ctdb_db;
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,(__location__ " Failed transaction_start while not frozen\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed transaction_start while not frozen\n"));
 		return -1;
 	}
 
 	if (!ctdb->freeze_handle->transaction_started) {
-		DEBUG(0,(__location__ " transaction not started\n"));
+		DEBUG(DEBUG_ERR,(__location__ " transaction not started\n"));
 		return -1;
 	}
 
 	if (w.transaction_id != ctdb->freeze_handle->transaction_id) {
-		DEBUG(0,(__location__ " incorrect transaction id 0x%x in commit\n", w.transaction_id));
+		DEBUG(DEBUG_ERR,(__location__ " incorrect transaction id 0x%x in commit\n", w.transaction_id));
 		return -1;
 	}
 
 	ctdb_db = find_ctdb_db(ctdb, w.db_id);
 	if (!ctdb_db) {
-		DEBUG(0,(__location__ " Unknown db 0x%x\n", w.db_id));
+		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%x\n", w.db_id));
 		return -1;
 	}
 
 	if (tdb_wipe_all(ctdb_db->ltdb->tdb) != 0) {
-		DEBUG(0,(__location__ " Failed to wipe database for db '%s'\n",
+		DEBUG(DEBUG_ERR,(__location__ " Failed to wipe database for db '%s'\n",
 			 ctdb_db->db_name));
 		return -1;
 	}

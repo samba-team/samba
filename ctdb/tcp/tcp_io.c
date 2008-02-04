@@ -41,31 +41,31 @@ void ctdb_tcp_read_cb(uint8_t *data, size_t cnt, void *args)
 	}
 
 	if (cnt < sizeof(*hdr)) {
-		DEBUG(0,(__location__ " Bad packet length %u\n", (unsigned)cnt));
+		DEBUG(DEBUG_ALERT,(__location__ " Bad packet length %u\n", (unsigned)cnt));
 		goto failed;
 	}
 
 	if (cnt & (CTDB_TCP_ALIGNMENT-1)) {
-		DEBUG(0,(__location__ " Length 0x%x not multiple of alignment\n", 
+		DEBUG(DEBUG_ALERT,(__location__ " Length 0x%x not multiple of alignment\n", 
 			 (unsigned)cnt));
 		goto failed;
 	}
 
 
 	if (cnt != hdr->length) {
-		DEBUG(0,(__location__ " Bad header length %u expected %u\n", 
+		DEBUG(DEBUG_ALERT,(__location__ " Bad header length %u expected %u\n", 
 			 (unsigned)hdr->length, (unsigned)cnt));
 		goto failed;
 	}
 
 	if (hdr->ctdb_magic != CTDB_MAGIC) {
-		DEBUG(0,(__location__ " Non CTDB packet 0x%x rejected\n", 
+		DEBUG(DEBUG_ALERT,(__location__ " Non CTDB packet 0x%x rejected\n", 
 			 hdr->ctdb_magic));
 		goto failed;
 	}
 
 	if (hdr->ctdb_version != CTDB_VERSION) {
-		DEBUG(0, (__location__ " Bad CTDB version 0x%x rejected\n", 
+		DEBUG(DEBUG_ALERT, (__location__ " Bad CTDB version 0x%x rejected\n", 
 			  hdr->ctdb_version));
 		goto failed;
 	}

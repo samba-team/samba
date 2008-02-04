@@ -47,7 +47,7 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 	c.old_flags = node->flags;
 
 	if (status != 0 && !(node->flags & NODE_FLAGS_UNHEALTHY)) {
-		DEBUG(0,("monitor event failed - disabling node\n"));
+		DEBUG(DEBUG_NOTICE,("monitor event failed - disabling node\n"));
 		node->flags |= NODE_FLAGS_UNHEALTHY;
 		ctdb->monitor->next_interval = 1;
 	} else if (status == 0 && (node->flags & NODE_FLAGS_UNHEALTHY)) {
@@ -89,9 +89,9 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 static void ctdb_startup_callback(struct ctdb_context *ctdb, int status, void *p)
 {
 	if (status != 0) {
-		DEBUG(0,("startup event failed\n"));
+		DEBUG(DEBUG_ERR,("startup event failed\n"));
 	} else if (status == 0) {
-		DEBUG(0,("startup event OK - enabling monitoring\n"));
+		DEBUG(DEBUG_NOTICE,("startup event OK - enabling monitoring\n"));
 		ctdb->done_startup = true;
 		ctdb->monitor->next_interval = 1;
 	}
@@ -132,7 +132,7 @@ static void ctdb_check_health(struct event_context *ev, struct timed_event *te,
 	}
 
 	if (ret != 0) {
-		DEBUG(0,("Unable to launch monitor event script\n"));
+		DEBUG(DEBUG_ERR,("Unable to launch monitor event script\n"));
 		ctdb->monitor->next_interval = 1;
 		event_add_timed(ctdb->ev, ctdb->monitor->monitor_context, 
 				timeval_current_ofs(1, 0), 
@@ -170,7 +170,7 @@ void ctdb_stop_monitoring(struct ctdb_context *ctdb)
 
 	ctdb->monitor->monitoring_mode  = CTDB_MONITORING_DISABLED;
 	ctdb->monitor->next_interval = 1;
-	DEBUG(0,("Monitoring has been stopped\n"));
+	DEBUG(DEBUG_NOTICE,("Monitoring has been stopped\n"));
 }
 
 /*
@@ -198,7 +198,7 @@ void ctdb_start_monitoring(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY_FATAL(ctdb, te);
 
 	ctdb->monitor->monitoring_mode  = CTDB_MONITORING_ACTIVE;
-	DEBUG(0,("Monitoring has been started\n"));
+	DEBUG(DEBUG_NOTICE,("Monitoring has been started\n"));
 }
 
 
@@ -221,7 +221,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 		return 0;
 	}
 
-	DEBUG(0, ("Control modflags on node %u - flags now 0x%x\n", ctdb->pnn, node->flags));
+	DEBUG(DEBUG_INFO, ("Control modflags on node %u - flags now 0x%x\n", ctdb->pnn, node->flags));
 
 	/* if we have been banned, go into recovery mode */
 	c.pnn = ctdb->pnn;
@@ -237,7 +237,7 @@ int32_t ctdb_control_modflags(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	if ((node->flags & NODE_FLAGS_BANNED) && !(old_flags & NODE_FLAGS_BANNED)) {
 		/* make sure we are frozen */
-		DEBUG(0,("This node has been banned - forcing freeze and recovery\n"));
+		DEBUG(DEBUG_NOTICE,("This node has been banned - forcing freeze and recovery\n"));
 		/* Reset the generation id to 1 to make us ignore any
 		   REQ/REPLY CALL/DMASTER someone sends to us.
 		   We are now banned so we shouldnt service database calls

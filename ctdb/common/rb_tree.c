@@ -21,7 +21,7 @@
 #include "rb_tree.h"
 
 #define NO_MEMORY_FATAL(p) do { if (!(p)) { \
-          DEBUG(0,("Out of memory for %s at %s\n", #p, __location__)); \
+          DEBUG(DEBUG_CRIT,("Out of memory for %s at %s\n", #p, __location__)); \
 	  exit(10); \
 	  }} while (0)
 

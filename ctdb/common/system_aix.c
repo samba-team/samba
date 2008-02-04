@@ -41,14 +41,14 @@ int ctdb_sys_open_sending_socket(void)
 
 	s = socket(AF_INET, SOCK_RAW, htons(IPPROTO_RAW));
 	if (s == -1) {
-		DEBUG(0,(" failed to open raw socket (%s)\n",
+		DEBUG(DEBUG_CRIT,(" failed to open raw socket (%s)\n",
 			 strerror(errno)));
 		return -1;
 	}
 
 	ret = setsockopt(s, IPPROTO_IP, IP_HDRINCL, &one, sizeof(one));
 	if (ret != 0) {
-		DEBUG(0,(" failed to setup IP headers (%s)\n",
+		DEBUG(DEBUG_CRIT, (" failed to setup IP headers (%s)\n",
 			 strerror(errno)));
 		close(s);
 		return -1;
@@ -123,7 +123,7 @@ int ctdb_sys_send_tcp(int s,
 
 	/* for now, we only handle AF_INET addresses */
 	if (src->sin_family != AF_INET || dest->sin_family != AF_INET) {
-		DEBUG(0,(__location__ " not an ipv4 address\n"));
+		DEBUG(DEBUG_CRIT,(__location__ " not an ipv4 address\n"));
 		return -1;
 	}
 
@@ -151,7 +151,7 @@ int ctdb_sys_send_tcp(int s,
 
 	ret = sendto(s, &pkt, sizeof(pkt), 0, (struct sockaddr *)dest, sizeof(*dest));
 	if (ret != sizeof(pkt)) {
-		DEBUG(0,(__location__ " failed sendto (%s)\n", strerror(errno)));
+		DEBUG(DEBUG_CRIT,(__location__ " failed sendto (%s)\n", strerror(errno)));
 		return -1;
 	}
 
@@ -191,7 +191,7 @@ int ctdb_sys_open_capture_socket(const char *iface, void **private_data)
 
 	pt=pcap_open_live(iface, 100, 0, 0, NULL);
 	if (pt == NULL) {
-		DEBUG(0,("Failed to open capture device %s\n", iface));
+		DEBUG(DEBUG_CRIT,("Failed to open capture device %s\n", iface));
 		return -1;
 	}
 	*((pcap_t **)private_data) = pt;

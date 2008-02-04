@@ -137,7 +137,7 @@ int ctdb_ltdb_store(struct ctdb_db_context *ctdb_db, TDB_DATA key,
 		rec = tdb_fetch(ctdb_db->ltdb->tdb, key);
 		h2 = (struct ctdb_ltdb_header *)rec.dptr;
 		if (rec.dptr && rec.dsize >= sizeof(h2) && h2->rsn > header->rsn) {
-			DEBUG(0,("RSN regression! %llu %llu\n",
+			DEBUG(DEBUG_CRIT,("RSN regression! %llu %llu\n",
 				 (unsigned long long)h2->rsn, (unsigned long long)header->rsn));
 		}
 		if (rec.dptr) free(rec.dptr);
@@ -172,7 +172,7 @@ int ctdb_ltdb_unlock(struct ctdb_db_context *ctdb_db, TDB_DATA key)
 {
 	int ret = tdb_chainunlock(ctdb_db->ltdb->tdb, key);
 	if (ret != 0) {
-		DEBUG(0,("tdb_chainunlock failed\n"));
+		DEBUG(DEBUG_ERR,("tdb_chainunlock failed\n"));
 	}
 	return ret;
 }

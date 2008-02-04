@@ -188,7 +188,7 @@ int ctdb_set_child_logging(struct ctdb_context *ctdb)
 
 	/* setup a pipe to catch IO from subprocesses */
 	if (pipe(p) != 0) {
-		DEBUG(0,(__location__ " Failed to setup for child logging pipe\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to setup for child logging pipe\n"));
 		return -1;
 	}
 

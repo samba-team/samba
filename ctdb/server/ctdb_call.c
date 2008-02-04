@@ -134,7 +134,7 @@ static void ctdb_send_dmaster_reply(struct ctdb_db_context *ctdb_db,
 	TALLOC_CTX *tmp_ctx;
 
 	if (ctdb->pnn != ctdb_lmaster(ctdb, &key)) {
-		DEBUG(0,(__location__ " Caller is not lmaster!\n"));
+		DEBUG(DEBUG_ALERT,(__location__ " Caller is not lmaster!\n"));
 		return;
 	}
 
@@ -246,7 +246,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
 
 	if (state == NULL) {
-		DEBUG(0,("pnn %u Invalid reqid %u in ctdb_become_dmaster from node %u\n",
+		DEBUG(DEBUG_ERR,("pnn %u Invalid reqid %u in ctdb_become_dmaster from node %u\n",
 			 ctdb->pnn, hdr->reqid, hdr->srcnode));
 		ctdb_ltdb_unlock(ctdb_db, key);
 		return;
@@ -254,7 +254,7 @@ static void ctdb_become_dmaster(struct ctdb_db_context *ctdb_db,
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphan in ctdb_become_dmaster with reqid:%u\n from node %u", hdr->reqid, hdr->srcnode));
+		DEBUG(DEBUG_ERR, ("Dropped orphan in ctdb_become_dmaster with reqid:%u\n from node %u", hdr->reqid, hdr->srcnode));
 		ctdb_ltdb_unlock(ctdb_db, key);
 		return;
 	}
@@ -311,7 +311,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 
 	if (ctdb_lmaster(ctdb, &key) != ctdb->pnn) {
-		DEBUG(0,("pnn %u dmaster request to non-lmaster lmaster=%u gen=%u curgen=%u\n",
+		DEBUG(DEBUG_ALERT,("pnn %u dmaster request to non-lmaster lmaster=%u gen=%u curgen=%u\n",
 			 ctdb->pnn, ctdb_lmaster(ctdb, &key), 
 			 hdr->generation, ctdb->vnn_map->generation));
 		ctdb_fatal(ctdb, "ctdb_req_dmaster to non-lmaster");
@@ -322,7 +322,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 
 	/* its a protocol error if the sending node is not the current dmaster */
 	if (header.dmaster != hdr->srcnode) {
-		DEBUG(0,("pnn %u dmaster request for new-dmaster %u from non-master %u real-dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u c->rsn=%llu header.rsn=%llu reqid=%u keyval=0x%08x\n",
+		DEBUG(DEBUG_ALERT,("pnn %u dmaster request for new-dmaster %u from non-master %u real-dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u c->rsn=%llu header.rsn=%llu reqid=%u keyval=0x%08x\n",
 			 ctdb->pnn, c->dmaster, hdr->srcnode, header.dmaster, ctdb_hash(&key),
 			 ctdb_db->db_id, hdr->generation, ctdb->vnn_map->generation,
 			 (unsigned long long)c->rsn, (unsigned long long)header.rsn, c->hdr.reqid,
@@ -334,7 +334,7 @@ void ctdb_request_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr
 	}
 
 	if (header.rsn > c->rsn) {
-		DEBUG(0,("pnn %u dmaster request with older RSN new-dmaster %u from %u real-dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u c->rsn=%llu header.rsn=%llu reqid=%u\n",
+		DEBUG(DEBUG_ALERT,("pnn %u dmaster request with older RSN new-dmaster %u from %u real-dmaster=%u key %08x dbid 0x%08x gen=%u curgen=%u c->rsn=%llu header.rsn=%llu reqid=%u\n",
 			 ctdb->pnn, c->dmaster, hdr->srcnode, header.dmaster, ctdb_hash(&key),
 			 ctdb_db->db_id, hdr->generation, ctdb->vnn_map->generation,
 			 (unsigned long long)c->rsn, (unsigned long long)header.rsn, c->hdr.reqid));
@@ -459,13 +459,13 @@ void ctdb_reply_call(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
-		DEBUG(0, (__location__ " reqid %u not found\n", hdr->reqid));
+		DEBUG(DEBUG_ERR, (__location__ " reqid %u not found\n", hdr->reqid));
 		return;
 	}
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned call reply with reqid:%u\n",hdr->reqid));
+		DEBUG(DEBUG_ERR, ("Dropped orphaned call reply with reqid:%u\n",hdr->reqid));
 		return;
 	}
 
@@ -498,7 +498,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	ctdb_db = find_ctdb_db(ctdb, c->db_id);
 	if (ctdb_db == NULL) {
-		DEBUG(0,("Unknown db_id 0x%x in ctdb_reply_dmaster\n", c->db_id));
+		DEBUG(DEBUG_ERR,("Unknown db_id 0x%x in ctdb_reply_dmaster\n", c->db_id));
 		return;
 	}
 	
@@ -513,7 +513,7 @@ void ctdb_reply_dmaster(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 		return;
 	}
 	if (ret != 0) {
-		DEBUG(0,(__location__ " Failed to get lock in ctdb_reply_dmaster\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock in ctdb_reply_dmaster\n"));
 		return;
 	}
 
@@ -531,14 +531,14 @@ void ctdb_reply_error(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_call_state);
 	if (state == NULL) {
-		DEBUG(0,("pnn %u Invalid reqid %u in ctdb_reply_error\n",
+		DEBUG(DEBUG_ERR,("pnn %u Invalid reqid %u in ctdb_reply_error\n",
 			 ctdb->pnn, hdr->reqid));
 		return;
 	}
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned error reply with reqid:%u\n",hdr->reqid));
+		DEBUG(DEBUG_ERR, ("Dropped orphaned error reply with reqid:%u\n",hdr->reqid));
 		return;
 	}
 
@@ -584,7 +584,7 @@ static void ctdb_call_resend(struct ctdb_call_state *state)
 	state->c->hdr.destnode = ctdb->pnn;
 
 	ctdb_queue_packet(ctdb, &state->c->hdr);
-	DEBUG(0,("resent ctdb_call\n"));
+	DEBUG(DEBUG_NOTICE,("resent ctdb_call\n"));
 }
 
 /*

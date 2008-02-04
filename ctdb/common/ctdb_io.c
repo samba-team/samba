@@ -77,14 +77,14 @@ static void queue_io_read(struct ctdb_queue *queue)
 						  num_ready + queue->partial.length);
 
 	if (queue->partial.data == NULL) {
-		DEBUG(0,("read error alloc failed for %u\n", 
+		DEBUG(DEBUG_ERR,("read error alloc failed for %u\n", 
 			 num_ready + queue->partial.length));
 		goto failed;
 	}
 
 	nread = read(queue->fd, queue->partial.data + queue->partial.length, num_ready);
 	if (nread <= 0) {
-		DEBUG(0,("read error nread=%d\n", (int)nread));
+		DEBUG(DEBUG_ERR,("read error nread=%d\n", (int)nread));
 		goto failed;
 	}
 
@@ -111,12 +111,12 @@ static void queue_io_read(struct ctdb_queue *queue)
 		len = *(uint32_t *)data;
 		if (len == 0) {
 			/* bad packet! treat as EOF */
-			DEBUG(0,("Invalid packet of length 0\n"));
+			DEBUG(DEBUG_CRIT,("Invalid packet of length 0\n"));
 			goto failed;
 		}
 		d2 = talloc_memdup(queue, data, len);
 		if (d2 == NULL) {
-			DEBUG(0,("read error memdup failed for %u\n", len));
+			DEBUG(DEBUG_ERR,("read error memdup failed for %u\n", len));
 			/* sigh */
 			goto failed;
 		}
@@ -133,7 +133,7 @@ static void queue_io_read(struct ctdb_queue *queue)
 		} else {
 			queue->partial.data = talloc_memdup(queue, data, nread);
 			if (queue->partial.data == NULL) {
-				DEBUG(0,("read error memdup partial failed for %u\n", 
+				DEBUG(DEBUG_ERR,("read error memdup partial failed for %u\n", 
 					 (unsigned)nread));
 				goto failed;
 			}

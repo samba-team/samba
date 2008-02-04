@@ -62,7 +62,7 @@ int32_t ctdb_control_register_server_id(struct ctdb_context *ctdb,
 
 
 	if (client == NULL) {
-		DEBUG(0,(__location__ " Could not find client parent structure. You can not send this control to a remote node\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Could not find client parent structure. You can not send this control to a remote node\n"));
 		return 1;
 	}
 
@@ -125,7 +125,7 @@ static void server_id_count(void *param, void *data)
 						struct count_server_ids);
 
 	if (svid == NULL) {
-		DEBUG(0, (__location__ " Got null pointer for svid\n"));
+		DEBUG(DEBUG_ERR, (__location__ " Got null pointer for svid\n"));
 		return;
 	}
 
@@ -140,12 +140,12 @@ static void server_id_store(void *param, void *data)
 						struct ctdb_server_id);
 
 	if (svid == NULL) {
-		DEBUG(0, (__location__ " Got null pointer for svid\n"));
+		DEBUG(DEBUG_ERR, (__location__ " Got null pointer for svid\n"));
 		return;
 	}
 
 	if (svid->count >= svid->list->num) {
-		DEBUG(0, (__location__ " size of server id tree changed during traverse\n"));
+		DEBUG(DEBUG_ERR, (__location__ " size of server id tree changed during traverse\n"));
 		return;
 	}
 

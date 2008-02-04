@@ -73,7 +73,7 @@ int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata,
 
 	if (indata.dsize < sizeof(*t) ||
 	    t->length > indata.dsize - offsetof(struct ctdb_control_get_tunable, name)) {
-		DEBUG(0,("Bad indata in ctdb_control_get_tunable\n"));
+		DEBUG(DEBUG_ERR,("Bad indata in ctdb_control_get_tunable\n"));
 		return -1;
 	}
 
@@ -113,7 +113,7 @@ int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	if (indata.dsize < sizeof(*t) ||
 	    t->length > indata.dsize - offsetof(struct ctdb_control_set_tunable, name)) {
-		DEBUG(0,("Bad indata in ctdb_control_set_tunable\n"));
+		DEBUG(DEBUG_ERR,("Bad indata in ctdb_control_set_tunable\n"));
 		return -1;
 	}
 

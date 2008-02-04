@@ -35,7 +35,7 @@ static int ctdb_lock_all_databases_mark(struct ctdb_context *ctdb)
 {
 	struct ctdb_db_context *ctdb_db;
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,("Attempt to mark all databases locked when not frozen\n"));
+		DEBUG(DEBUG_ERR,("Attempt to mark all databases locked when not frozen\n"));
 		return -1;
 	}
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
@@ -53,7 +53,7 @@ static int ctdb_lock_all_databases_unmark(struct ctdb_context *ctdb)
 {
 	struct ctdb_db_context *ctdb_db;
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,("Attempt to unmark all databases locked when not frozen\n"));
+		DEBUG(DEBUG_ERR,("Attempt to unmark all databases locked when not frozen\n"));
 		return -1;
 	}
 	for (ctdb_db=ctdb->db_list;ctdb_db;ctdb_db=ctdb_db->next) {
@@ -92,7 +92,7 @@ ctdb_control_setvnnmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA inda
 	struct ctdb_vnn_map_wire *map = (struct ctdb_vnn_map_wire *)indata.dptr;
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,("Attempt to set vnnmap when not frozen\n"));
+		DEBUG(DEBUG_ERR,("Attempt to set vnnmap when not frozen\n"));
 		return -1;
 	}
 
@@ -129,7 +129,7 @@ ctdb_control_getdbmap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA indat
 	outdata->dsize = offsetof(struct ctdb_dbid_map, dbs) + sizeof(dbid_map->dbs[0])*len;
 	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
 	if (!outdata->dptr) {
-		DEBUG(0, (__location__ " Failed to allocate dbmap array\n"));
+		DEBUG(DEBUG_ALERT, (__location__ " Failed to allocate dbmap array\n"));
 		exit(1);
 	}
 
@@ -156,7 +156,7 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 	outdata->dsize = offsetof(struct ctdb_node_map, nodes) + num_nodes*sizeof(struct ctdb_node_and_flags);
 	outdata->dptr  = (unsigned char *)talloc_zero_size(outdata, outdata->dsize);
 	if (!outdata->dptr) {
-		DEBUG(0, (__location__ " Failed to allocate nodemap array\n"));
+		DEBUG(DEBUG_ALERT, (__location__ " Failed to allocate nodemap array\n"));
 		exit(1);
 	}
 
@@ -194,7 +194,7 @@ static int traverse_pulldb(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data,
 	}
 	params->pulldata = talloc_realloc_size(NULL, params->pulldata, rec->length + params->len);
 	if (params->pulldata == NULL) {
-		DEBUG(0,(__location__ " Failed to expand pulldb_data to %u (%u records)\n", 
+		DEBUG(DEBUG_ERR,(__location__ " Failed to expand pulldb_data to %u (%u records)\n", 
 			 rec->length + params->len, params->pulldata->count));
 		params->failed = true;
 		return -1;
@@ -218,7 +218,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	struct ctdb_control_pulldb_reply *reply;
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,("rejecting ctdb_control_pull_db when not frozen\n"));
+		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_pull_db when not frozen\n"));
 		return -1;
 	}
 
@@ -226,7 +226,7 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	
 	ctdb_db = find_ctdb_db(ctdb, pull->db_id);
 	if (!ctdb_db) {
-		DEBUG(0,(__location__ " Unknown db 0x%08x\n", pull->db_id));
+		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", pull->db_id));
 		return -1;
 	}
 
@@ -241,12 +241,12 @@ int32_t ctdb_control_pull_db(struct ctdb_context *ctdb, TDB_DATA indata, TDB_DAT
 	params.failed = false;
 
 	if (ctdb_lock_all_databases_mark(ctdb) != 0) {
-		DEBUG(0,(__location__ " Failed to get lock on entired db - failing\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
 		return -1;
 	}
 
 	if (tdb_traverse_read(ctdb_db->ltdb->tdb, traverse_pulldb, &params) == -1) {
-		DEBUG(0,(__location__ " Failed to get traverse db '%s'\n", ctdb_db->db_name));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get traverse db '%s'\n", ctdb_db->db_name));
 		ctdb_lock_all_databases_unmark(ctdb);
 		talloc_free(params.pulldata);
 		return -1;
@@ -271,23 +271,23 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct ctdb_rec_data *rec;
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,("rejecting ctdb_control_push_db when not frozen\n"));
+		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_push_db when not frozen\n"));
 		return -1;
 	}
 
 	if (indata.dsize < offsetof(struct ctdb_control_pulldb_reply, data)) {
-		DEBUG(0,(__location__ " invalid data in pulldb reply\n"));
+		DEBUG(DEBUG_ERR,(__location__ " invalid data in pulldb reply\n"));
 		return -1;
 	}
 
 	ctdb_db = find_ctdb_db(ctdb, reply->db_id);
 	if (!ctdb_db) {
-		DEBUG(0,(__location__ " Unknown db 0x%08x\n", reply->db_id));
+		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", reply->db_id));
 		return -1;
 	}
 
 	if (ctdb_lock_all_databases_mark(ctdb) != 0) {
-		DEBUG(0,(__location__ " Failed to get lock on entired db - failing\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
 		return -1;
 	}
 
@@ -306,7 +306,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		data.dsize = rec->datalen;
 
 		if (data.dsize < sizeof(struct ctdb_ltdb_header)) {
-			DEBUG(0,(__location__ " bad ltdb record\n"));
+			DEBUG(DEBUG_CRIT,(__location__ " bad ltdb record\n"));
 			goto failed;
 		}
 		hdr = (struct ctdb_ltdb_header *)data.dptr;
@@ -315,7 +315,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 
 		ret = ctdb_ltdb_store(ctdb_db, key, hdr, data);
 		if (ret != 0) {
-			DEBUG(0, (__location__ " Unable to store record\n"));
+			DEBUG(DEBUG_CRIT, (__location__ " Unable to store record\n"));
 			goto failed;
 		}
 
@@ -349,7 +349,7 @@ static int traverse_setdmaster(struct tdb_context *tdb, TDB_DATA key, TDB_DATA d
 
 	ret = tdb_store(tdb, key, data, TDB_REPLACE);
 	if (ret) {
-		DEBUG(0,(__location__ " failed to write tdb data back  ret:%d\n",ret));
+		DEBUG(DEBUG_CRIT,(__location__ " failed to write tdb data back  ret:%d\n",ret));
 		return ret;
 	}
 
@@ -364,18 +364,18 @@ int32_t ctdb_control_set_dmaster(struct ctdb_context *ctdb, TDB_DATA indata)
 	struct ctdb_db_context *ctdb_db;
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,("rejecting ctdb_control_set_dmaster when not frozen\n"));
+		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_set_dmaster when not frozen\n"));
 		return -1;
 	}
 
 	ctdb_db = find_ctdb_db(ctdb, p->db_id);
 	if (!ctdb_db) {
-		DEBUG(0,(__location__ " Unknown db 0x%08x\n", p->db_id));
+		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", p->db_id));
 		return -1;
 	}
 
 	if (ctdb_lock_all_databases_mark(ctdb) != 0) {
-		DEBUG(0,(__location__ " Failed to get lock on entired db - failing\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get lock on entired db - failing\n"));
 		return -1;
 	}
 
@@ -473,14 +473,14 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	pid_t parent = getpid();
 
 	if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-		DEBUG(0,("Attempt to change recovery mode to %u when not frozen\n", 
+		DEBUG(DEBUG_ERR,("Attempt to change recovery mode to %u when not frozen\n", 
 			 recmode));
 		(*errormsg) = "Cannot change recovery mode while not frozen";
 		return -1;
 	}
 
 	if (recmode != ctdb->recovery_mode) {
-		DEBUG(0,(__location__ " Recovery mode set to %s\n", 
+		DEBUG(DEBUG_NOTICE,(__location__ " Recovery mode set to %s\n", 
 			 recmode==CTDB_RECOVERY_NORMAL?"NORMAL":"ACTIVE"));
 	}
 
@@ -503,7 +503,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 	ret = pipe(state->fd);
 	if (ret != 0) {
 		talloc_free(state);
-		DEBUG(0,(__location__ " Failed to open pipe for set_recmode child\n"));
+		DEBUG(DEBUG_CRIT,(__location__ " Failed to open pipe for set_recmode child\n"));
 		return -1;
 	}
 
@@ -523,7 +523,7 @@ int32_t ctdb_control_set_recmode(struct ctdb_context *ctdb,
 		  as it should  be held by the recovery master 
 		*/
 		if (ctdb_recovery_lock(ctdb, false)) {
-			DEBUG(0,("ERROR: recovery lock file %s not locked when recovering!\n", ctdb->recovery_lock_file));
+			DEBUG(DEBUG_CRIT,("ERROR: recovery lock file %s not locked when recovering!\n", ctdb->recovery_lock_file));
 			cc = 1;
 		}
 
@@ -573,7 +573,7 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 	}
 	ctdb->recovery_lock_fd = open(ctdb->recovery_lock_file, O_RDWR|O_CREAT, 0600);
 	if (ctdb->recovery_lock_fd == -1) {
-		DEBUG(0,("ctdb_recovery_lock: Unable to open %s - (%s)\n", 
+		DEBUG(DEBUG_ERR,("ctdb_recovery_lock: Unable to open %s - (%s)\n", 
 			 ctdb->recovery_lock_file, strerror(errno)));
 		return false;
 	}
@@ -590,7 +590,7 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
 		if (keep) {
-			DEBUG(0,("ctdb_recovery_lock: Failed to get recovery lock on '%s'\n", ctdb->recovery_lock_file));
+			DEBUG(DEBUG_CRIT,("ctdb_recovery_lock: Failed to get recovery lock on '%s'\n", ctdb->recovery_lock_file));
 		}
 		return false;
 	}
@@ -600,7 +600,7 @@ bool ctdb_recovery_lock(struct ctdb_context *ctdb, bool keep)
 		ctdb->recovery_lock_fd = -1;
 	}
 
-	DEBUG(0,("ctdb_recovery_lock: Got recovery lock on '%s'\n", ctdb->recovery_lock_file));
+	DEBUG(DEBUG_NOTICE,("ctdb_recovery_lock: Got recovery lock on '%s'\n", ctdb->recovery_lock_file));
 
 	return true;
 }
@@ -624,13 +624,13 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 	int tdb_unlock(struct tdb_context *tdb, int list, int ltype);
 
 	if (indata.dsize < sizeof(uint32_t) || indata.dsize != rec->length) {
-		DEBUG(0,(__location__ " Bad record size in ctdb_control_delete_record\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Bad record size in ctdb_control_delete_record\n"));
 		return -1;
 	}
 
 	ctdb_db = find_ctdb_db(ctdb, rec->reqid);
 	if (!ctdb_db) {
-		DEBUG(0,(__location__ " Unknown db 0x%08x\n", rec->reqid));
+		DEBUG(DEBUG_ERR,(__location__ " Unknown db 0x%08x\n", rec->reqid));
 		return -1;
 	}
 
@@ -645,7 +645,7 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 	}
 
 	if (data.dsize != sizeof(struct ctdb_ltdb_header)) {
-		DEBUG(0,(__location__ " Bad record size\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Bad record size\n"));
 		return -1;
 	}
 
@@ -666,7 +666,7 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 		if (tdb_lock_nonblock(ctdb_db->ltdb->tdb, -1, F_WRLCK) == 0) {
 			tdb_delete(ctdb_db->ltdb->tdb, key);
 			tdb_unlock(ctdb_db->ltdb->tdb, -1, F_WRLCK);
-			DEBUG(0,(__location__ " Deleted corrupt record\n"));
+			DEBUG(DEBUG_CRIT,(__location__ " Deleted corrupt record\n"));
 		}
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
 		free(data.dptr);
@@ -726,7 +726,7 @@ static void ctdb_end_recovery_callback(struct ctdb_context *ctdb, int status, vo
 	ctdb_enable_monitoring(ctdb);
 
 	if (status != 0) {
-		DEBUG(0,(__location__ " recovered event script failed (status %d)\n", status));
+		DEBUG(DEBUG_ERR,(__location__ " recovered event script failed (status %d)\n", status));
 	}
 
 	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
@@ -745,7 +745,7 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 	int ret;
 	struct recovery_callback_state *state;
 
-	DEBUG(0,("Recovery has finished\n"));
+	DEBUG(DEBUG_NOTICE,("Recovery has finished\n"));
 
 	state = talloc(ctdb, struct recovery_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
@@ -763,7 +763,7 @@ int32_t ctdb_control_end_recovery(struct ctdb_context *ctdb,
 	if (ret != 0) {
 		ctdb_enable_monitoring(ctdb);
 
-		DEBUG(0,(__location__ " Failed to end recovery\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to end recovery\n"));
 		talloc_free(state);
 		return -1;
 	}
@@ -783,7 +783,7 @@ static void ctdb_start_recovery_callback(struct ctdb_context *ctdb, int status, 
 	ctdb_enable_monitoring(ctdb);
 
 	if (status != 0) {
-		DEBUG(0,(__location__ " startrecovery event script failed (status %d)\n", status));
+		DEBUG(DEBUG_ERR,(__location__ " startrecovery event script failed (status %d)\n", status));
 	}
 
 	ctdb_request_control_reply(ctdb, state->c, NULL, status, NULL);
@@ -800,7 +800,7 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 	int ret;
 	struct recovery_callback_state *state;
 
-	DEBUG(0,("Recovery has started\n"));
+	DEBUG(DEBUG_NOTICE,("Recovery has started\n"));
 
 	state = talloc(ctdb, struct recovery_callback_state);
 	CTDB_NO_MEMORY(ctdb, state);
@@ -818,7 +818,7 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 	if (ret != 0) {
 		ctdb_enable_monitoring(ctdb);
 
-		DEBUG(0,(__location__ " Failed to start recovery\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to start recovery\n"));
 		talloc_free(state);
 		return -1;
 	}

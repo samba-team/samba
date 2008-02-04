@@ -46,7 +46,7 @@ static int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata)
 	long fsize;
 	f = tmpfile();
 	if (f == NULL) {
-		DEBUG(0,(__location__ " Unable to open tmpfile - %s\n", strerror(errno)));
+		DEBUG(DEBUG_ERR,(__location__ " Unable to open tmpfile - %s\n", strerror(errno)));
 		return -1;
 	}
 	talloc_report_full(NULL, f);
@@ -57,7 +57,7 @@ static int32_t ctdb_dump_memory(struct ctdb_context *ctdb, TDB_DATA *outdata)
 	outdata->dsize = fread(outdata->dptr, 1, fsize, f);
 	fclose(f);
 	if (outdata->dsize != fsize) {
-		DEBUG(0,(__location__ " Unable to read tmpfile\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Unable to read tmpfile\n"));
 		return -1;
 	}
 	return 0;
@@ -155,7 +155,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_SET_RECMASTER: {
 		CHECK_CONTROL_DATA_SIZE(sizeof(uint32_t));
 		if (ctdb->freeze_mode != CTDB_FREEZE_FROZEN) {
-			DEBUG(0,("Attempt to set recmaster when not frozen\n"));
+			DEBUG(DEBUG_NOTICE,("Attempt to set recmaster when not frozen\n"));
 			return -1;
 		}
 		ctdb->recovery_master = ((uint32_t *)(&indata.dptr[0]))[0];
@@ -260,7 +260,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 		ctdb_release_all_ips(ctdb);
 		ctdb->methods->shutdown(ctdb);
 		ctdb_event_script(ctdb, "shutdown");
-		DEBUG(0,("Received SHUTDOWN command. Stopping CTDB daemon.\n"));
+		DEBUG(DEBUG_NOTICE,("Received SHUTDOWN command. Stopping CTDB daemon.\n"));
 		exit(0);
 
 	case CTDB_CONTROL_TAKEOVER_IP:
@@ -361,7 +361,7 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_END_RECOVERY:
 		return ctdb_control_end_recovery(ctdb, c, async_reply);
 	default:
-		DEBUG(0,(__location__ " Unknown CTDB control opcode %u\n", opcode));
+		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;
 	}
 }
@@ -441,14 +441,14 @@ void ctdb_reply_control(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_control_state);
 	if (state == NULL) {
-		DEBUG(0,("pnn %u Invalid reqid %u in ctdb_reply_control\n",
+		DEBUG(DEBUG_ERR,("pnn %u Invalid reqid %u in ctdb_reply_control\n",
 			 ctdb->pnn, hdr->reqid));
 		return;
 	}
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned control reply with reqid:%u\n", hdr->reqid));
+		DEBUG(DEBUG_ERR, ("Dropped orphaned control reply with reqid:%u\n", hdr->reqid));
 		return;
 	}
 
@@ -510,7 +510,7 @@ int ctdb_daemon_send_control(struct ctdb_context *ctdb, uint32_t destnode,
 	     (destnode == CTDB_BROADCAST_ALL) ||
 	     (destnode == CTDB_BROADCAST_CONNECTED)) && 
 	    !(flags & CTDB_CTRL_FLAG_NOREPLY)) {
-		DEBUG(0,("Attempt to broadcast control without NOREPLY\n"));
+		DEBUG(DEBUG_CRIT,("Attempt to broadcast control without NOREPLY\n"));
 		return -1;
 	}
 

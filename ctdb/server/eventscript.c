@@ -36,7 +36,7 @@ static struct {
  */
 static void sigterm(int sig)
 {
-	DEBUG(0,("Timed out running script '%s' after %.1f seconds\n", 
+	DEBUG(DEBUG_ERR,("Timed out running script '%s' after %.1f seconds\n", 
 		 child_state.script_running, timeval_elapsed(&child_state.start)));
 	/* all the child processes will be running in the same process group */
 	kill(-getpgrp(), SIGKILL);
@@ -61,7 +61,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	char *script;
 
 	if (setpgid(0,0) != 0) {
-		DEBUG(0,("Failed to create process group for event scripts - %s\n",
+		DEBUG(DEBUG_ERR,("Failed to create process group for event scripts - %s\n",
 			 strerror(errno)));
 		talloc_free(tmp_ctx);
 		return -1;		
@@ -77,7 +77,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	*/
 	if (stat(ctdb->event_script_dir, &st) != 0 && 
 	    errno == ENOENT) {
-		DEBUG(0,("No event script directory found at '%s'\n", ctdb->event_script_dir));
+		DEBUG(DEBUG_CRIT,("No event script directory found at '%s'\n", ctdb->event_script_dir));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -90,7 +90,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 	*/
 	dir = opendir(ctdb->event_script_dir);
 	if (dir == NULL) {
-		DEBUG(0,("Failed to open event script directory '%s'\n", ctdb->event_script_dir));
+		DEBUG(DEBUG_CRIT,("Failed to open event script directory '%s'\n", ctdb->event_script_dir));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -122,11 +122,11 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 		/* Make sure the event script is executable */
 		str = talloc_asprintf(tree, "%s/%s", ctdb->event_script_dir, de->d_name);
 		if (stat(str, &st) != 0) {
-			DEBUG(0,("Could not stat event script %s. Ignoring this event script\n", str));
+			DEBUG(DEBUG_ERR,("Could not stat event script %s. Ignoring this event script\n", str));
 			continue;
 		}
 		if (!(st.st_mode & S_IXUSR)) {
-			DEBUG(0,("Event script %s is not executable. Ignoring this event script\n", str));
+			DEBUG(DEBUG_ERR,("Event script %s is not executable. Ignoring this event script\n", str));
 			continue;
 		}
 		
@@ -134,7 +134,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 		/* store the event script in the tree */		
 		script = trbt_insert32(tree, num, talloc_strdup(tree, de->d_name));
 		if (script != NULL) {
-			DEBUG(0,("CONFIG ERROR: Multiple event scripts with the same prefix : '%s' and '%s'. Each event script MUST have a unique prefix\n", script, de->d_name));
+			DEBUG(DEBUG_CRIT,("CONFIG ERROR: Multiple event scripts with the same prefix : '%s' and '%s'. Each event script MUST have a unique prefix\n", script, de->d_name));
 			talloc_free(tmp_ctx);
 			closedir(dir);
 			return -1;
@@ -170,7 +170,7 @@ static int ctdb_event_script_v(struct ctdb_context *ctdb, const char *fmt, va_li
 		}
 		/* return an error if the script failed */
 		if (ret != 0) {
-			DEBUG(0,("Event script %s failed with error %d\n", cmdstr, ret));
+			DEBUG(DEBUG_ERR,("Event script %s failed with error %d\n", cmdstr, ret));
 			talloc_free(tmp_ctx);
 			return ret;
 		}
@@ -224,7 +224,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
 	void *private_data = state->private_data;
 	struct ctdb_context *ctdb = state->ctdb;
 
-	DEBUG(0,("event script timed out\n"));
+	DEBUG(DEBUG_ERR,("event script timed out\n"));
 	talloc_free(state);
 	callback(ctdb, -1, private_data);
 }
@@ -234,7 +234,7 @@ static void ctdb_event_script_timeout(struct event_context *ev, struct timed_eve
  */
 static int event_script_destructor(struct ctdb_event_script_state *state)
 {
-	DEBUG(0,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
+	DEBUG(DEBUG_ERR,(__location__ " Sending SIGTERM to child pid:%d\n", state->child));
 	kill(state->child, SIGTERM);
 	waitpid(state->child, NULL, 0);
 	return 0;

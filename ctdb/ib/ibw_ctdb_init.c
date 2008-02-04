@@ -41,12 +41,12 @@ static int ctdb_ibw_listen(struct ctdb_context *ctdb, int backlog)
 		return -1;
 
 	if (ibw_bind(ictx, &my_addr)) {
-		DEBUG(0, ("ctdb_ibw_listen: ibw_bind failed\n"));
+		DEBUG(DEBUG_CRIT, ("ctdb_ibw_listen: ibw_bind failed\n"));
 		return -1;
 	}
 
 	if (ibw_listen(ictx, backlog)) {
-		DEBUG(0, ("ctdb_ibw_listen: ibw_listen failed\n"));
+		DEBUG(DEBUG_CRIT, ("ctdb_ibw_listen: ibw_listen failed\n"));
 		return -1;
 	}
 
@@ -82,7 +82,7 @@ static int ctdb_ibw_initialise(struct ctdb_context *ctdb)
 
 	for (i=0; i<ctdb->num_nodes; i++) {
 		if (ctdb_ibw_add_node(ctdb->nodes[i]) != 0) {
-			DEBUG(0, ("methods->add_node failed at %d\n", i));
+			DEBUG(DEBUG_CRIT, ("methods->add_node failed at %d\n", i));
 			return -1;
 		}
 	}
@@ -118,7 +118,7 @@ static int ctdb_ibw_send_pkt(struct ibw_conn *conn, uint8_t *data, uint32_t leng
 	void	*buf, *key;
 
 	if (ibw_alloc_send_buf(conn, &buf, &key, length)) {
-		DEBUG(0, ("queue_pkt/ibw_alloc_send_buf failed\n"));
+		DEBUG(DEBUG_ERR, ("queue_pkt/ibw_alloc_send_buf failed\n"));
 		return -1;
 	}
 
@@ -156,7 +156,7 @@ static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t le
 	assert(cn!=NULL);
 
 	if (cn->conn==NULL) {
-		DEBUG(0, ("ctdb_ibw_queue_pkt: conn is NULL\n"));
+		DEBUG(DEBUG_ERR, ("ctdb_ibw_queue_pkt: conn is NULL\n"));
 		return -1;
 	}
 
@@ -180,7 +180,7 @@ static int ctdb_ibw_queue_pkt(struct ctdb_node *node, uint8_t *data, uint32_t le
 static void ctdb_ibw_restart(struct ctdb_node *node)
 {
 	/* TODO: implement this method for IB */
-	DEBUG(0,("WARNING: method restart is not yet implemented for IB\n"));
+	DEBUG(DEBUG_ALERT,("WARNING: method restart is not yet implemented for IB\n"));
 }
 
 /*
@@ -232,7 +232,7 @@ int ctdb_ibw_init(struct ctdb_context *ctdb)
 		ctdb->ev);
 
 	if (ictx==NULL) {
-		DEBUG(0, ("ctdb_ibw_init: ibw_init failed\n"));
+		DEBUG(DEBUG_CRIT, ("ctdb_ibw_init: ibw_init failed\n"));
 		return -1;
 	}
 

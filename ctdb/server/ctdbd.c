@@ -136,7 +136,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (!options.recovery_lock_file) {
-		DEBUG(0,("You must specifiy the location of a recovery lock file with --reclock\n"));
+		DEBUG(DEBUG_ALERT,("You must specifiy the location of a recovery lock file with --reclock\n"));
 		exit(1);
 	}
 
@@ -155,7 +155,7 @@ int main(int argc, const char *argv[])
 		exit(1);
 	}
 
-	DEBUG(0,("Starting CTDB daemon\n"));
+	DEBUG(DEBUG_NOTICE,("Starting CTDB daemon\n"));
 	gettimeofday(&ctdb->ctdbd_start_time, NULL);
 	gettimeofday(&ctdb->last_recovery_time, NULL);
 	ctdb->recovery_mode    = CTDB_RECOVERY_NORMAL;
@@ -168,13 +168,13 @@ int main(int argc, const char *argv[])
 
 	ret = ctdb_set_recovery_lock_file(ctdb, options.recovery_lock_file);
 	if (ret == -1) {
-		DEBUG(0,("ctdb_set_recovery_lock_file failed - %s\n", ctdb_errstr(ctdb)));
+		DEBUG(DEBUG_ALERT,("ctdb_set_recovery_lock_file failed - %s\n", ctdb_errstr(ctdb)));
 		exit(1);
 	}
 
 	ret = ctdb_set_transport(ctdb, options.transport);
 	if (ret == -1) {
-		DEBUG(0,("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb)));
+		DEBUG(DEBUG_ALERT,("ctdb_set_transport failed - %s\n", ctdb_errstr(ctdb)));
 		exit(1);
 	}
 
@@ -182,7 +182,7 @@ int main(int argc, const char *argv[])
 	if (options.myaddress) {
 		ret = ctdb_set_address(ctdb, options.myaddress);
 		if (ret == -1) {
-			DEBUG(0,("ctdb_set_address failed - %s\n", ctdb_errstr(ctdb)));
+			DEBUG(DEBUG_ALERT,("ctdb_set_address failed - %s\n", ctdb_errstr(ctdb)));
 			exit(1);
 		}
 	}
@@ -190,7 +190,7 @@ int main(int argc, const char *argv[])
 	/* tell ctdb what nodes are available */
 	ret = ctdb_set_nlist(ctdb, options.nlist);
 	if (ret == -1) {
-		DEBUG(0,("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb)));
+		DEBUG(DEBUG_ALERT,("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb)));
 		exit(1);
 	}
 
@@ -198,27 +198,27 @@ int main(int argc, const char *argv[])
 	   nodes file
 	*/
 	if (options.node_ip != NULL) {
-		DEBUG(0,("IP for this node is %s\n", options.node_ip));
+		DEBUG(DEBUG_NOTICE,("IP for this node is %s\n", options.node_ip));
 		ret = ctdb_ip_to_nodeid(ctdb, options.node_ip);
 		if (ret == -1) {
-			DEBUG(0,("The specified node-ip:%s is not a valid node address. Exiting.\n", options.node_ip));
+			DEBUG(DEBUG_ALERT,("The specified node-ip:%s is not a valid node address. Exiting.\n", options.node_ip));
 			exit(1);
 		}
 		ctdb->node_ip = options.node_ip;
-		DEBUG(0,("This is node %d\n", ret));
+		DEBUG(DEBUG_NOTICE,("This is node %d\n", ret));
 	}
 
 	if (options.db_dir) {
 		ret = ctdb_set_tdb_dir(ctdb, options.db_dir);
 		if (ret == -1) {
-			DEBUG(0,("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb)));
+			DEBUG(DEBUG_ALERT,("ctdb_set_tdb_dir failed - %s\n", ctdb_errstr(ctdb)));
 			exit(1);
 		}
 	}
 	if (options.db_dir_persistent) {
 		ret = ctdb_set_tdb_dir_persistent(ctdb, options.db_dir_persistent);
 		if (ret == -1) {
-			DEBUG(0,("ctdb_set_tdb_dir_persistent failed - %s\n", ctdb_errstr(ctdb)));
+			DEBUG(DEBUG_ALERT,("ctdb_set_tdb_dir_persistent failed - %s\n", ctdb_errstr(ctdb)));
 			exit(1);
 		}
 	}
@@ -232,7 +232,7 @@ int main(int argc, const char *argv[])
 		struct ctdb_vnn *svnn;
 
 		if (options.public_interface == NULL) {
-			DEBUG(0,("--single_public_ip used but --public_interface is not specified. You must specify the public interface when using single public ip. Exiting\n"));
+			DEBUG(DEBUG_ALERT,("--single_public_ip used but --public_interface is not specified. You must specify the public interface when using single public ip. Exiting\n"));
 			exit(10);
 		}
 
@@ -245,7 +245,7 @@ int main(int argc, const char *argv[])
 
 		if (inet_aton(options.single_public_ip, 
 				&svnn->public_address.sin_addr) == 0) {
-			DEBUG(0,("Invalid --single-public-ip argument : %s . This is not a valid ip address. Exiting.\n", options.single_public_ip));
+			DEBUG(DEBUG_ALERT,("Invalid --single-public-ip argument : %s . This is not a valid ip address. Exiting.\n", options.single_public_ip));
 			exit(10);
 		}
 		svnn->public_address.sin_family = AF_INET;
@@ -255,14 +255,14 @@ int main(int argc, const char *argv[])
 	if (options.public_address_list) {
 		ret = ctdb_set_public_addresses(ctdb, options.public_address_list);
 		if (ret == -1) {
-			DEBUG(0,("Unable to setup public address list\n"));
+			DEBUG(DEBUG_ALERT,("Unable to setup public address list\n"));
 			exit(1);
 		}
 	}
 
 	ret = ctdb_set_event_script_dir(ctdb, options.event_script_dir);
 	if (ret == -1) {
-		DEBUG(0,("Unable to setup event script directory\n"));
+		DEBUG(DEBUG_ALERT,("Unable to setup event script directory\n"));
 		exit(1);
 	}
 

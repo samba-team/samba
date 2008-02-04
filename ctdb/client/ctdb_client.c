@@ -45,7 +45,7 @@ struct ctdb_req_header *_ctdbd_allocate_pkt(struct ctdb_context *ctdb,
 
 	hdr = (struct ctdb_req_header *)talloc_size(mem_ctx, size);
 	if (hdr == NULL) {
-		DEBUG(0,("Unable to allocate packet for operation %u of length %u\n",
+		DEBUG(DEBUG_ERR,("Unable to allocate packet for operation %u of length %u\n",
 			 operation, (unsigned)length));
 		return NULL;
 	}
@@ -160,13 +160,13 @@ static void ctdb_client_reply_call(struct ctdb_context *ctdb, struct ctdb_req_he
 
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_client_call_state);
 	if (state == NULL) {
-		DEBUG(0,(__location__ " reqid %u not found\n", hdr->reqid));
+		DEBUG(DEBUG_ERR,(__location__ " reqid %u not found\n", hdr->reqid));
 		return;
 	}
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped client call reply with reqid:%u\n",hdr->reqid));
+		DEBUG(DEBUG_ERR, ("Dropped client call reply with reqid:%u\n",hdr->reqid));
 		return;
 	}
 
@@ -207,7 +207,7 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	}
 
 	if (cnt < sizeof(*hdr)) {
-		DEBUG(0,("Bad packet length %u in client\n", (unsigned)cnt));
+		DEBUG(DEBUG_CRIT,("Bad packet length %u in client\n", (unsigned)cnt));
 		goto done;
 	}
 	if (cnt != hdr->length) {
@@ -240,7 +240,7 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 		break;
 
 	default:
-		DEBUG(0,("bogus operation code:%u\n",hdr->operation));
+		DEBUG(DEBUG_CRIT,("bogus operation code:%u\n",hdr->operation));
 	}
 
 done:
@@ -303,7 +303,7 @@ int ctdb_call_recv(struct ctdb_client_call_state *state, struct ctdb_call *call)
 		event_loop_once(state->ctdb_db->ctdb->ev);
 	}
 	if (state->state != CTDB_CALL_DONE) {
-		DEBUG(0,(__location__ " ctdb_call_recv failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_call_recv failed\n"));
 		talloc_free(state);
 		return -1;
 	}
@@ -388,7 +388,7 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 
 	ret = ctdb_ltdb_lock(ctdb_db, call->key);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " Failed to get chainlock\n"));
+		DEBUG(DEBUG_ERR,(__location__ " Failed to get chainlock\n"));
 		return NULL;
 	}
 
@@ -406,14 +406,14 @@ struct ctdb_client_call_state *ctdb_call_send(struct ctdb_db_context *ctdb_db,
 
 	state = talloc_zero(ctdb_db, struct ctdb_client_call_state);
 	if (state == NULL) {
-		DEBUG(0, (__location__ " failed to allocate state\n"));
+		DEBUG(DEBUG_ERR, (__location__ " failed to allocate state\n"));
 		return NULL;
 	}
 
 	len = offsetof(struct ctdb_req_call, data) + call->key.dsize + call->call_data.dsize;
 	c = ctdbd_allocate_pkt(ctdb, state, CTDB_REQ_CALL, len, struct ctdb_req_call);
 	if (c == NULL) {
-		DEBUG(0, (__location__ " failed to allocate packet\n"));
+		DEBUG(DEBUG_ERR, (__location__ " failed to allocate packet\n"));
 		return NULL;
 	}
 
@@ -471,7 +471,7 @@ int ctdb_set_message_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid, CTDB_CONTROL_REGISTER_SRVID, 0, 
 			   tdb_null, NULL, NULL, &status, NULL, NULL);
 	if (res != 0 || status != 0) {
-		DEBUG(0,("Failed to register srvid %llu\n", (unsigned long long)srvid));
+		DEBUG(DEBUG_ERR,("Failed to register srvid %llu\n", (unsigned long long)srvid));
 		return -1;
 	}
 
@@ -490,7 +490,7 @@ int ctdb_remove_message_handler(struct ctdb_context *ctdb, uint64_t srvid, void 
 	res = ctdb_control(ctdb, CTDB_CURRENT_NODE, srvid, CTDB_CONTROL_DEREGISTER_SRVID, 0, 
 			   tdb_null, NULL, NULL, &status, NULL, NULL);
 	if (res != 0 || status != 0) {
-		DEBUG(0,("Failed to deregister srvid %llu\n", (unsigned long long)srvid));
+		DEBUG(DEBUG_ERR,("Failed to deregister srvid %llu\n", (unsigned long long)srvid));
 		return -1;
 	}
 
@@ -592,7 +592,7 @@ again:
 	/* step 1 - get the chain lock */
 	ret = ctdb_ltdb_lock(ctdb_db, key);
 	if (ret != 0) {
-		DEBUG(0, (__location__ " failed to lock ltdb record\n"));
+		DEBUG(DEBUG_ERR, (__location__ " failed to lock ltdb record\n"));
 		talloc_free(h);
 		return NULL;
 	}
@@ -653,7 +653,7 @@ int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data)
 
 	rec = ctdb_marshall_record(h, h->ctdb_db->db_id, h->key, &h->header, data);
 	if (rec == NULL) {
-		DEBUG(0,("Unable to marshall record in ctdb_record_store\n"));
+		DEBUG(DEBUG_ERR,("Unable to marshall record in ctdb_record_store\n"));
 		return -1;
 	}
 
@@ -667,7 +667,7 @@ int ctdb_record_store(struct ctdb_record_handle *h, TDB_DATA data)
 	talloc_free(rec);
 
 	if (ret != 0 || status != 0) {
-		DEBUG(0,("Failed persistent store in ctdb_record_store\n"));
+		DEBUG(DEBUG_ERR,("Failed persistent store in ctdb_record_store\n"));
 		return -1;
 	}
 
@@ -735,13 +735,13 @@ static void ctdb_client_reply_control(struct ctdb_context *ctdb,
 
 	state = ctdb_reqid_find(ctdb, hdr->reqid, struct ctdb_client_control_state);
 	if (state == NULL) {
-		DEBUG(0,(__location__ " reqid %u not found\n", hdr->reqid));
+		DEBUG(DEBUG_ERR,(__location__ " reqid %u not found\n", hdr->reqid));
 		return;
 	}
 
 	if (hdr->reqid != state->reqid) {
 		/* we found a record  but it was the wrong one */
-		DEBUG(0, ("Dropped orphaned reply control with reqid:%u\n",hdr->reqid));
+		DEBUG(DEBUG_ERR, ("Dropped orphaned reply control with reqid:%u\n",hdr->reqid));
 		return;
 	}
 
@@ -786,7 +786,7 @@ static void control_timeout_func(struct event_context *ev, struct timed_event *t
 {
 	struct ctdb_client_control_state *state = talloc_get_type(private_data, struct ctdb_client_control_state);
 
-	DEBUG(0,("control timed out. reqid:%d opcode:%d dstnode:%d\n", state->reqid, state->c->opcode, state->c->hdr.destnode));
+	DEBUG(DEBUG_ERR,("control timed out. reqid:%d opcode:%d dstnode:%d\n", state->reqid, state->c->opcode, state->c->hdr.destnode));
 
 	state->state = CTDB_CONTROL_TIMEOUT;
 
@@ -891,7 +891,7 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 	}
 
 	if (state->state != CTDB_CONTROL_DONE) {
-		DEBUG(0,(__location__ " ctdb_control_recv failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control_recv failed\n"));
 		if (state->async.fn) {
 			state->async.fn(state);
 		}
@@ -900,7 +900,7 @@ int ctdb_control_recv(struct ctdb_context *ctdb,
 	}
 
 	if (state->errormsg) {
-		DEBUG(0,("ctdb_control error: '%s'\n", state->errormsg));
+		DEBUG(DEBUG_ERR,("ctdb_control error: '%s'\n", state->errormsg));
 		if (errormsg) {
 			(*errormsg) = talloc_move(mem_ctx, &state->errormsg);
 		}
@@ -969,7 +969,7 @@ int ctdb_ctrl_process_exists(struct ctdb_context *ctdb, uint32_t destnode, pid_t
 			   CTDB_CONTROL_PROCESS_EXISTS, 0, data, 
 			   NULL, NULL, &status, NULL, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for process_exists failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for process_exists failed\n"));
 		return -1;
 	}
 
@@ -989,12 +989,12 @@ int ctdb_ctrl_statistics(struct ctdb_context *ctdb, uint32_t destnode, struct ct
 			   CTDB_CONTROL_STATISTICS, 0, tdb_null, 
 			   ctdb, &data, &res, NULL, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for statistics failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for statistics failed\n"));
 		return -1;
 	}
 
 	if (data.dsize != sizeof(struct ctdb_statistics)) {
-		DEBUG(0,(__location__ " Wrong statistics size %u - expected %u\n",
+		DEBUG(DEBUG_ERR,(__location__ " Wrong statistics size %u - expected %u\n",
 			 (unsigned)data.dsize, (unsigned)sizeof(struct ctdb_statistics)));
 		      return -1;
 	}
@@ -1016,7 +1016,7 @@ int ctdb_ctrl_shutdown(struct ctdb_context *ctdb, struct timeval timeout, uint32
 			   CTDB_CONTROL_SHUTDOWN, 0, tdb_null, 
 			   NULL, &timeout, NULL);
 	if (state == NULL) {
-		DEBUG(0,(__location__ " ctdb_control for shutdown failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for shutdown failed\n"));
 		return -1;
 	}
 
@@ -1037,14 +1037,14 @@ int ctdb_ctrl_getvnnmap(struct ctdb_context *ctdb, struct timeval timeout, uint3
 			   CTDB_CONTROL_GETVNNMAP, 0, tdb_null, 
 			   mem_ctx, &outdata, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getvnnmap failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getvnnmap failed\n"));
 		return -1;
 	}
 	
 	map = (struct ctdb_vnn_map_wire *)outdata.dptr;
 	if (outdata.dsize < offsetof(struct ctdb_vnn_map_wire, map) ||
 	    outdata.dsize != map->size*sizeof(uint32_t) + offsetof(struct ctdb_vnn_map_wire, map)) {
-		DEBUG(0,("Bad vnn map size received in ctdb_ctrl_getvnnmap\n"));
+		DEBUG(DEBUG_ERR,("Bad vnn map size received in ctdb_ctrl_getvnnmap\n"));
 		return -1;
 	}
 
@@ -1080,7 +1080,7 @@ int ctdb_ctrl_getrecmode_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, st
 
 	ret = ctdb_control_recv(ctdb, state, mem_ctx, NULL, &res, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_ctrl_getrecmode_recv failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_ctrl_getrecmode_recv failed\n"));
 		return -1;
 	}
 
@@ -1118,7 +1118,7 @@ int ctdb_ctrl_setrecmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 			   CTDB_CONTROL_SET_RECMODE, 0, data, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for setrecmode failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for setrecmode failed\n"));
 		return -1;
 	}
 
@@ -1146,7 +1146,7 @@ int ctdb_ctrl_getrecmaster_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, 
 
 	ret = ctdb_control_recv(ctdb, state, mem_ctx, NULL, &res, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_ctrl_getrecmaster_recv failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_ctrl_getrecmaster_recv failed\n"));
 		return -1;
 	}
 
@@ -1183,7 +1183,7 @@ int ctdb_ctrl_setrecmaster(struct ctdb_context *ctdb, struct timeval timeout, ui
 			   CTDB_CONTROL_SET_RECMASTER, 0, data, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for setrecmaster failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for setrecmaster failed\n"));
 		return -1;
 	}
 
@@ -1205,7 +1205,7 @@ int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, struct timeval timeout, uint32
 			   CTDB_CONTROL_GET_DBMAP, 0, tdb_null, 
 			   mem_ctx, &outdata, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getdbmap failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getdbmap failed\n"));
 		return -1;
 	}
 
@@ -1231,7 +1231,7 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 			   CTDB_CONTROL_GET_NODEMAP, 0, tdb_null, 
 			   mem_ctx, &outdata, &res, &timeout, NULL);
 	if (ret != 0 || res != 0 || outdata.dsize == 0) {
-		DEBUG(0,(__location__ " ctdb_control for getnodes failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getnodes failed\n"));
 		return -1;
 	}
 
@@ -1268,7 +1268,7 @@ int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, struct timeval timeout, uint3
 			   CTDB_CONTROL_SETVNNMAP, 0, data, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for setvnnmap failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for setvnnmap failed\n"));
 		return -1;
 	}
 
@@ -1319,7 +1319,7 @@ int ctdb_ctrl_pulldb_recv(
 
 	ret = ctdb_control_recv(ctdb, state, mem_ctx, outdata, &res, NULL);
 	if ( (ret != 0) || (res != 0) ){
-		DEBUG(0,(__location__ " ctdb_ctrl_pulldb_recv failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_ctrl_pulldb_recv failed\n"));
 		return -1;
 	}
 
@@ -1363,7 +1363,7 @@ int ctdb_ctrl_setdmaster(struct ctdb_context *ctdb, struct timeval timeout, uint
 			   CTDB_CONTROL_SET_DMASTER, 0, indata, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for setdmaster failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for setdmaster failed\n"));
 		return -1;
 	}
 
@@ -1486,7 +1486,7 @@ int ctdb_ctrl_get_debuglevel(struct ctdb_context *ctdb, uint32_t destnode, uint3
 		return -1;
 	}
 	if (data.dsize != sizeof(uint32_t)) {
-		DEBUG(0,("Bad control reply size in ctdb_get_debuglevel (got %u)\n",
+		DEBUG(DEBUG_ERR,("Bad control reply size in ctdb_get_debuglevel (got %u)\n",
 			 (unsigned)data.dsize));
 		return -1;
 	}
@@ -1563,7 +1563,7 @@ int ctdb_statistics_reset(struct ctdb_context *ctdb, uint32_t destnode)
 			   CTDB_CONTROL_STATISTICS_RESET, 0, tdb_null, 
 			   NULL, NULL, &res, NULL, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for reset statistics failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for reset statistics failed\n"));
 		return -1;
 	}
 	return 0;
@@ -1616,7 +1616,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 			   persistent?CTDB_CONTROL_DB_ATTACH_PERSISTENT:CTDB_CONTROL_DB_ATTACH,
 			   0, data, ctdb_db, &data, &res, NULL, NULL);
 	if (ret != 0 || res != 0 || data.dsize != sizeof(uint32_t)) {
-		DEBUG(0,("Failed to attach to database '%s'\n", name));
+		DEBUG(DEBUG_ERR,("Failed to attach to database '%s'\n", name));
 		talloc_free(ctdb_db);
 		return NULL;
 	}
@@ -1626,7 +1626,7 @@ struct ctdb_db_context *ctdb_attach(struct ctdb_context *ctdb, const char *name,
 
 	ret = ctdb_ctrl_getdbpath(ctdb, timeval_current_ofs(2, 0), CTDB_CURRENT_NODE, ctdb_db->db_id, ctdb_db, &ctdb_db->db_path);
 	if (ret != 0) {
-		DEBUG(0,("Failed to get dbpath for database '%s'\n", name));
+		DEBUG(DEBUG_ERR,("Failed to get dbpath for database '%s'\n", name));
 		talloc_free(ctdb_db);
 		return NULL;
 	}
@@ -1674,7 +1674,7 @@ int ctdb_set_call(struct ctdb_db_context *ctdb_db, ctdb_fn_t fn, uint32_t id)
 	ret = ctdb_control(ctdb_db->ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_SET_CALL, 0,
 			   data, NULL, NULL, &status, NULL, NULL);
 	if (ret != 0 || status != 0) {
-		DEBUG(0,("ctdb_set_call failed for call %u\n", id));
+		DEBUG(DEBUG_ERR,("ctdb_set_call failed for call %u\n", id));
 		return -1;
 	}
 #endif
@@ -1707,7 +1707,7 @@ static void traverse_handler(struct ctdb_context *ctdb, uint64_t srvid, TDB_DATA
 
 	if (data.dsize < sizeof(uint32_t) ||
 	    d->length != data.dsize) {
-		DEBUG(0,("Bad data size %u in traverse_handler\n", (unsigned)data.dsize));
+		DEBUG(DEBUG_ERR,("Bad data size %u in traverse_handler\n", (unsigned)data.dsize));
 		state->done = True;
 		return;
 	}
@@ -1751,7 +1751,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 
 	ret = ctdb_set_message_handler(ctdb_db->ctdb, srvid, traverse_handler, &state);
 	if (ret != 0) {
-		DEBUG(0,("Failed to setup traverse handler\n"));
+		DEBUG(DEBUG_ERR,("Failed to setup traverse handler\n"));
 		return -1;
 	}
 
@@ -1765,7 +1765,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 	ret = ctdb_control(ctdb_db->ctdb, CTDB_CURRENT_NODE, 0, CTDB_CONTROL_TRAVERSE_START, 0,
 			   data, NULL, NULL, &status, NULL, NULL);
 	if (ret != 0 || status != 0) {
-		DEBUG(0,("ctdb_traverse_all failed\n"));
+		DEBUG(DEBUG_ERR,("ctdb_traverse_all failed\n"));
 		ctdb_remove_message_handler(ctdb_db->ctdb, srvid, &state);
 		return -1;
 	}
@@ -1776,7 +1776,7 @@ int ctdb_traverse(struct ctdb_db_context *ctdb_db, ctdb_traverse_func fn, void *
 
 	ret = ctdb_remove_message_handler(ctdb_db->ctdb, srvid, &state);
 	if (ret != 0) {
-		DEBUG(0,("Failed to remove ctdb_traverse handler\n"));
+		DEBUG(DEBUG_ERR,("Failed to remove ctdb_traverse handler\n"));
 		return -1;
 	}
 
@@ -1824,7 +1824,7 @@ int ctdb_ctrl_getpid(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 			   CTDB_CONTROL_GET_PID, 0, tdb_null, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getpid failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getpid failed\n"));
 		return -1;
 	}
 
@@ -1855,7 +1855,7 @@ int ctdb_ctrl_freeze_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct
 
 	ret = ctdb_control_recv(ctdb, state, mem_ctx, NULL, &res, NULL);
 	if ( (ret != 0) || (res != 0) ){
-		DEBUG(0,(__location__ " ctdb_ctrl_freeze_recv failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_ctrl_freeze_recv failed\n"));
 		return -1;
 	}
 
@@ -1890,7 +1890,7 @@ int ctdb_ctrl_thaw(struct ctdb_context *ctdb, struct timeval timeout, uint32_t d
 			   CTDB_CONTROL_THAW, 0, tdb_null, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control thaw failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control thaw failed\n"));
 		return -1;
 	}
 
@@ -1909,7 +1909,7 @@ int ctdb_ctrl_getpnn(struct ctdb_context *ctdb, struct timeval timeout, uint32_t
 			   CTDB_CONTROL_GET_PNN, 0, tdb_null, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getpnn failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getpnn failed\n"));
 		return -1;
 	}
 
@@ -1928,7 +1928,7 @@ int ctdb_ctrl_getmonmode(struct ctdb_context *ctdb, struct timeval timeout, uint
 			   CTDB_CONTROL_GET_MONMODE, 0, tdb_null, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getrecmode failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getrecmode failed\n"));
 		return -1;
 	}
 
@@ -1954,7 +1954,7 @@ int ctdb_ctrl_takeover_ip(struct ctdb_context *ctdb, struct timeval timeout,
 			   NULL, &res, &timeout, NULL);
 
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for takeover_ip failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for takeover_ip failed\n"));
 		return -1;
 	}
 
@@ -1979,7 +1979,7 @@ int ctdb_ctrl_release_ip(struct ctdb_context *ctdb, struct timeval timeout,
 			   NULL, &res, &timeout, NULL);
 
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for release_ip failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for release_ip failed\n"));
 		return -1;
 	}
 
@@ -2012,12 +2012,12 @@ int ctdb_ctrl_get_tunable(struct ctdb_context *ctdb,
 			   &outdata, &res, &timeout, NULL);
 	talloc_free(data.dptr);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for get_tunable failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get_tunable failed\n"));
 		return -1;
 	}
 
 	if (outdata.dsize != sizeof(uint32_t)) {
-		DEBUG(0,("Invalid return data in get_tunable\n"));
+		DEBUG(DEBUG_ERR,("Invalid return data in get_tunable\n"));
 		talloc_free(outdata.dptr);
 		return -1;
 	}
@@ -2054,7 +2054,7 @@ int ctdb_ctrl_set_tunable(struct ctdb_context *ctdb,
 			   NULL, &res, &timeout, NULL);
 	talloc_free(data.dptr);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for set_tunable failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for set_tunable failed\n"));
 		return -1;
 	}
 
@@ -2079,14 +2079,14 @@ int ctdb_ctrl_list_tunables(struct ctdb_context *ctdb,
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_LIST_TUNABLES, 0, tdb_null, 
 			   mem_ctx, &outdata, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for list_tunables failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for list_tunables failed\n"));
 		return -1;
 	}
 
 	t = (struct ctdb_control_list_tunable *)outdata.dptr;
 	if (outdata.dsize < offsetof(struct ctdb_control_list_tunable, data) ||
 	    t->length > outdata.dsize-offsetof(struct ctdb_control_list_tunable, data)) {
-		DEBUG(0,("Invalid data in list_tunables reply\n"));
+		DEBUG(DEBUG_ERR,("Invalid data in list_tunables reply\n"));
 		talloc_free(outdata.dptr);
 		return -1;		
 	}
@@ -2125,7 +2125,7 @@ int ctdb_ctrl_get_public_ips(struct ctdb_context *ctdb,
 			   CTDB_CONTROL_GET_PUBLIC_IPS, 0, tdb_null, 
 			   mem_ctx, &outdata, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for getpublicips failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getpublicips failed\n"));
 		return -1;
 	}
 
@@ -2156,7 +2156,7 @@ int ctdb_ctrl_modflags(struct ctdb_context *ctdb, struct timeval timeout, uint32
 			   CTDB_CONTROL_MODIFY_FLAGS, 0, data, 
 			   NULL, NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for modflags failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for modflags failed\n"));
 		return -1;
 	}
 
@@ -2179,12 +2179,12 @@ int ctdb_ctrl_get_all_tunables(struct ctdb_context *ctdb,
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_GET_ALL_TUNABLES, 0, tdb_null, ctdb,
 			   &outdata, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for get all tunables failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get all tunables failed\n"));
 		return -1;
 	}
 
 	if (outdata.dsize != sizeof(*tunables)) {
-		DEBUG(0,(__location__ " bad data size %u in ctdb_ctrl_get_all_tunables should be %u\n",
+		DEBUG(DEBUG_ERR,(__location__ " bad data size %u in ctdb_ctrl_get_all_tunables should be %u\n",
 			 (unsigned)outdata.dsize, (unsigned)sizeof(*tunables)));
 		return -1;		
 	}
@@ -2213,7 +2213,7 @@ int ctdb_ctrl_killtcp(struct ctdb_context *ctdb,
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_KILL_TCP, 0, data, NULL,
 			   NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for killtcp failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for killtcp failed\n"));
 		return -1;
 	}
 
@@ -2252,7 +2252,7 @@ int ctdb_ctrl_gratious_arp(struct ctdb_context *ctdb,
 	ret = ctdb_control(ctdb, destnode, 0, CTDB_CONTROL_SEND_GRATIOUS_ARP, 0, data, NULL,
 			   NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for gratious_arp failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for gratious_arp failed\n"));
 		talloc_free(tmp_ctx);
 		return -1;
 	}
@@ -2281,7 +2281,7 @@ int ctdb_ctrl_get_tcp_tickles(struct ctdb_context *ctdb,
 			   CTDB_CONTROL_GET_TCP_TICKLE_LIST, 0, data, 
 			   mem_ctx, &outdata, &status, NULL, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for get tcp tickles failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get tcp tickles failed\n"));
 		return -1;
 	}
 
@@ -2309,7 +2309,7 @@ int ctdb_ctrl_register_server_id(struct ctdb_context *ctdb,
 			0, data, NULL,
 			NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for register server id failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for register server id failed\n"));
 		return -1;
 	}
 
@@ -2335,7 +2335,7 @@ int ctdb_ctrl_unregister_server_id(struct ctdb_context *ctdb,
 			0, data, NULL,
 			NULL, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for unregister server id failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for unregister server id failed\n"));
 		return -1;
 	}
 
@@ -2365,7 +2365,7 @@ int ctdb_ctrl_check_server_id(struct ctdb_context *ctdb,
 			0, data, NULL,
 			NULL, &res, &timeout, NULL);
 	if (ret != 0) {
-		DEBUG(0,(__location__ " ctdb_control for check server id failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for check server id failed\n"));
 		return -1;
 	}
 
@@ -2394,7 +2394,7 @@ int ctdb_ctrl_get_server_id_list(struct ctdb_context *ctdb,
 			   CTDB_CONTROL_GET_SERVER_ID_LIST, 0, tdb_null, 
 			   mem_ctx, &outdata, &res, &timeout, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_control for get_server_id_list failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for get_server_id_list failed\n"));
 		return -1;
 	}
 
@@ -2469,7 +2469,7 @@ int ctdb_ctrl_uptime_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct
 
 	ret = ctdb_control_recv(ctdb, state, mem_ctx, &outdata, &res, NULL);
 	if (ret != 0 || res != 0) {
-		DEBUG(0,(__location__ " ctdb_ctrl_uptime_recv failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_ctrl_uptime_recv failed\n"));
 		return -1;
 	}
 
@@ -2498,7 +2498,7 @@ int ctdb_ctrl_end_recovery(struct ctdb_context *ctdb, struct timeval timeout, ui
 			   CTDB_CONTROL_END_RECOVERY, 0, tdb_null, 
 			   NULL, NULL, &status, &timeout, NULL);
 	if (ret != 0 || status != 0) {
-		DEBUG(0,(__location__ " ctdb_control for end_recovery failed\n"));
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for end_recovery failed\n"));
 		return -1;
 	}
 
@@ -2523,7 +2523,7 @@ static void async_callback(struct ctdb_client_control_state *state)
 	*/
 	if (state->state != CTDB_CONTROL_DONE) {
 		if ( !data->dont_log_errors) {
-			DEBUG(0,("Async operation failed with state %d\n", state->state));
+			DEBUG(DEBUG_ERR,("Async operation failed with state %d\n", state->state));
 		}
 		data->fail_count++;
 		return;
@@ -2534,7 +2534,7 @@ static void async_callback(struct ctdb_client_control_state *state)
 	ret = ctdb_control_recv(state->ctdb, state, data, NULL, &res, NULL);
 	if ((ret != 0) || (res != 0)) {
 		if ( !data->dont_log_errors) {
-			DEBUG(0,("Async operation failed with ret=%d res=%d\n", ret, (int)res));
+			DEBUG(DEBUG_ERR,("Async operation failed with ret=%d res=%d\n", ret, (int)res));
 		}
 		data->fail_count++;
 	}
@@ -2562,7 +2562,7 @@ int ctdb_client_async_wait(struct ctdb_context *ctdb, struct client_async_data *
 	}
 	if (data->fail_count != 0) {
 		if (!data->dont_log_errors) {
-			DEBUG(0,("Async wait failed - fail_count=%u\n", 
+			DEBUG(DEBUG_ERR,("Async wait failed - fail_count=%u\n", 
 				 data->fail_count));
 		}
 		return -1;
@@ -2599,7 +2599,7 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 		state = ctdb_control_send(ctdb, pnn, 0, opcode, 
 					  0, data, async_data, &timeout, NULL);
 		if (state == NULL) {
-			DEBUG(0,(__location__ " Failed to call async control %u\n", (unsigned)opcode));
+			DEBUG(DEBUG_ERR,(__location__ " Failed to call async control %u\n", (unsigned)opcode));
 			talloc_free(async_data);
 			return -1;
 		}

@@ -46,7 +46,7 @@ static void ctdb_persistent_callback(struct ctdb_context *ctdb,
 							      struct ctdb_persistent_state);
 
 	if (status != 0) {
-		DEBUG(0,("ctdb_persistent_callback failed with status %d (%s)\n",
+		DEBUG(DEBUG_ERR,("ctdb_persistent_callback failed with status %d (%s)\n",
 			 status, errormsg));
 		state->status = status;
 		state->errormsg = errormsg;
@@ -108,7 +108,7 @@ int32_t ctdb_control_persistent_store(struct ctdb_context *ctdb,
 					       c->client_id, 0, recdata, 
 					       ctdb_persistent_callback, state);
 		if (ret == -1) {
-			DEBUG(0,("Unable to send CTDB_CONTROL_UPDATE_RECORD to pnn %u\n", node->pnn));
+			DEBUG(DEBUG_ERR,("Unable to send CTDB_CONTROL_UPDATE_RECORD to pnn %u\n", node->pnn));
 			talloc_free(state);
 			return -1;
 		}
@@ -157,13 +157,13 @@ static int ctdb_persistent_store(struct ctdb_persistent_lock_state *state)
 	/* fetch the old header and ensure the rsn is less than the new rsn */
 	ret = ctdb_ltdb_fetch(state->ctdb_db, state->key, &oldheader, NULL, NULL);
 	if (ret != 0) {
-		DEBUG(0,("Failed to fetch old record for db_id 0x%08x in ctdb_persistent_store\n",
+		DEBUG(DEBUG_ERR,("Failed to fetch old record for db_id 0x%08x in ctdb_persistent_store\n",
 			 state->ctdb_db->db_id));
 		return -1;
 	}
 
 	if (oldheader.rsn >= state->header->rsn) {
-		DEBUG(0,("existing header for db_id 0x%08x has larger RSN %llu than new RSN %llu in ctdb_persistent_store\n",
+		DEBUG(DEBUG_CRIT,("existing header for db_id 0x%08x has larger RSN %llu than new RSN %llu in ctdb_persistent_store\n",
 			 state->ctdb_db->db_id, 
 			 (unsigned long long)oldheader.rsn, (unsigned long long)state->header->rsn));
 		return -1;
@@ -171,7 +171,7 @@ static int ctdb_persistent_store(struct ctdb_persistent_lock_state *state)
 
 	ret = ctdb_ltdb_store(state->ctdb_db, state->key, state->header, state->data);
 	if (ret != 0) {
-		DEBUG(0,("Failed to store record for db_id 0x%08x in ctdb_persistent_store\n", 
+		DEBUG(DEBUG_CRIT,("Failed to store record for db_id 0x%08x in ctdb_persistent_store\n", 
 			 state->ctdb_db->db_id));
 		return -1;
 	}
@@ -192,7 +192,7 @@ static void ctdb_persistent_lock_callback(void *private_data)
 
 	ret = tdb_chainlock_mark(state->tdb, state->key);
 	if (ret != 0) {
-		DEBUG(0,("Failed to mark lock in ctdb_persistent_lock_callback\n"));
+		DEBUG(DEBUG_ERR,("Failed to mark lock in ctdb_persistent_lock_callback\n"));
 		ctdb_request_control_reply(state->ctdb_db->ctdb, state->c, NULL, ret, NULL);
 		return;
 	}
@@ -231,13 +231,13 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	struct ctdb_persistent_lock_state *state;
 
 	if (ctdb->recovery_mode != CTDB_RECOVERY_NORMAL) {
-		DEBUG(0,("rejecting ctdb_control_update_record when recovery active\n"));
+		DEBUG(DEBUG_DEBUG,("rejecting ctdb_control_update_record when recovery active\n"));
 		return -1;
 	}
 
 	ctdb_db = find_ctdb_db(ctdb, db_id);
 	if (ctdb_db == NULL) {
-		DEBUG(0,("Unknown database 0x%08x in ctdb_control_update_record\n", db_id));
+		DEBUG(DEBUG_ERR,("Unknown database 0x%08x in ctdb_control_update_record\n", db_id));
 		return -1;
 	}
 
@@ -253,7 +253,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	state->data.dsize = rec->datalen;
 
 	if (state->data.dsize < sizeof(struct ctdb_ltdb_header)) {
-		DEBUG(0,("Invalid data size %u in ctdb_control_update_record\n", 
+		DEBUG(DEBUG_CRIT,("Invalid data size %u in ctdb_control_update_record\n", 
 			 (unsigned)state->data.dsize));
 		return -1;
 	}
@@ -273,7 +273,7 @@ int32_t ctdb_control_update_record(struct ctdb_context *ctdb,
 	/* wait until we have a lock on this record */
 	handle = ctdb_lockwait(ctdb_db, state->key, ctdb_persistent_lock_callback, state);
 	if (handle == NULL) {
-		DEBUG(0,("Failed to setup lockwait handler in ctdb_control_update_record\n"));
+		DEBUG(DEBUG_ERR,("Failed to setup lockwait handler in ctdb_control_update_record\n"));
 		return -1;
 	}
 

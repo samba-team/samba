@@ -46,7 +46,7 @@ void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...)
 	talloc_free(ctdb->err_msg);
 	va_start(ap, fmt);
 	ctdb->err_msg = talloc_vasprintf(ctdb, fmt, ap);
-	DEBUG(0,("ctdb error: %s\n", ctdb->err_msg));
+	DEBUG(DEBUG_ERR,("ctdb error: %s\n", ctdb->err_msg));
 	va_end(ap);
 }
 
@@ -113,7 +113,7 @@ static void *_idr_find_type(struct idr_context *idp, int id, const char *type, c
 {
 	void *p = idr_find(idp, id);
 	if (p && talloc_check_name(p, type) == NULL) {
-		DEBUG(0,("%s idr_find_type expected type %s  but got %s\n",
+		DEBUG(DEBUG_ERR,("%s idr_find_type expected type %s  but got %s\n",
 			 location, type, talloc_get_name(p)));
 		return NULL;
 	}
@@ -147,7 +147,7 @@ void *_ctdb_reqid_find(struct ctdb_context *ctdb, uint32_t reqid, const char *ty
 
 	p = _idr_find_type(ctdb->idr, (reqid>>16)&0xFFFF, type, location);
 	if (p == NULL) {
-		DEBUG(0, ("Could not find idr:%u\n",reqid));
+		DEBUG(DEBUG_ERR, ("Could not find idr:%u\n",reqid));
 	}
 
 	return p;
@@ -160,7 +160,7 @@ void ctdb_reqid_remove(struct ctdb_context *ctdb, uint32_t reqid)
 
 	ret = idr_remove(ctdb->idr, (reqid>>16)&0xFFFF);
 	if (ret != 0) {
-		DEBUG(0, ("Removing idr that does not exist\n"));
+		DEBUG(DEBUG_ERR, ("Removing idr that does not exist\n"));
 	}
 }
 
@@ -216,7 +216,7 @@ void ctdb_set_scheduler(struct ctdb_context *ctdb)
 	}
 	
 	if (sched_getparam(0, (struct sched_param *)ctdb->saved_scheduler_param) == -1) {
-		DEBUG(0,("Unable to get old scheduler params\n"));
+		DEBUG(DEBUG_ERR,("Unable to get old scheduler params\n"));
 		return;
 	}
 
@@ -224,7 +224,7 @@ void ctdb_set_scheduler(struct ctdb_context *ctdb)
 	p.sched_priority = 1;
 
 	if (sched_setscheduler(0, SCHED_FIFO, &p) == -1) {
-		DEBUG(0,("Unable to set scheduler to SCHED_FIFO (%s)\n", 
+		DEBUG(DEBUG_CRIT,("Unable to set scheduler to SCHED_FIFO (%s)\n", 
 			 strerror(errno)));
 	} else {
 		DEBUG(DEBUG_NOTICE,("Set scheduler to SCHED_FIFO\n"));
