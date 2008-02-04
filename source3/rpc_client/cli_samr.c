@@ -605,37 +605,6 @@ NTSTATUS rpccli_samr_add_aliasmem(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return result;
 }
 
-/* Delete an alias member */
-
-NTSTATUS rpccli_samr_del_aliasmem(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-			       POLICY_HND *alias_pol, DOM_SID *member)
-{
-	prs_struct qbuf, rbuf;
- 	SAMR_Q_DEL_ALIASMEM q;
- 	SAMR_R_DEL_ALIASMEM r;
- 	NTSTATUS result;
-
- 	DEBUG(10,("cli_samr_del_aliasmem"));
-
- 	ZERO_STRUCT(q);
- 	ZERO_STRUCT(r);
-
- 	/* Marshall data and send request */
-
- 	init_samr_q_del_aliasmem(&q, alias_pol, member);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_DEL_ALIASMEM,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_del_aliasmem,
-		samr_io_r_del_aliasmem,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	result = r.status;
-
-	return result;
-}
-
 /* Query alias info */
 
 NTSTATUS rpccli_samr_query_alias_info(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
