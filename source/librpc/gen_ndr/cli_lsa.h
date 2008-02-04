@@ -17,7 +17,7 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  struct policy_handle *handle,
 				  uint32_t sec_info,
-				  struct sec_desc_buf *sdbuf);
+				  struct sec_desc_buf **sdbuf);
 NTSTATUS rpccli_lsa_SetSecObj(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_lsa_ChangePassword(struct rpc_pipe_client *cli,

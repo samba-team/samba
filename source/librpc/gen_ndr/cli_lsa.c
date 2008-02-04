@@ -135,7 +135,7 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  struct policy_handle *handle,
 				  uint32_t sec_info,
-				  struct sec_desc_buf *sdbuf)
+				  struct sec_desc_buf **sdbuf)
 {
 	struct lsa_QuerySecurity r;
 	NTSTATUS status;
@@ -168,9 +168,7 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (sdbuf && r.out.sdbuf) {
-		*sdbuf = *r.out.sdbuf;
-	}
+	*sdbuf = *r.out.sdbuf;
 
 	/* Return result */
 	return r.out.result;

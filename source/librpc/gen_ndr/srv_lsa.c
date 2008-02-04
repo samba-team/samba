@@ -274,7 +274,7 @@ static bool api_lsa_QuerySecurity(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.sdbuf = talloc_zero(r, struct sec_desc_buf);
+	r->out.sdbuf = talloc_zero(r, struct sec_desc_buf *);
 	if (r->out.sdbuf == NULL) {
 		talloc_free(r);
 		return false;
