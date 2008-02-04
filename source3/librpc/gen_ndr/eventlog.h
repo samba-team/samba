@@ -164,7 +164,7 @@ struct eventlog_ReadEventLogW {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t flags;
 		uint32_t offset;
-		uint32_t number_of_bytes;
+		uint32_t number_of_bytes;/* [range(0,0x7FFFF)] */
 	} in;
 
 	struct {
