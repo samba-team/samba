@@ -656,9 +656,10 @@ import "security.idl";
 		);
 
 	/* Function:        0x22 */
-	NTSTATUS lsa_DeleteObject();
+	NTSTATUS lsa_DeleteObject(
+		[in,out] policy_handle **handle
+		);
 
-	
 	/*******************/
 	/* Function:      0x23 */
 	NTSTATUS lsa_EnumAccountsWithUserRight (
