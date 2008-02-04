@@ -516,15 +516,16 @@ static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 
 
 /***************************************************************************
- _lsa_open_policy2.
+ _lsa_OpenPolicy2
  ***************************************************************************/
 
-NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 *r_u)
+NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
+			  struct lsa_OpenPolicy2 *r)
 {
 	struct lsa_info *info;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
-	uint32 des_access=q_u->des_access;
+	uint32 des_access = r->in.access_mask;
 	uint32 acc_granted;
 	NTSTATUS status;
 
@@ -558,7 +559,7 @@ NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL
 	info->access = acc_granted;
 
 	/* set up the LSA QUERY INFO response */
-	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.handle, free_lsa_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -2399,12 +2400,6 @@ NTSTATUS _lsa_StorePrivateData(pipes_struct *p, struct lsa_StorePrivateData *r)
 }
 
 NTSTATUS _lsa_RetrievePrivateData(pipes_struct *p, struct lsa_RetrievePrivateData *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_OpenPolicy2(pipes_struct *p, struct lsa_OpenPolicy2 *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
