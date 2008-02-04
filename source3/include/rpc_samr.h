@@ -1469,25 +1469,6 @@ typedef struct r_samr_del_alias_mem_info
 } SAMR_R_DEL_ALIASMEM;
 
 
-/* SAMR_Q_CONNECT - probably an open */
-typedef struct q_samr_connect_info
-{
-	uint32 ptr_srv_name;         /* pointer (to server name?) */
-	UNISTR2 uni_srv_name;        /* unicode server name starting with '\\' */
-
-	uint32 access_mask;            
-
-} SAMR_Q_CONNECT;
-
-
-/* SAMR_R_CONNECT - probably an open */
-typedef struct r_samr_connect_info
-{
-	POLICY_HND connect_pol;       /* policy handle */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_CONNECT;
-
 /* SAMR_ENC_PASSWD */
 typedef struct enc_passwd_info
 {

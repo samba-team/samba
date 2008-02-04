@@ -22,43 +22,6 @@
 
 #include "includes.h"
 
-/* Connect to SAMR database */
-
-NTSTATUS rpccli_samr_connect(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-			     uint32 access_mask, POLICY_HND *connect_pol)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_CONNECT q;
-	SAMR_R_CONNECT r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_connect to %s\n", cli->cli->desthost));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_connect(&q, cli->cli->desthost, access_mask);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CONNECT,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_connect,
-		samr_io_r_connect,
-		NT_STATUS_UNSUCCESSFUL); 
-	/* Return output parameters */
-
-	if (NT_STATUS_IS_OK(result = r.status)) {
-		*connect_pol = r.connect_pol;
-#ifdef __INSURE__
-		connect_pol->marker = malloc(1);
-#endif
-	}
-
-	return result;
-}
-
 /* Query user info */
 
 NTSTATUS rpccli_samr_query_userinfo(struct rpc_pipe_client *cli,
