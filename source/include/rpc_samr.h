@@ -446,32 +446,6 @@ typedef struct sam_user_info_9
 
 
 /****************************************************************************
-SAMR_Q_GET_USRDOM_PWINFO - a "set user info" occurs just after this
-*****************************************************************************/
-
-/* SAMR_Q_GET_USRDOM_PWINFO */
-typedef struct q_samr_usrdom_pwinfo_info
-{
-	POLICY_HND user_pol;          /* policy handle */
-
-} SAMR_Q_GET_USRDOM_PWINFO;
-
-
-/****************************************************************************
-SAMR_R_GET_USRDOM_PWINFO - a "set user info" occurs just after this
-*****************************************************************************/
-
-/* SAMR_R_GET_USRDOM_PWINFO */
-typedef struct r_samr_usrdom_pwinfo_info
-{
-	uint16 min_pwd_length;
-	uint16 unknown_1; /* 0x0016 or 0x0015 */
-	uint32 password_properties;
-	NTSTATUS status; 
-
-} SAMR_R_GET_USRDOM_PWINFO;
-
-/****************************************************************************
 SAMR_Q_SET_SEC_OBJ - info level 4.
 *****************************************************************************/
 
