@@ -136,7 +136,7 @@ NTSTATUS stream_new_connection_merge(struct event_context *ev,
 	srv_conn->private       = private_data;
 	srv_conn->model_ops     = model_ops;
 	srv_conn->socket	= sock;
-	srv_conn->server_id	= cluster_id(0);
+	srv_conn->server_id	= cluster_id(0, 0);
 	srv_conn->ops           = stream_ops;
 	srv_conn->msg_ctx	= msg_ctx;
 	srv_conn->event.ctx	= ev;
@@ -274,8 +274,11 @@ NTSTATUS stream_setup_socket(struct event_context *event_context,
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
-	/* TODO: set socket ACL's here when they're implemented */
+	/* TODO: set socket ACL's (host allow etc) here when they're
+	 * implemented */
 
+	/* Some sockets don't have a port, or are just described from
+	 * the string.  We are indicating this by having port == NULL */
 	if (!port) {
 		socket_address = socket_address_from_strings(stream_socket, 
 							     stream_socket->sock->backend_name,
@@ -314,8 +317,15 @@ NTSTATUS stream_setup_socket(struct event_context *event_context,
 		return status;
 	}
 
-	/* we will close the socket using the events system */
+	/* By specifying EVENT_FD_AUTOCLOSE below, we indicate that we
+	 * will close the socket using the events system.  This avoids
+	 * nasty interactions with waiting for talloc to close the socket. */
+
 	socket_set_flags(stream_socket->sock, SOCKET_FLAG_NOCLOSE);
+
+	/* Add the FD from the newly created socket into the event
+	 * subsystem.  it will call the accept handler whenever we get
+	 * new connections */
 
 	event_add_fd(event_context, stream_socket->sock, 
 		     socket_get_fd(stream_socket->sock), 
