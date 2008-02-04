@@ -1151,48 +1151,6 @@ NTSTATUS rpccli_lsa_lookup_priv_value(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	return result;
 }
 
-/** Query LSA security object */
-
-NTSTATUS rpccli_lsa_query_secobj(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *pol, uint32 sec_info,
-			      SEC_DESC_BUF **psdb)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_QUERY_SEC_OBJ q;
-	LSA_R_QUERY_SEC_OBJ r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_q_query_sec_obj(&q, pol, sec_info);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_QUERYSECOBJ,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_query_sec_obj,
-		lsa_io_r_query_sec_obj,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	/* Return output parameters */
-
-	if (psdb)
-		*psdb = r.buf;
-
- done:
-
-	return result;
-}
-
-
 /* Enumerate account rights This is similar to enum_privileges but
    takes a SID directly, avoiding the open_account call.
 */
