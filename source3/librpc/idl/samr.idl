@@ -12,8 +12,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 [ uuid("12345778-1234-abcd-ef00-0123456789ac"),
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\samr]","ncacn_ip_tcp:", "ncalrpc:"),
-  pointer_default(unique),
-  pointer_default_top(unique)
+  pointer_default(unique)
 ] interface samr
 {
 	typedef bitmap security_secinfo security_secinfo;
@@ -98,7 +97,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/* Function: 0x00 */
 	NTSTATUS samr_Connect (
 		/* notice the lack of [string] */
-		[in]       uint16 *system_name,
+		[in,unique] uint16 *system_name,
 		[in]       samr_ConnectAccessMask access_mask,
 		[out,ref]  policy_handle *connect_handle
 		);
@@ -349,7 +348,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          samr_AcctFlags acct_flags,
 		[in]          uint32 max_size,
-		[out]         samr_SamArray *sam,
+		[out,unique]  samr_SamArray *sam,
 		[out,ref]     uint32 *num_entries
 		);
 
@@ -887,15 +886,15 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_ChangePasswordUser(
 		[in,ref]    policy_handle *user_handle,
 		[in]        boolean8 lm_present,
-		[in]        samr_Password *old_lm_crypted,
-		[in]        samr_Password *new_lm_crypted,
+		[in,unique] samr_Password *old_lm_crypted,
+		[in,unique] samr_Password *new_lm_crypted,
 		[in]        boolean8 nt_present,
-		[in]        samr_Password *old_nt_crypted,
-		[in]        samr_Password *new_nt_crypted,
+		[in,unique] samr_Password *old_nt_crypted,
+		[in,unique] samr_Password *new_nt_crypted,
 		[in]        boolean8 cross1_present,
-		[in]        samr_Password *nt_cross,
+		[in,unique] samr_Password *nt_cross,
 		[in]        boolean8 cross2_present,
-		[in]        samr_Password *lm_cross
+		[in,unique] samr_Password *lm_cross
 		);
 
 	/************************/
@@ -1155,35 +1154,35 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/* Function    0x36     */
 
 	NTSTATUS samr_OemChangePasswordUser2(
-		[in]              lsa_AsciiString *server,
+		[in,unique]       lsa_AsciiString *server,
 		[in,ref]          lsa_AsciiString *account,
-		[in]              samr_CryptPassword *password,
-		[in]              samr_Password *hash
+		[in,unique]       samr_CryptPassword *password,
+		[in,unique]       samr_Password *hash
 		);
 
 	/************************/
 	/* Function    0x37     */
 	NTSTATUS samr_ChangePasswordUser2(
-		[in]              lsa_String *server,
+		[in,unique]       lsa_String *server,
 		[in,ref]          lsa_String *account,
-		[in]              samr_CryptPassword *nt_password,
-		[in]              samr_Password *nt_verifier,
+		[in,unique]       samr_CryptPassword *nt_password,
+		[in,unique]       samr_Password *nt_verifier,
 		[in]              boolean8 lm_change,
-		[in]              samr_CryptPassword *lm_password,
-		[in]              samr_Password *lm_verifier
+		[in,unique]       samr_CryptPassword *lm_password,
+		[in,unique]       samr_Password *lm_verifier
 		);
 
 	/************************/
 	/* Function    0x38     */
 	NTSTATUS samr_GetDomPwInfo(
-		[in]        lsa_String *domain_name,
+		[in,unique] lsa_String *domain_name,
 		[out,ref]   samr_PwInfo *info
 		);
 
 	/************************/
 	/* Function    0x39     */
 	NTSTATUS samr_Connect2(
-		[in,string,charset(UTF16)] uint16 *system_name,
+		[in,unique,string,charset(UTF16)] uint16 *system_name,
 		[in] samr_ConnectAccessMask access_mask,
 		[out,ref]  policy_handle *connect_handle
 		);
@@ -1221,7 +1220,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/************************/
 	/* Function    0x3d     */
 	NTSTATUS samr_Connect3(
-		[in,string,charset(UTF16)] uint16 *system_name,
+		[in,unique,string,charset(UTF16)] uint16 *system_name,
 		/* this unknown value seems to be completely ignored by w2k3 */
 		[in] uint32 unknown,
 		[in] samr_ConnectAccessMask access_mask,
@@ -1231,7 +1230,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/************************/
 	/* Function    0x3e     */
 	NTSTATUS samr_Connect4(
-		[in,string,charset(UTF16)] uint16 *system_name,
+		[in,unique,string,charset(UTF16)] uint16 *system_name,
 		[in] uint32 unknown,
 		[in] samr_ConnectAccessMask access_mask,
 		[out,ref]  policy_handle *connect_handle
@@ -1249,14 +1248,14 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_ChangeReject;
 
 	NTSTATUS samr_ChangePasswordUser3(
-		[in]              lsa_String *server,
+		[in,unique]       lsa_String *server,
 		[in,ref]          lsa_String *account,
-		[in]              samr_CryptPassword *nt_password,
-		[in]              samr_Password *nt_verifier,
+		[in,unique]       samr_CryptPassword *nt_password,
+		[in,unique]       samr_Password *nt_verifier,
 		[in]              boolean8 lm_change,
-		[in]              samr_CryptPassword *lm_password,
-		[in]              samr_Password *lm_verifier,
-		[in]              samr_CryptPassword *password3,
+		[in,unique]       samr_CryptPassword *lm_password,
+		[in,unique]       samr_Password *lm_verifier,
+		[in,unique]       samr_CryptPassword *password3,
 		[out,ref]         samr_DomInfo1 *dominfo,
 		[out,ref]         samr_ChangeReject *reject
 		);
@@ -1274,7 +1273,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_ConnectInfo;
 
 	[public] NTSTATUS samr_Connect5(
-		[in,string,charset(UTF16)] uint16 *system_name,
+		[in,unique,string,charset(UTF16)] uint16 *system_name,
 		[in]       samr_ConnectAccessMask  access_mask,
 		[in]       uint32             level_in,
 		[in,ref,switch_is(level_in)] samr_ConnectInfo *info_in,
@@ -1302,9 +1301,9 @@ import "misc.idl", "lsa.idl", "security.idl";
 	*/
 
 	NTSTATUS samr_SetDsrmPassword(
-		[in]       lsa_String *name,
+		[in,unique] lsa_String *name,
 		[in]       uint32 unknown,
-		[in]       samr_Password *hash
+		[in,unique] samr_Password *hash
 		);
 
 
