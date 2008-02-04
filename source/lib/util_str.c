@@ -1841,8 +1841,7 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 
 #define S_LIST_ABS 16 /* List Allocation Block Size */
 
-static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string,
-				     const char *sep)
+char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
 {
 	char **list;
 	const char *str;
@@ -1902,11 +1901,6 @@ static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string,
 	return list;
 }
 
-char **str_list_make(TALLOC_CTX *mem_ctx, const char *string, const char *sep)
-{
-	return str_list_make_internal(mem_ctx, string, sep);
-}
-
 bool str_list_copy(TALLOC_CTX *mem_ctx, char ***dest, const char **src)
 {
 	char **list;
@@ -1958,16 +1952,6 @@ bool str_list_compare(char **list1, char **list2)
 		return false; /* if list2 has more elements than list1 fail */
 
 	return true;
-}
-
-void str_list_free_talloc(TALLOC_CTX *mem_ctx, char ***list)
-{
-	TALLOC_FREE(*list);
-}
-
-void str_list_free(char ***list)
-{
-	TALLOC_FREE(*list);
 }
 
 /******************************************************************************

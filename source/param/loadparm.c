@@ -2494,9 +2494,10 @@ static void free_service(service *pservice)
 				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
 		else if (parm_table[i].type == P_LIST &&
 			 parm_table[i].p_class == P_LOCAL)
-			     str_list_free((char ***)
-			     		    (((char *)pservice) +
-					     PTR_DIFF(parm_table[i].ptr, &sDefault)));
+			     TALLOC_FREE(*((char ***)
+					   (((char *)pservice) +
+					    PTR_DIFF(parm_table[i].ptr,
+						     &sDefault))));
 	}
 
 	data = pservice->param_opt;
@@ -2506,7 +2507,7 @@ static void free_service(service *pservice)
 		DEBUG(5,("[%s = %s]\n", data->key, data->value));
 		string_free(&data->key);
 		string_free(&data->value);
-		str_list_free(&data->list);
+		TALLOC_FREE(data->list);
 		pdata = data->next;
 		SAFE_FREE(data);
 		data = pdata;
@@ -2566,7 +2567,7 @@ static int add_a_service(const service *pservice, const char *name)
 			while (data) {
 				string_free(&data->key);
 				string_free(&data->value);
-				str_list_free(&data->list);
+				TALLOC_FREE(data->list);
 				pdata = data->next;
 				SAFE_FREE(data);
 				data = pdata;
@@ -3275,7 +3276,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource,
 					strupper_m(*(char **)dest_ptr);
 					break;
 				case P_LIST:
-					str_list_free((char ***)dest_ptr);
+					TALLOC_FREE(*((char ***)dest_ptr));
 					str_list_copy(NULL, (char ***)dest_ptr,
 						      *(const char ***)src_ptr);
 					break;
@@ -3300,7 +3301,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource,
 			/* If we already have same option, override it */
 			if (strcmp(pdata->key, data->key) == 0) {
 				string_free(&pdata->value);
-				str_list_free(&data->list);
+				TALLOC_FREE(data->list);
 				pdata->value = SMB_STRDUP(data->value);
 				not_added = False;
 				break;
@@ -3775,7 +3776,7 @@ static bool handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
 
 static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **ptr)
 {
-	str_list_free(&Globals.szNetbiosAliases);
+	TALLOC_FREE(Globals.szNetbiosAliases);
 	Globals.szNetbiosAliases = str_list_make(NULL, pszParmValue, NULL);
 	return set_netbios_aliases((const char **)Globals.szNetbiosAliases);
 }
@@ -4100,7 +4101,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 				/* If we already have same option, override it */
 				if (strcmp(data->key, param_key) == 0) {
 					string_free(&data->value);
-					str_list_free(&data->list);
+					TALLOC_FREE(data->list);
 					data->value = SMB_STRDUP(pszParmValue);
 					not_added = False;
 					break;
@@ -4193,7 +4194,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_LIST:
-			str_list_free((char ***)parm_ptr);
+			TALLOC_FREE(*((char ***)parm_ptr));
 			*(char ***)parm_ptr = str_list_make(
 				NULL, pszParmValue, NULL);
 			break;
@@ -5650,7 +5651,7 @@ void gfree_loadparm(void)
 			string_free( (char**)parm_table[i].ptr );
 		}
 		else if (parm_table[i].type == P_LIST) {
-			str_list_free( (char***)parm_table[i].ptr );
+			TALLOC_FREE( *((char***)parm_table[i].ptr) );
 		}
 	}
 }
@@ -5690,7 +5691,7 @@ bool lp_load(const char *pszFname,
 		while (data) {
 			string_free(&data->key);
 			string_free(&data->value);
-			str_list_free(&data->list);
+			TALLOC_FREE(data->list);
 			pdata = data->next;
 			SAFE_FREE(data);
 			data = pdata;
