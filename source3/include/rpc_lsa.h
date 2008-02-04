@@ -270,24 +270,6 @@ typedef struct lsa_r_open_pol2_info
                             POLICY_VIEW_LOCAL_INFORMATION    |\
                             POLICY_LOOKUP_NAMES )
 
-/* LSA_Q_QUERY_SEC_OBJ - LSA query security */
-typedef struct lsa_query_sec_obj_info
-{
-	POLICY_HND pol; /* policy handle */
-	uint32 sec_info;
-
-} LSA_Q_QUERY_SEC_OBJ;
-
-/* LSA_R_QUERY_SEC_OBJ - probably an open */
-typedef struct r_lsa_query_sec_obj_info
-{
-	uint32 ptr;
-	SEC_DESC_BUF *buf;
-
-	NTSTATUS status;         /* return status */
-
-} LSA_R_QUERY_SEC_OBJ;
-
 /* LSA_Q_QUERY_INFO - LSA query info policy */
 typedef struct lsa_query_info
 {

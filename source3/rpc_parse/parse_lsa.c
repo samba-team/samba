@@ -419,66 +419,6 @@ bool lsa_io_r_open_pol2(const char *desc, LSA_R_OPEN_POL2 *out, prs_struct *ps,
 }
 
 /*******************************************************************
-makes an LSA_Q_QUERY_SEC_OBJ structure.
-********************************************************************/
-
-void init_q_query_sec_obj(LSA_Q_QUERY_SEC_OBJ *in, const POLICY_HND *hnd, 
-			  uint32 sec_info)
-{
-	DEBUG(5, ("init_q_query_sec_obj\n"));
-
-	in->pol = *hnd;
-	in->sec_info = sec_info;
-
-	return;
-}
-
-/*******************************************************************
- Reads or writes an LSA_Q_QUERY_SEC_OBJ structure.
-********************************************************************/
-
-bool lsa_io_q_query_sec_obj(const char *desc, LSA_Q_QUERY_SEC_OBJ *in, 
-			    prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_query_sec_obj");
-	depth++;
-
-	if (!smb_io_pol_hnd("", &in->pol, ps, depth))
-		return False;
-
-	if (!prs_uint32("sec_info", ps, depth, &in->sec_info))
-		return False;
-
-	return True;
-} 
-
-/*******************************************************************
- Reads or writes a LSA_R_QUERY_SEC_OBJ structure.
-********************************************************************/
-
-bool lsa_io_r_query_sec_obj(const char *desc, LSA_R_QUERY_SEC_OBJ *out, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_query_sec_obj");
-	depth++;
-
-	if (!prs_align(ps))
-		return False;
-
-	if (!prs_uint32("ptr", ps, depth, &out->ptr))
-		return False;
-
-	if (out->ptr != 0) {
-		if (!sec_io_desc_buf("sec", &out->buf, ps, depth))
-			return False;
-	}
-
-	if (!prs_ntstatus("status", ps, depth, &out->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Inits an LSA_Q_QUERY_INFO structure.
 ********************************************************************/
 
