@@ -83,29 +83,7 @@ api_lsa_open_policy
 
 static bool api_lsa_open_policy(pipes_struct *p)
 {
-	LSA_Q_OPEN_POL q_u;
-	LSA_R_OPEN_POL r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the server, object attributes and desired access flag...*/
-	if(!lsa_io_q_open_pol("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_open_policy: unable to unmarshall LSA_Q_OPEN_POL.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_open_policy(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_open_pol("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_open_policy: unable to marshall LSA_R_OPEN_POL.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_OPENPOLICY);
 }
 
 /***************************************************************************
