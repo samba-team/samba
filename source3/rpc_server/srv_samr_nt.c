@@ -3961,26 +3961,28 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 }
 
 /*********************************************************************
- _samr_add_aliasmem
+ _samr_AddAliasMember
 *********************************************************************/
 
-NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_ADD_ALIASMEM *r_u)
+NTSTATUS _samr_AddAliasMember(pipes_struct *p,
+			      struct samr_AddAliasMember *r)
 {
 	DOM_SID alias_sid;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	bool can_add_accounts;
-	NTSTATUS ret;
+	NTSTATUS status;
 	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid, &acc_granted, &disp_info)) 
+	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &alias_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
-	
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_ADD_MEMBER, "_samr_add_aliasmem"))) {
-		return r_u->status;
+
+	status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_ADD_MEMBER, "_samr_AddAliasMember");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-		
+
 	DEBUG(10, ("sid is %s\n", sid_string_dbg(&alias_sid)));
 	
 	se_priv_copy( &se_rights, &se_add_users );
@@ -3991,18 +3993,18 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	if ( can_add_accounts )
 		become_root();
 	
-	ret = pdb_add_aliasmem(&alias_sid, &q_u->sid.sid);
+	status = pdb_add_aliasmem(&alias_sid, r->in.sid);
 	
 	if ( can_add_accounts )
 		unbecome_root();
 		
 	/******** END SeAddUsers BLOCK *********/
 	
-	if (NT_STATUS_IS_OK(ret)) {
+	if (NT_STATUS_IS_OK(status)) {
 		force_flush_samr_cache(disp_info);
 	}
 
-	return ret;
+	return status;
 }
 
 /*********************************************************************
@@ -5240,16 +5242,6 @@ NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
 
 NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
 			    struct samr_SetAliasInfo *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_AddAliasMember(pipes_struct *p,
-			      struct samr_AddAliasMember *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
