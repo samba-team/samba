@@ -453,6 +453,10 @@ static void wreplsrv_task_init(struct task_server *task)
 	NTSTATUS status;
 	struct wreplsrv_service *service;
 
+	if (!lp_wins_support(task->lp_ctx)) {
+		return;
+	}
+
 	task_server_set_title(task, "task[wreplsrv]");
 
 	service = talloc_zero(task, struct wreplsrv_service);
@@ -502,22 +506,9 @@ static void wreplsrv_task_init(struct task_server *task)
 }
 
 /*
-  initialise the WREPL server
- */
-static NTSTATUS wreplsrv_init(struct event_context *event_ctx, struct loadparm_context *lp_ctx, const struct model_ops *model_ops)
-{
-	if (!lp_wins_support(lp_ctx)) {
-		return NT_STATUS_OK;
-	}
-
-	return task_server_startup(event_ctx, lp_ctx, "wrepl", 
-				   model_ops, wreplsrv_task_init);
-}
-
-/*
   register ourselves as a available server
 */
 NTSTATUS server_service_wrepl_init(void)
 {
-	return register_server_service("wrepl", wreplsrv_init);
+	return register_server_service("wrepl", wreplsrv_task_init);
 }
