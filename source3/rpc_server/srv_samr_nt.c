@@ -2653,25 +2653,23 @@ NTSTATUS _samr_CreateUser2(pipes_struct *p,
 }
 
 /*******************************************************************
- samr_reply_connect_anon
+ _samr_Connect
  ********************************************************************/
 
-NTSTATUS _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CONNECT_ANON *r_u)
+NTSTATUS _samr_Connect(pipes_struct *p,
+		       struct samr_Connect *r)
 {
 	struct samr_info *info = NULL;
-	uint32    des_access = q_u->access_mask;
+	uint32    des_access = r->in.access_mask;
 
 	/* Access check */
 
 	if (!pipe_access_check(p)) {
-		DEBUG(3, ("access denied to samr_connect_anon\n"));
-		r_u->status = NT_STATUS_ACCESS_DENIED;
-		return r_u->status;
+		DEBUG(3, ("access denied to _samr_Connect\n"));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* set up the SAMR connect_anon response */
-
-	r_u->status = NT_STATUS_OK;
 
 	/* associate the user's SID with the new handle. */
 	if ((info = get_samr_info_by_sid(NULL)) == NULL)
@@ -2688,14 +2686,12 @@ NTSTATUS _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CO
 
 	se_map_generic( &des_access, &sam_generic_mapping );
 	info->acc_granted = des_access & (SA_RIGHT_SAM_ENUM_DOMAINS|SA_RIGHT_SAM_OPEN_DOMAIN);
-	
-	info->status = q_u->unknown_0;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, &r_u->connect_pol, free_samr_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.connect_handle, free_samr_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -5062,16 +5058,6 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 	DEBUG(5,("_samr_set_dom_info: %d\n", __LINE__));
 
 	return r_u->status;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_Connect(pipes_struct *p,
-		       struct samr_Connect *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /****************************************************************
