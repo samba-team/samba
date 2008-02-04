@@ -2490,7 +2490,9 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	result = rpccli_samr_del_aliasmem(pipe_hnd, mem_ctx, &alias_pol, &member_sid);
+	result = rpccli_samr_DeleteAliasMember(pipe_hnd, mem_ctx,
+					       &alias_pol,
+					       &member_sid);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
