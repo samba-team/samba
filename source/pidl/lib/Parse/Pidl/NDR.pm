@@ -581,7 +581,7 @@ sub ParseFunction($$$)
 	my $rettype = undef;
 	my $thisopnum = undef;
 
-	CheckPointerTypes($d, $ndr->{PROPERTIES}->{pointer_default_top});
+	CheckPointerTypes($d, "ref");
 
 	if (not defined($d->{PROPERTIES}{noopnum})) {
 		$thisopnum = ${$opnum};
@@ -659,12 +659,6 @@ sub ParseInterface($)
 		# MIDL defaults to "ptr" in DCE compatible mode (/osf)
 		# and "unique" in Microsoft Extensions mode (default)
 		$idl->{PROPERTIES}->{pointer_default} = "unique";
-	}
-
-	if (not has_property($idl, "pointer_default_top")) {
-		$idl->{PROPERTIES}->{pointer_default_top} = "ref";
-	} else {
-		warning($idl, "pointer_default_top() is a pidl extension and should not be used");
 	}
 
 	foreach my $d (@{$idl->{DATA}}) {
@@ -824,7 +818,6 @@ my %property_list = (
 	"uuid"			=> ["INTERFACE"],
 	"endpoint"		=> ["INTERFACE"],
 	"pointer_default"	=> ["INTERFACE"],
-	"pointer_default_top"	=> ["INTERFACE"],
 	"helper"		=> ["INTERFACE"],
 	"authservice"		=> ["INTERFACE"],
 
