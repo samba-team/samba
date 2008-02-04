@@ -659,28 +659,22 @@ NTSTATUS _eventlog_open_eventlog( pipes_struct * p,
 }
 
 /********************************************************************
+ _eventlog_ClearEventLogW
  This call still needs some work
  ********************************************************************/
 
-NTSTATUS _eventlog_clear_eventlog( pipes_struct * p,
-				 EVENTLOG_Q_CLEAR_EVENTLOG * q_u,
-				 EVENTLOG_R_CLEAR_EVENTLOG * r_u )
+NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p,
+				  struct eventlog_ClearEventLogW *r)
 {
-	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, &q_u->handle );
-	char *backup_file_name = NULL;
+	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, r->in.handle );
+	const char *backup_file_name = NULL;
 
 	if ( !info )
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (q_u->backupfile.string) {
-		size_t len = rpcstr_pull_talloc(p->mem_ctx,
-				&backup_file_name,
-				q_u->backupfile.string->buffer,
-				q_u->backupfile.string->uni_str_len * 2,
-				0 );
-		if (len == (size_t)-1 || !backup_file_name) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+	if (r->in.backupfile && r->in.backupfile->string) {
+
+		backup_file_name = r->in.backupfile->string;
 
 		DEBUG(8,( "_eventlog_clear_eventlog: Using [%s] as the backup "
 			"file name for log [%s].",
@@ -850,12 +844,6 @@ NTSTATUS _eventlog_GetNumRecords(pipes_struct *p,
 	*r->out.number = info->num_records;
 
 	return NT_STATUS_OK;
-}
-
-NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p, struct eventlog_ClearEventLogW *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS _eventlog_BackupEventLogW(pipes_struct *p, struct eventlog_BackupEventLogW *r)
