@@ -128,39 +128,6 @@ NTSTATUS rpccli_samr_add_groupmem(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return result;
 }
 
-/* Delete a domain group member */
-
-NTSTATUS rpccli_samr_del_groupmem(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			       POLICY_HND *group_pol, uint32 rid)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_DEL_GROUPMEM q;
-	SAMR_R_DEL_GROUPMEM r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_del_groupmem\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_del_groupmem(&q, group_pol, rid);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_DEL_GROUPMEM,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_del_groupmem,
-		samr_io_r_del_groupmem,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	return result;
-}
-
 /* Query user info */
 
 NTSTATUS rpccli_samr_query_userinfo(struct rpc_pipe_client *cli,

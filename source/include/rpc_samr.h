@@ -1411,23 +1411,6 @@ typedef struct r_samr_query_groupmem_info
 } SAMR_R_QUERY_GROUPMEM;
 
 
-/* SAMR_Q_DEL_GROUPMEM - probably an del group member */
-typedef struct q_samr_del_group_mem_info
-{
-	POLICY_HND pol;       /* policy handle */
-	uint32 rid;         /* rid */
-
-} SAMR_Q_DEL_GROUPMEM;
-
-
-/* SAMR_R_DEL_GROUPMEM - probably an del group member */
-typedef struct r_samr_del_group_mem_info
-{
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_DEL_GROUPMEM;
-
-
 /* SAMR_Q_ADD_GROUPMEM - probably an add group member */
 typedef struct q_samr_add_group_mem_info
 {
