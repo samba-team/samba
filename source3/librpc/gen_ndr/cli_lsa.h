@@ -19,7 +19,10 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli,
 				  uint32_t sec_info,
 				  struct sec_desc_buf **sdbuf);
 NTSTATUS rpccli_lsa_SetSecObj(struct rpc_pipe_client *cli,
-			      TALLOC_CTX *mem_ctx);
+			      TALLOC_CTX *mem_ctx,
+			      struct policy_handle *handle,
+			      uint32_t sec_info,
+			      struct sec_desc_buf *sdbuf);
 NTSTATUS rpccli_lsa_ChangePassword(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_lsa_OpenPolicy(struct rpc_pipe_client *cli,
@@ -163,7 +166,8 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 					  uint16_t *language_id,
 					  uint16_t unknown);
 NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli,
-				 TALLOC_CTX *mem_ctx);
+				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle **handle);
 NTSTATUS rpccli_lsa_EnumAccountsWithUserRight(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      struct policy_handle *handle,

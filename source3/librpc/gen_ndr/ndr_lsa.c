@@ -4857,6 +4857,15 @@ _PUBLIC_ void ndr_print_lsa_QuerySecurity(struct ndr_print *ndr, const char *nam
 static enum ndr_err_code ndr_push_lsa_SetSecObj(struct ndr_push *ndr, int flags, const struct lsa_SetSecObj *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_security_secinfo(ndr, NDR_SCALARS, r->in.sec_info));
+		if (r->in.sdbuf == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sdbuf));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
@@ -4866,7 +4875,24 @@ static enum ndr_err_code ndr_push_lsa_SetSecObj(struct ndr_push *ndr, int flags,
 
 static enum ndr_err_code ndr_pull_lsa_SetSecObj(struct ndr_pull *ndr, int flags, struct lsa_SetSecObj *r)
 {
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_sdbuf_0;
 	if (flags & NDR_IN) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_security_secinfo(ndr, NDR_SCALARS, &r->in.sec_info));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.sdbuf);
+		}
+		_mem_save_sdbuf_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.sdbuf, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_sec_desc_buf(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sdbuf));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sdbuf_0, LIBNDR_FLAG_REF_ALLOC);
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
@@ -4884,6 +4910,15 @@ _PUBLIC_ void ndr_print_lsa_SetSecObj(struct ndr_print *ndr, const char *name, i
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "lsa_SetSecObj");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_security_secinfo(ndr, "sec_info", r->in.sec_info);
+		ndr_print_ptr(ndr, "sdbuf", r->in.sdbuf);
+		ndr->depth++;
+		ndr_print_sec_desc_buf(ndr, "sdbuf", r->in.sdbuf);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -7602,8 +7637,24 @@ _PUBLIC_ void ndr_print_lsa_LookupPrivDisplayName(struct ndr_print *ndr, const c
 static enum ndr_err_code ndr_push_lsa_DeleteObject(struct ndr_push *ndr, int flags, const struct lsa_DeleteObject *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		if (*r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_ref_ptr(ndr));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.handle));
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		if (*r->out.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_ref_ptr(ndr));
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.handle));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -7611,9 +7662,44 @@ static enum ndr_err_code ndr_push_lsa_DeleteObject(struct ndr_push *ndr, int fla
 
 static enum ndr_err_code ndr_pull_lsa_DeleteObject(struct ndr_pull *ndr, int flags, struct lsa_DeleteObject *r)
 {
+	uint32_t _ptr_handle;
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_handle_1;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_handle));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, *r->in.handle);
+		}
+		_mem_save_handle_1 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, *r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_1, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_ALLOC(ndr, r->out.handle);
+		*r->out.handle = *r->in.handle;
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_handle));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, *r->out.handle);
+		}
+		_mem_save_handle_1 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, *r->out.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_1, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -7629,11 +7715,25 @@ _PUBLIC_ void ndr_print_lsa_DeleteObject(struct ndr_print *ndr, const char *name
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "lsa_DeleteObject");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", *r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", *r->in.handle);
+		ndr->depth--;
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "lsa_DeleteObject");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->out.handle);
+		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", *r->out.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", *r->out.handle);
+		ndr->depth--;
+		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
 	}

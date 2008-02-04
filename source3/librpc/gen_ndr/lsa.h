@@ -634,6 +634,12 @@ struct lsa_QuerySecurity {
 
 struct lsa_SetSecObj {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t sec_info;
+		struct sec_desc_buf *sdbuf;/* [ref] */
+	} in;
+
+	struct {
 		NTSTATUS result;
 	} out;
 
@@ -1035,6 +1041,11 @@ struct lsa_LookupPrivDisplayName {
 
 struct lsa_DeleteObject {
 	struct {
+		struct policy_handle **handle;/* [ref] */
+	} in;
+
+	struct {
+		struct policy_handle **handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 
