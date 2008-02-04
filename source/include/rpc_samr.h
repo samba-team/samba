@@ -1488,19 +1488,6 @@ typedef struct r_samr_connect_info
 
 } SAMR_R_CONNECT;
 
-/* SAMR_Q_CONNECT4 */
-typedef struct q_samr_connect4_info
-{
-	uint32 ptr_srv_name; /* pointer to server name */
-	UNISTR2 uni_srv_name;
-
-	uint32 unk_0; /* possible server name type, 1 for IP num, 2 for name */
-	uint32 access_mask;
-} SAMR_Q_CONNECT4;
-
-/* SAMR_R_CONNECT4 - same format as connect */
-typedef struct r_samr_connect_info SAMR_R_CONNECT4;       
-
 /* SAMR_ENC_PASSWD */
 typedef struct enc_passwd_info
 {
