@@ -83,18 +83,6 @@ typedef struct {
 
 typedef struct {
 	POLICY_HND handle;
-} EVENTLOG_Q_GET_NUM_RECORDS;
-
-typedef struct {
-	uint32 num_records;
-	NTSTATUS status;
-} EVENTLOG_R_GET_NUM_RECORDS;
-
-
-/***********************************/
-
-typedef struct {
-	POLICY_HND handle;
 } EVENTLOG_Q_GET_OLDEST_ENTRY;
 
 typedef struct {
