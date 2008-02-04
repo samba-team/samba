@@ -508,11 +508,9 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 		DEBUG(5,("Using specified auth order\n"));
 	}
 	
-	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_text_list(auth_context, auth_method_list))) {
-		str_list_free(&auth_method_list);
-		return nt_status;
-	}
-	
+	nt_status = make_auth_context_text_list(auth_context,
+						auth_method_list);
+
 	str_list_free(&auth_method_list);
 	return nt_status;
 }
