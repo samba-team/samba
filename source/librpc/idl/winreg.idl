@@ -9,7 +9,6 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\winreg]","ncacn_ip_tcp:","ncalrpc:"),
   pointer_default(unique),
-  pointer_default_top(unique),
   helpstring("Remote Registry Service")
 ] interface winreg
 {
@@ -50,7 +49,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x00 */
 	WERROR winreg_OpenHKCR(
-		[in]      uint16 *system_name,
+		[in,unique] uint16 *system_name,
 		[in]      winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
 	);
@@ -58,7 +57,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x01 */
 	WERROR winreg_OpenHKCU(
-	        [in]      uint16 *system_name,
+	        [in,unique] uint16 *system_name,
 		[in]      winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
 	);
@@ -66,7 +65,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x02 */
 	WERROR winreg_OpenHKLM(
-		[in]      uint16 *system_name,
+		[in,unique] uint16 *system_name,
 		[in]      winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
 	);
@@ -74,7 +73,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x03 */
 	WERROR winreg_OpenHKPD(
-		[in]      uint16 *system_name,
+		[in,unique] uint16 *system_name,
 		[in]      winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
 	);
@@ -82,7 +81,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x04 */
 	WERROR winreg_OpenHKU(
-		[in]      uint16 *system_name,
+		[in,unique] uint16 *system_name,
 		[in]      winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
 	);
@@ -198,8 +197,8 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/* Function: 0x0d */
 	WERROR winreg_LoadKey(
 		[in,ref] policy_handle *handle,
-		[in] winreg_String *keyname,
-		[in] winreg_String *filename
+		[in,unique] winreg_String *keyname,
+		[in,unique] winreg_String *filename
 	);
 
 	/******************/
@@ -244,10 +243,10 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	WERROR winreg_QueryValue(
 		[in,ref] policy_handle *handle,
 		[in] winreg_String value_name,
-		[in,out] winreg_Type *type,
-		[in,out,size_is(*data_size),length_is(*value_length)] uint8 *data,
-		[in,out] uint32 *data_size,
-		[in,out] uint32 *value_length
+		[in,out,unique] winreg_Type *type,
+		[in,out,unique,size_is(*data_size),length_is(*value_length)] uint8 *data,
+		[in,out,unique] uint32 *data_size,
+		[in,out,unique] uint32 *value_length
 	);
 
 	/******************/
@@ -304,8 +303,8 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x18 */
 	WERROR winreg_InitiateSystemShutdown(
-		[in]	uint16 *hostname,
-		[in]	initshutdown_String *message,
+		[in,unique] uint16 *hostname,
+		[in,unique] initshutdown_String *message,
 		[in]	uint32 timeout,
 		[in]	uint8 force_apps,
 		[in]	uint8 reboot
@@ -314,7 +313,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x19 */
 	WERROR winreg_AbortSystemShutdown(
-		[in]	uint16 *server
+		[in,unique] uint16 *server
 	);
 
 	/******************/
@@ -327,7 +326,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x1b */
 	WERROR winreg_OpenHKCC(
-		[in]      uint16 *system_name,
+		[in,unique] uint16 *system_name,
 		[in]      winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
 	);
@@ -335,7 +334,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x1c */
 	WERROR winreg_OpenHKDD(
-		[in]      uint16 *system_name,
+		[in,unique] uint16 *system_name,
 		[in]      winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
 	);
@@ -353,15 +352,15 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 		[in,ref] policy_handle *key_handle, 
 		[in,out,ref,size_is(num_values),length_is(num_values)] QueryMultipleValue *values,
 		[in] uint32 num_values,
-		[in,out,size_is(*buffer_size),length_is(*buffer_size)] uint8 *buffer,
+		[in,out,unique,size_is(*buffer_size),length_is(*buffer_size)] uint8 *buffer,
 		[in,out,ref] uint32 *buffer_size
 	);
 
 	/******************/
 	/* Function: 0x1e */
 	WERROR winreg_InitiateSystemShutdownEx(
-		[in] uint16 *hostname,
-		[in] initshutdown_String *message,
+		[in,unique] uint16 *hostname,
+		[in,unique] initshutdown_String *message,
 		[in] uint32 timeout,
 		[in] uint8 force_apps,
 		[in] uint8 reboot,
@@ -376,7 +375,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x20 */
 	WERROR winreg_OpenHKPT(
-		[in]      uint16 *system_name,
+		[in,unique] uint16 *system_name,
 		[in]      winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
 	);
@@ -384,7 +383,7 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/******************/
 	/* Function: 0x21 */
 	WERROR winreg_OpenHKPN(
-		[in]      uint16 *system_name,
+		[in,unique] uint16 *system_name,
 		[in]      winreg_AccessMask access_mask,
 		[out,ref] policy_handle *handle
 	);
