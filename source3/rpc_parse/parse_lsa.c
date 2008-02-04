@@ -3206,34 +3206,3 @@ bool lsa_io_r_remove_acct_rights(const char *desc, LSA_R_REMOVE_ACCT_RIGHTS *out
 
 	return True;
 }
-
-/*******************************************************************
-********************************************************************/
-
-bool lsa_io_q_delete_object(const char *desc, LSA_Q_DELETE_OBJECT *in, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_delete_object");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("", &in->handle, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/
-
-bool lsa_io_r_delete_object(const char *desc, LSA_R_DELETE_OBJECT *out, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_delete_object");
-	depth++;
-
-	if(!prs_ntstatus("status", ps, depth, &out->status))
-		return False;
-
-	return True;
-}
