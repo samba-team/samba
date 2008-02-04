@@ -811,13 +811,13 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 }
 
 /********************************************************************
+ _eventlog_GetOldestRecord
  ********************************************************************/
 
-NTSTATUS _eventlog_get_oldest_entry( pipes_struct * p,
-				   EVENTLOG_Q_GET_OLDEST_ENTRY * q_u,
-				   EVENTLOG_R_GET_OLDEST_ENTRY * r_u )
+NTSTATUS _eventlog_GetOldestRecord(pipes_struct *p,
+				   struct eventlog_GetOldestRecord *r)
 {
-	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, &q_u->handle );
+	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, r->in.handle );
 
 	if (info == NULL) {
 		return NT_STATUS_INVALID_HANDLE;
@@ -826,7 +826,7 @@ NTSTATUS _eventlog_get_oldest_entry( pipes_struct * p,
 	if ( !( get_oldest_entry_hook( info ) ) )
 		return NT_STATUS_ACCESS_DENIED;
 
-	r_u->oldest_entry = info->oldest_entry;
+	*r->out.oldest_entry = info->oldest_entry;
 
 	return NT_STATUS_OK;
 }
@@ -865,12 +865,6 @@ NTSTATUS _eventlog_BackupEventLogW(pipes_struct *p, struct eventlog_BackupEventL
 }
 
 NTSTATUS _eventlog_DeregisterEventSource(pipes_struct *p, struct eventlog_DeregisterEventSource *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _eventlog_GetOldestRecord(pipes_struct *p, struct eventlog_GetOldestRecord *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
