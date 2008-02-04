@@ -262,20 +262,6 @@ bool eventlog_io_r_read_eventlog(const char *desc,
 	return True;
 }
 
-/** The windows client seems to be doing something funny with the file name
-   A call like
-      ClearEventLog(handle, "backup_file")
-   on the client side will result in the backup file name looking like this on the
-   server side:
-      \??\${CWD of client}\backup_file
-   If an absolute path gets specified, such as
-      ClearEventLog(handle, "C:\\temp\\backup_file")
-   then it is still mangled by the client into this:
-      \??\C:\temp\backup_file
-   when it is on the wire.
-   I'm not sure where the \?? is coming from, or why the ${CWD} of the client process
-   would be added in given that the backup file gets written on the server side. */
-
 bool eventlog_io_q_clear_eventlog(const char *desc, EVENTLOG_Q_CLEAR_EVENTLOG *q_u,
 				  prs_struct *ps, int depth)
 {
