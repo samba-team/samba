@@ -99,8 +99,8 @@ import "lsa.idl", "security.idl";
 	/* Function: 0x07 */
 	NTSTATUS eventlog_OpenEventLogW(
 		[in,unique]	    eventlog_OpenUnknown0 *unknown0,
-		[in]	    lsa_String logname,
-		[in]	    lsa_String servername,
+		[in,ref]    lsa_String *logname,
+		[in,ref]    lsa_String *servername,
 		[in]	    uint32 unknown2,
 		[in]	    uint32 unknown3,
 		[out]   policy_handle *handle
