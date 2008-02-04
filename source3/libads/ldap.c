@@ -664,7 +664,7 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 	else {
 		/* This would be the utf8-encoded version...*/
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs))) */
-		if (!(str_list_copy(&search_attrs, attrs))) {
+		if (!(str_list_copy(talloc_tos(), &search_attrs, attrs))) {
 			rc = LDAP_NO_MEMORY;
 			goto done;
 		}
@@ -974,7 +974,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 	else {
 		/* This would be the utf8-encoded version...*/
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs)))  */
-		if (!(str_list_copy(&search_attrs, attrs)))
+		if (!(str_list_copy(talloc_tos(), &search_attrs, attrs)))
 		{
 			DEBUG(1,("ads_do_search: str_list_copy() failed!"));
 			rc = LDAP_NO_MEMORY;
