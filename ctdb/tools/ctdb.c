@@ -23,6 +23,7 @@
 #include "system/time.h"
 #include "system/filesys.h"
 #include "system/network.h"
+#include "system/locale.h"
 #include "popt.h"
 #include "cmdline.h"
 #include "../include/ctdb.h"
@@ -973,12 +974,10 @@ static int control_listvars(struct ctdb_context *ctdb, int argc, const char **ar
 	return 0;
 }
 
-struct debug_levels {
+static struct {
 	int32_t	level;
 	const char *description;
-};
-
-static struct debug_levels debug_levels[] = {
+} debug_levels[] = {
 	{DEBUG_EMERG,	"EMERG"},
 	{DEBUG_ALERT,	"ALERT"},
 	{DEBUG_CRIT,	"CRIT"},
@@ -986,33 +985,26 @@ static struct debug_levels debug_levels[] = {
 	{DEBUG_WARNING,	"WARNING"},
 	{DEBUG_NOTICE,	"NOTICE"},
 	{DEBUG_INFO,	"INFO"},
-	{DEBUG_DEBUG,	"DEBUG"},
-	{0, NULL}
+	{DEBUG_DEBUG,	"DEBUG"}
 };
 
 static const char *get_debug_by_level(int32_t level)
 {
 	int i;
 
-	for (i=0;1;i++) {
-		if (debug_levels[i].description == NULL) {
-			return "Unknown";
-		}
+	for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
 		if (debug_levels[i].level == level) {
 			return debug_levels[i].description;
 		}
 	}
-	return NULL;
+	return "Unknown";
 }
 
 static int32_t get_debug_by_desc(const char *desc)
 {
 	int i;
 
-	for (i=0;1;i++) {
-		if (debug_levels[i].description == NULL) {
-			return DEBUG_ERR;
-		}
+	for (i=0;i<ARRAY_SIZE(debug_levels);i++) {
 		if (!strcmp(debug_levels[i].description, desc)) {
 			return debug_levels[i].level;
 		}
@@ -1051,7 +1043,7 @@ static int control_setdebug(struct ctdb_context *ctdb, int argc, const char **ar
 		usage();
 	}
 
-	if ( (argv[0][0]>='A') && (argv[0][0]<='Z') ) { 
+	if (isalpha(argv[0][0])) { 
 		level = get_debug_by_desc(argv[0]);
 	} else {
 		level = strtoul(argv[0], NULL, 0);
