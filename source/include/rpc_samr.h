@@ -1411,25 +1411,6 @@ typedef struct r_samr_query_groupmem_info
 } SAMR_R_QUERY_GROUPMEM;
 
 
-/* SAMR_Q_ADD_GROUPMEM - probably an add group member */
-typedef struct q_samr_add_group_mem_info
-{
-	POLICY_HND pol;       /* policy handle */
-
-	uint32 rid;         /* rid */
-	uint32 unknown;     /* 0x0000 0005 */
-
-} SAMR_Q_ADD_GROUPMEM;
-
-
-/* SAMR_R_ADD_GROUPMEM - probably an add group member */
-typedef struct r_samr_add_group_mem_info
-{
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_ADD_GROUPMEM;
-
-
 /* SAMR_Q_QUERY_ALIASMEM - query alias members */
 typedef struct q_samr_query_aliasmem_info
 {
