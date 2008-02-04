@@ -1229,6 +1229,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	/************************/
 	/* Function    0x3e     */
+	/* Only value we've seen for unknown is "2", possibly an address type ? */
 	NTSTATUS samr_Connect4(
 		[in,unique,string,charset(UTF16)] uint16 *system_name,
 		[in] uint32 unknown,
