@@ -141,16 +141,4 @@ typedef struct {
 	NTSTATUS status;
 } EVENTLOG_R_READ_EVENTLOG;
 
-
-/***********************************/
-
-typedef struct {
-	POLICY_HND handle;
-	UNISTR4 backupfile;
-} EVENTLOG_Q_CLEAR_EVENTLOG;
-
-typedef struct {
-	NTSTATUS status;
-} EVENTLOG_R_CLEAR_EVENTLOG;
-
 #endif /* _RPC_EVENTLOG_H */
