@@ -410,30 +410,24 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		   name. And even w2k3 does use ntlmssp if you for example
 		   connect to an ip address. */
 
-		struct winbindd_request wb_request;
-		struct winbindd_response wb_response;
-		NSS_STATUS wb_result;
-
-		ZERO_STRUCT(wb_request);
-		ZERO_STRUCT(wb_response);
+		wbcErr wbc_status;
+		struct wbcDomainInfo *info = NULL;
 
 		DEBUG(10, ("Mapping [%s] to short name\n", domain));
 
-		fstrcpy(wb_request.domain_name, domain);
+		wbc_status = wbcDomainInfo(domain, &info);
 
-		wb_result = winbindd_request_response(WINBINDD_DOMAIN_INFO,
-					     &wb_request, &wb_response);
-
-		if (wb_result == NSS_STATUS_SUCCESS) {
+		if (WBC_ERROR_IS_OK(wbc_status)) {
 
 			fstrcpy(netbios_domain_name,
-				wb_response.data.domain_info.name);
-			domain = netbios_domain_name;
+				info->short_name);
 
+			wbcFreeMemory(info);
+			domain = netbios_domain_name;
 			DEBUG(10, ("Mapped to [%s] (using Winbind)\n", domain));
 		} else {
-			DEBUG(3, ("Could not find short name -- winbind "
-				  "not running?\n"));
+			DEBUG(3, ("Could not find short name: %s\n",
+				wbcErrorString(wbc_status)));
 		}
 	}
 
