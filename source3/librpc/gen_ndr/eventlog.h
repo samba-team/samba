@@ -129,8 +129,8 @@ struct eventlog_ChangeNotify {
 struct eventlog_OpenEventLogW {
 	struct {
 		struct eventlog_OpenUnknown0 *unknown0;/* [unique] */
-		struct lsa_String logname;
-		struct lsa_String servername;
+		struct lsa_String *logname;/* [ref] */
+		struct lsa_String *servername;/* [ref] */
 		uint32_t unknown2;
 		uint32_t unknown3;
 	} in;
