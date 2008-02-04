@@ -446,27 +446,6 @@ typedef struct sam_user_info_9
 
 
 /****************************************************************************
-SAMR_Q_SET_SEC_OBJ - info level 4.
-*****************************************************************************/
-
-/* SAMR_Q_SET_SEC_OBJ - */
-typedef struct q_samr_set_sec_obj_info
-{
-	POLICY_HND pol;          /* policy handle */
-	uint32 sec_info;         /* xxxx_SECURITY_INFORMATION 0x0000 0004 */
-	SEC_DESC_BUF *buf;
-
-} SAMR_Q_SET_SEC_OBJ;
-
-/* SAMR_R_SET_SEC_OBJ - */
-typedef struct r_samr_set_sec_obj_info
-{
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_SET_SEC_OBJ;
-
-
-/****************************************************************************
 SAMR_Q_QUERY_DOMAIN_INFO - probably a query on domain group info.
 *****************************************************************************/
 
