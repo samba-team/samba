@@ -576,20 +576,8 @@ failed:
 	task_server_terminate(task, "Failed to startup ldap server task");	
 }
 
-/*
-  called on startup of the web server service It's job is to start
-  listening on all configured sockets
-*/
-static NTSTATUS ldapsrv_init(struct event_context *event_context, 
-			     struct loadparm_context *lp_ctx,
-			     const struct model_ops *model_ops)
-{	
-	return task_server_startup(event_context, lp_ctx, "ldap", model_ops, 
-				   ldapsrv_task_init);
-}
-
 
 NTSTATUS server_service_ldap_init(void)
 {
-	return register_server_service("ldap", ldapsrv_init);
+	return register_server_service("ldap", ldapsrv_task_init);
 }

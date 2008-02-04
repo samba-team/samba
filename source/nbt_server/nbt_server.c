@@ -89,19 +89,9 @@ static void nbtd_task_init(struct task_server *task)
 
 
 /*
-  initialise the nbt server
- */
-static NTSTATUS nbtd_init(struct event_context *event_ctx, struct loadparm_context *lp_ctx, const struct model_ops *model_ops)
-{
-	return task_server_startup(event_ctx, lp_ctx, "nbt",
-				   model_ops, nbtd_task_init);
-}
-
-
-/*
   register ourselves as a available server
 */
 NTSTATUS server_service_nbtd_init(void)
 {
-	return register_server_service("nbt", nbtd_init);
+	return register_server_service("nbt", nbtd_task_init);
 }
