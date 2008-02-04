@@ -4053,11 +4053,13 @@ NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DE
 }
 
 /*********************************************************************
- _samr_add_groupmem
+ _samr_AddGroupMember
 *********************************************************************/
 
-NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_ADD_GROUPMEM *r_u)
+NTSTATUS _samr_AddGroupMember(pipes_struct *p,
+			      struct samr_AddGroupMember *r)
 {
+	NTSTATUS status;
 	DOM_SID group_sid;
 	uint32 group_rid;
 	uint32 acc_granted;
@@ -4066,11 +4068,12 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	DISP_INFO *disp_info = NULL;
 
 	/* Find the policy handle. Open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted, &disp_info)) 
+	if (!get_lsa_policy_samr_sid(p, r->in.group_handle, &group_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
-	
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_ADD_MEMBER, "_samr_add_groupmem"))) {
-		return r_u->status;
+
+	status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_ADD_MEMBER, "_samr_AddGroupMember");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	DEBUG(10, ("sid is %s\n", sid_string_dbg(&group_sid)));
@@ -4088,8 +4091,8 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	if ( can_add_accounts )
 		become_root();
 
-	r_u->status = pdb_add_groupmem(p->mem_ctx, group_rid, q_u->rid);
-		
+	status = pdb_add_groupmem(p->mem_ctx, group_rid, r->in.rid);
+
 	if ( can_add_accounts )
 		unbecome_root();
 		
@@ -4097,7 +4100,7 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	
 	force_flush_samr_cache(disp_info);
 
-	return r_u->status;
+	return status;
 }
 
 /*********************************************************************
@@ -5196,16 +5199,6 @@ NTSTATUS _samr_QueryGroupInfo(pipes_struct *p,
 
 NTSTATUS _samr_SetGroupInfo(pipes_struct *p,
 			    struct samr_SetGroupInfo *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_AddGroupMember(pipes_struct *p,
-			      struct samr_AddGroupMember *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
