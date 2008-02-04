@@ -1841,95 +1841,64 @@ int fstr_sprintf(fstring s, const char *fmt, ...)
 
 #define S_LIST_ABS 16 /* List Allocation Block Size */
 
-static char **str_list_make_internal(TALLOC_CTX *mem_ctx,
-		const char *string,
-		const char *sep)
+static char **str_list_make_internal(TALLOC_CTX *mem_ctx, const char *string,
+				     const char *sep)
 {
-	char **list, **rlist;
+	char **list;
 	const char *str;
 	char *s;
 	int num, lsize;
 	char *tok;
-	TALLOC_CTX *frame = NULL;
 
 	if (!string || !*string)
 		return NULL;
-	if (mem_ctx) {
-		s = talloc_strdup(mem_ctx, string);
-	} else {
-		s = SMB_STRDUP(string);
+
+	list = TALLOC_ARRAY(mem_ctx, char *, S_LIST_ABS+1);
+	if (list == NULL) {
+		return NULL;
 	}
-	if (!s) {
+	lsize = S_LIST_ABS;
+
+	s = talloc_strdup(list, string);
+	if (s == NULL) {
 		DEBUG(0,("str_list_make: Unable to allocate memory"));
+		TALLOC_FREE(list);
 		return NULL;
 	}
 	if (!sep) sep = LIST_SEP;
 
-	num = lsize = 0;
-	list = NULL;
-
+	num = 0;
 	str = s;
-	frame = talloc_stackframe();
-	while (next_token_talloc(frame, &str, &tok, sep)) {
+
+	while (next_token_talloc(list, &str, &tok, sep)) {
+
 		if (num == lsize) {
+			char **tmp;
+
 			lsize += S_LIST_ABS;
-			if (mem_ctx) {
-				rlist = TALLOC_REALLOC_ARRAY(mem_ctx, list,
-						char *, lsize +1);
-			} else {
-				/* We need to keep the old list on
-				 * error so we can free the elements
-				   if the realloc fails. */
-				rlist =SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(list,
-						char *, lsize +1);
-			}
-			if (!rlist) {
+
+			tmp = TALLOC_REALLOC_ARRAY(mem_ctx, list, char *,
+						   lsize + 1);
+			if (tmp == NULL) {
 				DEBUG(0,("str_list_make: "
 					"Unable to allocate memory"));
-				str_list_free(&list);
-				if (mem_ctx) {
-					TALLOC_FREE(s);
-				} else {
-					SAFE_FREE(s);
-				}
-				TALLOC_FREE(frame);
+				TALLOC_FREE(list);
 				return NULL;
-			} else {
-				list = rlist;
 			}
+
+			list = tmp;
+
 			memset (&list[num], 0,
-					((sizeof(char**)) * (S_LIST_ABS +1)));
+				((sizeof(char**)) * (S_LIST_ABS +1)));
 		}
 
-		if (mem_ctx) {
-			list[num] = talloc_strdup(mem_ctx, tok);
-		} else {
-			list[num] = SMB_STRDUP(tok);
-		}
-
-		if (!list[num]) {
-			DEBUG(0,("str_list_make: Unable to allocate memory"));
-			str_list_free(&list);
-			if (mem_ctx) {
-				TALLOC_FREE(s);
-			} else {
-				SAFE_FREE(s);
-			}
-			TALLOC_FREE(frame);
-			return NULL;
-		}
-
-		num++;
+		list[num] = tok;
+		num += 1;
 	}
 
-	TALLOC_FREE(frame);
+	list[num] = NULL;
 
-	if (mem_ctx) {
-		TALLOC_FREE(s);
-	} else {
-		SAFE_FREE(s);
-	}
-
+	TALLOC_FREE(s);
 	return list;
 }
 
@@ -1947,43 +1916,31 @@ char **str_list_make(const char *string, const char *sep)
 
 bool str_list_copy(char ***dest, const char **src)
 {
-	char **list, **rlist;
-	int num, lsize;
+	char **list;
+	int i, num;
 
 	*dest = NULL;
 	if (!src)
 		return false;
 
-	num = lsize = 0;
-	list = NULL;
-
-	while (src[num]) {
-		if (num == lsize) {
-			lsize += S_LIST_ABS;
-			rlist = SMB_REALLOC_ARRAY_KEEP_OLD_ON_ERROR(list,
-					char *, lsize +1);
-			if (!rlist) {
-				DEBUG(0,("str_list_copy: "
-					"Unable to re-allocate memory"));
-				str_list_free(&list);
-				return false;
-			} else {
-				list = rlist;
-			}
-			memset (&list[num], 0,
-					((sizeof(char **)) * (S_LIST_ABS +1)));
-		}
-
-		list[num] = SMB_STRDUP(src[num]);
-		if (!list[num]) {
-			DEBUG(0,("str_list_copy: Unable to allocate memory"));
-			str_list_free(&list);
-			return false;
-		}
-
-		num++;
+	num = 0;
+	while (src[num] != NULL) {
+		num += 1;
 	}
 
+	list = TALLOC_ARRAY(NULL, char *, num+1);
+	if (list == NULL) {
+		return false;
+	}
+
+	for (i=0; i<num; i++) {
+		list[i] = talloc_strdup(list, src[i]);
+		if (list[i] == NULL) {
+			TALLOC_FREE(list);
+			return false;
+		}
+	}
+	list[i] = NULL;
 	*dest = list;
 	return true;
 }
@@ -2010,35 +1967,14 @@ bool str_list_compare(char **list1, char **list2)
 	return true;
 }
 
-static void str_list_free_internal(TALLOC_CTX *mem_ctx, char ***list)
-{
-	char **tlist;
-
-	if (!list || !*list)
-		return;
-	tlist = *list;
-	for(; *tlist; tlist++) {
-		if (mem_ctx) {
-			TALLOC_FREE(*tlist);
-		} else {
-			SAFE_FREE(*tlist);
-		}
-	}
-	if (mem_ctx) {
-		TALLOC_FREE(*tlist);
-	} else {
-		SAFE_FREE(*list);
-	}
-}
-
 void str_list_free_talloc(TALLOC_CTX *mem_ctx, char ***list)
 {
-	str_list_free_internal(mem_ctx, list);
+	TALLOC_FREE(*list);
 }
 
 void str_list_free(char ***list)
 {
-	str_list_free_internal(NULL, list);
+	TALLOC_FREE(*list);
 }
 
 /******************************************************************************
