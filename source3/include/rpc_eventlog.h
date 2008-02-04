@@ -60,27 +60,6 @@ typedef struct elog_tdb {
 
 /***********************************/
 
-typedef struct {
-	uint16 unknown1;
-	uint16 unknown2;
-} EVENTLOG_OPEN_UNKNOWN0;
-
-typedef struct {
-	EVENTLOG_OPEN_UNKNOWN0 *unknown0;
-	UNISTR4 logname;
-	UNISTR4 servername;
-	uint32 unknown1;
-	uint32 unknown2;
-} EVENTLOG_Q_OPEN_EVENTLOG;
-
-typedef struct {
-	POLICY_HND handle;
-	NTSTATUS status;
-} EVENTLOG_R_OPEN_EVENTLOG;
-
-
-/***********************************/
-
 typedef struct 
 {
 	POLICY_HND handle;
