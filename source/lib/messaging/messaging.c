@@ -121,8 +121,8 @@ static NTSTATUS irpc_uptime(struct irpc_message *msg,
 */
 static char *messaging_path(struct messaging_context *msg, struct server_id server_id)
 {
-	return talloc_asprintf(msg, "%s/msg.%u.%u", msg->base_path, 
-			       (unsigned)server_id.node, (unsigned)server_id.id);
+	return talloc_asprintf(msg, "%s/msg.%s", msg->base_path, 
+			       cluster_id_string(msg, server_id));
 }
 
 /*

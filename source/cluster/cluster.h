@@ -25,7 +25,9 @@
 /*
   test for same cluster id
 */
-#define cluster_id_equal(id1, id2) ((id1)->id == (id2)->id && (id1)->node == (id2)->node)
+#define cluster_id_equal(id_1, id_2) ((id_1)->id == (id_2)->id \
+				    && (id_1)->id2 == (id_2)->id2 \
+				    && (id_1)->node == (id_2)->node)
 
 /*
   test for same cluster node
