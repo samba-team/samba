@@ -1537,31 +1537,6 @@ typedef struct q_samr_connect4_info
 /* SAMR_R_CONNECT4 - same format as connect */
 typedef struct r_samr_connect_info SAMR_R_CONNECT4;       
 
-/* SAMR_Q_CONNECT5 */
-typedef struct q_samr_connect5_info
-{
-	uint32 ptr_srv_name; /* pointer to server name */
-	UNISTR2 uni_srv_name;
-	uint32 access_mask;
-	uint32 level;
-	/* These following are acutally a level dependent
-	   value. Fudge it for now. JRA */
-	uint32 info1_unk1;
-	uint32 info1_unk2;
-} SAMR_Q_CONNECT5;
-
-/* SAMR_R_CONNECT5 */
-typedef struct r_samr_connect_info5
-{
-	uint32 level;
-	uint32 info1_unk1;
-	uint32 info1_unk2;
-	POLICY_HND connect_pol;       /* policy handle */
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_CONNECT5;
-
-
 /* SAMR_ENC_PASSWD */
 typedef struct enc_passwd_info
 {
