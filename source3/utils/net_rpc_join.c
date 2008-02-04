@@ -239,9 +239,10 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		goto done;
 	}
 
-	CHECK_RPC_ERR(rpccli_samr_connect(pipe_hnd, mem_ctx, 
-				       SEC_RIGHTS_MAXIMUM_ALLOWED,
-				       &sam_pol),
+	CHECK_RPC_ERR(rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+					   pipe_hnd->cli->desthost,
+					   SEC_RIGHTS_MAXIMUM_ALLOWED,
+					   &sam_pol),
 		      "could not connect to SAM database");
 
 
