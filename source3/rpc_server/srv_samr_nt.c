@@ -618,32 +618,31 @@ NTSTATUS _samr_OpenDomain(pipes_struct *p,
 }
 
 /*******************************************************************
- _samr_get_usrdom_pwinfo
+ _samr_GetUserPwInfo
  ********************************************************************/
 
-NTSTATUS _samr_get_usrdom_pwinfo(pipes_struct *p, SAMR_Q_GET_USRDOM_PWINFO *q_u, SAMR_R_GET_USRDOM_PWINFO *r_u)
+NTSTATUS _samr_GetUserPwInfo(pipes_struct *p,
+			     struct samr_GetUserPwInfo *r)
 {
 	struct samr_info *info = NULL;
 
-	r_u->status = NT_STATUS_OK;
-
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->user_pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.user_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (!sid_check_is_in_our_domain(&info->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	init_samr_r_get_usrdom_pwinfo(r_u, NT_STATUS_OK);
+	ZERO_STRUCTP(r->out.info);
 
-	DEBUG(5,("_samr_get_usrdom_pwinfo: %d\n", __LINE__));
+	DEBUG(5,("_samr_GetUserPwInfo: %d\n", __LINE__));
 
-	/* 
+	/*
 	 * NT sometimes return NT_STATUS_ACCESS_DENIED
 	 * I don't know yet why.
 	 */
 
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -5349,16 +5348,6 @@ NTSTATUS _samr_TestPrivateFunctionsDomain(pipes_struct *p,
 
 NTSTATUS _samr_TestPrivateFunctionsUser(pipes_struct *p,
 					struct samr_TestPrivateFunctionsUser *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_GetUserPwInfo(pipes_struct *p,
-			     struct samr_GetUserPwInfo *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;

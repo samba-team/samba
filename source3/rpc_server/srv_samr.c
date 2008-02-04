@@ -80,28 +80,7 @@ static bool api_samr_open_domain(pipes_struct *p)
 
 static bool api_samr_get_usrdom_pwinfo(pipes_struct *p)
 {
-	SAMR_Q_GET_USRDOM_PWINFO q_u;
-	SAMR_R_GET_USRDOM_PWINFO r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!samr_io_q_get_usrdom_pwinfo("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_get_usrdom_pwinfo: unable to unmarshall SAMR_Q_GET_USRDOM_PWINFO.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_get_usrdom_pwinfo(p, &q_u, &r_u);
-
-	if(!samr_io_r_get_usrdom_pwinfo("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_get_usrdom_pwinfo: unable to marshall SAMR_R_GET_USRDOM_PWINFO.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_GETUSERPWINFO);
 }
 
 /*******************************************************************
