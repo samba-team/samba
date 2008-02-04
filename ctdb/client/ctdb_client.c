@@ -202,7 +202,7 @@ static void ctdb_client_read_cb(uint8_t *data, size_t cnt, void *args)
 	talloc_steal(tmp_ctx, hdr);
 
 	if (cnt == 0) {
-		DEBUG(2,("Daemon has exited - shutting down client\n"));
+		DEBUG(DEBUG_INFO,("Daemon has exited - shutting down client\n"));
 		exit(0);
 	}
 
@@ -585,7 +585,7 @@ struct ctdb_record_handle *ctdb_fetch_lock(struct ctdb_db_context *ctdb_db, TALL
 	}
 	h->data    = data;
 
-	DEBUG(3,("ctdb_fetch_lock: key=%*.*s\n", (int)key.dsize, (int)key.dsize, 
+	DEBUG(DEBUG_DEBUG,("ctdb_fetch_lock: key=%*.*s\n", (int)key.dsize, (int)key.dsize, 
 		 (const char *)key.dptr));
 
 again:
@@ -597,7 +597,7 @@ again:
 		return NULL;
 	}
 
-	DEBUG(4,("ctdb_fetch_lock: got chain lock\n"));
+	DEBUG(DEBUG_DEBUG,("ctdb_fetch_lock: got chain lock\n"));
 
 	talloc_set_destructor(h, fetch_lock_destructor);
 
@@ -610,20 +610,20 @@ again:
 	}
 
 
-	DEBUG(4,("ctdb_fetch_lock: done local fetch\n"));
+	DEBUG(DEBUG_DEBUG,("ctdb_fetch_lock: done local fetch\n"));
 
 	if (ret != 0 || h->header.dmaster != ctdb_db->ctdb->pnn) {
 		ctdb_ltdb_unlock(ctdb_db, key);
 		ret = ctdb_client_force_migration(ctdb_db, key);
 		if (ret != 0) {
-			DEBUG(4,("ctdb_fetch_lock: force_migration failed\n"));
+			DEBUG(DEBUG_DEBUG,("ctdb_fetch_lock: force_migration failed\n"));
 			talloc_free(h);
 			return NULL;
 		}
 		goto again;
 	}
 
-	DEBUG(4,("ctdb_fetch_lock: we are dmaster - done\n"));
+	DEBUG(DEBUG_DEBUG,("ctdb_fetch_lock: we are dmaster - done\n"));
 	return h;
 }
 

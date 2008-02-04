@@ -136,7 +136,7 @@ int ctdb_ibw_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 				struct ctdb_ibw_node *cn = talloc_get_type(node->private_data, struct ctdb_ibw_node);
 				struct ibw_ctx *ictx = cn->conn->ctx;
 
-				DEBUG(10, ("IBWC_ERROR, reconnecting...\n"));
+				DEBUG(DEBUG_DEBUG, ("IBWC_ERROR, reconnecting...\n"));
 				talloc_free(cn->conn); /* internal queue content is destroyed */
 				cn->conn = (void *)ibw_conn_new(ictx, node);
 				event_add_timed(node->ctdb->ev, node, timeval_current_ofs(1, 0),

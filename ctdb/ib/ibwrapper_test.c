@@ -91,7 +91,7 @@ int ibwtest_connect_everybody(struct ibwtest_ctx *tcx)
 			return -1;
 		}
 	}
-	DEBUG(10, ("sent %d connect request...\n", tcx->naddrs));
+	DEBUG(DEBUG_DEBUG, ("sent %d connect request...\n", tcx->naddrs));
 
 	return 0;
 }
@@ -103,7 +103,7 @@ int ibwtest_send_id(struct ibw_conn *conn)
 	void *key;
 	uint32_t	len;
 
-	DEBUG(10, ("ibwtest_send_id\n"));
+	DEBUG(DEBUG_DEBUG, ("ibwtest_send_id\n"));
 	len = sizeof(uint32_t)+strlen(tcx->id)+2;
 	if (ibw_alloc_send_buf(conn, (void **)&buf, &key, len)) {
 		DEBUG(0, ("send_id: ibw_alloc_send_buf failed\n"));
@@ -245,24 +245,24 @@ int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 
 		switch(ctx->state) {
 		case IBWS_INIT:
-			DEBUG(10, ("test IBWS_INIT\n"));
+			DEBUG(DEBUG_DEBUG, ("test IBWS_INIT\n"));
 			break;
 		case IBWS_READY:
-			DEBUG(10, ("test IBWS_READY\n"));
+			DEBUG(DEBUG_DEBUG, ("test IBWS_READY\n"));
 			break;
 		case IBWS_CONNECT_REQUEST:
-			DEBUG(10, ("test IBWS_CONNECT_REQUEST\n"));
+			DEBUG(DEBUG_DEBUG, ("test IBWS_CONNECT_REQUEST\n"));
 			tconn = talloc_zero(conn, struct ibwtest_conn);
 			if (ibw_accept(ctx, conn, tconn)) {
 				DEBUG(0, ("error accepting the connect request\n"));
 			}
 			break;
 		case IBWS_STOPPED:
-			DEBUG(10, ("test IBWS_STOPPED\n"));
+			DEBUG(DEBUG_DEBUG, ("test IBWS_STOPPED\n"));
 			tcx->kill_me = 1; /* main loop can exit */
 			break;
 		case IBWS_ERROR:
-			DEBUG(10, ("test IBWS_ERROR\n"));
+			DEBUG(DEBUG_DEBUG, ("test IBWS_ERROR\n"));
 			ibw_stop(tcx->ibwctx);
 			break;
 		default:
@@ -275,7 +275,7 @@ int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 		tconn = talloc_get_type(conn->conn_userdata, struct ibwtest_conn);
 		switch(conn->state) {
 		case IBWC_INIT:
-			DEBUG(10, ("test IBWC_INIT\n"));
+			DEBUG(DEBUG_DEBUG, ("test IBWC_INIT\n"));
 			break;
 		case IBWC_CONNECTED:
 			if (gettimeofday(&tcx->start_time, NULL)) {
@@ -285,11 +285,11 @@ int ibwtest_connstate_handler(struct ibw_ctx *ctx, struct ibw_conn *conn)
 			ibwtest_send_id(conn);
 			break;
 		case IBWC_DISCONNECTED:
-			DEBUG(10, ("test IBWC_DISCONNECTED\n"));
+			DEBUG(DEBUG_DEBUG, ("test IBWC_DISCONNECTED\n"));
 			talloc_free(conn);
 			break;
 		case IBWC_ERROR:
-			DEBUG(10, ("test IBWC_ERROR %s\n", ibw_getLastError()));
+			DEBUG(DEBUG_DEBUG, ("test IBWC_ERROR %s\n", ibw_getLastError()));
 			break;
 		default:
 			assert(0);
@@ -315,7 +315,7 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 		tconn->id = talloc_strdup(tconn, ((char *)buf)+sizeof(uint32_t)+1);
 	}
 	if (op==TESTOP_SEND_ID || op==TESTOP_SEND_TEXT) {
-		DEBUG(11, ("[%d]msg from %s: \"%s\"(%d)\n", op,
+		DEBUG(DEBUG_DEBUG, ("[%d]msg from %s: \"%s\"(%d)\n", op,
 			tconn->id ? tconn->id : "NULL", ((char *)buf)+sizeof(uint32_t)+1, n));
 	}
 
@@ -324,7 +324,7 @@ int ibwtest_receive_handler(struct ibw_conn *conn, void *buf, int n)
 			unsigned char sum;
 			sum = ibwtest_get_sum((unsigned char *)buf + sizeof(uint32_t) + 1,
 				n - sizeof(uint32_t) - 2);
-			DEBUG(11, ("[%d]msg varsize %u/sum %u from %s\n",
+			DEBUG(DEBUG_DEBUG, ("[%d]msg varsize %u/sum %u from %s\n",
 				op,
 				n - sizeof(uint32_t) - 2,
 				(uint32_t)sum,
@@ -411,7 +411,7 @@ void ibwtest_sigint_handler(int sig)
 			testctx->ibwctx->state==IBWS_ERROR)
 		{
 			if (testctx->stopping) {
-				DEBUG(10, ("forcing exit...\n"));
+				DEBUG(DEBUG_DEBUG, ("forcing exit...\n"));
 				testctx->kill_me = 1;
 			} else {
 				/* mostly expected case */

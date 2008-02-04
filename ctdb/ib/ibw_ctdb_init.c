@@ -222,7 +222,7 @@ int ctdb_ibw_init(struct ctdb_context *ctdb)
 {
 	struct ibw_ctx *ictx;
 
-	DEBUG(10, ("ctdb_ibw_init invoked...\n"));
+	DEBUG(DEBUG_DEBUG, ("ctdb_ibw_init invoked...\n"));
 	ictx = ibw_init(
 		NULL, //struct ibw_initattr *attr, /* TODO */
 		0, //int nattr, /* TODO */
@@ -239,6 +239,6 @@ int ctdb_ibw_init(struct ctdb_context *ctdb)
 	ctdb->methods = &ctdb_ibw_methods;
 	ctdb->private_data = ictx;
 	
-	DEBUG(10, ("ctdb_ibw_init succeeded.\n"));
+	DEBUG(DEBUG_DEBUG, ("ctdb_ibw_init succeeded.\n"));
 	return 0;
 }

@@ -52,7 +52,7 @@ static void flag_change_handler(struct ctdb_context *ctdb, uint64_t srvid,
 	ctdb->nodes[c->pnn]->flags = 
 		(ctdb->nodes[c->pnn]->flags&NODE_FLAGS_DISCONNECTED) 
 		| (c->new_flags & ~NODE_FLAGS_DISCONNECTED);	
-	DEBUG(2,("Node flags for node %u are now 0x%x\n", c->pnn, ctdb->nodes[c->pnn]->flags));
+	DEBUG(DEBUG_INFO,("Node flags for node %u are now 0x%x\n", c->pnn, ctdb->nodes[c->pnn]->flags));
 
 	/* make sure we don't hold any IPs when we shouldn't */
 	if (c->pnn == ctdb->pnn &&
@@ -167,7 +167,7 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 		DEBUG(0,(__location__ " Failed to register handler %llu in daemon\n", 
 			 (unsigned long long)srvid));
 	} else {
-		DEBUG(1,(__location__ " Registered message handler for srvid=%llu\n", 
+		DEBUG(DEBUG_INFO,(__location__ " Registered message handler for srvid=%llu\n", 
 			 (unsigned long long)srvid));
 	}
 
@@ -175,7 +175,7 @@ int daemon_register_message_handler(struct ctdb_context *ctdb, uint32_t client_i
 	if ((srvid & 0xFFFFFFFF) == srvid &&
 	    kill(srvid, 0) == 0) {
 		client->pid = srvid;
-		DEBUG(1,(__location__ " Registered PID %u for client %u\n",
+		DEBUG(DEBUG_INFO,(__location__ " Registered PID %u for client %u\n",
 			 (unsigned)client->pid, client_id));
 	}
 	return res;
@@ -512,7 +512,7 @@ static void ctdb_daemon_read_cb(uint8_t *data, size_t cnt, void *args)
 		return;
 	}
 
-	DEBUG(3,(__location__ " client request %u of type %u length %u from "
+	DEBUG(DEBUG_DEBUG,(__location__ " client request %u of type %u length %u from "
 		 "node %u to %u\n", hdr->reqid, hdr->operation, hdr->length,
 		 hdr->srcnode, hdr->destnode));
 

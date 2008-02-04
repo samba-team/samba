@@ -219,7 +219,7 @@ void ctdb_input_pkt(struct ctdb_context *ctdb, struct ctdb_req_header *hdr)
 	tmp_ctx = talloc_new(ctdb);
 	talloc_steal(tmp_ctx, hdr);
 
-	DEBUG(3,(__location__ " ctdb request %u of type %u length %u from "
+	DEBUG(DEBUG_DEBUG,(__location__ " ctdb request %u of type %u length %u from "
 		 "node %u to %u\n", hdr->reqid, hdr->operation, hdr->length,
 		 hdr->srcnode, hdr->destnode));
 
@@ -320,7 +320,7 @@ done:
 void ctdb_node_dead(struct ctdb_node *node)
 {
 	if (node->flags & NODE_FLAGS_DISCONNECTED) {
-		DEBUG(1,("%s: node %s is already marked disconnected: %u connected\n", 
+		DEBUG(DEBUG_INFO,("%s: node %s is already marked disconnected: %u connected\n", 
 			 node->ctdb->name, node->name, 
 			 node->ctdb->num_connected));
 		return;
@@ -343,7 +343,7 @@ void ctdb_node_dead(struct ctdb_node *node)
 void ctdb_node_connected(struct ctdb_node *node)
 {
 	if (!(node->flags & NODE_FLAGS_DISCONNECTED)) {
-		DEBUG(1,("%s: node %s is already marked connected: %u connected\n", 
+		DEBUG(DEBUG_INFO,("%s: node %s is already marked connected: %u connected\n", 
 			 node->ctdb->name, node->name, 
 			 node->ctdb->num_connected));
 		return;
@@ -352,7 +352,7 @@ void ctdb_node_connected(struct ctdb_node *node)
 	node->dead_count = 0;
 	node->flags &= ~NODE_FLAGS_DISCONNECTED;
 	node->flags |= NODE_FLAGS_UNHEALTHY;
-	DEBUG(1,("%s: connected to %s - %u connected\n", 
+	DEBUG(DEBUG_INFO,("%s: connected to %s - %u connected\n", 
 		 node->ctdb->name, node->name, node->ctdb->num_connected));
 }
 

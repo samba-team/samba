@@ -68,7 +68,7 @@ int ctdb_sys_send_arp(const struct sockaddr_in *saddr, const char *iface)
 		return -1;
 	}
 	if (ARPHRD_LOOPBACK == if_hwaddr.ifr_hwaddr.sa_family) {
-		DEBUG(3,("Ignoring loopback arp request\n"));
+		DEBUG(DEBUG_DEBUG,("Ignoring loopback arp request\n"));
 		close(s);
 		return 0;
 	}

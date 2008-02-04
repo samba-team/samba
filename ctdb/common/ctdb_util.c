@@ -25,7 +25,8 @@
 #include "system/wait.h"
 #include "../include/ctdb_private.h"
 
-int LogLevel;
+int LogLevel = DEBUG_NOTICE;
+int this_log_level = 0;
 
 /*
   return error string for last error
@@ -54,7 +55,7 @@ void ctdb_set_error(struct ctdb_context *ctdb, const char *fmt, ...)
 */
 void ctdb_fatal(struct ctdb_context *ctdb, const char *msg)
 {
-	DEBUG(0,("ctdb fatal error: %s\n", msg));
+	DEBUG(DEBUG_ALERT,("ctdb fatal error: %s\n", msg));
 	abort();
 }
 
@@ -226,7 +227,7 @@ void ctdb_set_scheduler(struct ctdb_context *ctdb)
 		DEBUG(0,("Unable to set scheduler to SCHED_FIFO (%s)\n", 
 			 strerror(errno)));
 	} else {
-		DEBUG(0,("Set scheduler to SCHED_FIFO\n"));
+		DEBUG(DEBUG_NOTICE,("Set scheduler to SCHED_FIFO\n"));
 	}
 #endif
 }

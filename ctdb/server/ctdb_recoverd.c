@@ -911,7 +911,7 @@ static void ctdb_set_culprit(struct ctdb_recoverd *rec, uint32_t culprit)
 
 	if (rec->last_culprit != culprit ||
 	    timeval_elapsed(&rec->first_recover_time) > ctdb->tunable.recovery_grace_period) {
-		DEBUG(0,("New recovery culprit %u\n", culprit));
+		DEBUG(DEBUG_NOTICE,("New recovery culprit %u\n", culprit));
 		/* either a new node is the culprit, or we've decided to forgive them */
 		rec->last_culprit = culprit;
 		rec->first_recover_time = timeval_current();
@@ -1144,7 +1144,7 @@ static int push_recdb_database(struct ctdb_context *ctdb, uint32_t dbid,
 		return -1;
 	}
 
-	DEBUG(0, (__location__ " Recovery - pushed remote database 0x%x of size %u\n", 
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - pushed remote database 0x%x of size %u\n", 
 		  dbid, recdata->count));
 
 	talloc_free(recdata);
@@ -1182,7 +1182,7 @@ static int recover_database(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-	DEBUG(0, (__location__ " Recovery - pulled remote database 0x%x\n", dbid));
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - pulled remote database 0x%x\n", dbid));
 
 	/* wipe all the remote databases. This is safe as we are in a transaction */
 	w.db_id = dbid;
@@ -1228,7 +1228,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	struct ctdb_dbid_map *dbmap;
 	TDB_DATA data;
 
-	DEBUG(0, (__location__ " Starting do_recovery\n"));
+	DEBUG(DEBUG_NOTICE, (__location__ " Starting do_recovery\n"));
 
 	/* if recovery fails, force it again */
 	rec->need_recovery = true;
@@ -1248,7 +1248,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-	DEBUG(0, (__location__ " Recovery initiated due to problem with node %u\n", culprit));
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery initiated due to problem with node %u\n", culprit));
 
 	/* get a list of all databases */
 	ret = ctdb_ctrl_getdbmap(ctdb, CONTROL_TIMEOUT(), pnn, mem_ctx, &dbmap);
@@ -1274,7 +1274,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-	DEBUG(0, (__location__ " Recovery - created remote databases\n"));
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - created remote databases\n"));
 
 
 	/* set recovery mode to active on all nodes */
@@ -1321,7 +1321,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-	DEBUG(0,(__location__ " started transactions on all nodes\n"));
+	DEBUG(DEBUG_NOTICE,(__location__ " started transactions on all nodes\n"));
 
 	for (i=0;i<dbmap->num;i++) {
 		if (recover_database(rec, mem_ctx, dbmap->dbs[i].dbid, pnn, nodemap, generation) != 0) {
@@ -1330,7 +1330,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		}
 	}
 
-	DEBUG(0, (__location__ " Recovery - starting database commits\n"));
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - starting database commits\n"));
 
 	/* commit all the changes */
 	if (ctdb_client_async_control(ctdb, CTDB_CONTROL_TRANSACTION_COMMIT,
@@ -1340,7 +1340,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-	DEBUG(0, (__location__ " Recovery - committed databases\n"));
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - committed databases\n"));
 	
 
 	/* build a new vnn map with all the currently active and
@@ -1364,7 +1364,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-	DEBUG(0, (__location__ " Recovery - updated vnnmap\n"));
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated vnnmap\n"));
 
 	/* update recmaster to point to us for all nodes */
 	ret = set_recovery_master(ctdb, nodemap, pnn);
@@ -1373,7 +1373,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
-	DEBUG(0, (__location__ " Recovery - updated recmaster\n"));
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated recmaster\n"));
 
 	/*
 	  update all nodes to have the same flags that we have
@@ -1384,7 +1384,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 	
-	DEBUG(0, (__location__ " Recovery - updated flags\n"));
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - updated flags\n"));
 
 	/*
 	  if enabled, tell nodes to takeover their public IPs
@@ -1396,7 +1396,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 			DEBUG(0, (__location__ " Unable to setup public takeover addresses\n"));
 			return -1;
 		}
-		DEBUG(1, (__location__ " Recovery - done takeover\n"));
+		DEBUG(DEBUG_INFO, (__location__ " Recovery - done takeover\n"));
 	}
 
 	/* execute the "recovered" event script on all nodes */
@@ -1417,7 +1417,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	   has been reconfigured */
 	ctdb_send_message(ctdb, CTDB_BROADCAST_CONNECTED, CTDB_SRVID_RECONFIGURE, tdb_null);
 
-	DEBUG(0, (__location__ " Recovery complete\n"));
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery complete\n"));
 
 	rec->need_recovery = false;
 
@@ -1425,9 +1425,9 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	   We now wait for rerecovery_timeout before we allow 
 	   another recovery to take place.
 	*/
-	DEBUG(0, (__location__ " New recoveries supressed for the rerecovery timeout\n"));
+	DEBUG(DEBUG_NOTICE, (__location__ " New recoveries supressed for the rerecovery timeout\n"));
 	ctdb_wait_timeout(ctdb, ctdb->tunable.rerecovery_timeout);
-	DEBUG(0, (__location__ " Rerecovery timeout elapsed. Recovery reactivated.\n"));
+	DEBUG(DEBUG_NOTICE, (__location__ " Rerecovery timeout elapsed. Recovery reactivated.\n"));
 
 	return 0;
 }

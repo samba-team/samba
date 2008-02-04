@@ -293,7 +293,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	rec = (struct ctdb_rec_data *)&reply->data[0];
 
-	DEBUG(1,("starting push of %u records for dbid 0x%x\n",
+	DEBUG(DEBUG_INFO,("starting push of %u records for dbid 0x%x\n",
 		 reply->count, reply->db_id));
 
 	for (i=0;i<reply->count;i++) {
@@ -322,7 +322,7 @@ int32_t ctdb_control_push_db(struct ctdb_context *ctdb, TDB_DATA indata)
 		rec = (struct ctdb_rec_data *)(rec->length + (uint8_t *)rec);
 	}	    
 
-	DEBUG(3,("finished push of %u records for dbid 0x%x\n",
+	DEBUG(DEBUG_DEBUG,("finished push of %u records for dbid 0x%x\n",
 		 reply->count, reply->db_id));
 
 	ctdb_lock_all_databases_unmark(ctdb);
@@ -640,7 +640,7 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 	data.dptr = &rec->data[rec->keylen];
 
 	if (ctdb_lmaster(ctdb, &key) == ctdb->pnn) {
-		DEBUG(2,(__location__ " Called delete on record where we are lmaster\n"));
+		DEBUG(DEBUG_INFO,(__location__ " Called delete on record where we are lmaster\n"));
 		return -1;
 	}
 
@@ -677,7 +677,7 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	if (hdr2->rsn > hdr->rsn) {
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
-		DEBUG(2,(__location__ " Skipping record with rsn=%llu - called with rsn=%llu\n",
+		DEBUG(DEBUG_INFO,(__location__ " Skipping record with rsn=%llu - called with rsn=%llu\n",
 			 (unsigned long long)hdr2->rsn, (unsigned long long)hdr->rsn));
 		free(data.dptr);
 		return -1;		
@@ -685,7 +685,7 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 
 	if (hdr2->dmaster == ctdb->pnn) {
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
-		DEBUG(2,(__location__ " Attempted delete record where we are the dmaster\n"));
+		DEBUG(DEBUG_INFO,(__location__ " Attempted delete record where we are the dmaster\n"));
 		free(data.dptr);
 		return -1;				
 	}
@@ -699,7 +699,7 @@ int32_t ctdb_control_delete_record(struct ctdb_context *ctdb, TDB_DATA indata)
 	if (tdb_delete(ctdb_db->ltdb->tdb, key) != 0) {
 		tdb_unlock(ctdb_db->ltdb->tdb, -1, F_WRLCK);
 		tdb_chainunlock(ctdb_db->ltdb->tdb, key);
-		DEBUG(2,(__location__ " Failed to delete record\n"));
+		DEBUG(DEBUG_INFO,(__location__ " Failed to delete record\n"));
 		free(data.dptr);
 		return -1;						
 	}
