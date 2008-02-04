@@ -908,14 +908,4 @@ typedef struct lsa_r_removeprivs
 	NTSTATUS status;
 } LSA_R_REMOVEPRIVS;
 
-/*******************************************************/
-
-typedef struct {
-	POLICY_HND	handle;
-} LSA_Q_DELETE_OBJECT;
-
-typedef struct {
-	NTSTATUS 	status;
-} LSA_R_DELETE_OBJECT;
-
 #endif /* _RPC_LSA_H */
