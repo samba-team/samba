@@ -667,7 +667,7 @@ static NTSTATUS kdc_init(struct event_context *event_ctx,
 			 struct loadparm_context *lp_ctx,
 			 const struct model_ops *model_ops)
 {	
-	return task_server_startup(event_ctx, lp_ctx, model_ops, kdc_task_init);
+	return task_server_startup(event_ctx, lp_ctx, "kdc", model_ops, kdc_task_init);
 }
 
 /* called at smbd startup - register ourselves as a server service */

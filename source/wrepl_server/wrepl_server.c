@@ -510,7 +510,7 @@ static NTSTATUS wreplsrv_init(struct event_context *event_ctx, struct loadparm_c
 		return NT_STATUS_OK;
 	}
 
-	return task_server_startup(event_ctx, lp_ctx, 
+	return task_server_startup(event_ctx, lp_ctx, "wrepl", 
 				   model_ops, wreplsrv_task_init);
 }
 

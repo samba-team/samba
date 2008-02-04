@@ -298,7 +298,7 @@ static NTSTATUS websrv_init(struct event_context *event_context,
 			    struct loadparm_context *lp_ctx,
 			    const struct model_ops *model_ops)
 {	
-	return task_server_startup(event_context, lp_ctx, 
+	return task_server_startup(event_context, lp_ctx, "web", 
 				   model_ops, websrv_task_init);
 }
 

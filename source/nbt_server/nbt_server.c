@@ -93,7 +93,7 @@ static void nbtd_task_init(struct task_server *task)
  */
 static NTSTATUS nbtd_init(struct event_context *event_ctx, struct loadparm_context *lp_ctx, const struct model_ops *model_ops)
 {
-	return task_server_startup(event_ctx, lp_ctx, 
+	return task_server_startup(event_ctx, lp_ctx, "nbt",
 				   model_ops, nbtd_task_init);
 }
 
