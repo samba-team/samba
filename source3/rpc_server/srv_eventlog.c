@@ -42,27 +42,7 @@ static bool proxy_eventlog_call(pipes_struct *p, uint8 opnum)
 
 static bool api_eventlog_open_eventlog(pipes_struct *p)
 {
-	EVENTLOG_Q_OPEN_EVENTLOG q_u;
-	EVENTLOG_R_OPEN_EVENTLOG r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!(eventlog_io_q_open_eventlog("", &q_u, data, 0))) {
-		DEBUG(0, ("eventlog_io_q_open_eventlog: unable to unmarshall EVENTLOG_Q_OPEN_EVENTLOG.\n"));
-		return False;
-	}
-	
-	r_u.status = _eventlog_open_eventlog(p, &q_u, &r_u);
-
-	if (!(eventlog_io_r_open_eventlog("", &r_u, rdata, 0))) {
-		DEBUG(0, ("eventlog_io_r_open_eventlog: unable to marshall EVENTLOG_R_OPEN_EVENTLOG.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_eventlog_call(p, NDR_EVENTLOG_OPENEVENTLOGW);
 }
 
 static bool api_eventlog_close_eventlog(pipes_struct *p)
