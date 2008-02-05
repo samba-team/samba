@@ -860,7 +860,7 @@ struct samr_QueryDomainInfo {
 	} in;
 
 	struct {
-		union samr_DomainInfo *info;/* [ref,switch_is(level)] */
+		union samr_DomainInfo **info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 
@@ -1414,7 +1414,7 @@ struct samr_QueryDomainInfo2 {
 	} in;
 
 	struct {
-		union samr_DomainInfo *info;/* [ref,switch_is(level)] */
+		union samr_DomainInfo **info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 

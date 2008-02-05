@@ -354,7 +354,7 @@ NTSTATUS rpccli_samr_QueryDomainInfo(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct policy_handle *domain_handle,
 				     uint16_t level,
-				     union samr_DomainInfo *info)
+				     union samr_DomainInfo **info)
 {
 	struct samr_QueryDomainInfo r;
 	NTSTATUS status;
@@ -2028,7 +2028,7 @@ NTSTATUS rpccli_samr_QueryDomainInfo2(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *domain_handle,
 				      uint16_t level,
-				      union samr_DomainInfo *info)
+				      union samr_DomainInfo **info)
 {
 	struct samr_QueryDomainInfo2 r;
 	NTSTATUS status;
