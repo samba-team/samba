@@ -1113,38 +1113,3 @@ NTSTATUS rpccli_samr_set_userinfo2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_
 
 	return result;
 }
-
-/* Remove foreign SID */
-
-NTSTATUS rpccli_samr_remove_sid_foreign_domain(struct rpc_pipe_client *cli, 
-					    TALLOC_CTX *mem_ctx, 
-					    POLICY_HND *user_pol,
-					    DOM_SID *sid)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN q;
-	SAMR_R_REMOVE_SID_FOREIGN_DOMAIN r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_remove_sid_foreign_domain\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_remove_sid_foreign_domain(&q, user_pol, sid);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_REMOVE_SID_FOREIGN_DOMAIN,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_remove_sid_foreign_domain,
-		samr_io_r_remove_sid_foreign_domain,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	return result;
-}

@@ -32,68 +32,6 @@
 reads or writes a structure.
 ********************************************************************/
 
-void init_samr_q_remove_sid_foreign_domain(SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN * q_u, POLICY_HND *dom_pol, DOM_SID *sid)
-{
-	DEBUG(5, ("samr_init_samr_q_remove_sid_foreign_domain\n"));
-
-	q_u->dom_pol = *dom_pol;
-	init_dom_sid2(&q_u->sid, sid);
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_q_remove_sid_foreign_domain(const char *desc, SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN * q_u,
-			  prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_q_remove_sid_foreign_domain");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("domain_pol", &q_u->dom_pol, ps, depth))
-		return False;
-
-	if(!smb_io_dom_sid2("sid", &q_u->sid, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_r_remove_sid_foreign_domain(const char *desc, SAMR_R_REMOVE_SID_FOREIGN_DOMAIN * r_u,
-			  prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_r_remove_sid_foreign_domain");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
 void init_samr_q_query_domain_info(SAMR_Q_QUERY_DOMAIN_INFO * q_u,
 				   POLICY_HND *domain_pol, uint16 switch_value)
 {
