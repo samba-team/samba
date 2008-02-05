@@ -1101,7 +1101,7 @@ struct samr_QueryGroupMember {
 	} in;
 
 	struct {
-		struct samr_RidTypeArray *rids;/* [ref] */
+		struct samr_RidTypeArray **rids;/* [ref] */
 		NTSTATUS result;
 	} out;
 

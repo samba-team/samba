@@ -1120,7 +1120,7 @@ NTSTATUS rpccli_samr_DeleteGroupMember(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_QueryGroupMember(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *group_handle,
-				      struct samr_RidTypeArray *rids)
+				      struct samr_RidTypeArray **rids)
 {
 	struct samr_QueryGroupMember r;
 	NTSTATUS status;
