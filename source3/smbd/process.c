@@ -324,7 +324,7 @@ static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
 				   size_t *p_unread, bool *p_encrypted,
 				   size_t *p_len)
 {
-	size_t len;
+	size_t len = 0;
 	NTSTATUS status;
 
 	*p_encrypted = false;
@@ -719,7 +719,7 @@ static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
 	int selrtn;
 	struct timeval to;
 	int maxfd = 0;
-	size_t len;
+	size_t len = 0;
 	NTSTATUS status;
 
 	*p_unread = 0;
