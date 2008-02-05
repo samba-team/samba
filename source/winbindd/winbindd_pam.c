@@ -1936,8 +1936,8 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 	POLICY_HND dom_pol;
 	struct rpc_pipe_client *cli;
 	bool got_info = False;
-	SAM_UNK_INFO_1 info;
-	SAMR_CHANGE_REJECT reject;
+	struct samr_DomInfo1 *info = NULL;
+	struct samr_ChangeReject *reject = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	fstring domain, user;
 
@@ -1965,24 +1965,29 @@ enum winbindd_result winbindd_dual_pam_chauthtok(struct winbindd_domain *contact
 		goto done;
 	}
 
-	result = rpccli_samr_chgpasswd3(cli, state->mem_ctx, user, newpass, oldpass, &info, &reject);
+	result = rpccli_samr_chgpasswd3(cli, state->mem_ctx,
+					user,
+					newpass,
+					oldpass,
+					&info,
+					&reject);
 
  	/* Windows 2003 returns NT_STATUS_PASSWORD_RESTRICTION */
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION) ) {
-		state->response.data.auth.policy.min_length_password = 
-			info.min_length_password;
-		state->response.data.auth.policy.password_history = 
-			info.password_history;
-		state->response.data.auth.policy.password_properties = 
-			info.password_properties;
-		state->response.data.auth.policy.expire = 
-			nt_time_to_unix_abs(&info.expire);
-		state->response.data.auth.policy.min_passwordage = 
-			nt_time_to_unix_abs(&info.min_passwordage);
+		state->response.data.auth.policy.min_length_password =
+			info->min_password_length;
+		state->response.data.auth.policy.password_history =
+			info->password_history_length;
+		state->response.data.auth.policy.password_properties =
+			info->password_properties;
+		state->response.data.auth.policy.expire =
+			nt_time_to_unix_abs((NTTIME *)&info->max_password_age);
+		state->response.data.auth.policy.min_passwordage =
+			nt_time_to_unix_abs((NTTIME *)&info->min_password_age);
 
-		state->response.data.auth.reject_reason = 
-			reject.reject_reason;
+		state->response.data.auth.reject_reason =
+			reject->reason;
 
 		got_info = True;
 	}

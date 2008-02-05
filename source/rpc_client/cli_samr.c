@@ -22,6 +22,11 @@
 
 #include "includes.h"
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
 /* Query user info */
 
 NTSTATUS rpccli_samr_query_userinfo(struct rpc_pipe_client *cli,
@@ -601,80 +606,76 @@ NTSTATUS rpccli_samr_chng_pswd_auth_crap(struct rpc_pipe_client *cli,
 /* change password 3 */
 
 NTSTATUS rpccli_samr_chgpasswd3(struct rpc_pipe_client *cli,
-				TALLOC_CTX *mem_ctx, 
-				const char *username, 
-				const char *newpassword, 
+				TALLOC_CTX *mem_ctx,
+				const char *username,
+				const char *newpassword,
 				const char *oldpassword,
-				SAM_UNK_INFO_1 *info,
-				SAMR_CHANGE_REJECT *reject)
+				struct samr_DomInfo1 **dominfo1,
+				struct samr_ChangeReject **reject)
 {
-	prs_struct qbuf, rbuf;
-	SAMR_Q_CHGPASSWD_USER3 q;
-	SAMR_R_CHGPASSWD_USER3 r;
+	NTSTATUS status;
 
-	uchar new_nt_password[516];
-	uchar new_lm_password[516];
+	struct samr_CryptPassword new_nt_password;
+	struct samr_CryptPassword new_lm_password;
+	struct samr_Password old_nt_hash_enc;
+	struct samr_Password old_lanman_hash_enc;
+
 	uchar old_nt_hash[16];
 	uchar old_lanman_hash[16];
-	uchar old_nt_hash_enc[16];
-	uchar old_lanman_hash_enc[16];
-
 	uchar new_nt_hash[16];
 	uchar new_lanman_hash[16];
 
-	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
+	struct lsa_String server, account;
+	char *srv_name_slash = NULL;
 
 	DEBUG(10,("rpccli_samr_chgpasswd_user3\n"));
 
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
+	srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
+	if (!srv_name_slash) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	init_lsa_String(&server, srv_name_slash);
+	init_lsa_String(&account, username);
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	E_md4hash(oldpassword, old_nt_hash);
 	E_md4hash(newpassword, new_nt_hash);
 
-	if (lp_client_lanman_auth() 
-	    && E_deshash(newpassword, new_lanman_hash) 
-	    && E_deshash(oldpassword, old_lanman_hash)) {
+	if (lp_client_lanman_auth() &&
+	    E_deshash(newpassword, new_lanman_hash) &&
+	    E_deshash(oldpassword, old_lanman_hash)) {
 		/* E_deshash returns false for 'long' passwords (> 14
 		   DOS chars).  This allows us to match Win2k, which
 		   does not store a LM hash for these passwords (which
 		   would reduce the effective password length to 14) */
 
-		encode_pw_buffer(new_lm_password, newpassword, STR_UNICODE);
+		encode_pw_buffer(new_lm_password.data, newpassword, STR_UNICODE);
 
-		SamOEMhash( new_lm_password, old_nt_hash, 516);
-		E_old_pw_hash( new_nt_hash, old_lanman_hash, old_lanman_hash_enc);
+		SamOEMhash(new_lm_password.data, old_nt_hash, 516);
+		E_old_pw_hash(new_nt_hash, old_lanman_hash, old_lanman_hash_enc.hash);
 	} else {
 		ZERO_STRUCT(new_lm_password);
 		ZERO_STRUCT(old_lanman_hash_enc);
 	}
 
-	encode_pw_buffer(new_nt_password, newpassword, STR_UNICODE);
-	
-	SamOEMhash( new_nt_password, old_nt_hash, 516);
-	E_old_pw_hash( new_nt_hash, old_nt_hash, old_nt_hash_enc);
+	encode_pw_buffer(new_nt_password.data, newpassword, STR_UNICODE);
 
-	/* Marshall data and send request */
+	SamOEMhash(new_nt_password.data, old_nt_hash, 516);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, old_nt_hash_enc.hash);
 
-	init_samr_q_chgpasswd_user3(&q, srv_name_slash, username, 
-				    new_nt_password, 
-				    old_nt_hash_enc, 
-				    new_lm_password,
-				    old_lanman_hash_enc);
-	r.info = info;
-	r.reject = reject;
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_CHGPASSWD_USER3,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_chgpasswd_user3,
-		samr_io_r_chgpasswd_user3,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	return r.status;
+	status = rpccli_samr_ChangePasswordUser3(cli, mem_ctx,
+						 &server,
+						 &account,
+						 &new_nt_password,
+						 &old_nt_hash_enc,
+						 true,
+						 &new_lm_password,
+						 &old_lanman_hash_enc,
+						 NULL,
+						 dominfo1,
+						 reject);
+	return status;
 }
 
 /* This function returns the bizzare set of (max_entries, max_size) required

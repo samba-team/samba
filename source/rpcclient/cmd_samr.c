@@ -2367,10 +2367,10 @@ static NTSTATUS cmd_samr_chgpasswd2(struct rpc_pipe_client *cli,
 	user = argv[1];
 	oldpass = argv[2];
 	newpass = argv[3];
-	
+
 	/* Get sam policy handle */
 
-	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
 				   &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -2406,16 +2406,16 @@ static NTSTATUS cmd_samr_chgpasswd2(struct rpc_pipe_client *cli,
 
 /* Change user password */
 
-static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli, 
+static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
-				    int argc, const char **argv) 
+				    int argc, const char **argv)
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	const char *user, *oldpass, *newpass;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-	SAM_UNK_INFO_1 info;
-	SAMR_CHANGE_REJECT reject;
+	struct samr_DomInfo1 *info = NULL;
+	struct samr_ChangeReject *reject = NULL;
 
 	if (argc < 3) {
 		printf("Usage: %s username oldpass newpass\n", argv[0]);
@@ -2446,13 +2446,18 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 		goto done;
 
 	/* Change user password */
-	result = rpccli_samr_chgpasswd3(cli, mem_ctx, user, newpass, oldpass, &info, &reject);
+	result = rpccli_samr_chgpasswd3(cli, mem_ctx,
+					user,
+					newpass,
+					oldpass,
+					&info,
+					&reject);
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION)) {
 
-		/*display_sam_dom_info_1(&info);*/
+		display_sam_dom_info_1(info);
 
-		switch (reject.reject_reason) {
+		switch (reject->reason) {
 			case SAMR_REJECT_TOO_SHORT:
 				d_printf("SAMR_REJECT_TOO_SHORT\n");
 				break;
@@ -2466,7 +2471,8 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 				d_printf("SAMR_REJECT_OTHER\n");
 				break;
 			default:
-				d_printf("unknown reject reason: %d\n", reject.reject_reason);
+				d_printf("unknown reject reason: %d\n",
+					reject->reason);
 				break;
 		}
 	}
