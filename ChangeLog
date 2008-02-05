@@ -1,3 +1,10 @@
+2008-02-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/test_renew.c: Remove extra ;, From Dennis Davis.
+
+	* lib/krb5/store_emem.c: Make compile on-pre c99 compilers. From
+	Dennis Davis.
+
 2008-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* tools/heimdal-gssapi.pc.in: Add wind.
