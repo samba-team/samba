@@ -637,28 +637,7 @@ static bool api_samr_query_aliasmem(pipes_struct *p)
 
 static bool api_samr_query_groupmem(pipes_struct *p)
 {
-	SAMR_Q_QUERY_GROUPMEM q_u;
-	SAMR_R_QUERY_GROUPMEM r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_query_groupmem("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_query_groupmem: unable to unmarshall SAMR_Q_QUERY_GROUPMEM.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_query_groupmem(p, &q_u, &r_u);
-
-	if (!samr_io_r_query_groupmem("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_query_groupmem: unable to marshall SAMR_R_QUERY_GROUPMEM.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_QUERYGROUPMEMBER);
 }
 
 /*******************************************************************

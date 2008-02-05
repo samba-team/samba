@@ -3909,10 +3909,11 @@ NTSTATUS _samr_GetMembersInAlias(pipes_struct *p,
 }
 
 /*********************************************************************
- _samr_query_groupmem
+ _samr_QueryGroupMember
 *********************************************************************/
 
-NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_R_QUERY_GROUPMEM *r_u)
+NTSTATUS _samr_QueryGroupMember(pipes_struct *p,
+				struct samr_QueryGroupMember *r)
 {
 	DOM_SID group_sid;
 	size_t i, num_members;
@@ -3922,16 +3923,23 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 
 	uint32 acc_granted;
 
-	NTSTATUS result;
+	NTSTATUS status;
+	struct samr_RidTypeArray *rids = NULL;
+
+	rids = TALLOC_ZERO_P(p->mem_ctx, struct samr_RidTypeArray);
+	if (!rids) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->group_pol, &group_sid, &acc_granted, NULL)) 
+	if (!get_lsa_policy_samr_sid(p, r->in.group_handle, &group_sid, &acc_granted, NULL)) 
 		return NT_STATUS_INVALID_HANDLE;
-		
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_GET_MEMBERS, "_samr_query_groupmem"))) {
-		return r_u->status;
+
+	status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_GET_MEMBERS, "_samr_QueryGroupMember");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-		
+
 	DEBUG(10, ("sid is %s\n", sid_string_dbg(&group_sid)));
 
 	if (!sid_check_is_in_our_domain(&group_sid)) {
@@ -3943,12 +3951,12 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	DEBUG(10, ("lookup on Domain SID\n"));
 
 	become_root();
-	result = pdb_enum_group_members(p->mem_ctx, &group_sid,
+	status = pdb_enum_group_members(p->mem_ctx, &group_sid,
 					&rid, &num_members);
 	unbecome_root();
 
-	if (!NT_STATUS_IS_OK(result))
-		return result;
+	if (!NT_STATUS_IS_OK(status))
+		return status;
 
 	if (num_members) {
 		attr=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_members);
@@ -3962,7 +3970,11 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	for (i=0; i<num_members; i++)
 		attr[i] = SID_NAME_USER;
 
-	init_samr_r_query_groupmem(r_u, num_members, rid, attr, NT_STATUS_OK);
+	rids->count = num_members;
+	rids->types = attr;
+	rids->rids = rid;
+
+	*r->out.rids = rids;
 
 	return NT_STATUS_OK;
 }
@@ -5189,16 +5201,6 @@ NTSTATUS _samr_QueryGroupInfo(pipes_struct *p,
 
 NTSTATUS _samr_SetGroupInfo(pipes_struct *p,
 			    struct samr_SetGroupInfo *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_QueryGroupMember(pipes_struct *p,
-				struct samr_QueryGroupMember *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
