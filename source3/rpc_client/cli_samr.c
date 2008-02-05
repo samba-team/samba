@@ -518,62 +518,6 @@ NTSTATUS rpccli_samr_enum_als_groups(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/* Query alias members */
-
-NTSTATUS rpccli_samr_query_aliasmem(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx,
-				    POLICY_HND *alias_pol, uint32 *num_mem, 
-				    DOM_SID **sids)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_QUERY_ALIASMEM q;
-	SAMR_R_QUERY_ALIASMEM r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 i;
-
-	DEBUG(10,("cli_samr_query_aliasmem\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_query_aliasmem(&q, alias_pol);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_ALIASMEM,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_query_aliasmem,
-		samr_io_r_query_aliasmem,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	if (!NT_STATUS_IS_OK(result = r.status)) {
-		goto done;
-	}
-
-	*num_mem = r.num_sids;
-
-	if (*num_mem == 0) {
-		*sids = NULL;
-		result = NT_STATUS_OK;
-		goto done;
-	}
-
-	if (!(*sids = TALLOC_ARRAY(mem_ctx, DOM_SID, *num_mem))) {
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	for (i = 0; i < *num_mem; i++) {
-		(*sids)[i] = r.sid[i].sid;
-	}
-
- done:
-	return result;
-}
-
 /* Query alias info */
 
 NTSTATUS rpccli_samr_query_alias_info(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
