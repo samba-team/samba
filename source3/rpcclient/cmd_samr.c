@@ -1100,9 +1100,9 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
 {
 	POLICY_HND connect_pol, domain_pol, alias_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 alias_rid, num_members, i;
+	uint32 alias_rid, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-	DOM_SID *alias_sids;
+	struct lsa_SidArray sid_array;
 
 	if ((argc < 3) || (argc > 4)) {
 		printf("Usage: %s builtin|domain rid [access mask]\n", argv[0]);
@@ -1152,16 +1152,17 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_query_aliasmem(cli, mem_ctx, &alias_pol,
-					 &num_members, &alias_sids);
+	result = rpccli_samr_GetMembersInAlias(cli, mem_ctx,
+					       &alias_pol,
+					       &sid_array);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	for (i = 0; i < num_members; i++) {
+	for (i = 0; i < sid_array.num_sids; i++) {
 		fstring sid_str;
 
-		sid_to_fstring(sid_str, &alias_sids[i]);
+		sid_to_fstring(sid_str, sid_array.sids[i].sid);
 		printf("\tsid:[%s]\n", sid_str);
 	}
 
