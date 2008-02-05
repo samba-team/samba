@@ -1483,7 +1483,7 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 		goto done;;
 	}
 
-	printf("Succesfully set %s to driver %s.\n", argv[1], argv[2]);
+	printf("Successfully set %s to driver %s.\n", argv[1], argv[2]);
 
 done:
 	/* Cleanup */
