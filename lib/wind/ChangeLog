@@ -1,3 +1,9 @@
+2008-02-05  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* utf8.c: Make wind_utf8ucs4_length() work again.
+
+	* test-utf8.c: Test wind_utf8ucs4_length().
+
 2008-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* utf8.c: Fix overaggressive checks, fix comments.
