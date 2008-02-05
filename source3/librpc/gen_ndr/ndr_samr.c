@@ -5581,7 +5581,11 @@ static enum ndr_err_code ndr_push_samr_LookupDomain(struct ndr_push *ndr, int fl
 		if (r->out.sid == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
+		if (*r->out.sid == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_ref_ptr(ndr));
+		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.sid));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -5589,9 +5593,11 @@ static enum ndr_err_code ndr_push_samr_LookupDomain(struct ndr_push *ndr, int fl
 
 static enum ndr_err_code ndr_pull_samr_LookupDomain(struct ndr_pull *ndr, int flags, struct samr_LookupDomain *r)
 {
+	uint32_t _ptr_sid;
 	TALLOC_CTX *_mem_save_connect_handle_0;
 	TALLOC_CTX *_mem_save_domain_name_0;
 	TALLOC_CTX *_mem_save_sid_0;
+	TALLOC_CTX *_mem_save_sid_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -5618,7 +5624,14 @@ static enum ndr_err_code ndr_pull_samr_LookupDomain(struct ndr_pull *ndr, int fl
 		}
 		_mem_save_sid_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.sid, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sid));
+		NDR_CHECK(ndr_pull_ref_ptr(ndr, &_ptr_sid));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, *r->out.sid);
+		}
+		_mem_save_sid_1 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, *r->out.sid, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.sid));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_1, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -5650,7 +5663,10 @@ _PUBLIC_ void ndr_print_samr_LookupDomain(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_ptr(ndr, "sid", r->out.sid);
 		ndr->depth++;
-		ndr_print_dom_sid2(ndr, "sid", r->out.sid);
+		ndr_print_ptr(ndr, "sid", *r->out.sid);
+		ndr->depth++;
+		ndr_print_dom_sid2(ndr, "sid", *r->out.sid);
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;

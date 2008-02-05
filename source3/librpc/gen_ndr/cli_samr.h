@@ -26,7 +26,7 @@ NTSTATUS rpccli_samr_LookupDomain(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  struct policy_handle *connect_handle,
 				  struct lsa_String *domain_name,
-				  struct dom_sid2 *sid);
+				  struct dom_sid2 **sid);
 NTSTATUS rpccli_samr_EnumDomains(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *connect_handle,

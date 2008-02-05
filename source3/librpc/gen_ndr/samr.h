@@ -799,7 +799,7 @@ struct samr_LookupDomain {
 	} in;
 
 	struct {
-		struct dom_sid2 *sid;/* [ref] */
+		struct dom_sid2 **sid;/* [ref] */
 		NTSTATUS result;
 	} out;
 
