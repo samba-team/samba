@@ -613,28 +613,6 @@ typedef struct r_samr_query_domain_info
 } SAMR_R_QUERY_DOMAIN_INFO;
 
 
-/* SAMR_Q_LOOKUP_DOMAIN - obtain SID for a local domain */
-typedef struct q_samr_lookup_domain_info
-{
-	POLICY_HND connect_pol;
-
-	UNIHDR  hdr_domain;
-	UNISTR2 uni_domain;
-
-} SAMR_Q_LOOKUP_DOMAIN;
-
-
-/* SAMR_R_LOOKUP_DOMAIN */
-typedef struct r_samr_lookup_domain_info
-{
-	uint32   ptr_sid;
-	DOM_SID2 dom_sid;
-
-	NTSTATUS status;
-
-} SAMR_R_LOOKUP_DOMAIN;
-
-
 #define MAX_SAM_ENTRIES_W2K 0x400
 #define MAX_SAM_ENTRIES_W95 50
 /* The following should be the greater of the preceeding two. */
