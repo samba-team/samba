@@ -1787,8 +1787,8 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	bool group_is_primary = False;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	uint32 *group_rids, num_rids, *name_types, num_members, 
-               *group_attrs, group_rid;
+	uint32 *group_rids, num_rids, *name_types, group_rid;
+	struct samr_RidTypeArray *rids = NULL;
 	uint32 flags = 0x000003e8; /* Unknown */
 	/* char **names; */
 	int i;
@@ -1847,11 +1847,11 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		}
                 
 		group_rid = group_rids[0];
-                
-		result = rpccli_samr_query_groupmem(pipe_hnd, mem_ctx, &group_pol,
-                                 &num_members, &group_rids,
-                                 &group_attrs);
-		
+
+		result = rpccli_samr_QueryGroupMember(pipe_hnd, mem_ctx,
+						      &group_pol,
+						      &rids);
+
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, "Unable to query group members of %s",argv[0]);
    			goto done;
@@ -1859,20 +1859,21 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		
 		if (opt_verbose) {
 			d_printf("Domain Group %s (rid: %d) has %d members\n",
-				argv[0],group_rid,num_members);
+				argv[0],group_rid, rids->count);
 		}
 
 		/* Check if group is anyone's primary group */
-                for (i = 0; i < num_members; i++)
+                for (i = 0; i < rids->count; i++)
 		{
 	                result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
 						      &domain_pol,
 						      MAXIMUM_ALLOWED_ACCESS,
-						      group_rids[i],
+						      rids->rids[i],
 						      &user_pol);
 	
 	        	if (!NT_STATUS_IS_OK(result)) {
-				d_fprintf(stderr, "Unable to open group member %d\n",group_rids[i]);
+				d_fprintf(stderr, "Unable to open group member %d\n",
+					rids->rids[i]);
 	           		goto done;
 	        	}
 	
@@ -1882,7 +1883,8 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	                                                 21, &user_ctr);
 	
 	        	if (!NT_STATUS_IS_OK(result)) {
-				d_fprintf(stderr, "Unable to lookup userinfo for group member %d\n",group_rids[i]);
+				d_fprintf(stderr, "Unable to lookup userinfo for group member %d\n",
+					rids->rids[i]);
 	           		goto done;
 	        	}
 	
@@ -1905,13 +1907,14 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		}
      
 		/* remove all group members */
-		for (i = 0; i < num_members; i++)
+		for (i = 0; i < rids->count; i++)
 		{
 			if (opt_verbose) 
-				d_printf("Remove group member %d...",group_rids[i]);
+				d_printf("Remove group member %d...",
+					rids->rids[i]);
 			result = rpccli_samr_DeleteGroupMember(pipe_hnd, mem_ctx,
 							       &group_pol,
-							       group_rids[i]);
+							       rids->rids[i]);
 
 			if (NT_STATUS_IS_OK(result)) {
 				if (opt_verbose)
@@ -2801,11 +2804,12 @@ static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
 {
 	NTSTATUS result;
 	POLICY_HND group_pol;
-	uint32 num_members, *group_rids, *group_attrs;
+	uint32 num_members, *group_rids;
 	uint32 num_names;
 	char **names;
 	uint32 *name_types;
 	int i;
+	struct samr_RidTypeArray *rids = NULL;
 
 	fstring sid_str;
 	sid_to_fstring(sid_str, domain_sid);
@@ -2819,12 +2823,15 @@ static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	result = rpccli_samr_query_groupmem(pipe_hnd, mem_ctx, &group_pol,
-					 &num_members, &group_rids,
-					 &group_attrs);
+	result = rpccli_samr_QueryGroupMember(pipe_hnd, mem_ctx,
+					      &group_pol,
+					      &rids);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
+
+	num_members = rids->count;
+	group_rids = rids->rids;
 
 	while (num_members > 0) {
 		int this_time = 512;

@@ -792,12 +792,13 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 {
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 num_members, *group_rids, *group_attrs, group_rid;
+	uint32 group_rid;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int i;
 	fstring			server;
 	unsigned int old_timeout;
-	
+	struct samr_RidTypeArray *rids = NULL;
+
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s rid [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
@@ -838,18 +839,18 @@ static NTSTATUS cmd_samr_query_groupmem(struct rpc_pipe_client *cli,
 	/* Make sure to wait for our DC's reply */
 	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
 
-	result = rpccli_samr_query_groupmem(cli, mem_ctx, &group_pol,
-					 &num_members, &group_rids,
-					 &group_attrs);
+	result = rpccli_samr_QueryGroupMember(cli, mem_ctx,
+					      &group_pol,
+					      &rids);
 
 	cli_set_timeout(cli->cli, old_timeout);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	for (i = 0; i < num_members; i++) {
-		printf("\trid:[0x%x] attr:[0x%x]\n", group_rids[i],
-		       group_attrs[i]);
+	for (i = 0; i < rids->count; i++) {
+		printf("\trid:[0x%x] attr:[0x%x]\n", rids->rids[i],
+		       rids->types[i]);
 	}
 
 	rpccli_samr_Close(cli, mem_ctx, &group_pol);
