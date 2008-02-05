@@ -445,24 +445,6 @@ typedef struct sam_user_info_9
 } SAM_USER_INFO_9;
 
 
-typedef struct sam_unknown_info_1_inf
-{
-	uint16 min_length_password;
-	uint16 password_history;
-	uint32 password_properties;
-	NTTIME expire;
-	NTTIME min_passwordage;
-
-} SAM_UNK_INFO_1;
-
-typedef struct sam_unknown_info_3_info
-{
-	NTTIME logout;	
-	/* 0x8000 0000 */ /* DON'T forcibly disconnect remote users from server when logon hours expire*/
-	/* 0x0000 0000 */ /* forcibly disconnect remote users from server when logon hours expire*/
-
-} SAM_UNK_INFO_3;
-
 #define MAX_SAM_ENTRIES_W2K 0x400
 #define MAX_SAM_ENTRIES_W95 50
 /* The following should be the greater of the preceeding two. */

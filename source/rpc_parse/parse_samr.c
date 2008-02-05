@@ -172,56 +172,6 @@ void init_samr_DomInfo12(struct samr_DomInfo12 *r,
 }
 
 /*******************************************************************
-inits a structure.
-********************************************************************/
-
-void init_unk_info1(SAM_UNK_INFO_1 *u_1, uint16 min_pass_len, uint16 pass_hist, 
-		    uint32 password_properties, NTTIME nt_expire, NTTIME nt_min_age)
-{
-	u_1->min_length_password = min_pass_len;
-	u_1->password_history = pass_hist;
-	
-	if (lp_check_password_script() && *lp_check_password_script()) {
-		password_properties |= DOMAIN_PASSWORD_COMPLEX;
-	}
-	u_1->password_properties = password_properties;
-
-	/* password never expire */
-	u_1->expire = nt_expire;
-
-	/* can change the password now */
-	u_1->min_passwordage = nt_min_age;
-	
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-static bool sam_io_unk_info1(const char *desc, SAM_UNK_INFO_1 * u_1,
-			     prs_struct *ps, int depth)
-{
-	if (u_1 == NULL)
-	  return False;
-
-	prs_debug(ps, depth, desc, "sam_io_unk_info1");
-	depth++;
-
-	if(!prs_uint16("min_length_password", ps, depth, &u_1->min_length_password))
-		return False;
-	if(!prs_uint16("password_history", ps, depth, &u_1->password_history))
-		return False;
-	if(!prs_uint32("password_properties", ps, depth, &u_1->password_properties))
-		return False;
-	if(!smb_io_time("expire", &u_1->expire, ps, depth))
-		return False;
-	if(!smb_io_time("min_passwordage", &u_1->min_passwordage, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 reads or writes a SAM_STR1 structure.
 ********************************************************************/
 
