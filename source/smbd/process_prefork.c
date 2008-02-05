@@ -54,6 +54,17 @@ static void prefork_model_init(struct event_context *ev)
 	signal(SIGCHLD, SIG_IGN);
 }
 
+static void prefork_reload_after_fork(void)
+{
+	/* tdb needs special fork handling */
+	if (tdb_reopen_all(1) == -1) {
+		DEBUG(0,("prefork_reload_after_fork: tdb_reopen_all failed.\n"));
+	}
+
+	/* Ensure that the forked children do not expose identical random streams */
+	set_need_random_reseed();
+}
+
 /*
   called when a listening socket becomes readable. 
 */
@@ -115,15 +126,9 @@ static void prefork_new_task(struct event_context *ev,
 	   is not associated with this new connection */
 	talloc_free(ev);
 
-	/* tdb needs special fork handling */
-	if (tdb_reopen_all(1) == -1) {
-		DEBUG(0,("prefork_accept_connection: tdb_reopen_all failed.\n"));
-	}
-
-	/* Ensure that the forked children do not expose identical random streams */
-	set_need_random_reseed();
-
 	setproctitle("task %s server_id[%d]", service_name, pid);
+
+	prefork_reload_after_fork();
 
 	/* setup this new connection: process will bind to it's sockets etc */
 	new_task_fn(ev2, lp_ctx, cluster_id(pid, 0), private);
@@ -151,6 +156,9 @@ static void prefork_new_task(struct event_context *ev,
 		} else {
 			pid = getpid();
 			setproctitle("task %s server_id[%d]", service_name, pid);
+
+			prefork_reload_after_fork();
+
 			/* we can't return to the top level here, as that event context is gone,
 			   so we now process events in the new event context until there are no
 			   more to process */	   
