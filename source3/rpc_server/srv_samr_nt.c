@@ -2837,7 +2837,7 @@ NTSTATUS _samr_Connect5(pipes_struct *p,
 
 	DEBUG(5,("_samr_Connect5: %d\n", __LINE__));
 
-	info1.unknown1 = 3;
+	info1.client_version = SAMR_CONNECT_AFTER_W2K;
 	info1.unknown2 = 0;
 
 	*r->out.level_out = 1;
