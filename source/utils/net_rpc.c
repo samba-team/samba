@@ -2874,6 +2874,7 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 	char **names;
 	enum lsa_SidType *types;
 	int i;
+	struct lsa_SidArray sid_array;
 
 	result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
 				       domain_pol,
@@ -2884,13 +2885,16 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	result = rpccli_samr_query_aliasmem(pipe_hnd, mem_ctx, &alias_pol,
-					 &num_members, &alias_sids);
+	result = rpccli_samr_GetMembersInAlias(pipe_hnd, mem_ctx,
+					       &alias_pol,
+					       &sid_array);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Couldn't list alias members\n");
 		return result;
 	}
+
+	num_members = sid_array.num_sids;
 
 	if (num_members == 0) {
 		return NT_STATUS_OK;
@@ -2910,6 +2914,17 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 		d_fprintf(stderr, "Couldn't open LSA policy handle\n");
 		cli_rpc_pipe_close(lsa_pipe);
 		return result;
+	}
+
+	alias_sids = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
+	if (!alias_sids) {
+		d_fprintf(stderr, "Out of memory\n");
+		cli_rpc_pipe_close(lsa_pipe);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_members; i++) {
+		sid_copy(&alias_sids[i], sid_array.sids[i].sid);
 	}
 
 	result = rpccli_lsa_lookup_sids(lsa_pipe, mem_ctx, &lsa_pol, num_members,
@@ -4185,7 +4200,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 
 			POLICY_HND alias_pol;
 			struct full_alias alias;
-			DOM_SID *members;
+			struct lsa_SidArray sid_array;
 			int j;
 
 			result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
@@ -4196,12 +4211,13 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 			if (!NT_STATUS_IS_OK(result))
 				goto done;
 
-			result = rpccli_samr_query_aliasmem(pipe_hnd, mem_ctx,
-							 &alias_pol,
-							 &alias.num_members,
-							 &members);
+			result = rpccli_samr_GetMembersInAlias(pipe_hnd, mem_ctx,
+							       &alias_pol,
+							       &sid_array);
 			if (!NT_STATUS_IS_OK(result))
 				goto done;
+
+			alias.num_members = sid_array.num_sids;
 
 			result = rpccli_samr_Close(pipe_hnd, mem_ctx, &alias_pol);
 			if (!NT_STATUS_IS_OK(result))
@@ -4214,7 +4230,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 
 				for (j = 0; j < alias.num_members; j++)
 					sid_copy(&alias.members[j],
-						 &members[j]);
+						 sid_array.sids[j].sid);
 			}
 
 			sid_copy(&alias.sid, domain_sid);
