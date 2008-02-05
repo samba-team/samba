@@ -2276,15 +2276,18 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 }
 
 /*******************************************************************
- _samr_query_domain_info
+ samr_QueryDomainInfo_internal
  ********************************************************************/
 
-NTSTATUS _samr_query_domain_info(pipes_struct *p,
-				 SAMR_Q_QUERY_DOMAIN_INFO *q_u,
-				 SAMR_R_QUERY_DOMAIN_INFO *r_u)
+static NTSTATUS samr_QueryDomainInfo_internal(const char *fn_name,
+					      pipes_struct *p,
+					      struct policy_handle *handle,
+					      uint32_t level,
+					      union samr_DomainInfo **dom_info_ptr)
 {
+	NTSTATUS status = NT_STATUS_OK;
 	struct samr_info *info = NULL;
-	SAM_UNK_CTR *ctr;
+	union samr_DomainInfo *dom_info;
 	uint32 min_pass_len,pass_hist,password_properties;
 	time_t u_expire, u_min_age;
 	NTTIME nt_expire, nt_min_age;
@@ -2302,22 +2305,21 @@ NTSTATUS _samr_query_domain_info(pipes_struct *p,
 
 	uint32 num_users=0, num_groups=0, num_aliases=0;
 
-	if ((ctr = TALLOC_ZERO_P(p->mem_ctx, SAM_UNK_CTR)) == NULL) {
+	DEBUG(5,("%s: %d\n", fn_name, __LINE__));
+
+	dom_info = TALLOC_ZERO_P(p->mem_ctx, union samr_DomainInfo);
+	if (!dom_info) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ZERO_STRUCTP(ctr);
-
-	r_u->status = NT_STATUS_OK;
-
-	DEBUG(5,("_samr_query_domain_info: %d\n", __LINE__));
+	*dom_info_ptr = dom_info;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)(void *)&info)) {
+	if (!find_policy_by_hnd(p, handle, (void **)(void *)&info)) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	switch (q_u->switch_value) {
+	switch (level) {
 		case 0x01:
 
 			become_root();
@@ -2346,8 +2348,12 @@ NTSTATUS _samr_query_domain_info(pipes_struct *p,
 			unix_to_nt_time_abs(&nt_expire, u_expire);
 			unix_to_nt_time_abs(&nt_min_age, u_min_age);
 
-			init_unk_info1(&ctr->info.inf1, (uint16)min_pass_len, (uint16)pass_hist,
-			               password_properties, nt_expire, nt_min_age);
+			init_samr_DomInfo1(&dom_info->info1,
+					   (uint16)min_pass_len,
+					   (uint16)pass_hist,
+					   password_properties,
+					   nt_expire,
+					   nt_min_age);
 			break;
 		case 0x02:
 
@@ -2375,8 +2381,18 @@ NTSTATUS _samr_query_domain_info(pipes_struct *p,
 			if (lp_server_role() == ROLE_DOMAIN_BDC)
 				server_role = ROLE_DOMAIN_BDC;
 
-			init_unk_info2(&ctr->info.inf2, lp_serverstring(), lp_workgroup(), global_myname(), seq_num,
-				       num_users, num_groups, num_aliases, nt_logout, server_role);
+			init_samr_DomInfo2(&dom_info->info2,
+					   nt_logout,
+					   lp_serverstring(),
+					   lp_workgroup(),
+					   global_myname(),
+					   seq_num,
+					   1,
+					   server_role,
+					   1,
+					   num_users,
+					   num_groups,
+					   num_aliases);
 			break;
 		case 0x03:
 
@@ -2396,26 +2412,32 @@ NTSTATUS _samr_query_domain_info(pipes_struct *p,
 
 			unix_to_nt_time_abs(&nt_logout, u_logout);
 
-			init_unk_info3(&ctr->info.inf3, nt_logout);
+			init_samr_DomInfo3(&dom_info->info3,
+					   nt_logout);
+
 			break;
 		case 0x04:
-			init_unk_info4(&ctr->info.inf4, lp_serverstring());
+			init_samr_DomInfo4(&dom_info->info4,
+					   lp_serverstring());
 			break;
 		case 0x05:
-			init_unk_info5(&ctr->info.inf5, get_global_sam_name());
+			init_samr_DomInfo5(&dom_info->info5,
+					   get_global_sam_name());
 			break;
 		case 0x06:
 			/* NT returns its own name when a PDC. win2k and later
 			 * only the name of the PDC if itself is a BDC (samba4
 			 * idl) */
-			init_unk_info6(&ctr->info.inf6, global_myname());
+			init_samr_DomInfo6(&dom_info->info6,
+					   global_myname());
 			break;
 		case 0x07:
 			server_role = ROLE_DOMAIN_PDC;
 			if (lp_server_role() == ROLE_DOMAIN_BDC)
 				server_role = ROLE_DOMAIN_BDC;
 
-			init_unk_info7(&ctr->info.inf7, server_role);
+			init_samr_DomInfo7(&dom_info->info7,
+					   server_role);
 			break;
 		case 0x08:
 
@@ -2431,7 +2453,9 @@ NTSTATUS _samr_query_domain_info(pipes_struct *p,
 
 			unbecome_root();
 
-			init_unk_info8(&ctr->info.inf8, (uint32) seq_num);
+			init_samr_DomInfo8(&dom_info->info8,
+					   seq_num,
+					   0);
 			break;
 		case 0x0c:
 
@@ -2458,18 +2482,32 @@ NTSTATUS _samr_query_domain_info(pipes_struct *p,
 			unix_to_nt_time_abs(&nt_lock_duration, u_lock_duration);
 			unix_to_nt_time_abs(&nt_reset_time, u_reset_time);
 
-            		init_unk_info12(&ctr->info.inf12, nt_lock_duration, nt_reset_time, (uint16)lockout);
+			init_samr_DomInfo12(&dom_info->info12,
+					    nt_lock_duration,
+					    nt_reset_time,
+					    (uint16)lockout);
             		break;
         	default:
             		return NT_STATUS_INVALID_INFO_CLASS;
-		}
+	}
 
+	DEBUG(5,("%s: %d\n", fn_name, __LINE__));
 
-	init_samr_r_query_domain_info(r_u, q_u->switch_value, ctr, NT_STATUS_OK);
+	return status;
+}
 
-	DEBUG(5,("_samr_query_domain_info: %d\n", __LINE__));
+/*******************************************************************
+ _samr_QueryDomainInfo
+ ********************************************************************/
 
-	return r_u->status;
+NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
+			       struct samr_QueryDomainInfo *r)
+{
+	return samr_QueryDomainInfo_internal("_samr_QueryDomainInfo",
+					     p,
+					     r->in.domain_handle,
+					     r->in.level,
+					     r->out.info);
 }
 
 /* W2k3 seems to use the same check for all 3 objects that can be created via
@@ -4993,31 +5031,17 @@ NTSTATUS _samr_RemoveMemberFromForeignDomain(pipes_struct *p,
 }
 
 /*******************************************************************
- _samr_query_domain_info2
+ _samr_QueryDomainInfo2
  ********************************************************************/
 
-NTSTATUS _samr_query_domain_info2(pipes_struct *p,
-				  SAMR_Q_QUERY_DOMAIN_INFO2 *q_u,
-				  SAMR_R_QUERY_DOMAIN_INFO2 *r_u)
+NTSTATUS _samr_QueryDomainInfo2(pipes_struct *p,
+				struct samr_QueryDomainInfo2 *r)
 {
-	SAMR_Q_QUERY_DOMAIN_INFO q;
-	SAMR_R_QUERY_DOMAIN_INFO r;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	DEBUG(5,("_samr_query_domain_info2: %d\n", __LINE__));
-
-	q.domain_pol = q_u->domain_pol;
-	q.switch_value = q_u->switch_value;
-
-	r_u->status = _samr_query_domain_info(p, &q, &r);
-
-	r_u->ptr_0 		= r.ptr_0;
-	r_u->switch_value	= r.switch_value;
-	r_u->ctr		= r.ctr;
-
-	return r_u->status;
+	return samr_QueryDomainInfo_internal("_samr_QueryDomainInfo2",
+					     p,
+					     r->in.domain_handle,
+					     r->in.level,
+					     r->out.info);
 }
 
 /*******************************************************************
@@ -5100,16 +5124,6 @@ NTSTATUS _samr_Shutdown(pipes_struct *p,
 
 NTSTATUS _samr_EnumDomains(pipes_struct *p,
 			   struct samr_EnumDomains *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_QueryDomainInfo(pipes_struct *p,
-			       struct samr_QueryDomainInfo *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -5310,16 +5324,6 @@ NTSTATUS _samr_TestPrivateFunctionsDomain(pipes_struct *p,
 
 NTSTATUS _samr_TestPrivateFunctionsUser(pipes_struct *p,
 					struct samr_TestPrivateFunctionsUser *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_QueryDomainInfo2(pipes_struct *p,
-				struct samr_QueryDomainInfo2 *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
