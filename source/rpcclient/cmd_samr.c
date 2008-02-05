@@ -150,98 +150,90 @@ static void display_password_properties(uint32_t password_properties)
 		printf("\tDOMAIN_REFUSE_PASSWORD_CHANGE\n");
 }
 
-static void display_sam_unk_info_1(SAM_UNK_INFO_1 *info1)
+static void display_sam_dom_info_1(struct samr_DomInfo1 *info1)
 {
-	
-	printf("Minimum password length:\t\t\t%d\n", info1->min_length_password);
-	printf("Password uniqueness (remember x passwords):\t%d\n", info1->password_history);
+	printf("Minimum password length:\t\t\t%d\n",
+		info1->min_password_length);
+	printf("Password uniqueness (remember x passwords):\t%d\n",
+		info1->password_history_length);
 	display_password_properties(info1->password_properties);
-	printf("password expire in:\t\t\t\t%s\n", display_time(info1->expire));
-	printf("Min password age (allow changing in x days):\t%s\n", display_time(info1->min_passwordage));
+	printf("password expire in:\t\t\t\t%s\n",
+		display_time(info1->max_password_age));
+	printf("Min password age (allow changing in x days):\t%s\n",
+		display_time(info1->min_password_age));
 }
 
-static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
+static void display_sam_dom_info_2(struct samr_DomInfo2 *info2)
 {
-	fstring name;
+	printf("Domain:\t\t%s\n", info2->domain_name.string);
+	printf("Server:\t\t%s\n", info2->primary.string);
+	printf("Comment:\t%s\n", info2->comment.string);
 
-	unistr2_to_ascii(name, &info2->uni_domain, sizeof(name));
-	printf("Domain:\t\t%s\n", name);
+	printf("Total Users:\t%d\n", info2->num_users);
+	printf("Total Groups:\t%d\n", info2->num_groups);
+	printf("Total Aliases:\t%d\n", info2->num_aliases);
 
-	unistr2_to_ascii(name, &info2->uni_server, sizeof(name));
-	printf("Server:\t\t%s\n", name);
+	printf("Sequence No:\t%llu\n", (unsigned long long)info2->sequence_num);
 
-	unistr2_to_ascii(name, &info2->uni_comment, sizeof(name));
-	printf("Comment:\t%s\n", name);
+	printf("Force Logoff:\t%d\n",
+		(int)nt_time_to_unix_abs(&info2->force_logoff_time));
 
-	printf("Total Users:\t%d\n", info2->num_domain_usrs);
-	printf("Total Groups:\t%d\n", info2->num_domain_grps);
-	printf("Total Aliases:\t%d\n", info2->num_local_grps);
-	
-	printf("Sequence No:\t%llu\n", (unsigned long long)info2->seq_num);
-
-	printf("Force Logoff:\t%d\n", (int)nt_time_to_unix_abs(&info2->logout));
-
-	printf("Unknown 4:\t0x%x\n", info2->unknown_4);
-	printf("Server Role:\t%s\n", server_role_str(info2->server_role));
-	printf("Unknown 6:\t0x%x\n", info2->unknown_6);
+	printf("Unknown 2:\t0x%x\n", info2->unknown2);
+	printf("Server Role:\t%s\n", server_role_str(info2->role));
+	printf("Unknown 3:\t0x%x\n", info2->unknown3);
 }
 
-static void display_sam_unk_info_3(SAM_UNK_INFO_3 *info3)
+static void display_sam_dom_info_3(struct samr_DomInfo3 *info3)
 {
-	printf("Force Logoff:\t%d\n", (int)nt_time_to_unix_abs(&info3->logout));
+	printf("Force Logoff:\t%d\n",
+		(int)nt_time_to_unix_abs(&info3->force_logoff_time));
 }
 
-static void display_sam_unk_info_4(SAM_UNK_INFO_4 *info4)
+static void display_sam_dom_info_4(struct samr_DomInfo4 *info4)
 {
-	fstring name;
-
-	unistr2_to_ascii(name, &info4->uni_comment, sizeof(name));
-	printf("Comment:\t%s\n", name);
+	printf("Comment:\t%s\n", info4->comment.string);
 }
 
-static void display_sam_unk_info_5(SAM_UNK_INFO_5 *info5)
+static void display_sam_dom_info_5(struct samr_DomInfo5 *info5)
 {
-	fstring name;
-
-	unistr2_to_ascii(name, &info5->uni_domain, sizeof(name));
-	printf("Domain:\t\t%s\n", name);
+	printf("Domain:\t\t%s\n", info5->domain_name.string);
 }
 
-static void display_sam_unk_info_6(SAM_UNK_INFO_6 *info6)
+static void display_sam_dom_info_6(struct samr_DomInfo6 *info6)
 {
-	fstring name;
-
-	unistr2_to_ascii(name, &info6->uni_server, sizeof(name));
-	printf("Server:\t\t%s\n", name);
+	printf("Server:\t\t%s\n", info6->primary.string);
 }
 
-static void display_sam_unk_info_7(SAM_UNK_INFO_7 *info7)
+static void display_sam_dom_info_7(struct samr_DomInfo7 *info7)
 {
-	printf("Server Role:\t%s\n", server_role_str(info7->server_role));
+	printf("Server Role:\t%s\n", server_role_str(info7->role));
 }
 
-static void display_sam_unk_info_8(SAM_UNK_INFO_8 *info8)
+static void display_sam_dom_info_8(struct samr_DomInfo8 *info8)
 {
-	printf("Sequence No:\t%llu\n", (unsigned long long)info8->seq_num);
+	printf("Sequence No:\t%llu\n", (unsigned long long)info8->sequence_num);
 	printf("Domain Create Time:\t%s\n", 
 		http_timestring(nt_time_to_unix(info8->domain_create_time)));
 }
 
-static void display_sam_unk_info_9(SAM_UNK_INFO_9 *info9)
+static void display_sam_dom_info_9(struct samr_DomInfo9 *info9)
 {
 	printf("unknown:\t%d (0x%08x)\n", info9->unknown, info9->unknown);
 }
 
-static void display_sam_unk_info_12(SAM_UNK_INFO_12 *info12)
+static void display_sam_dom_info_12(struct samr_DomInfo12 *info12)
 {
-	printf("Bad password lockout duration:               %s\n", display_time(info12->duration));
-	printf("Reset Lockout after:                         %s\n", display_time(info12->reset_count));
-	printf("Lockout after bad attempts:                  %d\n", info12->bad_attempt_lockout);
+	printf("Bad password lockout duration:               %s\n",
+		display_time(info12->lockout_duration));
+	printf("Reset Lockout after:                         %s\n",
+		display_time(info12->lockout_window));
+	printf("Lockout after bad attempts:                  %d\n",
+		info12->lockout_threshold);
 }
 
-static void display_sam_unk_info_13(SAM_UNK_INFO_13 *info13)
+static void display_sam_dom_info_13(struct samr_DomInfo13 *info13)
 {
-	printf("Sequence No:\t%llu\n", (unsigned long long)info13->seq_num);
+	printf("Sequence No:\t%llu\n", (unsigned long long)info13->sequence_num);
 	printf("Domain Create Time:\t%s\n", 
 		http_timestring(nt_time_to_unix(info13->domain_create_time)));
 	printf("Unknown1:\t%d\n", info13->unknown1);
@@ -1410,7 +1402,7 @@ static NTSTATUS cmd_samr_query_dominfo(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 switch_level = 2;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-	SAM_UNK_CTR ctr;
+	union samr_DomainInfo *info = NULL;
 
 	if (argc > 3) {
 		printf("Usage: %s [info level] [access mask]\n", argv[0]);
@@ -1444,8 +1436,10 @@ static NTSTATUS cmd_samr_query_dominfo(struct rpc_pipe_client *cli,
 
 	/* Query domain info */
 
-	result = rpccli_samr_query_dom_info(cli, mem_ctx, &domain_pol,
-					 switch_level, &ctr);
+	result = rpccli_samr_QueryDomainInfo(cli, mem_ctx,
+					     &domain_pol,
+					     switch_level,
+					     &info);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1454,37 +1448,37 @@ static NTSTATUS cmd_samr_query_dominfo(struct rpc_pipe_client *cli,
 
 	switch (switch_level) {
 	case 1:
-		display_sam_unk_info_1(&ctr.info.inf1);
+		display_sam_dom_info_1(&info->info1);
 		break;
 	case 2:
-		display_sam_unk_info_2(&ctr.info.inf2);
+		display_sam_dom_info_2(&info->info2);
 		break;
 	case 3:
-		display_sam_unk_info_3(&ctr.info.inf3);
+		display_sam_dom_info_3(&info->info3);
 		break;
 	case 4:
-		display_sam_unk_info_4(&ctr.info.inf4);
+		display_sam_dom_info_4(&info->info4);
 		break;
 	case 5:
-		display_sam_unk_info_5(&ctr.info.inf5);
+		display_sam_dom_info_5(&info->info5);
 		break;
 	case 6:
-		display_sam_unk_info_6(&ctr.info.inf6);
+		display_sam_dom_info_6(&info->info6);
 		break;
 	case 7:
-		display_sam_unk_info_7(&ctr.info.inf7);
+		display_sam_dom_info_7(&info->info7);
 		break;
 	case 8:
-		display_sam_unk_info_8(&ctr.info.inf8);
+		display_sam_dom_info_8(&info->info8);
 		break;
 	case 9:
-		display_sam_unk_info_9(&ctr.info.inf9);
+		display_sam_dom_info_9(&info->info9);
 		break;
 	case 12:
-		display_sam_unk_info_12(&ctr.info.inf12);
+		display_sam_dom_info_12(&info->info12);
 		break;
 	case 13:
-		display_sam_unk_info_13(&ctr.info.inf13);
+		display_sam_dom_info_13(&info->info13);
 		break;
 
 	default:
@@ -2346,8 +2340,8 @@ static NTSTATUS cmd_samr_chgpasswd3(struct rpc_pipe_client *cli,
 	result = rpccli_samr_chgpasswd3(cli, mem_ctx, user, newpass, oldpass, &info, &reject);
 
 	if (NT_STATUS_EQUAL(result, NT_STATUS_PASSWORD_RESTRICTION)) {
-	
-		display_sam_unk_info_1(&info);
+
+		/*display_sam_dom_info_1(&info);*/
 
 		switch (reject.reject_reason) {
 			case SAMR_REJECT_TOO_SHORT:
