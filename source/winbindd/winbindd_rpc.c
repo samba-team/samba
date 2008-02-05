@@ -691,6 +691,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	unsigned int j;
 	struct rpc_pipe_client *cli;
 	unsigned int orig_timeout;
+	struct samr_RidTypeArray *rids = NULL;
 
 	DEBUG(10,("rpc: lookup_groupmem %s sid=%s\n", domain->name,
 		  sid_string_dbg(group_sid)));
@@ -727,9 +728,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
 	orig_timeout = cli_set_timeout(cli->cli, 35000);
 
-        result = rpccli_samr_query_groupmem(cli, mem_ctx,
-					    &group_pol, num_names, &rid_mem,
-					    name_types);
+        result = rpccli_samr_QueryGroupMember(cli, mem_ctx,
+					      &group_pol,
+					      &rids);
 
 	/* And restore our original timeout. */
 	cli_set_timeout(cli->cli, orig_timeout);
@@ -738,6 +739,9 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 
         if (!NT_STATUS_IS_OK(result))
 		return result;
+
+	*num_names = rids->count;
+	rid_mem = rids->rids;
 
 	if (!*num_names) {
 		names = NULL;
