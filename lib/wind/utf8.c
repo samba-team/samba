@@ -116,8 +116,9 @@ wind_utf8ucs4(const char *in, uint32_t *out, size_t *out_len)
 	if (out) {
 	    if (o >= *out_len)
 		return WIND_ERR_OVERRUN;
-	    out[o++] = u;
+	    out[o] = u;
 	}
+	o++;
     }
     *out_len = o;
     return 0;
