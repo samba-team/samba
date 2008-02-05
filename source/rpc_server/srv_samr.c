@@ -507,27 +507,7 @@ static bool api_samr_connect5(pipes_struct *p)
 
 static bool api_samr_lookup_domain(pipes_struct *p)
 {
-	SAMR_Q_LOOKUP_DOMAIN q_u;
-	SAMR_R_LOOKUP_DOMAIN r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-  
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!samr_io_q_lookup_domain("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_lookup_domain: Unable to unmarshall SAMR_Q_LOOKUP_DOMAIN.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_lookup_domain(p, &q_u, &r_u);
-	
-	if(!samr_io_r_lookup_domain("", &r_u, rdata, 0)){
-		DEBUG(0,("api_samr_lookup_domain: Unable to marshall SAMR_R_LOOKUP_DOMAIN.\n"));
-		return False;
-	}
-	
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_LOOKUPDOMAIN);
 }
 
 /**********************************************************************

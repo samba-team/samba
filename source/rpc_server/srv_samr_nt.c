@@ -2847,47 +2847,50 @@ NTSTATUS _samr_Connect5(pipes_struct *p,
 }
 
 /**********************************************************************
- api_samr_lookup_domain
+ _samr_LookupDomain
  **********************************************************************/
-
-NTSTATUS _samr_lookup_domain(pipes_struct *p, SAMR_Q_LOOKUP_DOMAIN *q_u, SAMR_R_LOOKUP_DOMAIN *r_u)
+NTSTATUS _samr_LookupDomain(pipes_struct *p,
+			    struct samr_LookupDomain *r)
 {
+	NTSTATUS status = NT_STATUS_OK;
 	struct samr_info *info;
-	fstring domain_name;
-	DOM_SID sid;
+	const char *domain_name;
+	DOM_SID *sid = NULL;
 
-	r_u->status = NT_STATUS_OK;
-
-	if (!find_policy_by_hnd(p, &q_u->connect_pol, (void**)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.connect_handle, (void**)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* win9x user manager likes to use SA_RIGHT_SAM_ENUM_DOMAINS here.  
 	   Reverted that change so we will work with RAS servers again */
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, 
-		SA_RIGHT_SAM_OPEN_DOMAIN, "_samr_lookup_domain"))) 
-	{
-		return r_u->status;
+	status = access_check_samr_function(info->acc_granted,
+					    SA_RIGHT_SAM_OPEN_DOMAIN,
+					    "_samr_LookupDomain");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	rpcstr_pull(domain_name, q_u->uni_domain.buffer, sizeof(domain_name), q_u->uni_domain.uni_str_len*2, 0);
+	domain_name = r->in.domain_name->string;
 
-	ZERO_STRUCT(sid);
+	sid = TALLOC_ZERO_P(p->mem_ctx, struct dom_sid2);
+	if (!sid) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (strequal(domain_name, builtin_domain_name())) {
-		sid_copy(&sid, &global_sid_Builtin);
+		sid_copy(sid, &global_sid_Builtin);
 	} else {
-		if (!secrets_fetch_domain_sid(domain_name, &sid)) {
-			r_u->status = NT_STATUS_NO_SUCH_DOMAIN;
+		if (!secrets_fetch_domain_sid(domain_name, sid)) {
+			status = NT_STATUS_NO_SUCH_DOMAIN;
 		}
 	}
 
 	DEBUG(2,("Returning domain sid for domain %s -> %s\n", domain_name,
-		 sid_string_dbg(&sid)));
+		 sid_string_dbg(sid)));
 
-	init_samr_r_lookup_domain(r_u, &sid, r_u->status);
+	*r->out.sid = sid;
 
-	return r_u->status;
+	return status;
 }
 
 /******************************************************************
@@ -5076,16 +5079,6 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 
 NTSTATUS _samr_Shutdown(pipes_struct *p,
 			struct samr_Shutdown *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_LookupDomain(pipes_struct *p,
-			    struct samr_LookupDomain *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
