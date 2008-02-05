@@ -124,8 +124,23 @@ main(void)
     for (i = 0; i < sizeof(testcases)/sizeof(testcases[0]); ++i) {
 	const struct testcase *t = &testcases[i];
 
-	len = MAX_LENGTH,
-	    ret = wind_utf8ucs4(t->utf8_str, u, &len);
+	ret = wind_utf8ucs4_length(t->utf8_str, &len);
+	if (ret) {
+	    printf("utf8ucs4 length of \"%s\" should have succeeded\n",
+		   t->utf8_str);
+	    ++failures;
+	    continue;
+	}
+	if (len != t->len) {
+	    printf("utf8ucs4_length of \"%s\" has wrong length: "
+		   "expected: %u, actual: %u\n",
+		   t->utf8_str, (unsigned int)t->len, (unsigned int)len);
+	    ++failures;
+	    continue;
+	}
+
+	len = MAX_LENGTH;
+	ret = wind_utf8ucs4(t->utf8_str, u, &len);
 	if (ret) {
 	    printf("utf8 decode of \"%s\" should have succeeded\n",
 		   t->utf8_str);
