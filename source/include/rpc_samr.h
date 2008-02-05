@@ -1385,28 +1385,6 @@ typedef struct r_samr_query_groupmem_info
 } SAMR_R_QUERY_GROUPMEM;
 
 
-/* SAMR_Q_QUERY_ALIASMEM - query alias members */
-typedef struct q_samr_query_aliasmem_info
-{
-	POLICY_HND alias_pol;        /* policy handle */
-
-} SAMR_Q_QUERY_ALIASMEM;
-
-
-/* SAMR_R_QUERY_ALIASMEM - query alias members */
-typedef struct r_samr_query_aliasmem_info
-{
-	uint32 num_sids;
-	uint32 ptr;
-	uint32 num_sids1;
-
-	DOM_SID2 *sid;
-
-	NTSTATUS status;
-
-} SAMR_R_QUERY_ALIASMEM;
-
-
 /* SAMR_ENC_PASSWD */
 typedef struct enc_passwd_info
 {
