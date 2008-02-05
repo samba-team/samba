@@ -603,6 +603,21 @@ struct samr_PwInfo {
 	uint32_t password_properties;
 };
 
+enum samr_ConnectVersion
+#ifndef USE_UINT_ENUMS
+ {
+	SAMR_CONNECT_PRE_W2K=1,
+	SAMR_CONNECT_W2K=2,
+	SAMR_CONNECT_AFTER_W2K=3
+}
+#else
+ { __donnot_use_enum_samr_ConnectVersion=0x7FFFFFFF}
+#define SAMR_CONNECT_PRE_W2K ( 1 )
+#define SAMR_CONNECT_W2K ( 2 )
+#define SAMR_CONNECT_AFTER_W2K ( 3 )
+#endif
+;
+
 enum samr_RejectReason;
 
 struct samr_ChangeReject {
@@ -612,7 +627,7 @@ struct samr_ChangeReject {
 };
 
 struct samr_ConnectInfo1 {
-	uint32_t unknown1;
+	enum samr_ConnectVersion client_version;
 	uint32_t unknown2;
 };
 
@@ -1637,7 +1652,7 @@ struct samr_Connect3 {
 struct samr_Connect4 {
 	struct {
 		const char *system_name;/* [unique,charset(UTF16)] */
-		uint32_t unknown;
+		enum samr_ConnectVersion client_version;
 		uint32_t access_mask;
 	} in;
 

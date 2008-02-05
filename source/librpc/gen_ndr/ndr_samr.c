@@ -4380,6 +4380,32 @@ _PUBLIC_ void ndr_print_samr_PwInfo(struct ndr_print *ndr, const char *name, con
 	ndr->depth--;
 }
 
+static enum ndr_err_code ndr_push_samr_ConnectVersion(struct ndr_push *ndr, int ndr_flags, enum samr_ConnectVersion r)
+{
+	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_samr_ConnectVersion(struct ndr_pull *ndr, int ndr_flags, enum samr_ConnectVersion *r)
+{
+	uint16_t v;
+	NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_samr_ConnectVersion(struct ndr_print *ndr, const char *name, enum samr_ConnectVersion r)
+{
+	const char *val = NULL;
+
+	switch (r) {
+		case SAMR_CONNECT_PRE_W2K: val = "SAMR_CONNECT_PRE_W2K"; break;
+		case SAMR_CONNECT_W2K: val = "SAMR_CONNECT_W2K"; break;
+		case SAMR_CONNECT_AFTER_W2K: val = "SAMR_CONNECT_AFTER_W2K"; break;
+	}
+	ndr_print_enum(ndr, name, "ENUM", val, r);
+}
+
 static enum ndr_err_code ndr_push_samr_ChangeReject(struct ndr_push *ndr, int ndr_flags, const struct samr_ChangeReject *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -4420,7 +4446,7 @@ static enum ndr_err_code ndr_push_samr_ConnectInfo1(struct ndr_push *ndr, int nd
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
+		NDR_CHECK(ndr_push_samr_ConnectVersion(ndr, NDR_SCALARS, r->client_version));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown2));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -4432,7 +4458,7 @@ static enum ndr_err_code ndr_pull_samr_ConnectInfo1(struct ndr_pull *ndr, int nd
 {
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
+		NDR_CHECK(ndr_pull_samr_ConnectVersion(ndr, NDR_SCALARS, &r->client_version));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown2));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
@@ -4444,7 +4470,7 @@ _PUBLIC_ void ndr_print_samr_ConnectInfo1(struct ndr_print *ndr, const char *nam
 {
 	ndr_print_struct(ndr, name, "samr_ConnectInfo1");
 	ndr->depth++;
-	ndr_print_uint32(ndr, "unknown1", r->unknown1);
+	ndr_print_samr_ConnectVersion(ndr, "client_version", r->client_version);
 	ndr_print_uint32(ndr, "unknown2", r->unknown2);
 	ndr->depth--;
 }
@@ -11025,7 +11051,7 @@ static enum ndr_err_code ndr_push_samr_Connect4(struct ndr_push *ndr, int flags,
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.system_name, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.system_name, ndr_charset_length(r->in.system_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown));
+		NDR_CHECK(ndr_push_samr_ConnectVersion(ndr, NDR_SCALARS, r->in.client_version));
 		NDR_CHECK(ndr_push_samr_ConnectAccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
@@ -11064,7 +11090,7 @@ static enum ndr_err_code ndr_pull_samr_Connect4(struct ndr_pull *ndr, int flags,
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.system_name, ndr_get_array_length(ndr, &r->in.system_name), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_system_name_0, 0);
 		}
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown));
+		NDR_CHECK(ndr_pull_samr_ConnectVersion(ndr, NDR_SCALARS, &r->in.client_version));
 		NDR_CHECK(ndr_pull_samr_ConnectAccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.connect_handle);
 		ZERO_STRUCTP(r->out.connect_handle);
@@ -11098,7 +11124,7 @@ _PUBLIC_ void ndr_print_samr_Connect4(struct ndr_print *ndr, const char *name, i
 			ndr_print_string(ndr, "system_name", r->in.system_name);
 		}
 		ndr->depth--;
-		ndr_print_uint32(ndr, "unknown", r->in.unknown);
+		ndr_print_samr_ConnectVersion(ndr, "client_version", r->in.client_version);
 		ndr_print_samr_ConnectAccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}

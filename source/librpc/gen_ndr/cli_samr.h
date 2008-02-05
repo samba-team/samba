@@ -347,7 +347,7 @@ NTSTATUS rpccli_samr_Connect3(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      const char *system_name,
-			      uint32_t unknown,
+			      enum samr_ConnectVersion client_version,
 			      uint32_t access_mask,
 			      struct policy_handle *connect_handle);
 NTSTATUS rpccli_samr_ChangePasswordUser3(struct rpc_pipe_client *cli,
