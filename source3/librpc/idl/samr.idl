@@ -140,9 +140,9 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/******************/
 	/* Function: 0x05 */
 	NTSTATUS samr_LookupDomain (
-		[in,ref]  policy_handle *connect_handle,		
+		[in,ref]  policy_handle *connect_handle,
 		[in,ref]  lsa_String *domain_name,
-		[out,ref] dom_sid2 *sid
+		[out,ref] dom_sid2 **sid
 		);
 
 
