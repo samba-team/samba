@@ -2751,7 +2751,7 @@ NTSTATUS rpccli_samr_Connect3(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      const char *system_name,
-			      uint32_t unknown,
+			      enum samr_ConnectVersion client_version,
 			      uint32_t access_mask,
 			      struct policy_handle *connect_handle)
 {
@@ -2760,7 +2760,7 @@ NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 	r.in.system_name = system_name;
-	r.in.unknown = unknown;
+	r.in.client_version = client_version;
 	r.in.access_mask = access_mask;
 
 	if (DEBUGLEVEL >= 10) {
