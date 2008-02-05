@@ -865,7 +865,7 @@ static bool wbinfo_auth(char *username)
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	char *s = NULL;
 	char *p = NULL;
-	char *password = NULL;
+	const char *password = NULL;
 	char *name = NULL;
 
 	if ((s = SMB_STRDUP(username)) == NULL) {
