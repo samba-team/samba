@@ -2051,7 +2051,7 @@ static bool api_samr_QueryGroupMember(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.rids = talloc_zero(r, struct samr_RidTypeArray);
+	r->out.rids = talloc_zero(r, struct samr_RidTypeArray *);
 	if (r->out.rids == NULL) {
 		talloc_free(r);
 		return false;
