@@ -445,18 +445,6 @@ typedef struct sam_user_info_9
 } SAM_USER_INFO_9;
 
 
-/****************************************************************************
-SAMR_Q_QUERY_DOMAIN_INFO - probably a query on domain group info.
-*****************************************************************************/
-
-/* SAMR_Q_QUERY_DOMAIN_INFO - */
-typedef struct q_samr_query_domain_info
-{
-	POLICY_HND domain_pol;   /* policy handle */
-	uint16 switch_value;     /* 0x0002, 0x0001 */
-
-} SAMR_Q_QUERY_DOMAIN_INFO;
-
 typedef struct sam_unknown_info_1_inf
 {
 	uint16 min_length_password;
@@ -577,20 +565,6 @@ typedef struct sam_unknown_ctr_info
 	} info;
 
 } SAM_UNK_CTR;
-
-
-/* SAMR_R_QUERY_DOMAIN_INFO - */
-typedef struct r_samr_query_domain_info
-{
-	uint32 ptr_0;
-	uint16 switch_value; /* same as in query */
-
-	SAM_UNK_CTR *ctr;
-
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_QUERY_DOMAIN_INFO;
-
 
 #define MAX_SAM_ENTRIES_W2K 0x400
 #define MAX_SAM_ENTRIES_W95 50

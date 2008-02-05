@@ -467,48 +467,6 @@ NTSTATUS rpccli_samr_query_alias_info(struct rpc_pipe_client *cli, TALLOC_CTX *m
 	return result;
 }
 
-/* Query domain info */
-
-NTSTATUS rpccli_samr_query_dom_info(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx, 
-				    POLICY_HND *domain_pol,
-				    uint16 switch_value,
-				    SAM_UNK_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_QUERY_DOMAIN_INFO q;
-	SAMR_R_QUERY_DOMAIN_INFO r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_query_dom_info\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_query_domain_info(&q, domain_pol, switch_value);
-
-	r.ctr = ctr;
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_DOMAIN_INFO,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_query_domain_info,
-		samr_io_r_query_domain_info,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	if (!NT_STATUS_IS_OK(result = r.status)) {
-		goto done;
-	}
-
- done:
-
-	return result;
-}
-
 /* Set domain info */
 
 NTSTATUS rpccli_samr_set_domain_info(struct rpc_pipe_client *cli,
