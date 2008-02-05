@@ -5045,40 +5045,38 @@ NTSTATUS _samr_QueryDomainInfo2(pipes_struct *p,
 }
 
 /*******************************************************************
- _samr_set_dom_info
+ _samr_SetDomainInfo
  ********************************************************************/
 
-NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R_SET_DOMAIN_INFO *r_u)
+NTSTATUS _samr_SetDomainInfo(pipes_struct *p,
+			     struct samr_SetDomainInfo *r)
 {
 	time_t u_expire, u_min_age;
 	time_t u_logout;
 	time_t u_lock_duration, u_reset_time;
 
-	r_u->status = NT_STATUS_OK;
-
-	DEBUG(5,("_samr_set_dom_info: %d\n", __LINE__));
+	DEBUG(5,("_samr_SetDomainInfo: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->domain_pol, NULL))
+	if (!find_policy_by_hnd(p, r->in.domain_handle, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	DEBUG(5,("_samr_set_dom_info: switch_value: %d\n", q_u->switch_value));
+	DEBUG(5,("_samr_SetDomainInfo: level: %d\n", r->in.level));
 
-	switch (q_u->switch_value) {
+	switch (r->in.level) {
         	case 0x01:
-			u_expire=nt_time_to_unix_abs(&q_u->ctr->info.inf1.expire);
-			u_min_age=nt_time_to_unix_abs(&q_u->ctr->info.inf1.min_passwordage);
-
-			pdb_set_account_policy(AP_MIN_PASSWORD_LEN, (uint32)q_u->ctr->info.inf1.min_length_password);
-			pdb_set_account_policy(AP_PASSWORD_HISTORY, (uint32)q_u->ctr->info.inf1.password_history);
-			pdb_set_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, (uint32)q_u->ctr->info.inf1.password_properties);
+			u_expire=nt_time_to_unix_abs((NTTIME *)&r->in.info->info1.max_password_age);
+			u_min_age=nt_time_to_unix_abs((NTTIME *)&r->in.info->info1.min_password_age);
+			pdb_set_account_policy(AP_MIN_PASSWORD_LEN, (uint32)r->in.info->info1.min_password_length);
+			pdb_set_account_policy(AP_PASSWORD_HISTORY, (uint32)r->in.info->info1.password_history_length);
+			pdb_set_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, (uint32)r->in.info->info1.password_properties);
 			pdb_set_account_policy(AP_MAX_PASSWORD_AGE, (int)u_expire);
 			pdb_set_account_policy(AP_MIN_PASSWORD_AGE, (int)u_min_age);
             		break;
         	case 0x02:
 			break;
 		case 0x03:
-			u_logout=nt_time_to_unix_abs(&q_u->ctr->info.inf3.logout);
+			u_logout=nt_time_to_unix_abs((NTTIME *)&r->in.info->info3.force_logoff_time);
 			pdb_set_account_policy(AP_TIME_TO_LOGOUT, (int)u_logout);
 			break;
 		case 0x05:
@@ -5088,25 +5086,23 @@ NTSTATUS _samr_set_dom_info(pipes_struct *p, SAMR_Q_SET_DOMAIN_INFO *q_u, SAMR_R
 		case 0x07:
 			break;
 		case 0x0c:
-			u_lock_duration=nt_time_to_unix_abs(&q_u->ctr->info.inf12.duration);
+			u_lock_duration=nt_time_to_unix_abs((NTTIME *)&r->in.info->info12.lockout_duration);
 			if (u_lock_duration != -1)
 				u_lock_duration /= 60;
 
-			u_reset_time=nt_time_to_unix_abs(&q_u->ctr->info.inf12.reset_count)/60;
+			u_reset_time=nt_time_to_unix_abs((NTTIME *)&r->in.info->info12.lockout_window)/60;
 
 			pdb_set_account_policy(AP_LOCK_ACCOUNT_DURATION, (int)u_lock_duration);
 			pdb_set_account_policy(AP_RESET_COUNT_TIME, (int)u_reset_time);
-			pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT, (uint32)q_u->ctr->info.inf12.bad_attempt_lockout);
+			pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT, (uint32)r->in.info->info12.lockout_threshold);
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	init_samr_r_set_domain_info(r_u, NT_STATUS_OK);
+	DEBUG(5,("_samr_SetDomainInfo: %d\n", __LINE__));
 
-	DEBUG(5,("_samr_set_dom_info: %d\n", __LINE__));
-
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************
@@ -5124,16 +5120,6 @@ NTSTATUS _samr_Shutdown(pipes_struct *p,
 
 NTSTATUS _samr_EnumDomains(pipes_struct *p,
 			   struct samr_EnumDomains *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_SetDomainInfo(pipes_struct *p,
-			     struct samr_SetDomainInfo *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
