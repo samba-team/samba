@@ -1387,25 +1387,6 @@ typedef struct r_samr_chgpasswd_user3
 } SAMR_R_CHGPASSWD_USER3;
 
 
-
-/* SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN */
-typedef struct q_samr_remove_sid_foreign_domain_info
-{
-	POLICY_HND dom_pol;   /* policy handle */
-	DOM_SID2 sid;         /* SID */
-
-} SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN;
-
-
-/* SAMR_R_REMOVE_SID_FOREIGN_DOMAIN */
-typedef struct r_samr_remove_sid_foreign_domain_info
-{
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_REMOVE_SID_FOREIGN_DOMAIN;
-
-
-
 /* these are from the old rpc_samr.h - they are needed while the merge
    is still going on */
 #define MAX_SAM_SIDS 15
