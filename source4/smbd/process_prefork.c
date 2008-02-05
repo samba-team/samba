@@ -58,26 +58,26 @@ static void prefork_model_init(struct event_context *ev)
   called when a listening socket becomes readable. 
 */
 static void prefork_accept_connection(struct event_context *ev, 
-				       struct loadparm_context *lp_ctx,
-				       struct socket_context *sock, 
+				      struct loadparm_context *lp_ctx,
+				      struct socket_context *listen_socket,
 				       void (*new_conn)(struct event_context *,
 							struct loadparm_context *, struct socket_context *, 
 							struct server_id , void *), 
 				       void *private)
 {
 	NTSTATUS status;
-	struct socket_context *sock2;
+	struct socket_context *connected_socket;
 	pid_t pid = getpid();
 
 	/* accept an incoming connection. */
-	status = socket_accept(sock, &sock2);
+	status = socket_accept(listen_socket, &connected_socket);
 	if (!NT_STATUS_IS_OK(status)) {
 		return;
 	}
 
-	talloc_steal(private, sock);
+	talloc_steal(private, connected_socket);
 
-	new_conn(ev, lp_ctx, sock2, cluster_id(pid, socket_get_fd(sock2)), private);
+	new_conn(ev, lp_ctx, connected_socket, cluster_id(pid, socket_get_fd(connected_socket)), private);
 }
 
 /*
@@ -184,18 +184,6 @@ static void prefork_new_task(struct event_context *ev,
 _NORETURN_ static void prefork_terminate(struct event_context *ev, const char *reason) 
 {
 	DEBUG(2,("prefork_terminate: reason[%s]\n",reason));
-
-	/* this reload_charcnv() has the effect of freeing the iconv context memory,
-	   which makes leak checking easier */
-	reload_charcnv(global_loadparm);
-
-	/* the secrets db should really hang off the connection structure */
-	secrets_shutdown();
-
-	talloc_free(ev);
-
-	/* terminate this process */
-	exit(0);
 }
 
 /* called to set a title of a task or connection */
