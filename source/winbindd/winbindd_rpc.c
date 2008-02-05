@@ -585,11 +585,10 @@ NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND dom_pol;
-	DOM_SID2 *query_sids;
 	uint32 num_query_sids = 0;
 	int i;
 	struct rpc_pipe_client *cli;
-	uint32 *alias_rids_query, num_aliases_query;
+	struct samr_Ids alias_rids_query;
 	int rangesize = MAX_SAM_ENTRIES_W2K;
 	uint32 total_sids = 0;
 	int num_queries = 1;
@@ -611,6 +610,9 @@ NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 
 	do {
 		/* prepare query */
+		struct lsa_SidArray sid_array;
+
+		ZERO_STRUCT(sid_array);
 
 		num_query_sids = MIN(num_sids - total_sids, rangesize);
 
@@ -618,45 +620,48 @@ NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 			num_queries, num_query_sids));	
 
 		if (num_query_sids) {
-			query_sids = TALLOC_ARRAY(mem_ctx, DOM_SID2, num_query_sids);
-			if (query_sids == NULL) {
+			sid_array.sids = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_SidPtr, num_query_sids);
+			if (sid_array.sids == NULL) {
 				return NT_STATUS_NO_MEMORY;
 			}
 		} else {
-			query_sids = NULL;
+			sid_array.sids = NULL;
 		}
 
 		for (i=0; i<num_query_sids; i++) {
-			sid_copy(&query_sids[i].sid, &sids[total_sids++]);
-			query_sids[i].num_auths = query_sids[i].sid.num_auths;
+			sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sids[total_sids++]);
+			if (sid_array.sids[i].sid) {
+				TALLOC_FREE(sid_array.sids);
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
+		sid_array.num_sids = num_query_sids;
 
 		/* do request */
-
-		result = rpccli_samr_query_useraliases(cli, mem_ctx, &dom_pol,
-						       num_query_sids, query_sids,
-						       &num_aliases_query, 
-						       &alias_rids_query);
+		result = rpccli_samr_GetAliasMembership(cli, mem_ctx,
+							&dom_pol,
+							&sid_array,
+							&alias_rids_query);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			*num_aliases = 0;
 			*alias_rids = NULL;
-			TALLOC_FREE(query_sids);
+			TALLOC_FREE(sid_array.sids);
 			goto done;
 		}
 
 		/* process output */
 
-		for (i=0; i<num_aliases_query; i++) {
+		for (i=0; i<alias_rids_query.count; i++) {
 			size_t na = *num_aliases;
-			if (!add_rid_to_array_unique(mem_ctx, alias_rids_query[i], 
+			if (!add_rid_to_array_unique(mem_ctx, alias_rids_query.ids[i],
 						alias_rids, &na)) {
 				return NT_STATUS_NO_MEMORY;
 			}
 			*num_aliases = na;
 		}
 
-		TALLOC_FREE(query_sids);
+		TALLOC_FREE(sid_array.sids);
 
 		num_queries++;
 

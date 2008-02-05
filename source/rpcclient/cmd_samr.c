@@ -696,11 +696,11 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
 	DOM_SID                *sids;
 	size_t                     num_sids;
-	uint32 			num_aliases, *alias_rids;
 	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
 	int 			i;
 	fstring			server;
-	DOM_SID2	       *sid2;
+	struct lsa_SidArray sid_array;
+	struct samr_Ids alias_rids;
 
 	if (argc < 3) {
 		printf("Usage: %s builtin|domain sid1 sid2 ...\n", argv[0]);
@@ -723,17 +723,21 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 	}
 
 	if (num_sids) {
-		sid2 = TALLOC_ARRAY(mem_ctx, DOM_SID2, num_sids);
-		if (sid2 == NULL)
+		sid_array.sids = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_SidPtr, num_sids);
+		if (sid_array.sids == NULL)
 			return NT_STATUS_NO_MEMORY;
 	} else {
-		sid2 = NULL;
+		sid_array.sids = NULL;
 	}
 
 	for (i=0; i<num_sids; i++) {
-		sid_copy(&sid2[i].sid, &sids[i]);
-		sid2[i].num_auths = sid2[i].sid.num_auths;
+		sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sids[i]);
+		if (!sid_array.sids[i].sid) {
+			return NT_STATUS_NO_MEMORY;
+		}
 	}
+
+	sid_array.num_sids = num_sids;
 
 	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
 	strupper_m(server);
@@ -763,15 +767,15 @@ static NTSTATUS cmd_samr_query_useraliases(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_query_useraliases(cli, mem_ctx, &domain_pol,
-					    num_sids, sid2,
-					    &num_aliases, &alias_rids);
-
+	result = rpccli_samr_GetAliasMembership(cli, mem_ctx,
+						&domain_pol,
+						&sid_array,
+						&alias_rids);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	for (i = 0; i < num_aliases; i++) {
-		printf("\tgroup rid:[0x%x]\n", alias_rids[i]);
+	for (i = 0; i < alias_rids.count; i++) {
+		printf("\tgroup rid:[0x%x]\n", alias_rids.ids[i]);
 	}
 
 	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
