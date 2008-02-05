@@ -1130,7 +1130,7 @@ NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
 		DEBUG(5,("Got keepalive packet\n"));
 	}
 
-	DEBUG(10,("got smb length of %lu\n",(unsigned long)len));
+	DEBUG(10,("got smb length of %lu\n",(unsigned long)(*len)));
 
 	return NT_STATUS_OK;
 }
