@@ -87,7 +87,7 @@ to be specified as part of the username.
 		<listitem><para>specifies the CIFS password. If this
 option is not given then the environment variable
 <emphasis>PASSWD</emphasis> is used. If the password is not specified 
-directly or indirectly via an argument to mount <emphasis>mount.cifs</emphasis> will prompt
+directly or indirectly via an argument to mount, <emphasis>mount.cifs</emphasis> will prompt
 for a password, unless the guest option is specified.
 </para>
 
@@ -124,18 +124,44 @@ credentials file properly.
 		<listitem><para>sets the uid that will own all files on
 	the mounted filesystem.
 	It may be specified as either a username or a numeric uid.
-	This parameter is ignored when the target server supports
-	the CIFS Unix extensions.</para></listitem>
+	For mounts to servers which do support the CIFS Unix extensions, 
+        such as a properly configured Samba server, the server provides
+                the uid, gid and mode so this parameter should not be
+                specified unless the server and client uid and gid
+                numbering differ.  If the server and client are in the
+                same domain (e.g. running winbind or nss_ldap) and
+                the server supports the Unix Extensions then the uid
+                and gid can be retrieved from the server (and uid
+                and gid would not have to be specifed on the mount. 
+                For servers which do not support the CIFS Unix
+                extensions, the default uid (and gid) returned on lookup 
+                of existing files will be the uid (gid) of the person
+                who executed the mount (root, except when mount.cifs
+                is configured setuid for user mounts) unless the "uid="
+                (gid) mount option is specified.  For the uid (gid) of newly
+                created files and directories, ie files created since
+                the last mount of the server share, the expected uid
+                (gid) is cached as long as the inode remains in
+                memory on the client.   Also note that permission
+                checks (authorization checks) on accesses to a file occur
+                at the server, but there are cases in which an administrator
+                may want to restrict at the client as well.  For those
+                servers which do not report a uid/gid owner
+                (such as Windows), permissions can also be checked at the
+                client, and a crude form of client side permission checking
+                can be enabled by specifying file_mode and dir_mode on
+                the client.  Note that the mount.cifs helper must be
+                at version 1.10 or higher to support specifying the uid
+                (or gid) in non-numeric form.
+	</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
 		<term>gid=<replaceable>arg</replaceable></term>
 
 		<listitem><para>sets the gid that will own all files on
-the mounted filesystem.
-It may be specified as either a groupname or a numeric 
-gid. This parameter is ignored when the target server supports
-the CIFS Unix extensions.
+the mounted filesystem.  It may be specified as either a groupname or a numeric 
+gid. For other considerations see the description of uid above. 
 		</para></listitem>
 	</varlistentry>
 
@@ -148,6 +174,21 @@ if it is not specified, the default ports will be tried i.e.
 port 445 is tried and if no response then port 139 is tried.
 		</para></listitem>
 	</varlistentry>
+
+        <varlistentry>
+                <term>servern=<replaceable>arg</replaceable></term>
+
+                <listitem><para>
+		Specify the server netbios name (RFC1001 name) to use
+                when attempting to setup a session to the server. Although
+		rarely needed for mounting to newer servers, this option
+                is needed for mounting to some older servers (such
+                as OS/2 or Windows 98 and Windows ME) since when connecting
+		over port 139 they, unlike most newer servers, do not
+                support a default server name.  A server name can be up
+                to 15 characters long and is usually uppercased.
+                </para></listitem>
+        </varlistentry>
 
         <varlistentry>
                 <term>netbiosname=<replaceable>arg</replaceable></term>
@@ -175,7 +216,7 @@ port 445 is tried and if no response then port 139 is tried.
 	<varlistentry>
 		<term>ip=<replaceable>arg</replaceable></term>
 
-		<listitem><para>sets the destination IP address.</para></listitem>
+		<listitem><para>sets the destination IP address.  This option is set automatically if the server name portion of the requested UNC name can be resolved so rarely needs to be specified by the user.</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
@@ -425,13 +466,28 @@ port 445 is tried and if no response then port 139 is tried.
 
 	<varlistentry>
 		<term>rsize=<replaceable>arg</replaceable></term>
-		<listitem><para>default network read size</para></listitem>
+		<listitem><para>default network read size (usually 16K). The client currently
+                can not use rsize larger than CIFSMaxBufSize. CIFSMaxBufSize
+                defaults to 16K and may be changed (from 8K to the maximum
+                kmalloc size allowed by your kernel) at module install time
+                for cifs.ko. Setting CIFSMaxBufSize to a very large value
+                will cause cifs to use more memory and may reduce performance
+                in some cases.  To use rsize greater than 127K (the original
+                cifs protocol maximum) also requires that the server support
+                a new Unix Capability flag (for very large read) which some
+                newer servers (e.g. Samba 3.0.26 or later) do. rsize can be
+                set from a minimum of 2048 to a maximum of 130048 (127K or
+                CIFSMaxBufSize, whichever is smaller)
+
+		</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
 		<term>wsize=<replaceable>arg</replaceable></term>
 
-		<listitem><para>default network write size</para></listitem>
+		<listitem><para>default network write size (default 57344)
+                maximum wsize currently allowed by CIFS is 57344 (fourteen
+                4096 byte pages)</para></listitem>
 	</varlistentry>
 	 <varlistentry>
                 <term>--verbose</term>
@@ -510,8 +566,8 @@ server type you are trying to contact.
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 1.39 of 
-	the cifs vfs filesystem (roughly Linux kernel 2.6.15).</para>
+	<para>This man page is correct for version 1.52 of 
+	the cifs vfs filesystem (roughly Linux kernel 2.6.24).</para>
 </refsect1>
 
 <refsect1>
