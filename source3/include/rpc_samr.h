@@ -455,32 +455,6 @@ typedef struct sam_unknown_info_1_inf
 
 } SAM_UNK_INFO_1;
 
-typedef struct sam_unknown_info_2_inf
-{
-	NTTIME logout; /* whether users are forcibly disconnected when logon hours expire */
-	UNIHDR hdr_comment; /* comment according to samba4 idl */
-	UNIHDR hdr_domain; /* domain name unicode header */
-	UNIHDR hdr_server; /* server name unicode header */
-
-	/* put all the data in here, at the moment, including what the above
-	   pointer is referring to
-	 */
-
-	uint64 seq_num;
-	
-	uint32 unknown_4; /* 0x0000 0001 */
-	uint32 server_role;
-	uint32 unknown_6; /* 0x0000 0001 */
-	uint32 num_domain_usrs; /* number of users in domain */
-	uint32 num_domain_grps; /* number of domain groups in domain */
-	uint32 num_local_grps; /* number of local groups in domain */
-
-	UNISTR2 uni_comment; /* comment unicode string */
-	UNISTR2 uni_domain; /* domain name unicode string */
-	UNISTR2 uni_server; /* server name unicode string */
-
-} SAM_UNK_INFO_2;
-
 typedef struct sam_unknown_info_3_info
 {
 	NTTIME logout;	
@@ -488,83 +462,6 @@ typedef struct sam_unknown_info_3_info
 	/* 0x0000 0000 */ /* forcibly disconnect remote users from server when logon hours expire*/
 
 } SAM_UNK_INFO_3;
-
-typedef struct sam_unknown_info_4_inf
-{
-	UNIHDR hdr_comment; /* comment according to samba4 idl */
-	UNISTR2 uni_comment; /* comment unicode string */
-
-} SAM_UNK_INFO_4;
-
-typedef struct sam_unknown_info_5_inf
-{
-	UNIHDR hdr_domain; /* domain name unicode header */
-	UNISTR2 uni_domain; /* domain name unicode string */
-
-} SAM_UNK_INFO_5;
-
-typedef struct sam_unknown_info_6_info
-{
-	UNIHDR hdr_server; /* server name unicode header */
-	UNISTR2 uni_server; /* server name unicode string */
-
-} SAM_UNK_INFO_6;
-
-typedef struct sam_unknown_info_7_info
-{
-	uint16 server_role;
-
-} SAM_UNK_INFO_7;
-
-typedef struct sam_unknown_info_8_info
-{
-	uint64 seq_num;
-	NTTIME domain_create_time;
-
-} SAM_UNK_INFO_8;
-
-typedef struct sam_unknown_info_9_info
-{
-	uint32 unknown;
-
-} SAM_UNK_INFO_9;
-
-typedef struct sam_unknown_info_12_inf
-{
-	NTTIME duration;
-	NTTIME reset_count;
-	uint16 bad_attempt_lockout;
-
-} SAM_UNK_INFO_12;
-
-typedef struct sam_unknown_info_13_info
-{
-	uint64 seq_num;
-	NTTIME domain_create_time;
-	uint32 unknown1;
-	uint32 unknown2;
-
-} SAM_UNK_INFO_13;
-
-typedef struct sam_unknown_ctr_info
-{
-	union
-	{
-		SAM_UNK_INFO_1 inf1;
-		SAM_UNK_INFO_2 inf2;
-		SAM_UNK_INFO_3 inf3;
-		SAM_UNK_INFO_4 inf4;
-		SAM_UNK_INFO_5 inf5;
-		SAM_UNK_INFO_6 inf6;
-		SAM_UNK_INFO_7 inf7;
-		SAM_UNK_INFO_8 inf8;
-		SAM_UNK_INFO_9 inf9;
-		SAM_UNK_INFO_12 inf12;
-		SAM_UNK_INFO_13 inf13;
-
-	} info;
-
-} SAM_UNK_CTR;
 
 #define MAX_SAM_ENTRIES_W2K 0x400
 #define MAX_SAM_ENTRIES_W95 50
