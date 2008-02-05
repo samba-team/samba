@@ -1380,24 +1380,6 @@ typedef struct sid_info_3
 
 } DOM_SID3;
 
-/* SAMR_Q_QUERY_DOMAIN_INFO2 */
-typedef struct q_samr_query_domain_info2
-{
-	POLICY_HND domain_pol;   /* policy handle */
-	uint16 switch_value;
-
-} SAMR_Q_QUERY_DOMAIN_INFO2;
-
-/* SAMR_R_QUERY_DOMAIN_INFO2 */
-typedef struct r_samr_query_domain_info2
-{
-	uint32 ptr_0;
-	uint16 switch_value;
-	SAM_UNK_CTR *ctr;
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_QUERY_DOMAIN_INFO2;
-
 /* SAMR_Q_SET_DOMAIN_INFO */
 typedef struct q_samr_set_domain_info
 {
