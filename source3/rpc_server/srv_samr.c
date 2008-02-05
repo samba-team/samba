@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
@@ -7,21 +7,21 @@
  *  Copyright (C) Marc Jacobsen			    1999,
  *  Copyright (C) Jean François Micouleau      1998-2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2002-2003.
- *	
- * 	Split into interface and implementation modules by, 
+ *
+ * 	Split into interface and implementation modules by,
  *
  *  Copyright (C) Jeremy Allison                    2001.
- *  
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -173,7 +173,7 @@ static bool api_samr_enum_dom_aliases(pipes_struct *p)
 	SAMR_R_ENUM_DOM_ALIASES r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
-	
+
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
@@ -251,7 +251,7 @@ static bool api_samr_query_aliasinfo(pipes_struct *p)
 		DEBUG(0,("api_samr_query_aliasinfo: unable to marshall SAMR_R_QUERY_ALIASINFO.\n"));
 		return False;
 	}
-  
+
 	return True;
 }
 
@@ -520,7 +520,7 @@ static bool api_samr_enum_domains(pipes_struct *p)
 	SAMR_R_ENUM_DOMAINS r_u;
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
-  
+
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
@@ -535,7 +535,7 @@ static bool api_samr_enum_domains(pipes_struct *p)
 		DEBUG(0,("api_samr_enum_domains: Unable to marshall SAMR_R_ENUM_DOMAINS.\n"));
 		return False;
 	}
-	
+
 	return True;
 }
 
@@ -930,7 +930,7 @@ static struct api_struct api_samr_cmds [] =
       {"SAMR_CONNECT_ANON"      , SAMR_CONNECT_ANON     , api_samr_connect_anon     },
       {"SAMR_ENUM_DOMAINS"      , SAMR_ENUM_DOMAINS     , api_samr_enum_domains     },
       {"SAMR_ENUM_DOM_USERS"    , SAMR_ENUM_DOM_USERS   , api_samr_enum_dom_users   },
-      
+
       {"SAMR_ENUM_DOM_GROUPS"   , SAMR_ENUM_DOM_GROUPS  , api_samr_enum_dom_groups  },
       {"SAMR_ENUM_DOM_ALIASES"  , SAMR_ENUM_DOM_ALIASES , api_samr_enum_dom_aliases },
       {"SAMR_QUERY_USERALIASES" , SAMR_QUERY_USERALIASES, api_samr_query_useraliases},
@@ -940,7 +940,7 @@ static struct api_struct api_samr_cmds [] =
       {"SAMR_DEL_ALIASMEM"      , SAMR_DEL_ALIASMEM     , api_samr_del_aliasmem     },
       {"SAMR_ADD_GROUPMEM"      , SAMR_ADD_GROUPMEM     , api_samr_add_groupmem     },
       {"SAMR_DEL_GROUPMEM"      , SAMR_DEL_GROUPMEM     , api_samr_del_groupmem     },
-      
+
       {"SAMR_DELETE_DOM_USER"   , SAMR_DELETE_DOM_USER  , api_samr_delete_dom_user  },
       {"SAMR_DELETE_DOM_GROUP"  , SAMR_DELETE_DOM_GROUP , api_samr_delete_dom_group },
       {"SAMR_DELETE_DOM_ALIAS"  , SAMR_DELETE_DOM_ALIAS , api_samr_delete_dom_alias },
@@ -951,13 +951,13 @@ static struct api_struct api_samr_cmds [] =
       {"SAMR_QUERY_USERINFO"    , SAMR_QUERY_USERINFO   , api_samr_query_userinfo   },
       {"SAMR_SET_USERINFO"      , SAMR_SET_USERINFO     , api_samr_set_userinfo     },
       {"SAMR_SET_USERINFO2"     , SAMR_SET_USERINFO2    , api_samr_set_userinfo2    },
-      
+
       {"SAMR_QUERY_DOMAIN_INFO" , SAMR_QUERY_DOMAIN_INFO, api_samr_query_domain_info},
       {"SAMR_QUERY_USERGROUPS"  , SAMR_QUERY_USERGROUPS , api_samr_query_usergroups },
       {"SAMR_QUERY_DISPINFO"    , SAMR_QUERY_DISPINFO   , api_samr_query_dispinfo   },
       {"SAMR_QUERY_DISPINFO3"   , SAMR_QUERY_DISPINFO3  , api_samr_query_dispinfo   },
       {"SAMR_QUERY_DISPINFO4"   , SAMR_QUERY_DISPINFO4  , api_samr_query_dispinfo   },
-      
+
       {"SAMR_QUERY_ALIASINFO"   , SAMR_QUERY_ALIASINFO  , api_samr_query_aliasinfo  },
       {"SAMR_QUERY_GROUPINFO"   , SAMR_QUERY_GROUPINFO  , api_samr_query_groupinfo  },
       {"SAMR_SET_GROUPINFO"     , SAMR_SET_GROUPINFO    , api_samr_set_groupinfo    },
@@ -971,7 +971,7 @@ static struct api_struct api_samr_cmds [] =
       {"SAMR_OPEN_DOMAIN"       , SAMR_OPEN_DOMAIN      , api_samr_open_domain      },
       {"SAMR_REMOVE_SID_FOREIGN_DOMAIN"       , SAMR_REMOVE_SID_FOREIGN_DOMAIN      , api_samr_remove_sid_foreign_domain      },
       {"SAMR_LOOKUP_DOMAIN"     , SAMR_LOOKUP_DOMAIN    , api_samr_lookup_domain    },
-      
+
       {"SAMR_QUERY_SEC_OBJECT"  , SAMR_QUERY_SEC_OBJECT , api_samr_query_sec_obj    },
       {"SAMR_SET_SEC_OBJECT"    , SAMR_SET_SEC_OBJECT   , api_samr_set_sec_obj      },
       {"SAMR_GET_USRDOM_PWINFO" , SAMR_GET_USRDOM_PWINFO, api_samr_get_usrdom_pwinfo},
