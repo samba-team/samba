@@ -4931,36 +4931,35 @@ NTSTATUS _samr_OpenGroup(pipes_struct *p,
 }
 
 /*********************************************************************
- _samr_remove_sid_foreign_domain
+ _samr_RemoveMemberFromForeignDomain
 *********************************************************************/
 
-NTSTATUS _samr_remove_sid_foreign_domain(pipes_struct *p,
-                                          SAMR_Q_REMOVE_SID_FOREIGN_DOMAIN *q_u,
-                                          SAMR_R_REMOVE_SID_FOREIGN_DOMAIN *r_u)
+NTSTATUS _samr_RemoveMemberFromForeignDomain(pipes_struct *p,
+					     struct samr_RemoveMemberFromForeignDomain *r)
 {
 	DOM_SID			delete_sid, domain_sid;
 	uint32 			acc_granted;
 	NTSTATUS		result;
 	DISP_INFO *disp_info = NULL;
 
-	sid_copy( &delete_sid, &q_u->sid.sid );
+	sid_copy( &delete_sid, r->in.sid );
 
-	DEBUG(5,("_samr_remove_sid_foreign_domain: removing SID [%s]\n",
+	DEBUG(5,("_samr_RemoveMemberFromForeignDomain: removing SID [%s]\n",
 		sid_string_dbg(&delete_sid)));
 
 	/* Find the policy handle. Open a policy on it. */
 
-	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &domain_sid,
+	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &domain_sid,
 				     &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	result = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS,
-		"_samr_remove_sid_foreign_domain");
+		"_samr_RemoveMemberFromForeignDomain");
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	DEBUG(8, ("_samr_remove_sid_foreign_domain:sid is %s\n",
+	DEBUG(8, ("_samr_RemoveMemberFromForeignDomain: sid is %s\n",
 		  sid_string_dbg(&domain_sid)));
 
 	/* we can only delete a user from a group since we don't have
@@ -4978,7 +4977,7 @@ NTSTATUS _samr_remove_sid_foreign_domain(pipes_struct *p,
 	 * other cases. */
 
 	if (!sid_check_is_builtin(&domain_sid)) {
-		DEBUG(1,("_samr_remove_sid_foreign_domain: domain_sid = %s, "
+		DEBUG(1,("_samr_RemoveMemberFromForeignDomain: domain_sid = %s, "
 			 "global_sam_sid() = %s\n",
 			 sid_string_dbg(&domain_sid),
 			 sid_string_dbg(get_global_sam_sid())));
@@ -5311,16 +5310,6 @@ NTSTATUS _samr_TestPrivateFunctionsDomain(pipes_struct *p,
 
 NTSTATUS _samr_TestPrivateFunctionsUser(pipes_struct *p,
 					struct samr_TestPrivateFunctionsUser *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_RemoveMemberFromForeignDomain(pipes_struct *p,
-					     struct samr_RemoveMemberFromForeignDomain *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
