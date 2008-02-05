@@ -673,7 +673,7 @@ static bool api_samr_QueryDomainInfo(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, union samr_DomainInfo);
+	r->out.info = talloc_zero(r, union samr_DomainInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -3670,7 +3670,7 @@ static bool api_samr_QueryDomainInfo2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, union samr_DomainInfo);
+	r->out.info = talloc_zero(r, union samr_DomainInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
