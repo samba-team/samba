@@ -38,7 +38,7 @@ static void single_model_init(struct event_context *ev)
 */
 static void single_accept_connection(struct event_context *ev, 
 				     struct loadparm_context *lp_ctx,
-				     struct socket_context *sock,
+				     struct socket_context *listen_socket,
 				     void (*new_conn)(struct event_context *, 
 						      struct loadparm_context *,
 						      struct socket_context *, 
@@ -46,10 +46,10 @@ static void single_accept_connection(struct event_context *ev,
 				     void *private)
 {
 	NTSTATUS status;
-	struct socket_context *sock2;
+	struct socket_context *connected_socket;
 
 	/* accept an incoming connection. */
-	status = socket_accept(sock, &sock2);
+	status = socket_accept(listen_socket, &connected_socket);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("single_accept_connection: accept: %s\n", nt_errstr(status)));
 		/* this looks strange, but is correct. 
@@ -67,11 +67,12 @@ static void single_accept_connection(struct event_context *ev,
 		return;
 	}
 
-	talloc_steal(private, sock);
+	talloc_steal(private, connected_socket);
 
 	/* The cluster_id(0, fd) cannot collide with the incrementing
 	 * task below, as the first component is 0, not 1 */
-	new_conn(ev, lp_ctx, sock2, cluster_id(0, socket_get_fd(sock2)), private);
+	new_conn(ev, lp_ctx, connected_socket, 
+		 cluster_id(0, socket_get_fd(connected_socket)), private);
 }
 
 /*
