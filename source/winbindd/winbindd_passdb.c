@@ -338,7 +338,7 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
-			       SAM_UNK_INFO_12 *policy)
+			       struct samr_DomInfo12 *policy)
 {
 	/* actually we have that */
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -346,14 +346,14 @@ static NTSTATUS lockout_policy(struct winbindd_domain *domain,
 
 static NTSTATUS password_policy(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				SAM_UNK_INFO_1 *policy)
+				struct samr_DomInfo1 *policy)
 {
 	uint32 min_pass_len,pass_hist,password_properties;
 	time_t u_expire, u_min_age;
 	NTTIME nt_expire, nt_min_age;
 	uint32 account_policy_temp;
 
-	if ((policy = TALLOC_ZERO_P(mem_ctx, SAM_UNK_INFO_1)) == NULL) {
+	if ((policy = TALLOC_ZERO_P(mem_ctx, struct samr_DomInfo1)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -385,8 +385,12 @@ static NTSTATUS password_policy(struct winbindd_domain *domain,
 	unix_to_nt_time_abs(&nt_expire, u_expire);
 	unix_to_nt_time_abs(&nt_min_age, u_min_age);
 
-	init_unk_info1(policy, (uint16)min_pass_len, (uint16)pass_hist, 
-	               password_properties, nt_expire, nt_min_age);
+	init_samr_DomInfo1(policy,
+			   (uint16)min_pass_len,
+			   (uint16)pass_hist,
+			   password_properties,
+			   nt_expire,
+			   nt_min_age);
 
 	return NT_STATUS_OK;
 }
