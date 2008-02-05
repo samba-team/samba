@@ -2198,16 +2198,17 @@ static NTSTATUS cmd_samr_lookup_domain(struct rpc_pipe_client *cli,
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-	fstring domain_name,sid_string;
-	DOM_SID sid;
-	
+	fstring sid_string;
+	struct lsa_String domain_name;
+	DOM_SID *sid = NULL;
+
 	if (argc != 2) {
 		printf("Usage: %s domain_name\n", argv[0]);
 		return NT_STATUS_OK;
 	}
-	
-	sscanf(argv[1], "%s", domain_name);
-	
+
+	init_lsa_String(&domain_name, argv[1]);
+
 	result = try_samr_connects(cli, mem_ctx, access_mask, &connect_pol);
 	
 	if (!NT_STATUS_IS_OK(result))
@@ -2221,14 +2222,16 @@ static NTSTATUS cmd_samr_lookup_domain(struct rpc_pipe_client *cli,
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
-	
-	result = rpccli_samr_lookup_domain(
-		cli, mem_ctx, &connect_pol, domain_name, &sid);
+
+	result = rpccli_samr_LookupDomain(cli, mem_ctx,
+					  &connect_pol,
+					  &domain_name,
+					  &sid);
 
 	if (NT_STATUS_IS_OK(result)) {
-		sid_to_fstring(sid_string,&sid);
+		sid_to_fstring(sid_string, sid);
 		printf("SAMR_LOOKUP_DOMAIN: Domain Name: %s Domain SID: %s\n",
-		       domain_name,sid_string);
+		       argv[1], sid_string);
 	}
 
 	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
