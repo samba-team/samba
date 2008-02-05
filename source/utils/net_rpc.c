@@ -5751,9 +5751,9 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 
 	/* remove the sid */
 
-	result = rpccli_samr_remove_sid_foreign_domain(pipe_hnd, mem_ctx, &user_pol,
-						    &trust_acct_sid);
-
+	result = rpccli_samr_RemoveMemberFromForeignDomain(pipe_hnd, mem_ctx,
+							   &user_pol,
+							   &trust_acct_sid);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
