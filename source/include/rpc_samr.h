@@ -1335,34 +1335,6 @@ typedef struct r_samr_lookup_rids_info
 } SAMR_R_LOOKUP_RIDS;
 
 
-/* SAMR_Q_QUERY_GROUPMEM - query group members */
-typedef struct q_samr_query_groupmem_info
-{
-	POLICY_HND group_pol;        /* policy handle */
-
-} SAMR_Q_QUERY_GROUPMEM;
-
-
-/* SAMR_R_QUERY_GROUPMEM - query group members */
-typedef struct r_samr_query_groupmem_info
-{
-	uint32 ptr;
-	uint32 num_entries;
-
-	uint32 ptr_rids;
-	uint32 ptr_attrs;
-
-	uint32 num_rids;
-	uint32 *rid;
-
-	uint32 num_attrs;
-	uint32 *attr;
-
-	NTSTATUS status;
-
-} SAMR_R_QUERY_GROUPMEM;
-
-
 /* SAMR_ENC_PASSWD */
 typedef struct enc_passwd_info
 {
