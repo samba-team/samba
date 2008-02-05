@@ -3781,10 +3781,11 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 }
 
 /*********************************************************************
- _samr_query_aliasmem
+ _samr_GetAliasMembership
 *********************************************************************/
 
-NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, SAMR_R_QUERY_USERALIASES *r_u)
+NTSTATUS _samr_GetAliasMembership(pipes_struct *p,
+				  struct samr_GetAliasMembership *r)
 {
 	size_t num_alias_rids;
 	uint32 *alias_rids;
@@ -3796,17 +3797,15 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 
 	DOM_SID *members;
 
-	r_u->status = NT_STATUS_OK;
-
-	DEBUG(5,("_samr_query_useraliases: %d\n", __LINE__));
+	DEBUG(5,("_samr_GetAliasMembership: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
-		
-	ntstatus1 = access_check_samr_function(info->acc_granted, SA_RIGHT_DOMAIN_LOOKUP_ALIAS_BY_MEM, "_samr_query_useraliases");
-	ntstatus2 = access_check_samr_function(info->acc_granted, SA_RIGHT_DOMAIN_OPEN_ACCOUNT, "_samr_query_useraliases");
-	
+
+	ntstatus1 = access_check_samr_function(info->acc_granted, SA_RIGHT_DOMAIN_LOOKUP_ALIAS_BY_MEM, "_samr_GetAliasMembership");
+	ntstatus2 = access_check_samr_function(info->acc_granted, SA_RIGHT_DOMAIN_OPEN_ACCOUNT, "_samr_GetAliasMembership");
+
 	if (!NT_STATUS_IS_OK(ntstatus1) || !NT_STATUS_IS_OK(ntstatus2)) {
 		if (!(NT_STATUS_EQUAL(ntstatus1,NT_STATUS_ACCESS_DENIED) && NT_STATUS_IS_OK(ntstatus2)) &&
 		    !(NT_STATUS_EQUAL(ntstatus1,NT_STATUS_ACCESS_DENIED) && NT_STATUS_IS_OK(ntstatus1))) {
@@ -3818,8 +3817,8 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	    !sid_check_is_builtin(&info->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	if (q_u->num_sids1) {
-		members = TALLOC_ARRAY(p->mem_ctx, DOM_SID, q_u->num_sids1);
+	if (r->in.sids->num_sids) {
+		members = TALLOC_ARRAY(p->mem_ctx, DOM_SID, r->in.sids->num_sids);
 
 		if (members == NULL)
 			return NT_STATUS_NO_MEMORY;
@@ -3827,15 +3826,15 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 		members = NULL;
 	}
 
-	for (i=0; i<q_u->num_sids1; i++)
-		sid_copy(&members[i], &q_u->sid[i].sid);
+	for (i=0; i<r->in.sids->num_sids; i++)
+		sid_copy(&members[i], r->in.sids->sids[i].sid);
 
 	alias_rids = NULL;
 	num_alias_rids = 0;
 
 	become_root();
 	ntstatus1 = pdb_enum_alias_memberships(p->mem_ctx, &info->sid, members,
-					       q_u->num_sids1,
+					       r->in.sids->num_sids,
 					       &alias_rids, &num_alias_rids);
 	unbecome_root();
 
@@ -3843,8 +3842,9 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 		return ntstatus1;
 	}
 
-	init_samr_r_query_useraliases(r_u, num_alias_rids, alias_rids,
-				      NT_STATUS_OK);
+	r->out.rids->count = num_alias_rids;
+	r->out.rids->ids = alias_rids;
+
 	return NT_STATUS_OK;
 }
 
@@ -5149,16 +5149,6 @@ NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
 
 NTSTATUS _samr_EnumDomainAliases(pipes_struct *p,
 				 struct samr_EnumDomainAliases *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_GetAliasMembership(pipes_struct *p,
-				  struct samr_GetAliasMembership *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
