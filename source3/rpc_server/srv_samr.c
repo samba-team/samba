@@ -401,28 +401,7 @@ static bool api_samr_query_usergroups(pipes_struct *p)
 
 static bool api_samr_query_domain_info(pipes_struct *p)
 {
-	SAMR_Q_QUERY_DOMAIN_INFO q_u;
-	SAMR_R_QUERY_DOMAIN_INFO r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!samr_io_q_query_domain_info("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_query_domain_info: unable to unmarshall SAMR_Q_QUERY_DOMAIN_INFO.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_query_domain_info(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_query_domain_info("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_query_domain_info: unable to marshall SAMR_R_QUERY_DOMAIN_INFO.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_QUERYDOMAININFO);
 }
 
 /*******************************************************************
@@ -844,28 +823,7 @@ static bool api_samr_remove_sid_foreign_domain(pipes_struct *p)
 
 static bool api_samr_query_domain_info2(pipes_struct *p)
 {
-	SAMR_Q_QUERY_DOMAIN_INFO2 q_u;
-	SAMR_R_QUERY_DOMAIN_INFO2 r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!samr_io_q_query_domain_info2("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_query_domain_info2: unable to unmarshall SAMR_Q_QUERY_DOMAIN_INFO2.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_query_domain_info2(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!samr_io_r_query_domain_info2("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_query_domain_info2: unable to marshall SAMR_R_QUERY_DOMAIN_INFO2.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_QUERYDOMAININFO2);
 }
 
 /*******************************************************************
