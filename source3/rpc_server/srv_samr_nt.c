@@ -1562,23 +1562,27 @@ NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
 }
 
 /*******************************************************************
- _samr_chgpasswd_user3
+ _samr_ChangePasswordUser3
  ********************************************************************/
 
-NTSTATUS _samr_chgpasswd_user3(pipes_struct *p, SAMR_Q_CHGPASSWD_USER3 *q_u, SAMR_R_CHGPASSWD_USER3 *r_u)
+NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
+				   struct samr_ChangePasswordUser3 *r)
 {
+	NTSTATUS status;
 	fstring user_name;
-	fstring wks;
+	const char *wks = NULL;
 	uint32 reject_reason;
-	SAM_UNK_INFO_1 *info = NULL;
-	SAMR_CHANGE_REJECT *reject = NULL;
+	struct samr_DomInfo1 *dominfo = NULL;
+	struct samr_ChangeReject *reject = NULL;
 
-	DEBUG(5,("_samr_chgpasswd_user3: %d\n", __LINE__));
+	DEBUG(5,("_samr_ChangePasswordUser3: %d\n", __LINE__));
 
-	rpcstr_pull(user_name, q_u->uni_user_name.buffer, sizeof(user_name), q_u->uni_user_name.uni_str_len*2, 0);
-	rpcstr_pull(wks, q_u->uni_dest_host.buffer, sizeof(wks), q_u->uni_dest_host.uni_str_len*2,0);
+	fstrcpy(user_name, r->in.account->string);
+	if (r->in.server && r->in.server->string) {
+		wks = r->in.server->string;
+	}
 
-	DEBUG(5,("_samr_chgpasswd_user3: user: %s wks: %s\n", user_name, wks));
+	DEBUG(5,("_samr_ChangePasswordUser3: user: %s wks: %s\n", user_name, wks));
 
 	/*
 	 * Pass the user through the NT -> unix user mapping
@@ -1592,27 +1596,30 @@ NTSTATUS _samr_chgpasswd_user3(pipes_struct *p, SAMR_Q_CHGPASSWD_USER3 *q_u, SAM
 	 * is case insensitive.
 	 */
 
-	r_u->status = pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
-				      q_u->nt_newpass.pass, q_u->nt_oldhash.hash, &reject_reason);
+	status = pass_oem_change(user_name,
+				 r->in.lm_password->data,
+				 r->in.lm_verifier->hash,
+				 r->in.nt_password->data,
+				 r->in.nt_verifier->hash,
+				 &reject_reason);
 
-	if (NT_STATUS_EQUAL(r_u->status, NT_STATUS_PASSWORD_RESTRICTION) ||
-	    NT_STATUS_EQUAL(r_u->status, NT_STATUS_ACCOUNT_RESTRICTION)) {
+	if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_ACCOUNT_RESTRICTION)) {
 
 		uint32 min_pass_len,pass_hist,password_properties;
 		time_t u_expire, u_min_age;
 		NTTIME nt_expire, nt_min_age;
 		uint32 account_policy_temp;
 
-		if ((info = TALLOC_ZERO_P(p->mem_ctx, SAM_UNK_INFO_1)) == NULL) {
+		dominfo = TALLOC_ZERO_P(p->mem_ctx, struct samr_DomInfo1);
+		if (!dominfo) {
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		if ((reject = TALLOC_ZERO_P(p->mem_ctx, SAMR_CHANGE_REJECT)) == NULL) {
+		reject = TALLOC_ZERO_P(p->mem_ctx, struct samr_ChangeReject);
+		if (!reject) {
 			return NT_STATUS_NO_MEMORY;
 		}
-
-		ZERO_STRUCTP(info);
-		ZERO_STRUCTP(reject);
 
 		become_root();
 
@@ -1640,17 +1647,26 @@ NTSTATUS _samr_chgpasswd_user3(pipes_struct *p, SAMR_Q_CHGPASSWD_USER3 *q_u, SAM
 		unix_to_nt_time_abs(&nt_expire, u_expire);
 		unix_to_nt_time_abs(&nt_min_age, u_min_age);
 
-		init_unk_info1(info, (uint16)min_pass_len, (uint16)pass_hist,
-		               password_properties, nt_expire, nt_min_age);
+		if (lp_check_password_script() && *lp_check_password_script()) {
+			password_properties |= DOMAIN_PASSWORD_COMPLEX;
+		}
 
-		reject->reject_reason = reject_reason;
+		init_samr_DomInfo1(dominfo,
+				   min_pass_len,
+				   pass_hist,
+				   password_properties,
+				   u_expire,
+				   u_min_age);
+
+		reject->reason = reject_reason;
+
+		*r->out.dominfo = dominfo;
+		*r->out.reject = reject;
 	}
 
-	init_samr_r_chgpasswd_user3(r_u, r_u->status, reject, info);
+	DEBUG(5,("_samr_ChangePasswordUser3: %d\n", __LINE__));
 
-	DEBUG(5,("_samr_chgpasswd_user3: %d\n", __LINE__));
-
-	return r_u->status;
+	return status;
 }
 
 /*******************************************************************
@@ -5420,16 +5436,6 @@ NTSTATUS _samr_GetBootKeyInformation(pipes_struct *p,
 
 NTSTATUS _samr_Connect3(pipes_struct *p,
 			struct samr_Connect3 *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_ChangePasswordUser3(pipes_struct *p,
-				   struct samr_ChangePasswordUser3 *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
