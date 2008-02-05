@@ -66,7 +66,7 @@ main(int argc, char **argv)
     const char *in_tkt_service = NULL;
     krb5_ccache id;
     krb5_error_code ret;
-    krb5_creds out;;
+    krb5_creds out;
     int optidx = 0;
 
     setprogname(argv[0]);
