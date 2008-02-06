@@ -4784,29 +4784,28 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 }
 
 /*********************************************************************
- _samr_set_aliasinfo
-
- update an alias's comment.
+ _samr_SetAliasInfo
 *********************************************************************/
 
-NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_SET_ALIASINFO *r_u)
+NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
+			    struct samr_SetAliasInfo *r)
 {
 	DOM_SID group_sid;
 	struct acct_info info;
-	ALIAS_INFO_CTR *ctr;
 	uint32 acc_granted;
 	bool can_mod_accounts;
 	NTSTATUS status;
 	DISP_INFO *disp_info = NULL;
 
-	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &group_sid, &acc_granted, &disp_info))
+	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &group_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_SET_INFO, "_samr_set_aliasinfo"))) {
-		return r_u->status;
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_ALIAS_SET_INFO,
+					    "_samr_SetAliasInfo");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	ctr=&q_u->ctr;
 
 	/* get the current group information */
 
@@ -4817,10 +4816,10 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 	if ( !NT_STATUS_IS_OK(status))
 		return status;
 
-	switch (ctr->level) {
-		case 2:
+	switch (r->in.level) {
+		case ALIASINFONAME:
 		{
-			fstring group_name, acct_name;
+			fstring group_name;
 
 			/* We currently do not support renaming groups in the
 			   the BUILTIN domain.  Refer to util_builtin.c to understand
@@ -4833,19 +4832,16 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 
 			/* There has to be a valid name (and it has to be different) */
 
-			if ( !ctr->alias.info2.name.string )
+			if ( !r->in.info->name.string )
 				return NT_STATUS_INVALID_PARAMETER;
-
-			unistr2_to_ascii( acct_name, ctr->alias.info2.name.string,
-				sizeof(acct_name));
 
 			/* If the name is the same just reply "ok".  Yes this
 			   doesn't allow you to change the case of a group name. */
 
-			if ( strequal( acct_name, info.acct_name ) )
+			if ( strequal( r->in.info->name.string, info.acct_name ) )
 				return NT_STATUS_OK;
 
-			fstrcpy( info.acct_name, acct_name );
+			fstrcpy( info.acct_name, r->in.info->name.string);
 
 			/* make sure the name doesn't already exist as a user
 			   or local group */
@@ -4856,14 +4852,13 @@ NTSTATUS _samr_set_aliasinfo(pipes_struct *p, SAMR_Q_SET_ALIASINFO *q_u, SAMR_R_
 				return status;
 			break;
 		}
-		case 3:
-			if ( ctr->alias.info3.description.string ) {
-				unistr2_to_ascii( info.acct_desc,
-					ctr->alias.info3.description.string,
-					sizeof(info.acct_desc));
-			}
-			else
+		case ALIASINFODESCRIPTION:
+			if (r->in.info->description.string) {
+				fstrcpy(info.acct_desc,
+					r->in.info->description.string);
+			} else {
 				fstrcpy( info.acct_desc, "" );
+			}
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
@@ -5236,16 +5231,6 @@ NTSTATUS _samr_SetMemberAttributesOfGroup(pipes_struct *p,
 
 NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
 			      struct samr_QueryAliasInfo *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_SetAliasInfo(pipes_struct *p,
-			    struct samr_SetAliasInfo *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
