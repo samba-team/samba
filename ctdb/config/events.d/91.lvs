@@ -7,6 +7,12 @@ loadconfig ctdb
 [ -z "$CTDB_LVS_PUBLIC_IP" ] && exit 0
 [ -z "$CTDB_PUBLIC_INTERFACE" ] && exit 0
 
+[ -x /sbin/ipvsadm ] || {
+    echo "LVS configured but /sbin/ipvsadm is not installed."
+    exit 1
+}
+
+
 cmd="$1"
 shift
 
