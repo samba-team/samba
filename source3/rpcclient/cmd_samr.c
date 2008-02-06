@@ -605,13 +605,12 @@ static NTSTATUS cmd_samr_query_usergroups(struct rpc_pipe_client *cli,
 				domain_pol, 
 				user_pol;
 	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
-	uint32 			num_groups, 
-				user_rid;
+	uint32 			user_rid;
 	uint32			access_mask = MAXIMUM_ALLOWED_ACCESS;
-	DOM_GID 		*user_gids;
 	int 			i;
 	fstring			server;
-	
+	struct samr_RidWithAttributeArray *rid_array = NULL;
+
 	if ((argc < 2) || (argc > 3)) {
 		printf("Usage: %s rid [access mask]\n", argv[0]);
 		return NT_STATUS_OK;
@@ -648,15 +647,17 @@ static NTSTATUS cmd_samr_query_usergroups(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_query_usergroups(cli, mem_ctx, &user_pol,
-					   &num_groups, &user_gids);
+	result = rpccli_samr_GetGroupsForUser(cli, mem_ctx,
+					      &user_pol,
+					      &rid_array);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	for (i = 0; i < num_groups; i++) {
-		printf("\tgroup rid:[0x%x] attr:[0x%x]\n", 
-		       user_gids[i].g_rid, user_gids[i].attr);
+	for (i = 0; i < rid_array->count; i++) {
+		printf("\tgroup rid:[0x%x] attr:[0x%x]\n",
+		       rid_array->rids[i].rid,
+		       rid_array->rids[i].attributes);
 	}
 
 	rpccli_samr_Close(cli, mem_ctx, &user_pol);

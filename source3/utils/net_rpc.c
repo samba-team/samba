@@ -1164,7 +1164,7 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 	uint32 flags = 0x000003e8; /* Unknown */
 	int i;
 	char **names;
-	DOM_GID *user_gids;
+	struct samr_RidWithAttributeArray *rid_array = NULL;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
@@ -1203,10 +1203,13 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 				      &user_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_query_usergroups(pipe_hnd, mem_ctx, &user_pol,
-					   &num_rids, &user_gids);
+	result = rpccli_samr_GetGroupsForUser(pipe_hnd, mem_ctx,
+					      &user_pol,
+					      &rid_array);
 
 	if (!NT_STATUS_IS_OK(result)) goto done;
+
+	num_rids = rid_array->count;
 
 	/* Look up rids */
 
@@ -1217,7 +1220,7 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 		}
 
 		for (i = 0; i < num_rids; i++)
-                	rids[i] = user_gids[i].g_rid;
+			rids[i] = rid_array->rids[i].rid;
 
 		result = rpccli_samr_lookup_rids(pipe_hnd, mem_ctx, &domain_pol,
 				      	      num_rids, rids,

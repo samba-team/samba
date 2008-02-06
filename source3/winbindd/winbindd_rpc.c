@@ -510,7 +510,7 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND dom_pol, user_pol;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	DOM_GID *user_groups;
+	struct samr_RidWithAttributeArray *rid_array = NULL;
 	unsigned int i;
 	uint32 user_rid;
 	struct rpc_pipe_client *cli;
@@ -557,8 +557,10 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 		return result;
 
 	/* Query user rids */
-	result = rpccli_samr_query_usergroups(cli, mem_ctx, &user_pol, 
-					   num_groups, &user_groups);
+	result = rpccli_samr_GetGroupsForUser(cli, mem_ctx,
+					      &user_pol,
+					      &rid_array);
+	*num_groups = rid_array->count;
 
 	rpccli_samr_Close(cli, mem_ctx, &user_pol);
 
@@ -572,9 +574,9 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	for (i=0;i<(*num_groups);i++) {
 		sid_copy(&((*user_grpsids)[i]), &domain->sid);
 		sid_append_rid(&((*user_grpsids)[i]),
-				user_groups[i].g_rid);
+				rid_array->rids[i].rid);
 	}
-	
+
 	return NT_STATUS_OK;
 }
 
