@@ -1655,16 +1655,17 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 
 
 /***************************************************************************
- Lsa Open Account
+ _lsa_OpenAccount
  ***************************************************************************/
 
-NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENACCOUNT *r_u)
+NTSTATUS _lsa_OpenAccount(pipes_struct *p,
+			  struct lsa_OpenAccount *r)
 {
 	struct lsa_info *handle;
 	struct lsa_info *info;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
@@ -1686,11 +1687,11 @@ NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENAC
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(info);
-	info->sid = q_u->sid.sid;
-	info->access = q_u->access;
+	info->sid = *r->in.sid;
+	info->access = r->in.access_mask;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
+	if (!create_policy_hnd(p, *r->out.acct_handle, free_lsa_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -2235,12 +2236,6 @@ NTSTATUS _lsa_LookupNames(pipes_struct *p, struct lsa_LookupNames *r)
 }
 
 NTSTATUS _lsa_LookupSids(pipes_struct *p, struct lsa_LookupSids *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_OpenAccount(pipes_struct *p, struct lsa_OpenAccount *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
