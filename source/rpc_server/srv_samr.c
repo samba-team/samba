@@ -714,28 +714,7 @@ static bool api_samr_query_groupinfo(pipes_struct *p)
 
 static bool api_samr_set_groupinfo(pipes_struct *p)
 {
-	SAMR_Q_SET_GROUPINFO q_u;
-	SAMR_R_SET_GROUPINFO r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_set_groupinfo("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_set_groupinfo: unable to unmarshall SAMR_Q_SET_GROUPINFO.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_set_groupinfo(p, &q_u, &r_u);
-
-	if (!samr_io_r_set_groupinfo("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_set_groupinfo: unable to marshall SAMR_R_SET_GROUPINFO.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_SETGROUPINFO);
 }
 
 /*******************************************************************
