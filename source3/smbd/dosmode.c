@@ -422,7 +422,7 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	uint32_t old_mode;
 
 	/* We only allow READONLY|HIDDEN|SYSTEM|DIRECTORY|ARCHIVE here. */
-	dosmode &= SAMBA_ATTRIBUTES_MASK | FILE_ATTRIBUTE_OFFLINE;
+	dosmode &= (SAMBA_ATTRIBUTES_MASK | FILE_ATTRIBUTE_OFFLINE);
 
 	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n", dosmode, fname));
 
