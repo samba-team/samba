@@ -419,9 +419,10 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	mode_t tmp;
 	mode_t unixmode;
 	int ret = -1, lret = -1;
+	uint32_t old_mode;
 
 	/* We only allow READONLY|HIDDEN|SYSTEM|DIRECTORY|ARCHIVE here. */
-	dosmode &= SAMBA_ATTRIBUTES_MASK;
+	dosmode &= SAMBA_ATTRIBUTES_MASK | FILE_ATTRIBUTE_OFFLINE;
 
 	DEBUG(10,("file_set_dosmode: setting dos mode 0x%x on file %s\n", dosmode, fname));
 
@@ -444,7 +445,24 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 	else
 		dosmode &= ~aDIR;
 
-	if (dos_mode(conn,fname,st) == dosmode) {
+	old_mode = dos_mode(conn,fname,st);
+	
+	if (dosmode & FILE_ATTRIBUTE_OFFLINE) {
+		if (!(old_mode & FILE_ATTRIBUTE_OFFLINE)) {
+			lret = SMB_VFS_SET_OFFLINE(conn, fname);
+			if (lret == -1) {
+				DEBUG(0, ("set_dos_mode: client has asked to set "
+					  "FILE_ATTRIBUTE_OFFLINE to %s/%s but there was "
+					  "an error while setting it or it is not supported.\n",
+					  parent_dir, fname));
+			}
+		}
+	}
+
+	dosmode  &= ~FILE_ATTRIBUTE_OFFLINE;
+	old_mode &= ~FILE_ATTRIBUTE_OFFLINE;
+
+	if (old_mode == dosmode) {
 		st->st_mode = unixmode;
 		return(0);
 	}
@@ -489,16 +507,6 @@ int file_set_dosmode(connection_struct *conn, const char *fname,
 		whilst adding in the new w bits, if the new mode is not rdonly */
 	if (!IS_DOS_READONLY(dosmode)) {
 		unixmode |= (st->st_mode & (S_IWUSR|S_IWGRP|S_IWOTH));
-	}
-
-	if (dosmode & FILE_ATTRIBUTE_OFFLINE) {
-		lret = SMB_VFS_SET_OFFLINE(conn, fname);
-		if (lret == -1) {
-			DEBUG(0, ("set_dos_mode: client has asked to set "
-				  "FILE_ATTRIBUTE_OFFLINE to %s/%s but there was "
-				  "an error while setting it or it is not supported.\n", 
-				  parent_dir, fname));
-		}
 	}
 
 	ret = SMB_VFS_CHMOD(conn, fname, unixmode);
