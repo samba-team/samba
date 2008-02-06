@@ -1985,60 +1985,6 @@ bool lsa_io_r_unk_get_connuser(const char *desc, LSA_R_UNK_GET_CONNUSER *out, pr
 	return True;
 }
 
-void init_lsa_q_open_account(LSA_Q_OPENACCOUNT *trn, POLICY_HND *hnd, DOM_SID *sid, uint32 desired_access)
-{
-	memcpy(&trn->pol, hnd, sizeof(trn->pol));
-
-	init_dom_sid2(&trn->sid, sid);
-	trn->access = desired_access;
-}
-
-/*******************************************************************
- Reads or writes an LSA_Q_OPENACCOUNT structure.
-********************************************************************/
-
-bool lsa_io_q_open_account(const char *desc, LSA_Q_OPENACCOUNT *out, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_open_account");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
- 
-	if(!smb_io_pol_hnd("pol", &out->pol, ps, depth))
-		return False;
-
-	if(!smb_io_dom_sid2("sid", &out->sid, ps, depth)) /* domain SID */
-		return False;
-
- 	if(!prs_uint32("access", ps, depth, &out->access))
-		return False;
-  
-	return True;
-}
-
-/*******************************************************************
- Reads or writes an LSA_R_OPENACCOUNT structure.
-********************************************************************/
-
-bool lsa_io_r_open_account(const char *desc, LSA_R_OPENACCOUNT  *out, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_open_account");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
- 
-	if(!smb_io_pol_hnd("pol", &out->pol, ps, depth))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &out->status))
-		return False;
-
-	return True;
-}
-
-
 void init_lsa_q_enum_privsaccount(LSA_Q_ENUMPRIVSACCOUNT *trn, POLICY_HND *hnd)
 {
 	memcpy(&trn->pol, hnd, sizeof(trn->pol));

@@ -689,19 +689,6 @@ typedef struct lsa_r_unk_get_connuser
 } LSA_R_UNK_GET_CONNUSER;
 
 
-typedef struct lsa_q_openaccount
-{
-	POLICY_HND pol; /* policy handle */
-	DOM_SID2 sid;
-	uint32 access; /* desired access */
-} LSA_Q_OPENACCOUNT;
-
-typedef struct lsa_r_openaccount
-{
-	POLICY_HND pol; /* policy handle */
-	NTSTATUS status;
-} LSA_R_OPENACCOUNT;
-
 typedef struct lsa_q_enumprivsaccount
 {
 	POLICY_HND pol; /* policy handle */
