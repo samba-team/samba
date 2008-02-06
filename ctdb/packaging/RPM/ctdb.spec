@@ -101,6 +101,7 @@ fi
 %{_sysconfdir}/ctdb/events.d/50.samba
 %{_sysconfdir}/ctdb/events.d/60.nfs
 %{_sysconfdir}/ctdb/events.d/61.nfstickle
+%{_sysconfdir}/ctdb/events.d/70.iscsi
 %{_sysconfdir}/ctdb/events.d/90.ipmux
 %{_sysconfdir}/ctdb/events.d/91.lvs
 %{_sysconfdir}/ctdb/statd-callout
@@ -119,6 +120,8 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Wed Feb 06 2008 : Version 1.0.27
+ - Add eventscript for iscsi
 * Thu Jan 31 2008 : Version 1.0.26
  - Fix crashbug in tdb transaction code
 * Tue Jan 29 2008 : Version 1.0.25
