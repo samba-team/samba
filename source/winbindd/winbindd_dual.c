@@ -770,7 +770,7 @@ static void account_lockout_policy_handler(struct event_context *ctx,
 		(struct winbindd_child *)private_data;
 	TALLOC_CTX *mem_ctx = NULL;
 	struct winbindd_methods *methods;
-	SAM_UNK_INFO_12 lockout_policy;
+	struct samr_DomInfo12 lockout_policy;
 	NTSTATUS result;
 
 	DEBUG(10,("account_lockout_policy_handler called\n"));

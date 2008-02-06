@@ -884,7 +884,7 @@ static int get_ldap_sequence_number(struct winbindd_domain *domain, uint32 *seq)
 static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 {
 	TALLOC_CTX *mem_ctx;
-	SAM_UNK_CTR ctr;
+	union samr_DomainInfo *info = NULL;
 	NTSTATUS result;
 	POLICY_HND dom_pol;
 	bool got_seq_num = False;
@@ -935,21 +935,27 @@ static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
 
 	/* Query domain info */
 
-	result = rpccli_samr_query_dom_info(cli, mem_ctx, &dom_pol, 8, &ctr);
+	result = rpccli_samr_QueryDomainInfo(cli, mem_ctx,
+					     &dom_pol,
+					     8,
+					     &info);
 
 	if (NT_STATUS_IS_OK(result)) {
-		*seq = ctr.info.inf8.seq_num;
+		*seq = info->info8.sequence_num;
 		got_seq_num = True;
 		goto seq_num;
 	}
 
 	/* retry with info-level 2 in case the dc does not support info-level 8
-	 * (like all older samba2 and samba3 dc's - Guenther */
+	 * (like all older samba2 and samba3 dc's) - Guenther */
 
-	result = rpccli_samr_query_dom_info(cli, mem_ctx, &dom_pol, 2, &ctr);
-	
+	result = rpccli_samr_QueryDomainInfo(cli, mem_ctx,
+					     &dom_pol,
+					     2,
+					     &info);
+
 	if (NT_STATUS_IS_OK(result)) {
-		*seq = ctr.info.inf2.seq_num;
+		*seq = info->info2.sequence_num;
 		got_seq_num = True;
 	}
 
@@ -1033,14 +1039,14 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 }
 
 /* find the lockout policy for a domain */
-NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain, 
+NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain,
 			      TALLOC_CTX *mem_ctx,
-			      SAM_UNK_INFO_12 *lockout_policy)
+			      struct samr_DomInfo12 *lockout_policy)
 {
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
 	POLICY_HND dom_pol;
-	SAM_UNK_CTR ctr;
+	union samr_DomainInfo *info = NULL;
 
 	DEBUG(10,("rpc: fetch lockout policy for %s\n", domain->name));
 
@@ -1055,15 +1061,18 @@ NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	result = rpccli_samr_query_dom_info(cli, mem_ctx, &dom_pol, 12, &ctr);
+	result = rpccli_samr_QueryDomainInfo(cli, mem_ctx,
+					     &dom_pol,
+					     12,
+					     &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	*lockout_policy = ctr.info.inf12;
+	*lockout_policy = info->info12;
 
-	DEBUG(10,("msrpc_lockout_policy: bad_attempt_lockout %d\n", 
-		ctr.info.inf12.bad_attempt_lockout));
+	DEBUG(10,("msrpc_lockout_policy: lockout_threshold %d\n",
+		info->info12.lockout_threshold));
 
   done:
 
@@ -1071,14 +1080,14 @@ NTSTATUS msrpc_lockout_policy(struct winbindd_domain *domain,
 }
 
 /* find the password policy for a domain */
-NTSTATUS msrpc_password_policy(struct winbindd_domain *domain, 
+NTSTATUS msrpc_password_policy(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
-			       SAM_UNK_INFO_1 *password_policy)
+			       struct samr_DomInfo1 *password_policy)
 {
 	NTSTATUS result;
 	struct rpc_pipe_client *cli;
 	POLICY_HND dom_pol;
-	SAM_UNK_CTR ctr;
+	union samr_DomainInfo *info = NULL;
 
 	DEBUG(10,("rpc: fetch password policy for %s\n", domain->name));
 
@@ -1093,15 +1102,18 @@ NTSTATUS msrpc_password_policy(struct winbindd_domain *domain,
 		goto done;
 	}
 
-	result = rpccli_samr_query_dom_info(cli, mem_ctx, &dom_pol, 1, &ctr);
+	result = rpccli_samr_QueryDomainInfo(cli, mem_ctx,
+					     &dom_pol,
+					     1,
+					     &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	*password_policy = ctr.info.inf1;
+	*password_policy = info->info1;
 
-	DEBUG(10,("msrpc_password_policy: min_length_password %d\n", 
-		ctr.info.inf1.min_length_password));
+	DEBUG(10,("msrpc_password_policy: min_length_password %d\n",
+		info->info1.min_password_length));
 
   done:
 
