@@ -2051,7 +2051,7 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 {
 	POLICY_HND connect_pol, domain_pol, alias_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	ALIAS_INFO_CTR alias_info;
+	union samr_AliasInfo alias_info;
 	struct lsa_String alias_name;
 	uint32_t rid = 0;
 
@@ -2094,10 +2094,13 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 
 	/* We've got a comment to set */
 
-	alias_info.level = 3;
-	init_samr_alias_info3(&alias_info.alias.info3, opt_comment);
+	init_lsa_String(&alias_info.description, opt_comment);
 
-	result = rpccli_samr_set_aliasinfo(pipe_hnd, mem_ctx, &alias_pol, &alias_info);
+	result = rpccli_samr_SetAliasInfo(pipe_hnd, mem_ctx,
+					  &alias_pol,
+					  3,
+					  &alias_info);
+
 	if (!NT_STATUS_IS_OK(result)) goto done;
 	
  done:
