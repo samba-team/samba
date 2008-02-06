@@ -27,10 +27,15 @@ shift
 }
 
 case $cmd in 
+     startup)
+	/bin/mkdir -p $CTDB_BASE/state/iscsi
+	;;
+
      takeip)
 	# when we takeover this ip we must start iscsi
 	[ $2 == "$CTDB_ISCSI_PUBLIC_IP" ] && {
 		$CTDB_START_ISCSI_SCRIPT
+		touch $CTDB_BASE/state/iscsi/iscsi_active
 	}
 	;;
 
@@ -38,6 +43,7 @@ case $cmd in
 	# when we release this ip we must stop iscsi
 	[ $2 == "$CTDB_ISCSI_PUBLIC_IP" ] && {
 		killall -9 tgtd >/dev/null 2>/dev/null
+		rm -rf $CTDB_BASE/state/iscsi/iscsi_active >/dev/null 2>/dev/null
 	}
 	;;
 
@@ -46,6 +52,11 @@ case $cmd in
 	killall -9 tgtd >/dev/null 2>/dev/null
 	;;
 
+     monitor)
+	[ -f $CTDB_BASE/state/iscsi/iscsi_active ] && {
+		ctdb_check_tcp_ports "iscsi" 3260
+	}
+	;;
 esac
 
 # ignore unknown commands
