@@ -53,7 +53,7 @@ struct eventlog_Record {
 struct eventlog_ClearEventLogW {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		struct lsa_String *unknown;/* [unique] */
+		struct lsa_String *backupfile;/* [unique] */
 	} in;
 
 	struct {
@@ -107,6 +107,11 @@ struct eventlog_GetNumRecords {
 
 struct eventlog_GetOldestRecord {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *oldest_entry;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -124,8 +129,8 @@ struct eventlog_ChangeNotify {
 struct eventlog_OpenEventLogW {
 	struct {
 		struct eventlog_OpenUnknown0 *unknown0;/* [unique] */
-		struct lsa_String logname;
-		struct lsa_String servername;
+		struct lsa_String *logname;/* [ref] */
+		struct lsa_String *servername;/* [ref] */
 		uint32_t unknown2;
 		uint32_t unknown3;
 	} in;
@@ -159,7 +164,7 @@ struct eventlog_ReadEventLogW {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t flags;
 		uint32_t offset;
-		uint32_t number_of_bytes;
+		uint32_t number_of_bytes;/* [range(0,0x7FFFF)] */
 	} in;
 
 	struct {

@@ -239,7 +239,8 @@ static int dochild(int master, const char *slavedev, const struct passwd *pass,
 static int expect(int master, char *issue, char *expected)
 {
 	char buffer[1024];
-	int attempts, timeout, nread, len;
+	int attempts, timeout, nread;
+	size_t len;
 	bool match = False;
 
 	for (attempts = 0; attempts < 2; attempts++) {
@@ -248,7 +249,8 @@ static int expect(int master, char *issue, char *expected)
 				DEBUG(100, ("expect: sending [%s]\n", issue));
 
 			if ((len = sys_write(master, issue, strlen(issue))) != strlen(issue)) {
-				DEBUG(2,("expect: (short) write returned %d\n", len ));
+				DEBUG(2,("expect: (short) write returned %d\n",
+					 (int)len ));
 				return False;
 			}
 		}
@@ -261,9 +263,16 @@ static int expect(int master, char *issue, char *expected)
 		nread = 0;
 		buffer[nread] = 0;
 
-		while ((len = read_socket_with_timeout(master, buffer + nread, 1,
-						       sizeof(buffer) - nread - 1,
-						       timeout, NULL)) > 0) {
+		while (True) {
+			NTSTATUS status;
+			status = read_socket_with_timeout(
+				master, buffer + nread, 1,
+				sizeof(buffer) - nread - 1,
+				timeout, &len);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				break;
+			}
 			nread += len;
 			buffer[nread] = 0;
 

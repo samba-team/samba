@@ -274,7 +274,7 @@ static bool api_lsa_QuerySecurity(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.sdbuf = talloc_zero(r, struct sec_desc_buf);
+	r->out.sdbuf = talloc_zero(r, struct sec_desc_buf *);
 	if (r->out.sdbuf == NULL) {
 		talloc_free(r);
 		return false;
@@ -2674,6 +2674,8 @@ static bool api_lsa_DeleteObject(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_DeleteObject, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.handle = r->in.handle;
 	r->out.result = _lsa_DeleteObject(p, r);
 
 	if (p->rng_fault_state) {

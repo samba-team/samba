@@ -493,8 +493,6 @@ done:
  ********************************************************************/
 
 static Eventlog_entry *read_package_entry( prs_struct * ps,
-					   EVENTLOG_Q_READ_EVENTLOG * q_u,
-					   EVENTLOG_R_READ_EVENTLOG * r_u,
 					   Eventlog_entry * entry )
 {
 	uint8 *offset;
@@ -610,28 +608,23 @@ static bool add_record_to_resp( EVENTLOG_R_READ_EVENTLOG * r_u,
 }
 
 /********************************************************************
+ _eventlog_OpenEventLogW
  ********************************************************************/
 
-NTSTATUS _eventlog_open_eventlog( pipes_struct * p,
-				EVENTLOG_Q_OPEN_EVENTLOG * q_u,
-				EVENTLOG_R_OPEN_EVENTLOG * r_u )
+NTSTATUS _eventlog_OpenEventLogW(pipes_struct *p,
+				 struct eventlog_OpenEventLogW *r)
 {
-	fstring servername, logname;
+	const char *servername = "";
+	const char *logname = "";
 	EVENTLOG_INFO *info;
 	NTSTATUS result;
 
-	fstrcpy( servername, "" );
-	if ( q_u->servername.string ) {
-		rpcstr_pull( servername, q_u->servername.string->buffer,
-			     sizeof( servername ),
-			     q_u->servername.string->uni_str_len * 2, 0 );
+	if (r->in.servername->string) {
+		servername = r->in.servername->string;
 	}
 
-	fstrcpy( logname, "" );
-	if ( q_u->logname.string ) {
-		rpcstr_pull( logname, q_u->logname.string->buffer,
-			     sizeof( logname ),
-			     q_u->logname.string->uni_str_len * 2, 0 );
+	if (r->in.logname->string) {
+		logname = r->in.logname->string;
 	}
 	
 	DEBUG( 10,("_eventlog_open_eventlog: Server [%s], Log [%s]\n",
@@ -640,13 +633,13 @@ NTSTATUS _eventlog_open_eventlog( pipes_struct * p,
 	/* according to MSDN, if the logfile cannot be found, we should
 	  default to the "Application" log */
 	  
-	if ( !NT_STATUS_IS_OK( result = elog_open( p, logname, &r_u->handle )) )
+	if ( !NT_STATUS_IS_OK( result = elog_open( p, logname, r->out.handle )) )
 		return result;
 
-	if ( !(info = find_eventlog_info_by_hnd( p, &r_u->handle )) ) {
+	if ( !(info = find_eventlog_info_by_hnd( p, r->out.handle )) ) {
 		DEBUG(0,("_eventlog_open_eventlog: eventlog (%s) opened but unable to find handle!\n",
 			logname ));
-		elog_close( p, &r_u->handle );
+		elog_close( p, r->out.handle );
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
@@ -659,28 +652,35 @@ NTSTATUS _eventlog_open_eventlog( pipes_struct * p,
 }
 
 /********************************************************************
+ _eventlog_ClearEventLogW
  This call still needs some work
  ********************************************************************/
+/** The windows client seems to be doing something funny with the file name
+   A call like
+      ClearEventLog(handle, "backup_file")
+   on the client side will result in the backup file name looking like this on the
+   server side:
+      \??\${CWD of client}\backup_file
+   If an absolute path gets specified, such as
+      ClearEventLog(handle, "C:\\temp\\backup_file")
+   then it is still mangled by the client into this:
+      \??\C:\temp\backup_file
+   when it is on the wire.
+   I'm not sure where the \?? is coming from, or why the ${CWD} of the client process
+   would be added in given that the backup file gets written on the server side. */
 
-NTSTATUS _eventlog_clear_eventlog( pipes_struct * p,
-				 EVENTLOG_Q_CLEAR_EVENTLOG * q_u,
-				 EVENTLOG_R_CLEAR_EVENTLOG * r_u )
+NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p,
+				  struct eventlog_ClearEventLogW *r)
 {
-	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, &q_u->handle );
-	char *backup_file_name = NULL;
+	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, r->in.handle );
+	const char *backup_file_name = NULL;
 
 	if ( !info )
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (q_u->backupfile.string) {
-		size_t len = rpcstr_pull_talloc(p->mem_ctx,
-				&backup_file_name,
-				q_u->backupfile.string->buffer,
-				q_u->backupfile.string->uni_str_len * 2,
-				0 );
-		if (len == (size_t)-1 || !backup_file_name) {
-			return NT_STATUS_INVALID_PARAMETER;
-		}
+	if (r->in.backupfile && r->in.backupfile->string) {
+
+		backup_file_name = r->in.backupfile->string;
 
 		DEBUG(8,( "_eventlog_clear_eventlog: Using [%s] as the backup "
 			"file name for log [%s].",
@@ -771,7 +771,7 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 
 		/* Now see if there is enough room to add */
 
-		if ( !(ee_new = read_package_entry( ps, q_u, r_u, entry )) )
+		if ( !(ee_new = read_package_entry( ps, entry )) )
 			return NT_STATUS_NO_MEMORY;
 
 		if ( r_u->num_bytes_in_resp + ee_new->record.length > q_u->max_read_size ) {
@@ -811,13 +811,13 @@ NTSTATUS _eventlog_read_eventlog( pipes_struct * p,
 }
 
 /********************************************************************
+ _eventlog_GetOldestRecord
  ********************************************************************/
 
-NTSTATUS _eventlog_get_oldest_entry( pipes_struct * p,
-				   EVENTLOG_Q_GET_OLDEST_ENTRY * q_u,
-				   EVENTLOG_R_GET_OLDEST_ENTRY * r_u )
+NTSTATUS _eventlog_GetOldestRecord(pipes_struct *p,
+				   struct eventlog_GetOldestRecord *r)
 {
-	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, &q_u->handle );
+	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, r->in.handle );
 
 	if (info == NULL) {
 		return NT_STATUS_INVALID_HANDLE;
@@ -826,19 +826,19 @@ NTSTATUS _eventlog_get_oldest_entry( pipes_struct * p,
 	if ( !( get_oldest_entry_hook( info ) ) )
 		return NT_STATUS_ACCESS_DENIED;
 
-	r_u->oldest_entry = info->oldest_entry;
+	*r->out.oldest_entry = info->oldest_entry;
 
 	return NT_STATUS_OK;
 }
 
 /********************************************************************
+_eventlog_GetNumRecords
  ********************************************************************/
 
-NTSTATUS _eventlog_get_num_records( pipes_struct * p,
-				  EVENTLOG_Q_GET_NUM_RECORDS * q_u,
-				  EVENTLOG_R_GET_NUM_RECORDS * r_u )
+NTSTATUS _eventlog_GetNumRecords(pipes_struct *p,
+				 struct eventlog_GetNumRecords *r)
 {
-	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, &q_u->handle );
+	EVENTLOG_INFO *info = find_eventlog_info_by_hnd( p, r->in.handle );
 
 	if (info == NULL) {
 		return NT_STATUS_INVALID_HANDLE;
@@ -847,15 +847,9 @@ NTSTATUS _eventlog_get_num_records( pipes_struct * p,
 	if ( !( get_num_records_hook( info ) ) )
 		return NT_STATUS_ACCESS_DENIED;
 
-	r_u->num_records = info->num_records;
+	*r->out.number = info->num_records;
 
 	return NT_STATUS_OK;
-}
-
-NTSTATUS _eventlog_ClearEventLogW(pipes_struct *p, struct eventlog_ClearEventLogW *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 NTSTATUS _eventlog_BackupEventLogW(pipes_struct *p, struct eventlog_BackupEventLogW *r)
@@ -870,25 +864,7 @@ NTSTATUS _eventlog_DeregisterEventSource(pipes_struct *p, struct eventlog_Deregi
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS _eventlog_GetNumRecords(pipes_struct *p, struct eventlog_GetNumRecords *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _eventlog_GetOldestRecord(pipes_struct *p, struct eventlog_GetOldestRecord *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 NTSTATUS _eventlog_ChangeNotify(pipes_struct *p, struct eventlog_ChangeNotify *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _eventlog_OpenEventLogW(pipes_struct *p, struct eventlog_OpenEventLogW *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;

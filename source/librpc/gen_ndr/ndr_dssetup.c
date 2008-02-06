@@ -88,7 +88,6 @@ static enum ndr_err_code ndr_push_dssetup_DsRolePrimaryDomInfoBasic(struct ndr_p
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->forest, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->forest, ndr_charset_length(r->forest, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		NDR_CHECK(ndr_push_GUID(ndr, NDR_BUFFERS, &r->domain_guid));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -162,7 +161,6 @@ static enum ndr_err_code ndr_pull_dssetup_DsRolePrimaryDomInfoBasic(struct ndr_p
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->forest, ndr_get_array_length(ndr, &r->forest), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_forest_0, 0);
 		}
-		NDR_CHECK(ndr_pull_GUID(ndr, NDR_BUFFERS, &r->domain_guid));
 	}
 	return NDR_ERR_SUCCESS;
 }

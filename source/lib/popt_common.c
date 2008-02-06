@@ -71,10 +71,19 @@ static void popt_common_callback(poptContext con,
 	}
 
 	if (reason == POPT_CALLBACK_REASON_POST) {
-		if (!PrintSambaVersionString) return;
 
-		printf( "Version %s\n", SAMBA_VERSION_STRING);
-		exit(0);
+		if (PrintSambaVersionString) {
+			printf( "Version %s\n", SAMBA_VERSION_STRING);
+			exit(0);
+		}
+
+		if (is_default_dyn_CONFIGFILE()) {
+			if(getenv("SMB_CONF_PATH")) {
+				set_dyn_CONFIGFILE(getenv("SMB_CONF_PATH"));
+			}
+		}
+
+		/* Further 'every Samba program must do this' hooks here. */
 		return;
 	}
 

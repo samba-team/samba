@@ -82,14 +82,17 @@ import "security.idl";
 	NTSTATUS lsa_QuerySecurity (
 		[in]     policy_handle *handle,
 		[in]         security_secinfo sec_info,
-		[out,unique]        sec_desc_buf *sdbuf
+		[out,ref]    sec_desc_buf **sdbuf
 		);
 
 
 	/******************/
 	/* Function: 0x04 */
-	NTSTATUS lsa_SetSecObj ();
-
+	NTSTATUS lsa_SetSecObj(
+		[in]		policy_handle *handle,
+		[in]		security_secinfo sec_info,
+		[in,ref]	sec_desc_buf *sdbuf
+		);
 
 	/******************/
 	/* Function: 0x05 */
@@ -653,9 +656,10 @@ import "security.idl";
 		);
 
 	/* Function:        0x22 */
-	NTSTATUS lsa_DeleteObject();
+	NTSTATUS lsa_DeleteObject(
+		[in,out] policy_handle **handle
+		);
 
-	
 	/*******************/
 	/* Function:      0x23 */
 	NTSTATUS lsa_EnumAccountsWithUserRight (

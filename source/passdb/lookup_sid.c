@@ -548,10 +548,16 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 		if (*domain_name == NULL) {
 			*domain_name = talloc_strdup(
 				mem_ctx, unix_users_domain_name());
+			if (*domain_name == NULL) {
+				return false;
+			}
 		}
 		for (i=0; i<num_rids; i++) {
 			(*names)[i] = talloc_strdup(
 				(*names), uidtoname(rids[i]));
+			if ((*names)[i] == NULL) {
+				return false;
+			}
 			(*types)[i] = SID_NAME_USER;
 		}
 		return true;
@@ -561,10 +567,16 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 		if (*domain_name == NULL) {
 			*domain_name = talloc_strdup(
 				mem_ctx, unix_groups_domain_name());
+			if (*domain_name == NULL) {
+				return false;
+			}
 		}
 		for (i=0; i<num_rids; i++) {
 			(*names)[i] = talloc_strdup(
 				(*names), gidtoname(rids[i]));
+			if ((*names)[i] == NULL) {
+				return false;
+			}
 			(*types)[i] = SID_NAME_DOM_GRP;
 		}
 		return true;

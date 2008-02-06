@@ -237,6 +237,7 @@ void ndr_print_samr_DispEntryAscii(struct ndr_print *ndr, const char *name, cons
 void ndr_print_samr_DispInfoAscii(struct ndr_print *ndr, const char *name, const struct samr_DispInfoAscii *r);
 void ndr_print_samr_DispInfo(struct ndr_print *ndr, const char *name, const union samr_DispInfo *r);
 void ndr_print_samr_PwInfo(struct ndr_print *ndr, const char *name, const struct samr_PwInfo *r);
+void ndr_print_samr_ConnectVersion(struct ndr_print *ndr, const char *name, enum samr_ConnectVersion r);
 void ndr_print_samr_ChangeReject(struct ndr_print *ndr, const char *name, const struct samr_ChangeReject *r);
 void ndr_print_samr_ConnectInfo1(struct ndr_print *ndr, const char *name, const struct samr_ConnectInfo1 *r);
 void ndr_print_samr_ConnectInfo(struct ndr_print *ndr, const char *name, const union samr_ConnectInfo *r);

@@ -273,7 +273,7 @@ static bool api_samr_QuerySecurity(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.sdbuf = talloc_zero(r, struct sec_desc_buf);
+	r->out.sdbuf = talloc_zero(r, struct sec_desc_buf *);
 	if (r->out.sdbuf == NULL) {
 		talloc_free(r);
 		return false;
@@ -426,7 +426,7 @@ static bool api_samr_LookupDomain(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.sid = talloc_zero(r, struct dom_sid2);
+	r->out.sid = talloc_zero(r, struct dom_sid2 *);
 	if (r->out.sid == NULL) {
 		talloc_free(r);
 		return false;
@@ -673,7 +673,7 @@ static bool api_samr_QueryDomainInfo(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, union samr_DomainInfo);
+	r->out.info = talloc_zero(r, union samr_DomainInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -2051,7 +2051,7 @@ static bool api_samr_QueryGroupMember(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.rids = talloc_zero(r, struct samr_RidTypeArray);
+	r->out.rids = talloc_zero(r, struct samr_RidTypeArray *);
 	if (r->out.rids == NULL) {
 		talloc_free(r);
 		return false;
@@ -3670,7 +3670,7 @@ static bool api_samr_QueryDomainInfo2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, union samr_DomainInfo);
+	r->out.info = talloc_zero(r, union samr_DomainInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;

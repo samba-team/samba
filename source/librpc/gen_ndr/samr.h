@@ -200,7 +200,7 @@ union samr_DomainInfo {
 }/* [switch_type(uint16)] */;
 
 struct samr_Ids {
-	uint32_t count;/* [range(0 1024)] */
+	uint32_t count;/* [range(0,1024)] */
 	uint32_t *ids;/* [unique,size_is(count)] */
 };
 
@@ -603,6 +603,21 @@ struct samr_PwInfo {
 	uint32_t password_properties;
 };
 
+enum samr_ConnectVersion
+#ifndef USE_UINT_ENUMS
+ {
+	SAMR_CONNECT_PRE_W2K=1,
+	SAMR_CONNECT_W2K=2,
+	SAMR_CONNECT_AFTER_W2K=3
+}
+#else
+ { __donnot_use_enum_samr_ConnectVersion=0x7FFFFFFF}
+#define SAMR_CONNECT_PRE_W2K ( 1 )
+#define SAMR_CONNECT_W2K ( 2 )
+#define SAMR_CONNECT_AFTER_W2K ( 3 )
+#endif
+;
+
 enum samr_RejectReason;
 
 struct samr_ChangeReject {
@@ -612,7 +627,7 @@ struct samr_ChangeReject {
 };
 
 struct samr_ConnectInfo1 {
-	uint32_t unknown1;
+	enum samr_ConnectVersion client_version;
 	uint32_t unknown2;
 };
 
@@ -773,7 +788,7 @@ struct samr_QuerySecurity {
 	} in;
 
 	struct {
-		struct sec_desc_buf *sdbuf;/* [ref] */
+		struct sec_desc_buf **sdbuf;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -799,7 +814,7 @@ struct samr_LookupDomain {
 	} in;
 
 	struct {
-		struct dom_sid2 *sid;/* [ref] */
+		struct dom_sid2 **sid;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -845,7 +860,7 @@ struct samr_QueryDomainInfo {
 	} in;
 
 	struct {
-		union samr_DomainInfo *info;/* [ref,switch_is(level)] */
+		union samr_DomainInfo **info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 
@@ -983,7 +998,7 @@ struct samr_GetAliasMembership {
 struct samr_LookupNames {
 	struct {
 		struct policy_handle *domain_handle;/* [ref] */
-		uint32_t num_names;/* [range(0 1000)] */
+		uint32_t num_names;/* [range(0,1000)] */
 		struct lsa_String *names;/* [length_is(num_names),size_is(1000)] */
 	} in;
 
@@ -999,7 +1014,7 @@ struct samr_LookupNames {
 struct samr_LookupRids {
 	struct {
 		struct policy_handle *domain_handle;/* [ref] */
-		uint32_t num_rids;/* [range(0 1000)] */
+		uint32_t num_rids;/* [range(0,1000)] */
 		uint32_t *rids;/* [length_is(num_rids),size_is(1000)] */
 	} in;
 
@@ -1101,7 +1116,7 @@ struct samr_QueryGroupMember {
 	} in;
 
 	struct {
-		struct samr_RidTypeArray *rids;/* [ref] */
+		struct samr_RidTypeArray **rids;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -1399,7 +1414,7 @@ struct samr_QueryDomainInfo2 {
 	} in;
 
 	struct {
-		union samr_DomainInfo *info;/* [ref,switch_is(level)] */
+		union samr_DomainInfo **info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 
@@ -1637,7 +1652,7 @@ struct samr_Connect3 {
 struct samr_Connect4 {
 	struct {
 		const char *system_name;/* [unique,charset(UTF16)] */
-		uint32_t unknown;
+		enum samr_ConnectVersion client_version;
 		uint32_t access_mask;
 	} in;
 

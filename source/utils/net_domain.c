@@ -37,6 +37,11 @@
                 goto done; \
         }
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
 /*******************************************************************
  Leave an AD domain.  Windows XP disables the machine account.
  We'll try the same.  The old code would do an LDAP delete.
@@ -66,14 +71,19 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		return status;
 	}
 
-	status = rpccli_samr_connect(pipe_hnd, mem_ctx, 
-			SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_pol);
+	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &sam_pol);
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	
-	status = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &sam_pol,
-			SEC_RIGHTS_MAXIMUM_ALLOWED, dom_sid, &domain_pol);
+
+	status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&sam_pol,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					dom_sid,
+					&domain_pol);
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
@@ -98,8 +108,11 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		
 	/* Open handle on user */
 
-	status = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-			SEC_RIGHTS_MAXIMUM_ALLOWED, user_rid, &user_pol);
+	status = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_pol);
 	if ( !NT_STATUS_IS_OK(status) ) {
 		goto done;
 	}
@@ -204,6 +217,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	const char *const_acct_name;
+	struct lsa_String lsa_acct_name;
 	uint32 user_rid;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
@@ -218,6 +232,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	uchar md5buffer[16];
 	DATA_BLOB digested_session_key;
 	uchar md4_trust_password[16];
+	uint32_t access_granted = 0;
 
 	/* Open the domain */
 	
@@ -227,14 +242,19 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		return status;
 	}
 
-	status = rpccli_samr_connect(pipe_hnd, mem_ctx, 
-			SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_pol);
+	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &sam_pol);
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	
-	status = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &sam_pol,
-			SEC_RIGHTS_MAXIMUM_ALLOWED, dom_sid, &domain_pol);
+
+	status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&sam_pol,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					dom_sid,
+					&domain_pol);
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
@@ -243,6 +263,8 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname()); 
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
+
+	init_lsa_String(&lsa_acct_name, acct_name);
 
 	/* Don't try to set any acb_info flags other than ACB_WSTRUST */
 	acct_flags = SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
@@ -253,8 +275,14 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 
 	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
 
-	status = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-			acct_name, acb_info, acct_flags, &user_pol, &user_rid);
+	status = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 &lsa_acct_name,
+					 acb_info,
+					 acct_flags,
+					 &user_pol,
+					 &access_granted,
+					 &user_rid);
 
 	if ( !NT_STATUS_IS_OK(status) 
 		&& !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) 
@@ -292,8 +320,11 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		
 	/* Open handle on user */
 
-	status = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-			SEC_RIGHTS_MAXIMUM_ALLOWED, user_rid, &user_pol);
+	status = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

@@ -18,7 +18,7 @@ NTSTATUS rpccli_samr_QuerySecurity(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *handle,
 				   uint32_t sec_info,
-				   struct sec_desc_buf *sdbuf);
+				   struct sec_desc_buf **sdbuf);
 NTSTATUS rpccli_samr_Shutdown(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      struct policy_handle *connect_handle);
@@ -26,7 +26,7 @@ NTSTATUS rpccli_samr_LookupDomain(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  struct policy_handle *connect_handle,
 				  struct lsa_String *domain_name,
-				  struct dom_sid2 *sid);
+				  struct dom_sid2 **sid);
 NTSTATUS rpccli_samr_EnumDomains(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *connect_handle,
@@ -44,7 +44,7 @@ NTSTATUS rpccli_samr_QueryDomainInfo(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct policy_handle *domain_handle,
 				     uint16_t level,
-				     union samr_DomainInfo *info);
+				     union samr_DomainInfo **info);
 NTSTATUS rpccli_samr_SetDomainInfo(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *domain_handle,
@@ -143,7 +143,7 @@ NTSTATUS rpccli_samr_DeleteGroupMember(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_QueryGroupMember(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *group_handle,
-				      struct samr_RidTypeArray *rids);
+				      struct samr_RidTypeArray **rids);
 NTSTATUS rpccli_samr_SetMemberAttributesOfGroup(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,
 						struct policy_handle *group_handle,
@@ -250,7 +250,7 @@ NTSTATUS rpccli_samr_QueryDomainInfo2(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *domain_handle,
 				      uint16_t level,
-				      union samr_DomainInfo *info);
+				      union samr_DomainInfo **info);
 NTSTATUS rpccli_samr_QueryUserInfo2(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *user_handle,
@@ -347,7 +347,7 @@ NTSTATUS rpccli_samr_Connect3(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      const char *system_name,
-			      uint32_t unknown,
+			      enum samr_ConnectVersion client_version,
 			      uint32_t access_mask,
 			      struct policy_handle *connect_handle);
 NTSTATUS rpccli_samr_ChangePasswordUser3(struct rpc_pipe_client *cli,

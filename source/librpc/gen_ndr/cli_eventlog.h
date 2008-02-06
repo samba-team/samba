@@ -4,7 +4,7 @@
 NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					struct policy_handle *handle,
-					struct lsa_String *unknown);
+					struct lsa_String *backupfile);
 NTSTATUS rpccli_eventlog_BackupEventLogW(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_eventlog_CloseEventLog(struct rpc_pipe_client *cli,
@@ -17,14 +17,16 @@ NTSTATUS rpccli_eventlog_GetNumRecords(struct rpc_pipe_client *cli,
 				       struct policy_handle *handle,
 				       uint32_t *number);
 NTSTATUS rpccli_eventlog_GetOldestRecord(struct rpc_pipe_client *cli,
-					 TALLOC_CTX *mem_ctx);
+					 TALLOC_CTX *mem_ctx,
+					 struct policy_handle *handle,
+					 uint32_t *oldest_entry);
 NTSTATUS rpccli_eventlog_ChangeNotify(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct eventlog_OpenUnknown0 *unknown0,
-				       struct lsa_String logname,
-				       struct lsa_String servername,
+				       struct lsa_String *logname,
+				       struct lsa_String *servername,
 				       uint32_t unknown2,
 				       uint32_t unknown3,
 				       struct policy_handle *handle);
