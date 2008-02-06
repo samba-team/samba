@@ -1170,6 +1170,115 @@ static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* Query alias info */
+
+static NTSTATUS cmd_samr_query_aliasinfo(struct rpc_pipe_client *cli,
+					 TALLOC_CTX *mem_ctx,
+					 int argc, const char **argv)
+{
+	POLICY_HND connect_pol, domain_pol, alias_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32_t alias_rid;
+	uint32_t access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	union samr_AliasInfo *info = NULL;
+	enum samr_AliasInfoEnum level = ALIASINFOALL;
+
+	if ((argc < 3) || (argc > 4)) {
+		printf("Usage: %s builtin|domain rid [level] [access mask]\n",
+			argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	sscanf(argv[2], "%i", &alias_rid);
+
+	if (argc > 3) {
+		level = atoi(argv[3]);
+	}
+
+	if (argc > 4) {
+		sscanf(argv[4], "%x", &access_mask);
+	}
+
+	/* Open SAMR handle */
+
+	result = try_samr_connects(cli, mem_ctx,
+				   SEC_FLAG_MAXIMUM_ALLOWED,
+				   &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Open handle on domain */
+
+	if (strequal(argv[1], "domain")) {
+
+		result = rpccli_samr_OpenDomain(cli, mem_ctx,
+						&connect_pol,
+						SEC_FLAG_MAXIMUM_ALLOWED,
+						&domain_sid,
+						&domain_pol);
+
+	} else if (strequal(argv[1], "builtin")) {
+
+		result = rpccli_samr_OpenDomain(cli, mem_ctx,
+						&connect_pol,
+						SEC_FLAG_MAXIMUM_ALLOWED,
+						CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
+						&domain_pol);
+
+	} else {
+		return NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Open handle on alias */
+
+	result = rpccli_samr_OpenAlias(cli, mem_ctx,
+				       &domain_pol,
+				       access_mask,
+				       alias_rid,
+				       &alias_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_samr_QueryAliasInfo(cli, mem_ctx,
+					    &alias_pol,
+					    level,
+					    &info);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	switch (level) {
+		case ALIASINFOALL:
+			printf("Name: %s\n", info->all.name.string);
+			printf("Description: %s\n", info->all.description.string);
+			printf("Num Members: %d\n", info->all.num_members);
+			break;
+		case ALIASINFONAME:
+			printf("Name: %s\n", info->name.string);
+			break;
+		case ALIASINFODESCRIPTION:
+			printf("Description: %s\n", info->description.string);
+			break;
+		default:
+			break;
+	}
+
+	rpccli_samr_Close(cli, mem_ctx, &alias_pol);
+	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
+	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+ done:
+	return result;
+}
+
+
 /* Query delete an alias membership */
 
 static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli, 
@@ -2387,6 +2496,7 @@ struct cmd_set samr_commands[] = {
 	{ "queryuseraliases", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_useraliases, 	NULL, PI_SAMR, NULL,	"Query user aliases",      "" },
 	{ "querygroupmem", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_groupmem, 	NULL, PI_SAMR, NULL,	"Query group membership",  "" },
 	{ "queryaliasmem", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_aliasmem, 	NULL, PI_SAMR, NULL,	"Query alias membership",  "" },
+	{ "queryaliasinfo", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_aliasinfo, 	NULL, PI_SAMR, NULL,	"Query alias info",       "" },
 	{ "deletealias", 	RPC_RTYPE_NTSTATUS, cmd_samr_delete_alias, 	NULL, PI_SAMR, NULL,	"Delete an alias",  "" },
 	{ "querydispinfo", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dispinfo, 	NULL, PI_SAMR, NULL,	"Query display info",      "" },
 	{ "querydominfo", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dominfo, 	NULL, PI_SAMR, NULL,	"Query domain info",       "" },
