@@ -1,0 +1,109 @@
+<!--#set var="TITLE" value="CTDB and iSCSI" -->
+<!--#include virtual="header.html" -->
+
+<h1>Setting up HA iSCSI with CTDB</h1>
+
+<p>
+You can use CTDB to create a HA iSCSI Target.
+</p>
+
+<p>
+Since the iSCSI Target is not
+clusterized nor integrated with CTDB in the same sense Samba is, this
+implementation will only create a HA solution for iSCSI where the iSCSI service is available from a specific ip address and where the service fails over to a different node when a node fails. But the service is ONLY available from one single node at a time. This in contrast with samba which is clusterized and where Samba is available from all nodes at all times.
+</p>
+
+<p>
+! This feature ONLY works when public addresses are used. It is not supported, nor does it work, if you use the LVS feature to present the entire cluster as one single ip address. !
+
+</p>
+
+<h2>Prereqs</h2>
+Configure CTDB as above and set it up to use public ipaddresses.<br>
+Verify that the CTDB cluster works.
+
+<h2>Install the iSCSI target software on all nodes</h2>
+On RHEL5 this package is called "scsi-target-utils" and it needs to be installed
+on all nodes in the cluster. The easiest way to install this package is by using :
+
+<pre>
+onnode all yum install scsi-target-utils -y
+</pre>
+
+Make sure that the service is not started automatically when booting, we want CTDB to start/stop this service :
+<pre>
+onnode all chkconfig tgtd off
+</pre>
+
+<h2>/etc/sysconfig/iscsi</h2>
+
+Create this file and add the following three lines to it :
+
+<pre>
+   CTDB_MANAGES_ISCSI=yes
+   CTDB_ISCSI_PUBLIC_IP=10.13.26.2
+   CTDB_START_ISCSI_SCRIPT=/gpfs/iscsi/iscsi.sh
+</pre>
+
+<p>
+CTDB_MANAGES_ISCSI=yes just tells CTDB event script for iSCSI that CTDB should start and stop the iSCSI target service as required.
+</p>
+
+<p>
+CTDB_ISCSI_PUBLIC_IP=<ip address> must contain a valid public ip address which is listed in the /etc/ctdb/public_addresses file. While the cluster is running, iSCSI will be available from this ip address from the node in the cluster that is currently hosting this address.
+</p>
+
+<p>
+CTDB_START_ISCSI_SCRIPT=<script to start the iscsi service> This is the path to the shellscript used to configure and start up the iSCSI service. This script must be stored in the shared cluster filesystem that is shared on all nodes so that the same script can be run by any node in the cluster. 
+</p>
+
+
+
+<h2>iscsi.sh</h2>
+<p>
+This shellscript that was specified in CTDB_START_ISCSI_SCRIPT should contain the commands required to start and configure iSCSI for your environment. It should create whatever targets you need and whatever LUNs you need.
+</p>
+
+<p>
+An example trivial script that starts, creates one target, and creates one LUN :
+</p>
+
+<pre>
+#!/bin/sh
+
+# start the daemon
+tgtd
+
+#create a target
+tgtadm --lld iscsi --op new --mode target --tid 1 -T iqn.2007-11.com.ctdb:ctdb.iscsi.target.1
+
+#attach a lun
+tgtadm --lld iscsi --op new --mode logicalunit --tid 1 --lun 1 -b /gpfs/iscsi/lun.1
+
+# no security, allow everyone to access this lun
+tgtadm --lld iscsi --op bind --mode target --tid 1 -I ALL
+</pre>
+
+<p>
+iqn.2007-11.com.ctdb:ctdb.iscsi.target.1 in the example above is the iscsi name that is assigned to the target. Dont use this name, pick your own name!
+</p>
+
+<p>
+In the example above the target also hosts a LUN backed by the file /gpfs/iscsi/lun.1 . This file must be stored on the shared cluster filesystem so that all nodes can access it. You must also create this file manually prior to starting iSCSI :
+</p>
+
+<pre>
+dd if=/dev/zero of=/gpfs/iscsi/lun.1 bs=1024 count=102400
+</pre>
+
+<p>
+See the documentation for the tgtadm command for more information on how you want to set up your environment.
+</p>
+
+<h2>restart CTDB on all nodes</h2>
+<pre>
+onnode all service ctdb restart
+</pre>
+
+<!--#include virtual="footer.html" -->
+
