@@ -1983,7 +1983,7 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 {
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	GROUP_INFO_CTR group_info;
+	union samr_GroupInfo group_info;
 	struct lsa_String grp_name;
 	uint32_t rid = 0;
 
@@ -2026,10 +2026,12 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 
 	/* We've got a comment to set */
 
-	group_info.switch_value1 = 4;
-	init_samr_group_info4(&group_info.group.info4, opt_comment);
+	init_lsa_String(&group_info.description, opt_comment);
 
-	result = rpccli_samr_set_groupinfo(pipe_hnd, mem_ctx, &group_pol, &group_info);
+	result = rpccli_samr_SetGroupInfo(pipe_hnd, mem_ctx,
+					  &group_pol,
+					  4,
+					  &group_info);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 	
  done:
@@ -3076,7 +3078,7 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 	NTSTATUS result;
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	uint32 num_rids, *rids, *rid_types;
-	GROUP_INFO_CTR ctr;
+	union samr_GroupInfo group_info;
 
 	if (argc != 2) {
 		d_printf("Usage: 'net rpc group rename group newname'\n");
@@ -3126,12 +3128,12 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	ZERO_STRUCT(ctr);
+	init_lsa_String(&group_info.name, argv[1]);
 
-	ctr.switch_value1 = 2;
-	init_samr_group_info2(&ctr.group.info2, argv[1]);
-
-	result = rpccli_samr_set_groupinfo(pipe_hnd, mem_ctx, &group_pol, &ctr);
+	result = rpccli_samr_SetGroupInfo(pipe_hnd, mem_ctx,
+					  &group_pol,
+					  2,
+					  &group_info);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
