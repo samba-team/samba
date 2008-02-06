@@ -1110,6 +1110,12 @@ void reply_setatr(struct smb_request *req)
 	mode = SVAL(req->inbuf,smb_vwv0);
 	mtime = srv_make_unix_date3(req->inbuf+smb_vwv1);
 
+	if (!set_filetime(conn,fname,convert_time_t_to_timespec(mtime))) {
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		END_PROFILE(SMBsetatr);
+		return;
+	}
+
 	if (mode != FILE_ATTRIBUTE_NORMAL) {
 		if (VALID_STAT_OF_DIR(sbuf))
 			mode |= aDIR;
@@ -1121,12 +1127,6 @@ void reply_setatr(struct smb_request *req)
 			END_PROFILE(SMBsetatr);
 			return;
 		}
-	}
-
-	if (!set_filetime(conn,fname,convert_time_t_to_timespec(mtime))) {
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
-		END_PROFILE(SMBsetatr);
-		return;
 	}
 
 	reply_outbuf(req, 0, 0);
