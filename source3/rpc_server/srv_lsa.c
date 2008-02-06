@@ -307,29 +307,7 @@ static bool api_lsa_unk_get_connuser(pipes_struct *p)
 
 static bool api_lsa_create_account(pipes_struct *p)
 {
-	LSA_Q_CREATEACCOUNT q_u;
-	LSA_R_CREATEACCOUNT r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_create_account("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_create_account: failed to unmarshall LSA_Q_CREATEACCOUNT.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_create_account(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_create_account("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_create_account: Failed to marshall LSA_R_CREATEACCOUNT.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_CREATEACCOUNT);
 }
 
 /***************************************************************************
@@ -943,6 +921,7 @@ static int count_fns(void)
 
 	return funcs;
 }
+
 void lsa_get_pipe_fns( struct api_struct **fns, int *n_fns )
 {
 	*fns = api_lsa_cmds;
