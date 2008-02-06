@@ -912,7 +912,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	NTSTATUS samr_GetGroupsForUser(
 		[in,ref]   policy_handle *user_handle,
-		[out,ref]  samr_RidWithAttributeArray  *rids
+		[out,ref]  samr_RidWithAttributeArray  **rids
 		);
 
 	/************************/
