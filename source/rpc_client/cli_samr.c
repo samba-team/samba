@@ -172,39 +172,6 @@ NTSTATUS rpccli_samr_query_usergroups(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/* Set alias info */
-
-NTSTATUS rpccli_samr_set_aliasinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				POLICY_HND *alias_pol, ALIAS_INFO_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_SET_ALIASINFO q;
-	SAMR_R_SET_ALIASINFO r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_set_aliasinfo\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_set_aliasinfo(&q, alias_pol, ctr);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_SET_ALIASINFO,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_set_aliasinfo,
-		samr_io_r_set_aliasinfo,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	return result;
-}
-
 /**
  * Enumerate domain users
  *

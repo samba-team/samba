@@ -936,18 +936,6 @@ typedef struct {
 
 /********************************************************/
 
-typedef struct {
-	POLICY_HND alias_pol;        /* policy handle */
-	ALIAS_INFO_CTR ctr;
-} SAMR_Q_SET_ALIASINFO;
-
-typedef struct {
-	NTSTATUS status;
-} SAMR_R_SET_ALIASINFO;
-
-
-/********************************************************/
-
 /* SAMR_Q_QUERY_USERGROUPS - */
 typedef struct q_samr_query_usergroup_info
 {
