@@ -30,7 +30,7 @@ static void samba_ldap_log_print_fn(LDAP_CONST char *data)
 
 void init_ldap_debugging(void)
 {
-#if HAVE_LDAP
+#if defined(HAVE_LDAP) && defined(HAVE_LBER_LOG_PRINT_FN)
 	int ret;
 	int ldap_debug_level = lp_ldap_debug_level();
 
@@ -48,5 +48,5 @@ void init_ldap_debugging(void)
 	if (ret != LBER_OPT_SUCCESS) {
 		DEBUG(10, ("Error setting LBER log print function.\n"));
 	}
-#endif /* HAVE_LDAP */
+#endif /* HAVE_LDAP && HAVE_LBER_LOG_PRINT_FN */
 }
