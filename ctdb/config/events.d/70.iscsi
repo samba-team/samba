@@ -1,0 +1,52 @@
+#!/bin/sh
+# ctdb event script for TGTD based iSCSI
+
+PATH=/bin:/usr/bin:$PATH
+
+. $CTDB_BASE/functions
+loadconfig iscsi
+
+cmd="$1"
+shift
+
+[ "$CTDB_MANAGES_ISCSI" = "yes" ] || exit 0
+
+[ -z "$CTDB_ISCSI_PUBLIC_IP" ] && {
+	echo "No public ip set for iscsi. iscsi disabled"
+	exit 1
+}
+
+[ -z "$CTDB_START_ISCSI_SCRIPT" ] && {
+	echo "No iscsi start script found"
+	exit 1
+}
+
+[ ! -x "$CTDB_START_ISCSI_SCRIPT" ] && {
+	echo "iscsi start script is not executable"
+	exit 1
+}
+
+case $cmd in 
+     takeip)
+	# when we takeover this ip we must start iscsi
+	[ $2 == "$CTDB_ISCSI_PUBLIC_IP" ] && {
+		$CTDB_START_ISCSI_SCRIPT
+	}
+	;;
+
+     releaseip)
+	# when we release this ip we must stop iscsi
+	[ $2 == "$CTDB_ISCSI_PUBLIC_IP" ] && {
+		killall -9 tgtd >/dev/null 2>/dev/null
+	}
+	;;
+
+     shutdown)
+	# shutdown iscsi when ctdb goes down
+	killall -9 tgtd >/dev/null 2>/dev/null
+	;;
+
+esac
+
+# ignore unknown commands
+exit 0
