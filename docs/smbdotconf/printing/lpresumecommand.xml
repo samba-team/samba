@@ -24,7 +24,7 @@
 
     <para>Default: Currently no default value is given 
     to this string, unless the value of the <parameter moreinfo="none">printing</parameter> 
-    parameter is <constant>SYSV</constant>, in which case the default is :</para>
+    parameter is <constant>SYSV</constant>, in which case the default is:</para>
 
     <para><command moreinfo="none">lp -i %p-%j -H resume</command></para>
 
@@ -34,5 +34,5 @@
     <para><command moreinfo="none">qstat -s -j%j -r</command></para>
 </description>
 
-<value type="default">lpresume command = /usr/bin/lpalt %p-%j -p2</value>
+<value type="example">/usr/bin/lpalt %p-%j -p2</value>
 </samba:parameter>
