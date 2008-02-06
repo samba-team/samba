@@ -4720,43 +4720,42 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 }
 
 /*********************************************************************
- _samr_set_groupinfo
-
- update a domain group's comment.
+ _samr_SetGroupInfo
 *********************************************************************/
 
-NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_SET_GROUPINFO *r_u)
+NTSTATUS _samr_SetGroupInfo(pipes_struct *p,
+			    struct samr_SetGroupInfo *r)
 {
 	DOM_SID group_sid;
 	GROUP_MAP map;
-	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
-	NTSTATUS ret;
-	bool result;
+	NTSTATUS status;
+	bool ret;
 	bool can_mod_accounts;
 	DISP_INFO *disp_info = NULL;
 
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted, &disp_info))
+	if (!get_lsa_policy_samr_sid(p, r->in.group_handle, &group_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_SET_INFO, "_samr_set_groupinfo"))) {
-		return r_u->status;
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_GROUP_SET_INFO,
+					    "_samr_SetGroupInfo");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	become_root();
-	result = get_domain_group_from_sid(group_sid, &map);
+	ret = get_domain_group_from_sid(group_sid, &map);
 	unbecome_root();
-	if (!result)
+	if (!ret)
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	ctr=q_u->ctr;
-
-	switch (ctr->switch_value1) {
+	switch (r->in.level) {
 		case 1:
-			unistr2_to_ascii(map.comment, &(ctr->group.info1.uni_acct_desc), sizeof(map.comment));
+			fstrcpy(map.comment, r->in.info->all.description.string);
 			break;
 		case 4:
-			unistr2_to_ascii(map.comment, &(ctr->group.info4.uni_acct_desc), sizeof(map.comment));
+			fstrcpy(map.comment, r->in.info->description.string);
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
@@ -4769,18 +4768,18 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	if ( can_mod_accounts )
 		become_root();
 
-	ret = pdb_update_group_mapping_entry(&map);
+	status = pdb_update_group_mapping_entry(&map);
 
 	if ( can_mod_accounts )
 		unbecome_root();
 
 	/******** End SeAddUsers BLOCK *********/
 
-	if (NT_STATUS_IS_OK(ret)) {
+	if (NT_STATUS_IS_OK(status)) {
 		force_flush_samr_cache(disp_info);
 	}
 
-	return ret;
+	return status;
 }
 
 /*********************************************************************
@@ -5201,16 +5200,6 @@ NTSTATUS _samr_LookupRids(pipes_struct *p,
 
 NTSTATUS _samr_QueryGroupInfo(pipes_struct *p,
 			      struct samr_QueryGroupInfo *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_SetGroupInfo(pipes_struct *p,
-			    struct samr_SetGroupInfo *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
