@@ -882,22 +882,6 @@ typedef struct r_samr_query_groupinfo_info
 } SAMR_R_QUERY_GROUPINFO;
 
 
-/* SAMR_Q_SET_GROUPINFO - SAM Group Info */
-typedef struct q_samr_set_group_info
-{
-	POLICY_HND pol;        /* policy handle */
-	GROUP_INFO_CTR *ctr;
-
-} SAMR_Q_SET_GROUPINFO;
-
-/* SAMR_R_SET_GROUPINFO - SAM Group Info */
-typedef struct r_samr_set_group_info
-{
-	NTSTATUS status;
-
-} SAMR_R_SET_GROUPINFO;
-
-
 /********************************************************/
 
 typedef struct {
