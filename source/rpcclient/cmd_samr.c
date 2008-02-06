@@ -1046,6 +1046,72 @@ static NTSTATUS cmd_samr_enum_als_groups(struct rpc_pipe_client *cli,
 	return result;
 }
 
+/* Enumerate domains */
+
+static NTSTATUS cmd_samr_enum_domains(struct rpc_pipe_client *cli,
+				      TALLOC_CTX *mem_ctx,
+				      int argc, const char **argv)
+{
+	POLICY_HND connect_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 start_idx, size, num_entries, i;
+	uint32 access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	bool got_connect_pol = false;
+	struct samr_SamArray *sam = NULL;
+
+	if ((argc < 1) || (argc > 2)) {
+		printf("Usage: %s [access mask]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	if (argc > 2) {
+		sscanf(argv[2], "%x", &access_mask);
+	}
+
+	/* Get sam policy handle */
+
+	result = try_samr_connects(cli, mem_ctx,
+				   access_mask,
+				   &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	got_connect_pol = true;
+
+	/* Enumerate alias groups */
+
+	start_idx = 0;
+	size = 0xffff;
+
+	do {
+		result = rpccli_samr_EnumDomains(cli, mem_ctx,
+						 &connect_pol,
+						 &start_idx,
+						 &sam,
+						 size,
+						 &num_entries);
+
+		if (NT_STATUS_IS_OK(result) ||
+		    NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES)) {
+
+			for (i = 0; i < num_entries; i++)
+				printf("name:[%s] idx:[0x%x]\n",
+				       sam->entries[i].name.string,
+				       sam->entries[i].idx);
+		}
+	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
+
+ done:
+	if (got_connect_pol) {
+		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
+	}
+
+	return result;
+}
+
+
 /* Query alias membership */
 
 static NTSTATUS cmd_samr_query_aliasmem(struct rpc_pipe_client *cli,
@@ -2485,6 +2551,7 @@ struct cmd_set samr_commands[] = {
 	{ "enumdomusers",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_dom_users,       NULL, PI_SAMR, NULL,	"Enumerate domain users", "" },
 	{ "enumdomgroups",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_dom_groups,       NULL, PI_SAMR, NULL,	"Enumerate domain groups", "" },
 	{ "enumalsgroups",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_als_groups,       NULL, PI_SAMR, NULL,	"Enumerate alias groups",  "" },
+	{ "enumdomains",        RPC_RTYPE_NTSTATUS, cmd_samr_enum_domains,          NULL, PI_SAMR, NULL,	"Enumerate domains",  "" },
 
 	{ "createdomuser",      RPC_RTYPE_NTSTATUS, cmd_samr_create_dom_user,       NULL, PI_SAMR, NULL,	"Create domain user",      "" },
 	{ "createdomgroup",     RPC_RTYPE_NTSTATUS, cmd_samr_create_dom_group,      NULL, PI_SAMR, NULL,	"Create domain group",     "" },
