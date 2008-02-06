@@ -721,44 +721,6 @@ NTSTATUS rpccli_lsa_enum_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/** Open a LSA user handle
- *
- * @param cli Handle on an initialised SMB connection */
-
-NTSTATUS rpccli_lsa_open_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                             POLICY_HND *dom_pol, DOM_SID *sid, uint32 des_access,
-			     POLICY_HND *user_pol)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_OPENACCOUNT q;
-	LSA_R_OPENACCOUNT r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	init_lsa_q_open_account(&q, dom_pol, sid, des_access);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_OPENACCOUNT,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_open_account,
-		lsa_io_r_open_account,
-		NT_STATUS_UNSUCCESSFUL);
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	if (NT_STATUS_IS_OK(result)) {
-		*user_pol = r.pol;
-	}
-
-	return result;
-}
-
 /** Enumerate user privileges
  *
  * @param cli Handle on an initialised SMB connection */
