@@ -585,7 +585,7 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
                                            const char **argv) 
 {
 	POLICY_HND dom_pol;
-	POLICY_HND user_pol;
+	POLICY_HND *user_pol = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 des_access = 0x000f000f;
 	
@@ -607,7 +607,11 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_create_account(cli, mem_ctx, &dom_pol, &sid, des_access, &user_pol);
+	result = rpccli_lsa_CreateAccount(cli, mem_ctx,
+					  &dom_pol,
+					  &sid,
+					  des_access,
+					  &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
