@@ -3490,6 +3490,21 @@ if test x"$with_ldap_support" != x"no"; then
   	AC_DEFINE(HAVE_LDAP_SASL_WRAPPING, 1, [Support for SASL wrapping])
   fi
 
+  #######################################################
+  # if we have LBER_OPT_LOG_PRINT_FN, we can intercept
+  # ldap logging and print it out in the samba logs
+  AC_CACHE_CHECK([for LBER_OPT_LOG_PRINT_FN],
+		 samba_cv_HAVE_LBER_OPT_LOG_PRINT_FN,
+		 [AC_TRY_COMPILE([#include <lber.h>],
+				 [int val = LBER_OPT_LOG_PRINT_FN;],
+				 samba_cv_HAVE_LBER_OPT_LOG_PRINT_FN=yes,
+				 samba_cv_HAVE_LBER_OPT_LOG_PRINT_FN=no)])
+
+  if test x"$samba_cv_HAVE_LBER_OPT_LOG_PRINT_FN" = x"yes"; then
+	AC_DEFINE(HAVE_LBER_LOG_PRINT_FN, 1,
+		  [Support for LDAP/LBER logging interception])
+  fi
+
   ########################################################
   # now see if we can find the ldap libs in standard paths
   AC_CHECK_LIB_EXT(ldap, LDAP_LIBS, ldap_init)
