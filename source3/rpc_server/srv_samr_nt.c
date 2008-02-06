@@ -104,6 +104,15 @@ static const struct generic_mapping ali_generic_mapping = {
 	GENERIC_RIGHTS_ALIAS_ALL_ACCESS};
 
 /*******************************************************************
+ inits a structure.
+********************************************************************/
+
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
+/*******************************************************************
 *******************************************************************/
 
 static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size,
@@ -1684,60 +1693,54 @@ makes a SAMR_R_LOOKUP_RIDS structure.
 ********************************************************************/
 
 static bool make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names,
-				  const char **names, UNIHDR **pp_hdr_name,
-				  UNISTR2 **pp_uni_name)
+				  const char **names,
+				  struct lsa_String **lsa_name_array_p)
 {
-	uint32 i;
-	UNIHDR *hdr_name=NULL;
-	UNISTR2 *uni_name=NULL;
+	struct lsa_String *lsa_name_array = NULL;
+	uint32_t i;
 
-	*pp_uni_name = NULL;
-	*pp_hdr_name = NULL;
+	*lsa_name_array_p = NULL;
 
 	if (num_names != 0) {
-		hdr_name = TALLOC_ZERO_ARRAY(ctx, UNIHDR, num_names);
-		if (hdr_name == NULL)
-			return False;
-
-		uni_name = TALLOC_ZERO_ARRAY(ctx,UNISTR2, num_names);
-		if (uni_name == NULL)
-			return False;
+		lsa_name_array = TALLOC_ZERO_ARRAY(ctx, struct lsa_String, num_names);
+		if (!lsa_name_array) {
+			return false;
+		}
 	}
 
 	for (i = 0; i < num_names; i++) {
 		DEBUG(10, ("names[%d]:%s\n", i, names[i] && *names[i] ? names[i] : ""));
-		init_unistr2(&uni_name[i], names[i], UNI_FLAGS_NONE);
-		init_uni_hdr(&hdr_name[i], &uni_name[i]);
+		init_lsa_String(&lsa_name_array[i], names[i]);
 	}
 
-	*pp_uni_name = uni_name;
-	*pp_hdr_name = hdr_name;
+	*lsa_name_array_p = lsa_name_array;
 
-	return True;
+	return true;
 }
 
 /*******************************************************************
- _samr_lookup_rids
+ _samr_LookupRids
  ********************************************************************/
 
-NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_RIDS *r_u)
+NTSTATUS _samr_LookupRids(pipes_struct *p,
+			  struct samr_LookupRids *r)
 {
+	NTSTATUS status;
 	const char **names;
 	enum lsa_SidType *attrs = NULL;
 	uint32 *wire_attrs = NULL;
-	UNIHDR *hdr_name = NULL;
-	UNISTR2 *uni_name = NULL;
 	DOM_SID pol_sid;
-	int num_rids = (int)q_u->num_rids1;
+	int num_rids = (int)r->in.num_rids;
 	uint32 acc_granted;
 	int i;
+	struct lsa_Strings names_array;
+	struct samr_Ids types_array;
+	struct lsa_String *lsa_names = NULL;
 
-	r_u->status = NT_STATUS_OK;
-
-	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
+	DEBUG(5,("_samr_LookupRids: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid, &acc_granted, NULL))
+	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &pol_sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (num_rids > 1000) {
@@ -1760,28 +1763,36 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	}
 
 	become_root();  /* lookup_sid can require root privs */
-	r_u->status = pdb_lookup_rids(&pol_sid, num_rids, q_u->rid,
-				      names, attrs);
+	status = pdb_lookup_rids(&pol_sid, num_rids, r->in.rids,
+				 names, attrs);
 	unbecome_root();
 
-	if ( NT_STATUS_EQUAL(r_u->status, NT_STATUS_NONE_MAPPED) && (num_rids == 0) ) {
-		r_u->status = NT_STATUS_OK;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NONE_MAPPED) && (num_rids == 0)) {
+		status = NT_STATUS_OK;
 	}
 
-	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, names,
-				  &hdr_name, &uni_name))
+	if (!make_samr_lookup_rids(p->mem_ctx, num_rids, names,
+				   &lsa_names)) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* Convert from enum lsa_SidType to uint32 for wire format. */
 	for (i = 0; i < num_rids; i++) {
 		wire_attrs[i] = (uint32)attrs[i];
 	}
 
-	init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, wire_attrs);
+	names_array.count = num_rids;
+	names_array.names = lsa_names;
 
-	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
+	types_array.count = num_rids;
+	types_array.ids = wire_attrs;
 
-	return r_u->status;
+	*r->out.names = names_array;
+	*r->out.types = types_array;
+
+	DEBUG(5,("_samr_LookupRids: %d\n", __LINE__));
+
+	return status;
 }
 
 /*******************************************************************
@@ -5216,16 +5227,6 @@ NTSTATUS _samr_EnumDomainAliases(pipes_struct *p,
 
 NTSTATUS _samr_LookupNames(pipes_struct *p,
 			   struct samr_LookupNames *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_LookupRids(pipes_struct *p,
-			  struct samr_LookupRids *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
