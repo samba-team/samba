@@ -123,10 +123,10 @@ static NTSTATUS sidmap_primary_domain_sid(struct sidmap_context *sidmap,
 /*
   map a sid to a unix uid
 */
-_PUBLIC_ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap, 
-					struct dom_sid *sid, uid_t *uid)
+_PUBLIC_ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap,
+					const struct dom_sid *sid, uid_t *uid)
 {
-	const char *attrs[] = { "sAMAccountName", "uidNumber", 
+	const char *attrs[] = { "sAMAccountName", "uidNumber",
 				"sAMAccountType", "unixName", NULL };
 	int ret;
 	const char *s;
@@ -137,15 +137,17 @@ _PUBLIC_ NTSTATUS sidmap_sid_to_unixuid(struct sidmap_context *sidmap,
 
 	tmp_ctx = talloc_new(sidmap);
 
-	ret = gendb_search(sidmap->samctx, tmp_ctx, NULL, &res, attrs, 
-			   "objectSid=%s", ldap_encode_ndr_dom_sid(tmp_ctx, sid));
+	ret = gendb_search(sidmap->samctx, tmp_ctx, NULL, &res, attrs,
+			   "objectSid=%s",
+			   ldap_encode_ndr_dom_sid(tmp_ctx, sid));
+
 	if (ret != 1) {
 		goto allocated_sid;
 	}
 
 	/* make sure its a user, not a group */
 	if (!is_user_account(res[0])) {
-		DEBUG(0,("sid_to_unixuid: sid %s is not an account!\n", 
+		DEBUG(0,("sid_to_unixuid: sid %s is not an account!\n",
 			 dom_sid_string(tmp_ctx, sid)));
 		talloc_free(tmp_ctx);
 		return NT_STATUS_INVALID_SID;
@@ -261,9 +263,9 @@ _PUBLIC_ bool sidmap_sid_is_group(struct sidmap_context *sidmap, struct dom_sid 
   map a sid to a unix gid
 */
 _PUBLIC_ NTSTATUS sidmap_sid_to_unixgid(struct sidmap_context *sidmap,
-					struct dom_sid *sid, gid_t *gid)
+					const struct dom_sid *sid, gid_t *gid)
 {
-	const char *attrs[] = { "sAMAccountName", "gidNumber", 
+	const char *attrs[] = { "sAMAccountName", "gidNumber",
 				"unixName", "sAMAccountType", NULL };
 	int ret;
 	const char *s;
@@ -355,7 +357,7 @@ allocated_sid:
 */
 _PUBLIC_ NTSTATUS sidmap_uid_to_sid(struct sidmap_context *sidmap,
 				    TALLOC_CTX *mem_ctx,
-				    uid_t uid, struct dom_sid **sid)
+				    const uid_t uid, struct dom_sid **sid)
 {
 	const char *attrs[] = { "sAMAccountName", "objectSid", "sAMAccountType", NULL };
 	int ret, i;
@@ -453,7 +455,7 @@ allocate_sid:
 */
 _PUBLIC_ NTSTATUS sidmap_gid_to_sid(struct sidmap_context *sidmap,
 				    TALLOC_CTX *mem_ctx,
-				    gid_t gid, struct dom_sid **sid)
+				    const gid_t gid, struct dom_sid **sid)
 {
 	const char *attrs[] = { "sAMAccountName", "objectSid", "sAMAccountType", NULL };
 	int ret, i;
