@@ -721,49 +721,6 @@ NTSTATUS rpccli_lsa_enum_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/** Create a LSA user handle
- *
- * @param cli Handle on an initialised SMB connection
- *
- * FIXME: The code is actually identical to open account
- * TODO: Check and code what the function should exactly do
- *
- * */
-
-NTSTATUS rpccli_lsa_create_account(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                             POLICY_HND *dom_pol, DOM_SID *sid, uint32 desired_access,
-			     POLICY_HND *user_pol)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_CREATEACCOUNT q;
-	LSA_R_CREATEACCOUNT r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	init_lsa_q_create_account(&q, dom_pol, sid, desired_access);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_CREATEACCOUNT,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_create_account,
-		lsa_io_r_create_account,
-		NT_STATUS_UNSUCCESSFUL);
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	if (NT_STATUS_IS_OK(result)) {
-		*user_pol = r.pol;
-	}
-
-	return result;
-}
-
 /** Open a LSA user handle
  *
  * @param cli Handle on an initialised SMB connection */
