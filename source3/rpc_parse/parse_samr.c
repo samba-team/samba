@@ -2459,64 +2459,6 @@ bool samr_io_r_query_aliasinfo(const char *desc, SAMR_R_QUERY_ALIASINFO *out,
 }
 
 /*******************************************************************
-inits a SAMR_Q_SET_ALIASINFO structure.
-********************************************************************/
-
-void init_samr_q_set_aliasinfo(SAMR_Q_SET_ALIASINFO * q_u,
-			       POLICY_HND *hnd, ALIAS_INFO_CTR * ctr)
-{
-	DEBUG(5, ("init_samr_q_set_aliasinfo\n"));
-
-	q_u->alias_pol = *hnd;
-	q_u->ctr = *ctr;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_q_set_aliasinfo(const char *desc, SAMR_Q_SET_ALIASINFO * q_u,
-			     prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_q_set_aliasinfo");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("alias_pol", &q_u->alias_pol, ps, depth))
-		return False;
-	if(!samr_alias_info_ctr("ctr", ps, depth, &q_u->ctr))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_r_set_aliasinfo(const char *desc, SAMR_R_SET_ALIASINFO * r_u,
-			     prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_r_set_aliasinfo");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 inits a SAMR_Q_LOOKUP_RIDS structure.
 ********************************************************************/
 
