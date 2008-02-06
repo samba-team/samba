@@ -1350,7 +1350,7 @@ struct netr_NETRLOGONSENDTOSAM {
 struct netr_DsRAddressToSitenamesW {
 	struct {
 		const char *server_name;/* [unique,charset(UTF16)] */
-		uint32_t count;/* [range(0 32000)] */
+		uint32_t count;/* [range(0,32000)] */
 		struct netr_DsRAddress *addresses;/* [ref,size_is(count)] */
 	} in;
 
@@ -1405,7 +1405,7 @@ struct netr_NetrEnumerateTrustedDomainsEx {
 struct netr_DsRAddressToSitenamesExW {
 	struct {
 		const char *server_name;/* [unique,charset(UTF16)] */
-		uint32_t count;/* [range(0 32000)] */
+		uint32_t count;/* [range(0,32000)] */
 		struct netr_DsRAddress *addresses;/* [ref,size_is(count)] */
 	} in;
 

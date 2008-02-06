@@ -324,7 +324,7 @@ struct winbindd_domain *find_auth_domain(struct winbindd_cli_state *state,
 	if (IS_DC) {
 		domain = find_domain_from_name_noinit(domain_name);
 		if (domain == NULL) {
-			DEBUG(3, ("Authentication for domain [%s] refused"
+			DEBUG(3, ("Authentication for domain [%s] refused "
 				  "as it is not a trusted domain\n", 
 				  domain_name));
 		}
@@ -370,7 +370,7 @@ static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
 {
 	struct winbindd_methods *methods;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	SAM_UNK_INFO_1 password_policy;
+	struct samr_DomInfo1 password_policy;
 
 	if ( !winbindd_can_contact_domain( domain ) ) {
 		DEBUG(5,("fillup_password_policy: No inbound trust to "
@@ -386,28 +386,28 @@ static NTSTATUS fillup_password_policy(struct winbindd_domain *domain,
 	}
 
 	state->response.data.auth.policy.min_length_password =
-		password_policy.min_length_password;
+		password_policy.min_password_length;
 	state->response.data.auth.policy.password_history =
-		password_policy.password_history;
+		password_policy.password_history_length;
 	state->response.data.auth.policy.password_properties =
 		password_policy.password_properties;
 	state->response.data.auth.policy.expire	=
-		nt_time_to_unix_abs(&(password_policy.expire));
-	state->response.data.auth.policy.min_passwordage = 
-		nt_time_to_unix_abs(&(password_policy.min_passwordage));
+		nt_time_to_unix_abs((NTTIME *)&(password_policy.max_password_age));
+	state->response.data.auth.policy.min_passwordage =
+		nt_time_to_unix_abs((NTTIME *)&(password_policy.min_password_age));
 
 	return NT_STATUS_OK;
 }
 
 static NTSTATUS get_max_bad_attempts_from_lockout_policy(struct winbindd_domain *domain, 
 							 TALLOC_CTX *mem_ctx, 
-							 uint16 *max_allowed_bad_attempts)
+							 uint16 *lockout_threshold)
 {
 	struct winbindd_methods *methods;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	SAM_UNK_INFO_12 lockout_policy;
+	struct samr_DomInfo12 lockout_policy;
 
-	*max_allowed_bad_attempts = 0;
+	*lockout_threshold = 0;
 
 	methods = domain->methods;
 
@@ -416,7 +416,7 @@ static NTSTATUS get_max_bad_attempts_from_lockout_policy(struct winbindd_domain 
 		return status;
 	}
 
-	*max_allowed_bad_attempts = lockout_policy.bad_attempt_lockout;
+	*lockout_threshold = lockout_policy.lockout_threshold;
 
 	return NT_STATUS_OK;
 }
@@ -427,7 +427,7 @@ static NTSTATUS get_pwd_properties(struct winbindd_domain *domain,
 {
 	struct winbindd_methods *methods;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	SAM_UNK_INFO_1 password_policy;
+	struct samr_DomInfo1 password_policy;
 
 	*password_properties = 0;
 
@@ -1339,10 +1339,11 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		status_tmp = rpccli_samr_open_user(samr_pipe, state->mem_ctx, 
-						   &samr_domain_handle,
-						   MAXIMUM_ALLOWED_ACCESS,
-						   my_info3->user_rid, &user_pol);
+		status_tmp = rpccli_samr_OpenUser(samr_pipe, state->mem_ctx,
+						  &samr_domain_handle,
+						  MAXIMUM_ALLOWED_ACCESS,
+						  my_info3->user_rid,
+						  &user_pol);
 
 		if (!NT_STATUS_IS_OK(status_tmp)) {
 			DEBUG(3, ("could not open user handle on SAMR pipe: %s\n",

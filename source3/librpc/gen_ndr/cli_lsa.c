@@ -135,7 +135,7 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  struct policy_handle *handle,
 				  uint32_t sec_info,
-				  struct sec_desc_buf *sdbuf)
+				  struct sec_desc_buf **sdbuf)
 {
 	struct lsa_QuerySecurity r;
 	NTSTATUS status;
@@ -168,21 +168,25 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (sdbuf && r.out.sdbuf) {
-		*sdbuf = *r.out.sdbuf;
-	}
+	*sdbuf = *r.out.sdbuf;
 
 	/* Return result */
 	return r.out.result;
 }
 
 NTSTATUS rpccli_lsa_SetSecObj(struct rpc_pipe_client *cli,
-			      TALLOC_CTX *mem_ctx)
+			      TALLOC_CTX *mem_ctx,
+			      struct policy_handle *handle,
+			      uint32_t sec_info,
+			      struct sec_desc_buf *sdbuf)
 {
 	struct lsa_SetSecObj r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.sec_info = sec_info;
+	r.in.sdbuf = sdbuf;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_SetSecObj, &r);
@@ -1488,12 +1492,14 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli,
-				 TALLOC_CTX *mem_ctx)
+				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle **handle)
 {
 	struct lsa_DeleteObject r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_DeleteObject, &r);
@@ -1519,6 +1525,7 @@ NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*handle = *r.out.handle;
 
 	/* Return result */
 	return r.out.result;

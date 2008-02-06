@@ -516,15 +516,16 @@ static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 
 
 /***************************************************************************
- _lsa_open_policy2.
+ _lsa_OpenPolicy2
  ***************************************************************************/
 
-NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL2 *r_u)
+NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
+			  struct lsa_OpenPolicy2 *r)
 {
 	struct lsa_info *info;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
-	uint32 des_access=q_u->des_access;
+	uint32 des_access = r->in.access_mask;
 	uint32 acc_granted;
 	NTSTATUS status;
 
@@ -558,22 +559,23 @@ NTSTATUS _lsa_open_policy2(pipes_struct *p, LSA_Q_OPEN_POL2 *q_u, LSA_R_OPEN_POL
 	info->access = acc_granted;
 
 	/* set up the LSA QUERY INFO response */
-	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.handle, free_lsa_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
 }
 
 /***************************************************************************
- _lsa_open_policy
+ _lsa_OpenPolicy
  ***************************************************************************/
 
-NTSTATUS _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *r_u)
+NTSTATUS _lsa_OpenPolicy(pipes_struct *p,
+			 struct lsa_OpenPolicy *r)
 {
 	struct lsa_info *info;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
-	uint32 des_access=q_u->des_access;
+	uint32 des_access= r->in.access_mask;
 	uint32 acc_granted;
 	NTSTATUS status;
 
@@ -603,7 +605,7 @@ NTSTATUS _lsa_open_policy(pipes_struct *p, LSA_Q_OPEN_POL *q_u, LSA_R_OPEN_POL *
 	info->access = acc_granted;
 
 	/* set up the LSA QUERY INFO response */
-	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.handle, free_lsa_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -1394,9 +1396,11 @@ NTSTATUS _lsa_SetSecret(pipes_struct *p, struct lsa_SetSecret *r)
 }
 
 /***************************************************************************
+ _lsa_DeleteObject
  ***************************************************************************/
 
-NTSTATUS _lsa_delete_object(pipes_struct *p, LSA_Q_DELETE_OBJECT *q_u, LSA_R_DELETE_OBJECT *r_u)
+NTSTATUS _lsa_DeleteObject(pipes_struct *p,
+			   struct lsa_DeleteObject *r)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -1864,20 +1868,19 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 }
 
 /***************************************************************************
- For a given SID, remove some privileges.
+ _lsa_QuerySecurity
  ***************************************************************************/
 
-NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUERY_SEC_OBJ *r_u)
+NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
+			    struct lsa_QuerySecurity *r)
 {
 	struct lsa_info *handle=NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
 	NTSTATUS status;
 
-	r_u->status = NT_STATUS_OK;
-
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
@@ -1885,7 +1888,7 @@ NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUER
 		return NT_STATUS_ACCESS_DENIED;
 
 
-	switch (q_u->sec_info) {
+	switch (r->in.sec_info) {
 	case 1:
 		/* SD contains only the owner */
 
@@ -1894,7 +1897,7 @@ NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUER
 			return NT_STATUS_NO_MEMORY;
 
 
-		if((r_u->buf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
+		if((*r->out.sdbuf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
 			return NT_STATUS_NO_MEMORY;
 		break;
 	case 4:
@@ -1904,16 +1907,14 @@ NTSTATUS _lsa_query_secobj(pipes_struct *p, LSA_Q_QUERY_SEC_OBJ *q_u, LSA_R_QUER
 		if(!NT_STATUS_IS_OK(status))
 			return NT_STATUS_NO_MEMORY;
 
-		if((r_u->buf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
+		if((*r->out.sdbuf = make_sec_desc_buf(p->mem_ctx, sd_size, psd)) == NULL)
 			return NT_STATUS_NO_MEMORY;
 		break;
 	default:
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	r_u->ptr=1;
-
-	return r_u->status;
+	return status;
 }
 
 #if 0 	/* AD DC work in ongoing in Samba 4 */
@@ -2193,12 +2194,6 @@ NTSTATUS _lsa_EnumPrivs(pipes_struct *p, struct lsa_EnumPrivs *r)
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS _lsa_QuerySecurity(pipes_struct *p, struct lsa_QuerySecurity *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 NTSTATUS _lsa_SetSecObj(pipes_struct *p, struct lsa_SetSecObj *r)
 {
 	p->rng_fault_state = True;
@@ -2206,12 +2201,6 @@ NTSTATUS _lsa_SetSecObj(pipes_struct *p, struct lsa_SetSecObj *r)
 }
 
 NTSTATUS _lsa_ChangePassword(pipes_struct *p, struct lsa_ChangePassword *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_OpenPolicy(pipes_struct *p, struct lsa_OpenPolicy *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -2349,12 +2338,6 @@ NTSTATUS _lsa_LookupPrivDisplayName(pipes_struct *p, struct lsa_LookupPrivDispla
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS _lsa_DeleteObject(pipes_struct *p, struct lsa_DeleteObject *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 NTSTATUS _lsa_EnumAccountsWithUserRight(pipes_struct *p, struct lsa_EnumAccountsWithUserRight *r)
 {
 	p->rng_fault_state = True;
@@ -2404,12 +2387,6 @@ NTSTATUS _lsa_StorePrivateData(pipes_struct *p, struct lsa_StorePrivateData *r)
 }
 
 NTSTATUS _lsa_RetrievePrivateData(pipes_struct *p, struct lsa_RetrievePrivateData *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_OpenPolicy2(pipes_struct *p, struct lsa_OpenPolicy2 *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;

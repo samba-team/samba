@@ -9,14 +9,14 @@
 NTSTATUS rpccli_eventlog_ClearEventLogW(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					struct policy_handle *handle,
-					struct lsa_String *unknown)
+					struct lsa_String *backupfile)
 {
 	struct eventlog_ClearEventLogW r;
 	NTSTATUS status;
 
 	/* In parameters */
 	r.in.handle = handle;
-	r.in.unknown = unknown;
+	r.in.backupfile = backupfile;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_ClearEventLogW, &r);
@@ -203,12 +203,15 @@ NTSTATUS rpccli_eventlog_GetNumRecords(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_eventlog_GetOldestRecord(struct rpc_pipe_client *cli,
-					 TALLOC_CTX *mem_ctx)
+					 TALLOC_CTX *mem_ctx,
+					 struct policy_handle *handle,
+					 uint32_t *oldest_entry)
 {
 	struct eventlog_GetOldestRecord r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_GetOldestRecord, &r);
@@ -234,6 +237,7 @@ NTSTATUS rpccli_eventlog_GetOldestRecord(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*oldest_entry = *r.out.oldest_entry;
 
 	/* Return result */
 	return r.out.result;
@@ -279,8 +283,8 @@ NTSTATUS rpccli_eventlog_ChangeNotify(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_eventlog_OpenEventLogW(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct eventlog_OpenUnknown0 *unknown0,
-				       struct lsa_String logname,
-				       struct lsa_String servername,
+				       struct lsa_String *logname,
+				       struct lsa_String *servername,
 				       uint32_t unknown2,
 				       uint32_t unknown3,
 				       struct policy_handle *handle)

@@ -10,7 +10,6 @@ import "security.idl", "svcctl.idl";
   version(3.0),
   endpoint("ncacn_np:[\\pipe\\srvsvc]", "ncacn_ip_tcp:", "ncalrpc:"),
   pointer_default(unique),
-  pointer_default_top(unique),
   helpstring("Server Service")
 ] interface srvsvc
 {
@@ -56,7 +55,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x00 */
 	WERROR srvsvc_NetCharDevEnum(
-		[in]   [string,charset(UTF16)] uint16 *server_unc, 
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in,out,ref]   uint32 *level,
 		[in,out,ref,switch_is(*level)]   srvsvc_NetCharDevCtr *ctr,
 		[in]   uint32 max_buffer,
@@ -67,7 +66,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x01 */
 	WERROR srvsvc_NetCharDevGetInfo(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique] [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 device_name[],
 		[in]   uint32 level,
 		[out,ref,switch_is(level)]   srvsvc_NetCharDevInfo *info
@@ -76,7 +75,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x02 */
 	WERROR srvsvc_NetCharDevControl(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique] [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 device_name[],
 		[in]   uint32 opcode
 		);
@@ -121,19 +120,19 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x03 */
 	WERROR srvsvc_NetCharDevQEnum(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]   [string,charset(UTF16)] uint16 *user,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *user,
 		[in,out,ref]   uint32 *level,
 		[in,out,switch_is(*level),ref]   srvsvc_NetCharDevQCtr *ctr,
 		[in]   uint32 max_buffer,
 		[out,ref]   uint32 *totalentries,
-		[in,out]   uint32 *resume_handle
+		[in,out,unique]   uint32 *resume_handle
 		);
 
 	/******************/
 	/* Function: 0x04 */
 	WERROR srvsvc_NetCharDevQGetInfo(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique] [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 queue_name[],
 		[in]   [string,charset(UTF16)] uint16 user[],
 		[in]   uint32 level,
@@ -143,24 +142,24 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x05 */
 	WERROR srvsvc_NetCharDevQSetInfo(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique] [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 queue_name[],
 		[in]   uint32 level,
 		[in,switch_is(level)]   srvsvc_NetCharDevQInfo info,
-		[in,out]   uint32 *parm_error
+		[in,out,unique]   uint32 *parm_error
 		);
 
 	/******************/
 	/* Function: 0x06 */
 	WERROR srvsvc_NetCharDevQPurge(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique] [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 queue_name[]
 		);
 
 	/******************/
 	/* Function: 0x07 */
 	WERROR srvsvc_NetCharDevQPurgeSelf(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique] [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 queue_name[],
 		[in]   [string,charset(UTF16)] uint16 computer_name[]
 		);
@@ -201,8 +200,8 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x08 */
 	WERROR srvsvc_NetConnEnum(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]   [string,charset(UTF16)] uint16 *path,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *path,
 		[in,out,ref]   uint32 *level,
 		[in,out,switch_is(*level),ref]   srvsvc_NetConnCtr *ctr,
 		[in]   uint32 max_buffer,
@@ -250,9 +249,9 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x09 */
 	WERROR srvsvc_NetFileEnum(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]   [string,charset(UTF16)] uint16 *path,
-		[in]   [string,charset(UTF16)] uint16 *user,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *path,
+		[in,unique]   [string,charset(UTF16)] uint16 *user,
 		[in,out,ref]   uint32 *level,
 		[in,out,switch_is(*level),ref]   srvsvc_NetFileCtr *ctr,
 		[in]   uint32 max_buffer,
@@ -263,7 +262,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x0a */
 	WERROR srvsvc_NetFileGetInfo(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   uint32 fid,
 		[in]   uint32 level,
 		[out,switch_is(level),ref]   srvsvc_NetFileInfo *info
@@ -272,7 +271,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x0b */
 	WERROR srvsvc_NetFileClose(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   uint32 fid	
 		);
 
@@ -357,9 +356,9 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x0c */
 	WERROR srvsvc_NetSessEnum(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]   [string,charset(UTF16)] uint16 *client,
-		[in]   [string,charset(UTF16)] uint16 *user,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *client,
+		[in,unique]   [string,charset(UTF16)] uint16 *user,
 		[in,out,ref]   uint32 *level,
 		[in,out,switch_is(*level),ref]   srvsvc_NetSessCtr *ctr,
 		[in]   uint32 max_buffer,
@@ -370,9 +369,9 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x0d */
 	WERROR srvsvc_NetSessDel(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]   [string,charset(UTF16)] uint16 *client,
-		[in]   [string,charset(UTF16)] uint16 *user
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *client,
+		[in,unique]   [string,charset(UTF16)] uint16 *user
 		);
 
 /**************************/
@@ -546,27 +545,27 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x0e */
 	WERROR srvsvc_NetShareAdd(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   uint32 level,
 		[in,switch_is(level)] srvsvc_NetShareInfo info,
-		[in,out]   uint32 *parm_error
+		[in,out,unique]   uint32 *parm_error
 		);
 
 	/******************/
 	/* Function: 0x0f */
 	WERROR srvsvc_NetShareEnumAll (
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in,out,ref]   uint32 *level,
 		[in,out,ref,switch_is(*level)] srvsvc_NetShareCtr *ctr,
 		[in]   uint32 max_buffer,
 		[out,ref]  uint32 *totalentries,
-		[in,out]   uint32 *resume_handle
+		[in,out,unique]   uint32 *resume_handle
 		);
 
 	/******************/
 	/* Function: 0x10 */
 	WERROR srvsvc_NetShareGetInfo(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 share_name[],
 		[in]   uint32 level,
 		[out,ref,switch_is(level)] srvsvc_NetShareInfo *info
@@ -575,17 +574,17 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x11 */
 	WERROR srvsvc_NetShareSetInfo(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 share_name[],
 		[in]   uint32 level,
 		[in,switch_is(level)] srvsvc_NetShareInfo info,
-		[in,out]   uint32 *parm_error
+		[in,out,unique]   uint32 *parm_error
 		);
 
 	/******************/
 	/* Function: 0x12 */
 	WERROR srvsvc_NetShareDel(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 share_name[],
 		[in]   uint32 reserved
 		);
@@ -593,7 +592,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x13 */
 	WERROR srvsvc_NetShareDelSticky(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 share_name[],
 		[in]   uint32 reserved
 		);
@@ -601,7 +600,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x14 */
 	WERROR srvsvc_NetShareCheck(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 device_name[],
 		[out,ref]  srvsvc_ShareType *type
 		);
@@ -1111,7 +1110,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x15 */
 	WERROR srvsvc_NetSrvGetInfo(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   uint32 level,
 		[out,ref,switch_is(level)] srvsvc_NetSrvInfo *info
 		);
@@ -1119,10 +1118,10 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x16 */
 	WERROR srvsvc_NetSrvSetInfo(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   uint32 level,
 		[in,switch_is(level)] srvsvc_NetSrvInfo info,
-		[in,out]   uint32 *parm_error
+		[in,out,unique]   uint32 *parm_error
 		);
 
 /**************************/
@@ -1140,12 +1139,12 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x17 */
 	WERROR srvsvc_NetDiskEnum(
-		[in]      [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]      [string,charset(UTF16)] uint16 *server_unc,
 		[in]      uint32 level,
 		[in,out,ref]  srvsvc_NetDiskInfo *info,
 		[in]      uint32 maxlen,
 		[out,ref]     uint32 *totalentries,
-		[in,out]  uint32 *resume_handle
+		[in,out,unique]  uint32 *resume_handle
 		);
 
 /**************************/
@@ -1174,8 +1173,8 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x18 */
 	WERROR srvsvc_NetServerStatisticsGet(
-		[in]      [string,charset(UTF16)] uint16 *server_unc,
-		[in]      [string,charset(UTF16)] uint16 *service,
+		[in,unique]      [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]      [string,charset(UTF16)] uint16 *service,
 		[in]      uint32 level,
 		[in]      uint32 options,
 		[out,ref]     srvsvc_Statistics *stats
@@ -1195,7 +1194,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x19 */
 	WERROR srvsvc_NetTransportAdd(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in] uint32 level,
 		[in,switch_is(level)]   srvsvc_NetTransportInfo info
 		);
@@ -1262,7 +1261,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x1a */
 	WERROR srvsvc_NetTransportEnum(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in,out,ref] uint32 *level,
 		[in,out,ref,switch_is(*level)]   srvsvc_NetTransportCtr *transports,
 		[in]   uint32 max_buffer,
@@ -1273,7 +1272,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x1b */
 	WERROR srvsvc_NetTransportDel(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]	uint32 unknown,
 		[in] 	srvsvc_NetTransportInfo0 transport
 		);
@@ -1299,8 +1298,8 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x1c */
 	WERROR srvsvc_NetRemoteTOD(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[out]   srvsvc_NetRemoteTODInfo *info
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[out,unique]   srvsvc_NetRemoteTODInfo *info
 		);
 
 /**************************/
@@ -1309,8 +1308,8 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x1d */
 	WERROR srvsvc_NetSetServiceBits(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]   [string,charset(UTF16)] uint16 *transport,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *transport,
 		[in]   uint32 servicebits,
 		[in]   uint32 updateimmediately
 		);
@@ -1321,7 +1320,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x1e */
 	WERROR srvsvc_NetPathType(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 path[],
 		[in]   uint32 pathflags,
 		[out,ref]   uint32 *pathtype
@@ -1330,7 +1329,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x1f */
 	WERROR srvsvc_NetPathCanonicalize(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 path[],
 		[out]  [size_is(maxbuf)] uint8 can_path[],
 		[in]   uint32 maxbuf,
@@ -1342,7 +1341,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x20 */
 	WERROR srvsvc_NetPathCompare(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 path1[],
 		[in]   [string,charset(UTF16)] uint16 path2[],
 		[in]    uint32 pathtype,
@@ -1355,7 +1354,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x21 */
 	WERROR srvsvc_NetNameValidate(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 name[],
 		[in]    uint32 name_type,
 		[in]    uint32 flags
@@ -1369,7 +1368,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x23 */
 	WERROR srvsvc_NetPRNameCompare(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in]   [string,charset(UTF16)] uint16 name1[],
 		[in]   [string,charset(UTF16)] uint16 name2[],
 		[in]    uint32 name_type,
@@ -1384,7 +1383,7 @@ import "security.idl", "svcctl.idl";
 	/* Note, there must be some way to return entries read vs 
 	   total entries ... */
 	WERROR srvsvc_NetShareEnum(
-		[in]       [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]       [string,charset(UTF16)] uint16 *server_unc,
 	 	[in,out,ref]   uint32 *level,
 		[in,out,ref,switch_is(*level)]   srvsvc_NetShareCtr *ctr,
 		[in]       uint32 max_buffer,
@@ -1395,33 +1394,33 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x25 */
 	WERROR srvsvc_NetShareDelStart(
-		[in]       [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]       [string,charset(UTF16)] uint16 *server_unc,
 		[in]       [string,charset(UTF16)] uint16 share[],
 		[in]       uint32 reserved,
-		[out] policy_handle *hnd
+		[out,unique] policy_handle *hnd
 		);
 
 	/******************/
 	/* Function: 0x26 */
 	WERROR srvsvc_NetShareDelCommit(
-		[in, out] policy_handle *hnd
+		[in, out,unique] policy_handle *hnd
 		);
 
 	/******************/
 	/* Function: 0x27 */
 	WERROR srvsvc_NetGetFileSecurity(
-		[in]       [string,charset(UTF16)] uint16 *server_unc,
-		[in]       [string,charset(UTF16)] uint16 *share,
+		[in,unique]       [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]       [string,charset(UTF16)] uint16 *share,
 		[in]       [string,charset(UTF16)] uint16 file[],
 		[in]       security_secinfo securityinformation,
-		[out]	   sec_desc_buf *sd_buf
+		[out,unique]	   sec_desc_buf *sd_buf
 		);
 
 	/******************/
 	/* Function: 0x28 */
 	WERROR srvsvc_NetSetFileSecurity(
-		[in]       [string,charset(UTF16)] uint16 *server_unc,
-		[in]       [string,charset(UTF16)] uint16 *share,
+		[in,unique]       [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]       [string,charset(UTF16)] uint16 *share,
 		[in]       [string,charset(UTF16)] uint16 file[],
 		[in]       security_secinfo securityinformation,
 		[in]	   sec_desc_buf sd_buf
@@ -1439,7 +1438,7 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x29 */
 	WERROR srvsvc_NetServerTransportAddEx(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
 		[in] uint32 level,
 		[in,switch_is(level)]   srvsvc_NetTransportInfo info
 		);
@@ -1447,9 +1446,9 @@ import "security.idl", "svcctl.idl";
 	/******************/
 	/* Function: 0x2a */
 	WERROR srvsvc_NetServerSetServiceBitsEx(
-		[in]   [string,charset(UTF16)] uint16 *server_unc,
-		[in]   [string,charset(UTF16)] uint16 *emulated_server_unc,
-		[in]   [string,charset(UTF16)] uint16 *transport,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *emulated_server_unc,
+		[in,unique]   [string,charset(UTF16)] uint16 *transport,
 		[in]   uint32 servicebitsofinterest,
 		[in]   uint32 servicebits,
 		[in]   uint32 updateimmediately

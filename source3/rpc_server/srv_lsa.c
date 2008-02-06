@@ -52,29 +52,7 @@ static bool proxy_lsa_call(pipes_struct *p, uint8 opnum)
 
 static bool api_lsa_open_policy2(pipes_struct *p)
 {
-	LSA_Q_OPEN_POL2 q_u;
-	LSA_R_OPEN_POL2 r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the server, object attributes and desired access flag...*/
-	if(!lsa_io_q_open_pol2("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_open_policy2: unable to unmarshall LSA_Q_OPEN_POL2.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_open_policy2(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_open_pol2("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_open_policy2: unable to marshall LSA_R_OPEN_POL2.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_OPENPOLICY2);
 }
 
 /***************************************************************************
@@ -83,29 +61,7 @@ api_lsa_open_policy
 
 static bool api_lsa_open_policy(pipes_struct *p)
 {
-	LSA_Q_OPEN_POL q_u;
-	LSA_R_OPEN_POL r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the server, object attributes and desired access flag...*/
-	if(!lsa_io_q_open_pol("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_open_policy: unable to unmarshall LSA_Q_OPEN_POL.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_open_policy(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_open_pol("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_open_policy: unable to marshall LSA_R_OPEN_POL.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_OPENPOLICY);
 }
 
 /***************************************************************************
@@ -591,29 +547,7 @@ static bool api_lsa_removeprivs(pipes_struct *p)
 
 static bool api_lsa_query_secobj(pipes_struct *p)
 {
-	LSA_Q_QUERY_SEC_OBJ q_u;
-	LSA_R_QUERY_SEC_OBJ r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_query_sec_obj("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_query_secobj: failed to unmarshall LSA_Q_QUERY_SEC_OBJ.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_query_secobj(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_query_sec_obj("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_query_secobj: Failed to marshall LSA_R_QUERY_SEC_OBJ.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_QUERYSECURITY);
 }
 
 /***************************************************************************
@@ -777,29 +711,7 @@ static bool api_lsa_set_secret(pipes_struct *p)
 
 static bool api_lsa_delete_object(pipes_struct *p)
 {
-	LSA_Q_DELETE_OBJECT q_u;
-	LSA_R_DELETE_OBJECT r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_delete_object("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_delete_object: failed to unmarshall LSA_Q_DELETE_OBJECT.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_delete_object(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_delete_object("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_delete_object: Failed to marshall LSA_R_DELETE_OBJECT.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_DELETEOBJECT);
 }
 
 /***************************************************************************

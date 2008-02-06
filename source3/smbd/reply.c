@@ -3492,17 +3492,11 @@ void reply_writebraw(struct smb_request *req)
 	}
 
 	/* Now read the raw data into the buffer and write it */
-	if (read_smb_length(smbd_server_fd(),buf,
-			SMB_SECONDARY_WAIT, get_srv_read_error()) == -1) {
+	status = read_smb_length(smbd_server_fd(), buf, SMB_SECONDARY_WAIT,
+				 &numtowrite);
+	if (!NT_STATUS_IS_OK(status)) {
 		exit_server_cleanly("secondary writebraw failed");
 	}
-
-	/*
-	 * Even though this is not an smb message,
-	 * smb_len returns the generic length of a packet.
-	 */
-
-	numtowrite = smb_len(buf);
 
 	/* Set up outbuf to return the correct size */
 	reply_outbuf(req, 1, 0);
@@ -3522,11 +3516,12 @@ void reply_writebraw(struct smb_request *req)
 				(int)tcount,(int)nwritten,(int)numtowrite));
 		}
 
-		if (read_data(smbd_server_fd(), buf+4, numtowrite,get_srv_read_error())
-					!= numtowrite ) {
+		status = read_data(smbd_server_fd(), buf+4, numtowrite);
+
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("reply_writebraw: Oversize secondary write "
-				"raw read failed (%s). Terminating\n",
-				strerror(errno) ));
+				 "raw read failed (%s). Terminating\n",
+				 nt_errstr(status)));
 			exit_server_cleanly("secondary writebraw failed");
 		}
 

@@ -60,51 +60,6 @@ typedef struct elog_tdb {
 
 /***********************************/
 
-typedef struct {
-	uint16 unknown1;
-	uint16 unknown2;
-} EVENTLOG_OPEN_UNKNOWN0;
-
-typedef struct {
-	EVENTLOG_OPEN_UNKNOWN0 *unknown0;
-	UNISTR4 logname;
-	UNISTR4 servername;
-	uint32 unknown1;
-	uint32 unknown2;
-} EVENTLOG_Q_OPEN_EVENTLOG;
-
-typedef struct {
-	POLICY_HND handle;
-	NTSTATUS status;
-} EVENTLOG_R_OPEN_EVENTLOG;
-
-
-/***********************************/
-
-typedef struct {
-	POLICY_HND handle;
-} EVENTLOG_Q_GET_NUM_RECORDS;
-
-typedef struct {
-	uint32 num_records;
-	NTSTATUS status;
-} EVENTLOG_R_GET_NUM_RECORDS;
-
-
-/***********************************/
-
-typedef struct {
-	POLICY_HND handle;
-} EVENTLOG_Q_GET_OLDEST_ENTRY;
-
-typedef struct {
-	uint32 oldest_entry;
-	NTSTATUS status;
-} EVENTLOG_R_GET_OLDEST_ENTRY;
-
-
-/***********************************/
-
 typedef struct 
 {
 	POLICY_HND handle;
@@ -164,17 +119,5 @@ typedef struct {
 	uint32 real_size;
 	NTSTATUS status;
 } EVENTLOG_R_READ_EVENTLOG;
-
-
-/***********************************/
-
-typedef struct {
-	POLICY_HND handle;
-	UNISTR4 backupfile;
-} EVENTLOG_Q_CLEAR_EVENTLOG;
-
-typedef struct {
-	NTSTATUS status;
-} EVENTLOG_R_CLEAR_EVENTLOG;
 
 #endif /* _RPC_EVENTLOG_H */

@@ -418,6 +418,13 @@ static bool api_eventlog_GetOldestRecord(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(eventlog_GetOldestRecord, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.oldest_entry = talloc_zero(r, uint32_t);
+	if (r->out.oldest_entry == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _eventlog_GetOldestRecord(p, r);
 
 	if (p->rng_fault_state) {

@@ -136,7 +136,7 @@ NTSTATUS rpccli_samr_QuerySecurity(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *handle,
 				   uint32_t sec_info,
-				   struct sec_desc_buf *sdbuf)
+				   struct sec_desc_buf **sdbuf)
 {
 	struct samr_QuerySecurity r;
 	NTSTATUS status;
@@ -218,7 +218,7 @@ NTSTATUS rpccli_samr_LookupDomain(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  struct policy_handle *connect_handle,
 				  struct lsa_String *domain_name,
-				  struct dom_sid2 *sid)
+				  struct dom_sid2 **sid)
 {
 	struct samr_LookupDomain r;
 	NTSTATUS status;
@@ -354,7 +354,7 @@ NTSTATUS rpccli_samr_QueryDomainInfo(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct policy_handle *domain_handle,
 				     uint16_t level,
-				     union samr_DomainInfo *info)
+				     union samr_DomainInfo **info)
 {
 	struct samr_QueryDomainInfo r;
 	NTSTATUS status;
@@ -1120,7 +1120,7 @@ NTSTATUS rpccli_samr_DeleteGroupMember(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_QueryGroupMember(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *group_handle,
-				      struct samr_RidTypeArray *rids)
+				      struct samr_RidTypeArray **rids)
 {
 	struct samr_QueryGroupMember r;
 	NTSTATUS status;
@@ -2028,7 +2028,7 @@ NTSTATUS rpccli_samr_QueryDomainInfo2(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *domain_handle,
 				      uint16_t level,
-				      union samr_DomainInfo *info)
+				      union samr_DomainInfo **info)
 {
 	struct samr_QueryDomainInfo2 r;
 	NTSTATUS status;
@@ -2751,7 +2751,7 @@ NTSTATUS rpccli_samr_Connect3(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      const char *system_name,
-			      uint32_t unknown,
+			      enum samr_ConnectVersion client_version,
 			      uint32_t access_mask,
 			      struct policy_handle *connect_handle)
 {
@@ -2760,7 +2760,7 @@ NTSTATUS rpccli_samr_Connect4(struct rpc_pipe_client *cli,
 
 	/* In parameters */
 	r.in.system_name = system_name;
-	r.in.unknown = unknown;
+	r.in.client_version = client_version;
 	r.in.access_mask = access_mask;
 
 	if (DEBUGLEVEL >= 10) {

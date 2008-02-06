@@ -12,6 +12,7 @@
 #define PAM_SM_AUTH
 #define PAM_SM_ACCOUNT
 #define PAM_SM_PASSWORD
+#define PAM_SM_SESSION
 
 #ifndef PAM_WINBIND_CONFIG_FILE
 #define PAM_WINBIND_CONFIG_FILE "/etc/security/pam_winbind.conf"

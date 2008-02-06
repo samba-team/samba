@@ -50,6 +50,11 @@
 #define LIBNET_UNJOIN_OUT_DUMP_CTX(ctx, r) \
 	LIBNET_UNJOIN_DUMP_CTX(ctx, r, NDR_OUT)
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
 /****************************************************************
 ****************************************************************/
 
@@ -591,6 +596,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	const char *const_acct_name;
+	struct lsa_String lsa_acct_name;
 	uint32 user_rid;
 	uint32 num_rids, *name_types, *user_rids;
 	uint32 flags = 0x3e8;
@@ -665,16 +671,19 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_connect(pipe_hnd, mem_ctx,
-				     SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_pol);
+	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &sam_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	status = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &sam_pol,
-					 SEC_RIGHTS_MAXIMUM_ALLOWED,
-					 r->out.domain_sid,
-					 &domain_pol);
+	status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&sam_pol,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					r->out.domain_sid,
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -683,6 +692,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	strlower_m(acct_name);
 	const_acct_name = acct_name;
 
+	init_lsa_String(&lsa_acct_name, acct_name);
+
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE) {
 		uint32_t acct_flags =
 			SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
@@ -690,12 +701,16 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 			SAMR_USER_ACCESS_SET_PASSWORD |
 			SAMR_USER_ACCESS_GET_ATTRIBUTES |
 			SAMR_USER_ACCESS_SET_ATTRIBUTES;
+		uint32_t access_granted = 0;
 
-		status = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx,
-						     &domain_pol,
-						     acct_name, ACB_WSTRUST,
-						     acct_flags, &user_pol,
-						     &user_rid);
+		status = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+						 &domain_pol,
+						 &lsa_acct_name,
+						 ACB_WSTRUST,
+						 acct_flags,
+						 &user_pol,
+						 &access_granted,
+						 &user_rid);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 			if (!(r->in.join_flags &
 			      WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED)) {
@@ -723,9 +738,11 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	user_rid = user_rids[0];
 
-	status = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				       SEC_RIGHTS_MAXIMUM_ALLOWED, user_rid,
-				       &user_pol);
+	status = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -834,16 +851,19 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_connect(pipe_hnd, mem_ctx,
-				     SEC_RIGHTS_MAXIMUM_ALLOWED, &sam_pol);
+	status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &sam_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
 
-	status = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &sam_pol,
-					 SEC_RIGHTS_MAXIMUM_ALLOWED,
-					 r->in.domain_sid,
-					 &domain_pol);
+	status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&sam_pol,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					r->in.domain_sid,
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -867,9 +887,11 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	user_rid = user_rids[0];
 
-	status = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				       SEC_RIGHTS_MAXIMUM_ALLOWED,
-				       user_rid, &user_pol);
+	status = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      user_rid,
+				      &user_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}

@@ -2109,13 +2109,14 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		  "pipe: user %s\\%s\n", domain->name,
 		  domain_name, machine_account));
 
-	result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &conn->sam_connect_handle);
+	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
+				      conn->samr_pipe->cli->desthost,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &conn->sam_connect_handle);
 	if (NT_STATUS_IS_OK(result)) {
 		goto open_domain;
 	}
-	DEBUG(10,("cm_connect_sam: ntlmssp-sealed rpccli_samr_connect "
+	DEBUG(10,("cm_connect_sam: ntlmssp-sealed rpccli_samr_Connect2 "
 		  "failed for domain %s, error was %s. Trying schannel\n",
 		  domain->name, nt_errstr(result) ));
 	cli_rpc_pipe_close(conn->samr_pipe);
@@ -2143,13 +2144,14 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	DEBUG(10,("cm_connect_sam: connected to SAMR pipe for domain %s using "
 		  "schannel.\n", domain->name ));
 
-	result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &conn->sam_connect_handle);
+	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
+				      conn->samr_pipe->cli->desthost,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &conn->sam_connect_handle);
 	if (NT_STATUS_IS_OK(result)) {
 		goto open_domain;
 	}
-	DEBUG(10,("cm_connect_sam: schannel-sealed rpccli_samr_connect failed "
+	DEBUG(10,("cm_connect_sam: schannel-sealed rpccli_samr_Connect2 failed "
 		  "for domain %s, error was %s. Trying anonymous\n",
 		  domain->name, nt_errstr(result) ));
 	cli_rpc_pipe_close(conn->samr_pipe);
@@ -2165,23 +2167,24 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &conn->sam_connect_handle);
+	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
+				      conn->samr_pipe->cli->desthost,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &conn->sam_connect_handle);
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10,("cm_connect_sam: rpccli_samr_connect failed "
+		DEBUG(10,("cm_connect_sam: rpccli_samr_Connect2 failed "
 			  "for domain %s Error was %s\n",
 			  domain->name, nt_errstr(result) ));
 		goto done;
 	}
 
  open_domain:
-	result = rpccli_samr_open_domain(conn->samr_pipe,
-					 mem_ctx,
-					 &conn->sam_connect_handle,
-					 SEC_RIGHTS_MAXIMUM_ALLOWED,
-					 &domain->sid,
-					 &conn->sam_domain_handle);
+	result = rpccli_samr_OpenDomain(conn->samr_pipe,
+					mem_ctx,
+					&conn->sam_connect_handle,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&domain->sid,
+					&conn->sam_domain_handle);
 
  done:
 

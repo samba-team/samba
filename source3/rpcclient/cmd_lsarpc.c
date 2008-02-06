@@ -879,8 +879,10 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_query_secobj(cli, mem_ctx, &pol, sec_info, &sdb);
-
+	result = rpccli_lsa_QuerySecurity(cli, mem_ctx,
+					  &pol,
+					  sec_info,
+					  &sdb);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
@@ -976,8 +978,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
 
  done:
-	if (&pol)
-		rpccli_lsa_Close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
 }
@@ -1024,8 +1025,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
 
  done:
-	if (&pol)
-		rpccli_lsa_Close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
 }
@@ -1078,8 +1078,7 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
 
  done:
-	if (&pol)
-		rpccli_lsa_Close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
 }

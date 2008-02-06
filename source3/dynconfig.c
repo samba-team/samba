@@ -64,6 +64,11 @@ static char *dyn_##name; \
 	}\
 	dyn_##name = SMB_STRDUP(newpath);\
 	return dyn_##name;\
+}\
+\
+ bool is_default_dyn_##name(void) \
+{\
+	return (dyn_##name == NULL);\
 }
 
 DEFINE_DYN_CONFIG_PARAM(SBINDIR)

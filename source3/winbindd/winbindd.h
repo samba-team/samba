@@ -301,15 +301,15 @@ struct winbindd_methods {
 	NTSTATUS (*sequence_number)(struct winbindd_domain *domain, uint32 *seq);
 
 	/* return the lockout policy */
-	NTSTATUS (*lockout_policy)(struct winbindd_domain *domain, 
+	NTSTATUS (*lockout_policy)(struct winbindd_domain *domain,
  				   TALLOC_CTX *mem_ctx,
-				   SAM_UNK_INFO_12 *lockout_policy);
- 
+				   struct samr_DomInfo12 *lockout_policy);
+
 	/* return the lockout policy */
-	NTSTATUS (*password_policy)(struct winbindd_domain *domain, 
+	NTSTATUS (*password_policy)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
-				    SAM_UNK_INFO_1 *password_policy);
- 
+				    struct samr_DomInfo1 *password_policy);
+
 	/* enumerate trusted domains */
 	NTSTATUS (*trusted_domains)(struct winbindd_domain *domain,
 				    TALLOC_CTX *mem_ctx,
