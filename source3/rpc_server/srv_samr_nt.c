@@ -2184,16 +2184,17 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 }
 
 /*******************************************************************
- samr_reply_query_usergroups
+ _samr_GetGroupsForUser
  ********************************************************************/
 
-NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAMR_R_QUERY_USERGROUPS *r_u)
+NTSTATUS _samr_GetGroupsForUser(pipes_struct *p,
+				struct samr_GetGroupsForUser *r)
 {
 	struct samu *sam_pass=NULL;
 	DOM_SID  sid;
 	DOM_SID *sids;
-	DOM_GID dom_gid;
-	DOM_GID *gids = NULL;
+	struct samr_RidWithAttribute dom_gid;
+	struct samr_RidWithAttribute *gids = NULL;
 	uint32 primary_group_rid;
 	size_t num_groups = 0;
 	gid_t *unix_gids;
@@ -2202,6 +2203,8 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	bool ret;
 	NTSTATUS result;
 	bool success = False;
+
+	struct samr_RidWithAttributeArray *rids = NULL;
 
 	/*
 	 * from the SID in the request:
@@ -2215,16 +2218,22 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	 * JFM, 12/2/2001
 	 */
 
-	r_u->status = NT_STATUS_OK;
+	DEBUG(5,("_samr_GetGroupsForUser: %d\n", __LINE__));
 
-	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
+	rids = TALLOC_ZERO_P(p->mem_ctx, struct samr_RidWithAttributeArray);
+	if (!rids) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &sid, &acc_granted, NULL))
+	if (!get_lsa_policy_samr_sid(p, r->in.user_handle, &sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_USER_GET_GROUPS, "_samr_query_usergroups"))) {
-		return r_u->status;
+	result = access_check_samr_function(acc_granted,
+					    SA_RIGHT_USER_GET_GROUPS,
+					    "_samr_GetGroupsForUser");
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
 	}
 
 	if (!sid_check_is_in_our_domain(&sid))
@@ -2274,36 +2283,38 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	gids = NULL;
 	num_gids = 0;
 
-	dom_gid.attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|
-			SE_GROUP_ENABLED);
-	dom_gid.g_rid = primary_group_rid;
-	ADD_TO_ARRAY(p->mem_ctx, DOM_GID, dom_gid, &gids, &num_gids);
+	dom_gid.attributes = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT|
+			      SE_GROUP_ENABLED);
+	dom_gid.rid = primary_group_rid;
+	ADD_TO_ARRAY(p->mem_ctx, struct samr_RidWithAttribute, dom_gid, &gids, &num_gids);
 
 	for (i=0; i<num_groups; i++) {
 
 		if (!sid_peek_check_rid(get_global_sam_sid(),
-					&(sids[i]), &dom_gid.g_rid)) {
+					&(sids[i]), &dom_gid.rid)) {
 			DEBUG(10, ("Found sid %s not in our domain\n",
 				   sid_string_dbg(&sids[i])));
 			continue;
 		}
 
-		if (dom_gid.g_rid == primary_group_rid) {
+		if (dom_gid.rid == primary_group_rid) {
 			/* We added the primary group directly from the
 			 * sam_account. The other SIDs are unique from
 			 * enum_group_memberships */
 			continue;
 		}
 
-		ADD_TO_ARRAY(p->mem_ctx, DOM_GID, dom_gid, &gids, &num_gids);
+		ADD_TO_ARRAY(p->mem_ctx, struct samr_RidWithAttribute, dom_gid, &gids, &num_gids);
 	}
 
-	/* construct the response.  lkclXXXX: gids are not copied! */
-	init_samr_r_query_usergroups(r_u, num_gids, gids, r_u->status);
+	rids->count = num_gids;
+	rids->rids = gids;
 
-	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
+	*r->out.rids = rids;
 
-	return r_u->status;
+	DEBUG(5,("_samr_GetGroupsForUser: %d\n", __LINE__));
+
+	return result;
 }
 
 /*******************************************************************
@@ -5260,16 +5271,6 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 
 NTSTATUS _samr_ChangePasswordUser(pipes_struct *p,
 				  struct samr_ChangePasswordUser *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_GetGroupsForUser(pipes_struct *p,
-				struct samr_GetGroupsForUser *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
