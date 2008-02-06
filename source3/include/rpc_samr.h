@@ -798,27 +798,6 @@ typedef struct r_samr_get_dispenum_index
 /********************************************************/
 /********************************************************/
 
-/* SAMR_Q_QUERY_USERGROUPS - */
-typedef struct q_samr_query_usergroup_info
-{
-	POLICY_HND pol;          /* policy handle associated with unknown id */
-
-} SAMR_Q_QUERY_USERGROUPS;
-
-/* SAMR_R_QUERY_USERGROUPS - probably a get sam info */
-typedef struct r_samr_query_usergroup_info
-{
-	uint32 ptr_0;            /* pointer */
-	uint32 num_entries;      /* number of RID groups */
-	uint32 ptr_1;            /* pointer */
-	uint32 num_entries2;     /* number of RID groups */
-
-	DOM_GID *gid; /* group info */
-
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_QUERY_USERGROUPS;
-
 /* SAM_USERINFO_CTR - sam user info */
 typedef struct sam_userinfo_ctr_info
 {
