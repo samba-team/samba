@@ -398,40 +398,6 @@ typedef struct net_r_logon_ctrl2_info {
 	NTSTATUS status; /* return code */
 } NET_R_LOGON_CTRL2;
 
-/* NET_Q_GETANYDCNAME - Ask a DC for a trusted DC name */
-
-typedef struct net_q_getanydcname {
-	uint32  ptr_logon_server;
-	UNISTR2 uni_logon_server;
-	uint32  ptr_domainname;
-	UNISTR2 uni_domainname;
-} NET_Q_GETANYDCNAME;
-
-/* NET_R_GETANYDCNAME - Ask a DC for a trusted DC name */
-
-typedef struct net_r_getanydcname {
-	uint32  ptr_dcname;
-	UNISTR2 uni_dcname;
-	WERROR status;
-} NET_R_GETANYDCNAME;
-
-
-/* NET_Q_GETDCNAME - Ask a DC for a trusted DC name */
-
-typedef struct net_q_getdcname {
-	UNISTR2 uni_logon_server;
-	uint32  ptr_domainname;
-	UNISTR2 uni_domainname;
-} NET_Q_GETDCNAME;
-
-/* NET_R_GETDCNAME - Ask a DC for a trusted DC name */
-
-typedef struct net_r_getdcname {
-	uint32  ptr_dcname;
-	UNISTR2 uni_dcname;
-	WERROR status;
-} NET_R_GETDCNAME;
-
 /* NET_Q_TRUST_DOM_LIST - LSA Query Trusted Domains */
 typedef struct net_q_trust_dom_info {
 	uint32       ptr;             /* undocumented buffer pointer */
