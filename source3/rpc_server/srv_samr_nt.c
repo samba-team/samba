@@ -1128,20 +1128,22 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 }
 
 /*******************************************************************
- samr_reply_query_dispinfo
+ _samr_QueryDisplayInfo
  ********************************************************************/
 
-NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
-			      SAMR_R_QUERY_DISPINFO *r_u)
+NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
+				struct samr_QueryDisplayInfo *r)
 {
+	NTSTATUS status;
 	struct samr_info *info = NULL;
 	uint32 struct_size=0x20; /* W2K always reply that, client doesn't care */
 
-	uint32 max_entries=q_u->max_entries;
-	uint32 enum_context=q_u->start_idx;
-	uint32 max_size=q_u->max_size;
+	uint32 max_entries = r->in.max_entries;
+	uint32 enum_context = r->in.start_idx;
+	uint32 max_size = r->in.buf_size;
 
-	SAM_DISPINFO_CTR *ctr;
+	union samr_DispInfo *disp_info = r->out.info;
+
 	uint32 temp_size=0, total_data_size=0;
 	NTSTATUS disp_ret = NT_STATUS_UNSUCCESSFUL;
 	uint32 num_account = 0;
@@ -1149,11 +1151,10 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	int max_sam_entries = (ra_type == RA_WIN95) ? MAX_SAM_ENTRIES_W95 : MAX_SAM_ENTRIES_W2K;
 	struct samr_displayentry *entries = NULL;
 
-	DEBUG(5, ("samr_reply_query_dispinfo: %d\n", __LINE__));
-	r_u->status = NT_STATUS_UNSUCCESSFUL;
+	DEBUG(5,("_samr_QueryDisplayInfo: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->domain_pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/*
@@ -1184,15 +1185,15 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	 * JFM, 12/20/2001
 	 */
 
-	if ((q_u->switch_level < 1) || (q_u->switch_level > 5)) {
-		DEBUG(0,("_samr_query_dispinfo: Unknown info level (%u)\n",
-			 (unsigned int)q_u->switch_level ));
+	if ((r->in.level < 1) || (r->in.level > 5)) {
+		DEBUG(0,("_samr_QueryDisplayInfo: Unknown info level (%u)\n",
+			 (unsigned int)r->in.level ));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	/* first limit the number of entries we will return */
 	if(max_entries > max_sam_entries) {
-		DEBUG(5, ("samr_reply_query_dispinfo: client requested %d "
+		DEBUG(5, ("_samr_QueryDisplayInfo: client requested %d "
 			  "entries, limiting to %d\n", max_entries,
 			  max_sam_entries));
 		max_entries = max_sam_entries;
@@ -1205,20 +1206,15 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 
 	if (temp_size>max_size) {
 		max_entries=MIN((max_size/struct_size),max_entries);;
-		DEBUG(5, ("samr_reply_query_dispinfo: buffer size limits to "
+		DEBUG(5, ("_samr_QueryDisplayInfo: buffer size limits to "
 			  "only %d entries\n", max_entries));
 	}
-
-	if (!(ctr = TALLOC_ZERO_P(p->mem_ctx,SAM_DISPINFO_CTR)))
-		return NT_STATUS_NO_MEMORY;
-
-	ZERO_STRUCTP(ctr);
 
 	become_root();
 
 	/* THe following done as ROOT. Don't return without unbecome_root(). */
 
-	switch (q_u->switch_level) {
+	switch (r->in.level) {
 	case 0x1:
 	case 0x4:
 		if (info->disp_info->users == NULL) {
@@ -1227,10 +1223,10 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 				unbecome_root();
 				return NT_STATUS_ACCESS_DENIED;
 			}
-			DEBUG(10,("samr_reply_query_dispinfo: starting user enumeration at index %u\n",
+			DEBUG(10,("_samr_QueryDisplayInfo: starting user enumeration at index %u\n",
 				(unsigned  int)enum_context ));
 		} else {
-			DEBUG(10,("samr_reply_query_dispinfo: using cached user enumeration at index %u\n",
+			DEBUG(10,("_samr_QueryDisplayInfo: using cached user enumeration at index %u\n",
 				(unsigned  int)enum_context ));
 		}
 
@@ -1246,10 +1242,10 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 				unbecome_root();
 				return NT_STATUS_ACCESS_DENIED;
 			}
-			DEBUG(10,("samr_reply_query_dispinfo: starting machine enumeration at index %u\n",
+			DEBUG(10,("_samr_QueryDisplayInfo: starting machine enumeration at index %u\n",
 				(unsigned  int)enum_context ));
 		} else {
-			DEBUG(10,("samr_reply_query_dispinfo: using cached machine enumeration at index %u\n",
+			DEBUG(10,("_samr_QueryDisplayInfo: using cached machine enumeration at index %u\n",
 				(unsigned  int)enum_context ));
 		}
 
@@ -1265,10 +1261,10 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 				unbecome_root();
 				return NT_STATUS_ACCESS_DENIED;
 			}
-			DEBUG(10,("samr_reply_query_dispinfo: starting group enumeration at index %u\n",
+			DEBUG(10,("_samr_QueryDisplayInfo: starting group enumeration at index %u\n",
 				(unsigned  int)enum_context ));
 		} else {
-			DEBUG(10,("samr_reply_query_dispinfo: using cached group enumeration at index %u\n",
+			DEBUG(10,("_samr_QueryDisplayInfo: using cached group enumeration at index %u\n",
 				(unsigned  int)enum_context ));
 		}
 
@@ -1283,30 +1279,31 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	}
 	unbecome_root();
 
+
 	/* Now create reply structure */
-	switch (q_u->switch_level) {
+	switch (r->in.level) {
 	case 0x1:
-		disp_ret = init_sam_dispinfo_1(p->mem_ctx, &ctr->sam.info1,
+		disp_ret = init_sam_dispinfo_1(p->mem_ctx, &disp_info->info1,
 					       num_account, enum_context,
 					       entries);
 		break;
 	case 0x2:
-		disp_ret = init_sam_dispinfo_2(p->mem_ctx, &ctr->sam.info2,
+		disp_ret = init_sam_dispinfo_2(p->mem_ctx, &disp_info->info2,
 					       num_account, enum_context,
 					       entries);
 		break;
 	case 0x3:
-		disp_ret = init_sam_dispinfo_3(p->mem_ctx, &ctr->sam.info3,
+		disp_ret = init_sam_dispinfo_3(p->mem_ctx, &disp_info->info3,
 					       num_account, enum_context,
 					       entries);
 		break;
 	case 0x4:
-		disp_ret = init_sam_dispinfo_4(p->mem_ctx, &ctr->sam.info4,
+		disp_ret = init_sam_dispinfo_4(p->mem_ctx, &disp_info->info4,
 					       num_account, enum_context,
 					       entries);
 		break;
 	case 0x5:
-		disp_ret = init_sam_dispinfo_5(p->mem_ctx, &ctr->sam.info5,
+		disp_ret = init_sam_dispinfo_5(p->mem_ctx, &disp_info->info5,
 					       num_account, enum_context,
 					       entries);
 		break;
@@ -1322,22 +1319,20 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	total_data_size=num_account*struct_size;
 
 	if (num_account) {
-		r_u->status = STATUS_MORE_ENTRIES;
+		status = STATUS_MORE_ENTRIES;
 	} else {
-		r_u->status = NT_STATUS_OK;
+		status = NT_STATUS_OK;
 	}
 
 	/* Ensure we cache this enumeration. */
 	set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
 
-	DEBUG(5, ("_samr_query_dispinfo: %d\n", __LINE__));
+	DEBUG(5, ("_samr_QueryDisplayInfo: %d\n", __LINE__));
 
-	init_samr_r_query_dispinfo(r_u, num_account, total_data_size,
-				   temp_size, q_u->switch_level, ctr,
-				   r_u->status);
+	*r->out.total_size = total_data_size;
+	*r->out.returned_size = temp_size;
 
-	return r_u->status;
-
+	return status;
 }
 
 /*******************************************************************
@@ -5271,16 +5266,6 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 
 NTSTATUS _samr_ChangePasswordUser(pipes_struct *p,
 				  struct samr_ChangePasswordUser *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
-				struct samr_QueryDisplayInfo *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
