@@ -48,8 +48,9 @@ static WERROR cmd_netlogon_getanydcname(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx, int argc, 
 					const char **argv)
 {
-	char *dcname = NULL;
-	WERROR result = WERR_GENERAL_FAILURE;
+	const char *dcname = NULL;
+	WERROR werr;
+	NTSTATUS status;
 	int old_timeout;
 
 	if (argc != 2) {
@@ -60,27 +61,35 @@ static WERROR cmd_netlogon_getanydcname(struct rpc_pipe_client *cli,
 	/* Make sure to wait for our DC's reply */
 	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
 
-	result = rpccli_netlogon_getanydcname(cli, mem_ctx, cli->cli->desthost, argv[1], &dcname);
-
+	status = rpccli_netr_GetAnyDCName(cli, mem_ctx,
+					  cli->cli->desthost,
+					  argv[1],
+					  &dcname,
+					  &werr);
 	cli_set_timeout(cli->cli, old_timeout);
 
-	if (!W_ERROR_IS_OK(result))
-		goto done;
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 
 	/* Display results */
 
 	printf("%s\n", dcname);
 
- done:
-	return result;
+	return werr;
 }
 
-static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli, 
-				     TALLOC_CTX *mem_ctx, int argc, 
+static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli,
+				     TALLOC_CTX *mem_ctx, int argc,
 				     const char **argv)
 {
-	char *dcname = NULL;
-	WERROR result = WERR_GENERAL_FAILURE;
+	const char *dcname = NULL;
+	NTSTATUS status;
+	WERROR werr;
 	int old_timeout;
 
 	if (argc != 2) {
@@ -91,19 +100,26 @@ static WERROR cmd_netlogon_getdcname(struct rpc_pipe_client *cli,
 	/* Make sure to wait for our DC's reply */
 	old_timeout = cli_set_timeout(cli->cli, MAX(cli->cli->timeout,30000)); /* 30 seconds. */
 
-	result = rpccli_netlogon_getdcname(cli, mem_ctx, cli->cli->desthost, argv[1], &dcname);
-
+	status = rpccli_netr_GetDcName(cli, mem_ctx,
+				       cli->cli->desthost,
+				       argv[1],
+				       &dcname,
+				       &werr);
 	cli_set_timeout(cli->cli, old_timeout);
 
-	if (!W_ERROR_IS_OK(result))
-		goto done;
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 
 	/* Display results */
 
 	printf("%s\n", dcname);
 
- done:
-	return result;
+	return werr;
 }
 
 static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
