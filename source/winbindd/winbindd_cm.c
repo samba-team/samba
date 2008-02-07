@@ -570,8 +570,8 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	WERROR werr;
 	TALLOC_CTX *mem_ctx;
 	unsigned int orig_timeout;
-	char *tmp = NULL;
-	char *p;
+	const char *tmp = NULL;
+	const char *p;
 
 	/* Hmmmm. We can only open one connection to the NETLOGON pipe at the
 	 * moment.... */
@@ -630,25 +630,31 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 			}
 		}
 	} else {
-
-		werr = rpccli_netlogon_getanydcname(netlogon_pipe,
-						    mem_ctx,
-						    our_domain->dcname,
-						    domain->name,
-						    &tmp);
+		result = rpccli_netr_GetAnyDCName(netlogon_pipe, mem_ctx,
+						  our_domain->dcname,
+						  domain->name,
+						  &tmp,
+						  &werr);
 	}
 
 	/* And restore our original timeout. */
 	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
 
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(10, ("rpccli_netlogon_getanydcname failed: %s\n",
-			   dos_errstr(werr)));
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10,("rpccli_netr_GetAnyDCName failed: %s\n",
+			nt_errstr(result)));
 		talloc_destroy(mem_ctx);
-		return False;
+		return false;
 	}
 
-	/* cli_netlogon_getanydcname gives us a name with \\ */
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(10,("rpccli_netr_GetAnyDCName failed: %s\n",
+			   dos_errstr(werr)));
+		talloc_destroy(mem_ctx);
+		return false;
+	}
+
+	/* rpccli_netr_GetAnyDCName gives us a name with \\ */
 	p = tmp;
 	if (*p == '\\') {
 		p+=1;
@@ -661,7 +667,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 
 	talloc_destroy(mem_ctx);
 
-	DEBUG(10, ("rpccli_netlogon_getanydcname returned %s\n", dcname));
+	DEBUG(10,("rpccli_netr_GetAnyDCName returned %s\n", dcname));
 
 	if (!resolve_name(dcname, dc_ss, 0x20)) {
 		return False;
