@@ -1307,29 +1307,36 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Query domain users */
-	ZERO_STRUCT(ctr);
-	ZERO_STRUCT(info1);
-	ctr.sam.info1 = &info1;
 	if (opt_long_list_entries)
 		d_printf("\nUser name             Comment"\
 			 "\n-----------------------------\n");
 	do {
-		fstring user, desc;
+		const char *user = NULL;
+		const char *desc = NULL;
 		uint32 max_entries, max_size;
+		uint32_t total_size, returned_size;
+		union samr_DispInfo info;
 
 		get_query_dispinfo_params(
 			loop_count, &max_entries, &max_size);
 
-		result = rpccli_samr_query_dispinfo(pipe_hnd, mem_ctx, &domain_pol,
-						 &start_idx, 1, &num_entries,
-						 max_entries, max_size, &ctr);
+		result = rpccli_samr_QueryDisplayInfo(pipe_hnd, mem_ctx,
+						      &domain_pol,
+						      1,
+						      start_idx,
+						      max_entries,
+						      max_size,
+						      &total_size,
+						      &returned_size,
+						      &info);
 		loop_count++;
+		start_idx += info.info1.count;
+		num_entries = info.info1.count;
 
 		for (i = 0; i < num_entries; i++) {
-			unistr2_to_ascii(user, &(&ctr.sam.info1->str[i])->uni_acct_name, sizeof(user));
-			if (opt_long_list_entries) 
-				unistr2_to_ascii(desc, &(&ctr.sam.info1->str[i])->uni_acct_desc, sizeof(desc));
-			
+			user = info.info1.entries[i].account_name.string;
+			if (opt_long_list_entries)
+				desc = info.info1.entries[i].description.string;
 			if (opt_long_list_entries)
 				printf("%-21.21s %s\n", user, desc);
 			else
@@ -2647,34 +2654,38 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 		d_printf("\nGroup name            Comment"\
 			 "\n-----------------------------\n");
 	do {
-		SAM_DISPINFO_CTR ctr;
-		SAM_DISPINFO_3 info3;
-		uint32 max_size;
-
-		ZERO_STRUCT(ctr);
-		ZERO_STRUCT(info3);
-		ctr.sam.info3 = &info3;
+		uint32_t max_size, total_size, returned_size;
+		union samr_DispInfo info;
 
 		if (!global) break;
 
 		get_query_dispinfo_params(
 			loop_count, &max_entries, &max_size);
 
-		result = rpccli_samr_query_dispinfo(pipe_hnd, mem_ctx, &domain_pol,
-						 &start_idx, 3, &num_entries,
-						 max_entries, max_size, &ctr);
+		result = rpccli_samr_QueryDisplayInfo(pipe_hnd, mem_ctx,
+						      &domain_pol,
+						      3,
+						      start_idx,
+						      max_entries,
+						      max_size,
+						      &total_size,
+						      &returned_size,
+						      &info);
+		num_entries = info.info3.count;
+		start_idx += info.info3.count;
 
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
 			break;
-						 
+
 		for (i = 0; i < num_entries; i++) {
 
-			fstring group, desc;
+			const char *group = NULL;
+			const char *desc = NULL;
 
-			unistr2_to_ascii(group, &(&ctr.sam.info3->str[i])->uni_grp_name, sizeof(group));
-			unistr2_to_ascii(desc, &(&ctr.sam.info3->str[i])->uni_grp_desc, sizeof(desc));
-			
+			group = info.info3.entries[i].account_name.string;
+			desc = info.info3.entries[i].description.string;
+
 			if (opt_long_list_entries)
 				printf("%-21.21s %-50.50s\n",
 				       group, desc);
