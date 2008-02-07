@@ -1,22 +1,22 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    SAMR Pipe utility functions.
-   
+
    Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
    Copyright (C) Gerald (Jerry) Carter		2000-2001
    Copyright (C) Andrew Bartlett		2001-2002
    Copyright (C) Stefan (metze) Metzmacher	2002
-      
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -72,14 +72,14 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 	const char *old_string, *new_string;
 	DATA_BLOB mung;
 
-	if (from == NULL || to == NULL) 
+	if (from == NULL || to == NULL)
 		return;
 
 	if (from->fields_present & ACCT_LAST_LOGON) {
 		unix_time=nt_time_to_unix(from->logon_time);
 		stored_time = pdb_get_logon_time(to);
 		DEBUG(10,("INFO_21 LOGON_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
+		if (stored_time != unix_time)
 			pdb_set_logon_time(to, unix_time, PDB_CHANGED);
 	}
 
@@ -87,7 +87,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		unix_time=nt_time_to_unix(from->logoff_time);
 		stored_time = pdb_get_logoff_time(to);
 		DEBUG(10,("INFO_21 LOGOFF_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
+		if (stored_time != unix_time)
 			pdb_set_logoff_time(to, unix_time, PDB_CHANGED);
 	}
 
@@ -95,15 +95,15 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		unix_time=nt_time_to_unix(from->kickoff_time);
 		stored_time = pdb_get_kickoff_time(to);
 		DEBUG(10,("INFO_21 KICKOFF_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
+		if (stored_time != unix_time)
 			pdb_set_kickoff_time(to, unix_time , PDB_CHANGED);
-	}	
+	}
 
 	if (from->fields_present & ACCT_LAST_PWD_CHANGE) {
 		unix_time=nt_time_to_unix(from->pass_last_set_time);
 		stored_time = pdb_get_pass_last_set_time(to);
 		DEBUG(10,("INFO_21 PASS_LAST_SET: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
+		if (stored_time != unix_time)
 			pdb_set_pass_last_set_time(to, unix_time, PDB_CHANGED);
 	}
 
@@ -124,7 +124,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		if (STRING_CHANGED)
 			pdb_set_fullname(to      , new_string, PDB_CHANGED);
 	}
-	
+
 	if ((from->fields_present & ACCT_HOME_DIR) &&
 	    (from->hdr_home_dir.buffer)) {
 		old_string = pdb_get_homedir(to);
@@ -160,7 +160,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		if (STRING_CHANGED)
 			pdb_set_profile_path(to  , new_string, PDB_CHANGED);
 	}
-	
+
 	if ((from->fields_present & ACCT_DESCRIPTION) &&
 	    (from->hdr_acct_desc.buffer)) {
 		old_string = pdb_get_acct_desc(to);
@@ -169,7 +169,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		if (STRING_CHANGED)
 			pdb_set_acct_desc(to     , new_string, PDB_CHANGED);
 	}
-	
+
 	if ((from->fields_present & ACCT_WORKSTATIONS) &&
 	    (from->hdr_workstations.buffer)) {
 		old_string = pdb_get_workstations(to);
@@ -187,7 +187,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 		if (STRING_CHANGED)
 			pdb_set_comment(to, new_string, PDB_CHANGED);
 	}
-	
+
 	if ((from->fields_present & ACCT_CALLBACK) &&
 	    (from->hdr_munged_dial.buffer)) {
 		char *newstr;
@@ -203,7 +203,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 
 		TALLOC_FREE(newstr);
 	}
-	
+
 	if (from->fields_present & ACCT_RID) {
 		if (from->user_rid == 0) {
 			DEBUG(10, ("INFO_21: Asked to set User RID to 0 !? Skipping change!\n"));
@@ -211,7 +211,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 			DEBUG(10,("INFO_21 USER_RID: %u -> %u NOT UPDATED!\n",pdb_get_user_rid(to),from->user_rid));
 		}
 	}
-	
+
 	if (from->fields_present & ACCT_PRIMARY_GID) {
 		if (from->group_rid == 0) {
 			DEBUG(10, ("INFO_21: Asked to set Group RID to 0 !? Skipping change!\n"));
@@ -220,7 +220,7 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 			pdb_set_group_sid_from_rid(to, from->group_rid, PDB_CHANGED);
 		}
 	}
-	
+
 	if (from->fields_present & ACCT_FLAGS) {
 		DEBUG(10,("INFO_21 ACCT_CTRL: %08X -> %08X\n",pdb_get_acct_ctrl(to),from->acb_info));
 		if (from->acb_info != pdb_get_acct_ctrl(to)) {
@@ -270,13 +270,13 @@ void copy_id21_to_sam_passwd(struct samu *to, SAM_USER_INFO_21 *from)
 	}
 
 	/* If the must change flag is set, the last set time goes to zero.
-	   the must change and can change fields also do, but they are 
+	   the must change and can change fields also do, but they are
 	   calculated from policy, not set from the wire */
 
 	if (from->fields_present & ACCT_EXPIRED_FLAG) {
 		DEBUG(10,("INFO_21 PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n",from->passmustchange));
 		if (from->passmustchange == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
-			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);		
+			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);
 		} else {
 			pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
 		}
@@ -296,14 +296,14 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 	const char *old_string, *new_string;
 	DATA_BLOB mung;
 
-	if (from == NULL || to == NULL) 
+	if (from == NULL || to == NULL)
 		return;
 
 	if (from->fields_present & ACCT_LAST_LOGON) {
 		unix_time=nt_time_to_unix(from->logon_time);
 		stored_time = pdb_get_logon_time(to);
 		DEBUG(10,("INFO_23 LOGON_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
+		if (stored_time != unix_time)
 			pdb_set_logon_time(to, unix_time, PDB_CHANGED);
 	}
 
@@ -311,23 +311,23 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		unix_time=nt_time_to_unix(from->logoff_time);
 		stored_time = pdb_get_logoff_time(to);
 		DEBUG(10,("INFO_23 LOGOFF_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
+		if (stored_time != unix_time)
 			pdb_set_logoff_time(to, unix_time, PDB_CHANGED);
 	}
-	
+
 	if (from->fields_present & ACCT_EXPIRY) {
 		unix_time=nt_time_to_unix(from->kickoff_time);
 		stored_time = pdb_get_kickoff_time(to);
 		DEBUG(10,("INFO_23 KICKOFF_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
+		if (stored_time != unix_time)
 			pdb_set_kickoff_time(to, unix_time , PDB_CHANGED);
-	}	
+	}
 
 	if (from->fields_present & ACCT_LAST_PWD_CHANGE) {
 		unix_time=nt_time_to_unix(from->pass_last_set_time);
 		stored_time = pdb_get_pass_last_set_time(to);
 		DEBUG(10,("INFO_23 PASS_LAST_SET: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
+		if (stored_time != unix_time)
 			pdb_set_pass_last_set_time(to, unix_time, PDB_CHANGED);
 	}
 
@@ -349,7 +349,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		if (STRING_CHANGED)
 			pdb_set_fullname(to      , new_string, PDB_CHANGED);
 	}
-	
+
 	if ((from->fields_present & ACCT_HOME_DIR) &&
 	    (from->hdr_home_dir.buffer)) {
 		old_string = pdb_get_homedir(to);
@@ -385,7 +385,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		if (STRING_CHANGED)
 			pdb_set_profile_path(to  , new_string, PDB_CHANGED);
 	}
-	
+
 	if ((from->fields_present & ACCT_DESCRIPTION) &&
 	    (from->hdr_acct_desc.buffer)) {
 		old_string = pdb_get_acct_desc(to);
@@ -394,7 +394,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		if (STRING_CHANGED)
 			pdb_set_acct_desc(to     , new_string, PDB_CHANGED);
 	}
-	
+
 	if ((from->fields_present & ACCT_WORKSTATIONS) &&
 	    (from->hdr_workstations.buffer)) {
 		old_string = pdb_get_workstations(to);
@@ -412,7 +412,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 		if (STRING_CHANGED)
 			pdb_set_comment(to   , new_string, PDB_CHANGED);
 	}
-	
+
 	if ((from->fields_present & ACCT_CALLBACK) &&
 	    (from->hdr_munged_dial.buffer)) {
 		char *newstr;
@@ -428,7 +428,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 
 		TALLOC_FREE(newstr);
 	}
-	
+
 	if (from->fields_present & ACCT_RID) {
 		if (from->user_rid == 0) {
 			DEBUG(10, ("INFO_23: Asked to set User RID to 0 !? Skipping change!\n"));
@@ -445,7 +445,7 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 			pdb_set_group_sid_from_rid(to, from->group_rid, PDB_CHANGED);
 		}
 	}
-	
+
 	if (from->fields_present & ACCT_FLAGS) {
 		DEBUG(10,("INFO_23 ACCT_CTRL: %08X -> %08X\n",pdb_get_acct_ctrl(to),from->acb_info));
 		if (from->acb_info != pdb_get_acct_ctrl(to)) {
@@ -484,13 +484,13 @@ void copy_id23_to_sam_passwd(struct samu *to, SAM_USER_INFO_23 *from)
 	}
 
 	/* If the must change flag is set, the last set time goes to zero.
-	   the must change and can change fields also do, but they are 
+	   the must change and can change fields also do, but they are
 	   calculated from policy, not set from the wire */
 
 	if (from->fields_present & ACCT_EXPIRED_FLAG) {
 		DEBUG(10,("INFO_23 PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n",from->passmustchange));
 		if (from->passmustchange == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
-			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);		
+			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);
 		} else {
 			pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
 		}
@@ -509,14 +509,14 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 	const char *old_string, *new_string;
 	DATA_BLOB mung;
 
-	if (from == NULL || to == NULL) 
+	if (from == NULL || to == NULL)
 		return;
 
 	if (from->fields_present & ACCT_LAST_LOGON) {
 		unix_time=nt_time_to_unix(from->logon_time);
 		stored_time = pdb_get_logon_time(to);
 		DEBUG(10,("INFO_25 LOGON_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
+		if (stored_time != unix_time)
 			pdb_set_logon_time(to, unix_time, PDB_CHANGED);
 	}
 
@@ -524,7 +524,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 		unix_time=nt_time_to_unix(from->logoff_time);
 		stored_time = pdb_get_logoff_time(to);
 		DEBUG(10,("INFO_25 LOGOFF_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
+		if (stored_time != unix_time)
 			pdb_set_logoff_time(to, unix_time, PDB_CHANGED);
 	}
 
@@ -532,15 +532,15 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 		unix_time=nt_time_to_unix(from->kickoff_time);
 		stored_time = pdb_get_kickoff_time(to);
 		DEBUG(10,("INFO_25 KICKOFF_TIME: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
+		if (stored_time != unix_time)
 			pdb_set_kickoff_time(to, unix_time , PDB_CHANGED);
-	}	
+	}
 
 	if (from->fields_present & ACCT_LAST_PWD_CHANGE) {
 		unix_time=nt_time_to_unix(from->pass_last_set_time);
 		stored_time = pdb_get_pass_last_set_time(to);
 		DEBUG(10,("INFO_25 PASS_LAST_SET: %lu -> %lu\n",(long unsigned int)stored_time, (long unsigned int)unix_time));
-		if (stored_time != unix_time) 
+		if (stored_time != unix_time)
 			pdb_set_pass_last_set_time(to, unix_time, PDB_CHANGED);
 	}
 
@@ -561,7 +561,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 		if (STRING_CHANGED)
 			pdb_set_fullname(to      , new_string, PDB_CHANGED);
 	}
-	
+
 	if ((from->fields_present & ACCT_HOME_DIR) &&
 	    (from->hdr_home_dir.buffer)) {
 		old_string = pdb_get_homedir(to);
@@ -597,7 +597,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 		if (STRING_CHANGED)
 			pdb_set_profile_path(to  , new_string, PDB_CHANGED);
 	}
-	
+
 	if ((from->fields_present & ACCT_DESCRIPTION) &&
 	    (from->hdr_acct_desc.buffer)) {
 		old_string = pdb_get_acct_desc(to);
@@ -606,7 +606,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 		if (STRING_CHANGED)
 			pdb_set_acct_desc(to     , new_string, PDB_CHANGED);
 	}
-	
+
 	if ((from->fields_present & ACCT_WORKSTATIONS) &&
 	    (from->hdr_workstations.buffer)) {
 		old_string = pdb_get_workstations(to);
@@ -624,7 +624,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 		if (STRING_CHANGED)
 			pdb_set_comment(to   , new_string, PDB_CHANGED);
 	}
-	
+
 	if ((from->fields_present & ACCT_CALLBACK) &&
 	    (from->hdr_munged_dial.buffer)) {
 		char *newstr;
@@ -640,7 +640,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 
 		TALLOC_FREE(newstr);
 	}
-	
+
 	if (from->fields_present & ACCT_RID) {
 		if (from->user_rid == 0) {
 			DEBUG(10, ("INFO_25: Asked to set User RID to 0 !? Skipping change!\n"));
@@ -648,7 +648,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 			DEBUG(10,("INFO_25 USER_RID: %u -> %u NOT UPDATED!\n",pdb_get_user_rid(to),from->user_rid));
 		}
 	}
-	
+
 	if (from->fields_present & ACCT_PRIMARY_GID) {
 		if (from->group_rid == 0) {
 			DEBUG(10, ("INFO_25: Asked to set Group RID to 0 !? Skipping change!\n"));
@@ -657,7 +657,7 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 			pdb_set_group_sid_from_rid(to, from->group_rid, PDB_CHANGED);
 		}
 	}
-	
+
 	if (from->fields_present & ACCT_FLAGS) {
 		DEBUG(10,("INFO_25 ACCT_CTRL: %08X -> %08X\n",pdb_get_acct_ctrl(to),from->acb_info));
 		if (from->acb_info != pdb_get_acct_ctrl(to)) {
@@ -702,13 +702,13 @@ void copy_id25_to_sam_passwd(struct samu *to, SAM_USER_INFO_25 *from)
 	}
 
 	/* If the must change flag is set, the last set time goes to zero.
-	   the must change and can change fields also do, but they are 
+	   the must change and can change fields also do, but they are
 	   calculated from policy, not set from the wire */
 
 	if (from->fields_present & ACCT_EXPIRED_FLAG) {
 		DEBUG(10,("INFO_25 PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n",from->passmustchange));
 		if (from->passmustchange == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
-			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);		
+			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);
 		} else {
 			pdb_set_pass_last_set_time(to, time(NULL),PDB_CHANGED);
 		}
