@@ -2700,25 +2700,25 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 						 
 		for (i = 0; i < num_entries; i++) {
 
-			char *description = NULL;
+			const char *description = NULL;
 
 			if (opt_long_list_entries) {
 
 				POLICY_HND alias_pol;
-				ALIAS_INFO_CTR ctr;
+				union samr_AliasInfo *info = NULL;
 
 				if ((NT_STATUS_IS_OK(rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
 									   &domain_pol,
 									   0x8,
 									   groups[i].rid,
 									   &alias_pol))) &&
-				    (NT_STATUS_IS_OK(rpccli_samr_query_alias_info(pipe_hnd, mem_ctx,
-									       &alias_pol, 3,
-									       &ctr))) &&
+				    (NT_STATUS_IS_OK(rpccli_samr_QueryAliasInfo(pipe_hnd, mem_ctx,
+										&alias_pol,
+										3,
+										&info))) &&
 				    (NT_STATUS_IS_OK(rpccli_samr_Close(pipe_hnd, mem_ctx,
 								    &alias_pol)))) {
-					description = unistr2_to_ascii_talloc(mem_ctx,
-								   ctr.alias.info3.description.string);
+					description = info->description.string;
 				}
 			}
 			
@@ -2757,25 +2757,25 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 						 
 		for (i = 0; i < num_entries; i++) {
 
-			char *description = NULL;
+			const char *description = NULL;
 
 			if (opt_long_list_entries) {
 
 				POLICY_HND alias_pol;
-				ALIAS_INFO_CTR ctr;
+				union samr_AliasInfo *info = NULL;
 
 				if ((NT_STATUS_IS_OK(rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
 									   &domain_pol,
 									   0x8,
 									   groups[i].rid,
 									   &alias_pol))) &&
-				    (NT_STATUS_IS_OK(rpccli_samr_query_alias_info(pipe_hnd, mem_ctx,
-									       &alias_pol, 3,
-									       &ctr))) &&
+				    (NT_STATUS_IS_OK(rpccli_samr_QueryAliasInfo(pipe_hnd, mem_ctx,
+										&alias_pol,
+										3,
+										&info))) &&
 				    (NT_STATUS_IS_OK(rpccli_samr_Close(pipe_hnd, mem_ctx,
 								    &alias_pol)))) {
-					description = unistr2_to_ascii_talloc(mem_ctx,
-								   ctr.alias.info3.description.string);
+					description = info->description.string;
 				}
 			}
 			
