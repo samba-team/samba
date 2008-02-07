@@ -696,9 +696,29 @@ int tdb_wipe_all(struct tdb_context *tdb)
 	int i;
 	tdb_off_t offset = 0;
 	ssize_t data_len;
+	tdb_off_t recovery_head;
+	tdb_len_t recovery_size = 0;
 
 	if (tdb_lockall(tdb) != 0) {
 		return -1;
+	}
+
+	/* see if the tdb has a recovery area, and remember its size
+	   if so. We don't want to lose this as otherwise each
+	   tdb_wipe_all() in a transaction will increase the size of
+	   the tdb by the size of the recovery area */
+	if (tdb_ofs_read(tdb, TDB_RECOVERY_HEAD, &recovery_head) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_wipe_all: failed to read recovery head\n"));
+		goto failed;
+	}
+
+	if (recovery_head != 0) {
+		struct list_struct rec;
+		if (tdb->methods->tdb_read(tdb, recovery_head, &rec, sizeof(rec), DOCONV()) == -1) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL, "tdb_wipe_all: failed to read recovery record\n"));
+			return -1;
+		}	
+		recovery_size = rec.rec_len + sizeof(rec);
 	}
 
 	/* wipe the hashes */
@@ -722,6 +742,11 @@ int tdb_wipe_all(struct tdb_context *tdb)
 
 	/* add all the rest of the file to the freelist */
 	data_len = (tdb->map_size - TDB_DATA_START(tdb->header.hash_size)) - sizeof(struct list_struct);
+	if (data_len < recovery_size+sizeof(tdb_off_t)) {
+		recovery_size = 0;
+	} else {
+		data_len -= recovery_size;
+	}
 	if (data_len > 0) {
 		struct list_struct rec;
 		memset(&rec,'\0',sizeof(rec));
@@ -729,6 +754,24 @@ int tdb_wipe_all(struct tdb_context *tdb)
 		if (tdb_free(tdb, TDB_DATA_START(tdb->header.hash_size), &rec) == -1) {
 			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to add free record\n"));
 			goto failed;
+		}
+	}
+
+	/* possibly add the recovery record */
+	if (recovery_size != 0) {
+		struct list_struct rec;
+		
+		recovery_head = tdb->map_size - recovery_size;
+
+		ZERO_STRUCT(rec);
+		rec.rec_len = recovery_size - sizeof(rec);
+		if (tdb_rec_write(tdb, recovery_head, &rec) != 0) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to add recovery record\n"));
+			goto failed;
+		}
+		if (tdb_ofs_write(tdb, TDB_RECOVERY_HEAD, &recovery_head) == -1) {
+			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to write recovery head\n"));
+			goto failed;		
 		}
 	}
 
