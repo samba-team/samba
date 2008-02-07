@@ -883,41 +883,6 @@ typedef struct r_samr_query_groupinfo_info
 
 
 /********************************************************/
-
-typedef struct {
-	UNISTR4 name;
-	UNISTR4 description;
-	uint32 num_member;
-} ALIAS_INFO1;
-
-typedef struct {
-	UNISTR4 name;
-} ALIAS_INFO2;
-
-typedef struct {
-	UNISTR4 description;
-} ALIAS_INFO3;
-
-typedef struct {
-	POLICY_HND pol;        /* policy handle */
-	uint16 level;    /* 0x0003 seen */
-} SAMR_Q_QUERY_ALIASINFO;
-
-typedef struct {
-	uint16 level;
-	union {
-		ALIAS_INFO1 info1;
-		ALIAS_INFO2 info2;
-		ALIAS_INFO3 info3;
-	} alias;
-} ALIAS_INFO_CTR;
-
-typedef struct {
-	ALIAS_INFO_CTR *ctr;
-	NTSTATUS status;
-} SAMR_R_QUERY_ALIASINFO;
-
-
 /********************************************************/
 
 /* SAMR_Q_QUERY_USERGROUPS - */
