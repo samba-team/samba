@@ -1159,7 +1159,7 @@ struct samr_QueryAliasInfo {
 	} in;
 
 	struct {
-		union samr_AliasInfo *info;/* [ref,switch_is(level)] */
+		union samr_AliasInfo **info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 

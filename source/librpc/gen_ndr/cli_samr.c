@@ -1250,7 +1250,7 @@ NTSTATUS rpccli_samr_QueryAliasInfo(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *alias_handle,
 				    enum samr_AliasInfoEnum level,
-				    union samr_AliasInfo *info)
+				    union samr_AliasInfo **info)
 {
 	struct samr_QueryAliasInfo r;
 	NTSTATUS status;
