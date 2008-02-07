@@ -1316,7 +1316,7 @@ struct samr_GetGroupsForUser {
 	} in;
 
 	struct {
-		struct samr_RidWithAttributeArray *rids;/* [ref] */
+		struct samr_RidWithAttributeArray **rids;/* [ref] */
 		NTSTATUS result;
 	} out;
 

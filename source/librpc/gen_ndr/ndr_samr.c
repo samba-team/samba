@@ -8980,7 +8980,10 @@ static enum ndr_err_code ndr_push_samr_GetGroupsForUser(struct ndr_push *ndr, in
 		if (r->out.rids == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_samr_RidWithAttributeArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.rids));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.rids));
+		if (*r->out.rids) {
+			NDR_CHECK(ndr_push_samr_RidWithAttributeArray(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.rids));
+		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -8988,8 +8991,10 @@ static enum ndr_err_code ndr_push_samr_GetGroupsForUser(struct ndr_push *ndr, in
 
 static enum ndr_err_code ndr_pull_samr_GetGroupsForUser(struct ndr_pull *ndr, int flags, struct samr_GetGroupsForUser *r)
 {
+	uint32_t _ptr_rids;
 	TALLOC_CTX *_mem_save_user_handle_0;
 	TALLOC_CTX *_mem_save_rids_0;
+	TALLOC_CTX *_mem_save_rids_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -9009,7 +9014,18 @@ static enum ndr_err_code ndr_pull_samr_GetGroupsForUser(struct ndr_pull *ndr, in
 		}
 		_mem_save_rids_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.rids, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_samr_RidWithAttributeArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.rids));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_rids));
+		if (_ptr_rids) {
+			NDR_PULL_ALLOC(ndr, *r->out.rids);
+		} else {
+			*r->out.rids = NULL;
+		}
+		if (*r->out.rids) {
+			_mem_save_rids_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.rids, 0);
+			NDR_CHECK(ndr_pull_samr_RidWithAttributeArray(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.rids));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_rids_1, 0);
+		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_rids_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -9037,7 +9053,12 @@ _PUBLIC_ void ndr_print_samr_GetGroupsForUser(struct ndr_print *ndr, const char 
 		ndr->depth++;
 		ndr_print_ptr(ndr, "rids", r->out.rids);
 		ndr->depth++;
-		ndr_print_samr_RidWithAttributeArray(ndr, "rids", r->out.rids);
+		ndr_print_ptr(ndr, "rids", *r->out.rids);
+		ndr->depth++;
+		if (*r->out.rids) {
+			ndr_print_samr_RidWithAttributeArray(ndr, "rids", *r->out.rids);
+		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
