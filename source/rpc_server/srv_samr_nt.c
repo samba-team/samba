@@ -1341,25 +1341,36 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 }
 
 /*******************************************************************
- samr_reply_query_aliasinfo
+ _samr_QueryAliasInfo
  ********************************************************************/
 
-NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAMR_R_QUERY_ALIASINFO *r_u)
+NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
+			      struct samr_QueryAliasInfo *r)
 {
 	DOM_SID   sid;
 	struct acct_info info;
 	uint32    acc_granted;
 	NTSTATUS status;
+	union samr_AliasInfo *alias_info = NULL;
+	const char *alias_name = NULL;
+	const char *alias_description = NULL;
 
-	r_u->status = NT_STATUS_OK;
+	DEBUG(5,("_samr_QueryAliasInfo: %d\n", __LINE__));
 
-	DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
+	alias_info = TALLOC_ZERO_P(p->mem_ctx, union samr_AliasInfo);
+	if (!alias_info) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &sid, &acc_granted, NULL))
+	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_LOOKUP_INFO, "_samr_query_aliasinfo"))) {
-		return r_u->status;
+
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_ALIAS_LOOKUP_INFO,
+					    "_samr_QueryAliasInfo");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	become_root();
@@ -1369,26 +1380,30 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	if ( !NT_STATUS_IS_OK(status))
 		return status;
 
-	if ( !(r_u->ctr = TALLOC_ZERO_P( p->mem_ctx, ALIAS_INFO_CTR )) )
-		return NT_STATUS_NO_MEMORY;
+	/* FIXME: info contains fstrings */
+	alias_name = talloc_strdup(r, info.acct_name);
+	alias_description = talloc_strdup(r, info.acct_desc);
 
-
-	switch (q_u->level ) {
-	case 1:
-		r_u->ctr->level = 1;
-		init_samr_alias_info1(&r_u->ctr->alias.info1, info.acct_name, 1, info.acct_desc);
+	switch (r->in.level) {
+	case ALIASINFOALL:
+		init_samr_alias_info1(&alias_info->all,
+				      alias_name,
+				      1,
+				      alias_description);
 		break;
-	case 3:
-		r_u->ctr->level = 3;
-		init_samr_alias_info3(&r_u->ctr->alias.info3, info.acct_desc);
+	case ALIASINFODESCRIPTION:
+		init_samr_alias_info3(&alias_info->description,
+				      alias_description);
 		break;
 	default:
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
+	*r->out.info = alias_info;
 
-	return r_u->status;
+	DEBUG(5,("_samr_QueryAliasInfo: %d\n", __LINE__));
+
+	return NT_STATUS_OK;
 }
 
 #if 0
@@ -5210,16 +5225,6 @@ NTSTATUS _samr_QueryGroupInfo(pipes_struct *p,
 
 NTSTATUS _samr_SetMemberAttributesOfGroup(pipes_struct *p,
 					  struct samr_SetMemberAttributesOfGroup *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
-			      struct samr_QueryAliasInfo *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;

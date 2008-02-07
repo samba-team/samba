@@ -2169,16 +2169,19 @@ bool samr_io_r_enum_dom_aliases(const char *desc, SAMR_R_ENUM_DOM_ALIASES * r_u,
 }
 
 /*******************************************************************
-inits a ALIAS_INFO1 structure.
+ inits a samr_AliasInfoAll structure.
 ********************************************************************/
 
-void init_samr_alias_info1(ALIAS_INFO1 * al1, char *acct_name, uint32 num_member, char *acct_desc)
+void init_samr_alias_info1(struct samr_AliasInfoAll *r,
+			   const char *name,
+			   uint32_t num_members,
+			   const char *description)
 {
 	DEBUG(5, ("init_samr_alias_info1\n"));
 
-	init_unistr4(&al1->name, acct_name, UNI_FLAGS_NONE);
-	al1->num_member = num_member;
-	init_unistr4(&al1->description, acct_desc, UNI_FLAGS_NONE);
+	init_lsa_String(&r->name, name);
+	r->num_members = num_members;
+	init_lsa_String(&r->description, description);
 }
 
 /*******************************************************************
@@ -2216,15 +2219,17 @@ bool samr_io_alias_info1(const char *desc, ALIAS_INFO1 * al1,
 	return True;
 }
 
+
 /*******************************************************************
-inits a ALIAS_INFO3 structure.
+inits a lsa_String structure.
 ********************************************************************/
 
-void init_samr_alias_info3(ALIAS_INFO3 * al3, const char *acct_desc)
+void init_samr_alias_info3(struct lsa_String *r,
+			   const char *description)
 {
 	DEBUG(5, ("init_samr_alias_info3\n"));
 
-	init_unistr4(&al3->description, acct_desc, UNI_FLAGS_NONE);
+	init_lsa_String(r, description);
 }
 
 /*******************************************************************
