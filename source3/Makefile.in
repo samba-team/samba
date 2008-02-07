@@ -203,7 +203,7 @@ EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@ bin/ndrdump@EXEEXT@ \
 	bin/vlp@EXEEXT@
 
-SHLIBS = @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBADDNS@ @LIBNETAPI@ @LIBWBCLIENT@
+SHLIBS = @LIBWBCLIENT@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBADDNS@ @LIBNETAPI@
 
 PAM_MODULES = @PAM_MODULES@
 
@@ -1044,8 +1044,8 @@ VLP_OBJ = $(VLP_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) \
 ######################################################################
 # now the rules...
 ######################################################################
-all : SHOWFLAGS $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
-	$(SHLIBS) $(MODULES) $(NSS_MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
+all : SHOWFLAGS $(SHLIBS) $(SBIN_PROGS) $(BIN_PROGS) $(ROOT_SBIN_PROGS) \
+	$(MODULES) $(NSS_MODULES) $(PAM_MODULES) @EXTRA_ALL_TARGETS@
 
 nss_modules : $(NSS_MODULES)
 
