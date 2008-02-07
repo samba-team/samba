@@ -41,6 +41,15 @@ static void init_lsa_String(struct lsa_String *name, const char *s)
  inits a structure.
 ********************************************************************/
 
+static void init_lsa_AsciiString(struct lsa_AsciiString *name, const char *s)
+{
+	name->string = s;
+}
+
+/*******************************************************************
+ inits a structure.
+********************************************************************/
+
 void init_samr_DomInfo1(struct samr_DomInfo1 *r,
 			uint16_t min_password_length,
 			uint16_t password_history_length,
@@ -705,45 +714,44 @@ bool samr_io_q_query_dispinfo(const char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
 }
 
 /*******************************************************************
-inits a SAM_DISPINFO_1 structure.
+ inits a samr_DispInfoGeneral structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 **sam,
-			     uint32 num_entries, uint32 start_idx,
+NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx,
+			     struct samr_DispInfoGeneral *r,
+			     uint32_t num_entries,
+			     uint32_t start_idx,
 			     struct samr_displayentry *entries)
 {
 	uint32 i;
 
 	DEBUG(10, ("init_sam_dispinfo_1: num_entries: %d\n", num_entries));
 
-	if (num_entries==0)
+	if (num_entries == 0) {
 		return NT_STATUS_OK;
+	}
 
-	*sam = TALLOC_ZERO_ARRAY(ctx, SAM_DISPINFO_1, num_entries);
-	if (*sam == NULL)
-		return NT_STATUS_NO_MEMORY;
+	r->count = num_entries;
 
-	(*sam)->sam=TALLOC_ARRAY(ctx, SAM_ENTRY1, num_entries);
-	if ((*sam)->sam == NULL)
+	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryGeneral, num_entries);
+	if (!r->entries) {
 		return NT_STATUS_NO_MEMORY;
-
-	(*sam)->str=TALLOC_ARRAY(ctx, SAM_STR1, num_entries);
-	if ((*sam)->str == NULL)
-		return NT_STATUS_NO_MEMORY;
+	}
 
 	for (i = 0; i < num_entries ; i++) {
-		init_unistr2(&(*sam)->str[i].uni_acct_name,
-			     entries[i].account_name, UNI_FLAGS_NONE);
-		init_unistr2(&(*sam)->str[i].uni_full_name,
-			     entries[i].fullname, UNI_FLAGS_NONE);
-		init_unistr2(&(*sam)->str[i].uni_acct_desc,
-			     entries[i].description, UNI_FLAGS_NONE);
 
-		init_sam_entry1(&(*sam)->sam[i], start_idx+i+1,
-				&(*sam)->str[i].uni_acct_name,
-				&(*sam)->str[i].uni_full_name,
-				&(*sam)->str[i].uni_acct_desc,
-				entries[i].rid, entries[i].acct_flags);
+		init_lsa_String(&r->entries[i].account_name,
+				entries[i].account_name);
+
+		init_lsa_String(&r->entries[i].description,
+				entries[i].description);
+
+		init_lsa_String(&r->entries[i].full_name,
+				entries[i].fullname);
+
+		r->entries[i].rid = entries[i].rid;
+		r->entries[i].acct_flags = entries[i].acct_flags;
+		r->entries[i].idx = start_idx+i+1;
 	}
 
 	return NT_STATUS_OK;
@@ -795,42 +803,41 @@ static bool sam_io_sam_dispinfo_1(const char *desc, SAM_DISPINFO_1 * sam,
 }
 
 /*******************************************************************
-inits a SAM_DISPINFO_2 structure.
+ inits a samr_DispInfoFull structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 **sam,
-			     uint32 num_entries, uint32 start_idx,
+NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx,
+			     struct samr_DispInfoFull *r,
+			     uint32_t num_entries,
+			     uint32_t start_idx,
 			     struct samr_displayentry *entries)
 {
-	uint32 i;
+	uint32_t i;
 
 	DEBUG(10, ("init_sam_dispinfo_2: num_entries: %d\n", num_entries));
 
-	if (num_entries==0)
+	if (num_entries == 0) {
 		return NT_STATUS_OK;
+	}
 
-	*sam = TALLOC_ZERO_ARRAY(ctx, SAM_DISPINFO_2, num_entries);
-	if (*sam == NULL)
+	r->count = num_entries;
+
+	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryFull, num_entries);
+	if (!r->entries) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
-	(*sam)->sam = TALLOC_ARRAY(ctx, SAM_ENTRY2, num_entries);
-	if ((*sam)->sam == NULL)
-		return NT_STATUS_NO_MEMORY;
+	for (i = 0; i < num_entries ; i++) {
 
-	(*sam)->str=TALLOC_ARRAY(ctx, SAM_STR2, num_entries);
-	if ((*sam)->str == NULL)
-		return NT_STATUS_NO_MEMORY;
+		init_lsa_String(&r->entries[i].account_name,
+				entries[i].account_name);
 
-	for (i = 0; i < num_entries; i++) {
-		init_unistr2(&(*sam)->str[i].uni_srv_name,
-			     entries[i].account_name, UNI_FLAGS_NONE);
-		init_unistr2(&(*sam)->str[i].uni_srv_desc,
-			     entries[i].description, UNI_FLAGS_NONE);
+		init_lsa_String(&r->entries[i].description,
+				entries[i].description);
 
-		init_sam_entry2(&(*sam)->sam[i], start_idx + i + 1,
-				&(*sam)->str[i].uni_srv_name,
-				&(*sam)->str[i].uni_srv_desc,
-				entries[i].rid, entries[i].acct_flags);
+		r->entries[i].rid = entries[i].rid;
+		r->entries[i].acct_flags = entries[i].acct_flags;
+		r->entries[i].idx = start_idx+i+1;
 	}
 
 	return NT_STATUS_OK;
@@ -884,42 +891,41 @@ static bool sam_io_sam_dispinfo_2(const char *desc, SAM_DISPINFO_2 * sam,
 }
 
 /*******************************************************************
-inits a SAM_DISPINFO_3 structure.
+ inits a samr_DispInfoFullGroups structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 **sam,
-			     uint32 num_entries, uint32 start_idx,
+NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx,
+			     struct samr_DispInfoFullGroups *r,
+			     uint32_t num_entries,
+			     uint32_t start_idx,
 			     struct samr_displayentry *entries)
 {
-	uint32 i;
+	uint32_t i;
 
 	DEBUG(5, ("init_sam_dispinfo_3: num_entries: %d\n", num_entries));
 
-	if (num_entries==0)
+	if (num_entries == 0) {
 		return NT_STATUS_OK;
+	}
 
-	*sam = TALLOC_ZERO_ARRAY(ctx, SAM_DISPINFO_3, num_entries);
-	if (*sam == NULL)
+	r->count = num_entries;
+
+	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryFullGroup, num_entries);
+	if (!r->entries) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
-	if (!((*sam)->sam=TALLOC_ARRAY(ctx, SAM_ENTRY3, num_entries)))
-		return NT_STATUS_NO_MEMORY;
+	for (i = 0; i < num_entries ; i++) {
 
-	if (!((*sam)->str=TALLOC_ARRAY(ctx, SAM_STR3, num_entries)))
-		return NT_STATUS_NO_MEMORY;
+		init_lsa_String(&r->entries[i].account_name,
+				entries[i].account_name);
 
-	for (i = 0; i < num_entries; i++) {
-		DEBUG(11, ("init_sam_dispinfo_3: entry: %d\n",i));
+		init_lsa_String(&r->entries[i].description,
+				entries[i].description);
 
-		init_unistr2(&(*sam)->str[i].uni_grp_name,
-			     entries[i].account_name, UNI_FLAGS_NONE);
-		init_unistr2(&(*sam)->str[i].uni_grp_desc,
-			     entries[i].description, UNI_FLAGS_NONE);
-
-		init_sam_entry3(&(*sam)->sam[i], start_idx+i+1,
-				&(*sam)->str[i].uni_grp_name,
-				&(*sam)->str[i].uni_grp_desc,
-				entries[i].rid);
+		r->entries[i].rid = entries[i].rid;
+		r->entries[i].acct_flags = entries[i].acct_flags;
+		r->entries[i].idx = start_idx+i+1;
 	}
 
 	return NT_STATUS_OK;
@@ -973,45 +979,38 @@ static bool sam_io_sam_dispinfo_3(const char *desc, SAM_DISPINFO_3 * sam,
 }
 
 /*******************************************************************
-inits a SAM_DISPINFO_4 structure.
+ inits a samr_DispInfoAscii structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 **sam,
-			     uint32 num_entries, uint32 start_idx,
+NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx,
+			     struct samr_DispInfoAscii *r,
+			     uint32_t num_entries,
+			     uint32_t start_idx,
 			     struct samr_displayentry *entries)
 {
-	uint32 i;
+	uint32_t i;
 
 	DEBUG(5, ("init_sam_dispinfo_4: num_entries: %d\n", num_entries));
 
-	if (num_entries==0)
+	if (num_entries == 0) {
 		return NT_STATUS_OK;
-
-	*sam = TALLOC_ZERO_ARRAY(ctx, SAM_DISPINFO_4, num_entries);
-	if (*sam == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	(*sam)->sam = TALLOC_ARRAY(ctx, SAM_ENTRY4, num_entries);
-	if ((*sam)->sam == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	(*sam)->str=TALLOC_ARRAY(ctx, SAM_STR4, num_entries);
-	if ((*sam)->str == NULL)
-		return NT_STATUS_NO_MEMORY;
-
-	for (i = 0; i < num_entries; i++) {
-		size_t len_sam_name = strlen(entries[i].account_name);
-
-		DEBUG(11, ("init_sam_dispinfo_2: entry: %d\n",i));
-	  
-		init_sam_entry4(&(*sam)->sam[i], start_idx + i + 1,
-				len_sam_name);
-
-		init_string2(&(*sam)->str[i].acct_name,
-			     entries[i].account_name, len_sam_name+1,
-			     len_sam_name);
 	}
-	
+
+	r->count = num_entries;
+
+	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryAscii, num_entries);
+	if (!r->entries) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < num_entries ; i++) {
+
+		init_lsa_AsciiString(&r->entries[i].account_name,
+				     entries[i].account_name);
+
+		r->entries[i].idx = start_idx+i+1;
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -1062,39 +1061,36 @@ static bool sam_io_sam_dispinfo_4(const char *desc, SAM_DISPINFO_4 * sam,
 }
 
 /*******************************************************************
-inits a SAM_DISPINFO_5 structure.
+ inits a samr_DispInfoAscii structure.
 ********************************************************************/
 
-NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 **sam,
-			     uint32 num_entries, uint32 start_idx,
+NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx,
+			     struct samr_DispInfoAscii *r,
+			     uint32_t num_entries,
+			     uint32_t start_idx,
 			     struct samr_displayentry *entries)
 {
-	uint32 len_sam_name;
-	uint32 i;
+	uint32_t i;
 
 	DEBUG(5, ("init_sam_dispinfo_5: num_entries: %d\n", num_entries));
 
-	if (num_entries==0)
+	if (num_entries == 0) {
 		return NT_STATUS_OK;
+	}
 
-	*sam = TALLOC_ZERO_ARRAY(ctx, SAM_DISPINFO_5, num_entries);
-	if (*sam == NULL)
+	r->count = num_entries;
+
+	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryAscii, num_entries);
+	if (!r->entries) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
-	if (!((*sam)->sam=TALLOC_ARRAY(ctx, SAM_ENTRY5, num_entries)))
-		return NT_STATUS_NO_MEMORY;
+	for (i = 0; i < num_entries ; i++) {
 
-	if (!((*sam)->str=TALLOC_ARRAY(ctx, SAM_STR5, num_entries)))
-		return NT_STATUS_NO_MEMORY;
+		init_lsa_AsciiString(&r->entries[i].account_name,
+				     entries[i].account_name);
 
-	for (i = 0; i < num_entries; i++) {
-		DEBUG(11, ("init_sam_dispinfo_5: entry: %d\n",i));
-
-		len_sam_name = strlen(entries[i].account_name);
-	  
-		init_sam_entry5(&(*sam)->sam[i], start_idx+i+1, len_sam_name);
-		init_string2(&(*sam)->str[i].grp_name, entries[i].account_name,
-			     len_sam_name+1, len_sam_name);
+		r->entries[i].idx = start_idx+i+1;
 	}
 
 	return NT_STATUS_OK;
