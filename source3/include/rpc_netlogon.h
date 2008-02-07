@@ -1062,18 +1062,4 @@ typedef struct net_r_dsr_getdcname {
 	WERROR result;
 } NET_R_DSR_GETDCNAME;
 
-/* NET_Q_DSR_GESITENAME */
-typedef struct net_q_dsr_getsitename {
-	uint32 ptr_computer_name;
-	UNISTR2 uni_computer_name;
-} NET_Q_DSR_GETSITENAME;
-
-/* NET_R_DSR_GETSITENAME */
-typedef struct net_r_dsr_getsitename {
-	uint32 ptr_site_name;
-	UNISTR2 uni_site_name;
-	WERROR result;
-} NET_R_DSR_GETSITENAME;
-
-
 #endif /* _RPC_NETLOGON_H */
