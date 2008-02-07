@@ -510,57 +510,6 @@ void get_query_dispinfo_params(int loop_count, uint32 *max_entries,
 		*max_size = 131071;
 		break;
 	}
-}		     
-
-/* Query display info */
-
-NTSTATUS rpccli_samr_query_dispinfo(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx, 
-				    POLICY_HND *domain_pol, uint32 *start_idx,
-				    uint16 switch_value, uint32 *num_entries,
-				    uint32 max_entries, uint32 max_size,
-				    SAM_DISPINFO_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_QUERY_DISPINFO q;
-	SAMR_R_QUERY_DISPINFO r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_query_dispinfo for start_idx = %u\n", *start_idx));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	*num_entries = 0;
-
-	/* Marshall data and send request */
-
-	init_samr_q_query_dispinfo(&q, domain_pol, switch_value,
-				   *start_idx, max_entries, max_size);
-
-	r.ctr = ctr;
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_DISPINFO,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_query_dispinfo,
-		samr_io_r_query_dispinfo,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-        result = r.status;
-
-	if (!NT_STATUS_IS_OK(result) &&
-	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_MORE_ENTRIES)) {
-		goto done;
-	}
-
-	*num_entries = r.num_entries;
-	*start_idx += r.num_entries;  /* No next_idx in this structure! */
-
- done:
-	return result;
 }
 
 /* Lookup rids.  Note that NT4 seems to crash if more than ~1000 rids are

@@ -1282,8 +1282,6 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx=0, num_entries, i, loop_count = 0;
-	SAM_DISPINFO_CTR ctr;
-	SAM_DISPINFO_1 info1;
 
 	/* Get sam policy handle */
 
