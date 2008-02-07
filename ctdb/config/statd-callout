@@ -31,7 +31,7 @@ case "$1" in
         for f in `/bin/ls $CTDB_BASE/state/statd/ip/*`; do
 	    ip=`basename $f`
 	    [ -d $STATD_SHARED_DIRECTORY/$ip ] || /bin/mkdir $STATD_SHARED_DIRECTORY/$ip
-	    /bin/touch $STATD_SHARED_DIRECTORY/$ip/$2
+	    touch $STATD_SHARED_DIRECTORY/$ip/$2
 	done
 	;;
   del-client)

@@ -42,7 +42,7 @@ case $cmd in
 
 	# having a list of what IPs we have allows statd to do the right 
 	# thing via $CTDB_BASE/statd-callout
-	/bin/touch $CTDB_BASE/state/statd/ip/$ip
+	touch $CTDB_BASE/state/statd/ip/$ip
 	exit 0
 	;;
 
