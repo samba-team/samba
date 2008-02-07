@@ -29,7 +29,7 @@ case "$1" in
 	# the callout does not tell us to which ip the client connected
 	# so we must add it to all the ips that we serve
         for f in `/bin/ls $CTDB_BASE/state/statd/ip/*`; do
-	    ip=`/bin/basename $f`
+	    ip=`basename $f`
 	    [ -d $STATD_SHARED_DIRECTORY/$ip ] || /bin/mkdir $STATD_SHARED_DIRECTORY/$ip
 	    /bin/touch $STATD_SHARED_DIRECTORY/$ip/$2
 	done
@@ -38,7 +38,7 @@ case "$1" in
 	# the callout does not tell us to which ip the client connected
 	# so we must add it to all the ips that we serve
         for f in `/bin/ls $CTDB_BASE/state/statd/ip/*`; do
-	    ip=`/bin/basename $f`
+	    ip=`basename $f`
 	    /bin/rm -f $STATD_SHARED_DIRECTORY/$ip/$2
 	done
 	;;
@@ -86,10 +86,10 @@ case "$1" in
 
 	# copy all monitored clients on this node to the local lockmanager
 	for f in `/bin/ls $CTDB_BASE/state/statd/ip/* 2>/dev/null`; do
-	    ip=`/bin/basename $f`
+	    ip=`basename $f`
 	    [ -d $STATD_SHARED_DIRECTORY/$ip ] && [ -x /usr/bin/smnotify ] && {
 		for g in `/bin/ls $STATD_SHARED_DIRECTORY/$ip/* 2>/dev/null`; do
-			client=`/bin/basename $g`
+			client=`basename $g`
 			touch /var/lib/nfs/statd/sm/$client
 		done
 	    }
@@ -127,10 +127,10 @@ case "$1" in
 	# probability that the client will accept the statd notify packet and
 	# not just ignore it.
         for f in `/bin/ls $CTDB_BASE/state/statd/ip/* 2>/dev/null`; do
-	    ip=`/bin/basename $f`
+	    ip=`basename $f`
 	    [ -d $STATD_SHARED_DIRECTORY/$ip ] && [ -x /usr/bin/smnotify ] && {
 		for g in `/bin/ls $STATD_SHARED_DIRECTORY/$ip/* 2>/dev/null`; do
-			client=`/bin/basename $g`
+			client=`basename $g`
 #			/bin/rm -f $g
 			# send out notifications from the "correct" address
 			# (the same addresse as where the lock was taken out
