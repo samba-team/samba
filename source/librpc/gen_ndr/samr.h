@@ -1049,7 +1049,7 @@ struct samr_QueryGroupInfo {
 	} in;
 
 	struct {
-		union samr_GroupInfo *info;/* [ref,switch_is(level)] */
+		union samr_GroupInfo **info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 

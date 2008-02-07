@@ -911,7 +911,7 @@ NTSTATUS rpccli_samr_QueryGroupInfo(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *group_handle,
 				    enum samr_GroupInfoEnum level,
-				    union samr_GroupInfo *info)
+				    union samr_GroupInfo **info)
 {
 	struct samr_QueryGroupInfo r;
 	NTSTATUS status;

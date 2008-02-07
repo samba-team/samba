@@ -1677,7 +1677,7 @@ static bool api_samr_QueryGroupInfo(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, union samr_GroupInfo);
+	r->out.info = talloc_zero(r, union samr_GroupInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
