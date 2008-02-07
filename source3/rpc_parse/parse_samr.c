@@ -1259,22 +1259,21 @@ bool samr_io_r_query_dispinfo(const char *desc, SAMR_R_QUERY_DISPINFO * r_u,
 }
 
 /*******************************************************************
-inits a GROUP_INFO1 structure.
+ inits a samr_GroupInfoAll structure.
 ********************************************************************/
 
-void init_samr_group_info1(GROUP_INFO1 * gr1,
-			   char *acct_name, char *acct_desc,
-			   uint32 num_members)
+void init_samr_group_info1(struct samr_GroupInfoAll *r,
+			   const char *name,
+			   uint32_t attributes,
+			   uint32_t num_members,
+			   const char *description)
 {
 	DEBUG(5, ("init_samr_group_info1\n"));
 
-	gr1->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not | SE_GROUP_ENABLED ? */
-	gr1->num_members = num_members;
-
-	init_unistr2(&gr1->uni_acct_name, acct_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&gr1->hdr_acct_name, &gr1->uni_acct_name);
-	init_unistr2(&gr1->uni_acct_desc, acct_desc, UNI_FLAGS_NONE);
-	init_uni_hdr(&gr1->hdr_acct_desc, &gr1->uni_acct_desc);
+	init_lsa_String(&r->name, name);
+	r->attributes = attributes;
+	r->num_members = num_members;
+	init_lsa_String(&r->description, description);
 }
 
 /*******************************************************************
@@ -1321,16 +1320,14 @@ bool samr_io_group_info1(const char *desc, GROUP_INFO1 * gr1,
 }
 
 /*******************************************************************
-inits a GROUP_INFO2 structure.
+ inits a lsa_String structure
 ********************************************************************/
 
-void init_samr_group_info2(GROUP_INFO2 * gr2, const char *acct_name)
+void init_samr_group_info2(struct lsa_String *r, const char *group_name)
 {
 	DEBUG(5, ("init_samr_group_info2\n"));
 
-	gr2->level = 2;
-	init_unistr2(&gr2->uni_acct_name, acct_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&gr2->hdr_acct_name, &gr2->uni_acct_name);
+	init_lsa_String(r, group_name);
 }
 
 /*******************************************************************
@@ -1358,14 +1355,15 @@ bool samr_io_group_info2(const char *desc, GROUP_INFO2 *gr2, prs_struct *ps, int
 }
 
 /*******************************************************************
-inits a GROUP_INFO3 structure.
+ inits a samr_GroupInfoAttributes structure.
 ********************************************************************/
 
-void init_samr_group_info3(GROUP_INFO3 *gr3)
+void init_samr_group_info3(struct samr_GroupInfoAttributes *r,
+			   uint32_t attributes)
 {
 	DEBUG(5, ("init_samr_group_info3\n"));
 
-	gr3->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not | SE_GROUP_ENABLED ? */
+	r->attributes = attributes;
 }
 
 /*******************************************************************
@@ -1390,16 +1388,14 @@ bool samr_io_group_info3(const char *desc, GROUP_INFO3 *gr3, prs_struct *ps, int
 }
 
 /*******************************************************************
-inits a GROUP_INFO4 structure.
+ inits a lsa_String structure
 ********************************************************************/
 
-void init_samr_group_info4(GROUP_INFO4 * gr4, const char *acct_desc)
+void init_samr_group_info4(struct lsa_String *r, const char *description)
 {
 	DEBUG(5, ("init_samr_group_info4\n"));
 
-	gr4->level = 4;
-	init_unistr2(&gr4->uni_acct_desc, acct_desc, UNI_FLAGS_NONE);
-	init_uni_hdr(&gr4->hdr_acct_desc, &gr4->uni_acct_desc);
+	init_lsa_String(r, description);
 }
 
 /*******************************************************************
@@ -1426,23 +1422,23 @@ bool samr_io_group_info4(const char *desc, GROUP_INFO4 * gr4,
 	return True;
 }
 
+
 /*******************************************************************
-inits a GROUP_INFO5 structure.
+ inits a samr_GroupInfoAll structure.
 ********************************************************************/
 
-void init_samr_group_info5(GROUP_INFO5 * gr5,
-			   char *acct_name, char *acct_desc,
-			   uint32 num_members)
+void init_samr_group_info5(struct samr_GroupInfoAll *r,
+			   const char *name,
+			   uint32_t attributes,
+			   uint32_t num_members,
+			   const char *description)
 {
 	DEBUG(5, ("init_samr_group_info5\n"));
 
-	gr5->group_attr = (SE_GROUP_MANDATORY|SE_GROUP_ENABLED_BY_DEFAULT); /* why not | SE_GROUP_ENABLED ? */
-	gr5->num_members = num_members;
-
-	init_unistr2(&gr5->uni_acct_name, acct_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&gr5->hdr_acct_name, &gr5->uni_acct_name);
-	init_unistr2(&gr5->uni_acct_desc, acct_desc, UNI_FLAGS_NONE);
-	init_uni_hdr(&gr5->hdr_acct_desc, &gr5->uni_acct_desc);
+	init_lsa_String(&r->name, name);
+	r->attributes = attributes;
+	r->num_members = num_members;
+	init_lsa_String(&r->description, description);
 }
 
 /*******************************************************************

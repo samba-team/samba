@@ -4640,25 +4640,32 @@ NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
 }
 
 /*********************************************************************
- _samr_query_groupinfo
-
-sends the name/comment pair of a domain group
-level 1 send also the number of users of that group
+ _samr_QueryGroupInfo
 *********************************************************************/
 
-NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAMR_R_QUERY_GROUPINFO *r_u)
+NTSTATUS _samr_QueryGroupInfo(pipes_struct *p,
+			      struct samr_QueryGroupInfo *r)
 {
+	NTSTATUS status;
 	DOM_SID group_sid;
 	GROUP_MAP map;
-	GROUP_INFO_CTR *ctr;
+	union samr_GroupInfo *info = NULL;
 	uint32 acc_granted;
 	bool ret;
+	uint32_t attributes = SE_GROUP_MANDATORY |
+			      SE_GROUP_ENABLED_BY_DEFAULT |
+			      SE_GROUP_ENABLED;
+	const char *group_name = NULL;
+	const char *group_description = NULL;
 
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted, NULL))
+	if (!get_lsa_policy_samr_sid(p, r->in.group_handle, &group_sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_LOOKUP_INFO, "_samr_query_groupinfo"))) {
-		return r_u->status;
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_GROUP_LOOKUP_INFO,
+					    "_samr_QueryGroupInfo");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	become_root();
@@ -4667,41 +4674,47 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 	if (!ret)
 		return NT_STATUS_INVALID_HANDLE;
 
-	ctr=TALLOC_ZERO_P(p->mem_ctx, GROUP_INFO_CTR);
-	if (ctr==NULL)
-		return NT_STATUS_NO_MEMORY;
+	/* FIXME: map contains fstrings */
+	group_name = talloc_strdup(r, map.nt_name);
+	group_description = talloc_strdup(r, map.comment);
 
-	switch (q_u->switch_level) {
+	info = TALLOC_ZERO_P(p->mem_ctx, union samr_GroupInfo);
+	if (!info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	switch (r->in.level) {
 		case 1: {
 			uint32 *members;
 			size_t num_members;
 
-			ctr->switch_value1 = 1;
-
 			become_root();
-			r_u->status = pdb_enum_group_members(
+			status = pdb_enum_group_members(
 				p->mem_ctx, &group_sid, &members, &num_members);
 			unbecome_root();
 
-			if (!NT_STATUS_IS_OK(r_u->status)) {
-				return r_u->status;
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
 
-			init_samr_group_info1(&ctr->group.info1, map.nt_name,
-				      map.comment, num_members);
+			init_samr_group_info1(&info->all,
+					      group_name,
+					      attributes,
+					      num_members,
+					      group_description);
 			break;
 		}
 		case 2:
-			ctr->switch_value1 = 2;
-			init_samr_group_info2(&ctr->group.info2, map.nt_name);
+			init_samr_group_info2(&info->name,
+					      group_name);
 			break;
 		case 3:
-			ctr->switch_value1 = 3;
-			init_samr_group_info3(&ctr->group.info3);
+			init_samr_group_info3(&info->attributes,
+					      attributes);
 			break;
 		case 4:
-			ctr->switch_value1 = 4;
-			init_samr_group_info4(&ctr->group.info4, map.comment);
+			init_samr_group_info4(&info->description,
+					      group_description);
 			break;
 		case 5: {
 			/*
@@ -4709,27 +4722,29 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 			size_t num_members;
 			*/
 
-			ctr->switch_value1 = 5;
-
 			/*
 			become_root();
-			r_u->status = pdb_enum_group_members(
+			status = pdb_enum_group_members(
 				p->mem_ctx, &group_sid, &members, &num_members);
 			unbecome_root();
 
-			if (!NT_STATUS_IS_OK(r_u->status)) {
-				return r_u->status;
+			if (!NT_STATUS_IS_OK(status)) {
+				return status;
 			}
 			*/
-			init_samr_group_info5(&ctr->group.info5, map.nt_name,
-				      map.comment, 0 /* num_members */); /* in w2k3 this is always 0 */
+			init_samr_group_info5(&info->all2,
+					      group_name,
+					      attributes,
+					      0, /* num_members - in w2k3 this is always 0 */
+					      group_description);
+
 			break;
 		}
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	init_samr_r_query_groupinfo(r_u, ctr, NT_STATUS_OK);
+	*r->out.info = info;
 
 	return NT_STATUS_OK;
 }
@@ -5205,16 +5220,6 @@ NTSTATUS _samr_LookupNames(pipes_struct *p,
 
 NTSTATUS _samr_LookupRids(pipes_struct *p,
 			  struct samr_LookupRids *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_QueryGroupInfo(pipes_struct *p,
-			      struct samr_QueryGroupInfo *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
