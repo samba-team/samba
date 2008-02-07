@@ -215,7 +215,7 @@ NTSTATUS rpccli_samr_ChangePasswordUser(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_samr_GetGroupsForUser(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *user_handle,
-				      struct samr_RidWithAttributeArray *rids);
+				      struct samr_RidWithAttributeArray **rids);
 NTSTATUS rpccli_samr_QueryDisplayInfo(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *domain_handle,

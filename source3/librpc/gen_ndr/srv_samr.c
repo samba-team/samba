@@ -3119,7 +3119,7 @@ static bool api_samr_GetGroupsForUser(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.rids = talloc_zero(r, struct samr_RidWithAttributeArray);
+	r->out.rids = talloc_zero(r, struct samr_RidWithAttributeArray *);
 	if (r->out.rids == NULL) {
 		talloc_free(r);
 		return false;
