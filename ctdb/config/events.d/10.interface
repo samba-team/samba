@@ -62,7 +62,7 @@ case $cmd in
 		 exit 1
 	}
 	# cope with the script being killed while we have the interface blocked
-	/sbin/iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
+	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
 
 	# flush our route cache
 	echo 1 > /proc/sys/net/ipv4/route/flush
@@ -93,8 +93,8 @@ case $cmd in
 
 	failed=0
 	# we do an extra delete to cope with the script being killed
-	/sbin/iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
-	/sbin/iptables -I INPUT -i $iface -d $ip -j DROP
+	iptables -D INPUT -i $iface -d $ip -j DROP 2> /dev/null
+	iptables -I INPUT -i $iface -d $ip -j DROP
 	kill_tcp_connections $ip
 
 	# the ip tool will delete all secondary IPs if this is the primary. To work around
@@ -115,7 +115,7 @@ case $cmd in
 		fi
 	    done
 	}
-	/sbin/iptables -D INPUT -i $iface -d $ip -j DROP
+	iptables -D INPUT -i $iface -d $ip -j DROP
 	[ $failed = 0 ] || {
 		 echo "Failed to del $ip on dev $iface"
 		 exit 1
