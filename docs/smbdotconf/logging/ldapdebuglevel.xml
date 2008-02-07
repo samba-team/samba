@@ -8,17 +8,17 @@
 		This parameter controls the debug level of the LDAP library
 		calls. In the case of OpenLDAP, it is the same
 		bit-field as understood by the server and documented in the
-		<citerefentry>
+		 <citerefentry>
 			<refentrytitle>slapd.conf</refentrytitle>
 			<manvolnum>5</manvolnum>
 		</citerefentry>
 		manpage.
 		A typical useful value will be
-		<emphasis>1</emphasis> for tracing function calls.
+		 <emphasis>1</emphasis> for tracing function calls.
 	</para>
 	<para>
-		The debug ouput from the LDAP libraries appears with a
-		prefix [LDAP] in samba's logging output.
+		The debug ouput from the LDAP libraries appears with the
+		prefix [LDAP] in Samba's logging output.
 		The level at which LDAP logging is printed is controlled by the
 		parameter <parameter>ldap debug threshold</parameter>.
 	</para>
