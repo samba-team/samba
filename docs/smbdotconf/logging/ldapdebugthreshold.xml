@@ -5,10 +5,10 @@
 		xmlns:samba="http://www.samba.org/samba/DTD/samba-doc">
 <description>
 	<para>
-		This parameter controls the samba debug level at which
+		This parameter controls the Samba debug level at which
 		the ldap library debug output is
-		printed in the samba logs. See the description of
-		<parameter>ldap debug level</parameter> for details.
+		printed in the Samba logs. See the description of
+		 <parameter>ldap debug level</parameter> for details.
 	</para>
 </description>
 <value type="default">10</value>
