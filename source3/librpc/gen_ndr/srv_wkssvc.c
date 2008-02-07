@@ -1650,7 +1650,7 @@ static bool api_wkssvc_NetrGetJoinableOus(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.num_ous = r->in.num_ous;
-	r->out.ous = talloc_zero_array(r, const char **, *r->out.num_ous);
+	r->out.ous = talloc_zero(r, const char **);
 	if (r->out.ous == NULL) {
 		talloc_free(r);
 		return false;
@@ -2023,7 +2023,7 @@ static bool api_wkssvc_NetrGetJoinableOus2(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.num_ous = r->in.num_ous;
-	r->out.ous = talloc_zero_array(r, const char **, *r->out.num_ous);
+	r->out.ous = talloc_zero(r, const char **);
 	if (r->out.ous == NULL) {
 		talloc_free(r);
 		return false;

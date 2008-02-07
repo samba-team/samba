@@ -1120,7 +1120,7 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinableOus(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*num_ous = *r.out.num_ous;
-	memcpy(ous, r.out.ous, *r.in.num_ous);
+	*ous = *r.out.ous;
 
 	/* Return result */
 	if (werror) {
@@ -1383,7 +1383,7 @@ NTSTATUS rpccli_wkssvc_NetrGetJoinableOus2(struct rpc_pipe_client *cli,
 
 	/* Return variables */
 	*num_ous = *r.out.num_ous;
-	memcpy(ous, r.out.ous, *r.in.num_ous);
+	*ous = *r.out.ous;
 
 	/* Return result */
 	if (werror) {
