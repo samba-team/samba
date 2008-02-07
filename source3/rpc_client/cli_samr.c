@@ -366,46 +366,6 @@ NTSTATUS rpccli_samr_enum_als_groups(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/* Query alias info */
-
-NTSTATUS rpccli_samr_query_alias_info(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				   POLICY_HND *alias_pol, uint16 switch_value,
-				   ALIAS_INFO_CTR *ctr)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_QUERY_ALIASINFO q;
-	SAMR_R_QUERY_ALIASINFO r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_query_alias_info\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_query_aliasinfo(&q, alias_pol, switch_value);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_ALIASINFO,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_query_aliasinfo,
-		samr_io_r_query_aliasinfo,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	if (!NT_STATUS_IS_OK(result = r.status)) {
-		goto done;
-	}
-
-	*ctr = *r.ctr;
-
-  done:
-
-	return result;
-}
-
 /* User change password */
 
 NTSTATUS rpccli_samr_chgpasswd_user(struct rpc_pipe_client *cli,
