@@ -314,20 +314,27 @@ static WERROR cmd_netlogon_dsr_getsitename(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx, int argc,
 					   const char **argv)
 {
-	WERROR result;
-	char *sitename;
+	WERROR werr;
+	NTSTATUS status;
+	const char *sitename = NULL;
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s computername\n", argv[0]);
 		return WERR_OK;
 	}
 
-	result = rpccli_netlogon_dsr_getsitename(cli, mem_ctx, argv[1], &sitename);
+	status = rpccli_netr_DsRGetSiteName(cli, mem_ctx,
+					    argv[1],
+					    &sitename,
+					    &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
 
-	if (!W_ERROR_IS_OK(result)) {
+	if (!W_ERROR_IS_OK(werr)) {
 		printf("rpccli_netlogon_dsr_gesitename returned %s\n",
-		       nt_errstr(werror_to_ntstatus(result)));
-		return result;
+		       nt_errstr(werror_to_ntstatus(werr)));
+		return werr;
 	}
 
 	printf("Computer %s is on Site: %s\n", argv[1], sitename);
