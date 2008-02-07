@@ -2284,7 +2284,7 @@ static bool api_samr_QueryAliasInfo(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, union samr_AliasInfo);
+	r->out.info = talloc_zero(r, union samr_AliasInfo *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
