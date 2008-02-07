@@ -122,7 +122,7 @@ NTSTATUS rpccli_samr_QueryGroupInfo(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *group_handle,
 				    enum samr_GroupInfoEnum level,
-				    union samr_GroupInfo *info);
+				    union samr_GroupInfo **info);
 NTSTATUS rpccli_samr_SetGroupInfo(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  struct policy_handle *group_handle,
