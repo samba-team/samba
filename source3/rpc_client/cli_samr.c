@@ -64,42 +64,6 @@ NTSTATUS rpccli_samr_query_userinfo(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/* Query group info */
-
-NTSTATUS rpccli_samr_query_groupinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                  POLICY_HND *group_pol, uint32 info_level, 
-                                  GROUP_INFO_CTR **ctr)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_QUERY_GROUPINFO q;
-	SAMR_R_QUERY_GROUPINFO r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_query_groupinfo\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_query_groupinfo(&q, group_pol, info_level);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_GROUPINFO,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_query_groupinfo,
-		samr_io_r_query_groupinfo,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	*ctr = r.ctr;
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	return result;
-}
-
 /* Query user groups */
 
 NTSTATUS rpccli_samr_query_usergroups(struct rpc_pipe_client *cli,

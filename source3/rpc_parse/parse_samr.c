@@ -1277,49 +1277,6 @@ void init_samr_group_info1(struct samr_GroupInfoAll *r,
 }
 
 /*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_group_info1(const char *desc, GROUP_INFO1 * gr1,
-			 prs_struct *ps, int depth)
-{
-	uint16 dummy = 1;
-
-	if (gr1 == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_group_info1");
-	depth++;
-
-	if(!prs_uint16("level", ps, depth, &dummy))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_unihdr("hdr_acct_name", &gr1->hdr_acct_name, ps, depth))
-		return False;
-
-	if(!prs_uint32("group_attr", ps, depth, &gr1->group_attr))
-		return False;
-	if(!prs_uint32("num_members", ps, depth, &gr1->num_members))
-		return False;
-
-	if(!smb_io_unihdr("hdr_acct_desc", &gr1->hdr_acct_desc, ps, depth))
-		return False;
-
-	if(!smb_io_unistr2("uni_acct_name", &gr1->uni_acct_name,
-			   gr1->hdr_acct_name.buffer, ps, depth))
-		return False;
-
-	if(!smb_io_unistr2("uni_acct_desc", &gr1->uni_acct_desc,
-			   gr1->hdr_acct_desc.buffer, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  inits a lsa_String structure
 ********************************************************************/
 
@@ -1328,30 +1285,6 @@ void init_samr_group_info2(struct lsa_String *r, const char *group_name)
 	DEBUG(5, ("init_samr_group_info2\n"));
 
 	init_lsa_String(r, group_name);
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_group_info2(const char *desc, GROUP_INFO2 *gr2, prs_struct *ps, int depth)
-{
-	if (gr2 == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_group_info2");
-	depth++;
-
-	if(!prs_uint16("hdr_level", ps, depth, &gr2->level))
-		return False;
-
-	if(!smb_io_unihdr("hdr_acct_name", &gr2->hdr_acct_name, ps, depth))
-		return False;
-	if(!smb_io_unistr2("uni_acct_name", &gr2->uni_acct_name,
-			   gr2->hdr_acct_name.buffer, ps, depth))
-		return False;
-
-	return True;
 }
 
 /*******************************************************************
@@ -1367,27 +1300,6 @@ void init_samr_group_info3(struct samr_GroupInfoAttributes *r,
 }
 
 /*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_group_info3(const char *desc, GROUP_INFO3 *gr3, prs_struct *ps, int depth)
-{
-	if (gr3 == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_group_info3");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("group_attr", ps, depth, &gr3->group_attr))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  inits a lsa_String structure
 ********************************************************************/
 
@@ -1397,31 +1309,6 @@ void init_samr_group_info4(struct lsa_String *r, const char *description)
 
 	init_lsa_String(r, description);
 }
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_group_info4(const char *desc, GROUP_INFO4 * gr4,
-			 prs_struct *ps, int depth)
-{
-	if (gr4 == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_group_info4");
-	depth++;
-
-	if(!prs_uint16("hdr_level", ps, depth, &gr4->level))
-		return False;
-	if(!smb_io_unihdr("hdr_acct_desc", &gr4->hdr_acct_desc, ps, depth))
-		return False;
-	if(!smb_io_unistr2("uni_acct_desc", &gr4->uni_acct_desc,
-			   gr4->hdr_acct_desc.buffer, ps, depth))
-		return False;
-
-	return True;
-}
-
 
 /*******************************************************************
  inits a samr_GroupInfoAll structure.
@@ -1439,183 +1326,6 @@ void init_samr_group_info5(struct samr_GroupInfoAll *r,
 	r->attributes = attributes;
 	r->num_members = num_members;
 	init_lsa_String(&r->description, description);
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_group_info5(const char *desc, GROUP_INFO5 * gr5,
-			 prs_struct *ps, int depth)
-{
-	uint16 dummy = 1;
-
-	if (gr5 == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_group_info5");
-	depth++;
-
-	if(!prs_uint16("level", ps, depth, &dummy))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_unihdr("hdr_acct_name", &gr5->hdr_acct_name, ps, depth))
-		return False;
-
-	if(!prs_uint32("group_attr", ps, depth, &gr5->group_attr))
-		return False;
-	if(!prs_uint32("num_members", ps, depth, &gr5->num_members))
-		return False;
-
-	if(!smb_io_unihdr("hdr_acct_desc", &gr5->hdr_acct_desc, ps, depth))
-		return False;
-
-	if(!smb_io_unistr2("uni_acct_name", &gr5->uni_acct_name,
-			   gr5->hdr_acct_name.buffer, ps, depth))
-		return False;
-
-	if(!smb_io_unistr2("uni_acct_desc", &gr5->uni_acct_desc,
-			   gr5->hdr_acct_desc.buffer, ps, depth))
-		return False;
-
-	return True;
-}
-
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-static bool samr_group_info_ctr(const char *desc, GROUP_INFO_CTR **ctr,
-				prs_struct *ps, int depth)
-{
-	if (UNMARSHALLING(ps))
-		*ctr = PRS_ALLOC_MEM(ps,GROUP_INFO_CTR,1);
-
-	if (*ctr == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_group_info_ctr");
-	depth++;
-
-	if(!prs_uint16("switch_value1", ps, depth, &(*ctr)->switch_value1))
-		return False;
-
-	switch ((*ctr)->switch_value1) {
-	case 1:
-		if(!samr_io_group_info1("group_info1", &(*ctr)->group.info1, ps, depth))
-			return False;
-		break;
-	case 2:
-		if(!samr_io_group_info2("group_info2", &(*ctr)->group.info2, ps, depth))
-			return False;
-		break;
-	case 3:
-		if(!samr_io_group_info3("group_info3", &(*ctr)->group.info3, ps, depth))
-			return False;
-		break;
-	case 4:
-		if(!samr_io_group_info4("group_info4", &(*ctr)->group.info4, ps, depth))
-			return False;
-		break;
-	case 5:
-		if(!samr_io_group_info5("group_info5", &(*ctr)->group.info5, ps, depth))
-			return False;
-		break;
-	default:
-		DEBUG(0,("samr_group_info_ctr: unsupported switch level\n"));
-		break;
-	}
-
-	return True;
-}
-
-/*******************************************************************
-inits a SAMR_Q_QUERY_GROUPINFO structure.
-********************************************************************/
-
-void init_samr_q_query_groupinfo(SAMR_Q_QUERY_GROUPINFO * q_e,
-				 POLICY_HND *pol, uint16 switch_level)
-{
-	DEBUG(5, ("init_samr_q_query_groupinfo\n"));
-
-	q_e->pol = *pol;
-
-	q_e->switch_level = switch_level;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_q_query_groupinfo(const char *desc, SAMR_Q_QUERY_GROUPINFO * q_e,
-			       prs_struct *ps, int depth)
-{
-	if (q_e == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_q_query_groupinfo");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("pol", &q_e->pol, ps, depth))
-		return False;
-
-	if(!prs_uint16("switch_level", ps, depth, &q_e->switch_level))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-inits a SAMR_R_QUERY_GROUPINFO structure.
-********************************************************************/
-
-void init_samr_r_query_groupinfo(SAMR_R_QUERY_GROUPINFO * r_u,
-				 GROUP_INFO_CTR * ctr, NTSTATUS status)
-{
-	DEBUG(5, ("init_samr_r_query_groupinfo\n"));
-
-	r_u->ptr = (NT_STATUS_IS_OK(status) && ctr != NULL) ? 1 : 0;
-	r_u->ctr = ctr;
-	r_u->status = status;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_r_query_groupinfo(const char *desc, SAMR_R_QUERY_GROUPINFO * r_u,
-			       prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_r_query_groupinfo");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("ptr", ps, depth, &r_u->ptr))
-		return False;
-
-	if (r_u->ptr != 0) {
-		if(!samr_group_info_ctr("ctr", &r_u->ctr, ps, depth))
-			return False;
-	}
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
 }
 
 /*******************************************************************
