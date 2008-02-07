@@ -241,80 +241,44 @@ static void display_sam_dom_info_13(struct samr_DomInfo13 *info13)
 
 }
 
-static void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
+static void display_sam_info_1(struct samr_DispEntryGeneral *r)
 {
-	fstring tmp;
-
-	printf("index: 0x%x ", e1->user_idx);
-	printf("RID: 0x%x ", e1->rid_user);
-	printf("acb: 0x%x ", e1->acb_info);
-
-	unistr2_to_ascii(tmp, &s1->uni_acct_name, sizeof(tmp));
-	printf("Account: %s\t", tmp);
-
-	unistr2_to_ascii(tmp, &s1->uni_full_name, sizeof(tmp));
-	printf("Name: %s\t", tmp);
-
-	unistr2_to_ascii(tmp, &s1->uni_acct_desc, sizeof(tmp));
-	printf("Desc: %s\n", tmp);
+	printf("index: 0x%x ", r->idx);
+	printf("RID: 0x%x ", r->rid);
+	printf("acb: 0x%x ", r->acct_flags);
+	printf("Account: %s\t", r->account_name.string);
+	printf("Name: %s\t", r->full_name.string);
+	printf("Desc: %s\n", r->description.string);
 }
 
-static void display_sam_info_2(SAM_ENTRY2 *e2, SAM_STR2 *s2)
+static void display_sam_info_2(struct samr_DispEntryFull *r)
 {
-	fstring tmp;
-
-	printf("index: 0x%x ", e2->user_idx);
-	printf("RID: 0x%x ", e2->rid_user);
-	printf("acb: 0x%x ", e2->acb_info);
-
-	unistr2_to_ascii(tmp, &s2->uni_srv_name, sizeof(tmp));
-	printf("Account: %s\t", tmp);
-
-	unistr2_to_ascii(tmp, &s2->uni_srv_desc, sizeof(tmp));
-	printf("Name: %s\n", tmp);
-
+	printf("index: 0x%x ", r->idx);
+	printf("RID: 0x%x ", r->rid);
+	printf("acb: 0x%x ", r->acct_flags);
+	printf("Account: %s\t", r->account_name.string);
+	printf("Desc: %s\n", r->description.string);
 }
 
-static void display_sam_info_3(SAM_ENTRY3 *e3, SAM_STR3 *s3)
+static void display_sam_info_3(struct samr_DispEntryFullGroup *r)
 {
-	fstring tmp;
-
-	printf("index: 0x%x ", e3->grp_idx);
-	printf("RID: 0x%x ", e3->rid_grp);
-	printf("attr: 0x%x ", e3->attr);
-
-	unistr2_to_ascii(tmp, &s3->uni_grp_name, sizeof(tmp));
-	printf("Account: %s\t", tmp);
-
-	unistr2_to_ascii(tmp, &s3->uni_grp_desc, sizeof(tmp));
-	printf("Name: %s\n", tmp);
-
+	printf("index: 0x%x ", r->idx);
+	printf("RID: 0x%x ", r->rid);
+	printf("acb: 0x%x ", r->acct_flags);
+	printf("Account: %s\t", r->account_name.string);
+	printf("Desc: %s\n", r->description.string);
 }
 
-static void display_sam_info_4(SAM_ENTRY4 *e4, SAM_STR4 *s4)
+static void display_sam_info_4(struct samr_DispEntryAscii *r)
 {
-	int i;
-
-	printf("index: %d ", e4->user_idx);
-
-	printf("Account: ");
-	for (i=0; i<s4->acct_name.str_str_len; i++)
-		printf("%c", s4->acct_name.buffer[i]);
-	printf("\n");
-
+	printf("index: 0x%x ", r->idx);
+	printf("Account: %s\n", r->account_name.string);
 }
 
-static void display_sam_info_5(SAM_ENTRY5 *e5, SAM_STR5 *s5)
+static void display_sam_info_5(struct samr_DispEntryAscii *r)
 {
-	int i;
-
-	printf("index: 0x%x ", e5->grp_idx);
-
-	printf("Account: ");
-	for (i=0; i<s5->grp_name.str_str_len; i++)
-		printf("%c", s5->grp_name.buffer[i]);
-	printf("\n");
-
+	printf("index: 0x%x ", r->idx);
+	printf("Account: %s\n", r->account_name.string);
 }
 
 /****************************************************************************
@@ -1363,14 +1327,10 @@ static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli,
 	uint32 start_idx=0, max_entries=250, max_size = 0xffff, num_entries, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32 info_level = 1;
-	SAM_DISPINFO_CTR ctr;
-	SAM_DISPINFO_1 info1;
-	SAM_DISPINFO_2 info2;
-	SAM_DISPINFO_3 info3;
-	SAM_DISPINFO_4 info4;
-	SAM_DISPINFO_5 info5;
+	union samr_DispInfo info;
 	int loop_count = 0;
 	bool got_params = False; /* Use get_query_dispinfo_params() or not? */
+	uint32_t total_size, returned_size;
 
 	if (argc > 6) {
 		printf("Usage: %s [info level] [start index] [max entries] [max size] [access mask]\n", argv[0]);
@@ -1417,45 +1377,45 @@ static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli,
 
 	/* Query display info */
 
-	ZERO_STRUCT(ctr);
-	ZERO_STRUCT(info1);
-
-	switch (info_level) {
-	case 1:
-		ZERO_STRUCT(info1);
-		ctr.sam.info1 = &info1;
-		break;
-	case 2:
-		ZERO_STRUCT(info2);
-		ctr.sam.info2 = &info2;
-		break;
-	case 3:
-		ZERO_STRUCT(info3);
-		ctr.sam.info3 = &info3;
-		break;
-	case 4:
-		ZERO_STRUCT(info4);
-		ctr.sam.info4 = &info4;
-		break;
-	case 5:
-		ZERO_STRUCT(info5);
-		ctr.sam.info5 = &info5;
-		break;
-	}
-
-
 	do {
 
 		if (!got_params)
 			get_query_dispinfo_params(
 				loop_count, &max_entries, &max_size);
 
-		result = rpccli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
-						 &start_idx, info_level,
-						 &num_entries, max_entries,
-						 max_size, &ctr);
+		result = rpccli_samr_QueryDisplayInfo(cli, mem_ctx,
+						      &domain_pol,
+						      info_level,
+						      start_idx,
+						      max_entries,
+						      max_size,
+						      &total_size,
+						      &returned_size,
+						      &info);
 
 		loop_count++;
+
+		switch (info_level) {
+			case 1:
+				num_entries = info.info1.count;
+				break;
+			case 2:
+				num_entries = info.info2.count;
+				break;
+			case 3:
+				num_entries = info.info3.count;
+				break;
+			case 4:
+				num_entries = info.info4.count;
+				break;
+			case 5:
+				num_entries = info.info5.count;
+				break;
+			default:
+				break;
+		}
+
+		start_idx += num_entries;
 
 		if (NT_STATUS_IS_ERR(result))
 			break;
@@ -1466,19 +1426,19 @@ static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli,
 		for (i = 0; i < num_entries; i++) {
 			switch (info_level) {
 			case 1:
-				display_sam_info_1(&ctr.sam.info1->sam[i], &ctr.sam.info1->str[i]);
+				display_sam_info_1(&info.info1.entries[i]);
 				break;
 			case 2:
-				display_sam_info_2(&ctr.sam.info2->sam[i], &ctr.sam.info2->str[i]);
+				display_sam_info_2(&info.info2.entries[i]);
 				break;
 			case 3:
-				display_sam_info_3(&ctr.sam.info3->sam[i], &ctr.sam.info3->str[i]);
+				display_sam_info_3(&info.info3.entries[i]);
 				break;
 			case 4:
-				display_sam_info_4(&ctr.sam.info4->sam[i], &ctr.sam.info4->str[i]);
+				display_sam_info_4(&info.info4.entries[i]);
 				break;
 			case 5:
-				display_sam_info_5(&ctr.sam.info5->sam[i], &ctr.sam.info5->str[i]);
+				display_sam_info_5(&info.info5.entries[i]);
 				break;
 			}
 		}

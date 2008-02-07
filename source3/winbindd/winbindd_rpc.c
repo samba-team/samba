@@ -63,24 +63,26 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	do {
 		uint32 num_dom_users, j;
 		uint32 max_entries, max_size;
-		SAM_DISPINFO_CTR ctr;
-		SAM_DISPINFO_1 info1;
+		uint32_t total_size, returned_size;
 
-		ZERO_STRUCT( ctr );
-		ZERO_STRUCT( info1 );
-		ctr.sam.info1 = &info1;
+		union samr_DispInfo disp_info;
 
 		/* this next bit is copied from net_user_list_internal() */
 
 		get_query_dispinfo_params(loop_count, &max_entries,
 					  &max_size);
 
-		result = rpccli_samr_query_dispinfo(cli, mem_ctx, &dom_pol,
-						    &start_idx, 1,
-						    &num_dom_users,
-						    max_entries, max_size,
-						    &ctr);
-
+		result = rpccli_samr_QueryDisplayInfo(cli, mem_ctx,
+						      &dom_pol,
+						      1,
+						      start_idx,
+						      max_entries,
+						      max_size,
+						      &total_size,
+						      &returned_size,
+						      &disp_info);
+		num_dom_users = disp_info.info1.count;
+		start_idx += disp_info.info1.count;
 		loop_count++;
 
 		*num_entries += num_dom_users;
@@ -93,14 +95,13 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 		}
 
 		for (j = 0; j < num_dom_users; i++, j++) {
-			fstring username, fullname;
-			uint32 rid = ctr.sam.info1->sam[j].rid_user;
-			
-			unistr2_to_ascii( username, &(&ctr.sam.info1->str[j])->uni_acct_name, sizeof(username));
-			unistr2_to_ascii( fullname, &(&ctr.sam.info1->str[j])->uni_full_name, sizeof(fullname));
-			
-			(*info)[i].acct_name = talloc_strdup(mem_ctx, username );
-			(*info)[i].full_name = talloc_strdup(mem_ctx, fullname );
+
+			uint32_t rid = disp_info.info1.entries[j].rid;
+
+			(*info)[i].acct_name = talloc_strdup(mem_ctx,
+				disp_info.info1.entries[j].account_name.string);
+			(*info)[i].full_name = talloc_strdup(mem_ctx,
+				disp_info.info1.entries[j].full_name.string);
 			(*info)[i].homedir = NULL;
 			(*info)[i].shell = NULL;
 			sid_compose(&(*info)[i].user_sid, &domain->sid, rid);
