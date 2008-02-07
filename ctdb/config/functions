@@ -70,7 +70,9 @@ ctdb_wait_tcp_ports() {
 	      elif [ -x /usr/bin/nc ]; then
 	          /usr/bin/nc -z 127.0.0.1 $p > /dev/null || all_ok=0
 	      elif [ -x /usr/bin/netstat ]; then
-	          (/usr/bin/netstat -a -n | egrep "0.0.0.0:$p\s*LISTEN" > /dev/null) || all_ok=0
+	          (netstat -a -n | egrep "0.0.0.0:$p\s*LISTEN" > /dev/null) || all_ok=0
+	      elif [ -x /bin/netstat ]; then
+	          (netstat -a -n | egrep "0.0.0.0:$p\s*LISTEN" > /dev/null) || all_ok=0
 	      else 
 		  echo "No tool to check tcp ports availabe. can not check in ctdb_wait_tcp_ports"
 		  return
@@ -161,7 +163,9 @@ ctdb_check_tcp_ports() {
       elif [ -x /usr/bin/nc ]; then
           /usr/bin/nc -z 127.0.0.1 $p > /dev/null || all_ok=0
       elif [ -x /usr/bin/netstat ]; then
-          (/usr/bin/netstat -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ) || all_ok=0
+          (netstat -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ) || all_ok=0
+      elif [ -x /bin/netstat ]; then
+          (netstat -a -n | egrep "0.0.0.0:$p .*LISTEN" > /dev/null ) || all_ok=0
       fi
       [ $all_ok -eq 1 ] || {
 	  echo "ERROR: $service_name tcp port $p is not responding"
