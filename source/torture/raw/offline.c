@@ -42,6 +42,7 @@ static int numstates;
 static int num_connected;
 static int test_failed;
 extern int torture_numops;
+extern int torture_entries;
 static bool test_finished;
 
 enum offline_op {OP_LOADFILE, OP_SAVEFILE, OP_SETOFFLINE, OP_GETOFFLINE, OP_ENDOFLIST};
@@ -395,7 +396,7 @@ bool torture_test_offline(struct torture_context *torture)
 	progress = torture_setting_bool(torture, "progress", true);
 
 	nconnections = torture_setting_int(torture, "nprocs", 4);
-	numstates = nconnections * 5;
+	numstates = nconnections * torture_entries;
 
 	state = talloc_zero_array(mem_ctx, struct offline_state, numstates);
 
