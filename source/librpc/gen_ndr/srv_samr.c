@@ -5024,13 +5024,13 @@ static bool api_samr_ChangePasswordUser3(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.dominfo = talloc_zero(r, struct samr_DomInfo1);
+	r->out.dominfo = talloc_zero(r, struct samr_DomInfo1 *);
 	if (r->out.dominfo == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.reject = talloc_zero(r, struct samr_ChangeReject);
+	r->out.reject = talloc_zero(r, struct samr_ChangeReject *);
 	if (r->out.reject == NULL) {
 		talloc_free(r);
 		return false;

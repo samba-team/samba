@@ -360,8 +360,8 @@ NTSTATUS rpccli_samr_ChangePasswordUser3(struct rpc_pipe_client *cli,
 					 struct samr_CryptPassword *lm_password,
 					 struct samr_Password *lm_verifier,
 					 struct samr_CryptPassword *password3,
-					 struct samr_DomInfo1 *dominfo,
-					 struct samr_ChangeReject *reject);
+					 struct samr_DomInfo1 **dominfo,
+					 struct samr_ChangeReject **reject);
 NTSTATUS rpccli_samr_Connect5(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      const char *system_name,
