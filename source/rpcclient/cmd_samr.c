@@ -453,87 +453,73 @@ done:
 /****************************************************************************
  display group info
  ****************************************************************************/
-static void display_group_info1(GROUP_INFO1 *info1)
+static void display_group_info1(struct samr_GroupInfoAll *info1)
 {
-	fstring temp;
-
-	unistr2_to_ascii(temp, &info1->uni_acct_name, sizeof(temp));
-	printf("\tGroup Name:\t%s\n", temp);
-	unistr2_to_ascii(temp, &info1->uni_acct_desc, sizeof(temp));
-	printf("\tDescription:\t%s\n", temp);
-	printf("\tGroup Attribute:%d\n", info1->group_attr);
+	printf("\tGroup Name:\t%s\n", info1->name.string);
+	printf("\tDescription:\t%s\n", info1->description.string);
+	printf("\tGroup Attribute:%d\n", info1->attributes);
 	printf("\tNum Members:%d\n", info1->num_members);
 }
 
 /****************************************************************************
  display group info
  ****************************************************************************/
-static void display_group_info2(GROUP_INFO2 *info2)
+static void display_group_info2(struct lsa_String *info2)
 {
-	fstring name;
-
-	unistr2_to_ascii(name, &info2->uni_acct_name, sizeof(name));
-	printf("\tGroup Description:%s\n", name);
+	printf("\tGroup Description:%s\n", info2->string);
 }
 
 
 /****************************************************************************
  display group info
  ****************************************************************************/
-static void display_group_info3(GROUP_INFO3 *info3)
+static void display_group_info3(struct samr_GroupInfoAttributes *info3)
 {
-	printf("\tGroup Attribute:%d\n", info3->group_attr);
+	printf("\tGroup Attribute:%d\n", info3->attributes);
 }
 
 
 /****************************************************************************
  display group info
  ****************************************************************************/
-static void display_group_info4(GROUP_INFO4 *info4)
+static void display_group_info4(struct lsa_String *info4)
 {
-	fstring desc;
-
-	unistr2_to_ascii(desc, &info4->uni_acct_desc, sizeof(desc));
-	printf("\tGroup Description:%s\n", desc);
+	printf("\tGroup Description:%s\n", info4->string);
 }
 
 /****************************************************************************
  display group info
  ****************************************************************************/
-static void display_group_info5(GROUP_INFO5 *info5)
+static void display_group_info5(struct samr_GroupInfoAll *info5)
 {
-	fstring temp;
-
-	unistr2_to_ascii(temp, &info5->uni_acct_name, sizeof(temp));
-	printf("\tGroup Name:\t%s\n", temp);
-	unistr2_to_ascii(temp, &info5->uni_acct_desc, sizeof(temp));
-	printf("\tDescription:\t%s\n", temp);
-	printf("\tGroup Attribute:%d\n", info5->group_attr);
+	printf("\tGroup Name:\t%s\n", info5->name.string);
+	printf("\tDescription:\t%s\n", info5->description.string);
+	printf("\tGroup Attribute:%d\n", info5->attributes);
 	printf("\tNum Members:%d\n", info5->num_members);
 }
 
 /****************************************************************************
  display sam sync structure
  ****************************************************************************/
-static void display_group_info_ctr(GROUP_INFO_CTR *ctr)
+static void display_group_info(union samr_GroupInfo *info,
+			       enum samr_GroupInfoEnum level)
 {
-	switch (ctr->switch_value1) {
+	switch (level) {
 		case 1:
-			display_group_info1(&ctr->group.info1);
+			display_group_info1(&info->all);
 			break;
 		case 2:
-			display_group_info2(&ctr->group.info2);
+			display_group_info2(&info->name);
 			break;
 		case 3:
-			display_group_info3(&ctr->group.info3);
+			display_group_info3(&info->attributes);
 			break;
 		case 4:
-			display_group_info4(&ctr->group.info4);
+			display_group_info4(&info->description);
 			break;
 		case 5:
-			display_group_info5(&ctr->group.info5);
+			display_group_info5(&info->all2);
 			break;
-
 	}
 }
 
@@ -546,9 +532,9 @@ static NTSTATUS cmd_samr_query_group(struct rpc_pipe_client *cli,
 {
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 info_level = 1;
+	enum samr_GroupInfoEnum info_level = GROUPINFOALL;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-	GROUP_INFO_CTR *group_ctr;
+	union samr_GroupInfo *group_info = NULL;
 	fstring			server;	
 	uint32 group_rid;
 	
@@ -558,10 +544,10 @@ static NTSTATUS cmd_samr_query_group(struct rpc_pipe_client *cli,
 	}
 
         sscanf(argv[1], "%i", &group_rid);
-	
+
 	if (argc > 2)
-		sscanf(argv[2], "%i", &info_level);
-	
+		info_level = atoi(argv[2]);
+
 	if (argc > 3)
 		sscanf(argv[3], "%x", &access_mask);
 
@@ -592,13 +578,15 @@ static NTSTATUS cmd_samr_query_group(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_query_groupinfo(cli, mem_ctx, &group_pol, 
-					  info_level, &group_ctr);
+	result = rpccli_samr_QueryGroupInfo(cli, mem_ctx,
+					    &group_pol,
+					    info_level,
+					    &group_info);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	display_group_info_ctr(group_ctr);
+	display_group_info(group_info, info_level);
 
 	rpccli_samr_Close(cli, mem_ctx, &group_pol);
 	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
