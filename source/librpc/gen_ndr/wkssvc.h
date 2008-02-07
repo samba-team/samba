@@ -826,7 +826,7 @@ struct wkssvc_NetrGetJoinableOus {
 	} in;
 
 	struct {
-		const char ***ous;/* [ref,charset(UTF16),size_is(*num_ous)] */
+		const char ***ous;/* [ref,charset(UTF16),size_is(,*num_ous)] */
 		uint32_t *num_ous;/* [ref] */
 		WERROR result;
 	} out;
@@ -908,7 +908,7 @@ struct wkssvc_NetrGetJoinableOus2 {
 	} in;
 
 	struct {
-		const char ***ous;/* [ref,charset(UTF16),size_is(*num_ous)] */
+		const char ***ous;/* [ref,charset(UTF16),size_is(,*num_ous)] */
 		uint32_t *num_ous;/* [ref] */
 		WERROR result;
 	} out;

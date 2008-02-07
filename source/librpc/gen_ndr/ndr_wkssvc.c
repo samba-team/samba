@@ -8567,7 +8567,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetrGetJoinInformation(struct ndr_print *ndr, con
 
 static enum ndr_err_code ndr_push_wkssvc_NetrGetJoinableOus(struct ndr_push *ndr, int flags, const struct wkssvc_NetrGetJoinableOus *r)
 {
-	uint32_t cntr_ous_1;
+	uint32_t cntr_ous_2;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
 		if (r->in.server_name) {
@@ -8610,18 +8610,18 @@ static enum ndr_err_code ndr_push_wkssvc_NetrGetJoinableOus(struct ndr_push *ndr
 		if (r->out.ous == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.num_ous));
-		for (cntr_ous_1 = 0; cntr_ous_1 < *r->out.num_ous; cntr_ous_1++) {
-			NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.ous[cntr_ous_1]));
-		}
-		for (cntr_ous_1 = 0; cntr_ous_1 < *r->out.num_ous; cntr_ous_1++) {
-			if (r->out.ous[cntr_ous_1]) {
-				NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.ous[cntr_ous_1]));
-				if (*r->out.ous[cntr_ous_1]) {
-					NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.ous[cntr_ous_1], CH_UTF16)));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.ous));
+		if (*r->out.ous) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.num_ous));
+			for (cntr_ous_2 = 0; cntr_ous_2 < *r->out.num_ous; cntr_ous_2++) {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, (*r->out.ous)[cntr_ous_2]));
+			}
+			for (cntr_ous_2 = 0; cntr_ous_2 < *r->out.num_ous; cntr_ous_2++) {
+				if ((*r->out.ous)[cntr_ous_2]) {
+					NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length((*r->out.ous)[cntr_ous_2], CH_UTF16)));
 					NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-					NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.ous[cntr_ous_1], CH_UTF16)));
-					NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.ous[cntr_ous_1], ndr_charset_length(*r->out.ous[cntr_ous_1], CH_UTF16), sizeof(uint16_t), CH_UTF16));
+					NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length((*r->out.ous)[cntr_ous_2], CH_UTF16)));
+					NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, (*r->out.ous)[cntr_ous_2], ndr_charset_length((*r->out.ous)[cntr_ous_2], CH_UTF16), sizeof(uint16_t), CH_UTF16));
 				}
 			}
 		}
@@ -8636,11 +8636,12 @@ static enum ndr_err_code ndr_pull_wkssvc_NetrGetJoinableOus(struct ndr_pull *ndr
 	uint32_t _ptr_Account;
 	uint32_t _ptr_unknown;
 	uint32_t _ptr_ous;
-	uint32_t cntr_ous_1;
+	uint32_t cntr_ous_2;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_Account_0;
 	TALLOC_CTX *_mem_save_unknown_0;
 	TALLOC_CTX *_mem_save_num_ous_0;
+	TALLOC_CTX *_mem_save_ous_0;
 	TALLOC_CTX *_mem_save_ous_1;
 	TALLOC_CTX *_mem_save_ous_2;
 	TALLOC_CTX *_mem_save_ous_3;
@@ -8717,8 +8718,8 @@ static enum ndr_err_code ndr_pull_wkssvc_NetrGetJoinableOus(struct ndr_pull *ndr
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_num_ous_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.num_ous);
 		*r->out.num_ous = *r->in.num_ous;
-		NDR_PULL_ALLOC_N(ndr, r->out.ous, *r->in.num_ous);
-		memset(r->out.ous, 0, *r->in.num_ous * sizeof(*r->out.ous));
+		NDR_PULL_ALLOC(ndr, r->out.ous);
+		ZERO_STRUCTP(r->out.ous);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -8728,49 +8729,53 @@ static enum ndr_err_code ndr_pull_wkssvc_NetrGetJoinableOus(struct ndr_pull *ndr
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.num_ous, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.num_ous));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_num_ous_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.ous));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->out.ous, ndr_get_array_size(ndr, &r->out.ous));
+			NDR_PULL_ALLOC(ndr, r->out.ous);
 		}
-		_mem_save_ous_1 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.ous, 0);
-		for (cntr_ous_1 = 0; cntr_ous_1 < *r->out.num_ous; cntr_ous_1++) {
-			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ous));
-			if (_ptr_ous) {
-				NDR_PULL_ALLOC(ndr, r->out.ous[cntr_ous_1]);
-			} else {
-				r->out.ous[cntr_ous_1] = NULL;
-			}
+		_mem_save_ous_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.ous, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ous));
+		if (_ptr_ous) {
+			NDR_PULL_ALLOC(ndr, *r->out.ous);
+		} else {
+			*r->out.ous = NULL;
 		}
-		for (cntr_ous_1 = 0; cntr_ous_1 < *r->out.num_ous; cntr_ous_1++) {
-			if (r->out.ous[cntr_ous_1]) {
-				_mem_save_ous_2 = NDR_PULL_GET_MEM_CTX(ndr);
-				NDR_PULL_SET_MEM_CTX(ndr, r->out.ous[cntr_ous_1], 0);
+		if (*r->out.ous) {
+			_mem_save_ous_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.ous, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, r->out.ous));
+			NDR_PULL_ALLOC_N(ndr, *r->out.ous, ndr_get_array_size(ndr, r->out.ous));
+			_mem_save_ous_2 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.ous, 0);
+			for (cntr_ous_2 = 0; cntr_ous_2 < *r->out.num_ous; cntr_ous_2++) {
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ous));
 				if (_ptr_ous) {
-					NDR_PULL_ALLOC(ndr, *r->out.ous[cntr_ous_1]);
+					NDR_PULL_ALLOC(ndr, (*r->out.ous)[cntr_ous_2]);
 				} else {
-					*r->out.ous[cntr_ous_1] = NULL;
+					(*r->out.ous)[cntr_ous_2] = NULL;
 				}
-				if (*r->out.ous[cntr_ous_1]) {
+			}
+			for (cntr_ous_2 = 0; cntr_ous_2 < *r->out.num_ous; cntr_ous_2++) {
+				if ((*r->out.ous)[cntr_ous_2]) {
 					_mem_save_ous_3 = NDR_PULL_GET_MEM_CTX(ndr);
-					NDR_PULL_SET_MEM_CTX(ndr, *r->out.ous[cntr_ous_1], 0);
-					NDR_CHECK(ndr_pull_array_size(ndr, r->out.ous[cntr_ous_1]));
-					NDR_CHECK(ndr_pull_array_length(ndr, r->out.ous[cntr_ous_1]));
-					if (ndr_get_array_length(ndr, r->out.ous[cntr_ous_1]) > ndr_get_array_size(ndr, r->out.ous[cntr_ous_1])) {
-						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.ous[cntr_ous_1]), ndr_get_array_length(ndr, r->out.ous[cntr_ous_1]));
+					NDR_PULL_SET_MEM_CTX(ndr, (*r->out.ous)[cntr_ous_2], 0);
+					NDR_CHECK(ndr_pull_array_size(ndr, &(*r->out.ous)[cntr_ous_2]));
+					NDR_CHECK(ndr_pull_array_length(ndr, &(*r->out.ous)[cntr_ous_2]));
+					if (ndr_get_array_length(ndr, &(*r->out.ous)[cntr_ous_2]) > ndr_get_array_size(ndr, &(*r->out.ous)[cntr_ous_2])) {
+						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &(*r->out.ous)[cntr_ous_2]), ndr_get_array_length(ndr, &(*r->out.ous)[cntr_ous_2]));
 					}
-					NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.ous[cntr_ous_1]), sizeof(uint16_t)));
-					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.ous[cntr_ous_1], ndr_get_array_length(ndr, r->out.ous[cntr_ous_1]), sizeof(uint16_t), CH_UTF16));
+					NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &(*r->out.ous)[cntr_ous_2]), sizeof(uint16_t)));
+					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &(*r->out.ous)[cntr_ous_2], ndr_get_array_length(ndr, &(*r->out.ous)[cntr_ous_2]), sizeof(uint16_t), CH_UTF16));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ous_3, 0);
 				}
-				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ous_2, 0);
 			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ous_2, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ous_1, 0);
 		}
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ous_1, 0);
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ous_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
-		if (r->out.ous) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->out.ous, *r->out.num_ous));
+		if (*r->out.ous) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)r->out.ous, *r->out.num_ous));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -8778,7 +8783,7 @@ static enum ndr_err_code ndr_pull_wkssvc_NetrGetJoinableOus(struct ndr_pull *ndr
 
 _PUBLIC_ void ndr_print_wkssvc_NetrGetJoinableOus(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrGetJoinableOus *r)
 {
-	uint32_t cntr_ous_1;
+	uint32_t cntr_ous_2;
 	ndr_print_struct(ndr, name, "wkssvc_NetrGetJoinableOus");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -8824,25 +8829,25 @@ _PUBLIC_ void ndr_print_wkssvc_NetrGetJoinableOus(struct ndr_print *ndr, const c
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ous", r->out.ous);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "ous", *r->out.num_ous);
+		ndr_print_ptr(ndr, "ous", *r->out.ous);
 		ndr->depth++;
-		for (cntr_ous_1=0;cntr_ous_1<*r->out.num_ous;cntr_ous_1++) {
-			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_ous_1);
-			if (idx_1) {
-				ndr_print_ptr(ndr, "ous", r->out.ous[cntr_ous_1]);
-				ndr->depth++;
-				if (r->out.ous[cntr_ous_1]) {
-					ndr_print_ptr(ndr, "ous", *r->out.ous[cntr_ous_1]);
+		if (*r->out.ous) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "ous", *r->out.num_ous);
+			ndr->depth++;
+			for (cntr_ous_2=0;cntr_ous_2<*r->out.num_ous;cntr_ous_2++) {
+				char *idx_2=NULL;
+				asprintf(&idx_2, "[%d]", cntr_ous_2);
+				if (idx_2) {
+					ndr_print_ptr(ndr, "ous", (*r->out.ous)[cntr_ous_2]);
 					ndr->depth++;
-					if (*r->out.ous[cntr_ous_1]) {
-						ndr_print_string(ndr, "ous", *r->out.ous[cntr_ous_1]);
+					if ((*r->out.ous)[cntr_ous_2]) {
+						ndr_print_string(ndr, "ous", (*r->out.ous)[cntr_ous_2]);
 					}
 					ndr->depth--;
+					free(idx_2);
 				}
-				ndr->depth--;
-				free(idx_1);
 			}
+			ndr->depth--;
 		}
 		ndr->depth--;
 		ndr->depth--;
@@ -9492,7 +9497,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetrValidateName2(struct ndr_print *ndr, const ch
 
 static enum ndr_err_code ndr_push_wkssvc_NetrGetJoinableOus2(struct ndr_push *ndr, int flags, const struct wkssvc_NetrGetJoinableOus2 *r)
 {
-	uint32_t cntr_ous_1;
+	uint32_t cntr_ous_2;
 	if (flags & NDR_IN) {
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.server_name));
 		if (r->in.server_name) {
@@ -9532,18 +9537,18 @@ static enum ndr_err_code ndr_push_wkssvc_NetrGetJoinableOus2(struct ndr_push *nd
 		if (r->out.ous == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.num_ous));
-		for (cntr_ous_1 = 0; cntr_ous_1 < *r->out.num_ous; cntr_ous_1++) {
-			NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.ous[cntr_ous_1]));
-		}
-		for (cntr_ous_1 = 0; cntr_ous_1 < *r->out.num_ous; cntr_ous_1++) {
-			if (r->out.ous[cntr_ous_1]) {
-				NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.ous[cntr_ous_1]));
-				if (*r->out.ous[cntr_ous_1]) {
-					NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.ous[cntr_ous_1], CH_UTF16)));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.ous));
+		if (*r->out.ous) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.num_ous));
+			for (cntr_ous_2 = 0; cntr_ous_2 < *r->out.num_ous; cntr_ous_2++) {
+				NDR_CHECK(ndr_push_unique_ptr(ndr, (*r->out.ous)[cntr_ous_2]));
+			}
+			for (cntr_ous_2 = 0; cntr_ous_2 < *r->out.num_ous; cntr_ous_2++) {
+				if ((*r->out.ous)[cntr_ous_2]) {
+					NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length((*r->out.ous)[cntr_ous_2], CH_UTF16)));
 					NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
-					NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(*r->out.ous[cntr_ous_1], CH_UTF16)));
-					NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.ous[cntr_ous_1], ndr_charset_length(*r->out.ous[cntr_ous_1], CH_UTF16), sizeof(uint16_t), CH_UTF16));
+					NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length((*r->out.ous)[cntr_ous_2], CH_UTF16)));
+					NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, (*r->out.ous)[cntr_ous_2], ndr_charset_length((*r->out.ous)[cntr_ous_2], CH_UTF16), sizeof(uint16_t), CH_UTF16));
 				}
 			}
 		}
@@ -9558,11 +9563,12 @@ static enum ndr_err_code ndr_pull_wkssvc_NetrGetJoinableOus2(struct ndr_pull *nd
 	uint32_t _ptr_Account;
 	uint32_t _ptr_EncryptedPassword;
 	uint32_t _ptr_ous;
-	uint32_t cntr_ous_1;
+	uint32_t cntr_ous_2;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_Account_0;
 	TALLOC_CTX *_mem_save_EncryptedPassword_0;
 	TALLOC_CTX *_mem_save_num_ous_0;
+	TALLOC_CTX *_mem_save_ous_0;
 	TALLOC_CTX *_mem_save_ous_1;
 	TALLOC_CTX *_mem_save_ous_2;
 	TALLOC_CTX *_mem_save_ous_3;
@@ -9633,8 +9639,8 @@ static enum ndr_err_code ndr_pull_wkssvc_NetrGetJoinableOus2(struct ndr_pull *nd
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_num_ous_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.num_ous);
 		*r->out.num_ous = *r->in.num_ous;
-		NDR_PULL_ALLOC_N(ndr, r->out.ous, *r->in.num_ous);
-		memset(r->out.ous, 0, *r->in.num_ous * sizeof(*r->out.ous));
+		NDR_PULL_ALLOC(ndr, r->out.ous);
+		ZERO_STRUCTP(r->out.ous);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
@@ -9644,49 +9650,53 @@ static enum ndr_err_code ndr_pull_wkssvc_NetrGetJoinableOus2(struct ndr_pull *nd
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.num_ous, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.num_ous));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_num_ous_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_array_size(ndr, &r->out.ous));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC_N(ndr, r->out.ous, ndr_get_array_size(ndr, &r->out.ous));
+			NDR_PULL_ALLOC(ndr, r->out.ous);
 		}
-		_mem_save_ous_1 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.ous, 0);
-		for (cntr_ous_1 = 0; cntr_ous_1 < *r->out.num_ous; cntr_ous_1++) {
-			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ous));
-			if (_ptr_ous) {
-				NDR_PULL_ALLOC(ndr, r->out.ous[cntr_ous_1]);
-			} else {
-				r->out.ous[cntr_ous_1] = NULL;
-			}
+		_mem_save_ous_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.ous, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ous));
+		if (_ptr_ous) {
+			NDR_PULL_ALLOC(ndr, *r->out.ous);
+		} else {
+			*r->out.ous = NULL;
 		}
-		for (cntr_ous_1 = 0; cntr_ous_1 < *r->out.num_ous; cntr_ous_1++) {
-			if (r->out.ous[cntr_ous_1]) {
-				_mem_save_ous_2 = NDR_PULL_GET_MEM_CTX(ndr);
-				NDR_PULL_SET_MEM_CTX(ndr, r->out.ous[cntr_ous_1], 0);
+		if (*r->out.ous) {
+			_mem_save_ous_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.ous, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, r->out.ous));
+			NDR_PULL_ALLOC_N(ndr, *r->out.ous, ndr_get_array_size(ndr, r->out.ous));
+			_mem_save_ous_2 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.ous, 0);
+			for (cntr_ous_2 = 0; cntr_ous_2 < *r->out.num_ous; cntr_ous_2++) {
 				NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_ous));
 				if (_ptr_ous) {
-					NDR_PULL_ALLOC(ndr, *r->out.ous[cntr_ous_1]);
+					NDR_PULL_ALLOC(ndr, (*r->out.ous)[cntr_ous_2]);
 				} else {
-					*r->out.ous[cntr_ous_1] = NULL;
+					(*r->out.ous)[cntr_ous_2] = NULL;
 				}
-				if (*r->out.ous[cntr_ous_1]) {
+			}
+			for (cntr_ous_2 = 0; cntr_ous_2 < *r->out.num_ous; cntr_ous_2++) {
+				if ((*r->out.ous)[cntr_ous_2]) {
 					_mem_save_ous_3 = NDR_PULL_GET_MEM_CTX(ndr);
-					NDR_PULL_SET_MEM_CTX(ndr, *r->out.ous[cntr_ous_1], 0);
-					NDR_CHECK(ndr_pull_array_size(ndr, r->out.ous[cntr_ous_1]));
-					NDR_CHECK(ndr_pull_array_length(ndr, r->out.ous[cntr_ous_1]));
-					if (ndr_get_array_length(ndr, r->out.ous[cntr_ous_1]) > ndr_get_array_size(ndr, r->out.ous[cntr_ous_1])) {
-						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, r->out.ous[cntr_ous_1]), ndr_get_array_length(ndr, r->out.ous[cntr_ous_1]));
+					NDR_PULL_SET_MEM_CTX(ndr, (*r->out.ous)[cntr_ous_2], 0);
+					NDR_CHECK(ndr_pull_array_size(ndr, &(*r->out.ous)[cntr_ous_2]));
+					NDR_CHECK(ndr_pull_array_length(ndr, &(*r->out.ous)[cntr_ous_2]));
+					if (ndr_get_array_length(ndr, &(*r->out.ous)[cntr_ous_2]) > ndr_get_array_size(ndr, &(*r->out.ous)[cntr_ous_2])) {
+						return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &(*r->out.ous)[cntr_ous_2]), ndr_get_array_length(ndr, &(*r->out.ous)[cntr_ous_2]));
 					}
-					NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, r->out.ous[cntr_ous_1]), sizeof(uint16_t)));
-					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, r->out.ous[cntr_ous_1], ndr_get_array_length(ndr, r->out.ous[cntr_ous_1]), sizeof(uint16_t), CH_UTF16));
+					NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &(*r->out.ous)[cntr_ous_2]), sizeof(uint16_t)));
+					NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &(*r->out.ous)[cntr_ous_2], ndr_get_array_length(ndr, &(*r->out.ous)[cntr_ous_2]), sizeof(uint16_t), CH_UTF16));
 					NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ous_3, 0);
 				}
-				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ous_2, 0);
 			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ous_2, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ous_1, 0);
 		}
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ous_1, 0);
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ous_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
-		if (r->out.ous) {
-			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->out.ous, *r->out.num_ous));
+		if (*r->out.ous) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)r->out.ous, *r->out.num_ous));
 		}
 	}
 	return NDR_ERR_SUCCESS;
@@ -9694,7 +9704,7 @@ static enum ndr_err_code ndr_pull_wkssvc_NetrGetJoinableOus2(struct ndr_pull *nd
 
 _PUBLIC_ void ndr_print_wkssvc_NetrGetJoinableOus2(struct ndr_print *ndr, const char *name, int flags, const struct wkssvc_NetrGetJoinableOus2 *r)
 {
-	uint32_t cntr_ous_1;
+	uint32_t cntr_ous_2;
 	ndr_print_struct(ndr, name, "wkssvc_NetrGetJoinableOus2");
 	ndr->depth++;
 	if (flags & NDR_SET_VALUES) {
@@ -9740,25 +9750,25 @@ _PUBLIC_ void ndr_print_wkssvc_NetrGetJoinableOus2(struct ndr_print *ndr, const 
 		ndr->depth--;
 		ndr_print_ptr(ndr, "ous", r->out.ous);
 		ndr->depth++;
-		ndr->print(ndr, "%s: ARRAY(%d)", "ous", *r->out.num_ous);
+		ndr_print_ptr(ndr, "ous", *r->out.ous);
 		ndr->depth++;
-		for (cntr_ous_1=0;cntr_ous_1<*r->out.num_ous;cntr_ous_1++) {
-			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_ous_1);
-			if (idx_1) {
-				ndr_print_ptr(ndr, "ous", r->out.ous[cntr_ous_1]);
-				ndr->depth++;
-				if (r->out.ous[cntr_ous_1]) {
-					ndr_print_ptr(ndr, "ous", *r->out.ous[cntr_ous_1]);
+		if (*r->out.ous) {
+			ndr->print(ndr, "%s: ARRAY(%d)", "ous", *r->out.num_ous);
+			ndr->depth++;
+			for (cntr_ous_2=0;cntr_ous_2<*r->out.num_ous;cntr_ous_2++) {
+				char *idx_2=NULL;
+				asprintf(&idx_2, "[%d]", cntr_ous_2);
+				if (idx_2) {
+					ndr_print_ptr(ndr, "ous", (*r->out.ous)[cntr_ous_2]);
 					ndr->depth++;
-					if (*r->out.ous[cntr_ous_1]) {
-						ndr_print_string(ndr, "ous", *r->out.ous[cntr_ous_1]);
+					if ((*r->out.ous)[cntr_ous_2]) {
+						ndr_print_string(ndr, "ous", (*r->out.ous)[cntr_ous_2]);
 					}
 					ndr->depth--;
+					free(idx_2);
 				}
-				ndr->depth--;
-				free(idx_1);
 			}
+			ndr->depth--;
 		}
 		ndr->depth--;
 		ndr->depth--;
