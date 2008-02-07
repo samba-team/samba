@@ -1677,8 +1677,8 @@ struct samr_ChangePasswordUser3 {
 	} in;
 
 	struct {
-		struct samr_DomInfo1 *dominfo;/* [ref] */
-		struct samr_ChangeReject *reject;/* [ref] */
+		struct samr_DomInfo1 **dominfo;/* [ref] */
+		struct samr_ChangeReject **reject;/* [ref] */
 		NTSTATUS result;
 	} out;
 

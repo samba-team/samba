@@ -11256,11 +11256,17 @@ static enum ndr_err_code ndr_push_samr_ChangePasswordUser3(struct ndr_push *ndr,
 		if (r->out.dominfo == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_samr_DomInfo1(ndr, NDR_SCALARS, r->out.dominfo));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.dominfo));
+		if (*r->out.dominfo) {
+			NDR_CHECK(ndr_push_samr_DomInfo1(ndr, NDR_SCALARS, *r->out.dominfo));
+		}
 		if (r->out.reject == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_samr_ChangeReject(ndr, NDR_SCALARS, r->out.reject));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.reject));
+		if (*r->out.reject) {
+			NDR_CHECK(ndr_push_samr_ChangeReject(ndr, NDR_SCALARS, *r->out.reject));
+		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -11274,6 +11280,8 @@ static enum ndr_err_code ndr_pull_samr_ChangePasswordUser3(struct ndr_pull *ndr,
 	uint32_t _ptr_lm_password;
 	uint32_t _ptr_lm_verifier;
 	uint32_t _ptr_password3;
+	uint32_t _ptr_dominfo;
+	uint32_t _ptr_reject;
 	TALLOC_CTX *_mem_save_server_0;
 	TALLOC_CTX *_mem_save_account_0;
 	TALLOC_CTX *_mem_save_nt_password_0;
@@ -11282,7 +11290,9 @@ static enum ndr_err_code ndr_pull_samr_ChangePasswordUser3(struct ndr_pull *ndr,
 	TALLOC_CTX *_mem_save_lm_verifier_0;
 	TALLOC_CTX *_mem_save_password3_0;
 	TALLOC_CTX *_mem_save_dominfo_0;
+	TALLOC_CTX *_mem_save_dominfo_1;
 	TALLOC_CTX *_mem_save_reject_0;
+	TALLOC_CTX *_mem_save_reject_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -11377,14 +11387,36 @@ static enum ndr_err_code ndr_pull_samr_ChangePasswordUser3(struct ndr_pull *ndr,
 		}
 		_mem_save_dominfo_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.dominfo, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_SCALARS, r->out.dominfo));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_dominfo));
+		if (_ptr_dominfo) {
+			NDR_PULL_ALLOC(ndr, *r->out.dominfo);
+		} else {
+			*r->out.dominfo = NULL;
+		}
+		if (*r->out.dominfo) {
+			_mem_save_dominfo_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.dominfo, 0);
+			NDR_CHECK(ndr_pull_samr_DomInfo1(ndr, NDR_SCALARS, *r->out.dominfo));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dominfo_1, 0);
+		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_dominfo_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.reject);
 		}
 		_mem_save_reject_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.reject, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_samr_ChangeReject(ndr, NDR_SCALARS, r->out.reject));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_reject));
+		if (_ptr_reject) {
+			NDR_PULL_ALLOC(ndr, *r->out.reject);
+		} else {
+			*r->out.reject = NULL;
+		}
+		if (*r->out.reject) {
+			_mem_save_reject_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.reject, 0);
+			NDR_CHECK(ndr_pull_samr_ChangeReject(ndr, NDR_SCALARS, *r->out.reject));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_reject_1, 0);
+		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_reject_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -11449,11 +11481,21 @@ _PUBLIC_ void ndr_print_samr_ChangePasswordUser3(struct ndr_print *ndr, const ch
 		ndr->depth++;
 		ndr_print_ptr(ndr, "dominfo", r->out.dominfo);
 		ndr->depth++;
-		ndr_print_samr_DomInfo1(ndr, "dominfo", r->out.dominfo);
+		ndr_print_ptr(ndr, "dominfo", *r->out.dominfo);
+		ndr->depth++;
+		if (*r->out.dominfo) {
+			ndr_print_samr_DomInfo1(ndr, "dominfo", *r->out.dominfo);
+		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "reject", r->out.reject);
 		ndr->depth++;
-		ndr_print_samr_ChangeReject(ndr, "reject", r->out.reject);
+		ndr_print_ptr(ndr, "reject", *r->out.reject);
+		ndr->depth++;
+		if (*r->out.reject) {
+			ndr_print_samr_ChangeReject(ndr, "reject", *r->out.reject);
+		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
