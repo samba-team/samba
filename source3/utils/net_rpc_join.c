@@ -169,6 +169,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	struct lsa_String lsa_acct_name;
 	uint32 acct_flags=0;
 	uint32_t access_granted = 0;
+	union lsa_PolicyInformation *info = NULL;
 
 	/* check what type of join */
 	if (argc >= 0) {
@@ -218,9 +219,14 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 					  &lsa_pol),
 		      "error opening lsa policy handle");
 
-	CHECK_RPC_ERR(rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, &lsa_pol,
-						5, &domain, &domain_sid),
+	CHECK_RPC_ERR(rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+						 &lsa_pol,
+						 LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+						 &info),
 		      "error querying info policy");
+
+	domain = info->account_domain.name.string;
+	domain_sid = info->account_domain.sid;
 
 	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */

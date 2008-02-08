@@ -62,8 +62,8 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *lsa_pipe;
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;
-	uint32 info_class = 5;
-	
+	union lsa_PolicyInformation *info = NULL;
+
 	lsa_pipe = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &result);
 	if (!lsa_pipe) {
 		d_fprintf(stderr, "Could not initialise lsa pipe\n");
@@ -79,14 +79,18 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	result = rpccli_lsa_query_info_policy(lsa_pipe, mem_ctx, &pol,
-					      info_class, domain_name,
-					      domain_sid);
+	result = rpccli_lsa_QueryInfoPolicy(lsa_pipe, mem_ctx,
+					    &pol,
+					    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+					    &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "lsaquery failed: %s\n",
 			  nt_errstr(result));
 		return result;
 	}
+
+	*domain_name = info->account_domain.name.string;
+	*domain_sid = info->account_domain.sid;
 
 	rpccli_lsa_Close(lsa_pipe, mem_ctx, &pol);
 	cli_rpc_pipe_close(lsa_pipe);
@@ -5836,10 +5840,10 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	DOM_SID *domain_sid;
 
 	char* domain_name;
-	const char* domain_name_pol;
 	char* acct_name;
 	fstring pdc_name;
 	char *dc_name;
+	union lsa_PolicyInformation *info = NULL;
 
 	/*
 	 * Connect to \\server\ipc$ as 'our domain' account with password
@@ -5941,10 +5945,11 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	}
 
 	/* Querying info level 5 */
-	
-	nt_status = rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, &connect_hnd,
-	                                      5 /* info level */,
-					      &domain_name_pol, &domain_sid);
+
+	nt_status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+					       &connect_hnd,
+					       LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+					       &info);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
@@ -5952,6 +5957,8 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		talloc_destroy(mem_ctx);
 		return -1;
 	}
+
+	domain_sid = info->account_domain.sid;
 
 	/* There should be actually query info level 3 (following nt serv behaviour),
 	   but I still don't know if it's _really_ necessary */
@@ -6139,6 +6146,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	const char *domain_name = NULL;
 	DOM_SID *queried_dom_sid;
 	POLICY_HND connect_hnd;
+	union lsa_PolicyInformation *info = NULL;
 
 	/* trusted domains listing variables */
 	unsigned int num_domains, enum_ctx = 0;
@@ -6146,7 +6154,6 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	DOM_SID *domain_sids;
 	char **trusted_dom_names;
 	fstring pdc_name;
-	const char *dummy;
 
 	/*
 	 * Listing trusted domains (stored in secrets.tdb, if local)
@@ -6197,9 +6204,10 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	};
 
 	/* query info level 5 to obtain sid of a domain being queried */
-	nt_status = rpccli_lsa_query_info_policy(
-		pipe_hnd, mem_ctx, &connect_hnd, 5 /* info level */, 
-		&dummy, &queried_dom_sid);
+	nt_status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+					       &connect_hnd,
+					       LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+					       &info);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
@@ -6208,6 +6216,8 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 		talloc_destroy(mem_ctx);
 		return -1;
 	}
+
+	queried_dom_sid = info->account_domain.sid;
 
 	/*
 	 * Keep calling LsaEnumTrustdom over opened pipe until
@@ -6279,15 +6289,15 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	fstring padding;
 	int ascii_dom_name_len;
 	POLICY_HND connect_hnd;
-	
+	union lsa_PolicyInformation *info = NULL;
+
 	/* trusted domains listing variables */
 	unsigned int num_domains, enum_ctx = 0;
 	int i, pad_len, col_len = 20;
 	DOM_SID *domain_sids;
 	char **trusted_dom_names;
 	fstring pdc_name;
-	const char *dummy;
-	
+
 	/* trusting domains listing variables */
 	POLICY_HND domain_hnd;
 	char **trusting_dom_names;
@@ -6342,9 +6352,10 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	};
 	
 	/* query info level 5 to obtain sid of a domain being queried */
-	nt_status = rpccli_lsa_query_info_policy(
-		pipe_hnd, mem_ctx, &connect_hnd, 5 /* info level */, 
-		&dummy, &queried_dom_sid);
+	nt_status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+					       &connect_hnd,
+					       LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+					       &info);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
@@ -6353,7 +6364,9 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		talloc_destroy(mem_ctx);
 		return -1;
 	}
-		
+
+	queried_dom_sid = info->account_domain.sid;
+
 	/*
 	 * Keep calling LsaEnumTrustdom over opened pipe until
 	 * the end of enumeration is reached
