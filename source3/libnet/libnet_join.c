@@ -654,13 +654,16 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		status = rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, &lsa_pol,
-						      5,
-						      &r->out.netbios_domain_name,
-						      &r->out.domain_sid);
+		status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+						    &lsa_pol,
+						    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+						    &info);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto done;
 		}
+
+		r->out.netbios_domain_name = info->account_domain.name.string;
+		r->out.domain_sid = info->account_domain.sid;
 	}
 
 	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
