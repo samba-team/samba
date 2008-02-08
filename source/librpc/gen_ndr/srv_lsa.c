@@ -806,7 +806,7 @@ static bool api_lsa_CreateAccount(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.acct_handle = talloc_zero(r, struct policy_handle);
+	r->out.acct_handle = talloc_zero(r, struct policy_handle *);
 	if (r->out.acct_handle == NULL) {
 		talloc_free(r);
 		return false;
