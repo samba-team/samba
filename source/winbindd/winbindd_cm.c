@@ -602,19 +602,20 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
 
 	if (our_domain->active_directory) {
-		struct DS_DOMAIN_CONTROLLER_INFO *domain_info = NULL;
+		struct netr_DsRGetDCNameInfo *domain_info = NULL;
 
-		werr = rpccli_netlogon_dsr_getdcname(netlogon_pipe,
-						     mem_ctx,
-						     our_domain->dcname,
-						     domain->name,
-						     NULL,
-						     NULL,
-						     DS_RETURN_DNS_NAME,
-						     &domain_info);
+		result = rpccli_netr_DsRGetDCName(netlogon_pipe,
+						  mem_ctx,
+						  our_domain->dcname,
+						  domain->name,
+						  NULL,
+						  NULL,
+						  DS_RETURN_DNS_NAME,
+						  &domain_info,
+						  &werr);
 		if (W_ERROR_IS_OK(werr)) {
 			tmp = talloc_strdup(
-				mem_ctx, domain_info->domain_controller_name);
+				mem_ctx, domain_info->dc_unc);
 			if (tmp == NULL) {
 				DEBUG(0, ("talloc_strdup failed\n"));
 				talloc_destroy(mem_ctx);
@@ -626,7 +627,7 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 			}
 			if (strlen(domain->forest_name) == 0) {
 				fstrcpy(domain->forest_name,
-					domain_info->dns_forest_name);
+					domain_info->forest_name);
 			}
 		}
 	} else {
