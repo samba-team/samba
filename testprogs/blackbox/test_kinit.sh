@@ -56,7 +56,7 @@ test_smbclient() {
 	return $status
 }
 
-KRB5CCNAME=`pwd`/tmpccache
+KRB5CCNAME="$PREFIX/tmpccache"
 export KRB5CCNAME
 
 echo $PASSWORD > ./tmppassfile
