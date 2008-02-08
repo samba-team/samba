@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 27
+Release: 28
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,11 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Fri Feb 08 2008 : Version 1.0.28
+ - Fix a problem where we tried to use ethtool on non-ethernet interfaces
+ - Warn if the ipvsadm packege is missing when LVS is used
+ - Dont use absolute pathnames in some of the event scripts
+ - Fix for persistent tdbs growing inifinitely.
 * Wed Feb 06 2008 : Version 1.0.27
  - Add eventscript for iscsi
 * Thu Jan 31 2008 : Version 1.0.26
