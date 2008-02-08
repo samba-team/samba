@@ -1823,6 +1823,13 @@ static bool api_lsa_GetSystemAccessAccount(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_GetSystemAccessAccount, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.access_mask = talloc_zero(r, uint32_t);
+	if (r->out.access_mask == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _lsa_GetSystemAccessAccount(p, r);
 
 	if (p->rng_fault_state) {

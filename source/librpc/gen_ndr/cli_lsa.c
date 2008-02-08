@@ -1004,12 +1004,15 @@ NTSTATUS rpccli_lsa_SetQuotasForAccount(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_lsa_GetSystemAccessAccount(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx)
+					   TALLOC_CTX *mem_ctx,
+					   struct policy_handle *handle,
+					   uint32_t *access_mask)
 {
 	struct lsa_GetSystemAccessAccount r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_GetSystemAccessAccount, &r);
@@ -1035,6 +1038,7 @@ NTSTATUS rpccli_lsa_GetSystemAccessAccount(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*access_mask = *r.out.access_mask;
 
 	/* Return result */
 	return r.out.result;
