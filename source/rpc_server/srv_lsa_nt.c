@@ -1766,14 +1766,14 @@ NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA
   update the systemaccount information
  ***************************************************************************/
 
-NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA_R_SETSYSTEMACCOUNT *r_u)
+NTSTATUS _lsa_SetSystemAccessAccount(pipes_struct *p,
+				     struct lsa_SetSystemAccessAccount *r)
 {
 	struct lsa_info *info=NULL;
 	GROUP_MAP map;
-	r_u->status = NT_STATUS_OK;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check to see if the pipe_user is a Domain Admin since 
@@ -2272,12 +2272,6 @@ NTSTATUS _lsa_SetQuotasForAccount(pipes_struct *p, struct lsa_SetQuotasForAccoun
 }
 
 NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p, struct lsa_GetSystemAccessAccount *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_SetSystemAccessAccount(pipes_struct *p, struct lsa_SetSystemAccessAccount *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
