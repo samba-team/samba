@@ -523,12 +523,12 @@ member: cn=ldaptestuser4,cn=ldaptestcontainer,""" + base_dn + """
     assert len(res) == 0
 
     print "Testing one-level ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in cn=ldaptestcontainer2," + base_dn
-    res = ldb.search(expression="(&(cn=ldaptestuser4)(objectClass=user))", base="cn=ldaptestcontainer2," + base_dn, scope=SCOPE_ONELEVEL)
-    # FIXME: assert len(res) == 0
+    res = ldb.search(expression="(&(cn=ldaptestuser4)(objectClass=user))", base=("cn=ldaptestcontainer2," + base_dn), scope=SCOPE_ONELEVEL)
+    assert len(res) == 0
 
     print "Testing one-level ldb.search for (&(cn=ldaptestuser4)(objectClass=user)) in cn=ldaptestcontainer2," + base_dn
-    res = ldb.search(expression="(&(cn=ldaptestuser4)(objectClass=user))", base="cn=ldaptestcontainer2," + base_dn, scope=SCOPE_SUBTREE)
-    #FIXME: assert len(res) == 0
+    res = ldb.search(expression="(&(cn=ldaptestuser4)(objectClass=user))", base=("cn=ldaptestcontainer2," + base_dn), scope=SCOPE_SUBTREE)
+    assert len(res) == 0
 
     print "Testing delete of subtree renamed "+("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn)
     ldb.delete(("CN=ldaptestuser4,CN=ldaptestcontainer2," + base_dn))
