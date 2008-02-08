@@ -322,6 +322,11 @@ AC_SUBST(UNINSTALL_LIBADDNS)
 AC_SUBST(LIBADDNS_SHARED)
 AC_SUBST(LIBADDNS)
 
+AC_SUBST(INSTALL_LIBTALLOC)
+AC_SUBST(UNINSTALL_LIBTALLOC)
+AC_SUBST(LIBTALLOC_SHARED)
+AC_SUBST(LIBTALLOC)
+
 AC_SUBST(INSTALL_LIBWBCLIENT)
 AC_SUBST(UNINSTALL_LIBWBCLIENT)
 AC_SUBST(LIBWBCLIENT_SHARED)
@@ -5112,6 +5117,48 @@ if test $enable_static = yes; then
 	INSTALLLIBCMD_A="\$(INSTALLCMD)"
 	UNINSTALLLIBCMD_A="rm -f"
 fi
+
+#################################################
+# should we build libtalloc?
+INSTALL_LIBTALLOC=
+UNINSTALL_LIBTALLOC=
+LIBTALLOC_SHARED=
+LIBTALLOC=
+
+AC_MSG_CHECKING(whether to build the libtalloc shared library)
+AC_ARG_WITH(libtalloc,
+[AS_HELP_STRING([--with-libtalloc],
+	[Build the libtalloc shared library (default=yes if shared libs supported)])],
+[
+case "$withval" in
+	*)
+		AC_MSG_RESULT(no)
+		;;
+	yes)
+		samba_cv_with_libtalloc=yes
+		;;
+esac
+],
+[
+# if unspecified, default is to built it if possible.
+samba_cv_with_libtalloc=yes
+]
+)
+
+if test x"$samba_cv_with_libtalloc" = "xyes" -a $BLDSHARED = true; then
+	LIBTALLOC_SHARED=bin/libtalloc.$SHLIBEXT
+	LIBTALLOC=libtalloc
+	AC_MSG_RESULT(yes)
+else
+	enable_static=yes
+	AC_MSG_RESULT(no shared library support -- will supply static library)
+fi
+if test $enable_static = yes; then
+	LIBTALLOC=libtalloc
+fi
+INSTALL_LIBTALLOC=installlibtalloc
+UNINSTALL_LIBTALLOC=uninstalllibtalloc
+
 
 #################################################
 # should we build libnetapi?
