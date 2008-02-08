@@ -1471,75 +1471,80 @@ NTSTATUS _samr_QueryAliasInfo(pipes_struct *p,
 #endif
 
 /*******************************************************************
- _samr_lookup_names
+ _samr_LookupNames
  ********************************************************************/
 
-NTSTATUS _samr_lookup_names(pipes_struct *p, SAMR_Q_LOOKUP_NAMES *q_u, SAMR_R_LOOKUP_NAMES *r_u)
+NTSTATUS _samr_LookupNames(pipes_struct *p,
+			   struct samr_LookupNames *r)
 {
+	NTSTATUS status;
 	uint32 rid[MAX_SAM_ENTRIES];
 	enum lsa_SidType type[MAX_SAM_ENTRIES];
 	int i;
-	int num_rids = q_u->num_names2;
+	int num_rids = r->in.num_names;
 	DOM_SID pol_sid;
 	uint32  acc_granted;
+	struct samr_Ids rids, types;
 
-	r_u->status = NT_STATUS_OK;
-
-	DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
+	DEBUG(5,("_samr_LookupNames: %d\n", __LINE__));
 
 	ZERO_ARRAY(rid);
 	ZERO_ARRAY(type);
 
-	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &pol_sid, &acc_granted, NULL)) {
-		init_samr_r_lookup_names(p->mem_ctx, r_u, 0, NULL, NULL, NT_STATUS_OBJECT_TYPE_MISMATCH);
-		return r_u->status;
+	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &pol_sid, &acc_granted, NULL)) {
+		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 	}
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, 0, "_samr_lookup_names"))) { /* Don't know the acc_bits yet */
-		return r_u->status;
+	status = access_check_samr_function(acc_granted,
+					    0, /* Don't know the acc_bits yet */
+					    "_samr_LookupNames");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (num_rids > MAX_SAM_ENTRIES) {
 		num_rids = MAX_SAM_ENTRIES;
-		DEBUG(5,("_samr_lookup_names: truncating entries to %d\n", num_rids));
+		DEBUG(5,("_samr_LookupNames: truncating entries to %d\n", num_rids));
 	}
 
-	DEBUG(5,("_samr_lookup_names: looking name on SID %s\n",
+	DEBUG(5,("_samr_LookupNames: looking name on SID %s\n",
 		 sid_string_dbg(&pol_sid)));
 
 	for (i = 0; i < num_rids; i++) {
-		fstring name;
-            	int ret;
 
-	        r_u->status = NT_STATUS_NONE_MAPPED;
+		status = NT_STATUS_NONE_MAPPED;
 	        type[i] = SID_NAME_UNKNOWN;
 
-	        rid [i] = 0xffffffff;
-
-		ret = rpcstr_pull(name, q_u->uni_name[i].buffer, sizeof(name), q_u->uni_name[i].uni_str_len*2, 0);
-
-		if (ret <= 0) {
-			continue;
-		}
+		rid[i] = 0xffffffff;
 
 		if (sid_check_is_builtin(&pol_sid)) {
-			if (lookup_builtin_name(name, &rid[i])) {
+			if (lookup_builtin_name(r->in.names[i].string,
+						&rid[i]))
+			{
 				type[i] = SID_NAME_ALIAS;
 			}
 		} else {
-			lookup_global_sam_name(name, 0, &rid[i], &type[i]);
+			lookup_global_sam_name(r->in.names[i].string, 0,
+					       &rid[i], &type[i]);
 		}
 
 		if (type[i] != SID_NAME_UNKNOWN) {
-			r_u->status = NT_STATUS_OK;
+			status = NT_STATUS_OK;
 		}
 	}
 
-	init_samr_r_lookup_names(p->mem_ctx, r_u, num_rids, rid, type, r_u->status);
+	rids.count = num_rids;
+	rids.ids = rid;
 
-	DEBUG(5,("_samr_lookup_names: %d\n", __LINE__));
+	types.count = num_rids;
+	types.ids = type;
 
-	return r_u->status;
+	*r->out.rids = rids;
+	*r->out.types = types;
+
+	DEBUG(5,("_samr_LookupNames: %d\n", __LINE__));
+
+	return status;
 }
 
 /*******************************************************************
@@ -5217,16 +5222,6 @@ NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
 
 NTSTATUS _samr_EnumDomainAliases(pipes_struct *p,
 				 struct samr_EnumDomainAliases *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_LookupNames(pipes_struct *p,
-			   struct samr_LookupNames *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
