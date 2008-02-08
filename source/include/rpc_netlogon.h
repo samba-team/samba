@@ -1029,37 +1029,4 @@ struct DS_DOMAIN_CONTROLLER_INFO {
 	const char *client_site_name;
 };
 
-/* NET_Q_DSR_GETDCNAME */
-typedef struct net_q_dsr_getdcname {
-	uint32 ptr_server_unc;
-	UNISTR2 uni_server_unc;
-	uint32 ptr_domain_name;
-	UNISTR2 uni_domain_name;
-	uint32 ptr_domain_guid;
-	struct GUID *domain_guid;
-	uint32 ptr_site_guid;
-	struct GUID *site_guid;
-	uint32 flags;
-} NET_Q_DSR_GETDCNAME;
-
-/* NET_R_DSR_GETDCNAME */
-typedef struct net_r_dsr_getdcname {
-	uint32 ptr_dc_unc;
-	UNISTR2 uni_dc_unc;
-	uint32 ptr_dc_address;
-	UNISTR2 uni_dc_address;
-	int32 dc_address_type;
-	struct GUID domain_guid;
-	uint32 ptr_domain_name;
-	UNISTR2 uni_domain_name;
-	uint32 ptr_forest_name;
-	UNISTR2 uni_forest_name;
-	uint32 dc_flags;
-	uint32 ptr_dc_site_name;
-	UNISTR2 uni_dc_site_name;
-	uint32 ptr_client_site_name;
-	UNISTR2 uni_client_site_name;
-	WERROR result;
-} NET_R_DSR_GETDCNAME;
-
 #endif /* _RPC_NETLOGON_H */
