@@ -580,7 +580,7 @@ static bool api_lsa_QueryInfoPolicy(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, union lsa_PolicyInformation);
+	r->out.info = talloc_zero(r, union lsa_PolicyInformation *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -3584,7 +3584,7 @@ static bool api_lsa_QueryInfoPolicy2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, union lsa_PolicyInformation);
+	r->out.info = talloc_zero(r, union lsa_PolicyInformation *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;

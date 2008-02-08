@@ -676,7 +676,7 @@ struct lsa_QueryInfoPolicy {
 	} in;
 
 	struct {
-		union lsa_PolicyInformation *info;/* [unique,switch_is(level)] */
+		union lsa_PolicyInformation **info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 
@@ -1199,7 +1199,7 @@ struct lsa_QueryInfoPolicy2 {
 	} in;
 
 	struct {
-		union lsa_PolicyInformation *info;/* [unique,switch_is(level)] */
+		union lsa_PolicyInformation **info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 
