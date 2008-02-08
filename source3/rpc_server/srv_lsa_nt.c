@@ -1733,16 +1733,17 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVS
 }
 
 /***************************************************************************
- 
+ _lsa_GetSystemAccessAccount
  ***************************************************************************/
 
-NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA_R_GETSYSTEMACCOUNT *r_u)
+NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p,
+				     struct lsa_GetSystemAccessAccount *r)
 {
 	struct lsa_info *info=NULL;
 
 	/* find the connection policy handle. */
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (!lookup_sid(p->mem_ctx, &info->sid, NULL, NULL, NULL))
@@ -1757,7 +1758,7 @@ NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA
 	  they can be ORed together
 	*/
 
-	r_u->access = PR_LOG_ON_LOCALLY | PR_ACCESS_FROM_NETWORK;
+	*r->out.access_mask = PR_LOG_ON_LOCALLY | PR_ACCESS_FROM_NETWORK;
 
 	return NT_STATUS_OK;
 }
@@ -2266,12 +2267,6 @@ NTSTATUS _lsa_GetQuotasForAccount(pipes_struct *p, struct lsa_GetQuotasForAccoun
 }
 
 NTSTATUS _lsa_SetQuotasForAccount(pipes_struct *p, struct lsa_SetQuotasForAccount *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p, struct lsa_GetSystemAccessAccount *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
