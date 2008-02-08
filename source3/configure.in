@@ -273,9 +273,17 @@ done
 
 AC_LIBREPLACE_CC_CHECKS
 
+m4_include(lib/talloc/libtalloc.m4)
+
+TALLOC_OBJS=""
+for obj in ${TALLOC_OBJ}; do
+	TALLOC_OBJS="${TALLOCOBJS} ${tallocdir}/${obj}"
+done
+AC_SUBST(TALLOC_OBJS)
+
 SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/replace"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/talloc"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TALLOC_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/tdb/include"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"

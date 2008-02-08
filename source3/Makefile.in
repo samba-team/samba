@@ -294,7 +294,8 @@ LIBREPLACE_OBJ = @LIBREPLACE_OBJS@
 SOCKET_WRAPPER_OBJ = @SOCKET_WRAPPER_OBJS@
 NSS_WRAPPER_OBJ = @NSS_WRAPPER_OBJS@
 
-TALLOC_OBJ = lib/talloc/talloc.o
+TALLOC_OBJ = @TALLOC_OBJS@
+
 
 LIBTALLOC_OBJ0 = $(TALLOC_OBJ)
 LIBTALLOC_OBJ = $(LIBTALLOC_OBJ0)
@@ -881,7 +882,7 @@ SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(REGOBJS_OBJ) 
 		$(ERRORMAP_OBJ) $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(DOSERR_OBJ) \
                 $(POPT_LIB_OBJ) $(SECRETS_OBJ)
 
-TALLOCTORT_OBJ = lib/talloc/testsuite.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
+TALLOCTORT_OBJ = @tallocdir@/testsuite.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
                  $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(LIBSAMBA_OBJ) $(SECRETS_OBJ)
 
 REPLACETORT_OBJ = lib/replace/test/testsuite.o \
@@ -1956,7 +1957,7 @@ installlibtalloc: installdirs libtalloc
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) bin/libtalloc.@SHLIBEXT@ $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) bin/libtalloc.a $(DESTDIR)$(LIBDIR)
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(srcdir)/lib/talloc/talloc.h $(DESTDIR)${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) @tallocdir@/talloc.h $(DESTDIR)${prefix}/include
 
 installlibsmbsharemodes: installdirs libsmbsharemodes
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
