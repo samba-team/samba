@@ -98,29 +98,7 @@ static bool api_lsa_enum_trust_dom(pipes_struct *p)
 
 static bool api_lsa_query_info(pipes_struct *p)
 {
-	LSA_Q_QUERY_INFO q_u;
-	LSA_R_QUERY_INFO r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the info class and policy handle */
-	if(!lsa_io_q_query("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_query_info: failed to unmarshall LSA_Q_QUERY_INFO.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_query_info(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_query("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_query_info: failed to marshall LSA_R_QUERY_INFO.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_QUERYINFOPOLICY);
 }
 
 /***************************************************************************

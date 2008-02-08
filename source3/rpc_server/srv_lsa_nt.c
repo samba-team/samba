@@ -47,6 +47,16 @@ const struct generic_mapping lsa_generic_mapping = {
 };
 
 /*******************************************************************
+ inits a structure.
+********************************************************************/
+
+static void init_lsa_StringLarge(struct lsa_StringLarge *name, const char *s)
+{
+	name->string = s;
+}
+
+
+/*******************************************************************
  Function to free the per handle data.
  ********************************************************************/
 
@@ -58,47 +68,27 @@ static void free_lsa_info(void *ptr)
 }
 
 /***************************************************************************
-Init dom_query
+ initialize a lsa_DomainInfo structure.
  ***************************************************************************/
 
-static void init_dom_query_3(DOM_QUERY_3 *d_q, const char *dom_name, DOM_SID *dom_sid)
+static void init_dom_query_3(struct lsa_DomainInfo *r,
+			     const char *name,
+			     DOM_SID *sid)
 {
-	d_q->buffer_dom_name = (dom_name != NULL) ? 1 : 0; /* domain buffer pointer */
-	d_q->buffer_dom_sid = (dom_sid != NULL) ? 1 : 0;  /* domain sid pointer */
-
-	/* this string is supposed to be non-null terminated. */
-	/* But the maxlen in this UNISTR2 must include the terminating null. */
-	init_unistr2(&d_q->uni_domain_name, dom_name, UNI_BROKEN_NON_NULL);
-
-	/*
-	 * I'm not sure why this really odd combination of length
-	 * values works, but it does appear to. I need to look at
-	 * this *much* more closely - but at the moment leave alone
-	 * until it's understood. This allows a W2k client to join
-	 * a domain with both odd and even length names... JRA.
-	 */
-
-	/*
-	 * IMPORTANT NOTE !!!!
-	 * The two fields below probably are reversed in meaning, ie.
-	 * the first field is probably the str_len, the second the max
-	 * len. Both are measured in bytes anyway.
-	 */
-
-	d_q->uni_dom_str_len = d_q->uni_domain_name.uni_max_len * 2;
-	d_q->uni_dom_max_len = d_q->uni_domain_name.uni_str_len * 2;
-
-	if (dom_sid != NULL)
-		init_dom_sid2(&d_q->dom_sid, dom_sid);
+	init_lsa_StringLarge(&r->name, name);
+	r->sid = sid;
 }
 
 /***************************************************************************
-Init dom_query
+ initialize a lsa_DomainInfo structure.
  ***************************************************************************/
 
-static void init_dom_query_5(DOM_QUERY_5 *d_q, const char *dom_name, DOM_SID *dom_sid)
+static void init_dom_query_5(struct lsa_DomainInfo *r,
+			     const char *name,
+			     DOM_SID *sid)
 {
-	init_dom_query_3(d_q, dom_name, dom_sid);
+	init_lsa_StringLarge(&r->name, name);
+	r->sid = sid;
 }
 
 /***************************************************************************
@@ -674,49 +664,57 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u,
 }
 
 /***************************************************************************
- _lsa_query_info. See the POLICY_INFOMATION_CLASS docs at msdn.
+ _lsa_QueryInfoPolicy
  ***************************************************************************/
 
-NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO *r_u)
+NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
+			      struct lsa_QueryInfoPolicy *r)
 {
+	NTSTATUS status = NT_STATUS_OK;
 	struct lsa_info *handle;
-	LSA_INFO_CTR *ctr = &r_u->ctr;
 	DOM_SID domain_sid;
 	const char *name;
 	DOM_SID *sid = NULL;
+	union lsa_PolicyInformation *info = NULL;
 
-	r_u->status = NT_STATUS_OK;
-
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
-	switch (q_u->info_class) {
+	info = TALLOC_ZERO_P(p->mem_ctx, union lsa_PolicyInformation);
+	if (!info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	switch (r->in.level) {
 	case 0x02:
 		{
 
 		uint32 policy_def = LSA_AUDIT_POLICY_ALL;
-		
+
 		/* check if the user have enough rights */
 		if (!(handle->access & POLICY_VIEW_AUDIT_INFORMATION)) {
-			DEBUG(10,("_lsa_query_info: insufficient access rights\n"));
+			DEBUG(10,("_lsa_QueryInfoPolicy: insufficient access rights\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		/* fake info: We audit everything. ;) */
-		ctr->info.id2.ptr = 1;
-		ctr->info.id2.auditing_enabled = True;
-		ctr->info.id2.count1 = ctr->info.id2.count2 = LSA_AUDIT_NUM_CATEGORIES;
 
-		if ((ctr->info.id2.auditsettings = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, LSA_AUDIT_NUM_CATEGORIES)) == NULL)
+		info->audit_events.auditing_mode = true;
+		info->audit_events.count = LSA_AUDIT_NUM_CATEGORIES;
+		info->audit_events.settings = TALLOC_ZERO_ARRAY(p->mem_ctx,
+								enum lsa_PolicyAuditPolicy,
+								info->audit_events.count);
+		if (!info->audit_events.settings) {
 			return NT_STATUS_NO_MEMORY;
+		}
 
-		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_ACCOUNT_MANAGEMENT] = policy_def;
-		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_FILE_AND_OBJECT_ACCESS] = policy_def; 
-		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_LOGON] = policy_def; 
-		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_PROCCESS_TRACKING] = policy_def; 
-		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_SECURITY_POLICY_CHANGES] = policy_def;
-		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_SYSTEM] = policy_def;
-		ctr->info.id2.auditsettings[LSA_AUDIT_CATEGORY_USE_OF_USER_RIGHTS] = policy_def; 
+		info->audit_events.settings[LSA_AUDIT_CATEGORY_ACCOUNT_MANAGEMENT] = policy_def;
+		info->audit_events.settings[LSA_AUDIT_CATEGORY_FILE_AND_OBJECT_ACCESS] = policy_def;
+		info->audit_events.settings[LSA_AUDIT_CATEGORY_LOGON] = policy_def;
+		info->audit_events.settings[LSA_AUDIT_CATEGORY_PROCCESS_TRACKING] = policy_def;
+		info->audit_events.settings[LSA_AUDIT_CATEGORY_SECURITY_POLICY_CHANGES] = policy_def;
+		info->audit_events.settings[LSA_AUDIT_CATEGORY_SYSTEM] = policy_def;
+		info->audit_events.settings[LSA_AUDIT_CATEGORY_USE_OF_USER_RIGHTS] = policy_def;
 
 		break;
 		}
@@ -747,7 +745,7 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 			default:
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
-		init_dom_query_3(&r_u->ctr.info.id3, name, sid);
+		init_dom_query_3(&info->domain, name, sid);
 		break;
 	case 0x05:
 		/* check if the user have enough rights */
@@ -757,7 +755,8 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 		/* Request PolicyAccountDomainInformation. */
 		name = get_global_sam_name();
 		sid = get_global_sam_sid();
-		init_dom_query_5(&r_u->ctr.info.id5, name, sid);
+
+		init_dom_query_5(&info->account_domain, name, sid);
 		break;
 	case 0x06:
 		/* check if the user have enough rights */
@@ -770,29 +769,27 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 				 * only a BDC is a backup controller
 				 * of the domain, it controls.
 				 */
-				ctr->info.id6.server_role = 2;
+				info->role.role = 2;
 				break;
 			default:
 				/*
 				 * any other role is a primary
 				 * of the domain, it controls.
 				 */
-				ctr->info.id6.server_role = 3;
-				break; 
+				info->role.role = 3;
+				break;
 		}
 		break;
 	default:
-		DEBUG(0,("_lsa_query_info: unknown info level in Lsa Query: %d\n", q_u->info_class));
-		r_u->status = NT_STATUS_INVALID_INFO_CLASS;
+		DEBUG(0,("_lsa_QueryInfoPolicy: unknown info level in Lsa Query: %d\n",
+			r->in.level));
+		status = NT_STATUS_INVALID_INFO_CLASS;
 		break;
 	}
 
-	if (NT_STATUS_IS_OK(r_u->status)) {
-		r_u->dom_ptr = 0x22000000; /* bizarre */
-		ctr->info_class = q_u->info_class;
-	}
+	*r->out.info = info;
 
-	return r_u->status;
+	return status;
 }
 
 /***************************************************************************
@@ -2201,12 +2198,6 @@ NTSTATUS _lsa_SetSecObj(pipes_struct *p, struct lsa_SetSecObj *r)
 }
 
 NTSTATUS _lsa_ChangePassword(pipes_struct *p, struct lsa_ChangePassword *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p, struct lsa_QueryInfoPolicy *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
