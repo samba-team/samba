@@ -303,7 +303,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *handle,
 				    enum lsa_PolicyInfo level,
-				    union lsa_PolicyInformation *info)
+				    union lsa_PolicyInformation **info)
 {
 	struct lsa_QueryInfoPolicy r;
 	NTSTATUS status;
@@ -336,9 +336,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	return r.out.result;
@@ -2002,7 +2000,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct policy_handle *handle,
 				     enum lsa_PolicyInfo level,
-				     union lsa_PolicyInformation *info)
+				     union lsa_PolicyInformation **info)
 {
 	struct lsa_QueryInfoPolicy2 r;
 	NTSTATUS status;
@@ -2035,9 +2033,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	return r.out.result;
