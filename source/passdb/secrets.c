@@ -113,12 +113,20 @@ void secrets_shutdown(void)
 void *secrets_fetch(const char *key, size_t *size)
 {
 	TDB_DATA dbuf;
-	secrets_init();
-	if (!tdb)
+
+	if (!secrets_init()) {
 		return NULL;
+	}
+
+	if (!tdb) {
+		return NULL;
+	}
+
 	dbuf = tdb_fetch(tdb, string_tdb_data(key));
-	if (size)
+	if (size) {
 		*size = dbuf.dsize;
+	}
+
 	return dbuf.dptr;
 }
 
@@ -126,9 +134,14 @@ void *secrets_fetch(const char *key, size_t *size)
  */
 bool secrets_store(const char *key, const void *data, size_t size)
 {
-	secrets_init();
-	if (!tdb)
-		return False;
+	if (!secrets_init()) {
+		return false;
+	}
+
+	if (!tdb) {
+		return false;
+	}
+
 	return tdb_trans_store(tdb, string_tdb_data(key),
 			       make_tdb_data((const uint8 *)data, size),
 			       TDB_REPLACE) == 0;
@@ -139,9 +152,14 @@ bool secrets_store(const char *key, const void *data, size_t size)
  */
 bool secrets_delete(const char *key)
 {
-	secrets_init();
-	if (!tdb)
-		return False;
+	if (!secrets_init()) {
+		return false;
+	}
+
+	if (!tdb) {
+		return false;
+	}
+
 	return tdb_trans_delete(tdb, string_tdb_data(key)) == 0;
 }
 
@@ -923,7 +941,9 @@ NTSTATUS secrets_trusted_domains(TALLOC_CTX *mem_ctx, uint32 *num_domains,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!secrets_init()) return NT_STATUS_ACCESS_DENIED;
+	if (!secrets_init()) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* generate searching pattern */
 	pattern = talloc_asprintf(tmp_ctx, "%s/*", SECRETS_DOMTRUST_ACCT_PASS);
@@ -1034,12 +1054,14 @@ bool secrets_named_mutex(const char *name, unsigned int timeout)
 {
 	int ret = 0;
 
-	if (!secrets_init())
-		return False;
+	if (!secrets_init()) {
+		return false;
+	}
 
 	ret = tdb_lock_bystring_with_timeout(tdb, name, timeout);
-	if (ret == 0)
+	if (ret == 0) {
 		DEBUG(10,("secrets_named_mutex: got mutex for %s\n", name ));
+	}
 
 	return (ret == 0);
 }
