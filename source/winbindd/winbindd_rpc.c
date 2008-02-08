@@ -633,7 +633,7 @@ NTSTATUS msrpc_lookup_useraliases(struct winbindd_domain *domain,
 
 		for (i=0; i<num_query_sids; i++) {
 			sid_array.sids[i].sid = sid_dup_talloc(mem_ctx, &sids[total_sids++]);
-			if (sid_array.sids[i].sid) {
+			if (!sid_array.sids[i].sid) {
 				TALLOC_FREE(sid_array.sids);
 				return NT_STATUS_NO_MEMORY;
 			}
