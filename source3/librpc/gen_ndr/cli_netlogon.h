@@ -178,7 +178,7 @@ NTSTATUS rpccli_netr_DsRGetDCName(struct rpc_pipe_client *cli,
 				  struct GUID *domain_guid,
 				  struct GUID *site_guid,
 				  uint32_t flags,
-				  struct netr_DsRGetDCNameInfo *info,
+				  struct netr_DsRGetDCNameInfo **info,
 				  WERROR *werror);
 NTSTATUS rpccli_netr_NETRLOGONDUMMYROUTINE1(struct rpc_pipe_client *cli,
 					    TALLOC_CTX *mem_ctx,
