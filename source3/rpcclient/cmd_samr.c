@@ -245,7 +245,7 @@ static void display_sam_info_1(struct samr_DispEntryGeneral *r)
 {
 	printf("index: 0x%x ", r->idx);
 	printf("RID: 0x%x ", r->rid);
-	printf("acb: 0x%x ", r->acct_flags);
+	printf("acb: 0x%08x ", r->acct_flags);
 	printf("Account: %s\t", r->account_name.string);
 	printf("Name: %s\t", r->full_name.string);
 	printf("Desc: %s\n", r->description.string);
@@ -255,7 +255,7 @@ static void display_sam_info_2(struct samr_DispEntryFull *r)
 {
 	printf("index: 0x%x ", r->idx);
 	printf("RID: 0x%x ", r->rid);
-	printf("acb: 0x%x ", r->acct_flags);
+	printf("acb: 0x%08x ", r->acct_flags);
 	printf("Account: %s\t", r->account_name.string);
 	printf("Desc: %s\n", r->description.string);
 }
@@ -264,7 +264,7 @@ static void display_sam_info_3(struct samr_DispEntryFullGroup *r)
 {
 	printf("index: 0x%x ", r->idx);
 	printf("RID: 0x%x ", r->rid);
-	printf("acb: 0x%x ", r->acct_flags);
+	printf("acb: 0x%08x ", r->acct_flags);
 	printf("Account: %s\t", r->account_name.string);
 	printf("Desc: %s\n", r->description.string);
 }
