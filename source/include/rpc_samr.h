@@ -689,45 +689,6 @@ typedef struct r_samr_query_user_info
 
 
 /****************************************************************************
-SAMR_Q_LOOKUP_NAMES - do a conversion from Names to RIDs+types.
-*****************************************************************************/
-/* SAMR_Q_LOOKUP_NAMES */
-typedef struct q_samr_lookup_names_info
-{
-	POLICY_HND pol;       /* policy handle */
-
-	uint32 num_names1;      /* number of names being looked up */
-	uint32 flags;           /* 0x0000 03e8 - unknown */
-	uint32 ptr;            /* 0x0000 0000 - 32 bit unknown */
-	uint32 num_names2;      /* number of names being looked up */
-
-	UNIHDR  *hdr_name; /* unicode account name header */
-	UNISTR2 *uni_name; /* unicode account name string */
-
-} SAMR_Q_LOOKUP_NAMES;
-
-
-/* SAMR_R_LOOKUP_NAMES */
-typedef struct r_samr_lookup_names_info
-{
-	uint32 num_rids1;      /* number of aliases being looked up */
-	uint32 ptr_rids;       /* pointer to aliases */
-	uint32 num_rids2;      /* number of aliases being looked up */
-
-	uint32 *rids; /* rids */
-
-	uint32 num_types1;      /* number of users in aliases being looked up */
-	uint32 ptr_types;       /* pointer to users in aliases */
-	uint32 num_types2;      /* number of users in aliases being looked up */
-
-	uint32 *types; /* SID_ENUM type */
-
-	NTSTATUS status; /* return code */
-
-} SAMR_R_LOOKUP_NAMES;
-
-
-/****************************************************************************
 SAMR_Q_LOOKUP_RIDS - do a conversion from RID groups to something.
 
 called to resolve domain RID groups.

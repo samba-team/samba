@@ -586,68 +586,6 @@ NTSTATUS rpccli_samr_lookup_rids(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/* Lookup names */
-
-NTSTATUS rpccli_samr_lookup_names(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-                               POLICY_HND *domain_pol, uint32 flags,
-                               uint32 num_names, const char **names,
-                               uint32 *num_rids, uint32 **rids,
-                               uint32 **rid_types)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_LOOKUP_NAMES q;
-	SAMR_R_LOOKUP_NAMES r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 i;
-
-	DEBUG(10,("cli_samr_lookup_names\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_lookup_names(mem_ctx, &q, domain_pol, flags,
-				 num_names, names);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_LOOKUP_NAMES,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_lookup_names,
-		samr_io_r_lookup_names,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	if (!NT_STATUS_IS_OK(result = r.status)) {
-		goto done;
-	}
-
-	if (r.num_rids1 == 0) {
-		*num_rids = 0;
-		goto done;
-	}
-
-	*num_rids = r.num_rids1;
-	*rids = TALLOC_ARRAY(mem_ctx, uint32, r.num_rids1);
-	*rid_types = TALLOC_ARRAY(mem_ctx, uint32, r.num_rids1);
-
-	if ((*rids == NULL) || (*rid_types == NULL)) {
-		TALLOC_FREE(*rids);
-		TALLOC_FREE(*rid_types);
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i = 0; i < r.num_rids1; i++) {
-		(*rids)[i] = r.rids[i];
-		(*rid_types)[i] = r.types[i];
-	}
-
- done:
-
-	return result;
-}
-
 /* Set userinfo */
 
 NTSTATUS rpccli_samr_set_userinfo(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
