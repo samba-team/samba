@@ -427,7 +427,7 @@ NTSTATUS rpccli_lsa_CreateAccount(struct rpc_pipe_client *cli,
 				  struct policy_handle *handle,
 				  struct dom_sid2 *sid,
 				  uint32_t access_mask,
-				  struct policy_handle *acct_handle)
+				  struct policy_handle **acct_handle)
 {
 	struct lsa_CreateAccount r;
 	NTSTATUS status;

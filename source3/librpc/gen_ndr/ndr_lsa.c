@@ -5321,7 +5321,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateAccount(struct ndr_push *ndr, int 
 		if (r->out.acct_handle == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.acct_handle));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.acct_handle));
+		if (*r->out.acct_handle) {
+			NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.acct_handle));
+		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -5329,9 +5332,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_CreateAccount(struct ndr_push *ndr, int 
 
 _PUBLIC_ enum ndr_err_code ndr_pull_lsa_CreateAccount(struct ndr_pull *ndr, int flags, struct lsa_CreateAccount *r)
 {
+	uint32_t _ptr_acct_handle;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sid_0;
 	TALLOC_CTX *_mem_save_acct_handle_0;
+	TALLOC_CTX *_mem_save_acct_handle_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -5359,7 +5364,18 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_CreateAccount(struct ndr_pull *ndr, int 
 		}
 		_mem_save_acct_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.acct_handle, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.acct_handle));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_acct_handle));
+		if (_ptr_acct_handle) {
+			NDR_PULL_ALLOC(ndr, *r->out.acct_handle);
+		} else {
+			*r->out.acct_handle = NULL;
+		}
+		if (*r->out.acct_handle) {
+			_mem_save_acct_handle_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.acct_handle, 0);
+			NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.acct_handle));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_acct_handle_1, 0);
+		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_acct_handle_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -5392,7 +5408,12 @@ _PUBLIC_ void ndr_print_lsa_CreateAccount(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_ptr(ndr, "acct_handle", r->out.acct_handle);
 		ndr->depth++;
-		ndr_print_policy_handle(ndr, "acct_handle", r->out.acct_handle);
+		ndr_print_ptr(ndr, "acct_handle", *r->out.acct_handle);
+		ndr->depth++;
+		if (*r->out.acct_handle) {
+			ndr_print_policy_handle(ndr, "acct_handle", *r->out.acct_handle);
+		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
