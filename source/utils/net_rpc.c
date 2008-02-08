@@ -1167,8 +1167,9 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 	uint32 *rids, num_rids, *name_types, num_names;
 	uint32 flags = 0x000003e8; /* Unknown */
 	int i;
-	char **names;
 	struct samr_RidWithAttributeArray *rid_array = NULL;
+	struct lsa_Strings names;
+	struct samr_Ids types;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
@@ -1226,9 +1227,12 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 		for (i = 0; i < num_rids; i++)
 			rids[i] = rid_array->rids[i].rid;
 
-		result = rpccli_samr_lookup_rids(pipe_hnd, mem_ctx, &domain_pol,
-				      	      num_rids, rids,
-				      	      &num_names, &names, &name_types);
+		result = rpccli_samr_LookupRids(pipe_hnd, mem_ctx,
+						&domain_pol,
+						num_rids,
+						rids,
+						&names,
+						&types);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
@@ -1237,7 +1241,7 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 		/* Display results */
 
 		for (i = 0; i < num_names; i++)
-			printf("%s\n", names[i]);
+			printf("%s\n", names.names[i].string);
 	}
  done:
 	return result;
@@ -2826,11 +2830,10 @@ static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
 	NTSTATUS result;
 	POLICY_HND group_pol;
 	uint32 num_members, *group_rids;
-	uint32 num_names;
-	char **names;
-	uint32 *name_types;
 	int i;
 	struct samr_RidTypeArray *rids = NULL;
+	struct lsa_Strings names;
+	struct samr_Ids types;
 
 	fstring sid_str;
 	sid_to_fstring(sid_str, domain_sid);
@@ -2860,9 +2863,12 @@ static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
 		if (num_members < this_time)
 			this_time = num_members;
 
-		result = rpccli_samr_lookup_rids(pipe_hnd, mem_ctx, domain_pol,
-					      this_time, group_rids,
-					      &num_names, &names, &name_types);
+		result = rpccli_samr_LookupRids(pipe_hnd, mem_ctx,
+						domain_pol,
+						this_time,
+						group_rids,
+						&names,
+						&types);
 
 		if (!NT_STATUS_IS_OK(result))
 			return result;
@@ -2874,10 +2880,12 @@ static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
 
 			if (opt_long_list_entries) {
 				printf("%s-%d %s\\%s %d\n", sid_str,
-				       group_rids[i], domain_name, names[i],
+				       group_rids[i], domain_name,
+				       names.names[i].string,
 				       SID_NAME_USER);
 			} else {
-				printf("%s\\%s\n", domain_name, names[i]);
+				printf("%s\\%s\n", domain_name,
+					names.names[i].string);
 			}
 		}
 
