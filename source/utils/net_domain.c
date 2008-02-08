@@ -175,6 +175,7 @@ NTSTATUS netdom_get_domain_sid( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	POLICY_HND lsa_pol;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	union lsa_PolicyInformation *info = NULL;
 
 	if ( (pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &status)) == NULL ) {
 		DEBUG(0, ("Error connecting to LSA pipe. Error was %s\n",
@@ -187,10 +188,15 @@ NTSTATUS netdom_get_domain_sid( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	status = rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, 
-			&lsa_pol, 5, domain, sid);
+	status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+					    &lsa_pol,
+					    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+					    &info);
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
+
+	*domain = info->account_domain.name.string;
+	*sid = info->account_domain.sid;
 
 	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
