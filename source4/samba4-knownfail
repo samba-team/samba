@@ -34,4 +34,3 @@ RPC-NETLOGON.*.GetTrustPasswords
 BASE-CHARSET.*.Testing partial surrogate
 .*NET-API-DELSHARE.*				# DelShare isn't implemented yet
 RAP.*netservergetinfo
-RAW-OFFLINE 			# Samba 4 doesn't have much offline support yet
