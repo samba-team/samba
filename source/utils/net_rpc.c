@@ -397,7 +397,7 @@ static int rpc_join_usage(int argc, const char **argv)
  * @param argc  Standard main() style argv.  Initial components are already
  *              stripped
  *
- * Main 'net_rpc_join()' (where the admain username/password is used) is 
+ * Main 'net_rpc_join()' (where the admin username/password is used) is 
  * in net_rpc_join.c
  * Try to just change the password, but if that doesn't work, use/prompt
  * for a username/password.
