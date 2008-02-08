@@ -336,6 +336,8 @@ AC_SUBST(INSTALL_LIBTALLOC)
 AC_SUBST(UNINSTALL_LIBTALLOC)
 AC_SUBST(LIBTALLOC_SHARED)
 AC_SUBST(LIBTALLOC)
+AC_SUBST(LIBTALLOC_STATIC)
+AC_SUBST(LIBTALLOC_LIBS)
 
 AC_SUBST(INSTALL_LIBWBCLIENT)
 AC_SUBST(UNINSTALL_LIBWBCLIENT)
@@ -5127,11 +5129,45 @@ if test $enable_static = yes; then
 fi
 
 #################################################
+# --with-static-libs=LIBS:
+#   link (internal) libs dynamically or statically?
+#
+# If a subsystem is built as a library then this controls whether they are
+# linked into Samba targets statically or dynamically:
+#
+# * If we build the shared library at all, we link dynamically by default.
+#
+# * We only link statically if we don't build shared or if the library
+#   appears in the --with-static-libs configure option.
+#
+# Example:
+#   --with-static-libs=talloc makes use of libtalloc.a instead
+#   of linking the dynamic variant with -ltalloc.
+#
+# NOTE: This option only affects libraries that we do not only build
+# but that samba also links against as libraries (as opposed to linking
+# the plain object files. - This has to be configured in Makefile.in.
+# So in particular it does not harm to give invalid or unknown names here.
+#
+
+AC_ARG_WITH([static-libs],
+	[AC_HELP_STRING([--with-static-libs=LIBS],
+		[Comma-separated list of names of (internal) libraries to link statically (instead of dynamically)])],
+	[AS_IF([test $withval],
+		[for lib in `echo $withval | sed -e 's/,/ /g'` ; do
+			[lib=`echo $lib | tr '[a-z]' '[A-Z]'`]
+			eval LIB_$lib=STATIC
+		done], [])],
+	[])
+
+#################################################
 # should we build libtalloc?
 INSTALL_LIBTALLOC=
 UNINSTALL_LIBTALLOC=
 LIBTALLOC_SHARED=
 LIBTALLOC=
+LIBTALLOC_STATIC=
+LIBTALLOC_LIBS=
 
 AC_MSG_CHECKING(whether to build the libtalloc shared library)
 AC_ARG_WITH(libtalloc,
@@ -5157,12 +5193,18 @@ if test x"$samba_cv_with_libtalloc" = "xyes" -a $BLDSHARED = true; then
 	LIBTALLOC_SHARED=bin/libtalloc.$SHLIBEXT
 	LIBTALLOC=libtalloc
 	AC_MSG_RESULT(yes)
+	if test x"$LIB_TALLOC" = "xSTATIC" ; then
+		LIBTALLOC_STATIC=bin/libtalloc.a
+	else
+		LIBTALLOC_LIBS=-ltalloc
+	fi
 else
 	enable_static=yes
 	AC_MSG_RESULT(no shared library support -- will supply static library)
 fi
 if test $enable_static = yes; then
 	LIBTALLOC=libtalloc
+	LIBTALLOC_STATIC=bin/libtalloc.a
 fi
 INSTALL_LIBTALLOC=installlibtalloc
 UNINSTALL_LIBTALLOC=uninstalllibtalloc

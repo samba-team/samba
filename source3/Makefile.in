@@ -18,7 +18,7 @@ datarootdir=@datarootdir@
 selftest_prefix=@selftest_prefix@
 smbtorture4_path=@smbtorture4_path@
 
-LIBS=@LIBS@
+LIBS=@LIBS@ @LIBTALLOC_LIBS@
 CC=@CC@
 SHLD=@SHLD@
 LIB_PATH_VAR=@LIB_PATH_VAR@
@@ -300,7 +300,7 @@ TALLOC_OBJ = @TALLOC_OBJS@
 LIBTALLOC_OBJ0 = $(TALLOC_OBJ)
 LIBTALLOC_OBJ = $(LIBTALLOC_OBJ0)
 
-LIBSAMBAUTIL_OBJ = $(TALLOC_OBJ) \
+LIBSAMBAUTIL_OBJ = @LIBTALLOC_STATIC@ \
 		$(LIBREPLACE_OBJ) \
 		$(SOCKET_WRAPPER_OBJ) \
 		$(NSS_WRAPPER_OBJ)
@@ -353,7 +353,7 @@ KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
 
 LIBADDNS_OBJ0 = libaddns/dnsrecord.o libaddns/dnsutils.o  libaddns/dnssock.o \
 	       libaddns/dnsgss.o libaddns/dnsmarshall.o
-LIBADDNS_OBJ = $(LIBADDNS_OBJ0) $(TALLOC_OBJ)
+LIBADDNS_OBJ = $(LIBADDNS_OBJ0) @LIBTALLOC_STATIC@
 
 LIBWBCLIENT_OBJ0 = nsswitch/libwbclient/wbclient.o \
 		  nsswitch/libwbclient/wbc_util.o \
@@ -361,7 +361,7 @@ LIBWBCLIENT_OBJ0 = nsswitch/libwbclient/wbclient.o \
 		  nsswitch/libwbclient/wbc_idmap.o \
 		  nsswitch/libwbclient/wbc_sid.o \
 		  nsswitch/libwbclient/wbc_pam.o
-LIBWBCLIENT_OBJ = $(LIBWBCLIENT_OBJ0) $(WBCOMMON_OBJ) $(TALLOC_OBJ) $(LIBREPLACE_OBJ)
+LIBWBCLIENT_OBJ = $(LIBWBCLIENT_OBJ0) $(WBCOMMON_OBJ) @LIBTALLOC_STATIC@ $(LIBREPLACE_OBJ)
 
 LIBGPO_OBJ0 = libgpo/gpo_ldap.o libgpo/gpo_ini.o libgpo/gpo_util.o \
 	      libgpo/gpo_fetch.o libgpo/gpo_filesync.o libgpo/gpo_sec.o
