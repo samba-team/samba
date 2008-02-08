@@ -168,7 +168,7 @@ NTSTATUS make_pdb_method_name(struct pdb_methods **methods, const char *selected
 }
 
 /******************************************************************
- Return an already initialised pdn_methods structure
+ Return an already initialized pdb_methods structure
 *******************************************************************/
 
 static struct pdb_methods *pdb_get_methods_reload( bool reload ) 
