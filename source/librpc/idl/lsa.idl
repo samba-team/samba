@@ -254,10 +254,10 @@ import "security.idl";
 		[case(LSA_POLICY_INFO_DNS)]              lsa_DnsDomainInfo      dns;
 	} lsa_PolicyInformation;
 
-	NTSTATUS lsa_QueryInfoPolicy (
+	NTSTATUS lsa_QueryInfoPolicy(
 		[in]                            policy_handle *handle,
 		[in]                            lsa_PolicyInfo level,
-		[out,unique,switch_is(level)]   lsa_PolicyInformation *info
+		[out,ref,switch_is(level)]      lsa_PolicyInformation **info
 		);
 
 	/******************/
