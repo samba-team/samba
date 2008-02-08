@@ -54,28 +54,4 @@ sub _set_config($$)
 	$self->{automatic_deps} = ($self->{config}->{automatic_dependencies} eq "yes");
 }
 
-sub Import($$)
-{
-	my ($self,$items) = @_;
-
-	foreach (keys %$items) {
-		if (defined($self->{items})) {
-			print "Warning: Importing $_ twice!\n";
-		}
-		$self->{items}->{$_} = $items->{$_};
-	}
-}
-
-sub GetInfo($$)
-{
-	my ($self,$name) = @_;
-
-	unless (defined($self->{info}->{$name})) 
-	{
-		$self->{info}->{$name} = $self->{items}->Build($self);
-	}
-
-	return $self->{info}->{$name};
-}
-
 1;
