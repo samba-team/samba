@@ -2093,7 +2093,7 @@ NTSTATUS rpccli_lsa_SetInfoPolicy2(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
 						 struct policy_handle *handle,
-						 struct lsa_String trusted_domain,
+						 struct lsa_String *trusted_domain,
 						 enum lsa_TrustDomInfoEnum level,
 						 union lsa_TrustedDomainInfo *info)
 {
@@ -2129,9 +2129,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	return r.out.result;
