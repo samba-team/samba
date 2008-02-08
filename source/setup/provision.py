@@ -150,7 +150,7 @@ elif opts.partitions_only:
     samdb_fill = FILL_DRS
 
 provision(lp, setup_dir, message, paths, 
-          system_session(), creds, opts.ldap_backend, 
+          system_session(), creds, 
           samdb_fill=samdb_fill, realm=opts.realm,
           domainguid=opts.domain_guid, domainsid=opts.domain_sid,
           policyguid=opts.policy_guid, hostname=opts.host_name,
