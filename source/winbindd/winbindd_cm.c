@@ -1839,11 +1839,9 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 	union dssetup_DsRoleInfo info;
 
 	const char *domain_name = NULL;
-	const char *dns_name = NULL;
-	const char *forest_name = NULL;
-	DOM_SID *dom_sid = NULL;	
+	DOM_SID *dom_sid = NULL;
+	union lsa_PolicyInformation *lsa_info = NULL;
 
-	
 	if (!connection_ok(domain)) {
 		return;
 	}
@@ -1921,34 +1919,39 @@ no_dssetup:
 	if (NT_STATUS_IS_OK(result)) {
 		/* This particular query is exactly what Win2k clients use 
 		   to determine that the DC is active directory */
-		result = rpccli_lsa_query_info_policy2(cli, mem_ctx, &pol,
-						       12, &domain_name,
-						       &dns_name, &forest_name,
-						       NULL, &dom_sid);
+		result = rpccli_lsa_QueryInfoPolicy2(cli, mem_ctx,
+						     &pol,
+						     LSA_POLICY_INFO_DNS,
+						     &lsa_info);
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
 		domain->active_directory = True;
 
-		if (domain_name)
-			fstrcpy(domain->name, domain_name);
+		if (lsa_info->dns.name.string) {
+			fstrcpy(domain->name, lsa_info->dns.name.string);
+		}
 
-		if (dns_name)
-			fstrcpy(domain->alt_name, dns_name);
+		if (lsa_info->dns.dns_domain.string) {
+			fstrcpy(domain->alt_name,
+				lsa_info->dns.dns_domain.string);
+		}
 
 		/* See if we can set some domain trust flags about
 		   ourself */
 
-		if ( forest_name ) {
-			fstrcpy(domain->forest_name, forest_name);		
+		if (lsa_info->dns.dns_forest.string) {
+			fstrcpy(domain->forest_name,
+				lsa_info->dns.dns_forest.string);
 
 			if (strequal(domain->forest_name, domain->alt_name)) {
 				domain->domain_flags = NETR_TRUST_FLAG_TREEROOT;
 			}
 		}
 
-		if (dom_sid) 
-			sid_copy(&domain->sid, dom_sid);
+		if (lsa_info->dns.sid) {
+			sid_copy(&domain->sid, lsa_info->dns.sid);
+		}
 	} else {
 		domain->active_directory = False;
 
