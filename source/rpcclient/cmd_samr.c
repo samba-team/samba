@@ -1332,7 +1332,7 @@ static NTSTATUS cmd_samr_query_dispinfo(struct rpc_pipe_client *cli,
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx=0, max_entries=250, max_size = 0xffff, num_entries, i;
+	uint32 start_idx=0, max_entries=250, max_size = 0xffff, num_entries = 0, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32 info_level = 1;
 	union samr_DispInfo info;
@@ -1859,7 +1859,7 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol;
-	uint32_t num_rids, num_names, *rids;
+	uint32_t num_rids, *rids;
 	struct lsa_Strings names;
 	struct samr_Ids types;
 
@@ -1923,7 +1923,7 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 
 	/* Display results */
 
-	for (i = 0; i < num_names; i++) {
+	for (i = 0; i < num_rids; i++) {
 		printf("rid 0x%x: %s (%d)\n",
 			rids[i], names.names[i].string, types.ids[i]);
 	}
