@@ -1012,7 +1012,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 
 	result = rpccli_lsa_QueryTrustedDomainInfoByName(cli, mem_ctx,
 							 &pol,
-							 trusted_domain,
+							 &trusted_domain,
 							 info_class,
 							 &info);
 	if (!NT_STATUS_IS_OK(result))
