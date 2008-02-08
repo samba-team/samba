@@ -58,107 +58,91 @@ done:
 	return result;
 }
 
-static void display_query_info_1(DOM_QUERY_1 d)
+static void display_query_info_1(struct lsa_AuditLogInfo *r)
 {
-	d_printf("percent_full:\t%d\n", d.percent_full);
-	d_printf("log_size:\t%d\n", d.log_size);
-	d_printf("retention_time:\t%lld\n", (long long)d.retention_time);
-	d_printf("shutdown_in_progress:\t%d\n", d.shutdown_in_progress);
-	d_printf("time_to_shutdown:\t%lld\n", (long long)d.time_to_shutdown);
-	d_printf("next_audit_record:\t%d\n", d.next_audit_record);
-	d_printf("unknown:\t%d\n", d.unknown);
+	d_printf("percent_full:\t%d\n", r->percent_full);
+	d_printf("log_size:\t%d\n", r->log_size);
+	d_printf("retention_time:\t%lld\n", (long long)r->retention_time);
+	d_printf("shutdown_in_progress:\t%d\n", r->shutdown_in_progress);
+	d_printf("time_to_shutdown:\t%lld\n", (long long)r->time_to_shutdown);
+	d_printf("next_audit_record:\t%d\n", r->next_audit_record);
+	d_printf("unknown:\t%d\n", r->unknown);
 }
 
-static void display_query_info_2(DOM_QUERY_2 d, TALLOC_CTX *mem_ctx)
+static void display_query_info_2(struct lsa_AuditEventsInfo *r)
 {
 	int i;
-	d_printf("Auditing enabled:\t%d\n", d.auditing_enabled);
-	d_printf("Auditing categories:\t%d\n", d.count1);
+	d_printf("Auditing enabled:\t%d\n", r->auditing_mode);
+	d_printf("Auditing categories:\t%d\n", r->count);
 	d_printf("Auditsettings:\n");
-	for (i=0; i<d.count1; i++) {
-		const char *val = audit_policy_str(mem_ctx, d.auditsettings[i]);
+	for (i=0; i<r->count; i++) {
+		const char *val = audit_policy_str(talloc_tos(), r->settings[i]);
 		const char *policy = audit_description_str(i);
 		d_printf("%s:\t%s\n", policy, val);
 	}
 }
 
-static void display_query_info_3(DOM_QUERY_3 d)
+static void display_query_info_3(struct lsa_DomainInfo *r)
 {
-	fstring name;
-
-	unistr2_to_ascii(name, &d.uni_domain_name, sizeof(name));
-
-	d_printf("Domain Name: %s\n", name);
-	d_printf("Domain Sid: %s\n", sid_string_tos(&d.dom_sid.sid));
+	d_printf("Domain Name: %s\n", r->name.string);
+	d_printf("Domain Sid: %s\n", sid_string_tos(r->sid));
 }
 
-static void display_query_info_5(DOM_QUERY_5 d)
+static void display_query_info_5(struct lsa_DomainInfo *r)
 {
-	fstring name;
-
-	unistr2_to_ascii(name, &d.uni_domain_name, sizeof(name));
-
-	d_printf("Domain Name: %s\n", name);
-	d_printf("Domain Sid: %s\n", sid_string_tos(&d.dom_sid.sid));
+	d_printf("Domain Name: %s\n", r->name.string);
+	d_printf("Domain Sid: %s\n", sid_string_tos(r->sid));
 }
 
-static void display_query_info_10(DOM_QUERY_10 d)
+static void display_query_info_10(struct lsa_AuditFullSetInfo *r)
 {
-	d_printf("Shutdown on full: %d\n", d.shutdown_on_full);
+	d_printf("Shutdown on full: %d\n", r->shutdown_on_full);
 }
 
-static void display_query_info_11(DOM_QUERY_11 d)
+static void display_query_info_11(struct lsa_AuditFullQueryInfo *r)
 {
-	d_printf("Shutdown on full: %d\n", d.shutdown_on_full);
-	d_printf("Log is full: %d\n", d.log_is_full);
-	d_printf("Unknown: %d\n", d.unknown);
+	d_printf("Shutdown on full: %d\n", r->shutdown_on_full);
+	d_printf("Log is full: %d\n", r->log_is_full);
+	d_printf("Unknown: %d\n", r->unknown);
 }
 
-static void display_query_info_12(DOM_QUERY_12 d)
+static void display_query_info_12(struct lsa_DnsDomainInfo *r)
 {
-	fstring dom_name, dns_dom_name, forest_name;
-
-	unistr2_to_ascii(dom_name, &d.uni_nb_dom_name, sizeof(dom_name));
-	unistr2_to_ascii(dns_dom_name, &d.uni_dns_dom_name, sizeof(dns_dom_name));
-	unistr2_to_ascii(forest_name, &d.uni_forest_name, sizeof(forest_name));
-
-	d_printf("Domain NetBios Name: %s\n", dom_name);
-	d_printf("Domain DNS Name: %s\n", dns_dom_name);
-	d_printf("Domain Forest Name: %s\n", forest_name);
-	d_printf("Domain Sid: %s\n", sid_string_tos(&d.dom_sid.sid));
+	d_printf("Domain NetBios Name: %s\n", r->name.string);
+	d_printf("Domain DNS Name: %s\n", r->dns_domain.string);
+	d_printf("Domain Forest Name: %s\n", r->dns_forest.string);
+	d_printf("Domain Sid: %s\n", sid_string_tos(r->sid));
 	d_printf("Domain GUID: %s\n", smb_uuid_string(talloc_tos(),
-						      d.dom_guid));
-
+						      r->domain_guid));
 }
 
-
-
-static void display_lsa_query_info(LSA_INFO_CTR *dom, TALLOC_CTX *mem_ctx)
+static void display_lsa_query_info(union lsa_PolicyInformation *info,
+				   enum lsa_PolicyInfo level)
 {
-	switch (dom->info_class) {
+	switch (level) {
 		case 1:
-			display_query_info_1(dom->info.id1);
+			display_query_info_1(&info->audit_log);
 			break;
 		case 2:
-			display_query_info_2(dom->info.id2, mem_ctx);
+			display_query_info_2(&info->audit_events);
 			break;
 		case 3:
-			display_query_info_3(dom->info.id3);
+			display_query_info_3(&info->domain);
 			break;
 		case 5:
-			display_query_info_5(dom->info.id5);
+			display_query_info_5(&info->account_domain);
 			break;
 		case 10:
-			display_query_info_10(dom->info.id10);
+			display_query_info_10(&info->auditfullset);
 			break;
 		case 11:
-			display_query_info_11(dom->info.id11);
+			display_query_info_11(&info->auditfullquery);
 			break;
 		case 12:
-			display_query_info_12(dom->info.id12);
+			display_query_info_12(&info->dns);
 			break;
 		default:
-			printf("can't display info level: %d\n", dom->info_class);
+			printf("can't display info level: %d\n", level);
 			break;
 	}
 }
@@ -169,7 +153,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	LSA_INFO_CTR dom;
+	union lsa_PolicyInformation *info = NULL;
 
 	uint32 info_class = 3;
 
@@ -190,8 +174,10 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
 			
-		result = rpccli_lsa_query_info_policy2_new(cli, mem_ctx, &pol,
-							   info_class, &dom);
+		result = rpccli_lsa_QueryInfoPolicy2(cli, mem_ctx,
+						     &pol,
+						     info_class,
+						     &info);
 		break;
 	default:
 		result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
@@ -201,12 +187,14 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
 		
-		result = rpccli_lsa_query_info_policy_new(cli, mem_ctx, &pol, 
-							  info_class, &dom);
+		result = rpccli_lsa_QueryInfoPolicy(cli, mem_ctx,
+						    &pol,
+						    info_class,
+						    &info);
 	}
 
 
-	display_lsa_query_info(&dom, mem_ctx);
+	display_lsa_query_info(info, info_class);
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
