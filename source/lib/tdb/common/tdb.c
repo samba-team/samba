@@ -687,9 +687,35 @@ void tdb_enable_seqnum(struct tdb_context *tdb)
 
 
 /*
+  add a region of the file to the freelist. Length is the size of the region in bytes, 
+  which includes the free list header that needs to be added
+ */
+static int tdb_free_region(struct tdb_context *tdb, tdb_off_t offset, ssize_t length)
+{
+	struct list_struct rec;
+	if (length <= sizeof(rec)) {
+		/* the region is not worth adding */
+		return 0;
+	}
+	if (length + offset > tdb->map_size) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_free_region: adding region beyond end of file\n"));
+		return -1;		
+	}
+	memset(&rec,'\0',sizeof(rec));
+	rec.rec_len = length - sizeof(rec);
+	if (tdb_free(tdb, offset, &rec) == -1) {
+		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_free_region: failed to add free record\n"));
+		return -1;
+	}
+	return 0;
+}
+
+/*
   wipe the entire database, deleting all records. This can be done
   very fast by using a global lock. The entire data portion of the
   file becomes a single entry in the freelist.
+
+  This code carefully steps around the recovery area, leaving it alone
  */
 int tdb_wipe_all(struct tdb_context *tdb)
 {
@@ -735,43 +761,31 @@ int tdb_wipe_all(struct tdb_context *tdb)
 		goto failed;
 	}
 
-	if (tdb_ofs_write(tdb, TDB_RECOVERY_HEAD, &offset) == -1) {
-		TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to write recovery head\n"));
-		goto failed;		
-	}
-
-	/* add all the rest of the file to the freelist */
-	data_len = (tdb->map_size - TDB_DATA_START(tdb->header.hash_size)) - sizeof(struct list_struct);
-	if (data_len < recovery_size+sizeof(tdb_off_t)) {
-		recovery_size = 0;
+	/* add all the rest of the file to the freelist, possibly leaving a gap 
+	   for the recovery area */
+	if (recovery_size == 0) {
+		/* the simple case - the whole file can be used as a freelist */
+		data_len = (tdb->map_size - TDB_DATA_START(tdb->header.hash_size));
+		if (tdb_free_region(tdb, TDB_DATA_START(tdb->header.hash_size), data_len) != 0) {
+			goto failed;
+		}
 	} else {
-		data_len -= recovery_size;
-	}
-	if (data_len > 0) {
-		struct list_struct rec;
-		memset(&rec,'\0',sizeof(rec));
-		rec.rec_len = data_len;
-		if (tdb_free(tdb, TDB_DATA_START(tdb->header.hash_size), &rec) == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to add free record\n"));
+		/* we need to add two freelist entries - one on either
+		   side of the recovery area 
+
+		   Note that we cannot shift the recovery area during
+		   this operation. Only the transaction.c code may
+		   move the recovery area or we risk subtle data
+		   corruption
+		*/
+		data_len = (recovery_head - TDB_DATA_START(tdb->header.hash_size));
+		if (tdb_free_region(tdb, TDB_DATA_START(tdb->header.hash_size), data_len) != 0) {
 			goto failed;
 		}
-	}
-
-	/* possibly add the recovery record */
-	if (recovery_size != 0) {
-		struct list_struct rec;
-		
-		recovery_head = tdb->map_size - recovery_size;
-
-		ZERO_STRUCT(rec);
-		rec.rec_len = recovery_size - sizeof(rec);
-		if (tdb_rec_write(tdb, recovery_head, &rec) != 0) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to add recovery record\n"));
+		/* and the 2nd free list entry after the recovery area - if any */
+		data_len = tdb->map_size - (recovery_head+recovery_size);
+		if (tdb_free_region(tdb, recovery_head+recovery_size, data_len) != 0) {
 			goto failed;
-		}
-		if (tdb_ofs_write(tdb, TDB_RECOVERY_HEAD, &recovery_head) == -1) {
-			TDB_LOG((tdb, TDB_DEBUG_FATAL,"tdb_wipe_all: failed to write recovery head\n"));
-			goto failed;		
 		}
 	}
 
