@@ -829,7 +829,7 @@ struct lsa_OpenAccount {
 	} in;
 
 	struct {
-		struct policy_handle *acct_handle;/* [ref] */
+		struct policy_handle **acct_handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 
