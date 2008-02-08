@@ -359,19 +359,23 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 	    (user_rid == 0)) {
 
 		/* Probably this was a user name, try lookupnames */
-		uint32 num_rids;
-		uint32 *rids, *types;
+		struct samr_Ids rids, types;
+		struct lsa_String lsa_acct_name;
 
-		result = rpccli_samr_lookup_names(cli, mem_ctx, &domain_pol,
-						  1000, 1, &argv[1],
-						  &num_rids, &rids,
-						  &types);
+		init_lsa_String(&lsa_acct_name, argv[1]);
+
+		result = rpccli_samr_LookupNames(cli, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &rids,
+						 &types);
 
 		if (NT_STATUS_IS_OK(result)) {
 			result = rpccli_samr_OpenUser(cli, mem_ctx,
 						      &domain_pol,
 						      access_mask,
-						      rids[0],
+						      rids.ids[0],
 						      &user_pol);
 		}
 	}
@@ -1287,19 +1291,23 @@ static NTSTATUS cmd_samr_delete_alias(struct rpc_pipe_client *cli,
 				       &alias_pol);
 	if (!NT_STATUS_IS_OK(result) && (alias_rid == 0)) {
 		/* Probably this was a user name, try lookupnames */
-		uint32 num_rids;
-		uint32 *rids, *types;
+		struct samr_Ids rids, types;
+		struct lsa_String lsa_acct_name;
 
-		result = rpccli_samr_lookup_names(cli, mem_ctx, &domain_pol,
-						  1000, 1, &argv[2],
-						  &num_rids, &rids,
-						  &types);
+		init_lsa_String(&lsa_acct_name, argv[2]);
+
+		result = rpccli_samr_LookupNames(cli, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &rids,
+						 &types);
 
 		if (NT_STATUS_IS_OK(result)) {
 			result = rpccli_samr_OpenAlias(cli, mem_ctx,
 						       &domain_pol,
 						       access_mask,
-						       rids[0],
+						       rids.ids[0],
 						       &alias_pol);
 		}
 	}
@@ -1768,10 +1776,10 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol;
-	uint32 flags = 0x000003e8; /* Unknown */
-	uint32 num_rids, num_names, *name_types, *rids;
-	const char **names;
+	uint32 num_names;
+	struct samr_Ids rids, name_types;
 	int i;
+	struct lsa_String *names = NULL;;
 
 	if (argc < 3) {
 		printf("Usage: %s  domain|builtin name1 [name2 [name3] [...]]\n", argv[0]);
@@ -1810,19 +1818,23 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 
 	num_names = argc - 2;
 
-	if ((names = TALLOC_ARRAY(mem_ctx, const char *, num_names)) == NULL) {
+	if ((names = TALLOC_ARRAY(mem_ctx, struct lsa_String, num_names)) == NULL) {
 		rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 		rpccli_samr_Close(cli, mem_ctx, &connect_pol);
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-	for (i = 0; i < num_names; i++)
-		names[i] = argv[i + 2];
+	for (i = 0; i < num_names; i++) {
+		init_lsa_String(&names[i], argv[i + 2]);
+	}
 
-	result = rpccli_samr_lookup_names(cli, mem_ctx, &domain_pol,
-				       flags, num_names, names,
-				       &num_rids, &rids, &name_types);
+	result = rpccli_samr_LookupNames(cli, mem_ctx,
+					 &domain_pol,
+					 num_names,
+					 names,
+					 &rids,
+					 &name_types);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -1830,8 +1842,8 @@ static NTSTATUS cmd_samr_lookup_names(struct rpc_pipe_client *cli,
 	/* Display results */
 
 	for (i = 0; i < num_names; i++)
-		printf("name %s: 0x%x (%d)\n", names[i], rids[i],
-		       name_types[i]);
+		printf("name %s: 0x%x (%d)\n", names[i].string, rids.ids[i],
+		       name_types.ids[i]);
 
 	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
@@ -1960,21 +1972,24 @@ static NTSTATUS cmd_samr_delete_dom_group(struct rpc_pipe_client *cli,
 	/* Get handle on group */
 
 	{
-		uint32 *group_rids, num_rids, *name_types;
-		uint32 flags = 0x000003e8; /* Unknown */
+		struct samr_Ids group_rids, name_types;
+		struct lsa_String lsa_acct_name;
 
-		result = rpccli_samr_lookup_names(cli, mem_ctx, &domain_pol,
-					       flags, 1, (const char **)&argv[1],
-					       &num_rids, &group_rids,
-					       &name_types);
+		init_lsa_String(&lsa_acct_name, argv[1]);
 
+		result = rpccli_samr_LookupNames(cli, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &group_rids,
+						 &name_types);
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
 
 		result = rpccli_samr_OpenGroup(cli, mem_ctx,
 					       &domain_pol,
 					       access_mask,
-					       group_rids[0],
+					       group_rids.ids[0],
 					       &group_pol);
 
 		if (!NT_STATUS_IS_OK(result))
@@ -2037,13 +2052,17 @@ static NTSTATUS cmd_samr_delete_dom_user(struct rpc_pipe_client *cli,
 	/* Get handle on user */
 
 	{
-		uint32 *user_rids, num_rids, *name_types;
-		uint32 flags = 0x000003e8; /* Unknown */
+		struct samr_Ids user_rids, name_types;
+		struct lsa_String lsa_acct_name;
 
-		result = rpccli_samr_lookup_names(cli, mem_ctx, &domain_pol,
-					       flags, 1, (const char **)&argv[1],
-					       &num_rids, &user_rids,
-					       &name_types);
+		init_lsa_String(&lsa_acct_name, argv[1]);
+
+		result = rpccli_samr_LookupNames(cli, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &user_rids,
+						 &name_types);
 
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
@@ -2051,7 +2070,7 @@ static NTSTATUS cmd_samr_delete_dom_user(struct rpc_pipe_client *cli,
 		result = rpccli_samr_OpenUser(cli, mem_ctx,
 					      &domain_pol,
 					      access_mask,
-					      user_rids[0],
+					      user_rids.ids[0],
 					      &user_pol);
 
 		if (!NT_STATUS_IS_OK(result))
