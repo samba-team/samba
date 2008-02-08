@@ -295,8 +295,6 @@ typedef struct lsa_info_ctr
 
 } LSA_INFO_CTR;
 
-typedef LSA_INFO_CTR LSA_INFO_CTR2;
-
 /* LSA_R_QUERY_INFO - response to LSA query info policy */
 typedef struct lsa_r_query_info
 {
@@ -305,9 +303,6 @@ typedef struct lsa_r_query_info
 	NTSTATUS status; /* return code */
 
 } LSA_R_QUERY_INFO;
-
-typedef LSA_Q_QUERY_INFO LSA_Q_QUERY_INFO2;
-typedef LSA_R_QUERY_INFO LSA_R_QUERY_INFO2;
 
 /*******************************************************/
 

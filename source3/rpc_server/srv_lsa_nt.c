@@ -1919,7 +1919,7 @@ NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
 /***************************************************************************
  ***************************************************************************/
 
-NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_INFO2 *r_u)
+ NTSTATUS _lsa_query_info2(pipes_struct *p, LSA_Q_QUERY_INFO2 *q_u, LSA_R_QUERY_INFO2 *r_u)
 {
 	struct lsa_info *handle;
 	const char *nb_name;

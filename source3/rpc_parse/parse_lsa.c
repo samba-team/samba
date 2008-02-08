@@ -854,61 +854,6 @@ bool lsa_io_dom_query_12(const char *desc, DOM_QUERY_12 *info, prs_struct *ps, i
 reads or writes a structure.
 ********************************************************************/
 
-static bool lsa_io_query_info_ctr2(const char *desc, prs_struct *ps, int depth, LSA_INFO_CTR2 *ctr)
-{
-	prs_debug(ps, depth, desc, "lsa_io_query_info_ctr2");
-	depth++;
-
-	if(!prs_uint16("info_class", ps, depth, &ctr->info_class))
-		return False;
-
-	switch (ctr->info_class) {
-	case 1:
-		if(!lsa_io_dom_query_1("", &ctr->info.id1, ps, depth))
-			return False;
-		break;
-	case 2:
-		if(!lsa_io_dom_query_2("", &ctr->info.id2, ps, depth))
-			return False;
-		break;
-	case 3:
-		if(!lsa_io_dom_query_3("", &ctr->info.id3, ps, depth))
-			return False;
-		break;
-	case 5:
-		if(!lsa_io_dom_query_5("", &ctr->info.id5, ps, depth))
-			return False;
-		break;
-	case 6:
-		if(!lsa_io_dom_query_6("", &ctr->info.id6, ps, depth))
-			return False;
-		break;
-	case 10:
-		if(!lsa_io_dom_query_10("", &ctr->info.id10, ps, depth))
-			return False;
-		break;
-	case 11:
-		if(!lsa_io_dom_query_11("", &ctr->info.id11, ps, depth))
-			return False;
-		break;
-	case 12:
-		if(!lsa_io_dom_query_12("", &ctr->info.id12, ps, depth))
-			return False;
-		break;
-	default:
-		DEBUG(0,("invalid info_class: %d\n", ctr->info_class));
-		return False;
-		break;
-	}
-
-	return True;
-}
-
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
 static bool lsa_io_query_info_ctr(const char *desc, prs_struct *ps, int depth, LSA_INFO_CTR *ctr)
 {
 	prs_debug(ps, depth, desc, "lsa_io_query_info_ctr");
@@ -2921,70 +2866,6 @@ bool policy_handle_is_valid(const POLICY_HND *hnd)
 
 	ZERO_STRUCT(zero_pol);
 	return ((memcmp(&zero_pol, hnd, sizeof(POLICY_HND)) == 0) ? False : True );
-}
-
-/*******************************************************************
- Inits an LSA_Q_QUERY_INFO2 structure.
-********************************************************************/
-
-void init_q_query2(LSA_Q_QUERY_INFO2 *in, POLICY_HND *hnd, uint16 info_class)
-{
-	DEBUG(5, ("init_q_query2\n"));
-
-	memcpy(&in->pol, hnd, sizeof(in->pol));
-
-	in->info_class = info_class;
-}
-
-/*******************************************************************
- Reads or writes an LSA_Q_QUERY_DNSDOMINFO structure.
-********************************************************************/
-
-bool lsa_io_q_query_info2(const char *desc, LSA_Q_QUERY_INFO2 *in, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_query_info2");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
- 
-	if(!smb_io_pol_hnd("pol", &in->pol, ps, depth))
-		return False;
-	
-	if(!prs_uint16("info_class", ps, depth, &in->info_class))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes an LSA_R_QUERY_DNSDOMINFO structure.
-********************************************************************/
-
-bool lsa_io_r_query_info2(const char *desc, LSA_R_QUERY_INFO2 *out,
-			  prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_query_info2");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("dom_ptr", ps, depth, &out->dom_ptr))
-		return False;
-
-	if (out->dom_ptr) {
-
-		if(!lsa_io_query_info_ctr2("", ps, depth, &out->ctr))
-			return False;
-	}
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_ntstatus("status", ps, depth, &out->status))
-		return False;
-
-	return True;
 }
 
 /*******************************************************************
