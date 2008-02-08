@@ -78,3 +78,7 @@ dn: CN=Policies,CN=System,${DOMAINDN}
 objectClass: top
 objectClass: container
 
+dn: CN=IP Security,CN=System,${DOMAINDN}
+objectClass: top
+objectClass: container
+
