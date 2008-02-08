@@ -97,7 +97,7 @@ static void nbtd_unexpected_handler(struct nbt_name_socket *nbtsock,
 	}
 
 	/* try the wins server client interface */
-	if (!req && nbtsrv->wins_interface) {
+	if (!req && nbtsrv->wins_interface && nbtsrv->wins_interface->nbtsock) {
 		i = nbtsrv->wins_interface;
 		req = idr_find(i->nbtsock->idr, packet->name_trn_id);
 	}
