@@ -1,6 +1,5 @@
 dsdb/samdb/ldb_modules/tests/samba3sam.py: Fix remaining failing tests
 lib/ldb/tests/python/ldap.py: Fix remaining 3 FIXME's
-provisioning in LDAP mode(TEST_LDAP=yes PROVISION_PYTHON=yes make test)
 command-line vampire
 provisioning: combine some of the python dictionaries
 finish scripting/bin/smbstatus.py
