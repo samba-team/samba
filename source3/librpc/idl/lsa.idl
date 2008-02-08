@@ -749,9 +749,9 @@ import "security.idl";
 	/* Function:          0x2e */
 
 	NTSTATUS lsa_QueryInfoPolicy2(
-		[in]                 policy_handle *handle,
-		[in]                     lsa_PolicyInfo level,
-		[out,unique,switch_is(level)]   lsa_PolicyInformation *info
+		[in]                         policy_handle *handle,
+		[in]                         lsa_PolicyInfo level,
+		[out,ref,switch_is(level)]   lsa_PolicyInformation **info
 		);
 
 	/* Function 0x2f */
