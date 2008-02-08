@@ -604,6 +604,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	uint32 acb_info;
 	uint32 acct_flags, user_rid;
 	uint32_t access_granted = 0;
+	struct samr_Ids user_rids, name_types;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
@@ -659,16 +660,16 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 
 	if (argc == 2) {
 
-		uint32 *user_rids, num_rids, *name_types;
-		uint32 flags = 0x000003e8; /* Unknown */
 		SAM_USERINFO_CTR ctr;
 		SAM_USER_INFO_24 p24;
 		uchar pwbuf[516];
 
-		result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-						  flags, 1, &acct_name,
-						  &num_rids, &user_rids,
-						  &name_types);
+		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &user_rids,
+						 &name_types);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
@@ -677,7 +678,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 		result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
 					      &domain_pol,
 					      MAXIMUM_ALLOWED_ACCESS,
-					      user_rids[0],
+					      user_rids.ids[0],
 					      &user_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -800,13 +801,17 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 	/* Get handle on user */
 
 	{
-		uint32 *user_rids, num_rids, *name_types;
-		uint32 flags = 0x000003e8; /* Unknown */
+		struct samr_Ids user_rids, name_types;
+		struct lsa_String lsa_acct_name;
 
-		result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-					       flags, 1, &acct_name,
-					       &num_rids, &user_rids,
-					       &name_types);
+		init_lsa_String(&lsa_acct_name, acct_name);
+
+		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &user_rids,
+						 &name_types);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
@@ -815,7 +820,7 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 		result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
 					      &domain_pol,
 					      MAXIMUM_ALLOWED_ACCESS,
-					      user_rids[0],
+					      user_rids.ids[0],
 					      &user_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -871,14 +876,11 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 info_level = 7;
 	const char *old_name, *new_name;
-	uint32 *user_rid;
-	uint32 flags = 0x000003e8; /* Unknown */
-	uint32 num_rids, *name_types;
-	uint32 num_names = 1;
-	const char **names;
 	SAM_USERINFO_CTR *user_ctr;
 	SAM_USERINFO_CTR ctr;
 	SAM_USER_INFO_7 info7;
+	struct samr_Ids user_rids, name_types;
+	struct lsa_String lsa_acct_name;
 
 	if (argc != 2) {
 		d_printf("Old and new username must be specified\n");
@@ -914,14 +916,14 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 		goto done;
 	}
 
-	if ((names = TALLOC_ARRAY(mem_ctx, const char *, num_names)) == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-	names[0] = old_name;
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-				       flags, num_names, names,
-				       &num_rids, &user_rid, &name_types);
+	init_lsa_String(&lsa_acct_name, old_name);
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &user_rids,
+					 &name_types);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -930,7 +932,7 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
 				      &domain_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      user_rid[0],
+				      user_rids.ids[0],
 				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1073,14 +1075,17 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 	/* Get handle on user */
 
 	{
-		uint32 *user_rids, num_rids, *name_types;
-		uint32 flags = 0x000003e8; /* Unknown */
+		struct samr_Ids user_rids, name_types;
+		struct lsa_String lsa_acct_name;
 
-		result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-					       flags, 1, &user,
-					       &num_rids, &user_rids,
-					       &name_types);
+		init_lsa_String(&lsa_acct_name, user);
 
+		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &user_rids,
+						 &name_types);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}
@@ -1088,7 +1093,7 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 		result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
 					      &domain_pol,
 					      MAXIMUM_ALLOWED_ACCESS,
-					      user_rids[0],
+					      user_rids.ids[0],
 					      &user_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -1164,12 +1169,14 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 *rids, num_rids, *name_types, num_names;
-	uint32 flags = 0x000003e8; /* Unknown */
 	int i;
 	struct samr_RidWithAttributeArray *rid_array = NULL;
 	struct lsa_Strings names;
 	struct samr_Ids types;
+	uint32_t *lrids = NULL;
+	struct samr_Ids rids, name_types;
+	struct lsa_String lsa_acct_name;
+
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
@@ -1195,16 +1202,21 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 
 	/* Get handle on user */
 
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-				       flags, 1, &argv[0],
-				       &num_rids, &rids, &name_types);
+	init_lsa_String(&lsa_acct_name, argv[0]);
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &rids,
+					 &name_types);
 
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
 	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
 				      &domain_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      rids[0],
+				      rids.ids[0],
 				      &user_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
@@ -1214,23 +1226,21 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	num_rids = rid_array->count;
-
 	/* Look up rids */
 
-	if (num_rids) {
-		if ((rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids)) == NULL) {
+	if (rid_array->count) {
+		if ((lrids = TALLOC_ARRAY(mem_ctx, uint32, rid_array->count)) == NULL) {
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
-		for (i = 0; i < num_rids; i++)
-			rids[i] = rid_array->rids[i].rid;
+		for (i = 0; i < rid_array->count; i++)
+			lrids[i] = rid_array->rids[i].rid;
 
 		result = rpccli_samr_LookupRids(pipe_hnd, mem_ctx,
 						&domain_pol,
-						num_rids,
-						rids,
+						rid_array->count,
+						lrids,
 						&names,
 						&types);
 
@@ -1240,7 +1250,7 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 
 		/* Display results */
 
-		for (i = 0; i < num_names; i++)
+		for (i = 0; i < names.count; i++)
 			printf("%s\n", names.names[i].string);
 	}
  done:
@@ -1802,15 +1812,17 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, group_pol, user_pol;
 	bool group_is_primary = False;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	uint32 *group_rids, num_rids, *name_types, group_rid;
+	uint32_t group_rid;
 	struct samr_RidTypeArray *rids = NULL;
-	uint32 flags = 0x000003e8; /* Unknown */
 	/* char **names; */
 	int i;
 	/* DOM_GID *user_gids; */
 	SAM_USERINFO_CTR *user_ctr;
 	fstring temp;
+
+	struct samr_Ids group_rids, name_types;
+	struct lsa_String lsa_acct_name;
+
 
 	if (argc < 1) {
         	d_printf("specify group\n");
@@ -1838,31 +1850,34 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		d_fprintf(stderr, "Request open_domain failed\n");
         	goto done;
         }
-	
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-				       flags, 1, &argv[0],
-				       &num_rids, &group_rids,
-				       &name_types);
 
+	init_lsa_String(&lsa_acct_name, argv[0]);
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &group_rids,
+					 &name_types);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Lookup of '%s' failed\n",argv[0]);
    		goto done;
 	}
 
-	switch (name_types[0])
+	switch (name_types.ids[0])
 	{
 	case SID_NAME_DOM_GRP:
 		result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
 					       &domain_pol,
 					       MAXIMUM_ALLOWED_ACCESS,
-					       group_rids[0],
+					       group_rids.ids[0],
 					       &group_pol);
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, "Request open_group failed");
    			goto done;
 		}
-                
-		group_rid = group_rids[0];
+
+		group_rid = group_rids.ids[0];
 
 		result = rpccli_samr_QueryGroupMember(pipe_hnd, mem_ctx,
 						      &group_pol,
@@ -1951,7 +1966,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
 					       &domain_pol,
 					       MAXIMUM_ALLOWED_ACCESS,
-					       group_rids[0],
+					       group_rids.ids[0],
 					       &group_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
@@ -1964,7 +1979,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		break;
 	default:
 		d_fprintf(stderr, "%s is of type %s. This command is only for deleting local or global groups\n",
-			argv[0],sid_type_lookup(name_types[0]));
+			argv[0],sid_type_lookup(name_types.ids[0]));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1972,7 +1987,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	
 	if (NT_STATUS_IS_OK(result)) {
 		if (opt_verbose)
-			d_printf("Deleted %s '%s'\n",sid_type_lookup(name_types[0]),argv[0]);
+			d_printf("Deleted %s '%s'\n",sid_type_lookup(name_types.ids[0]),argv[0]);
 	} else {
 		d_fprintf(stderr, "Deleting of %s failed: %s\n",argv[0],
 			get_friendly_nt_error_msg(result));
@@ -2207,9 +2222,8 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 	uint32 group_rid;
 	POLICY_HND group_pol;
 
-	uint32 num_rids;
-	uint32 *rids = NULL;
-	uint32 *rid_types = NULL;
+	struct samr_Ids rids, rid_types;
+	struct lsa_String lsa_acct_name;
 
 	DOM_SID sid;
 
@@ -2238,9 +2252,14 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 		return result;
 	}
 
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol, 1000,
-				       1, &member,
-				       &num_rids, &rids, &rid_types);
+	init_lsa_String(&lsa_acct_name, member);
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &rids,
+					 &rid_types);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not lookup up group member %s\n", member);
@@ -2259,7 +2278,7 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 
 	result = rpccli_samr_AddGroupMember(pipe_hnd, mem_ctx,
 					    &group_pol,
-					    rids[0],
+					    rids.ids[0],
 					    0x0005); /* unknown flags */
 
  done:
@@ -2405,9 +2424,8 @@ static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
 	uint32 group_rid;
 	POLICY_HND group_pol;
 
-	uint32 num_rids;
-	uint32 *rids = NULL;
-	uint32 *rid_types = NULL;
+	struct samr_Ids rids, rid_types;
+	struct lsa_String lsa_acct_name;
 
 	DOM_SID sid;
 
@@ -2433,10 +2451,14 @@ static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol, 1000,
-				       1, &member,
-				       &num_rids, &rids, &rid_types);
+	init_lsa_String(&lsa_acct_name, member);
 
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &rids,
+					 &rid_types);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not lookup up group member %s\n", member);
 		goto done;
@@ -2453,7 +2475,7 @@ static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
 
 	result = rpccli_samr_DeleteGroupMember(pipe_hnd, mem_ctx,
 					       &group_pol,
-					       rids[0]);
+					       rids.ids[0]);
 
  done:
 	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
@@ -3004,7 +3026,8 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result;
 	POLICY_HND connect_pol, domain_pol;
-	uint32 num_rids, *rids, *rid_types;
+	struct samr_Ids rids, rid_types;
+	struct lsa_String lsa_acct_name;
 
 	/* Get sam policy handle */
 
@@ -3027,8 +3050,14 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol, 1000,
-				       1, argv, &num_rids, &rids, &rid_types);
+	init_lsa_String(&lsa_acct_name, argv[0]); /* sure? */
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &rids,
+					 &rid_types);
 
 	if (!NT_STATUS_IS_OK(result)) {
 
@@ -3051,9 +3080,12 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 			return result;
 		}
 
-		result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol, 1000,
-					       1, argv, &num_rids,
-					       &rids, &rid_types);
+		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &rids,
+						 &rid_types);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, "Couldn't find group %s\n", argv[0]);
@@ -3061,20 +3093,20 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 		}
 	}
 
-	if (num_rids != 1) {
+	if (rids.count != 1) {
 		d_fprintf(stderr, "Couldn't find group %s\n", argv[0]);
 		return result;
 	}
 
-	if (rid_types[0] == SID_NAME_DOM_GRP) {
+	if (rid_types.ids[0] == SID_NAME_DOM_GRP) {
 		return rpc_list_group_members(pipe_hnd, mem_ctx, domain_name,
 					      domain_sid, &domain_pol,
-					      rids[0]);
+					      rids.ids[0]);
 	}
 
-	if (rid_types[0] == SID_NAME_ALIAS) {
+	if (rid_types.ids[0] == SID_NAME_ALIAS) {
 		return rpc_list_alias_members(pipe_hnd, mem_ctx, &domain_pol,
-					      rids[0]);
+					      rids.ids[0]);
 	}
 
 	return NT_STATUS_NO_SUCH_GROUP;
@@ -3101,8 +3133,9 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result;
 	POLICY_HND connect_pol, domain_pol, group_pol;
-	uint32 num_rids, *rids, *rid_types;
 	union samr_GroupInfo group_info;
+	struct samr_Ids rids, rid_types;
+	struct lsa_String lsa_acct_name;
 
 	if (argc != 2) {
 		d_printf("Usage: 'net rpc group rename group newname'\n");
@@ -3130,15 +3163,21 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol, 1000,
-				       1, argv, &num_rids, &rids, &rid_types);
+	init_lsa_String(&lsa_acct_name, argv[0]);
 
-	if (num_rids != 1) {
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &rids,
+					 &rid_types);
+
+	if (rids.count != 1) {
 		d_fprintf(stderr, "Couldn't find group %s\n", argv[0]);
 		return result;
 	}
 
-	if (rid_types[0] != SID_NAME_DOM_GRP) {
+	if (rid_types.ids[0] != SID_NAME_DOM_GRP) {
 		d_fprintf(stderr, "Can only rename domain groups\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -3146,7 +3185,7 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 	result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
 				       &domain_pol,
 				       MAXIMUM_ALLOWED_ACCESS,
-				       rids[0],
+				       rids.ids[0],
 				       &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -5709,10 +5748,9 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
-	const char **names;
 	DOM_SID trust_acct_sid;
-	uint32 *user_rids, num_rids, *name_types;
-	uint32 flags = 0x000003e8; /* Unknown */
+	struct samr_Ids user_rids, name_types;
+	struct lsa_String lsa_acct_name;
 
 	if (argc != 1) {
 		d_printf("Usage: net rpc trustdom del <domain_name>\n");
@@ -5728,12 +5766,6 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_NO_MEMORY;
 
 	strupper_m(acct_name);
-
-	if ((names = TALLOC_ARRAY(mem_ctx, const char *, 1)) == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	names[0] = acct_name;
-
 
 	/* Get samr policy handle */
 	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
@@ -5754,10 +5786,15 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 		goto done;
 	}
 
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol, flags, 1,
-				       names, &num_rids,
-				       &user_rids, &name_types);
-	
+	init_lsa_String(&lsa_acct_name, acct_name);
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &user_rids,
+					 &name_types);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -5765,7 +5802,7 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
 				      &domain_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      user_rids[0],
+				      user_rids.ids[0],
 				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -5774,7 +5811,7 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 
 	/* append the rid to the domain sid */
 	sid_copy(&trust_acct_sid, domain_sid);
-	if (!sid_append_rid(&trust_acct_sid, user_rids[0])) {
+	if (!sid_append_rid(&trust_acct_sid, user_rids.ids[0])) {
 		goto done;
 	}
 
