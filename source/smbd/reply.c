@@ -2469,7 +2469,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			}
 
 			count++;
-			DEBUG(3,("unlink_internals: succesful unlink [%s]\n",
+			DEBUG(3,("unlink_internals: successful unlink [%s]\n",
 				 fname));
 
 			TALLOC_FREE(fname);
