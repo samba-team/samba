@@ -714,17 +714,6 @@ typedef struct lsa_r_getsystemaccount
 } LSA_R_GETSYSTEMACCOUNT;
 
 
-typedef struct lsa_q_setsystemaccount
-{
-	POLICY_HND pol; /* policy handle */
-	uint32 access;
-} LSA_Q_SETSYSTEMACCOUNT;
-
-typedef struct lsa_r_setsystemaccount
-{
-	NTSTATUS status;
-} LSA_R_SETSYSTEMACCOUNT;
-
 typedef struct {
 	UNIHDR hdr;
 	UNISTR2 unistring;
