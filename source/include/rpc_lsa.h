@@ -89,81 +89,6 @@
 #define LSA_AUDIT_NUM_CATEGORIES_WIN2K	9
 #define LSA_AUDIT_NUM_CATEGORIES LSA_AUDIT_NUM_CATEGORIES_NT4
 
-/* level 1 is auditing settings */
-typedef struct dom_query_1
-{
-	uint32 percent_full;
-	uint32 log_size;
-	NTTIME retention_time;
-	uint8 shutdown_in_progress;
-	NTTIME time_to_shutdown;
-	uint32 next_audit_record;
-	uint32 unknown;
-} DOM_QUERY_1;
-
-
-/* level 2 is auditing settings */
-typedef struct dom_query_2
-{
-	uint32 auditing_enabled;
-	uint32 count1; /* usualy 7, at least on nt4sp4 */
-	uint32 count2; /* the same */
-	uint32 ptr;
-	uint32 *auditsettings;
-} DOM_QUERY_2;
-
-/* DOM_QUERY - info class 3 and 5 LSA Query response */
-typedef struct dom_query_info_3
-{
-	uint16 uni_dom_max_len; /* domain name string length * 2 */
-	uint16 uni_dom_str_len; /* domain name string length * 2 */
-	uint32 buffer_dom_name; /* undocumented domain name string buffer pointer */
-	uint32 buffer_dom_sid; /* undocumented domain SID string buffer pointer */
-	UNISTR2 uni_domain_name; /* domain name (unicode string) */
-	DOM_SID2 dom_sid; /* domain SID */
-
-} DOM_QUERY_3;
-
-/* level 5 is same as level 3. */
-typedef DOM_QUERY_3 DOM_QUERY_5;
-
-/* level 6 is server role information */
-typedef struct dom_query_6
-{
-	uint16 server_role; /* 2=backup, 3=primary */
-} DOM_QUERY_6;
-
-/* level 10 is audit full set info */
-typedef struct dom_query_10
-{
-        uint8 shutdown_on_full;
-} DOM_QUERY_10;
-
-/* level 11 is audit full query info */
-typedef struct dom_query_11
-{
-	uint16 unknown;
-	uint8 shutdown_on_full;
-	uint8 log_is_full;
-} DOM_QUERY_11;
-
-/* level 12 is DNS domain info */
-typedef struct lsa_dns_dom_info
-{
-	UNIHDR  hdr_nb_dom_name; /* netbios domain name */
-	UNIHDR  hdr_dns_dom_name;
-	UNIHDR  hdr_forest_name;
-
-	struct GUID dom_guid; /* domain GUID */
-
-	UNISTR2 uni_nb_dom_name;
-	UNISTR2 uni_dns_dom_name;
-	UNISTR2 uni_forest_name;
-
-	uint32 ptr_dom_sid;
-	DOM_SID2   dom_sid; /* domain SID */
-} DOM_QUERY_12;
-
 typedef struct seq_qos_info
 {
 	uint32 len; /* 12 */
@@ -269,40 +194,6 @@ typedef struct lsa_r_open_pol2_info
 #define POLICY_EXECUTE    ( STANDARD_RIGHTS_EXECUTE_ACCESS   |\
                             POLICY_VIEW_LOCAL_INFORMATION    |\
                             POLICY_LOOKUP_NAMES )
-
-/* LSA_Q_QUERY_INFO - LSA query info policy */
-typedef struct lsa_query_info
-{
-	POLICY_HND pol; /* policy handle */
-	uint16 info_class; /* info class */
-
-} LSA_Q_QUERY_INFO;
-
-/* LSA_INFO_CTR */
-typedef struct lsa_info_ctr
-{
-	uint16 info_class;
-	union {
-		DOM_QUERY_1 id1;
-		DOM_QUERY_2 id2;
-		DOM_QUERY_3 id3;
-		DOM_QUERY_5 id5;
-		DOM_QUERY_6 id6;
-		DOM_QUERY_10 id10;
-		DOM_QUERY_11 id11;
-		DOM_QUERY_12 id12;
-	} info;
-
-} LSA_INFO_CTR;
-
-/* LSA_R_QUERY_INFO - response to LSA query info policy */
-typedef struct lsa_r_query_info
-{
-	uint32 dom_ptr; /* undocumented buffer pointer */
-	LSA_INFO_CTR ctr; 
-	NTSTATUS status; /* return code */
-
-} LSA_R_QUERY_INFO;
 
 /*******************************************************/
 
