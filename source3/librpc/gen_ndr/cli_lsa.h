@@ -116,7 +116,9 @@ NTSTATUS rpccli_lsa_SetQuotasForAccount(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_GetSystemAccessAccount(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_lsa_SetSystemAccessAccount(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx);
+					   TALLOC_CTX *mem_ctx,
+					   struct policy_handle *handle,
+					   uint32_t access_mask);
 NTSTATUS rpccli_lsa_OpenTrustedDomain(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *handle,

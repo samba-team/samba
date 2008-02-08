@@ -1041,12 +1041,16 @@ NTSTATUS rpccli_lsa_GetSystemAccessAccount(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_lsa_SetSystemAccessAccount(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx)
+					   TALLOC_CTX *mem_ctx,
+					   struct policy_handle *handle,
+					   uint32_t access_mask)
 {
 	struct lsa_SetSystemAccessAccount r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.access_mask = access_mask;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_SetSystemAccessAccount, &r);

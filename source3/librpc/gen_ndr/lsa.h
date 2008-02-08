@@ -902,6 +902,11 @@ struct lsa_GetSystemAccessAccount {
 
 struct lsa_SetSystemAccessAccount {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t access_mask;
+	} in;
+
+	struct {
 		NTSTATUS result;
 	} out;
 
