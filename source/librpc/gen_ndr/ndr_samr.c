@@ -2529,6 +2529,90 @@ _PUBLIC_ void ndr_print_samr_UserInfo17(struct ndr_print *ndr, const char *name,
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_samr_Password(struct ndr_push *ndr, int ndr_flags, const struct samr_Password *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 1));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->hash, 16));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_samr_Password(struct ndr_pull *ndr, int ndr_flags, struct samr_Password *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 1));
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->hash, 16));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_samr_Password(struct ndr_print *ndr, const char *name, const struct samr_Password *r)
+{
+	ndr_print_struct(ndr, name, "samr_Password");
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
+		ndr->depth++;
+		ndr_print_array_uint8(ndr, "hash", r->hash, 16);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+
+static enum ndr_err_code ndr_push_samr_UserInfo18(struct ndr_push *ndr, int ndr_flags, const struct samr_UserInfo18 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 1));
+		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, &r->lm_pwd));
+		NDR_CHECK(ndr_push_samr_Password(ndr, NDR_SCALARS, &r->nt_pwd));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->lm_pwd_active));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->nt_pwd_active));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_samr_UserInfo18(struct ndr_pull *ndr, int ndr_flags, struct samr_UserInfo18 *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 1));
+		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, &r->lm_pwd));
+		NDR_CHECK(ndr_pull_samr_Password(ndr, NDR_SCALARS, &r->nt_pwd));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->lm_pwd_active));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->nt_pwd_active));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_samr_UserInfo18(struct ndr_print *ndr, const char *name, const struct samr_UserInfo18 *r)
+{
+	ndr_print_struct(ndr, name, "samr_UserInfo18");
+	ndr->depth++;
+	ndr_print_samr_Password(ndr, "lm_pwd", &r->lm_pwd);
+	ndr_print_samr_Password(ndr, "nt_pwd", &r->nt_pwd);
+	ndr_print_uint8(ndr, "lm_pwd_active", r->lm_pwd_active);
+	ndr_print_uint8(ndr, "nt_pwd_active", r->nt_pwd_active);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_samr_UserInfo20(struct ndr_push *ndr, int ndr_flags, const struct samr_UserInfo20 *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -3092,6 +3176,10 @@ static enum ndr_err_code ndr_push_samr_UserInfo(struct ndr_push *ndr, int ndr_fl
 				NDR_CHECK(ndr_push_samr_UserInfo17(ndr, NDR_SCALARS, &r->info17));
 			break;
 
+			case 18:
+				NDR_CHECK(ndr_push_samr_UserInfo18(ndr, NDR_SCALARS, &r->info18));
+			break;
+
 			case 20:
 				NDR_CHECK(ndr_push_samr_UserInfo20(ndr, NDR_SCALARS, &r->info20));
 			break;
@@ -3182,6 +3270,9 @@ static enum ndr_err_code ndr_push_samr_UserInfo(struct ndr_push *ndr, int ndr_fl
 			break;
 
 			case 17:
+			break;
+
+			case 18:
 			break;
 
 			case 20:
@@ -3288,6 +3379,10 @@ static enum ndr_err_code ndr_pull_samr_UserInfo(struct ndr_pull *ndr, int ndr_fl
 				NDR_CHECK(ndr_pull_samr_UserInfo17(ndr, NDR_SCALARS, &r->info17));
 			break; }
 
+			case 18: {
+				NDR_CHECK(ndr_pull_samr_UserInfo18(ndr, NDR_SCALARS, &r->info18));
+			break; }
+
 			case 20: {
 				NDR_CHECK(ndr_pull_samr_UserInfo20(ndr, NDR_SCALARS, &r->info20));
 			break; }
@@ -3377,6 +3472,9 @@ static enum ndr_err_code ndr_pull_samr_UserInfo(struct ndr_pull *ndr, int ndr_fl
 			break;
 
 			case 17:
+			break;
+
+			case 18:
 			break;
 
 			case 20:
@@ -3478,6 +3576,10 @@ _PUBLIC_ void ndr_print_samr_UserInfo(struct ndr_print *ndr, const char *name, c
 			ndr_print_samr_UserInfo17(ndr, "info17", &r->info17);
 		break;
 
+		case 18:
+			ndr_print_samr_UserInfo18(ndr, "info18", &r->info18);
+		break;
+
 		case 20:
 			ndr_print_samr_UserInfo20(ndr, "info20", &r->info20);
 		break;
@@ -3504,51 +3606,6 @@ _PUBLIC_ void ndr_print_samr_UserInfo(struct ndr_print *ndr, const char *name, c
 
 		default:
 			ndr_print_bad_level(ndr, name, level);
-	}
-}
-
-_PUBLIC_ enum ndr_err_code ndr_push_samr_Password(struct ndr_push *ndr, int ndr_flags, const struct samr_Password *r)
-{
-	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
-		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_push_align(ndr, 1));
-			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->hash, 16));
-		}
-		if (ndr_flags & NDR_BUFFERS) {
-		}
-		ndr->flags = _flags_save_STRUCT;
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ enum ndr_err_code ndr_pull_samr_Password(struct ndr_pull *ndr, int ndr_flags, struct samr_Password *r)
-{
-	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
-		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		if (ndr_flags & NDR_SCALARS) {
-			NDR_CHECK(ndr_pull_align(ndr, 1));
-			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->hash, 16));
-		}
-		if (ndr_flags & NDR_BUFFERS) {
-		}
-		ndr->flags = _flags_save_STRUCT;
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_samr_Password(struct ndr_print *ndr, const char *name, const struct samr_Password *r)
-{
-	ndr_print_struct(ndr, name, "samr_Password");
-	{
-		uint32_t _flags_save_STRUCT = ndr->flags;
-		ndr_set_flags(&ndr->flags, LIBNDR_PRINT_ARRAY_HEX);
-		ndr->depth++;
-		ndr_print_array_uint8(ndr, "hash", r->hash, 16);
-		ndr->depth--;
-		ndr->flags = _flags_save_STRUCT;
 	}
 }
 
@@ -6498,9 +6555,12 @@ static enum ndr_err_code ndr_push_samr_EnumDomainUsers(struct ndr_push *ndr, int
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.resume_handle));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.sam));
-		if (r->out.sam) {
-			NDR_CHECK(ndr_push_samr_SamArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sam));
+		if (r->out.sam == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.sam));
+		if (*r->out.sam) {
+			NDR_CHECK(ndr_push_samr_SamArray(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.sam));
 		}
 		if (r->out.num_entries == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -6517,6 +6577,7 @@ static enum ndr_err_code ndr_pull_samr_EnumDomainUsers(struct ndr_pull *ndr, int
 	TALLOC_CTX *_mem_save_domain_handle_0;
 	TALLOC_CTX *_mem_save_resume_handle_0;
 	TALLOC_CTX *_mem_save_sam_0;
+	TALLOC_CTX *_mem_save_sam_1;
 	TALLOC_CTX *_mem_save_num_entries_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -6539,6 +6600,8 @@ static enum ndr_err_code ndr_pull_samr_EnumDomainUsers(struct ndr_pull *ndr, int
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.max_size));
 		NDR_PULL_ALLOC(ndr, r->out.resume_handle);
 		*r->out.resume_handle = *r->in.resume_handle;
+		NDR_PULL_ALLOC(ndr, r->out.sam);
+		ZERO_STRUCTP(r->out.sam);
 		NDR_PULL_ALLOC(ndr, r->out.num_entries);
 		ZERO_STRUCTP(r->out.num_entries);
 	}
@@ -6550,18 +6613,24 @@ static enum ndr_err_code ndr_pull_samr_EnumDomainUsers(struct ndr_pull *ndr, int
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.resume_handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.resume_handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_resume_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.sam);
+		}
+		_mem_save_sam_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.sam, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sam));
 		if (_ptr_sam) {
-			NDR_PULL_ALLOC(ndr, r->out.sam);
+			NDR_PULL_ALLOC(ndr, *r->out.sam);
 		} else {
-			r->out.sam = NULL;
+			*r->out.sam = NULL;
 		}
-		if (r->out.sam) {
-			_mem_save_sam_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.sam, 0);
-			NDR_CHECK(ndr_pull_samr_SamArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sam));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sam_0, 0);
+		if (*r->out.sam) {
+			_mem_save_sam_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.sam, 0);
+			NDR_CHECK(ndr_pull_samr_SamArray(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.sam));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sam_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sam_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.num_entries);
 		}
@@ -6605,9 +6674,12 @@ _PUBLIC_ void ndr_print_samr_EnumDomainUsers(struct ndr_print *ndr, const char *
 		ndr->depth--;
 		ndr_print_ptr(ndr, "sam", r->out.sam);
 		ndr->depth++;
-		if (r->out.sam) {
-			ndr_print_samr_SamArray(ndr, "sam", r->out.sam);
+		ndr_print_ptr(ndr, "sam", *r->out.sam);
+		ndr->depth++;
+		if (*r->out.sam) {
+			ndr_print_samr_SamArray(ndr, "sam", *r->out.sam);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "num_entries", r->out.num_entries);
 		ndr->depth++;

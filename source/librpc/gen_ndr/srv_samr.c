@@ -1086,7 +1086,7 @@ static bool api_samr_EnumDomainUsers(pipes_struct *p)
 
 	ZERO_STRUCT(r->out);
 	r->out.resume_handle = r->in.resume_handle;
-	r->out.sam = talloc_zero(r, struct samr_SamArray);
+	r->out.sam = talloc_zero(r, struct samr_SamArray *);
 	if (r->out.sam == NULL) {
 		talloc_free(r);
 		return false;

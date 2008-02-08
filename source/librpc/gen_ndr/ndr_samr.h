@@ -206,6 +206,10 @@ void ndr_print_samr_UserInfo13(struct ndr_print *ndr, const char *name, const st
 void ndr_print_samr_UserInfo14(struct ndr_print *ndr, const char *name, const struct samr_UserInfo14 *r);
 void ndr_print_samr_UserInfo16(struct ndr_print *ndr, const char *name, const struct samr_UserInfo16 *r);
 void ndr_print_samr_UserInfo17(struct ndr_print *ndr, const char *name, const struct samr_UserInfo17 *r);
+enum ndr_err_code ndr_push_samr_Password(struct ndr_push *ndr, int ndr_flags, const struct samr_Password *r);
+enum ndr_err_code ndr_pull_samr_Password(struct ndr_pull *ndr, int ndr_flags, struct samr_Password *r);
+void ndr_print_samr_Password(struct ndr_print *ndr, const char *name, const struct samr_Password *r);
+void ndr_print_samr_UserInfo18(struct ndr_print *ndr, const char *name, const struct samr_UserInfo18 *r);
 void ndr_print_samr_UserInfo20(struct ndr_print *ndr, const char *name, const struct samr_UserInfo20 *r);
 void ndr_print_samr_FieldsPresent(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_samr_UserInfo21(struct ndr_print *ndr, const char *name, const struct samr_UserInfo21 *r);
@@ -218,9 +222,6 @@ void ndr_print_samr_CryptPasswordEx(struct ndr_print *ndr, const char *name, con
 void ndr_print_samr_UserInfo25(struct ndr_print *ndr, const char *name, const struct samr_UserInfo25 *r);
 void ndr_print_samr_UserInfo26(struct ndr_print *ndr, const char *name, const struct samr_UserInfo26 *r);
 void ndr_print_samr_UserInfo(struct ndr_print *ndr, const char *name, const union samr_UserInfo *r);
-enum ndr_err_code ndr_push_samr_Password(struct ndr_push *ndr, int ndr_flags, const struct samr_Password *r);
-enum ndr_err_code ndr_pull_samr_Password(struct ndr_pull *ndr, int ndr_flags, struct samr_Password *r);
-void ndr_print_samr_Password(struct ndr_print *ndr, const char *name, const struct samr_Password *r);
 enum ndr_err_code ndr_push_samr_RidWithAttribute(struct ndr_push *ndr, int ndr_flags, const struct samr_RidWithAttribute *r);
 enum ndr_err_code ndr_pull_samr_RidWithAttribute(struct ndr_pull *ndr, int ndr_flags, struct samr_RidWithAttribute *r);
 void ndr_print_samr_RidWithAttribute(struct ndr_print *ndr, const char *name, const struct samr_RidWithAttribute *r);

@@ -400,6 +400,17 @@ struct samr_UserInfo17 {
 	NTTIME acct_expiry;
 };
 
+struct samr_Password {
+	uint8_t hash[16];
+}/* [public,flag(LIBNDR_PRINT_ARRAY_HEX)] */;
+
+struct samr_UserInfo18 {
+	struct samr_Password lm_pwd;
+	struct samr_Password nt_pwd;
+	uint8_t lm_pwd_active;
+	uint8_t nt_pwd_active;
+};
+
 struct samr_UserInfo20 {
 	struct lsa_String parameters;
 };
@@ -518,6 +529,7 @@ union samr_UserInfo {
 	struct samr_UserInfo14 info14;/* [case(14)] */
 	struct samr_UserInfo16 info16;/* [case(16)] */
 	struct samr_UserInfo17 info17;/* [case(17)] */
+	struct samr_UserInfo18 info18;/* [case(18)] */
 	struct samr_UserInfo20 info20;/* [case(20)] */
 	struct samr_UserInfo21 info21;/* [case(21)] */
 	struct samr_UserInfo23 info23;/* [case(23)] */
@@ -525,10 +537,6 @@ union samr_UserInfo {
 	struct samr_UserInfo25 info25;/* [case(25)] */
 	struct samr_UserInfo26 info26;/* [case(26)] */
 }/* [switch_type(uint16)] */;
-
-struct samr_Password {
-	uint8_t hash[16];
-}/* [public,flag(LIBNDR_PRINT_ARRAY_HEX)] */;
 
 struct samr_RidWithAttribute {
 	uint32_t rid;
@@ -939,7 +947,7 @@ struct samr_EnumDomainUsers {
 	} in;
 
 	struct {
-		struct samr_SamArray *sam;/* [unique] */
+		struct samr_SamArray **sam;/* [ref] */
 		uint32_t *num_entries;/* [ref] */
 		uint32_t *resume_handle;/* [ref] */
 		NTSTATUS result;
