@@ -162,14 +162,13 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	NTSTATUS result;
 	int retval = 1;
 	const char *domain = NULL;
-	uint32 num_rids, *name_types, *user_rids;
-	uint32 flags = 0x3e8;
 	char *acct_name;
-	const char *const_acct_name;
 	struct lsa_String lsa_acct_name;
 	uint32 acct_flags=0;
 	uint32_t access_granted = 0;
 	union lsa_PolicyInformation *info = NULL;
+	struct samr_Ids user_rids;
+	struct samr_Ids name_types;
 
 	/* check what type of join */
 	if (argc >= 0) {
@@ -265,7 +264,6 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		goto done;
 	}
 	strlower_m(acct_name);
-	const_acct_name = acct_name;
 
 	init_lsa_String(&lsa_acct_name, acct_name);
 
@@ -306,21 +304,22 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	}
 
-	CHECK_RPC_ERR_DEBUG(rpccli_samr_lookup_names(pipe_hnd, mem_ctx,
-						  &domain_pol, flags,
-						  1, &const_acct_name, 
-						  &num_rids,
-						  &user_rids, &name_types),
+	CHECK_RPC_ERR_DEBUG(rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+						    &domain_pol,
+						    1,
+						    &lsa_acct_name,
+						    &user_rids,
+						    &name_types),
 			    ("error looking up rid for user %s: %s\n",
 			     acct_name, nt_errstr(result)));
 
-	if (name_types[0] != SID_NAME_USER) {
-		DEBUG(0, ("%s is not a user account (type=%d)\n", acct_name, name_types[0]));
+	if (name_types.ids[0] != SID_NAME_USER) {
+		DEBUG(0, ("%s is not a user account (type=%d)\n", acct_name, name_types.ids[0]));
 		goto done;
 	}
 
-	user_rid = user_rids[0];
-		
+	user_rid = user_rids.ids[0];
+
 	/* Open handle on user */
 
 	CHECK_RPC_ERR_DEBUG(
