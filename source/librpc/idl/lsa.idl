@@ -431,9 +431,9 @@ import "security.idl";
 	/* Function:     0x11                    */
 	NTSTATUS lsa_OpenAccount (
 		[in]         policy_handle *handle,
-		[in]         dom_sid2 *sid,
+		[in,ref]     dom_sid2 *sid,
 		[in]         uint32 access_mask,
-		[out]        policy_handle *acct_handle
+		[out]        policy_handle **acct_handle
 		);
 
 
