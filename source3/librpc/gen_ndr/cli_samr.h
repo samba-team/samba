@@ -77,7 +77,7 @@ NTSTATUS rpccli_samr_EnumDomainUsers(struct rpc_pipe_client *cli,
 				     uint32_t *resume_handle,
 				     uint32_t acct_flags,
 				     uint32_t max_size,
-				     struct samr_SamArray *sam,
+				     struct samr_SamArray **sam,
 				     uint32_t *num_entries);
 NTSTATUS rpccli_samr_CreateDomAlias(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
