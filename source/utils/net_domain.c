@@ -56,12 +56,12 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	POLICY_HND sam_pol, domain_pol, user_pol;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
-	uint32 flags = 0x3e8;
-	const char *const_acct_name;
 	uint32 user_rid;
-	uint32 num_rids, *name_types, *user_rids;
 	SAM_USERINFO_CTR ctr, *qctr = NULL;
 	SAM_USER_INFO_16 p16;
+	struct lsa_String lsa_acct_name;
+	struct samr_Ids user_rids;
+	struct samr_Ids name_types;
 
 	/* Open the domain */
 	
@@ -91,20 +91,24 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	
 	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname()); 
 	strlower_m(acct_name);
-	const_acct_name = acct_name;
 
-	status = rpccli_samr_lookup_names(pipe_hnd, mem_ctx,
-			&domain_pol, flags, 1, &const_acct_name, 
-			&num_rids, &user_rids, &name_types);
+	init_lsa_String(&lsa_acct_name, acct_name);
+
+	status = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &user_rids,
+					 &name_types);
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	if ( name_types[0] != SID_NAME_USER) {
-		DEBUG(0, ("%s is not a user account (type=%d)\n", acct_name, name_types[0]));
+	if ( name_types.ids[0] != SID_NAME_USER) {
+		DEBUG(0, ("%s is not a user account (type=%d)\n", acct_name, name_types.ids[0]));
 		return NT_STATUS_INVALID_WORKSTATION;
 	}
 
-	user_rid = user_rids[0];
+	user_rid = user_rids.ids[0];
 		
 	/* Open handle on user */
 
@@ -222,11 +226,8 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	POLICY_HND sam_pol, domain_pol, user_pol;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
-	const char *const_acct_name;
 	struct lsa_String lsa_acct_name;
 	uint32 user_rid;
-	uint32 num_rids, *name_types, *user_rids;
-	uint32 flags = 0x3e8;
 	uint32 acb_info = ACB_WSTRUST;
 	uint32 acct_flags;
 	uint32 fields_present;
@@ -239,6 +240,8 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	DATA_BLOB digested_session_key;
 	uchar md4_trust_password[16];
 	uint32_t access_granted = 0;
+	struct samr_Ids user_rids;
+	struct samr_Ids name_types;
 
 	/* Open the domain */
 	
@@ -268,7 +271,6 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	
 	acct_name = talloc_asprintf(mem_ctx, "%s$", global_myname()); 
 	strlower_m(acct_name);
-	const_acct_name = acct_name;
 
 	init_lsa_String(&lsa_acct_name, acct_name);
 
@@ -311,18 +313,21 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	}
 
-	status = rpccli_samr_lookup_names(pipe_hnd, mem_ctx,
-			&domain_pol, flags, 1, &const_acct_name, 
-			&num_rids, &user_rids, &name_types);
+	status = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &user_rids,
+					 &name_types);
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
 
-	if ( name_types[0] != SID_NAME_USER) {
-		DEBUG(0, ("%s is not a user account (type=%d)\n", acct_name, name_types[0]));
+	if ( name_types.ids[0] != SID_NAME_USER) {
+		DEBUG(0, ("%s is not a user account (type=%d)\n", acct_name, name_types.ids[0]));
 		return NT_STATUS_INVALID_WORKSTATION;
 	}
 
-	user_rid = user_rids[0];
+	user_rid = user_rids.ids[0];
 		
 	/* Open handle on user */
 
