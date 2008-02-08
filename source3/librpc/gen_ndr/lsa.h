@@ -894,6 +894,11 @@ struct lsa_SetQuotasForAccount {
 
 struct lsa_GetSystemAccessAccount {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *access_mask;/* [ref] */
 		NTSTATUS result;
 	} out;
 
