@@ -10983,7 +10983,10 @@ static enum ndr_err_code ndr_push_netr_DsRGetDCName(struct ndr_push *ndr, int fl
 		if (r->out.info == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.info));
+		if (*r->out.info) {
+			NDR_CHECK(ndr_push_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.info));
+		}
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -10995,11 +10998,13 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCName(struct ndr_pull *ndr, int fl
 	uint32_t _ptr_domain_name;
 	uint32_t _ptr_domain_guid;
 	uint32_t _ptr_site_guid;
+	uint32_t _ptr_info;
 	TALLOC_CTX *_mem_save_server_unc_0;
 	TALLOC_CTX *_mem_save_domain_name_0;
 	TALLOC_CTX *_mem_save_domain_guid_0;
 	TALLOC_CTX *_mem_save_site_guid_0;
 	TALLOC_CTX *_mem_save_info_0;
+	TALLOC_CTX *_mem_save_info_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -11073,7 +11078,18 @@ static enum ndr_err_code ndr_pull_netr_DsRGetDCName(struct ndr_pull *ndr, int fl
 		}
 		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.info));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_info));
+		if (_ptr_info) {
+			NDR_PULL_ALLOC(ndr, *r->out.info);
+		} else {
+			*r->out.info = NULL;
+		}
+		if (*r->out.info) {
+			_mem_save_info_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.info, 0);
+			NDR_CHECK(ndr_pull_netr_DsRGetDCNameInfo(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.info));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_1, 0);
+		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
@@ -11122,7 +11138,12 @@ _PUBLIC_ void ndr_print_netr_DsRGetDCName(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		ndr_print_ptr(ndr, "info", r->out.info);
 		ndr->depth++;
-		ndr_print_netr_DsRGetDCNameInfo(ndr, "info", r->out.info);
+		ndr_print_ptr(ndr, "info", *r->out.info);
+		ndr->depth++;
+		if (*r->out.info) {
+			ndr_print_netr_DsRGetDCNameInfo(ndr, "info", *r->out.info);
+		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
