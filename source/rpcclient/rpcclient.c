@@ -133,12 +133,10 @@ static void fetch_machine_sid(struct cli_state *cli)
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;
-	uint32 info_class = 5;
-	const char *domain_name = NULL;
 	static bool got_domain_sid;
 	TALLOC_CTX *mem_ctx;
-	DOM_SID *dom_sid = NULL;
 	struct rpc_pipe_client *lsapipe = NULL;
+	union lsa_PolicyInformation *info = NULL;
 
 	if (got_domain_sid) return;
 
@@ -159,14 +157,16 @@ static void fetch_machine_sid(struct cli_state *cli)
 		goto error;
 	}
 
-	result = rpccli_lsa_query_info_policy(lsapipe, mem_ctx, &pol, info_class, 
-					   &domain_name, &dom_sid);
+	result = rpccli_lsa_QueryInfoPolicy(lsapipe, mem_ctx,
+					    &pol,
+					    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+					    &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto error;
 	}
 
 	got_domain_sid = True;
-	sid_copy( &domain_sid, dom_sid );
+	sid_copy(&domain_sid, info->account_domain.sid);
 
 	rpccli_lsa_Close(lsapipe, mem_ctx, &pol);
 	cli_rpc_pipe_close(lsapipe);

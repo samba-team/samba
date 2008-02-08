@@ -1837,9 +1837,6 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 	struct rpc_pipe_client  *cli;
 	POLICY_HND pol;
 	union dssetup_DsRoleInfo info;
-
-	const char *domain_name = NULL;
-	DOM_SID *dom_sid = NULL;
 	union lsa_PolicyInformation *lsa_info = NULL;
 
 	if (!connection_ok(domain)) {
@@ -1958,20 +1955,26 @@ no_dssetup:
 		result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
 						SEC_RIGHTS_MAXIMUM_ALLOWED,
 						&pol);
-			
-		if (!NT_STATUS_IS_OK(result))
-			goto done;
-			
-		result = rpccli_lsa_query_info_policy(cli, mem_ctx, 
-						      &pol, 5, &domain_name, 
-						      &dom_sid);
-			
-		if (NT_STATUS_IS_OK(result)) {
-			if (domain_name)
-				fstrcpy(domain->name, domain_name);
 
-			if (dom_sid) 
-				sid_copy(&domain->sid, dom_sid);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
+
+		result = rpccli_lsa_QueryInfoPolicy(cli, mem_ctx,
+						    &pol,
+						    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+						    &lsa_info);
+
+		if (NT_STATUS_IS_OK(result)) {
+
+			if (lsa_info->account_domain.name.string) {
+				fstrcpy(domain->name,
+					lsa_info->account_domain.name.string);
+			}
+
+			if (lsa_info->account_domain.sid) {
+				sid_copy(&domain->sid, lsa_info->account_domain.sid);
+			}
 		}
 	}
 done:
