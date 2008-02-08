@@ -459,11 +459,12 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
  The length of the structure is returned.
 ****************************************************************************/
 
-static int interpret_short_filename(TALLOC_CTX *ctx,
+static bool interpret_short_filename(TALLOC_CTX *ctx,
 				struct cli_state *cli,
 				char *p,
 				file_info *finfo)
 {
+	size_t ret;
 	ZERO_STRUCTP(finfo);
 
 	finfo->cli = cli;
@@ -475,18 +476,22 @@ static int interpret_short_filename(TALLOC_CTX *ctx,
 	finfo->mtime_ts.tv_sec = finfo->atime_ts.tv_sec = finfo->ctime_ts.tv_sec;
 	finfo->mtime_ts.tv_nsec = finfo->atime_ts.tv_nsec = 0;
 	finfo->size = IVAL(p,26);
-	clistr_pull_talloc(ctx,
+	ret = clistr_pull_talloc(ctx,
 			cli,
 			&finfo->name,
 			p+30,
 			12,
 			STR_ASCII);
-	if (!finfo->name) {
-		finfo->name = talloc_strdup(ctx, finfo->short_name);
-	} else if (strcmp(finfo->name, "..") && strcmp(finfo->name, ".")) {
-		finfo->name = talloc_strdup(ctx, finfo->short_name);
+	if (ret == (size_t)-1) {
+		return false;
 	}
 
+	if (finfo->name) {
+		strlcpy(finfo->short_name,
+			finfo->name,
+			sizeof(finfo->short_name));
+	}
+	return true;
 	return(DIR_STRUCT_SIZE);
 }
 
@@ -555,6 +560,12 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		received = SVAL(cli->inbuf,smb_vwv0);
 		if (received <= 0) break;
 
+		/* Ensure we received enough data. */
+		if ((cli->inbuf+4+smb_len(cli->inbuf) - (smb_buf(cli->inbuf)+3)) <
+				received*DIR_STRUCT_SIZE) {
+			break;
+		}
+
 		first = False;
 
 		dirlist = (char *)SMB_REALLOC(
@@ -609,7 +620,10 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 	frame = talloc_stackframe();
 	for (p=dirlist,i=0;i<num_received;i++) {
 		file_info finfo;
-		p += interpret_short_filename(frame,cli, p,&finfo);
+		if (!interpret_short_filename(frame, cli, p, &finfo)) {
+			break;
+		}
+		p += DIR_STRUCT_SIZE;
 		fn("\\", &finfo, Mask, state);
 	}
 	TALLOC_FREE(frame);
