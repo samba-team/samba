@@ -610,6 +610,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	uchar md5buffer[16];
 	DATA_BLOB digested_session_key;
 	uchar md4_trust_password[16];
+	union lsa_PolicyInformation *info = NULL;
 
 	if (!r->in.machine_password) {
 		r->in.machine_password = talloc_strdup(mem_ctx, generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH));
@@ -641,16 +642,15 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = rpccli_lsa_query_info_policy2(pipe_hnd, mem_ctx, &lsa_pol,
-					       12,
-					       &r->out.netbios_domain_name,
-					       &r->out.dns_domain_name,
-					       NULL,
-					       NULL,
-					       &r->out.domain_sid);
-
+	status = rpccli_lsa_QueryInfoPolicy2(pipe_hnd, mem_ctx,
+					     &lsa_pol,
+					     LSA_POLICY_INFO_DNS,
+					     &info);
 	if (NT_STATUS_IS_OK(status)) {
 		r->out.domain_is_ad = true;
+		r->out.netbios_domain_name = info->dns.name.string;
+		r->out.dns_domain_name = info->dns.dns_domain.string;
+		r->out.domain_sid = info->dns.sid;
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
