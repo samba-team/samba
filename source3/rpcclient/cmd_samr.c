@@ -1847,8 +1847,10 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol;
-	uint32 num_rids, num_names, *rids, *name_types;
-	char **names;
+	uint32_t num_rids, num_names, *rids;
+	struct lsa_Strings names;
+	struct samr_Ids types;
+
 	int i;
 
 	if (argc < 3) {
@@ -1896,8 +1898,12 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 	for (i = 0; i < argc - 2; i++)
                 sscanf(argv[i + 2], "%i", &rids[i]);
 
-	result = rpccli_samr_lookup_rids(cli, mem_ctx, &domain_pol, num_rids, rids,
-				      &num_names, &names, &name_types);
+	result = rpccli_samr_LookupRids(cli, mem_ctx,
+					&domain_pol,
+					num_rids,
+					rids,
+					&names,
+					&types);
 
 	if (!NT_STATUS_IS_OK(result) &&
 	    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED))
@@ -1905,8 +1911,10 @@ static NTSTATUS cmd_samr_lookup_rids(struct rpc_pipe_client *cli,
 
 	/* Display results */
 
-	for (i = 0; i < num_names; i++)
-		printf("rid 0x%x: %s (%d)\n", rids[i], names[i], name_types[i]);
+	for (i = 0; i < num_names; i++) {
+		printf("rid 0x%x: %s (%d)\n",
+			rids[i], names.names[i].string, types.ids[i]);
+	}
 
 	rpccli_samr_Close(cli, mem_ctx, &domain_pol);
 	rpccli_samr_Close(cli, mem_ctx, &connect_pol);
