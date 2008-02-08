@@ -261,8 +261,8 @@ NTSTATUS rpccli_samr_EnumDomains(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *connect_handle,
 				 uint32_t *resume_handle,
+				 struct samr_SamArray **sam,
 				 uint32_t buf_size,
-				 struct samr_SamArray *sam,
 				 uint32_t *num_entries)
 {
 	struct samr_EnumDomains r;
