@@ -74,7 +74,7 @@ done
 # is now pretty well tested by the rest of the quick tests anyway
 LDBDIR=$samba4srcdir/lib/ldb
 export LDBDIR
-plantest "ldb" none $LDBDIR/tests/test-tdb.sh
+plantest "ldb" none TEST_DATA_PREFIX=\$PREFIX $LDBDIR/tests/test-tdb.sh
 
 plantest "js.ldap" dc $SCRIPTDIR/ldap.js $CONFIGURATION -d 10 \$SERVER -U\$USERNAME%\$PASSWORD
 
