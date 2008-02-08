@@ -323,9 +323,9 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     configdn_ldb = "configuration.ldb"
     if ldap_backend is not None:
     	configdn_ldb = ldap_backend
-    schema_ldb = "schema.ldb"
+    schemadn_ldb = "schema.ldb"
     if ldap_backend is not None:
-    	schema_ldb = ldap_backend
+    	schemadn_ldb = ldap_backend
     	
     if ldap_backend_type == "fedora-ds":
         backend_modules = ["nsuniqueid","paged_searches"]
@@ -336,23 +336,31 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     else:
         backend_modules = ["objectguid"]
         
-    setup_add_ldif(samdb, setup_path("provision_partitions.ldif"), {
-        "SCHEMADN": schemadn, 
-        "SCHEMADN_LDB": "schema.ldb",
-        "SCHEMADN_MOD2": ",objectguid",
-        "CONFIGDN": configdn,
-        "CONFIGDN_LDB": "configuration.ldb",
-        "DOMAINDN": domaindn,
-        "DOMAINDN_LDB": "users.ldb",
-        "SCHEMADN_MOD": "schema_fsmo,instancetype",
-        "CONFIGDN_MOD": "naming_fsmo,instancetype",
-        "DOMAINDN_MOD": "pdc_fsmo,password_hash,instancetype",
-        "MODULES_LIST": ",".join(modules_list),
-        "TDB_MODULES_LIST": ","+",".join(tdb_modules_list),
-        "MODULES_LIST2": ",".join(modules_list2),
-        "BACKEND_MOD": ",".join(backend_modules),
+    samdb.transaction_start()
+    try:
+        setup_add_ldif(samdb, setup_path("provision_partitions.ldif"), {
+                "SCHEMADN": schemadn, 
+                "SCHEMADN_LDB": schemadn_ldb,
+                "SCHEMADN_MOD2": ",objectguid",
+                "CONFIGDN": configdn,
+                "CONFIGDN_LDB": configdn_ldb,
+                "DOMAINDN": domaindn,
+                "DOMAINDN_LDB": domaindn_ldb,
+                "SCHEMADN_MOD": "schema_fsmo,instancetype",
+                "CONFIGDN_MOD": "naming_fsmo,instancetype",
+                "DOMAINDN_MOD": "pdc_fsmo,password_hash,instancetype",
+                "MODULES_LIST": ",".join(modules_list),
+                "TDB_MODULES_LIST": ","+",".join(tdb_modules_list),
+                "MODULES_LIST2": ",".join(modules_list2),
+                "BACKEND_MOD": ",".join(backend_modules),
         })
 
+    except:
+        samdb.transaction_cancel()
+        raise
+
+    samdb.transaction_commit()
+    
     samdb = SamDB(samdb_path, session_info=session_info, 
                   credentials=credentials, lp=lp)
 
@@ -680,7 +688,7 @@ FILL_NT4SYNC = "NT4SYNC"
 FILL_DRS = "DRS"
 
 def provision(lp, setup_dir, message, paths, session_info, 
-              credentials, ldapbackend, samdb_fill=FILL_FULL, realm=None, rootdn=None,
+              credentials, samdb_fill=FILL_FULL, realm=None, rootdn=None,
               domain=None, hostname=None, hostip=None, domainsid=None, 
               hostguid=None, adminpass=None, krbtgtpass=None, domainguid=None, 
               policyguid=None, invocationid=None, machinepass=None, 
