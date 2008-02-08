@@ -2138,48 +2138,6 @@ bool lsa_io_r_enum_privsaccount(const char *desc, LSA_R_ENUMPRIVSACCOUNT *out, p
 	return True;
 }
 
-
-
-/*******************************************************************
- Reads or writes an  LSA_Q_GETSYSTEMACCOUNTstructure.
-********************************************************************/
-
-bool lsa_io_q_getsystemaccount(const char *desc, LSA_Q_GETSYSTEMACCOUNT  *out, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_getsystemaccount");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
- 
-	if(!smb_io_pol_hnd("pol", &out->pol, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes an  LSA_R_GETSYSTEMACCOUNTstructure.
-********************************************************************/
-
-bool lsa_io_r_getsystemaccount(const char *desc, LSA_R_GETSYSTEMACCOUNT  *out, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_getsystemaccount");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
- 
-	if(!prs_uint32("access", ps, depth, &out->access))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &out->status))
-		return False;
-
-	return True;
-}
-
-
 void init_lsa_string( LSA_STRING *uni, const char *string )
 {
 	init_unistr2(&uni->unistring, string, UNI_FLAGS_NONE);
