@@ -191,12 +191,13 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 
 					sname = p;
 					type = SVAL(p,14);
-					comment_offset = IVAL(p,16) & 0xFFFF;
-					if (comment_offset < 0 || comment_offset > (int)rdrcnt) {
+					comment_offset = (IVAL(p,16) & 0xFFFF) - converter;
+					if (comment_offset < 0 ||
+							comment_offset > (int)rdrcnt) {
 						TALLOC_FREE(frame);
 						break;
 					}
-					cmnt = comment_offset?(rdata+comment_offset-converter):"";
+					cmnt = comment_offset?(rdata+comment_offset):"";
 
 					/* Work out the comment length. */
 					for (p1 = cmnt, len = 0; *p1 &&
