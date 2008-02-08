@@ -586,8 +586,9 @@ NTSTATUS _samr_OpenDomain(pipes_struct *p,
 	if ( !find_policy_by_hnd(p, r->in.connect_handle, (void**)(void *)&info) )
 		return NT_STATUS_INVALID_HANDLE;
 
-	status = access_check_samr_function( info->acc_granted,
-		SA_RIGHT_SAM_OPEN_DOMAIN, "_samr_OpenDomain" );
+	status = access_check_samr_function(info->acc_granted,
+					    SA_RIGHT_SAM_OPEN_DOMAIN,
+					    "_samr_OpenDomain" );
 
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
@@ -728,7 +729,9 @@ NTSTATUS _samr_SetSecurity(pipes_struct *p,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = access_check_samr_function(acc_granted, SA_RIGHT_USER_SET_ATTRIBUTES, "_samr_SetSecurity");
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_USER_SET_ATTRIBUTES,
+					    "_samr_SetSecurity");
 	if (NT_STATUS_IS_OK(status)) {
 		become_root();
 		status = pdb_update_sam_account(sampass);
@@ -1550,9 +1553,9 @@ NTSTATUS _samr_LookupNames(pipes_struct *p,
 /*******************************************************************
  _samr_ChangePasswordUser2
  ********************************************************************/
+
 NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
 				   struct samr_ChangePasswordUser2 *r)
-
 {
 	NTSTATUS status;
 	fstring user_name;
@@ -1577,8 +1580,12 @@ NTSTATUS _samr_ChangePasswordUser2(pipes_struct *p,
 	 * is case insensitive.
 	 */
 
-	status = pass_oem_change(user_name, r->in.lm_password->data, r->in.lm_verifier->hash,
-				r->in.nt_password->data, r->in.nt_verifier->hash, NULL);
+	status = pass_oem_change(user_name,
+				 r->in.lm_password->data,
+				 r->in.lm_verifier->hash,
+				 r->in.nt_password->data,
+				 r->in.nt_verifier->hash,
+				 NULL);
 
 	DEBUG(5,("_samr_ChangePasswordUser2: %d\n", __LINE__));
 
@@ -1825,8 +1832,9 @@ NTSTATUS _samr_OpenUser(pipes_struct *p,
 	if ( !get_lsa_policy_samr_sid(p, &domain_pol, &sid, &acc_granted, NULL) )
 		return NT_STATUS_INVALID_HANDLE;
 
-	nt_status = access_check_samr_function( acc_granted,
-		SA_RIGHT_DOMAIN_OPEN_ACCOUNT, "_samr_OpenUser" );
+	nt_status = access_check_samr_function(acc_granted,
+					       SA_RIGHT_DOMAIN_OPEN_ACCOUNT,
+					       "_samr_OpenUser" );
 
 	if ( !NT_STATUS_IS_OK(nt_status) )
 		return nt_status;
@@ -2940,6 +2948,7 @@ NTSTATUS _samr_Connect5(pipes_struct *p,
 /**********************************************************************
  _samr_LookupDomain
  **********************************************************************/
+
 NTSTATUS _samr_LookupDomain(pipes_struct *p,
 			    struct samr_LookupDomain *r)
 {
@@ -3079,7 +3088,8 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-		SA_RIGHT_DOMAIN_OPEN_ACCOUNT, "_samr_OpenAlias");
+					    SA_RIGHT_DOMAIN_OPEN_ACCOUNT,
+					    "_samr_OpenAlias");
 
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
@@ -3894,8 +3904,12 @@ NTSTATUS _samr_GetAliasMembership(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	ntstatus1 = access_check_samr_function(info->acc_granted, SA_RIGHT_DOMAIN_LOOKUP_ALIAS_BY_MEM, "_samr_GetAliasMembership");
-	ntstatus2 = access_check_samr_function(info->acc_granted, SA_RIGHT_DOMAIN_OPEN_ACCOUNT, "_samr_GetAliasMembership");
+	ntstatus1 = access_check_samr_function(info->acc_granted,
+					       SA_RIGHT_DOMAIN_LOOKUP_ALIAS_BY_MEM,
+					       "_samr_GetAliasMembership");
+	ntstatus2 = access_check_samr_function(info->acc_granted,
+					       SA_RIGHT_DOMAIN_OPEN_ACCOUNT,
+					       "_samr_GetAliasMembership");
 
 	if (!NT_STATUS_IS_OK(ntstatus1) || !NT_STATUS_IS_OK(ntstatus2)) {
 		if (!(NT_STATUS_EQUAL(ntstatus1,NT_STATUS_ACCESS_DENIED) && NT_STATUS_IS_OK(ntstatus2)) &&
@@ -3960,7 +3974,9 @@ NTSTATUS _samr_GetMembersInAlias(pipes_struct *p,
 	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &alias_sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_GET_MEMBERS, "_samr_GetMembersInAlias");
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_ALIAS_GET_MEMBERS,
+					    "_samr_GetMembersInAlias");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4026,7 +4042,9 @@ NTSTATUS _samr_QueryGroupMember(pipes_struct *p,
 	if (!get_lsa_policy_samr_sid(p, r->in.group_handle, &group_sid, &acc_granted, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_GET_MEMBERS, "_samr_QueryGroupMember");
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_GROUP_GET_MEMBERS,
+					    "_samr_QueryGroupMember");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4088,7 +4106,9 @@ NTSTATUS _samr_AddAliasMember(pipes_struct *p,
 	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &alias_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_ADD_MEMBER, "_samr_AddAliasMember");
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_ALIAS_ADD_MEMBER,
+					    "_samr_AddAliasMember");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4135,7 +4155,9 @@ NTSTATUS _samr_DeleteAliasMember(pipes_struct *p,
 	if (!get_lsa_policy_samr_sid(p, r->in.alias_handle, &alias_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	status = access_check_samr_function(acc_granted, SA_RIGHT_ALIAS_REMOVE_MEMBER, "_samr_DeleteAliasMember");
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_ALIAS_REMOVE_MEMBER,
+					    "_samr_DeleteAliasMember");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4184,7 +4206,9 @@ NTSTATUS _samr_AddGroupMember(pipes_struct *p,
 	if (!get_lsa_policy_samr_sid(p, r->in.group_handle, &group_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_ADD_MEMBER, "_samr_AddGroupMember");
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_GROUP_ADD_MEMBER,
+					    "_samr_AddGroupMember");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4242,7 +4266,9 @@ NTSTATUS _samr_DeleteGroupMember(pipes_struct *p,
 	if (!get_lsa_policy_samr_sid(p, r->in.group_handle, &group_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	status = access_check_samr_function(acc_granted, SA_RIGHT_GROUP_REMOVE_MEMBER, "_samr_DeleteGroupMember");
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_GROUP_REMOVE_MEMBER,
+					    "_samr_DeleteGroupMember");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4294,7 +4320,9 @@ NTSTATUS _samr_DeleteUser(pipes_struct *p,
 	if (!get_lsa_policy_samr_sid(p, r->in.user_handle, &user_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_DeleteUser");
+	status = access_check_samr_function(acc_granted,
+					    STD_RIGHT_DELETE_ACCESS,
+					    "_samr_DeleteUser");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4379,7 +4407,9 @@ NTSTATUS _samr_DeleteDomainGroup(pipes_struct *p,
 	if (!get_lsa_policy_samr_sid(p, r->in.group_handle, &group_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_DeleteDomainGroup");
+	status = access_check_samr_function(acc_granted,
+					    STD_RIGHT_DELETE_ACCESS,
+					    "_samr_DeleteDomainGroup");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4446,7 +4476,9 @@ NTSTATUS _samr_DeleteDomAlias(pipes_struct *p,
 
 	memcpy(r->out.alias_handle, r->in.alias_handle, sizeof(r->out.alias_handle));
 
-	status = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS, "_samr_DeleteDomAlias");
+	status = access_check_samr_function(acc_granted,
+					    STD_RIGHT_DELETE_ACCESS,
+					    "_samr_DeleteDomAlias");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4513,7 +4545,9 @@ NTSTATUS _samr_CreateDomainGroup(pipes_struct *p,
 	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &dom_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	status = access_check_samr_function(acc_granted, SA_RIGHT_DOMAIN_CREATE_GROUP, "_samr_CreateDomainGroup");
+	status = access_check_samr_function(acc_granted,
+					    SA_RIGHT_DOMAIN_CREATE_GROUP,
+					    "_samr_CreateDomainGroup");
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -4593,7 +4627,9 @@ NTSTATUS _samr_CreateDomAlias(pipes_struct *p,
 	if (!get_lsa_policy_samr_sid(p, r->in.domain_handle, &dom_sid, &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	result = access_check_samr_function(acc_granted, SA_RIGHT_DOMAIN_CREATE_ALIAS, "_samr_CreateDomAlias");
+	result = access_check_samr_function(acc_granted,
+					    SA_RIGHT_DOMAIN_CREATE_ALIAS,
+					    "_samr_CreateDomAlias");
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
@@ -4982,7 +5018,8 @@ NTSTATUS _samr_OpenGroup(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	status = access_check_samr_function(acc_granted,
-		SA_RIGHT_DOMAIN_OPEN_ACCOUNT, "_samr_OpenGroup");
+					    SA_RIGHT_DOMAIN_OPEN_ACCOUNT,
+					    "_samr_OpenGroup");
 
 	if ( !NT_STATUS_IS_OK(status) )
 		return status;
@@ -5053,8 +5090,9 @@ NTSTATUS _samr_RemoveMemberFromForeignDomain(pipes_struct *p,
 				     &acc_granted, &disp_info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	result = access_check_samr_function(acc_granted, STD_RIGHT_DELETE_ACCESS,
-		"_samr_RemoveMemberFromForeignDomain");
+	result = access_check_samr_function(acc_granted,
+					    STD_RIGHT_DELETE_ACCESS,
+					    "_samr_RemoveMemberFromForeignDomain");
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
