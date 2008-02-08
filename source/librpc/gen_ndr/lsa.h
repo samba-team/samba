@@ -1233,12 +1233,12 @@ struct lsa_SetInfoPolicy2 {
 struct lsa_QueryTrustedDomainInfoByName {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		struct lsa_String trusted_domain;
+		struct lsa_String *trusted_domain;/* [ref] */
 		enum lsa_TrustDomInfoEnum level;
 	} in;
 
 	struct {
-		union lsa_TrustedDomainInfo *info;/* [unique,switch_is(level)] */
+		union lsa_TrustedDomainInfo *info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 
