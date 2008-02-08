@@ -319,14 +319,14 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
  
     domaindn_ldb = "users.ldb"
     if ldap_backend is not None:
-    	domaindn_ldb = ldap_backend
+        domaindn_ldb = ldap_backend
     configdn_ldb = "configuration.ldb"
     if ldap_backend is not None:
-    	configdn_ldb = ldap_backend
+        configdn_ldb = ldap_backend
     schema_ldb = "schema.ldb"
     if ldap_backend is not None:
-    	schema_ldb = ldap_backend
-    	
+        schema_ldb = ldap_backend
+    
     if ldap_backend_type == "fedora-ds":
         backend_modules = ["nsuniqueid","paged_searches"]
     elif ldap_backend_type == "openldap":
@@ -737,8 +737,8 @@ def provision(lp, setup_dir, message, paths, session_info,
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
     
     if ldap_backend == "ldapi":
-    	# provision-backend will set this path suggested slapd command line / fedorads.inf
-    	ldap_backend = "ldapi://" % urllib.quote(os.path.join(lp.get("private dir"), "ldap", "ldapi"), safe="")
+        # provision-backend will set this path suggested slapd command line / fedorads.inf
+        ldap_backend = "ldapi://" % urllib.quote(os.path.join(lp.get("private dir"), "ldap", "ldapi"), safe="")
 
     assert realm is not None
     realm = realm.upper()
@@ -755,7 +755,7 @@ def provision(lp, setup_dir, message, paths, session_info,
 
     dnsdomain    = realm.lower()
     if serverrole == "domain controller":
-	domaindn     = "DC=" + dnsdomain.replace(".", ",DC=")
+        domaindn     = "DC=" + dnsdomain.replace(".", ",DC=")
         if domain is None:
             domain = lp.get("workgroup")
     
@@ -769,9 +769,9 @@ def provision(lp, setup_dir, message, paths, session_info,
             raise InvalidNetbiosName(domain)
 
     else:
-    	domaindn = "CN=" + netbiosname
-    	domain = netbiosname
-    	
+        domaindn = "CN=" + netbiosname
+        domain = netbiosname
+    
     if rootdn is None:
        rootdn       = domaindn
        
