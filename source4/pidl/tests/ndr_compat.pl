@@ -3,7 +3,7 @@
 # Published under the GNU General Public License
 use strict;
 
-use Test::More tests => 3;
+use Test::More tests => 2;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util; 
