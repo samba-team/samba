@@ -1611,7 +1611,7 @@ sub ParseUnionPushPrimitives($$$)
 		if ($el->{CASE} eq "default") {
 			$have_default = 1;
 		}
-		$self->pidl("$el->{CASE}:");
+		$self->pidl("$el->{CASE}: {");
 
 		if ($el->{TYPE} ne "EMPTY") {
 			$self->indent;
@@ -1625,7 +1625,7 @@ sub ParseUnionPushPrimitives($$$)
 			$self->ParseElementPush($el, "ndr", {$el->{NAME} => "$varname->$el->{NAME}"}, 1, 0);
 			$self->deindent;
 		}
-		$self->pidl("break;");
+		$self->pidl("break; }");
 		$self->pidl("");
 	}
 	if (! $have_default) {
