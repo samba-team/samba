@@ -70,7 +70,7 @@ if test $working_python = yes; then
 	AC_MSG_RESULT([yes])
 else
 	SMB_ENABLE(EXT_LIB_PYTHON,NO)
-	SMB_ENABLE(LIBPYTHONyy,NO)
+	SMB_ENABLE(LIBPYTHON,NO)
 	SMB_ENABLE(smbpython,NO)
 	AC_MSG_RESULT([no])
 fi
