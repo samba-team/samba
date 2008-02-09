@@ -95,7 +95,7 @@ NTSTATUS rpccli_lsa_OpenAccount(struct rpc_pipe_client *cli,
 				struct policy_handle *handle,
 				struct dom_sid2 *sid,
 				uint32_t access_mask,
-				struct policy_handle *acct_handle);
+				struct policy_handle **acct_handle);
 NTSTATUS rpccli_lsa_EnumPrivsAccount(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct policy_handle *handle,
@@ -114,9 +114,13 @@ NTSTATUS rpccli_lsa_GetQuotasForAccount(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_SetQuotasForAccount(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx);
 NTSTATUS rpccli_lsa_GetSystemAccessAccount(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx);
+					   TALLOC_CTX *mem_ctx,
+					   struct policy_handle *handle,
+					   uint32_t *access_mask);
 NTSTATUS rpccli_lsa_SetSystemAccessAccount(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx);
+					   TALLOC_CTX *mem_ctx,
+					   struct policy_handle *handle,
+					   uint32_t access_mask);
 NTSTATUS rpccli_lsa_OpenTrustedDomain(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *handle,
@@ -229,7 +233,7 @@ NTSTATUS rpccli_lsa_SetInfoPolicy2(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
 						 struct policy_handle *handle,
-						 struct lsa_String trusted_domain,
+						 struct lsa_String *trusted_domain,
 						 enum lsa_TrustDomInfoEnum level,
 						 union lsa_TrustedDomainInfo *info);
 NTSTATUS rpccli_lsa_SetTrustedDomainInfoByName(struct rpc_pipe_client *cli,

@@ -689,19 +689,6 @@ typedef struct lsa_r_unk_get_connuser
 } LSA_R_UNK_GET_CONNUSER;
 
 
-typedef struct lsa_q_openaccount
-{
-	POLICY_HND pol; /* policy handle */
-	DOM_SID2 sid;
-	uint32 access; /* desired access */
-} LSA_Q_OPENACCOUNT;
-
-typedef struct lsa_r_openaccount
-{
-	POLICY_HND pol; /* policy handle */
-	NTSTATUS status;
-} LSA_R_OPENACCOUNT;
-
 typedef struct lsa_q_enumprivsaccount
 {
 	POLICY_HND pol; /* policy handle */
@@ -714,29 +701,6 @@ typedef struct lsa_r_enumprivsaccount
 	PRIVILEGE_SET set;
 	NTSTATUS status;
 } LSA_R_ENUMPRIVSACCOUNT;
-
-typedef struct lsa_q_getsystemaccount
-{
-	POLICY_HND pol; /* policy handle */
-} LSA_Q_GETSYSTEMACCOUNT;
-
-typedef struct lsa_r_getsystemaccount
-{
-	uint32 access;
-	NTSTATUS status;
-} LSA_R_GETSYSTEMACCOUNT;
-
-
-typedef struct lsa_q_setsystemaccount
-{
-	POLICY_HND pol; /* policy handle */
-	uint32 access;
-} LSA_Q_SETSYSTEMACCOUNT;
-
-typedef struct lsa_r_setsystemaccount
-{
-	NTSTATUS status;
-} LSA_R_SETSYSTEMACCOUNT;
 
 typedef struct {
 	UNIHDR hdr;

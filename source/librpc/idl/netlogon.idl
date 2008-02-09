@@ -982,7 +982,7 @@ interface netlogon
 		[in,unique] GUID *domain_guid,
 		[in,unique] GUID *site_guid,
 		[in] netr_DsRGetDCName_flags flags,
-		[out,ref] netr_DsRGetDCNameInfo *info
+		[out,ref] netr_DsRGetDCNameInfo **info
 		);
 
 	/*****************/

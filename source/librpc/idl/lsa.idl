@@ -431,9 +431,9 @@ import "security.idl";
 	/* Function:     0x11                    */
 	NTSTATUS lsa_OpenAccount (
 		[in]         policy_handle *handle,
-		[in]         dom_sid2 *sid,
+		[in,ref]     dom_sid2 *sid,
 		[in]         uint32 access_mask,
-		[out]        policy_handle *acct_handle
+		[out]        policy_handle **acct_handle
 		);
 
 
@@ -480,9 +480,16 @@ import "security.idl";
 	NTSTATUS lsa_SetQuotasForAccount();
 	
 	/* Function:    0x17 */
-	NTSTATUS lsa_GetSystemAccessAccount();
+	NTSTATUS lsa_GetSystemAccessAccount(
+		[in]	policy_handle *handle,
+		[out,ref] uint32 *access_mask
+		);
+
 	/* Function:    0x18 */
-	NTSTATUS lsa_SetSystemAccessAccount();
+	NTSTATUS lsa_SetSystemAccessAccount(
+		[in]	policy_handle *handle,
+		[in]	uint32 access_mask
+		);
 
 	/* Function:        0x19 */
 	NTSTATUS lsa_OpenTrustedDomain(
@@ -764,10 +771,10 @@ import "security.idl";
 	/**********************/
 	/* Function 0x30 */
 	NTSTATUS lsa_QueryTrustedDomainInfoByName(
-		[in]                   policy_handle         *handle,
-		[in]                   lsa_String             trusted_domain,
-		[in]                   lsa_TrustDomInfoEnum   level, 
-		[out,unique,switch_is(level)] lsa_TrustedDomainInfo *info
+		[in]                   policy_handle          *handle,
+		[in,ref]               lsa_String             *trusted_domain,
+		[in]                   lsa_TrustDomInfoEnum   level,
+		[out,ref,switch_is(level)] lsa_TrustedDomainInfo *info
 		);
 
 	/**********************/
