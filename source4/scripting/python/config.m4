@@ -66,7 +66,7 @@ if test $working_python = yes; then
 	SMB_ENABLE(EXT_LIB_PYTHON,YES)
 	SMB_ENABLE(smbpython,YES)
 	SMB_ENABLE(LIBPYTHON,YES)
-	dnl AC_DEFINE(HAVE_WORKING_PYTHON, 1, [Whether we have working python support])
+	AC_DEFINE(HAVE_WORKING_PYTHON, 1, [Whether we have working python support])
 	AC_MSG_RESULT([yes])
 else
 	SMB_ENABLE(EXT_LIB_PYTHON,NO)
