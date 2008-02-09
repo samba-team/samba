@@ -6,8 +6,6 @@ import getopt
 import optparse
 import sys
 
-# Add path to the library for in-tree use
-sys.path.append("scripting/python")
 import samba.getopt as options
 
 from auth import system_session
