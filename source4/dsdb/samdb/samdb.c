@@ -103,8 +103,8 @@ int samdb_copy_template(struct ldb_context *ldb,
 
 	if (!templates_ldb) {
 		templates_ldb_path = samdb_relative_path(ldb, 
-							msg, 
-							"templates.ldb");
+							 msg, 
+							 "templates.ldb");
 		if (!templates_ldb_path) {
 			*errstring = talloc_asprintf(msg, "samdb_copy_template: ERROR: Failed to contruct path for template db");
 			return LDB_ERR_OPERATIONS_ERROR;
@@ -115,6 +115,8 @@ int samdb_copy_template(struct ldb_context *ldb,
 						NULL, 0, NULL);
 		talloc_free(templates_ldb_path);
 		if (!templates_ldb) {
+			*errstring = talloc_asprintf(msg, "samdb_copy_template: ERROR: Failed to connect to templates db at: %s",
+					     templates_ldb_path);
 			return LDB_ERR_OPERATIONS_ERROR;
 		}
 		

@@ -1514,10 +1514,10 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 
 	if (!drsuapi->binding) {
 		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc", "print", false)) {
-			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,print,seal]", s->source_dsa.dns_name);
+			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[print,seal]", s->source_dsa.dns_name);
 			if (composite_nomem(binding_str, c)) return;
 		} else {
-			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,seal]", s->source_dsa.dns_name);
+			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[seal]", s->source_dsa.dns_name);
 			if (composite_nomem(binding_str, c)) return;
 		}
 		c->status = dcerpc_parse_binding(s, binding_str, &drsuapi->binding);
