@@ -35,13 +35,13 @@ include kdc/config.mk
 DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
 		  $(srcdir)/version.h
 
-binaries: $(BINARIES)
-libraries: $(STATIC_LIBS) $(SHARED_LIBS)
-modules: $(SHARED_MODULES)
-headers: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
-manpages: $(MANPAGES)
-all: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules pythonmods
-everything: all libraries headers
+binaries:: $(BINARIES)
+libraries:: $(STATIC_LIBS) $(SHARED_LIBS)
+modules:: $(SHARED_MODULES)
+headers:: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
+manpages:: $(MANPAGES)
+all:: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules pythonmods
+everything:: all libraries headers
 
 LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)=$(builddir)/bin/shared
 
@@ -49,9 +49,9 @@ LD_LIBPATH_OVERRIDE = $(LIB_PATH_VAR)=$(builddir)/bin/shared
 # needed by samba3's 'make test' and the build-farm
 # scripts use that it as fallback in case
 # 'make everything' fails
-testsuite: bin/smbclient bin/cifsdd bin/smbtorture bin/nmblookup
+testsuite:: bin/smbclient bin/cifsdd bin/smbtorture bin/nmblookup
 
-showlayout: 
+showlayout:: 
 	@echo 'Samba will be installed into:'
 	@echo '  basedir:     $(BASEDIR)'
 	@echo '  bindir:      $(BINDIR)'
@@ -72,7 +72,7 @@ showlayout:
 	@echo '  datadir:     $(DATADIR)'
 	@echo '  winbindd_socket_dir:  $(WINBINDD_SOCKET_DIR)'
 
-showflags:
+showflags::
 	@echo 'Samba will be compiled with flags:'
 	@echo '  CPP        = $(CPP)'
 	@echo '  CPPFLAGS   = $(CPPFLAGS)'
@@ -95,7 +95,7 @@ showflags:
 # The permissions to give the executables
 INSTALLPERMS = 0755
 
-install: showlayout everything installbin installdat installswat installmisc installlib \
+install:: showlayout everything installbin installdat installswat installmisc installlib \
 	installheader installpc installplugins
 
 # DESTDIR is used here to prevent packagers wasting their time
@@ -106,7 +106,7 @@ install: showlayout everything installbin installdat installswat installmisc ins
 # the removal of DESTDIR. Do not remove it even though you think it
 # is not used.
 
-installdirs:
+installdirs::
 	@$(SHELL) $(srcdir)/script/installdirs.sh \
 		$(DESTDIR)$(BASEDIR) \
 		$(DESTDIR)$(BINDIR) \
@@ -126,7 +126,7 @@ installdirs:
 		$(DESTDIR)$(PKGCONFIGDIR) \
 		$(DESTDIR)$(CONFIGDIR) \
 
-installbin: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
+installbin:: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh \
 		$(INSTALLPERMS) \
 		$(DESTDIR)$(BASEDIR) \
@@ -146,47 +146,47 @@ installbin: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
 		$(DESTDIR)$(TORTUREDIR) \
 		$(TORTURE_PROGS)
 
-installlib: $(INSTALLABLE_SHARED_LIBS) $(STATIC_LIBS) installdirs
+installlib:: $(INSTALLABLE_SHARED_LIBS) $(STATIC_LIBS) installdirs
 	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) "$(SHLIBEXT)" $(INSTALLABLE_SHARED_LIBS) 
 	#@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) "$(STLIBEXT)" $(STATIC_LIBS)
 
-installheader: headers installdirs
+installheader:: headers installdirs
 	@srcdir=$(srcdir) builddir=$(builddir) $(PERL) $(srcdir)/script/installheader.pl $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 
-installdat: installdirs
+installdat:: installdirs
 	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(DATADIR) $(srcdir)
 
-installswat: installdirs
+installswat:: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
-installman: manpages installdirs
+installman:: manpages installdirs
 	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
 
-installmisc: installdirs
+installmisc:: installdirs
 	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(JSDIR) $(DESTDIR)$(SETUPDIR) $(DESTDIR)$(BINDIR)
 
-installpc: installdirs
+installpc:: installdirs
 	@$(SHELL) $(srcdir)/script/installpc.sh $(builddir) $(DESTDIR)$(PKGCONFIGDIR) $(PC_FILES)
 
-uninstall: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader \
+uninstall:: uninstallbin uninstallman uninstallmisc uninstalllib uninstallheader \
 	uninstallplugins
 
-uninstallmisc:
+uninstallmisc::
 	#FIXME
 
-uninstallbin:
+uninstallbin::
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(BIN_PROGS)
 	@$(SHELL) $(srcdir)/script/uninstalltorture.sh $(DESTDIR)$(TORTUREDIR) $(TORTURE_PROGS)
 
-uninstalllib:
+uninstalllib::
 	@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(LIBDIR) $(SHARED_LIBS)
 	#@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(LIBDIR) $(STATIC_LIBS) 
 
-uninstallheader:
+uninstallheader::
 	@$(SHELL) $(srcdir)/script/uninstallheader.sh $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS)
 
-uninstallman:
+uninstallman::
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
 
 Makefile: config.status $(MK_FILES)
@@ -206,10 +206,10 @@ testcov-html:: pidl-testcov
 pidl-testcov: pidl/Makefile
 	cd pidl && cover -test
 
-installpidl: pidl/Makefile
+installpidl:: pidl/Makefile
 	$(MAKE) -C pidl install
 
-uninstallpidl: pidl/Makefile
+uninstallpidl:: pidl/Makefile
 	$(MAKE) -C pidl uninstall
 
 $(IDL_HEADER_FILES) \
@@ -219,10 +219,10 @@ $(IDL_HEADER_FILES) \
 	$(IDL_NDR_EJS_C_FILES) $(IDL_NDR_EJS_H_FILES) \
 	$(IDL_NDR_PY_C_FILES) $(IDL_NDR_PY_H_FILES): idl
 
-idl_full: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
+idl_full:: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
 	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh FULL
 
-idl: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
+idl:: pidl/lib/Parse/Pidl/IDL.pm pidl/lib/Parse/Pidl/Expr.pm 
 	@CPP="$(CPP)" PERL="$(PERL)" srcdir=$(srcdir) $(srcdir)/script/build_idl.sh PARTIAL 
 
 pidl/lib/Parse/Pidl/IDL.pm: pidl/idl.yp
@@ -233,139 +233,5 @@ pidl/lib/Parse/Pidl/Expr.pm: pidl/idl.yp
 	-$(YAPP) -m 'Parse::Pidl::Expr' -o pidl/lib/Parse/Pidl/Expr.pm pidl/expr.yp ||\
 		touch pidl/lib/Parse/Pidl/Expr.pm 
 
-include/config.h:
-	@echo "include/config.h not present"
-	@echo "You need to rerun ./autogen.sh and ./configure"
-	@/bin/false
-
-$(srcdir)/version.h: $(srcdir)/VERSION
-	@$(SHELL) script/mkversion.sh VERSION $(srcdir)/version.h $(srcdir)/
-
-regen_version:
-	@$(SHELL) script/mkversion.sh VERSION $(srcdir)/version.h $(srcdir)/
-
-clean_pch:
-	@echo "Removing precompiled headers"
-	@-rm -f include/includes.h.gch
-
-pch: clean_pch include/includes.h.gch
-
-clean:: clean_pch
-	@echo Removing objects
-	@-find . -name '*.o' -exec rm -f '{}' \;
-	@echo Removing hostcc objects
-	@-find . -name '*.ho' -exec rm -f '{}' \;
-	@echo Removing binaries
-	@-rm -f $(BIN_PROGS) $(SBIN_PROGS) $(BINARIES) $(TORTURE_PROGS)
-	@echo Removing libraries
-	@-rm -f $(STATIC_LIBRARIES) $(SHARED_LIBRARIES)
-	@-rm -f bin/static/*.a bin/shared/*.$(SHLIBEXT)
-	@echo Removing modules
-	@-rm -f bin/modules/*/*.$(SHLIBEXT)
-	@-rm -f bin/*_init_module.c
-	@echo Removing dummy targets
-	@-rm -f bin/.*_*
-	@echo Removing generated files
-	@-rm -f bin/*_init_module.c
-	@-rm -rf librpc/gen_* 
-	@echo Removing proto headers
-	@-rm -f $(PROTO_HEADERS)
-
-distclean: clean
-	-rm -f include/config.h include/config_tmp.h include/build.h
-	-rm -f Makefile 
-	-rm -f config.status
-	-rm -f config.log config.cache
-	-rm -f config.pm config.mk
-	-rm -f $(PC_FILES)
-
-removebackup:
-	-rm -f *.bak *~ */*.bak */*~ */*/*.bak */*/*~ */*/*/*.bak */*/*/*~
-
-realdistclean:: distclean removebackup
-	-rm -f include/config_tmp.h.in
-	-rm -f version.h
-	-rm -f configure
-	-rm -f $(MANPAGES)
-
-check:: test
-
-include selftest/config.mk
-
-unused_macros:
-	$(srcdir)/script/find_unused_macros.pl `find . -name "*.[ch]"` | sort
-
-###############################################################################
-# File types
-###############################################################################
-
-.SUFFIXES: .x .c .et .y .l .d .o .h .h.gch .a .$(SHLIBEXT) .1 .1.xml .3 .3.xml .5 .5.xml .7 .7.xml .8 .8.xml .ho .idl .hd
-
-.c.d:
-	@echo "Generating dependencies for $<"
-	@$(DEPENDS)
-
-.c.hd:
-	@echo "Generating host-compiler dependencies for $<"
-	@$(HDEPENDS)
-
-include/includes.d: include/includes.h
-	@echo "Generating dependencies for $<"
-	@$(PCHDEPENDS)
-
-.c.o:
-	@if test -n "$(CC_CHECKER)"; then \
-		echo "Checking  $< with '$(CC_CHECKER)'"; \
-		$(CHECK) ; \
-	fi
-	@echo "Compiling $<"
-	@-mkdir -p `dirname $@`
-	@$(COMPILE) && exit 0 ; \
-		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE)" 1>&2;\
-		$(COMPILE) >/dev/null 2>&1
-
-.c.ho:
-	@echo "Compiling $< with host compiler"
-	@-mkdir -p `dirname $@`
-	@$(HCOMPILE) && exit 0;\
-		echo "The following command failed:" 1>&2;\
-		echo "$(HCOMPILE)" 1>&2;\
-		$(HCOMPILE) >/dev/null 2>&1
-
-.h.h.gch:
-	@echo "Precompiling $<"
-	@$(PCHCOMPILE)
-
-.y.c:
-	@echo "Building $< with $(YACC)"
-	@-$(srcdir)/script/yacc_compile.sh "$(YACC)" "$<" "$@"
-
-.l.c:
-	@echo "Building $< with $(LEX)"
-	@-$(srcdir)/script/lex_compile.sh "$(LEX)" "$<" "$@"
-
-DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl
-
-.1.xml.1:
-	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
-
-.3.xml.3:
-	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
-
-.5.xml.5:
-	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
-
-.7.xml.7:
-	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
-
-.8.xml.8:
-	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
-
-DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
-		   include/includes.d
-
-dist:: idl_full manpages configure distclean 
-
-configure: 
-	./autogen.sh
+mkinclude selftest/config.mk
+mkinclude rules.mk
