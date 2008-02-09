@@ -251,6 +251,8 @@ sub run_config_mk($$$$)
 			next;
 		}
 
+		$line =~ s/^mkinclude /include /;
+
 		# empty line
 		if ($line =~ /^[ \t]*$/) {
 			$section = "GLOBAL";
