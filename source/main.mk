@@ -73,24 +73,8 @@ showlayout::
 	@echo '  winbindd_socket_dir:  $(WINBINDD_SOCKET_DIR)'
 
 showflags::
-	@echo 'Samba will be compiled with flags:'
-	@echo '  CPP        = $(CPP)'
-	@echo '  CPPFLAGS   = $(CPPFLAGS)'
-	@echo '  CC         = $(CC)'
-	@echo '  CFLAGS     = $(CFLAGS)'
-	@echo '  PICFLAG    = $(PICFLAG)'
-	@echo '  BNLD       = $(BNLD)'
-	@echo '  BNLD_FLAGS = $(BNLD_FLAGS)'
-	@echo '  STLD       = $(STLD)'
-	@echo '  STLD_FLAGS = $(STLD_FLAGS)'
-	@echo '  SHLD       = $(SHLD)'
-	@echo '  SHLD_FLAGS = $(SHLD_FLAGS)'
-	@echo '  MDLD       = $(MDLD)'
-	@echo '  MDLD_FLAGS = $(MDLD_FLAGS)'
-	@echo '  SHLIBEXT   = $(SHLIBEXT)'
 	@echo '  srcdir     = $(srcdir)'
 	@echo '  builddir   = $(builddir)'
-	@echo '  pwd        = '`/bin/pwd`
 
 # The permissions to give the executables
 INSTALLPERMS = 0755
@@ -192,12 +176,6 @@ uninstallman::
 Makefile: config.status $(MK_FILES)
 	./config.status
 
-etags:
-	etags `find $(srcdir) -name "*.[ch]"`
-
-ctags:
-	ctags `find $(srcdir) -name "*.[ch]"`
-
 pidl/Makefile: pidl/Makefile.PL
 	cd pidl && $(PERL) Makefile.PL 
 
@@ -235,3 +213,6 @@ pidl/lib/Parse/Pidl/Expr.pm: pidl/idl.yp
 
 mkinclude selftest/config.mk
 mkinclude rules.mk
+
+showflags::
+	@echo '  pwd        = '`/bin/pwd`

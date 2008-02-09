@@ -132,3 +132,26 @@ dist:: idl_full manpages configure distclean
 
 configure: 
 	./autogen.sh
+
+showflags::
+	@echo 'Samba will be compiled with flags:'
+	@echo '  CPP        = $(CPP)'
+	@echo '  CPPFLAGS   = $(CPPFLAGS)'
+	@echo '  CC         = $(CC)'
+	@echo '  CFLAGS     = $(CFLAGS)'
+	@echo '  PICFLAG    = $(PICFLAG)'
+	@echo '  BNLD       = $(BNLD)'
+	@echo '  BNLD_FLAGS = $(BNLD_FLAGS)'
+	@echo '  STLD       = $(STLD)'
+	@echo '  STLD_FLAGS = $(STLD_FLAGS)'
+	@echo '  SHLD       = $(SHLD)'
+	@echo '  SHLD_FLAGS = $(SHLD_FLAGS)'
+	@echo '  MDLD       = $(MDLD)'
+	@echo '  MDLD_FLAGS = $(MDLD_FLAGS)'
+	@echo '  SHLIBEXT   = $(SHLIBEXT)'
+
+etags:
+	etags `find $(srcdir) -name "*.[ch]"`
+
+ctags:
+	ctags `find $(srcdir) -name "*.[ch]"`
