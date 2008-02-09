@@ -3,9 +3,10 @@
 #  work out the minimal schema for a set of objectclasses 
 #
 
-import getopt
 import optparse
 import samba
+from samba import getopt as options
+import sys
 
 parser = optparse.OptionParser("minschema <URL> <classfile>")
 sambaopts = options.SambaOptions(parser)
@@ -28,14 +29,14 @@ if opts.dump_attributes:
     opts.dump_all = False
 if opts.dump_subschema:
     opts.dump_all = False
-if dump_subschema_auto:
-	opts.dump_all = False
-	opts.dump_subschema = True
+if opts.dump_subschema_auto:
+    opts.dump_all = False
+    opts.dump_subschema = True
 if opts.dump_all:
-	opts.dump_classes = True
-	opts.dump_attributes = True
-	opts.dump_subschema = True
-	opts.dump_subschema_auto = True
+    opts.dump_classes = True
+    opts.dump_attributes = True
+    opts.dump_subschema = True
+    opts.dump_subschema_auto = True
 
 if len(args) != 2:
     parser.print_usage()
@@ -48,9 +49,8 @@ ldb = Ldb(url, credentials=creds)
 
 objectclasses = []
 attributes = []
-rootDse = {}
 
-objectclasses_expanded = []
+objectclasses_expanded = set()
 
 # the attributes we need for objectclasses
 class_attrs = ["objectClass", 
@@ -130,33 +130,28 @@ attrib_attrs = ["objectClass",
 #
 def dprintf(text):
     if verbose is not None:
-		print text
+        print text
 
 def get_object_cn(ldb, name):
-	attrs = ["cn"]
+    attrs = ["cn"]
 
-	res = ldb.search("(ldapDisplayName=%s)" % name, rootDse.schemaNamingContext, ldb.SCOPE_SUBTREE, attrs)
-	assert len(res) == 1
+    res = ldb.search("(ldapDisplayName=%s)" % name, rootDse["schemaNamingContext"], ldb.SCOPE_SUBTREE, attrs)
+    assert len(res) == 1
 
-    cn = res[0]["cn"]
+    return res[0]["cn"]
 
-#
-#  create an objectclass object
-#
-def obj_objectClass(ldb, name):
-	var o = new Object()
-	o.name = name
-	o.cn = get_object_cn(ldb, name)
-	return o
+class Objectclass:
+    def __init__(self, ldb, name):
+        """create an objectclass object"""
+        self.name = name
+        self.cn = get_object_cn(ldb, name)
 
-#
-#  create an attribute object
-#
-def obj_attribute(ldb, name):
-	var o = new Object()
-	o.name = name
-	o.cn = get_object_cn(ldb, name)
-	return o
+
+class Attribute:
+    def __init__(self, ldb, name):
+        """create an attribute object"""
+        self.name = name
+        self.cn = get_object_cn(ldb, name)
 
 
 syntaxmap = dict()
@@ -179,397 +174,330 @@ syntaxmap['2.5.5.15'] = '1.2.840.113556.1.4.907'
 syntaxmap['2.5.5.16'] = '1.2.840.113556.1.4.906'
 syntaxmap['2.5.5.17'] = '1.3.6.1.4.1.1466.115.121.1.40'
 
-#
-#  map some attribute syntaxes from some apparently MS specific
-#  syntaxes to the standard syntaxes
-#
+
 def map_attribute_syntax(s):
+    """map some attribute syntaxes from some apparently MS specific
+    syntaxes to the standard syntaxes"""
     if syntaxmap.has_key(s):
-		return syntaxmap[s]
-	return s
+        return syntaxmap[s]
+    return s
 
-#
-#  fix a string DN to use ${SCHEMADN}
-#
+
 def fix_dn(dn):
-	s = strstr(dn, rootDse.schemaNamingContext)
-	if (s == NULL) {
-		return dn
-	}
-	return substr(dn, 0, strlen(dn) - strlen(s)) + "${SCHEMADN}"
+    """fix a string DN to use ${SCHEMADN}"""
+    return dn.replace(rootDse["schemaNamingContext"], "${SCHEMADN}")
 
-#
-#  dump an object as ldif
-#
+
 def write_ldif_one(o, attrs):
-	print "dn: CN=%s,${SCHEMADN}\n" % o["cn"]
+    """dump an object as ldif"""
+    print "dn: CN=%s,${SCHEMADN}\n" % o["cn"]
     for a in attrs:
         if not o.has_key(a):
-			continue
-		# special case for oMObjectClass, which is a binary object
+            continue
+        # special case for oMObjectClass, which is a binary object
         if a == "oMObjectClass":
-			print "%s:: %s\n" % (a, o[a])
-			continue
-		v = o[a]
+            print "%s:: %s\n" % (a, o[a])
+            continue
+        v = o[a]
         if isinstance(v, str):
-			v = [v]
+            v = [v]
         for j in v:
-			print "%s: %s\n" % (a, fix_dn(j))
-	print "\n"
+            print "%s: %s\n" % (a, fix_dn(j))
+    print "\n"
 
-#
-# dump an array of objects as ldif
-#
 def write_ldif(o, attrs):
+    """dump an array of objects as ldif"""
     for i in o:
-		write_ldif_one(i, attrs)
+        write_ldif_one(i, attrs)
 
 
-#
-#  create a testDN based an an example DN
-#  the idea is to ensure we obey any structural rules
-#
 def create_testdn(exampleDN):
-	a = split(",", exampleDN)
-	a[0] = "CN=TestDN"
-	return ",".join(a)
+    """create a testDN based an an example DN
+    the idea is to ensure we obey any structural rules"""
+    a = exampleDN.split(",")
+    a[0] = "CN=TestDN"
+    return ",".join(a)
 
-#
-#  find the properties of an objectclass
-#
+
 def find_objectclass_properties(ldb, o):
-	res = ldb.search(
-		expression="(ldapDisplayName=%s)" % o.name,
-		rootDse.schemaNamingContext, ldb.SCOPE_SUBTREE, class_attrs)
-	assert(len(res) == 1)
+    """the properties of an objectclass"""
+    res = ldb.search(
+        expression="(ldapDisplayName=%s)" % o.name,
+        basedn=rootDse["schemaNamingContext"], scope=ldb.SCOPE_SUBTREE, attrs=class_attrs)
+    assert(len(res) == 1)
     msg = res[0]
     for a in msg:
-		o[a] = msg[a]
+        o[a] = msg[a]
 
-#
-#  find the properties of an attribute
-#
 def find_attribute_properties(ldb, o):
-	res = ldb.search(
-		expression="(ldapDisplayName=%s)" % o.name,
-		rootDse.schemaNamingContext, ldb.SCOPE_SUBTREE, attrib_attrs)
-	assert(len(res) == 1)
+    """find the properties of an attribute"""
+    res = ldb.search(
+        expression="(ldapDisplayName=%s)" % o.name,
+        basedn=rootDse["schemaNamingContext"], scope=ldb.SCOPE_SUBTREE, 
+        attrs=attrib_attrs)
+    assert(len(res) == 1)
     msg = res[0]
     for a in msg:
-		# special case for oMObjectClass, which is a binary object
+        # special case for oMObjectClass, which is a binary object
         if a == "oMObjectClass":
-			o[a] = ldb.encode(msg[a])
-			continue
-		o[a] = msg[a]
+            o[a] = ldb.encode(msg[a])
+            continue
+        o[a] = msg[a]
 
-#
-#  find the auto-created properties of an objectclass. Only works for classes
-#  that can be created using just a DN and the objectclass
-#
+
 def find_objectclass_auto(ldb, o):
+    """find the auto-created properties of an objectclass. Only works for 
+    classes that can be created using just a DN and the objectclass"""
     if not o.has_key("exampleDN"):
-		return
-	testdn = create_testdn(o.exampleDN)
+        return
+    testdn = create_testdn(o.exampleDN)
 
-	print "testdn is '%s'\n" % testdn
+    print "testdn is '%s'\n" % testdn
 
-	ldif = "dn: " + testdn
-	ldif += "\nobjectClass: " + o.name
+    ldif = "dn: " + testdn
+    ldif += "\nobjectClass: " + o.name
     try:
         ldb.add(ldif)
     except LdbError, e:
         print "error adding %s: %s\n" % (o.name, e)
-		print "%s\n" % ldif
+        print "%s\n" % ldif
         return
 
-	res = ldb.search("", testdn, ldb.SCOPE_BASE)
-	ldb.delete(testdn)
+    res = ldb.search("", testdn, ldb.SCOPE_BASE)
+    ldb.delete(testdn)
 
     for a in res.msgs[0]:
-		attributes[a].autocreate = True
+        attributes[a].autocreate = True
 
 
-#
-#  look at auxiliary information from a class to intuit the existance of more
-#  classes needed for a minimal schema
-#
 def expand_objectclass(ldb, o):
-	attrs = ["auxiliaryClass", "systemAuxiliaryClass",
-			      "possSuperiors", "systemPossSuperiors",
-			      "subClassOf"]
-	res = ldb.search(
-		"(&(objectClass=classSchema)(ldapDisplayName=%s))" % o.name,
-		rootDse.schemaNamingContext, ldb.SCOPE_SUBTREE, attrs)
-	print "Expanding class %s\n" % o.name
-	assert(len(res) == 1)
-	msg = res[0]
+    """look at auxiliary information from a class to intuit the existance of 
+    more classes needed for a minimal schema"""
+    attrs = ["auxiliaryClass", "systemAuxiliaryClass",
+                  "possSuperiors", "systemPossSuperiors",
+                  "subClassOf"]
+    res = ldb.search(
+        expression="(&(objectClass=classSchema)(ldapDisplayName=%s))" % o.name,
+        basedn=rootDse["schemaNamingContext"], scope=ldb.SCOPE_SUBTREE, 
+        attrs=attrs)
+    print "Expanding class %s\n" % o.name
+    assert(len(res) == 1)
+    msg = res[0]
     for a in attrs:
         if not msg.has_key(aname):
-			continue
-		list = msg[aname]
+            continue
+        list = msg[aname]
         if isinstance(list, str):
-			list = [msg[aname]]
+            list = [msg[aname]]
         for name in list:
             if not objectclasses.has_key(name):
-				print "Found new objectclass '%s'\n" % name
-				objectclasses[name] = obj_objectClass(ldb, name)
+                print "Found new objectclass '%s'\n" % name
+                objectclasses[name] = Objectclass(ldb, name)
 
 
-#
-#  add the must and may attributes from an objectclass to the full list
-#  of attributes
-#
-def add_objectclass_attributes(ldb, class):
-	attrs = ["mustContain", "systemMustContain", 
-			      "mayContain", "systemMayContain"]
+def add_objectclass_attributes(ldb, objectclass):
+    """add the must and may attributes from an objectclass to the full list
+    of attributes"""
+    attrs = ["mustContain", "systemMustContain", 
+                  "mayContain", "systemMayContain"]
     for aname in attrs:
-        if not class.has_key(aname):
-			continue
-		alist = class[aname]
+        if not objectclass.has_key(aname):
+            continue
+        alist = objectclass[aname]
         if isinstance(alist, str):
-			alist = [alist]
+            alist = [alist]
         for a in alist:
             if not attributes.has_key(a):
-				attributes[a] = obj_attribute(ldb, a)
+                attributes[a] = Attribute(ldb, a)
 
 
-#
-#  process an individual record, working out what attributes it has
-#
 def walk_dn(ldb, dn):
-	# get a list of all possible attributes for this object 
-	attrs = ["allowedAttributes"]
+    """process an individual record, working out what attributes it has"""
+    # get a list of all possible attributes for this object 
+    attrs = ["allowedAttributes"]
     try:
         res = ldb.search("objectClass=*", dn, ldb.SCOPE_BASE, attrs)
     except LdbError, e:
-		print "Unable to fetch allowedAttributes for '%s' - %r\n" % (dn, e)
-		return
-	allattrs = res[0]["allowedAttributes"]
+        print "Unable to fetch allowedAttributes for '%s' - %r\n" % (dn, e)
+        return
+    allattrs = res[0]["allowedAttributes"]
     try:
         res = ldb.search("objectClass=*", dn, ldb.SCOPE_BASE, allattrs)
     except LdbError, e:
         print "Unable to fetch all attributes for '%s' - %s\n" % (dn, e)
-		return
-	msg = res[0]
+        return
+    msg = res[0]
     for a in msg:
         if not attributes.has_key(a):
-			attributes[a] = obj_attribute(ldb, a)
+            attributes[a] = Attribute(ldb, a)
 
-#
-#  walk a naming context, looking for all records
-#
 def walk_naming_context(ldb, namingContext):
+    """walk a naming context, looking for all records"""
     try:
         res = ldb.search("objectClass=*", namingContext, ldb.SCOPE_DEFAULT, 
                          ["objectClass"])
     except LdbError, e:
-		print "Unable to fetch objectClasses for '%s' - %s\n" % (namingContext, e)
-		return
+        print "Unable to fetch objectClasses for '%s' - %s\n" % (namingContext, e)
+        return
     for msg in res:
-		msg = res.msgs[r]["objectClass"]
+        msg = res.msgs[r]["objectClass"]
         for objectClass in msg:
             if not objectclasses.has_key(objectClass):
-				objectclasses[objectClass] = obj_objectClass(ldb, objectClass)
-				objectclasses[objectClass].exampleDN = res.msgs[r]["dn"]
-		walk_dn(ldb, res.msgs[r].dn)
+                objectclasses[objectClass] = Objectclass(ldb, objectClass)
+                objectclasses[objectClass].exampleDN = res.msgs[r]["dn"]
+        walk_dn(ldb, res.msgs[r].dn)
 
-#
-#  trim the may attributes for an objectClass
-#
-def trim_objectclass_attributes(ldb, class):
-	# trim possibleInferiors,
-	# include only the classes we extracted
-    if class.has_key("possibleInferiors"):
-        possinf = class["possibleInferiors"]
-		newpossinf = []
+def trim_objectclass_attributes(ldb, objectclass):
+    """trim the may attributes for an objectClass"""
+    # trim possibleInferiors,
+    # include only the classes we extracted
+    if objectclass.has_key("possibleInferiors"):
+        possinf = objectclass["possibleInferiors"]
+        newpossinf = []
         if isinstance(possinf, str):
-			possinf = [possinf]
+            possinf = [possinf]
         for x in possinf:
             if objectclasses.has_key(x):
-				newpossinf[n] = x
-				n++
-		class["possibleInferiors"] = newpossinf
+                newpossinf[n] = x
+                n+=1
+        objectclass["possibleInferiors"] = newpossinf
 
-	# trim systemMayContain,
-	# remove duplicates
-    if class.has_key("systemMayContain"):
-        sysmay = class["systemMayContain"]
-		newsysmay = []
+    # trim systemMayContain,
+    # remove duplicates
+    if objectclass.has_key("systemMayContain"):
+        sysmay = objectclass["systemMayContain"]
+        newsysmay = []
         if isinstance(sysmay, str):
-			sysmay = [sysmay]
+            sysmay = [sysmay]
         for x in sysmay:
-			dup = False
-			if newsysmay[0] == undefined) {
-				newsysmay[0] = x
-            else:
-				for (n = 0; n < newsysmay.length; n++) {
-					if (newsysmay[n] == x) {
-						dup = True
-                if not dup:
-					newsysmay[n] = x
-		class["systemMayContain"] = newsysmay
+            if not x in newsysmay:
+                newsysmay.append(x)
+        objectclass["systemMayContain"] = newsysmay
 
-	# trim mayContain,
-	# remove duplicates
-    if not class.has_key("mayContain"):
-        may = class["mayContain"]
-		newmay = []
+    # trim mayContain,
+    # remove duplicates
+    if not objectclass.has_key("mayContain"):
+        may = objectclass["mayContain"]
+        newmay = []
         if isinstance(may, str):
-			may = [may]
+            may = [may]
         for x in may:
-			dup = False
-			if (newmay[0] == undefined) {
-				newmay[0] = x
-			} else {
-				for (n = 0; n < newmay.length; n++) {
-					if (newmay[n] == x) {
-						dup = True
-                if not dup:
-					newmay[n] = x
-		class["mayContain"] = newmay
+            if not x in newmay:
+                newmay.append(x)
+        objectclass["mayContain"] = newmay
 
-#
-#  load the basic attributes of an objectClass
-#
 def build_objectclass(ldb, name):
-	attrs = ["name"]
+    """load the basic attributes of an objectClass"""
+    attrs = ["name"]
     try:
         res = ldb.search(
             expression="(&(objectClass=classSchema)(ldapDisplayName=%s))" % name,
-            rootDse.schemaNamingContext, ldb.SCOPE_SUBTREE, attrs)
+            basedn=rootDse["schemaNamingContext"], scope=ldb.SCOPE_SUBTREE, 
+            attrs=attrs)
     except LdbError, e:
-		print "unknown class '%s'\n" % name
-		return None
+        print "unknown class '%s'\n" % name
+        return None
     if len(res) == 0:
-		print "unknown class '%s'\n" % name
-		return None
-	return obj_objectClass(ldb, name)
+        print "unknown class '%s'\n" % name
+        return None
+    return Objectclass(ldb, name)
 
-#
-#  append 2 lists
-#
-def list_append(a1, a2):
-	if (a1 == undefined) {
-		return a2
-	if (a2 == undefined)
-		return a1
-    for (i=0;i<a2.length;i++):
-		a1[a1.length] = a2[i]
-	return a1
-
-#
-#  form a coalesced attribute list
-#
-def attribute_list(class, attr1, attr2):
-	a1 = class[attr1]
-	a2 = class[attr2]
+def attribute_list(objectclass, attr1, attr2):
+    """form a coalesced attribute list"""
+    a1 = objectclass[attr1]
+    a2 = objectclass[attr2]
     if isinstance(a1, str):
-		a1 = [a1]
+        a1 = [a1]
     if isinstance(a2, str):
-		a2 = [a2]
-	return list_append(a1, a2)
+        a2 = [a2]
+    return a1 + a2
 
-#
-#  write out a list in aggregate form
-#
 def aggregate_list(name, list):
+    """write out a list in aggregate form"""
     if list is None:
-		return
-	print "%s ( %s )" % (name, "$ ".join(list))
+        return
+    print "%s ( %s )" % (name, "$ ".join(list))
 
-#
-#  write the aggregate record for an objectclass
-#
-def write_aggregate_objectclass(class):
-	print "objectClasses: ( %s NAME '%s' " % (class.governsID, class.name)
-    if not class.has_key('subClassOf'):
-		print "SUP %s " % class['subClassOf']
-    if class.objectClassCategory == 1:
-		print "STRUCTURAL "
-    elif class.objectClassCategory == 2:
-		print "ABSTRACT "
-    elif class.objectClassCategory == 3:
-		print "AUXILIARY "
+def write_aggregate_objectclass(objectclass):
+    """write the aggregate record for an objectclass"""
+    print "objectClasses: ( %s NAME '%s' " % (objectclass.governsID, objectclass.name)
+    if not objectclass.has_key('subClassOf'):
+        print "SUP %s " % objectclass['subClassOf']
+    if objectclass.objectClassCategory == 1:
+        print "STRUCTURAL "
+    elif objectclass.objectClassCategory == 2:
+        print "ABSTRACT "
+    elif objectclass.objectClassCategory == 3:
+        print "AUXILIARY "
 
-	list = attribute_list(class, "systemMustContain", "mustContain")
-	aggregate_list("MUST", list)
+    list = attribute_list(objectclass, "systemMustContain", "mustContain")
+    aggregate_list("MUST", list)
 
-	list = attribute_list(class, "systemMayContain", "mayContain")
-	aggregate_list("MAY", list)
+    list = attribute_list(objectclass, "systemMayContain", "mayContain")
+    aggregate_list("MAY", list)
 
-	print ")\n"
+    print ")\n"
 
 
-#
-#  write the aggregate record for an ditcontentrule
-#
-def write_aggregate_ditcontentrule(class):
-	list = attribute_list(class, "auxiliaryClass", "systemAuxiliaryClass")
+def write_aggregate_ditcontentrule(objectclass):
+    """write the aggregate record for an ditcontentrule"""
+    list = attribute_list(objectclass, "auxiliaryClass", "systemAuxiliaryClass")
     if list is None:
-		return
+        return
 
-	print "dITContentRules: ( %s NAME '%s' " % (class.governsID, class.name)
+    print "dITContentRules: ( %s NAME '%s' " % (objectclass.governsID, objectclass.name)
 
-	aggregate_list("AUX", list)
+    aggregate_list("AUX", list)
 
-	may_list = None
-	must_list = None
+    may_list = None
+    must_list = None
 
     for c in list:
-		list2 = attribute_list(objectclasses[c], 
-				       "mayContain", "systemMayContain")
-		may_list = list_append(may_list, list2)
-		list2 = attribute_list(objectclasses[c], 
-				       "mustContain", "systemMustContain")
-		must_list = list_append(must_list, list2)
+        list2 = attribute_list(objectclasses[c], 
+                       "mayContain", "systemMayContain")
+        may_list = may_list + list2
+        list2 = attribute_list(objectclasses[c], 
+                       "mustContain", "systemMustContain")
+        must_list = must_list + list2
 
-	aggregate_list("MUST", must_list)
-	aggregate_list("MAY", may_list)
+    aggregate_list("MUST", must_list)
+    aggregate_list("MAY", may_list)
 
-	print ")\n"
+    print ")\n"
 
-#
-#  write the aggregate record for an attribute
-#
 def write_aggregate_attribute(attrib):
-	print "attributeTypes: ( %s NAME '%s' SYNTAX '%s' " % (
-	       attrib.attributeID, attrib.name, 
-	       map_attribute_syntax(attrib.attributeSyntax))
+    """write the aggregate record for an attribute"""
+    print "attributeTypes: ( %s NAME '%s' SYNTAX '%s' " % (
+           attrib.attributeID, attrib.name, 
+           map_attribute_syntax(attrib.attributeSyntax))
     if attrib['isSingleValued'] == "TRUE":
-		print "SINGLE-VALUE "
+        print "SINGLE-VALUE "
     if attrib['systemOnly'] == "TRUE":
-		print "NO-USER-MODIFICATION "
+        print "NO-USER-MODIFICATION "
 
-	print ")\n"
+    print ")\n"
 
 
-#
-#  write the aggregate record
-#
 def write_aggregate():
-	print "dn: CN=Aggregate,${SCHEMADN}\n"
-	print """objectClass: top
+    """write the aggregate record"""
+    print "dn: CN=Aggregate,${SCHEMADN}\n"
+    print """objectClass: top
 objectClass: subSchema
 objectCategory: CN=SubSchema,${SCHEMADN}
 """
     if not opts.dump_subschema_auto:
-		return
+        return
 
     for objectclass in objectclasses:
-		write_aggregate_objectclass(objectclass)
+        write_aggregate_objectclass(objectclass)
     for attr in attributes:
-		write_aggregate_attribute(attr)
+        write_aggregate_attribute(attr)
     for objectclass in objectclasses:
-		write_aggregate_ditcontentrule(objectclass)
+        write_aggregate_ditcontentrule(objectclass)
 
-#
-#  load a list from a file
-#
 def load_list(file):
-	var sys = sys_init()
-	var s = sys.file_load(file)
-	var a = split("\n", s)
-	return a
+    """load a list from a file"""
+    return open(file, 'r').splitlines()
 
 # get the rootDSE
 res = ldb.search("", "", ldb.SCOPE_BASE)
@@ -577,84 +505,75 @@ rootDse = res[0]
 
 # load the list of classes we are interested in
 classes = load_list(classfile)
-for (i=0;i<classes.length;i++) {
-	var classname = classes[i]
-	var class = build_objectclass(ldb, classname)
-	if (class != undefined) {
-		objectclasses[classname] = class
+for classname in classes:
+    objectclass = build_objectclass(ldb, classname)
+    if objectclass is not None:
+        objectclasses[classname] = objectclass
 
 
 #
 #  expand the objectclass list as needed
 #
-num_classes = 0
 expanded = 0
-# calculate the actual number of classes
-num_classes = len(objectclasses)
 
 # so EJS do not have while nor the break statement
 # cannot find any other way than doing more loops
 # than necessary to recursively expand all classes
 #
 for inf in range(500):
-    if expanded < num_classes:
-		for (i in objectclasses) {
-			var n = objectclasses[i]
-			if (objectclasses_expanded[i] != "DONE") {
-				expand_objectclass(ldb, objectclasses[i])
-				objectclasses_expanded[i] = "DONE"
-				expanded++
-		# recalculate the actual number of classes
-		num_classes = len(objectclasses)
+    for n in objectclasses:
+        if not n in objectclasses_expanded:
+            expand_objectclass(ldb, objectclasses[i])
+            objectclasses_expanded.add(n)
 
 #
 #  find objectclass properties
 #
 for objectclass in objectclasses:
-	find_objectclass_properties(ldb, objectclass)
+    find_objectclass_properties(ldb, objectclass)
 
 
 #
 #  form the full list of attributes
 #
 for objectclass in objectclasses:
-	add_objectclass_attributes(ldb, objectclass)
+    add_objectclass_attributes(ldb, objectclass)
 
 # and attribute properties
 for attr in attributes:
-	find_attribute_properties(ldb, attr)
+    find_attribute_properties(ldb, attr)
 
 #
 # trim the 'may' attribute lists to those really needed
 #
-for objectclass in objectclasses) {
-	trim_objectclass_attributes(ldb, objectclass)
+for objectclass in objectclasses:
+    trim_objectclass_attributes(ldb, objectclass)
 
 #
 #  dump an ldif form of the attributes and objectclasses
 #
 if opts.dump_attributes:
-	write_ldif(attributes, attrib_attrs)
+    write_ldif(attributes, attrib_attrs)
 if opts.dump_classes:
-	write_ldif(objectclasses, class_attrs)
+    write_ldif(objectclasses, class_attrs)
 if opts.dump_subschema:
-	write_aggregate()
+    write_aggregate()
 
 if not opts.verbose:
-	sys.exit(0)
+    sys.exit(0)
 
 #
 #  dump list of objectclasses
 #
 print "objectClasses:\n"
 for objectclass in objectclasses:
-	print "\t%s\n" % objectclass
+    print "\t%s\n" % objectclass
 
 print "attributes:\n"
 for attr in attributes:
-	print "\t%s\n" % ttr
+    print "\t%s\n" % attr
 
 print "autocreated attributes:\n"
-for (i in attributes) {
-	if (attributes[i].autocreate == true) {
-		print "\t%s\n" % i
+for attr in attributes:
+    if attr.autocreate:
+        print "\t%s\n" % i
