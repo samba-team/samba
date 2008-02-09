@@ -1,3 +1,42 @@
+# Dependencies command
+DEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.o) -MT $@ \
+    $(CFLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
+    $(CPPFLAGS) $(FIRST_PREREQ) -o $@
+# Dependencies for host objects
+HDEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.ho) -MT $@ \
+    $(HOSTCC_FLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
+    $(CPPFLAGS) $(FIRST_PREREQ) -o $@
+# Dependencies for precompiled headers
+PCHDEPENDS = $(CC) -M -MG -MT include/includes.h.gch -MT $@ \
+    $(CFLAGS) $(CPPFLAGS) $(FIRST_PREREQ) -o $@
+
+# $< is broken in older BSD versions:
+# when $@ is foo/bar.o, $< could be torture/foo/bar.c
+# if it also exists. So better use $* which is foo/bar
+# and append .c manually to get foo/bar.c
+#
+# If we have GNU Make, it is safe to use $<, which also lets
+# building with $srcdir != $builddir work.
+
+# Run a static analysis checker
+CHECK = $(CC_CHECKER) $(CFLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
+    $(PICFLAG) $(CPPLAGS) -c $(FIRST_PREREQ) -o $@
+
+# Run the configured compiler
+COMPILE = $(CC) $(CFLAGS) $(PICFLAG) \
+          `$(PERL) $(srcdir)/script/cflags.pl $@` \
+		  $(CPPFLAGS) \
+		  -c $(FIRST_PREREQ) -o $@
+
+# Run the compiler for the build host
+HCOMPILE = $(HOSTCC) $(HOSTCC_FLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
+	 $(CPPFLAGS) -c $(FIRST_PREREQ) -o $@
+
+# Precompile headers
+PCHCOMPILE = @$(CC) -Ilib/replace \
+    $(CFLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
+    $(PICFLAG) $(CPPFLAGS) -c $(FIRST_PREREQ) -o $@
+
 include/config.h:
 	@echo "include/config.h not present"
 	@echo "You need to rerun ./autogen.sh and ./configure"
