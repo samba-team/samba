@@ -189,20 +189,16 @@ def setup_file(template, fname, substvars):
     open(f, 'w').write(data)
 
 
-def provision_paths_from_lp(lp, dnsdomain, private_dir=None):
+def provision_paths_from_lp(lp, dnsdomain):
     """Set the default paths for provisioning.
 
     :param lp: Loadparm context.
     :param dnsdomain: DNS Domain name
     """
     paths = ProvisionPaths()
-    if private_dir is None:
-        private_dir = lp.get("private dir")
-        paths.keytab = "secrets.keytab"
-        paths.dns_keytab = "dns.keytab"
-    else:
-        paths.keytab = os.path.join(private_dir, "secrets.keytab")
-        paths.dns_keytab = os.path.join(private_dir, "dns.keytab")
+    private_dir = lp.get("private dir")
+    paths.keytab = "secrets.keytab"
+    paths.dns_keytab = "dns.keytab"
 
     paths.shareconf = os.path.join(private_dir, "share.ldb")
     paths.samdb = os.path.join(private_dir, lp.get("sam database") or "samdb.ldb")
@@ -469,7 +465,6 @@ def setup_registry(path, setup_path, session_info, credentials, lp):
     :param lp: Loadparm context
     """
     reg = registry.Registry()
-    print path
     hive = registry.open_ldb(path, session_info=session_info, 
                          credentials=credentials, lp_ctx=lp)
     reg.mount_hive(hive, "HKEY_LOCAL_MACHINE")
@@ -540,6 +535,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                 serverrole, ldap_backend=None, ldap_backend_type=None):
     """Setup a complete SAM Database.
     
+    :note: This will wipe the main SAM database file!
     """
 
     # Also wipes the database
@@ -745,6 +741,7 @@ def provision(lp, setup_dir, message, paths, session_info,
         aci = "# no aci for local ldb"
     if serverrole is None:
         serverrole = lp.get("server role")
+    assert serverrole in ("domain controller", "member server")
     if invocationid is None and serverrole == "domain controller":
         invocationid = uuid.random()
 
@@ -774,9 +771,9 @@ def provision(lp, setup_dir, message, paths, session_info,
     if not valid_netbios_name(netbiosname):
         raise InvalidNetbiosName(netbiosname)
 
-    dnsdomain    = realm.lower()
+    dnsdomain = realm.lower()
     if serverrole == "domain controller":
-        domaindn     = "DC=" + dnsdomain.replace(".", ",DC=")
+        domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
         if domain is None:
             domain = lp.get("workgroup")
     
@@ -788,7 +785,6 @@ def provision(lp, setup_dir, message, paths, session_info,
         domain = domain.upper()
         if not valid_netbios_name(domain):
             raise InvalidNetbiosName(domain)
-
     else:
         domaindn = "CN=" + netbiosname
         domain = netbiosname
@@ -812,8 +808,6 @@ def provision(lp, setup_dir, message, paths, session_info,
             smbconfsuffix = "dc"
         elif serverrole == "member":
             smbconfsuffix = "member"
-        else:
-            assert "Invalid server role setting: %s" % serverrole
         setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix), 
                    paths.smbconf, {
             "HOSTNAME": hostname,
@@ -953,7 +947,7 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
 
 
 def load_schema(setup_path, samdb, schemadn, netbiosname, configdn):
-    """Load schema.
+    """Load schema for the SamDB.
     
     :param samdb: Load a schema into a SamDB.
     :param setup_path: Setup path function.
