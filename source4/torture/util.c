@@ -24,13 +24,6 @@
 #include "libcli/raw/interfaces.h"
 #include "libcli/raw/libcliraw.h"
 
-/**
-  check if 2 NTTIMEs are equal.
-*/
-bool nt_time_equal(NTTIME *t1, NTTIME *t2)
-{
-	return *t1 == *t2;
-}
 
 NTSTATUS torture_second_tcon(TALLOC_CTX *mem_ctx,
 			     struct smbcli_session *session,
