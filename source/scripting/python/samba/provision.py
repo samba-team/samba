@@ -64,9 +64,6 @@ class ProvisionPaths:
         self.dns_keytab = None
         self.dns = None
         self.winsdb = None
-        self.ldap_basedn_ldif = None
-        self.ldap_config_basedn_ldif = None
-        self.ldap_schema_basedn_ldif = None
 
 
 def check_install(lp, session_info, credentials):
@@ -201,6 +198,7 @@ def provision_paths_from_lp(lp, dnsdomain, private_dir=None):
     paths.dns = os.path.join(private_dir, dnsdomain + ".zone")
     paths.winsdb = os.path.join(private_dir, "wins.ldb")
     paths.s4_ldapi_path = os.path.join(private_dir, "ldapi")
+    paths.smbconf = os.path.join(private_dir, "smb.conf")
     paths.phpldapadminconfig = os.path.join(private_dir, 
                                             "phpldapadmin-config.php")
     paths.hklm = "hklm.ldb"
@@ -812,7 +810,7 @@ def provision(lp, setup_dir, message, paths, session_info,
             "NETLOGONPATH": paths.netlogon,
             "SYSVOLPATH": paths.sysvol,
             })
-        lp.reload()
+        lp.load(paths.smbconf)
 
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
