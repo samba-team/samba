@@ -18,10 +18,11 @@
 #
 
 import os
-from samba.provision import setup_secretsdb, secretsdb_become_dc
+from samba.provision import setup_secretsdb, secretsdb_become_dc, findnss
 import samba.tests
 from ldb import Dn
 import param
+import unittest
 
 lp = param.LoadParm()
 lp.load("st/dc/etc/smb.conf")
@@ -66,6 +67,25 @@ class ProvisionTestCase(samba.tests.TestCaseInTempDir):
             del secrets_ldb
             os.unlink(path)
 
+
+class FindNssTests(unittest.TestCase):
+    """Test findnss() function."""
+    def test_nothing(self):
+        def x(y):
+            raise KeyError
+        self.assertRaises(KeyError, findnss, x, [])
+
+    def test_first(self):
+        self.assertEquals("bla", findnss(lambda x: "bla", ["bla"]))
+
+    def test_skip_first(self):
+        def x(y):
+            if y != "bla":
+                raise KeyError
+            return "ha"
+        self.assertEquals("ha", findnss(x, ["bloe", "bla"]))
+
+
 class Disabled:
     def test_setup_templatesdb(self):
         raise NotImplementedError(self.test_setup_templatesdb)
@@ -99,4 +119,5 @@ class Disabled:
 
     def test_erase_partitions(self):
         raise NotImplementedError(self.test_erase_partitions)
+
 

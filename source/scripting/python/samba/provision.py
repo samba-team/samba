@@ -64,9 +64,6 @@ class ProvisionPaths:
         self.dns_keytab = None
         self.dns = None
         self.winsdb = None
-        self.ldap_basedn_ldif = None
-        self.ldap_config_basedn_ldif = None
-        self.ldap_schema_basedn_ldif = None
 
 
 def check_install(lp, session_info, credentials):
@@ -84,14 +81,19 @@ def check_install(lp, session_info, credentials):
         raise "No administrator account found"
 
 
-def findnss(nssfn, *names):
-    """Find a user or group from a list of possibilities."""
+def findnss(nssfn, names):
+    """Find a user or group from a list of possibilities.
+    
+    :param nssfn: NSS Function to try (should raise KeyError if not found)
+    :param names: Names to check.
+    :return: Value return by first names list.
+    """
     for name in names:
         try:
             return nssfn(name)
         except KeyError:
             pass
-    raise Exception("Unable to find user/group for %s" % arguments[1])
+    raise KeyError("Unable to find user/group %r" % names)
 
 
 def open_ldb(session_info, credentials, lp, dbname):
@@ -149,6 +151,14 @@ def setup_modify_ldif(ldb, ldif_path, substvars=None):
 
 
 def setup_ldb(ldb, ldif_path, subst_vars):
+    """Import a LDIF a file into a LDB handle, optionally substituting variables.
+
+    :note: Either all LDIF data will be added or none (using transactions).
+
+    :param ldb: LDB file to import into.
+    :param ldif_path: Path to the LDIF file.
+    :param subst_vars: Dictionary with substitution variables.
+    """
     assert ldb is not None
     ldb.transaction_start()
     try:
@@ -179,20 +189,16 @@ def setup_file(template, fname, substvars):
     open(f, 'w').write(data)
 
 
-def provision_paths_from_lp(lp, dnsdomain, private_dir=None):
+def provision_paths_from_lp(lp, dnsdomain):
     """Set the default paths for provisioning.
 
     :param lp: Loadparm context.
     :param dnsdomain: DNS Domain name
     """
     paths = ProvisionPaths()
-    if private_dir is None:
-        private_dir = lp.get("private dir")
-        paths.keytab = "secrets.keytab"
-        paths.dns_keytab = "dns.keytab"
-    else:
-        paths.keytab = os.path.join(private_dir, "secrets.keytab")
-        paths.dns_keytab = os.path.join(private_dir, "dns.keytab")
+    private_dir = lp.get("private dir")
+    paths.keytab = "secrets.keytab"
+    paths.dns_keytab = "dns.keytab"
 
     paths.shareconf = os.path.join(private_dir, "share.ldb")
     paths.samdb = os.path.join(private_dir, lp.get("sam database") or "samdb.ldb")
@@ -201,6 +207,7 @@ def provision_paths_from_lp(lp, dnsdomain, private_dir=None):
     paths.dns = os.path.join(private_dir, dnsdomain + ".zone")
     paths.winsdb = os.path.join(private_dir, "wins.ldb")
     paths.s4_ldapi_path = os.path.join(private_dir, "ldapi")
+    paths.smbconf = os.path.join(private_dir, "smb.conf")
     paths.phpldapadminconfig = os.path.join(private_dir, 
                                             "phpldapadmin-config.php")
     paths.hklm = "hklm.ldb"
@@ -319,12 +326,14 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
  
     domaindn_ldb = "users.ldb"
     if ldap_backend is not None:
-    	domaindn_ldb = ldap_backend
+        domaindn_ldb = ldap_backend
     configdn_ldb = "configuration.ldb"
     if ldap_backend is not None:
-    	configdn_ldb = ldap_backend
+        configdn_ldb = ldap_backend
     schemadn_ldb = "schema.ldb"
     if ldap_backend is not None:
+        schema_ldb = ldap_backend
+    
     	schemadn_ldb = ldap_backend
     	
     if ldap_backend_type == "fedora-ds":
@@ -456,7 +465,6 @@ def setup_registry(path, setup_path, session_info, credentials, lp):
     :param lp: Loadparm context
     """
     reg = registry.Registry()
-    print path
     hive = registry.open_ldb(path, session_info=session_info, 
                          credentials=credentials, lp_ctx=lp)
     reg.mount_hive(hive, "HKEY_LOCAL_MACHINE")
@@ -527,6 +535,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                 serverrole, ldap_backend=None, ldap_backend_type=None):
     """Setup a complete SAM Database.
     
+    :note: This will wipe the main SAM database file!
     """
 
     # Also wipes the database
@@ -716,22 +725,23 @@ def provision(lp, setup_dir, message, paths, session_info,
     if dnspass is None:
         dnspass = misc.random_password(12)
     if root is None:
-        root = findnss(pwd.getpwnam, "root")[0]
+        root = findnss(pwd.getpwnam, ["root"])[0]
     if nobody is None:
-        nobody = findnss(pwd.getpwnam, "nobody")[0]
+        nobody = findnss(pwd.getpwnam, ["nobody"])[0]
     if nogroup is None:
-        nogroup = findnss(grp.getgrnam, "nogroup", "nobody")[0]
+        nogroup = findnss(grp.getgrnam, ["nogroup", "nobody"])[0]
     if users is None:
-        users = findnss(grp.getgrnam, "users", "guest", "other", "unknown", 
-                        "usr")[0]
+        users = findnss(grp.getgrnam, ["users", "guest", "other", "unknown", 
+                        "usr"])[0]
     if wheel is None:
-        wheel = findnss(grp.getgrnam, "wheel", "root", "staff", "adm")[0]
+        wheel = findnss(grp.getgrnam, ["wheel", "root", "staff", "adm"])[0]
     if backup is None:
-        backup = findnss(grp.getgrnam, "backup", "wheel", "root", "staff")[0]
+        backup = findnss(grp.getgrnam, ["backup", "wheel", "root", "staff"])[0]
     if aci is None:
         aci = "# no aci for local ldb"
     if serverrole is None:
         serverrole = lp.get("server role")
+    assert serverrole in ("domain controller", "member server")
     if invocationid is None and serverrole == "domain controller":
         invocationid = uuid.random()
 
@@ -745,8 +755,8 @@ def provision(lp, setup_dir, message, paths, session_info,
     ldapi_url = "ldapi://%s" % urllib.quote(paths.s4_ldapi_path, safe="")
     
     if ldap_backend == "ldapi":
-    	# provision-backend will set this path suggested slapd command line / fedorads.inf
-    	ldap_backend = "ldapi://" % urllib.quote(os.path.join(lp.get("private dir"), "ldap", "ldapi"), safe="")
+        # provision-backend will set this path suggested slapd command line / fedorads.inf
+        ldap_backend = "ldapi://" % urllib.quote(os.path.join(lp.get("private dir"), "ldap", "ldapi"), safe="")
 
     assert realm is not None
     realm = realm.upper()
@@ -761,9 +771,9 @@ def provision(lp, setup_dir, message, paths, session_info,
     if not valid_netbios_name(netbiosname):
         raise InvalidNetbiosName(netbiosname)
 
-    dnsdomain    = realm.lower()
+    dnsdomain = realm.lower()
     if serverrole == "domain controller":
-	domaindn     = "DC=" + dnsdomain.replace(".", ",DC=")
+        domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
         if domain is None:
             domain = lp.get("workgroup")
     
@@ -775,16 +785,15 @@ def provision(lp, setup_dir, message, paths, session_info,
         domain = domain.upper()
         if not valid_netbios_name(domain):
             raise InvalidNetbiosName(domain)
-
     else:
-    	domaindn = "CN=" + netbiosname
-    	domain = netbiosname
-    	
+        domaindn = "CN=" + netbiosname
+        domain = netbiosname
+    
     if rootdn is None:
-       rootdn       = domaindn
+       rootdn = domaindn
        
-    configdn     = "CN=Configuration," + rootdn
-    schemadn     = "CN=Schema," + configdn
+    configdn = "CN=Configuration," + rootdn
+    schemadn = "CN=Schema," + configdn
 
     message("set DOMAIN SID: %s" % str(domainsid))
     message("Provisioning for %s in realm %s" % (domain, realm))
@@ -799,8 +808,6 @@ def provision(lp, setup_dir, message, paths, session_info,
             smbconfsuffix = "dc"
         elif serverrole == "member":
             smbconfsuffix = "member"
-        else:
-            assert "Invalid server role setting: %s" % serverrole
         setup_file(setup_path("provision.smb.conf.%s" % smbconfsuffix), 
                    paths.smbconf, {
             "HOSTNAME": hostname,
@@ -810,7 +817,7 @@ def provision(lp, setup_dir, message, paths, session_info,
             "NETLOGONPATH": paths.netlogon,
             "SYSVOLPATH": paths.sysvol,
             })
-        lp.reload()
+        lp.load(paths.smbconf)
 
     # only install a new shares config db if there is none
     if not os.path.exists(paths.shareconf):
@@ -940,7 +947,7 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
 
 
 def load_schema(setup_path, samdb, schemadn, netbiosname, configdn):
-    """Load schema.
+    """Load schema for the SamDB.
     
     :param samdb: Load a schema into a SamDB.
     :param setup_path: Setup path function.

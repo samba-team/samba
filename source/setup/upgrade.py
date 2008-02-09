@@ -7,7 +7,6 @@
 import getopt
 import optparse
 import os, sys
-sys.path.append("scripting/python")
 import param
 import samba
 import samba.getopt as options
