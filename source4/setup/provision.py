@@ -26,9 +26,6 @@ import getopt
 import optparse
 import os, sys
 
-# Add path to the library for in-tree use
-sys.path.append("scripting/python")
-
 import samba
 
 from auth import system_session
@@ -130,12 +127,12 @@ lp.set("realm", opts.realm)
 lp.set("workgroup", opts.domain)
 lp.set("server role", opts.server_role or "domain controller")
 
-
 if opts.aci is not None:
 	print "set ACI: %s" % opts.aci
 
-paths = provision_paths_from_lp(lp, opts.realm.lower(), private_dir)
-paths.smbconf = sambaopts.get_loadparm_path()
+paths = provision_paths_from_lp(lp, opts.realm.lower())
+if sambaopts.get_loadparm_path() is not None:
+    paths.smbconf = sambaopts.get_loadparm_path()
 
 creds = credopts.get_credentials()
 
