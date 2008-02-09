@@ -278,13 +278,12 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     Alternatively, provision() may call this, and then populate the database.
     
     :param erase: Remove the existing data present in the database.
-    :param
      
     :note: This will wipe the Sam Database!
     
     :note: This function always removes the local SAM LDB file. The erase 
-    parameter controls whether to erase the existing data, which 
-    may not be stored locally but in LDAP.
+        parameter controls whether to erase the existing data, which 
+        may not be stored locally but in LDAP.
     """
     assert session_info is not None
 
@@ -479,7 +478,6 @@ def setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname,
 
     :param samdb: Sam Database handle
     :param setup_path: Obtain setup path
-    ...
     """
     setup_add_ldif(samdb, setup_path("provision_rootdse_add.ldif"), {
         "SCHEMADN": schemadn, 
