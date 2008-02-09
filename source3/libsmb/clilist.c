@@ -377,6 +377,12 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 							&resume_key,
 							&last_name_raw);
 
+			if (!finfo.name) {
+				DEBUG(0,("cli_list_new: Error: unable to parse name from info level %d\n",
+					info_level));
+				ff_eos = 1;
+				break;
+			}
 			if (!First && *mask && strcsequal(finfo.name, mask)) {
 				DEBUG(0,("Error: Looping in FIND_NEXT as name %s has already been seen?\n",
 					finfo.name));
@@ -442,6 +448,11 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 							&finfo,
 							NULL,
 							NULL);
+			if (!finfo.name) {
+				DEBUG(0,("cli_list_new: unable to parse name from info level %d\n",
+					info_level));
+				break;
+			}
                         fn(mnt,&finfo, Mask, state);
                 }
         }
