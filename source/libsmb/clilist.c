@@ -83,18 +83,13 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			 * instead of +2 as the STR_TERMINATE flag below is
 			 * actually used as the length calculation.
 			 * The len+2 is merely an upper bound.
-			 * We ensure we don't get a one byte overread by
-			 * doing a zero termination at pdata_end[-1];
-			 * JRA + kukks */
+			 * Due to the explicit 2 byte null termination
+			 * in cli_receive_trans/cli_receive_nt_trans
+			 * we know this is safe. JRA + kukks
+			 */
 
 			if (p + len + 1 > pdata_end) {
 				return pdata_end - base;
-			}
-
-			/* Ensure the null termination (see above). */
-			{
-				char *pend = CONST_DISCARD(char *, pdata_end);
-				pend[-1] = '\0';
 			}
 
 			/* the len+2 below looks strange but it is
