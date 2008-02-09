@@ -2993,74 +2993,54 @@ NTSTATUS _samr_LookupDomain(pipes_struct *p,
 	return status;
 }
 
-/******************************************************************
-makes a SAMR_R_ENUM_DOMAINS structure.
-********************************************************************/
-
-static bool make_enum_domains(TALLOC_CTX *ctx, SAM_ENTRY **pp_sam,
-			UNISTR2 **pp_uni_name, uint32 num_sam_entries, fstring doms[])
-{
-	uint32 i;
-	SAM_ENTRY *sam;
-	UNISTR2 *uni_name;
-
-	DEBUG(5, ("make_enum_domains\n"));
-
-	*pp_sam = NULL;
-	*pp_uni_name = NULL;
-
-	if (num_sam_entries == 0)
-		return True;
-
-	sam = TALLOC_ZERO_ARRAY(ctx, SAM_ENTRY, num_sam_entries);
-	uni_name = TALLOC_ZERO_ARRAY(ctx, UNISTR2, num_sam_entries);
-
-	if (sam == NULL || uni_name == NULL)
-		return False;
-
-	for (i = 0; i < num_sam_entries; i++) {
-		init_unistr2(&uni_name[i], doms[i], UNI_FLAGS_NONE);
-		init_sam_entry(&sam[i], &uni_name[i], 0);
-	}
-
-	*pp_sam = sam;
-	*pp_uni_name = uni_name;
-
-	return True;
-}
-
 /**********************************************************************
- api_samr_enum_domains
+ _samr_EnumDomains
  **********************************************************************/
 
-NTSTATUS _samr_enum_domains(pipes_struct *p, SAMR_Q_ENUM_DOMAINS *q_u, SAMR_R_ENUM_DOMAINS *r_u)
+NTSTATUS _samr_EnumDomains(pipes_struct *p,
+			   struct samr_EnumDomains *r)
 {
+	NTSTATUS status;
 	struct samr_info *info;
-	uint32 num_entries = 2;
-	fstring dom[2];
-	const char *name;
+	uint32_t num_entries = 2;
+	struct samr_SamEntry *entry_array = NULL;
+	struct samr_SamArray *sam;
 
-	r_u->status = NT_STATUS_OK;
-
-	if (!find_policy_by_hnd(p, &q_u->pol, (void**)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.connect_handle, (void**)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted, SA_RIGHT_SAM_ENUM_DOMAINS, "_samr_enum_domains"))) {
-		return r_u->status;
+	status = access_check_samr_function(info->acc_granted,
+					    SA_RIGHT_SAM_ENUM_DOMAINS,
+					    "_samr_EnumDomains");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	name = get_global_sam_name();
-
-	fstrcpy(dom[0],name);
-	strupper_m(dom[0]);
-	fstrcpy(dom[1],"Builtin");
-
-	if (!make_enum_domains(p->mem_ctx, &r_u->sam, &r_u->uni_dom_name, num_entries, dom))
+	sam = TALLOC_ZERO_P(p->mem_ctx, struct samr_SamArray);
+	if (!sam) {
 		return NT_STATUS_NO_MEMORY;
+	}
 
-	init_samr_r_enum_domains(r_u, q_u->start_idx + num_entries, num_entries);
+	entry_array = TALLOC_ZERO_ARRAY(p->mem_ctx,
+					struct samr_SamEntry,
+					num_entries);
+	if (!entry_array) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	return r_u->status;
+	entry_array[0].idx = 0;
+	init_lsa_String(&entry_array[0].name, get_global_sam_name());
+
+	entry_array[1].idx = 1;
+	init_lsa_String(&entry_array[1].name, "Builtin");
+
+	sam->count = num_entries;
+	sam->entries = entry_array;
+
+	*r->out.sam = sam;
+	*r->out.num_entries = num_entries;
+
+	return status;
 }
 
 /*******************************************************************
@@ -5210,16 +5190,6 @@ NTSTATUS _samr_SetDomainInfo(pipes_struct *p,
 
 NTSTATUS _samr_Shutdown(pipes_struct *p,
 			struct samr_Shutdown *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_EnumDomains(pipes_struct *p,
-			   struct samr_EnumDomains *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
