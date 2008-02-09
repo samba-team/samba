@@ -246,8 +246,8 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info, lp,
         machinepass = None
     
     domaindn = provision(lp=lp, setup_dir=setup_dir, message=message, 
-                         samdb_fill=FILL_DRS, ldapbackend=None, 
-                         paths=paths, session_info=session_info, credentials=credentials, realm=realm, 
+                         samdb_fill=FILL_DRS, paths=paths, session_info=session_info, 
+                         credentials=credentials, realm=realm, 
                          domain=domainname, domainsid=domainsid, domainguid=domainguid, 
                          machinepass=machinepass, serverrole=serverrole)
 
