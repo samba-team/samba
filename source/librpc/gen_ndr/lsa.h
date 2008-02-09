@@ -713,7 +713,7 @@ struct lsa_CreateAccount {
 	} in;
 
 	struct {
-		struct policy_handle **acct_handle;/* [ref] */
+		struct policy_handle *acct_handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -829,7 +829,7 @@ struct lsa_OpenAccount {
 	} in;
 
 	struct {
-		struct policy_handle **acct_handle;/* [ref] */
+		struct policy_handle *acct_handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -1051,11 +1051,11 @@ struct lsa_LookupPrivDisplayName {
 
 struct lsa_DeleteObject {
 	struct {
-		struct policy_handle **handle;/* [ref] */
+		struct policy_handle *handle;/* [ref] */
 	} in;
 
 	struct {
-		struct policy_handle **handle;/* [ref] */
+		struct policy_handle *handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 

@@ -1647,7 +1647,7 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 	info->access = r->in.access_mask;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, *r->out.acct_handle, free_lsa_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.acct_handle, free_lsa_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return privilege_create_account( &info->sid );
@@ -1691,7 +1691,7 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
 	info->access = r->in.access_mask;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, *r->out.acct_handle, free_lsa_info, (void *)info))
+	if (!create_policy_hnd(p, r->out.acct_handle, free_lsa_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
