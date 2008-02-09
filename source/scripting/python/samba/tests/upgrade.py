@@ -17,6 +17,21 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import samba.upgrade
-from unittest import TestCase
+from samba import Ldb
+from samba.upgrade import import_wins
+from samba.tests import LdbTestCase
 
+class WinsUpgradeTests(LdbTestCase):
+    def test_upgrade(self):
+        winsdb = {
+            "FOO#20": (200, ["127.0.0.1", "127.0.0.2"], 0x60)
+        }
+        import_wins(self.ldb, winsdb)
+
+        self.assertEquals(['name=FOO,type=0x20'], 
+                          [str(m.dn) for m in self.ldb.search(expression="(objectClass=winsRecord)")])
+
+    def test_version(self):
+        import_wins(self.ldb, {})
+        self.assertEquals("VERSION", 
+                self.ldb.search(expression="(objectClass=winsMaxVersion)")[0]["cn"])

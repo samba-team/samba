@@ -18,6 +18,7 @@ from samba import Ldb
 from samba.samdb import SamDB
 
 def import_sam_policy(samldb, samba3_policy, domaindn):
+    """Import a Samba 3 policy database."""
     samldb.modify_ldif("""
 dn: %s
 changetype: modify
@@ -201,7 +202,8 @@ def import_wins(samba4_winsdb, samba3_winsdb):
                            "versionID": str(version_id),
                            "address": ips})
 
-    samba4_winsdb.add({"dn": "CN=VERSION",
+    samba4_winsdb.add({"dn": "cn=VERSION",
+                       "cn": "VERSION",
                        "objectClass": "winsMaxVersion",
                        "maxVersion": str(version_id)})
 
