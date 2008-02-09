@@ -7,9 +7,10 @@
 
 """Support code for upgrading from Samba 3 to Samba 4."""
 
-from provision import findnss, provision
+from provision import findnss, provision, FILL_DRS
 import grp
 import ldb
+import time
 import pwd
 import uuid
 import registry
@@ -162,7 +163,6 @@ def import_wins(samba4_winsdb, samba3_winsdb):
     :param samba3_winsdb: WINS database to import from
     """
     version_id = 0
-    import time
 
     for (name, (ttl, ips, nb_flags)) in samba3_winsdb.items():
         version_id+=1
@@ -245,8 +245,9 @@ def upgrade_provision(samba3, setup_dir, message, credentials, session_info, lp,
     else:
         machinepass = None
     
-    domaindn = provision(lp=lp, setup_dir=setup_dir, message=message, blank=True, ldapbackend=None, 
-                         paths=paths, session_info=session_info, credentials=credentials, realm=realm, 
+    domaindn = provision(lp=lp, setup_dir=setup_dir, message=message, 
+                         samdb_fill=FILL_DRS, paths=paths, session_info=session_info, 
+                         credentials=credentials, realm=realm, 
                          domain=domainname, domainsid=domainsid, domainguid=domainguid, 
                          machinepass=machinepass, serverrole=serverrole)
 

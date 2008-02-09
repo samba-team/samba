@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
 #   
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,9 +18,14 @@
 #
 
 import os
-from samba.provision import setup_secretsdb
+from samba.provision import setup_secretsdb, secretsdb_become_dc, findnss
 import samba.tests
 from ldb import Dn
+import param
+import unittest
+
+lp = param.LoadParm()
+lp.load("st/dc/etc/smb.conf")
 
 setup_dir = "setup"
 def setup_path(file):
@@ -28,15 +33,59 @@ def setup_path(file):
 
 
 class ProvisionTestCase(samba.tests.TestCaseInTempDir):
+    """Some simple tests for individual functions in the provisioning code.
+    """
     def test_setup_secretsdb(self):
         path = os.path.join(self.tempdir, "secrets.ldb")
-        ldb = setup_secretsdb(path, setup_path, None, None, None)
+        ldb = setup_secretsdb(path, setup_path, None, None, lp=lp)
         try:
             self.assertEquals("LSA Secrets",
-                 ldb.searchone(Dn(ldb, "CN=LSA Secrets"), "CN"))
+                 ldb.searchone(basedn="CN=LSA Secrets", attribute="CN"))
         finally:
             del ldb
             os.unlink(path)
+            
+    def test_become_dc(self):
+        path = os.path.join(self.tempdir, "secrets.ldb")
+        secrets_ldb = setup_secretsdb(path, setup_path, None, None, lp=lp)
+        try:
+            secretsdb_become_dc(secrets_ldb, setup_path, domain="EXAMPLE", 
+                   realm="example", netbiosname="myhost", 
+                   domainsid="S-5-22", keytab_path="keytab.path", 
+                   samdb_url="ldap://url/", 
+                   dns_keytab_path="dns.keytab", dnspass="bla", 
+                           machinepass="machinepass", dnsdomain="example.com")
+            self.assertEquals(1, 
+                    len(secrets_ldb.search("samAccountName=krbtgt,flatname=EXAMPLE,CN=Principals")))
+	    self.assertEquals("keytab.path",
+                    secrets_ldb.searchone(basedn="flatname=EXAMPLE,CN=primary domains", 
+                                          expression="(privateKeytab=*)", 
+                                          attribute="privateKeytab"))
+            self.assertEquals("S-5-22",
+                    secrets_ldb.searchone(basedn="flatname=EXAMPLE,CN=primary domains",
+                                          expression="objectSid=*", attribute="objectSid"))
+
+        finally:
+            del secrets_ldb
+            os.unlink(path)
+
+
+class FindNssTests(unittest.TestCase):
+    """Test findnss() function."""
+    def test_nothing(self):
+        def x(y):
+            raise KeyError
+        self.assertRaises(KeyError, findnss, x, [])
+
+    def test_first(self):
+        self.assertEquals("bla", findnss(lambda x: "bla", ["bla"]))
+
+    def test_skip_first(self):
+        def x(y):
+            if y != "bla":
+                raise KeyError
+            return "ha"
+        self.assertEquals("ha", findnss(x, ["bloe", "bla"]))
 
 
 class Disabled:
@@ -72,4 +121,5 @@ class Disabled:
 
     def test_erase_partitions(self):
         raise NotImplementedError(self.test_erase_partitions)
+
 

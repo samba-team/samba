@@ -72,9 +72,9 @@ my $scalar_alignment = {
 	'ipv4address' => 4
 };
 
-sub GetElementLevelTable($)
+sub GetElementLevelTable($$)
 {
-	my $e = shift;
+	my ($e, $pointer_default) = @_;
 
 	my $order = [];
 	my $is_deferred = 0;
@@ -157,32 +157,45 @@ sub GetElementLevelTable($)
 
 	# Next, all the pointers
 	foreach my $i (1..$e->{POINTERS}) {
-		my $pt = pointer_type($e);
-
 		my $level = "EMBEDDED";
 		# Top level "ref" pointers do not have a referrent identifier
-		$level = "TOP" if ( defined($pt) 
-				and $i == 1
-				and $e->{PARENT}->{TYPE} eq "FUNCTION");
+		$level = "TOP" if ($i == 1 and $e->{PARENT}->{TYPE} eq "FUNCTION");
+
+		my $pt;
+		#
+		# Only the first level gets the pointer type from the
+		# pointer property, the others get them from
+		# the pointer_default() interface property
+		#
+		# see http://msdn2.microsoft.com/en-us/library/aa378984(VS.85).aspx
+		# (Here they talk about the rightmost pointer, but testing shows
+		#  they mean the leftmost pointer.)
+		#
+		# --metze
+		#
+		$pt = pointer_type($e);
+		if ($i > 1) {
+			$is_deferred = 1 if ($pt ne "ref" and $e->{PARENT}->{TYPE} eq "FUNCTION");
+			$pt = $pointer_default;
+		}
 
 		push (@$order, { 
 			TYPE => "POINTER",
-			# for now, there can only be one pointer type per element
-			POINTER_TYPE => pointer_type($e),
+			POINTER_TYPE => $pt,
 			POINTER_INDEX => $pointer_idx,
 			IS_DEFERRED => "$is_deferred",
 			LEVEL => $level
 		});
 
 		warning($e, "top-level \[out\] pointer `$e->{NAME}' is not a \[ref\] pointer") 
-			if ($i == 1 and pointer_type($e) ne "ref" and 
+			if ($i == 1 and $pt ne "ref" and
 				$e->{PARENT}->{TYPE} eq "FUNCTION" and 
 				not has_property($e, "in"));
 
 		$pointer_idx++;
 		
 		# everything that follows will be deferred
-		$is_deferred = 1 if ($e->{PARENT}->{TYPE} ne "FUNCTION");
+		$is_deferred = 1 if ($level ne "TOP");
 
 		my $array_size = shift @size_is;
 		my $array_length;
@@ -391,7 +404,7 @@ sub ParseElement($$)
 		NAME => $e->{NAME},
 		TYPE => $e->{TYPE},
 		PROPERTIES => $e->{PROPERTIES},
-		LEVELS => GetElementLevelTable($e),
+		LEVELS => GetElementLevelTable($e, $pointer_default),
 		REPRESENTATION_TYPE => ($e->{PROPERTIES}->{represent_as} or $e->{TYPE}),
 		ALIGN => align_type($e->{TYPE}),
 		ORIGINAL => $e
@@ -581,7 +594,7 @@ sub ParseFunction($$$)
 	my $rettype = undef;
 	my $thisopnum = undef;
 
-	CheckPointerTypes($d, $ndr->{PROPERTIES}->{pointer_default_top});
+	CheckPointerTypes($d, "ref");
 
 	if (not defined($d->{PROPERTIES}{noopnum})) {
 		$thisopnum = ${$opnum};
@@ -623,7 +636,7 @@ sub CheckPointerTypes($$)
 
 	foreach my $e (@{$s->{ELEMENTS}}) {
 		if ($e->{POINTERS} and not defined(pointer_type($e))) {
-			$e->{PROPERTIES}->{$default} = 1;
+			$e->{PROPERTIES}->{$default} = '1';
 		}
 	}
 }
@@ -661,12 +674,6 @@ sub ParseInterface($)
 		$idl->{PROPERTIES}->{pointer_default} = "unique";
 	}
 
-	if (not has_property($idl, "pointer_default_top")) {
-		$idl->{PROPERTIES}->{pointer_default_top} = "ref";
-	} else {
-		warning($idl, "pointer_default_top() is a pidl extension and should not be used");
-	}
-
 	foreach my $d (@{$idl->{DATA}}) {
 		if ($d->{TYPE} eq "FUNCTION") {
 			push (@functions, ParseFunction($idl, $d, \$opnum));
@@ -688,7 +695,7 @@ sub ParseInterface($)
 	if (!defined $idl->{PROPERTIES}->{endpoint}) {
 		push @endpoints, "\"ncacn_np:[\\\\pipe\\\\" . $idl->{NAME} . "]\"";
 	} else {
-		@endpoints = split / /, $idl->{PROPERTIES}->{endpoint};
+		@endpoints = split /,/, $idl->{PROPERTIES}->{endpoint};
 	}
 
 	return { 
@@ -824,7 +831,6 @@ my %property_list = (
 	"uuid"			=> ["INTERFACE"],
 	"endpoint"		=> ["INTERFACE"],
 	"pointer_default"	=> ["INTERFACE"],
-	"pointer_default_top"	=> ["INTERFACE"],
 	"helper"		=> ["INTERFACE"],
 	"authservice"		=> ["INTERFACE"],
 

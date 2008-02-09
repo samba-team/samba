@@ -290,20 +290,8 @@ failed:
 }
 
 
-/*
-  called on startup of the web server service It's job is to start
-  listening on all configured sockets
-*/
-static NTSTATUS websrv_init(struct event_context *event_context, 
-			    struct loadparm_context *lp_ctx,
-			    const struct model_ops *model_ops)
-{	
-	return task_server_startup(event_context, lp_ctx, 
-				   model_ops, websrv_task_init);
-}
-
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_web_init(void)
 {
-	return register_server_service("web", websrv_init);
+	return register_server_service("web", websrv_task_init);
 }

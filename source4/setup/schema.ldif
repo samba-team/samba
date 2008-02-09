@@ -2249,6 +2249,24 @@ systemOnly: FALSE
 systemFlags: 16
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
+dn: CN=Ipsec-ISAKMP-Reference,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.626
+attributeSyntax: 2.5.5.1
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-ISAKMP-Reference
+oMObjectClass:: KwwCh3McAIVK
+adminDescription: Ipsec-ISAKMP-Reference
+oMSyntax: 127
+searchFlags: 0
+lDAPDisplayName: ipsecISAKMPReference
+schemaIDGUID: b40ff820-427a-11d1-a9c2-0000f80367c1
+systemOnly: FALSE
+systemFlags: 16
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
 dn: CN=Application-Name,${SCHEMADN}
 objectClass: top
 objectClass: attributeSchema
@@ -2990,6 +3008,23 @@ systemOnly: FALSE
 systemFlags: 16
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
+dn: CN=Ipsec-ID,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.621
+attributeSyntax: 2.5.5.12
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-ID
+adminDescription: Ipsec-ID
+oMSyntax: 64
+searchFlags: 0
+lDAPDisplayName: ipsecID
+schemaIDGUID: b40ff81d-427a-11d1-a9c2-0000f80367c1
+systemOnly: FALSE
+systemFlags: 16
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
 dn: CN=LDAP-Admin-Limits,${SCHEMADN}
 objectClass: top
 objectClass: attributeSchema
@@ -3315,6 +3350,24 @@ attributeSecurityGUID: 77b5b886-944a-11d1-aebd-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+dn: CN=Ipsec-NFA-Reference,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.627
+attributeSyntax: 2.5.5.1
+isSingleValued: FALSE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-NFA-Reference
+oMObjectClass:: KwwCh3McAIVK
+adminDescription: Ipsec-NFA-Reference
+oMSyntax: 127
+searchFlags: 0
+lDAPDisplayName: ipsecNFAReference
+schemaIDGUID: b40ff821-427a-11d1-a9c2-0000f80367c1
+systemOnly: FALSE
+systemFlags: 16
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=secretary,${SCHEMADN}
@@ -7279,6 +7332,24 @@ systemOnly: FALSE
 systemFlags: 16
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
+dn: CN=Ipsec-Owners-Reference,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.624
+attributeSyntax: 2.5.5.1
+isSingleValued: FALSE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-Owners-Reference
+oMObjectClass:: KwwCh3McAIVK
+adminDescription: Ipsec-Owners-Reference
+oMSyntax: 127
+searchFlags: 0
+lDAPDisplayName: ipsecOwnersReference
+schemaIDGUID: b40ff824-427a-11d1-a9c2-0000f80367c1
+systemOnly: FALSE
+systemFlags: 16
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
 dn: CN=State-Or-Province-Name,${SCHEMADN}
 objectClass: top
 objectClass: attributeSchema
@@ -7808,6 +7879,24 @@ systemOnly: FALSE
 systemFlags: 16
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
+dn: CN=Ipsec-Filter-Reference,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.629
+attributeSyntax: 2.5.5.1
+isSingleValued: FALSE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-Filter-Reference
+oMObjectClass:: KwwCh3McAIVK
+adminDescription: Ipsec-Filter-Reference
+oMSyntax: 127
+searchFlags: 0
+lDAPDisplayName: ipsecFilterReference
+schemaIDGUID: b40ff823-427a-11d1-a9c2-0000f80367c1
+systemOnly: FALSE
+systemFlags: 16
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
 dn: CN=User-Comment,${SCHEMADN}
 objectClass: top
 objectClass: attributeSchema
@@ -7946,7 +8035,6 @@ searchFlags: 0
 lDAPDisplayName: msDRM-IdentityCertificate
 schemaIDGUID: e85e1204-3434-41ad-9b56-e2901228fff0
 systemFlags: 16
-isMemberOfPartialAttributeSet: TRUE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=Last-Logoff,${SCHEMADN}
@@ -8074,6 +8162,40 @@ oMSyntax: 127
 searchFlags: 0
 lDAPDisplayName: trustParent
 schemaIDGUID: b000ea7a-a086-11d0-afdd-00c04fd930c9
+systemOnly: FALSE
+systemFlags: 16
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+dn: CN=Ipsec-Data-Type,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.622
+attributeSyntax: 2.5.5.9
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-Data-Type
+adminDescription: Ipsec-Data-Type
+oMSyntax: 2
+searchFlags: 0
+lDAPDisplayName: ipsecDataType
+schemaIDGUID: b40ff81e-427a-11d1-a9c2-0000f80367c1
+systemOnly: FALSE
+systemFlags: 16
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+dn: CN=Ipsec-Data,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.623
+attributeSyntax: 2.5.5.10
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-Data
+adminDescription: Ipsec-Data
+oMSyntax: 4
+searchFlags: 0
+lDAPDisplayName: ipsecData
+schemaIDGUID: b40ff81f-427a-11d1-a9c2-0000f80367c1
 systemOnly: FALSE
 systemFlags: 16
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
@@ -8501,6 +8623,23 @@ systemOnly: FALSE
 systemFlags: 16
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
+dn: CN=Ipsec-Name,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.620
+attributeSyntax: 2.5.5.12
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-Name
+adminDescription: Ipsec-Name
+oMSyntax: 64
+searchFlags: 0
+lDAPDisplayName: ipsecName
+schemaIDGUID: b40ff81c-427a-11d1-a9c2-0000f80367c1
+systemOnly: FALSE
+systemFlags: 16
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
 dn: CN=CA-Certificate,${SCHEMADN}
 objectClass: top
 objectClass: attributeSchema
@@ -8520,6 +8659,24 @@ schemaIDGUID: bf967932-0de6-11d0-a285-00aa003049e2
 systemOnly: FALSE
 systemFlags: 16
 isMemberOfPartialAttributeSet: TRUE
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+dn: CN=Ipsec-Negotiation-Policy-Reference,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+attributeID: 1.2.840.113556.1.4.628
+attributeSyntax: 2.5.5.1
+isSingleValued: TRUE
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-Negotiation-Policy-Reference
+oMObjectClass:: KwwCh3McAIVK
+adminDescription: Ipsec-Negotiation-Policy-Reference
+oMSyntax: 127
+searchFlags: 0
+lDAPDisplayName: ipsecNegotiationPolicyReference
+schemaIDGUID: b40ff822-427a-11d1-a9c2-0000f80367c1
+systemOnly: FALSE
+systemFlags: 16
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 dn: CN=MHS-OR-Address,${SCHEMADN}
@@ -9014,6 +9171,28 @@ defaultHidingValue: TRUE
 objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Top,${SCHEMADN}
 
+dn: CN=Ipsec-ISAKMP-Policy,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+subClassOf: ipsecBase
+governsID: 1.2.840.113556.1.5.120
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-ISAKMP-Policy
+adminDescription: Ipsec-ISAKMP-Policy
+objectClassCategory: 1
+lDAPDisplayName: ipsecISAKMPPolicy
+schemaIDGUID: b40ff828-427a-11d1-a9c2-0000f80367c1
+systemOnly: FALSE
+systemPossSuperiors: container
+systemPossSuperiors: computer
+systemPossSuperiors: organizationalUnit
+defaultSecurityDescriptor: D:
+systemFlags: 16
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=Ipsec-ISAKMP-Policy,${SCHEMADN}
+
 dn: CN=Domain-DNS,${SCHEMADN}
 objectClass: top
 objectClass: classSchema
@@ -9245,6 +9424,30 @@ systemFlags: 16
 defaultHidingValue: TRUE
 objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Display-Specifier,${SCHEMADN}
+
+dn: CN=Ipsec-Base,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+subClassOf: top
+governsID: 1.2.840.113556.1.5.7000.56
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-Base
+adminDescription: Ipsec-Base
+objectClassCategory: 2
+lDAPDisplayName: ipsecBase
+schemaIDGUID: b40ff825-427a-11d1-a9c2-0000f80367c1
+systemOnly: FALSE
+systemMayContain: ipsecOwnersReference
+systemMayContain: ipsecName
+systemMayContain: ipsecID
+systemMayContain: ipsecDataType
+systemMayContain: ipsecData
+defaultSecurityDescriptor: D:
+systemFlags: 16
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=Ipsec-Base,${SCHEMADN}
 
 dn: CN=ms-DS-Az-Scope,${SCHEMADN}
 objectClass: top
@@ -9546,10 +9749,13 @@ possibleInferiors: user
 possibleInferiors: container
 possibleInferiors: groupPolicyContainer
 possibleInferiors: person
+possibleInferiors: ipsecNFA
 possibleInferiors: locality
 possibleInferiors: msDS-AzAdminManager
 possibleInferiors: organizationalUnit
+possibleInferiors: ipsecPolicy
 possibleInferiors: organizationalPerson
+possibleInferiors: ipsecISAKMPPolicy
 rDNAttID: ou
 showInAdvancedViewOnly: TRUE
 adminDisplayName: Organizational-Unit
@@ -9600,6 +9806,30 @@ defaultHidingValue: FALSE
 objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Organizational-Unit,${SCHEMADN}
 
+dn: CN=Ipsec-NFA,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+subClassOf: ipsecBase
+governsID: 1.2.840.113556.1.5.121
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-NFA
+adminDescription: Ipsec-NFA
+objectClassCategory: 1
+lDAPDisplayName: ipsecNFA
+schemaIDGUID: b40ff829-427a-11d1-a9c2-0000f80367c1
+systemOnly: FALSE
+systemPossSuperiors: container
+systemPossSuperiors: computer
+systemPossSuperiors: organizationalUnit
+systemMayContain: ipsecNegotiationPolicyReference
+systemMayContain: ipsecFilterReference
+defaultSecurityDescriptor: D:
+systemFlags: 16
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=Ipsec-NFA,${SCHEMADN}
+
 dn: CN=Lost-And-Found,${SCHEMADN}
 objectClass: top
 objectClass: classSchema
@@ -9625,6 +9855,7 @@ possibleInferiors: site
 possibleInferiors: organization
 possibleInferiors: domainDNS
 possibleInferiors: person
+possibleInferiors: ipsecNFA
 possibleInferiors: queryPolicy
 possibleInferiors: locality
 possibleInferiors: subnet
@@ -9635,8 +9866,10 @@ possibleInferiors: nTDSService
 possibleInferiors: country
 possibleInferiors: organizationalUnit
 possibleInferiors: secret
+possibleInferiors: ipsecPolicy
 possibleInferiors: organizationalPerson
 possibleInferiors: server
+possibleInferiors: ipsecISAKMPPolicy
 rDNAttID: cn
 showInAdvancedViewOnly: TRUE
 adminDisplayName: Lost-And-Found
@@ -9829,6 +10062,9 @@ objectClass: top
 objectClass: classSchema
 subClassOf: user
 governsID: 1.2.840.113556.1.3.30
+possibleInferiors: ipsecNFA
+possibleInferiors: ipsecPolicy
+possibleInferiors: ipsecISAKMPPolicy
 rDNAttID: cn
 showInAdvancedViewOnly: TRUE
 adminDisplayName: Computer
@@ -9899,6 +10135,30 @@ defaultHidingValue: TRUE
 objectCategory: CN=Class-Schema,${SCHEMADN}
 defaultObjectCategory: CN=Person,${SCHEMADN}
 
+dn: CN=Ipsec-Policy,${SCHEMADN}
+objectClass: top
+objectClass: classSchema
+subClassOf: ipsecBase
+governsID: 1.2.840.113556.1.5.98
+rDNAttID: cn
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ipsec-Policy
+adminDescription: Ipsec-Policy
+objectClassCategory: 1
+lDAPDisplayName: ipsecPolicy
+schemaIDGUID: b7b13121-b82e-11d0-afee-0000f80367c1
+systemOnly: FALSE
+systemPossSuperiors: organizationalUnit
+systemPossSuperiors: computer
+systemPossSuperiors: container
+systemMayContain: ipsecNFAReference
+systemMayContain: ipsecISAKMPReference
+defaultSecurityDescriptor: D:
+systemFlags: 16
+defaultHidingValue: TRUE
+objectCategory: CN=Class-Schema,${SCHEMADN}
+defaultObjectCategory: CN=Ipsec-Policy,${SCHEMADN}
+
 dn: CN=Container,${SCHEMADN}
 objectClass: top
 objectClass: classSchema
@@ -9912,12 +10172,15 @@ possibleInferiors: user
 possibleInferiors: container
 possibleInferiors: groupPolicyContainer
 possibleInferiors: person
+possibleInferiors: ipsecNFA
 possibleInferiors: queryPolicy
 possibleInferiors: msDS-AzAdminManager
 possibleInferiors: displaySpecifier
 possibleInferiors: nTDSService
 possibleInferiors: secret
+possibleInferiors: ipsecPolicy
 possibleInferiors: organizationalPerson
+possibleInferiors: ipsecISAKMPPolicy
 mayContain: msDS-ObjectReference
 rDNAttID: cn
 showInAdvancedViewOnly: TRUE
@@ -10624,12 +10887,15 @@ possibleInferiors: user
 possibleInferiors: container
 possibleInferiors: groupPolicyContainer
 possibleInferiors: person
+possibleInferiors: ipsecNFA
 possibleInferiors: queryPolicy
 possibleInferiors: msDS-AzAdminManager
 possibleInferiors: displaySpecifier
 possibleInferiors: nTDSService
 possibleInferiors: secret
+possibleInferiors: ipsecPolicy
 possibleInferiors: organizationalPerson
+possibleInferiors: ipsecISAKMPPolicy
 rDNAttID: cn
 showInAdvancedViewOnly: TRUE
 adminDisplayName: Group-Policy-Container
@@ -10656,6 +10922,7 @@ objectClass: top
 objectClass: subSchema
 objectCategory: CN=SubSchema,${SCHEMADN}
 objectClasses: ( 2.5.6.0 NAME 'top' SUP top ABSTRACT MUST ( objectClass $ objectCategory $ nTSecurityDescriptor $ instanceType ) MAY ( url $ wWWHomePage $ whenCreated $ whenChanged $ wellKnownObjects $ wbemPath $ uSNSource $ uSNLastObjRem $ USNIntersite $ uSNDSALastObjRemoved $ uSNCreated $ uSNChanged $ systemFlags $ subSchemaSubEntry $ subRefs $ structuralObjectClass $ siteObjectBL $ serverReferenceBL $ sDRightsEffective $ revision $ repsTo $ repsFrom $ directReports $ replUpToDateVector $ replPropertyMetaData $ name $ queryPolicyBL $ proxyAddresses $ proxiedObjectName $ possibleInferiors $ partialAttributeSet $ partialAttributeDeletionList $ otherWellKnownObjects $ objectVersion $ objectGUID $ distinguishedName $ nonSecurityMemberBL $ netbootSCPBL $ ownerBL $ msDS-ReplValueMetaData $ msDS-ReplAttributeMetaData $ msDS-NonMembersBL $ msDS-NCReplOutboundNeighbors $ msDS-NCReplInboundNeighbors $ msDS-NCReplCursors $ msDS-TasksForAzRoleBL $ msDS-TasksForAzTaskBL $ msDS-OperationsForAzRoleBL $ msDS-OperationsForAzTaskBL $ msDS-MembersForAzRoleBL $ msDs-masteredBy $ mS-DS-ConsistencyGuid $ mS-DS-ConsistencyChildCount $ msDS-Approx-Immed-Subordinates $ msCOM-PartitionSetLink $ msCOM-UserLink $ modifyTimeStamp $ masteredBy $ managedObjects $ lastKnownParent $ isPrivilegeHolder $ memberOf $ isDeleted $ isCriticalSystemObject $ showInAdvancedViewOnly $ fSMORoleOwner $ fRSMemberReferenceBL $ frsComputerReferenceBL $ fromEntry $ flags $ extensionName $ dSASignature $ dSCorePropagationData $ displayNamePrintable $ displayName $ description $ createTimeStamp $ cn $ canonicalName $ bridgeheadServerListBL $ allowedChildClassesEffective $ allowedChildClasses $ allowedAttributesEffective $ allowedAttributes $ adminDisplayName $ adminDescription $ msDS-ObjectReferenceBL ) )
+objectClasses: ( 1.2.840.113556.1.5.120 NAME 'ipsecISAKMPPolicy' SUP ipsecBase STRUCTURAL )
 objectClasses: ( 1.2.840.113556.1.5.67 NAME 'domainDNS' SUP domain STRUCTURAL MAY ( msDS-Behavior-Version $ msDS-AllowedDNSSuffixes $ managedBy ) )
 objectClasses: ( 1.2.840.113556.1.5.235 NAME 'msDS-AzApplication' SUP top STRUCTURAL MAY ( msDS-AzApplicationData $ msDS-AzGenerateAudits $ msDS-AzApplicationVersion $ msDS-AzClassId $ msDS-AzApplicationName $ description ) )
 objectClasses: ( 1.2.840.113556.1.5.4 NAME 'builtinDomain' SUP top STRUCTURAL )
@@ -10664,6 +10931,7 @@ objectClasses: ( 1.2.840.113556.1.5.12 NAME 'configuration' SUP top STRUCTURAL M
 objectClasses: ( 1.2.840.113556.1.3.11 NAME 'crossRef' SUP top STRUCTURAL MUST ( nCName $ dnsRoot $ cn ) MAY ( trustParent $ superiorDNSRoot $ rootTrust $ nTMixedDomain $ nETBIOSName $ Enabled $ msDS-SDReferenceDomain $ msDS-Replication-Notify-Subsequent-DSA-Delay $ msDS-Replication-Notify-First-DSA-Delay $ msDS-NC-Replica-Locations $ msDS-DnsRootAlias $ msDS-Behavior-Version ) )
 objectClasses: ( 1.2.840.113556.1.5.83 NAME 'rIDManager' SUP top STRUCTURAL MUST ( rIDAvailablePool ) )
 objectClasses: ( 1.2.840.113556.1.5.84 NAME 'displaySpecifier' SUP top STRUCTURAL MAY ( treatAsLeaf $ shellPropertyPages $ shellContextMenu $ scopeFlags $ queryFilter $ iconPath $ extraColumns $ creationWizard $ createWizardExt $ createDialog $ contextMenu $ classDisplayName $ attributeDisplayNames $ adminPropertyPages $ adminMultiselectPropertyPages $ adminContextMenu ) )
+objectClasses: ( 1.2.840.113556.1.5.7000.56 NAME 'ipsecBase' SUP top ABSTRACT MAY ( ipsecOwnersReference $ ipsecName $ ipsecID $ ipsecDataType $ ipsecData ) )
 objectClasses: ( 1.2.840.113556.1.5.237 NAME 'msDS-AzScope' SUP top STRUCTURAL MUST ( msDS-AzScopeName ) MAY ( msDS-AzApplicationData $ description ) )
 objectClasses: ( 2.5.6.3 NAME 'locality' SUP top STRUCTURAL MUST ( l ) MAY ( street $ st $ seeAlso $ searchGuide ) )
 objectClasses: ( 1.2.840.113556.1.5.7000.53 NAME 'crossRefContainer' SUP top STRUCTURAL MAY ( msDS-SPNSuffixes $ uPNSuffixes $ msDS-UpdateScript $ msDS-ExecuteScriptPassword $ msDS-Behavior-Version ) )
@@ -10674,6 +10942,7 @@ objectClasses: ( 1.2.840.113556.1.5.3 NAME 'samDomain' SUP top AUXILIARY MAY ( t
 objectClasses: ( 1.2.840.113556.1.5.2 NAME 'samDomainBase' SUP top AUXILIARY MAY ( uASCompat $ serverState $ serverRole $ revision $ pwdProperties $ pwdHistoryLength $ oEMInformation $ objectSid $ nTSecurityDescriptor $ nextRid $ modifiedCountAtLastProm $ modifiedCount $ minPwdLength $ minPwdAge $ maxPwdAge $ lockoutThreshold $ lockoutDuration $ lockOutObservationWindow $ forceLogoff $ domainReplica $ creationTime ) )
 objectClasses: ( 2.5.6.2 NAME 'country' SUP top MUST ( c ) MAY ( co $ searchGuide ) )
 objectClasses: ( 2.5.6.5 NAME 'organizationalUnit' SUP top STRUCTURAL MUST ( ou ) MAY ( x121Address $ userPassword $ uPNSuffixes $ co $ telexNumber $ teletexTerminalIdentifier $ telephoneNumber $ street $ st $ seeAlso $ searchGuide $ registeredAddress $ preferredDeliveryMethod $ postalCode $ postalAddress $ postOfficeBox $ physicalDeliveryOfficeName $ msCOM-UserPartitionSetLink $ managedBy $ thumbnailLogo $ l $ internationalISDNNumber $ gPOptions $ gPLink $ facsimileTelephoneNumber $ destinationIndicator $ desktopProfile $ defaultGroup $ countryCode $ c $ businessCategory ) )
+objectClasses: ( 1.2.840.113556.1.5.121 NAME 'ipsecNFA' SUP ipsecBase STRUCTURAL MAY ( ipsecNegotiationPolicyReference $ ipsecFilterReference ) )
 objectClasses: ( 1.2.840.113556.1.5.139 NAME 'lostAndFound' SUP top STRUCTURAL MAY ( moveTreeState ) )
 objectClasses: ( 2.5.6.7 NAME 'organizationalPerson' SUP person MAY ( x121Address $ comment $ title $ co $ primaryTelexNumber $ telexNumber $ teletexTerminalIdentifier $ street $ st $ registeredAddress $ preferredDeliveryMethod $ postalCode $ postalAddress $ postOfficeBox $ thumbnailPhoto $ physicalDeliveryOfficeName $ pager $ otherPager $ otherTelephone $ mobile $ otherMobile $ primaryInternationalISDNNumber $ ipPhone $ otherIpPhone $ otherHomePhone $ homePhone $ otherFacsimileTelephoneNumber $ personalTitle $ middleName $ otherMailbox $ ou $ o $ mhsORAddress $ msDS-AllowedToDelegateTo $ manager $ thumbnailLogo $ l $ internationalISDNNumber $ initials $ givenName $ generationQualifier $ facsimileTelephoneNumber $ employeeID $ mail $ division $ destinationIndicator $ department $ c $ countryCode $ company $ assistant $ streetAddress $ houseIdentifier $ msExchHouseIdentifier $ homePostalAddress ) )
 objectClasses: ( 1.2.840.113556.1.3.14 NAME 'attributeSchema' SUP top STRUCTURAL MUST ( schemaIDGUID $ oMSyntax $ lDAPDisplayName $ isSingleValued $ cn $ attributeSyntax $ attributeID ) MAY ( systemOnly $ searchFlags $ schemaFlagsEx $ rangeUpper $ rangeLower $ oMObjectClass $ msDs-Schema-Extensions $ msDS-IntId $ mAPIID $ linkID $ isMemberOfPartialAttributeSet $ isEphemeral $ isDefunct $ extendedCharsAllowed $ classDisplayName $ attributeSecurityGUID ) )
@@ -10681,6 +10950,7 @@ objectClasses: ( 1.2.840.113556.1.5.72 NAME 'nTDSService' SUP top STRUCTURAL MAY
 objectClasses: ( 1.2.840.113556.1.5.7000.48 NAME 'serversContainer' SUP top STRUCTURAL )
 objectClasses: ( 1.2.840.113556.1.3.30 NAME 'computer' SUP user STRUCTURAL MAY ( volumeCount $ siteGUID $ rIDSetReferences $ policyReplicationFlags $ physicalLocationObject $ operatingSystemVersion $ operatingSystemServicePack $ operatingSystemHotfix $ operatingSystem $ networkAddress $ netbootSIFFile $ netbootMirrorDataFile $ netbootMachineFilePath $ netbootInitialization $ netbootGUID $ msDS-AdditionalSamAccountName $ msDS-AdditionalDnsHostName $ managedBy $ machineRole $ location $ localPolicyFlags $ dNSHostName $ defaultLocalPolicyObject $ cn $ catalogs ) )
 objectClasses: ( 2.5.6.6 NAME 'person' SUP top MUST ( cn ) MAY ( userPassword $ telephoneNumber $ sn $ serialNumber $ seeAlso $ attributeCertificateAttribute ) )
+objectClasses: ( 1.2.840.113556.1.5.98 NAME 'ipsecPolicy' SUP ipsecBase STRUCTURAL MAY ( ipsecNFAReference $ ipsecISAKMPReference ) )
 objectClasses: ( 1.2.840.113556.1.3.23 NAME 'container' SUP top STRUCTURAL MUST ( cn ) MAY ( schemaVersion $ defaultClassStore $ msDS-ObjectReference ) )
 objectClasses: ( 1.2.840.113556.1.5.31 NAME 'site' SUP top STRUCTURAL MAY ( notificationList $ mSMQSiteID $ mSMQSiteForeign $ mSMQNt4Stub $ mSMQInterval2 $ mSMQInterval1 $ managedBy $ location $ gPOptions $ gPLink ) )
 objectClasses: ( 2.5.6.4 NAME 'organization' SUP top STRUCTURAL MUST ( o ) MAY ( x121Address $ userPassword $ telexNumber $ teletexTerminalIdentifier $ telephoneNumber $ street $ st $ seeAlso $ searchGuide $ registeredAddress $ preferredDeliveryMethod $ postalCode $ postalAddress $ postOfficeBox $ physicalDeliveryOfficeName $ l $ internationalISDNNumber $ facsimileTelephoneNumber $ destinationIndicator $ businessCategory ) )
@@ -10825,6 +11095,7 @@ attributeTypes: ( 2.5.4.20 NAME 'telephoneNumber' SYNTAX '1.3.6.1.4.1.1466.115.1
 attributeTypes: ( 1.2.840.113556.1.2.141 NAME 'department' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.639 NAME 'isMemberOfPartialAttributeSet' SYNTAX '1.3.6.1.4.1.1466.115.121.1.7' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.633 NAME 'policyReplicationFlags' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.626 NAME 'ipsecISAKMPReference' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.218 NAME 'applicationName' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.196 NAME 'systemMayContain' SYNTAX '1.3.6.1.4.1.1466.115.121.1.38' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.1191 NAME 'msRASSavedFramedRoute' SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' )
@@ -10866,6 +11137,7 @@ attributeTypes: ( 1.2.840.113556.1.4.1412 NAME 'primaryGroupToken' SYNTAX '1.3.6
 attributeTypes: ( 1.2.840.113556.1.2.469 NAME 'USNIntersite' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.876 NAME 'fRSMemberReferenceBL' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.1711 NAME 'msDS-SDReferenceDomain' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.621 NAME 'ipsecID' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.843 NAME 'lDAPAdminLimits' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
 attributeTypes: ( 1.2.840.113556.1.4.519 NAME 'lastBackupRestorationTime' SYNTAX '1.2.840.113556.1.4.906' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.660 NAME 'treeName' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE NO-USER-MODIFICATION )
@@ -10884,6 +11156,7 @@ attributeTypes: ( 1.2.840.113556.1.2.227 NAME 'extensionName' SYNTAX '1.3.6.1.4.
 attributeTypes: ( 1.2.840.113556.1.4.1663 NAME 'msDS-Replication-Notify-First-DSA-Delay' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.74 NAME 'maxPwdAge' SYNTAX '1.2.840.113556.1.4.906' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.722 NAME 'otherIpPhone' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+attributeTypes: ( 1.2.840.113556.1.4.627 NAME 'ipsecNFAReference' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
 attributeTypes: ( 0.9.2342.19200300.100.1.21 NAME 'secretary' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
 attributeTypes: ( 1.2.840.113556.1.4.138 NAME 'userParameters' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.134 NAME 'trustPosixOffset' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
@@ -11098,6 +11371,7 @@ attributeTypes: ( 1.2.840.113556.1.4.644 NAME 'showInAddressBook' SYNTAX '1.3.6.
 attributeTypes: ( 1.2.840.113556.1.2.2 NAME 'whenCreated' SYNTAX '1.3.6.1.4.1.1466.115.121.1.24' SINGLE-VALUE NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.1357 NAME 'dSCorePropagationData' SYNTAX '1.3.6.1.4.1.1466.115.121.1.24' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.2.353 NAME 'displayNamePrintable' SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.624 NAME 'ipsecOwnersReference' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
 attributeTypes: ( 2.5.4.8 NAME 'st' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.515 NAME 'serverReference' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.1820 NAME 'msDS-HasDomainNCs' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' NO-USER-MODIFICATION )
@@ -11126,6 +11400,7 @@ attributeTypes: ( 1.2.840.113556.1.4.1424 NAME 'msCOM-PartitionSetLink' SYNTAX '
 attributeTypes: ( 2.5.4.3 NAME 'cn' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.1789 NAME 'msDS-AllUsersTrustQuota' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.480 NAME 'defaultGroup' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.629 NAME 'ipsecFilterReference' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
 attributeTypes: ( 1.2.840.113556.1.4.156 NAME 'comment' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.1440 NAME 'msDs-Schema-Extensions' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.56 NAME 'localPolicyFlags' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
@@ -11141,6 +11416,8 @@ attributeTypes: ( 1.2.840.113556.1.2.436 NAME 'directReports' SYNTAX '1.3.6.1.4.
 attributeTypes: ( 1.2.840.113556.1.4.3 NAME 'replPropertyMetaData' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.910 NAME 'fromEntry' SYNTAX '1.3.6.1.4.1.1466.115.121.1.7' NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.471 NAME 'trustParent' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.622 NAME 'ipsecDataType' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
+attributeTypes: ( 1.2.840.113556.1.4.623 NAME 'ipsecData' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.368 NAME 'rIDManagerReference' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' SINGLE-VALUE NO-USER-MODIFICATION )
 attributeTypes: ( 1.2.840.113556.1.4.73 NAME 'lockoutThreshold' SYNTAX '1.3.6.1.4.1.1466.115.121.1.27' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.346 NAME 'desktopProfile' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
@@ -11164,7 +11441,9 @@ attributeTypes: ( 1.2.840.113556.1.4.532 NAME 'superiorDNSRoot' SYNTAX '1.3.6.1.
 attributeTypes: ( 1.2.840.113556.1.4.674 NAME 'rootTrust' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' )
 attributeTypes: ( 1.2.840.113556.1.4.615 NAME 'shellContextMenu' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
 attributeTypes: ( 1.2.840.113556.1.4.610 NAME 'classDisplayName' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+attributeTypes: ( 1.2.840.113556.1.4.620 NAME 'ipsecName' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )
 attributeTypes: ( 2.5.4.37 NAME 'cACertificate' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' )
+attributeTypes: ( 1.2.840.113556.1.4.628 NAME 'ipsecNegotiationPolicyReference' SYNTAX '1.3.6.1.4.1.1466.115.121.1.12' SINGLE-VALUE )
 attributeTypes: ( 1.2.840.113556.1.4.650 NAME 'mhsORAddress' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
 attributeTypes: ( 1.2.840.113556.1.4.94 NAME 'ntPwdHistory' SYNTAX '1.3.6.1.4.1.1466.115.121.1.40' )
 attributeTypes: ( 1.2.840.113556.1.4.786 NAME 'mailAddress' SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' SINGLE-VALUE )

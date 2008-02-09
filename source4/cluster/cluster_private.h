@@ -23,7 +23,7 @@
 #define _CLUSTER_PRIVATE_H_
 
 struct cluster_ops {
-	struct server_id (*cluster_id)(struct cluster_ops *ops, uint32_t id);
+	struct server_id (*cluster_id)(struct cluster_ops *ops, uint64_t id, uint32_t id2);
 	const char *(*cluster_id_string)(struct cluster_ops *ops, 
 					 TALLOC_CTX *, struct server_id );
 	struct tdb_wrap *(*cluster_tdb_tmp_open)(struct cluster_ops *,

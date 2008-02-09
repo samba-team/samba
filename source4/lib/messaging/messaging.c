@@ -121,8 +121,8 @@ static NTSTATUS irpc_uptime(struct irpc_message *msg,
 */
 static char *messaging_path(struct messaging_context *msg, struct server_id server_id)
 {
-	return talloc_asprintf(msg, "%s/msg.%u.%u", msg->base_path, 
-			       (unsigned)server_id.node, (unsigned)server_id.id);
+	return talloc_asprintf(msg, "%s/msg.%s", msg->base_path, 
+			       cluster_id_string(msg, server_id));
 }
 
 /*
@@ -263,8 +263,10 @@ static void messaging_send_handler(struct messaging_context *msg)
 		}
 		rec->retries = 0;
 		if (!NT_STATUS_IS_OK(status)) {
-			DEBUG(1,("messaging: Lost message from %u to %u of type %u - %s\n", 
-				 rec->header->from.id, rec->header->to.id, rec->header->msg_type, 
+			DEBUG(1,("messaging: Lost message from %s to %s of type %u - %s\n", 
+				 cluster_id_string(debug_ctx(), rec->header->from), 
+				 cluster_id_string(debug_ctx(), rec->header->to), 
+				 rec->header->msg_type, 
 				 nt_errstr(status)));
 		}
 		DLIST_REMOVE(msg->pending, rec);
@@ -1051,7 +1053,7 @@ struct server_id *irpc_servers_byname(struct messaging_context *msg_ctx,
 	for (i=0;i<count;i++) {
 		ret[i] = ((struct server_id *)rec.dptr)[i];
 	}
-	ret[i] = cluster_id(0);
+	ret[i] = cluster_id(0, 0);
 	free(rec.dptr);
 	tdb_unlock_bystring(t->tdb, name);
 	talloc_free(t);

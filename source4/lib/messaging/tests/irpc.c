@@ -93,7 +93,7 @@ static bool test_addone(struct torture_context *test, const void *_data,
 	r.in.in_data = value;
 
 	test_debug = true;
-	status = IRPC_CALL(data->msg_ctx1, cluster_id(MSG_ID2), 
+	status = IRPC_CALL(data->msg_ctx1, cluster_id(0, MSG_ID2), 
 			   rpcecho, ECHO_ADDONE, &r, test);
 	test_debug = false;
 	torture_assert_ntstatus_ok(test, status, "AddOne failed");
@@ -122,7 +122,7 @@ static bool test_echodata(struct torture_context *tctx,
 	r.in.in_data = (unsigned char *)talloc_strdup(mem_ctx, "0123456789");
 	r.in.len = strlen((char *)r.in.in_data);
 
-	status = IRPC_CALL(data->msg_ctx1, cluster_id(MSG_ID2), 
+	status = IRPC_CALL(data->msg_ctx1, cluster_id(0, MSG_ID2), 
 			   rpcecho, ECHO_ECHODATA, &r, 
 			   mem_ctx);
 	torture_assert_ntstatus_ok(tctx, status, "EchoData failed");
@@ -180,7 +180,7 @@ static bool test_speed(struct torture_context *tctx,
 	while (timeval_elapsed(&tv) < timelimit) {
 		struct irpc_request *irpc;
 
-		irpc = IRPC_CALL_SEND(data->msg_ctx1, cluster_id(MSG_ID2), 
+		irpc = IRPC_CALL_SEND(data->msg_ctx1, cluster_id(0, MSG_ID2), 
 				      rpcecho, ECHO_ADDONE, 
 				      &r, mem_ctx);
 		torture_assert(tctx, irpc != NULL, "AddOne send failed");
@@ -221,7 +221,7 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 	torture_assert(tctx, data->msg_ctx1 = 
 		       messaging_init(tctx, 
 				      lp_messaging_path(tctx, tctx->lp_ctx), 
-				      cluster_id(MSG_ID1),
+				      cluster_id(0, MSG_ID1),
 				      lp_iconv_convenience(tctx->lp_ctx),
 				      data->ev),
 		       "Failed to init first messaging context");
@@ -229,7 +229,7 @@ static bool irpc_setup(struct torture_context *tctx, void **_data)
 	torture_assert(tctx, data->msg_ctx2 = 
 		       messaging_init(tctx, 
 				      lp_messaging_path(tctx, tctx->lp_ctx),
-				      cluster_id(MSG_ID2), 
+				      cluster_id(0, MSG_ID2), 
 				      lp_iconv_convenience(tctx->lp_ctx),
 				      data->ev),
 		       "Failed to init second messaging context");

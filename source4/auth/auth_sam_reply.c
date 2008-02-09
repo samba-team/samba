@@ -132,7 +132,7 @@ NTSTATUS auth_convert_server_info_saminfo3(TALLOC_CTX *mem_ctx,
 			continue;
 		}
 		sam3->sids[sam3->sidcount].sid = talloc_reference(sam3->sids,server_info->domain_groups[i]);
-		sam3->sids[sam3->sidcount].attribute = 
+		sam3->sids[sam3->sidcount].attributes =
 			SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;
 		sam3->sidcount += 1;
 	}

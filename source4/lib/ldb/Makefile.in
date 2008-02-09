@@ -213,7 +213,7 @@ valgrindtest: all
 
 installcheck: install test
 
-install:: all installdirs installheaders installlibs installbin installdoc \
+install:: all installdirs installheaders installlibs installbin installdocs \
 		@PYTHON_INSTALL_TARGET@
 
 installdirs:

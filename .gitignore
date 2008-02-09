@@ -193,3 +193,5 @@ source/lib/util/apidocs
 source/lib/util/util_ldb.h
 source/libcli/ldap/ldap_ndr.h
 source/libcli/resolve/lp_proto.h
+source/apidocs
+*.swp

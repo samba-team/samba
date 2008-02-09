@@ -38,7 +38,7 @@ static void single_model_init(struct event_context *ev)
 */
 static void single_accept_connection(struct event_context *ev, 
 				     struct loadparm_context *lp_ctx,
-				     struct socket_context *sock,
+				     struct socket_context *listen_socket,
 				     void (*new_conn)(struct event_context *, 
 						      struct loadparm_context *,
 						      struct socket_context *, 
@@ -46,25 +46,33 @@ static void single_accept_connection(struct event_context *ev,
 				     void *private)
 {
 	NTSTATUS status;
-	struct socket_context *sock2;
+	struct socket_context *connected_socket;
 
 	/* accept an incoming connection. */
-	status = socket_accept(sock, &sock2);
+	status = socket_accept(listen_socket, &connected_socket);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("single_accept_connection: accept: %s\n", nt_errstr(status)));
-		/* this looks strange, but is correct. We need to
-		   throttle things until the system clears enough
-		   resources to handle this new socket. If we don't
-		   then we will spin filling the log and causing more
-		   problems. We don't panic as this is probably a
-		   temporary resource constraint */
+		/* this looks strange, but is correct. 
+
+		   We can only be here if woken up from select, due to
+		   an incomming connection.
+
+		   We need to throttle things until the system clears
+		   enough resources to handle this new socket. 
+
+		   If we don't then we will spin filling the log and
+		   causing more problems. We don't panic as this is
+		   probably a temporary resource constraint */
 		sleep(1);
 		return;
 	}
 
-	talloc_steal(private, sock);
+	talloc_steal(private, connected_socket);
 
-	new_conn(ev, lp_ctx, sock2, cluster_id(socket_get_fd(sock2)), private);
+	/* The cluster_id(0, fd) cannot collide with the incrementing
+	 * task below, as the first component is 0, not 1 */
+	new_conn(ev, lp_ctx, connected_socket, 
+		 cluster_id(0, socket_get_fd(connected_socket)), private);
 }
 
 /*
@@ -72,11 +80,17 @@ static void single_accept_connection(struct event_context *ev,
 */
 static void single_new_task(struct event_context *ev, 
 			    struct loadparm_context *lp_ctx, 
+			    const char *service_name,
 			    void (*new_task)(struct event_context *, struct loadparm_context *, struct server_id, void *), 
 			    void *private)
 {
-	static uint32_t taskid = 0x10000000;
-	new_task(ev, lp_ctx, cluster_id(taskid++), private);
+	static uint32_t taskid = 0;
+       
+	/* We use 1 so we cannot collide in with cluster ids generated
+	 * in the accept connection above, and unlikly to collide with
+	 * PIDs from process modal standard (don't run samba as
+	 * init) */
+	new_task(ev, lp_ctx, cluster_id(1, taskid++), private);
 }
 
 

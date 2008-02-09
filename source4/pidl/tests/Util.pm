@@ -134,7 +134,7 @@ $c
 		$cc = "cc";
 	}
 
-	my $flags = `pkg-config --libs --cflags ndr samba-config`;
+	my $flags = `pkg-config --libs --cflags ndr`;
 
 	my $cmd = "$cc $cflags -x c - -o $outfile $flags $ldflags";
 	$cmd =~ s/\n//g;

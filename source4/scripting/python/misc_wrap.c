@@ -2794,6 +2794,16 @@ SWIG_From_int  (int value)
   return SWIG_From_long  (value);
 }
 
+
+bool dsdb_set_ntds_invocation_id(struct ldb_context *ldb, const char *guid)
+{
+    struct GUID invocation_id_in;
+    if (NT_STATUS_IS_ERR(GUID_from_string(guid, &invocation_id_in))) {
+        return false;
+    }
+    return samdb_set_ntds_invocation_id(ldb, &invocation_id_in);
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -3102,6 +3112,46 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_dsdb_set_ntds_invocation_id(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  struct ldb_context *arg1 = (struct ldb_context *) 0 ;
+  char *arg2 = (char *) 0 ;
+  bool result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int res2 ;
+  char *buf2 = 0 ;
+  int alloc2 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  char *  kwnames[] = {
+    (char *) "ldb",(char *) "guid", NULL 
+  };
+  
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"OO:dsdb_set_ntds_invocation_id",kwnames,&obj0,&obj1)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_ldb_context, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "dsdb_set_ntds_invocation_id" "', argument " "1"" of type '" "struct ldb_context *""'"); 
+  }
+  arg1 = (struct ldb_context *)(argp1);
+  res2 = SWIG_AsCharPtrAndSize(obj1, &buf2, NULL, &alloc2);
+  if (!SWIG_IsOK(res2)) {
+    SWIG_exception_fail(SWIG_ArgError(res2), "in method '" "dsdb_set_ntds_invocation_id" "', argument " "2"" of type '" "char const *""'");
+  }
+  arg2 = (char *)(buf2);
+  if (arg1 == NULL)
+  SWIG_exception(SWIG_ValueError, 
+    "ldb context must be non-NULL");
+  result = (bool)dsdb_set_ntds_invocation_id(arg1,(char const *)arg2);
+  resultobj = SWIG_From_bool((bool)(result));
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return resultobj;
+fail:
+  if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return NULL;
+}
+
+
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"random_password", (PyCFunction) _wrap_random_password, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ldb_set_credentials", (PyCFunction) _wrap_ldb_set_credentials, METH_VARARGS | METH_KEYWORDS, NULL},
@@ -3112,6 +3162,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"version", (PyCFunction)_wrap_version, METH_NOARGS, NULL},
 	 { (char *)"dsdb_set_global_schema", (PyCFunction) _wrap_dsdb_set_global_schema, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"ldb_register_samba_handlers", (PyCFunction) _wrap_ldb_register_samba_handlers, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"dsdb_set_ntds_invocation_id", (PyCFunction) _wrap_dsdb_set_ntds_invocation_id, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { NULL, NULL, 0, NULL }
 };
 

@@ -41,13 +41,17 @@ struct debug_ops {
 
 extern int DEBUGLEVEL;
 
+#define debug_ctx() (_debug_ctx?_debug_ctx:(_debug_ctx=talloc_new(NULL)))
+
 #define DEBUGLVL(level) ((level) <= DEBUGLEVEL)
 #define _DEBUG(level, body, header) do { \
 	if (DEBUGLVL(level)) { \
+		void* _debug_ctx=NULL; \
 		if (header) { \
 			do_debug_header(level, __location__, __FUNCTION__); \
 		} \
 		do_debug body; \
+		talloc_free(_debug_ctx); \
 	} \
 } while (0)
 /** 

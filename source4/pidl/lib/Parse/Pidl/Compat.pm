@@ -148,10 +148,6 @@ sub CheckInterface($)
 {
 	my $if = shift;
 
-	if (has_property($if, "pointer_default_top") and 
-		$if->{PROPERTIES}->{pointer_default_top} ne "ref") {
-		warning($if, "pointer_default_top() is pidl-specific");
-	}
 }
 
 sub Check($)

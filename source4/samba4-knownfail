@@ -34,3 +34,5 @@ RPC-NETLOGON.*.GetTrustPasswords
 BASE-CHARSET.*.Testing partial surrogate
 .*NET-API-DELSHARE.*				# DelShare isn't implemented yet
 RAP.*netservergetinfo
+kinit with pkinit # fails with: salt type 3 not supported
+

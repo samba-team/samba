@@ -83,6 +83,9 @@ class CredentialsTests(unittest.TestCase):
         # Just check the method is there and doesn't raise an exception
         self.creds.guess()
 
+    def test_set_cmdline_callbacks(self):
+        self.creds.set_cmdline_callbacks()
+
     def test_authentication_requested(self):
         self.creds.set_username("")
         self.assertFalse(self.creds.authentication_requested())

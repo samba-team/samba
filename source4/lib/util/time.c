@@ -612,3 +612,11 @@ _PUBLIC_ int get_time_zone(time_t t)
 		return 0;
 	return tm_diff(&tm_utc,tm);
 }
+
+/**
+  check if 2 NTTIMEs are equal.
+*/
+bool nt_time_equal(NTTIME *t1, NTTIME *t2)
+{
+	return *t1 == *t2;
+}

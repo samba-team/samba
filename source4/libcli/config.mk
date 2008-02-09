@@ -39,7 +39,6 @@ OBJ_FILES = nbt/nbtname.o
 [SUBSYSTEM::LIBCLI_NBT]
 #VERSION = 0.0.1
 #SO_VERSION = 0
-#DESCRIPTION = NetBios over TCP/IP client library
 PRIVATE_PROTO_HEADER = nbt/nbt_proto.h
 OBJ_FILES = \
 	nbt/nbtsocket.o \

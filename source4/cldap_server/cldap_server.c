@@ -205,18 +205,9 @@ static void cldapd_task_init(struct task_server *task)
 
 
 /*
-  initialise the cldapd server
- */
-static NTSTATUS cldapd_init(struct event_context *event_ctx, struct loadparm_context *lp_ctx, const struct model_ops *model_ops)
-{
-	return task_server_startup(event_ctx, lp_ctx, model_ops, cldapd_task_init);
-}
-
-
-/*
   register ourselves as a available server
 */
 NTSTATUS server_service_cldapd_init(void)
 {
-	return register_server_service("cldap", cldapd_init);
+	return register_server_service("cldap", cldapd_task_init);
 }

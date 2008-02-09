@@ -1,9 +1,9 @@
 #################################
 # Start SUBSYSTEM gensec
 [LIBRARY::gensec]
+PC_FILE = gensec.pc
 VERSION = 0.0.1
 SO_VERSION = 0
-DESCRIPTION = Generic Security Library
 PUBLIC_HEADERS = gensec.h spnego.h
 PUBLIC_PROTO_HEADER = gensec_proto.h
 OBJ_FILES = gensec.o socket.o

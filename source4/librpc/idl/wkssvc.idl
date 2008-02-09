@@ -9,7 +9,6 @@ import "srvsvc.idl", "lsa.idl";
 [ uuid("6bffd098-a112-3610-9833-46c3f87e345a"),
   version(1.0),
   pointer_default(unique),
-  pointer_default_top(unique),
   helpstring("Workstation Service"),
   endpoint("ncacn_np:[\\pipe\\wkssvc]","ncacn_ip_tcp:","ncalrpc:")
 ] interface wkssvc
@@ -259,7 +258,7 @@ import "srvsvc.idl", "lsa.idl";
 	} wkssvc_NetWkstaInfo;
 
 	WERROR wkssvc_NetWkstaGetInfo(
-		[in]   [string,charset(UTF16)] uint16 *server_name,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_name,
 		[in]   uint32 level,
 		[out,switch_is(level),ref]  wkssvc_NetWkstaInfo *info
 		);
@@ -268,7 +267,7 @@ import "srvsvc.idl", "lsa.idl";
 	/******************/
 	/* Function: 0x01 */
 	WERROR wkssvc_NetWkstaSetInfo(
-		[in]   [string,charset(UTF16)] uint16 *server_name,
+		[in,unique]   [string,charset(UTF16)] uint16 *server_name,
 		[in]   uint32 level,
 		[in,switch_is(level),ref]  wkssvc_NetWkstaInfo *info,
 		[in,out,ref]   uint32 *parm_error
@@ -309,11 +308,11 @@ import "srvsvc.idl", "lsa.idl";
 	} wkssvc_NetWkstaEnumUsersInfo;
 
 	WERROR wkssvc_NetWkstaEnumUsers(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,out,ref] wkssvc_NetWkstaEnumUsersInfo *info,
 		[in] uint32 prefmaxlen,
 		[out,ref] uint32 *entries_read,
-		[in,out] uint32 *resume_handle
+		[in,out,unique] uint32 *resume_handle
 		);
 
 	/*****************************/
@@ -329,7 +328,7 @@ import "srvsvc.idl", "lsa.idl";
 	} wkssvc_NetrWkstaUserInfo;
 
 	WERROR wkssvc_NetrWkstaUserGetInfo(
-		[in] [string,charset(UTF16)] uint16 *unknown,
+		[in,unique] [string,charset(UTF16)] uint16 *unknown,
 		[in] uint32 level,
 		[out,ref] [switch_is(level)] wkssvc_NetrWkstaUserInfo *info
 		);
@@ -337,10 +336,10 @@ import "srvsvc.idl", "lsa.idl";
 	/*****************************/
 	/* Function        0x04      */
 	WERROR wkssvc_NetrWkstaUserSetInfo(
-		[in] [string,charset(UTF16)] uint16 *unknown,
+		[in,unique] [string,charset(UTF16)] uint16 *unknown,
 		[in] uint32 level,
 		[in,ref] [switch_is(level)] wkssvc_NetrWkstaUserInfo *info,
-		[in,out] uint32 *parm_err
+		[in,out,unique] uint32 *parm_err
 		);
 
 	/*****************************/
@@ -369,29 +368,29 @@ import "srvsvc.idl", "lsa.idl";
 	} wkssvc_NetWkstaTransportInfo;
 
 	WERROR wkssvc_NetWkstaTransportEnum (
-		[in]         [string,charset(UTF16)] uint16 *server_name,
+		[in,unique]         [string,charset(UTF16)] uint16 *server_name,
 		[in,out,ref] wkssvc_NetWkstaTransportInfo *info,
 		[in]         uint32 max_buffer,
 		[out,ref]    uint32 *total_entries,
-		[in,out]     uint32 *resume_handle
+		[in,out,unique]     uint32 *resume_handle
 		);
 
 	/*****************************/
 	/* Function        0x06      */
 	/* only supported on NT */
 	WERROR wkssvc_NetrWkstaTransportAdd(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in] uint32 level, /* must be 0 */
 		[in,ref] wkssvc_NetWkstaTransportInfo0 *info0,
-		[in,out] uint32 *parm_err
+		[in,out,unique] uint32 *parm_err
                 );
 
 	/*****************************/
 	/* Function        0x07      */
 	/* only supported on NT */
 	WERROR wkssvc_NetrWkstaTransportDel(
-		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in] [string,charset(UTF16)] uint16 *transport_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *transport_name,
 		[in] uint32 unknown3
 		);
 
@@ -437,16 +436,16 @@ import "srvsvc.idl", "lsa.idl";
 	} wkssvc_NetrUseGetInfoCtr;
 
 	WERROR wkssvc_NetrUseAdd(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in] uint32 level,
 		[in,ref] [switch_is(level)] wkssvc_NetrUseGetInfoCtr *ctr,
-		[in,out] uint32 *parm_err
+		[in,out,unique] uint32 *parm_err
 		);
 
 	/*****************************/
 	/* Function        0x09      */
 	WERROR wkssvc_NetrUseGetInfo(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,ref] [string,charset(UTF16)] uint16 *use_name,
 		[in] uint32 level,
 		[out,ref] [switch_is(level)] wkssvc_NetrUseGetInfoCtr *ctr
@@ -455,7 +454,7 @@ import "srvsvc.idl", "lsa.idl";
 	/*****************************/
 	/* Function        0x0a      */
 	WERROR wkssvc_NetrUseDel(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,ref] [string,charset(UTF16)] uint16 *use_name,
 		[in] uint32 force_cond
 		);
@@ -489,19 +488,19 @@ import "srvsvc.idl", "lsa.idl";
 	} wkssvc_NetrUseEnumInfo;
 
 	WERROR wkssvc_NetrUseEnum(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,out,ref] wkssvc_NetrUseEnumInfo *info,
 		[in] uint32 prefmaxlen,
 		[out,ref] uint32 *entries_read,
-		[in,out] uint32 *resume_handle
+		[in,out,unique] uint32 *resume_handle
 		);
 
 	/*****************************/
 	/* Function        0x0c      */
 	WERROR wkssvc_NetrMessageBufferSend(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,ref] [string,charset(UTF16)] uint16 *message_name,
-		[in] [string,charset(UTF16)] uint16 *message_sender_name,
+		[in,unique] [string,charset(UTF16)] uint16 *message_sender_name,
 		[in,ref] [size_is(message_size)] uint8 *message_buffer,
 		[in] uint32 message_size
 		);
@@ -552,8 +551,8 @@ import "srvsvc.idl", "lsa.idl";
 	} wkssvc_NetrWorkstationStatistics;
 
 	WERROR wkssvc_NetrWorkstationStatisticsGet(
-		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in] [string,charset(UTF16)] uint16 *unknown2,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *unknown2,
 		[in] uint32 unknown3,
 		[in] uint32 unknown4,
 		[out,ref] wkssvc_NetrWorkstationStatistics **info
@@ -574,20 +573,20 @@ import "srvsvc.idl", "lsa.idl";
 	/*****************************/
 	/* Function        0x10      */
 	WERROR wkssvc_NetrJoinDomain(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,ref] [string,charset(UTF16)] uint16 *domain_name,
-		[in] [string,charset(UTF16)] uint16 *account_ou,
-		[in] [string,charset(UTF16)] uint16 *Account,
-		[in] [string,charset(UTF16)] uint16 *password,
+		[in,unique] [string,charset(UTF16)] uint16 *account_ou,
+		[in,unique] [string,charset(UTF16)] uint16 *Account,
+		[in,unique] [string,charset(UTF16)] uint16 *password,
 		[in] wkssvc_joinflags join_flags
 		);
 
 	/*****************************/
 	/* Function        0x11      */
 	WERROR wkssvc_NetrUnjoinDomain(
-		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in] [string,charset(UTF16)] uint16 *Account,
-		[in] [string,charset(UTF16)] uint16 *password,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *Account,
+		[in,unique] [string,charset(UTF16)] uint16 *password,
 		[in] wkssvc_joinflags unjoin_flags
 		);
 
@@ -599,10 +598,10 @@ import "srvsvc.idl", "lsa.idl";
 	} wkssvc_renameflags;
 
 	WERROR wkssvc_NetrRenameMachineInDomain(
-		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in] [string,charset(UTF16)] uint16 *NewMachineName,
-		[in] [string,charset(UTF16)] uint16 *Account,
-		[in] [string,charset(UTF16)] uint16 *password,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *NewMachineName,
+		[in,unique] [string,charset(UTF16)] uint16 *Account,
+		[in,unique] [string,charset(UTF16)] uint16 *password,
 		[in] wkssvc_renameflags RenameOptions
 		);
 
@@ -618,10 +617,10 @@ import "srvsvc.idl", "lsa.idl";
 	} wkssvc_NetValidateNameType;
 
 	WERROR wkssvc_NetrValidateName(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,ref] [string,charset(UTF16)] uint16 *name,
-		[in] [string,charset(UTF16)] uint16 *Account,
-		[in] [string,charset(UTF16)] uint16 *Password,
+		[in,unique] [string,charset(UTF16)] uint16 *Account,
+		[in,unique] [string,charset(UTF16)] uint16 *Password,
 		[in] wkssvc_NetValidateNameType name_type
 		);
 
@@ -635,7 +634,7 @@ import "srvsvc.idl", "lsa.idl";
 	} wkssvc_NetJoinStatus;
 
 	WERROR wkssvc_NetrGetJoinInformation(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,out,ref] [string,charset(UTF16)] uint16 **name_buffer,
 		[out,ref] wkssvc_NetJoinStatus *name_type
 		);
@@ -643,12 +642,16 @@ import "srvsvc.idl", "lsa.idl";
 	/*****************************/
 	/* Function        0x15      */
 	WERROR wkssvc_NetrGetJoinableOus(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,ref] [string,charset(UTF16)] uint16 *domain_name,
-		[in] [string,charset(UTF16)] uint16 *Account,
-		[in] [string,charset(UTF16)] uint16 *unknown,
+		[in,unique] [string,charset(UTF16)] uint16 *Account,
+		[in,unique] [string,charset(UTF16)] uint16 *unknown,
 		[in,out,ref] uint32 *num_ous,
-		[out,ref] [size_is(*num_ous)] [string,charset(UTF16)] uint16 ***ous
+		/*
+		 * this is a [ref] pointer to a [unique] pointer to an
+		 * array of [unique] pointers to a string array
+		 */
+		[out,ref] [size_is(,*num_ous)] [string,charset(UTF16)] uint16 ***ous
 		);
 
 	typedef [flag(NDR_PAHEX)] struct {
@@ -687,81 +690,85 @@ import "srvsvc.idl", "lsa.idl";
 	/*****************************/
 	/* Function        0x16      */
 	WERROR wkssvc_NetrJoinDomain2 (
-		[in]         [string,charset(UTF16)] uint16 *server_name,
+		[in,unique]  [string,charset(UTF16)] uint16 *server_name,
 		[in,ref]     [string,charset(UTF16)] uint16 *domain_name,
-		[in]         [string,charset(UTF16)] uint16 *account_ou,
-		[in]         [string,charset(UTF16)] uint16 *admin_account,
-		[in]         wkssvc_PasswordBuffer *encrypted_password,
+		[in,unique]  [string,charset(UTF16)] uint16 *account_ou,
+		[in,unique]  [string,charset(UTF16)] uint16 *admin_account,
+		[in,unique]  wkssvc_PasswordBuffer *encrypted_password,
 		[in]         wkssvc_joinflags join_flags
 		);
 
 	/*****************************/
 	/* Function        0x17      */
 	WERROR wkssvc_NetrUnjoinDomain2 (
-		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in] [string,charset(UTF16)] uint16 *account,
-		[in] wkssvc_PasswordBuffer *encrypted_password,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *account,
+		[in,unique] wkssvc_PasswordBuffer *encrypted_password,
 		[in] wkssvc_joinflags unjoin_flags
 		);
 
 	/*****************************/
 	/* Function        0x18      */
 	WERROR wkssvc_NetrRenameMachineInDomain2(
-		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in] [string,charset(UTF16)] uint16 *NewMachineName,
-		[in] [string,charset(UTF16)] uint16 *Account,
-		[in] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *NewMachineName,
+		[in,unique] [string,charset(UTF16)] uint16 *Account,
+		[in,unique] wkssvc_PasswordBuffer *EncryptedPassword,
 		[in] wkssvc_renameflags RenameOptions
 		);
 
 	/*****************************/
 	/* Function        0x19      */
 	WERROR wkssvc_NetrValidateName2(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,ref] [string,charset(UTF16)] uint16 *name,
-		[in] [string,charset(UTF16)] uint16 *Account,
-		[in] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in,unique] [string,charset(UTF16)] uint16 *Account,
+		[in,unique] wkssvc_PasswordBuffer *EncryptedPassword,
 		[in] wkssvc_NetValidateNameType name_type
 		);
 
 	/*****************************/
 	/* Function        0x1a      */
 	WERROR wkssvc_NetrGetJoinableOus2(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in,ref] [string,charset(UTF16)] uint16 *domain_name,
-		[in] [string,charset(UTF16)] uint16 *Account,
-		[in] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in,unique] [string,charset(UTF16)] uint16 *Account,
+		[in,unique] wkssvc_PasswordBuffer *EncryptedPassword,
 		[in,out,ref] uint32 *num_ous,
-		[out,ref] [size_is(*num_ous)] [string,charset(UTF16)] uint16 ***ous
+		/*
+		 * this is a [ref] pointer to a [unique] pointer to an
+		 * array of [unique] pointers to a string array
+		 */
+		[out,ref] [size_is(,*num_ous)] [string,charset(UTF16)] uint16 ***ous
 		);
 
 	/*****************************/
 	/* Function        0x1b      */
 	WERROR wkssvc_NetrAddAlternateComputerName(
-		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in] [string,charset(UTF16)] uint16 *NewAlternateMachineName,
-		[in] [string,charset(UTF16)] uint16 *Account,
-		[in] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *NewAlternateMachineName,
+		[in,unique] [string,charset(UTF16)] uint16 *Account,
+		[in,unique] wkssvc_PasswordBuffer *EncryptedPassword,
 		[in] uint32 Reserved
 		);
 
 	/*****************************/
 	/* Function        0x1c      */
 	WERROR wkssvc_NetrRemoveAlternateComputerName(
-		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in] [string,charset(UTF16)] uint16 *AlternateMachineNameToRemove,
-		[in] [string,charset(UTF16)] uint16 *Account,
-		[in] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *AlternateMachineNameToRemove,
+		[in,unique] [string,charset(UTF16)] uint16 *Account,
+		[in,unique] wkssvc_PasswordBuffer *EncryptedPassword,
 		[in] uint32 Reserved
 		);
 
 	/*****************************/
 	/* Function        0x1d      */
 	WERROR wkssvc_NetrSetPrimaryComputername(
-		[in] [string,charset(UTF16)] uint16 *server_name,
-		[in] [string,charset(UTF16)] uint16 *primary_name,
-		[in] [string,charset(UTF16)] uint16 *Account,
-		[in] wkssvc_PasswordBuffer *EncryptedPassword,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *primary_name,
+		[in,unique] [string,charset(UTF16)] uint16 *Account,
+		[in,unique] wkssvc_PasswordBuffer *EncryptedPassword,
 		[in] uint32 Reserved
 		);
 
@@ -780,7 +787,7 @@ import "srvsvc.idl", "lsa.idl";
         } wkssvc_ComputerNamesCtr;
 
 	WERROR wkssvc_NetrEnumerateComputerNames(
-		[in] [string,charset(UTF16)] uint16 *server_name,
+		[in,unique] [string,charset(UTF16)] uint16 *server_name,
 		[in] wkssvc_ComputerNameType name_type,
 		[in] uint32 Reserved,
 		[out,ref] wkssvc_ComputerNamesCtr **ctr

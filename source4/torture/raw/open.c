@@ -1367,7 +1367,7 @@ static bool test_raw_open_multi(struct torture_context *tctx)
 		return false;
 	}
 
-	cli->tree->session->transport->options.request_timeout = 60000;
+	cli->tree->session->transport->options.request_timeout = 60;
 
 	for (i=0; i<num_files; i++) {
 		if (!torture_open_connection_share(mem_ctx, &(clients[i]),
@@ -1375,8 +1375,7 @@ static bool test_raw_open_multi(struct torture_context *tctx)
 			DEBUG(0, ("Could not open %d'th connection\n", i));
 			return false;
 		}
-		clients[i]->tree->session->transport->
-			options.request_timeout = 60000;
+		clients[i]->tree->session->transport->options.request_timeout = 60;
 	}
 
 	/* cleanup */

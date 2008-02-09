@@ -111,53 +111,9 @@ __EOD__
 sub _prepare_suffix_rules($)
 {
 	my ($self) = @_;
-	my $first_prereq = '$*.c';
-
-	if ($self->{config}->{GNU_MAKE} eq 'yes') {
-		$first_prereq = '$<';
-	}
 
 	$self->output(<< "__EOD__"
-FIRST_PREREQ = $first_prereq
-
-# Dependencies command
-DEPENDS = \$(CC) -M -MG -MP -MT \$(<:.c=.o) -MT \$@ \\
-    \$(CFLAGS) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(CPPFLAGS) \$(FIRST_PREREQ) -o \$@
-# Dependencies for host objects
-HDEPENDS = \$(CC) -M -MG -MP -MT \$(<:.c=.ho) -MT \$@ \\
-    \$(HOSTCC_FLAGS) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(CPPFLAGS) \$(FIRST_PREREQ) -o \$@
-# Dependencies for precompiled headers
-PCHDEPENDS = \$(CC) -M -MG -MT include/includes.h.gch -MT \$@ \\
-    \$(CFLAGS) \$(CPPFLAGS) \$(FIRST_PREREQ) -o \$@
-
-# \$< is broken in older BSD versions:
-# when \$@ is foo/bar.o, \$< could be torture/foo/bar.c
-# if it also exists. So better use \$* which is foo/bar
-# and append .c manually to get foo/bar.c
-#
-# If we have GNU Make, it is safe to use \$<, which also lets
-# building with \$srcdir != \$builddir work.
-
-# Run a static analysis checker
-CHECK = \$(CC_CHECKER) \$(CFLAGS) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(PICFLAG) \$(CPPLAGS) -c \$(FIRST_PREREQ) -o \$@
-
-# Run the configured compiler
-COMPILE = \$(CC) \$(CFLAGS)  \$(PICFLAG) \\
-          `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-		  \$(CPPFLAGS) \\
-		  -c \$(FIRST_PREREQ) -o \$@
-
-# Run the compiler for the build host
-HCOMPILE = \$(HOSTCC) \$(HOSTCC_FLAGS) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-	 \$(CPPFLAGS) -c \$(FIRST_PREREQ) -o \$@
-
-# Precompile headers
-PCHCOMPILE = @\$(CC) -Ilib/replace \\
-    \$(CFLAGS) `\$(PERL) \$(srcdir)/script/cflags.pl \$@` \\
-    \$(PICFLAG) \$(CPPFLAGS) -c \$(FIRST_PREREQ) -o \$@
+FIRST_PREREQ = $self->{config}->{FIRST_PREREQ}
 
 __EOD__
 );
@@ -500,7 +456,6 @@ sub Binary($$)
 		push (@{$self->{torture_progs}}, "$installdir/$ctx->{BINARY}");
 	}
 
-
 	push (@{$self->{binaries}}, "$localdir/$ctx->{BINARY}");
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
@@ -550,115 +505,6 @@ sub Manpage($$)
 
 	my $path = output::add_dir_str($ctx->{BASEDIR}, $ctx->{MANPAGE});
 	push (@{$self->{manpages}}, $path);
-}
-
-sub PkgConfig($$$)
-{
-	my ($self,$ctx,$other) = @_;
-	
-	my $link_name = $ctx->{NAME};
-
-	$link_name =~ s/^LIB//g;
-	$link_name = lc($link_name);
-
-	return if (not defined($ctx->{DESCRIPTION}));
-
-	my $path = output::add_dir_str($ctx->{BASEDIR}, "$link_name.pc");
-
-	push (@{$self->{pc_files}}, $path);
-
-	my $pubs;
-	my $privs;
-	my $privlibs;
-	my $publibs = "";
-
-	if (defined($ctx->{PUBLIC_DEPENDENCIES})) {
-		foreach (@{$ctx->{PUBLIC_DEPENDENCIES}}) {
-			next if ($other->{$_}->{ENABLE} eq "NO");
-			if (defined($other->{$_}->{PC_NAME})) {
-				$pubs .= "$other->{$_}->{PC_NAME} ";
-			} elsif ($other->{$_}->{TYPE} eq "EXT_LIB") {
-				my $e = $other->{$_};
-				my $ldflags = join(" ", @{$e->{LDFLAGS}});
-				$ldflags .= " " unless $ldflags eq "";
-				my $libs = join(" ", @{$e->{LIBS}});
-				$libs .= " " unless $libs eq "";
-
-				$publibs .= $ldflags.$libs;
-			} else {
-				s/^LIB//g;
-				$_ = lc($_);
-
-				$privlibs .= "-l$_ ";
-			}
-		}
-	}
-
-	if (defined($ctx->{PRIVATE_DEPENDENCIES})) {
-		foreach (@{$ctx->{PRIVATE_DEPENDENCIES}}) {
-			next if ($other->{$_}->{ENABLE} eq "NO");
-			if ($other->{$_}->{TYPE} eq "EXT_LIB") {
-				my $e = $other->{$_};
-
-				my $ldflags = join(" ", @{$e->{LDFLAGS}});
-				$ldflags .= " " unless $ldflags eq "";
-				my $libs = join(" ", @{$e->{LIBS}});
-				$libs .= " " unless $libs eq "";
-
-				$privlibs .= $ldflags.$libs;
-			} elsif ($other->{$_}->{TYPE} eq "LIBRARY") {
-				s/^LIB//g;
-				$_ = lc($_);
-
-				$privs .= "$_ ";
-			} else {
-				s/^LIB//g;
-				$_ = lc($_);
-
-				$privlibs .= "-l$_ ";
-			}
-		}
-	}
-
-	smb_build::env::PkgConfig($self,
-		$path,
-		$link_name,
-		"-L\${libdir} -l$link_name $publibs",
-		$privlibs,
-		"",
-		"$ctx->{VERSION}",
-		$ctx->{DESCRIPTION},
-		defined($ctx->{INIT_FUNCTIONS}),
-		$pubs,
-		"",
-		[
-			"prefix=$self->{config}->{prefix}",
-			"exec_prefix=$self->{config}->{exec_prefix}",
-			"libdir=$self->{config}->{libdir}",
-			"includedir=$self->{config}->{includedir}"
-		]
-	); 
-	my $abs_srcdir = abs_path($self->{config}->{srcdir});
-	smb_build::env::PkgConfig($self,
-		"bin/pkgconfig/$link_name-uninstalled.pc",
-		$link_name,
-		"-Lbin/shared -Lbin/static -l$link_name",
-		$privlibs,
-		join(' ', 
-			"-I$abs_srcdir",
-			"-I$abs_srcdir/include",
-			"-I$abs_srcdir/lib",
-			"-I$abs_srcdir/lib/replace"),
-		"$ctx->{VERSION}",
-		$ctx->{DESCRIPTION},
-		defined($ctx->{INIT_FUNCTIONS}),
-		$pubs,
-		$privs,
-		[
-			"prefix=bin/",
-			"includedir=$ctx->{BASEDIR}"
-		]
-	); 
 }
 
 sub ProtoHeader($$)

@@ -240,7 +240,7 @@ servicePrincipalName: host/ldaptest2computer29
 	    var attrs = new Array("servicePrincipalName;range=0-*");
 	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	    if (res.error != 0 || res.msgs.length != 1) {
-		    println("Could not find (cn=ldaptest2computer)");
+		    println("Could not find (cn=ldaptest2computer) for servicePrincipalName;range=0-*");
 		    assert(res.error == 0);
 		    assert(res.msgs.length == 1);
 	    }
@@ -250,7 +250,7 @@ servicePrincipalName: host/ldaptest2computer29
 	    var attrs = new Array("servicePrincipalName;range=0-19");
 	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	    if (res.error != 0 || res.msgs.length != 1) {
-		    println("Could not find (cn=ldaptest2computer)");
+		    println("Could not find (cn=ldaptest2computer) for servicePrincipalName;range=0-19");
 		    assert(res.error == 0);
 		    assert(res.msgs.length == 1);
 	    }
@@ -260,7 +260,7 @@ servicePrincipalName: host/ldaptest2computer29
 	    var attrs = new Array("servicePrincipalName;range=0-30");
 	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	    if (res.error != 0 || res.msgs.length != 1) {
-		    println("Could not find (cn=ldaptest2computer)");
+		    println("Could not find (cn=ldaptest2computer) at servicePrincipalName;range=0-19");
 		    assert(res.error == 0);
 		    assert(res.msgs.length == 1);
 	    }
@@ -269,7 +269,7 @@ servicePrincipalName: host/ldaptest2computer29
 	    var attrs = new Array("servicePrincipalName;range=0-40");
 	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	    if (res.error != 0 || res.msgs.length != 1) {
-		    println("Could not find (cn=ldaptest2computer)");
+		    println("Could not find (cn=ldaptest2computer) at servicePrincipalName;range=0-40");
 		    assert(res.error == 0);
 		    assert(res.msgs.length == 1);
 	    }
@@ -278,7 +278,7 @@ servicePrincipalName: host/ldaptest2computer29
 	    var attrs = new Array("servicePrincipalName;range=30-40");
 	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	    if (res.error != 0 || res.msgs.length != 1) {
-		    println("Could not find (cn=ldaptest2computer)");
+		    println("Could not find (cn=ldaptest2computer) at servicePrincipalName;range=30-40");
 		    assert(res.error == 0);
 		    assert(res.msgs.length == 1);
 	    }
@@ -287,7 +287,7 @@ servicePrincipalName: host/ldaptest2computer29
 	    var attrs = new Array("servicePrincipalName;range=10-40");
 	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	    if (res.error != 0 || res.msgs.length != 1) {
-		    println("Could not find (cn=ldaptest2computer)");
+		    println("Could not find (cn=ldaptest2computer) at servicePrincipalName;range=10-40");
 		    assert(res.error == 0);
 		    assert(res.msgs.length == 1);
 	    }
@@ -297,7 +297,7 @@ servicePrincipalName: host/ldaptest2computer29
 	    var attrs = new Array("servicePrincipalName;range=11-40");
 	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	    if (res.error != 0 || res.msgs.length != 1) {
-		    println("Could not find (cn=ldaptest2computer)");
+		    println("Could not find (cn=ldaptest2computer) at servicePrincipalName;range=10-*");
 		    assert(res.error == 0);
 		    assert(res.msgs.length == 1);
 	    }
@@ -309,7 +309,7 @@ servicePrincipalName: host/ldaptest2computer29
 	    var attrs = new Array("servicePrincipalName;range=11-15");
 	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	    if (res.error != 0 || res.msgs.length != 1) {
-		    println("Could not find (cn=ldaptest2computer)");
+		    println("Could not find (cn=ldaptest2computer) at servicePrincipalName;range=11-15");
 		    assert(res.error == 0);
 		    assert(res.msgs.length == 1);
 	    }
@@ -319,7 +319,7 @@ servicePrincipalName: host/ldaptest2computer29
 	    var attrs = new Array("servicePrincipalName");
 	    var res = ldb.search("(cn=ldaptest2computer))", base_dn, ldb.SCOPE_SUBTREE, attrs);
 	    if (res.error != 0 || res.msgs.length != 1) {
-		    println("Could not find (cn=ldaptest2computer)");
+		    println("Could not find (cn=ldaptest2computer) at servicePrincipalName");
 		    assert(res.error == 0);
 		    assert(res.msgs.length == 1);
 	    }

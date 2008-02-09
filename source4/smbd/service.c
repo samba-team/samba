@@ -30,20 +30,20 @@
 static struct registered_server {
 	struct registered_server *next, *prev;
 	const char *service_name;
-	NTSTATUS (*service_init)(struct event_context *, struct loadparm_context *lp_ctx, const struct model_ops *);
+	void (*task_init)(struct task_server *);
 } *registered_servers;
 
 /*
   register a server service. 
 */
 NTSTATUS register_server_service(const char *name,
-				 NTSTATUS (*service_init)(struct event_context *, struct loadparm_context *lp_ctx, const struct model_ops *))
+				 void (*task_init)(struct task_server *))
 {
 	struct registered_server *srv;
 	srv = talloc(talloc_autofree_context(), struct registered_server);
 	NT_STATUS_HAVE_NO_MEMORY(srv);
 	srv->service_name = name;
-	srv->service_init = service_init;
+	srv->task_init = task_init;
 	DLIST_ADD_END(registered_servers, srv, struct registered_server *);
 	return NT_STATUS_OK;
 }
@@ -53,14 +53,15 @@ NTSTATUS register_server_service(const char *name,
   initialise a server service
 */
 static NTSTATUS server_service_init(const char *name,
-				    struct event_context *event_ctx,
+				    struct event_context *event_context,
 				    struct loadparm_context *lp_ctx,
 				    const struct model_ops *model_ops)
 {
 	struct registered_server *srv;
 	for (srv=registered_servers; srv; srv=srv->next) {
 		if (strcasecmp(name, srv->service_name) == 0) {
-			return srv->service_init(event_ctx, lp_ctx, model_ops);
+			return task_server_startup(event_context, lp_ctx, srv->service_name,
+						   model_ops, srv->task_init);
 		}
 	}
 	return NT_STATUS_INVALID_SYSTEM_SERVICE;
