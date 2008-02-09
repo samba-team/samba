@@ -111,14 +111,9 @@ __EOD__
 sub _prepare_suffix_rules($)
 {
 	my ($self) = @_;
-	my $first_prereq = '$*.c';
-
-	if ($self->{config}->{GNU_MAKE} eq 'yes') {
-		$first_prereq = '$<';
-	}
 
 	$self->output(<< "__EOD__"
-FIRST_PREREQ = $first_prereq
+FIRST_PREREQ = $self->{config}->{FIRST_PREREQ}
 
 __EOD__
 );
@@ -460,7 +455,6 @@ sub Binary($$)
 	} elsif ($ctx->{INSTALLDIR} =~ /^TORTUREDIR/) {
 		push (@{$self->{torture_progs}}, "$installdir/$ctx->{BINARY}");
 	}
-
 
 	push (@{$self->{binaries}}, "$localdir/$ctx->{BINARY}");
 
