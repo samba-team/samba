@@ -309,6 +309,17 @@ static int cmd_pwd(void)
 }
 
 /****************************************************************************
+ Ensure name has correct directory separators.
+****************************************************************************/
+
+static void normalize_name(char *newdir)
+{
+	if (!(cli->posix_capabilities & CIFS_UNIX_POSIX_PATHNAMES_CAP)) {
+		string_replace(newdir,'/','\\');
+	}
+}
+
+/****************************************************************************
  Change directory - inner section.
 ****************************************************************************/
 
@@ -329,7 +340,8 @@ static int do_cd(const char *new_dir)
 		TALLOC_FREE(ctx);
 		return 1;
 	}
-	string_replace(newdir,'/','\\');
+
+	normalize_name(newdir);
 
 	/* Save the current directory in case the new directory is invalid */
 
@@ -349,17 +361,16 @@ static int do_cd(const char *new_dir)
 		if (!new_cd) {
 			goto out;
 		}
-		if ((new_cd[0] != '\0') && (*(new_cd+strlen(new_cd)-1) != CLI_DIRSEP_CHAR)) {
-			new_cd = talloc_asprintf_append(new_cd, CLI_DIRSEP_STR);
-			if (!new_cd) {
-				goto out;
-			}
+	}
+
+	/* Ensure cur_dir ends in a DIRSEP */
+	if ((new_cd[0] != '\0') && (*(new_cd+strlen(new_cd)-1) != CLI_DIRSEP_CHAR)) {
+		new_cd = talloc_asprintf_append(new_cd, CLI_DIRSEP_STR);
+		if (!new_cd) {
+			goto out;
 		}
-		client_set_cur_dir(new_cd);
 	}
-	if (!new_cd) {
-		goto out;
-	}
+	client_set_cur_dir(new_cd);
 
 	new_cd = clean_name(ctx, new_cd);
 	client_set_cur_dir(new_cd);
@@ -851,26 +862,15 @@ static int cmd_dir(void)
 	int rc = 1;
 
 	dir_total = 0;
-	if (strcmp(client_get_cur_dir(), CLI_DIRSEP_STR) != 0) {
-		mask = talloc_strdup(ctx, client_get_cur_dir());
-		if (!mask) {
-			return 1;
-		}
-		if ((mask[0] != '\0') && (mask[strlen(mask)-1]!=CLI_DIRSEP_CHAR)) {
-			mask = talloc_asprintf_append(mask, CLI_DIRSEP_STR);
-		}
-	} else {
-		mask = talloc_strdup(ctx, CLI_DIRSEP_STR);
-	}
-
+	mask = talloc_strdup(ctx, client_get_cur_dir());
 	if (!mask) {
 		return 1;
 	}
 
 	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
-		string_replace(buf,'/','\\');
+		normalize_name(buf);
 		if (*buf == CLI_DIRSEP_CHAR) {
-			mask = talloc_strdup(ctx, buf + 1);
+			mask = talloc_strdup(ctx, buf);
 		} else {
 			mask = talloc_asprintf_append(mask, buf);
 		}
@@ -920,7 +920,7 @@ static int cmd_du(void)
 	}
 
 	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
-		string_replace(buf,'/','\\');
+		normalize_name(buf);
 		if (*buf == CLI_DIRSEP_CHAR) {
 			mask = talloc_strdup(ctx, buf);
 		} else {
@@ -1112,10 +1112,7 @@ static int cmd_get(void)
 	char *rname = NULL;
 	char *fname = NULL;
 
-	rname = talloc_asprintf(ctx,
-			"%s%s",
-			client_get_cur_dir(),
-			CLI_DIRSEP_STR);
+	rname = talloc_strdup(ctx, client_get_cur_dir());
 	if (!rname) {
 		return 1;
 	}
@@ -1262,10 +1259,7 @@ static int cmd_more(void)
 	int fd;
 	int rc = 0;
 
-	rname = talloc_asprintf(ctx,
-			"%s%s",
-			client_get_cur_dir(),
-			CLI_DIRSEP_STR);
+	rname = talloc_strdup(ctx, client_get_cur_dir());
 	if (!rname) {
 		return 1;
 	}
@@ -1334,15 +1328,6 @@ static int cmd_mget(void)
 		if (!mget_mask) {
 			return 1;
 		}
-		if ((mget_mask[0] != '\0') &&
-				(mget_mask[strlen(mget_mask)-1]!=CLI_DIRSEP_CHAR)) {
-			mget_mask = talloc_asprintf_append(mget_mask,
-							CLI_DIRSEP_STR);
-			if (!mget_mask) {
-				return 1;
-			}
-		}
-
 		if (*buf == CLI_DIRSEP_CHAR) {
 			mget_mask = talloc_strdup(ctx, buf);
 		} else {
@@ -1356,18 +1341,9 @@ static int cmd_mget(void)
 	}
 
 	if (!*mget_mask) {
-		mget_mask = talloc_strdup(ctx, client_get_cur_dir());
-		if (!mget_mask) {
-			return 1;
-		}
-		if(mget_mask[strlen(mget_mask)-1]!=CLI_DIRSEP_CHAR) {
-			mget_mask = talloc_asprintf_append(mget_mask,
-							CLI_DIRSEP_STR);
-			if (!mget_mask) {
-				return 1;
-			}
-		}
-		mget_mask = talloc_asprintf_append(mget_mask, "*");
+		mget_mask = talloc_asprintf(ctx,
+					"%s*",
+					client_get_cur_dir());
 		if (!mget_mask) {
 			return 1;
 		}
@@ -1760,10 +1736,7 @@ static int cmd_put(void)
 	char *rname;
 	char *buf;
 
-	rname = talloc_asprintf(ctx,
-			"%s%s",
-			client_get_cur_dir(),
-			CLI_DIRSEP_STR);
+	rname = talloc_strdup(ctx, client_get_cur_dir());
 	if (!rname) {
 		return 1;
 	}
@@ -1980,10 +1953,10 @@ static int cmd_mput(void)
 						break;
 				} else { /* Yes */
 	      				SAFE_FREE(rname);
-					if(asprintf(&rname, "%s%s", cur_dir, lname) < 0) {
+					if(asprintf(&rname, "%s%s", client_get_cur_dir(), lname) < 0) {
 						break;
 					}
-					string_replace(rname,'/','\\');
+					normalize_name(rname);
 					if (!cli_chkpath(cli, rname) &&
 					    !do_mkdir(rname)) {
 						DEBUG (0, ("Unable to make dir, skipping..."));
@@ -2007,12 +1980,12 @@ static int cmd_mput(void)
 
 				/* Yes */
 				SAFE_FREE(rname);
-				if (asprintf(&rname, "%s%s", cur_dir, lname) < 0) {
+				if (asprintf(&rname, "%s%s", client_get_cur_dir(), lname) < 0) {
 					break;
 				}
 			}
 
-			string_replace(rname,'/','\\');
+			normalize_name(rname);
 
 			do_put(rname, lname, false);
 		}
@@ -3556,10 +3529,7 @@ static int cmd_reget(void)
 	char *fname = NULL;
 	char *p = NULL;
 
-	remote_name = talloc_asprintf(ctx,
-				"%s%s",
-				client_get_cur_dir(),
-				CLI_DIRSEP_STR);
+	remote_name = talloc_strdup(ctx, client_get_cur_dir());
 	if (!remote_name) {
 		return 1;
 	}
@@ -3598,10 +3568,7 @@ static int cmd_reput(void)
 	char *buf;
 	SMB_STRUCT_STAT st;
 
-	remote_name = talloc_asprintf(ctx,
-				"%s%s",
-				client_get_cur_dir(),
-				CLI_DIRSEP_STR);
+	remote_name = talloc_strdup(ctx, client_get_cur_dir());
 	if (!remote_name) {
 		return 1;
 	}
@@ -4158,7 +4125,7 @@ static void completion_remote_filter(const char *mnt,
 				return;
 			}
 			if (f->mode & aDIR) {
-				tmp = talloc_asprintf_append(tmp, "/");
+				tmp = talloc_asprintf_append(tmp, CLI_DIRSEP_STR);
 			}
 			if (!tmp) {
 				TALLOC_FREE(ctx);
