@@ -279,9 +279,11 @@ static int do_cd(char *newdir)
 		pstrcpy(cur_dir,p);
 	} else {
 		pstrcat(cur_dir,p);
-		if ((cur_dir[0] != '\0') && (*(cur_dir+strlen(cur_dir)-1) != CLI_DIRSEP_CHAR)) {
-			pstrcat(cur_dir, CLI_DIRSEP_STR);
-		}
+	}
+
+	/* Ensure cur_dir ends in a DIRSEP */
+	if ((cur_dir[0] != '\0') && (*(cur_dir+strlen(cur_dir)-1) != CLI_DIRSEP_CHAR)) {
+		pstrcat(cur_dir, CLI_DIRSEP_STR);
 	}
 	
 	clean_name(cur_dir);
@@ -699,18 +701,12 @@ static int cmd_dir(void)
 	int rc;
 	
 	dir_total = 0;
-	if (strcmp(cur_dir, CLI_DIRSEP_STR) != 0) {
-		pstrcpy(mask,cur_dir);
-		if ((mask[0] != '\0') && (mask[strlen(mask)-1]!=CLI_DIRSEP_CHAR))
-			pstrcat(mask,CLI_DIRSEP_STR);
-	} else {
-		pstrcpy(mask, CLI_DIRSEP_STR);
-	}
+	pstrcpy(mask,cur_dir);
 	
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
 		if (*p == CLI_DIRSEP_CHAR)
-			pstrcpy(mask,p + 1);
+			pstrcpy(mask,p);
 		else
 			pstrcat(mask,p);
 	} else {
@@ -745,9 +741,7 @@ static int cmd_du(void)
 	
 	dir_total = 0;
 	pstrcpy(mask,cur_dir);
-	if ((mask[0] != '\0') && (mask[strlen(mask)-1]!=CLI_DIRSEP_CHAR))
-		pstrcat(mask,CLI_DIRSEP_STR);
-	
+
 	if (next_token_nr(NULL,buf,NULL,sizeof(buf))) {
 		dos_format(p);
 		if (*p == CLI_DIRSEP_CHAR)
@@ -912,7 +906,6 @@ static int cmd_get(void)
 	char *p;
 
 	pstrcpy(rname,cur_dir);
-	pstrcat(rname,CLI_DIRSEP_STR);
 	
 	p = rname + strlen(rname);
 	
@@ -1007,7 +1000,6 @@ static int cmd_more(void)
 	int rc = 0;
 
 	pstrcpy(rname,cur_dir);
-	pstrcat(rname,CLI_DIRSEP_STR);
 	
 	slprintf(lname,sizeof(lname)-1, "%s/smbmore.XXXXXX",tmpdir());
 	fd = smb_mkstemp(lname);
@@ -1056,8 +1048,6 @@ static int cmd_mget(void)
 
 	while (next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		pstrcpy(mget_mask,cur_dir);
-		if ((mget_mask[0] != '\0') && (mget_mask[strlen(mget_mask)-1]!=CLI_DIRSEP_CHAR))
-			pstrcat(mget_mask,CLI_DIRSEP_STR);
 		
 		if (*p == CLI_DIRSEP_CHAR)
 			pstrcpy(mget_mask,p);
@@ -1068,8 +1058,6 @@ static int cmd_mget(void)
 
 	if (!*mget_mask) {
 		pstrcpy(mget_mask,cur_dir);
-		if(mget_mask[strlen(mget_mask)-1]!=CLI_DIRSEP_CHAR)
-			pstrcat(mget_mask,CLI_DIRSEP_STR);
 		pstrcat(mget_mask,"*");
 		do_list(mget_mask, attribute,do_mget,False,True);
 	}
@@ -1348,7 +1336,6 @@ static int cmd_put(void)
 	char *p=buf;
 	
 	pstrcpy(rname,cur_dir);
-	pstrcat(rname,CLI_DIRSEP_STR);
   
 	if (!next_token_nr(NULL,p,NULL,sizeof(buf))) {
 		d_printf("put <filename>\n");
@@ -1997,6 +1984,7 @@ static int cmd_posix(void)
 		CLI_DIRSEP_CHAR = '/';
 		*CLI_DIRSEP_STR = '/';
 		pstrcpy(cur_dir, CLI_DIRSEP_STR);
+		do_cd(cur_dir);
 	}
 
 	return 0;
@@ -2902,7 +2890,6 @@ static int cmd_reget(void)
 	char *p;
 
 	pstrcpy(remote_name, cur_dir);
-	pstrcat(remote_name, CLI_DIRSEP_STR);
 	
 	p = remote_name + strlen(remote_name);
 	
@@ -2931,7 +2918,6 @@ static int cmd_reput(void)
 	SMB_STRUCT_STAT st;
 	
 	pstrcpy(remote_name, cur_dir);
-	pstrcat(remote_name, CLI_DIRSEP_STR);
   
 	if (!next_token_nr(NULL, p, NULL, sizeof(buf))) {
 		d_printf("reput <filename>\n");
