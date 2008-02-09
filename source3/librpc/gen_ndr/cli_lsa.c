@@ -427,7 +427,7 @@ NTSTATUS rpccli_lsa_CreateAccount(struct rpc_pipe_client *cli,
 				  struct policy_handle *handle,
 				  struct dom_sid2 *sid,
 				  uint32_t access_mask,
-				  struct policy_handle **acct_handle)
+				  struct policy_handle *acct_handle)
 {
 	struct lsa_CreateAccount r;
 	NTSTATUS status;
@@ -762,7 +762,7 @@ NTSTATUS rpccli_lsa_OpenAccount(struct rpc_pipe_client *cli,
 				struct policy_handle *handle,
 				struct dom_sid2 *sid,
 				uint32_t access_mask,
-				struct policy_handle **acct_handle)
+				struct policy_handle *acct_handle)
 {
 	struct lsa_OpenAccount r;
 	NTSTATUS status;
@@ -1499,7 +1499,7 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle **handle)
+				 struct policy_handle *handle)
 {
 	struct lsa_DeleteObject r;
 	NTSTATUS status;

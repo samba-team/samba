@@ -585,7 +585,7 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
                                            const char **argv) 
 {
 	POLICY_HND dom_pol;
-	POLICY_HND *user_pol = NULL;
+	POLICY_HND user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 des_access = 0x000f000f;
 	
@@ -632,7 +632,7 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
                                            const char **argv) 
 {
 	POLICY_HND dom_pol;
-	POLICY_HND *user_pol = NULL;
+	POLICY_HND user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_desired = 0x000f000f;
 	
@@ -666,7 +666,7 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_enum_privsaccount(cli, mem_ctx, user_pol, &count, &set);
+	result = rpccli_lsa_enum_privsaccount(cli, mem_ctx, &user_pol, &count, &set);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;

@@ -278,7 +278,7 @@ import "security.idl";
 		[in]    policy_handle *handle,
 		[in,ref] dom_sid2 *sid,
 		[in]    uint32 access_mask,
-		[out]   policy_handle **acct_handle
+		[out]   policy_handle *acct_handle
 		);
 
 	/******************/
@@ -429,11 +429,11 @@ import "security.idl";
 
 	/*****************************************/
 	/* Function:     0x11                    */
-	NTSTATUS lsa_OpenAccount (
+	NTSTATUS lsa_OpenAccount(
 		[in]         policy_handle *handle,
 		[in,ref]     dom_sid2 *sid,
 		[in]         uint32 access_mask,
-		[out]        policy_handle **acct_handle
+		[out]        policy_handle *acct_handle
 		);
 
 
@@ -664,7 +664,7 @@ import "security.idl";
 
 	/* Function:        0x22 */
 	NTSTATUS lsa_DeleteObject(
-		[in,out] policy_handle **handle
+		[in,out] policy_handle *handle
 		);
 
 	/*******************/

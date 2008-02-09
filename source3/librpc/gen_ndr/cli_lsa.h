@@ -48,7 +48,7 @@ NTSTATUS rpccli_lsa_CreateAccount(struct rpc_pipe_client *cli,
 				  struct policy_handle *handle,
 				  struct dom_sid2 *sid,
 				  uint32_t access_mask,
-				  struct policy_handle **acct_handle);
+				  struct policy_handle *acct_handle);
 NTSTATUS rpccli_lsa_EnumAccounts(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *handle,
@@ -95,7 +95,7 @@ NTSTATUS rpccli_lsa_OpenAccount(struct rpc_pipe_client *cli,
 				struct policy_handle *handle,
 				struct dom_sid2 *sid,
 				uint32_t access_mask,
-				struct policy_handle **acct_handle);
+				struct policy_handle *acct_handle);
 NTSTATUS rpccli_lsa_EnumPrivsAccount(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct policy_handle *handle,
@@ -171,7 +171,7 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 					  uint16_t unknown);
 NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
-				 struct policy_handle **handle);
+				 struct policy_handle *handle);
 NTSTATUS rpccli_lsa_EnumAccountsWithUserRight(struct rpc_pipe_client *cli,
 					      TALLOC_CTX *mem_ctx,
 					      struct policy_handle *handle,
