@@ -1372,7 +1372,7 @@ static bool api_lsa_OpenAccount(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.acct_handle = talloc_zero(r, struct policy_handle);
+	r->out.acct_handle = talloc_zero(r, struct policy_handle *);
 	if (r->out.acct_handle == NULL) {
 		talloc_free(r);
 		return false;
@@ -1821,6 +1821,13 @@ static bool api_lsa_GetSystemAccessAccount(pipes_struct *p)
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_GetSystemAccessAccount, r);
+	}
+
+	ZERO_STRUCT(r->out);
+	r->out.access_mask = talloc_zero(r, uint32_t);
+	if (r->out.access_mask == NULL) {
+		talloc_free(r);
+		return false;
 	}
 
 	r->out.result = _lsa_GetSystemAccessAccount(p, r);

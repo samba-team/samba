@@ -1181,7 +1181,7 @@ struct netr_DsRGetDCName {
 	} in;
 
 	struct {
-		struct netr_DsRGetDCNameInfo *info;/* [ref] */
+		struct netr_DsRGetDCNameInfo **info;/* [ref] */
 		WERROR result;
 	} out;
 

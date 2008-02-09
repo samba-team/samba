@@ -316,29 +316,7 @@ static bool api_lsa_create_account(pipes_struct *p)
 
 static bool api_lsa_open_account(pipes_struct *p)
 {
-	LSA_Q_OPENACCOUNT q_u;
-	LSA_R_OPENACCOUNT r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_open_account("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_open_account: failed to unmarshall LSA_Q_OPENACCOUNT.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_open_account(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_open_account("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_open_account: Failed to marshall LSA_R_OPENACCOUNT.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_OPENACCOUNT);
 }
 
 /***************************************************************************
@@ -378,29 +356,7 @@ static bool api_lsa_enum_privsaccount(pipes_struct *p)
 
 static bool api_lsa_getsystemaccount(pipes_struct *p)
 {
-	LSA_Q_GETSYSTEMACCOUNT q_u;
-	LSA_R_GETSYSTEMACCOUNT r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_getsystemaccount("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_getsystemaccount: failed to unmarshall LSA_Q_GETSYSTEMACCOUNT.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_getsystemaccount(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_getsystemaccount("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_getsystemaccount: Failed to marshall LSA_R_GETSYSTEMACCOUNT.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_GETSYSTEMACCESSACCOUNT);
 }
 
 
@@ -410,29 +366,7 @@ static bool api_lsa_getsystemaccount(pipes_struct *p)
 
 static bool api_lsa_setsystemaccount(pipes_struct *p)
 {
-	LSA_Q_SETSYSTEMACCOUNT q_u;
-	LSA_R_SETSYSTEMACCOUNT r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_setsystemaccount("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_setsystemaccount: failed to unmarshall LSA_Q_SETSYSTEMACCOUNT.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_setsystemaccount(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_setsystemaccount("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_setsystemaccount: Failed to marshall LSA_R_SETSYSTEMACCOUNT.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_SETSYSTEMACCESSACCOUNT);
 }
 
 /***************************************************************************

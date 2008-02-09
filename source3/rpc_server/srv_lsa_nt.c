@@ -1655,16 +1655,17 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 
 
 /***************************************************************************
- Lsa Open Account
+ _lsa_OpenAccount
  ***************************************************************************/
 
-NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENACCOUNT *r_u)
+NTSTATUS _lsa_OpenAccount(pipes_struct *p,
+			  struct lsa_OpenAccount *r)
 {
 	struct lsa_info *handle;
 	struct lsa_info *info;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
@@ -1686,11 +1687,11 @@ NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENAC
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(info);
-	info->sid = q_u->sid.sid;
-	info->access = q_u->access;
+	info->sid = *r->in.sid;
+	info->access = r->in.access_mask;
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!create_policy_hnd(p, &r_u->pol, free_lsa_info, (void *)info))
+	if (!create_policy_hnd(p, *r->out.acct_handle, free_lsa_info, (void *)info))
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	return NT_STATUS_OK;
@@ -1732,16 +1733,17 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVS
 }
 
 /***************************************************************************
- 
+ _lsa_GetSystemAccessAccount
  ***************************************************************************/
 
-NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA_R_GETSYSTEMACCOUNT *r_u)
+NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p,
+				     struct lsa_GetSystemAccessAccount *r)
 {
 	struct lsa_info *info=NULL;
 
 	/* find the connection policy handle. */
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (!lookup_sid(p->mem_ctx, &info->sid, NULL, NULL, NULL))
@@ -1756,7 +1758,7 @@ NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA
 	  they can be ORed together
 	*/
 
-	r_u->access = PR_LOG_ON_LOCALLY | PR_ACCESS_FROM_NETWORK;
+	*r->out.access_mask = PR_LOG_ON_LOCALLY | PR_ACCESS_FROM_NETWORK;
 
 	return NT_STATUS_OK;
 }
@@ -1765,14 +1767,14 @@ NTSTATUS _lsa_getsystemaccount(pipes_struct *p, LSA_Q_GETSYSTEMACCOUNT *q_u, LSA
   update the systemaccount information
  ***************************************************************************/
 
-NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA_R_SETSYSTEMACCOUNT *r_u)
+NTSTATUS _lsa_SetSystemAccessAccount(pipes_struct *p,
+				     struct lsa_SetSystemAccessAccount *r)
 {
 	struct lsa_info *info=NULL;
 	GROUP_MAP map;
-	r_u->status = NT_STATUS_OK;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check to see if the pipe_user is a Domain Admin since 
@@ -2240,12 +2242,6 @@ NTSTATUS _lsa_LookupSids(pipes_struct *p, struct lsa_LookupSids *r)
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS _lsa_OpenAccount(pipes_struct *p, struct lsa_OpenAccount *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
 NTSTATUS _lsa_EnumPrivsAccount(pipes_struct *p, struct lsa_EnumPrivsAccount *r)
 {
 	p->rng_fault_state = True;
@@ -2271,18 +2267,6 @@ NTSTATUS _lsa_GetQuotasForAccount(pipes_struct *p, struct lsa_GetQuotasForAccoun
 }
 
 NTSTATUS _lsa_SetQuotasForAccount(pipes_struct *p, struct lsa_SetQuotasForAccount *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p, struct lsa_GetSystemAccessAccount *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_SetSystemAccessAccount(pipes_struct *p, struct lsa_SetSystemAccessAccount *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;

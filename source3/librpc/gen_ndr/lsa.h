@@ -829,7 +829,7 @@ struct lsa_OpenAccount {
 	} in;
 
 	struct {
-		struct policy_handle *acct_handle;/* [ref] */
+		struct policy_handle **acct_handle;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -894,6 +894,11 @@ struct lsa_SetQuotasForAccount {
 
 struct lsa_GetSystemAccessAccount {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *access_mask;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -901,6 +906,11 @@ struct lsa_GetSystemAccessAccount {
 
 
 struct lsa_SetSystemAccessAccount {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t access_mask;
+	} in;
+
 	struct {
 		NTSTATUS result;
 	} out;
@@ -1223,12 +1233,12 @@ struct lsa_SetInfoPolicy2 {
 struct lsa_QueryTrustedDomainInfoByName {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		struct lsa_String trusted_domain;
+		struct lsa_String *trusted_domain;/* [ref] */
 		enum lsa_TrustDomInfoEnum level;
 	} in;
 
 	struct {
-		union lsa_TrustedDomainInfo *info;/* [unique,switch_is(level)] */
+		union lsa_TrustedDomainInfo *info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 

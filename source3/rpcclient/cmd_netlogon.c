@@ -126,13 +126,14 @@ static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 					 TALLOC_CTX *mem_ctx, int argc,
 					 const char **argv)
 {
-	WERROR result;
+	NTSTATUS result;
+	WERROR werr = WERR_OK;
 	uint32 flags = DS_RETURN_DNS_NAME;
 	const char *server_name = cli->cli->desthost;
 	const char *domain_name;
 	struct GUID domain_guid = GUID_zero();
 	struct GUID site_guid = GUID_zero();
-	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+	struct netr_DsRGetDCNameInfo *info = NULL;
 
 	if (argc < 2) {
 		fprintf(stderr, "Usage: %s [domain_name] [domain_guid] "
@@ -160,20 +161,25 @@ static WERROR cmd_netlogon_dsr_getdcname(struct rpc_pipe_client *cli,
 
 	debug_dsdcinfo_flags(1,flags);
 
-	result = rpccli_netlogon_dsr_getdcname(cli, mem_ctx, server_name, domain_name, 
-					       &domain_guid, &site_guid, flags,
-					       &info);
+	result = rpccli_netr_DsRGetDCName(cli, mem_ctx,
+					  server_name,
+					  domain_name,
+					  &domain_guid,
+					  &site_guid,
+					  flags,
+					  &info,
+					  &werr);
 
-	if (W_ERROR_IS_OK(result)) {
-		d_printf("DsGetDcName gave\n");
-		display_ds_domain_controller_info(mem_ctx, info);
+	if (W_ERROR_IS_OK(werr)) {
+		d_printf("DsGetDcName gave: %s\n",
+		NDR_PRINT_STRUCT_STRING(mem_ctx, netr_DsRGetDCNameInfo, info));
 		return WERR_OK;
 	}
 
 	printf("rpccli_netlogon_dsr_getdcname returned %s\n",
-	       dos_errstr(result));
+	       dos_errstr(werr));
 
-	return result;
+	return werr;
 }
 
 static WERROR cmd_netlogon_dsr_getdcnameex(struct rpc_pipe_client *cli,
