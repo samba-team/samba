@@ -78,9 +78,25 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			len = CVAL(p, 26);
 			p += 27;
 			p += clistr_align_in(cli, p, 0);
-			if (p + len + 2 > pdata_end) {
+
+			/* We can safely use +1 here (which is required by OS/2)
+			 * instead of +2 as the STR_TERMINATE flag below is
+			 * actually used as the length calculation.
+			 * The len+2 is merely an upper bound.
+			 * We ensure we don't get a one byte overread by
+			 * doing a zero termination at pdata_end[-1];
+			 * JRA + kukks */
+
+			if (p + len + 1 > pdata_end) {
 				return pdata_end - base;
 			}
+
+			/* Ensure the null termination (see above). */
+			{
+				char *pend = CONST_DISCARD(char *, pdata_end);
+				pend[-1] = '\0';
+			}
+
 			/* the len+2 below looks strange but it is
 			   important to cope with the differences
 			   between win2000 and win9x for this call
