@@ -64,30 +64,28 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 	fi
 
 	if test "$PKG_CONFIG" = "no" ; then
-    		echo "*** The pkg-config script could not be found. Make sure it is"
-    		echo "*** in your path, or set the PKG_CONFIG environment variable"
-    		echo "*** to the full path to pkg-config."
-    		echo "*** Or see http://pkg-config.freedesktop.org/ to get pkg-config."
+		echo "*** The pkg-config script could not be found. Make sure it is"
+		echo "*** in your path, or set the PKG_CONFIG environment variable"
+		echo "*** to the full path to pkg-config."
+		echo "*** Or see http://pkg-config.freedesktop.org/ to get pkg-config."
 			ac_cv_$1_found=no
 	else
 		if $PKG_CONFIG --atleast-pkgconfig-version 0.9.0; then
-        		AC_MSG_CHECKING(for $2)
+			AC_MSG_CHECKING(for $2)
 
-          		if $PKG_CONFIG --exists '$2' ; then
+			if $PKG_CONFIG --exists '$2' ; then
 				AC_MSG_RESULT(yes)
 
-
 				$1_CFLAGS="`$PKG_CONFIG --cflags '$2'`"
-    			OLD_CFLAGS="$CFLAGS"
-	    		CFLAGS="$CFLAGS $$1_CFLAGS"
-		    	AC_MSG_CHECKING([that the C compiler can use the $1_CFLAGS])
-    			AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
+				OLD_CFLAGS="$CFLAGS"
+				CFLAGS="$CFLAGS $$1_CFLAGS"
+				AC_MSG_CHECKING([that the C compiler can use the $1_CFLAGS])
+				AC_TRY_RUN([#include "${srcdir-.}/build/tests/trivial.c"],
 					SMB_ENABLE($1, YES)
-			    	AC_MSG_RESULT(yes),
+					AC_MSG_RESULT(yes),
 					AC_MSG_RESULT(no),
 					AC_MSG_WARN([cannot run when cross-compiling]))
-    			CFLAGS="$OLD_CFLAGS"
-
+				CFLAGS="$OLD_CFLAGS"
 
 				SMB_EXT_LIB($1, 
 					[`$PKG_CONFIG --libs-only-l '$2'`], 
@@ -97,17 +95,17 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 					[ $2 ])
 				ac_cv_$1_found=yes
 
-        		else
+			else
 				AC_MSG_RESULT(no)
-            			$PKG_CONFIG --errors-to-stdout --print-errors '$2'
+				$PKG_CONFIG --errors-to-stdout --print-errors '$2'
 				ac_cv_$1_found=no
-        		fi
-     		else
-        		echo "*** Your version of pkg-config is too old. You need version $PKG_CONFIG_MIN_VERSION or newer."
-        			echo "*** See http://pkg-config.freedesktop.org/"
-				ac_cv_$1_found=no
-     		fi
-  	fi
+			fi
+		else
+			echo "*** Your version of pkg-config is too old. You need version $PKG_CONFIG_MIN_VERSION or newer."
+			echo "*** See http://pkg-config.freedesktop.org/"
+			ac_cv_$1_found=no
+		fi
+	fi
 	if test x$ac_cv_$1_found = x"yes"; then
 		ifelse([$3], [], [echo -n ""], [$3])
 	else
