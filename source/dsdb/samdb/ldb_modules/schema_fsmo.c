@@ -59,6 +59,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 
 	schema_dn = samdb_schema_dn(module->ldb);
 	if (!schema_dn) {
+		ldb_reset_err_string(module->ldb);
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
 			  "schema_fsmo_init: no schema dn present: (skip schema loading)\n");
 		return ldb_next_init(module);
@@ -91,6 +92,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 			 NULL, schema_attrs,
 			 &schema_res);
 	if (ret == LDB_ERR_NO_SUCH_OBJECT) {
+		ldb_reset_err_string(module->ldb);
 		ldb_debug(module->ldb, LDB_DEBUG_WARNING,
 			  "schema_fsmo_init: no schema head present: (skip schema loading)\n");
 		talloc_free(mem_ctx);

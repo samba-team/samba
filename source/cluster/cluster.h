@@ -25,7 +25,9 @@
 /*
   test for same cluster id
 */
-#define cluster_id_equal(id1, id2) ((id1)->id == (id2)->id && (id1)->node == (id2)->node)
+#define cluster_id_equal(id_1, id_2) ((id_1)->id == (id_2)->id \
+				    && (id_1)->id2 == (id_2)->id2 \
+				    && (id_1)->node == (id_2)->node)
 
 /*
   test for same cluster node
@@ -36,7 +38,7 @@ struct messaging_context;
 typedef void (*cluster_message_fn_t)(struct messaging_context *, DATA_BLOB);
 
 /* prototypes */
-struct server_id cluster_id(uint32_t id);
+struct server_id cluster_id(uint64_t id, uint32_t id2);
 const char *cluster_id_string(TALLOC_CTX *mem_ctx, struct server_id id);
 struct tdb_wrap *cluster_tdb_tmp_open(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *dbname, int flags);
 void *cluster_backend_handle(void);

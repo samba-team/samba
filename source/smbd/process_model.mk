@@ -32,6 +32,16 @@ PRIVATE_DEPENDENCIES = PTHREAD
 # End MODULE process_model_thread
 ################################################
 
+################################################
+# Start MODULE process_model_prefork
+[MODULE::process_model_prefork]
+INIT_FUNCTION = process_model_prefork_init 
+SUBSYSTEM = process_model
+OBJ_FILES = \
+		process_prefork.o
+# End MODULE process_model_thread
+################################################
+
 [SUBSYSTEM::process_model]
 PRIVATE_PROTO_HEADER = process_model_proto.h
 OBJ_FILES = \

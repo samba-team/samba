@@ -46,3 +46,11 @@ AC_ARG_ENABLE(automatic-dependencies,
 [ automatic_dependencies=no ])
 AC_MSG_RESULT($automatic_dependencies)
 AC_SUBST(automatic_dependencies)
+
+FIRST_PREREQ="\$*.c"
+AC_SUBST(FIRST_PREREQ)
+
+if test x$GNU_MAKE = xyes; then
+	FIRST_PREREQ="\$<"
+fi
+

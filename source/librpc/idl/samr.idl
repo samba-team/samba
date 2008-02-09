@@ -12,8 +12,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 [ uuid("12345778-1234-abcd-ef00-0123456789ac"),
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\samr]","ncacn_ip_tcp:", "ncalrpc:"),
-  pointer_default(unique),
-  pointer_default_top(unique)
+  pointer_default(unique)
 ] interface samr
 {
 	typedef bitmap security_secinfo security_secinfo;
@@ -51,54 +50,54 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_ConnectAccessMask;
 
 	typedef [bitmap32bit] bitmap {
-		USER_ACCESS_GET_NAME_ETC             = 0x00000001,
-		USER_ACCESS_GET_LOCALE               = 0x00000002,
-		USER_ACCESS_SET_LOC_COM              = 0x00000004,
-		USER_ACCESS_GET_LOGONINFO            = 0x00000008,
-		USER_ACCESS_GET_ATTRIBUTES           = 0x00000010,
-		USER_ACCESS_SET_ATTRIBUTES           = 0x00000020,
-		USER_ACCESS_CHANGE_PASSWORD          = 0x00000040,
-		USER_ACCESS_SET_PASSWORD             = 0x00000080,
-		USER_ACCESS_GET_GROUPS               = 0x00000100,
-		USER_ACCESS_GET_GROUP_MEMBERSHIP     = 0x00000200,
-		USER_ACCESS_CHANGE_GROUP_MEMBERSHIP  = 0x00000400
+		SAMR_USER_ACCESS_GET_NAME_ETC             = 0x00000001,
+		SAMR_USER_ACCESS_GET_LOCALE               = 0x00000002,
+		SAMR_USER_ACCESS_SET_LOC_COM              = 0x00000004,
+		SAMR_USER_ACCESS_GET_LOGONINFO            = 0x00000008,
+		SAMR_USER_ACCESS_GET_ATTRIBUTES           = 0x00000010,
+		SAMR_USER_ACCESS_SET_ATTRIBUTES           = 0x00000020,
+		SAMR_USER_ACCESS_CHANGE_PASSWORD          = 0x00000040,
+		SAMR_USER_ACCESS_SET_PASSWORD             = 0x00000080,
+		SAMR_USER_ACCESS_GET_GROUPS               = 0x00000100,
+		SAMR_USER_ACCESS_GET_GROUP_MEMBERSHIP     = 0x00000200,
+		SAMR_USER_ACCESS_CHANGE_GROUP_MEMBERSHIP  = 0x00000400
 	} samr_UserAccessMask;
 
 	typedef [bitmap32bit] bitmap {
-		DOMAIN_ACCESS_LOOKUP_INFO_1  = 0x00000001,
-		DOMAIN_ACCESS_SET_INFO_1     = 0x00000002,
-		DOMAIN_ACCESS_LOOKUP_INFO_2  = 0x00000004,
-		DOMAIN_ACCESS_SET_INFO_2     = 0x00000008,
-		DOMAIN_ACCESS_CREATE_USER    = 0x00000010,
-		DOMAIN_ACCESS_CREATE_GROUP   = 0x00000020,
-		DOMAIN_ACCESS_CREATE_ALIAS   = 0x00000040,
-		DOMAIN_ACCESS_LOOKUP_ALIAS   = 0x00000080,
-		DOMAIN_ACCESS_ENUM_ACCOUNTS  = 0x00000100,
-		DOMAIN_ACCESS_OPEN_ACCOUNT   = 0x00000200,
-		DOMAIN_ACCESS_SET_INFO_3     = 0x00000400
+		SAMR_DOMAIN_ACCESS_LOOKUP_INFO_1  = 0x00000001,
+		SAMR_DOMAIN_ACCESS_SET_INFO_1     = 0x00000002,
+		SAMR_DOMAIN_ACCESS_LOOKUP_INFO_2  = 0x00000004,
+		SAMR_DOMAIN_ACCESS_SET_INFO_2     = 0x00000008,
+		SAMR_DOMAIN_ACCESS_CREATE_USER    = 0x00000010,
+		SAMR_DOMAIN_ACCESS_CREATE_GROUP   = 0x00000020,
+		SAMR_DOMAIN_ACCESS_CREATE_ALIAS   = 0x00000040,
+		SAMR_DOMAIN_ACCESS_LOOKUP_ALIAS   = 0x00000080,
+		SAMR_DOMAIN_ACCESS_ENUM_ACCOUNTS  = 0x00000100,
+		SAMR_DOMAIN_ACCESS_OPEN_ACCOUNT   = 0x00000200,
+		SAMR_DOMAIN_ACCESS_SET_INFO_3     = 0x00000400
 	} samr_DomainAccessMask;
 
 	typedef [bitmap32bit] bitmap {
-		GROUP_ACCESS_LOOKUP_INFO     = 0x00000001,
-		GROUP_ACCESS_SET_INFO        = 0x00000002,
-		GROUP_ACCESS_ADD_MEMBER      = 0x00000004,
-		GROUP_ACCESS_REMOVE_MEMBER   = 0x00000008,
-		GROUP_ACCESS_GET_MEMBERS     = 0x00000010
+		SAMR_GROUP_ACCESS_LOOKUP_INFO     = 0x00000001,
+		SAMR_GROUP_ACCESS_SET_INFO        = 0x00000002,
+		SAMR_GROUP_ACCESS_ADD_MEMBER      = 0x00000004,
+		SAMR_GROUP_ACCESS_REMOVE_MEMBER   = 0x00000008,
+		SAMR_GROUP_ACCESS_GET_MEMBERS     = 0x00000010
 	} samr_GroupAccessMask;
 
 	typedef [bitmap32bit] bitmap {
-		ALIAS_ACCESS_ADD_MEMBER      = 0x00000001,
-		ALIAS_ACCESS_REMOVE_MEMBER   = 0x00000002,
-		ALIAS_ACCESS_GET_MEMBERS     = 0x00000004,
-		ALIAS_ACCESS_LOOKUP_INFO     = 0x00000008,
-		ALIAS_ACCESS_SET_INFO        = 0x00000010
+		SAMR_ALIAS_ACCESS_ADD_MEMBER      = 0x00000001,
+		SAMR_ALIAS_ACCESS_REMOVE_MEMBER   = 0x00000002,
+		SAMR_ALIAS_ACCESS_GET_MEMBERS     = 0x00000004,
+		SAMR_ALIAS_ACCESS_LOOKUP_INFO     = 0x00000008,
+		SAMR_ALIAS_ACCESS_SET_INFO        = 0x00000010
 	} samr_AliasAccessMask;
 
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS samr_Connect (
 		/* notice the lack of [string] */
-		[in]       uint16 *system_name,
+		[in,unique] uint16 *system_name,
 		[in]       samr_ConnectAccessMask access_mask,
 		[out,ref]  policy_handle *connect_handle
 		);
@@ -125,7 +124,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_QuerySecurity (
 		[in,ref]          policy_handle *handle,
 		[in]              security_secinfo sec_info,
-		[out]             sec_desc_buf *sdbuf
+		[out,unique]      sec_desc_buf *sdbuf
 		);
 
 	/******************/
@@ -143,7 +142,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_LookupDomain (
 		[in,ref]  policy_handle *connect_handle,		
 		[in,ref]  lsa_String *domain_name,
-		[out]     dom_sid2 *sid
+		[out,unique] dom_sid2 *sid
 		);
 
 
@@ -164,7 +163,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[in,ref]      policy_handle *connect_handle,
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          uint32 buf_size,
-		[out]         samr_SamArray *sam,
+		[out,unique]  samr_SamArray *sam,
 		[out]         uint32 num_entries
 		);
 
@@ -288,7 +287,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_QueryDomainInfo(
 		[in,ref]      policy_handle *domain_handle,
 		[in]          uint16 level,
-		[out,switch_is(level)] samr_DomainInfo *info
+		[out,switch_is(level),unique] samr_DomainInfo *info
 		);
 
 	/************************/
@@ -321,7 +320,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[in,ref]      policy_handle *domain_handle,
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          uint32 max_size,
-		[out]         samr_SamArray *sam,
+		[out,unique]  samr_SamArray *sam,
 		[out]         uint32 num_entries
 		);
 
@@ -349,7 +348,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          samr_AcctFlags acct_flags,
 		[in]          uint32 max_size,
-		[out]         samr_SamArray *sam,
+		[out,unique]  samr_SamArray *sam,
 		[out]         uint32 num_entries
 		);
 
@@ -369,7 +368,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 		[in,ref]      policy_handle *domain_handle,
 		[in,out,ref]  uint32 *resume_handle,
 		[in]          samr_AcctFlags acct_flags,
-		[out]         samr_SamArray *sam,
+		[out,unique]  samr_SamArray *sam,
 		[out]         uint32 num_entries
 		);
 
@@ -466,7 +465,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_QueryGroupInfo(
 		[in,ref]                  policy_handle *group_handle,
 		[in]                      samr_GroupInfoEnum level,
-		[out,switch_is(level)]    samr_GroupInfo *info
+		[out,switch_is(level),unique] samr_GroupInfo *info
 		);
 
 	/************************/
@@ -509,7 +508,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	NTSTATUS samr_QueryGroupMember(
 		[in,ref]  policy_handle *group_handle,
-		[out]     samr_RidTypeArray *rids
+		[out,unique] samr_RidTypeArray *rids
 		);
 
 
@@ -563,7 +562,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_QueryAliasInfo(
 		[in,ref]                  policy_handle  *alias_handle,
 		[in]                      samr_AliasInfoEnum      level,
-		[out,switch_is(level)]    samr_AliasInfo *info
+		[out,switch_is(level),unique] samr_AliasInfo *info
 		);
 
 	/************************/
@@ -862,7 +861,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	[public] NTSTATUS samr_QueryUserInfo(
 		[in,ref]                  policy_handle *user_handle,
 		[in]                      uint16 level,
-		[out,switch_is(level)]    samr_UserInfo *info
+		[out,unique,switch_is(level)] samr_UserInfo *info
 		);
 
 
@@ -887,15 +886,15 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_ChangePasswordUser(
 		[in,ref]    policy_handle *user_handle,
 		[in]        boolean8 lm_present,
-		[in]        samr_Password *old_lm_crypted,
-		[in]        samr_Password *new_lm_crypted,
+		[in,unique] samr_Password *old_lm_crypted,
+		[in,unique] samr_Password *new_lm_crypted,
 		[in]        boolean8 nt_present,
-		[in]        samr_Password *old_nt_crypted,
-		[in]        samr_Password *new_nt_crypted,
+		[in,unique] samr_Password *old_nt_crypted,
+		[in,unique] samr_Password *new_nt_crypted,
 		[in]        boolean8 cross1_present,
-		[in]        samr_Password *nt_cross,
+		[in,unique] samr_Password *nt_cross,
 		[in]        boolean8 cross2_present,
-		[in]        samr_Password *lm_cross
+		[in,unique] samr_Password *lm_cross
 		);
 
 	/************************/
@@ -913,7 +912,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	NTSTATUS samr_GetGroupsForUser(
 		[in,ref]   policy_handle *user_handle,
-		[out]      samr_RidWithAttributeArray  *rids
+		[out,unique] samr_RidWithAttributeArray  *rids
 		);
 
 	/************************/
@@ -1061,7 +1060,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_QueryDomainInfo2(
 		[in,ref]      policy_handle *domain_handle,
 		[in]          uint16 level,
-		[out,switch_is(level)] samr_DomainInfo *info
+		[out,unique,switch_is(level)] samr_DomainInfo *info
 		);
 
 	/************************/
@@ -1073,7 +1072,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_QueryUserInfo2(
 		[in,ref]                  policy_handle *user_handle,
 		[in]                      uint16 level,
-		[out,switch_is(level)]    samr_UserInfo *info
+		[out,unique,switch_is(level)]    samr_UserInfo *info
 		);
 
 	/************************/
@@ -1155,35 +1154,35 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/* Function    0x36     */
 
 	NTSTATUS samr_OemChangePasswordUser2(
-		[in]              lsa_AsciiString *server,
+		[in,unique]       lsa_AsciiString *server,
 		[in,ref]          lsa_AsciiString *account,
-		[in]              samr_CryptPassword *password,
-		[in]              samr_Password *hash
+		[in,unique]       samr_CryptPassword *password,
+		[in,unique]       samr_Password *hash
 		);
 
 	/************************/
 	/* Function    0x37     */
 	NTSTATUS samr_ChangePasswordUser2(
-		[in]              lsa_String *server,
+		[in,unique]       lsa_String *server,
 		[in,ref]          lsa_String *account,
-		[in]              samr_CryptPassword *nt_password,
-		[in]              samr_Password *nt_verifier,
+		[in,unique]       samr_CryptPassword *nt_password,
+		[in,unique]       samr_Password *nt_verifier,
 		[in]              boolean8 lm_change,
-		[in]              samr_CryptPassword *lm_password,
-		[in]              samr_Password *lm_verifier
+		[in,unique]       samr_CryptPassword *lm_password,
+		[in,unique]       samr_Password *lm_verifier
 		);
 
 	/************************/
 	/* Function    0x38     */
 	NTSTATUS samr_GetDomPwInfo(
-		[in]        lsa_String *domain_name,
+		[in,unique] lsa_String *domain_name,
 		[out]       samr_PwInfo info
 		);
 
 	/************************/
 	/* Function    0x39     */
 	NTSTATUS samr_Connect2(
-		[in,string,charset(UTF16)] uint16 *system_name,
+		[in,unique,string,charset(UTF16)] uint16 *system_name,
 		[in] samr_ConnectAccessMask access_mask,
 		[out,ref]  policy_handle *connect_handle
 		);
@@ -1221,7 +1220,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/************************/
 	/* Function    0x3d     */
 	NTSTATUS samr_Connect3(
-		[in,string,charset(UTF16)] uint16 *system_name,
+		[in,unique,string,charset(UTF16)] uint16 *system_name,
 		/* this unknown value seems to be completely ignored by w2k3 */
 		[in] uint32 unknown,
 		[in] samr_ConnectAccessMask access_mask,
@@ -1231,7 +1230,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	/************************/
 	/* Function    0x3e     */
 	NTSTATUS samr_Connect4(
-		[in,string,charset(UTF16)] uint16 *system_name,
+		[in,unique,string,charset(UTF16)] uint16 *system_name,
 		[in] uint32 unknown,
 		[in] samr_ConnectAccessMask access_mask,
 		[out,ref]  policy_handle *connect_handle
@@ -1249,16 +1248,16 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_ChangeReject;
 
 	NTSTATUS samr_ChangePasswordUser3(
-		[in]              lsa_String *server,
+		[in,unique]       lsa_String *server,
 		[in,ref]          lsa_String *account,
-		[in]              samr_CryptPassword *nt_password,
-		[in]              samr_Password *nt_verifier,
+		[in,unique]       samr_CryptPassword *nt_password,
+		[in,unique]       samr_Password *nt_verifier,
 		[in]              boolean8 lm_change,
-		[in]              samr_CryptPassword *lm_password,
-		[in]              samr_Password *lm_verifier,
-		[in]              samr_CryptPassword *password3,
-		[out]             samr_DomInfo1 *dominfo,
-		[out]             samr_ChangeReject *reject
+		[in,unique]       samr_CryptPassword *lm_password,
+		[in,unique]       samr_Password *lm_verifier,
+		[in,unique]       samr_CryptPassword *password3,
+		[out,unique]      samr_DomInfo1 *dominfo,
+		[out,unique]      samr_ChangeReject *reject
 		);
 
 	/************************/
@@ -1274,7 +1273,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	} samr_ConnectInfo;
 
 	[public] NTSTATUS samr_Connect5(
-		[in,string,charset(UTF16)] uint16 *system_name,
+		[in,unique,string,charset(UTF16)] uint16 *system_name,
 		[in]       samr_ConnectAccessMask  access_mask,
 		[in,out]   uint32             level,
 		[in,out,switch_is(level),ref] samr_ConnectInfo *info,
@@ -1286,7 +1285,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_RidToSid(
 		[in,ref]    policy_handle *domain_handle,
 		[in]        uint32        rid,
-		[out]       dom_sid2      *sid
+		[out,unique] dom_sid2      *sid
 		);
 
 
@@ -1300,9 +1299,9 @@ import "misc.idl", "lsa.idl", "security.idl";
 	*/
 
 	NTSTATUS samr_SetDsrmPassword(
-		[in]       lsa_String *name,
+		[in,unique] lsa_String *name,
 		[in]       uint32 unknown,
-		[in]       samr_Password *hash
+		[in,unique] samr_Password *hash
 		);
 
 
@@ -1401,6 +1400,6 @@ import "misc.idl", "lsa.idl", "security.idl";
 	NTSTATUS samr_ValidatePassword(
 		[in] samr_ValidatePasswordLevel level,
 		[in,switch_is(level)] samr_ValidatePasswordReq req,
-		[out,switch_is(level)] samr_ValidatePasswordRep *rep
+		[out,unique,switch_is(level)] samr_ValidatePasswordRep *rep
 		);
 }

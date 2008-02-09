@@ -51,7 +51,8 @@ interface misc
 
 	/* id used to identify a endpoint, possibly in a cluster */
 	typedef [public] struct {
-		uint32 id;
+		hyper id;
+		uint32 id2;
 		uint32 node;
 	} server_id;
 }

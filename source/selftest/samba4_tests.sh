@@ -74,7 +74,7 @@ done
 # is now pretty well tested by the rest of the quick tests anyway
 LDBDIR=$samba4srcdir/lib/ldb
 export LDBDIR
-plantest "ldb" none $LDBDIR/tests/test-tdb.sh
+plantest "ldb" none TEST_DATA_PREFIX=\$PREFIX $LDBDIR/tests/test-tdb.sh
 
 plantest "js.ldap" dc $SCRIPTDIR/ldap.js $CONFIGURATION -d 10 \$SERVER -U\$USERNAME%\$PASSWORD
 
@@ -251,8 +251,8 @@ bbdir=$incdir/../../testprogs/blackbox
 plantest "blackbox.smbclient" dc $bbdir/test_smbclient.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX" 
 plantest "blackbox.kinit" dc $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" 
 plantest "blackbox.cifsdd" dc $bbdir/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 
-plantest "blackbox.nmblookup" dc $bbdir/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" 
-plantest "blackbox.nmblookup" member $bbdir/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP"
+plantest "blackbox.nmblookup" dc $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" 
+plantest "blackbox.nmblookup" member $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP"
 
 # Tests using the "Simple" NTVFS backend
 
@@ -330,5 +330,5 @@ then
 	rm -rf $PREFIX/upgrade
 	plantest "blackbox.upgrade" none $PYTHON setup/upgrade.py $CONFIGURATION --targetdir=$PREFIX/upgrade ../testdata/samba3 ../testdata/samba3/smb.conf
 	rm -rf $PREFIX/provision
-	plantest "blackbox.provision.py" none $PYTHON ./setup/provision.py $CONFIGURATION --domain=FOO --realm=foo --targetdir=$PREFIX/provision
+	plantest "blackbox.provision.py" none $PYTHON ./setup/provision.py $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/provision
 fi

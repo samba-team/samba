@@ -1,10 +1,10 @@
 #!/usr/bin/python
 
 # Unix SMB/CIFS implementation.
-# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
 #
 # Based on the original in EJS:
-# Copyright (C) Andrew Tridgell 2005
+# Copyright (C) Andrew Tridgell <tridge@samba.org> 2005
 #   
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -105,7 +105,7 @@ userAccountControl: %u
         assert(len(res) == 1 and res[0].defaultNamingContext is not None)
         domain_dn = res[0]["defaultNamingContext"][0]
         assert(domain_dn is not None)
-        dom_users = self.searchone(domain_dn, "dn", "name=Domain Users")
+        dom_users = self.searchone(basedn=domain_dn, attribute="dn", expression="name=Domain Users")
         assert(dom_users is not None)
 
         user_dn = "CN=%s,CN=Users,%s" % (username, domain_dn)
@@ -145,3 +145,10 @@ member: %s
 
     def attach_schema_from_ldif(self, pf, df):
         misc.dsdb_attach_schema_from_ldif_file(self, pf, df)
+
+    def set_invocation_id(self, invocation_id):
+    	"""Set the invocation id for this SamDB handle.
+    	
+    	:param invocation_id: GUID of the invocation id.
+    	"""
+    	misc.dsdb_set_ntds_invocation_id(self, invocation_id)

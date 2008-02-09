@@ -34,3 +34,8 @@ attributeSchema
 subSchema
 queryPolicy
 groupPolicyContainer
+ipsecPolicy
+ipsecISAKMPPolicy
+ipsecNFA
+ipsecFilter
+ipsecNegotiationPolicy

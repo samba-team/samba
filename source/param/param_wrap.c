@@ -2602,6 +2602,7 @@ SWIGINTERNINLINE PyObject*
   return PyBool_FromLong(value ? 1 : 0);
 }
 
+SWIGINTERN bool loadparm_context_load_default(loadparm_context *self){ return lp_load_default(self); }
 SWIGINTERN int loadparm_context___len__(loadparm_context *self){ return lp_numservices(self); }
 
   #define SWIG_From_long   PyInt_FromLong 
@@ -2836,6 +2837,34 @@ SWIGINTERN PyObject *_wrap_LoadParm_load(PyObject *SWIGUNUSEDPARM(self), PyObjec
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_LoadParm_load_default(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
+  PyObject *resultobj = 0;
+  loadparm_context *arg1 = (loadparm_context *) 0 ;
+  bool result;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  PyObject * obj0 = 0 ;
+  char *  kwnames[] = {
+    (char *) "self", NULL 
+  };
+  
+  arg1 = loadparm_init(NULL);
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:LoadParm_load_default",kwnames,&obj0)) SWIG_fail;
+  if (obj0) {
+    res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_loadparm_context, 0 |  0 );
+    if (!SWIG_IsOK(res1)) {
+      SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "LoadParm_load_default" "', argument " "1"" of type '" "loadparm_context *""'"); 
+    }
+    arg1 = (loadparm_context *)(argp1);
+  }
+  result = (bool)loadparm_context_load_default(arg1);
+  resultobj = SWIG_From_bool((bool)(result));
+  return resultobj;
+fail:
   return NULL;
 }
 
@@ -4050,6 +4079,7 @@ SWIGINTERN PyObject *Swig_var_default_config_get(void) {
 static PyMethodDef SwigMethods[] = {
 	 { (char *)"new_LoadParm", (PyCFunction)_wrap_new_LoadParm, METH_NOARGS, NULL},
 	 { (char *)"LoadParm_load", (PyCFunction) _wrap_LoadParm_load, METH_VARARGS | METH_KEYWORDS, NULL},
+	 { (char *)"LoadParm_load_default", (PyCFunction) _wrap_LoadParm_load_default, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm___len__", (PyCFunction) _wrap_LoadParm___len__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm___getitem__", (PyCFunction) _wrap_LoadParm___getitem__, METH_VARARGS | METH_KEYWORDS, NULL},
 	 { (char *)"LoadParm_configfile", (PyCFunction) _wrap_LoadParm_configfile, METH_VARARGS | METH_KEYWORDS, NULL},

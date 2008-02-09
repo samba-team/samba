@@ -127,8 +127,8 @@ static void standard_accept_connection(struct event_context *ev,
 	talloc_free(c);
 	talloc_free(s);
 
-	/* setup this new connection */
-	new_conn(ev2, lp_ctx, sock2, cluster_id(pid), private);
+	/* setup this new connection.  Cluster ID is PID based for this process modal */
+	new_conn(ev2, lp_ctx, sock2, cluster_id(pid, 0), private);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no
@@ -144,6 +144,7 @@ static void standard_accept_connection(struct event_context *ev,
 */
 static void standard_new_task(struct event_context *ev, 
 			      struct loadparm_context *lp_ctx,
+			      const char *service_name,
 			      void (*new_task)(struct event_context *, struct loadparm_context *lp_ctx, struct server_id , void *), 
 			      void *private)
 {
@@ -179,10 +180,10 @@ static void standard_new_task(struct event_context *ev,
 	/* Ensure that the forked children do not expose identical random streams */
 	set_need_random_reseed();
 
-	setproctitle("task server_id[%d]", pid);
+	setproctitle("task %s server_id[%d]", service_name, pid);
 
-	/* setup this new connection */
-	new_task(ev2, lp_ctx, cluster_id(pid), private);
+	/* setup this new task.  Cluster ID is PID based for this process modal */
+	new_task(ev2, lp_ctx, cluster_id(pid, 0), private);
 
 	/* we can't return to the top level here, as that event context is gone,
 	   so we now process events in the new event context until there are no

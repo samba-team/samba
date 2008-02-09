@@ -82,10 +82,11 @@ sub HeaderElement($)
 
 #####################################################################
 # parse a struct
-sub HeaderStruct($$)
+sub HeaderStruct($$;$)
 {
-	my($struct,$name) = @_;
+	my($struct,$name,$tail) = @_;
 	pidl "struct $name";
+	pidl $tail if defined($tail) and not defined($struct->{ELEMENTS});
 	return if (not defined($struct->{ELEMENTS}));
 	pidl " {\n";
 	$tab_depth++;
@@ -103,13 +104,14 @@ sub HeaderStruct($$)
 	if (defined $struct->{PROPERTIES}) {
 		HeaderProperties($struct->{PROPERTIES}, []);
 	}
+	pidl $tail if defined($tail);
 }
 
 #####################################################################
 # parse a enum
-sub HeaderEnum($$)
+sub HeaderEnum($$;$)
 {
-	my($enum,$name) = @_;
+	my($enum,$name,$tail) = @_;
 	my $first = 1;
 
 	pidl "enum $name";
@@ -131,30 +133,29 @@ sub HeaderEnum($$)
 		my $count = 0;
 		my $with_val = 0;
 		my $without_val = 0;
-		if (defined($enum->{ELEMENTS})) {
-			pidl " { __donnot_use_enum_$name=0x7FFFFFFF}\n";
-			foreach my $e (@{$enum->{ELEMENTS}}) {
-				my $t = "$e";
-				my $name;
-				my $value;
-				if ($t =~ /(.*)=(.*)/) {
-					$name = $1;
-					$value = $2;
-					$with_val = 1;
-					fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
-						unless ($without_val == 0);
-				} else {
-					$name = $t;
-					$value = $count++;
-					$without_val = 1;
-					fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
-						unless ($with_val == 0);
-				}
-				pidl "#define $name ( $value )\n";
+		pidl " { __donnot_use_enum_$name=0x7FFFFFFF}\n";
+		foreach my $e (@{$enum->{ELEMENTS}}) {
+			my $t = "$e";
+			my $name;
+			my $value;
+			if ($t =~ /(.*)=(.*)/) {
+				$name = $1;
+				$value = $2;
+				$with_val = 1;
+				fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
+					unless ($without_val == 0);
+			} else {
+				$name = $t;
+				$value = $count++;
+				$without_val = 1;
+				fatal($e->{ORIGINAL}, "you can't mix enum member with values and without values!")
+					unless ($with_val == 0);
 			}
+			pidl "#define $name ( $value )\n";
 		}
 		pidl "#endif\n";
 	}
+	pidl $tail if defined($tail);
 }
 
 #####################################################################
@@ -172,12 +173,13 @@ sub HeaderBitmap($$)
 
 #####################################################################
 # parse a union
-sub HeaderUnion($$)
+sub HeaderUnion($$;$)
 {
-	my($union,$name) = @_;
+	my($union,$name,$tail) = @_;
 	my %done = ();
 
 	pidl "union $name";
+	pidl $tail if defined($tail) and not defined($union->{ELEMENTS});
 	return if (not defined($union->{ELEMENTS}));
 	pidl " {\n";
 	$tab_depth++;
@@ -195,18 +197,19 @@ sub HeaderUnion($$)
 	if (defined $union->{PROPERTIES}) {
 		HeaderProperties($union->{PROPERTIES}, []);
 	}
+	pidl $tail if defined($tail);
 }
 
 #####################################################################
 # parse a type
-sub HeaderType($$$)
+sub HeaderType($$$;$)
 {
-	my($e,$data,$name) = @_;
+	my($e,$data,$name,$tail) = @_;
 	if (ref($data) eq "HASH") {
-		($data->{TYPE} eq "ENUM") && HeaderEnum($data, $name);
+		($data->{TYPE} eq "ENUM") && HeaderEnum($data, $name, $tail);
 		($data->{TYPE} eq "BITMAP") && HeaderBitmap($data, $name);
-		($data->{TYPE} eq "STRUCT") && HeaderStruct($data, $name);
-		($data->{TYPE} eq "UNION") && HeaderUnion($data, $name);
+		($data->{TYPE} eq "STRUCT") && HeaderStruct($data, $name, $tail);
+		($data->{TYPE} eq "UNION") && HeaderUnion($data, $name, $tail);
 		return;
 	}
 
@@ -215,14 +218,15 @@ sub HeaderType($$$)
 	} else {
 		pidl mapTypeName($e->{TYPE});
 	}
+	pidl $tail if defined($tail);
 }
 
 #####################################################################
 # parse a typedef
-sub HeaderTypedef($)
+sub HeaderTypedef($;$)
 {
-	my($typedef) = shift;
-	HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME}) if defined ($typedef->{DATA});
+	my($typedef,$tail) = @_;
+	HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME}, $tail) if defined ($typedef->{DATA});
 }
 
 #####################################################################
@@ -359,16 +363,11 @@ sub HeaderInterface($)
 	}
 
 	foreach my $t (@{$interface->{TYPES}}) {
-		HeaderTypedef($t) if ($t->{TYPE} eq "TYPEDEF");
-		HeaderStruct($t, $t->{NAME}) if ($t->{TYPE} eq "STRUCT");
-		HeaderUnion($t, $t->{NAME}) if ($t->{TYPE} eq "UNION");
-		HeaderEnum($t, $t->{NAME}) if ($t->{TYPE} eq "ENUM");
+		HeaderTypedef($t, ";\n\n") if ($t->{TYPE} eq "TYPEDEF");
+		HeaderStruct($t, $t->{NAME}, ";\n\n") if ($t->{TYPE} eq "STRUCT");
+		HeaderUnion($t, $t->{NAME}, ";\n\n") if ($t->{TYPE} eq "UNION");
+		HeaderEnum($t, $t->{NAME}, ";\n\n") if ($t->{TYPE} eq "ENUM");
 		HeaderBitmap($t, $t->{NAME}) if ($t->{TYPE} eq "BITMAP");
-		pidl ";\n\n" if ($t->{TYPE} eq "BITMAP" or 
-				 $t->{TYPE} eq "STRUCT" or 
-				 $t->{TYPE} eq "TYPEDEF" or 
-				 $t->{TYPE} eq "UNION" or 
-				 $t->{TYPE} eq "ENUM");
 	}
 
 	foreach my $fn (@{$interface->{FUNCTIONS}}) {

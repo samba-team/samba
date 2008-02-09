@@ -1,7 +1,7 @@
 [LIBRARY::LIBSAMBA-CONFIG]
-DESCRIPTION = Reading Samba configuration files
 VERSION = 0.0.1
 SO_VERSION = 0
+PC_FILE = samba-config.pc
 OBJ_FILES = loadparm.o \
 			params.o \
 			generic.o \

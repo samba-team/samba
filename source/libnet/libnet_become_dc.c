@@ -1514,10 +1514,10 @@ static void becomeDC_drsuapi_connect_send(struct libnet_BecomeDC_state *s,
 
 	if (!drsuapi->binding) {
 		if (lp_parm_bool(s->libnet->lp_ctx, NULL, "become_dc", "print", false)) {
-			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,print,seal]", s->source_dsa.dns_name);
+			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[print,seal]", s->source_dsa.dns_name);
 			if (composite_nomem(binding_str, c)) return;
 		} else {
-			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[krb5,seal]", s->source_dsa.dns_name);
+			binding_str = talloc_asprintf(s, "ncacn_ip_tcp:%s[seal]", s->source_dsa.dns_name);
 			if (composite_nomem(binding_str, c)) return;
 		}
 		c->status = dcerpc_parse_binding(s, binding_str, &drsuapi->binding);
@@ -1687,6 +1687,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 	struct drsuapi_DsReplicaObjectIdentifier *identifier;
 	uint32_t num_attrs, i = 0;
 	struct drsuapi_DsReplicaAttribute *attrs;
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(s->libnet->lp_ctx);
 	enum ndr_err_code ndr_err;
 	bool w2k3;
 
@@ -1785,7 +1786,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 					       NULL);
 		if (composite_nomem(v, c)) return;
 
-		ndr_err = ndr_push_struct_blob(&vd[0], vd, NULL, v,(ndr_push_flags_fn_t)ndr_push_security_descriptor);
+		ndr_err = ndr_push_struct_blob(&vd[0], vd, iconv_convenience, v,(ndr_push_flags_fn_t)ndr_push_security_descriptor);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
 			if (!composite_is_ok(c)) return;
@@ -1844,7 +1845,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 							  s->forest.schema_dn_str);
 		if (composite_nomem(v[0].dn, c)) return;
 
-		ndr_err = ndr_push_struct_blob(&vd[0], vd, NULL, &v[0], 
+		ndr_err = ndr_push_struct_blob(&vd[0], vd, iconv_convenience, &v[0], 
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
@@ -1874,7 +1875,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 
 		v = &s->dest_dsa.invocation_id;
 
-		ndr_err = ndr_push_struct_blob(&vd[0], vd, NULL, v, (ndr_push_flags_fn_t)ndr_push_GUID);
+		ndr_err = ndr_push_struct_blob(&vd[0], vd, iconv_convenience, v, (ndr_push_flags_fn_t)ndr_push_GUID);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
 			if (!composite_is_ok(c)) return;
@@ -1913,21 +1914,21 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		v[2].sid		= s->zero_sid;
 		v[2].dn			= s->forest.schema_dn_str;
 
-		ndr_err = ndr_push_struct_blob(&vd[0], vd, NULL, &v[0],
+		ndr_err = ndr_push_struct_blob(&vd[0], vd, iconv_convenience, &v[0],
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
 			if (!composite_is_ok(c)) return;
 		}
 
-		ndr_err = ndr_push_struct_blob(&vd[1], vd, NULL, &v[1],
+		ndr_err = ndr_push_struct_blob(&vd[1], vd, iconv_convenience, &v[1],
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
 			if (!composite_is_ok(c)) return;
 		}
 
-		ndr_err = ndr_push_struct_blob(&vd[2], vd, NULL, &v[2],
+		ndr_err = ndr_push_struct_blob(&vd[2], vd, iconv_convenience, &v[2],
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
@@ -1969,21 +1970,21 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		v[2].sid		= s->zero_sid;
 		v[2].dn			= s->forest.schema_dn_str;
 
-		ndr_err = ndr_push_struct_blob(&vd[0], vd, NULL, &v[0],
+		ndr_err = ndr_push_struct_blob(&vd[0], vd, iconv_convenience, &v[0],
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
 			if (!composite_is_ok(c)) return;
 		}
 
-		ndr_err = ndr_push_struct_blob(&vd[1], vd, NULL, &v[1],
+		ndr_err = ndr_push_struct_blob(&vd[1], vd, iconv_convenience, &v[1],
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
 			if (!composite_is_ok(c)) return;
 		}
 
-		ndr_err = ndr_push_struct_blob(&vd[2], vd, NULL, &v[2],
+		ndr_err = ndr_push_struct_blob(&vd[2], vd, iconv_convenience, &v[2],
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
@@ -2017,7 +2018,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		v[0].sid		= s->zero_sid;
 		v[0].dn			= s->forest.schema_dn_str;
 
-		ndr_err = ndr_push_struct_blob(&vd[0], vd, NULL, &v[0],
+		ndr_err = ndr_push_struct_blob(&vd[0], vd, iconv_convenience, &v[0],
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
@@ -2049,7 +2050,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		v[0].sid		= s->zero_sid;
 		v[0].dn			= s->domain.dn_str;
 
-		ndr_err = ndr_push_struct_blob(&vd[0], vd, NULL, &v[0],
+		ndr_err = ndr_push_struct_blob(&vd[0], vd, iconv_convenience, &v[0],
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);
@@ -2131,7 +2132,7 @@ static void becomeDC_drsuapi1_add_entry_send(struct libnet_BecomeDC_state *s)
 		v[0].sid		= s->zero_sid;
 		v[0].dn			= s->dest_dsa.computer_dn_str;
 
-		ndr_err = ndr_push_struct_blob(&vd[0], vd, NULL, &v[0],
+		ndr_err = ndr_push_struct_blob(&vd[0], vd, iconv_convenience, &v[0],
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			c->status = ndr_map_error2ntstatus(ndr_err);

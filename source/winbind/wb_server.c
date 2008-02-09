@@ -202,20 +202,9 @@ nomem:
 }
 
 /*
-  initialise the winbind server
- */
-static NTSTATUS winbind_init(struct event_context *event_ctx,
-			     struct loadparm_context *lp_ctx,
-			     const struct model_ops *model_ops)
-{
-	return task_server_startup(event_ctx, lp_ctx, 
-				   model_ops, winbind_task_init);
-}
-
-/*
   register ourselves as a available server
 */
 NTSTATUS server_service_winbind_init(void)
 {
-	return register_server_service("winbind", winbind_init);
+	return register_server_service("winbind", winbind_task_init);
 }

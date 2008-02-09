@@ -47,12 +47,12 @@ static void cluster_init(void)
 }
 
 /*
-  server a server_id for the local node
+  create a server_id for the local node
 */
-struct server_id cluster_id(uint32_t id)
+struct server_id cluster_id(uint64_t id, uint32_t id2)
 {
 	cluster_init();
-	return ops->cluster_id(ops, id);
+	return ops->cluster_id(ops, id, id2);
 }
 
 

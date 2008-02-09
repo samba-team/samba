@@ -80,7 +80,7 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, char **argv)
 	for (i=0;i<10000;i++) {
 		p->msg_ctx = messaging_init(p, 
 					    lp_messaging_path(p, global_loadparm),
-					    cluster_id(EJS_ID_BASE + i), 
+					    cluster_id(EJS_ID_BASE, i), 
 				            lp_iconv_convenience(global_loadparm),
 					    ev);
 		if (p->msg_ctx) break;
