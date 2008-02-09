@@ -10,6 +10,7 @@
 from provision import findnss, provision, FILL_DRS
 import grp
 import ldb
+import time
 import pwd
 import uuid
 import registry
@@ -162,7 +163,6 @@ def import_wins(samba4_winsdb, samba3_winsdb):
     :param samba3_winsdb: WINS database to import from
     """
     version_id = 0
-    import time
 
     for (name, (ttl, ips, nb_flags)) in samba3_winsdb.items():
         version_id+=1
