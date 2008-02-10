@@ -3,15 +3,9 @@ source/lib/registry/TODO
 source/lib/tdr/TODO
 source/pidl/TODO
 
-upgrade process (from Samba3):
- - Rename upgrade to upgrade3 (to avoid confusion with upgrades 
-   from earlier Samba4 releases in the future)
- - Add support for reading WINS TDB files as well as WINS dat files.
-
 - seperate adminlog mechanism (as opposed to the current DEBUG log,
   which is not really aimed at administrators but more at developers)
   Perhaps similar to eventlog so we can also use eventlog to retrieve the data?
-- improve handling of test results in testsuite
 
 - testsuite for the 'net' tool
 
