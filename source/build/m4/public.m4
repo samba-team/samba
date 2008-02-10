@@ -30,9 +30,9 @@ SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
 @<:@SUBSYSTEM::$1@:>@
-OBJ_FILES = $($1_OBJ_FILES)
+OBJ_FILES = \$($1_OBJ_FILES)
 PRIVATE_DEPENDENCIES = $3
-CFLAGS = $($1_CFLAGS)
+CFLAGS = $4
 ENABLE = YES
 # End Subsystem $1
 ###################################
@@ -52,12 +52,12 @@ SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
 @<:@LIBRARY::$1@:>@
-OBJ_FILES = $($1_OBJ_FILES)
+OBJ_FILES = \$($1_OBJ_FILES)
 PRIVATE_DEPENDENCIES = $3
 VERSION = $4
 SO_VERSION = $5 
-CFLAGS = $($1_CFLAGS)
-LDFLAGS = $($1_LDFLAGS)
+CFLAGS = $6
+LDFLAGS = \$($1_LDFLAGS)
 PC_NAME = $8
 ENABLE = YES
 # End Library $1
@@ -149,10 +149,10 @@ SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
 ###################################
 # Start Ext Lib $1
 @<:@EXT_LIB::$1@:>@
-LIBS = $($1_LIBS)
-CFLAGS = $($1_CFLAGS)
-CPPFLAGS = $($1_CPPFLAGS)
-LDFLAGS = $($1_LDFLAGS)
+LIBS = \$($1_LIBS)
+CFLAGS = $3
+CPPFLAGS = $4
+LDFLAGS = \$($1_LDFLAGS)
 PC_NAME = $6
 # End Ext Lib $1
 ###################################
