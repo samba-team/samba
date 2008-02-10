@@ -268,3 +268,45 @@ startstop_nfs() {
 		;;
 	esac
 }
+
+########################################################
+# start/stop the nfs lockmanager service on different platforms
+########################################################
+startstop_nfslock() {
+	PLATFORM="unknown"
+	[ -x /etc/init.d/nfsserver ] && {
+		PLATFORM="sles"
+	}
+	[ -x /etc/init.d/nfslock ] && {
+		PLATFORM="rhel"
+	}
+
+	case $PLATFORM in
+	sles)
+		# for sles there is no service for lockmanager
+		# so we instead just shutdown/restart nfs
+		case $1 in
+		start)
+			service nfsserver start
+			;;
+		stop)
+			service nfsserver stop > /dev/null 2>&1
+			;;
+		esac
+		;;
+	rhel)
+		case $1 in
+		start)
+			service nfslock start
+			;;
+		stop)
+			service nfslock stop > /dev/null 2>&1
+			;;
+		esac
+		;;
+	*)
+		echo "Unknown platform. NFS locking is not supported with ctdb"
+		exit 1
+		;;
+	esac
+}

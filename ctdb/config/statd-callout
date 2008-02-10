@@ -81,7 +81,7 @@ case "$1" in
 	# will respond "strangely" immediately after restarting it, which
 	# causes clients to fail to reclaim the locks.
 	# 
-	service nfslock stop > /dev/null 2>&1
+	startstop_nfslock stop > /dev/null 2>&1
 	sleep 2
 
 	# copy all monitored clients on this node to the local lockmanager
@@ -96,7 +96,7 @@ case "$1" in
 	done
 
 	# now start lockmanager again with the new state directory.
-	service nfslock start > /dev/null 2>&1
+	startstop_nfslock start > /dev/null 2>&1
 
 	# we now need to send out additional statd notifications to ensure
 	# that clients understand that the lockmanager has restarted.
