@@ -227,3 +227,44 @@ kill_tcp_connections() {
     echo "killed $_killcount TCP connections to released IP $_IP"
 }
 
+########################################################
+# start/stop the nfs service on different platforms
+########################################################
+startstop_nfs() {
+	PLATFORM="unknown"
+	[ -x /etc/init.d/nfsserver ] && {
+		PLATFORM="sles"
+	}
+	[ -x /etc/init.d/nfslock ] && {
+		PLATFORM="rhel"
+	}
+
+	case $PLATFORM in
+	sles)
+		case $1 in
+		start)
+			service nfsserver start
+			;;
+		stop)
+			service nfsserver stop > /dev/null 2>&1
+			;;
+		esac
+		;;
+	rhel)
+		case $1 in
+		start)
+			service nfslock start
+			service nfs start
+			;;
+		stop)
+			service nfs stop > /dev/null 2>&1
+			service nfslock stop > /dev/null 2>&1
+			;;
+		esac
+		;;
+	*)
+		echo "Unknown platform. NFS is not supported with ctdb"
+		exit 1
+		;;
+	esac
+}

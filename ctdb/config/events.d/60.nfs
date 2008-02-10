@@ -12,6 +12,8 @@ shift
 
 PATH=/usr/bin:/bin:/usr/sbin:/sbin:$PATH
 
+
+
 case $cmd in 
      startup)
 	/bin/mkdir -p $CTDB_BASE/state/nfs
@@ -21,17 +23,12 @@ case $cmd in
 	/bin/rm -f $CTDB_BASE/state/statd/statd.restart >/dev/null 2>/dev/null
 
 	# make sure nfs is stopped before we start it, or it may get a bind error
-	service nfs stop > /dev/null 2>&1
-	service nfslock stop > /dev/null 2>&1
-
-	service nfslock start
-	service nfs start
+	startstop_nfs stop
+	startstop_nfs start
 	;;
 
      shutdown)
-	# shutting down nfs can take a while so put it in the background
-	service nfs stop &
-	service nfslock stop &
+	startstop_nfs stop
 	exit 0
 	;;
 
