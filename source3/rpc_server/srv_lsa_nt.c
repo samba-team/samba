@@ -1403,16 +1403,17 @@ NTSTATUS _lsa_DeleteObject(pipes_struct *p,
 }
 
 /***************************************************************************
-_lsa_enum_privs.
+ _lsa_EnumPrivs
  ***************************************************************************/
 
-NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIVS *r_u)
+NTSTATUS _lsa_EnumPrivs(pipes_struct *p,
+			struct lsa_EnumPrivs *r)
 {
 	struct lsa_info *handle;
 	uint32 i;
-	uint32 enum_context = q_u->enum_context;
+	uint32 enum_context = *r->in.resume_handle;
 	int num_privs = count_all_privileges();
-	LSA_PRIV_ENTRY *entries = NULL;
+	struct lsa_PrivEntry *entries = NULL;
 	LUID_ATTR luid;
 
 	/* remember that the enum_context starts at 0 and not 1 */
@@ -1423,7 +1424,7 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 	DEBUG(10,("_lsa_enum_privs: enum_context:%d total entries:%d\n", 
 		enum_context, num_privs));
 	
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights
@@ -1433,33 +1434,37 @@ NTSTATUS _lsa_enum_privs(pipes_struct *p, LSA_Q_ENUM_PRIVS *q_u, LSA_R_ENUM_PRIV
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (num_privs) {
-		if ( !(entries = TALLOC_ZERO_ARRAY(p->mem_ctx, LSA_PRIV_ENTRY, num_privs )) )
+		entries = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_PrivEntry, num_privs);
+		if (!entries) {
 			return NT_STATUS_NO_MEMORY;
+		}
 	} else {
 		entries = NULL;
 	}
 
 	for (i = 0; i < num_privs; i++) {
 		if( i < enum_context) {
-			init_unistr2(&entries[i].name, NULL, UNI_FLAGS_NONE);
-			init_uni_hdr(&entries[i].hdr_name, &entries[i].name);
-			
-			entries[i].luid_low = 0;
-			entries[i].luid_high = 0;
+
+			init_lsa_StringLarge(&entries[i].name, NULL);
+
+			entries[i].luid.low = 0;
+			entries[i].luid.high = 0;
 		} else {
-			init_unistr2(&entries[i].name, privs[i].name, UNI_FLAGS_NONE);
-			init_uni_hdr(&entries[i].hdr_name, &entries[i].name);
-			
+
+			init_lsa_StringLarge(&entries[i].name, privs[i].name);
+
 			luid = get_privilege_luid( &privs[i].se_priv );
-			
-			entries[i].luid_low = luid.luid.low;
-			entries[i].luid_high = luid.luid.high;
+
+			entries[i].luid.low = luid.luid.low;
+			entries[i].luid.high = luid.luid.high;
 		}
 	}
 
 	enum_context = num_privs;
-	
-	init_lsa_r_enum_privs(r_u, enum_context, num_privs, entries);
+
+	*r->out.resume_handle = enum_context;
+	r->out.privs->count = num_privs;
+	r->out.privs->privs = entries;
 
 	return NT_STATUS_OK;
 }
@@ -2183,12 +2188,6 @@ NTSTATUS _lsa_lookup_priv_value(pipes_struct *p, LSA_Q_LOOKUP_PRIV_VALUE *q_u, L
  */ 
 
 NTSTATUS _lsa_Delete(pipes_struct *p, struct lsa_Delete *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_EnumPrivs(pipes_struct *p, struct lsa_EnumPrivs *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
