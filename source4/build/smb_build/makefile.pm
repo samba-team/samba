@@ -92,17 +92,7 @@ CPPFLAGS=$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -I\
 
 INSTALL_LINK_FLAGS=$extra_link_flags
 
-BNLD=$self->{config}->{LD} 
-BNLD_FLAGS=$self->{config}->{LDFLAGS} -L$libdir
-
-SHLD_FLAGS=$self->{config}->{SHLD_FLAGS} -L\$(builddir)/bin/shared
-
-MDLD_FLAGS=$self->{config}->{MDLD_FLAGS} -L\$(builddir)/bin/shared
-
-HOSTCC_FLAGS=-D_SAMBA_HOSTCC_ \$(CFLAGS)
-
-HOSTLD_FLAGS=$self->{config}->{LDFLAGS}
-
+INTERN_LDFLAGS = -L$libdir
 __EOD__
 );
 }
@@ -245,7 +235,7 @@ __EOD__
 $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
-	\@\$(MDLD) \$(MDLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(MDLD) \$(MDLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) $init_obj \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS)
 __EOD__
@@ -303,7 +293,7 @@ sub SharedLibrary($$)
 $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
-	\@\$(SHLD) \$(SHLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(SHLD) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) \\
 		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
 		$soarg$lns
