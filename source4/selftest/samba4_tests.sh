@@ -43,7 +43,7 @@ plantest() {
 $incdir/../bin/smbtorture -V
 
 samba4srcdir=$incdir/..
-samba4bindir=$samba4srcdir/bin
+samba4biir=$samba4srcdir/bin
 SCRIPTDIR=$samba4srcdir/../testprogs/ejs
 smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
 
@@ -261,9 +261,6 @@ for t in "BASE-RW1"; do
 done
 
 DATADIR=$samba4srcdir/../testdata
-
-plantest "parse samba3" none $samba4bindir/smbscript $DATADIR/samba3/verify $CONFIGURATION $DATADIR/samba3
-plantest "js.samba3sam" none $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
 
 # Domain Member Tests
 
