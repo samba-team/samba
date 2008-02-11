@@ -81,6 +81,40 @@ wbcErr wbcRequestResponse(int cmd,
 	return wbc_status;
 }
 
+/** @brief Translate an error value into a string
+ *
+ * @param error
+ *
+ * @return a pointer to a static string
+ **/
+const char *wbcErrorString(wbcErr error)
+{
+	switch (error) {
+	case WBC_ERR_SUCCESS:
+		return "WBC_ERR_SUCCESS";
+	case WBC_ERR_NOT_IMPLEMENTED:
+		return "WBC_ERR_NOT_IMPLEMENTED";
+	case WBC_ERR_UNKNOWN_FAILURE:
+		return "WBC_ERR_UNKNOWN_FAILURE";
+	case WBC_ERR_NO_MEMORY:
+		return "WBC_ERR_NO_MEMORY";
+	case WBC_ERR_INVALID_SID:
+		return "WBC_ERR_INVALID_SID";
+	case WBC_ERR_INVALID_PARAM:
+		return "WBC_ERR_INVALID_PARAM";
+	case WBC_ERR_WINBIND_NOT_AVAILABLE:
+		return "WBC_ERR_WINBIND_NOT_AVAILABLE";
+	case WBC_ERR_DOMAIN_NOT_FOUND:
+		return "WBC_ERR_DOMAIN_NOT_FOUND";
+	case WBC_INVALID_RESPONSE:
+		return "WBC_INVALID_RESPONSE";
+	case WBC_ERR_NSS_ERROR:
+		return "WBC_ERR_NSS_ERROR";
+	}
+
+	return "unknown wbcErr value";
+};
+
 /** @brief Free library allocated memory
  *
  * @param *p Pointer to free
