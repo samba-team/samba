@@ -262,9 +262,6 @@ done
 
 DATADIR=$samba4srcdir/../testdata
 
-plantest "parse samba3" none $samba4bindir/smbscript $DATADIR/samba3/verify $CONFIGURATION $DATADIR/samba3
-plantest "js.samba3sam" none $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
-
 # Domain Member Tests
 
 plantest "RPC-ECHO against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" RPC-ECHO "$*"

@@ -24,7 +24,6 @@ sub new($$$)
 	$self->{manpages} = [];
 	$self->{sbin_progs} = [];
 	$self->{bin_progs} = [];
-	$self->{torture_progs} = [];
 	$self->{static_libs} = [];
 	$self->{python_dsos} = [];
 	$self->{python_pys} = [];
@@ -340,9 +339,6 @@ sub Binary($$)
 	my $installdir;
 	my $extradir = "";
 
-	if (defined($ctx->{INSTALLDIR}) && $ctx->{INSTALLDIR} =~ /^TORTUREDIR/) {
-		$extradir = "/torture" . substr($ctx->{INSTALLDIR}, length("TORTUREDIR"));
-	}
 	my $localdir = "bin$extradir";
 
 	$installdir = "bin$extradir";
@@ -354,8 +350,6 @@ sub Binary($$)
 		push (@{$self->{sbin_progs}}, "$installdir/$ctx->{BINARY}");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
 		push (@{$self->{bin_progs}}, "$installdir/$ctx->{BINARY}");
-	} elsif ($ctx->{INSTALLDIR} =~ /^TORTUREDIR/) {
-		push (@{$self->{torture_progs}}, "$installdir/$ctx->{BINARY}");
 	}
 
 	push (@{$self->{binaries}}, "$localdir/$ctx->{BINARY}");
@@ -455,7 +449,6 @@ sub write($$)
 	$self->output("MANPAGES = ".array2oneperline($self->{manpages})."\n");
 	$self->output("BIN_PROGS = " . array2oneperline($self->{bin_progs}) . "\n");
 	$self->output("SBIN_PROGS = " . array2oneperline($self->{sbin_progs}) . "\n");
-	$self->output("TORTURE_PROGS = " . array2oneperline($self->{torture_progs}) . "\n");
 	$self->output("BINARIES = " . array2oneperline($self->{binaries}) . "\n");
 	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
 	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");

@@ -28,13 +28,6 @@ SUBSYSTEM = smbcalls
 OUTPUT_TYPE = INTEGRATED
 INIT_FUNCTION = smb_setup_ejs_nbt
 
-[MODULE::smbcalls_samba3]
-OBJ_FILES = smbcalls_samba3.o
-SUBSYSTEM = smbcalls
-OUTPUT_TYPE = INTEGRATED
-INIT_FUNCTION = smb_setup_ejs_samba3
-PRIVATE_DEPENDENCIES = LIBSAMBA3 
-
 [MODULE::smbcalls_rand]
 OBJ_FILES = smbcalls_rand.o
 SUBSYSTEM = smbcalls
