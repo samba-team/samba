@@ -3309,7 +3309,7 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx,
 		pdb_set_username(pwd, id21->account_name.string, PDB_SET);
 	}
 
-	copy_id21_to_sam_passwd(pwd, id21);
+	copy_id21_to_sam_passwd("INFO_21", pwd, id21);
 
 	/*
 	 * The funny part about the previous two calls is
