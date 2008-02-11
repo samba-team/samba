@@ -627,7 +627,7 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *
 	if (!cli_session_setup_blob(cli, negTokenTarg, session_key_krb5)) {
 		data_blob_free(&negTokenTarg);
 		data_blob_free(&session_key_krb5);
-		ADS_ERROR_NT(cli_nt_error(cli));
+		return ADS_ERROR_NT(cli_nt_error(cli));
 	}
 
 	cli_set_session_key(cli, session_key_krb5);
