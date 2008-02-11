@@ -22,6 +22,10 @@
 #include "includes.h"
 #include "rpcclient.h"
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
 
 /* useful function to allow entering a name instead of a SID and
  * looking it up automatically */
@@ -501,7 +505,8 @@ static NTSTATUS cmd_lsa_get_dispname(struct rpc_pipe_client *cli,
 	uint16 lang_id=0;
 	uint16 lang_id_sys=0;
 	uint16 lang_id_desc;
-	fstring description;
+	struct lsa_String lsa_name;
+	struct lsa_StringLarge *description = NULL;
 
 	if (argc != 2) {
 		printf("Usage: %s privilege name\n", argv[0]);
@@ -515,13 +520,21 @@ static NTSTATUS cmd_lsa_get_dispname(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_get_dispname(cli, mem_ctx, &pol, argv[1], lang_id, lang_id_sys, description, &lang_id_desc);
+	init_lsa_String(&lsa_name, argv[1]);
+
+	result = rpccli_lsa_LookupPrivDisplayName(cli, mem_ctx,
+						  &pol,
+						  &lsa_name,
+						  lang_id,
+						  lang_id_sys,
+						  &description,
+						  &lang_id_desc);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Print results */
-	printf("%s -> %s (language: 0x%x)\n", argv[1], description, lang_id_desc);
+	printf("%s -> %s (language: 0x%x)\n", argv[1], description->string, lang_id_desc);
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
@@ -981,11 +994,6 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
-}
-
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
 }
 
 static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
