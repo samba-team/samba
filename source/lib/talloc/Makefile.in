@@ -24,8 +24,8 @@ LIBOBJ = $(TALLOC_OBJ) @LIBREPLACEOBJ@
 
 all:: showflags $(EXTRA_TARGETS)
 
-include rules.mk
-include talloc.mk
+include $(tallocdir)/rules.mk
+include $(tallocdir)/talloc.mk
 
 $(SOLIB): $(LIBOBJ)
 	$(CC) $(SHLD_FLAGS) -o $@ $(LIBOBJ) @SONAMEFLAG@$(SONAME)
