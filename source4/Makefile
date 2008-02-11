@@ -164,6 +164,10 @@ uninstallheader::
 uninstallman::
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(mandir) $(MANPAGES)
 
+config.status:
+	@echo "config.status does not exist. Please run ./configure."
+	@/bin/false
+
 data.mk: config.status $(MK_FILES)
 	./config.status
 
