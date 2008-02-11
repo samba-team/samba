@@ -24,8 +24,7 @@ from ldb import Dn
 import param
 import unittest
 
-lp = param.LoadParm()
-lp.load("st/dc/etc/smb.conf")
+lp = samba.tests.get_loadparm()
 
 setup_dir = "setup"
 def setup_path(file):
