@@ -178,7 +178,7 @@ _NORETURN_ static void sig_fault(int sig)
 		/* we have a fault handler, call it. It may not return. */
 		fault_handlers.fault_handler(sig);
 	}
-	/* If it returns or doean't exist, use regular reporter */
+	/* If it returns or doesn't exist, use regular reporter */
 	fault_report(sig);
 }
 
