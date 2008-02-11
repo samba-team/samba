@@ -1349,7 +1349,7 @@ static bool get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 
 	/* We only look at our own sam, so don't care about imported stuff */
 	winbind_env = winbind_env_set();
-	winbind_off();
+	(void)winbind_off();
 
 	if ((grp = getgrgid(gid)) == NULL) {
 		/* allow winbindd lookups, but only if they weren't already disabled */
@@ -1385,7 +1385,7 @@ static bool get_memberuids(TALLOC_CTX *mem_ctx, gid_t gid, uid_t **pp_uids, size
 
 	/* allow winbindd lookups, but only if they weren't already disabled */
 	if (!winbind_env) {
-		winbind_on();
+		(void)winbind_on();
 	}
 	
 	return ret;

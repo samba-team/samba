@@ -125,7 +125,7 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 	 * always determined by the info3 coming back from auth3 or the
 	 * PAC. */
 	winbind_env = winbind_env_set();
-	winbind_off();
+	(void)winbind_off();
 
 #ifdef HAVE_GETGROUPLIST
 	retval = getgrouplist(user, gid, groups, grpcnt);
@@ -137,7 +137,7 @@ static int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grp
 
 	/* allow winbindd lookups, but only if they were not already disabled */
 	if (!winbind_env) {
-		winbind_on();
+		(void)winbind_on();
 	}
 
 	return retval;
