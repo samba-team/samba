@@ -247,32 +247,28 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 			pdb_set_acct_ctrl(to, from->acct_flags, PDB_CHANGED);
 		}
 	}
-	DEBUG(15,("%s LOGON_DIVS: %08X -> %08X\n", l, pdb_get_logon_divs(to),
-		from->logon_hours.units_per_week));
-#if 0
-// LOGON_HRS
-//	struct samr_LogonHours logon_hours;
-	if (from->fields_present & ACCT_LOGON_HOURS) {
+
+	if (from->fields_present & SAMR_FIELD_LOGON_HOURS) {
 		char oldstr[44]; /* hours strings are 42 bytes. */
 		char newstr[44];
-		DEBUG(15,("%s LOGON_DIVS: %08X -> %08X\n", l, pdb_get_logon_divs(to), from->logon_divs));
-		if (from->logon_divs != pdb_get_logon_divs(to)) {
-			pdb_set_logon_divs(to, from->logon_divs, PDB_CHANGED);
+		DEBUG(15,("%s SAMR_FIELD_LOGON_HOURS (units_per_week): %08X -> %08X\n", l, pdb_get_logon_divs(to), from->logon_hours.units_per_week));
+		if (from->logon_hours.units_per_week != pdb_get_logon_divs(to)) {
+			pdb_set_logon_divs(to, from->logon_hours.units_per_week, PDB_CHANGED);
 		}
 
-		DEBUG(15,("%s LOGON_HRS.LEN: %08X -> %08X\n", l, pdb_get_hours_len(to), from->logon_hrs.len));
-		if (from->logon_hrs.len != pdb_get_hours_len(to)) {
-			pdb_set_hours_len(to, from->logon_hrs.len, PDB_CHANGED);
+		DEBUG(15,("%s SAMR_FIELD_LOGON_HOURS (units_per_week/8): %08X -> %08X\n", l, pdb_get_hours_len(to), from->logon_hours.units_per_week/8));
+		if (from->logon_hours.units_per_week/8 != pdb_get_hours_len(to)) {
+			pdb_set_hours_len(to, from->logon_hours.units_per_week/8, PDB_CHANGED);
 		}
 
-		DEBUG(15,("%s LOGON_HRS.HOURS: %s -> %s\n", l, pdb_get_hours(to), from->logon_hrs.hours));
+		DEBUG(15,("%s SAMR_FIELD_LOGON_HOURS (bits): %s -> %s\n", l, pdb_get_hours(to), from->logon_hours.bits));
 		pdb_sethexhours(oldstr, pdb_get_hours(to));
-		pdb_sethexhours(newstr, from->logon_hrs.hours);
+		pdb_sethexhours(newstr, from->logon_hours.bits);
 		if (!strequal(oldstr, newstr)) {
-			pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
+			pdb_set_hours(to, from->logon_hours.bits, PDB_CHANGED);
 		}
 	}
-#endif
+
 	if (from->fields_present & SAMR_FIELD_BAD_PWD_COUNT) {
 		DEBUG(10,("%s SAMR_FIELD_BAD_PWD_COUNT: %08X -> %08X\n", l, pdb_get_bad_password_count(to), from->bad_password_count));
 		if (from->bad_password_count != pdb_get_bad_password_count(to)) {
