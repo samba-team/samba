@@ -26,4 +26,5 @@ showflags::
 	@echo '  CFLAGS = $(CFLAGS)'
 	@echo '  LIBS = $(LIBS)'
 
-
+distclean::
+	rm -f *~ */*~
