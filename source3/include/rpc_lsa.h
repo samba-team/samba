@@ -546,35 +546,6 @@ typedef struct lsa_r_lookup_names4
 	NTSTATUS status; /* return code */
 } LSA_R_LOOKUP_NAMES4;
 
-typedef struct lsa_enum_priv_entry
-{
-	UNIHDR hdr_name;
-	uint32 luid_low;
-	uint32 luid_high;
-	UNISTR2 name;
-	
-} LSA_PRIV_ENTRY;
-
-/* LSA_Q_ENUM_PRIVS - LSA enum privileges */
-typedef struct lsa_q_enum_privs
-{
-	POLICY_HND pol; /* policy handle */
-	uint32 enum_context;
-	uint32 pref_max_length;
-} LSA_Q_ENUM_PRIVS;
-
-typedef struct lsa_r_enum_privs
-{
-	uint32 enum_context;
-	uint32 count;
-	uint32 ptr;
-	uint32 count1;
-
-	LSA_PRIV_ENTRY *privs;
-
-	NTSTATUS status;
-} LSA_R_ENUM_PRIVS;
-
 /* LSA_Q_ENUM_ACCT_RIGHTS - LSA enum account rights */
 typedef struct
 {
