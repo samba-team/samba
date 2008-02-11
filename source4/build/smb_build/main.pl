@@ -80,7 +80,7 @@ foreach my $key (values %$OUTPUT) {
 					 defined($key->{PUBLIC_PROTO_HEADER});
 }
 
-$mkenv->write("Makefile");
+$mkenv->write("data.mk");
 header::create_smb_build_h($OUTPUT, "include/build.h");
 
 cflags::create_cflags($OUTPUT, $config::config{srcdir},
