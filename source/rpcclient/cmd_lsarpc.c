@@ -1091,6 +1091,46 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
+                                     TALLOC_CTX *mem_ctx, int argc,
+                                     const char **argv)
+{
+	POLICY_HND pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	const char *servername = cli->cli->desthost;
+	struct lsa_String *account_name = NULL;
+	struct lsa_String *authority_name = NULL;
+
+	if (argc > 2) {
+		printf("Usage: %s servername\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = rpccli_lsa_open_policy(cli, mem_ctx, true,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_lsa_GetUserName(cli, mem_ctx,
+					servername,
+					&account_name,
+					&authority_name);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Print results */
+
+	printf("Account Name: %s, Authority Name: %s\n",
+		account_name->string, authority_name->string);
+
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
+ done:
+	return result;
+}
 
 
 /* List of commands exported by this module */
@@ -1121,6 +1161,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsaquerytrustdominfo",RPC_RTYPE_NTSTATUS, cmd_lsa_query_trustdominfo, NULL, PI_LSARPC, NULL, "Query LSA trusted domains info (given a SID)", "" },
 	{ "lsaquerytrustdominfobyname",RPC_RTYPE_NTSTATUS, cmd_lsa_query_trustdominfobyname, NULL, PI_LSARPC, NULL, "Query LSA trusted domains info (given a name), only works for Windows > 2k", "" },
 	{ "lsaquerytrustdominfobysid",RPC_RTYPE_NTSTATUS, cmd_lsa_query_trustdominfobysid, NULL, PI_LSARPC, NULL, "Query LSA trusted domains info (given a SID)", "" },
+	{ "getusername",          RPC_RTYPE_NTSTATUS, cmd_lsa_get_username, NULL, PI_LSARPC, NULL, "Get username", "" },
 
 	{ NULL }
 };
