@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 1999-2001, 2003, PADL Software Pty Ltd.
  * Copyright (c) 2004, Andrew Bartlett.
- * Copyright (c) 2003 - 2007, Kungliga Tekniska Högskolan.
+ * Copyright (c) 2003 - 2008, Kungliga Tekniska Högskolan.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -307,38 +307,40 @@ static krb5_error_code
 LDAP_get_string_value(HDB * db, LDAPMessage * entry,
 		      const char *attribute, char **ptr)
 {
-    char **vals;
-    int ret;
+    struct berval **vals;
 
-    vals = ldap_get_values(HDB2LDAP(db), entry, (char *) attribute);
-    if (vals == NULL) {
+    vals = ldap_get_values_len(HDB2LDAP(db), entry, attribute);
+    if (vals == NULL || vals[0] == NULL) {
 	*ptr = NULL;
 	return HDB_ERR_NOENTRY;
     }
 
-    *ptr = strdup(vals[0]);
-    if (*ptr == NULL)
-	ret = ENOMEM;
-    else
-	ret = 0;
+    *ptr = malloc(vals[0]->bv_len + 1);
+    if (*ptr == NULL) {
+	ldap_value_free_len(vals);
+	return ENOMEM;
+    }
 
-    ldap_value_free(vals);
+    memcpy(*ptr, vals[0]->bv_val, vals[0]->bv_len);
+    (*ptr)[vals[0]->bv_len] = 0;
 
-    return ret;
+    ldap_value_free_len(vals);
+
+    return 0;
 }
 
 static krb5_error_code
 LDAP_get_integer_value(HDB * db, LDAPMessage * entry,
 		       const char *attribute, int *ptr)
 {
-    char **vals;
+    krb5_error_code ret;
+    char *val;
 
-    vals = ldap_get_values(HDB2LDAP(db), entry, (char *) attribute);
-    if (vals == NULL)
-	return HDB_ERR_NOENTRY;
-
-    *ptr = atoi(vals[0]);
-    ldap_value_free(vals);
+    ret = LDAP_get_string_value(db, entry, attribute, &val);
+    if (ret)
+	return ret;
+    *ptr = atoi(val);
+    free(val);
     return 0;
 }
 
@@ -369,6 +371,14 @@ LDAP_get_generalized_time_value(HDB * db, LDAPMessage * entry,
     return 0;
 }
 
+static int
+bervalstrcmp(struct berval *v, const char *str)
+{
+    size_t len = strlen(str);
+    return (v->bv_len == len) && strncasecmp(str, (char *)v->bv_val, len) == 0;
+}
+
+
 static krb5_error_code
 LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 		LDAPMessage * msg, LDAPMod *** pmods)
@@ -386,7 +396,7 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
     krb5_boolean is_heimdal_entry = FALSE;
     krb5_boolean is_heimdal_principal = FALSE;
 
-    char **values;
+    struct berval **vals;
 
     *pmods = NULL;
 
@@ -398,21 +408,20 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 
 	is_new_entry = FALSE;
 	    
-	values = ldap_get_values(HDB2LDAP(db), msg, "objectClass");
-	if (values) {
-	    int num_objectclasses = ldap_count_values(values);
+	vals = ldap_get_values_len(HDB2LDAP(db), msg, "objectClass");
+	if (vals) {
+	    int num_objectclasses = ldap_count_values_len(vals);
 	    for (i=0; i < num_objectclasses; i++) {
-		if (strcasecmp(values[i], "sambaSamAccount") == 0) {
+		if (bervalstrcmp(vals[i], "sambaSamAccount"))
 		    is_samba_account = TRUE;
-		} else if (strcasecmp(values[i], structural_object) == 0) {
+		else if (bervalstrcmp(vals[i], structural_object))
 		    is_account = TRUE;
-		} else if (strcasecmp(values[i], "krb5Principal") == 0) {
+		else if (bervalstrcmp(vals[i], "krb5Principal"))
 		    is_heimdal_principal = TRUE;
-		} else if (strcasecmp(values[i], "krb5KDCEntry") == 0) {
+		else if (bervalstrcmp(vals[i], "krb5KDCEntry"))
 		    is_heimdal_entry = TRUE;
-		}
 	    }
-	    ldap_value_free(values);
+	    ldap_value_free_len(vals);
 	}
 
 	/*
@@ -602,9 +611,9 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 
     /* Remove keys if they exists, and then replace keys. */
     if (!is_new_entry && orig.entry.keys.len > 0) {
-	values = ldap_get_values(HDB2LDAP(db), msg, "krb5Key");
-	if (values) {
-	    ldap_value_free(values);
+	vals = ldap_get_values_len(HDB2LDAP(db), msg, "krb5Key");
+	if (vals) {
+	    ldap_value_free_len(vals);
 
 	    ret = LDAP_addmod(&mods, LDAP_MOD_DELETE, "krb5Key", NULL);
 	    if (ret)
@@ -641,9 +650,9 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 		goto out;
 		    
 	    /* have to kill the LM passwod if it exists */
-	    values = ldap_get_values(HDB2LDAP(db), msg, "sambaLMPassword");
-	    if (values) {
-		ldap_value_free(values);
+	    vals = ldap_get_values_len(HDB2LDAP(db), msg, "sambaLMPassword");
+	    if (vals) {
+		ldap_value_free_len(vals);
 		ret = LDAP_addmod(&mods, LDAP_MOD_DELETE,
 				  "sambaLMPassword", NULL);
 		if (ret)
@@ -676,9 +685,9 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry_ex * ent,
 	 */
 
 	if (!is_new_entry) {
-	    values = ldap_get_values(HDB2LDAP(db), msg, "krb5EncryptionType");
-	    if (values) {
-		ldap_value_free(values);
+	    vals = ldap_get_values_len(HDB2LDAP(db), msg, "krb5EncryptionType");
+	    if (vals) {
+		ldap_value_free_len(vals);
 		ret = LDAP_addmod(&mods, LDAP_MOD_DELETE, "krb5EncryptionType",
 				  NULL);
 		if (ret)
@@ -730,8 +739,8 @@ LDAP_dn2principal(krb5_context context, HDB * db, const char *dn,
     krb5_error_code ret;
     int rc;
     const char *filter = "(objectClass=krb5Principal)";
-    char **values;
     LDAPMessage *res = NULL, *e;
+    char *p;
 
     ret = LDAP_no_size_limit(context, HDB2LDAP(db));
     if (ret)
@@ -753,14 +762,14 @@ LDAP_dn2principal(krb5_context context, HDB * db, const char *dn,
 	goto out;
     }
 
-    values = ldap_get_values(HDB2LDAP(db), e, "krb5PrincipalName");
-    if (values == NULL) {
+    ret = LDAP_get_string_value(db, e, "krb5PrincipalName", &p);
+    if (ret) {
 	ret = HDB_ERR_NOENTRY;
 	goto out;
     }
 
-    ret = krb5_parse_name(context, values[0], principal);
-    ldap_value_free(values);
+    ret = krb5_parse_name(context, p, principal);
+    free(p);
 
   out:
     if (res)
@@ -893,10 +902,9 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 {
     char *unparsed_name = NULL, *dn = NULL, *ntPasswordIN = NULL;
     char *samba_acct_flags = NULL;
-    unsigned long tmp;
     struct berval **keys;
-    char **values;
-    int tmp_time, i, ret, have_arcfour = 0;
+    struct berval **vals;
+    int tmp, tmp_time, i, ret, have_arcfour = 0;
 
     memset(ent, 0, sizeof(*ent));
     ent->entry.flags = int2HDBFlags(0);
@@ -962,8 +970,8 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 #endif
     }
 
-    values = ldap_get_values(HDB2LDAP(db), msg, "krb5EncryptionType");
-    if (values != NULL) {
+    vals = ldap_get_values_len(HDB2LDAP(db), msg, "krb5EncryptionType");
+    if (vals != NULL) {
 	int i;
 
 	ent->entry.etypes = malloc(sizeof(*(ent->entry.etypes)));
@@ -972,17 +980,26 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	    ret = ENOMEM;
 	    goto out;
 	}
-	ent->entry.etypes->len = ldap_count_values(values);
+	ent->entry.etypes->len = ldap_count_values_len(vals);
 	ent->entry.etypes->val = calloc(ent->entry.etypes->len, sizeof(int));
 	if (ent->entry.etypes->val == NULL) {
 	    krb5_set_error_string(context, "malloc: out of memory");
+	    ent->entry.etypes->len = 0;
 	    ret = ENOMEM;
 	    goto out;
 	}
 	for (i = 0; i < ent->entry.etypes->len; i++) {
-	    ent->entry.etypes->val[i] = atoi(values[i]);
+	    char buf[100];
+	    if (vals[i]->bv_len > sizeof(buf) - 1) {
+		krb5_set_error_string(context, "malloc: out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
+	    memcpy(buf, vals[i]->bv_val, vals[i]->bv_len);
+	    buf[vals[i]->bv_len] = '\0';
+	    ent->entry.etypes->val[i] = atoi(buf);
 	}
-	ldap_value_free(values);
+	ldap_value_free_len(vals);
     }
 
     for (i = 0; i < ent->entry.keys.len; i++) {
@@ -1193,18 +1210,9 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	    *ent->entry.max_renew = max_renew;
     }
 
-    values = ldap_get_values(HDB2LDAP(db), msg, "krb5KDCFlags");
-    if (values != NULL) {
-	errno = 0;
-	tmp = strtoul(values[0], (char **) NULL, 10);
-	if (tmp == ULONG_MAX && errno == ERANGE) {
-	    krb5_set_error_string(context, "strtoul: could not convert flag");
-	    ret = ERANGE;
-	    goto out;
-	}
-    } else {
+    ret = LDAP_get_integer_value(db, msg, "krb5KDCFlags", &tmp);
+    if (ret)
 	tmp = 0;
-    }
 
     ent->entry.flags = int2HDBFlags(tmp);
 
