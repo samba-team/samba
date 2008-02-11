@@ -23,6 +23,8 @@ sub create_cflags($$$$) {
 
 	open(CFLAGS_TXT,">$file") || die ("Can't open `$file'\n");
 
+	print CFLAGS_TXT "include mkconfig.mk\n";
+
 	my $src_ne_build = ($srcdir ne $builddir) ? 1 : 0;
 
 	foreach my $key (values %{$CTX}) {
