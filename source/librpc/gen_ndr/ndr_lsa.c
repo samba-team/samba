@@ -7585,21 +7585,21 @@ static enum ndr_err_code ndr_push_lsa_LookupPrivDisplayName(struct ndr_push *ndr
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.name));
-		if (r->in.language_id == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
-		}
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, *r->in.language_id));
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.unknown));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.language_id));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.language_id_sys));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.disp_name));
-		if (r->out.disp_name) {
-			NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.disp_name));
-		}
-		if (r->out.language_id == NULL) {
+		if (r->out.disp_name == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, *r->out.language_id));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.disp_name));
+		if (*r->out.disp_name) {
+			NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.disp_name));
+		}
+		if (r->out.returned_language_id == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, *r->out.returned_language_id));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -7611,7 +7611,8 @@ static enum ndr_err_code ndr_pull_lsa_LookupPrivDisplayName(struct ndr_pull *ndr
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_name_0;
 	TALLOC_CTX *_mem_save_disp_name_0;
-	TALLOC_CTX *_mem_save_language_id_0;
+	TALLOC_CTX *_mem_save_disp_name_1;
+	TALLOC_CTX *_mem_save_returned_language_id_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -7629,37 +7630,39 @@ static enum ndr_err_code ndr_pull_lsa_LookupPrivDisplayName(struct ndr_pull *ndr
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.name, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.name));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_name_0, LIBNDR_FLAG_REF_ALLOC);
-		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->in.language_id);
-		}
-		_mem_save_language_id_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->in.language_id, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, r->in.language_id));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_language_id_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.unknown));
-		NDR_PULL_ALLOC(ndr, r->out.language_id);
-		*r->out.language_id = *r->in.language_id;
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.language_id));
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.language_id_sys));
+		NDR_PULL_ALLOC(ndr, r->out.disp_name);
+		ZERO_STRUCTP(r->out.disp_name);
+		NDR_PULL_ALLOC(ndr, r->out.returned_language_id);
+		ZERO_STRUCTP(r->out.returned_language_id);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.disp_name);
+		}
+		_mem_save_disp_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.disp_name, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_disp_name));
 		if (_ptr_disp_name) {
-			NDR_PULL_ALLOC(ndr, r->out.disp_name);
+			NDR_PULL_ALLOC(ndr, *r->out.disp_name);
 		} else {
-			r->out.disp_name = NULL;
+			*r->out.disp_name = NULL;
 		}
-		if (r->out.disp_name) {
-			_mem_save_disp_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.disp_name, 0);
-			NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.disp_name));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_disp_name_0, 0);
+		if (*r->out.disp_name) {
+			_mem_save_disp_name_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.disp_name, 0);
+			NDR_CHECK(ndr_pull_lsa_StringLarge(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.disp_name));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_disp_name_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_disp_name_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.language_id);
+			NDR_PULL_ALLOC(ndr, r->out.returned_language_id);
 		}
-		_mem_save_language_id_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.language_id, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, r->out.language_id));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_language_id_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_returned_language_id_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.returned_language_id, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, r->out.returned_language_id));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_returned_language_id_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -7683,11 +7686,8 @@ _PUBLIC_ void ndr_print_lsa_LookupPrivDisplayName(struct ndr_print *ndr, const c
 		ndr->depth++;
 		ndr_print_lsa_String(ndr, "name", r->in.name);
 		ndr->depth--;
-		ndr_print_ptr(ndr, "language_id", r->in.language_id);
-		ndr->depth++;
-		ndr_print_uint16(ndr, "language_id", *r->in.language_id);
-		ndr->depth--;
-		ndr_print_uint16(ndr, "unknown", r->in.unknown);
+		ndr_print_uint16(ndr, "language_id", r->in.language_id);
+		ndr_print_uint16(ndr, "language_id_sys", r->in.language_id_sys);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -7695,13 +7695,16 @@ _PUBLIC_ void ndr_print_lsa_LookupPrivDisplayName(struct ndr_print *ndr, const c
 		ndr->depth++;
 		ndr_print_ptr(ndr, "disp_name", r->out.disp_name);
 		ndr->depth++;
-		if (r->out.disp_name) {
-			ndr_print_lsa_StringLarge(ndr, "disp_name", r->out.disp_name);
+		ndr_print_ptr(ndr, "disp_name", *r->out.disp_name);
+		ndr->depth++;
+		if (*r->out.disp_name) {
+			ndr_print_lsa_StringLarge(ndr, "disp_name", *r->out.disp_name);
 		}
 		ndr->depth--;
-		ndr_print_ptr(ndr, "language_id", r->out.language_id);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "returned_language_id", r->out.returned_language_id);
 		ndr->depth++;
-		ndr_print_uint16(ndr, "language_id", *r->out.language_id);
+		ndr_print_uint16(ndr, "returned_language_id", *r->out.returned_language_id);
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;

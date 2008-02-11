@@ -1451,9 +1451,10 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  struct policy_handle *handle,
 					  struct lsa_String *name,
-					  struct lsa_StringLarge *disp_name,
-					  uint16_t *language_id,
-					  uint16_t unknown)
+					  uint16_t language_id,
+					  uint16_t language_id_sys,
+					  struct lsa_StringLarge **disp_name,
+					  uint16_t *returned_language_id)
 {
 	struct lsa_LookupPrivDisplayName r;
 	NTSTATUS status;
@@ -1462,7 +1463,7 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.name = name;
 	r.in.language_id = language_id;
-	r.in.unknown = unknown;
+	r.in.language_id_sys = language_id_sys;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_LookupPrivDisplayName, &r);
@@ -1488,10 +1489,8 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (disp_name && r.out.disp_name) {
-		*disp_name = *r.out.disp_name;
-	}
-	*language_id = *r.out.language_id;
+	*disp_name = *r.out.disp_name;
+	*returned_language_id = *r.out.returned_language_id;
 
 	/* Return result */
 	return r.out.result;

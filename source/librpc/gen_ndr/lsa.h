@@ -1036,13 +1036,13 @@ struct lsa_LookupPrivDisplayName {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		struct lsa_String *name;/* [ref] */
-		uint16_t unknown;
-		uint16_t *language_id;/* [ref] */
+		uint16_t language_id;
+		uint16_t language_id_sys;
 	} in;
 
 	struct {
-		struct lsa_StringLarge *disp_name;/* [unique] */
-		uint16_t *language_id;/* [ref] */
+		struct lsa_StringLarge **disp_name;/* [ref] */
+		uint16_t *returned_language_id;/* [ref] */
 		NTSTATUS result;
 	} out;
 
