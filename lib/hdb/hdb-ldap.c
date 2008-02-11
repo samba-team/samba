@@ -989,8 +989,10 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	    goto out;
 	}
 	for (i = 0; i < ent->entry.etypes->len; i++) {
-	    char buf[100];
-	    if (vals[i]->bv_len > sizeof(buf) - 1) {
+	    char *buf;
+
+	    buf = malloc(vals[i]->bv_len + 1);
+	    if (buf == NULL) {
 		krb5_set_error_string(context, "malloc: out of memory");
 		ret = ENOMEM;
 		goto out;
@@ -998,6 +1000,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	    memcpy(buf, vals[i]->bv_val, vals[i]->bv_len);
 	    buf[vals[i]->bv_len] = '\0';
 	    ent->entry.etypes->val[i] = atoi(buf);
+	    free(buf);
 	}
 	ldap_value_free_len(vals);
     }
