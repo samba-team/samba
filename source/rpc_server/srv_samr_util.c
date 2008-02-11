@@ -88,121 +88,121 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 		l = "INFO_21";
 	}
 
-	if (from->fields_present & ACCT_LAST_LOGON) {
+	if (from->fields_present & SAMR_FIELD_LAST_LOGON) {
 		unix_time=nt_time_to_unix(from->last_logon);
 		stored_time = pdb_get_logon_time(to);
-		DEBUG(10,("%s LOGON_TIME: %lu -> %lu\n", l, (long unsigned int)stored_time, (long unsigned int)unix_time));
+		DEBUG(10,("%s SAMR_FIELD_LAST_LOGON: %lu -> %lu\n", l, (long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time)
 			pdb_set_logon_time(to, unix_time, PDB_CHANGED);
 	}
 
-	if (from->fields_present & ACCT_LAST_LOGOFF) {
+	if (from->fields_present & SAMR_FIELD_LAST_LOGOFF) {
 		unix_time=nt_time_to_unix(from->last_logoff);
 		stored_time = pdb_get_logoff_time(to);
-		DEBUG(10,("%s LOGOFF_TIME: %lu -> %lu\n", l, (long unsigned int)stored_time, (long unsigned int)unix_time));
+		DEBUG(10,("%s SAMR_FIELD_LAST_LOGOFF: %lu -> %lu\n", l, (long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time)
 			pdb_set_logoff_time(to, unix_time, PDB_CHANGED);
 	}
 
-	if (from->fields_present & ACCT_EXPIRY) {
+	if (from->fields_present & SAMR_FIELD_ACCT_EXPIRY) {
 		unix_time=nt_time_to_unix(from->acct_expiry);
 		stored_time = pdb_get_kickoff_time(to);
-		DEBUG(10,("%s KICKOFF_TIME: %lu -> %lu\n", l, (long unsigned int)stored_time, (long unsigned int)unix_time));
+		DEBUG(10,("%s SAMR_FIELD_ACCT_EXPIRY: %lu -> %lu\n", l, (long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time)
 			pdb_set_kickoff_time(to, unix_time , PDB_CHANGED);
 	}
 
-	if (from->fields_present & ACCT_LAST_PWD_CHANGE) {
+	if (from->fields_present & SAMR_FIELD_LAST_PWD_CHANGE) {
 		unix_time=nt_time_to_unix(from->last_password_change);
 		stored_time = pdb_get_pass_last_set_time(to);
-		DEBUG(10,("%s PASS_LAST_SET: %lu -> %lu\n", l, (long unsigned int)stored_time, (long unsigned int)unix_time));
+		DEBUG(10,("%s SAMR_FIELD_LAST_PWD_CHANGE: %lu -> %lu\n", l, (long unsigned int)stored_time, (long unsigned int)unix_time));
 		if (stored_time != unix_time)
 			pdb_set_pass_last_set_time(to, unix_time, PDB_CHANGED);
 	}
 
-	if ((from->fields_present & ACCT_USERNAME) &&
+	if ((from->fields_present & SAMR_FIELD_ACCOUNT_NAME) &&
 	    (from->account_name.string)) {
 		old_string = pdb_get_username(to);
 		new_string = from->account_name.string;
-		DEBUG(10,("%s UNI_USER_NAME: %s -> %s\n", l, old_string, new_string));
+		DEBUG(10,("%s SAMR_FIELD_ACCOUNT_NAME: %s -> %s\n", l, old_string, new_string));
 		if (STRING_CHANGED)
 		    pdb_set_username(to      , new_string, PDB_CHANGED);
 	}
 
-	if ((from->fields_present & ACCT_FULL_NAME) &&
+	if ((from->fields_present & SAMR_FIELD_FULL_NAME) &&
 	    (from->full_name.string)) {
 		old_string = pdb_get_fullname(to);
 		new_string = from->full_name.string;
-		DEBUG(10,("%s UNI_FULL_NAME: %s -> %s\n", l, old_string, new_string));
+		DEBUG(10,("%s SAMR_FIELD_FULL_NAME: %s -> %s\n", l, old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_fullname(to      , new_string, PDB_CHANGED);
 	}
 
-	if ((from->fields_present & ACCT_HOME_DIR) &&
+	if ((from->fields_present & SAMR_FIELD_HOME_DIRECTORY) &&
 	    (from->home_directory.string)) {
 		old_string = pdb_get_homedir(to);
 		new_string = from->home_directory.string;
-		DEBUG(10,("%s UNI_HOME_DIR: %s -> %s\n", l, old_string, new_string));
+		DEBUG(10,("%s SAMR_FIELD_HOME_DIRECTORY: %s -> %s\n", l, old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_homedir(to       , new_string, PDB_CHANGED);
 	}
 
-	if ((from->fields_present & ACCT_HOME_DRIVE) &&
+	if ((from->fields_present & SAMR_FIELD_HOME_DRIVE) &&
 	    (from->home_drive.string)) {
 		old_string = pdb_get_dir_drive(to);
 		new_string = from->home_drive.string;
-		DEBUG(10,("%s UNI_DIR_DRIVE: %s -> %s\n", l, old_string, new_string));
+		DEBUG(10,("%s SAMR_FIELD_HOME_DRIVE: %s -> %s\n", l, old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_dir_drive(to     , new_string, PDB_CHANGED);
 	}
 
-	if ((from->fields_present & ACCT_LOGON_SCRIPT) &&
+	if ((from->fields_present & SAMR_FIELD_LOGON_SCRIPT) &&
 	    (from->logon_script.string)) {
 		old_string = pdb_get_logon_script(to);
 		new_string = from->logon_script.string;
-		DEBUG(10,("%s UNI_LOGON_SCRIPT: %s -> %s\n", l, old_string, new_string));
+		DEBUG(10,("%s SAMR_FIELD_LOGON_SCRIPT: %s -> %s\n", l, old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_logon_script(to  , new_string, PDB_CHANGED);
 	}
 
-	if ((from->fields_present & ACCT_PROFILE) &&
+	if ((from->fields_present & SAMR_FIELD_PROFILE_PATH) &&
 	    (from->profile_path.string)) {
 		old_string = pdb_get_profile_path(to);
 		new_string = from->profile_path.string;
-		DEBUG(10,("%s UNI_PROFILE_PATH: %s -> %s\n", l, old_string, new_string));
+		DEBUG(10,("%s SAMR_FIELD_PROFILE_PATH: %s -> %s\n", l, old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_profile_path(to  , new_string, PDB_CHANGED);
 	}
 
-	if ((from->fields_present & ACCT_DESCRIPTION) &&
+	if ((from->fields_present & SAMR_FIELD_DESCRIPTION) &&
 	    (from->description.string)) {
 		old_string = pdb_get_acct_desc(to);
 		new_string = from->description.string;
-		DEBUG(10,("%s UNI_ACCT_DESC: %s -> %s\n", l, old_string, new_string));
+		DEBUG(10,("%s SAMR_FIELD_DESCRIPTION: %s -> %s\n", l, old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_acct_desc(to     , new_string, PDB_CHANGED);
 	}
 
-	if ((from->fields_present & ACCT_WORKSTATIONS) &&
+	if ((from->fields_present & SAMR_FIELD_WORKSTATIONS) &&
 	    (from->workstations.string)) {
 		old_string = pdb_get_workstations(to);
 		new_string = from->workstations.string;
-		DEBUG(10,("%s UNI_WORKSTATIONS: %s -> %s\n", l, old_string, new_string));
+		DEBUG(10,("%s SAMR_FIELD_WORKSTATIONS: %s -> %s\n", l, old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_workstations(to  , new_string, PDB_CHANGED);
 	}
 
-	if ((from->fields_present & ACCT_COMMENT) &&
+	if ((from->fields_present & SAMR_FIELD_COMMENT) &&
 	    (from->comment.string)) {
 		old_string = pdb_get_comment(to);
 		new_string = from->comment.string;
-		DEBUG(10,("%s UNI_COMMENT: %s -> %s\n", l, old_string, new_string));
+		DEBUG(10,("%s SAMR_FIELD_COMMENT: %s -> %s\n", l, old_string, new_string));
 		if (STRING_CHANGED)
 			pdb_set_comment(to, new_string, PDB_CHANGED);
 	}
 #if 0
 	/* FIXME GD */
-	if ((from->fields_present & ACCT_CALLBACK) &&
+	if ((from->fields_present & SAMR_FIELD_PARAMETERS) &&
 	    (from->hdr_munged_dial.buffer)) {
 		char *newstr;
 		old_string = pdb_get_munged_dial(to);
@@ -211,32 +211,32 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 		mung.free = NULL;
 		newstr = (mung.length == 0) ?
 			NULL : base64_encode_data_blob(talloc_tos(), mung);
-		DEBUG(10,("%s UNI_MUNGED_DIAL: %s -> %s\n", l, old_string, newstr));
+		DEBUG(10,("%s SAMR_FIELD_PARAMETERS: %s -> %s\n", l, old_string, newstr));
 		if (STRING_CHANGED_NC(old_string,newstr))
 			pdb_set_munged_dial(to   , newstr, PDB_CHANGED);
 
 		TALLOC_FREE(newstr);
 	}
 #endif
-	if (from->fields_present & ACCT_RID) {
+	if (from->fields_present & SAMR_FIELD_RID) {
 		if (from->rid == 0) {
 			DEBUG(10, ("%s: Asked to set User RID to 0 !? Skipping change!\n", l));
 		} else if (from->rid != pdb_get_user_rid(to)) {
-			DEBUG(10,("%s USER_RID: %u -> %u NOT UPDATED!\n", l, pdb_get_user_rid(to), from->rid));
+			DEBUG(10,("%s SAMR_FIELD_RID: %u -> %u NOT UPDATED!\n", l, pdb_get_user_rid(to), from->rid));
 		}
 	}
 
-	if (from->fields_present & ACCT_PRIMARY_GID) {
+	if (from->fields_present & SAMR_FIELD_PRIMARY_GID) {
 		if (from->primary_gid == 0) {
 			DEBUG(10, ("%s: Asked to set Group RID to 0 !? Skipping change!\n", l));
 		} else if (from->primary_gid != pdb_get_group_rid(to)) {
-			DEBUG(10,("%s GROUP_RID: %u -> %u\n", l, pdb_get_group_rid(to), from->primary_gid));
+			DEBUG(10,("%s SAMR_FIELD_PRIMARY_GID: %u -> %u\n", l, pdb_get_group_rid(to), from->primary_gid));
 			pdb_set_group_sid_from_rid(to, from->primary_gid, PDB_CHANGED);
 		}
 	}
 
-	if (from->fields_present & ACCT_FLAGS) {
-		DEBUG(10,("%s ACCT_CTRL: %08X -> %08X\n", l, pdb_get_acct_ctrl(to), from->acct_flags));
+	if (from->fields_present & SAMR_FIELD_ACCT_FLAGS) {
+		DEBUG(10,("%s SAMR_FIELD_ACCT_FLAGS: %08X -> %08X\n", l, pdb_get_acct_ctrl(to), from->acct_flags));
 		if (from->acct_flags != pdb_get_acct_ctrl(to)) {
 			if (!(from->acct_flags & ACB_AUTOLOCK) && (pdb_get_acct_ctrl(to) & ACB_AUTOLOCK)) {
 				/* We're unlocking a previously locked user. Reset bad password counts.
@@ -247,7 +247,9 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 			pdb_set_acct_ctrl(to, from->acct_flags, PDB_CHANGED);
 		}
 	}
-
+	DEBUG(15,("%s LOGON_DIVS: %08X -> %08X\n", l, pdb_get_logon_divs(to),
+		from->logon_hours.units_per_week));
+#if 0
 // LOGON_HRS
 //	struct samr_LogonHours logon_hours;
 	if (from->fields_present & ACCT_LOGON_HOURS) {
@@ -270,16 +272,16 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 			pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
 		}
 	}
-
-	if (from->fields_present & ACCT_BAD_PWD_COUNT) {
-		DEBUG(10,("%s BAD_PASSWORD_COUNT: %08X -> %08X\n", l, pdb_get_bad_password_count(to), from->bad_password_count));
+#endif
+	if (from->fields_present & SAMR_FIELD_BAD_PWD_COUNT) {
+		DEBUG(10,("%s SAMR_FIELD_BAD_PWD_COUNT: %08X -> %08X\n", l, pdb_get_bad_password_count(to), from->bad_password_count));
 		if (from->bad_password_count != pdb_get_bad_password_count(to)) {
 			pdb_set_bad_password_count(to, from->bad_password_count, PDB_CHANGED);
 		}
 	}
 
-	if (from->fields_present & ACCT_NUM_LOGONS) {
-		DEBUG(10,("%s LOGON_COUNT: %08X -> %08X\n", l, pdb_get_logon_count(to), from->logon_count));
+	if (from->fields_present & SAMR_FIELD_NUM_LOGONS) {
+		DEBUG(10,("%s SAMR_FIELD_NUM_LOGONS: %08X -> %08X\n", l, pdb_get_logon_count(to), from->logon_count));
 		if (from->logon_count != pdb_get_logon_count(to)) {
 			pdb_set_logon_count(to, from->logon_count, PDB_CHANGED);
 		}
@@ -289,8 +291,8 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 	   the must change and can change fields also do, but they are
 	   calculated from policy, not set from the wire */
 
-	if (from->fields_present & ACCT_EXPIRED_FLAG) {
-		DEBUG(10,("%s PASS_MUST_CHANGE_AT_NEXT_LOGON: %02X\n", l, from->password_expired));
+	if (from->fields_present & SAMR_FIELD_EXPIRED_FLAG) {
+		DEBUG(10,("%s SAMR_FIELD_EXPIRED_FLAG: %02X\n", l, from->password_expired));
 		if (from->password_expired == PASS_MUST_CHANGE_AT_NEXT_LOGON) {
 			pdb_set_pass_last_set_time(to, 0, PDB_CHANGED);
 		} else {
