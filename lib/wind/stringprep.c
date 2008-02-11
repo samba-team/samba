@@ -62,6 +62,7 @@ wind_stringprep(const uint32_t *in, size_t in_len,
     size_t tmp_len = in_len * 3;
     uint32_t *tmp = malloc(tmp_len * sizeof(uint32_t));
     int ret;
+    size_t olen;
 
     if (tmp == NULL)
 	return ENOMEM;
@@ -71,17 +72,39 @@ wind_stringprep(const uint32_t *in, size_t in_len,
 	free(tmp);
 	return ret;
     }
-    ret = _wind_stringprep_normalize(tmp, tmp_len, out, out_len);
+
+    olen = *out_len;
+    ret = _wind_stringprep_normalize(tmp, tmp_len, tmp, &olen);
+    if (ret) {
+	free(tmp);
+	return ret;
+    }
+    ret = _wind_stringprep_prohibited(tmp, olen, flags);
+    if (ret) {
+	free(tmp);
+	return ret;
+    }
+    ret = _wind_stringprep_testbidi(tmp, olen, flags);
+    if (ret) {
+	free(tmp);
+	return ret;
+    }
+
+    /* Insignificant Character Handling for ldap-prep */
+    if (flags & WIND_PROFILE_LDAP_CASE_EXACT_ATTRIBUTE) {
+	ret = _wind_ldap_case_exact_attribute(tmp, olen, out, out_len);
+#if 0
+    } else if (flags & WIND_PROFILE_LDAP_CASE_EXACT_ASSERTION) {
+    } else if (flags & WIND_PROFILE_LDAP_NUMERIC) {
+    } else if (flags & WIND_PROFILE_LDAP_TELEPHONE) {
+    } else {
+#endif
+	memcpy(out, tmp, sizeof(out[0]) * olen);
+	*out_len = olen;
+    }
     free(tmp);
-    if (ret)
-	return ret;
-    ret = _wind_stringprep_prohibited(out, *out_len, flags);
-    if (ret)
-	return ret;
-    ret = _wind_stringprep_testbidi(out, *out_len, flags);
-    if (ret)
-	return ret;
-    return 0;
+
+    return ret;
 }
 
 static struct {

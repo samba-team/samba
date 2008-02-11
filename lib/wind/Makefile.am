@@ -14,6 +14,7 @@ libwind_la_SOURCES =				\
 	errorlist_table.c			\
 	map_table.c				\
 	map.c					\
+	ldap.c					\
 	normalize.c				\
 	normalize_table.c			\
 	punycode.c				\
@@ -59,6 +60,7 @@ check_PROGRAMS =				\
 	test-normalize				\
 	test-prohibited				\
 	test-punycode				\
+	test-ldap				\
 	test-utf8
 
 test_punycode_SOURCES =				\

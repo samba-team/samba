@@ -39,11 +39,19 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <wind_err.h>
+
 typedef unsigned int wind_profile_flags;
 
-#define WIND_PROFILE_NAME 1
-#define WIND_PROFILE_LDAP 2
-#define WIND_PROFILE_SASL 4
+#define WIND_PROFILE_NAME 			0x00000001
+#define WIND_PROFILE_SASL 			0x00000002
+#define WIND_PROFILE_LDAP 			0x00000004
+
+#define WIND_PROFILE_LDAP_CASE_EXACT_ATTRIBUTE	0x00010000
+#define WIND_PROFILE_LDAP_CASE_EXACT_ASSERTION	0x00020000
+#define WIND_PROFILE_LDAP_NUMERIC		0x00040000
+#define WIND_PROFILE_LDAP_TELEPHONE		0x00080000
+
 
 /* flags to wind_ucs2read/wind_ucs2write */
 #define WIND_RW_LE	1
