@@ -162,23 +162,6 @@ typedef struct {
 
 /*******************************************************/
 
-/* LSA_Q_CLOSE */
-typedef struct lsa_q_close_info
-{
-	POLICY_HND pol; /* policy handle */
-
-} LSA_Q_CLOSE;
-
-/* LSA_R_CLOSE */
-typedef struct lsa_r_close_info
-{
-	POLICY_HND pol; /* policy handle.  should be all zeros. */
-
-	NTSTATUS status; /* return code */
-
-} LSA_R_CLOSE;
-
-
 #define MAX_REF_DOMAINS 32
 
 /* DOM_TRUST_HDR */
