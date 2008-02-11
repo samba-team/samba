@@ -551,34 +551,6 @@ typedef struct lsa_r_enum_accounts
 	NTSTATUS status;
 } LSA_R_ENUM_ACCOUNTS;
 
-/* LSA_Q_UNK_GET_CONNUSER - gets username\domain of connected user
-                  called when "Take Ownership" is clicked -SK */
-typedef struct lsa_q_unk_get_connuser
-{
-  uint32 ptr_srvname;
-  UNISTR2 uni2_srvname;
-  uint32 unk1; /* 3 unknown uint32's are seen right after uni2_srvname */
-  uint32 unk2; /* unk2 appears to be a ptr, unk1 = unk3 = 0 usually */
-  uint32 unk3; 
-} LSA_Q_UNK_GET_CONNUSER;
-
-/* LSA_R_UNK_GET_CONNUSER */
-typedef struct lsa_r_unk_get_connuser
-{
-  uint32 ptr_user_name;
-  UNIHDR hdr_user_name;
-  UNISTR2 uni2_user_name;
-  
-  uint32 unk1;
-  
-  uint32 ptr_dom_name;
-  UNIHDR hdr_dom_name;
-  UNISTR2 uni2_dom_name;
-
-  NTSTATUS status;
-} LSA_R_UNK_GET_CONNUSER;
-
-
 typedef struct lsa_q_enumprivsaccount
 {
 	POLICY_HND pol; /* policy handle */
