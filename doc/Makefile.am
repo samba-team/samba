@@ -34,6 +34,11 @@ hcrypto.dxy: hcrypto.din Makefile
 	chmod +x hcrypto.dxy.tmp
 	mv hcrypto.dxy.tmp hcrypto.dxy
 
+wind.dxy: wind.din Makefile
+	$(dxy_subst) < $(srcdir)/wind.din > wind.dxy.tmp
+	chmod +x wind.dxy.tmp
+	mv wind.dxy.tmp wind.dxy
+
 
 texi_subst = sed -e 's,[@]dbdir[@],$(localstatedir),g' \
 	-e 's,[@]PACKAGE_VERSION[@],$(PACKAGE_VERSION),g'
@@ -43,11 +48,12 @@ vars.texi: vars.tin Makefile
 	chmod +x vars.texi.tmp
 	mv vars.texi.tmp vars.texi
 
-doxygen: krb5.dxy ntlm.dxy hx509.dxy hcrypto.dxy
+doxygen: krb5.dxy ntlm.dxy hx509.dxy hcrypto.dxy wind.dxy
+	doxygen hcrypto.dxy
+	doxygen hx509.dxy
 	doxygen krb5.dxy
 	doxygen ntlm.dxy
-	doxygen hx509.dxy
-	doxygen hcrypto.dxy
+	doxygen wind.dxy
 
 heimdal_TEXINFOS = \
 	ack.texi \
@@ -74,6 +80,7 @@ EXTRA_DIST = \
 	latin1.tex \
 	layman.asc \
 	doxytmpl.dxy \
+	wind.din \
 	vars.tin
 
 CLEANFILES = \
@@ -81,5 +88,6 @@ CLEANFILES = \
 	ntlm.dxy* \
 	hx509.dxy* \
 	hcrypto.dxy* \
+	wind.dxy* \
 	vars.texi*
 
