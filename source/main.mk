@@ -1,3 +1,18 @@
+VPATH = $(builddir):$(srcdir):heimdal_build:heimdal/lib/asn1:heimdal/lib/krb5:heimdal/lib/gssapi:heimdal/lib/hdb:heimdal/lib/roken:heimdal/lib/des
+
+BASEDIR = $(prefix)
+TORTUREDIR = $(libdir)/torture
+SWATDIR = $(datadir)/swat
+JSDIR = $(datadir)/js
+SETUPDIR = $(datadir)/setup
+NCALRPCDIR = $(localstatedir)/ncalrpc
+
+BNLD = $(LD)
+BNLD_FLAGS = $(LDFLAGS)
+
+HOSTCC_FLAGS = -D_SAMBA_HOSTCC_ $(CFLAGS)
+HOSTLD_FLAGS = $(LDFLAGS)
+
 default: all
 
 include dynconfig.mk
@@ -54,23 +69,23 @@ testsuite:: bin/smbclient bin/cifsdd bin/smbtorture bin/nmblookup
 showlayout:: 
 	@echo 'Samba will be installed into:'
 	@echo '  basedir:     $(BASEDIR)'
-	@echo '  bindir:      $(BINDIR)'
-	@echo '  sbindir:     $(SBINDIR)'
-	@echo '  libdir:      $(LIBDIR)'
-	@echo '  modulesdir:  $(MODULESDIR)'
-	@echo '  includedir:  $(INCLUDEDIR)'
-	@echo '  vardir:      $(VARDIR)'
-	@echo '  privatedir:  $(PRIVATEDIR)'
-	@echo '  piddir:      $(PIDDIR)'
-	@echo '  lockdir:     $(LOCKDIR)'
-	@echo '  logfilebase: $(LOGFILEBASE)'
+	@echo '  bindir:      $(bindir)'
+	@echo '  sbindir:     $(sbindir)'
+	@echo '  libdir:      $(libdir)'
+	@echo '  modulesdir:  $(modulesdir)'
+	@echo '  includedir:  $(includedir)'
+	@echo '  vardir:      $(localstatedir)'
+	@echo '  privatedir:  $(privatedir)'
+	@echo '  piddir:      $(piddir)'
+	@echo '  lockdir:     $(lockdir)'
+	@echo '  logfilebase: $(logfilebase)'
 	@echo '  setupdir:    $(SETUPDIR)'
 	@echo '  jsdir:       $(JSDIR)'
 	@echo '  swatdir:     $(SWATDIR)'
-	@echo '  mandir:      $(MANDIR)'
+	@echo '  mandir:      $(mandir)'
 	@echo '  torturedir:  $(TORTUREDIR)'
-	@echo '  datadir:     $(DATADIR)'
-	@echo '  winbindd_socket_dir:  $(WINBINDD_SOCKET_DIR)'
+	@echo '  datadir:     $(datadir)'
+	@echo '  winbindd_socket_dir:  $(winbindd_socket_dir)'
 
 showflags::
 	@echo '  srcdir     = $(srcdir)'
@@ -93,37 +108,37 @@ install:: showlayout everything installbin installdat installswat installmisc in
 installdirs::
 	@$(SHELL) $(srcdir)/script/installdirs.sh \
 		$(DESTDIR)$(BASEDIR) \
-		$(DESTDIR)$(BINDIR) \
-		$(DESTDIR)$(SBINDIR) \
+		$(DESTDIR)$(bindir) \
+		$(DESTDIR)$(sbindir) \
 		$(DESTDIR)$(TORTUREDIR) \
-		$(DESTDIR)$(LIBDIR) \
-		$(DESTDIR)$(MODULESDIR) \
-		$(DESTDIR)$(MANDIR) \
-		$(DESTDIR)$(VARDIR) \
-		$(DESTDIR)$(PRIVATEDIR) \
-		$(DESTDIR)$(DATADIR) \
-		$(DESTDIR)$(PIDDIR) \
-		$(DESTDIR)$(LOCKDIR) \
-		$(DESTDIR)$(LOGFILEBASE) \
-		$(DESTDIR)$(PRIVATEDIR)/tls \
-		$(DESTDIR)$(INCLUDEDIR) \
+		$(DESTDIR)$(libdir) \
+		$(DESTDIR)$(modulesdir) \
+		$(DESTDIR)$(mandir) \
+		$(DESTDIR)$(localstatedir) \
+		$(DESTDIR)$(privatedir) \
+		$(DESTDIR)$(datadir) \
+		$(DESTDIR)$(piddir) \
+		$(DESTDIR)$(lockdir) \
+		$(DESTDIR)$(logfilebase) \
+		$(DESTDIR)$(privatedir)/tls \
+		$(DESTDIR)$(includedir) \
 		$(DESTDIR)$(PKGCONFIGDIR) \
-		$(DESTDIR)$(CONFIGDIR) \
+		$(DESTDIR)$(sysconfdir) \
 
 installbin:: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh \
 		$(INSTALLPERMS) \
 		$(DESTDIR)$(BASEDIR) \
-		$(DESTDIR)$(SBINDIR) \
-		$(DESTDIR)$(LIBDIR) \
-		$(DESTDIR)$(VARDIR) \
+		$(DESTDIR)$(sbindir) \
+		$(DESTDIR)$(libdir) \
+		$(DESTDIR)$(localstatedir) \
 		$(SBIN_PROGS)
 	@$(SHELL) $(srcdir)/script/installbin.sh \
 		$(INSTALLPERMS) \
 		$(DESTDIR)$(BASEDIR) \
-		$(DESTDIR)$(BINDIR) \
-		$(DESTDIR)$(LIBDIR) \
-		$(DESTDIR)$(VARDIR) \
+		$(DESTDIR)$(bindir) \
+		$(DESTDIR)$(libdir) \
+		$(DESTDIR)$(localstatedir) \
 		$(BIN_PROGS)
 	@$(SHELL) $(srcdir)/script/installtorture.sh \
 		$(INSTALLPERMS) \
@@ -131,23 +146,23 @@ installbin:: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
 		$(TORTURE_PROGS)
 
 installlib:: $(INSTALLABLE_SHARED_LIBS) $(STATIC_LIBS) installdirs
-	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) "$(SHLIBEXT)" $(INSTALLABLE_SHARED_LIBS) 
-	#@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(LIBDIR) "$(STLIBEXT)" $(STATIC_LIBS)
+	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(libdir) "$(SHLIBEXT)" $(INSTALLABLE_SHARED_LIBS) 
+	#@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(libdir) "$(STLIBEXT)" $(STATIC_LIBS)
 
 installheader:: headers installdirs
-	@srcdir=$(srcdir) builddir=$(builddir) $(PERL) $(srcdir)/script/installheader.pl $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
+	@srcdir=$(srcdir) builddir=$(builddir) $(PERL) $(srcdir)/script/installheader.pl $(DESTDIR)$(includedir) $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 
 installdat:: installdirs
-	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(DATADIR) $(srcdir)
+	@$(SHELL) $(srcdir)/script/installdat.sh $(DESTDIR)$(datadir) $(srcdir)
 
 installswat:: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(DESTDIR)$(SWATDIR) $(srcdir)
 
 installman:: manpages installdirs
-	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
+	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(mandir) $(MANPAGES)
 
 installmisc:: installdirs
-	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(JSDIR) $(DESTDIR)$(SETUPDIR) $(DESTDIR)$(BINDIR)
+	@$(SHELL) $(srcdir)/script/installmisc.sh $(srcdir) $(DESTDIR)$(JSDIR) $(DESTDIR)$(SETUPDIR) $(DESTDIR)$(bindir)
 
 installpc:: installdirs
 	@$(SHELL) $(srcdir)/script/installpc.sh $(builddir) $(DESTDIR)$(PKGCONFIGDIR) $(PC_FILES)
@@ -159,19 +174,19 @@ uninstallmisc::
 	#FIXME
 
 uninstallbin::
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(SBINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(SBIN_PROGS)
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(BINDIR) $(DESTDIR)$(LIBDIR) $(DESTDIR)$(VARDIR) $(DESTDIR)$(BIN_PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(sbindir) $(DESTDIR)$(libdir) $(DESTDIR)$(localstatedir) $(DESTDIR)$(SBIN_PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(DESTDIR)$(BASEDIR) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir) $(DESTDIR)$(localstatedir) $(DESTDIR)$(BIN_PROGS)
 	@$(SHELL) $(srcdir)/script/uninstalltorture.sh $(DESTDIR)$(TORTUREDIR) $(TORTURE_PROGS)
 
 uninstalllib::
-	@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(LIBDIR) $(SHARED_LIBS)
-	#@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(LIBDIR) $(STATIC_LIBS) 
+	@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(libdir) $(SHARED_LIBS)
+	#@$(SHELL) $(srcdir)/script/uninstalllib.sh $(DESTDIR)$(libdir) $(STATIC_LIBS) 
 
 uninstallheader::
-	@$(SHELL) $(srcdir)/script/uninstallheader.sh $(DESTDIR)$(INCLUDEDIR) $(PUBLIC_HEADERS)
+	@$(SHELL) $(srcdir)/script/uninstallheader.sh $(DESTDIR)$(includedir) $(PUBLIC_HEADERS)
 
 uninstallman::
-	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(MANPAGES)
+	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(mandir) $(MANPAGES)
 
 Makefile: config.status $(MK_FILES)
 	./config.status
