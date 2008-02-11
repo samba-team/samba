@@ -7,6 +7,12 @@ JSDIR = $(datadir)/js
 SETUPDIR = $(datadir)/setup
 NCALRPCDIR = $(localstatedir)/ncalrpc
 
+BNLD = $(LD)
+BNLD_FLAGS = $(LDFLAGS)
+
+HOSTCC_FLAGS = -D_SAMBA_HOSTCC_ $(CFLAGS)
+HOSTLD_FLAGS = $(LDFLAGS)
+
 default: all
 
 include dynconfig.mk
