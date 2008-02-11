@@ -40,10 +40,9 @@
 #include <err.h>
 
 #include "windlocl.h"
+#include "normalize_table.h"
 
 RCSID("$Id$");
-
-#define MAX_LENGTH 20
 
 static size_t
 parse_vector(char *buf, uint32_t *v)
@@ -56,8 +55,8 @@ parse_vector(char *buf, uint32_t *v)
     for(n = strtok_r(buf, " ", &last);
 	n != NULL;
 	n = strtok_r(NULL, " ", &last)) {
-	if (ret >= MAX_LENGTH) {
-	    errx(1, "increase MAX_LENGTH");
+	if (ret >= MAX_LENGTH_CANON) {
+	    errx(1, "increase MAX_LENGTH_CANON");
 	}
 	if (sscanf(n, "%x", &u) != 1) {
 	    errx(1, "failed to parse hex: %s", n);
@@ -73,9 +72,9 @@ test(char *buf)
 {
     char *last;
     char *c;
-    uint32_t in[MAX_LENGTH];
+    uint32_t in[MAX_LENGTH_CANON];
     size_t in_len;
-    uint32_t out[MAX_LENGTH];
+    uint32_t out[MAX_LENGTH_CANON];
     size_t out_len;
     uint32_t *tmp;
     size_t norm_len;
@@ -100,7 +99,7 @@ test(char *buf)
     if (c == NULL)
 	return 0;
 
-    norm_len = MAX_LENGTH;
+    norm_len = MAX_LENGTH_CANON;
     tmp = malloc(norm_len * sizeof(size_t));
     if (tmp == NULL)
 	err(1, "malloc");

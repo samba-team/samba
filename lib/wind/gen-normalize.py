@@ -70,7 +70,7 @@ normalize_h.file.write(
 #include <stddef.h>
 #include <stdint.h>
 
-#define MAX_LENGTH %u
+#define MAX_LENGTH_CANON %u
 
 struct translation {
   uint32_t key;
