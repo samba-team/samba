@@ -18,53 +18,21 @@ PICFLAG = @PICFLAG@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 SHLIBEXT = @SHLIBEXT@
 SHLD_FLAGS = @SHLD_FLAGS@
+tallocdir = @tallocdir@
 
-LIBOBJ = @TALLOC_OBJ@ @LIBREPLACEOBJ@
+LIBOBJ = $(TALLOC_OBJ) @LIBREPLACEOBJ@
 
-SOLIB = libtalloc.$(SHLIBEXT).$(PACKAGE_VERSION)
-SONAME = libtalloc.$(SHLIBEXT).1
-
-all:: showflags libtalloc.a $(SOLIB) testsuite $(EXTRA_TARGETS)
+all:: showflags $(EXTRA_TARGETS)
 
 include rules.mk
-
-testsuite:: $(LIBOBJ) testsuite.o
-	$(CC) $(CFLAGS) -o testsuite testsuite.o $(LIBOBJ) $(LIBS)
-
-libtalloc.a: $(LIBOBJ)
-	ar -rv $@ $(LIBOBJ)
-	@-ranlib $@
+include talloc.mk
 
 $(SOLIB): $(LIBOBJ)
 	$(CC) $(SHLD_FLAGS) -o $@ $(LIBOBJ) @SONAMEFLAG@$(SONAME)
 
-install:: all 
-	${INSTALLCMD} -d $(DESTDIR)$(libdir)
-	${INSTALLCMD} -d $(DESTDIR)$(libdir)/pkgconfig
-	${INSTALLCMD} -m 755 libtalloc.a $(DESTDIR)$(libdir)
-	${INSTALLCMD} -m 755 $(SOLIB) $(DESTDIR)$(libdir)
-	${INSTALLCMD} -d $(DESTDIR)${includedir}
-	${INSTALLCMD} -m 644 $(srcdir)/talloc.h $(DESTDIR)$(includedir)
-	${INSTALLCMD} -m 644 talloc.pc $(DESTDIR)$(libdir)/pkgconfig
-	if [ -f talloc.3 ];then ${INSTALLCMD} -d $(DESTDIR)$(mandir)/man3; fi
-	if [ -f talloc.3 ];then ${INSTALLCMD} -m 644 talloc.3 $(DESTDIR)$(mandir)/man3; fi
-	which swig >/dev/null 2>&1 && ${INSTALLCMD} -d $(DESTDIR)`swig -swiglib` || true
-	which swig >/dev/null 2>&1 && ${INSTALLCMD} -m 644 talloc.i $(DESTDIR)`swig -swiglib` || true
-
-doc:: talloc.3 talloc.3.html
-
-clean::
-	rm -f *~ $(LIBOBJ) $(SOLIB) libtalloc.a testsuite testsuite.o *.gc?? talloc.3 talloc.3.html
-
 check: test
 
-test:: testsuite
-	./testsuite
-
-gcov::
-	gcov talloc.c
-
-installcheck:: test
+installcheck:: test install
 
 distclean:: clean
 	rm -f Makefile
