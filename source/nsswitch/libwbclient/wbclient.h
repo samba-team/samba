@@ -48,7 +48,7 @@ typedef enum _wbcErrType wbcErr;
 
 #define WBC_ERROR_IS_OK(x) ((x) == WBC_ERR_SUCCESS)
 
-char *wbcErrorString(wbcErr error);
+const char *wbcErrorString(wbcErr error);
 
 /*
  * Data types used by the Winbind Client API
