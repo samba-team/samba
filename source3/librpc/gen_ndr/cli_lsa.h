@@ -166,9 +166,10 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  struct policy_handle *handle,
 					  struct lsa_String *name,
-					  struct lsa_StringLarge *disp_name,
-					  uint16_t *language_id,
-					  uint16_t unknown);
+					  uint16_t language_id,
+					  uint16_t language_id_sys,
+					  struct lsa_StringLarge **disp_name,
+					  uint16_t *returned_language_id);
 NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *handle);

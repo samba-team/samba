@@ -2601,13 +2601,18 @@ static bool api_lsa_LookupPrivDisplayName(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.disp_name = talloc_zero(r, struct lsa_StringLarge);
+	r->out.disp_name = talloc_zero(r, struct lsa_StringLarge *);
 	if (r->out.disp_name == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.language_id = r->in.language_id;
+	r->out.returned_language_id = talloc_zero(r, uint16_t);
+	if (r->out.returned_language_id == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _lsa_LookupPrivDisplayName(p, r);
 
 	if (p->rng_fault_state) {
