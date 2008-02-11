@@ -45,42 +45,34 @@ NTSTATUS rpccli_lsa_open_policy(struct rpc_pipe_client *cli,
 				bool sec_qos, uint32 des_access,
 				POLICY_HND *pol)
 {
-	prs_struct qbuf, rbuf;
-	LSA_Q_OPEN_POL q;
-	LSA_R_OPEN_POL r;
-	LSA_SEC_QOS qos;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
+	struct lsa_ObjectAttribute attr;
+	struct lsa_QosInfo qos;
+	uint16_t system_name = '\\';
 
 	if (sec_qos) {
-		init_lsa_sec_qos(&qos, 2, 1, 0);
-		init_q_open_pol(&q, '\\', 0, des_access, &qos);
+		init_lsa_sec_qos(&qos, 0xc, 2, 1, 0);
+		init_lsa_obj_attr(&attr,
+				  0x18,
+				  NULL,
+				  NULL,
+				  0,
+				  NULL,
+				  &qos);
 	} else {
-		init_q_open_pol(&q, '\\', 0, des_access, NULL);
+		init_lsa_obj_attr(&attr,
+				  0x18,
+				  NULL,
+				  NULL,
+				  0,
+				  NULL,
+				  NULL);
 	}
 
-	/* Marshall data and send request */
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_OPENPOLICY,
-			q, r,
-			qbuf, rbuf,
-			lsa_io_q_open_pol,
-			lsa_io_r_open_pol,
-			NT_STATUS_UNSUCCESSFUL );
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	if (NT_STATUS_IS_OK(result)) {
-		*pol = r.pol;
-	}
-
-	return result;
+	return rpccli_lsa_OpenPolicy(cli, mem_ctx,
+				     &system_name,
+				     &attr,
+				     des_access,
+				     pol);
 }
 
 /** Open a LSA policy handle
@@ -92,39 +84,34 @@ NTSTATUS rpccli_lsa_open_policy2(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx, bool sec_qos,
 				 uint32 des_access, POLICY_HND *pol)
 {
-	prs_struct qbuf, rbuf;
-	LSA_Q_OPEN_POL2 q;
-	LSA_R_OPEN_POL2 r;
-	LSA_SEC_QOS qos;
-	NTSTATUS result;
+	struct lsa_ObjectAttribute attr;
+	struct lsa_QosInfo qos;
 	char *srv_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", cli->cli->desthost);
 
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
 	if (sec_qos) {
-		init_lsa_sec_qos(&qos, 2, 1, 0);
-		init_q_open_pol2(&q, srv_name_slash, 0, des_access, &qos);
+		init_lsa_sec_qos(&qos, 0xc, 2, 1, 0);
+		init_lsa_obj_attr(&attr,
+				  0x18,
+				  NULL,
+				  NULL,
+				  0,
+				  NULL,
+				  &qos);
 	} else {
-		init_q_open_pol2(&q, srv_name_slash, 0, des_access, NULL);
+		init_lsa_obj_attr(&attr,
+				  0x18,
+				  NULL,
+				  NULL,
+				  0,
+				  NULL,
+				  NULL);
 	}
 
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_OPENPOLICY2,
-			q, r,
-			qbuf, rbuf,
-			lsa_io_q_open_pol2,
-			lsa_io_r_open_pol2,
-			NT_STATUS_UNSUCCESSFUL );
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	if (NT_STATUS_IS_OK(result)) {
-		*pol = r.pol;
-	}
-
-	return result;
+	return rpccli_lsa_OpenPolicy2(cli, mem_ctx,
+				      srv_name_slash,
+				      &attr,
+				      des_access,
+				      pol);
 }
 
 /* Lookup a list of sids

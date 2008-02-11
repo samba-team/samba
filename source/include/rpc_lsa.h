@@ -89,66 +89,6 @@
 #define LSA_AUDIT_NUM_CATEGORIES_WIN2K	9
 #define LSA_AUDIT_NUM_CATEGORIES LSA_AUDIT_NUM_CATEGORIES_NT4
 
-typedef struct seq_qos_info
-{
-	uint32 len; /* 12 */
-	uint16 sec_imp_level; /* 0x02 - impersonation level */
-	uint8  sec_ctxt_mode; /* 0x01 - context tracking mode */
-	uint8  effective_only; /* 0x00 - effective only */
-
-} LSA_SEC_QOS;
-
-typedef struct obj_attr_info
-{
-	uint32 len;          /* 0x18 - length (in bytes) inc. the length field. */
-	uint32 ptr_root_dir; /* 0 - root directory (pointer) */
-	uint32 ptr_obj_name; /* 0 - object name (pointer) */
-	uint32 attributes;   /* 0 - attributes (undocumented) */
-	uint32 ptr_sec_desc; /* 0 - security descriptior (pointer) */
-	uint32 ptr_sec_qos;  /* security quality of service */
-	LSA_SEC_QOS *sec_qos;
-
-} LSA_OBJ_ATTR;
-
-/* LSA_Q_OPEN_POL - LSA Query Open Policy */
-typedef struct lsa_q_open_pol_info
-{
-	uint32 ptr;         /* undocumented buffer pointer */
-	uint16 system_name; /* 0x5c - system name */
-	LSA_OBJ_ATTR attr ; /* object attributes */
-
-	uint32 des_access; /* desired access attributes */
-
-} LSA_Q_OPEN_POL;
-
-/* LSA_R_OPEN_POL - response to LSA Open Policy */
-typedef struct lsa_r_open_pol_info
-{
-	POLICY_HND pol; /* policy handle */
-	NTSTATUS status; /* return code */
-
-} LSA_R_OPEN_POL;
-
-/* LSA_Q_OPEN_POL2 - LSA Query Open Policy */
-typedef struct lsa_q_open_pol2_info
-{
-	uint32       ptr;             /* undocumented buffer pointer */
-	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
-	LSA_OBJ_ATTR attr           ; /* object attributes */
-
-	uint32 des_access; /* desired access attributes */
-
-} LSA_Q_OPEN_POL2;
-
-/* LSA_R_OPEN_POL2 - response to LSA Open Policy */
-typedef struct lsa_r_open_pol2_info
-{
-	POLICY_HND pol; /* policy handle */
-	NTSTATUS status; /* return code */
-
-} LSA_R_OPEN_POL2;
-
-
 #define POLICY_VIEW_LOCAL_INFORMATION    0x00000001
 #define POLICY_VIEW_AUDIT_INFORMATION    0x00000002
 #define POLICY_GET_PRIVATE_INFORMATION   0x00000004
