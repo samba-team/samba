@@ -3132,10 +3132,11 @@ NTSTATUS _samr_OpenAlias(pipes_struct *p,
 /*******************************************************************
  set_user_info_7
  ********************************************************************/
+
 static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
-				const SAM_USER_INFO_7 *id7, struct samu *pwd)
+				struct samr_UserInfo7 *id7,
+				struct samu *pwd)
 {
-	fstring new_name;
 	NTSTATUS rc;
 
 	if (id7 == NULL) {
@@ -3144,7 +3145,7 @@ static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if(!rpcstr_pull(new_name, id7->uni_name.buffer, sizeof(new_name), id7->uni_name.uni_str_len*2, 0)) {
+	if (!id7->account_name.string) {
 	        DEBUG(5, ("set_user_info_7: failed to get new username\n"));
 		TALLOC_FREE(pwd);
 		return NT_STATUS_ACCESS_DENIED;
@@ -3159,12 +3160,12 @@ static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
 	   simply that the rename fails with a slightly different status
 	   code (like UNSUCCESSFUL instead of ALREADY_EXISTS). */
 
-	rc = can_create(mem_ctx, new_name);
+	rc = can_create(mem_ctx, id7->account_name.string);
 	if (!NT_STATUS_IS_OK(rc)) {
 		return rc;
 	}
 
-	rc = pdb_rename_sam_account(pwd, new_name);
+	rc = pdb_rename_sam_account(pwd, id7->account_name.string);
 
 	TALLOC_FREE(pwd);
 	return rc;
@@ -3174,7 +3175,8 @@ static NTSTATUS set_user_info_7(TALLOC_CTX *mem_ctx,
  set_user_info_16
  ********************************************************************/
 
-static bool set_user_info_16(const SAM_USER_INFO_16 *id16, struct samu *pwd)
+static bool set_user_info_16(struct samr_UserInfo16 *id16,
+			     struct samu *pwd)
 {
 	if (id16 == NULL) {
 		DEBUG(5, ("set_user_info_16: NULL id16\n"));
@@ -3183,7 +3185,7 @@ static bool set_user_info_16(const SAM_USER_INFO_16 *id16, struct samu *pwd)
 	}
 
 	/* FIX ME: check if the value is really changed --metze */
-	if (!pdb_set_acct_ctrl(pwd, id16->acb_info, PDB_CHANGED)) {
+	if (!pdb_set_acct_ctrl(pwd, id16->acct_flags, PDB_CHANGED)) {
 		TALLOC_FREE(pwd);
 		return False;
 	}
@@ -3202,20 +3204,20 @@ static bool set_user_info_16(const SAM_USER_INFO_16 *id16, struct samu *pwd)
  set_user_info_18
  ********************************************************************/
 
-static bool set_user_info_18(SAM_USER_INFO_18 *id18, struct samu *pwd)
+static bool set_user_info_18(struct samr_UserInfo18 *id18,
+			     struct samu *pwd)
 {
-
 	if (id18 == NULL) {
 		DEBUG(2, ("set_user_info_18: id18 is NULL\n"));
 		TALLOC_FREE(pwd);
 		return False;
 	}
 
-	if (!pdb_set_lanman_passwd (pwd, id18->lm_pwd, PDB_CHANGED)) {
+	if (!pdb_set_lanman_passwd (pwd, id18->lm_pwd.hash, PDB_CHANGED)) {
 		TALLOC_FREE(pwd);
 		return False;
 	}
-	if (!pdb_set_nt_passwd     (pwd, id18->nt_pwd, PDB_CHANGED)) {
+	if (!pdb_set_nt_passwd     (pwd, id18->nt_pwd.hash, PDB_CHANGED)) {
 		TALLOC_FREE(pwd);
 		return False;
 	}
@@ -3237,7 +3239,8 @@ static bool set_user_info_18(SAM_USER_INFO_18 *id18, struct samu *pwd)
  set_user_info_20
  ********************************************************************/
 
-static bool set_user_info_20(SAM_USER_INFO_20 *id20, struct samu *pwd)
+static bool set_user_info_20(struct samr_UserInfo20 *id20,
+			     struct samu *pwd)
 {
 	if (id20 == NULL) {
 		DEBUG(5, ("set_user_info_20: NULL id20\n"));
@@ -3256,14 +3259,15 @@ static bool set_user_info_20(SAM_USER_INFO_20 *id20, struct samu *pwd)
 
 	return True;
 }
+
 /*******************************************************************
  set_user_info_21
  ********************************************************************/
 
-static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
+static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo21 *id21,
 				 struct samu *pwd)
 {
-	fstring new_name;
 	NTSTATUS status;
 
 	if (id21 == NULL) {
@@ -3273,9 +3277,8 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 
 	/* we need to separately check for an account rename first */
 
-	if (rpcstr_pull(new_name, id21->uni_user_name.buffer,
-		sizeof(new_name), id21->uni_user_name.uni_str_len*2, 0)
-		&& (!strequal(new_name, pdb_get_username(pwd))))
+	if (id21->account_name.string &&
+	    (!strequal(id21->account_name.string, pdb_get_username(pwd))))
 	{
 
 		/* check to see if the new username already exists.  Note: we can't
@@ -3287,12 +3290,12 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 		   simply that the rename fails with a slightly different status
 		   code (like UNSUCCESSFUL instead of ALREADY_EXISTS). */
 
-		status = can_create(mem_ctx, new_name);
+		status = can_create(mem_ctx, id21->account_name.string);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
-		status = pdb_rename_sam_account(pwd, new_name);
+		status = pdb_rename_sam_account(pwd, id21->account_name.string);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("set_user_info_21: failed to rename account: %s\n",
@@ -3303,7 +3306,7 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
 
 		/* set the new username so that later
 		   functions can work on the new account */
-		pdb_set_username(pwd, new_name, PDB_SET);
+		pdb_set_username(pwd, id21->account_name.string, PDB_SET);
 	}
 
 	copy_id21_to_sam_passwd(pwd, id21);
@@ -3341,7 +3344,8 @@ static NTSTATUS set_user_info_21(TALLOC_CTX *mem_ctx, SAM_USER_INFO_21 *id21,
  set_user_info_23
  ********************************************************************/
 
-static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
+static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo23 *id23,
 				 struct samu *pwd)
 {
 	char *plaintext_buf = NULL;
@@ -3360,7 +3364,7 @@ static NTSTATUS set_user_info_23(TALLOC_CTX *mem_ctx, SAM_USER_INFO_23 *id23,
 	acct_ctrl = pdb_get_acct_ctrl(pwd);
 
 	if (!decode_pw_buffer(mem_ctx,
-				id23->pass,
+				id23->password.data,
 				&plaintext_buf,
 				&len,
 				STR_UNICODE)) {
@@ -3508,7 +3512,8 @@ static bool set_user_info_pw(uint8 *pass, struct samu *pwd)
  set_user_info_25
  ********************************************************************/
 
-static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx, SAM_USER_INFO_25 *id25,
+static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx,
+				 struct samr_UserInfo25 *id25,
 				 struct samu *pwd)
 {
 	NTSTATUS status;
@@ -3548,16 +3553,18 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx, SAM_USER_INFO_25 *id25,
 }
 
 /*******************************************************************
- samr_reply_set_userinfo
+ _samr_SetUserInfo
  ********************************************************************/
 
-NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_USERINFO *r_u)
+NTSTATUS _samr_SetUserInfo(pipes_struct *p,
+			   struct samr_SetUserInfo *r)
 {
+	NTSTATUS status;
 	struct samu *pwd = NULL;
 	DOM_SID sid;
-	POLICY_HND *pol = &q_u->pol;
-	uint16 switch_value = q_u->switch_value;
-	SAM_USERINFO_CTR *ctr = q_u->ctr;
+	POLICY_HND *pol = r->in.user_handle;
+	uint16 switch_value = r->in.level;
+	union samr_UserInfo *info = r->in.info;
 	uint32 acc_granted;
 	uint32 acc_required;
 	bool ret;
@@ -3565,9 +3572,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	uint32 acb_info;
 	DISP_INFO *disp_info = NULL;
 
-	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
-
-	r_u->status = NT_STATUS_OK;
+	DEBUG(5, ("_samr_SetUserInfo: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted, &disp_info))
@@ -3592,15 +3597,18 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 		break;
 	}
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, acc_required, "_samr_set_userinfo"))) {
-		return r_u->status;
+	status = access_check_samr_function(acc_granted,
+					    acc_required,
+					    "_samr_SetUserInfo");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	DEBUG(5, ("_samr_set_userinfo: sid:%s, level:%d\n",
+	DEBUG(5, ("_samr_SetUserInfo: sid:%s, level:%d\n",
 		  sid_string_dbg(&sid), switch_value));
 
-	if (ctr == NULL) {
-		DEBUG(5, ("_samr_set_userinfo: NULL info level\n"));
+	if (info == NULL) {
+		DEBUG(5, ("_samr_SetUserInfo: NULL info level\n"));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
@@ -3630,7 +3638,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 			has_enough_rights = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
 	}
 
-	DEBUG(5, ("_samr_set_userinfo: %s does%s possess sufficient rights\n",
+	DEBUG(5, ("_samr_SetUserInfo: %s does%s possess sufficient rights\n",
 		  uidtoname(p->pipe_user.ut.uid),
 		  has_enough_rights ? "" : " not"));
 
@@ -3643,65 +3651,67 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 	switch (switch_value) {
 		case 18:
-			if (!set_user_info_18(ctr->info.id18, pwd))
-				r_u->status = NT_STATUS_ACCESS_DENIED;
+			if (!set_user_info_18(&info->info18, pwd))
+				status = NT_STATUS_ACCESS_DENIED;
 			break;
 
 		case 24:
 			if (!p->session_key.length) {
-				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
+				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			SamOEMhashBlob(ctr->info.id24->pass, 516, &p->session_key);
+			SamOEMhashBlob(info->info24.password.data,
+				       516,
+				       &p->session_key);
 
-			dump_data(100, ctr->info.id24->pass, 516);
+			dump_data(100, info->info24.password.data, 516);
 
-			if (!set_user_info_pw(ctr->info.id24->pass, pwd))
-				r_u->status = NT_STATUS_ACCESS_DENIED;
+			if (!set_user_info_pw(info->info24.password.data, pwd))
+				status = NT_STATUS_ACCESS_DENIED;
 			break;
 
 		case 25:
 			if (!p->session_key.length) {
-				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
+				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			encode_or_decode_arc4_passwd_buffer(ctr->info.id25->pass, &p->session_key);
+			encode_or_decode_arc4_passwd_buffer(info->info25.password.data, &p->session_key);
 
-			dump_data(100, ctr->info.id25->pass, 532);
+			dump_data(100, info->info25.password.data, 532);
 
-			r_u->status = set_user_info_25(p->mem_ctx,
-						       ctr->info.id25, pwd);
-			if (!NT_STATUS_IS_OK(r_u->status)) {
+			status = set_user_info_25(p->mem_ctx,
+						  &info->info25, pwd);
+			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
-			if (!set_user_info_pw(ctr->info.id25->pass, pwd))
-				r_u->status = NT_STATUS_ACCESS_DENIED;
+			if (!set_user_info_pw(info->info25.password.data, pwd))
+				status = NT_STATUS_ACCESS_DENIED;
 			break;
 
 		case 26:
 			if (!p->session_key.length) {
-				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
+				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			encode_or_decode_arc4_passwd_buffer(ctr->info.id26->pass, &p->session_key);
+			encode_or_decode_arc4_passwd_buffer(info->info26.password.data, &p->session_key);
 
-			dump_data(100, ctr->info.id26->pass, 516);
+			dump_data(100, info->info26.password.data, 516);
 
-			if (!set_user_info_pw(ctr->info.id26->pass, pwd))
-				r_u->status = NT_STATUS_ACCESS_DENIED;
+			if (!set_user_info_pw(info->info26.password.data, pwd))
+				status = NT_STATUS_ACCESS_DENIED;
 			break;
 
 		case 23:
 			if (!p->session_key.length) {
-				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
+				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			SamOEMhashBlob(ctr->info.id23->pass, 516, &p->session_key);
+			SamOEMhashBlob(info->info23.password.data, 516, &p->session_key);
 
-			dump_data(100, ctr->info.id23->pass, 516);
+			dump_data(100, info->info23.password.data, 516);
 
-			r_u->status = set_user_info_23(p->mem_ctx,
-						       ctr->info.id23, pwd);
+			status = set_user_info_23(p->mem_ctx,
+						  &info->info23, pwd);
 			break;
 
 		default:
-			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 
  done:
@@ -3711,24 +3721,26 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 
 	/* ================ END SeMachineAccountPrivilege BLOCK ================ */
 
-	if (NT_STATUS_IS_OK(r_u->status)) {
+	if (NT_STATUS_IS_OK(status)) {
 		force_flush_samr_cache(disp_info);
 	}
 
-	return r_u->status;
+	return status;
 }
 
 /*******************************************************************
- samr_reply_set_userinfo2
+ _samr_SetUserInfo2
  ********************************************************************/
 
-NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_SET_USERINFO2 *r_u)
+NTSTATUS _samr_SetUserInfo2(pipes_struct *p,
+			    struct samr_SetUserInfo2 *r)
 {
+	NTSTATUS status;
 	struct samu *pwd = NULL;
 	DOM_SID sid;
-	SAM_USERINFO_CTR *ctr = q_u->ctr;
-	POLICY_HND *pol = &q_u->pol;
-	uint16 switch_value = q_u->switch_value;
+	union samr_UserInfo *info = r->in.info;
+	POLICY_HND *pol = r->in.user_handle;
+	uint16 switch_value = r->in.level;
 	uint32 acc_granted;
 	uint32 acc_required;
 	bool ret;
@@ -3736,9 +3748,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	uint32 acb_info;
 	DISP_INFO *disp_info = NULL;
 
-	DEBUG(5, ("samr_reply_set_userinfo2: %d\n", __LINE__));
-
-	r_u->status = NT_STATUS_OK;
+	DEBUG(5, ("_samr_SetUserInfo2: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted, &disp_info))
@@ -3753,19 +3763,20 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	acc_required = SA_RIGHT_USER_SET_ATTRIBUTES;
 #endif
 
-	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, acc_required, "_samr_set_userinfo2"))) {
-		return r_u->status;
+	status = access_check_samr_function(acc_granted,
+					    acc_required,
+					    "_samr_SetUserInfo2");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	DEBUG(5, ("samr_reply_set_userinfo2: sid:%s\n",
+	DEBUG(5,("_samr_SetUserInfo2: sid:%s\n",
 		  sid_string_dbg(&sid)));
 
-	if (ctr == NULL) {
-		DEBUG(5, ("samr_reply_set_userinfo2: NULL info level\n"));
+	if (info == NULL) {
+		DEBUG(5,("_samr_SetUserInfo2: NULL info level\n"));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
-
-	switch_value=ctr->switch_value;
 
 	if ( !(pwd = samu_new( NULL )) ) {
 		return NT_STATUS_NO_MEMORY;
@@ -3790,7 +3801,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 			has_enough_rights = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
 	}
 
-	DEBUG(5, ("_samr_set_userinfo2: %s does%s possess sufficient rights\n",
+	DEBUG(5, ("_samr_SetUserInfo2: %s does%s possess sufficient rights\n",
 		  uidtoname(p->pipe_user.ut.uid),
 		  has_enough_rights ? "" : " not"));
 
@@ -3803,50 +3814,50 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 
 	switch (switch_value) {
 		case 7:
-			r_u->status = set_user_info_7(p->mem_ctx,
-						      ctr->info.id7, pwd);
+			status = set_user_info_7(p->mem_ctx,
+						 &info->info7, pwd);
 			break;
 		case 16:
-			if (!set_user_info_16(ctr->info.id16, pwd))
-				r_u->status = NT_STATUS_ACCESS_DENIED;
+			if (!set_user_info_16(&info->info16, pwd))
+				status = NT_STATUS_ACCESS_DENIED;
 			break;
 		case 18:
 			/* Used by AS/U JRA. */
-			if (!set_user_info_18(ctr->info.id18, pwd))
-				r_u->status = NT_STATUS_ACCESS_DENIED;
+			if (!set_user_info_18(&info->info18, pwd))
+				status = NT_STATUS_ACCESS_DENIED;
 			break;
 		case 20:
-			if (!set_user_info_20(ctr->info.id20, pwd))
-				r_u->status = NT_STATUS_ACCESS_DENIED;
+			if (!set_user_info_20(&info->info20, pwd))
+				status = NT_STATUS_ACCESS_DENIED;
 			break;
 		case 21:
-			r_u->status = set_user_info_21(p->mem_ctx,
-						       ctr->info.id21, pwd);
+			status = set_user_info_21(p->mem_ctx,
+						  &info->info21, pwd);
 			break;
 		case 23:
 			if (!p->session_key.length) {
-				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
+				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			SamOEMhashBlob(ctr->info.id23->pass, 516, &p->session_key);
+			SamOEMhashBlob(info->info23.password.data, 516, &p->session_key);
 
-			dump_data(100, ctr->info.id23->pass, 516);
+			dump_data(100, info->info23.password.data, 516);
 
-			r_u->status = set_user_info_23(p->mem_ctx,
-						       ctr->info.id23, pwd);
+			status = set_user_info_23(p->mem_ctx,
+						  &info->info23, pwd);
 			break;
 		case 26:
 			if (!p->session_key.length) {
-				r_u->status = NT_STATUS_NO_USER_SESSION_KEY;
+				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			encode_or_decode_arc4_passwd_buffer(ctr->info.id26->pass, &p->session_key);
+			encode_or_decode_arc4_passwd_buffer(info->info26.password.data, &p->session_key);
 
-			dump_data(100, ctr->info.id26->pass, 516);
+			dump_data(100, info->info26.password.data, 516);
 
-			if (!set_user_info_pw(ctr->info.id26->pass, pwd))
-				r_u->status = NT_STATUS_ACCESS_DENIED;
+			if (!set_user_info_pw(info->info26.password.data, pwd))
+				status = NT_STATUS_ACCESS_DENIED;
 			break;
 		default:
-			r_u->status = NT_STATUS_INVALID_INFO_CLASS;
+			status = NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	if ( has_enough_rights )
@@ -3854,11 +3865,11 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 
 	/* ================ END SeMachineAccountPrivilege BLOCK ================ */
 
-	if (NT_STATUS_IS_OK(r_u->status)) {
+	if (NT_STATUS_IS_OK(status)) {
 		force_flush_samr_cache(disp_info);
 	}
 
-	return r_u->status;
+	return status;
 }
 
 /*********************************************************************
@@ -5258,16 +5269,6 @@ NTSTATUS _samr_QueryUserInfo(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _samr_SetUserInfo(pipes_struct *p,
-			   struct samr_SetUserInfo *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
 NTSTATUS _samr_ChangePasswordUser(pipes_struct *p,
 				  struct samr_ChangePasswordUser *r)
 {
@@ -5370,16 +5371,6 @@ NTSTATUS _samr_RemoveMultipleMembersFromAlias(pipes_struct *p,
 
 NTSTATUS _samr_OemChangePasswordUser2(pipes_struct *p,
 				      struct samr_OemChangePasswordUser2 *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_SetUserInfo2(pipes_struct *p,
-			    struct samr_SetUserInfo2 *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
