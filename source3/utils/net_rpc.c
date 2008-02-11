@@ -1547,7 +1547,7 @@ do { if (strequal(ctx->thiscmd, name)) { \
 do { if (strequal(ctx->thiscmd, name)) { \
 	init_unistr2(&usr->uni_##rec, argv[0], UNI_STR_TERMINATE); \
 	init_uni_hdr(&usr->hdr_##rec, &usr->uni_##rec); \
-	usr->fields_present |= ACCT_##flag; } \
+	usr->fields_present |= SAMR_FIELD_##flag; } \
 } while (0);
 
 static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
@@ -1597,10 +1597,10 @@ static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
 	}
 
 	SETSTR("fullname", full_name, FULL_NAME);
-	SETSTR("homedir", home_dir, HOME_DIR);
+	SETSTR("homedir", home_dir, HOME_DIRECTORY);
 	SETSTR("homedrive", dir_drive, HOME_DRIVE);
 	SETSTR("logonscript", logon_script, LOGON_SCRIPT);
-	SETSTR("profilepath", profile_path, PROFILE);
+	SETSTR("profilepath", profile_path, PROFILE_PATH);
 	SETSTR("description", acct_desc, DESCRIPTION);
 
 	result = rpccli_samr_set_userinfo2(
@@ -1682,7 +1682,7 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCTP(usr);
 
 	usr->acb_info = newflags;
-	usr->fields_present = ACCT_FLAGS;
+	usr->fields_present = SAMR_FIELD_ACCT_FLAGS;
 
 	result = rpccli_samr_set_userinfo2(
 		pipe_hnd, mem_ctx, user_hnd, 21,
@@ -5680,7 +5680,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 				      &notime, &notime, &notime,
 				      nostr, nostr, nostr, nostr, nostr,
 				      nostr, nostr, nostr, nostr, nostr,
-				      0, 0, acb_info, ACCT_FLAGS, 168, &hrs, 
+				      0, 0, acb_info, SAMR_FIELD_ACCT_FLAGS, 168, &hrs,
 				      0, 0, (char *)pwbuf);
 		ctr.switch_value = 23;
 		ctr.info.id23 = &p23;

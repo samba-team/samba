@@ -776,7 +776,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	ZERO_STRUCT(ctr);
 	ZERO_STRUCT(p25);
 
-	fields_present = ACCT_NT_PWD_SET | ACCT_LM_PWD_SET | ACCT_FLAGS;
+	fields_present = ACCT_NT_PWD_SET | ACCT_LM_PWD_SET |
+			 SAMR_FIELD_ACCT_FLAGS;
 	init_sam_user_info25P(&p25, fields_present, acb_info, (char *)pwbuf);
 
 	ctr.switch_value = infolevel;
