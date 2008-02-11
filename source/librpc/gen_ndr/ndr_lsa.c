@@ -3344,57 +3344,6 @@ _PUBLIC_ void ndr_print_lsa_RightSet(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
-static enum ndr_err_code ndr_push_lsa_StringPointer(struct ndr_push *ndr, int ndr_flags, const struct lsa_StringPointer *r)
-{
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_push_align(ndr, 4));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->string));
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->string) {
-			NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->string));
-		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-static enum ndr_err_code ndr_pull_lsa_StringPointer(struct ndr_pull *ndr, int ndr_flags, struct lsa_StringPointer *r)
-{
-	uint32_t _ptr_string;
-	TALLOC_CTX *_mem_save_string_0;
-	if (ndr_flags & NDR_SCALARS) {
-		NDR_CHECK(ndr_pull_align(ndr, 4));
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_string));
-		if (_ptr_string) {
-			NDR_PULL_ALLOC(ndr, r->string);
-		} else {
-			r->string = NULL;
-		}
-	}
-	if (ndr_flags & NDR_BUFFERS) {
-		if (r->string) {
-			_mem_save_string_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->string, 0);
-			NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->string));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_string_0, 0);
-		}
-	}
-	return NDR_ERR_SUCCESS;
-}
-
-_PUBLIC_ void ndr_print_lsa_StringPointer(struct ndr_print *ndr, const char *name, const struct lsa_StringPointer *r)
-{
-	ndr_print_struct(ndr, name, "lsa_StringPointer");
-	ndr->depth++;
-	ndr_print_ptr(ndr, "string", r->string);
-	ndr->depth++;
-	if (r->string) {
-		ndr_print_lsa_String(ndr, "string", r->string);
-	}
-	ndr->depth--;
-	ndr->depth--;
-}
-
 static enum ndr_err_code ndr_push_lsa_DomainListEx(struct ndr_push *ndr, int ndr_flags, const struct lsa_DomainListEx *r)
 {
 	uint32_t cntr_domains_1;
@@ -8587,23 +8536,35 @@ static enum ndr_err_code ndr_push_lsa_GetUserName(struct ndr_push *ndr, int flag
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.system_name, CH_UTF16)));
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.system_name, ndr_charset_length(r->in.system_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.account_name));
-		if (r->in.account_name) {
-			NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.account_name));
+		if (r->in.account_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->in.account_name));
+		if (*r->in.account_name) {
+			NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.account_name));
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.authority_name));
 		if (r->in.authority_name) {
-			NDR_CHECK(ndr_push_lsa_StringPointer(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.authority_name));
+			NDR_CHECK(ndr_push_unique_ptr(ndr, *r->in.authority_name));
+			if (*r->in.authority_name) {
+				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.authority_name));
+			}
 		}
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.account_name));
-		if (r->out.account_name) {
-			NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.account_name));
+		if (r->out.account_name == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.account_name));
+		if (*r->out.account_name) {
+			NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.account_name));
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.authority_name));
 		if (r->out.authority_name) {
-			NDR_CHECK(ndr_push_lsa_StringPointer(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.authority_name));
+			NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.authority_name));
+			if (*r->out.authority_name) {
+				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.authority_name));
+			}
 		}
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
@@ -8617,7 +8578,9 @@ static enum ndr_err_code ndr_pull_lsa_GetUserName(struct ndr_pull *ndr, int flag
 	uint32_t _ptr_authority_name;
 	TALLOC_CTX *_mem_save_system_name_0;
 	TALLOC_CTX *_mem_save_account_name_0;
+	TALLOC_CTX *_mem_save_account_name_1;
 	TALLOC_CTX *_mem_save_authority_name_0;
+	TALLOC_CTX *_mem_save_authority_name_1;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -8639,18 +8602,24 @@ static enum ndr_err_code ndr_pull_lsa_GetUserName(struct ndr_pull *ndr, int flag
 			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.system_name, ndr_get_array_length(ndr, &r->in.system_name), sizeof(uint16_t), CH_UTF16));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_system_name_0, 0);
 		}
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.account_name);
+		}
+		_mem_save_account_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.account_name, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_account_name));
 		if (_ptr_account_name) {
-			NDR_PULL_ALLOC(ndr, r->in.account_name);
+			NDR_PULL_ALLOC(ndr, *r->in.account_name);
 		} else {
-			r->in.account_name = NULL;
+			*r->in.account_name = NULL;
 		}
-		if (r->in.account_name) {
-			_mem_save_account_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->in.account_name, 0);
-			NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.account_name));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_account_name_0, 0);
+		if (*r->in.account_name) {
+			_mem_save_account_name_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->in.account_name, 0);
+			NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.account_name));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_account_name_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_account_name_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_authority_name));
 		if (_ptr_authority_name) {
 			NDR_PULL_ALLOC(ndr, r->in.authority_name);
@@ -8660,23 +8629,42 @@ static enum ndr_err_code ndr_pull_lsa_GetUserName(struct ndr_pull *ndr, int flag
 		if (r->in.authority_name) {
 			_mem_save_authority_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->in.authority_name, 0);
-			NDR_CHECK(ndr_pull_lsa_StringPointer(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.authority_name));
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_authority_name));
+			if (_ptr_authority_name) {
+				NDR_PULL_ALLOC(ndr, *r->in.authority_name);
+			} else {
+				*r->in.authority_name = NULL;
+			}
+			if (*r->in.authority_name) {
+				_mem_save_authority_name_1 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, *r->in.authority_name, 0);
+				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, *r->in.authority_name));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_authority_name_1, 0);
+			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_authority_name_0, 0);
 		}
+		NDR_PULL_ALLOC(ndr, r->out.account_name);
+		*r->out.account_name = *r->in.account_name;
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.account_name);
+		}
+		_mem_save_account_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.account_name, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_account_name));
 		if (_ptr_account_name) {
-			NDR_PULL_ALLOC(ndr, r->out.account_name);
+			NDR_PULL_ALLOC(ndr, *r->out.account_name);
 		} else {
-			r->out.account_name = NULL;
+			*r->out.account_name = NULL;
 		}
-		if (r->out.account_name) {
-			_mem_save_account_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.account_name, 0);
-			NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.account_name));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_account_name_0, 0);
+		if (*r->out.account_name) {
+			_mem_save_account_name_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.account_name, 0);
+			NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.account_name));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_account_name_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_account_name_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_authority_name));
 		if (_ptr_authority_name) {
 			NDR_PULL_ALLOC(ndr, r->out.authority_name);
@@ -8686,7 +8674,18 @@ static enum ndr_err_code ndr_pull_lsa_GetUserName(struct ndr_pull *ndr, int flag
 		if (r->out.authority_name) {
 			_mem_save_authority_name_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->out.authority_name, 0);
-			NDR_CHECK(ndr_pull_lsa_StringPointer(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.authority_name));
+			NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_authority_name));
+			if (_ptr_authority_name) {
+				NDR_PULL_ALLOC(ndr, *r->out.authority_name);
+			} else {
+				*r->out.authority_name = NULL;
+			}
+			if (*r->out.authority_name) {
+				_mem_save_authority_name_1 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, *r->out.authority_name, 0);
+				NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.authority_name));
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_authority_name_1, 0);
+			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_authority_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
@@ -8712,14 +8711,22 @@ _PUBLIC_ void ndr_print_lsa_GetUserName(struct ndr_print *ndr, const char *name,
 		ndr->depth--;
 		ndr_print_ptr(ndr, "account_name", r->in.account_name);
 		ndr->depth++;
-		if (r->in.account_name) {
-			ndr_print_lsa_String(ndr, "account_name", r->in.account_name);
+		ndr_print_ptr(ndr, "account_name", *r->in.account_name);
+		ndr->depth++;
+		if (*r->in.account_name) {
+			ndr_print_lsa_String(ndr, "account_name", *r->in.account_name);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "authority_name", r->in.authority_name);
 		ndr->depth++;
 		if (r->in.authority_name) {
-			ndr_print_lsa_StringPointer(ndr, "authority_name", r->in.authority_name);
+			ndr_print_ptr(ndr, "authority_name", *r->in.authority_name);
+			ndr->depth++;
+			if (*r->in.authority_name) {
+				ndr_print_lsa_String(ndr, "authority_name", *r->in.authority_name);
+			}
+			ndr->depth--;
 		}
 		ndr->depth--;
 		ndr->depth--;
@@ -8729,14 +8736,22 @@ _PUBLIC_ void ndr_print_lsa_GetUserName(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		ndr_print_ptr(ndr, "account_name", r->out.account_name);
 		ndr->depth++;
-		if (r->out.account_name) {
-			ndr_print_lsa_String(ndr, "account_name", r->out.account_name);
+		ndr_print_ptr(ndr, "account_name", *r->out.account_name);
+		ndr->depth++;
+		if (*r->out.account_name) {
+			ndr_print_lsa_String(ndr, "account_name", *r->out.account_name);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "authority_name", r->out.authority_name);
 		ndr->depth++;
 		if (r->out.authority_name) {
-			ndr_print_lsa_StringPointer(ndr, "authority_name", r->out.authority_name);
+			ndr_print_ptr(ndr, "authority_name", *r->out.authority_name);
+			ndr->depth++;
+			if (*r->out.authority_name) {
+				ndr_print_lsa_String(ndr, "authority_name", *r->out.authority_name);
+			}
+			ndr->depth--;
 		}
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);

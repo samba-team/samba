@@ -219,8 +219,8 @@ NTSTATUS rpccli_lsa_OpenPolicy2(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_GetUserName(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				const char *system_name,
-				struct lsa_String *account_name,
-				struct lsa_StringPointer *authority_name);
+				struct lsa_String **account_name,
+				struct lsa_String **authority_name);
 NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct policy_handle *handle,

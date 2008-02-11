@@ -1957,8 +1957,8 @@ NTSTATUS rpccli_lsa_OpenPolicy2(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_GetUserName(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				const char *system_name,
-				struct lsa_String *account_name,
-				struct lsa_StringPointer *authority_name)
+				struct lsa_String **account_name,
+				struct lsa_String **authority_name)
 {
 	struct lsa_GetUserName r;
 	NTSTATUS status;
@@ -1992,9 +1992,7 @@ NTSTATUS rpccli_lsa_GetUserName(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (account_name && r.out.account_name) {
-		*account_name = *r.out.account_name;
-	}
+	*account_name = *r.out.account_name;
 	if (authority_name && r.out.authority_name) {
 		*authority_name = *r.out.authority_name;
 	}
