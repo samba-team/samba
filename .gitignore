@@ -1,3 +1,4 @@
+source/mkconfig.mk
 source/test-results
 source/lib/gencache/gencache.h
 source/lib/ldb/bin
