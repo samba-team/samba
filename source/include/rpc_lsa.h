@@ -535,27 +535,6 @@ typedef struct
 } LSA_R_REMOVE_ACCT_RIGHTS;
 
 
-/* LSA_Q_PRIV_GET_DISPNAME - LSA get privilege display name */
-typedef struct lsa_q_priv_get_dispname
-{
-	POLICY_HND pol; /* policy handle */
-	UNIHDR hdr_name;
-	UNISTR2 name;
-	uint16 lang_id;
-	uint16 lang_id_sys;
-} LSA_Q_PRIV_GET_DISPNAME;
-
-typedef struct lsa_r_priv_get_dispname
-{
-	uint32 ptr_info;
-	UNIHDR hdr_desc;
-	UNISTR2 desc;
-	/* Don't align ! */
-	uint16 lang_id;
-	/* align */
-	NTSTATUS status;
-} LSA_R_PRIV_GET_DISPNAME;
-
 /* LSA_Q_ENUM_ACCOUNTS */
 typedef struct lsa_q_enum_accounts
 {
