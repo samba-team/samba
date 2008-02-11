@@ -452,10 +452,6 @@ struct lsa_RightSet {
 	struct lsa_StringLarge *names;/* [unique,size_is(count)] */
 };
 
-struct lsa_StringPointer {
-	struct lsa_String *string;/* [unique] */
-};
-
 struct lsa_DomainListEx {
 	uint32_t count;
 	struct lsa_TrustDomainInfoInfoEx *domains;/* [unique,size_is(count)] */
@@ -1189,13 +1185,13 @@ struct lsa_OpenPolicy2 {
 struct lsa_GetUserName {
 	struct {
 		const char *system_name;/* [unique,charset(UTF16)] */
-		struct lsa_String *account_name;/* [unique] */
-		struct lsa_StringPointer *authority_name;/* [unique] */
+		struct lsa_String **account_name;/* [ref] */
+		struct lsa_String **authority_name;/* [unique] */
 	} in;
 
 	struct {
-		struct lsa_String *account_name;/* [unique] */
-		struct lsa_StringPointer *authority_name;/* [unique] */
+		struct lsa_String **account_name;/* [ref] */
+		struct lsa_String **authority_name;/* [unique] */
 		NTSTATUS result;
 	} out;
 

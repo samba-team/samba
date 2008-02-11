@@ -237,7 +237,6 @@ void ndr_print_lsa_TrustDomainInfoInfoAll(struct ndr_print *ndr, const char *nam
 void ndr_print_lsa_TrustedDomainInfo(struct ndr_print *ndr, const char *name, const union lsa_TrustedDomainInfo *r);
 void ndr_print_lsa_DATA_BUF_PTR(struct ndr_print *ndr, const char *name, const struct lsa_DATA_BUF_PTR *r);
 void ndr_print_lsa_RightSet(struct ndr_print *ndr, const char *name, const struct lsa_RightSet *r);
-void ndr_print_lsa_StringPointer(struct ndr_print *ndr, const char *name, const struct lsa_StringPointer *r);
 void ndr_print_lsa_DomainListEx(struct ndr_print *ndr, const char *name, const struct lsa_DomainListEx *r);
 void ndr_print_lsa_DomainInfoKerberos(struct ndr_print *ndr, const char *name, const struct lsa_DomainInfoKerberos *r);
 void ndr_print_lsa_DomainInfoEfs(struct ndr_print *ndr, const char *name, const struct lsa_DomainInfoEfs *r);
