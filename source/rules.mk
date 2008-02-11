@@ -77,6 +77,7 @@ clean:: clean_pch
 
 distclean:: clean
 	-rm -f include/config.h include/config_tmp.h include/build.h
+	-rm -f data.mk
 	-rm -f config.status
 	-rm -f config.log config.cache
 	-rm -f config.pm config.mk

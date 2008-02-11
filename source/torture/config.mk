@@ -196,8 +196,8 @@ OBJ_FILES = \
 		auth/ntlmssp.o \
 		auth/pac.o
 PRIVATE_DEPENDENCIES = \
-		LIBCLI_SMB gensec auth LIBSAMBA3 KERBEROS \
-		POPT_CREDENTIALS
+		LIBCLI_SMB gensec auth KERBEROS \
+		POPT_CREDENTIALS SMBPASSWD
 # End SUBSYSTEM TORTURE_AUTH
 #################################
 
