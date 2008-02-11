@@ -18,13 +18,12 @@
 #
 
 import echo
-from param import LoadParm
 import unittest
+from samba.tests import get_loadparm
 
 class RpcEchoTests(unittest.TestCase):
     def setUp(self):
-        lp_ctx = LoadParm()
-        lp_ctx.load("st/client/client.conf")
+        lp_ctx = get_loadparm()
         self.conn = echo.rpcecho("ncalrpc:", lp_ctx)
 
     def test_addone(self):
