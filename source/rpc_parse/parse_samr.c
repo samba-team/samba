@@ -1732,7 +1732,7 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 
 /*************************************************************************
  init_samr_user_info25P
- fields_present = ACCT_NT_PWD_SET | ACCT_LM_PWD_SET | ACCT_FLAGS
+ fields_present = ACCT_NT_PWD_SET | ACCT_LM_PWD_SET | SAMR_FIELD_ACCT_FLAGS
 *************************************************************************/
 
 void init_sam_user_info25P(SAM_USER_INFO_25 * usr,
