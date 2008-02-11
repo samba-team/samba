@@ -33,8 +33,13 @@ clean::
 	rm -f $(SONAME) $(SOLIB) libtdb.a libtdb.$(SHLIBEXT)
 	rm -f $(ALL_PROGS) tdb.pc
 
-build-python:: libtdb.$(SHLIBEXT) tdb_wrap.c
-	$(tdbdir)/setup.py build
+build-python:: _tdb.$(SHLIBEXT) 
+
+tdb_wrap.o: tdb_wrap.c
+	$(CC) -c $< $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
+
+_tdb.$(SHLIBEXT): libtdb.$(SHLIBEXT) tdb_wrap.o
+	$(SHLD) $(SHLD_FLAGS) -o $@ tdb_wrap.o -L. -ltdb `$(PYTHON_CONFIG) --libs`
 
 install:: installdirs installbin installheaders installlibs \
 		  $(PYTHON_INSTALL_TARGET)
@@ -43,15 +48,14 @@ installpython:: build-python
 	./setup.py install --prefix=$(DESTDIR)$(prefix)
 
 check-python:: build-python
-	# FIXME: Should be more portable:
-	LD_LIBRARY_PATH=. PYTHONPATH=.:build/lib.linux-i686-2.4 trial python/tests/simple.py
+	$(LIB_PATH_VAR)=. PYTHONPATH=".:$(tdbdir)" trial $(tdbdir)/python/tests/simple.py
 
 install-swig::
 	mkdir -p $(DESTDIR)`$(SWIG) -swiglib`
 	cp tdb.i $(DESTDIR)`$(SWIG) -swiglib`
 
-clean-python::
-	./setup.py clean
+clean::
+	rm -f _tdb.$(SHLIBEXT)
 
 installdirs::
 	mkdir -p $(DESTDIR)$(bindir)
@@ -77,5 +81,3 @@ libtdb.$(SHLIBEXT): $(SOLIB)
 
 $(SONAME): $(SOLIB)
 	ln -fs $< $@
-
-
