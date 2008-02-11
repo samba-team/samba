@@ -19,6 +19,11 @@
 #include "includes.h"
 #include "utils/net.h"
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
+
 /********************************************************************
 ********************************************************************/
 
@@ -98,7 +103,7 @@ static NTSTATUS enum_privileges(struct rpc_pipe_client *pipe_hnd,
 	uint16 lang_id=0;
 	uint16 lang_id_sys=0;
 	uint16 lang_id_desc;
-	fstring description;
+	struct lsa_StringLarge *description = NULL;
 	struct lsa_PrivArray priv_array;
 
 	result = rpccli_lsa_EnumPrivs(pipe_hnd, ctx,
@@ -113,19 +118,30 @@ static NTSTATUS enum_privileges(struct rpc_pipe_client *pipe_hnd,
 	/* Print results */
 
 	for (i = 0; i < priv_array.count; i++) {
+
+		struct lsa_String lsa_name;
+
 		d_printf("%30s  ",
 			priv_array.privs[i].name.string ? priv_array.privs[i].name.string : "*unknown*" );
 
 		/* try to get the description */
-		
-		if ( !NT_STATUS_IS_OK(rpccli_lsa_get_dispname(pipe_hnd, ctx, pol, 
-			priv_array.privs[i].name.string, lang_id, lang_id_sys, description, &lang_id_desc)) )
-		{
+
+		init_lsa_String(&lsa_name, priv_array.privs[i].name.string);
+
+		result = rpccli_lsa_LookupPrivDisplayName(pipe_hnd, ctx,
+							  pol,
+							  &lsa_name,
+							  lang_id,
+							  lang_id_sys,
+							  &description,
+							  &lang_id_desc);
+
+		if (!NT_STATUS_IS_OK(result)) {
 			d_printf("??????\n");
 			continue;
 		}
-		
-		d_printf("%s\n", description );		
+
+		d_printf("%s\n", description->string);
 	}
 
 	return NT_STATUS_OK;
@@ -298,7 +314,8 @@ static NTSTATUS rpc_rights_list_internal(const DOM_SID *domain_sid,
 	NTSTATUS result;
 	DOM_SID sid;
 	fstring privname;
-	fstring description;
+	struct lsa_String lsa_name;
+	struct lsa_StringLarge *description = NULL;
 	uint16 lang_id = 0;
 	uint16 lang_id_sys = 0;
 	uint16 lang_id_desc;
@@ -326,14 +343,19 @@ static NTSTATUS rpc_rights_list_internal(const DOM_SID *domain_sid,
 		}
 
 		while ( argv[i] != NULL ) {
-			fstrcpy( privname, argv[i] );
+			fstrcpy(privname, argv[i]);
+			init_lsa_String(&lsa_name, argv[i]);
 			i++;
 		
 			/* verify that this is a valid privilege for error reporting */
-			
-			result = rpccli_lsa_get_dispname(pipe_hnd, mem_ctx, &pol, privname, lang_id, 
-				lang_id_sys, description, &lang_id_desc);
-			
+			result = rpccli_lsa_LookupPrivDisplayName(pipe_hnd, mem_ctx,
+								  &pol,
+								  &lsa_name,
+								  lang_id,
+								  lang_id_sys,
+								  &description,
+								  &lang_id_desc);
+
 			if ( !NT_STATUS_IS_OK(result) ) {
 				if ( NT_STATUS_EQUAL( result, NT_STATUS_NO_SUCH_PRIVILEGE ) ) 
 					d_fprintf(stderr, "No such privilege exists: %s.\n", privname);
