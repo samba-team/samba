@@ -10,6 +10,7 @@ my $target = shift;
 
 my $vars = {};
 
+sub check_flags($$);
 sub check_flags($$)
 {
 	my ($path, $name)=@_;
@@ -17,15 +18,18 @@ sub check_flags($$)
 	foreach my $line (<IN>) {
 		if ($line =~ /^include (.*)$/) {
 			check_flags($1, $name);
-		} elsif ($line =~ /^([A-Za-z0-9_]+) = (.*)$/) {
+		} elsif ($line =~ /^([A-Za-z0-9_]+) =(.*)$/) {
 			$vars->{$1} = $2;
 		} elsif ($line =~ /^([^:]+): (.*)$/) {
 			next unless (grep(/^$target$/, (split / /, $1)));
 			my $data = $2;
 			$data =~ s/^CFLAGS\+=//;
-			foreach (keys %$vars) {
-				$data =~ s/\$($_)/$vars->{$_}/g;
+			foreach my $key (keys %$vars) {
+				my $val = $vars->{$key};
+				$data =~ s/\$\($key\)/$val/g;
 			}
+			# Remove undefined variables
+			$data =~ s/\$\([A-Za-z0-9_]+\)//g;
 			print "$data ";
 		}
 	}
