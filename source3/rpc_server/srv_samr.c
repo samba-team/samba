@@ -383,33 +383,7 @@ static bool api_samr_open_alias(pipes_struct *p)
 
 static bool api_samr_set_userinfo(pipes_struct *p)
 {
-	SAMR_Q_SET_USERINFO q_u;
-	SAMR_R_SET_USERINFO r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_set_userinfo("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_set_userinfo: Unable to unmarshall SAMR_Q_SET_USERINFO.\n"));
-		/* Fix for W2K SP2 */
-		/* what is that status-code ? - gd */
-		if (q_u.switch_value == 0x1a) {
-			setup_fault_pdu(p, NT_STATUS(DCERPC_FAULT_INVALID_TAG));
-			return True;
-		}
-		return False;
-	}
-
-	r_u.status = _samr_set_userinfo(p, &q_u, &r_u);
-
-	if(!samr_io_r_set_userinfo("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_set_userinfo: Unable to marshall SAMR_R_SET_USERINFO.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_SETUSERINFO);
 }
 
 /*******************************************************************
@@ -418,28 +392,7 @@ static bool api_samr_set_userinfo(pipes_struct *p)
 
 static bool api_samr_set_userinfo2(pipes_struct *p)
 {
-	SAMR_Q_SET_USERINFO2 q_u;
-	SAMR_R_SET_USERINFO2 r_u;
-
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if (!samr_io_q_set_userinfo2("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_set_userinfo2: Unable to unmarshall SAMR_Q_SET_USERINFO2.\n"));
-		return False;
-	}
-
-	r_u.status = _samr_set_userinfo2(p, &q_u, &r_u);
-
-	if(!samr_io_r_set_userinfo2("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_set_userinfo2: Unable to marshall SAMR_R_SET_USERINFO2.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_samr_call(p, NDR_SAMR_SETUSERINFO2);
 }
 
 /*******************************************************************
