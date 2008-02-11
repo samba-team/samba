@@ -42,9 +42,11 @@ R=TEST.H5L.SE
 
 port=@port@
 
+server=host/datan.test.h5l.se
 cache="FILE:${objdir}/cache.krb5"
 
 kinit="${TESTS_ENVIRONMENT} ../../kuser/kinit -c $cache --no-afslog"
+kgetcred="${TESTS_ENVIRONMENT} ../../kuser/kgetcred -c $cache"
 kadmin="${TESTS_ENVIRONMENT} ../../kadmin/kadmin -l -r $R"
 kdc="${TESTS_ENVIRONMENT} ../../kdc/kdc --addresses=localhost -P $port"
 
@@ -98,6 +100,7 @@ ${kadmin} \
 
 ${kadmin} add -p foo --use-defaults foo@${R} || exit 1
 ${kadmin} add -p foo --use-defaults bar@${R} || exit 1
+${kadmin} add -p kaka --use-defaults ${server}@${R} || exit 1
 
 ${kadmin} cpw --random-password bar@${R} > /dev/null || exit 1
 ${kadmin} cpw --random-password bar@${R} > /dev/null || exit 1
@@ -128,6 +131,9 @@ ec=0
 echo "Getting client initial tickets";
 ${kinit} --password-file=${objdir}/foopassword foo@$R || \
 	{ ec=1 ; eval "${testfailed}"; }
+
+echo "Getting ${server} ticket"
+${kgetcred} ${server}@${R} || { ec=1 ; eval "${testfailed}"; }
 
 
 echo "killing kdc (${kdcpid})"
