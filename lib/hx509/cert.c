@@ -893,10 +893,13 @@ _hx509_cert_is_parent_cmp(const Certificate *subject,
     int diff;
     AuthorityKeyIdentifier ai;
     SubjectKeyIdentifier si;
-    int ret_ai, ret_si;
+    int ret_ai, ret_si, ret;
 
-    diff = _hx509_name_cmp(&issuer->tbsCertificate.subject, 
-			   &subject->tbsCertificate.issuer);
+    ret = _hx509_name_cmp(&issuer->tbsCertificate.subject, 
+			  &subject->tbsCertificate.issuer,
+			  &diff);
+    if (ret)
+	return ret;
     if (diff)
 	return diff;
     
@@ -951,8 +954,11 @@ _hx509_cert_is_parent_cmp(const Certificate *subject,
 	name.u.rdnSequence = 
 	    ai.authorityCertIssuer->val[0].u.directoryName.u.rdnSequence;
 
-	diff = _hx509_name_cmp(&issuer->tbsCertificate.subject, 
-			       &name);
+	ret = _hx509_name_cmp(&issuer->tbsCertificate.subject, 
+			      &name,
+			      &diff);
+	if (ret)
+	    return ret;
 	if (diff)
 	    return diff;
 	diff = 0;
@@ -991,10 +997,18 @@ certificate_is_anchor(hx509_context context,
 }
 
 static int
-certificate_is_self_signed(const Certificate *cert)
+certificate_is_self_signed(hx509_context context,
+			   const Certificate *cert,
+			   int *self_signed)
 {
-    return _hx509_name_cmp(&cert->tbsCertificate.subject, 
-			   &cert->tbsCertificate.issuer) == 0;
+    int ret, diff;
+    ret = _hx509_name_cmp(&cert->tbsCertificate.subject, 
+			  &cert->tbsCertificate.issuer, &diff);
+    *self_signed = (diff == 0);
+    if (ret)
+	hx509_set_error_string(context, 0, ret,
+			       "Failed to check if self signed");
+    return ret;
 }
 
 /*
@@ -1605,9 +1619,14 @@ match_RDN(const RelativeDistinguishedName *c,
 	return HX509_NAME_CONSTRAINT_ERROR;
     
     for (i = 0; i < n->len; i++) {
+	int diff, ret;
+
 	if (der_heim_oid_cmp(&c->val[i].type, &n->val[i].type) != 0)
 	    return HX509_NAME_CONSTRAINT_ERROR;
-	if (_hx509_name_ds_cmp(&c->val[i].value, &n->val[i].value) != 0)
+	ret = _hx509_name_ds_cmp(&c->val[i].value, &n->val[i].value, &diff);
+	if (ret)
+	    return ret;
+	if (diff != 0)
 	    return HX509_NAME_CONSTRAINT_ERROR;
     }
     return 0;
@@ -1867,10 +1886,7 @@ hx509_verify_path(hx509_context context,
 {
     hx509_name_constraints nc;
     hx509_path path;
-#if 0
-    const AlgorithmIdentifier *alg_id;
-#endif
-    int ret, i, proxy_cert_depth, selfsigned_depth;
+    int ret, i, proxy_cert_depth, selfsigned_depth, diff;
     enum certtype type;
     Name proxy_issuer;
     hx509_certs anchors = NULL;
@@ -1910,10 +1926,6 @@ hx509_verify_path(hx509_context context,
     if (ret)
 	goto out;
 
-#if 0
-    alg_id = path.val[path->len - 1]->data->tbsCertificate.signature;
-#endif
-
     /*
      * Check CA and proxy certificate chain from the top of the
      * certificate chain. Also check certificate is valid with respect
@@ -1943,6 +1955,7 @@ hx509_verify_path(hx509_context context,
 
 	switch (type) {
 	case CA_CERT:
+
 	    /* XXX make constants for keyusage */
 	    ret = check_key_usage(context, c, 1 << 5,
 				  REQUIRE_RFC3280(ctx) ? TRUE : FALSE);
@@ -1952,8 +1965,16 @@ hx509_verify_path(hx509_context context,
 		goto out;
 	    }
 
-	    if (i + 1 != path.len && certificate_is_self_signed(c)) 
-		selfsigned_depth++;
+	    /* self signed cert doesn't add to path length */
+	    if (i + 1 != path.len) {
+		int selfsigned;
+
+		ret = certificate_is_self_signed(context, c, &selfsigned);
+		if (ret)
+		    goto out;
+		if (selfsigned) 
+		    selfsigned_depth++;
+	    }
 
 	    break;
 	case PROXY_CERT: {
@@ -2001,8 +2022,12 @@ hx509_verify_path(hx509_context context,
 		 */
 
 		if (proxy_cert_depth) {
-		    ret = _hx509_name_cmp(&proxy_issuer, &c->tbsCertificate.subject);
+		    ret = _hx509_name_cmp(&proxy_issuer, &c->tbsCertificate.subject, &diff);
 		    if (ret) {
+			hx509_set_error_string(context, 0, ret, "Out of memory");
+			goto out;
+		    }
+		    if (diff) {
 			ret = HX509_PROXY_CERT_NAME_WRONG;
 			hx509_set_error_string(context, 0, ret,
 					       "Base proxy name not right");
@@ -2035,8 +2060,12 @@ hx509_verify_path(hx509_context context,
 		free_RelativeDistinguishedName(&proxy_issuer.u.rdnSequence.val[j - 1]);
 		proxy_issuer.u.rdnSequence.len -= 1;
 
-		ret = _hx509_name_cmp(&proxy_issuer, &c->tbsCertificate.issuer);
-		if (ret != 0) {
+		ret = _hx509_name_cmp(&proxy_issuer, &c->tbsCertificate.issuer, &diff);
+		if (ret) {
+		    hx509_set_error_string(context, 0, ret, "Out of memory");
+		    goto out;
+		}
+		if (diff != 0) {
 		    ret = HX509_PROXY_CERT_NAME_WRONG;
 		    hx509_set_error_string(context, 0, ret,
 					   "Proxy issuer name not as expected");
@@ -2062,9 +2091,13 @@ hx509_verify_path(hx509_context context,
 	     */
 	    if (proxy_cert_depth) {
 
-		ret = _hx509_name_cmp(&proxy_issuer,
-				      &c->tbsCertificate.subject);
+		ret = _hx509_name_cmp(&proxy_issuer, 
+				      &c->tbsCertificate.subject, &diff);
 		if (ret) {
+		    hx509_set_error_string(context, 0, ret, "out of memory");
+		    goto out;
+		}
+		if (diff) {
 		    ret = HX509_PROXY_CERT_NAME_WRONG;
 		    hx509_clear_error_string(context);
 		    goto out;
@@ -2120,11 +2153,16 @@ hx509_verify_path(hx509_context context,
 
     for (ret = 0, i = path.len - 1; i >= 0; i--) {
 	Certificate *c;
+	int selfsigned;
 
 	c = _hx509_get_cert(path.val[i]);
 
+	ret = certificate_is_self_signed(context, c, &selfsigned);
+	if (ret)
+	    goto out;
+
 	/* verify name constraints, not for selfsigned and anchor */
-	if (!certificate_is_self_signed(c) || i + 1 != path.len) {
+	if (!selfsigned || i + 1 != path.len) {
 	    ret = check_name_constraints(context, &nc, c);
 	    if (ret) {
 		goto out;
@@ -2192,10 +2230,16 @@ hx509_verify_path(hx509_context context,
 
 	/* is last in chain (trust anchor) */
 	if (i + 1 == path.len) {
+	    int selfsigned;
+
 	    signer = path.val[i]->data;
 
+	    ret = certificate_is_self_signed(context, signer, &selfsigned);
+	    if (ret)
+		goto out;
+
 	    /* if trust anchor is not self signed, don't check sig */
-	    if (!certificate_is_self_signed(signer))
+	    if (!selfsigned)
 		continue;
 	} else {
 	    /* take next certificate in chain */
@@ -2717,6 +2761,7 @@ int
 _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert cert)
 {
     Certificate *c = _hx509_get_cert(cert);
+    int ret, diff;
 
     _hx509_query_statistic(context, 1, q);
 
@@ -2732,17 +2777,20 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 	&& der_heim_integer_cmp(&c->tbsCertificate.serialNumber, q->serial) != 0)
 	return 0;
 
-    if ((q->match & HX509_QUERY_MATCH_ISSUER_NAME)
-	&& _hx509_name_cmp(&c->tbsCertificate.issuer, q->issuer_name) != 0)
-	return 0;
+    if (q->match & HX509_QUERY_MATCH_ISSUER_NAME) {
+	ret = _hx509_name_cmp(&c->tbsCertificate.issuer, q->issuer_name, &diff);
+	if (ret || diff)
+	    return 0;
+    }
 
-    if ((q->match & HX509_QUERY_MATCH_SUBJECT_NAME)
-	&& _hx509_name_cmp(&c->tbsCertificate.subject, q->subject_name) != 0)
-	return 0;
+    if (q->match & HX509_QUERY_MATCH_SUBJECT_NAME) {
+	ret = _hx509_name_cmp(&c->tbsCertificate.subject, q->subject_name, &diff);
+	if (ret || diff)
+	    return 0;
+    }
 
     if (q->match & HX509_QUERY_MATCH_SUBJECT_KEY_ID) {
 	SubjectKeyIdentifier si;
-	int ret;
 
 	ret = _hx509_find_extension_subject_key_id(c, &si);
 	if (ret == 0) {
@@ -2806,14 +2854,13 @@ _hx509_query_match_cert(hx509_context context, const hx509_query *q, hx509_cert 
 	    return 0;
     }
     if (q->match & HX509_QUERY_MATCH_FUNCTION) {
-	int ret = (*q->cmp_func)(q->cmp_func_ctx, cert);
+	ret = (*q->cmp_func)(q->cmp_func_ctx, cert);
 	if (ret != 0)
 	    return 0;
     }
 
     if (q->match & HX509_QUERY_MATCH_KEY_HASH_SHA1) {
 	heim_octet_string os;
-	int ret;
 
 	os.data = c->tbsCertificate.subjectPublicKeyInfo.subjectPublicKey.data;
 	os.length = 

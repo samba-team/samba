@@ -1,3 +1,7 @@
+2008-02-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Use ldap-prep (with libwind) to compare names
+
 2008-01-27  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cert.c (hx509_query_match_eku): update to support the NULL

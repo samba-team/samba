@@ -85,6 +85,7 @@ libhx509_la_LIBADD = \
 	$(LIB_com_err) \
 	$(LIB_hcrypto) \
 	$(top_builddir)/lib/asn1/libasn1.la \
+	$(top_builddir)/lib/wind/libwind.la \
 	$(LIBADD_roken) \
 	$(LIB_dlopen)
 

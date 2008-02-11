@@ -763,11 +763,12 @@ hx509_revoke_verify(hx509_context context,
     for (i = 0; i < ctx->crls.len; i++) {
 	struct revoke_crl *crl = &ctx->crls.val[i];
 	struct stat sb;
+	int diff;
 
 	/* check if cert.issuer == crls.val[i].crl.issuer */
 	ret = _hx509_name_cmp(&c->tbsCertificate.issuer, 
-			      &crl->crl.tbsCertList.issuer);
-	if (ret)
+			      &crl->crl.tbsCertList.issuer, &diff);
+	if (ret || diff)
 	    continue;
 
 	ret = stat(crl->path, &sb);

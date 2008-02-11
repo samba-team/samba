@@ -32,6 +32,7 @@
  */
 
 #include "hx_locl.h"
+#include <wind.h>
 RCSID("$Id$");
 
 /**
@@ -63,6 +64,7 @@ RCSID("$Id$");
 static const struct {
     const char *n;
     const heim_oid *(*o)(void);
+    wind_profile_flags flags;
 } no[] = {
     { "C", oid_id_at_countryName },
     { "CN", oid_id_at_commonName },
@@ -279,95 +281,162 @@ _hx509_Name_to_string(const Name *n, char **str)
     return 0;
 }
 
-/*
- * XXX this function is broken, it needs to compare code points, not
- * bytes.
- */
+#define COPYCHARARRAY(_ds,_el,_l,_n)		\
+        (_l) = strlen(_ds->u._el);		\
+	(_n) = malloc((_l) * sizeof((_n)[0]));	\
+	if ((_n) == NULL)			\
+	    return ENOMEM;			\
+	for (i = 0; i < (_l); i++)		\
+	    (_n)[i] = _ds->u._el[i]
 
-static void
-prune_space(const unsigned char **s)
+
+#define COPYVALARRAY(_ds,_el,_l,_n)		\
+        (_l) = _ds->u._el.length;		\
+	(_n) = malloc((_l) * sizeof((_n)[0]));	\
+	if ((_n) == NULL)			\
+	    return ENOMEM;			\
+	for (i = 0; i < (_l); i++)		\
+	    (_n)[i] = _ds->u._el.data[i]
+
+#define COPYVOIDARRAY(_ds,_el,_l,_n)		\
+        (_l) = _ds->u._el.length;		\
+	(_n) = malloc((_l) * sizeof((_n)[0]));	\
+	if ((_n) == NULL)			\
+	    return ENOMEM;			\
+	for (i = 0; i < (_l); i++)		\
+	    (_n)[i] = ((unsigned char *)_ds->u._el.data)[i]
+
+
+
+static int
+dsstringprep(const DirectoryString *ds, uint32_t **rname, size_t *rlen)
 {
-    while (**s == ' ')
-	(*s)++;
-}
+    wind_profile_flags flags = 0;
+    size_t i, len;
+    int ret;
+    uint32_t *name;
 
-int
-_hx509_name_ds_cmp(const DirectoryString *ds1, const DirectoryString *ds2)
-{
-    int c;
+    *rname = NULL;
+    *rlen = 0;
 
-    c = ds1->element - ds2->element;
-    if (c)
-	return c;
-
-    switch(ds1->element) {
+    switch(ds->element) {
     case choice_DirectoryString_ia5String:
-	c = strcmp(ds1->u.ia5String, ds2->u.ia5String);
+	COPYCHARARRAY(ds, ia5String, len, name);
+	break;
+    case choice_DirectoryString_printableString:
+	flags = WIND_PROFILE_LDAP_CASE_EXACT_ATTRIBUTE;
+	COPYCHARARRAY(ds, printableString, len, name);
 	break;
     case choice_DirectoryString_teletexString:
-	c = der_heim_octet_string_cmp(&ds1->u.teletexString,
-				  &ds2->u.teletexString);
-	break;
-    case choice_DirectoryString_printableString: {
-	const unsigned char *s1 = (unsigned char*)ds1->u.printableString;
-	const unsigned char *s2 = (unsigned char*)ds2->u.printableString;
-	prune_space(&s1); prune_space(&s2);
-	while (*s1 && *s2) {
-	    if (toupper(*s1) != toupper(*s2)) {
-		c = toupper(*s1) - toupper(*s2);
-		break;
-	    }
-	    if (*s1 == ' ') { prune_space(&s1); prune_space(&s2); }
-	    else { s1++; s2++; }
-	}	    
-	prune_space(&s1); prune_space(&s2);
-	c = *s1 - *s2;
-	break;
-    }
-    case choice_DirectoryString_utf8String:
-	c = strcmp(ds1->u.utf8String, ds2->u.utf8String);
-	break;
-    case choice_DirectoryString_universalString:
-	c = der_heim_universal_string_cmp(&ds1->u.universalString,
-					  &ds2->u.universalString);
+	COPYVOIDARRAY(ds, teletexString, len, name);
 	break;
     case choice_DirectoryString_bmpString:
-	c = der_heim_bmp_string_cmp(&ds1->u.bmpString,
-				    &ds2->u.bmpString);
+	COPYVALARRAY(ds, bmpString, len, name);
+	break;
+    case choice_DirectoryString_universalString:
+	COPYVALARRAY(ds, universalString, len, name);
+	break;
+    case choice_DirectoryString_utf8String:
+	ret = wind_utf8ucs4_length(ds->u.utf8String, &len);
+	if (ret)
+	    return ret;
+	name = malloc(len * sizeof(name[0]));
+	if (name == NULL)
+	    return ENOMEM;
+	ret = wind_utf8ucs4(ds->u.utf8String, name, &len);
+	if (ret)
+	    return ret;
 	break;
     default:
-	c = 1;
-	break;
+	_hx509_abort("unknown directory type: %d", ds->element);
     }
-    return c;
+
+    *rlen = len;
+    /* try a couple of times to get the length right, XXX gross */
+    for (i = 0; i < 4; i++) {
+	*rlen = *rlen * 2;
+	*rname = malloc(*rlen * sizeof((*rname)[0]));
+
+	ret = wind_stringprep(name, len, *rname, rlen,
+			      WIND_PROFILE_LDAP|flags);
+	if (ret == WIND_ERR_OVERRUN) {
+	    free(*rname);
+	    *rname = NULL;
+	    continue;
+	} else
+	    break;
+    }
+    free(name);
+    if (ret) {
+	if (*rname)
+	    free(*rname);
+	*rname = NULL;
+	*rlen = 0;
+	return ret;
+    }
+
+    return 0;
 }
 
 int
-_hx509_name_cmp(const Name *n1, const Name *n2)
+_hx509_name_ds_cmp(const DirectoryString *ds1,
+		   const DirectoryString *ds2,
+		   int *diff)
 {
-    int i, j, c;
+    uint32_t *ds1lp, *ds2lp;
+    size_t ds1len, ds2len;
+    int ret;
 
-    c = n1->u.rdnSequence.len - n2->u.rdnSequence.len;
-    if (c)
-	return c;
+    ret = dsstringprep(ds1, &ds1lp, &ds1len);
+    if (ret)
+	return ret;
+    ret = dsstringprep(ds2, &ds2lp, &ds2len);
+    if (ret) {
+	free(ds1lp);
+	return ret;
+    }
+
+    if (ds1len != ds2len)
+	*diff = ds1len - ds2len;
+    else
+	*diff = memcmp(ds1lp, ds2lp, ds1len * sizeof(ds1lp[0]));
+
+    free(ds1lp);
+    free(ds2lp);
+
+    return 0;
+}
+
+int
+_hx509_name_cmp(const Name *n1, const Name *n2, int *c)
+{
+    int ret, i, j;
+
+    *c = n1->u.rdnSequence.len - n2->u.rdnSequence.len;
+    if (*c)
+	return 0;
 
     for (i = 0 ; i < n1->u.rdnSequence.len; i++) {
-	c = n1->u.rdnSequence.val[i].len - n2->u.rdnSequence.val[i].len;
-	if (c)
-	    return c;
+	*c = n1->u.rdnSequence.val[i].len - n2->u.rdnSequence.val[i].len;
+	if (*c)
+	    return 0;
 
 	for (j = 0; j < n1->u.rdnSequence.val[i].len; j++) {
-	    c = der_heim_oid_cmp(&n1->u.rdnSequence.val[i].val[j].type,
-				 &n1->u.rdnSequence.val[i].val[j].type);
-	    if (c)
-		return c;
+	    *c = der_heim_oid_cmp(&n1->u.rdnSequence.val[i].val[j].type,
+				  &n1->u.rdnSequence.val[i].val[j].type);
+	    if (*c)
+		return 0;
 			     
-	    c = _hx509_name_ds_cmp(&n1->u.rdnSequence.val[i].val[j].value,
-				   &n2->u.rdnSequence.val[i].val[j].value);
-	    if (c)
-		return c;
+	    ret = _hx509_name_ds_cmp(&n1->u.rdnSequence.val[i].val[j].value,
+				     &n2->u.rdnSequence.val[i].val[j].value,
+				     c);
+	    if (ret)
+		return ret;
+	    if (*c)
+		return 0;
 	}
     }
+    *c = 0;
     return 0;
 }
 
@@ -386,7 +455,11 @@ _hx509_name_cmp(const Name *n1, const Name *n2)
 int
 hx509_name_cmp(hx509_name n1, hx509_name n2)
 {
-    return _hx509_name_cmp(&n1->der_name, &n2->der_name);
+    int ret, diff;
+    ret = _hx509_name_cmp(&n1->der_name, &n2->der_name, &diff);
+    if (ret)
+	return ret;
+    return diff;
 }
 
 
