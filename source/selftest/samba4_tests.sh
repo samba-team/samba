@@ -43,7 +43,7 @@ plantest() {
 $incdir/../bin/smbtorture -V
 
 samba4srcdir=$incdir/..
-samba4biir=$samba4srcdir/bin
+samba4bindir=$samba4srcdir/bin
 SCRIPTDIR=$samba4srcdir/../testprogs/ejs
 smb4torture="$samba4bindir/smbtorture $TORTURE_OPTIONS"
 
