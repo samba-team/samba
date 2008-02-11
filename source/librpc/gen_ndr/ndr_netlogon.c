@@ -600,25 +600,25 @@ _PUBLIC_ enum ndr_err_code ndr_push_netr_LogonLevel(struct ndr_push *ndr, int nd
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->password));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->network));
-			break;
+			break; }
 
-			case 3:
+			case 3: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->password));
-			break;
+			break; }
 
-			case 5:
+			case 5: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->password));
-			break;
+			break; }
 
-			case 6:
+			case 6: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->network));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -1578,25 +1578,25 @@ _PUBLIC_ enum ndr_err_code ndr_push_netr_Validation(struct ndr_push *ndr, int nd
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->sam2));
-			break;
+			break; }
 
-			case 3:
+			case 3: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->sam3));
-			break;
+			break; }
 
-			case 4:
+			case 4: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->pac));
-			break;
+			break; }
 
-			case 5:
+			case 5: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->pac));
-			break;
+			break; }
 
-			case 6:
+			case 6: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->sam6));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -3790,90 +3790,90 @@ static enum ndr_err_code ndr_push_netr_DELTA_UNION(struct ndr_push *ndr, int ndr
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_netr_DeltaEnum(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case NETR_DELTA_DOMAIN:
+			case NETR_DELTA_DOMAIN: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->domain));
-			break;
+			break; }
 
-			case NETR_DELTA_GROUP:
+			case NETR_DELTA_GROUP: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->group));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_GROUP:
-			break;
+			case NETR_DELTA_DELETE_GROUP: {
+			break; }
 
-			case NETR_DELTA_RENAME_GROUP:
+			case NETR_DELTA_RENAME_GROUP: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->rename_group));
-			break;
+			break; }
 
-			case NETR_DELTA_USER:
+			case NETR_DELTA_USER: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->user));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_USER:
-			break;
+			case NETR_DELTA_DELETE_USER: {
+			break; }
 
-			case NETR_DELTA_RENAME_USER:
+			case NETR_DELTA_RENAME_USER: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->rename_user));
-			break;
+			break; }
 
-			case NETR_DELTA_GROUP_MEMBER:
+			case NETR_DELTA_GROUP_MEMBER: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->group_member));
-			break;
+			break; }
 
-			case NETR_DELTA_ALIAS:
+			case NETR_DELTA_ALIAS: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->alias));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_ALIAS:
-			break;
+			case NETR_DELTA_DELETE_ALIAS: {
+			break; }
 
-			case NETR_DELTA_RENAME_ALIAS:
+			case NETR_DELTA_RENAME_ALIAS: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->rename_alias));
-			break;
+			break; }
 
-			case NETR_DELTA_ALIAS_MEMBER:
+			case NETR_DELTA_ALIAS_MEMBER: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->alias_member));
-			break;
+			break; }
 
-			case NETR_DELTA_POLICY:
+			case NETR_DELTA_POLICY: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->policy));
-			break;
+			break; }
 
-			case NETR_DELTA_TRUSTED_DOMAIN:
+			case NETR_DELTA_TRUSTED_DOMAIN: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->trusted_domain));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_TRUST:
+			case NETR_DELTA_DELETE_TRUST: {
 				NDR_CHECK(ndr_push_netr_DELTA_DELETE_TRUST(ndr, NDR_SCALARS, &r->delete_trust));
-			break;
+			break; }
 
-			case NETR_DELTA_ACCOUNT:
+			case NETR_DELTA_ACCOUNT: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->account));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_ACCOUNT:
+			case NETR_DELTA_DELETE_ACCOUNT: {
 				NDR_CHECK(ndr_push_netr_DELTA_DELETE_ACCOUNT(ndr, NDR_SCALARS, &r->delete_account));
-			break;
+			break; }
 
-			case NETR_DELTA_SECRET:
+			case NETR_DELTA_SECRET: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->secret));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_SECRET:
+			case NETR_DELTA_DELETE_SECRET: {
 				NDR_CHECK(ndr_push_netr_DELTA_DELETE_SECRET(ndr, NDR_SCALARS, &r->delete_secret));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_GROUP2:
+			case NETR_DELTA_DELETE_GROUP2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->delete_group));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_USER2:
+			case NETR_DELTA_DELETE_USER2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->delete_user));
-			break;
+			break; }
 
-			case NETR_DELTA_MODIFY_COUNT:
+			case NETR_DELTA_MODIFY_COUNT: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->modified_count));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -4568,92 +4568,92 @@ static enum ndr_err_code ndr_push_netr_DELTA_ID_UNION(struct ndr_push *ndr, int 
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_netr_DeltaEnum(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case NETR_DELTA_DOMAIN:
+			case NETR_DELTA_DOMAIN: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_GROUP:
+			case NETR_DELTA_GROUP: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_GROUP:
+			case NETR_DELTA_DELETE_GROUP: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_RENAME_GROUP:
+			case NETR_DELTA_RENAME_GROUP: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_USER:
+			case NETR_DELTA_USER: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_USER:
+			case NETR_DELTA_DELETE_USER: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_RENAME_USER:
+			case NETR_DELTA_RENAME_USER: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_GROUP_MEMBER:
+			case NETR_DELTA_GROUP_MEMBER: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_ALIAS:
+			case NETR_DELTA_ALIAS: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_ALIAS:
+			case NETR_DELTA_DELETE_ALIAS: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_RENAME_ALIAS:
+			case NETR_DELTA_RENAME_ALIAS: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_ALIAS_MEMBER:
+			case NETR_DELTA_ALIAS_MEMBER: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_POLICY:
+			case NETR_DELTA_POLICY: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->sid));
-			break;
+			break; }
 
-			case NETR_DELTA_TRUSTED_DOMAIN:
+			case NETR_DELTA_TRUSTED_DOMAIN: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->sid));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_TRUST:
+			case NETR_DELTA_DELETE_TRUST: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->sid));
-			break;
+			break; }
 
-			case NETR_DELTA_ACCOUNT:
+			case NETR_DELTA_ACCOUNT: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->sid));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_ACCOUNT:
+			case NETR_DELTA_DELETE_ACCOUNT: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->sid));
-			break;
+			break; }
 
-			case NETR_DELTA_SECRET:
+			case NETR_DELTA_SECRET: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->name));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_SECRET:
+			case NETR_DELTA_DELETE_SECRET: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->name));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_GROUP2:
+			case NETR_DELTA_DELETE_GROUP2: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_DELETE_USER2:
+			case NETR_DELTA_DELETE_USER2: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->rid));
-			break;
+			break; }
 
-			case NETR_DELTA_MODIFY_COUNT:
-			break;
+			case NETR_DELTA_MODIFY_COUNT: {
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -5529,17 +5529,17 @@ static enum ndr_err_code ndr_push_netr_CONTROL_QUERY_INFORMATION(struct ndr_push
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info2));
-			break;
+			break; }
 
-			case 3:
+			case 3: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info3));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -5728,21 +5728,21 @@ static enum ndr_err_code ndr_push_netr_CONTROL_DATA_INFORMATION(struct ndr_push 
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case NETLOGON_CONTROL_REDISCOVER:
+			case NETLOGON_CONTROL_REDISCOVER: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->domain));
-			break;
+			break; }
 
-			case NETLOGON_CONTROL_TC_QUERY:
+			case NETLOGON_CONTROL_TC_QUERY: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->domain));
-			break;
+			break; }
 
-			case NETLOGON_CONTROL_TRANSPORT_NOTIFY:
+			case NETLOGON_CONTROL_TRANSPORT_NOTIFY: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->domain));
-			break;
+			break; }
 
-			case NETLOGON_CONTROL_SET_DBFLAG:
+			case NETLOGON_CONTROL_SET_DBFLAG: {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->debug_level));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -6718,13 +6718,13 @@ static enum ndr_err_code ndr_push_netr_DomainQuery(struct ndr_push *ndr, int ndr
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->query1));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->query1));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -7079,13 +7079,13 @@ static enum ndr_err_code ndr_push_netr_DomainInfo(struct ndr_push *ndr, int ndr_
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);

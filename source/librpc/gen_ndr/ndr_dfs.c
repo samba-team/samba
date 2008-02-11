@@ -1562,65 +1562,65 @@ static enum ndr_err_code ndr_push_dfs_Info(struct ndr_push *ndr, int ndr_flags, 
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 0:
+			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info0));
-			break;
+			break; }
 
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info2));
-			break;
+			break; }
 
-			case 3:
+			case 3: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info3));
-			break;
+			break; }
 
-			case 4:
+			case 4: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info4));
-			break;
+			break; }
 
-			case 5:
+			case 5: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info5));
-			break;
+			break; }
 
-			case 6:
+			case 6: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info6));
-			break;
+			break; }
 
-			case 7:
+			case 7: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info7));
-			break;
+			break; }
 
-			case 100:
+			case 100: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info100));
-			break;
+			break; }
 
-			case 101:
+			case 101: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info101));
-			break;
+			break; }
 
-			case 102:
+			case 102: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info102));
-			break;
+			break; }
 
-			case 103:
+			case 103: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info103));
-			break;
+			break; }
 
-			case 104:
+			case 104: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info104));
-			break;
+			break; }
 
-			case 105:
+			case 105: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info105));
-			break;
+			break; }
 
-			case 106:
+			case 106: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info106));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -2898,37 +2898,37 @@ static enum ndr_err_code ndr_push_dfs_EnumInfo(struct ndr_push *ndr, int ndr_fla
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info2));
-			break;
+			break; }
 
-			case 3:
+			case 3: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info3));
-			break;
+			break; }
 
-			case 4:
+			case 4: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info4));
-			break;
+			break; }
 
-			case 5:
+			case 5: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info5));
-			break;
+			break; }
 
-			case 6:
+			case 6: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info6));
-			break;
+			break; }
 
-			case 200:
+			case 200: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info200));
-			break;
+			break; }
 
-			case 300:
+			case 300: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info300));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);

@@ -17,7 +17,7 @@ static bool api_unixinfo_SidToUid(pipes_struct *p)
 
 	call = &ndr_table_unixinfo.calls[NDR_UNIXINFO_SIDTOUID];
 
-	r = talloc(NULL, struct unixinfo_SidToUid);
+	r = talloc(talloc_tos(), struct unixinfo_SidToUid);
 	if (r == NULL) {
 		return false;
 	}
@@ -97,7 +97,7 @@ static bool api_unixinfo_UidToSid(pipes_struct *p)
 
 	call = &ndr_table_unixinfo.calls[NDR_UNIXINFO_UIDTOSID];
 
-	r = talloc(NULL, struct unixinfo_UidToSid);
+	r = talloc(talloc_tos(), struct unixinfo_UidToSid);
 	if (r == NULL) {
 		return false;
 	}
@@ -177,7 +177,7 @@ static bool api_unixinfo_SidToGid(pipes_struct *p)
 
 	call = &ndr_table_unixinfo.calls[NDR_UNIXINFO_SIDTOGID];
 
-	r = talloc(NULL, struct unixinfo_SidToGid);
+	r = talloc(talloc_tos(), struct unixinfo_SidToGid);
 	if (r == NULL) {
 		return false;
 	}
@@ -257,7 +257,7 @@ static bool api_unixinfo_GidToSid(pipes_struct *p)
 
 	call = &ndr_table_unixinfo.calls[NDR_UNIXINFO_GIDTOSID];
 
-	r = talloc(NULL, struct unixinfo_GidToSid);
+	r = talloc(talloc_tos(), struct unixinfo_GidToSid);
 	if (r == NULL) {
 		return false;
 	}
@@ -337,7 +337,7 @@ static bool api_unixinfo_GetPWUid(pipes_struct *p)
 
 	call = &ndr_table_unixinfo.calls[NDR_UNIXINFO_GETPWUID];
 
-	r = talloc(NULL, struct unixinfo_GetPWUid);
+	r = talloc(talloc_tos(), struct unixinfo_GetPWUid);
 	if (r == NULL) {
 		return false;
 	}

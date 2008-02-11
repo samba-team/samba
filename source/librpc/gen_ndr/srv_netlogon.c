@@ -17,7 +17,7 @@ static bool api_netr_LogonUasLogon(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONUASLOGON];
 
-	r = talloc(NULL, struct netr_LogonUasLogon);
+	r = talloc(talloc_tos(), struct netr_LogonUasLogon);
 	if (r == NULL) {
 		return false;
 	}
@@ -97,7 +97,7 @@ static bool api_netr_LogonUasLogoff(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONUASLOGOFF];
 
-	r = talloc(NULL, struct netr_LogonUasLogoff);
+	r = talloc(talloc_tos(), struct netr_LogonUasLogoff);
 	if (r == NULL) {
 		return false;
 	}
@@ -177,7 +177,7 @@ static bool api_netr_LogonSamLogon(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONSAMLOGON];
 
-	r = talloc(NULL, struct netr_LogonSamLogon);
+	r = talloc(talloc_tos(), struct netr_LogonSamLogon);
 	if (r == NULL) {
 		return false;
 	}
@@ -264,7 +264,7 @@ static bool api_netr_LogonSamLogoff(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONSAMLOGOFF];
 
-	r = talloc(NULL, struct netr_LogonSamLogoff);
+	r = talloc(talloc_tos(), struct netr_LogonSamLogoff);
 	if (r == NULL) {
 		return false;
 	}
@@ -339,7 +339,7 @@ static bool api_netr_ServerReqChallenge(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_SERVERREQCHALLENGE];
 
-	r = talloc(NULL, struct netr_ServerReqChallenge);
+	r = talloc(talloc_tos(), struct netr_ServerReqChallenge);
 	if (r == NULL) {
 		return false;
 	}
@@ -414,7 +414,7 @@ static bool api_netr_ServerAuthenticate(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_SERVERAUTHENTICATE];
 
-	r = talloc(NULL, struct netr_ServerAuthenticate);
+	r = talloc(talloc_tos(), struct netr_ServerAuthenticate);
 	if (r == NULL) {
 		return false;
 	}
@@ -489,7 +489,7 @@ static bool api_netr_ServerPasswordSet(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_SERVERPASSWORDSET];
 
-	r = talloc(NULL, struct netr_ServerPasswordSet);
+	r = talloc(talloc_tos(), struct netr_ServerPasswordSet);
 	if (r == NULL) {
 		return false;
 	}
@@ -569,7 +569,7 @@ static bool api_netr_DatabaseDeltas(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DATABASEDELTAS];
 
-	r = talloc(NULL, struct netr_DatabaseDeltas);
+	r = talloc(talloc_tos(), struct netr_DatabaseDeltas);
 	if (r == NULL) {
 		return false;
 	}
@@ -651,7 +651,7 @@ static bool api_netr_DatabaseSync(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DATABASESYNC];
 
-	r = talloc(NULL, struct netr_DatabaseSync);
+	r = talloc(talloc_tos(), struct netr_DatabaseSync);
 	if (r == NULL) {
 		return false;
 	}
@@ -733,7 +733,7 @@ static bool api_netr_AccountDeltas(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_ACCOUNTDELTAS];
 
-	r = talloc(NULL, struct netr_AccountDeltas);
+	r = talloc(talloc_tos(), struct netr_AccountDeltas);
 	if (r == NULL) {
 		return false;
 	}
@@ -832,7 +832,7 @@ static bool api_netr_AccountSync(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_ACCOUNTSYNC];
 
-	r = talloc(NULL, struct netr_AccountSync);
+	r = talloc(talloc_tos(), struct netr_AccountSync);
 	if (r == NULL) {
 		return false;
 	}
@@ -932,7 +932,7 @@ static bool api_netr_GetDcName(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_GETDCNAME];
 
-	r = talloc(NULL, struct netr_GetDcName);
+	r = talloc(talloc_tos(), struct netr_GetDcName);
 	if (r == NULL) {
 		return false;
 	}
@@ -1012,7 +1012,7 @@ static bool api_netr_LogonControl(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONCONTROL];
 
-	r = talloc(NULL, struct netr_LogonControl);
+	r = talloc(talloc_tos(), struct netr_LogonControl);
 	if (r == NULL) {
 		return false;
 	}
@@ -1092,7 +1092,7 @@ static bool api_netr_GetAnyDCName(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_GETANYDCNAME];
 
-	r = talloc(NULL, struct netr_GetAnyDCName);
+	r = talloc(talloc_tos(), struct netr_GetAnyDCName);
 	if (r == NULL) {
 		return false;
 	}
@@ -1172,7 +1172,7 @@ static bool api_netr_LogonControl2(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONCONTROL2];
 
-	r = talloc(NULL, struct netr_LogonControl2);
+	r = talloc(talloc_tos(), struct netr_LogonControl2);
 	if (r == NULL) {
 		return false;
 	}
@@ -1252,7 +1252,7 @@ static bool api_netr_ServerAuthenticate2(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_SERVERAUTHENTICATE2];
 
-	r = talloc(NULL, struct netr_ServerAuthenticate2);
+	r = talloc(talloc_tos(), struct netr_ServerAuthenticate2);
 	if (r == NULL) {
 		return false;
 	}
@@ -1328,7 +1328,7 @@ static bool api_netr_DatabaseSync2(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DATABASESYNC2];
 
-	r = talloc(NULL, struct netr_DatabaseSync2);
+	r = talloc(talloc_tos(), struct netr_DatabaseSync2);
 	if (r == NULL) {
 		return false;
 	}
@@ -1410,7 +1410,7 @@ static bool api_netr_DatabaseRedo(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DATABASEREDO];
 
-	r = talloc(NULL, struct netr_DatabaseRedo);
+	r = talloc(talloc_tos(), struct netr_DatabaseRedo);
 	if (r == NULL) {
 		return false;
 	}
@@ -1491,7 +1491,7 @@ static bool api_netr_LogonControl2Ex(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONCONTROL2EX];
 
-	r = talloc(NULL, struct netr_LogonControl2Ex);
+	r = talloc(talloc_tos(), struct netr_LogonControl2Ex);
 	if (r == NULL) {
 		return false;
 	}
@@ -1571,7 +1571,7 @@ static bool api_netr_NetrEnumerateTrustedDomains(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_NETRENUMERATETRUSTEDDOMAINS];
 
-	r = talloc(NULL, struct netr_NetrEnumerateTrustedDomains);
+	r = talloc(talloc_tos(), struct netr_NetrEnumerateTrustedDomains);
 	if (r == NULL) {
 		return false;
 	}
@@ -1651,7 +1651,7 @@ static bool api_netr_DsRGetDCName(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DSRGETDCNAME];
 
-	r = talloc(NULL, struct netr_DsRGetDCName);
+	r = talloc(talloc_tos(), struct netr_DsRGetDCName);
 	if (r == NULL) {
 		return false;
 	}
@@ -1731,7 +1731,7 @@ static bool api_netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_NETRLOGONDUMMYROUTINE1];
 
-	r = talloc(NULL, struct netr_NETRLOGONDUMMYROUTINE1);
+	r = talloc(talloc_tos(), struct netr_NETRLOGONDUMMYROUTINE1);
 	if (r == NULL) {
 		return false;
 	}
@@ -1804,7 +1804,7 @@ static bool api_netr_NETRLOGONSETSERVICEBITS(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_NETRLOGONSETSERVICEBITS];
 
-	r = talloc(NULL, struct netr_NETRLOGONSETSERVICEBITS);
+	r = talloc(talloc_tos(), struct netr_NETRLOGONSETSERVICEBITS);
 	if (r == NULL) {
 		return false;
 	}
@@ -1877,7 +1877,7 @@ static bool api_netr_LogonGetTrustRid(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONGETTRUSTRID];
 
-	r = talloc(NULL, struct netr_LogonGetTrustRid);
+	r = talloc(talloc_tos(), struct netr_LogonGetTrustRid);
 	if (r == NULL) {
 		return false;
 	}
@@ -1957,7 +1957,7 @@ static bool api_netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_NETRLOGONCOMPUTESERVERDIGEST];
 
-	r = talloc(NULL, struct netr_NETRLOGONCOMPUTESERVERDIGEST);
+	r = talloc(talloc_tos(), struct netr_NETRLOGONCOMPUTESERVERDIGEST);
 	if (r == NULL) {
 		return false;
 	}
@@ -2030,7 +2030,7 @@ static bool api_netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_NETRLOGONCOMPUTECLIENTDIGEST];
 
-	r = talloc(NULL, struct netr_NETRLOGONCOMPUTECLIENTDIGEST);
+	r = talloc(talloc_tos(), struct netr_NETRLOGONCOMPUTECLIENTDIGEST);
 	if (r == NULL) {
 		return false;
 	}
@@ -2103,7 +2103,7 @@ static bool api_netr_ServerAuthenticate3(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_SERVERAUTHENTICATE3];
 
-	r = talloc(NULL, struct netr_ServerAuthenticate3);
+	r = talloc(talloc_tos(), struct netr_ServerAuthenticate3);
 	if (r == NULL) {
 		return false;
 	}
@@ -2185,7 +2185,7 @@ static bool api_netr_DsRGetDCNameEx(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DSRGETDCNAMEEX];
 
-	r = talloc(NULL, struct netr_DsRGetDCNameEx);
+	r = talloc(talloc_tos(), struct netr_DsRGetDCNameEx);
 	if (r == NULL) {
 		return false;
 	}
@@ -2265,7 +2265,7 @@ static bool api_netr_DsRGetSiteName(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DSRGETSITENAME];
 
-	r = talloc(NULL, struct netr_DsRGetSiteName);
+	r = talloc(talloc_tos(), struct netr_DsRGetSiteName);
 	if (r == NULL) {
 		return false;
 	}
@@ -2345,7 +2345,7 @@ static bool api_netr_LogonGetDomainInfo(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONGETDOMAININFO];
 
-	r = talloc(NULL, struct netr_LogonGetDomainInfo);
+	r = talloc(talloc_tos(), struct netr_LogonGetDomainInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -2426,7 +2426,7 @@ static bool api_netr_ServerPasswordSet2(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_SERVERPASSWORDSET2];
 
-	r = talloc(NULL, struct netr_ServerPasswordSet2);
+	r = talloc(talloc_tos(), struct netr_ServerPasswordSet2);
 	if (r == NULL) {
 		return false;
 	}
@@ -2506,7 +2506,7 @@ static bool api_netr_ServerPasswordGet(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_SERVERPASSWORDGET];
 
-	r = talloc(NULL, struct netr_ServerPasswordGet);
+	r = talloc(talloc_tos(), struct netr_ServerPasswordGet);
 	if (r == NULL) {
 		return false;
 	}
@@ -2592,7 +2592,7 @@ static bool api_netr_NETRLOGONSENDTOSAM(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_NETRLOGONSENDTOSAM];
 
-	r = talloc(NULL, struct netr_NETRLOGONSENDTOSAM);
+	r = talloc(talloc_tos(), struct netr_NETRLOGONSENDTOSAM);
 	if (r == NULL) {
 		return false;
 	}
@@ -2665,7 +2665,7 @@ static bool api_netr_DsRAddressToSitenamesW(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DSRADDRESSTOSITENAMESW];
 
-	r = talloc(NULL, struct netr_DsRAddressToSitenamesW);
+	r = talloc(talloc_tos(), struct netr_DsRAddressToSitenamesW);
 	if (r == NULL) {
 		return false;
 	}
@@ -2745,7 +2745,7 @@ static bool api_netr_DsRGetDCNameEx2(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DSRGETDCNAMEEX2];
 
-	r = talloc(NULL, struct netr_DsRGetDCNameEx2);
+	r = talloc(talloc_tos(), struct netr_DsRGetDCNameEx2);
 	if (r == NULL) {
 		return false;
 	}
@@ -2825,7 +2825,7 @@ static bool api_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_NETRLOGONGETTIMESERVICEPARENTDOMAIN];
 
-	r = talloc(NULL, struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN);
+	r = talloc(talloc_tos(), struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN);
 	if (r == NULL) {
 		return false;
 	}
@@ -2898,7 +2898,7 @@ static bool api_netr_NetrEnumerateTrustedDomainsEx(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_NETRENUMERATETRUSTEDDOMAINSEX];
 
-	r = talloc(NULL, struct netr_NetrEnumerateTrustedDomainsEx);
+	r = talloc(talloc_tos(), struct netr_NetrEnumerateTrustedDomainsEx);
 	if (r == NULL) {
 		return false;
 	}
@@ -2978,7 +2978,7 @@ static bool api_netr_DsRAddressToSitenamesExW(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DSRADDRESSTOSITENAMESEXW];
 
-	r = talloc(NULL, struct netr_DsRAddressToSitenamesExW);
+	r = talloc(talloc_tos(), struct netr_DsRAddressToSitenamesExW);
 	if (r == NULL) {
 		return false;
 	}
@@ -3058,7 +3058,7 @@ static bool api_netr_DsrGetDcSiteCoverageW(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DSRGETDCSITECOVERAGEW];
 
-	r = talloc(NULL, struct netr_DsrGetDcSiteCoverageW);
+	r = talloc(talloc_tos(), struct netr_DsrGetDcSiteCoverageW);
 	if (r == NULL) {
 		return false;
 	}
@@ -3138,7 +3138,7 @@ static bool api_netr_LogonSamLogonEx(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONSAMLOGONEX];
 
-	r = talloc(NULL, struct netr_LogonSamLogonEx);
+	r = talloc(talloc_tos(), struct netr_LogonSamLogonEx);
 	if (r == NULL) {
 		return false;
 	}
@@ -3225,7 +3225,7 @@ static bool api_netr_DsrEnumerateDomainTrusts(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DSRENUMERATEDOMAINTRUSTS];
 
-	r = talloc(NULL, struct netr_DsrEnumerateDomainTrusts);
+	r = talloc(talloc_tos(), struct netr_DsrEnumerateDomainTrusts);
 	if (r == NULL) {
 		return false;
 	}
@@ -3305,7 +3305,7 @@ static bool api_netr_DsrDeregisterDNSHostRecords(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DSRDEREGISTERDNSHOSTRECORDS];
 
-	r = talloc(NULL, struct netr_DsrDeregisterDNSHostRecords);
+	r = talloc(talloc_tos(), struct netr_DsrDeregisterDNSHostRecords);
 	if (r == NULL) {
 		return false;
 	}
@@ -3378,7 +3378,7 @@ static bool api_netr_ServerTrustPasswordsGet(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_SERVERTRUSTPASSWORDSGET];
 
-	r = talloc(NULL, struct netr_ServerTrustPasswordsGet);
+	r = talloc(talloc_tos(), struct netr_ServerTrustPasswordsGet);
 	if (r == NULL) {
 		return false;
 	}
@@ -3470,7 +3470,7 @@ static bool api_netr_DsRGetForestTrustInformation(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_DSRGETFORESTTRUSTINFORMATION];
 
-	r = talloc(NULL, struct netr_DsRGetForestTrustInformation);
+	r = talloc(talloc_tos(), struct netr_DsRGetForestTrustInformation);
 	if (r == NULL) {
 		return false;
 	}
@@ -3550,7 +3550,7 @@ static bool api_netr_GetForestTrustInformation(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_GETFORESTTRUSTINFORMATION];
 
-	r = talloc(NULL, struct netr_GetForestTrustInformation);
+	r = talloc(talloc_tos(), struct netr_GetForestTrustInformation);
 	if (r == NULL) {
 		return false;
 	}
@@ -3636,7 +3636,7 @@ static bool api_netr_LogonSamLogonWithFlags(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_LOGONSAMLOGONWITHFLAGS];
 
-	r = talloc(NULL, struct netr_LogonSamLogonWithFlags);
+	r = talloc(talloc_tos(), struct netr_LogonSamLogonWithFlags);
 	if (r == NULL) {
 		return false;
 	}
@@ -3724,7 +3724,7 @@ static bool api_netr_NETRSERVERGETTRUSTINFO(pipes_struct *p)
 
 	call = &ndr_table_netlogon.calls[NDR_NETR_NETRSERVERGETTRUSTINFO];
 
-	r = talloc(NULL, struct netr_NETRSERVERGETTRUSTINFO);
+	r = talloc(talloc_tos(), struct netr_NETRSERVERGETTRUSTINFO);
 	if (r == NULL) {
 		return false;
 	}

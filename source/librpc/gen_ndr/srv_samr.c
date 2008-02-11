@@ -17,7 +17,7 @@ static bool api_samr_Connect(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CONNECT];
 
-	r = talloc(NULL, struct samr_Connect);
+	r = talloc(talloc_tos(), struct samr_Connect);
 	if (r == NULL) {
 		return false;
 	}
@@ -97,7 +97,7 @@ static bool api_samr_Close(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CLOSE];
 
-	r = talloc(NULL, struct samr_Close);
+	r = talloc(talloc_tos(), struct samr_Close);
 	if (r == NULL) {
 		return false;
 	}
@@ -172,7 +172,7 @@ static bool api_samr_SetSecurity(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_SETSECURITY];
 
-	r = talloc(NULL, struct samr_SetSecurity);
+	r = talloc(talloc_tos(), struct samr_SetSecurity);
 	if (r == NULL) {
 		return false;
 	}
@@ -245,7 +245,7 @@ static bool api_samr_QuerySecurity(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_QUERYSECURITY];
 
-	r = talloc(NULL, struct samr_QuerySecurity);
+	r = talloc(talloc_tos(), struct samr_QuerySecurity);
 	if (r == NULL) {
 		return false;
 	}
@@ -325,7 +325,7 @@ static bool api_samr_Shutdown(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_SHUTDOWN];
 
-	r = talloc(NULL, struct samr_Shutdown);
+	r = talloc(talloc_tos(), struct samr_Shutdown);
 	if (r == NULL) {
 		return false;
 	}
@@ -398,7 +398,7 @@ static bool api_samr_LookupDomain(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_LOOKUPDOMAIN];
 
-	r = talloc(NULL, struct samr_LookupDomain);
+	r = talloc(talloc_tos(), struct samr_LookupDomain);
 	if (r == NULL) {
 		return false;
 	}
@@ -478,7 +478,7 @@ static bool api_samr_EnumDomains(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_ENUMDOMAINS];
 
-	r = talloc(NULL, struct samr_EnumDomains);
+	r = talloc(talloc_tos(), struct samr_EnumDomains);
 	if (r == NULL) {
 		return false;
 	}
@@ -565,7 +565,7 @@ static bool api_samr_OpenDomain(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_OPENDOMAIN];
 
-	r = talloc(NULL, struct samr_OpenDomain);
+	r = talloc(talloc_tos(), struct samr_OpenDomain);
 	if (r == NULL) {
 		return false;
 	}
@@ -645,7 +645,7 @@ static bool api_samr_QueryDomainInfo(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_QUERYDOMAININFO];
 
-	r = talloc(NULL, struct samr_QueryDomainInfo);
+	r = talloc(talloc_tos(), struct samr_QueryDomainInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -725,7 +725,7 @@ static bool api_samr_SetDomainInfo(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_SETDOMAININFO];
 
-	r = talloc(NULL, struct samr_SetDomainInfo);
+	r = talloc(talloc_tos(), struct samr_SetDomainInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -798,7 +798,7 @@ static bool api_samr_CreateDomainGroup(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CREATEDOMAINGROUP];
 
-	r = talloc(NULL, struct samr_CreateDomainGroup);
+	r = talloc(talloc_tos(), struct samr_CreateDomainGroup);
 	if (r == NULL) {
 		return false;
 	}
@@ -884,7 +884,7 @@ static bool api_samr_EnumDomainGroups(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_ENUMDOMAINGROUPS];
 
-	r = talloc(NULL, struct samr_EnumDomainGroups);
+	r = talloc(talloc_tos(), struct samr_EnumDomainGroups);
 	if (r == NULL) {
 		return false;
 	}
@@ -971,7 +971,7 @@ static bool api_samr_CreateUser(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CREATEUSER];
 
-	r = talloc(NULL, struct samr_CreateUser);
+	r = talloc(talloc_tos(), struct samr_CreateUser);
 	if (r == NULL) {
 		return false;
 	}
@@ -1057,7 +1057,7 @@ static bool api_samr_EnumDomainUsers(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_ENUMDOMAINUSERS];
 
-	r = talloc(NULL, struct samr_EnumDomainUsers);
+	r = talloc(talloc_tos(), struct samr_EnumDomainUsers);
 	if (r == NULL) {
 		return false;
 	}
@@ -1144,7 +1144,7 @@ static bool api_samr_CreateDomAlias(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CREATEDOMALIAS];
 
-	r = talloc(NULL, struct samr_CreateDomAlias);
+	r = talloc(talloc_tos(), struct samr_CreateDomAlias);
 	if (r == NULL) {
 		return false;
 	}
@@ -1230,7 +1230,7 @@ static bool api_samr_EnumDomainAliases(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_ENUMDOMAINALIASES];
 
-	r = talloc(NULL, struct samr_EnumDomainAliases);
+	r = talloc(talloc_tos(), struct samr_EnumDomainAliases);
 	if (r == NULL) {
 		return false;
 	}
@@ -1317,7 +1317,7 @@ static bool api_samr_GetAliasMembership(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_GETALIASMEMBERSHIP];
 
-	r = talloc(NULL, struct samr_GetAliasMembership);
+	r = talloc(talloc_tos(), struct samr_GetAliasMembership);
 	if (r == NULL) {
 		return false;
 	}
@@ -1397,7 +1397,7 @@ static bool api_samr_LookupNames(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_LOOKUPNAMES];
 
-	r = talloc(NULL, struct samr_LookupNames);
+	r = talloc(talloc_tos(), struct samr_LookupNames);
 	if (r == NULL) {
 		return false;
 	}
@@ -1483,7 +1483,7 @@ static bool api_samr_LookupRids(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_LOOKUPRIDS];
 
-	r = talloc(NULL, struct samr_LookupRids);
+	r = talloc(talloc_tos(), struct samr_LookupRids);
 	if (r == NULL) {
 		return false;
 	}
@@ -1569,7 +1569,7 @@ static bool api_samr_OpenGroup(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_OPENGROUP];
 
-	r = talloc(NULL, struct samr_OpenGroup);
+	r = talloc(talloc_tos(), struct samr_OpenGroup);
 	if (r == NULL) {
 		return false;
 	}
@@ -1649,7 +1649,7 @@ static bool api_samr_QueryGroupInfo(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_QUERYGROUPINFO];
 
-	r = talloc(NULL, struct samr_QueryGroupInfo);
+	r = talloc(talloc_tos(), struct samr_QueryGroupInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -1729,7 +1729,7 @@ static bool api_samr_SetGroupInfo(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_SETGROUPINFO];
 
-	r = talloc(NULL, struct samr_SetGroupInfo);
+	r = talloc(talloc_tos(), struct samr_SetGroupInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -1802,7 +1802,7 @@ static bool api_samr_AddGroupMember(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_ADDGROUPMEMBER];
 
-	r = talloc(NULL, struct samr_AddGroupMember);
+	r = talloc(talloc_tos(), struct samr_AddGroupMember);
 	if (r == NULL) {
 		return false;
 	}
@@ -1875,7 +1875,7 @@ static bool api_samr_DeleteDomainGroup(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_DELETEDOMAINGROUP];
 
-	r = talloc(NULL, struct samr_DeleteDomainGroup);
+	r = talloc(talloc_tos(), struct samr_DeleteDomainGroup);
 	if (r == NULL) {
 		return false;
 	}
@@ -1950,7 +1950,7 @@ static bool api_samr_DeleteGroupMember(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_DELETEGROUPMEMBER];
 
-	r = talloc(NULL, struct samr_DeleteGroupMember);
+	r = talloc(talloc_tos(), struct samr_DeleteGroupMember);
 	if (r == NULL) {
 		return false;
 	}
@@ -2023,7 +2023,7 @@ static bool api_samr_QueryGroupMember(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_QUERYGROUPMEMBER];
 
-	r = talloc(NULL, struct samr_QueryGroupMember);
+	r = talloc(talloc_tos(), struct samr_QueryGroupMember);
 	if (r == NULL) {
 		return false;
 	}
@@ -2103,7 +2103,7 @@ static bool api_samr_SetMemberAttributesOfGroup(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_SETMEMBERATTRIBUTESOFGROUP];
 
-	r = talloc(NULL, struct samr_SetMemberAttributesOfGroup);
+	r = talloc(talloc_tos(), struct samr_SetMemberAttributesOfGroup);
 	if (r == NULL) {
 		return false;
 	}
@@ -2176,7 +2176,7 @@ static bool api_samr_OpenAlias(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_OPENALIAS];
 
-	r = talloc(NULL, struct samr_OpenAlias);
+	r = talloc(talloc_tos(), struct samr_OpenAlias);
 	if (r == NULL) {
 		return false;
 	}
@@ -2256,7 +2256,7 @@ static bool api_samr_QueryAliasInfo(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_QUERYALIASINFO];
 
-	r = talloc(NULL, struct samr_QueryAliasInfo);
+	r = talloc(talloc_tos(), struct samr_QueryAliasInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -2336,7 +2336,7 @@ static bool api_samr_SetAliasInfo(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_SETALIASINFO];
 
-	r = talloc(NULL, struct samr_SetAliasInfo);
+	r = talloc(talloc_tos(), struct samr_SetAliasInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -2409,7 +2409,7 @@ static bool api_samr_DeleteDomAlias(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_DELETEDOMALIAS];
 
-	r = talloc(NULL, struct samr_DeleteDomAlias);
+	r = talloc(talloc_tos(), struct samr_DeleteDomAlias);
 	if (r == NULL) {
 		return false;
 	}
@@ -2484,7 +2484,7 @@ static bool api_samr_AddAliasMember(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_ADDALIASMEMBER];
 
-	r = talloc(NULL, struct samr_AddAliasMember);
+	r = talloc(talloc_tos(), struct samr_AddAliasMember);
 	if (r == NULL) {
 		return false;
 	}
@@ -2557,7 +2557,7 @@ static bool api_samr_DeleteAliasMember(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_DELETEALIASMEMBER];
 
-	r = talloc(NULL, struct samr_DeleteAliasMember);
+	r = talloc(talloc_tos(), struct samr_DeleteAliasMember);
 	if (r == NULL) {
 		return false;
 	}
@@ -2630,7 +2630,7 @@ static bool api_samr_GetMembersInAlias(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_GETMEMBERSINALIAS];
 
-	r = talloc(NULL, struct samr_GetMembersInAlias);
+	r = talloc(talloc_tos(), struct samr_GetMembersInAlias);
 	if (r == NULL) {
 		return false;
 	}
@@ -2710,7 +2710,7 @@ static bool api_samr_OpenUser(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_OPENUSER];
 
-	r = talloc(NULL, struct samr_OpenUser);
+	r = talloc(talloc_tos(), struct samr_OpenUser);
 	if (r == NULL) {
 		return false;
 	}
@@ -2790,7 +2790,7 @@ static bool api_samr_DeleteUser(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_DELETEUSER];
 
-	r = talloc(NULL, struct samr_DeleteUser);
+	r = talloc(talloc_tos(), struct samr_DeleteUser);
 	if (r == NULL) {
 		return false;
 	}
@@ -2865,7 +2865,7 @@ static bool api_samr_QueryUserInfo(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_QUERYUSERINFO];
 
-	r = talloc(NULL, struct samr_QueryUserInfo);
+	r = talloc(talloc_tos(), struct samr_QueryUserInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -2945,7 +2945,7 @@ static bool api_samr_SetUserInfo(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_SETUSERINFO];
 
-	r = talloc(NULL, struct samr_SetUserInfo);
+	r = talloc(talloc_tos(), struct samr_SetUserInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -3018,7 +3018,7 @@ static bool api_samr_ChangePasswordUser(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CHANGEPASSWORDUSER];
 
-	r = talloc(NULL, struct samr_ChangePasswordUser);
+	r = talloc(talloc_tos(), struct samr_ChangePasswordUser);
 	if (r == NULL) {
 		return false;
 	}
@@ -3091,7 +3091,7 @@ static bool api_samr_GetGroupsForUser(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_GETGROUPSFORUSER];
 
-	r = talloc(NULL, struct samr_GetGroupsForUser);
+	r = talloc(talloc_tos(), struct samr_GetGroupsForUser);
 	if (r == NULL) {
 		return false;
 	}
@@ -3171,7 +3171,7 @@ static bool api_samr_QueryDisplayInfo(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_QUERYDISPLAYINFO];
 
-	r = talloc(NULL, struct samr_QueryDisplayInfo);
+	r = talloc(talloc_tos(), struct samr_QueryDisplayInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -3263,7 +3263,7 @@ static bool api_samr_GetDisplayEnumerationIndex(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_GETDISPLAYENUMERATIONINDEX];
 
-	r = talloc(NULL, struct samr_GetDisplayEnumerationIndex);
+	r = talloc(talloc_tos(), struct samr_GetDisplayEnumerationIndex);
 	if (r == NULL) {
 		return false;
 	}
@@ -3343,7 +3343,7 @@ static bool api_samr_TestPrivateFunctionsDomain(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_TESTPRIVATEFUNCTIONSDOMAIN];
 
-	r = talloc(NULL, struct samr_TestPrivateFunctionsDomain);
+	r = talloc(talloc_tos(), struct samr_TestPrivateFunctionsDomain);
 	if (r == NULL) {
 		return false;
 	}
@@ -3416,7 +3416,7 @@ static bool api_samr_TestPrivateFunctionsUser(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_TESTPRIVATEFUNCTIONSUSER];
 
-	r = talloc(NULL, struct samr_TestPrivateFunctionsUser);
+	r = talloc(talloc_tos(), struct samr_TestPrivateFunctionsUser);
 	if (r == NULL) {
 		return false;
 	}
@@ -3489,7 +3489,7 @@ static bool api_samr_GetUserPwInfo(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_GETUSERPWINFO];
 
-	r = talloc(NULL, struct samr_GetUserPwInfo);
+	r = talloc(talloc_tos(), struct samr_GetUserPwInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -3569,7 +3569,7 @@ static bool api_samr_RemoveMemberFromForeignDomain(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_REMOVEMEMBERFROMFOREIGNDOMAIN];
 
-	r = talloc(NULL, struct samr_RemoveMemberFromForeignDomain);
+	r = talloc(talloc_tos(), struct samr_RemoveMemberFromForeignDomain);
 	if (r == NULL) {
 		return false;
 	}
@@ -3642,7 +3642,7 @@ static bool api_samr_QueryDomainInfo2(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_QUERYDOMAININFO2];
 
-	r = talloc(NULL, struct samr_QueryDomainInfo2);
+	r = talloc(talloc_tos(), struct samr_QueryDomainInfo2);
 	if (r == NULL) {
 		return false;
 	}
@@ -3722,7 +3722,7 @@ static bool api_samr_QueryUserInfo2(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_QUERYUSERINFO2];
 
-	r = talloc(NULL, struct samr_QueryUserInfo2);
+	r = talloc(talloc_tos(), struct samr_QueryUserInfo2);
 	if (r == NULL) {
 		return false;
 	}
@@ -3802,7 +3802,7 @@ static bool api_samr_QueryDisplayInfo2(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_QUERYDISPLAYINFO2];
 
-	r = talloc(NULL, struct samr_QueryDisplayInfo2);
+	r = talloc(talloc_tos(), struct samr_QueryDisplayInfo2);
 	if (r == NULL) {
 		return false;
 	}
@@ -3894,7 +3894,7 @@ static bool api_samr_GetDisplayEnumerationIndex2(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_GETDISPLAYENUMERATIONINDEX2];
 
-	r = talloc(NULL, struct samr_GetDisplayEnumerationIndex2);
+	r = talloc(talloc_tos(), struct samr_GetDisplayEnumerationIndex2);
 	if (r == NULL) {
 		return false;
 	}
@@ -3974,7 +3974,7 @@ static bool api_samr_CreateUser2(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CREATEUSER2];
 
-	r = talloc(NULL, struct samr_CreateUser2);
+	r = talloc(talloc_tos(), struct samr_CreateUser2);
 	if (r == NULL) {
 		return false;
 	}
@@ -4066,7 +4066,7 @@ static bool api_samr_QueryDisplayInfo3(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_QUERYDISPLAYINFO3];
 
-	r = talloc(NULL, struct samr_QueryDisplayInfo3);
+	r = talloc(talloc_tos(), struct samr_QueryDisplayInfo3);
 	if (r == NULL) {
 		return false;
 	}
@@ -4158,7 +4158,7 @@ static bool api_samr_AddMultipleMembersToAlias(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_ADDMULTIPLEMEMBERSTOALIAS];
 
-	r = talloc(NULL, struct samr_AddMultipleMembersToAlias);
+	r = talloc(talloc_tos(), struct samr_AddMultipleMembersToAlias);
 	if (r == NULL) {
 		return false;
 	}
@@ -4231,7 +4231,7 @@ static bool api_samr_RemoveMultipleMembersFromAlias(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_REMOVEMULTIPLEMEMBERSFROMALIAS];
 
-	r = talloc(NULL, struct samr_RemoveMultipleMembersFromAlias);
+	r = talloc(talloc_tos(), struct samr_RemoveMultipleMembersFromAlias);
 	if (r == NULL) {
 		return false;
 	}
@@ -4304,7 +4304,7 @@ static bool api_samr_OemChangePasswordUser2(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_OEMCHANGEPASSWORDUSER2];
 
-	r = talloc(NULL, struct samr_OemChangePasswordUser2);
+	r = talloc(talloc_tos(), struct samr_OemChangePasswordUser2);
 	if (r == NULL) {
 		return false;
 	}
@@ -4377,7 +4377,7 @@ static bool api_samr_ChangePasswordUser2(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CHANGEPASSWORDUSER2];
 
-	r = talloc(NULL, struct samr_ChangePasswordUser2);
+	r = talloc(talloc_tos(), struct samr_ChangePasswordUser2);
 	if (r == NULL) {
 		return false;
 	}
@@ -4450,7 +4450,7 @@ static bool api_samr_GetDomPwInfo(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_GETDOMPWINFO];
 
-	r = talloc(NULL, struct samr_GetDomPwInfo);
+	r = talloc(talloc_tos(), struct samr_GetDomPwInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -4530,7 +4530,7 @@ static bool api_samr_Connect2(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CONNECT2];
 
-	r = talloc(NULL, struct samr_Connect2);
+	r = talloc(talloc_tos(), struct samr_Connect2);
 	if (r == NULL) {
 		return false;
 	}
@@ -4610,7 +4610,7 @@ static bool api_samr_SetUserInfo2(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_SETUSERINFO2];
 
-	r = talloc(NULL, struct samr_SetUserInfo2);
+	r = talloc(talloc_tos(), struct samr_SetUserInfo2);
 	if (r == NULL) {
 		return false;
 	}
@@ -4683,7 +4683,7 @@ static bool api_samr_SetBootKeyInformation(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_SETBOOTKEYINFORMATION];
 
-	r = talloc(NULL, struct samr_SetBootKeyInformation);
+	r = talloc(talloc_tos(), struct samr_SetBootKeyInformation);
 	if (r == NULL) {
 		return false;
 	}
@@ -4756,7 +4756,7 @@ static bool api_samr_GetBootKeyInformation(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_GETBOOTKEYINFORMATION];
 
-	r = talloc(NULL, struct samr_GetBootKeyInformation);
+	r = talloc(talloc_tos(), struct samr_GetBootKeyInformation);
 	if (r == NULL) {
 		return false;
 	}
@@ -4836,7 +4836,7 @@ static bool api_samr_Connect3(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CONNECT3];
 
-	r = talloc(NULL, struct samr_Connect3);
+	r = talloc(talloc_tos(), struct samr_Connect3);
 	if (r == NULL) {
 		return false;
 	}
@@ -4916,7 +4916,7 @@ static bool api_samr_Connect4(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CONNECT4];
 
-	r = talloc(NULL, struct samr_Connect4);
+	r = talloc(talloc_tos(), struct samr_Connect4);
 	if (r == NULL) {
 		return false;
 	}
@@ -4996,7 +4996,7 @@ static bool api_samr_ChangePasswordUser3(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CHANGEPASSWORDUSER3];
 
-	r = talloc(NULL, struct samr_ChangePasswordUser3);
+	r = talloc(talloc_tos(), struct samr_ChangePasswordUser3);
 	if (r == NULL) {
 		return false;
 	}
@@ -5082,7 +5082,7 @@ static bool api_samr_Connect5(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_CONNECT5];
 
-	r = talloc(NULL, struct samr_Connect5);
+	r = talloc(talloc_tos(), struct samr_Connect5);
 	if (r == NULL) {
 		return false;
 	}
@@ -5174,7 +5174,7 @@ static bool api_samr_RidToSid(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_RIDTOSID];
 
-	r = talloc(NULL, struct samr_RidToSid);
+	r = talloc(talloc_tos(), struct samr_RidToSid);
 	if (r == NULL) {
 		return false;
 	}
@@ -5254,7 +5254,7 @@ static bool api_samr_SetDsrmPassword(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_SETDSRMPASSWORD];
 
-	r = talloc(NULL, struct samr_SetDsrmPassword);
+	r = talloc(talloc_tos(), struct samr_SetDsrmPassword);
 	if (r == NULL) {
 		return false;
 	}
@@ -5327,7 +5327,7 @@ static bool api_samr_ValidatePassword(pipes_struct *p)
 
 	call = &ndr_table_samr.calls[NDR_SAMR_VALIDATEPASSWORD];
 
-	r = talloc(NULL, struct samr_ValidatePassword);
+	r = talloc(talloc_tos(), struct samr_ValidatePassword);
 	if (r == NULL) {
 		return false;
 	}

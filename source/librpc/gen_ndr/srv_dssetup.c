@@ -17,7 +17,7 @@ static bool api_dssetup_DsRoleGetPrimaryDomainInformation(pipes_struct *p)
 
 	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEGETPRIMARYDOMAININFORMATION];
 
-	r = talloc(NULL, struct dssetup_DsRoleGetPrimaryDomainInformation);
+	r = talloc(talloc_tos(), struct dssetup_DsRoleGetPrimaryDomainInformation);
 	if (r == NULL) {
 		return false;
 	}
@@ -97,7 +97,7 @@ static bool api_dssetup_DsRoleDnsNameToFlatName(pipes_struct *p)
 
 	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEDNSNAMETOFLATNAME];
 
-	r = talloc(NULL, struct dssetup_DsRoleDnsNameToFlatName);
+	r = talloc(talloc_tos(), struct dssetup_DsRoleDnsNameToFlatName);
 	if (r == NULL) {
 		return false;
 	}
@@ -170,7 +170,7 @@ static bool api_dssetup_DsRoleDcAsDc(pipes_struct *p)
 
 	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEDCASDC];
 
-	r = talloc(NULL, struct dssetup_DsRoleDcAsDc);
+	r = talloc(talloc_tos(), struct dssetup_DsRoleDcAsDc);
 	if (r == NULL) {
 		return false;
 	}
@@ -243,7 +243,7 @@ static bool api_dssetup_DsRoleDcAsReplica(pipes_struct *p)
 
 	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEDCASREPLICA];
 
-	r = talloc(NULL, struct dssetup_DsRoleDcAsReplica);
+	r = talloc(talloc_tos(), struct dssetup_DsRoleDcAsReplica);
 	if (r == NULL) {
 		return false;
 	}
@@ -316,7 +316,7 @@ static bool api_dssetup_DsRoleDemoteDc(pipes_struct *p)
 
 	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEDEMOTEDC];
 
-	r = talloc(NULL, struct dssetup_DsRoleDemoteDc);
+	r = talloc(talloc_tos(), struct dssetup_DsRoleDemoteDc);
 	if (r == NULL) {
 		return false;
 	}
@@ -389,7 +389,7 @@ static bool api_dssetup_DsRoleGetDcOperationProgress(pipes_struct *p)
 
 	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEGETDCOPERATIONPROGRESS];
 
-	r = talloc(NULL, struct dssetup_DsRoleGetDcOperationProgress);
+	r = talloc(talloc_tos(), struct dssetup_DsRoleGetDcOperationProgress);
 	if (r == NULL) {
 		return false;
 	}
@@ -462,7 +462,7 @@ static bool api_dssetup_DsRoleGetDcOperationResults(pipes_struct *p)
 
 	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEGETDCOPERATIONRESULTS];
 
-	r = talloc(NULL, struct dssetup_DsRoleGetDcOperationResults);
+	r = talloc(talloc_tos(), struct dssetup_DsRoleGetDcOperationResults);
 	if (r == NULL) {
 		return false;
 	}
@@ -535,7 +535,7 @@ static bool api_dssetup_DsRoleCancel(pipes_struct *p)
 
 	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLECANCEL];
 
-	r = talloc(NULL, struct dssetup_DsRoleCancel);
+	r = talloc(talloc_tos(), struct dssetup_DsRoleCancel);
 	if (r == NULL) {
 		return false;
 	}
@@ -608,7 +608,7 @@ static bool api_dssetup_DsRoleServerSaveStateForUpgrade(pipes_struct *p)
 
 	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLESERVERSAVESTATEFORUPGRADE];
 
-	r = talloc(NULL, struct dssetup_DsRoleServerSaveStateForUpgrade);
+	r = talloc(talloc_tos(), struct dssetup_DsRoleServerSaveStateForUpgrade);
 	if (r == NULL) {
 		return false;
 	}
@@ -681,7 +681,7 @@ static bool api_dssetup_DsRoleUpgradeDownlevelServer(pipes_struct *p)
 
 	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEUPGRADEDOWNLEVELSERVER];
 
-	r = talloc(NULL, struct dssetup_DsRoleUpgradeDownlevelServer);
+	r = talloc(talloc_tos(), struct dssetup_DsRoleUpgradeDownlevelServer);
 	if (r == NULL) {
 		return false;
 	}
@@ -754,7 +754,7 @@ static bool api_dssetup_DsRoleAbortDownlevelServerUpgrade(pipes_struct *p)
 
 	call = &ndr_table_dssetup.calls[NDR_DSSETUP_DSROLEABORTDOWNLEVELSERVERUPGRADE];
 
-	r = talloc(NULL, struct dssetup_DsRoleAbortDownlevelServerUpgrade);
+	r = talloc(talloc_tos(), struct dssetup_DsRoleAbortDownlevelServerUpgrade);
 	if (r == NULL) {
 		return false;
 	}

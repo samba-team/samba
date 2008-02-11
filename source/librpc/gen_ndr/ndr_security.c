@@ -93,12 +93,12 @@ static enum ndr_err_code ndr_push_security_ace_object_type(struct ndr_push *ndr,
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
-			case SEC_ACE_OBJECT_TYPE_PRESENT:
+			case SEC_ACE_OBJECT_TYPE_PRESENT: {
 				NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->type));
-			break;
+			break; }
 
-			default:
-			break;
+			default: {
+			break; }
 
 		}
 	}
@@ -165,12 +165,12 @@ static enum ndr_err_code ndr_push_security_ace_object_inherited_type(struct ndr_
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
-			case SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT:
+			case SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT: {
 				NDR_CHECK(ndr_push_GUID(ndr, NDR_SCALARS, &r->inherited_type));
-			break;
+			break; }
 
-			default:
-			break;
+			default: {
+			break; }
 
 		}
 	}
@@ -283,24 +283,24 @@ static enum ndr_err_code ndr_push_security_ace_object_ctr(struct ndr_push *ndr, 
 	if (ndr_flags & NDR_SCALARS) {
 		int level = ndr_push_get_switch_value(ndr, r);
 		switch (level) {
-			case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT:
+			case SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT: {
 				NDR_CHECK(ndr_push_security_ace_object(ndr, NDR_SCALARS, &r->object));
-			break;
+			break; }
 
-			case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT:
+			case SEC_ACE_TYPE_ACCESS_DENIED_OBJECT: {
 				NDR_CHECK(ndr_push_security_ace_object(ndr, NDR_SCALARS, &r->object));
-			break;
+			break; }
 
-			case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT:
+			case SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT: {
 				NDR_CHECK(ndr_push_security_ace_object(ndr, NDR_SCALARS, &r->object));
-			break;
+			break; }
 
-			case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT:
+			case SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT: {
 				NDR_CHECK(ndr_push_security_ace_object(ndr, NDR_SCALARS, &r->object));
-			break;
+			break; }
 
-			default:
-			break;
+			default: {
+			break; }
 
 		}
 	}

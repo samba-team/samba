@@ -1216,53 +1216,53 @@ static enum ndr_err_code ndr_push_lsa_PolicyInformation(struct ndr_push *ndr, in
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case LSA_POLICY_INFO_AUDIT_LOG:
+			case LSA_POLICY_INFO_AUDIT_LOG: {
 				NDR_CHECK(ndr_push_lsa_AuditLogInfo(ndr, NDR_SCALARS, &r->audit_log));
-			break;
+			break; }
 
-			case LSA_POLICY_INFO_AUDIT_EVENTS:
+			case LSA_POLICY_INFO_AUDIT_EVENTS: {
 				NDR_CHECK(ndr_push_lsa_AuditEventsInfo(ndr, NDR_SCALARS, &r->audit_events));
-			break;
+			break; }
 
-			case LSA_POLICY_INFO_DOMAIN:
+			case LSA_POLICY_INFO_DOMAIN: {
 				NDR_CHECK(ndr_push_lsa_DomainInfo(ndr, NDR_SCALARS, &r->domain));
-			break;
+			break; }
 
-			case LSA_POLICY_INFO_PD:
+			case LSA_POLICY_INFO_PD: {
 				NDR_CHECK(ndr_push_lsa_PDAccountInfo(ndr, NDR_SCALARS, &r->pd));
-			break;
+			break; }
 
-			case LSA_POLICY_INFO_ACCOUNT_DOMAIN:
+			case LSA_POLICY_INFO_ACCOUNT_DOMAIN: {
 				NDR_CHECK(ndr_push_lsa_DomainInfo(ndr, NDR_SCALARS, &r->account_domain));
-			break;
+			break; }
 
-			case LSA_POLICY_INFO_ROLE:
+			case LSA_POLICY_INFO_ROLE: {
 				NDR_CHECK(ndr_push_lsa_ServerRole(ndr, NDR_SCALARS, &r->role));
-			break;
+			break; }
 
-			case LSA_POLICY_INFO_REPLICA:
+			case LSA_POLICY_INFO_REPLICA: {
 				NDR_CHECK(ndr_push_lsa_ReplicaSourceInfo(ndr, NDR_SCALARS, &r->replica));
-			break;
+			break; }
 
-			case LSA_POLICY_INFO_QUOTA:
+			case LSA_POLICY_INFO_QUOTA: {
 				NDR_CHECK(ndr_push_lsa_DefaultQuotaInfo(ndr, NDR_SCALARS, &r->quota));
-			break;
+			break; }
 
-			case LSA_POLICY_INFO_DB:
+			case LSA_POLICY_INFO_DB: {
 				NDR_CHECK(ndr_push_lsa_ModificationInfo(ndr, NDR_SCALARS, &r->db));
-			break;
+			break; }
 
-			case LSA_POLICY_INFO_AUDIT_FULL_SET:
+			case LSA_POLICY_INFO_AUDIT_FULL_SET: {
 				NDR_CHECK(ndr_push_lsa_AuditFullSetInfo(ndr, NDR_SCALARS, &r->auditfullset));
-			break;
+			break; }
 
-			case LSA_POLICY_INFO_AUDIT_FULL_QUERY:
+			case LSA_POLICY_INFO_AUDIT_FULL_QUERY: {
 				NDR_CHECK(ndr_push_lsa_AuditFullQueryInfo(ndr, NDR_SCALARS, &r->auditfullquery));
-			break;
+			break; }
 
-			case LSA_POLICY_INFO_DNS:
+			case LSA_POLICY_INFO_DNS: {
 				NDR_CHECK(ndr_push_lsa_DnsDomainInfo(ndr, NDR_SCALARS, &r->dns));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -2979,41 +2979,41 @@ static enum ndr_err_code ndr_push_lsa_TrustedDomainInfo(struct ndr_push *ndr, in
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_lsa_TrustDomInfoEnum(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case LSA_TRUSTED_DOMAIN_INFO_NAME:
+			case LSA_TRUSTED_DOMAIN_INFO_NAME: {
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoName(ndr, NDR_SCALARS, &r->name));
-			break;
+			break; }
 
-			case LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET:
+			case LSA_TRUSTED_DOMAIN_INFO_POSIX_OFFSET: {
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoPosixOffset(ndr, NDR_SCALARS, &r->posix_offset));
-			break;
+			break; }
 
-			case LSA_TRUSTED_DOMAIN_INFO_PASSWORD:
+			case LSA_TRUSTED_DOMAIN_INFO_PASSWORD: {
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoPassword(ndr, NDR_SCALARS, &r->password));
-			break;
+			break; }
 
-			case LSA_TRUSTED_DOMAIN_INFO_BASIC:
+			case LSA_TRUSTED_DOMAIN_INFO_BASIC: {
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoBasic(ndr, NDR_SCALARS, &r->info_basic));
-			break;
+			break; }
 
-			case LSA_TRUSTED_DOMAIN_INFO_INFO_EX:
+			case LSA_TRUSTED_DOMAIN_INFO_INFO_EX: {
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoInfoEx(ndr, NDR_SCALARS, &r->info_ex));
-			break;
+			break; }
 
-			case LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO:
+			case LSA_TRUSTED_DOMAIN_INFO_AUTH_INFO: {
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoAuthInfo(ndr, NDR_SCALARS, &r->auth_info));
-			break;
+			break; }
 
-			case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO:
+			case LSA_TRUSTED_DOMAIN_INFO_FULL_INFO: {
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoFullInfo(ndr, NDR_SCALARS, &r->full_info));
-			break;
+			break; }
 
-			case LSA_TRUSTED_DOMAIN_INFO_11:
+			case LSA_TRUSTED_DOMAIN_INFO_11: {
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfo11(ndr, NDR_SCALARS, &r->info11));
-			break;
+			break; }
 
-			case LSA_TRUSTED_DOMAIN_INFO_INFO_ALL:
+			case LSA_TRUSTED_DOMAIN_INFO_INFO_ALL: {
 				NDR_CHECK(ndr_push_lsa_TrustDomainInfoInfoAll(ndr, NDR_SCALARS, &r->info_all));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -3593,13 +3593,13 @@ static enum ndr_err_code ndr_push_lsa_DomainInformationPolicy(struct ndr_push *n
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case LSA_DOMAIN_INFO_POLICY_EFS:
+			case LSA_DOMAIN_INFO_POLICY_EFS: {
 				NDR_CHECK(ndr_push_lsa_DomainInfoEfs(ndr, NDR_SCALARS, &r->efs_info));
-			break;
+			break; }
 
-			case LSA_DOMAIN_INFO_POLICY_KERBEROS:
+			case LSA_DOMAIN_INFO_POLICY_KERBEROS: {
 				NDR_CHECK(ndr_push_lsa_DomainInfoKerberos(ndr, NDR_SCALARS, &r->kerberos_info));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -4214,21 +4214,21 @@ static enum ndr_err_code ndr_push_lsa_ForestTrustData(struct ndr_push *ndr, int 
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case LSA_FOREST_TRUST_TOP_LEVEL_NAME:
+			case LSA_FOREST_TRUST_TOP_LEVEL_NAME: {
 				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->top_level_name));
-			break;
+			break; }
 
-			case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX:
+			case LSA_FOREST_TRUST_TOP_LEVEL_NAME_EX: {
 				NDR_CHECK(ndr_push_lsa_StringLarge(ndr, NDR_SCALARS, &r->top_level_name_ex));
-			break;
+			break; }
 
-			case LSA_FOREST_TRUST_DOMAIN_INFO:
+			case LSA_FOREST_TRUST_DOMAIN_INFO: {
 				NDR_CHECK(ndr_push_lsa_ForestTrustDomainInfo(ndr, NDR_SCALARS, &r->domain_info));
-			break;
+			break; }
 
-			default:
+			default: {
 				NDR_CHECK(ndr_push_lsa_ForestTrustBinaryData(ndr, NDR_SCALARS, &r->data));
-			break;
+			break; }
 
 		}
 	}
