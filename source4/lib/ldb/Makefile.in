@@ -20,6 +20,7 @@ EXTRA_OBJ=@EXTRA_OBJ@
 TESTS=test-tdb.sh @TESTS@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 tdbdir = @tdbdir@
+ldbdir = $(srcdir)
 tallocdir = @tallocdir@
 
 TALLOC_LIBS = @TALLOC_LIBS@
@@ -67,7 +68,7 @@ DIRS = lib bin common ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples
 
 default: all
 
-include rules.mk
+include $(ldbdir)/rules.mk
 
 nss: nssdir all $(NSS_LIB)
 
@@ -160,4 +161,4 @@ gcov::
 	$(GCOV) -po modules $(srcdir)/modules/*.c 2| tee modules.report.gcov
 	$(GCOV) -po tools $(srcdir)/tools/*.c 2| tee tools.report.gcov
 
-include ldb.mk
+include $(ldbdir)/ldb.mk

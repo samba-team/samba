@@ -30,8 +30,8 @@ TDB_OBJ = @TDB_OBJ@ @LIBREPLACEOBJ@
 
 all:: showflags dirs $(PROGS) $(SOLIB) libtdb.a $(PYTHON_BUILD_TARGET)
 
-include tdb.mk
-include rules.mk
+include $(tdbdir)/tdb.mk
+include $(tdbdir)/rules.mk
 
 install:: all
 $(SOLIB): $(TDB_OBJ)
