@@ -1124,7 +1124,7 @@ unixName: %s
 sambaPassword: %s
 objectClass: user
 ",
-			   user_dn, username, dom_users,
+			   user_dn, username,
 			   unixname, password);
 	/*
 	  add the user to the users group as well
@@ -1134,7 +1134,7 @@ dn: %s
 changetype: modify
 add: member
 member: %s
-", 
+",
 			       dom_users, user_dn);
 
 

@@ -21,11 +21,16 @@ dnl #######################################################
 dnl SMB_SUBSYSTEM(name,obj_files,required_subsystems,cflags)
 AC_DEFUN([SMB_SUBSYSTEM],
 [
+MAKE_SETTINGS="$MAKE_SETTINGS
+$1_OBJ_FILES = $2
+$1_CFLAGS = $4
+"
+
 SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
 @<:@SUBSYSTEM::$1@:>@
-OBJ_FILES = $2
+OBJ_FILES = \$($1_OBJ_FILES)
 PRIVATE_DEPENDENCIES = $3
 CFLAGS = $4
 ENABLE = YES
@@ -37,16 +42,22 @@ ENABLE = YES
 dnl SMB_LIBRARY(name,obj_files,required_subsystems,version,so_version,cflags,ldflags,pcname)
 AC_DEFUN([SMB_LIBRARY],
 [
+MAKE_SETTINGS="$MAKE_SETTINGS
+$1_OBJ_FILES = $2
+$1_CFLAGS = $6
+$1_LDFLAGS = $7
+"
+
 SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
 @<:@LIBRARY::$1@:>@
-OBJ_FILES = $2
+OBJ_FILES = \$($1_OBJ_FILES)
 PRIVATE_DEPENDENCIES = $3
 VERSION = $4
 SO_VERSION = $5 
 CFLAGS = $6
-LDFLAGS = $7
+LDFLAGS = \$($1_LDFLAGS)
 PC_NAME = $8
 ENABLE = YES
 # End Library $1
@@ -127,15 +138,21 @@ include $1
 dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags,pcname)
 AC_DEFUN([SMB_EXT_LIB],
 [
+MAKE_SETTINGS="$MAKE_SETTINGS
+$1_LIBS = $2
+$1_CFLAGS = $3
+$1_CPPFLAGS = $4
+$1_LDFLAGS = $5
+"
 
 SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
 ###################################
 # Start Ext Lib $1
 @<:@EXT_LIB::$1@:>@
-LIBS = $2
+LIBS = \$($1_LIBS)
 CFLAGS = $3
 CPPFLAGS = $4
-LDFLAGS = $5
+LDFLAGS = \$($1_LDFLAGS)
 PC_NAME = $6
 # End Ext Lib $1
 ###################################
