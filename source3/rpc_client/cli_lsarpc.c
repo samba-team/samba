@@ -537,46 +537,6 @@ NTSTATUS rpccli_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 	return out.status;
 }
 
-/** Get privilege name */
-
-NTSTATUS rpccli_lsa_get_dispname(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *pol, const char *name,
-			      uint16 lang_id, uint16 lang_id_sys,
-			      fstring description, uint16 *lang_id_desc)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_PRIV_GET_DISPNAME q;
-	LSA_R_PRIV_GET_DISPNAME r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	init_lsa_priv_get_dispname(&q, pol, name, lang_id, lang_id_sys);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_PRIV_GET_DISPNAME,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_priv_get_dispname,
-		lsa_io_r_priv_get_dispname,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	/* Return output parameters */
-
-	rpcstr_pull_unistr2_fstring(description , &r.desc);
-	*lang_id_desc = r.lang_id;
-
- done:
-
-	return result;
-}
-
 /** Enumerate list of SIDs  */
 
 NTSTATUS rpccli_lsa_enum_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
