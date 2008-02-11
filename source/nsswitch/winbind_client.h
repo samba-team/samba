@@ -14,9 +14,14 @@ NSS_STATUS winbindd_priv_request_response(int req_type,
 					  struct winbindd_response *response);
 int winbindd_read_reply(struct winbindd_response *response);
 
-bool winbind_env_set(void);
-bool winbind_off(void);
-bool winbind_on(void);
+#define winbind_env_set() \
+	(strcmp(getenv(WINBINDD_DONT_ENV)?getenv(WINBINDD_DONT_ENV):"0","1") == 0)
+
+#define winbind_off() \
+	(setenv(WINBINDD_DONT_ENV, "1", 1) == 0)
+
+#define winbind_on() \
+	(setenv(WINBINDD_DONT_ENV, "0", 1) == 0)
 
 int winbind_write_sock(void *buffer, int count, int recursing, int need_priv);
 int winbind_read_sock(void *buffer, int count);
