@@ -57,8 +57,6 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	uint32 user_rid;
-	SAM_USERINFO_CTR ctr;
-	SAM_USER_INFO_16 p16;
 	struct lsa_String lsa_acct_name;
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
@@ -134,15 +132,13 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	}
 
 	/* now disable and setuser info */
-	
-	ZERO_STRUCT(ctr);
-	ctr.switch_value = 16;
-	ctr.info.id16 = &p16;
 
-	p16.acb_info = info->info16.acct_flags | ACB_DISABLED;
+	info->info16.acct_flags |= ACB_DISABLED;
 
-	status = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol, 16, 
-					&cli->user_session_key, &ctr);
+	status = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+					 &user_pol,
+					 16,
+					 info);
 
 	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 
@@ -234,11 +230,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	uint32 user_rid;
 	uint32 acb_info = ACB_WSTRUST;
 	uint32 acct_flags;
-	uint32 fields_present;
 	uchar pwbuf[532];
-	SAM_USERINFO_CTR ctr;
-	SAM_USER_INFO_25 p25;
-	const int infolevel = 25;
 	struct MD5Context md5ctx;
 	uchar md5buffer[16];
 	DATA_BLOB digested_session_key;
@@ -246,6 +238,7 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	uint32_t access_granted = 0;
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
+	union samr_UserInfo info;
 
 	/* Open the domain */
 	
@@ -371,19 +364,18 @@ NTSTATUS netdom_join_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	}
 
 	/* Set password and account flags on machine account */
+	ZERO_STRUCT(info.info25);
+	info.info25.info.fields_present = ACCT_NT_PWD_SET |
+					  ACCT_LM_PWD_SET |
+					  SAMR_FIELD_ACCT_FLAGS;
+	info.info25.info.acct_flags = acb_info;
+	memcpy(&info.info25.password.data, pwbuf, sizeof(pwbuf));
 
-	ZERO_STRUCT(ctr);
-	ZERO_STRUCT(p25);
 
-	fields_present = ACCT_NT_PWD_SET | ACCT_LM_PWD_SET |
-			 SAMR_FIELD_ACCT_FLAGS;
-	init_sam_user_info25P(&p25, fields_present, acb_info, (char *)pwbuf);
-
-	ctr.switch_value = infolevel;
-	ctr.info.id25    = &p25;
-
-	status = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol,
-					   infolevel, &cli->user_session_key, &ctr);
+	status = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+					 &user_pol,
+					 25,
+					 &info);
 
 	if ( !NT_STATUS_IS_OK(status) ) {
 		d_fprintf( stderr, "Failed to set password for machine account (%s)\n", 
