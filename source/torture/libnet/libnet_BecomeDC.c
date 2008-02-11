@@ -275,7 +275,6 @@ static NTSTATUS test_become_dc_prepare_db_ejs(void *private_data,
 	return NT_STATUS_OK;
 }
 
-#ifdef HAVE_WORKING_PYTHON
 #include "param/param.h"
 #include <Python.h>
 #include "scripting/python/modules.h"
@@ -381,7 +380,6 @@ static NTSTATUS test_become_dc_prepare_db_py(void *private_data,
 
 	return NT_STATUS_OK;
 }
-#endif /* HAVE_WORKING_PYTHON */
 
 static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 				  const struct libnet_BecomeDC_StoreChunk *c)
@@ -878,12 +876,10 @@ bool torture_net_become_dc(struct torture_context *torture)
 
 	b.in.callbacks.private_data	= s;
 	b.in.callbacks.check_options	= test_become_dc_check_options;
-	b.in.callbacks.prepare_db	= test_become_dc_prepare_db_ejs;
-#ifdef HAVE_WORKING_PYTHON
-	if (getenv("PROVISION_PYTHON")) {
-		b.in.callbacks.prepare_db = test_become_dc_prepare_db_py;
+	b.in.callbacks.prepare_db = test_become_dc_prepare_db_py;
+	if (getenv("PROVISION_EJS")) {
+		b.in.callbacks.prepare_db	= test_become_dc_prepare_db_ejs;
 	}
-#endif
 	b.in.callbacks.schema_chunk	= test_become_dc_schema_chunk;
 	b.in.callbacks.config_chunk	= test_become_dc_store_chunk;
 	b.in.callbacks.domain_chunk	= test_become_dc_store_chunk;
