@@ -94,31 +94,32 @@ static NTSTATUS enum_privileges(struct rpc_pipe_client *pipe_hnd,
 	NTSTATUS result;
 	uint32 enum_context = 0;
 	uint32 pref_max_length=0x1000;
-	uint32 count=0;
-	char   **privs_name;
-	uint32 *privs_high;
-	uint32 *privs_low;
 	int i;
 	uint16 lang_id=0;
 	uint16 lang_id_sys=0;
 	uint16 lang_id_desc;
 	fstring description;
+	struct lsa_PrivArray priv_array;
 
-	result = rpccli_lsa_enum_privilege(pipe_hnd, ctx, pol, &enum_context, 
-		pref_max_length, &count, &privs_name, &privs_high, &privs_low);
+	result = rpccli_lsa_EnumPrivs(pipe_hnd, ctx,
+				      pol,
+				      &enum_context,
+				      &priv_array,
+				      pref_max_length);
 
 	if ( !NT_STATUS_IS_OK(result) )
 		return result;
 
 	/* Print results */
-	
-	for (i = 0; i < count; i++) {
-		d_printf("%30s  ", privs_name[i] ? privs_name[i] : "*unknown*" );
-		
+
+	for (i = 0; i < priv_array.count; i++) {
+		d_printf("%30s  ",
+			priv_array.privs[i].name.string ? priv_array.privs[i].name.string : "*unknown*" );
+
 		/* try to get the description */
 		
 		if ( !NT_STATUS_IS_OK(rpccli_lsa_get_dispname(pipe_hnd, ctx, pol, 
-			privs_name[i], lang_id, lang_id_sys, description, &lang_id_desc)) )
+			priv_array.privs[i].name.string, lang_id, lang_id_sys, description, &lang_id_desc)) )
 		{
 			d_printf("??????\n");
 			continue;

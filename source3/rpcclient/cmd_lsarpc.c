@@ -439,13 +439,10 @@ static NTSTATUS cmd_lsa_enum_privilege(struct rpc_pipe_client *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct lsa_PrivArray priv_array;
 
 	uint32 enum_context=0;
 	uint32 pref_max_length=0x1000;
-	uint32 count=0;
-	char   **privs_name;
-	uint32 *privs_high;
-	uint32 *privs_low;
 	int i;
 
 	if (argc > 3) {
@@ -466,18 +463,24 @@ static NTSTATUS cmd_lsa_enum_privilege(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_enum_privilege(cli, mem_ctx, &pol, &enum_context, pref_max_length,
-					&count, &privs_name, &privs_high, &privs_low);
-
+	result = rpccli_lsa_EnumPrivs(cli, mem_ctx,
+				      &pol,
+				      &enum_context,
+				      &priv_array,
+				      pref_max_length);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Print results */
-	printf("found %d privileges\n\n", count);
+	printf("found %d privileges\n\n", priv_array.count);
 
-	for (i = 0; i < count; i++) {
-		printf("%s \t\t%d:%d (0x%x:0x%x)\n", privs_name[i] ? privs_name[i] : "*unknown*",
-		       privs_high[i], privs_low[i], privs_high[i], privs_low[i]);
+	for (i = 0; i < priv_array.count; i++) {
+		printf("%s \t\t%d:%d (0x%x:0x%x)\n",
+		       priv_array.privs[i].name.string ? priv_array.privs[i].name.string : "*unknown*",
+		       priv_array.privs[i].luid.high,
+		       priv_array.privs[i].luid.low,
+		       priv_array.privs[i].luid.high,
+		       priv_array.privs[i].luid.low);
 	}
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
