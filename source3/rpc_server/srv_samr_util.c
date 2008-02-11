@@ -45,24 +45,23 @@ void copy_id20_to_sam_passwd(struct samu *to,
 	char *new_string;
 	DATA_BLOB mung;
 
-	if (from == NULL || to == NULL)
+	if (from == NULL || to == NULL) {
 		return;
+	}
 
-#if 0
-	if (from->hdr_munged_dial.buffer) {
+	if (from->parameters.string) {
 		old_string = pdb_get_munged_dial(to);
-		mung.length = from->hdr_munged_dial.uni_str_len;
-		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		mung.length = from->parameters.length;
+		mung.data = (uint8_t *)from->parameters.string;
 		mung.free = NULL;
 		new_string = (mung.length == 0) ?
 			NULL : base64_encode_data_blob(talloc_tos(), mung);
-		DEBUG(10,("INFO_20 UNI_MUNGED_DIAL: %s -> %s\n",old_string, new_string));
+		DEBUG(10,("INFO_20 PARAMETERS: %s -> %s\n",old_string, new_string));
 		if (STRING_CHANGED_NC(old_string,new_string))
 			pdb_set_munged_dial(to   , new_string, PDB_CHANGED);
 
 		TALLOC_FREE(new_string);
 	}
-#endif
 }
 
 /*************************************************************
@@ -200,14 +199,13 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 		if (STRING_CHANGED)
 			pdb_set_comment(to, new_string, PDB_CHANGED);
 	}
-#if 0
-	/* FIXME GD */
+
 	if ((from->fields_present & SAMR_FIELD_PARAMETERS) &&
-	    (from->hdr_munged_dial.buffer)) {
+	    (from->parameters.string)) {
 		char *newstr;
 		old_string = pdb_get_munged_dial(to);
-		mung.length = from->hdr_munged_dial.uni_str_len;
-		mung.data = (uint8 *) from->uni_munged_dial.buffer;
+		mung.length = from->parameters.length;
+		mung.data = (uint8_t *)from->parameters.string;
 		mung.free = NULL;
 		newstr = (mung.length == 0) ?
 			NULL : base64_encode_data_blob(talloc_tos(), mung);
@@ -217,7 +215,7 @@ void copy_id21_to_sam_passwd(const char *log_prefix,
 
 		TALLOC_FREE(newstr);
 	}
-#endif
+
 	if (from->fields_present & SAMR_FIELD_RID) {
 		if (from->rid == 0) {
 			DEBUG(10, ("%s: Asked to set User RID to 0 !? Skipping change!\n", l));
