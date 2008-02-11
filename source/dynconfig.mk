@@ -5,7 +5,7 @@ OBJ_FILES = dynconfig.o
 # These can be overridden by command line switches (see smbd(8))
 # or in smb.conf (see smb.conf(5))
 CONFIGFILE = $(sysconfdir)/smb.conf
-PKGCONFIGDIR = $(LIBDIR)/pkgconfig
+PKGCONFIGDIR = $(libdir)/pkgconfig
 LMHOSTSFILE = $(sysconfdir)/lmhosts
 
 PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" \
