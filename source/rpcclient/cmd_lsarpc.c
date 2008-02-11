@@ -193,8 +193,9 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 						    &info);
 	}
 
-
-	display_lsa_query_info(info, info_class);
+	if (NT_STATUS_IS_OK(result)) {
+		display_lsa_query_info(info, info_class);
+	}
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
