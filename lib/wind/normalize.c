@@ -205,12 +205,15 @@ find_composition(const uint32_t *in, unsigned in_len)
 
     do {
 	const struct canon_node *c = &_wind_canon_table[canon_index];
+	unsigned i;
+
 	if (n % 5 == 0) {
 	    cur = *in++;
 	    if (in_len-- == 0)
 		return c->val;
 	}
-	unsigned i = cur >> 16;
+
+	i = cur >> 16;
 	if (i < c->next_start || i >= c->next_end)
 	    canon_index = 0;
 	else
@@ -224,7 +227,7 @@ find_composition(const uint32_t *in, unsigned in_len)
     return 0;
 }
 
-static void
+static int
 combine(const uint32_t *in, size_t in_len,
 	uint32_t *out, size_t *out_len)
 {
@@ -239,19 +242,27 @@ combine(const uint32_t *in, size_t in_len,
 	    out[o++] = in[i++];
 	}
 	if (i < in_len) {
+	    if (o >= *out_len)
+		return WIND_ERR_OVERRUN;
 	    ostarter = o;
 	    out[o++] = in[i++];
 	    old_cc   = -1;
 
 	    while (i < in_len) {
-		uint32_t v[2] = {out[ostarter], in[i]};
 		uint32_t comb;
+		uint32_t v[2];
+
+		v[0] = out[ostarter];
+		v[1] = in[i];
+
 		cc = _wind_combining_class(in[i]);
 		if (old_cc != cc && (comb = find_composition(v, 2))) {
 		    out[ostarter] = comb;
 		} else if (cc == 0) {
 		    break;
 		} else {
+		    if (o >= *out_len)
+			return WIND_ERR_OVERRUN;
 		    out[o++] = in[i];
 		    old_cc   = cc;
 		}
@@ -260,6 +271,7 @@ combine(const uint32_t *in, size_t in_len,
 	}
     }
     *out_len = o;
+    return 0;
 }
 
 int
@@ -271,8 +283,8 @@ _wind_stringprep_normalize(const uint32_t *in, size_t in_len,
     int ret;
 
     tmp_len = in_len * 4;
-    if (tmp_len < MAX_LENGTH)
-	tmp_len = MAX_LENGTH;
+    if (tmp_len < MAX_LENGTH_CANON)
+	tmp_len = MAX_LENGTH_CANON;
     tmp = malloc(tmp_len * sizeof(uint32_t));
     if (tmp == NULL)
 	return ENOMEM;
@@ -283,7 +295,7 @@ _wind_stringprep_normalize(const uint32_t *in, size_t in_len,
 	return ret;
     }
     canonical_reorder(tmp, tmp_len);
-    combine(tmp, tmp_len, out, out_len);
+    ret = combine(tmp, tmp_len, out, out_len);
     free(tmp);
-    return 0;
+    return ret;
 }
