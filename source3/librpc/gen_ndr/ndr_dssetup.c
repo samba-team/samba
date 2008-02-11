@@ -365,17 +365,17 @@ static enum ndr_err_code ndr_push_dssetup_DsRoleInfo(struct ndr_push *ndr, int n
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_dssetup_DsRoleInfoLevel(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case DS_ROLE_BASIC_INFORMATION:
+			case DS_ROLE_BASIC_INFORMATION: {
 				NDR_CHECK(ndr_push_dssetup_DsRolePrimaryDomInfoBasic(ndr, NDR_SCALARS, &r->basic));
-			break;
+			break; }
 
-			case DS_ROLE_UPGRADE_STATUS:
+			case DS_ROLE_UPGRADE_STATUS: {
 				NDR_CHECK(ndr_push_dssetup_DsRoleUpgradeStatus(ndr, NDR_SCALARS, &r->upgrade));
-			break;
+			break; }
 
-			case DS_ROLE_OP_STATUS:
+			case DS_ROLE_OP_STATUS: {
 				NDR_CHECK(ndr_push_dssetup_DsRoleOpStatus(ndr, NDR_SCALARS, &r->opstatus));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);

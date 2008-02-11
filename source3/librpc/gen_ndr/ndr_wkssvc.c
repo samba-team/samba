@@ -1478,152 +1478,152 @@ static enum ndr_err_code ndr_push_wkssvc_NetWkstaInfo(struct ndr_push *ndr, int 
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 100:
+			case 100: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info100));
-			break;
+			break; }
 
-			case 101:
+			case 101: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info101));
-			break;
+			break; }
 
-			case 102:
+			case 102: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info102));
-			break;
+			break; }
 
-			case 502:
+			case 502: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info502));
-			break;
+			break; }
 
-			case 1010:
+			case 1010: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1010));
-			break;
+			break; }
 
-			case 1011:
+			case 1011: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1011));
-			break;
+			break; }
 
-			case 1012:
+			case 1012: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1012));
-			break;
+			break; }
 
-			case 1013:
+			case 1013: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1013));
-			break;
+			break; }
 
-			case 1018:
+			case 1018: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1018));
-			break;
+			break; }
 
-			case 1023:
+			case 1023: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1023));
-			break;
+			break; }
 
-			case 1027:
+			case 1027: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1027));
-			break;
+			break; }
 
-			case 1028:
+			case 1028: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1028));
-			break;
+			break; }
 
-			case 1032:
+			case 1032: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1032));
-			break;
+			break; }
 
-			case 1033:
+			case 1033: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1033));
-			break;
+			break; }
 
-			case 1041:
+			case 1041: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1041));
-			break;
+			break; }
 
-			case 1042:
+			case 1042: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1042));
-			break;
+			break; }
 
-			case 1043:
+			case 1043: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1043));
-			break;
+			break; }
 
-			case 1044:
+			case 1044: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1044));
-			break;
+			break; }
 
-			case 1045:
+			case 1045: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1045));
-			break;
+			break; }
 
-			case 1046:
+			case 1046: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1046));
-			break;
+			break; }
 
-			case 1047:
+			case 1047: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1047));
-			break;
+			break; }
 
-			case 1048:
+			case 1048: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1048));
-			break;
+			break; }
 
-			case 1049:
+			case 1049: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1049));
-			break;
+			break; }
 
-			case 1050:
+			case 1050: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1050));
-			break;
+			break; }
 
-			case 1051:
+			case 1051: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1051));
-			break;
+			break; }
 
-			case 1052:
+			case 1052: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1052));
-			break;
+			break; }
 
-			case 1053:
+			case 1053: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1053));
-			break;
+			break; }
 
-			case 1054:
+			case 1054: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1054));
-			break;
+			break; }
 
-			case 1055:
+			case 1055: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1055));
-			break;
+			break; }
 
-			case 1056:
+			case 1056: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1056));
-			break;
+			break; }
 
-			case 1057:
+			case 1057: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1057));
-			break;
+			break; }
 
-			case 1058:
+			case 1058: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1058));
-			break;
+			break; }
 
-			case 1059:
+			case 1059: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1059));
-			break;
+			break; }
 
-			case 1060:
+			case 1060: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1060));
-			break;
+			break; }
 
-			case 1061:
+			case 1061: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1061));
-			break;
+			break; }
 
-			case 1062:
+			case 1062: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1062));
-			break;
+			break; }
 
-			default:
-			break;
+			default: {
+			break; }
 
 		}
 	}
@@ -3335,13 +3335,13 @@ static enum ndr_err_code ndr_push_wkssvc_NetWkstaEnumUsersCtr(struct ndr_push *n
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 0:
+			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->user0));
-			break;
+			break; }
 
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->user1));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -3566,17 +3566,17 @@ static enum ndr_err_code ndr_push_wkssvc_NetrWkstaUserInfo(struct ndr_push *ndr,
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 0:
+			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info0));
-			break;
+			break; }
 
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1));
-			break;
+			break; }
 
-			case 1101:
+			case 1101: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1101));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -3927,9 +3927,9 @@ static enum ndr_err_code ndr_push_wkssvc_NetWkstaTransportCtr(struct ndr_push *n
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 0:
+			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr0));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -4587,21 +4587,21 @@ static enum ndr_err_code ndr_push_wkssvc_NetrUseGetInfoCtr(struct ndr_push *ndr,
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 0:
+			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info0));
-			break;
+			break; }
 
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info1));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info2));
-			break;
+			break; }
 
-			case 3:
+			case 3: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->info3));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -5059,17 +5059,17 @@ static enum ndr_err_code ndr_push_wkssvc_NetrUseEnumCtr(struct ndr_push *ndr, in
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 0:
+			case 0: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr0));
-			break;
+			break; }
 
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr1));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_unique_ptr(ndr, r->ctr2));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);

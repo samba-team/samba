@@ -814,53 +814,53 @@ static enum ndr_err_code ndr_push_samr_DomainInfo(struct ndr_push *ndr, int ndr_
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_samr_DomInfo1(ndr, NDR_SCALARS, &r->info1));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_samr_DomInfo2(ndr, NDR_SCALARS, &r->info2));
-			break;
+			break; }
 
-			case 3:
+			case 3: {
 				NDR_CHECK(ndr_push_samr_DomInfo3(ndr, NDR_SCALARS, &r->info3));
-			break;
+			break; }
 
-			case 4:
+			case 4: {
 				NDR_CHECK(ndr_push_samr_DomInfo4(ndr, NDR_SCALARS, &r->info4));
-			break;
+			break; }
 
-			case 5:
+			case 5: {
 				NDR_CHECK(ndr_push_samr_DomInfo5(ndr, NDR_SCALARS, &r->info5));
-			break;
+			break; }
 
-			case 6:
+			case 6: {
 				NDR_CHECK(ndr_push_samr_DomInfo6(ndr, NDR_SCALARS, &r->info6));
-			break;
+			break; }
 
-			case 7:
+			case 7: {
 				NDR_CHECK(ndr_push_samr_DomInfo7(ndr, NDR_SCALARS, &r->info7));
-			break;
+			break; }
 
-			case 8:
+			case 8: {
 				NDR_CHECK(ndr_push_samr_DomInfo8(ndr, NDR_SCALARS, &r->info8));
-			break;
+			break; }
 
-			case 9:
+			case 9: {
 				NDR_CHECK(ndr_push_samr_DomInfo9(ndr, NDR_SCALARS, &r->info9));
-			break;
+			break; }
 
-			case 11:
+			case 11: {
 				NDR_CHECK(ndr_push_samr_DomInfo11(ndr, NDR_SCALARS, &r->info11));
-			break;
+			break; }
 
-			case 12:
+			case 12: {
 				NDR_CHECK(ndr_push_samr_DomInfo12(ndr, NDR_SCALARS, &r->info12));
-			break;
+			break; }
 
-			case 13:
+			case 13: {
 				NDR_CHECK(ndr_push_samr_DomInfo13(ndr, NDR_SCALARS, &r->info13));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -1308,25 +1308,25 @@ static enum ndr_err_code ndr_push_samr_GroupInfo(struct ndr_push *ndr, int ndr_f
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_samr_GroupInfoEnum(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case GROUPINFOALL:
+			case GROUPINFOALL: {
 				NDR_CHECK(ndr_push_samr_GroupInfoAll(ndr, NDR_SCALARS, &r->all));
-			break;
+			break; }
 
-			case GROUPINFONAME:
+			case GROUPINFONAME: {
 				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->name));
-			break;
+			break; }
 
-			case GROUPINFOATTRIBUTES:
+			case GROUPINFOATTRIBUTES: {
 				NDR_CHECK(ndr_push_samr_GroupInfoAttributes(ndr, NDR_SCALARS, &r->attributes));
-			break;
+			break; }
 
-			case GROUPINFODESCRIPTION:
+			case GROUPINFODESCRIPTION: {
 				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->description));
-			break;
+			break; }
 
-			case GROUPINFOALL2:
+			case GROUPINFOALL2: {
 				NDR_CHECK(ndr_push_samr_GroupInfoAll(ndr, NDR_SCALARS, &r->all2));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -1659,17 +1659,17 @@ static enum ndr_err_code ndr_push_samr_AliasInfo(struct ndr_push *ndr, int ndr_f
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_samr_AliasInfoEnum(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case ALIASINFOALL:
+			case ALIASINFOALL: {
 				NDR_CHECK(ndr_push_samr_AliasInfoAll(ndr, NDR_SCALARS, &r->all));
-			break;
+			break; }
 
-			case ALIASINFONAME:
+			case ALIASINFONAME: {
 				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->name));
-			break;
+			break; }
 
-			case ALIASINFODESCRIPTION:
+			case ALIASINFODESCRIPTION: {
 				NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS, &r->description));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -3112,97 +3112,97 @@ static enum ndr_err_code ndr_push_samr_UserInfo(struct ndr_push *ndr, int ndr_fl
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_samr_UserInfo1(ndr, NDR_SCALARS, &r->info1));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_samr_UserInfo2(ndr, NDR_SCALARS, &r->info2));
-			break;
+			break; }
 
-			case 3:
+			case 3: {
 				NDR_CHECK(ndr_push_samr_UserInfo3(ndr, NDR_SCALARS, &r->info3));
-			break;
+			break; }
 
-			case 4:
+			case 4: {
 				NDR_CHECK(ndr_push_samr_UserInfo4(ndr, NDR_SCALARS, &r->info4));
-			break;
+			break; }
 
-			case 5:
+			case 5: {
 				NDR_CHECK(ndr_push_samr_UserInfo5(ndr, NDR_SCALARS, &r->info5));
-			break;
+			break; }
 
-			case 6:
+			case 6: {
 				NDR_CHECK(ndr_push_samr_UserInfo6(ndr, NDR_SCALARS, &r->info6));
-			break;
+			break; }
 
-			case 7:
+			case 7: {
 				NDR_CHECK(ndr_push_samr_UserInfo7(ndr, NDR_SCALARS, &r->info7));
-			break;
+			break; }
 
-			case 8:
+			case 8: {
 				NDR_CHECK(ndr_push_samr_UserInfo8(ndr, NDR_SCALARS, &r->info8));
-			break;
+			break; }
 
-			case 9:
+			case 9: {
 				NDR_CHECK(ndr_push_samr_UserInfo9(ndr, NDR_SCALARS, &r->info9));
-			break;
+			break; }
 
-			case 10:
+			case 10: {
 				NDR_CHECK(ndr_push_samr_UserInfo10(ndr, NDR_SCALARS, &r->info10));
-			break;
+			break; }
 
-			case 11:
+			case 11: {
 				NDR_CHECK(ndr_push_samr_UserInfo11(ndr, NDR_SCALARS, &r->info11));
-			break;
+			break; }
 
-			case 12:
+			case 12: {
 				NDR_CHECK(ndr_push_samr_UserInfo12(ndr, NDR_SCALARS, &r->info12));
-			break;
+			break; }
 
-			case 13:
+			case 13: {
 				NDR_CHECK(ndr_push_samr_UserInfo13(ndr, NDR_SCALARS, &r->info13));
-			break;
+			break; }
 
-			case 14:
+			case 14: {
 				NDR_CHECK(ndr_push_samr_UserInfo14(ndr, NDR_SCALARS, &r->info14));
-			break;
+			break; }
 
-			case 16:
+			case 16: {
 				NDR_CHECK(ndr_push_samr_UserInfo16(ndr, NDR_SCALARS, &r->info16));
-			break;
+			break; }
 
-			case 17:
+			case 17: {
 				NDR_CHECK(ndr_push_samr_UserInfo17(ndr, NDR_SCALARS, &r->info17));
-			break;
+			break; }
 
-			case 18:
+			case 18: {
 				NDR_CHECK(ndr_push_samr_UserInfo18(ndr, NDR_SCALARS, &r->info18));
-			break;
+			break; }
 
-			case 20:
+			case 20: {
 				NDR_CHECK(ndr_push_samr_UserInfo20(ndr, NDR_SCALARS, &r->info20));
-			break;
+			break; }
 
-			case 21:
+			case 21: {
 				NDR_CHECK(ndr_push_samr_UserInfo21(ndr, NDR_SCALARS, &r->info21));
-			break;
+			break; }
 
-			case 23:
+			case 23: {
 				NDR_CHECK(ndr_push_samr_UserInfo23(ndr, NDR_SCALARS, &r->info23));
-			break;
+			break; }
 
-			case 24:
+			case 24: {
 				NDR_CHECK(ndr_push_samr_UserInfo24(ndr, NDR_SCALARS, &r->info24));
-			break;
+			break; }
 
-			case 25:
+			case 25: {
 				NDR_CHECK(ndr_push_samr_UserInfo25(ndr, NDR_SCALARS, &r->info25));
-			break;
+			break; }
 
-			case 26:
+			case 26: {
 				NDR_CHECK(ndr_push_samr_UserInfo26(ndr, NDR_SCALARS, &r->info26));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -4255,25 +4255,25 @@ static enum ndr_err_code ndr_push_samr_DispInfo(struct ndr_push *ndr, int ndr_fl
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_samr_DispInfoGeneral(ndr, NDR_SCALARS, &r->info1));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_samr_DispInfoFull(ndr, NDR_SCALARS, &r->info2));
-			break;
+			break; }
 
-			case 3:
+			case 3: {
 				NDR_CHECK(ndr_push_samr_DispInfoFullGroups(ndr, NDR_SCALARS, &r->info3));
-			break;
+			break; }
 
-			case 4:
+			case 4: {
 				NDR_CHECK(ndr_push_samr_DispInfoAscii(ndr, NDR_SCALARS, &r->info4));
-			break;
+			break; }
 
-			case 5:
+			case 5: {
 				NDR_CHECK(ndr_push_samr_DispInfoAscii(ndr, NDR_SCALARS, &r->info5));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -4538,9 +4538,9 @@ static enum ndr_err_code ndr_push_samr_ConnectInfo(struct ndr_push *ndr, int ndr
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_samr_ConnectInfo1(ndr, NDR_SCALARS, &r->info1));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -4893,17 +4893,17 @@ static enum ndr_err_code ndr_push_samr_ValidatePasswordRep(struct ndr_push *ndr,
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_samr_ValidatePasswordRepCtr(ndr, NDR_SCALARS, &r->ctr1));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_samr_ValidatePasswordRepCtr(ndr, NDR_SCALARS, &r->ctr2));
-			break;
+			break; }
 
-			case 3:
+			case 3: {
 				NDR_CHECK(ndr_push_samr_ValidatePasswordRepCtr(ndr, NDR_SCALARS, &r->ctr3));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
@@ -5146,17 +5146,17 @@ static enum ndr_err_code ndr_push_samr_ValidatePasswordReq(struct ndr_push *ndr,
 		int level = ndr_push_get_switch_value(ndr, r);
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, level));
 		switch (level) {
-			case 1:
+			case 1: {
 				NDR_CHECK(ndr_push_samr_ValidatePasswordReq1(ndr, NDR_SCALARS, &r->req1));
-			break;
+			break; }
 
-			case 2:
+			case 2: {
 				NDR_CHECK(ndr_push_samr_ValidatePasswordReq2(ndr, NDR_SCALARS, &r->req2));
-			break;
+			break; }
 
-			case 3:
+			case 3: {
 				NDR_CHECK(ndr_push_samr_ValidatePasswordReq3(ndr, NDR_SCALARS, &r->req3));
-			break;
+			break; }
 
 			default:
 				return ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", level);
