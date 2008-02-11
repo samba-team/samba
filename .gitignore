@@ -10,7 +10,6 @@ autom4te.cache
 *.hd
 *.ho
 *.pyc
-Makefile
 configure
 source/bin/*
 config.log
@@ -196,3 +195,5 @@ source/libcli/ldap/ldap_ndr.h
 source/libcli/resolve/lp_proto.h
 source/apidocs
 *.swp
+source/mkconfig.mk
+source/data.mk
