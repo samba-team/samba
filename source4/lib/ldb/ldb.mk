@@ -65,8 +65,13 @@ examples/ldifreader: examples/ldifreader.o $(LIBS)
 	$(CC) -o examples/ldifreader examples/ldifreader.o $(LIB_FLAGS)
 
 # Python bindings
-build-python:: lib/libldb.$(SHLIBEXT) ldb_wrap.c
-	$(ldbdir)/setup.py build
+build-python:: _ldb.$(SHLIBEXT)
+
+ldb_wrap.o: $(ldbdir)/ldb_wrap.c
+	$(CC) -c $(ldbdir)/ldb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
+	
+_ldb.$(SHLIBEXT): $(LIBS) ldb_wrap.o
+	$(SHLD) $(SHLD_FLAGS) -o _ldb.$(SHLIBEXT) ldb_wrap.o $(LIB_FLAGS)
 
 install-python:: build-python
 	$(ldbdir)/setup.py install --prefix=$(DESTDIR)$(prefix)
@@ -75,8 +80,7 @@ install-swig::
 	cp ldb.i `$(SWIG) -swiglib`
 
 check-python:: build-python
-	# FIXME: This isn't portable
-	LD_LIBRARY_PATH=lib PYTHONPATH=.:build/lib.linux-i686-2.4/ trial tests/python/api.py
+	LD_LIBRARY_PATH=lib PYTHONPATH=.:$(ldbdir) trial $(ldbdir)/tests/python/api.py
 
-clean-python::
-	$(ldbdir)/setup.py clean
+clean::
+	rm -f _ldb.$(SHLIBEXT)

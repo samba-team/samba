@@ -19,6 +19,7 @@ SWIG = swig
 EXTRA_OBJ=@EXTRA_OBJ@
 TESTS=test-tdb.sh @TESTS@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PYTHON_CONFIG = @PYTHON_CONFIG@
 tdbdir = @tdbdir@
 ldbdir = $(srcdir)
 tallocdir = @tallocdir@
@@ -121,7 +122,7 @@ distclean:: clean
 realdistclean:: distclean
 	rm -f configure.in include/config.h.in
 
-check:: test
+check:: test @PYTHON_CHECK_TARGET@
 
 check-soloading: sample_module.$(SHLIBEXT)
 	LDB_MODULES_PATH=$(builddir) $(srcdir)/tests/test-soloading.sh
