@@ -176,246 +176,43 @@ static bool lsa_io_dom_r_ref(const char *desc, DOM_R_REF *dom, prs_struct *ps, i
 }
 
 /*******************************************************************
- Inits an LSA_SEC_QOS structure.
+ Inits an lsa_QosInfo structure.
 ********************************************************************/
 
-void init_lsa_sec_qos(LSA_SEC_QOS *qos, uint16 imp_lev, uint8 ctxt, uint8 eff)
+void init_lsa_sec_qos(struct lsa_QosInfo *r,
+		      uint32_t len,
+		      uint16_t impersonation_level,
+		      uint8_t context_mode,
+		      uint8_t effective_only)
 {
 	DEBUG(5, ("init_lsa_sec_qos\n"));
 
-	qos->len = 0x0c; /* length of quality of service block, in bytes */
-	qos->sec_imp_level = imp_lev;
-	qos->sec_ctxt_mode = ctxt;
-	qos->effective_only = eff;
+	r->len = len;
+	r->impersonation_level = impersonation_level;
+	r->context_mode = context_mode;
+	r->effective_only = effective_only;
 }
 
 /*******************************************************************
- Reads or writes an LSA_SEC_QOS structure.
+ Inits an lsa_ObjectAttribute structure.
 ********************************************************************/
 
-static bool lsa_io_sec_qos(const char *desc,  LSA_SEC_QOS *qos, prs_struct *ps, 
-			   int depth)
+void init_lsa_obj_attr(struct lsa_ObjectAttribute *r,
+			      uint32_t len,
+			      uint8_t *root_dir,
+			      const char *object_name,
+			      uint32_t attributes,
+			      struct security_descriptor *sec_desc,
+			      struct lsa_QosInfo *sec_qos)
 {
-	uint32 start;
+	DEBUG(5,("init_lsa_obj_attr\n"));
 
-	prs_debug(ps, depth, desc, "lsa_io_obj_qos");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	
-	start = prs_offset(ps);
-
-	/* these pointers had _better_ be zero, because we don't know
-	   what they point to!
-	 */
-	if(!prs_uint32("len           ", ps, depth, &qos->len)) /* 0x18 - length (in bytes) inc. the length field. */
-		return False;
-	if(!prs_uint16("sec_imp_level ", ps, depth, &qos->sec_imp_level ))
-		return False;
-	if(!prs_uint8 ("sec_ctxt_mode ", ps, depth, &qos->sec_ctxt_mode ))
-		return False;
-	if(!prs_uint8 ("effective_only", ps, depth, &qos->effective_only))
-		return False;
-
-	if (qos->len != prs_offset(ps) - start) {
-		DEBUG(3,("lsa_io_sec_qos: length %x does not match size %x\n",
-		         qos->len, prs_offset(ps) - start));
-	}
-
-	return True;
-}
-
-/*******************************************************************
- Inits an LSA_OBJ_ATTR structure.
-********************************************************************/
-
-static void init_lsa_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, LSA_SEC_QOS *qos)
-{
-	DEBUG(5, ("init_lsa_obj_attr\n"));
-
-	attr->len = 0x18; /* length of object attribute block, in bytes */
-	attr->ptr_root_dir = 0;
-	attr->ptr_obj_name = 0;
-	attr->attributes = attributes;
-	attr->ptr_sec_desc = 0;
-	
-	if (qos != NULL) {
-		attr->ptr_sec_qos = 1;
-		attr->sec_qos = qos;
-	} else {
-		attr->ptr_sec_qos = 0;
-		attr->sec_qos = NULL;
-	}
-}
-
-/*******************************************************************
- Reads or writes an LSA_OBJ_ATTR structure.
-********************************************************************/
-
-static bool lsa_io_obj_attr(const char *desc, LSA_OBJ_ATTR *attr, prs_struct *ps, 
-			    int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_obj_attr");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	
-	/* these pointers had _better_ be zero, because we don't know
-	   what they point to!
-	 */
-	if(!prs_uint32("len         ", ps, depth, &attr->len)) /* 0x18 - length (in bytes) inc. the length field. */
-		return False;
-	if(!prs_uint32("ptr_root_dir", ps, depth, &attr->ptr_root_dir)) /* 0 - root directory (pointer) */
-		return False;
-	if(!prs_uint32("ptr_obj_name", ps, depth, &attr->ptr_obj_name)) /* 0 - object name (pointer) */
-		return False;
-	if(!prs_uint32("attributes  ", ps, depth, &attr->attributes)) /* 0 - attributes (undocumented) */
-		return False;
-	if(!prs_uint32("ptr_sec_desc", ps, depth, &attr->ptr_sec_desc)) /* 0 - security descriptior (pointer) */
-		return False;
-	if(!prs_uint32("ptr_sec_qos ", ps, depth, &attr->ptr_sec_qos )) /* security quality of service (pointer) */
-		return False;
-
-	if (attr->ptr_sec_qos != 0) {
-		if (UNMARSHALLING(ps))
-			if (!(attr->sec_qos = PRS_ALLOC_MEM(ps,LSA_SEC_QOS,1)))
-				return False;
-
-		if(!lsa_io_sec_qos("sec_qos", attr->sec_qos, ps, depth))
-			return False;
-	}
-
-	return True;
-}
-
-
-/*******************************************************************
- Inits an LSA_Q_OPEN_POL structure.
-********************************************************************/
-
-void init_q_open_pol(LSA_Q_OPEN_POL *in, uint16 system_name,
-		     uint32 attributes, uint32 desired_access,
-		     LSA_SEC_QOS *qos)
-{
-	DEBUG(5, ("init_open_pol: attr:%d da:%d\n", attributes, 
-		  desired_access));
-
-	in->ptr = 1; /* undocumented pointer */
-
-	in->des_access = desired_access;
-
-	in->system_name = system_name;
-	init_lsa_obj_attr(&in->attr, attributes, qos);
-}
-
-/*******************************************************************
- Reads or writes an LSA_Q_OPEN_POL structure.
-********************************************************************/
-
-bool lsa_io_q_open_pol(const char *desc, LSA_Q_OPEN_POL *in, prs_struct *ps, 
-		       int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_open_pol");
-	depth++;
-
-	if(!prs_uint32("ptr       ", ps, depth, &in->ptr))
-		return False;
-	if(!prs_uint16("system_name", ps, depth, &in->system_name))
-		return False;
-	if(!prs_align( ps ))
-		return False;
-
-	if(!lsa_io_obj_attr("", &in->attr, ps, depth))
-		return False;
-
-	if(!prs_uint32("des_access", ps, depth, &in->des_access))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes an LSA_R_OPEN_POL structure.
-********************************************************************/
-
-bool lsa_io_r_open_pol(const char *desc, LSA_R_OPEN_POL *out, prs_struct *ps, 
-		       int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_open_pol");
-	depth++;
-
-	if(!smb_io_pol_hnd("", &out->pol, ps, depth))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &out->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Inits an LSA_Q_OPEN_POL2 structure.
-********************************************************************/
-
-void init_q_open_pol2(LSA_Q_OPEN_POL2 *in, const char *server_name,
-			uint32 attributes, uint32 desired_access,
-			LSA_SEC_QOS *qos)
-{
-	DEBUG(5, ("init_q_open_pol2: attr:%d da:%d\n", attributes, 
-		  desired_access));
-
-	in->ptr = 1; /* undocumented pointer */
-
-	in->des_access = desired_access;
-
-	init_unistr2(&in->uni_server_name, server_name, UNI_STR_TERMINATE);
-
-	init_lsa_obj_attr(&in->attr, attributes, qos);
-}
-
-/*******************************************************************
- Reads or writes an LSA_Q_OPEN_POL2 structure.
-********************************************************************/
-
-bool lsa_io_q_open_pol2(const char *desc, LSA_Q_OPEN_POL2 *in, prs_struct *ps, 
-			int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_open_pol2");
-	depth++;
-
-	if(!prs_uint32("ptr       ", ps, depth, &in->ptr))
-		return False;
-
-	if(!smb_io_unistr2 ("", &in->uni_server_name, in->ptr, ps, depth))
-		return False;
-	if(!lsa_io_obj_attr("", &in->attr, ps, depth))
-		return False;
-
-	if(!prs_uint32("des_access", ps, depth, &in->des_access))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes an LSA_R_OPEN_POL2 structure.
-********************************************************************/
-
-bool lsa_io_r_open_pol2(const char *desc, LSA_R_OPEN_POL2 *out, prs_struct *ps, 
-			int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_open_pol2");
-	depth++;
-
-	if(!smb_io_pol_hnd("", &out->pol, ps, depth))
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &out->status))
-		return False;
-
-	return True;
+	r->len = len;
+	r->root_dir = root_dir;
+	r->object_name = object_name;
+	r->attributes = attributes;
+	r->sec_desc = sec_desc;
+	r->sec_qos = sec_qos;
 }
 
 /*******************************************************************
