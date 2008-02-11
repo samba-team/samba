@@ -34,7 +34,7 @@ clean::
 	rm -f $(ALL_PROGS) tdb.pc
 
 build-python:: libtdb.$(SHLIBEXT) tdb_wrap.c
-	./setup.py build
+	$(tdbdir)/setup.py build
 
 install:: installdirs installbin installheaders installlibs \
 		  $(PYTHON_INSTALL_TARGET)

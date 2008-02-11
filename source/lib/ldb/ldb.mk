@@ -66,10 +66,10 @@ examples/ldifreader: examples/ldifreader.o $(LIBS)
 
 # Python bindings
 build-python:: lib/libldb.$(SHLIBEXT) ldb_wrap.c
-	./setup.py build
+	$(ldbdir)/setup.py build
 
 install-python:: build-python
-	./setup.py install --prefix=$(DESTDIR)$(prefix)
+	$(ldbdir)/setup.py install --prefix=$(DESTDIR)$(prefix)
 
 install-swig::
 	cp ldb.i `$(SWIG) -swiglib`
@@ -79,4 +79,4 @@ check-python:: build-python
 	LD_LIBRARY_PATH=lib PYTHONPATH=.:build/lib.linux-i686-2.4/ trial tests/python/api.py
 
 clean-python::
-	./setup.py clean
+	$(ldbdir)/setup.py clean
