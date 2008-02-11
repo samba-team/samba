@@ -1470,16 +1470,17 @@ NTSTATUS _lsa_EnumPrivs(pipes_struct *p,
 }
 
 /***************************************************************************
-_lsa_priv_get_dispname.
+ _lsa_LookupPrivDisplayName
  ***************************************************************************/
 
-NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, LSA_R_PRIV_GET_DISPNAME *r_u)
+NTSTATUS _lsa_LookupPrivDisplayName(pipes_struct *p,
+				    struct lsa_LookupPrivDisplayName *r)
 {
 	struct lsa_info *handle;
-	fstring name_asc;
 	const char *description;
+	struct lsa_StringLarge *lsa_name;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
@@ -1490,29 +1491,27 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	unistr2_to_ascii(name_asc, &q_u->name, sizeof(name_asc));
+	DEBUG(10,("_lsa_LookupPrivDisplayName: name = %s\n", r->in.name->string));
 
-	DEBUG(10,("_lsa_priv_get_dispname: name = %s\n", name_asc));
-
-	description = get_privilege_dispname( name_asc );
-	
-	if ( description ) {
-		DEBUG(10,("_lsa_priv_get_dispname: display name = %s\n", description));
-		
-		init_unistr2(&r_u->desc, description, UNI_FLAGS_NONE);
-		init_uni_hdr(&r_u->hdr_desc, &r_u->desc);
-
-		r_u->ptr_info = 0xdeadbeef;
-		r_u->lang_id = q_u->lang_id;
-		
-		return NT_STATUS_OK;
-	} else {
-		DEBUG(10,("_lsa_priv_get_dispname: doesn't exist\n"));
-		
-		r_u->ptr_info = 0;
-		
+	description = get_privilege_dispname(r->in.name->string);
+	if (!description) {
+		DEBUG(10,("_lsa_LookupPrivDisplayName: doesn't exist\n"));
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
+
+	DEBUG(10,("_lsa_LookupPrivDisplayName: display name = %s\n", description));
+
+	lsa_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_StringLarge);
+	if (!lsa_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	init_lsa_StringLarge(lsa_name, description);
+
+	*r->out.returned_language_id = r->in.language_id;
+	*r->out.disp_name = lsa_name;
+
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -2296,12 +2295,6 @@ NTSTATUS _lsa_LookupPrivValue(pipes_struct *p, struct lsa_LookupPrivValue *r)
 }
 
 NTSTATUS _lsa_LookupPrivName(pipes_struct *p, struct lsa_LookupPrivName *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_LookupPrivDisplayName(pipes_struct *p, struct lsa_LookupPrivDisplayName *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;

@@ -317,6 +317,10 @@ const char* get_privilege_dispname( const char *name )
 {
 	int i;
 
+	if (!name) {
+		return NULL;
+	}
+
 	for ( i=0; !se_priv_equal(&privs[i].se_priv, &se_priv_end); i++ ) {
 	
 		if ( strequal( privs[i].name, name ) ) {

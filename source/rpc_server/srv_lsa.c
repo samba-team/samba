@@ -195,28 +195,7 @@ static bool api_lsa_enum_privs(pipes_struct *p)
 
 static bool api_lsa_priv_get_dispname(pipes_struct *p)
 {
-	LSA_Q_PRIV_GET_DISPNAME q_u;
-	LSA_R_PRIV_GET_DISPNAME r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_priv_get_dispname("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_priv_get_dispname: failed to unmarshall LSA_Q_PRIV_GET_DISPNAME.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_priv_get_dispname(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_priv_get_dispname("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_priv_get_dispname: Failed to marshall LSA_R_PRIV_GET_DISPNAME.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_LOOKUPPRIVDISPLAYNAME);
 }
 
 /***************************************************************************
