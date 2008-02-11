@@ -89,8 +89,8 @@ NTSTATUS rpccli_lsa_EnumPrivs(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      struct policy_handle *handle,
 			      uint32_t *resume_handle,
-			      uint32_t max_count,
-			      struct lsa_PrivArray *privs)
+			      struct lsa_PrivArray *privs,
+			      uint32_t max_count)
 {
 	struct lsa_EnumPrivs r;
 	NTSTATUS status;
