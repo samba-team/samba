@@ -1548,9 +1548,8 @@ do { if (strequal(ctx->thiscmd, name)) { \
 
 #define SETSTR(name, rec, flag) \
 do { if (strequal(ctx->thiscmd, name)) { \
-	init_unistr2(&usr->uni_##rec, argv[0], UNI_STR_TERMINATE); \
-	init_uni_hdr(&usr->hdr_##rec, &usr->uni_##rec); \
-	usr->fields_present |= SAMR_FIELD_##flag; } \
+	init_lsa_String(&(info->info21.rec), argv[0]); \
+	info->info21.fields_present |= SAMR_FIELD_##flag; } \
 } while (0);
 
 static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
@@ -1560,8 +1559,6 @@ static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
 					       int argc, const char **argv)
 {
 	NTSTATUS result;
-	SAM_USERINFO_CTR *ctr;
-	SAM_USER_INFO_21 *usr;
 	const char *username;
 	const char *oldval = "";
 	union samr_UserInfo *info = NULL;
@@ -1594,22 +1591,23 @@ static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	ZERO_STRUCTP(usr);
-
 	if (strcmp(argv[0], "NULL") == 0) {
 		argv[0] = "";
 	}
 
+	ZERO_STRUCT(info->info21);
+
 	SETSTR("fullname", full_name, FULL_NAME);
-	SETSTR("homedir", home_dir, HOME_DIRECTORY);
-	SETSTR("homedrive", dir_drive, HOME_DRIVE);
+	SETSTR("homedir", home_directory, HOME_DIRECTORY);
+	SETSTR("homedrive", home_drive, HOME_DRIVE);
 	SETSTR("logonscript", logon_script, LOGON_SCRIPT);
 	SETSTR("profilepath", profile_path, PROFILE_PATH);
-	SETSTR("description", acct_desc, DESCRIPTION);
+	SETSTR("description", description, DESCRIPTION);
 
-	result = rpccli_samr_set_userinfo2(
-		pipe_hnd, mem_ctx, user_hnd, 21,
-		&pipe_hnd->cli->user_session_key, ctr);
+	result = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+					 CONST_DISCARD(struct policy_handle *, user_hnd),
+					 21,
+					 info);
 
 	d_printf("Set %s's %s from [%s] to [%s]\n", username,
 		 ctx->thiscmd, oldval, argv[0]);
@@ -1644,8 +1642,6 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
 						int argc, const char **argv)
 {
 	NTSTATUS result;
-	SAM_USERINFO_CTR *ctr;
-	SAM_USER_INFO_21 *usr;
 	const char *username;
 	const char *oldval = "unknown";
 	uint32 oldflags, newflags;
@@ -1684,14 +1680,15 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	ZERO_STRUCTP(usr);
+	ZERO_STRUCT(info->info21);
 
-	usr->acb_info = newflags;
-	usr->fields_present = SAMR_FIELD_ACCT_FLAGS;
+	info->info21.acct_flags = newflags;
+	info->info21.fields_present = SAMR_FIELD_ACCT_FLAGS;
 
-	result = rpccli_samr_set_userinfo2(
-		pipe_hnd, mem_ctx, user_hnd, 21,
-		&pipe_hnd->cli->user_session_key, ctr);
+	result = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+					 CONST_DISCARD(struct policy_handle *, user_hnd),
+					 21,
+					 info);
 
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("Set %s's %s flag from [%s] to [%s]\n", username,

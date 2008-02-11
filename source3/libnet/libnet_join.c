@@ -598,11 +598,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	struct lsa_String lsa_acct_name;
 	uint32 user_rid;
 	uint32 acb_info = ACB_WSTRUST;
-	uint32 fields_present;
 	uchar pwbuf[532];
-	SAM_USERINFO_CTR ctr;
-	SAM_USER_INFO_25 p25;
-	const int infolevel = 25;
 	struct MD5Context md5ctx;
 	uchar md5buffer[16];
 	DATA_BLOB digested_session_key;
@@ -610,6 +606,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	union lsa_PolicyInformation *info = NULL;
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
+	union samr_UserInfo user_info;
 
 	if (!r->in.machine_password) {
 		r->in.machine_password = talloc_strdup(mem_ctx, generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH));
@@ -773,19 +770,18 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		;;
 	}
 
-	ZERO_STRUCT(ctr);
-	ZERO_STRUCT(p25);
+	ZERO_STRUCT(user_info.info25);
 
-	fields_present = ACCT_NT_PWD_SET | ACCT_LM_PWD_SET |
-			 SAMR_FIELD_ACCT_FLAGS;
-	init_sam_user_info25P(&p25, fields_present, acb_info, (char *)pwbuf);
+	user_info.info25.info.fields_present = ACCT_NT_PWD_SET |
+					       ACCT_LM_PWD_SET |
+					       SAMR_FIELD_ACCT_FLAGS;
+	user_info.info25.info.acct_flags = acb_info;
+	memcpy(&user_info.info25.password.data, pwbuf, sizeof(pwbuf));
 
-	ctr.switch_value = infolevel;
-	ctr.info.id25    = &p25;
-
-	status = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol,
-					   infolevel, &cli->user_session_key,
-					   &ctr);
+	status = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+					 &user_pol,
+					 25,
+					 &user_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
@@ -831,8 +827,6 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	uint32 user_rid;
-	SAM_USERINFO_CTR ctr;
-	SAM_USER_INFO_16 p16;
 	struct lsa_String lsa_acct_name;
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
@@ -914,14 +908,12 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	ZERO_STRUCT(ctr);
-	ctr.switch_value = 16;
-	ctr.info.id16 = &p16;
+	info->info16.acct_flags |= ACB_DISABLED;
 
-	p16.acb_info = info->info16.acct_flags | ACB_DISABLED;
-
-	status = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol, 16,
-					   &cli->user_session_key, &ctr);
+	status = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+					 &user_pol,
+					 16,
+					 info);
 
 	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 
