@@ -234,29 +234,7 @@ static bool api_lsa_enum_accounts(pipes_struct *p)
 
 static bool api_lsa_unk_get_connuser(pipes_struct *p)
 {
-	LSA_Q_UNK_GET_CONNUSER q_u;
-	LSA_R_UNK_GET_CONNUSER r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_unk_get_connuser("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_unk_get_connuser: failed to unmarshall LSA_Q_UNK_GET_CONNUSER.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_unk_get_connuser(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_unk_get_connuser("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_unk_get_connuser: Failed to marshall LSA_R_UNK_GET_CONNUSER.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_GETUSERNAME);
 }
 
 /***************************************************************************

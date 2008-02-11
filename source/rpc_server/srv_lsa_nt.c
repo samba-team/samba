@@ -55,6 +55,10 @@ static void init_lsa_StringLarge(struct lsa_StringLarge *name, const char *s)
 	name->string = s;
 }
 
+static void init_lsa_String(struct lsa_String *name, const char *s)
+{
+	name->string = s;
+}
 
 /*******************************************************************
  Function to free the per handle data.
@@ -1570,12 +1574,18 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 	return NT_STATUS_OK;
 }
 
+/***************************************************************************
+ _lsa_GetUserName
+ ***************************************************************************/
 
-NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA_R_UNK_GET_CONNUSER *r_u)
+NTSTATUS _lsa_GetUserName(pipes_struct *p,
+			  struct lsa_GetUserName *r)
 {
 	const char *username, *domname;
 	user_struct *vuser = get_valid_user_struct(p->vuid);
-  
+	struct lsa_String *account_name = NULL;
+	struct lsa_String *authority_name = NULL;
+
 	if (vuser == NULL)
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 
@@ -1593,20 +1603,24 @@ NTSTATUS _lsa_unk_get_connuser(pipes_struct *p, LSA_Q_UNK_GET_CONNUSER *q_u, LSA
 		username = vuser->user.smb_name;
 		domname = vuser->user.domain;
 	}
-  
-	r_u->ptr_user_name = 1;
-	init_unistr2(&r_u->uni2_user_name, username, UNI_STR_TERMINATE);
-	init_uni_hdr(&r_u->hdr_user_name, &r_u->uni2_user_name);
 
-	r_u->unk1 = 1;
-  
-	r_u->ptr_dom_name = 1;
-	init_unistr2(&r_u->uni2_dom_name, domname,  UNI_STR_TERMINATE);
-	init_uni_hdr(&r_u->hdr_dom_name, &r_u->uni2_dom_name);
+	account_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_String);
+	if (!account_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	r_u->status = NT_STATUS_OK;
-  
-	return r_u->status;
+	authority_name = TALLOC_ZERO_P(p->mem_ctx, struct lsa_String);
+	if (!authority_name) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	init_lsa_String(account_name, username);
+	init_lsa_String(authority_name, domname);
+
+	*r->out.account_name = account_name;
+	*r->out.authority_name = authority_name;
+
+	return NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -2349,12 +2363,6 @@ NTSTATUS _lsa_StorePrivateData(pipes_struct *p, struct lsa_StorePrivateData *r)
 }
 
 NTSTATUS _lsa_RetrievePrivateData(pipes_struct *p, struct lsa_RetrievePrivateData *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_GetUserName(pipes_struct *p, struct lsa_GetUserName *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
