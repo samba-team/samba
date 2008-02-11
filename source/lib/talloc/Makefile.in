@@ -20,24 +20,16 @@ SHLIBEXT = @SHLIBEXT@
 SHLD = @SHLD@
 SHLD_FLAGS = @SHLD_FLAGS@
 
-.SUFFIXES: .c .o .3 .3.xml .xml .html
-
 LIBOBJ = @TALLOC_OBJ@ @LIBREPLACEOBJ@
 
 SOLIB = libtalloc.$(SHLIBEXT).$(PACKAGE_VERSION)
 SONAME = libtalloc.$(SHLIBEXT).1
 
-.c.o:
-	$(CC) $(PICFLAG) -o $@ -c $< $(CFLAGS)
+all:: showflags libtalloc.a $(SOLIB) testsuite $(EXTRA_TARGETS)
 
-all: showflags libtalloc.a $(SOLIB) testsuite $(EXTRA_TARGETS)
+include rules.mk
 
-showflags:
-	@echo 'talloc will be compiled with flags:'
-	@echo '  CFLAGS = $(CFLAGS)'
-	@echo '  LIBS = $(LIBS)'
-
-testsuite: $(LIBOBJ) testsuite.o
+testsuite:: $(LIBOBJ) testsuite.o
 	$(CC) $(CFLAGS) -o testsuite testsuite.o $(LIBOBJ) $(LIBS)
 
 libtalloc.a: $(LIBOBJ)
@@ -47,7 +39,7 @@ libtalloc.a: $(LIBOBJ)
 $(SOLIB): $(LIBOBJ)
 	$(SHLD) $(SHLD_FLAGS) -o $@ $(LIBOBJ) @SONAMEFLAG@$(SONAME)
 
-install: all 
+install:: all 
 	${INSTALLCMD} -d $(DESTDIR)$(libdir)
 	${INSTALLCMD} -d $(DESTDIR)$(libdir)/pkgconfig
 	${INSTALLCMD} -m 755 libtalloc.a $(DESTDIR)$(libdir)
@@ -60,30 +52,24 @@ install: all
 	which swig >/dev/null 2>&1 && ${INSTALLCMD} -d $(DESTDIR)`swig -swiglib` || true
 	which swig >/dev/null 2>&1 && ${INSTALLCMD} -m 644 talloc.i $(DESTDIR)`swig -swiglib` || true
 
-doc: talloc.3 talloc.3.html
+doc:: talloc.3 talloc.3.html
 
-.3.xml.3:
-	-test -z "$(XSLTPROC)" || $(XSLTPROC) --nonet -o $@ http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl $<
-
-.xml.html:
-	-test -z "$(XSLTPROC)" || $(XSLTPROC) --nonet -o $@ http://docbook.sourceforge.net/release/xsl/current/html/docbook.xsl $<
-
-clean:
+clean::
 	rm -f *~ $(LIBOBJ) $(SOLIB) libtalloc.a testsuite testsuite.o *.gc?? talloc.3 talloc.3.html
 
-test: testsuite
+check: test
+
+test:: testsuite
 	./testsuite
 
-gcov:
+gcov::
 	gcov talloc.c
 
-installcheck: 
-	$(MAKE) test
+installcheck:: test
 
-distclean: clean
-	rm -f *~ */*~
+distclean:: clean
 	rm -f Makefile
 	rm -f config.log config.status config.h config.cache
 
-realdistclean: distclean
+realdistclean:: distclean
 	rm -f configure config.h.in
