@@ -74,7 +74,7 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 				0x18, true, io->in.secblob.length);
 	if (req == NULL) return NULL;
 
-	SBVAL(req->out.hdr,  SMB2_HDR_UID, session->uid);
+	SBVAL(req->out.hdr,  SMB2_HDR_SESSION_ID, session->uid);
 	SCVAL(req->out.body, 0x02, io->in.vc_number);
 	SCVAL(req->out.body, 0x03, io->in.security_mode);
 	SIVAL(req->out.body, 0x04, io->in.capabilities);
@@ -112,7 +112,7 @@ NTSTATUS smb2_session_setup_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 	SMB2_CHECK_PACKET_RECV(req, 0x08, true);
 
 	io->out.session_flags = SVAL(req->in.body, 0x02);
-	io->out.uid           = BVAL(req->in.hdr,  SMB2_HDR_UID);
+	io->out.uid           = BVAL(req->in.hdr,  SMB2_HDR_SESSION_ID);
 	
 	status = smb2_pull_o16s16_blob(&req->in, mem_ctx, req->in.body+0x04, &io->out.secblob);
 	if (!NT_STATUS_IS_OK(status)) {

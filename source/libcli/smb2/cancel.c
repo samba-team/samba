@@ -52,11 +52,11 @@ NTSTATUS smb2_cancel(struct smb2_request *r)
 	c->seqnum = 0;
 
 	SIVAL(c->out.hdr, SMB2_HDR_FLAGS,	0x00000002);
-	SSVAL(c->out.hdr, SMB2_HDR_UNKNOWN1,	0x0030);
+	SSVAL(c->out.hdr, SMB2_HDR_CREDIT,	0x0030);
 	SIVAL(c->out.hdr, SMB2_HDR_PID,		r->cancel.pending_id);
-	SBVAL(c->out.hdr, SMB2_HDR_SEQNUM,	c->seqnum);
+	SBVAL(c->out.hdr, SMB2_HDR_MESSAGE_ID,	c->seqnum);
 	if (r->session) {
-		SBVAL(c->out.hdr, SMB2_HDR_UID,	r->session->uid);
+		SBVAL(c->out.hdr, SMB2_HDR_SESSION_ID,	r->session->uid);
 	}
 
 	SSVAL(c->out.body, 0x02, 0);
