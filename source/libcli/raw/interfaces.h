@@ -260,20 +260,19 @@ union smb_tcon {
 
 		struct {
 			/* static body buffer 8 (0x08) bytes */
-			/* uint16_t buffer_code; 0x09 = 0x08 + 1 */
-			uint16_t unknown1; /* 0x0000 */
+			uint16_t reserved;
 			/* uint16_t path_ofs */
 			/* uint16_t path_size */
-	
-			/* dynamic body */
+				/* dynamic body */
 			const char *path; /* as non-terminated UTF-16 on the wire */
 		} in;
 		struct {
 			/* static body buffer 16 (0x10) bytes */
 			/* uint16_t buffer_code;  0x10 */
-			uint16_t unknown1; /* 0x02 */
-			uint32_t unknown2; /* 0x00 */
-			uint32_t unknown3; /* 0x00 */
+			uint8_t share_type;
+			uint8_t reserved;
+			uint32_t flags;
+			uint32_t capabilities;
 			uint32_t access_mask;
 	
 			/* extracted from the SMB2 header */
