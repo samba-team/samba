@@ -6345,9 +6345,8 @@ static int rpc_trustdom_list(int argc, const char **argv)
 
 	/* trusting domains listing variables */
 	POLICY_HND domain_hnd;
-	char **trusting_dom_names;
-	uint32 *trusting_dom_rids;
-	
+	struct samr_SamArray *trusts = NULL;
+
 	/*
 	 * Listing trusted domains (stored in secrets.tdb, if local)
 	 */
@@ -6507,11 +6506,14 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	 
 	enum_ctx = 0;	/* reset enumeration context from last enumeration */
 	do {
-			
-		nt_status = rpccli_samr_enum_dom_users(pipe_hnd, mem_ctx, &domain_hnd,
-		                                    &enum_ctx, ACB_DOMTRUST, 0xffff,
-		                                    &trusting_dom_names, &trusting_dom_rids,
-		                                    &num_domains);
+
+		nt_status = rpccli_samr_EnumDomainUsers(pipe_hnd, mem_ctx,
+							&domain_hnd,
+							&enum_ctx,
+							ACB_DOMTRUST,
+							&trusts,
+							0xffff,
+							&num_domains);
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate accounts. Error was: %s\n",
 				nt_errstr(nt_status)));
@@ -6519,8 +6521,10 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			talloc_destroy(mem_ctx);
 			return -1;
 		};
-		
+
 		for (i = 0; i < num_domains; i++) {
+
+			char *str = CONST_DISCARD(char *, trusts->entries[i].name.string);
 
 			/*
 			 * get each single domain's sid (do we _really_ need this ?):
@@ -6529,22 +6533,22 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			 */
 
 			/* get rid of '$' tail */
-			ascii_dom_name_len = strlen(trusting_dom_names[i]);
+			ascii_dom_name_len = strlen(str);
 			if (ascii_dom_name_len && ascii_dom_name_len < FSTRING_LEN)
-				trusting_dom_names[i][ascii_dom_name_len - 1] = '\0';
-			
+				str[ascii_dom_name_len - 1] = '\0';
+
 			/* calculate padding space for d_printf to look nicer */
-			pad_len = col_len - strlen(trusting_dom_names[i]);
+			pad_len = col_len - strlen(str);
 			padding[pad_len] = 0;
 			do padding[--pad_len] = ' '; while (pad_len);
 
 			/* set opt_* variables to remote domain */
-			strupper_m(trusting_dom_names[i]);
-			opt_workgroup = talloc_strdup(mem_ctx, trusting_dom_names[i]);
+			strupper_m(str);
+			opt_workgroup = talloc_strdup(mem_ctx, str);
 			opt_target_workgroup = opt_workgroup;
-			
-			d_printf("%s%s", trusting_dom_names[i], padding);
-			
+
+			d_printf("%s%s", str, padding);
+
 			/* connect to remote domain controller */
 			nt_status = net_make_ipc_connection(
 					NET_FLAGS_PDC | NET_FLAGS_ANONYMOUS,
