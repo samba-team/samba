@@ -104,15 +104,6 @@ static const struct generic_mapping ali_generic_mapping = {
 	GENERIC_RIGHTS_ALIAS_ALL_ACCESS};
 
 /*******************************************************************
- inits a structure.
-********************************************************************/
-
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
-}
-
-/*******************************************************************
 *******************************************************************/
 
 static NTSTATUS make_samr_object_sd( TALLOC_CTX *ctx, SEC_DESC **psd, size_t *sd_size,
@@ -1169,15 +1160,6 @@ NTSTATUS _samr_EnumDomainAliases(pipes_struct *p,
 	*r->out.resume_handle = num_aliases + *r->in.resume_handle;
 
 	return status;
-}
-
-/*******************************************************************
- inits a structure.
-********************************************************************/
-
-static void init_lsa_AsciiString(struct lsa_AsciiString *name, const char *s)
-{
-	name->string = s;
 }
 
 /*******************************************************************

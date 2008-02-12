@@ -22,11 +22,6 @@
 #include "includes.h"
 #include "rpcclient.h"
 
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
-}
-
 /* useful function to allow entering a name instead of a SID and
  * looking it up automatically */
 static NTSTATUS name_to_sid(struct rpc_pipe_client *cli, 

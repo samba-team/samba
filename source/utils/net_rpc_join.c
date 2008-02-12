@@ -34,12 +34,6 @@
                 goto done; \
         }
 
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
-}
-
-
 /**
  * confirm that a domain join is still valid
  *

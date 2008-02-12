@@ -26,11 +26,6 @@
 
 extern DOM_SID domain_sid;
 
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
-}
-
 /****************************************************************************
  display samr_user_info_7 structure
  ****************************************************************************/

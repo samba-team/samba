@@ -50,11 +50,6 @@
 #define LIBNET_UNJOIN_OUT_DUMP_CTX(ctx, r) \
 	LIBNET_UNJOIN_DUMP_CTX(ctx, r, NDR_OUT)
 
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
-}
-
 /****************************************************************
 ****************************************************************/
 

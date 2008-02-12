@@ -23,11 +23,6 @@
 #include "includes.h"
 #include "utils/net.h"
 
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
-}
-
 static int net_mode_share;
 static bool sync_files(struct copy_clistate *cp_clistate, const char *mask);
 
