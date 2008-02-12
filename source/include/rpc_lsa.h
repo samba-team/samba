@@ -137,29 +137,6 @@
 
 /*******************************************************/
 
-typedef struct {
-	POLICY_HND pol; 
-	uint32 enum_context; 
-	uint32 preferred_len; 	/* preferred maximum length */
-} LSA_Q_ENUM_TRUST_DOM;
-
-typedef struct {
-	UNISTR4	name;
-	DOM_SID2 *sid;
-} DOMAIN_INFO;
-
-typedef struct {
-	uint32 count;
-	DOMAIN_INFO *domains;
-} DOMAIN_LIST;
-
-typedef struct {
-	uint32 enum_context;
-	uint32 count;
-	DOMAIN_LIST *domlist;
-	NTSTATUS status; 
-} LSA_R_ENUM_TRUST_DOM;
-
 /*******************************************************/
 
 #define MAX_REF_DOMAINS 32
