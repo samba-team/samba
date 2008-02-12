@@ -583,8 +583,8 @@ NTSTATUS rpccli_samr_EnumDomainUsers(struct rpc_pipe_client *cli,
 				     struct policy_handle *domain_handle,
 				     uint32_t *resume_handle,
 				     uint32_t acct_flags,
-				     uint32_t max_size,
 				     struct samr_SamArray **sam,
+				     uint32_t max_size,
 				     uint32_t *num_entries)
 {
 	struct samr_EnumDomainUsers r;
