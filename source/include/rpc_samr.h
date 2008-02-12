@@ -116,7 +116,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_OPEN_USER         0x22
 #define SAMR_DELETE_DOM_USER   0x23
 #define SAMR_QUERY_USERINFO    0x24
-#define SAMR_SET_USERINFO2     0x25
+#define SAMR_SET_USERINFO2     0x25 /* this is SAMR_SET_USERINFO! */
 #define SAMR_QUERY_USERGROUPS  0x27
 
 #define SAMR_QUERY_DISPINFO    0x28
@@ -140,7 +140,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CHGPASSWD_USER    0x37
 #define SAMR_GET_DOM_PWINFO    0x38
 #define SAMR_CONNECT           0x39
-#define SAMR_SET_USERINFO      0x3A
+#define SAMR_SET_USERINFO      0x3A /* this is SAMR_SET_USERINFO2! */
 #define SAMR_CONNECT4          0x3E
 #define SAMR_CHGPASSWD_USER3   0x3F
 #define SAMR_CONNECT5          0x40
