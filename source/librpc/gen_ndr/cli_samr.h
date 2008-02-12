@@ -193,7 +193,7 @@ NTSTATUS rpccli_samr_QueryUserInfo(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   struct policy_handle *user_handle,
 				   uint16_t level,
-				   union samr_UserInfo *info);
+				   union samr_UserInfo **info);
 NTSTATUS rpccli_samr_SetUserInfo(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *user_handle,

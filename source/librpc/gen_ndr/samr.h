@@ -1275,7 +1275,7 @@ struct samr_QueryUserInfo {
 	} in;
 
 	struct {
-		union samr_UserInfo *info;/* [ref,switch_is(level)] */
+		union samr_UserInfo **info;/* [ref,switch_is(level)] */
 		NTSTATUS result;
 	} out;
 
