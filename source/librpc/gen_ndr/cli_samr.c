@@ -487,8 +487,8 @@ NTSTATUS rpccli_samr_EnumDomainGroups(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
 				      struct policy_handle *domain_handle,
 				      uint32_t *resume_handle,
+				      struct samr_SamArray **sam,
 				      uint32_t max_size,
-				      struct samr_SamArray *sam,
 				      uint32_t *num_entries)
 {
 	struct samr_EnumDomainGroups r;
