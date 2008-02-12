@@ -66,13 +66,13 @@ installdirs::
 	mkdir -p $(DESTDIR)$(libdir) 
 	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
 
-installbin:: installdirs
+installbin:: all installdirs
 	cp $(PROGS) $(DESTDIR)$(bindir)
 
 installheaders:: installdirs
 	cp $(srcdir)/include/tdb.h $(DESTDIR)$(includedir)
 
-installlibs:: installdirs
+installlibs:: all installdirs
 	cp tdb.pc $(DESTDIR)$(libdir)/pkgconfig
 	cp libtdb.a $(SOLIB) $(DESTDIR)$(libdir)
 
