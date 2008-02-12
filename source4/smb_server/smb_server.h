@@ -291,7 +291,7 @@ struct smbsrv_connection {
 	
 		/* the negotiatiated protocol */
 		enum protocol_types protocol;
-	
+
 		/* authentication context for multi-part negprot */
 		struct auth_context *auth_context;
 	

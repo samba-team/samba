@@ -31,16 +31,33 @@ struct smb2_request *smb2_negprot_send(struct smb2_transport *transport,
 				       struct smb2_negprot *io)
 {
 	struct smb2_request *req;
-	
-	req = smb2_request_init(transport, SMB2_OP_NEGPROT, 0x26, false, 0);
+	uint16_t size = 0x24 + io->in.dialect_count*2;
+        DATA_BLOB guid_blob;
+	enum ndr_err_code ndr_err;
+	int i;
+
+	req = smb2_request_init(transport, SMB2_OP_NEGPROT, size, false, 0);
 	if (req == NULL) return NULL;
 
-	/* this seems to be a bug, they use 0x24 but the length is 0x26 */
-	SSVAL(req->out.body, 0x00, 0x24);
 
-	SSVAL(req->out.body, 0x02, io->in.unknown1);
-	memcpy(req->out.body+0x04, io->in.unknown2, 32);
-	SSVAL(req->out.body, 0x24, io->in.unknown3);
+	ndr_err = ndr_push_struct_blob(&guid_blob, req, NULL,
+				       &io->in.client_guid,
+				       (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err) || guid_blob.length != 16) {
+		talloc_free(req);
+		return NULL;
+	}
+
+	SSVAL(req->out.body, 0x00, 0x24);
+	SSVAL(req->out.body, 0x02, io->in.dialect_count);
+	SSVAL(req->out.body, 0x04, io->in.security_mode);
+	SSVAL(req->out.body, 0x06, io->in.reserved);
+	SIVAL(req->out.body, 0x08, io->in.capabilities);
+	memcpy(req->out.body+0x0C, guid_blob.data, guid_blob.length);
+	smbcli_push_nttime(req->out.body, 0x1C, io->in.start_time);
+	for (i=0;i<io->in.dialect_count;i++) {
+		SSVAL(req->out.body, 0x24 + i*2, io->in.dialects[i]);		
+	}
 
 	smb2_transport_send(req);
 
