@@ -1,9 +1,9 @@
-all:: libtalloc.a $(SOLIB) testsuite
-
 TALLOC_OBJ = $(tallocdir)/talloc.o 
 
 SOLIB = libtalloc.$(SHLIBEXT).$(PACKAGE_VERSION)
 SONAME = libtalloc.$(SHLIBEXT).1
+
+all:: libtalloc.a $(SOLIB) testsuite
 
 testsuite:: $(LIBOBJ) testsuite.o
 	$(CC) $(CFLAGS) -o testsuite testsuite.o $(LIBOBJ) $(LIBS)
