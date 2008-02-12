@@ -841,32 +841,29 @@ NTSTATUS _samr_QuerySecurity(pipes_struct *p,
 makes a SAM_ENTRY / UNISTR2* structure from a user list.
 ********************************************************************/
 
-static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp,
-					 UNISTR2 **uni_name_pp,
-					 uint32 num_entries, uint32 start_idx,
+static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx,
+					 struct samr_SamEntry **sam_pp,
+					 uint32_t num_entries,
+					 uint32_t start_idx,
 					 struct samr_displayentry *entries)
 {
-	uint32 i;
-	SAM_ENTRY *sam;
-	UNISTR2 *uni_name;
+	uint32_t i;
+	struct samr_SamEntry *sam;
 
 	*sam_pp = NULL;
-	*uni_name_pp = NULL;
 
-	if (num_entries == 0)
+	if (num_entries == 0) {
 		return NT_STATUS_OK;
+	}
 
-	sam = TALLOC_ZERO_ARRAY(ctx, SAM_ENTRY, num_entries);
-
-	uni_name = TALLOC_ZERO_ARRAY(ctx, UNISTR2, num_entries);
-
-	if (sam == NULL || uni_name == NULL) {
+	sam = TALLOC_ZERO_ARRAY(ctx, struct samr_SamEntry, num_entries);
+	if (sam == NULL) {
 		DEBUG(0, ("make_user_sam_entry_list: TALLOC_ZERO failed!\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	for (i = 0; i < num_entries; i++) {
-		UNISTR2 uni_temp_name;
+#if 0
 		/*
 		 * usrmgr expects a non-NULL terminated string with
 		 * trust relationships
@@ -878,50 +875,57 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp,
 			init_unistr2(&uni_temp_name, entries[i].account_name,
 				     UNI_STR_TERMINATE);
 		}
-
-		init_sam_entry(&sam[i], &uni_temp_name, entries[i].rid);
-		copy_unistr2(&uni_name[i], &uni_temp_name);
+#endif
+		init_lsa_String(&sam[i].name, entries[i].account_name);
+		sam[i].idx = entries[i].rid;
 	}
 
 	*sam_pp = sam;
-	*uni_name_pp = uni_name;
+
 	return NT_STATUS_OK;
 }
 
 /*******************************************************************
- samr_reply_enum_dom_users
+ _samr_EnumDomainUsers
  ********************************************************************/
 
-NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
-			      SAMR_R_ENUM_DOM_USERS *r_u)
+NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
+			       struct samr_EnumDomainUsers *r)
 {
+	NTSTATUS status;
 	struct samr_info *info = NULL;
 	int num_account;
-	uint32 enum_context=q_u->start_idx;
+	uint32 enum_context = *r->in.resume_handle;
 	enum remote_arch_types ra_type = get_remote_arch();
 	int max_sam_entries = (ra_type == RA_WIN95) ? MAX_SAM_ENTRIES_W95 : MAX_SAM_ENTRIES_W2K;
 	uint32 max_entries = max_sam_entries;
 	struct samr_displayentry *entries = NULL;
-
-	r_u->status = NT_STATUS_OK;
+	struct samr_SamArray *samr_array = NULL;
+	struct samr_SamEntry *samr_entries = NULL;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
- 	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(info->acc_granted,
-					SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
-					"_samr_enum_dom_users"))) {
- 		return r_u->status;
+ 	status = access_check_samr_function(info->acc_granted,
+					    SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
+					    "_samr_EnumDomainUsers");
+	if (!NT_STATUS_IS_OK(status)) {
+ 		return status;
 	}
 
-	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
+	DEBUG(5,("_samr_EnumDomainUsers: %d\n", __LINE__));
 
 	if (info->builtin_domain) {
 		/* No users in builtin. */
-		init_samr_r_enum_dom_users(r_u, q_u->start_idx, 0);
-		DEBUG(5,("_samr_enum_dom_users: No users in BUILTIN\n"));
-		return r_u->status;
+		*r->out.resume_handle = *r->in.resume_handle;
+		DEBUG(5,("_samr_EnumDomainUsers: No users in BUILTIN\n"));
+		return status;
+	}
+
+	samr_array = TALLOC_ZERO_P(p->mem_ctx, struct samr_SamArray);
+	if (!samr_array) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	become_root();
@@ -929,14 +933,14 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
 	/* AS ROOT !!!! */
 
 	if ((info->disp_info->enum_users != NULL) &&
-	    (info->disp_info->enum_acb_mask != q_u->acb_mask)) {
+	    (info->disp_info->enum_acb_mask != r->in.acct_flags)) {
 		pdb_search_destroy(info->disp_info->enum_users);
 		info->disp_info->enum_users = NULL;
 	}
 
 	if (info->disp_info->enum_users == NULL) {
-		info->disp_info->enum_users = pdb_search_users(q_u->acb_mask);
-		info->disp_info->enum_acb_mask = q_u->acb_mask;
+		info->disp_info->enum_users = pdb_search_users(r->in.acct_flags);
+		info->disp_info->enum_acb_mask = r->in.acct_flags;
 	}
 
 	if (info->disp_info->enum_users == NULL) {
@@ -954,37 +958,40 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
 	unbecome_root();
 
 	if (num_account == 0) {
-		DEBUG(5, ("_samr_enum_dom_users: enumeration handle over "
+		DEBUG(5, ("_samr_EnumDomainUsers: enumeration handle over "
 			  "total entries\n"));
-		init_samr_r_enum_dom_users(r_u, q_u->start_idx, 0);
+		*r->out.resume_handle = *r->in.resume_handle;
 		return NT_STATUS_OK;
 	}
 
-	r_u->status = make_user_sam_entry_list(p->mem_ctx, &r_u->sam,
-					       &r_u->uni_acct_name,
-					       num_account, enum_context,
-					       entries);
-
-	if (!NT_STATUS_IS_OK(r_u->status))
-		return r_u->status;
+	status = make_user_sam_entry_list(p->mem_ctx, &samr_entries,
+					  num_account, enum_context,
+					  entries);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if (max_entries <= num_account) {
-		r_u->status = STATUS_MORE_ENTRIES;
+		status = STATUS_MORE_ENTRIES;
 	} else {
-		r_u->status = NT_STATUS_OK;
+		status = NT_STATUS_OK;
 	}
 
 	/* Ensure we cache this enumeration. */
 	set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
 
-	DEBUG(5, ("_samr_enum_dom_users: %d\n", __LINE__));
+	DEBUG(5, ("_samr_EnumDomainUsers: %d\n", __LINE__));
 
-	init_samr_r_enum_dom_users(r_u, q_u->start_idx + num_account,
-				   num_account);
+	samr_array->count = num_account;
+	samr_array->entries = samr_entries;
 
-	DEBUG(5,("_samr_enum_dom_users: %d\n", __LINE__));
+	*r->out.resume_handle = *r->in.resume_handle + num_account;
+	*r->out.sam = samr_array;
+	*r->out.num_entries = num_account;
 
-	return r_u->status;
+	DEBUG(5,("_samr_EnumDomainUsers: %d\n", __LINE__));
+
+	return status;
 }
 
 /*******************************************************************
@@ -5236,16 +5243,6 @@ NTSTATUS _samr_Shutdown(pipes_struct *p,
 
 NTSTATUS _samr_CreateUser(pipes_struct *p,
 			  struct samr_CreateUser *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
-			       struct samr_EnumDomainUsers *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
