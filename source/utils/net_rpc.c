@@ -2634,7 +2634,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx=0, max_entries=250, num_entries, i, loop_count = 0;
-	struct acct_info *groups;
+	struct samr_SamArray *groups = NULL;
 	bool global = False;
 	bool local = False;
 	bool builtin = False;
@@ -2726,14 +2726,16 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	do {
 		if (!local) break;
 
-		result = rpccli_samr_enum_als_groups(pipe_hnd, mem_ctx, &domain_pol,
-						  &start_idx, 0xffff,
-						  &groups, &num_entries);
-
+		result = rpccli_samr_EnumDomainAliases(pipe_hnd, mem_ctx,
+						       &domain_pol,
+						       &start_idx,
+						       &groups,
+						       0xffff,
+						       &num_entries);
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
 			break;
-						 
+
 		for (i = 0; i < num_entries; i++) {
 
 			const char *description = NULL;
@@ -2746,7 +2748,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 				if ((NT_STATUS_IS_OK(rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
 									   &domain_pol,
 									   0x8,
-									   groups[i].rid,
+									   groups->entries[i].idx,
 									   &alias_pol))) &&
 				    (NT_STATUS_IS_OK(rpccli_samr_QueryAliasInfo(pipe_hnd, mem_ctx,
 										&alias_pol,
@@ -2757,13 +2759,13 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 					description = info->description.string;
 				}
 			}
-			
+
 			if (description != NULL) {
-				printf("%-21.21s %-50.50s\n", 
-				       groups[i].acct_name,
+				printf("%-21.21s %-50.50s\n",
+				       groups->entries[i].name.string,
 				       description);
 			} else {
-				printf("%s\n", groups[i].acct_name);
+				printf("%s\n", groups->entries[i].name.string);
 			}
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
@@ -2783,14 +2785,16 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	do {
 		if (!builtin) break;
 
-		result = rpccli_samr_enum_als_groups(pipe_hnd, mem_ctx, &domain_pol,
-						  &start_idx, max_entries,
-						  &groups, &num_entries);
-						 
+		result = rpccli_samr_EnumDomainAliases(pipe_hnd, mem_ctx,
+						       &domain_pol,
+						       &start_idx,
+						       &groups,
+						       max_entries,
+						       &num_entries);
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
 			break;
-						 
+
 		for (i = 0; i < num_entries; i++) {
 
 			const char *description = NULL;
@@ -2803,7 +2807,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 				if ((NT_STATUS_IS_OK(rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
 									   &domain_pol,
 									   0x8,
-									   groups[i].rid,
+									   groups->entries[i].idx,
 									   &alias_pol))) &&
 				    (NT_STATUS_IS_OK(rpccli_samr_QueryAliasInfo(pipe_hnd, mem_ctx,
 										&alias_pol,
@@ -2814,13 +2818,13 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 					description = info->description.string;
 				}
 			}
-			
+
 			if (description != NULL) {
-				printf("%-21.21s %-50.50s\n", 
-				       groups[i].acct_name,
+				printf("%-21.21s %-50.50s\n",
+				       groups->entries[i].name.string,
 				       description);
 			} else {
-				printf("%s\n", groups[i].acct_name);
+				printf("%s\n", groups->entries[i].name.string);
 			}
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
@@ -4243,7 +4247,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 					const DOM_SID *domain_sid)
 {
 	uint32 start_idx, max_entries, num_entries, i;
-	struct acct_info *groups;
+	struct samr_SamArray *groups = NULL;
 	NTSTATUS result;
 	POLICY_HND domain_pol;
 
@@ -4261,10 +4265,12 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 	max_entries = 250;
 
 	do {
-		result = rpccli_samr_enum_als_groups(pipe_hnd, mem_ctx, &domain_pol,
-						  &start_idx, max_entries,
-						  &groups, &num_entries);
-
+		result = rpccli_samr_EnumDomainAliases(pipe_hnd, mem_ctx,
+						       &domain_pol,
+						       &start_idx,
+						       &groups,
+						       max_entries,
+						       &num_entries);
 		for (i = 0; i < num_entries; i++) {
 
 			POLICY_HND alias_pol;
@@ -4275,7 +4281,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 			result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
 						       &domain_pol,
 						       MAXIMUM_ALLOWED_ACCESS,
-						       groups[i].rid,
+						       groups->entries[i].idx,
 						       &alias_pol);
 			if (!NT_STATUS_IS_OK(result))
 				goto done;
@@ -4303,7 +4309,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 			}
 
 			sid_copy(&alias.sid, domain_sid);
-			sid_append_rid(&alias.sid, groups[i].rid);
+			sid_append_rid(&alias.sid, groups->entries[i].idx);
 
 			push_alias(mem_ctx, &alias);
 		}
