@@ -757,7 +757,7 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 			
 			/* 'resign' the last message, so we get the right sequence numbers
 			   for checking the first reply from the server */
-			cli_calculate_sign_mac(cli);
+			cli_calculate_sign_mac(cli, cli->outbuf);
 			
 			if (!cli_check_sign_mac(cli)) {
 				nt_status = NT_STATUS_ACCESS_DENIED;

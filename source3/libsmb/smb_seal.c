@@ -483,15 +483,15 @@ NTSTATUS cli_decrypt_message(struct cli_state *cli)
  Encrypt an outgoing buffer. Return the encrypted pointer in buf_out.
 ******************************************************************************/
 
-NTSTATUS cli_encrypt_message(struct cli_state *cli, char **buf_out)
+NTSTATUS cli_encrypt_message(struct cli_state *cli, char *buf, char **buf_out)
 {
 	/* Ignore non-session messages. */
-	if(CVAL(cli->outbuf,0)) {
+	if (CVAL(buf,0)) {
 		return NT_STATUS_OK;
 	}
 
 	/* If we supported multiple encrytion contexts
 	 * here we'd look up based on tid.
 	 */
-	return common_encrypt_buffer(cli->trans_enc_state, cli->outbuf, buf_out);
+	return common_encrypt_buffer(cli->trans_enc_state, buf, buf_out);
 }
