@@ -57,11 +57,12 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	uint32 user_rid;
-	SAM_USERINFO_CTR ctr, *qctr = NULL;
+	SAM_USERINFO_CTR ctr;
 	SAM_USER_INFO_16 p16;
 	struct lsa_String lsa_acct_name;
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
+	union samr_UserInfo *info = NULL;
 
 	/* Open the domain */
 	
@@ -123,7 +124,10 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	
 	/* Get user info */
 
-	status = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, &user_pol, 16, &qctr);
+	status = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+					   &user_pol,
+					   16,
+					   &info);
 	if ( !NT_STATUS_IS_OK(status) ) {
 		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 		goto done;
@@ -135,7 +139,7 @@ NTSTATUS netdom_leave_domain( TALLOC_CTX *mem_ctx, struct cli_state *cli,
 	ctr.switch_value = 16;
 	ctr.info.id16 = &p16;
 
-	p16.acb_info = qctr->info.id16->acb_info | ACB_DISABLED;
+	p16.acb_info = info->info16.acct_flags | ACB_DISABLED;
 
 	status = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol, 16, 
 					&cli->user_session_key, &ctr);
