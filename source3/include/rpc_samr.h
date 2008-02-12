@@ -559,23 +559,6 @@ typedef struct r_samr_enum_dom_aliases_info
 } SAMR_R_ENUM_DOM_ALIASES;
 
 
-/* SAMR_Q_GET_DISPENUM_INDEX */
-typedef struct q_samr_get_dispenum_index
-{
-	POLICY_HND domain_pol;
-	uint16 switch_level;
-	LSA_STRING name;
-
-} SAMR_Q_GET_DISPENUM_INDEX;
-
-/* SAMR_R_GET_DISPENUM_INDEX */
-typedef struct r_samr_get_dispenum_index
-{
-	uint32 idx;
-	NTSTATUS status;
-	
-} SAMR_R_GET_DISPENUM_INDEX;
-
 /********************************************************/
 /********************************************************/
 
@@ -704,15 +687,5 @@ typedef struct r_samr_lookup_rids_info
 /* these are from the old rpc_samr.h - they are needed while the merge
    is still going on */
 #define MAX_SAM_SIDS 15
-
-/* DOM_SID3 - security id */
-typedef struct sid_info_3
-{
-        uint16 len; /* length, bytes, including length of len :-) */
-        /* uint8  pad[2]; */
-        
-        DOM_SID sid;
-
-} DOM_SID3;
 
 #endif /* _RPC_SAMR_H */
