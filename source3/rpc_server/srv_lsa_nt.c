@@ -592,16 +592,18 @@ NTSTATUS _lsa_OpenPolicy(pipes_struct *p,
 }
 
 /***************************************************************************
- _lsa_enum_trust_dom - this needs fixing to do more than return NULL ! JRA.
+ _lsa_EnumTrustDom - this needs fixing to do more than return NULL ! JRA.
  ufff, done :)  mimir
  ***************************************************************************/
 
-NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u,
-			     LSA_R_ENUM_TRUST_DOM *r_u)
+NTSTATUS _lsa_EnumTrustDom(pipes_struct *p,
+			   struct lsa_EnumTrustDom *r)
 {
 	struct lsa_info *info;
 	uint32 next_idx;
 	struct trustdom_info **domains;
+	struct lsa_DomainInfo *lsa_domains = NULL;
+	int i;
 
 	/*
 	 * preferred length is set to 5 as a "our" preferred length
@@ -610,12 +612,12 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u,
 	 * it needs further investigation how to optimally choose this value
 	 */
 	uint32 max_num_domains =
-		q_u->preferred_len < 5 ? q_u->preferred_len : 10;
+		r->in.max_size < 5 ? r->in.max_size : 10;
 	uint32 num_domains;
 	NTSTATUS nt_status;
 	uint32 num_thistime;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
@@ -628,29 +630,41 @@ NTSTATUS _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u,
 		return nt_status;
 	}
 
-	if (q_u->enum_context < num_domains) {
+	if (*r->in.resume_handle < num_domains) {
 		num_thistime = MIN(num_domains, max_num_domains);
 
-		r_u->status = STATUS_MORE_ENTRIES;
+		nt_status = STATUS_MORE_ENTRIES;
 
-		if (q_u->enum_context + num_thistime > num_domains) {
-			num_thistime = num_domains - q_u->enum_context;
-			r_u->status = NT_STATUS_OK;
+		if (*r->in.resume_handle + num_thistime > num_domains) {
+			num_thistime = num_domains - *r->in.resume_handle;
+			nt_status = NT_STATUS_OK;
 		}
 
-		next_idx = q_u->enum_context + num_thistime;
+		next_idx = *r->in.resume_handle + num_thistime;
 	} else {
 		num_thistime = 0;
 		next_idx = 0xffffffff;
-		r_u->status = NT_STATUS_NO_MORE_ENTRIES;
+		nt_status = NT_STATUS_NO_MORE_ENTRIES;
 	}
-		
+
 	/* set up the lsa_enum_trust_dom response */
 
-	init_r_enum_trust_dom(p->mem_ctx, r_u, next_idx,
-			      num_thistime, domains+q_u->enum_context);
+	lsa_domains = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_DomainInfo,
+					num_thistime);
+	if (!lsa_domains) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	return r_u->status;
+	for (i=0; i<num_thistime; i++) {
+		init_lsa_StringLarge(&lsa_domains[i].name, domains[i]->name);
+		lsa_domains[i].sid = &domains[i]->sid;
+	}
+
+	*r->out.resume_handle = next_idx;
+	r->out.domains->count = num_thistime;
+	r->out.domains->domains = lsa_domains;
+
+	return nt_status;
 }
 
 /***************************************************************************
@@ -2217,12 +2231,6 @@ NTSTATUS _lsa_ClearAuditLog(pipes_struct *p, struct lsa_ClearAuditLog *r)
 }
 
 NTSTATUS _lsa_EnumAccounts(pipes_struct *p, struct lsa_EnumAccounts *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_EnumTrustDom(pipes_struct *p, struct lsa_EnumTrustDom *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
