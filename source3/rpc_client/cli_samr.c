@@ -27,43 +27,6 @@ static void init_lsa_String(struct lsa_String *name, const char *s)
 	name->string = s;
 }
 
-/* Query user info */
-
-NTSTATUS rpccli_samr_query_userinfo(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx,
-				    const POLICY_HND *user_pol,
-				    uint16 switch_value, 
-				    SAM_USERINFO_CTR **ctr)
-{
-	prs_struct qbuf, rbuf;
-	SAMR_Q_QUERY_USERINFO q;
-	SAMR_R_QUERY_USERINFO r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	DEBUG(10,("cli_samr_query_userinfo\n"));
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_samr_q_query_userinfo(&q, user_pol, switch_value);
-
-	CLI_DO_RPC(cli, mem_ctx, PI_SAMR, SAMR_QUERY_USERINFO,
-		q, r,
-		qbuf, rbuf,
-		samr_io_q_query_userinfo,
-		samr_io_r_query_userinfo,
-		NT_STATUS_UNSUCCESSFUL); 
-
-	/* Return output parameters */
-
-	result = r.status;
-	*ctr = r.ctr;
-
-	return result;
-}
-
 /* Enumerate domain groups */
 
 NTSTATUS rpccli_samr_enum_dom_groups(struct rpc_pipe_client *cli,

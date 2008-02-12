@@ -587,25 +587,6 @@ typedef struct r_samr_set_user_info
 } SAMR_R_SET_USERINFO;
 
 
-/* SAMR_Q_QUERY_USERINFO - probably a get sam info */
-typedef struct q_samr_query_user_info
-{
-	POLICY_HND pol;          /* policy handle associated with unknown id */
-	uint16 switch_value;         /* 0x0015, 0x0011 or 0x0010 - 16 bit unknown */
-
-} SAMR_Q_QUERY_USERINFO;
-
-/* SAMR_R_QUERY_USERINFO - probably a get sam info */
-typedef struct r_samr_query_user_info
-{
-	uint32 ptr;            /* pointer */
-	SAM_USERINFO_CTR *ctr;
-
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_QUERY_USERINFO;
-
-
 /****************************************************************************
 SAMR_Q_LOOKUP_RIDS - do a conversion from RID groups to something.
 
