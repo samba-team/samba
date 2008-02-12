@@ -28,6 +28,19 @@ service() {
   fi
 }
 
+######################################################
+# simulate /sbin/service (niced) on platforms that don't have it
+nice_service() { 
+  service_name="$1"
+  op="$2"
+  if [ -x /sbin/service ]; then
+      nice /sbin/service "$service_name" "$op"
+  elif [ -x /etc/init.d/$service_name ]; then
+      nice /etc/init.d/$service_name "$op"
+  elif [ -x /etc/rc.d/init.d/$service_name ]; then
+      nice /etc/rc.d/init.d/$service_name "$op"
+  fi
+}
 
 ######################################################
 # wait for a command to return a zero exit status

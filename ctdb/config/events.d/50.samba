@@ -66,7 +66,7 @@ case $cmd in
 	# start Samba service. Start it reniced, as under very heavy load 
 	# the number of smbd processes will mean that it leaves few cycles for
 	# anything else
-	nice service smb start
+	nice_service smb start
 	;;
 	
      takeip)
