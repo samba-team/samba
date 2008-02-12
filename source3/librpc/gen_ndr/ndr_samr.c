@@ -6333,7 +6333,10 @@ static enum ndr_err_code ndr_push_samr_EnumDomainGroups(struct ndr_push *ndr, in
 		if (r->out.sam == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_samr_SamArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sam));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.sam));
+		if (*r->out.sam) {
+			NDR_CHECK(ndr_push_samr_SamArray(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.sam));
+		}
 		if (r->out.num_entries == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -6345,9 +6348,11 @@ static enum ndr_err_code ndr_push_samr_EnumDomainGroups(struct ndr_push *ndr, in
 
 static enum ndr_err_code ndr_pull_samr_EnumDomainGroups(struct ndr_pull *ndr, int flags, struct samr_EnumDomainGroups *r)
 {
+	uint32_t _ptr_sam;
 	TALLOC_CTX *_mem_save_domain_handle_0;
 	TALLOC_CTX *_mem_save_resume_handle_0;
 	TALLOC_CTX *_mem_save_sam_0;
+	TALLOC_CTX *_mem_save_sam_1;
 	TALLOC_CTX *_mem_save_num_entries_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -6387,7 +6392,18 @@ static enum ndr_err_code ndr_pull_samr_EnumDomainGroups(struct ndr_pull *ndr, in
 		}
 		_mem_save_sam_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.sam, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_samr_SamArray(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.sam));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_sam));
+		if (_ptr_sam) {
+			NDR_PULL_ALLOC(ndr, *r->out.sam);
+		} else {
+			*r->out.sam = NULL;
+		}
+		if (*r->out.sam) {
+			_mem_save_sam_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.sam, 0);
+			NDR_CHECK(ndr_pull_samr_SamArray(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.sam));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sam_1, 0);
+		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sam_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.num_entries);
@@ -6431,7 +6447,12 @@ _PUBLIC_ void ndr_print_samr_EnumDomainGroups(struct ndr_print *ndr, const char 
 		ndr->depth--;
 		ndr_print_ptr(ndr, "sam", r->out.sam);
 		ndr->depth++;
-		ndr_print_samr_SamArray(ndr, "sam", r->out.sam);
+		ndr_print_ptr(ndr, "sam", *r->out.sam);
+		ndr->depth++;
+		if (*r->out.sam) {
+			ndr_print_samr_SamArray(ndr, "sam", *r->out.sam);
+		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "num_entries", r->out.num_entries);
 		ndr->depth++;
