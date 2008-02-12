@@ -94,8 +94,10 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	struct timeval boot_time;
 
 	/* we only do dialect 0 for now */
-	if (io->in.dialect_count < 1 ||
-	    io->in.dialects[0] != 0) {
+	if (io->in.dialect_count < 1) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+	if (io->in.dialects[0] != 0) {
 		DEBUG(0,("Got unexpected SMB2 dialect %u\n", io->in.dialects[0]));
 	}
 
