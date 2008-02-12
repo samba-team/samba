@@ -818,8 +818,7 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx, size, num_dom_users, i;
-	char **dom_users;
-	uint32 *dom_rids;
+	struct samr_SamArray *dom_users = NULL;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
 	uint32 acb_mask = ACB_NORMAL;
 	bool got_connect_pol = False, got_domain_pol = False;
@@ -864,16 +863,21 @@ static NTSTATUS cmd_samr_enum_dom_users(struct rpc_pipe_client *cli,
 	size = 0xffff;
 
 	do {
-		result = rpccli_samr_enum_dom_users(
-			cli, mem_ctx, &domain_pol, &start_idx, acb_mask,
-			size, &dom_users, &dom_rids, &num_dom_users);
+		result = rpccli_samr_EnumDomainUsers(cli, mem_ctx,
+						     &domain_pol,
+						     &start_idx,
+						     acb_mask,
+						     &dom_users,
+						     size,
+						     &num_dom_users);
 
 		if (NT_STATUS_IS_OK(result) ||
 		    NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES)) {
 
 			for (i = 0; i < num_dom_users; i++)
                                printf("user:[%s] rid:[0x%x]\n",
-				       dom_users[i], dom_rids[i]);
+				       dom_users->entries[i].name.string,
+				       dom_users->entries[i].idx);
 		}
 
 	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
@@ -2553,7 +2557,7 @@ struct cmd_set samr_commands[] = {
 	{ "deletealias", 	RPC_RTYPE_NTSTATUS, cmd_samr_delete_alias, 	NULL, PI_SAMR, NULL,	"Delete an alias",  "" },
 	{ "querydispinfo", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dispinfo, 	NULL, PI_SAMR, NULL,	"Query display info",      "" },
 	{ "querydominfo", 	RPC_RTYPE_NTSTATUS, cmd_samr_query_dominfo, 	NULL, PI_SAMR, NULL,	"Query domain info",       "" },
-	{ "enumdomusers",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_dom_users,       NULL, PI_SAMR, NULL,	"Enumerate domain users", "" },
+	{ "enumdomusers",       RPC_RTYPE_NTSTATUS, cmd_samr_enum_dom_users,       NULL, PI_SAMR, NULL,	"Enumerate domain users", "" },
 	{ "enumdomgroups",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_dom_groups,       NULL, PI_SAMR, NULL,	"Enumerate domain groups", "" },
 	{ "enumalsgroups",      RPC_RTYPE_NTSTATUS, cmd_samr_enum_als_groups,       NULL, PI_SAMR, NULL,	"Enumerate alias groups",  "" },
 	{ "enumdomains",        RPC_RTYPE_NTSTATUS, cmd_samr_enum_domains,          NULL, PI_SAMR, NULL,	"Enumerate domains",  "" },
