@@ -22,11 +22,6 @@
 
 #include "includes.h"
 
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
-}
-
 /* Enumerate domain groups */
 
 NTSTATUS rpccli_samr_enum_dom_groups(struct rpc_pipe_client *cli,

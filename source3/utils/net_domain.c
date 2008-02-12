@@ -37,11 +37,6 @@
                 goto done; \
         }
 
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
-}
-
 /*******************************************************************
  Leave an AD domain.  Windows XP disables the machine account.
  We'll try the same.  The old code would do an LDAP delete.

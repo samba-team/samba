@@ -23,15 +23,6 @@
  inits a structure.
 ********************************************************************/
 
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
-}
-
-/*******************************************************************
- inits a structure.
-********************************************************************/
-
 void init_samr_DomInfo1(struct samr_DomInfo1 *r,
 			uint16_t min_password_length,
 			uint16_t password_history_length,

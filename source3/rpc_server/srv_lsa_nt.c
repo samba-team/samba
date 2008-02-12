@@ -47,20 +47,6 @@ const struct generic_mapping lsa_generic_mapping = {
 };
 
 /*******************************************************************
- inits a structure.
-********************************************************************/
-
-static void init_lsa_StringLarge(struct lsa_StringLarge *name, const char *s)
-{
-	name->string = s;
-}
-
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
-}
-
-/*******************************************************************
  Function to free the per handle data.
  ********************************************************************/
 
