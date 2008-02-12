@@ -1008,22 +1008,24 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	result = STATUS_MORE_ENTRIES;
 
 	while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
-		uint32 start_idx, num;
+		uint32 start_idx;
 		char **tmp_names;
 		DOM_SID *tmp_sids;
 		int i;
+		struct lsa_DomainList dom_list;
 
-		result = rpccli_lsa_enum_trust_dom(cli, mem_ctx,
-						   &lsa_policy, &enum_ctx,
-						   &num, &tmp_names,
-						   &tmp_sids);
+		result = rpccli_lsa_EnumTrustDom(cli, mem_ctx,
+						 &lsa_policy,
+						 &enum_ctx,
+						 &dom_list,
+						 (uint32_t)-1);
 
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
 			break;
 
 		start_idx = *num_domains;
-		*num_domains += num;
+		*num_domains += dom_list.count;
 		*names = TALLOC_REALLOC_ARRAY(mem_ctx, *names,
 					      char *, *num_domains);
 		*dom_sids = TALLOC_REALLOC_ARRAY(mem_ctx, *dom_sids,
@@ -1035,8 +1037,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 			return NT_STATUS_NO_MEMORY;
 
 		for (i=0; i<num; i++) {
-			(*names)[start_idx+i] = tmp_names[i];
-			(*dom_sids)[start_idx+i] = tmp_sids[i];
+			(*names)[start_idx+i] = dom_list.domains[i].name.string;
+			(*dom_sids)[start_idx+i] = dom_list.domains[i].sid;
 			(*alt_names)[start_idx+i] = talloc_strdup(mem_ctx, "");
 		}
 	}
