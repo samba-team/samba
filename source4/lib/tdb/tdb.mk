@@ -36,7 +36,7 @@ clean::
 build-python:: _tdb.$(SHLIBEXT) 
 
 tdb_wrap.o: $(tdbdir)/tdb_wrap.c
-	$(CC) -c $(tdbdir)/tdb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
+	$(CC) $(PICFLAG) -c $(tdbdir)/tdb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 
 _tdb.$(SHLIBEXT): libtdb.$(SHLIBEXT) tdb_wrap.o
 	$(SHLD) $(SHLD_FLAGS) -o $@ tdb_wrap.o -L. -ltdb `$(PYTHON_CONFIG) --libs`

@@ -68,7 +68,7 @@ examples/ldifreader: examples/ldifreader.o $(LIBS)
 build-python:: _ldb.$(SHLIBEXT)
 
 ldb_wrap.o: $(ldbdir)/ldb_wrap.c
-	$(CC) -c $(ldbdir)/ldb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
+	$(CC) $(PICFLAG) -c $(ldbdir)/ldb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 	
 _ldb.$(SHLIBEXT): $(LIBS) ldb_wrap.o
 	$(SHLD) $(SHLD_FLAGS) -o _ldb.$(SHLIBEXT) ldb_wrap.o $(LIB_FLAGS)
