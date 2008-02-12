@@ -209,7 +209,7 @@ class TestProtocolClient(unittest.TestResult):
     """A class that looks like a TestResult and informs a TestProtocolServer."""
 
     def __init__(self, stream):
-        unittest.TestResult.__init__(self)
+        super(TestProtocolClient, self).__init__()
         self._stream = stream
 
     def addError(self, test, error):
@@ -383,5 +383,6 @@ class SubunitTestRunner:
     def run(self, test):
         "Run the given test case or test suite."
         result = TestProtocolClient(self.stream)
+        test(result)
         return result
 
