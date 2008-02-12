@@ -152,8 +152,6 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	char *clear_trust_password = NULL;
 	uchar pwbuf[516];
-	SAM_USERINFO_CTR ctr;
-	SAM_USER_INFO_24 p24;
 	uchar md4_trust_password[16];
 	union samr_UserInfo set_info;
 
@@ -344,16 +342,15 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Set password on machine account */
 
-	ZERO_STRUCT(ctr);
-	ZERO_STRUCT(p24);
+	init_samr_user_info24(&set_info.info24, pwbuf, 24);
 
-	init_sam_user_info24(&p24, (char *)pwbuf,24);
+	SamOEMhashBlob(set_info.info24.password.data, 516,
+		       &cli->user_session_key);
 
-	ctr.switch_value = 24;
-	ctr.info.id24 = &p24;
-
-	CHECK_RPC_ERR(rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol, 24, 
-					    &cli->user_session_key, &ctr),
+	CHECK_RPC_ERR(rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+					       &user_pol,
+					       24,
+					       &set_info),
 		      "error setting trust account password");
 
 	/* Why do we have to try to (re-)set the ACB to be the same as what

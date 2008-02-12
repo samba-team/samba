@@ -385,3 +385,86 @@ void init_samr_user_info21(struct samr_UserInfo21 *r,
 	r->lm_password_set = lm_password_set;
 	r->password_expired = password_expired;
 }
+
+/*************************************************************************
+ init_samr_user_info23
+ *************************************************************************/
+
+void init_samr_user_info23(struct samr_UserInfo23 *r,
+			   NTTIME last_logon,
+			   NTTIME last_logoff,
+			   NTTIME last_password_change,
+			   NTTIME acct_expiry,
+			   NTTIME allow_password_change,
+			   NTTIME force_password_change,
+			   const char *account_name,
+			   const char *full_name,
+			   const char *home_directory,
+			   const char *home_drive,
+			   const char *logon_script,
+			   const char *profile_path,
+			   const char *description,
+			   const char *workstations,
+			   const char *comment,
+			   const char *parameters,
+			   uint32_t rid,
+			   uint32_t primary_gid,
+			   uint32_t acct_flags,
+			   uint32_t fields_present,
+			   struct samr_LogonHours logon_hours,
+			   uint16_t bad_password_count,
+			   uint16_t logon_count,
+			   uint16_t country_code,
+			   uint16_t code_page,
+			   uint8_t nt_password_set,
+			   uint8_t lm_password_set,
+			   uint8_t password_expired,
+			   uint8_t data[516],
+			   uint8_t pw_len)
+{
+	init_samr_user_info21(&r->info,
+			      last_logon,
+			      last_logoff,
+			      last_password_change,
+			      acct_expiry,
+			      allow_password_change,
+			      force_password_change,
+			      account_name,
+			      full_name,
+			      home_directory,
+			      home_drive,
+			      logon_script,
+			      profile_path,
+			      description,
+			      workstations,
+			      comment,
+			      parameters,
+			      rid,
+			      primary_gid,
+			      acct_flags,
+			      fields_present,
+			      logon_hours,
+			      bad_password_count,
+			      logon_count,
+			      country_code,
+			      code_page,
+			      nt_password_set,
+			      lm_password_set,
+			      password_expired);
+
+	memcpy(r->password.data, data, sizeof(r->password.data));
+}
+
+/*************************************************************************
+ init_samr_user_info24
+ *************************************************************************/
+
+void init_samr_user_info24(struct samr_UserInfo24 *r,
+			   uint8_t data[516],
+			   uint8_t pw_len)
+{
+	DEBUG(10, ("init_samr_user_info24:\n"));
+
+	memcpy(r->password.data, data, sizeof(r->password.data));
+	r->pw_len = pw_len;
+}
