@@ -972,3 +972,44 @@ size_t smbcli_blob_append_string(struct smbcli_session *session,
 
 	return len;
 }
+
+/*
+  pull a GUID structure from the wire. The buffer must be at least 16
+  bytes long
+ */
+enum ndr_err_code smbcli_pull_guid(void *base, uint16_t offset, 
+				   struct GUID *guid)
+{
+	DATA_BLOB blob;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	enum ndr_err_code ndr_err;
+
+	ZERO_STRUCTP(guid);
+
+	blob.data       = offset + (uint8_t *)base;
+	blob.length     = 16;
+	ndr_err = ndr_pull_struct_blob(&blob, tmp_ctx, NULL, guid, 
+				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
+	talloc_free(tmp_ctx);
+	return ndr_err;
+}
+
+/*
+  push a guid onto the wire. The buffer must hold 16 bytes
+ */
+enum ndr_err_code smbcli_push_guid(void *base, uint16_t offset, 
+				   const struct GUID *guid)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL,
+				       guid, (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err) || blob.length != 16) {
+		talloc_free(tmp_ctx);
+		return ndr_err;
+	}
+	memcpy(offset + (uint8_t *)base, blob.data, blob.length);
+	talloc_free(tmp_ctx);
+	return ndr_err;
+}
