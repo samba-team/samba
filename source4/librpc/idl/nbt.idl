@@ -143,7 +143,7 @@ interface nbt
 	} nbt_statistics;
 
 	typedef struct {
-		astring15 name;
+		[charset(DOS)] uint8 name[15];
 		nbt_name_type type;
 		nb_flags  nb_flags;
 	} nbt_status_name;
