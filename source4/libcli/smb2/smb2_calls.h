@@ -35,21 +35,19 @@ struct smb2_negprot {
 	struct {
 		/* static body buffer 64 (0x40) bytes */
 		/* uint16_t buffer_code;  0x41 = 0x40 + 1 */
-		uint16_t _pad;
-		uint32_t unknown2; /* 0x06 */
-		uint8_t  sessid[16];
-		uint32_t unknown3; /* 0x0d */
-		uint16_t unknown4; /* 0x00 */
-		uint32_t unknown5; /* 0x01 */
-		uint32_t unknown6; /* 0x01 */
-		uint16_t unknown7; /* 0x01 */
-		NTTIME   current_time;
-		NTTIME   boot_time;
+		uint16_t security_mode;
+		uint16_t dialect_revision;
+		uint16_t reserved;
+		struct GUID server_guid;
+		uint32_t capabilities;
+		uint32_t max_transact_size;
+		uint32_t max_read_size;
+		uint32_t max_write_size;
+		NTTIME   system_time;
+		NTTIME   server_start_time;
 		/* uint16_t secblob_ofs */
 		/* uint16_t secblob_size */
-		uint32_t unknown9; /* 0x204d4c20 */
-
-		/* dynamic body buffer */
+		uint32_t reserved2;
 		DATA_BLOB secblob;
 	} out;
 };

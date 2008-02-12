@@ -96,7 +96,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	/* we only do dialect 0 for now */
 	if (io->in.dialect_count < 1 ||
 	    io->in.dialects[0] != 0) {
-		return NT_STATUS_NOT_SUPPORTED;
+		DEBUG(0,("Got unexpected SMB2 dialect %u\n", io->in.dialects[0]));
 	}
 
 	req->smb_conn->negotiate.protocol = PROTOCOL_SMB2;
@@ -104,19 +104,19 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	current_time = timeval_current(); /* TODO: handle timezone?! */
 	boot_time = timeval_current(); /* TODO: fix me */
 
-	io->out._pad		= 0;
-	io->out.unknown2	= 0x06;
-	ZERO_STRUCT(io->out.sessid);
-	io->out.unknown3	= 0x0d;
-	io->out.unknown4	= 0x00;
-	io->out.unknown5	= 0x01;
-	io->out.unknown6	= 0x01;
-	io->out.unknown7	= 0x01;
-	io->out.current_time	= timeval_to_nttime(&current_time);
-	io->out.boot_time	= timeval_to_nttime(&boot_time);
+	ZERO_STRUCT(io->out);
+	io->out.security_mode      = 0; /* no signing yet */
+	 /* choose the first dialect offered for now */
+	io->out.dialect_revision   = io->in.dialects[0];
+	io->out.capabilities       = 0;
+	io->out.max_transact_size  = 0x10000;
+	io->out.max_read_size      = 0x10000;
+	io->out.max_write_size     = 0x10000;
+	io->out.system_time	   = timeval_to_nttime(&current_time);
+	io->out.server_start_time  = timeval_to_nttime(&boot_time);
+	io->out.reserved2          = 0;
 	status = smb2srv_negprot_secblob(req, &io->out.secblob);
 	NT_STATUS_NOT_OK_RETURN(status);
-	io->out.unknown9	= 0x204d4c20;
 
 	return NT_STATUS_OK;
 }
@@ -124,6 +124,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 static void smb2srv_negprot_send(struct smb2srv_request *req, struct smb2_negprot *io)
 {
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	if (NT_STATUS_IS_ERR(req->status)) {
 		smb2srv_send_error(req, req->status); /* TODO: is this correct? */
@@ -137,24 +138,28 @@ static void smb2srv_negprot_send(struct smb2srv_request *req, struct smb2_negpro
 		return;
 	}
 
-	SSVAL(req->out.body, 0x02, io->out._pad);
-	SIVAL(req->out.body, 0x04, io->out.unknown2);
-	memcpy(req->out.body+0x08, io->out.sessid, 16);
-	SIVAL(req->out.body, 0x18, io->out.unknown3);
-	SSVAL(req->out.body, 0x1C, io->out.unknown4);
-	SIVAL(req->out.body, 0x1E, io->out.unknown5);
-	SIVAL(req->out.body, 0x22, io->out.unknown6);
-	SSVAL(req->out.body, 0x26, io->out.unknown7);
-	push_nttime(req->out.body, 0x28, io->out.current_time);
-	push_nttime(req->out.body, 0x30, io->out.boot_time);
+	SSVAL(req->out.body, 0x02, io->out.security_mode);
+	SIVAL(req->out.body, 0x04, io->out.dialect_revision);
+	SIVAL(req->out.body, 0x06, io->out.reserved);
+	ndr_err = smbcli_push_guid(req->out.body, 0x08, &io->out.server_guid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
+		talloc_free(req);
+		return;
+	}
+	SIVAL(req->out.body, 0x18, io->out.capabilities);
+	SIVAL(req->out.body, 0x1C, io->out.max_transact_size);
+	SIVAL(req->out.body, 0x20, io->out.max_read_size);
+	SIVAL(req->out.body, 0x24, io->out.max_write_size);
+	push_nttime(req->out.body, 0x28, io->out.system_time);
+	push_nttime(req->out.body, 0x30, io->out.server_start_time);
+	SIVAL(req->out.body, 0x3C, io->out.reserved2);
 	status = smb2_push_o16s16_blob(&req->out, 0x38, io->out.secblob);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
 		talloc_free(req);
 		return;
 	}
-
-	SIVAL(req->out.body, 0x3C, io->out.unknown9);
 
 	smb2srv_send_reply(req);
 }
@@ -163,7 +168,6 @@ void smb2srv_negprot_recv(struct smb2srv_request *req)
 {
 	struct smb2_negprot *io;
 	int i;
-	DATA_BLOB guid_blob;
 	enum ndr_err_code ndr_err;
 
 	if (req->in.body_size < 0x26) {
@@ -182,10 +186,7 @@ void smb2srv_negprot_recv(struct smb2srv_request *req)
 	io->in.security_mode = SVAL(req->in.body, 0x04);
 	io->in.reserved      = SVAL(req->in.body, 0x06);
 	io->in.capabilities  = IVAL(req->in.body, 0x08);
-	guid_blob.data       = req->in.body + 0xC;
-	guid_blob.length     = 16;
-	ndr_err = ndr_pull_struct_blob(&guid_blob, req, NULL, &io->in.client_guid, 
-				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
+	ndr_err = smbcli_pull_guid(req->in.body, 0xC, &io->in.client_guid);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(NT_STATUS_FOOBAR));
 		talloc_free(req);
