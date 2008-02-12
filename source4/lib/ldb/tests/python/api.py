@@ -418,3 +418,6 @@ class ModuleTests(unittest.TestCase):
     def test_register_module(self):
         ldb.register_module(ExampleModule())
 
+if __name__ == '__main__':
+    import unittest
+    unittest.TestProgram()

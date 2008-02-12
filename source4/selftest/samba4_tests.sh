@@ -262,6 +262,8 @@ done
 
 DATADIR=$samba4srcdir/../testdata
 
+plantest "js.samba3sam" none $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
+
 # Domain Member Tests
 
 plantest "RPC-ECHO against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" RPC-ECHO "$*"
@@ -327,5 +329,6 @@ then
 	rm -rf $PREFIX/upgrade
 	plantest "blackbox.upgrade" none $PYTHON setup/upgrade.py $CONFIGURATION --targetdir=$PREFIX/upgrade ../testdata/samba3 ../testdata/samba3/smb.conf
 	rm -rf $PREFIX/provision
-	plantest "blackbox.provision.py" none $PYTHON ./setup/provision.py $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/provision
+	mkdir $PREFIX/provision
+	plantest "blackbox.provision.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_provision.sh "$PREFIX/provision" "$CONFIGURATION" 
 fi
