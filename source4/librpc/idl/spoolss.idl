@@ -58,7 +58,7 @@ import "security.idl", "winreg.idl";
 	} spoolss_PrinterInfo0;
 
 	typedef [public,gensize] struct {
-	        string32 devicename;
+		[charset(UTF16)] uint16 devicename[32];
 		uint16 specversion;
 		uint16 driverversion;
 		uint16 size;
@@ -77,7 +77,7 @@ import "security.idl", "winreg.idl";
 		uint16 yresolution;
 		uint16 ttoption;
 		uint16 collate;
-	        string32 formname;
+		[charset(UTF16)] uint16 formname[32];
 		uint16 logpixels;
 		uint32 bitsperpel;
 		uint32 pelswidth;
