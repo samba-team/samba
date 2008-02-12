@@ -1,3 +1,9 @@
+2008-02-12  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* rename wind_punycode_toascii to wind_punycode_label_toascii
+
+	* stringprep.c: Move else to make it work again.
+
 2008-02-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Add partial support for LDAP-prep Insignificant Character Handling

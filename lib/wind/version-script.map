@@ -4,7 +4,7 @@ HEIMDAL_WIND_1.0 {
 	global:
 		wind_stringprep;
 		wind_profile;
-		wind_punycode_toascii;
+		wind_punycode_label_toascii;
 		wind_utf8ucs4;
 		wind_utf8ucs4_length;
 		wind_ucs4utf8;

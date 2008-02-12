@@ -55,7 +55,7 @@ main(void)
 	size_t len;
 
 	len = sizeof(buf);
-	ret = wind_punycode_toascii(e->val, e->len, buf, &len);
+	ret = wind_punycode_label_toascii(e->val, e->len, buf, &len);
 	if (ret < 0) {
 	    printf("punycode %u (%s) failed: %d\n", i, e->description, ret);
 	    ++failures;

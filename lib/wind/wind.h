@@ -63,8 +63,8 @@ int wind_stringprep(const unsigned *in, size_t in_len,
 		    wind_profile_flags flags);
 int wind_profile(const char *, wind_profile_flags *);
 
-int wind_punycode_toascii(const uint32_t *in, size_t in_len,
-			  char *out, size_t *out_len);
+int wind_punycode_label_toascii(const uint32_t *, size_t,
+				char *, size_t *);
 
 int wind_utf8ucs4(const char *, uint32_t *, size_t *);
 int wind_utf8ucs4_length(const char *, size_t *);
