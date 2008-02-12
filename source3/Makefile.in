@@ -467,7 +467,7 @@ RPC_LSA_OBJ = rpc_server/srv_lsa.o rpc_server/srv_lsa_nt.o librpc/gen_ndr/srv_ls
 RPC_NETLOG_OBJ = rpc_server/srv_netlog.o rpc_server/srv_netlog_nt.o \
 		 librpc/gen_ndr/srv_netlogon.o
 
-RPC_SAMR_OBJ = rpc_server/srv_samr.o rpc_server/srv_samr_nt.o \
+RPC_SAMR_OBJ = rpc_server/srv_samr_nt.o \
                rpc_server/srv_samr_util.o \
 	       librpc/gen_ndr/srv_samr.o
 
