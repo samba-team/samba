@@ -74,13 +74,14 @@ _ldb.$(SHLIBEXT): $(LIBS) ldb_wrap.o
 	$(SHLD) $(SHLD_FLAGS) -o _ldb.$(SHLIBEXT) ldb_wrap.o $(LIB_FLAGS)
 
 install-python:: build-python
-	$(ldbdir)/setup.py install --prefix=$(DESTDIR)$(prefix)
+	cp $(ldbdir)/ldb.py $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0)"`
+	cp _ldb.$(SHLIBEXT) $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1)"`
 
 install-swig::
 	cp ldb.i `$(SWIG) -swiglib`
 
 check-python:: build-python
-	LD_LIBRARY_PATH=lib PYTHONPATH=.:$(ldbdir) trial $(ldbdir)/tests/python/api.py
+	LD_LIBRARY_PATH=lib PYTHONPATH=.:$(ldbdir) $(PYTHON) $(ldbdir)/tests/python/api.py
 
 clean::
 	rm -f _ldb.$(SHLIBEXT)

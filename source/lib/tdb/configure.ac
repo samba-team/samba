@@ -14,6 +14,7 @@ AC_LIBREPLACE_SHLD_FLAGS
 AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR
 m4_include(libtdb.m4)
 AC_PATH_PROGS([PYTHON_CONFIG], [python2.6-config python2.5-config python2.4-config python-config])
+AC_PATH_PROGS([PYTHON], [python2.6 python2.5 python2.4 python])
 
 PYTHON_BUILD_TARGET="build-python"
 PYTHON_INSTALL_TARGET="install-python"
