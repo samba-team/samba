@@ -25,8 +25,8 @@ bin/tdbdump$(EXEEXT): tools/tdbdump.o $(TDB_LIB)
 bin/tdbbackup$(EXEEXT): tools/tdbbackup.o $(TDB_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb
 
-test:: bin/tdbtorture$(EXEEXT)
-	bin/tdbtorture$(EXEEXT)
+test:: bin/tdbtorture$(EXEEXT) $(SONAME)
+	$(LIB_PATH_VAR)=. bin/tdbtorture$(EXEEXT)
 
 clean:: 
 	rm -f test.db test.tdb torture.tdb test.gdbm
@@ -36,7 +36,7 @@ clean::
 build-python:: _tdb.$(SHLIBEXT) 
 
 tdb_wrap.o: $(tdbdir)/tdb_wrap.c
-	$(CC) -c $(tdbdir)/tdb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
+	$(CC) $(PICFLAG) -c $(tdbdir)/tdb_wrap.c $(CFLAGS) `$(PYTHON_CONFIG) --cflags`
 
 _tdb.$(SHLIBEXT): libtdb.$(SHLIBEXT) tdb_wrap.o
 	$(SHLD) $(SHLD_FLAGS) -o $@ tdb_wrap.o -L. -ltdb `$(PYTHON_CONFIG) --libs`
@@ -66,13 +66,13 @@ installdirs::
 	mkdir -p $(DESTDIR)$(libdir) 
 	mkdir -p $(DESTDIR)$(libdir)/pkgconfig
 
-installbin:: installdirs
+installbin:: all installdirs
 	cp $(PROGS) $(DESTDIR)$(bindir)
 
 installheaders:: installdirs
 	cp $(srcdir)/include/tdb.h $(DESTDIR)$(includedir)
 
-installlibs:: installdirs
+installlibs:: all installdirs
 	cp tdb.pc $(DESTDIR)$(libdir)/pkgconfig
 	cp libtdb.a $(SOLIB) $(DESTDIR)$(libdir)
 

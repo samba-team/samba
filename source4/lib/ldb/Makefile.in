@@ -19,6 +19,7 @@ SWIG = swig
 EXTRA_OBJ=@EXTRA_OBJ@
 TESTS=test-tdb.sh @TESTS@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PYTHON = @PYTHON@
 PYTHON_CONFIG = @PYTHON_CONFIG@
 tdbdir = @tdbdir@
 ldbdir = $(srcdir)

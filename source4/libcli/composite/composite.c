@@ -64,23 +64,6 @@ _PUBLIC_ NTSTATUS composite_wait(struct composite_context *c)
 	return c->status;
 }
 
-
-/*
- * Some composite helpers that are handy if you write larger composite
- * functions.
- */
-_PUBLIC_ bool composite_is_ok(struct composite_context *ctx)
-{
-	if (NT_STATUS_IS_OK(ctx->status)) {
-		return true;
-	}
-	ctx->state = COMPOSITE_STATE_ERROR;
-	if (ctx->async.fn != NULL) {
-		ctx->async.fn(ctx);
-	}
-	return false;
-}
-
 /* 
    callback from composite_done() and composite_error()
 
@@ -110,7 +93,10 @@ _PUBLIC_ void composite_error(struct composite_context *ctx, NTSTATUS status)
 		event_add_timed(ctx->event_ctx, ctx, timeval_zero(), composite_trigger, ctx);
 	}
 	ctx->status = status;
-	SMB_ASSERT(!composite_is_ok(ctx));
+	ctx->state = COMPOSITE_STATE_ERROR;
+	if (ctx->async.fn != NULL) {
+		ctx->async.fn(ctx);
+	}
 }
 
 _PUBLIC_ bool composite_nomem(const void *p, struct composite_context *ctx)
@@ -120,6 +106,15 @@ _PUBLIC_ bool composite_nomem(const void *p, struct composite_context *ctx)
 	}
 	composite_error(ctx, NT_STATUS_NO_MEMORY);
 	return true;
+}
+
+_PUBLIC_ bool composite_is_ok(struct composite_context *ctx)
+{
+	if (NT_STATUS_IS_OK(ctx->status)) {
+		return true;
+	}
+	composite_error(ctx, ctx->status);
+	return false;
 }
 
 _PUBLIC_ void composite_done(struct composite_context *ctx)
