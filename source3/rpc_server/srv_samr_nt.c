@@ -1172,6 +1172,213 @@ NTSTATUS _samr_EnumDomainAliases(pipes_struct *p,
 }
 
 /*******************************************************************
+ inits a structure.
+********************************************************************/
+
+static void init_lsa_AsciiString(struct lsa_AsciiString *name, const char *s)
+{
+	name->string = s;
+}
+
+/*******************************************************************
+ inits a samr_DispInfoGeneral structure.
+********************************************************************/
+
+static NTSTATUS init_samr_dispinfo_1(TALLOC_CTX *ctx,
+				     struct samr_DispInfoGeneral *r,
+				     uint32_t num_entries,
+				     uint32_t start_idx,
+				     struct samr_displayentry *entries)
+{
+	uint32 i;
+
+	DEBUG(10, ("init_samr_dispinfo_1: num_entries: %d\n", num_entries));
+
+	if (num_entries == 0) {
+		return NT_STATUS_OK;
+	}
+
+	r->count = num_entries;
+
+	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryGeneral, num_entries);
+	if (!r->entries) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < num_entries ; i++) {
+
+		init_lsa_String(&r->entries[i].account_name,
+				entries[i].account_name);
+
+		init_lsa_String(&r->entries[i].description,
+				entries[i].description);
+
+		init_lsa_String(&r->entries[i].full_name,
+				entries[i].fullname);
+
+		r->entries[i].rid = entries[i].rid;
+		r->entries[i].acct_flags = entries[i].acct_flags;
+		r->entries[i].idx = start_idx+i+1;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ inits a samr_DispInfoFull structure.
+********************************************************************/
+
+static NTSTATUS init_samr_dispinfo_2(TALLOC_CTX *ctx,
+				     struct samr_DispInfoFull *r,
+				     uint32_t num_entries,
+				     uint32_t start_idx,
+				     struct samr_displayentry *entries)
+{
+	uint32_t i;
+
+	DEBUG(10, ("init_samr_dispinfo_2: num_entries: %d\n", num_entries));
+
+	if (num_entries == 0) {
+		return NT_STATUS_OK;
+	}
+
+	r->count = num_entries;
+
+	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryFull, num_entries);
+	if (!r->entries) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < num_entries ; i++) {
+
+		init_lsa_String(&r->entries[i].account_name,
+				entries[i].account_name);
+
+		init_lsa_String(&r->entries[i].description,
+				entries[i].description);
+
+		r->entries[i].rid = entries[i].rid;
+		r->entries[i].acct_flags = entries[i].acct_flags;
+		r->entries[i].idx = start_idx+i+1;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ inits a samr_DispInfoFullGroups structure.
+********************************************************************/
+
+static NTSTATUS init_samr_dispinfo_3(TALLOC_CTX *ctx,
+				     struct samr_DispInfoFullGroups *r,
+				     uint32_t num_entries,
+				     uint32_t start_idx,
+				     struct samr_displayentry *entries)
+{
+	uint32_t i;
+
+	DEBUG(5, ("init_samr_dispinfo_3: num_entries: %d\n", num_entries));
+
+	if (num_entries == 0) {
+		return NT_STATUS_OK;
+	}
+
+	r->count = num_entries;
+
+	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryFullGroup, num_entries);
+	if (!r->entries) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < num_entries ; i++) {
+
+		init_lsa_String(&r->entries[i].account_name,
+				entries[i].account_name);
+
+		init_lsa_String(&r->entries[i].description,
+				entries[i].description);
+
+		r->entries[i].rid = entries[i].rid;
+		r->entries[i].acct_flags = entries[i].acct_flags;
+		r->entries[i].idx = start_idx+i+1;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ inits a samr_DispInfoAscii structure.
+********************************************************************/
+
+static NTSTATUS init_samr_dispinfo_4(TALLOC_CTX *ctx,
+				     struct samr_DispInfoAscii *r,
+				     uint32_t num_entries,
+				     uint32_t start_idx,
+				     struct samr_displayentry *entries)
+{
+	uint32_t i;
+
+	DEBUG(5, ("init_samr_dispinfo_4: num_entries: %d\n", num_entries));
+
+	if (num_entries == 0) {
+		return NT_STATUS_OK;
+	}
+
+	r->count = num_entries;
+
+	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryAscii, num_entries);
+	if (!r->entries) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < num_entries ; i++) {
+
+		init_lsa_AsciiString(&r->entries[i].account_name,
+				     entries[i].account_name);
+
+		r->entries[i].idx = start_idx+i+1;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
+ inits a samr_DispInfoAscii structure.
+********************************************************************/
+
+static NTSTATUS init_samr_dispinfo_5(TALLOC_CTX *ctx,
+				     struct samr_DispInfoAscii *r,
+				     uint32_t num_entries,
+				     uint32_t start_idx,
+				     struct samr_displayentry *entries)
+{
+	uint32_t i;
+
+	DEBUG(5, ("init_samr_dispinfo_5: num_entries: %d\n", num_entries));
+
+	if (num_entries == 0) {
+		return NT_STATUS_OK;
+	}
+
+	r->count = num_entries;
+
+	r->entries = TALLOC_ZERO_ARRAY(ctx, struct samr_DispEntryAscii, num_entries);
+	if (!r->entries) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i = 0; i < num_entries ; i++) {
+
+		init_lsa_AsciiString(&r->entries[i].account_name,
+				     entries[i].account_name);
+
+		r->entries[i].idx = start_idx+i+1;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/*******************************************************************
  _samr_QueryDisplayInfo
  ********************************************************************/
 
@@ -1327,29 +1534,29 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	/* Now create reply structure */
 	switch (r->in.level) {
 	case 0x1:
-		disp_ret = init_sam_dispinfo_1(p->mem_ctx, &disp_info->info1,
-					       num_account, enum_context,
-					       entries);
+		disp_ret = init_samr_dispinfo_1(p->mem_ctx, &disp_info->info1,
+						num_account, enum_context,
+						entries);
 		break;
 	case 0x2:
-		disp_ret = init_sam_dispinfo_2(p->mem_ctx, &disp_info->info2,
-					       num_account, enum_context,
-					       entries);
+		disp_ret = init_samr_dispinfo_2(p->mem_ctx, &disp_info->info2,
+						num_account, enum_context,
+						entries);
 		break;
 	case 0x3:
-		disp_ret = init_sam_dispinfo_3(p->mem_ctx, &disp_info->info3,
-					       num_account, enum_context,
-					       entries);
+		disp_ret = init_samr_dispinfo_3(p->mem_ctx, &disp_info->info3,
+						num_account, enum_context,
+						entries);
 		break;
 	case 0x4:
-		disp_ret = init_sam_dispinfo_4(p->mem_ctx, &disp_info->info4,
-					       num_account, enum_context,
-					       entries);
+		disp_ret = init_samr_dispinfo_4(p->mem_ctx, &disp_info->info4,
+						num_account, enum_context,
+						entries);
 		break;
 	case 0x5:
-		disp_ret = init_sam_dispinfo_5(p->mem_ctx, &disp_info->info5,
-					       num_account, enum_context,
-					       entries);
+		disp_ret = init_samr_dispinfo_5(p->mem_ctx, &disp_info->info5,
+						num_account, enum_context,
+						entries);
 		break;
 	default:
 		smb_panic("info class changed");
