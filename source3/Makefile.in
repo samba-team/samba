@@ -206,7 +206,7 @@ EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@ bin/ndrdump@EXEEXT@ \
 	bin/vlp@EXEEXT@
 
-SHLIBS = @LIBTALLOC@ @LIBWBCLIENT@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBADDNS@ @LIBNETAPI@
+SHLIBS = libtalloc @LIBWBCLIENT@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBADDNS@ @LIBNETAPI@
 
 PAM_MODULES = @PAM_MODULES@
 
@@ -1886,7 +1886,7 @@ bin/timelimit@EXEEXT@: script/tests/timelimit.o
 
 install: installservers installbin @INSTALL_CIFSMOUNT@ @INSTALL_CIFSSPNEGO@ installman \
 		installscripts installdat installmodules @SWAT_INSTALL_TARGETS@ \
-		@INSTALL_LIBTALLOC@ \
+		installlibtalloc \
 		@INSTALL_LIBSMBCLIENT@ @INSTALL_PAM_MODULES@ \
 		@INSTALL_LIBSMBSHAREMODES@ @INSTALL_LIBWBCLIENT@ @INSTALL_LIBNETAPI@
 
@@ -2018,7 +2018,7 @@ showlayout:
 	@echo "  swatdir:     $(SWATDIR)"
 
 
-uninstall: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSSPNEGO@ uninstallscripts uninstalldat uninstallswat uninstallmodules @UNINSTALL_LIBTALLOC@ @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_PAM_MODULES@ @UNINSTALL_LIBSMBSHAREMODES@ @UNINSTALL_LIBNETAPI@
+uninstall: uninstallman uninstallservers uninstallbin @UNINSTALL_CIFSMOUNT@ @UNINSTALL_CIFSSPNEGO@ uninstallscripts uninstalldat uninstallswat uninstallmodules uninstalllibtalloc @UNINSTALL_LIBSMBCLIENT@ @UNINSTALL_PAM_MODULES@ @UNINSTALL_LIBSMBSHAREMODES@ @UNINSTALL_LIBNETAPI@
 
 uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(MANDIR) $(srcdir) C
