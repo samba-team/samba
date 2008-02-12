@@ -97,8 +97,8 @@ wind_stringprep(const uint32_t *in, size_t in_len,
     } else if (flags & WIND_PROFILE_LDAP_CASE_EXACT_ASSERTION) {
     } else if (flags & WIND_PROFILE_LDAP_NUMERIC) {
     } else if (flags & WIND_PROFILE_LDAP_TELEPHONE) {
-    } else {
 #endif
+    } else {
 	memcpy(out, tmp, sizeof(out[0]) * olen);
 	*out_len = olen;
     }
