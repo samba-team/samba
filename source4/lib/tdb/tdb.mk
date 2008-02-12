@@ -45,6 +45,8 @@ install:: installdirs installbin installheaders installlibs \
 		  $(PYTHON_INSTALL_TARGET)
 
 install-python:: build-python
+	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0)"` \
+		$(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1)"`
 	cp $(tdbdir)/tdb.py $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0)"`
 	cp _tdb.$(SHLIBEXT) $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1)"`
 
