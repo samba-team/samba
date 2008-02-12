@@ -1324,11 +1324,9 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 
 		struct rpc_pipe_client *samr_pipe;
 		POLICY_HND samr_domain_handle, user_pol;
-		SAM_USERINFO_CTR *user_ctr;
+		union samr_UserInfo *info = NULL;
 		NTSTATUS status_tmp;
 		uint32 acct_flags;
-
-		ZERO_STRUCT(user_ctr);
 
 		status_tmp = cm_connect_sam(contact_domain, state->mem_ctx, 
 					    &samr_pipe, &samr_domain_handle);
@@ -1351,8 +1349,10 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		status_tmp = rpccli_samr_query_userinfo(samr_pipe, state->mem_ctx, 
-							&user_pol, 16, &user_ctr);
+		status_tmp = rpccli_samr_QueryUserInfo(samr_pipe, state->mem_ctx,
+						       &user_pol,
+						       16,
+						       &info);
 
 		if (!NT_STATUS_IS_OK(status_tmp)) {
 			DEBUG(3, ("could not query user info on SAMR pipe: %s\n",
@@ -1361,7 +1361,7 @@ NTSTATUS winbindd_dual_pam_auth_samlogon(struct winbindd_domain *domain,
 			goto done;
 		}
 
-		acct_flags = user_ctr->info.id16->acb_info;
+		acct_flags = info->info16.acct_flags;
 
 		if (acct_flags == 0) {
 			rpccli_samr_Close(samr_pipe, state->mem_ctx, &user_pol);

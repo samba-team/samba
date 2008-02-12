@@ -881,6 +881,7 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 	SAM_USER_INFO_7 info7;
 	struct samr_Ids user_rids, name_types;
 	struct lsa_String lsa_acct_name;
+	union samr_UserInfo *info = NULL;
 
 	if (argc != 2) {
 		d_printf("Old and new username must be specified\n");
@@ -940,8 +941,10 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Query user info */
-	result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, &user_pol,
-					 info_level, &user_ctr);
+	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+					   &user_pol,
+					   info_level,
+					   &info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -1507,24 +1510,24 @@ static NTSTATUS rpc_sh_user_show_internals(TALLOC_CTX *mem_ctx,
 					   int argc, const char **argv)
 {
 	NTSTATUS result;
-	SAM_USERINFO_CTR *ctr;
-	SAM_USER_INFO_21 *info;
+	union samr_UserInfo *info = NULL;
 
 	if (argc != 0) {
 		d_fprintf(stderr, "usage: %s show <username>\n", ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, user_hnd,
-					    21, &ctr);
+	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+					   CONST_DISCARD(struct policy_handle *, user_hnd),
+					   21,
+					   &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	info = ctr->info.id21;
-
-	d_printf("user rid: %d, group rid: %d\n", info->user_rid,
-		 info->group_rid);
+	d_printf("user rid: %d, group rid: %d\n",
+		info->info21.rid,
+		info->info21.primary_gid);
 
 	return result;
 }
@@ -1540,7 +1543,7 @@ static NTSTATUS rpc_sh_user_show(TALLOC_CTX *mem_ctx,
 
 #define FETCHSTR(name, rec) \
 do { if (strequal(ctx->thiscmd, name)) { \
-	oldval = rpcstr_pull_unistr2_talloc(mem_ctx, &usr->uni_##rec); } \
+	oldval = talloc_strdup(mem_ctx, info->info21.rec.string); } \
 } while (0);
 
 #define SETSTR(name, rec, flag) \
@@ -1561,6 +1564,7 @@ static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
 	SAM_USER_INFO_21 *usr;
 	const char *username;
 	const char *oldval = "";
+	union samr_UserInfo *info = NULL;
 
 	if (argc > 1) {
 		d_fprintf(stderr, "usage: %s <username> [new value|NULL]\n",
@@ -1568,22 +1572,22 @@ static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, user_hnd,
-					    21, &ctr);
+	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+					   CONST_DISCARD(struct policy_handle *, user_hnd),
+					   21,
+					   &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	usr = ctr->info.id21;
-
-	username = rpcstr_pull_unistr2_talloc(mem_ctx, &usr->uni_user_name);
+	username = talloc_strdup(mem_ctx, info->info21.account_name.string);
 
 	FETCHSTR("fullname", full_name);
-	FETCHSTR("homedir", home_dir);
-	FETCHSTR("homedrive", dir_drive);
+	FETCHSTR("homedir", home_directory);
+	FETCHSTR("homedrive", home_drive);
 	FETCHSTR("logonscript", logon_script);
 	FETCHSTR("profilepath", profile_path);
-	FETCHSTR("description", acct_desc);
+	FETCHSTR("description", description);
 
 	if (argc == 0) {
 		d_printf("%s's %s: [%s]\n", username, ctx->thiscmd, oldval);
@@ -1646,6 +1650,7 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
 	const char *oldval = "unknown";
 	uint32 oldflags, newflags;
 	bool newval;
+	union samr_UserInfo *info = NULL;
 
 	if ((argc > 1) ||
 	    ((argc == 1) && !strequal(argv[0], "yes") &&
@@ -1657,17 +1662,17 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
 
 	newval = strequal(argv[0], "yes");
 
-	result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, user_hnd,
-					    21, &ctr);
+	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+					   CONST_DISCARD(struct policy_handle *, user_hnd),
+					   21,
+					   &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	usr = ctr->info.id21;
-
-	username = rpcstr_pull_unistr2_talloc(mem_ctx, &usr->uni_user_name);
-	oldflags = usr->acb_info;
-	newflags = usr->acb_info;
+	username = talloc_strdup(mem_ctx, info->info21.account_name.string);
+	oldflags = info->info21.acct_flags;
+	newflags = info->info21.acct_flags;
 
 	HANDLEFLG("disabled", DISABLED);
 	HANDLEFLG("pwnotreq", PWNOTREQ);
@@ -1817,12 +1822,10 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	/* char **names; */
 	int i;
 	/* DOM_GID *user_gids; */
-	SAM_USERINFO_CTR *user_ctr;
-	fstring temp;
 
 	struct samr_Ids group_rids, name_types;
 	struct lsa_String lsa_acct_name;
-
+	union samr_UserInfo *info = NULL;
 
 	if (argc < 1) {
         	d_printf("specify group\n");
@@ -1907,23 +1910,23 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 					rids->rids[i]);
 	           		goto done;
 	        	}
-	
-	                ZERO_STRUCT(user_ctr);
 
-	                result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, &user_pol,
-	                                                 21, &user_ctr);
-	
+			result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+							   &user_pol,
+							   21,
+							   &info);
+
 	        	if (!NT_STATUS_IS_OK(result)) {
 				d_fprintf(stderr, "Unable to lookup userinfo for group member %d\n",
 					rids->rids[i]);
 	           		goto done;
 	        	}
-	
-			if (user_ctr->info.id21->group_rid == group_rid) {
-				unistr2_to_ascii(temp, &(user_ctr->info.id21)->uni_user_name, 
-						sizeof(temp));
-				if (opt_verbose) 
-					d_printf("Group is primary group of %s\n",temp);
+
+			if (info->info21.primary_gid == group_rid) {
+				if (opt_verbose) {
+					d_printf("Group is primary group of %s\n",
+						info->info21.account_name.string);
+				}
 				group_is_primary = True;
                         }
 
