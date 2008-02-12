@@ -831,11 +831,12 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	uint32 user_rid;
-	SAM_USERINFO_CTR ctr, *qctr = NULL;
+	SAM_USERINFO_CTR ctr;
 	SAM_USER_INFO_16 p16;
 	struct lsa_String lsa_acct_name;
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
+	union samr_UserInfo *info = NULL;
 
 	status = cli_full_connection(&cli, NULL,
 				     r->in.dc_name,
@@ -904,8 +905,10 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx,
-					    &user_pol, 16, &qctr);
+	status = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+					   &user_pol,
+					   16,
+					   &info);
 	if (!NT_STATUS_IS_OK(status)) {
 		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 		goto done;
@@ -915,7 +918,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	ctr.switch_value = 16;
 	ctr.info.id16 = &p16;
 
-	p16.acb_info = qctr->info.id16->acb_info | ACB_DISABLED;
+	p16.acb_info = info->info16.acct_flags | ACB_DISABLED;
 
 	status = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol, 16,
 					   &cli->user_session_key, &ctr);
