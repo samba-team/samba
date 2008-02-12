@@ -23,11 +23,14 @@
 
 struct smb2_negprot {
 	struct {
-		/* static body buffer 38 (0x26) bytes */
-		/* uint16_t buffer_code;  0x24 (why?) */
-		uint16_t unknown1;    /* 0x0001 */
-		uint8_t  unknown2[32]; /* all zero */
-		uint16_t unknown3; /* 0x00000 */
+		uint16_t dialect_count;    /* size of dialects array */
+		uint16_t security_mode;    /* 0==signing disabled   
+					      1==signing enabled */
+		uint16_t reserved;
+		uint32_t capabilities;
+		struct GUID client_guid;
+		NTTIME   start_time;
+		uint16_t *dialects;
 	} in;
 	struct {
 		/* static body buffer 64 (0x40) bytes */

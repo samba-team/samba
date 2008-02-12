@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "smb_server/smb_server.h"
@@ -92,6 +93,12 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	struct timeval current_time;
 	struct timeval boot_time;
 
+	/* we only do dialect 0 for now */
+	if (io->in.dialect_count < 1 ||
+	    io->in.dialects[0] != 0) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
 	req->smb_conn->negotiate.protocol = PROTOCOL_SMB2;
 
 	current_time = timeval_current(); /* TODO: handle timezone?! */
@@ -155,6 +162,9 @@ static void smb2srv_negprot_send(struct smb2srv_request *req, struct smb2_negpro
 void smb2srv_negprot_recv(struct smb2srv_request *req)
 {
 	struct smb2_negprot *io;
+	int i;
+	DATA_BLOB guid_blob;
+	enum ndr_err_code ndr_err;
 
 	if (req->in.body_size < 0x26) {
 		smb2srv_send_error(req,  NT_STATUS_FOOBAR);
@@ -168,9 +178,30 @@ void smb2srv_negprot_recv(struct smb2srv_request *req)
 		return;
 	}
 
-	io->in.unknown1	= SVAL(req->in.body, 0x02);
-	memcpy(io->in.unknown2, req->in.body + 0x04, 0x20);
-	io->in.unknown3 = SVAL(req->in.body, 0x24);
+	io->in.dialect_count = SVAL(req->in.body, 0x02);
+	io->in.security_mode = SVAL(req->in.body, 0x04);
+	io->in.reserved      = SVAL(req->in.body, 0x06);
+	io->in.capabilities  = IVAL(req->in.body, 0x08);
+	guid_blob.data       = req->in.body + 0xC;
+	guid_blob.length     = 16;
+	ndr_err = ndr_pull_struct_blob(&guid_blob, req, NULL, &io->in.client_guid, 
+				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		smbsrv_terminate_connection(req->smb_conn, nt_errstr(NT_STATUS_FOOBAR));
+		talloc_free(req);
+		return;
+	}
+	io->in.start_time = smbcli_pull_nttime(req->in.body, 0x1C);
+
+	io->in.dialects = talloc_array(req, uint16_t, io->in.dialect_count);
+	if (io->in.dialects == NULL) {
+		smbsrv_terminate_connection(req->smb_conn, nt_errstr(NT_STATUS_NO_MEMORY));
+		talloc_free(req);
+		return;
+	}
+	for (i=0;i<io->in.dialect_count;i++) {
+		io->in.dialects[i] = SVAL(req->in.body, 0x24+i*2);
+	}
 
 	req->status = smb2srv_negprot_backend(req, io);
 
@@ -182,14 +213,13 @@ void smb2srv_negprot_recv(struct smb2srv_request *req)
 }
 
 /*
- * reply to a SMB negprot request with dialect "SMB 2.001"
+ * reply to a SMB negprot request with dialect "SMB 2.002"
  */
 void smb2srv_reply_smb_negprot(struct smbsrv_request *smb_req)
 {
 	struct smb2srv_request *req;
 	uint32_t body_fixed_size = 0x26;
 
-	/* create a fake SMB2 negprot request */
 	req = talloc_zero(smb_req->smb_conn, struct smb2srv_request);
 	if (!req) goto nomem;
 	req->smb_conn		= smb_req->smb_conn;
