@@ -343,10 +343,11 @@ bool cli_send_smb(struct cli_state *cli)
 	if (cli->fd == -1)
 		return false;
 
-	cli_calculate_sign_mac(cli);
+	cli_calculate_sign_mac(cli, cli->outbuf);
 
 	if (enc_on) {
-		NTSTATUS status = cli_encrypt_message(cli, &buf_out);
+		NTSTATUS status = cli_encrypt_message(cli, cli->outbuf,
+						      &buf_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			close(cli->fd);
 			cli->fd = -1;

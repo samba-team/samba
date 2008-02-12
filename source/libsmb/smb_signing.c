@@ -573,9 +573,9 @@ void cli_free_signing_context(struct cli_state *cli)
  * Sign a packet with the current mechanism
  */
  
-void cli_calculate_sign_mac(struct cli_state *cli)
+void cli_calculate_sign_mac(struct cli_state *cli, char *buf)
 {
-	cli->sign_info.sign_outgoing_message(cli->outbuf, &cli->sign_info);
+	cli->sign_info.sign_outgoing_message(buf, &cli->sign_info);
 }
 
 /**
