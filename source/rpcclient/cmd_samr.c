@@ -898,7 +898,7 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx, size, num_dom_groups, i;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-	struct acct_info *dom_groups;
+	struct samr_SamArray *dom_groups = NULL;
 	bool got_connect_pol = False, got_domain_pol = False;
 
 	if ((argc < 1) || (argc > 2)) {
@@ -938,17 +938,19 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct rpc_pipe_client *cli,
 	size = 0xffff;
 
 	do {
-		result = rpccli_samr_enum_dom_groups(
-			cli, mem_ctx, &domain_pol, &start_idx, size,
-			&dom_groups, &num_dom_groups);
-
+		result = rpccli_samr_EnumDomainGroups(cli, mem_ctx,
+						      &domain_pol,
+						      &start_idx,
+						      &dom_groups,
+						      size,
+						      &num_dom_groups);
 		if (NT_STATUS_IS_OK(result) ||
 		    NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES)) {
 
 			for (i = 0; i < num_dom_groups; i++)
 				printf("group:[%s] rid:[0x%x]\n",
-				       dom_groups[i].acct_name,
-				       dom_groups[i].rid);
+				       dom_groups->entries[i].name.string,
+				       dom_groups->entries[i].idx);
 		}
 
 	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
