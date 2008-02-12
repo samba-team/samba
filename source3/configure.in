@@ -5191,7 +5191,6 @@ samba_cv_with_libtalloc=yes
 
 if test x"$samba_cv_with_libtalloc" = "xyes" -a $BLDSHARED = true; then
 	LIBTALLOC_SHARED=bin/libtalloc.$SHLIBEXT
-	LIBTALLOC=libtalloc
 	AC_MSG_RESULT(yes)
 	if test x"$LIB_TALLOC" = "xSTATIC" ; then
 		LIBTALLOC_STATIC=bin/libtalloc.a
@@ -5203,9 +5202,9 @@ else
 	AC_MSG_RESULT(no shared library support -- will supply static library)
 fi
 if test $enable_static = yes; then
-	LIBTALLOC=libtalloc
 	LIBTALLOC_STATIC=bin/libtalloc.a
 fi
+LIBTALLOC=libtalloc
 INSTALL_LIBTALLOC=installlibtalloc
 UNINSTALL_LIBTALLOC=uninstalllibtalloc
 
