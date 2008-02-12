@@ -2367,7 +2367,7 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 			dssetup_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_SAMR:
-			samr2_get_pipe_fns( &cmds, &n_cmds );
+			samr_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_NETLOGON:
 			netlog_get_pipe_fns( &cmds, &n_cmds );
