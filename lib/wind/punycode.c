@@ -34,6 +34,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+#include <string.h>
 #include "windlocl.h"
 
 RCSID("$Id$");
@@ -70,9 +71,24 @@ adapt(unsigned delta, unsigned numpoints, int first)
     return k + (((base - t_min + 1) * delta) / (delta + skew));
 }
 
+/**
+ * Convert an UCS4 string to a puny-coded DNS label string suitable
+ * when combined with delimiters and other labels for DNS lookup.
+ *
+ * @param in an UCS4 string to convert
+ * @param in_len the length of in.
+ * @param out the resulting puny-coded string.
+ * @param out_len before processing out_len should be the length of
+ * the out variable, after processing it will be the length of the out
+ * string.
+ * 
+ * @return returns 0 on success, an wind error code otherwise
+ * @ingroup wind
+ */
+
 int
-wind_punycode_toascii(const uint32_t *in, size_t in_len,
-		      char *out, size_t *out_len)
+wind_punycode_label_toascii(const uint32_t *in, size_t in_len,
+			    char *out, size_t *out_len)
 {
     unsigned n     = initial_n;
     unsigned delta = 0;
@@ -82,7 +98,6 @@ wind_punycode_toascii(const uint32_t *in, size_t in_len,
     unsigned i;
     unsigned o = 0;
     unsigned m;
-    int ret = 0;
 
     for (i = 0; i < in_len; ++i) {
 	if (in[i] < 0x80) {
@@ -99,7 +114,12 @@ wind_punycode_toascii(const uint32_t *in, size_t in_len,
 	out[o++] = 0x2D;
     }
     while (h < in_len) {
-	ret = 1;
+	if (o + 4 >= *out_len)
+	    return WIND_ERR_OVERRUN;
+	memmove(out + 4, out, o);
+	memcpy(out, "xn--", 4);
+	o += 4;
+
 	m = (unsigned)-1;
 	for (i = 0; i < in_len; ++i)
 	    if(in[i] < m && in[i] >= n)
@@ -142,5 +162,5 @@ wind_punycode_toascii(const uint32_t *in, size_t in_len,
     }
 
     *out_len = o;
-    return ret;
+    return 0;
 }
