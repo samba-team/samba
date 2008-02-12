@@ -531,44 +531,6 @@ bool samr_io_r_lookup_rids(const char *desc, SAMR_R_LOOKUP_RIDS * r_u,
 }
 
 /*******************************************************************
-inits a SAMR_Q_QUERY_USERINFO structure.
-********************************************************************/
-
-void init_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO * q_u,
-				const POLICY_HND *hnd, uint16 switch_value)
-{
-	DEBUG(5, ("init_samr_q_query_userinfo\n"));
-
-	q_u->pol = *hnd;
-	q_u->switch_value = switch_value;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_q_query_userinfo(const char *desc, SAMR_Q_QUERY_USERINFO * q_u,
-			      prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_q_query_userinfo");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("pol", &q_u->pol, ps, depth))
-		return False;
-
-	if(!prs_uint16("switch_value", ps, depth, &q_u->switch_value)) /* 0x0015 or 0x0011 */
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
 reads or writes a LOGON_HRS structure.
 ********************************************************************/
 
@@ -2080,58 +2042,6 @@ static bool samr_io_userinfo_ctr(const char *desc, SAM_USERINFO_CTR **ppctr,
 	}
 
 	return ret;
-}
-
-/*******************************************************************
-inits a SAMR_R_QUERY_USERINFO structure.
-********************************************************************/
-
-void init_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO * r_u,
-				SAM_USERINFO_CTR * ctr, NTSTATUS status)
-{
-	DEBUG(5, ("init_samr_r_query_userinfo\n"));
-
-	r_u->ptr = 0;
-	r_u->ctr = NULL;
-
-	if (NT_STATUS_IS_OK(status)) {
-		r_u->ptr = 1;
-		r_u->ctr = ctr;
-	}
-
-	r_u->status = status;	/* return status */
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-
-bool samr_io_r_query_userinfo(const char *desc, SAMR_R_QUERY_USERINFO * r_u,
-			      prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "samr_io_r_query_userinfo");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("ptr", ps, depth, &r_u->ptr))
-		return False;
-
-	if (r_u->ptr != 0) {
-		if(!samr_io_userinfo_ctr("ctr", &r_u->ctr, ps, depth))
-			return False;
-	}
-
-	if(!prs_align(ps))
-		return False;
-	if(!prs_ntstatus("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
 }
 
 /*******************************************************************
