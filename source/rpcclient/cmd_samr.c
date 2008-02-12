@@ -32,97 +32,73 @@ static void init_lsa_String(struct lsa_String *name, const char *s)
 }
 
 /****************************************************************************
- display sam_user_info_7 structure
+ display samr_user_info_7 structure
  ****************************************************************************/
-static void display_sam_user_info_7(SAM_USER_INFO_7 *usr)
+static void display_samr_user_info_7(struct samr_UserInfo7 *r)
 {
-	fstring temp;
-
-	unistr2_to_ascii(temp, &usr->uni_name, sizeof(temp));
-	printf("\tUser Name   :\t%s\n", temp);
+	printf("\tUser Name   :\t%s\n", r->account_name.string);
 }
 
 /****************************************************************************
- display sam_user_info_9 structure
+ display samr_user_info_9 structure
  ****************************************************************************/
-static void display_sam_user_info_9(SAM_USER_INFO_9 *usr)
+static void display_samr_user_info_9(struct samr_UserInfo9 *r)
 {
-	printf("\tPrimary group RID   :\tox%x\n", usr->rid_group);
+	printf("\tPrimary group RID   :\tox%x\n", r->primary_gid);
 }
 
 /****************************************************************************
- display sam_user_info_16 structure
+ display samr_user_info_16 structure
  ****************************************************************************/
-static void display_sam_user_info_16(SAM_USER_INFO_16 *usr)
+static void display_samr_user_info_16(struct samr_UserInfo16 *r)
 {
-	printf("\tAcct Flags   :\tox%x\n", usr->acb_info);
+	printf("\tAcct Flags   :\tox%x\n", r->acct_flags);
 }
 
 /****************************************************************************
- display sam_user_info_21 structure
+ display samr_user_info_21 structure
  ****************************************************************************/
-static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
+static void display_samr_user_info_21(struct samr_UserInfo21 *r)
 {
-	fstring temp;
-
-	unistr2_to_ascii(temp, &usr->uni_user_name, sizeof(temp));
-	printf("\tUser Name   :\t%s\n", temp);
-
-	unistr2_to_ascii(temp, &usr->uni_full_name, sizeof(temp));
-	printf("\tFull Name   :\t%s\n", temp);
-
-	unistr2_to_ascii(temp, &usr->uni_home_dir, sizeof(temp));
-	printf("\tHome Drive  :\t%s\n", temp);
-
-	unistr2_to_ascii(temp, &usr->uni_dir_drive, sizeof(temp));
-	printf("\tDir Drive   :\t%s\n", temp);
-
-	unistr2_to_ascii(temp, &usr->uni_profile_path, sizeof(temp));
-	printf("\tProfile Path:\t%s\n", temp);
-
-	unistr2_to_ascii(temp, &usr->uni_logon_script, sizeof(temp));
-	printf("\tLogon Script:\t%s\n", temp);
-
-	unistr2_to_ascii(temp, &usr->uni_acct_desc, sizeof(temp));
-	printf("\tDescription :\t%s\n", temp);
-
-	unistr2_to_ascii(temp, &usr->uni_workstations, sizeof(temp));
-	printf("\tWorkstations:\t%s\n", temp);
-
-	unistr2_to_ascii(temp, &usr->uni_comment, sizeof(temp));
-	printf("\tUnknown Str :\t%s\n", temp);
-
-	unistr2_to_ascii(temp, &usr->uni_munged_dial, sizeof(temp));
-	printf("\tRemote Dial :\t%s\n", temp);
+	printf("\tUser Name   :\t%s\n", r->account_name.string);
+	printf("\tFull Name   :\t%s\n", r->full_name.string);
+	printf("\tHome Drive  :\t%s\n", r->home_directory.string);
+	printf("\tDir Drive   :\t%s\n", r->home_drive.string);
+	printf("\tProfile Path:\t%s\n", r->profile_path.string);
+	printf("\tLogon Script:\t%s\n", r->logon_script.string);
+	printf("\tDescription :\t%s\n", r->description.string);
+	printf("\tWorkstations:\t%s\n", r->workstations.string);
+	printf("\tComment     :\t%s\n", r->comment.string);
+	printf("\tRemote Dial :\t%s\n", r->parameters.string);
 
 	printf("\tLogon Time               :\t%s\n",
-	       http_timestring(nt_time_to_unix(usr->logon_time)));
+	       http_timestring(nt_time_to_unix(r->last_logon)));
 	printf("\tLogoff Time              :\t%s\n",
-	       http_timestring(nt_time_to_unix(usr->logoff_time)));
+	       http_timestring(nt_time_to_unix(r->last_logoff)));
 	printf("\tKickoff Time             :\t%s\n",
-	       http_timestring(nt_time_to_unix(usr->kickoff_time)));
+	       http_timestring(nt_time_to_unix(r->acct_expiry)));
 	printf("\tPassword last set Time   :\t%s\n",
-	       http_timestring(nt_time_to_unix(usr->pass_last_set_time)));
+	       http_timestring(nt_time_to_unix(r->last_password_change)));
 	printf("\tPassword can change Time :\t%s\n",
-	       http_timestring(nt_time_to_unix(usr->pass_can_change_time)));
+	       http_timestring(nt_time_to_unix(r->allow_password_change)));
 	printf("\tPassword must change Time:\t%s\n",
-	       http_timestring(nt_time_to_unix(usr->pass_must_change_time)));
+	       http_timestring(nt_time_to_unix(r->force_password_change)));
 
 	printf("\tunknown_2[0..31]...\n"); /* user passwords? */
 
-	printf("\tuser_rid :\t0x%x\n"  , usr->user_rid ); /* User ID */
-	printf("\tgroup_rid:\t0x%x\n"  , usr->group_rid); /* Group ID */
-	printf("\tacb_info :\t0x%08x\n", usr->acb_info ); /* Account Control Info */
+	printf("\tuser_rid :\t0x%x\n"  , r->rid); /* User ID */
+	printf("\tgroup_rid:\t0x%x\n"  , r->primary_gid); /* Group ID */
+	printf("\tacb_info :\t0x%08x\n", r->acct_flags); /* Account Control Info */
 
-	printf("\tfields_present:\t0x%08x\n", usr->fields_present); /* 0x00ff ffff */
-	printf("\tlogon_divs:\t%d\n", usr->logon_divs); /* 0x0000 00a8 which is 168 which is num hrs in a week */
-	printf("\tbad_password_count:\t0x%08x\n", usr->bad_password_count);
-	printf("\tlogon_count:\t0x%08x\n", usr->logon_count);
+	printf("\tfields_present:\t0x%08x\n", r->fields_present); /* 0x00ff ffff */
+	printf("\tlogon_divs:\t%d\n", r->logon_hours.units_per_week); /* 0x0000 00a8 which is 168 which is num hrs in a week */
+	printf("\tbad_password_count:\t0x%08x\n", r->bad_password_count);
+	printf("\tlogon_count:\t0x%08x\n", r->logon_count);
 
 	printf("\tpadding1[0..7]...\n");
 
-	if (usr->ptr_logon_hrs) {
-		printf("\tlogon_hrs[0..%d]...\n", usr->logon_hrs.len);
+	if (r->logon_hours.bits) {
+		printf("\tlogon_hrs[0..%d]...\n", r->logon_hours.units_per_week/8);
 	}
 }
 
@@ -314,7 +290,7 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 info_level = 21;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
-	SAM_USERINFO_CTR *user_ctr;
+	union samr_UserInfo *info = NULL;
 	fstring server;
 	uint32 user_rid = 0;
 
@@ -384,26 +360,26 @@ static NTSTATUS cmd_samr_query_user(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	ZERO_STRUCT(user_ctr);
-
-	result = rpccli_samr_query_userinfo(cli, mem_ctx, &user_pol,
-					 info_level, &user_ctr);
+	result = rpccli_samr_QueryUserInfo(cli, mem_ctx,
+					   &user_pol,
+					   info_level,
+					   &info);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	switch (user_ctr->switch_value) {
+	switch (info_level) {
 	case 7:
-		display_sam_user_info_7(user_ctr->info.id7);
+		display_samr_user_info_7(&info->info7);
 		break;
 	case 9:
-		display_sam_user_info_9(user_ctr->info.id9);
+		display_samr_user_info_9(&info->info9);
 		break;
 	case 16:
-		display_sam_user_info_16(user_ctr->info.id16);
+		display_samr_user_info_16(&info->info16);
 		break;
 	case 21:
-		display_sam_user_info_21(user_ctr->info.id21);
+		display_samr_user_info_21(&info->info21);
 		break;
 	default:
 		printf("Unsupported infolevel: %d\n", info_level);
