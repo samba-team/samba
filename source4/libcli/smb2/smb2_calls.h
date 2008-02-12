@@ -35,7 +35,7 @@ struct smb2_negprot {
 	struct {
 		/* static body buffer 64 (0x40) bytes */
 		/* uint16_t buffer_code;  0x41 = 0x40 + 1 */
-		uint16_t security_mode;
+		uint16_t security_mode; /* SMB2_NEGOTIATE_SIGNING_* */
 		uint16_t dialect_revision;
 		uint16_t reserved;
 		struct GUID server_guid;
