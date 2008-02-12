@@ -5182,7 +5182,7 @@ case "$withval" in
 esac
 ],
 [
-# if unspecified, default is to built it if possible.
+# if unspecified, default is to build it if possible.
 samba_cv_with_libtalloc=yes
 ]
 )
@@ -5234,7 +5234,7 @@ AC_ARG_WITH(libnetapi,
      ;;
   esac ],
 [
-# if unspecified, default is to built it if possible.
+# if unspecified, default is to build it if possible.
   if test $BLDSHARED = true; then
      LIBNETAPI_SHARED=bin/libnetapi.$SHLIBEXT
      LIBNETAPI=libnetapi
@@ -5312,7 +5312,7 @@ AC_ARG_WITH(libsmbclient,
      ;;
   esac ],
 [
-# if unspecified, default is to built it if possible.
+# if unspecified, default is to build it if possible.
   if test $BLDSHARED = true; then
      LIBSMBCLIENT_SHARED=bin/libsmbclient.$SHLIBEXT
      LIBSMBCLIENT=libsmbclient
@@ -5355,7 +5355,7 @@ AC_ARG_WITH(libsmbsharemodes,
      ;;
   esac ],
 [
-# if unspecified, default is to built it if possible.
+# if unspecified, default is to build it if possible.
   if test $BLDSHARED = true; then
      LIBSMBSHAREMODES_SHARED=bin/libsmbsharemodes.$SHLIBEXT
      LIBSMBSHAREMODES=libsmbsharemodes
@@ -6507,7 +6507,7 @@ do
 	fi
 done
 
-dnl Always built these modules static
+dnl Always build these modules static
 MODULE_rpc_spoolss=STATIC
 MODULE_rpc_srvsvc2=STATIC
 MODULE_idmap_tdb=STATIC
