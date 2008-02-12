@@ -1586,6 +1586,50 @@ NTSTATUS _samr_QueryDisplayInfo(pipes_struct *p,
 	return status;
 }
 
+/****************************************************************
+ _samr_QueryDisplayInfo2
+****************************************************************/
+
+NTSTATUS _samr_QueryDisplayInfo2(pipes_struct *p,
+				 struct samr_QueryDisplayInfo2 *r)
+{
+	struct samr_QueryDisplayInfo q;
+
+	q.in.domain_handle	= r->in.domain_handle;
+	q.in.level		= r->in.level;
+	q.in.start_idx		= r->in.start_idx;
+	q.in.max_entries	= r->in.max_entries;
+	q.in.buf_size		= r->in.buf_size;
+
+	q.out.total_size	= r->out.total_size;
+	q.out.returned_size	= r->out.returned_size;
+	q.out.info		= r->out.info;
+
+	return _samr_QueryDisplayInfo(p, &q);
+}
+
+/****************************************************************
+ _samr_QueryDisplayInfo3
+****************************************************************/
+
+NTSTATUS _samr_QueryDisplayInfo3(pipes_struct *p,
+				 struct samr_QueryDisplayInfo3 *r)
+{
+	struct samr_QueryDisplayInfo q;
+
+	q.in.domain_handle	= r->in.domain_handle;
+	q.in.level		= r->in.level;
+	q.in.start_idx		= r->in.start_idx;
+	q.in.max_entries	= r->in.max_entries;
+	q.in.buf_size		= r->in.buf_size;
+
+	q.out.total_size	= r->out.total_size;
+	q.out.returned_size	= r->out.returned_size;
+	q.out.info		= r->out.info;
+
+	return _samr_QueryDisplayInfo(p, &q);
+}
+
 /*******************************************************************
  _samr_QueryAliasInfo
  ********************************************************************/
@@ -5608,28 +5652,8 @@ NTSTATUS _samr_QueryUserInfo2(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _samr_QueryDisplayInfo2(pipes_struct *p,
-				 struct samr_QueryDisplayInfo2 *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
 NTSTATUS _samr_GetDisplayEnumerationIndex2(pipes_struct *p,
 					   struct samr_GetDisplayEnumerationIndex2 *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_QueryDisplayInfo3(pipes_struct *p,
-				 struct samr_QueryDisplayInfo3 *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
