@@ -457,40 +457,6 @@ typedef struct samr_entry_info
 
 } SAM_ENTRY;
 
-/* SAMR_Q_ENUM_DOM_USERS - SAM rids and names */
-typedef struct q_samr_enum_dom_users_info
-{
-	POLICY_HND pol;          /* policy handle */
-
-	uint32 start_idx;   /* number of values (0 indicates unlimited?) */
-	uint32 acb_mask;          /* 0x0000 indicates all */
-
-	uint32 max_size;              /* 0x0000 ffff */
-
-} SAMR_Q_ENUM_DOM_USERS;
-
-
-/* SAMR_R_ENUM_DOM_USERS - SAM rids and names */
-typedef struct r_samr_enum_dom_users_info
-{
-	uint32 next_idx;     /* next starting index required for enum */
-	uint32 ptr_entries1;  
-
-	uint32 num_entries2;
-	uint32 ptr_entries2;
-
-	uint32 num_entries3;
-
-	SAM_ENTRY *sam;
-	UNISTR2 *uni_acct_name;
-
-	uint32 num_entries4;
-
-	NTSTATUS status;
-
-} SAMR_R_ENUM_DOM_USERS;
-
-
 /* SAMR_Q_ENUM_DOM_GROUPS - SAM rids and names */
 typedef struct q_samr_enum_dom_groups_info
 {
