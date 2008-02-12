@@ -70,26 +70,7 @@ static bool api_lsa_open_policy(pipes_struct *p)
 
 static bool api_lsa_enum_trust_dom(pipes_struct *p)
 {
-	LSA_Q_ENUM_TRUST_DOM q_u;
-	LSA_R_ENUM_TRUST_DOM r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the enum trust domain context etc. */
-	if(!lsa_io_q_enum_trust_dom("", &q_u, data, 0))
-		return False;
-
-	/* get required trusted domains information */
-	r_u.status = _lsa_enum_trust_dom(p, &q_u, &r_u);
-
-	/* prepare the response */
-	if(!lsa_io_r_enum_trust_dom("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_ENUMTRUSTDOM);
 }
 
 /***************************************************************************
