@@ -329,5 +329,6 @@ then
 	rm -rf $PREFIX/upgrade
 	plantest "blackbox.upgrade" none $PYTHON setup/upgrade.py $CONFIGURATION --targetdir=$PREFIX/upgrade ../testdata/samba3 ../testdata/samba3/smb.conf
 	rm -rf $PREFIX/provision
-	plantest "blackbox.provision.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_provision.sh "$PREFIX" "$CONFIGURATION" 
+	mkdir $PREFIX/provision
+	plantest "blackbox.provision.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_provision.sh "$PREFIX/provision" "$CONFIGURATION" 
 fi
