@@ -94,17 +94,17 @@ NTSTATUS smb2srv_setup_reply(struct smb2srv_request *req, uint16_t body_fixed_si
 
 	SIVAL(req->out.hdr, 0,				SMB2_MAGIC);
 	SSVAL(req->out.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
-	SSVAL(req->out.hdr, SMB2_HDR_PAD1,		0);
+	SSVAL(req->out.hdr, SMB2_HDR_EPOCH,		0);
 	SIVAL(req->out.hdr, SMB2_HDR_STATUS,		NT_STATUS_V(req->status));
 	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,		SVAL(req->in.hdr, SMB2_HDR_OPCODE));
-	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,		0x0001);
+	SSVAL(req->out.hdr, SMB2_HDR_CREDIT,		0x0001);
 	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,		flags);
-	SIVAL(req->out.hdr, SMB2_HDR_CHAIN_OFFSET,	0);
-	SBVAL(req->out.hdr, SMB2_HDR_SEQNUM,		req->seqnum);
+	SIVAL(req->out.hdr, SMB2_HDR_NEXT_COMMAND,	0);
+	SBVAL(req->out.hdr, SMB2_HDR_MESSAGE_ID,	req->seqnum);
 	SIVAL(req->out.hdr, SMB2_HDR_PID,		pid);
 	SIVAL(req->out.hdr, SMB2_HDR_TID,		tid);
-	SBVAL(req->out.hdr, SMB2_HDR_UID,		BVAL(req->in.hdr, SMB2_HDR_UID));
-	memset(req->out.hdr+SMB2_HDR_SIG, 0, 16);
+	SBVAL(req->out.hdr, SMB2_HDR_SESSION_ID,	BVAL(req->in.hdr, SMB2_HDR_SESSION_ID));
+	memset(req->out.hdr+SMB2_HDR_SIGNATURE, 0, 16);
 
 	/* set the length of the fixed body part and +1 if there's a dynamic part also */
 	SSVAL(req->out.body, 0, body_fixed_size + (body_dynamic_size?1:0));
@@ -259,10 +259,10 @@ static NTSTATUS smb2srv_reply(struct smb2srv_request *req)
 	uint64_t uid;
 
 	opcode			= SVAL(req->in.hdr, SMB2_HDR_OPCODE);
-	req->chain_offset	= IVAL(req->in.hdr, SMB2_HDR_CHAIN_OFFSET);
-	req->seqnum		= BVAL(req->in.hdr, SMB2_HDR_SEQNUM);
+	req->chain_offset	= IVAL(req->in.hdr, SMB2_HDR_NEXT_COMMAND);
+	req->seqnum		= BVAL(req->in.hdr, SMB2_HDR_MESSAGE_ID);
 	tid			= IVAL(req->in.hdr, SMB2_HDR_TID);
-	uid			= BVAL(req->in.hdr, SMB2_HDR_UID);
+	uid			= BVAL(req->in.hdr, SMB2_HDR_SESSION_ID);
 
 	req->session	= smbsrv_session_find(req->smb_conn, uid, req->request_time);
 	req->tcon	= smbsrv_smb2_tcon_find(req->session, tid, req->request_time);

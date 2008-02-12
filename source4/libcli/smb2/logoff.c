@@ -33,7 +33,7 @@ struct smb2_request *smb2_logoff_send(struct smb2_session *session)
 	req = smb2_request_init(session->transport, SMB2_OP_LOGOFF, 0x04, false, 0);
 	if (req == NULL) return NULL;
 
-	SBVAL(req->out.hdr,  SMB2_HDR_UID, session->uid);
+	SBVAL(req->out.hdr,  SMB2_HDR_SESSION_ID, session->uid);
 
 	SSVAL(req->out.body, 0x02, 0);
 

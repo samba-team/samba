@@ -167,7 +167,7 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	}
 
 	flags	= IVAL(hdr, SMB2_HDR_FLAGS);
-	seqnum	= BVAL(hdr, SMB2_HDR_SEQNUM);
+	seqnum	= BVAL(hdr, SMB2_HDR_MESSAGE_ID);
 
 	/* match the incoming request against the list of pending requests */
 	for (req=transport->pending_recv; req; req=req->next) {

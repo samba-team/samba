@@ -156,19 +156,20 @@ struct smb2_request {
 
 #define SMB2_MIN_SIZE 0x42
 
-/* offsets into header elements */
+/* offsets into header elements for a sync SMB2 request */
+#define SMB2_HDR_PROTOCOL_ID    0x00
 #define SMB2_HDR_LENGTH		0x04
-#define SMB2_HDR_PAD1		0x06
+#define SMB2_HDR_EPOCH		0x06
 #define SMB2_HDR_STATUS		0x08
 #define SMB2_HDR_OPCODE		0x0c
-#define SMB2_HDR_UNKNOWN1	0x0e
+#define SMB2_HDR_CREDIT 	0x0e
 #define SMB2_HDR_FLAGS		0x10
-#define SMB2_HDR_CHAIN_OFFSET	0x14
-#define SMB2_HDR_SEQNUM		0x18
+#define SMB2_HDR_NEXT_COMMAND	0x14
+#define SMB2_HDR_MESSAGE_ID     0x18
 #define SMB2_HDR_PID		0x20
 #define SMB2_HDR_TID		0x24
-#define SMB2_HDR_UID		0x28 /* 64 bit */
-#define SMB2_HDR_SIG		0x30 /* guess ... */
+#define SMB2_HDR_SESSION_ID	0x28
+#define SMB2_HDR_SIGNATURE	0x30 /* 16 bytes */
 #define SMB2_HDR_BODY		0x40
 
 /* SMB2 opcodes */
