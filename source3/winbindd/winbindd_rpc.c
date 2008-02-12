@@ -409,7 +409,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND dom_pol, user_pol;
-	SAM_USERINFO_CTR *ctr;
+	union samr_UserInfo *info = NULL;
 	uint32 user_rid;
 	NET_USER_INFO_3 *user;
 	struct rpc_pipe_client *cli;
@@ -480,8 +480,10 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		return result;
 
 	/* Get user info */
-	result = rpccli_samr_query_userinfo(cli, mem_ctx, &user_pol,
-					    0x15, &ctr);
+	result = rpccli_samr_QueryUserInfo(cli, mem_ctx,
+					   &user_pol,
+					   0x15,
+					   &info);
 
 	rpccli_samr_Close(cli, mem_ctx, &user_pol);
 
@@ -490,11 +492,11 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 
 	sid_compose(&user_info->user_sid, &domain->sid, user_rid);
 	sid_compose(&user_info->group_sid, &domain->sid,
-		    ctr->info.id21->group_rid);
-	user_info->acct_name = unistr2_to_ascii_talloc(mem_ctx, 
-					    &ctr->info.id21->uni_user_name);
-	user_info->full_name = unistr2_to_ascii_talloc(mem_ctx, 
-					    &ctr->info.id21->uni_full_name);
+		    info->info21.primary_gid);
+	user_info->acct_name = talloc_strdup(mem_ctx,
+					     info->info21.account_name.string);
+	user_info->full_name = talloc_strdup(mem_ctx,
+					     info->info21.full_name.string);
 	user_info->homedir = NULL;
 	user_info->shell = NULL;
 	user_info->primary_gid = (gid_t)-1;
