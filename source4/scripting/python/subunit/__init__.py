@@ -218,6 +218,7 @@ class TestProtocolClient(unittest.TestResult):
         for line in self._exc_info_to_string(error, test).splitlines():
             self._stream.write("%s\n" % line)
         self._stream.write("]\n")
+        super(TestProtocolClient, self).addError(test, error)
 
     def addFailure(self, test, error):
         """Report a failure in test test."""
@@ -225,14 +226,17 @@ class TestProtocolClient(unittest.TestResult):
         for line in self._exc_info_to_string(error, test).splitlines():
             self._stream.write("%s\n" % line)
         self._stream.write("]\n")
+        super(TestProtocolClient, self).addFailure(test, error)
 
     def addSuccess(self, test):
         """Report a success in a test."""
         self._stream.write("successful: %s\n" % (test.shortDescription() or str(test)))
+        super(TestProtocolClient, self).addSuccess(test)
 
     def startTest(self, test):
         """Mark a test as starting its test run."""
         self._stream.write("test: %s\n" % (test.shortDescription() or str(test)))
+        super(TestProtocolClient, self).startTest(test)
 
 
 def RemoteError(description=""):
@@ -379,6 +383,5 @@ class SubunitTestRunner:
     def run(self, test):
         "Run the given test case or test suite."
         result = TestProtocolClient(self.stream)
-        test(result)
         return result
 

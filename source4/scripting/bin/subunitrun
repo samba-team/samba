@@ -21,6 +21,4 @@ from subunit import SubunitTestRunner
 import sys
 from unittest import TestProgram
 
-program = TestProgram(module=None, argv=sys.argv, 
-		              testRunner=SubunitTestRunner())
-program.runTests()
+TestProgram(module=None, argv=sys.argv, testRunner=SubunitTestRunner())
