@@ -6184,10 +6184,9 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	union lsa_PolicyInformation *info = NULL;
 
 	/* trusted domains listing variables */
-	unsigned int num_domains, enum_ctx = 0;
+	unsigned int enum_ctx = 0;
 	int i;
-	DOM_SID *domain_sids;
-	char **trusted_dom_names;
+	struct lsa_DomainList dom_list;
 	fstring pdc_name;
 
 	/*
@@ -6262,10 +6261,11 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	d_printf("Vampire trusted domains:\n\n");
 
 	do {
-		nt_status = rpccli_lsa_enum_trust_dom(pipe_hnd, mem_ctx, &connect_hnd, &enum_ctx,
-						   &num_domains,
-						   &trusted_dom_names, &domain_sids);
-		
+		nt_status = rpccli_lsa_EnumTrustDom(pipe_hnd, mem_ctx,
+						    &connect_hnd,
+						    &enum_ctx,
+						    &dom_list,
+						    (uint32_t)-1);
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(nt_status)));
@@ -6273,13 +6273,15 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 			talloc_destroy(mem_ctx);
 			return -1;
 		};
-		
-		for (i = 0; i < num_domains; i++) {
 
-			print_trusted_domain(&(domain_sids[i]), trusted_dom_names[i]);
+		for (i = 0; i < dom_list.count; i++) {
+
+			print_trusted_domain(dom_list.domains[i].sid,
+					     dom_list.domains[i].name.string);
 
 			nt_status = vampire_trusted_domain(pipe_hnd, mem_ctx, &connect_hnd, 
-							   domain_sids[i], trusted_dom_names[i]);
+							   *dom_list.domains[i].sid,
+							   dom_list.domains[i].name.string);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				cli_shutdown(cli);
 				talloc_destroy(mem_ctx);
@@ -6291,7 +6293,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 		 * in case of no trusted domains say something rather
 		 * than just display blank line
 		 */
-		if (!num_domains) d_printf("none\n");
+		if (!dom_list.count) d_printf("none\n");
 
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
@@ -6329,8 +6331,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	/* trusted domains listing variables */
 	unsigned int num_domains, enum_ctx = 0;
 	int i, pad_len, col_len = 20;
-	DOM_SID *domain_sids;
-	char **trusted_dom_names;
+	struct lsa_DomainList dom_list;
 	fstring pdc_name;
 
 	/* trusting domains listing variables */
@@ -6409,10 +6410,11 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	d_printf("Trusted domains list:\n\n");
 
 	do {
-		nt_status = rpccli_lsa_enum_trust_dom(pipe_hnd, mem_ctx, &connect_hnd, &enum_ctx,
-						   &num_domains,
-						   &trusted_dom_names, &domain_sids);
-		
+		nt_status = rpccli_lsa_EnumTrustDom(pipe_hnd, mem_ctx,
+						    &connect_hnd,
+						    &enum_ctx,
+						    &dom_list,
+						    (uint32_t)-1);
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(nt_status)));
@@ -6420,16 +6422,17 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			talloc_destroy(mem_ctx);
 			return -1;
 		};
-		
-		for (i = 0; i < num_domains; i++) {
-			print_trusted_domain(&(domain_sids[i]), trusted_dom_names[i]);
+
+		for (i = 0; i < dom_list.count; i++) {
+			print_trusted_domain(dom_list.domains[i].sid,
+					     dom_list.domains[i].name.string);
 		};
-		
+
 		/*
 		 * in case of no trusted domains say something rather
 		 * than just display blank line
 		 */
-		if (!num_domains) d_printf("none\n");
+		if (!dom_list.count) d_printf("none\n");
 
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 

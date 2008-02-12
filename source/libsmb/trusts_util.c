@@ -152,6 +152,8 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *lsa_pipe;
 	bool 		retry;
+	struct lsa_DomainList dom_list;
+	int i;
 
 	*domain_names = NULL;
 	*num_domains = 0;
@@ -188,10 +190,32 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 
 	/* Lookup list of trusted domains */
 
-	result = rpccli_lsa_enum_trust_dom(lsa_pipe, mem_ctx, &pol, &enum_ctx,
-		num_domains, domain_names, sids);
+	result = rpccli_lsa_EnumTrustDom(lsa_pipe, mem_ctx,
+					 &pol,
+					 &enum_ctx,
+					 &dom_list,
+					 (uint32_t)-1);
 	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
+
+	*num_domains = dom_list.count;
+
+	*domain_names = TALLOC_ZERO_ARRAY(mem_ctx, char *, *num_domains);
+	if (!*domain_names) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	*sids = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, *num_domains);
+	if (!*sids) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i< *num_domains; i++) {
+		(*domain_names)[i] = CONST_DISCARD(char *, dom_list.domains[i].name.string);
+		(*sids)[i] = *dom_list.domains[i].sid;
+	}
 
 done:
 	/* cleanup */

@@ -377,13 +377,12 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID *domain_sids;
-	char **domain_names;
+	struct lsa_DomainList domain_list;
 
 	/* defaults, but may be changed using params */
 	uint32 enum_ctx = 0;
-	uint32 num_domains = 0;
 	int i;
+	uint32_t max_size = (uint32_t)-1;
 
 	if (argc > 2) {
 		printf("Usage: %s [enum context (0)]\n", argv[0]);
@@ -407,9 +406,11 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 
 		/* Lookup list of trusted domains */
 
-		result = rpccli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
-						&num_domains,
-						&domain_names, &domain_sids);
+		result = rpccli_lsa_EnumTrustDom(cli, mem_ctx,
+						 &pol,
+						 &enum_ctx,
+						 &domain_list,
+						 max_size);
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
@@ -417,12 +418,14 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 
 		/* Print results: list of names and sids returned in this
 		 * response. */	 
-		for (i = 0; i < num_domains; i++) {
+		for (i = 0; i < domain_list.count; i++) {
 			fstring sid_str;
 
-			sid_to_fstring(sid_str, &domain_sids[i]);
-			printf("%s %s\n", domain_names[i] ? domain_names[i] : 
-			       "*unknown*", sid_str);
+			sid_to_fstring(sid_str, domain_list.domains[i].sid);
+			printf("%s %s\n",
+				domain_list.domains[i].name.string ?
+				domain_list.domains[i].name.string : "*unknown*",
+				sid_str);
 		}
 	}
 
