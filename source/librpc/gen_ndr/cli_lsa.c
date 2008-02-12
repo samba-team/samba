@@ -562,8 +562,8 @@ NTSTATUS rpccli_lsa_EnumTrustDom(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *handle,
 				 uint32_t *resume_handle,
-				 uint32_t max_size,
-				 struct lsa_DomainList *domains)
+				 struct lsa_DomainList *domains,
+				 uint32_t max_size)
 {
 	struct lsa_EnumTrustDom r;
 	NTSTATUS status;
