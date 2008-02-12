@@ -660,8 +660,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 
 	if (argc == 2) {
 
-		SAM_USERINFO_CTR ctr;
-		SAM_USER_INFO_24 p24;
+		union samr_UserInfo info;
 		uchar pwbuf[516];
 
 		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
@@ -687,18 +686,17 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 
 		/* Set password on account */
 
-		ZERO_STRUCT(ctr);
-		ZERO_STRUCT(p24);
-
 		encode_pw_buffer(pwbuf, argv[1], STR_UNICODE);
 
-		init_sam_user_info24(&p24, (char *)pwbuf,24);
+		init_samr_user_info24(&info.info24, pwbuf, 24);
 
-		ctr.switch_value = 24;
-		ctr.info.id24 = &p24;
+		SamOEMhashBlob(info.info24.password.data, 516,
+			       &cli->user_session_key);
 
-		result = rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol, 24, 
-					       &cli->user_session_key, &ctr);
+		result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+						  &user_pol,
+						  24,
+						  &info);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, "Failed to set password for user %s - %s\n", 
@@ -876,9 +874,6 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 info_level = 7;
 	const char *old_name, *new_name;
-	SAM_USERINFO_CTR *user_ctr;
-	SAM_USERINFO_CTR ctr;
-	SAM_USER_INFO_7 info7;
 	struct samr_Ids user_rids, name_types;
 	struct lsa_String lsa_acct_name;
 	union samr_UserInfo *info = NULL;
@@ -891,9 +886,6 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 
 	old_name = argv[0];
 	new_name = argv[1];
-
-	ZERO_STRUCT(ctr);
-	ZERO_STRUCT(user_ctr);
 
 	/* Get sam policy handle */
 
@@ -950,14 +942,13 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 		goto done;
 	}
 
-	ctr.switch_value = info_level;
-	ctr.info.id7 = &info7;
-
-	init_sam_user_info7(&info7, new_name);
+	init_samr_user_info7(&info->info7, new_name);
 
 	/* Set new name */
-	result = rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol,
-				       info_level, &cli->user_session_key, &ctr);
+	result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+					  &user_pol,
+					  info_level,
+					  info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -1031,12 +1022,11 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol, user_pol;
-	SAM_USERINFO_CTR ctr;
-	SAM_USER_INFO_24 p24;
 	uchar pwbuf[516];
 	const char *user;
 	const char *new_password;
 	char *prompt = NULL;
+	union samr_UserInfo info;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
@@ -1106,18 +1096,17 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 
 	/* Set password on account */
 
-	ZERO_STRUCT(ctr);
-	ZERO_STRUCT(p24);
-
 	encode_pw_buffer(pwbuf, new_password, STR_UNICODE);
 
-	init_sam_user_info24(&p24, (char *)pwbuf,24);
+	init_samr_user_info24(&info.info24, pwbuf, 24);
 
-	ctr.switch_value = 24;
-	ctr.info.id24 = &p24;
+	SamOEMhashBlob(info.info24.password.data, 516,
+		       &cli->user_session_key);
 
-	result = rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol, 24, 
-				       &cli->user_session_key, &ctr);
+	result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+					  &user_pol,
+					  24,
+					  &info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -5600,6 +5589,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 	uint32 acct_flags=0;
 	uint32 user_rid;
 	uint32_t access_granted = 0;
+	union samr_UserInfo info;
 
 	if (argc != 2) {
 		d_printf("Usage: net rpc trustdom add <domain_name> <pw>\n");
@@ -5658,36 +5648,41 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 	}
 
 	{
-		SAM_USERINFO_CTR ctr;
-		SAM_USER_INFO_23 p23;
 		NTTIME notime;
-		char nostr[] = "";
-		LOGON_HRS hrs;
+		struct samr_LogonHours hours;
+		const int units_per_week = 168;
 		uchar pwbuf[516];
 
 		encode_pw_buffer(pwbuf, argv[1], STR_UNICODE);
 
-		ZERO_STRUCT(ctr);
-		ZERO_STRUCT(p23);
 		ZERO_STRUCT(notime);
-		hrs.max_len = 1260;
-		hrs.offset = 0;
-		hrs.len = 21;
-		memset(hrs.hours, 0xFF, sizeof(hrs.hours));
-		acb_info = ACB_DOMTRUST;
 
-		init_sam_user_info23A(&p23, &notime, &notime, &notime,
-				      &notime, &notime, &notime,
-				      nostr, nostr, nostr, nostr, nostr,
-				      nostr, nostr, nostr, nostr, nostr,
-				      0, 0, acb_info, SAMR_FIELD_ACCT_FLAGS, 168, &hrs,
-				      0, 0, (char *)pwbuf);
-		ctr.switch_value = 23;
-		ctr.info.id23 = &p23;
-		p23.passmustchange = 0;
+		ZERO_STRUCT(hours);
+		hours.bits = talloc_array(mem_ctx, uint8_t, units_per_week);
+		if (!hours.bits) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		hours.units_per_week = units_per_week;
+		memset(hours.bits, 0xFF, units_per_week);
 
-		result = rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol, 23,
-					       &cli->user_session_key, &ctr);
+		init_samr_user_info23(&info.info23,
+				      notime, notime, notime,
+				      notime, notime, notime,
+				      NULL, NULL, NULL, NULL, NULL,
+				      NULL, NULL, NULL, NULL, NULL,
+				      0, 0, ACB_DOMTRUST, SAMR_FIELD_ACCT_FLAGS,
+				      hours,
+				      0, 0, 0, 0, 0, 0, 0,
+				      pwbuf, 24);
+
+		SamOEMhashBlob(info.info23.password.data, 516,
+			       &cli->user_session_key);
+
+		result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+						  &user_pol,
+						  23,
+						  &info);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(0,("Could not set trust account password: %s\n",
