@@ -164,7 +164,7 @@ bool cli_receive_smb(struct cli_state *cli)
 		return false;
 	}
 
-	if (!cli_check_sign_mac(cli)) {
+	if (!cli_check_sign_mac(cli, cli->inbuf)) {
 		/*
 		 * If we get a signature failure in sessionsetup, then
 		 * the server sometimes just reflects the sent signature
