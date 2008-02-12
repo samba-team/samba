@@ -74,6 +74,8 @@ _ldb.$(SHLIBEXT): $(LIBS) ldb_wrap.o
 	$(SHLD) $(SHLD_FLAGS) -o _ldb.$(SHLIBEXT) ldb_wrap.o $(LIB_FLAGS)
 
 install-python:: build-python
+	mkdir -p $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0)"` \
+		$(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1)"`
 	cp $(ldbdir)/ldb.py $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(0)"`
 	cp _ldb.$(SHLIBEXT) $(DESTDIR)`$(PYTHON) -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1)"`
 
