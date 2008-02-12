@@ -2726,12 +2726,6 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	do {
 		if (!local) break;
 
-		/* The max_size field in cli_samr_enum_als_groups is more like
-		 * an account_control field with indiviual bits what to
-		 * retrieve. Set this to 0xffff as NT4 usrmgr.exe does to get
-		 * everything. I'm too lazy (sorry) to get this through to
-		 * rpc_parse/ etc.  Volker */
-
 		result = rpccli_samr_enum_als_groups(pipe_hnd, mem_ctx, &domain_pol,
 						  &start_idx, 0xffff,
 						  &groups, &num_entries);
