@@ -679,8 +679,8 @@ NTSTATUS rpccli_samr_EnumDomainAliases(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct policy_handle *domain_handle,
 				       uint32_t *resume_handle,
-				       uint32_t acct_flags,
-				       struct samr_SamArray *sam,
+				       struct samr_SamArray **sam,
+				       uint32_t max_size,
 				       uint32_t *num_entries)
 {
 	struct samr_EnumDomainAliases r;
@@ -689,7 +689,7 @@ NTSTATUS rpccli_samr_EnumDomainAliases(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.domain_handle = domain_handle;
 	r.in.resume_handle = resume_handle;
-	r.in.acct_flags = acct_flags;
+	r.in.max_size = max_size;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(samr_EnumDomainAliases, &r);

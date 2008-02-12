@@ -975,12 +975,12 @@ struct samr_CreateDomAlias {
 struct samr_EnumDomainAliases {
 	struct {
 		struct policy_handle *domain_handle;/* [ref] */
-		uint32_t acct_flags;
+		uint32_t max_size;
 		uint32_t *resume_handle;/* [ref] */
 	} in;
 
 	struct {
-		struct samr_SamArray *sam;/* [ref] */
+		struct samr_SamArray **sam;/* [ref] */
 		uint32_t *num_entries;/* [ref] */
 		uint32_t *resume_handle;/* [ref] */
 		NTSTATUS result;
