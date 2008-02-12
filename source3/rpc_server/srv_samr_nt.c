@@ -907,11 +907,11 @@ NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
- 	status = access_check_samr_function(info->acc_granted,
+	status = access_check_samr_function(info->acc_granted,
 					    SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
 					    "_samr_EnumDomainUsers");
 	if (!NT_STATUS_IS_OK(status)) {
- 		return status;
+		return status;
 	}
 
 	DEBUG(5,("_samr_EnumDomainUsers: %d\n", __LINE__));
