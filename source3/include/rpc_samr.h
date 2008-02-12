@@ -553,23 +553,6 @@ typedef struct sam_userinfo_ctr_info
 } SAM_USERINFO_CTR;
 
 
-/* SAMR_Q_SET_USERINFO2 - set sam info */
-typedef struct q_samr_set_user_info2
-{
-	POLICY_HND pol;          /* policy handle associated with user */
-	uint16 switch_value;      /* 0x0010 */
-
-	SAM_USERINFO_CTR *ctr;
-
-} SAMR_Q_SET_USERINFO2;
-
-/* SAMR_R_SET_USERINFO2 - set sam info */
-typedef struct r_samr_set_user_info2
-{
-	NTSTATUS status;         /* return status */
-
-} SAMR_R_SET_USERINFO2;
-
 /* SAMR_Q_SET_USERINFO - set sam info */
 typedef struct q_samr_set_user_info
 {
