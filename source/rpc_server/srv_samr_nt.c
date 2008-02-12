@@ -991,26 +991,22 @@ NTSTATUS _samr_enum_dom_users(pipes_struct *p, SAMR_Q_ENUM_DOM_USERS *q_u,
 makes a SAM_ENTRY / UNISTR2* structure from a group list.
 ********************************************************************/
 
-static void make_group_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp,
-				      UNISTR2 **uni_name_pp,
-				      uint32 num_sam_entries,
+static void make_group_sam_entry_list(TALLOC_CTX *ctx,
+				      struct samr_SamEntry **sam_pp,
+				      uint32_t num_sam_entries,
 				      struct samr_displayentry *entries)
 {
-	uint32 i;
-	SAM_ENTRY *sam;
-	UNISTR2 *uni_name;
+	struct samr_SamEntry *sam;
+	uint32_t i;
 
 	*sam_pp = NULL;
-	*uni_name_pp = NULL;
 
-	if (num_sam_entries == 0)
+	if (num_sam_entries == 0) {
 		return;
+	}
 
-	sam = TALLOC_ZERO_ARRAY(ctx, SAM_ENTRY, num_sam_entries);
-	uni_name = TALLOC_ZERO_ARRAY(ctx, UNISTR2, num_sam_entries);
-
-	if (sam == NULL || uni_name == NULL) {
-		DEBUG(0, ("NULL pointers in SAMR_R_QUERY_DISPINFO\n"));
+	sam = TALLOC_ZERO_ARRAY(ctx, struct samr_SamEntry, num_sam_entries);
+	if (sam == NULL) {
 		return;
 	}
 
@@ -1018,44 +1014,50 @@ static void make_group_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp,
 		/*
 		 * JRA. I think this should include the null. TNG does not.
 		 */
-		init_unistr2(&uni_name[i], entries[i].account_name,
-			     UNI_STR_TERMINATE);
-		init_sam_entry(&sam[i], &uni_name[i], entries[i].rid);
+		init_lsa_String(&sam[i].name, entries[i].account_name);
+		sam[i].idx = entries[i].rid;
 	}
 
 	*sam_pp = sam;
-	*uni_name_pp = uni_name;
 }
 
 /*******************************************************************
- samr_reply_enum_dom_groups
+ _samr_EnumDomainGroups
  ********************************************************************/
 
-NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_R_ENUM_DOM_GROUPS *r_u)
+NTSTATUS _samr_EnumDomainGroups(pipes_struct *p,
+				struct samr_EnumDomainGroups *r)
 {
+	NTSTATUS status;
 	struct samr_info *info = NULL;
 	struct samr_displayentry *groups;
 	uint32 num_groups;
-
-	r_u->status = NT_STATUS_OK;
+	struct samr_SamArray *samr_array = NULL;
+	struct samr_SamEntry *samr_entries = NULL;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	r_u->status = access_check_samr_function(info->acc_granted,
-						 SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
-						 "_samr_enum_dom_groups");
-	if (!NT_STATUS_IS_OK(r_u->status))
-		return r_u->status;
+	status = access_check_samr_function(info->acc_granted,
+					    SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
+					    "_samr_EnumDomainGroups");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
+	DEBUG(5,("_samr_EnumDomainGroups: %d\n", __LINE__));
 
 	if (info->builtin_domain) {
 		/* No groups in builtin. */
-		init_samr_r_enum_dom_groups(r_u, q_u->start_idx, 0);
-		DEBUG(5,("_samr_enum_dom_users: No groups in BUILTIN\n"));
-		return r_u->status;
+		*r->out.resume_handle = *r->in.resume_handle;
+		DEBUG(5,("_samr_EnumDomainGroups: No groups in BUILTIN\n"));
+		return status;
+	}
+
+	samr_array = TALLOC_ZERO_P(p->mem_ctx, struct samr_SamArray);
+	if (!samr_array) {
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* the domain group array is being allocated in the function below */
@@ -1071,45 +1073,63 @@ NTSTATUS _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAM
 		}
 	}
 
-	num_groups = pdb_search_entries(info->disp_info->groups, q_u->start_idx,
+	num_groups = pdb_search_entries(info->disp_info->groups,
+					*r->in.resume_handle,
 					MAX_SAM_ENTRIES, &groups);
 	unbecome_root();
 
 	/* Ensure we cache this enumeration. */
 	set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
 
-	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name,
+	make_group_sam_entry_list(p->mem_ctx, &samr_entries,
 				  num_groups, groups);
 
-	init_samr_r_enum_dom_groups(r_u, q_u->start_idx, num_groups);
+	samr_array->count = num_groups;
+	samr_array->entries = samr_entries;
 
-	DEBUG(5,("samr_enum_dom_groups: %d\n", __LINE__));
+	*r->out.sam = samr_array;
+	*r->out.num_entries = num_groups;
+	/* this was missing, IMHO:
+	*r->out.resume_handle = num_groups + *r->in.resume_handle;
+	*/
 
-	return r_u->status;
+	DEBUG(5,("_samr_EnumDomainGroups: %d\n", __LINE__));
+
+	return status;
 }
 
 /*******************************************************************
- samr_reply_enum_dom_aliases
+ _samr_EnumDomainAliases
  ********************************************************************/
 
-NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAMR_R_ENUM_DOM_ALIASES *r_u)
+NTSTATUS _samr_EnumDomainAliases(pipes_struct *p,
+				 struct samr_EnumDomainAliases *r)
 {
+	NTSTATUS status;
 	struct samr_info *info;
 	struct samr_displayentry *aliases;
 	uint32 num_aliases = 0;
+	struct samr_SamArray *samr_array = NULL;
+	struct samr_SamEntry *samr_entries = NULL;
 
 	/* find the policy handle.  open a policy on it. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.domain_handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	r_u->status = access_check_samr_function(info->acc_granted,
-						 SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
-						 "_samr_enum_dom_aliases");
-	if (!NT_STATUS_IS_OK(r_u->status))
-		return r_u->status;
+	status = access_check_samr_function(info->acc_granted,
+					    SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
+					    "_samr_EnumDomainAliases");
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
-	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n",
+	DEBUG(5,("_samr_EnumDomainAliases: sid %s\n",
 		 sid_string_dbg(&info->sid)));
+
+	samr_array = TALLOC_ZERO_P(p->mem_ctx, struct samr_SamArray);
+	if (!samr_array) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	become_root();
 
@@ -1121,22 +1141,27 @@ NTSTATUS _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, S
 		}
 	}
 
-	num_aliases = pdb_search_entries(info->disp_info->aliases, q_u->start_idx,
+	num_aliases = pdb_search_entries(info->disp_info->aliases,
+					 *r->in.resume_handle,
 					 MAX_SAM_ENTRIES, &aliases);
 	unbecome_root();
 
 	/* Ensure we cache this enumeration. */
 	set_disp_info_cache_timeout(info->disp_info, DISP_INFO_CACHE_TIMEOUT);
 
-	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name,
+	make_group_sam_entry_list(p->mem_ctx, &samr_entries,
 				  num_aliases, aliases);
 
-	init_samr_r_enum_dom_aliases(r_u, q_u->start_idx + num_aliases,
-				     num_aliases);
+	DEBUG(5,("_samr_EnumDomainAliases: %d\n", __LINE__));
 
-	DEBUG(5,("samr_enum_dom_aliases: %d\n", __LINE__));
+	samr_array->count = num_aliases;
+	samr_array->entries = samr_entries;
 
-	return r_u->status;
+	*r->out.sam = samr_array;
+	*r->out.num_entries = num_aliases;
+	*r->out.resume_handle = num_aliases + *r->in.resume_handle;
+
+	return status;
 }
 
 /*******************************************************************
@@ -5209,16 +5234,6 @@ NTSTATUS _samr_Shutdown(pipes_struct *p,
 /****************************************************************
 ****************************************************************/
 
-NTSTATUS _samr_EnumDomainGroups(pipes_struct *p,
-				struct samr_EnumDomainGroups *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
 NTSTATUS _samr_CreateUser(pipes_struct *p,
 			  struct samr_CreateUser *r)
 {
@@ -5231,16 +5246,6 @@ NTSTATUS _samr_CreateUser(pipes_struct *p,
 
 NTSTATUS _samr_EnumDomainUsers(pipes_struct *p,
 			       struct samr_EnumDomainUsers *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _samr_EnumDomainAliases(pipes_struct *p,
-				 struct samr_EnumDomainAliases *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
