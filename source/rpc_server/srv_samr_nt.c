@@ -3792,30 +3792,33 @@ static NTSTATUS set_user_info_25(TALLOC_CTX *mem_ctx,
 }
 
 /*******************************************************************
- _samr_SetUserInfo
+ samr_SetUserInfo_internal
  ********************************************************************/
 
-NTSTATUS _samr_SetUserInfo(pipes_struct *p,
-			   struct samr_SetUserInfo *r)
+static NTSTATUS samr_SetUserInfo_internal(const char *fn_name,
+					  pipes_struct *p,
+					  struct policy_handle *user_handle,
+					  uint16_t level,
+					  union samr_UserInfo *info)
 {
 	NTSTATUS status;
 	struct samu *pwd = NULL;
 	DOM_SID sid;
-	POLICY_HND *pol = r->in.user_handle;
-	uint16 switch_value = r->in.level;
-	union samr_UserInfo *info = r->in.info;
-	uint32 acc_granted;
-	uint32 acc_required;
+	POLICY_HND *pol = user_handle;
+	uint16_t switch_value = level;
+	uint32_t acc_granted;
+	uint32_t acc_required;
 	bool ret;
 	bool has_enough_rights = False;
-	uint32 acb_info;
+	uint32_t acb_info;
 	DISP_INFO *disp_info = NULL;
 
-	DEBUG(5, ("_samr_SetUserInfo: %d\n", __LINE__));
+	DEBUG(5,("%s: %d\n", fn_name, __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted, &disp_info))
+	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted, &disp_info)) {
 		return NT_STATUS_INVALID_HANDLE;
+	}
 
 	/* This is tricky.  A WinXP domain join sets
 	  (SA_RIGHT_USER_SET_PASSWORD|SA_RIGHT_USER_SET_ATTRIBUTES|SA_RIGHT_USER_ACCT_FLAGS_EXPIRY)
@@ -3832,26 +3835,28 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 		acc_required = SA_RIGHT_USER_SET_PASSWORD;
 		break;
 	default:
-		acc_required = SA_RIGHT_USER_SET_PASSWORD | SA_RIGHT_USER_SET_ATTRIBUTES | SA_RIGHT_USER_ACCT_FLAGS_EXPIRY;
+		acc_required = SA_RIGHT_USER_SET_PASSWORD |
+			       SA_RIGHT_USER_SET_ATTRIBUTES |
+			       SA_RIGHT_USER_ACCT_FLAGS_EXPIRY;
 		break;
 	}
 
 	status = access_check_samr_function(acc_granted,
 					    acc_required,
-					    "_samr_SetUserInfo");
+					    fn_name);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	DEBUG(5, ("_samr_SetUserInfo: sid:%s, level:%d\n",
-		  sid_string_dbg(&sid), switch_value));
+	DEBUG(5, ("%s: sid:%s, level:%d\n",
+		  fn_name, sid_string_dbg(&sid), switch_value));
 
 	if (info == NULL) {
-		DEBUG(5, ("_samr_SetUserInfo: NULL info level\n"));
+		DEBUG(5, ("%s: NULL info level\n", fn_name));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
- 	if ( !(pwd = samu_new( NULL )) ) {
+	if (!(pwd = samu_new(NULL))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -3859,7 +3864,7 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	ret = pdb_getsampwsid(pwd, &sid);
 	unbecome_root();
 
-	if ( !ret ) {
+	if (!ret) {
 		TALLOC_FREE(pwd);
 		return NT_STATUS_NO_SUCH_USER;
  	}
@@ -3868,30 +3873,74 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 	/* check to see if we have the sufficient rights */
 
 	acb_info = pdb_get_acct_ctrl(pwd);
-	if ( acb_info & ACB_WSTRUST )
-		has_enough_rights = user_has_privileges( p->pipe_user.nt_user_token, &se_machine_account);
-	else if ( acb_info & ACB_NORMAL )
-		has_enough_rights = user_has_privileges( p->pipe_user.nt_user_token, &se_add_users );
-	else if ( acb_info & (ACB_SVRTRUST|ACB_DOMTRUST) ) {
-		if ( lp_enable_privileges() )
-			has_enough_rights = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
+	if (acb_info & ACB_WSTRUST)
+		has_enough_rights = user_has_privileges(p->pipe_user.nt_user_token,
+							&se_machine_account);
+	else if (acb_info & ACB_NORMAL)
+		has_enough_rights = user_has_privileges(p->pipe_user.nt_user_token,
+							&se_add_users);
+	else if (acb_info & (ACB_SVRTRUST|ACB_DOMTRUST)) {
+		if (lp_enable_privileges()) {
+			has_enough_rights = nt_token_check_domain_rid(p->pipe_user.nt_user_token,
+								      DOMAIN_GROUP_RID_ADMINS);
+		}
 	}
 
-	DEBUG(5, ("_samr_SetUserInfo: %s does%s possess sufficient rights\n",
+	DEBUG(5, ("%s: %s does%s possess sufficient rights\n",
+		  fn_name,
 		  uidtoname(p->pipe_user.ut.uid),
 		  has_enough_rights ? "" : " not"));
 
 	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
 
-	if ( has_enough_rights )
+	if (has_enough_rights) {
 		become_root();
+	}
 
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 
 	switch (switch_value) {
-		case 18:
-			if (!set_user_info_18(&info->info18, pwd))
+
+		case 7:
+			status = set_user_info_7(p->mem_ctx,
+						 &info->info7, pwd);
+			break;
+
+		case 16:
+			if (!set_user_info_16(&info->info16, pwd)) {
 				status = NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+
+		case 18:
+			/* Used by AS/U JRA. */
+			if (!set_user_info_18(&info->info18, pwd)) {
+				status = NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+
+		case 20:
+			if (!set_user_info_20(&info->info20, pwd)) {
+				status = NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+
+		case 21:
+			status = set_user_info_21(p->mem_ctx,
+						  &info->info21, pwd);
+			break;
+
+		case 23:
+			if (!p->session_key.length) {
+				status = NT_STATUS_NO_USER_SESSION_KEY;
+			}
+			SamOEMhashBlob(info->info23.password.data, 516,
+				       &p->session_key);
+
+			dump_data(100, info->info23.password.data, 516);
+
+			status = set_user_info_23(p->mem_ctx,
+						  &info->info23, pwd);
 			break;
 
 		case 24:
@@ -3904,15 +3953,17 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 
 			dump_data(100, info->info24.password.data, 516);
 
-			if (!set_user_info_pw(info->info24.password.data, pwd))
+			if (!set_user_info_pw(info->info24.password.data, pwd)) {
 				status = NT_STATUS_ACCESS_DENIED;
+			}
 			break;
 
 		case 25:
 			if (!p->session_key.length) {
 				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			encode_or_decode_arc4_passwd_buffer(info->info25.password.data, &p->session_key);
+			encode_or_decode_arc4_passwd_buffer(info->info25.password.data,
+							    &p->session_key);
 
 			dump_data(100, info->info25.password.data, 532);
 
@@ -3921,32 +3972,23 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 			if (!NT_STATUS_IS_OK(status)) {
 				goto done;
 			}
-			if (!set_user_info_pw(info->info25.password.data, pwd))
+			if (!set_user_info_pw(info->info25.password.data, pwd)) {
 				status = NT_STATUS_ACCESS_DENIED;
+			}
 			break;
 
 		case 26:
 			if (!p->session_key.length) {
 				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			encode_or_decode_arc4_passwd_buffer(info->info26.password.data, &p->session_key);
+			encode_or_decode_arc4_passwd_buffer(info->info26.password.data,
+							    &p->session_key);
 
 			dump_data(100, info->info26.password.data, 516);
 
-			if (!set_user_info_pw(info->info26.password.data, pwd))
+			if (!set_user_info_pw(info->info26.password.data, pwd)) {
 				status = NT_STATUS_ACCESS_DENIED;
-			break;
-
-		case 23:
-			if (!p->session_key.length) {
-				status = NT_STATUS_NO_USER_SESSION_KEY;
 			}
-			SamOEMhashBlob(info->info23.password.data, 516, &p->session_key);
-
-			dump_data(100, info->info23.password.data, 516);
-
-			status = set_user_info_23(p->mem_ctx,
-						  &info->info23, pwd);
 			break;
 
 		default:
@@ -3955,8 +3997,9 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 
  done:
 
-	if ( has_enough_rights )
+	if (has_enough_rights) {
 		unbecome_root();
+	}
 
 	/* ================ END SeMachineAccountPrivilege BLOCK ================ */
 
@@ -3968,147 +4011,31 @@ NTSTATUS _samr_SetUserInfo(pipes_struct *p,
 }
 
 /*******************************************************************
+ _samr_SetUserInfo
+ ********************************************************************/
+
+NTSTATUS _samr_SetUserInfo(pipes_struct *p,
+			   struct samr_SetUserInfo *r)
+{
+	return samr_SetUserInfo_internal("_samr_SetUserInfo",
+					 p,
+					 r->in.user_handle,
+					 r->in.level,
+					 r->in.info);
+}
+
+/*******************************************************************
  _samr_SetUserInfo2
  ********************************************************************/
 
 NTSTATUS _samr_SetUserInfo2(pipes_struct *p,
 			    struct samr_SetUserInfo2 *r)
 {
-	NTSTATUS status;
-	struct samu *pwd = NULL;
-	DOM_SID sid;
-	union samr_UserInfo *info = r->in.info;
-	POLICY_HND *pol = r->in.user_handle;
-	uint16 switch_value = r->in.level;
-	uint32 acc_granted;
-	uint32 acc_required;
-	bool ret;
-	bool has_enough_rights = False;
-	uint32 acb_info;
-	DISP_INFO *disp_info = NULL;
-
-	DEBUG(5, ("_samr_SetUserInfo2: %d\n", __LINE__));
-
-	/* find the policy handle.  open a policy on it. */
-	if (!get_lsa_policy_samr_sid(p, pol, &sid, &acc_granted, &disp_info))
-		return NT_STATUS_INVALID_HANDLE;
-
-
-#if 0 	/* this really should be applied on a per info level basis   --jerry */
-
-	/* observed when joining XP client to Samba domain */
-	acc_required = SA_RIGHT_USER_SET_PASSWORD | SA_RIGHT_USER_SET_ATTRIBUTES | SA_RIGHT_USER_ACCT_FLAGS_EXPIRY;
-#else
-	acc_required = SA_RIGHT_USER_SET_ATTRIBUTES;
-#endif
-
-	status = access_check_samr_function(acc_granted,
-					    acc_required,
-					    "_samr_SetUserInfo2");
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	DEBUG(5,("_samr_SetUserInfo2: sid:%s\n",
-		  sid_string_dbg(&sid)));
-
-	if (info == NULL) {
-		DEBUG(5,("_samr_SetUserInfo2: NULL info level\n"));
-		return NT_STATUS_INVALID_INFO_CLASS;
-	}
-
-	if ( !(pwd = samu_new( NULL )) ) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	become_root();
-	ret = pdb_getsampwsid(pwd, &sid);
-	unbecome_root();
-
-	if ( !ret ) {
-		TALLOC_FREE(pwd);
-		return NT_STATUS_NO_SUCH_USER;
- 	}
-
-	acb_info = pdb_get_acct_ctrl(pwd);
-	if ( acb_info & ACB_WSTRUST )
-		has_enough_rights = user_has_privileges( p->pipe_user.nt_user_token, &se_machine_account);
-	else if ( acb_info & ACB_NORMAL )
-		has_enough_rights = user_has_privileges( p->pipe_user.nt_user_token, &se_add_users );
-	else if ( acb_info & (ACB_SVRTRUST|ACB_DOMTRUST) ) {
-		if ( lp_enable_privileges() )
-			has_enough_rights = nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS );
-	}
-
-	DEBUG(5, ("_samr_SetUserInfo2: %s does%s possess sufficient rights\n",
-		  uidtoname(p->pipe_user.ut.uid),
-		  has_enough_rights ? "" : " not"));
-
-	/* ================ BEGIN SeMachineAccountPrivilege BLOCK ================ */
-
-	if ( has_enough_rights )
-		become_root();
-
-	/* ok!  user info levels (lots: see MSDEV help), off we go... */
-
-	switch (switch_value) {
-		case 7:
-			status = set_user_info_7(p->mem_ctx,
-						 &info->info7, pwd);
-			break;
-		case 16:
-			if (!set_user_info_16(&info->info16, pwd))
-				status = NT_STATUS_ACCESS_DENIED;
-			break;
-		case 18:
-			/* Used by AS/U JRA. */
-			if (!set_user_info_18(&info->info18, pwd))
-				status = NT_STATUS_ACCESS_DENIED;
-			break;
-		case 20:
-			if (!set_user_info_20(&info->info20, pwd))
-				status = NT_STATUS_ACCESS_DENIED;
-			break;
-		case 21:
-			status = set_user_info_21(p->mem_ctx,
-						  &info->info21, pwd);
-			break;
-		case 23:
-			if (!p->session_key.length) {
-				status = NT_STATUS_NO_USER_SESSION_KEY;
-			}
-			SamOEMhashBlob(info->info23.password.data, 516, &p->session_key);
-
-			dump_data(100, info->info23.password.data, 516);
-
-			status = set_user_info_23(p->mem_ctx,
-						  &info->info23, pwd);
-			break;
-		case 26:
-			if (!p->session_key.length) {
-				status = NT_STATUS_NO_USER_SESSION_KEY;
-			}
-			encode_or_decode_arc4_passwd_buffer(info->info26.password.data, &p->session_key);
-
-			dump_data(100, info->info26.password.data, 516);
-
-			if (!set_user_info_pw(info->info26.password.data, pwd))
-				status = NT_STATUS_ACCESS_DENIED;
-			break;
-		default:
-			status = NT_STATUS_INVALID_INFO_CLASS;
-	}
-
-	if ( has_enough_rights )
-		unbecome_root();
-
-	/* ================ END SeMachineAccountPrivilege BLOCK ================ */
-
-	if (NT_STATUS_IS_OK(status)) {
-		force_flush_samr_cache(disp_info);
-	}
-
-	return status;
+	return samr_SetUserInfo_internal("_samr_SetUserInfo2",
+					 p,
+					 r->in.user_handle,
+					 r->in.level,
+					 r->in.info);
 }
 
 /*********************************************************************
