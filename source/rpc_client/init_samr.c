@@ -260,3 +260,128 @@ void init_samr_alias_info3(struct lsa_String *r,
 	init_lsa_String(r, description);
 }
 
+/*******************************************************************
+ inits a samr_UserInfo7 structure.
+********************************************************************/
+
+void init_samr_user_info7(struct samr_UserInfo7 *r,
+			  const char *account_name)
+{
+	DEBUG(5, ("init_samr_user_info7\n"));
+
+	init_lsa_String(&r->account_name, account_name);
+}
+
+/*******************************************************************
+ inits a samr_UserInfo9 structure.
+********************************************************************/
+
+void init_samr_user_info9(struct samr_UserInfo9 *r,
+			  uint32_t primary_gid)
+{
+	DEBUG(5, ("init_samr_user_info9\n"));
+
+	r->primary_gid = primary_gid;
+}
+
+/*******************************************************************
+ inits a SAM_USER_INFO_16 structure.
+********************************************************************/
+
+void init_samr_user_info16(struct samr_UserInfo16 *r,
+			   uint32_t acct_flags)
+{
+	DEBUG(5, ("init_samr_user_info16\n"));
+
+	r->acct_flags = acct_flags;
+}
+
+/*******************************************************************
+ inits a samr_UserInfo18 structure.
+********************************************************************/
+
+void init_samr_user_info18(struct samr_UserInfo18 *r,
+			   const uint8 lm_pwd[16],
+			   const uint8 nt_pwd[16])
+{
+	DEBUG(5, ("init_samr_user_info18\n"));
+
+	r->lm_pwd_active =
+		memcpy(r->lm_pwd.hash, lm_pwd, sizeof(r->lm_pwd.hash)) ? true : false;
+	r->nt_pwd_active =
+		memcpy(r->nt_pwd.hash, nt_pwd, sizeof(r->nt_pwd.hash)) ? true : false;
+}
+
+/*******************************************************************
+ inits a samr_UserInfo20 structure.
+********************************************************************/
+
+void init_samr_user_info20(struct samr_UserInfo20 *r,
+			   const char *munged_dial)
+{
+	init_lsa_String(&r->parameters, munged_dial);
+}
+
+/*************************************************************************
+ inits a samr_UserInfo21 structure
+ *************************************************************************/
+
+void init_samr_user_info21(struct samr_UserInfo21 *r,
+			   NTTIME last_logon,
+			   NTTIME last_logoff,
+			   NTTIME last_password_change,
+			   NTTIME acct_expiry,
+			   NTTIME allow_password_change,
+			   NTTIME force_password_change,
+			   const char *account_name,
+			   const char *full_name,
+			   const char *home_directory,
+			   const char *home_drive,
+			   const char *logon_script,
+			   const char *profile_path,
+			   const char *description,
+			   const char *workstations,
+			   const char *comment,
+			   const char *parameters,
+			   uint32_t rid,
+			   uint32_t primary_gid,
+			   uint32_t acct_flags,
+			   uint32_t fields_present,
+			   struct samr_LogonHours logon_hours,
+			   uint16_t bad_password_count,
+			   uint16_t logon_count,
+			   uint16_t country_code,
+			   uint16_t code_page,
+			   uint8_t nt_password_set,
+			   uint8_t lm_password_set,
+			   uint8_t password_expired)
+{
+	r->last_logon = last_logon;
+	r->last_logoff = last_logoff;
+	r->last_password_change = last_password_change;
+	r->acct_expiry = acct_expiry;
+	r->allow_password_change = allow_password_change;
+	r->force_password_change = force_password_change;
+	init_lsa_String(&r->account_name, account_name);
+	init_lsa_String(&r->full_name, full_name);
+	init_lsa_String(&r->home_directory, home_directory);
+	init_lsa_String(&r->home_drive, home_drive);
+	init_lsa_String(&r->logon_script, logon_script);
+	init_lsa_String(&r->profile_path, profile_path);
+	init_lsa_String(&r->description, description);
+	init_lsa_String(&r->workstations, workstations);
+	init_lsa_String(&r->comment, comment);
+	init_lsa_String(&r->parameters, parameters);
+	r->rid = rid;
+	r->primary_gid = primary_gid;
+	r->acct_flags = acct_flags;
+	r->fields_present = fields_present;
+	r->logon_hours = logon_hours;
+	r->bad_password_count = bad_password_count;
+	r->logon_count = logon_count;
+	r->country_code = country_code;
+	r->code_page = code_page;
+	r->nt_password_set = nt_password_set;
+	r->lm_password_set = lm_password_set;
+	r->password_expired = password_expired;
+}
