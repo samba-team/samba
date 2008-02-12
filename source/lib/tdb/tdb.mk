@@ -25,8 +25,8 @@ bin/tdbdump$(EXEEXT): tools/tdbdump.o $(TDB_LIB)
 bin/tdbbackup$(EXEEXT): tools/tdbbackup.o $(TDB_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb
 
-test:: bin/tdbtorture$(EXEEXT)
-	bin/tdbtorture$(EXEEXT)
+test:: bin/tdbtorture$(EXEEXT) $(SONAME)
+	$(LIB_PATH_VAR)=. bin/tdbtorture$(EXEEXT)
 
 clean:: 
 	rm -f test.db test.tdb torture.tdb test.gdbm
