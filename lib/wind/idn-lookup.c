@@ -73,7 +73,7 @@ lookup(const char *name)
 
     size_t u_len = strlen(name);
     uint32_t *u = malloc(u_len * sizeof(uint32_t));
-    size_t norm_len = u_len;
+    size_t norm_len = u_len * 2;
     uint32_t *norm = malloc(norm_len * sizeof(uint32_t));
 
     if (u == NULL || norm == NULL)
@@ -95,16 +95,10 @@ lookup(const char *name)
 	for (j = i; j < norm_len && !is_separator(norm[j]); ++j)
 	    ;
 	len = sizeof(encoded) - (ep - encoded);
-	ret = wind_punycode_toascii(norm + i, j - i, ep, &len);
-	if (ret < 0)
+	ret = wind_punycode_label_toascii(norm + i, j - i, ep, &len);
+	if (ret)
 	    errx(1, "punycode failed");
-	if (ret) {
-	    memmove(ep + 4, ep, len);
-	    memcpy(ep, "xn--", 4);
-	    ep += 4;
-	} else {
-	    --len;
-	}
+
 	ep += len;
 	*ep++ = '.';
 	i = j;
