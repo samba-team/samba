@@ -1959,6 +1959,7 @@ installlibtalloc: installdirs libtalloc
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
 	-$(INSTALLLIBCMD_SH) $(LIBTALLOC_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) $(LIBTALLOC_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
+	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
 	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) @tallocdir@/talloc.h $(DESTDIR)${prefix}/include
 
 installlibsmbsharemodes: installdirs libsmbsharemodes
