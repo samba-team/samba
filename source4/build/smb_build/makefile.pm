@@ -45,8 +45,6 @@ sub new($$$)
 	$self->output("################################################\n");
 	$self->output("\n");
 
-	$self->_prepare_compiler_linker();
-
 	if (!$self->{automatic_deps}) {
 		$self->output("ALL_PREDEP = proto\n");
 		$self->output(".NOTPARALLEL:\n");
@@ -60,36 +58,6 @@ sub output($$)
 	my ($self, $text) = @_;
 
 	$self->{output} .= $text;
-}
-
-sub _prepare_compiler_linker($)
-{
-	my ($self) = @_;
-
-	my $builddir_headers = "";
-	my $libdir;
-	my $extra_link_flags = "";
-
-	if ($self->{config}->{USESHARED} eq "true") {
-		$libdir = "\$(builddir)/bin/shared";
-		$extra_link_flags = "-Wl,-rpath-link,\$(builddir)/bin/shared";
-	} else {
-		$libdir = "\$(builddir)/bin/static";
-	}
-	
-	if (!(abs_path($self->{config}->{srcdir}) eq abs_path($self->{config}->{builddir}))) {
-	    $builddir_headers= "-I\$(builddir)/include -I\$(builddir) -I\$(builddir)/lib ";
-	}
-
-	$self->output(<< "__EOD__"
-
-CPPFLAGS=$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -I\$(srcdir)/lib/replace -I\$(srcdir)/lib/talloc -D_SAMBA_BUILD_=4 -DHAVE_CONFIG_H $self->{config}->{CPPFLAGS}
-
-INSTALL_LINK_FLAGS=$extra_link_flags
-
-INTERN_LDFLAGS = -L$libdir
-__EOD__
-);
 }
 
 sub _prepare_mk_files($)
@@ -250,6 +218,9 @@ sub SharedLibrary($$)
 	my ($self,$ctx) = @_;
 
 	my $has_static_lib = 0;
+
+	$self->output("$ctx->{NAME}_SOVERSION = $ctx->{SO_VERSION}\n") if (defined($ctx->{SO_VERSION}));
+	$self->output("$ctx->{NAME}_VERSION = $ctx->{VERSION}\n") if (defined($ctx->{VERSION}));
 
 	push (@{$self->{shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
 	push (@{$self->{installable_shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
