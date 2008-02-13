@@ -693,7 +693,7 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
         uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
 	uint32 *rid_mem = NULL;
 	uint32 group_rid;
-	unsigned int j;
+	unsigned int j, r;
 	struct rpc_pipe_client *cli;
 	unsigned int orig_timeout;
 	struct samr_RidTypeArray *rids = NULL;
@@ -772,38 +772,40 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
 	if (*num_names>0 && (!*names || !*name_types))
 		return NT_STATUS_NO_MEMORY;
 
-        for (i = 0; i < *num_names; i += MAX_LOOKUP_RIDS) {
-                int num_lookup_rids = MIN(*num_names - i, MAX_LOOKUP_RIDS);
-                uint32 tmp_num_names = 0;
-                char **tmp_names = NULL;
-                uint32 *tmp_types = NULL;
+	for (i = 0; i < *num_names; i += MAX_LOOKUP_RIDS) {
+		int num_lookup_rids = MIN(*num_names - i, MAX_LOOKUP_RIDS);
+		struct lsa_Strings tmp_names;
+		struct samr_Ids tmp_types;
 
-                /* Lookup a chunk of rids */
+		/* Lookup a chunk of rids */
 
-                result = rpccli_samr_lookup_rids(cli, mem_ctx,
-						 &dom_pol,
-						 num_lookup_rids,
-						 &rid_mem[i],
-						 &tmp_num_names,
-						 &tmp_names, &tmp_types);
+		result = rpccli_samr_LookupRids(cli, mem_ctx,
+						&dom_pol,
+						num_lookup_rids,
+						&rid_mem[i],
+						&tmp_names,
+						&tmp_types);
 
 		/* see if we have a real error (and yes the
 		   STATUS_SOME_UNMAPPED is the one returned from 2k) */
-		
+
                 if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, STATUS_SOME_UNMAPPED))
 			return result;
-			
-                /* Copy result into array.  The talloc system will take
-                   care of freeing the temporary arrays later on. */
 
-                memcpy(&(*names)[i], tmp_names, sizeof(char *) * 
-                       tmp_num_names);
+		/* Copy result into array.  The talloc system will take
+		   care of freeing the temporary arrays later on. */
 
-                memcpy(&(*name_types)[i], tmp_types, sizeof(uint32) *
-                       tmp_num_names);
-		
-                total_names += tmp_num_names;
+		if (tmp_names.count != tmp_types.count) {
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		for (r=0; r<tmp_names.count; r++) {
+			(*names)[i+r] = CONST_DISCARD(char *, tmp_names.names[r].string);
+			(*name_types)[i+r] = tmp_types.ids[r];
+		}
+
+		total_names += tmp_names.count;
         }
 
         *num_names = total_names;
