@@ -40,7 +40,6 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.1.0,
 	[
 		m4_include(lib/talloc/libtalloc.m4)
 		SMB_INCLUDE_MK(lib/talloc/config.mk)
-		AC_CONFIG_FILES(lib/talloc/talloc.pc)
 	]
 )
 
@@ -49,7 +48,6 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.0,
 	[
 		m4_include(lib/tdb/libtdb.m4)
 		SMB_INCLUDE_MK(lib/tdb/config.mk)
-		AC_CONFIG_FILES(lib/tdb/tdb.pc)
 	]
 )
 
