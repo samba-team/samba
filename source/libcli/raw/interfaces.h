@@ -1552,16 +1552,16 @@ union smb_open {
 		enum smb_open_level level;
 		struct {
 			/* static body buffer 56 (0x38) bytes */
-			/* uint16_t buffer_code;  0x39 = 0x38 + 1 */
-			uint16_t oplock_flags; /* SMB2_CREATE_FLAG_* */
-			uint32_t impersonation;
-			uint32_t unknown3[4];
-			uint32_t access_mask;
-
-			uint32_t file_attr;
-			uint32_t share_access;
-			uint32_t open_disposition;
-			uint32_t create_options;
+			uint8_t  security_flags;      /* SMB2_SECURITY_* */
+			uint8_t  oplock_level;        /* SMB2_OPLOCK_LEVEL_* */
+			uint32_t impersonation_level; /* SMB2_IMPERSONATION_* */
+			uint64_t create_flags;
+			uint64_t reserved;
+			uint32_t desired_access;
+			uint32_t file_attributes;
+			uint32_t share_access; /* NTCREATEX_SHARE_ACCESS_* */
+			uint32_t create_disposition; /* NTCREATEX_DISP_* */
+			uint32_t create_options; /* NTCREATEX_OPTIONS_* */
 
 			/* uint16_t fname_ofs */
 			/* uint16_t fname_size */
@@ -1579,7 +1579,8 @@ union smb_open {
 
 			/* static body buffer 88 (0x58) bytes */
 			/* uint16_t buffer_code;  0x59 = 0x58 + 1 */
-			uint16_t oplock_flags; /* SMB2_CREATE_FLAG_* */
+			uint8_t oplock_level;
+			uint8_t reserved;
 			uint32_t create_action;
 			NTTIME   create_time;
 			NTTIME   access_time;
@@ -1588,7 +1589,7 @@ union smb_open {
 			uint64_t alloc_size;
 			uint64_t size;
 			uint32_t file_attr;
-			uint32_t _pad;
+			uint32_t reserved2;
 			/* struct smb2_handle handle;*/
 			/* uint32_t blob_ofs; */
 			/* uint32_t blob_size; */
