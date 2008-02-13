@@ -34,12 +34,12 @@ extern userdom_struct current_user_info;
  init_net_r_req_chal:
  *************************************************************************/
 
-static void init_net_r_req_chal(NET_R_REQ_CHAL *r_c,
-                                DOM_CHAL *srv_chal, NTSTATUS status)
+static void init_net_r_req_chal(struct netr_Credential *r,
+				DOM_CHAL *srv_chal)
 {
 	DEBUG(6,("init_net_r_req_chal: %d\n", __LINE__));
-	memcpy(r_c->srv_chal.data, srv_chal->data, sizeof(srv_chal->data));
-	r_c->status = status;
+
+	memcpy(r->data, srv_chal->data, sizeof(r->data));
 }
 
 /*************************************************************************
@@ -305,10 +305,11 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 }
 
 /*************************************************************************
- _net_req_chal
+ _netr_ServerReqChallenge
  *************************************************************************/
 
-NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
+NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
+				  struct netr_ServerReqChallenge *r)
 {
 	if (!p->dc) {
 		p->dc = TALLOC_ZERO_P(p->pipe_state_mem_ctx, struct dcinfo);
@@ -316,23 +317,22 @@ NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
-		DEBUG(10,("_net_req_chal: new challenge requested. Clearing old state.\n"));
+		DEBUG(10,("_netr_ServerReqChallenge: new challenge requested. Clearing old state.\n"));
 		ZERO_STRUCTP(p->dc);
 	}
 
-	rpcstr_pull(p->dc->remote_machine,
-			q_u->uni_logon_clnt.buffer,
-			sizeof(fstring),q_u->uni_logon_clnt.uni_str_len*2,0);
+	fstrcpy(p->dc->remote_machine, r->in.computer_name);
 
 	/* Save the client challenge to the server. */
-	memcpy(p->dc->clnt_chal.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+	memcpy(p->dc->clnt_chal.data, r->in.credentials->data,
+		sizeof(r->in.credentials->data));
 
 	/* Create a server challenge for the client */
 	/* Set this to a random value. */
 	generate_random_buffer(p->dc->srv_chal.data, 8);
 
 	/* set up the LSA REQUEST CHALLENGE response */
-	init_net_r_req_chal(r_u, &p->dc->srv_chal, NT_STATUS_OK);
+	init_net_r_req_chal(r->out.credentials, &p->dc->srv_chal);
 
 	p->dc->challenge_sent = True;
 
@@ -1192,16 +1192,6 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 
 NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
 			      struct netr_LogonSamLogoff *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
-				  struct netr_ServerReqChallenge *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;

@@ -55,29 +55,7 @@ static bool proxy_netr_call(pipes_struct *p, uint8 opnum)
 
 static bool api_net_req_chal(pipes_struct *p)
 {
-	NET_Q_REQ_CHAL q_u;
-	NET_R_REQ_CHAL r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the challenge... */
-	if(!net_io_q_req_chal("", &q_u, data, 0)) {
-		DEBUG(0,("api_net_req_chal: Failed to unmarshall NET_Q_REQ_CHAL.\n"));
-		return False;
-	}
-
-	r_u.status = _net_req_chal(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!net_io_r_req_chal("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_net_req_chal: Failed to marshall NET_R_REQ_CHAL.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_netr_call(p, NDR_NETR_SERVERREQCHALLENGE);
 }
 
 /*************************************************************************
