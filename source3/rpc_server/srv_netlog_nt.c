@@ -43,21 +43,34 @@ static void init_net_r_req_chal(NET_R_REQ_CHAL *r_c,
 }
 
 /*************************************************************************
- net_reply_logon_ctrl:
+ _netr_LogonControl
  *************************************************************************/
 
-NTSTATUS _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u, 
-		       NET_R_LOGON_CTRL *r_u)
+WERROR _netr_LogonControl(pipes_struct *p,
+			  struct netr_LogonControl *r)
 {
-	uint32 flags = 0x0;
-	uint32 pdc_connection_status = 0x00; /* Maybe a win32 error code? */
-	
+	struct netr_NETLOGON_INFO_1 *info1;
+	uint32_t flags = 0x0;
+	uint32_t pdc_connection_status = W_ERROR_V(WERR_OK);
+
 	/* Setup the Logon Control response */
 
-	init_net_r_logon_ctrl(r_u, q_u->query_level, flags, 
-			      pdc_connection_status);
+	switch (r->in.level) {
+		case 1:
+			info1 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_1);
+			if (!info1) {
+				return WERR_NOMEM;
+			}
+			info1->flags = flags;
+			info1->pdc_connection_status = pdc_connection_status;
 
-	return r_u->status;
+			r->out.info->info1 = info1;
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -1252,16 +1265,6 @@ NTSTATUS _netr_AccountSync(pipes_struct *p,
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-WERROR _netr_LogonControl(pipes_struct *p,
-			  struct netr_LogonControl *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
 }
 
 /****************************************************************
