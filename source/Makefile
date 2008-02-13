@@ -21,6 +21,7 @@ HOSTLD_FLAGS = $(LDFLAGS)
 
 default: all
 
+include rules.mk
 include data.mk
 
 DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
@@ -175,7 +176,6 @@ testcov-html::
 
 include pidl/config.mk
 include selftest/config.mk
-include rules.mk
 
 showflags::
 	@echo '  pwd        = '`/bin/pwd`

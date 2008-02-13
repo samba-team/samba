@@ -147,10 +147,10 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 	TALLOC_CTX *tmp_ctx = talloc_new(tree);
 
 	ZERO_STRUCT(io);
-	io.in.oplock_flags = 0;
-	io.in.access_mask = SEC_RIGHTS_FILE_ALL;
-	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
-	io.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.in.oplock_level = 0;
+	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.in.share_access = 
 		NTCREATEX_SHARE_ACCESS_DELETE|
 		NTCREATEX_SHARE_ACCESS_READ|
@@ -166,7 +166,7 @@ static struct smb2_handle torture_smb2_create(struct smb2_tree *tree,
 
 	if (DEBUGLVL(1)) {
 		printf("Open gave:\n");
-		printf("oplock_flags    = 0x%x\n", io.out.oplock_flags);
+		printf("oplock_flags    = 0x%x\n", io.out.oplock_level);
 		printf("create_action   = 0x%x\n", io.out.create_action);
 		printf("create_time     = %s\n", nt_time_string(tmp_ctx, io.out.create_time));
 		printf("access_time     = %s\n", nt_time_string(tmp_ctx, io.out.access_time));

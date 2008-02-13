@@ -32,9 +32,11 @@ struct ntvfs_module_context;
 struct ntvfs_request;
 
 /* each backend has to be one one of the following 3 basic types. In
- * earlier versions of Samba backends needed to handle all types, now
- * we implement them separately. */
-enum ntvfs_type {NTVFS_DISK, NTVFS_PRINT, NTVFS_IPC};
+   earlier versions of Samba backends needed to handle all types, now
+   we implement them separately.
+   The values 1..3 match the SMB2 SMB2_SHARE_TYPE_* values
+ */
+enum ntvfs_type {NTVFS_DISK=1, NTVFS_IPC=2, NTVFS_PRINT=3};
 
 /* the ntvfs operations structure - contains function pointers to 
    the backend implementations of each operation */

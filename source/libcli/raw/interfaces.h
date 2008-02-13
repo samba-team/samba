@@ -260,20 +260,19 @@ union smb_tcon {
 
 		struct {
 			/* static body buffer 8 (0x08) bytes */
-			/* uint16_t buffer_code; 0x09 = 0x08 + 1 */
-			uint16_t unknown1; /* 0x0000 */
+			uint16_t reserved;
 			/* uint16_t path_ofs */
 			/* uint16_t path_size */
-	
-			/* dynamic body */
+				/* dynamic body */
 			const char *path; /* as non-terminated UTF-16 on the wire */
 		} in;
 		struct {
 			/* static body buffer 16 (0x10) bytes */
 			/* uint16_t buffer_code;  0x10 */
-			uint16_t unknown1; /* 0x02 */
-			uint32_t unknown2; /* 0x00 */
-			uint32_t unknown3; /* 0x00 */
+			uint8_t share_type;
+			uint8_t reserved;
+			uint32_t flags;
+			uint32_t capabilities;
 			uint32_t access_mask;
 	
 			/* extracted from the SMB2 header */
@@ -1553,16 +1552,16 @@ union smb_open {
 		enum smb_open_level level;
 		struct {
 			/* static body buffer 56 (0x38) bytes */
-			/* uint16_t buffer_code;  0x39 = 0x38 + 1 */
-			uint16_t oplock_flags; /* SMB2_CREATE_FLAG_* */
-			uint32_t impersonation;
-			uint32_t unknown3[4];
-			uint32_t access_mask;
-
-			uint32_t file_attr;
-			uint32_t share_access;
-			uint32_t open_disposition;
-			uint32_t create_options;
+			uint8_t  security_flags;      /* SMB2_SECURITY_* */
+			uint8_t  oplock_level;        /* SMB2_OPLOCK_LEVEL_* */
+			uint32_t impersonation_level; /* SMB2_IMPERSONATION_* */
+			uint64_t create_flags;
+			uint64_t reserved;
+			uint32_t desired_access;
+			uint32_t file_attributes;
+			uint32_t share_access; /* NTCREATEX_SHARE_ACCESS_* */
+			uint32_t create_disposition; /* NTCREATEX_DISP_* */
+			uint32_t create_options; /* NTCREATEX_OPTIONS_* */
 
 			/* uint16_t fname_ofs */
 			/* uint16_t fname_size */
@@ -1580,7 +1579,8 @@ union smb_open {
 
 			/* static body buffer 88 (0x58) bytes */
 			/* uint16_t buffer_code;  0x59 = 0x58 + 1 */
-			uint16_t oplock_flags; /* SMB2_CREATE_FLAG_* */
+			uint8_t oplock_level;
+			uint8_t reserved;
 			uint32_t create_action;
 			NTTIME   create_time;
 			NTTIME   access_time;
@@ -1589,7 +1589,7 @@ union smb_open {
 			uint64_t alloc_size;
 			uint64_t size;
 			uint32_t file_attr;
-			uint32_t _pad;
+			uint32_t reserved2;
 			/* struct smb2_handle handle;*/
 			/* uint32_t blob_ofs; */
 			/* uint32_t blob_size; */
