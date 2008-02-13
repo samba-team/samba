@@ -347,38 +347,6 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	return NT_STATUS_OK;
 }
 
-/* Logon Control 2 */
-
-NTSTATUS rpccli_netlogon_logon_ctrl2(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                  uint32 query_level)
-{
-	prs_struct qbuf, rbuf;
-	NET_Q_LOGON_CTRL2 q;
-	NET_R_LOGON_CTRL2 r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	fstring server;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	slprintf(server, sizeof(fstring)-1, "\\\\%s", cli->cli->desthost);
-	init_net_q_logon_ctrl2(&q, server, query_level);
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_LOGON_CTRL2,
-		q, r,
-		qbuf, rbuf,
-		net_io_q_logon_ctrl2,
-		net_io_r_logon_ctrl2,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-	return result;
-}
-
 /* Sam synchronisation */
 
 NTSTATUS rpccli_netlogon_sam_sync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
