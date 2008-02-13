@@ -28,8 +28,8 @@ all:: showflags $(EXTRA_TARGETS)
 include $(tallocdir)/rules.mk
 include $(tallocdir)/talloc.mk
 
-$(SOLIB): $(LIBOBJ)
-	$(SHLD) $(SHLD_FLAGS) -o $@ $(LIBOBJ) @SONAMEFLAG@$(SONAME)
+$(TALLOC_SOLIB): $(LIBOBJ)
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(LIBOBJ) @SONAMEFLAG@$(TALLOC_SONAME)
 
 check: test
 

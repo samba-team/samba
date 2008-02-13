@@ -37,11 +37,11 @@ default: all
 include $(tdbdir)/tdb.mk
 include $(tdbdir)/rules.mk
 
-all:: showflags dirs $(PROGS) $(SOLIB) libtdb.a $(PYTHON_BUILD_TARGET)
+all:: showflags dirs $(PROGS) $(TDB_SOLIB) libtdb.a $(PYTHON_BUILD_TARGET)
 
 install:: all
-$(SOLIB): $(TDB_OBJ)
-	$(SHLD) $(SHLD_FLAGS) -o $@ $(TDB_OBJ) @SONAMEFLAG@$(SONAME)
+$(TDB_SOLIB): $(TDB_OBJ)
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(TDB_OBJ) @SONAMEFLAG@$(TDB_SONAME)
 
 check: test
 

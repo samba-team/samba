@@ -5,8 +5,8 @@ PROGS = bin/tdbtool$(EXEEXT) bin/tdbdump$(EXEEXT) bin/tdbbackup$(EXEEXT)
 PROGS_NOINSTALL = bin/tdbtest$(EXEEXT) bin/tdbtorture$(EXEEXT)
 ALL_PROGS = $(PROGS) $(PROGS_NOINSTALL)
 
-SONAME = libtdb.$(SHLIBEXT).1
-SOLIB = libtdb.$(SHLIBEXT).$(PACKAGE_VERSION)
+TDB_SONAME = libtdb.$(SHLIBEXT).1
+TDB_SOLIB = libtdb.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 TDB_LIB = libtdb.a
 
@@ -25,12 +25,12 @@ bin/tdbdump$(EXEEXT): tools/tdbdump.o $(TDB_LIB)
 bin/tdbbackup$(EXEEXT): tools/tdbbackup.o $(TDB_LIB)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o bin/tdbbackup tools/tdbbackup.o -L. -ltdb
 
-test:: bin/tdbtorture$(EXEEXT) $(SONAME)
+test:: bin/tdbtorture$(EXEEXT) $(TDB_SONAME)
 	$(LIB_PATH_VAR)=. bin/tdbtorture$(EXEEXT)
 
 clean:: 
 	rm -f test.db test.tdb torture.tdb test.gdbm
-	rm -f $(SONAME) $(SOLIB) libtdb.a libtdb.$(SHLIBEXT)
+	rm -f $(TDB_SONAME) $(TDB_SOLIB) libtdb.a libtdb.$(SHLIBEXT)
 	rm -f $(ALL_PROGS) tdb.pc
 
 build-python:: _tdb.$(SHLIBEXT) 
@@ -74,13 +74,13 @@ installheaders:: installdirs
 
 installlibs:: all installdirs
 	cp tdb.pc $(DESTDIR)$(libdir)/pkgconfig
-	cp libtdb.a $(SOLIB) $(DESTDIR)$(libdir)
+	cp libtdb.a $(TDB_SOLIB) $(DESTDIR)$(libdir)
 
 libtdb.a: $(TDB_OBJ)
 	ar -rv libtdb.a $(TDB_OBJ)
 
-libtdb.$(SHLIBEXT): $(SOLIB)
+libtdb.$(SHLIBEXT): $(TDB_SOLIB)
 	ln -fs $< $@
 
-$(SONAME): $(SOLIB)
+$(TDB_SONAME): $(TDB_SOLIB)
 	ln -fs $< $@
