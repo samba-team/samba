@@ -208,7 +208,7 @@ sub import_integrated($$)
 		next if($mod->{SUBSYSTEM} ne $lib->{NAME});
 		next if($mod->{ENABLE} ne "YES");
 
-		push (@{$lib->{FULL_OBJ_LIST}}, "\$($mod->{TYPE}_$mod->{NAME}_FULL_OBJ_LIST)");
+		push (@{$lib->{FULL_OBJ_LIST}}, "\$($mod->{TYPE}_$mod->{NAME}_OBJ_LIST)");
 		push (@{$lib->{LINK_FLAGS}}, "\$($mod->{TYPE}_$mod->{NAME}_LINK_FLAGS)");
 		push (@{$lib->{CFLAGS}}, @{$mod->{CFLAGS}}) if defined($mod->{CFLAGS});
 		push (@{$lib->{PUBLIC_DEPENDENCIES}}, @{$mod->{PUBLIC_DEPENDENCIES}}) if defined($mod->{PUBLIC_DEPENDENCIES});
