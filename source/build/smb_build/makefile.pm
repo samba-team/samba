@@ -130,8 +130,6 @@ sub Integrated($$)
 	my ($self,$ctx) = @_;
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
-	$self->_prepare_list($ctx, "LINK_FLAGS");
 }
 
 sub SharedModulePrimitives($$)

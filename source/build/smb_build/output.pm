@@ -176,7 +176,7 @@ sub create_output($$)
 			my $elem = $depend->{$_};
 			next if $elem == $part;
 
-			push(@{$part->{LINK_FLAGS}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
+			push(@{$part->{LINK_FLAGS}}, "\$($elem->{TYPE}_$elem->{NAME}_OUTPUT)") if defined($elem->{OUTPUT});
 			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
 		    	push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
