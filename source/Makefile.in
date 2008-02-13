@@ -1453,9 +1453,9 @@ $(LIBTALLOC_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTALLOC_OBJ0)
 
-bin/libwbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ)
+bin/libwbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBWBCLIENT_OBJ) @LIBTALLOC_SHARED@
 	@echo Linking shared library $@
-	@$(SHLD_DSO) $(LIBWBCLIENT_OBJ) \
+	@$(SHLD_DSO) @LIBTALLOC_LIBS@ $(LIBWBCLIENT_OBJ) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 	@ln -s -f `basename $@` $@.$(SONAME_VER)
 
