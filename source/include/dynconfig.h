@@ -61,7 +61,7 @@ bool is_default_dyn_LOGFILEBASE(void);
 
 const char *get_dyn_LMHOSTSFILE(void);
 const char *set_dyn_LMHOSTSFILE(const char *newpath);
-bool is_default_dyn_LOGFILEBASE(void);
+bool is_default_dyn_LMHOSTSFILE(void);
 
 const char *get_dyn_CODEPAGEDIR(void);
 const char *set_dyn_CODEPAGEDIR(const char *newpath);
