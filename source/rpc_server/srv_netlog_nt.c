@@ -42,6 +42,46 @@ static void init_net_r_req_chal(struct netr_Credential *r,
 	memcpy(r->data, srv_chal->data, sizeof(r->data));
 }
 
+/*******************************************************************
+ Inits a netr_NETLOGON_INFO_1 structure.
+********************************************************************/
+
+static void init_netlogon_info1(struct netr_NETLOGON_INFO_1 *r,
+				uint32_t flags,
+				uint32_t pdc_connection_status)
+{
+	r->flags = flags;
+	r->pdc_connection_status = pdc_connection_status;
+}
+
+/*******************************************************************
+ Inits a netr_NETLOGON_INFO_2 structure.
+********************************************************************/
+
+static void init_netlogon_info2(struct netr_NETLOGON_INFO_2 *r,
+				uint32_t flags,
+				uint32_t pdc_connection_status,
+				const char *trusted_dc_name,
+				uint32_t tc_connection_status)
+{
+	r->flags = flags;
+	r->pdc_connection_status = pdc_connection_status;
+	r->trusted_dc_name = trusted_dc_name;
+	r->tc_connection_status = tc_connection_status;
+}
+
+/*******************************************************************
+ Inits a netr_NETLOGON_INFO_3 structure.
+********************************************************************/
+
+static void init_netlogon_info3(struct netr_NETLOGON_INFO_3 *r,
+				uint32_t flags,
+				uint32_t logon_attempts)
+{
+	r->flags = flags;
+	r->logon_attempts = logon_attempts;
+}
+
 /*************************************************************************
  _netr_LogonControl
  *************************************************************************/
@@ -61,9 +101,9 @@ WERROR _netr_LogonControl(pipes_struct *p,
 			if (!info1) {
 				return WERR_NOMEM;
 			}
-			info1->flags = flags;
-			info1->pdc_connection_status = pdc_connection_status;
-
+			init_netlogon_info1(info1,
+					    flags,
+					    pdc_connection_status);
 			r->out.info->info1 = info1;
 			break;
 		default:
