@@ -145,22 +145,28 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
 }
 
 /*************************************************************************
- net_reply_trust_dom_list:
+ _netr_NetrEnumerateTrustedDomains
  *************************************************************************/
 
-NTSTATUS _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRUST_DOM_LIST *r_u)
+WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
+					 struct netr_NetrEnumerateTrustedDomains *r)
 {
-	const char *trusted_domain = "test_domain";
-	uint32 num_trust_domains = 1;
+	struct netr_Blob trusted_domains_blob;
+	DATA_BLOB blob;
 
-	DEBUG(6,("_net_trust_dom_list: %d\n", __LINE__));
+	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
 
 	/* set up the Trusted Domain List response */
-	init_r_trust_dom(r_u, num_trust_domains, trusted_domain);
 
-	DEBUG(6,("_net_trust_dom_list: %d\n", __LINE__));
+	blob = data_blob_talloc_zero(p->mem_ctx, 2);
+	trusted_domains_blob.data = blob.data;
+	trusted_domains_blob.length = blob.length;
 
-	return r_u->status;
+	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
+
+	*r->out.trusted_domains_blob = trusted_domains_blob;
+
+	return WERR_OK;
 }
 
 /***********************************************************************************
@@ -1323,16 +1329,6 @@ NTSTATUS _netr_DatabaseRedo(pipes_struct *p,
 
 WERROR _netr_LogonControl2Ex(pipes_struct *p,
 			     struct netr_LogonControl2Ex *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
-					 struct netr_NetrEnumerateTrustedDomains *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

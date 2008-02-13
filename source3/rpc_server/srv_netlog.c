@@ -28,6 +28,27 @@
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
 
+/*******************************************************************
+ ********************************************************************/
+
+static bool proxy_netr_call(pipes_struct *p, uint8 opnum)
+{
+	struct api_struct *fns;
+	int n_fns;
+
+	netlogon_get_pipe_fns(&fns, &n_fns);
+
+	if (opnum >= n_fns) {
+		return false;
+	}
+
+	if (fns[opnum].opnum != opnum) {
+		smb_panic("NETLOGON function table not sorted");
+	}
+
+	return fns[opnum].fn(p);
+}
+
 /*************************************************************************
  api_net_req_chal:
  *************************************************************************/
@@ -218,30 +239,7 @@ static bool api_net_sam_logon(pipes_struct *p)
 
 static bool api_net_trust_dom_list(pipes_struct *p)
 {
-	NET_Q_TRUST_DOM_LIST q_u;
-	NET_R_TRUST_DOM_LIST r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the lsa trusted domain list query... */
-	if(!net_io_q_trust_dom("", &q_u, data, 0)) {
-		DEBUG(0,("api_net_trust_dom_list: Failed to unmarshall NET_Q_TRUST_DOM_LIST.\n"));
-		return False;
-	}
-
-	/* construct reply. */
-	r_u.status = _net_trust_dom_list(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!net_io_r_trust_dom("", &r_u, rdata, 0)) {
-		DEBUG(0,("net_reply_trust_dom_list: Failed to marshall NET_R_TRUST_DOM_LIST.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_netr_call(p, NDR_NETR_NETRENUMERATETRUSTEDDOMAINS);
 }
 
 /*************************************************************************
