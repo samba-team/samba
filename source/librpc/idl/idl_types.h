@@ -10,11 +10,6 @@
 #define STR_UTF8	LIBNDR_FLAG_STR_UTF8
 
 /*
-  a UCS2 string prefixed with [size], 32 bits
-*/
-#define lstring		[flag(STR_SIZE4)] string
-
-/*
   a null terminated UCS2 string
 */
 #define nstring		[flag(STR_NULLTERM)] string
