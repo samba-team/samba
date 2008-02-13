@@ -920,8 +920,8 @@ struct netr_ServerPasswordSet {
 		const char *account_name;/* [charset(UTF16)] */
 		enum netr_SchannelType secure_channel_type;
 		const char *computer_name;/* [charset(UTF16)] */
-		struct netr_Authenticator credential;
-		struct samr_Password new_password;
+		struct netr_Authenticator *credential;/* [ref] */
+		struct samr_Password *new_password;/* [ref] */
 	} in;
 
 	struct {

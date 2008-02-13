@@ -52,9 +52,9 @@ NTSTATUS rpccli_netr_ServerPasswordSet(struct rpc_pipe_client *cli,
 				       const char *account_name,
 				       enum netr_SchannelType secure_channel_type,
 				       const char *computer_name,
-				       struct netr_Authenticator credential,
-				       struct samr_Password new_password,
-				       struct netr_Authenticator *return_authenticator);
+				       struct netr_Authenticator *credential,
+				       struct netr_Authenticator *return_authenticator,
+				       struct samr_Password *new_password);
 NTSTATUS rpccli_netr_DatabaseDeltas(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    const char *logon_server,
