@@ -153,46 +153,6 @@ SamrTestPrivateFunctionsUser
 /* The following should be the greater of the preceeding two. */
 #define MAX_SAM_ENTRIES MAX_SAM_ENTRIES_W2K
 
-typedef struct samr_entry_info
-{
-	uint32 rid;
-	UNIHDR hdr_name;
-
-} SAM_ENTRY;
-
-/* SAMR_Q_ENUM_DOM_ALIASES - SAM rids and names */
-typedef struct q_samr_enum_dom_aliases_info
-{
-	POLICY_HND pol;          /* policy handle */
-
-	/* this is possibly an enumeration context handle... */
-	uint32 start_idx;         /* 0x0000 0000 */
-
-	uint32 max_size;              /* 0x0000 ffff */
-
-} SAMR_Q_ENUM_DOM_ALIASES;
-
-
-/* SAMR_R_ENUM_DOM_ALIASES - SAM rids and names */
-typedef struct r_samr_enum_dom_aliases_info
-{
-	uint32 next_idx;
-	uint32 ptr_entries1;
-
-	uint32 num_entries2;
-	uint32 ptr_entries2;
-
-	uint32 num_entries3;
-
-	SAM_ENTRY *sam;
-	UNISTR2 *uni_grp_name;
-
-	uint32 num_entries4;
-
-	NTSTATUS status;
-
-} SAMR_R_ENUM_DOM_ALIASES;
-
 /* these are from the old rpc_samr.h - they are needed while the merge
    is still going on */
 #define MAX_SAM_SIDS 15
