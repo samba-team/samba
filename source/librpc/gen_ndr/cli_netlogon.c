@@ -745,7 +745,7 @@ NTSTATUS rpccli_netr_LogonControl2(struct rpc_pipe_client *cli,
 				   const char *logon_server,
 				   uint32_t function_code,
 				   uint32_t level,
-				   union netr_CONTROL_DATA_INFORMATION data,
+				   union netr_CONTROL_DATA_INFORMATION *data,
 				   union netr_CONTROL_QUERY_INFORMATION *query,
 				   WERROR *werror)
 {

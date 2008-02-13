@@ -10166,8 +10166,11 @@ static enum ndr_err_code ndr_push_netr_LogonControl2(struct ndr_push *ndr, int f
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.function_code));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.level));
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.data, r->in.function_code));
-		NDR_CHECK(ndr_push_netr_CONTROL_DATA_INFORMATION(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.data));
+		if (r->in.data == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.data, r->in.function_code));
+		NDR_CHECK(ndr_push_netr_CONTROL_DATA_INFORMATION(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.data));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.query == NULL) {
@@ -10184,6 +10187,7 @@ static enum ndr_err_code ndr_pull_netr_LogonControl2(struct ndr_pull *ndr, int f
 {
 	uint32_t _ptr_logon_server;
 	TALLOC_CTX *_mem_save_logon_server_0;
+	TALLOC_CTX *_mem_save_data_0;
 	TALLOC_CTX *_mem_save_query_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -10208,8 +10212,14 @@ static enum ndr_err_code ndr_pull_netr_LogonControl2(struct ndr_pull *ndr, int f
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.function_code));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.level));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.data, r->in.function_code));
-		NDR_CHECK(ndr_pull_netr_CONTROL_DATA_INFORMATION(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.data));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.data);
+		}
+		_mem_save_data_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.data, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.data, r->in.function_code));
+		NDR_CHECK(ndr_pull_netr_CONTROL_DATA_INFORMATION(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.data));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_data_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.query);
 		ZERO_STRUCTP(r->out.query);
 	}
@@ -10245,8 +10255,11 @@ _PUBLIC_ void ndr_print_netr_LogonControl2(struct ndr_print *ndr, const char *na
 		ndr->depth--;
 		ndr_print_uint32(ndr, "function_code", r->in.function_code);
 		ndr_print_uint32(ndr, "level", r->in.level);
-		ndr_print_set_switch_value(ndr, &r->in.data, r->in.function_code);
-		ndr_print_netr_CONTROL_DATA_INFORMATION(ndr, "data", &r->in.data);
+		ndr_print_ptr(ndr, "data", r->in.data);
+		ndr->depth++;
+		ndr_print_set_switch_value(ndr, r->in.data, r->in.function_code);
+		ndr_print_netr_CONTROL_DATA_INFORMATION(ndr, "data", r->in.data);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
