@@ -21,27 +21,68 @@
 #include "includes.h"
 #include "rpcclient.h"
 
-static NTSTATUS cmd_netlogon_logon_ctrl2(struct rpc_pipe_client *cli, 
-                                         TALLOC_CTX *mem_ctx, int argc, 
-                                         const char **argv)
+static WERROR cmd_netlogon_logon_ctrl2(struct rpc_pipe_client *cli,
+				       TALLOC_CTX *mem_ctx, int argc,
+				       const char **argv)
 {
-	uint32 query_level = 1;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	WERROR werr;
+	const char *logon_server = cli->cli->desthost;
+	enum netr_LogonControlCode function_code = NETLOGON_CONTROL_REDISCOVER;
+	uint32_t level = 1;
+	union netr_CONTROL_DATA_INFORMATION data;
+	union netr_CONTROL_QUERY_INFORMATION query;
+	const char *domain = "BER";
 
-	if (argc > 1) {
-		fprintf(stderr, "Usage: %s\n", argv[0]);
-		return NT_STATUS_OK;
+	if (argc > 5) {
+		fprintf(stderr, "Usage: %s <logon_server> <function_code> "
+			"<level> <domain>\n", argv[0]);
+		return WERR_OK;
 	}
 
-	result = rpccli_netlogon_logon_ctrl2(cli, mem_ctx, query_level);
+	if (argc >= 2) {
+		logon_server = argv[1];
+	}
 
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
+	if (argc >= 3) {
+		function_code = atoi(argv[2]);
+	}
+
+	if (argc >= 4) {
+		level = atoi(argv[3]);
+	}
+
+	if (argc >= 5) {
+		domain = argv[4];
+	}
+
+	switch (function_code) {
+		case NETLOGON_CONTROL_REDISCOVER:
+		case NETLOGON_CONTROL_TC_QUERY:
+			data.domain = domain;
+			break;
+		default:
+			break;
+	}
+
+	status = rpccli_netr_LogonControl2(cli, mem_ctx,
+					  logon_server,
+					  function_code,
+					  level,
+					  &data,
+					  &query,
+					  &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
 
 	/* Display results */
 
- done:
-	return result;
+	return werr;
 }
 
 static WERROR cmd_netlogon_getanydcname(struct rpc_pipe_client *cli, 
@@ -859,14 +900,13 @@ static WERROR cmd_netlogon_enumtrusteddomainsex(struct rpc_pipe_client *cli,
 }
 
 
-
 /* List of commands exported by this module */
 
 struct cmd_set netlogon_commands[] = {
 
 	{ "NETLOGON" },
 
-	{ "logonctrl2", RPC_RTYPE_NTSTATUS, cmd_netlogon_logon_ctrl2, NULL, PI_NETLOGON, NULL, "Logon Control 2",     "" },
+	{ "logonctrl2", RPC_RTYPE_WERROR, NULL, cmd_netlogon_logon_ctrl2, PI_NETLOGON, NULL, "Logon Control 2",     "" },
 	{ "getanydcname", RPC_RTYPE_WERROR, NULL, cmd_netlogon_getanydcname, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
 	{ "getdcname", RPC_RTYPE_WERROR, NULL, cmd_netlogon_getdcname, PI_NETLOGON, NULL, "Get trusted PDC name",     "" },
 	{ "dsr_getdcname", RPC_RTYPE_WERROR, NULL, cmd_netlogon_dsr_getdcname, PI_NETLOGON, NULL, "Get trusted DC name",     "" },
