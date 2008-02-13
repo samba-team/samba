@@ -1996,6 +1996,10 @@ if test "$enable_shared" = yes -a "${ac_cv_gnu_ld_version_script}" = yes; then
 	DSO_EXPORTS=\$\(DSO_EXPORTS_CMD\)
 fi
 
+if test x"$BLDSHARED" = x"true" ; then
+	LDFLAGS="$LDFLAGS -L./bin"
+fi
+
 AC_MSG_RESULT($BLDSHARED)
 
 AC_MSG_CHECKING([LDFLAGS])
@@ -6284,7 +6288,6 @@ if test $BLDSHARED = true -a x"$HAVE_WINBIND" = x"yes" -a x"$BUILD_LIBWBCLIENT_S
 	INSTALL_LIBWBCLIENT=installlibwbclient
 	UNINSTALL_LIBWBCLIENT=uninstalllibwbclient
 	WINBIND_LIBS="-lwbclient"
-	LDFLAGS="$LDFLAGS -L./bin"
 else
 	LIBWBCLIENT_STATIC=bin/libwbclient.a
 fi
