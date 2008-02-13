@@ -16,7 +16,7 @@ install:: all
 	${INSTALLCMD} -d $(DESTDIR)$(libdir)
 	${INSTALLCMD} -d $(DESTDIR)$(libdir)/pkgconfig
 	${INSTALLCMD} -m 755 libtalloc.a $(DESTDIR)$(libdir)
-	${INSTALLCMD} -m 755 $(SOLIB) $(DESTDIR)$(libdir)
+	${INSTALLCMD} -m 755 $(TALLOC_SOLIB) $(DESTDIR)$(libdir)
 	${INSTALLCMD} -d $(DESTDIR)${includedir}
 	${INSTALLCMD} -m 644 $(srcdir)/talloc.h $(DESTDIR)$(includedir)
 	${INSTALLCMD} -m 644 talloc.pc $(DESTDIR)$(libdir)/pkgconfig
