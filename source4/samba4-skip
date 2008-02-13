@@ -50,4 +50,5 @@ RPC-FRSAPI							# Not provided by Samba 4
 WINBIND							# FIXME: This should not be skipped
 NSS-TEST						# Fails
 samba4.samba3sam.python		# Conversion from EJS not yet finished
+samba4.samdb.python			# Not finished yet
 RAW-OFFLINE 			# Samba 4 doesn't have much offline support yet
