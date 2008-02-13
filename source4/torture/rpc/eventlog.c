@@ -127,8 +127,6 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 			break;
 		}
 
-		torture_assert_ntstatus_ok(tctx, status, "ReadEventLog failed");
-
 		torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_BUFFER_TOO_SMALL,
 			"ReadEventLog failed");
 		
