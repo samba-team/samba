@@ -276,7 +276,7 @@ m4_include(lib/talloc/libtalloc.m4)
 
 TALLOC_OBJS=""
 for obj in ${TALLOC_OBJ}; do
-	TALLOC_OBJS="${TALLOCOBJS} ${tallocdir}/${obj}"
+	TALLOC_OBJS="${TALLOC_OBJS} ${tallocdir}/${obj}"
 done
 AC_SUBST(TALLOC_OBJS)
 
