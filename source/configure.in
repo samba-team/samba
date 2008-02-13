@@ -5150,7 +5150,7 @@ fi
 #
 
 AC_ARG_WITH([static-libs],
-	[AC_HELP_STRING([--with-static-libs=LIBS],
+	[AS_HELP_STRING([--with-static-libs=LIBS],
 		[Comma-separated list of names of (internal) libraries to link statically (instead of dynamically)])],
 	[AS_IF([test $withval],
 		[for lib in `echo $withval | sed -e 's/,/ /g'` ; do
