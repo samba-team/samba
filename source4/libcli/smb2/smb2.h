@@ -217,6 +217,34 @@ struct smb2_request {
 #define SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM       0x0800
 #define SMB2_SHAREFLAG_ALL                               0x0F33
 
+/* SMB2 create security flags */
+#define SMB2_SECURITY_DYNAMIC_TRACKING                   0x01
+#define SMB2_SECURITY_EFFECTIVE_ONLY                     0x02
+
+/* SMB2 requested oplock levels */
+#define SMB2_OPLOCK_LEVEL_NONE                           0x00
+#define SMB2_OPLOCK_LEVEL_II                             0x01
+#define SMB2_OPLOCK_LEVEL_EXCLUSIVE                      0x08
+#define SMB2_OPLOCK_LEVEL_BATCH                          0x09
+
+/* SMB2 impersonation levels */
+#define SMB2_IMPERSONATION_ANONYMOUS                     0x00
+#define SMB2_IMPERSONATION_IDENTIFICATION                0x01
+#define SMB2_IMPERSONATION_IMPERSONATION                 0x02
+#define SMB2_IMPERSONATION_DELEGATE                      0x03
+
+/* SMB2 create tags */
+#define SMB2_CREATE_TAG_EXTA "ExtA"
+#define SMB2_CREATE_TAG_MXAC "MxAc"
+#define SMB2_CREATE_TAG_SECD "SecD"
+#define SMB2_CREATE_TAG_DHNQ "DHnQ"
+#define SMB2_CREATE_TAG_DHNC "DHnC"
+#define SMB2_CREATE_TAG_ALSI "AlSi"
+#define SMB2_CREATE_TAG_TWRP "TWrp"
+#define SMB2_CREATE_TAG_QFID "QFid"
+
+
+
 /*
   check that a body has the expected size
 */
