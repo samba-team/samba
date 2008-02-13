@@ -82,4 +82,5 @@ sub create_smb_build_h($$)
 
 	print __FILE__.": creating $file\n";
 }
+
 1;

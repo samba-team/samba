@@ -134,6 +134,13 @@ sub Integrated($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 }
 
+sub SharedModulePrimitives($$)
+{
+	my ($self,$ctx) = @_;
+	
+	#FIXME
+}
+
 sub SharedModule($$)
 {
 	my ($self,$ctx) = @_;
@@ -213,25 +220,27 @@ __EOD__
 	$self->output("\n");
 }
 
-sub SharedLibrary($$)
+sub SharedLibraryPrimitives($$)
 {
 	my ($self,$ctx) = @_;
-
-	my $has_static_lib = 0;
 
 	$self->output("$ctx->{NAME}_SOVERSION = $ctx->{SO_VERSION}\n") if (defined($ctx->{SO_VERSION}));
 	$self->output("$ctx->{NAME}_VERSION = $ctx->{VERSION}\n") if (defined($ctx->{VERSION}));
 
-	push (@{$self->{shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
-	push (@{$self->{installable_shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
-
-	$has_static_lib = 1 if grep(/STATIC_LIBRARY/, @{$ctx->{OUTPUT_TYPE}});
-
-	if (not $has_static_lib) {
+	if (not grep(/STATIC_LIBRARY/, @{$ctx->{OUTPUT_TYPE}})) {
 		$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 		$self->_prepare_list($ctx, "OBJ_LIST");
 		$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	}
+}
+
+sub SharedLibrary($$)
+{
+	my ($self,$ctx) = @_;
+
+	push (@{$self->{shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
+	push (@{$self->{installable_shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
+
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 #	$self->_prepare_list_ex($ctx, "LINK_FLAGS", "-Wl,--whole-archive", "-Wl,--no-whole-archive");
@@ -338,13 +347,13 @@ __EOD__
 
 	if (defined($ctx->{USE_HOSTCC}) && $ctx->{USE_HOSTCC} eq "YES") {
 		$self->output(<< "__EOD__"
-	\@\$(HOSTLD) \$(HOSTLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(HOSTLD) \$(HOSTLD_FLAGS) -L\${builddir}/bin/static -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS)
 __EOD__
 		);
 	} else {
 		$self->output(<< "__EOD__"
-	\@\$(BNLD) \$(BNLD_FLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(BNLD) \$(BNLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
@@ -415,9 +424,9 @@ sub ProtoHeader($$)
 
 sub write($$)
 {
-	my ($self,$file) = @_;
+	my ($self, $file) = @_;
 
-	$self->output("MANPAGES = ".array2oneperline($self->{manpages})."\n");
+	$self->output("MANPAGES = " . array2oneperline($self->{manpages})."\n");
 	$self->output("BIN_PROGS = " . array2oneperline($self->{bin_progs}) . "\n");
 	$self->output("SBIN_PROGS = " . array2oneperline($self->{sbin_progs}) . "\n");
 	$self->output("BINARIES = " . array2oneperline($self->{binaries}) . "\n");
