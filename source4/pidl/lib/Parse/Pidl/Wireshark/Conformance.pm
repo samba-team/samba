@@ -52,6 +52,10 @@ use old_hf_name.
 This can be used in conjunction with HF_FIELD in order to make more than 
 one element use the same filter name.
 
+=item I<ETT_FIELD> ett
+
+Register a custom ett field
+
 =item I<STRIP_PREFIX> prefix
 
 Remove the specified prefix from all function names (if present).
@@ -313,6 +317,20 @@ sub handle_import
 	};
 }
 
+sub handle_ett_field
+{
+	my $pos = shift @_;
+	my $data = shift @_;
+	my $ett = shift @_;
+
+	unless(defined($ett)) {
+		error($pos, "incomplete ETT_FIELD command");
+		return;
+	};
+
+	push (@{$data->{ett}}, $ett);
+}
+
 my %field_handlers = (
 	TYPE => \&handle_type,
 	NOEMIT => \&handle_noemit, 
@@ -320,6 +338,7 @@ my %field_handlers = (
 	PARAM_VALUE => \&handle_param_value, 
 	HF_FIELD => \&handle_hf_field, 
 	HF_RENAME => \&handle_hf_rename, 
+	ETT_FIELD => \&handle_ett_field,
 	TFS => \&handle_tfs,
 	STRIP_PREFIX => \&handle_strip_prefix,
 	PROTOCOL => \&handle_protocol,

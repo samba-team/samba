@@ -332,7 +332,6 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     schemadn_ldb = "schema.ldb"
     if ldap_backend is not None:
         schema_ldb = ldap_backend
-    
     	schemadn_ldb = ldap_backend
     	
     if ldap_backend_type == "fedora-ds":
@@ -535,6 +534,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     
     :note: This will wipe the main SAM database file!
     """
+
+    assert serverrole in ("domain controller", "member server")
 
     # Also wipes the database
     setup_samdb_partitions(path, setup_path, schemadn=schemadn, configdn=configdn, 
