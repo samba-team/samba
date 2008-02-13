@@ -1,5 +1,5 @@
 AC_PREREQ(2.50)
-AC_INIT(talloc, 1.1.0)
+AC_INIT(talloc, 1.2.0)
 AC_CONFIG_SRCDIR([talloc.c])
 AC_SUBST(datarootdir)
 AC_CONFIG_HEADER(config.h)
@@ -14,5 +14,10 @@ if test -n "$XSLTPROC"; then
 	DOC_TARGET=doc
 fi
 AC_SUBST(DOC_TARGET)
+
+AC_LD_PICFLAG
+AC_LD_SHLIBEXT
+AC_LD_SONAMEFLAG
+AC_LIBREPLACE_SHLD_FLAGS
 
 AC_OUTPUT(Makefile talloc.pc)
