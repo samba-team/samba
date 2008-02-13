@@ -5146,7 +5146,7 @@ fi
 #   appears in the --with-static-libs configure option.
 #
 # Example:
-#   --with-static-libs=talloc makes use of libtalloc.a instead
+#   --with-static-libs=libtalloc makes use of libtalloc.a instead
 #   of linking the dynamic variant with -ltalloc.
 #
 # NOTE: This option only affects libraries that we do not only build
@@ -5161,7 +5161,7 @@ AC_ARG_WITH([static-libs],
 	[AS_IF([test $withval],
 		[for lib in `echo $withval | sed -e 's/,/ /g'` ; do
 			[lib=`echo $lib | tr '[a-z]' '[A-Z]'`]
-			eval LIB_$lib=STATIC
+			eval LINK_$lib=STATIC
 		done], [])],
 	[])
 
@@ -5196,7 +5196,7 @@ samba_cv_with_libtalloc=yes
 if test x"$samba_cv_with_libtalloc" = "xyes" -a $BLDSHARED = true; then
 	LIBTALLOC_SHARED=$LIBTALLOC_SHARED_TARGET
 	AC_MSG_RESULT(yes)
-	if test x"$LIB_TALLOC" = "xSTATIC" ; then
+	if test x"$LINK_LIBTALLOC" = "xSTATIC" ; then
 		LIBTALLOC_STATIC=$LIBTALLOC_STATIC_TARGET
 	else
 		LIBTALLOC_LIBS=-ltalloc
@@ -5240,7 +5240,7 @@ samba_cv_with_libnetapi=yes
 if test x"$samba_cv_with_libnetapi" = x"yes" -a $BLDSHARED = true; then
 	LIBNETAPI_SHARED=$LIBNETAPI_SHARED_TARGET
 	AC_MSG_RESULT(yes)
-	if test x"$LIB_NETAPI" = x"STATIC" ; then
+	if test x"$LINK_LIBNETAPI" = x"STATIC" ; then
 		LIBNETAPI_STATIC=$LIBNETAPI_STATIC_TARGET
 	else
 		LIBNETAPI_LIBS=-lnetapi
