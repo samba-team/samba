@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
@@ -11,12 +11,12 @@
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -101,54 +101,54 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
 	unistr2_to_ascii(servername, &q_u->uni_server_name, sizeof(servername));
 
 	r_u->status = NT_STATUS_OK;
-	
+
 	tc_status = W_ERROR_V(WERR_NO_SUCH_DOMAIN);
 	fstrcpy( dc_name, "" );
-	
+
 	switch ( q_u->function_code ) {
 		case NETLOGON_CONTROL_TC_QUERY:
 			unistr2_to_ascii(domain, &q_u->info.info6.domain, sizeof(domain));
-				
+
 			if ( !is_trusted_domain( domain ) )
 				break;
-				
+
 			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
 				tc_status = W_ERROR_V(WERR_NO_LOGON_SERVERS);
 				break;
 			}
 
 			fstr_sprintf( dc_name, "\\\\%s", dc_name2 );
-				
+
 			tc_status = W_ERROR_V(WERR_OK);
-			
+
 			break;
-			
+
 		case NETLOGON_CONTROL_REDISCOVER:
 			unistr2_to_ascii(domain, &q_u->info.info6.domain, sizeof(domain));
-				
+
 			if ( !is_trusted_domain( domain ) )
 				break;
-				
+
 			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
 				tc_status = W_ERROR_V(WERR_NO_LOGON_SERVERS);
 				break;
 			}
 
 			fstr_sprintf( dc_name, "\\\\%s", dc_name2 );
-				
+
 			tc_status = W_ERROR_V(WERR_OK);
-			
+
 			break;
-			
+
 		default:
 			/* no idea what this should be */
 			DEBUG(0,("_net_logon_ctrl2: unimplemented function level [%d]\n",
 				q_u->function_code));
 	}
-	
+
 	/* prepare the response */
-	
-	init_net_r_logon_ctrl2( r_u, q_u->query_level, flags, 
+
+	init_net_r_logon_ctrl2( r_u, q_u->query_level, flags,
 		pdc_connection_status, logon_attempts, tc_status, dc_name );
 
         if (lp_server_role() == ROLE_DOMAIN_BDC)
@@ -187,7 +187,7 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
  ***********************************************************************************/
 
 static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
-				 DOM_CRED *srv_cred, NTSTATUS status)  
+				 DOM_CRED *srv_cred, NTSTATUS status)
 {
 	DEBUG(5,("init_net_r_srv_pwset: %d\n", __LINE__));
 
@@ -207,13 +207,13 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 	const uint8 *pass;
 	bool ret;
 	uint32 acct_ctrl;
-	
+
 #if 0
 	char addr[INET6_ADDRSTRLEN];
 
     /*
      * Currently this code is redundent as we already have a filter
-     * by hostname list. What this code really needs to do is to 
+     * by hostname list. What this code really needs to do is to
      * get a hosts allowed/hosts denied list from the SAM database
      * on a per user basis, and make the access decision there.
      * I will leave this code here for now as a reminder to implement
@@ -236,7 +236,7 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 	become_root();
 	ret = pdb_getsampwnam(sampass, mach_acct);
 	unbecome_root();
- 
+
  	if (!ret) {
  		DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
 		TALLOC_FREE(sampass);
@@ -252,7 +252,7 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 
 	if (!(acct_ctrl & ACB_SVRTRUST) &&
 	    !(acct_ctrl & ACB_WSTRUST) &&
-	    !(acct_ctrl & ACB_DOMTRUST)) 
+	    !(acct_ctrl & ACB_DOMTRUST))
 	{
 		DEBUG(0,("get_md4pw: Workstation %s: account is not a trust account\n", mach_acct));
 		TALLOC_FREE(sampass);
@@ -298,9 +298,9 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 	dump_data(5, (uint8 *)md4pw, 16);
 
 	TALLOC_FREE(sampass);
-	
+
 	return NT_STATUS_OK;
- 	
+
 
 }
 
@@ -330,10 +330,10 @@ NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u
 	/* Create a server challenge for the client */
 	/* Set this to a random value. */
 	generate_random_buffer(p->dc->srv_chal.data, 8);
-	
+
 	/* set up the LSA REQUEST CHALLENGE response */
 	init_net_r_req_chal(r_u, &p->dc->srv_chal, NT_STATUS_OK);
-	
+
 	p->dc->challenge_sent = True;
 
 	return NT_STATUS_OK;
@@ -385,7 +385,7 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 			&p->dc->clnt_chal,	/* Stored client chal. */
 			&p->dc->srv_chal,	/* Stored server chal. */
 			p->dc->mach_pw,
-			&srv_chal_out);	
+			&srv_chal_out);
 
 	/* Check client credentials are valid. */
 	if (!creds_server_check(p->dc, &q_u->clnt_chal)) {
@@ -468,7 +468,7 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 			&p->dc->clnt_chal,	/* Stored client chal. */
 			&p->dc->srv_chal,	/* Stored server chal. */
 			p->dc->mach_pw,
-			&srv_chal_out);	
+			&srv_chal_out);
 
 	/* Check client credentials are valid. */
 	if (!creds_server_check(p->dc, &q_u->clnt_chal)) {
@@ -551,7 +551,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 
 	DEBUG(3,("_net_srv_pwset: Server Password Set by remote machine:[%s] on account [%s]\n",
 			remote_machine, p->dc->mach_acct));
-	
+
 	/* Step the creds chain forward. */
 	if (!creds_server_step(p->dc, &q_u->clnt_id.cred, &cred_out)) {
 		DEBUG(2,("_net_srv_pwset: creds_server_step failed. Rejecting auth "
@@ -579,7 +579,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	}
 
 	/* Ensure the account exists and is a machine account. */
-	
+
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 
 	if (!(acct_ctrl & ACB_WSTRUST ||
@@ -588,7 +588,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		TALLOC_FREE(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	
+
 	if (pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
 		TALLOC_FREE(sampass);
 		return NT_STATUS_ACCOUNT_DISABLED;
@@ -605,7 +605,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	old_pw = pdb_get_nt_passwd(sampass);
 
 	if (old_pw && memcmp(pwd, old_pw, 16) == 0) {
-		/* Avoid backend modificiations and other fun if the 
+		/* Avoid backend modificiations and other fun if the
 		   client changed the password to the *same thing* */
 
 		ret = True;
@@ -616,18 +616,18 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 			TALLOC_FREE(sampass);
 			return NT_STATUS_NO_MEMORY;
 		}
-		
+
 		if (!pdb_set_nt_passwd(sampass, pwd, PDB_CHANGED)) {
 			TALLOC_FREE(sampass);
 			return NT_STATUS_NO_MEMORY;
 		}
-		
+
 		if (!pdb_set_pass_last_set_time(sampass, time(NULL), PDB_CHANGED)) {
 			TALLOC_FREE(sampass);
 			/* Not quite sure what this one qualifies as, but this will do */
-			return NT_STATUS_UNSUCCESSFUL; 
+			return NT_STATUS_UNSUCCESSFUL;
 		}
-		
+
 		become_root();
 		r_u->status = pdb_update_sam_account(sampass);
 		unbecome_root();
@@ -712,7 +712,7 @@ static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
 				       const DOM_SID *domain_sid,
 				       size_t num_sids,
 				       const DOM_SID *sids,
-				       int *numgroups, DOM_GID **pgids) 
+				       int *numgroups, DOM_GID **pgids)
 {
 	int i;
 
@@ -754,7 +754,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 	auth_serversupplied_info *server_info = NULL;
 	struct samu *sampw;
 	struct auth_context *auth_context = NULL;
-	 
+
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
@@ -781,7 +781,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 	/* We handle the return of USER_INFO_2 instead of 3 in the parse return. Sucks, I know... */
 	r_u->switch_value = q_u->validation_level; /* indicates type of validation user info */
 	r_u->buffer_creds = 1; /* Ensure we always return server creds. */
- 
+
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
@@ -835,14 +835,14 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
  		uni_samlogon_domain = &ctr->auth.id1.uni_domain_name;
 
                 uni_samlogon_workstation = &ctr->auth.id1.uni_wksta_name;
-            
+
 		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
 		break;
 	case NET_LOGON_TYPE:
 		uni_samlogon_user = &ctr->auth.id2.uni_user_name;
 		uni_samlogon_domain = &ctr->auth.id2.uni_domain_name;
 		uni_samlogon_workstation = &ctr->auth.id2.uni_wksta_name;
-            
+
 		DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", lp_workgroup()));
 		break;
 	default:
@@ -857,16 +857,16 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 	DEBUG(3,("User:[%s@%s] Requested Domain:[%s]\n", nt_username, nt_workstation, nt_domain));
 	fstrcpy(current_user_info.smb_name, nt_username);
 	sub_set_smb_name(nt_username);
-     
+
 	DEBUG(5,("Attempting validation level %d for unmapped username %s.\n", q_u->sam_id.ctr->switch_value, nt_username));
 
 	status = NT_STATUS_OK;
-	
+
 	switch (ctr->switch_value) {
 	case NET_LOGON_TYPE:
 	{
 		const char *wksname = nt_workstation;
-		
+
 		if (!NT_STATUS_IS_OK(status = make_auth_context_fixed(&auth_context, ctr->auth.id2.lm_chal))) {
 			return status;
 		}
@@ -878,8 +878,8 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		if (*wksname == '\\') wksname++;
 
 		/* Standard challenge/response authenticaion */
-		if (!make_user_info_netlogon_network(&user_info, 
-						     nt_username, nt_domain, 
+		if (!make_user_info_netlogon_network(&user_info,
+						     nt_username, nt_domain,
 						     wksname,
 						     ctr->auth.id2.param_ctrl,
 						     ctr->auth.id2.lm_chal_resp.buffer,
@@ -887,7 +887,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 						     ctr->auth.id2.nt_chal_resp.buffer,
 						     ctr->auth.id2.nt_chal_resp.str_str_len)) {
 			status = NT_STATUS_NO_MEMORY;
-		}	
+		}
 		break;
 	}
 	case INTERACTIVE_LOGON_TYPE:
@@ -897,20 +897,20 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		   on */
 	{
 		const uint8 *chal;
-		
+
 		if (!NT_STATUS_IS_OK(status = make_auth_context_subsystem(&auth_context))) {
 			return status;
 		}
-		
+
 		chal = auth_context->get_ntlm_challenge(auth_context);
 
-		if (!make_user_info_netlogon_interactive(&user_info, 
-							 nt_username, nt_domain, 
-							 nt_workstation, 
+		if (!make_user_info_netlogon_interactive(&user_info,
+							 nt_username, nt_domain,
+							 nt_workstation,
 							 ctr->auth.id1.param_ctrl,
 							 chal,
-							 ctr->auth.id1.lm_owf.data, 
-							 ctr->auth.id1.nt_owf.data, 
+							 ctr->auth.id1.lm_owf.data,
+							 ctr->auth.id1.nt_owf.data,
 							 p->dc->sess_key)) {
 			status = NT_STATUS_NO_MEMORY;
 		}
@@ -920,26 +920,26 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		DEBUG(2,("SAM Logon: unsupported switch value\n"));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	} /* end switch */
-	
+
 	if ( NT_STATUS_IS_OK(status) ) {
-		status = auth_context->check_ntlm_password(auth_context, 
+		status = auth_context->check_ntlm_password(auth_context,
 			user_info, &server_info);
 	}
 
-	(auth_context->free)(&auth_context);	
+	(auth_context->free)(&auth_context);
 	free_user_info(&user_info);
-	
-	DEBUG(5, ("_net_sam_logon: check_password returned status %s\n", 
+
+	DEBUG(5, ("_net_sam_logon: check_password returned status %s\n",
 		  nt_errstr(status)));
 
 	/* Check account and password */
-    
+
 	if (!NT_STATUS_IS_OK(status)) {
-		/* If we don't know what this domain is, we need to 
-		   indicate that we are not authoritative.  This 
-		   allows the client to decide if it needs to try 
+		/* If we don't know what this domain is, we need to
+		   indicate that we are not authoritative.  This
+		   allows the client to decide if it needs to try
 		   a local user.  Fix by jpjanosi@us.ibm.com, #2976 */
-                if ( NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER) 
+                if ( NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)
 		     && !strequal(nt_domain, get_global_sam_name())
 		     && !is_trusted_domain(nt_domain) )
 			r_u->auth_resp = 0; /* We are not authoritative */
@@ -1095,7 +1095,7 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 {
 	return _net_sam_logon_internal(p, q_u, r_u, True);
 }
- 
+
 /*************************************************************************
  _net_sam_logon_ex - no credential chaining. Map into net sam logon.
  *************************************************************************/
@@ -1146,10 +1146,10 @@ NTSTATUS _net_sam_logon_ex(pipes_struct *p, NET_Q_SAM_LOGON_EX *q_u, NET_R_SAM_L
 {
 	NTSTATUS status = NT_STATUS_OK;
 
-	/* TODO: According to MSDN, the can only be executed against a 
+	/* TODO: According to MSDN, the can only be executed against a
 	   DC or domain member running Windows 2000 or later.  Need
-	   to test against a standalone 2k server and see what it 
-	   does.  A windows 2000 DC includes its own domain in the 
+	   to test against a standalone 2k server and see what it
+	   does.  A windows 2000 DC includes its own domain in the
 	   list.  --jerry */
 
 	return status;
