@@ -29,18 +29,6 @@
 #define DBGC_CLASS DBGC_RPC_PARSE
 
 /*******************************************************************
-inits a SAM_ENTRY structure.
-********************************************************************/
-
-void init_sam_entry(SAM_ENTRY *sam, UNISTR2 *uni2, uint32 rid)
-{
-	DEBUG(10, ("init_sam_entry: %d\n", rid));
-
-	sam->rid = rid;
-	init_uni_hdr(&sam->hdr_name, uni2);
-}
-
-/*******************************************************************
 reads or writes a SAM_ENTRY structure.
 ********************************************************************/
 
