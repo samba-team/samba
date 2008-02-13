@@ -220,18 +220,21 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 		return result;
 
 	do {
-		struct acct_info *info2 = NULL;
+		struct samr_SamArray *sam_array = NULL;
 		uint32 count = 0, start = *num_entries;
 		TALLOC_CTX *mem_ctx2;
+		int g;
 
 		mem_ctx2 = talloc_init("enum_dom_local_groups[rpc]");
 
-		result = rpccli_samr_enum_als_groups( cli, mem_ctx2, &dom_pol,
-						      &start, 0xFFFF, &info2,
-						      &count);
-					  
+		result = rpccli_samr_EnumDomainAliases(cli, mem_ctx2,
+						       &dom_pol,
+						       &start,
+						       &sam_array,
+						       0xFFFF, /* buffer size? */
+						       &count);
 		if (!NT_STATUS_IS_OK(result) &&
-		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES) ) 
+		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES) )
 		{
 			talloc_destroy(mem_ctx2);
 			return result;
@@ -245,7 +248,13 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		memcpy(&(*info)[*num_entries], info2, count*sizeof(*info2));
+		for (g=0; g < count; g++) {
+
+			fstrcpy((*info)[*num_entries + g].acct_name,
+				sam_array->entries[g].name.string);
+			(*info)[*num_entries + g].rid = sam_array->entries[g].idx;
+		}
+
 		(*num_entries) += count;
 		talloc_destroy(mem_ctx2);
 
