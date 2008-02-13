@@ -73,7 +73,7 @@ static void continue_session(struct composite_context *creq)
 	state->tree = smb2_tree_init(state->session, state, true);
 	if (composite_nomem(state->tree, c)) return;
 
-	state->tcon.in.unknown1 = 0x09;
+	state->tcon.in.reserved = 0;
 	state->tcon.in.path     = talloc_asprintf(state, "\\\\%s\\%s", 
 						  state->host, state->share);
 	if (composite_nomem(state->tcon.in.path, c)) return;
