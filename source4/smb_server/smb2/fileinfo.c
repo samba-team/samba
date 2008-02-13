@@ -268,7 +268,7 @@ static NTSTATUS smb2srv_setinfo_file(struct smb2srv_setinfo_op *op, uint8_t smb2
 
 	status = smbsrv_pull_passthru_sfileinfo(io, io->generic.level, io,
 						&op->info->in.blob,
-						STR_UNICODE, NULL);
+						STR_UNICODE, &op->req->in.bufinfo);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	return ntvfs_setfileinfo(op->req->ntvfs, io);

@@ -123,9 +123,9 @@ NTSTATUS smb_raw_tcon_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 		p = req->in.data;
 		if (!p) break;
 
-		p += smbcli_req_pull_string(req, mem_ctx, &parms->tconx.out.dev_type, 
-					 p, -1, STR_ASCII | STR_TERMINATE);
-		p += smbcli_req_pull_string(req, mem_ctx, &parms->tconx.out.fs_type, 
+		p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->tconx.out.dev_type, 
+					    p, -1, STR_ASCII | STR_TERMINATE);
+		p += smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->tconx.out.fs_type, 
 					 p, -1, STR_TERMINATE);
 		break;
 

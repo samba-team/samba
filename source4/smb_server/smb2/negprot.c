@@ -238,6 +238,8 @@ void smb2srv_reply_smb_negprot(struct smbsrv_request *smb_req)
 	req->in.body_size = body_fixed_size;
 	req->in.dynamic   = NULL;
 
+	smb2srv_setup_bufinfo(req);
+
 	SIVAL(req->in.hdr, 0,				SMB2_MAGIC);
 	SSVAL(req->in.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
 	SSVAL(req->in.hdr, SMB2_HDR_EPOCH,		0);
