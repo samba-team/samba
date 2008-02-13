@@ -226,29 +226,7 @@ static bool api_net_trust_dom_list(pipes_struct *p)
 
 static bool api_net_logon_ctrl2(pipes_struct *p)
 {
-	NET_Q_LOGON_CTRL2 q_u;
-	NET_R_LOGON_CTRL2 r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-
-	/* grab the lsa netlogon ctrl2 query... */
-	if(!net_io_q_logon_ctrl2("", &q_u, data, 0)) {
-		DEBUG(0,("api_net_logon_ctrl2: Failed to unmarshall NET_Q_LOGON_CTRL2.\n"));
-		return False;
-	}
-
-	r_u.status = _net_logon_ctrl2(p, &q_u, &r_u);
-
-	if(!net_io_r_logon_ctrl2("", &r_u, rdata, 0)) {
-		DEBUG(0,("net_reply_logon_ctrl2: Failed to marshall NET_R_LOGON_CTRL2.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_netr_call(p, NDR_NETR_LOGONCONTROL2);
 }
 
 /*************************************************************************
