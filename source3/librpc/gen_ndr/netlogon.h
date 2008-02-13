@@ -1071,7 +1071,7 @@ struct netr_LogonControl2 {
 		const char *logon_server;/* [unique,charset(UTF16)] */
 		uint32_t function_code;
 		uint32_t level;
-		union netr_CONTROL_DATA_INFORMATION data;/* [switch_is(function_code)] */
+		union netr_CONTROL_DATA_INFORMATION *data;/* [ref,switch_is(function_code)] */
 	} in;
 
 	struct {
