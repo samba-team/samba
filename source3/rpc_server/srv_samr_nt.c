@@ -2476,6 +2476,8 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 			TALLOC_FREE(pw);
 			return NT_STATUS_NO_MEMORY;
 		}
+	} else {
+		parameters = NULL;
 	}
 
 
