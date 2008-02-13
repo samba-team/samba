@@ -46,3 +46,43 @@ void init_lsa_AsciiString(struct lsa_AsciiString *name, const char *s)
 	name->string = s;
 }
 
+/*******************************************************************
+ Inits an lsa_QosInfo structure.
+********************************************************************/
+
+void init_lsa_sec_qos(struct lsa_QosInfo *r,
+		      uint32_t len,
+		      uint16_t impersonation_level,
+		      uint8_t context_mode,
+		      uint8_t effective_only)
+{
+	DEBUG(5, ("init_lsa_sec_qos\n"));
+
+	r->len = len;
+	r->impersonation_level = impersonation_level;
+	r->context_mode = context_mode;
+	r->effective_only = effective_only;
+}
+
+/*******************************************************************
+ Inits an lsa_ObjectAttribute structure.
+********************************************************************/
+
+void init_lsa_obj_attr(struct lsa_ObjectAttribute *r,
+		       uint32_t len,
+		       uint8_t *root_dir,
+		       const char *object_name,
+		       uint32_t attributes,
+		       struct security_descriptor *sec_desc,
+		       struct lsa_QosInfo *sec_qos)
+{
+	DEBUG(5,("init_lsa_obj_attr\n"));
+
+	r->len = len;
+	r->root_dir = root_dir;
+	r->object_name = object_name;
+	r->attributes = attributes;
+	r->sec_desc = sec_desc;
+	r->sec_qos = sec_qos;
+}
+
