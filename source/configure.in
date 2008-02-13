@@ -354,10 +354,13 @@ AC_SUBST(INSTALL_LIBSMBSHAREMODES)
 AC_SUBST(UNINSTALL_LIBSMBSHAREMODES)
 AC_SUBST(LIBSMBSHAREMODES_SHARED)
 AC_SUBST(LIBSMBSHAREMODES)
-AC_SUBST(INSTALL_LIBNETAPI)
-AC_SUBST(UNINSTALL_LIBNETAPI)
+
+AC_SUBST(LIBNETAPI_SHARED_TARGET)
+AC_SUBST(LIBNETAPI_STATIC_TARGET)
 AC_SUBST(LIBNETAPI_SHARED)
-AC_SUBST(LIBNETAPI)
+AC_SUBST(LIBNETAPI_STATIC)
+AC_SUBST(LIBNETAPI_LIBS)
+
 AC_SUBST(PRINT_LIBS)
 AC_SUBST(AUTH_LIBS)
 AC_SUBST(ACL_LIBS)
@@ -5209,48 +5212,46 @@ fi
 
 #################################################
 # should we build libnetapi?
-INSTALL_LIBNETAPI=
-UNINSTALL_LIBNETAPI=
+LIBNETAPI_SHARED_TARGET=bin/libnetapi.$SHLIBEXT
+LIBNETAPI_STATIC_TARGET=bin/libnetapi.a
 LIBNETAPI_SHARED=
-LIBNETAPI=
+LIBNETAPI_STATIC=
+LIBNETAPI_LIBS=
+
 AC_MSG_CHECKING(whether to build the libnetapi shared library)
 AC_ARG_WITH(libnetapi,
 [AS_HELP_STRING([--with-libnetapi], [Build the libnetapi shared library (default=yes if shared libs supported)])],
-[ case "$withval" in
-  *)
-     AC_MSG_RESULT(no)
-     ;;
-  yes)
-     if test $BLDSHARED = true; then
-        LIBNETAPI_SHARED=bin/libnetapi.$SHLIBEXT
-        LIBNETAPI=libnetapi
-        AC_MSG_RESULT(yes)
-     else
-	enable_static=yes
-        AC_MSG_RESULT(no shared library support -- will supply static library)
-     fi
-     if test $enable_static = yes; then
-        LIBNETAPI=libnetapi
-     fi
-     INSTALL_LIBNETAPI=installlibnetapi
-     UNINSTALL_LIBNETAPI=uninstalllibnetapi
-     ;;
-  esac ],
+[
+case "$withval" in
+	*)
+		AC_MSG_RESULT(no)
+		;;
+	yes)
+		samba_cv_with_libnetapi=yes
+		;;
+esac
+],
 [
 # if unspecified, default is to build it if possible.
-  if test $BLDSHARED = true; then
-     LIBNETAPI_SHARED=bin/libnetapi.$SHLIBEXT
-     LIBNETAPI=libnetapi
-     AC_MSG_RESULT(yes)
-   else
-     enable_static=yes
-     AC_MSG_RESULT(no shared library support -- will supply static library)
-   fi
-   if test $enable_static = yes; then
-     LIBNETAPI=libnetapi
-  fi]
-  INSTALL_LIBNETAPI=installlibnetapi
+samba_cv_with_libnetapi=yes
+]
 )
+
+if test x"$samba_cv_with_libnetapi" = x"yes" -a $BLDSHARED = true; then
+	LIBNETAPI_SHARED=$LIBNETAPI_SHARED_TARGET
+	AC_MSG_RESULT(yes)
+	if test x"$LIB_NETAPI" = x"STATIC" ; then
+		LIBNETAPI_STATIC=$LIBNETAPI_STATIC_TARGET
+	else
+		LIBNETAPI_LIBS=-lnetapi
+	fi
+else
+	enable_static=yes
+	AC_MSG_RESULT(no shared library support -- will supply static library)
+fi
+if test x"$enable_static" = x"yes"; then
+	LIBNETAPI_STATIC=$LIBNETAPI_STATIC_TARGET
+fi
 
 #################################################
 # should we build libaddns?
