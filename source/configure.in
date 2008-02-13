@@ -60,7 +60,7 @@ statedir="\${LOCKDIR}"
 cachedir="\${LOCKDIR}"
 
 AC_ARG_WITH(fhs,
-[  --with-fhs              Use FHS-compliant paths (default=no)],
+[AS_HELP_STRING([--with-fhs],[Use FHS-compliant paths (default=no)])],
 [ case "$withval" in
   yes)
     lockdir="\${VARDIR}/lib/samba"
@@ -81,7 +81,7 @@ AC_ARG_WITH(fhs,
 #################################################
 # set private directory location
 AC_ARG_WITH(privatedir,
-[  --with-privatedir=DIR   Where to put smbpasswd ($ac_default_prefix/private)],
+[AS_HELP_STRING([--with-privatedir=DIR], [Where to put smbpasswd ($ac_default_prefix/private)])],
 [ case "$withval" in
   yes|no)
   #
@@ -97,7 +97,7 @@ AC_ARG_WITH(privatedir,
 #################################################
 # set root sbin directory location
 AC_ARG_WITH(rootsbindir,
-[  --with-rootsbindir=DIR  Which directory to use for root sbin ($ac_default_prefix/sbin)],
+[AS_HELP_STRING([--with-rootsbindir=DIR], [Which directory to use for root sbin ($ac_default_prefix/sbin)])],
 [ case "$withval" in
   yes|no)
   #
@@ -113,7 +113,7 @@ AC_ARG_WITH(rootsbindir,
 #################################################
 # set lock directory location
 AC_ARG_WITH(lockdir,
-[  --with-lockdir=DIR      Where to put lock files ($ac_default_prefix/var/locks)],
+[AS_HELP_STRING([--with-lockdir=DIR], [Where to put lock files ($ac_default_prefix/var/locks)])],
 [ case "$withval" in
   yes|no)
   #
@@ -129,7 +129,7 @@ AC_ARG_WITH(lockdir,
 #################################################
 # set pid directory location
 AC_ARG_WITH(piddir,
-[  --with-piddir=DIR       Where to put pid files ($ac_default_prefix/var/locks)],
+[AS_HELP_STRING([--with-piddir=DIR], [Where to put pid files ($ac_default_prefix/var/locks)])],
 [ case "$withval" in
   yes|no)
   #
@@ -145,7 +145,7 @@ AC_ARG_WITH(piddir,
 #################################################
 # set SWAT directory location
 AC_ARG_WITH(swatdir,
-[  --with-swatdir=DIR      Where to put SWAT files ($ac_default_prefix/swat)],
+[AS_HELP_STRING([--with-swatdir=DIR], [Where to put SWAT files ($ac_default_prefix/swat)])],
 [ case "$withval" in
   yes|no)
   #
@@ -161,7 +161,7 @@ AC_ARG_WITH(swatdir,
 #################################################
 # set configuration directory location
 AC_ARG_WITH(configdir,
-[  --with-configdir=DIR    Where to put configuration files ($libdir)],
+[AS_HELP_STRING([--with-configdir=DIR], [Where to put configuration files ($libdir)])],
 [ case "$withval" in
   yes|no)
   #
@@ -177,7 +177,7 @@ AC_ARG_WITH(configdir,
 #################################################
 # set log directory location
 AC_ARG_WITH(logfilebase,
-[  --with-logfilebase=DIR  Where to put log files ($VARDIR)],
+[AS_HELP_STRING([--with-logfilebase=DIR], [Where to put log files ($VARDIR)])],
 [ case "$withval" in
   yes|no)
   #
@@ -194,7 +194,7 @@ AC_ARG_WITH(logfilebase,
 #################################################
 # set ctdb source directory location
 AC_ARG_WITH(ctdb,
-[  --with-ctdb=DIR  Where to find ctdb sources],
+[AS_HELP_STRING([--with-ctdb=DIR], [Where to find ctdb sources])],
 [ case "$withval" in
   yes|no)
     AC_MSG_WARN([--with-ctdb called without argument])
@@ -207,7 +207,7 @@ AC_ARG_WITH(ctdb,
 #################################################
 # set lib directory location
 AC_ARG_WITH(libdir,
-[  --with-libdir=DIR       Where to put libdir ($libdir)],
+[AS_HELP_STRING([--with-libdir=DIR], [Where to put libdir ($libdir)])],
 [ case "$withval" in
   yes|no)
   #
@@ -223,7 +223,7 @@ AC_ARG_WITH(libdir,
 #################################################
 # set PAM modules directory location
 AC_ARG_WITH(pammodulesdir,
-[  --with-pammodulesdir=DIR  Which directory to use for PAM modules ($ac_default_prefix/$libdir/security)],
+[AS_HELP_STRING([--with-pammodulesdir=DIR], [Which directory to use for PAM modules ($ac_default_prefix/$libdir/security)])],
 [ case "$withval" in
   yes|no)
   #
@@ -239,7 +239,7 @@ AC_ARG_WITH(pammodulesdir,
 #################################################
 # set man directory location
 AC_ARG_WITH(mandir,
-[  --with-mandir=DIR       Where to put man pages ($mandir)],
+[AS_HELP_STRING([--with-mandir=DIR], [Where to put man pages ($mandir)])],
 [ case "$withval" in
   yes|no)
   #
@@ -253,8 +253,7 @@ AC_ARG_WITH(mandir,
   esac])
 
 AC_ARG_WITH(cfenc,
-[  --with-cfenc=HEADERDIR  Use internal CoreFoundation encoding API
-			  for optimization (Mac OS X/Darwin only)],
+[AS_HELP_STRING([--with-cfenc=HEADERDIR], [Use internal CoreFoundation encoding API for optimization (Mac OS X/Darwin only)])],
 [
 # May be in source $withval/CoreFoundation/StringEncodings.subproj.
 # Should have been in framework $withval/CoreFoundation.framework/Headers.
@@ -387,7 +386,7 @@ AC_SUBST(NSCD_LIBS)
 ## check for --enable-debug first before checking CFLAGS before
 ## so that we don't mix -O and -g
 AC_ARG_ENABLE(debug,
-[  --enable-debug          Turn on compiler debugging information (default=no)],
+[AS_HELP_STRING([--enable-debug], [Turn on compiler debugging information (default=no)])],
     [if eval "test x$enable_debug = xyes"; then
 	CFLAGS="${CFLAGS} -g"
     fi])
@@ -410,7 +409,7 @@ SWAT_SBIN_TARGETS='bin/swat$(EXEEXT)'
 SWAT_INSTALL_TARGETS=installswat
 
 AC_ARG_ENABLE(swat,
-[  --enable-swat           Build the SWAT tool (default=yes)],
+[AS_HELP_STRING([--enable-swat], [Build the SWAT tool (default=yes)])],
 [
     case "$enable_swat" in
 	no)
@@ -428,7 +427,7 @@ AC_SUBST(SWAT_INSTALL_TARGETS)
 selftest_prefix="./"
 AC_SUBST(selftest_prefix)
 AC_ARG_WITH(selftest-prefix,
-[  --with-selftest-prefix=DIR    The prefix where make test will be run ($selftest_prefix)],
+[AS_HELP_STRING([--with-selftest-prefix=DIR], [The prefix where make test will be run ($selftest_prefix)])],
 [ case "$withval" in
   yes|no)
     AC_MSG_WARN([--with-selftest-prefix called without argument - will use default])
@@ -444,7 +443,7 @@ AC_ARG_WITH(selftest-prefix,
 smbtorture4_path=""
 AC_SUBST(smbtorture4_path)
 AC_ARG_WITH(smbtorture4_path,
-[  --with-smbtorture4-path=PATH    The path to a samba4 smbtorture for make test (none)],
+[AS_HELP_STRING([--with-smbtorture4-path=PATH], [The path to a samba4 smbtorture for make test (none)])],
 [ case "$withval" in
   yes|no)
     AC_MSG_ERROR([--with-smbtorture4-path should take a path])
@@ -458,12 +457,12 @@ AC_ARG_WITH(smbtorture4_path,
  esac
 ])
 
-AC_ARG_ENABLE(developer, [  --enable-developer      Turn on developer warnings and debugging (default=no)],
+AC_ARG_ENABLE(developer, [AS_HELP_STRING([--enable-developer], [Turn on developer warnings and debugging (default=no)])],
     [if eval "test x$enable_developer = xyes"; then
         developer=yes
     fi])
 
-AC_ARG_ENABLE(krb5developer, [  --enable-krb5developer  Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)],
+AC_ARG_ENABLE(krb5developer, [AS_HELP_STRING([--enable-krb5developer], [Turn on developer warnings and debugging, except -Wstrict-prototypes (default=no)])],
     [if eval "test x$enable_krb5developer = xyes"; then
         developer=yes
 	krb5_developer=yes
@@ -516,7 +515,7 @@ if test x"$ac_cv_prog_gcc" = x"yes" ; then
        fi
 fi
 
-AC_ARG_ENABLE(dmalloc, [  --enable-dmalloc        Enable heap debugging [default=no]])
+AC_ARG_ENABLE(dmalloc, [AS_HELP_STRING([--enable-dmalloc], [Enable heap debugging [default=no]])])
 
 if test "x$enable_dmalloc" = xyes
 then
@@ -530,7 +529,7 @@ fi
 # check for a shared memory profiling support
 AC_MSG_CHECKING(whether to use profiling)
 AC_ARG_WITH(profiling-data,
-[  --with-profiling-data   Include gathering source code profile information (default=no)],
+[AS_HELP_STRING([--with-profiling-data], [Include gathering source code profile information (default=no)])],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1070,7 +1069,7 @@ AC_CHECK_TYPE(comparison_fn_t,
 # for cups support we need libcups, and a handful of header files
 
 AC_ARG_ENABLE(cups,
-[  --enable-cups           Turn on CUPS support (default=auto)])
+[AS_HELP_STRING([--enable-cups], [Turn on CUPS support (default=auto)])])
 
 if test x$enable_cups != xno; then
 	AC_PATH_PROG(CUPS_CONFIG, cups-config)
@@ -1086,7 +1085,7 @@ if test x$enable_cups != xno; then
 fi
 
 AC_ARG_ENABLE(iprint,
-[  --enable-iprint         Turn on iPrint support (default=yes if cups is yes)])
+[AS_HELP_STRING([--enable-iprint], [Turn on iPrint support (default=yes if cups is yes)])])
 
 if test x$enable_iprint != xno; then
 	if test "x$CUPS_CONFIG" != x; then
@@ -1208,7 +1207,7 @@ test "${with_readline+set}" != "set" && with_readline=yes
 # test for where we get readline() from
 AC_MSG_CHECKING(whether to use readline)
 AC_ARG_WITH(readline,
-[  --with-readline[=DIR]     Look for readline include/libs in DIR (default=auto) ],
+[AS_HELP_STRING([--with-readline[=DIR]], [Look for readline include/libs in DIR (default=auto)])],
 [  case "$with_readline" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1761,7 +1760,7 @@ esac
 # Set defaults
 PIE_CFLAGS=""
 PIE_LDFLAGS=""
-AC_ARG_ENABLE(pie, [  --enable-pie            Turn on pie support if available (default=yes)])
+AC_ARG_ENABLE(pie, [AS_HELP_STRING([--enable-pie], [Turn on pie support if available (default=yes)])])
 
 if test "x$enable_pie" != xno
 then
@@ -2493,7 +2492,7 @@ fi
 
 ICONV_LOOK_DIRS="/usr /usr/local /sw /opt"
 AC_ARG_WITH(libiconv,
-[  --with-libiconv=BASEDIR Use libiconv in BASEDIR/lib and BASEDIR/include (default=auto) ],
+[AS_HELP_STRING([--with-libiconv=BASEDIR], [Use libiconv in BASEDIR/lib and BASEDIR/include (default=auto)])],
 [
   if test "$withval" = "no" ; then
     AC_MSG_ERROR([argument to --with-libiconv must be a directory])
@@ -2728,7 +2727,7 @@ fi
 #	http://oss.sgi.com/projects/fam/
 #	http://savannah.nongnu.org/projects/fam/
 AC_ARG_ENABLE(fam,
-[  --enable-fam            Turn on FAM support (default=auto)])
+[AS_HELP_STRING([--enable-fam], [Turn on FAM support (default=auto)])])
 
 if test x$enable_fam != xno; then
     AC_CHECK_HEADERS(fam.h, [samba_cv_HAVE_FAM_H=yes], [samba_cv_HAVE_FAM_H=no])
@@ -3309,7 +3308,7 @@ fi
 samba_cv_WITH_AFS=no
 AC_MSG_CHECKING(whether to use AFS clear-text auth)
 AC_ARG_WITH(afs,
-[  --with-afs              Include AFS clear-text auth support (default=no) ],
+[AS_HELP_STRING([--with-afs], [Include AFS clear-text auth support (default=no)])],
 [ case "$withval" in
   yes|auto)
     AC_MSG_RESULT($withval)
@@ -3327,7 +3326,7 @@ AC_ARG_WITH(afs,
 samba_cv_WITH_FAKE_KASERVER=no
 AC_MSG_CHECKING(whether to use AFS fake-kaserver)
 AC_ARG_WITH(fake-kaserver,
-[  --with-fake-kaserver    Include AFS fake-kaserver support (default=no) ],
+[AS_HELP_STRING([--with-fake-kaserver], [Include AFS fake-kaserver support (default=no)])],
 [ case "$withval" in
   yes|auto)
     AC_MSG_RESULT($withval)
@@ -3379,7 +3378,7 @@ fi
 samba_cv_WITH_VFS_AFSACL=no
 AC_MSG_CHECKING(whether to use AFS ACL mapping module)
 AC_ARG_WITH(vfs-afsacl,
-[  --with-vfs-afsacl       Include AFS to NT ACL mapping module (default=no) ],
+[AS_HELP_STRING([--with-vfs-afsacl], [Include AFS to NT ACL mapping module (default=no)])],
 [ case "$withval" in
   yes|auto)
     AC_MSG_RESULT($withval)
@@ -3404,7 +3403,7 @@ fi
 # check for the DFS clear-text auth system
 AC_MSG_CHECKING(whether to use DFS clear-text auth)
 AC_ARG_WITH(dfs,
-[  --with-dce-dfs          Include DCE/DFS clear-text auth support (default=no)],
+[AS_HELP_STRING([--with-dce-dfs], [Include DCE/DFS clear-text auth support (default=no)])],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -3424,7 +3423,7 @@ with_ldap_support=auto
 AC_MSG_CHECKING([for LDAP support])
 
 AC_ARG_WITH(ldap,
-[  --with-ldap             LDAP support (default yes)],
+[AS_HELP_STRING([--with-ldap], [LDAP support (default yes)])],
 [ case "$withval" in
     yes|no)
 	with_ldap_support=$withval
@@ -3574,7 +3573,7 @@ with_ads_support=auto
 AC_MSG_CHECKING([for Active Directory and krb5 support])
 
 AC_ARG_WITH(ads,
-[  --with-ads              Active Directory support (default auto)],
+[AS_HELP_STRING([--with-ads], [Active Directory support (default auto)])],
 [ case "$withval" in
     yes|no)
 	with_ads_support="$withval"
@@ -3652,7 +3651,7 @@ if test x"$with_ads_support" != x"no"; then
     # check for location of Kerberos 5 install
     AC_MSG_CHECKING(for kerberos 5 install path)
     AC_ARG_WITH(krb5,
-    [  --with-krb5=base-dir    Locate Kerberos 5 support (default=/usr)],
+    [AS_HELP_STRING([--with-krb5=base-dir], [Locate Kerberos 5 support (default=/usr)])],
     [ case "$withval" in
       no)
         AC_MSG_RESULT(no krb5-path given)
@@ -4401,7 +4400,7 @@ with_dnsupdate_support=no
 AC_MSG_CHECKING([whether to enable DNS Updates support])
 
 AC_ARG_WITH(dnsupdate,
-[  --with-dnsupdate        Enable DNS Updates support (default no)],
+[AS_HELP_STRING([--with-dnsupdate], [Enable DNS Updates support (default no)])],
 [ case "$withval" in
     yes|no)
 	with_dnsupdate_support=$withval
@@ -4467,7 +4466,7 @@ fi
 # check for automount support
 AC_MSG_CHECKING(whether to use automount)
 AC_ARG_WITH(automount,
-[  --with-automount        Include automount support (default=no)],
+[AS_HELP_STRING([--with-automount], [Include automount support (default=no)])],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -4484,7 +4483,7 @@ AC_ARG_WITH(automount,
 # check for smbmount support
 AC_MSG_CHECKING(whether to use smbmount)
 AC_ARG_WITH(smbmount,
-[  --with-smbmount         Include smbmount (Linux only) support (default=no)],
+[AS_HELP_STRING([--with-smbmount], [Include smbmount (Linux only) support (default=no)])],
 [ case "$withval" in
   yes)
 	case "$host_os" in
@@ -4512,7 +4511,7 @@ INSTALL_CIFSMOUNT=""
 UNINSTALL_CIFSMOUNT=""
 AC_MSG_CHECKING(whether to build mount.cifs and umount.cifs)
 AC_ARG_WITH(cifsmount,
-[  --with-cifsmount        Include mount.cifs and umount.cifs (Linux only) support (default=yes)],
+[AS_HELP_STRING([--with-cifsmount], [Include mount.cifs and umount.cifs (Linux only) support (default=yes)])],
 [ case "$withval" in
   no)
 	AC_MSG_RESULT(no)
@@ -4554,7 +4553,7 @@ INSTALL_CIFSSPNEGO=""
 UNINSTALL_CIFSSPNEGO=""
 AC_MSG_CHECKING(whether to build cifs.spnego)
 AC_ARG_WITH(cifsspnego,
-[  --with-cifsspnego       Include cifs.spnego (Linux only) support (default=no)],
+[AS_HELP_STRING([--with-cifsspnego], [Include cifs.spnego (Linux only) support (default=no)])],
 [ case "$withval" in
   no)
 	AC_MSG_RESULT(no)
@@ -4596,7 +4595,7 @@ with_pam_for_crypt=no
 try_pam=no
 AC_MSG_CHECKING(whether to try PAM support)
 AC_ARG_WITH(pam,
-[  --with-pam              Include PAM support (default=no)],
+[AS_HELP_STRING([--with-pam], [Include PAM support (default=no)])],
 [ case "$withval" in
   yes|no)
     try_pam=$withval
@@ -4679,7 +4678,7 @@ INSTALL_PAM_MODULES=""
 UNINSTALL_PAM_MODULES=""
 AC_MSG_CHECKING(whether to use pam_smbpass)
 AC_ARG_WITH(pam_smbpass,
-[  --with-pam_smbpass      Build PAM module for authenticating against passdb backends (default=no)],
+[AS_HELP_STRING([--with-pam_smbpass], [Build PAM module for authenticating against passdb backends (default=no)])],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -4732,7 +4731,7 @@ fi
 # check for a NISPLUS_HOME support
 AC_MSG_CHECKING(whether to use NISPLUS_HOME)
 AC_ARG_WITH(nisplus-home,
-[  --with-nisplus-home     Include NISPLUS_HOME support (default=no)],
+[AS_HELP_STRING([--with-nisplus-home], [Include NISPLUS_HOME support (default=no)])],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -4749,7 +4748,7 @@ AC_ARG_WITH(nisplus-home,
 # check for syslog logging
 AC_MSG_CHECKING(whether to use syslog logging)
 AC_ARG_WITH(syslog,
-[  --with-syslog           Include experimental SYSLOG support (default=no)],
+[AS_HELP_STRING([--with-syslog], [Include experimental SYSLOG support (default=no)])],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -4774,7 +4773,7 @@ samba_cv_SYSQUOTA_FOUND=no
 
 AC_MSG_CHECKING(whether to try disk-quotas support)
 AC_ARG_WITH(quotas,
-[  --with-quotas           Include disk-quota support (default=no)],
+[AS_HELP_STRING([--with-quotas], [Include disk-quota support (default=no)])],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -4807,7 +4806,7 @@ AC_ARG_WITH(quotas,
 
 AC_MSG_CHECKING(whether to try the new lib/sysquotas.c interface)
 AC_ARG_WITH(sys-quotas,
-[  --with-sys-quotas       Include lib/sysquotas.c support (default=auto)],
+[AS_HELP_STRING([--with-sys-quotas], [Include lib/sysquotas.c support (default=auto)])],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -5085,7 +5084,7 @@ fi
 AC_MSG_CHECKING(whether to support utmp accounting)
 WITH_UTMP=yes
 AC_ARG_WITH(utmp,
-[  --with-utmp             Include utmp accounting (default, if supported by OS)],
+[AS_HELP_STRING([--with-utmp], [Include utmp accounting (default, if supported by OS)])],
 [ case "$withval" in
   no)
 		WITH_UTMP=no
@@ -5212,7 +5211,7 @@ LIBNETAPI_SHARED=
 LIBNETAPI=
 AC_MSG_CHECKING(whether to build the libnetapi shared library)
 AC_ARG_WITH(libnetapi,
-[  --with-libnetapi        Build the libnetapi shared library (default=yes if shared libs supported)],
+[AS_HELP_STRING([--with-libnetapi], [Build the libnetapi shared library (default=yes if shared libs supported)])],
 [ case "$withval" in
   *)
      AC_MSG_RESULT(no)
@@ -5257,7 +5256,7 @@ LIBADDNS_SHARED=
 LIBADDNS=
 AC_MSG_CHECKING(whether to build the libaddns shared library)
 AC_ARG_WITH(libaddns,
-[  --with-libaddns         Build the libaddns shared library (default=no undefined API)],
+[AS_HELP_STRING([--with-libaddns], [Build the libaddns shared library (default=no undefined API)])],
 [ case "$withval" in
   *)
      AC_MSG_RESULT(no)
@@ -5290,7 +5289,7 @@ LIBSMBCLIENT_SHARED=
 LIBSMBCLIENT=
 AC_MSG_CHECKING(whether to build the libsmbclient shared library)
 AC_ARG_WITH(libsmbclient,
-[  --with-libsmbclient     Build the libsmbclient shared library (default=yes if shared libs supported)],
+[AS_HELP_STRING([--with-libsmbclient], [Build the libsmbclient shared library (default=yes if shared libs supported)])],
 [ case "$withval" in
   no)
      AC_MSG_RESULT(no)
@@ -5333,7 +5332,7 @@ LIBSMBSHAREMODES_SHARED=
 LIBSMBSHAREMODES=
 AC_MSG_CHECKING(whether to build the libsmbsharemodes shared library)
 AC_ARG_WITH(libsmbsharemodes,
-[  --with-libsmbsharemodes     Build the libsmbsharemodes shared library (default=yes if shared libs supported)],
+[AS_HELP_STRING([--with-libsmbsharemodes], [Build the libsmbsharemodes shared library (default=yes if shared libs supported)])],
 [ case "$withval" in
   no)
      AC_MSG_RESULT(no)
@@ -5593,7 +5592,7 @@ AC_MSG_RESULT([$samba_cv_HAVE_EXPLICIT_LARGEFILE_SUPPORT])
 
 AC_MSG_CHECKING(whether to include cluster support)
 AC_ARG_WITH(cluster-support,
-[  --with-cluster-support  Enable cluster extensions (default=no)])
+[AS_HELP_STRING([--with-cluster-support], [Enable cluster extensions (default=no)])])
 if test "x$with_cluster_support" = "xyes"; then
     AC_DEFINE(CLUSTER_SUPPORT,1,[Whether to enable cluster extensions])
     AC_MSG_RESULT(yes)
@@ -5607,7 +5606,7 @@ fi
 
 AC_MSG_CHECKING(whether to support ACLs)
 AC_ARG_WITH(acl-support,
-[  --with-acl-support      Include ACL support (default=auto)],
+[AS_HELP_STRING([--with-acl-support], [Include ACL support (default=auto)])],
 [ case "$withval" in
 	yes|no)
 		with_acl_support="$withval"
@@ -5722,7 +5721,7 @@ fi # with_acl_support
 
 AC_MSG_CHECKING(whether to support asynchronous io)
 AC_ARG_WITH(aio-support,
-[  --with-aio-support      Include asynchronous io support (default=no)],
+[AS_HELP_STRING([--with-aio-support], [Include asynchronous io support (default=no)])],
 [ case "$withval" in
   yes)
 
@@ -5862,7 +5861,7 @@ int main() { struct aiocb a; return aio_suspend64(&a, 1, NULL); }],
 with_sendfile_support=yes
 AC_MSG_CHECKING(whether to check to support sendfile)
 AC_ARG_WITH(sendfile-support,
-[  --with-sendfile-support Check for sendfile support (default=yes)],
+[AS_HELP_STRING([--with-sendfile-support], [Check for sendfile support (default=yes)])],
 [ case "$withval" in
   yes)
 
@@ -6239,7 +6238,7 @@ esac
 # Check the setting of --with-winbind
 
 AC_ARG_WITH(winbind,
-[  --with-winbind          Build winbind (default, if supported by OS)],
+[AS_HELP_STRING([--with-winbind], [Build winbind (default, if supported by OS)])],
 [
   case "$withval" in
 	yes)
@@ -6271,7 +6270,7 @@ fi
 BUILD_LIBWBCLIENT_SHARED=yes
 
 AC_ARG_ENABLE(libwbclient-shared,
-[ --enable-libwbclient-shared	Build libwbclient as shared object (default=yes, \"no\" only for --enable-developer)],
+[AS_HELP_STRING([--enable-libwbclient-shared], [Build libwbclient as shared object (default=yes, \"no\" only for --enable-developer)])],
 	[if eval "test x$enable_developer = xyes -a x$enable_libwbclient_shared = xno" ; then
 		BUILD_LIBWBCLIENT_SHARED=no
 	fi])
@@ -6358,7 +6357,7 @@ fi
 # Check to see if we should use the included popt
 
 AC_ARG_WITH(included-popt,
-[  --with-included-popt    use bundled popt library, not from system],
+[AS_HELP_STRING([--with-included-popt], [use bundled popt library, not from system])],
 [
   case "$withval" in
 	yes)
@@ -6393,7 +6392,7 @@ AC_SUBST(FLAGS1)
 # Check if user wants DNS service discovery support
 
 AC_ARG_ENABLE(dnssd,
-[  --enable-dnssd          Enable DNS service discovery support (default=auto)])
+[AS_HELP_STRING([--enable-dnssd], [Enable DNS service discovery support (default=auto)])])
 
 AC_SUBST(DNSSD_LIBS)
 if test x"$enable_dnssd" != x"no"; then
@@ -6428,7 +6427,7 @@ fi
 # Check to see if we should use the included iniparser
 
 AC_ARG_WITH(included-iniparser,
-[  --with-included-iniparser    use bundled iniparser library, not from system],
+[AS_HELP_STRING([--with-included-iniparser], [use bundled iniparser library, not from system])],
 [
   case "$withval" in
 	yes)
@@ -6517,7 +6516,7 @@ MODULE_idmap_nss=STATIC
 MODULE_nss_info_template=STATIC
 
 AC_ARG_WITH(static-modules,
-[  --with-static-modules=MODULES  Comma-separated list of names of modules to statically link in],
+[AS_HELP_STRING([--with-static-modules=MODULES], [Comma-separated list of names of modules to statically link in])],
 [ if test $withval; then
 	for i in `echo $withval | sed -e 's/,/ /g'`
 	do
@@ -6526,7 +6525,7 @@ AC_ARG_WITH(static-modules,
 fi ])
 
 AC_ARG_WITH(shared-modules,
-[  --with-shared-modules=MODULES  Comma-separated list of names of modules to build shared],
+[AS_HELP_STRING([--with-shared-modules=MODULES], [Comma-separated list of names of modules to build shared])],
 [ if test $withval; then
 	for i in `echo $withval | sed -e 's/,/ /g'`
 	do
