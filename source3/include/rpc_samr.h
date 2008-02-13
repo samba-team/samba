@@ -227,50 +227,6 @@ typedef struct r_samr_enum_dom_aliases_info
 
 } SAMR_R_ENUM_DOM_ALIASES;
 
-/****************************************************************************
-SAMR_Q_LOOKUP_RIDS - do a conversion from RID groups to something.
-
-called to resolve domain RID groups.
-*****************************************************************************/
-/* SAMR_Q_LOOKUP_RIDS */
-typedef struct q_samr_lookup_rids_info
-{
-	POLICY_HND pol;       /* policy handle */
-
-	uint32 num_rids1;      /* number of rids being looked up */
-	uint32 flags;          /* 0x0000 03e8 - unknown */
-	uint32 ptr;            /* 0x0000 0000 - 32 bit unknown */
-	uint32 num_rids2;      /* number of rids being looked up */
-
-	uint32 *rid; /* domain RIDs being looked up */
-
-} SAMR_Q_LOOKUP_RIDS;
-
-
-/****************************************************************************
-SAMR_R_LOOKUP_RIDS - do a conversion from group RID to names
-
-*****************************************************************************/
-/* SAMR_R_LOOKUP_RIDS */
-typedef struct r_samr_lookup_rids_info
-{
-	uint32 num_names1;      /* number of aliases being looked up */
-	uint32 ptr_names;       /* pointer to aliases */
-	uint32 num_names2;      /* number of aliases being looked up */
-
-	UNIHDR  *hdr_name; /* unicode account name header */
-	UNISTR2 *uni_name; /* unicode account name string */
-
-	uint32 num_types1;      /* number of users in aliases being looked up */
-	uint32 ptr_types;       /* pointer to users in aliases */
-	uint32 num_types2;      /* number of users in aliases being looked up */
-
-	uint32 *type; /* SID_ENUM type */
-
-	NTSTATUS status;
-
-} SAMR_R_LOOKUP_RIDS;
-
 /* these are from the old rpc_samr.h - they are needed while the merge
    is still going on */
 #define MAX_SAM_SIDS 15
