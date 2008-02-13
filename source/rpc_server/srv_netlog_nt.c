@@ -125,29 +125,29 @@ static void send_sync_message(void)
 }
 
 /*************************************************************************
- net_reply_logon_ctrl2:
+ _netr_LogonControl2
  *************************************************************************/
 
-NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTRL2 *r_u)
+WERROR _netr_LogonControl2(pipes_struct *p,
+			   struct netr_LogonControl2 *r)
 {
         uint32 flags = 0x0;
         uint32 pdc_connection_status = 0x0;
         uint32 logon_attempts = 0x0;
         uint32 tc_status;
-	fstring servername, domain, dc_name, dc_name2;
+	fstring dc_name, dc_name2;
 	struct sockaddr_storage dc_ss;
-
-	/* this should be \\global_myname() */
-	unistr2_to_ascii(servername, &q_u->uni_server_name, sizeof(servername));
-
-	r_u->status = NT_STATUS_OK;
+	const char *domain = NULL;
+	struct netr_NETLOGON_INFO_1 *info1;
+	struct netr_NETLOGON_INFO_2 *info2;
+	struct netr_NETLOGON_INFO_3 *info3;
 
 	tc_status = W_ERROR_V(WERR_NO_SUCH_DOMAIN);
 	fstrcpy( dc_name, "" );
 
-	switch ( q_u->function_code ) {
+	switch (r->in.function_code) {
 		case NETLOGON_CONTROL_TC_QUERY:
-			unistr2_to_ascii(domain, &q_u->info.info6.domain, sizeof(domain));
+			domain = r->in.data->domain;
 
 			if ( !is_trusted_domain( domain ) )
 				break;
@@ -164,7 +164,7 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
 			break;
 
 		case NETLOGON_CONTROL_REDISCOVER:
-			unistr2_to_ascii(domain, &q_u->info.info6.domain, sizeof(domain));
+			domain = r->in.data->domain;
 
 			if ( !is_trusted_domain( domain ) )
 				break;
@@ -182,19 +182,52 @@ NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_C
 
 		default:
 			/* no idea what this should be */
-			DEBUG(0,("_net_logon_ctrl2: unimplemented function level [%d]\n",
-				q_u->function_code));
+			DEBUG(0,("_netr_LogonControl2: unimplemented function level [%d]\n",
+				r->in.function_code));
+			return WERR_UNKNOWN_LEVEL;
 	}
 
 	/* prepare the response */
 
-	init_net_r_logon_ctrl2( r_u, q_u->query_level, flags,
-		pdc_connection_status, logon_attempts, tc_status, dc_name );
+	switch (r->in.level) {
+		case 1:
+			info1 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_1);
+			W_ERROR_HAVE_NO_MEMORY(info1);
 
-        if (lp_server_role() == ROLE_DOMAIN_BDC)
+			init_netlogon_info1(info1,
+					    flags,
+					    pdc_connection_status);
+			r->out.query->info1 = info1;
+			break;
+		case 2:
+			info2 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_2);
+			W_ERROR_HAVE_NO_MEMORY(info2);
+
+			init_netlogon_info2(info2,
+					    flags,
+					    pdc_connection_status,
+					    dc_name,
+					    tc_status);
+			r->out.query->info2 = info2;
+			break;
+		case 3:
+			info3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_3);
+			W_ERROR_HAVE_NO_MEMORY(info3);
+
+			init_netlogon_info3(info3,
+					    flags,
+					    logon_attempts);
+			r->out.query->info3 = info3;
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+        if (lp_server_role() == ROLE_DOMAIN_BDC) {
                 send_sync_message();
+	}
 
-	return r_u->status;
+	return WERR_OK;
 }
 
 /*************************************************************************
@@ -1312,16 +1345,6 @@ WERROR _netr_GetDcName(pipes_struct *p,
 
 WERROR _netr_GetAnyDCName(pipes_struct *p,
 			  struct netr_GetAnyDCName *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-WERROR _netr_LogonControl2(pipes_struct *p,
-			   struct netr_LogonControl2 *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
