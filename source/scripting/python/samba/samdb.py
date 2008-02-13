@@ -100,12 +100,14 @@ userAccountControl: %u
         self.transaction_start()
 
         # find the DNs for the domain and the domain users group
-        res = self.search("", SCOPE_BASE, "defaultNamingContext=*", 
-                         ["defaultNamingContext"])
+        res = self.search("", scope=ldb.SCOPE_BASE, 
+                          expression="(defaultNamingContext=*)", 
+                          attrs=["defaultNamingContext"])
         assert(len(res) == 1 and res[0].defaultNamingContext is not None)
         domain_dn = res[0]["defaultNamingContext"][0]
         assert(domain_dn is not None)
-        dom_users = self.searchone(basedn=domain_dn, attribute="dn", expression="name=Domain Users")
+        dom_users = self.searchone(basedn=domain_dn, attribute="dn", 
+                                   expression="name=Domain Users")
         assert(dom_users is not None)
 
         user_dn = "CN=%s,CN=Users,%s" % (username, domain_dn)
