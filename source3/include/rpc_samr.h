@@ -160,40 +160,6 @@ typedef struct samr_entry_info
 
 } SAM_ENTRY;
 
-/* SAMR_Q_ENUM_DOM_GROUPS - SAM rids and names */
-typedef struct q_samr_enum_dom_groups_info
-{
-	POLICY_HND pol;          /* policy handle */
-
-	/* this is possibly an enumeration context handle... */
-	uint32 start_idx;         /* 0x0000 0000 */
-
-	uint32 max_size;              /* 0x0000 ffff */
-
-} SAMR_Q_ENUM_DOM_GROUPS;
-
-
-/* SAMR_R_ENUM_DOM_GROUPS - SAM rids and names */
-typedef struct r_samr_enum_dom_groups_info
-{
-	uint32 next_idx;
-	uint32 ptr_entries1;
-
-	uint32 num_entries2;
-	uint32 ptr_entries2;
-
-	uint32 num_entries3;
-
-	SAM_ENTRY *sam;
-	UNISTR2 *uni_grp_name;
-
-	uint32 num_entries4;
-
-	NTSTATUS status;
-
-} SAMR_R_ENUM_DOM_GROUPS;
-
-
 /* SAMR_Q_ENUM_DOM_ALIASES - SAM rids and names */
 typedef struct q_samr_enum_dom_aliases_info
 {
