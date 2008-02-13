@@ -23,10 +23,21 @@
 #include "libcli/raw/signing.h"
 
 /*
+  buffer limit structure used by both SMB and SMB2
+ */
+struct request_bufinfo {
+	TALLOC_CTX *mem_ctx;
+	bool unicode;
+	const uint8_t *align_base;
+	const uint8_t *data;
+	size_t data_size;	
+};
+
+/*
   Shared state structure between client and server, representing the basic packet.
 */
 
-struct request_buffer {
+struct smb_request_buffer {
 	/* the raw SMB buffer, including the 4 byte length header */
 	uint8_t *buffer;
 	
@@ -56,6 +67,9 @@ struct request_buffer {
 	 * a send packet is done we need to move this
 	 * pointer */
 	uint8_t *ptr;
+
+	/* this is used to range check and align strings and buffers */
+	struct request_bufinfo bufinfo;
 };
 
 #endif

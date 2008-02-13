@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "libcli/raw/request.h"
+
 struct smb2_options {
 	uint32_t timeout;
 };
@@ -102,6 +104,9 @@ struct smb2_request_buffer {
 	 * this will be moved when some dynamic data is pushed
 	 */
 	uint8_t *dynamic;
+
+	/* this is used to range check and align strings and buffers */
+	struct request_bufinfo bufinfo;
 };
 
 

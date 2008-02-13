@@ -216,6 +216,8 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 		}
 	}
 
+	smb2_setup_bufinfo(req);
+
 	DEBUG(2, ("SMB2 RECV seqnum=0x%llx\n", (long long)req->seqnum));
 	dump_data(5, req->in.body, req->in.body_size);
 

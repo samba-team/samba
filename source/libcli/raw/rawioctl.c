@@ -59,7 +59,7 @@ static NTSTATUS smb_raw_smbioctl_recv(struct smbcli_request *req,
 		return smbcli_request_destroy(req);
 	}
 
-	parms->ioctl.out.blob = smbcli_req_pull_blob(req, mem_ctx, req->in.data, -1);
+	parms->ioctl.out.blob = smbcli_req_pull_blob(&req->in.bufinfo, mem_ctx, req->in.data, -1);
 	return smbcli_request_destroy(req);
 }
 

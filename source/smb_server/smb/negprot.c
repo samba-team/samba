@@ -509,7 +509,7 @@ void smbsrv_reply_negprot(struct smbsrv_request *req)
 			return;
 		}
 		protos[protos_count] = NULL;
-		len = req_pull_ascii4(req, (const char **)&protos[protos_count], p, STR_ASCII|STR_TERMINATE);
+		len = req_pull_ascii4(&req->in.bufinfo, (const char **)&protos[protos_count], p, STR_ASCII|STR_TERMINATE);
 		p += len;
 		if (len == 0 || !protos[protos_count]) break;
 

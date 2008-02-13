@@ -616,7 +616,7 @@ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, unio
 	case RAW_OPEN_CTEMP:
 		SMBCLI_CHECK_WCT(req, 1);
 		parms->ctemp.out.file.fnum = SVAL(req->in.vwv, VWV(0));
-		smbcli_req_pull_string(req, mem_ctx, &parms->ctemp.out.name, req->in.data, -1, STR_TERMINATE | STR_ASCII);
+		smbcli_req_pull_string(&req->in.bufinfo, mem_ctx, &parms->ctemp.out.name, req->in.data, -1, STR_TERMINATE | STR_ASCII);
 		break;
 
 	case RAW_OPEN_SPLOPEN:
@@ -675,7 +675,7 @@ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, unio
 		parms->openxreadx.out.nread = SVAL(req->in.vwv, VWV(5));
 		if (parms->openxreadx.out.nread > 
 		    MAX(parms->openxreadx.in.mincnt, parms->openxreadx.in.maxcnt) ||
-		    !smbcli_raw_pull_data(req, req->in.hdr + SVAL(req->in.vwv, VWV(6)), 
+		    !smbcli_raw_pull_data(&req->in.bufinfo, req->in.hdr + SVAL(req->in.vwv, VWV(6)), 
 					  parms->openxreadx.out.nread, 
 					  parms->openxreadx.out.data)) {
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;

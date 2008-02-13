@@ -28,6 +28,21 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "param/param.h"
 
+/* fill in the bufinfo */
+void smb2_setup_bufinfo(struct smb2_request *req)
+{
+	req->in.bufinfo.mem_ctx    = req;
+	req->in.bufinfo.unicode    = true;
+	req->in.bufinfo.align_base = req->in.buffer;
+	if (req->in.dynamic) {
+		req->in.bufinfo.data       = req->in.dynamic;
+		req->in.bufinfo.data_size  = req->in.body_size - req->in.body_fixed;
+	} else {
+		req->in.bufinfo.data       = NULL;
+		req->in.bufinfo.data_size  = 0;
+	}
+}
+
 /*
   initialise a smb2 request
 */
