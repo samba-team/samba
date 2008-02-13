@@ -1479,9 +1479,9 @@ bin/libnetapi.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBNETAPI_OBJ) @LIBWBCLIENT_SHARED
 		$(LDAP_LIBS) $(KRB5LIBS) $(NSCD_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
-bin/libnetapi.a: $(BINARY_PREREQS) $(LIBNETAPI_OBJ)
+bin/libnetapi.a: $(BINARY_PREREQS) $(LIBNETAPI_OBJ1)
 	@echo Linking non-shared library $@
-	@-$(AR) -rc $@ $(LIBNETAPI_OBJ)
+	@-$(AR) -rc $@ $(LIBNETAPI_OBJ1)
 
 bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ) @LIBWBCLIENT_SHARED@
 	@echo Linking shared library $@
