@@ -398,22 +398,6 @@ typedef struct net_r_logon_ctrl2_info {
 	NTSTATUS status; /* return code */
 } NET_R_LOGON_CTRL2;
 
-/* NET_Q_TRUST_DOM_LIST - LSA Query Trusted Domains */
-typedef struct net_q_trust_dom_info {
-	uint32       ptr;             /* undocumented buffer pointer */
-	UNISTR2      uni_server_name; /* server name, starting with two '\'s */
-} NET_Q_TRUST_DOM_LIST;
-
-#define MAX_TRUST_DOMS 1
-
-/* NET_R_TRUST_DOM_LIST - response to LSA Trusted Domains */
-typedef struct net_r_trust_dom_info {
-	UNISTR2 uni_trust_dom_name[MAX_TRUST_DOMS];
-
-	NTSTATUS status; /* return code */
-} NET_R_TRUST_DOM_LIST;
-
-
 /* NEG_FLAGS */
 typedef struct neg_flags_info {
 	uint32 neg_flags; /* negotiated flags */
