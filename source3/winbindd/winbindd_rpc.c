@@ -1009,8 +1009,6 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 
 	while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
 		uint32 start_idx;
-		char **tmp_names;
-		DOM_SID *tmp_sids;
 		int i;
 		struct lsa_DomainList dom_list;
 
@@ -1036,9 +1034,9 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 		    (*alt_names == NULL))
 			return NT_STATUS_NO_MEMORY;
 
-		for (i=0; i<num; i++) {
-			(*names)[start_idx+i] = dom_list.domains[i].name.string;
-			(*dom_sids)[start_idx+i] = dom_list.domains[i].sid;
+		for (i=0; i<dom_list.count; i++) {
+			(*names)[start_idx+i] = CONST_DISCARD(char *, dom_list.domains[i].name.string);
+			(*dom_sids)[start_idx+i] = *dom_list.domains[i].sid;
 			(*alt_names)[start_idx+i] = talloc_strdup(mem_ctx, "");
 		}
 	}
