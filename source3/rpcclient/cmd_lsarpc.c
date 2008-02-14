@@ -841,7 +841,8 @@ static NTSTATUS cmd_lsa_lookup_priv_value(struct rpc_pipe_client *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	LUID luid;
+	struct lsa_LUID luid;
+	struct lsa_String name;
 
 	if (argc != 2 ) {
 		printf("Usage: %s name\n", argv[0]);
@@ -855,7 +856,12 @@ static NTSTATUS cmd_lsa_lookup_priv_value(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_lookup_priv_value(cli, mem_ctx, &pol, argv[1], &luid);
+	init_lsa_String(&name, argv[1]);
+
+	result = rpccli_lsa_LookupPrivValue(cli, mem_ctx,
+					    &pol,
+					    &name,
+					    &luid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
