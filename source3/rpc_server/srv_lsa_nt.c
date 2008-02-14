@@ -1519,18 +1519,19 @@ NTSTATUS _lsa_LookupPrivDisplayName(pipes_struct *p,
 }
 
 /***************************************************************************
-_lsa_enum_accounts.
+ _lsa_EnumAccounts
  ***************************************************************************/
 
-NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENUM_ACCOUNTS *r_u)
+NTSTATUS _lsa_EnumAccounts(pipes_struct *p,
+			   struct lsa_EnumAccounts *r)
 {
 	struct lsa_info *handle;
 	DOM_SID *sid_list;
 	int i, j, num_entries;
-	LSA_SID_ENUM *sids=&r_u->sids;
-	NTSTATUS ret;
+	NTSTATUS status;
+	struct lsa_SidPtr *sids = NULL;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&handle))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
 	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
@@ -1542,34 +1543,37 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 	/* The only way we can currently find out all the SIDs that have been
 	   privileged is to scan all privileges */
 
-	if (!NT_STATUS_IS_OK(ret = privilege_enumerate_accounts(&sid_list, &num_entries))) {
-		return ret;
+	status = privilege_enumerate_accounts(&sid_list, &num_entries);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	if (q_u->enum_context >= num_entries)
+	if (*r->in.resume_handle >= num_entries) {
 		return NT_STATUS_NO_MORE_ENTRIES;
+	}
 
-	if (num_entries-q_u->enum_context) {
-		sids->ptr_sid = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_entries-q_u->enum_context);
-		sids->sid = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_SID2, num_entries-q_u->enum_context);
-
-		if (sids->ptr_sid==NULL || sids->sid==NULL) {
+	if (num_entries - *r->in.resume_handle) {
+		sids = TALLOC_ZERO_ARRAY(p->mem_ctx, struct lsa_SidPtr,
+					 num_entries - *r->in.resume_handle);
+		if (!sids) {
 			SAFE_FREE(sid_list);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		for (i = q_u->enum_context, j = 0; i < num_entries; i++, j++) {
-			init_dom_sid2(&(*sids).sid[j], &sid_list[i]);
-			(*sids).ptr_sid[j] = 1;
+		for (i = *r->in.resume_handle, j = 0; i < num_entries; i++, j++) {
+			sids[j].sid = sid_dup_talloc(p->mem_ctx, &sid_list[i]);
+			if (!sids[j].sid) {
+				SAFE_FREE(sid_list);
+				return NT_STATUS_NO_MEMORY;
+			}
 		}
-	} else {
-		sids->ptr_sid = NULL;
-		sids->sid = NULL;
 	}
 
 	talloc_free(sid_list);
 
-	init_lsa_r_enum_accounts(r_u, num_entries);
+	*r->out.resume_handle = num_entries;
+	r->out.sids->num_sids = num_entries;
+	r->out.sids->sids = sids;
 
 	return NT_STATUS_OK;
 }
@@ -2225,12 +2229,6 @@ NTSTATUS _lsa_SetInfoPolicy(pipes_struct *p, struct lsa_SetInfoPolicy *r)
 }
 
 NTSTATUS _lsa_ClearAuditLog(pipes_struct *p, struct lsa_ClearAuditLog *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_EnumAccounts(pipes_struct *p, struct lsa_EnumAccounts *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
