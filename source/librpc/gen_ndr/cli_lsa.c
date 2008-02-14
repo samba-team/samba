@@ -471,8 +471,8 @@ NTSTATUS rpccli_lsa_EnumAccounts(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *handle,
 				 uint32_t *resume_handle,
-				 uint32_t num_entries,
-				 struct lsa_SidArray *sids)
+				 struct lsa_SidArray *sids,
+				 uint32_t num_entries)
 {
 	struct lsa_EnumAccounts r;
 	NTSTATUS status;
