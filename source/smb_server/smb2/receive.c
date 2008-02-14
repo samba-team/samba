@@ -35,7 +35,7 @@
 void smb2srv_setup_bufinfo(struct smb2srv_request *req)
 {
 	req->in.bufinfo.mem_ctx    = req;
-	req->in.bufinfo.unicode    = true;
+	req->in.bufinfo.flags      = BUFINFO_FLAG_UNICODE | BUFINFO_FLAG_SMB2;
 	req->in.bufinfo.align_base = req->in.buffer;
 	if (req->in.dynamic) {
 		req->in.bufinfo.data       = req->in.dynamic;

@@ -523,7 +523,7 @@ NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
 					int default_str_flags,
 					struct request_bufinfo *bufinfo)
 {
-	uint32_t len;
+	uint32_t len, ofs;
 	DATA_BLOB str_blob;
 
 	switch (level) {
@@ -563,14 +563,23 @@ NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
 		if (!bufinfo) {
 			return NT_STATUS_INTERNAL_ERROR;
 		}
-		BLOB_CHECK_MIN_SIZE(blob, 12);
-
-		st->rename_information.in.overwrite = CVAL(blob->data, 0);
-		st->rename_information.in.root_fid  = IVAL(blob->data, 4);
-		len                                 = IVAL(blob->data, 8);
-		str_blob.data = blob->data+12;
-		str_blob.length = MIN(blob->length, len);
-		smbsrv_blob_pull_string(bufinfo, &str_blob, 0,
+		if (bufinfo->flags & BUFINFO_FLAG_SMB2) {
+			/* SMB2 uses a different format for rename information */
+			BLOB_CHECK_MIN_SIZE(blob, 20);
+			st->rename_information.in.overwrite = CVAL(blob->data, 0);
+			st->rename_information.in.root_fid  = BVAL(blob->data, 4);
+			len                                 = IVAL(blob->data,16);
+			ofs                                 = 20;			
+		} else {
+			BLOB_CHECK_MIN_SIZE(blob, 12);
+			st->rename_information.in.overwrite = CVAL(blob->data, 0);
+			st->rename_information.in.root_fid  = IVAL(blob->data, 4);
+			len                                 = IVAL(blob->data, 8);
+			ofs                                 = 12;
+		}
+		str_blob = *blob;
+		str_blob.length = MIN(str_blob.length, ofs+len);
+		smbsrv_blob_pull_string(bufinfo, &str_blob, ofs,
 					&st->rename_information.in.new_name,
 					STR_UNICODE);
 		if (st->rename_information.in.new_name == NULL) {

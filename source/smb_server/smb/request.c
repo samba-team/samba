@@ -37,7 +37,10 @@
 void smbsrv_setup_bufinfo(struct smbsrv_request *req)
 {
 	req->in.bufinfo.mem_ctx    = req;
-	req->in.bufinfo.unicode    = (req->flags2 & FLAGS2_UNICODE_STRINGS)?true:false;
+	req->in.bufinfo.flags      = 0;
+	if (req->flags2 & FLAGS2_UNICODE_STRINGS) {
+		req->in.bufinfo.flags |= BUFINFO_FLAG_UNICODE;
+	}
 	req->in.bufinfo.align_base = req->in.buffer;
 	req->in.bufinfo.data       = req->in.data;
 	req->in.bufinfo.data_size  = req->in.data_size;
@@ -582,7 +585,7 @@ static size_t req_pull_ascii(struct request_bufinfo *bufinfo, const char **dest,
 size_t req_pull_string(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	if (!(flags & STR_ASCII) && 
-	    (((flags & STR_UNICODE) || bufinfo->unicode))) {
+	    (((flags & STR_UNICODE) || (bufinfo->flags & BUFINFO_FLAG_UNICODE)))) {
 		return req_pull_ucs2(bufinfo, dest, src, byte_len, flags);
 	}
 
