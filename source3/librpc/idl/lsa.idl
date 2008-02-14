@@ -297,9 +297,9 @@ import "security.idl";
 
 	[public] NTSTATUS lsa_EnumAccounts (
 		[in]         policy_handle *handle,
-		[in,out]     uint32 *resume_handle,
-		[in,range(0,8192)] uint32 num_entries,
-		[out]        lsa_SidArray *sids
+		[in,out,ref] uint32 *resume_handle,
+		[out,ref]    lsa_SidArray *sids,
+		[in,range(0,8192)] uint32 num_entries
 		);
 
 
