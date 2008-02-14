@@ -413,29 +413,7 @@ static bool api_lsa_enum_acct_rights(pipes_struct *p)
 
 static bool api_lsa_lookup_priv_value(pipes_struct *p)
 {
-	LSA_Q_LOOKUP_PRIV_VALUE q_u;
-	LSA_R_LOOKUP_PRIV_VALUE r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_lookup_priv_value("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_lookup_priv_value: failed to unmarshall LSA_Q_LOOKUP_PRIV_VALUE .\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_lookup_priv_value(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_lookup_priv_value("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_lookup_priv_value: Failed to marshall LSA_R_LOOKUP_PRIV_VALUE.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_LOOKUPPRIVVALUE);
 }
 
 /***************************************************************************
