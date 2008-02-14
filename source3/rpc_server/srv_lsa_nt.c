@@ -1843,17 +1843,19 @@ NTSTATUS _lsa_SetSystemAccessAccount(pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_AddPrivilegesToAccount
  For a given SID, add some privileges.
  ***************************************************************************/
 
-NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u)
+NTSTATUS _lsa_AddPrivilegesToAccount(pipes_struct *p,
+				     struct lsa_AddPrivilegesToAccount *r)
 {
 	struct lsa_info *info = NULL;
 	SE_PRIV mask;
-	PRIVILEGE_SET *set = NULL;
+	struct lsa_PrivilegeSet *set = NULL;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check to see if the pipe_user is root or a Domain Admin since
@@ -1865,13 +1867,12 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	set = &q_u->set;
-
+	set = r->in.privs;
 	if ( !privilege_set_to_se_priv( &mask, set ) )
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 
 	if ( !grant_privilege( &info->sid, &mask ) ) {
-		DEBUG(3,("_lsa_addprivs: grant_privilege(%s) failed!\n",
+		DEBUG(3,("_lsa_AddPrivilegesToAccount: grant_privilege(%s) failed!\n",
 			 sid_string_dbg(&info->sid) ));
 		DEBUG(3,("Privilege mask:\n"));
 		dump_se_priv( DBGC_ALL, 3, &mask );
@@ -1882,17 +1883,19 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 }
 
 /***************************************************************************
+ _lsa_RemovePrivilegesFromAccount
  For a given SID, remove some privileges.
  ***************************************************************************/
 
-NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEPRIVS *r_u)
+NTSTATUS _lsa_RemovePrivilegesFromAccount(pipes_struct *p,
+					  struct lsa_RemovePrivilegesFromAccount *r)
 {
 	struct lsa_info *info = NULL;
 	SE_PRIV mask;
-	PRIVILEGE_SET *set = NULL;
+	struct lsa_PrivilegeSet *set = NULL;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check to see if the pipe_user is root or a Domain Admin since
@@ -1904,13 +1907,13 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	set = &q_u->set;
+	set = r->in.privs;
 
 	if ( !privilege_set_to_se_priv( &mask, set ) )
 		return NT_STATUS_NO_SUCH_PRIVILEGE;
 
 	if ( !revoke_privilege( &info->sid, &mask ) ) {
-		DEBUG(3,("_lsa_removeprivs: revoke_privilege(%s) failed!\n",
+		DEBUG(3,("_lsa_RemovePrivilegesFromAccount: revoke_privilege(%s) failed!\n",
 			 sid_string_dbg(&info->sid) ));
 		DEBUG(3,("Privilege mask:\n"));
 		dump_se_priv( DBGC_ALL, 3, &mask );
@@ -2272,18 +2275,6 @@ NTSTATUS _lsa_LookupNames(pipes_struct *p, struct lsa_LookupNames *r)
 }
 
 NTSTATUS _lsa_LookupSids(pipes_struct *p, struct lsa_LookupSids *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_AddPrivilegesToAccount(pipes_struct *p, struct lsa_AddPrivilegesToAccount *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_RemovePrivilegesFromAccount(pipes_struct *p, struct lsa_RemovePrivilegesFromAccount *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;

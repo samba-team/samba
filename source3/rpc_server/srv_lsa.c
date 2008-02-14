@@ -249,29 +249,7 @@ static bool api_lsa_setsystemaccount(pipes_struct *p)
 
 static bool api_lsa_addprivs(pipes_struct *p)
 {
-	LSA_Q_ADDPRIVS q_u;
-	LSA_R_ADDPRIVS r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_addprivs("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_addprivs: failed to unmarshall LSA_Q_ADDPRIVS.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_addprivs(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_addprivs("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_addprivs: Failed to marshall LSA_R_ADDPRIVS.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_ADDPRIVILEGESTOACCOUNT);
 }
 
 /***************************************************************************
@@ -280,29 +258,7 @@ static bool api_lsa_addprivs(pipes_struct *p)
 
 static bool api_lsa_removeprivs(pipes_struct *p)
 {
-	LSA_Q_REMOVEPRIVS q_u;
-	LSA_R_REMOVEPRIVS r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_removeprivs("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_removeprivs: failed to unmarshall LSA_Q_REMOVEPRIVS.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_removeprivs(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_removeprivs("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_removeprivs: Failed to marshall LSA_R_REMOVEPRIVS.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_REMOVEPRIVILEGESFROMACCOUNT);
 }
 
 /***************************************************************************
