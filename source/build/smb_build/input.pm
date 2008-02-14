@@ -208,8 +208,8 @@ sub import_integrated($$)
 		next if($mod->{SUBSYSTEM} ne $lib->{NAME});
 		next if($mod->{ENABLE} ne "YES");
 
-		push (@{$lib->{FULL_OBJ_LIST}}, "\$($mod->{TYPE}_$mod->{NAME}_OBJ_LIST)");
-		push (@{$lib->{LINK_FLAGS}}, "\$($mod->{TYPE}_$mod->{NAME}_LINK_FLAGS)");
+		push (@{$lib->{FULL_OBJ_LIST}}, "\$($mod->{NAME}_OBJ_LIST)");
+		push (@{$lib->{LINK_FLAGS}}, "\$($mod->{NAME}_LINK_FLAGS)");
 		push (@{$lib->{CFLAGS}}, @{$mod->{CFLAGS}}) if defined($mod->{CFLAGS});
 		push (@{$lib->{PUBLIC_DEPENDENCIES}}, @{$mod->{PUBLIC_DEPENDENCIES}}) if defined($mod->{PUBLIC_DEPENDENCIES});
 		push (@{$lib->{PRIVATE_DEPENDENCIES}}, @{$mod->{PRIVATE_DEPENDENCIES}}) if defined($mod->{PRIVATE_DEPENDENCIES});
@@ -284,7 +284,7 @@ sub check($$$$$)
 		my $part = $INPUT->{$k};
 
 		$part->{LINK_FLAGS} = [];
-		$part->{FULL_OBJ_LIST} = ["\$($part->{TYPE}_$part->{NAME}_OBJ_LIST)"];
+		$part->{FULL_OBJ_LIST} = ["\$($part->{NAME}_OBJ_LIST)"];
 
 		if ($part->{TYPE} eq "SUBSYSTEM") { 
 			check_subsystem($INPUT, $part, $subsys_ot);
