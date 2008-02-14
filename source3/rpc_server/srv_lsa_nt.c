@@ -1424,10 +1424,10 @@ NTSTATUS _lsa_EnumPrivs(pipes_struct *p,
 
 	if ( enum_context >= num_privs )
 		return NT_STATUS_NO_MORE_ENTRIES;
-		
-	DEBUG(10,("_lsa_enum_privs: enum_context:%d total entries:%d\n", 
+
+	DEBUG(10,("_lsa_EnumPrivs: enum_context:%d total entries:%d\n",
 		enum_context, num_privs));
-	
+
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
