@@ -3,6 +3,7 @@
 /*
   endpoint mapper interface
   Related links:
+	http://www.opengroup.org/onlinepubs/9629399/apdxo.htm : The official IDL for this pipe
 	http://www.opengroup.org/onlinepubs/9629399/apdxl.htm : Details on towers
 http://www.opengroup.org/onlinepubs/9629399/chap6.htm#tagcjh_11_02_03_01: binding strings
 
