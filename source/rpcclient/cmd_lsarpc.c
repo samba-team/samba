@@ -713,10 +713,8 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 {
 	POLICY_HND dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
 	DOM_SID sid;
-	uint32 count;
-	char **rights;
+	struct lsa_RightSet rights;
 
 	int i;
 
@@ -736,16 +734,19 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_enum_account_rights(cli, mem_ctx, &dom_pol, &sid, &count, &rights);
+	result = rpccli_lsa_EnumAccountRights(cli, mem_ctx,
+					      &dom_pol,
+					      &sid,
+					      &rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	printf("found %d privileges for SID %s\n", count,
+	printf("found %d privileges for SID %s\n", rights.count,
 	       sid_string_tos(&sid));
 
-	for (i = 0; i < count; i++) {
-		printf("\t%s\n", rights[i]);
+	for (i = 0; i < rights.count; i++) {
+		printf("\t%s\n", rights.names[i].string);
 	}
 
 	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
