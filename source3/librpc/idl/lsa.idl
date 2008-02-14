@@ -688,8 +688,8 @@ import "security.idl";
 	
 	NTSTATUS lsa_EnumAccountRights (
 		[in]     policy_handle *handle,
-		[in]     dom_sid2 *sid,
-		[out]    lsa_RightSet *rights
+		[in,ref] dom_sid2 *sid,
+		[out,ref] lsa_RightSet *rights
 		);
 
 
