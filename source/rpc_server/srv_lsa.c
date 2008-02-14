@@ -221,29 +221,7 @@ static bool api_lsa_open_account(pipes_struct *p)
 
 static bool api_lsa_enum_privsaccount(pipes_struct *p)
 {
-	LSA_Q_ENUMPRIVSACCOUNT q_u;
-	LSA_R_ENUMPRIVSACCOUNT r_u;
-	
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_enum_privsaccount("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_enum_privsaccount: failed to unmarshall LSA_Q_ENUMPRIVSACCOUNT.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_enum_privsaccount(p, rdata, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_enum_privsaccount("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_enum_privsaccount: Failed to marshall LSA_R_ENUMPRIVSACCOUNT.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_ENUMPRIVSACCOUNT);
 }
 
 /***************************************************************************

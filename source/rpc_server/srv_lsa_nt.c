@@ -1720,38 +1720,69 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_EnumPrivsAccount
  For a given SID, enumerate all the privilege this account has.
  ***************************************************************************/
 
-NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVSACCOUNT *q_u, LSA_R_ENUMPRIVSACCOUNT *r_u)
+NTSTATUS _lsa_EnumPrivsAccount(pipes_struct *p,
+			       struct lsa_EnumPrivsAccount *r)
 {
+	NTSTATUS status = NT_STATUS_OK;
 	struct lsa_info *info=NULL;
 	SE_PRIV mask;
 	PRIVILEGE_SET privileges;
+	struct lsa_PrivilegeSet *priv_set = NULL;
+	struct lsa_LUIDAttribute *luid_attrs = NULL;
+	int i;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if ( !get_privileges_for_sids( &mask, &info->sid, 1 ) ) 
+	if ( !get_privileges_for_sids( &mask, &info->sid, 1 ) )
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	privilege_set_init( &privileges );
 
 	if ( se_priv_to_privilege_set( &privileges, &mask ) ) {
 
-		DEBUG(10,("_lsa_enum_privsaccount: %s has %d privileges\n",
+		DEBUG(10,("_lsa_EnumPrivsAccount: %s has %d privileges\n",
 			  sid_string_dbg(&info->sid),
 			  privileges.count));
 
-		r_u->status = init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, privileges.set, privileges.count, 0);
-	}
-	else
-		r_u->status = NT_STATUS_NO_SUCH_PRIVILEGE;
+		priv_set = TALLOC_ZERO_P(p->mem_ctx, struct lsa_PrivilegeSet);
+		if (!priv_set) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
 
+		luid_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx,
+					       struct lsa_LUIDAttribute,
+					       privileges.count);
+		if (!luid_attrs) {
+			status = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+
+		for (i=0; i<privileges.count; i++) {
+			luid_attrs[i].luid.low = privileges.set[i].luid.low;
+			luid_attrs[i].luid.high = privileges.set[i].luid.high;
+			luid_attrs[i].attribute = privileges.set[i].attr;
+		}
+
+		priv_set->count = privileges.count;
+		priv_set->unknown = 0;
+		priv_set->set = luid_attrs;
+
+		*r->out.privs = priv_set;
+	} else {
+		status = NT_STATUS_NO_SUCH_PRIVILEGE;
+	}
+
+ done:
 	privilege_set_free( &privileges );
 
-	return r_u->status;
+	return status;
 }
 
 /***************************************************************************
@@ -2241,12 +2272,6 @@ NTSTATUS _lsa_LookupNames(pipes_struct *p, struct lsa_LookupNames *r)
 }
 
 NTSTATUS _lsa_LookupSids(pipes_struct *p, struct lsa_LookupSids *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_EnumPrivsAccount(pipes_struct *p, struct lsa_EnumPrivsAccount *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
