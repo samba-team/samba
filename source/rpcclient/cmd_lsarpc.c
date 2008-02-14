@@ -762,8 +762,9 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 {
 	POLICY_HND dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
+	struct lsa_RightSet rights;
 	DOM_SID sid;
+	int i;
 
 	if (argc < 3 ) {
 		printf("Usage: %s SID [rights...]\n", argv[0]);
@@ -781,8 +782,21 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_add_account_rights(cli, mem_ctx, &dom_pol, sid, 
-					    argc-2, argv+2);
+	rights.count = argc-2;
+	rights.names = TALLOC_ARRAY(mem_ctx, struct lsa_StringLarge,
+				    rights.count);
+	if (!rights.names) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<argc-1; i++) {
+		init_lsa_StringLarge(&rights.names[i], argv[i+2]);
+	}
+
+	result = rpccli_lsa_AddAccountRights(cli, mem_ctx,
+					     &dom_pol,
+					     &sid,
+					     &rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
