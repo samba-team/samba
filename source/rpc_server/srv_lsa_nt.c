@@ -15,12 +15,12 @@
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -467,7 +467,7 @@ static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 		r_l->hdr_nb_dom_name.uni_max_len += 2;
 		r_l->uni_nb_dom_name.uni_max_len += 1;
 	}
-	
+
 	if (dns_name && *dns_name) {
 		init_unistr2(&r_l->uni_dns_dom_name, dns_name, UNI_FLAGS_NONE);
 		init_uni_hdr(&r_l->hdr_dns_dom_name, &r_l->uni_dns_dom_name);
@@ -486,7 +486,7 @@ static void init_dns_dom_info(LSA_DNS_DOM_INFO *r_l, const char *nb_name,
 	if (dom_guid) {
 		memcpy(&r_l->dom_guid, dom_guid, sizeof(struct GUID));
 	}
-	
+
 	if (dom_sid) {
 		r_l->ptr_dom_sid = 1;
 		init_dom_sid2(&r_l->dom_sid, dom_sid);
@@ -874,7 +874,7 @@ static NTSTATUS _lsa_lookup_sids_internal(pipes_struct *p,
 			 * RID as 8 bytes hex, in others it returns the full
 			 * SID. We (Jerry/VL) could not figure out which the
 			 * hard cases are, so leave it with the SID.  */
-			name->name = talloc_asprintf(p->mem_ctx, "%s", 
+			name->name = talloc_asprintf(p->mem_ctx, "%s",
 			                             sid_to_fstring(tmp,
 								    sids[i]));
 			if (name->name == NULL) {
@@ -942,7 +942,7 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p,
 
 	r_u->status = _lsa_lookup_sids_internal(p,
 						q_u->level,
-						num_sids, 
+						num_sids,
 						q_u->sids.sid,
 						&ref,
 						&names,
@@ -991,7 +991,7 @@ NTSTATUS _lsa_lookup_sids2(pipes_struct *p,
 
 	r_u->status = _lsa_lookup_sids_internal(p,
 						q_u->level,
-						num_sids, 
+						num_sids,
 						q_u->sids.sid,
 						&ref,
 						&r_u->names,
@@ -1032,7 +1032,7 @@ NTSTATUS _lsa_lookup_sids3(pipes_struct *p,
 
 	r_u->status = _lsa_lookup_sids_internal(p,
 						q_u->level,
-						num_sids, 
+						num_sids,
 						q_u->sids.sid,
 						&ref,
 						&r_u->names,
@@ -1085,7 +1085,7 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 		num_entries = MAX_LOOKUP_SIDS;
 		DEBUG(5,("_lsa_lookup_names: truncating name lookup list to %d\n", num_entries));
 	}
-		
+
 	flags = lsa_lookup_level_to_flags(q_u->lookup_level);
 
 	ref = TALLOC_ZERO_P(p->mem_ctx, DOM_R_REF);
@@ -1230,7 +1230,7 @@ NTSTATUS _lsa_lookup_names3(pipes_struct *p, LSA_Q_LOOKUP_NAMES3 *q_u, LSA_R_LOO
 		num_entries = MAX_LOOKUP_SIDS;
 		DEBUG(5,("_lsa_lookup_names3: truncating name lookup list to %d\n", num_entries));
 	}
-		
+
 	/* Probably the lookup_level is some sort of bitmask. */
 	if (q_u->lookup_level == 1) {
 		flags = LOOKUP_NAME_ALL;
@@ -1297,7 +1297,7 @@ NTSTATUS _lsa_lookup_names4(pipes_struct *p, LSA_Q_LOOKUP_NAMES4 *q_u, LSA_R_LOO
 		num_entries = MAX_LOOKUP_SIDS;
 		DEBUG(5,("_lsa_lookup_names4: truncating name lookup list to %d\n", num_entries));
 	}
-		
+
 	/* Probably the lookup_level is some sort of bitmask. */
 	if (q_u->lookup_level == 1) {
 		flags = LOOKUP_NAME_ALL;
@@ -1650,17 +1650,17 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 	if (!(handle->access & POLICY_GET_PRIVATE_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
-	/* check to see if the pipe_user is a Domain Admin since 
+	/* check to see if the pipe_user is a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
-	   
+
 	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 		return NT_STATUS_ACCESS_DENIED;
-		
+
 	if ( is_privileged_sid( r->in.sid ) )
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 
 	/* associate the user/group SID with the (unique) handle. */
-	
+
 	if ((info = SMB_MALLOC_P(struct lsa_info)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -1807,7 +1807,7 @@ NTSTATUS _lsa_GetSystemAccessAccount(pipes_struct *p,
 	  0x02 -> Access this computer from network
 	  0x04 -> Log on as a batch job
 	  0x10 -> Log on as a service
-	  
+
 	  they can be ORed together
 	*/
 
@@ -1830,9 +1830,9 @@ NTSTATUS _lsa_SetSystemAccessAccount(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* check to see if the pipe_user is a Domain Admin since 
+	/* check to see if the pipe_user is a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
-	   
+
 	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 		return NT_STATUS_ACCESS_DENIED;
 
@@ -1855,11 +1855,11 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
-		
-	/* check to see if the pipe_user is root or a Domain Admin since 
+
+	/* check to see if the pipe_user is root or a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
-	   
-	if ( p->pipe_user.ut.uid != sec_initial_uid() 
+
+	if ( p->pipe_user.ut.uid != sec_initial_uid()
 		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 	{
 		return NT_STATUS_ACCESS_DENIED;
@@ -1895,11 +1895,11 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	/* check to see if the pipe_user is root or a Domain Admin since 
+	/* check to see if the pipe_user is root or a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
-	   
+
 	if ( p->pipe_user.ut.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) ) 
+		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -2020,7 +2020,7 @@ NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
 			default:
 				return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 		}
-		init_dns_dom_info(&r_u->info.dns_dom_info, nb_name, dns_name, 
+		init_dns_dom_info(&r_u->info.dns_dom_info, nb_name, dns_name,
 				  forest_name,&guid,sid);
 		break;
 	default:
@@ -2048,33 +2048,33 @@ NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R
 	DOM_SID sid;
 	fstring privname;
 	UNISTR4_ARRAY *uni_privnames = q_u->rights;
-	
+
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
-		
-	/* check to see if the pipe_user is a Domain Admin since 
+
+	/* check to see if the pipe_user is a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
-	   
+
 	if ( p->pipe_user.ut.uid != sec_initial_uid()
-		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) ) 
+		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* according to an NT4 PDC, you can add privileges to SIDs even without
 	   call_lsa_create_account() first.  And you can use any arbitrary SID. */
-	   
+
 	sid_copy( &sid, &q_u->sid.sid );
-	
+
 	/* just a little sanity check */
-	
+
 	if ( q_u->count != uni_privnames->count ) {
 		DEBUG(0,("_lsa_add_acct_rights: count != number of UNISTR2 elements!\n"));
-		return NT_STATUS_INVALID_HANDLE;	
+		return NT_STATUS_INVALID_HANDLE;
 	}
-		
+
 	for ( i=0; i<q_u->count; i++ ) {
 		UNISTR4 *uni4_str = &uni_privnames->strings[i];
 
@@ -2084,7 +2084,7 @@ NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R
 			continue;
 
 		rpcstr_pull( privname, uni4_str->string->buffer, sizeof(privname), -1, STR_TERMINATE );
-		
+
 		if ( !grant_privilege_by_name( &sid, privname ) ) {
 			DEBUG(2,("_lsa_add_acct_rights: Failed to add privilege [%s]\n", privname ));
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
@@ -2104,15 +2104,15 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 	DOM_SID sid;
 	fstring privname;
 	UNISTR4_ARRAY *uni_privnames = q_u->rights;
-	
+
 
 	/* find the connection policy handle. */
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
-		
-	/* check to see if the pipe_user is a Domain Admin since 
+
+	/* check to see if the pipe_user is a Domain Admin since
 	   account_pol.tdb was already opened as root, this is all we have */
-	   
+
 	if ( p->pipe_user.ut.uid != sec_initial_uid()
 		&& !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 	{
@@ -2122,19 +2122,19 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 	sid_copy( &sid, &q_u->sid.sid );
 
 	if ( q_u->removeall ) {
-		if ( !revoke_all_privileges( &sid ) ) 
+		if ( !revoke_all_privileges( &sid ) )
 			return NT_STATUS_ACCESS_DENIED;
-	
+
 		return NT_STATUS_OK;
 	}
-	
+
 	/* just a little sanity check */
-	
+
 	if ( q_u->count != uni_privnames->count ) {
 		DEBUG(0,("_lsa_add_acct_rights: count != number of UNISTR2 elements!\n"));
-		return NT_STATUS_INVALID_HANDLE;	
+		return NT_STATUS_INVALID_HANDLE;
 	}
-		
+
 	for ( i=0; i<q_u->count; i++ ) {
 		UNISTR4 *uni4_str = &uni_privnames->strings[i];
 
@@ -2144,7 +2144,7 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 			continue;
 
 		rpcstr_pull( privname, uni4_str->string->buffer, sizeof(privname), -1, STR_TERMINATE );
-		
+
 		if ( !revoke_privilege_by_name( &sid, privname ) ) {
 			DEBUG(2,("_lsa_remove_acct_rights: Failed to revoke privilege [%s]\n", privname ));
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
@@ -2164,18 +2164,18 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 	DOM_SID sid;
 	PRIVILEGE_SET privileges;
 	SE_PRIV mask;
-	
+
 
 	/* find the connection policy handle. */
-	
+
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
-		
+
 	/* according to an NT4 PDC, you can add privileges to SIDs even without
 	   call_lsa_create_account() first.  And you can use any arbitrary SID. */
-	   
+
 	sid_copy( &sid, &q_u->sid.sid );
-	
+
 	if ( !get_privileges_for_sids( &mask, &sid, 1 ) )
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
@@ -2188,7 +2188,7 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 
 		r_u->status = init_r_enum_acct_rights( r_u, &privileges );
 	}
-	else 
+	else
 		r_u->status = NT_STATUS_NO_SUCH_PRIVILEGE;
 
 	privilege_set_free( &privileges );
@@ -2206,14 +2206,14 @@ NTSTATUS _lsa_lookup_priv_value(pipes_struct *p, LSA_Q_LOOKUP_PRIV_VALUE *q_u, L
 	fstring name;
 	LUID_ATTR priv_luid;
 	SE_PRIV mask;
-	
+
 	/* find the connection policy handle. */
-	
+
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
-		
+
 	unistr2_to_ascii(name, &q_u->privname.unistring, sizeof(name));
-	
+
 	DEBUG(10,("_lsa_lookup_priv_value: name = %s\n", name));
 
 	if ( !se_priv_from_name( name, &mask ) )
@@ -2223,7 +2223,7 @@ NTSTATUS _lsa_lookup_priv_value(pipes_struct *p, LSA_Q_LOOKUP_PRIV_VALUE *q_u, L
 
 	r_u->luid.low  = priv_luid.luid.low;
 	r_u->luid.high = priv_luid.luid.high;
-		
+
 
 	return NT_STATUS_OK;
 }
@@ -2233,7 +2233,7 @@ NTSTATUS _lsa_lookup_priv_value(pipes_struct *p, LSA_Q_LOOKUP_PRIV_VALUE *q_u, L
  * From here on the server routines are just dummy ones to make smbd link with
  * librpc/gen_ndr/srv_lsa.c. These routines are actually never called, we are
  * pulling the server stubs across one by one.
- */ 
+ */
 
 NTSTATUS _lsa_Delete(pipes_struct *p, struct lsa_Delete *r)
 {
