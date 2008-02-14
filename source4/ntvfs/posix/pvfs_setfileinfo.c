@@ -103,9 +103,11 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* w2k3 does not appear to allow relative rename */
-	if (info->rename_information.in.root_fid != 0) {
-		DEBUG(1,("WARNING: got invalid root_fid in rename_information.\n"));
+	/* w2k3 does not appear to allow relative rename. On SMB2, vista sends it sometimes,
+	   but I suspect it is just uninitialised memory */
+	if (info->rename_information.in.root_fid != 0 && 
+	    (req->ctx->protocol != PROTOCOL_SMB2)) {
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* construct the fully qualified windows name for the new file name */
