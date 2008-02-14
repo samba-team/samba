@@ -78,7 +78,7 @@ NTSTATUS smbsrv_blob_fill_data(TALLOC_CTX *mem_ctx,
 /*
   pull a string from a blob in a trans2 request
 */
-size_t smbsrv_blob_pull_string(struct smbsrv_request *req, 
+size_t smbsrv_blob_pull_string(struct request_bufinfo *bufinfo, 
 			       const DATA_BLOB *blob,
 			       uint16_t offset,
 			       const char **str,
@@ -92,7 +92,7 @@ size_t smbsrv_blob_pull_string(struct smbsrv_request *req,
 		return 0;
 	}
 	
-	return req_pull_string(req, str, 
+	return req_pull_string(bufinfo, str, 
 			       blob->data + offset, 
 			       blob->length - offset,
 			       STR_NO_RANGE_CHECK | flags);
@@ -521,9 +521,9 @@ NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
 					union smb_setfileinfo *st,
 					const DATA_BLOB *blob,
 					int default_str_flags,
-					struct smbsrv_request *req)
+					struct request_bufinfo *bufinfo)
 {
-	uint32_t len;
+	uint32_t len, ofs;
 	DATA_BLOB str_blob;
 
 	switch (level) {
@@ -560,21 +560,38 @@ NTSTATUS smbsrv_pull_passthru_sfileinfo(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
-		if (!req) {
-			/* 
-			 * TODO: get rid of smbsrv_request argument of
-			 * smbsrv_blob_pull_string()
-			 */
-			return NT_STATUS_NOT_IMPLEMENTED;
+		if (!bufinfo) {
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 		BLOB_CHECK_MIN_SIZE(blob, 12);
-
 		st->rename_information.in.overwrite = CVAL(blob->data, 0);
 		st->rename_information.in.root_fid  = IVAL(blob->data, 4);
 		len                                 = IVAL(blob->data, 8);
-		str_blob.data = blob->data+12;
-		str_blob.length = MIN(blob->length, len);
-		smbsrv_blob_pull_string(req, &str_blob, 0,
+		ofs                                 = 12;
+		str_blob = *blob;
+		str_blob.length = MIN(str_blob.length, ofs+len);
+		smbsrv_blob_pull_string(bufinfo, &str_blob, ofs,
+					&st->rename_information.in.new_name,
+					STR_UNICODE);
+		if (st->rename_information.in.new_name == NULL) {
+			return NT_STATUS_FOOBAR;
+		}
+
+		return NT_STATUS_OK;
+
+	case RAW_SFILEINFO_RENAME_INFORMATION_SMB2:
+		/* SMB2 uses a different format for rename information */
+		if (!bufinfo) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
+		BLOB_CHECK_MIN_SIZE(blob, 20);
+		st->rename_information.in.overwrite = CVAL(blob->data, 0);
+		st->rename_information.in.root_fid  = BVAL(blob->data, 8);
+		len                                 = IVAL(blob->data,16);
+		ofs                                 = 20;			
+		str_blob = *blob;
+		str_blob.length = MIN(str_blob.length, ofs+len);
+		smbsrv_blob_pull_string(bufinfo, &str_blob, ofs,
 					&st->rename_information.in.new_name,
 					STR_UNICODE);
 		if (st->rename_information.in.new_name == NULL) {

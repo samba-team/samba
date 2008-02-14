@@ -33,6 +33,20 @@
 /* we over allocate the data buffer to prevent too many realloc calls */
 #define REQ_OVER_ALLOCATION 0
 
+/* setup the bufinfo used for strings and range checking */
+void smbsrv_setup_bufinfo(struct smbsrv_request *req)
+{
+	req->in.bufinfo.mem_ctx    = req;
+	req->in.bufinfo.flags      = 0;
+	if (req->flags2 & FLAGS2_UNICODE_STRINGS) {
+		req->in.bufinfo.flags |= BUFINFO_FLAG_UNICODE;
+	}
+	req->in.bufinfo.align_base = req->in.buffer;
+	req->in.bufinfo.data       = req->in.data;
+	req->in.bufinfo.data_size  = req->in.data_size;
+}
+
+
 static int smbsrv_request_destructor(struct smbsrv_request *req)
 {
 	DLIST_REMOVE(req->smb_conn->requests, req);
@@ -461,13 +475,13 @@ size_t req_append_var_block(struct smbsrv_request *req,
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
+static size_t req_pull_ucs2(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2, alignment=0;
 	ssize_t ret;
 	char *dest2;
 
-	if (!(flags & STR_NOALIGN) && ucs2_align(req->in.buffer, src, flags)) {
+	if (!(flags & STR_NOALIGN) && ucs2_align(bufinfo->align_base, src, flags)) {
 		src++;
 		alignment=1;
 		if (byte_len != -1) {
@@ -478,7 +492,7 @@ static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const
 	if (flags & STR_NO_RANGE_CHECK) {
 		src_len = byte_len;
 	} else {
-		src_len = req->in.data_size - PTR_DIFF(src, req->in.data);
+		src_len = bufinfo->data_size - PTR_DIFF(src, bufinfo->data);
 		if (byte_len != -1 && src_len > byte_len) {
 			src_len = byte_len;
 		}
@@ -491,11 +505,11 @@ static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const
 	
 	src_len2 = utf16_len_n(src, src_len);
 	if (src_len2 == 0) {
-		*dest = talloc_strdup(req, "");
+		*dest = talloc_strdup(bufinfo->mem_ctx, "");
 		return src_len2 + alignment;
 	}
 
-	ret = convert_string_talloc(req, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
+	ret = convert_string_talloc(bufinfo->mem_ctx, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX, src, src_len2, (void **)&dest2);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -519,7 +533,7 @@ static size_t req_pull_ucs2(struct smbsrv_request *req, const char **dest, const
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-static size_t req_pull_ascii(struct smbsrv_request *req, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
+static size_t req_pull_ascii(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2;
 	ssize_t ret;
@@ -528,7 +542,7 @@ static size_t req_pull_ascii(struct smbsrv_request *req, const char **dest, cons
 	if (flags & STR_NO_RANGE_CHECK) {
 		src_len = byte_len;
 	} else {
-		src_len = req->in.data_size - PTR_DIFF(src, req->in.data);
+		src_len = bufinfo->data_size - PTR_DIFF(src, bufinfo->data);
 		if (src_len < 0) {
 			*dest = NULL;
 			return 0;
@@ -544,7 +558,7 @@ static size_t req_pull_ascii(struct smbsrv_request *req, const char **dest, cons
 		src_len2++;
 	}
 
-	ret = convert_string_talloc(req, lp_iconv_convenience(global_loadparm), CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2);
+	ret = convert_string_talloc(bufinfo->mem_ctx, lp_iconv_convenience(global_loadparm), CH_DOS, CH_UNIX, src, src_len2, (void **)&dest2);
 
 	if (ret == -1) {
 		*dest = NULL;
@@ -568,14 +582,14 @@ static size_t req_pull_ascii(struct smbsrv_request *req, const char **dest, cons
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-size_t req_pull_string(struct smbsrv_request *req, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
+size_t req_pull_string(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	if (!(flags & STR_ASCII) && 
-	    (((flags & STR_UNICODE) || (req->flags2 & FLAGS2_UNICODE_STRINGS)))) {
-		return req_pull_ucs2(req, dest, src, byte_len, flags);
+	    (((flags & STR_UNICODE) || (bufinfo->flags & BUFINFO_FLAG_UNICODE)))) {
+		return req_pull_ucs2(bufinfo, dest, src, byte_len, flags);
 	}
 
-	return req_pull_ascii(req, dest, src, byte_len, flags);
+	return req_pull_ascii(bufinfo, dest, src, byte_len, flags);
 }
 
 
@@ -588,13 +602,13 @@ size_t req_pull_string(struct smbsrv_request *req, const char **dest, const uint
   on failure *dest is set to the zero length string. This seems to
   match win2000 behaviour
 */
-size_t req_pull_ascii4(struct smbsrv_request *req, const char **dest, const uint8_t *src, uint_t flags)
+size_t req_pull_ascii4(struct request_bufinfo *bufinfo, const char **dest, const uint8_t *src, uint_t flags)
 {
 	ssize_t ret;
 
-	if (PTR_DIFF(src, req->in.data) + 1 > req->in.data_size) {
+	if (PTR_DIFF(src, bufinfo->data) + 1 > bufinfo->data_size) {
 		/* win2000 treats this as the empty string! */
-		(*dest) = talloc_strdup(req, "");
+		(*dest) = talloc_strdup(bufinfo->mem_ctx, "");
 		return 0;
 	}
 
@@ -603,9 +617,9 @@ size_t req_pull_ascii4(struct smbsrv_request *req, const char **dest, const uint
 	   behaviour */
 	src++;
 
-	ret = req_pull_string(req, dest, src, -1, flags);
+	ret = req_pull_string(bufinfo, dest, src, -1, flags);
 	if (ret == -1) {
-		(*dest) = talloc_strdup(req, "");
+		(*dest) = talloc_strdup(bufinfo->mem_ctx, "");
 		return 1;
 	}
 	
@@ -617,30 +631,30 @@ size_t req_pull_ascii4(struct smbsrv_request *req, const char **dest, const uint
 
   return false if any part is outside the data portion of the packet
 */
-bool req_pull_blob(struct smbsrv_request *req, const uint8_t *src, int len, DATA_BLOB *blob)
+bool req_pull_blob(struct request_bufinfo *bufinfo, const uint8_t *src, int len, DATA_BLOB *blob)
 {
-	if (len != 0 && req_data_oob(req, src, len)) {
+	if (len != 0 && req_data_oob(bufinfo, src, len)) {
 		return false;
 	}
 
-	(*blob) = data_blob_talloc(req, src, len);
+	(*blob) = data_blob_talloc(bufinfo->mem_ctx, src, len);
 
 	return true;
 }
 
 /* check that a lump of data in a request is within the bounds of the data section of
    the packet */
-bool req_data_oob(struct smbsrv_request *req, const uint8_t *ptr, uint32_t count)
+bool req_data_oob(struct request_bufinfo *bufinfo, const uint8_t *ptr, uint32_t count)
 {
 	if (count == 0) {
 		return false;
 	}
 	
 	/* be careful with wraparound! */
-	if (ptr < req->in.data ||
-	    ptr >= req->in.data + req->in.data_size ||
-	    count > req->in.data_size ||
-	    ptr + count > req->in.data + req->in.data_size) {
+	if (ptr < bufinfo->data ||
+	    ptr >= bufinfo->data + bufinfo->data_size ||
+	    count > bufinfo->data_size ||
+	    ptr + count > bufinfo->data + bufinfo->data_size) {
 		return true;
 	}
 	return false;

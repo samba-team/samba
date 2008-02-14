@@ -133,7 +133,7 @@ static void continue_socket(struct composite_context *creq)
 	state->negprot.in.security_mode = 0;
 	state->negprot.in.capabilities  = 0;
 	unix_to_nt_time(&state->negprot.in.start_time, time(NULL));
-	dialects[0] = 0;
+	dialects[0] = SMB2_DIALECT_REVISION;
 	state->negprot.in.dialects = dialects;
 
 	req = smb2_negprot_send(transport, &state->negprot);

@@ -28,6 +28,21 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "param/param.h"
 
+/* fill in the bufinfo */
+void smb2_setup_bufinfo(struct smb2_request *req)
+{
+	req->in.bufinfo.mem_ctx    = req;
+	req->in.bufinfo.flags      = BUFINFO_FLAG_UNICODE | BUFINFO_FLAG_SMB2;
+	req->in.bufinfo.align_base = req->in.buffer;
+	if (req->in.dynamic) {
+		req->in.bufinfo.data       = req->in.dynamic;
+		req->in.bufinfo.data_size  = req->in.body_size - req->in.body_fixed;
+	} else {
+		req->in.bufinfo.data       = NULL;
+		req->in.bufinfo.data_size  = 0;
+	}
+}
+
 /*
   initialise a smb2 request
 */
@@ -520,6 +535,33 @@ NTSTATUS smb2_pull_o32s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 	ofs  = IVAL(ptr, 0);
+	size = IVAL(ptr, 4);
+	if (ofs == 0 || size == 0) {
+		*blob = data_blob(NULL, 0);
+		return NT_STATUS_OK;
+	}
+	if (smb2_oob(buf, buf->hdr + ofs, size)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	*blob = data_blob_talloc(mem_ctx, buf->hdr + ofs, size);
+	NT_STATUS_HAVE_NO_MEMORY(blob->data);
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a uint16_t ofs/ uint32_t length/blob triple from a data blob
+  the ptr points to the start of the offset/length pair
+  
+  In this varient the uint16_t is padded by an extra 2 bytes, making
+  the size aligned on 4 byte boundary
+*/
+NTSTATUS smb2_pull_o16As32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx, uint8_t *ptr, DATA_BLOB *blob)
+{
+	uint32_t ofs, size;
+	if (smb2_oob(buf, ptr, 8)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	ofs  = SVAL(ptr, 0);
 	size = IVAL(ptr, 4);
 	if (ofs == 0 || size == 0) {
 		*blob = data_blob(NULL, 0);
