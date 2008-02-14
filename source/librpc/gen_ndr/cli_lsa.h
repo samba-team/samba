@@ -192,7 +192,7 @@ NTSTATUS rpccli_lsa_RemoveAccountRights(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					struct policy_handle *handle,
 					struct dom_sid2 *sid,
-					uint32_t unknown,
+					uint8_t remove_all,
 					struct lsa_RightSet *rights);
 NTSTATUS rpccli_lsa_QueryTrustedDomainInfoBySid(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,

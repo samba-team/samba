@@ -448,7 +448,7 @@ struct lsa_RightAttribute {
 };
 
 struct lsa_RightSet {
-	uint32_t count;
+	uint32_t count;/* [range(0,256)] */
 	struct lsa_StringLarge *names;/* [unique,size_is(count)] */
 };
 
@@ -1104,7 +1104,7 @@ struct lsa_RemoveAccountRights {
 	struct {
 		struct policy_handle *handle;/* [ref] */
 		struct dom_sid2 *sid;/* [ref] */
-		uint32_t unknown;
+		uint8_t remove_all;
 		struct lsa_RightSet *rights;/* [ref] */
 	} in;
 
