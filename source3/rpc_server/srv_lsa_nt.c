@@ -2042,19 +2042,18 @@ NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
 #endif	/* AD DC work in ongoing in Samba 4 */
 
 /***************************************************************************
+ _lsa_AddAccountRights
  ***************************************************************************/
 
-NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R_ADD_ACCT_RIGHTS *r_u)
+NTSTATUS _lsa_AddAccountRights(pipes_struct *p,
+			       struct lsa_AddAccountRights *r)
 {
 	struct lsa_info *info = NULL;
 	int i = 0;
 	DOM_SID sid;
-	fstring privname;
-	UNISTR4_ARRAY *uni_privnames = q_u->rights;
-
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check to see if the pipe_user is a Domain Admin since
@@ -2069,27 +2068,20 @@ NTSTATUS _lsa_add_acct_rights(pipes_struct *p, LSA_Q_ADD_ACCT_RIGHTS *q_u, LSA_R
 	/* according to an NT4 PDC, you can add privileges to SIDs even without
 	   call_lsa_create_account() first.  And you can use any arbitrary SID. */
 
-	sid_copy( &sid, &q_u->sid.sid );
+	sid_copy( &sid, r->in.sid );
 
-	/* just a little sanity check */
+	for ( i=0; i < r->in.rights->count; i++ ) {
 
-	if ( q_u->count != uni_privnames->count ) {
-		DEBUG(0,("_lsa_add_acct_rights: count != number of UNISTR2 elements!\n"));
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	for ( i=0; i<q_u->count; i++ ) {
-		UNISTR4 *uni4_str = &uni_privnames->strings[i];
+		const char *privname = r->in.rights->names[i].string;
 
 		/* only try to add non-null strings */
 
-		if ( !uni4_str->string )
+		if ( !privname )
 			continue;
 
-		rpcstr_pull( privname, uni4_str->string->buffer, sizeof(privname), -1, STR_TERMINATE );
-
 		if ( !grant_privilege_by_name( &sid, privname ) ) {
-			DEBUG(2,("_lsa_add_acct_rights: Failed to add privilege [%s]\n", privname ));
+			DEBUG(2,("_lsa_AddAccountRights: Failed to add privilege [%s]\n",
+				privname ));
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
 	}
@@ -2323,12 +2315,6 @@ NTSTATUS _lsa_EnumAccountsWithUserRight(pipes_struct *p, struct lsa_EnumAccounts
 }
 
 NTSTATUS _lsa_EnumAccountRights(pipes_struct *p, struct lsa_EnumAccountRights *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_AddAccountRights(pipes_struct *p, struct lsa_AddAccountRights *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
