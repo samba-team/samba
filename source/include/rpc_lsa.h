@@ -494,37 +494,4 @@ typedef struct
 	NTSTATUS status;
 } LSA_R_REMOVE_ACCT_RIGHTS;
 
-
-typedef struct {
-	UNIHDR hdr;
-	UNISTR2 unistring;
-} LSA_STRING;
-
-typedef struct lsa_q_addprivs
-{
-	POLICY_HND pol; /* policy handle */
-	uint32 count;
-	PRIVILEGE_SET set;
-} LSA_Q_ADDPRIVS;
-
-typedef struct lsa_r_addprivs
-{
-	NTSTATUS status;
-} LSA_R_ADDPRIVS;
-
-
-typedef struct lsa_q_removeprivs
-{
-	POLICY_HND pol; /* policy handle */
-	uint32 allrights;
-	uint32 ptr;
-	uint32 count;
-	PRIVILEGE_SET set;
-} LSA_Q_REMOVEPRIVS;
-
-typedef struct lsa_r_removeprivs
-{
-	NTSTATUS status;
-} LSA_R_REMOVEPRIVS;
-
 #endif /* _RPC_LSA_H */
