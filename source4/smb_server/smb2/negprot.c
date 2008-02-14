@@ -93,12 +93,14 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	struct timeval current_time;
 	struct timeval boot_time;
 
-	/* we only do dialect 0 for now */
+	/* we only do one dialect for now */
 	if (io->in.dialect_count < 1) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
-	if (io->in.dialects[0] != 0) {
+	if (io->in.dialects[0] != 0 &&
+	    io->in.dialects[0] != SMB2_DIALECT_REVISION) {
 		DEBUG(0,("Got unexpected SMB2 dialect %u\n", io->in.dialects[0]));
+		return NT_STATUS_NOT_SUPPORTED;
 	}
 
 	req->smb_conn->negotiate.protocol = PROTOCOL_SMB2;
@@ -108,8 +110,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 
 	ZERO_STRUCT(io->out);
 	io->out.security_mode      = 0; /* no signing yet */
-	 /* choose the first dialect offered for now */
-	io->out.dialect_revision   = io->in.dialects[0];
+	io->out.dialect_revision   = SMB2_DIALECT_REVISION;
 	io->out.capabilities       = 0;
 	io->out.max_transact_size  = 0x10000;
 	io->out.max_read_size      = 0x10000;
