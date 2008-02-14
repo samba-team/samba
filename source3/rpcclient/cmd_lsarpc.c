@@ -652,10 +652,8 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 	POLICY_HND user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_desired = 0x000f000f;
-	
 	DOM_SID sid;
-	uint32 count=0;
-	LUID_ATTR *set;
+	struct lsa_PrivilegeSet *privs = NULL;
 	int i;
 
 	if (argc != 2 ) {
@@ -683,17 +681,22 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_enum_privsaccount(cli, mem_ctx, &user_pol, &count, &set);
+	result = rpccli_lsa_EnumPrivsAccount(cli, mem_ctx,
+					     &user_pol,
+					     &privs);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Print results */
-	printf("found %d privileges for SID %s\n\n", count, argv[1]);
+	printf("found %d privileges for SID %s\n\n", privs->count, argv[1]);
 	printf("high\tlow\tattribute\n");
 
-	for (i = 0; i < count; i++) {
-		printf("%u\t%u\t%u\n", set[i].luid.high, set[i].luid.low, set[i].attr);
+	for (i = 0; i < privs->count; i++) {
+		printf("%u\t%u\t%u\n",
+			privs->set[i].luid.high,
+			privs->set[i].luid.low,
+			privs->set[i].attribute);
 	}
 
 	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
