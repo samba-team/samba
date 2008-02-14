@@ -495,19 +495,6 @@ typedef struct
 } LSA_R_REMOVE_ACCT_RIGHTS;
 
 
-typedef struct lsa_q_enumprivsaccount
-{
-	POLICY_HND pol; /* policy handle */
-} LSA_Q_ENUMPRIVSACCOUNT;
-
-typedef struct lsa_r_enumprivsaccount
-{
-	uint32 ptr;
-	uint32 count;
-	PRIVILEGE_SET set;
-	NTSTATUS status;
-} LSA_R_ENUMPRIVSACCOUNT;
-
 typedef struct {
 	UNIHDR hdr;
 	UNISTR2 unistring;

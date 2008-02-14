@@ -1207,30 +1207,6 @@ bool lsa_io_r_lookup_names4(const char *desc, LSA_R_LOOKUP_NAMES4 *out, prs_stru
 	return True;
 }
 
-void init_lsa_q_enum_privsaccount(LSA_Q_ENUMPRIVSACCOUNT *trn, POLICY_HND *hnd)
-{
-	memcpy(&trn->pol, hnd, sizeof(trn->pol));
-
-}
-
-/*******************************************************************
- Reads or writes an LSA_Q_ENUMPRIVSACCOUNT structure.
-********************************************************************/
-
-bool lsa_io_q_enum_privsaccount(const char *desc, LSA_Q_ENUMPRIVSACCOUNT *out, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_enum_privsaccount");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
- 
-	if(!smb_io_pol_hnd("pol", &out->pol, ps, depth))
-		return False;
-
-	return True;
-}
-
 /*******************************************************************
  Reads or writes an LUID structure.
 ********************************************************************/
@@ -1297,66 +1273,6 @@ static bool lsa_io_privilege_set(const char *desc, PRIVILEGE_SET *out, prs_struc
 			return False;
 	}
 	
-	return True;
-}
-
-NTSTATUS init_lsa_r_enum_privsaccount(TALLOC_CTX *mem_ctx, LSA_R_ENUMPRIVSACCOUNT *out, LUID_ATTR *set, uint32 count, uint32 control)
-{
-	NTSTATUS ret = NT_STATUS_OK;
-
-	out->ptr = 1;
-	out->count = count;
-
-	if ( !NT_STATUS_IS_OK(ret = privilege_set_init_by_ctx(mem_ctx, &(out->set))) )
-		return ret;
-	
-	out->set.count = count;
-	
-	if (!NT_STATUS_IS_OK(ret = dup_luid_attr(out->set.mem_ctx, &(out->set.set), set, count)))
-		return ret;
-
-	DEBUG(10,("init_lsa_r_enum_privsaccount: %d privileges\n", out->count));
-
-	return ret;
-}
-
-/*******************************************************************
- Reads or writes an LSA_R_ENUMPRIVSACCOUNT structure.
-********************************************************************/
-
-bool lsa_io_r_enum_privsaccount(const char *desc, LSA_R_ENUMPRIVSACCOUNT *out, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_enum_privsaccount");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
- 
-	if(!prs_uint32("ptr", ps, depth, &out->ptr))
-		return False;
-
-	if (out->ptr!=0) {
-		if(!prs_uint32("count", ps, depth, &out->count))
-			return False;
-
-		/* malloc memory if unmarshalling here */
-
-		if (UNMARSHALLING(ps) && out->count != 0) {
-			if (!NT_STATUS_IS_OK(privilege_set_init_by_ctx(ps->mem_ctx, &(out->set))))
-				return False;
-
-			if (!(out->set.set = PRS_ALLOC_MEM(ps,LUID_ATTR,out->count)))
-				return False;
-
-		}
-		
-		if(!lsa_io_privilege_set(desc, &out->set, ps, depth))
-			return False;
-	}
-
-	if(!prs_ntstatus("status", ps, depth, &out->status))
-		return False;
-
 	return True;
 }
 

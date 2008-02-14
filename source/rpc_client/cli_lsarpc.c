@@ -452,62 +452,6 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/** Enumerate user privileges
- *
- * @param cli Handle on an initialised SMB connection */
-
-NTSTATUS rpccli_lsa_enum_privsaccount(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                             POLICY_HND *pol, uint32 *count, LUID_ATTR **set)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_ENUMPRIVSACCOUNT q;
-	LSA_R_ENUMPRIVSACCOUNT r;
-	NTSTATUS result;
-	int i;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	init_lsa_q_enum_privsaccount(&q, pol);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUMPRIVSACCOUNT,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_enum_privsaccount,
-		lsa_io_r_enum_privsaccount,
-		NT_STATUS_UNSUCCESSFUL);
-
-	/* Return output parameters */
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	if (r.count == 0)
-		goto done;
-
-	if (!((*set = TALLOC_ARRAY(mem_ctx, LUID_ATTR, r.count)))) {
-		DEBUG(0, ("(cli_lsa_enum_privsaccount): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	for (i=0; i<r.count; i++) {
-		(*set)[i].luid.low = r.set.set[i].luid.low;
-		(*set)[i].luid.high = r.set.set[i].luid.high;
-		(*set)[i].attr = r.set.set[i].attr;
-	}
-
-	*count=r.count;
- done:
-
-	return result;
-}
-
 /** Get a privilege value given its name */
 
 NTSTATUS rpccli_lsa_lookup_priv_value(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
