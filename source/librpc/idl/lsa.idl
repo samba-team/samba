@@ -682,7 +682,7 @@ import "security.idl";
 	} lsa_RightAttribute;
 	
 	typedef struct {
-		uint32 count;
+		[range(0,256)] uint32 count;
 		[size_is(count)] lsa_StringLarge *names;
 	} lsa_RightSet;
 	
@@ -697,8 +697,8 @@ import "security.idl";
 	/* Function:       0x25 */
 	NTSTATUS lsa_AddAccountRights (
 		[in]     policy_handle *handle,
-		[in]     dom_sid2 *sid,
-		[in]     lsa_RightSet *rights
+		[in,ref] dom_sid2 *sid,
+		[in,ref] lsa_RightSet *rights
 		);
 	
 	/**********************/
