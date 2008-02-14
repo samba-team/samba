@@ -185,28 +185,7 @@ static bool api_lsa_priv_get_dispname(pipes_struct *p)
 
 static bool api_lsa_enum_accounts(pipes_struct *p)
 {
-	LSA_Q_ENUM_ACCOUNTS q_u;
-	LSA_R_ENUM_ACCOUNTS r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!lsa_io_q_enum_accounts("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_enum_accounts: failed to unmarshall LSA_Q_ENUM_ACCOUNTS.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_enum_accounts(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_enum_accounts("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_enum_accounts: Failed to marshall LSA_R_ENUM_ACCOUNTS.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_ENUMACCOUNTS);
 }
 
 /***************************************************************************
