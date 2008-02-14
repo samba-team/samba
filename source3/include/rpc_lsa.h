@@ -446,22 +446,6 @@ typedef struct lsa_r_lookup_names4
 	NTSTATUS status; /* return code */
 } LSA_R_LOOKUP_NAMES4;
 
-/* LSA_Q_ENUM_ACCT_RIGHTS - LSA enum account rights */
-typedef struct
-{
-	POLICY_HND pol; /* policy handle */
-	DOM_SID2 sid;
-} LSA_Q_ENUM_ACCT_RIGHTS;
-
-/* LSA_R_ENUM_ACCT_RIGHTS - LSA enum account rights */
-typedef struct
-{
-	uint32 count;
-	UNISTR4_ARRAY *rights;
-	NTSTATUS status;
-} LSA_R_ENUM_ACCT_RIGHTS;
-
-
 /* LSA_Q_REMOVE_ACCT_RIGHTS - LSA remove account rights */
 typedef struct
 {
