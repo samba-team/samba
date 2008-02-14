@@ -280,10 +280,26 @@ for obj in ${TALLOC_OBJ}; do
 done
 AC_SUBST(TALLOC_OBJS)
 
+# TODO: These should come from m4_include(lib/tdb/libtdb.m4)
+# but currently this fails: things have to get merged from s4.
+tdbdir="lib/tdb"
+AC_SUBST(tdbdir)
+TDB_CFLAGS="-I$tdbdir/include"
+AC_SUBST(TDB_CFLAGS)
+TDB_OBJ="common/tdb.o common/dump.o common/transaction.o common/error.o common/traverse.o"
+TDB_OBJ="$TDB_OBJ common/freelist.o common/freelistcheck.o common/io.o common/lock.o common/open.o"
+AC_SUBST(TDB_OBJ)
+
+TDB_OBJS=""
+for obj in ${TDB_OBJ}; do
+	TDB_OBJS="${TDB_OBJS} ${tdbdir}/${obj}"
+done
+AC_SUBST(TDB_OBJS)
+
 SAMBA_CPPFLAGS="-Iinclude -I${srcdir-.}/include  -I. -I${srcdir-.}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/replace"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TALLOC_CFLAGS}"
-SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/lib/tdb/include"
+SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} ${TDB_CFLAGS}"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/libaddns"
 SAMBA_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/librpc"
 
@@ -336,6 +352,12 @@ AC_SUBST(LIBTALLOC_SHARED_TARGET)
 AC_SUBST(LIBTALLOC_SHARED)
 AC_SUBST(LIBTALLOC_STATIC)
 AC_SUBST(LIBTALLOC_LIBS)
+
+AC_SUBST(LIBTDB_STATIC_TARGET)
+AC_SUBST(LIBTDB_SHARED_TARGET)
+AC_SUBST(LIBTDB_SHARED)
+AC_SUBST(LIBTDB_STATIC)
+AC_SUBST(LIBTDB_LIBS)
 
 AC_SUBST(INSTALL_LIBWBCLIENT)
 AC_SUBST(UNINSTALL_LIBWBCLIENT)
@@ -5211,6 +5233,49 @@ if test $enable_static = yes; then
 	LIBTALLOC_STATIC=$LIBTALLOC_STATIC_TARGET
 fi
 
+#################################################
+# should we build libtdb?
+LIBTDB_SHARED_TARGET=bin/libtdb.$SHLIBEXT
+LIBTDB_STATIC_TARGET=bin/libtdb.a
+LIBTDB_SHARED=
+LIBTDB_STATIC=
+LIBTDB_LIBS=
+
+AC_MSG_CHECKING(whether to build the libtdb shared library)
+AC_ARG_WITH(libtdb,
+[AS_HELP_STRING([--with-libtdb],
+	[Build the libtdb shared library (default=yes if shared libs supported)])],
+[
+case "$withval" in
+	*)
+		AC_MSG_RESULT(no)
+		;;
+	yes)
+		samba_cv_with_libtdb=yes
+		;;
+esac
+],
+[
+# if unspecified, default is to build it if possible.
+samba_cv_with_libtdb=yes
+]
+)
+
+if test x"$samba_cv_with_libtdb" = "xyes" -a $BLDSHARED = true; then
+	LIBTDB_SHARED=$LIBTDB_SHARED_TARGET
+	AC_MSG_RESULT(yes)
+	if test x"$LINK_LIBTDB" = "xSTATIC" ; then
+		LIBTDB_STATIC=$LIBTDB_STATIC_TARGET
+	else
+		LIBTDB_LIBS=-ltdb
+	fi
+else
+	enable_static=yes
+	AC_MSG_RESULT(no shared library support -- will supply static library)
+fi
+if test $enable_static = yes; then
+	LIBTDB_STATIC=$LIBTDB_STATIC_TARGET
+fi
 
 #################################################
 # should we build libnetapi?
