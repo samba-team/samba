@@ -214,24 +214,27 @@ static NTSTATUS enum_accounts_for_privilege(struct rpc_pipe_client *pipe_hnd,
 	NTSTATUS result;
 	uint32 enum_context=0;
 	uint32 pref_max_length=0x1000;
-	DOM_SID *sids = NULL;
-	uint32 count=0;
+	struct lsa_SidArray sid_array;
 	int i;
 	fstring name;
 
-	result = rpccli_lsa_enum_sids(pipe_hnd, ctx, pol, &enum_context, 
-		pref_max_length, &count, &sids);
+	result = rpccli_lsa_EnumAccounts(pipe_hnd, ctx,
+					 pol,
+					 &enum_context,
+					 &sid_array,
+					 pref_max_length);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 		
 	d_printf("%s:\n", privilege);
 
-	for ( i=0; i<count; i++ ) {
-	
-		   
-		result = check_privilege_for_user( pipe_hnd, ctx, pol, &sids[i], privilege);
-		
+	for ( i=0; i<sid_array.num_sids; i++ ) {
+
+		result = check_privilege_for_user(pipe_hnd, ctx, pol,
+						  sid_array.sids[i].sid,
+						  privilege);
+
 		if ( ! NT_STATUS_IS_OK(result)) {
 			if ( ! NT_STATUS_EQUAL(result, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
 				return result;
@@ -241,9 +244,9 @@ static NTSTATUS enum_accounts_for_privilege(struct rpc_pipe_client *pipe_hnd,
 
 		/* try to convert the SID to a name.  Fall back to 
 		   printing the raw SID if necessary */
-		result = sid_to_name( pipe_hnd, ctx, &sids[i], name );
+		result = sid_to_name( pipe_hnd, ctx, sid_array.sids[i].sid, name );
 		if ( !NT_STATUS_IS_OK (result) )
-			sid_to_fstring(name, &sids[i]);
+			sid_to_fstring(name, sid_array.sids[i].sid);
 
 		d_printf("  %s\n", name);
 	}
@@ -261,30 +264,32 @@ static NTSTATUS enum_privileges_for_accounts(struct rpc_pipe_client *pipe_hnd,
 	NTSTATUS result;
 	uint32 enum_context=0;
 	uint32 pref_max_length=0x1000;
-	DOM_SID *sids;
-	uint32 count=0;
+	struct lsa_SidArray sid_array;
 	int i;
 	fstring name;
 
-	result = rpccli_lsa_enum_sids(pipe_hnd, ctx, pol, &enum_context, 
-		pref_max_length, &count, &sids);
+	result = rpccli_lsa_EnumAccounts(pipe_hnd, ctx,
+					 pol,
+					 &enum_context,
+					 &sid_array,
+					 pref_max_length);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
-		
-	for ( i=0; i<count; i++ ) {
-	
+
+	for ( i=0; i<sid_array.num_sids; i++ ) {
+
 		/* try to convert the SID to a name.  Fall back to 
 		   printing the raw SID if necessary */
-		   
-		result = sid_to_name(pipe_hnd, ctx, &sids[i], name );
+
+		result = sid_to_name(pipe_hnd, ctx, sid_array.sids[i].sid, name);
 		if ( !NT_STATUS_IS_OK (result) )
-			sid_to_fstring(name, &sids[i]);
-			
+			sid_to_fstring(name, sid_array.sids[i].sid);
+
 		d_printf("%s\n", name);
-		
-		result = enum_privileges_for_user(pipe_hnd, ctx, pol, &sids[i] );
-		
+
+		result = enum_privileges_for_user(pipe_hnd, ctx, pol,
+						  sid_array.sids[i].sid);
 		if ( !NT_STATUS_IS_OK(result) )
 			return result;
 

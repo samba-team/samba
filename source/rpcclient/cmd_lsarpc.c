@@ -550,8 +550,7 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 
 	uint32 enum_context=0;
 	uint32 pref_max_length=0x1000;
-	DOM_SID *sids;
-	uint32 count=0;
+	struct lsa_SidArray sid_array;
 	int i;
 
 	if (argc > 3) {
@@ -572,19 +571,22 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_enum_sids(cli, mem_ctx, &pol, &enum_context, pref_max_length,
-					&count, &sids);
+	result = rpccli_lsa_EnumAccounts(cli, mem_ctx,
+					 &pol,
+					 &enum_context,
+					 &sid_array,
+					 pref_max_length);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Print results */
-	printf("found %d SIDs\n\n", count);
+	printf("found %d SIDs\n\n", sid_array.num_sids);
 
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < sid_array.num_sids; i++) {
 		fstring sid_str;
 
-		sid_to_fstring(sid_str, &sids[i]);
+		sid_to_fstring(sid_str, sid_array.sids[i].sid);
 		printf("%s\n", sid_str);
 	}
 
