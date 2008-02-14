@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "libcli/raw/request.h"
+
 struct smb2_options {
 	uint32_t timeout;
 };
@@ -102,6 +104,9 @@ struct smb2_request_buffer {
 	 * this will be moved when some dynamic data is pushed
 	 */
 	uint8_t *dynamic;
+
+	/* this is used to range check and align strings and buffers */
+	struct request_bufinfo bufinfo;
 };
 
 
@@ -194,6 +199,9 @@ struct smb2_request {
 #define SMB2_OP_BREAK     0x12
 
 #define SMB2_MAGIC 0x424D53FE /* 0xFE 'S' 'M' 'B' */
+
+/* the dialect we support */
+#define SMB2_DIALECT_REVISION           0x202
 
 /* SMB2 negotiate security_mode */
 #define SMB2_NEGOTIATE_SIGNING_ENABLED   0x01

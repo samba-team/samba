@@ -54,7 +54,7 @@ static void smb_raw_search_backend(struct smbcli_request *req,
 		search_data.search.write_time       = raw_pull_dos_date(req->transport,
 									p + 22);
 		search_data.search.size             = IVAL(p, 26);
-		smbcli_req_pull_ascii(req, mem_ctx, &name, p+30, 13, STR_ASCII);
+		smbcli_req_pull_ascii(&req->in.bufinfo, mem_ctx, &name, p+30, 13, STR_ASCII);
 		search_data.search.name = name;
 		if (!callback(private, &search_data)) {
 			break;

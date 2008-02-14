@@ -55,6 +55,8 @@ static NTSTATUS smb2srv_send_oplock_break(void *p, struct ntvfs_handle *h, uint8
 
 	req->seqnum		= UINT64_MAX;
 
+	smb2srv_setup_bufinfo(req);
+
 	SIVAL(req->in.hdr, 0,				SMB2_MAGIC);
 	SSVAL(req->in.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
 	SSVAL(req->in.hdr, SMB2_HDR_EPOCH,		0);

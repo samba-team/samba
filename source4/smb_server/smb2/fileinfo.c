@@ -79,19 +79,21 @@ static NTSTATUS smb2srv_getinfo_file_send(struct smb2srv_getinfo_op *op)
 static NTSTATUS smb2srv_getinfo_file(struct smb2srv_getinfo_op *op, uint8_t smb2_level)
 {
 	union smb_fileinfo *io;
+	uint16_t level;
 
 	io = talloc(op, union smb_fileinfo);
 	NT_STATUS_HAVE_NO_MEMORY(io);
 
-	switch (op->info->in.level) {
+	level = op->info->in.info_type | (op->info->in.info_class << 8);
+	switch (level) {
 	case RAW_FILEINFO_SMB2_ALL_EAS:
-		io->all_eas.level		= op->info->in.level;
+		io->all_eas.level		= level;
 		io->all_eas.in.file.ntvfs	= op->info->in.file.ntvfs;
-		io->all_eas.in.continue_flags	= op->info->in.flags2;
+		io->all_eas.in.continue_flags	= op->info->in.getinfo_flags;
 		break;
 
 	case RAW_FILEINFO_SMB2_ALL_INFORMATION:
-		io->all_info2.level		= op->info->in.level;
+		io->all_info2.level		= level;
 		io->all_info2.in.file.ntvfs	= op->info->in.file.ntvfs;
 		break;
 
@@ -166,7 +168,7 @@ static NTSTATUS smb2srv_getinfo_security(struct smb2srv_getinfo_op *op, uint8_t 
 
 		io->query_secdesc.level			= RAW_FILEINFO_SEC_DESC;
 		io->query_secdesc.in.file.ntvfs		= op->info->in.file.ntvfs;
-		io->query_secdesc.in.secinfo_flags	= op->info->in.flags;
+		io->query_secdesc.in.secinfo_flags	= op->info->in.additional_information;
 
 		op->io_ptr	= io;
 		op->send_fn	= smb2srv_getinfo_security_send;
@@ -179,23 +181,17 @@ static NTSTATUS smb2srv_getinfo_security(struct smb2srv_getinfo_op *op, uint8_t 
 
 static NTSTATUS smb2srv_getinfo_backend(struct smb2srv_getinfo_op *op)
 {
-	uint8_t smb2_class;
-	uint8_t smb2_level;
-
-	smb2_class = 0xFF & op->info->in.level;
-	smb2_level = 0xFF & (op->info->in.level>>8);
-
-	switch (smb2_class) {
+	switch (op->info->in.info_type) {
 	case SMB2_GETINFO_FILE:
-		return smb2srv_getinfo_file(op, smb2_level);
+		return smb2srv_getinfo_file(op, op->info->in.info_class);
 
 	case SMB2_GETINFO_FS:
-		return smb2srv_getinfo_fs(op, smb2_level);
+		return smb2srv_getinfo_fs(op, op->info->in.info_class);
 
 	case SMB2_GETINFO_SECURITY:
-		return smb2srv_getinfo_security(op, smb2_level);
+		return smb2srv_getinfo_security(op, op->info->in.info_class);
 
-	case 0x04:
+	case SMB2_GETINFO_QUOTA:
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -217,13 +213,15 @@ void smb2srv_getinfo_recv(struct smb2srv_request *req)
 	op->send_fn	= NULL;
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_getinfo_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
-	info->in.level			= SVAL(req->in.body, 0x02);
-	info->in.max_response_size	= IVAL(req->in.body, 0x04);
-	info->in.unknown1		= IVAL(req->in.body, 0x08);
-	info->in.unknown2		= IVAL(req->in.body, 0x0C);
-	info->in.flags			= IVAL(req->in.body, 0x10);
-	info->in.flags2			= IVAL(req->in.body, 0x14);
+	info->in.info_type		= CVAL(req->in.body, 0x02);
+	info->in.info_class		= CVAL(req->in.body, 0x03);
+	info->in.output_buffer_length	= IVAL(req->in.body, 0x04);
+	info->in.reserved		= IVAL(req->in.body, 0x0C);
+	info->in.additional_information	= IVAL(req->in.body, 0x10);
+	info->in.getinfo_flags		= IVAL(req->in.body, 0x14);
 	info->in.file.ntvfs		= smb2srv_pull_handle(req, req->in.body, 0x18);
+	SMB2SRV_CHECK(smb2_pull_o16As32_blob(&req->in, op, 
+					    req->in.body+0x08, &info->in.blob));
 
 	SMB2SRV_CHECK_FILE_HANDLE(info->in.file.ntvfs);
 	SMB2SRV_CALL_NTVFS_BACKEND(smb2srv_getinfo_backend(op));
@@ -266,9 +264,14 @@ static NTSTATUS smb2srv_setinfo_file(struct smb2srv_setinfo_op *op, uint8_t smb2
 	io->generic.level		= smb2_level + 1000;
 	io->generic.in.file.ntvfs	= op->info->in.file.ntvfs;
 
+	/* handle cases that don't map directly */
+	if (io->generic.level == RAW_SFILEINFO_RENAME_INFORMATION) {
+		io->generic.level = RAW_SFILEINFO_RENAME_INFORMATION_SMB2;
+	}
+
 	status = smbsrv_pull_passthru_sfileinfo(io, io->generic.level, io,
 						&op->info->in.blob,
-						STR_UNICODE, NULL);
+						STR_UNICODE, &op->req->in.bufinfo);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	return ntvfs_setfileinfo(op->req->ntvfs, io);

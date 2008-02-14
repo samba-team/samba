@@ -134,7 +134,7 @@ static NTSTATUS nttrans_create(struct smbsrv_request *req,
 	io->ntcreatex.in.sec_desc         = NULL;
 	io->ntcreatex.in.ea_list          = NULL;
 
-	req_pull_string(req, &io->ntcreatex.in.fname, 
+	req_pull_string(&req->in.bufinfo, &io->ntcreatex.in.fname, 
 			params + 53, 
 			MIN(fname_len+1, trans->in.params.length - 53),
 			STR_NO_RANGE_CHECK | STR_TERMINATE);
@@ -622,8 +622,8 @@ void smbsrv_reply_nttrans(struct smbsrv_request *req)
 	memcpy(trans->in.setup, (char *)(req->in.vwv) + VWV(19),
 	       sizeof(uint16_t) * trans->in.setup_count);
 
-	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &trans->in.params) ||
-	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &trans->in.data)) {
+	if (!req_pull_blob(&req->in.bufinfo, req->in.hdr + param_ofs, param_count, &trans->in.params) ||
+	    !req_pull_blob(&req->in.bufinfo, req->in.hdr + data_ofs, data_count, &trans->in.data)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}

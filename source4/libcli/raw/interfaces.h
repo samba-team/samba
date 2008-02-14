@@ -902,7 +902,10 @@ enum smb_setfileinfo_level {
 	RAW_SFILEINFO_1029                    = SMB_SFILEINFO_1029,
 	RAW_SFILEINFO_1032                    = SMB_SFILEINFO_1032,
 	RAW_SFILEINFO_1039                    = SMB_SFILEINFO_1039,
-	RAW_SFILEINFO_1040                    = SMB_SFILEINFO_1040
+	RAW_SFILEINFO_1040                    = SMB_SFILEINFO_1040,
+	
+	/* cope with breakage in SMB2 */
+	RAW_SFILEINFO_RENAME_INFORMATION_SMB2 = SMB_SFILEINFO_RENAME_INFORMATION|0x80000000,
 };
 
 /* union used in setfileinfo() and setpathinfo() calls */
@@ -1000,7 +1003,7 @@ union smb_setfileinfo {
 		struct {
 			union smb_handle_or_path file;
 			uint8_t overwrite;
-			uint32_t root_fid;
+			uint64_t root_fid;
 			const char *new_name;
 		} in;
 	} rename_information;

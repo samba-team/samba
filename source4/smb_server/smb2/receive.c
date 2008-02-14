@@ -30,6 +30,22 @@
 #include "ntvfs/ntvfs.h"
 #include "param/param.h"
 
+
+/* fill in the bufinfo */
+void smb2srv_setup_bufinfo(struct smb2srv_request *req)
+{
+	req->in.bufinfo.mem_ctx    = req;
+	req->in.bufinfo.flags      = BUFINFO_FLAG_UNICODE | BUFINFO_FLAG_SMB2;
+	req->in.bufinfo.align_base = req->in.buffer;
+	if (req->in.dynamic) {
+		req->in.bufinfo.data       = req->in.dynamic;
+		req->in.bufinfo.data_size  = req->in.body_size - req->in.body_fixed;
+	} else {
+		req->in.bufinfo.data       = NULL;
+		req->in.bufinfo.data_size  = 0;
+	}
+}
+
 static int smb2srv_request_destructor(struct smb2srv_request *req)
 {
 	DLIST_REMOVE(req->smb_conn->requests2.list, req);
@@ -179,6 +195,8 @@ static void smb2srv_chain_reply(struct smb2srv_request *p_req)
 			return;
 		}
 	}
+
+	smb2srv_setup_bufinfo(req);
 
 	if (p_req->chained_file_handle) {
 		memcpy(req->_chained_file_handle,
@@ -429,6 +447,8 @@ NTSTATUS smbsrv_recv_smb2_request(void *private, DATA_BLOB blob)
 			return NT_STATUS_OK;
 		}
 	}
+
+	smb2srv_setup_bufinfo(req);
 
 	/* 
 	 * TODO: - make sure the length field is 64

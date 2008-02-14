@@ -254,8 +254,8 @@ struct smbsrv_request {
 	/* the sequence number for signing */
 	uint64_t seq_num;
 
-	struct request_buffer in;
-	struct request_buffer out;
+	struct smb_request_buffer in;
+	struct smb_request_buffer out;
 };
 
 enum security_types {SEC_SHARE,SEC_USER};
