@@ -152,22 +152,24 @@ static NTSTATUS check_privilege_for_user(struct rpc_pipe_client *pipe_hnd,
 					const char *right)
 {
 	NTSTATUS result;
-	uint32 count;
-	char **rights;
+	struct lsa_RightSet rights;
 	int i;
 
-	result = rpccli_lsa_enum_account_rights(pipe_hnd, ctx, pol, sid, &count, &rights);
+	result = rpccli_lsa_EnumAccountRights(pipe_hnd, ctx,
+					      pol,
+					      sid,
+					      &rights);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	if (count == 0) {
+	if (rights.count == 0) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
-		
-	for (i = 0; i < count; i++) {
-		if (StrCaseCmp(rights[i], right) == 0) {
+
+	for (i = 0; i < rights.count; i++) {
+		if (StrCaseCmp(rights.names[i].string, right) == 0) {
 			return NT_STATUS_OK;
 		}
 	}
@@ -184,20 +186,23 @@ static NTSTATUS enum_privileges_for_user(struct rpc_pipe_client *pipe_hnd,
 					DOM_SID *sid )
 {
 	NTSTATUS result;
-	uint32 count;
-	char **rights;
+	struct lsa_RightSet rights;
 	int i;
 
-	result = rpccli_lsa_enum_account_rights(pipe_hnd, ctx, pol, sid, &count, &rights);
+	result = rpccli_lsa_EnumAccountRights(pipe_hnd, ctx,
+					      pol,
+					      sid,
+					      &rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	if ( count == 0 )
+	if (rights.count == 0) {
 		d_printf("No privileges assigned\n");
-		
-	for (i = 0; i < count; i++) {
-		printf("%s\n", rights[i]);
+	}
+
+	for (i = 0; i < rights.count; i++) {
+		printf("%s\n", rights.names[i].string);
 	}
 
 	return NT_STATUS_OK;
