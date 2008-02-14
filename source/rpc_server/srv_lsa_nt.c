@@ -2198,21 +2198,23 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 
 
 /***************************************************************************
+ _lsa_LookupPrivValue
  ***************************************************************************/
 
-NTSTATUS _lsa_lookup_priv_value(pipes_struct *p, LSA_Q_LOOKUP_PRIV_VALUE *q_u, LSA_R_LOOKUP_PRIV_VALUE *r_u)
+NTSTATUS _lsa_LookupPrivValue(pipes_struct *p,
+			      struct lsa_LookupPrivValue *r)
 {
 	struct lsa_info *info = NULL;
-	fstring name;
+	const char *name = NULL;
 	LUID_ATTR priv_luid;
 	SE_PRIV mask;
 
 	/* find the connection policy handle. */
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
-	unistr2_to_ascii(name, &q_u->privname.unistring, sizeof(name));
+	name = r->in.name->string;
 
 	DEBUG(10,("_lsa_lookup_priv_value: name = %s\n", name));
 
@@ -2221,13 +2223,11 @@ NTSTATUS _lsa_lookup_priv_value(pipes_struct *p, LSA_Q_LOOKUP_PRIV_VALUE *q_u, L
 
 	priv_luid = get_privilege_luid( &mask );
 
-	r_u->luid.low  = priv_luid.luid.low;
-	r_u->luid.high = priv_luid.luid.high;
-
+	r->out.luid->low = priv_luid.luid.low;
+	r->out.luid->high = priv_luid.luid.high;
 
 	return NT_STATUS_OK;
 }
-
 
 /*
  * From here on the server routines are just dummy ones to make smbd link with
@@ -2314,12 +2314,6 @@ NTSTATUS _lsa_SetInformationTrustedDomain(pipes_struct *p, struct lsa_SetInforma
 }
 
 NTSTATUS _lsa_QuerySecret(pipes_struct *p, struct lsa_QuerySecret *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_LookupPrivValue(pipes_struct *p, struct lsa_LookupPrivValue *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
