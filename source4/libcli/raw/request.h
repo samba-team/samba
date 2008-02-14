@@ -22,12 +22,15 @@
 
 #include "libcli/raw/signing.h"
 
+#define BUFINFO_FLAG_UNICODE 0x0001
+#define BUFINFO_FLAG_SMB2    0x0002
+
 /*
   buffer limit structure used by both SMB and SMB2
  */
 struct request_bufinfo {
 	TALLOC_CTX *mem_ctx;
-	bool unicode;
+	uint32_t flags;
 	const uint8_t *align_base;
 	const uint8_t *data;
 	size_t data_size;	

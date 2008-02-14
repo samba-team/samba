@@ -63,6 +63,10 @@ static uint32_t pvfs_setfileinfo_access(union smb_setfileinfo *info)
 		}
 		break;
 
+	case RAW_SFILEINFO_RENAME_INFORMATION:
+		needed = SEC_STD_DELETE;
+		break;
+
 	default:
 		needed = SEC_FILE_WRITE_ATTRIBUTE;
 		break;
@@ -84,7 +88,8 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 	char *new_name, *p;
 
 	/* renames are only allowed within a directory */
-	if (strchr_m(info->rename_information.in.new_name, '\\')) {
+	if (strchr_m(info->rename_information.in.new_name, '\\') &&
+	    (req->ctx->protocol != PROTOCOL_SMB2)) {
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
@@ -100,22 +105,28 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 
 	/* w2k3 does not appear to allow relative rename */
 	if (info->rename_information.in.root_fid != 0) {
-		return NT_STATUS_INVALID_PARAMETER;
+		DEBUG(1,("WARNING: got invalid root_fid in rename_information.\n"));
 	}
 
 	/* construct the fully qualified windows name for the new file name */
-	new_name = talloc_strdup(req, name->original_name);
-	if (new_name == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	p = strrchr_m(new_name, '\\');
-	if (p == NULL) {
-		return NT_STATUS_OBJECT_NAME_INVALID;
-	}
-	*p = 0;
+	if (req->ctx->protocol == PROTOCOL_SMB2) {
+		/* SMB2 sends the full path of the new name */
+		new_name = talloc_asprintf(req, "\\%s", info->rename_information.in.new_name);
+	} else {
+		new_name = talloc_strdup(req, name->original_name);
+		if (new_name == NULL) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		p = strrchr_m(new_name, '\\');
+		if (p == NULL) {
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		} else {
+			*p = 0;
+		}
 
-	new_name = talloc_asprintf(req, "%s\\%s", new_name,
-				   info->rename_information.in.new_name);
+		new_name = talloc_asprintf(req, "%s\\%s", new_name,
+					   info->rename_information.in.new_name);
+	}
 	if (new_name == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}

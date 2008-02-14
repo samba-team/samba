@@ -1000,7 +1000,7 @@ union smb_setfileinfo {
 		struct {
 			union smb_handle_or_path file;
 			uint8_t overwrite;
-			uint32_t root_fid;
+			uint64_t root_fid;
 			const char *new_name;
 		} in;
 	} rename_information;
