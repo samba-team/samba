@@ -502,8 +502,9 @@ static NTSTATUS rpc_rights_revoke_internal(const DOM_SID *domain_sid,
 {
 	POLICY_HND dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
+	struct lsa_RightSet rights;
 	DOM_SID sid;
+	int i;
 
 	if (argc < 2 ) {
 		d_printf("Usage: net rpc rights revoke <name|SID> <rights...>\n");
@@ -521,8 +522,22 @@ static NTSTATUS rpc_rights_revoke_internal(const DOM_SID *domain_sid,
 	if (!NT_STATUS_IS_OK(result))
 		return result;	
 
-	result = rpccli_lsa_remove_account_rights(pipe_hnd, mem_ctx, &dom_pol, sid, 
-					       False, argc-1, argv+1);
+	rights.count = argc-1;
+	rights.names = TALLOC_ARRAY(mem_ctx, struct lsa_StringLarge,
+				    rights.count);
+	if (!rights.names) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<argc-1; i++) {
+		init_lsa_StringLarge(&rights.names[i], argv[i+1]);
+	}
+
+	result = rpccli_lsa_RemoveAccountRights(pipe_hnd, mem_ctx,
+						&dom_pol,
+						&sid,
+						false,
+						&rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
