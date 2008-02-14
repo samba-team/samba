@@ -2090,19 +2090,19 @@ NTSTATUS _lsa_AddAccountRights(pipes_struct *p,
 }
 
 /***************************************************************************
+ _lsa_RemoveAccountRights
  ***************************************************************************/
 
-NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u, LSA_R_REMOVE_ACCT_RIGHTS *r_u)
+NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p,
+				  struct lsa_RemoveAccountRights *r)
 {
 	struct lsa_info *info = NULL;
 	int i = 0;
 	DOM_SID sid;
-	fstring privname;
-	UNISTR4_ARRAY *uni_privnames = q_u->rights;
-
+	const char *privname = NULL;
 
 	/* find the connection policy handle. */
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check to see if the pipe_user is a Domain Admin since
@@ -2114,34 +2114,27 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sid_copy( &sid, &q_u->sid.sid );
+	sid_copy( &sid, r->in.sid );
 
-	if ( q_u->removeall ) {
+	if ( r->in.remove_all ) {
 		if ( !revoke_all_privileges( &sid ) )
 			return NT_STATUS_ACCESS_DENIED;
 
 		return NT_STATUS_OK;
 	}
 
-	/* just a little sanity check */
+	for ( i=0; i < r->in.rights->count; i++ ) {
 
-	if ( q_u->count != uni_privnames->count ) {
-		DEBUG(0,("_lsa_add_acct_rights: count != number of UNISTR2 elements!\n"));
-		return NT_STATUS_INVALID_HANDLE;
-	}
-
-	for ( i=0; i<q_u->count; i++ ) {
-		UNISTR4 *uni4_str = &uni_privnames->strings[i];
+		privname = r->in.rights->names[i].string;
 
 		/* only try to add non-null strings */
 
-		if ( !uni4_str->string )
+		if ( !privname )
 			continue;
 
-		rpcstr_pull( privname, uni4_str->string->buffer, sizeof(privname), -1, STR_TERMINATE );
-
 		if ( !revoke_privilege_by_name( &sid, privname ) ) {
-			DEBUG(2,("_lsa_remove_acct_rights: Failed to revoke privilege [%s]\n", privname ));
+			DEBUG(2,("_lsa_RemoveAccountRights: Failed to revoke privilege [%s]\n",
+				privname ));
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
 	}
@@ -2350,12 +2343,6 @@ NTSTATUS _lsa_LookupPrivName(pipes_struct *p, struct lsa_LookupPrivName *r)
 }
 
 NTSTATUS _lsa_EnumAccountsWithUserRight(pipes_struct *p, struct lsa_EnumAccountsWithUserRight *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_RemoveAccountRights(pipes_struct *p, struct lsa_RemoveAccountRights *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
