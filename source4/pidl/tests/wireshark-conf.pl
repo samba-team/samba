@@ -5,7 +5,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 47;
+use Test::More tests => 48;
 use FindBin qw($RealBin);
 use lib "$RealBin";
 use Util;
@@ -163,6 +163,9 @@ test_errors("nofile:1: no dissectorname specified\n",
 
 test_errors("nofile:1: incomplete HF_FIELD command\n",
 	sub { parse_conf("HF_FIELD hf_idx\n"); });
+
+test_errors("nofile:1: incomplete ETT_FIELD command\n",
+	sub { parse_conf("ETT_FIELD\n"); });
 
 is_deeply(parse_conf("TYPE winreg_String dissect_myminregstring(); FT_STRING BASE_DEC 0 0 0 2\n"), {
 		types => {
