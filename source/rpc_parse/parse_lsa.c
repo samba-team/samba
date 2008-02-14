@@ -1312,65 +1312,6 @@ bool lsa_io_r_enum_acct_rights(const char *desc, LSA_R_ENUM_ACCT_RIGHTS *out, pr
 
 
 /*******************************************************************
- Inits an LSA_Q_ADD_ACCT_RIGHTS structure.
-********************************************************************/
-void init_q_add_acct_rights( LSA_Q_ADD_ACCT_RIGHTS *in, POLICY_HND *hnd, 
-                             DOM_SID *sid, uint32 count, const char **rights )
-{
-	DEBUG(5, ("init_q_add_acct_rights\n"));
-
-	in->pol = *hnd;
-	init_dom_sid2(&in->sid, sid);
-	
-	in->rights = TALLOC_P( talloc_tos(), UNISTR4_ARRAY );
-	if (!in->rights) {
-		smb_panic("init_q_add_acct_rights: talloc fail\n");
-		return;
-	}
-	init_unistr4_array( in->rights, count, rights );
-	
-	in->count = count;
-}
-
-
-/*******************************************************************
-reads or writes a LSA_Q_ADD_ACCT_RIGHTS structure.
-********************************************************************/
-bool lsa_io_q_add_acct_rights(const char *desc, LSA_Q_ADD_ACCT_RIGHTS *in, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_q_add_acct_rights");
-	depth++;
-
-	if (!smb_io_pol_hnd("", &in->pol, ps, depth))
-		return False;
-
-	if(!smb_io_dom_sid2("sid", &in->sid, ps, depth))
-		return False;
-
-	if(!prs_uint32("count", ps, depth, &in->count))
-		return False;
-
-	if ( !prs_pointer("rights", ps, depth, (void*)&in->rights, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a LSA_R_ENUM_ACCT_RIGHTS structure.
-********************************************************************/
-bool lsa_io_r_add_acct_rights(const char *desc, LSA_R_ADD_ACCT_RIGHTS *out, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "lsa_io_r_add_acct_rights");
-	depth++;
-
-	if(!prs_ntstatus("status", ps, depth, &out->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Inits an LSA_Q_REMOVE_ACCT_RIGHTS structure.
 ********************************************************************/
 
