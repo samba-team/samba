@@ -705,9 +705,9 @@ import "security.idl";
 	/* Function:       0x26 */
 	NTSTATUS lsa_RemoveAccountRights (
 		[in]     policy_handle *handle,
-		[in]     dom_sid2 *sid,
-		[in]         uint32 unknown,
-		[in]     lsa_RightSet *rights
+		[in,ref] dom_sid2 *sid,
+		[in]     uint8 remove_all,
+		[in,ref] lsa_RightSet *rights
 		);
 
 	/* Function:   0x27 */
