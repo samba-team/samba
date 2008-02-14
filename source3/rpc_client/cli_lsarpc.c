@@ -452,62 +452,6 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/** Enumerate list of SIDs  */
-
-NTSTATUS rpccli_lsa_enum_sids(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                POLICY_HND *pol, uint32 *enum_ctx, uint32 pref_max_length,
-                                uint32 *num_sids, DOM_SID **sids)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_ENUM_ACCOUNTS q;
-	LSA_R_ENUM_ACCOUNTS r;
-	NTSTATUS result;
-	int i;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-        init_lsa_q_enum_accounts(&q, pol, *enum_ctx, pref_max_length);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ENUM_ACCOUNTS,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_enum_accounts,
-		lsa_io_r_enum_accounts,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	if (r.sids.num_entries==0)
-		goto done;
-
-	/* Return output parameters */
-
-	*sids = TALLOC_ARRAY(mem_ctx, DOM_SID, r.sids.num_entries);
-	if (!*sids) {
-		DEBUG(0, ("(cli_lsa_enum_sids): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
-
-	/* Copy across names and sids */
-
-	for (i = 0; i < r.sids.num_entries; i++) {
-		sid_copy(&(*sids)[i], &r.sids.sid[i].sid);
-	}
-
-	*num_sids= r.sids.num_entries;
-	*enum_ctx = r.enum_context;
-
- done:
-
-	return result;
-}
-
 /** Enumerate user privileges
  *
  * @param cli Handle on an initialised SMB connection */
