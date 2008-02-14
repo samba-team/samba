@@ -1452,7 +1452,7 @@ static bool api_lsa_EnumPrivsAccount(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.privs = talloc_zero(r, struct lsa_PrivilegeSet);
+	r->out.privs = talloc_zero(r, struct lsa_PrivilegeSet *);
 	if (r->out.privs == NULL) {
 		talloc_free(r);
 		return false;

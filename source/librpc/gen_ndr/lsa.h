@@ -838,7 +838,7 @@ struct lsa_EnumPrivsAccount {
 	} in;
 
 	struct {
-		struct lsa_PrivilegeSet *privs;/* [unique] */
+		struct lsa_PrivilegeSet **privs;/* [ref] */
 		NTSTATUS result;
 	} out;
 
