@@ -495,22 +495,6 @@ typedef struct
 } LSA_R_REMOVE_ACCT_RIGHTS;
 
 
-/* LSA_Q_ENUM_ACCOUNTS */
-typedef struct lsa_q_enum_accounts
-{
-	POLICY_HND pol; /* policy handle */
-	uint32 enum_context;
-	uint32 pref_max_length;
-} LSA_Q_ENUM_ACCOUNTS;
-
-/* LSA_R_ENUM_ACCOUNTS */
-typedef struct lsa_r_enum_accounts
-{
-	uint32 enum_context;
-	LSA_SID_ENUM sids;
-	NTSTATUS status;
-} LSA_R_ENUM_ACCOUNTS;
-
 typedef struct lsa_q_enumprivsaccount
 {
 	POLICY_HND pol; /* policy handle */
