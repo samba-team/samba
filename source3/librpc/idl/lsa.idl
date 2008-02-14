@@ -453,7 +453,7 @@ import "security.idl";
 	
 	NTSTATUS lsa_EnumPrivsAccount (
 		[in]         policy_handle *handle,
-		[out,unique] lsa_PrivilegeSet *privs
+		[out,ref] lsa_PrivilegeSet **privs
 		);
 
 
