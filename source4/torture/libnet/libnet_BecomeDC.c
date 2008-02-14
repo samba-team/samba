@@ -284,6 +284,7 @@ static NTSTATUS test_become_dc_prepare_db_py(void *private_data,
 {
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
 	bool ok;
+	PyObject *module, *module_dict;
 	PyObject *provision_fn, *result, *parameters;
 
 	DEBUG(0,("Provision for Become-DC test using PYTHON\n"));
@@ -293,13 +294,24 @@ static NTSTATUS test_become_dc_prepare_db_py(void *private_data,
 
 	py_update_path("bin"); /* FIXME: Can't assume this always runs in source/... */
 
-	provision_fn = PyImport_Import(PyString_FromString("samba.provision.provision"));
-
-	if (provision_fn == NULL) {
-		DEBUG(0, ("Unable to import provision Python module.\n"));
-	      	return NT_STATUS_UNSUCCESSFUL;
+	module = PyImport_Import(PyString_FromString("samba.provision"));
+	if (module == NULL) {
+		DEBUG(0, ("Unable to import 'samba.provision' Python module.\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
-	
+
+	module_dict = PyModule_GetDict(module);
+	if (module_dict == NULL) {
+		DEBUG(0, ("Unable to GetDict of 'samba.provision'.\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	provision_fn = PyDict_GetItemString(module_dict, "provision");
+	if (provision_fn == NULL) {
+		DEBUG(0, ("Unable to get function 'provision' of 'samba.provision'.\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	DEBUG(0,("New Server[%s] in Site[%s]\n",
 		p->dest_dsa->dns_name, p->dest_dsa->site_name));
 
