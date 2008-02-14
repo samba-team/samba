@@ -81,8 +81,8 @@ sub generate_shared_library($)
 	$lib->{LIBRARY_DEBUGNAME} = $lib->{LIBRARY_REALNAME};
 
 	if (defined($lib->{VERSION}) and $config::config{SONAMEFLAG} ne "#") {
-		$lib->{LIBRARY_SONAME} = "$lib->{LIBRARY_REALNAME}.$lib->{SO_VERSION}";
-		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}.$lib->{VERSION}";
+		$lib->{LIBRARY_SONAME} = "$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_SOVERSION)";
+		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_VERSION)";
 	} 
 	
 	$lib->{TARGET_SHARED_LIBRARY} = "$lib->{SHAREDDIR}/$lib->{LIBRARY_REALNAME}";
@@ -104,10 +104,11 @@ sub generate_static_library($)
 	if (defined($lib->{OBJ_FILES})) {
 		$lib->{TARGET_STATIC_LIBRARY} = "bin/static/$lib->{LIBRARY_NAME}";
 		$lib->{STATICDIR} = 'bin/static';
+		$lib->{OUTPUT_STATIC_LIBRARY} = "-l".lc($link_name);
 	} else {
 		$lib->{TARGET_STATIC_LIBRARY} = "";
+		$lib->{OUTPUT_STATIC_LIBRARY} = "";
 	}
-	$lib->{OUTPUT_STATIC_LIBRARY} = $lib->{TARGET_STATIC_LIBRARY};
 }
 
 sub generate_binary($)

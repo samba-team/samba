@@ -40,7 +40,6 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.1.0,
 	[
 		m4_include(lib/talloc/libtalloc.m4)
 		SMB_INCLUDE_MK(lib/talloc/config.mk)
-		AC_CONFIG_FILES(lib/talloc/talloc.pc)
 	]
 )
 
@@ -49,7 +48,6 @@ SMB_EXT_LIB_FROM_PKGCONFIG(LIBTDB, tdb >= 1.1.0,
 	[
 		m4_include(lib/tdb/libtdb.m4)
 		SMB_INCLUDE_MK(lib/tdb/config.mk)
-		AC_CONFIG_FILES(lib/tdb/tdb.pc)
 	]
 )
 
@@ -139,6 +137,25 @@ AC_SUBST(ac_default_prefix)
 for d in build/smb_build bin include ; do
     test -d ${builddir}/$d || AS_MKDIR_P(${builddir}/$d)
 done
+
+AC_SUBST(INTERN_LDFLAGS)
+AC_SUBST(INSTALL_LINK_FLAGS)
+if test $USESHARED = "true";
+then
+	INTERN_LDFLAGS="-L\${builddir}/bin/shared"
+	INSTALL_LINK_FLAGS="-Wl,-rpath-link,\${builddir}/bin/shared";
+else
+	INTERN_LDFLAGS="-L\${builddir}/bin/static"
+fi
+
+builddir_headers=""
+	
+if test "x$ac_abs_srcdir" != "x$ac_abs_builddir"
+then
+	builddir_headers="-I\$(builddir)/include -I\$(builddir) -I\$(builddir)/lib ";
+fi
+
+CPPFLAGS="$builddir_headers-I\$(srcdir)/include -I\$(srcdir) -I\$(srcdir)/lib -I\$(srcdir)/lib/replace -I\$(srcdir)/lib/talloc -D_SAMBA_BUILD_=4 -DHAVE_CONFIG_H $CPPFLAGS"
 
 echo "configure: creating build/smb_build/config.pm"
 cat >build/smb_build/config.pm<<CEOF

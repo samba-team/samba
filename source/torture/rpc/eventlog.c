@@ -67,11 +67,14 @@ static bool test_GetNumRecords(struct torture_context *tctx, struct dcerpc_pipe 
 	struct eventlog_GetNumRecords r;
 	struct eventlog_CloseEventLog cr;
 	struct policy_handle handle;
+	uint32_t number = 0;
 
 	if (!get_policy_handle(tctx, p, &handle))
 		return false;
 
+	ZERO_STRUCT(r);
 	r.in.handle = &handle;
+	r.out.number = &number;
 
 	torture_assert_ntstatus_ok(tctx, 
 			dcerpc_eventlog_GetNumRecords(p, tctx, &r), 
@@ -98,6 +101,7 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 	if (!get_policy_handle(tctx, p, &handle))
 		return false;
 
+	ZERO_STRUCT(r);
 	r.in.offset = 0;
 	r.in.handle = &handle;
 	r.in.flags = EVENTLOG_BACKWARDS_READ|EVENTLOG_SEQUENTIAL_READ;
@@ -107,19 +111,21 @@ static bool test_ReadEventLog(struct torture_context *tctx,
 		struct eventlog_Record rec;
 		struct ndr_pull *ndr;
 		enum ndr_err_code ndr_err;
+		uint32_t sent_size = 0;
+		uint32_t real_size = 0;
 
 		/* Read first for number of bytes in record */
 
 		r.in.number_of_bytes = 0;
 		r.out.data = NULL;
+		r.out.sent_size = &sent_size;
+		r.out.real_size = &real_size;
 
 		status = dcerpc_eventlog_ReadEventLogW(p, tctx, &r);
 
 		if (NT_STATUS_EQUAL(r.out.result, NT_STATUS_END_OF_FILE)) {
 			break;
 		}
-
-		torture_assert_ntstatus_ok(tctx, status, "ReadEventLog failed");
 
 		torture_assert_ntstatus_equal(tctx, r.out.result, NT_STATUS_BUFFER_TOO_SMALL,
 			"ReadEventLog failed");
