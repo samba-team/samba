@@ -500,16 +500,6 @@ typedef struct {
 	UNISTR2 unistring;
 } LSA_STRING;
 
-typedef struct {
-	POLICY_HND pol; /* policy handle */
-	LSA_STRING privname;
-} LSA_Q_LOOKUP_PRIV_VALUE;
-
-typedef struct {
-	LUID luid;
-	NTSTATUS status;
-} LSA_R_LOOKUP_PRIV_VALUE;
-
 typedef struct lsa_q_addprivs
 {
 	POLICY_HND pol; /* policy handle */

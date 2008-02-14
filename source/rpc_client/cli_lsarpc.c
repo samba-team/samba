@@ -452,46 +452,6 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/** Get a privilege value given its name */
-
-NTSTATUS rpccli_lsa_lookup_priv_value(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				 POLICY_HND *pol, const char *name, LUID *luid)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_LOOKUP_PRIV_VALUE q;
-	LSA_R_LOOKUP_PRIV_VALUE r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-
-	init_lsa_q_lookup_priv_value(&q, pol, name);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_LOOKUPPRIVVALUE,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_lookup_priv_value,
-		lsa_io_r_lookup_priv_value,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-
-	/* Return output parameters */
-
-	(*luid).low=r.luid.low;
-	(*luid).high=r.luid.high;
-
- done:
-
-	return result;
-}
-
 /* Enumerate account rights This is similar to enum_privileges but
    takes a SID directly, avoiding the open_account call.
 */
