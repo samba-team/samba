@@ -2149,27 +2149,69 @@ NTSTATUS _lsa_remove_acct_rights(pipes_struct *p, LSA_Q_REMOVE_ACCT_RIGHTS *q_u,
 	return NT_STATUS_OK;
 }
 
+/*******************************************************************
+********************************************************************/
+
+static NTSTATUS init_lsa_right_set(TALLOC_CTX *mem_ctx,
+				   struct lsa_RightSet *r,
+				   PRIVILEGE_SET *privileges)
+{
+	uint32 i;
+	const char *privname;
+	const char **privname_array = NULL;
+	int num_priv = 0;
+
+	for (i=0; i<privileges->count; i++) {
+
+		privname = luid_to_privilege_name(&privileges->set[i].luid);
+		if (privname) {
+			if (!add_string_to_array(mem_ctx, privname,
+						 &privname_array, &num_priv)) {
+				return NT_STATUS_NO_MEMORY;
+			}
+		}
+	}
+
+	if (num_priv) {
+
+		r->names = TALLOC_ZERO_ARRAY(mem_ctx, struct lsa_StringLarge,
+					     num_priv);
+		if (!r->names) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (i=0; i<num_priv; i++) {
+			init_lsa_StringLarge(&r->names[i], privname_array[i]);
+		}
+
+		r->count = num_priv;
+	}
+
+	return NT_STATUS_OK;
+}
 
 /***************************************************************************
+ _lsa_EnumAccountRights
  ***************************************************************************/
 
-NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA_R_ENUM_ACCT_RIGHTS *r_u)
+NTSTATUS _lsa_EnumAccountRights(pipes_struct *p,
+				struct lsa_EnumAccountRights *r)
 {
+	NTSTATUS status;
 	struct lsa_info *info = NULL;
 	DOM_SID sid;
 	PRIVILEGE_SET privileges;
 	SE_PRIV mask;
 
-
 	/* find the connection policy handle. */
 
-	if (!find_policy_by_hnd(p, &q_u->pol, (void **)(void *)&info))
+	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&info))
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* according to an NT4 PDC, you can add privileges to SIDs even without
 	   call_lsa_create_account() first.  And you can use any arbitrary SID. */
 
-	sid_copy( &sid, &q_u->sid.sid );
+	sid_copy( &sid, r->in.sid );
 
 	if ( !get_privileges_for_sids( &mask, &sid, 1 ) )
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -2178,19 +2220,18 @@ NTSTATUS _lsa_enum_acct_rights(pipes_struct *p, LSA_Q_ENUM_ACCT_RIGHTS *q_u, LSA
 
 	if ( se_priv_to_privilege_set( &privileges, &mask ) ) {
 
-		DEBUG(10,("_lsa_enum_acct_rights: %s has %d privileges\n",
+		DEBUG(10,("_lsa_EnumAccountRights: %s has %d privileges\n",
 			  sid_string_dbg(&sid), privileges.count));
 
-		r_u->status = init_r_enum_acct_rights( r_u, &privileges );
+		status = init_lsa_right_set(p->mem_ctx, r->out.rights, &privileges);
+	} else {
+		status = NT_STATUS_NO_SUCH_PRIVILEGE;
 	}
-	else
-		r_u->status = NT_STATUS_NO_SUCH_PRIVILEGE;
 
 	privilege_set_free( &privileges );
 
-	return r_u->status;
+	return status;
 }
-
 
 /***************************************************************************
  _lsa_LookupPrivValue
@@ -2309,12 +2350,6 @@ NTSTATUS _lsa_LookupPrivName(pipes_struct *p, struct lsa_LookupPrivName *r)
 }
 
 NTSTATUS _lsa_EnumAccountsWithUserRight(pipes_struct *p, struct lsa_EnumAccountsWithUserRight *r)
-{
-	p->rng_fault_state = True;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS _lsa_EnumAccountRights(pipes_struct *p, struct lsa_EnumAccountRights *r)
 {
 	p->rng_fault_state = True;
 	return NT_STATUS_NOT_IMPLEMENTED;
