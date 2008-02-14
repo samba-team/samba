@@ -238,15 +238,7 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
 # object file lists
 ######################################################################
 
-#TDBBASE_OBJ = lib/tdb/common/tdb.o lib/tdb/common/dump.o lib/tdb/common/error.o \
-#	lib/tdb/common/freelist.o lib/tdb/common/freelistcheck.o \
-#	lib/tdb/common/io.o lib/tdb/common/lock.o \
-#	lib/tdb/common/open.o lib/tdb/common/transaction.o \
-#	lib/tdb/common/traverse.o
-
-TDBBASE_OBJ = @TDB_OBJS@
-
-LIBTDB_OBJ0 = $(TDBBASE_OBJ)
+LIBTDB_OBJ0 = @TDB_OBJS@
 LIBTDB_OBJ = $(LIBTDB_OBJ0) $(LIBREPLACE_OBJ)
 
 TDB_OBJ = @LIBTDB_STATIC@ lib/util_tdb.o \
