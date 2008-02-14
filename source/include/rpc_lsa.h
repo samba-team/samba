@@ -446,20 +446,4 @@ typedef struct lsa_r_lookup_names4
 	NTSTATUS status; /* return code */
 } LSA_R_LOOKUP_NAMES4;
 
-/* LSA_Q_REMOVE_ACCT_RIGHTS - LSA remove account rights */
-typedef struct
-{
-	POLICY_HND pol; /* policy handle */
-	DOM_SID2 sid;
-	uint32 removeall;
-	uint32 count;
-	UNISTR4_ARRAY *rights;
-} LSA_Q_REMOVE_ACCT_RIGHTS;
-
-/* LSA_R_REMOVE_ACCT_RIGHTS - LSA remove account rights */
-typedef struct
-{
-	NTSTATUS status;
-} LSA_R_REMOVE_ACCT_RIGHTS;
-
 #endif /* _RPC_LSA_H */
