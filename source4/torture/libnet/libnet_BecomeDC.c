@@ -34,8 +34,8 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "system/time.h"
-#include "auth/auth.h"
 #include "lib/ldb_wrap.h"
+#include "auth/auth.h"
 #include "param/param.h"
 #include "torture/util.h"
 
@@ -67,6 +67,20 @@ struct test_become_dc_state {
 		const char *dns_keytab;
 	} path;
 };
+
+static NTSTATUS test_become_dc_prepare_db(void *private_data,
+					      const struct libnet_BecomeDC_PrepareDB *p)
+{
+	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
+	return provision_bare(s, s->tctx->lp_ctx, p->dest_dsa->dns_name, 
+						  p->dest_dsa->site_name, p->forest->root_dn_str,
+						  p->domain->dn_str, p->forest->config_dn_str,
+						  p->forest->schema_dn_str, 
+						  &p->dest_dsa->invocation_id,
+						  p->dest_dsa->netbios_name, 
+						  torture_join_dom_dns_name(s->tj),
+						  torture_join_dom_netbios_name(s->tj));
+}
 
 static NTSTATUS test_become_dc_check_options(void *private_data,
 					     const struct libnet_BecomeDC_CheckOptions *o)
