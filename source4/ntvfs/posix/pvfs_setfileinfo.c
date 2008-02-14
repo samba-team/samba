@@ -64,6 +64,7 @@ static uint32_t pvfs_setfileinfo_access(union smb_setfileinfo *info)
 		break;
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
+	case RAW_SFILEINFO_RENAME_INFORMATION_SMB2:
 		needed = SEC_STD_DELETE;
 		break;
 
@@ -382,6 +383,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 		break;
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
+	case RAW_SFILEINFO_RENAME_INFORMATION_SMB2:
 		return pvfs_setfileinfo_rename(pvfs, req, h->name, 
 					       info);
 
@@ -579,6 +581,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OK;
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
+	case RAW_SFILEINFO_RENAME_INFORMATION_SMB2:
 		return pvfs_setfileinfo_rename(pvfs, req, name, 
 					       info);
 

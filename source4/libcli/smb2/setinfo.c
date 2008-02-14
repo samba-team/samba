@@ -92,6 +92,12 @@ struct smb2_request *smb2_setinfo_file_send(struct smb2_tree *tree, union smb_se
 	ZERO_STRUCT(b);
 	b.in.level             = smb2_level;
 	b.in.file.handle       = io->generic.in.file.handle;
+
+	/* change levels so the parsers know it is SMB2 */
+	if (io->generic.level == RAW_SFILEINFO_RENAME_INFORMATION) {
+		io->generic.level = RAW_SFILEINFO_RENAME_INFORMATION_SMB2;
+	}
+
 	if (!smb_raw_setfileinfo_passthru(tree, io->generic.level, io, &b.in.blob)) {
 		return NULL;
 	}

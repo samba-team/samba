@@ -266,6 +266,11 @@ static NTSTATUS smb2srv_setinfo_file(struct smb2srv_setinfo_op *op, uint8_t smb2
 	io->generic.level		= smb2_level + 1000;
 	io->generic.in.file.ntvfs	= op->info->in.file.ntvfs;
 
+	/* handle cases that don't map directly */
+	if (io->generic.level == RAW_SFILEINFO_RENAME_INFORMATION) {
+		io->generic.level = RAW_SFILEINFO_RENAME_INFORMATION_SMB2;
+	}
+
 	status = smbsrv_pull_passthru_sfileinfo(io, io->generic.level, io,
 						&op->info->in.blob,
 						STR_UNICODE, &op->req->in.bufinfo);
