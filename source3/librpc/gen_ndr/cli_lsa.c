@@ -1667,7 +1667,7 @@ NTSTATUS rpccli_lsa_RemoveAccountRights(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					struct policy_handle *handle,
 					struct dom_sid2 *sid,
-					uint32_t unknown,
+					uint8_t remove_all,
 					struct lsa_RightSet *rights)
 {
 	struct lsa_RemoveAccountRights r;
@@ -1676,7 +1676,7 @@ NTSTATUS rpccli_lsa_RemoveAccountRights(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.sid = sid;
-	r.in.unknown = unknown;
+	r.in.remove_all = remove_all;
 	r.in.rights = rights;
 
 	if (DEBUGLEVEL >= 10) {

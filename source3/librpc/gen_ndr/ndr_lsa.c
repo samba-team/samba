@@ -8049,7 +8049,7 @@ static enum ndr_err_code ndr_push_lsa_RemoveAccountRights(struct ndr_push *ndr, 
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->in.remove_all));
 		if (r->in.rights == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -8081,7 +8081,7 @@ static enum ndr_err_code ndr_pull_lsa_RemoveAccountRights(struct ndr_pull *ndr, 
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.sid, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_dom_sid2(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.sid));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_sid_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown));
+		NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->in.remove_all));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.rights);
 		}
@@ -8114,7 +8114,7 @@ _PUBLIC_ void ndr_print_lsa_RemoveAccountRights(struct ndr_print *ndr, const cha
 		ndr->depth++;
 		ndr_print_dom_sid2(ndr, "sid", r->in.sid);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "unknown", r->in.unknown);
+		ndr_print_uint8(ndr, "remove_all", r->in.remove_all);
 		ndr_print_ptr(ndr, "rights", r->in.rights);
 		ndr->depth++;
 		ndr_print_lsa_RightSet(ndr, "rights", r->in.rights);
