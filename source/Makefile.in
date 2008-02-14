@@ -148,6 +148,8 @@ LIBTALLOC=$(LIBTALLOC_STATIC_TARGET) @LIBTALLOC_SHARED@
 LIBTDB_SHARED_TARGET=@LIBTDB_SHARED_TARGET@
 LIBTDB_STATIC_TARGET=@LIBTDB_STATIC_TARGET@
 LIBTDB=$(LIBTDB_STATIC_TARGET) @LIBTDB_SHARED@
+LIBTDB_SYMS=exports/libtdb.syms
+LIBTDB_HEADERS=@tdbdir@/include/tdb.h
 
 LIBSMBCLIENT=bin/libsmbclient.a @LIBSMBCLIENT_SHARED@
 LIBSMBSHAREMODES=bin/libsmbsharemodes.a @LIBSMBSHAREMODES_SHARED@
@@ -1471,7 +1473,12 @@ $(LIBTALLOC_STATIC_TARGET): $(BINARY_PREREQS) $(LIBTALLOC_OBJ0)
 	@echo Linking non-shared library $@
 	@-$(AR) -rc $@ $(LIBTALLOC_OBJ0)
 
-$(LIBTDB_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ)
+MKSYMS_SH = $(srcdir)/script/mksyms.sh
+
+$(LIBTDB_SYMS): $(LIBTDB_HEADERS)
+	@$(MKSYMS_SH) $(AWK) $@ $(LIBTDB_HEADERS)
+
+$(LIBTDB_SHARED_TARGET): $(BINARY_PREREQS) $(LIBTDB_OBJ) $(LIBTDB_SYMS)
 	@echo Linking shared library $@
 	@$(SHLD_DSO) $(LIBTDB_OBJ) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
@@ -1998,7 +2005,7 @@ installlibtdb: installdirs libtdb
 	-$(INSTALLLIBCMD_SH) $(LIBTDB_SHARED_TARGET) $(DESTDIR)$(LIBDIR)
 	-$(INSTALLLIBCMD_A) $(LIBTDB_STATIC_TARGET) $(DESTDIR)$(LIBDIR)
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) ${prefix}/include
-	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) @tdbdir@/include/tdb.h $(DESTDIR)${prefix}/include
+	-$(INSTALLCMD) -m $(INSTALLPERMS_DATA) $(LIBTDB_HEADERS) $(DESTDIR)${prefix}/include
 
 installlibsmbsharemodes: installdirs libsmbsharemodes
 	@$(SHELL) $(srcdir)/script/installdirs.sh $(INSTALLPERMS_BIN) $(DESTDIR) $(LIBDIR)
@@ -2132,7 +2139,8 @@ clean: delheaders
 		$(LIBTALLOC) $(LIBSMBCLIENT) $(LIBADDNS) \
 		$(LIBSMBSHAREMODES) $(EVERYTHING_PROGS) $(LIBNETAPI) \
 		bin/libwbclient.so.0 bin/timelimit \
-		.headers.stamp */src/*.o proto_exists
+		.headers.stamp */src/*.o proto_exists \
+		$(LIBTDB_SYMS)
 	-rm -rf t_dir
 
 # Making this target will just make sure that the prototype files
