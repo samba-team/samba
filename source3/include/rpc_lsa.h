@@ -462,22 +462,6 @@ typedef struct
 } LSA_R_ENUM_ACCT_RIGHTS;
 
 
-/* LSA_Q_ADD_ACCT_RIGHTS - LSA add account rights */
-typedef struct
-{
-	POLICY_HND pol; /* policy handle */
-	DOM_SID2 sid;
-	uint32 count;
-	UNISTR4_ARRAY *rights;
-} LSA_Q_ADD_ACCT_RIGHTS;
-
-/* LSA_R_ADD_ACCT_RIGHTS - LSA add account rights */
-typedef struct
-{
-	NTSTATUS status;
-} LSA_R_ADD_ACCT_RIGHTS;
-
-
 /* LSA_Q_REMOVE_ACCT_RIGHTS - LSA remove account rights */
 typedef struct
 {

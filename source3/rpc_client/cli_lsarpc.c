@@ -522,42 +522,6 @@ done:
 }
 
 
-
-/* add account rights to an account. */
-
-NTSTATUS rpccli_lsa_add_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				    POLICY_HND *pol, DOM_SID sid,
-					uint32 count, const char **privs_name)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_ADD_ACCT_RIGHTS q;
-	LSA_R_ADD_ACCT_RIGHTS r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-	init_q_add_acct_rights(&q, pol, &sid, count, privs_name);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_ADDACCTRIGHTS,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_add_acct_rights,
-		lsa_io_r_add_acct_rights,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-done:
-
-	return result;
-}
-
-
 /* remove account rights for an account. */
 
 NTSTATUS rpccli_lsa_remove_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
