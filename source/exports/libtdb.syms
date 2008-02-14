@@ -1,0 +1,4 @@
+{
+	global: tdb_*;
+	local: *;
+};
