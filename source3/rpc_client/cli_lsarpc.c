@@ -452,41 +452,6 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	return result;
 }
 
-/* remove account rights for an account. */
-
-NTSTATUS rpccli_lsa_remove_account_rights(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-				       POLICY_HND *pol, DOM_SID sid, bool removeall,
-				       uint32 count, const char **privs_name)
-{
-	prs_struct qbuf, rbuf;
-	LSA_Q_REMOVE_ACCT_RIGHTS q;
-	LSA_R_REMOVE_ACCT_RIGHTS r;
-	NTSTATUS result;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Marshall data and send request */
-	init_q_remove_acct_rights(&q, pol, &sid, removeall?1:0, count, privs_name);
-
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_REMOVEACCTRIGHTS,
-		q, r,
-		qbuf, rbuf,
-		lsa_io_q_remove_acct_rights,
-		lsa_io_r_remove_acct_rights,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-done:
-
-	return result;
-}
-
-
 #if 0
 
 /** An example of how to use the routines in this file.  Fetch a DOMAIN
