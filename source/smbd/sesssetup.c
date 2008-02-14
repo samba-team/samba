@@ -710,6 +710,15 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	}
 #endif
 
+	if (got_kerberos_mechanism) {
+		invalidate_intermediate_vuid(vuid);
+		DEBUG(3,("reply_spnego_negotiate: network "
+			"misconfiguration, client sent us a "
+			"krb5 ticket and kerberos security "
+			"not enabled"));
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
 	if (*auth_ntlmssp_state) {
 		auth_ntlmssp_end(auth_ntlmssp_state);
 	}
