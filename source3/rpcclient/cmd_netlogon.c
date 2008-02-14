@@ -32,7 +32,7 @@ static WERROR cmd_netlogon_logon_ctrl2(struct rpc_pipe_client *cli,
 	uint32_t level = 1;
 	union netr_CONTROL_DATA_INFORMATION data;
 	union netr_CONTROL_QUERY_INFORMATION query;
-	const char *domain = "BER";
+	const char *domain = lp_workgroup();
 
 	if (argc > 5) {
 		fprintf(stderr, "Usage: %s <logon_server> <function_code> "
