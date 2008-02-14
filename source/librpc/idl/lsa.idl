@@ -33,9 +33,9 @@ import "security.idl";
 	} lsa_Strings;
 
 	typedef [public] struct {
-		[value(strlen_m(string))] uint16 length;
-		[value(strlen_m(string))] uint16 size;
-		ascstr_noterm *string;
+		[value(strlen(string))] uint16 length;
+		[value(strlen(string))] uint16 size;
+		[charset(DOS),size_is(size),length_is(length)] uint8 *string;
 	} lsa_AsciiString;
 
 	/******************/
