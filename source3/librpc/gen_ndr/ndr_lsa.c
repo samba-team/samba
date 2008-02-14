@@ -3288,6 +3288,9 @@ static enum ndr_err_code ndr_pull_lsa_RightSet(struct ndr_pull *ndr, int ndr_fla
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->count));
+		if (r->count < 0 || r->count > 256) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_names));
 		if (_ptr_names) {
 			NDR_PULL_ALLOC(ndr, r->names);
