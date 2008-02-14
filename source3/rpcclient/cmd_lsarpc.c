@@ -1141,6 +1141,176 @@ static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
 	return result;
 }
 
+static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx, int argc,
+				 const char **argv)
+{
+	POLICY_HND dom_pol, user_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct lsa_PrivilegeSet privs;
+	struct lsa_LUIDAttribute *set = NULL;
+	DOM_SID sid;
+	int i;
+
+	ZERO_STRUCT(privs);
+
+	if (argc < 3 ) {
+		printf("Usage: %s SID [rights...]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_lsa_open_policy2(cli, mem_ctx, True,
+					 SEC_RIGHTS_MAXIMUM_ALLOWED,
+					 &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_lsa_OpenAccount(cli, mem_ctx,
+					&dom_pol,
+					&sid,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&user_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	for (i=2; i<argc; i++) {
+
+		struct lsa_String priv_name;
+		struct lsa_LUID luid;
+
+		init_lsa_String(&priv_name, argv[i]);
+
+		result = rpccli_lsa_LookupPrivValue(cli, mem_ctx,
+						    &dom_pol,
+						    &priv_name,
+						    &luid);
+		if (!NT_STATUS_IS_OK(result)) {
+			continue;
+		}
+
+		privs.count++;
+		set = TALLOC_REALLOC_ARRAY(mem_ctx, set,
+					   struct lsa_LUIDAttribute,
+					   privs.count);
+		if (!set) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		set[privs.count-1].luid = luid;
+		set[privs.count-1].attribute = 0;
+	}
+
+	privs.set = set;
+
+	result = rpccli_lsa_AddPrivilegesToAccount(cli, mem_ctx,
+						   &user_pol,
+						   &privs);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	rpccli_lsa_Close(cli, mem_ctx, &user_pol);
+	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
+ done:
+	return result;
+}
+
+static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx, int argc,
+				 const char **argv)
+{
+	POLICY_HND dom_pol, user_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct lsa_PrivilegeSet privs;
+	struct lsa_LUIDAttribute *set = NULL;
+	DOM_SID sid;
+	int i;
+
+	ZERO_STRUCT(privs);
+
+	if (argc < 3 ) {
+		printf("Usage: %s SID [rights...]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_lsa_open_policy2(cli, mem_ctx, True,
+					 SEC_RIGHTS_MAXIMUM_ALLOWED,
+					 &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_lsa_OpenAccount(cli, mem_ctx,
+					&dom_pol,
+					&sid,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&user_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	for (i=2; i<argc; i++) {
+
+		struct lsa_String priv_name;
+		struct lsa_LUID luid;
+
+		init_lsa_String(&priv_name, argv[i]);
+
+		result = rpccli_lsa_LookupPrivValue(cli, mem_ctx,
+						    &dom_pol,
+						    &priv_name,
+						    &luid);
+		if (!NT_STATUS_IS_OK(result)) {
+			continue;
+		}
+
+		privs.count++;
+		set = TALLOC_REALLOC_ARRAY(mem_ctx, set,
+					   struct lsa_LUIDAttribute,
+					   privs.count);
+		if (!set) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		set[privs.count-1].luid = luid;
+		set[privs.count-1].attribute = 0;
+	}
+
+	privs.set = set;
+
+
+	result = rpccli_lsa_RemovePrivilegesFromAccount(cli, mem_ctx,
+							&user_pol,
+							false,
+							&privs);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	rpccli_lsa_Close(cli, mem_ctx, &user_pol);
+	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
+ done:
+	return result;
+}
+
 
 /* List of commands exported by this module */
 
@@ -1159,10 +1329,8 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsacreateaccount",    RPC_RTYPE_NTSTATUS, cmd_lsa_create_account,     NULL, PI_LSARPC, NULL, "Create a new lsa account",   "" },
 	{ "lsaenumprivsaccount", RPC_RTYPE_NTSTATUS, cmd_lsa_enum_privsaccounts, NULL, PI_LSARPC, NULL, "Enumerate the privileges of an SID",   "" },
 	{ "lsaenumacctrights",   RPC_RTYPE_NTSTATUS, cmd_lsa_enum_acct_rights,   NULL, PI_LSARPC, NULL, "Enumerate the rights of an SID",   "" },
-#if 0
-	{ "lsaaddpriv",          RPC_RTYPE_NTSTATUS, cmd_lsa_add_priv,           NULL, PI_LSARPC, "Assign a privilege to a SID", "" },
-	{ "lsadelpriv",          RPC_RTYPE_NTSTATUS, cmd_lsa_del_priv,           NULL, PI_LSARPC, "Revoke a privilege from a SID", "" },
-#endif
+	{ "lsaaddpriv",          RPC_RTYPE_NTSTATUS, cmd_lsa_add_priv,           NULL, PI_LSARPC, NULL, "Assign a privilege to a SID", "" },
+	{ "lsadelpriv",          RPC_RTYPE_NTSTATUS, cmd_lsa_del_priv,           NULL, PI_LSARPC, NULL, "Revoke a privilege from a SID", "" },
 	{ "lsaaddacctrights",    RPC_RTYPE_NTSTATUS, cmd_lsa_add_acct_rights,    NULL, PI_LSARPC, NULL, "Add rights to an account",   "" },
 	{ "lsaremoveacctrights", RPC_RTYPE_NTSTATUS, cmd_lsa_remove_acct_rights, NULL, PI_LSARPC, NULL, "Remove rights from an account",   "" },
 	{ "lsalookupprivvalue",  RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_priv_value,  NULL, PI_LSARPC, NULL, "Get a privilege value given its name", "" },
