@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#undef realloc
 
 static int
 process_block (smb_iconv_t cd, const char *addr, size_t len, FILE *output)
