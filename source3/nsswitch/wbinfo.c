@@ -906,6 +906,7 @@ static bool wbinfo_auth_crap(char *username)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	struct wbcAuthUserParams params;
+	struct wbcAuthUserInfo *info = NULL;
 	struct wbcAuthErrorInfo *err = NULL;
 	DATA_BLOB lm = data_blob_null;
 	DATA_BLOB nt = data_blob_null;
@@ -974,7 +975,7 @@ static bool wbinfo_auth_crap(char *username)
 	params.password.response.lm_length	= lm.length;
 	params.password.response.lm_data	= lm.data;
 
-	wbc_status = wbcAuthenticateUserEx(&params, NULL, &err);
+	wbc_status = wbcAuthenticateUserEx(&params, &info, &err);
 
 	/* Display response */
 
@@ -987,6 +988,8 @@ static bool wbinfo_auth_crap(char *username)
 			 err->nt_status,
 			 err->display_string);
 		wbcFreeMemory(err);
+	} else if (WBC_ERROR_IS_OK(wbc_status)) {
+		wbcFreeMemory(info);
 	}
 
 	data_blob_free(&nt);
