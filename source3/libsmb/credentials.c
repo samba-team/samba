@@ -42,9 +42,9 @@ char *credstr(const unsigned char *cred)
 ****************************************************************************/
 
 static void creds_init_128(struct dcinfo *dc,
-				const DOM_CHAL *clnt_chal_in,
-				const DOM_CHAL *srv_chal_in,
-				const unsigned char mach_pw[16])
+			   const struct netr_Credential *clnt_chal_in,
+			   const struct netr_Credential *srv_chal_in,
+			   const unsigned char mach_pw[16])
 {
 	unsigned char zero[4], tmp[16];
 	HMACMD5Context ctx;
@@ -94,9 +94,9 @@ static void creds_init_128(struct dcinfo *dc,
 ****************************************************************************/
 
 static void creds_init_64(struct dcinfo *dc,
-			const DOM_CHAL *clnt_chal_in,
-			const DOM_CHAL *srv_chal_in,
-			const unsigned char mach_pw[16])
+			  const struct netr_Credential *clnt_chal_in,
+			  const struct netr_Credential *srv_chal_in,
+			  const unsigned char mach_pw[16])
 {
 	uint32 sum[2];
 	unsigned char sum2[8];
@@ -177,10 +177,10 @@ static void creds_step(struct dcinfo *dc)
 
 void creds_server_init(uint32 neg_flags,
 			struct dcinfo *dc,
-			DOM_CHAL *clnt_chal,
-			DOM_CHAL *srv_chal,
+			struct netr_Credential *clnt_chal,
+			struct netr_Credential *srv_chal,
 			const unsigned char mach_pw[16],
-			DOM_CHAL *init_chal_out)
+			struct netr_Credential *init_chal_out)
 {
 	DEBUG(10,("creds_server_init: neg_flags : %x\n", (unsigned int)neg_flags));
 	DEBUG(10,("creds_server_init: client chal : %s\n", credstr(clnt_chal->data) ));
@@ -246,7 +246,7 @@ bool netlogon_creds_server_check(const struct dcinfo *dc,
 
 static void creds_reseed(struct dcinfo *dc)
 {
-	DOM_CHAL time_chal;
+	struct netr_Credential time_chal;
 
 	SIVAL(time_chal.data, 0, IVAL(dc->seed_chal.data, 0) + dc->sequence + 1);
 	SIVAL(time_chal.data, 4, IVAL(dc->seed_chal.data, 4));
@@ -274,7 +274,8 @@ bool creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred, DOM_CRE
 
 	/* Create the outgoing credentials */
 	cred_out->timestamp.time = tmp_dc.sequence + 1;
-	cred_out->challenge = tmp_dc.srv_chal;
+	memcpy(&cred_out->challenge.data, tmp_dc.srv_chal.data,
+	       sizeof(cred_out->challenge.data));
 
 	creds_reseed(&tmp_dc);
 
@@ -324,10 +325,10 @@ bool netlogon_creds_server_step(struct dcinfo *dc,
 
 void creds_client_init(uint32 neg_flags,
 			struct dcinfo *dc,
-			DOM_CHAL *clnt_chal,
-			DOM_CHAL *srv_chal,
+			struct netr_Credential *clnt_chal,
+			struct netr_Credential *srv_chal,
 			const unsigned char mach_pw[16],
-			DOM_CHAL *init_chal_out)
+			struct netr_Credential *init_chal_out)
 {
 	dc->sequence = time(NULL);
 
@@ -406,7 +407,8 @@ void creds_client_step(struct dcinfo *dc, DOM_CRED *next_cred_out)
 	creds_step(dc);
 	creds_reseed(dc);
 
-	next_cred_out->challenge = dc->clnt_chal;
+	memcpy(&next_cred_out->challenge.data, dc->clnt_chal.data,
+	       sizeof(next_cred_out->challenge.data));
 	next_cred_out->timestamp.time = dc->sequence;
 }
 

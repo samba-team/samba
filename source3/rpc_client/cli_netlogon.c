@@ -251,17 +251,17 @@ static NTSTATUS rpccli_net_auth3(struct rpc_pipe_client *cli,
 ****************************************************************************/
 
 NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
-				const char *server_name,
-				const char *domain,
-				const char *clnt_name,
-				const char *machine_account,
-				const unsigned char machine_pwd[16],
-				uint32 sec_chan_type,
-				uint32 *neg_flags_inout)
+				     const char *server_name,
+				     const char *domain,
+				     const char *clnt_name,
+				     const char *machine_account,
+				     const unsigned char machine_pwd[16],
+				     enum netr_SchannelType sec_chan_type,
+				     uint32_t *neg_flags_inout)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_CHAL clnt_chal_send;
-	DOM_CHAL srv_chal_recv;
+	struct netr_Credential clnt_chal_send;
+	struct netr_Credential srv_chal_recv;
 	struct dcinfo *dc;
 
 	SMB_ASSERT(cli->pipe_idx == PI_NETLOGON);
@@ -288,13 +288,11 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	generate_random_buffer(clnt_chal_send.data, 8);
 
 	/* Get the server challenge. */
-	result = rpccli_net_req_chal(cli,
-				cli->mem_ctx,
-				dc->remote_machine,
-				clnt_name,
-				&clnt_chal_send,
-				&srv_chal_recv);
-
+	result = rpccli_netr_ServerReqChallenge(cli, cli->mem_ctx,
+						dc->remote_machine,
+						clnt_name,
+						&clnt_chal_send,
+						&srv_chal_recv);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
@@ -307,20 +305,18 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 			machine_pwd,
 			&clnt_chal_send);
 
-        /*  
+        /*
          * Send client auth-2 challenge and receive server repy.
          */
 
-	result = rpccli_net_auth2(cli,
-			cli->mem_ctx,
-			dc->remote_machine,
-			dc->mach_acct,
-			sec_chan_type,
-			clnt_name,
-			neg_flags_inout,
-			&clnt_chal_send, /* input. */
-			&srv_chal_recv); /* output */
-
+	result = rpccli_netr_ServerAuthenticate2(cli, cli->mem_ctx,
+						 dc->remote_machine,
+						 dc->mach_acct,
+						 sec_chan_type,
+						 clnt_name,
+						 &clnt_chal_send, /* input. */
+						 &srv_chal_recv, /* output. */
+						 neg_flags_inout);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
@@ -330,7 +326,7 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 	 * server received challenge.
 	 */
 
-	if (!creds_client_check(dc, &srv_chal_recv)) {
+	if (!netlogon_creds_client_check(dc, &srv_chal_recv)) {
 		/*
 		 * Server replied with bad credential. Fail.
 		 */
