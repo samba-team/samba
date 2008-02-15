@@ -35,7 +35,7 @@ extern userdom_struct current_user_info;
  *************************************************************************/
 
 static void init_net_r_req_chal(struct netr_Credential *r,
-				DOM_CHAL *srv_chal)
+				struct netr_Credential *srv_chal)
 {
 	DEBUG(6,("init_net_r_req_chal: %d\n", __LINE__));
 
@@ -406,7 +406,7 @@ NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
 				  struct netr_ServerAuthenticate *r)
 {
 	NTSTATUS status;
-	DOM_CHAL srv_chal_out;
+	struct netr_Credential srv_chal_out;
 
 	if (!p->dc || !p->dc->challenge_sent) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -465,7 +465,7 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 {
 	NTSTATUS status;
 	uint32_t srv_flgs;
-	DOM_CHAL srv_chal_out;
+	struct netr_Credential srv_chal_out;
 
 	/* We use this as the key to store the creds: */
 	/* r->in.computer_name */
