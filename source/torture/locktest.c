@@ -573,7 +573,7 @@ _NORETURN_ static void usage(poptContext pc)
 	setlinebuf(stdout);
 	seed = time(NULL);
 
-	pc = poptGetContext("locjtest", argc, (const char **) argv, long_options, 
+	pc = poptGetContext("locktest", argc, (const char **) argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
 
 	poptSetOtherOptionHelp(pc, "<unc1> <unc2>");
