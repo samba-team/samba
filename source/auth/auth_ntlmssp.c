@@ -187,7 +187,13 @@ NTSTATUS auth_ntlmssp_start(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 
 void auth_ntlmssp_end(AUTH_NTLMSSP_STATE **auth_ntlmssp_state)
 {
-	TALLOC_CTX *mem_ctx = (*auth_ntlmssp_state)->mem_ctx;
+	TALLOC_CTX *mem_ctx;
+
+	if (*auth_ntlmssp_state == NULL) {
+		return;
+	}
+
+	mem_ctx = (*auth_ntlmssp_state)->mem_ctx;
 
 	if ((*auth_ntlmssp_state)->ntlmssp_state) {
 		ntlmssp_end(&(*auth_ntlmssp_state)->ntlmssp_state);
