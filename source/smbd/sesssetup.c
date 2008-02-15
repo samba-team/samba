@@ -716,7 +716,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 			"misconfiguration, client sent us a "
 			"krb5 ticket and kerberos security "
 			"not enabled"));
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 	}
 
 	if (*auth_ntlmssp_state) {
@@ -766,7 +766,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		/* Kill the intermediate vuid */
 		invalidate_intermediate_vuid(vuid);
 
-		return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
+		return ERROR_NT(nt_status_squash(NT_STATUS_LOGON_FAILURE));
 	}
 
 	if (auth.data[0] == ASN1_APPLICATION(0)) {
@@ -795,24 +795,24 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 
 	/* If we get here it wasn't a negTokenTarg auth packet. */
 	data_blob_free(&secblob);
-	
+
 	if (!*auth_ntlmssp_state) {
 		/* Kill the intermediate vuid */
 		invalidate_intermediate_vuid(vuid);
 
 		/* auth before negotiatiate? */
-		return ERROR_NT(nt_status_squash(NT_STATUS_INVALID_PARAMETER));
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
-	
-	status = auth_ntlmssp_update(*auth_ntlmssp_state, 
+
+	status = auth_ntlmssp_update(*auth_ntlmssp_state,
 					auth, &auth_reply);
 
 	data_blob_free(&auth);
 
-	reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid, 
+	reply_spnego_ntlmssp(conn, inbuf, outbuf, vuid,
 			     auth_ntlmssp_state,
 			     &auth_reply, status, True);
-		
+
 	data_blob_free(&auth_reply);
 
 	/* and tell smbd that we have already replied to this packet */
