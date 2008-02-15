@@ -682,18 +682,17 @@ NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
 }
 
 /*************************************************************************
- _net_sam_logoff:
+ _netr_LogonSamLogoff
  *************************************************************************/
 
-NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u)
+NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
+			      struct netr_LogonSamLogoff *r)
 {
-	fstring remote_machine;
-
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
 		   obviously did not use it. */
-		DEBUG(0,("_net_sam_logoff: client %s not using schannel for netlogon\n",
+		DEBUG(0,("_netr_LogonSamLogoff: client %s not using schannel for netlogon\n",
 			get_remote_machine_name() ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -702,9 +701,8 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
-	/* Get the remote machine name for the creds store. */
-	rpcstr_pull(remote_machine,q_u->sam_id.client.login.uni_comp_name.buffer,
-		    sizeof(remote_machine),q_u->sam_id.client.login.uni_comp_name.uni_str_len*2,0);
+	/* Using the remote machine name for the creds store: */
+	/* r->in.computer_name */
 
 	if (!p->dc) {
 		/* Restore the saved state of the netlogon creds. */
@@ -712,8 +710,8 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 
 		become_root();
 		ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
-						remote_machine,
-						&p->dc);
+							    r->in.computer_name,
+							    &p->dc);
 		unbecome_root();
 		if (!ret) {
 			return NT_STATUS_INVALID_HANDLE;
@@ -724,25 +722,22 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-
 	/* checks and updates credentials.  creates reply credentials */
-	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred, &r_u->srv_creds)) {
-		DEBUG(2,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
+	if (!netlogon_creds_server_step(p->dc, r->in.credential, r->out.return_authenticator)) {
+		DEBUG(2,("_netr_LogonSamLogoff: netlogon_creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
-			remote_machine, p->dc->mach_acct ));
+			r->in.computer_name, p->dc->mach_acct ));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* We must store the creds state after an update. */
 	become_root();
 	secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
-					remote_machine,
-					p->dc);
+					    r->in.computer_name,
+					    p->dc);
 	unbecome_root();
 
-	r_u->status = NT_STATUS_OK;
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1223,16 +1218,6 @@ WERROR _netr_LogonUasLogoff(pipes_struct *p,
 
 NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 			     struct netr_LogonSamLogon *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
-			      struct netr_LogonSamLogoff *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
