@@ -79,7 +79,13 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 						  &p->dest_dsa->invocation_id,
 						  p->dest_dsa->netbios_name, 
 						  torture_join_dom_dns_name(s->tj),
-						  torture_join_dom_netbios_name(s->tj));
+						  torture_join_dom_netbios_name(s->tj),
+						  &p->dest_dsa->ntds_guid,
+						  p->dest_dsa->ntds_dn_str,
+						  cli_credentials_get_password(s->machine_account),
+						  s->path.samdb_ldb, s->path.secrets_ldb, 
+						  s->path.secrets_keytab, s->path.schemadn_ldb,
+						  s->path.configdn_ldb, s->path.domaindn_ldb);
 }
 
 static NTSTATUS test_become_dc_check_options(void *private_data,
