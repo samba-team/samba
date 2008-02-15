@@ -721,7 +721,7 @@ PDBEDIT_OBJ = utils/pdbedit.o $(PASSWD_UTIL_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) @LIB
 		$(SECRETS_OBJ) $(POPT_LIB_OBJ) $(SMBLDAP_OBJ) libsmb/asn1.o \
 		$(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(LDB_OBJ) $(ERRORMAP_OBJ) 
 
-SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ)
+SMBGET_OBJ = utils/smbget.o $(POPT_LIB_OBJ) $(LIBSMBCLIENT_OBJ0)
 
 DISPLAY_SEC_OBJ= lib/display_sec.o
 DISPLAY_DSDCINFO_OBJ= lib/display_dsdcinfo.o
@@ -745,12 +745,14 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
 
-LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
-		   libsmb/libsmb_cache.o \
-		   $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-	  	   $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
-		   $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
-		   $(SECRETS_OBJ) $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ)
+LIBSMBCLIENT_OBJ0 = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
+		    libsmb/libsmb_cache.o \
+		    $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
+		    $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
+		    $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
+		    $(SECRETS_OBJ) $(PASSDB_OBJ) $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ)
+
+LIBSMBCLIENT_OBJ = $(LIBSMBCLIENT_OBJ0) @LIBWBCLIENT_STATIC@
 
 LIBSMBSHAREMODES_OBJ = libsmb/smb_share_modes.o @LIBTDB_STATIC@
 
@@ -1292,10 +1294,10 @@ bin/umount.cifs@EXEEXT@: $(BINARY_PREREQS) $(CIFS_UMOUNT_OBJ) @BUILD_POPT@
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CIFS_UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS) @POPTLIBS@
 
-bin/cifs.spnego@EXEEXT@: $(BINARY_PREREQS) $(CIFS_SPNEGO_OBJ) $(LIBSMBCLIENT_OBJ) @BUILD_POPT@ @LIBTDB_SHARED@
+bin/cifs.spnego@EXEEXT@: $(BINARY_PREREQS) $(CIFS_SPNEGO_OBJ) $(LIBSMBCLIENT_OBJ0) @BUILD_POPT@ @LIBTDB_SHARED@
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CIFS_SPNEGO_OBJ) $(DYNEXP) $(LDFLAGS) -lkeyutils $(LIBS) \
-		$(LIBSMBCLIENT_OBJ) $(KRB5LIBS) $(LDAP_LIBS) @POPTLIBS@ @LIBWBCLIENT_SHARED@ @LIBTDB_LIBS@
+		$(LIBSMBCLIENT_OBJ0) $(KRB5LIBS) $(LDAP_LIBS) @POPTLIBS@ @LIBWBCLIENT_SHARED@ @LIBTDB_LIBS@
 
 bin/testparm@EXEEXT@: $(BINARY_PREREQS) $(TESTPARM_OBJ) @BUILD_POPT@ @LIBTDB_SHARED@
 	@echo Linking $@
@@ -1512,9 +1514,9 @@ bin/libsmbclient.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ) @LIBWBCLIENT_
 		$(KRB5LIBS) $(LDAP_LIBS) $(NSCD_LIBS) \
 		@SONAMEFLAG@`basename $@`.$(SONAME_VER)
 
-bin/libsmbclient.a: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ)
+bin/libsmbclient.a: $(BINARY_PREREQS) $(LIBSMBCLIENT_OBJ0)
 	@echo Linking non-shared library $@
-	@-$(AR) -rc $@ $(LIBSMBCLIENT_OBJ)
+	@-$(AR) -rc $@ $(LIBSMBCLIENT_OBJ0)
 
 bin/libsmbsharemodes.@SHLIBEXT@: $(BINARY_PREREQS) $(LIBSMBSHAREMODES_OBJ)
 	@echo Linking shared library $@
