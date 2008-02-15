@@ -116,7 +116,7 @@ sub generate_binary($)
 	my $bin = shift;
 
 	$bin->{DEPEND_LIST} = [];
-	push(@{$bin->{LINK_FLAGS}}, "\$($bin->{TYPE}_$bin->{NAME}\_OBJ_LIST)");
+	push(@{$bin->{LINK_FLAGS}}, "\$($bin->{NAME}\_OBJ_LIST)");
 
 	$bin->{DEBUGDIR} = "bin/";
 	$bin->{TARGET_BINARY} = $bin->{OUTPUT_BINARY} = "$bin->{DEBUGDIR}/$bin->{NAME}";
@@ -176,7 +176,7 @@ sub create_output($$)
 			my $elem = $depend->{$_};
 			next if $elem == $part;
 
-			push(@{$part->{LINK_FLAGS}}, $elem->{OUTPUT}) if defined($elem->{OUTPUT});
+			push(@{$part->{LINK_FLAGS}}, "\$($elem->{NAME}_OUTPUT)") if defined($elem->{OUTPUT});
 			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
 			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
 		    	push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});

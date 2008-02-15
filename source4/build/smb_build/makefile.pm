@@ -115,7 +115,7 @@ sub _prepare_list_ex($$$$$)
 	my $tmplist = array2oneperline(\@tmparr);
 	return if ($tmplist eq "");
 
-	$self->output("$ctx->{TYPE}\_$ctx->{NAME}_$var =$tmplist\n");
+	$self->output("$ctx->{NAME}_$var =$tmplist\n");
 }
 
 sub _prepare_list($$$)
@@ -130,8 +130,6 @@ sub Integrated($$)
 	my ($self,$ctx) = @_;
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
-	$self->_prepare_list($ctx, "LINK_FLAGS");
 }
 
 sub SharedModulePrimitives($$)
@@ -170,13 +168,13 @@ sub SharedModule($$)
 		}
 	}
 
-	$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
+	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
+	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 
 	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{TYPE} ne "PYTHON") {
 		my $init_fn = $ctx->{INIT_FUNCTION_TYPE};
@@ -202,12 +200,12 @@ __EOD__
 	$self->output(<< "__EOD__"
 #
 
-$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST) $init_obj
+$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(MDLD) \$(MDLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) $init_obj \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS)
+		\$($ctx->{NAME}\_FULL_OBJ_LIST) $init_obj \\
+		\$($ctx->{NAME}_LINK_FLAGS)
 __EOD__
 );
 
@@ -228,7 +226,7 @@ sub SharedLibraryPrimitives($$)
 	$self->output("$ctx->{NAME}_VERSION = $ctx->{VERSION}\n") if (defined($ctx->{VERSION}));
 
 	if (not grep(/STATIC_LIBRARY/, @{$ctx->{OUTPUT_TYPE}})) {
-		$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
+		$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 		$self->_prepare_list($ctx, "OBJ_LIST");
 		$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	}
@@ -245,32 +243,30 @@ sub SharedLibrary($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 #	$self->_prepare_list_ex($ctx, "LINK_FLAGS", "-Wl,--whole-archive", "-Wl,--no-whole-archive");
 
-	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
+	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 
 	my $soarg = "";
 	my $lns = "";
 	if ($self->{config}->{SONAMEFLAG} ne "#" and defined($ctx->{LIBRARY_SONAME})) {
 		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME}";
 		if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-			$lns .= "\n\t\@rm -f $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
-			$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
+			$lns .= "\n\t\@test \$($ctx->{NAME}_VERSION) = \$($ctx->{NAME}_SOVERSION) || ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
 		}
 	}
 
 	if (defined($ctx->{LIBRARY_SONAME})) {
-		$lns .= "\n\t\@rm -f $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}";
 		$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}";
 	}
 
 	$self->output(<< "__EOD__"
 #
 
-$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{TYPE}_$ctx->{NAME}\_FULL_OBJ_LIST) \\
-		\$($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) \\
+		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
+		\$($ctx->{NAME}_LINK_FLAGS) \\
 		$soarg$lns
 __EOD__
 );
@@ -285,19 +281,19 @@ sub StaticLibrary($$)
 
 	push (@{$self->{static_libs}}, $ctx->{TARGET_STATIC_LIBRARY}) if ($ctx->{TYPE} eq "LIBRARY");
 
-	$self->output("$ctx->{TYPE}_$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
+	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 
-	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
+	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 
 	$self->output(<< "__EOD__"
 #
-$ctx->{TARGET_STATIC_LIBRARY}: \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{TARGET_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$@
 	\@rm -f \$@
 	\@mkdir -p $ctx->{STATICDIR}
-	\@\$(STLD) \$(STLD_FLAGS) \$@ \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
+	\@\$(STLD) \$(STLD_FLAGS) \$@ \$($ctx->{NAME}_FULL_OBJ_LIST)
 
 __EOD__
 );
@@ -323,7 +319,7 @@ sub Binary($$)
 
 	$installdir = "bin$extradir";
 
-	push(@{$self->{all_objs}}, "\$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)");
+	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 		
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
@@ -340,7 +336,7 @@ sub Binary($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 $self->output(<< "__EOD__"
-$installdir/$ctx->{BINARY}: \$($ctx->{TYPE}_$ctx->{NAME}_DEPEND_LIST) \$($ctx->{TYPE}_$ctx->{NAME}_FULL_OBJ_LIST)
+$installdir/$ctx->{BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 __EOD__
 	);
@@ -348,13 +344,13 @@ __EOD__
 	if (defined($ctx->{USE_HOSTCC}) && $ctx->{USE_HOSTCC} eq "YES") {
 		$self->output(<< "__EOD__"
 	\@\$(HOSTLD) \$(HOSTLD_FLAGS) -L\${builddir}/bin/static -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS)
+		\$\($ctx->{NAME}_LINK_FLAGS)
 __EOD__
 		);
 	} else {
 		$self->output(<< "__EOD__"
 	\@\$(BNLD) \$(BNLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$\($ctx->{TYPE}_$ctx->{NAME}_LINK_FLAGS) 
+		\$\($ctx->{NAME}_LINK_FLAGS) 
 
 __EOD__
 		);
@@ -417,9 +413,9 @@ sub ProtoHeader($$)
 		$pub = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PUBLIC_PROTO_HEADER});
 	}
 
-	$self->output("$pub: $ctx->{MK_FILE} \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
+	$self->output("$pub: $ctx->{MK_FILE} \$($ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
 	$self->output("\t\@echo \"$comment\"\n");
-	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --private=$priv --public=$pub \$($ctx->{TYPE}_$ctx->{NAME}_OBJ_LIST)\n\n");
+	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --private=$priv --public=$pub \$($ctx->{NAME}_OBJ_LIST)\n\n");
 }
 
 sub write($$)
