@@ -936,7 +936,7 @@ struct netr_DatabaseDeltas {
 	struct {
 		const char *logon_server;/* [charset(UTF16)] */
 		const char *computername;/* [charset(UTF16)] */
-		struct netr_Authenticator credential;
+		struct netr_Authenticator *credential;/* [ref] */
 		enum netr_SamDatabaseID database_id;
 		uint32_t preferredmaximumlength;
 		struct netr_Authenticator *return_authenticator;/* [ref] */
@@ -944,7 +944,7 @@ struct netr_DatabaseDeltas {
 	} in;
 
 	struct {
-		struct netr_DELTA_ENUM_ARRAY *delta_enum_array;/* [ref] */
+		struct netr_DELTA_ENUM_ARRAY **delta_enum_array;/* [ref] */
 		struct netr_Authenticator *return_authenticator;/* [ref] */
 		uint64_t *sequence_num;/* [ref] */
 		NTSTATUS result;
