@@ -24,7 +24,7 @@
 #include "scripting/ejs/smbcalls.h"
 #include "auth/auth.h"
 #include "lib/ldb_wrap.h"
-#include "torture/util_provision.h"
+#include "torture/util.h"
 
 static EjsId eid;
 static int ejs_error;
