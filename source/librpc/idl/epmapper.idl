@@ -3,6 +3,7 @@
 /*
   endpoint mapper interface
   Related links:
+	http://www.opengroup.org/onlinepubs/9629399/apdxo.htm : The official IDL for this pipe
 	http://www.opengroup.org/onlinepubs/9629399/apdxl.htm : Details on towers
 http://www.opengroup.org/onlinepubs/9629399/chap6.htm#tagcjh_11_02_03_01: binding strings
 
@@ -222,7 +223,16 @@ interface epmapper
 	typedef struct {
 		GUID        object;
 		epm_twr_t   *tower;
-		ascstr2     annotation;
+		/*
+		 * In theory this should be:
+		 *	[charset(DOS),string] uint8 annotation[64]
+		 * But midl treats this as:
+		 *	[charset(DOS),string] uint8 annotation[]
+		 * and pidl doesn't support this yet
+		 */
+		[value(0)] uint32 __annotation_offset;
+		[value(strlen(annotation)+1)] uint32 __annotation_length;
+		[charset(DOS)] uint8 annotation[__annotation_length];
 	} epm_entry_t;
 
 	typedef struct {

@@ -525,7 +525,7 @@ sub provision($$$$$$)
 
 	(system("rm -rf $prefix/*") == 0) or die("Unable to clean up");
 	mkdir($_, 0777) foreach ($privatedir, $etcdir, $piddir, $ncalrpcdir, $lockdir, 
-		$tmpdir);
+		$tmpdir, "$tmpdir/test1", "$tmpdir/test2");
 
 
 	my $localbasedn = $basedn;
@@ -564,6 +564,20 @@ sub provision($$$$$$)
 
 [tmp]
 	path = $tmpdir
+	read only = no
+	ntvfs handler = posix
+	posix:sharedelay = 100000
+	posix:eadb = $lockdir/eadb.tdb
+
+[test1]
+	path = $tmpdir/test1
+	read only = no
+	ntvfs handler = posix
+	posix:sharedelay = 100000
+	posix:eadb = $lockdir/eadb.tdb
+
+[test2]
+	path = $tmpdir/test2
 	read only = no
 	ntvfs handler = posix
 	posix:sharedelay = 100000
