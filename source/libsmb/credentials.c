@@ -329,6 +329,25 @@ bool creds_client_check(const struct dcinfo *dc, const DOM_CHAL *rcv_srv_chal_in
 	return True;
 }
 
+bool netlogon_creds_client_check(const struct dcinfo *dc,
+				 const struct netr_Credential *rcv_srv_chal_in)
+{
+	if (memcmp(dc->srv_chal.data, rcv_srv_chal_in->data,
+		   sizeof(dc->srv_chal.data))) {
+
+		DEBUG(0,("netlogon_creds_client_check: credentials check failed.\n"));
+		DEBUGADD(5,("netlogon_creds_client_check: challenge : %s\n",
+			credstr(rcv_srv_chal_in->data)));
+		DEBUGADD(5,("calculated: %s\n", credstr(dc->srv_chal.data)));
+		return false;
+	}
+
+	DEBUG(10,("netlogon_creds_client_check: credentials check OK.\n"));
+
+	return true;
+}
+
+
 /****************************************************************************
   Step the client credentials to the next element in the chain, updating the
   current client and server credentials and the seed
@@ -344,4 +363,16 @@ void creds_client_step(struct dcinfo *dc, DOM_CRED *next_cred_out)
 
 	next_cred_out->challenge = dc->clnt_chal;
 	next_cred_out->timestamp.time = dc->sequence;
+}
+
+void netlogon_creds_client_step(struct dcinfo *dc,
+				struct netr_Authenticator *next_cred_out)
+{
+	dc->sequence += 2;
+	creds_step(dc);
+	creds_reseed(dc);
+
+	memcpy(&next_cred_out->cred.data, &dc->clnt_chal.data,
+		sizeof(next_cred_out->cred.data));
+	next_cred_out->timestamp = dc->sequence;
 }
