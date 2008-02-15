@@ -390,7 +390,7 @@ NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
 	generate_random_buffer(p->dc->srv_chal.data, 8);
 
 	/* set up the LSA REQUEST CHALLENGE response */
-	init_net_r_req_chal(r->out.credentials, &p->dc->srv_chal);
+	init_net_r_req_chal(r->out.return_credentials, &p->dc->srv_chal);
 
 	p->dc->challenge_sent = True;
 
@@ -450,8 +450,8 @@ NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
 	/* set up the LSA AUTH response */
 	/* Return the server credentials. */
 
-	memcpy(r->out.credentials->data, &srv_chal_out.data,
-	       sizeof(r->out.credentials->data));
+	memcpy(r->out.return_credentials->data, &srv_chal_out.data,
+	       sizeof(r->out.return_credentials->data));
 
 	return NT_STATUS_OK;
 }
@@ -521,8 +521,8 @@ NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
 	}
 
 	/* set up the LSA AUTH 2 response */
-	memcpy(r->out.credentials->data, &srv_chal_out.data,
-	       sizeof(r->out.credentials->data));
+	memcpy(r->out.return_credentials->data, &srv_chal_out.data,
+	       sizeof(r->out.return_credentials->data));
 	*r->out.negotiate_flags = srv_flgs;
 
 	fstrcpy(p->dc->mach_acct, r->in.account_name);
