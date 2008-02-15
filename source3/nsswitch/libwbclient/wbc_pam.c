@@ -334,6 +334,9 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 		       request.data.auth_crap.nt_resp_len);
 
 		break;
+	default:
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
 	wbc_status = wbcRequestResponse(cmd,
