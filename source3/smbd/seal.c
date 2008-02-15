@@ -496,12 +496,15 @@ static NTSTATUS srv_enc_spnego_negotiate(connection_struct *conn,
 
 	srv_free_encryption_context(&partial_srv_trans_enc_ctx);
 
+	if (got_kerberos_mechanism) {
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
-	if (got_kerberos_mechanism && lp_use_kerberos_keytab() ) {
 		status = srv_enc_spnego_gss_negotiate(ppdata, p_data_size, secblob);
-	} else 
+#else
+		/* Currently we don't SPNEGO negotiate
+		 * back to NTLMSSP as we do in sessionsetupX. We should... */
+		return NT_STATUS_LOGON_FAILURE;
 #endif
-	{
+	} else {
 		status = srv_enc_ntlm_negotiate(ppdata, p_data_size, secblob, true);
 	}
 
@@ -558,7 +561,16 @@ static NTSTATUS srv_enc_spnego_ntlm_auth(connection_struct *conn,
 	status = auth_ntlmssp_update(ec->auth_ntlmssp_state, auth, &auth_reply);
 	data_blob_free(&auth);
 
-	response = spnego_gen_auth_response(&auth_reply, status, OID_NTLMSSP);
+	/* From RFC4178.
+	 *
+	 *    supportedMech
+	 *
+	 *          This field SHALL only be present in the first reply from the
+	 *                target.
+	 * So set mechOID to NULL here.
+	 */
+
+	response = spnego_gen_auth_response(&auth_reply, status, NULL);
 	data_blob_free(&auth_reply);
 
 	if (NT_STATUS_IS_OK(status)) {
