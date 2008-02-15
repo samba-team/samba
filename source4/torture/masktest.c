@@ -325,7 +325,7 @@ static void usage(void)
 	argc -= 1;
 	argv += 1;
 
-	lp_ctx = loadparm_init(talloc_autofree_context());
+	global_loadparm = lp_ctx = loadparm_init(talloc_autofree_context());
 	lp_load(lp_ctx, dyn_CONFIGFILE);
 
 	credentials = cli_credentials_init(talloc_autofree_context());
