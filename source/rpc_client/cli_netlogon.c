@@ -400,58 +400,6 @@ NTSTATUS rpccli_netlogon_sam_sync(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	return result;
 }
 
-/* Sam synchronisation */
-
-NTSTATUS rpccli_netlogon_sam_deltas(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                 uint32 database_id, uint64 seqnum,
-                                 uint32 *num_deltas, 
-                                 SAM_DELTA_HDR **hdr_deltas, 
-                                 SAM_DELTA_CTR **deltas)
-{
-	prs_struct qbuf, rbuf;
-	NET_Q_SAM_DELTAS q;
-	NET_R_SAM_DELTAS r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-        DOM_CRED clnt_creds;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
-
-	/* Initialise input parameters */
-
-	creds_client_step(cli->dc, &clnt_creds);
-
-	init_net_q_sam_deltas(&q, cli->dc->remote_machine,
-                              global_myname(), &clnt_creds, 
-                              database_id, seqnum);
-
-	/* Marshall data and send request */
-
-	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_SAM_DELTAS,
-		q, r,
-		qbuf, rbuf,
-		net_io_q_sam_deltas,
-		net_io_r_sam_deltas,
-		NT_STATUS_UNSUCCESSFUL);
-
-        /* Return results */
-
-	result = r.status;
-        *num_deltas = r.num_deltas2;
-        *hdr_deltas = r.hdr_deltas;
-        *deltas = r.deltas;
-
-	if (!NT_STATUS_IS_ERR(result)) {
-		/* Check returned credentials. */
-		if (!creds_client_check(cli->dc, &r.srv_creds.challenge)) {
-			DEBUG(0,("cli_netlogon_sam_sync: credentials chain check failed\n"));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-	}
-
-	return result;
-}
-
 /* Logon domain user */
 
 NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,

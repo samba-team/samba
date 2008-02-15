@@ -831,35 +831,6 @@ typedef struct net_r_sam_sync_info {
 	NTSTATUS status;
 } NET_R_SAM_SYNC;
 
-/* NET_Q_SAM_DELTAS */
-typedef struct net_q_sam_deltas_info {
-	UNISTR2 uni_srv_name;
-	UNISTR2 uni_cli_name;
-	DOM_CRED cli_creds;
-	DOM_CRED ret_creds;
-
-	uint32 database_id;
-	uint64 dom_mod_count;  /* domain mod count at last sync */
-
-	uint32 max_size;       /* preferred maximum length */
-} NET_Q_SAM_DELTAS;
-
-/* NET_R_SAM_DELTAS */
-typedef struct net_r_sam_deltas_info {
-	DOM_CRED srv_creds;
-
-	uint64 dom_mod_count;   /* new domain mod count */
-
-	uint32 ptr_deltas;
-	uint32 num_deltas;
-	uint32 num_deltas2;
-
-	SAM_DELTA_HDR *hdr_deltas;
-	SAM_DELTA_CTR *deltas;
-
-	NTSTATUS status;
-} NET_R_SAM_DELTAS;
-
 #define DSGETDC_VALID_FLAGS ( \
     DS_FORCE_REDISCOVERY | \
     DS_DIRECTORY_SERVICE_REQUIRED | \
