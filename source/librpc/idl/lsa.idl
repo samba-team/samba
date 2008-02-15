@@ -38,6 +38,12 @@ import "security.idl";
 		[charset(DOS),size_is(size),length_is(length)] uint8 *string;
 	} lsa_AsciiString;
 
+	typedef [public] struct {
+		[value(strlen(string))] uint16 length;
+		[value(strlen(string)+1)] uint16 size;
+		[charset(DOS),size_is(size),length_is(length)] uint8 *string;
+	} lsa_AsciiStringLarge;
+
 	/******************/
 	/* Function: 0x00 */
 	NTSTATUS lsa_Close (
