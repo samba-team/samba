@@ -265,10 +265,9 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 			     struct wbcAuthErrorInfo **error)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	int cmd;
+	int cmd = 0;
 	struct winbindd_request request;
 	struct winbindd_response response;
-
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
@@ -278,6 +277,11 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 	}
 
 	if (!params) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	if (!params->account_name) {
 		wbc_status = WBC_ERR_INVALID_PARAM;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
@@ -301,12 +305,36 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 				WBFLAG_PAM_USER_SESSION_KEY |
 				WBFLAG_PAM_LMKEY;
 
+		if (params->password.response.lm_length &&
+		    params->password.response.lm_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+		if (params->password.response.lm_length == 0 &&
+		    params->password.response.lm_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		if (params->password.response.nt_length &&
+		    !params->password.response.nt_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+		if (params->password.response.nt_length == 0&&
+		    params->password.response.nt_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
 		strncpy(request.data.auth_crap.user,
 			params->account_name,
 			sizeof(request.data.auth_crap.user)-1);
-		strncpy(request.data.auth_crap.domain,
-			params->domain_name,
-			sizeof(request.data.auth_crap.domain)-1);
+		if (params->domain_name) {
+			strncpy(request.data.auth_crap.domain,
+				params->domain_name,
+				sizeof(request.data.auth_crap.domain)-1);
+		}
 		if (params->workstation_name) {
 			strncpy(request.data.auth_crap.workstation,
 				params->workstation_name,
@@ -326,14 +354,22 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 		request.data.auth_crap.nt_resp_len =
 				MIN(params->password.response.nt_length,
 				    sizeof(request.data.auth_crap.nt_resp));
-		memcpy(request.data.auth_crap.lm_resp,
-		       params->password.response.lm_data,
-		       request.data.auth_crap.lm_resp_len);
-		memcpy(request.data.auth_crap.nt_resp,
-		       params->password.response.nt_data,
-		       request.data.auth_crap.nt_resp_len);
-
+		if (params->password.response.lm_data) {
+			memcpy(request.data.auth_crap.lm_resp,
+			       params->password.response.lm_data,
+			       request.data.auth_crap.lm_resp_len);
+		}
+		if (params->password.response.nt_data) {
+			memcpy(request.data.auth_crap.nt_resp,
+			       params->password.response.nt_data,
+			       request.data.auth_crap.nt_resp_len);
+		}
 		break;
+	}
+
+	if (cmd == 0) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
 	wbc_status = wbcRequestResponse(cmd,
