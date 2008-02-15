@@ -91,11 +91,15 @@ void invalidate_vuid(uint16 vuid)
 
 	if (vuser == NULL)
 		return;
-	
+
 	SAFE_FREE(vuser->homedir);
 	SAFE_FREE(vuser->unix_homedir);
 	SAFE_FREE(vuser->logon_script);
-	
+
+	if (vuser->auth_ntlmssp_state) {
+		auth_ntlmssp_end(&vuser->auth_ntlmssp_state);
+	}
+
 	session_yield(vuser);
 	SAFE_FREE(vuser->session_keystr);
 
@@ -122,6 +126,10 @@ void invalidate_intermediate_vuid(uint16 vuid)
 
 	if (vuser == NULL)
 		return;
+
+	if (vuser->auth_ntlmssp_state) {
+		auth_ntlmssp_end(&vuser->auth_ntlmssp_state);
+	}
 
 	DLIST_REMOVE(validated_users, vuser);
 
