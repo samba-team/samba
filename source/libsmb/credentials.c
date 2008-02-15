@@ -225,6 +225,21 @@ bool creds_server_check(const struct dcinfo *dc, const DOM_CHAL *rcv_cli_chal_in
 	return True;
 }
 
+bool netlogon_creds_server_check(const struct dcinfo *dc,
+				 const struct netr_Credential *rcv_cli_chal_in)
+{
+	if (memcmp(dc->clnt_chal.data, rcv_cli_chal_in->data, 8)) {
+		DEBUG(5,("netlogon_creds_server_check: challenge : %s\n",
+			credstr(rcv_cli_chal_in->data)));
+		DEBUG(5,("calculated: %s\n", credstr(dc->clnt_chal.data)));
+		DEBUG(2,("netlogon_creds_server_check: credentials check failed.\n"));
+		return false;
+	}
+
+	DEBUG(10,("netlogon_creds_server_check: credentials check OK.\n"));
+
+	return true;
+}
 /****************************************************************************
  Replace current seed chal. Internal function - due to split server step below.
 ****************************************************************************/
@@ -271,6 +286,36 @@ bool creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred, DOM_CRE
 	/* creds step succeeded - replace the current creds. */
 	*dc = tmp_dc;
 	return True;
+}
+
+bool netlogon_creds_server_step(struct dcinfo *dc,
+				const struct netr_Authenticator *received_cred,
+				struct netr_Authenticator *cred_out)
+{
+	bool ret;
+	struct dcinfo tmp_dc = *dc;
+
+	/* Do all operations on a temporary copy of the dc,
+	   which we throw away if the checks fail. */
+
+	tmp_dc.sequence = received_cred->timestamp;
+
+	creds_step(&tmp_dc);
+
+	/* Create the outgoing credentials */
+	cred_out->timestamp = tmp_dc.sequence + 1;
+	memcpy(&cred_out->cred, &tmp_dc.srv_chal, sizeof(cred_out->cred));
+
+	creds_reseed(&tmp_dc);
+
+	ret = netlogon_creds_server_check(&tmp_dc, &received_cred->cred);
+	if (!ret) {
+		return false;
+	}
+
+	/* creds step succeeded - replace the current creds. */
+	*dc = tmp_dc;
+	return true;
 }
 
 /****************************************************************************
