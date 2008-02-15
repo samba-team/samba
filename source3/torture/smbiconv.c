@@ -86,7 +86,7 @@ incomplete character or shift sequence at end of buffer"));
 
 
 static int
-process_fd (iconv_t cd, int fd, FILE *output)
+process_fd (smb_iconv_t cd, int fd, FILE *output)
 {
   /* we have a problem with reading from a descriptor since we must not
      provide the iconv() function an incomplete character or shift
