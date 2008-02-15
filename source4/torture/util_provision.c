@@ -252,21 +252,35 @@ static NTSTATUS provision_bare_py(TALLOC_CTX *mem_ctx,
 								  const char *dns_keytab)
 {
 	bool ok;
-	PyObject *provision_fn, *result, *parameters;
+	PyObject *provision_mod, *provision_dict, *provision_fn, *result, *parameters;
 	struct ldb_context *ldb;
 
 	DEBUG(0,("Provision for Become-DC test using PYTHON\n"));
 
 	py_load_samba_modules();
 	Py_Initialize();
+	py_update_path("bin"); /* FIXME: Can't assume this is always the case */
 
-	py_update_path("bin"); /* FIXME: Can't assume this always runs in source/... */
+	provision_mod = PyImport_Import(PyString_FromString("samba.provision"));
 
-	provision_fn = PyImport_Import(PyString_FromString("samba.provision.provision"));
-
-	if (provision_fn == NULL) {
+	if (provision_mod == NULL) {
+		PyErr_Print();
 		DEBUG(0, ("Unable to import provision Python module.\n"));
 	      	return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	provision_dict = PyModule_GetDict(provision_mod);
+
+	if (provision_dict == NULL) {
+		DEBUG(0, ("Unable to get dictionary for provision module\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	provision_fn = PyDict_GetItemString(provision_dict, "provision");
+	if (provision_fn == NULL) {
+		PyErr_Print();
+		DEBUG(0, ("Unable to get provision function\n"));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	DEBUG(0,("New Server[%s] in Site[%s]\n", dns_name, site_name));
@@ -275,8 +289,8 @@ static NTSTATUS provision_bare_py(TALLOC_CTX *mem_ctx,
 		"\tobjectGUID[%s]\n"
 		"\tinvocationId[%s]\n",
 		ntds_dn_str,
-		GUID_string(mem_ctx, ntds_guid),
-		GUID_string(mem_ctx, invocation_id)));
+		ntds_guid == NULL?"None":GUID_string(mem_ctx, ntds_guid),
+		invocation_id == NULL?"None":GUID_string(mem_ctx, invocation_id)));
 
 	DEBUG(0,("Pathes under PRIVATEDIR[%s]\n"
 		 "SAMDB[%s] SECRETS[%s] KEYTAB[%s]\n",
@@ -297,19 +311,33 @@ static NTSTATUS provision_bare_py(TALLOC_CTX *mem_ctx,
 	parameters = PyDict_New();
 
 	PyDict_SetItemString(parameters, "rootdn", PyString_FromString(root_dn_str));
-	PyDict_SetItemString(parameters, "domaindn", PyString_FromString(domain_dn_str));
-	PyDict_SetItemString(parameters, "domaindn_ldb", PyString_FromString(domaindn_ldb));
-	PyDict_SetItemString(parameters, "configdn", PyString_FromString(config_dn_str));
-	PyDict_SetItemString(parameters, "configdn_ldb", PyString_FromString(configdn_ldb));
-	PyDict_SetItemString(parameters, "schema_dn_str", PyString_FromString(schema_dn_str));
-	PyDict_SetItemString(parameters, "schemadn_ldb", PyString_FromString(schemadn_ldb));
-	PyDict_SetItemString(parameters, "netbios_name", PyString_FromString(netbios_name));
-	PyDict_SetItemString(parameters, "dnsname", PyString_FromString(dns_name));
-	PyDict_SetItemString(parameters, "defaultsite", PyString_FromString(site_name));
+	if (domaindn_ldb != NULL)
+		PyDict_SetItemString(parameters, "domaindn_ldb", 
+							 PyString_FromString(domaindn_ldb));
+	if (config_dn_str != NULL)
+		PyDict_SetItemString(parameters, "configdn", 
+							 PyString_FromString(config_dn_str));
+	if (configdn_ldb != NULL)
+		PyDict_SetItemString(parameters, "configdn_ldb", 
+							 PyString_FromString(configdn_ldb));
+	if (schema_dn_str != NULL)
+		PyDict_SetItemString(parameters, "schema_dn_str", 
+							 PyString_FromString(schema_dn_str));
+	if (schemadn_ldb != NULL)
+		PyDict_SetItemString(parameters, "schemadn_ldb", 
+							 PyString_FromString(schemadn_ldb));
+	PyDict_SetItemString(parameters, "hostname", PyString_FromString(netbios_name));
+	PyDict_SetItemString(parameters, "sitename", PyString_FromString(site_name));
 	PyDict_SetItemString(parameters, "machinepass", PyString_FromString(machine_password));
-	PyDict_SetItemString(parameters, "samdb", PyString_FromString(samdb_ldb));
-	PyDict_SetItemString(parameters, "secrets_ldb", PyString_FromString(secrets_ldb));
-	PyDict_SetItemString(parameters, "secrets_keytab", PyString_FromString(secrets_keytab));
+	if (samdb_ldb != NULL)
+		PyDict_SetItemString(parameters, "samdb", 
+							 PyString_FromString(samdb_ldb));
+	if (secrets_ldb != NULL)
+		PyDict_SetItemString(parameters, "secrets_ldb", 
+							 PyString_FromString(secrets_ldb));
+	if (secrets_keytab != NULL)
+		PyDict_SetItemString(parameters, "secrets_keytab", 
+							 PyString_FromString(secrets_keytab));
 
 	result = PyEval_CallObjectWithKeywords(provision_fn, NULL, parameters);
 
