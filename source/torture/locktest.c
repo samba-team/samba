@@ -396,7 +396,7 @@ static int retest(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
    we then do random locking ops in tamdem on the 4 fnums from each
    server and ensure that the results match
  */
-static void test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
+static int test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
 {
 	struct smbcli_state *cli[NSERVERS][NCONNECTIONS];
 	int fnum[NSERVERS][NCONNECTIONS][NFILES];
@@ -451,7 +451,12 @@ static void test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
 	open_files(cli, fnum);
 	n = retest(cli, fnum, numops);
 
-	if (n == numops || !analyze) return;
+	if (n == numops || !analyze) {
+		if (n != numops) {
+			return 1;
+		}
+		return 0;
+	}
 	n++;
 
 	skip = n/2;
@@ -517,6 +522,8 @@ static void test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
 		       (double)recorded[i].len,
 		       recorded[i].needed);
 	}	
+
+	return 1;
 }
 
 
@@ -632,8 +639,6 @@ _NORETURN_ static void usage(poptContext pc)
 		 seed, lock_base, lock_range, min_length));
 	srandom(seed);
 
-	test_locks(lp_ctx, share);
-
-	return(0);
+	return test_locks(lp_ctx, share);
 }
 
