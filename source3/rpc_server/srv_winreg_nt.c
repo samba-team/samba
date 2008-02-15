@@ -21,7 +21,6 @@
 /* Implementation of registry functions. */
 
 #include "includes.h"
-#include "regfio.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_SRV
@@ -652,125 +651,6 @@ static int validate_reg_filename(TALLOC_CTX *ctx, char **pp_fname )
 }
 
 /*******************************************************************
- Note: topkeypat is the *full* path that this *key will be
- loaded into (including the name of the key)
- ********************************************************************/
-
-static WERROR reg_load_tree( REGF_FILE *regfile, const char *topkeypath,
-                             REGF_NK_REC *key )
-{
-	REGF_NK_REC *subkey;
-	REGISTRY_KEY registry_key;
-	REGVAL_CTR *values;
-	REGSUBKEY_CTR *subkeys;
-	int i;
-	char *path = NULL;
-	WERROR result = WERR_OK;
-
-	/* initialize the REGISTRY_KEY structure */
-
-	if ( !(registry_key.hook = reghook_cache_find(topkeypath)) ) {
-		DEBUG(0,("reg_load_tree: Failed to assigned a REGISTRY_HOOK to [%s]\n",
-			topkeypath ));
-		return WERR_BADFILE;
-	}
-
-	registry_key.name = talloc_strdup( regfile->mem_ctx, topkeypath );
-	if ( !registry_key.name ) {
-		DEBUG(0,("reg_load_tree: Talloc failed for reg_key.name!\n"));
-		return WERR_NOMEM;
-	}
-
-	/* now start parsing the values and subkeys */
-
-	if ( !(subkeys = TALLOC_ZERO_P( regfile->mem_ctx, REGSUBKEY_CTR )) )
-		return WERR_NOMEM;
-
-	if ( !(values = TALLOC_ZERO_P( subkeys, REGVAL_CTR )) )
-		return WERR_NOMEM;
-
-	/* copy values into the REGVAL_CTR */
-
-	for ( i=0; i<key->num_values; i++ ) {
-		regval_ctr_addvalue( values, key->values[i].valuename, key->values[i].type,
-			(char*)key->values[i].data, (key->values[i].data_size & ~VK_DATA_IN_OFFSET) );
-	}
-
-	/* copy subkeys into the REGSUBKEY_CTR */
-
-	key->subkey_index = 0;
-	while ( (subkey = regfio_fetch_subkey( regfile, key )) ) {
-		regsubkey_ctr_addkey( subkeys, subkey->keyname );
-	}
-
-	/* write this key and values out */
-
-	if ( !store_reg_values( &registry_key, values )
-		|| !store_reg_keys( &registry_key, subkeys ) )
-	{
-		DEBUG(0,("reg_load_tree: Failed to load %s!\n", topkeypath));
-		result = WERR_REG_IO_FAILURE;
-	}
-
-	TALLOC_FREE( subkeys );
-
-	if ( !W_ERROR_IS_OK(result) )
-		return result;
-
-	/* now continue to load each subkey registry tree */
-
-	key->subkey_index = 0;
-	while ( (subkey = regfio_fetch_subkey( regfile, key )) ) {
-		path = talloc_asprintf(regfile->mem_ctx,
-				"%s\\%s",
-				topkeypath,
-				subkey->keyname);
-		if (!path) {
-			return WERR_NOMEM;
-		}
-		result = reg_load_tree( regfile, path, subkey );
-		if ( !W_ERROR_IS_OK(result) )
-			break;
-	}
-
-	return result;
-}
-
-/*******************************************************************
- ********************************************************************/
-
-static WERROR restore_registry_key ( REGISTRY_KEY *krecord, const char *fname )
-{
-	REGF_FILE *regfile;
-	REGF_NK_REC *rootkey;
-	WERROR result;
-		
-	/* open the registry file....fail if the file already exists */
-	
-	if ( !(regfile = regfio_open( fname, (O_RDONLY), 0 )) ) {
-                DEBUG(0,("restore_registry_key: failed to open \"%s\" (%s)\n", 
-			fname, strerror(errno) ));
-		return ( ntstatus_to_werror(map_nt_error_from_unix( errno )) );
-        }
-	
-	/* get the rootkey from the regf file and then load the tree
-	   via recursive calls */
-	   
-	if ( !(rootkey = regfio_rootkey( regfile )) ) {
-		regfio_close( regfile );
-		return WERR_REG_FILE_INVALID;
-	}
-
-	result = reg_load_tree( regfile, krecord->name, rootkey );
-
-	/* cleanup */
-
-	regfio_close( regfile );
-
-	return result;
-}
-
-/*******************************************************************
  ********************************************************************/
 
 WERROR _winreg_RestoreKey(pipes_struct *p, struct winreg_RestoreKey *r)
@@ -804,7 +684,7 @@ WERROR _winreg_RestoreKey(pipes_struct *p, struct winreg_RestoreKey *r)
 	DEBUG(2,("_winreg_RestoreKey: Restoring [%s] from %s in share %s\n",
 		 regkey->key->name, fname, lp_servicename(snum) ));
 
-	return restore_registry_key( regkey->key, fname );
+	return reg_restorekey(regkey, fname);
 }
 
 WERROR _winreg_SaveKey(pipes_struct *p, struct winreg_SaveKey *r)
