@@ -960,7 +960,7 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	typedef struct {
 		uint32    idx;
-		lsa_AsciiString account_name;
+		lsa_AsciiStringLarge account_name;
 	} samr_DispEntryAscii;
 
 	typedef struct {
