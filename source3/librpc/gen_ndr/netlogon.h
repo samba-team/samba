@@ -890,7 +890,7 @@ struct netr_ServerReqChallenge {
 	} in;
 
 	struct {
-		struct netr_Credential *credentials;/* [ref] */
+		struct netr_Credential *return_credentials;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -907,7 +907,7 @@ struct netr_ServerAuthenticate {
 	} in;
 
 	struct {
-		struct netr_Credential *credentials;/* [ref] */
+		struct netr_Credential *return_credentials;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -1093,7 +1093,7 @@ struct netr_ServerAuthenticate2 {
 	} in;
 
 	struct {
-		struct netr_Credential *credentials;/* [ref] */
+		struct netr_Credential *return_credentials;/* [ref] */
 		uint32_t *negotiate_flags;/* [ref] */
 		NTSTATUS result;
 	} out;

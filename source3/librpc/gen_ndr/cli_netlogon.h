@@ -38,14 +38,16 @@ NTSTATUS rpccli_netr_ServerReqChallenge(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					const char *server_name,
 					const char *computer_name,
-					struct netr_Credential *credentials);
+					struct netr_Credential *credentials,
+					struct netr_Credential *return_credentials);
 NTSTATUS rpccli_netr_ServerAuthenticate(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					const char *server_name,
 					const char *account_name,
 					enum netr_SchannelType secure_channel_type,
 					const char *computer_name,
-					struct netr_Credential *credentials);
+					struct netr_Credential *credentials,
+					struct netr_Credential *return_credentials);
 NTSTATUS rpccli_netr_ServerPasswordSet(struct rpc_pipe_client *cli,
 				       TALLOC_CTX *mem_ctx,
 				       const char *server_name,
@@ -137,6 +139,7 @@ NTSTATUS rpccli_netr_ServerAuthenticate2(struct rpc_pipe_client *cli,
 					 enum netr_SchannelType secure_channel_type,
 					 const char *computer_name,
 					 struct netr_Credential *credentials,
+					 struct netr_Credential *return_credentials,
 					 uint32_t *negotiate_flags);
 NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
