@@ -24,7 +24,7 @@
 #include "system/wait.h"
 #include "lib/events/events.h"
 #include "libcli/raw/libcliraw.h"
-#include "torture/util_provision.h"
+#include "torture/util.h"
 
 static bool test_tempdir(struct torture_context *tctx)
 {
