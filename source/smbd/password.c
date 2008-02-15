@@ -121,6 +121,10 @@ void invalidate_vuid(uint16 vuid)
 
 	data_blob_free(&vuser->session_key);
 
+	if (vuser->auth_ntlmssp_state) {
+		auth_ntlmssp_end(&vuser->auth_ntlmssp_state);
+	}
+
 	DLIST_REMOVE(validated_users, vuser);
 
 	/* clear the vuid from the 'cache' on each connection, and
