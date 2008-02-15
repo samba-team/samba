@@ -454,19 +454,6 @@ typedef struct net_r_sam_logon_info_ex {
 	NTSTATUS status; /* return code */
 } NET_R_SAM_LOGON_EX;
 
-
-/* NET_Q_SAM_LOGOFF */
-typedef struct net_q_sam_logoff_info {
-	DOM_SAM_INFO sam_id;
-} NET_Q_SAM_LOGOFF;
-
-/* NET_R_SAM_LOGOFF */
-typedef struct net_r_sam_logoff_info {
-	uint32 buffer_creds; /* undocumented buffer pointer */
-	DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
-	NTSTATUS status; /* return code */
-} NET_R_SAM_LOGOFF;
-
 /* LOCKOUT_STRING */
 typedef struct account_lockout_string {
 	uint32 array_size;
