@@ -633,9 +633,6 @@ static void usage(poptContext pc)
 
 	gensec_init(lp_ctx);
 
-	argc -= optind;
-	argv += optind;
-
 	DEBUG(0,("seed=%u base=%d range=%d min_length=%d\n", 
 		 seed, lock_base, lock_range, min_length));
 	srandom(seed);
