@@ -259,7 +259,7 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
  gets a machine password entry.  checks access rights of the host.
  ******************************************************************/
 
-static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
+static NTSTATUS get_md4pw(char *md4pw, const char *mach_acct, uint16 sec_chan_type)
 {
 	struct samu *sampass = NULL;
 	const uint8 *pass;
@@ -398,41 +398,30 @@ NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
 }
 
 /*************************************************************************
- init_net_r_auth:
+ _netr_ServerAuthenticate
+ Create the initial credentials.
  *************************************************************************/
 
-static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, NTSTATUS status)
-{
-	memcpy(r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
-	r_a->status = status;
-}
-
-/*************************************************************************
- _net_auth. Create the initial credentials.
- *************************************************************************/
-
-NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
+NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
+				  struct netr_ServerAuthenticate *r)
 {
 	NTSTATUS status;
-	fstring mach_acct;
-	fstring remote_machine;
 	DOM_CHAL srv_chal_out;
 
 	if (!p->dc || !p->dc->challenge_sent) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
-	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
-
-	status = get_md4pw((char *)p->dc->mach_pw, mach_acct, q_u->clnt_id.sec_chan);
+	status = get_md4pw((char *)p->dc->mach_pw,
+			   r->in.account_name,
+			   r->in.secure_channel_type);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("_net_auth: creds_server_check failed. Failed to "
+		DEBUG(0,("_netr_ServerAuthenticate: get_md4pw failed. Failed to "
 			"get password for machine account %s "
 			"from client %s: %s\n",
-			mach_acct, remote_machine, nt_errstr(status) ));
+			r->in.account_name,
+			r->in.computer_name,
+			nt_errstr(status) ));
 		/* always return NT_STATUS_ACCESS_DENIED */
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -446,22 +435,25 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 			&srv_chal_out);
 
 	/* Check client credentials are valid. */
-	if (!creds_server_check(p->dc, &q_u->clnt_chal)) {
-		DEBUG(0,("_net_auth: creds_server_check failed. Rejecting auth "
+	if (!netlogon_creds_server_check(p->dc, r->in.credentials)) {
+		DEBUG(0,("_netr_ServerAuthenticate: netlogon_creds_server_check failed. Rejecting auth "
 			"request from client %s machine account %s\n",
-			remote_machine, mach_acct ));
+			r->in.computer_name,
+			r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	fstrcpy(p->dc->mach_acct, mach_acct);
-	fstrcpy(p->dc->remote_machine, remote_machine);
+	fstrcpy(p->dc->mach_acct, r->in.account_name);
+	fstrcpy(p->dc->remote_machine, r->in.computer_name);
 	p->dc->authenticated = True;
 
 	/* set up the LSA AUTH response */
 	/* Return the server credentials. */
-	init_net_r_auth(r_u, &srv_chal_out, NT_STATUS_OK);
 
-	return r_u->status;
+	memcpy(r->out.credentials->data, &srv_chal_out.data,
+	       sizeof(r->out.credentials->data));
+
+	return NT_STATUS_OK;
 }
 
 /*************************************************************************
@@ -1253,16 +1245,6 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 
 NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
 			      struct netr_LogonSamLogoff *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
-				  struct netr_ServerAuthenticate *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
