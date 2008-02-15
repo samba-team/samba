@@ -528,7 +528,7 @@ static int test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
 
 
 
-_NORETURN_ static void usage(poptContext pc)
+static void usage(poptContext pc)
 {
 	printf("Usage:\n\tlocktest //server1/share1 //server2/share2 [options..]\n");
 	poptPrintUsage(pc, stdout, 0);
@@ -578,6 +578,7 @@ _NORETURN_ static void usage(poptContext pc)
 
 	poptSetOtherOptionHelp(pc, "<unc1> <unc2>");
 
+	lp_ctx = cmdline_lp_ctx;
 	servers[0] = cli_credentials_init(talloc_autofree_context());
 	servers[1] = cli_credentials_init(talloc_autofree_context());
 	cli_credentials_guess(servers[0], lp_ctx);
