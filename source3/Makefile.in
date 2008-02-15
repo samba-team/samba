@@ -1881,19 +1881,19 @@ bin/pam_smbpass.@SHLIBEXT@: $(BINARY_PREREQS) $(PAM_SMBPASS_OBJ)
 
 bin/tdbbackup@EXEEXT@: $(BINARY_PREREQS) $(TDBBACKUP_OBJ) @LIBTDB_SHARED@
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) @LIBTDB_LIBS@ $(TDBBACKUP_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(TDBBACKUP_OBJ) $(DYNEXP) $(LIBS) @LIBTDB_LIBS@
 
 bin/tdbtool@EXEEXT@: $(BINARY_PREREQS) $(TDBTOOL_OBJ) @LIBTDB_SHARED@
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) @LIBTDB_SHARED@ $(TDBTOOL_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(TDBTOOL_OBJ) $(DYNEXP) $(LIBS) @LIBTDB_SHARED@
 
 bin/tdbdump@EXEEXT@: $(BINARY_PREREQS) $(TDBDUMP_OBJ) @LIBTDB_SHARED@
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) @LIBTDB_LIBS@ $(TDBDUMP_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(TDBDUMP_OBJ) $(DYNEXP) $(LIBS) @LIBTDB_LIBS@
 
 bin/tdbtorture@EXEEXT@: $(BINARY_PREREQS) $(TDBTORTURE_OBJ) @LIBTDB_SHARED@
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(DYNEXP) $(LIBS) @LIBTDB_LIBS@ $(TDBTORTURE_OBJ)
+	@$(CC) $(FLAGS) -o $@ $(LDFLAGS) $(TDBTORTURE_OBJ) $(DYNEXP) $(LIBS) @LIBTDB_LIBS@
 
 bin/t_strcmp@EXEEXT@: $(BINARY_PREREQS) bin/libbigballofmud.@SHLIBEXT@ torture/t_strcmp.o
 	$(CC) $(FLAGS) -o $@ $(DYNEXP) $(LIBS) torture/t_strcmp.o -L ./bin -lbigballofmud
