@@ -27,45 +27,7 @@
  private data. Only call this via rpccli_netlogon_setup_creds(). JRA.
 */
 
-static NTSTATUS rpccli_net_req_chal(struct rpc_pipe_client *cli,
-				TALLOC_CTX *mem_ctx,
-				const char *server_name,
-				const char *clnt_name,
-				const DOM_CHAL *clnt_chal_in,
-				DOM_CHAL *srv_chal_out)
-{
-	prs_struct qbuf, rbuf;
-	NET_Q_REQ_CHAL q;
-	NET_R_REQ_CHAL r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	/* create and send a MSRPC command with api NET_REQCHAL */
-
-	DEBUG(4,("cli_net_req_chal: LSA Request Challenge from %s to %s\n",
-		clnt_name, server_name));
-        
-	/* store the parameters */
-	init_q_req_chal(&q, server_name, clnt_name, clnt_chal_in);
-
-	/* Marshall data and send request */
-	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_REQCHAL,
-		q, r,
-		qbuf, rbuf,
-		net_io_q_req_chal,
-		net_io_r_req_chal,
-		NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
-
-	/* Return result */
-
-	if (NT_STATUS_IS_OK(result)) {
-		/* Store the returned server challenge. */
-		*srv_chal_out = r.srv_chal;
-	}
-
-	return result;
-}
+/* instead of rpccli_net_req_chal() we use rpccli_netr_ServerReqChallenge() now - gd */
 
 #if 0
 /****************************************************************************
@@ -147,50 +109,8 @@ password ?).\n", cli->cli->desthost ));
  encrypt of the server challenge originally received. JRA.
 ****************************************************************************/
 
-static NTSTATUS rpccli_net_auth2(struct rpc_pipe_client *cli,
-			TALLOC_CTX *mem_ctx,
-			const char *server_name,
-			const char *account_name,
-			uint16 sec_chan_type,
-			const char *computer_name,
-			uint32 *neg_flags_inout,
-			const DOM_CHAL *clnt_chal_in,
-			DOM_CHAL *srv_chal_out)
-{
-        prs_struct qbuf, rbuf;
-        NET_Q_AUTH_2 q;
-        NET_R_AUTH_2 r;
-        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+/* instead of rpccli_net_auth2() we use rpccli_netr_ServerAuthenticate2() now -  gd */
 
-        /* create and send a MSRPC command with api NET_AUTH2 */
-
-        DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s neg: %x\n",
-                 server_name, account_name, sec_chan_type, computer_name,
-                 *neg_flags_inout));
-
-        /* store the parameters */
-
-        init_q_auth_2(&q, server_name, account_name, sec_chan_type,
-		      computer_name, clnt_chal_in, *neg_flags_inout);
-
-        /* turn parameters into data stream */
-
-	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_AUTH2,
-		q, r,
-		qbuf, rbuf,
-		net_io_q_auth_2,
-		net_io_r_auth_2,
-		NT_STATUS_UNSUCCESSFUL);
-
-        result = r.status;
-
-        if (NT_STATUS_IS_OK(result)) {
-		*srv_chal_out = r.srv_chal;
-		*neg_flags_inout = r.srv_flgs.neg_flags;
-        }
-
-        return result;
-}
 
 #if 0	/* not currebntly used */
 /****************************************************************************

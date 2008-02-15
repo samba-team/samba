@@ -281,22 +281,6 @@ typedef struct neg_flags_info {
 	uint32 neg_flags; /* negotiated flags */
 } NEG_FLAGS;
 
-
-/* NET_Q_REQ_CHAL */
-typedef struct net_q_req_chal_info {
-	uint32  undoc_buffer; /* undocumented buffer pointer */
-	UNISTR2 uni_logon_srv; /* logon server unicode string */
-	UNISTR2 uni_logon_clnt; /* logon client unicode string */
-	DOM_CHAL clnt_chal; /* client challenge */
-} NET_Q_REQ_CHAL;
-
-
-/* NET_R_REQ_CHAL */
-typedef struct net_r_req_chal_info {
-	DOM_CHAL srv_chal; /* server challenge */
-	NTSTATUS status; /* return code */
-} NET_R_REQ_CHAL;
-
 /* NET_Q_AUTH */
 typedef struct net_q_auth_info {
 	DOM_LOG_INFO clnt_id; /* client identification info */
@@ -308,22 +292,6 @@ typedef struct net_r_auth_info {
 	DOM_CHAL srv_chal;     /* server-calculated credentials */
 	NTSTATUS status; /* return code */
 } NET_R_AUTH;
-
-/* NET_Q_AUTH_2 */
-typedef struct net_q_auth2_info {
-	DOM_LOG_INFO clnt_id; /* client identification info */
-	DOM_CHAL clnt_chal;     /* client-calculated credentials */
-
-	NEG_FLAGS clnt_flgs; /* usually 0x0000 01ff */
-} NET_Q_AUTH_2;
-
-
-/* NET_R_AUTH_2 */
-typedef struct net_r_auth2_info {
-	DOM_CHAL srv_chal;     /* server-calculated credentials */
-	NEG_FLAGS srv_flgs; /* usually 0x0000 01ff */
-	NTSTATUS status; /* return code */
-} NET_R_AUTH_2;
 
 /* NET_Q_AUTH_3 */
 typedef struct net_q_auth3_info {
