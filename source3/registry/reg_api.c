@@ -726,9 +726,7 @@ WERROR reg_deleteallvalues(struct registry_key *key)
 }
 
 /*
- * Utility function to open a complete registry path including the hive
- * prefix. This should become the replacement function for
- * regkey_open_internal.
+ * Utility function to open a complete registry path including the hive prefix.
  */
 
 WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
