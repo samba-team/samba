@@ -130,7 +130,8 @@ interface drsuapi
 		[value(ndr_size_dom_sid28(&sid, ndr->flags))]  uint32 __ndr_size_sid;
 		GUID guid;
 		dom_sid28 sid;
-		[flag(STR_SIZE4|STR_CHARLEN|STR_CONFORMANT)] string dn;
+		[value(strlen_m(dn))] uint32 __ndr_size_dn;
+		[charset(UTF16),size_is(__ndr_size_dn+1)] uint16 dn[];
 	} drsuapi_DsReplicaObjectIdentifier;
 
 	typedef [public] bitmap {
@@ -451,7 +452,8 @@ interface drsuapi
 		[value(ndr_size_dom_sid28(&sid,ndr->flags))]  uint32 __ndr_size_sid;
 		GUID guid;
 		dom_sid28 sid;
-		[flag(STR_SIZE4|STR_CHARLEN)] string dn;
+		[value(strlen_m(dn))] uint32 __ndr_size_dn;
+		[charset(UTF16)] uint16 dn[__ndr_size_dn+1];
 	} drsuapi_DsReplicaObjectIdentifier3;
 
 	typedef [public,gensize] struct {
@@ -459,7 +461,8 @@ interface drsuapi
 		[value(ndr_size_dom_sid28(&sid,ndr->flags))]  uint32 __ndr_size_sid;
 		GUID guid;
 		dom_sid28 sid;
-		[flag(STR_SIZE4|STR_CHARLEN)] string dn;
+		[value(strlen_m(dn))] uint32 __ndr_size_dn;
+		[charset(UTF16)] uint16 dn[__ndr_size_dn+1];
 		[value(binary.length + 4)] uint32 __ndr_size_binary;
 		[flag(NDR_REMAINING)] DATA_BLOB binary;
 	} drsuapi_DsReplicaObjectIdentifier3Binary;

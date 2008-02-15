@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "lib/cmdline/popt_common.h"
 #include "system/filesys.h"
 #include "system/dir.h"
 #include "libcli/libcli.h"
@@ -30,12 +31,10 @@
 #include "dynconfig.h"
 #include "libcli/resolve/resolve.h"
 
-static struct cli_credentials *credentials;
 static bool showall = false;
 static bool old_list = false;
 static const char *maskchars = "<>\"?*abc.";
 static const char *filechars = "abcdefghijklm.";
-static int verbose;
 static int die_on_error;
 static int NumLoops = 0;
 static int max_length = 20;
@@ -87,13 +86,13 @@ static struct smbcli_state *connect_one(struct resolve_context *resolve_ctx,
 	*share = 0;
 	share++;
 
-	cli_credentials_set_workstation(credentials, "masktest", CRED_SPECIFIED);
+	cli_credentials_set_workstation(cmdline_credentials, "masktest", CRED_SPECIFIED);
 
 	status = smbcli_full_connection(NULL, &c,
 					server, 
 					ports,
 					share, NULL,
-					credentials, resolve_ctx, NULL,
+					cmdline_credentials, resolve_ctx, NULL,
 					options);
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -112,7 +111,7 @@ static bool f_info_hit;
 
 static void listfn(struct clilist_file_info *f, const char *s, void *state)
 {
-	struct masktest_state *m = talloc_get_type(state,struct masktest_state);
+	struct masktest_state *m = (struct masktest_state *)state;
 
 	if (ISDOT(f->name)) {
 		resultp[0] = '+';
@@ -128,7 +127,7 @@ static void listfn(struct clilist_file_info *f, const char *s, void *state)
 }
 
 static void get_real_name(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
-			  char *long_name, fstring short_name)
+			  char **long_name, fstring short_name)
 {
 	const char *mask;
 	struct masktest_state state;
@@ -151,12 +150,12 @@ static void get_real_name(TALLOC_CTX *mem_ctx, struct smbcli_state *cli,
 	if (f_info_hit) {
 		fstrcpy(short_name, last_hit.short_name);
 		strlower(short_name);
-		long_name = talloc_strdup(mem_ctx, last_hit.long_name);
-		strlower(long_name);
+		*long_name = talloc_strdup(mem_ctx, last_hit.long_name);
+		strlower(*long_name);
 	}
 
 	if (*short_name == '\0') {
-		fstrcpy(short_name, long_name);
+		fstrcpy(short_name, *long_name);
 	}
 }
 
@@ -168,7 +167,7 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 	char *res2;
 	static int count;
 	fstring short_name;
-	char *long_name;
+	char *long_name = NULL;
 	struct masktest_state state;
 
 	count++;
@@ -186,7 +185,7 @@ static void testpair(TALLOC_CTX *mem_ctx, struct smbcli_state *cli, char *mask,
 
 	resultp = res1;
 	fstrcpy(short_name, "");
-	get_real_name(mem_ctx, cli, long_name, short_name);
+	get_real_name(mem_ctx, cli, &long_name, short_name);
 	fstrcpy(res1, "---");
 	smbcli_list_new(cli->tree, mask,
 			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY,
@@ -241,6 +240,8 @@ static void test_mask(int argc, char *argv[],
 		l2 = 1 + random() % max_length;
 		mask = talloc_strdup(mem_ctx, "\\masktest\\");
 		file = talloc_strdup(mem_ctx, "\\masktest\\");
+		mask = talloc_realloc_size(mem_ctx, mask, strlen(mask)+l1+1);
+		file = talloc_realloc_size(mem_ctx, file, strlen(file)+l2+1);
 		l = strlen(mask);
 		for (i=0;i<l1;i++) {
 			mask[i+l] = maskchars[random() % mc_len];
@@ -269,30 +270,16 @@ static void test_mask(int argc, char *argv[],
 }
 
 
-static void usage(void)
+static void usage(poptContext pc)
 {
 	printf(
 "Usage:\n\
   masktest //server/share [options..]\n\
-  options:\n\
-	-d debuglevel\n\
-	-n numloops\n\
-        -W workgroup\n\
-        -U user%%pass\n\
-        -s seed\n\
-        -l max test length\n\
-        -M max protocol\n\
-        -f filechars (default %s)\n\
-        -m maskchars (default %s)\n\
-	-v                             verbose mode\n\
-	-E                             die on error\n\
-        -a                             show all tests\n\
 \n\
   This program tests wildcard matching between two servers. It generates\n\
   random pairs of filenames/masks and tests that they match in the same\n\
-  way on the servers and internally\n\
-", 
-  filechars, maskchars);
+  way on the servers and internally\n");
+	poptPrintUsage(pc, stdout, 0);
 }
 
 /****************************************************************************
@@ -306,84 +293,66 @@ static void usage(void)
 	int seed;
 	struct loadparm_context *lp_ctx;
 	struct smbcli_options options;
+	poptContext pc;
+	int argc_new, i;
+	char **argv_new;
+	enum {OPT_UNCLIST=1000};
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{"seed",	  0, POPT_ARG_INT,  &seed, 	0,	"Seed to use for randomizer", 	NULL},
+		{"num-ops",	  0, POPT_ARG_INT,  &NumLoops, 	0, 	"num ops",	NULL},
+		{"maxlength",	  0, POPT_ARG_INT,  &max_length,0, 	"maximum length",	NULL},
+		{"dieonerror",    0, POPT_ARG_NONE, &die_on_error, 0,   "die on errors", NULL},
+		{"showall",       0, POPT_ARG_NONE, &showall,    0,      "display all operations", NULL},
+		{"oldlist",       0, POPT_ARG_NONE, &old_list,    0,     "use old list call", NULL},
+		{"maskchars",	  0, POPT_ARG_STRING,	&maskchars,    0,"mask characters", 	NULL},
+		{"filechars",	  0, POPT_ARG_STRING,	&filechars,    0,"file characters", 	NULL},
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CONNECTION
+		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
+		{ NULL }
+	};
 
 	setlinebuf(stdout);
-
-	setup_logging("masktest", DEBUG_STDOUT);
-
-	if (argc < 2 || argv[1][0] == '-') {
-		usage();
-		exit(1);
-	}
-
-	share = argv[1];
-
-	all_string_sub(share,"/","\\",0);
-
-	setup_logging(argv[0], DEBUG_STDOUT);
-
-	argc -= 1;
-	argv += 1;
-
-	lp_ctx = loadparm_init(talloc_autofree_context());
-	lp_load(lp_ctx, dyn_CONFIGFILE);
-
-	credentials = cli_credentials_init(talloc_autofree_context());
-	cli_credentials_guess(credentials, lp_ctx);
-
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vEl:")) != EOF) {
+	pc = poptGetContext("locktest", argc, (const char **) argv, long_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
+
+	poptSetOtherOptionHelp(pc, "<unc>");
+
+	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
-		case 'n':
-			NumLoops = atoi(optarg);
+		case OPT_UNCLIST:
+			lp_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
 			break;
-		case 'd':
-			DEBUGLEVEL = atoi(optarg);
-			break;
-		case 'E':
-			die_on_error = 1;
-			break;
-		case 'v':
-			verbose++;
-			break;
-		case 'M':
-			lp_set_cmdline(lp_ctx, "max protocol", optarg);
-			break;
-		case 'U':
-			cli_credentials_parse_string(credentials, optarg, CRED_SPECIFIED);
-			break;
-		case 's':
-			seed = atoi(optarg);
-			break;
-		case 'h':
-			usage();
-			exit(1);
-		case 'm':
-			maskchars = optarg;
-			break;
-		case 'l':
-			max_length = atoi(optarg);
-			break;
-		case 'f':
-			filechars = optarg;
-			break;
-		case 'a':
-			showall = 1;
-			break;
-		case 'o':
-			old_list = true;
-			break;
-		default:
-			printf("Unknown option %c (%d)\n", (char)opt, opt);
-			exit(1);
 		}
 	}
 
-	gensec_init(lp_ctx);
+	argv_new = discard_const_p(char *, poptGetArgs(pc));
+	argc_new = argc;
+	for (i=0; i<argc; i++) {
+		if (argv_new[i] == NULL) {
+			argc_new = i;
+			break;
+		}
+	}
 
-	argc -= optind;
-	argv += optind;
+	if (!(argc_new >= 2)) {
+		usage(pc);
+		exit(1);
+	}
+
+	setup_logging("masktest", DEBUG_STDOUT);
+
+	share = argv_new[1];
+
+	all_string_sub(share,"/","\\",0);
+
+	lp_ctx = cmdline_lp_ctx;
+
+	gensec_init(lp_ctx);
 
 	lp_smbcli_options(lp_ctx, &options);
 
@@ -398,7 +367,7 @@ static void usage(void)
 	DEBUG(0,("seed=%d     format --- --- (server, correct)\n", seed));
 	srandom(seed);
 
-	test_mask(argc, argv, cli);
+	test_mask(argc_new-1, argv_new+1, cli);
 
 	return(0);
 }

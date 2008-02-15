@@ -64,7 +64,8 @@ interface dcerpc
 		uint16 max_xmit_frag;
 		uint16 max_recv_frag;
 		uint32 assoc_group_id;
-		ascstr3 secondary_address;
+		[value(strlen(secondary_address)+1)] uint16 secondary_address_size;
+		[charset(DOS)] uint8 secondary_address[secondary_address_size];
 		[flag(NDR_ALIGN4)]    DATA_BLOB _pad1;
 		uint8 num_results;
 		dcerpc_ack_ctx ctx_list[num_results];

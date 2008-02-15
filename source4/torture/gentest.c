@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "lib/cmdline/popt_common.h"
 #include "system/time.h"
 #include "system/filesys.h"
 #include "libcli/raw/request.h"
@@ -1755,6 +1756,7 @@ static void gen_setfileinfo(int instance, union smb_setfileinfo *info)
 		info->end_of_file_info.in.size = gen_offset();
 		break;
 	case RAW_SFILEINFO_RENAME_INFORMATION:
+	case RAW_SFILEINFO_RENAME_INFORMATION_SMB2:
 		info->rename_information.in.overwrite = gen_bool();
 		info->rename_information.in.root_fid = gen_root_fid(instance);
 		info->rename_information.in.new_name = gen_fname_open(instance);
@@ -2129,25 +2131,13 @@ static bool start_gentest(struct loadparm_context *lp_ctx)
 }
 
 
-static void usage(void)
+static void usage(poptContext pc)
 {
 	printf(
 "Usage:\n\
-  gentest2 //server1/share1 //server2/share2 [options..]\n\
-  options:\n\
-        -U user%%pass        (can be specified twice)\n\
-        -s seed\n\
-        -o numops\n\
-        -a            (show all ops)\n\
-        -A            backtrack to find minimal ops\n\
-        -i FILE       add a list of wildcard exclusions\n\
-        -O            enable oplocks\n\
-        -S FILE       set preset seeds file\n\
-        -L            use preset seeds\n\
-        -F            fast reconnect (just close files)\n\
-        -C            continuous analysis mode\n\
-        -X            analyse even when test OK\n\
+  gentest //server1/share1 //server2/share2 [options..]\n\
 ");
+	poptPrintUsage(pc, stdout, 0);
 }
 
 /**
@@ -2180,14 +2170,91 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 	int opt;
 	int i, username_count=0;
 	bool ret;
+	char *ignore_file=NULL;
 	struct loadparm_context *lp_ctx;
+	poptContext pc;
+	int argc_new;
+	char **argv_new;
+	enum {OPT_UNCLIST=1000};
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{"seed",	  0, POPT_ARG_INT,  &options.seed, 	0,	"Seed to use for randomizer", 	NULL},
+		{"num-ops",	  0, POPT_ARG_INT,  &options.numops, 	0, 	"num ops",	NULL},
+		{"oplocks",       0, POPT_ARG_NONE, &options.use_oplocks,0,      "use oplocks", NULL},
+		{"showall",       0, POPT_ARG_NONE, &options.showall,    0,      "display all operations", NULL},
+		{"analyse",       0, POPT_ARG_NONE, &options.analyze,    0,      "do backtrack analysis", NULL},
+		{"analysealways", 0, POPT_ARG_NONE, &options.analyze_always,    0,      "analysis always", NULL},
+		{"analysecontinuous", 0, POPT_ARG_NONE, &options.analyze_continuous,    0,      "analysis continuous", NULL},
+		{"ignore",        0, POPT_ARG_STRING, &ignore_file,    0,      "ignore from file", NULL},
+		{"preset",        0, POPT_ARG_NONE, &options.use_preset_seeds,    0,      "use preset seeds", NULL},
+		{"fast",          0, POPT_ARG_NONE, &options.fast_reconnect,    0,      "use fast reconnect", NULL},
+		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
+		{"seedsfile",	  0, POPT_ARG_STRING,  &options.seeds_file, 0,	"seed file", 	NULL},
+		{ "user", 'U',       POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CONNECTION
+		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
+		{ NULL }
+	};
+
+	setlinebuf(stdout);
+	options.seed = time(NULL);
+	options.numops = 1000;
+	options.max_open_handles = 20;
+	options.seeds_file = "gentest_seeds.dat";
+
+	pc = poptGetContext("gentest", argc, (const char **) argv, long_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
+
+	poptSetOtherOptionHelp(pc, "<unc1> <unc2>");
+
+	lp_ctx = cmdline_lp_ctx;
+	servers[0].credentials = cli_credentials_init(talloc_autofree_context());
+	servers[1].credentials = cli_credentials_init(talloc_autofree_context());
+	cli_credentials_guess(servers[0].credentials, lp_ctx);
+	cli_credentials_guess(servers[1].credentials, lp_ctx);
+
+	while((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case OPT_UNCLIST:
+			lp_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
+			break;
+		case 'U':
+			if (username_count == 2) {
+				usage(pc);
+				exit(1);
+			}
+			cli_credentials_parse_string(servers[username_count].credentials, poptGetOptArg(pc), CRED_SPECIFIED);
+			username_count++;
+			break;
+		}
+	}
+
+	if (ignore_file) {
+		options.ignore_patterns = file_lines_load(ignore_file, NULL, NULL);
+	}
+
+	argv_new = discard_const_p(char *, poptGetArgs(pc));
+	argc_new = argc;
+	for (i=0; i<argc; i++) {
+		if (argv_new[i] == NULL) {
+			argc_new = i;
+			break;
+		}
+	}
+
+	if (!(argc_new >= 3)) {
+		usage(pc);
+		exit(1);
+	}
 
 	setlinebuf(stdout);
 
 	setup_logging("gentest", DEBUG_STDOUT);
 
 	if (argc < 3 || argv[1][0] == '-') {
-		usage();
+		usage(pc);
 		exit(1);
 	}
 
@@ -2195,90 +2262,14 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 
 	for (i=0;i<NSERVERS;i++) {
 		const char *share = argv[1+i];
-		servers[i].credentials = cli_credentials_init(NULL);
 		if (!split_unc_name(share, &servers[i].server_name, &servers[i].share_name)) {
 			printf("Invalid share name '%s'\n", share);
 			return -1;
 		}
 	}
 
-	argc -= NSERVERS;
-	argv += NSERVERS;
-
-	lp_ctx = loadparm_init(talloc_autofree_context());
-	lp_load(lp_ctx, dyn_CONFIGFILE);
-
-	servers[0].credentials = cli_credentials_init(talloc_autofree_context());
-	servers[1].credentials = cli_credentials_init(talloc_autofree_context());
-	cli_credentials_guess(servers[0].credentials, lp_ctx);
-	cli_credentials_guess(servers[1].credentials, lp_ctx);
-
-	options.seed = time(NULL);
-	options.numops = 1000;
-	options.max_open_handles = 20;
-	options.seeds_file = "gentest_seeds.dat";
-
-	while ((opt = getopt(argc, argv, "U:s:o:ad:i:AOhS:LFXC")) != EOF) {
-		switch (opt) {
-		case 'U':
-			if (username_count == 2) {
-				usage();
-				exit(1);
-			}
-			cli_credentials_parse_string(servers[username_count].credentials, 
-						     optarg, CRED_SPECIFIED);
-			username_count++;
-			break;
-		case 'd':
-			DEBUGLEVEL = atoi(optarg);
-			setup_logging(NULL, DEBUG_STDOUT);
-			break;
-		case 's':
-			options.seed = atoi(optarg);
-			break;
-		case 'S':
-			options.seeds_file = optarg;
-			break;
-		case 'L':
-			options.use_preset_seeds = true;
-			break;
-		case 'F':
-			options.fast_reconnect = true;
-			break;
-		case 'o':
-			options.numops = atoi(optarg);
-			break;
-		case 'O':
-			options.use_oplocks = true;
-			break;
-		case 'a':
-			options.showall = true;
-			break;
-		case 'A':
-			options.analyze = true;
-			break;
-		case 'X':
-			options.analyze_always = true;
-			break;
-		case 'C':
-			options.analyze_continuous = true;
-			break;
-		case 'i':
-			options.ignore_patterns = file_lines_load(optarg, NULL, NULL);
-			break;
-		case 'h':
-			usage();
-			exit(1);
-		default:
-			printf("Unknown option %c (%d)\n", (char)opt, opt);
-			exit(1);
-		}
-	}
-
-	gensec_init(lp_ctx);
-
 	if (username_count == 0) {
-		usage();
+		usage(pc);
 		return -1;
 	}
 	if (username_count == 1) {
@@ -2286,6 +2277,8 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 	}
 
 	printf("seed=%u\n", options.seed);
+
+	gensec_init(lp_ctx);
 
 	ret = start_gentest(lp_ctx);
 
