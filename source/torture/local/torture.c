@@ -39,12 +39,33 @@ static bool test_tempdir(struct torture_context *tctx)
 	return true;
 }
 
+static bool test_provision(struct torture_context *tctx)
+{
+	NTSTATUS status;
+
+	status = provision_bare(tctx, tctx->lp_ctx, 
+							"example.com", "SOME-SITE-NAME",
+							"DC=EXAMPLE,DC=COM",
+							"DC=EXAMPLE,DC=COM",
+							NULL, NULL, NULL, 
+							"FOO", "EXAMPLE.COM",
+							"EXAMPLE", NULL,
+							NULL, "geheim",
+							NULL, NULL, 
+							NULL, NULL, NULL, NULL, NULL, NULL);
+
+	torture_assert_ntstatus_ok(tctx, status, "provision");
+
+	return true;
+}
+
 struct torture_suite *torture_local_torture(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, 
 													   "TORTURE");
 
 	torture_suite_add_simple_test(suite, "tempdir", test_tempdir);
+	torture_suite_add_simple_test(suite, "provision", test_provision);
 
 	return suite;
 }
