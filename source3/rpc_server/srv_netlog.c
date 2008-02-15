@@ -64,29 +64,7 @@ static bool api_net_req_chal(pipes_struct *p)
 
 static bool api_net_auth(pipes_struct *p)
 {
-	NET_Q_AUTH q_u;
-	NET_R_AUTH r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the challenge... */
-	if(!net_io_q_auth("", &q_u, data, 0)) {
-		DEBUG(0,("api_net_auth: Failed to unmarshall NET_Q_AUTH.\n"));
-		return False;
-	}
-
-	r_u.status = _net_auth(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!net_io_r_auth("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_net_auth: Failed to marshall NET_R_AUTH.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_netr_call(p, NDR_NETR_SERVERAUTHENTICATE);
 }
 
 /*************************************************************************
@@ -126,29 +104,7 @@ static bool api_net_auth_2(pipes_struct *p)
 
 static bool api_net_srv_pwset(pipes_struct *p)
 {
-	NET_Q_SRV_PWSET q_u;
-	NET_R_SRV_PWSET r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the challenge and encrypted password ... */
-	if(!net_io_q_srv_pwset("", &q_u, data, 0)) {
-		DEBUG(0,("api_net_srv_pwset: Failed to unmarshall NET_Q_SRV_PWSET.\n"));
-		return False;
-	}
-
-	r_u.status = _net_srv_pwset(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!net_io_r_srv_pwset("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_net_srv_pwset: Failed to marshall NET_R_SRV_PWSET.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_netr_call(p, NDR_NETR_SERVERPASSWORDSET);
 }
 
 /*************************************************************************

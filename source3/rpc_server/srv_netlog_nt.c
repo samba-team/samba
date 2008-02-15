@@ -255,26 +255,11 @@ WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
 	return WERR_OK;
 }
 
-/***********************************************************************************
- init_net_r_srv_pwset:
- ***********************************************************************************/
-
-static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
-				 DOM_CRED *srv_cred, NTSTATUS status)
-{
-	DEBUG(5,("init_net_r_srv_pwset: %d\n", __LINE__));
-
-	memcpy(&r_s->srv_cred, srv_cred, sizeof(r_s->srv_cred));
-	r_s->status = status;
-
-	DEBUG(5,("init_net_r_srv_pwset: %d\n", __LINE__));
-}
-
 /******************************************************************
  gets a machine password entry.  checks access rights of the host.
  ******************************************************************/
 
-static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
+static NTSTATUS get_md4pw(char *md4pw, const char *mach_acct, uint16 sec_chan_type)
 {
 	struct samu *sampass = NULL;
 	const uint8 *pass;
@@ -413,41 +398,30 @@ NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
 }
 
 /*************************************************************************
- init_net_r_auth:
+ _netr_ServerAuthenticate
+ Create the initial credentials.
  *************************************************************************/
 
-static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, NTSTATUS status)
-{
-	memcpy(r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
-	r_a->status = status;
-}
-
-/*************************************************************************
- _net_auth. Create the initial credentials.
- *************************************************************************/
-
-NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
+NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
+				  struct netr_ServerAuthenticate *r)
 {
 	NTSTATUS status;
-	fstring mach_acct;
-	fstring remote_machine;
 	DOM_CHAL srv_chal_out;
 
 	if (!p->dc || !p->dc->challenge_sent) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
-	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
-
-	status = get_md4pw((char *)p->dc->mach_pw, mach_acct, q_u->clnt_id.sec_chan);
+	status = get_md4pw((char *)p->dc->mach_pw,
+			   r->in.account_name,
+			   r->in.secure_channel_type);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("_net_auth: creds_server_check failed. Failed to "
+		DEBUG(0,("_netr_ServerAuthenticate: get_md4pw failed. Failed to "
 			"get password for machine account %s "
 			"from client %s: %s\n",
-			mach_acct, remote_machine, nt_errstr(status) ));
+			r->in.account_name,
+			r->in.computer_name,
+			nt_errstr(status) ));
 		/* always return NT_STATUS_ACCESS_DENIED */
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -461,22 +435,25 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 			&srv_chal_out);
 
 	/* Check client credentials are valid. */
-	if (!creds_server_check(p->dc, &q_u->clnt_chal)) {
-		DEBUG(0,("_net_auth: creds_server_check failed. Rejecting auth "
+	if (!netlogon_creds_server_check(p->dc, r->in.credentials)) {
+		DEBUG(0,("_netr_ServerAuthenticate: netlogon_creds_server_check failed. Rejecting auth "
 			"request from client %s machine account %s\n",
-			remote_machine, mach_acct ));
+			r->in.computer_name,
+			r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	fstrcpy(p->dc->mach_acct, mach_acct);
-	fstrcpy(p->dc->remote_machine, remote_machine);
+	fstrcpy(p->dc->mach_acct, r->in.account_name);
+	fstrcpy(p->dc->remote_machine, r->in.computer_name);
 	p->dc->authenticated = True;
 
 	/* set up the LSA AUTH response */
 	/* Return the server credentials. */
-	init_net_r_auth(r_u, &srv_chal_out, NT_STATUS_OK);
 
-	return r_u->status;
+	memcpy(r->out.credentials->data, &srv_chal_out.data,
+	       sizeof(r->out.credentials->data));
+
+	return NT_STATUS_OK;
 }
 
 /*************************************************************************
@@ -577,31 +554,32 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 }
 
 /*************************************************************************
- _net_srv_pwset
+ _netr_ServerPasswordSet
  *************************************************************************/
 
-NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u)
+NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
+				 struct netr_ServerPasswordSet *r)
 {
+	NTSTATUS status = NT_STATUS_OK;
 	fstring remote_machine;
 	struct samu *sampass=NULL;
 	bool ret = False;
 	unsigned char pwd[16];
 	int i;
 	uint32 acct_ctrl;
-	DOM_CRED cred_out;
+	struct netr_Authenticator cred_out;
 	const uchar *old_pw;
 
-	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
+	DEBUG(5,("_netr_ServerPasswordSet: %d\n", __LINE__));
 
 	/* We need the remote machine name for the creds lookup. */
-	rpcstr_pull(remote_machine,q_u->clnt_id.login.uni_comp_name.buffer,
-		    sizeof(remote_machine),q_u->clnt_id.login.uni_comp_name.uni_str_len*2,0);
+	fstrcpy(remote_machine, r->in.computer_name);
 
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
 		   obviously did not use it. */
-		DEBUG(0,("_net_srv_pwset: client %s not using schannel for netlogon\n",
+		DEBUG(0,("_netr_ServerPasswordSet: client %s not using schannel for netlogon\n",
 			remote_machine ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -622,12 +600,12 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	DEBUG(3,("_net_srv_pwset: Server Password Set by remote machine:[%s] on account [%s]\n",
+	DEBUG(3,("_netr_ServerPasswordSet: Server Password Set by remote machine:[%s] on account [%s]\n",
 			remote_machine, p->dc->mach_acct));
 
 	/* Step the creds chain forward. */
-	if (!creds_server_step(p->dc, &q_u->clnt_id.cred, &cred_out)) {
-		DEBUG(2,("_net_srv_pwset: creds_server_step failed. Rejecting auth "
+	if (!netlogon_creds_server_step(p->dc, r->in.credential, &cred_out)) {
+		DEBUG(2,("_netr_ServerPasswordSet: netlogon_creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -668,9 +646,9 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	}
 
 	/* Woah - what does this to to the credential chain ? JRA */
-	cred_hash3( pwd, q_u->pwd, p->dc->sess_key, 0);
+	cred_hash3(pwd, r->in.new_password->hash, p->dc->sess_key, 0);
 
-	DEBUG(100,("Server password set : new given value was :\n"));
+	DEBUG(100,("_netr_ServerPasswordSet: new given value was :\n"));
 	for(i = 0; i < sizeof(pwd); i++)
 		DEBUG(100,("%02X ", pwd[i]));
 	DEBUG(100,("\n"));
@@ -702,15 +680,17 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		}
 
 		become_root();
-		r_u->status = pdb_update_sam_account(sampass);
+		status = pdb_update_sam_account(sampass);
 		unbecome_root();
 	}
 
 	/* set up the LSA Server Password Set response */
-	init_net_r_srv_pwset(r_u, &cred_out, r_u->status);
+
+	memcpy(r->out.return_authenticator, &cred_out,
+	       sizeof(r->out.return_authenticator));
 
 	TALLOC_FREE(sampass);
-	return r_u->status;
+	return status;
 }
 
 /*************************************************************************
@@ -1265,26 +1245,6 @@ NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
 
 NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
 			      struct netr_LogonSamLogoff *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
-				  struct netr_ServerAuthenticate *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
-				 struct netr_ServerPasswordSet *r)
 {
 	p->rng_fault_state = true;
 	return NT_STATUS_NOT_IMPLEMENTED;
