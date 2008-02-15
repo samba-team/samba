@@ -168,8 +168,8 @@ process_fd (smb_iconv_t cd, int fd, FILE *output)
 int main(int argc, char *argv[])
 {
 	const char *file = NULL;
-	char *from = "";
-	char *to = "";
+	const char *from = "";
+	const char *to = "";
 	char *output = NULL;
 	const char *preload_modules[] = {NULL, NULL};
 	FILE *out = stdout;
