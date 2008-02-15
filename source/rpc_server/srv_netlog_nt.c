@@ -457,63 +457,48 @@ NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
 }
 
 /*************************************************************************
- init_net_r_auth_2:
+ _netr_ServerAuthenticate2
  *************************************************************************/
 
-static void init_net_r_auth_2(NET_R_AUTH_2 *r_a,
-                              DOM_CHAL *resp_cred, NEG_FLAGS *flgs, NTSTATUS status)
-{
-	memcpy(r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
-	memcpy(&r_a->srv_flgs, flgs, sizeof(r_a->srv_flgs));
-	r_a->status = status;
-}
-
-/*************************************************************************
- _net_auth_2
- *************************************************************************/
-
-NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
+NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
+				   struct netr_ServerAuthenticate2 *r)
 {
 	NTSTATUS status;
-	NEG_FLAGS srv_flgs;
-	fstring mach_acct;
-	fstring remote_machine;
+	uint32_t srv_flgs;
 	DOM_CHAL srv_chal_out;
 
-	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
-
-	/* We use this as the key to store the creds. */
-	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
+	/* We use this as the key to store the creds: */
+	/* r->in.computer_name */
 
 	if (!p->dc || !p->dc->challenge_sent) {
-		DEBUG(0,("_net_auth2: no challenge sent to client %s\n",
-			remote_machine ));
+		DEBUG(0,("_netr_ServerAuthenticate2: no challenge sent to client %s\n",
+			r->in.computer_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if ( (lp_server_schannel() == True) &&
-	     ((q_u->clnt_flgs.neg_flags & NETLOGON_NEG_SCHANNEL) == 0) ) {
+	if ( (lp_server_schannel() == true) &&
+	     ((*r->in.negotiate_flags & NETLOGON_NEG_SCHANNEL) == 0) ) {
 
 		/* schannel must be used, but client did not offer it. */
-		DEBUG(0,("_net_auth2: schannel required but client failed "
+		DEBUG(0,("_netr_ServerAuthenticate2: schannel required but client failed "
 			"to offer it. Client was %s\n",
-			mach_acct ));
+			r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = get_md4pw((char *)p->dc->mach_pw, mach_acct, q_u->clnt_id.sec_chan);
+	status = get_md4pw((char *)p->dc->mach_pw,
+			   r->in.account_name,
+			   r->in.secure_channel_type);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("_net_auth2: failed to get machine password for "
+		DEBUG(0,("_netr_ServerAuthenticate2: failed to get machine password for "
 			"account %s: %s\n",
-			mach_acct, nt_errstr(status) ));
+			r->in.account_name, nt_errstr(status) ));
 		/* always return NT_STATUS_ACCESS_DENIED */
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* From the client / server challenges and md4 password, generate sess key */
-	creds_server_init(q_u->clnt_flgs.neg_flags,
+	creds_server_init(*r->in.negotiate_flags,
 			p->dc,
 			&p->dc->clnt_chal,	/* Stored client chal. */
 			&p->dc->srv_chal,	/* Stored server chal. */
@@ -521,24 +506,27 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 			&srv_chal_out);
 
 	/* Check client credentials are valid. */
-	if (!creds_server_check(p->dc, &q_u->clnt_chal)) {
-		DEBUG(0,("_net_auth2: creds_server_check failed. Rejecting auth "
+	if (!netlogon_creds_server_check(p->dc, r->in.credentials)) {
+		DEBUG(0,("_netr_ServerAuthenticate2: netlogon_creds_server_check failed. Rejecting auth "
 			"request from client %s machine account %s\n",
-			remote_machine, mach_acct ));
+			r->in.computer_name,
+			r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	srv_flgs.neg_flags = 0x000001ff;
+	srv_flgs = 0x000001ff;
 
-	if (lp_server_schannel() != False) {
-		srv_flgs.neg_flags |= NETLOGON_NEG_SCHANNEL;
+	if (lp_server_schannel() != false) {
+		srv_flgs |= NETLOGON_NEG_SCHANNEL;
 	}
 
 	/* set up the LSA AUTH 2 response */
-	init_net_r_auth_2(r_u, &srv_chal_out, &srv_flgs, NT_STATUS_OK);
+	memcpy(r->out.credentials->data, &srv_chal_out.data,
+	       sizeof(r->out.credentials->data));
+	*r->out.negotiate_flags = srv_flgs;
 
-	fstrcpy(p->dc->mach_acct, mach_acct);
-	fstrcpy(p->dc->remote_machine, remote_machine);
+	fstrcpy(p->dc->mach_acct, r->in.account_name);
+	fstrcpy(p->dc->remote_machine, r->in.computer_name);
 	fstrcpy(p->dc->domain, lp_workgroup() );
 
 	p->dc->authenticated = True;
@@ -546,11 +534,11 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	/* Store off the state so we can continue after client disconnect. */
 	become_root();
 	secrets_store_schannel_session_info(p->mem_ctx,
-					remote_machine,
-					p->dc);
+					    r->in.computer_name,
+					    p->dc);
 	unbecome_root();
 
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /*************************************************************************
@@ -1308,16 +1296,6 @@ WERROR _netr_GetAnyDCName(pipes_struct *p,
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
-				   struct netr_ServerAuthenticate2 *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /****************************************************************

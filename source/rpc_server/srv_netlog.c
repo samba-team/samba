@@ -73,29 +73,7 @@ static bool api_net_auth(pipes_struct *p)
 
 static bool api_net_auth_2(pipes_struct *p)
 {
-	NET_Q_AUTH_2 q_u;
-	NET_R_AUTH_2 r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the challenge... */
-	if(!net_io_q_auth_2("", &q_u, data, 0)) {
-		DEBUG(0,("api_net_auth_2: Failed to unmarshall NET_Q_AUTH_2.\n"));
-		return False;
-	}
-
-	r_u.status = _net_auth_2(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!net_io_r_auth_2("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_net_auth_2: Failed to marshall NET_R_AUTH_2.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_netr_call(p, NDR_NETR_SERVERAUTHENTICATE2);
 }
 
 /*************************************************************************
