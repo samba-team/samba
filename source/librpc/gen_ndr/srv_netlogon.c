@@ -599,7 +599,7 @@ static bool api_netr_DatabaseDeltas(pipes_struct *p)
 	ZERO_STRUCT(r->out);
 	r->out.return_authenticator = r->in.return_authenticator;
 	r->out.sequence_num = r->in.sequence_num;
-	r->out.delta_enum_array = talloc_zero(r, struct netr_DELTA_ENUM_ARRAY);
+	r->out.delta_enum_array = talloc_zero(r, struct netr_DELTA_ENUM_ARRAY *);
 	if (r->out.delta_enum_array == NULL) {
 		talloc_free(r);
 		return false;
@@ -1358,7 +1358,7 @@ static bool api_netr_DatabaseSync2(pipes_struct *p)
 	ZERO_STRUCT(r->out);
 	r->out.return_authenticator = r->in.return_authenticator;
 	r->out.sync_context = r->in.sync_context;
-	r->out.delta_enum_array = talloc_zero(r, struct netr_DELTA_ENUM_ARRAY);
+	r->out.delta_enum_array = talloc_zero(r, struct netr_DELTA_ENUM_ARRAY *);
 	if (r->out.delta_enum_array == NULL) {
 		talloc_free(r);
 		return false;

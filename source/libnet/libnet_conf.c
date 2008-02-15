@@ -62,7 +62,7 @@ static WERROR libnet_conf_reg_initialize(struct libnet_conf_ctx *ctx)
 {
 	WERROR werr = WERR_OK;
 
-	if (!registry_init_regdb()) {
+	if (!registry_init_smbconf()) {
 		werr = WERR_REG_IO_FAILURE;
 		goto done;
 	}

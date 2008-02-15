@@ -3561,7 +3561,7 @@ static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 		smb_panic("Failed to create talloc context!");
 	}
 
-	if (!registry_init_regdb()) {
+	if (!registry_init_smbconf()) {
 		DEBUG(1, ("Error initializing the registry.\n"));
 		goto done;
 	}
