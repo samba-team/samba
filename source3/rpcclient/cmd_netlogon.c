@@ -554,37 +554,66 @@ static void display_sam_sync(struct netr_DELTA_ENUM_ARRAY *r)
 
 /* Perform sam synchronisation */
 
-static NTSTATUS cmd_netlogon_sam_sync(struct rpc_pipe_client *cli, 
+static NTSTATUS cmd_netlogon_sam_sync(struct rpc_pipe_client *cli,
                                       TALLOC_CTX *mem_ctx, int argc,
                                       const char **argv)
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-        uint32 database_id = 0, num_deltas;
-        SAM_DELTA_HDR *hdr_deltas;
-        SAM_DELTA_CTR *deltas;
+	const char *logon_server = cli->cli->desthost;
+	const char *computername = global_myname();
+	struct netr_Authenticator credential;
+	struct netr_Authenticator return_authenticator;
+	enum netr_SamDatabaseID database_id = SAM_DATABASE_DOMAIN;
+	uint16_t restart_state = 0;
+	uint32_t sync_context = 0;
 
         if (argc > 2) {
                 fprintf(stderr, "Usage: %s [database_id]\n", argv[0]);
                 return NT_STATUS_OK;
         }
 
-        if (argc == 2)
-                database_id = atoi(argv[1]);
+	if (argc == 2) {
+		database_id = atoi(argv[1]);
+	}
 
-        /* Synchronise sam database */
+	/* Synchronise sam database */
 
-	result = rpccli_netlogon_sam_sync(cli, mem_ctx, database_id,
-				       0, &num_deltas, &hdr_deltas, &deltas);
+	do {
+		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
+		netlogon_creds_client_step(cli->dc, &credential);
 
-        /* Display results */
+		result = rpccli_netr_DatabaseSync2(cli, mem_ctx,
+						   logon_server,
+						   computername,
+						   &credential,
+						   &return_authenticator,
+						   database_id,
+						   restart_state,
+						   &sync_context,
+						   &delta_enum_array,
+						   0xffff);
 
-/*        display_sam_sync(num_deltas, hdr_deltas, deltas); */
+		/* Check returned credentials. */
+		if (!netlogon_creds_client_check(cli->dc,
+						 &return_authenticator.cred)) {
+			DEBUG(0,("credentials chain check failed\n"));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 
- done:
-        return result;
+		if (NT_STATUS_IS_ERR(result)) {
+			break;
+		}
+
+		/* Display results */
+
+		display_sam_sync(delta_enum_array);
+
+		TALLOC_FREE(delta_enum_array);
+
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+
+	return result;
 }
 
 /* Perform sam delta synchronisation */
