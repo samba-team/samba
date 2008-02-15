@@ -34,30 +34,16 @@
 wbcErr wbcAuthenticateUser(const char *username,
 			   const char *password)
 {
-	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	struct winbindd_request request;
-	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_SUCCESS;
+	struct wbcAuthUserParams params;
 
-	if (!username) {
-		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
+	ZERO_STRUCT(params);
 
-	/* Initialize request */
+	params.account_name		= username;
+	params.level			= WBC_AUTH_USER_LEVEL_PLAIN;
+	params.password.plaintext	= password;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	/* dst is already null terminated from the memset above */
-
-	strncpy(request.data.auth.user,	username,
-		sizeof(request.data.auth.user)-1);
-	strncpy(request.data.auth.pass,	password,
-		sizeof(request.data.auth.user)-1);
-
-	wbc_status = wbcRequestResponse(WINBINDD_PAM_AUTH,
-					&request,
-					&response);
+	wbc_status = wbcAuthenticateUserEx(&params, NULL, NULL);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 done:
@@ -252,8 +238,8 @@ done:
 
 /** @brief Authenticate with more detailed information
  *
- * @param params       Input parameters, only WBC_AUTH_USER_LEVEL_RESPONSE
- *                     is supported yet
+ * @param params       Input parameters, WBC_AUTH_USER_LEVEL_HASH
+ *                     is not supported yet
  * @param info         Output details on WBC_ERR_SUCCESS
  * @param error        Output details on WBC_ERR_AUTH_ERROR
  *
@@ -265,10 +251,9 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 			     struct wbcAuthErrorInfo **error)
 {
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	int cmd;
+	int cmd = 0;
 	struct winbindd_request request;
 	struct winbindd_response response;
-
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
@@ -282,12 +267,49 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}
 
+	if (!params->account_name) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
 	/* Initialize request */
 
 	switch (params->level) {
 	case WBC_AUTH_USER_LEVEL_PLAIN:
-		wbc_status = WBC_ERR_NOT_IMPLEMENTED;
-		BAIL_ON_WBC_ERROR(wbc_status);
+		cmd = WINBINDD_PAM_AUTH;
+		request.flags = WBFLAG_PAM_INFO3_TEXT |
+				WBFLAG_PAM_USER_SESSION_KEY |
+				WBFLAG_PAM_LMKEY;
+
+		if (!params->password.plaintext) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		if (params->domain_name && params->domain_name[0]) {
+			/* We need to get the winbind separator :-( */
+			struct winbindd_response sep_response;
+
+			ZERO_STRUCT(sep_response);
+
+			wbc_status = wbcRequestResponse(WINBINDD_INFO,
+							NULL, &sep_response);
+			BAIL_ON_WBC_ERROR(wbc_status);
+
+			snprintf(request.data.auth.user,
+				 sizeof(request.data.auth.user)-1,
+				 "%s%c%s",
+				 params->domain_name,
+				 sep_response.data.info.winbind_separator,
+				 params->account_name);
+		} else {
+			strncpy(request.data.auth.user,
+				params->account_name,
+				sizeof(request.data.auth.user)-1);
+		}
+		strncpy(request.data.auth.pass,
+			params->password.plaintext,
+			sizeof(request.data.auth.user)-1);
 		break;
 
 	case WBC_AUTH_USER_LEVEL_HASH:
@@ -301,12 +323,36 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 				WBFLAG_PAM_USER_SESSION_KEY |
 				WBFLAG_PAM_LMKEY;
 
+		if (params->password.response.lm_length &&
+		    params->password.response.lm_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+		if (params->password.response.lm_length == 0 &&
+		    params->password.response.lm_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		if (params->password.response.nt_length &&
+		    !params->password.response.nt_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+		if (params->password.response.nt_length == 0&&
+		    params->password.response.nt_data) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
 		strncpy(request.data.auth_crap.user,
 			params->account_name,
 			sizeof(request.data.auth_crap.user)-1);
-		strncpy(request.data.auth_crap.domain,
-			params->domain_name,
-			sizeof(request.data.auth_crap.domain)-1);
+		if (params->domain_name) {
+			strncpy(request.data.auth_crap.domain,
+				params->domain_name,
+				sizeof(request.data.auth_crap.domain)-1);
+		}
 		if (params->workstation_name) {
 			strncpy(request.data.auth_crap.workstation,
 				params->workstation_name,
@@ -326,15 +372,23 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 		request.data.auth_crap.nt_resp_len =
 				MIN(params->password.response.nt_length,
 				    sizeof(request.data.auth_crap.nt_resp));
-		memcpy(request.data.auth_crap.lm_resp,
-		       params->password.response.lm_data,
-		       request.data.auth_crap.lm_resp_len);
-		memcpy(request.data.auth_crap.nt_resp,
-		       params->password.response.nt_data,
-		       request.data.auth_crap.nt_resp_len);
-
+		if (params->password.response.lm_data) {
+			memcpy(request.data.auth_crap.lm_resp,
+			       params->password.response.lm_data,
+			       request.data.auth_crap.lm_resp_len);
+		}
+		if (params->password.response.nt_data) {
+			memcpy(request.data.auth_crap.nt_resp,
+			       params->password.response.nt_data,
+			       request.data.auth_crap.nt_resp_len);
+		}
 		break;
 	default:
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
+
+	if (cmd == 0) {
 		wbc_status = WBC_ERR_INVALID_PARAM;
 		BAIL_ON_WBC_ERROR(wbc_status);
 	}

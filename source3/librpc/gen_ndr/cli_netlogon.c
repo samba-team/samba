@@ -363,12 +363,12 @@ NTSTATUS rpccli_netr_DatabaseDeltas(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    const char *logon_server,
 				    const char *computername,
-				    struct netr_Authenticator credential,
+				    struct netr_Authenticator *credential,
 				    struct netr_Authenticator *return_authenticator,
 				    enum netr_SamDatabaseID database_id,
 				    uint64_t *sequence_num,
-				    uint32_t preferredmaximumlength,
-				    struct netr_DELTA_ENUM_ARRAY *delta_enum_array)
+				    struct netr_DELTA_ENUM_ARRAY **delta_enum_array,
+				    uint32_t preferredmaximumlength)
 {
 	struct netr_DatabaseDeltas r;
 	NTSTATUS status;
@@ -847,13 +847,13 @@ NTSTATUS rpccli_netr_DatabaseSync2(struct rpc_pipe_client *cli,
 				   TALLOC_CTX *mem_ctx,
 				   const char *logon_server,
 				   const char *computername,
-				   struct netr_Authenticator credential,
+				   struct netr_Authenticator *credential,
 				   struct netr_Authenticator *return_authenticator,
 				   enum netr_SamDatabaseID database_id,
 				   uint16_t restart_state,
 				   uint32_t *sync_context,
-				   uint32_t preferredmaximumlength,
-				   struct netr_DELTA_ENUM_ARRAY *delta_enum_array)
+				   struct netr_DELTA_ENUM_ARRAY **delta_enum_array,
+				   uint32_t preferredmaximumlength)
 {
 	struct netr_DatabaseSync2 r;
 	NTSTATUS status;
