@@ -1105,7 +1105,7 @@ struct netr_DatabaseSync2 {
 	struct {
 		const char *logon_server;/* [charset(UTF16)] */
 		const char *computername;/* [charset(UTF16)] */
-		struct netr_Authenticator credential;
+		struct netr_Authenticator *credential;/* [ref] */
 		enum netr_SamDatabaseID database_id;
 		uint16_t restart_state;
 		uint32_t preferredmaximumlength;
@@ -1114,7 +1114,7 @@ struct netr_DatabaseSync2 {
 	} in;
 
 	struct {
-		struct netr_DELTA_ENUM_ARRAY *delta_enum_array;/* [ref] */
+		struct netr_DELTA_ENUM_ARRAY **delta_enum_array;/* [ref] */
 		struct netr_Authenticator *return_authenticator;/* [ref] */
 		uint32_t *sync_context;/* [ref] */
 		NTSTATUS result;
