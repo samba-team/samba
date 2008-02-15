@@ -34,30 +34,16 @@
 wbcErr wbcAuthenticateUser(const char *username,
 			   const char *password)
 {
-	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
-	struct winbindd_request request;
-	struct winbindd_response response;
+	wbcErr wbc_status = WBC_ERR_SUCCESS;
+	struct wbcAuthUserParams params;
 
-	if (!username) {
-		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
+	ZERO_STRUCT(params);
 
-	/* Initialize request */
+	params.account_name		= username;
+	params.level			= WBC_AUTH_USER_LEVEL_PLAIN;
+	params.password.plaintext	= password;
 
-	ZERO_STRUCT(request);
-	ZERO_STRUCT(response);
-
-	/* dst is already null terminated from the memset above */
-
-	strncpy(request.data.auth.user,	username,
-		sizeof(request.data.auth.user)-1);
-	strncpy(request.data.auth.pass,	password,
-		sizeof(request.data.auth.user)-1);
-
-	wbc_status = wbcRequestResponse(WINBINDD_PAM_AUTH,
-					&request,
-					&response);
+	wbc_status = wbcAuthenticateUserEx(&params, NULL, NULL);
 	BAIL_ON_WBC_ERROR(wbc_status);
 
 done:
