@@ -37,7 +37,7 @@
 #include "lib/ldb_wrap.h"
 #include "auth/auth.h"
 #include "param/param.h"
-#include "torture/util.h"
+#include "torture/util_provision.h"
 
 struct test_become_dc_state {
 	struct libnet_context *ctx;
@@ -72,20 +72,29 @@ static NTSTATUS test_become_dc_prepare_db(void *private_data,
 					      const struct libnet_BecomeDC_PrepareDB *p)
 {
 	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
-	return provision_bare(s, s->tctx->lp_ctx, p->dest_dsa->dns_name, 
-						  p->dest_dsa->site_name, p->forest->root_dn_str,
-						  p->domain->dn_str, p->forest->config_dn_str,
-						  p->forest->schema_dn_str, 
-						  &p->dest_dsa->invocation_id,
-						  p->dest_dsa->netbios_name, 
-						  torture_join_dom_dns_name(s->tj),
-						  torture_join_dom_netbios_name(s->tj),
-						  &p->dest_dsa->ntds_guid,
-						  p->dest_dsa->ntds_dn_str,
-						  cli_credentials_get_password(s->machine_account),
-						  s->path.samdb_ldb, s->path.secrets_ldb, 
-						  s->path.secrets_keytab, s->path.schemadn_ldb,
-						  s->path.configdn_ldb, s->path.domaindn_ldb);
+	struct provision_settings settings;
+
+	settings.dns_name = p->dest_dsa->dns_name;
+	settings.site_name = p->dest_dsa->site_name;
+	settings.root_dn_str = p->forest->root_dn_str;
+	settings.domain_dn_str = p->domain->dn_str;
+	settings.config_dn_str = p->forest->config_dn_str;
+	settings.schema_dn_str = p->forest->schema_dn_str;
+	settings.invocation_id = &p->dest_dsa->invocation_id;
+	settings.netbios_name = p->dest_dsa->netbios_name;
+	settings.realm = torture_join_dom_dns_name(s->tj);
+	settings.domain = torture_join_dom_netbios_name(s->tj);
+	settings.ntds_guid = &p->dest_dsa->ntds_guid;
+	settings.ntds_dn_str = p->dest_dsa->ntds_dn_str;
+	settings.machine_password = cli_credentials_get_password(s->machine_account);
+	settings.samdb_ldb = s->path.samdb_ldb;
+	settings.secrets_ldb = s->path.secrets_ldb;
+	settings.secrets_keytab = s->path.secrets_keytab;
+	settings.schemadn_ldb = s->path.schemadn_ldb;
+	settings.configdn_ldb = s->path.configdn_ldb;
+	settings.domaindn_ldb = s->path.domaindn_ldb;
+
+	return provision_bare(s, s->tctx->lp_ctx, &settings);
 }
 
 static NTSTATUS test_become_dc_check_options(void *private_data,

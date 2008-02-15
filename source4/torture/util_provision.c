@@ -24,6 +24,7 @@
 #include "scripting/ejs/smbcalls.h"
 #include "auth/auth.h"
 #include "lib/ldb_wrap.h"
+#include "torture/util_provision.h"
 
 static EjsId eid;
 static int ejs_error;
@@ -80,27 +81,7 @@ failed:
 
 static NTSTATUS provision_bare_ejs(TALLOC_CTX *mem_ctx, 
 								   struct loadparm_context *lp_ctx,
-								   const char *dns_name,
-								   const char *site_name,
-								   const char *root_dn_str,
-								   const char *domain_dn_str,
-								   const char *config_dn_str,
-								   const char *schema_dn_str,
-								   const struct GUID *invocation_id,
-								   const char *netbios_name,
-								   const char *realm,
-								   const char *domain,
-								   const struct GUID *ntds_guid,
-								   const char *ntds_dn_str,
-								   const char *machine_password,
-								   const char *samdb_ldb,
-								   const char *secrets_ldb,
-								   const char *secrets_keytab, 
-								   const char *schemadn_ldb,
-								   const char *configdn_ldb,
-								   const char *domaindn_ldb,
-								   const char *templates_ldb,
-								   const char *dns_keytab)
+								   struct provision_settings *settings)
 {
 	char *ejs;
 	int ret;
@@ -109,30 +90,31 @@ static NTSTATUS provision_bare_ejs(TALLOC_CTX *mem_ctx,
 
 	DEBUG(0,("Provision for Become-DC test using EJS\n"));
 
-	DEBUG(0,("New Server[%s] in Site[%s]\n", dns_name, site_name));
+	DEBUG(0,("New Server[%s] in Site[%s]\n", settings->dns_name, 
+			 settings->site_name));
 
 	DEBUG(0,("DSA Instance [%s]\n"
 		"\tobjectGUID[%s]\n"
 		"\tinvocationId[%s]\n",
-		ntds_dn_str,
-		GUID_string(mem_ctx, ntds_guid),
-		GUID_string(mem_ctx, invocation_id)));
+		settings->ntds_dn_str,
+		GUID_string(mem_ctx, settings->ntds_guid),
+		GUID_string(mem_ctx, settings->invocation_id)));
 
 	DEBUG(0,("Pathes under PRIVATEDIR[%s]\n"
 		 "SAMDB[%s] SECRETS[%s] KEYTAB[%s]\n",
 		lp_private_dir(lp_ctx),
-		samdb_ldb,
-		secrets_ldb,
-		secrets_keytab));
+		settings->samdb_ldb,
+		settings->secrets_ldb,
+		settings->secrets_keytab));
 
 	DEBUG(0,("Schema Partition[%s => %s]\n",
-		schema_dn_str, schemadn_ldb));
+		settings->schema_dn_str, settings->schemadn_ldb));
 
 	DEBUG(0,("Config Partition[%s => %s]\n",
-		config_dn_str, configdn_ldb));
+		settings->config_dn_str, settings->configdn_ldb));
 
 	DEBUG(0,("Domain Partition[%s => %s]\n",
-		domain_dn_str, domaindn_ldb));
+		settings->domain_dn_str, settings->domaindn_ldb));
 
 	ejs = talloc_asprintf(mem_ctx,
 		"libinclude(\"base.js\");\n"
@@ -170,23 +152,23 @@ static NTSTATUS provision_bare_ejs(TALLOC_CTX *mem_ctx,
 		"assert(ok);\n"
 		"\n"
 		"return 0;\n",
-		root_dn_str,		/* subobj.ROOTDN */
-		domain_dn_str,		/* subobj.DOMAINDN */
-		domaindn_ldb,		/* subobj.DOMAINDN_LDB */
-		config_dn_str,	/* subobj.CONFIGDN */
-		configdn_ldb,		/* subobj.CONFIGDN_LDB */
-		schema_dn_str,	/* subobj.SCHEMADN */
-		schemadn_ldb,		/* subobj.SCHEMADN_LDB */
-		netbios_name,	/* subobj.HOSTNAME */
-		realm,/* subobj.REALM */
-		domain,/* subobj.DOMAIN */
-		site_name,		/* subobj.DEFAULTSITE */
-		machine_password,/* subobj.MACHINEPASS */
-		samdb_ldb,		/* paths.samdb */
-		templates_ldb,		/* paths.templates */
-		secrets_ldb,		/* paths.secrets */
-		secrets_keytab,	        /* paths.keytab */
-		dns_keytab);	        /* paths.dns_keytab */
+		settings->root_dn_str,		/* subobj.ROOTDN */
+		settings->domain_dn_str,		/* subobj.DOMAINDN */
+		settings->domaindn_ldb,		/* subobj.DOMAINDN_LDB */
+		settings->config_dn_str,	/* subobj.CONFIGDN */
+		settings->configdn_ldb,		/* subobj.CONFIGDN_LDB */
+		settings->schema_dn_str,	/* subobj.SCHEMADN */
+		settings->schemadn_ldb,		/* subobj.SCHEMADN_LDB */
+		settings->netbios_name,	/* subobj.HOSTNAME */
+		settings->realm,/* subobj.REALM */
+		settings->domain,/* subobj.DOMAIN */
+		settings->site_name,		/* subobj.DEFAULTSITE */
+		settings->machine_password,/* subobj.MACHINEPASS */
+		settings->samdb_ldb,		/* paths.samdb */
+		settings->templates_ldb,		/* paths.templates */
+		settings->secrets_ldb,		/* paths.secrets */
+		settings->secrets_keytab,	        /* paths.keytab */
+		settings->dns_keytab);	        /* paths.dns_keytab */
 	NT_STATUS_HAVE_NO_MEMORY(ejs);
 
 	ret = test_run_ejs(ejs);
@@ -199,23 +181,23 @@ static NTSTATUS provision_bare_ejs(TALLOC_CTX *mem_ctx,
 	talloc_free(ejs);
 
 	DEBUG(0,("Open the SAM LDB with system credentials: %s\n", 
-		 samdb_ldb));
+		 settings->samdb_ldb));
 
-	ldb = ldb_wrap_connect(mem_ctx, lp_ctx, samdb_ldb,
+	ldb = ldb_wrap_connect(mem_ctx, lp_ctx, settings->samdb_ldb,
 				  system_session(mem_ctx, lp_ctx),
 				  NULL, 0, NULL);
 	if (!ldb) {
 		DEBUG(0,("Failed to open '%s'\n",
-			samdb_ldb));
+			settings->samdb_ldb));
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	ok = samdb_set_ntds_invocation_id(ldb, invocation_id);
+	ok = samdb_set_ntds_invocation_id(ldb, settings->invocation_id);
 	if (!ok) {
 		DEBUG(0,("Failed to set cached ntds invocationId\n"));
 		return NT_STATUS_FOOBAR;
 	}
-	ok = samdb_set_ntds_objectGUID(ldb, ntds_guid);
+	ok = samdb_set_ntds_objectGUID(ldb, settings->ntds_guid);
 	if (!ok) {
 		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
 		return NT_STATUS_FOOBAR;
@@ -230,32 +212,13 @@ static NTSTATUS provision_bare_ejs(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS provision_bare_py(TALLOC_CTX *mem_ctx, 
 								  struct loadparm_context *lp_ctx,
-								  const char *dns_name,
-								  const char *site_name,
-								  const char *root_dn_str,
-								  const char *domain_dn_str,
-								  const char *config_dn_str,
-								  const char *schema_dn_str,
-								  const struct GUID *invocation_id,
-								  const char *netbios_name, const char *realm,
-								  const char *domain,
-								  const struct GUID *ntds_guid,
-								  const char *ntds_dn_str,
-								  const char *machine_password,
-								  const char *samdb_ldb,
-								  const char *secrets_ldb,
-								  const char *secrets_keytab,
-								  const char *schemadn_ldb,
-								  const char *configdn_ldb,
-								  const char *domaindn_ldb,
-								  const char *templates_ldb,
-								  const char *dns_keytab)
+								  struct provision_settings *settings)
 {
 	bool ok;
 	PyObject *provision_mod, *provision_dict, *provision_fn, *result, *parameters;
 	struct ldb_context *ldb;
 
-	DEBUG(0,("Provision for Become-DC test using PYTHON\n"));
+	DEBUG(0,("Provision for Become-DC test using python\n"));
 
 	py_load_samba_modules();
 	Py_Initialize();
@@ -283,61 +246,66 @@ static NTSTATUS provision_bare_py(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	DEBUG(0,("New Server[%s] in Site[%s]\n", dns_name, site_name));
+	DEBUG(0,("New Server[%s] in Site[%s]\n", settings->dns_name, 
+			 settings->site_name));
 
 	DEBUG(0,("DSA Instance [%s]\n"
 		"\tobjectGUID[%s]\n"
 		"\tinvocationId[%s]\n",
-		ntds_dn_str,
-		ntds_guid == NULL?"None":GUID_string(mem_ctx, ntds_guid),
-		invocation_id == NULL?"None":GUID_string(mem_ctx, invocation_id)));
+		settings->ntds_dn_str,
+		settings->ntds_guid == NULL?"None":GUID_string(mem_ctx, settings->ntds_guid),
+		settings->invocation_id == NULL?"None":GUID_string(mem_ctx, settings->invocation_id)));
 
 	DEBUG(0,("Pathes under PRIVATEDIR[%s]\n"
 		 "SAMDB[%s] SECRETS[%s] KEYTAB[%s]\n",
 		lp_private_dir(lp_ctx),
-		samdb_ldb,
-		secrets_ldb,
-		secrets_keytab));
+		settings->samdb_ldb,
+		settings->secrets_ldb,
+		settings->secrets_keytab));
 
 	DEBUG(0,("Schema Partition[%s => %s]\n",
-		schema_dn_str, schemadn_ldb));
+		settings->schema_dn_str, settings->schemadn_ldb));
 
 	DEBUG(0,("Config Partition[%s => %s]\n",
-		config_dn_str, configdn_ldb));
+		settings->config_dn_str, settings->configdn_ldb));
 
 	DEBUG(0,("Domain Partition[%s => %s]\n",
-		domain_dn_str, domaindn_ldb));
+		settings->domain_dn_str, settings->domaindn_ldb));
 
 	parameters = PyDict_New();
 
-	PyDict_SetItemString(parameters, "rootdn", PyString_FromString(root_dn_str));
-	if (domaindn_ldb != NULL)
+	PyDict_SetItemString(parameters, "rootdn", 
+						 PyString_FromString(settings->root_dn_str));
+	if (settings->domaindn_ldb != NULL)
 		PyDict_SetItemString(parameters, "domaindn_ldb", 
-							 PyString_FromString(domaindn_ldb));
-	if (config_dn_str != NULL)
+							 PyString_FromString(settings->domaindn_ldb));
+	if (settings->config_dn_str != NULL)
 		PyDict_SetItemString(parameters, "configdn", 
-							 PyString_FromString(config_dn_str));
-	if (configdn_ldb != NULL)
+							 PyString_FromString(settings->config_dn_str));
+	if (settings->configdn_ldb != NULL)
 		PyDict_SetItemString(parameters, "configdn_ldb", 
-							 PyString_FromString(configdn_ldb));
-	if (schema_dn_str != NULL)
+							 PyString_FromString(settings->configdn_ldb));
+	if (settings->schema_dn_str != NULL)
 		PyDict_SetItemString(parameters, "schema_dn_str", 
-							 PyString_FromString(schema_dn_str));
-	if (schemadn_ldb != NULL)
+							 PyString_FromString(settings->schema_dn_str));
+	if (settings->schemadn_ldb != NULL)
 		PyDict_SetItemString(parameters, "schemadn_ldb", 
-							 PyString_FromString(schemadn_ldb));
-	PyDict_SetItemString(parameters, "hostname", PyString_FromString(netbios_name));
-	PyDict_SetItemString(parameters, "sitename", PyString_FromString(site_name));
-	PyDict_SetItemString(parameters, "machinepass", PyString_FromString(machine_password));
-	if (samdb_ldb != NULL)
+							 PyString_FromString(settings->schemadn_ldb));
+	PyDict_SetItemString(parameters, "hostname", 
+						 PyString_FromString(settings->netbios_name));
+	PyDict_SetItemString(parameters, "sitename", 
+						 PyString_FromString(settings->site_name));
+	PyDict_SetItemString(parameters, "machinepass", 
+						 PyString_FromString(settings->machine_password));
+	if (settings->samdb_ldb != NULL)
 		PyDict_SetItemString(parameters, "samdb", 
-							 PyString_FromString(samdb_ldb));
-	if (secrets_ldb != NULL)
+							 PyString_FromString(settings->samdb_ldb));
+	if (settings->secrets_ldb != NULL)
 		PyDict_SetItemString(parameters, "secrets_ldb", 
-							 PyString_FromString(secrets_ldb));
-	if (secrets_keytab != NULL)
+							 PyString_FromString(settings->secrets_ldb));
+	if (settings->secrets_keytab != NULL)
 		PyDict_SetItemString(parameters, "secrets_keytab", 
-							 PyString_FromString(secrets_keytab));
+							 PyString_FromString(settings->secrets_keytab));
 
 	result = PyEval_CallObjectWithKeywords(provision_fn, NULL, parameters);
 
@@ -350,23 +318,22 @@ static NTSTATUS provision_bare_py(TALLOC_CTX *mem_ctx,
 	}
 
 	DEBUG(0,("Open the SAM LDB with system credentials: %s\n", 
-		 samdb_ldb));
+		 settings->samdb_ldb));
 
-	ldb = ldb_wrap_connect(mem_ctx, lp_ctx, samdb_ldb,
+	ldb = ldb_wrap_connect(mem_ctx, lp_ctx, settings->samdb_ldb,
 				  system_session(mem_ctx, lp_ctx),
 				  NULL, 0, NULL);
 	if (!ldb) {
-		DEBUG(0,("Failed to open '%s'\n",
-			samdb_ldb));
+		DEBUG(0,("Failed to open '%s'\n", settings->samdb_ldb));
 		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
-	ok = samdb_set_ntds_invocation_id(ldb, invocation_id);
+	ok = samdb_set_ntds_invocation_id(ldb, settings->invocation_id);
 	if (!ok) {
 		DEBUG(0,("Failed to set cached ntds invocationId\n"));
 		return NT_STATUS_FOOBAR;
 	}
-	ok = samdb_set_ntds_objectGUID(ldb, ntds_guid);
+	ok = samdb_set_ntds_objectGUID(ldb, settings->ntds_guid);
 	if (!ok) {
 		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
 		return NT_STATUS_FOOBAR;
@@ -376,41 +343,12 @@ static NTSTATUS provision_bare_py(TALLOC_CTX *mem_ctx,
 }
 
 NTSTATUS provision_bare(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx,
-						const char *dns_name, const char *site_name,
-						const char *root_dn_str, const char *domain_dn_str,
-						const char *config_dn_str, const char *schema_dn_str,
-						const struct GUID *invocation_id, 
-						const char *netbios_name, const char *realm,
-						const char *domain, const struct GUID *ntds_guid,
-						const char *ntds_dn_str, 
-						const char *machine_password,
-						const char *samdb_ldb,
-						const char *secrets_ldb,
-						const char *secrets_keytab,
-						const char *schemadn_ldb,
-						const char *configdn_ldb,
-						const char *domaindn_ldb,
-						const char *templates_ldb,
-						const char *dns_keytab)
+						struct provision_settings *settings)
 {
 	if (getenv("PROVISION_EJS")) {
-		return provision_bare_ejs(mem_ctx, lp_ctx, dns_name, site_name, 
-								  root_dn_str, domain_dn_str, config_dn_str, 
-								  schema_dn_str, invocation_id, netbios_name, 
-								  realm, domain, ntds_guid, ntds_dn_str, 
-								  machine_password, samdb_ldb, secrets_ldb,
-								  secrets_keytab, schemadn_ldb, configdn_ldb,
-								  domaindn_ldb, templates_ldb, 
-								  dns_keytab);
+		return provision_bare_ejs(mem_ctx, lp_ctx, settings);
 	} else {
-		return provision_bare_py(mem_ctx, lp_ctx, dns_name, site_name, 
-								 root_dn_str, domain_dn_str, config_dn_str, 
-								 schema_dn_str, invocation_id, netbios_name, 
-								 realm, domain, ntds_guid, ntds_dn_str, 
-								 machine_password, samdb_ldb, secrets_ldb,
-								 secrets_keytab, schemadn_ldb, configdn_ldb,
-								 domaindn_ldb, templates_ldb,
-								 dns_keytab);
+		return provision_bare_py(mem_ctx, lp_ctx, settings);
 	}
 }
 

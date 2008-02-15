@@ -24,7 +24,7 @@
 #include "system/wait.h"
 #include "lib/events/events.h"
 #include "libcli/raw/libcliraw.h"
-#include "torture/util.h"
+#include "torture/util_provision.h"
 
 static bool test_tempdir(struct torture_context *tctx)
 {
@@ -42,18 +42,32 @@ static bool test_tempdir(struct torture_context *tctx)
 static bool test_provision(struct torture_context *tctx)
 {
 	NTSTATUS status;
+	struct provision_settings settings;
 
-	status = provision_bare(tctx, tctx->lp_ctx, 
-							"example.com", "SOME-SITE-NAME",
-							"DC=EXAMPLE,DC=COM",
-							"DC=EXAMPLE,DC=COM",
-							NULL, NULL, NULL, 
-							"FOO", "EXAMPLE.COM",
-							"EXAMPLE", NULL,
-							NULL, "geheim",
-							NULL, NULL, 
-							NULL, NULL, NULL, NULL, NULL, NULL);
+	settings.dns_name = "example.com";
+	settings.site_name = "SOME-SITE-NAME";
+	settings.root_dn_str = "DC=EXAMPLE,DC=COM";
+	settings.domain_dn_str = "DC=EXAMPLE,DC=COM";
+	settings.config_dn_str = NULL;
+	settings.schema_dn_str = NULL;
+	settings.invocation_id = NULL;
+	settings.netbios_name = "FOO";
+	settings.realm = "EXAMPLE.COM";
+	settings.domain = "EXAMPLE";
+	settings.ntds_guid = NULL;
+	settings.ntds_dn_str = NULL;
+	settings.machine_password = "geheim";
+	settings.samdb_ldb = NULL;
+	settings.secrets_ldb = NULL;
+	settings.secrets_keytab = NULL;
+	settings.schemadn_ldb = NULL;
+	settings.configdn_ldb = NULL;
+	settings.domaindn_ldb = NULL;
+	settings.templates_ldb = NULL;
+	settings.dns_keytab = NULL;
 
+	status = provision_bare(tctx, tctx->lp_ctx, &settings);
+			
 	torture_assert_ntstatus_ok(tctx, status, "provision");
 
 	return true;
