@@ -214,7 +214,7 @@ BIN_PROGS = @EXTRA_BIN_PROGS@ @SMBMOUNT_PROGS@ \
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
 	bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
 	bin/log2pcap@EXEEXT@ bin/sharesec@EXEEXT@ bin/ndrdump@EXEEXT@ \
-	bin/vlp@EXEEXT@
+	bin/vlp@EXEEXT@ bin/smbiconv@EXEEXT@
 
 SHLIBS = libtalloc libtdb @LIBWBCLIENT@ @LIBSMBCLIENT@ @LIBSMBSHAREMODES@ @LIBADDNS@ libnetapi
 
