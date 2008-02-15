@@ -306,33 +306,29 @@ then
 	plantest "NSS-TEST using winbind" member $VALGRIND $samba4bindir/nsstest $samba4bindir/shared/libnss_winbind.so
 fi
 
-# if python is available, run the python tests:
-if test -f $samba4bindir/smbpython
-then
-	PYTHON=bin/smbpython
-	SUBUNITRUN="$PYTHON ./scripting/bin/subunitrun"
-	plantest "ldb.python" none PYTHONPATH="$PYTHONPATH:lib/ldb/tests/python/" $SUBUNITRUN api
-	plantest "credentials.python" none PYTHONPATH="$PYTHONPATH:auth/credentials/tests" $SUBUNITRUN bindings
-	plantest "registry.python" none PYTHONPATH="$PYTHONPATH:lib/registry/tests/" $SUBUNITRUN bindings
-	plantest "tdb.python" none PYTHONPATH="$PYTHONPATH:lib/tdb/python/tests" $SUBUNITRUN simple
-	plantest "auth.python" none PYTHONPATH="$PYTHONPATH:auth/tests/" $SUBUNITRUN bindings
-	plantest "security.python" none PYTHONPATH="$PYTHONPATH:libcli/security/tests" $SUBUNITRUN bindings
-	plantest "param.python" none PYTHONPATH="$PYTHONPATH:param/tests" $SUBUNITRUN bindings
-	plantest "upgrade.python" none $SUBUNITRUN samba.tests.upgrade
-	plantest "samba.python" none $SUBUNITRUN samba.tests
-	plantest "provision.python" none $SUBUNITRUN samba.tests.provision
-	plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
-	plantest "samr.python" dc $SUBUNITRUN samba.tests.dcerpc.sam
-	plantest "samdb.python" dc $SUBUNITRUN samba.tests.samdb
-	plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
-	plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
-	plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho
-	plantest "winreg.python" dc $SUBUNITRUN samba.tests.dcerpc.registry
-	plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-	plantest "blackbox.samba3dump" none $PYTHON scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
-	rm -rf $PREFIX/upgrade
-	plantest "blackbox.upgrade" none $PYTHON setup/upgrade.py $CONFIGURATION --targetdir=$PREFIX/upgrade ../testdata/samba3 ../testdata/samba3/smb.conf
-	rm -rf $PREFIX/provision
-	mkdir $PREFIX/provision
-	plantest "blackbox.provision.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_provision.sh "$PREFIX/provision" "$CONFIGURATION" 
-fi
+PYTHON=bin/smbpython
+SUBUNITRUN="$PYTHON ./scripting/bin/subunitrun"
+plantest "ldb.python" none PYTHONPATH="$PYTHONPATH:lib/ldb/tests/python/" $SUBUNITRUN api
+plantest "credentials.python" none PYTHONPATH="$PYTHONPATH:auth/credentials/tests" $SUBUNITRUN bindings
+plantest "registry.python" none PYTHONPATH="$PYTHONPATH:lib/registry/tests/" $SUBUNITRUN bindings
+plantest "tdb.python" none PYTHONPATH="$PYTHONPATH:lib/tdb/python/tests" $SUBUNITRUN simple
+plantest "auth.python" none PYTHONPATH="$PYTHONPATH:auth/tests/" $SUBUNITRUN bindings
+plantest "security.python" none PYTHONPATH="$PYTHONPATH:libcli/security/tests" $SUBUNITRUN bindings
+plantest "param.python" none PYTHONPATH="$PYTHONPATH:param/tests" $SUBUNITRUN bindings
+plantest "upgrade.python" none $SUBUNITRUN samba.tests.upgrade
+plantest "samba.python" none $SUBUNITRUN samba.tests
+plantest "provision.python" none $SUBUNITRUN samba.tests.provision
+plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
+plantest "samr.python" dc $SUBUNITRUN samba.tests.dcerpc.sam
+plantest "samdb.python" dc $SUBUNITRUN samba.tests.samdb
+plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
+plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
+plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho
+plantest "winreg.python" dc $SUBUNITRUN samba.tests.dcerpc.registry
+plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+plantest "blackbox.samba3dump" none $PYTHON scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
+rm -rf $PREFIX/upgrade
+plantest "blackbox.upgrade" none $PYTHON setup/upgrade.py $CONFIGURATION --targetdir=$PREFIX/upgrade ../testdata/samba3 ../testdata/samba3/smb.conf
+rm -rf $PREFIX/provision
+mkdir $PREFIX/provision
+plantest "blackbox.provision.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_provision.sh "$PREFIX/provision" "$CONFIGURATION" 

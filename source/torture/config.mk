@@ -14,9 +14,8 @@ PUBLIC_DEPENDENCIES = \
 		LIBTALLOC 
 
 [SUBSYSTEM::TORTURE_UTIL]
-OBJ_FILES = util_smb.o
-PRIVATE_DEPENDENCIES = LIBCLI_RAW
-PUBLIC_PROTO_HEADER = util.h
+OBJ_FILES = util_smb.o util_provision.o
+PRIVATE_DEPENDENCIES = LIBCLI_RAW LIBPYTHON smbcalls
 PUBLIC_DEPENDENCIES = POPT_CREDENTIALS
 
 #################################
@@ -295,10 +294,8 @@ OBJ_FILES = \
 		libnet/libnet_BecomeDC.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-NET \
-		smbcalls \
 		POPT_CREDENTIALS \
-		torture_rpc \
-		LIBPYTHON
+		torture_rpc
 # End SUBSYSTEM TORTURE_NET
 #################################
 
