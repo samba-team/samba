@@ -2200,6 +2200,9 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 
 	setlinebuf(stdout);
 	options.seed = time(NULL);
+	options.numops = 1000;
+	options.max_open_handles = 20;
+	options.seeds_file = "gentest_seeds.dat";
 
 	pc = poptGetContext("gentest", argc, (const char **) argv, long_options, 
 			    POPT_CONTEXT_KEEP_FIRST);
@@ -2264,16 +2267,6 @@ static bool split_unc_name(const char *unc, char **server, char **share)
 			return -1;
 		}
 	}
-
-	argc -= NSERVERS;
-	argv += NSERVERS;
-
-	lp_load(lp_ctx, dyn_CONFIGFILE);
-
-	options.seed = time(NULL);
-	options.numops = 1000;
-	options.max_open_handles = 20;
-	options.seeds_file = "gentest_seeds.dat";
 
 	if (username_count == 0) {
 		usage(pc);
