@@ -252,8 +252,8 @@ done:
 
 /** @brief Authenticate with more detailed information
  *
- * @param params       Input parameters, only WBC_AUTH_USER_LEVEL_RESPONSE
- *                     is supported yet
+ * @param params       Input parameters, WBC_AUTH_USER_LEVEL_HASH
+ *                     is not supported yet
  * @param info         Output details on WBC_ERR_SUCCESS
  * @param error        Output details on WBC_ERR_AUTH_ERROR
  *
@@ -290,8 +290,40 @@ wbcErr wbcAuthenticateUserEx(const struct wbcAuthUserParams *params,
 
 	switch (params->level) {
 	case WBC_AUTH_USER_LEVEL_PLAIN:
-		wbc_status = WBC_ERR_NOT_IMPLEMENTED;
-		BAIL_ON_WBC_ERROR(wbc_status);
+		cmd = WINBINDD_PAM_AUTH;
+		request.flags = WBFLAG_PAM_INFO3_TEXT |
+				WBFLAG_PAM_USER_SESSION_KEY |
+				WBFLAG_PAM_LMKEY;
+
+		if (!params->password.plaintext) {
+			wbc_status = WBC_ERR_INVALID_PARAM;
+			BAIL_ON_WBC_ERROR(wbc_status);
+		}
+
+		if (params->domain_name && params->domain_name[0]) {
+			/* We need to get the winbind separator :-( */
+			struct winbindd_response sep_response;
+
+			ZERO_STRUCT(sep_response);
+
+			wbc_status = wbcRequestResponse(WINBINDD_INFO,
+							NULL, &sep_response);
+			BAIL_ON_WBC_ERROR(wbc_status);
+
+			snprintf(request.data.auth.user,
+				 sizeof(request.data.auth.user)-1,
+				 "%s%c%s",
+				 params->domain_name,
+				 sep_response.data.info.winbind_separator,
+				 params->account_name);
+		} else {
+			strncpy(request.data.auth.user,
+				params->account_name,
+				sizeof(request.data.auth.user)-1);
+		}
+		strncpy(request.data.auth.pass,
+			params->password.plaintext,
+			sizeof(request.data.auth.user)-1);
 		break;
 
 	case WBC_AUTH_USER_LEVEL_HASH:
