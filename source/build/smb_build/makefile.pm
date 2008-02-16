@@ -32,8 +32,6 @@ sub new($$$)
 	$self->{headers} = [];
 	$self->{shared_modules} = [];
 	$self->{plugins} = [];
-	$self->{install_plugins} = "";
-	$self->{uninstall_plugins} = "";
 	$self->{pc_files} = [];
 	$self->{proto_headers} = [];
 	$self->{output} = "";
@@ -154,16 +152,24 @@ sub SharedModule($$)
 	} else {
 		push (@{$self->{shared_modules}}, "$ctx->{TARGET_SHARED_LIBRARY}");
 		push (@{$self->{plugins}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
-		$self->{install_plugins} .= "\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-		$self->{install_plugins} .= "\t\@mkdir -p \$(DESTDIR)\$(modulesdir)/$sane_subsystem/\n";
-		$self->{install_plugins} .= "\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-		$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
+		$self->output("installplugins:: $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
+		$self->output("\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
+		$self->output("\t\@mkdir -p \$(DESTDIR)\$(modulesdir)/$sane_subsystem/\n");
+		$self->output("\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
 		if (defined($ctx->{ALIASES})) {
 			foreach (@{$ctx->{ALIASES}}) {
-				$self->{install_plugins} .= "\t\@rm -f \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
-				$self->{install_plugins} .= "\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
-				$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
+				$self->output("\t\@rm -f \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
+				$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
+			}
+		}
+
+		$self->output("uninstallplugins::\n");
+		$self->output("\t\@echo Uninstalling \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
+		$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
+
+		if (defined($ctx->{ALIASES})) {
+			foreach (@{$ctx->{ALIASES}}) {
+				$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
 			}
 		}
 	}
@@ -437,9 +443,6 @@ sub write($$)
 	$self->output("PROTO_HEADERS = " . array2oneperline($self->{proto_headers}) .  "\n");
 	$self->output("SHARED_MODULES = " . array2oneperline($self->{shared_modules}) . "\n");
 	$self->output("PLUGINS = " . array2oneperline($self->{plugins}) . "\n");
-
-	$self->output("\ninstallplugins: \$(PLUGINS)\n".$self->{install_plugins}."\n");
-	$self->output("\nuninstallplugins:\n".$self->{uninstall_plugins}."\n");
 
 	$self->_prepare_mk_files();
 
