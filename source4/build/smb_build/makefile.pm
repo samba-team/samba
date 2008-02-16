@@ -21,9 +21,6 @@ sub new($$$)
 	
 	bless($self, $myname);
 
-	$self->{python_dsos} = [];
-	$self->{python_pys} = [];
-	$self->{headers} = [];
 	$self->{output} = "";
 
 	$self->{mkfile} = $mkfile;
@@ -121,8 +118,7 @@ sub SharedModule($$)
 	$sane_subsystem =~ s/^lib//;
 	
 	if ($ctx->{TYPE} eq "PYTHON") {
-		push (@{$self->{python_dsos}}, 
-			"$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
+		$self->output("PYTHON_DSOS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
 	} else {
 		$self->output("PLUGINS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
 		$self->output("installplugins:: $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
@@ -340,7 +336,7 @@ sub PythonFiles($$)
 		my $target = "bin/python/".basename($_);
 		my $source = output::add_dir_str($ctx->{BASEDIR}, $_);
 		$self->output("$target: $source\n\n");
-		push (@{$self->{python_pys}}, $target);
+		$self->output("PYTHON_PYS += $target\n");
 	}
 }
 
@@ -394,8 +390,6 @@ sub write($$)
 {
 	my ($self, $file) = @_;
 
-	$self->output("PYTHON_DSOS = " . array2oneperline($self->{python_dsos}) . "\n");
-	$self->output("PYTHON_PYS = " . array2oneperline($self->{python_pys}) . "\n");
 	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
 
 	$self->_prepare_mk_files();
