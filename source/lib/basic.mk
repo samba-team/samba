@@ -18,15 +18,11 @@ include tdr/config.mk
 include dbwrap/config.mk
 include crypto/config.mk
 
-################################################
-# Start SUBSYSTEM LIBCOMPRESSION
 [SUBSYSTEM::LIBCOMPRESSION]
 OBJ_FILES = compression/mszip.o
-# End SUBSYSTEM LIBCOMPRESION
-################################################
 
 [SUBSYSTEM::GENCACHE]
-PRIVATE_PROTO_HEADER = gencache/gencache.h
+PUBLIC_HEADERS = gencache/gencache.h
 OBJ_FILES = gencache/gencache.o
 PRIVATE_DEPENDENCIES = TDB_WRAP
 
