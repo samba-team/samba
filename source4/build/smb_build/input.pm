@@ -76,8 +76,6 @@ sub check_module($$$)
 
 	die("Module $mod->{NAME} does not have a SUBSYSTEM set") if not defined($mod->{SUBSYSTEM});
 
-	my $use_default = 0;
-	
 	if (not exists($INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS})) {
 		$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS} = [];
 	}
@@ -126,9 +124,7 @@ sub check_library($$$)
 
 	return if ($lib->{ENABLE} ne "YES");
 
-	unless (defined($lib->{OUTPUT_TYPE})) {
-		$lib->{OUTPUT_TYPE} = $default_ot;
-	}
+	unless (defined($lib->{OUTPUT_TYPE})) { $lib->{OUTPUT_TYPE} = $default_ot; }
 
 	if (defined($lib->{VERSION}) and not defined($lib->{SO_VERSION})) {
 		print "$lib->{NAME}: Please specify SO_VERSION when specifying VERSION\n";
@@ -141,12 +137,8 @@ sub check_library($$$)
 	}
 
 	unless (defined($lib->{INIT_FUNCTION_TYPE})) { $lib->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
-
 	unless (defined($lib->{INIT_FUNCTION_SENTINEL})) { $lib->{INIT_FUNCTION_SENTINEL} = "NULL"; }
-
-	unless(defined($lib->{INSTALLDIR})) {
-		$lib->{INSTALLDIR} = "LIBDIR";
-	}
+	unless (defined($lib->{INSTALLDIR})) { $lib->{INSTALLDIR} = "LIBDIR"; }
 
 	add_libreplace($lib);
 }
@@ -281,9 +273,7 @@ sub check($$$$$)
 		}
 	}
 
-	foreach my $k (keys %$INPUT) {
-		my $part = $INPUT->{$k};
-
+	foreach my $part (values %$INPUT) {
 		$part->{LINK_FLAGS} = [];
 		$part->{FULL_OBJ_LIST} = ["\$($part->{NAME}_OBJ_LIST)"];
 
