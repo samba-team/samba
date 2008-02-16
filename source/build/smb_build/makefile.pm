@@ -296,28 +296,21 @@ sub Binary($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $installdir;
-	my $extradir = "";
-
-	my $localdir = "bin$extradir";
-
-	$installdir = "bin$extradir";
-
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
-		$self->output("SBIN_PROGS += $installdir/$ctx->{BINARY}\n");
+		$self->output("SBIN_PROGS += bin/$ctx->{BINARY}\n");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
-		$self->output("BIN_PROGS += $installdir/$ctx->{BINARY}\n");
+		$self->output("BIN_PROGS += bin/$ctx->{BINARY}\n");
 	}
 
-	$self->output("binaries:: $localdir/$ctx->{BINARY}\n");
+	$self->output("binaries:: bin/$ctx->{BINARY}\n");
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 $self->output(<< "__EOD__"
-$installdir/$ctx->{BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_OBJ_LIST)
+bin/$ctx->{BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_OBJ_LIST)
 	\@echo Linking \$\@
 __EOD__
 	);
