@@ -142,7 +142,6 @@ sub SharedModule($$)
 		$self->output("\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
 		if (defined($ctx->{ALIASES})) {
 			foreach (@{$ctx->{ALIASES}}) {
-				$self->output("\t\@rm -f \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
 				$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
 			}
 		}
@@ -164,19 +163,14 @@ sub SharedModule($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{TYPE} ne "PYTHON") {
-		my $init_fn = $ctx->{INIT_FUNCTION_TYPE};
-		$init_fn =~ s/\(\*\)/init_module/;
-		my $proto_fn = $ctx->{INIT_FUNCTION_TYPE};
-		$proto_fn =~ s/\(\*\)/$ctx->{INIT_FUNCTION}/;
 		$self->output("\$($ctx->{NAME}_OBJ_LIST): CFLAGS+=-D$ctx->{INIT_FUNCTION}=init_module\n");
 	}
 
 	$self->output(<< "__EOD__"
-#
 
 $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_OBJ_LIST)
 	\@echo Linking \$\@
-	\@mkdir -p $ctx->{SHAREDDIR}
+	\@mkdir -p \$(\@D)
 	\@\$(MDLD) \$(MDLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{NAME}\_OBJ_LIST) \\
 		\$($ctx->{NAME}_LINK_FLAGS)
@@ -185,7 +179,6 @@ __EOD__
 
 	if (defined($ctx->{ALIASES})) {
 		foreach (@{$ctx->{ALIASES}}) {
-			$self->output("\t\@rm -f $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
 			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
 		}
 	}
