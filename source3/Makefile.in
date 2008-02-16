@@ -382,7 +382,9 @@ LIBADS_OBJ = libads/ldap.o libads/ldap_printer.o \
              libads/disp_sec.o libads/ads_utils.o libads/ldap_utils.o \
 	     libads/cldap.o libads/ldap_schema.o libads/util.o libads/ndr.o
 
-LIBADS_SERVER_OBJ = libads/kerberos_verify.o libads/authdata.o
+LIBADS_SERVER_OBJ = libads/kerberos_verify.o libads/authdata.o \
+		    librpc/ndr/ndr_krb5pac.o \
+		    librpc/gen_ndr/ndr_krb5pac.o
 
 SECRETS_OBJ = passdb/secrets.o passdb/machine_sid.o
 
@@ -1118,7 +1120,7 @@ modules: SHOWFLAGS $(MODULES)
 IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
 	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
 	epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl \
-	dssetup.idl
+	dssetup.idl krb5pac.idl
 
 idl:
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \
