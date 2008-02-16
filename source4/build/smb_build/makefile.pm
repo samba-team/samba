@@ -349,8 +349,7 @@ sub Manpage($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $path = output::add_dir_str($ctx->{BASEDIR}, $ctx->{MANPAGE});
-	push (@{$self->{manpages}}, $path);
+	$self->output("MANPAGES += " . output::add_dir_str($ctx->{BASEDIR}, $ctx->{MANPAGE}) . "\n");
 }
 
 sub ProtoHeader($$)
