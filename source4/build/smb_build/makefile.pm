@@ -341,9 +341,7 @@ sub PythonFiles($$)
 	foreach (@{$ctx->{PYTHON_FILES}}) {
 		my $target = "bin/python/".basename($_);
 		my $source = output::add_dir_str($ctx->{BASEDIR}, $_);
-		$self->output("$target: $source\n" .
-					  "\tmkdir -p \$(builddir)/bin/python\n" .
-		              "\tcp $source \$@\n\n");
+		$self->output("$target: $source\n\n");
 		push (@{$self->{python_pys}}, $target);
 	}
 }
