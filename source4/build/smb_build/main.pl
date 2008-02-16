@@ -48,18 +48,12 @@ $config::config{LIBRARY_OUTPUT_TYPE} = $library_output_type;
 $config::config{MODULE_OUTPUT_TYPE} = $module_output_type;
 my $mkenv = new smb_build::makefile(\%config::config, $mkfile);
 
-foreach my $key (values %$OUTPUT) {
-	next unless defined $key->{OUTPUT_TYPE};
-
-	$mkenv->Integrated($key) if grep(/INTEGRATED/, @{$key->{OUTPUT_TYPE}});
-}
-
 my $shared_libs_used = 0;
 
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
-	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
+	$mkenv->StaticLibraryPrimitives($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	if (defined($key->{PC_FILE})) {
 		$mkenv->output("PC_FILES += $key->{BASEDIR}/$key->{PC_FILE}\n");
 	} 
@@ -82,6 +76,13 @@ foreach my $key (values %$OUTPUT) {
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
+	$mkenv->Integrated($key) if grep(/INTEGRATED/, @{$key->{OUTPUT_TYPE}});
+}
+
+foreach my $key (values %$OUTPUT) {
+	next unless defined $key->{OUTPUT_TYPE};
+
+	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->SharedLibrary($key) if ($key->{TYPE} eq "LIBRARY") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->SharedModule($key) if ($key->{TYPE} eq "MODULE" or 
