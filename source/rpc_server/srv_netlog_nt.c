@@ -771,52 +771,53 @@ static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
 }
 
 /*************************************************************************
- _net_sam_logon
+ _netr_LogonSamLogon
  *************************************************************************/
 
-static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
-					NET_Q_SAM_LOGON *q_u,
-					NET_R_SAM_LOGON *r_u,
-					bool process_creds)
+NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
+			     struct netr_LogonSamLogon *r)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	NET_USER_INFO_3 *usr_info = NULL;
-	NET_ID_INFO_CTR *ctr = q_u->sam_id.ctr;
-	UNISTR2 *uni_samlogon_user = NULL;
-	UNISTR2 *uni_samlogon_domain = NULL;
-	UNISTR2 *uni_samlogon_workstation = NULL;
+	struct netr_SamInfo3 *sam3 = NULL;
+	union netr_LogonLevel *logon = r->in.logon;
 	fstring nt_username, nt_domain, nt_workstation;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 	struct samu *sampw;
 	struct auth_context *auth_context = NULL;
+	bool process_creds = true;
+
+	switch (p->hdr_req.opnum) {
+		case NDR_NETR_LOGONSAMLOGON:
+			process_creds = true;
+			break;
+		case NDR_NETR_LOGONSAMLOGONEX:
+		default:
+			process_creds = false;
+	}
 
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
 		   obviously did not use it. */
-		DEBUG(0,("_net_sam_logon_internal: client %s not using schannel for netlogon\n",
+		DEBUG(0,("_netr_LogonSamLogon: client %s not using schannel for netlogon\n",
 			get_remote_machine_name() ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	usr_info = TALLOC_P(p->mem_ctx, NET_USER_INFO_3);
-	if (!usr_info) {
+	sam3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_SamInfo3);
+	if (!sam3) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ZERO_STRUCTP(usr_info);
-
  	/* store the user information, if there is any. */
-	r_u->user = usr_info;
-	r_u->auth_resp = 1; /* authoritative response */
-	if (q_u->validation_level != 2 && q_u->validation_level != 3) {
-		DEBUG(0,("_net_sam_logon: bad validation_level value %d.\n", (int)q_u->validation_level ));
+	r->out.validation->sam3 = sam3;
+	*r->out.authoritative = true; /* authoritative response */
+	if (r->in.validation_level != 2 && r->in.validation_level != 3) {
+		DEBUG(0,("_netr_LogonSamLogon: bad validation_level value %d.\n",
+			(int)r->in.validation_level));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	/* We handle the return of USER_INFO_2 instead of 3 in the parse return. Sucks, I know... */
-	r_u->switch_value = q_u->validation_level; /* indicates type of validation user info */
-	r_u->buffer_creds = 1; /* Ensure we always return server creds. */
 
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
@@ -828,8 +829,8 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		/* Note this is the remote machine this request is coming from (member server),
 		   not neccessarily the workstation name the user is logging onto.
 		*/
-		rpcstr_pull(remote_machine,q_u->sam_id.client.login.uni_comp_name.buffer,
-		    sizeof(remote_machine),q_u->sam_id.client.login.uni_comp_name.uni_str_len*2,0);
+
+		fstrcpy(remote_machine, r->in.computer_name);
 
 		if (!p->dc) {
 			/* Restore the saved state of the netlogon creds. */
@@ -850,8 +851,8 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		}
 
 		/* checks and updates credentials.  creates reply credentials */
-		if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
-			DEBUG(2,("_net_sam_logon: creds_server_step failed. Rejecting auth "
+		if (!netlogon_creds_server_step(p->dc, r->in.credential,  r->out.return_authenticator)) {
+			DEBUG(2,("_netr_LogonSamLogon: creds_server_step failed. Rejecting auth "
 				"request from client %s machine account %s\n",
 				remote_machine, p->dc->mach_acct ));
 			return NT_STATUS_INVALID_PARAMETER;
@@ -865,19 +866,24 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		unbecome_root();
 	}
 
-	switch (q_u->sam_id.logon_level) {
+	switch (r->in.logon_level) {
 	case INTERACTIVE_LOGON_TYPE:
-		uni_samlogon_user = &ctr->auth.id1.uni_user_name;
- 		uni_samlogon_domain = &ctr->auth.id1.uni_domain_name;
-
-                uni_samlogon_workstation = &ctr->auth.id1.uni_wksta_name;
+		fstrcpy(nt_username,
+			logon->password->identity_info.account_name.string);
+		fstrcpy(nt_domain,
+			logon->password->identity_info.domain_name.string);
+		fstrcpy(nt_workstation,
+			logon->password->identity_info.workstation.string);
 
 		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
 		break;
 	case NET_LOGON_TYPE:
-		uni_samlogon_user = &ctr->auth.id2.uni_user_name;
-		uni_samlogon_domain = &ctr->auth.id2.uni_domain_name;
-		uni_samlogon_workstation = &ctr->auth.id2.uni_wksta_name;
+		fstrcpy(nt_username,
+			logon->network->identity_info.account_name.string);
+		fstrcpy(nt_domain,
+			logon->network->identity_info.domain_name.string);
+		fstrcpy(nt_workstation,
+			logon->network->identity_info.workstation.string);
 
 		DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", lp_workgroup()));
 		break;
@@ -886,24 +892,23 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		return NT_STATUS_INVALID_INFO_CLASS;
 	} /* end switch */
 
-	rpcstr_pull(nt_username,uni_samlogon_user->buffer,sizeof(nt_username),uni_samlogon_user->uni_str_len*2,0);
-	rpcstr_pull(nt_domain,uni_samlogon_domain->buffer,sizeof(nt_domain),uni_samlogon_domain->uni_str_len*2,0);
-	rpcstr_pull(nt_workstation,uni_samlogon_workstation->buffer,sizeof(nt_workstation),uni_samlogon_workstation->uni_str_len*2,0);
-
 	DEBUG(3,("User:[%s@%s] Requested Domain:[%s]\n", nt_username, nt_workstation, nt_domain));
 	fstrcpy(current_user_info.smb_name, nt_username);
 	sub_set_smb_name(nt_username);
 
-	DEBUG(5,("Attempting validation level %d for unmapped username %s.\n", q_u->sam_id.ctr->switch_value, nt_username));
+	DEBUG(5,("Attempting validation level %d for unmapped username %s.\n",
+		r->in.validation_level, nt_username));
 
 	status = NT_STATUS_OK;
 
-	switch (ctr->switch_value) {
+	switch (r->in.logon_level) {
 	case NET_LOGON_TYPE:
 	{
 		const char *wksname = nt_workstation;
 
-		if (!NT_STATUS_IS_OK(status = make_auth_context_fixed(&auth_context, ctr->auth.id2.lm_chal))) {
+		status = make_auth_context_fixed(&auth_context,
+						 logon->network->challenge);
+		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
@@ -917,11 +922,11 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		if (!make_user_info_netlogon_network(&user_info,
 						     nt_username, nt_domain,
 						     wksname,
-						     ctr->auth.id2.param_ctrl,
-						     ctr->auth.id2.lm_chal_resp.buffer,
-						     ctr->auth.id2.lm_chal_resp.str_str_len,
-						     ctr->auth.id2.nt_chal_resp.buffer,
-						     ctr->auth.id2.nt_chal_resp.str_str_len)) {
+						     logon->network->identity_info.parameter_control,
+						     logon->network->lm.data,
+						     logon->network->lm.length,
+						     logon->network->nt.data,
+						     logon->network->nt.length)) {
 			status = NT_STATUS_NO_MEMORY;
 		}
 		break;
@@ -943,10 +948,10 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		if (!make_user_info_netlogon_interactive(&user_info,
 							 nt_username, nt_domain,
 							 nt_workstation,
-							 ctr->auth.id1.param_ctrl,
+							 logon->password->identity_info.parameter_control,
 							 chal,
-							 ctr->auth.id1.lm_owf.data,
-							 ctr->auth.id1.nt_owf.data,
+							 logon->password->lmpassword.hash,
+							 logon->password->ntpassword.hash,
 							 p->dc->sess_key)) {
 			status = NT_STATUS_NO_MEMORY;
 		}
@@ -965,7 +970,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 	(auth_context->free)(&auth_context);
 	free_user_info(&user_info);
 
-	DEBUG(5, ("_net_sam_logon: check_password returned status %s\n",
+	DEBUG(5,("_netr_LogonSamLogon: check_password returned status %s\n",
 		  nt_errstr(status)));
 
 	/* Check account and password */
@@ -978,7 +983,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
                 if ( NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)
 		     && !strequal(nt_domain, get_global_sam_name())
 		     && !is_trusted_domain(nt_domain) )
-			r_u->auth_resp = 0; /* We are not authoritative */
+			*r->out.authoritative = false; /* We are not authoritative */
 
 		TALLOC_FREE(server_info);
 		return status;
@@ -986,7 +991,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 
 	if (server_info->guest) {
 		/* We don't like guest domain logons... */
-		DEBUG(5,("_net_sam_logon: Attempted domain logon as GUEST "
+		DEBUG(5,("_netr_LogonSamLogon: Attempted domain logon as GUEST "
 			 "denied.\n"));
 		TALLOC_FREE(server_info);
 		return NT_STATUS_LOGON_FAILURE;
@@ -1005,29 +1010,40 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 
 		int num_gids = 0;
 		const char *my_name;
-		unsigned char user_session_key[16];
-		unsigned char lm_session_key[16];
+
+		struct netr_UserSessionKey user_session_key;
+		struct netr_LMSessionKey lm_session_key;
 		unsigned char pipe_session_key[16];
 
-		sampw = server_info->sam_account;
+		NTTIME last_logon, last_logoff, acct_expiry, last_password_change;
+		NTTIME allow_password_change, force_password_change;
+		struct samr_RidWithAttributeArray groups;
+		int i;
+		struct dom_sid2 *sid = NULL;
 
-		/* set up pointer indicating user/password failed to be
-		 * found */
-		usr_info->ptr_user_info = 0;
+		ZERO_STRUCT(user_session_key);
+		ZERO_STRUCT(lm_session_key);
+
+		sampw = server_info->sam_account;
 
 		user_sid = pdb_get_user_sid(sampw);
 		group_sid = pdb_get_group_sid(sampw);
 
 		if ((user_sid == NULL) || (group_sid == NULL)) {
-			DEBUG(1, ("_net_sam_logon: User without group or user SID\n"));
+			DEBUG(1, ("_netr_LogonSamLogon: User without group or user SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
 		sid_copy(&domain_sid, user_sid);
 		sid_split_rid(&domain_sid, &user_rid);
 
+		sid = sid_dup_talloc(p->mem_ctx, &domain_sid);
+		if (!sid) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		if (!sid_peek_check_rid(&domain_sid, group_sid, &group_rid)) {
-			DEBUG(1, ("_net_sam_logon: user %s\\%s has user sid "
+			DEBUG(1, ("_netr_LogonSamLogon: user %s\\%s has user sid "
 				  "%s\n but group sid %s.\n"
 				  "The conflicting domain portions are not "
 				  "supported for NETLOGON calls\n",
@@ -1054,9 +1070,9 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		}
 
 		if (server_info->user_session_key.length) {
-			memcpy(user_session_key,
+			memcpy(user_session_key.key,
 			       server_info->user_session_key.data,
-			       MIN(sizeof(user_session_key),
+			       MIN(sizeof(user_session_key.key),
 				   server_info->user_session_key.length));
 			if (process_creds) {
 				/* Get the pipe session key from the creds. */
@@ -1068,13 +1084,13 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 				}
 				memcpy(pipe_session_key, p->auth.a_u.schannel_auth->sess_key, 16);
 			}
-			SamOEMhash(user_session_key, pipe_session_key, 16);
+			SamOEMhash(user_session_key.key, pipe_session_key, 16);
 			memset(pipe_session_key, '\0', 16);
 		}
 		if (server_info->lm_session_key.length) {
-			memcpy(lm_session_key,
+			memcpy(lm_session_key.key,
 			       server_info->lm_session_key.data,
-			       MIN(sizeof(lm_session_key),
+			       MIN(sizeof(lm_session_key.key),
 				   server_info->lm_session_key.length));
 			if (process_creds) {
 				/* Get the pipe session key from the creds. */
@@ -1086,36 +1102,56 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 				}
 				memcpy(pipe_session_key, p->auth.a_u.schannel_auth->sess_key, 16);
 			}
-			SamOEMhash(lm_session_key, pipe_session_key, 16);
+			SamOEMhash(lm_session_key.key, pipe_session_key, 16);
 			memset(pipe_session_key, '\0', 16);
 		}
 
-		init_net_user_info3(p->mem_ctx, usr_info,
-				    user_rid,
-				    group_rid,
-				    pdb_get_username(sampw),
-				    pdb_get_fullname(sampw),
-				    pdb_get_homedir(sampw),
-				    pdb_get_dir_drive(sampw),
-				    pdb_get_logon_script(sampw),
-				    pdb_get_profile_path(sampw),
-				    pdb_get_logon_time(sampw),
-				    get_time_t_max(),
-				    get_time_t_max(),
-				    pdb_get_pass_last_set_time(sampw),
-				    pdb_get_pass_can_change_time(sampw),
-				    pdb_get_pass_must_change_time(sampw),
-				    0, /* logon_count */
-				    0, /* bad_pw_count */
-				    num_gids,    /* uint32 num_groups */
-				    gids    , /* DOM_GID *gids */
-				    NETLOGON_EXTRA_SIDS, /* uint32 user_flgs (?) */
-				    pdb_get_acct_ctrl(sampw),
-				    server_info->user_session_key.length ? user_session_key : NULL,
-				    server_info->lm_session_key.length ? lm_session_key : NULL,
-				    my_name     , /* char *logon_srv */
-				    pdb_get_domain(sampw),
-				    &domain_sid);     /* DOM_SID *dom_sid */
+		groups.count = num_gids;
+		groups.rids = TALLOC_ARRAY(p->mem_ctx, struct samr_RidWithAttribute,
+					   groups.count);
+		if (!groups.rids) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (i=0; i < groups.count; i++) {
+			groups.rids[i].rid = gids[i].g_rid;
+			groups.rids[i].attributes = gids[i].attr;
+		}
+
+		unix_to_nt_time(&last_logon, pdb_get_logon_time(sampw));
+		unix_to_nt_time(&last_logoff, get_time_t_max());
+		unix_to_nt_time(&acct_expiry, get_time_t_max());
+		unix_to_nt_time(&last_password_change, pdb_get_pass_last_set_time(sampw));
+		unix_to_nt_time(&allow_password_change, pdb_get_pass_can_change_time(sampw));
+		unix_to_nt_time(&force_password_change, pdb_get_pass_must_change_time(sampw));
+
+		init_netr_SamInfo3(sam3,
+				   last_logon,
+				   last_logoff,
+				   acct_expiry,
+				   last_password_change,
+				   allow_password_change,
+				   force_password_change,
+				   talloc_strdup(p->mem_ctx, pdb_get_username(sampw)),
+				   talloc_strdup(p->mem_ctx, pdb_get_fullname(sampw)),
+				   talloc_strdup(p->mem_ctx, pdb_get_logon_script(sampw)),
+				   talloc_strdup(p->mem_ctx, pdb_get_profile_path(sampw)),
+				   talloc_strdup(p->mem_ctx, pdb_get_homedir(sampw)),
+				   talloc_strdup(p->mem_ctx, pdb_get_dir_drive(sampw)),
+				   0, /* logon_count */
+				   0, /* bad_password_count */
+				   user_rid,
+				   group_rid,
+				   groups,
+				   NETLOGON_EXTRA_SIDS,
+				   user_session_key,
+				   my_name,
+				   talloc_strdup(p->mem_ctx, pdb_get_domain(sampw)),
+				   sid,
+				   lm_session_key,
+				   pdb_get_acct_ctrl(sampw),
+				   0, /* sidcount */
+				   NULL); /* struct netr_SidAttr *sids */
 		ZERO_STRUCT(user_session_key);
 		ZERO_STRUCT(lm_session_key);
 	}
@@ -1124,25 +1160,14 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 }
 
 /*************************************************************************
- _net_sam_logon
+ _netr_LogonSamLogonEx
+ - no credential chaining. Map into net sam logon.
  *************************************************************************/
 
-NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u)
+NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
+			       struct netr_LogonSamLogonEx *r)
 {
-	return _net_sam_logon_internal(p, q_u, r_u, True);
-}
-
-/*************************************************************************
- _net_sam_logon_ex - no credential chaining. Map into net sam logon.
- *************************************************************************/
-
-NTSTATUS _net_sam_logon_ex(pipes_struct *p, NET_Q_SAM_LOGON_EX *q_u, NET_R_SAM_LOGON_EX *r_u)
-{
-	NET_Q_SAM_LOGON q;
-	NET_R_SAM_LOGON r;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
+	struct netr_LogonSamLogon q;
 
 	/* Only allow this if the pipe is protected. */
 	if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
@@ -1151,26 +1176,20 @@ NTSTATUS _net_sam_logon_ex(pipes_struct *p, NET_Q_SAM_LOGON_EX *q_u, NET_R_SAM_L
 		return NT_STATUS_INVALID_PARAMETER;
         }
 
-	/* Map a NET_Q_SAM_LOGON_EX to NET_Q_SAM_LOGON. */
-	q.validation_level = q_u->validation_level;
+	q.in.server_name 	= r->in.server_name;
+	q.in.computer_name	= r->in.computer_name;
+	q.in.logon_level	= r->in.logon_level;
+	q.in.logon		= r->in.logon;
+	q.in.validation_level	= r->in.validation_level;
+	/* we do not handle the flags */
+	/*			= r->in.flags; */
 
- 	/* Map a DOM_SAM_INFO_EX into a DOM_SAM_INFO with no creds. */
-	q.sam_id.client.login = q_u->sam_id.client;
-	q.sam_id.logon_level = q_u->sam_id.logon_level;
-	q.sam_id.ctr = q_u->sam_id.ctr;
+	q.out.validation	= r->out.validation;
+	q.out.authoritative	= r->out.authoritative;
+	/* we do not handle the flags */
+	/*			= r->out.flags; */
 
-	r_u->status = _net_sam_logon_internal(p, &q, &r, False);
-
-	if (!NT_STATUS_IS_OK(r_u->status)) {
-		return r_u->status;
-	}
-
-	/* Map the NET_R_SAM_LOGON to NET_R_SAM_LOGON_EX. */
-	r_u->switch_value = r.switch_value;
-	r_u->user = r.user;
-	r_u->auth_resp = r.auth_resp;
-	r_u->flags = 0; /* FIXME ! */
-	return r_u->status;
+	return _netr_LogonSamLogon(p, &q);
 }
 
 /*************************************************************************
@@ -1211,16 +1230,6 @@ WERROR _netr_LogonUasLogoff(pipes_struct *p,
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
-			     struct netr_LogonSamLogon *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /****************************************************************
@@ -1501,16 +1510,6 @@ WERROR _netr_DsrGetDcSiteCoverageW(pipes_struct *p,
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
-			       struct netr_LogonSamLogonEx *r)
-{
-	p->rng_fault_state = true;
-	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /****************************************************************
