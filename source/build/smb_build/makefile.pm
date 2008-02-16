@@ -116,6 +116,7 @@ sub Integrated($$)
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->output("$ctx->{SUBSYSTEM}_OBJ_LIST += \$($ctx->{NAME}_OBJ_LIST)\n");
+	$self->output("$ctx->{SUBSYSTEM}_INIT_FUNCTIONS += \"$ctx->{INIT_FUNCTION},\"\n") if defined($ctx->{INIT_FUNCTION});
 }
 
 sub SharedModulePrimitives($$)
@@ -242,6 +243,12 @@ sub StaticLibraryPrimitives($$)
 	return unless (defined($ctx->{OBJ_FILES}));
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
+}
+
+sub InitFunctions($$)
+{
+	my ($self, $ctx) = @_;
+	$self->output("\$($ctx->{NAME}_OBJ_LIST): CFLAGS+=-DSTATIC_$ctx->{NAME}_MODULES=\"\$($ctx->{NAME}_INIT_FUNCTIONS)$ctx->{INIT_FUNCTION_SENTINEL}\"\n");
 }
 
 sub StaticLibrary($$)

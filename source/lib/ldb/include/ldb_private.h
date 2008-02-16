@@ -173,6 +173,7 @@ int ldb_should_b64_encode(const struct ldb_val *val);
 int ldb_objectclass_init(void);
 int ldb_operational_init(void);
 int ldb_paged_results_init(void);
+int ldb_paged_searches_init(void);
 int ldb_rdn_name_init(void);
 int ldb_schema_init(void);
 int ldb_asq_init(void);
@@ -180,6 +181,7 @@ int ldb_sort_init(void);
 int ldb_ldap_init(void);
 int ldb_ildap_init(void);
 int ldb_tdb_init(void);
+int ldb_skel_init(void);
 int ldb_sqlite3_init(void);
 
 int ldb_match_msg(struct ldb_context *ldb,

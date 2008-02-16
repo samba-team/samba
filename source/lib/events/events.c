@@ -58,9 +58,6 @@
 #include "lib/events/events_internal.h"
 #include "lib/util/dlinklist.h"
 #include "param/param.h"
-#if _SAMBA_BUILD_
-#include "build.h"
-#endif
 
 struct event_ops_list {
 	struct event_ops_list *next, *prev;
@@ -102,6 +99,9 @@ void event_set_default_backend(const char *backend)
 static void event_backend_init(void)
 {
 #if _SAMBA_BUILD_
+	NTSTATUS s4_events_standard_init(void);
+	NTSTATUS s4_events_select_init(void);
+	NTSTATUS s4_events_epoll_init(void);
 	init_module_fn static_init[] = { STATIC_LIBEVENTS_MODULES };
 	if (event_backends) return;
 	run_init_functions(static_init);
