@@ -27,7 +27,7 @@ include data.mk
 DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
 		  $(srcdir)/version.h
 
-binaries:: $(BINARIES)
+binaries::
 libraries:: $(STATIC_LIBS) $(SHARED_LIBS)
 modules:: $(SHARED_MODULES)
 headers:: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
@@ -124,8 +124,8 @@ installbin:: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
 
 installplugins::
 
-installlib:: $(INSTALLABLE_SHARED_LIBS) $(STATIC_LIBS) installdirs
-	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(libdir) "$(SHLIBEXT)" $(INSTALLABLE_SHARED_LIBS) 
+installlib:: $(SHARED_LIBS) $(STATIC_LIBS) installdirs
+	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(libdir) "$(SHLIBEXT)" $(SHARED_LIBS) 
 	#@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(libdir) "$(STLIBEXT)" $(STATIC_LIBS)
 
 installheader:: headers installdirs
