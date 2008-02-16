@@ -16,7 +16,6 @@ PUBLIC_DEPENDENCIES = \
 # Start MODULE ldb_wins_ldb
 [MODULE::ldb_wins_ldb]
 SUBSYSTEM = LIBLDB
-OUTPUT_TYPE = SHARED_LIBRARY
 INIT_FUNCTION = wins_ldb_module_init
 OBJ_FILES = \
 		wins/wins_ldb.o
