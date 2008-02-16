@@ -6,7 +6,6 @@
 #  Released under the GNU GPL				
 
 use smb_build::makefile;
-use smb_build::header;
 use smb_build::input;
 use smb_build::config_mk;
 use smb_build::output;
@@ -89,10 +88,10 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->Binary($key) if grep(/BINARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER}) or 
 					 defined($key->{PUBLIC_PROTO_HEADER});
+	$mkenv->InitFunctions($key) if defined($key->{INIT_FUNCTIONS});
 }
 
 $mkenv->write("data.mk");
-header::create_smb_build_h($OUTPUT, "include/build.h");
 
 cflags::create_cflags($OUTPUT, $config::config{srcdir},
 		    $config::config{builddir}, "extra_cflags.txt");
