@@ -129,8 +129,6 @@ sub SharedModule($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $init_obj = "";
-
 	my $sane_subsystem = lc($ctx->{SUBSYSTEM});
 	$sane_subsystem =~ s/^lib//;
 	
@@ -170,30 +168,17 @@ sub SharedModule($$)
 		$init_fn =~ s/\(\*\)/init_module/;
 		my $proto_fn = $ctx->{INIT_FUNCTION_TYPE};
 		$proto_fn =~ s/\(\*\)/$ctx->{INIT_FUNCTION}/;
-
-		$self->output(<< "__EOD__"
-bin/$ctx->{NAME}_init_module.c:
-	\@echo Creating \$\@
-	\@echo \"#include \\\"includes.h\\\"\" > \$\@
-	\@echo \"$proto_fn;\" >> \$\@
-	\@echo \"_PUBLIC_ $init_fn\" >> \$\@
-	\@echo \"{\" >> \$\@
-	\@echo \"	return $ctx->{INIT_FUNCTION}();\" >> \$\@
-	\@echo \"}\" >> \$\@
-	\@echo \"\" >> \$\@
-__EOD__
-);
-		$init_obj = "bin/$ctx->{NAME}_init_module.o";
+		$self->output("\$($ctx->{NAME}_OBJ_LIST): CFLAGS+=-D$ctx->{INIT_FUNCTION}=init_module\n");
 	}
 
 	$self->output(<< "__EOD__"
 #
 
-$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_OBJ_LIST) $init_obj
+$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(MDLD) \$(MDLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{NAME}\_OBJ_LIST) $init_obj \\
+		\$($ctx->{NAME}\_OBJ_LIST) \\
 		\$($ctx->{NAME}_LINK_FLAGS)
 __EOD__
 );
