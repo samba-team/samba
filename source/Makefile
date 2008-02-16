@@ -122,6 +122,8 @@ installbin:: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
 		$(DESTDIR)$(TORTUREDIR) \
 		$(TORTURE_PROGS)
 
+installplugins::
+
 installlib:: $(INSTALLABLE_SHARED_LIBS) $(STATIC_LIBS) installdirs
 	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(libdir) "$(SHLIBEXT)" $(INSTALLABLE_SHARED_LIBS) 
 	#@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(libdir) "$(STLIBEXT)" $(STATIC_LIBS)
@@ -164,6 +166,8 @@ uninstallheader::
 
 uninstallman::
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(mandir) $(MANPAGES)
+
+uninstallplugins::
 
 config.status:
 	@echo "config.status does not exist. Please run ./configure."
