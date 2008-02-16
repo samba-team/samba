@@ -27,7 +27,6 @@ sub new($$$)
 	$self->{shared_modules} = [];
 	$self->{plugins} = [];
 	$self->{pc_files} = [];
-	$self->{proto_headers} = [];
 	$self->{output} = "";
 
 	$self->{mkfile} = $mkfile;
@@ -389,7 +388,7 @@ sub ProtoHeader($$)
 			$comment .= " and ";
 			$target.= " ";
 		}
-		push (@{$self->{proto_headers}}, $priv);
+		$self->output("PROTO_HEADERS += $priv\n");
 	} else {
 		$ctx->{PRIVATE_PROTO_HEADER} = $ctx->{PUBLIC_PROTO_HEADER};
 		$priv = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PRIVATE_PROTO_HEADER});
@@ -399,7 +398,7 @@ sub ProtoHeader($$)
 		$pub = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PUBLIC_PROTO_HEADER});
 		$comment .= $pub;
 		$target .= $pub;
-		push (@{$self->{proto_headers}}, $pub);
+		$self->output("PROTO_HEADERS += $pub\n");
 	} else {
 		$ctx->{PUBLIC_PROTO_HEADER} = $ctx->{PRIVATE_PROTO_HEADER};
 		$pub = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PUBLIC_PROTO_HEADER});
@@ -419,7 +418,6 @@ sub write($$)
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
 	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
 	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
-	$self->output("PROTO_HEADERS = " . array2oneperline($self->{proto_headers}) .  "\n");
 	$self->output("SHARED_MODULES = " . array2oneperline($self->{shared_modules}) . "\n");
 	$self->output("PLUGINS = " . array2oneperline($self->{plugins}) . "\n");
 
