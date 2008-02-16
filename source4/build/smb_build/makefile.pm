@@ -28,7 +28,6 @@ sub new($$$)
 	$self->{python_dsos} = [];
 	$self->{python_pys} = [];
 	$self->{shared_libs} = [];
-	$self->{installable_shared_libs} = [];
 	$self->{headers} = [];
 	$self->{shared_modules} = [];
 	$self->{plugins} = [];
@@ -243,7 +242,6 @@ sub SharedLibrary($$)
 	my ($self,$ctx) = @_;
 
 	push (@{$self->{shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
-	push (@{$self->{installable_shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
@@ -334,7 +332,7 @@ sub Binary($$)
 		push (@{$self->{bin_progs}}, "$installdir/$ctx->{BINARY}");
 	}
 
-	push (@{$self->{binaries}}, "$localdir/$ctx->{BINARY}");
+	$self->output("binaries:: $localdir/$ctx->{BINARY}\n");
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
@@ -431,12 +429,10 @@ sub write($$)
 	$self->output("MANPAGES = " . array2oneperline($self->{manpages})."\n");
 	$self->output("BIN_PROGS = " . array2oneperline($self->{bin_progs}) . "\n");
 	$self->output("SBIN_PROGS = " . array2oneperline($self->{sbin_progs}) . "\n");
-	$self->output("BINARIES = " . array2oneperline($self->{binaries}) . "\n");
 	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
 	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");
 	$self->output("PYTHON_DSOS = " . array2oneperline($self->{python_dsos}) . "\n");
 	$self->output("PYTHON_PYS = " . array2oneperline($self->{python_pys}) . "\n");
-	$self->output("INSTALLABLE_SHARED_LIBS = " . array2oneperline($self->{installable_shared_libs}) . "\n");
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
 	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
 	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
