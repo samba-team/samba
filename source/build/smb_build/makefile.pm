@@ -25,7 +25,6 @@ sub new($$$)
 	$self->{python_pys} = [];
 	$self->{headers} = [];
 	$self->{plugins} = [];
-	$self->{pc_files} = [];
 	$self->{output} = "";
 
 	$self->{mkfile} = $mkfile;
@@ -282,9 +281,15 @@ sub Header($$)
 {
 	my ($self,$ctx) = @_;
 
+	return if ($#{$ctx->{PUBLIC_HEADERS}} == -1);
+
+	$self->output("PUBLIC_HEADERS +=");
+
 	foreach (@{$ctx->{PUBLIC_HEADERS}}) {
-		push (@{$self->{headers}}, output::add_dir_str($ctx->{BASEDIR}, $_));
+		$self->output(" " . output::add_dir_str($ctx->{BASEDIR}, $_));
 	}
+
+	$self->output("\n");
 }
 
 sub Binary($$)
@@ -393,8 +398,6 @@ sub write($$)
 
 	$self->output("PYTHON_DSOS = " . array2oneperline($self->{python_dsos}) . "\n");
 	$self->output("PYTHON_PYS = " . array2oneperline($self->{python_pys}) . "\n");
-	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
-	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
 	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
 	$self->output("PLUGINS = " . array2oneperline($self->{plugins}) . "\n");
 

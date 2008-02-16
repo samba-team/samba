@@ -56,7 +56,7 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->MergedObj($key) if grep(/MERGED_OBJ/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	if (defined($key->{PC_FILE})) {
-		push(@{$mkenv->{pc_files}}, "$key->{BASEDIR}/$key->{PC_FILE}");
+		$mkenv->output("PC_FILES += $key->{BASEDIR}/$key->{PC_FILE}\n");
 	} 
 	$mkenv->SharedLibraryPrimitives($key) if ($key->{TYPE} eq "LIBRARY") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
