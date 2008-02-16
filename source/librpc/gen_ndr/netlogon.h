@@ -849,7 +849,7 @@ struct netr_LogonSamLogon {
 		const char *computer_name;/* [unique,charset(UTF16)] */
 		struct netr_Authenticator *credential;/* [unique] */
 		uint16_t logon_level;
-		union netr_LogonLevel logon;/* [switch_is(logon_level)] */
+		union netr_LogonLevel *logon;/* [ref,switch_is(logon_level)] */
 		uint16_t validation_level;
 		struct netr_Authenticator *return_authenticator;/* [unique] */
 	} in;
@@ -1435,7 +1435,7 @@ struct netr_LogonSamLogonEx {
 		const char *server_name;/* [unique,charset(UTF16)] */
 		const char *computer_name;/* [unique,charset(UTF16)] */
 		uint16_t logon_level;
-		union netr_LogonLevel logon;/* [switch_is(logon_level)] */
+		union netr_LogonLevel *logon;/* [ref,switch_is(logon_level)] */
 		uint16_t validation_level;
 		uint32_t *flags;/* [ref] */
 	} in;
