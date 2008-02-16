@@ -35,6 +35,10 @@ PYDOCTOR_MODULES=bin/python/ldb.py bin/python/auth.py bin/python/credentials.py 
 pydoctor:: pythonmods
 	LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --project-name=Samba --make-html --docformat=restructuredtext --add-package scripting/python/samba/ $(addprefix --add-module , $(PYDOCTOR_MODULES))
 
+bin/python/%.py: 
+	mkdir -p $(@D)
+	cp $< $@
+
 installpython:: pythonmods
 	@$(SHELL) $(srcdir)/script/installpython.sh \
 		$(INSTALLPERMS) \
