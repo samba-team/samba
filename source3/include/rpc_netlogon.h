@@ -309,19 +309,6 @@ typedef struct net_r_auth3_info {
 } NET_R_AUTH_3;
 
 
-/* NET_Q_SRV_PWSET */
-typedef struct net_q_srv_pwset_info {
-	DOM_CLNT_INFO clnt_id; /* client identification/authentication info */
-	uint8 pwd[16]; /* new password - undocumented. */
-} NET_Q_SRV_PWSET;
-    
-/* NET_R_SRV_PWSET */
-typedef struct net_r_srv_pwset_info {
-	DOM_CRED srv_cred;     /* server-calculated credentials */
-
-	NTSTATUS status; /* return code */
-} NET_R_SRV_PWSET;
-
 /* NET_ID_INFO_2 */
 typedef struct net_network_info_2 {
 	uint32            ptr_id_info2;        /* pointer to id_info_2 */
