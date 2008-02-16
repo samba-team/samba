@@ -245,9 +245,9 @@ sub SharedLibrary($$)
 		}
 	}
 
-	if (defined($ctx->{LIBRARY_SONAME})) {
-		$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}";
-	}
+	$lns .= "\nifdef $ctx->{NAME}_SOVERSION";
+	$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}";
+	$lns .= "\nendif";
 
 	$self->output(<< "__EOD__"
 #
