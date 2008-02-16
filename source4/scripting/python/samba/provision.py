@@ -335,9 +335,9 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     	schemadn_ldb = ldap_backend
     	
     if ldap_backend_type == "fedora-ds":
-        backend_modules = ["nsuniqueid","paged_searches"]
+        backend_modules = ["nsuniqueid", "paged_searches"]
     elif ldap_backend_type == "openldap":
-        backend_modules = ["normalise","entryuuid","paged_searches"]
+        backend_modules = ["normalise", "entryuuid", "paged_searches"]
     elif serverrole == "domain controller":
         backend_modules = ["repl_meta_data"]
     else:
@@ -694,6 +694,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
 
     samdb.transaction_commit()
     return samdb
+
 
 FILL_FULL = "FULL"
 FILL_NT4SYNC = "NT4SYNC"
