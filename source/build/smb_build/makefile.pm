@@ -22,8 +22,6 @@ sub new($$$)
 	bless($self, $myname);
 
 	$self->{manpages} = [];
-	$self->{sbin_progs} = [];
-	$self->{bin_progs} = [];
 	$self->{static_libs} = [];
 	$self->{python_dsos} = [];
 	$self->{python_pys} = [];
@@ -301,9 +299,9 @@ sub Binary($$)
 
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
-		push (@{$self->{sbin_progs}}, $ctx->{RESULT_BINARY});
+		$self->output("SBIN_PROGS += $installdir/$ctx->{BINARY}\n");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
-		push (@{$self->{bin_progs}}, $ctx->{RESULT_BINARY});
+		$self->output("BIN_PROGS += $installdir/$ctx->{BINARY}\n");
 	}
 
 	$self->output("binaries:: $ctx->{TARGET_BINARY}\n");
@@ -398,8 +396,6 @@ sub write($$)
 	my ($self, $file) = @_;
 
 	$self->output("MANPAGES = " . array2oneperline($self->{manpages})."\n");
-	$self->output("BIN_PROGS = " . array2oneperline($self->{bin_progs}) . "\n");
-	$self->output("SBIN_PROGS = " . array2oneperline($self->{sbin_progs}) . "\n");
 	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
 	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");
 	$self->output("PYTHON_DSOS = " . array2oneperline($self->{python_dsos}) . "\n");
