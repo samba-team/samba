@@ -66,8 +66,6 @@ sub check_subsystem($$$)
 
 	unless (defined($subsys->{INIT_FUNCTION_TYPE})) { $subsys->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
 	unless (defined($subsys->{INIT_FUNCTION_SENTINEL})) { $subsys->{INIT_FUNCTION_SENTINEL} = "NULL"; }
-
-	add_libreplace($subsys);
 }
 
 sub check_module($$$)
@@ -111,11 +109,11 @@ sub check_module($$$)
 		$sane_subsystem =~ s/^lib//;
 		$mod->{INSTALLDIR} = "MODULESDIR/$sane_subsystem";
 		push (@{$mod->{PUBLIC_DEPENDENCIES}}, $mod->{SUBSYSTEM});
+		add_libreplace($mod);
 	} 
 	if (grep(/INTEGRATED/, @{$mod->{OUTPUT_TYPE}})) {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
 	}
-	add_libreplace($mod);
 }
 
 sub check_library($$$)
