@@ -289,7 +289,7 @@ sub MergedObj($$)
 $ctx->{TARGET_MERGED_OBJ}: \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Partially linking \$@
 	\@mkdir -p bin/mergedobj
-	\@\$(LD) -r -o \$@ \$($ctx->{NAME}_FULL_OBJ_LIST)
+	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_FULL_OBJ_LIST)
 
 __EOD__
 );

@@ -234,6 +234,7 @@ sub calc_unique_deps($$$$$$$$)
  		if (defined ($dep->{OUTPUT_TYPE}) && 
 			($withlibs or 
 			(@{$dep->{OUTPUT_TYPE}}[0] eq "INTEGRATED") or 
+			(@{$dep->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ") or 
 			(@{$dep->{OUTPUT_TYPE}}[0] eq "STATIC_LIBRARY"))) {
 				push (@$busy, $dep->{NAME});
 			        calc_unique_deps($dep->{NAME}, $INPUT, $dep->{PUBLIC_DEPENDENCIES}, $udeps, $withlibs, $forward, $pubonly, $busy);
