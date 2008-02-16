@@ -214,7 +214,7 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	$self->output("SHARED_LIBS += $ctx->{RESULT_SHARED_LIBRARY}\n") if (defined($ctx->{SO_VERSION}));
+	$self->output("SHARED_LIBS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n") if (defined($ctx->{SO_VERSION}));
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
