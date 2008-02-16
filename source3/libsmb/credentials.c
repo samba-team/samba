@@ -213,18 +213,6 @@ void creds_server_init(uint32 neg_flags,
  Check a credential sent by the client.
 ****************************************************************************/
 
-bool creds_server_check(const struct dcinfo *dc, const DOM_CHAL *rcv_cli_chal_in)
-{
-	if (memcmp(dc->clnt_chal.data, rcv_cli_chal_in->data, 8)) {
-		DEBUG(5,("creds_server_check: challenge : %s\n", credstr(rcv_cli_chal_in->data)));
-		DEBUG(5,("calculated: %s\n", credstr(dc->clnt_chal.data)));
-		DEBUG(2,("creds_server_check: credentials check failed.\n"));
-		return False;
-	}
-	DEBUG(10,("creds_server_check: credentials check OK.\n"));
-	return True;
-}
-
 bool netlogon_creds_server_check(const struct dcinfo *dc,
 				 const struct netr_Credential *rcv_cli_chal_in)
 {
@@ -259,35 +247,6 @@ static void creds_reseed(struct dcinfo *dc)
 /****************************************************************************
  Step the server credential chain one forward. 
 ****************************************************************************/
-
-bool creds_server_step(struct dcinfo *dc, const DOM_CRED *received_cred, DOM_CRED *cred_out)
-{
-	bool ret;
-	struct dcinfo tmp_dc = *dc;
-
-	/* Do all operations on a temporary copy of the dc,
-	   which we throw away if the checks fail. */
-
-	tmp_dc.sequence = received_cred->timestamp.time;
-
-	creds_step(&tmp_dc);
-
-	/* Create the outgoing credentials */
-	cred_out->timestamp.time = tmp_dc.sequence + 1;
-	memcpy(&cred_out->challenge.data, tmp_dc.srv_chal.data,
-	       sizeof(cred_out->challenge.data));
-
-	creds_reseed(&tmp_dc);
-
-	ret = creds_server_check(&tmp_dc, &received_cred->challenge);
-	if (!ret) {
-		return False;
-	}
-
-	/* creds step succeeded - replace the current creds. */
-	*dc = tmp_dc;
-	return True;
-}
 
 bool netlogon_creds_server_step(struct dcinfo *dc,
 				const struct netr_Authenticator *received_cred,
