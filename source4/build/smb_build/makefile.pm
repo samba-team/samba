@@ -165,11 +165,8 @@ sub SharedModule($$)
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
-
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 
 	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{TYPE} ne "PYTHON") {
 		my $init_fn = $ctx->{INIT_FUNCTION_TYPE};
@@ -195,11 +192,11 @@ __EOD__
 	$self->output(<< "__EOD__"
 #
 
-$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST) $init_obj
+$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(MDLD) \$(MDLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{NAME}\_FULL_OBJ_LIST) $init_obj \\
+		\$($ctx->{NAME}\_OBJ_LIST) $init_obj \\
 		\$($ctx->{NAME}_LINK_FLAGS)
 __EOD__
 );
@@ -236,8 +233,6 @@ sub SharedLibrary($$)
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 #	$self->_prepare_list_ex($ctx, "LINK_FLAGS", "-Wl,--whole-archive", "-Wl,--no-whole-archive");
-
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 
 	my $soarg = "";
 	my $lns = "";
@@ -279,8 +274,6 @@ sub StaticLibrary($$)
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
-
 	$self->output(<< "__EOD__"
 #
 $ctx->{TARGET_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)
@@ -315,8 +308,6 @@ sub Binary($$)
 
 	$installdir = "bin$extradir";
 
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
-		
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
 		$self->output("SBIN_PROGS += $installdir/$ctx->{BINARY}\n");
@@ -327,12 +318,11 @@ sub Binary($$)
 	$self->output("binaries:: $localdir/$ctx->{BINARY}\n");
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 $self->output(<< "__EOD__"
-$installdir/$ctx->{BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
+$installdir/$ctx->{BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_OBJ_LIST)
 	\@echo Linking \$\@
 __EOD__
 	);
@@ -417,7 +407,6 @@ sub write($$)
 
 	$self->output("PYTHON_DSOS = " . array2oneperline($self->{python_dsos}) . "\n");
 	$self->output("PYTHON_PYS = " . array2oneperline($self->{python_pys}) . "\n");
-	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
 
 	$self->_prepare_mk_files();
 
