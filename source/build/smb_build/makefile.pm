@@ -21,10 +21,8 @@ sub new($$$)
 	
 	bless($self, $myname);
 
-	$self->{static_libs} = [];
 	$self->{python_dsos} = [];
 	$self->{python_pys} = [];
-	$self->{shared_libs} = [];
 	$self->{headers} = [];
 	$self->{shared_modules} = [];
 	$self->{plugins} = [];
@@ -238,7 +236,7 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	push (@{$self->{shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
+	$self->output("SHARED_LIBS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n") if (defined($ctx->{SO_VERSION}));
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
@@ -280,7 +278,7 @@ sub StaticLibrary($$)
 
 	return unless (defined($ctx->{OBJ_FILES}));
 
-	push (@{$self->{static_libs}}, $ctx->{TARGET_STATIC_LIBRARY}) if ($ctx->{TYPE} eq "LIBRARY");
+	$self->output("STATIC_LIBS += $ctx->{TARGET_STATIC_LIBRARY}\n") if ($ctx->{TYPE} eq "LIBRARY");
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "OBJ_LIST");
@@ -416,8 +414,6 @@ sub write($$)
 {
 	my ($self, $file) = @_;
 
-	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
-	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");
 	$self->output("PYTHON_DSOS = " . array2oneperline($self->{python_dsos}) . "\n");
 	$self->output("PYTHON_PYS = " . array2oneperline($self->{python_pys}) . "\n");
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
