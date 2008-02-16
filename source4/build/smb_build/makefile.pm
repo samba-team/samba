@@ -116,7 +116,11 @@ sub Integrated($$)
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->output("$ctx->{SUBSYSTEM}_OBJ_LIST += \$($ctx->{NAME}_OBJ_LIST)\n");
-	$self->output("$ctx->{SUBSYSTEM}_INIT_FUNCTIONS += \"$ctx->{INIT_FUNCTION},\"\n") if defined($ctx->{INIT_FUNCTION});
+	if(defined($ctx->{INIT_FUNCTION})) {
+		my $init_fn = $ctx->{INIT_FUNCTION};
+		$init_fn =~ s/"/\\\"/g;
+		$self->output("$ctx->{SUBSYSTEM}_INIT_FUNCTIONS += \"$init_fn,\"\n");
+	}
 }
 
 sub SharedModulePrimitives($$)
