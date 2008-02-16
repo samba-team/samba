@@ -115,6 +115,7 @@ sub Integrated($$)
 	my ($self,$ctx) = @_;
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
+	$self->output("$ctx->{SUBSYSTEM}_OBJ_LIST += \$($ctx->{NAME}_OBJ_LIST)\n");
 }
 
 sub SharedModulePrimitives($$)
@@ -216,7 +217,6 @@ sub SharedLibraryPrimitives($$)
 	if (not grep(/STATIC_LIBRARY/, @{$ctx->{OUTPUT_TYPE}})) {
 		$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 		$self->_prepare_list($ctx, "OBJ_LIST");
-		$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	}
 }
 
@@ -228,7 +228,6 @@ sub SharedLibrary($$)
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
-#	$self->_prepare_list_ex($ctx, "LINK_FLAGS", "-Wl,--whole-archive", "-Wl,--no-whole-archive");
 
 	my $soarg = "";
 	my $lns = "";
@@ -246,16 +245,25 @@ sub SharedLibrary($$)
 	$self->output(<< "__EOD__"
 #
 
-$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
+		\$($ctx->{NAME}\_OBJ_LIST) \\
 		\$($ctx->{NAME}_LINK_FLAGS) \\
 		$soarg$lns
 __EOD__
 );
 	$self->output("\n");
+}
+
+sub StaticLibraryPrimitives($$)
+{
+	my ($self,$ctx) = @_;
+
+	return unless (defined($ctx->{OBJ_FILES}));
+
+	$self->_prepare_list($ctx, "OBJ_LIST");
 }
 
 sub StaticLibrary($$)
@@ -265,17 +273,8 @@ sub StaticLibrary($$)
 	return unless (defined($ctx->{OBJ_FILES}));
 
 	$self->output("STATIC_LIBS += $ctx->{TARGET_STATIC_LIBRARY}\n") if ($ctx->{TYPE} eq "LIBRARY");
-
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
-
-	$self->output(<< "__EOD__"
-#
-$ctx->{TARGET_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)
-
-__EOD__
-);
+	$self->output("$ctx->{TARGET_STATIC_LIBRARY}: \$($ctx->{NAME}_OBJ_LIST)\n");
 }
 
 sub Header($$)
