@@ -290,10 +290,6 @@ sub StaticLibrary($$)
 	$self->output(<< "__EOD__"
 #
 $ctx->{TARGET_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)
-	\@echo Linking \$@
-	\@rm -f \$@
-	\@mkdir -p $ctx->{STATICDIR}
-	\@\$(STLD) \$(STLD_FLAGS) \$@ \$($ctx->{NAME}_FULL_OBJ_LIST)
 
 __EOD__
 );
