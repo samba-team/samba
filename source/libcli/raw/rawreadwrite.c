@@ -171,6 +171,9 @@ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms)
 			    parms->readx.out.nread <= 
 			    req->in.buffer + req->in.size) {
 				req->in.data_size += (SVAL(req->in.vwv, VWV(7)) << 16);
+
+				/* update the bufinfo with the new size */
+				smb_setup_bufinfo(req);
 			}
 		}
 
