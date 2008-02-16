@@ -29,7 +29,7 @@ DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
 
 binaries::
 libraries:: $(STATIC_LIBS) $(SHARED_LIBS)
-modules:: $(SHARED_MODULES)
+modules:: $(PLUGINS)
 headers:: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 manpages:: $(MANPAGES)
 all:: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules pythonmods
