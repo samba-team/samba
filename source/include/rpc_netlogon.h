@@ -45,24 +45,6 @@
 #define NET_DSR_GETDCNAMEEX2	0x22
 #define NET_SAMLOGON_EX		0x27
 
-/* Returned delta types */
-#define SAM_DELTA_DOMAIN_INFO    0x01
-#define SAM_DELTA_GROUP_INFO     0x02
-#define SAM_DELTA_RENAME_GROUP   0x04
-#define SAM_DELTA_ACCOUNT_INFO   0x05
-#define SAM_DELTA_RENAME_USER    0x07
-#define SAM_DELTA_GROUP_MEM      0x08
-#define SAM_DELTA_ALIAS_INFO     0x09
-#define SAM_DELTA_RENAME_ALIAS   0x0b
-#define SAM_DELTA_ALIAS_MEM      0x0c
-#define SAM_DELTA_POLICY_INFO    0x0d
-#define SAM_DELTA_TRUST_DOMS     0x0e
-#define SAM_DELTA_PRIVS_INFO     0x10 /* DT_DELTA_ACCOUNTS */
-#define SAM_DELTA_SECRET_INFO    0x12
-#define SAM_DELTA_DELETE_GROUP   0x14
-#define SAM_DELTA_DELETE_USER    0x15
-#define SAM_DELTA_MODIFIED_COUNT 0x16
-
 /* flags use when sending a NETLOGON_CONTROL request */
 
 #define NETLOGON_CONTROL_SYNC			0x2
