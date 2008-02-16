@@ -20,7 +20,7 @@ my $INPUT = {};
 my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, $config::config{builddir}, "main.mk");
 
 my $subsys_output_type;
-$subsys_output_type = ["STATIC_LIBRARY"];
+$subsys_output_type = ["MERGED_OBJ"];
 
 my $library_output_type;
 if ($config::config{USESHARED} eq "true") {
@@ -59,6 +59,7 @@ my $shared_libs_used = 0;
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
+	$mkenv->MergedObj($key) if grep(/MERGED_OBJ/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	if (defined($key->{PC_FILE})) {
 		push(@{$mkenv->{pc_files}}, "$key->{BASEDIR}/$key->{PC_FILE}");
