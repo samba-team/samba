@@ -225,31 +225,22 @@ sub SharedLibrary($$)
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	my $soarg = "";
-	my $lns = "";
-	if ($self->{config}->{SONAMEFLAG} ne "#" and defined($ctx->{LIBRARY_SONAME})) {
-		$soarg = "$self->{config}->{SONAMEFLAG}$ctx->{LIBRARY_SONAME}";
-		if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-			$lns .= "\n\t\@test \$($ctx->{NAME}_VERSION) = \$($ctx->{NAME}_SOVERSION) || ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}";
-		}
-	}
-
-	$lns .= "\nifdef $ctx->{NAME}_SOVERSION";
-	$lns .= "\n\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}";
-	$lns .= "\nendif";
-
 	$self->output(<< "__EOD__"
-#
 $ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p \$(\@D)
 	\@\$(SHLD) \$(LDFLAGS) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
 		\$($ctx->{NAME}_LINK_FLAGS) \\
-		$soarg$lns
+		\$(if \$(SONAMEFLAG), \$(SONAMEFLAG)$ctx->{LIBRARY_SONAME})
 __EOD__
 );
-	$self->output("\n");
+	if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
+		$self->output("\t\@test \$($ctx->{NAME}_VERSION) = \$($ctx->{NAME}_SOVERSION) || ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}\n");
+	}
+	$self->output("ifdef $ctx->{NAME}_SOVERSION\n");
+	$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}\n");
+	$self->output("endif\n");
 }
 
 sub MergedObj($$)
