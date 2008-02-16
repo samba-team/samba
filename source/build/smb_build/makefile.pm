@@ -21,7 +21,6 @@ sub new($$$)
 	
 	bless($self, $myname);
 
-	$self->{manpages} = [];
 	$self->{static_libs} = [];
 	$self->{python_dsos} = [];
 	$self->{python_pys} = [];
@@ -371,8 +370,7 @@ sub Manpage($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $path = output::add_dir_str($ctx->{BASEDIR}, $ctx->{MANPAGE});
-	push (@{$self->{manpages}}, $path);
+	$self->output("MANPAGES += " . output::add_dir_str($ctx->{BASEDIR}, $ctx->{MANPAGE}) . "\n");
 }
 
 sub ProtoHeader($$)
@@ -418,7 +416,6 @@ sub write($$)
 {
 	my ($self, $file) = @_;
 
-	$self->output("MANPAGES = " . array2oneperline($self->{manpages})."\n");
 	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
 	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");
 	$self->output("PYTHON_DSOS = " . array2oneperline($self->{python_dsos}) . "\n");
