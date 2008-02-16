@@ -665,7 +665,7 @@ bool is_null_sid(const DOM_SID *sid)
 }
 
 NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
-			      const NET_USER_INFO_3 *info3,
+			      const struct netr_SamInfo3 *info3,
 			      DOM_SID **user_sids,
 			      size_t *num_user_sids,
 			      bool include_user_group_rid)
@@ -678,45 +678,45 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
 
 	if (include_user_group_rid) {
 
-		if (!sid_compose(&sid, &(info3->dom_sid.sid), info3->user_rid))
+		if (!sid_compose(&sid, info3->base.domain_sid, info3->base.rid))
 		{
 			DEBUG(3, ("could not compose user SID from rid 0x%x\n",
-				  info3->user_rid));
+				  info3->base.rid));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		status = add_sid_to_array(mem_ctx, &sid, &sid_array, &num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("could not append user SID from rid 0x%x\n",
-				  info3->user_rid));
+				  info3->base.rid));
 			return status;
 		}
 
-		if (!sid_compose(&sid, &(info3->dom_sid.sid), info3->group_rid))
+		if (!sid_compose(&sid, info3->base.domain_sid, info3->base.primary_gid))
 		{
 			DEBUG(3, ("could not compose group SID from rid 0x%x\n",
-				  info3->group_rid));
+				  info3->base.primary_gid));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		status = add_sid_to_array(mem_ctx, &sid, &sid_array, &num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("could not append group SID from rid 0x%x\n",
-				  info3->group_rid));
+				  info3->base.rid));
 			return status;
 		}
 	}
 
-	for (i = 0; i < info3->num_groups2; i++) {
-		if (!sid_compose(&sid, &(info3->dom_sid.sid),
-				 info3->gids[i].g_rid))
+	for (i = 0; i < info3->base.groups.count; i++) {
+		if (!sid_compose(&sid, info3->base.domain_sid,
+				 info3->base.groups.rids[i].rid))
 		{
 			DEBUG(3, ("could not compose SID from additional group "
-				  "rid 0x%x\n", info3->gids[i].g_rid));
+				  "rid 0x%x\n", info3->base.groups.rids[i].rid));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		status = add_sid_to_array(mem_ctx, &sid, &sid_array, &num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("could not append SID from additional group "
-				  "rid 0x%x\n", info3->gids[i].g_rid));
+				  "rid 0x%x\n", info3->base.groups.rids[i].rid));
 			return status;
 		}
 	}
@@ -727,12 +727,12 @@ NTSTATUS sid_array_from_info3(TALLOC_CTX *mem_ctx,
            http://www.microsoft.com/windows2000/techinfo/administration/security/sidfilter.asp
          */
 
-	for (i = 0; i < info3->num_other_sids; i++) {
-		status = add_sid_to_array(mem_ctx, &info3->other_sids[i].sid,
+	for (i = 0; i < info3->sidcount; i++) {
+		status = add_sid_to_array(mem_ctx, info3->sids[i].sid,
 				      &sid_array, &num_sids);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(3, ("could not add SID to array: %s\n",
-				  sid_string_dbg(&info3->other_sids[i].sid)));
+				  sid_string_dbg(info3->sids[i].sid)));
 			return status;
 		}
 	}
