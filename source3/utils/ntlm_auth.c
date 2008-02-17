@@ -1215,7 +1215,7 @@ static void manage_gss_spnego_request(struct ntlm_auth_state *state,
 			char *principal;
 			DATA_BLOB ap_rep;
 			DATA_BLOB session_key;
-			PAC_DATA *pac_data = NULL;
+			struct PAC_DATA *pac_data = NULL;
 
 			if ( request.negTokenInit.mechToken.data == NULL ) {
 				DEBUG(1, ("Client did not provide Kerberos data\n"));

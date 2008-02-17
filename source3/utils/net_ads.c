@@ -2519,8 +2519,8 @@ static int net_ads_kerberos_renew(int argc, const char **argv)
 
 static int net_ads_kerberos_pac(int argc, const char **argv)
 {
-	PAC_DATA *pac = NULL;
-	PAC_LOGON_INFO *info = NULL;
+	struct PAC_DATA *pac = NULL;
+	struct PAC_LOGON_INFO *info = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	NTSTATUS status;
 	int ret = -1;
@@ -2551,7 +2551,9 @@ static int net_ads_kerberos_pac(int argc, const char **argv)
 
 	info = get_logon_info_from_pac(pac);
 	if (info) {
-		dump_pac_logon_info(0, info);
+		const char *s;
+		s = NDR_PRINT_STRUCT_STRING(mem_ctx, PAC_LOGON_INFO, info);
+		d_printf("The Pac: %s\n", s);
 	}
 
 	ret = 0;
