@@ -44,7 +44,10 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x06 */
 
-	WERROR PNP_ValidateDeviceInstance();
+	WERROR PNP_ValidateDeviceInstance(
+		[in,ref] [string,charset(UTF16)] uint16 *devicepath,
+		[in] uint32 flags
+		);
 
 	/******************/
 	/* Function: 0x07 */
