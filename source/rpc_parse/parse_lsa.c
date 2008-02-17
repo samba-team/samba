@@ -1206,15 +1206,3 @@ bool lsa_io_r_lookup_names4(const char *desc, LSA_R_LOOKUP_NAMES4 *out, prs_stru
 
 	return True;
 }
-
-/*******************************************************************
- Reads or writes an LUID_ATTR structure.
-********************************************************************/
-
-bool policy_handle_is_valid(const POLICY_HND *hnd)
-{
-	POLICY_HND zero_pol;
-
-	ZERO_STRUCT(zero_pol);
-	return ((memcmp(&zero_pol, hnd, sizeof(POLICY_HND)) == 0) ? False : True );
-}
