@@ -655,6 +655,41 @@ _PUBLIC_ void ndr_print_PAC_DATA_RAW(struct ndr_print *ndr, const char *name, co
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_netsamlogoncache_entry(struct ndr_push *ndr, int ndr_flags, const struct netsamlogoncache_entry *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_time_t(ndr, NDR_SCALARS, r->timestamp));
+		NDR_CHECK(ndr_push_netr_SamInfo3(ndr, NDR_SCALARS, &r->info3));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_push_netr_SamInfo3(ndr, NDR_BUFFERS, &r->info3));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_netsamlogoncache_entry(struct ndr_pull *ndr, int ndr_flags, struct netsamlogoncache_entry *r)
+{
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_time_t(ndr, NDR_SCALARS, &r->timestamp));
+		NDR_CHECK(ndr_pull_netr_SamInfo3(ndr, NDR_SCALARS, &r->info3));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+		NDR_CHECK(ndr_pull_netr_SamInfo3(ndr, NDR_BUFFERS, &r->info3));
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_netsamlogoncache_entry(struct ndr_print *ndr, const char *name, const struct netsamlogoncache_entry *r)
+{
+	ndr_print_struct(ndr, name, "netsamlogoncache_entry");
+	ndr->depth++;
+	ndr_print_time_t(ndr, "timestamp", r->timestamp);
+	ndr_print_netr_SamInfo3(ndr, "info3", &r->info3);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_decode_pac(struct ndr_push *ndr, int flags, const struct decode_pac *r)
 {
 	if (flags & NDR_IN) {

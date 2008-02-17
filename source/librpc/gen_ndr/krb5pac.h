@@ -89,6 +89,11 @@ struct PAC_DATA_RAW {
 	struct PAC_BUFFER_RAW *buffers;
 }/* [public] */;
 
+struct netsamlogoncache_entry {
+	time_t timestamp;
+	struct netr_SamInfo3 info3;
+}/* [public] */;
+
 
 struct decode_pac {
 	struct {
