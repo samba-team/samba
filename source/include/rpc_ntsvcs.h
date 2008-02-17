@@ -37,19 +37,6 @@
 
 typedef struct {
 	UNISTR2 *devicename;
-	uint32 flags;
-} NTSVCS_Q_GET_DEVICE_LIST_SIZE;
-
-typedef struct {
-	uint32 size;
-	WERROR status;
-} NTSVCS_R_GET_DEVICE_LIST_SIZE;
-
-
-/**************************/
-
-typedef struct {
-	UNISTR2 *devicename;
 	uint32 buffer_size;
 	uint32 flags;
 } NTSVCS_Q_GET_DEVICE_LIST;
