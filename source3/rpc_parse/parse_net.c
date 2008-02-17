@@ -47,53 +47,6 @@ static bool net_io_neg_flags(const char *desc, NEG_FLAGS *neg, prs_struct *ps, i
 }
 
 /*******************************************************************
- Reads or writes a structure.
-********************************************************************/
-
-bool net_io_q_auth(const char *desc, NET_Q_AUTH *q_a, prs_struct *ps, int depth)
-{
-	if (q_a == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "net_io_q_auth");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-    
-	if(!smb_io_log_info ("", &q_a->clnt_id, ps, depth)) /* client identification info */
-		return False;
-	if(!smb_io_chal("", &q_a->clnt_chal, ps, depth))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
- Reads or writes a structure.
-********************************************************************/
-
-bool net_io_r_auth(const char *desc, NET_R_AUTH *r_a, prs_struct *ps, int depth)
-{
-	if (r_a == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "net_io_r_auth");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-    
-	if(!smb_io_chal("", &r_a->srv_chal, ps, depth)) /* server challenge */
-		return False;
-
-	if(!prs_ntstatus("status", ps, depth, &r_a->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Inits a NET_Q_AUTH_3 struct.
 ********************************************************************/
 

@@ -263,18 +263,6 @@ typedef struct neg_flags_info {
 	uint32 neg_flags; /* negotiated flags */
 } NEG_FLAGS;
 
-/* NET_Q_AUTH */
-typedef struct net_q_auth_info {
-	DOM_LOG_INFO clnt_id; /* client identification info */
-	DOM_CHAL clnt_chal;     /* client-calculated credentials */
-} NET_Q_AUTH;
-
-/* NET_R_AUTH */
-typedef struct net_r_auth_info {
-	DOM_CHAL srv_chal;     /* server-calculated credentials */
-	NTSTATUS status; /* return code */
-} NET_R_AUTH;
-
 /* NET_Q_AUTH_3 */
 typedef struct net_q_auth3_info {
 	DOM_LOG_INFO clnt_id;	/* client identification info */
