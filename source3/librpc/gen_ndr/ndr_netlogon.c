@@ -5714,6 +5714,7 @@ _PUBLIC_ void ndr_print_netr_LogonControlCode(struct ndr_print *ndr, const char 
 	const char *val = NULL;
 
 	switch (r) {
+		case NETLOGON_CONTROL_SYNC: val = "NETLOGON_CONTROL_SYNC"; break;
 		case NETLOGON_CONTROL_REDISCOVER: val = "NETLOGON_CONTROL_REDISCOVER"; break;
 		case NETLOGON_CONTROL_TC_QUERY: val = "NETLOGON_CONTROL_TC_QUERY"; break;
 		case NETLOGON_CONTROL_TRANSPORT_NOTIFY: val = "NETLOGON_CONTROL_TRANSPORT_NOTIFY"; break;
