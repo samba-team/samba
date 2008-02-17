@@ -512,7 +512,8 @@ RPC_SVCCTL_OBJ =  rpc_server/srv_svcctl.o rpc_server/srv_svcctl_nt.o \
                   services/svc_netlogon.o services/svc_winreg.o \
                   services/svc_wins.o
 
-RPC_NTSVCS_OBJ = rpc_server/srv_ntsvcs.o rpc_server/srv_ntsvcs_nt.o
+RPC_NTSVCS_OBJ = rpc_server/srv_ntsvcs.o rpc_server/srv_ntsvcs_nt.o \
+		 librpc/gen_ndr/srv_ntsvcs.o
 
 RPC_DFS_OBJ =  librpc/gen_ndr/srv_dfs.o rpc_server/srv_dfs_nt.o
 
