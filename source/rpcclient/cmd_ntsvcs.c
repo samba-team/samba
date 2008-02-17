@@ -43,9 +43,42 @@ static WERROR cmd_ntsvcs_get_version(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_ntsvcs_validate_dev_inst(struct rpc_pipe_client *cli,
+					   TALLOC_CTX *mem_ctx,
+					   int argc,
+					   const char **argv)
+{
+	NTSTATUS status;
+	WERROR werr;
+	const char *devicepath = NULL;
+	uint32_t flags = 0;
+
+	if (argc < 2 || argc > 3) {
+		printf("usage: %s [devicepath] <flags>\n", argv[0]);
+		return WERR_OK;
+	}
+
+	devicepath = argv[1];
+
+	if (argc >= 3) {
+		flags = atoi(argv[2]);
+	}
+
+	status = rpccli_PNP_ValidateDeviceInstance(cli, mem_ctx,
+						   devicepath,
+						   flags,
+						   &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	return werr;
+}
+
 struct cmd_set ntsvcs_commands[] = {
 
 	{ "NTSVCS" },
 	{ "ntsvcs_getversion", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_version, PI_NTSVCS, NULL, "Query NTSVCS version", "" },
+	{ "ntsvcs_validatedevinst", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_validate_dev_inst, PI_NTSVCS, NULL, "Query NTSVCS device instance", "" },
 	{ NULL }
 };
