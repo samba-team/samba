@@ -8,6 +8,7 @@ static enum ndr_err_code ndr_push_PNP_Disconnect(struct ndr_push *ndr, int flags
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -17,6 +18,7 @@ static enum ndr_err_code ndr_pull_PNP_Disconnect(struct ndr_pull *ndr, int flags
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -36,6 +38,7 @@ _PUBLIC_ void ndr_print_PNP_Disconnect(struct ndr_print *ndr, const char *name, 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_Disconnect");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -46,6 +49,7 @@ static enum ndr_err_code ndr_push_PNP_Connect(struct ndr_push *ndr, int flags, c
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -55,6 +59,7 @@ static enum ndr_err_code ndr_pull_PNP_Connect(struct ndr_pull *ndr, int flags, s
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -74,6 +79,7 @@ _PUBLIC_ void ndr_print_PNP_Connect(struct ndr_print *ndr, const char *name, int
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_Connect");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -84,15 +90,33 @@ static enum ndr_err_code ndr_push_PNP_GetVersion(struct ndr_push *ndr, int flags
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.version == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, *r->out.version));
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
 
 static enum ndr_err_code ndr_pull_PNP_GetVersion(struct ndr_pull *ndr, int flags, struct PNP_GetVersion *r)
 {
+	TALLOC_CTX *_mem_save_version_0;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_PULL_ALLOC(ndr, r->out.version);
+		ZERO_STRUCTP(r->out.version);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.version);
+		}
+		_mem_save_version_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.version, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, r->out.version));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_version_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -112,6 +136,11 @@ _PUBLIC_ void ndr_print_PNP_GetVersion(struct ndr_print *ndr, const char *name, 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetVersion");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "version", r->out.version);
+		ndr->depth++;
+		ndr_print_uint16(ndr, "version", *r->out.version);
+		ndr->depth--;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -122,6 +151,7 @@ static enum ndr_err_code ndr_push_PNP_GetGlobalState(struct ndr_push *ndr, int f
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -131,6 +161,7 @@ static enum ndr_err_code ndr_pull_PNP_GetGlobalState(struct ndr_pull *ndr, int f
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -150,6 +181,7 @@ _PUBLIC_ void ndr_print_PNP_GetGlobalState(struct ndr_print *ndr, const char *na
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetGlobalState");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -160,6 +192,7 @@ static enum ndr_err_code ndr_push_PNP_InitDetection(struct ndr_push *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -169,6 +202,7 @@ static enum ndr_err_code ndr_pull_PNP_InitDetection(struct ndr_pull *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -188,6 +222,7 @@ _PUBLIC_ void ndr_print_PNP_InitDetection(struct ndr_print *ndr, const char *nam
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_InitDetection");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -198,6 +233,7 @@ static enum ndr_err_code ndr_push_PNP_ReportLogOn(struct ndr_push *ndr, int flag
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -207,6 +243,7 @@ static enum ndr_err_code ndr_pull_PNP_ReportLogOn(struct ndr_pull *ndr, int flag
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -226,6 +263,7 @@ _PUBLIC_ void ndr_print_PNP_ReportLogOn(struct ndr_print *ndr, const char *name,
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_ReportLogOn");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -236,6 +274,7 @@ static enum ndr_err_code ndr_push_PNP_ValidateDeviceInstance(struct ndr_push *nd
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -245,6 +284,7 @@ static enum ndr_err_code ndr_pull_PNP_ValidateDeviceInstance(struct ndr_pull *nd
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -264,6 +304,7 @@ _PUBLIC_ void ndr_print_PNP_ValidateDeviceInstance(struct ndr_print *ndr, const 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_ValidateDeviceInstance");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -274,6 +315,7 @@ static enum ndr_err_code ndr_push_PNP_GetRootDeviceInstance(struct ndr_push *ndr
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -283,6 +325,7 @@ static enum ndr_err_code ndr_pull_PNP_GetRootDeviceInstance(struct ndr_pull *ndr
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -302,6 +345,7 @@ _PUBLIC_ void ndr_print_PNP_GetRootDeviceInstance(struct ndr_print *ndr, const c
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetRootDeviceInstance");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -312,6 +356,7 @@ static enum ndr_err_code ndr_push_PNP_GetRelatedDeviceInstance(struct ndr_push *
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -321,6 +366,7 @@ static enum ndr_err_code ndr_pull_PNP_GetRelatedDeviceInstance(struct ndr_pull *
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -340,6 +386,7 @@ _PUBLIC_ void ndr_print_PNP_GetRelatedDeviceInstance(struct ndr_print *ndr, cons
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetRelatedDeviceInstance");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -350,6 +397,7 @@ static enum ndr_err_code ndr_push_PNP_EnumerateSubKeys(struct ndr_push *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -359,6 +407,7 @@ static enum ndr_err_code ndr_pull_PNP_EnumerateSubKeys(struct ndr_pull *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -378,6 +427,7 @@ _PUBLIC_ void ndr_print_PNP_EnumerateSubKeys(struct ndr_print *ndr, const char *
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_EnumerateSubKeys");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -388,6 +438,7 @@ static enum ndr_err_code ndr_push_PNP_GetDeviceList(struct ndr_push *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -397,6 +448,7 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceList(struct ndr_pull *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -416,6 +468,7 @@ _PUBLIC_ void ndr_print_PNP_GetDeviceList(struct ndr_print *ndr, const char *nam
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetDeviceList");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -426,6 +479,7 @@ static enum ndr_err_code ndr_push_PNP_GetDeviceListSize(struct ndr_push *ndr, in
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -435,6 +489,7 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceListSize(struct ndr_pull *ndr, in
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -454,6 +509,7 @@ _PUBLIC_ void ndr_print_PNP_GetDeviceListSize(struct ndr_print *ndr, const char 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetDeviceListSize");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -464,6 +520,7 @@ static enum ndr_err_code ndr_push_PNP_GetDepth(struct ndr_push *ndr, int flags, 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -473,6 +530,7 @@ static enum ndr_err_code ndr_pull_PNP_GetDepth(struct ndr_pull *ndr, int flags, 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -492,6 +550,7 @@ _PUBLIC_ void ndr_print_PNP_GetDepth(struct ndr_print *ndr, const char *name, in
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetDepth");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -502,6 +561,7 @@ static enum ndr_err_code ndr_push_PNP_GetDeviceRegProp(struct ndr_push *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -511,6 +571,7 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceRegProp(struct ndr_pull *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -530,6 +591,7 @@ _PUBLIC_ void ndr_print_PNP_GetDeviceRegProp(struct ndr_print *ndr, const char *
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetDeviceRegProp");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -540,6 +602,7 @@ static enum ndr_err_code ndr_push_PNP_SetDeviceRegProp(struct ndr_push *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -549,6 +612,7 @@ static enum ndr_err_code ndr_pull_PNP_SetDeviceRegProp(struct ndr_pull *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -568,6 +632,7 @@ _PUBLIC_ void ndr_print_PNP_SetDeviceRegProp(struct ndr_print *ndr, const char *
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_SetDeviceRegProp");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -578,6 +643,7 @@ static enum ndr_err_code ndr_push_PNP_GetClassInstance(struct ndr_push *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -587,6 +653,7 @@ static enum ndr_err_code ndr_pull_PNP_GetClassInstance(struct ndr_pull *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -606,6 +673,7 @@ _PUBLIC_ void ndr_print_PNP_GetClassInstance(struct ndr_print *ndr, const char *
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetClassInstance");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -616,6 +684,7 @@ static enum ndr_err_code ndr_push_PNP_CreateKey(struct ndr_push *ndr, int flags,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -625,6 +694,7 @@ static enum ndr_err_code ndr_pull_PNP_CreateKey(struct ndr_pull *ndr, int flags,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -644,6 +714,7 @@ _PUBLIC_ void ndr_print_PNP_CreateKey(struct ndr_print *ndr, const char *name, i
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_CreateKey");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -654,6 +725,7 @@ static enum ndr_err_code ndr_push_PNP_DeleteRegistryKey(struct ndr_push *ndr, in
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -663,6 +735,7 @@ static enum ndr_err_code ndr_pull_PNP_DeleteRegistryKey(struct ndr_pull *ndr, in
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -682,6 +755,7 @@ _PUBLIC_ void ndr_print_PNP_DeleteRegistryKey(struct ndr_print *ndr, const char 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_DeleteRegistryKey");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -692,6 +766,7 @@ static enum ndr_err_code ndr_push_PNP_GetClassCount(struct ndr_push *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -701,6 +776,7 @@ static enum ndr_err_code ndr_pull_PNP_GetClassCount(struct ndr_pull *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -720,6 +796,7 @@ _PUBLIC_ void ndr_print_PNP_GetClassCount(struct ndr_print *ndr, const char *nam
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetClassCount");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -730,6 +807,7 @@ static enum ndr_err_code ndr_push_PNP_GetClassName(struct ndr_push *ndr, int fla
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -739,6 +817,7 @@ static enum ndr_err_code ndr_pull_PNP_GetClassName(struct ndr_pull *ndr, int fla
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -758,6 +837,7 @@ _PUBLIC_ void ndr_print_PNP_GetClassName(struct ndr_print *ndr, const char *name
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetClassName");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -768,6 +848,7 @@ static enum ndr_err_code ndr_push_PNP_DeleteClassKey(struct ndr_push *ndr, int f
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -777,6 +858,7 @@ static enum ndr_err_code ndr_pull_PNP_DeleteClassKey(struct ndr_pull *ndr, int f
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -796,6 +878,7 @@ _PUBLIC_ void ndr_print_PNP_DeleteClassKey(struct ndr_print *ndr, const char *na
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_DeleteClassKey");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -806,6 +889,7 @@ static enum ndr_err_code ndr_push_PNP_GetInterfaceDeviceAlias(struct ndr_push *n
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -815,6 +899,7 @@ static enum ndr_err_code ndr_pull_PNP_GetInterfaceDeviceAlias(struct ndr_pull *n
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -834,6 +919,7 @@ _PUBLIC_ void ndr_print_PNP_GetInterfaceDeviceAlias(struct ndr_print *ndr, const
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetInterfaceDeviceAlias");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -844,6 +930,7 @@ static enum ndr_err_code ndr_push_PNP_GetInterfaceDeviceList(struct ndr_push *nd
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -853,6 +940,7 @@ static enum ndr_err_code ndr_pull_PNP_GetInterfaceDeviceList(struct ndr_pull *nd
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -872,6 +960,7 @@ _PUBLIC_ void ndr_print_PNP_GetInterfaceDeviceList(struct ndr_print *ndr, const 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetInterfaceDeviceList");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -882,6 +971,7 @@ static enum ndr_err_code ndr_push_PNP_GetInterfaceDeviceListSize(struct ndr_push
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -891,6 +981,7 @@ static enum ndr_err_code ndr_pull_PNP_GetInterfaceDeviceListSize(struct ndr_pull
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -910,6 +1001,7 @@ _PUBLIC_ void ndr_print_PNP_GetInterfaceDeviceListSize(struct ndr_print *ndr, co
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetInterfaceDeviceListSize");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -920,6 +1012,7 @@ static enum ndr_err_code ndr_push_PNP_RegisterDeviceClassAssociation(struct ndr_
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -929,6 +1022,7 @@ static enum ndr_err_code ndr_pull_PNP_RegisterDeviceClassAssociation(struct ndr_
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -948,6 +1042,7 @@ _PUBLIC_ void ndr_print_PNP_RegisterDeviceClassAssociation(struct ndr_print *ndr
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_RegisterDeviceClassAssociation");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -958,6 +1053,7 @@ static enum ndr_err_code ndr_push_PNP_UnregisterDeviceClassAssociation(struct nd
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -967,6 +1063,7 @@ static enum ndr_err_code ndr_pull_PNP_UnregisterDeviceClassAssociation(struct nd
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -986,6 +1083,7 @@ _PUBLIC_ void ndr_print_PNP_UnregisterDeviceClassAssociation(struct ndr_print *n
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_UnregisterDeviceClassAssociation");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -996,6 +1094,7 @@ static enum ndr_err_code ndr_push_PNP_GetClassRegProp(struct ndr_push *ndr, int 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1005,6 +1104,7 @@ static enum ndr_err_code ndr_pull_PNP_GetClassRegProp(struct ndr_pull *ndr, int 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1024,6 +1124,7 @@ _PUBLIC_ void ndr_print_PNP_GetClassRegProp(struct ndr_print *ndr, const char *n
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetClassRegProp");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1034,6 +1135,7 @@ static enum ndr_err_code ndr_push_PNP_SetClassRegProp(struct ndr_push *ndr, int 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1043,6 +1145,7 @@ static enum ndr_err_code ndr_pull_PNP_SetClassRegProp(struct ndr_pull *ndr, int 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1062,6 +1165,7 @@ _PUBLIC_ void ndr_print_PNP_SetClassRegProp(struct ndr_print *ndr, const char *n
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_SetClassRegProp");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1072,6 +1176,7 @@ static enum ndr_err_code ndr_push_PNP_CreateDevInst(struct ndr_push *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1081,6 +1186,7 @@ static enum ndr_err_code ndr_pull_PNP_CreateDevInst(struct ndr_pull *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1100,6 +1206,7 @@ _PUBLIC_ void ndr_print_PNP_CreateDevInst(struct ndr_print *ndr, const char *nam
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_CreateDevInst");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1110,6 +1217,7 @@ static enum ndr_err_code ndr_push_PNP_DeviceInstanceAction(struct ndr_push *ndr,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1119,6 +1227,7 @@ static enum ndr_err_code ndr_pull_PNP_DeviceInstanceAction(struct ndr_pull *ndr,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1138,6 +1247,7 @@ _PUBLIC_ void ndr_print_PNP_DeviceInstanceAction(struct ndr_print *ndr, const ch
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_DeviceInstanceAction");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1148,6 +1258,7 @@ static enum ndr_err_code ndr_push_PNP_GetDeviceStatus(struct ndr_push *ndr, int 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1157,6 +1268,7 @@ static enum ndr_err_code ndr_pull_PNP_GetDeviceStatus(struct ndr_pull *ndr, int 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1176,6 +1288,7 @@ _PUBLIC_ void ndr_print_PNP_GetDeviceStatus(struct ndr_print *ndr, const char *n
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetDeviceStatus");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1186,6 +1299,7 @@ static enum ndr_err_code ndr_push_PNP_SetDeviceProblem(struct ndr_push *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1195,6 +1309,7 @@ static enum ndr_err_code ndr_pull_PNP_SetDeviceProblem(struct ndr_pull *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1214,6 +1329,7 @@ _PUBLIC_ void ndr_print_PNP_SetDeviceProblem(struct ndr_print *ndr, const char *
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_SetDeviceProblem");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1224,6 +1340,7 @@ static enum ndr_err_code ndr_push_PNP_DisableDevInst(struct ndr_push *ndr, int f
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1233,6 +1350,7 @@ static enum ndr_err_code ndr_pull_PNP_DisableDevInst(struct ndr_pull *ndr, int f
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1252,6 +1370,7 @@ _PUBLIC_ void ndr_print_PNP_DisableDevInst(struct ndr_print *ndr, const char *na
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_DisableDevInst");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1262,6 +1381,7 @@ static enum ndr_err_code ndr_push_PNP_UninstallDevInst(struct ndr_push *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1271,6 +1391,7 @@ static enum ndr_err_code ndr_pull_PNP_UninstallDevInst(struct ndr_pull *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1290,6 +1411,7 @@ _PUBLIC_ void ndr_print_PNP_UninstallDevInst(struct ndr_print *ndr, const char *
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_UninstallDevInst");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1300,6 +1422,7 @@ static enum ndr_err_code ndr_push_PNP_AddID(struct ndr_push *ndr, int flags, con
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1309,6 +1432,7 @@ static enum ndr_err_code ndr_pull_PNP_AddID(struct ndr_pull *ndr, int flags, str
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1328,6 +1452,7 @@ _PUBLIC_ void ndr_print_PNP_AddID(struct ndr_print *ndr, const char *name, int f
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_AddID");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1338,6 +1463,7 @@ static enum ndr_err_code ndr_push_PNP_RegisterDriver(struct ndr_push *ndr, int f
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1347,6 +1473,7 @@ static enum ndr_err_code ndr_pull_PNP_RegisterDriver(struct ndr_pull *ndr, int f
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1366,6 +1493,7 @@ _PUBLIC_ void ndr_print_PNP_RegisterDriver(struct ndr_print *ndr, const char *na
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_RegisterDriver");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1376,6 +1504,7 @@ static enum ndr_err_code ndr_push_PNP_QueryRemove(struct ndr_push *ndr, int flag
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1385,6 +1514,7 @@ static enum ndr_err_code ndr_pull_PNP_QueryRemove(struct ndr_pull *ndr, int flag
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1404,6 +1534,7 @@ _PUBLIC_ void ndr_print_PNP_QueryRemove(struct ndr_print *ndr, const char *name,
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_QueryRemove");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1414,6 +1545,7 @@ static enum ndr_err_code ndr_push_PNP_RequestDeviceEject(struct ndr_push *ndr, i
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1423,6 +1555,7 @@ static enum ndr_err_code ndr_pull_PNP_RequestDeviceEject(struct ndr_pull *ndr, i
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1442,6 +1575,7 @@ _PUBLIC_ void ndr_print_PNP_RequestDeviceEject(struct ndr_print *ndr, const char
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_RequestDeviceEject");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1452,6 +1586,7 @@ static enum ndr_err_code ndr_push_PNP_IsDockStationPresent(struct ndr_push *ndr,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1461,6 +1596,7 @@ static enum ndr_err_code ndr_pull_PNP_IsDockStationPresent(struct ndr_pull *ndr,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1480,6 +1616,7 @@ _PUBLIC_ void ndr_print_PNP_IsDockStationPresent(struct ndr_print *ndr, const ch
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_IsDockStationPresent");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1490,6 +1627,7 @@ static enum ndr_err_code ndr_push_PNP_RequestEjectPC(struct ndr_push *ndr, int f
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1499,6 +1637,7 @@ static enum ndr_err_code ndr_pull_PNP_RequestEjectPC(struct ndr_pull *ndr, int f
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1518,6 +1657,7 @@ _PUBLIC_ void ndr_print_PNP_RequestEjectPC(struct ndr_print *ndr, const char *na
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_RequestEjectPC");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1528,6 +1668,7 @@ static enum ndr_err_code ndr_push_PNP_HwProfFlags(struct ndr_push *ndr, int flag
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1537,6 +1678,7 @@ static enum ndr_err_code ndr_pull_PNP_HwProfFlags(struct ndr_pull *ndr, int flag
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1556,6 +1698,7 @@ _PUBLIC_ void ndr_print_PNP_HwProfFlags(struct ndr_print *ndr, const char *name,
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_HwProfFlags");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1566,6 +1709,7 @@ static enum ndr_err_code ndr_push_PNP_GetHwProfInfo(struct ndr_push *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1575,6 +1719,7 @@ static enum ndr_err_code ndr_pull_PNP_GetHwProfInfo(struct ndr_pull *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1594,6 +1739,7 @@ _PUBLIC_ void ndr_print_PNP_GetHwProfInfo(struct ndr_print *ndr, const char *nam
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetHwProfInfo");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1604,6 +1750,7 @@ static enum ndr_err_code ndr_push_PNP_AddEmptyLogConf(struct ndr_push *ndr, int 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1613,6 +1760,7 @@ static enum ndr_err_code ndr_pull_PNP_AddEmptyLogConf(struct ndr_pull *ndr, int 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1632,6 +1780,7 @@ _PUBLIC_ void ndr_print_PNP_AddEmptyLogConf(struct ndr_print *ndr, const char *n
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_AddEmptyLogConf");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1642,6 +1791,7 @@ static enum ndr_err_code ndr_push_PNP_FreeLogConf(struct ndr_push *ndr, int flag
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1651,6 +1801,7 @@ static enum ndr_err_code ndr_pull_PNP_FreeLogConf(struct ndr_pull *ndr, int flag
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1670,6 +1821,7 @@ _PUBLIC_ void ndr_print_PNP_FreeLogConf(struct ndr_print *ndr, const char *name,
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_FreeLogConf");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1680,6 +1832,7 @@ static enum ndr_err_code ndr_push_PNP_GetFirstLogConf(struct ndr_push *ndr, int 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1689,6 +1842,7 @@ static enum ndr_err_code ndr_pull_PNP_GetFirstLogConf(struct ndr_pull *ndr, int 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1708,6 +1862,7 @@ _PUBLIC_ void ndr_print_PNP_GetFirstLogConf(struct ndr_print *ndr, const char *n
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetFirstLogConf");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1718,6 +1873,7 @@ static enum ndr_err_code ndr_push_PNP_GetNextLogConf(struct ndr_push *ndr, int f
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1727,6 +1883,7 @@ static enum ndr_err_code ndr_pull_PNP_GetNextLogConf(struct ndr_pull *ndr, int f
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1746,6 +1903,7 @@ _PUBLIC_ void ndr_print_PNP_GetNextLogConf(struct ndr_print *ndr, const char *na
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetNextLogConf");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1756,6 +1914,7 @@ static enum ndr_err_code ndr_push_PNP_GetLogConfPriority(struct ndr_push *ndr, i
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1765,6 +1924,7 @@ static enum ndr_err_code ndr_pull_PNP_GetLogConfPriority(struct ndr_pull *ndr, i
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1784,6 +1944,7 @@ _PUBLIC_ void ndr_print_PNP_GetLogConfPriority(struct ndr_print *ndr, const char
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetLogConfPriority");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1794,6 +1955,7 @@ static enum ndr_err_code ndr_push_PNP_AddResDes(struct ndr_push *ndr, int flags,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1803,6 +1965,7 @@ static enum ndr_err_code ndr_pull_PNP_AddResDes(struct ndr_pull *ndr, int flags,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1822,6 +1985,7 @@ _PUBLIC_ void ndr_print_PNP_AddResDes(struct ndr_print *ndr, const char *name, i
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_AddResDes");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1832,6 +1996,7 @@ static enum ndr_err_code ndr_push_PNP_FreeResDes(struct ndr_push *ndr, int flags
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1841,6 +2006,7 @@ static enum ndr_err_code ndr_pull_PNP_FreeResDes(struct ndr_pull *ndr, int flags
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1860,6 +2026,7 @@ _PUBLIC_ void ndr_print_PNP_FreeResDes(struct ndr_print *ndr, const char *name, 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_FreeResDes");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1870,6 +2037,7 @@ static enum ndr_err_code ndr_push_PNP_GetNextResDes(struct ndr_push *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1879,6 +2047,7 @@ static enum ndr_err_code ndr_pull_PNP_GetNextResDes(struct ndr_pull *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1898,6 +2067,7 @@ _PUBLIC_ void ndr_print_PNP_GetNextResDes(struct ndr_print *ndr, const char *nam
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetNextResDes");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1908,6 +2078,7 @@ static enum ndr_err_code ndr_push_PNP_GetResDesData(struct ndr_push *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1917,6 +2088,7 @@ static enum ndr_err_code ndr_pull_PNP_GetResDesData(struct ndr_pull *ndr, int fl
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1936,6 +2108,7 @@ _PUBLIC_ void ndr_print_PNP_GetResDesData(struct ndr_print *ndr, const char *nam
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetResDesData");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1946,6 +2119,7 @@ static enum ndr_err_code ndr_push_PNP_GetResDesDataSize(struct ndr_push *ndr, in
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1955,6 +2129,7 @@ static enum ndr_err_code ndr_pull_PNP_GetResDesDataSize(struct ndr_pull *ndr, in
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1974,6 +2149,7 @@ _PUBLIC_ void ndr_print_PNP_GetResDesDataSize(struct ndr_print *ndr, const char 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetResDesDataSize");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -1984,6 +2160,7 @@ static enum ndr_err_code ndr_push_PNP_ModifyResDes(struct ndr_push *ndr, int fla
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1993,6 +2170,7 @@ static enum ndr_err_code ndr_pull_PNP_ModifyResDes(struct ndr_pull *ndr, int fla
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2012,6 +2190,7 @@ _PUBLIC_ void ndr_print_PNP_ModifyResDes(struct ndr_print *ndr, const char *name
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_ModifyResDes");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -2022,6 +2201,7 @@ static enum ndr_err_code ndr_push_PNP_DetectResourceLimit(struct ndr_push *ndr, 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2031,6 +2211,7 @@ static enum ndr_err_code ndr_pull_PNP_DetectResourceLimit(struct ndr_pull *ndr, 
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2050,6 +2231,7 @@ _PUBLIC_ void ndr_print_PNP_DetectResourceLimit(struct ndr_print *ndr, const cha
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_DetectResourceLimit");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -2060,6 +2242,7 @@ static enum ndr_err_code ndr_push_PNP_QueryResConfList(struct ndr_push *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2069,6 +2252,7 @@ static enum ndr_err_code ndr_pull_PNP_QueryResConfList(struct ndr_pull *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2088,6 +2272,7 @@ _PUBLIC_ void ndr_print_PNP_QueryResConfList(struct ndr_print *ndr, const char *
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_QueryResConfList");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -2098,6 +2283,7 @@ static enum ndr_err_code ndr_push_PNP_SetHwProf(struct ndr_push *ndr, int flags,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2107,6 +2293,7 @@ static enum ndr_err_code ndr_pull_PNP_SetHwProf(struct ndr_pull *ndr, int flags,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2126,6 +2313,7 @@ _PUBLIC_ void ndr_print_PNP_SetHwProf(struct ndr_print *ndr, const char *name, i
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_SetHwProf");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -2136,6 +2324,7 @@ static enum ndr_err_code ndr_push_PNP_QueryArbitratorFreeData(struct ndr_push *n
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2145,6 +2334,7 @@ static enum ndr_err_code ndr_pull_PNP_QueryArbitratorFreeData(struct ndr_pull *n
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2164,6 +2354,7 @@ _PUBLIC_ void ndr_print_PNP_QueryArbitratorFreeData(struct ndr_print *ndr, const
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_QueryArbitratorFreeData");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -2174,6 +2365,7 @@ static enum ndr_err_code ndr_push_PNP_QueryArbitratorFreeSize(struct ndr_push *n
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2183,6 +2375,7 @@ static enum ndr_err_code ndr_pull_PNP_QueryArbitratorFreeSize(struct ndr_pull *n
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2202,6 +2395,7 @@ _PUBLIC_ void ndr_print_PNP_QueryArbitratorFreeSize(struct ndr_print *ndr, const
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_QueryArbitratorFreeSize");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -2212,6 +2406,7 @@ static enum ndr_err_code ndr_push_PNP_RunDetection(struct ndr_push *ndr, int fla
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2221,6 +2416,7 @@ static enum ndr_err_code ndr_pull_PNP_RunDetection(struct ndr_pull *ndr, int fla
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2240,6 +2436,7 @@ _PUBLIC_ void ndr_print_PNP_RunDetection(struct ndr_print *ndr, const char *name
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_RunDetection");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -2250,6 +2447,7 @@ static enum ndr_err_code ndr_push_PNP_RegisterNotification(struct ndr_push *ndr,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2259,6 +2457,7 @@ static enum ndr_err_code ndr_pull_PNP_RegisterNotification(struct ndr_pull *ndr,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2278,6 +2477,7 @@ _PUBLIC_ void ndr_print_PNP_RegisterNotification(struct ndr_print *ndr, const ch
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_RegisterNotification");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -2288,6 +2488,7 @@ static enum ndr_err_code ndr_push_PNP_UnregisterNotification(struct ndr_push *nd
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2297,6 +2498,7 @@ static enum ndr_err_code ndr_pull_PNP_UnregisterNotification(struct ndr_pull *nd
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2316,6 +2518,7 @@ _PUBLIC_ void ndr_print_PNP_UnregisterNotification(struct ndr_print *ndr, const 
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_UnregisterNotification");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -2326,6 +2529,7 @@ static enum ndr_err_code ndr_push_PNP_GetCustomDevProp(struct ndr_push *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2335,6 +2539,7 @@ static enum ndr_err_code ndr_pull_PNP_GetCustomDevProp(struct ndr_pull *ndr, int
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2354,6 +2559,7 @@ _PUBLIC_ void ndr_print_PNP_GetCustomDevProp(struct ndr_print *ndr, const char *
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetCustomDevProp");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -2364,6 +2570,7 @@ static enum ndr_err_code ndr_push_PNP_GetVersionInternal(struct ndr_push *ndr, i
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2373,6 +2580,7 @@ static enum ndr_err_code ndr_pull_PNP_GetVersionInternal(struct ndr_pull *ndr, i
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2392,6 +2600,7 @@ _PUBLIC_ void ndr_print_PNP_GetVersionInternal(struct ndr_print *ndr, const char
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetVersionInternal");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -2402,6 +2611,7 @@ static enum ndr_err_code ndr_push_PNP_GetBlockedDriverInfo(struct ndr_push *ndr,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2411,6 +2621,7 @@ static enum ndr_err_code ndr_pull_PNP_GetBlockedDriverInfo(struct ndr_pull *ndr,
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2430,6 +2641,7 @@ _PUBLIC_ void ndr_print_PNP_GetBlockedDriverInfo(struct ndr_print *ndr, const ch
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetBlockedDriverInfo");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
@@ -2440,6 +2652,7 @@ static enum ndr_err_code ndr_push_PNP_GetServerSideDeviceInstallFlags(struct ndr
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2449,6 +2662,7 @@ static enum ndr_err_code ndr_pull_PNP_GetServerSideDeviceInstallFlags(struct ndr
 	if (flags & NDR_IN) {
 	}
 	if (flags & NDR_OUT) {
+		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -2468,6 +2682,7 @@ _PUBLIC_ void ndr_print_PNP_GetServerSideDeviceInstallFlags(struct ndr_print *nd
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetServerSideDeviceInstallFlags");
 		ndr->depth++;
+		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;

@@ -7,7 +7,8 @@
 #include "librpc/gen_ndr/cli_ntsvcs.h"
 
 NTSTATUS rpccli_PNP_Disconnect(struct rpc_pipe_client *cli,
-			       TALLOC_CTX *mem_ctx)
+			       TALLOC_CTX *mem_ctx,
+			       WERROR *werror)
 {
 	struct PNP_Disconnect r;
 	NTSTATUS status;
@@ -40,11 +41,16 @@ NTSTATUS rpccli_PNP_Disconnect(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_Connect(struct rpc_pipe_client *cli,
-			    TALLOC_CTX *mem_ctx)
+			    TALLOC_CTX *mem_ctx,
+			    WERROR *werror)
 {
 	struct PNP_Connect r;
 	NTSTATUS status;
@@ -77,11 +83,17 @@ NTSTATUS rpccli_PNP_Connect(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetVersion(struct rpc_pipe_client *cli,
-			       TALLOC_CTX *mem_ctx)
+			       TALLOC_CTX *mem_ctx,
+			       uint16_t *version,
+			       WERROR *werror)
 {
 	struct PNP_GetVersion r;
 	NTSTATUS status;
@@ -112,13 +124,19 @@ NTSTATUS rpccli_PNP_GetVersion(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*version = *r.out.version;
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetGlobalState(struct rpc_pipe_client *cli,
-				   TALLOC_CTX *mem_ctx)
+				   TALLOC_CTX *mem_ctx,
+				   WERROR *werror)
 {
 	struct PNP_GetGlobalState r;
 	NTSTATUS status;
@@ -151,11 +169,16 @@ NTSTATUS rpccli_PNP_GetGlobalState(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_InitDetection(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx)
+				  TALLOC_CTX *mem_ctx,
+				  WERROR *werror)
 {
 	struct PNP_InitDetection r;
 	NTSTATUS status;
@@ -188,11 +211,16 @@ NTSTATUS rpccli_PNP_InitDetection(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_ReportLogOn(struct rpc_pipe_client *cli,
-				TALLOC_CTX *mem_ctx)
+				TALLOC_CTX *mem_ctx,
+				WERROR *werror)
 {
 	struct PNP_ReportLogOn r;
 	NTSTATUS status;
@@ -225,11 +253,16 @@ NTSTATUS rpccli_PNP_ReportLogOn(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_ValidateDeviceInstance(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx)
+					   TALLOC_CTX *mem_ctx,
+					   WERROR *werror)
 {
 	struct PNP_ValidateDeviceInstance r;
 	NTSTATUS status;
@@ -262,11 +295,16 @@ NTSTATUS rpccli_PNP_ValidateDeviceInstance(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetRootDeviceInstance(struct rpc_pipe_client *cli,
-					  TALLOC_CTX *mem_ctx)
+					  TALLOC_CTX *mem_ctx,
+					  WERROR *werror)
 {
 	struct PNP_GetRootDeviceInstance r;
 	NTSTATUS status;
@@ -299,11 +337,16 @@ NTSTATUS rpccli_PNP_GetRootDeviceInstance(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetRelatedDeviceInstance(struct rpc_pipe_client *cli,
-					     TALLOC_CTX *mem_ctx)
+					     TALLOC_CTX *mem_ctx,
+					     WERROR *werror)
 {
 	struct PNP_GetRelatedDeviceInstance r;
 	NTSTATUS status;
@@ -336,11 +379,16 @@ NTSTATUS rpccli_PNP_GetRelatedDeviceInstance(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_EnumerateSubKeys(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx)
+				     TALLOC_CTX *mem_ctx,
+				     WERROR *werror)
 {
 	struct PNP_EnumerateSubKeys r;
 	NTSTATUS status;
@@ -373,11 +421,16 @@ NTSTATUS rpccli_PNP_EnumerateSubKeys(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx)
+				  TALLOC_CTX *mem_ctx,
+				  WERROR *werror)
 {
 	struct PNP_GetDeviceList r;
 	NTSTATUS status;
@@ -410,11 +463,16 @@ NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetDeviceListSize(struct rpc_pipe_client *cli,
-				      TALLOC_CTX *mem_ctx)
+				      TALLOC_CTX *mem_ctx,
+				      WERROR *werror)
 {
 	struct PNP_GetDeviceListSize r;
 	NTSTATUS status;
@@ -447,11 +505,16 @@ NTSTATUS rpccli_PNP_GetDeviceListSize(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetDepth(struct rpc_pipe_client *cli,
-			     TALLOC_CTX *mem_ctx)
+			     TALLOC_CTX *mem_ctx,
+			     WERROR *werror)
 {
 	struct PNP_GetDepth r;
 	NTSTATUS status;
@@ -484,11 +547,16 @@ NTSTATUS rpccli_PNP_GetDepth(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx)
+				     TALLOC_CTX *mem_ctx,
+				     WERROR *werror)
 {
 	struct PNP_GetDeviceRegProp r;
 	NTSTATUS status;
@@ -521,11 +589,16 @@ NTSTATUS rpccli_PNP_GetDeviceRegProp(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_SetDeviceRegProp(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx)
+				     TALLOC_CTX *mem_ctx,
+				     WERROR *werror)
 {
 	struct PNP_SetDeviceRegProp r;
 	NTSTATUS status;
@@ -558,11 +631,16 @@ NTSTATUS rpccli_PNP_SetDeviceRegProp(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetClassInstance(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx)
+				     TALLOC_CTX *mem_ctx,
+				     WERROR *werror)
 {
 	struct PNP_GetClassInstance r;
 	NTSTATUS status;
@@ -595,11 +673,16 @@ NTSTATUS rpccli_PNP_GetClassInstance(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_CreateKey(struct rpc_pipe_client *cli,
-			      TALLOC_CTX *mem_ctx)
+			      TALLOC_CTX *mem_ctx,
+			      WERROR *werror)
 {
 	struct PNP_CreateKey r;
 	NTSTATUS status;
@@ -632,11 +715,16 @@ NTSTATUS rpccli_PNP_CreateKey(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_DeleteRegistryKey(struct rpc_pipe_client *cli,
-				      TALLOC_CTX *mem_ctx)
+				      TALLOC_CTX *mem_ctx,
+				      WERROR *werror)
 {
 	struct PNP_DeleteRegistryKey r;
 	NTSTATUS status;
@@ -669,11 +757,16 @@ NTSTATUS rpccli_PNP_DeleteRegistryKey(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetClassCount(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx)
+				  TALLOC_CTX *mem_ctx,
+				  WERROR *werror)
 {
 	struct PNP_GetClassCount r;
 	NTSTATUS status;
@@ -706,11 +799,16 @@ NTSTATUS rpccli_PNP_GetClassCount(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetClassName(struct rpc_pipe_client *cli,
-				 TALLOC_CTX *mem_ctx)
+				 TALLOC_CTX *mem_ctx,
+				 WERROR *werror)
 {
 	struct PNP_GetClassName r;
 	NTSTATUS status;
@@ -743,11 +841,16 @@ NTSTATUS rpccli_PNP_GetClassName(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_DeleteClassKey(struct rpc_pipe_client *cli,
-				   TALLOC_CTX *mem_ctx)
+				   TALLOC_CTX *mem_ctx,
+				   WERROR *werror)
 {
 	struct PNP_DeleteClassKey r;
 	NTSTATUS status;
@@ -780,11 +883,16 @@ NTSTATUS rpccli_PNP_DeleteClassKey(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetInterfaceDeviceAlias(struct rpc_pipe_client *cli,
-					    TALLOC_CTX *mem_ctx)
+					    TALLOC_CTX *mem_ctx,
+					    WERROR *werror)
 {
 	struct PNP_GetInterfaceDeviceAlias r;
 	NTSTATUS status;
@@ -817,11 +925,16 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceAlias(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetInterfaceDeviceList(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx)
+					   TALLOC_CTX *mem_ctx,
+					   WERROR *werror)
 {
 	struct PNP_GetInterfaceDeviceList r;
 	NTSTATUS status;
@@ -854,11 +967,16 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceList(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetInterfaceDeviceListSize(struct rpc_pipe_client *cli,
-					       TALLOC_CTX *mem_ctx)
+					       TALLOC_CTX *mem_ctx,
+					       WERROR *werror)
 {
 	struct PNP_GetInterfaceDeviceListSize r;
 	NTSTATUS status;
@@ -891,11 +1009,16 @@ NTSTATUS rpccli_PNP_GetInterfaceDeviceListSize(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_RegisterDeviceClassAssociation(struct rpc_pipe_client *cli,
-						   TALLOC_CTX *mem_ctx)
+						   TALLOC_CTX *mem_ctx,
+						   WERROR *werror)
 {
 	struct PNP_RegisterDeviceClassAssociation r;
 	NTSTATUS status;
@@ -928,11 +1051,16 @@ NTSTATUS rpccli_PNP_RegisterDeviceClassAssociation(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_UnregisterDeviceClassAssociation(struct rpc_pipe_client *cli,
-						     TALLOC_CTX *mem_ctx)
+						     TALLOC_CTX *mem_ctx,
+						     WERROR *werror)
 {
 	struct PNP_UnregisterDeviceClassAssociation r;
 	NTSTATUS status;
@@ -965,11 +1093,16 @@ NTSTATUS rpccli_PNP_UnregisterDeviceClassAssociation(struct rpc_pipe_client *cli
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetClassRegProp(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx)
+				    TALLOC_CTX *mem_ctx,
+				    WERROR *werror)
 {
 	struct PNP_GetClassRegProp r;
 	NTSTATUS status;
@@ -1002,11 +1135,16 @@ NTSTATUS rpccli_PNP_GetClassRegProp(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_SetClassRegProp(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx)
+				    TALLOC_CTX *mem_ctx,
+				    WERROR *werror)
 {
 	struct PNP_SetClassRegProp r;
 	NTSTATUS status;
@@ -1039,11 +1177,16 @@ NTSTATUS rpccli_PNP_SetClassRegProp(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_CreateDevInst(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx)
+				  TALLOC_CTX *mem_ctx,
+				  WERROR *werror)
 {
 	struct PNP_CreateDevInst r;
 	NTSTATUS status;
@@ -1076,11 +1219,16 @@ NTSTATUS rpccli_PNP_CreateDevInst(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_DeviceInstanceAction(struct rpc_pipe_client *cli,
-					 TALLOC_CTX *mem_ctx)
+					 TALLOC_CTX *mem_ctx,
+					 WERROR *werror)
 {
 	struct PNP_DeviceInstanceAction r;
 	NTSTATUS status;
@@ -1113,11 +1261,16 @@ NTSTATUS rpccli_PNP_DeviceInstanceAction(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetDeviceStatus(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx)
+				    TALLOC_CTX *mem_ctx,
+				    WERROR *werror)
 {
 	struct PNP_GetDeviceStatus r;
 	NTSTATUS status;
@@ -1150,11 +1303,16 @@ NTSTATUS rpccli_PNP_GetDeviceStatus(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_SetDeviceProblem(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx)
+				     TALLOC_CTX *mem_ctx,
+				     WERROR *werror)
 {
 	struct PNP_SetDeviceProblem r;
 	NTSTATUS status;
@@ -1187,11 +1345,16 @@ NTSTATUS rpccli_PNP_SetDeviceProblem(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_DisableDevInst(struct rpc_pipe_client *cli,
-				   TALLOC_CTX *mem_ctx)
+				   TALLOC_CTX *mem_ctx,
+				   WERROR *werror)
 {
 	struct PNP_DisableDevInst r;
 	NTSTATUS status;
@@ -1224,11 +1387,16 @@ NTSTATUS rpccli_PNP_DisableDevInst(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_UninstallDevInst(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx)
+				     TALLOC_CTX *mem_ctx,
+				     WERROR *werror)
 {
 	struct PNP_UninstallDevInst r;
 	NTSTATUS status;
@@ -1261,11 +1429,16 @@ NTSTATUS rpccli_PNP_UninstallDevInst(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_AddID(struct rpc_pipe_client *cli,
-			  TALLOC_CTX *mem_ctx)
+			  TALLOC_CTX *mem_ctx,
+			  WERROR *werror)
 {
 	struct PNP_AddID r;
 	NTSTATUS status;
@@ -1298,11 +1471,16 @@ NTSTATUS rpccli_PNP_AddID(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_RegisterDriver(struct rpc_pipe_client *cli,
-				   TALLOC_CTX *mem_ctx)
+				   TALLOC_CTX *mem_ctx,
+				   WERROR *werror)
 {
 	struct PNP_RegisterDriver r;
 	NTSTATUS status;
@@ -1335,11 +1513,16 @@ NTSTATUS rpccli_PNP_RegisterDriver(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_QueryRemove(struct rpc_pipe_client *cli,
-				TALLOC_CTX *mem_ctx)
+				TALLOC_CTX *mem_ctx,
+				WERROR *werror)
 {
 	struct PNP_QueryRemove r;
 	NTSTATUS status;
@@ -1372,11 +1555,16 @@ NTSTATUS rpccli_PNP_QueryRemove(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_RequestDeviceEject(struct rpc_pipe_client *cli,
-				       TALLOC_CTX *mem_ctx)
+				       TALLOC_CTX *mem_ctx,
+				       WERROR *werror)
 {
 	struct PNP_RequestDeviceEject r;
 	NTSTATUS status;
@@ -1409,11 +1597,16 @@ NTSTATUS rpccli_PNP_RequestDeviceEject(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_IsDockStationPresent(struct rpc_pipe_client *cli,
-					 TALLOC_CTX *mem_ctx)
+					 TALLOC_CTX *mem_ctx,
+					 WERROR *werror)
 {
 	struct PNP_IsDockStationPresent r;
 	NTSTATUS status;
@@ -1446,11 +1639,16 @@ NTSTATUS rpccli_PNP_IsDockStationPresent(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_RequestEjectPC(struct rpc_pipe_client *cli,
-				   TALLOC_CTX *mem_ctx)
+				   TALLOC_CTX *mem_ctx,
+				   WERROR *werror)
 {
 	struct PNP_RequestEjectPC r;
 	NTSTATUS status;
@@ -1483,11 +1681,16 @@ NTSTATUS rpccli_PNP_RequestEjectPC(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
-				TALLOC_CTX *mem_ctx)
+				TALLOC_CTX *mem_ctx,
+				WERROR *werror)
 {
 	struct PNP_HwProfFlags r;
 	NTSTATUS status;
@@ -1520,11 +1723,16 @@ NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx)
+				  TALLOC_CTX *mem_ctx,
+				  WERROR *werror)
 {
 	struct PNP_GetHwProfInfo r;
 	NTSTATUS status;
@@ -1557,11 +1765,16 @@ NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_AddEmptyLogConf(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx)
+				    TALLOC_CTX *mem_ctx,
+				    WERROR *werror)
 {
 	struct PNP_AddEmptyLogConf r;
 	NTSTATUS status;
@@ -1594,11 +1807,16 @@ NTSTATUS rpccli_PNP_AddEmptyLogConf(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_FreeLogConf(struct rpc_pipe_client *cli,
-				TALLOC_CTX *mem_ctx)
+				TALLOC_CTX *mem_ctx,
+				WERROR *werror)
 {
 	struct PNP_FreeLogConf r;
 	NTSTATUS status;
@@ -1631,11 +1849,16 @@ NTSTATUS rpccli_PNP_FreeLogConf(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetFirstLogConf(struct rpc_pipe_client *cli,
-				    TALLOC_CTX *mem_ctx)
+				    TALLOC_CTX *mem_ctx,
+				    WERROR *werror)
 {
 	struct PNP_GetFirstLogConf r;
 	NTSTATUS status;
@@ -1668,11 +1891,16 @@ NTSTATUS rpccli_PNP_GetFirstLogConf(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetNextLogConf(struct rpc_pipe_client *cli,
-				   TALLOC_CTX *mem_ctx)
+				   TALLOC_CTX *mem_ctx,
+				   WERROR *werror)
 {
 	struct PNP_GetNextLogConf r;
 	NTSTATUS status;
@@ -1705,11 +1933,16 @@ NTSTATUS rpccli_PNP_GetNextLogConf(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetLogConfPriority(struct rpc_pipe_client *cli,
-				       TALLOC_CTX *mem_ctx)
+				       TALLOC_CTX *mem_ctx,
+				       WERROR *werror)
 {
 	struct PNP_GetLogConfPriority r;
 	NTSTATUS status;
@@ -1742,11 +1975,16 @@ NTSTATUS rpccli_PNP_GetLogConfPriority(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_AddResDes(struct rpc_pipe_client *cli,
-			      TALLOC_CTX *mem_ctx)
+			      TALLOC_CTX *mem_ctx,
+			      WERROR *werror)
 {
 	struct PNP_AddResDes r;
 	NTSTATUS status;
@@ -1779,11 +2017,16 @@ NTSTATUS rpccli_PNP_AddResDes(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_FreeResDes(struct rpc_pipe_client *cli,
-			       TALLOC_CTX *mem_ctx)
+			       TALLOC_CTX *mem_ctx,
+			       WERROR *werror)
 {
 	struct PNP_FreeResDes r;
 	NTSTATUS status;
@@ -1816,11 +2059,16 @@ NTSTATUS rpccli_PNP_FreeResDes(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetNextResDes(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx)
+				  TALLOC_CTX *mem_ctx,
+				  WERROR *werror)
 {
 	struct PNP_GetNextResDes r;
 	NTSTATUS status;
@@ -1853,11 +2101,16 @@ NTSTATUS rpccli_PNP_GetNextResDes(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetResDesData(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx)
+				  TALLOC_CTX *mem_ctx,
+				  WERROR *werror)
 {
 	struct PNP_GetResDesData r;
 	NTSTATUS status;
@@ -1890,11 +2143,16 @@ NTSTATUS rpccli_PNP_GetResDesData(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetResDesDataSize(struct rpc_pipe_client *cli,
-				      TALLOC_CTX *mem_ctx)
+				      TALLOC_CTX *mem_ctx,
+				      WERROR *werror)
 {
 	struct PNP_GetResDesDataSize r;
 	NTSTATUS status;
@@ -1927,11 +2185,16 @@ NTSTATUS rpccli_PNP_GetResDesDataSize(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_ModifyResDes(struct rpc_pipe_client *cli,
-				 TALLOC_CTX *mem_ctx)
+				 TALLOC_CTX *mem_ctx,
+				 WERROR *werror)
 {
 	struct PNP_ModifyResDes r;
 	NTSTATUS status;
@@ -1964,11 +2227,16 @@ NTSTATUS rpccli_PNP_ModifyResDes(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_DetectResourceLimit(struct rpc_pipe_client *cli,
-					TALLOC_CTX *mem_ctx)
+					TALLOC_CTX *mem_ctx,
+					WERROR *werror)
 {
 	struct PNP_DetectResourceLimit r;
 	NTSTATUS status;
@@ -2001,11 +2269,16 @@ NTSTATUS rpccli_PNP_DetectResourceLimit(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_QueryResConfList(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx)
+				     TALLOC_CTX *mem_ctx,
+				     WERROR *werror)
 {
 	struct PNP_QueryResConfList r;
 	NTSTATUS status;
@@ -2038,11 +2311,16 @@ NTSTATUS rpccli_PNP_QueryResConfList(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_SetHwProf(struct rpc_pipe_client *cli,
-			      TALLOC_CTX *mem_ctx)
+			      TALLOC_CTX *mem_ctx,
+			      WERROR *werror)
 {
 	struct PNP_SetHwProf r;
 	NTSTATUS status;
@@ -2075,11 +2353,16 @@ NTSTATUS rpccli_PNP_SetHwProf(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_QueryArbitratorFreeData(struct rpc_pipe_client *cli,
-					    TALLOC_CTX *mem_ctx)
+					    TALLOC_CTX *mem_ctx,
+					    WERROR *werror)
 {
 	struct PNP_QueryArbitratorFreeData r;
 	NTSTATUS status;
@@ -2112,11 +2395,16 @@ NTSTATUS rpccli_PNP_QueryArbitratorFreeData(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_QueryArbitratorFreeSize(struct rpc_pipe_client *cli,
-					    TALLOC_CTX *mem_ctx)
+					    TALLOC_CTX *mem_ctx,
+					    WERROR *werror)
 {
 	struct PNP_QueryArbitratorFreeSize r;
 	NTSTATUS status;
@@ -2149,11 +2437,16 @@ NTSTATUS rpccli_PNP_QueryArbitratorFreeSize(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_RunDetection(struct rpc_pipe_client *cli,
-				 TALLOC_CTX *mem_ctx)
+				 TALLOC_CTX *mem_ctx,
+				 WERROR *werror)
 {
 	struct PNP_RunDetection r;
 	NTSTATUS status;
@@ -2186,11 +2479,16 @@ NTSTATUS rpccli_PNP_RunDetection(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_RegisterNotification(struct rpc_pipe_client *cli,
-					 TALLOC_CTX *mem_ctx)
+					 TALLOC_CTX *mem_ctx,
+					 WERROR *werror)
 {
 	struct PNP_RegisterNotification r;
 	NTSTATUS status;
@@ -2223,11 +2521,16 @@ NTSTATUS rpccli_PNP_RegisterNotification(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_UnregisterNotification(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx)
+					   TALLOC_CTX *mem_ctx,
+					   WERROR *werror)
 {
 	struct PNP_UnregisterNotification r;
 	NTSTATUS status;
@@ -2260,11 +2563,16 @@ NTSTATUS rpccli_PNP_UnregisterNotification(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetCustomDevProp(struct rpc_pipe_client *cli,
-				     TALLOC_CTX *mem_ctx)
+				     TALLOC_CTX *mem_ctx,
+				     WERROR *werror)
 {
 	struct PNP_GetCustomDevProp r;
 	NTSTATUS status;
@@ -2297,11 +2605,16 @@ NTSTATUS rpccli_PNP_GetCustomDevProp(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetVersionInternal(struct rpc_pipe_client *cli,
-				       TALLOC_CTX *mem_ctx)
+				       TALLOC_CTX *mem_ctx,
+				       WERROR *werror)
 {
 	struct PNP_GetVersionInternal r;
 	NTSTATUS status;
@@ -2334,11 +2647,16 @@ NTSTATUS rpccli_PNP_GetVersionInternal(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetBlockedDriverInfo(struct rpc_pipe_client *cli,
-					 TALLOC_CTX *mem_ctx)
+					 TALLOC_CTX *mem_ctx,
+					 WERROR *werror)
 {
 	struct PNP_GetBlockedDriverInfo r;
 	NTSTATUS status;
@@ -2371,11 +2689,16 @@ NTSTATUS rpccli_PNP_GetBlockedDriverInfo(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
 NTSTATUS rpccli_PNP_GetServerSideDeviceInstallFlags(struct rpc_pipe_client *cli,
-						    TALLOC_CTX *mem_ctx)
+						    TALLOC_CTX *mem_ctx,
+						    WERROR *werror)
 {
 	struct PNP_GetServerSideDeviceInstallFlags r;
 	NTSTATUS status;
@@ -2408,6 +2731,10 @@ NTSTATUS rpccli_PNP_GetServerSideDeviceInstallFlags(struct rpc_pipe_client *cli,
 	/* Return variables */
 
 	/* Return result */
-	return NT_STATUS_OK;
+	if (werror) {
+		*werror = r.out.result;
+	}
+
+	return werror_to_ntstatus(r.out.result);
 }
 
