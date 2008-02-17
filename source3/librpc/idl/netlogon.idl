@@ -798,6 +798,7 @@ interface netlogon
 
 	/* function_code values */
 	typedef [v1_enum] enum {
+		NETLOGON_CONTROL_SYNC             = 2,
 		NETLOGON_CONTROL_REDISCOVER       = 5,
 		NETLOGON_CONTROL_TC_QUERY         = 6,
 		NETLOGON_CONTROL_TRANSPORT_NOTIFY = 7,
