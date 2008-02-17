@@ -44,7 +44,7 @@ static bool api_PNP_Disconnect(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_Disconnect, r);
 	}
 
-	_PNP_Disconnect(p, r);
+	r->out.result = _PNP_Disconnect(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -117,7 +117,7 @@ static bool api_PNP_Connect(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_Connect, r);
 	}
 
-	_PNP_Connect(p, r);
+	r->out.result = _PNP_Connect(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -190,7 +190,14 @@ static bool api_PNP_GetVersion(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetVersion, r);
 	}
 
-	_PNP_GetVersion(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.version = talloc_zero(r, uint16_t);
+	if (r->out.version == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.result = _PNP_GetVersion(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -263,7 +270,7 @@ static bool api_PNP_GetGlobalState(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetGlobalState, r);
 	}
 
-	_PNP_GetGlobalState(p, r);
+	r->out.result = _PNP_GetGlobalState(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -336,7 +343,7 @@ static bool api_PNP_InitDetection(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_InitDetection, r);
 	}
 
-	_PNP_InitDetection(p, r);
+	r->out.result = _PNP_InitDetection(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -409,7 +416,7 @@ static bool api_PNP_ReportLogOn(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_ReportLogOn, r);
 	}
 
-	_PNP_ReportLogOn(p, r);
+	r->out.result = _PNP_ReportLogOn(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -482,7 +489,7 @@ static bool api_PNP_ValidateDeviceInstance(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_ValidateDeviceInstance, r);
 	}
 
-	_PNP_ValidateDeviceInstance(p, r);
+	r->out.result = _PNP_ValidateDeviceInstance(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -555,7 +562,7 @@ static bool api_PNP_GetRootDeviceInstance(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetRootDeviceInstance, r);
 	}
 
-	_PNP_GetRootDeviceInstance(p, r);
+	r->out.result = _PNP_GetRootDeviceInstance(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -628,7 +635,7 @@ static bool api_PNP_GetRelatedDeviceInstance(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetRelatedDeviceInstance, r);
 	}
 
-	_PNP_GetRelatedDeviceInstance(p, r);
+	r->out.result = _PNP_GetRelatedDeviceInstance(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -701,7 +708,7 @@ static bool api_PNP_EnumerateSubKeys(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_EnumerateSubKeys, r);
 	}
 
-	_PNP_EnumerateSubKeys(p, r);
+	r->out.result = _PNP_EnumerateSubKeys(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -774,7 +781,7 @@ static bool api_PNP_GetDeviceList(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceList, r);
 	}
 
-	_PNP_GetDeviceList(p, r);
+	r->out.result = _PNP_GetDeviceList(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -847,7 +854,7 @@ static bool api_PNP_GetDeviceListSize(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceListSize, r);
 	}
 
-	_PNP_GetDeviceListSize(p, r);
+	r->out.result = _PNP_GetDeviceListSize(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -920,7 +927,7 @@ static bool api_PNP_GetDepth(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetDepth, r);
 	}
 
-	_PNP_GetDepth(p, r);
+	r->out.result = _PNP_GetDepth(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -993,7 +1000,7 @@ static bool api_PNP_GetDeviceRegProp(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceRegProp, r);
 	}
 
-	_PNP_GetDeviceRegProp(p, r);
+	r->out.result = _PNP_GetDeviceRegProp(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1066,7 +1073,7 @@ static bool api_PNP_SetDeviceRegProp(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_SetDeviceRegProp, r);
 	}
 
-	_PNP_SetDeviceRegProp(p, r);
+	r->out.result = _PNP_SetDeviceRegProp(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1139,7 +1146,7 @@ static bool api_PNP_GetClassInstance(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetClassInstance, r);
 	}
 
-	_PNP_GetClassInstance(p, r);
+	r->out.result = _PNP_GetClassInstance(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1212,7 +1219,7 @@ static bool api_PNP_CreateKey(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_CreateKey, r);
 	}
 
-	_PNP_CreateKey(p, r);
+	r->out.result = _PNP_CreateKey(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1285,7 +1292,7 @@ static bool api_PNP_DeleteRegistryKey(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_DeleteRegistryKey, r);
 	}
 
-	_PNP_DeleteRegistryKey(p, r);
+	r->out.result = _PNP_DeleteRegistryKey(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1358,7 +1365,7 @@ static bool api_PNP_GetClassCount(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetClassCount, r);
 	}
 
-	_PNP_GetClassCount(p, r);
+	r->out.result = _PNP_GetClassCount(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1431,7 +1438,7 @@ static bool api_PNP_GetClassName(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetClassName, r);
 	}
 
-	_PNP_GetClassName(p, r);
+	r->out.result = _PNP_GetClassName(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1504,7 +1511,7 @@ static bool api_PNP_DeleteClassKey(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_DeleteClassKey, r);
 	}
 
-	_PNP_DeleteClassKey(p, r);
+	r->out.result = _PNP_DeleteClassKey(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1577,7 +1584,7 @@ static bool api_PNP_GetInterfaceDeviceAlias(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetInterfaceDeviceAlias, r);
 	}
 
-	_PNP_GetInterfaceDeviceAlias(p, r);
+	r->out.result = _PNP_GetInterfaceDeviceAlias(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1650,7 +1657,7 @@ static bool api_PNP_GetInterfaceDeviceList(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetInterfaceDeviceList, r);
 	}
 
-	_PNP_GetInterfaceDeviceList(p, r);
+	r->out.result = _PNP_GetInterfaceDeviceList(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1723,7 +1730,7 @@ static bool api_PNP_GetInterfaceDeviceListSize(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetInterfaceDeviceListSize, r);
 	}
 
-	_PNP_GetInterfaceDeviceListSize(p, r);
+	r->out.result = _PNP_GetInterfaceDeviceListSize(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1796,7 +1803,7 @@ static bool api_PNP_RegisterDeviceClassAssociation(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_RegisterDeviceClassAssociation, r);
 	}
 
-	_PNP_RegisterDeviceClassAssociation(p, r);
+	r->out.result = _PNP_RegisterDeviceClassAssociation(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1869,7 +1876,7 @@ static bool api_PNP_UnregisterDeviceClassAssociation(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_UnregisterDeviceClassAssociation, r);
 	}
 
-	_PNP_UnregisterDeviceClassAssociation(p, r);
+	r->out.result = _PNP_UnregisterDeviceClassAssociation(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -1942,7 +1949,7 @@ static bool api_PNP_GetClassRegProp(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetClassRegProp, r);
 	}
 
-	_PNP_GetClassRegProp(p, r);
+	r->out.result = _PNP_GetClassRegProp(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2015,7 +2022,7 @@ static bool api_PNP_SetClassRegProp(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_SetClassRegProp, r);
 	}
 
-	_PNP_SetClassRegProp(p, r);
+	r->out.result = _PNP_SetClassRegProp(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2088,7 +2095,7 @@ static bool api_PNP_CreateDevInst(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_CreateDevInst, r);
 	}
 
-	_PNP_CreateDevInst(p, r);
+	r->out.result = _PNP_CreateDevInst(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2161,7 +2168,7 @@ static bool api_PNP_DeviceInstanceAction(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_DeviceInstanceAction, r);
 	}
 
-	_PNP_DeviceInstanceAction(p, r);
+	r->out.result = _PNP_DeviceInstanceAction(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2234,7 +2241,7 @@ static bool api_PNP_GetDeviceStatus(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceStatus, r);
 	}
 
-	_PNP_GetDeviceStatus(p, r);
+	r->out.result = _PNP_GetDeviceStatus(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2307,7 +2314,7 @@ static bool api_PNP_SetDeviceProblem(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_SetDeviceProblem, r);
 	}
 
-	_PNP_SetDeviceProblem(p, r);
+	r->out.result = _PNP_SetDeviceProblem(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2380,7 +2387,7 @@ static bool api_PNP_DisableDevInst(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_DisableDevInst, r);
 	}
 
-	_PNP_DisableDevInst(p, r);
+	r->out.result = _PNP_DisableDevInst(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2453,7 +2460,7 @@ static bool api_PNP_UninstallDevInst(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_UninstallDevInst, r);
 	}
 
-	_PNP_UninstallDevInst(p, r);
+	r->out.result = _PNP_UninstallDevInst(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2526,7 +2533,7 @@ static bool api_PNP_AddID(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_AddID, r);
 	}
 
-	_PNP_AddID(p, r);
+	r->out.result = _PNP_AddID(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2599,7 +2606,7 @@ static bool api_PNP_RegisterDriver(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_RegisterDriver, r);
 	}
 
-	_PNP_RegisterDriver(p, r);
+	r->out.result = _PNP_RegisterDriver(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2672,7 +2679,7 @@ static bool api_PNP_QueryRemove(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_QueryRemove, r);
 	}
 
-	_PNP_QueryRemove(p, r);
+	r->out.result = _PNP_QueryRemove(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2745,7 +2752,7 @@ static bool api_PNP_RequestDeviceEject(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_RequestDeviceEject, r);
 	}
 
-	_PNP_RequestDeviceEject(p, r);
+	r->out.result = _PNP_RequestDeviceEject(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2818,7 +2825,7 @@ static bool api_PNP_IsDockStationPresent(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_IsDockStationPresent, r);
 	}
 
-	_PNP_IsDockStationPresent(p, r);
+	r->out.result = _PNP_IsDockStationPresent(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2891,7 +2898,7 @@ static bool api_PNP_RequestEjectPC(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_RequestEjectPC, r);
 	}
 
-	_PNP_RequestEjectPC(p, r);
+	r->out.result = _PNP_RequestEjectPC(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -2964,7 +2971,7 @@ static bool api_PNP_HwProfFlags(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_HwProfFlags, r);
 	}
 
-	_PNP_HwProfFlags(p, r);
+	r->out.result = _PNP_HwProfFlags(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3037,7 +3044,7 @@ static bool api_PNP_GetHwProfInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetHwProfInfo, r);
 	}
 
-	_PNP_GetHwProfInfo(p, r);
+	r->out.result = _PNP_GetHwProfInfo(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3110,7 +3117,7 @@ static bool api_PNP_AddEmptyLogConf(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_AddEmptyLogConf, r);
 	}
 
-	_PNP_AddEmptyLogConf(p, r);
+	r->out.result = _PNP_AddEmptyLogConf(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3183,7 +3190,7 @@ static bool api_PNP_FreeLogConf(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_FreeLogConf, r);
 	}
 
-	_PNP_FreeLogConf(p, r);
+	r->out.result = _PNP_FreeLogConf(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3256,7 +3263,7 @@ static bool api_PNP_GetFirstLogConf(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetFirstLogConf, r);
 	}
 
-	_PNP_GetFirstLogConf(p, r);
+	r->out.result = _PNP_GetFirstLogConf(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3329,7 +3336,7 @@ static bool api_PNP_GetNextLogConf(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetNextLogConf, r);
 	}
 
-	_PNP_GetNextLogConf(p, r);
+	r->out.result = _PNP_GetNextLogConf(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3402,7 +3409,7 @@ static bool api_PNP_GetLogConfPriority(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetLogConfPriority, r);
 	}
 
-	_PNP_GetLogConfPriority(p, r);
+	r->out.result = _PNP_GetLogConfPriority(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3475,7 +3482,7 @@ static bool api_PNP_AddResDes(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_AddResDes, r);
 	}
 
-	_PNP_AddResDes(p, r);
+	r->out.result = _PNP_AddResDes(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3548,7 +3555,7 @@ static bool api_PNP_FreeResDes(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_FreeResDes, r);
 	}
 
-	_PNP_FreeResDes(p, r);
+	r->out.result = _PNP_FreeResDes(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3621,7 +3628,7 @@ static bool api_PNP_GetNextResDes(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetNextResDes, r);
 	}
 
-	_PNP_GetNextResDes(p, r);
+	r->out.result = _PNP_GetNextResDes(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3694,7 +3701,7 @@ static bool api_PNP_GetResDesData(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetResDesData, r);
 	}
 
-	_PNP_GetResDesData(p, r);
+	r->out.result = _PNP_GetResDesData(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3767,7 +3774,7 @@ static bool api_PNP_GetResDesDataSize(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetResDesDataSize, r);
 	}
 
-	_PNP_GetResDesDataSize(p, r);
+	r->out.result = _PNP_GetResDesDataSize(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3840,7 +3847,7 @@ static bool api_PNP_ModifyResDes(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_ModifyResDes, r);
 	}
 
-	_PNP_ModifyResDes(p, r);
+	r->out.result = _PNP_ModifyResDes(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3913,7 +3920,7 @@ static bool api_PNP_DetectResourceLimit(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_DetectResourceLimit, r);
 	}
 
-	_PNP_DetectResourceLimit(p, r);
+	r->out.result = _PNP_DetectResourceLimit(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -3986,7 +3993,7 @@ static bool api_PNP_QueryResConfList(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_QueryResConfList, r);
 	}
 
-	_PNP_QueryResConfList(p, r);
+	r->out.result = _PNP_QueryResConfList(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -4059,7 +4066,7 @@ static bool api_PNP_SetHwProf(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_SetHwProf, r);
 	}
 
-	_PNP_SetHwProf(p, r);
+	r->out.result = _PNP_SetHwProf(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -4132,7 +4139,7 @@ static bool api_PNP_QueryArbitratorFreeData(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_QueryArbitratorFreeData, r);
 	}
 
-	_PNP_QueryArbitratorFreeData(p, r);
+	r->out.result = _PNP_QueryArbitratorFreeData(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -4205,7 +4212,7 @@ static bool api_PNP_QueryArbitratorFreeSize(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_QueryArbitratorFreeSize, r);
 	}
 
-	_PNP_QueryArbitratorFreeSize(p, r);
+	r->out.result = _PNP_QueryArbitratorFreeSize(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -4278,7 +4285,7 @@ static bool api_PNP_RunDetection(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_RunDetection, r);
 	}
 
-	_PNP_RunDetection(p, r);
+	r->out.result = _PNP_RunDetection(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -4351,7 +4358,7 @@ static bool api_PNP_RegisterNotification(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_RegisterNotification, r);
 	}
 
-	_PNP_RegisterNotification(p, r);
+	r->out.result = _PNP_RegisterNotification(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -4424,7 +4431,7 @@ static bool api_PNP_UnregisterNotification(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_UnregisterNotification, r);
 	}
 
-	_PNP_UnregisterNotification(p, r);
+	r->out.result = _PNP_UnregisterNotification(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -4497,7 +4504,7 @@ static bool api_PNP_GetCustomDevProp(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetCustomDevProp, r);
 	}
 
-	_PNP_GetCustomDevProp(p, r);
+	r->out.result = _PNP_GetCustomDevProp(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -4570,7 +4577,7 @@ static bool api_PNP_GetVersionInternal(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetVersionInternal, r);
 	}
 
-	_PNP_GetVersionInternal(p, r);
+	r->out.result = _PNP_GetVersionInternal(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -4643,7 +4650,7 @@ static bool api_PNP_GetBlockedDriverInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetBlockedDriverInfo, r);
 	}
 
-	_PNP_GetBlockedDriverInfo(p, r);
+	r->out.result = _PNP_GetBlockedDriverInfo(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -4716,7 +4723,7 @@ static bool api_PNP_GetServerSideDeviceInstallFlags(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetServerSideDeviceInstallFlags, r);
 	}
 
-	_PNP_GetServerSideDeviceInstallFlags(p, r);
+	r->out.result = _PNP_GetServerSideDeviceInstallFlags(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
