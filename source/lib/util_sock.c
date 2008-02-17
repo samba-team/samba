@@ -1933,7 +1933,8 @@ int create_pipe_sock(const char *socket_dir,
 
 out_close:
 	SAFE_FREE(path);
-	close(sock);
+	if (sock != -1)
+		close(sock);
 
 out_umask:
 	umask(old_umask);
