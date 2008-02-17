@@ -128,29 +128,31 @@ static NTSTATUS append_info3_as_txt(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS append_info3_as_ndr(TALLOC_CTX *mem_ctx,
 				    struct winbindd_cli_state *state,
-				    NET_USER_INFO_3 *info3)
+				    struct netr_SamInfo3 *info3)
 {
-	prs_struct ps;
-	uint32 size;
-	if (!prs_init(&ps, 256 /* Random, non-zero number */, mem_ctx, MARSHALL)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	if (!net_io_user_info3("", info3, &ps, 1, 3, False)) {
-		prs_mem_free(&ps);
-		return NT_STATUS_UNSUCCESSFUL;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, info3,
+				       (ndr_push_flags_fn_t)ndr_push_netr_SamInfo3);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,("append_info3_as_ndr: failed to append\n"));
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
-	size = prs_data_size(&ps);
 	SAFE_FREE(state->response.extra_data.data);
-	state->response.extra_data.data = SMB_MALLOC(size);
+	state->response.extra_data.data = SMB_MALLOC(blob.length);
 	if (!state->response.extra_data.data) {
-		prs_mem_free(&ps);
+		data_blob_free(&blob);
 		return NT_STATUS_NO_MEMORY;
 	}
-	memset( state->response.extra_data.data, '\0', size );
-	prs_copy_all_data_out((char *)state->response.extra_data.data, &ps);
-	state->response.length += size;
-	prs_mem_free(&ps);
+
+	memset(state->response.extra_data.data, '\0', blob.length);
+	memcpy(state->response.extra_data.data, blob.data, blob.length);
+	state->response.length += blob.length;
+
+	data_blob_free(&blob);
+
 	return NT_STATUS_OK;
 }
 
