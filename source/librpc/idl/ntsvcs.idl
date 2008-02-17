@@ -72,7 +72,11 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x0b */
 
-	WERROR PNP_GetDeviceListSize();
+	WERROR PNP_GetDeviceListSize(
+		[in,unique] [string,charset(UTF16)] uint16 *devicename,
+		[out,ref] uint32 *size,
+		[in] uint32 flags
+		);
 
 	/******************/
 	/* Function: 0x0c */
