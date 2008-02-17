@@ -22,7 +22,9 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x02 */
 
-	WERROR PNP_GetVersion();
+	WERROR PNP_GetVersion(
+		[out,ref] uint16 *version
+		);
 
 	/******************/
 	/* Function: 0x03 */
