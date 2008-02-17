@@ -538,7 +538,7 @@ bool pdb_set_user_sid_from_string(struct samu *sampass, fstring u_sid, enum pdb_
  We never fill this in from a passdb backend but rather set is 
  based on the user's primary group membership.  However, the 
  struct samu* is overloaded and reused in domain memship code 
- as well and built from the NET_USER_INFO_3 or PAC so we 
+ as well and built from the netr_SamInfo3 or PAC so we
  have to allow the explicitly setting of a group SID here.
 ********************************************************************/
 
