@@ -835,22 +835,22 @@ failed:
 #endif
 }
 
- void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum, 
-				    PAC_SIGNATURE_DATA *sig)
+ void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum,
+				     struct PAC_SIGNATURE_DATA *sig)
 {
 #ifdef HAVE_CHECKSUM_IN_KRB5_CHECKSUM
 	cksum->cksumtype	= (krb5_cksumtype)sig->type;
-	cksum->checksum.length	= sig->signature.buf_len;
-	cksum->checksum.data	= sig->signature.buffer;
+	cksum->checksum.length	= sig->signature.length;
+	cksum->checksum.data	= sig->signature.data;
 #else
 	cksum->checksum_type	= (krb5_cksumtype)sig->type;
-	cksum->length		= sig->signature.buf_len;
-	cksum->contents		= sig->signature.buffer;
+	cksum->length		= sig->signature.length;
+	cksum->contents		= sig->signature.data;
 #endif
 }
 
  krb5_error_code smb_krb5_verify_checksum(krb5_context context,
-					 krb5_keyblock *keyblock,
+					  const krb5_keyblock *keyblock,
 					 krb5_keyusage usage,
 					 krb5_checksum *cksum,
 					 uint8 *data,
