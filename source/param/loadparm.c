@@ -91,6 +91,7 @@ struct loadparm_global
 	char *szPasswdChat;
 	char *szShareBackend;
 	char *szSAM_URL;
+	char *szIDMAP_URL;
 	char *szSECRETS_URL;
 	char *szSPOOLSS_URL;
 	char *szWINS_CONFIG_URL;
@@ -119,6 +120,7 @@ struct loadparm_global
 	char *szTemplateShell;
 	char *szTemplateHomedir;
 	int bWinbindSealedPipes;
+	int bIdmapTrustedOnly;
 	char *swat_directory;
 	int tls_enabled;
 	char *tls_keyfile;
@@ -384,6 +386,7 @@ static struct parm_struct parm_table[] = {
 	{"obey pam restrictions", P_BOOL, P_GLOBAL, GLOBAL_VAR(bObeyPamRestrictions), NULL, NULL},
 	{"password server", P_LIST, P_GLOBAL, GLOBAL_VAR(szPasswordServers), NULL, NULL},
 	{"sam database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSAM_URL), NULL, NULL},
+	{"idmap database", P_STRING, P_GLOBAL, GLOBAL_VAR(szIDMAP_URL), NULL, NULL},
 	{"secrets database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSECRETS_URL), NULL, NULL},
 	{"spoolss database", P_STRING, P_GLOBAL, GLOBAL_VAR(szSPOOLSS_URL), NULL, NULL},
 	{"wins config database", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINS_CONFIG_URL), NULL, NULL},
@@ -513,6 +516,7 @@ static struct parm_struct parm_table[] = {
 	{"winbind sealed pipes", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWinbindSealedPipes), NULL, NULL },
 	{"template shell", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateShell), NULL, NULL },
 	{"template homedir", P_STRING, P_GLOBAL, GLOBAL_VAR(szTemplateHomedir), NULL, NULL },
+	{"idmap trusted only", P_BOOL, P_GLOBAL, GLOBAL_VAR(bIdmapTrustedOnly), NULL, NULL},
 
 	{NULL, P_BOOL, P_NONE, 0, NULL, NULL}
 };
@@ -642,6 +646,7 @@ _PUBLIC_ FN_GLOBAL_STRING(lp_tls_crlfile, tls_crlfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_tls_dhpfile, tls_dhpfile)
 _PUBLIC_ FN_GLOBAL_STRING(lp_share_backend, szShareBackend)
 _PUBLIC_ FN_GLOBAL_STRING(lp_sam_url, szSAM_URL)
+_PUBLIC_ FN_GLOBAL_STRING(lp_idmap_url, szIDMAP_URL)
 _PUBLIC_ FN_GLOBAL_STRING(lp_secrets_url, szSECRETS_URL)
 _PUBLIC_ FN_GLOBAL_STRING(lp_spoolss_url, szSPOOLSS_URL)
 _PUBLIC_ FN_GLOBAL_STRING(lp_wins_config_url, szWINS_CONFIG_URL)
@@ -651,6 +656,7 @@ _PUBLIC_ FN_GLOBAL_CONST_STRING(lp_winbindd_socket_directory, szWinbinddSocketDi
 _PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_shell, szTemplateShell)
 _PUBLIC_ FN_GLOBAL_CONST_STRING(lp_template_homedir, szTemplateHomedir)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_winbind_sealed_pipes, bWinbindSealedPipes)
+_PUBLIC_ FN_GLOBAL_BOOL(lp_idmap_trusted_only, bIdmapTrustedOnly)
 _PUBLIC_ FN_GLOBAL_STRING(lp_private_dir, szPrivateDir)
 _PUBLIC_ FN_GLOBAL_STRING(lp_serverstring, szServerString)
 _PUBLIC_ FN_GLOBAL_STRING(lp_lockdir, szLockDir)
@@ -2305,6 +2311,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "auth methods:standalone", "anonymous sam_ignoredomain");
 	lp_do_global_parameter(lp_ctx, "private dir", dyn_PRIVATE_DIR);
 	lp_do_global_parameter(lp_ctx, "sam database", "sam.ldb");
+	lp_do_global_parameter(lp_ctx, "idmap database", "idmap.ldb");
 	lp_do_global_parameter(lp_ctx, "secrets database", "secrets.ldb");
 	lp_do_global_parameter(lp_ctx, "spoolss database", "spoolss.ldb");
 	lp_do_global_parameter(lp_ctx, "wins config database", "wins_config.ldb");
@@ -2380,6 +2387,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "winbindd socket directory", dyn_WINBINDD_SOCKET_DIR);
 	lp_do_global_parameter(lp_ctx, "template shell", "/bin/false");
 	lp_do_global_parameter(lp_ctx, "template homedir", "/home/%WORKGROUP%/%ACCOUNTNAME%");
+	lp_do_global_parameter(lp_ctx, "idmap trusted only", "False");
 
 	lp_do_global_parameter(lp_ctx, "client signing", "Yes");
 	lp_do_global_parameter(lp_ctx, "server signing", "auto");
