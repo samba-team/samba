@@ -498,8 +498,20 @@ _PUBLIC_ void ndr_print_PNP_GetDeviceList(struct ndr_print *ndr, const char *nam
 static enum ndr_err_code ndr_push_PNP_GetDeviceListSize(struct ndr_push *ndr, int flags, const struct PNP_GetDeviceListSize *r)
 {
 	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.devicename));
+		if (r->in.devicename) {
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.devicename, CH_UTF16)));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.devicename, CH_UTF16)));
+			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.devicename, ndr_charset_length(r->in.devicename, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.flags));
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.size == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.size));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -507,9 +519,42 @@ static enum ndr_err_code ndr_push_PNP_GetDeviceListSize(struct ndr_push *ndr, in
 
 static enum ndr_err_code ndr_pull_PNP_GetDeviceListSize(struct ndr_pull *ndr, int flags, struct PNP_GetDeviceListSize *r)
 {
+	uint32_t _ptr_devicename;
+	TALLOC_CTX *_mem_save_devicename_0;
+	TALLOC_CTX *_mem_save_size_0;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_devicename));
+		if (_ptr_devicename) {
+			NDR_PULL_ALLOC(ndr, r->in.devicename);
+		} else {
+			r->in.devicename = NULL;
+		}
+		if (r->in.devicename) {
+			_mem_save_devicename_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.devicename, 0);
+			NDR_CHECK(ndr_pull_array_size(ndr, &r->in.devicename));
+			NDR_CHECK(ndr_pull_array_length(ndr, &r->in.devicename));
+			if (ndr_get_array_length(ndr, &r->in.devicename) > ndr_get_array_size(ndr, &r->in.devicename)) {
+				return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.devicename), ndr_get_array_length(ndr, &r->in.devicename));
+			}
+			NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.devicename), sizeof(uint16_t)));
+			NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.devicename, ndr_get_array_length(ndr, &r->in.devicename), sizeof(uint16_t), CH_UTF16));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_devicename_0, 0);
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.flags));
+		NDR_PULL_ALLOC(ndr, r->out.size);
+		ZERO_STRUCTP(r->out.size);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.size);
+		}
+		_mem_save_size_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.size, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.size));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_size_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -525,11 +570,22 @@ _PUBLIC_ void ndr_print_PNP_GetDeviceListSize(struct ndr_print *ndr, const char 
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "PNP_GetDeviceListSize");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "devicename", r->in.devicename);
+		ndr->depth++;
+		if (r->in.devicename) {
+			ndr_print_string(ndr, "devicename", r->in.devicename);
+		}
+		ndr->depth--;
+		ndr_print_uint32(ndr, "flags", r->in.flags);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetDeviceListSize");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "size", r->out.size);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "size", *r->out.size);
+		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}

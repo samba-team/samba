@@ -39,6 +39,9 @@ NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
 				  WERROR *werror);
 NTSTATUS rpccli_PNP_GetDeviceListSize(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
+				      const char *devicename,
+				      uint32_t *size,
+				      uint32_t flags,
 				      WERROR *werror);
 NTSTATUS rpccli_PNP_GetDepth(struct rpc_pipe_client *cli,
 			     TALLOC_CTX *mem_ctx,
