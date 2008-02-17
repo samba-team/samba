@@ -81,27 +81,6 @@
 #define MSV1_0_RETURN_PROFILE_PATH		0x00000200
 #endif
 
-/* NEG_FLAGS */
-typedef struct neg_flags_info {
-	uint32 neg_flags; /* negotiated flags */
-} NEG_FLAGS;
-
-/* NET_Q_AUTH_3 */
-typedef struct net_q_auth3_info {
-	DOM_LOG_INFO clnt_id;	/* client identification info */
-	DOM_CHAL clnt_chal;		/* client-calculated credentials */
-	NEG_FLAGS clnt_flgs;	/* usually 0x6007 ffff */
-} NET_Q_AUTH_3;
-
-/* NET_R_AUTH_3 */
-typedef struct net_r_auth3_info {
-	DOM_CHAL srv_chal;	/* server-calculated credentials */
-	NEG_FLAGS srv_flgs;	/* usually 0x6007 ffff */
-	uint32 unknown;		/* 0x0000045b */
-	NTSTATUS status;	/* return code */
-} NET_R_AUTH_3;
-
-
 #define INTERACTIVE_LOGON_TYPE 1
 #define NET_LOGON_TYPE 2
 

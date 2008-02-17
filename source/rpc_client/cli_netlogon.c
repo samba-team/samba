@@ -112,58 +112,6 @@ password ?).\n", cli->cli->desthost ));
 /* instead of rpccli_net_auth2() we use rpccli_netr_ServerAuthenticate2() now -  gd */
 
 
-#if 0	/* not currebntly used */
-/****************************************************************************
- LSA Authenticate 3
-
- Send the client credential, receive back a server credential.
- The caller *must* ensure that the server credential returned matches the session key
- encrypt of the server challenge originally received. JRA.
-****************************************************************************/
-
-static NTSTATUS rpccli_net_auth3(struct rpc_pipe_client *cli,
-			TALLOC_CTX *mem_ctx,
-			const char *server_name,
-			const char *account_name,
-			uint16 sec_chan_type,
-			const char *computer_name,
-			uint32 *neg_flags_inout,
-			const DOM_CHAL *clnt_chal_in,
-			DOM_CHAL *srv_chal_out)
-{
-        prs_struct qbuf, rbuf;
-        NET_Q_AUTH_3 q;
-        NET_R_AUTH_3 r;
-        NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-        /* create and send a MSRPC command with api NET_AUTH2 */
-
-        DEBUG(4,("cli_net_auth3: srv:%s acct:%s sc:%x mc: %s chal %s neg: %x\n",
-		server_name, account_name, sec_chan_type, computer_name,
-		credstr(clnt_chal_in->data), *neg_flags_inout));
-
-        /* store the parameters */
-        init_q_auth_3(&q, server_name, account_name, sec_chan_type,
-			computer_name, clnt_chal_in, *neg_flags_inout);
-
-        /* turn parameters into data stream */
-
-	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_AUTH3,
-		q, r,
-		qbuf, rbuf,
-		net_io_q_auth_3,
-		net_io_r_auth_3,
-		NT_STATUS_UNSUCCESSFUL);
-
-        if (NT_STATUS_IS_OK(result)) {
-		*srv_chal_out = r.srv_chal;
-		*neg_flags_inout = r.srv_flgs.neg_flags;
-        }
-
-        return result;
-}
-#endif 	/* not currebntly used */
-
 /****************************************************************************
  Wrapper function that uses the auth and auth2 calls to set up a NETLOGON
  credentials chain. Stores the credentials in the struct dcinfo in the
