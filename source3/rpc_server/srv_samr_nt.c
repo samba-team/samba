@@ -2535,10 +2535,10 @@ static NTSTATUS get_user_info_21(TALLOC_CTX *mem_ctx,
 			      logon_hours,
 			      pdb_get_bad_password_count(pw),
 			      pdb_get_logon_count(pw),
-			      0, //country_code,
-			      0, //code_page,
-			      0, //nt_password_set,
-			      0, //lm_password_set,
+			      0, /* country_code */
+			      0, /* code_page */
+			      0, /* nt_password_set */
+			      0, /* lm_password_set */
 			      password_expired);
 	TALLOC_FREE(pw);
 
