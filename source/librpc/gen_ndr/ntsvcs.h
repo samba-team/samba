@@ -57,6 +57,11 @@ struct PNP_ReportLogOn {
 
 struct PNP_ValidateDeviceInstance {
 	struct {
+		const char *devicepath;/* [ref,charset(UTF16)] */
+		uint32_t flags;
+	} in;
+
+	struct {
 		WERROR result;
 	} out;
 

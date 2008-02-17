@@ -272,6 +272,14 @@ _PUBLIC_ void ndr_print_PNP_ReportLogOn(struct ndr_print *ndr, const char *name,
 static enum ndr_err_code ndr_push_PNP_ValidateDeviceInstance(struct ndr_push *ndr, int flags, const struct PNP_ValidateDeviceInstance *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.devicepath == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.devicepath, CH_UTF16)));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, 0));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, ndr_charset_length(r->in.devicepath, CH_UTF16)));
+		NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.devicepath, ndr_charset_length(r->in.devicepath, CH_UTF16), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.flags));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -282,6 +290,14 @@ static enum ndr_err_code ndr_push_PNP_ValidateDeviceInstance(struct ndr_push *nd
 static enum ndr_err_code ndr_pull_PNP_ValidateDeviceInstance(struct ndr_pull *ndr, int flags, struct PNP_ValidateDeviceInstance *r)
 {
 	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.devicepath));
+		NDR_CHECK(ndr_pull_array_length(ndr, &r->in.devicepath));
+		if (ndr_get_array_length(ndr, &r->in.devicepath) > ndr_get_array_size(ndr, &r->in.devicepath)) {
+			return ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, "Bad array size %u should exceed array length %u", ndr_get_array_size(ndr, &r->in.devicepath), ndr_get_array_length(ndr, &r->in.devicepath));
+		}
+		NDR_CHECK(ndr_check_string_terminator(ndr, ndr_get_array_length(ndr, &r->in.devicepath), sizeof(uint16_t)));
+		NDR_CHECK(ndr_pull_charset(ndr, NDR_SCALARS, &r->in.devicepath, ndr_get_array_length(ndr, &r->in.devicepath), sizeof(uint16_t), CH_UTF16));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.flags));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -299,6 +315,11 @@ _PUBLIC_ void ndr_print_PNP_ValidateDeviceInstance(struct ndr_print *ndr, const 
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "PNP_ValidateDeviceInstance");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "devicepath", r->in.devicepath);
+		ndr->depth++;
+		ndr_print_string(ndr, "devicepath", r->in.devicepath);
+		ndr->depth--;
+		ndr_print_uint32(ndr, "flags", r->in.flags);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {

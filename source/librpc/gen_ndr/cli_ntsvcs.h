@@ -22,6 +22,8 @@ NTSTATUS rpccli_PNP_ReportLogOn(struct rpc_pipe_client *cli,
 				WERROR *werror);
 NTSTATUS rpccli_PNP_ValidateDeviceInstance(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
+					   const char *devicepath,
+					   uint32_t flags,
 					   WERROR *werror);
 NTSTATUS rpccli_PNP_GetRootDeviceInstance(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
