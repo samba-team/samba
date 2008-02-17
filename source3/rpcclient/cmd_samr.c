@@ -1044,8 +1044,8 @@ static NTSTATUS cmd_samr_enum_domains(struct rpc_pipe_client *cli,
 		return NT_STATUS_OK;
 	}
 
-	if (argc > 2) {
-		sscanf(argv[2], "%x", &access_mask);
+	if (argc > 1) {
+		sscanf(argv[1], "%x", &access_mask);
 	}
 
 	/* Get sam policy handle */
@@ -1194,11 +1194,11 @@ static NTSTATUS cmd_samr_query_aliasinfo(struct rpc_pipe_client *cli,
 
 	sscanf(argv[2], "%i", &alias_rid);
 
-	if (argc > 3) {
+	if (argc > 2) {
 		level = atoi(argv[3]);
 	}
 
-	if (argc > 4) {
+	if (argc > 3) {
 		sscanf(argv[4], "%x", &access_mask);
 	}
 
