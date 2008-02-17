@@ -25,6 +25,27 @@
 /*******************************************************************
  ********************************************************************/
 
+static bool proxy_ntsvcs_call(pipes_struct *p, uint8_t opnum)
+{
+	struct api_struct *fns;
+	int n_fns;
+
+	ntsvcs_get_pipe_fns(&fns, &n_fns);
+
+	if (opnum >= n_fns) {
+		return false;
+	}
+
+	if (fns[opnum].opnum != opnum) {
+		smb_panic("NTSVCS function table not sorted");
+	}
+
+	return fns[opnum].fn(p);
+}
+
+/*******************************************************************
+ ********************************************************************/
+
 static bool api_ntsvcs_get_version(pipes_struct *p)
 {
 	NTSVCS_Q_GET_VERSION q_u;
@@ -206,13 +227,13 @@ static struct api_struct api_ntsvcs_cmds[] =
 };
 
 
-void ntsvcs_get_pipe_fns( struct api_struct **fns, int *n_fns )
+void ntsvcs2_get_pipe_fns( struct api_struct **fns, int *n_fns )
 {
 	*fns = api_ntsvcs_cmds;
 	*n_fns = sizeof(api_ntsvcs_cmds) / sizeof(struct api_struct);
 }
 
-NTSTATUS rpc_ntsvcs_init(void)
+NTSTATUS rpc_ntsvcs2_init(void)
 {
   return rpc_pipe_register_commands(SMB_RPC_INTERFACE_VERSION, "ntsvcs", "ntsvcs", api_ntsvcs_cmds,
 				    sizeof(api_ntsvcs_cmds) / sizeof(struct api_struct));
