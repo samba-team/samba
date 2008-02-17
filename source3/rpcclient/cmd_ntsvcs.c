@@ -75,10 +75,50 @@ static WERROR cmd_ntsvcs_validate_dev_inst(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_ntsvcs_get_device_list_size(struct rpc_pipe_client *cli,
+					      TALLOC_CTX *mem_ctx,
+					      int argc,
+					      const char **argv)
+{
+	NTSTATUS status;
+	WERROR werr;
+	const char *devicename = NULL;
+	uint32_t flags = 0;
+	uint32_t size = 0;
+
+	if (argc < 2 || argc > 4) {
+		printf("usage: %s [devicename] <flags>\n", argv[0]);
+		return WERR_OK;
+	}
+
+	devicename = argv[1];
+
+	if (argc >= 3) {
+		flags = atoi(argv[2]);
+	}
+
+	status = rpccli_PNP_GetDeviceListSize(cli, mem_ctx,
+					      devicename,
+					      &size,
+					      flags,
+					      &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	if (W_ERROR_IS_OK(werr)) {
+		printf("size: %d\n", size);
+	}
+
+	return werr;
+}
+
+
 struct cmd_set ntsvcs_commands[] = {
 
 	{ "NTSVCS" },
 	{ "ntsvcs_getversion", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_version, PI_NTSVCS, NULL, "Query NTSVCS version", "" },
 	{ "ntsvcs_validatedevinst", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_validate_dev_inst, PI_NTSVCS, NULL, "Query NTSVCS device instance", "" },
+	{ "ntsvcs_getdevlistsize", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_device_list_size, PI_NTSVCS, NULL, "Query NTSVCS get device list", "" },
 	{ NULL }
 };
