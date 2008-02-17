@@ -23,36 +23,6 @@
 #ifndef _RPC_NETLOGON_H /* _RPC_NETLOGON_H */
 #define _RPC_NETLOGON_H 
 
-
-/* NETLOGON pipe */
-#define NET_SAMLOGON		0x02
-#define NET_SAMLOGOFF		0x03
-#define NET_REQCHAL		0x04
-#define NET_AUTH		0x05
-#define NET_SRVPWSET		0x06
-#define NET_SAM_DELTAS		0x07
-#define NET_GETDCNAME		0x0b
-#define NET_LOGON_CTRL		0x0c
-#define NET_GETANYDCNAME	0x0d
-#define NET_AUTH2		0x0f
-#define NET_LOGON_CTRL2		0x0e
-#define NET_SAM_SYNC		0x10
-#define NET_TRUST_DOM_LIST	0x13
-#define NET_DSR_GETDCNAME	0x14
-#define NET_AUTH3		0x1a
-#define NET_DSR_GETDCNAMEEX	0x1b
-#define NET_DSR_GETSITENAME	0x1c
-#define NET_DSR_GETDCNAMEEX2	0x22
-#define NET_SAMLOGON_EX		0x27
-
-/* flags use when sending a NETLOGON_CONTROL request */
-
-#define NETLOGON_CONTROL_SYNC			0x2
-#define NETLOGON_CONTROL_REDISCOVER		0x5
-#define NETLOGON_CONTROL_TC_QUERY		0x6
-#define NETLOGON_CONTROL_TRANSPORT_NOTIFY	0x7
-#define NETLOGON_CONTROL_SET_DBFLAG		0xfffe
-
 /* Some flag values reverse engineered from NLTEST.EXE */
 /* used in the NETLOGON_CONTROL[2] reply */
 

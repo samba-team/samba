@@ -296,8 +296,8 @@ RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 # that requires knowledge of security contexts
 RPC_PARSE_OBJ1 = $(RPC_PARSE_OBJ0) rpc_parse/parse_sec.o
 
-RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o rpc_parse/parse_net.o rpc_parse/parse_srv.o
-RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o rpc_parse/parse_net.o rpc_parse/parse_srv.o \
+RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o rpc_parse/parse_srv.o
+RPC_PARSE_OBJ2 = rpc_parse/parse_rpc.o rpc_parse/parse_srv.o \
 		 rpc_client/init_netlogon.o \
 		 rpc_client/init_lsa.o
 
@@ -1052,7 +1052,7 @@ NTLM_AUTH_OBJ = ${NTLM_AUTH_OBJ1} $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
 		$(SECRETS_OBJ) $(SERVER_MUTEX_OBJ) $(LIBADS_SERVER_OBJ) \
 		$(RPC_PARSE_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
-		$(SMBLDAP_OBJ) $(DOSERR_OBJ) rpc_parse/parse_net.o $(LIBNMB_OBJ) \
+		$(SMBLDAP_OBJ) $(DOSERR_OBJ) $(LIBNMB_OBJ) \
 		$(LDB_OBJ) $(ERRORMAP_OBJ) $(WBCOMMON_OBJ) @LIBWBCLIENT_STATIC@ \
 		librpc/gen_ndr/ndr_samr.o \
 		librpc/gen_ndr/ndr_lsa.o \
