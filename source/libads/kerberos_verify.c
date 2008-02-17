@@ -309,7 +309,7 @@ NTSTATUS ads_verify_ticket(TALLOC_CTX *mem_ctx,
 			   time_t time_offset,
 			   const DATA_BLOB *ticket,
 			   char **principal,
-			   PAC_DATA **pac_data,
+			   struct PAC_DATA **pac_data,
 			   DATA_BLOB *ap_rep,
 			   DATA_BLOB *session_key,
 			   bool use_replay_cache)
