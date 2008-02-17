@@ -322,18 +322,6 @@ void creds_client_init(uint32 neg_flags,
  Check a credential returned by the server.
 ****************************************************************************/
 
-bool creds_client_check(const struct dcinfo *dc, const DOM_CHAL *rcv_srv_chal_in)
-{
-	if (memcmp(dc->srv_chal.data, rcv_srv_chal_in->data, 8)) {
-		DEBUG(5,("creds_client_check: challenge : %s\n", credstr(rcv_srv_chal_in->data)));
-		DEBUG(5,("calculated: %s\n", credstr(dc->srv_chal.data)));
-		DEBUG(0,("creds_client_check: credentials check failed.\n"));
-		return False;
-	}
-	DEBUG(10,("creds_client_check: credentials check OK.\n"));
-	return True;
-}
-
 bool netlogon_creds_client_check(const struct dcinfo *dc,
 				 const struct netr_Credential *rcv_srv_chal_in)
 {
@@ -359,17 +347,6 @@ bool netlogon_creds_client_check(const struct dcinfo *dc,
   produce the next authenticator in the sequence ready to send to
   the server
 ****************************************************************************/
-
-void creds_client_step(struct dcinfo *dc, DOM_CRED *next_cred_out)
-{
-        dc->sequence += 2;
-	creds_step(dc);
-	creds_reseed(dc);
-
-	memcpy(&next_cred_out->challenge.data, dc->clnt_chal.data,
-	       sizeof(next_cred_out->challenge.data));
-	next_cred_out->timestamp.time = dc->sequence;
-}
 
 void netlogon_creds_client_step(struct dcinfo *dc,
 				struct netr_Authenticator *next_cred_out)
