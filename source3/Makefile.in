@@ -288,7 +288,8 @@ LIBNDR_GEN_OBJ = librpc/gen_ndr/ndr_wkssvc.o \
 		 librpc/gen_ndr/ndr_samr.o \
 		 librpc/gen_ndr/ndr_dssetup.o \
 		 librpc/gen_ndr/ndr_notify.o \
-		 librpc/gen_ndr/ndr_xattr.o
+		 librpc/gen_ndr/ndr_xattr.o \
+		 librpc/gen_ndr/ndr_ntsvcs.o
 
 RPC_PARSE_OBJ0 = rpc_parse/parse_prs.o rpc_parse/parse_misc.o
 
@@ -429,6 +430,7 @@ LIBMSRPC_GEN_OBJ = librpc/gen_ndr/cli_lsa.o \
 		   librpc/gen_ndr/cli_netlogon.o \
 		   librpc/gen_ndr/cli_samr.o \
 		   librpc/gen_ndr/cli_dssetup.o \
+		   librpc/gen_ndr/cli_ntsvcs.o \
 		   $(LIBNDR_GEN_OBJ) \
 		   $(RPCCLIENT_NDR_OBJ)
 
@@ -1124,7 +1126,7 @@ modules: SHOWFLAGS $(MODULES)
 IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
 	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
 	epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl \
-	dssetup.idl krb5pac.idl
+	dssetup.idl krb5pac.idl ntsvcs.idl
 
 idl:
 	@IDL_FILES="$(IDL_FILES)" CPP="$(CPP)" PERL="$(PERL)" \

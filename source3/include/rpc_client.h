@@ -34,6 +34,7 @@
 #include "librpc/gen_ndr/cli_samr.h"
 #include "librpc/gen_ndr/cli_netlogon.h"
 #include "librpc/gen_ndr/cli_dssetup.h"
+#include "librpc/gen_ndr/cli_ntsvcs.h"
 
 /* macro to expand cookie-cutter code in cli_xxx() using rpc_api_pipe_req() */
 
