@@ -45,21 +45,20 @@ WERROR _PNP_GetVersion(pipes_struct *p,
 /********************************************************************
 ********************************************************************/
 
-WERROR _ntsvcs_get_device_list_size( pipes_struct *p, NTSVCS_Q_GET_DEVICE_LIST_SIZE *q_u, NTSVCS_R_GET_DEVICE_LIST_SIZE *r_u )
+WERROR _PNP_GetDeviceListSize(pipes_struct *p,
+			      struct PNP_GetDeviceListSize *r)
 {
-	fstring device;
 	char *devicepath;
 
-	if ( !q_u->devicename )
+	if (!r->in.devicename) {
 		return WERR_ACCESS_DENIED;
+	}
 
-	rpcstr_pull(device, q_u->devicename->buffer, sizeof(device), q_u->devicename->uni_str_len*2, 0);
-
-	if (!(devicepath = get_device_path(p->mem_ctx, device))) {
+	if (!(devicepath = get_device_path(p->mem_ctx, r->in.devicename))) {
 		return WERR_NOMEM;
 	}
 
-	r_u->size = strlen(devicepath) + 2;
+	*r->out.size = strlen(devicepath) + 2;
 
 	TALLOC_FREE(devicepath);
 
@@ -261,16 +260,6 @@ WERROR _PNP_EnumerateSubKeys(pipes_struct *p,
 
 WERROR _PNP_GetDeviceList(pipes_struct *p,
 			  struct PNP_GetDeviceList *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-WERROR _PNP_GetDeviceListSize(pipes_struct *p,
-			      struct PNP_GetDeviceListSize *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;

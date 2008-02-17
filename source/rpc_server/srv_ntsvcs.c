@@ -56,23 +56,7 @@ static bool api_ntsvcs_get_version(pipes_struct *p)
 
 static bool api_ntsvcs_get_device_list_size(pipes_struct *p)
 {
-	NTSVCS_Q_GET_DEVICE_LIST_SIZE q_u;
-	NTSVCS_R_GET_DEVICE_LIST_SIZE r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!ntsvcs_io_q_get_device_list_size("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _ntsvcs_get_device_list_size(p, &q_u, &r_u);
-
-	if(!ntsvcs_io_r_get_device_list_size("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_ntsvcs_call(p, NDR_PNP_GETDEVICELISTSIZE);
 }
 
 /*******************************************************************
