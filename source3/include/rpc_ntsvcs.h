@@ -62,17 +62,6 @@ typedef struct {
 
 /**************************/
 
-typedef struct {
-	UNISTR2 devicepath;
-	uint32 flags;
-} NTSVCS_Q_VALIDATE_DEVICE_INSTANCE;
-
-typedef struct {
-	WERROR status;
-} NTSVCS_R_VALIDATE_DEVICE_INSTANCE;
-
-/**************************/
-
 #define DEV_REGPROP_DESC	1
 
 typedef struct {
