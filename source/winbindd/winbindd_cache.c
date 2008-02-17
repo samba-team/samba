@@ -2248,7 +2248,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 /* Invalidate the getpwnam and getgroups entries for a winbindd domain */
 
 void wcache_invalidate_samlogon(struct winbindd_domain *domain, 
-				NET_USER_INFO_3 *info3)
+				struct netr_SamInfo3 *info3)
 {
 	struct winbind_cache *cache;
 
