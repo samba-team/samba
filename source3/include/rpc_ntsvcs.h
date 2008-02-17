@@ -36,19 +36,6 @@
 /**************************/
 
 typedef struct {
-	/* nothing in the request */
-	uint32 dummy;
-} NTSVCS_Q_GET_VERSION;
-
-typedef struct {
-	uint32 version;
-	WERROR status;
-} NTSVCS_R_GET_VERSION;
-
-
-/**************************/
-
-typedef struct {
 	UNISTR2 *devicename;
 	uint32 flags;
 } NTSVCS_Q_GET_DEVICE_LIST_SIZE;

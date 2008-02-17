@@ -25,43 +25,6 @@
 /*******************************************************************
 ********************************************************************/
 
-bool ntsvcs_io_q_get_version(const char *desc, NTSVCS_Q_GET_VERSION *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "ntsvcs_io_q_get_version");
-	depth++;
-
-	/* there is nothing to parse in this PDU */
-
-	return True;
-
-}
-
-/*******************************************************************
-********************************************************************/
-
-bool ntsvcs_io_r_get_version(const char *desc, NTSVCS_R_GET_VERSION *r_u, prs_struct *ps, int depth)
-{
-	if ( !r_u )
-		return False;
-
-	prs_debug(ps, depth, desc, "ntsvcs_io_r_get_version");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-		
-	if(!prs_uint32("version", ps, depth, &r_u->version))
-		return False;
-		
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
 /*******************************************************************
 ********************************************************************/
 
