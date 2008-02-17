@@ -136,3 +136,74 @@ void init_netr_SamInfo3(struct netr_SamInfo3 *r,
 	r->sids = sids;
 }
 
+/*******************************************************************
+ inits a structure.
+********************************************************************/
+
+void init_netr_IdentityInfo(struct netr_IdentityInfo *r,
+			    const char *domain_name,
+			    uint32_t parameter_control,
+			    uint32_t logon_id_low,
+			    uint32_t logon_id_high,
+			    const char *account_name,
+			    const char *workstation)
+{
+	init_lsa_String(&r->domain_name, domain_name);
+	r->parameter_control = parameter_control;
+	r->logon_id_low = logon_id_low;
+	r->logon_id_high = logon_id_high;
+	init_lsa_String(&r->account_name, account_name);
+	init_lsa_String(&r->workstation, workstation);
+}
+
+/*******************************************************************
+ inits a structure.
+********************************************************************/
+
+void init_netr_NetworkInfo(struct netr_NetworkInfo *r,
+			   const char *domain_name,
+			   uint32_t parameter_control,
+			   uint32_t logon_id_low,
+			   uint32_t logon_id_high,
+			   const char *account_name,
+			   const char *workstation,
+			   uint8_t challenge[8],
+			   struct netr_ChallengeResponse nt,
+			   struct netr_ChallengeResponse lm)
+{
+	init_netr_IdentityInfo(&r->identity_info,
+			       domain_name,
+			       parameter_control,
+			       logon_id_low,
+			       logon_id_high,
+			       account_name,
+			       workstation);
+	memcpy(r->challenge, challenge, 8);
+	r->nt = nt;
+	r->lm = lm;
+}
+
+/*******************************************************************
+ inits a structure.
+********************************************************************/
+
+void init_netr_PasswordInfo(struct netr_PasswordInfo *r,
+			    const char *domain_name,
+			    uint32_t parameter_control,
+			    uint32_t logon_id_low,
+			    uint32_t logon_id_high,
+			    const char *account_name,
+			    const char *workstation,
+			    struct samr_Password lmpassword,
+			    struct samr_Password ntpassword)
+{
+	init_netr_IdentityInfo(&r->identity_info,
+			       domain_name,
+			       parameter_control,
+			       logon_id_low,
+			       logon_id_high,
+			       account_name,
+			       workstation);
+	r->lmpassword = lmpassword;
+	r->ntpassword = ntpassword;
+}
