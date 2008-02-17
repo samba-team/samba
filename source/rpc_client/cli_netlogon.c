@@ -568,22 +568,36 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 					      const uint8 chal[8],
 					      DATA_BLOB lm_response,
 					      DATA_BLOB nt_response,
-					      NET_USER_INFO_3 *info3)
+					      struct netr_SamInfo3 **info3)
 {
-	prs_struct qbuf, rbuf;
-	NET_Q_SAM_LOGON_EX q;
-	NET_R_SAM_LOGON_EX r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	NET_ID_INFO_CTR ctr;
 	int validation_level = 3;
 	const char *workstation_name_slash;
 	const char *server_name_slash;
 	uint8 zeros[16];
-	int i;
+	union netr_LogonLevel *logon = NULL;
+	struct netr_NetworkInfo *network_info;
+	uint8_t authoritative;
+	union netr_Validation validation;
+	struct netr_ChallengeResponse lm;
+	struct netr_ChallengeResponse nt;
+	struct netr_UserSessionKey user_session_key;
+	struct netr_LMSessionKey lmsesskey;
+	uint32_t flags = 0;
+
+	*info3 = NULL;
 
 	ZERO_STRUCT(zeros);
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
+
+	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonLevel);
+	if (!logon) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	network_info = TALLOC_ZERO_P(mem_ctx, struct netr_NetworkInfo);
+	if (!network_info) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (server[0] != '\\' && server[1] != '\\') {
 		server_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", server);
@@ -604,49 +618,53 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 
 	/* Initialise input parameters */
 
-	q.validation_level = validation_level;
+	lm.data = lm_response.data;
+	lm.length = lm_response.length;
+	nt.data = nt_response.data;
+	nt.length = nt_response.length;
 
-        ctr.switch_value = NET_LOGON_TYPE;
+	init_netr_NetworkInfo(network_info,
+			      domain,
+			      logon_parameters,
+			      0xdead,
+			      0xbeef,
+			      username,
+			      workstation_name_slash,
+			      (uint8_t *) chal,
+			      nt,
+			      lm);
 
-	init_id_info2(&ctr.auth.id2, domain,
-		      logon_parameters, /* param_ctrl */
-		      0xdead, 0xbeef, /* LUID? */
-		      username, workstation_name_slash, (const uchar*)chal,
-		      lm_response.data, lm_response.length, nt_response.data,
-		      nt_response.length);
-
-        init_sam_info_ex(&q.sam_id, server_name_slash, global_myname(),
-			 NET_LOGON_TYPE, &ctr);
-
-        r.user = info3;
+	logon->network = network_info;
 
         /* Marshall data and send request */
 
-	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_SAMLOGON_EX,
-		   q, r, qbuf, rbuf,
-		   net_io_q_sam_logon_ex,
-		   net_io_r_sam_logon_ex,
-		   NT_STATUS_UNSUCCESSFUL);
-
-	if (memcmp(zeros, info3->user_sess_key, 16) != 0) {
-		SamOEMhash(info3->user_sess_key, cli->dc->sess_key, 16);
-	} else {
-		memset(info3->user_sess_key, '\0', 16);
+	result = rpccli_netr_LogonSamLogonEx(cli, mem_ctx,
+					     server_name_slash,
+					     global_myname(),
+					     NET_LOGON_TYPE,
+					     logon,
+					     validation_level,
+					     &validation,
+					     &authoritative,
+					     &flags);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
 	}
 
-	if (memcmp(zeros, info3->lm_sess_key, 8) != 0) {
-		SamOEMhash(info3->lm_sess_key, cli->dc->sess_key, 8);
-	} else {
-		memset(info3->lm_sess_key, '\0', 8);
+	user_session_key = validation.sam3->base.key;
+	lmsesskey = validation.sam3->base.LMSessKey;
+
+	if (memcmp(zeros, user_session_key.key, 16) != 0) {
+		SamOEMhash(user_session_key.key, cli->dc->sess_key, 16);
 	}
 
-	for (i=0; i < 7; i++) {
-		memset(&info3->unknown[i], '\0', 4);
+	if (memcmp(zeros, lmsesskey.key, 8) != 0) {
+		SamOEMhash(lmsesskey.key, cli->dc->sess_key, 8);
 	}
 
-        /* Return results */
+	*info3 = validation.sam3;
 
-	result = r.status;
+	return result;
 
         return result;
 }
