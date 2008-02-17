@@ -854,6 +854,13 @@ static bool api_PNP_GetDeviceListSize(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceListSize, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.size = talloc_zero(r, uint32_t);
+	if (r->out.size == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _PNP_GetDeviceListSize(p, r);
 
 	if (p->rng_fault_state) {

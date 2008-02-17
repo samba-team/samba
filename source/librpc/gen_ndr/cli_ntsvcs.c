@@ -476,12 +476,17 @@ NTSTATUS rpccli_PNP_GetDeviceList(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_PNP_GetDeviceListSize(struct rpc_pipe_client *cli,
 				      TALLOC_CTX *mem_ctx,
+				      const char *devicename,
+				      uint32_t *size,
+				      uint32_t flags,
 				      WERROR *werror)
 {
 	struct PNP_GetDeviceListSize r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.devicename = devicename;
+	r.in.flags = flags;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(PNP_GetDeviceListSize, &r);
@@ -507,6 +512,7 @@ NTSTATUS rpccli_PNP_GetDeviceListSize(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*size = *r.out.size;
 
 	/* Return result */
 	if (werror) {

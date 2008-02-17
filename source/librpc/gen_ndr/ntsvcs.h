@@ -102,6 +102,12 @@ struct PNP_GetDeviceList {
 
 struct PNP_GetDeviceListSize {
 	struct {
+		const char *devicename;/* [unique,charset(UTF16)] */
+		uint32_t flags;
+	} in;
+
+	struct {
+		uint32_t *size;/* [ref] */
 		WERROR result;
 	} out;
 
