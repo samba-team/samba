@@ -1035,11 +1035,11 @@ import "security.idl";
 	/* Function 0x4c */
 
 	[public] NTSTATUS lsa_LookupSids3(
-		[in]         lsa_SidArray *sids,
-		[out,unique] lsa_RefDomainList *domains,
-		[in,out]     lsa_TransNameArray2 *names,
+		[in,ref]     lsa_SidArray *sids,
+		[out,ref]    lsa_RefDomainList **domains,
+		[in,out,ref] lsa_TransNameArray2 *names,
 		[in]         uint16 level,
-		[in,out]     uint32 *count,
+		[in,out,ref] uint32 *count,
 		[in]         uint32 unknown1,
 		[in]         uint32 unknown2
 		);
