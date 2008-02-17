@@ -338,15 +338,6 @@ typedef struct net_id_info_ctr_info {
 	} auth;
 } NET_ID_INFO_CTR;
 
-/* SAM_INFO - sam logon/off id structure */
-typedef struct sam_info {
-	DOM_CLNT_INFO2  client;
-	uint32          ptr_rtn_cred; /* pointer to return credentials */
-	DOM_CRED        rtn_cred; /* return credentials */
-	uint16          logon_level;
-	NET_ID_INFO_CTR *ctr;
-} DOM_SAM_INFO;
-
 /* SAM_INFO - sam logon/off id structure - no creds */
 typedef struct sam_info_ex {
 	DOM_CLNT_SRV	client;
@@ -354,31 +345,12 @@ typedef struct sam_info_ex {
 	NET_ID_INFO_CTR *ctr;
 } DOM_SAM_INFO_EX;
 
-/* NET_Q_SAM_LOGON */
-typedef struct net_q_sam_logon_info {
-	DOM_SAM_INFO sam_id;
-	uint16          validation_level;
-} NET_Q_SAM_LOGON;
-
 /* NET_Q_SAM_LOGON_EX */
 typedef struct net_q_sam_logon_info_ex {
 	DOM_SAM_INFO_EX sam_id;
 	uint16          validation_level;
 	uint32 flags;
 } NET_Q_SAM_LOGON_EX;
-
-/* NET_R_SAM_LOGON */
-typedef struct net_r_sam_logon_info {
-	uint32 buffer_creds; /* undocumented buffer pointer */
-	DOM_CRED srv_creds; /* server credentials.  server time stamp appears to be ignored. */
-    
-	uint16 switch_value; /* 3 - indicates type of USER INFO */
-	NET_USER_INFO_3 *user;
-
-	uint32 auth_resp; /* 1 - Authoritative response; 0 - Non-Auth? */
-
-	NTSTATUS status; /* return code */
-} NET_R_SAM_LOGON;
 
 /* NET_R_SAM_LOGON_EX */
 typedef struct net_r_sam_logon_info_ex {
