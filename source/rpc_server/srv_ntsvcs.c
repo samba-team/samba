@@ -48,23 +48,7 @@ static bool proxy_ntsvcs_call(pipes_struct *p, uint8_t opnum)
 
 static bool api_ntsvcs_get_version(pipes_struct *p)
 {
-	NTSVCS_Q_GET_VERSION q_u;
-	NTSVCS_R_GET_VERSION r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!ntsvcs_io_q_get_version("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _ntsvcs_get_version(p, &q_u, &r_u);
-
-	if(!ntsvcs_io_r_get_version("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_ntsvcs_call(p, NDR_PNP_GETVERSION);
 }
 
 /*******************************************************************
