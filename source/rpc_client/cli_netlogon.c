@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    NT Domain Authentication SMB / MSRPC client
    Copyright (C) Andrew Tridgell 1992-2000
@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -34,12 +34,12 @@
 LSA Authenticate 2
 
 Send the client credential, receive back a server credential.
-Ensure that the server credential returned matches the session key 
+Ensure that the server credential returned matches the session key
 encrypt of the server challenge originally received. JRA.
 ****************************************************************************/
 
-  NTSTATUS rpccli_net_auth2(struct rpc_pipe_client *cli, 
-		       uint16 sec_chan, 
+  NTSTATUS rpccli_net_auth2(struct rpc_pipe_client *cli,
+		       uint16 sec_chan,
 		       uint32 *neg_flags, DOM_CHAL *srv_chal)
 {
         prs_struct qbuf, rbuf;
@@ -52,7 +52,7 @@ encrypt of the server challenge originally received. JRA.
 		fstr_sprintf( machine_acct, "%s$", lp_workgroup() );
 	else
 		fstrcpy( machine_acct, cli->mach_acct );
-	
+
         /* create and send a MSRPC command with api NET_AUTH2 */
 
         DEBUG(4,("cli_net_auth2: srv:%s acct:%s sc:%x mc: %s chal %s neg: %x\n",
@@ -61,8 +61,8 @@ encrypt of the server challenge originally received. JRA.
 
         /* store the parameters */
 
-        init_q_auth_2(&q, cli->srv_name_slash, machine_acct, 
-                      sec_chan, global_myname(), &cli->clnt_cred.challenge, 
+        init_q_auth_2(&q, cli->srv_name_slash, machine_acct,
+                      sec_chan, global_myname(), &cli->clnt_cred.challenge,
                       *neg_flags);
 
         /* turn parameters into data stream */
@@ -78,7 +78,7 @@ encrypt of the server challenge originally received. JRA.
 
         if (NT_STATUS_IS_OK(result)) {
                 UTIME zerotime;
-                
+
                 /*
                  * Check the returned value using the initial
                  * server received challenge.
@@ -105,7 +105,7 @@ password ?).\n", cli->cli->desthost ));
  LSA Authenticate 2
 
  Send the client credential, receive back a server credential.
- The caller *must* ensure that the server credential returned matches the session key 
+ The caller *must* ensure that the server credential returned matches the session key
  encrypt of the server challenge originally received. JRA.
 ****************************************************************************/
 
@@ -117,11 +117,11 @@ password ?).\n", cli->cli->desthost ));
  LSA Authenticate 3
 
  Send the client credential, receive back a server credential.
- The caller *must* ensure that the server credential returned matches the session key 
+ The caller *must* ensure that the server credential returned matches the session key
  encrypt of the server challenge originally received. JRA.
 ****************************************************************************/
 
-static NTSTATUS rpccli_net_auth3(struct rpc_pipe_client *cli, 
+static NTSTATUS rpccli_net_auth3(struct rpc_pipe_client *cli,
 			TALLOC_CTX *mem_ctx,
 			const char *server_name,
 			const char *account_name,
@@ -225,9 +225,9 @@ NTSTATUS rpccli_netlogon_setup_creds(struct rpc_pipe_client *cli,
 			machine_pwd,
 			&clnt_chal_send);
 
-        /*
-         * Send client auth-2 challenge and receive server repy.
-         */
+	/*
+	 * Send client auth-2 challenge and receive server repy.
+	 */
 
 	result = rpccli_netr_ServerAuthenticate2(cli, cli->mem_ctx,
 						 dc->remote_machine,
@@ -274,20 +274,23 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 				   const char *workstation,
 				   int logon_type)
 {
-	prs_struct qbuf, rbuf;
-	NET_Q_SAM_LOGON q;
-	NET_R_SAM_LOGON r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_CRED clnt_creds;
-	DOM_CRED ret_creds;
-        NET_ID_INFO_CTR ctr;
-        NET_USER_INFO_3 user;
-        int validation_level = 3;
+	struct netr_Authenticator clnt_creds;
+	struct netr_Authenticator ret_creds;
+	union netr_LogonLevel *logon;
+	union netr_Validation validation;
+	uint8_t authoritative;
+	int validation_level = 3;
 	fstring clnt_name_slash;
+	uint8 zeros[16];
 
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
 	ZERO_STRUCT(ret_creds);
+	ZERO_STRUCT(zeros);
+
+	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonLevel);
+	if (!logon) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	if (workstation) {
 		fstr_sprintf( clnt_name_slash, "\\\\%s", workstation );
@@ -295,85 +298,140 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 		fstr_sprintf( clnt_name_slash, "\\\\%s", global_myname() );
 	}
 
-        /* Initialise input parameters */
+	/* Initialise input parameters */
 
-	creds_client_step(cli->dc, &clnt_creds);
+	netlogon_creds_client_step(cli->dc, &clnt_creds);
 
-        q.validation_level = validation_level;
+	switch (logon_type) {
+	case INTERACTIVE_LOGON_TYPE: {
 
-        ctr.switch_value = logon_type;
+		struct netr_PasswordInfo *password_info;
 
-        switch (logon_type) {
-        case INTERACTIVE_LOGON_TYPE: {
-                unsigned char lm_owf_user_pwd[16], nt_owf_user_pwd[16];
+		struct samr_Password lmpassword;
+		struct samr_Password ntpassword;
 
-                nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
+		unsigned char lm_owf_user_pwd[16], nt_owf_user_pwd[16];
 
-                init_id_info1(&ctr.auth.id1, domain, 
-			      logon_parameters, /* param_ctrl */
-                              0xdead, 0xbeef, /* LUID? */
-                              username, clnt_name_slash,
-                              (const char *)cli->dc->sess_key, lm_owf_user_pwd,
-                              nt_owf_user_pwd);
+		unsigned char lm_owf[16];
+		unsigned char nt_owf[16];
+		unsigned char key[16];
 
-                break;
-        }
-        case NET_LOGON_TYPE: {
-                uint8 chal[8];
-                unsigned char local_lm_response[24];
-                unsigned char local_nt_response[24];
+		password_info = TALLOC_ZERO_P(mem_ctx, struct netr_PasswordInfo);
+		if (!password_info) {
+			return NT_STATUS_NO_MEMORY;
+		}
 
-                generate_random_buffer(chal, 8);
+		nt_lm_owf_gen(password, nt_owf_user_pwd, lm_owf_user_pwd);
 
-                SMBencrypt(password, chal, local_lm_response);
-                SMBNTencrypt(password, chal, local_nt_response);
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("lm cypher:"));
+		dump_data(100, lm_owf_user_pwd, 16);
 
-                init_id_info2(&ctr.auth.id2, domain, 
-			      logon_parameters, /* param_ctrl */
-                              0xdead, 0xbeef, /* LUID? */
-                              username, clnt_name_slash, chal,
-                              local_lm_response, 24, local_nt_response, 24);
-                break;
-        }
-        default:
-                DEBUG(0, ("switch value %d not supported\n", 
-                          ctr.switch_value));
-                return NT_STATUS_INVALID_INFO_CLASS;
-        }
+		DEBUG(100,("nt cypher:"));
+		dump_data(100, nt_owf_user_pwd, 16);
+#endif
+		memset(key, 0, 16);
+		memcpy(key, cli->dc->sess_key, 8);
 
-        r.user = &user;
+		memcpy(lm_owf, lm_owf_user_pwd, 16);
+		SamOEMhash(lm_owf, key, 16);
+		memcpy(nt_owf, nt_owf_user_pwd, 16);
+		SamOEMhash(nt_owf, key, 16);
 
-        init_sam_info(&q.sam_id, cli->dc->remote_machine, global_myname(),
-                      &clnt_creds, &ret_creds, logon_type,
-                      &ctr);
+#ifdef DEBUG_PASSWORD
+		DEBUG(100,("encrypt of lm owf password:"));
+		dump_data(100, lm_owf, 16);
 
-        /* Marshall data and send request */
+		DEBUG(100,("encrypt of nt owf password:"));
+		dump_data(100, nt_owf, 16);
+#endif
+		memcpy(lmpassword.hash, lm_owf, 16);
+		memcpy(ntpassword.hash, nt_owf, 16);
 
-	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_SAMLOGON,
-		q, r,
-		qbuf, rbuf,
-		net_io_q_sam_logon,
-		net_io_r_sam_logon,
-		NT_STATUS_UNSUCCESSFUL);
+		init_netr_PasswordInfo(password_info,
+				       domain,
+				       logon_parameters,
+				       0xdead,
+				       0xbeef,
+				       username,
+				       clnt_name_slash,
+				       lmpassword,
+				       ntpassword);
 
-        /* Return results */
+		logon->password = password_info;
 
-	result = r.status;
+		break;
+	}
+	case NET_LOGON_TYPE: {
+		struct netr_NetworkInfo *network_info;
+		uint8 chal[8];
+		unsigned char local_lm_response[24];
+		unsigned char local_nt_response[24];
+		struct netr_ChallengeResponse lm;
+		struct netr_ChallengeResponse nt;
 
-	if (r.buffer_creds) {
+		network_info = TALLOC_ZERO_P(mem_ctx, struct netr_NetworkInfo);
+		if (!network_info) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		generate_random_buffer(chal, 8);
+
+		SMBencrypt(password, chal, local_lm_response);
+		SMBNTencrypt(password, chal, local_nt_response);
+
+		lm.length = 24;
+		lm.data = local_lm_response;
+
+		nt.length = 24;
+		nt.data = local_nt_response;
+
+		init_netr_NetworkInfo(network_info,
+				      domain,
+				      logon_parameters,
+				      0xdead,
+				      0xbeef,
+				      username,
+				      clnt_name_slash,
+				      chal,
+				      nt,
+				      lm);
+
+		logon->network = network_info;
+
+		break;
+	}
+	default:
+		DEBUG(0, ("switch value %d not supported\n",
+			logon_type));
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	result = rpccli_netr_LogonSamLogon(cli, mem_ctx,
+					   cli->dc->remote_machine,
+					   global_myname(),
+					   &clnt_creds,
+					   &ret_creds,
+					   logon_type,
+					   logon,
+					   validation_level,
+					   &validation,
+					   &authoritative);
+
+	if (memcmp(zeros, &ret_creds.cred.data, sizeof(ret_creds.cred.data)) != 0) {
 		/* Check returned credentials if present. */
-		if (!creds_client_check(cli->dc, &r.srv_creds.challenge)) {
+		if (!netlogon_creds_client_check(cli->dc, &ret_creds.cred)) {
 			DEBUG(0,("rpccli_netlogon_sam_logon: credentials chain check failed\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
-        return result;
+	return result;
 }
 
 
-/** 
- * Logon domain user with an 'network' SAM logon 
+/**
+ * Logon domain user with an 'network' SAM logon
  *
  * @param info3 Pointer to a NET_USER_INFO_3 already allocated by the caller.
  **/
@@ -384,31 +442,44 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 					   const char *server,
 					   const char *username,
 					   const char *domain,
-					   const char *workstation, 
-					   const uint8 chal[8], 
+					   const char *workstation,
+					   const uint8 chal[8],
 					   DATA_BLOB lm_response,
 					   DATA_BLOB nt_response,
-					   NET_USER_INFO_3 *info3)
+					   struct netr_SamInfo3 **info3)
 {
-	prs_struct qbuf, rbuf;
-	NET_Q_SAM_LOGON q;
-	NET_R_SAM_LOGON r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	NET_ID_INFO_CTR ctr;
 	int validation_level = 3;
 	const char *workstation_name_slash;
 	const char *server_name_slash;
 	uint8 zeros[16];
-	DOM_CRED clnt_creds;
-	DOM_CRED ret_creds;
-	int i;
+	struct netr_Authenticator clnt_creds;
+	struct netr_Authenticator ret_creds;
+	union netr_LogonLevel *logon = NULL;
+	struct netr_NetworkInfo *network_info;
+	uint8_t authoritative;
+	union netr_Validation validation;
+	struct netr_ChallengeResponse lm;
+	struct netr_ChallengeResponse nt;
+	struct netr_UserSessionKey user_session_key;
+	struct netr_LMSessionKey lmsesskey;
+
+	*info3 = NULL;
 
 	ZERO_STRUCT(zeros);
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
 	ZERO_STRUCT(ret_creds);
 
-	creds_client_step(cli->dc, &clnt_creds);
+	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonLevel);
+	if (!logon) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	network_info = TALLOC_ZERO_P(mem_ctx, struct netr_NetworkInfo);
+	if (!network_info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	netlogon_creds_client_step(cli->dc, &clnt_creds);
 
 	if (server[0] != '\\' && server[1] != '\\') {
 		server_name_slash = talloc_asprintf(mem_ctx, "\\\\%s", server);
@@ -429,60 +500,62 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 
 	/* Initialise input parameters */
 
-	q.validation_level = validation_level;
+	lm.data = lm_response.data;
+	lm.length = lm_response.length;
+	nt.data = nt_response.data;
+	nt.length = nt_response.length;
 
-        ctr.switch_value = NET_LOGON_TYPE;
+	init_netr_NetworkInfo(network_info,
+			      domain,
+			      logon_parameters,
+			      0xdead,
+			      0xbeef,
+			      username,
+			      workstation_name_slash,
+			      (uint8_t *) chal,
+			      nt,
+			      lm);
 
-	init_id_info2(&ctr.auth.id2, domain,
-		      logon_parameters, /* param_ctrl */
-		      0xdead, 0xbeef, /* LUID? */
-		      username, workstation_name_slash, (const uchar*)chal,
-		      lm_response.data, lm_response.length, nt_response.data, nt_response.length);
- 
-        init_sam_info(&q.sam_id, server_name_slash, global_myname(),
-                      &clnt_creds, &ret_creds, NET_LOGON_TYPE,
-                      &ctr);
+	logon->network = network_info;
 
-        r.user = info3;
+	/* Marshall data and send request */
 
-        /* Marshall data and send request */
-
-	CLI_DO_RPC(cli, mem_ctx, PI_NETLOGON, NET_SAMLOGON,
-		q, r,
-		qbuf, rbuf,
-		net_io_q_sam_logon,
-		net_io_r_sam_logon,
-		NT_STATUS_UNSUCCESSFUL);
-
-	if (memcmp(zeros, info3->user_sess_key, 16) != 0) {
-		SamOEMhash(info3->user_sess_key, cli->dc->sess_key, 16);
-	} else {
-		memset(info3->user_sess_key, '\0', 16);
+	result = rpccli_netr_LogonSamLogon(cli, mem_ctx,
+					   server_name_slash,
+					   global_myname(),
+					   &clnt_creds,
+					   &ret_creds,
+					   NET_LOGON_TYPE,
+					   logon,
+					   validation_level,
+					   &validation,
+					   &authoritative);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
 	}
 
-	if (memcmp(zeros, info3->lm_sess_key, 8) != 0) {
-		SamOEMhash(info3->lm_sess_key, cli->dc->sess_key, 8);
-	} else {
-		memset(info3->lm_sess_key, '\0', 8);
+	user_session_key = validation.sam3->base.key;
+	lmsesskey = validation.sam3->base.LMSessKey;
+
+	if (memcmp(zeros, user_session_key.key, 16) != 0) {
+		SamOEMhash(user_session_key.key, cli->dc->sess_key, 16);
 	}
 
-	for (i=0; i < 7; i++) {
-		memset(&info3->unknown[i], '\0', 4);
+	if (memcmp(zeros, lmsesskey.key, 8) != 0) {
+		SamOEMhash(lmsesskey.key, cli->dc->sess_key, 8);
 	}
 
-        /* Return results */
-
-	result = r.status;
-
-	if (r.buffer_creds) {
+	if (memcmp(zeros, ret_creds.cred.data, sizeof(ret_creds.cred.data)) != 0) {
 		/* Check returned credentials if present. */
-		if (!creds_client_check(cli->dc, &r.srv_creds.challenge)) {
+		if (!netlogon_creds_client_check(cli->dc, &ret_creds.cred)) {
 			DEBUG(0,("rpccli_netlogon_sam_network_logon: credentials chain check failed\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
-        return result;
+	*info3 = validation.sam3;
+
+	return result;
 }
 
 NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
@@ -491,8 +564,8 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 					      const char *server,
 					      const char *username,
 					      const char *domain,
-					      const char *workstation, 
-					      const uint8 chal[8], 
+					      const char *workstation,
+					      const uint8 chal[8],
 					      DATA_BLOB lm_response,
 					      DATA_BLOB nt_response,
 					      NET_USER_INFO_3 *info3)
@@ -541,7 +614,7 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 		      username, workstation_name_slash, (const uchar*)chal,
 		      lm_response.data, lm_response.length, nt_response.data,
 		      nt_response.length);
- 
+
         init_sam_info_ex(&q.sam_id, server_name_slash, global_myname(),
 			 NET_LOGON_TYPE, &ctr);
 
