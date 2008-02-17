@@ -262,12 +262,16 @@ NTSTATUS rpccli_PNP_ReportLogOn(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_PNP_ValidateDeviceInstance(struct rpc_pipe_client *cli,
 					   TALLOC_CTX *mem_ctx,
+					   const char *devicepath,
+					   uint32_t flags,
 					   WERROR *werror)
 {
 	struct PNP_ValidateDeviceInstance r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.devicepath = devicepath;
+	r.in.flags = flags;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(PNP_ValidateDeviceInstance, &r);
