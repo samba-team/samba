@@ -34,10 +34,11 @@ static char* get_device_path(TALLOC_CTX *mem_ctx, const char *device )
 /********************************************************************
 ********************************************************************/
 
-WERROR _ntsvcs_get_version( pipes_struct *p, NTSVCS_Q_GET_VERSION *q_u, NTSVCS_R_GET_VERSION *r_u )
+WERROR _PNP_GetVersion(pipes_struct *p,
+		       struct PNP_GetVersion *r)
 {
-	r_u->version = 0x00000400;	/* no idea what this means */
-		
+	*r->out.version = 0x0400;      /* no idea what this means */
+
 	return WERR_OK;
 }
 
@@ -189,16 +190,6 @@ WERROR _PNP_Disconnect(pipes_struct *p,
 
 WERROR _PNP_Connect(pipes_struct *p,
 		    struct PNP_Connect *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-WERROR _PNP_GetVersion(pipes_struct *p,
-		       struct PNP_GetVersion *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
