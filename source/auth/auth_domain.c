@@ -189,7 +189,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 					struct sockaddr_storage *dc_ss)
 
 {
-	NET_USER_INFO_3 info3;
+	struct netr_SamInfo3 *info3 = NULL;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
 	NTSTATUS nt_status = NT_STATUS_NO_LOGON_SERVERS;
@@ -226,8 +226,6 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	/* store a successful connection */
 
 	saf_store( domain, cli->desthost );
-
-	ZERO_STRUCT(info3);
 
         /*
          * If this call succeeds, we now have lots of info about the user
@@ -267,7 +265,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 						user_info->smb_name,
 						domain,
 						server_info,
-						&info3);
+						info3);
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			if (user_info->was_mapped) {
@@ -281,12 +279,14 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 				if (  !NT_STATUS_IS_OK(nt_status)) {
 					DEBUG(1, ("PAM account restriction prevents user login\n"));
 					cli_shutdown(cli);
+					TALLOC_FREE(info3);
 					return nt_status;
 				}
 			}
 		}
 
-		netsamlogon_cache_store( user_info->smb_name, &info3 );
+		netsamlogon_cache_store(user_info->smb_name, info3);
+		TALLOC_FREE(info3);
 	}
 
 	/* Note - once the cli stream is shutdown the mem_ctx used
