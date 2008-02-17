@@ -410,11 +410,11 @@ import "security.idl";
 
 	[public] NTSTATUS lsa_LookupSids (
 		[in]         policy_handle *handle,
-		[in]         lsa_SidArray *sids,
-		[out,unique]        lsa_RefDomainList *domains,
-		[in,out]     lsa_TransNameArray *names,
+		[in,ref]     lsa_SidArray *sids,
+		[out,ref]    lsa_RefDomainList **domains,
+		[in,out,ref] lsa_TransNameArray *names,
 		[in]         uint16 level,
-		[in,out] uint32 *count
+		[in,out,ref] uint32 *count
 		);
 
 
