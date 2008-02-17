@@ -158,6 +158,17 @@ void init_netr_IdentityInfo(struct netr_IdentityInfo *r,
 
 /*******************************************************************
  inits a structure.
+ This is a network logon packet. The log_id parameters
+ are what an NT server would generate for LUID once the
+ user is logged on. I don't think we care about them.
+
+ Note that this has no access to the NT and LM hashed passwords,
+ so it forwards the challenge, and the NT and LM responses (24
+ bytes each) over the secure channel to the Domain controller
+ for it to say yea or nay. This is the preferred method of
+ checking for a logon as it doesn't export the password
+ hashes to anyone who has compromised the secure channel. JRA.
+
 ********************************************************************/
 
 void init_netr_NetworkInfo(struct netr_NetworkInfo *r,
