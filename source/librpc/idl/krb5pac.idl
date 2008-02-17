@@ -95,4 +95,10 @@ interface krb5pac
 	void decode_login_info(
 		[in] PAC_LOGON_INFO logon_info
 		);
+
+	/* used for samba3 netsamlogon cache */
+	typedef [public] struct {
+		time_t timestamp;
+		netr_SamInfo3 info3;
+	} netsamlogoncache_entry;
 }
