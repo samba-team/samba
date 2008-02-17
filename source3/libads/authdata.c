@@ -643,11 +643,11 @@ static bool pac_io_pac_data(const char *desc, PAC_DATA *data,
 	return True;
 }
 
-static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx, 
-				   DATA_BLOB pac_data,
-				   PAC_SIGNATURE_DATA *sig,
-				   krb5_context context,
-				   krb5_keyblock *keyblock)
+static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
+					  DATA_BLOB pac_data,
+					  struct PAC_SIGNATURE_DATA *sig,
+					  krb5_context context,
+					  krb5_keyblock *keyblock)
 {
 	krb5_error_code ret;
 	krb5_checksum cksum;
@@ -663,299 +663,289 @@ static NTSTATUS check_pac_checksum(TALLOC_CTX *mem_ctx,
 #error UNKNOWN_KRB5_KEYUSAGE
 #endif
 
-	ret = smb_krb5_verify_checksum(context, 
-				       keyblock, 
-				       usage, 
+	ret = smb_krb5_verify_checksum(context,
+				       keyblock,
+				       usage,
 				       &cksum,
-				       pac_data.data, 
+				       pac_data.data,
 				       pac_data.length);
 
 	if (ret) {
-		DEBUG(2,("check_pac_checksum: PAC Verification failed: %s (%d)\n", 
+		DEBUG(2,("check_pac_checksum: PAC Verification failed: %s (%d)\n",
 			error_message(ret), ret));
-		return NT_STATUS_ACCESS_DENIED;
+		return ret;
 	}
 
-	return NT_STATUS_OK;
+	return ret;
 }
 
-static NTSTATUS parse_pac_data(TALLOC_CTX *mem_ctx, DATA_BLOB *pac_data_blob, PAC_DATA *pac_data)
-{
-	prs_struct ps;
-	PAC_DATA *my_pac;
-
-	if (!prs_init(&ps, pac_data_blob->length, mem_ctx, UNMARSHALL))
-		return NT_STATUS_NO_MEMORY;
-
-	if (!prs_copy_data_in(&ps, (char *)pac_data_blob->data, pac_data_blob->length))
-		return NT_STATUS_INVALID_PARAMETER;
-
-	prs_set_offset(&ps, 0);
-
-	my_pac = TALLOC_ZERO_P(mem_ctx, PAC_DATA);
-	if (!pac_io_pac_data("pac data", my_pac, &ps, 0))
-		return NT_STATUS_INVALID_PARAMETER;
-
-	prs_mem_free(&ps);
-
-	*pac_data = *my_pac;
-
-	return NT_STATUS_OK;
-}
-
-/* just for debugging, will be removed later - Guenther */
-char *pac_group_attr_string(uint32 attr)
-{
-	fstring name = "";
-
-	if (!attr)
-		return NULL;
-
-	if (attr & SE_GROUP_MANDATORY)			fstrcat(name, "SE_GROUP_MANDATORY ");
-	if (attr & SE_GROUP_ENABLED_BY_DEFAULT)		fstrcat(name, "SE_GROUP_ENABLED_BY_DEFAULT ");
-	if (attr & SE_GROUP_ENABLED)			fstrcat(name, "SE_GROUP_ENABLED ");
-	if (attr & SE_GROUP_OWNER)			fstrcat(name, "SE_GROUP_OWNER ");
-	if (attr & SE_GROUP_USE_FOR_DENY_ONLY)		fstrcat(name, "SE_GROUP_USE_FOR_DENY_ONLY ");
-	if (attr & SE_GROUP_LOGON_ID)			fstrcat(name, "SE_GROUP_LOGON_ID ");
-	if (attr & SE_GROUP_RESOURCE)			fstrcat(name, "SE_GROUP_RESOURCE ");
-
-	return SMB_STRDUP(name);
-}
-
-/* just for debugging, will be removed later - Guenther */
-void dump_pac_logon_info(int lvl, PAC_LOGON_INFO *logon_info)
-{
-	DOM_SID dom_sid, res_group_dom_sid;
-	int i;
-	char *attr_string;
-	uint32 user_flgs = logon_info->info3.user_flgs;
-
-	if (logon_info->info3.ptr_res_group_dom_sid) {
-		sid_copy(&res_group_dom_sid, &logon_info->res_group_dom_sid.sid);
-	}
-	sid_copy(&dom_sid, &logon_info->info3.dom_sid.sid);
-
-	DEBUG(lvl,("The PAC:\n"));
-
-	DEBUGADD(lvl,("\tUser Flags: 0x%x (%d)\n", user_flgs, user_flgs));
-	if (user_flgs & NETLOGON_EXTRA_SIDS)
-		DEBUGADD(lvl,("\tUser Flags: NETLOGON_EXTRA_SIDS 0x%x (%d)\n", NETLOGON_EXTRA_SIDS, NETLOGON_EXTRA_SIDS));
-	if (user_flgs & NETLOGON_RESOURCE_GROUPS)
-		DEBUGADD(lvl,("\tUser Flags: NETLOGON_RESOURCE_GROUPS 0x%x (%d)\n", NETLOGON_RESOURCE_GROUPS, NETLOGON_RESOURCE_GROUPS));
-	DEBUGADD(lvl,("\tUser SID: %s-%d\n", sid_string_dbg(&dom_sid),
-		      logon_info->info3.user_rid));
-	DEBUGADD(lvl,("\tGroup SID: %s-%d\n", sid_string_dbg(&dom_sid),
-		      logon_info->info3.group_rid));
-
-	DEBUGADD(lvl,("\tGroup Membership (Global and Universal Groups of own domain):\n"));
-	for (i = 0; i < logon_info->info3.num_groups; i++) {
-		attr_string = pac_group_attr_string(logon_info->info3.gids[i].attr);
-		DEBUGADD(lvl,("\t\t%d: sid: %s-%d\n\t\t   attr: 0x%x == %s\n",
-			i, sid_string_dbg(&dom_sid),
-			logon_info->info3.gids[i].g_rid,
-			logon_info->info3.gids[i].attr,
-			attr_string));
-		SAFE_FREE(attr_string);
-	}
-
-	DEBUGADD(lvl,("\tGroup Membership (Domain Local Groups and Groups from Trusted Domains):\n"));
-	for (i = 0; i < logon_info->info3.num_other_sids; i++) {
-		attr_string = pac_group_attr_string(logon_info->info3.other_sids_attrib[i]);
-		DEBUGADD(lvl,("\t\t%d: sid: %s\n\t\t   attr: 0x%x == %s\n",
-			i, sid_string_dbg(
-				&logon_info->info3.other_sids[i].sid),
-			logon_info->info3.other_sids_attrib[i],
-			attr_string));
-		SAFE_FREE(attr_string);
-	}
-
-	DEBUGADD(lvl,("\tGroup Membership (Resource Groups (SID History ?)):\n"));
-	for (i = 0; i < logon_info->info3.res_group_count; i++) {
-		attr_string = pac_group_attr_string(logon_info->res_groups.group_membership[i].attrs);
-		DEBUGADD(lvl,("\t\t%d: sid: %s-%d\n\t\t   attr: 0x%x == %s\n",
-			i, sid_string_dbg(&res_group_dom_sid),
-			logon_info->res_groups.group_membership[i].rid,
-			logon_info->res_groups.group_membership[i].attrs,
-			attr_string));
-		SAFE_FREE(attr_string);
-	}
-}
+/****************************************************************
+****************************************************************/
 
  NTSTATUS decode_pac_data(TALLOC_CTX *mem_ctx,
 			 DATA_BLOB *pac_data_blob,
-			 krb5_context context, 
+			 krb5_context context,
 			 krb5_keyblock *service_keyblock,
 			 krb5_const_principal client_principal,
 			 time_t tgs_authtime,
-			 PAC_DATA **pac_data)
-			 
+			 struct PAC_DATA **pac_data_out)
 {
-	DATA_BLOB modified_pac_blob;
-	PAC_DATA *my_pac;
-	NTSTATUS nt_status;
+	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 	krb5_error_code ret;
-	PAC_SIGNATURE_DATA *srv_sig = NULL;
-	PAC_SIGNATURE_DATA *kdc_sig = NULL;
-	PAC_LOGON_NAME *logon_name = NULL;
-	PAC_LOGON_INFO *logon_info = NULL;
-	krb5_principal client_principal_pac = NULL;
+	DATA_BLOB modified_pac_blob;
+
 	NTTIME tgs_authtime_nttime;
-	int i, srv_sig_pos = 0, kdc_sig_pos = 0;
-	fstring username;
+	krb5_principal client_principal_pac = NULL;
+	int i;
 
-	*pac_data = NULL;
+	struct PAC_SIGNATURE_DATA *srv_sig_ptr = NULL;
+	struct PAC_SIGNATURE_DATA *kdc_sig_ptr = NULL;
+	struct PAC_SIGNATURE_DATA *srv_sig_wipe = NULL;
+	struct PAC_SIGNATURE_DATA *kdc_sig_wipe = NULL;
+	struct PAC_LOGON_NAME *logon_name = NULL;
+	struct PAC_LOGON_INFO *logon_info = NULL;
+	struct PAC_DATA *pac_data = NULL;
+	struct PAC_DATA_RAW *pac_data_raw = NULL;
 
-	my_pac = talloc(mem_ctx, PAC_DATA);
-	if (!my_pac) {
+	DATA_BLOB *srv_sig_blob = NULL;
+	DATA_BLOB *kdc_sig_blob = NULL;
+
+	*pac_data_out = NULL;
+
+	pac_data = TALLOC_ZERO_P(mem_ctx, struct PAC_DATA);
+	pac_data_raw = TALLOC_ZERO_P(mem_ctx, struct PAC_DATA_RAW);
+	kdc_sig_wipe = TALLOC_ZERO_P(mem_ctx, struct PAC_SIGNATURE_DATA);
+	srv_sig_wipe = TALLOC_ZERO_P(mem_ctx, struct PAC_SIGNATURE_DATA);
+	if (!pac_data_raw || !pac_data || !kdc_sig_wipe || !srv_sig_wipe) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	nt_status = parse_pac_data(mem_ctx, pac_data_blob, my_pac);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0,("decode_pac_data: failed to parse PAC\n"));
-		return nt_status;
+	ndr_err = ndr_pull_struct_blob(pac_data_blob, pac_data,
+			pac_data,
+		       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the PAC: %s\n",
+			nt_errstr(status)));
+		return status;
 	}
 
-	modified_pac_blob = data_blob_talloc(mem_ctx, pac_data_blob->data, pac_data_blob->length);
-
-	if (my_pac->num_buffers < 4) {
-		nt_status = NT_STATUS_INVALID_PARAMETER;
-		goto out;
+	if (pac_data->num_buffers < 4) {
+		/* we need logon_ingo, service_key and kdc_key */
+		DEBUG(0,("less than 4 PAC buffers\n"));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* store signatures */
-	for (i=0; i < my_pac->num_buffers; i++) {
-	
-		switch (my_pac->pac_buffer[i].type) {
-		
-			case PAC_TYPE_SERVER_CHECKSUM:
-				if (!my_pac->pac_buffer[i].ctr->pac.srv_cksum) {
-					break;
-				}
-				
-				srv_sig = my_pac->pac_buffer[i].ctr->pac.srv_cksum;
-				
-				/* get position of signature buffer */
-				srv_sig_pos = my_pac->pac_buffer[i].offset;
-				srv_sig_pos += sizeof(uint32);
-				
-				break;
-				
-			case PAC_TYPE_PRIVSVR_CHECKSUM:
-				if (!my_pac->pac_buffer[i].ctr->pac.privsrv_cksum) {
-					break;
-				}
+	ndr_err = ndr_pull_struct_blob(pac_data_blob, pac_data_raw,
+				       pac_data_raw,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_DATA_RAW);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the PAC: %s\n",
+			nt_errstr(status)));
+		return status;
+	}
 
-				kdc_sig = my_pac->pac_buffer[i].ctr->pac.privsrv_cksum;
-				
-				/* get position of signature buffer */
-				kdc_sig_pos = my_pac->pac_buffer[i].offset;
-				kdc_sig_pos += sizeof(uint32);
-				
-				break;
-				
-			case PAC_TYPE_LOGON_NAME:
-				if (!my_pac->pac_buffer[i].ctr->pac.logon_name) {
-					break;
-				}
+	if (pac_data_raw->num_buffers < 4) {
+		/* we need logon_ingo, service_key and kdc_key */
+		DEBUG(0,("less than 4 PAC buffers\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-				logon_name = my_pac->pac_buffer[i].ctr->pac.logon_name;
-				break;
+	if (pac_data->num_buffers != pac_data_raw->num_buffers) {
+		/* we need logon_ingo, service_key and kdc_key */
+		DEBUG(0,("misparse!  PAC_DATA has %d buffers while PAC_DATA_RAW has %d\n",
+			 pac_data->num_buffers, pac_data_raw->num_buffers));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
+	for (i=0; i < pac_data->num_buffers; i++) {
+		if (pac_data->buffers[i].type != pac_data_raw->buffers[i].type) {
+			DEBUG(0,("misparse!  PAC_DATA buffer %d has type %d while PAC_DATA_RAW has %d\n",
+				 i, pac_data->buffers[i].type, pac_data->buffers[i].type));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+		switch (pac_data->buffers[i].type) {
 			case PAC_TYPE_LOGON_INFO:
-				if (!my_pac->pac_buffer[i].ctr->pac.logon_info) {
+				if (!pac_data->buffers[i].info) {
 					break;
 				}
-
-				logon_info = my_pac->pac_buffer[i].ctr->pac.logon_info;
+				logon_info = pac_data->buffers[i].info->logon_info.info;
 				break;
-			}
-
+			case PAC_TYPE_SRV_CHECKSUM:
+				if (!pac_data->buffers[i].info) {
+					break;
+				}
+				srv_sig_ptr = &pac_data->buffers[i].info->srv_cksum;
+				srv_sig_blob = &pac_data_raw->buffers[i].info->remaining;
+				break;
+			case PAC_TYPE_KDC_CHECKSUM:
+				if (!pac_data->buffers[i].info) {
+					break;
+				}
+				kdc_sig_ptr = &pac_data->buffers[i].info->kdc_cksum;
+				kdc_sig_blob = &pac_data_raw->buffers[i].info->remaining;
+				break;
+			case PAC_TYPE_LOGON_NAME:
+				logon_name = &pac_data->buffers[i].info->logon_name;
+				break;
+			default:
+				break;
+		}
 	}
 
-	if (!srv_sig || !kdc_sig || !logon_name || !logon_info) {
-		nt_status = NT_STATUS_INVALID_PARAMETER;
-		goto out;
+	if (!logon_info) {
+		DEBUG(0,("PAC no logon_info\n"));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	/* zero PAC_SIGNATURE_DATA signature buffer */
-	memset(&modified_pac_blob.data[srv_sig_pos], '\0', srv_sig->signature.buf_len);
-	memset(&modified_pac_blob.data[kdc_sig_pos], '\0', kdc_sig->signature.buf_len);
+	if (!logon_name) {
+		DEBUG(0,("PAC no logon_name\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
-	/* check server signature */
-	nt_status = check_pac_checksum(mem_ctx, modified_pac_blob, srv_sig, context, service_keyblock);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		DEBUG(0,("decode_pac_data: failed to verify PAC server signature\n"));
-		goto out;
+	if (!srv_sig_ptr || !srv_sig_blob) {
+		DEBUG(0,("PAC no srv_key\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!kdc_sig_ptr || !kdc_sig_blob) {
+		DEBUG(0,("PAC no kdc_key\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Find and zero out the signatures, as required by the signing algorithm */
+
+	/* We find the data blobs above, now we parse them to get at the exact portion we should zero */
+	ndr_err = ndr_pull_struct_blob(kdc_sig_blob, kdc_sig_wipe,
+				       kdc_sig_wipe,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the KDC signature: %s\n",
+			nt_errstr(status)));
+		return status;
+	}
+
+	ndr_err = ndr_pull_struct_blob(srv_sig_blob, srv_sig_wipe,
+				       srv_sig_wipe,
+				       (ndr_pull_flags_fn_t)ndr_pull_PAC_SIGNATURE_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't parse the SRV signature: %s\n",
+			nt_errstr(status)));
+		return status;
+	}
+
+	/* Now zero the decoded structure */
+	memset(kdc_sig_wipe->signature.data, '\0', kdc_sig_wipe->signature.length);
+	memset(srv_sig_wipe->signature.data, '\0', srv_sig_wipe->signature.length);
+
+	/* and reencode, back into the same place it came from */
+	ndr_err = ndr_push_struct_blob(kdc_sig_blob, pac_data_raw,
+				       kdc_sig_wipe,
+				       (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't repack the KDC signature: %s\n",
+			nt_errstr(status)));
+		return status;
+	}
+	ndr_err = ndr_push_struct_blob(srv_sig_blob, pac_data_raw,
+				       srv_sig_wipe,
+				       (ndr_push_flags_fn_t)ndr_push_PAC_SIGNATURE_DATA);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't repack the SRV signature: %s\n",
+			nt_errstr(status)));
+		return status;
+	}
+
+	/* push out the whole structure, but now with zero'ed signatures */
+	ndr_err = ndr_push_struct_blob(&modified_pac_blob, pac_data_raw,
+				       pac_data_raw,
+				       (ndr_push_flags_fn_t)ndr_push_PAC_DATA_RAW);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		status = ndr_map_error2ntstatus(ndr_err);
+		DEBUG(0,("can't repack the RAW PAC: %s\n",
+			nt_errstr(status)));
+		return status;
+	}
+
+	/* verify by service_key */
+	ret = check_pac_checksum(mem_ctx,
+				 modified_pac_blob, srv_sig_ptr,
+				 context,
+				 service_keyblock);
+	if (ret) {
+		DEBUG(1, ("PAC Decode: Failed to verify the service signature: %s\n",
+			  error_message(ret)));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Convert to NT time, so as not to loose accuracy in comparison */
 	unix_to_nt_time(&tgs_authtime_nttime, tgs_authtime);
 
-	if (!nt_time_equals(&tgs_authtime_nttime, &logon_name->logon_time)) {
-	
-		DEBUG(2,("decode_pac_data: Logon time mismatch between ticket and PAC!\n"));
-		DEBUGADD(2, ("decode_pac_data: PAC: %s\n", 
-			http_timestring(nt_time_to_unix(logon_name->logon_time))));
-		DEBUGADD(2, ("decode_pac_data: Ticket: %s\n", 
-			http_timestring(nt_time_to_unix(tgs_authtime_nttime))));
-		
-		nt_status = NT_STATUS_ACCESS_DENIED;
-		goto out;
+	if (tgs_authtime_nttime != logon_name->logon_time) {
+		DEBUG(2, ("PAC Decode: Logon time mismatch between ticket and PAC!\n"));
+		DEBUG(2, ("PAC Decode: PAC: %s\n", nt_time_string(mem_ctx, logon_name->logon_time)));
+		DEBUG(2, ("PAC Decode: Ticket: %s\n", nt_time_string(mem_ctx, tgs_authtime_nttime)));
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!logon_name->len) {
-		DEBUG(2,("decode_pac_data: No Logon Name available\n"));
-		nt_status = NT_STATUS_INVALID_PARAMETER;
-		goto out;
-	}
-	rpcstr_pull(username, logon_name->username, sizeof(username), logon_name->len, 0);
-
-	ret = smb_krb5_parse_name_norealm(context, username, &client_principal_pac);
+	ret = smb_krb5_parse_name_norealm(context, logon_name->account_name,
+				    &client_principal_pac);
 	if (ret) {
-		DEBUG(2,("decode_pac_data: Could not parse name from incoming PAC: [%s]: %s\n", 
-			username, error_message(ret)));
-		nt_status = NT_STATUS_INVALID_PARAMETER;
-		goto out;
+		DEBUG(2, ("Could not parse name from incoming PAC: [%s]: %s\n",
+			  logon_name->account_name,
+			  error_message(ret)));
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if (!smb_krb5_principal_compare_any_realm(context, client_principal, client_principal_pac)) {
-		DEBUG(2,("decode_pac_data: Name in PAC [%s] does not match principal name in ticket\n", 
-			username));
-		nt_status = NT_STATUS_ACCESS_DENIED;
-		goto out;
+		DEBUG(2, ("Name in PAC [%s] does not match principal name in ticket\n",
+			  logon_name->account_name));
+		krb5_free_principal(context, client_principal_pac);
+		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	DEBUG(3,("Found account name from PAC: %s [%s]\n",
+		 logon_info->info3.base.account_name.string,
+		 logon_info->info3.base.full_name.string));
 
 	DEBUG(10,("Successfully validated Kerberos PAC\n"));
 
-	dump_pac_logon_info(10, logon_info);
-
-	*pac_data = my_pac;
-
-	nt_status = NT_STATUS_OK;
-
-out:
-	if (client_principal_pac) {
-		krb5_free_principal(context, client_principal_pac);
+	if (DEBUGLEVEL >= 10) {
+		const char *s;
+		s = NDR_PRINT_STRUCT_STRING(mem_ctx, PAC_DATA, pac_data);
+		if (s) {
+			DEBUGADD(10,("%s\n", s));
+		}
 	}
 
-	return nt_status;
+	*pac_data_out = pac_data;
+
+	return NT_STATUS_OK;
 }
 
- PAC_LOGON_INFO *get_logon_info_from_pac(PAC_DATA *pac_data) 
+/****************************************************************
+****************************************************************/
+
+struct PAC_LOGON_INFO *get_logon_info_from_pac(struct PAC_DATA *pac_data)
 {
-	PAC_LOGON_INFO *logon_info = NULL;
 	int i;
-	
+
 	for (i=0; i < pac_data->num_buffers; i++) {
 
-		if (pac_data->pac_buffer[i].type != PAC_TYPE_LOGON_INFO)
+		if (pac_data->buffers[i].type != PAC_TYPE_LOGON_INFO) {
 			continue;
+		}
 
-		logon_info = pac_data->pac_buffer[i].ctr->pac.logon_info;
-		break;
+		return pac_data->buffers[i].info->logon_info.info;
 	}
-	return logon_info;
+
+	return NULL;
 }
 
 /****************************************************************
@@ -971,12 +961,12 @@ NTSTATUS kerberos_return_pac(TALLOC_CTX *mem_ctx,
 			     bool request_pac,
 			     bool add_netbios_addr,
 			     time_t renewable_time,
-			     PAC_DATA **pac_ret)
+			     struct PAC_DATA **pac_ret)
 {
 	krb5_error_code ret;
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	DATA_BLOB tkt, ap_rep, sesskey1, sesskey2;
-	PAC_DATA *pac_data = NULL;
+	struct PAC_DATA *pac_data = NULL;
 	char *client_princ_out = NULL;
 	const char *auth_princ = NULL;
 	const char *local_service = NULL;
@@ -1110,11 +1100,11 @@ static NTSTATUS kerberos_return_pac_logon_info(TALLOC_CTX *mem_ctx,
 					       bool request_pac,
 					       bool add_netbios_addr,
 					       time_t renewable_time,
-					       PAC_LOGON_INFO **logon_info)
+					       struct PAC_LOGON_INFO **logon_info)
 {
 	NTSTATUS status;
-	PAC_DATA *pac_data = NULL;
-	PAC_LOGON_INFO *info = NULL;
+	struct PAC_DATA *pac_data = NULL;
+	struct PAC_LOGON_INFO *info = NULL;
 
 	status = kerberos_return_pac(mem_ctx,
 				     name,
@@ -1160,10 +1150,10 @@ NTSTATUS kerberos_return_info3_from_pac(TALLOC_CTX *mem_ctx,
 					bool request_pac,
 					bool add_netbios_addr,
 					time_t renewable_time,
-					NET_USER_INFO_3 **info3)
+					struct netr_SamInfo3 **info3)
 {
 	NTSTATUS status;
-	PAC_LOGON_INFO *logon_info = NULL;
+	struct PAC_LOGON_INFO *logon_info = NULL;
 
 	status = kerberos_return_pac_logon_info(mem_ctx,
 						name,
