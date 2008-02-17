@@ -144,7 +144,8 @@ WERROR _ntsvcs_get_device_reg_property( pipes_struct *p, NTSVCS_Q_GET_DEVICE_REG
 /********************************************************************
 ********************************************************************/
 
-WERROR _ntsvcs_validate_device_instance( pipes_struct *p, NTSVCS_Q_VALIDATE_DEVICE_INSTANCE *q_u, NTSVCS_R_VALIDATE_DEVICE_INSTANCE *r_u )
+WERROR _PNP_ValidateDeviceInstance(pipes_struct *p,
+				   struct PNP_ValidateDeviceInstance *r)
 {
 	/* whatever dude */
 	return WERR_OK;
@@ -220,16 +221,6 @@ WERROR _PNP_InitDetection(pipes_struct *p,
 
 WERROR _PNP_ReportLogOn(pipes_struct *p,
 			struct PNP_ReportLogOn *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-WERROR _PNP_ValidateDeviceInstance(pipes_struct *p,
-				   struct PNP_ValidateDeviceInstance *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
