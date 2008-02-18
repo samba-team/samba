@@ -332,23 +332,30 @@ WERROR _svcctl_CloseServiceHandle(pipes_struct *p, struct svcctl_CloseServiceHan
 }
 
 /********************************************************************
+ _svcctl_GetServiceDisplayNameW
 ********************************************************************/
 
-WERROR _svcctl_get_display_name(pipes_struct *p, SVCCTL_Q_GET_DISPLAY_NAME *q_u, SVCCTL_R_GET_DISPLAY_NAME *r_u)
+WERROR _svcctl_GetServiceDisplayNameW(pipes_struct *p,
+				      struct svcctl_GetServiceDisplayNameW *r)
 {
-	fstring service;
+	const char *service;
 	const char *display_name;
-	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 
 	/* can only use an SCM handle here */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SCM) )
 		return WERR_BADFID;
 
-	rpcstr_pull(service, q_u->servicename.buffer, sizeof(service), q_u->servicename.uni_str_len*2, 0);
+	service = r->in.service_name;
 
 	display_name = svcctl_lookup_dispname(p->mem_ctx, service, p->pipe_user.nt_user_token );
-	init_svcctl_r_get_display_name( r_u, display_name ? display_name : "");
+	if (!display_name) {
+		display_name = "";
+	}
+
+	*r->out.display_name = display_name;
+	*r->out.display_name_length = strlen(display_name);
 
 	return WERR_OK;
 }
@@ -976,12 +983,6 @@ WERROR _svcctl_QueryServiceLockStatusW(pipes_struct *p, struct svcctl_QueryServi
 }
 
 WERROR _svcctl_StartServiceW(pipes_struct *p, struct svcctl_StartServiceW *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_GetServiceDisplayNameW(pipes_struct *p, struct svcctl_GetServiceDisplayNameW *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
