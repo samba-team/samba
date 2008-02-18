@@ -25,6 +25,7 @@
 #include "smbd/service_task.h"
 #include "winbind/wb_helper.h"
 #include "libcli/security/proto.h"
+#include "winbind/idmap.h"
 
 struct sid2gid_state {
 	struct composite_context *ctx;
@@ -50,9 +51,13 @@ struct composite_context *wb_sid2gid_send(TALLOC_CTX *mem_ctx,
 	result->private_data = state;
 	state->service = service;
 
-	/*FIXME: This is a stub so far. */
-	state->ctx->status = dom_sid_split_rid(result, sid, NULL, &state->gid);
-	if(!composite_is_ok(state->ctx)) return result;
+	state->ctx->status = idmap_sid_to_gid(service->idmap_ctx, state, sid,
+					      &state->gid);
+	if (NT_STATUS_EQUAL(state->ctx->status, NT_STATUS_RETRY)) {
+		state->ctx->status = idmap_sid_to_gid(service->idmap_ctx, state,
+						      sid, &state->gid);
+	}
+	if (!composite_is_ok(state->ctx)) return result;
 
 	composite_done(state->ctx);
 	return result;
