@@ -20,8 +20,8 @@ my $INPUT = {};
 my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, $config::config{builddir}, "main.mk");
 
 my $subsys_output_type;
-$subsys_output_type = ["MERGED_OBJ"];
-#$subsys_output_type = ["STATIC_LIBRARY"];
+#$subsys_output_type = ["MERGED_OBJ"];
+$subsys_output_type = ["STATIC_LIBRARY"];
 
 my $library_output_type;
 if ($config::config{USESHARED} eq "true") {
