@@ -1399,6 +1399,8 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		DEBUG(DEBUG_INFO, (__location__ " Recovery - done takeover\n"));
 	}
 
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - takeip finished\n"));
+
 	/* execute the "recovered" event script on all nodes */
 	ret = run_recovered_eventscript(ctdb, nodemap);
 	if (ret!=0) {
@@ -1406,12 +1408,16 @@ static int do_recovery(struct ctdb_recoverd *rec,
 		return -1;
 	}
 
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - finished the recovered event\n"));
+
 	/* disable recovery mode */
 	ret = set_recovery_mode(ctdb, nodemap, CTDB_RECOVERY_NORMAL);
 	if (ret!=0) {
 		DEBUG(DEBUG_ERR, (__location__ " Unable to set recovery mode to normal on cluster\n"));
 		return -1;
 	}
+
+	DEBUG(DEBUG_NOTICE, (__location__ " Recovery - disabled recovery mode\n"));
 
 	/* send a message to all clients telling them that the cluster 
 	   has been reconfigured */
@@ -1963,6 +1969,7 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	struct ctdb_node_map *remote_nodemap=NULL;
 	struct ctdb_vnn_map *vnnmap=NULL;
 	struct ctdb_vnn_map *remote_vnnmap=NULL;
+	int32_t debug_level;
 	int i, j, ret;
 	struct ctdb_recoverd *rec;
 	struct ctdb_all_public_ips *ips;
@@ -2018,6 +2025,14 @@ again:
 		/* an election is in progress */
 		goto again;
 	}
+
+	/* read the debug level from the parent and update locally */
+	ret = ctdb_ctrl_get_debuglevel(ctdb, CTDB_CURRENT_NODE, &debug_level);
+	if (ret !=0) {
+		DEBUG(DEBUG_ERR, (__location__ " Failed to read debuglevel from parent\n"));
+		goto again;
+	}
+	LogLevel = debug_level;
 
 
 	/* We must check if we need to ban a node here but we want to do this
