@@ -269,58 +269,6 @@ bool svcctl_io_r_get_display_name(const char *desc, SVCCTL_R_GET_DISPLAY_NAME *r
 /*******************************************************************
 ********************************************************************/
 
-bool svcctl_io_q_open_service(const char *desc, SVCCTL_Q_OPEN_SERVICE *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_q_open_service");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("scm_pol", &q_u->handle, ps, depth))
-		return False;
-
-	if(!smb_io_unistr2("servicename", &q_u->servicename, 1, ps, depth))
-		return False;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("access", ps, depth, &q_u->access))
-		return False;
-	
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/
-
-bool svcctl_io_r_open_service(const char *desc, SVCCTL_R_OPEN_SERVICE *r_u, prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_r_open_service");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("service_pol", &r_u->handle, ps, depth))
-		return False;
-
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/
-
 bool svcctl_io_q_query_status(const char *desc, SVCCTL_Q_QUERY_STATUS *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
