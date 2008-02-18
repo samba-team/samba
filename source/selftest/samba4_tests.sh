@@ -50,8 +50,9 @@ plansmbtorturetest() {
 	name=$1
 	env=$2
 	shift 2
+	other_args="$*"
 	modname=`normalize_testname $name`
-	cmdline="$VALGRIND $smb4torture $* $name"
+	cmdline="$VALGRIND $smb4torture $other_args $name"
 	plantest "$modname" "$env" $cmdline
 }
 
@@ -236,7 +237,7 @@ done
 # Local tests
 
 for t in `$smb4torture --list | grep "^LOCAL-" | xargs`; do
-	plansmbtorturetest "$t" none $VALGRIND $smb4torture ncalrpc: "$*"
+	plansmbtorturetest "$t" none ncalrpc: "$*"
 done
 
 if test -f $samba4bindir/tdbtorture
