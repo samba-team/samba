@@ -480,7 +480,8 @@ spnego_reply
 	return GSS_S_BAD_MECH;
     }
 
-    if (resp.responseToken != NULL || 
+    /* if a token (of non zero length), or no context, pass to underlaying mech */
+    if ((resp.responseToken != NULL && resp.responseToken->length) || 
 	ctx->negotiated_ctx_id == GSS_C_NO_CONTEXT) {
 	gss_buffer_desc mech_input_token;
 
