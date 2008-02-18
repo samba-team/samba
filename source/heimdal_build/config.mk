@@ -412,7 +412,6 @@ OBJ_FILES = \
 	../heimdal/lib/roken/estrdup.o \
 	../heimdal/lib/roken/erealloc.o \
 	../heimdal/lib/roken/simple_exec.o \
-	../heimdal/lib/roken/simple_exec.o \
 	../heimdal/lib/roken/strcollect.o \
 	../heimdal/lib/roken/rtbl.o \
 	replace.o
