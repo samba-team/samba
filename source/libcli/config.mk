@@ -1,6 +1,6 @@
-include auth/config.mk
-include ldap/config.mk
-include security/config.mk
+mkinclude auth/config.mk
+mkinclude ldap/config.mk
+mkinclude security/config.mk
 
 [SUBSYSTEM::LIBSAMBA-ERRORS]
 PUBLIC_HEADERS = util/error.h util/ntstatus.h util/doserr.h util/werror.h
@@ -144,4 +144,4 @@ OBJ_FILES = raw/rawfile.o \
 		raw/rawlpq.o \
 		raw/rawshadow.o
 
-include smb2/config.mk
+mkinclude smb2/config.mk

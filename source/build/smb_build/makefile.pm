@@ -101,19 +101,6 @@ sub _prepare_list($$$)
 	$self->output("$ctx->{NAME}_$var =$tmplist\n");
 }
 
-sub Integrated($$)
-{
-	my ($self,$ctx) = @_;
-
-	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->output("$ctx->{SUBSYSTEM}_OBJ_LIST += \$($ctx->{NAME}_OBJ_LIST)\n");
-	if(defined($ctx->{INIT_FUNCTION})) {
-		my $init_fn = $ctx->{INIT_FUNCTION};
-		$init_fn =~ s/"/\\\"/g;
-		$self->output("$ctx->{SUBSYSTEM}_INIT_FUNCTIONS += \"$init_fn,\"\n");
-	}
-}
-
 sub SharedModulePrimitives($$)
 {
 	my ($self,$ctx) = @_;
@@ -154,7 +141,7 @@ sub SharedModule($$)
 	}
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->_prepare_list($ctx, "OBJ_LIST");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
@@ -190,7 +177,7 @@ sub SharedLibraryPrimitives($$)
 
 	if (not grep(/STATIC_LIBRARY/, @{$ctx->{OUTPUT_TYPE}})) {
 		$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-		$self->_prepare_list($ctx, "OBJ_LIST");
+		$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	}
 }
 
@@ -198,14 +185,14 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	$self->output("SHARED_LIBS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n") if (defined($ctx->{SO_VERSION}));
+	$self->output("SHARED_LIBS += $ctx->{RESULT_SHARED_LIBRARY}\n") if (defined($ctx->{SO_VERSION}));
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 	$self->output(<< "__EOD__"
 
-$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_OBJ_LIST)
+$ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
@@ -226,16 +213,15 @@ sub MergedObj($$)
 {
 	my ($self, $ctx) = @_;
 
+	return unless defined($ctx->{OUTPUT});
+
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->_prepare_list($ctx, "OBJ_LIST");
-	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 	$self->output(<< "__EOD__"
 #
-$ctx->{TARGET_MERGED_OBJ}: \$($ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_OBJ_LIST)
 	\@echo Partially linking \$@
 	\@mkdir -p bin/mergedobj
-	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_FULL_OBJ_LIST)
+	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_OBJ_LIST)
 
 __EOD__
 );
@@ -247,7 +233,10 @@ sub StaticLibraryPrimitives($$)
 
 	return unless (defined($ctx->{OBJ_FILES}));
 
-	$self->_prepare_list($ctx, "OBJ_LIST");
+	push (@{$self->{static_libs}}, $ctx->{RESULT_STATIC_LIBRARY}) if ($ctx->{TYPE} eq "LIBRARY");
+
+	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 }
 
 sub InitFunctions($$)
@@ -259,6 +248,13 @@ sub InitFunctions($$)
 sub StaticLibrary($$)
 {
 	my ($self,$ctx) = @_;
+	$self->output(<< "__EOD__"
+#
+$ctx->{RESULT_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)
+	\@echo Linking \$@
+	\@rm -f \$@
+	\@mkdir -p $ctx->{STATICDIR}
+	\@\$(STLD) \$(STLD_FLAGS) \$@ \$($ctx->{NAME}_FULL_OBJ_LIST)
 
 	return unless (defined($ctx->{OBJ_FILES}));
 
@@ -288,19 +284,19 @@ sub Binary($$)
 
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
-		$self->output("SBIN_PROGS += bin/$ctx->{BINARY}\n");
+		$self->output("SBIN_PROGS += $ctx->{RESULT_BINARY}\n");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
-		$self->output("BIN_PROGS += bin/$ctx->{BINARY}\n");
+		$self->output("BIN_PROGS += $ctx->{RESULT_BINARY}\n");
 	}
 
-	$self->output("binaries:: bin/$ctx->{BINARY}\n");
+	$self->output("binaries:: $ctx->{TARGET_BINARY}\n");
 
-	$self->_prepare_list($ctx, "OBJ_LIST");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 $self->output(<< "__EOD__"
-bin/$ctx->{BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_OBJ_LIST)
+$ctx->{RESULT_BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 __EOD__
 	);

@@ -10,7 +10,8 @@ OBJ_FILES = \
 		nsstest.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
-		LIBREPLACE_EXT
+		LIBREPLACE_EXT \
+		LIBSAMBA-CONFIG
 # End BINARY nsstest
 #################################
 
