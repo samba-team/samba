@@ -151,6 +151,32 @@ static WERROR cmd_ntsvcs_hw_prof_flags(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_ntsvcs_get_hw_prof_info(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx,
+					  int argc,
+					  const char **argv)
+{
+	NTSTATUS status;
+	WERROR werr;
+	uint32_t idx = 0;
+	struct PNP_HwProfInfo info;
+	uint32_t unknown1 = 0, unknown2 = 0;
+
+	ZERO_STRUCT(info);
+
+	status = rpccli_PNP_GetHwProfInfo(cli, mem_ctx,
+					  idx,
+					  &info,
+					  unknown1,
+					  unknown2,
+					  &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	return werr;
+}
+
 struct cmd_set ntsvcs_commands[] = {
 
 	{ "NTSVCS" },
@@ -158,5 +184,6 @@ struct cmd_set ntsvcs_commands[] = {
 	{ "ntsvcs_validatedevinst", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_validate_dev_inst, PI_NTSVCS, NULL, "Query NTSVCS device instance", "" },
 	{ "ntsvcs_getdevlistsize", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_device_list_size, PI_NTSVCS, NULL, "Query NTSVCS get device list", "" },
 	{ "ntsvcs_hwprofflags", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_hw_prof_flags, PI_NTSVCS, NULL, "Query NTSVCS HW prof flags", "" },
+	{ "ntsvcs_hwprofinfo", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_hw_prof_info, PI_NTSVCS, NULL, "Query NTSVCS HW prof info", "" },
 	{ NULL }
 };
