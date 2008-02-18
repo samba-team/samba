@@ -389,6 +389,7 @@ function provision_default_paths(subobj)
 	paths.smbconf = lp.filename()
 	paths.shareconf = lp.get("private dir") + "/" + "share.ldb";
 	paths.samdb = lp.get("sam database");
+	paths.idmapdb = lp.get("idmap database");
 	paths.secrets = lp.get("secrets database");
 	paths.templates = lp.get("private dir") + "/" + "templates.ldb";
 	paths.keytab = "secrets.keytab";
@@ -678,6 +679,9 @@ function provision(subobj, message, blank, paths, session_info, credentials, lda
 
 	message("Setting up templates into " + paths.templates + "\n");
 	setup_ldb("provision_templates.ldif", info, paths.templates);
+
+	message("Setting up " + paths.idmapdb +"\n");
+	setup_ldb("idmap_init.ldif", info, paths.idmapdb);
 
 	message("Setting up sam.ldb partitions\n");
 	/* Also wipes the database */
