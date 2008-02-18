@@ -85,25 +85,4 @@ typedef struct {
 	WERROR status;
 } NTSVCS_R_GET_HW_PROFILE_INFO;
 
-
-/**************************/
-
-typedef struct {
-	uint32 unknown1;
-	UNISTR2 devicepath;
-	uint32 unknown2;
-	uint32 unknown3;
-	uint32 unknown4;
-	uint32 unknown5;
-	uint32 unknown6;
-	uint32 unknown7;
-} NTSVCS_Q_HW_PROFILE_FLAGS;
-
-typedef struct {
-	uint32 unknown1;
-	uint32 unknown2;
-	uint32 unknown3;
-	WERROR status;
-} NTSVCS_R_HW_PROFILE_FLAGS;
-
 #endif /* _RPC_NTSVCS_H */
