@@ -160,8 +160,6 @@ sub SharedModule($$)
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
-
 	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{TYPE} ne "PYTHON") {
 		my $init_fn = $ctx->{INIT_FUNCTION_TYPE};
 		$init_fn =~ s/\(\*\)/init_module/;
@@ -226,8 +224,6 @@ sub SharedLibrary($$)
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
-
 	my $soarg = "";
 	my $lns = "";
 	if ($self->{config}->{SONAMEFLAG} ne "#" and defined($ctx->{LIBRARY_SONAME})) {
@@ -261,7 +257,6 @@ sub MergedObj($$)
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 	$self->output(<< "__EOD__"
 #
 $ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_FULL_OBJ_LIST)
@@ -283,8 +278,6 @@ sub StaticLibrary($$)
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
-
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 
 	$self->output(<< "__EOD__"
 #
@@ -313,8 +306,6 @@ sub Binary($$)
 
 	my $extradir = "";
 
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
-		
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
 		push (@{$self->{sbin_progs}}, $ctx->{RESULT_BINARY});
