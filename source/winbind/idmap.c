@@ -527,7 +527,7 @@ failed:
  *
  * If no mapping exists, a new mapping will be created.
  *
- * \todo Create mappings for users not from our primary domain.
+ * \todo Check if SIDs can be resolved if lp_idmap_trusted_only() == true
  *
  * \param idmap_ctx idmap context to use
  * \param mem_ctx talloc context to use
@@ -540,7 +540,260 @@ failed:
 NTSTATUS idmap_sid_to_uid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 		const struct dom_sid *sid, uid_t *uid)
 {
-	return NT_STATUS_NONE_MAPPED;
+	int ret;
+	NTSTATUS status = NT_STATUS_NONE_MAPPED;
+	struct ldb_context *ldb = idmap_ctx->ldb_ctx;
+	struct ldb_dn *dn;
+	struct ldb_message *hwm_msg, *map_msg;
+	struct ldb_result *res = NULL;
+	int trans;
+	uid_t low, high, hwm, new_uid;
+	char *sid_string, *uid_string, *hwm_string;
+	bool hwm_entry_exists;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
+				 NULL, "(&(objectClass=sidMap)(objectSid=%s))",
+				 ldap_encode_ndr_dom_sid(tmp_ctx, sid));
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Search failed: %s\n", ldb_errstring(ldb)));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	if (res->count == 1) {
+		new_uid = ldb_msg_find_attr_as_uint(res->msgs[0], "uidNumber",
+						    -1);
+		if (new_uid == (uid_t) -1) {
+			DEBUG(1, ("Invalid uid mapping.\n"));
+			status = NT_STATUS_NONE_MAPPED;
+			goto failed;
+		}
+		*uid = new_uid;
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	DEBUG(6, ("No existing mapping found, attempting to create one.\n"));
+
+	trans = ldb_transaction_start(ldb);
+	if (trans != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	/* Redo the search to make sure noone changed the mapping while we
+	 * weren't looking */
+	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
+				 NULL, "(&(objectClass=sidMap)(objectSid=%s))",
+				 ldap_encode_ndr_dom_sid(tmp_ctx, sid));
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Search failed: %s\n", ldb_errstring(ldb)));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	if (res->count > 0) {
+		DEBUG(1, ("Database changed while trying to add a sidmap.\n"));
+		status = NT_STATUS_RETRY;
+		goto failed;
+	}
+
+	/*FIXME: if lp_idmap_trusted_only() == true, check if SID can be
+	 * resolved here. */
+
+	ret = idmap_get_bounds(idmap_ctx, &low, &high);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	dn = ldb_dn_new(tmp_ctx, ldb, "CN=CONFIG");
+	if (dn == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	ret = ldb_search(ldb, dn, LDB_SCOPE_BASE, NULL, NULL, &res);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Search failed: %s\n", ldb_errstring(ldb)));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	talloc_steal(tmp_ctx, res);
+
+	if (res->count != 1) {
+		DEBUG(1, ("No CN=CONFIG record, idmap database is broken.\n"));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	hwm = ldb_msg_find_attr_as_uint(res->msgs[0], "uidNumber", -1);
+	if (hwm == (uid_t)-1) {
+		hwm = low;
+		hwm_entry_exists = false;
+	} else {
+		hwm_entry_exists = true;
+	}
+
+	if (hwm > high) {
+		DEBUG(1, ("Out of uids to allocate.\n"));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	hwm_msg = ldb_msg_new(tmp_ctx);
+	if (hwm_msg == NULL) {
+		DEBUG(1, ("Out of memory when creating ldb_message\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	hwm_msg->dn = dn;
+
+	new_uid = hwm;
+	hwm++;
+
+	hwm_string = talloc_asprintf(tmp_ctx, "%u", hwm);
+	if (hwm_string == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	sid_string = dom_sid_string(tmp_ctx, sid);
+	if (sid_string == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	uid_string = talloc_asprintf(tmp_ctx, "%u", new_uid);
+	if (uid_string == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	if (hwm_entry_exists) {
+		struct ldb_message_element *els;
+		struct ldb_val *vals;
+
+		/* We're modifying the entry, not just adding a new one. */
+		els = talloc_array(tmp_ctx, struct ldb_message_element, 2);
+		if (els == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
+
+		vals = talloc_array(tmp_ctx, struct ldb_val, 2);
+		if (els == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
+
+		hwm_msg->num_elements = 2;
+		hwm_msg->elements = els;
+
+		els[0].num_values = 1;
+		els[0].values = &vals[0];
+		els[0].flags = LDB_FLAG_MOD_DELETE;
+		els[0].name = talloc_strdup(tmp_ctx, "uidNumber");
+		if (els[0].name == NULL) {
+			status = NT_STATUS_NO_MEMORY;
+			goto failed;
+		}
+
+		els[1].num_values = 1;
+		els[1].values = &vals[1];
+		els[1].flags = LDB_FLAG_MOD_ADD;
+		els[1].name = els[0].name;
+
+		vals[0].data = (uint8_t *)uid_string;
+		vals[0].length = strlen(uid_string);
+		vals[1].data = (uint8_t *)hwm_string;
+		vals[1].length = strlen(hwm_string);
+	} else {
+		ret = ldb_msg_add_empty(hwm_msg, "uidNumber", LDB_FLAG_MOD_ADD,
+					NULL);
+		if (ret != LDB_SUCCESS) {
+			status = NT_STATUS_NONE_MAPPED;
+			goto failed;
+		}
+
+		ret = ldb_msg_add_string(hwm_msg, "uidNumber", hwm_string);
+		if (ret != LDB_SUCCESS)
+		{
+			status = NT_STATUS_NONE_MAPPED;
+			goto failed;
+		}
+	}
+
+	ret = ldb_modify(ldb, hwm_msg);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Updating the uid high water mark failed: %s\n",
+			  ldb_errstring(ldb)));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	map_msg = ldb_msg_new(tmp_ctx);
+	if (map_msg == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	map_msg->dn = ldb_dn_new_fmt(tmp_ctx, ldb, "CN=%s", sid_string);
+	if (map_msg->dn == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	ret = ldb_msg_add_string(map_msg, "uidNumber", uid_string);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	ret = idmap_msg_add_dom_sid(idmap_ctx, tmp_ctx, map_msg, "objectSid",
+			sid);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	ret = ldb_msg_add_string(map_msg, "objectClass", "sidMap");
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	ret = ldb_msg_add_string(map_msg, "cn", sid_string);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	ret = ldb_add(ldb, map_msg);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Adding a sidmap failed: %s\n", ldb_errstring(ldb)));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	trans = ldb_transaction_commit(ldb);
+	if (trans != LDB_SUCCESS) {
+		DEBUG(1, ("Transaction failed: %s\n", ldb_errstring(ldb)));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	*uid = new_uid;
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+
+failed:
+	if (trans == LDB_SUCCESS) ldb_transaction_cancel(ldb);
+	talloc_free(tmp_ctx);
+	return status;
 }
 
 /**
