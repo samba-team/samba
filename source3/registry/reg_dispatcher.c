@@ -34,7 +34,7 @@ static const struct generic_mapping reg_generic_map =
 /********************************************************************
 ********************************************************************/
 
-static SEC_DESC* construct_registry_sd(TALLOC_CTX *ctx)
+static WERROR construct_registry_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
 {
 	SEC_ACE ace[3];
 	SEC_ACCESS mask;
@@ -65,17 +65,18 @@ static SEC_DESC* construct_registry_sd(TALLOC_CTX *ctx)
 
 	acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace);
 	if (acl == NULL) {
-		return NULL;
+		return WERR_NOMEM;
 	}
 
 	sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
 			   &global_sid_Builtin_Administrators, NULL, NULL, acl,
 			   &sd_size);
 	if (sd == NULL) {
-		return NULL;
+		return WERR_NOMEM;
 	}
 
-	return sd;
+	*psd = sd;
+	return WERR_OK;
 }
 
 /***********************************************************************
@@ -185,19 +186,19 @@ WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
 			  struct security_descriptor **psecdesc)
 {
 	struct security_descriptor *secdesc;
+	WERROR werr;
 
 	if (key->hook && key->hook->ops && key->hook->ops->get_secdesc) {
-		WERROR err;
-
-		err = key->hook->ops->get_secdesc(mem_ctx, key->name,
-						  psecdesc);
-		if (W_ERROR_IS_OK(err)) {
+		werr = key->hook->ops->get_secdesc(mem_ctx, key->name,
+						   psecdesc);
+		if (W_ERROR_IS_OK(werr)) {
 			return WERR_OK;
 		}
 	}
 
-	if (!(secdesc = construct_registry_sd(mem_ctx))) {
-		return WERR_NOMEM;
+	werr = construct_registry_sd(mem_ctx, &secdesc);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	*psecdesc = secdesc;
