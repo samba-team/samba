@@ -123,6 +123,7 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 		io.in.create_disposition = NTCREATEX_DISP_CREATE;
 	}
 
+	/* it seems vista is now fussier about alignment? */
 	if (strchr(fname, ':') == NULL) {
 		/* setup some EAs */
 		io.in.eas.num_eas = 2;
@@ -428,7 +429,7 @@ NTSTATUS smb2_util_roothandle(struct smb2_tree *tree, struct smb2_handle *handle
 	io.in.create_disposition = NTCREATEX_DISP_OPEN;
 	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_DELETE;
 	io.in.create_options = NTCREATEX_OPTIONS_ASYNC_ALERT;
-	io.in.fname = "";
+	io.in.fname = NULL;
 
 	status = smb2_create(tree, tree, &io);
 	NT_STATUS_NOT_OK_RETURN(status);
