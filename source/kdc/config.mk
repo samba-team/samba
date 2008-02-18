@@ -22,7 +22,8 @@ OBJ_FILES = \
 		hdb-ldb.o \
 		pac-glue.o 
 PRIVATE_DEPENDENCIES = \
-		LIBLDB auth_sam auth_sam_reply KERBEROS CREDENTIALS
+		LIBLDB auth_sam auth_sam_reply KERBEROS CREDENTIALS \
+		HEIMDAL_HDB_ASN1
 # End SUBSYSTEM KDC
 #######################
 
