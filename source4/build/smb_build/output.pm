@@ -85,8 +85,9 @@ sub generate_shared_library($)
 		$lib->{LIBRARY_REALNAME} = "$lib->{LIBRARY_REALNAME}.\$($lib->{NAME}_VERSION)";
 	} 
 	
-	$lib->{TARGET_SHARED_LIBRARY} = "$lib->{SHAREDDIR}/$lib->{LIBRARY_REALNAME}";
-	$lib->{OUTPUT_SHARED_LIBRARY} = $lib->{TARGET_SHARED_LIBRARY};
+	$lib->{RESULT_SHARED_LIBRARY} = "$lib->{SHAREDDIR}/$lib->{LIBRARY_REALNAME}";
+	$lib->{OUTPUT_SHARED_LIBRARY} = "-l$link_name";
+	$lib->{TARGET_SHARED_LIBRARY} = $lib->{RESULT_SHARED_LIBRARY};
 }
 
 sub generate_merged_obj($)
@@ -97,7 +98,8 @@ sub generate_merged_obj($)
 	$link_name =~ s/^LIB//;
 
 	$lib->{MERGED_OBJNAME} = lc($link_name).".o";
-	$lib->{TARGET_MERGED_OBJ} = $lib->{OUTPUT_MERGED_OBJ} = "bin/mergedobj/$lib->{MERGED_OBJNAME}";
+	$lib->{RESULT_MERGED_OBJ} = $lib->{OUTPUT_MERGED_OBJ} = "bin/mergedobj/$lib->{MERGED_OBJNAME}";
+	$lib->{TARGET_MERGED_OBJ} = $lib->{RESULT_MERGED_OBJ};
 }
 
 sub generate_static_library($)
@@ -113,11 +115,12 @@ sub generate_static_library($)
 	$lib->{LIBRARY_NAME} = "lib".lc($link_name).".a";
 
 	if (defined($lib->{OBJ_FILES})) {
-		$lib->{TARGET_STATIC_LIBRARY} = "bin/static/$lib->{LIBRARY_NAME}";
+		$lib->{RESULT_STATIC_LIBRARY} = "bin/static/$lib->{LIBRARY_NAME}";
+		$lib->{TARGET_STATIC_LIBRARY} = $lib->{RESULT_STATIC_LIBRARY};
 		$lib->{STATICDIR} = 'bin/static';
 		$lib->{OUTPUT_STATIC_LIBRARY} = "-l".lc($link_name);
 	} else {
-		$lib->{TARGET_STATIC_LIBRARY} = "";
+		$lib->{RESULT_STATIC_LIBRARY} = "";
 		$lib->{OUTPUT_STATIC_LIBRARY} = "";
 	}
 }
@@ -129,8 +132,9 @@ sub generate_binary($)
 	$bin->{DEPEND_LIST} = [];
 	push(@{$bin->{LINK_FLAGS}}, "\$($bin->{NAME}\_OBJ_LIST)");
 
-	$bin->{DEBUGDIR} = "bin/";
-	$bin->{TARGET_BINARY} = $bin->{OUTPUT_BINARY} = "$bin->{DEBUGDIR}/$bin->{NAME}";
+	$bin->{DEBUGDIR} = "bin";
+	$bin->{RESULT_BINARY} = $bin->{OUTPUT_BINARY} = "$bin->{DEBUGDIR}/$bin->{NAME}";
+	$bin->{TARGET_BINARY} = $bin->{RESULT_BINARY};
 	$bin->{BINARY} = $bin->{NAME};
 }
 

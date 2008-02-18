@@ -230,7 +230,7 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	push (@{$self->{shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
+	push (@{$self->{shared_libs}}, $ctx->{RESULT_SHARED_LIBRARY}) if (defined($ctx->{SO_VERSION}));
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
@@ -252,8 +252,7 @@ sub SharedLibrary($$)
 
 	$self->output(<< "__EOD__"
 #
-
-$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
@@ -275,7 +274,7 @@ sub MergedObj($$)
 	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 	$self->output(<< "__EOD__"
 #
-$ctx->{TARGET_MERGED_OBJ}: \$($ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Partially linking \$@
 	\@mkdir -p bin/mergedobj
 	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_FULL_OBJ_LIST)
@@ -290,7 +289,7 @@ sub StaticLibrary($$)
 
 	return unless (defined($ctx->{OBJ_FILES}));
 
-	push (@{$self->{static_libs}}, $ctx->{TARGET_STATIC_LIBRARY}) if ($ctx->{TYPE} eq "LIBRARY");
+	push (@{$self->{static_libs}}, $ctx->{RESULT_STATIC_LIBRARY}) if ($ctx->{TYPE} eq "LIBRARY");
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "OBJ_LIST");
@@ -300,7 +299,7 @@ sub StaticLibrary($$)
 
 	$self->output(<< "__EOD__"
 #
-$ctx->{TARGET_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{RESULT_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$@
 	\@rm -f \$@
 	\@mkdir -p $ctx->{STATICDIR}
@@ -323,23 +322,18 @@ sub Binary($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $installdir;
 	my $extradir = "";
-
-	my $localdir = "bin$extradir";
-
-	$installdir = "bin$extradir";
 
 	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 		
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
-		push (@{$self->{sbin_progs}}, "$installdir/$ctx->{BINARY}");
+		push (@{$self->{sbin_progs}}, $ctx->{RESULT_BINARY});
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
-		push (@{$self->{bin_progs}}, "$installdir/$ctx->{BINARY}");
+		push (@{$self->{bin_progs}}, $ctx->{RESULT_BINARY});
 	}
 
-	$self->output("binaries:: $localdir/$ctx->{BINARY}\n");
+	$self->output("binaries:: $ctx->{TARGET_BINARY}\n");
 
 	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
@@ -347,7 +341,7 @@ sub Binary($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 $self->output(<< "__EOD__"
-$installdir/$ctx->{BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{RESULT_BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 __EOD__
 	);
