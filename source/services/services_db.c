@@ -469,7 +469,7 @@ void svcctl_init_keys( void )
 
 	fetch_reg_keys( key, subkeys );
 
-	/* the builting services exist */
+	/* the builtin services exist */
 
 	for ( i=0; builtin_svcs[i].servicename; i++ )
 		add_new_svc_name( key, subkeys, builtin_svcs[i].servicename );
