@@ -153,12 +153,12 @@ WERROR _PNP_ValidateDeviceInstance(pipes_struct *p,
 /********************************************************************
 ********************************************************************/
 
-WERROR _ntsvcs_get_hw_profile_info( pipes_struct *p, NTSVCS_Q_GET_HW_PROFILE_INFO *q_u, NTSVCS_R_GET_HW_PROFILE_INFO *r_u )
+WERROR _PNP_GetHwProfInfo(pipes_struct *p,
+			  struct PNP_GetHwProfInfo *r)
 {
 	/* steal the incoming buffer */
 
-	r_u->buffer_size = q_u->buffer_size;
-	r_u->buffer = q_u->buffer;
+	r->out.info = r->in.info;
 
 	/* Take the 5th Ammentment */
 
@@ -541,16 +541,6 @@ WERROR _PNP_IsDockStationPresent(pipes_struct *p,
 
 WERROR _PNP_RequestEjectPC(pipes_struct *p,
 			   struct PNP_RequestEjectPC *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-WERROR _PNP_GetHwProfInfo(pipes_struct *p,
-			  struct PNP_GetHwProfInfo *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
