@@ -255,14 +255,15 @@ sub MergedObj($$)
 {
 	my ($self, $ctx) = @_;
 
+	return unless defined($ctx->{OUTPUT});
+
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->output(<< "__EOD__"
 #
-$ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_OBJ_LIST)
 	\@echo Partially linking \$@
 	\@mkdir -p bin/mergedobj
-	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_FULL_OBJ_LIST)
+	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_OBJ_LIST)
 
 __EOD__
 );

@@ -105,8 +105,9 @@ sub check_module($$$)
 		push (@{$mod->{PUBLIC_DEPENDENCIES}}, $mod->{SUBSYSTEM});
 		add_libreplace($mod);
 	} 
-	if (grep(/INTEGRATED/, @{$mod->{OUTPUT_TYPE}})) {
+	if (grep(/MERGED_OBJ/, @{$mod->{OUTPUT_TYPE}})) {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
+		unshift (@{$INPUT->{$mod->{SUBSYSTEM}}{PRIVATE_DEPENDENCIES}}, $mod->{NAME});
 	}
 }
 
@@ -181,27 +182,6 @@ sub check_binary($$)
 	add_libreplace($bin);
 }
 
-sub import_integrated($$)
-{
-	my ($lib, $depend) = @_;
-
-	foreach my $mod (values %$depend) {
-		next if(not defined($mod->{OUTPUT_TYPE}));
-		next if(not grep(/INTEGRATED/, @{$mod->{OUTPUT_TYPE}}));
-		next if(not defined($mod->{SUBSYSTEM}));
-		next if($mod->{SUBSYSTEM} ne $lib->{NAME});
-		next if($mod->{ENABLE} ne "YES");
-
-		push (@{$lib->{FULL_OBJ_LIST}}, "\$($mod->{NAME}_OBJ_LIST)");
-		push (@{$lib->{LINK_FLAGS}}, "\$($mod->{NAME}_LINK_FLAGS)");
-		push (@{$lib->{CFLAGS}}, @{$mod->{CFLAGS}}) if defined($mod->{CFLAGS});
-		push (@{$lib->{PUBLIC_DEPENDENCIES}}, @{$mod->{PUBLIC_DEPENDENCIES}}) if defined($mod->{PUBLIC_DEPENDENCIES});
-		push (@{$lib->{PRIVATE_DEPENDENCIES}}, @{$mod->{PRIVATE_DEPENDENCIES}}) if defined($mod->{PRIVATE_DEPENDENCIES});
-
-		$mod->{ENABLE} = "NO";
-	}
-}
-
 sub add_implicit($$)
 {
 	my ($INPUT, $n) = @_;
@@ -230,7 +210,6 @@ sub calc_unique_deps($$$$$$$$)
 
  		if (defined ($dep->{OUTPUT_TYPE}) && 
 			($withlibs or 
-			(@{$dep->{OUTPUT_TYPE}}[0] eq "INTEGRATED") or 
 			(@{$dep->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ") or 
 			(@{$dep->{OUTPUT_TYPE}}[0] eq "STATIC_LIBRARY"))) {
 				push (@$busy, $dep->{NAME});
@@ -302,7 +281,6 @@ sub check($$$$$)
 		if (defined($part->{INIT_FUNCTIONS})) {
 			push (@{$part->{LINK_FLAGS}}, "\$(DYNEXP)");
 		}
-		import_integrated($part, $INPUT);
 	}
 
 	foreach my $part (values %$INPUT) {
