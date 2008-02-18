@@ -86,3 +86,17 @@ void init_lsa_obj_attr(struct lsa_ObjectAttribute *r,
 	r->sec_qos = sec_qos;
 }
 
+/*******************************************************************
+ Inits a lsa_TranslatedSid structure.
+********************************************************************/
+
+void init_lsa_translated_sid(struct lsa_TranslatedSid *r,
+			     enum lsa_SidType sid_type,
+			     uint32_t rid,
+			     uint32_t sid_index)
+{
+	r->sid_type = sid_type;
+	r->rid = rid;
+	r->sid_index = sid_index;
+}
+
