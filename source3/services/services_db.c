@@ -531,7 +531,11 @@ SEC_DESC *svcctl_get_secdesc( TALLOC_CTX *ctx, const char *name, NT_USER_TOKEN *
 		return NULL;
 	}
 
-	fetch_reg_values( key, values );
+	if (fetch_reg_values( key, values ) == -1) {
+		DEBUG(0, ("Error getting registry values\n"));
+		TALLOC_FREE(key);
+		return NULL;
+	}
 
 	TALLOC_FREE(key);
 
