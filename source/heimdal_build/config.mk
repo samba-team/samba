@@ -15,8 +15,7 @@ OBJ_FILES = \
 	../heimdal/kdc/digest.o \
 	../heimdal/kdc/process.o \
 	../heimdal/kdc/windc.o \
-	../heimdal/kdc/kx509.o \
-	../heimdal/lib/asn1/asn1_KRB5SignedPath.o
+	../heimdal/kdc/kx509.o
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1
 PUBLIC_DEPENDENCIES = HEIMDAL_NTLM HEIMDAL_HCRYPTO
 # End SUBSYSTEM HEIMDAL_KDC
@@ -31,9 +30,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_HDB_KEYS]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/hdb
 OBJ_FILES = \
-	../heimdal/lib/hdb/keys.o \
-	../heimdal/lib/hdb/asn1_Key.o \
-	../heimdal/lib/hdb/asn1_Salt.o
+	../heimdal/lib/hdb/keys.o
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5
 
 #######################
@@ -278,9 +275,7 @@ OBJ_FILES = \
 	../heimdal/lib/asn1/der_cmp.o \
 	../heimdal/lib/asn1/extra.o \
 	../heimdal/lib/asn1/timegm.o \
-	../heimdal/lib/asn1/asn1_err.o \
-	../heimdal/lib/asn1/asn1_krb5int32.o \
-	../heimdal/lib/asn1/asn1_krb5uint32.o
+	../heimdal/lib/asn1/asn1_err.o
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_COM_ERR
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
@@ -341,7 +336,7 @@ PRIVATE_DEPENDENCIES = \
 	HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 \
 	HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 \
 	HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 \
-	HEIMDAL_PKINIT_ASN1
+	HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1
 OBJ_FILES = \
 	../heimdal/lib/hx509/ca.o \
 	../heimdal/lib/hx509/cert.o \
