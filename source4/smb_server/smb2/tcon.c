@@ -394,6 +394,11 @@ void smb2srv_tcon_recv(struct smb2srv_request *req)
 	io->smb2.in.reserved	= SVAL(req->in.body, 0x02);
 	SMB2SRV_CHECK(smb2_pull_o16s16_string(&req->in, io, req->in.body+0x04, &io->smb2.in.path));
 
+	/* the VFS backend does not yet handle NULL paths */
+	if (io->smb2.in.path == NULL) {
+		io->smb2.in.path = "";
+	}
+
 	req->status = smb2srv_tcon_backend(req, io);
 
 	if (req->control_flags & SMB2SRV_REQ_CTRL_FLAG_NOT_REPLY) {

@@ -161,6 +161,11 @@ void smb2srv_find_recv(struct smb2srv_request *req)
 	SMB2SRV_CHECK(smb2_pull_o16s16_string(&req->in, info, req->in.body+0x18, &info->in.pattern));
 	info->in.max_response_size	= IVAL(req->in.body, 0x1C);
 
+	/* the VFS backend does not yet handle NULL patterns */
+	if (info->in.pattern == NULL) {
+		info->in.pattern = "";
+	}
+
 	SMB2SRV_CHECK_FILE_HANDLE(info->in.file.ntvfs);
 	SMB2SRV_CALL_NTVFS_BACKEND(smb2srv_find_backend(state));
 }
