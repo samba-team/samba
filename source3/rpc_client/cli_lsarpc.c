@@ -348,29 +348,32 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 				 DOM_SID **sids,
 				 enum lsa_SidType **types)
 {
-	prs_struct qbuf, rbuf;
-	LSA_Q_LOOKUP_NAMES q;
-	LSA_R_LOOKUP_NAMES r;
-	DOM_R_REF ref;
 	NTSTATUS result;
 	int i;
+	struct lsa_String *lsa_names = NULL;
+	struct lsa_RefDomainList *domains = NULL;
+	struct lsa_TransSidArray sid_array;
+	uint32_t count = 0;
 
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
+	ZERO_STRUCT(sid_array);
 
-	ZERO_STRUCT(ref);
-	r.dom_ref = &ref;
+	lsa_names = TALLOC_ARRAY(mem_ctx, struct lsa_String, num_names);
+	if (!lsa_names) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	init_q_lookup_names(mem_ctx, &q, pol, num_names, names, level);
+	for (i=0; i<num_names; i++) {
+		init_lsa_String(&lsa_names[i], names[i]);
+	}
 
-	CLI_DO_RPC( cli, mem_ctx, PI_LSARPC, LSA_LOOKUPNAMES,
-			q, r,
-			qbuf, rbuf,
-			lsa_io_q_lookup_names,
-			lsa_io_r_lookup_names,
-			NT_STATUS_UNSUCCESSFUL);
-
-	result = r.status;
+	result = rpccli_lsa_LookupNames(cli, mem_ctx,
+				        pol,
+					num_names,
+					lsa_names,
+					&domains,
+					&sid_array,
+					level,
+					&count);
 
 	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) !=
 	    NT_STATUS_V(STATUS_SOME_UNMAPPED)) {
@@ -382,7 +385,7 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 
 	/* Return output parameters */
 
-	if (r.mapped_count == 0) {
+	if (count == 0) {
 		result = NT_STATUS_NONE_MAPPED;
 		goto done;
 	}
@@ -417,9 +420,8 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 	}
 
 	for (i = 0; i < num_names; i++) {
-		DOM_RID *t_rids = r.dom_rid;
-		uint32 dom_idx = t_rids[i].rid_idx;
-		uint32 dom_rid = t_rids[i].rid;
+		uint32_t dom_idx = sid_array.sids[i].sid_index;
+		uint32_t dom_rid = sid_array.sids[i].rid;
 		DOM_SID *sid = &(*sids)[i];
 
 		/* Translate optimised sid through domain index array */
@@ -431,20 +433,19 @@ NTSTATUS rpccli_lsa_lookup_names(struct rpc_pipe_client *cli,
 			continue;
 		}
 
-		sid_copy(sid, &ref.ref_dom[dom_idx].ref_dom.sid);
+		sid_copy(sid, domains->domains[dom_idx].sid);
 
 		if (dom_rid != 0xffffffff) {
 			sid_append_rid(sid, dom_rid);
 		}
 
-		(*types)[i] = t_rids[i].type;
+		(*types)[i] = sid_array.sids[i].sid_type;
 
 		if (dom_names == NULL) {
 			continue;
 		}
 
-		(*dom_names)[i] = rpcstr_pull_unistr2_talloc(
-			*dom_names, &ref.ref_dom[dom_idx].uni_dom_name);
+		(*dom_names)[i] = domains->domains[dom_idx].name.string;
 	}
 
  done:
