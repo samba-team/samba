@@ -1700,12 +1700,29 @@ NTSTATUS rpccli_PNP_RequestEjectPC(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
+				uint32_t unknown1,
+				const char *devicepath,
+				uint32_t unknown2,
+				uint32_t *unknown3,
+				uint16_t *unknown4,
+				const char *unknown5,
+				const char **unknown5a,
+				uint32_t unknown6,
+				uint32_t unknown7,
 				WERROR *werror)
 {
 	struct PNP_HwProfFlags r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.unknown1 = unknown1;
+	r.in.devicepath = devicepath;
+	r.in.unknown2 = unknown2;
+	r.in.unknown3 = unknown3;
+	r.in.unknown4 = unknown4;
+	r.in.unknown5 = unknown5;
+	r.in.unknown6 = unknown6;
+	r.in.unknown7 = unknown7;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(PNP_HwProfFlags, &r);
@@ -1731,6 +1748,13 @@ NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*unknown3 = *r.out.unknown3;
+	if (unknown4 && r.out.unknown4) {
+		*unknown4 = *r.out.unknown4;
+	}
+	if (unknown5a && r.out.unknown5a) {
+		*unknown5a = *r.out.unknown5a;
+	}
 
 	/* Return result */
 	if (werror) {

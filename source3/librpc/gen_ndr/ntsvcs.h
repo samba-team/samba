@@ -340,6 +340,20 @@ struct PNP_RequestEjectPC {
 
 struct PNP_HwProfFlags {
 	struct {
+		uint32_t unknown1;
+		const char *devicepath;/* [ref,charset(UTF16)] */
+		uint32_t unknown2;
+		const char *unknown5;/* [unique,charset(UTF16)] */
+		uint32_t unknown6;
+		uint32_t unknown7;
+		uint32_t *unknown3;/* [ref] */
+		uint16_t *unknown4;/* [unique] */
+	} in;
+
+	struct {
+		const char **unknown5a;/* [unique,charset(UTF16)] */
+		uint32_t *unknown3;/* [ref] */
+		uint16_t *unknown4;/* [unique] */
 		WERROR result;
 	} out;
 

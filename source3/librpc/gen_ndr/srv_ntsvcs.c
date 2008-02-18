@@ -2978,6 +2978,15 @@ static bool api_PNP_HwProfFlags(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_HwProfFlags, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.unknown3 = r->in.unknown3;
+	r->out.unknown4 = r->in.unknown4;
+	r->out.unknown5a = talloc_zero(r, const char *);
+	if (r->out.unknown5a == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _PNP_HwProfFlags(p, r);
 
 	if (p->rng_fault_state) {
