@@ -222,6 +222,25 @@ __EOD__
 	$self->output("endif\n");
 }
 
+sub MergedObj($$)
+{
+	my ($self, $ctx) = @_;
+
+	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
+	$self->_prepare_list($ctx, "OBJ_LIST");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
+	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
+	$self->output(<< "__EOD__"
+#
+$ctx->{TARGET_MERGED_OBJ}: \$($ctx->{NAME}_FULL_OBJ_LIST)
+	\@echo Partially linking \$@
+	\@mkdir -p bin/mergedobj
+	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_FULL_OBJ_LIST)
+
+__EOD__
+);
+}
+
 sub StaticLibraryPrimitives($$)
 {
 	my ($self,$ctx) = @_;

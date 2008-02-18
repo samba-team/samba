@@ -206,6 +206,10 @@ bool smb2_request_is_ok(struct smb2_request *req)
 */
 bool smb2_oob(struct smb2_request_buffer *buf, const uint8_t *ptr, size_t size)
 {
+	if (size == 0) {
+		/* zero bytes is never out of range */
+		return false;
+	}
 	/* be careful with wraparound! */
 	if (ptr < buf->body ||
 	    ptr >= buf->body + buf->body_size ||
@@ -270,7 +274,7 @@ NTSTATUS smb2_pull_o16s16_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 	}
 	ofs  = SVAL(ptr, 0);
 	size = SVAL(ptr, 2);
-	if (ofs == 0 || size == 0) {
+	if (ofs == 0) {
 		*blob = data_blob(NULL, 0);
 		return NT_STATUS_OK;
 	}
@@ -310,7 +314,10 @@ NTSTATUS smb2_push_o16s16_blob(struct smb2_request_buffer *buf,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if (blob.length == 0) {
+	if (blob.data == NULL) {
+		if (blob.length != 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		SSVAL(ptr, 0, 0);
 		SSVAL(ptr, 2, 0);
 		return NT_STATUS_OK;
@@ -363,7 +370,10 @@ NTSTATUS smb2_push_o16s32_blob(struct smb2_request_buffer *buf,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if (blob.length == 0) {
+	if (blob.data == NULL) {
+		if (blob.length != 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		SSVAL(ptr, 0, 0);
 		SIVAL(ptr, 2, 0);
 		return NT_STATUS_OK;
@@ -416,7 +426,10 @@ NTSTATUS smb2_push_o32s32_blob(struct smb2_request_buffer *buf,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if (blob.length == 0) {
+	if (blob.data == NULL) {
+		if (blob.length != 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		SIVAL(ptr, 0, 0);
 		SIVAL(ptr, 4, 0);
 		return NT_STATUS_OK;
@@ -469,7 +482,10 @@ NTSTATUS smb2_push_s32o32_blob(struct smb2_request_buffer *buf,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if (blob.length == 0) {
+	if (blob.data == NULL) {
+		if (blob.length != 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		SIVAL(ptr, 0, 0);
 		SIVAL(ptr, 4, 0);
 		return NT_STATUS_OK;
@@ -512,7 +528,7 @@ NTSTATUS smb2_pull_o16s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 	}
 	ofs  = SVAL(ptr, 0);
 	size = IVAL(ptr, 2);
-	if (ofs == 0 || size == 0) {
+	if (ofs == 0) {
 		*blob = data_blob(NULL, 0);
 		return NT_STATUS_OK;
 	}
@@ -536,7 +552,7 @@ NTSTATUS smb2_pull_o32s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 	}
 	ofs  = IVAL(ptr, 0);
 	size = IVAL(ptr, 4);
-	if (ofs == 0 || size == 0) {
+	if (ofs == 0) {
 		*blob = data_blob(NULL, 0);
 		return NT_STATUS_OK;
 	}
@@ -563,7 +579,7 @@ NTSTATUS smb2_pull_o16As32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem
 	}
 	ofs  = SVAL(ptr, 0);
 	size = IVAL(ptr, 4);
-	if (ofs == 0 || size == 0) {
+	if (ofs == 0) {
 		*blob = data_blob(NULL, 0);
 		return NT_STATUS_OK;
 	}
@@ -587,7 +603,7 @@ NTSTATUS smb2_pull_s32o32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 	}
 	size = IVAL(ptr, 0);
 	ofs  = IVAL(ptr, 4);
-	if (ofs == 0 || size == 0) {
+	if (ofs == 0) {
 		*blob = data_blob(NULL, 0);
 		return NT_STATUS_OK;
 	}
@@ -613,6 +629,11 @@ NTSTATUS smb2_pull_o16s16_string(struct smb2_request_buffer *buf, TALLOC_CTX *me
 
 	status = smb2_pull_o16s16_blob(buf, mem_ctx, ptr, &blob);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (blob.data == NULL) {
+		*str = NULL;
+		return NT_STATUS_OK;
+	}
 
 	if (blob.length == 0) {
 		char *s;
@@ -643,8 +664,14 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 	NTSTATUS status;
 	ssize_t size;
 
-	if (strcmp("", str) == 0) {
+	if (str == NULL) {
 		return smb2_push_o16s16_blob(buf, ofs, data_blob(NULL, 0));
+	}
+
+	if (*str == 0) {
+		blob.data = str;
+		blob.length = 0;
+		return smb2_push_o16s16_blob(buf, ofs, blob);
 	}
 
 	size = convert_string_talloc(buf->buffer, lp_iconv_convenience(global_loadparm), CH_UNIX, CH_UTF16, 
