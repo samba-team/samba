@@ -835,7 +835,7 @@ WERROR reg_restorekey(struct registry_key *key, const char *fname)
 ********************************************************************/
 
 static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
-			     REGF_NK_REC *parent, SEC_DESC *sec_desc)
+			     REGF_NK_REC *parent)
 {
 	REGF_NK_REC *key;
 	REGVAL_CTR *values;
@@ -847,6 +847,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 	char *subkeyname;
 	REGISTRY_KEY registry_key;
 	WERROR result = WERR_OK;
+	SEC_DESC *sec_desc = NULL;
 
 	if (!regfile) {
 		return WERR_GENERAL_FAILURE;
@@ -899,6 +900,11 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 	fetch_reg_keys(&registry_key, subkeys);
 	fetch_reg_values(&registry_key, values);
 
+	result = regkey_get_secdesc(regfile->mem_ctx, &registry_key, &sec_desc);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
 	/* write out this key */
 
 	key = regfio_write_key(regfile, keyname, values, subkeys, sec_desc,
@@ -919,7 +925,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 			result = WERR_NOMEM;
 			goto done;
 		}
-		result = reg_write_tree(regfile, subkeypath, key, sec_desc);
+		result = reg_write_tree(regfile, subkeypath, key);
 		if (!W_ERROR_IS_OK(result))
 			goto done;
 	}
@@ -985,7 +991,6 @@ static WERROR backup_registry_key(REGISTRY_KEY *krecord, const char *fname)
 {
 	REGF_FILE *regfile;
 	WERROR result;
-	SEC_DESC *sd = NULL;
 
 	/* open the registry file....fail if the file already exists */
 
@@ -997,15 +1002,9 @@ static WERROR backup_registry_key(REGISTRY_KEY *krecord, const char *fname)
 		return ntstatus_to_werror(map_nt_error_from_unix(errno));
 	}
 
-	result = make_default_reg_sd(regfile->mem_ctx, &sd);
-	if (!W_ERROR_IS_OK(result)) {
-		regfio_close(regfile);
-		return result;
-	}
-
 	/* write the registry tree to the file  */
 
-	result = reg_write_tree(regfile, krecord->name, NULL, sd);
+	result = reg_write_tree(regfile, krecord->name, NULL);
 
 	/* cleanup */
 
