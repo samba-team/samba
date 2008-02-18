@@ -5,6 +5,7 @@
 #  Released under the GNU GPL
 
 package summary;
+use smb_build::config;
 use strict;
 
 sub enabled($)
@@ -21,9 +22,7 @@ sub showitem($$$)
 	my @need = ();
 
 	foreach (@$items) {
-		if (!enabled($output->{$_}->{ENABLE})) {
-			push (@need, $_);
-		}
+		push (@need, $_) if (enabled($config::enable{$_}));
 	}
 
 	print "Support for $desc: ";
