@@ -92,7 +92,7 @@ sub check_module($$$)
 
 	if (not defined($mod->{OUTPUT_TYPE})) {
 		if ($INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "EXT_LIB") {
-			$mod->{OUTPUT_TYPE} = ["SHARED_LIBRARY"];
+			$mod->{OUTPUT_TYPE} = undef;
 		} else {
 			$mod->{OUTPUT_TYPE} = $default_ot;
 		}
@@ -163,7 +163,7 @@ sub check_python($$$)
 		$python->{LIBRARY_REALNAME} = "$basename.\$(SHLIBEXT)";
 		$python->{INIT_FUNCTION} = "{ (char *)\"$basename\", init$basename }";
 	}
-	push (@{$python->{CFLAGS}}, @{$INPUT->{EXT_LIB_PYTHON}->{CFLAGS}});
+	push (@{$python->{CFLAGS}}, "\$(EXT_LIB_PYTHON_CFLAGS)");
 
 	$python->{SUBSYSTEM} = "LIBPYTHON";
 
@@ -189,9 +189,12 @@ sub add_implicit($$)
 	$INPUT->{$n} = {
 		TYPE => "MAKE_RULE",
 		NAME => $n,
-		TARGET => lc($n),
-		LIBS => "\$(".uc($n)."_LIBS)",
-		CFLAGS => "\$(".uc($n)."_CFLAG)"
+		TARGET => "",
+		OUTPUT_TYPE => undef,
+		LIBS => ["\$(".uc($n)."_LIBS)"],
+		LDFLAGS => ["\$(".uc($n)."_LDFLAGS)"],
+		CFLAGS => ["\$(".uc($n)."_CFLAGS)"],
+		CPPFLAGS => ["\$(".uc($n)."_CPPFLAGS)"]
 	};
 }
 

@@ -210,7 +210,7 @@ sub create_output($$)
 	}
 
 	foreach $part (values %{$depend}) {
-		if (($part->{STANDARD_VISIBILITY} ne "default") and 
+		if (defined($part->{STANDARD_VISIBILITY}) and ($part->{STANDARD_VISIBILITY} ne "default") and 
 			($config->{visibility_attribute} eq "yes")) {
 		    	push(@{$part->{FINAL_CFLAGS}}, "-fvisibility=$part->{STANDARD_VISIBILITY}");
 		}
