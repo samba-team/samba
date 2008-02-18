@@ -939,54 +939,6 @@ done:
 	return result;
 }
 
-static const struct generic_mapping reg_generic_map =
-	{ REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
-
-static WERROR make_default_reg_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
-{
-	DOM_SID adm_sid, owner_sid;
-	SEC_ACE ace[2];         /* at most 2 entries */
-	SEC_ACCESS mask;
-	SEC_ACL *psa = NULL;
-	size_t sd_size;
-
-	/* set the owner to BUILTIN\Administrator */
-
-	sid_copy(&owner_sid, &global_sid_Builtin);
-	sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN );
-	
-
-	/* basic access for Everyone */
-
-	init_sec_access(&mask, reg_generic_map.generic_execute
-			       | reg_generic_map.generic_read);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
-		     mask, 0);
-
-	/* add Full Access 'BUILTIN\Administrators' */
-
-	init_sec_access(&mask, reg_generic_map.generic_all);
-	sid_copy(&adm_sid, &global_sid_Builtin);
-	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	/* create the security descriptor */
-
-	psa = make_sec_acl(ctx, NT4_ACL_REVISION, 2, ace);
-	if (psa == NULL) {
-		return WERR_NOMEM;
-	}
-
-	*psd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
-			     SEC_DESC_SELF_RELATIVE, &owner_sid, NULL,
-			     NULL, psa, &sd_size);
-	if (*psd == NULL) {
-		return WERR_NOMEM;
-	}
-
-	return WERR_OK;
-}
-
 static WERROR backup_registry_key(REGISTRY_KEY *krecord, const char *fname)
 {
 	REGF_FILE *regfile;
