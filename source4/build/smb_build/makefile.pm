@@ -29,7 +29,6 @@ sub new($$$)
 	$self->{python_pys} = [];
 	$self->{shared_libs} = [];
 	$self->{headers} = [];
-	$self->{shared_modules} = [];
 	$self->{plugins} = [];
 	$self->{pc_files} = [];
 	$self->{proto_headers} = [];
@@ -149,7 +148,6 @@ sub SharedModule($$)
 		push (@{$self->{python_dsos}}, 
 			"$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
 	} else {
-		push (@{$self->{shared_modules}}, "$ctx->{TARGET_SHARED_LIBRARY}");
 		push (@{$self->{plugins}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
 		$self->output("installplugins:: $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
 		$self->output("\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
@@ -456,7 +454,6 @@ sub write($$)
 	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
 	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
 	$self->output("PROTO_HEADERS = " . array2oneperline($self->{proto_headers}) .  "\n");
-	$self->output("SHARED_MODULES = " . array2oneperline($self->{shared_modules}) . "\n");
 	$self->output("PLUGINS = " . array2oneperline($self->{plugins}) . "\n");
 
 	$self->_prepare_mk_files();
