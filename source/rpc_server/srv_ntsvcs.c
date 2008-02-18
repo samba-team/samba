@@ -144,23 +144,7 @@ static bool api_ntsvcs_get_hw_profile_info(pipes_struct *p)
 
 static bool api_ntsvcs_hw_profile_flags(pipes_struct *p)
 {
-	NTSVCS_Q_HW_PROFILE_FLAGS q_u;
-	NTSVCS_R_HW_PROFILE_FLAGS r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!ntsvcs_io_q_hw_profile_flags("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _ntsvcs_hw_profile_flags(p, &q_u, &r_u);
-
-	if(!ntsvcs_io_r_hw_profile_flags("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_ntsvcs_call(p, NDR_PNP_HWPROFFLAGS);
 }
 
 /*******************************************************************
