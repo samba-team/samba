@@ -3,6 +3,59 @@
 #include "includes.h"
 #include "librpc/gen_ndr/ndr_ntsvcs.h"
 
+static enum ndr_err_code ndr_push_PNP_HwProfInfo(struct ndr_push *ndr, int ndr_flags, const struct PNP_HwProfInfo *r)
+{
+	uint32_t cntr_unknown2_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown1));
+		for (cntr_unknown2_0 = 0; cntr_unknown2_0 < 160; cntr_unknown2_0++) {
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->unknown2[cntr_unknown2_0]));
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->unknown3));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+static enum ndr_err_code ndr_pull_PNP_HwProfInfo(struct ndr_pull *ndr, int ndr_flags, struct PNP_HwProfInfo *r)
+{
+	uint32_t cntr_unknown2_0;
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_pull_align(ndr, 4));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown1));
+		for (cntr_unknown2_0 = 0; cntr_unknown2_0 < 160; cntr_unknown2_0++) {
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->unknown2[cntr_unknown2_0]));
+		}
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->unknown3));
+	}
+	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_PNP_HwProfInfo(struct ndr_print *ndr, const char *name, const struct PNP_HwProfInfo *r)
+{
+	uint32_t cntr_unknown2_0;
+	ndr_print_struct(ndr, name, "PNP_HwProfInfo");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "unknown1", r->unknown1);
+	ndr->print(ndr, "%s: ARRAY(%d)", "unknown2", 160);
+	ndr->depth++;
+	for (cntr_unknown2_0=0;cntr_unknown2_0<160;cntr_unknown2_0++) {
+		char *idx_0=NULL;
+		asprintf(&idx_0, "[%d]", cntr_unknown2_0);
+		if (idx_0) {
+			ndr_print_uint16(ndr, "unknown2", r->unknown2[cntr_unknown2_0]);
+			free(idx_0);
+		}
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "unknown3", r->unknown3);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_PNP_Disconnect(struct ndr_push *ndr, int flags, const struct PNP_Disconnect *r)
 {
 	if (flags & NDR_IN) {
@@ -1981,8 +2034,19 @@ _PUBLIC_ void ndr_print_PNP_HwProfFlags(struct ndr_print *ndr, const char *name,
 static enum ndr_err_code ndr_push_PNP_GetHwProfInfo(struct ndr_push *ndr, int flags, const struct PNP_GetHwProfInfo *r)
 {
 	if (flags & NDR_IN) {
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.idx));
+		if (r->in.info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_PNP_HwProfInfo(ndr, NDR_SCALARS, r->in.info));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown1));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.info == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_PNP_HwProfInfo(ndr, NDR_SCALARS, r->out.info));
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -1990,9 +2054,31 @@ static enum ndr_err_code ndr_push_PNP_GetHwProfInfo(struct ndr_push *ndr, int fl
 
 static enum ndr_err_code ndr_pull_PNP_GetHwProfInfo(struct ndr_pull *ndr, int flags, struct PNP_GetHwProfInfo *r)
 {
+	TALLOC_CTX *_mem_save_info_0;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.idx));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.info);
+		}
+		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_PNP_HwProfInfo(ndr, NDR_SCALARS, r->in.info));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown1));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown2));
+		NDR_PULL_ALLOC(ndr, r->out.info);
+		*r->out.info = *r->in.info;
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.info);
+		}
+		_mem_save_info_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.info, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_PNP_HwProfInfo(ndr, NDR_SCALARS, r->out.info));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_info_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -2008,11 +2094,22 @@ _PUBLIC_ void ndr_print_PNP_GetHwProfInfo(struct ndr_print *ndr, const char *nam
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "PNP_GetHwProfInfo");
 		ndr->depth++;
+		ndr_print_uint32(ndr, "idx", r->in.idx);
+		ndr_print_ptr(ndr, "info", r->in.info);
+		ndr->depth++;
+		ndr_print_PNP_HwProfInfo(ndr, "info", r->in.info);
+		ndr->depth--;
+		ndr_print_uint32(ndr, "unknown1", r->in.unknown1);
+		ndr_print_uint32(ndr, "unknown2", r->in.unknown2);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "PNP_GetHwProfInfo");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "info", r->out.info);
+		ndr->depth++;
+		ndr_print_PNP_HwProfInfo(ndr, "info", r->out.info);
+		ndr->depth--;
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}

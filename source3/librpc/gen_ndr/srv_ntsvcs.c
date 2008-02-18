@@ -3060,6 +3060,8 @@ static bool api_PNP_GetHwProfInfo(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(PNP_GetHwProfInfo, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.info = r->in.info;
 	r->out.result = _PNP_GetHwProfInfo(p, r);
 
 	if (p->rng_fault_state) {

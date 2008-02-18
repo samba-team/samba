@@ -141,6 +141,10 @@ NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 				WERROR *werror);
 NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
+				  uint32_t idx,
+				  struct PNP_HwProfInfo *info,
+				  uint32_t unknown1,
+				  uint32_t unknown2,
 				  WERROR *werror);
 NTSTATUS rpccli_PNP_AddEmptyLogConf(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
