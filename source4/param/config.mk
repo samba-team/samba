@@ -1,7 +1,4 @@
-[LIBRARY::LIBSAMBA-CONFIG]
-VERSION = 0.0.1
-SO_VERSION = 0
-PC_FILE = samba-config.pc
+[SUBSYSTEM::LIBSAMBA-CONFIG]
 OBJ_FILES = loadparm.o \
 			params.o \
 			generic.o \

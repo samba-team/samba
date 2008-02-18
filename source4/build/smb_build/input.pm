@@ -5,12 +5,9 @@
 #  Copyright (C) Jelmer Vernooij 2004
 #  Released under the GNU GPL
 
-use smb_build::config;
 use strict;
 package smb_build::input;
 use File::Basename;
-
-my $srcdir = $config::config{srcdir};
 
 sub strtrim($)
 {
@@ -60,10 +57,7 @@ sub check_subsystem($$$)
 	my ($INPUT, $subsys, $default_ot) = @_;
 	return if ($subsys->{ENABLE} ne "YES");
 	
-	unless(defined($subsys->{OUTPUT_TYPE})) {
-		$subsys->{OUTPUT_TYPE} = $default_ot;
-	}
-
+	unless (defined($subsys->{OUTPUT_TYPE})) { $subsys->{OUTPUT_TYPE} = $default_ot; }
 	unless (defined($subsys->{INIT_FUNCTION_TYPE})) { $subsys->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
 	unless (defined($subsys->{INIT_FUNCTION_SENTINEL})) { $subsys->{INIT_FUNCTION_SENTINEL} = "NULL"; }
 }
@@ -79,11 +73,11 @@ sub check_module($$$)
 	}
 
 	if (!(defined($INPUT->{$mod->{SUBSYSTEM}}))) {
-		$mod->{ENABLE} = "NO";
-		return;
+		die("Unknown subsystem $mod->{SUBSYSTEM} for module $mod->{NAME}");
 	}
 
 	if ($INPUT->{$mod->{SUBSYSTEM}} eq "NO") {
+		warn("Disabling module $mod->{NAME} because subsystem $mod->{SUBSYSTEM} is disabled");
 		$mod->{ENABLE} = "NO";
 		return;
 	}
@@ -98,7 +92,7 @@ sub check_module($$$)
 
 	if (not defined($mod->{OUTPUT_TYPE})) {
 		if ($INPUT->{$mod->{SUBSYSTEM}}->{TYPE} eq "EXT_LIB") {
-			$mod->{OUTPUT_TYPE} = ["SHARED_LIBRARY"];
+			$mod->{OUTPUT_TYPE} = undef;
 		} else {
 			$mod->{OUTPUT_TYPE} = $default_ot;
 		}
@@ -111,8 +105,9 @@ sub check_module($$$)
 		push (@{$mod->{PUBLIC_DEPENDENCIES}}, $mod->{SUBSYSTEM});
 		add_libreplace($mod);
 	} 
-	if (grep(/INTEGRATED/, @{$mod->{OUTPUT_TYPE}})) {
+	if (grep(/MERGED_OBJ/, @{$mod->{OUTPUT_TYPE}})) {
 		push (@{$INPUT->{$mod->{SUBSYSTEM}}{INIT_FUNCTIONS}}, $mod->{INIT_FUNCTION}) if defined($mod->{INIT_FUNCTION});
+		unshift (@{$INPUT->{$mod->{SUBSYSTEM}}{PRIVATE_DEPENDENCIES}}, $mod->{NAME});
 	}
 }
 
@@ -159,8 +154,8 @@ sub check_python($$$)
 		$python->{OBJ_FILES} = ["$dirname$basename\_wrap.o"];
 		$python->{LIBRARY_REALNAME} = "_$basename.\$(SHLIBEXT)";
 		$python->{PYTHON_FILES} = ["$dirname$basename.py"];
-		push (@{$python->{CFLAGS}}, $config::config{CFLAG_NO_UNUSED_MACROS});
-		push (@{$python->{CFLAGS}}, $config::config{CFLAG_NO_CAST_QUAL});
+		push (@{$python->{CFLAGS}}, "\$(CFLAG_NO_UNUSED_MACROS)");
+		push (@{$python->{CFLAGS}}, "\$(CFLAG_NO_CAST_QUAL)");
 		$python->{INIT_FUNCTION} = "{ (char *)\"_$basename\", init_$basename }";
 	} else {
 		my $basename = $python->{NAME};
@@ -168,7 +163,7 @@ sub check_python($$$)
 		$python->{LIBRARY_REALNAME} = "$basename.\$(SHLIBEXT)";
 		$python->{INIT_FUNCTION} = "{ (char *)\"$basename\", init$basename }";
 	}
-	push (@{$python->{CFLAGS}}, @{$INPUT->{EXT_LIB_PYTHON}->{CFLAGS}});
+	push (@{$python->{CFLAGS}}, "\$(EXT_LIB_PYTHON_CFLAGS)");
 
 	$python->{SUBSYSTEM} = "LIBPYTHON";
 
@@ -187,26 +182,6 @@ sub check_binary($$)
 	add_libreplace($bin);
 }
 
-sub import_integrated($$)
-{
-	my ($lib, $depend) = @_;
-
-	foreach my $mod (values %$depend) {
-		next if(not defined($mod->{OUTPUT_TYPE}));
-		next if(not grep(/INTEGRATED/, @{$mod->{OUTPUT_TYPE}}));
-		next if(not defined($mod->{SUBSYSTEM}));
-		next if($mod->{SUBSYSTEM} ne $lib->{NAME});
-		next if($mod->{ENABLE} ne "YES");
-
-		push (@{$lib->{LINK_FLAGS}}, "\$($mod->{NAME}_LINK_FLAGS)");
-		push (@{$lib->{CFLAGS}}, @{$mod->{CFLAGS}}) if defined($mod->{CFLAGS});
-		push (@{$lib->{PUBLIC_DEPENDENCIES}}, @{$mod->{PUBLIC_DEPENDENCIES}}) if defined($mod->{PUBLIC_DEPENDENCIES});
-		push (@{$lib->{PRIVATE_DEPENDENCIES}}, @{$mod->{PRIVATE_DEPENDENCIES}}) if defined($mod->{PRIVATE_DEPENDENCIES});
-
-		$mod->{ENABLE} = "NO";
-	}
-}
-
 sub add_implicit($$)
 {
 	my ($INPUT, $n) = @_;
@@ -214,9 +189,12 @@ sub add_implicit($$)
 	$INPUT->{$n} = {
 		TYPE => "MAKE_RULE",
 		NAME => $n,
-		TARGET => lc($n),
-		LIBS => "\$(".uc($n)."_LIBS)",
-		CFLAGS => "\$(".uc($n)."_CFLAG)"
+		TARGET => "",
+		OUTPUT_TYPE => undef,
+		LIBS => ["\$(".uc($n)."_LIBS)"],
+		LDFLAGS => ["\$(".uc($n)."_LDFLAGS)"],
+		CFLAGS => ["\$(".uc($n)."_CFLAGS)"],
+		CPPFLAGS => ["\$(".uc($n)."_CPPFLAGS)"]
 	};
 }
 
@@ -227,15 +205,17 @@ sub calc_unique_deps($$$$$$$$)
 
 	foreach my $n (@$deps) {
 		add_implicit($INPUT, $n) unless (defined($INPUT->{$n}));
-		die("Recursive dependency: $n, list: " . join(',', @$busy)) if (grep (/^$n$/, @$busy));
-		next if (grep /^$n$/, @$udeps);
 		my $dep = $INPUT->{$n};
+		if (grep (/^$n$/, @$busy)) {
+			next if (@{$dep->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ");
+			die("Recursive dependency: $n, list: " . join(',', @$busy));
+		}
+		next if (grep /^$n$/, @$udeps);
 
 		push (@{$udeps}, $dep->{NAME}) if $forward;
 
  		if (defined ($dep->{OUTPUT_TYPE}) && 
 			($withlibs or 
-			(@{$dep->{OUTPUT_TYPE}}[0] eq "INTEGRATED") or 
 			(@{$dep->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ") or 
 			(@{$dep->{OUTPUT_TYPE}}[0] eq "STATIC_LIBRARY"))) {
 				push (@$busy, $dep->{NAME});
@@ -306,7 +286,6 @@ sub check($$$$$)
 		if (defined($part->{INIT_FUNCTIONS})) {
 			push (@{$part->{LINK_FLAGS}}, "\$(DYNEXP)");
 		}
-		import_integrated($part, $INPUT);
 	}
 
 	foreach my $part (values %$INPUT) {

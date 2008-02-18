@@ -18,7 +18,6 @@ my $section_types = {
 		"CFLAGS"		=> "list",
 		"CPPFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
-		"PC_NAME" => "string",
 		},
 	"PYTHON" => {
 		SWIG_FILE => "string",
@@ -90,7 +89,6 @@ my $section_types = {
 		"SO_VERSION"		=> "string",
 		"LIBRARY_REALNAME" => "string",
 
-		"PC_NAME" => "string",
 		"PC_FILE" => "string",
 		
 		"INIT_FUNCTION_TYPE"	=> "string",
@@ -241,7 +239,7 @@ sub run_config_mk($$$$)
 		}
 
 		# include
-		if ($line =~ /^include (.*)$/) {
+		if ($line =~ /^mkinclude (.*)$/) {
 			my $subfile= $1;
 			my $subdir = dirname($filename);
 			$subdir =~ s/^\.$//g;
