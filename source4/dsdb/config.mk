@@ -1,6 +1,6 @@
 # Directory Service subsystem
 
-include samdb/ldb_modules/config.mk
+mkinclude samdb/ldb_modules/config.mk
 
 ################################################
 # Start SUBSYSTEM SAMDB

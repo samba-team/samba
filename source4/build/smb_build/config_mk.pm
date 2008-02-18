@@ -239,7 +239,7 @@ sub run_config_mk($$$$)
 		}
 
 		# include
-		if ($line =~ /^include (.*)$/) {
+		if ($line =~ /^mkinclude (.*)$/) {
 			my $subfile= $1;
 			my $subdir = dirname($filename);
 			$subdir =~ s/^\.$//g;

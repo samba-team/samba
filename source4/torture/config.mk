@@ -95,8 +95,8 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM TORTURE_RAW
 #################################
 
-include smb2/config.mk
-include winbind/config.mk
+mkinclude smb2/config.mk
+mkinclude winbind/config.mk
 
 [SUBSYSTEM::TORTURE_NDR]
 PRIVATE_PROTO_HEADER = ndr/proto.h
@@ -200,7 +200,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM TORTURE_AUTH
 #################################
 
-include local/config.mk
+mkinclude local/config.mk
 
 #################################
 # Start MODULE TORTURE_NBENCH
