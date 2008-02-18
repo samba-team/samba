@@ -247,6 +247,7 @@ sub run_config_mk($$$$)
 			$subdir =~ s/^\.$//g;
 			$subdir =~ s/^\.\///g;
 			$subdir .= "/" if ($subdir ne "");
+			$makefile .= "basedir := $subdir\n";
 			$makefile .= run_config_mk($input, $srcdir, $builddir, $subdir.$subfile);
 			next;
 		}
@@ -265,7 +266,6 @@ sub run_config_mk($$$$)
 			$infragment = 1;
 			next;
 		}
-
 		
 		# Assignment
 		if ($line =~ /^([a-zA-Z0-9_]+)[\t ]*=(.*)$/) {
