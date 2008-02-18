@@ -48,13 +48,10 @@ $config::config{LIBRARY_OUTPUT_TYPE} = $library_output_type;
 $config::config{MODULE_OUTPUT_TYPE} = $module_output_type;
 my $mkenv = new smb_build::makefile(\%config::config, $mkfile);
 
-foreach my $key (values %$OUTPUT) {
-	next unless defined $key->{OUTPUT_TYPE};
-
-	$mkenv->Integrated($key) if grep(/INTEGRATED/, @{$key->{OUTPUT_TYPE}});
-}
-
 my $shared_libs_used = 0;
+foreach my $key (values %$OUTPUT) {
+	$mkenv->_prepare_list($key, "OBJ_LIST");
+}
 
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};

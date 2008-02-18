@@ -112,13 +112,6 @@ sub _prepare_list($$$)
 	$self->output("$ctx->{NAME}_$var =$tmplist\n");
 }
 
-sub Integrated($$)
-{
-	my ($self,$ctx) = @_;
-
-	$self->_prepare_list($ctx, "OBJ_LIST");
-}
-
 sub SharedModulePrimitives($$)
 {
 	my ($self,$ctx) = @_;
@@ -163,7 +156,6 @@ sub SharedModule($$)
 	}
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
@@ -221,7 +213,6 @@ sub SharedLibraryPrimitives($$)
 
 	if (not grep(/STATIC_LIBRARY/, @{$ctx->{OUTPUT_TYPE}})) {
 		$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-		$self->_prepare_list($ctx, "OBJ_LIST");
 		$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	}
 }
@@ -269,7 +260,6 @@ sub MergedObj($$)
 	my ($self, $ctx) = @_;
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 	$self->output(<< "__EOD__"
@@ -292,7 +282,6 @@ sub StaticLibrary($$)
 	push (@{$self->{static_libs}}, $ctx->{RESULT_STATIC_LIBRARY}) if ($ctx->{TYPE} eq "LIBRARY");
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 
 	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
@@ -335,7 +324,6 @@ sub Binary($$)
 
 	$self->output("binaries:: $ctx->{TARGET_BINARY}\n");
 
-	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
