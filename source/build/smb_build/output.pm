@@ -136,7 +136,7 @@ sub generate_binary($)
 	my $bin = shift;
 
 	$bin->{DEPEND_LIST} = [];
-	push(@{$bin->{LINK_FLAGS}}, "\$($bin->{NAME}\_OBJ_LIST)");
+	push(@{$bin->{LINK_FLAGS}}, "\$($bin->{NAME}\_FULL_OBJ_LIST)");
 
 	$bin->{DEBUGDIR} = "bin";
 	$bin->{RESULT_BINARY} = $bin->{OUTPUT_BINARY} = "$bin->{DEBUGDIR}/$bin->{NAME}";
@@ -198,10 +198,14 @@ sub create_output($$)
 			my $elem = $depend->{$_};
 			next if $elem == $part;
 
-			push(@{$part->{LINK_FLAGS}}, "\$($elem->{NAME}_OUTPUT)") if defined($elem->{OUTPUT});
 			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
-			push(@{$part->{LINK_FLAGS}},@{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
-			push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
+			push(@{$part->{LINK_FLAGS}}, @{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
+			if (defined($elem->{OUTPUT_TYPE}) and @{$elem->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ") {
+				push (@{$part->{FULL_OBJ_LIST}}, $elem->{TARGET});
+			} else {
+				push(@{$part->{LINK_FLAGS}}, "\$($elem->{NAME}_OUTPUT)") if defined($elem->{OUTPUT});
+				push(@{$part->{DEPEND_LIST}}, $elem->{TARGET}) if defined($elem->{TARGET});
+			}
 		}
 	}
 
