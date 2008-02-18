@@ -284,28 +284,26 @@ WERROR _svcctl_OpenSCManagerW(pipes_struct *p,
 }
 
 /********************************************************************
+ _svcctl_OpenServiceW
 ********************************************************************/
 
-WERROR _svcctl_open_service(pipes_struct *p, SVCCTL_Q_OPEN_SERVICE *q_u, SVCCTL_R_OPEN_SERVICE *r_u)
+WERROR _svcctl_OpenServiceW(pipes_struct *p,
+			    struct svcctl_OpenServiceW *r)
 {
 	SEC_DESC *sec_desc;
 	uint32 access_granted = 0;
 	NTSTATUS status;
-	char *service = NULL;
-	size_t ret = rpcstr_pull_talloc(p->mem_ctx,
-					&service,
-					q_u->servicename.buffer,
-					q_u->servicename.uni_str_len*2,
-					0);
+	const char *service = NULL;
 
-	if (ret == (size_t)-1 || !service) {
+	service = r->in.ServiceName;
+	if (!service) {
 		return WERR_NOMEM;
 	}
-  	DEBUG(5, ("_svcctl_open_service: Attempting to open Service [%s], \n", service));
+	DEBUG(5, ("_svcctl_OpenServiceW: Attempting to open Service [%s], \n", service));
 
 	/* based on my tests you can open a service if you have a valid scm handle */
 
-	if ( !find_service_info_by_hnd( p, &q_u->handle ) )
+	if ( !find_service_info_by_hnd( p, r->in.scmanager_handle) )
 		return WERR_BADFID;
 
 	/* perform access checks.  Use the root token in order to ensure that we
@@ -314,12 +312,12 @@ WERROR _svcctl_open_service(pipes_struct *p, SVCCTL_Q_OPEN_SERVICE *q_u, SVCCTL_
 	if ( !(sec_desc = svcctl_get_secdesc( p->mem_ctx, service, get_root_nt_token() )) )
 		return WERR_NOMEM;
 
-	se_map_generic( &q_u->access, &svc_generic_map );
-	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
+	se_map_generic( &r->in.access_mask, &svc_generic_map );
+	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, r->in.access_mask, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
 
-	return create_open_service_handle( p, &r_u->handle, SVC_HANDLE_IS_SERVICE, service, access_granted );
+	return create_open_service_handle( p, r->out.handle, SVC_HANDLE_IS_SERVICE, service, access_granted );
 }
 
 /********************************************************************
@@ -960,12 +958,6 @@ WERROR _svcctl_EnumDependentServicesW(pipes_struct *p, struct svcctl_EnumDepende
 }
 
 WERROR _svcctl_EnumServicesStatusW(pipes_struct *p, struct svcctl_EnumServicesStatusW *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_OpenServiceW(pipes_struct *p, struct svcctl_OpenServiceW *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
