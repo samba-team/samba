@@ -960,7 +960,7 @@ import "security.idl";
 		[in]     policy_handle *handle,
 		[in,range(0,1000)] uint32 num_names,
 		[in,size_is(num_names)]  lsa_String names[],
-		[out,ref]    lsa_RefDomainList *domains,
+		[out,ref]    lsa_RefDomainList **domains,
 		[in,out,ref] lsa_TransSidArray3 *sids,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count,
@@ -1048,7 +1048,7 @@ import "security.idl";
 	NTSTATUS lsa_LookupNames4(
 		[in,range(0,1000)] uint32 num_names,
 		[in,size_is(num_names)]  lsa_String names[],
-		[out,ref]    lsa_RefDomainList *domains,
+		[out,ref]    lsa_RefDomainList **domains,
 		[in,out,ref] lsa_TransSidArray3 *sids,
 		[in]         lsa_LookupNamesLevel level,
 		[in,out,ref] uint32 *count,
