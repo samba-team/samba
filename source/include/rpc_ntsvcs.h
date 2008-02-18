@@ -68,21 +68,4 @@ typedef struct {
 	WERROR status;
 } NTSVCS_R_GET_DEVICE_REG_PROPERTY;
 
-
-/**************************/
-
-typedef struct {
-	uint32 index;
-	uint8 *buffer;
-	uint32 buffer_size;
-	uint32 unknown1;
-} NTSVCS_Q_GET_HW_PROFILE_INFO;
-
-typedef struct {
-	uint32 buffer_size;	/* the size (not included in the reply) 
-				   if just matched from the request */
-	uint8 *buffer;
-	WERROR status;
-} NTSVCS_R_GET_HW_PROFILE_INFO;
-
 #endif /* _RPC_NTSVCS_H */
