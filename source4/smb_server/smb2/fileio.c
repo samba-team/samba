@@ -80,6 +80,11 @@ void smb2srv_create_recv(struct smb2srv_request *req)
 	/* TODO: parse the blob */
 	ZERO_STRUCT(io->smb2.in.eas);
 
+	/* the VFS backend does not yet handle NULL filenames */
+	if (io->smb2.in.fname == NULL) {
+		io->smb2.in.fname = "";
+	}
+
 	SMB2SRV_CALL_NTVFS_BACKEND(ntvfs_open(req->ntvfs, io));
 }
 

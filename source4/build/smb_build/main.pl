@@ -19,6 +19,7 @@ my $INPUT = {};
 my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, $config::config{builddir}, "main.mk");
 
 my $subsys_output_type;
+#$subsys_output_type = ["MERGED_OBJ"];
 $subsys_output_type = ["STATIC_LIBRARY"];
 
 my $library_output_type;
@@ -53,6 +54,7 @@ foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
 	$mkenv->StaticLibraryPrimitives($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
+	$mkenv->MergedObj($key) if grep(/MERGED_OBJ/, @{$key->{OUTPUT_TYPE}});
 	if (defined($key->{PC_FILE})) {
 		$mkenv->output("PC_FILES += $key->{BASEDIR}/$key->{PC_FILE}\n");
 	} 

@@ -89,6 +89,17 @@ sub generate_shared_library($)
 	$lib->{OUTPUT_SHARED_LIBRARY} = $lib->{TARGET_SHARED_LIBRARY};
 }
 
+sub generate_merged_obj($)
+{
+	my $lib = shift;
+
+	my $link_name = $lib->{NAME};
+	$link_name =~ s/^LIB//;
+
+	$lib->{MERGED_OBJNAME} = lc($link_name).".o";
+	$lib->{TARGET_MERGED_OBJ} = $lib->{OUTPUT_MERGED_OBJ} = "bin/mergedobj/$lib->{MERGED_OBJNAME}";
+}
+
 sub generate_static_library($)
 {
 	my $lib = shift;
@@ -153,6 +164,7 @@ sub create_output($$)
 		generate_binary($part) if grep(/BINARY/, @{$part->{OUTPUT_TYPE}});
 		generate_shared_library($part) if grep(/SHARED_LIBRARY/, @{$part->{OUTPUT_TYPE}});
 		generate_static_library($part) if grep(/STATIC_LIBRARY/, @{$part->{OUTPUT_TYPE}});
+		generate_merged_obj($part) if grep(/MERGED_OBJ/, @{$part->{OUTPUT_TYPE}});
 		$part->{OUTPUT} = $part->{"OUTPUT_" . @{$part->{OUTPUT_TYPE}}[0]};
 		$part->{TARGET} = $part->{"TARGET_" . @{$part->{OUTPUT_TYPE}}[0]};
 	}

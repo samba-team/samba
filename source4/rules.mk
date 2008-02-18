@@ -37,6 +37,9 @@ PCHCOMPILE = @$(CC) -Ilib/replace \
     $(CFLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
     $(PICFLAG) $(CPPFLAGS) -c $(FIRST_PREREQ) -o $@
 
+# Partial linking
+PARTLINK = @$(PROG_LD) -r
+
 include/config.h:
 	@echo "include/config.h not present"
 	@echo "You need to rerun ./autogen.sh and ./configure"
