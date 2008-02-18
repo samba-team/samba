@@ -1,3 +1,10 @@
+2008-02-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* krb5/acquire_cred.c (acquire_initiator_cred): handle the
+	credential cache better, use destroy/close when appriate and for
+	all cases. Thanks to Michael Allen for point out the memory-leak
+	that I also fixed.
+
 2008-02-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* spnego/accept_sec_context.c: Make error reporting somewhat more
