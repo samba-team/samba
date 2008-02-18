@@ -236,7 +236,18 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x29 */
 
-	WERROR PNP_GetHwProfInfo();
+	typedef struct {
+		uint32 unknown1;
+		uint16 unknown2[160];
+		uint32 unknown3;
+	} PNP_HwProfInfo;
+
+	WERROR PNP_GetHwProfInfo(
+		[in] uint32 idx,
+		[in,out,ref] PNP_HwProfInfo *info,
+		[in] uint32 unknown1,
+		[in] uint32 unknown2
+		);
 
 	/******************/
 	/* Function: 0x2a */
