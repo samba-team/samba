@@ -263,7 +263,8 @@ done:
 /********************************************************************
 ********************************************************************/
 
-WERROR _svcctl_open_scmanager(pipes_struct *p, SVCCTL_Q_OPEN_SCMANAGER *q_u, SVCCTL_R_OPEN_SCMANAGER *r_u)
+WERROR _svcctl_OpenSCManagerW(pipes_struct *p,
+			      struct svcctl_OpenSCManagerW *r)
 {
 	SEC_DESC *sec_desc;
 	uint32 access_granted = 0;
@@ -274,12 +275,12 @@ WERROR _svcctl_open_scmanager(pipes_struct *p, SVCCTL_Q_OPEN_SCMANAGER *q_u, SVC
 	if ( !(sec_desc = construct_scm_sd( p->mem_ctx )) )
 		return WERR_NOMEM;
 
-	se_map_generic( &q_u->access, &scm_generic_map );
-	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, q_u->access, &access_granted );
+	se_map_generic( &r->in.access_mask, &scm_generic_map );
+	status = svcctl_access_check( sec_desc, p->pipe_user.nt_user_token, r->in.access_mask, &access_granted );
 	if ( !NT_STATUS_IS_OK(status) )
 		return ntstatus_to_werror( status );
 
-	return create_open_service_handle( p, &r_u->handle, SVC_HANDLE_IS_SCM, NULL, access_granted );
+	return create_open_service_handle( p, r->out.handle, SVC_HANDLE_IS_SCM, NULL, access_granted );
 }
 
 /********************************************************************
@@ -959,12 +960,6 @@ WERROR _svcctl_EnumDependentServicesW(pipes_struct *p, struct svcctl_EnumDepende
 }
 
 WERROR _svcctl_EnumServicesStatusW(pipes_struct *p, struct svcctl_EnumServicesStatusW *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_OpenSCManagerW(pipes_struct *p, struct svcctl_OpenSCManagerW *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
