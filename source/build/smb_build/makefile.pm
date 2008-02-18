@@ -248,19 +248,12 @@ sub InitFunctions($$)
 sub StaticLibrary($$)
 {
 	my ($self,$ctx) = @_;
-	$self->output(<< "__EOD__"
-#
-$ctx->{RESULT_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)
-	\@echo Linking \$@
-	\@rm -f \$@
-	\@mkdir -p $ctx->{STATICDIR}
-	\@\$(STLD) \$(STLD_FLAGS) \$@ \$($ctx->{NAME}_FULL_OBJ_LIST)
 
 	return unless (defined($ctx->{OBJ_FILES}));
 
-	$self->output("STATIC_LIBS += $ctx->{TARGET_STATIC_LIBRARY}\n") if ($ctx->{TYPE} eq "LIBRARY");
+	$self->output("STATIC_LIBS += $ctx->{RESULT_STATIC_LIBRARY}\n") if ($ctx->{TYPE} eq "LIBRARY");
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->output("$ctx->{TARGET_STATIC_LIBRARY}: \$($ctx->{NAME}_OBJ_LIST)\n");
+	$self->output("$ctx->{RESULT_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)\n");
 }
 
 sub Header($$)
