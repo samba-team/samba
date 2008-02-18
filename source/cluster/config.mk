@@ -1,4 +1,4 @@
-include ctdb/config.mk
+mkinclude ctdb/config.mk
 
 ####################
 [SUBSYSTEM::CLUSTER]

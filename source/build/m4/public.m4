@@ -131,7 +131,7 @@ dnl SMB_INCLUDE_MK(file)
 AC_DEFUN([SMB_INCLUDE_MK],
 [
 SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
-include $1
+mkinclude $1
 "
 ])
 

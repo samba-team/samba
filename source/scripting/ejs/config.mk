@@ -66,7 +66,7 @@ SUBSYSTEM = smbcalls
 OUTPUT_TYPE = MERGED_OBJ
 INIT_FUNCTION = smb_setup_ejs_system
 
-include ejsnet/config.mk
+mkinclude ejsnet/config.mk
 
 [SUBSYSTEM::smbcalls]
 PRIVATE_PROTO_HEADER = proto.h
