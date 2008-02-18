@@ -69,23 +69,7 @@ static bool api_svcctl_open_service(pipes_struct *p)
 
 static bool api_svcctl_get_display_name(pipes_struct *p)
 {
-	SVCCTL_Q_GET_DISPLAY_NAME q_u;
-	SVCCTL_R_GET_DISPLAY_NAME r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_get_display_name("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_get_display_name(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_get_display_name("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_GETSERVICEDISPLAYNAMEW);
 }
 
 /*******************************************************************
