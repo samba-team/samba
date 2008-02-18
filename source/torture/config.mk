@@ -113,7 +113,7 @@ OBJ_FILES = ndr/ndr.o \
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
-#OUTPUT_TYPE = INTEGRATED
+#OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = torture
 INIT_FUNCTION = torture_rpc_init
 PRIVATE_PROTO_HEADER = \
