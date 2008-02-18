@@ -105,6 +105,7 @@ static int normalise_search_callback(struct ldb_context *ldb, void *context, str
 		if (!attribute) {
 			continue;
 		}
+		/* Look to see if this attributeSyntax is a DN */
 		if ((strcmp(attribute->attributeSyntax_oid, "2.5.5.1") != 0) &&
 		    (strcmp(attribute->attributeSyntax_oid, "2.5.5.7") != 0)) {
 			continue;
