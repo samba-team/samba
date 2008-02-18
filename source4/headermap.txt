@@ -120,3 +120,4 @@ lib/util/wrap_xattr.h: wrap_xattr.h
 lib/events/events.h: events/events.h
 lib/events/events_internal.h: events/events_internal.h
 libcli/ldap/ldap_ndr.h: ldb/ldap_ndr.h
+lib/gencache/gencache.h: gencache.h
