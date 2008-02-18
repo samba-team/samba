@@ -34,7 +34,7 @@ static const struct generic_mapping reg_generic_map =
 /********************************************************************
 ********************************************************************/
 
-static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
+static SEC_DESC* construct_registry_sd(TALLOC_CTX *ctx)
 {
 	SEC_ACE ace[3];
 	SEC_ACCESS mask;
@@ -45,26 +45,35 @@ static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
 
 	/* basic access for Everyone */
 
-	init_sec_access(&mask, REG_KEY_READ );
-	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_access(&mask, REG_KEY_READ);
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+		     mask, 0);
 
 	/* Full Access 'BUILTIN\Administrators' */
 
-	init_sec_access(&mask, REG_KEY_ALL );
-	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_access(&mask, REG_KEY_ALL);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		     SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	/* Full Access 'NT Authority\System' */
 
 	init_sec_access(&mask, REG_KEY_ALL );
-	init_sec_ace(&ace[i++], &global_sid_System, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_System, SEC_ACE_TYPE_ACCESS_ALLOWED,
+		     mask, 0);
 
 	/* create the security descriptor */
 
-	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
+	acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace);
+	if (acl == NULL) {
 		return NULL;
+	}
 
-	if ( !(sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, &global_sid_Builtin_Administrators, NULL, NULL, acl, &sd_size)) )
+	sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+			   &global_sid_Builtin_Administrators, NULL, NULL, acl,
+			   &sd_size);
+	if (sd == NULL) {
 		return NULL;
+	}
 
 	return sd;
 }
