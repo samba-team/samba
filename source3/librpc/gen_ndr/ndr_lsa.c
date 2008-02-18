@@ -10515,7 +10515,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int f
 		if (r->out.domains == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.domains));
+		if (*r->out.domains) {
+			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
+		}
 		if (r->out.sids == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -10532,9 +10535,11 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int f
 _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int flags, struct lsa_LookupNames3 *r)
 {
 	uint32_t cntr_names_0;
+	uint32_t _ptr_domains;
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_names_0;
 	TALLOC_CTX *_mem_save_domains_0;
+	TALLOC_CTX *_mem_save_domains_1;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_count_0;
 	if (flags & NDR_IN) {
@@ -10595,7 +10600,18 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int f
 		}
 		_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domains));
+		if (_ptr_domains) {
+			NDR_PULL_ALLOC(ndr, *r->out.domains);
+		} else {
+			*r->out.domains = NULL;
+		}
+		if (*r->out.domains) {
+			_mem_save_domains_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.domains, 0);
+			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_1, 0);
+		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.sids);
@@ -10661,7 +10677,12 @@ _PUBLIC_ void ndr_print_lsa_LookupNames3(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_ptr(ndr, "domains", r->out.domains);
 		ndr->depth++;
-		ndr_print_lsa_RefDomainList(ndr, "domains", r->out.domains);
+		ndr_print_ptr(ndr, "domains", *r->out.domains);
+		ndr->depth++;
+		if (*r->out.domains) {
+			ndr_print_lsa_RefDomainList(ndr, "domains", *r->out.domains);
+		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "sids", r->out.sids);
 		ndr->depth++;
@@ -11241,7 +11262,10 @@ static enum ndr_err_code ndr_push_lsa_LookupNames4(struct ndr_push *ndr, int fla
 		if (r->out.domains == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.domains));
+		if (*r->out.domains) {
+			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
+		}
 		if (r->out.sids == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -11258,8 +11282,10 @@ static enum ndr_err_code ndr_push_lsa_LookupNames4(struct ndr_push *ndr, int fla
 static enum ndr_err_code ndr_pull_lsa_LookupNames4(struct ndr_pull *ndr, int flags, struct lsa_LookupNames4 *r)
 {
 	uint32_t cntr_names_0;
+	uint32_t _ptr_domains;
 	TALLOC_CTX *_mem_save_names_0;
 	TALLOC_CTX *_mem_save_domains_0;
+	TALLOC_CTX *_mem_save_domains_1;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_count_0;
 	if (flags & NDR_IN) {
@@ -11313,7 +11339,18 @@ static enum ndr_err_code ndr_pull_lsa_LookupNames4(struct ndr_pull *ndr, int fla
 		}
 		_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domains));
+		if (_ptr_domains) {
+			NDR_PULL_ALLOC(ndr, *r->out.domains);
+		} else {
+			*r->out.domains = NULL;
+		}
+		if (*r->out.domains) {
+			_mem_save_domains_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.domains, 0);
+			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_1, 0);
+		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.sids);
@@ -11375,7 +11412,12 @@ _PUBLIC_ void ndr_print_lsa_LookupNames4(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_ptr(ndr, "domains", r->out.domains);
 		ndr->depth++;
-		ndr_print_lsa_RefDomainList(ndr, "domains", r->out.domains);
+		ndr_print_ptr(ndr, "domains", *r->out.domains);
+		ndr->depth++;
+		if (*r->out.domains) {
+			ndr_print_lsa_RefDomainList(ndr, "domains", *r->out.domains);
+		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "sids", r->out.sids);
 		ndr->depth++;

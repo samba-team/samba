@@ -1472,7 +1472,7 @@ struct lsa_LookupNames3 {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [ref] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransSidArray3 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -1576,7 +1576,7 @@ struct lsa_LookupNames4 {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [ref] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransSidArray3 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
