@@ -399,29 +399,7 @@ static bool api_lsa_lookup_names2(pipes_struct *p)
 
 static bool api_lsa_lookup_names3(pipes_struct *p)
 {
-	LSA_Q_LOOKUP_NAMES3 q_u;
-	LSA_R_LOOKUP_NAMES3 r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the info class and policy handle */
-	if(!lsa_io_q_lookup_names3("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_lookup_names3: failed to unmarshall LSA_Q_LOOKUP_NAMES3.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_lookup_names3(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_lookup_names3("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_lookup_names3: Failed to marshall LSA_R_LOOKUP_NAMES3.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_LOOKUPNAMES3);
 }
 
 /***************************************************************************
@@ -430,29 +408,7 @@ static bool api_lsa_lookup_names3(pipes_struct *p)
 
 static bool api_lsa_lookup_names4(pipes_struct *p)
 {
-	LSA_Q_LOOKUP_NAMES4 q_u;
-	LSA_R_LOOKUP_NAMES4 r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the info class and policy handle */
-	if(!lsa_io_q_lookup_names4("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_lookup_names4: failed to unmarshall LSA_Q_LOOKUP_NAMES4.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_lookup_names4(p, &q_u, &r_u);
-
-	/* store the response in the SMB stream */
-	if(!lsa_io_r_lookup_names4("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_lookup_names4: Failed to marshall LSA_R_LOOKUP_NAMES4.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_LOOKUPNAMES4);
 }
 
 #if 0	/* AD DC work in ongoing in Samba 4 */
