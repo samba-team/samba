@@ -1766,12 +1766,20 @@ NTSTATUS rpccli_PNP_HwProfFlags(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
+				  uint32_t idx,
+				  struct PNP_HwProfInfo *info,
+				  uint32_t unknown1,
+				  uint32_t unknown2,
 				  WERROR *werror)
 {
 	struct PNP_GetHwProfInfo r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.idx = idx;
+	r.in.info = info;
+	r.in.unknown1 = unknown1;
+	r.in.unknown2 = unknown2;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(PNP_GetHwProfInfo, &r);
@@ -1797,6 +1805,7 @@ NTSTATUS rpccli_PNP_GetHwProfInfo(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*info = *r.out.info;
 
 	/* Return result */
 	if (werror) {

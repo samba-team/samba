@@ -5,6 +5,12 @@
 #ifndef _HEADER_ntsvcs
 #define _HEADER_ntsvcs
 
+struct PNP_HwProfInfo {
+	uint32_t unknown1;
+	uint16_t unknown2[160];
+	uint32_t unknown3;
+};
+
 
 struct PNP_Disconnect {
 	struct {
@@ -362,6 +368,14 @@ struct PNP_HwProfFlags {
 
 struct PNP_GetHwProfInfo {
 	struct {
+		uint32_t idx;
+		uint32_t unknown1;
+		uint32_t unknown2;
+		struct PNP_HwProfInfo *info;/* [ref] */
+	} in;
+
+	struct {
+		struct PNP_HwProfInfo *info;/* [ref] */
 		WERROR result;
 	} out;
 
