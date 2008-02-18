@@ -207,13 +207,26 @@ sub import_integrated($$)
 	}
 }
 
+sub add_implicit($$)
+{
+	my ($INPUT, $n) = @_;
+
+	$INPUT->{$n} = {
+		TYPE => "MAKE_RULE",
+		NAME => $n,
+		TARGET => lc($n),
+		LIBS => "\$(".uc($n)."_LIBS)",
+		CFLAGS => "\$(".uc($n)."_CFLAG)"
+	};
+}
+
 sub calc_unique_deps($$$$$$$$)
 {
 	sub calc_unique_deps($$$$$$$$);
 	my ($name, $INPUT, $deps, $udeps, $withlibs, $forward, $pubonly, $busy) = @_;
 
 	foreach my $n (@$deps) {
-		die("Dependency unknown: $n (for $name)") unless (defined($INPUT->{$n}));
+		add_implicit($INPUT, $n) unless (defined($INPUT->{$n}));
 		die("Recursive dependency: $n, list: " . join(',', @$busy)) if (grep (/^$n$/, @$busy));
 		next if (grep /^$n$/, @$udeps);
 		my $dep = $INPUT->{$n};
