@@ -73,11 +73,11 @@ sub check_module($$$)
 	}
 
 	if (!(defined($INPUT->{$mod->{SUBSYSTEM}}))) {
-		$mod->{ENABLE} = "NO";
-		return;
+		die("Unknown subsystem $mod->{SUBSYSTEM} for module $mod->{NAME}");
 	}
 
 	if ($INPUT->{$mod->{SUBSYSTEM}} eq "NO") {
+		warn("Disabling module $mod->{NAME} because subsystem $mod->{SUBSYSTEM} is disabled");
 		$mod->{ENABLE} = "NO";
 		return;
 	}
