@@ -202,9 +202,12 @@ sub calc_unique_deps($$$$$$$$)
 
 	foreach my $n (@$deps) {
 		add_implicit($INPUT, $n) unless (defined($INPUT->{$n}));
-		die("Recursive dependency: $n, list: " . join(',', @$busy)) if (grep (/^$n$/, @$busy));
-		next if (grep /^$n$/, @$udeps);
 		my $dep = $INPUT->{$n};
+		if (grep (/^$n$/, @$busy)) {
+			next if (@{$dep->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ");
+			die("Recursive dependency: $n, list: " . join(',', @$busy));
+		}
+		next if (grep /^$n$/, @$udeps);
 
 		push (@{$udeps}, $dep->{NAME}) if $forward;
 
