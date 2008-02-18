@@ -1,0 +1,5 @@
+dn: CN=CONFIG
+cn: CONFIG
+lowerBound: 10000
+upperBound: 20000
+
