@@ -198,59 +198,6 @@ uint32 svcctl_sizeof_service_config( SERVICE_CONFIG *config )
 /*******************************************************************
 ********************************************************************/
 
-bool svcctl_io_q_open_scmanager(const char *desc, SVCCTL_Q_OPEN_SCMANAGER *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_q_open_scmanager");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_pointer("servername", ps, depth, (void*)&q_u->servername, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
-		return False;
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_pointer("database", ps, depth, (void*)&q_u->database, sizeof(UNISTR2), (PRS_POINTER_CAST)prs_io_unistr2))
-		return False;
-	if(!prs_align(ps))
-		return False;
-
-	if(!prs_uint32("access", ps, depth, &q_u->access))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/
-
-bool svcctl_io_r_open_scmanager(const char *desc, SVCCTL_R_OPEN_SCMANAGER *r_u, prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_r_open_scmanager");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("scm_pol", &r_u->handle, ps, depth))
-		return False;
-
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/
-
 bool svcctl_io_q_get_display_name(const char *desc, SVCCTL_Q_GET_DISPLAY_NAME *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)

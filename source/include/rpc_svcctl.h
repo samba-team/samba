@@ -197,19 +197,6 @@ typedef struct _ServiceInfo {
 /**************************/
 
 typedef struct {
-	UNISTR2 *servername;
-	UNISTR2 *database; 
-	uint32 access;
-} SVCCTL_Q_OPEN_SCMANAGER;
-
-typedef struct {
-	POLICY_HND handle;
-	WERROR status;
-} SVCCTL_R_OPEN_SCMANAGER;
-
-/**************************/
-
-typedef struct {
 	POLICY_HND handle;
 	UNISTR2 servicename;
 	uint32  display_name_len;

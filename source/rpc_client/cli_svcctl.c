@@ -60,48 +60,6 @@ const char* svc_status_string( uint32 state )
 /********************************************************************
 ********************************************************************/
 
-WERROR rpccli_svcctl_open_scm(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
-                              POLICY_HND *hSCM, uint32 access_desired )
-{
-	SVCCTL_Q_OPEN_SCMANAGER in;
-	SVCCTL_R_OPEN_SCMANAGER out;
-	prs_struct qbuf, rbuf;
-	fstring server;
-	
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-	
-	/* leave the database name NULL to get the default service db */
-
-	in.database = NULL;
-
-	/* set the server name */
-
-	if ( !(in.servername = TALLOC_P( mem_ctx, UNISTR2 )) )
-		return WERR_NOMEM;
-	fstr_sprintf( server, "\\\\%s", cli->cli->desthost );
-	init_unistr2( in.servername, server, UNI_STR_TERMINATE );
-
-	in.access = access_desired;
-	
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_OPEN_SCMANAGER_W, 
-	            in, out, 
-	            qbuf, rbuf,
-	            svcctl_io_q_open_scmanager,
-	            svcctl_io_r_open_scmanager, 
-	            WERR_GENERAL_FAILURE );
-	
-	if ( !W_ERROR_IS_OK( out.status ) )
-		return out.status;
-
-	memcpy( hSCM, &out.handle, sizeof(POLICY_HND) );
-	
-	return out.status;
-}
-
-/********************************************************************
-********************************************************************/
-
 WERROR rpccli_svcctl_open_service( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx, 
                                 POLICY_HND *hSCM, POLICY_HND *hService, 
 				const char *servicename, uint32 access_desired )
