@@ -668,6 +668,12 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 		return smb2_push_o16s16_blob(buf, ofs, data_blob(NULL, 0));
 	}
 
+	if (*str == 0) {
+		blob.data = str;
+		blob.length = 0;
+		return smb2_push_o16s16_blob(buf, ofs, blob);
+	}
+
 	size = convert_string_talloc(buf->buffer, lp_iconv_convenience(global_loadparm), CH_UNIX, CH_UTF16, 
 				     str, strlen(str), (void **)&blob.data);
 	if (size == -1) {
