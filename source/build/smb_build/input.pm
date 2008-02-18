@@ -5,12 +5,9 @@
 #  Copyright (C) Jelmer Vernooij 2004
 #  Released under the GNU GPL
 
-use smb_build::config;
 use strict;
 package smb_build::input;
 use File::Basename;
-
-my $srcdir = $config::config{srcdir};
 
 sub strtrim($)
 {
@@ -60,10 +57,7 @@ sub check_subsystem($$$)
 	my ($INPUT, $subsys, $default_ot) = @_;
 	return if ($subsys->{ENABLE} ne "YES");
 	
-	unless(defined($subsys->{OUTPUT_TYPE})) {
-		$subsys->{OUTPUT_TYPE} = $default_ot;
-	}
-
+	unless (defined($subsys->{OUTPUT_TYPE})) { $subsys->{OUTPUT_TYPE} = $default_ot; }
 	unless (defined($subsys->{INIT_FUNCTION_TYPE})) { $subsys->{INIT_FUNCTION_TYPE} = "NTSTATUS (*) (void)"; }
 	unless (defined($subsys->{INIT_FUNCTION_SENTINEL})) { $subsys->{INIT_FUNCTION_SENTINEL} = "NULL"; }
 }
@@ -159,8 +153,8 @@ sub check_python($$$)
 		$python->{OBJ_FILES} = ["$dirname$basename\_wrap.o"];
 		$python->{LIBRARY_REALNAME} = "_$basename.\$(SHLIBEXT)";
 		$python->{PYTHON_FILES} = ["$dirname$basename.py"];
-		push (@{$python->{CFLAGS}}, $config::config{CFLAG_NO_UNUSED_MACROS});
-		push (@{$python->{CFLAGS}}, $config::config{CFLAG_NO_CAST_QUAL});
+		push (@{$python->{CFLAGS}}, "\$(CFLAG_NO_UNUSED_MACROS)");
+		push (@{$python->{CFLAGS}}, "\$(CFLAG_NO_CAST_QUAL)");
 		$python->{INIT_FUNCTION} = "{ (char *)\"_$basename\", init_$basename }";
 	} else {
 		my $basename = $python->{NAME};
