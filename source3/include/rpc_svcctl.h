@@ -212,19 +212,6 @@ typedef struct {
 
 typedef struct {
 	POLICY_HND handle;
-	UNISTR2 servicename;
-	uint32 access;
-} SVCCTL_Q_OPEN_SERVICE;
-
-typedef struct {
-	POLICY_HND handle;
-	WERROR status;
-} SVCCTL_R_OPEN_SERVICE;
-
-/**************************/
-
-typedef struct {
-	POLICY_HND handle;
 	uint32 parmcount;
 	UNISTR4_ARRAY *parameters;
 } SVCCTL_Q_START_SERVICE;
