@@ -177,6 +177,45 @@ static WERROR cmd_ntsvcs_get_hw_prof_info(struct rpc_pipe_client *cli,
 	return werr;
 }
 
+static WERROR cmd_ntsvcs_get_dev_reg_prop(struct rpc_pipe_client *cli,
+					  TALLOC_CTX *mem_ctx,
+					  int argc,
+					  const char **argv)
+{
+	NTSTATUS status;
+	WERROR werr;
+	const char *devicepath = NULL;
+	uint32_t property = DEV_REGPROP_DESC;
+	uint32_t unknown1 = 0;
+	uint8_t buffer;
+	uint32_t buffer_size = 0;
+	uint32_t unknown2 = 0;
+	uint32_t unknown3 = 0;
+
+	if (argc < 2) {
+		printf("usage: %s [devicepath]\n", argv[0]);
+		return WERR_OK;
+	}
+
+	devicepath = argv[1];
+
+	status = rpccli_PNP_GetDeviceRegProp(cli, mem_ctx,
+					     devicepath,
+					     property,
+					     &unknown1,
+					     &buffer,
+					     &buffer_size,
+					     &unknown2,
+					     unknown3,
+					     &werr);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	return werr;
+}
+
+
 struct cmd_set ntsvcs_commands[] = {
 
 	{ "NTSVCS" },
@@ -185,5 +224,6 @@ struct cmd_set ntsvcs_commands[] = {
 	{ "ntsvcs_getdevlistsize", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_device_list_size, PI_NTSVCS, NULL, "Query NTSVCS get device list", "" },
 	{ "ntsvcs_hwprofflags", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_hw_prof_flags, PI_NTSVCS, NULL, "Query NTSVCS HW prof flags", "" },
 	{ "ntsvcs_hwprofinfo", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_hw_prof_info, PI_NTSVCS, NULL, "Query NTSVCS HW prof info", "" },
+	{ "ntsvcs_getdevregprop", RPC_RTYPE_WERROR, NULL, cmd_ntsvcs_get_dev_reg_prop, PI_NTSVCS, NULL, "Query NTSVCS device registry property", "" },
 	{ NULL }
 };
