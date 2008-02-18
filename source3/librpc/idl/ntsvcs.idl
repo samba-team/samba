@@ -1,7 +1,6 @@
 /*
   plug and play services
 */
-
 [
   uuid("8d9f4e40-a03d-11ce-8f69-08003e30051b"),
   version(1.0),
@@ -86,7 +85,17 @@ interface ntsvcs
 	/******************/
 	/* Function: 0x0d */
 
-	WERROR PNP_GetDeviceRegProp();
+	const int DEV_REGPROP_DESC = 1;
+
+	WERROR PNP_GetDeviceRegProp(
+		[in,ref] [string,charset(UTF16)] uint16 *devicepath,
+		[in] uint32 property,
+		[in,out,ref] uint32 *unknown1,
+		[out,ref] [size_is(*buffer_size)] [length_is(*buffer_size)] uint8 *buffer,
+		[in,out,ref] uint32 *buffer_size,
+		[in,out,ref] uint32 *needed,
+		[in] uint32 unknown3
+		);
 
 	/******************/
 	/* Function: 0x0e */

@@ -49,8 +49,6 @@ typedef struct {
 
 /**************************/
 
-#define DEV_REGPROP_DESC	1
-
 typedef struct {
 	UNISTR2 devicepath;
 	uint32 property;
