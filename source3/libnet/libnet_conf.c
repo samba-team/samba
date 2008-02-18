@@ -482,6 +482,19 @@ void libnet_conf_close(struct libnet_conf_ctx *ctx)
 }
 
 /**
+ * Get the change sequence number of the given service/parameter.
+ *
+ * NOTE: Currently, for registry configuration, this is independent
+ * of the service and parameter, it returns the registry-sequence
+ * number.
+ */
+uint64_t libnet_conf_get_seqnum(struct libnet_conf_ctx *ctx,
+				const char *service, const char *param)
+{
+	return (uint64_t)regdb_get_seqnum();
+}
+
+/**
  * Drop the whole configuration (restarting empty).
  */
 WERROR libnet_conf_drop(struct libnet_conf_ctx *ctx)
