@@ -198,20 +198,6 @@ typedef struct _ServiceInfo {
 
 typedef struct {
 	POLICY_HND handle;
-	UNISTR2 servicename;
-	uint32  display_name_len;
-} SVCCTL_Q_GET_DISPLAY_NAME;
-
-typedef struct {
-	UNISTR2 displayname;
-	uint32 display_name_len;
-	WERROR status;
-} SVCCTL_R_GET_DISPLAY_NAME;
-
-/**************************/
-
-typedef struct {
-	POLICY_HND handle;
 	uint32 parmcount;
 	UNISTR4_ARRAY *parameters;
 } SVCCTL_Q_START_SERVICE;
