@@ -354,8 +354,6 @@ failed:
 /**
  * Map a Unix gid to the corresponding SID
  *
- * \todo Create a SID from the S-1-22-2 range for unmapped groups
- *
  * \param idmap_ctx idmap context to use
  * \param mem_ctx talloc context the memory for the struct dom_sid is allocated
  * from.
@@ -368,7 +366,160 @@ failed:
 NTSTATUS idmap_gid_to_sid(struct idmap_context *idmap_ctx, TALLOC_CTX *mem_ctx,
 		const gid_t gid, struct dom_sid **sid)
 {
-	return NT_STATUS_NONE_MAPPED;
+	int ret;
+	NTSTATUS status = NT_STATUS_NONE_MAPPED;
+	struct ldb_context *ldb = idmap_ctx->ldb_ctx;
+	struct ldb_message *msg;
+	struct ldb_result *res = NULL;
+	int trans = -1;
+	gid_t low, high;
+	char *sid_string, *gid_string;
+	struct dom_sid *unix_groups_sid, *new_sid;
+	TALLOC_CTX *tmp_ctx = talloc_new(mem_ctx);
+
+	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
+			NULL, "(&(objectClass=sidMap)(gidNumber=%u))", gid);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Search failed: %s\n", ldb_errstring(ldb)));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	if (res->count == 1) {
+		*sid = idmap_msg_get_dom_sid(mem_ctx, res->msgs[0],
+				"objectSid");
+		if (*sid == NULL) {
+			DEBUG(1, ("Failed to get sid from db: %u\n", ret));
+			status = NT_STATUS_NONE_MAPPED;
+			goto failed;
+		}
+		/* No change, so cancel the transaction */
+		ldb_transaction_cancel(ldb);
+		talloc_free(tmp_ctx);
+		return NT_STATUS_OK;
+	}
+
+	DEBUG(6, ("gid not found in idmap db, trying to allocate SID.\n"));
+
+	trans = ldb_transaction_start(ldb);
+	if (trans != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	/* Now redo the search to make sure noone added a mapping for that SID
+	 * while we weren't looking.*/
+	ret = ldb_search_exp_fmt(ldb, tmp_ctx, &res, NULL, LDB_SCOPE_SUBTREE,
+				 NULL, "(&(objectClass=sidMap)(gidNumber=%u))",
+				 gid);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Search failed: %s\n", ldb_errstring(ldb)));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	if (res->count > 0) {
+		DEBUG(1, ("sidMap modified while trying to add a mapping.\n"));
+		status = NT_STATUS_RETRY;
+		goto failed;
+	}
+
+	ret = idmap_get_bounds(idmap_ctx, &low, &high);
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("Failed to get id bounds from db: %u\n", ret));
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	if (gid >= low && gid <= high) {
+		/* An existing group would have been mapped before */
+		status = NT_STATUS_NO_SUCH_USER;
+		goto failed;
+	}
+
+	/* For local groups, we just create a rid = gid +1, so root doesn't end
+	 * up with a 0 rid */
+	unix_groups_sid = dom_sid_parse_talloc(tmp_ctx, "S-1-22-2");
+	if (unix_groups_sid == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	new_sid = dom_sid_add_rid(mem_ctx, unix_groups_sid, gid + 1);
+	if (new_sid == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	sid_string = dom_sid_string(tmp_ctx, new_sid);
+	if (sid_string == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	gid_string = talloc_asprintf(tmp_ctx, "%u", gid);
+	if (gid_string == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	msg = ldb_msg_new(tmp_ctx);
+	if (msg == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	msg->dn = ldb_dn_new_fmt(tmp_ctx, ldb, "CN=%s", sid_string);
+	if (msg->dn == NULL) {
+		status = NT_STATUS_NO_MEMORY;
+		goto failed;
+	}
+
+	ret = ldb_msg_add_string(msg, "gidNumber", gid_string);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	ret = idmap_msg_add_dom_sid(idmap_ctx, tmp_ctx, msg, "objectSid",
+			new_sid);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	ret = ldb_msg_add_string(msg, "objectClass", "sidMap");
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	ret = ldb_msg_add_string(msg, "cn", sid_string);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	ret = ldb_add(ldb, msg);
+	if (ret != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	trans = ldb_transaction_commit(ldb);
+	if (trans != LDB_SUCCESS) {
+		status = NT_STATUS_NONE_MAPPED;
+		goto failed;
+	}
+
+	*sid = new_sid;
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+
+failed:
+	if (trans == LDB_SUCCESS) ldb_transaction_cancel(ldb);
+	talloc_free(tmp_ctx);
+	return status;
 }
 
 /**
