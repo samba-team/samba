@@ -69,7 +69,8 @@ static WERROR construct_registry_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
 	}
 
 	sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
-			   &global_sid_Builtin_Administrators, NULL, NULL, acl,
+			   &global_sid_Builtin_Administrators,
+			   &global_sid_System, NULL, acl,
 			   &sd_size);
 	if (sd == NULL) {
 		return WERR_NOMEM;
