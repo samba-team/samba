@@ -168,10 +168,11 @@ WERROR _ntsvcs_get_hw_profile_info( pipes_struct *p, NTSVCS_Q_GET_HW_PROFILE_INF
 /********************************************************************
 ********************************************************************/
 
-WERROR _ntsvcs_hw_profile_flags( pipes_struct *p, NTSVCS_Q_HW_PROFILE_FLAGS *q_u, NTSVCS_R_HW_PROFILE_FLAGS *r_u )
-{	
+WERROR _PNP_HwProfFlags(pipes_struct *p,
+			struct PNP_HwProfFlags *r)
+{
 	/* just nod your head */
-	
+
 	return WERR_OK;
 }
 
@@ -540,16 +541,6 @@ WERROR _PNP_IsDockStationPresent(pipes_struct *p,
 
 WERROR _PNP_RequestEjectPC(pipes_struct *p,
 			   struct PNP_RequestEjectPC *r)
-{
-	p->rng_fault_state = true;
-	return WERR_NOT_SUPPORTED;
-}
-
-/****************************************************************
-****************************************************************/
-
-WERROR _PNP_HwProfFlags(pipes_struct *p,
-			struct PNP_HwProfFlags *r)
 {
 	p->rng_fault_state = true;
 	return WERR_NOT_SUPPORTED;
