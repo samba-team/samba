@@ -318,6 +318,9 @@ NTSTATUS rpccli_netlogon_sam_logon(struct rpc_pipe_client *cli,
 		struct netr_ChallengeResponse lm;
 		struct netr_ChallengeResponse nt;
 
+		ZERO_STRUCT(lm);
+		ZERO_STRUCT(nt);
+
 		network_info = TALLOC_ZERO_P(mem_ctx, struct netr_NetworkInfo);
 		if (!network_info) {
 			return NT_STATUS_NO_MEMORY;
@@ -416,6 +419,9 @@ NTSTATUS rpccli_netlogon_sam_network_logon(struct rpc_pipe_client *cli,
 
 	ZERO_STRUCT(zeros);
 	ZERO_STRUCT(ret_creds);
+
+	ZERO_STRUCT(lm);
+	ZERO_STRUCT(nt);
 
 	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonLevel);
 	if (!logon) {
@@ -536,6 +542,9 @@ NTSTATUS rpccli_netlogon_sam_network_logon_ex(struct rpc_pipe_client *cli,
 	*info3 = NULL;
 
 	ZERO_STRUCT(zeros);
+
+	ZERO_STRUCT(lm);
+	ZERO_STRUCT(nt);
 
 	logon = TALLOC_ZERO_P(mem_ctx, union netr_LogonLevel);
 	if (!logon) {
