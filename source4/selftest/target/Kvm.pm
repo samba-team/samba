@@ -99,7 +99,7 @@ sub start($$$)
 
 	my $pidfile = "$path/kvm.pid";
 
-	my $opts = ($ENV{KVM_OPTIONS} or "-nographic");
+	my $opts = (defined($ENV{KVM_OPTIONS})?$ENV{KVM_OPTIONS}:"-nographic");
 
 	my ($ifup_script, $dhcpd_pidfile, $ip_address) = $self->write_kvm_ifup($path, "192.168.9");
 
