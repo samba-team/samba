@@ -15,6 +15,9 @@ case "$PATH" in
 	;;
 esac 
 
+builddir=`pwd`
+AC_SUBST(builddir)
+
 SMB_VERSION_STRING=`cat $srcdir/include/version.h | grep 'SAMBA_VERSION_OFFICIAL_STRING' | cut -d '"' -f2`
 echo "SAMBA VERSION: ${SMB_VERSION_STRING}"
 
@@ -6825,9 +6828,6 @@ AC_SUBST(DEVELOPER_CFLAGS)
 if test x"$krb5_developer" = x"yes" -o x"$developer" = x"yes"; then
     CFLAGS="${CFLAGS} \$(DEVELOPER_CFLAGS)"
 fi
-
-builddir=`pwd`
-AC_SUBST(builddir)
 
 # Stuff the smbd-only libraries at the end of the smbd link
 # path (if we have them).
