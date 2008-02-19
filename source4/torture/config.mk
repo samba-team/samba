@@ -11,7 +11,8 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-CONFIG \
 		LIBSAMBA-UTIL \
-		LIBTALLOC 
+		LIBTALLOC \
+		LIBPOPT
 
 [SUBSYSTEM::TORTURE_UTIL]
 OBJ_FILES = util_smb.o util_provision.o
@@ -95,8 +96,8 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM TORTURE_RAW
 #################################
 
-include smb2/config.mk
-include winbind/config.mk
+mkinclude smb2/config.mk
+mkinclude winbind/config.mk
 
 [SUBSYSTEM::TORTURE_NDR]
 PRIVATE_PROTO_HEADER = ndr/proto.h
@@ -113,7 +114,7 @@ OBJ_FILES = ndr/ndr.o \
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
-#OUTPUT_TYPE = INTEGRATED
+#OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = torture
 INIT_FUNCTION = torture_rpc_init
 PRIVATE_PROTO_HEADER = \
@@ -200,7 +201,7 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM TORTURE_AUTH
 #################################
 
-include local/config.mk
+mkinclude local/config.mk
 
 #################################
 # Start MODULE TORTURE_NBENCH

@@ -27,9 +27,9 @@ include data.mk
 DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
 		  $(srcdir)/version.h
 
-binaries:: $(BINARIES)
+binaries::
 libraries:: $(STATIC_LIBS) $(SHARED_LIBS)
-modules:: $(SHARED_MODULES)
+modules:: $(PLUGINS)
 headers:: $(PUBLIC_HEADERS) $(DEFAULT_HEADERS)
 manpages:: $(MANPAGES)
 all:: showflags $(ALL_PREDEP) bin/asn1_compile bin/compile_et binaries modules pythonmods
@@ -122,8 +122,10 @@ installbin:: $(SBIN_PROGS) $(BIN_PROGS) $(TORTURE_PROGS) installdirs
 		$(DESTDIR)$(TORTUREDIR) \
 		$(TORTURE_PROGS)
 
-installlib:: $(INSTALLABLE_SHARED_LIBS) $(STATIC_LIBS) installdirs
-	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(libdir) "$(SHLIBEXT)" $(INSTALLABLE_SHARED_LIBS) 
+installplugins::
+
+installlib:: $(SHARED_LIBS) $(STATIC_LIBS) installdirs
+	@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(libdir) "$(SHLIBEXT)" $(SHARED_LIBS) 
 	#@$(SHELL) $(srcdir)/script/installlib.sh $(DESTDIR)$(libdir) "$(STLIBEXT)" $(STATIC_LIBS)
 
 installheader:: headers installdirs
@@ -164,6 +166,8 @@ uninstallheader::
 
 uninstallman::
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(DESTDIR)$(mandir) $(MANPAGES)
+
+uninstallplugins::
 
 config.status:
 	@echo "config.status does not exist. Please run ./configure."

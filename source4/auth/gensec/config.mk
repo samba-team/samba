@@ -62,7 +62,7 @@ INIT_FUNCTION = gensec_schannel_init
 OBJ_FILES = schannel.o \
 			schannel_sign.o
 PRIVATE_DEPENDENCIES = SCHANNELDB NDR_SCHANNEL CREDENTIALS LIBNDR
-OUTPUT_TYPE = INTEGRATED
+OUTPUT_TYPE = MERGED_OBJ
 # End MODULE gensec_schannel
 ################################################
 

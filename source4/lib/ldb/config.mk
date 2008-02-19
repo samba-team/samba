@@ -193,5 +193,5 @@ PRIVATE_DEPENDENCIES = \
 ################################################
 
 
-include tools/config.mk
-include ldb_ildap/config.mk
+mkinclude tools/config.mk
+mkinclude ldb_ildap/config.mk

@@ -37,6 +37,9 @@ PCHCOMPILE = @$(CC) -Ilib/replace \
     $(CFLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
     $(PICFLAG) $(CPPFLAGS) -c $(FIRST_PREREQ) -o $@
 
+# Partial linking
+PARTLINK = @$(PROG_LD) -r
+
 include/config.h:
 	@echo "include/config.h not present"
 	@echo "You need to rerun ./autogen.sh and ./configure"
@@ -63,7 +66,7 @@ clean:: clean_pch
 	@-rm -f $(BIN_PROGS) $(SBIN_PROGS) $(BINARIES) $(TORTURE_PROGS)
 	@echo Removing libraries
 	@-rm -f $(STATIC_LIBRARIES) $(SHARED_LIBRARIES)
-	@-rm -f bin/static/*.a bin/shared/*.$(SHLIBEXT)
+	@-rm -f bin/static/*.a bin/shared/*.$(SHLIBEXT) bin/mergedobj/*.o
 	@echo Removing modules
 	@-rm -f bin/modules/*/*.$(SHLIBEXT)
 	@-rm -f bin/*_init_module.c
