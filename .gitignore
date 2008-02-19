@@ -115,7 +115,6 @@ source/smb_server/smb2/smb2_proto.h
 source/smbd/process_model_proto.h
 source/smbd/service_proto.h
 source/torture/proto.h
-source/torture/util.h
 source/torture/auth/proto.h
 source/torture/basic/proto.h
 source/torture/ldap/proto.h
