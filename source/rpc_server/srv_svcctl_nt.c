@@ -470,11 +470,13 @@ WERROR _svcctl_enum_services_status(pipes_struct *p, SVCCTL_Q_ENUM_SERVICES_STAT
 }
 
 /********************************************************************
+ _svcctl_StartServiceW
 ********************************************************************/
 
-WERROR _svcctl_start_service(pipes_struct *p, SVCCTL_Q_START_SERVICE *q_u, SVCCTL_R_START_SERVICE *r_u)
+WERROR _svcctl_StartServiceW(pipes_struct *p,
+			     struct svcctl_StartServiceW *r)
 {
-	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 
 	/* perform access checks */
 
@@ -977,12 +979,6 @@ WERROR _svcctl_QueryServiceConfigW(pipes_struct *p, struct svcctl_QueryServiceCo
 }
 
 WERROR _svcctl_QueryServiceLockStatusW(pipes_struct *p, struct svcctl_QueryServiceLockStatusW *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_StartServiceW(pipes_struct *p, struct svcctl_StartServiceW *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;

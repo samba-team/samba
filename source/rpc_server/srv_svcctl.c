@@ -171,23 +171,7 @@ static bool api_svcctl_enum_dependent_services(pipes_struct *p)
 
 static bool api_svcctl_start_service(pipes_struct *p)
 {
-	SVCCTL_Q_START_SERVICE q_u;
-	SVCCTL_R_START_SERVICE r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_start_service("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_start_service(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_start_service("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_STARTSERVICEW);
 }
 
 /*******************************************************************
