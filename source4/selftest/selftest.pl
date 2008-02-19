@@ -448,6 +448,8 @@ if ($opt_target eq "samba4") {
 	require target::Windows;
 	$target = new Windows();
 } elsif ($opt_target eq "kvm") {
+	die("Kvm tests will not run with socket wrapper enabled.") 
+		if ($opt_socket_wrapper);
 	require target::Kvm;
 	die("No image specified") unless ($opt_image);
 	$target = new Kvm($opt_image);

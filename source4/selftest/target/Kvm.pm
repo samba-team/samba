@@ -19,6 +19,39 @@ sub new($$$$) {
 	return $self;
 }
 
+sub write_kvm_ifup($$$)
+{
+	my ($self, $path, $ip_prefix) = @_;
+	open(SCRIPT, ">$path/kvm-ifup");
+
+	print SCRIPT <<__EOF__;
+#!/bin/sh
+
+PREFIX=$ip_prefix
+
+/sbin/ifconfig \$1 \$PREFIX.1 up
+
+cat <<EOF>$path/udhcpd.conf
+interface \$1
+start 		\$PREFIX.20
+end		\$PREFIX.20
+max_leases 1
+lease_file	$path/udhcpd.leases
+pidfile	$path/udhcpd.pid
+EOF
+
+touch $path/udhcpd.leases
+
+/usr/sbin/udhcpd $path/udhcpd.conf
+
+exit 0
+__EOF__
+	close(SCRIPT);
+	chmod(0755, "$path/kvm-ifup");
+
+	return ("$path/kvm-ifup", "$path/udhcpd.pid", "$ip_prefix.20");
+}
+
 sub teardown_env($$)
 {
 	my ($self, $envvars) = @_;
@@ -26,6 +59,9 @@ sub teardown_env($$)
 	print "Killing kvm instance $envvars->{KVM_PID}\n";
 
 	kill 9, $envvars->{KVM_PID};
+
+	print "Killing dhcpd instance $envvars->{DHCPD_PID}\n";
+	kill 9, $envvars->{DHCPD_PID};
 
 	return 0;
 }
@@ -46,21 +82,30 @@ sub check_env($$)
 	return 1;
 }
 
+sub read_pidfile($)
+{
+	my ($path) = @_;
+
+	open(PID, $path);
+	<PID> =~ /([0-9]+)/;
+	my ($pid) = $1;
+	close(PID);
+	return $pid;
+}
+
 sub start($$$)
 {
 	my ($self, $path, $image) = @_;
 
 	my $pidfile = "$path/kvm.pid";
 
-	my $opts = ($ENV{KVM_OPTIONS} or "");
+	my $opts = ($ENV{KVM_OPTIONS} or "-nographic");
 
-	system("kvm $opts -daemonize -pidfile $pidfile -vnc unix:$path/kvm.vnc -snapshot $image");
+	my ($ifup_script, $dhcpd_pidfile, $ip_address) = $self->write_kvm_ifup($path, "192.168.9");
 
-	open(PID, $pidfile);
-	<PID> =~ /([0-9]+)/;
-	my ($pid) = $1;
-	close(PID);
-	return $pid;
+	system("kvm $opts -daemonize -pidfile $pidfile -snapshot $image -net nic -net tap,script=$ifup_script");
+
+	return (read_pidfile($pidfile), read_pidfile($dhcpd_pidfile), $ip_address);
 }
 
 sub setup_env($$$)
@@ -68,18 +113,25 @@ sub setup_env($$$)
 	my ($self, $envname, $path) = @_;
 
 	if ($envname eq "dc") {
-		$self->{dc_pid} = $self->start($path, $self->{dc_image});
+		($self->{dc_pid}, $self->{dc_dhcpd_pid}, $self->{dc_ip}) = $self->start($path, $self->{dc_image});
+
+		sub choose_var($$) { 
+			my ($name, $default) = @_; 
+			return defined($ENV{"KVM_DC_$name"})?$ENV{"KVM_DC_$name"}:$default; 
+		}
+
 		if ($envname eq "dc") {
 			return {
 				KVM_PID => $self->{dc_pid},
-				USERNAME => "Administrator",
-				PASSWORD => "penguin",
-				DOMAIN => "SAMBA",
-				REALM => "SAMBA",
-				SERVER => "",
-				SERVER_IP => "",
-				NETBIOSNAME => "",
-				NETBIOSALIAS => "",
+				DHCPD_PID => $self->{dc_dhcpd_pid},
+				USERNAME => choose_var("USERNAME", "Administrator"),
+				PASSWORD => choose_var("PASSWORD", "penguin"),
+				DOMAIN => choose_var("DOMAIN", "SAMBA"), 
+				REALM => choose_var("REALM", "SAMBA"), 
+				SERVER => choose_var("SERVER", "DC"), 
+				SERVER_IP => $self->{dc_ip},
+				NETBIOSNAME => choose_var("NETBIOSNAME", "DC"), 
+				NETBIOSALIAS => choose_var("NETBIOSALIAS", "DC"), 
 			};
 		} else {
 			return undef;
