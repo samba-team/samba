@@ -398,7 +398,7 @@ static bool samsync_handle_policy(TALLOC_CTX *mem_ctx, struct samsync_state *sam
 	return true;
 }
 
-static bool samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
+static bool samsync_handle_user(struct torture_context *tctx, TALLOC_CTX *mem_ctx, struct samsync_state *samsync_state,
 				int database_id, struct netr_DELTA_ENUM *delta) 
 {
 	uint32_t rid = delta->delta_id_union.rid;
@@ -548,7 +548,7 @@ static bool samsync_handle_user(TALLOC_CTX *mem_ctx, struct samsync_state *samsy
 		data.data = user->user_private_info.SensitiveData;
 		data.length = user->user_private_info.DataLength;
 		creds_arcfour_crypt(samsync_state->creds, data.data, data.length);
-		ndr_err = ndr_pull_struct_blob(&data, mem_ctx, lp_iconv_convenience(global_loadparm), &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
+		ndr_err = ndr_pull_struct_blob(&data, mem_ctx, lp_iconv_convenience(tctx->lp_ctx), &keys, (ndr_pull_flags_fn_t)ndr_pull_netr_USER_KEYS);
 		if (NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			if (keys.keys.keys2.lmpassword.length == 16) {
 				sam_rid_crypt(rid, keys.keys.keys2.lmpassword.pwd.hash, lm_hash.hash, 0);
@@ -1101,8 +1101,9 @@ static bool samsync_handle_account(TALLOC_CTX *mem_ctx, struct samsync_state *sa
 /*
   try a netlogon DatabaseSync
 */
-static bool test_DatabaseSync(struct samsync_state *samsync_state,
-			      TALLOC_CTX *mem_ctx)
+static bool test_DatabaseSync(struct torture_context *tctx, 
+							  struct samsync_state *samsync_state,
+							  TALLOC_CTX *mem_ctx)
 {
 	NTSTATUS status;
 	TALLOC_CTX *loop_ctx, *delta_ctx, *trustdom_ctx;
@@ -1162,7 +1163,7 @@ static bool test_DatabaseSync(struct samsync_state *samsync_state,
 					}
 					break;
 				case NETR_DELTA_USER:
-					if (!samsync_handle_user(delta_ctx, samsync_state, 
+					if (!samsync_handle_user(tctx, delta_ctx, samsync_state, 
 								 r.in.database_id, &r.out.delta_enum_array->delta_enum[d])) {
 						printf("Failed to handle DELTA_USER\n");
 						ret = false;
@@ -1611,7 +1612,7 @@ bool torture_rpc_samsync(struct torture_context *torture)
 		ret = false;
 	}
 
-	if (!test_DatabaseSync(samsync_state, mem_ctx)) {
+	if (!test_DatabaseSync(torture, samsync_state, mem_ctx)) {
 		printf("DatabaseSync failed\n");
 		ret = false;
 	}
