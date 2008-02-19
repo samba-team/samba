@@ -269,7 +269,7 @@ AC_SUBST(pammodulesdir)
 
 #################################################
 # set prefix for 'make test'
-selftest_prefix="./"
+selftest_prefix="./st"
 AC_SUBST(selftest_prefix)
 AC_ARG_WITH(selftest-prefix,
 [AS_HELP_STRING([--with-selftest-prefix=DIR], [The prefix where make test will be run ($selftest_prefix)])],
