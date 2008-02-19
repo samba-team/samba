@@ -43,8 +43,6 @@ iface=no;
 # look for a method of finding the list of network interfaces
 iface=no;
 AC_CACHE_CHECK([for iface getifaddrs],samba_cv_HAVE_IFACE_GETIFADDRS,[
-SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
 AC_TRY_RUN([
 #define NO_CONFIG_H 1
 #define HAVE_IFACE_GETIFADDRS 1
@@ -52,7 +50,6 @@ AC_TRY_RUN([
 #include "$libreplacedir/replace.c"
 #include "$libreplacedir/getifaddrs.c"],
            samba_cv_HAVE_IFACE_GETIFADDRS=yes,samba_cv_HAVE_IFACE_GETIFADDRS=no,samba_cv_HAVE_IFACE_GETIFADDRS=cross)])
-CPPFLAGS="$SAVE_CPPFLAGS"
 if test x"$samba_cv_HAVE_IFACE_GETIFADDRS" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_GETIFADDRS,1,[Whether iface getifaddrs is available])
 else
