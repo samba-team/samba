@@ -786,17 +786,19 @@ WERROR _svcctl_LockServiceDatabase(pipes_struct *p,
 }
 
 /********************************************************************
+ _svcctl_UnlockServiceDatabase
 ********************************************************************/
 
-WERROR _svcctl_unlock_service_db( pipes_struct *p, SVCCTL_Q_UNLOCK_SERVICE_DB *q_u, SVCCTL_R_UNLOCK_SERVICE_DB *r_u )
+WERROR _svcctl_UnlockServiceDatabase(pipes_struct *p,
+				     struct svcctl_UnlockServiceDatabase *r)
 {
-	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->h_lock );
+	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.lock );
 
 
 	if ( !info || (info->type != SVC_HANDLE_IS_DBLOCK) )
 		return WERR_BADFID;
 
-	return close_policy_hnd( p, &q_u->h_lock) ? WERR_OK : WERR_BADFID;
+	return close_policy_hnd( p, r->out.lock) ? WERR_OK : WERR_BADFID;
 }
 
 /********************************************************************
@@ -914,12 +916,6 @@ WERROR _svcctl_SetServiceObjectSecurity(pipes_struct *p, struct svcctl_SetServic
 }
 
 WERROR _svcctl_SetServiceStatus(pipes_struct *p, struct svcctl_SetServiceStatus *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_UnlockServiceDatabase(pipes_struct *p, struct svcctl_UnlockServiceDatabase *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
