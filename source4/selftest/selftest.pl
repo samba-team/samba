@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Bootstrap Samba and run a number of tests against it.
-# Copyright (C) 2005-2007 Jelmer Vernooij <jelmer@samba.org>
+# Copyright (C) 2005-2008 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL, v3 or later.
 
 =pod
@@ -453,6 +453,31 @@ if ($opt_target eq "samba4") {
 	require target::Kvm;
 	die("No image specified") unless ($opt_image);
 	$target = new Kvm($opt_image, undef);
+}
+
+#
+# Start a Virtual Distributed Ethernet Switch
+# Returns the pid of the switch.
+#
+sub start_vde_switch($)
+{
+	my ($path) = @_;
+
+	system("vde_switch --pidfile $path/vde.pid --sock $path/vde.sock --daemon");
+
+	open(PID, "$path/vde.pid");
+	<PID> =~ /([0-9]+)/;
+	my $pid = $1;
+	close(PID);
+
+	return $pid;
+}
+
+# Stop a Virtual Distributed Ethernet Switch
+sub stop_vde_switch($)
+{
+	my ($pid) = @_;
+	kill 9, $pid;
 }
 
 sub read_test_regexes($)
