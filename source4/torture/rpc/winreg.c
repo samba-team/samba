@@ -848,7 +848,6 @@ static bool test_SecurityDescriptorInheritance(struct dcerpc_pipe *p,
 
  out:
 	test_CloseKey(p, tctx, &new_handle);
-	test_Cleanup(p, tctx, handle, TEST_SUBSUBKEY_SD);
 	test_Cleanup(p, tctx, handle, TEST_SUBKEY_SD);
 	test_RestoreSecurity(p, tctx, handle, key, sd_orig);
 
@@ -971,7 +970,6 @@ static bool test_SecurityDescriptorBlockInheritance(struct dcerpc_pipe *p,
 
  out:
 	test_CloseKey(p, tctx, &new_handle);
-	test_Cleanup(p, tctx, handle, TEST_SUBSUBKEY_SD);
 	test_Cleanup(p, tctx, handle, TEST_SUBKEY_SD);
 	test_RestoreSecurity(p, tctx, handle, key, sd_orig);
 
@@ -1386,27 +1384,6 @@ static bool test_DeleteKey(struct dcerpc_pipe *p, struct torture_context *tctx,
 	return true;
 }
 
-/* DeleteKey on a key with subkey(s) should
- * return WERR_ACCESS_DENIED. */
-static bool test_DeleteKeyWithSubkey(struct dcerpc_pipe *p,
-				     struct torture_context *tctx,
-				     struct policy_handle *handle,
-				     const char *key)
-{
-	struct winreg_DeleteKey r;
-
-	r.in.handle = handle;
-	init_winreg_String(&r.in.key, key);
-
-	torture_assert_ntstatus_ok(tctx, dcerpc_winreg_DeleteKey(p, tctx, &r),
-				   "DeleteKeyWithSubkey failed");
-
-	torture_assert_werr_equal(tctx, r.out.result, WERR_ACCESS_DENIED,
-				  "DeleteKeyWithSubkey failed");
-
-	return true;
-}
-
 static bool test_QueryInfoKey(struct dcerpc_pipe *p,
 			      struct torture_context *tctx,
 			      struct policy_handle *handle, char *class)
@@ -1721,13 +1698,6 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	torture_assert_ntstatus_ok(tctx, open_fn(p, tctx, &r),
 				   "open");
 
-	test_Cleanup(p, tctx, &handle, TEST_KEY1);
-	test_Cleanup(p, tctx, &handle, TEST_SUBSUBKEY_SD);
-	test_Cleanup(p, tctx, &handle, TEST_SUBKEY_SD);
-	test_Cleanup(p, tctx, &handle, TEST_KEY4);
-	test_Cleanup(p, tctx, &handle, TEST_KEY2);
-	test_Cleanup(p, tctx, &handle, TEST_SUBKEY);
-	test_Cleanup(p, tctx, &handle, TEST_KEY3);
 	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
 
 	if (!test_CreateKey(p, tctx, &handle, TEST_KEY_BASE, NULL)) {
@@ -1826,19 +1796,6 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	}
 
 	if (created_subkey &&
-	    !test_DeleteKeyWithSubkey(p, tctx, &handle, TEST_KEY3)) {
-		printf("DeleteKeyWithSubkey failed "
-		       "(DeleteKey didn't return ACCESS_DENIED)\n");
-		ret = false;
-	}
-
-	if (created_subkey &&
-	    !test_DeleteKey(p, tctx, &handle, TEST_SUBKEY)) {
-		printf("DeleteKey failed\n");
-		ret = false;
-	}
-
-	if (created3 &&
 	    !test_DeleteKey(p, tctx, &handle, TEST_KEY3)) {
 		printf("DeleteKey failed\n");
 		ret = false;
