@@ -39,9 +39,6 @@ fi
 
 AC_LIBREPLACE_LOCATION_CHECKS
 
-AC_DISABLE_STATIC
-AC_ENABLE_SHARED
-
 #################################################
 # Directory handling stuff to support both the
 # legacy SAMBA directories and FHS compliant
@@ -1784,6 +1781,9 @@ case "$host_os" in
     AC_CHECK_FUNCS(extattr_set_fd extattr_set_file extattr_set_link)
     ;;
 esac
+
+AC_DISABLE_STATIC
+AC_ENABLE_SHARED
 
 # Set defaults
 PIE_CFLAGS=""
