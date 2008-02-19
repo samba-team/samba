@@ -258,8 +258,11 @@ bool regdb_init( void )
 	const char *vstring = "INFO/version";
 	uint32 vers_id;
 
-	if ( tdb_reg )
+	if ( tdb_reg ) {
+		DEBUG(10,("regdb_init: incrementing refcount (%d)\n", tdb_refcount));
+		tdb_refcount++;
 		return true;
+	}
 
 	if ( !(tdb_reg = tdb_wrap_open(NULL, state_path("registry.tdb"), 0, REG_TDB_FLAGS, O_RDWR, 0600)) )
 	{
