@@ -50,8 +50,12 @@ static WERROR query_service_state(struct rpc_pipe_client *pipe_hnd,
 		return result;
 	}
 
-	result = rpccli_svcctl_query_status(pipe_hnd, mem_ctx, &hService, &service_status  );
-	if ( W_ERROR_IS_OK(result) ) {
+	status = rpccli_svcctl_QueryServiceStatus(pipe_hnd, mem_ctx,
+						  &hService,
+						  &service_status,
+						  &result);
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
 		*state = service_status.state;
 	}
 
@@ -269,8 +273,12 @@ static NTSTATUS rpc_service_status_internal(const DOM_SID *domain_sid,
 
 	/* get the status */
 
-	result = rpccli_svcctl_query_status(pipe_hnd, mem_ctx, &hService, &service_status  );
-	if ( !W_ERROR_IS_OK(result) ) {
+	status = rpccli_svcctl_QueryServiceStatus(pipe_hnd, mem_ctx,
+						  &hService,
+						  &service_status,
+						  &result);
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
 		d_fprintf(stderr, "Query status request failed.  [%s]\n", dos_errstr(result));
 		goto done;
 	}
