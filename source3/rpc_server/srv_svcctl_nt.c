@@ -361,11 +361,13 @@ WERROR _svcctl_GetServiceDisplayNameW(pipes_struct *p,
 }
 
 /********************************************************************
+ _svcctl_QueryServiceStatus
 ********************************************************************/
 
-WERROR _svcctl_query_status(pipes_struct *p, SVCCTL_Q_QUERY_STATUS *q_u, SVCCTL_R_QUERY_STATUS *r_u)
+WERROR _svcctl_QueryServiceStatus(pipes_struct *p,
+				  struct svcctl_QueryServiceStatus *r)
 {
-	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 
 	/* perform access checks */
 
@@ -377,7 +379,7 @@ WERROR _svcctl_query_status(pipes_struct *p, SVCCTL_Q_QUERY_STATUS *q_u, SVCCTL_
 
 	/* try the service specific status call */
 
-	return info->ops->service_status( info->name, &r_u->svc_status );
+	return info->ops->service_status( info->name, r->out.service_status );
 }
 
 /********************************************************************
@@ -911,12 +913,6 @@ WERROR _svcctl_QueryServiceObjectSecurity(pipes_struct *p, struct svcctl_QuerySe
 }
 
 WERROR _svcctl_SetServiceObjectSecurity(pipes_struct *p, struct svcctl_SetServiceObjectSecurity *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_QueryServiceStatus(pipes_struct *p, struct svcctl_QueryServiceStatus *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
