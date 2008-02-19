@@ -2376,7 +2376,7 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 
 	switch ( idx ) {
 		case PI_LSARPC:
-			lsa_get_pipe_fns( &cmds, &n_cmds );
+			lsarpc_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_DSSETUP:
 			dssetup_get_pipe_fns( &cmds, &n_cmds );
