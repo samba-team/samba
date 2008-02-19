@@ -1730,6 +1730,11 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	test_Cleanup(p, tctx, &handle, TEST_KEY3);
 	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
 
+	if (!test_CreateKey(p, tctx, &handle, TEST_KEY_BASE, NULL)) {
+		torture_comment(tctx,
+				"CreateKey (TEST_KEY_BASE) failed\n");
+	}
+
 	if (!test_CreateKey(p, tctx, &handle, TEST_KEY1, NULL)) {
 		torture_comment(tctx,
 				"CreateKey failed - not considering a failure\n");
@@ -1763,9 +1768,12 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	}
 
 	if (created && deleted &&
-	    test_OpenKey(p, tctx, &handle, TEST_KEY1, &newhandle)) {
+	    !_test_OpenKey(p, tctx, &handle, TEST_KEY1,
+			   SEC_FLAG_MAXIMUM_ALLOWED, &newhandle,
+			   WERR_BADFILE, NULL)) {
 		torture_comment(tctx,
-				"DeleteKey failed (OpenKey after Delete worked)\n");
+				"DeleteKey failed (OpenKey after Delete "
+				"did not return WERR_BADFILE)\n");
 		ret = false;
 	}
 
@@ -1788,7 +1796,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		created4 = true;
 	}
 
-	if (!created4 && !test_CloseKey(p, tctx, &newhandle)) {
+	if (created4 && !test_CloseKey(p, tctx, &newhandle)) {
 		printf("CloseKey failed\n");
 		ret = false;
 	}
@@ -1803,7 +1811,7 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 	}
 
 
-	if (created && !test_DeleteKey(p, tctx, &handle, TEST_KEY2)) {
+	if (created2 && !test_DeleteKey(p, tctx, &handle, TEST_KEY2)) {
 		printf("DeleteKey failed\n");
 		ret = false;
 	}
@@ -1841,10 +1849,10 @@ static bool test_Open(struct torture_context *tctx, struct dcerpc_pipe *p,
 		if(!test_key(p, tctx, &handle, MAX_DEPTH - 1)) {
 			ret = false;
 		}
-	}
-
-	if (!test_key(p, tctx, &handle, 0)) {
-		ret = false;
+	} else {
+		if (!test_key(p, tctx, &handle, 0)) {
+			ret = false;
+		}
 	}
 
 	test_Cleanup(p, tctx, &handle, TEST_KEY_BASE);
