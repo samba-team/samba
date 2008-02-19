@@ -351,6 +351,8 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 		return False;
 	}
 
+	release_level_2_oplocks_on_change(fsp);
+
 	if (!write_through && !lp_syncalways(SNUM(fsp->conn))
 	    && fsp->aio_write_behind) {
 		/* Lie to the client and immediately claim we finished the
