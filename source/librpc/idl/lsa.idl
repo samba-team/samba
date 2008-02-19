@@ -23,7 +23,7 @@ import "security.idl";
 
 	typedef [public] struct {
 		[value(2*strlen_m(string))] uint16 length;
-		[value(2*(strlen_m(string)+1))] uint16 size;
+		[value(2*strlen_m_term(string))] uint16 size;
 		[charset(UTF16),size_is(size/2),length_is(length/2)] uint16 *string;
 	} lsa_StringLarge;
 
