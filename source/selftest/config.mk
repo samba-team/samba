@@ -13,6 +13,9 @@ test:: everything
 kvmtest:: everything
 	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --target=kvm --image=$(KVM_IMAGE)
 
+kvmquicktest:: everything
+	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --quick --target=kvm --image=$(KVM_IMAGE)
+
 testone:: everything
 	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --one $(TESTS)
 

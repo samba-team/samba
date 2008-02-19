@@ -303,7 +303,7 @@ Samba3 Specific:
  --bindir=PATH              path to binaries
 
 Kvm Specific:
- --image=PATH                path to KVM image
+ --image=PATH               path to KVM image
 
 Behaviour:
  --quick                    run quick overall test
