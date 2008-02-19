@@ -198,18 +198,6 @@ typedef struct _ServiceInfo {
 
 typedef struct {
 	POLICY_HND handle;
-	uint32 control;
-} SVCCTL_Q_CONTROL_SERVICE;
-
-typedef struct {
-	SERVICE_STATUS svc_status;
-	WERROR status;
-} SVCCTL_R_CONTROL_SERVICE;
-
-/**************************/
-
-typedef struct {
-	POLICY_HND handle;
 } SVCCTL_Q_QUERY_STATUS;
 
 typedef struct {

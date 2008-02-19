@@ -229,35 +229,3 @@ WERROR rpccli_svcctl_query_config(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 	
 	return out.status;
 }
-
-/*******************************************************************
-*******************************************************************/
-
-WERROR rpccli_svcctl_control_service( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                   POLICY_HND *hService, uint32 control,
-				   SERVICE_STATUS *status )
-{
-	SVCCTL_Q_CONTROL_SERVICE in;
-	SVCCTL_R_CONTROL_SERVICE out;
-	prs_struct qbuf, rbuf;
-	
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-	
-	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
-	in.control = control;
-	
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_CONTROL_SERVICE, 
-	            in, out, 
-	            qbuf, rbuf,
-	            svcctl_io_q_control_service,
-	            svcctl_io_r_control_service,
-	            WERR_GENERAL_FAILURE );
-	
-	if ( !W_ERROR_IS_OK( out.status ) )
-		return out.status;
-
-	memcpy( status, &out.svc_status, sizeof(SERVICE_STATUS) );
-	
-	return out.status;
-}
