@@ -129,36 +129,6 @@ WERROR rpccli_svcctl_enumerate_services( struct rpc_pipe_client *cli, TALLOC_CTX
 /*******************************************************************
 *******************************************************************/
 
-WERROR rpccli_svcctl_query_status( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                POLICY_HND *hService, SERVICE_STATUS *status )
-{
-	SVCCTL_Q_QUERY_STATUS in;
-	SVCCTL_R_QUERY_STATUS out;
-	prs_struct qbuf, rbuf;
-	
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-	
-	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
-	
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_QUERY_STATUS, 
-	            in, out, 
-	            qbuf, rbuf,
-	            svcctl_io_q_query_status,
-	            svcctl_io_r_query_status, 
-	            WERR_GENERAL_FAILURE );
-	
-	if ( !W_ERROR_IS_OK( out.status ) )
-		return out.status;
-
-	memcpy( status, &out.svc_status, sizeof(SERVICE_STATUS) );
-	
-	return out.status;
-}
-
-/*******************************************************************
-*******************************************************************/
-
 WERROR rpccli_svcctl_query_config(struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                 POLICY_HND *hService, SERVICE_CONFIG *config )
 {
