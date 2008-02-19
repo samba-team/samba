@@ -100,3 +100,18 @@ void init_lsa_translated_sid(struct lsa_TranslatedSid *r,
 	r->sid_index = sid_index;
 }
 
+/*******************************************************************
+ Inits a lsa_TranslatedName2 structure.
+********************************************************************/
+
+void init_lsa_translated_name2(struct lsa_TranslatedName2 *r,
+			       enum lsa_SidType sid_type,
+			       const char *name,
+			       uint32_t sid_index,
+			       uint32_t unknown)
+{
+	r->sid_type = sid_type;
+	init_lsa_String(&r->name, name);
+	r->sid_index = sid_index;
+	r->unknown = unknown;
+}

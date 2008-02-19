@@ -88,28 +88,7 @@ static bool api_lsa_query_info(pipes_struct *p)
 
 static bool api_lsa_lookup_sids(pipes_struct *p)
 {
-	LSA_Q_LOOKUP_SIDS q_u;
-	LSA_R_LOOKUP_SIDS r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the info class and policy handle */
-	if(!lsa_io_q_lookup_sids("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_lookup_sids: failed to unmarshall LSA_Q_LOOKUP_SIDS.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_lookup_sids(p, &q_u, &r_u);
-
-	if(!lsa_io_r_lookup_sids("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_lookup_sids: Failed to marshall LSA_R_LOOKUP_SIDS.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_LOOKUPSIDS);
 }
 
 /***************************************************************************
@@ -330,28 +309,7 @@ static bool api_lsa_delete_object(pipes_struct *p)
 
 static bool api_lsa_lookup_sids2(pipes_struct *p)
 {
-	LSA_Q_LOOKUP_SIDS2 q_u;
-	LSA_R_LOOKUP_SIDS2 r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the info class and policy handle */
-	if(!lsa_io_q_lookup_sids2("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_lookup_sids2: failed to unmarshall LSA_Q_LOOKUP_SIDS2.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_lookup_sids2(p, &q_u, &r_u);
-
-	if(!lsa_io_r_lookup_sids2("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_lookup_sids2: Failed to marshall LSA_R_LOOKUP_SIDS2.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_LOOKUPSIDS2);
 }
 
 /***************************************************************************
@@ -360,28 +318,7 @@ static bool api_lsa_lookup_sids2(pipes_struct *p)
 
 static bool api_lsa_lookup_sids3(pipes_struct *p)
 {
-	LSA_Q_LOOKUP_SIDS3 q_u;
-	LSA_R_LOOKUP_SIDS3 r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	/* grab the info class and policy handle */
-	if(!lsa_io_q_lookup_sids3("", &q_u, data, 0)) {
-		DEBUG(0,("api_lsa_lookup_sids3: failed to unmarshall LSA_Q_LOOKUP_SIDS3.\n"));
-		return False;
-	}
-
-	r_u.status = _lsa_lookup_sids3(p, &q_u, &r_u);
-
-	if(!lsa_io_r_lookup_sids3("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_lsa_lookup_sids3: Failed to marshall LSA_R_LOOKUP_SIDS3.\n"));
-		return False;
-	}
-
-	return True;
+	return proxy_lsa_call(p, NDR_LSA_LOOKUPSIDS3);
 }
 
 /***************************************************************************
