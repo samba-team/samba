@@ -101,9 +101,13 @@ sub start($$$)
 
 	my $opts = (defined($ENV{KVM_OPTIONS})?$ENV{KVM_OPTIONS}:"-nographic");
 
+	if (defined($ENV{KVM_SNAPSHOT})) {
+		$opts .= " -loadvm $ENV{KVM_SNAPSHOT}";
+	}
+
 	my ($ifup_script, $dhcpd_pidfile, $ip_address) = $self->write_kvm_ifup($path, "192.168.9");
 
-	system("kvm $opts -daemonize -pidfile $pidfile -snapshot $image -net nic -net tap,script=$ifup_script");
+	system("kvm $opts -monitor unix:$path/kvm.monitor,server,nowait -daemonize -pidfile $pidfile -snapshot $image -net nic -net tap,script=$ifup_script");
 
 	return (read_pidfile($pidfile), read_pidfile($dhcpd_pidfile), $ip_address);
 }
