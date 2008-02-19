@@ -302,7 +302,8 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 		DEBUG(DEBUG_CRIT,("Unable to bind to any of the node addresses - giving up\n"));
 		goto failed;
 	}
-	ctdb->address = ctdb->nodes[i]->address;
+	ctdb->address.address = talloc_strdup(ctdb, ctdb->nodes[i]->address.address);
+	ctdb->address.port    = ctdb->nodes[i]->address.port;
 	ctdb->name = talloc_asprintf(ctdb, "%s:%u", 
 				     ctdb->address.address, 
 				     ctdb->address.port);
@@ -363,7 +364,7 @@ int ctdb_tcp_listen(struct ctdb_context *ctdb)
 #endif
 	sock.sin_port = htons(ctdb->address.port);
 	sock.sin_family = PF_INET;
-	
+
 	if (ctdb_tcp_get_address(ctdb, ctdb->address.address, 
 				 &sock.sin_addr) != 0) {
 		goto failed;
