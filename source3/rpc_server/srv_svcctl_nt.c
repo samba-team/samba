@@ -764,11 +764,13 @@ WERROR _svcctl_query_service_config2( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_CO
 }
 
 /********************************************************************
+ _svcctl_LockServiceDatabase
 ********************************************************************/
 
-WERROR _svcctl_lock_service_db( pipes_struct *p, SVCCTL_Q_LOCK_SERVICE_DB *q_u, SVCCTL_R_LOCK_SERVICE_DB *r_u )
+WERROR _svcctl_LockServiceDatabase(pipes_struct *p,
+				   struct svcctl_LockServiceDatabase *r)
 {
-	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 
 	/* perform access checks */
 
@@ -780,8 +782,7 @@ WERROR _svcctl_lock_service_db( pipes_struct *p, SVCCTL_Q_LOCK_SERVICE_DB *q_u, 
 
 	/* Just open a handle.  Doesn't actually lock anything */
 
-	return create_open_service_handle( p, &r_u->h_lock, SVC_HANDLE_IS_DBLOCK, NULL, 0 );
-;
+	return create_open_service_handle( p, r->out.lock, SVC_HANDLE_IS_DBLOCK, NULL, 0 );
 }
 
 /********************************************************************
@@ -895,12 +896,6 @@ WERROR _svcctl_set_service_sec( pipes_struct *p, SVCCTL_Q_SET_SERVICE_SEC *q_u, 
 
 
 WERROR _svcctl_DeleteService(pipes_struct *p, struct svcctl_DeleteService *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_LockServiceDatabase(pipes_struct *p, struct svcctl_LockServiceDatabase *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
