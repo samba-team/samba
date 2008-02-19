@@ -74,6 +74,10 @@ Change description for the specified header field. `field' is the hf name of the
 Code to insert when generating the specified dissector. @HF@ and 
 @PARAM@ will be substituted.
 
+=item I<INCLUDE> filename
+
+Include conformance data from the specified filename in the dissector.
+
 =item I<TFS> hf_name "true string" "false string"
 
 Override the text shown when a bitmap boolean value is enabled or disabled.
@@ -331,6 +335,20 @@ sub handle_ett_field
 	push (@{$data->{ett}}, $ett);
 }
 
+sub handle_include
+{
+	my $pos = shift @_;
+	my $data = shift @_;
+	my $fn = shift @_;
+
+	unless(defined($fn)) {
+		error($pos, "incomplete INCLUDE command");
+		return;
+	};
+
+	ReadConformance($fn, $data);
+}
+
 my %field_handlers = (
 	TYPE => \&handle_type,
 	NOEMIT => \&handle_noemit, 
@@ -343,7 +361,8 @@ my %field_handlers = (
 	STRIP_PREFIX => \&handle_strip_prefix,
 	PROTOCOL => \&handle_protocol,
 	FIELD_DESCRIPTION => \&handle_fielddescription,
-	IMPORT => \&handle_import
+	IMPORT => \&handle_import,
+	INCLUDE => \&handle_include
 );
 
 sub ReadConformance($$)
