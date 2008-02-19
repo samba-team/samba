@@ -452,7 +452,7 @@ if ($opt_target eq "samba4") {
 		if ($opt_socket_wrapper);
 	require target::Kvm;
 	die("No image specified") unless ($opt_image);
-	$target = new Kvm($opt_image);
+	$target = new Kvm($opt_image, undef);
 }
 
 sub read_test_regexes($)

@@ -11,9 +11,10 @@ use FindBin qw($RealBin);
 use POSIX;
 
 sub new($$$$) {
-	my ($classname, $dc_image) = @_;
+	my ($classname, $dc_image, $vdesocket) = @_;
 	my $self = { 
 		dc_image => $dc_image,
+		vdesocket => $vdesocket,
 	};
 	bless $self;
 	return $self;
@@ -60,8 +61,10 @@ sub teardown_env($$)
 
 	kill 9, $envvars->{KVM_PID};
 
-	print "Killing dhcpd instance $envvars->{DHCPD_PID}\n";
-	kill 9, $envvars->{DHCPD_PID};
+	if (defined($envvars->{DHCPD_PID})) {
+		print "Killing dhcpd instance $envvars->{DHCPD_PID}\n";
+		kill 9, $envvars->{DHCPD_PID};
+	}
 
 	return 0;
 }
@@ -105,11 +108,22 @@ sub start($$$)
 		$opts .= " -loadvm $ENV{KVM_SNAPSHOT}";
 	}
 
-	my ($ifup_script, $dhcpd_pidfile, $ip_address) = $self->write_kvm_ifup($path, "192.168.9");
+	my $netopts;
+	my $dhcp_pid;
+	my $ip_address;
 
-	system("kvm -name \"Samba 4 Test Subject\" $opts -monitor unix:$path/kvm.monitor,server,nowait -daemonize -pidfile $pidfile -snapshot $image -net nic -net tap,script=$ifup_script");
+	if ($self->{vdesocket}) {
+		$netopts = "vde,socket=$self->{vdesocket}";
+	} else {
+		my $ifup_script, $dhcpd_pidfile;
+		($ifup_script, $dhcpd_pidfile, $ip_address) = $self->write_kvm_ifup($path, "192.168.9");
+		$netopts = "tap,script=$ifup_script";
+		$dhcp_pid = read_pidfile($dhcpd_pidfile);
+	}
 
-	return (read_pidfile($pidfile), read_pidfile($dhcpd_pidfile), $ip_address);
+	system("kvm -name \"Samba 4 Test Subject\" $opts -monitor unix:$path/kvm.monitor,server,nowait -daemonize -pidfile $pidfile -snapshot $image -net nic -net $netopts");
+
+	return (read_pidfile($pidfile), $dhcp_pid, $ip_address);
 }
 
 sub setup_env($$$)
