@@ -1,5 +1,5 @@
 /*
- * Copyright (C) Jelmer Vernooij 2005 <jelmer@samba.org>
+ * Copyright (C) Jelmer Vernooij 2005,2008 <jelmer@samba.org>
  * Copyright (C) Stefan Metzmacher 2006 <metze@samba.org>
  *
  * All rights reserved.
@@ -211,7 +211,6 @@ struct socket_info
 };
 
 static struct socket_info *sockets;
-
 
 const char *socket_wrapper_dir(void)
 {
@@ -908,40 +907,31 @@ static int swrap_get_pcap_fd(const char *fname)
 	return fd;
 }
 
-static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *addr,
-			      enum swrap_packet_type type,
-			      const void *buf, size_t len)
+static struct swrap_packet *swrap_marshall_packet(struct socket_info *si,
+								  const struct sockaddr *addr,
+								  enum swrap_packet_type type,
+								  const void *buf, size_t len,
+								  size_t *packet_len)
 {
 	const struct sockaddr_in *src_addr;
 	const struct sockaddr_in *dest_addr;
-	const char *file_name;
 	unsigned long tcp_seq = 0;
 	unsigned long tcp_ack = 0;
 	unsigned char tcp_ctl = 0;
 	int unreachable = 0;
-	struct timeval tv;
-	struct swrap_packet *packet;
-	size_t packet_len = 0;
-	int fd;
 
-	file_name = socket_wrapper_pcap_file();
-	if (!file_name) {
-		return;
-	}
+	struct timeval tv;
 
 	switch (si->family) {
 	case AF_INET:
-#ifdef HAVE_IPV6
-	case AF_INET6:
-#endif
 		break;
 	default:
-		return;
+		return NULL;
 	}
 
 	switch (type) {
 	case SWRAP_CONNECT_SEND:
-		if (si->type != SOCK_STREAM) return;
+		if (si->type != SOCK_STREAM) return NULL;
 
 		src_addr = (const struct sockaddr_in *)si->myname;
 		dest_addr = (const struct sockaddr_in *)addr;
@@ -955,7 +945,7 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		break;
 
 	case SWRAP_CONNECT_RECV:
-		if (si->type != SOCK_STREAM) return;
+		if (si->type != SOCK_STREAM) return NULL;
 
 		dest_addr = (const struct sockaddr_in *)si->myname;
 		src_addr = (const struct sockaddr_in *)addr;
@@ -969,7 +959,7 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		break;
 
 	case SWRAP_CONNECT_UNREACH:
-		if (si->type != SOCK_STREAM) return;
+		if (si->type != SOCK_STREAM) return NULL;
 
 		dest_addr = (const struct sockaddr_in *)si->myname;
 		src_addr = (const struct sockaddr_in *)addr;
@@ -983,7 +973,7 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		break;
 
 	case SWRAP_CONNECT_ACK:
-		if (si->type != SOCK_STREAM) return;
+		if (si->type != SOCK_STREAM) return NULL;
 
 		src_addr = (const struct sockaddr_in *)si->myname;
 		dest_addr = (const struct sockaddr_in *)addr;
@@ -995,7 +985,7 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		break;
 
 	case SWRAP_ACCEPT_SEND:
-		if (si->type != SOCK_STREAM) return;
+		if (si->type != SOCK_STREAM) return NULL;
 
 		dest_addr = (const struct sockaddr_in *)si->myname;
 		src_addr = (const struct sockaddr_in *)addr;
@@ -1009,7 +999,7 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		break;
 
 	case SWRAP_ACCEPT_RECV:
-		if (si->type != SOCK_STREAM) return;
+		if (si->type != SOCK_STREAM) return NULL;
 
 		src_addr = (const struct sockaddr_in *)si->myname;
 		dest_addr = (const struct sockaddr_in *)addr;
@@ -1023,7 +1013,7 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		break;
 
 	case SWRAP_ACCEPT_ACK:
-		if (si->type != SOCK_STREAM) return;
+		if (si->type != SOCK_STREAM) return NULL;
 
 		dest_addr = (const struct sockaddr_in *)si->myname;
 		src_addr = (const struct sockaddr_in *)addr;
@@ -1051,10 +1041,9 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		src_addr = (const struct sockaddr_in *)si->peername;
 
 		if (si->type == SOCK_DGRAM) {
-			swrap_dump_packet(si, si->peername,
+			return swrap_marshall_packet(si, si->peername,
 					  SWRAP_SENDTO_UNREACH,
-			      		  buf, len);
-			return;
+			      		  buf, len, packet_len);
 		}
 
 		tcp_seq = si->io.pck_rcv;
@@ -1068,7 +1057,7 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		src_addr = (const struct sockaddr_in *)si->peername;
 
 		if (si->type == SOCK_DGRAM) {
-			return;
+			return NULL;
 		}
 
 		tcp_seq = si->io.pck_rcv;
@@ -1094,7 +1083,7 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		src_addr = (const struct sockaddr_in *)si->peername;
 
 		if (si->type == SOCK_DGRAM) {
-			return;
+			return NULL;
 		}
 
 		tcp_seq = si->io.pck_rcv;
@@ -1128,7 +1117,7 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		break;
 
 	case SWRAP_CLOSE_SEND:
-		if (si->type != SOCK_STREAM) return;
+		if (si->type != SOCK_STREAM) return NULL;
 
 		src_addr = (const struct sockaddr_in *)si->myname;
 		dest_addr = (const struct sockaddr_in *)si->peername;
@@ -1142,7 +1131,7 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		break;
 
 	case SWRAP_CLOSE_RECV:
-		if (si->type != SOCK_STREAM) return;
+		if (si->type != SOCK_STREAM) return NULL;
 
 		dest_addr = (const struct sockaddr_in *)si->myname;
 		src_addr = (const struct sockaddr_in *)si->peername;
@@ -1156,7 +1145,7 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 		break;
 
 	case SWRAP_CLOSE_ACK:
-		if (si->type != SOCK_STREAM) return;
+		if (si->type != SOCK_STREAM) return NULL;
 
 		src_addr = (const struct sockaddr_in *)si->myname;
 		dest_addr = (const struct sockaddr_in *)si->peername;
@@ -1167,15 +1156,33 @@ static void swrap_dump_packet(struct socket_info *si, const struct sockaddr *add
 
 		break;
 	default:
-		return;
+		return NULL;
 	}
 
 	swrapGetTimeOfDay(&tv);
 
-	packet = swrap_packet_init(&tv, src_addr, dest_addr, si->type,
+	return swrap_packet_init(&tv, src_addr, dest_addr, si->type,
 				   (const unsigned char *)buf, len,
 				   tcp_seq, tcp_ack, tcp_ctl, unreachable,
-				   &packet_len);
+				   packet_len);
+}
+
+static void swrap_dump_packet(struct socket_info *si, 
+							  const struct sockaddr *addr,
+							  enum swrap_packet_type type,
+							  const void *buf, size_t len)
+{
+	const char *file_name;
+	struct swrap_packet *packet;
+	size_t packet_len = 0;
+	int fd;
+
+	file_name = socket_wrapper_pcap_file();
+	if (!file_name) {
+		return;
+	}
+
+	packet = swrap_marshall_packet(si, addr, type, buf, len, &packet_len);
 	if (!packet) {
 		return;
 	}
