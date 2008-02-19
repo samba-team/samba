@@ -171,6 +171,42 @@ ctdb_control_getnodemap(struct ctdb_context *ctdb, uint32_t opcode, TDB_DATA ind
 	return 0;
 }
 
+static void
+ctdb_reload_nodes_event(struct event_context *ev, struct timed_event *te, 
+			       struct timeval t, void *private_data)
+{
+	int ret;
+	struct ctdb_context *ctdb = talloc_get_type(private_data, struct ctdb_context);
+	int ctdb_tcp_init(struct ctdb_context *);
+
+	/* shut down the transport */
+	ctdb->methods->shutdown(ctdb);
+
+	/* start the transport again */
+	ctdb_load_nodes_file(ctdb);
+	ret = ctdb_tcp_init(ctdb);
+	if (ret != 0) {
+		DEBUG(DEBUG_CRIT, (__location__ " Failed to init TCP\n"));
+		exit(1);
+	}
+	ctdb->methods->initialise(ctdb);
+	ctdb->methods->start(ctdb);
+
+	return;
+}
+
+/*
+  reload the nodes file after a short delay (so that we can send the response
+  back first
+*/
+int 
+ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode)
+{
+	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(1,0), ctdb_reload_nodes_event, ctdb);
+
+	return 0;
+}
+
 /* 
    a traverse function for pulling all relevent records from pulldb
  */

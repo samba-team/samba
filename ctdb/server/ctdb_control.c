@@ -134,6 +134,10 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 	case CTDB_CONTROL_GET_NODEMAP:
 		return ctdb_control_getnodemap(ctdb, opcode, indata, outdata);
 
+	case CTDB_CONTROL_RELOAD_NODES_FILE:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_reload_nodes_file(ctdb, opcode);
+
 	case CTDB_CONTROL_SETVNNMAP:
 		return ctdb_control_setvnnmap(ctdb, opcode, indata, outdata);
 

@@ -134,6 +134,10 @@ int ctdb_set_nlist(struct ctdb_context *ctdb, const char *nlist)
 	int nlines;
 	int i;
 
+	talloc_free(ctdb->nodes);
+	ctdb->nodes     = NULL;
+	ctdb->num_nodes = 0;
+
 	talloc_free(ctdb->node_list_file);
 	ctdb->node_list_file = talloc_strdup(ctdb, nlist);
 

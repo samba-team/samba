@@ -490,6 +490,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_UPTIME                  = 69,
 		    CTDB_CONTROL_START_RECOVERY          = 70,
 		    CTDB_CONTROL_END_RECOVERY            = 71,
+		    CTDB_CONTROL_RELOAD_NODES_FILE       = 72,
 };	
 
 /*
@@ -1243,6 +1244,10 @@ int ctdb_client_async_control(struct ctdb_context *ctdb,
 				struct timeval timeout,
 				bool dont_log_errors,
 				TDB_DATA data);
+
+void ctdb_load_nodes_file(struct ctdb_context *ctdb);
+
+int ctdb_control_reload_nodes_file(struct ctdb_context *ctdb, uint32_t opcode);
 
 
 #endif

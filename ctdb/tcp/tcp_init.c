@@ -54,7 +54,10 @@ static int ctdb_tcp_initialise(struct ctdb_context *ctdb)
 	int i;
 
 	/* listen on our own address */
-	if (ctdb_tcp_listen(ctdb) != 0) return -1;
+	if (ctdb_tcp_listen(ctdb) != 0) {
+		DEBUG(DEBUG_CRIT, (__location__ " Failed to start listening on the CTDB socket\n"));
+		exit(1);
+	}
 
 	for (i=0; i<ctdb->num_nodes; i++) {
 		if (ctdb_tcp_add_node(ctdb->nodes[i]) != 0) {
@@ -142,6 +145,18 @@ static const struct ctdb_methods ctdb_tcp_methods = {
 	.restart      = ctdb_tcp_restart,
 };
 
+static int tcp_ctcp_destructor(struct ctdb_tcp *ctcp)
+{
+	if (ctcp->listen_fd) {
+		close(ctcp->listen_fd);
+	}
+	ctcp->ctdb->private_data = NULL;
+	ctcp->ctdb->methods = NULL;
+	
+	return 0;
+}
+
+		
 /*
   initialise tcp portion of ctdb 
 */
@@ -152,8 +167,11 @@ int ctdb_tcp_init(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY(ctdb, ctcp);
 
 	ctcp->listen_fd = -1;
+	ctcp->ctdb      = ctdb;
 	ctdb->private_data = ctcp;
 	ctdb->methods = &ctdb_tcp_methods;
+
+	talloc_set_destructor(ctcp, tcp_ctcp_destructor);
 	return 0;
 }
 

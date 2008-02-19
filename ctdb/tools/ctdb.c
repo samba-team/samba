@@ -1130,6 +1130,46 @@ static int control_dumpmemory(struct ctdb_context *ctdb, int argc, const char **
 	return 0;
 }
 
+/*
+  list all nodes in the cluster
+ */
+static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int i, ret;
+	struct ctdb_node_map *nodemap=NULL;
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		return ret;
+	}
+
+	for(i=0;i<nodemap->num;i++){
+		printf("%s\n", inet_ntoa(nodemap->nodes[i].sin.sin_addr));
+	}
+
+	return 0;
+}
+
+/*
+  reload the nodes file on the local node
+ */
+static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+
+
+	ret = ctdb_ctrl_reload_nodes_file(ctdb, TIMELIMIT(),
+		CTDB_CURRENT_NODE);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("ERROR: Failed to reload nodes file on local node You MUST fix that node manually!\n"));
+	}
+	
+				
+	return 0;
+}
+
+
 static const struct {
 	const char *name;
 	int (*fn)(struct ctdb_context *, int, const char **);
@@ -1175,6 +1215,8 @@ static const struct {
 	{ "getsrvids",       getsrvids,			false, "get a list of all server ids"},
 	{ "vacuum",          ctdb_vacuum,		false, "vacuum the databases of empty records", "[max_records]"},
 	{ "repack",          ctdb_repack,		false, "repack all databases", "[max_freelist]"},
+	{ "listnodes",       control_listnodes,		false, "list all nodes in the cluster"},
+	{ "reloadnodes",         control_reload_nodes_file,		false, "update the nodes file and restart the transport on the local node"},
 };
 
 /*

@@ -20,6 +20,7 @@
 
 /* ctdb_tcp main state */
 struct ctdb_tcp {
+	struct ctdb_context *ctdb;
 	int listen_fd;
 };
 

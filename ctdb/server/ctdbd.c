@@ -73,7 +73,16 @@ static void ctdb_recv_pkt(struct ctdb_context *ctdb, uint8_t *data, uint32_t len
 	ctdb_input_pkt(ctdb, hdr);
 }
 
+void ctdb_load_nodes_file(struct ctdb_context *ctdb)
+{
+	int ret;
 
+	ret = ctdb_set_nlist(ctdb, options.nlist);
+	if (ret == -1) {
+		DEBUG(DEBUG_ALERT,("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb)));
+		exit(1);
+	}
+}
 
 static const struct ctdb_upcalls ctdb_upcalls = {
 	.recv_pkt       = ctdb_recv_pkt,
@@ -188,11 +197,7 @@ int main(int argc, const char *argv[])
 	}
 
 	/* tell ctdb what nodes are available */
-	ret = ctdb_set_nlist(ctdb, options.nlist);
-	if (ret == -1) {
-		DEBUG(DEBUG_ALERT,("ctdb_set_nlist failed - %s\n", ctdb_errstr(ctdb)));
-		exit(1);
-	}
+	ctdb_load_nodes_file(ctdb);
 
 	/* if a node-ip was specified, verify that it exists in the
 	   nodes file

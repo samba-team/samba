@@ -1242,6 +1242,27 @@ int ctdb_ctrl_getnodemap(struct ctdb_context *ctdb,
 }
 
 /*
+  drop the transport, reload the nodes file and restart the transport
+ */
+int ctdb_ctrl_reload_nodes_file(struct ctdb_context *ctdb, 
+		    struct timeval timeout, uint32_t destnode)
+{
+	int ret;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_RELOAD_NODES_FILE, 0, tdb_null, 
+			   NULL, NULL, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for reloadnodesfile failed\n"));
+		return -1;
+	}
+
+	return 0;
+}
+
+
+/*
   set vnn map on a node
  */
 int ctdb_ctrl_setvnnmap(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, 
