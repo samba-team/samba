@@ -3,16 +3,17 @@
 /*
   spoolss interface definitions
 */
+import "security.idl", "winreg.idl";
 
 [ uuid("12345678-1234-abcd-ef00-0123456789ab"),
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\spoolss]"),
   pointer_default(unique),
   helpstring("Spooler SubSystem"),
-  depends(security),
   helper("librpc/ndr/ndr_spoolss_buf.h")
 ] interface spoolss
 {
+	typedef [v1_enum] enum winreg_Type winreg_Type;
 	typedef struct {
 		uint16 year;
 		uint16 month;
@@ -57,7 +58,7 @@
 	} spoolss_PrinterInfo0;
 
 	typedef [public,gensize] struct {
-	        string32 devicename;
+		[charset(UTF16)] uint16 devicename[32];
 		uint16 specversion;
 		uint16 driverversion;
 		uint16 size;
@@ -76,7 +77,7 @@
 		uint16 yresolution;
 		uint16 ttoption;
 		uint16 collate;
-	        string32 formname;
+		[charset(UTF16)] uint16 formname[32];
 		uint16 logpixels;
 		uint32 bitsperpel;
 		uint32 pelswidth;
@@ -103,7 +104,6 @@
 		PRINTER_ENUM_REMOTE      = 0x00000010,
 		PRINTER_ENUM_SHARED      = 0x00000020,
 		PRINTER_ENUM_NETWORK     = 0x00000040,
-		PRINTER_ENUM_UNKNOWN_8   = 0x00000008,
 		PRINTER_ENUM_EXPAND      = 0x00004000,
 		PRINTER_ENUM_CONTAINER   = 0x00008000,
 		PRINTER_ENUM_ICON1       = 0x00010000,
@@ -253,13 +253,13 @@
 	/* we are using this as internal parsing code */
 	[public,noopnum,noprint] WERROR _spoolss_EnumPrinters(
 		[in] spoolss_EnumPrinterFlags flags,
-		[in] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out] DATA_BLOB *info,
-		[out] uint32 *needed,
-		[out] uint32 *count
+		[out,unique] DATA_BLOB *info,
+		[out] uint32 needed,
+		[out] uint32 count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumPrinters(
 		[in] uint32 level,
@@ -268,16 +268,16 @@
 	);
 	[nopull,nopush] WERROR spoolss_EnumPrinters(
 		[in] spoolss_EnumPrinterFlags flags,
-		[in] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
 		/* what we have here is a subcontext containing an array of no discriminant unions
 		 * and the array has no size in front
 		 */
-		[out,switch_is(level),size_is(count)] spoolss_PrinterInfo *info,
-		[out] uint32 *needed,
-		[out] uint32 *count
+		[out,unique,switch_is(level),size_is(count)] spoolss_PrinterInfo *info,
+		[out] uint32 needed,
+		[out] uint32 count
 	);
 
 	/******************/
@@ -287,9 +287,9 @@
 		[subcontext(4),subcontext_size(_ndr_size)] spoolss_DeviceMode *devmode;
 	} spoolss_DevmodeContainer;
 
-	WERROR spoolss_OpenPrinter(
-		[in] [string,charset(UTF16)] uint16 *printername,
-		[in] [string,charset(UTF16)] uint16 *datatype,
+	[public] WERROR spoolss_OpenPrinter(
+		[in,unique] [string,charset(UTF16)] uint16 *printername,
+		[in,unique] [string,charset(UTF16)] uint16 *datatype,
 		[in] spoolss_DevmodeContainer devmode_ctr,
 		[in] uint32 access_mask,
 		[out,ref] policy_handle *handle
@@ -338,7 +338,7 @@
 	WERROR spoolss_SetJob(
 		[in,ref] policy_handle *handle,
 		[in] uint32 job_id,
-		[in] spoolss_JobInfoContainer *ctr,
+		[in,unique] spoolss_JobInfoContainer *ctr,
 		[in] spoolss_JobControl command
 	);
 
@@ -348,10 +348,10 @@
 		[in,ref] policy_handle *handle,
 		[in] 	 uint32 job_id,
 		[in] 	 uint32 level,
-		[in] 	 DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_JobInfo *info,
-		[out] 	 uint32 *needed
+		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_JobInfo *info,
+		[out] 	 uint32 needed
 	);
 
 	/******************/
@@ -361,11 +361,11 @@
 		[in] 	 uint32 firstjob,
 		[in] 	 uint32 numjobs,
 		[in] 	 uint32 level,
-		[in] 	 DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out] 	 DATA_BLOB *info,
-		[out] 	 uint32 *needed,
-		[out] 	 uint32 *count
+		[out,unique] DATA_BLOB *info,
+		[out] 	 uint32 needed,
+		[out] 	 uint32 count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumJobs(
 		[in] uint32 level,
@@ -377,11 +377,11 @@
 		[in]	 uint32 firstjob,
 		[in]	 uint32 numjobs,
 		[in]	 uint32 level,
-		[in]     DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out,switch_is(level),size_is(count)] spoolss_JobInfo *info,
-		[out] 	 uint32 *needed,
-		[out]	 uint32 *count
+		[out,unique,switch_is(level),size_is(count)] spoolss_JobInfo *info,
+		[out] 	 uint32 needed,
+		[out]	 uint32 count
 	);
 
 	/******************/
@@ -431,13 +431,13 @@
 
 	/******************/
 	/* Function: 0x08 */
-	WERROR spoolss_GetPrinter(
+	[public] WERROR spoolss_GetPrinter(
 		[in,ref] policy_handle *handle,
 		[in] 	 uint32 level,
-		[in] 	 DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_PrinterInfo *info,
-		[out] 	 uint32 *needed
+		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_PrinterInfo *info,
+		[out] 	 uint32 needed
 	);
 
 	/******************/
@@ -537,14 +537,14 @@
 	/******************/
 	/* Function: 0x0a */
 	[public,noopnum,noprint] WERROR _spoolss_EnumPrinterDrivers(
-		[in] [string,charset(UTF16)] uint16 *server,
-		[in] [string,charset(UTF16)] uint16 *environment,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *environment,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out] DATA_BLOB *info,
-		[out] uint32 *needed,
-		[out] uint32 *count
+		[out,unique] DATA_BLOB *info,
+		[out] uint32 needed,
+		[out] uint32 count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumPrinterDrivers(
 		[in] uint32 level,
@@ -552,14 +552,14 @@
 		[out,switch_is(level)] spoolss_DriverInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumPrinterDrivers(
-		[in] [string,charset(UTF16)] uint16 *server,
-		[in] [string,charset(UTF16)] uint16 *environment,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *environment,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,switch_is(level),size_is(count)] spoolss_DriverInfo *info,
-		[out] uint32 *needed,
-		[out] uint32 *count
+		[out,unique,switch_is(level),size_is(count)] spoolss_DriverInfo *info,
+		[out] uint32 needed,
+		[out] uint32 count
 	);
 
 	/******************/
@@ -581,21 +581,21 @@
 		[default] spoolss_DriverDirectoryInfo1 info1;
 	} spoolss_DriverDirectoryInfo;
 
-	WERROR spoolss_GetPrinterDriverDirectory(
-		[in] [string,charset(UTF16)] uint16 *server,
-		[in] [string,charset(UTF16)] uint16 *environment,
+	[public] WERROR spoolss_GetPrinterDriverDirectory(
+		[in,unique] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *environment,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_DriverDirectoryInfo *info,
-		[out] uint32 *needed
+		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_DriverDirectoryInfo *info,
+		[out] uint32 needed
 	);
 
 	/******************/
 	/* Function: 0x0d */
 	WERROR spoolss_DeletePrinterDriver(
 		[in,ref] policy_handle *handle,
-		[in] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
 		[in] [string,charset(UTF16)] uint16 architecture[],
 		[in] [string,charset(UTF16)] uint16 driver[]
 	);
@@ -617,14 +617,14 @@
 	} spoolss_PrintProcessorInfo;
 
 	[public,noopnum,noprint] WERROR _spoolss_EnumPrintProcessors(
-		[in] [string,charset(UTF16)] uint16 *servername,
-		[in] [string,charset(UTF16)] uint16 *environment,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *environment,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out] DATA_BLOB *info,
-		[out] uint32 *needed,
-		[out] uint32 *count
+		[out,unique] DATA_BLOB *info,
+		[out] uint32 needed,
+		[out] uint32 count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumPrintProcessors(
 		[in] uint32 level,
@@ -632,14 +632,14 @@
 		[out,switch_is(level)] spoolss_PrintProcessorInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumPrintProcessors(
-		[in] [string,charset(UTF16)] uint16 *servername,
-		[in] [string,charset(UTF16)] uint16 *environment,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *environment,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,switch_is(level),size_is(count)] spoolss_PrintProcessorInfo *info,
-		[out] uint32 *needed,
-		[out] uint32 *count
+		[out,unique,switch_is(level),size_is(count)] spoolss_PrintProcessorInfo *info,
+		[out] uint32 needed,
+		[out] uint32 count
 	);
 
 	/******************/
@@ -666,7 +666,7 @@
 		[in,ref] policy_handle *handle,
 		[in] uint32 level,
 		[in,switch_is(level)] spoolss_DocumentInfo info,
-		[out] uint32 *job_id
+		[out] uint32 job_id
 	);
 
 	/******************/
@@ -681,7 +681,7 @@
 		[in,ref] policy_handle *handle,
 		[in] DATA_BLOB data,
 		[in,value(r->in.data.length)] uint32 _data_size,
-		[out] uint32 *num_written
+		[out] uint32 num_written
 	);
 
 	/******************/
@@ -701,8 +701,8 @@
 	WERROR spoolss_ReadPrinter(
 		[in,ref] policy_handle *handle,
 		[in] uint32 data_size,
-		[out] DATA_BLOB *data,
-		[out,value(r->out.data.length)] uint32 *_data_size
+		[out] DATA_BLOB data,
+		[out,value(r->out.data.length)] uint32 _data_size
 	);
 
 	/******************/
@@ -766,21 +766,21 @@
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
 		[in] 	 uint32 offered,
-		[out] 	 spoolss_PrinterDataType *type,
-		[out] 	 DATA_BLOB *data,
-		[out] 	 uint32 *needed
+		[out] 	 spoolss_PrinterDataType type,
+		[out] 	 DATA_BLOB data,
+		[out] 	 uint32 needed
 	);
 	[noopnum,noprint,public] void __spoolss_GetPrinterData(
 		[in] spoolss_PrinterDataType type,
-		[out,switch_is(type)] spoolss_PrinterData *data
+		[out,switch_is(type)] spoolss_PrinterData data
 	);
-	[nopull,nopush] WERROR spoolss_GetPrinterData(
+	[nopull,nopush,public] WERROR spoolss_GetPrinterData(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
 		[in] 	 uint32 offered,
-		[out] 	 spoolss_PrinterDataType *type,
-		[out,subcontext(4),subcontext_size(offered),switch_is(type)] spoolss_PrinterData *data,
-		[out] 	 uint32 *needed
+		[out] 	 spoolss_PrinterDataType type,
+		[out,subcontext(4),subcontext_size(offered),switch_is(type)] spoolss_PrinterData data,
+		[out] 	 uint32 needed
 	);
 
 	/******************/
@@ -790,11 +790,11 @@
 		[in] [string,charset(UTF16)] uint16 value_name[],
 		[in] spoolss_PrinterDataType type,
 		[in] DATA_BLOB data,
-		[in] uint32 *_offered
+		[in] uint32 _offered
 	);
 	[noopnum,nopull,noprint,public] void __spoolss_SetPrinterData(
 		[in] spoolss_PrinterDataType type,
-		[out,switch_is(type)] spoolss_PrinterData *data
+		[out,switch_is(type)] spoolss_PrinterData data
 	);
 	[nopush] WERROR spoolss_SetPrinterData(
 		[in,ref] policy_handle *handle,
@@ -811,7 +811,7 @@
 
 	/******************/
 	/* Function: 0x1d */
-	WERROR spoolss_ClosePrinter(
+	[public] WERROR spoolss_ClosePrinter(
 		[in,out,ref]     policy_handle *handle
 	);
 
@@ -877,10 +877,10 @@
 		[in,ref] policy_handle *handle,
 		[in] [string,charset(UTF16)] uint16 form_name[],
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_FormInfo *info,
-		[out] uint32 *needed
+		[out,unique,subcontext(4),subcontext_size(offered),switch_is(level)] spoolss_FormInfo *info,
+		[out] uint32 needed
 	);
 
 	/******************/
@@ -897,11 +897,11 @@
 	[public,noopnum,noprint] WERROR _spoolss_EnumForms(
 		[in,ref] policy_handle *handle,
 		[in] 	 uint32 level,
-		[in] 	 DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out]	 DATA_BLOB *info,
-		[out]	 uint32 *needed,
-		[out]	 uint32 *count
+		[out,unique] DATA_BLOB *info,
+		[out]	 uint32 needed,
+		[out]	 uint32 count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumForms(
 		[in] uint32 level,
@@ -911,11 +911,11 @@
 	[nopull,nopush] WERROR spoolss_EnumForms(
 		[in,ref] policy_handle *handle,
 		[in] 	 uint32 level,
-		[in] 	 DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
-		[out,switch_is(level),size_is(count)] spoolss_FormInfo *info,
-		[out] uint32 *needed,
-		[out] uint32 *count
+		[out,unique,switch_is(level),size_is(count)] spoolss_FormInfo *info,
+		[out] uint32 needed,
+		[out] uint32 count
 	);
 
 	typedef struct {
@@ -947,13 +947,13 @@
 	/******************/
 	/* Function: 0x23 */
 	[public,noopnum,noprint] WERROR _spoolss_EnumPorts(
-		[in] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out] DATA_BLOB *info,
-		[out] uint32 *needed,
-		[out] uint32 *count
+		[out,unique] DATA_BLOB *info,
+		[out] uint32 needed,
+		[out] uint32 count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumPorts(
 		[in] uint32 level,
@@ -961,13 +961,13 @@
 		[out,switch_is(level)] spoolss_PortInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumPorts(
-		[in] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,switch_is(level),size_is(count)] spoolss_PortInfo *info,
-		[out] uint32 *needed,
-		[out] uint32 *count
+		[out,unique,switch_is(level),size_is(count)] spoolss_PortInfo *info,
+		[out] uint32 needed,
+		[out] uint32 count
 	);
 
 	/******************/
@@ -989,13 +989,13 @@
 	} spoolss_MonitorInfo;
 
 	[public,noopnum,noprint] WERROR _spoolss_EnumMonitors(
-		[in] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out] DATA_BLOB *info,
-		[out] uint32 *needed,
-		[out] uint32 *count
+		[out,unique] DATA_BLOB *info,
+		[out] uint32 needed,
+		[out] uint32 count
 	);
 	[public,noopnum,noprint] void __spoolss_EnumMonitors(
 		[in] uint32 level,
@@ -1003,19 +1003,19 @@
 		[out,switch_is(level)] spoolss_MonitorInfo info[count]
 	);
 	[nopull,nopush] WERROR spoolss_EnumMonitors(
-		[in] [string,charset(UTF16)] uint16 *servername,
+		[in,unique] [string,charset(UTF16)] uint16 *servername,
 		[in] uint32 level,
-		[in] DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] uint32 offered,
-		[out,switch_is(level),size_is(count)] spoolss_MonitorInfo *info,
-		[out] uint32 *needed,
-		[out] uint32 *count
+		[out,unique,switch_is(level),size_is(count)] spoolss_MonitorInfo *info,
+		[out] uint32 needed,
+		[out] uint32 count
 	);
 
 	/******************/
 	/* Function: 0x25 */
 	WERROR spoolss_AddPort(
-	       [in] [string,charset(UTF16)] uint16 *server_name,
+	       [in,unique] [string,charset(UTF16)] uint16 *server_name,
 	       [in] uint32 unknown,
 	       [in] [string,charset(UTF16)] uint16 monitor_name[]
 	);
@@ -1101,16 +1101,16 @@
 	/* Function: 0x35 */
 	WERROR spoolss_GetPrinterDriver2(
 		[in,ref] policy_handle *handle,
-		[in] 	 [string,charset(UTF16)] uint16 *architecture,
+		[in,unique] [string,charset(UTF16)] uint16 *architecture,
 		[in] 	 uint32 level,
-		[in] 	 DATA_BLOB *buffer,
+		[in,unique] DATA_BLOB *buffer,
 		[in] 	 uint32 offered,
 		[in] 	 uint32 client_major_version,
 		[in] 	 uint32 client_minor_version,
-		[out] 	 DATA_BLOB *info,
-		[out] 	 uint32 *needed,
-		[out] 	 uint32 *server_major_version,
-		[out] 	 uint32 *server_minor_version
+		[out,unique] DATA_BLOB *info,
+		[out] 	 uint32 needed,
+		[out] 	 uint32 server_major_version,
+		[out] 	 uint32 server_minor_version
 	);
 
 	/******************/
@@ -1125,7 +1125,8 @@
 
 	/******************/
 	/* Function: 0x38 */
-	WERROR spoolss_FindClosePrinterNotify(
+	[public] WERROR spoolss_FindClosePrinterNotify(
+		[in,ref] policy_handle *handle
 	);
 
 	/******************/
@@ -1135,7 +1136,13 @@
 
 	/******************/
 	/* Function: 0x3a */
-	WERROR spoolss_ReplyOpenPrinter(
+	[public] WERROR spoolss_ReplyOpenPrinter(
+		[in,string,charset(UTF16)] uint16 server_name[],
+		[in] uint32 printer_local,
+		[in] winreg_Type type,
+		[in] uint32 unknown1,
+		[in] uint32 unknown2,
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
@@ -1145,7 +1152,8 @@
 
 	/******************/
 	/* Function: 0x3c */
-	WERROR spoolss_ReplyClosePrinter(
+	[public] WERROR spoolss_ReplyClosePrinter(
+		[in,out,ref] policy_handle *handle
 	);
 
 	/******************/
@@ -1168,31 +1176,65 @@
 	WERROR spoolss_ResetPrinterEx(
 	);
 
+	typedef [enum16bit] enum {
+		SPOOLSS_FIELD_SERVER_NAME		=  0,
+		SPOOLSS_FIELD_PRINTER_NAME		=  1,
+		SPOOLSS_FIELD_SHARE_NAME    	=  2,
+		SPOOLSS_FIELD_PORT_NAME			=  3,
+		SPOOLSS_FIELD_DRIVER_NAME		=  4,
+		SPOOLSS_FIELD_COMMENT			=  5,
+		SPOOLSS_FIELD_LOCATION			=  6,
+		SPOOLSS_FIELD_DEVMODE			=  7,
+		SPOOLSS_FIELD_SEPFILE			=  8,
+		SPOOLSS_FIELD_PRINT_PROCESSOR	=  9,
+		SPOOLSS_FIELD_PARAMETERS		= 10,
+		SPOOLSS_FIELD_DATATYPE			= 11,
+		SPOOLSS_FIELD_SECURITY_DESCRIPTOR=12,
+		SPOOLSS_FIELD_ATTRIBUTES		= 13,
+		SPOOLSS_FIELD_PRIORITY			= 14,
+		SPOOLSS_FIELD_DEFAULT_PRIORITY	= 15,
+		SPOOLSS_FIELD_START_TIME		= 16,
+		SPOOLSS_FIELD_UNTIL_TIME		= 17,
+		SPOOLSS_FIELD_STATUS			= 18,
+		SPOOLSS_FIELD_STATUS_STRING		= 19,
+		SPOOLSS_FIELD_CJOBS				= 20,
+		SPOOLSS_FIELD_AVERAGE_PPM		= 21,
+		SPOOLSS_FIELD_TOTAL_PAGES		= 22,
+		SPOOLSS_FIELD_PAGES_PRINTED 	= 23,
+		SPOOLSS_FIELD_TOTAL_BYTES		= 24,
+		SPOOLSS_FIELD_BYTES_PRINTED		= 25
+	} spoolss_Field;
+
+	typedef [enum16bit] enum {
+		SPOOLSS_NOTIFY_PRINTER 			= 0,
+		SPOOLSS_NOTIFY_JOB				= 1
+	} spoolss_NotifyType;
+
 	/******************/
 	/* Function: 0x41 */
-	typedef [flag(NDR_PAHEX)] struct {
+	typedef struct {
+		spoolss_NotifyType type;
 		uint16 u1;
-		uint16 u2;
+		uint32 u2;
 		uint32 u3;
-		uint32 u4;
 		uint32 count;
-		[size_is(count)] uint16 *array;
-	} spoolss_RemoteFindFirstPrinterChangeNotifyEx_t2;
+		[size_is(count)] spoolss_Field *fields;
+	} spoolss_NotifyOptionsArray;
 
 	typedef struct {
-		uint32 u1;
-		uint32 u2;
+		uint32 version;
+		uint32 flags;
 		uint32 count;
-		[size_is(count)] spoolss_RemoteFindFirstPrinterChangeNotifyEx_t2 *t2;
-	} spoolss_RemoteFindFirstPrinterChangeNotifyEx_t1;
+		[size_is(count)] spoolss_NotifyOptionsArray *options;
+	} spoolss_NotifyOptionsContainer;
 
-	WERROR spoolss_RemoteFindFirstPrinterChangeNotifyEx(
+	[public] WERROR spoolss_RemoteFindFirstPrinterChangeNotifyEx(
 		[in,ref] policy_handle *handle,
-		[in] uint32 u1,
-		[in] uint32 u2,
-		[in] [string,charset(UTF16)] uint16 *str,
-		[in] uint32 u3,
-		[in] spoolss_RemoteFindFirstPrinterChangeNotifyEx_t1 *t1
+		[in] uint32 flags,
+		[in] uint32 options,
+		[in,unique] [string,charset(UTF16)] uint16 *str,
+		[in] uint32 printer_local,
+		[in,unique] spoolss_NotifyOptionsContainer *t1
 	);
 
 	/******************/
@@ -1200,9 +1242,55 @@
 	WERROR spoolss_RouterRefreshPrinterChangeNotification(
 	);
 
+	typedef struct {
+		uint32 size;
+		[size_is(size/2),unique,charset(UTF16)] uint16 *string;
+	} spoolss_NotifyUTF16String;
+
+	typedef struct {
+		uint32 size;
+		[size_is(size),charset(DOS)] uint8 *string;
+	} spoolss_NotifyDOSString;
+
+	typedef struct {
+		uint16 data[8];
+	} spoolss_NotifyBlobData;
+
+	typedef struct {
+		uint32 len;
+		[unique] spoolss_NotifyBlobData *data;
+	} spoolss_NotifyBlob;
+
+	typedef [switch_type(uint32)] union {
+		[case(1)] dlong integer;
+		[case(2)] spoolss_NotifyUTF16String utf16_string;
+		[case(3)] spoolss_NotifyDOSString ascii_string;
+		[case(4)] spoolss_NotifyBlob blob;
+		[case(5)] spoolss_NotifyDOSString ascii_string;
+	} spoolss_NotifyData;
+
+	typedef struct {
+		spoolss_NotifyType type;
+		spoolss_Field field;
+		uint32 variable_type;
+		uint32 job_id;
+		[switch_is(variable_type)] spoolss_NotifyData data;
+	} spoolss_Notify;
+
+	typedef struct {
+		uint32 version;
+		uint32 flags;
+		uint32 count;
+		[size_is(count)] spoolss_Notify notifies[];
+	} spoolss_NotifyInfo;
+
 	/******************/
 	/* Function: 0x43 */
-	WERROR spoolss_RemoteFindNextPrinterChangeNotifyEx(
+	[public] WERROR spoolss_RemoteFindNextPrinterChangeNotifyEx(
+		[in,ref] policy_handle *handle,
+		[in] uint32 change_low,
+		[in,unique] spoolss_NotifyOptionsContainer *container,
+		[out, unique] spoolss_NotifyInfo *info
 	);
 
 	/******************/
@@ -1224,11 +1312,72 @@
 		[case(1)]  spoolss_UserLevel1 *level1;
 	} spoolss_UserLevel;
 
+	typedef bitmap {
+		SERVER_ACCESS_ADMINISTER	= 0x00000001,
+		SERVER_ACCESS_ENUMERATE		= 0x00000002,
+		PRINTER_ACCESS_ADMINISTER	= 0x00000004,
+		PRINTER_ACCESS_USE		= 0x00000008,
+		JOB_ACCESS_ADMINISTER		= 0x00000010
+	} spoolss_AccessRights;
+
+	/* Access rights for print servers */
+	const int SERVER_ALL_ACCESS	= SEC_STD_REQUIRED |
+					  SERVER_ACCESS_ADMINISTER |
+					  SERVER_ACCESS_ENUMERATE;
+
+	const int SERVER_READ		= SEC_STD_READ_CONTROL |
+					  SERVER_ACCESS_ENUMERATE;
+
+	const int SERVER_WRITE		= STANDARD_RIGHTS_WRITE_ACCESS |
+					  SERVER_ACCESS_ADMINISTER |
+					  SERVER_ACCESS_ENUMERATE;
+
+	const int SERVER_EXECUTE	= SEC_STD_READ_CONTROL |
+					  SERVER_ACCESS_ENUMERATE;
+
+	/* Access rights for printers */
+	const int PRINTER_ALL_ACCESS	= SEC_STD_REQUIRED |
+					  PRINTER_ACCESS_ADMINISTER |
+					  PRINTER_ACCESS_USE;
+
+	const int PRINTER_READ		= SEC_STD_READ_CONTROL |
+					  PRINTER_ACCESS_USE;
+
+	const int PRINTER_WRITE		= STANDARD_RIGHTS_WRITE_ACCESS |
+					  PRINTER_ACCESS_USE;
+
+	const int PRINTER_EXECUTE	= SEC_STD_READ_CONTROL |
+					  PRINTER_ACCESS_USE;
+
+	/* Access rights for jobs */
+	const int JOB_ALL_ACCESS	= SEC_STD_REQUIRED |
+					  JOB_ACCESS_ADMINISTER;
+
+	const int JOB_READ		= SEC_STD_READ_CONTROL |
+					  JOB_ACCESS_ADMINISTER;
+
+	const int JOB_WRITE		= STANDARD_RIGHTS_WRITE_ACCESS |
+					  JOB_ACCESS_ADMINISTER;
+
+	const int JOB_EXECUTE		= SEC_STD_READ_CONTROL |
+					  JOB_ACCESS_ADMINISTER;
+
+	/* ACE masks for various print permissions */
+	const int PRINTER_ACE_FULL_CONTROL = SEC_GENERIC_ALL |
+						PRINTER_ALL_ACCESS;
+
+	const int PRINTER_ACE_MANAGE_DOCUMENTS = SEC_GENERIC_ALL |
+						READ_CONTROL_ACCESS;
+
+	const int PRINTER_ACE_PRINT	= GENERIC_EXECUTE_ACCESS |
+					  READ_CONTROL_ACCESS |
+					  PRINTER_ACCESS_USE;
+
 	/******************/
 	/* Function: 0x45 */
-	WERROR spoolss_OpenPrinterEx(
-		[in]                  [string,charset(UTF16)] uint16 *printername,
-		[in]                  [string,charset(UTF16)] uint16 *datatype,
+	[public] WERROR spoolss_OpenPrinterEx(
+		[in,unique]           [string,charset(UTF16)] uint16 *printername,
+		[in,unique]           [string,charset(UTF16)] uint16 *datatype,
 		[in]	              spoolss_DevmodeContainer devmode_ctr,
 		[in]	              uint32 access_mask,
 		[in]	              uint32 level,
@@ -1239,11 +1388,11 @@
 	/******************/
 	/* Function: 0x46 */
 	WERROR spoolss_AddPrinterEx(
-		[in] [string,charset(UTF16)] uint16 *server,
+		[in,unique] [string,charset(UTF16)] uint16 *server,
 		[in] uint32 level,
-		[in,switch_is(level)] spoolss_PrinterInfo *info,
+		[in,unique,switch_is(level)] spoolss_PrinterInfo *info,
 		[in] spoolss_DevmodeContainer devmode_ctr,
-		[in] security_descriptor *secdesc,
+		[in,unique] security_descriptor *secdesc,
 		[in] uint32 ulevel,
 		[in,switch_is(ulevel)] spoolss_UserLevel userlevel
 	);
@@ -1258,12 +1407,13 @@
 	WERROR spoolss_EnumPrinterData(
 		[in,ref] policy_handle *handle,
 		[in]	 uint32 enum_index,
+		[out,ref,size_is(value_offered/2),charset(UTF16)] uint16 *value_name,
 		[in]     uint32 value_offered,
-		[out]	 lstring *value_name,
-		[out]	 uint32 *value_needed,
-		[out]    uint32 *printerdata_type,
-		[out]    DATA_BLOB *buffer,
-		[in,out,ref] uint32 *data_size
+		[out,ref] uint32 *value_needed,
+		[out,ref] uint32 *printerdata_type,
+		[out,ref] DATA_BLOB *buffer,
+		[in]	 uint32 data_offered,
+		[out,ref] uint32 *data_needed
 	);
 
 	/******************/
@@ -1306,25 +1456,30 @@
 		[in] 	 [string,charset(UTF16)] uint16 key_name[],
 		[in] 	 [string,charset(UTF16)] uint16 value_name[],
 		[in] 	 uint32 offered,
-		[out] 	 uint32 *type,
-		[out] 	 DATA_BLOB *buffer,
-		[out] 	 uint32 *needed
+		[out] 	 uint32 type,
+		[out] 	 DATA_BLOB buffer,
+		[out] 	 uint32 needed
 	);
 
 	/******************/
 	/* Function: 0x4f */
-	WERROR spoolss_EnumPrinterDataEx(
+	[public] WERROR spoolss_EnumPrinterDataEx(
 		[in,ref] policy_handle *handle,
 		[in] 	 [string,charset(UTF16)] uint16 key_name[],
 		[in] 	 uint32 offered,
-		[out] 	 DATA_BLOB *buffer,
-		[out] 	 uint32 *needed,
-		[out] 	 uint32 *count
+		[out] 	 DATA_BLOB buffer,
+		[out] 	 uint32 needed,
+		[out] 	 uint32 count
 	);
 
 	/******************/
 	/* Function: 0x50 */
-	WERROR spoolss_EnumPrinterKey(
+	[public] WERROR spoolss_EnumPrinterKey(
+		[in, ref] policy_handle *handle,
+		[in] [string,charset(UTF16)] uint16 key_name[],
+		[out] uint32 key_buffer_size,
+		[out] uint16 key_buffer[key_buffer_size],
+		[in,out] uint32 needed
 	);
 
 	/******************/
@@ -1374,14 +1529,14 @@
 		[in,value(r->in.in_data.length)] uint32 _in_data_length,
 		[in] uint32 offered,
 		[in] uint32 unknown1,
-		[out] DATA_BLOB *out_data,
-		[out] uint32 *needed,
-		[out] uint32 *unknown2
+		[out] DATA_BLOB out_data,
+		[out] uint32 needed,
+		[out] uint32 unknown2
 	);
 
 	/******************/
 	/* Function: 0x59 */
-	WERROR spoolss_AddPrinterDriverEx(
+	[public] WERROR spoolss_AddPrinterDriverEx(
 	);
 
 	/******************/
