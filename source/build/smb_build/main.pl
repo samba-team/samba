@@ -19,8 +19,7 @@ use strict;
 my $INPUT = {};
 my $mkfile = smb_build::config_mk::run_config_mk($INPUT, $config::config{srcdir}, $config::config{builddir}, "main.mk");
 
-my $subsys_output_type;
-$subsys_output_type = ["STATIC_LIBRARY"];
+my $subsys_output_type = ["MERGED_OBJ"];
 
 my $library_output_type;
 if ($config::config{USESHARED} eq "true") {
@@ -35,7 +34,7 @@ my $module_output_type;
 if ($config::config{USESHARED} eq "true") {
 	$module_output_type = ["SHARED_LIBRARY"];
 } else {
-	$module_output_type = ["INTEGRATED"];
+	$module_output_type = ["MERGED_OBJ"];
 }
 
 my $DEPEND = smb_build::input::check($INPUT, \%config::enabled,
@@ -43,22 +42,18 @@ my $DEPEND = smb_build::input::check($INPUT, \%config::enabled,
 				     $library_output_type,
 				     $module_output_type);
 my $OUTPUT = output::create_output($DEPEND, \%config::config);
-$config::config{SUBSYSTEM_OUTPUT_TYPE} = $subsys_output_type;
-$config::config{LIBRARY_OUTPUT_TYPE} = $library_output_type;
-$config::config{MODULE_OUTPUT_TYPE} = $module_output_type;
 my $mkenv = new smb_build::makefile(\%config::config, $mkfile);
 
+my $shared_libs_used = 0;
 foreach my $key (values %$OUTPUT) {
-	next unless defined $key->{OUTPUT_TYPE};
-
-	$mkenv->Integrated($key) if grep(/INTEGRATED/, @{$key->{OUTPUT_TYPE}});
+	$mkenv->_prepare_list($key, "OBJ_LIST");
+	push(@{$mkenv->{all_objs}}, "\$($key->{NAME}_OBJ_LIST)");
 }
 
-my $shared_libs_used = 0;
-
 foreach my $key (values %$OUTPUT) {
 	next unless defined $key->{OUTPUT_TYPE};
 
+	$mkenv->MergedObj($key) if grep(/MERGED_OBJ/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	if (defined($key->{PC_FILE})) {
 		push(@{$mkenv->{pc_files}}, "$key->{BASEDIR}/$key->{PC_FILE}");

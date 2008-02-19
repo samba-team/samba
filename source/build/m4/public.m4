@@ -8,7 +8,7 @@ dnl SMB_SUBSYSTEM(name,obj_files,required_subsystems)
 dnl
 dnl SMB_EXT_LIB_FROM_PKGCONFIG(name,pkg-config name,[ACTION-IF-FOUND],[ACTION-IF-NOT-FOUND])
 dnl
-dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags,pcname)
+dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags)
 dnl
 dnl SMB_ENABLE(name,default_build)
 dnl
@@ -40,7 +40,7 @@ ENABLE = YES
 "
 ])
 
-dnl SMB_LIBRARY(name,obj_files,required_subsystems,version,so_version,cflags,ldflags,pcname)
+dnl SMB_LIBRARY(name,obj_files,required_subsystems,version,so_version,cflags,ldflags)
 AC_DEFUN([SMB_LIBRARY],
 [
 MAKE_SETTINGS="$MAKE_SETTINGS
@@ -60,7 +60,6 @@ VERSION = $4
 SO_VERSION = $5 
 CFLAGS = \$($1_CFLAGS)
 LDFLAGS = \$($1_LDFLAGS)
-PC_NAME = $8
 ENABLE = YES
 # End Library $1
 ###################################
@@ -104,8 +103,7 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 					[`$PKG_CONFIG --libs-only-l '$2'`], 
 					[`$PKG_CONFIG --cflags-only-other '$2'`],
 					[`$PKG_CONFIG --cflags-only-I '$2'`],
-					[`$PKG_CONFIG --libs-only-other '$2'` `$PKG_CONFIG --libs-only-L '$2'`],
-					[ $2 ])
+					[`$PKG_CONFIG --libs-only-other '$2'` `$PKG_CONFIG --libs-only-L '$2'`])
 				ac_cv_$1_found=yes
 
 			else
@@ -133,11 +131,11 @@ dnl SMB_INCLUDE_MK(file)
 AC_DEFUN([SMB_INCLUDE_MK],
 [
 SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
-include $1
+mkinclude $1
 "
 ])
 
-dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags,pcname)
+dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags)
 AC_DEFUN([SMB_EXT_LIB],
 [
 MAKE_SETTINGS="$MAKE_SETTINGS
@@ -147,18 +145,6 @@ $1_CPPFLAGS = $4
 $1_LDFLAGS = $5
 "
 
-SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
-###################################
-# Start Ext Lib $1
-@<:@EXT_LIB::$1@:>@
-LIBS = \$($1_LIBS)
-CFLAGS = \$($1_CFLAGS)
-CPPFLAGS = \$($1_CPPFLAGS)
-LDFLAGS = \$($1_LDFLAGS)
-PC_NAME = $6
-# End Ext Lib $1
-###################################
-"
 ])
 
 dnl SMB_ENABLE(name,default_build)

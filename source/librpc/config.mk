@@ -277,7 +277,7 @@ OBJ_FILES = gen_ndr/ndr_winbind.o
 PUBLIC_HEADERS = gen_ndr/winbind.h
 PUBLIC_DEPENDENCIES = LIBNDR NDR_NETLOGON
 
-include ../heimdal_build/perl_path_wrapper.sh ../librpc/idl-deps.pl librpc/idl/*.idl|
+mkinclude ../heimdal_build/perl_path_wrapper.sh ../librpc/idl-deps.pl librpc/idl/*.idl|
 
 librpc/gen_ndr/tables.c: $(IDL_NDR_PARSE_H_FILES)
 	@echo Generating librpc/gen_ndr/tables.c

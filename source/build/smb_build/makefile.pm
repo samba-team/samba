@@ -28,12 +28,8 @@ sub new($$$)
 	$self->{python_dsos} = [];
 	$self->{python_pys} = [];
 	$self->{shared_libs} = [];
-	$self->{installable_shared_libs} = [];
 	$self->{headers} = [];
-	$self->{shared_modules} = [];
 	$self->{plugins} = [];
-	$self->{install_plugins} = "";
-	$self->{uninstall_plugins} = "";
 	$self->{pc_files} = [];
 	$self->{proto_headers} = [];
 	$self->{output} = "";
@@ -103,33 +99,17 @@ sub array2oneperline($)
 	return $output;
 }
 
-sub _prepare_list_ex($$$$$)
+sub _prepare_list($$$)
 {
-	my ($self,$ctx,$var,$pre,$post) = @_;
+	my ($self,$ctx,$var) = @_;
 	my @tmparr = ();
 
-	push(@tmparr, $pre) if defined($pre);
 	push(@tmparr, @{$ctx->{$var}}) if defined($ctx->{$var});
-	push(@tmparr, $post) if defined($post);
 
 	my $tmplist = array2oneperline(\@tmparr);
 	return if ($tmplist eq "");
 
 	$self->output("$ctx->{NAME}_$var =$tmplist\n");
-}
-
-sub _prepare_list($$$)
-{
-	my ($self,$ctx,$var) = @_;
-
-	$self->_prepare_list_ex($ctx, $var, undef, undef);
-}
-
-sub Integrated($$)
-{
-	my ($self,$ctx) = @_;
-
-	$self->_prepare_list($ctx, "OBJ_LIST");
 }
 
 sub SharedModulePrimitives($$)
@@ -152,29 +132,33 @@ sub SharedModule($$)
 		push (@{$self->{python_dsos}}, 
 			"$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
 	} else {
-		push (@{$self->{shared_modules}}, "$ctx->{TARGET_SHARED_LIBRARY}");
 		push (@{$self->{plugins}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}");
-		$self->{install_plugins} .= "\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-		$self->{install_plugins} .= "\t\@mkdir -p \$(DESTDIR)\$(modulesdir)/$sane_subsystem/\n";
-		$self->{install_plugins} .= "\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-		$self->{uninstall_plugins} .= "\t\@echo Uninstalling \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
-		$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n";
+		$self->output("installplugins:: $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
+		$self->output("\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
+		$self->output("\t\@mkdir -p \$(DESTDIR)\$(modulesdir)/$sane_subsystem/\n");
+		$self->output("\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
 		if (defined($ctx->{ALIASES})) {
 			foreach (@{$ctx->{ALIASES}}) {
-				$self->{install_plugins} .= "\t\@rm -f \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
-				$self->{install_plugins} .= "\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
-				$self->{uninstall_plugins} .= "\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n";
+				$self->output("\t\@rm -f \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
+				$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
+			}
+		}
+
+		$self->output("uninstallplugins::\n");
+		$self->output("\t\@echo Uninstalling \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
+		$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
+
+		if (defined($ctx->{ALIASES})) {
+			foreach (@{$ctx->{ALIASES}}) {
+				$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
 			}
 		}
 	}
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
-
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 
 	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{TYPE} ne "PYTHON") {
 		my $init_fn = $ctx->{INIT_FUNCTION_TYPE};
@@ -227,7 +211,6 @@ sub SharedLibraryPrimitives($$)
 
 	if (not grep(/STATIC_LIBRARY/, @{$ctx->{OUTPUT_TYPE}})) {
 		$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-		$self->_prepare_list($ctx, "OBJ_LIST");
 		$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	}
 }
@@ -236,14 +219,10 @@ sub SharedLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
-	push (@{$self->{shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
-	push (@{$self->{installable_shared_libs}}, "$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}") if (defined($ctx->{SO_VERSION}));
+	push (@{$self->{shared_libs}}, $ctx->{RESULT_SHARED_LIBRARY}) if (defined($ctx->{SO_VERSION}));
 
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
-#	$self->_prepare_list_ex($ctx, "LINK_FLAGS", "-Wl,--whole-archive", "-Wl,--no-whole-archive");
-
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 
 	my $soarg = "";
 	my $lns = "";
@@ -260,8 +239,7 @@ sub SharedLibrary($$)
 
 	$self->output(<< "__EOD__"
 #
-
-$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
 	\@\$(SHLD) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
@@ -273,23 +251,38 @@ __EOD__
 	$self->output("\n");
 }
 
+sub MergedObj($$)
+{
+	my ($self, $ctx) = @_;
+
+	return unless defined($ctx->{OUTPUT});
+
+	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
+	$self->output(<< "__EOD__"
+#
+$ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_OBJ_LIST)
+	\@echo Partially linking \$@
+	\@mkdir -p bin/mergedobj
+	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_OBJ_LIST)
+
+__EOD__
+);
+}
+
 sub StaticLibrary($$)
 {
 	my ($self,$ctx) = @_;
 
 	return unless (defined($ctx->{OBJ_FILES}));
 
-	push (@{$self->{static_libs}}, $ctx->{TARGET_STATIC_LIBRARY}) if ($ctx->{TYPE} eq "LIBRARY");
+	push (@{$self->{static_libs}}, $ctx->{RESULT_STATIC_LIBRARY}) if ($ctx->{TYPE} eq "LIBRARY");
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
-
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
 
 	$self->output(<< "__EOD__"
 #
-$ctx->{TARGET_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{RESULT_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$@
 	\@rm -f \$@
 	\@mkdir -p $ctx->{STATICDIR}
@@ -312,31 +305,23 @@ sub Binary($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $installdir;
 	my $extradir = "";
 
-	my $localdir = "bin$extradir";
-
-	$installdir = "bin$extradir";
-
-	push(@{$self->{all_objs}}, "\$($ctx->{NAME}_FULL_OBJ_LIST)");
-		
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
-		push (@{$self->{sbin_progs}}, "$installdir/$ctx->{BINARY}");
+		push (@{$self->{sbin_progs}}, $ctx->{RESULT_BINARY});
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
-		push (@{$self->{bin_progs}}, "$installdir/$ctx->{BINARY}");
+		push (@{$self->{bin_progs}}, $ctx->{RESULT_BINARY});
 	}
 
-	push (@{$self->{binaries}}, "$localdir/$ctx->{BINARY}");
+	$self->output("binaries:: $ctx->{TARGET_BINARY}\n");
 
-	$self->_prepare_list($ctx, "OBJ_LIST");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 $self->output(<< "__EOD__"
-$installdir/$ctx->{BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
+$ctx->{RESULT_BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 __EOD__
 	);
@@ -425,21 +410,15 @@ sub write($$)
 	$self->output("MANPAGES = " . array2oneperline($self->{manpages})."\n");
 	$self->output("BIN_PROGS = " . array2oneperline($self->{bin_progs}) . "\n");
 	$self->output("SBIN_PROGS = " . array2oneperline($self->{sbin_progs}) . "\n");
-	$self->output("BINARIES = " . array2oneperline($self->{binaries}) . "\n");
 	$self->output("STATIC_LIBS = " . array2oneperline($self->{static_libs}) . "\n");
 	$self->output("SHARED_LIBS = " . array2oneperline($self->{shared_libs}) . "\n");
 	$self->output("PYTHON_DSOS = " . array2oneperline($self->{python_dsos}) . "\n");
 	$self->output("PYTHON_PYS = " . array2oneperline($self->{python_pys}) . "\n");
-	$self->output("INSTALLABLE_SHARED_LIBS = " . array2oneperline($self->{installable_shared_libs}) . "\n");
 	$self->output("PUBLIC_HEADERS = " . array2oneperline($self->{headers}) . "\n");
 	$self->output("PC_FILES = " . array2oneperline($self->{pc_files}) . "\n");
 	$self->output("ALL_OBJS = " . array2oneperline($self->{all_objs}) . "\n");
 	$self->output("PROTO_HEADERS = " . array2oneperline($self->{proto_headers}) .  "\n");
-	$self->output("SHARED_MODULES = " . array2oneperline($self->{shared_modules}) . "\n");
 	$self->output("PLUGINS = " . array2oneperline($self->{plugins}) . "\n");
-
-	$self->output("\ninstallplugins: \$(PLUGINS)\n".$self->{install_plugins}."\n");
-	$self->output("\nuninstallplugins:\n".$self->{uninstall_plugins}."\n");
 
 	$self->_prepare_mk_files();
 

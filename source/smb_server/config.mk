@@ -25,5 +25,5 @@ PUBLIC_DEPENDENCIES = \
 # End SUBSYSTEM SMB
 #######################
 
-include smb/config.mk
-include smb2/config.mk
+mkinclude smb/config.mk
+mkinclude smb2/config.mk
