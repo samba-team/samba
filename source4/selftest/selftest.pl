@@ -13,7 +13,7 @@ selftest - Samba test runner
 
 selftest --help
 
-selftest [--srcdir=DIR] [--builddir=DIR] [--target=samba4|samba3|win] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--immediate] [--testlist=FILE] [TESTS]
+selftest [--srcdir=DIR] [--builddir=DIR] [--target=samba4|samba3|win|kvm] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--immediate] [--testlist=FILE] [TESTS]
 
 =head1 DESCRIPTION
 
@@ -43,7 +43,7 @@ Change directory to run tests in. Default is 'st'.
 
 Show errors as soon as they happen rather than at the end of the test run.
 		
-=item I<--target samba4|samba3|win>
+=item I<--target samba4|samba3|win|kvm>
 
 Specify test target against which to run. Default is 'samba4'.
 
@@ -280,7 +280,7 @@ Usage: $Script [OPTIONS] PREFIX
 
 Generic options:
  --help                     this help page
- --target=samba4|samba3|win Samba version to target
+ --target=samba[34]|win|kvm Samba version to target
  --testlist=FILE			file to read available tests from
 
 Paths:
@@ -300,6 +300,9 @@ Samba4 Specific:
 
 Samba3 Specific:
  --bindir=PATH              path to binaries
+
+Kvm Specific:
+ --image=PATH                path to KVM image
 
 Behaviour:
  --quick                    run quick overall test
@@ -334,6 +337,7 @@ my $result = GetOptions (
 		'resetup-environment' => \$opt_resetup_env,
 		'bindir:s' => \$opt_bindir,
 		'format=s' => \$opt_format,
+		'image=s' => \$opt_image,
 		'testlist=s' => \@testlists
 	    );
 
@@ -442,6 +446,10 @@ if ($opt_target eq "samba4") {
 	$testenv_default = "dc";
 	require target::Windows;
 	$target = new Windows();
+} elsif ($opt_target eq "kvm") {
+	require target::Kvm;
+	die("No image specified") unless ($opt_image);
+	$target = new Kvm($opt_image);
 }
 
 sub read_test_regexes($)
