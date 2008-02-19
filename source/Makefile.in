@@ -358,7 +358,7 @@ READLINE_OBJ = lib/readline.o
 POPT_LIB_OBJ = lib/popt_common.o
 
 PARAM_WITHOUT_REG_OBJ = dynconfig.o param/loadparm.o param/params.o param/util.o lib/sharesec.o lib/ldap_debug_handler.o
-PARAM_REG_ADD_OBJ = $(UTIL_REG_API_OBJ)
+PARAM_REG_ADD_OBJ = $(REG_API_OBJ) $(LIBNET_CONF_OBJ) $(REGOBJS_OBJ) $(PRIVILEGES_BASIC_OBJ)
 PARAM_OBJ = $(PARAM_WITHOUT_REG_OBJ) $(PARAM_REG_ADD_OBJ)
 
 KRBCLIENT_OBJ = libads/kerberos.o libads/ads_status.o
@@ -466,7 +466,8 @@ REGISTRY_OBJ = registry/reg_init_full.o registry/reg_cachehook.o \
 	       $(REGISTRY_BACKENDS) \
 	       $(UTIL_REG_API_OBJ) \
 	       $(REG_INIT_SMBCONF_OBJ) \
-	       $(REGFIO_OBJ)
+	       $(REGFIO_OBJ) \
+	       $(REGOBJS_OBJ)
 
 # objects to be used when not all of the registry code should be
 # loaded but only the portion needed by reg_api, typically for
@@ -532,11 +533,15 @@ RPC_SERVER_OBJ = @RPC_STATIC@ $(RPC_PIPE_OBJ)
 RPC_PARSE_OBJ = $(RPC_PARSE_OBJ2) \
                 rpc_parse/parse_spoolss.o \
 	        rpc_parse/parse_eventlog.o rpc_parse/parse_buffer.o \
-                rpc_parse/parse_ntsvcs.o rpc_parse/parse_svcctl.o $(REGOBJS_OBJ)
+                rpc_parse/parse_ntsvcs.o rpc_parse/parse_svcctl.o
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
 LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
+
+PRIVILEGES_BASIC_OBJ = lib/privileges_basic.o
+
+PRIVILEGES_OBJ = lib/privileges.o
 
 PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
@@ -544,7 +549,7 @@ PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/util_wellknown.o passdb/util_builtin.o passdb/pdb_compat.o \
 		passdb/util_unixsids.o passdb/lookup_sid.o \
 		passdb/login_cache.o @PDB_STATIC@ \
-		lib/account_pol.o lib/privileges.o lib/privileges_basic.o \
+		lib/account_pol.o $(PRIVILEGES_OBJ) \
 		lib/util_nscd.o lib/winbind_util.o
 
 DEVEL_HELP_WEIRD_OBJ = modules/weird.o
@@ -556,7 +561,7 @@ GROUPDB_OBJ = groupdb/mapping.o groupdb/mapping_tdb.o groupdb/mapping_ldb.o
 
 PROFILE_OBJ = profile/profile.o
 PROFILES_OBJ = utils/profiles.o \
-               $(REGFIO_OBJ) $(REGOBJS_OBJ) $(ERRORMAP_OBJ) \
+               $(ERRORMAP_OBJ) \
 	       $(RPC_PARSE_OBJ1) $(PARAM_OBJ) $(LIBSAMBA_OBJ) \
                $(DOSERR_OBJ) $(LIB_OBJ) $(LIB_DUMMY_OBJ) \
                $(POPT_LIB_OBJ) $(SECRETS_OBJ)
@@ -656,7 +661,8 @@ SMBD_OBJ_BASE = $(PARAM_WITHOUT_REG_OBJ) $(SMBD_OBJ_SRV) $(LIBSMB_OBJ) \
 		$(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) \
 		$(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(LIBADS_SERVER_OBJ) \
 		$(REGISTRY_OBJ) $(POPT_LIB_OBJ) $(BUILDOPT_OBJ) \
-		$(SMBLDAP_OBJ) $(LDB_OBJ) $(LIBNET_OBJ) @LIBWBCLIENT_STATIC@
+		$(SMBLDAP_OBJ) $(LDB_OBJ) $(LIBNET_OBJ) @LIBWBCLIENT_STATIC@ \
+		$(PRIVILEGES_BASIC_OBJ)
 
 PRINTING_OBJ = printing/pcap.o printing/print_svid.o printing/print_aix.o \
                printing/print_cups.o printing/print_generic.o \
@@ -714,7 +720,8 @@ SMBTREE_OBJ = utils/smbtree.o $(PARAM_OBJ) \
 
 TESTPARM_OBJ = utils/testparm.o \
                $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
-	       $(SECRETS_OBJ) $(LIBSAMBA_OBJ) $(RPC_PARSE_OBJ1) $(DOSERR_OBJ)
+	       $(SECRETS_OBJ) $(LIBSAMBA_OBJ) $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) \
+	       $(ERRORMAP_OBJ)
 
 PASSWD_UTIL_OBJ = utils/passwd_util.o
 
@@ -722,7 +729,7 @@ SMBPASSWD_OBJ = utils/smbpasswd.o $(PASSWD_UTIL_OBJ) $(PASSCHANGE_OBJ) \
 		$(PARAM_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ \
 		$(GROUPDB_OBJ) $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) \
 		$(POPT_LIB_OBJ) $(SMBLDAP_OBJ) $(RPC_PARSE_OBJ) \
-		$(LIBMSRPC_GEN_OBJ) $(LIBMSRPC_OBJ) $(LDB_OBJ) 
+		$(LIBMSRPC_GEN_OBJ) $(LIBMSRPC_OBJ) $(LDB_OBJ)
 
 PDBEDIT_OBJ = utils/pdbedit.o $(PASSWD_UTIL_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ \
 		$(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(GROUPDB_OBJ) \
@@ -796,9 +803,11 @@ LIBNETAPI_OBJ  = $(LIBNETAPI_OBJ1) $(LIBNET_OBJ) \
 		 $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		 $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
 		 $(SECRETS_OBJ) $(PASSDB_OBJ) @LIBWBCLIENT_STATIC@ $(SMBLDAP_OBJ) $(GROUPDB_OBJ) $(LDB_OBJ) \
-		 $(DCUTIL_OBJ) $(LIBADS_OBJ)
+		 $(DCUTIL_OBJ) $(LIBADS_OBJ) $(REGOBJS_OBJ) $(PRIVILEGES_BASIC_OBJ)
 
-LIBNET_OBJ = libnet/libnet_conf.o libnet/libnet_join.o \
+LIBNET_CONF_OBJ = libnet/libnet_conf.o
+
+LIBNET_OBJ = $(LIBNET_CONF_OBJ) libnet/libnet_join.o \
 	     librpc/gen_ndr/ndr_libnet_join.o
 
 NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
@@ -821,7 +830,8 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_WITHOUT_REG_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 	  $(AFS_OBJ) $(AFS_SETTOKEN_OBJ) $(READLINE_OBJ) \
 	  $(LDB_OBJ) $(LIBGPO_OBJ) @BUILD_INIPARSER@ $(DISPLAY_SEC_OBJ) \
 	  $(REG_API_OBJ) $(DISPLAY_DSDCINFO_OBJ) @LIBNETAPI_STATIC@ $(LIBNET_OBJ) \
-	  $(WBCOMMON_OBJ) @LIBWBCLIENT_STATIC@
+	  $(WBCOMMON_OBJ) @LIBWBCLIENT_STATIC@ $(REGOBJS_OBJ) \
+	  $(PRIVILEGES_BASIC_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
@@ -841,7 +851,8 @@ CIFS_UMOUNT_OBJ = client/umount.cifs.o
 CIFS_SPNEGO_OBJ = client/cifs.spnego.o
 
 NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(LIBNMB_OBJ) $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) \
-               $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) $(LIBSAMBA_OBJ)
+               $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) $(LIBSAMBA_OBJ) \
+	       $(ERRORMAP_OBJ)
 
 SMBTORTURE_OBJ1 = torture/torture.o torture/nbio.o torture/scanner.o torture/utable.o \
 		torture/denytest.o torture/mangle_test.o
@@ -868,7 +879,7 @@ PDBTEST_OBJ = torture/pdbtest.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 
 VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) $(READLINE_OBJ)
 
-SMBICONV_OBJ = $(PARAM_OBJ) torture/smbiconv.o $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) $(LIBSAMBA_OBJ) $(DOSERR_OBJ)
+SMBICONV_OBJ = $(PARAM_OBJ) torture/smbiconv.o $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) $(SECRETS_OBJ) $(LIBSAMBA_OBJ) $(DOSERR_OBJ) $(RPC_PARSE_OBJ1) $(ERRORMAP_OBJ)
 
 LOG2PCAP_OBJ = utils/log2pcaphex.o
 
@@ -889,19 +900,19 @@ SMBCQUOTAS_OBJ = utils/smbcquotas.o $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 
 EVTLOGADM_OBJ0	= utils/eventlogadm.o
 
-EVTLOGADM_OBJ	= $(EVTLOGADM_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(REGOBJS_OBJ) \
+EVTLOGADM_OBJ	= $(EVTLOGADM_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(ERRORMAP_OBJ) $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(DOSERR_OBJ) \
 		$(SECRETS_OBJ) \
-	        registry/reg_eventlog.o rpc_server/srv_eventlog_lib.o registry/reg_util.o \
-		registry/reg_backend_db.o
+	        registry/reg_eventlog.o rpc_server/srv_eventlog_lib.o
 
 SHARESEC_OBJ0 = utils/sharesec.o
-SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) $(REGOBJS_OBJ) \
+SHARESEC_OBJ  = $(SHARESEC_OBJ0) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(ERRORMAP_OBJ) $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(DOSERR_OBJ) \
                 $(POPT_LIB_OBJ) $(SECRETS_OBJ)
 
 TALLOCTORT_OBJ = @tallocdir@/testsuite.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
-                 $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(LIBSAMBA_OBJ) $(SECRETS_OBJ)
+                 $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(LIBSAMBA_OBJ) $(SECRETS_OBJ) \
+		 $(ERRORMAP_OBJ)
 
 REPLACETORT_OBJ = lib/replace/test/testsuite.o \
 		lib/replace/test/os2_delete.o \
@@ -911,7 +922,8 @@ REPLACETORT_OBJ = lib/replace/test/testsuite.o \
 NDRDUMP_OBJ = librpc/tools/ndrdump.o \
 			  $(PARAM_OBJ) $(LIBNDR_GEN_OBJ) \
 			  $(LIBSAMBA_OBJ) $(LIB_NONSMBD_OBJ) $(POPT_LIB_OBJ) \
-			  $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(SECRETS_OBJ)
+			  $(RPC_PARSE_OBJ1) $(DOSERR_OBJ) $(SECRETS_OBJ) \
+			  $(ERRORMAP_OBJ)
 
 DEBUG2HTML_OBJ = utils/debug2html.o utils/debugparse.o
 
@@ -924,7 +936,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
 	    $(LIBMSRPC_OBJ) \
 	    $(LIB_WITH_PROTO_OBJ) \
 	    $(RPC_PIPE_OBJ) $(RPC_PARSE_OBJ) $(KRBCLIENT_OBJ) \
-	    $(AUTH_OBJ) $(PARAM_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
+	    $(AUTH_OBJ) $(PARAM_WITHOUT_REG_OBJ) $(LOCKING_OBJ) $(SECRETS_OBJ) \
 	    $(PRINTING_OBJ) $(PRINTBACKEND_OBJ) $(OPLOCK_OBJ) $(NOTIFY_OBJ) \
 	    $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 	    $(READLINE_OBJ) $(PROFILE_OBJ) $(LIBADS_OBJ) $(LIBADS_SERVER_OBJ) \
@@ -935,7 +947,8 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
             $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) $(RPC_UNIXINFO_OBJ) \
 	    $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
 	    utils/passwd_util.o $(LIBGPO_OBJ) $(NSS_INFO_OBJ) \
-	    $(RPCCLIENT_NDR_OBJ) $(DISPLAY_DSDCINFO_OBJ)
+	    $(RPCCLIENT_NDR_OBJ) $(DISPLAY_DSDCINFO_OBJ) \
+	    $(PRIVILEGES_BASIC_OBJ)
 
 WINBIND_WINS_NSS_OBJ = nsswitch/wins.o $(PARAM_OBJ) \
 	$(LIBSMB_OBJ) $(LIB_NONSMBD_OBJ) $(NSSWINS_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ)
@@ -988,7 +1001,8 @@ WINBINDD_OBJ = \
 
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		$(SECRETS_OBJ) $(POPT_LIB_OBJ) $(AFS_SETTOKEN_OBJ) $(RPC_PARSE_OBJ1) \
-		$(DOSERR_OBJ) lib/winbind_util.o $(WBCOMMON_OBJ) @LIBWBCLIENT_STATIC@
+		$(DOSERR_OBJ) lib/winbind_util.o $(WBCOMMON_OBJ) @LIBWBCLIENT_STATIC@ \
+		$(ERRORMAP_OBJ)
 
 WINBIND_NSS_OBJ = $(WBCOMMON_OBJ) $(LIBREPLACE_OBJ) @WINBIND_NSS_EXTRA_OBJS@
 
