@@ -330,7 +330,7 @@ sub handle_ett_field
 	unless(defined($ett)) {
 		error($pos, "incomplete ETT_FIELD command");
 		return;
-	};
+	}
 
 	push (@{$data->{ett}}, $ett);
 }
@@ -344,7 +344,7 @@ sub handle_include
 	unless(defined($fn)) {
 		error($pos, "incomplete INCLUDE command");
 		return;
-	};
+	}
 
 	ReadConformance($fn, $data);
 }
