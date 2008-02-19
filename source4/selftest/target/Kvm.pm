@@ -40,9 +40,30 @@ sub check_env($$)
 	return 1;
 }
 
+sub start($)
+{
+	my ($self) = @_;
+
+	my $pidfile = "kvm.pid";
+
+	system("kvm $ENV{KVM_OPTIONS} -daemonize -pidfile $pidfile -net user -vnc unix:kvm.vnc -snapshot $self->{image}");
+
+	open(PID, $pidfile);
+	$self->{pid} = <PID>;
+	close(PID);
+}
+
 sub setup_env($$$)
 {
 	my ($self, $envname, $path) = @_;
+
+	if ($envname eq "dc") {
+		unless (defined($self->{pid})) {
+			$self->start();
+		}
+	} elsif ($envname eq "member") {
+		return undef;
+	}
 
 	die("No implemented yet");
 }
@@ -50,6 +71,8 @@ sub setup_env($$$)
 sub stop($)
 {
 	my ($self) = @_;
+
+	kill $self->{pid};
 }
 
 1;
