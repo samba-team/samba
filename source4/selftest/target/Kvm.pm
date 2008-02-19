@@ -11,9 +11,9 @@ use FindBin qw($RealBin);
 use POSIX;
 
 sub new($$$$) {
-	my ($classname, $image) = @_;
+	my ($classname, $dc_image) = @_;
 	my $self = { 
-		image => $image
+		dc_image => $dc_image,
 	};
 	bless $self;
 	return $self;
@@ -22,6 +22,10 @@ sub new($$$$) {
 sub teardown_env($$)
 {
 	my ($self, $envvars) = @_;
+
+	print "Killing kvm instance $envvars->{KVM_PID}\n";
+
+	kill 9, $envvars->{KVM_PID};
 
 	return 0;
 }
@@ -37,22 +41,26 @@ sub check_env($$)
 {
 	my ($self, $envvars) = @_;
 
+	# FIXME: Check whether $self->{pid} is still running
+
 	return 1;
 }
 
-sub start($)
+sub start($$$)
 {
-	my ($self) = @_;
+	my ($self, $path, $image) = @_;
 
-	my $pidfile = "kvm.pid";
+	my $pidfile = "$path/kvm.pid";
 
 	my $opts = ($ENV{KVM_OPTIONS} or "");
 
-	system("kvm $opts -daemonize -pidfile $pidfile -vnc unix:kvm.vnc -snapshot $self->{image}");
+	system("kvm $opts -daemonize -pidfile $pidfile -vnc unix:$path/kvm.vnc -snapshot $image");
 
 	open(PID, $pidfile);
-	$self->{pid} = <PID>;
+	<PID> =~ /([0-9]+)/;
+	my ($pid) = $1;
 	close(PID);
+	return $pid;
 }
 
 sub setup_env($$$)
@@ -60,21 +68,30 @@ sub setup_env($$$)
 	my ($self, $envname, $path) = @_;
 
 	if ($envname eq "dc") {
-		unless (defined($self->{pid})) {
-			$self->start();
+		$self->{dc_pid} = $self->start($path, $self->{dc_image});
+		if ($envname eq "dc") {
+			return {
+				KVM_PID => $self->{dc_pid},
+				USERNAME => "Administrator",
+				PASSWORD => "penguin",
+				DOMAIN => "SAMBA",
+				REALM => "SAMBA",
+				SERVER => "",
+				SERVER_IP => "",
+				NETBIOSNAME => "",
+				NETBIOSALIAS => "",
+			};
+		} else {
+			return undef;
 		}
-	} elsif ($envname eq "member") {
+	} else {
 		return undef;
 	}
-
-	die("No implemented yet");
 }
 
 sub stop($)
 {
 	my ($self) = @_;
-
-	kill $self->{pid};
 }
 
 1;
