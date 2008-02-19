@@ -46,7 +46,9 @@ sub start($)
 
 	my $pidfile = "kvm.pid";
 
-	system("kvm $ENV{KVM_OPTIONS} -daemonize -pidfile $pidfile -net user -vnc unix:kvm.vnc -snapshot $self->{image}");
+	my $opts = ($ENV{KVM_OPTIONS} or "");
+
+	system("kvm $opts -daemonize -pidfile $pidfile -vnc unix:kvm.vnc -snapshot $self->{image}");
 
 	open(PID, $pidfile);
 	$self->{pid} = <PID>;

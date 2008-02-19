@@ -144,6 +144,7 @@ my $opt_expected_failures = undef;
 my @opt_exclude = ();
 my @opt_include = ();
 my $opt_verbose = 0;
+my $opt_image = undef;
 my $opt_testenv = 0;
 my $ldap = undef;
 my $opt_analyse_cmd = undef;
