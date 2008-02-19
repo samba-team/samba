@@ -423,6 +423,9 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 		SSVAL(outbuf,smb_vwv7,((nread >> 16) & 1));
 		SSVAL(smb_buf(outbuf),-2,nread);
 
+		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nread;
+		aio_ex->fsp->fh->position_information = aio_ex->fsp->fh->pos;
+
 		DEBUG( 3, ( "handle_aio_read_complete file %s max=%d "
 			    "nread=%d\n",
 			    aio_ex->fsp->fsp_name,
@@ -524,6 +527,8 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
                 	DEBUG(5,("handle_aio_write: sync_file for %s returned %s\n",
 				fsp->fsp_name, nt_errstr(status) ));
 		}
+
+		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nwritten;
 	}
 
 	show_msg(outbuf);
