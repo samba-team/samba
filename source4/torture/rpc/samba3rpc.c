@@ -806,6 +806,7 @@ static bool join3(struct smbcli_state *cli,
  */
 
 static bool auth2(struct smbcli_state *cli,
+		  struct loadparm_context *lp_ctx,
 		  struct cli_credentials *wks_cred)
 {
 	TALLOC_CTX *mem_ctx;
@@ -829,7 +830,7 @@ static bool auth2(struct smbcli_state *cli,
 
 	net_pipe = dcerpc_pipe_init(mem_ctx,
 				    cli->transport->socket->event.ctx,
-				    lp_iconv_convenience(global_loadparm));
+				    lp_iconv_convenience(lp_ctx));
 	if (net_pipe == NULL) {
 		d_printf("dcerpc_pipe_init failed\n");
 		goto done;
@@ -1204,7 +1205,7 @@ bool torture_netlogon_samba3(struct torture_context *torture)
 
 		int j;
 
-		if (!auth2(cli, wks_creds)) {
+		if (!auth2(cli, torture->lp_ctx, wks_creds)) {
 			d_printf("auth2 failed\n");
 			goto done;
 		}
@@ -1283,7 +1284,7 @@ static bool test_join3(struct torture_context *tctx,
 		cmdline_credentials, cli_credentials_get_domain(wks_creds),
 		CRED_SPECIFIED);
 
-	if (!auth2(cli, wks_creds)) {
+	if (!auth2(cli, tctx->lp_ctx, wks_creds)) {
 		d_printf("auth2 failed\n");
 		goto done;
 	}
@@ -1381,6 +1382,7 @@ bool torture_samba3_sessionkey(struct torture_context *torture)
  */
 
 static NTSTATUS pipe_bind_smb(TALLOC_CTX *mem_ctx,
+			      struct loadparm_context *lp_ctx,
 			      struct smbcli_tree *tree,
 			      const char *pipe_name,
 			      const struct ndr_interface_table *iface,
@@ -1391,7 +1393,7 @@ static NTSTATUS pipe_bind_smb(TALLOC_CTX *mem_ctx,
 
 	if (!(result = dcerpc_pipe_init(
 		      mem_ctx, tree->session->transport->socket->event.ctx, 
-		      lp_iconv_convenience(global_loadparm)))) {
+		      lp_iconv_convenience(lp_ctx)))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -1507,7 +1509,9 @@ static struct dom_sid *name2sid(TALLOC_CTX *mem_ctx,
  * Find out the user SID on this connection
  */
 
-static struct dom_sid *whoami(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree)
+static struct dom_sid *whoami(TALLOC_CTX *mem_ctx, 
+			      struct loadparm_context *lp_ctx, 
+			      struct smbcli_tree *tree)
 {
 	struct dcerpc_pipe *lsa;
 	struct lsa_GetUserName r;
@@ -1515,7 +1519,7 @@ static struct dom_sid *whoami(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree)
 	struct lsa_StringPointer authority_name_p;
 	struct dom_sid *result;
 
-	status = pipe_bind_smb(mem_ctx, tree, "\\pipe\\lsarpc",
+	status = pipe_bind_smb(mem_ctx, lp_ctx, tree, "\\pipe\\lsarpc",
 			       &ndr_table_lsarpc, &lsa);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) Could not bind to LSA: %s\n",
@@ -1631,7 +1635,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!(user_sid = whoami(mem_ctx, cli->tree))) {
+	if (!(user_sid = whoami(mem_ctx, torture->lp_ctx, cli->tree))) {
 		d_printf("(%s) whoami on auth'ed connection failed\n",
 			 __location__);
 		ret = false;
@@ -1658,7 +1662,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!(user_sid = whoami(mem_ctx, cli->tree))) {
+	if (!(user_sid = whoami(mem_ctx, torture->lp_ctx, cli->tree))) {
 		d_printf("(%s) whoami on anon connection failed\n",
 			 __location__);
 		ret = false;
@@ -1732,7 +1736,7 @@ bool torture_samba3_rpc_getusername(struct torture_context *torture)
 			goto done;
 		}
 
-		if (!(user_sid = whoami(mem_ctx, tree))) {
+		if (!(user_sid = whoami(mem_ctx, torture->lp_ctx, tree))) {
 			d_printf("(%s) whoami on user connection failed\n",
 				 __location__);
 			ret = false;
@@ -1870,8 +1874,8 @@ bool torture_samba3_rpc_srvsvc(struct torture_context *torture)
 		return false;
 	}
 
-	status = pipe_bind_smb(mem_ctx, cli->tree, "\\pipe\\srvsvc",
-			       &ndr_table_srvsvc, &p);
+	status = pipe_bind_smb(mem_ctx, torture->lp_ctx, cli->tree, 
+			       "\\pipe\\srvsvc", &ndr_table_srvsvc, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) could not bind to srvsvc pipe: %s\n",
 			 __location__, nt_errstr(status));
@@ -2007,6 +2011,7 @@ bool torture_samba3_rpc_randomauth2(struct torture_context *torture)
 }
 
 static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
+						struct loadparm_context *lp_ctx,
 						struct smbcli_session *sess,
 						const char *sharename)
 {
@@ -2028,7 +2033,7 @@ static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	status = pipe_bind_smb(mem_ctx, tree, "\\pipe\\srvsvc",
+	status = pipe_bind_smb(mem_ctx, lp_ctx, tree, "\\pipe\\srvsvc",
 			       &ndr_table_srvsvc, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) could not bind to srvsvc pipe: %s\n",
@@ -2060,6 +2065,7 @@ static struct security_descriptor *get_sharesec(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
+			     struct loadparm_context *lp_ctx,
 			     struct smbcli_session *sess,
 			     const char *sharename,
 			     struct security_descriptor *sd)
@@ -2083,7 +2089,7 @@ static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	status = pipe_bind_smb(mem_ctx, tree, "\\pipe\\srvsvc",
+	status = pipe_bind_smb(mem_ctx, lp_ctx, tree, "\\pipe\\srvsvc",
 			       &ndr_table_srvsvc, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) could not bind to srvsvc pipe: %s\n",
@@ -2115,6 +2121,7 @@ static NTSTATUS set_sharesec(TALLOC_CTX *mem_ctx,
 }
 
 bool try_tcon(TALLOC_CTX *mem_ctx,
+	      struct loadparm_context *lp_ctx,
 	      struct security_descriptor *orig_sd,
 	      struct smbcli_session *session,
 	      const char *sharename, const struct dom_sid *user_sid,
@@ -2162,7 +2169,7 @@ bool try_tcon(TALLOC_CTX *mem_ctx,
                 return false;
         }
 
-	status = set_sharesec(mem_ctx, session, sharename, sd);
+	status = set_sharesec(mem_ctx, lp_ctx, session, sharename, sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("custom set_sharesec failed: %s\n",
 			 nt_errstr(status));
@@ -2193,7 +2200,7 @@ bool try_tcon(TALLOC_CTX *mem_ctx,
  done:
 	smbcli_rmdir(rmdir_tree, "sharesec_testdir");
 
-	status = set_sharesec(mem_ctx, session, sharename, orig_sd);
+	status = set_sharesec(mem_ctx, lp_ctx, session, sharename, orig_sd);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("custom set_sharesec failed: %s\n",
 			 nt_errstr(status));
@@ -2225,25 +2232,25 @@ bool torture_samba3_rpc_sharesec(struct torture_context *torture)
 		return false;
 	}
 
-	if (!(user_sid = whoami(mem_ctx, cli->tree))) {
+	if (!(user_sid = whoami(mem_ctx, torture->lp_ctx, cli->tree))) {
 		d_printf("whoami failed\n");
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	sd = get_sharesec(mem_ctx, cli->session, torture_setting_string(torture,
-								"share", NULL));
+	sd = get_sharesec(mem_ctx, torture->lp_ctx, cli->session, 
+			  torture_setting_string(torture, "share", NULL));
 
-	ret &= try_tcon(mem_ctx, sd, cli->session,
+	ret &= try_tcon(mem_ctx, torture->lp_ctx, sd, cli->session,
 			torture_setting_string(torture, "share", NULL),
 			user_sid, 0, NT_STATUS_ACCESS_DENIED, NT_STATUS_OK);
 
-	ret &= try_tcon(mem_ctx, sd, cli->session,
+	ret &= try_tcon(mem_ctx, torture->lp_ctx, sd, cli->session,
 			torture_setting_string(torture, "share", NULL),
 			user_sid, SEC_FILE_READ_DATA, NT_STATUS_OK,
 			NT_STATUS_MEDIA_WRITE_PROTECTED);
 
-	ret &= try_tcon(mem_ctx, sd, cli->session,
+	ret &= try_tcon(mem_ctx, torture->lp_ctx, sd, cli->session,
 			torture_setting_string(torture, "share", NULL),
 			user_sid, SEC_FILE_ALL, NT_STATUS_OK, NT_STATUS_OK);
 
@@ -2273,7 +2280,7 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 		return false;
 	}
 
-	status = pipe_bind_smb(mem_ctx, cli->tree, "\\lsarpc",
+	status = pipe_bind_smb(mem_ctx, torture->lp_ctx, cli->tree, "\\lsarpc",
 			       &ndr_table_lsarpc, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) pipe_bind_smb failed: %s\n", __location__,
@@ -2356,7 +2363,8 @@ static NTSTATUS get_servername(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
 }
 
 
-static NTSTATUS find_printers(TALLOC_CTX *ctx, struct smbcli_tree *tree,
+static NTSTATUS find_printers(TALLOC_CTX *ctx, struct loadparm_context *lp_ctx,
+			      struct smbcli_tree *tree,
 			      const char ***printers, int *num_printers)
 {
 	TALLOC_CTX *mem_ctx;
@@ -2372,7 +2380,8 @@ static NTSTATUS find_printers(TALLOC_CTX *ctx, struct smbcli_tree *tree,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = pipe_bind_smb(mem_ctx, tree, "\\srvsvc", &ndr_table_srvsvc,
+	status = pipe_bind_smb(mem_ctx, lp_ctx, 
+			       tree, "\\srvsvc", &ndr_table_srvsvc,
 			       &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("could not bind to srvsvc pipe\n");
@@ -2560,7 +2569,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 		return false;
 	}
 
-	if (!NT_STATUS_IS_OK(find_printers(mem_ctx, cli->tree,
+	if (!NT_STATUS_IS_OK(find_printers(mem_ctx, torture->lp_ctx, cli->tree,
 					   &printers, &num_printers))) {
 		talloc_free(mem_ctx);
 		return false;
@@ -2572,7 +2581,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 		return true;
 	}
 
-	status = pipe_bind_smb(mem_ctx, cli->tree, "\\spoolss",
+	status = pipe_bind_smb(mem_ctx, torture->lp_ctx, cli->tree, "\\spoolss",
 			       &ndr_table_spoolss, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) pipe_bind_smb failed: %s\n", __location__,
@@ -2746,7 +2755,7 @@ bool torture_samba3_rpc_wkssvc(struct torture_context *torture)
 		return false;
 	}
 
-	status = pipe_bind_smb(mem_ctx, cli->tree, "\\wkssvc",
+	status = pipe_bind_smb(mem_ctx, torture->lp_ctx, cli->tree, "\\wkssvc",
 			       &ndr_table_wkssvc, &p);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("(%s) pipe_bind_smb failed: %s\n", __location__,
@@ -2995,6 +3004,7 @@ bool torture_samba3_rpc_winreg(struct torture_context *torture)
 }
 
 static NTSTATUS get_shareinfo(TALLOC_CTX *mem_ctx,
+			      struct loadparm_context *lp_ctx,
 			      struct smbcli_state *cli,
 			      const char *share,
 			      struct srvsvc_NetShareInfo502 **info)
@@ -3006,7 +3016,7 @@ static NTSTATUS get_shareinfo(TALLOC_CTX *mem_ctx,
 
 	if (!(p = dcerpc_pipe_init(cli,
 				   cli->transport->socket->event.ctx,
-				   lp_iconv_convenience(global_loadparm)))) {
+				   lp_iconv_convenience(lp_ctx)))) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
@@ -3176,7 +3186,8 @@ static NTSTATUS torture_samba3_createshare(struct smbcli_state *cli,
 	return status;
 }
 
-static NTSTATUS torture_samba3_deleteshare(struct smbcli_state *cli,
+static NTSTATUS torture_samba3_deleteshare(struct torture_context *torture,
+					   struct smbcli_state *cli,
 					   const char *sharename)
 {
 	struct dcerpc_pipe *p;
@@ -3301,7 +3312,7 @@ bool torture_samba3_regconfig(struct torture_context *torture)
 		goto done;
 	}
 
-	status = get_shareinfo(torture, cli, "blubber", &i);
+	status = get_shareinfo(torture, torture->lp_ctx, cli, "blubber", &i);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_warning(torture, "get_shareinfo failed: "
 				"%s\n", nt_errstr(status));
@@ -3314,7 +3325,7 @@ bool torture_samba3_regconfig(struct torture_context *torture)
 		goto done;
 	}
 
-	status = torture_samba3_deleteshare(cli, "blubber");
+	status = torture_samba3_deleteshare(torture, cli, "blubber");
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_warning(torture, "torture_samba3_deleteshare failed: "
 				"%s\n", nt_errstr(status));
