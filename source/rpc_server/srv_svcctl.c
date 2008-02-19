@@ -228,23 +228,7 @@ static bool api_svcctl_lock_service_db(pipes_struct *p)
 
 static bool api_svcctl_unlock_service_db(pipes_struct *p)
 {
-	SVCCTL_Q_UNLOCK_SERVICE_DB q_u;
-	SVCCTL_R_UNLOCK_SERVICE_DB r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_unlock_service_db("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_unlock_service_db(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_unlock_service_db("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_UNLOCKSERVICEDATABASE);
 }
 
 /*******************************************************************
