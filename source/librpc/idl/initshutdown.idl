@@ -4,6 +4,8 @@
   initshutdown interface definition
 */
 
+import "lsa.idl";
+
 [ 
   uuid("894de0c0-0d55-11d3-a322-00c04fa321a1"),
   version(1.0),
@@ -12,20 +14,13 @@
   helpstring("Init shutdown service")
 ] interface initshutdown
 {
-	typedef struct {
-		[value(strlen_m_term(name))] uint32 name_size;
-		[flag(STR_LEN4|STR_NOTERM)] string name;
-	} initshutdown_String_sub;
-
-	typedef [public] struct {
-		[value(strlen_m(name->name)*2)] uint16 name_len;
-		[value(strlen_m_term(name->name)*2)] uint16 name_size;
-		initshutdown_String_sub *name;
-	} initshutdown_String;
-
 	WERROR initshutdown_Init(
 		[in,unique] uint16 *hostname,
-		[in,unique] initshutdown_String *message,
+		/*
+		 * Note: lsa_String and winreg_String both result
+		 *       in WERR_INVALID_PARAM
+		 */
+		[in,unique] lsa_StringLarge *message,
 		[in] uint32 timeout,
 		[in] uint8 force_apps,
 		[in] uint8 reboot
@@ -37,7 +32,11 @@
 
 	WERROR initshutdown_InitEx(
   		[in,unique] uint16 *hostname,
-		[in,unique] initshutdown_String *message,
+		/*
+		 * Note: lsa_String and winreg_String both result
+		 *       in WERR_INVALID_PARAM
+		 */
+		[in,unique] lsa_StringLarge *message,
 		[in] uint32 timeout,
 		[in] uint8 force_apps,
 		[in] uint8 reboot,
