@@ -252,6 +252,21 @@ AC_ARG_WITH(mandir,
     ;;
   esac])
 
+AC_SUBST(configdir)
+AC_SUBST(lockdir)
+AC_SUBST(piddir)
+AC_SUBST(logfilebase)
+AC_SUBST(ctdbdir)
+AC_SUBST(privatedir)
+AC_SUBST(swatdir)
+AC_SUBST(bindir)
+AC_SUBST(sbindir)
+AC_SUBST(codepagedir)
+AC_SUBST(statedir)
+AC_SUBST(cachedir)
+AC_SUBST(rootsbindir)
+AC_SUBST(pammodulesdir)
+
 AC_ARG_WITH(cfenc,
 [AS_HELP_STRING([--with-cfenc=HEADERDIR], [Use internal CoreFoundation encoding API for optimization (Mac OS X/Darwin only)])],
 [
@@ -309,21 +324,6 @@ SAMBA_CONFIGURE_CPPFLAGS="${SAMBA_CPPFLAGS} -I${srcdir-.}/popt"
 if test "x${srcdir-.}" != "x."; then
 	SAMBA_CPPFLAGS=`echo ${SAMBA_CPPFLAGS} | sed -e "s;${srcdir};\$\(srcdir\);g"`
 fi
-
-AC_SUBST(configdir)
-AC_SUBST(lockdir)
-AC_SUBST(piddir)
-AC_SUBST(logfilebase)
-AC_SUBST(ctdbdir)
-AC_SUBST(privatedir)
-AC_SUBST(swatdir)
-AC_SUBST(bindir)
-AC_SUBST(sbindir)
-AC_SUBST(codepagedir)
-AC_SUBST(statedir)
-AC_SUBST(cachedir)
-AC_SUBST(rootsbindir)
-AC_SUBST(pammodulesdir)
 
 dnl Unique-to-Samba variables we'll be playing with.
 AC_SUBST(SAMBA_CPPFLAGS)
