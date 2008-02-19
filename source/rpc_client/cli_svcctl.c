@@ -233,35 +233,6 @@ WERROR rpccli_svcctl_query_config(struct rpc_pipe_client *cli, TALLOC_CTX *mem_c
 /*******************************************************************
 *******************************************************************/
 
-WERROR rpccli_svcctl_start_service( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
-                                 POLICY_HND *hService,
-                                 const char **parm_array, uint32 parmcount )
-{
-	SVCCTL_Q_START_SERVICE in;
-	SVCCTL_R_START_SERVICE out;
-	prs_struct qbuf, rbuf;
-	
-	ZERO_STRUCT(in);
-	ZERO_STRUCT(out);
-	
-	memcpy( &in.handle, hService, sizeof(POLICY_HND) );
-	
-	in.parmcount  = 0;
-	in.parameters = NULL;
-	
-	CLI_DO_RPC_WERR( cli, mem_ctx, PI_SVCCTL, SVCCTL_START_SERVICE_W,
-	            in, out, 
-	            qbuf, rbuf,
-	            svcctl_io_q_start_service,
-	            svcctl_io_r_start_service,
-	            WERR_GENERAL_FAILURE );
-	
-	return out.status;
-}
-
-/*******************************************************************
-*******************************************************************/
-
 WERROR rpccli_svcctl_control_service( struct rpc_pipe_client *cli, TALLOC_CTX *mem_ctx,
                                    POLICY_HND *hService, uint32 control,
 				   SERVICE_STATUS *status )

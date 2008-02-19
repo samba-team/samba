@@ -305,50 +305,6 @@ bool svcctl_io_r_enum_services_status(const char *desc, SVCCTL_R_ENUM_SERVICES_S
 /*******************************************************************
 ********************************************************************/
 
-bool svcctl_io_q_start_service(const char *desc, SVCCTL_Q_START_SERVICE *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_q_start_service");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("service_pol", &q_u->handle, ps, depth))
-		return False;
-
-	if(!prs_uint32("parmcount", ps, depth, &q_u->parmcount))
-		return False;
-
-	if ( !prs_pointer("rights", ps, depth, (void*)&q_u->parameters, sizeof(UNISTR4_ARRAY), (PRS_POINTER_CAST)prs_unistr4_array) )
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/
-
-bool svcctl_io_r_start_service(const char *desc, SVCCTL_R_START_SERVICE *r_u, prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_r_start_service");
-	depth++;
-
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-
-/*******************************************************************
-********************************************************************/
-
 bool svcctl_io_q_enum_dependent_services(const char *desc, SVCCTL_Q_ENUM_DEPENDENT_SERVICES *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
