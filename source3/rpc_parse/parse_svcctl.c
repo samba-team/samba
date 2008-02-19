@@ -361,53 +361,6 @@ bool svcctl_io_r_enum_dependent_services(const char *desc, SVCCTL_R_ENUM_DEPENDE
 /*******************************************************************
 ********************************************************************/
 
-bool svcctl_io_q_control_service(const char *desc, SVCCTL_Q_CONTROL_SERVICE *q_u, prs_struct *ps, int depth)
-{
-	if (q_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_q_control_service");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!smb_io_pol_hnd("service_pol", &q_u->handle, ps, depth))
-		return False;
-
-	if(!prs_uint32("control", ps, depth, &q_u->control))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
-********************************************************************/
-
-bool svcctl_io_r_control_service(const char *desc, SVCCTL_R_CONTROL_SERVICE *r_u, prs_struct *ps, int depth)
-{
-	if (r_u == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "svcctl_io_r_control_service");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-
-	if(!svcctl_io_service_status("service_status", &r_u->svc_status, ps, depth))
-		return False;
-
-	if(!prs_werror("status", ps, depth, &r_u->status))
-		return False;
-
-	return True;
-}
-
-
-/*******************************************************************
-********************************************************************/
-
 bool svcctl_io_q_query_service_config(const char *desc, SVCCTL_Q_QUERY_SERVICE_CONFIG *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
