@@ -490,29 +490,33 @@ WERROR _svcctl_StartServiceW(pipes_struct *p,
 }
 
 /********************************************************************
+ _svcctl_ControlService
 ********************************************************************/
 
-WERROR _svcctl_control_service(pipes_struct *p, SVCCTL_Q_CONTROL_SERVICE *q_u, SVCCTL_R_CONTROL_SERVICE *r_u)
+WERROR _svcctl_ControlService(pipes_struct *p,
+			      struct svcctl_ControlService *r)
 {
-	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 
 	/* perform access checks */
 
 	if ( !info || (info->type != SVC_HANDLE_IS_SERVICE) )
 		return WERR_BADFID;
 
-	switch ( q_u->control ) {
+	switch ( r->in.control ) {
 	case SVCCTL_CONTROL_STOP:
 		if ( !(info->access_granted & SC_RIGHT_SVC_STOP) )
 			return WERR_ACCESS_DENIED;
 
-		return info->ops->stop_service( info->name, &r_u->svc_status );
+		return info->ops->stop_service( info->name,
+						r->out.service_status );
 
 	case SVCCTL_CONTROL_INTERROGATE:
 		if ( !(info->access_granted & SC_RIGHT_SVC_QUERY_STATUS) )
 			return WERR_ACCESS_DENIED;
 
-		return info->ops->service_status( info->name, &r_u->svc_status );
+		return info->ops->service_status( info->name,
+						  r->out.service_status );
 	}
 
 	/* default control action */
@@ -887,12 +891,6 @@ WERROR _svcctl_set_service_sec( pipes_struct *p, SVCCTL_Q_SET_SERVICE_SEC *q_u, 
 	return WERR_OK;
 }
 
-
-WERROR _svcctl_ControlService(pipes_struct *p, struct svcctl_ControlService *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
 
 WERROR _svcctl_DeleteService(pipes_struct *p, struct svcctl_DeleteService *r)
 {
