@@ -127,10 +127,13 @@ static WERROR control_service(struct rpc_pipe_client *pipe_hnd,
 
 	/* get the status */
 
-	result = rpccli_svcctl_control_service(pipe_hnd, mem_ctx, &hService,
-		control, &service_status  );
+	status = rpccli_svcctl_ControlService(pipe_hnd, mem_ctx,
+					      &hService,
+					      control,
+					      &service_status,
+					      &result);
 
-	if ( !W_ERROR_IS_OK(result) ) {
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
 		d_fprintf(stderr, "Control service request failed.  [%s]\n", dos_errstr(result));
 		goto done;
 	}
