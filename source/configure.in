@@ -685,7 +685,12 @@ exit(1);
 
 esac
 
+SAVE_CPPFLAGS="${CPPFLAGS}"
+CPPFLAGS="${CPPFLAGS} ${SAMBA_CONFIGURE_CPPFLAGS}"
+
 AC_LIBREPLACE_BROKEN_CHECKS
+
+CPPFLAGS="${SAVE_CPPFLAGS}"
 
 LIBREPLACE_DIR=`echo ${libreplacedir} | sed -e "s;${srcdir};;" -e "s;^/;;"`
 
