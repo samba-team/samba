@@ -179,23 +179,7 @@ static bool api_svcctl_start_service(pipes_struct *p)
 
 static bool api_svcctl_control_service(pipes_struct *p)
 {
-	SVCCTL_Q_CONTROL_SERVICE q_u;
-	SVCCTL_R_CONTROL_SERVICE r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_control_service("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_control_service(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_control_service("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_CONTROLSERVICE);
 }
 
 /*******************************************************************
