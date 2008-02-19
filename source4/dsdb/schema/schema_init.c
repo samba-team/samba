@@ -1155,7 +1155,7 @@ WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf
 		goto nomem;
 	}
 
-	schema->iconv_convenience = ldb_get_opaque(ldb, "loadparm");
+	schema->iconv_convenience = lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm"));
 
 	/*
 	 * load the prefixMap attribute from pf
