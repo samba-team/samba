@@ -127,43 +127,6 @@ static void init_dom_query_5(struct lsa_DomainInfo *r,
 }
 
 /***************************************************************************
- init_dom_ref - adds a domain if it's not already in, returns the index.
-***************************************************************************/
-
-static int init_dom_ref(DOM_R_REF *ref, const char *dom_name, DOM_SID *dom_sid)
-{
-	int num = 0;
-
-	if (dom_name != NULL) {
-		for (num = 0; num < ref->num_ref_doms_1; num++) {
-			if (sid_equal(dom_sid, &ref->ref_dom[num].ref_dom.sid))
-				return num;
-		}
-	} else {
-		num = ref->num_ref_doms_1;
-	}
-
-	if (num >= MAX_REF_DOMAINS) {
-		/* index not found, already at maximum domain limit */
-		return -1;
-	}
-
-	ref->num_ref_doms_1 = num+1;
-	ref->ptr_ref_dom  = 1;
-	ref->max_entries = MAX_REF_DOMAINS;
-	ref->num_ref_doms_2 = num+1;
-
-	ref->hdr_ref_dom[num].ptr_dom_sid = 1; /* dom sid cannot be NULL. */
-
-	init_unistr2(&ref->ref_dom[num].uni_dom_name, dom_name, UNI_FLAGS_NONE);
-	init_uni_hdr(&ref->hdr_ref_dom[num].hdr_dom_name, &ref->ref_dom[num].uni_dom_name);
-
-	init_dom_sid2(&ref->ref_dom[num].ref_dom, dom_sid );
-
-	return num;
-}
-
-/***************************************************************************
  lookup_lsa_rids. Must be called as root for lookup_name to work.
  ***************************************************************************/
 
@@ -313,70 +276,6 @@ static NTSTATUS lookup_lsa_sids(TALLOC_CTX *mem_ctx,
 	}
 
 	*pmapped_count = mapped_count;
-	return NT_STATUS_OK;
-}
-
-/***************************************************************************
- Init_reply_lookup_sids.
- ***************************************************************************/
-
-static void init_reply_lookup_sids2(LSA_R_LOOKUP_SIDS2 *r_l,
-				DOM_R_REF *ref,
-				uint32 mapped_count)
-{
-	r_l->ptr_dom_ref  = ref ? 1 : 0;
-	r_l->dom_ref      = ref;
-	r_l->mapped_count = mapped_count;
-}
-
-/***************************************************************************
- Init_reply_lookup_sids.
- ***************************************************************************/
-
-static void init_reply_lookup_sids3(LSA_R_LOOKUP_SIDS3 *r_l,
-				DOM_R_REF *ref,
-				uint32 mapped_count)
-{
-	r_l->ptr_dom_ref  = ref ? 1 : 0;
-	r_l->dom_ref      = ref;
-	r_l->mapped_count = mapped_count;
-}
-
-/***************************************************************************
- Init_reply_lookup_sids.
- ***************************************************************************/
-
-static NTSTATUS init_reply_lookup_sids(TALLOC_CTX *mem_ctx,
-				LSA_R_LOOKUP_SIDS *r_l,
-				DOM_R_REF *ref,
-				LSA_TRANS_NAME_ENUM2 *names,
-				uint32 mapped_count)
-{
-	LSA_TRANS_NAME_ENUM *oldnames = &r_l->names;
-
-	oldnames->num_entries = names->num_entries;
-	oldnames->ptr_trans_names = names->ptr_trans_names;
-	oldnames->num_entries2 = names->num_entries2;
-	oldnames->uni_name = names->uni_name;
-
-	if (names->num_entries) {
-		int i;
-
-		oldnames->name = TALLOC_ARRAY(mem_ctx, LSA_TRANS_NAME, names->num_entries);
-
-		if (!oldnames->name) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		for (i = 0; i < names->num_entries; i++) {
-			oldnames->name[i].sid_name_use = names->name[i].sid_name_use;
-			oldnames->name[i].hdr_name = names->name[i].hdr_name;
-			oldnames->name[i].domain_idx = names->name[i].domain_idx;
-		}
-	}
-
-	r_l->ptr_dom_ref  = ref ? 1 : 0;
-	r_l->dom_ref      = ref;
-	r_l->mapped_count = mapped_count;
 	return NT_STATUS_OK;
 }
 
