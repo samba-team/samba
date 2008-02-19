@@ -533,11 +533,13 @@ sub write_clientconf($$)
 	if (defined($vars->{WINBINDD_SOCKET_DIR})) {
 		print CF "\twinbindd socket directory = $vars->{WINBINDD_SOCKET_DIR}\n";
 	}
+	if ($opt_socket_wrapper) {
+		print CF "\tinterfaces = $interfaces\n";
+	}
 	print CF "
 	private dir = $prefix_abs/client/private
 	js include = $srcdir_abs/scripting/libjs
 	name resolve order = bcast
-	interfaces = $interfaces
 	panic action = $srcdir_abs/script/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K
 	notify:inotify = false
