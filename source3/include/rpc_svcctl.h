@@ -275,18 +275,6 @@ typedef struct {
 /**************************/
 
 typedef struct {
-	POLICY_HND handle;
-} SVCCTL_Q_LOCK_SERVICE_DB;
-
-typedef struct {
-	POLICY_HND h_lock;
-	WERROR status;
-} SVCCTL_R_LOCK_SERVICE_DB;
-
-
-/**************************/
-
-typedef struct {
 	POLICY_HND h_lock;
 } SVCCTL_Q_UNLOCK_SERVICE_DB;
 
