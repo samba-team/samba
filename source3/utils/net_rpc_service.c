@@ -517,8 +517,13 @@ static NTSTATUS rpc_service_start_internal(const DOM_SID *domain_sid,
 
 	/* get the status */
 
-	result = rpccli_svcctl_start_service(pipe_hnd, mem_ctx, &hService, NULL, 0 );
-	if ( !W_ERROR_IS_OK(result) ) {
+	status = rpccli_svcctl_StartServiceW(pipe_hnd, mem_ctx,
+					     &hService,
+					     0,
+					     NULL,
+					     &result);
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(result) ) {
 		d_fprintf(stderr, "Query status request failed.  [%s]\n", dos_errstr(result));
 		goto done;
 	}
