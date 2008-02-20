@@ -1156,16 +1156,42 @@ static int control_listnodes(struct ctdb_context *ctdb, int argc, const char **a
  */
 static int control_reload_nodes_file(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
+	int i, ret;
+	int mypnn;
+	struct ctdb_node_map *nodemap=NULL;
 
-
-	ret = ctdb_ctrl_reload_nodes_file(ctdb, TIMELIMIT(),
-		CTDB_CURRENT_NODE);
-	if (ret != 0) {
-		DEBUG(DEBUG_ERR, ("ERROR: Failed to reload nodes file on local node You MUST fix that node manually!\n"));
+	mypnn = ctdb_ctrl_getpnn(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE);
+	if (mypnn == -1) {
+		DEBUG(DEBUG_ERR, ("Failed to read pnn of local node\n"));
+		return -1;
 	}
-	
-				
+
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), CTDB_CURRENT_NODE, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from local node\n"));
+		return ret;
+	}
+
+	/* reload the nodes file on all remote nodes */
+	for (i=0;i<nodemap->num;i++) {
+		if (nodemap->nodes[i].pnn == mypnn) {
+			continue;
+		}
+		DEBUG(DEBUG_NOTICE, ("Reloading nodes file on node %u\n", nodemap->nodes[i].pnn));
+		ret = ctdb_ctrl_reload_nodes_file(ctdb, TIMELIMIT(),
+			nodemap->nodes[i].pnn);
+		if (ret != 0) {
+			DEBUG(DEBUG_ERR, ("ERROR: Failed to reload nodes file on node %u. You MUST fix that node manually!\n", nodemap->nodes[i].pnn));
+		}
+	}
+
+	/* reload the nodes file on the local node */
+	DEBUG(DEBUG_NOTICE, ("Reloading nodes file on node %u\n", mypnn));
+	ret = ctdb_ctrl_reload_nodes_file(ctdb, TIMELIMIT(), mypnn);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("ERROR: Failed to reload nodes file on node %u. You MUST fix that node manually!\n", mypnn));
+	}
+
 	return 0;
 }
 
@@ -1216,7 +1242,7 @@ static const struct {
 	{ "vacuum",          ctdb_vacuum,		false, "vacuum the databases of empty records", "[max_records]"},
 	{ "repack",          ctdb_repack,		false, "repack all databases", "[max_freelist]"},
 	{ "listnodes",       control_listnodes,		false, "list all nodes in the cluster"},
-	{ "reloadnodes",         control_reload_nodes_file,		false, "update the nodes file and restart the transport on the local node"},
+	{ "reloadnodes",         control_reload_nodes_file,		false, "reload the nodes file and restart the transport on all nodes"},
 };
 
 /*
