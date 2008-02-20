@@ -540,7 +540,7 @@ static const struct socket_ops ipv4_ops = {
 	.fn_get_fd		= ip_get_fd
 };
 
-const struct socket_ops *socket_ipv4_ops(enum socket_type type)
+_PUBLIC_ const struct socket_ops *socket_ipv4_ops(enum socket_type type)
 {
 	return &ipv4_ops;
 }
@@ -977,7 +977,7 @@ static const struct socket_ops ipv6_tcp_ops = {
 	.fn_get_fd		= ip_get_fd
 };
 
-const struct socket_ops *socket_ipv6_ops(enum socket_type type)
+_PUBLIC_ const struct socket_ops *socket_ipv6_ops(enum socket_type type)
 {
 	return &ipv6_tcp_ops;
 }

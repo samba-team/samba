@@ -300,7 +300,7 @@ bool events_select_init(void)
 }
 
 #if _SAMBA_BUILD_
-NTSTATUS s4_events_select_init(void)
+_PUBLIC_ NTSTATUS s4_events_select_init(void)
 {
 	if (!events_select_init()) {
 		return NT_STATUS_INTERNAL_ERROR;

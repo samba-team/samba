@@ -1042,7 +1042,7 @@ static const struct gensec_security_ops gensec_spnego_security_ops = {
 	.priority         = GENSEC_SPNEGO
 };
 
-NTSTATUS gensec_spnego_init(void)
+_PUBLIC_ NTSTATUS gensec_spnego_init(void)
 {
 	NTSTATUS ret;
 	ret = gensec_register(&gensec_spnego_security_ops);

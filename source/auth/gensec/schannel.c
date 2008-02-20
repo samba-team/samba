@@ -274,7 +274,7 @@ static const struct gensec_security_ops gensec_schannel_security_ops = {
 	.priority       = GENSEC_SCHANNEL
 };
 
-NTSTATUS gensec_schannel_init(void)
+_PUBLIC_ NTSTATUS gensec_schannel_init(void)
 {
 	NTSTATUS ret;
 	ret = gensec_register(&gensec_schannel_security_ops);
