@@ -907,10 +907,6 @@ fi
 AC_HAVE_DECL(errno, [#include <errno.h>])
 AC_HAVE_DECL(setresuid, [#include <unistd.h>])
 AC_HAVE_DECL(setresgid, [#include <unistd.h>])
-AC_HAVE_DECL(asprintf, [#include <stdio.h>])
-AC_HAVE_DECL(vasprintf, [#include <stdio.h>])
-AC_HAVE_DECL(vsnprintf, [#include <stdio.h>])
-AC_HAVE_DECL(snprintf, [#include <stdio.h>])
 
 # and glibc has setresuid under linux but the function does
 # nothing until kernel 2.1.44! very dumb.
@@ -1062,7 +1058,7 @@ AC_CHECK_FUNCS(waitpid getcwd strdup strndup strnlen strerror chown fchown lchow
 AC_CHECK_FUNCS(strtol strtoll strtoul strtoull strtouq __strtoull)
 AC_CHECK_FUNCS(fstat strchr utime utimes chflags)
 AC_CHECK_FUNCS(getrlimit fsync fdatasync memset strlcpy strlcat setpgid)
-AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
+AC_CHECK_FUNCS(memmove setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select poll rdchk getgrnam getgrent pathconf realpath)
 AC_CHECK_FUNCS(setpriv setgidx setuidx setgroups sysconf mktime rename ftruncate chsize stat64 fstat64)
@@ -2030,54 +2026,6 @@ if test x"$samba_cv_WITH_PROFILE" = x"yes"; then
 			    SMB_CHECK_CLOCK_ID(CLOCK_REALTIME)
 			])
 
-fi
-
-AC_CACHE_CHECK([for va_copy],samba_cv_HAVE_VA_COPY,[
-AC_TRY_LINK([#include <stdarg.h>
-va_list ap1,ap2;], [va_copy(ap1,ap2);],
-samba_cv_HAVE_VA_COPY=yes,
-samba_cv_HAVE_VA_COPY=no)])
-if test x"$samba_cv_HAVE_VA_COPY" = x"yes"; then
-    AC_DEFINE(HAVE_VA_COPY,1,[Whether va_copy() is available])
-else
-    AC_CACHE_CHECK([for __va_copy],samba_cv_HAVE___VA_COPY,[
-    AC_TRY_LINK([#include <stdarg.h>
-    va_list ap1,ap2;], [__va_copy(ap1,ap2);],
-    samba_cv_HAVE___VA_COPY=yes,
-    samba_cv_HAVE___VA_COPY=no)])
-    if test x"$samba_cv_HAVE___VA_COPY" = x"yes"; then
-        AC_DEFINE(HAVE___VA_COPY,1,[Whether __va_copy() is available])
-    fi
-fi
-
-AC_CACHE_CHECK([for C99 vsnprintf],samba_cv_HAVE_C99_VSNPRINTF,[
-AC_TRY_RUN([
-#include <sys/types.h>
-#include <stdarg.h>
-void foo(const char *format, ...) {
-       va_list ap;
-       int len;
-       char buf[5];
-
-       va_start(ap, format);
-       len = vsnprintf(buf, 0, format, ap);
-       va_end(ap);
-       if (len != 5) exit(1);
-
-       va_start(ap, format);
-       len = vsnprintf(0, 0, format, ap);
-       va_end(ap);
-       if (len != 5) exit(1);
-
-       if (snprintf(buf, 3, "hello") != 5 || strcmp(buf, "he") != 0) exit(1);
-
-       exit(0);
-}
-main() { foo("hello"); }
-],
-samba_cv_HAVE_C99_VSNPRINTF=yes,samba_cv_HAVE_C99_VSNPRINTF=no,samba_cv_HAVE_C99_VSNPRINTF=cross)])
-if test x"$samba_cv_HAVE_C99_VSNPRINTF" = x"yes"; then
-    AC_DEFINE(HAVE_C99_VSNPRINTF,1,[Whether there is a C99 compliant vsnprintf])
 fi
 
 AC_CACHE_CHECK([for broken readdir name],samba_cv_HAVE_BROKEN_READDIR_NAME,[
