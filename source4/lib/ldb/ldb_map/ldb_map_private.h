@@ -98,20 +98,13 @@ int map_subtree_collect_remote_simple(struct ldb_module *module, void *mem_ctx, 
 /* The following definitions come from lib/ldb/modules/ldb_map_inbound.c */
 int map_add_do_remote(struct ldb_handle *handle);
 int map_add_do_local(struct ldb_handle *handle);
-int map_add(struct ldb_module *module, struct ldb_request *req);
 
 int map_modify_do_remote(struct ldb_handle *handle);
 int map_modify_do_local(struct ldb_handle *handle);
-int map_modify(struct ldb_module *module, struct ldb_request *req);
 
 int map_delete_do_remote(struct ldb_handle *handle);
 int map_delete_do_local(struct ldb_handle *handle);
-int map_delete(struct ldb_module *module, struct ldb_request *req);
 
 int map_rename_do_remote(struct ldb_handle *handle);
 int map_rename_do_fixup(struct ldb_handle *handle);
 int map_rename_do_local(struct ldb_handle *handle);
-int map_rename(struct ldb_module *module, struct ldb_request *req);
-
-/* The following definitions come from lib/ldb/modules/ldb_map_outbound.c */
-int map_search(struct ldb_module *module, struct ldb_request *req);

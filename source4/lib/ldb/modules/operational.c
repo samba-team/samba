@@ -304,13 +304,8 @@ static int operational_init(struct ldb_module *ctx)
 	return ldb_next_init(ctx);
 }
 
-static const struct ldb_module_ops operational_ops = {
+const struct ldb_module_ops ldb_operational_module_ops = {
 	.name              = "operational",
 	.search            = operational_search,
 	.init_context	   = operational_init
 };
-
-int ldb_operational_init(void)
-{
-	return ldb_register_module(&operational_ops);
-}

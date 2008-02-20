@@ -156,12 +156,7 @@ static int normalise_search(struct ldb_module *module, struct ldb_request *req)
 }
 
 
-static const struct ldb_module_ops normalise_ops = {
+const struct ldb_module_ops ldb_normalise_module_ops = {
 	.name		   = "normalise",
 	.search            = normalise_search,
 };
-
-int ldb_normalise_init(void)
-{
-	return ldb_register_module(&normalise_ops);
-}
