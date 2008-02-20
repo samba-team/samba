@@ -260,7 +260,7 @@ static const struct auth_operations winbind_ops = {
 	.check_password	= winbind_check_password
 };
 
-NTSTATUS auth_winbind_init(void)
+_PUBLIC_ NTSTATUS auth_winbind_init(void)
 {
 	NTSTATUS ret;
 
