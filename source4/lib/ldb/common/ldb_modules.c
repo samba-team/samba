@@ -257,8 +257,13 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 		}
 
 		if (ops == NULL) {
-			ops = ldb_dso_load_symbol(ldb, module_list[i], 
-						      "ldb_module_ops");
+			char *symbol_name = talloc_asprintf(ldb, "ldb_%s_module_ops", 
+												module_list[i]);
+			if (symbol_name == NULL) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			ops = ldb_dso_load_symbol(ldb, module_list[i], symbol_name);
+			talloc_free(symbol_name);
 		}
 		
 		if (ops == NULL) {
