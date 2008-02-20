@@ -188,7 +188,7 @@ __EOD__
 $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST) $init_obj
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
-	\@\$(MDLD) \$(MDLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(MDLD) \$(LDFLAGS) \$(MDLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{NAME}\_FULL_OBJ_LIST) $init_obj \\
 		\$($ctx->{NAME}_LINK_FLAGS)
 __EOD__
@@ -243,7 +243,7 @@ sub SharedLibrary($$)
 $ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
-	\@\$(SHLD) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+	\@\$(SHLD) \$(LDFLAGS) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
 		\$($ctx->{NAME}_LINK_FLAGS) \\
 		$soarg$lns
