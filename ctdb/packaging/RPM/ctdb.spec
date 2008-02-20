@@ -5,7 +5,7 @@ Vendor: Samba Team
 Packager: Samba Team <samba@samba.org>
 Name: ctdb
 Version: 1.0
-Release: 28
+Release: 29
 Epoch: 0
 License: GNU GPL version 3
 Group: System Environment/Daemons
@@ -120,6 +120,14 @@ fi
 %{_includedir}/ctdb_private.h
 
 %changelog
+* Thu Feb 21 2008 : Version 1.0.29
+ - Add a new command to make expansion of an existing cluster easier
+ - Fix bug with references to freed objects in the ctdb structure
+ - Propagate debuglevel changes to the recovery daemon
+ - Merge patches to event scripts from Mathieu Parent :
+ - MP: Simulate "service" on systems which do not provide this tool
+ - MP: Set correct permissions for events.d/README
+ - Add nice helper functions to start/stop nfs from the event scripts
 * Fri Feb 08 2008 : Version 1.0.28
  - Fix a problem where we tried to use ethtool on non-ethernet interfaces
  - Warn if the ipvsadm packege is missing when LVS is used
