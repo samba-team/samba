@@ -294,7 +294,7 @@ plantest "wbinfo -a against member server with domain creds" member $VALGRIND $s
 NBT_TESTS=`$smb4torture --list | grep "^NBT-" | xargs`
 
 for t in $NBT_TESTS; do
-	plansmbtorturetest "$t" dc //\$SERVER/_none_ $f -U\$USERNAME%\$PASSWORD 
+	plansmbtorturetest "$t" dc //\$SERVER/_none_ -U\$USERNAME%\$PASSWORD 
 done
 
 WB_OPTS="--option=\"torture:strict mode=yes\""
