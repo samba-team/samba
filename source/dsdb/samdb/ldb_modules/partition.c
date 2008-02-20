@@ -1030,7 +1030,7 @@ static int partition_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	}
 }
 
-static const struct ldb_module_ops partition_ops = {
+const struct ldb_module_ops ldb_partition_module_ops = {
 	.name		   = "partition",
 	.init_context	   = partition_init,
 	.search            = partition_search,
@@ -1045,8 +1045,3 @@ static const struct ldb_module_ops partition_ops = {
 	.del_transaction   = partition_del_trans,
 	.wait              = partition_wait
 };
-
-int ldb_partition_init(void)
-{
-	return ldb_register_module(&partition_ops);
-}
