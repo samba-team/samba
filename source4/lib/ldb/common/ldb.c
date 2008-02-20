@@ -463,11 +463,17 @@ static int ldb_autotransaction_request(struct ldb_context *ldb, struct ldb_reque
 
 int ldb_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
+	int ret;
 	if (!handle) {
 		return LDB_SUCCESS;
 	}
 
-	return handle->module->ops->wait(handle, type);
+	ret = handle->module->ops->wait(handle, type);
+	if (!ldb_errstring(handle->module->ldb)) {
+		/* Set a default error string, to place the blame somewhere */
+		ldb_asprintf_errstring(handle->module->ldb, "error waiting on module %s: %s (%d)", handle->module->ops->name, ldb_strerror(ret), ret);
+	}
+	return ret;
 }
 
 /* set the specified timeout or, if timeout is 0 set the default timeout */
