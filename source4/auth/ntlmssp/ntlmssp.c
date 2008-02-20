@@ -425,7 +425,7 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 };
 
 
-NTSTATUS gensec_ntlmssp_init(void)
+_PUBLIC_ NTSTATUS gensec_ntlmssp_init(void)
 {
 	NTSTATUS ret;
 

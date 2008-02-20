@@ -775,7 +775,7 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.priority       = GENSEC_KRB5
 };
 
-NTSTATUS gensec_krb5_init(void)
+_PUBLIC_ NTSTATUS gensec_krb5_init(void)
 {
 	NTSTATUS ret;
 
