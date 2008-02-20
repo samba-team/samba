@@ -88,8 +88,6 @@ int main(int argc, const char **argv)
 	int i, ret=0, count=0;
 	struct ldb_cmdline *options;
 
-	ldb_global_init();
-
 	ldb = ldb_init(NULL);
 
 	options = ldb_cmdline_process(ldb, argc, argv, usage);
