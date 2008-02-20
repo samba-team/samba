@@ -370,17 +370,11 @@ MANPAGE = man/locktest.1
 # End BINARY locktest
 #################################
 
-GCOV_FLAGS = --coverage
-
 COV_TARGET = test
 
 COV_VARS = \
-	CFLAGS="$(CFLAGS) $(GCOV_FLAGS)" \
-	BNLD_FLAGS="$(BNLD_FLAGS) $(GCOV_FLAGS)" \
-	SHLD_FLAGS="$(SHLD_FLAGS) $(GCOV_FLAGS)" \
-	MDLD_FLAGS="$(MDLD_FLAGS) $(GCOV_FLAGS)" \
-	HOSTCC_FLAGS="$(HOSTCC_FLAGS) $(GCOV_FLAGS)" \
-	HOSTLD_FLAGS="$(HOSTLD_FLAGS) $(GCOV_FLAGS)"
+	CFLAGS="$(CFLAGS) --coverage" \
+	LDFLAGS="$(LDFLAGS) --coverage"
 
 test_cov:
 	-$(MAKE) $(COV_TARGET) $(COV_VARS)
