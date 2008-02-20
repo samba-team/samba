@@ -118,7 +118,7 @@ static int instancetype_add(struct ldb_module *module, struct ldb_request *req)
 	return ret;
 }
 
-const struct ldb_module_ops ldb_instancetype_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_instancetype_module_ops = {
 	.name          = "instancetype",
 	.add           = instancetype_add,
 };

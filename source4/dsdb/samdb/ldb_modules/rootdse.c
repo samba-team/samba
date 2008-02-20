@@ -386,7 +386,7 @@ static int rootdse_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-const struct ldb_module_ops ldb_rootdse_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_rootdse_module_ops = {
 	.name			= "rootdse",
 	.init_context           = rootdse_init,
 	.search                 = rootdse_search,

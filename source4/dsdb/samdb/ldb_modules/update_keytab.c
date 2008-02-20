@@ -199,7 +199,7 @@ static int update_kt_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-const struct ldb_module_ops ldb_update_keytab_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_update_keytab_module_ops = {
 	.name		   = "update_keytab",
 	.init_context	   = update_kt_init,
 	.add               = update_kt_add,

@@ -112,7 +112,7 @@ failed:
 	return LDB_ERR_OTHER;
 }
 
-const struct ldb_module_ops ldb_wins_ldb_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_wins_ldb_module_ops = {
 	.name          = "wins_ldb",
 	.add           = wins_ldb_verify,
 	.modify        = wins_ldb_verify,

@@ -29,12 +29,10 @@
 /** Feel free to add definitions for other compilers here. */
 #endif
 
-#ifndef _PUBLIC_
 #ifdef HAVE_VISIBILITY_ATTR
 #  define _PUBLIC_ __attribute__((visibility("default")))
 #else
 #  define _PUBLIC_
-#endif
 #endif
 
 #ifndef _DEPRECATED_

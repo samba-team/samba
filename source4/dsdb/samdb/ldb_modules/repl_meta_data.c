@@ -1579,7 +1579,7 @@ static int replmd_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	}
 }
 
-const struct ldb_module_ops ldb_repl_meta_data_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_repl_meta_data_module_ops = {
 	.name          = "repl_meta_data",
 	.add           = replmd_add,
 	.modify        = replmd_modify,

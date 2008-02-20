@@ -21,6 +21,8 @@
 #ifndef _SAMBA_UTIL_H_
 #define _SAMBA_UTIL_H_
 
+#include "util/attr.h"
+
 #include "charset/charset.h"
 
 /* for TALLOC_CTX */
@@ -36,7 +38,6 @@ struct smbsrv_tcon;
 extern const char *logfile;
 extern const char *panic_action;
 
-#include "util/attr.h"
 #include "util/time.h"
 #include "util/data_blob.h"
 #include "util/xfile.h"

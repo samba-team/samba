@@ -843,7 +843,7 @@ static int local_password_wait(struct ldb_handle *handle, enum ldb_wait_type typ
 	}
 }
 
-const struct ldb_module_ops ldb_local_password_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_local_password_module_ops = {
 	.name          = "local_password",
 	.add           = local_password_add,
 	.modify        = local_password_modify,

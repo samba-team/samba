@@ -471,7 +471,7 @@ done:
 	return ldb_next_init(module);
 }
 
-const struct ldb_module_ops ldb_kludge_acl_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_kludge_acl_module_ops = {
 	.name		   = "kludge_acl",
 	.search            = kludge_acl_search,
 	.add               = kludge_acl_change,

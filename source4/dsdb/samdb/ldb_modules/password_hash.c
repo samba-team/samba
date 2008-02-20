@@ -2044,7 +2044,7 @@ static int password_hash_wait(struct ldb_handle *handle, enum ldb_wait_type type
 	}
 }
 
-const struct ldb_module_ops ldb_password_hash_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_password_hash_module_ops = {
 	.name          = "password_hash",
 	.add           = password_hash_add,
 	.modify        = password_hash_modify,
