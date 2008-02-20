@@ -811,6 +811,18 @@ failed:
 	return -1;
 }
 
-ldb_connect_fn ldb_ldap_connect = ildb_connect;
-ldb_connect_fn ldb_ldapi_connect = ildb_connect;
-ldb_connect_fn ldb_ldaps_connect = ildb_connect;
+const struct ldb_backend_ops ldb_ldap_backend_ops {
+	.name = "ldap",
+	.connect_fn = ildb_connect
+};
+
+const struct ldb_backend_ops ldb_ildap_backend_ops {
+	.name = "ildap",
+	.connect_fn = ildb_connect
+};
+
+const struct ldb_backend_ops ldb_ldaps_backend_ops {
+	.name = "ldaps",
+	.connect_fn = ildb_connect
+};
+
