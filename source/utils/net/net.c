@@ -182,8 +182,6 @@ static int binary_net(int argc, const char **argv)
 
 	dcerpc_init();
 
-	ldb_global_init();
-
 	mem_ctx = talloc_init("net_context");
 	ctx = talloc(mem_ctx, struct net_context);
 	if (!ctx) {

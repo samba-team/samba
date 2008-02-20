@@ -282,7 +282,6 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 	int ret;
 	const char *url2;
 	/* We seem to need to do this here, or else some utilities don't get ldb backends */
-	ldb_global_init();
 
 	ldb->flags = flags;
 
