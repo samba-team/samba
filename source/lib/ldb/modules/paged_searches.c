@@ -455,7 +455,7 @@ static int ps_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-const struct ldb_module_ops ldb_paged_searches_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_paged_searches_module_ops = {
 	.name           = "paged_searches",
 	.search         = ps_search,
 	.wait           = ps_wait,

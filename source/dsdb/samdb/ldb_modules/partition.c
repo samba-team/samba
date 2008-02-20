@@ -87,7 +87,7 @@ static struct ldb_module *make_module_for_next_request(TALLOC_CTX *mem_ctx,
 						       struct ldb_module *module)
 {
 	struct ldb_module *current;
-	static const struct ldb_module_ops ops; /* zero */
+_PUBLIC_ 	static const struct ldb_module_ops ops; /* zero */
 	current = talloc_zero(mem_ctx, struct ldb_module);
 	if (current == NULL) {
 		return module;
@@ -1030,7 +1030,7 @@ static int partition_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	}
 }
 
-const struct ldb_module_ops ldb_partition_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_partition_module_ops = {
 	.name		   = "partition",
 	.init_context	   = partition_init,
 	.search            = partition_search,

@@ -362,7 +362,7 @@ static int extended_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-const struct ldb_module_ops ldb_extended_dn_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_extended_dn_module_ops = {
 	.name		   = "extended_dn",
 	.search            = extended_search,
 	.init_context	   = extended_init

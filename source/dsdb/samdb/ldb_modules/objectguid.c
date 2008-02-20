@@ -247,7 +247,7 @@ static int objectguid_modify(struct ldb_module *module, struct ldb_request *req)
 	return ret;
 }
 
-const struct ldb_module_ops ldb_objectguid_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_objectguid_module_ops = {
 	.name          = "objectguid",
 	.add           = objectguid_add,
 	.modify        = objectguid_modify,

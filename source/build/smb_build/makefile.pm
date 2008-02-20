@@ -160,7 +160,8 @@ sub SharedModule($$)
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{TYPE} ne "PYTHON") {
+	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{TYPE} ne "PYTHON" and 
+		$ctx->{INIT_FUNCTION_TYPE} =~ /\(\*\)/) {
 		my $init_fn = $ctx->{INIT_FUNCTION_TYPE};
 		$init_fn =~ s/\(\*\)/init_module/;
 		my $proto_fn = $ctx->{INIT_FUNCTION_TYPE};

@@ -793,14 +793,14 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 	return LDB_SUCCESS;
 }
 
-const struct ldb_module_ops ldb_entryuuid_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_entryuuid_module_ops = {
 	.name		   = "entryuuid",
 	.init_context	   = entryuuid_init,
 	.sequence_number   = entryuuid_sequence_number,
 	LDB_MAP_OPS
 };
 
-const struct ldb_module_ops ldb_nsuniqueid_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_nsuniqueid_module_ops = {
 	.name		   = "nsuniqueid",
 	.init_context	   = nsuniqueid_init,
 	.sequence_number   = entryuuid_sequence_number,

@@ -915,7 +915,7 @@ static int linked_attributes_wait(struct ldb_handle *handle, enum ldb_wait_type 
 	}
 }
 
-const struct ldb_module_ops ldb_linked_attributes_module_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_linked_attributes_module_ops = {
 	.name		   = "linked_attributes",
 	.add               = linked_attributes_add,
 	.modify            = linked_attributes_modify,
