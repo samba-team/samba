@@ -241,8 +241,9 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) \
 LIBTDB_OBJ0 = @TDB_OBJS@
 LIBTDB_OBJ = $(LIBTDB_OBJ0) $(LIBREPLACE_OBJ)
 
-TDB_OBJ = @LIBTDB_STATIC@ lib/util_tdb.o \
-	lib/dbwrap.o lib/dbwrap_tdb.o lib/dbwrap_ctdb.o lib/dbwrap_rbt.o
+TDB_OBJ = lib/util_tdb.o \
+	  lib/dbwrap.o lib/dbwrap_tdb.o lib/dbwrap_ctdb.o lib/dbwrap_rbt.o \
+	  @LIBTDB_STATIC@
 
 SMBLDAP_OBJ = @SMBLDAP@ @SMBLDAPUTIL@
 
