@@ -63,7 +63,7 @@ static const struct auth_operations anonymous_auth_ops = {
 	.check_password	= anonymous_check_password
 };
 
-NTSTATUS auth_anonymous_init(void)
+_PUBLIC_ NTSTATUS auth_anonymous_init(void)
 {
 	NTSTATUS ret;
 

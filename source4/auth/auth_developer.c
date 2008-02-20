@@ -186,7 +186,7 @@ static const struct auth_operations fixed_challenge_auth_ops = {
 	.check_password	= fixed_challenge_check_password
 };
 
-NTSTATUS auth_developer_init(void)
+_PUBLIC_ NTSTATUS auth_developer_init(void)
 {
 	NTSTATUS ret;
 

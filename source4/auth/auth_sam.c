@@ -425,7 +425,7 @@ static const struct auth_operations sam_ops = {
 	.check_password	= authsam_check_password
 };
 
-NTSTATUS auth_sam_init(void)
+_PUBLIC_ NTSTATUS auth_sam_init(void)
 {
 	NTSTATUS ret;
 
