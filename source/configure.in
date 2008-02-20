@@ -4700,6 +4700,31 @@ if test $enable_static = yes; then
 fi
 
 #################################################
+# --disable-shared-libs
+# can be used to disable the internal use of shared libs altogether
+# (this only has an effect when building shared libs is enabled)
+#
+USESHARED=false
+AC_SUBST(USESHARED)
+
+AC_MSG_CHECKING(whether to use shared libraries internally)
+AC_ARG_ENABLE([shared-libs],
+	AS_HELP_STRING([--enable-shared-libs],
+		[Use shared libraries internally (default=yes)]),
+	[enable_shared_libs=$enableval],
+	[enable_shared_libs=yes])
+
+if test x"$enable_shared_libs" != x"no" ; then
+	USESHARED=$BLDSHARED
+fi
+
+AC_MSG_RESULT([$USESHARED])
+
+if test x"$enable_shared_libs" = x"yes" -a x"$BLDSHARED" != x"true" ; then
+	AC_MSG_WARN([--enable-shared-libs: no support for shared libraries])
+fi
+
+#################################################
 # --with-static-libs=LIBS:
 #   link (internal) libs dynamically or statically?
 #
@@ -4762,10 +4787,12 @@ samba_cv_with_libtalloc=yes
 if test x"$samba_cv_with_libtalloc" = "xyes" -a $BLDSHARED = true; then
 	LIBTALLOC_SHARED=$LIBTALLOC_SHARED_TARGET
 	AC_MSG_RESULT(yes)
-	if test x"$LINK_LIBTALLOC" = "xSTATIC" ; then
+	if test x"$USESHARED" != x"true" -o x"$LINK_LIBTALLOC" = "xSTATIC" ; then
 		LIBTALLOC_STATIC=$LIBTALLOC_STATIC_TARGET
+		AC_MSG_NOTICE([not using libtalloc shared library internally])
 	else
 		LIBTALLOC_LIBS=-ltalloc
+		AC_MSG_NOTICE([using libtalloc shared library internally])
 	fi
 else
 	enable_static=yes
@@ -4806,8 +4833,9 @@ samba_cv_with_libtdb=yes
 if test x"$samba_cv_with_libtdb" = "xyes" -a $BLDSHARED = true; then
 	LIBTDB_SHARED=$LIBTDB_SHARED_TARGET
 	AC_MSG_RESULT(yes)
-	if test x"$LINK_LIBTDB" = "xSTATIC" ; then
+	if test x"$USESHARED" != x"true" -o x"$LINK_LIBTDB" = "xSTATIC" ; then
 		LIBTDB_STATIC=$LIBTDB_STATIC_TARGET
+		AC_MSG_NOTICE([not using libtdb shared library internally])
 	else
 		LIBTDB_LIBS=-ltdb
 	fi
@@ -4849,8 +4877,9 @@ samba_cv_with_libnetapi=yes
 if test x"$samba_cv_with_libnetapi" = x"yes" -a $BLDSHARED = true; then
 	LIBNETAPI_SHARED=$LIBNETAPI_SHARED_TARGET
 	AC_MSG_RESULT(yes)
-	if test x"$LINK_LIBNETAPI" = x"STATIC" ; then
+	if test x"$USESHARED" != x"true" -o x"$LINK_LIBNETAPI" = x"STATIC" ; then
 		LIBNETAPI_STATIC=$LIBNETAPI_STATIC_TARGET
+		AC_MSG_NOTICE([not using libnetapi shared library internally])
 	else
 		LIBNETAPI_LIBS=-lnetapi
 	fi
