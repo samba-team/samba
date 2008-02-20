@@ -811,9 +811,6 @@ failed:
 	return -1;
 }
 
-int ldb_ildap_init(void)
-{
-	return ldb_register_backend("ldap", ildb_connect) + 
-		   ldb_register_backend("ldapi", ildb_connect) + 
-		   ldb_register_backend("ldaps", ildb_connect);
-}
+ldb_connect_fn ldb_ldap_connect = ildb_connect;
+ldb_connect_fn ldb_ldapi_connect = ildb_connect;
+ldb_connect_fn ldb_ldaps_connect = ildb_connect;
