@@ -1178,16 +1178,23 @@ static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pip
 	NTSTATUS status;
 	struct spoolss_EnumPrinterData r;
 
+	ZERO_STRUCT(r);
 	r.in.handle = handle;
 	r.in.enum_index = 0;
 
 	do {
-		uint32_t data_size;
-		
-		r.in.value_offered = 0;
-		data_size = 0;
-		r.in.data_size = &data_size;
-		r.out.data_size = &data_size;
+		uint32_t value_size = 0;
+		uint32_t data_size = 0;
+		uint32_t printerdata_type = 0;
+		DATA_BLOB data = data_blob(NULL,0);
+
+		r.in.value_offered = value_size;
+		r.out.value_needed = &value_size;
+		r.in.data_offered = data_size;
+		r.out.data_needed = &data_size;
+
+		r.out.printerdata_type = &printerdata_type;
+		r.out.buffer = &data;
 
 		torture_comment(tctx, "Testing EnumPrinterData\n");
 
@@ -1195,7 +1202,8 @@ static bool test_EnumPrinterData(struct torture_context *tctx, struct dcerpc_pip
 
 		torture_assert_ntstatus_ok(tctx, status, "EnumPrinterData failed");
 
-		r.in.value_offered = r.out.value_needed;
+		r.in.value_offered = value_size;
+		r.in.data_offered = data_size;
 
 		status = dcerpc_spoolss_EnumPrinterData(p, tctx, &r);
 

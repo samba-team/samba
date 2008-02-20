@@ -1153,16 +1153,10 @@ static int objectclass_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	}
 }
 
-static const struct ldb_module_ops objectclass_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_objectclass_module_ops = {
 	.name		   = "objectclass",
 	.add           = objectclass_add,
 	.modify        = objectclass_modify,
 	.rename        = objectclass_rename,
 	.wait          = objectclass_wait
 };
-
-int ldb_objectclass_init(void)
-{
-	return ldb_register_module(&objectclass_ops);
-}
-

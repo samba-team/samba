@@ -750,14 +750,8 @@ static int samldb_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-static const struct ldb_module_ops samldb_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_samldb_module_ops = {
 	.name          = "samldb",
 	.init_context  = samldb_init,
 	.add           = samldb_add,
 };
-
-
-int samldb_module_init(void)
-{
-	return ldb_register_module(&samldb_ops);
-}

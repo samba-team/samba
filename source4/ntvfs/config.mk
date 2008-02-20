@@ -1,8 +1,8 @@
 # NTVFS Server subsystem
-include posix/config.mk
-include common/config.mk
-include unixuid/config.mk
-include sysdep/config.mk
+mkinclude posix/config.mk
+mkinclude common/config.mk
+mkinclude unixuid/config.mk
+mkinclude sysdep/config.mk
 
 ################################################
 # Start MODULE ntvfs_cifs

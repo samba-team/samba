@@ -151,6 +151,9 @@ NTSTATUS smbsrv_recv_smb_request(void *private, DATA_BLOB blob)
 
 	req->flags2	= SVAL(req->in.hdr, HDR_FLG2);
 
+	/* fix the bufinfo */
+	smbsrv_setup_bufinfo(req);
+
 	if (!smbsrv_signing_check_incoming(req)) {
 		smbsrv_send_error(req, NT_STATUS_ACCESS_DENIED);
 		return NT_STATUS_OK;
@@ -619,6 +622,9 @@ void smbsrv_chain_reply(struct smbsrv_request *req)
 	req->in.data = data;
 	req->in.data_size = data_size;
 	req->in.ptr = data;
+
+	/* fix the bufinfo */
+	smbsrv_setup_bufinfo(req);
 
 	req->chain_count++;
 

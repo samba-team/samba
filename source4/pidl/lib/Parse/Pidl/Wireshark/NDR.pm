@@ -940,6 +940,10 @@ sub Parse($$$$$)
 	$self->{res}->{headers} .= "#include \"$h_basename\"\n";
 	$self->pidl_code("");
 
+	if (defined($self->{conformance}->{ett})) {
+		register_ett($self,$_) foreach(@{$self->{conformance}->{ett}})
+	}
+
 	# Wireshark protocol registration
 
 	foreach (@$ndr) {

@@ -224,6 +224,9 @@ _PUBLIC_ void nttime_to_timeval(struct timeval *tv, NTTIME t);
  */
 _PUBLIC_ int get_time_zone(time_t t);
 
-
+/**
+  check if 2 NTTIMEs are equal.
+*/
+bool nt_time_equal(NTTIME *t1, NTTIME *t2);
 
 #endif /* _SAMBA_TIME_H_ */

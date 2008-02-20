@@ -55,26 +55,28 @@ static NTSTATUS smb2srv_send_oplock_break(void *p, struct ntvfs_handle *h, uint8
 
 	req->seqnum		= UINT64_MAX;
 
+	smb2srv_setup_bufinfo(req);
+
 	SIVAL(req->in.hdr, 0,				SMB2_MAGIC);
 	SSVAL(req->in.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
-	SSVAL(req->in.hdr, SMB2_HDR_PAD1,		0);
+	SSVAL(req->in.hdr, SMB2_HDR_EPOCH,		0);
 	SIVAL(req->in.hdr, SMB2_HDR_STATUS,		0);
 	SSVAL(req->in.hdr, SMB2_HDR_OPCODE,		SMB2_OP_BREAK);
-	SSVAL(req->in.hdr, SMB2_HDR_UNKNOWN1,		0);
+	SSVAL(req->in.hdr, SMB2_HDR_CREDIT,		0);
 	SIVAL(req->in.hdr, SMB2_HDR_FLAGS,		0);
-	SIVAL(req->in.hdr, SMB2_HDR_CHAIN_OFFSET,	0);
-	SBVAL(req->in.hdr, SMB2_HDR_SEQNUM,		0);
+	SIVAL(req->in.hdr, SMB2_HDR_NEXT_COMMAND,	0);
+	SBVAL(req->in.hdr, SMB2_HDR_MESSAGE_ID,		0);
 	SIVAL(req->in.hdr, SMB2_HDR_PID,		0);
 	SIVAL(req->in.hdr, SMB2_HDR_TID,		0);
-	SBVAL(req->in.hdr, SMB2_HDR_UID,		0);
-	memset(req->in.hdr+SMB2_HDR_SIG, 0, 16);
+	SBVAL(req->in.hdr, SMB2_HDR_SESSION_ID,		0);
+	memset(req->in.hdr+SMB2_HDR_SIGNATURE, 0, 16);
 
 	SSVAL(req->in.body, 0, 2);
 
 	status = smb2srv_setup_reply(req, 0x18, false, 0);
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,	0x0000);
+	SSVAL(req->out.hdr, SMB2_HDR_CREDIT,	0x0000);
 
 	SSVAL(req->out.body, 0x02, 0x0001);
 	SIVAL(req->out.body, 0x04, 0x00000000);
@@ -240,8 +242,6 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	struct smbsrv_tcon *tcon;
 	NTSTATUS status;
 	enum ntvfs_type type;
-	uint16_t type_smb2;
-	uint32_t unknown2;
 	const char *service = io->smb2.in.path;
 	struct share_config *scfg;
 	const char *sharetype;
@@ -270,16 +270,10 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 	sharetype = share_string_option(scfg, SHARE_TYPE, "DISK");
 	if (sharetype && strcmp(sharetype, "IPC") == 0) {
 		type = NTVFS_IPC;
-		type_smb2 = 0x0002;
-		unknown2 = 0x00000030;
 	} else if (sharetype && strcmp(sharetype, "PRINTER") == 0) {
 		type = NTVFS_PRINT;
-		type_smb2 = 0x0003;
-		unknown2 = 0x00000000;
 	} else {
 		type = NTVFS_DISK;
-		type_smb2 = 0x0001;
-		unknown2 = 0x00000800;
 	}
 
 	tcon = smbsrv_smb2_tcon_new(req->session, scfg->name);
@@ -344,10 +338,11 @@ static NTSTATUS smb2srv_tcon_backend(struct smb2srv_request *req, union smb_tcon
 		goto failed;
 	}
 
-	io->smb2.out.unknown1	= type_smb2; /* 1 - DISK, 2 - Print, 3 - IPC */
-	io->smb2.out.unknown2	= unknown2;
-	io->smb2.out.unknown3	= 0x00000000;
-	io->smb2.out.access_mask= SEC_RIGHTS_FILE_ALL;
+	io->smb2.out.share_type	  = (unsigned)type; /* 1 - DISK, 2 - Print, 3 - IPC */
+	io->smb2.out.reserved	  = 0;
+	io->smb2.out.flags	  = 0x00000000;
+	io->smb2.out.capabilities = 0;
+	io->smb2.out.access_mask  = SEC_RIGHTS_FILE_ALL;
 
 	io->smb2.out.tid	= tcon->tid;
 
@@ -361,27 +356,28 @@ failed:
 
 static void smb2srv_tcon_send(struct smb2srv_request *req, union smb_tcon *io)
 {
-	uint16_t unknown1;
+	uint16_t credit;
 
 	if (!NT_STATUS_IS_OK(req->status)) {
 		smb2srv_send_error(req, req->status);
 		return;
 	}
-	if (io->smb2.out.unknown1 == 0x0002) {
+	if (io->smb2.out.share_type == NTVFS_IPC) {
 		/* if it's an IPC share vista returns 0x0005 */
-		unknown1 = 0x0005;
+		credit = 0x0005;
 	} else {
-		unknown1 = 0x0001;
+		credit = 0x0001;
 	}
 
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x10, false, 0));
 
 	SIVAL(req->out.hdr,	SMB2_HDR_TID,	io->smb2.out.tid);
-	SSVAL(req->out.hdr,	SMB2_HDR_UNKNOWN1,unknown1);
+	SSVAL(req->out.hdr,	SMB2_HDR_CREDIT,credit);
 
-	SSVAL(req->out.body,	0x02,		io->smb2.out.unknown1);
-	SIVAL(req->out.body,	0x04,		io->smb2.out.unknown2);
-	SIVAL(req->out.body,	0x08,		io->smb2.out.unknown3);
+	SCVAL(req->out.body,	0x02,		io->smb2.out.share_type);
+	SCVAL(req->out.body,	0x03,		io->smb2.out.reserved);
+	SIVAL(req->out.body,	0x04,		io->smb2.out.flags);
+	SIVAL(req->out.body,	0x08,		io->smb2.out.capabilities);
 	SIVAL(req->out.body,	0x0C,		io->smb2.out.access_mask);
 
 	smb2srv_send_reply(req);
@@ -395,8 +391,13 @@ void smb2srv_tcon_recv(struct smb2srv_request *req)
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_tcon);
 
 	io->smb2.level		= RAW_TCON_SMB2;
-	io->smb2.in.unknown1	= SVAL(req->in.body, 0x02);
+	io->smb2.in.reserved	= SVAL(req->in.body, 0x02);
 	SMB2SRV_CHECK(smb2_pull_o16s16_string(&req->in, io, req->in.body+0x04, &io->smb2.in.path));
+
+	/* the VFS backend does not yet handle NULL paths */
+	if (io->smb2.in.path == NULL) {
+		io->smb2.in.path = "";
+	}
 
 	req->status = smb2srv_tcon_backend(req, io);
 

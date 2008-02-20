@@ -3,7 +3,7 @@
 [MODULE::ldb_asq]
 PRIVATE_DEPENDENCIES = LIBTALLOC
 CFLAGS = -Ilib/ldb/include
-INIT_FUNCTION = ldb_asq_init
+INIT_FUNCTION = &ldb_asq_module_ops
 SUBSYSTEM = LIBLDB
 OBJ_FILES = \
 		modules/asq.o
@@ -15,7 +15,7 @@ OBJ_FILES = \
 [MODULE::ldb_server_sort]
 PRIVATE_DEPENDENCIES = LIBTALLOC
 CFLAGS = -Ilib/ldb/include
-INIT_FUNCTION = ldb_sort_init
+INIT_FUNCTION = &ldb_server_sort_module_ops
 SUBSYSTEM = LIBLDB
 OBJ_FILES = \
 		modules/sort.o
@@ -25,7 +25,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_paged_results
 [MODULE::ldb_paged_results]
-INIT_FUNCTION = ldb_paged_results_init
+INIT_FUNCTION = &ldb_paged_results_module_ops
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = LIBLDB
@@ -37,7 +37,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_paged_results
 [MODULE::ldb_paged_searches]
-INIT_FUNCTION = ldb_paged_searches_init
+INIT_FUNCTION = &ldb_paged_searches_module_ops
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = LIBLDB
@@ -52,7 +52,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
-INIT_FUNCTION = ldb_operational_init
+INIT_FUNCTION = &ldb_operational_module_ops
 OBJ_FILES = \
 		modules/operational.o
 # End MODULE ldb_operational
@@ -64,7 +64,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
-INIT_FUNCTION = ldb_rdn_name_init
+INIT_FUNCTION = &ldb_rdn_name_module_ops
 OBJ_FILES = \
 		modules/rdn_name.o
 # End MODULE ldb_rdn_name
@@ -88,7 +88,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
-INIT_FUNCTION = ldb_skel_init
+INIT_FUNCTION = &ldb_skel_module_ops
 OBJ_FILES = modules/skel.o
 # End MODULE ldb_skel
 ################################################
@@ -99,7 +99,7 @@ OBJ_FILES = modules/skel.o
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC SQLITE3 LIBTALLOC
-INIT_FUNCTION = ldb_sqlite3_init
+INIT_FUNCTION = &ldb_sqlite3_module_ops
 OBJ_FILES = \
 		ldb_sqlite3/ldb_sqlite3.o
 # End MODULE ldb_sqlite3
@@ -110,7 +110,6 @@ OBJ_FILES = \
 [MODULE::ldb_tdb]
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include -Ilib/ldb/ldb_tdb
-INIT_FUNCTION = ldb_tdb_init
 OBJ_FILES = \
 		ldb_tdb/ldb_tdb.o \
 		ldb_tdb/ldb_search.o \
@@ -128,10 +127,9 @@ PRIVATE_DEPENDENCIES = \
 [LIBRARY::LIBLDB]
 VERSION = 0.0.1
 SO_VERSION = 0
-OUTPUT_TYPE = SHARED_LIBRARY
 CFLAGS = -Ilib/ldb/include
 PC_FILE = ldb.pc
-INIT_FUNCTION_TYPE = int (*) (void)
+INIT_FUNCTION_TYPE = extern const struct ldb_module_ops
 OBJ_FILES = \
 		common/ldb.o \
 		common/ldb_ldif.o \
@@ -193,5 +191,5 @@ PRIVATE_DEPENDENCIES = \
 ################################################
 
 
-include tools/config.mk
-include ldb_ildap/config.mk
+mkinclude tools/config.mk
+mkinclude ldb_ildap/config.mk

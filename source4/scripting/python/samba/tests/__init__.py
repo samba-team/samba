@@ -84,3 +84,9 @@ class LdbExtensionTests(TestCaseInTempDir):
             del l
             os.unlink(path)
 
+
+def get_loadparm():
+    import param
+    lp = param.LoadParm()
+    lp.load(os.getenv("SMB_CONF_PATH"))
+    return lp

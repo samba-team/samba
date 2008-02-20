@@ -450,14 +450,9 @@ static int server_sort_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-static const struct ldb_module_ops server_sort_ops = {
+const struct ldb_module_ops ldb_server_sort_module_ops = {
 	.name		   = "server_sort",
 	.search            = server_sort_search,
 	.wait              = server_sort_wait,
 	.init_context	   = server_sort_init
 };
-
-int ldb_sort_init(void)
-{
-	return ldb_register_module(&server_sort_ops);
-}

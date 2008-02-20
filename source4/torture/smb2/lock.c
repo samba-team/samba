@@ -238,10 +238,10 @@ static bool test_lock_read_write(struct torture_context *torture,
 	CHECK_VALUE(lck.out.unknown1, 0);
 
 	ZERO_STRUCT(cr);
-	cr.in.oplock_flags = 0;
-	cr.in.access_mask = SEC_RIGHTS_FILE_ALL;
-	cr.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
-	cr.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	cr.in.oplock_level = 0;
+	cr.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	cr.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
+	cr.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	cr.in.share_access = 
 		NTCREATEX_SHARE_ACCESS_DELETE|
 		NTCREATEX_SHARE_ACCESS_READ|

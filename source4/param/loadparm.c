@@ -11,17 +11,17 @@
    Copyright (C) Jim McDonough (jmcd@us.ibm.com)  2003.
    Copyright (C) James Myers 2003 <myersjj@samba.org>
    Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -40,7 +40,7 @@
  * 3) add it to the list of available functions (eg: using FN_GLOBAL_STRING())
  * 4) If it's a global then initialise it in init_globals. If a local
  *    (ie. service) parameter then initialise it in the sDefault structure
- *  
+ *
  *
  * Notes:
  *   The configuration file is processed sequentially for speed. It is NOT
@@ -150,7 +150,7 @@ struct loadparm_global
 	char *socket_options;
 	int bWINSsupport;
 	int bWINSdnsProxy;
-	char *szWINSHook; 
+	char *szWINSHook;
 	int bLocalMaster;
 	int bPreferredMaster;
 	int bEncryptPasswords;
@@ -182,7 +182,7 @@ struct loadparm_global
 
 
 /**
- * This structure describes a single service. 
+ * This structure describes a single service.
  */
 struct loadparm_service
 {
@@ -228,28 +228,28 @@ struct loadparm_service sDefault = {
 	.szPath = NULL,
 	.szCopy = NULL,
 	.szInclude = NULL,
-	.szPrintername = NULL,			
-	.szHostsallow = NULL,			
-	.szHostsdeny = NULL,			
-	.comment = NULL,			
-	.volume = NULL,			
-	.fstype = NULL,			
-	.ntvfs_handler = NULL,                   
-	.iMaxPrintJobs = 1000,			
-	.iMaxConnections = 0,			
-	.iCSCPolicy = 0,			
-	.bAvailable = true,			
-	.bBrowseable = true,			
-	.bRead_only = true,			
-	.bPrint_ok = false,			
-	.bMap_system = false,			
-	.bMap_hidden = false,			
-	.bMap_archive = true,			
-	.bStrictLocking = true,			
-	.iCreate_mask = 0744,			
+	.szPrintername = NULL,
+	.szHostsallow = NULL,
+	.szHostsdeny = NULL,
+	.comment = NULL,
+	.volume = NULL,
+	.fstype = NULL,
+	.ntvfs_handler = NULL,
+	.iMaxPrintJobs = 1000,
+	.iMaxConnections = 0,
+	.iCSCPolicy = 0,
+	.bAvailable = true,
+	.bBrowseable = true,
+	.bRead_only = true,
+	.bPrint_ok = false,
+	.bMap_system = false,
+	.bMap_hidden = false,
+	.bMap_archive = true,
+	.bStrictLocking = true,
+	.iCreate_mask = 0744,
 	.iCreate_force_mode = 0000,
-	.iDir_mask = 0755,			
-	.iDir_force_mode = 0000,			
+	.iDir_mask = 0755,
+	.iDir_force_mode = 0000,
 	.copymap = NULL,
 	.bMSDfsRoot = false,
 	.bStrictSync = false,
@@ -261,9 +261,9 @@ struct loadparm_context *global_loadparm = NULL;
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
-static bool handle_include(struct loadparm_context *lp_ctx, 
+static bool handle_include(struct loadparm_context *lp_ctx,
 			   const char *pszParmValue, char **ptr);
-static bool handle_copy(struct loadparm_context *lp_ctx, 
+static bool handle_copy(struct loadparm_context *lp_ctx,
 			const char *pszParmValue, char **ptr);
 static bool handle_debuglevel(struct loadparm_context *lp_ctx,
 			      const char *pszParmValue, char **ptr);
@@ -308,9 +308,9 @@ static const struct enum_list enum_bool_auto[] = {
 };
 
 /* Client-side offline caching policy types */
-enum csc_policy { 
-	CSC_POLICY_MANUAL=0, 
-	CSC_POLICY_DOCUMENTS=1, 
+enum csc_policy {
+	CSC_POLICY_MANUAL=0,
+	CSC_POLICY_DOCUMENTS=1,
 	CSC_POLICY_PROGRAMS=2,
 	CSC_POLICY_DISABLE=3
 };
@@ -397,12 +397,12 @@ static struct parm_struct parm_table[] = {
 	{"client lanman auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bClientLanManAuth), NULL, NULL},
 	{"client plaintext auth", P_BOOL, P_GLOBAL, GLOBAL_VAR(bClientPlaintextAuth), NULL, NULL},
 	{"client use spnego principal", P_BOOL, P_GLOBAL, GLOBAL_VAR(client_use_spnego_principal), NULL, NULL},
-	
+
 	{"read only", P_BOOL, P_LOCAL, LOCAL_VAR(bRead_only), NULL, NULL},
 
-	{"create mask", P_OCTAL, P_LOCAL, LOCAL_VAR(iCreate_mask), NULL, NULL}, 
+	{"create mask", P_OCTAL, P_LOCAL, LOCAL_VAR(iCreate_mask), NULL, NULL},
 	{"force create mode", P_OCTAL, P_LOCAL, LOCAL_VAR(iCreate_force_mode), NULL, NULL}, 
-	{"directory mask", P_OCTAL, P_LOCAL, LOCAL_VAR(iDir_mask), NULL, NULL}, 
+	{"directory mask", P_OCTAL, P_LOCAL, LOCAL_VAR(iDir_mask), NULL, NULL},
 	{"force directory mode", P_OCTAL, P_LOCAL, LOCAL_VAR(iDir_force_mode), NULL, NULL}, 
 
 	{"hosts allow", P_LIST, P_LOCAL, LOCAL_VAR(szHostsallow), NULL, NULL},
@@ -411,7 +411,7 @@ static struct parm_struct parm_table[] = {
 	{"log level", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), handle_debuglevel, NULL},
 	{"debuglevel", P_INTEGER, P_GLOBAL, GLOBAL_VAR(debuglevel), handle_debuglevel, NULL},
 	{"log file", P_STRING, P_GLOBAL, GLOBAL_VAR(logfile), handle_logfile, NULL},
-	
+
 	{"smb ports", P_LIST, P_GLOBAL, GLOBAL_VAR(smb_ports), NULL, NULL},
 	{"nbt port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(nbt_port), NULL, NULL},
 	{"dgram port", P_INTEGER, P_GLOBAL, GLOBAL_VAR(dgram_port), NULL, NULL},
@@ -435,7 +435,7 @@ static struct parm_struct parm_table[] = {
 	{"read raw", P_BOOL, P_GLOBAL, GLOBAL_VAR(bReadRaw), NULL, NULL},
 	{"write raw", P_BOOL, P_GLOBAL, GLOBAL_VAR(bWriteRaw), NULL, NULL},
 	{"disable netbios", P_BOOL, P_GLOBAL, GLOBAL_VAR(bDisableNetbios), NULL, NULL},
-	
+
 	{"nt status support", P_BOOL, P_GLOBAL, GLOBAL_VAR(bNTStatusSupport), NULL, NULL},
 
 	{"announce version", P_STRING, P_GLOBAL, GLOBAL_VAR(szAnnounceVersion), NULL, NULL},
@@ -457,13 +457,13 @@ static struct parm_struct parm_table[] = {
 	{"paranoid server security", P_BOOL, P_GLOBAL, GLOBAL_VAR(paranoid_server_security), NULL, NULL},
 	{"socket options", P_STRING, P_GLOBAL, GLOBAL_VAR(socket_options), NULL, NULL},
 
-	{"strict sync", P_BOOL, P_LOCAL, LOCAL_VAR(bStrictSync), NULL, NULL}, 
+	{"strict sync", P_BOOL, P_LOCAL, LOCAL_VAR(bStrictSync), NULL, NULL},
 	{"case insensitive filesystem", P_BOOL, P_LOCAL, LOCAL_VAR(bCIFileSystem), NULL, NULL}, 
 
 	{"max print jobs", P_INTEGER, P_LOCAL, LOCAL_VAR(iMaxPrintJobs), NULL, NULL},
 	{"printable", P_BOOL, P_LOCAL, LOCAL_VAR(bPrint_ok), NULL, NULL},
 	{"print ok", P_BOOL, P_LOCAL, LOCAL_VAR(bPrint_ok), NULL, NULL},
-	
+
 	{"printer name", P_STRING, P_LOCAL, LOCAL_VAR(szPrintername), NULL, NULL},
 	{"printer", P_STRING, P_LOCAL, LOCAL_VAR(szPrintername), NULL, NULL},
 
@@ -483,7 +483,7 @@ static struct parm_struct parm_table[] = {
 	{"wins hook", P_STRING, P_GLOBAL, GLOBAL_VAR(szWINSHook), NULL, NULL}, 
 
 	{"csc policy", P_ENUM, P_LOCAL, LOCAL_VAR(iCSCPolicy), NULL, enum_csc_policy},
-	
+
 	{"strict locking", P_BOOL, P_LOCAL, LOCAL_VAR(bStrictLocking), NULL, NULL},
 
 	{"share backend", P_STRING, P_GLOBAL, GLOBAL_VAR(szShareBackend), NULL, NULL},
@@ -495,11 +495,11 @@ static struct parm_struct parm_table[] = {
 	{"pid directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szPidDir), NULL, NULL}, 
 	{"js include", P_LIST, P_GLOBAL, GLOBAL_VAR(jsInclude), NULL, NULL},
 	{"setup directory", P_STRING, P_GLOBAL, GLOBAL_VAR(szSetupDir), NULL, NULL},
-	
+
 	{"socket address", P_STRING, P_GLOBAL, GLOBAL_VAR(szSocketAddress), NULL, NULL},
 	{"copy", P_STRING, P_LOCAL, LOCAL_VAR(szCopy), handle_copy, NULL},
 	{"include", P_STRING, P_LOCAL, LOCAL_VAR(szInclude), handle_include, NULL},
-	
+
 	{"available", P_BOOL, P_LOCAL, LOCAL_VAR(bAvailable), NULL, NULL},
 	{"volume", P_STRING, P_LOCAL, LOCAL_VAR(volume), NULL, NULL },
 	{"fstype", P_STRING, P_LOCAL, LOCAL_VAR(fstype), NULL, NULL},
@@ -547,7 +547,7 @@ struct parm_struct *lp_parm_table(void)
 
 /**
  * Convenience routine to grab string parameters into temporary memory
- * and run standard_sub_basic on them. 
+ * and run standard_sub_basic on them.
  *
  * The buffers can be written to by
  * callers without affecting the source string.
@@ -595,8 +595,8 @@ static const char *lp_string(const char *s)
 }
 
 /*
-   In this section all the functions that are used to access the 
-   parameters from the rest of the program are defined 
+   In this section all the functions that are used to access the
+   parameters from the rest of the program are defined
 */
 
 #define FN_GLOBAL_STRING(fn_name,var_name) \
@@ -750,7 +750,7 @@ static int map_parameter(const char *pszParmName);
 static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx, 
 					const char *pszServiceName);
 static void copy_service(struct loadparm_service *pserviceDest,
-			 struct loadparm_service *pserviceSource, 
+			 struct loadparm_service *pserviceSource,
 			 int *pcopymapDest);
 static bool service_ok(struct loadparm_service *service);
 static bool do_section(const char *pszSectionName, void *);
@@ -759,8 +759,8 @@ static void init_copymap(struct loadparm_service *pservice);
 /* This is a helper function for parametrical options support. */
 /* It returns a pointer to parametrical option value if it exists or NULL otherwise */
 /* Actual parametrical functions are quite simple */
-const char *lp_get_parametric(struct loadparm_context *lp_ctx, 
-			      struct loadparm_service *service, 
+const char *lp_get_parametric(struct loadparm_context *lp_ctx,
+			      struct loadparm_service *service,
 			      const char *type, const char *option)
 {
 	char *vfskey;
@@ -768,9 +768,9 @@ const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 
 	if (lp_ctx == NULL)
 		return NULL;
-	
+
 	data = (service == NULL ? lp_ctx->globals->param_opt : service->param_opt);
-    
+
 	asprintf(&vfskey, "%s:%s", type, option);
 	strlower(vfskey);
 
@@ -785,7 +785,7 @@ const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 	if (service != NULL) {
 		/* Try to fetch the same option but from globals */
 		/* but only if we are not already working with globals */
-		for (data = lp_ctx->globals->param_opt; data; 
+		for (data = lp_ctx->globals->param_opt; data;
 		     data = data->next) {
 			if (strcmp(data->key, vfskey) == 0) {
 				free(vfskey);
@@ -795,7 +795,7 @@ const char *lp_get_parametric(struct loadparm_context *lp_ctx,
 	}
 
 	free(vfskey);
-	
+
 	return NULL;
 }
 
@@ -811,7 +811,7 @@ static int lp_int(const char *s)
 		return -1;
 	}
 
-	return strtol(s, NULL, 0); 
+	return strtol(s, NULL, 0);
 }
 
 /**
@@ -853,7 +853,7 @@ static bool lp_bool(const char *s)
 		DEBUG(0,("lp_bool(%s): is called with NULL!\n",s));
 		return false;
 	}
-	
+
 	if (!set_boolean(s, &ret)) {
 		DEBUG(0,("lp_bool(%s): value is not boolean!\n",s));
 		return false;
@@ -866,11 +866,11 @@ static bool lp_bool(const char *s)
 /**
  * Return parametric option from a given service. Type is a part of option before ':'
  * Parametric option has following syntax: 'Type: option = value'
- * Returned value is allocated in 'lp_talloc' context 
+ * Returned value is allocated in 'lp_talloc' context
  */
 
-const char *lp_parm_string(struct loadparm_context *lp_ctx, 
-			   struct loadparm_service *service, const char *type, 
+const char *lp_parm_string(struct loadparm_context *lp_ctx,
+			   struct loadparm_service *service, const char *type,
 			   const char *option)
 {
 	const char *value = lp_get_parametric(lp_ctx, service, type, option);
@@ -888,13 +888,13 @@ const char *lp_parm_string(struct loadparm_context *lp_ctx,
  */
 
 const char **lp_parm_string_list(TALLOC_CTX *mem_ctx,
-				 struct loadparm_context *lp_ctx, 
-				 struct loadparm_service *service, 
-				 const char *type, 
+				 struct loadparm_context *lp_ctx,
+				 struct loadparm_service *service,
+				 const char *type,
 				 const char *option, const char *separator)
 {
 	const char *value = lp_get_parametric(lp_ctx, service, type, option);
-	
+
 	if (value != NULL)
 		return str_list_make(mem_ctx, value, separator);
 
@@ -906,12 +906,12 @@ const char **lp_parm_string_list(TALLOC_CTX *mem_ctx,
  * Parametric option has following syntax: 'Type: option = value'
  */
 
-int lp_parm_int(struct loadparm_context *lp_ctx, 
-		struct loadparm_service *service, const char *type, 
+int lp_parm_int(struct loadparm_context *lp_ctx,
+		struct loadparm_service *service, const char *type,
 		const char *option, int default_v)
 {
 	const char *value = lp_get_parametric(lp_ctx, service, type, option);
-	
+
 	if (value)
 		return lp_int(value);
 
@@ -924,8 +924,8 @@ int lp_parm_int(struct loadparm_context *lp_ctx,
  * Parametric option has following syntax: 'Type: option = value'.
  */
 
-int lp_parm_bytes(struct loadparm_context *lp_ctx, 
-		  struct loadparm_service *service, const char *type, 
+int lp_parm_bytes(struct loadparm_context *lp_ctx,
+		  struct loadparm_service *service, const char *type,
 		  const char *option, int default_v)
 {
 	uint64_t bval;
@@ -942,16 +942,16 @@ int lp_parm_bytes(struct loadparm_context *lp_ctx,
 }
 
 /**
- * Return parametric option from a given service. 
+ * Return parametric option from a given service.
  * Type is a part of option before ':'
  * Parametric option has following syntax: 'Type: option = value'
  */
-unsigned long lp_parm_ulong(struct loadparm_context *lp_ctx, 
-			    struct loadparm_service *service, const char *type, 
+unsigned long lp_parm_ulong(struct loadparm_context *lp_ctx,
+			    struct loadparm_service *service, const char *type,
 			    const char *option, unsigned long default_v)
 {
 	const char *value = lp_get_parametric(lp_ctx, service, type, option);
-	
+
 	if (value)
 		return lp_ulong(value);
 
@@ -959,12 +959,12 @@ unsigned long lp_parm_ulong(struct loadparm_context *lp_ctx,
 }
 
 
-double lp_parm_double(struct loadparm_context *lp_ctx, 
-		      struct loadparm_service *service, const char *type, 
+double lp_parm_double(struct loadparm_context *lp_ctx,
+		      struct loadparm_service *service, const char *type,
 		      const char *option, double default_v)
 {
 	const char *value = lp_get_parametric(lp_ctx, service, type, option);
-	
+
 	if (value != NULL)
 		return lp_double(value);
 
@@ -976,12 +976,12 @@ double lp_parm_double(struct loadparm_context *lp_ctx,
  * Parametric option has following syntax: 'Type: option = value'
  */
 
-bool lp_parm_bool(struct loadparm_context *lp_ctx, 
-		  struct loadparm_service *service, const char *type, 
+bool lp_parm_bool(struct loadparm_context *lp_ctx,
+		  struct loadparm_service *service, const char *type,
 		  const char *option, bool default_v)
 {
 	const char *value = lp_get_parametric(lp_ctx, service, type, option);
-	
+
 	if (value != NULL)
 		return lp_bool(value);
 
@@ -995,7 +995,7 @@ bool lp_parm_bool(struct loadparm_context *lp_ctx,
 
 static struct loadparm_service *init_service(TALLOC_CTX *mem_ctx)
 {
-	struct loadparm_service *pservice = 
+	struct loadparm_service *pservice =
 		talloc_zero(mem_ctx, struct loadparm_service);
 	copy_service(pservice, &sDefault, NULL);
 	return pservice;
@@ -1009,7 +1009,7 @@ static bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 {
 	talloc_free(*dest);
 
-	if (src == NULL) 
+	if (src == NULL)
 		src = "";
 
 	*dest = talloc_strdup(mem_ctx, src);
@@ -1024,12 +1024,12 @@ static bool string_set(TALLOC_CTX *mem_ctx, char **dest, const char *src)
 
 
 /**
- * Add a new service to the services array initialising it with the given 
- * service. 
+ * Add a new service to the services array initialising it with the given
+ * service.
  */
 
-struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx, 
-				     const struct loadparm_service *pservice, 
+struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
+				     const struct loadparm_service *pservice,
 				     const char *name)
 {
 	int i;
@@ -1041,7 +1041,7 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
 
 	/* it might already exist */
 	if (name) {
-		struct loadparm_service *service = getservicebyname(lp_ctx, 
+		struct loadparm_service *service = getservicebyname(lp_ctx,
 								    name);
 		if (service != NULL) {
 			/* Clean all parametric options for service */
@@ -1065,9 +1065,9 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
 	/* if not, then create one */
 	if (i == lp_ctx->iNumServices) {
 		struct loadparm_service **tsp;
-		
+
 		tsp = talloc_realloc(lp_ctx, lp_ctx->services, struct loadparm_service *, num_to_alloc);
-					   
+
 		if (!tsp) {
 			DEBUG(0,("lp_add_service: failed to enlarge services!\n"));
 			return NULL;
@@ -1077,7 +1077,7 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
 		}
 
 		lp_ctx->iNumServices++;
-	} 
+	}
 
 	lp_ctx->services[i] = init_service(lp_ctx->services);
 	if (lp_ctx->services[i] == NULL) {
@@ -1091,12 +1091,12 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
 }
 
 /**
- * Add a new home service, with the specified home directory, defaults coming 
+ * Add a new home service, with the specified home directory, defaults coming
  * from service ifrom.
  */
 
-bool lp_add_home(struct loadparm_context *lp_ctx, 
-		 const char *pszHomename, 
+bool lp_add_home(struct loadparm_context *lp_ctx,
+		 const char *pszHomename,
 		 struct loadparm_service *default_service,
 		 const char *user, const char *pszHomedir)
 {
@@ -1120,9 +1120,9 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
 	service->bAvailable = default_service->bAvailable;
 	service->bBrowseable = default_service->bBrowseable;
 
-	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n", 
+	DEBUG(3, ("adding home's share [%s] for user '%s' at '%s'\n",
 		  pszHomename, user, service->szPath));
-	
+
 	return true;
 }
 
@@ -1130,7 +1130,7 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
  * Add the IPC service.
  */
 
-static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name, 
+static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name,
 			  const char *fstype)
 {
 	struct loadparm_service *service = lp_add_service(lp_ctx, &sDefault, name);
@@ -1140,7 +1140,7 @@ static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name,
 
 	string_set(service, &service->szPath, tmpdir());
 
-	service->comment = talloc_asprintf(service, "%s Service (%s)", 
+	service->comment = talloc_asprintf(service, "%s Service (%s)",
 				fstype, lp_ctx->globals->szServerString);
 	string_set(service, &service->fstype, fstype);
 	service->iMaxConnections = -1;
@@ -1150,7 +1150,7 @@ static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name,
 	service->bBrowseable = false;
 
 	if (strcasecmp(fstype, "IPC") == 0) {
-		lp_do_service_parameter(lp_ctx, service, "ntvfs handler", 
+		lp_do_service_parameter(lp_ctx, service, "ntvfs handler",
 					"default");
 	}
 
@@ -1164,7 +1164,7 @@ static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name,
  */
 
 bool lp_add_printer(struct loadparm_context *lp_ctx,
-		    const char *pszPrintername, 
+		    const char *pszPrintername,
 		    struct loadparm_service *default_service)
 {
 	const char *comment = "From Printcap";
@@ -1194,7 +1194,7 @@ bool lp_add_printer(struct loadparm_context *lp_ctx,
 }
 
 /**
- * Map a parameter's string representation to something we can use. 
+ * Map a parameter's string representation to something we can use.
  * Returns False if the parameter string is not recognised, else TRUE.
  */
 
@@ -1269,8 +1269,8 @@ static struct loadparm_service *getservicebyname(struct loadparm_context *lp_ctx
  * If pcopymapDest is NULL then copy all fields
  */
 
-static void copy_service(struct loadparm_service *pserviceDest, 
-			 struct loadparm_service *pserviceSource, 
+static void copy_service(struct loadparm_service *pserviceDest,
+			 struct loadparm_service *pserviceSource,
 			 int *pcopymapDest)
 {
 	int i;
@@ -1298,13 +1298,13 @@ static void copy_service(struct loadparm_service *pserviceDest,
 					break;
 
 				case P_STRING:
-					string_set(pserviceDest, 
+					string_set(pserviceDest,
 						   (char **)dest_ptr,
 						   *(char **)src_ptr);
 					break;
 
 				case P_USTRING:
-					string_set(pserviceDest, 
+					string_set(pserviceDest,
 						   (char **)dest_ptr,
 						   *(char **)src_ptr);
 					strupper(*(char **)dest_ptr);
@@ -1325,7 +1325,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 			       (void *)pserviceSource->copymap,
 			       sizeof(int) * NUMPARAMETERS);
 	}
-	
+
 	data = pserviceSource->param_opt;
 	while (data) {
 		not_added = true;
@@ -1335,7 +1335,7 @@ static void copy_service(struct loadparm_service *pserviceDest,
 			/* If we already have same option, override it */
 			if (strcmp(pdata->key, data->key) == 0) {
 				talloc_free(pdata->value);
-				pdata->value = talloc_reference(pdata, 
+				pdata->value = talloc_reference(pdata,
 							     data->value);
 				not_added = false;
 				break;
@@ -1392,11 +1392,11 @@ static bool service_ok(struct loadparm_service *service)
 
 
 /*******************************************************************
- Keep a linked list of all config files so we know when one has changed 
+ Keep a linked list of all config files so we know when one has changed
  it's date and needs to be reloaded.
 ********************************************************************/
 
-static void add_to_file_list(struct loadparm_context *lp_ctx, 
+static void add_to_file_list(struct loadparm_context *lp_ctx,
 			     const char *fname, const char *subfname)
 {
 	struct file_lists *f = lp_ctx->file_lists;
@@ -1466,7 +1466,7 @@ bool lp_file_list_changed(struct loadparm_context *lp_ctx)
  Handle the include operation.
 ***************************************************************************/
 
-static bool handle_include(struct loadparm_context *lp_ctx, 
+static bool handle_include(struct loadparm_context *lp_ctx,
 			   const char *pszParmValue, char **ptr)
 {
 	char *fname = standard_sub_basic(lp_ctx, pszParmValue);
@@ -1487,7 +1487,7 @@ static bool handle_include(struct loadparm_context *lp_ctx,
  Handle the interpretation of the copy parameter.
 ***************************************************************************/
 
-static bool handle_copy(struct loadparm_context *lp_ctx, 
+static bool handle_copy(struct loadparm_context *lp_ctx,
 			const char *pszParmValue, char **ptr)
 {
 	bool bRetval;
@@ -1509,7 +1509,7 @@ static bool handle_copy(struct loadparm_context *lp_ctx,
 			bRetval = true;
 		}
 	} else {
-		DEBUG(0, ("Unable to copy service - source not found: %s\n", 
+		DEBUG(0, ("Unable to copy service - source not found: %s\n",
 			  pszParmValue));
 		bRetval = false;
 	}
@@ -1517,7 +1517,7 @@ static bool handle_copy(struct loadparm_context *lp_ctx,
 	return bRetval;
 }
 
-static bool handle_debuglevel(struct loadparm_context *lp_ctx, 
+static bool handle_debuglevel(struct loadparm_context *lp_ctx,
 			const char *pszParmValue, char **ptr)
 {
 	DEBUGLEVEL = atoi(pszParmValue);
@@ -1525,7 +1525,7 @@ static bool handle_debuglevel(struct loadparm_context *lp_ctx,
 	return true;
 }
 
-static bool handle_logfile(struct loadparm_context *lp_ctx, 
+static bool handle_logfile(struct loadparm_context *lp_ctx,
 			const char *pszParmValue, char **ptr)
 {
 	logfile = pszParmValue;
@@ -1554,9 +1554,9 @@ static void init_copymap(struct loadparm_service *pservice)
 /**
  * Process a parametric option
  */
-static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx, 
-				       struct loadparm_service *service, 
-				       const char *pszParmName, 
+static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
+				       struct loadparm_service *service,
+				       const char *pszParmName,
 				       const char *pszParmValue, int flags)
 {
 	struct param_opt *paramo, *data;
@@ -1611,18 +1611,18 @@ static bool lp_do_parameter_parametric(struct loadparm_context *lp_ctx,
 	}
 
 	free(name);
-	
+
 	return true;
 }
 
-static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr, 
+static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 			 const char *pszParmName, const char *pszParmValue,
 			 struct loadparm_context *lp_ctx)
 {
 	int i;
 	/* if it is a special case then go ahead */
 	if (parm_table[parmnum].special) {
-		parm_table[parmnum].special(lp_ctx, pszParmValue, 
+		parm_table[parmnum].special(lp_ctx, pszParmValue,
 					    (char **)parm_ptr);
 		return true;
 	}
@@ -1664,7 +1664,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 		}
 
 		case P_LIST:
-			*(const char ***)parm_ptr = str_list_make(mem_ctx, 
+			*(const char ***)parm_ptr = str_list_make(mem_ctx,
 								  pszParmValue, NULL);
 			break;
 
@@ -1710,7 +1710,7 @@ static bool set_variable(TALLOC_CTX *mem_ctx, int parmnum, void *parm_ptr,
 }
 
 
-bool lp_do_global_parameter(struct loadparm_context *lp_ctx, 
+bool lp_do_global_parameter(struct loadparm_context *lp_ctx,
 			    const char *pszParmName, const char *pszParmValue)
 {
 	int parmnum = map_parameter(pszParmName);
@@ -1732,12 +1732,12 @@ bool lp_do_global_parameter(struct loadparm_context *lp_ctx,
 
 	parm_ptr = lp_parm_ptr(lp_ctx, NULL, &parm_table[parmnum]);
 
-	return set_variable(lp_ctx, parmnum, parm_ptr, 
+	return set_variable(lp_ctx, parmnum, parm_ptr,
 			    pszParmName, pszParmValue, lp_ctx);
 }
 
-bool lp_do_service_parameter(struct loadparm_context *lp_ctx, 
-			     struct loadparm_service *service, 
+bool lp_do_service_parameter(struct loadparm_context *lp_ctx,
+			     struct loadparm_service *service,
 			     const char *pszParmName, const char *pszParmValue)
 {
 	void *parm_ptr;
@@ -1769,14 +1769,14 @@ bool lp_do_service_parameter(struct loadparm_context *lp_ctx,
 	if (!service->copymap)
 		init_copymap(service);
 
-	/* this handles the aliases - set the copymap for other 
+	/* this handles the aliases - set the copymap for other
 	 * entries with the same data pointer */
 	for (i = 0; parm_table[i].label; i++)
-		if (parm_table[i].offset == parm_table[parmnum].offset && 
+		if (parm_table[i].offset == parm_table[parmnum].offset &&
 		    parm_table[i].class == parm_table[parmnum].class)
 			service->copymap[i] = false;
 
-	return set_variable(service, parmnum, parm_ptr, pszParmName, 
+	return set_variable(service, parmnum, parm_ptr, pszParmName,
 			    pszParmValue, lp_ctx);
 }
 
@@ -1784,15 +1784,15 @@ bool lp_do_service_parameter(struct loadparm_context *lp_ctx,
  * Process a parameter.
  */
 
-static bool do_parameter(const char *pszParmName, const char *pszParmValue, 
+static bool do_parameter(const char *pszParmName, const char *pszParmValue,
 			 void *userdata)
 {
 	struct loadparm_context *lp_ctx = (struct loadparm_context *)userdata;
 
-	if (lp_ctx->bInGlobalSection) 
-		return lp_do_global_parameter(lp_ctx, pszParmName, 
+	if (lp_ctx->bInGlobalSection)
+		return lp_do_global_parameter(lp_ctx, pszParmName,
 					      pszParmValue);
-	else 
+	else
 		return lp_do_service_parameter(lp_ctx, lp_ctx->currentService,
 					       pszParmName, pszParmValue);
 }
@@ -1801,14 +1801,14 @@ static bool do_parameter(const char *pszParmName, const char *pszParmValue,
   variable argument do parameter
 */
 bool lp_do_global_parameter_var(struct loadparm_context *lp_ctx, const char *pszParmName, const char *fmt, ...) PRINTF_ATTRIBUTE(3, 4);
-bool lp_do_global_parameter_var(struct loadparm_context *lp_ctx, 
-				const char *pszParmName, const char *fmt, ...) 
+bool lp_do_global_parameter_var(struct loadparm_context *lp_ctx,
+				const char *pszParmName, const char *fmt, ...)
 {
 	char *s;
 	bool ret;
 	va_list ap;
 
-	va_start(ap, fmt);	
+	va_start(ap, fmt);
 	s = talloc_vasprintf(NULL, fmt, ap);
 	va_end(ap);
 	ret = lp_do_global_parameter(lp_ctx, pszParmName, s);
@@ -1822,7 +1822,7 @@ bool lp_do_global_parameter_var(struct loadparm_context *lp_ctx,
   parsing code. It sets the parameter then marks the parameter as unable to be modified
   by smb.conf processing
 */
-bool lp_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName, 
+bool lp_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 		    const char *pszParmValue)
 {
 	int parmnum = map_parameter(pszParmName);
@@ -1833,7 +1833,7 @@ bool lp_set_cmdline(struct loadparm_context *lp_ctx, const char *pszParmName,
 
 	if (parmnum < 0 && strchr(pszParmName, ':')) {
 		/* set a parametric option */
-		return lp_do_parameter_parametric(lp_ctx, NULL, pszParmName, 
+		return lp_do_parameter_parametric(lp_ctx, NULL, pszParmName,
 						  pszParmValue, FLAG_CMDLINE);
 	}
 
@@ -1926,7 +1926,7 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f)
 		case P_LIST:
 			if ((char ***)ptr && *(char ***)ptr) {
 				char **list = *(char ***)ptr;
-				
+
 				for (; *list; list++)
 					fprintf(f, "%s%s", *list,
 						((*(list+1))?", ":""));
@@ -1959,7 +1959,7 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 			return (*((int *)ptr1) == *((int *)ptr2));
 
 		case P_LIST:
-			return str_list_equal((const char **)(*(char ***)ptr1), 
+			return str_list_equal((const char **)(*(char ***)ptr1),
 					      (const char **)(*(char ***)ptr2));
 
 		case P_STRING:
@@ -1977,11 +1977,11 @@ static bool equal_parameter(parm_type type, void *ptr1, void *ptr2)
 }
 
 /**
- * Process a new section (service). 
+ * Process a new section (service).
  *
  * At this stage all sections are services.
  * Later we'll have special sections that permit server parameters to be set.
- * Returns True on success, False on failure. 
+ * Returns True on success, False on failure.
  */
 
 static bool do_section(const char *pszSectionName, void *userdata)
@@ -2013,7 +2013,7 @@ static bool do_section(const char *pszSectionName, void *userdata)
 		/* issued by the post-processing of a previous section. */
 		DEBUG(2, ("Processing section \"[%s]\"\n", pszSectionName));
 
-		if ((lp_ctx->currentService = lp_add_service(lp_ctx, &sDefault, 
+		if ((lp_ctx->currentService = lp_add_service(lp_ctx, &sDefault,
 							     pszSectionName))
 		    == NULL) {
 			DEBUG(0, ("Failed to add a new service\n"));
@@ -2059,12 +2059,12 @@ static bool is_default(int i)
  *Display the contents of the global structure.
  */
 
-static void dump_globals(struct loadparm_context *lp_ctx, FILE *f, 
+static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 			 bool show_defaults)
 {
 	int i;
 	struct param_opt *data;
-	
+
 	fprintf(f, "# Global parameters\n[global]\n");
 
 	for (i = 0; parm_table[i].label; i++)
@@ -2078,7 +2078,7 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
 			fprintf(f, "\n");
 	}
 	if (lp_ctx->globals->param_opt != NULL) {
-		for (data = lp_ctx->globals->param_opt; data; 
+		for (data = lp_ctx->globals->param_opt; data;
 		     data = data->next) {
 			fprintf(f, "\t%s = %s\n", data->key, data->value);
 		}
@@ -2094,7 +2094,7 @@ static void dump_a_service(struct loadparm_service * pService, FILE * f)
 {
 	int i;
 	struct param_opt *data;
-	
+
 	if (pService != &sDefault)
 		fprintf(f, "\n[%s]\n", pService->szService);
 
@@ -2127,20 +2127,20 @@ static void dump_a_service(struct loadparm_service * pService, FILE * f)
         }
 }
 
-bool lp_dump_a_parameter(struct loadparm_context *lp_ctx, 
-			 struct loadparm_service *service, 
+bool lp_dump_a_parameter(struct loadparm_context *lp_ctx,
+			 struct loadparm_service *service,
 			 const char *parm_name, FILE * f)
 {
 	struct parm_struct *parm;
 	void *ptr;
-	
+
 	parm = lp_parm_struct(parm_name);
 	if (!parm) {
 		return false;
 	}
 
 	ptr = lp_parm_ptr(lp_ctx, service,parm);
-	
+
 	print_parameter(parm, ptr, f);
 	fprintf(f, "\n");
 	return true;
@@ -2199,7 +2199,7 @@ struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum,
 /**
  * Auto-load some home services.
  */
-static void lp_add_auto_services(struct loadparm_context *lp_ctx, 
+static void lp_add_auto_services(struct loadparm_context *lp_ctx,
 				 const char *str)
 {
 	return;
@@ -2210,8 +2210,8 @@ static void lp_add_auto_services(struct loadparm_context *lp_ctx,
  * Unload unused services.
  */
 
-void lp_killunused(struct loadparm_context *lp_ctx, 
-		   struct smbsrv_connection *smb, 
+void lp_killunused(struct loadparm_context *lp_ctx,
+		   struct smbsrv_connection *smb,
 		   bool (*snumused) (struct smbsrv_connection *, int))
 {
 	int i;
@@ -2279,7 +2279,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	}
 
 	lp_do_global_parameter(lp_ctx, "share backend", "classic");
-	
+
 	lp_do_global_parameter(lp_ctx, "server role", "standalone");
 
 	/* options that can be set on the command line must be initialised via
@@ -2315,7 +2315,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	   data from the sam, but for the moment leave it in a tdb to
 	   keep regedt32 from popping up an annoying dialog. */
 	lp_do_global_parameter(lp_ctx, "registry:HKEY_USERS", "hku.ldb");
-	
+
 	/* using UTF8 by default allows us to support all chars */
 	lp_do_global_parameter(lp_ctx, "unix charset", "UTF8");
 
@@ -2333,10 +2333,10 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "ncalrpc dir", dyn_NCALRPCDIR);
 
 	lp_do_global_parameter(lp_ctx, "socket address", "0.0.0.0");
-	lp_do_global_parameter_var(lp_ctx, "server string", 
+	lp_do_global_parameter_var(lp_ctx, "server string",
 				   "Samba %s", SAMBA_VERSION_STRING);
 
-	lp_do_global_parameter_var(lp_ctx, "announce version", "%d.%d", 
+	lp_do_global_parameter_var(lp_ctx, "announce version", "%d.%d",
 			 DEFAULT_MAJOR_VERSION,
 			 DEFAULT_MINOR_VERSION);
 
@@ -2366,7 +2366,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "LanmanAuth", "True");
 	lp_do_global_parameter(lp_ctx, "NTLMAuth", "True");
 	lp_do_global_parameter(lp_ctx, "client use spnego principal", "False");
-	
+
 	lp_do_global_parameter(lp_ctx, "UnixExtensions", "False");
 
 	lp_do_global_parameter(lp_ctx, "PreferredMaster", "Auto");
@@ -2405,7 +2405,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	lp_do_global_parameter(lp_ctx, "tls certfile", "tls/cert.pem");
 	lp_do_global_parameter(lp_ctx, "tls cafile", "tls/ca.pem");
 	lp_do_global_parameter_var(lp_ctx, "js include", "%s", dyn_JSDIR);
-	lp_do_global_parameter_var(lp_ctx, "setup directory", "%s", 
+	lp_do_global_parameter_var(lp_ctx, "setup directory", "%s",
 				   dyn_SETUPDIR);
 
 	lp_do_global_parameter(lp_ctx, "prefork children:smb", "4");
@@ -2430,7 +2430,7 @@ bool lp_load_default(struct loadparm_context *lp_ctx)
 }
 
 /**
- * Load the services array from the services file. 
+ * Load the services array from the services file.
  *
  * Return True on success, False on failure.
  */
@@ -2442,11 +2442,11 @@ bool lp_load(struct loadparm_context *lp_ctx, const char *filename)
 	filename = talloc_strdup(lp_ctx, filename);
 
 	lp_ctx->szConfigFile = filename;
-	
+
 	lp_ctx->bInGlobalSection = true;
 	n2 = standard_sub_basic(lp_ctx, lp_ctx->szConfigFile);
 	DEBUG(2, ("lp_load: refreshing parameters from %s\n", n2));
-	
+
 	add_to_file_list(lp_ctx, lp_ctx->szConfigFile, n2);
 
 	/* We get sections first, so have to start 'behind' to make up */
@@ -2494,7 +2494,7 @@ int lp_numservices(struct loadparm_context *lp_ctx)
  * Display the contents of the services array in human-readable form.
  */
 
-void lp_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults, 
+void lp_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults,
 	     int maxtoprint)
 {
 	int iService;
@@ -2528,14 +2528,14 @@ struct loadparm_service *lp_servicebynum(struct loadparm_context *lp_ctx,
 	return lp_ctx->services[snum];
 }
 
-struct loadparm_service *lp_service(struct loadparm_context *lp_ctx, 
+struct loadparm_service *lp_service(struct loadparm_context *lp_ctx,
 				    const char *service_name)
 {
 	int iService;
         char *serviceName;
 
 	for (iService = lp_ctx->iNumServices - 1; iService >= 0; iService--) {
-		if (lp_ctx->services[iService] && 
+		if (lp_ctx->services[iService] &&
 		    lp_ctx->services[iService]->szService) {
 			/*
 			 * The substitution here is used to support %U is
@@ -2555,7 +2555,7 @@ struct loadparm_service *lp_service(struct loadparm_context *lp_ctx,
 
 
 /**
- * A useful volume label function. 
+ * A useful volume label function.
  */
 const char *volume_label(struct loadparm_service *service)
 {
@@ -2609,10 +2609,10 @@ _PUBLIC_ void reload_charcnv(struct loadparm_context *lp_ctx)
 	lp_ctx->iconv_convenience = smb_iconv_convenience_init_lp(lp_ctx, lp_ctx);
 }
 
-void lp_smbcli_options(struct loadparm_context *lp_ctx, 
+void lp_smbcli_options(struct loadparm_context *lp_ctx,
 			 struct smbcli_options *options)
 {
-	options->max_xmit = lp_max_xmit(lp_ctx); 
+	options->max_xmit = lp_max_xmit(lp_ctx);
 	options->max_mux = lp_maxmux(lp_ctx);
 	options->use_spnego = lp_nt_status_support(lp_ctx) && lp_use_spnego(lp_ctx); 
 	options->signing = lp_client_signing(lp_ctx);

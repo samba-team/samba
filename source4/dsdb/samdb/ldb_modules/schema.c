@@ -1221,7 +1221,7 @@ static int schema_init(struct ldb_module *module)
 	return LDB_SUCCESS;
 }
 
-static const struct ldb_module_ops schema_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_schema_module_ops = {
 	.name          = "schema",
 	.init_context  = schema_init,
 	.add           = schema_add,
@@ -1230,8 +1230,3 @@ static const struct ldb_module_ops schema_ops = {
 	.rename        = schema_rename,
 	.wait          = schema_wait
 };
-
-int ldb_schema_init(void)
-{
-	return ldb_register_module(&schema_ops);
-}

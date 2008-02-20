@@ -100,7 +100,7 @@ sub ParseFunction($$)
 	pidl "";
 	pidl "call = &ndr_table_$if->{NAME}.calls[$op];";
 	pidl "";
-	pidl "r = talloc(NULL, struct $fn->{NAME});";
+	pidl "r = talloc(talloc_tos(), struct $fn->{NAME});";
 	pidl "if (r == NULL) {";
 	pidl "\treturn false;";
 	pidl "}";

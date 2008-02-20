@@ -40,6 +40,10 @@ static const struct {
 	{PROTOCOL_LANMAN2,"Samba"},
 	{PROTOCOL_NT1,"NT LANMAN 1.0"},
 	{PROTOCOL_NT1,"NT LM 0.12"},
+#if 0
+	/* we don't yet handle chaining a SMB transport onto SMB2 */
+	{PROTOCOL_SMB2,"SMB 2.002"},
+#endif
 };
 
 /*
@@ -131,14 +135,14 @@ NTSTATUS smb_raw_negotiate_recv(struct smbcli_request *req)
 			if (req->in.data_size < 16) {
 				goto failed;
 			}
-			transport->negotiate.server_guid = smbcli_req_pull_blob(req, transport, req->in.data, 16);
-			transport->negotiate.secblob = smbcli_req_pull_blob(req, transport, req->in.data + 16, req->in.data_size - 16);
+			transport->negotiate.server_guid = smbcli_req_pull_blob(&req->in.bufinfo, transport, req->in.data, 16);
+			transport->negotiate.secblob = smbcli_req_pull_blob(&req->in.bufinfo, transport, req->in.data + 16, req->in.data_size - 16);
 		} else {
 			if (req->in.data_size < (transport->negotiate.key_len)) {
 				goto failed;
 			}
-			transport->negotiate.secblob = smbcli_req_pull_blob(req, transport, req->in.data, transport->negotiate.key_len);
-			smbcli_req_pull_string(req, transport, &transport->negotiate.server_domain,
+			transport->negotiate.secblob = smbcli_req_pull_blob(&req->in.bufinfo, transport, req->in.data, transport->negotiate.key_len);
+			smbcli_req_pull_string(&req->in.bufinfo, transport, &transport->negotiate.server_domain,
 					    req->in.data+transport->negotiate.key_len,
 					    req->in.data_size-transport->negotiate.key_len, STR_UNICODE|STR_NOALIGN);
 			/* here comes the server name */
@@ -164,7 +168,7 @@ NTSTATUS smb_raw_negotiate_recv(struct smbcli_request *req)
 		if ((SVAL(req->in.vwv,VWV(5)) & 0x2)) {
 			transport->negotiate.writebraw_supported = 1;
 		}
-		transport->negotiate.secblob = smbcli_req_pull_blob(req, transport, 
+		transport->negotiate.secblob = smbcli_req_pull_blob(&req->in.bufinfo, transport, 
 								 req->in.data, req->in.data_size);
 	} else {
 		/* the old core protocol */

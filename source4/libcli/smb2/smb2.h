@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "libcli/raw/request.h"
+
 struct smb2_options {
 	uint32_t timeout;
 };
@@ -102,6 +104,9 @@ struct smb2_request_buffer {
 	 * this will be moved when some dynamic data is pushed
 	 */
 	uint8_t *dynamic;
+
+	/* this is used to range check and align strings and buffers */
+	struct request_bufinfo bufinfo;
 };
 
 
@@ -156,19 +161,20 @@ struct smb2_request {
 
 #define SMB2_MIN_SIZE 0x42
 
-/* offsets into header elements */
+/* offsets into header elements for a sync SMB2 request */
+#define SMB2_HDR_PROTOCOL_ID    0x00
 #define SMB2_HDR_LENGTH		0x04
-#define SMB2_HDR_PAD1		0x06
+#define SMB2_HDR_EPOCH		0x06
 #define SMB2_HDR_STATUS		0x08
 #define SMB2_HDR_OPCODE		0x0c
-#define SMB2_HDR_UNKNOWN1	0x0e
+#define SMB2_HDR_CREDIT 	0x0e
 #define SMB2_HDR_FLAGS		0x10
-#define SMB2_HDR_CHAIN_OFFSET	0x14
-#define SMB2_HDR_SEQNUM		0x18
+#define SMB2_HDR_NEXT_COMMAND	0x14
+#define SMB2_HDR_MESSAGE_ID     0x18
 #define SMB2_HDR_PID		0x20
 #define SMB2_HDR_TID		0x24
-#define SMB2_HDR_UID		0x28 /* 64 bit */
-#define SMB2_HDR_SIG		0x30 /* guess ... */
+#define SMB2_HDR_SESSION_ID	0x28
+#define SMB2_HDR_SIGNATURE	0x30 /* 16 bytes */
 #define SMB2_HDR_BODY		0x40
 
 /* SMB2 opcodes */
@@ -193,6 +199,59 @@ struct smb2_request {
 #define SMB2_OP_BREAK     0x12
 
 #define SMB2_MAGIC 0x424D53FE /* 0xFE 'S' 'M' 'B' */
+
+/* the dialect we support */
+#define SMB2_DIALECT_REVISION           0x202
+
+/* SMB2 negotiate security_mode */
+#define SMB2_NEGOTIATE_SIGNING_ENABLED   0x01
+#define SMB2_NEGOTIATE_SIGNING_REQUIRED  0x02
+
+/* SMB2 capabilities - only 1 so far. I'm sure more will be added */
+#define SMB2_CAP_DFS                     0x0
+/* so we can spot new caps as added */
+#define SMB2_CAP_ALL                     SMB2_CAP_DFS 
+
+/* SMB2 share flags */
+#define SMB2_SHAREFLAG_MANUAL_CACHING                    0x0000
+#define SMB2_SHAREFLAG_AUTO_CACHING                      0x0010
+#define SMB2_SHAREFLAG_VDO_CACHING                       0x0020
+#define SMB2_SHAREFLAG_NO_CACHING                        0x0030
+#define SMB2_SHAREFLAG_DFS                               0x0001
+#define SMB2_SHAREFLAG_DFS_ROOT                          0x0002
+#define SMB2_SHAREFLAG_RESTRICT_EXCLUSIVE_OPENS          0x0100
+#define SMB2_SHAREFLAG_FORCE_SHARED_DELETE               0x0200
+#define SMB2_SHAREFLAG_ALLOW_NAMESPACE_CACHING           0x0400
+#define SMB2_SHAREFLAG_ACCESS_BASED_DIRECTORY_ENUM       0x0800
+#define SMB2_SHAREFLAG_ALL                               0x0F33
+
+/* SMB2 create security flags */
+#define SMB2_SECURITY_DYNAMIC_TRACKING                   0x01
+#define SMB2_SECURITY_EFFECTIVE_ONLY                     0x02
+
+/* SMB2 requested oplock levels */
+#define SMB2_OPLOCK_LEVEL_NONE                           0x00
+#define SMB2_OPLOCK_LEVEL_II                             0x01
+#define SMB2_OPLOCK_LEVEL_EXCLUSIVE                      0x08
+#define SMB2_OPLOCK_LEVEL_BATCH                          0x09
+
+/* SMB2 impersonation levels */
+#define SMB2_IMPERSONATION_ANONYMOUS                     0x00
+#define SMB2_IMPERSONATION_IDENTIFICATION                0x01
+#define SMB2_IMPERSONATION_IMPERSONATION                 0x02
+#define SMB2_IMPERSONATION_DELEGATE                      0x03
+
+/* SMB2 create tags */
+#define SMB2_CREATE_TAG_EXTA "ExtA"
+#define SMB2_CREATE_TAG_MXAC "MxAc"
+#define SMB2_CREATE_TAG_SECD "SecD"
+#define SMB2_CREATE_TAG_DHNQ "DHnQ"
+#define SMB2_CREATE_TAG_DHNC "DHnC"
+#define SMB2_CREATE_TAG_ALSI "AlSi"
+#define SMB2_CREATE_TAG_TWRP "TWrp"
+#define SMB2_CREATE_TAG_QFID "QFid"
+
+
 
 /*
   check that a body has the expected size

@@ -23,30 +23,31 @@
 
 struct smb2_negprot {
 	struct {
-		/* static body buffer 38 (0x26) bytes */
-		/* uint16_t buffer_code;  0x24 (why?) */
-		uint16_t unknown1;    /* 0x0001 */
-		uint8_t  unknown2[32]; /* all zero */
-		uint16_t unknown3; /* 0x00000 */
+		uint16_t dialect_count;    /* size of dialects array */
+		uint16_t security_mode;    /* 0==signing disabled   
+					      1==signing enabled */
+		uint16_t reserved;
+		uint32_t capabilities;
+		struct GUID client_guid;
+		NTTIME   start_time;
+		uint16_t *dialects;
 	} in;
 	struct {
 		/* static body buffer 64 (0x40) bytes */
 		/* uint16_t buffer_code;  0x41 = 0x40 + 1 */
-		uint16_t _pad;
-		uint32_t unknown2; /* 0x06 */
-		uint8_t  sessid[16];
-		uint32_t unknown3; /* 0x0d */
-		uint16_t unknown4; /* 0x00 */
-		uint32_t unknown5; /* 0x01 */
-		uint32_t unknown6; /* 0x01 */
-		uint16_t unknown7; /* 0x01 */
-		NTTIME   current_time;
-		NTTIME   boot_time;
+		uint16_t security_mode; /* SMB2_NEGOTIATE_SIGNING_* */
+		uint16_t dialect_revision;
+		uint16_t reserved;
+		struct GUID server_guid;
+		uint32_t capabilities;
+		uint32_t max_transact_size;
+		uint32_t max_read_size;
+		uint32_t max_write_size;
+		NTTIME   system_time;
+		NTTIME   server_start_time;
 		/* uint16_t secblob_ofs */
 		/* uint16_t secblob_size */
-		uint32_t unknown9; /* 0x204d4c20 */
-
-		/* dynamic body buffer */
+		uint32_t reserved2;
 		DATA_BLOB secblob;
 	} out;
 };
@@ -55,6 +56,13 @@ struct smb2_negprot {
 #define SMB2_GETINFO_FILE               0x01
 #define SMB2_GETINFO_FS                 0x02
 #define SMB2_GETINFO_SECURITY           0x03
+#define SMB2_GETINFO_QUOTA              0x04
+
+#define SMB2_GETINFO_ADD_OWNER_SECURITY 0x01
+#define SMB2_GETINFO_ADD_GROUP_SECURITY 0x02
+#define SMB2_GETINFO_ADD_DACL_SECURITY  0x04
+#define SMB2_GETINFO_ADD_SACL_SECURITY  0x08
+#define SMB2_GETINFO_ADD_LABEL_SECURITY 0x10
 
 /* NOTE! the getinfo fs and file levels exactly match up with the
    'passthru' SMB levels, which are levels >= 1000. The SMB2 client
@@ -63,14 +71,17 @@ struct smb2_negprot {
 struct smb2_getinfo {
 	struct {
 		/* static body buffer 40 (0x28) bytes */
-		/* uint16_t buffer_code;  0x29 = 0x28 + 1 (why???) */
-		uint16_t level;
-		uint32_t max_response_size;
-		uint32_t unknown1;
-		uint32_t unknown2;
-		uint32_t flags; /* level specific */
-		uint32_t flags2; /* used by all_eas level */
+		/* uint16_t buffer_code;  0x29 = 0x28 + 1 */
+		uint8_t info_type;
+		uint8_t info_class;
+		uint32_t output_buffer_length;
+		/* uint32_t input_buffer_offset; */
+		uint32_t reserved;
+		uint32_t input_buffer_length;
+		uint32_t additional_information; /* SMB2_GETINFO_ADD_* */
+		uint32_t getinfo_flags; /* level specific */
 		union smb_handle file;
+		DATA_BLOB blob;
 	} in;
 
 	struct {

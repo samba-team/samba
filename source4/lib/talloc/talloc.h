@@ -116,6 +116,7 @@ typedef void TALLOC_CTX;
 
 /* The following definitions come from talloc.c  */
 void *_talloc(const void *context, size_t size);
+void *talloc_pool(const void *context, size_t size);
 void _talloc_set_destructor(const void *ptr, int (*destructor)(void *));
 int talloc_increase_ref_count(const void *ptr);
 size_t talloc_reference_count(const void *ptr);

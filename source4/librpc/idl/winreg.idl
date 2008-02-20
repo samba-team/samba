@@ -2,7 +2,7 @@
   winreg interface definition
 */
 
-import "lsa.idl", "initshutdown.idl", "security.idl";
+import "lsa.idl", "security.idl";
 
 [ 
   uuid("338cd001-2244-31f1-aaaa-900038001003"),
@@ -302,7 +302,11 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/* Function: 0x18 */
 	WERROR winreg_InitiateSystemShutdown(
 		[in,unique] uint16 *hostname,
-		[in,unique] initshutdown_String *message,
+		/*
+		 * Note: lsa_String and winreg_String both result
+		 *       in WERR_INVALID_PARAM
+		 */
+		[in,unique] lsa_StringLarge *message,
 		[in]	uint32 timeout,
 		[in]	uint8 force_apps,
 		[in]	uint8 reboot
@@ -358,7 +362,11 @@ import "lsa.idl", "initshutdown.idl", "security.idl";
 	/* Function: 0x1e */
 	WERROR winreg_InitiateSystemShutdownEx(
 		[in,unique] uint16 *hostname,
-		[in,unique] initshutdown_String *message,
+		/*
+		 * Note: lsa_String and winreg_String both result
+		 *       in WERR_INVALID_PARAM
+		 */
+		[in,unique] lsa_StringLarge *message,
 		[in] uint32 timeout,
 		[in] uint8 force_apps,
 		[in] uint8 reboot,

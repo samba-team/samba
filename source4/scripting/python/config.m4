@@ -54,7 +54,7 @@ fi
 
 if test x$PYTHON != x
 then
-	DISTUTILS_CFLAGS=`$PYTHON -c "from distutils import sysconfig; print '-I%s -I%s %s' % (sysconfig.get_python_inc(), sysconfig.get_python_inc(plat_specific=True), sysconfig.get_config_var('CFLAGS'))"`
+	DISTUTILS_CFLAGS=`$PYTHON -c "from distutils import sysconfig; print '-I%s -I%s %s' % (sysconfig.get_python_inc(), sysconfig.get_python_inc(plat_specific=1), sysconfig.get_config_var('CFLAGS'))"`
 	DISTUTILS_LDFLAGS=`$PYTHON -c "from distutils import sysconfig; print '%s %s -lpython%s -L%s' % (sysconfig.get_config_var('LIBS'), sysconfig.get_config_var('SYSLIBS'), sysconfig.get_config_var('VERSION'), sysconfig.get_config_var('LIBPL'))"`
 	TRY_LINK_PYTHON($DISTUTILS_LDFLAGS, $DISTUTILS_CFLAGS)
 fi
@@ -66,12 +66,8 @@ if test $working_python = yes; then
 	SMB_ENABLE(EXT_LIB_PYTHON,YES)
 	SMB_ENABLE(smbpython,YES)
 	SMB_ENABLE(LIBPYTHON,YES)
-	dnl AC_DEFINE(HAVE_WORKING_PYTHON, 1, [Whether we have working python support])
 	AC_MSG_RESULT([yes])
 else
-	SMB_ENABLE(EXT_LIB_PYTHON,NO)
-	SMB_ENABLE(LIBPYTHONyy,NO)
-	SMB_ENABLE(smbpython,NO)
-	AC_MSG_RESULT([no])
+	AC_MSG_ERROR([Python not found. Please install Python 2.x and its development headers/libraries.])
 fi
 

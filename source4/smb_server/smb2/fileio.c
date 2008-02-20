@@ -34,7 +34,8 @@ static void smb2srv_create_send(struct ntvfs_request *ntvfs)
 	SMB2SRV_CHECK_ASYNC_STATUS(io, union smb_open);
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x58, true, io->smb2.out.blob.length));
 
-	SSVAL(req->out.body,	0x02,	io->smb2.out.oplock_flags);
+	SCVAL(req->out.body,	0x02,	io->smb2.out.oplock_level);
+	SCVAL(req->out.body,	0x03,	io->smb2.out.reserved);
 	SIVAL(req->out.body,	0x04,	io->smb2.out.create_action);
 	SBVAL(req->out.body,	0x08,	io->smb2.out.create_time);
 	SBVAL(req->out.body,	0x10,	io->smb2.out.access_time);
@@ -43,7 +44,7 @@ static void smb2srv_create_send(struct ntvfs_request *ntvfs)
 	SBVAL(req->out.body,	0x28,	io->smb2.out.alloc_size);
 	SBVAL(req->out.body,	0x30,	io->smb2.out.size);
 	SIVAL(req->out.body,	0x38,	io->smb2.out.file_attr);
-	SIVAL(req->out.body,	0x3C,	io->smb2.out._pad);
+	SIVAL(req->out.body,	0x3C,	io->smb2.out.reserved2);
 	smb2srv_push_handle(req->out.body, 0x40, io->smb2.out.file.ntvfs);
 	SMB2SRV_CHECK(smb2_push_o32s32_blob(&req->out, 0x50, io->smb2.out.blob));
 
@@ -64,21 +65,25 @@ void smb2srv_create_recv(struct smb2srv_request *req)
 	SMB2SRV_SETUP_NTVFS_REQUEST(smb2srv_create_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->smb2.level			= RAW_OPEN_SMB2;
-	io->smb2.in.oplock_flags	= SVAL(req->in.body, 0x02);
-	io->smb2.in.impersonation	= IVAL(req->in.body, 0x04);
-	io->smb2.in.unknown3[0]		= IVAL(req->in.body, 0x08);
-	io->smb2.in.unknown3[1]		= IVAL(req->in.body, 0x0C);
-	io->smb2.in.unknown3[2]		= IVAL(req->in.body, 0x10);
-	io->smb2.in.unknown3[3]		= IVAL(req->in.body, 0x14);
-	io->smb2.in.access_mask		= IVAL(req->in.body, 0x18);
-	io->smb2.in.file_attr		= IVAL(req->in.body, 0x1C);
+	io->smb2.in.security_flags	= CVAL(req->in.body, 0x02);
+	io->smb2.in.oplock_level	= CVAL(req->in.body, 0x03);
+	io->smb2.in.impersonation_level	= IVAL(req->in.body, 0x04);
+	io->smb2.in.create_flags	= BVAL(req->in.body, 0x08);
+	io->smb2.in.reserved		= BVAL(req->in.body, 0x10);
+	io->smb2.in.desired_access	= IVAL(req->in.body, 0x18);
+	io->smb2.in.file_attributes	= IVAL(req->in.body, 0x1C);
 	io->smb2.in.share_access	= IVAL(req->in.body, 0x20);
-	io->smb2.in.open_disposition	= IVAL(req->in.body, 0x24);
+	io->smb2.in.create_disposition	= IVAL(req->in.body, 0x24);
 	io->smb2.in.create_options	= IVAL(req->in.body, 0x28);
 	SMB2SRV_CHECK(smb2_pull_o16s16_string(&req->in, io, req->in.body+0x2C, &io->smb2.in.fname));
 	SMB2SRV_CHECK(smb2_pull_o32s32_blob(&req->in, io, req->in.body+0x30, &blob));
 	/* TODO: parse the blob */
 	ZERO_STRUCT(io->smb2.in.eas);
+
+	/* the VFS backend does not yet handle NULL filenames */
+	if (io->smb2.in.fname == NULL) {
+		io->smb2.in.fname = "";
+	}
 
 	SMB2SRV_CALL_NTVFS_BACKEND(ntvfs_open(req->ntvfs, io));
 }

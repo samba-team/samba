@@ -44,7 +44,7 @@ my $name = "samba4";
 my $only;
 if (defined($subsys)) {
 	my $DEPEND = smb_build::input::check($INPUT, \%config::enabled, 
-		"STATIC_LIBRARY", "SHARED_LIBRARY", "SHARED_LIBRARY");
+		"MERGED_OBJ", "SHARED_LIBRARY", "SHARED_LIBRARY");
 
 	die("No such subsystem $subsys") unless (defined($DEPEND->{$subsys}));
 

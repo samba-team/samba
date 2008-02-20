@@ -829,7 +829,7 @@ static const struct auth_operations unix_ops = {
 	.check_password	= authunix_check_password
 };
 
-NTSTATUS auth_unix_init(void)
+_PUBLIC_ NTSTATUS auth_unix_init(void)
 {
 	NTSTATUS ret;
 

@@ -1,5 +1,6 @@
+source/pidl/Makefile
+source/mkconfig.mk
 source/test-results
-source/lib/gencache/gencache.h
 source/lib/ldb/bin
 *.pc
 autom4te.cache
@@ -9,7 +10,6 @@ autom4te.cache
 *.hd
 *.ho
 *.pyc
-Makefile
 configure
 source/bin/*
 config.log
@@ -115,7 +115,6 @@ source/smb_server/smb2/smb2_proto.h
 source/smbd/process_model_proto.h
 source/smbd/service_proto.h
 source/torture/proto.h
-source/torture/util.h
 source/torture/auth/proto.h
 source/torture/basic/proto.h
 source/torture/ldap/proto.h
@@ -193,3 +192,7 @@ source/lib/util/apidocs
 source/lib/util/util_ldb.h
 source/libcli/ldap/ldap_ndr.h
 source/libcli/resolve/lp_proto.h
+source/apidocs
+*.swp
+source/mkconfig.mk
+source/data.mk

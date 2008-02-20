@@ -28,6 +28,21 @@
 #include "libcli/smb2/smb2_calls.h"
 #include "param/param.h"
 
+/* fill in the bufinfo */
+void smb2_setup_bufinfo(struct smb2_request *req)
+{
+	req->in.bufinfo.mem_ctx    = req;
+	req->in.bufinfo.flags      = BUFINFO_FLAG_UNICODE | BUFINFO_FLAG_SMB2;
+	req->in.bufinfo.align_base = req->in.buffer;
+	if (req->in.dynamic) {
+		req->in.bufinfo.data       = req->in.dynamic;
+		req->in.bufinfo.data_size  = req->in.body_size - req->in.body_fixed;
+	} else {
+		req->in.bufinfo.data       = NULL;
+		req->in.bufinfo.data_size  = 0;
+	}
+}
+
 /*
   initialise a smb2 request
 */
@@ -83,17 +98,17 @@ struct smb2_request *smb2_request_init(struct smb2_transport *transport, uint16_
 
 	SIVAL(req->out.hdr, 0,				SMB2_MAGIC);
 	SSVAL(req->out.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
-	SSVAL(req->out.hdr, SMB2_HDR_PAD1,		0);
+	SSVAL(req->out.hdr, SMB2_HDR_EPOCH,		0);
 	SIVAL(req->out.hdr, SMB2_HDR_STATUS,		0);
 	SSVAL(req->out.hdr, SMB2_HDR_OPCODE,		opcode);
-	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,		0);
+	SSVAL(req->out.hdr, SMB2_HDR_CREDIT,		0);
 	SIVAL(req->out.hdr, SMB2_HDR_FLAGS,		0);
-	SIVAL(req->out.hdr, SMB2_HDR_CHAIN_OFFSET,	0);
-	SBVAL(req->out.hdr, SMB2_HDR_SEQNUM,		req->seqnum);
+	SIVAL(req->out.hdr, SMB2_HDR_NEXT_COMMAND,	0);
+	SBVAL(req->out.hdr, SMB2_HDR_MESSAGE_ID,		req->seqnum);
 	SIVAL(req->out.hdr, SMB2_HDR_PID,		0);
 	SIVAL(req->out.hdr, SMB2_HDR_TID,		0);
-	SBVAL(req->out.hdr, SMB2_HDR_UID,		0);
-	memset(req->out.hdr+SMB2_HDR_SIG, 0, 16);
+	SBVAL(req->out.hdr, SMB2_HDR_SESSION_ID,		0);
+	memset(req->out.hdr+SMB2_HDR_SIGNATURE, 0, 16);
 
 	/* set the length of the fixed body part and +1 if there's a dynamic part also */
 	SSVAL(req->out.body, 0, body_fixed_size + (body_dynamic_size?1:0));
@@ -122,7 +137,7 @@ struct smb2_request *smb2_request_init_tree(struct smb2_tree *tree, uint16_t opc
 						     body_dynamic_size);
 	if (req == NULL) return NULL;
 
-	SBVAL(req->out.hdr,  SMB2_HDR_UID, tree->session->uid);
+	SBVAL(req->out.hdr,  SMB2_HDR_SESSION_ID, tree->session->uid);
 	SIVAL(req->out.hdr,  SMB2_HDR_TID, tree->tid);
 	req->session = tree->session;
 	req->tree = tree;
@@ -191,6 +206,10 @@ bool smb2_request_is_ok(struct smb2_request *req)
 */
 bool smb2_oob(struct smb2_request_buffer *buf, const uint8_t *ptr, size_t size)
 {
+	if (size == 0) {
+		/* zero bytes is never out of range */
+		return false;
+	}
 	/* be careful with wraparound! */
 	if (ptr < buf->body ||
 	    ptr >= buf->body + buf->body_size ||
@@ -255,7 +274,7 @@ NTSTATUS smb2_pull_o16s16_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 	}
 	ofs  = SVAL(ptr, 0);
 	size = SVAL(ptr, 2);
-	if (ofs == 0 || size == 0) {
+	if (ofs == 0) {
 		*blob = data_blob(NULL, 0);
 		return NT_STATUS_OK;
 	}
@@ -295,7 +314,10 @@ NTSTATUS smb2_push_o16s16_blob(struct smb2_request_buffer *buf,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if (blob.length == 0) {
+	if (blob.data == NULL) {
+		if (blob.length != 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		SSVAL(ptr, 0, 0);
 		SSVAL(ptr, 2, 0);
 		return NT_STATUS_OK;
@@ -348,7 +370,10 @@ NTSTATUS smb2_push_o16s32_blob(struct smb2_request_buffer *buf,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if (blob.length == 0) {
+	if (blob.data == NULL) {
+		if (blob.length != 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		SSVAL(ptr, 0, 0);
 		SIVAL(ptr, 2, 0);
 		return NT_STATUS_OK;
@@ -401,7 +426,10 @@ NTSTATUS smb2_push_o32s32_blob(struct smb2_request_buffer *buf,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if (blob.length == 0) {
+	if (blob.data == NULL) {
+		if (blob.length != 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		SIVAL(ptr, 0, 0);
 		SIVAL(ptr, 4, 0);
 		return NT_STATUS_OK;
@@ -454,7 +482,10 @@ NTSTATUS smb2_push_s32o32_blob(struct smb2_request_buffer *buf,
 		return NT_STATUS_BUFFER_TOO_SMALL;
 	}
 
-	if (blob.length == 0) {
+	if (blob.data == NULL) {
+		if (blob.length != 0) {
+			return NT_STATUS_INTERNAL_ERROR;
+		}
 		SIVAL(ptr, 0, 0);
 		SIVAL(ptr, 4, 0);
 		return NT_STATUS_OK;
@@ -497,7 +528,7 @@ NTSTATUS smb2_pull_o16s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 	}
 	ofs  = SVAL(ptr, 0);
 	size = IVAL(ptr, 2);
-	if (ofs == 0 || size == 0) {
+	if (ofs == 0) {
 		*blob = data_blob(NULL, 0);
 		return NT_STATUS_OK;
 	}
@@ -521,7 +552,34 @@ NTSTATUS smb2_pull_o32s32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 	}
 	ofs  = IVAL(ptr, 0);
 	size = IVAL(ptr, 4);
-	if (ofs == 0 || size == 0) {
+	if (ofs == 0) {
+		*blob = data_blob(NULL, 0);
+		return NT_STATUS_OK;
+	}
+	if (smb2_oob(buf, buf->hdr + ofs, size)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	*blob = data_blob_talloc(mem_ctx, buf->hdr + ofs, size);
+	NT_STATUS_HAVE_NO_MEMORY(blob->data);
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a uint16_t ofs/ uint32_t length/blob triple from a data blob
+  the ptr points to the start of the offset/length pair
+  
+  In this varient the uint16_t is padded by an extra 2 bytes, making
+  the size aligned on 4 byte boundary
+*/
+NTSTATUS smb2_pull_o16As32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_ctx, uint8_t *ptr, DATA_BLOB *blob)
+{
+	uint32_t ofs, size;
+	if (smb2_oob(buf, ptr, 8)) {
+		return NT_STATUS_BUFFER_TOO_SMALL;
+	}
+	ofs  = SVAL(ptr, 0);
+	size = IVAL(ptr, 4);
+	if (ofs == 0) {
 		*blob = data_blob(NULL, 0);
 		return NT_STATUS_OK;
 	}
@@ -545,7 +603,7 @@ NTSTATUS smb2_pull_s32o32_blob(struct smb2_request_buffer *buf, TALLOC_CTX *mem_
 	}
 	size = IVAL(ptr, 0);
 	ofs  = IVAL(ptr, 4);
-	if (ofs == 0 || size == 0) {
+	if (ofs == 0) {
 		*blob = data_blob(NULL, 0);
 		return NT_STATUS_OK;
 	}
@@ -571,6 +629,11 @@ NTSTATUS smb2_pull_o16s16_string(struct smb2_request_buffer *buf, TALLOC_CTX *me
 
 	status = smb2_pull_o16s16_blob(buf, mem_ctx, ptr, &blob);
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	if (blob.data == NULL) {
+		*str = NULL;
+		return NT_STATUS_OK;
+	}
 
 	if (blob.length == 0) {
 		char *s;
@@ -601,8 +664,14 @@ NTSTATUS smb2_push_o16s16_string(struct smb2_request_buffer *buf,
 	NTSTATUS status;
 	ssize_t size;
 
-	if (strcmp("", str) == 0) {
+	if (str == NULL) {
 		return smb2_push_o16s16_blob(buf, ofs, data_blob(NULL, 0));
+	}
+
+	if (*str == 0) {
+		blob.data = str;
+		blob.length = 0;
+		return smb2_push_o16s16_blob(buf, ofs, blob);
 	}
 
 	size = convert_string_talloc(buf->buffer, lp_iconv_convenience(global_loadparm), CH_UNIX, CH_UTF16, 

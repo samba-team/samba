@@ -1,21 +1,21 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
 
    common share info functions
 
    Copyright (C) Andrew Tridgell 2004
    Copyright (C) Tim Potter 2004
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -56,7 +56,7 @@ int gendb_search_v(struct ldb_context *ldb,
 	if (ret == LDB_SUCCESS) {
 		talloc_steal(mem_ctx, res->msgs);
 
-		DEBUG(6,("gendb_search_v: %s %s -> %d\n", 
+		DEBUG(6,("gendb_search_v: %s %s -> %d\n",
 			 basedn?ldb_dn_get_linearized(basedn):"NULL",
 			 expr?expr:"NULL", res->count));
 
@@ -67,7 +67,8 @@ int gendb_search_v(struct ldb_context *ldb,
 		ret = 0;
 		*msgs = NULL;
 	} else {
-		DEBUG(4,("gendb_search_v: search failed: %s", ldb_errstring(ldb)));
+		DEBUG(4,("gendb_search_v: search failed: %s\n",
+					ldb_errstring(ldb)));
 		ret = -1;
 	}
 
@@ -80,7 +81,7 @@ int gendb_search_v(struct ldb_context *ldb,
   search the LDB for the specified attributes - varargs variant
 */
 int gendb_search(struct ldb_context *ldb,
-		 TALLOC_CTX *mem_ctx, 
+		 TALLOC_CTX *mem_ctx,
 		 struct ldb_dn *basedn,
 		 struct ldb_message ***res,
 		 const char * const *attrs,
@@ -101,7 +102,7 @@ int gendb_search(struct ldb_context *ldb,
 */
 
 int gendb_search_dn(struct ldb_context *ldb,
-		 TALLOC_CTX *mem_ctx, 
+		 TALLOC_CTX *mem_ctx,
 		 struct ldb_dn *dn,
 		 struct ldb_message ***res,
 		 const char * const *attrs)

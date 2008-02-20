@@ -1,8 +1,8 @@
 # auth server subsystem
-include gensec/config.mk
-include kerberos/config.mk
-include ntlmssp/config.mk
-include credentials/config.mk
+mkinclude gensec/config.mk
+mkinclude kerberos/config.mk
+mkinclude ntlmssp/config.mk
+mkinclude credentials/config.mk
 
 [SUBSYSTEM::auth_session]
 OBJ_FILES = session.o

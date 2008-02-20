@@ -46,8 +46,15 @@ sub start_testsuite($$)
 	my $out = "";
 	$out .= "[$self->{index}/$self->{totalsuites} in ".$duration."s";
 	$out .= sprintf(", %d errors", ($#{$self->{suitesfailed}}+1)) if ($#{$self->{suitesfailed}} > -1);
-	$out .= "] $name\n", 
-	print "$out";
+	$out .= "] $name"; 
+	if ($self->{immediate}) {
+		print "$out\n";
+	} else {
+		require Term::ReadKey;
+		my ($wchar, $hchar, $wpixels, $hpixels) = Term::ReadKey::GetTerminalSize();
+		foreach (1..$wchar) { $out.= " "; }
+		print "\r".substr($out, 0, $wchar);
+	}
 }
 
 sub output_msg($$)

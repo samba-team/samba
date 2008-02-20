@@ -73,7 +73,7 @@ static void continue_session(struct composite_context *creq)
 	state->tree = smb2_tree_init(state->session, state, true);
 	if (composite_nomem(state->tree, c)) return;
 
-	state->tcon.in.unknown1 = 0x09;
+	state->tcon.in.reserved = 0;
 	state->tcon.in.path     = talloc_asprintf(state, "\\\\%s\\%s", 
 						  state->host, state->share);
 	if (composite_nomem(state->tcon.in.path, c)) return;
@@ -120,6 +120,7 @@ static void continue_socket(struct composite_context *creq)
 	struct smbcli_socket *sock;
 	struct smb2_transport *transport;
 	struct smb2_request *req;
+	uint16_t dialects[1];
 
 	c->status = smbcli_sock_connect_recv(creq, state, &sock);
 	if (!composite_is_ok(c)) return;
@@ -128,7 +129,12 @@ static void continue_socket(struct composite_context *creq)
 	if (composite_nomem(transport, c)) return;
 
 	ZERO_STRUCT(state->negprot);
-	state->negprot.in.unknown1 = 0x0001;
+	state->negprot.in.dialect_count = 1;
+	state->negprot.in.security_mode = 0;
+	state->negprot.in.capabilities  = 0;
+	unix_to_nt_time(&state->negprot.in.start_time, time(NULL));
+	dialects[0] = SMB2_DIALECT_REVISION;
+	state->negprot.in.dialects = dialects;
 
 	req = smb2_negprot_send(transport, &state->negprot);
 	if (composite_nomem(req, c)) return;

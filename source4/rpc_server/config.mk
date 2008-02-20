@@ -108,7 +108,7 @@ PRIVATE_DEPENDENCIES = \
 [MODULE::dcerpc_winreg]
 INIT_FUNCTION = dcerpc_server_winreg_init
 SUBSYSTEM = dcerpc_server
-OUTPUT_TYPE = INTEGRATED
+OUTPUT_TYPE = MERGED_OBJ
 OBJ_FILES = \
 		winreg/rpc_winreg.o
 PRIVATE_DEPENDENCIES = \
@@ -155,7 +155,7 @@ PRIVATE_DEPENDENCIES = \
 [MODULE::dcerpc_spoolss]
 INIT_FUNCTION = dcerpc_server_spoolss_init
 SUBSYSTEM = dcerpc_server
-OUTPUT_TYPE = INTEGRATED
+OUTPUT_TYPE = MERGED_OBJ
 OBJ_FILES = \
 		spoolss/dcesrv_spoolss.o
 PRIVATE_DEPENDENCIES = \

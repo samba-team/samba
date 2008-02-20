@@ -85,7 +85,8 @@ interface drsblobs {
 	 * w2k3 uses version 1
 	 */
 	typedef [public,gensize] struct {
-		asclstr dns_name;
+		[value(strlen(dns_name)+1)] uint32 __dns_name_size;
+		[charset(DOS)] uint8 dns_name[__dns_name_size];
 	} repsFromTo1OtherInfo;
 
 	typedef [public,gensize,flag(NDR_PAHEX)] struct {

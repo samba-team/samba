@@ -1611,7 +1611,7 @@ sub ParseUnionPushPrimitives($$$)
 		if ($el->{CASE} eq "default") {
 			$have_default = 1;
 		}
-		$self->pidl("$el->{CASE}:");
+		$self->pidl("$el->{CASE}: {");
 
 		if ($el->{TYPE} ne "EMPTY") {
 			$self->indent;
@@ -1625,7 +1625,7 @@ sub ParseUnionPushPrimitives($$$)
 			$self->ParseElementPush($el, "ndr", {$el->{NAME} => "$varname->$el->{NAME}"}, 1, 0);
 			$self->deindent;
 		}
-		$self->pidl("break;");
+		$self->pidl("break; }");
 		$self->pidl("");
 	}
 	if (! $have_default) {
@@ -2149,9 +2149,9 @@ sub ParseFunctionPull($$)
 			$self->pidl("NDR_PULL_ALLOC_N(ndr, r->out.$e->{NAME}, $size);");
 
 			if (grep(/in/, @{$e->{DIRECTION}})) {
-				$self->pidl("memcpy(r->out.$e->{NAME}, r->in.$e->{NAME}, $size * sizeof(*r->in.$e->{NAME}));");
+				$self->pidl("memcpy(r->out.$e->{NAME}, r->in.$e->{NAME}, ($size) * sizeof(*r->in.$e->{NAME}));");
 			} else {
-				$self->pidl("memset(r->out.$e->{NAME}, 0, $size * sizeof(*r->out.$e->{NAME}));");
+				$self->pidl("memset(r->out.$e->{NAME}, 0, ($size) * sizeof(*r->out.$e->{NAME}));");
 			}
 		} else {
 			$self->pidl("NDR_PULL_ALLOC(ndr, r->out.$e->{NAME});");

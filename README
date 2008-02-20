@@ -1,3 +1,6 @@
+Readme for Samba 4
+==================
+
 Samba 4 is the ambitious next version of the Samba suite that is being
 developed in parallel to the stable 3.0 series. The main emphasis in
 this branch is support for the Active Directory logon protocols used
@@ -15,8 +18,8 @@ Technology Preview (TP), aimed at allowing you, our users, managers and
 developers to see how we have progressed, and to invite your feedback and
 support.
 
-WARNINGS
-========
+Warnings
+--------
 
 Samba4 is currently at alpha stage.  That is more a reference to
 Samba4's lack of the features we expect you will need than a statement
@@ -58,8 +61,8 @@ logged in user, much as Samba3 does.
 As such, we must strongly recommend against using Samba4 in a
 production environment at this stage.
 
-NEW FEATURES
-============
+New Features
+------------
 
 Samba4 supports the server-side of the Active Directory logon environment
 used by Windows 2000 and later, so we can do full domain join
@@ -93,20 +96,20 @@ working on modules to map between AD-like behaviours and this back-end.
 We are aiming for Samba 4 to be powerful front-end to large
 directories.
 
-CHANGES
-=======
+Changes
+-------
 
 Those familiar with Samba 3 can find a list of user-visible changes
 since that release series in the NEWS file.
 
- - An optional password is no longer supported as the second argument to
-   smbclient.
+- An optional password is no longer supported as the second argument to
+  smbclient.
 
- - The default location of smb.conf in non-FHS builds has changed from the
-   PREFIX/lib directory to the PREFIX/etc directory.
+- The default location of smb.conf in non-FHS builds has changed from the
+  PREFIX/lib directory to the PREFIX/etc directory.
 
-KNOWN ISSUES
-============
+Known issues
+------------
 
 - Standalone server and domain member roles are not currently
   supported.  While we have much of the infrastructure required, we
@@ -117,14 +120,15 @@ KNOWN ISSUES
 - SWAT can be painful with <TAB> and forms.  Just use the mouse, as
   the JavaScript layer doing this will change.
 
-RUNNING Samba4
-==============
+Running Samba4
+--------------
 
 A short guide to setting up Samba 4 can be found in the howto.txt file
 in root of the tarball.
 
-DEVELOPMENT and FEEDBACK
-========================
+Development and feedback
+------------------------
+
 Bugs can be filed at https://bugzilla.samba.org/. Please
 look at the STATUS file before filing a bug to see if a particular
 is supposed to work yet.
@@ -133,5 +137,4 @@ Development and general discussion about Samba 4 happens mainly on
 the #samba-technical IRC channel (on irc.freenode.net) and
 the samba-technical mailing list (see http://lists.samba.org/ for
 details).
-
 

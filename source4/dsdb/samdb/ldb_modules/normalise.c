@@ -105,6 +105,7 @@ static int normalise_search_callback(struct ldb_context *ldb, void *context, str
 		if (!attribute) {
 			continue;
 		}
+		/* Look to see if this attributeSyntax is a DN */
 		if ((strcmp(attribute->attributeSyntax_oid, "2.5.5.1") != 0) &&
 		    (strcmp(attribute->attributeSyntax_oid, "2.5.5.7") != 0)) {
 			continue;
@@ -155,12 +156,7 @@ static int normalise_search(struct ldb_module *module, struct ldb_request *req)
 }
 
 
-static const struct ldb_module_ops normalise_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_normalise_module_ops = {
 	.name		   = "normalise",
 	.search            = normalise_search,
 };
-
-int ldb_normalise_init(void)
-{
-	return ldb_register_module(&normalise_ops);
-}

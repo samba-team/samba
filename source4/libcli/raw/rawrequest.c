@@ -34,6 +34,20 @@
 /* assume that a character will not consume more than 3 bytes per char */
 #define MAX_BYTES_PER_CHAR 3
 
+/* setup the bufinfo used for strings and range checking */
+void smb_setup_bufinfo(struct smbcli_request *req)
+{
+	req->in.bufinfo.mem_ctx    = req;
+	req->in.bufinfo.flags      = 0;
+	if (req->flags2 & FLAGS2_UNICODE_STRINGS) {
+		req->in.bufinfo.flags = BUFINFO_FLAG_UNICODE;
+	}
+	req->in.bufinfo.align_base = req->in.buffer;
+	req->in.bufinfo.data       = req->in.data;
+	req->in.bufinfo.data_size  = req->in.data_size;
+}
+
+
 /* destroy a request structure and return final status */
 NTSTATUS smbcli_request_destroy(struct smbcli_request *req)
 {
@@ -298,6 +312,9 @@ NTSTATUS smbcli_chained_advance(struct smbcli_request *req)
 	req->in.data = req->in.vwv + 2 + req->in.wct * 2;
 	req->in.data_size = SVAL(req->in.vwv, VWV(req->in.wct));
 
+	/* fix the bufinfo */
+	smb_setup_bufinfo(req);
+
 	if (buffer + 3 + req->in.wct*2 + req->in.data_size > 
 	    req->in.buffer + req->in.size) {
 		return NT_STATUS_BUFFER_TOO_SMALL;
@@ -544,13 +561,13 @@ size_t smbcli_req_append_var_block(struct smbcli_request *req, const uint8_t *by
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-static size_t smbcli_req_pull_ucs2(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
+static size_t smbcli_req_pull_ucs2(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_ctx,
 				char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2, alignment=0;
 	ssize_t ret;
 
-	if (!(flags & STR_NOALIGN) && ucs2_align(req->in.buffer, src, flags)) {
+	if (!(flags & STR_NOALIGN) && ucs2_align(bufinfo->align_base, src, flags)) {
 		src++;
 		alignment=1;
 		if (byte_len != -1) {
@@ -558,7 +575,7 @@ static size_t smbcli_req_pull_ucs2(struct smbcli_request *req, TALLOC_CTX *mem_c
 		}
 	}
 
-	src_len = req->in.data_size - PTR_DIFF(src, req->in.data);
+	src_len = bufinfo->data_size - PTR_DIFF(src, bufinfo->data);
 	if (src_len < 0) {
 		*dest = NULL;
 		return 0;
@@ -597,13 +614,13 @@ static size_t smbcli_req_pull_ucs2(struct smbcli_request *req, TALLOC_CTX *mem_c
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-size_t smbcli_req_pull_ascii(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
+size_t smbcli_req_pull_ascii(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_ctx,
 			     char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	int src_len, src_len2;
 	ssize_t ret;
 
-	src_len = req->in.data_size - PTR_DIFF(src, req->in.data);
+	src_len = bufinfo->data_size - PTR_DIFF(src, bufinfo->data);
 	if (src_len < 0) {
 		*dest = NULL;
 		return 0;
@@ -640,15 +657,15 @@ size_t smbcli_req_pull_ascii(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
   on failure zero is returned and *dest is set to NULL, otherwise the number
   of bytes consumed in the packet is returned
 */
-size_t smbcli_req_pull_string(struct smbcli_request *req, TALLOC_CTX *mem_ctx, 
+size_t smbcli_req_pull_string(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_ctx, 
 			   char **dest, const uint8_t *src, int byte_len, uint_t flags)
 {
 	if (!(flags & STR_ASCII) && 
-	    (((flags & STR_UNICODE) || (req->flags2 & FLAGS2_UNICODE_STRINGS)))) {
-		return smbcli_req_pull_ucs2(req, mem_ctx, dest, src, byte_len, flags);
+	    (((flags & STR_UNICODE) || (bufinfo->flags & BUFINFO_FLAG_UNICODE)))) {
+		return smbcli_req_pull_ucs2(bufinfo, mem_ctx, dest, src, byte_len, flags);
 	}
 
-	return smbcli_req_pull_ascii(req, mem_ctx, dest, src, byte_len, flags);
+	return smbcli_req_pull_ascii(bufinfo, mem_ctx, dest, src, byte_len, flags);
 }
 
 
@@ -658,11 +675,11 @@ size_t smbcli_req_pull_string(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 
   if byte_len is -1 then limit the blob only by packet size
 */
-DATA_BLOB smbcli_req_pull_blob(struct smbcli_request *req, TALLOC_CTX *mem_ctx, const uint8_t *src, int byte_len)
+DATA_BLOB smbcli_req_pull_blob(struct request_bufinfo *bufinfo, TALLOC_CTX *mem_ctx, const uint8_t *src, int byte_len)
 {
 	int src_len;
 
-	src_len = req->in.data_size - PTR_DIFF(src, req->in.data);
+	src_len = bufinfo->data_size - PTR_DIFF(src, bufinfo->data);
 
 	if (src_len < 0) {
 		return data_blob(NULL, 0);
@@ -677,13 +694,13 @@ DATA_BLOB smbcli_req_pull_blob(struct smbcli_request *req, TALLOC_CTX *mem_ctx, 
 
 /* check that a lump of data in a request is within the bounds of the data section of
    the packet */
-static bool smbcli_req_data_oob(struct smbcli_request *req, const uint8_t *ptr, uint32_t count)
+static bool smbcli_req_data_oob(struct request_bufinfo *bufinfo, const uint8_t *ptr, uint32_t count)
 {
 	/* be careful with wraparound! */
-	if (ptr < req->in.data ||
-	    ptr >= req->in.data + req->in.data_size ||
-	    count > req->in.data_size ||
-	    ptr + count > req->in.data + req->in.data_size) {
+	if (ptr < bufinfo->data ||
+	    ptr >= bufinfo->data + bufinfo->data_size ||
+	    count > bufinfo->data_size ||
+	    ptr + count > bufinfo->data + bufinfo->data_size) {
 		return true;
 	}
 	return false;
@@ -694,11 +711,11 @@ static bool smbcli_req_data_oob(struct smbcli_request *req, const uint8_t *ptr, 
 
   return false if any part is outside the data portion of the packet
 */
-bool smbcli_raw_pull_data(struct smbcli_request *req, const uint8_t *src, int len, uint8_t *dest)
+bool smbcli_raw_pull_data(struct request_bufinfo *bufinfo, const uint8_t *src, int len, uint8_t *dest)
 {
 	if (len == 0) return true;
 
-	if (smbcli_req_data_oob(req, src, len)) {
+	if (smbcli_req_data_oob(bufinfo, src, len)) {
 		return false;
 	}
 
@@ -971,4 +988,45 @@ size_t smbcli_blob_append_string(struct smbcli_session *session,
 	blob->length += len;
 
 	return len;
+}
+
+/*
+  pull a GUID structure from the wire. The buffer must be at least 16
+  bytes long
+ */
+enum ndr_err_code smbcli_pull_guid(void *base, uint16_t offset, 
+				   struct GUID *guid)
+{
+	DATA_BLOB blob;
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	enum ndr_err_code ndr_err;
+
+	ZERO_STRUCTP(guid);
+
+	blob.data       = offset + (uint8_t *)base;
+	blob.length     = 16;
+	ndr_err = ndr_pull_struct_blob(&blob, tmp_ctx, NULL, guid, 
+				       (ndr_pull_flags_fn_t)ndr_pull_GUID);
+	talloc_free(tmp_ctx);
+	return ndr_err;
+}
+
+/*
+  push a guid onto the wire. The buffer must hold 16 bytes
+ */
+enum ndr_err_code smbcli_push_guid(void *base, uint16_t offset, 
+				   const struct GUID *guid)
+{
+	TALLOC_CTX *tmp_ctx = talloc_new(NULL);
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, NULL,
+				       guid, (ndr_push_flags_fn_t)ndr_push_GUID);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err) || blob.length != 16) {
+		talloc_free(tmp_ctx);
+		return ndr_err;
+	}
+	memcpy(offset + (uint8_t *)base, blob.data, blob.length);
+	talloc_free(tmp_ctx);
+	return ndr_err;
 }

@@ -23,7 +23,7 @@ import "security.idl";
 
 	typedef [public] struct {
 		[value(2*strlen_m(string))] uint16 length;
-		[value(2*(strlen_m(string)+1))] uint16 size;
+		[value(2*strlen_m_term(string))] uint16 size;
 		[charset(UTF16),size_is(size/2),length_is(length/2)] uint16 *string;
 	} lsa_StringLarge;
 
@@ -35,8 +35,14 @@ import "security.idl";
 	typedef [public] struct {
 		[value(strlen_m(string))] uint16 length;
 		[value(strlen_m(string))] uint16 size;
-		ascstr_noterm *string;
+		[charset(DOS),size_is(size),length_is(length)] uint8 *string;
 	} lsa_AsciiString;
+
+	typedef [public] struct {
+		[value(strlen_m(string))] uint16 length;
+		[value(strlen_m_term(string))] uint16 size;
+		[charset(DOS),size_is(size),length_is(length)] uint8 *string;
+	} lsa_AsciiStringLarge;
 
 	/******************/
 	/* Function: 0x00 */

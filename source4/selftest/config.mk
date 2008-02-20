@@ -7,65 +7,66 @@ SELFTEST = $(LD_LIBPATH_OVERRIDE) $(PERL) $(srcdir)/selftest/selftest.pl --prefi
     --exclude=$(srcdir)/samba4-skip --testlist="./selftest/samba4_tests.sh|" \
     $(TEST_OPTIONS) 
 
-test: everything
+test:: everything
 	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --immediate $(TESTS)
 
-testone: everything
+kvmtest:: everything
+	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --immediate --target=kvm --image=$(KVM_IMAGE)
+
+kvmquicktest:: everything
+	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --immediate --quick --target=kvm --image=$(KVM_IMAGE)
+
+testone:: everything
 	$(SELFTEST) $(DEFAULT_TEST_OPTIONS) --one $(TESTS)
 
-test-swrap: everything
+test-swrap:: everything
 	$(SELFTEST) --socket-wrapper --immediate $(TESTS)
 
-test-swrap-pcap: everything
+test-swrap-pcap:: everything
 	$(SELFTEST) --socket-wrapper-pcap --immediate $(TESTS)
 
-test-swrap-keep-pcap: everything
+test-swrap-keep-pcap:: everything
 	$(SELFTEST) --socket-wrapper-keep-pcap --immediate $(TESTS)
 
-test-noswrap: everything
+test-noswrap:: everything
 	$(SELFTEST) --immediate $(TESTS)
 
-quicktest: all
+quicktest:: all
 	$(SELFTEST) --quick --socket-wrapper --immediate $(TESTS)
 
-quicktestone: all
+quicktestone:: all
 	$(SELFTEST) --quick --socket-wrapper --one $(TESTS)
 
-testenv: everything
+testenv:: everything
 	$(SELFTEST) --socket-wrapper --testenv
 
-valgrindtest: valgrindtest-all
+valgrindtest:: valgrindtest-all
 
-valgrindtest-quick: all
+valgrindtest-quick:: all
 	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --quick --immediate --socket-wrapper $(TESTS)
 
-valgrindtest-all: everything
+valgrindtest-all:: everything
 	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --immediate --socket-wrapper $(TESTS)
 
-valgrindtest-env: everything
+valgrindtest-env:: everything
 	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/valgrind_run $(LD_LIBPATH_OVERRIDE)" \
 	VALGRIND="valgrind -q --num-callers=30 --log-file=${selftest_prefix}/valgrind.log" \
 	$(SELFTEST) --socket-wrapper --testenv
 
-gdbtest: gdbtest-all
+gdbtest:: gdbtest-all
 
-gdbtest-quick: all
+gdbtest-quick:: all
 	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run $(LD_LIBPATH_OVERRIDE)" \
 	$(SELFTEST) --immediate --quick --socket-wrapper $(TESTS)
 
-gdbtest-all: everything
+gdbtest-all:: everything
 	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run $(LD_LIBPATH_OVERRIDE)" \
 	$(SELFTEST) --immediate --socket-wrapper $(TESTS)
 
-gdbtest-env: everything
+gdbtest-env:: everything
 	SMBD_VALGRIND="xterm -n smbd -e $(srcdir)/script/gdb_run $(LD_LIBPATH_OVERRIDE)" \
 	$(SELFTEST) --socket-wrapper --testenv
-
-wintest: all
-	$(SELFTEST) win
-
-

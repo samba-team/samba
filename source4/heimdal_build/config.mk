@@ -15,8 +15,7 @@ OBJ_FILES = \
 	../heimdal/kdc/digest.o \
 	../heimdal/kdc/process.o \
 	../heimdal/kdc/windc.o \
-	../heimdal/kdc/kx509.o \
-	../heimdal/lib/asn1/asn1_KRB5SignedPath.o
+	../heimdal/kdc/kx509.o
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_KRB5 HEIMDAL_HDB HEIMDAL_HEIM_ASN1 HEIMDAL_DIGEST_ASN1 HEIMDAL_KX509_ASN1
 PUBLIC_DEPENDENCIES = HEIMDAL_NTLM HEIMDAL_HCRYPTO
 # End SUBSYSTEM HEIMDAL_KDC
@@ -31,10 +30,9 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5
 [SUBSYSTEM::HEIMDAL_HDB_KEYS]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/hdb
 OBJ_FILES = \
-	../heimdal/lib/hdb/keys.o \
-	../heimdal/lib/hdb/asn1_Key.o \
-	../heimdal/lib/hdb/asn1_Salt.o
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5
+	../heimdal/lib/hdb/keys.o
+PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_HCRYPTO HEIMDAL_KRB5 \
+					   HEIMDAL_HDB_ASN1
 
 #######################
 # Start SUBSYSTEM HEIMDAL_HDB
@@ -278,9 +276,7 @@ OBJ_FILES = \
 	../heimdal/lib/asn1/der_cmp.o \
 	../heimdal/lib/asn1/extra.o \
 	../heimdal/lib/asn1/timegm.o \
-	../heimdal/lib/asn1/asn1_err.o \
-	../heimdal/lib/asn1/asn1_krb5int32.o \
-	../heimdal/lib/asn1/asn1_krb5uint32.o
+	../heimdal/lib/asn1/asn1_err.o
 PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN HEIMDAL_COM_ERR
 # End SUBSYSTEM HEIMDAL_KRB5
 #######################
@@ -341,7 +337,7 @@ PRIVATE_DEPENDENCIES = \
 	HEIMDAL_CMS_ASN1 HEIMDAL_RFC2459_ASN1 \
 	HEIMDAL_OCSP_ASN1 HEIMDAL_PKCS8_ASN1 \
 	HEIMDAL_PKCS9_ASN1 HEIMDAL_PKCS12_ASN1 \
-	HEIMDAL_PKINIT_ASN1
+	HEIMDAL_PKINIT_ASN1 HEIMDAL_PKCS10_ASN1
 OBJ_FILES = \
 	../heimdal/lib/hx509/ca.o \
 	../heimdal/lib/hx509/cert.o \
@@ -411,7 +407,6 @@ OBJ_FILES = \
 	../heimdal/lib/roken/strpool.o \
 	../heimdal/lib/roken/estrdup.o \
 	../heimdal/lib/roken/erealloc.o \
-	../heimdal/lib/roken/simple_exec.o \
 	../heimdal/lib/roken/simple_exec.o \
 	../heimdal/lib/roken/strcollect.o \
 	../heimdal/lib/roken/rtbl.o \
@@ -511,32 +506,32 @@ PRIVATE_DEPENDENCIES = HEIMDAL_COM_ERR_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H E
 # End BINARY compile_et
 #######################
 
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hdb/hdb.asn1 hdb_asn1 heimdal/lib/hdb |
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/spnego/spnego.asn1 spnego_asn1 heimdal/lib/gssapi --sequence=MechTypeList |
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/mech/gssapi.asn1 gssapi_asn1 heimdal/lib/gssapi|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1 heimdal/lib/asn1 --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData --sequence=METHOD-DATA|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/digest.asn1 digest_asn1 heimdal/lib/asn1|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkcs8.asn1 pkcs8_asn1 heimdal/lib/asn1|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkcs9.asn1 pkcs9_asn1 heimdal/lib/asn1|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkcs12.asn1 pkcs12_asn1 heimdal/lib/asn1|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/rfc2459.asn1 rfc2459_asn1 heimdal/lib/asn1 --preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkinit.asn1 pkinit_asn1 heimdal/lib/asn1|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/CMS.asn1 cms_asn1 heimdal/lib/asn1|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hx509/ocsp.asn1 ocsp_asn1 heimdal/lib/hx509 --preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/kx509.asn1 kx509_asn1 heimdal/lib/asn1|
-include perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hx509/pkcs10.asn1 pkcs10_asn1 heimdal/lib/hx509 --preserve-binary=CertificationRequestInfo|
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hdb/hdb.asn1 hdb_asn1 heimdal/lib/hdb |
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/spnego/spnego.asn1 spnego_asn1 heimdal/lib/gssapi --sequence=MechTypeList |
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/gssapi/mech/gssapi.asn1 gssapi_asn1 heimdal/lib/gssapi|
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/k5.asn1 krb5_asn1 heimdal/lib/asn1 --encode-rfc1510-bit-string --sequence=KRB5SignedPathPrincipals --sequence=AuthorizationData --sequence=METHOD-DATA|
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/digest.asn1 digest_asn1 heimdal/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkcs8.asn1 pkcs8_asn1 heimdal/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkcs9.asn1 pkcs9_asn1 heimdal/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkcs12.asn1 pkcs12_asn1 heimdal/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/rfc2459.asn1 rfc2459_asn1 heimdal/lib/asn1 --preserve-binary=TBSCertificate --preserve-binary=TBSCRLCertList --preserve-binary=Name --sequence=GeneralNames --sequence=Extensions --sequence=CRLDistributionPoints|
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/pkinit.asn1 pkinit_asn1 heimdal/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/CMS.asn1 cms_asn1 heimdal/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hx509/ocsp.asn1 ocsp_asn1 heimdal/lib/hx509 --preserve-binary=OCSPTBSRequest --preserve-binary=OCSPResponseData|
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/asn1/kx509.asn1 kx509_asn1 heimdal/lib/asn1|
+mkinclude perl_path_wrapper.sh asn1_deps.pl heimdal/lib/hx509/pkcs10.asn1 pkcs10_asn1 heimdal/lib/hx509 --preserve-binary=CertificationRequestInfo|
 
 #
 # Ensure to update ../static_deps.mk when you add a new entry here!
 #
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/asn1/asn1_err.et heimdal/lib/asn1|
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/hdb/hdb_err.et heimdal/lib/hdb|
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/heim_err.et heimdal/lib/krb5|
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/k524_err.et heimdal/lib/krb5|
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb_err.et heimdal/lib/krb5|
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et heimdal/lib/krb5|
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/gssapi/krb5/gkrb5_err.et heimdal/lib/gssapi|
-include perl_path_wrapper.sh et_deps.pl heimdal/lib/hx509/hx509_err.et heimdal/lib/hx509|
+mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/asn1/asn1_err.et heimdal/lib/asn1|
+mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/hdb/hdb_err.et heimdal/lib/hdb|
+mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/heim_err.et heimdal/lib/krb5|
+mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/k524_err.et heimdal/lib/krb5|
+mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb_err.et heimdal/lib/krb5|
+mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/krb5/krb5_err.et heimdal/lib/krb5|
+mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/gssapi/krb5/gkrb5_err.et heimdal/lib/gssapi|
+mkinclude perl_path_wrapper.sh et_deps.pl heimdal/lib/hx509/hx509_err.et heimdal/lib/hx509|
 
 clean::	
 	@-rm -f bin/compile_et bin/asn1_compile

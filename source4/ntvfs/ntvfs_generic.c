@@ -208,7 +208,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 
 	case RAW_OPEN_SMB2:
 		io->smb2.out.file.ntvfs		= io2->generic.out.file.ntvfs;
-		io->smb2.out.oplock_flags	= 0;
+		io->smb2.out.oplock_level	= 0;
 		io->smb2.out.create_action	= io2->generic.out.create_action;
 		io->smb2.out.create_time	= io2->generic.out.create_time;
 		io->smb2.out.access_time	= io2->generic.out.access_time;
@@ -217,7 +217,7 @@ static NTSTATUS ntvfs_map_open_finish(struct ntvfs_module_context *ntvfs,
 		io->smb2.out.alloc_size		= io2->generic.out.alloc_size;
 		io->smb2.out.size		= io2->generic.out.size;
 		io->smb2.out.file_attr		= io2->generic.out.attrib;
-		io->smb2.out._pad		= 0;
+		io->smb2.out.reserved2		= 0;
 		io->smb2.out.blob		= data_blob(NULL, 0);
 		break;
 
@@ -486,13 +486,13 @@ _PUBLIC_ NTSTATUS ntvfs_map_open(struct ntvfs_module_context *ntvfs,
 	case RAW_OPEN_SMB2:
 		io2->generic.in.flags		= 0;
 		io2->generic.in.root_fid	= 0;
-		io2->generic.in.access_mask	= io->smb2.in.access_mask;
+		io2->generic.in.access_mask	= io->smb2.in.desired_access;
 		io2->generic.in.alloc_size	= 0;
-		io2->generic.in.file_attr	= io->smb2.in.file_attr;
+		io2->generic.in.file_attr	= io->smb2.in.file_attributes;
 		io2->generic.in.share_access	= io->smb2.in.share_access;
-		io2->generic.in.open_disposition= io->smb2.in.open_disposition;
+		io2->generic.in.open_disposition= io->smb2.in.create_disposition;
 		io2->generic.in.create_options	= io->smb2.in.create_options;
-		io2->generic.in.impersonation	= io->smb2.in.impersonation;
+		io2->generic.in.impersonation	= io->smb2.in.impersonation_level;
 		io2->generic.in.security_flags	= 0;
 		io2->generic.in.fname		= io->smb2.in.fname;
 		io2->generic.in.sec_desc	= NULL;

@@ -56,9 +56,9 @@ struct smb2_request *smb2_tree_connect_send(struct smb2_tree *tree,
 				0x08, true, 0);
 	if (req == NULL) return NULL;
 
-	SBVAL(req->out.hdr,  SMB2_HDR_UID, tree->session->uid);
+	SBVAL(req->out.hdr,  SMB2_HDR_SESSION_ID, tree->session->uid);
 
-	SSVAL(req->out.body, 0x02, io->in.unknown1);
+	SSVAL(req->out.body, 0x02, io->in.reserved);
 	status = smb2_push_o16s16_string(&req->out, 0x04, io->in.path);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
@@ -85,10 +85,18 @@ NTSTATUS smb2_tree_connect_recv(struct smb2_request *req, struct smb2_tree_conne
 
 	io->out.tid      = IVAL(req->in.hdr,  SMB2_HDR_TID);
 
-	io->out.unknown1    = SVAL(req->in.body, 0x02);
-	io->out.unknown2    = IVAL(req->in.body, 0x04);
-	io->out.unknown3    = IVAL(req->in.body, 0x08);
+	io->out.share_type  = CVAL(req->in.body, 0x02);
+	io->out.reserved    = CVAL(req->in.body, 0x03);
+	io->out.flags       = IVAL(req->in.body, 0x04);
+	io->out.capabilities= IVAL(req->in.body, 0x08);
 	io->out.access_mask = IVAL(req->in.body, 0x0C);
+
+	if (io->out.capabilities & ~SMB2_CAP_ALL) {
+		DEBUG(0,("Unknown capabilities mask 0x%x\n", io->out.capabilities));
+	}
+	if (io->out.flags & ~SMB2_SHAREFLAG_ALL) {
+		DEBUG(0,("Unknown tcon shareflag 0x%x\n", io->out.flags));
+	}
 	
 	return smb2_request_destroy(req);
 }

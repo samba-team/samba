@@ -58,11 +58,11 @@ Static and Global Data
 
 The basic rule is "avoid static and global data like the plague". What
 do I mean by static data? The way to tell if you have static data in a
-file is to use the "size" utility in Linux. For example if we run:
+file is to use the "size" utility in Linux. For example if we run::
 
   size libcli/raw/*.o
 
-in Samba4 then you get the following:
+in Samba4 then you get the following::
 
    text    data     bss     dec     hex filename
    2015       0       0    2015     7df libcli/raw/clikrb5.o
@@ -91,7 +91,7 @@ notice that the "data" and "bss" columns are all zero? That is
 good. If there are any non-zero values in data or bss then that
 indicates static data and is bad (as a rule of thumb).
 
-Lets compare that result to the equivalent in Samba3:
+Lets compare that result to the equivalent in Samba3::
 
    text    data     bss     dec     hex filename
    3978       0       0    3978     f8a libsmb/asn1.o
@@ -142,11 +142,11 @@ notice all of the non-zero data and bss elements? Every bit of that
 data is a bug waiting to happen.
 
 Static data is evil as it has the following consequences:
- - it makes code much less likely to be thread-safe
- - it makes code much less likely to be recursion-safe
- - it leads to subtle side effects when the same code is called from
-   multiple places
- - doesn't play well with shared libraries or plugins
+- it makes code much less likely to be thread-safe
+- it makes code much less likely to be recursion-safe
+- it leads to subtle side effects when the same code is called from
+  multiple places
+- doesn't play well with shared libraries or plugins
 
 Static data is particularly evil in library code (such as our internal
 smb and rpc libraries). If you can get rid of all static data in
@@ -237,23 +237,23 @@ In the Samba3 msrpc code we used explicit parse structures for all
 msrpc functions. The problem is that we didn't just put all of the
 real variables in these structures, we also put in all the artifacts
 as well. A good example is the security descriptor strucrure that
-looks like this in Samba3:
+looks like this in Samba3::
 
-typedef struct security_descriptor_info
-{
-	uint16 revision; 
-	uint16 type;    
+	typedef struct security_descriptor_info
+	{
+		uint16 revision; 
+		uint16 type;    
 
-	uint32 off_owner_sid;
-	uint32 off_grp_sid;
-	uint32 off_sacl;
-	uint32 off_dacl;
+		uint32 off_owner_sid;
+		uint32 off_grp_sid;
+		uint32 off_sacl;
+		uint32 off_dacl;
 
-	SEC_ACL *dacl;
-	SEC_ACL *sacl;
-	DOM_SID *owner_sid; 
-	DOM_SID *grp_sid;
-} SEC_DESC;
+		SEC_ACL *dacl;
+		SEC_ACL *sacl;
+		DOM_SID *owner_sid; 
+		DOM_SID *grp_sid;
+	} SEC_DESC;
 
 The problem with this structure is all the off_* variables. Those are
 not part of the interface, and do not appear in any real descriptions
@@ -301,11 +301,11 @@ just about everywhere.
 
 The first aspect of the async design to look at is the SMB client
 library. Lets take a look at the following three functions in
-libcli/raw/rawfile.c:
+libcli/raw/rawfile.c::
 
-struct cli_request *smb_raw_seek_send(struct cli_tree *tree, struct smb_seek *parms);
-NTSTATUS smb_raw_seek_recv(struct cli_request *req, struct smb_seek *parms);
-NTSTATUS smb_raw_seek(struct cli_tree *tree, struct smb_seek *parms);
+	struct cli_request *smb_raw_seek_send(struct cli_tree *tree, struct smb_seek *parms);
+	NTSTATUS smb_raw_seek_recv(struct cli_request *req, struct smb_seek *parms);
+	NTSTATUS smb_raw_seek(struct cli_tree *tree, struct smb_seek *parms);
 
 Go and read them now then come back.
 
@@ -327,7 +327,7 @@ one called smb_raw_XXXX(). That just calls the first two in order, and
 blocks waiting for the reply. 
 
 But what if you want to be called when the reply comes in? Yes, thats
-possible. You can do things like this:
+possible. You can do things like this::
 
     struct cli_request *req;
 
@@ -374,7 +374,7 @@ to just like in Samba3, but it also has the option of answering the
 request asynchronously. The only backend that currently does this is
 the CIFS backend, but I hope the other backends will soon do this to.
 
-To make this work you need to do things like this in the backend:
+To make this work you need to do things like this in the backend::
 
   req->control_flags |= REQ_CONTROL_ASYNC;
 
@@ -450,7 +450,7 @@ and read it. Yes, that means you!).
 Notice the union? That's how Samba4 allows a single NTVFS backend
 interface to handle the several different ways of doing a write
 operation in the SMB protocol. Now lets look at one section of that
-union:
+union::
 
 	/* SMBwriteX interface */
 	struct {
@@ -473,7 +473,7 @@ union:
 see the "in" and "out" sections? The "in" section is for parameters
 that the SMB client sends on the wire as part of the request. The smbd
 front end parse code parses the wire request and fills in all those
-parameters. It then calls the NTVFS interface which looks like this:
+parameters. It then calls the NTVFS interface which looks like this::
 
   NTSTATUS (*write)(struct request_context *req, union smb_write *io);
 

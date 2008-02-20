@@ -24,10 +24,9 @@
 #include "librpc/gen_ndr/ndr_initshutdown_c.h"
 #include "torture/rpc/rpc.h"
 
-static void init_initshutdown_String(TALLOC_CTX *mem_ctx, struct initshutdown_String *name, const char *s)
+static void init_lsa_StringLarge(struct lsa_StringLarge *name, const char *s)
 {
-	name->name = talloc(mem_ctx, struct initshutdown_String_sub);
-	name->name->name = s;
+	name->string = s;
 }
 
 
@@ -58,8 +57,8 @@ static bool test_Init(struct torture_context *tctx,
 	uint16_t hostname = 0x0;
 
 	r.in.hostname = &hostname;
-	r.in.message = talloc(tctx, struct initshutdown_String);
-	init_initshutdown_String(tctx, r.in.message, "spottyfood");
+	r.in.message = talloc(tctx, struct lsa_StringLarge);
+	init_lsa_StringLarge(r.in.message, "spottyfood");
 	r.in.force_apps = 1;
 	r.in.timeout = 30;
 	r.in.reboot = 1;
@@ -80,8 +79,8 @@ static bool test_InitEx(struct torture_context *tctx,
 	uint16_t hostname = 0x0;
 
 	r.in.hostname = &hostname;
-	r.in.message = talloc(tctx, struct initshutdown_String);
-	init_initshutdown_String(tctx, r.in.message, "spottyfood");
+	r.in.message = talloc(tctx, struct lsa_StringLarge);
+	init_lsa_StringLarge(r.in.message, "spottyfood");
 	r.in.force_apps = 1;
 	r.in.timeout = 30;
 	r.in.reboot = 1;

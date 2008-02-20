@@ -255,12 +255,7 @@ static int schema_fsmo_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-static const struct ldb_module_ops schema_fsmo_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_schema_fsmo_module_ops = {
 	.name		= "schema_fsmo",
 	.init_context	= schema_fsmo_init
 };
-
-int schema_fsmo_module_init(void)
-{
-	return ldb_register_module(&schema_fsmo_ops);
-}

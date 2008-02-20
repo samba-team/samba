@@ -116,6 +116,9 @@ static WERROR cmd_predef(struct regshell_context *ctx, int argc, char **argv)
 				argv[1], win_errstr(error));
 			return error;
 		}
+
+		ctx->path = strupper_talloc(ctx, argv[1]);
+		ctx->current = ret;
 	}
 
 	return WERR_OK;

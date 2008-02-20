@@ -1,6 +1,6 @@
-include auth/config.mk
-include ldap/config.mk
-include security/config.mk
+mkinclude auth/config.mk
+mkinclude ldap/config.mk
+mkinclude security/config.mk
 
 [SUBSYSTEM::LIBSAMBA-ERRORS]
 PUBLIC_HEADERS = util/error.h util/ntstatus.h util/doserr.h util/werror.h
@@ -118,7 +118,7 @@ PUBLIC_DEPENDENCIES = LIBCLI_RAW LIBSAMBA-ERRORS LIBCLI_AUTH \
 [SUBSYSTEM::LIBCLI_RAW]
 PRIVATE_PROTO_HEADER = raw/raw_proto.h
 PRIVATE_DEPENDENCIES = LIBCLI_COMPOSITE LP_RESOLVE gensec LIBCLI_RESOLVE LIBSECURITY LIBNDR
-LDFLAGS = $(SUBSYSTEM_LIBCLI_SMB_COMPOSITE_OUTPUT)
+#LDFLAGS = $(LIBCLI_SMB_COMPOSITE_OUTPUT)
 PUBLIC_DEPENDENCIES = samba-socket LIBPACKET gensec LIBCRYPTO CREDENTIALS 
 OBJ_FILES = raw/rawfile.o \
 		raw/smb_signing.o \
@@ -144,4 +144,4 @@ OBJ_FILES = raw/rawfile.o \
 		raw/rawlpq.o \
 		raw/rawshadow.o
 
-include smb2/config.mk
+mkinclude smb2/config.mk

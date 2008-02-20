@@ -8,7 +8,7 @@ dnl SMB_SUBSYSTEM(name,obj_files,required_subsystems)
 dnl
 dnl SMB_EXT_LIB_FROM_PKGCONFIG(name,pkg-config name,[ACTION-IF-FOUND],[ACTION-IF-NOT-FOUND])
 dnl
-dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags,pcname)
+dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags)
 dnl
 dnl SMB_ENABLE(name,default_build)
 dnl
@@ -21,33 +21,45 @@ dnl #######################################################
 dnl SMB_SUBSYSTEM(name,obj_files,required_subsystems,cflags)
 AC_DEFUN([SMB_SUBSYSTEM],
 [
+MAKE_SETTINGS="$MAKE_SETTINGS
+$1_OBJ_FILES = $2
+$1_CFLAGS = $4
+$1_ENABLE = YES
+"
+
 SMB_INFO_SUBSYSTEMS="$SMB_INFO_SUBSYSTEMS
 ###################################
 # Start Subsystem $1
 @<:@SUBSYSTEM::$1@:>@
-OBJ_FILES = $2
+OBJ_FILES = \$($1_OBJ_FILES)
 PRIVATE_DEPENDENCIES = $3
-CFLAGS = $4
+CFLAGS = \$($1_CFLAGS)
 ENABLE = YES
 # End Subsystem $1
 ###################################
 "
 ])
 
-dnl SMB_LIBRARY(name,obj_files,required_subsystems,version,so_version,cflags,ldflags,pcname)
+dnl SMB_LIBRARY(name,obj_files,required_subsystems,version,so_version,cflags,ldflags)
 AC_DEFUN([SMB_LIBRARY],
 [
+MAKE_SETTINGS="$MAKE_SETTINGS
+$1_OBJ_FILES = $2
+$1_CFLAGS = $6
+$1_LDFLAGS = $7
+$1_ENABLE = YES
+"
+
 SMB_INFO_LIBRARIES="$SMB_INFO_LIBRARIES
 ###################################
 # Start Library $1
 @<:@LIBRARY::$1@:>@
-OBJ_FILES = $2
+OBJ_FILES = \$($1_OBJ_FILES)
 PRIVATE_DEPENDENCIES = $3
 VERSION = $4
 SO_VERSION = $5 
-CFLAGS = $6
-LDFLAGS = $7
-PC_NAME = $8
+CFLAGS = \$($1_CFLAGS)
+LDFLAGS = \$($1_LDFLAGS)
 ENABLE = YES
 # End Library $1
 ###################################
@@ -91,8 +103,7 @@ AC_DEFUN([SMB_EXT_LIB_FROM_PKGCONFIG],
 					[`$PKG_CONFIG --libs-only-l '$2'`], 
 					[`$PKG_CONFIG --cflags-only-other '$2'`],
 					[`$PKG_CONFIG --cflags-only-I '$2'`],
-					[`$PKG_CONFIG --libs-only-other '$2'` `$PKG_CONFIG --libs-only-L '$2'`],
-					[ $2 ])
+					[`$PKG_CONFIG --libs-only-other '$2'` `$PKG_CONFIG --libs-only-L '$2'`])
 				ac_cv_$1_found=yes
 
 			else
@@ -120,33 +131,28 @@ dnl SMB_INCLUDE_MK(file)
 AC_DEFUN([SMB_INCLUDE_MK],
 [
 SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
-include $1
+mkinclude $1
 "
 ])
 
-dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags,pcname)
+dnl SMB_EXT_LIB(name,libs,cflags,cppflags,ldflags)
 AC_DEFUN([SMB_EXT_LIB],
 [
-
-SMB_INFO_EXT_LIBS="$SMB_INFO_EXT_LIBS
-###################################
-# Start Ext Lib $1
-@<:@EXT_LIB::$1@:>@
-LIBS = $2
-CFLAGS = $3
-CPPFLAGS = $4
-LDFLAGS = $5
-PC_NAME = $6
-# End Ext Lib $1
-###################################
+MAKE_SETTINGS="$MAKE_SETTINGS
+$1_LIBS = $2
+$1_CFLAGS = $3
+$1_CPPFLAGS = $4
+$1_LDFLAGS = $5
 "
+
 ])
 
 dnl SMB_ENABLE(name,default_build)
 AC_DEFUN([SMB_ENABLE],
 [
-	[SMB_ENABLE_][$1]="$2";
-
+	MAKE_SETTINGS="$MAKE_SETTINGS
+$1_ENABLE = $2
+"
 SMB_INFO_ENABLES="$SMB_INFO_ENABLES
 \$enabled{$1} = \"$2\";"
 ])

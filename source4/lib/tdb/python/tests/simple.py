@@ -142,3 +142,8 @@ class SimpleTdbTests(TestCase):
         self.assertEquals(0, len(self.tdb))
         self.tdb["entry"] = "value"
         self.assertEquals(1, len(self.tdb))
+
+
+if __name__ == '__main__':
+    import unittest
+    unittest.TestProgram()

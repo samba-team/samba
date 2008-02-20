@@ -199,7 +199,7 @@ static int update_kt_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-static const struct ldb_module_ops update_kt_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_update_keytab_module_ops = {
 	.name		   = "update_keytab",
 	.init_context	   = update_kt_init,
 	.add               = update_kt_add,
@@ -209,8 +209,3 @@ static const struct ldb_module_ops update_kt_ops = {
 	.end_transaction   = update_kt_end_trans,
 	.del_transaction   = update_kt_del_trans,
 };
-
-int ldb_update_kt_init(void)
-{
-	return ldb_register_module(&update_kt_ops);
-}

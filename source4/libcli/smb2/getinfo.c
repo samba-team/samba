@@ -30,21 +30,27 @@
 struct smb2_request *smb2_getinfo_send(struct smb2_tree *tree, struct smb2_getinfo *io)
 {
 	struct smb2_request *req;
+	NTSTATUS status;
 
-	req = smb2_request_init_tree(tree, SMB2_OP_GETINFO, 0x28, false, 0);
+	req = smb2_request_init_tree(tree, SMB2_OP_GETINFO, 0x28, true, 
+				     io->in.blob.length);
 	if (req == NULL) return NULL;
 
-	/* this seems to be a bug, they use 0x29 but only send 0x28 bytes */
-	SSVAL(req->out.body, 0x00, 0x29);
-
-	SSVAL(req->out.body, 0x02, io->in.level);
-	SIVAL(req->out.body, 0x04, io->in.max_response_size);
-	SIVAL(req->out.body, 0x08, io->in.unknown1);
-	SIVAL(req->out.body, 0x0C, io->in.unknown2);
-	SIVAL(req->out.body, 0x10, io->in.flags);
-	SIVAL(req->out.body, 0x14, io->in.flags2);
+	SCVAL(req->out.body, 0x02, io->in.info_type);
+	SCVAL(req->out.body, 0x03, io->in.info_class);
+	SIVAL(req->out.body, 0x04, io->in.output_buffer_length);
+	SIVAL(req->out.body, 0x0C, io->in.reserved);
+	SIVAL(req->out.body, 0x08, io->in.input_buffer_length);
+	SIVAL(req->out.body, 0x10, io->in.additional_information);
+	SIVAL(req->out.body, 0x14, io->in.getinfo_flags);
 	smb2_push_handle(req->out.body+0x18, &io->in.file.handle);
 
+	/* this blob is used for quota queries */
+	status = smb2_push_o32s32_blob(&req->out, 0x08, io->in.blob);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(req);
+		return NULL;
+	}
 	smb2_transport_send(req);
 
 	return req;
@@ -116,15 +122,17 @@ struct smb2_request *smb2_getinfo_file_send(struct smb2_tree *tree, union smb_fi
 	}
 
 	ZERO_STRUCT(b);
-	b.in.max_response_size = 0x10000;
-	b.in.file.handle       = io->generic.in.file.handle;
-	b.in.level             = smb2_level;
+	b.in.info_type            = smb2_level & 0xFF;
+	b.in.info_class           = smb2_level >> 8;
+	b.in.output_buffer_length = 0x10000;
+	b.in.input_buffer_length  = 0;
+	b.in.file.handle          = io->generic.in.file.handle;
 
 	if (io->generic.level == RAW_FILEINFO_SEC_DESC) {
-		b.in.flags = io->query_secdesc.in.secinfo_flags;
+		b.in.additional_information = io->query_secdesc.in.secinfo_flags;
 	}
 	if (io->generic.level == RAW_FILEINFO_SMB2_ALL_EAS) {
-		b.in.flags2 = io->all_eas.in.continue_flags;
+		b.in.getinfo_flags = io->all_eas.in.continue_flags;
 	}
 
 	return smb2_getinfo_send(tree, &b);
@@ -172,9 +180,10 @@ struct smb2_request *smb2_getinfo_fs_send(struct smb2_tree *tree, union smb_fsin
 	}
 	
 	ZERO_STRUCT(b);
-	b.in.max_response_size = 0x10000;
-	b.in.file.handle       = io->generic.handle;
-	b.in.level             = smb2_level;
+	b.in.output_buffer_length = 0x10000;
+	b.in.file.handle          = io->generic.handle;
+	b.in.info_type            = smb2_level & 0xFF;
+	b.in.info_class           = smb2_level >> 8;
 
 	return smb2_getinfo_send(tree, &b);
 }
