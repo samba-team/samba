@@ -2756,13 +2756,6 @@ if test x"$samba_cv_DARWIN_INITGROUPS" = x"yes" ; then
 	[Whether to use the Darwin-specific initgroups system call])
 fi
 
-AC_CACHE_CHECK([for working mmap],samba_cv_HAVE_MMAP,[
-AC_TRY_RUN([#include "${srcdir-.}/tests/shared_mmap.c"],
-           samba_cv_HAVE_MMAP=yes,samba_cv_HAVE_MMAP=no,samba_cv_HAVE_MMAP=cross)])
-if test x"$samba_cv_HAVE_MMAP" = x"yes"; then
-    AC_DEFINE(HAVE_MMAP,1,[Whether mmap works])
-fi
-
 AC_CACHE_CHECK([for fcntl locking],samba_cv_HAVE_FCNTL_LOCK,[
 AC_TRY_RUN([#include "${srcdir-.}/tests/fcntl_lock.c"],
            samba_cv_HAVE_FCNTL_LOCK=yes,samba_cv_HAVE_FCNTL_LOCK=no,samba_cv_HAVE_FCNTL_LOCK=cross)])
