@@ -88,8 +88,7 @@ WERROR dsdb_load_oid_mappings_ldb(struct dsdb_schema *schema,
 	TALLOC_CTX *mem_ctx = talloc_new(schema);
 	W_ERROR_HAVE_NO_MEMORY(mem_ctx);
 	
-	ndr_err = ndr_pull_struct_blob(prefixMap, mem_ctx, lp_iconv_convenience(global_loadparm), &pfm,
-				       (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
+	ndr_err = ndr_pull_struct_blob(prefixMap, mem_ctx, schema->iconv_convenience, &pfm, (ndr_pull_flags_fn_t)ndr_pull_prefixMapBlob);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
 		talloc_free(mem_ctx);
@@ -181,8 +180,7 @@ WERROR dsdb_get_oid_mappings_ldb(const struct dsdb_schema *schema,
 	pfm.reserved	= 0;
 	pfm.ctr.dsdb	= *ctr;
 
-	ndr_err = ndr_push_struct_blob(prefixMap, mem_ctx, lp_iconv_convenience(global_loadparm), &pfm,
-				       (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
+	ndr_err = ndr_push_struct_blob(prefixMap, mem_ctx, schema->iconv_convenience, &pfm, (ndr_push_flags_fn_t)ndr_push_prefixMapBlob);
 	talloc_free(ctr);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -628,7 +626,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	} \
 	if (_a && _a->value_ctr.num_values >= 1) { \
 		ssize_t _ret; \
-		_ret = convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX, \
+		_ret = convert_string_talloc(mem_ctx, s->iconv_convenience, CH_UTF16, CH_UNIX, \
 					     _a->value_ctr.values[0].blob->data, \
 					     _a->value_ctr.values[0].blob->length, \
 					     (void **)discard_const(&(p)->elem)); \
@@ -665,7 +663,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 		struct drsuapi_DsReplicaObjectIdentifier3 _id3; \
 		enum ndr_err_code _ndr_err; \
 		_ndr_err = ndr_pull_struct_blob_all(_a->value_ctr.values[0].blob, \
-						      mem_ctx, lp_iconv_convenience(global_loadparm), &_id3,\
+						      mem_ctx, s->iconv_convenience, &_id3,\
 						      (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);\
 		if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
 			NTSTATUS _nt_status = ndr_map_error2ntstatus(_ndr_err); \
@@ -727,7 +725,7 @@ static struct drsuapi_DsReplicaAttribute *dsdb_find_object_attr_name(struct dsdb
 	    && _a->value_ctr.values[0].blob->length == 16) { \
 		enum ndr_err_code _ndr_err; \
 		_ndr_err = ndr_pull_struct_blob_all(_a->value_ctr.values[0].blob, \
-						      mem_ctx, lp_iconv_convenience(global_loadparm), &(p)->elem, \
+						      mem_ctx, s->iconv_convenience, &(p)->elem, \
 						      (ndr_pull_flags_fn_t)ndr_pull_GUID); \
 		if (!NDR_ERR_CODE_IS_SUCCESS(_ndr_err)) { \
 			NTSTATUS _nt_status = ndr_map_error2ntstatus(_ndr_err); \
@@ -1156,6 +1154,8 @@ WERROR dsdb_attach_schema_from_ldif_file(struct ldb_context *ldb, const char *pf
 	if (!schema) {
 		goto nomem;
 	}
+
+	schema->iconv_convenience = lp_iconv_convenience(ldb_get_opaque(ldb, "loadparm"));
 
 	/*
 	 * load the prefixMap attribute from pf

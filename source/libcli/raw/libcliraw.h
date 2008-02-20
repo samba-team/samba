@@ -250,8 +250,8 @@ struct smbcli_request {
 	/* the mid of this packet - used to match replies */
 	uint16_t mid;
 
-	struct request_buffer in;
-	struct request_buffer out;
+	struct smb_request_buffer in;
+	struct smb_request_buffer out;
 
 	/* information on what to do with a reply when it is received
 	   asyncronously. If this is not setup when a reply is received then

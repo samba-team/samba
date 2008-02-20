@@ -56,20 +56,51 @@ struct ldb_context *ldb_init(void *mem_ctx)
 	return ldb;
 }
 
-struct ldb_backend {
-	const char *name;
-	ldb_connect_fn connect_fn;
-	struct ldb_backend *prev, *next;
+static struct backends_list_entry {
+	struct ldb_backend_ops *ops;
+	struct backends_list_entry *prev, *next;
 } *ldb_backends = NULL;
 
+#ifndef STATIC_LIBLDB_BACKENDS 
+
+#ifdef HAVE_LDB_LDAP
+#define LDAP_INIT &ldb_ldap_backend_ops, \
+				  &ldb_ildap_backend_ops, \
+				  &ldb_ldaps_backend_ops,
+#else
+#define LDAP_INIT
+#endif
+
+#ifdef HAVE_LDB_SQLITE3
+#define SQLITE3_INIT &ldb_sqlite3_backend_ops,
+#else
+#define SQLITE3_INIT
+#endif
+
+#define STATIC_LIBLDB_BACKENDS \
+	LDAP_INIT \
+	SQLITE3_INIT \
+	&ldb_tdb_backend_ops, 	\
+	NULL
+#endif
+
+const static struct ldb_backend_ops *builtin_backends[] = {
+	STATIC_LIBLDB_BACKENDS
+};
 
 static ldb_connect_fn ldb_find_backend(const char *url)
 {
-	struct ldb_backend *backend;
+	struct backends_list_entry *backend;
+	int i;
+
+	for (i = 0; builtin_backends[i]; i++) {
+		if (strncmp(builtin_backends[i]->name, url, strlen(builtin_backends[i]->name)) == 0)
+			return builtin_backends[i]->connect_fn;
+	}
 
 	for (backend = ldb_backends; backend; backend = backend->next) {
-		if (strncmp(backend->name, url, strlen(backend->name)) == 0) {
-			return backend->connect_fn;
+		if (strncmp(backend->ops->name, url, strlen(backend->ops->name)) == 0) {
+			return backend->ops->connect_fn;
 		}
 	}
 
@@ -81,7 +112,8 @@ static ldb_connect_fn ldb_find_backend(const char *url)
 */
 int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn)
 {
-	struct ldb_backend *backend = talloc(talloc_autofree_context(), struct ldb_backend);
+	struct ldb_backend_ops *backend = talloc(talloc_autofree_context(), struct ldb_backend_ops);
+	struct backends_list_entry *entry = talloc(talloc_autofree_context(), struct backends_list_entry);
 
 	if (ldb_find_backend(url_prefix)) {
 		return LDB_SUCCESS;
@@ -91,7 +123,8 @@ int ldb_register_backend(const char *url_prefix, ldb_connect_fn connectfn)
 
 	backend->name = talloc_strdup(backend, url_prefix);
 	backend->connect_fn = connectfn;
-	DLIST_ADD(ldb_backends, backend);
+	entry->ops = backend;
+	DLIST_ADD(ldb_backends, entry);
 
 	return LDB_SUCCESS;
 }
@@ -133,6 +166,19 @@ int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *op
 		if (init_fn != NULL && init_fn() == 0) {
 			fn = ldb_find_backend(backend);
 		}
+	}
+
+	if (fn == NULL) {
+		struct ldb_backend_ops *ops;
+		char *symbol_name = talloc_asprintf(ldb, "ldb_%s_backend_ops", backend);
+		if (symbol_name == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		ops = ldb_dso_load_symbol(ldb, backend, symbol_name);
+		if (ops != NULL) {
+			fn = ops->connect_fn;
+		}
+		talloc_free(symbol_name);
 	}
 
 	talloc_free(backend);
@@ -236,7 +282,6 @@ int ldb_connect(struct ldb_context *ldb, const char *url, unsigned int flags, co
 	int ret;
 	const char *url2;
 	/* We seem to need to do this here, or else some utilities don't get ldb backends */
-	ldb_global_init();
 
 	ldb->flags = flags;
 

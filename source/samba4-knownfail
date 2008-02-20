@@ -1,36 +1,39 @@
-LOCAL-RESOLVE.*.async
-LOCAL-ICONV.*.next_codepoint()
-BASE-DELAYWRITE.finfo update on close
-BASE-DELETE.*.deltest20a
-BASE-DELETE.*.deltest20b
-RAW-OPLOCK.*.OPLOCK
-RPC-WINREG
-LOCAL-REGISTRY.*.security # Not implemented yet
-RPC-WKSSVC
-RPC-HANDLES.*.lsarpc-shared
-RPC-HANDLES.*.mixed-shared
-RPC-EPMAPPER.*.Insert
-RPC-EPMAPPER.*.InqObject
-RPC-DFS.*
-RPC-DRSUAPI.*
-RPC-LSALOOKUP
-RPC-CRACKNAMES
-RPC-NETLOGON.*.LogonUasLogon
-RPC-NETLOGON.*.LogonUasLogoff
-RPC-NETLOGON.*.DatabaseSync
-RPC-NETLOGON.*.DatabaseSync2
-RPC-NETLOGON.*.GetDcName
-RPC-NETLOGON.*.LogonControl
-RPC-NETLOGON.*.LogonControl2
-RPC-NETLOGON.*.GetAnyDCName
-RPC-NETLOGON.*.DsrEnumerateDomainTrusts
-RPC-NETLOGON.*.NetrEnumerateTrustedDomains
-RPC-NETLOGON.*.NetrEnumerateTrustedDomainsEx
-RPC-NETLOGON.*.DsrGetDcSiteCoverageW
-RPC-NETLOGON.*.DsRAddressToSitenamesW
-RPC-NETLOGON.*.DsRAddressToSitenamesExW
-RPC-NETLOGON.*.GetPassword
-RPC-NETLOGON.*.GetTrustPasswords
-BASE-CHARSET.*.Testing partial surrogate
-.*NET-API-DELSHARE.*				# DelShare isn't implemented yet
-RAP.*netservergetinfo
+local.resolve.*.async
+local.iconv.*.next_codepoint()
+base.delaywrite.finfo update on close
+base.delete.*.deltest20a
+base.delete.*.deltest20b
+raw.oplock.*.OPLOCK
+rpc.winreg
+local.registry.*.security # Not implemented yet
+rpc.wkssvc
+rpc.handles.*.lsarpc-shared
+rpc.handles.*.mixed-shared
+rpc.epmapper.*.Insert
+rpc.epmapper.*.InqObject
+rpc.dfs.*
+rpc.drsuapi.*
+rpc.lsalookup
+rpc.cracknames
+rpc.netlogon.*.LogonUasLogon
+rpc.netlogon.*.LogonUasLogoff
+rpc.netlogon.*.DatabaseSync
+rpc.netlogon.*.DatabaseSync2
+rpc.netlogon.*.GetDcName
+rpc.netlogon.*.LogonControl
+rpc.netlogon.*.LogonControl2
+rpc.netlogon.*.GetAnyDCName
+rpc.netlogon.*.DsrEnumerateDomainTrusts
+rpc.netlogon.*.NetrEnumerateTrustedDomains
+rpc.netlogon.*.NetrEnumerateTrustedDomainsEx
+rpc.netlogon.*.DsrGetDcSiteCoverageW
+rpc.netlogon.*.DsRAddressToSitenamesW
+rpc.netlogon.*.DsRAddressToSitenamesExW
+rpc.netlogon.*.GetPassword
+rpc.netlogon.*.GetTrustPasswords
+base.charset.*.Testing partial surrogate
+.*net.api.delshare.*				# DelShare isn't implemented yet
+rap.*netservergetinfo
+kinit with pkinit # fails with: salt type 3 not supported
+samba4.blackbox.provision.py.reprovision # Fails with entry already exists
+local.torture.provision

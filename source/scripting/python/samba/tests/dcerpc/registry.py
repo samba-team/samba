@@ -20,11 +20,11 @@
 import winreg
 from param import LoadParm
 import unittest
+from samba.tests import get_loadparm
 
 class WinregTests(unittest.TestCase):
     def setUp(self):
-        lp_ctx = LoadParm()
-        lp_ctx.load("st/client/client.conf")
+        lp_ctx = get_loadparm()
         self.conn = winreg.winreg("ncalrpc:", lp_ctx)
 
     def get_hklm(self):

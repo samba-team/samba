@@ -444,6 +444,8 @@ static NTSTATUS smbcli_transport_finish_recv(void *private, DATA_BLOB blob)
 	req->in.ptr = req->in.data;
 	req->flags2 = SVAL(req->in.hdr, HDR_FLG2);
 
+	smb_setup_bufinfo(req);
+
 	if (!(req->flags2 & FLAGS2_32_BIT_ERROR_CODES)) {
 		int class = CVAL(req->in.hdr,HDR_RCLS);
 		int code = SVAL(req->in.hdr,HDR_ERR);
@@ -637,7 +639,7 @@ NTSTATUS smb_raw_echo_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx,
 	p->out.data = talloc_array(mem_ctx, uint8_t, p->out.size);
 	NT_STATUS_HAVE_NO_MEMORY(p->out.data);
 
-	if (!smbcli_raw_pull_data(req, req->in.data, p->out.size, p->out.data)) {
+	if (!smbcli_raw_pull_data(&req->in.bufinfo, req->in.data, p->out.size, p->out.data)) {
 		req->status = NT_STATUS_BUFFER_TOO_SMALL;
 	}
 

@@ -129,14 +129,14 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 	SMBSRV_TALLOC_IO_PTR(sf, union smb_search_first);
 
 	p = req->in.data;
-	p += req_pull_ascii4(req, &sf->search_first.in.pattern, 
+	p += req_pull_ascii4(&req->in.bufinfo, &sf->search_first.in.pattern, 
 			     p, STR_TERMINATE);
 	if (!sf->search_first.in.pattern) {
 		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
 	}
 
-	if (req_data_oob(req, p, 3)) {
+	if (req_data_oob(&req->in.bufinfo, p, 3)) {
 		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
@@ -167,7 +167,7 @@ void smbsrv_reply_search(struct smbsrv_request *req)
 		union smb_search_next *sn;
 
 		if (resume_key_length != 21 || 
-		    req_data_oob(req, p, 21) ||
+		    req_data_oob(&req->in.bufinfo, p, 21) ||
 		    level == RAW_SEARCH_FUNIQUE) {
 			smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 			return;
@@ -242,13 +242,13 @@ void smbsrv_reply_fclose(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_fclose_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	p = req->in.data;
-	p += req_pull_ascii4(req, &pattern, p, STR_TERMINATE);
+	p += req_pull_ascii4(&req->in.bufinfo, &pattern, p, STR_TERMINATE);
 	if (pattern && *pattern) {
 		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
 	
-	if (req_data_oob(req, p, 3)) {
+	if (req_data_oob(&req->in.bufinfo, p, 3)) {
 		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}
@@ -264,7 +264,7 @@ void smbsrv_reply_fclose(struct smbsrv_request *req)
 		return;
 	}
 
-	if (req_data_oob(req, p, 21)) {
+	if (req_data_oob(&req->in.bufinfo, p, 21)) {
 		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}

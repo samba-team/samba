@@ -8,20 +8,35 @@ use strict;
 
 my $target = shift;
 
-sub check_flags($)
+my $vars = {};
+
+sub check_flags($$);
+sub check_flags($$)
 {
-	my ($name)=@_;
-	open (IN, "extra_cflags.txt");
-	while (<IN> =~ /^([^:]+): (.*)$/) {
-		next unless (grep(/^$target$/, (split / /, $1)));
-		$_ = $2;
-		s/^CFLAGS\+=//;
-		print "$_ ";
+	my ($path, $name)=@_;
+	open (IN, $path);
+	foreach my $line (<IN>) {
+		if ($line =~ /^include (.*)$/) {
+			check_flags($1, $name);
+		} elsif ($line =~ /^([A-Za-z0-9_]+) =(.*)$/) {
+			$vars->{$1} = $2;
+		} elsif ($line =~ /^([^:]+): (.*)$/) {
+			next unless (grep(/^$target$/, (split / /, $1)));
+			my $data = $2;
+			$data =~ s/^CFLAGS\+=//;
+			foreach my $key (keys %$vars) {
+				my $val = $vars->{$key};
+				$data =~ s/\$\($key\)/$val/g;
+			}
+			# Remove undefined variables
+			$data =~ s/\$\([A-Za-z0-9_]+\)//g;
+			print "$data ";
+		}
 	}
 	close(IN);
-	print "\n";
 }
 
-check_flags($target);
+check_flags("extra_cflags.txt", $target);
+print "\n";
 
 exit 0;

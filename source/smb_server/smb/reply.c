@@ -58,9 +58,9 @@ void smbsrv_reply_tcon(struct smbsrv_request *req)
 	con.tcon.level = RAW_TCON_TCON;
 
 	p = req->in.data;	
-	p += req_pull_ascii4(req, &con.tcon.in.service, p, STR_TERMINATE);
-	p += req_pull_ascii4(req, &con.tcon.in.password, p, STR_TERMINATE);
-	p += req_pull_ascii4(req, &con.tcon.in.dev, p, STR_TERMINATE);
+	p += req_pull_ascii4(&req->in.bufinfo, &con.tcon.in.service, p, STR_TERMINATE);
+	p += req_pull_ascii4(&req->in.bufinfo, &con.tcon.in.password, p, STR_TERMINATE);
+	p += req_pull_ascii4(&req->in.bufinfo, &con.tcon.in.dev, p, STR_TERMINATE);
 
 	if (!con.tcon.in.service || !con.tcon.in.password || !con.tcon.in.dev) {
 		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
@@ -106,14 +106,14 @@ void smbsrv_reply_tcon_and_X(struct smbsrv_request *req)
 
 	p = req->in.data;
 
-	if (!req_pull_blob(req, p, passlen, &con.tconx.in.password)) {
+	if (!req_pull_blob(&req->in.bufinfo, p, passlen, &con.tconx.in.password)) {
 		smbsrv_send_error(req, NT_STATUS_ILL_FORMED_PASSWORD);
 		return;
 	}
 	p += passlen;
 
-	p += req_pull_string(req, &con.tconx.in.path, p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &con.tconx.in.device, p, -1, STR_ASCII);
+	p += req_pull_string(&req->in.bufinfo, &con.tconx.in.path, p, -1, STR_TERMINATE);
+	p += req_pull_string(&req->in.bufinfo, &con.tconx.in.device, p, -1, STR_ASCII);
 
 	if (!con.tconx.in.path || !con.tconx.in.device) {
 		smbsrv_send_error(req, NT_STATUS_BAD_DEVICE_TYPE);
@@ -223,7 +223,7 @@ void smbsrv_reply_chkpth(struct smbsrv_request *req)
 	SMBSRV_TALLOC_IO_PTR(io, union smb_chkpath);
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
-	req_pull_ascii4(req, &io->chkpath.in.path, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(&req->in.bufinfo, &io->chkpath.in.path, req->in.data, STR_TERMINATE);
 
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_chkpath(req->ntvfs, io));
 }
@@ -264,7 +264,7 @@ void smbsrv_reply_getatr(struct smbsrv_request *req)
 	st->getattr.level = RAW_FILEINFO_GETATTR;
 
 	/* parse request */
-	req_pull_ascii4(req, &st->getattr.in.file.path, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(&req->in.bufinfo, &st->getattr.in.file.path, req->in.data, STR_TERMINATE);
 	if (!st->getattr.in.file.path) {
 		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 		return;
@@ -290,7 +290,7 @@ void smbsrv_reply_setatr(struct smbsrv_request *req)
 	st->setattr.in.attrib     = SVAL(req->in.vwv, VWV(0));
 	st->setattr.in.write_time = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(1));
 	
-	req_pull_ascii4(req, &st->setattr.in.file.path, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(&req->in.bufinfo, &st->setattr.in.file.path, req->in.data, STR_TERMINATE);
 
 	if (!st->setattr.in.file.path) {
 		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
@@ -379,7 +379,7 @@ void smbsrv_reply_open(struct smbsrv_request *req)
 	oi->openold.in.open_mode = SVAL(req->in.vwv, VWV(0));
 	oi->openold.in.search_attrs = SVAL(req->in.vwv, VWV(1));
 
-	req_pull_ascii4(req, &oi->openold.in.fname, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(&req->in.bufinfo, &oi->openold.in.fname, req->in.data, STR_TERMINATE);
 
 	if (!oi->openold.in.fname) {
 		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
@@ -452,7 +452,7 @@ void smbsrv_reply_open_and_X(struct smbsrv_request *req)
 	oi->openx.in.size         = IVAL(req->in.vwv, VWV(9));
 	oi->openx.in.timeout      = IVAL(req->in.vwv, VWV(11));
 
-	req_pull_ascii4(req, &oi->openx.in.fname, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(&req->in.bufinfo, &oi->openx.in.fname, req->in.data, STR_TERMINATE);
 
 	if (!oi->openx.in.fname) {
 		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
@@ -502,7 +502,7 @@ void smbsrv_reply_mknew(struct smbsrv_request *req)
 	oi->mknew.in.attrib  = SVAL(req->in.vwv, VWV(0));
 	oi->mknew.in.write_time  = srv_pull_dos_date3(req->smb_conn, req->in.vwv + VWV(1));
 
-	req_pull_ascii4(req, &oi->mknew.in.fname, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(&req->in.bufinfo, &oi->mknew.in.fname, req->in.data, STR_TERMINATE);
 
 	if (!oi->mknew.in.fname) {
 		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
@@ -551,7 +551,7 @@ void smbsrv_reply_ctemp(struct smbsrv_request *req)
 
 	/* the filename is actually a directory name, the server provides a filename
 	   in that directory */
-	req_pull_ascii4(req, &oi->ctemp.in.directory, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(&req->in.bufinfo, &oi->ctemp.in.directory, req->in.data, STR_TERMINATE);
 
 	if (!oi->ctemp.in.directory) {
 		smbsrv_send_error(req, NT_STATUS_OBJECT_NAME_NOT_FOUND);
@@ -576,7 +576,7 @@ void smbsrv_reply_unlink(struct smbsrv_request *req)
 	
 	unl->unlink.in.attrib = SVAL(req->in.vwv, VWV(0));
 
-	req_pull_ascii4(req, &unl->unlink.in.pattern, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(&req->in.bufinfo, &unl->unlink.in.pattern, req->in.data, STR_TERMINATE);
 	
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_unlink(req->ntvfs, unl));
 }
@@ -958,7 +958,7 @@ void smbsrv_reply_write(struct smbsrv_request *req)
 	io->write.in.data        = req->in.data + 3;
 
 	/* make sure they gave us the data they promised */
-	if (req_data_oob(req, io->write.in.data, io->write.in.count)) {
+	if (req_data_oob(&req->in.bufinfo, io->write.in.data, io->write.in.count)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
@@ -1027,7 +1027,7 @@ void smbsrv_reply_write_and_X(struct smbsrv_request *req)
 	}
 
 	/* make sure the data is in bounds */
-	if (req_data_oob(req, io->writex.in.data, io->writex.in.count)) {
+	if (req_data_oob(&req->in.bufinfo, io->writex.in.data, io->writex.in.count)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
@@ -1163,7 +1163,7 @@ void smbsrv_reply_writeclose(struct smbsrv_request *req)
 	io->writeclose.in.data		= req->in.data + 1;
 
 	/* make sure they gave us the data they promised */
-	if (req_data_oob(req, io->writeclose.in.data, io->writeclose.in.count)) {
+	if (req_data_oob(&req->in.bufinfo, io->writeclose.in.data, io->writeclose.in.count)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
@@ -1313,7 +1313,7 @@ void smbsrv_reply_printopen(struct smbsrv_request *req)
 	oi->splopen.in.setup_length = SVAL(req->in.vwv, VWV(0));
 	oi->splopen.in.mode         = SVAL(req->in.vwv, VWV(1));
 
-	req_pull_ascii4(req, &oi->splopen.in.ident, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(&req->in.bufinfo, &oi->splopen.in.ident, req->in.data, STR_TERMINATE);
 
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_open(req->ntvfs, oi));
 }
@@ -1426,7 +1426,7 @@ void smbsrv_reply_printwrite(struct smbsrv_request *req)
 	io->splwrite.in.data		= req->in.data + 3;
 
 	/* make sure they gave us the data they promised */
-	if (req_data_oob(req, io->splwrite.in.data, io->splwrite.in.count)) {
+	if (req_data_oob(&req->in.bufinfo, io->splwrite.in.data, io->splwrite.in.count)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
@@ -1449,7 +1449,7 @@ void smbsrv_reply_mkdir(struct smbsrv_request *req)
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
 	io->generic.level = RAW_MKDIR_MKDIR;
-	req_pull_ascii4(req, &io->mkdir.in.path, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(&req->in.bufinfo, &io->mkdir.in.path, req->in.data, STR_TERMINATE);
 
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_mkdir(req->ntvfs, io));
 }
@@ -1467,7 +1467,7 @@ void smbsrv_reply_rmdir(struct smbsrv_request *req)
 	SMBSRV_TALLOC_IO_PTR(io, struct smb_rmdir);
 	SMBSRV_SETUP_NTVFS_REQUEST(reply_simple_send, NTVFS_ASYNC_STATE_MAY_ASYNC);
 
-	req_pull_ascii4(req, &io->in.path, req->in.data, STR_TERMINATE);
+	req_pull_ascii4(&req->in.bufinfo, &io->in.path, req->in.data, STR_TERMINATE);
 
 	SMBSRV_CALL_NTVFS_BACKEND(ntvfs_rmdir(req->ntvfs, io));
 }
@@ -1490,8 +1490,8 @@ void smbsrv_reply_mv(struct smbsrv_request *req)
 	io->rename.in.attrib = SVAL(req->in.vwv, VWV(0));
 
 	p = req->in.data;
-	p += req_pull_ascii4(req, &io->rename.in.pattern1, p, STR_TERMINATE);
-	p += req_pull_ascii4(req, &io->rename.in.pattern2, p, STR_TERMINATE);
+	p += req_pull_ascii4(&req->in.bufinfo, &io->rename.in.pattern1, p, STR_TERMINATE);
+	p += req_pull_ascii4(&req->in.bufinfo, &io->rename.in.pattern2, p, STR_TERMINATE);
 
 	if (!io->rename.in.pattern1 || !io->rename.in.pattern2) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
@@ -1521,8 +1521,8 @@ void smbsrv_reply_ntrename(struct smbsrv_request *req)
 	io->ntrename.in.cluster_size = IVAL(req->in.vwv, VWV(2));
 
 	p = req->in.data;
-	p += req_pull_ascii4(req, &io->ntrename.in.old_name, p, STR_TERMINATE);
-	p += req_pull_ascii4(req, &io->ntrename.in.new_name, p, STR_TERMINATE);
+	p += req_pull_ascii4(&req->in.bufinfo, &io->ntrename.in.old_name, p, STR_TERMINATE);
+	p += req_pull_ascii4(&req->in.bufinfo, &io->ntrename.in.new_name, p, STR_TERMINATE);
 
 	if (!io->ntrename.in.old_name || !io->ntrename.in.new_name) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
@@ -1568,8 +1568,8 @@ void smbsrv_reply_copy(struct smbsrv_request *req)
 	cp->in.flags = SVAL(req->in.vwv, VWV(2));
 
 	p = req->in.data;
-	p += req_pull_ascii4(req, &cp->in.path1, p, STR_TERMINATE);
-	p += req_pull_ascii4(req, &cp->in.path2, p, STR_TERMINATE);
+	p += req_pull_ascii4(&req->in.bufinfo, &cp->in.path1, p, STR_TERMINATE);
+	p += req_pull_ascii4(&req->in.bufinfo, &cp->in.path2, p, STR_TERMINATE);
 
 	if (!cp->in.path1 || !cp->in.path2) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
@@ -1638,7 +1638,7 @@ void smbsrv_reply_lockingX(struct smbsrv_request *req)
 	}
 
 	/* make sure we got the promised data */
-	if (req_data_oob(req, req->in.data, total_locks * lck_size)) {
+	if (req_data_oob(&req->in.bufinfo, req->in.data, total_locks * lck_size)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
@@ -1877,22 +1877,22 @@ static void reply_sesssetup_old(struct smbsrv_request *req)
 	passlen            = SVAL(req->in.vwv, VWV(7));
 
 	/* check the request isn't malformed */
-	if (req_data_oob(req, req->in.data, passlen)) {
+	if (req_data_oob(&req->in.bufinfo, req->in.data, passlen)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	
 	p = req->in.data;
-	if (!req_pull_blob(req, p, passlen, &io->old.in.password)) {
+	if (!req_pull_blob(&req->in.bufinfo, p, passlen, &io->old.in.password)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	p += passlen;
 	
-	p += req_pull_string(req, &io->old.in.user,   p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &io->old.in.domain, p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &io->old.in.os,     p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &io->old.in.lanman, p, -1, STR_TERMINATE);
+	p += req_pull_string(&req->in.bufinfo, &io->old.in.user,   p, -1, STR_TERMINATE);
+	p += req_pull_string(&req->in.bufinfo, &io->old.in.domain, p, -1, STR_TERMINATE);
+	p += req_pull_string(&req->in.bufinfo, &io->old.in.os,     p, -1, STR_TERMINATE);
+	p += req_pull_string(&req->in.bufinfo, &io->old.in.lanman, p, -1, STR_TERMINATE);
 
 	/* call the generic handler */
 	smbsrv_sesssetup_backend(req, io);
@@ -1921,28 +1921,28 @@ static void reply_sesssetup_nt1(struct smbsrv_request *req)
 	io->nt1.in.capabilities = IVAL(req->in.vwv, VWV(11));
 
 	/* check the request isn't malformed */
-	if (req_data_oob(req, req->in.data, passlen1) ||
-	    req_data_oob(req, req->in.data + passlen1, passlen2)) {
+	if (req_data_oob(&req->in.bufinfo, req->in.data, passlen1) ||
+	    req_data_oob(&req->in.bufinfo, req->in.data + passlen1, passlen2)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	
 	p = req->in.data;
-	if (!req_pull_blob(req, p, passlen1, &io->nt1.in.password1)) {
+	if (!req_pull_blob(&req->in.bufinfo, p, passlen1, &io->nt1.in.password1)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	p += passlen1;
-	if (!req_pull_blob(req, p, passlen2, &io->nt1.in.password2)) {
+	if (!req_pull_blob(&req->in.bufinfo, p, passlen2, &io->nt1.in.password2)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	p += passlen2;
 	
-	p += req_pull_string(req, &io->nt1.in.user,   p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &io->nt1.in.domain, p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &io->nt1.in.os,     p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &io->nt1.in.lanman, p, -1, STR_TERMINATE);
+	p += req_pull_string(&req->in.bufinfo, &io->nt1.in.user,   p, -1, STR_TERMINATE);
+	p += req_pull_string(&req->in.bufinfo, &io->nt1.in.domain, p, -1, STR_TERMINATE);
+	p += req_pull_string(&req->in.bufinfo, &io->nt1.in.os,     p, -1, STR_TERMINATE);
+	p += req_pull_string(&req->in.bufinfo, &io->nt1.in.lanman, p, -1, STR_TERMINATE);
 
 	/* call the generic handler */
 	smbsrv_sesssetup_backend(req, io);
@@ -1971,15 +1971,15 @@ static void reply_sesssetup_spnego(struct smbsrv_request *req)
 	io->spnego.in.capabilities = IVAL(req->in.vwv, VWV(10));
 
 	p = req->in.data;
-	if (!req_pull_blob(req, p, blob_len, &io->spnego.in.secblob)) {
+	if (!req_pull_blob(&req->in.bufinfo, p, blob_len, &io->spnego.in.secblob)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
 	p += blob_len;
 	
-	p += req_pull_string(req, &io->spnego.in.os,        p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &io->spnego.in.lanman,    p, -1, STR_TERMINATE);
-	p += req_pull_string(req, &io->spnego.in.workgroup, p, -1, STR_TERMINATE);
+	p += req_pull_string(&req->in.bufinfo, &io->spnego.in.os,        p, -1, STR_TERMINATE);
+	p += req_pull_string(&req->in.bufinfo, &io->spnego.in.lanman,    p, -1, STR_TERMINATE);
+	p += req_pull_string(&req->in.bufinfo, &io->spnego.in.workgroup, p, -1, STR_TERMINATE);
 
 	/* call the generic handler */
 	smbsrv_sesssetup_backend(req, io);
@@ -2199,7 +2199,7 @@ void smbsrv_reply_ntcreate_and_X(struct smbsrv_request *req)
 		fname_len++;
 	}
 
-	req_pull_string(req, &io->ntcreatex.in.fname, req->in.data, fname_len, STR_TERMINATE);
+	req_pull_string(&req->in.bufinfo, &io->ntcreatex.in.fname, req->in.data, fname_len, STR_TERMINATE);
 	if (!io->ntcreatex.in.fname) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;

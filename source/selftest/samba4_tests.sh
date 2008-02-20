@@ -40,6 +40,22 @@ plantest() {
 	echo $cmdline
 }
 
+normalize_testname() {
+	name=$1
+	shift 1
+	echo $name | tr "A-Z-" "a-z."
+}
+
+plansmbtorturetest() {
+	name=$1
+	env=$2
+	shift 2
+	other_args="$*"
+	modname=`normalize_testname $name`
+	cmdline="$VALGRIND $smb4torture $other_args $name"
+	plantest "$modname" "$env" $cmdline
+}
+
 $incdir/../bin/smbtorture -V
 
 samba4srcdir=$incdir/..
@@ -67,7 +83,7 @@ if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
 fi
 for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATEVECTOR
 do
-	plantest "$t" dc $smb4torture "-U\$USERNAME%\$PASSWORD" //\$SERVER_IP/_none_ $t
+	plansmbtorturetest "$t" dc "-U\$USERNAME%\$PASSWORD" //\$SERVER_IP/_none_
 done
 
 # only do the ldb tests when not in quick mode - they are quite slow, and ldb
@@ -75,7 +91,6 @@ done
 LDBDIR=$samba4srcdir/lib/ldb
 export LDBDIR
 plantest "ldb" none TEST_DATA_PREFIX=\$PREFIX $LDBDIR/tests/test-tdb.sh
-
 plantest "js.ldap" dc $SCRIPTDIR/ldap.js $CONFIGURATION -d 10 \$SERVER -U\$USERNAME%\$PASSWORD
 
 # Tests for RPC
@@ -109,15 +124,15 @@ for bindoptions in seal,padcheck $VALIDATE bigendian; do
 	 ncacn_ip_tcp) tests=$ncacn_ip_tcp_tests ;;
      esac
    for t in $tests; do
-    plantest "$t on $transport with $bindoptions" dc $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+    plantest "`normalize_testname $t` on $transport with $bindoptions" dc $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
    done
-   plantest "RPC-SAMBA3-SHARESEC on $transport with $bindoptions" dc $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=torture:share=tmp $t "$*"
+   plantest "rpc.samba3.sharesec on $transport with $bindoptions" dc $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=torture:share=tmp RPC-SAMBA3-SHARESEC "$*"
  done
 done
 
 for bindoptions in "" $VALIDATE bigendian; do
  for t in $auto_rpc_tests; do
-  plantest "$t with $bindoptions" dc $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+  plantest "`normalize_testname $t` with $bindoptions" dc $VALGRIND $smb4torture "\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
  done
 done
 
@@ -129,7 +144,7 @@ for bindoptions in connect $VALIDATE ; do
 	 ncacn_ip_tcp) tests=$slow_ncacn_ip_tcp_tests ;;
      esac
    for t in $tests; do
-    plantest "$t on $transport with $bindoptions" dc $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
+    plantest "`normalize_testname $t` on $transport with $bindoptions" dc $VALGRIND $smb4torture $transport:"\$SERVER[$bindoptions]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN $t "$*"
    done
  done
 done
@@ -140,7 +155,7 @@ done
 net=`$smb4torture --list | grep ^NET-`
 
 for t in $net; do
-    plantest "$t" dc $VALGRIND $smb4torture "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" $t "$*"
+    plansmbtorturetest "$t" dc "\$SERVER[$VALIDATE]" -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "$*"
 done
 
 # Tests for session keys
@@ -160,13 +175,13 @@ for ntlmoptions in \
         "-k no --option=usespnego=no --option=clientntlmv2auth=yes" \
         "-k no --option=gensec:spnego=no --option=clientntlmv2auth=yes" \
         "-k no --option=usespnego=no"; do
-	name="RPC-SECRETS on $transport with $bindoptions with $ntlmoptions"
+	name="rpc.secrets on $transport with $bindoptions with $ntlmoptions"
    plantest "$name" dc $smb4torture $transport:"\$SERVER[$bindoptions]"  $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN --option=gensec:target_hostname=\$NETBIOSNAME RPC-SECRETS "$*"
 done
-plantest "RPC-SECRETS on $transport with $bindoptions with Kerberos" dc $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-SECRETS "$*"
-plantest "RPC-SECRETS on $transport with $bindoptions with Kerberos - use target principal" dc $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=clientusespnegoprincipal=yes" "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-SECRETS "$*"
- plantest "RPC-SECRETS on $transport with Kerberos - use Samba3 style login" dc $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-SECRETS-none*" "$*"
- plantest "RPC-SECRETS on $transport with Kerberos - use Samba3 style login, use target principal" dc $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-SECRETS-none*" "$*"
+plantest "rpc.secrets on $transport with $bindoptions with Kerberos" dc $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-SECRETS "$*"
+plantest "rpc.secrets on $transport with $bindoptions with Kerberos - use target principal" dc $smb4torture $transport:"\$SERVER[$bindoptions]" -k yes -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN "--option=clientusespnegoprincipal=yes" "--option=gensec:target_hostname=\$NETBIOSNAME" RPC-SECRETS "$*"
+plantest "rpc.secrets on $transport with Kerberos - use Samba3 style login" dc $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-SECRETS-none*" "$*"
+plantest "rpc.secrets on $transport with Kerberos - use Samba3 style login, use target principal" dc $smb4torture $transport:"\$SERVER" -k yes -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" "--option=clientusespnegoprincipal=yes" "--option=gensec:fake_gssapi_krb5=yes" "--option=gensec:gssapi_krb5=no" "--option=gensec:target_hostname=\$NETBIOSNAME" "RPC-SECRETS-none*" "$*"
 
 # Echo tests
 transports="ncacn_np ncacn_ip_tcp ncalrpc"
@@ -175,7 +190,7 @@ for transport in $transports; do
  for bindoptions in connect spnego spnego,sign spnego,seal $VALIDATE padcheck bigendian bigendian,seal; do
   for ntlmoptions in \
         "--option=socket:testnonblock=True --option=torture:quick=yes"; do
-   plantest "RPC-ECHO on $transport with $bindoptions and $ntlmoptions" dc $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
+   plantest "rpc.echo on $transport with $bindoptions and $ntlmoptions" dc $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W "\$DOMAIN" RPC-ECHO "$*"
   done
  done
 done
@@ -193,12 +208,12 @@ for transport in $transports; do
         "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=yes  --option=torture:quick=yes" \
         "--option=clientntlmv2auth=yes  --option=ntlmssp_client:128bit=no --option=ntlmssp_client:keyexchange=no  --option=torture:quick=yes" \
     ; do
-   plantest "RPC-ECHO on $transport with $bindoptions and $ntlmoptions" dc $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
+   plantest "rpc.echo on $transport with $bindoptions and $ntlmoptions" dc $smb4torture $transport:"\$SERVER[$bindoptions]" $ntlmoptions -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
   done
  done
 done
 
-plantest "RPC-ECHO on ncacn_np over smb2" dc $smb4torture ncacn_np:"\$SERVER[smb2]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
+plantest "rpc.echo on ncacn_np over smb2" dc $smb4torture ncacn_np:"\$SERVER[smb2]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
 
 # Tests against the NTVFS POSIX backend
 smb2=`$smb4torture --list | grep "^SMB2-" | xargs`
@@ -206,28 +221,28 @@ raw=`$smb4torture --list | grep "^RAW-" | xargs`
 base=`$smb4torture --list | grep "^BASE-" | xargs`
 
 for t in $base $raw $smb2; do
-    plantest "$t" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD" $t
+    plansmbtorturetest "$t" dc $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD"
 done
 
 rap=`$smb4torture --list | grep "^RAP-" | xargs`
 for t in $rap; do
-    plantest "$t" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/IPC\\\$ -U"\$USERNAME"%"\$PASSWORD" $t
+    plansmbtorturetest "$t" dc $ADDARGS //\$SERVER/IPC\\\$ -U"\$USERNAME"%"\$PASSWORD"
 done
 
 # Tests against the NTVFS CIFS backend
 for t in $base $raw; do
-    plantest "ntvfs.cifs.$t" dc $VALGRIND $smb4torture //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "ntvfs.cifs.`normalize_testname $t`" dc $VALGRIND $smb4torture //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $t
 done
 
 # Local tests
 
 for t in `$smb4torture --list | grep "^LOCAL-" | xargs`; do
-	plantest "$t" none $VALGRIND $smb4torture ncalrpc: $t "$*"
+	plansmbtorturetest "$t" none ncalrpc: "$*"
 done
 
 if test -f $samba4bindir/tdbtorture
 then
-	plantest "tdb stress" none $VALGRIND $samba4bindir/tdbtorture
+	plantest "tdb.stress" none $VALGRIND $samba4bindir/tdbtorture
 fi
 
 # Pidl tests
@@ -251,33 +266,35 @@ bbdir=$incdir/../../testprogs/blackbox
 plantest "blackbox.smbclient" dc $bbdir/test_smbclient.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX" 
 plantest "blackbox.kinit" dc $bbdir/test_kinit.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$REALM" "\$DOMAIN" "$PREFIX" 
 plantest "blackbox.cifsdd" dc $bbdir/test_cifsdd.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" 
-plantest "blackbox.nmblookup" dc $bbdir/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" 
-plantest "blackbox.nmblookup" member $bbdir/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP"
+plantest "blackbox.nmblookup" dc $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP" 
+plantest "blackbox.nmblookup" member $samba4srcdir/utils/tests/test_nmblookup.sh "\$NETBIOSNAME" "\$NETBIOSALIAS" "\$SERVER" "\$SERVER_IP"
+plantest "blackbox.locktest" dc $bbdir/test_locktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
+plantest "blackbox.masktest" dc $bbdir/test_masktest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
+plantest "blackbox.gentest" dc $bbdir/test_gentest.sh "\$SERVER" "\$USERNAME" "\$PASSWORD" "\$DOMAIN" "$PREFIX"
 
 # Tests using the "Simple" NTVFS backend
 
 for t in "BASE-RW1"; do
-    plantest "ntvfs/simple $t" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/simple -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "ntvfs.simple.`normalize_testname $t`" dc $VALGRIND $smb4torture $ADDARGS //\$SERVER/simple -U"\$USERNAME"%"\$PASSWORD" $t
 done
 
 DATADIR=$samba4srcdir/../testdata
 
-plantest "parse samba3" none $samba4bindir/smbscript $DATADIR/samba3/verify $CONFIGURATION $DATADIR/samba3
 plantest "js.samba3sam" none $SCRIPTDIR/samba3sam.js $CONFIGURATION `pwd` $DATADIR/samba3/
 
 # Domain Member Tests
 
-plantest "RPC-ECHO against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" RPC-ECHO "$*"
-plantest "RPC-ECHO against member server with domain creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD" RPC-ECHO "$*"
-plantest "RPC-SAMR against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR" "$*"
-plantest "RPC-SAMR-USERS against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-USERS" "$*"
-plantest "RPC-SAMR-PASSWORDS against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-PASSWORDS" "$*"
+plantest "rpc.echo against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" RPC-ECHO "$*"
+plantest "rpc.echo against member server with domain creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD" RPC-ECHO "$*"
+plantest "rpc.samr against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR" "$*"
+plantest "rpc.samr.users against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-USERS" "$*"
+plantest "rpc.samr.passwords against member server with local creds" member $VALGRIND $smb4torture ncacn_np:"\$NETBIOSNAME" -U"\$NETBIOSNAME/\$USERNAME"%"\$PASSWORD" "RPC-SAMR-PASSWORDS" "$*"
 plantest "wbinfo -a against member server with domain creds" member $VALGRIND $samba4bindir/wbinfo -a "\$DOMAIN/\$DC_USERNAME"%"\$DC_PASSWORD"
 
 NBT_TESTS=`$smb4torture --list | grep "^NBT-" | xargs`
 
-for f in $NBT_TESTS; do
-	plantest $f dc $smb4torture //\$SERVER/_none_ $f -U\$USERNAME%\$PASSWORD 
+for t in $NBT_TESTS; do
+	plansmbtorturetest "$t" dc //\$SERVER/_none_ -U\$USERNAME%\$PASSWORD 
 done
 
 WB_OPTS="--option=\"torture:strict mode=yes\""
@@ -291,44 +308,42 @@ WINBIND_STRUCT_TESTS=`$smb4torture --list | grep "^WINBIND-STRUCT" | xargs`
 WINBIND_NDR_TESTS=`$smb4torture --list | grep "^WINBIND-NDR" | xargs`
 for env in dc member; do
 	for t in $WINBIND_STRUCT_TESTS; do
-		plantest $t $env $smb4torture $WB_OPTS //_none_/_none_ $t
+		plansmbtorturetest $t $env $WB_OPTS //_none_/_none_
 	done
 
 	for t in $WINBIND_NDR_TESTS; do
-		plantest $t $env $smb4torture $WB_OPTS //_none_/_none_ $t
+		plansmbtorturetest $t $env $WB_OPTS //_none_/_none_
 	done
 done
 
 if test -f $samba4bindir/nsstest 
 then
-	plantest "NSS-TEST using winbind" member $VALGRIND $samba4bindir/nsstest $samba4bindir/shared/libnss_winbind.so
+	plantest "nss.test using winbind" member $VALGRIND $samba4bindir/nsstest $samba4bindir/shared/libnss_winbind.so
 fi
 
-# if python is available, run the python tests:
-if test -f $samba4bindir/smbpython
-then
-	PYTHON=bin/smbpython
-	SUBUNITRUN="$PYTHON ./scripting/bin/subunitrun"
-	plantest "ldb.python" none PYTHONPATH="$PYTHONPATH:lib/ldb/tests/python/" $SUBUNITRUN api
-	plantest "credentials.python" none PYTHONPATH="$PYTHONPATH:auth/credentials/tests" $SUBUNITRUN bindings
-	plantest "registry.python" none PYTHONPATH="$PYTHONPATH:lib/registry/tests/" $SUBUNITRUN bindings
-	plantest "tdb.python" none PYTHONPATH="$PYTHONPATH:lib/tdb/python/tests" $SUBUNITRUN simple
-	plantest "auth.python" none PYTHONPATH="$PYTHONPATH:auth/tests/" $SUBUNITRUN bindings
-	plantest "security.python" none PYTHONPATH="$PYTHONPATH:libcli/security/tests" $SUBUNITRUN bindings
-	plantest "param.python" none PYTHONPATH="$PYTHONPATH:param/tests" $SUBUNITRUN bindings
-	plantest "upgrade.python" none $SUBUNITRUN samba.tests.upgrade
-	plantest "samba.python" none $SUBUNITRUN samba.tests
-	plantest "provision.python" none $SUBUNITRUN samba.tests.provision
-	plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
-	plantest "samr.python" dc $SUBUNITRUN samba.tests.dcerpc.sam
-	plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
-	plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
-	plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho
-	plantest "winreg.python" dc $SUBUNITRUN samba.tests.dcerpc.registry
-	plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
-	plantest "blackbox.samba3dump" none $PYTHON scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
-	rm -rf $PREFIX/upgrade
-	plantest "blackbox.upgrade" none $PYTHON setup/upgrade.py $CONFIGURATION --targetdir=$PREFIX/upgrade ../testdata/samba3 ../testdata/samba3/smb.conf
-	rm -rf $PREFIX/provision
-	plantest "blackbox.provision.py" none $PYTHON ./setup/provision.py $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/provision
-fi
+PYTHON=bin/smbpython
+SUBUNITRUN="$PYTHON ./scripting/bin/subunitrun"
+plantest "ldb.python" none PYTHONPATH="$PYTHONPATH:lib/ldb/tests/python/" $SUBUNITRUN api
+plantest "credentials.python" none PYTHONPATH="$PYTHONPATH:auth/credentials/tests" $SUBUNITRUN bindings
+plantest "registry.python" none PYTHONPATH="$PYTHONPATH:lib/registry/tests/" $SUBUNITRUN bindings
+plantest "tdb.python" none PYTHONPATH="$PYTHONPATH:lib/tdb/python/tests" $SUBUNITRUN simple
+plantest "auth.python" none PYTHONPATH="$PYTHONPATH:auth/tests/" $SUBUNITRUN bindings
+plantest "security.python" none PYTHONPATH="$PYTHONPATH:libcli/security/tests" $SUBUNITRUN bindings
+plantest "param.python" none PYTHONPATH="$PYTHONPATH:param/tests" $SUBUNITRUN bindings
+plantest "upgrade.python" none $SUBUNITRUN samba.tests.upgrade
+plantest "samba.python" none $SUBUNITRUN samba.tests
+plantest "provision.python" none $SUBUNITRUN samba.tests.provision
+plantest "samba3.python" none $SUBUNITRUN samba.tests.samba3
+plantest "samr.python" dc $SUBUNITRUN samba.tests.dcerpc.sam
+plantest "samdb.python" dc $SUBUNITRUN samba.tests.samdb
+plantest "events.python" none PYTHONPATH="$PYTHONPATH:lib/events" $SUBUNITRUN tests
+plantest "samba3sam.python" none PYTHONPATH="$PYTHONPATH:dsdb/samdb/ldb_modules/tests" $SUBUNITRUN samba3sam
+plantest "rpcecho.python" dc $SUBUNITRUN samba.tests.dcerpc.rpcecho
+plantest "winreg.python" dc $SUBUNITRUN samba.tests.dcerpc.registry
+plantest "ldap.python" dc $PYTHON $samba4srcdir/lib/ldb/tests/python/ldap.py $CONFIGURATION \$SERVER -U\$USERNAME%\$PASSWORD -W \$DOMAIN
+plantest "blackbox.samba3dump" none $PYTHON scripting/bin/samba3dump $samba4srcdir/../testdata/samba3
+rm -rf $PREFIX/upgrade
+plantest "blackbox.upgrade" none $PYTHON setup/upgrade.py $CONFIGURATION --targetdir=$PREFIX/upgrade ../testdata/samba3 ../testdata/samba3/smb.conf
+rm -rf $PREFIX/provision
+mkdir $PREFIX/provision
+plantest "blackbox.provision.py" none PYTHON="$PYTHON" $samba4srcdir/setup/tests/blackbox_provision.sh "$PREFIX/provision" "$CONFIGURATION" 

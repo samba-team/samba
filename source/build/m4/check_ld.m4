@@ -13,6 +13,7 @@ LD=""
 
 AC_SUBST(BLDSHARED)
 AC_SUBST(LD)
+AC_SUBST(SYS_LDFLAGS)
 AC_SUBST(LDFLAGS)
 
 # Assume non-shared by default and override below
@@ -32,13 +33,13 @@ AC_MSG_CHECKING([whether to try to build shared libraries on $host_os])
 case "$host_os" in
 	*linux*)
 		BLDSHARED="true"
-		LDFLAGS="$LDFLAGS -Wl,--export-dynamic"
+		SYS_LDFLAGS="-Wl,--export-dynamic"
 		;;
 	*solaris*)
 		BLDSHARED="true"
 		if test "${GCC}" = "yes"; then
 			if test "${ac_cv_prog_gnu_ld}" = "yes"; then
-				LDFLAGS="$LDFLAGS -Wl,-E"
+				SYS_LDFLAGS="-Wl,-E"
 			fi
 		fi
 		;;
@@ -47,26 +48,26 @@ case "$host_os" in
 		;;
 	*netbsd* | *freebsd* | *dragonfly* )  
 		BLDSHARED="true"
-		LDFLAGS="$LDFLAGS -Wl,--export-dynamic"
+		SYS_LDFLAGS="-Wl,--export-dynamic"
 		;;
 	*openbsd*)
 		BLDSHARED="true"
-		LDFLAGS="$LDFLAGS -Wl,-Bdynamic"
+		SYS_LDFLAGS="-Wl,-Bdynamic"
 		;;
 	*irix*)
 		BLDSHARED="true"
 		;;
 	*aix*)
 		BLDSHARED="true"
-		LDFLAGS="$LDFLAGS -Wl,-brtl,-bexpall,-bbigtoc"
+		SYS_LDFLAGS="-Wl,-brtl,-bexpall,-bbigtoc"
 		;;
 	*hpux*)
 		# Use special PIC flags for the native HP-UX compiler.
 		BLDSHARED="true" # I hope this is correct
 		if test "$host_cpu" = "ia64"; then
-			LDFLAGS="$LDFLAGS -Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
+			SYS_LDFLAGS="-Wl,-E,+b/usr/local/lib/hpux32:/usr/lib/hpux32"
 		else
-			LDFLAGS="$LDFLAGS -Wl,-E,+b/usr/local/lib:/usr/lib"
+			SYS_LDFLAGS="-Wl,-E,+b/usr/local/lib:/usr/lib"
 		fi
 		;;
 	*osf*)
@@ -86,6 +87,8 @@ AC_MSG_CHECKING([LD])
 AC_MSG_RESULT([$LD])
 AC_MSG_CHECKING([LDFLAGS])
 AC_MSG_RESULT([$LDFLAGS])
+AC_MSG_CHECKING([SYS_LDFLAGS])
+AC_MSG_RESULT([$SYS_LDFLAGS])
 
 AC_SUBST(HOSTLD)
 

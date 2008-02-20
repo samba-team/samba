@@ -35,7 +35,7 @@ struct smb2_request *smb2_notify_send(struct smb2_tree *tree, struct smb2_notify
 	req = smb2_request_init_tree(tree, SMB2_OP_NOTIFY, 0x20, false, 0);
 	if (req == NULL) return NULL;
 
-	SSVAL(req->out.hdr,  SMB2_HDR_UNKNOWN1,	0x0030);
+	SSVAL(req->out.hdr,  SMB2_HDR_CREDIT,	0x0030);
 
 	SSVAL(req->out.body, 0x02, io->in.recursive);
 	SIVAL(req->out.body, 0x04, io->in.buffer_size);

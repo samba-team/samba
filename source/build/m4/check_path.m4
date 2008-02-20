@@ -132,7 +132,7 @@ AC_SUBST(modulesdir)
 selftest_prefix="./st"
 AC_SUBST(selftest_prefix)
 AC_ARG_WITH(selftest-prefix,
-[  --with-selftest-prefix=DIR    The prefix where make test will be runned ($selftest_prefix)],
+[  --with-selftest-prefix=DIR    The prefix where make test will be run ($selftest_prefix)],
 [ case "$withval" in
   yes|no)
     AC_MSG_WARN([--with-selftest-prefix called without argument - will use default])

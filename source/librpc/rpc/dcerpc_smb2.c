@@ -410,7 +410,7 @@ struct composite_context *dcerpc_pipe_open_smb2_send(struct dcerpc_pipe *p,
 	state->ctx = ctx;
 
 	ZERO_STRUCT(io);
-	io.in.access_mask = 
+	io.in.desired_access = 
 		SEC_STD_READ_CONTROL |
 		SEC_FILE_READ_ATTRIBUTE |
 		SEC_FILE_WRITE_ATTRIBUTE |
@@ -423,11 +423,11 @@ struct composite_context *dcerpc_pipe_open_smb2_send(struct dcerpc_pipe *p,
 	io.in.share_access = 
 		NTCREATEX_SHARE_ACCESS_READ |
 		NTCREATEX_SHARE_ACCESS_WRITE;
-	io.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
 	io.in.create_options   = 
 		NTCREATEX_OPTIONS_NON_DIRECTORY_FILE | 
 		NTCREATEX_OPTIONS_UNKNOWN_400000;
-	io.in.impersonation    = NTCREATEX_IMPERSONATION_IMPERSONATION;
+	io.in.impersonation_level = NTCREATEX_IMPERSONATION_IMPERSONATION;
 
 	if ((strncasecmp(pipe_name, "/pipe/", 6) == 0) || 
 	    (strncasecmp(pipe_name, "\\pipe\\", 6) == 0)) {

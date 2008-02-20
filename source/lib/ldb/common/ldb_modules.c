@@ -126,9 +126,30 @@ static struct ops_list_entry {
 	struct ops_list_entry *next;	
 } *registered_modules = NULL;
 
+#ifndef STATIC_LIBLDB_MODULES
+
+#define STATIC_LIBLDB_MODULES \
+	ldb_operational_module_ops,	\
+	ldb_rdn_name_module_ops,	\
+	ldb_paged_results_module_ops,	\
+	ldb_sort_module_ops,		\
+	ldb_asq_module_ops, \
+	NULL
+#endif
+
+const static struct ldb_module_ops *builtin_modules[] = {
+	STATIC_LIBLDB_MODULES
+};
+
 static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 {
 	struct ops_list_entry *e;
+	int i;
+
+	for (i = 0; builtin_modules[i]; i++) {
+		if (strcmp(builtin_modules[i]->name, name) == 0)
+			return builtin_modules[i];
+	}
  
 	for (e = registered_modules; e; e = e->next) {
  		if (strcmp(e->ops->name, name) == 0) 
@@ -138,51 +159,6 @@ static const struct ldb_module_ops *ldb_find_module_ops(const char *name)
 	return NULL;
 }
 
-#ifndef STATIC_LIBLDB_MODULES
-
-#ifdef HAVE_LDB_LDAP
-#define LDAP_INIT ldb_ldap_init,
-#else
-#define LDAP_INIT
-#endif
-
-#ifdef HAVE_LDB_SQLITE3
-#define SQLITE3_INIT ldb_sqlite3_init,
-#else
-#define SQLITE3_INIT
-#endif
-
-#define STATIC_LIBLDB_MODULES \
-	LDAP_INIT \
-	SQLITE3_INIT \
-	ldb_tdb_init, 	\
-	ldb_operational_init,	\
-	ldb_rdn_name_init,	\
-	ldb_paged_results_init,	\
-	ldb_sort_init,		\
-	ldb_asq_init, \
-	NULL
-#endif
-
-int ldb_global_init(void)
-{
-	int (*static_init_fns[])(void) = { STATIC_LIBLDB_MODULES };
-
-	static int initialized = 0;
-	int ret = 0, i;
-
-	if (initialized) 
-		return 0;
-
-	initialized = 1;
-	
-	for (i = 0; static_init_fns[i]; i++) {
-		if (static_init_fns[i]() == -1)
-			ret = -1;
-	}
-
-	return ret;
-}
 
 int ldb_register_module(const struct ldb_module_ops *ops)
 {
@@ -257,8 +233,13 @@ int ldb_load_modules_list(struct ldb_context *ldb, const char **module_list, str
 		}
 
 		if (ops == NULL) {
-			ops = ldb_dso_load_symbol(ldb, module_list[i], 
-						      "ldb_module_ops");
+			char *symbol_name = talloc_asprintf(ldb, "ldb_%s_module_ops", 
+												module_list[i]);
+			if (symbol_name == NULL) {
+				return LDB_ERR_OPERATIONS_ERROR;
+			}
+			ops = ldb_dso_load_symbol(ldb, module_list[i], symbol_name);
+			talloc_free(symbol_name);
 		}
 		
 		if (ops == NULL) {

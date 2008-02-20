@@ -55,9 +55,9 @@ NTSTATUS smb2_util_unlink(struct smb2_tree *tree, const char *fname)
 	NTSTATUS status;
 
 	ZERO_STRUCT(io);
-	io.in.access_mask = SEC_RIGHTS_FILE_ALL;
-	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
-	io.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
 	io.in.share_access = 
 		NTCREATEX_SHARE_ACCESS_DELETE|
 		NTCREATEX_SHARE_ACCESS_READ|
@@ -107,9 +107,9 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 
 	smb2_util_unlink(tree, fname);
 	ZERO_STRUCT(io);
-	io.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
-	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
-	io.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	io.in.desired_access = SEC_FLAG_MAXIMUM_ALLOWED;
+	io.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OVERWRITE_IF;
 	io.in.share_access = 
 		NTCREATEX_SHARE_ACCESS_DELETE|
 		NTCREATEX_SHARE_ACCESS_READ|
@@ -119,10 +119,11 @@ static NTSTATUS smb2_create_complex(struct smb2_tree *tree, const char *fname,
 	if (dir) {
 		io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 		io.in.share_access &= ~NTCREATEX_SHARE_ACCESS_DELETE;
-		io.in.file_attr   = FILE_ATTRIBUTE_DIRECTORY;
-		io.in.open_disposition = NTCREATEX_DISP_CREATE;
+		io.in.file_attributes   = FILE_ATTRIBUTE_DIRECTORY;
+		io.in.create_disposition = NTCREATEX_DISP_CREATE;
 	}
 
+	/* it seems vista is now fussier about alignment? */
 	if (strchr(fname, ':') == NULL) {
 		/* setup some EAs */
 		io.in.eas.num_eas = 2;
@@ -334,10 +335,10 @@ NTSTATUS torture_smb2_testfile(struct smb2_tree *tree, const char *fname,
 	NTSTATUS status;
 
 	ZERO_STRUCT(io);
-	io.in.oplock_flags = 0;
-	io.in.access_mask = SEC_RIGHTS_FILE_ALL;
-	io.in.file_attr   = FILE_ATTRIBUTE_NORMAL;
-	io.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.in.oplock_level = 0;
+	io.in.desired_access = SEC_RIGHTS_FILE_ALL;
+	io.in.file_attributes   = FILE_ATTRIBUTE_NORMAL;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.in.share_access = 
 		NTCREATEX_SHARE_ACCESS_DELETE|
 		NTCREATEX_SHARE_ACCESS_READ|
@@ -370,10 +371,10 @@ NTSTATUS torture_smb2_testdir(struct smb2_tree *tree, const char *fname,
 	NTSTATUS status;
 
 	ZERO_STRUCT(io);
-	io.in.oplock_flags = 0;
-	io.in.access_mask = SEC_RIGHTS_DIR_ALL;
-	io.in.file_attr   = FILE_ATTRIBUTE_DIRECTORY;
-	io.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.in.oplock_level = 0;
+	io.in.desired_access = SEC_RIGHTS_DIR_ALL;
+	io.in.file_attributes   = FILE_ATTRIBUTE_DIRECTORY;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN_IF;
 	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE;
 	io.in.create_options = NTCREATEX_OPTIONS_DIRECTORY;
 	io.in.fname = fname;
@@ -422,13 +423,13 @@ NTSTATUS smb2_util_roothandle(struct smb2_tree *tree, struct smb2_handle *handle
 	NTSTATUS status;
 
 	ZERO_STRUCT(io);
-	io.in.oplock_flags = 0;
-	io.in.access_mask = SEC_STD_SYNCHRONIZE | SEC_DIR_READ_ATTRIBUTE | SEC_DIR_LIST;
-	io.in.file_attr   = 0;
-	io.in.open_disposition = NTCREATEX_DISP_OPEN;
+	io.in.oplock_level = 0;
+	io.in.desired_access = SEC_STD_SYNCHRONIZE | SEC_DIR_READ_ATTRIBUTE | SEC_DIR_LIST;
+	io.in.file_attributes   = 0;
+	io.in.create_disposition = NTCREATEX_DISP_OPEN;
 	io.in.share_access = NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_DELETE;
 	io.in.create_options = NTCREATEX_OPTIONS_ASYNC_ALERT;
-	io.in.fname = "";
+	io.in.fname = NULL;
 
 	status = smb2_create(tree, tree, &io);
 	NT_STATUS_NOT_OK_RETURN(status);

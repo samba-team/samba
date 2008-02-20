@@ -13,6 +13,6 @@ OBJ_FILES = ntlmssp.o \
 		ntlmssp_client.o \
 		ntlmssp_server.o
 PRIVATE_DEPENDENCIES = MSRPC_PARSE CREDENTIALS
-OUTPUT_TYPE = INTEGRATED
+OUTPUT_TYPE = MERGED_OBJ
 # End MODULE gensec_ntlmssp
 ################################################

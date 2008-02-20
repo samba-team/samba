@@ -615,8 +615,6 @@ int main(int argc,char *argv[])
 		alarm(max_runtime);
 	}
 
-	ldb_global_init();
-
 	if (extra_module != NULL) {
 	    init_module_fn fn = load_module(talloc_autofree_context(), poptGetOptArg(pc));
 

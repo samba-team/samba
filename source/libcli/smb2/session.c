@@ -74,10 +74,12 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 				0x18, true, io->in.secblob.length);
 	if (req == NULL) return NULL;
 
-	SBVAL(req->out.hdr,  SMB2_HDR_UID, session->uid);
-	SSVAL(req->out.body, 0x02, io->in._pad); /* pad */
-	SIVAL(req->out.body, 0x04, io->in.unknown2);
-	SIVAL(req->out.body, 0x08, io->in.unknown3);
+	SBVAL(req->out.hdr,  SMB2_HDR_SESSION_ID, session->uid);
+	SCVAL(req->out.body, 0x02, io->in.vc_number);
+	SCVAL(req->out.body, 0x03, io->in.security_mode);
+	SIVAL(req->out.body, 0x04, io->in.capabilities);
+	SIVAL(req->out.body, 0x08, io->in.channel);
+	SBVAL(req->out.body, 0x10, io->in.previous_sessionid);
 
 	req->session = session;
 
@@ -86,7 +88,6 @@ struct smb2_request *smb2_session_setup_send(struct smb2_session *session,
 		talloc_free(req);
 		return NULL;
 	}
-	SBVAL(req->out.body, 0x10, io->in.unknown4);
 
 	smb2_transport_send(req);
 
@@ -110,8 +111,8 @@ NTSTATUS smb2_session_setup_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx,
 
 	SMB2_CHECK_PACKET_RECV(req, 0x08, true);
 
-	io->out._pad     = SVAL(req->in.body, 0x02);
-	io->out.uid      = BVAL(req->in.hdr,  SMB2_HDR_UID);
+	io->out.session_flags = SVAL(req->in.body, 0x02);
+	io->out.uid           = BVAL(req->in.hdr,  SMB2_HDR_SESSION_ID);
 	
 	status = smb2_pull_o16s16_blob(&req->in, mem_ctx, req->in.body+0x04, &io->out.secblob);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -206,10 +207,11 @@ struct composite_context *smb2_session_setup_spnego_send(struct smb2_session *se
 	c->private_data = state;
 
 	ZERO_STRUCT(state->io);
-	state->io.in._pad = 0x0000;
-	state->io.in.unknown2 = 0x0000000F;
-	state->io.in.unknown3 = 0x00000000;
-	state->io.in.unknown4 = 0; /* uint64_t */
+	state->io.in.vc_number          = 0;
+	state->io.in.security_mode      = 0;
+	state->io.in.capabilities       = 0;
+	state->io.in.channel            = 0;
+	state->io.in.previous_sessionid = 0;
 
 	c->status = gensec_set_credentials(session->gensec, credentials);
 	if (!composite_is_ok(c)) return c;

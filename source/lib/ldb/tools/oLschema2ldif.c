@@ -560,8 +560,6 @@ static void usage(void)
 	struct ldb_cmdline *options;
 	FILE *in = stdin;
 	FILE *out = stdout;
-	ldb_global_init();
-
 	ctx = talloc_new(NULL);
 	ldb_ctx = ldb_init(ctx);
 

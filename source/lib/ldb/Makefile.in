@@ -19,6 +19,11 @@ SWIG = swig
 EXTRA_OBJ=@EXTRA_OBJ@
 TESTS=test-tdb.sh @TESTS@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PYTHON = @PYTHON@
+PYTHON_CONFIG = @PYTHON_CONFIG@
+tdbdir = @tdbdir@
+ldbdir = $(srcdir)
+tallocdir = @tallocdir@
 
 TALLOC_LIBS = @TALLOC_LIBS@
 TALLOC_CFLAGS = @TALLOC_CFLAGS@
@@ -53,35 +58,6 @@ CFLAGS=-g -I$(srcdir)/include -Iinclude -I$(srcdir) -I$(srcdir)/.. \
 MDLD = @MDLD@
 MDLD_FLAGS = @MDLD_FLAGS@
 
-LDB_LIB = $(STATICLIB)
-
-LIB_FLAGS=$(LDFLAGS) -Llib $(LDB_LIB) $(LIBS) $(POPT_LIBS) $(TALLOC_LIBS) \
-		  $(TDB_LIBS) $(LDAP_LIBS) $(LIBDL)
-
-LDB_TDB_DIR=ldb_tdb
-LDB_TDB_OBJ=$(LDB_TDB_DIR)/ldb_tdb.o \
-	$(LDB_TDB_DIR)/ldb_pack.o $(LDB_TDB_DIR)/ldb_search.o $(LDB_TDB_DIR)/ldb_index.o \
-	$(LDB_TDB_DIR)/ldb_cache.o $(LDB_TDB_DIR)/ldb_tdb_wrap.o
-
-LDB_MAP_DIR=ldb_map
-LDB_MAP_OBJ=$(LDB_MAP_DIR)/ldb_map.o $(LDB_MAP_DIR)/ldb_map_inbound.o \
-	    $(LDB_MAP_DIR)/ldb_map_outbound.o
-
-COMDIR=common
-COMMON_OBJ=$(COMDIR)/ldb.o $(COMDIR)/ldb_ldif.o \
-	   $(COMDIR)/ldb_parse.o $(COMDIR)/ldb_msg.o $(COMDIR)/ldb_utf8.o \
-	   $(COMDIR)/ldb_debug.o $(COMDIR)/ldb_modules.o \
-	   $(COMDIR)/ldb_dn.o $(COMDIR)/ldb_match.o $(COMDIR)/ldb_attributes.o \
-	   $(COMDIR)/attrib_handlers.o $(COMDIR)/ldb_controls.o $(COMDIR)/qsort.o
-
-MODDIR=modules
-MODULES_OBJ=$(MODDIR)/operational.o $(MODDIR)/rdn_name.o \
-	   $(MODDIR)/paged_results.o $(MODDIR)/sort.o $(MODDIR)/asq.o
-
-NSSDIR=nssldb
-NSS_OBJ= $(NSSDIR)/ldb-nss.o $(NSSDIR)/ldb-pwd.o $(NSSDIR)/ldb-grp.o
-NSS_LIB = lib/libnss_ldb.$(SHLIBEXT).2
-
 OBJS = $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(POPT_OBJ) $(LDB_MAP_OBJ) @LIBREPLACEOBJ@ $(EXTRA_OBJ) 
 
 headers = $(srcdir)/include/ldb.h $(srcdir)/include/ldb_errors.h $(srcdir)/include/ldb_handlers.h
@@ -93,6 +69,8 @@ EXAMPLES = examples/ldbreader examples/ldifreader
 DIRS = lib bin common ldb_tdb ldb_ldap ldb_sqlite3 modules tools examples
 
 default: all
+
+include $(ldbdir)/rules.mk
 
 nss: nssdir all $(NSS_LIB)
 
@@ -109,76 +87,22 @@ lib/$(SONAME): $(SOLIB)
 lib/libldb.$(SHLIBEXT): $(SOLIB)
 	ln -fs libldb.$(SHLIBEXT).$(PACKAGE_VERSION) $@
 
+lib/libnss_ldb.$(SHLIBEXT).2: $(NSS_OBJ) $(SOLIB)
+	$(SHLD) $(SHLD_FLAGS) -o $@ $(NSS_OBJ) $(LDFLAGS) $(SOLIB) @SONAMEFLAG@libnss_ldb.$(SHLIBEXT).2
+
 $(SOLIB): $(OBJS)
 	$(SHLD) $(SHLD_FLAGS) -o $@ $(OBJS) $(LDFLAGS) $(LIBS) $(TALLOC_LIBS) $(TDB_LIBS) $(LIBDL) $(LDAP_LIBS) @SONAMEFLAG@$(SONAME)
 
 all: showflags dirs $(OBJS) $(STATICLIB) $(SOLIB) $(BINS) $(EXAMPLES) manpages \
 	@PYTHON_BUILD_TARGET@
 
-showflags:
-	@echo 'ldb will be compiled with flags:'
-	@echo '  CFLAGS = $(CFLAGS)'
-	@echo '  LIBS = $(LIBS)'
-
-.c.o:
-	@echo Compiling $*.c
-	@mkdir -p `dirname $@`
-	@$(CC) $(CFLAGS) $(PICFLAG) -c $< -o $@
-
-.c.po:
-	@echo Compiling $*.c
-	@mkdir -p `dirname $@`
-	@$(CC) -fPIC $(CFLAGS) -c $< -o $@
-
 dirs:
 	@mkdir -p $(DIRS)
 
-lib/libldb.a: $(OBJS)
-	ar -rv $@ $(OBJS)
-	@-ranlib $@
-
-lib/libnss_ldb.$(SHLIBEXT).2: $(NSS_OBJ) $(SOLIB)
-	$(SHLD) $(SHLD_FLAGS) -o $@ $(NSS_OBJ) $(LDFLAGS) $(SOLIB) @SONAMEFLAG@libnss_ldb.$(SHLIBEXT).2
-
-sample_module.$(SHLIBEXT): tests/sample_module.o
-	$(MDLD) $(MDLD_FLAGS) -o $@ tests/sample_module.o
-
-bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)
-	$(CC) -o bin/ldbadd tools/ldbadd.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
-
-bin/ldbsearch: tools/ldbsearch.o tools/cmdline.o $(LIBS)
-	$(CC) -o bin/ldbsearch tools/ldbsearch.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
-
-bin/ldbdel: tools/ldbdel.o tools/cmdline.o $(LIBS)
-	$(CC) -o bin/ldbdel tools/ldbdel.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
-
-bin/ldbmodify: tools/ldbmodify.o tools/cmdline.o $(LIBS)
-	$(CC) -o bin/ldbmodify tools/ldbmodify.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
-
-bin/ldbedit: tools/ldbedit.o tools/cmdline.o $(LIBS)
-	$(CC) -o bin/ldbedit tools/ldbedit.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
-
-bin/ldbrename: tools/ldbrename.o tools/cmdline.o $(LIBS)
-	$(CC) -o bin/ldbrename tools/ldbrename.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
-
-bin/ldbtest: tools/ldbtest.o tools/cmdline.o $(LIBS)
-	$(CC) -o bin/ldbtest tools/ldbtest.o tools/cmdline.o $(LIB_FLAGS) $(LD_EXPORT_DYNAMIC)
-
-bin/oLschema2ldif: tools/oLschema2ldif.o tools/cmdline.o tools/convert.o $(LIBS)
-	$(CC) -o bin/oLschema2ldif tools/oLschema2ldif.o tools/cmdline.o tools/convert.o $(LIB_FLAGS)
-
-examples/ldbreader: examples/ldbreader.o $(LIBS)
-	$(CC) -o examples/ldbreader examples/ldbreader.o $(LIB_FLAGS)
-
-examples/ldifreader: examples/ldifreader.o $(LIBS)
-	$(CC) -o examples/ldifreader examples/ldifreader.o $(LIB_FLAGS)
-
-.SUFFIXES: .1 .1.xml .3 .3.xml .xml .html .c .o
-
-manpages:
+manpages::
 	@$(srcdir)/docs/builddocs.sh "$(XSLTPROC)" "$(srcdir)"
 
-doxygen:
+doxygen::
 	test -z "$(DOXYGEN)" || (cd $(srcdir) && "$(DOXYGEN)")
 
 clean::
@@ -191,7 +115,6 @@ clean::
 	rm -rf tests/schema/
 
 distclean:: clean
-	rm -f *~ */*~
 	rm -rf bin lib
 	rm -f config.log config.status config.cache include/config.h
 	rm -f ldb.pc
@@ -200,39 +123,39 @@ distclean:: clean
 realdistclean:: distclean
 	rm -f configure.in include/config.h.in
 
-check:: test check-soloading
+check:: test @PYTHON_CHECK_TARGET@
 
-check-soloading: sample_module.$(SHLIBEXT)
+check-soloading: sample.$(SHLIBEXT)
 	LDB_MODULES_PATH=$(builddir) $(srcdir)/tests/test-soloading.sh
 
-test: all check-soloading
+test:: all check-soloading
 	for t in $(TESTS); do echo STARTING $${t}; $(srcdir)/tests/$${t} || exit 1; done
 
-valgrindtest: all
+valgrindtest:: all
 	for t in $(TESTS); do echo STARTING $${t}; VALGRIND="valgrind -q --db-attach=yes --num-callers=30" $(srcdir)/tests/$${t} || exit 1; done
 
-installcheck: install test
+installcheck:: install test
 
 install:: all installdirs installheaders installlibs installbin installdocs \
 		@PYTHON_INSTALL_TARGET@
 
-installdirs:
+installdirs::
 	mkdir -p $(DESTDIR)$(includedir) $(DESTDIR)$(libdir) $(DESTDIR)$(bindir) $(DESTDIR)$(libdir)/pkgconfig 
 
-installheaders: installdirs
+installheaders:: installdirs
 	cp $(headers) $(DESTDIR)$(includedir)
 
-installlibs: installdirs
+installlibs:: installdirs
 	cp $(STATICLIB) $(SOLIB) $(DESTDIR)$(libdir)
 	cp ldb.pc $(DESTDIR)$(libdir)/pkgconfig
 
-installbin: installdirs
+installbin:: installdirs
 	cp $(BINS) $(DESTDIR)$(bindir)
 
-installdocs: installdirs
+installdocs:: installdirs
 	$(srcdir)/docs/installdocs.sh $(DESTDIR)$(mandir)
 
-gcov:
+gcov::
 	$(GCOV) -po ldb_sqlite3 $(srcdir)/ldb_sqlite3/*.c 2| tee ldb_sqlite3.report.gcov
 	$(GCOV) -po ldb_ldap $(srcdir)/ldb_ldap/*.c 2| tee ldb_ldap.report.gcov
 	$(GCOV) -po ldb_tdb $(srcdir)/ldb_tdb/*.c 2| tee ldb_tdb.report.gcov
@@ -240,30 +163,4 @@ gcov:
 	$(GCOV) -po modules $(srcdir)/modules/*.c 2| tee modules.report.gcov
 	$(GCOV) -po tools $(srcdir)/tools/*.c 2| tee tools.report.gcov
 
-etags:
-	etags `find $(srcdir) -name "*.[ch]"`
-
-ctags:
-	ctags `find $(srcdir) -name "*.[ch]"`
-
-.SUFFIXES: _wrap.c .i
-
-.i_wrap.c:
-	[ "$(SWIG)" == "no" ] || $(SWIG) -O -Wall -python -keyword $<
-
-# Python bindings
-build-python: lib/libldb.$(SHLIBEXT) ldb_wrap.c
-	./setup.py build
-
-install-python: build-python
-	./setup.py install --prefix=$(DESTDIR)$(prefix)
-
-install-swig: 
-	cp ldb.i `$(SWIG) -swiglib`
-
-check-python: build-python
-	# FIXME: This isn't portable
-	LD_LIBRARY_PATH=lib PYTHONPATH=.:build/lib.linux-i686-2.4/ trial tests/python/api.py
-
-clean-python:
-	./setup.py clean
+include $(ldbdir)/ldb.mk

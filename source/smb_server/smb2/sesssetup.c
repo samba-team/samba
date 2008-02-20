@@ -32,12 +32,12 @@
 
 static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sesssetup *io)
 {
-	uint16_t unknown1;
+	uint16_t credit;
 
 	if (NT_STATUS_IS_OK(req->status)) {
-		unknown1 = 0x0003;
+		credit = 0x0003;
 	} else if (NT_STATUS_EQUAL(req->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		unknown1 = 0x0002;
+		credit = 0x0002;
 	} else {
 		smb2srv_send_error(req, req->status);
 		return;
@@ -45,10 +45,10 @@ static void smb2srv_sesssetup_send(struct smb2srv_request *req, union smb_sessse
 
 	SMB2SRV_CHECK(smb2srv_setup_reply(req, 0x08, true, io->smb2.out.secblob.length));
 
-	SSVAL(req->out.hdr, SMB2_HDR_UNKNOWN1,	unknown1);
-	SBVAL(req->out.hdr, SMB2_HDR_UID,	io->smb2.out.uid);
+	SSVAL(req->out.hdr, SMB2_HDR_CREDIT,	credit);
+	SBVAL(req->out.hdr, SMB2_HDR_SESSION_ID,	io->smb2.out.uid);
 
-	SSVAL(req->out.body, 0x02, io->smb2.out._pad);
+	SSVAL(req->out.body, 0x02, io->smb2.out.session_flags);
 	SMB2SRV_CHECK(smb2_push_o16s16_blob(&req->out, 0x04, io->smb2.out.secblob));
 
 	smb2srv_send_reply(req);
@@ -108,11 +108,11 @@ static void smb2srv_sesssetup_backend(struct smb2srv_request *req, union smb_ses
 	struct smbsrv_session *smb_sess = NULL;
 	uint64_t vuid;
 
-	io->smb2.out._pad	= 0;
+	io->smb2.out.session_flags = 0;
 	io->smb2.out.uid	= 0;
 	io->smb2.out.secblob = data_blob(NULL, 0);
 
-	vuid = BVAL(req->in.hdr, SMB2_HDR_UID);
+	vuid = BVAL(req->in.hdr, SMB2_HDR_SESSION_ID);
 
 	/*
 	 * only when we got '0' we should allocate a new session
@@ -192,12 +192,13 @@ void smb2srv_sesssetup_recv(struct smb2srv_request *req)
 	SMB2SRV_CHECK_BODY_SIZE(req, 0x18, true);
 	SMB2SRV_TALLOC_IO_PTR(io, union smb_sesssetup);
 
-	io->smb2.level		= RAW_SESSSETUP_SMB2;
-	io->smb2.in._pad	= SVAL(req->in.body, 0x02);
-	io->smb2.in.unknown2	= IVAL(req->in.body, 0x04);
-	io->smb2.in.unknown3	= IVAL(req->in.body, 0x08);
+	io->smb2.level		       = RAW_SESSSETUP_SMB2;
+	io->smb2.in.vc_number	       = CVAL(req->in.body, 0x02);
+	io->smb2.in.security_mode      = CVAL(req->in.body, 0x03);
+	io->smb2.in.capabilities       = IVAL(req->in.body, 0x04);
+	io->smb2.in.channel            = IVAL(req->in.body, 0x08);
+	io->smb2.in.previous_sessionid = BVAL(req->in.body, 0x10);
 	SMB2SRV_CHECK(smb2_pull_o16s16_blob(&req->in, io, req->in.body+0x0C, &io->smb2.in.secblob));
-	io->smb2.in.unknown4	= BVAL(req->in.body, 0x10);
 
 	smb2srv_sesssetup_backend(req, io);
 }

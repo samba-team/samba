@@ -400,7 +400,7 @@ static WERROR ldb_add_key(TALLOC_CTX *mem_ctx, const struct hive_key *parent,
 			  struct security_descriptor *sd,
 			  struct hive_key **newkey)
 {
-	struct ldb_key_data *parentkd = (const struct ldb_key_data *)parent;
+	struct ldb_key_data *parentkd = discard_const_p(struct ldb_key_data, parent);
 	struct ldb_message *msg;
 	struct ldb_key_data *newkd;
 	int ret;

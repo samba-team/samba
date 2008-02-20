@@ -326,15 +326,9 @@ static int rdn_name_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 	return rdn_name_wait_once(handle);
 }
 
-static const struct ldb_module_ops rdn_name_ops = {
+const struct ldb_module_ops ldb_rdn_name_module_ops = {
 	.name              = "rdn_name",
 	.add               = rdn_name_add,
 	.rename            = rdn_name_rename,
 	.wait              = rdn_name_wait
 };
-
-
-int ldb_rdn_name_init(void)
-{
-	return ldb_register_module(&rdn_name_ops);
-}

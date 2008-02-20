@@ -51,7 +51,9 @@ static struct {
  { LEVEL(RAW_FILEINFO_COMPRESSION_INFORMATION) },
  { LEVEL(RAW_FILEINFO_NETWORK_OPEN_INFORMATION) },
  { LEVEL(RAW_FILEINFO_ATTRIBUTE_TAG_INFORMATION) },
- { LEVEL(RAW_FILEINFO_SMB2_ALL_EAS) },
+/*  
+disabled until we know how the alignment now works
+{ LEVEL(RAW_FILEINFO_SMB2_ALL_EAS) }, */
  { LEVEL(RAW_FILEINFO_SMB2_ALL_INFORMATION) },
  { LEVEL(RAW_FILEINFO_SEC_DESC) }
 };
@@ -85,13 +87,13 @@ static bool torture_smb2_fileinfo(struct torture_context *tctx, struct smb2_tree
 
 	status = torture_smb2_testfile(tree, FNAME, &hfile);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Unable to create test file '%s' - %s\n", FNAME, nt_errstr(status));
+		printf(__location__ " Unable to create test file '%s' - %s\n", FNAME, nt_errstr(status));
 		goto failed;
 	}
 
 	status = torture_smb2_testdir(tree, DNAME, &hdir);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Unable to create test directory '%s' - %s\n", DNAME, nt_errstr(status));
+		printf(__location__ " Unable to create test directory '%s' - %s\n", DNAME, nt_errstr(status));
 		goto failed;
 	}
 
@@ -150,7 +152,7 @@ static bool torture_smb2_fsinfo(struct smb2_tree *tree)
 	printf("Testing fsinfo levels\n");
 	status = smb2_util_roothandle(tree, &handle);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("Unable to create test directory '%s' - %s\n", DNAME, nt_errstr(status));
+		printf(__location__ " Unable to create root handle - %s\n", nt_errstr(status));
 		return false;
 	}
 

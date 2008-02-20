@@ -167,7 +167,7 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 	}
 
 	flags	= IVAL(hdr, SMB2_HDR_FLAGS);
-	seqnum	= BVAL(hdr, SMB2_HDR_SEQNUM);
+	seqnum	= BVAL(hdr, SMB2_HDR_MESSAGE_ID);
 
 	/* match the incoming request against the list of pending requests */
 	for (req=transport->pending_recv; req; req=req->next) {
@@ -215,6 +215,8 @@ static NTSTATUS smb2_transport_finish_recv(void *private, DATA_BLOB blob)
 			goto error;
 		}
 	}
+
+	smb2_setup_bufinfo(req);
 
 	DEBUG(2, ("SMB2 RECV seqnum=0x%llx\n", (long long)req->seqnum));
 	dump_data(5, req->in.body, req->in.body_size);

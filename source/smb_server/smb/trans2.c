@@ -248,7 +248,7 @@ static NTSTATUS trans2_open(struct smbsrv_request *req, struct trans_op *op)
 	io->t2open.in.num_eas      = 0;
 	io->t2open.in.eas          = NULL;
 
-	smbsrv_blob_pull_string(req, &trans->in.params, 28, &io->t2open.in.fname, 0);
+	smbsrv_blob_pull_string(&req->in.bufinfo, &trans->in.params, 28, &io->t2open.in.fname, 0);
 	if (io->t2open.in.fname == NULL) {
 		return NT_STATUS_FOOBAR;
 	}
@@ -296,7 +296,7 @@ static NTSTATUS trans2_mkdir(struct smbsrv_request *req, struct trans_op *op)
 	NT_STATUS_HAVE_NO_MEMORY(io);
 
 	io->t2mkdir.level = RAW_MKDIR_T2MKDIR;
-	smbsrv_blob_pull_string(req, &trans->in.params, 4, &io->t2mkdir.in.path, 0);
+	smbsrv_blob_pull_string(&req->in.bufinfo, &trans->in.params, 4, &io->t2mkdir.in.path, 0);
 	if (io->t2mkdir.in.path == NULL) {
 		return NT_STATUS_FOOBAR;
 	}
@@ -461,7 +461,7 @@ static NTSTATUS trans2_qpathinfo(struct smbsrv_request *req, struct trans_op *op
 
 	level = SVAL(trans->in.params.data, 0);
 
-	smbsrv_blob_pull_string(req, &trans->in.params, 6, &st->generic.in.file.path, 0);
+	smbsrv_blob_pull_string(&req->in.bufinfo, &trans->in.params, 6, &st->generic.in.file.path, 0);
 	if (st->generic.in.file.path == NULL) {
 		return NT_STATUS_FOOBAR;
 	}
@@ -602,7 +602,7 @@ static NTSTATUS trans2_parse_sfileinfo(struct smbsrv_request *req,
 
 	return smbsrv_pull_passthru_sfileinfo(st, passthru_level, st,
 					      blob, SMBSRV_REQ_DEFAULT_STR_FLAGS(req),
-					      req);
+					      &req->in.bufinfo);
 }
 
 /*
@@ -661,7 +661,7 @@ static NTSTATUS trans2_setpathinfo(struct smbsrv_request *req, struct trans_op *
 
 	level = SVAL(trans->in.params.data, 0);
 
-	smbsrv_blob_pull_string(req, &trans->in.params, 6, &st->generic.in.file.path, 0);
+	smbsrv_blob_pull_string(&req->in.bufinfo, &trans->in.params, 6, &st->generic.in.file.path, 0);
 	if (st->generic.in.file.path == NULL) {
 		return NT_STATUS_FOOBAR;
 	}
@@ -859,7 +859,7 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct trans_op *op
 	level                             = SVAL(trans->in.params.data, 6);
 	search->t2ffirst.in.storage_type  = IVAL(trans->in.params.data, 8);
 
-	smbsrv_blob_pull_string(req, &trans->in.params, 12, &search->t2ffirst.in.pattern, 0);
+	smbsrv_blob_pull_string(&req->in.bufinfo, &trans->in.params, 12, &search->t2ffirst.in.pattern, 0);
 	if (search->t2ffirst.in.pattern == NULL) {
 		return NT_STATUS_FOOBAR;
 	}
@@ -945,7 +945,7 @@ static NTSTATUS trans2_findnext(struct smbsrv_request *req, struct trans_op *op)
 	search->t2fnext.in.resume_key    = IVAL(trans->in.params.data, 6);
 	search->t2fnext.in.flags         = SVAL(trans->in.params.data, 10);
 
-	smbsrv_blob_pull_string(req, &trans->in.params, 12, &search->t2fnext.in.last_name, 0);
+	smbsrv_blob_pull_string(&req->in.bufinfo, &trans->in.params, 12, &search->t2fnext.in.last_name, 0);
 	if (search->t2fnext.in.last_name == NULL) {
 		return NT_STATUS_FOOBAR;
 	}
@@ -1240,11 +1240,11 @@ static void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 	}
 
 	if (command == SMBtrans) {
-		req_pull_string(req, &trans->in.trans_name, req->in.data, -1, STR_TERMINATE);
+		req_pull_string(&req->in.bufinfo, &trans->in.trans_name, req->in.data, -1, STR_TERMINATE);
 	}
 
-	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &trans->in.params) ||
-	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &trans->in.data)) {
+	if (!req_pull_blob(&req->in.bufinfo, req->in.hdr + param_ofs, param_count, &trans->in.params) ||
+	    !req_pull_blob(&req->in.bufinfo, req->in.hdr + data_ofs, data_count, &trans->in.data)) {
 		smbsrv_send_error(req, NT_STATUS_FOOBAR);
 		return;
 	}
@@ -1302,8 +1302,8 @@ static void reply_transs_generic(struct smbsrv_request *req, uint8_t command)
 	data_ofs              = SVAL(req->in.vwv, VWV(6));
 	data_disp             = SVAL(req->in.vwv, VWV(7));
 
-	if (!req_pull_blob(req, req->in.hdr + param_ofs, param_count, &params) ||
-	    !req_pull_blob(req, req->in.hdr + data_ofs, data_count, &data)) {
+	if (!req_pull_blob(&req->in.bufinfo, req->in.hdr + param_ofs, param_count, &params) ||
+	    !req_pull_blob(&req->in.bufinfo, req->in.hdr + data_ofs, data_count, &data)) {
 		smbsrv_send_error(req, NT_STATUS_INVALID_PARAMETER);
 		return;
 	}

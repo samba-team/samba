@@ -863,3 +863,42 @@ _PUBLIC_ struct torture_test *torture_suite_add_1smb_test(
 }
 
 
+NTSTATUS torture_second_tcon(TALLOC_CTX *mem_ctx,
+			     struct smbcli_session *session,
+			     const char *sharename,
+			     struct smbcli_tree **res)
+{
+	union smb_tcon tcon;
+	struct smbcli_tree *result;
+	TALLOC_CTX *tmp_ctx;
+	NTSTATUS status;
+
+	if ((tmp_ctx = talloc_new(mem_ctx)) == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	result = smbcli_tree_init(session, tmp_ctx, false);
+	if (result == NULL) {
+		talloc_free(tmp_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	tcon.generic.level = RAW_TCON_TCONX;
+	tcon.tconx.in.flags = 0;
+
+	/* Ignore share mode security here */
+	tcon.tconx.in.password = data_blob(NULL, 0);
+	tcon.tconx.in.path = sharename;
+	tcon.tconx.in.device = "?????";
+
+	status = smb_raw_tcon(result, tmp_ctx, &tcon);
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(tmp_ctx);
+		return status;
+	}
+
+	result->tid = tcon.tconx.out.tid;
+	*res = talloc_steal(mem_ctx, result);
+	talloc_free(tmp_ctx);
+	return NT_STATUS_OK;
+}

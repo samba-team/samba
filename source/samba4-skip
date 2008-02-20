@@ -1,53 +1,54 @@
-BASE-DEFER_OPEN
-BASE-DELAYWRITE
-RAW-COMPOSITE
-RAW-OPLOCK
-BASE-IOMETER
-BASE-CASETABLE
-BASE-NTTRANS
-.*BASE-BENCH-HOLDCON.*				# Very slow
-BASE-SCAN-MAXFID
-RAW-BENCH-OPLOCK
-RAW-HOLD-OPLOCK
-RAW-PING-PONG
-RPC-SAMR_ACCESSMASK
-RAW-SCAN-EAMAX
-RAW-QFILEINFO-IPC
-BASE-UTABLE
-BASE-SMB
-SMB2-NOTIFY
-SMB2-SCAN
-ntvfs.cifs.BASE-CHARSET
-ntvfs.cifs.BASE-DEFER_OPEN
-ntvfs.cifs.BASE-DELAYWRITE
-ntvfs.cifs.BASE-IOMETER
-ntvfs.cifs.BASE-CASETABLE
-ntvfs.cifs.BASE-NTTRANS
-ntvfs.cifs.BASE-SCAN-MAXFID
-ntvfs.cifs.BASE-UTABLE
-ntvfs.cifs.BASE-SMB
-ntvfs.cifs.RAW-COMPOSITE
-ntvfs.cifs.RAW-OPLOCK
-ntvfs.cifs.RAW-NOTIFY
-ntvfs.cifs.RAW-BENCH-OPLOCK
-ntvfs.cifs.RAW-SCAN-EAMAX
-ntvfs.cifs.RAW-CONTEXT
-ntvfs.cifs.RAW-QFILEINFO-IPC
-RPC-DSSYNC
-RPC-SAMSYNC
-LDAP-UPTODATEVECTOR					# Segfaults
-RPC-SCANNER							# Very slow
-RPC-REMACT							# Not provided by Samba 4
-RPC-OXIDRESOLVE						# Not provided by Samba 4
-RPC-EVENTLOG						# Not provided by Samba 4
-RPC-INITSHUTDOWN					# Not provided by Samba 4
-RPC-SVCCTL							# Not provided by Samba 4
-RPC-ATSVC							# Not provided by Samba 4
-RPC-FRSAPI							# Not provided by Samba 4
-.*SAMBA3.*							# Samba3-specific test
-^samba4.NET-DOMOPEN.*$				# Hangs for some reason
-^samba4.NET-API-BECOME-DC.*$			# Fails
-WINBIND							# FIXME: This should not be skipped
-NSS-TEST						# Fails
+base.defer_open
+base.delaywrite
+raw.composite
+raw.oplock
+base.iometer
+base.casetable
+base.nttrans
+.*base.bench.holdcon.*				# Very slow
+base.scan.maxfid
+raw.bench.oplock
+raw.hold.oplock
+raw.ping.pong
+rpc.samr_accessmask
+raw.scan.eamax
+raw.qfileinfo.ipc
+base.utable
+base.smb
+smb2.notify
+smb2.scan
+ntvfs.cifs.base.charset
+ntvfs.cifs.base.defer_open
+ntvfs.cifs.base.delaywrite
+ntvfs.cifs.base.iometer
+ntvfs.cifs.base.casetable
+ntvfs.cifs.base.nttrans
+ntvfs.cifs.base.scan-maxfid
+ntvfs.cifs.base.utable
+ntvfs.cifs.base.smb
+ntvfs.cifs.raw.composite
+ntvfs.cifs.raw.oplock
+ntvfs.cifs.raw.notify
+ntvfs.cifs.raw.bench-oplock
+ntvfs.cifs.raw.scan-eamax
+ntvfs.cifs.raw.context
+ntvfs.cifs.raw.qfileinfo.ipc
+rpc.dssync
+rpc.samsync
+ldap.uptodatevector					# Segfaults
+rpc.scanner							# Very slow
+rpc.remact							# Not provided by Samba 4
+rpc.oxidresolve						# Not provided by Samba 4
+rpc.eventlog						# Not provided by Samba 4
+rpc.initshutdown					# Not provided by Samba 4
+rpc.svcctl							# Not provided by Samba 4
+rpc.atsvc							# Not provided by Samba 4
+rpc.frsapi							# Not provided by Samba 4
+.*samba3.*							# Samba3-specific test
+^samba4.net.domopen.*$				# Hangs for some reason
+^samba4.net.api.become.dc.*$			# Fails
+winbind							# FIXME: This should not be skipped
+nss.test						# Fails
 samba4.samba3sam.python		# Conversion from EJS not yet finished
-RAW-OFFLINE 			# Samba 4 doesn't have much offline support yet
+samba4.samdb.python			# Not finished yet
+raw.offline 			# Samba 4 doesn't have much offline support yet

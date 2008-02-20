@@ -11,12 +11,12 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-CONFIG \
 		LIBSAMBA-UTIL \
-		LIBTALLOC 
+		LIBTALLOC \
+		LIBPOPT
 
 [SUBSYSTEM::TORTURE_UTIL]
-OBJ_FILES = util.o util_smb.o
-PRIVATE_DEPENDENCIES = LIBCLI_RAW
-PUBLIC_PROTO_HEADER = util.h
+OBJ_FILES = util_smb.o util_provision.o
+PRIVATE_DEPENDENCIES = LIBCLI_RAW LIBPYTHON smbcalls
 PUBLIC_DEPENDENCIES = POPT_CREDENTIALS
 
 #################################
@@ -96,8 +96,8 @@ PRIVATE_DEPENDENCIES = \
 # End SUBSYSTEM TORTURE_RAW
 #################################
 
-include smb2/config.mk
-include winbind/config.mk
+mkinclude smb2/config.mk
+mkinclude winbind/config.mk
 
 [SUBSYSTEM::TORTURE_NDR]
 PRIVATE_PROTO_HEADER = ndr/proto.h
@@ -114,7 +114,7 @@ OBJ_FILES = ndr/ndr.o \
 
 [MODULE::torture_rpc]
 # TORTURE_NET and TORTURE_NBT use functions from torture_rpc...
-#OUTPUT_TYPE = INTEGRATED
+#OUTPUT_TYPE = MERGED_OBJ
 SUBSYSTEM = torture
 INIT_FUNCTION = torture_rpc_init
 PRIVATE_PROTO_HEADER = \
@@ -196,12 +196,12 @@ OBJ_FILES = \
 		auth/ntlmssp.o \
 		auth/pac.o
 PRIVATE_DEPENDENCIES = \
-		LIBCLI_SMB gensec auth LIBSAMBA3 KERBEROS \
-		POPT_CREDENTIALS
+		LIBCLI_SMB gensec auth KERBEROS \
+		POPT_CREDENTIALS SMBPASSWD
 # End SUBSYSTEM TORTURE_AUTH
 #################################
 
-include local/config.mk
+mkinclude local/config.mk
 
 #################################
 # Start MODULE TORTURE_NBENCH
@@ -295,7 +295,6 @@ OBJ_FILES = \
 		libnet/libnet_BecomeDC.o
 PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-NET \
-		smbcalls \
 		POPT_CREDENTIALS \
 		torture_rpc
 # End SUBSYSTEM TORTURE_NET
@@ -361,6 +360,9 @@ INSTALLDIR = BINDIR
 OBJ_FILES = \
 		locktest.o
 PRIVATE_DEPENDENCIES = \
+		LIBPOPT \
+		POPT_SAMBA \
+		POPT_CREDENTIALS \
 		LIBSAMBA-UTIL \
 		LIBCLI_SMB \
 		LIBSAMBA-CONFIG
@@ -368,21 +370,14 @@ MANPAGE = man/locktest.1
 # End BINARY locktest
 #################################
 
-GCOV_CFLAGS = -ftest-coverage -fprofile-arcs
-GCOV_LDFLAGS = $(GCOV_CFLAGS) -lgcov
-
 COV_TARGET = test
 
 COV_VARS = \
-	CFLAGS="$(CFLAGS) $(GCOV_CFLAGS)" \
-	BNLD_FLAGS="$(BNLD_FLAGS) $(GCOV_LDFLAGS)" \
-	SHLD_FLAGS="$(SHLD_FLAGS) $(GCOV_LDFLAGS)" \
-	MDLD_FLAGS="$(MDLD_FLAGS) $(GCOV_LDFLAGS)" \
-	HOSTCC_FLAGS="$(HOSTCC_FLAGS) $(GCOV_CFLAGS)" \
-	HOSTLD_FLAGS="$(HOSTLD_FLAGS) $(GCOV_LDFLAGS)"
+	CFLAGS="$(CFLAGS) --coverage" \
+	LDFLAGS="$(LDFLAGS) --coverage"
 
 test_cov:
-	@$(MAKE) $(COV_TARGET) $(COV_VARS)
+	-$(MAKE) $(COV_TARGET) $(COV_VARS)
 
 gcov: test_cov
 	for I in $(sort $(dir $(ALL_OBJS))); \
@@ -394,10 +389,12 @@ lcov-split:
 	@$(MAKE) $(COV_TARGET) $(COV_VARS) \
 		TEST_OPTIONS="--analyse-cmd=\"lcov --base-directory `pwd` --directory . --capture --output-file samba.info -t\""
 	-rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
+	-rm lib/policy/*/{lex,parse}.{gcda,gcno}
 	genhtml -o coverage samba.info
 
 lcov: test_cov
 	-rm heimdal/lib/*/{lex,parse}.{gcda,gcno}
+	-rm lib/policy/*/{lex,parse}.{gcda,gcno}
 	lcov --base-directory `pwd` --directory . --capture --output-file samba.info
 	genhtml -o coverage samba.info
 

@@ -64,12 +64,16 @@ struct async_info {
 
 #define SETUP_PID private->tree->session->pid = req->smbpid
 
-#define SETUP_FILE do { \
-	struct cvfs_file *f; \
+#define SETUP_FILE_HERE(f) do { \
 	f = ntvfs_handle_get_backend_data(io->generic.in.file.ntvfs, ntvfs); \
 	if (!f) return NT_STATUS_INVALID_HANDLE; \
 	io->generic.in.file.fnum = f->fnum; \
-} while (0) 
+} while (0)
+
+#define SETUP_FILE do { \
+	struct cvfs_file *f; \
+	SETUP_FILE_HERE(f); \
+} while (0)
 
 #define SETUP_PID_AND_FILE do { \
 	SETUP_PID; \
@@ -484,6 +488,7 @@ static void async_open(struct smbcli_request *c_req)
 	req->async_states->status = ntvfs_handle_set_backend_data(f->h, cvfs->ntvfs, f);
 	if (!NT_STATUS_IS_OK(req->async_states->status)) goto failed;
 	file->ntvfs = f->h;
+	DLIST_ADD(cvfs->files, f);
 failed:
 	req->async_states->send_fn(req);
 }
@@ -526,6 +531,7 @@ static NTSTATUS cvfs_open(struct ntvfs_module_context *ntvfs,
 		status = ntvfs_handle_set_backend_data(f->h, private->ntvfs, f);
 		NT_STATUS_NOT_OK_RETURN(status);
 		file->ntvfs = f->h;
+		DLIST_ADD(private->files, f);
 
 		return NT_STATUS_OK;
 	}
@@ -752,6 +758,7 @@ static NTSTATUS cvfs_close(struct ntvfs_module_context *ntvfs,
 {
 	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
+	struct cvfs_file *f;
 
 	SETUP_PID;
 
@@ -759,7 +766,12 @@ static NTSTATUS cvfs_close(struct ntvfs_module_context *ntvfs,
 	    private->map_generic) {
 		return ntvfs_map_close(ntvfs, req, io);
 	}
-	SETUP_FILE;
+	SETUP_FILE_HERE(f);
+	/* Note, we aren't free-ing f, or it's h here. Should we?
+	   even if file-close fails, we'll remove it from the list,
+	   what else would we do? Maybe we should not remove until
+	   after the proxied call completes? */
+	DLIST_REMOVE(private->files, f);
 
 	if (!(req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		return smb_raw_close(private->tree, io);

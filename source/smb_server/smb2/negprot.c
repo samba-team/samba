@@ -21,6 +21,7 @@
 #include "includes.h"
 #include "auth/credentials/credentials.h"
 #include "auth/gensec/gensec.h"
+#include "libcli/raw/libcliraw.h"
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 #include "smb_server/smb_server.h"
@@ -92,24 +93,33 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 	struct timeval current_time;
 	struct timeval boot_time;
 
+	/* we only do one dialect for now */
+	if (io->in.dialect_count < 1) {
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+	if (io->in.dialects[0] != 0 &&
+	    io->in.dialects[0] != SMB2_DIALECT_REVISION) {
+		DEBUG(0,("Got unexpected SMB2 dialect %u\n", io->in.dialects[0]));
+		return NT_STATUS_NOT_SUPPORTED;
+	}
+
 	req->smb_conn->negotiate.protocol = PROTOCOL_SMB2;
 
 	current_time = timeval_current(); /* TODO: handle timezone?! */
 	boot_time = timeval_current(); /* TODO: fix me */
 
-	io->out._pad		= 0;
-	io->out.unknown2	= 0x06;
-	ZERO_STRUCT(io->out.sessid);
-	io->out.unknown3	= 0x0d;
-	io->out.unknown4	= 0x00;
-	io->out.unknown5	= 0x01;
-	io->out.unknown6	= 0x01;
-	io->out.unknown7	= 0x01;
-	io->out.current_time	= timeval_to_nttime(&current_time);
-	io->out.boot_time	= timeval_to_nttime(&boot_time);
+	ZERO_STRUCT(io->out);
+	io->out.security_mode      = 0; /* no signing yet */
+	io->out.dialect_revision   = SMB2_DIALECT_REVISION;
+	io->out.capabilities       = 0;
+	io->out.max_transact_size  = 0x10000;
+	io->out.max_read_size      = 0x10000;
+	io->out.max_write_size     = 0x10000;
+	io->out.system_time	   = timeval_to_nttime(&current_time);
+	io->out.server_start_time  = timeval_to_nttime(&boot_time);
+	io->out.reserved2          = 0;
 	status = smb2srv_negprot_secblob(req, &io->out.secblob);
 	NT_STATUS_NOT_OK_RETURN(status);
-	io->out.unknown9	= 0x204d4c20;
 
 	return NT_STATUS_OK;
 }
@@ -117,6 +127,7 @@ static NTSTATUS smb2srv_negprot_backend(struct smb2srv_request *req, struct smb2
 static void smb2srv_negprot_send(struct smb2srv_request *req, struct smb2_negprot *io)
 {
 	NTSTATUS status;
+	enum ndr_err_code ndr_err;
 
 	if (NT_STATUS_IS_ERR(req->status)) {
 		smb2srv_send_error(req, req->status); /* TODO: is this correct? */
@@ -130,16 +141,22 @@ static void smb2srv_negprot_send(struct smb2srv_request *req, struct smb2_negpro
 		return;
 	}
 
-	SSVAL(req->out.body, 0x02, io->out._pad);
-	SIVAL(req->out.body, 0x04, io->out.unknown2);
-	memcpy(req->out.body+0x08, io->out.sessid, 16);
-	SIVAL(req->out.body, 0x18, io->out.unknown3);
-	SSVAL(req->out.body, 0x1C, io->out.unknown4);
-	SIVAL(req->out.body, 0x1E, io->out.unknown5);
-	SIVAL(req->out.body, 0x22, io->out.unknown6);
-	SSVAL(req->out.body, 0x26, io->out.unknown7);
-	push_nttime(req->out.body, 0x28, io->out.current_time);
-	push_nttime(req->out.body, 0x30, io->out.boot_time);
+	SSVAL(req->out.body, 0x02, io->out.security_mode);
+	SIVAL(req->out.body, 0x04, io->out.dialect_revision);
+	SIVAL(req->out.body, 0x06, io->out.reserved);
+	ndr_err = smbcli_push_guid(req->out.body, 0x08, &io->out.server_guid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
+		talloc_free(req);
+		return;
+	}
+	SIVAL(req->out.body, 0x18, io->out.capabilities);
+	SIVAL(req->out.body, 0x1C, io->out.max_transact_size);
+	SIVAL(req->out.body, 0x20, io->out.max_read_size);
+	SIVAL(req->out.body, 0x24, io->out.max_write_size);
+	push_nttime(req->out.body, 0x28, io->out.system_time);
+	push_nttime(req->out.body, 0x30, io->out.server_start_time);
+	SIVAL(req->out.body, 0x3C, io->out.reserved2);
 	status = smb2_push_o16s16_blob(&req->out, 0x38, io->out.secblob);
 	if (!NT_STATUS_IS_OK(status)) {
 		smbsrv_terminate_connection(req->smb_conn, nt_errstr(status));
@@ -147,14 +164,14 @@ static void smb2srv_negprot_send(struct smb2srv_request *req, struct smb2_negpro
 		return;
 	}
 
-	SIVAL(req->out.body, 0x3C, io->out.unknown9);
-
 	smb2srv_send_reply(req);
 }
 
 void smb2srv_negprot_recv(struct smb2srv_request *req)
 {
 	struct smb2_negprot *io;
+	int i;
+	enum ndr_err_code ndr_err;
 
 	if (req->in.body_size < 0x26) {
 		smb2srv_send_error(req,  NT_STATUS_FOOBAR);
@@ -168,9 +185,27 @@ void smb2srv_negprot_recv(struct smb2srv_request *req)
 		return;
 	}
 
-	io->in.unknown1	= SVAL(req->in.body, 0x02);
-	memcpy(io->in.unknown2, req->in.body + 0x04, 0x20);
-	io->in.unknown3 = SVAL(req->in.body, 0x24);
+	io->in.dialect_count = SVAL(req->in.body, 0x02);
+	io->in.security_mode = SVAL(req->in.body, 0x04);
+	io->in.reserved      = SVAL(req->in.body, 0x06);
+	io->in.capabilities  = IVAL(req->in.body, 0x08);
+	ndr_err = smbcli_pull_guid(req->in.body, 0xC, &io->in.client_guid);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		smbsrv_terminate_connection(req->smb_conn, nt_errstr(NT_STATUS_FOOBAR));
+		talloc_free(req);
+		return;
+	}
+	io->in.start_time = smbcli_pull_nttime(req->in.body, 0x1C);
+
+	io->in.dialects = talloc_array(req, uint16_t, io->in.dialect_count);
+	if (io->in.dialects == NULL) {
+		smbsrv_terminate_connection(req->smb_conn, nt_errstr(NT_STATUS_NO_MEMORY));
+		talloc_free(req);
+		return;
+	}
+	for (i=0;i<io->in.dialect_count;i++) {
+		io->in.dialects[i] = SVAL(req->in.body, 0x24+i*2);
+	}
 
 	req->status = smb2srv_negprot_backend(req, io);
 
@@ -182,14 +217,13 @@ void smb2srv_negprot_recv(struct smb2srv_request *req)
 }
 
 /*
- * reply to a SMB negprot request with dialect "SMB 2.001"
+ * reply to a SMB negprot request with dialect "SMB 2.002"
  */
 void smb2srv_reply_smb_negprot(struct smbsrv_request *smb_req)
 {
 	struct smb2srv_request *req;
 	uint32_t body_fixed_size = 0x26;
 
-	/* create a fake SMB2 negprot request */
 	req = talloc_zero(smb_req->smb_conn, struct smb2srv_request);
 	if (!req) goto nomem;
 	req->smb_conn		= smb_req->smb_conn;
@@ -205,19 +239,21 @@ void smb2srv_reply_smb_negprot(struct smbsrv_request *smb_req)
 	req->in.body_size = body_fixed_size;
 	req->in.dynamic   = NULL;
 
+	smb2srv_setup_bufinfo(req);
+
 	SIVAL(req->in.hdr, 0,				SMB2_MAGIC);
 	SSVAL(req->in.hdr, SMB2_HDR_LENGTH,		SMB2_HDR_BODY);
-	SSVAL(req->in.hdr, SMB2_HDR_PAD1,		0);
+	SSVAL(req->in.hdr, SMB2_HDR_EPOCH,		0);
 	SIVAL(req->in.hdr, SMB2_HDR_STATUS,		0);
 	SSVAL(req->in.hdr, SMB2_HDR_OPCODE,		SMB2_OP_NEGPROT);
-	SSVAL(req->in.hdr, SMB2_HDR_UNKNOWN1,		0);
+	SSVAL(req->in.hdr, SMB2_HDR_CREDIT,		0);
 	SIVAL(req->in.hdr, SMB2_HDR_FLAGS,		0);
-	SIVAL(req->in.hdr, SMB2_HDR_CHAIN_OFFSET,	0);
-	SBVAL(req->in.hdr, SMB2_HDR_SEQNUM,		0);
+	SIVAL(req->in.hdr, SMB2_HDR_NEXT_COMMAND,	0);
+	SBVAL(req->in.hdr, SMB2_HDR_MESSAGE_ID,		0);
 	SIVAL(req->in.hdr, SMB2_HDR_PID,		0);
 	SIVAL(req->in.hdr, SMB2_HDR_TID,		0);
-	SBVAL(req->in.hdr, SMB2_HDR_UID,		0);
-	memset(req->in.hdr+SMB2_HDR_SIG, 0, 16);
+	SBVAL(req->in.hdr, SMB2_HDR_SESSION_ID,		0);
+	memset(req->in.hdr+SMB2_HDR_SIGNATURE, 0, 16);
 
 	/* this seems to be a bug, they use 0x24 but the length is 0x26 */
 	SSVAL(req->in.body, 0x00, 0x24);

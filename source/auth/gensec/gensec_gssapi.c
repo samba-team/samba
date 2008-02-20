@@ -1463,7 +1463,7 @@ static const struct gensec_security_ops gensec_gssapi_sasl_krb5_security_ops = {
 	.priority         = GENSEC_GSSAPI
 };
 
-NTSTATUS gensec_gssapi_init(void)
+_PUBLIC_ NTSTATUS gensec_gssapi_init(void)
 {
 	NTSTATUS ret;
 

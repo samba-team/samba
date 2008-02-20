@@ -1,7 +1,9 @@
 ###############################
 # start SMB_EXT_LIB_GNUTLS
 # check for gnutls/gnutls.h and -lgnutls
-SMB_EXT_LIB_FROM_PKGCONFIG(GNUTLS, gnutls)
+SMB_EXT_LIB_FROM_PKGCONFIG(GNUTLS, gnutls, 
+						   [SMB_ENABLE_GNUTLS=YES], 
+						   [SMB_ENABLE_GNUTLS=NO])
 
 if test x$SMB_ENABLE_GNUTLS = xNO; then
 	AC_CHECK_HEADERS(gnutls/gnutls.h)

@@ -24,8 +24,7 @@ from ldb import Dn
 import param
 import unittest
 
-lp = param.LoadParm()
-lp.load("st/dc/etc/smb.conf")
+lp = samba.tests.get_loadparm()
 
 setup_dir = "setup"
 def setup_path(file):
@@ -33,6 +32,8 @@ def setup_path(file):
 
 
 class ProvisionTestCase(samba.tests.TestCaseInTempDir):
+    """Some simple tests for individual functions in the provisioning code.
+    """
     def test_setup_secretsdb(self):
         path = os.path.join(self.tempdir, "secrets.ldb")
         ldb = setup_secretsdb(path, setup_path, None, None, lp=lp)

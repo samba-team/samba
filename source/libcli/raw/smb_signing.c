@@ -65,7 +65,7 @@ static bool smbcli_set_smb_signing_common(struct smbcli_transport *transport)
 	return true;
 }
 
-void mark_packet_signed(struct request_buffer *out) 
+void mark_packet_signed(struct smb_request_buffer *out) 
 {
 	uint16_t flags2;
 	flags2 = SVAL(out->hdr, HDR_FLG2);
@@ -101,7 +101,7 @@ bool signing_good(struct smb_signing_context *sign_info,
 	return true;
 }
 
-void sign_outgoing_message(struct request_buffer *out, DATA_BLOB *mac_key, unsigned int seq_num) 
+void sign_outgoing_message(struct smb_request_buffer *out, DATA_BLOB *mac_key, unsigned int seq_num) 
 {
 	uint8_t calc_md5_mac[16];
 	struct MD5Context md5_ctx;
@@ -133,7 +133,7 @@ void sign_outgoing_message(struct request_buffer *out, DATA_BLOB *mac_key, unsig
 	Uncomment this to test if the remote server actually verifies signitures...*/
 }
 
-bool check_signed_incoming_message(struct request_buffer *in, DATA_BLOB *mac_key, uint_t seq_num) 
+bool check_signed_incoming_message(struct smb_request_buffer *in, DATA_BLOB *mac_key, uint_t seq_num) 
 {
 	bool good;
 	uint8_t calc_md5_mac[16];

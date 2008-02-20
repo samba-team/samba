@@ -767,7 +767,8 @@ static WERROR dsdb_syntax_UNICODE_drsuapi_to_ldb(const struct dsdb_schema *schem
 			return WERR_FOOBAR;
 		}
 
-		ret = convert_string_talloc(out->values, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX,
+		ret = convert_string_talloc(out->values, schema->iconv_convenience, 
+									CH_UTF16, CH_UNIX,
 					    in->value_ctr.values[i].blob->data,
 					    in->value_ctr.values[i].blob->length,
 					    (void **)&str);
@@ -809,7 +810,7 @@ static WERROR dsdb_syntax_UNICODE_ldb_to_drsuapi(const struct dsdb_schema *schem
 
 		out->value_ctr.values[i].blob	= &blobs[i];
 
-		ret = convert_string_talloc(blobs, lp_iconv_convenience(global_loadparm), CH_UNIX, CH_UTF16,
+		ret = convert_string_talloc(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
 					    in->values[i].data,
 					    in->values[i].length,
 					    (void **)&blobs[i].data);
@@ -851,7 +852,7 @@ static WERROR dsdb_syntax_DN_drsuapi_to_ldb(const struct dsdb_schema *schema,
 		}
 
 		ndr_err = ndr_pull_struct_blob_all(in->value_ctr.values[i].blob,
-						   out->values, lp_iconv_convenience(global_loadparm), &id3,
+						   out->values, schema->iconv_convenience, &id3,
 						   (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -898,7 +899,7 @@ static WERROR dsdb_syntax_DN_ldb_to_drsuapi(const struct dsdb_schema *schema,
 		ZERO_STRUCT(id3);
 		id3.dn = (const char *)in->values[i].data;
 
-		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, lp_iconv_convenience(global_loadparm), &id3, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
+		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, schema->iconv_convenience, &id3, (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
 			return ntstatus_to_werror(status);
@@ -939,7 +940,7 @@ static WERROR dsdb_syntax_DN_BINARY_drsuapi_to_ldb(const struct dsdb_schema *sch
 		}
 
 		ndr_err = ndr_pull_struct_blob_all(in->value_ctr.values[i].blob,
-						   out->values, lp_iconv_convenience(global_loadparm), &id3b,
+						   out->values, schema->iconv_convenience, &id3b,
 						   (ndr_pull_flags_fn_t)ndr_pull_drsuapi_DsReplicaObjectIdentifier3Binary);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -997,7 +998,7 @@ static WERROR dsdb_syntax_DN_BINARY_ldb_to_drsuapi(const struct dsdb_schema *sch
 		id3b.dn		= (const char *)in->values[i].data;
 		id3b.binary	= data_blob(NULL, 0);
 
-		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, lp_iconv_convenience(global_loadparm), &id3b,
+		ndr_err = ndr_push_struct_blob(&blobs[i], blobs, schema->iconv_convenience, &id3b,
 					       (ndr_push_flags_fn_t)ndr_push_drsuapi_DsReplicaObjectIdentifier3Binary);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -1043,7 +1044,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_drsuapi_to_ldb(const struct dsdb_
 			return WERR_FOOBAR;
 		}
 
-		ret = convert_string_talloc(out->values, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX,
+		ret = convert_string_talloc(out->values, schema->iconv_convenience, CH_UTF16, CH_UNIX,
 					    in->value_ctr.values[i].blob->data+4,
 					    in->value_ctr.values[i].blob->length-4,
 					    (void **)&str);
@@ -1086,7 +1087,7 @@ static WERROR dsdb_syntax_PRESENTATION_ADDRESS_ldb_to_drsuapi(const struct dsdb_
 
 		out->value_ctr.values[i].blob	= &blobs[i];
 
-		ret = convert_string_talloc(blobs, lp_iconv_convenience(global_loadparm), CH_UNIX, CH_UTF16,
+		ret = convert_string_talloc(blobs, schema->iconv_convenience, CH_UNIX, CH_UTF16,
 					    in->values[i].data,
 					    in->values[i].length,
 					    (void **)&data);

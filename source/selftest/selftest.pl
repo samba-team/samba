@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 # Bootstrap Samba and run a number of tests against it.
-# Copyright (C) 2005-2007 Jelmer Vernooij <jelmer@samba.org>
+# Copyright (C) 2005-2008 Jelmer Vernooij <jelmer@samba.org>
 # Published under the GNU GPL, v3 or later.
 
 =pod
@@ -13,7 +13,7 @@ selftest - Samba test runner
 
 selftest --help
 
-selftest [--srcdir=DIR] [--builddir=DIR] [--target=samba4|samba3|win] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--immediate] [--testlist=FILE] [TESTS]
+selftest [--srcdir=DIR] [--builddir=DIR] [--target=samba4|samba3|win|kvm] [--socket-wrapper] [--quick] [--exclude=FILE] [--include=FILE] [--one] [--prefix=prefix] [--immediate] [--testlist=FILE] [TESTS]
 
 =head1 DESCRIPTION
 
@@ -43,7 +43,7 @@ Change directory to run tests in. Default is 'st'.
 
 Show errors as soon as they happen rather than at the end of the test run.
 		
-=item I<--target samba4|samba3|win>
+=item I<--target samba4|samba3|win|kvm>
 
 Specify test target against which to run. Default is 'samba4'.
 
@@ -144,6 +144,7 @@ my $opt_expected_failures = undef;
 my @opt_exclude = ();
 my @opt_include = ();
 my $opt_verbose = 0;
+my $opt_image = undef;
 my $opt_testenv = 0;
 my $ldap = undef;
 my $opt_analyse_cmd = undef;
@@ -280,7 +281,7 @@ Usage: $Script [OPTIONS] PREFIX
 
 Generic options:
  --help                     this help page
- --target=samba4|samba3|win Samba version to target
+ --target=samba[34]|win|kvm Samba version to target
  --testlist=FILE			file to read available tests from
 
 Paths:
@@ -300,6 +301,9 @@ Samba4 Specific:
 
 Samba3 Specific:
  --bindir=PATH              path to binaries
+
+Kvm Specific:
+ --image=PATH               path to KVM image
 
 Behaviour:
  --quick                    run quick overall test
@@ -334,6 +338,7 @@ my $result = GetOptions (
 		'resetup-environment' => \$opt_resetup_env,
 		'bindir:s' => \$opt_bindir,
 		'format=s' => \$opt_format,
+		'image=s' => \$opt_image,
 		'testlist=s' => \@testlists
 	    );
 
@@ -442,6 +447,37 @@ if ($opt_target eq "samba4") {
 	$testenv_default = "dc";
 	require target::Windows;
 	$target = new Windows();
+} elsif ($opt_target eq "kvm") {
+	die("Kvm tests will not run with socket wrapper enabled.") 
+		if ($opt_socket_wrapper);
+	require target::Kvm;
+	die("No image specified") unless ($opt_image);
+	$target = new Kvm($opt_image, undef);
+}
+
+#
+# Start a Virtual Distributed Ethernet Switch
+# Returns the pid of the switch.
+#
+sub start_vde_switch($)
+{
+	my ($path) = @_;
+
+	system("vde_switch --pidfile $path/vde.pid --sock $path/vde.sock --daemon");
+
+	open(PID, "$path/vde.pid");
+	<PID> =~ /([0-9]+)/;
+	my $pid = $1;
+	close(PID);
+
+	return $pid;
+}
+
+# Stop a Virtual Distributed Ethernet Switch
+sub stop_vde_switch($)
+{
+	my ($pid) = @_;
+	kill 9, $pid;
 }
 
 sub read_test_regexes($)
@@ -522,11 +558,13 @@ sub write_clientconf($$)
 	if (defined($vars->{WINBINDD_SOCKET_DIR})) {
 		print CF "\twinbindd socket directory = $vars->{WINBINDD_SOCKET_DIR}\n";
 	}
+	if ($opt_socket_wrapper) {
+		print CF "\tinterfaces = $interfaces\n";
+	}
 	print CF "
 	private dir = $prefix_abs/client/private
 	js include = $srcdir_abs/scripting/libjs
 	name resolve order = bcast
-	interfaces = $interfaces
 	panic action = $srcdir_abs/script/gdb_backtrace \%PID\% \%PROG\%
 	max xmit = 32K
 	notify:inotify = false

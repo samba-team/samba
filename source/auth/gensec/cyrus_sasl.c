@@ -362,8 +362,11 @@ int gensec_sasl_log(void *context,
 NTSTATUS gensec_sasl_init(void)
 {
 	NTSTATUS ret;
-	int sasl_ret, i;
+	int sasl_ret;
+#if 0
+	int i;
 	const char **sasl_mechs;
+#endif
 	
 	static const sasl_callback_t callbacks[] = {
 		{ 

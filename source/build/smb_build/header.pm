@@ -44,8 +44,14 @@ sub _prepare_build_h($)
 			$DEFINE->{VAL} .= "\t$_, \\\n";
 			unless (/{/) {
 				my $fn = $key->{INIT_FUNCTION_TYPE};
-				$fn =~ s/\(\*\)/$_/;
-				$output .= "$fn;\n";
+				my $n = $_;
+				if ($fn =~ /\(\*\)/) {
+					$fn =~ s/\(\*\)/$n/;
+					$output .= "$fn;\n";
+				} else {
+					$n =~ s/\&//;
+					$output .= "$fn $n;\n";
+				}
 			}
 		}
 
@@ -82,4 +88,5 @@ sub create_smb_build_h($$)
 
 	print __FILE__.": creating $file\n";
 }
+
 1;

@@ -793,42 +793,16 @@ static int entryuuid_sequence_number(struct ldb_module *module, struct ldb_reque
 	return LDB_SUCCESS;
 }
 
-static struct ldb_module_ops entryuuid_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_entryuuid_module_ops = {
 	.name		   = "entryuuid",
 	.init_context	   = entryuuid_init,
-	.sequence_number   = entryuuid_sequence_number
+	.sequence_number   = entryuuid_sequence_number,
+	LDB_MAP_OPS
 };
 
-static struct ldb_module_ops nsuniqueid_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_nsuniqueid_module_ops = {
 	.name		   = "nsuniqueid",
 	.init_context	   = nsuniqueid_init,
-	.sequence_number   = entryuuid_sequence_number
+	.sequence_number   = entryuuid_sequence_number,
+	LDB_MAP_OPS
 };
-
-/* the init function */
-int ldb_simple_ldap_map_module_init(void)
-{
-	int ret;
-	struct ldb_module_ops ops = ldb_map_get_ops();
-	entryuuid_ops.add	= ops.add;
-	entryuuid_ops.modify	= ops.modify;
-	entryuuid_ops.del	= ops.del;
-	entryuuid_ops.rename	= ops.rename;
-	entryuuid_ops.search	= ops.search;
-	entryuuid_ops.wait	= ops.wait;
-	ret = ldb_register_module(&entryuuid_ops);
-
-	if (ret) {
-		return ret;
-	}
-
-	nsuniqueid_ops.add	= ops.add;
-	nsuniqueid_ops.modify	= ops.modify;
-	nsuniqueid_ops.del	= ops.del;
-	nsuniqueid_ops.rename	= ops.rename;
-	nsuniqueid_ops.search	= ops.search;
-	nsuniqueid_ops.wait	= ops.wait;
-	ret = ldb_register_module(&nsuniqueid_ops);
-
-	return ret;
-}

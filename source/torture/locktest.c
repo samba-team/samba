@@ -18,6 +18,7 @@
 */
 
 #include "includes.h"
+#include "lib/cmdline/popt_common.h"
 #include "system/filesys.h"
 #include "system/time.h"
 #include "pstring.h"
@@ -29,15 +30,15 @@
 #include "libcli/resolve/resolve.h"
 
 static int numops = 1000;
-static bool showall;
-static bool analyze;
-static bool hide_unlock_fails;
-static bool use_oplocks;
+static int showall;
+static int analyze;
+static int hide_unlock_fails;
+static int use_oplocks;
 static uint_t lock_range = 100;
 static uint_t lock_base = 0;
 static uint_t min_length = 0;
-static bool exact_error_codes;
-static bool zero_zero;
+static int exact_error_codes;
+static int zero_zero;
 
 #define FILENAME "\\locktest.dat"
 
@@ -395,7 +396,7 @@ static int retest(struct smbcli_state *cli[NSERVERS][NCONNECTIONS],
    we then do random locking ops in tamdem on the 4 fnums from each
    server and ensure that the results match
  */
-static void test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
+static int test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
 {
 	struct smbcli_state *cli[NSERVERS][NCONNECTIONS];
 	int fnum[NSERVERS][NCONNECTIONS][NFILES];
@@ -450,7 +451,12 @@ static void test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
 	open_files(cli, fnum);
 	n = retest(cli, fnum, numops);
 
-	if (n == numops || !analyze) return;
+	if (n == numops || !analyze) {
+		if (n != numops) {
+			return 1;
+		}
+		return 0;
+	}
 	n++;
 
 	skip = n/2;
@@ -516,30 +522,16 @@ static void test_locks(struct loadparm_context *lp_ctx, char *share[NSERVERS])
 		       (double)recorded[i].len,
 		       recorded[i].needed);
 	}	
+
+	return 1;
 }
 
 
 
-static void usage(void)
+static void usage(poptContext pc)
 {
-	printf(
-"Usage:\n\
-  locktest //server1/share1 //server2/share2 [options..]\n\
-  options:\n\
-        -U user%%pass        (may be specified twice)\n\
-        -s seed\n\
-        -o numops\n\
-        -u          hide unlock fails\n\
-        -a          (show all ops)\n\
-        -A          analyse for minimal ops\n\
-        -O          use oplocks\n\
-        -E          enable exact error code checking\n\
-        -Z          enable the zero/zero lock\n\
-        -R range    set lock range\n\
-        -B base     set lock base\n\
-        -M min      set min lock length\n\
-        -l filename unclist file\n\
-");
+	printf("Usage:\n\tlocktest //server1/share1 //server2/share2 [options..]\n");
+	poptPrintUsage(pc, stdout, 0);
 }
 
 /****************************************************************************
@@ -552,97 +544,87 @@ static void usage(void)
 	int seed, server;
 	int username_count=0;
 	struct loadparm_context *lp_ctx;
+	poptContext pc;
+	int argc_new, i;
+	char **argv_new;
+	enum {OPT_UNCLIST=1000};
+	struct poptOption long_options[] = {
+		POPT_AUTOHELP
+		{"seed",	  0, POPT_ARG_INT,  &seed, 	0,	"Seed to use for randomizer", 	NULL},
+		{"num-ops",	  0, POPT_ARG_INT,  &numops, 	0, 	"num ops",	NULL},
+		{"lockrange",     0, POPT_ARG_INT,  &lock_range,0,      "locking range", NULL},
+		{"lockbase",      0, POPT_ARG_INT,  &lock_base, 0,      "locking base", NULL},
+		{"minlength",     0, POPT_ARG_INT,  &min_length,0,      "min lock length", NULL},
+		{"hidefails",     0, POPT_ARG_NONE, &hide_unlock_fails,0,"hide unlock fails", NULL},
+		{"oplocks",       0, POPT_ARG_NONE, &use_oplocks,0,      "use oplocks", NULL},
+		{"showall",       0, POPT_ARG_NONE, &showall,    0,      "display all operations", NULL},
+		{"analyse",       0, POPT_ARG_NONE, &analyze,    0,      "do backtrack analysis", NULL},
+		{"zerozero",      0, POPT_ARG_NONE, &zero_zero,    0,      "do zero/zero lock", NULL},
+		{"exacterrors",   0, POPT_ARG_NONE, &exact_error_codes,0,"use exact error codes", NULL},
+		{"unclist",	  0, POPT_ARG_STRING,	NULL, 	OPT_UNCLIST,	"unclist", 	NULL},
+		{ "user", 'U',       POPT_ARG_STRING, NULL, 'U', "Set the network username", "[DOMAIN/]USERNAME[%PASSWORD]" },
+		POPT_COMMON_SAMBA
+		POPT_COMMON_CONNECTION
+		POPT_COMMON_CREDENTIALS
+		POPT_COMMON_VERSION
+		{ NULL }
+	};
 
 	setlinebuf(stdout);
+	seed = time(NULL);
 
-	setup_logging("locktest", DEBUG_STDOUT);
+	pc = poptGetContext("locktest", argc, (const char **) argv, long_options, 
+			    POPT_CONTEXT_KEEP_FIRST);
 
-	if (argc < 3 || argv[1][0] == '-') {
-		usage();
-		exit(1);
-	}
+	poptSetOtherOptionHelp(pc, "<unc1> <unc2>");
 
-	setup_logging(argv[0], DEBUG_STDOUT);
-
-	for (server=0;server<NSERVERS;server++) {
-		share[server] = argv[1+server];
-		all_string_sub(share[server],"/","\\",0);
-	}
-
-	argc -= NSERVERS;
-	argv += NSERVERS;
-
-	lp_ctx = loadparm_init(talloc_autofree_context());
-	lp_load(lp_ctx, dyn_CONFIGFILE);
-
+	lp_ctx = cmdline_lp_ctx;
 	servers[0] = cli_credentials_init(talloc_autofree_context());
 	servers[1] = cli_credentials_init(talloc_autofree_context());
 	cli_credentials_guess(servers[0], lp_ctx);
 	cli_credentials_guess(servers[1], lp_ctx);
 
-	seed = time(NULL);
-
-	while ((opt = getopt(argc, argv, "U:s:ho:aAW:OR:B:M:EZW:l:")) != EOF) {
+	while((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
+		case OPT_UNCLIST:
+			lp_set_cmdline(cmdline_lp_ctx, "torture:unclist", poptGetOptArg(pc));
+			break;
 		case 'U':
 			if (username_count == 2) {
-				usage();
+				usage(pc);
 				exit(1);
 			}
-			cli_credentials_parse_string(servers[username_count], 
-						     optarg, CRED_SPECIFIED);
+			cli_credentials_parse_string(servers[username_count], poptGetOptArg(pc), CRED_SPECIFIED);
 			username_count++;
 			break;
-		case 'R':
-			lock_range = strtol(optarg, NULL, 0);
-			break;
-		case 'B':
-			lock_base = strtol(optarg, NULL, 0);
-			break;
-		case 'M':
-			min_length = strtol(optarg, NULL, 0);
-			break;
-		case 's':
-			seed = atoi(optarg);
-			break;
-		case 'u':
-			hide_unlock_fails = true;
-			break;
-		case 'o':
-			numops = atoi(optarg);
-			break;
-		case 'O':
-			use_oplocks = true;
-			break;
-		case 'a':
-			showall = true;
-			break;
-		case 'A':
-			analyze = true;
-			break;
-		case 'Z':
-			zero_zero = true;
-			break;
-		case 'E':
-			exact_error_codes = true;
-			break;
-		case 'l':
-			lp_set_cmdline(lp_ctx, "torture:unclist", optarg);
-			break;
-		case 'W':
-			lp_set_cmdline(lp_ctx, "workgroup", optarg);
-			break;
-		case 'h':
-			usage();
-			exit(1);
-		default:
-			printf("Unknown option %c (%d)\n", (char)opt, opt);
-			exit(1);
 		}
 	}
 
+	argv_new = discard_const_p(char *, poptGetArgs(pc));
+	argc_new = argc;
+	for (i=0; i<argc; i++) {
+		if (argv_new[i] == NULL) {
+			argc_new = i;
+			break;
+		}
+	}
+
+	if (!(argc_new >= 3)) {
+		usage(pc);
+		exit(1);
+	}
+
+	setup_logging("locktest", DEBUG_STDOUT);
+
+	for (server=0;server<NSERVERS;server++) {
+		share[server] = argv_new[1+server];
+		all_string_sub(share[server],"/","\\",0);
+	}
+
+	lp_ctx = cmdline_lp_ctx;
+
 	if (username_count == 0) {
-		usage();
+		usage(pc);
 		return -1;
 	}
 	if (username_count == 1) {
@@ -651,15 +633,10 @@ static void usage(void)
 
 	gensec_init(lp_ctx);
 
-	argc -= optind;
-	argv += optind;
-
 	DEBUG(0,("seed=%u base=%d range=%d min_length=%d\n", 
 		 seed, lock_base, lock_range, min_length));
 	srandom(seed);
 
-	test_locks(lp_ctx, share);
-
-	return(0);
+	return test_locks(lp_ctx, share);
 }
 

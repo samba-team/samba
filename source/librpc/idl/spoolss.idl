@@ -58,7 +58,7 @@ import "security.idl", "winreg.idl";
 	} spoolss_PrinterInfo0;
 
 	typedef [public,gensize] struct {
-	        string32 devicename;
+		[charset(UTF16)] uint16 devicename[32];
 		uint16 specversion;
 		uint16 driverversion;
 		uint16 size;
@@ -77,7 +77,7 @@ import "security.idl", "winreg.idl";
 		uint16 yresolution;
 		uint16 ttoption;
 		uint16 collate;
-	        string32 formname;
+		[charset(UTF16)] uint16 formname[32];
 		uint16 logpixels;
 		uint32 bitsperpel;
 		uint32 pelswidth;
@@ -1407,12 +1407,13 @@ import "security.idl", "winreg.idl";
 	WERROR spoolss_EnumPrinterData(
 		[in,ref] policy_handle *handle,
 		[in]	 uint32 enum_index,
+		[out,ref,size_is(value_offered/2),charset(UTF16)] uint16 *value_name,
 		[in]     uint32 value_offered,
-		[out]	 lstring value_name,
-		[out]	 uint32 value_needed,
-		[out]    uint32 printerdata_type,
-		[out]    DATA_BLOB buffer,
-		[in,out,ref] uint32 *data_size
+		[out,ref] uint32 *value_needed,
+		[out,ref] uint32 *printerdata_type,
+		[out,ref] DATA_BLOB *buffer,
+		[in]	 uint32 data_offered,
+		[out,ref] uint32 *data_needed
 	);
 
 	/******************/

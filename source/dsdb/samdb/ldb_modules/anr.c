@@ -295,13 +295,7 @@ static int anr_search(struct ldb_module *module, struct ldb_request *req)
 	return ldb_next_request(module, req);
 }
 
-static const struct ldb_module_ops anr_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_anr_module_ops = {
 	.name		   = "anr",
 	.search = anr_search
 };
-
-int ldb_anr_init(void)
-{
-	return ldb_register_module(&anr_ops);
-}
-

@@ -24,34 +24,33 @@
 #include "libcli/smb2/smb2.h"
 #include "libcli/smb2/smb2_calls.h"
 
-#define CREATE_TAG_EXTA 0x41747845 /* "ExtA" */
-#define CREATE_TAG_MXAC 0x6341784D /* "MxAc" */
-
 /*
   add a blob to a smb2_create attribute blob
 */
 NTSTATUS smb2_create_blob_add(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, 
-			      uint32_t tag,
+			      const char *tag,
 			      DATA_BLOB add, bool last)
 {
 	uint32_t ofs = blob->length;
-	uint8_t pad = smb2_padding_size(add.length, 8);
-	if (!data_blob_realloc(mem_ctx, blob, blob->length + 0x18 + add.length + pad))
+	size_t tag_length = strlen(tag);
+	uint8_t pad = smb2_padding_size(add.length+tag_length, 8);
+	if (!data_blob_realloc(mem_ctx, blob, 
+			       blob->length + 0x14 + tag_length + add.length + pad))
 		return NT_STATUS_NO_MEMORY;
 	
 	if (last) {
 		SIVAL(blob->data, ofs+0x00, 0);
 	} else {
-		SIVAL(blob->data, ofs+0x00, 0x18 + add.length + pad);
+		SIVAL(blob->data, ofs+0x00, 0x14 + tag_length + add.length + pad);
 	}
 	SSVAL(blob->data, ofs+0x04, 0x10); /* offset of tag */
-	SIVAL(blob->data, ofs+0x06, 0x04); /* tag length */
-	SSVAL(blob->data, ofs+0x0A, 0x18); /* offset of data */
+	SIVAL(blob->data, ofs+0x06, tag_length); /* tag length */
+	SSVAL(blob->data, ofs+0x0A, 0x14 + tag_length); /* offset of data */
 	SIVAL(blob->data, ofs+0x0C, add.length);
-	SIVAL(blob->data, ofs+0x10, tag);
-	SIVAL(blob->data, ofs+0x14, 0); /* pad? */
-	memcpy(blob->data+ofs+0x18, add.data, add.length);
-	memset(blob->data+ofs+0x18+add.length, 0, pad);
+	memcpy(blob->data+ofs+0x10, tag, tag_length);
+	SIVAL(blob->data, ofs+0x10+tag_length, 0); /* pad? */
+	memcpy(blob->data+ofs+0x14+tag_length, add.data, add.length);
+	memset(blob->data+ofs+0x14+tag_length+add.length, 0, pad);
 
 	return NT_STATUS_OK;
 }
@@ -68,16 +67,15 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 	req = smb2_request_init_tree(tree, SMB2_OP_CREATE, 0x38, true, 0);
 	if (req == NULL) return NULL;
 
-	SSVAL(req->out.body, 0x02, io->in.oplock_flags);
-	SIVAL(req->out.body, 0x04, io->in.impersonation);
-	SIVAL(req->out.body, 0x08, io->in.unknown3[0]);
-	SIVAL(req->out.body, 0x0C, io->in.unknown3[1]);
-	SIVAL(req->out.body, 0x10, io->in.unknown3[2]);
-	SIVAL(req->out.body, 0x14, io->in.unknown3[3]);
-	SIVAL(req->out.body, 0x18, io->in.access_mask);
-	SIVAL(req->out.body, 0x1C, io->in.file_attr);
+	SCVAL(req->out.body, 0x02, io->in.security_flags);
+	SCVAL(req->out.body, 0x03, io->in.oplock_level);
+	SIVAL(req->out.body, 0x04, io->in.impersonation_level);
+	SBVAL(req->out.body, 0x08, io->in.create_flags);
+	SBVAL(req->out.body, 0x10, io->in.reserved);
+	SIVAL(req->out.body, 0x18, io->in.desired_access);
+	SIVAL(req->out.body, 0x1C, io->in.file_attributes);
 	SIVAL(req->out.body, 0x20, io->in.share_access);
-	SIVAL(req->out.body, 0x24, io->in.open_disposition);
+	SIVAL(req->out.body, 0x24, io->in.create_disposition);
 	SIVAL(req->out.body, 0x28, io->in.create_options);
 
 	status = smb2_push_o16s16_string(&req->out, 0x2C, io->in.fname);
@@ -90,7 +88,7 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 		DATA_BLOB b = data_blob_talloc(req, NULL, 
 					       ea_list_size_chained(io->in.eas.num_eas, io->in.eas.eas));
 		ea_put_list_chained(b.data, io->in.eas.num_eas, io->in.eas.eas);
-		status = smb2_create_blob_add(req, &blob, CREATE_TAG_EXTA, b, false);
+		status = smb2_create_blob_add(req, &blob, SMB2_CREATE_TAG_EXTA, b, false);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(req);
 			return NULL;
@@ -100,7 +98,8 @@ struct smb2_request *smb2_create_send(struct smb2_tree *tree, struct smb2_create
 
 	/* an empty MxAc tag seems to be used to ask the server to
 	   return the maximum access mask allowed on the file */
-	status = smb2_create_blob_add(req, &blob, CREATE_TAG_MXAC, data_blob(NULL, 0), true);
+	status = smb2_create_blob_add(req, &blob, SMB2_CREATE_TAG_MXAC, 
+				      data_blob(NULL, 0), true);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(req);
@@ -132,7 +131,8 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 
 	SMB2_CHECK_PACKET_RECV(req, 0x58, true);
 
-	io->out.oplock_flags   = SVAL(req->in.body, 0x02);
+	io->out.oplock_level   = CVAL(req->in.body, 0x02);
+	io->out.reserved       = CVAL(req->in.body, 0x03);
 	io->out.create_action  = IVAL(req->in.body, 0x04);
 	io->out.create_time    = smbcli_pull_nttime(req->in.body, 0x08);
 	io->out.access_time    = smbcli_pull_nttime(req->in.body, 0x10);
@@ -141,7 +141,7 @@ NTSTATUS smb2_create_recv(struct smb2_request *req, TALLOC_CTX *mem_ctx, struct 
 	io->out.alloc_size     = BVAL(req->in.body, 0x28);
 	io->out.size           = BVAL(req->in.body, 0x30);
 	io->out.file_attr      = IVAL(req->in.body, 0x38);
-	io->out._pad           = IVAL(req->in.body, 0x3C);
+	io->out.reserved2      = IVAL(req->in.body, 0x3C);
 	smb2_pull_handle(req->in.body+0x40, &io->out.file.handle);
 	status = smb2_pull_o32s32_blob(&req->in, mem_ctx, req->in.body+0x50, &io->out.blob);
 	if (!NT_STATUS_IS_OK(status)) {

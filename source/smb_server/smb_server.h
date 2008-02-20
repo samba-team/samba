@@ -254,8 +254,8 @@ struct smbsrv_request {
 	/* the sequence number for signing */
 	uint64_t seq_num;
 
-	struct request_buffer in;
-	struct request_buffer out;
+	struct smb_request_buffer in;
+	struct smb_request_buffer out;
 };
 
 enum security_types {SEC_SHARE,SEC_USER};
@@ -291,7 +291,7 @@ struct smbsrv_connection {
 	
 		/* the negotiatiated protocol */
 		enum protocol_types protocol;
-	
+
 		/* authentication context for multi-part negprot */
 		struct auth_context *auth_context;
 	

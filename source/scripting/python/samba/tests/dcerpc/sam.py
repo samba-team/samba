@@ -19,10 +19,11 @@
 
 import samr
 import unittest
+from samba.tests import get_loadparm
 
 class SamrTests(unittest.TestCase):
     def setUp(self):
-        self.conn = samr.samr("ncalrpc:", "st/client/client.conf")
+        self.conn = samr.samr("ncalrpc:", get_loadparm())
 
     def test_connect5(self):
         (level, info, handle) = self.conn.Connect5(None, 0, 1, samr.ConnectInfo1())

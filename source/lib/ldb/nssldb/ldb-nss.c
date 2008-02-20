@@ -45,11 +45,6 @@ NSS_STATUS _ldb_nss_init(void)
 
 	_ldb_nss_ctx->pid = mypid;
 
-	ret = ldb_global_init();
-	if (ret != 0) {
-		goto failed;
-	}
-
 	_ldb_nss_ctx->ldb = ldb_init(_ldb_nss_ctx);
 	if (_ldb_nss_ctx->ldb == NULL) {
 		goto failed;

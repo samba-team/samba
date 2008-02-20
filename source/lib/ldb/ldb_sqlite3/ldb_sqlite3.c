@@ -1903,7 +1903,7 @@ failed:
 	return -1;
 }
 
-int ldb_sqlite3_init(void)
-{
-	return ldb_register_backend("sqlite3", lsqlite3_connect);
-}
+_PUBLIC_ const struct ldb_backend_ops ldb_sqlite3_backend_ops = {
+	.name = "sqlite3",
+	.connect_fn = lsqlite3_connect
+};

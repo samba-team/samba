@@ -187,6 +187,9 @@ enum ndr_err_code ndr_pull_dom_sid28(struct ndr_pull *ndr, int ndr_flags, struct
 	if (!NDR_ERR_CODE_IS_SUCCESS(status)) {
 		/* handle a w2k bug which send random data in the buffer */
 		ZERO_STRUCTP(sid);
+	} else if (sid->num_auths == 0 && sid->sub_auths) {
+		talloc_free(sid->sub_auths);
+		sid->sub_auths = NULL;
 	}
 
 	return NDR_ERR_SUCCESS;

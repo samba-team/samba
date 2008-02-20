@@ -34,8 +34,10 @@
 #include "librpc/gen_ndr/ndr_drsblobs.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "system/time.h"
-#include "auth/auth.h"
 #include "lib/ldb_wrap.h"
+#include "auth/auth.h"
+#include "param/param.h"
+#include "torture/util.h"
 
 struct test_become_dc_state {
 	struct libnet_context *ctx;
@@ -66,6 +68,35 @@ struct test_become_dc_state {
 	} path;
 };
 
+static NTSTATUS test_become_dc_prepare_db(void *private_data,
+					      const struct libnet_BecomeDC_PrepareDB *p)
+{
+	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
+	struct provision_settings settings;
+
+	settings.dns_name = p->dest_dsa->dns_name;
+	settings.site_name = p->dest_dsa->site_name;
+	settings.root_dn_str = p->forest->root_dn_str;
+	settings.domain_dn_str = p->domain->dn_str;
+	settings.config_dn_str = p->forest->config_dn_str;
+	settings.schema_dn_str = p->forest->schema_dn_str;
+	settings.invocation_id = &p->dest_dsa->invocation_id;
+	settings.netbios_name = p->dest_dsa->netbios_name;
+	settings.realm = torture_join_dom_dns_name(s->tj);
+	settings.domain = torture_join_dom_netbios_name(s->tj);
+	settings.ntds_guid = &p->dest_dsa->ntds_guid;
+	settings.ntds_dn_str = p->dest_dsa->ntds_dn_str;
+	settings.machine_password = cli_credentials_get_password(s->machine_account);
+	settings.samdb_ldb = s->path.samdb_ldb;
+	settings.secrets_ldb = s->path.secrets_ldb;
+	settings.secrets_keytab = s->path.secrets_keytab;
+	settings.schemadn_ldb = s->path.schemadn_ldb;
+	settings.configdn_ldb = s->path.configdn_ldb;
+	settings.domaindn_ldb = s->path.domaindn_ldb;
+
+	return provision_bare(s, s->tctx->lp_ctx, &settings);
+}
+
 static NTSTATUS test_become_dc_check_options(void *private_data,
 					     const struct libnet_BecomeDC_CheckOptions *o)
 {
@@ -89,299 +120,6 @@ static NTSTATUS test_become_dc_check_options(void *private_data,
 
 	return NT_STATUS_OK;
 }
-
-#include "lib/appweb/ejs/ejs.h"
-#include "lib/appweb/ejs/ejsInternal.h"
-#include "scripting/ejs/smbcalls.h"
-
-static EjsId eid;
-static int ejs_error;
-
-static void test_ejs_exception(const char *reason)
-{
-	Ejs *ep = ejsPtr(eid);
-	ejsSetErrorMsg(eid, "%s", reason);
-	fprintf(stderr, "%s", ep->error);
-	ejs_error = 127;
-}
-
-static int test_run_ejs(char *script)
-{
-	EjsHandle handle = 0;
-	MprVar result;
-	char *emsg;
-	TALLOC_CTX *mem_ctx = talloc_new(NULL);
-	struct MprVar *return_var;
-
-	mprSetCtx(mem_ctx);
-
-	if (ejsOpen(NULL, NULL, NULL) != 0) {
-		d_printf("ejsOpen(): unable to initialise EJS subsystem\n");
-		ejs_error = 127;
-		goto failed;
-	}
-
-	smb_setup_ejs_functions(test_ejs_exception);
-
-	if ((eid = ejsOpenEngine(handle, 0)) == (EjsId)-1) {
-		d_printf("smbscript: ejsOpenEngine(): unable to initialise an EJS engine\n");
-		ejs_error = 127;
-		goto failed;
-	}
-
-	mprSetVar(ejsGetGlobalObject(eid), "ARGV", mprList("ARGV", NULL));
-
-	/* run the script */
-	if (ejsEvalScript(eid, script, &result, &emsg) == -1) {
-		d_printf("smbscript: ejsEvalScript(): %s\n", emsg);
-		if (ejs_error == 0) ejs_error = 127;
-		goto failed;
-	}
-
-	return_var = ejsGetReturnValue(eid);
-	ejs_error = mprVarToNumber(return_var);
-
-failed:
-	ejsClose();
-	talloc_free(mem_ctx);
-	return ejs_error;
-}
-
-static NTSTATUS test_become_dc_prepare_db_ejs(void *private_data,
-					      const struct libnet_BecomeDC_PrepareDB *p)
-{
-	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
-	char *ejs;
-	int ret;
-	bool ok;
-
-	DEBUG(0,("Provision for Become-DC test using EJS\n"));
-
-	DEBUG(0,("New Server[%s] in Site[%s]\n",
-		p->dest_dsa->dns_name, p->dest_dsa->site_name));
-
-	DEBUG(0,("DSA Instance [%s]\n"
-		"\tobjectGUID[%s]\n"
-		"\tinvocationId[%s]\n",
-		p->dest_dsa->ntds_dn_str,
-		GUID_string(s, &p->dest_dsa->ntds_guid),
-		GUID_string(s, &p->dest_dsa->invocation_id)));
-
-	DEBUG(0,("Pathes under PRIVATEDIR[%s]\n"
-		 "SAMDB[%s] SECRETS[%s] KEYTAB[%s]\n",
-		lp_private_dir(s->tctx->lp_ctx),
-		s->path.samdb_ldb,
-		s->path.secrets_ldb,
-		s->path.secrets_keytab));
-
-	DEBUG(0,("Schema Partition[%s => %s]\n",
-		p->forest->schema_dn_str, s->path.schemadn_ldb));
-
-	DEBUG(0,("Config Partition[%s => %s]\n",
-		p->forest->config_dn_str, s->path.configdn_ldb));
-
-	DEBUG(0,("Domain Partition[%s => %s]\n",
-		p->domain->dn_str, s->path.domaindn_ldb));
-
-	ejs = talloc_asprintf(s,
-		"libinclude(\"base.js\");\n"
-		"libinclude(\"provision.js\");\n"
-		"\n"
-		"function message() { print(vsprintf(arguments)); }\n"
-		"\n"
-		"var subobj = provision_guess();\n"
-		"subobj.ROOTDN       = \"%s\";\n"
-		"subobj.DOMAINDN     = \"%s\";\n"
-		"subobj.DOMAINDN_LDB = \"%s\";\n"
-		"subobj.CONFIGDN     = \"%s\";\n"
-		"subobj.CONFIGDN_LDB = \"%s\";\n"
-		"subobj.SCHEMADN     = \"%s\";\n"
-		"subobj.SCHEMADN_LDB = \"%s\";\n"
-		"subobj.HOSTNAME     = \"%s\";\n"
-		"subobj.REALM        = \"%s\";\n"
-		"subobj.DOMAIN       = \"%s\";\n"
-		"subobj.DEFAULTSITE  = \"%s\";\n"
-		"\n"
-		"subobj.KRBTGTPASS   = \"_NOT_USED_\";\n"
-		"subobj.MACHINEPASS  = \"%s\";\n"
-		"subobj.ADMINPASS    = \"_NOT_USED_\";\n"
-		"\n"
-		"var paths = provision_default_paths(subobj);\n"
-		"paths.samdb = \"%s\";\n"
-		"paths.secrets = \"%s\";\n"
-		"paths.templates = \"%s\";\n"
-		"paths.keytab = \"%s\";\n"
-		"paths.dns_keytab = \"%s\";\n"
-		"\n"
-		"var system_session = system_session();\n"
-		"\n"
-		"var ok = provision_become_dc(subobj, message, true, paths, system_session);\n"
-		"assert(ok);\n"
-		"\n"
-		"return 0;\n",
-		p->forest->root_dn_str,		/* subobj.ROOTDN */
-		p->domain->dn_str,		/* subobj.DOMAINDN */
-		s->path.domaindn_ldb,		/* subobj.DOMAINDN_LDB */
-		p->forest->config_dn_str,	/* subobj.CONFIGDN */
-		s->path.configdn_ldb,		/* subobj.CONFIGDN_LDB */
-		p->forest->schema_dn_str,	/* subobj.SCHEMADN */
-		s->path.schemadn_ldb,		/* subobj.SCHEMADN_LDB */
-		p->dest_dsa->netbios_name,	/* subobj.HOSTNAME */
-		torture_join_dom_dns_name(s->tj),/* subobj.REALM */
-		torture_join_dom_netbios_name(s->tj),/* subobj.DOMAIN */
-		p->dest_dsa->site_name,		/* subobj.DEFAULTSITE */
-		cli_credentials_get_password(s->machine_account),/* subobj.MACHINEPASS */
-		s->path.samdb_ldb,		/* paths.samdb */
-		s->path.templates_ldb,		/* paths.templates */
-		s->path.secrets_ldb,		/* paths.secrets */
-		s->path.secrets_keytab,	        /* paths.keytab */
-		s->path.dns_keytab);	        /* paths.dns_keytab */
-	NT_STATUS_HAVE_NO_MEMORY(ejs);
-
-	ret = test_run_ejs(ejs);
-	if (ret != 0) {
-		DEBUG(0,("Failed to run ejs script: %d:\n%s",
-			ret, ejs));
-		talloc_free(ejs);
-		return NT_STATUS_FOOBAR;
-	}
-	talloc_free(ejs);
-
-	talloc_free(s->ldb);
-
-	DEBUG(0,("Open the SAM LDB with system credentials: %s\n", 
-		 s->path.samdb_ldb));
-
-	s->ldb = ldb_wrap_connect(s, s->tctx->lp_ctx, s->path.samdb_ldb,
-				  system_session(s, s->tctx->lp_ctx),
-				  NULL, 0, NULL);
-	if (!s->ldb) {
-		DEBUG(0,("Failed to open '%s'\n",
-			s->path.samdb_ldb));
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	ok = samdb_set_ntds_invocation_id(s->ldb, &p->dest_dsa->invocation_id);
-	if (!ok) {
-		DEBUG(0,("Failed to set cached ntds invocationId\n"));
-		return NT_STATUS_FOOBAR;
-	}
-	ok = samdb_set_ntds_objectGUID(s->ldb, &p->dest_dsa->ntds_guid);
-	if (!ok) {
-		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
-		return NT_STATUS_FOOBAR;
-	}
-
-	return NT_STATUS_OK;
-}
-
-#ifdef HAVE_WORKING_PYTHON
-#include "param/param.h"
-#include <Python.h>
-#include "scripting/python/modules.h"
-
-static NTSTATUS test_become_dc_prepare_db_py(void *private_data,
-					     const struct libnet_BecomeDC_PrepareDB *p)
-{
-	struct test_become_dc_state *s = talloc_get_type(private_data, struct test_become_dc_state);
-	bool ok;
-	PyObject *provision_fn, *result, *parameters;
-
-	DEBUG(0,("Provision for Become-DC test using PYTHON\n"));
-
-	py_load_samba_modules();
-	Py_Initialize();
-
-	py_update_path("bin"); /* FIXME: Can't assume this always runs in source/... */
-
-	provision_fn = PyImport_Import(PyString_FromString("samba.provision.provision"));
-
-	if (provision_fn == NULL) {
-		DEBUG(0, ("Unable to import provision Python module.\n"));
-	      	return NT_STATUS_UNSUCCESSFUL;
-	}
-	
-	DEBUG(0,("New Server[%s] in Site[%s]\n",
-		p->dest_dsa->dns_name, p->dest_dsa->site_name));
-
-	DEBUG(0,("DSA Instance [%s]\n"
-		"\tobjectGUID[%s]\n"
-		"\tinvocationId[%s]\n",
-		p->dest_dsa->ntds_dn_str,
-		GUID_string(s, &p->dest_dsa->ntds_guid),
-		GUID_string(s, &p->dest_dsa->invocation_id)));
-
-	DEBUG(0,("Pathes under PRIVATEDIR[%s]\n"
-		 "SAMDB[%s] SECRETS[%s] KEYTAB[%s]\n",
-		lp_private_dir(s->tctx->lp_ctx),
-		s->path.samdb_ldb,
-		s->path.secrets_ldb,
-		s->path.secrets_keytab));
-
-	DEBUG(0,("Schema Partition[%s => %s]\n",
-		p->forest->schema_dn_str, s->path.schemadn_ldb));
-
-	DEBUG(0,("Config Partition[%s => %s]\n",
-		p->forest->config_dn_str, s->path.configdn_ldb));
-
-	DEBUG(0,("Domain Partition[%s => %s]\n",
-		p->domain->dn_str, s->path.domaindn_ldb));
-
-	parameters = PyDict_New();
-
-	PyDict_SetItemString(parameters, "rootdn", PyString_FromString(p->forest->root_dn_str));
-	PyDict_SetItemString(parameters, "domaindn", PyString_FromString(p->domain->dn_str));
-	PyDict_SetItemString(parameters, "domaindn_ldb", PyString_FromString(s->path.domaindn_ldb));
-	PyDict_SetItemString(parameters, "configdn", PyString_FromString(p->forest->config_dn_str));
-	PyDict_SetItemString(parameters, "configdn_ldb", PyString_FromString(s->path.configdn_ldb));
-	PyDict_SetItemString(parameters, "schema_dn_str", PyString_FromString(p->forest->schema_dn_str));
-	PyDict_SetItemString(parameters, "schemadn_ldb", PyString_FromString(s->path.schemadn_ldb));
-	PyDict_SetItemString(parameters, "netbios_name", PyString_FromString(p->dest_dsa->netbios_name));
-	PyDict_SetItemString(parameters, "dnsname", PyString_FromString(p->dest_dsa->dns_name));
-	PyDict_SetItemString(parameters, "defaultsite", PyString_FromString(p->dest_dsa->site_name));
-	PyDict_SetItemString(parameters, "machinepass", PyString_FromString(cli_credentials_get_password(s->machine_account)));
-	PyDict_SetItemString(parameters, "samdb", PyString_FromString(s->path.samdb_ldb));
-	PyDict_SetItemString(parameters, "secrets_ldb", PyString_FromString(s->path.secrets_ldb));
-	PyDict_SetItemString(parameters, "secrets_keytab", PyString_FromString(s->path.secrets_keytab));
-
-	result = PyEval_CallObjectWithKeywords(provision_fn, NULL, parameters);
-
-	Py_DECREF(parameters);
-
-	if (result == NULL) {
-		PyErr_Print();
-		PyErr_Clear();
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	talloc_free(s->ldb);
-
-	DEBUG(0,("Open the SAM LDB with system credentials: %s\n", 
-		 s->path.samdb_ldb));
-
-	s->ldb = ldb_wrap_connect(s, s->tctx->lp_ctx, s->path.samdb_ldb,
-				  system_session(s, s->tctx->lp_ctx),
-				  NULL, 0, NULL);
-	if (!s->ldb) {
-		DEBUG(0,("Failed to open '%s'\n",
-			s->path.samdb_ldb));
-		return NT_STATUS_INTERNAL_DB_ERROR;
-	}
-
-	ok = samdb_set_ntds_invocation_id(s->ldb, &p->dest_dsa->invocation_id);
-	if (!ok) {
-		DEBUG(0,("Failed to set cached ntds invocationId\n"));
-		return NT_STATUS_FOOBAR;
-	}
-	ok = samdb_set_ntds_objectGUID(s->ldb, &p->dest_dsa->ntds_guid);
-	if (!ok) {
-		DEBUG(0,("Failed to set cached ntds objectGUID\n"));
-		return NT_STATUS_FOOBAR;
-	}
-
-	return NT_STATUS_OK;
-}
-#endif /* HAVE_WORKING_PYTHON */
 
 static NTSTATUS test_apply_schema(struct test_become_dc_state *s,
 				  const struct libnet_BecomeDC_StoreChunk *c)
@@ -878,12 +616,7 @@ bool torture_net_become_dc(struct torture_context *torture)
 
 	b.in.callbacks.private_data	= s;
 	b.in.callbacks.check_options	= test_become_dc_check_options;
-	b.in.callbacks.prepare_db	= test_become_dc_prepare_db_ejs;
-#ifdef HAVE_WORKING_PYTHON
-	if (getenv("PROVISION_PYTHON")) {
-		b.in.callbacks.prepare_db = test_become_dc_prepare_db_py;
-	}
-#endif
+	b.in.callbacks.prepare_db = test_become_dc_prepare_db;
 	b.in.callbacks.schema_chunk	= test_become_dc_schema_chunk;
 	b.in.callbacks.config_chunk	= test_become_dc_store_chunk;
 	b.in.callbacks.domain_chunk	= test_become_dc_store_chunk;

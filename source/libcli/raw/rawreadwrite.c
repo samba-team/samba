@@ -137,7 +137,7 @@ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms)
 		SMBCLI_CHECK_WCT(req, 5);
 		parms->lockread.out.nread = SVAL(req->in.vwv, VWV(0));
 		if (parms->lockread.out.nread > parms->lockread.in.count ||
-		    !smbcli_raw_pull_data(req, req->in.data+3, 
+		    !smbcli_raw_pull_data(&req->in.bufinfo, req->in.data+3, 
 				       parms->lockread.out.nread, parms->lockread.out.data)) {
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
 		}
@@ -148,7 +148,7 @@ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms)
 		SMBCLI_CHECK_WCT(req, 5);
 		parms->read.out.nread = SVAL(req->in.vwv, VWV(0));
 		if (parms->read.out.nread > parms->read.in.count ||
-		    !smbcli_raw_pull_data(req, req->in.data+3, 
+		    !smbcli_raw_pull_data(&req->in.bufinfo, req->in.data+3, 
 				       parms->read.out.nread, parms->read.out.data)) {
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
 		}
@@ -171,11 +171,14 @@ NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms)
 			    parms->readx.out.nread <= 
 			    req->in.buffer + req->in.size) {
 				req->in.data_size += (SVAL(req->in.vwv, VWV(7)) << 16);
+
+				/* update the bufinfo with the new size */
+				smb_setup_bufinfo(req);
 			}
 		}
 
 		if (parms->readx.out.nread > MAX(parms->readx.in.mincnt, parms->readx.in.maxcnt) ||
-		    !smbcli_raw_pull_data(req, req->in.hdr + SVAL(req->in.vwv, VWV(6)), 
+		    !smbcli_raw_pull_data(&req->in.bufinfo, req->in.hdr + SVAL(req->in.vwv, VWV(6)), 
 				       parms->readx.out.nread, 
 				       parms->readx.out.data)) {
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;

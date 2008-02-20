@@ -271,20 +271,19 @@ def setup_name_mappings(ldb, sid, domaindn, root, nobody, nogroup, users,
 def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info, 
                            credentials, configdn, schemadn, domaindn, 
                            hostname, netbiosname, dnsdomain, realm, 
-                           rootdn, serverrole, ldap_backend=None, 
+                           rootdn, serverrole, sitename, ldap_backend=None, 
                            ldap_backend_type=None, erase=False):
     """Setup the partitions for the SAM database. 
     
     Alternatively, provision() may call this, and then populate the database.
     
     :param erase: Remove the existing data present in the database.
-    :param
      
     :note: This will wipe the Sam Database!
     
     :note: This function always removes the local SAM LDB file. The erase 
-    parameter controls whether to erase the existing data, which 
-    may not be stored locally but in LDAP.
+        parameter controls whether to erase the existing data, which 
+        may not be stored locally but in LDAP.
     """
     assert session_info is not None
 
@@ -333,13 +332,12 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
     schemadn_ldb = "schema.ldb"
     if ldap_backend is not None:
         schema_ldb = ldap_backend
-    
     	schemadn_ldb = ldap_backend
     	
     if ldap_backend_type == "fedora-ds":
-        backend_modules = ["nsuniqueid","paged_searches"]
+        backend_modules = ["nsuniqueid", "paged_searches"]
     elif ldap_backend_type == "openldap":
-        backend_modules = ["normalise","entryuuid","paged_searches"]
+        backend_modules = ["normalise", "entryuuid", "paged_searches"]
     elif serverrole == "domain controller":
         backend_modules = ["repl_meta_data"]
     else:
@@ -380,7 +378,8 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
 
         message("Setting up sam.ldb rootDSE")
         setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname, 
-                            dnsdomain, realm, rootdn, configdn, netbiosname)
+                            dnsdomain, realm, rootdn, configdn, netbiosname,
+                            sitename)
 
         if erase:
             message("Erasing data from partitions")
@@ -474,18 +473,18 @@ def setup_registry(path, setup_path, session_info, credentials, lp):
 
 
 def setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname, 
-                        dnsdomain, realm, rootdn, configdn, netbiosname):
+                        dnsdomain, realm, rootdn, configdn, netbiosname,
+                        sitename):
     """Setup the SamDB rootdse.
 
     :param samdb: Sam Database handle
     :param setup_path: Obtain setup path
-    ...
     """
     setup_add_ldif(samdb, setup_path("provision_rootdse_add.ldif"), {
         "SCHEMADN": schemadn, 
         "NETBIOSNAME": netbiosname,
         "DNSDOMAIN": dnsdomain,
-        "DEFAULTSITE": DEFAULTSITE,
+        "DEFAULTSITE": sitename,
         "REALM": realm,
         "DNSNAME": "%s.%s" % (hostname, dnsdomain),
         "DOMAINDN": domaindn,
@@ -498,7 +497,7 @@ def setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname,
 def setup_self_join(samdb, configdn, schemadn, domaindn, 
                     netbiosname, hostname, dnsdomain, machinepass, dnspass, 
                     realm, domainname, domainsid, invocationid, setup_path,
-                    policyguid, hostguid=None):
+                    policyguid, sitename, hostguid=None):
     """Join a host to its own domain."""
     if hostguid is not None:
         hostguid_add = "objectGUID: %s" % hostguid
@@ -511,7 +510,7 @@ def setup_self_join(samdb, configdn, schemadn, domaindn,
               "DOMAINDN": domaindn,
               "INVOCATIONID": invocationid,
               "NETBIOSNAME": netbiosname,
-              "DEFAULTSITE": DEFAULTSITE,
+              "DEFAULTSITE": sitename,
               "DNSNAME": "%s.%s" % (hostname, dnsdomain),
               "MACHINEPASS_B64": b64encode(machinepass),
               "DNSPASS_B64": b64encode(dnspass),
@@ -532,11 +531,14 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                 domainsid, aci, domainguid, policyguid, 
                 domainname, fill, adminpass, krbtgtpass, 
                 machinepass, hostguid, invocationid, dnspass,
-                serverrole, ldap_backend=None, ldap_backend_type=None):
+                serverrole, sitename, ldap_backend=None, 
+                ldap_backend_type=None):
     """Setup a complete SAM Database.
     
     :note: This will wipe the main SAM database file!
     """
+
+    assert serverrole in ("domain controller", "member server")
 
     # Also wipes the database
     setup_samdb_partitions(path, setup_path, schemadn=schemadn, configdn=configdn, 
@@ -545,7 +547,8 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                            hostname=hostname, netbiosname=netbiosname, 
                            dnsdomain=dnsdomain, realm=realm, rootdn=rootdn,
                            ldap_backend=ldap_backend, serverrole=serverrole,
-                           ldap_backend_type=ldap_backend_type, erase=erase)
+                           ldap_backend_type=ldap_backend_type, erase=erase,
+                           sitename=sitename)
 
     samdb = SamDB(path, session_info=session_info, 
                   credentials=credentials, lp=lp)
@@ -563,7 +566,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
     if lp.get("server role") == "domain controller":
         samdb.set_invocation_id(invocationid)
 
-    load_schema(setup_path, samdb, schemadn, netbiosname, configdn)
+    load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename)
 
     samdb.transaction_start()
         
@@ -585,7 +588,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             "DOMAINSID": str(domainsid),
             "SCHEMADN": schemadn, 
             "NETBIOSNAME": netbiosname,
-            "DEFAULTSITE": DEFAULTSITE,
+            "DEFAULTSITE": sitename,
             "CONFIGDN": configdn,
             "POLICYGUID": policyguid,
             "DOMAINDN": domaindn,
@@ -615,7 +618,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
             setup_path("provision_schema_basedn_modify.ldif"), {
             "SCHEMADN": schemadn,
             "NETBIOSNAME": netbiosname,
-            "DEFAULTSITE": DEFAULTSITE,
+            "DEFAULTSITE": sitename,
             "CONFIGDN": configdn,
             })
 
@@ -630,7 +633,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         setup_add_ldif(samdb, setup_path("provision_configuration.ldif"), {
             "CONFIGDN": configdn,
             "NETBIOSNAME": netbiosname,
-            "DEFAULTSITE": DEFAULTSITE,
+            "DEFAULTSITE": sitename,
             "DNSDOMAIN": dnsdomain,
             "DOMAIN": domainname,
             "SCHEMADN": schemadn,
@@ -657,7 +660,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
         setup_add_ldif(samdb, setup_path("provision.ldif"), {
             "DOMAINDN": domaindn,
             "NETBIOSNAME": netbiosname,
-            "DEFAULTSITE": DEFAULTSITE,
+            "DEFAULTSITE": sitename,
             "CONFIGDN": configdn,
             })
 
@@ -680,7 +683,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
                                 machinepass=machinepass, domainname=domainname, 
                                 domainsid=domainsid, policyguid=policyguid,
                                 hostname=hostname, hostguid=hostguid, 
-                                setup_path=setup_path)
+                                setup_path=setup_path, sitename=sitename)
 
     #We want to setup the index last, as adds are faster unindexed
         message("Setting up sam.ldb index")
@@ -691,6 +694,7 @@ def setup_samdb(path, setup_path, session_info, credentials, lp,
 
     samdb.transaction_commit()
     return samdb
+
 
 FILL_FULL = "FULL"
 FILL_NT4SYNC = "NT4SYNC"
@@ -703,7 +707,7 @@ def provision(lp, setup_dir, message, paths, session_info,
               policyguid=None, invocationid=None, machinepass=None, 
               dnspass=None, root=None, nobody=None, nogroup=None, users=None, 
               wheel=None, backup=None, aci=None, serverrole=None, erase=False,
-              ldap_backend=None, ldap_backend_type=None):
+              ldap_backend=None, ldap_backend_type=None, sitename=DEFAULTSITE):
     """Provision samba4
     
     :note: caution, this wipes all existing data!
@@ -852,7 +856,7 @@ def provision(lp, setup_dir, message, paths, session_info,
                         hostguid=hostguid, invocationid=invocationid, 
                         machinepass=machinepass, dnspass=dnspass,
                         serverrole=serverrole, ldap_backend=ldap_backend, 
-                        ldap_backend_type=ldap_backend_type)
+                        ldap_backend_type=ldap_backend_type, sitename=sitename)
 
     if lp.get("server role") == "domain controller":
        policy_path = os.path.join(paths.sysvol, dnsdomain, "Policies", 
@@ -946,7 +950,7 @@ def create_zone_file(path, setup_path, samdb, dnsdomain, domaindn,
         })
 
 
-def load_schema(setup_path, samdb, schemadn, netbiosname, configdn):
+def load_schema(setup_path, samdb, schemadn, netbiosname, configdn, sitename):
     """Load schema for the SamDB.
     
     :param samdb: Load a schema into a SamDB.
@@ -963,7 +967,7 @@ def load_schema(setup_path, samdb, schemadn, netbiosname, configdn):
                     "SCHEMADN": schemadn,
                     "NETBIOSNAME": netbiosname,
                     "CONFIGDN": configdn,
-                    "DEFAULTSITE": DEFAULTSITE
+                    "DEFAULTSITE":sitename 
     })
     samdb.attach_schema_from_ldif(head_data, schema_data)
 

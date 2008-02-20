@@ -466,6 +466,7 @@ static const struct {
 	void (*proto_reply_fn)(struct smbsrv_request *req, uint16_t choice);
 	int protocol_level;
 } supported_protocols[] = {
+	{"SMB 2.002",			"SMB2",		reply_smb2,	PROTOCOL_SMB2},
 	{"SMB 2.001",			"SMB2",		reply_smb2,	PROTOCOL_SMB2},
 	{"NT LANMAN 1.0",		"NT1",		reply_nt1,	PROTOCOL_NT1},
 	{"NT LM 0.12",			"NT1",		reply_nt1,	PROTOCOL_NT1},
@@ -508,7 +509,7 @@ void smbsrv_reply_negprot(struct smbsrv_request *req)
 			return;
 		}
 		protos[protos_count] = NULL;
-		len = req_pull_ascii4(req, (const char **)&protos[protos_count], p, STR_ASCII|STR_TERMINATE);
+		len = req_pull_ascii4(&req->in.bufinfo, (const char **)&protos[protos_count], p, STR_ASCII|STR_TERMINATE);
 		p += len;
 		if (len == 0 || !protos[protos_count]) break;
 
