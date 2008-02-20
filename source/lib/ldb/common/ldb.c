@@ -135,6 +135,15 @@ int ldb_connect_backend(struct ldb_context *ldb, const char *url, const char *op
 		}
 	}
 
+	if (fn == NULL) {
+		char *symbol_name = talloc_asprintf(ldb, "ldb_%s_connect", backend);
+		if (symbol_name == NULL) {
+			return LDB_ERR_OPERATIONS_ERROR;
+		}
+		fn = ldb_dso_load_symbol(ldb, backend, symbol_name);
+		talloc_free(symbol_name);
+	}
+
 	talloc_free(backend);
 
 	if (fn == NULL) {
