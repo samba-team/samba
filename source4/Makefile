@@ -14,10 +14,10 @@ SETUPDIR = $(datadir)/setup
 NCALRPCDIR = $(localstatedir)/ncalrpc
 
 BNLD = $(LD)
-BNLD_FLAGS = $(LDFLAGS)
+BNLD_FLAGS = $(LDFLAGS) $(SYS_LDFLAGS)
 
 HOSTCC_FLAGS = -D_SAMBA_HOSTCC_ $(CFLAGS)
-HOSTLD_FLAGS = $(LDFLAGS)
+HOSTLD_FLAGS = $(LDFLAGS) $(SYS_LDFLAGS)
 
 default: all
 
