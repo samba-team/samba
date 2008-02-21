@@ -84,7 +84,8 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	struct in_addr ipaddr;
 	struct in_addr nmask;
 	char *iname;
-	struct ifaddrs *curif, *lastif;
+	struct ifaddrs *curif;
+	struct ifaddrs *lastif = NULL;
 
 	*ifap = NULL;
 
@@ -168,7 +169,8 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	struct in_addr ipaddr;
 	struct in_addr nmask;
 	char *iname;
-	struct ifaddrs *curif, *lastif;
+	struct ifaddrs *curif;
+	struct ifaddrs *lastif = NULL;
 
 	*ifap = NULL;
 
@@ -268,7 +270,8 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	struct in_addr ipaddr;
 	struct in_addr nmask;
 	char *iname;
-	struct ifaddrs *curif, *lastif;
+	struct ifaddrs *curif;
+	struct ifaddrs *lastif = NULL;
 
 	*ifap = NULL;
 
