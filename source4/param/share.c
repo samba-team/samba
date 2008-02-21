@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    
-   Modular services configuration system
+   Modular shares configuration system
    
    Copyright (C) Simo Sorce	2006
    
