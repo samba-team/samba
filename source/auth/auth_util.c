@@ -144,7 +144,7 @@ NTSTATUS encrypt_user_info(TALLOC_CTX *mem_ctx, struct auth_context *auth_contex
 			
 			chall_blob = data_blob_talloc(mem_ctx, challenge, 8);
 			if (lp_client_ntlmv2_auth(auth_context->lp_ctx)) {
-				DATA_BLOB names_blob = NTLMv2_generate_names_blob(mem_ctx, lp_netbios_name(auth_context->lp_ctx), lp_workgroup(auth_context->lp_ctx));
+				DATA_BLOB names_blob = NTLMv2_generate_names_blob(mem_ctx, lp_iconv_convenience(auth_context->lp_ctx), lp_netbios_name(auth_context->lp_ctx), lp_workgroup(auth_context->lp_ctx));
 				DATA_BLOB lmv2_response, ntlmv2_response, lmv2_session_key, ntlmv2_session_key;
 				
 				if (!SMBNTLMv2encrypt_hash(user_info_temp,

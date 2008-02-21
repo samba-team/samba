@@ -985,7 +985,8 @@ static bool schan(struct smbcli_state *cli,
 
 		generate_random_buffer(chal.data, chal.length);
 		names_blob = NTLMv2_generate_names_blob(
-			mem_ctx, cli_credentials_get_workstation(user_creds),
+			mem_ctx, lp_iconv_convenience(lp_ctx), 
+			cli_credentials_get_workstation(user_creds),
 			cli_credentials_get_domain(user_creds));
 		status = cli_credentials_get_ntlm_response(
 			user_creds, mem_ctx, &flags, chal, names_blob,
