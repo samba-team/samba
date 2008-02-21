@@ -430,6 +430,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	}
 
 	private->entry_ex = entry_ex;
+	private->iconv_convenience = lp_iconv_convenience(lp_ctx);
 
 	talloc_set_destructor(private, hdb_ldb_destrutor);
 
@@ -546,7 +547,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	entry_ex->entry.generation = NULL;
 
 	/* Get keys from the db */
-	ret = LDB_message2entry_keys(context, lp_iconv_convenience(lp_ctx), private, msg, userAccountControl, entry_ex);
+	ret = LDB_message2entry_keys(context, private->iconv_convenience, private, msg, userAccountControl, entry_ex);
 	if (ret) {
 		/* Could be bougus data in the entry, or out of memory */
 		goto out;

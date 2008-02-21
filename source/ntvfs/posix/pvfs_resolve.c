@@ -336,12 +336,13 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char **fname, uint_t
 	int i, num_components, err_count;
 	char **components;
 	char *p, *s, *ret;
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	s = talloc_strdup(mem_ctx, *fname);
 	if (s == NULL) return NT_STATUS_NO_MEMORY;
 
 	for (num_components=1, p=s; *p; p += c_size) {
-		c = next_codepoint(lp_iconv_convenience(global_loadparm), p, &c_size);
+		c = next_codepoint(iconv_convenience, p, &c_size);
 		if (c == '\\') num_components++;
 	}
 
@@ -353,7 +354,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char **fname, uint_t
 
 	components[0] = s;
 	for (i=0, p=s; *p; p += c_size) {
-		c = next_codepoint(lp_iconv_convenience(global_loadparm), p, &c_size);
+		c = next_codepoint(iconv_convenience, p, &c_size);
 		if (c == '\\') {
 			*p = 0;
 			components[++i] = p+1;

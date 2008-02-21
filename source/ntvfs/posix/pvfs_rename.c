@@ -89,6 +89,7 @@ NTSTATUS pvfs_do_rename(struct pvfs_state *pvfs, const struct pvfs_filename *nam
   resolve a wildcard rename pattern. This works on one component of the name
 */
 static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx, 
+						   struct smb_iconv_convenience *iconv_convenience,
 						   const char *fname, 
 						   const char *pattern)
 {
@@ -108,16 +109,16 @@ static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx,
 	while (*p2) {
 		codepoint_t c1, c2;
 		size_t c_size1, c_size2;
-		c1 = next_codepoint(lp_iconv_convenience(global_loadparm), p1, &c_size1);
-		c2 = next_codepoint(lp_iconv_convenience(global_loadparm), p2, &c_size2);
+		c1 = next_codepoint(iconv_convenience, p1, &c_size1);
+		c2 = next_codepoint(iconv_convenience, p2, &c_size2);
 		if (c2 == '?') {
-			d += push_codepoint(lp_iconv_convenience(global_loadparm), d, c1);
+			d += push_codepoint(iconv_convenience, d, c1);
 		} else if (c2 == '*') {
 			memcpy(d, p1, strlen(p1));
 			d += strlen(p1);
 			break;
 		} else {
-			d += push_codepoint(lp_iconv_convenience(global_loadparm), d, c2);
+			d += push_codepoint(iconv_convenience, d, c2);
 		}
 
 		p1 += c_size1;
@@ -138,6 +139,7 @@ static const char *pvfs_resolve_wildcard(TALLOC_CTX *mem_ctx,
 {
 	const char *base1, *base2;
 	const char *ext1, *ext2;
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 	char *p;
 
 	/* break into base part plus extension */
@@ -165,8 +167,8 @@ static const char *pvfs_resolve_wildcard(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	base1 = pvfs_resolve_wildcard_component(mem_ctx, base1, base2);
-	ext1 = pvfs_resolve_wildcard_component(mem_ctx, ext1, ext2);
+	base1 = pvfs_resolve_wildcard_component(mem_ctx, iconv_convenience, base1, base2);
+	ext1 = pvfs_resolve_wildcard_component(mem_ctx, iconv_convenience, ext1, ext2);
 	if (base1 == NULL || ext1 == NULL) {
 		return NULL;
 	}

@@ -73,7 +73,7 @@ struct rap_call {
 
 #define RAPNDR_FLAGS (LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
 
-static struct rap_call *new_rap_cli_call(TALLOC_CTX *mem_ctx, uint16_t callno)
+static struct rap_call *new_rap_cli_call(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint16_t callno)
 {
 	struct rap_call *call;
 
@@ -88,10 +88,10 @@ static struct rap_call *new_rap_cli_call(TALLOC_CTX *mem_ctx, uint16_t callno)
 	call->paramdesc = NULL;
 	call->datadesc = NULL;
 
-	call->ndr_push_param = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
+	call->ndr_push_param = ndr_push_init_ctx(mem_ctx, iconv_convenience);
 	call->ndr_push_param->flags = RAPNDR_FLAGS;
 
-	call->ndr_push_data = ndr_push_init_ctx(mem_ctx, lp_iconv_convenience(global_loadparm));
+	call->ndr_push_data = ndr_push_init_ctx(mem_ctx, iconv_convenience);
 	call->ndr_push_data->flags = RAPNDR_FLAGS;
 
 	return call;
@@ -253,7 +253,7 @@ static NTSTATUS smbcli_rap_netshareenum(struct smbcli_tree *tree,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
-	call = new_rap_cli_call(tree, RAP_WshareEnum);
+	call = new_rap_cli_call(tree, iconv_convenience, RAP_WshareEnum);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -345,7 +345,7 @@ static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_tree *tree,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int i;
 
-	call = new_rap_cli_call(mem_ctx, RAP_NetServerEnum2);
+	call = new_rap_cli_call(mem_ctx, iconv_convenience, RAP_NetServerEnum2);
 
 	if (call == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -451,7 +451,7 @@ _PUBLIC_ NTSTATUS smbcli_rap_netservergetinfo(struct smbcli_tree *tree,
 	struct rap_call *call;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	if (!(call = new_rap_cli_call(mem_ctx, RAP_WserverGetInfo))) {
+	if (!(call = new_rap_cli_call(mem_ctx, iconv_convenience, RAP_WserverGetInfo))) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -524,7 +524,7 @@ bool torture_rap_scan(struct torture_context *torture, struct smbcli_state *cli)
 	int callno;
 
 	for (callno = 0; callno < 0xffff; callno++) {
-		struct rap_call *call = new_rap_cli_call(torture, callno);
+		struct rap_call *call = new_rap_cli_call(torture, lp_iconv_convenience(torture->lp_ctx), callno);
 		NTSTATUS result;
 
 		result = rap_cli_do_call(cli->tree, lp_iconv_convenience(torture->lp_ctx), call);
