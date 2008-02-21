@@ -423,7 +423,7 @@ size_t req_push_str(struct smbsrv_request *req, uint8_t *dest, const char *str, 
 		dest = req->out.buffer + PTR_DIFF(dest, buf0);
 	}
 
-	len = push_string(lp_iconv_convenience(global_loadparm), dest, str, len, flags);
+	len = push_string(lp_iconv_convenience(req->smb_conn->lp_ctx), dest, str, len, flags);
 
 	grow_size = len + PTR_DIFF(dest, req->out.data);
 
