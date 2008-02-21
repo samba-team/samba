@@ -35,10 +35,18 @@
 
 RCSID("$Id$");
 
-/*
+/**
  * Add a specified list of error messages to the et list in context.
  * Call func (probably a comerr-generated function) with a pointer to
  * the current et_list.
+ *
+ * @param context A kerberos context.
+ * @param func The generated com_err et function.
+ *
+ * @return Returns 0 to indicate success.  Otherwise an kerberos et
+ * error code is returned, see krb5_get_error_message().
+ *
+ * @ingroup krb5
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
