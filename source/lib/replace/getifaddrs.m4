@@ -60,6 +60,7 @@ fi
 if test $iface = no; then
 AC_CACHE_CHECK([for iface AIX],libreplace_cv_HAVE_IFACE_AIX,[
 AC_TRY_RUN([
+#define NO_CONFIG_H 1
 #define HAVE_IFACE_AIX 1
 #define AUTOCONF_TEST 1
 #undef _XOPEN_SOURCE_EXTENDED
@@ -74,6 +75,7 @@ fi
 if test $iface = no; then
 AC_CACHE_CHECK([for iface ifconf],libreplace_cv_HAVE_IFACE_IFCONF,[
 AC_TRY_RUN([
+#define NO_CONFIG_H 1
 #define HAVE_IFACE_IFCONF 1
 #define AUTOCONF_TEST 1
 #include "$libreplacedir/getifaddrs.c"],
@@ -86,6 +88,7 @@ fi
 if test $iface = no; then
 AC_CACHE_CHECK([for iface ifreq],libreplace_cv_HAVE_IFACE_IFREQ,[
 AC_TRY_RUN([
+#define NO_CONFIG_H 1
 #define HAVE_IFACE_IFREQ 1
 #define AUTOCONF_TEST 1
 #include "$libreplacedir/getifaddrs.c"],
