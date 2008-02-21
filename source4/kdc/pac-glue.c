@@ -114,7 +114,6 @@ krb5_error_code samba_kdc_get_pac(void *priv,
 	struct hdb_ldb_private *private = talloc_get_type(client->ctx, struct hdb_ldb_private);
 	TALLOC_CTX *mem_ctx = talloc_named(private, 0, "samba_get_pac context");
 	unsigned int userAccountControl;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	if (!mem_ctx) {
 		return ENOMEM;
@@ -140,7 +139,7 @@ krb5_error_code samba_kdc_get_pac(void *priv,
 		return ENOMEM;
 	}
 
-	ret = make_pac(context, mem_ctx, iconv_convenience, server_info, pac);
+	ret = make_pac(context, mem_ctx, private->iconv_convenience, server_info, pac);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -166,7 +165,6 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 	struct PAC_LOGON_INFO_CTR logon_info;
 	union netr_Validation validation;
 	struct auth_serversupplied_info *server_info_out;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	TALLOC_CTX *mem_ctx = talloc_named(private, 0, "samba_get_pac context");
 	
@@ -193,7 +191,7 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 		return ENOMEM;
 	}
 		
-	ndr_err = ndr_pull_struct_blob(&pac_in, mem_ctx, iconv_convenience, &logon_info,
+	ndr_err = ndr_pull_struct_blob(&pac_in, mem_ctx, private->iconv_convenience, &logon_info,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_LOGON_INFO_CTR);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err) || !logon_info.info) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -216,7 +214,7 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 	/* We will compleatly regenerate this pac */
 	krb5_pac_free(context, *pac);
 
-	ret = make_pac(context, mem_ctx, iconv_convenience, server_info_out, pac);
+	ret = make_pac(context, mem_ctx, private->iconv_convenience, server_info_out, pac);
 
 	talloc_free(mem_ctx);
 	return ret;
