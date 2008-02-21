@@ -81,7 +81,6 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	char buff[8192];
 	int fd, i, n;
 	struct ifreq *ifr=NULL;
-	int total = 0;
 	struct in_addr ipaddr;
 	struct in_addr nmask;
 	char *iname;
@@ -106,7 +105,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	n = ifc.ifc_len / sizeof(struct ifreq);
 
 	/* Loop through interfaces, looking for given IP address */
-	for (i=n-1;i>=0 && total < max_interfaces;i--) {
+	for (i=n-1; i>=0; i--) {
 		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != 0) {
 			freeifaddrs(*ifap);
 		}
@@ -166,11 +165,10 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	char buff[8192];
 	int fd, i, n;
 	struct ifreq *ifr=NULL;
-	int total = 0;
 	struct in_addr ipaddr;
 	struct in_addr nmask;
 	char *iname;
-	struct ifaddrs *curif;
+	struct ifaddrs *curif, *lastif;
 
 	*ifap = NULL;
 
@@ -201,7 +199,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 
 	/* Loop through interfaces */
 
-	for (i = 0; i<n && total < max_interfaces; i++) {
+	for (i = 0; i<n; i++) {
 		ifreq = ifr[i];
   
 		curif = calloc(1, sizeof(struct ifaddrs));
@@ -270,7 +268,6 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	struct in_addr ipaddr;
 	struct in_addr nmask;
 	char *iname;
-	int total = 0;
 	struct ifaddrs *curif, *lastif;
 
 	*ifap = NULL;
