@@ -204,7 +204,7 @@ sub getlog_env($);
 
 sub setup_pcap($)
 {
-	my ($state, $name) = @_;
+	my ($name) = @_;
 
 	return unless ($opt_socket_wrapper_pcap);
 	return unless defined($ENV{SOCKET_WRAPPER_PCAP_DIR});
