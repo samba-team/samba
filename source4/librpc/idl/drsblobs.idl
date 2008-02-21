@@ -91,7 +91,7 @@ interface drsblobs {
 
 	typedef [public,gensize,flag(NDR_PAHEX)] struct {
 		/* this includes the 8 bytes of the repsFromToBlob header */
-		[value(ndr_size_repsFromTo1(r, ndr->flags)+8)] uint32 blobsize;
+		[value(ndr_size_repsFromTo1(this, ndr->flags)+8)] uint32 blobsize;
 		uint32 consecutive_sync_failures;
 		NTTIME_1sec last_success;
 		NTTIME_1sec last_attempt;
