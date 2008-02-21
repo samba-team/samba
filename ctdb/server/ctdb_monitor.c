@@ -50,6 +50,11 @@ static void ctdb_health_callback(struct ctdb_context *ctdb, int status, void *p)
 		DEBUG(DEBUG_NOTICE,("monitor event failed - disabling node\n"));
 		node->flags |= NODE_FLAGS_UNHEALTHY;
 		ctdb->monitor->next_interval = 1;
+		if (ctdb->tunable.disable_when_unhealthy != 0) {
+			DEBUG(DEBUG_INFO, ("DISABLING node since it became unhealthy\n"));
+			node->flags |= NODE_FLAGS_DISABLED;
+		}
+
 	} else if (status == 0 && (node->flags & NODE_FLAGS_UNHEALTHY)) {
 		DEBUG(DEBUG_NOTICE,("monitor event OK - node re-enabled\n"));
 		node->flags &= ~NODE_FLAGS_UNHEALTHY;
