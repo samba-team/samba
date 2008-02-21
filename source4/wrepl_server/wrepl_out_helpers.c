@@ -194,7 +194,7 @@ static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partn
 	state->wreplconn= wreplconn;
 	state->c_req	= wrepl_connect_send(wreplconn->sock,
 					     lp_resolve_context(service->task->lp_ctx),
-					     partner->our_address,
+					     partner->our_address?partner->our_address:wrepl_best_ip(service->task->lp_ctx, partner->address),
 					     partner->address);
 	if (!state->c_req) goto failed;
 
