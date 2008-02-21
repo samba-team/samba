@@ -99,7 +99,6 @@ OBJ_FILES = modules/skel.o
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC SQLITE3 LIBTALLOC
-INIT_FUNCTION = &ldb_sqlite3_module_ops
 OBJ_FILES = \
 		ldb_sqlite3/ldb_sqlite3.o
 # End MODULE ldb_sqlite3

@@ -21,6 +21,7 @@
 
 #include "nsswitch/winbind_nss_config.h"
 #include "nsswitch/winbind_struct_protocol.h"
+#include "winbind/idmap.h"
 #include "libnet/libnet.h"
 
 #define WINBINDD_SAMBA3_SOCKET "pipe"
@@ -33,6 +34,7 @@ struct wbsrv_service {
 
 	const struct dom_sid *primary_sid;
 	struct wbsrv_domain *domains;
+	struct idmap_context *idmap_ctx;
 };
 
 struct wbsrv_samconn {

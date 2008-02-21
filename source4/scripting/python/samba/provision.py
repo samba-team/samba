@@ -59,6 +59,7 @@ class ProvisionPaths:
         self.hkpd = None
         self.hkpt = None
         self.samdb = None
+        self.idmapdb = None
         self.secrets = None
         self.keytab = None
         self.dns_keytab = None
@@ -202,6 +203,7 @@ def provision_paths_from_lp(lp, dnsdomain):
 
     paths.shareconf = os.path.join(private_dir, "share.ldb")
     paths.samdb = os.path.join(private_dir, lp.get("sam database") or "samdb.ldb")
+    paths.idmapdb = os.path.join(private_dir, lp.get("idmap database") or "idmap.ldb")
     paths.secrets = os.path.join(private_dir, lp.get("secrets database") or "secrets.ldb")
     paths.templates = os.path.join(private_dir, "templates.ldb")
     paths.dns = os.path.join(private_dir, dnsdomain + ".zone")
@@ -471,6 +473,24 @@ def setup_registry(path, setup_path, session_info, credentials, lp):
     assert os.path.exists(provision_reg)
     reg.diff_apply(provision_reg)
 
+def setup_idmapdb(path, setup_path, session_info, credentials, lp):
+    """Setup the idmap database.
+
+    :param path: path to the idmap database
+    :param setup_path: Function that returns a path to a setup file
+    :param session_info: Session information
+    :param credentials: Credentials
+    :param lp: Loadparm context
+    """
+    if os.path.exists(path):
+        os.unlink(path)
+
+    idmap_ldb = Ldb(path, session_info=session_info, credentials=credentials,
+                    lp=lp)
+
+    idmap_ldb.erase()
+    idmap_ldb.load_ldif_file_add(setup_path("idmap_init.ldif"))
+    return idmap_ldb
 
 def setup_samdb_rootdse(samdb, setup_path, schemadn, domaindn, hostname, 
                         dnsdomain, realm, rootdn, configdn, netbiosname,
@@ -843,6 +863,10 @@ def provision(lp, setup_dir, message, paths, session_info,
     message("Setting up templates db")
     setup_templatesdb(paths.templates, setup_path, session_info=session_info, 
                       credentials=credentials, lp=lp)
+
+    message("Setting up idmap db")
+    setup_idmapdb(paths.idmapdb, setup_path, session_info=session_info,
+                  credentials=credentials, lp=lp)
 
     samdb = setup_samdb(paths.samdb, setup_path, session_info=session_info, 
                         credentials=credentials, lp=lp, schemadn=schemadn, 
