@@ -29,6 +29,7 @@
 struct resolve_bcast_data {
 	struct interface *ifaces;
 	uint16_t nbt_port;
+	int nbt_timeout;
 };
 
 /**
@@ -62,7 +63,7 @@ struct composite_context *resolve_name_bcast_send(TALLOC_CTX *mem_ctx,
 	}
 	address_list[count] = NULL;
 
-	c = resolve_name_nbtlist_send(mem_ctx, event_ctx, name, address_list, data->ifaces, data->nbt_port, true, false);
+	c = resolve_name_nbtlist_send(mem_ctx, event_ctx, name, address_list, data->ifaces, data->nbt_port, data->nbt_timeout, true, false);
 	talloc_free(address_list);
 
 	return c;	
@@ -84,22 +85,25 @@ NTSTATUS resolve_name_bcast(struct nbt_name *name,
 			    TALLOC_CTX *mem_ctx,
 			    struct interface *ifaces,
 			    uint16_t nbt_port,
+			    int nbt_timeout,
 			    const char **reply_addr)
 {
 	struct resolve_bcast_data *data = talloc(mem_ctx, struct resolve_bcast_data);
 	struct composite_context *c;
 	data->ifaces = talloc_reference(data, ifaces);
 	data->nbt_port = nbt_port;
+	data->nbt_timeout = nbt_timeout;
 	
 	c = resolve_name_bcast_send(mem_ctx, NULL, data, name);
 	return resolve_name_bcast_recv(c, mem_ctx, reply_addr);
 }
 
-bool resolve_context_add_bcast_method(struct resolve_context *ctx, struct interface *ifaces, uint16_t nbt_port)
+bool resolve_context_add_bcast_method(struct resolve_context *ctx, struct interface *ifaces, uint16_t nbt_port, int nbt_timeout)
 {
 	struct resolve_bcast_data *data = talloc(ctx, struct resolve_bcast_data);
 	data->ifaces = ifaces;
 	data->nbt_port = nbt_port;
+	data->nbt_timeout = nbt_timeout;
 	return resolve_context_add_method(ctx, resolve_name_bcast_send, resolve_name_bcast_recv, data);
 }
 
@@ -107,5 +111,5 @@ bool resolve_context_add_bcast_method_lp(struct resolve_context *ctx, struct loa
 {
 	struct interface *ifaces;
 	load_interfaces(ctx, lp_interfaces(lp_ctx), &ifaces);
-	return resolve_context_add_bcast_method(ctx, ifaces, lp_nbt_port(lp_ctx));
+	return resolve_context_add_bcast_method(ctx, ifaces, lp_nbt_port(lp_ctx), lp_parm_int(lp_ctx, NULL, "nbt", "timeout", 1));
 }

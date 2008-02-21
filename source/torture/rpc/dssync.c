@@ -255,7 +255,7 @@ static bool test_GetInfo(struct torture_context *tctx, struct DsSyncTest *ctx)
 	struct drsuapi_DsNameString names[1];
 	bool ret = true;
 
-	struct cldap_socket *cldap = cldap_socket_init(ctx, NULL);
+	struct cldap_socket *cldap = cldap_socket_init(ctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
 	struct cldap_netlogon search;
 	
 	r.in.bind_handle		= &ctx->admin.drsuapi.bind_handle;

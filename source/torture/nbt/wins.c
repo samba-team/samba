@@ -53,7 +53,7 @@ static bool nbt_test_wins_name(struct torture_context *tctx, const char *address
 	struct nbt_name_refresh_wins refresh;
 	struct nbt_name_release release;
 	NTSTATUS status;
-	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL);
+	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
 	const char *myaddress;
 	struct socket_address *socket_address;
 	struct interface *ifaces;

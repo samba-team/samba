@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "hive.h"
 #include "system/filesys.h"
+#include "param/param.h"
 
 /** Open a registry file/host/etc */
 _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
@@ -52,7 +53,7 @@ _PUBLIC_ WERROR reg_open_hive(TALLOC_CTX *parent_ctx, const char *location,
 
 	if (!strncmp(peek, "regf", 4)) {
 		close(fd);
-		return reg_open_regf_file(parent_ctx, location, lp_ctx, root);
+		return reg_open_regf_file(parent_ctx, location, lp_iconv_convenience(lp_ctx), root);
 	} else if (!strncmp(peek, "TDB file", 8)) {
 		close(fd);
 		return reg_open_ldb_file(parent_ctx, location, session_info,

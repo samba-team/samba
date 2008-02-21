@@ -134,12 +134,12 @@ static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx,
   resolve a wildcard rename pattern.
 */
 static const char *pvfs_resolve_wildcard(TALLOC_CTX *mem_ctx, 
+					 struct smb_iconv_convenience *iconv_convenience,
 					 const char *fname, 
 					 const char *pattern)
 {
 	const char *base1, *base2;
 	const char *ext1, *ext2;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 	char *p;
 
 	/* break into base part plus extension */
@@ -196,7 +196,7 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 	struct odb_lock *lck, *lck2;
 
 	/* resolve the wildcard pattern for this name */
-	fname2 = pvfs_resolve_wildcard(mem_ctx, fname1, fname2);
+	fname2 = pvfs_resolve_wildcard(mem_ctx, lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), fname1, fname2);
 	if (fname2 == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
