@@ -351,6 +351,8 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 		return False;
 	}
 
+	release_level_2_oplocks_on_change(fsp);
+
 	if (!write_through && !lp_syncalways(SNUM(fsp->conn))
 	    && fsp->aio_write_behind) {
 		/* Lie to the client and immediately claim we finished the
@@ -420,6 +422,9 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
 		SSVAL(outbuf,smb_vwv7,((nread >> 16) & 1));
 		SSVAL(smb_buf(outbuf),-2,nread);
+
+		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nread;
+		aio_ex->fsp->fh->position_information = aio_ex->fsp->fh->pos;
 
 		DEBUG( 3, ( "handle_aio_read_complete file %s max=%d "
 			    "nread=%d\n",
@@ -522,6 +527,8 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
                 	DEBUG(5,("handle_aio_write: sync_file for %s returned %s\n",
 				fsp->fsp_name, nt_errstr(status) ));
 		}
+
+		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nwritten;
 	}
 
 	show_msg(outbuf);

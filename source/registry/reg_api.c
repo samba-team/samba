@@ -835,7 +835,7 @@ WERROR reg_restorekey(struct registry_key *key, const char *fname)
 ********************************************************************/
 
 static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
-			     REGF_NK_REC *parent, SEC_DESC *sec_desc)
+			     REGF_NK_REC *parent)
 {
 	REGF_NK_REC *key;
 	REGVAL_CTR *values;
@@ -847,6 +847,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 	char *subkeyname;
 	REGISTRY_KEY registry_key;
 	WERROR result = WERR_OK;
+	SEC_DESC *sec_desc = NULL;
 
 	if (!regfile) {
 		return WERR_GENERAL_FAILURE;
@@ -899,6 +900,11 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 	fetch_reg_keys(&registry_key, subkeys);
 	fetch_reg_values(&registry_key, values);
 
+	result = regkey_get_secdesc(regfile->mem_ctx, &registry_key, &sec_desc);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
 	/* write out this key */
 
 	key = regfio_write_key(regfile, keyname, values, subkeys, sec_desc,
@@ -919,7 +925,7 @@ static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
 			result = WERR_NOMEM;
 			goto done;
 		}
-		result = reg_write_tree(regfile, subkeypath, key, sec_desc);
+		result = reg_write_tree(regfile, subkeypath, key);
 		if (!W_ERROR_IS_OK(result))
 			goto done;
 	}
@@ -933,59 +939,10 @@ done:
 	return result;
 }
 
-static const struct generic_mapping reg_generic_map =
-	{ REG_KEY_READ, REG_KEY_WRITE, REG_KEY_EXECUTE, REG_KEY_ALL };
-
-static WERROR make_default_reg_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
-{
-	DOM_SID adm_sid, owner_sid;
-	SEC_ACE ace[2];         /* at most 2 entries */
-	SEC_ACCESS mask;
-	SEC_ACL *psa = NULL;
-	size_t sd_size;
-
-	/* set the owner to BUILTIN\Administrator */
-
-	sid_copy(&owner_sid, &global_sid_Builtin);
-	sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN );
-	
-
-	/* basic access for Everyone */
-
-	init_sec_access(&mask, reg_generic_map.generic_execute
-			       | reg_generic_map.generic_read);
-	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
-		     mask, 0);
-
-	/* add Full Access 'BUILTIN\Administrators' */
-
-	init_sec_access(&mask, reg_generic_map.generic_all);
-	sid_copy(&adm_sid, &global_sid_Builtin);
-	sid_append_rid(&adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
-
-	/* create the security descriptor */
-
-	psa = make_sec_acl(ctx, NT4_ACL_REVISION, 2, ace);
-	if (psa == NULL) {
-		return WERR_NOMEM;
-	}
-
-	*psd = make_sec_desc(ctx, SECURITY_DESCRIPTOR_REVISION_1,
-			     SEC_DESC_SELF_RELATIVE, &owner_sid, NULL,
-			     NULL, psa, &sd_size);
-	if (*psd == NULL) {
-		return WERR_NOMEM;
-	}
-
-	return WERR_OK;
-}
-
 static WERROR backup_registry_key(REGISTRY_KEY *krecord, const char *fname)
 {
 	REGF_FILE *regfile;
 	WERROR result;
-	SEC_DESC *sd = NULL;
 
 	/* open the registry file....fail if the file already exists */
 
@@ -997,15 +954,9 @@ static WERROR backup_registry_key(REGISTRY_KEY *krecord, const char *fname)
 		return ntstatus_to_werror(map_nt_error_from_unix(errno));
 	}
 
-	result = make_default_reg_sd(regfile->mem_ctx, &sd);
-	if (!W_ERROR_IS_OK(result)) {
-		regfio_close(regfile);
-		return result;
-	}
-
 	/* write the registry tree to the file  */
 
-	result = reg_write_tree(regfile, krecord->name, NULL, sd);
+	result = reg_write_tree(regfile, krecord->name, NULL);
 
 	/* cleanup */
 

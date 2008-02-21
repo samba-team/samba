@@ -774,7 +774,7 @@ struct lsa_LookupNames {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransSidArray *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -793,7 +793,7 @@ struct lsa_LookupSids {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransNameArray *names;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -1356,7 +1356,7 @@ struct lsa_LookupSids2 {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransNameArray2 *names;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -1378,7 +1378,7 @@ struct lsa_LookupNames2 {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransSidArray2 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -1472,7 +1472,7 @@ struct lsa_LookupNames3 {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransSidArray3 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -1555,7 +1555,7 @@ struct lsa_LookupSids3 {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransNameArray2 *names;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;
@@ -1576,7 +1576,7 @@ struct lsa_LookupNames4 {
 	} in;
 
 	struct {
-		struct lsa_RefDomainList *domains;/* [unique] */
+		struct lsa_RefDomainList **domains;/* [ref] */
 		struct lsa_TransSidArray3 *sids;/* [ref] */
 		uint32_t *count;/* [ref] */
 		NTSTATUS result;

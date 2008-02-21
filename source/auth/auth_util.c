@@ -1422,7 +1422,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 				const char *sent_nt_username,
 				const char *domain,
 				auth_serversupplied_info **server_info, 
-				NET_USER_INFO_3 *info3) 
+				struct netr_SamInfo3 *info3)
 {
 	char zeros[16];
 
@@ -1446,23 +1446,25 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	   matches.
 	*/
 
-	sid_copy(&user_sid, &info3->dom_sid.sid);
-	if (!sid_append_rid(&user_sid, info3->user_rid)) {
+	sid_copy(&user_sid, info3->base.domain_sid);
+	if (!sid_append_rid(&user_sid, info3->base.rid)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	sid_copy(&group_sid, &info3->dom_sid.sid);
-	if (!sid_append_rid(&group_sid, info3->group_rid)) {
+	sid_copy(&group_sid, info3->base.domain_sid);
+	if (!sid_append_rid(&group_sid, info3->base.primary_gid)) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	if (!(nt_username = unistr2_to_ascii_talloc(mem_ctx, &(info3->uni_user_name)))) {
+	nt_username = talloc_strdup(mem_ctx, info3->base.account_name.string);
+	if (!nt_username) {
 		/* If the server didn't give us one, just use the one we sent
 		 * them */
 		nt_username = sent_nt_username;
 	}
 
-	if (!(nt_domain = unistr2_to_ascii_talloc(mem_ctx, &(info3->uni_logon_dom)))) {
+	nt_domain = talloc_strdup(mem_ctx, info3->base.domain.string);
+	if (!nt_domain) {
 		/* If the server didn't give us one, just use the one we sent
 		 * them */
 		nt_domain = domain;
@@ -1527,50 +1529,50 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		TALLOC_FREE(sam_account);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
-		
+
 	if (!pdb_set_fullname(sam_account,
-			      unistr2_static(&(info3->uni_full_name)), 
+			      info3->base.full_name.string,
 			      PDB_CHANGED)) {
 		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_set_logon_script(sam_account,
-				  unistr2_static(&(info3->uni_logon_script)),
+				  info3->base.logon_script.string,
 				  PDB_CHANGED)) {
 		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_set_profile_path(sam_account,
-				  unistr2_static(&(info3->uni_profile_path)),
+				  info3->base.profile_path.string,
 				  PDB_CHANGED)) {
 		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_set_homedir(sam_account,
-			     unistr2_static(&(info3->uni_home_dir)),
+			     info3->base.home_directory.string,
 			     PDB_CHANGED)) {
 		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_set_dir_drive(sam_account,
-			       unistr2_static(&(info3->uni_dir_drive)),
+			       info3->base.home_drive.string,
 			       PDB_CHANGED)) {
 		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_acct_ctrl(sam_account, info3->acct_flags, PDB_CHANGED)) {
+	if (!pdb_set_acct_ctrl(sam_account, info3->base.acct_flags, PDB_CHANGED)) {
 		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (!pdb_set_pass_last_set_time(
 		    sam_account,
-		    nt_time_to_unix(info3->pass_last_set_time),
+		    nt_time_to_unix(info3->base.last_password_change),
 		    PDB_CHANGED)) {
 		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
@@ -1578,7 +1580,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	if (!pdb_set_pass_can_change_time(
 		    sam_account,
-		    nt_time_to_unix(info3->pass_can_change_time),
+		    nt_time_to_unix(info3->base.allow_password_change),
 		    PDB_CHANGED)) {
 		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
@@ -1586,7 +1588,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 
 	if (!pdb_set_pass_must_change_time(
 		    sam_account,
-		    nt_time_to_unix(info3->pass_must_change_time),
+		    nt_time_to_unix(info3->base.force_password_change),
 		    PDB_CHANGED)) {
 		TALLOC_FREE(sam_account);
 		return NT_STATUS_NO_MEMORY;
@@ -1624,27 +1626,27 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 
-	result->login_server = unistr2_to_ascii_talloc(result, 
-					    &(info3->uni_logon_srv));
+	result->login_server = talloc_strdup(result,
+					     info3->base.logon_server.string);
 
 	/* ensure we are never given NULL session keys */
 
 	ZERO_STRUCT(zeros);
 
-	if (memcmp(info3->user_sess_key, zeros, sizeof(zeros)) == 0) {
+	if (memcmp(info3->base.key.key, zeros, sizeof(zeros)) == 0) {
 		result->user_session_key = data_blob_null;
 	} else {
 		result->user_session_key = data_blob_talloc(
-			result, info3->user_sess_key,
-			sizeof(info3->user_sess_key));
+			result, info3->base.key.key,
+			sizeof(info3->base.key.key));
 	}
 
-	if (memcmp(info3->lm_sess_key, zeros, 8) == 0) {
+	if (memcmp(info3->base.LMSessKey.key, zeros, 8) == 0) {
 		result->lm_session_key = data_blob_null;
 	} else {
 		result->lm_session_key = data_blob_talloc(
-			result, info3->lm_sess_key,
-			sizeof(info3->lm_sess_key));
+			result, info3->base.LMSessKey.key,
+			sizeof(info3->base.LMSessKey.key));
 	}
 
 	result->was_mapped = username_was_mapped;

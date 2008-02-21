@@ -5714,6 +5714,7 @@ _PUBLIC_ void ndr_print_netr_LogonControlCode(struct ndr_print *ndr, const char 
 	const char *val = NULL;
 
 	switch (r) {
+		case NETLOGON_CONTROL_SYNC: val = "NETLOGON_CONTROL_SYNC"; break;
 		case NETLOGON_CONTROL_REDISCOVER: val = "NETLOGON_CONTROL_REDISCOVER"; break;
 		case NETLOGON_CONTROL_TC_QUERY: val = "NETLOGON_CONTROL_TC_QUERY"; break;
 		case NETLOGON_CONTROL_TRANSPORT_NOTIFY: val = "NETLOGON_CONTROL_TRANSPORT_NOTIFY"; break;
@@ -8196,8 +8197,11 @@ static enum ndr_err_code ndr_push_netr_LogonSamLogon(struct ndr_push *ndr, int f
 			NDR_CHECK(ndr_push_netr_Authenticator(ndr, NDR_SCALARS, r->in.return_authenticator));
 		}
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.logon_level));
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.logon, r->in.logon_level));
-		NDR_CHECK(ndr_push_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.logon));
+		if (r->in.logon == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.logon, r->in.logon_level));
+		NDR_CHECK(ndr_push_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.logon));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.validation_level));
 	}
 	if (flags & NDR_OUT) {
@@ -8229,6 +8233,7 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogon(struct ndr_pull *ndr, int f
 	TALLOC_CTX *_mem_save_computer_name_0;
 	TALLOC_CTX *_mem_save_credential_0;
 	TALLOC_CTX *_mem_save_return_authenticator_0;
+	TALLOC_CTX *_mem_save_logon_0;
 	TALLOC_CTX *_mem_save_validation_0;
 	TALLOC_CTX *_mem_save_authoritative_0;
 	if (flags & NDR_IN) {
@@ -8295,8 +8300,14 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogon(struct ndr_pull *ndr, int f
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_return_authenticator_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.logon_level));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.logon, r->in.logon_level));
-		NDR_CHECK(ndr_pull_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.logon));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.logon);
+		}
+		_mem_save_logon_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.logon, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.logon, r->in.logon_level));
+		NDR_CHECK(ndr_pull_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.logon));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logon_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.validation_level));
 		NDR_PULL_ALLOC(ndr, r->out.validation);
 		ZERO_STRUCTP(r->out.validation);
@@ -8371,8 +8382,11 @@ _PUBLIC_ void ndr_print_netr_LogonSamLogon(struct ndr_print *ndr, const char *na
 		}
 		ndr->depth--;
 		ndr_print_uint16(ndr, "logon_level", r->in.logon_level);
-		ndr_print_set_switch_value(ndr, &r->in.logon, r->in.logon_level);
-		ndr_print_netr_LogonLevel(ndr, "logon", &r->in.logon);
+		ndr_print_ptr(ndr, "logon", r->in.logon);
+		ndr->depth++;
+		ndr_print_set_switch_value(ndr, r->in.logon, r->in.logon_level);
+		ndr_print_netr_LogonLevel(ndr, "logon", r->in.logon);
+		ndr->depth--;
 		ndr_print_uint16(ndr, "validation_level", r->in.validation_level);
 		ndr->depth--;
 	}
@@ -8608,10 +8622,10 @@ static enum ndr_err_code ndr_push_netr_ServerReqChallenge(struct ndr_push *ndr, 
 		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->in.credentials));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.credentials == NULL) {
+		if (r->out.return_credentials == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->out.credentials));
+		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->out.return_credentials));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -8622,6 +8636,7 @@ static enum ndr_err_code ndr_pull_netr_ServerReqChallenge(struct ndr_pull *ndr, 
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credentials_0;
+	TALLOC_CTX *_mem_save_return_credentials_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -8657,17 +8672,17 @@ static enum ndr_err_code ndr_pull_netr_ServerReqChallenge(struct ndr_pull *ndr, 
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.credentials, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->in.credentials));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credentials_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_ALLOC(ndr, r->out.credentials);
-		*r->out.credentials = *r->in.credentials;
+		NDR_PULL_ALLOC(ndr, r->out.return_credentials);
+		ZERO_STRUCTP(r->out.return_credentials);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.credentials);
+			NDR_PULL_ALLOC(ndr, r->out.return_credentials);
 		}
-		_mem_save_credentials_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.credentials, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->out.credentials));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credentials_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_return_credentials_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.return_credentials, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->out.return_credentials));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_return_credentials_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -8699,9 +8714,9 @@ _PUBLIC_ void ndr_print_netr_ServerReqChallenge(struct ndr_print *ndr, const cha
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "netr_ServerReqChallenge");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "credentials", r->out.credentials);
+		ndr_print_ptr(ndr, "return_credentials", r->out.return_credentials);
 		ndr->depth++;
-		ndr_print_netr_Credential(ndr, "credentials", r->out.credentials);
+		ndr_print_netr_Credential(ndr, "return_credentials", r->out.return_credentials);
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -8734,10 +8749,10 @@ static enum ndr_err_code ndr_push_netr_ServerAuthenticate(struct ndr_push *ndr, 
 		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->in.credentials));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.credentials == NULL) {
+		if (r->out.return_credentials == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->out.credentials));
+		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->out.return_credentials));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -8748,6 +8763,7 @@ static enum ndr_err_code ndr_pull_netr_ServerAuthenticate(struct ndr_pull *ndr, 
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credentials_0;
+	TALLOC_CTX *_mem_save_return_credentials_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
 
@@ -8791,17 +8807,17 @@ static enum ndr_err_code ndr_pull_netr_ServerAuthenticate(struct ndr_pull *ndr, 
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.credentials, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->in.credentials));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credentials_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_ALLOC(ndr, r->out.credentials);
-		*r->out.credentials = *r->in.credentials;
+		NDR_PULL_ALLOC(ndr, r->out.return_credentials);
+		ZERO_STRUCTP(r->out.return_credentials);
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.credentials);
+			NDR_PULL_ALLOC(ndr, r->out.return_credentials);
 		}
-		_mem_save_credentials_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.credentials, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->out.credentials));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credentials_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_return_credentials_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.return_credentials, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->out.return_credentials));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_return_credentials_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -8835,9 +8851,9 @@ _PUBLIC_ void ndr_print_netr_ServerAuthenticate(struct ndr_print *ndr, const cha
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "netr_ServerAuthenticate");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "credentials", r->out.credentials);
+		ndr_print_ptr(ndr, "return_credentials", r->out.return_credentials);
 		ndr->depth++;
-		ndr_print_netr_Credential(ndr, "credentials", r->out.credentials);
+		ndr_print_netr_Credential(ndr, "return_credentials", r->out.return_credentials);
 		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
@@ -10365,10 +10381,10 @@ static enum ndr_err_code ndr_push_netr_ServerAuthenticate2(struct ndr_push *ndr,
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.negotiate_flags));
 	}
 	if (flags & NDR_OUT) {
-		if (r->out.credentials == NULL) {
+		if (r->out.return_credentials == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
-		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->out.credentials));
+		NDR_CHECK(ndr_push_netr_Credential(ndr, NDR_SCALARS, r->out.return_credentials));
 		if (r->out.negotiate_flags == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -10383,6 +10399,7 @@ static enum ndr_err_code ndr_pull_netr_ServerAuthenticate2(struct ndr_pull *ndr,
 	uint32_t _ptr_server_name;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_credentials_0;
+	TALLOC_CTX *_mem_save_return_credentials_0;
 	TALLOC_CTX *_mem_save_negotiate_flags_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -10434,19 +10451,19 @@ static enum ndr_err_code ndr_pull_netr_ServerAuthenticate2(struct ndr_pull *ndr,
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.negotiate_flags, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.negotiate_flags));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_negotiate_flags_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_PULL_ALLOC(ndr, r->out.credentials);
-		*r->out.credentials = *r->in.credentials;
+		NDR_PULL_ALLOC(ndr, r->out.return_credentials);
+		ZERO_STRUCTP(r->out.return_credentials);
 		NDR_PULL_ALLOC(ndr, r->out.negotiate_flags);
 		*r->out.negotiate_flags = *r->in.negotiate_flags;
 	}
 	if (flags & NDR_OUT) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
-			NDR_PULL_ALLOC(ndr, r->out.credentials);
+			NDR_PULL_ALLOC(ndr, r->out.return_credentials);
 		}
-		_mem_save_credentials_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		NDR_PULL_SET_MEM_CTX(ndr, r->out.credentials, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->out.credentials));
-		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_credentials_0, LIBNDR_FLAG_REF_ALLOC);
+		_mem_save_return_credentials_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.return_credentials, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_netr_Credential(ndr, NDR_SCALARS, r->out.return_credentials));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_return_credentials_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.negotiate_flags);
 		}
@@ -10491,9 +10508,9 @@ _PUBLIC_ void ndr_print_netr_ServerAuthenticate2(struct ndr_print *ndr, const ch
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "netr_ServerAuthenticate2");
 		ndr->depth++;
-		ndr_print_ptr(ndr, "credentials", r->out.credentials);
+		ndr_print_ptr(ndr, "return_credentials", r->out.return_credentials);
 		ndr->depth++;
-		ndr_print_netr_Credential(ndr, "credentials", r->out.credentials);
+		ndr_print_netr_Credential(ndr, "return_credentials", r->out.return_credentials);
 		ndr->depth--;
 		ndr_print_ptr(ndr, "negotiate_flags", r->out.negotiate_flags);
 		ndr->depth++;
@@ -13379,8 +13396,11 @@ static enum ndr_err_code ndr_push_netr_LogonSamLogonEx(struct ndr_push *ndr, int
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, r->in.computer_name, ndr_charset_length(r->in.computer_name, CH_UTF16), sizeof(uint16_t), CH_UTF16));
 		}
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.logon_level));
-		NDR_CHECK(ndr_push_set_switch_value(ndr, &r->in.logon, r->in.logon_level));
-		NDR_CHECK(ndr_push_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.logon));
+		if (r->in.logon == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_set_switch_value(ndr, r->in.logon, r->in.logon_level));
+		NDR_CHECK(ndr_push_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.logon));
 		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->in.validation_level));
 		if (r->in.flags == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -13412,6 +13432,7 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogonEx(struct ndr_pull *ndr, int
 	uint32_t _ptr_computer_name;
 	TALLOC_CTX *_mem_save_server_name_0;
 	TALLOC_CTX *_mem_save_computer_name_0;
+	TALLOC_CTX *_mem_save_logon_0;
 	TALLOC_CTX *_mem_save_validation_0;
 	TALLOC_CTX *_mem_save_authoritative_0;
 	TALLOC_CTX *_mem_save_flags_0;
@@ -13455,8 +13476,14 @@ static enum ndr_err_code ndr_pull_netr_LogonSamLogonEx(struct ndr_pull *ndr, int
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_computer_name_0, 0);
 		}
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.logon_level));
-		NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->in.logon, r->in.logon_level));
-		NDR_CHECK(ndr_pull_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.logon));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.logon);
+		}
+		_mem_save_logon_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.logon, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_set_switch_value(ndr, r->in.logon, r->in.logon_level));
+		NDR_CHECK(ndr_pull_netr_LogonLevel(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.logon));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logon_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->in.validation_level));
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.flags);
@@ -13523,8 +13550,11 @@ _PUBLIC_ void ndr_print_netr_LogonSamLogonEx(struct ndr_print *ndr, const char *
 		}
 		ndr->depth--;
 		ndr_print_uint16(ndr, "logon_level", r->in.logon_level);
-		ndr_print_set_switch_value(ndr, &r->in.logon, r->in.logon_level);
-		ndr_print_netr_LogonLevel(ndr, "logon", &r->in.logon);
+		ndr_print_ptr(ndr, "logon", r->in.logon);
+		ndr->depth++;
+		ndr_print_set_switch_value(ndr, r->in.logon, r->in.logon_level);
+		ndr_print_netr_LogonLevel(ndr, "logon", r->in.logon);
+		ndr->depth--;
 		ndr_print_uint16(ndr, "validation_level", r->in.validation_level);
 		ndr_print_ptr(ndr, "flags", r->in.flags);
 		ndr->depth++;

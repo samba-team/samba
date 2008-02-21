@@ -988,7 +988,8 @@ static bool init_structs(void )
 
 	init_dptrs();
 
-	secrets_init();
+	if (!secrets_init())
+		return False;
 
 	return True;
 }

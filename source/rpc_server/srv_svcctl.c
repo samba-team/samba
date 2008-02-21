@@ -53,23 +53,7 @@ static bool api_svcctl_close_service(pipes_struct *p)
 
 static bool api_svcctl_open_scmanager(pipes_struct *p)
 {
-	SVCCTL_Q_OPEN_SCMANAGER q_u;
-	SVCCTL_R_OPEN_SCMANAGER r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_open_scmanager("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_open_scmanager(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_open_scmanager("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_OPENSCMANAGERW);
 }
 
 /*******************************************************************
@@ -77,23 +61,7 @@ static bool api_svcctl_open_scmanager(pipes_struct *p)
 
 static bool api_svcctl_open_service(pipes_struct *p)
 {
-	SVCCTL_Q_OPEN_SERVICE q_u;
-	SVCCTL_R_OPEN_SERVICE r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_open_service("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_open_service(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_open_service("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_OPENSERVICEW);
 }
 
 /*******************************************************************
@@ -101,23 +69,7 @@ static bool api_svcctl_open_service(pipes_struct *p)
 
 static bool api_svcctl_get_display_name(pipes_struct *p)
 {
-	SVCCTL_Q_GET_DISPLAY_NAME q_u;
-	SVCCTL_R_GET_DISPLAY_NAME r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_get_display_name("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_get_display_name(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_get_display_name("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_GETSERVICEDISPLAYNAMEW);
 }
 
 /*******************************************************************
@@ -125,23 +77,7 @@ static bool api_svcctl_get_display_name(pipes_struct *p)
 
 static bool api_svcctl_query_status(pipes_struct *p)
 {
-	SVCCTL_Q_QUERY_STATUS q_u;
-	SVCCTL_R_QUERY_STATUS r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_query_status("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_query_status(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_query_status("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_QUERYSERVICESTATUS);
 }
 
 /*******************************************************************
@@ -219,23 +155,7 @@ static bool api_svcctl_enum_dependent_services(pipes_struct *p)
 
 static bool api_svcctl_start_service(pipes_struct *p)
 {
-	SVCCTL_Q_START_SERVICE q_u;
-	SVCCTL_R_START_SERVICE r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_start_service("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_start_service(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_start_service("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_STARTSERVICEW);
 }
 
 /*******************************************************************
@@ -243,23 +163,7 @@ static bool api_svcctl_start_service(pipes_struct *p)
 
 static bool api_svcctl_control_service(pipes_struct *p)
 {
-	SVCCTL_Q_CONTROL_SERVICE q_u;
-	SVCCTL_R_CONTROL_SERVICE r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_control_service("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_control_service(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_control_service("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_CONTROLSERVICE);
 }
 
 /*******************************************************************
@@ -315,23 +219,7 @@ static bool api_svcctl_query_service_config2(pipes_struct *p)
 
 static bool api_svcctl_lock_service_db(pipes_struct *p)
 {
-	SVCCTL_Q_LOCK_SERVICE_DB q_u;
-	SVCCTL_R_LOCK_SERVICE_DB r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_lock_service_db("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_lock_service_db(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_lock_service_db("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_LOCKSERVICEDATABASE);
 }
 
 
@@ -340,23 +228,7 @@ static bool api_svcctl_lock_service_db(pipes_struct *p)
 
 static bool api_svcctl_unlock_service_db(pipes_struct *p)
 {
-	SVCCTL_Q_UNLOCK_SERVICE_DB q_u;
-	SVCCTL_R_UNLOCK_SERVICE_DB r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_unlock_service_db("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_unlock_service_db(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_unlock_service_db("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_UNLOCKSERVICEDATABASE);
 }
 
 /*******************************************************************

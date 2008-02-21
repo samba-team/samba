@@ -251,7 +251,7 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
                 return -1;
         }
 
-        data.uid = mount_uid;    // truncates to 16-bits here!!!
+        data.uid = mount_uid;    /* truncates to 16-bits here!!! */
         data.gid = mount_gid;
         data.file_mode = (S_IRWXU|S_IRWXG|S_IRWXO) & mount_fmask;
         data.dir_mode  = (S_IRWXU|S_IRWXG|S_IRWXO) & mount_dmask;
