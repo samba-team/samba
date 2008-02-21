@@ -575,7 +575,7 @@ static bool xattr_tdb_init(int snum, struct db_context **p_db)
 	struct db_context *db;
 	const char *dbname;
 
-	dbname = lp_parm_const_string(snum, "xattr", "tdb",
+	dbname = lp_parm_const_string(snum, "xattr_tdb", "file",
 				      lock_path("xattr.tdb"));
 
 	if (dbname == NULL) {
