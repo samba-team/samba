@@ -33,7 +33,6 @@ static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs,
 				   uint16_t attrib)
 {
 	NTSTATUS status;
-	struct odb_lock *lck;
 
 	if (!name->stream_exists) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -45,7 +44,7 @@ static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	status = pvfs_can_delete(pvfs, req, name, &lck);
+	status = pvfs_can_delete(pvfs, req, name, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -64,7 +63,6 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
 {
 	struct pvfs_filename *name;
 	NTSTATUS status;
-	struct odb_lock *lck;
 
 	/* get a pvfs_filename object */
 	status = pvfs_resolve_partial(pvfs, req, 
@@ -80,7 +78,7 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	status = pvfs_can_delete(pvfs, req, name, &lck);
+	status = pvfs_can_delete(pvfs, req, name, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(name);
 		return status;
