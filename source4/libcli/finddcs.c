@@ -28,6 +28,7 @@
 #include "libcli/libcli.h"
 #include "libcli/resolve/resolve.h"
 #include "libcli/finddcs.h"
+#include "param/param.h"
 
 struct finddcs_state {
 	struct composite_context *ctx;
@@ -195,7 +196,8 @@ static void fallback_node_status(struct finddcs_state *state)
 	state->node_status.in.timeout = 1;
 	state->node_status.in.retries = 2;
 
-	nbtsock = nbt_name_socket_init(state, state->ctx->event_ctx);
+	nbtsock = nbt_name_socket_init(state, state->ctx->event_ctx, 
+				       lp_iconv_convenience(global_loadparm));
 	if (composite_nomem(nbtsock, state->ctx)) return;
 	
 	name_req = nbt_name_status_send(nbtsock, &state->node_status);
