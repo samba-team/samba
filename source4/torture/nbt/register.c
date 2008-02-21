@@ -44,7 +44,8 @@ static bool nbt_register_own(struct torture_context *tctx)
 {
 	struct nbt_name_register io;
 	NTSTATUS status;
-	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL);
+	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL,
+							       lp_iconv_convenience(tctx->lp_ctx));
 	struct socket_address *socket_address;
 	struct nbt_name name;
 	const char *address;
@@ -113,7 +114,8 @@ static bool nbt_refresh_own(struct torture_context *tctx)
 {
 	struct nbt_name_refresh io;
 	NTSTATUS status;
-	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL);
+	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL,
+							       lp_iconv_convenience(tctx->lp_ctx));
 	const char *myaddress;
 	struct socket_address *socket_address;
 	struct nbt_name name;

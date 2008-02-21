@@ -130,7 +130,7 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 		struct nbt_name_socket *bcast_nbtsock;
 
 		/* listen for broadcasts on port 137 */
-		bcast_nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx);
+		bcast_nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx, lp_iconv_convenience(nbtsrv->task->lp_ctx));
 		if (!bcast_nbtsock) {
 			talloc_free(iface);
 			return NT_STATUS_NO_MEMORY;
@@ -156,7 +156,8 @@ static NTSTATUS nbtd_add_socket(struct nbtd_server *nbtsrv,
 	}
 
 	/* listen for unicasts on port 137 */
-	iface->nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx);
+	iface->nbtsock = nbt_name_socket_init(iface, nbtsrv->task->event_ctx, 
+					      lp_iconv_convenience(nbtsrv->task->lp_ctx));
 	if (!iface->nbtsock) {
 		talloc_free(iface);
 		return NT_STATUS_NO_MEMORY;

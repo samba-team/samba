@@ -30,6 +30,7 @@
 #include "libcli/composite/composite.h"
 #include "libcli/wrepl/winsrepl.h"
 #include "libcli/resolve/resolve.h"
+#include "param/param.h"
 
 enum wreplsrv_out_connect_stage {
 	WREPLSRV_OUT_CONNECT_STAGE_WAIT_SOCKET,
@@ -186,7 +187,7 @@ static struct composite_context *wreplsrv_out_connect_send(struct wreplsrv_partn
 
 	wreplconn->service	= service;
 	wreplconn->partner	= partner;
-	wreplconn->sock		= wrepl_socket_init(wreplconn, service->task->event_ctx);
+	wreplconn->sock		= wrepl_socket_init(wreplconn, service->task->event_ctx, lp_iconv_convenience(service->task->lp_ctx));
 	if (!wreplconn->sock) goto failed;
 
 	state->stage	= WREPLSRV_OUT_CONNECT_STAGE_WAIT_SOCKET;

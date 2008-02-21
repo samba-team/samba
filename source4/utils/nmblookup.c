@@ -211,7 +211,7 @@ static bool process_one(struct loadparm_context *lp_ctx,
 		node_name = talloc_strdup(tmp_ctx, name);
 	}
 
-	nbtsock = nbt_name_socket_init(tmp_ctx, NULL);
+	nbtsock = nbt_name_socket_init(tmp_ctx, NULL, lp_iconv_convenience(lp_ctx));
 	
 	if (options.root_port) {
 		all_zero_addr = socket_address_from_strings(tmp_ctx, nbtsock->sock->backend_name, 

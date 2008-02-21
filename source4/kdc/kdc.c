@@ -41,8 +41,10 @@
 #include "param/param.h"
 
 
-/* Disgusting hack to get a mem_ctx into the hdb plugin, when used as a keytab */
+/* Disgusting hack to get a mem_ctx and lp_ctx into the hdb plugin, when 
+ * used as a keytab */
 TALLOC_CTX *kdc_mem_ctx;
+struct loadparm_context *kdc_lp_ctx;
 
 /* hold all the info needed to send a reply */
 struct kdc_reply {
@@ -648,6 +650,7 @@ static void kdc_task_init(struct task_server *task)
 	krb5_kdc_windc_init(kdc->smb_krb5_context->krb5_context);
 
 	kdc_mem_ctx = kdc->smb_krb5_context;
+	kdc_lp_ctx = task->lp_ctx;
 
 	/* start listening on the configured network interfaces */
 	status = kdc_startup_interfaces(kdc, task->lp_ctx, ifaces);
