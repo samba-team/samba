@@ -115,7 +115,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 		if (lastif == NULL) {
 			*ifap = curif;
 		} else {
-			lastif->ifa_next = (*ifap);
+			lastif->ifa_next = curif;
 		}
 
 		curif->ifa_name = strdup(ifr[i].ifr_name);
@@ -208,7 +208,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 		if (lastif == NULL) {
 			*ifap = curif;
 		} else {
-			lastif->ifa_next = (*ifap);
+			lastif->ifa_next = curif;
 		}
 
 		strioctl.ic_cmd = SIOCGIFFLAGS;
@@ -306,7 +306,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 		if (lastif == NULL) {
 			*ifap = curif;
 		} else {
-			lastif->ifa_next = (*ifap);
+			lastif->ifa_next = curif;
 		}
 
 		curif->ifa_name = strdup(ifr->ifr_name);
