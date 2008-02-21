@@ -259,12 +259,28 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 /*
   send an oplock break to a client
 */
-static NTSTATUS odb_oplock_break_send(struct odb_context *odb, struct opendb_entry *e)
+static NTSTATUS odb_oplock_break_send(struct odb_context *odb,
+				      struct opendb_entry *e,
+				      uint8_t level)
 {
+	NTSTATUS status;
+	struct opendb_oplock_break op_break;
+	DATA_BLOB blob;
+
+	ZERO_STRUCT(op_break);
+
 	/* tell the server handling this open file about the need to send the client
 	   a break */
-	return messaging_send_ptr(odb->ntvfs_ctx->msg_ctx, e->server, 
-				  MSG_NTVFS_OPLOCK_BREAK, e->file_handle);
+	op_break.file_handle	= e->file_handle;
+	op_break.level		= level;
+
+	blob = data_blob_const(&op_break, sizeof(op_break));
+
+	status = messaging_send(odb->ntvfs_ctx->msg_ctx, e->server,
+				MSG_NTVFS_OPLOCK_BREAK, &blob);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -318,7 +334,8 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 			   break request and suspending this call
 			   until the break is acknowledged or the file
 			   is closed */
-			odb_oplock_break_send(odb, &file.entries[i]);
+			odb_oplock_break_send(odb, &file.entries[i],
+					      OPLOCK_BREAK_TO_LEVEL_II/*TODO*/);
 			return NT_STATUS_OPLOCK_NOT_GRANTED;
 		}
 	}
@@ -342,7 +359,8 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	   exclusive oplocks afterwards. */
 	for (i=0;i<file.num_entries;i++) {
 		if (file.entries[i].oplock_level == OPLOCK_EXCLUSIVE) {
-			odb_oplock_break_send(odb, &file.entries[i]);
+			odb_oplock_break_send(odb, &file.entries[i],
+					      OPLOCK_BREAK_TO_NONE/*TODO*/);
 			return NT_STATUS_OPLOCK_NOT_GRANTED;
 		}
 	}

@@ -43,6 +43,10 @@ struct opendb_ops {
 				 uint32_t access_mask);
 };
 
+struct opendb_oplock_break {
+	void *file_handle;
+	uint8_t level;
+};
 
 void odb_set_ops(const struct opendb_ops *new_ops);
 void odb_tdb_init_ops(void);
