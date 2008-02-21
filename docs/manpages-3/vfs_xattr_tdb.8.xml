@@ -27,14 +27,30 @@
 	<manvolnum>7</manvolnum></citerefentry> suite.</para>
 
 	<para>The <command>vfs_xattr_tdb</command> VFS module stores
-	Extended Attributes (EAs) in the tdb file <filename>xattr.tdb</filename>.
+	Extended Attributes (EAs) in a tdb file. 
 	This enables the usage of Extended Attributes on OS and 
 	filesystems which do not support Extended Attributes 
-	by themselves.
+	by themselves.	
 	</para>
 
 	<para>This module is stackable.</para>
+</refsect1>
 
+<refsect1>
+	<title>OPTIONS</title>
+
+	<variablelist>
+		<varlistentry>
+		<term>xattr_tdb:file = PATH</term>
+		<listitem>
+		<para>Name of the tdb file the EAs are stored in.
+		If this option is not set, the default filename 
+		<filename>xattr.tdb</filename> is used.</para>
+		</listitem>
+		</varlistentry>
+	</variablelist>
+
+	
 </refsect1>
 
 <refsect1>
