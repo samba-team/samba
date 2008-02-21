@@ -35,7 +35,7 @@ options = GetOptions(ARGV,
 		'partitions-only',
 		'ldap-base',
 		'ldap-backend=s',
-                'ldap-module=s',
+                'ldap-backend-type=s',
                 'aci=s');
 
 if (options == undefined) {
@@ -88,7 +88,7 @@ provision [options]
  --partitions-only              Configure Samba's partitions, but do not modify them (ie, join a BDC)
  --ldap-base			output only an LDIF file, suitable for creating an LDAP baseDN
  --ldap-backend LDAPSERVER      LDAP server to use for this provision
- --ldap-module  MODULE          LDB mapping module to use for the LDAP backend
+ --ldap-backend-type  TYPE      OpenLDAP or Fedora DS
  --aci          ACI             An arbitary LDIF fragment, particularly useful to loading a backend ACI value into a target LDAP server
 You must provide at least a realm and domain
 
@@ -124,7 +124,7 @@ for (r in options) {
 
 var blank = (options["blank"] != undefined);
 var ldapbackend = (options["ldap-backend"] != undefined);
-var ldapmodule = (options["ldap-module"] != undefined);
+var ldapbackendtype = options["ldap-backend-type"];
 var partitions_only = (options["partitions-only"] != undefined);
 var paths = provision_default_paths(subobj);
 if (options["aci"] != undefined) {
@@ -139,9 +139,13 @@ if (ldapbackend) {
 	if (options["ldap-backend"] == "ldapi") {
 		subobj.LDAPBACKEND = subobj.LDAPI_URI;
 	}
-	if (!ldapmodule) {
+	if (ldapbackendtype == undefined) {
+	       
+	} else if (ldapbackendtype == "openldap") {
 		subobj.LDAPMODULE = "normalise,entryuuid";
 		subobj.TDB_MODULES_LIST = "";
+	} else if (ldapbackendtype == "fedora-ds") {
+		subobj.LDAPMODULE = "nsuniqueid";
 	}
 	subobj.BACKEND_MOD = subobj.LDAPMODULE + ",paged_searches";
 	subobj.DOMAINDN_LDB = subobj.LDAPBACKEND;
@@ -183,8 +187,8 @@ if (partitions_only) {
 	if (ldapbackend) {
 		message("--ldap-backend='%s' \\\n", subobj.LDAPBACKEND);
 	}
-	if (ldapmodule) {
-		message("--ldap-module='%s' \\\n", + subobj.LDAPMODULE);
+	if (ldapbackendtype != undefined) {
+		message("--ldap-backend-type='%s' \\\n", + ldapbackendtype);
 	}
 	message("--aci='" + subobj.ACI + "' \\\n")
 }
