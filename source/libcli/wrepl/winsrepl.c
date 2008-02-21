@@ -311,6 +311,14 @@ static void wrepl_connect_handler(struct composite_context *creq)
 	composite_done(result);
 }
 
+const char *wrepl_best_ip(struct loadparm_context *lp_ctx, const char *peer_ip)
+{
+	struct interface *ifaces;
+	load_interfaces(lp_ctx, lp_interfaces(lp_ctx), &ifaces);
+	return iface_best_ip(ifaces, peer_ip);
+}
+
+
 /*
   connect a wrepl_socket to a WINS server
 */
@@ -333,12 +341,6 @@ struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 	result->private_data	= state;
 	state->result		= result;
 	state->wrepl_socket	= wrepl_socket;
-
-	if (!our_ip) {
-		struct interface *ifaces;
-		load_interfaces(state, lp_interfaces(global_loadparm), &ifaces);
-		our_ip = iface_best_ip(ifaces, peer_ip);
-	}
 
 	us = socket_address_from_strings(state, wrepl_socket->sock->backend_name, 
 					 our_ip, 0);

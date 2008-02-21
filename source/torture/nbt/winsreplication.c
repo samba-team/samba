@@ -107,10 +107,10 @@ static bool test_assoc_ctx1(struct torture_context *tctx)
 	wrepl_socket2 = wrepl_socket_init(tctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
 
 	torture_comment(tctx, "Setup 2 wrepl connections\n");
-	status = wrepl_connect(wrepl_socket1, lp_resolve_context(tctx->lp_ctx), NULL, address);
+	status = wrepl_connect(wrepl_socket1, lp_resolve_context(tctx->lp_ctx), wrepl_best_ip(tctx->lp_ctx, address), address);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
-	status = wrepl_connect(wrepl_socket2, lp_resolve_context(tctx->lp_ctx), NULL, address);
+	status = wrepl_connect(wrepl_socket2, lp_resolve_context(tctx->lp_ctx), wrepl_best_ip(tctx->lp_ctx, address), address);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_comment(tctx, "Send a start association request (conn1)\n");
@@ -189,7 +189,7 @@ static bool test_assoc_ctx2(struct torture_context *tctx)
 	wrepl_socket = wrepl_socket_init(tctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
 	
 	torture_comment(tctx, "Setup wrepl connections\n");
-	status = wrepl_connect(wrepl_socket, lp_resolve_context(tctx->lp_ctx), NULL, address);
+	status = wrepl_connect(wrepl_socket, lp_resolve_context(tctx->lp_ctx), wrepl_best_ip(tctx->lp_ctx, address), address);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_comment(tctx, "Send 1st start association request\n");
@@ -258,7 +258,7 @@ static bool test_wins_replication(struct torture_context *tctx)
 	wrepl_socket = wrepl_socket_init(tctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
 	
 	torture_comment(tctx, "Setup wrepl connections\n");
-	status = wrepl_connect(wrepl_socket, lp_resolve_context(tctx->lp_ctx), NULL, address);
+	status = wrepl_connect(wrepl_socket, lp_resolve_context(tctx->lp_ctx), wrepl_best_ip(tctx->lp_ctx, address), address);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	torture_comment(tctx, "Send a start association request\n");
@@ -557,7 +557,7 @@ static struct test_wrepl_conflict_conn *test_create_conflict_ctx(
 	if (!ctx->pull) return NULL;
 
 	torture_comment(tctx, "Setup wrepl conflict pull connection\n");
-	status = wrepl_connect(ctx->pull, lp_resolve_context(tctx->lp_ctx), NULL, ctx->address);
+	status = wrepl_connect(ctx->pull, lp_resolve_context(tctx->lp_ctx), wrepl_best_ip(tctx->lp_ctx, ctx->address), ctx->address);
 	if (!NT_STATUS_IS_OK(status)) return NULL;
 
 	status = wrepl_associate(ctx->pull, &associate);
@@ -724,7 +724,7 @@ static bool test_wrepl_update_one(struct torture_context *tctx,
 
 	wrepl_socket = wrepl_socket_init(ctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
 
-	status = wrepl_connect(wrepl_socket, lp_resolve_context(tctx->lp_ctx), NULL, ctx->address);
+	status = wrepl_connect(wrepl_socket, lp_resolve_context(tctx->lp_ctx), wrepl_best_ip(tctx->lp_ctx, ctx->address), ctx->address);
 	CHECK_STATUS(tctx, status, NT_STATUS_OK);
 
 	status = wrepl_associate(wrepl_socket, &associate);
