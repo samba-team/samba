@@ -115,8 +115,14 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 
 	if (ctdb->address.address &&
 	    ctdb_same_address(&ctdb->address, &node->address)) {
+		/* for automatic binding to interfaces, see tcp_connect.c */
 		ctdb->pnn = node->pnn;
 		node->flags &= ~NODE_FLAGS_DISCONNECTED;
+
+		/* do we start out in DISABLED mode? */
+		if (ctdb->start_as_disabled != 0) {
+			node->flags |= NODE_FLAGS_DISABLED;
+		}
 	}
 
 	ctdb->num_nodes++;

@@ -372,6 +372,7 @@ struct ctdb_context {
 	const char *node_ip;
 	struct ctdb_monitor_state *monitor;
 	struct ctdb_log_state *log;
+	int start_as_disabled;
 };
 
 struct ctdb_db_context {

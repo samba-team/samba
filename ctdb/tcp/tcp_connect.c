@@ -313,7 +313,11 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 		 ctdb->address.address, 
 		 ctdb->address.port, 
 		 ctdb->pnn));
-
+	/* do we start out in DISABLED mode? */
+	if (ctdb->start_as_disabled != 0) {
+		ctdb->nodes[i]->flags |= NODE_FLAGS_DISABLED;
+	}
+	
 	if (listen(ctcp->listen_fd, 10) == -1) {
 		goto failed;
 	}

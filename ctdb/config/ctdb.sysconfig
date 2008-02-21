@@ -80,11 +80,16 @@
 # When set, this variable makes ctdb monitor the amount of free memory
 # in the system (the second number in the buffers/cache output from free -m).
 # If the amount of free memory drops below this treshold the node will become
-# unhealthy and will be marked as DISABLED.
-# Once a node is disabled it requires administrator intervention to enable the
-# node again using the "ctdb enable" command.
+# unhealthy and ctdb and all managed services will be shutdown.
+# Once this occurs, the administrator needs to find the reason for the OOM
+# situation, rectify it and restart ctdb with "service ctdb start"
 # The unit is MByte
 # CTDB_MONITOR_FREE_MEMORY=100
+
+# When set to yes, the CTDB node will start in DISABLED mode and not host
+# any public ip addresses. The administrator needs to explicitely enable
+# the node with "ctdb enable"
+# CTDB_START_AS_DISABLED="yes"
 
 # where to log messages
 # the default is /var/log/log.ctdb

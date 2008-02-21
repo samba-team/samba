@@ -42,6 +42,7 @@ static struct {
 	const char *node_ip;
 	int         no_setsched;
 	int         use_syslog;
+	int         start_as_disabled;
 } options = {
 	.nlist = ETCDIR "/ctdb/nodes",
 	.transport = "tcp",
@@ -118,6 +119,7 @@ int main(int argc, const char *argv[])
 		{ "reclock", 0, POPT_ARG_STRING, &options.recovery_lock_file, 0, "location of recovery lock file", "filename" },
 		{ "nosetsched", 0, POPT_ARG_NONE, &options.no_setsched, 0, "disable setscheduler SCHED_FIFO call", NULL },
 		{ "syslog", 0, POPT_ARG_NONE, &options.use_syslog, 0, "log messages to syslog", NULL },
+		{ "start-as-disabled", 0, POPT_ARG_NONE, &options.start_as_disabled, 0, "Node starts in disabled state", NULL },
 		POPT_TABLEEND
 	};
 	int opt, ret;
@@ -156,6 +158,8 @@ int main(int argc, const char *argv[])
 	ev = event_context_init(NULL);
 
 	ctdb = ctdb_cmdline_init(ev);
+
+	ctdb->start_as_disabled = options.start_as_disabled;
 
 	ret = ctdb_set_logfile(ctdb, options.logfile, options.use_syslog);
 	if (ret == -1) {

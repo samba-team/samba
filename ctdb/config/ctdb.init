@@ -63,6 +63,9 @@ CTDB_OPTIONS="$CTDB_OPTIONS --reclock=$CTDB_RECOVERY_LOCK"
 [ -z "$CTDB_EVENT_SCRIPT_DIR" ] || CTDB_OPTIONS="$CTDB_OPTIONS --event-script-dir $CTDB_EVENT_SCRIPT_DIR"
 [ -z "$CTDB_TRANSPORT" ]        || CTDB_OPTIONS="$CTDB_OPTIONS --transport $CTDB_TRANSPORT"
 [ -z "$CTDB_DEBUGLEVEL" ]       || CTDB_OPTIONS="$CTDB_OPTIONS -d $CTDB_DEBUGLEVEL"
+[ -z "$CTDB_START_AS_DISABLED" ] || [ "$CTDB_START_AS_DISABLED" != "yes" ] || {
+	CTDB_OPTIONS="$CTDB_OPTIONS --start-as-disabled"
+}
 
 if [ -x /sbin/startproc ]; then
     init_style="suse"
