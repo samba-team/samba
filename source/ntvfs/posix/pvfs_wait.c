@@ -31,7 +31,7 @@ struct pvfs_wait {
 	struct pvfs_wait *next, *prev;
 	struct pvfs_state *pvfs;
 	void (*handler)(void *, enum pvfs_wait_notice);
-	void *private;
+	void *private_data;
 	int msg_type;
 	struct messaging_context *msg_ctx;
 	struct event_context *ev;
@@ -45,20 +45,23 @@ struct pvfs_wait {
   previous ntvfs handlers in the chain (such as security context)
 */
 NTSTATUS pvfs_async_setup(struct ntvfs_module_context *ntvfs,
-			  struct ntvfs_request *req, void *private)
+			  struct ntvfs_request *req, void *private_data)
 {
-	struct pvfs_wait *pwait = private;
-	pwait->handler(pwait->private, pwait->reason);
+	struct pvfs_wait *pwait = talloc_get_type(private_data,
+						  struct pvfs_wait);
+	pwait->handler(pwait->private_data, pwait->reason);
 	return NT_STATUS_OK;
 }
 
 /*
   receive a completion message for a wait
 */
-static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uint32_t msg_type, 
+static void pvfs_wait_dispatch(struct messaging_context *msg,
+			       void *private_data, uint32_t msg_type,
 			       struct server_id src, DATA_BLOB *data)
 {
-	struct pvfs_wait *pwait = private;
+	struct pvfs_wait *pwait = talloc_get_type(private_data,
+						  struct pvfs_wait);
 	struct ntvfs_request *req;
 	void *p = NULL;
 
@@ -70,7 +73,7 @@ static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uin
 		pp = (void **)data->data;
 		p = *pp;
 	}
-	if (p == NULL || p != pwait->private) {
+	if (p == NULL || p != pwait->private_data) {
 		return;
 	}
 
@@ -91,9 +94,11 @@ static void pvfs_wait_dispatch(struct messaging_context *msg, void *private, uin
   receive a timeout on a message wait
 */
 static void pvfs_wait_timeout(struct event_context *ev, 
-			      struct timed_event *te, struct timeval t, void *private)
+			      struct timed_event *te, struct timeval t,
+			      void *private_data)
 {
-	struct pvfs_wait *pwait = talloc_get_type(private, struct pvfs_wait);
+	struct pvfs_wait *pwait = talloc_get_type(private_data,
+						  struct pvfs_wait);
 	struct ntvfs_request *req = pwait->req;
 
 	pwait->reason = PVFS_WAIT_TIMEOUT;
@@ -131,7 +136,7 @@ void *pvfs_wait_message(struct pvfs_state *pvfs,
 			int msg_type, 
 			struct timeval end_time,
 			void (*fn)(void *, enum pvfs_wait_notice),
-			void *private)
+			void *private_data)
 {
 	struct pvfs_wait *pwait;
 
@@ -140,7 +145,7 @@ void *pvfs_wait_message(struct pvfs_state *pvfs,
 		return NULL;
 	}
 
-	pwait->private = private;
+	pwait->private_data = private_data;
 	pwait->handler = fn;
 	pwait->msg_ctx = pvfs->ntvfs->ctx->msg_ctx;
 	pwait->ev = pvfs->ntvfs->ctx->event_ctx;
