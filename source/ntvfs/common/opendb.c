@@ -170,3 +170,9 @@ _PUBLIC_ NTSTATUS odb_can_open(struct odb_lock *lck,
 {
 	return ops->odb_can_open(lck, share_access, create_options, access_mask);
 }
+
+_PUBLIC_ NTSTATUS odb_update_oplock(struct odb_lock *lck, void *file_handle,
+				    uint32_t oplock_level)
+{
+	return ops->odb_update_oplock(lck, file_handle, oplock_level);
+}
