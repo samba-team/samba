@@ -127,7 +127,7 @@ krb5_error_code samba_kdc_get_pac(void *priv,
 	}
 
 	nt_status = authsam_make_server_info(mem_ctx, private->samdb, 
-					     lp_netbios_name(global_loadparm),
+					     private->netbios_name,
 					     private->msg, 
 					     private->realm_ref_msg,
 					     data_blob(NULL, 0),

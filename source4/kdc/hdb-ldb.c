@@ -431,6 +431,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 
 	private->entry_ex = entry_ex;
 	private->iconv_convenience = lp_iconv_convenience(lp_ctx);
+	private->netbios_name = lp_netbios_name(lp_ctx);
 
 	talloc_set_destructor(private, hdb_ldb_destrutor);
 

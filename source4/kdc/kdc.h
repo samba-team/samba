@@ -55,4 +55,5 @@ struct hdb_ldb_private {
 	struct ldb_message *msg;
 	struct ldb_message *realm_ref_msg;
 	hdb_entry_ex *entry_ex;
+	const char *netbios_name;
 };
