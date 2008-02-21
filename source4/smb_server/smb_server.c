@@ -253,5 +253,6 @@ failed:
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_smb_init(void)
 {
+	share_init();
 	return register_server_service("smb", smbsrv_task_init);
 }
