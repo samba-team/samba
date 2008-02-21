@@ -44,9 +44,10 @@ iface=no;
 iface=no;
 AC_CACHE_CHECK([for iface getifaddrs],libreplace_cv_HAVE_IFACE_GETIFADDRS,[
 AC_TRY_RUN([
-#define NO_CONFIG_H 1
 #define HAVE_IFACE_GETIFADDRS 1
+#define NO_CONFIG_H 1
 #define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
 #include "$libreplacedir/replace.c"
 #include "$libreplacedir/getifaddrs.c"],
            libreplace_cv_HAVE_IFACE_GETIFADDRS=yes,libreplace_cv_HAVE_IFACE_GETIFADDRS=no,libreplace_cv_HAVE_IFACE_GETIFADDRS=cross)])
@@ -60,10 +61,12 @@ fi
 if test $iface = no; then
 AC_CACHE_CHECK([for iface AIX],libreplace_cv_HAVE_IFACE_AIX,[
 AC_TRY_RUN([
-#define NO_CONFIG_H 1
 #define HAVE_IFACE_AIX 1
+#define NO_CONFIG_H 1
 #define AUTOCONF_TEST 1
 #undef _XOPEN_SOURCE_EXTENDED
+#define SOCKET_WRAPPER_NOT_REPLACE
+#include "$libreplacedir/replace.c"
 #include "$libreplacedir/getifaddrs.c"],
            libreplace_cv_HAVE_IFACE_AIX=yes,libreplace_cv_HAVE_IFACE_AIX=no,libreplace_cv_HAVE_IFACE_AIX=cross)])
 if test x"$libreplace_cv_HAVE_IFACE_AIX" = x"yes"; then
@@ -75,9 +78,11 @@ fi
 if test $iface = no; then
 AC_CACHE_CHECK([for iface ifconf],libreplace_cv_HAVE_IFACE_IFCONF,[
 AC_TRY_RUN([
-#define NO_CONFIG_H 1
 #define HAVE_IFACE_IFCONF 1
+#define NO_CONFIG_H 1
 #define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
+#include "$libreplacedir/replace.c"
 #include "$libreplacedir/getifaddrs.c"],
            libreplace_cv_HAVE_IFACE_IFCONF=yes,libreplace_cv_HAVE_IFACE_IFCONF=no,libreplace_cv_HAVE_IFACE_IFCONF=cross)])
 if test x"$libreplace_cv_HAVE_IFACE_IFCONF" = x"yes"; then
@@ -88,9 +93,11 @@ fi
 if test $iface = no; then
 AC_CACHE_CHECK([for iface ifreq],libreplace_cv_HAVE_IFACE_IFREQ,[
 AC_TRY_RUN([
-#define NO_CONFIG_H 1
 #define HAVE_IFACE_IFREQ 1
+#define NO_CONFIG_H 1
 #define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
+#include "$libreplacedir/replace.c"
 #include "$libreplacedir/getifaddrs.c"],
            libreplace_cv_HAVE_IFACE_IFREQ=yes,libreplace_cv_HAVE_IFACE_IFREQ=no,libreplace_cv_HAVE_IFACE_IFREQ=cross)])
 if test x"$libreplace_cv_HAVE_IFACE_IFREQ" = x"yes"; then
