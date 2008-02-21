@@ -51,7 +51,9 @@ _PUBLIC_ const char *str_regtype(int type)
 	return "Unknown";
 }
 
-_PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
+_PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, 
+				   struct smb_iconv_convenience *iconv_convenience,
+				   uint32_t type,
 				   const DATA_BLOB data)
 {
 	char *ret = NULL;
@@ -62,7 +64,7 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
 	switch (type) {
 		case REG_EXPAND_SZ:
 		case REG_SZ:
-			convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX,
+			convert_string_talloc(mem_ctx, iconv_convenience, CH_UTF16, CH_UNIX,
 					      data.data, data.length,
 					      (void **)&ret);
 			return ret;
@@ -85,16 +87,20 @@ _PUBLIC_ char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
 }
 
 /** Generate a string that describes a registry value */
-_PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx, const char *name,
+_PUBLIC_ char *reg_val_description(TALLOC_CTX *mem_ctx, 
+				   struct smb_iconv_convenience *iconv_convenience, 
+				   const char *name,
 				   uint32_t data_type,
 				   const DATA_BLOB data)
 {
 	return talloc_asprintf(mem_ctx, "%s = %s : %s", name?name:"<No Name>",
 			       str_regtype(data_type),
-			       reg_val_data_string(mem_ctx, data_type, data));
+			       reg_val_data_string(mem_ctx, iconv_convenience, data_type, data));
 }
 
-_PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
+_PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, 
+				struct smb_iconv_convenience *iconv_convenience,
+				const char *type_str,
 				const char *data_str, uint32_t *type,
 				DATA_BLOB *data)
 {
@@ -118,7 +124,7 @@ _PUBLIC_ bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
 	{
 		case REG_SZ:
 		case REG_EXPAND_SZ:
-      		data->length = convert_string_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), CH_UNIX, CH_UTF16,
+      		data->length = convert_string_talloc(mem_ctx, iconv_convenience, CH_UNIX, CH_UTF16,
 						     data_str, strlen(data_str),
 						     (void **)&data->data);
 			break;
