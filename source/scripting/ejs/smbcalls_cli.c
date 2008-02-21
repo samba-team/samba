@@ -432,23 +432,23 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 	/* Set up credentials */
 
 	creds = cli_credentials_init(NULL);
-	cli_credentials_set_conf(creds, global_loadparm);
+	cli_credentials_set_conf(creds, mprLpCtx());
 	cli_credentials_parse_string(creds, argv[1], CRED_SPECIFIED);
 
 	/* Do connect */
 
 	io.in.dest_host              = hostname;
-	io.in.dest_ports             = lp_smb_ports(global_loadparm);
+	io.in.dest_ports             = lp_smb_ports(mprLpCtx());
 	io.in.called_name            = strupper_talloc(mem_ctx, hostname);
 	io.in.service                = sharename;
 	io.in.service_type           = "?????";
 	io.in.credentials            = creds;
 	io.in.fallback_to_anonymous  = false;
-	io.in.workgroup              = lp_workgroup(global_loadparm);
+	io.in.workgroup              = lp_workgroup(mprLpCtx());
 	lp_smbcli_options(global_loadparm, &io.in.options);
 
 	result = smb_composite_connect(&io, mem_ctx, 
-				       lp_resolve_context(global_loadparm), 
+				       lp_resolve_context(mprLpCtx()), 
 				       NULL);
 	tree = io.out.tree;
 

@@ -79,9 +79,9 @@ static int ejs_irpc_connect(MprVarHandle eid, int argc, char **argv)
 	   allocate temporary server ids automatically */
 	for (i=0;i<10000;i++) {
 		p->msg_ctx = messaging_init(p, 
-					    lp_messaging_path(p, global_loadparm),
+					    lp_messaging_path(p, mprLpCtx()),
 					    cluster_id(EJS_ID_BASE, i), 
-				            lp_iconv_convenience(global_loadparm),
+				            lp_iconv_convenience(mprLpCtx()),
 					    ev);
 		if (p->msg_ctx) break;
 	}
@@ -161,7 +161,7 @@ static int ejs_rpc_connect(MprVarHandle eid, int argc, char **argv)
 	ev = event_context_find(mprMemCtx());
 
 	status = dcerpc_pipe_connect(this, &p, binding, iface, creds, ev,
-				     global_loadparm);
+				     mprLpCtx());
 	if (!NT_STATUS_IS_OK(status)) goto done;
 
 	/* callers don't allocate ref vars in the ejs interface */

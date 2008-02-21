@@ -70,7 +70,7 @@ static int ejs_reg_open(MprVarHandle eid, int argc, struct MprVar **argv)
 	struct registry_context *rctx;
 	WERROR error;
 
-	error = reg_open_samba(mprMemCtx(), &rctx, global_loadparm, NULL, NULL);
+	error = reg_open_samba(mprMemCtx(), &rctx, mprLpCtx(), NULL, NULL);
 	SMB_ASSERT(W_ERROR_IS_OK(error));
 
 	mprSetPtrChild(reg, "registry", rctx);

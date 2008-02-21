@@ -192,7 +192,7 @@ static int ejs_creds_set_machine_account(MprVarHandle eid, int argc, struct MprV
 		return -1;
 	}
 	
-	if (NT_STATUS_IS_OK(cli_credentials_set_machine_account(creds, global_loadparm))) {
+	if (NT_STATUS_IS_OK(cli_credentials_set_machine_account(creds, mprLpCtx()))) {
 		mpr_Return(eid, mprCreateBoolVar(true));
 	} else {
 		mpr_Return(eid, mprCreateBoolVar(false));
@@ -248,7 +248,7 @@ static int ejs_credentials_init(MprVarHandle eid, int argc, struct MprVar **argv
 		return -1;
 	}
 
-	cli_credentials_set_conf(creds, global_loadparm);
+	cli_credentials_set_conf(creds, mprLpCtx());
 
 	return ejs_credentials_obj(obj, creds);
 }
