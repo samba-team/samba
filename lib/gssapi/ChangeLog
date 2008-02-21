@@ -1,3 +1,8 @@
+2008-02-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* make the SPNEGO mech store the error itself instead, works for
+	everything except other stackable mechs
+
 2008-02-18  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* spnego/init_sec_context.c (spnego_reply): if the reply token was

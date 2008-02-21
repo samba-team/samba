@@ -609,7 +609,7 @@ acceptor_start
     /*
      * First we try the opportunistic token if we have support for it,
      * don't try to verify we have credential for the token,
-     * gss_accept_sec_context will (hopefully) tell us that.
+     * gss_accept_sec_context() will (hopefully) tell us that.
      * If that failes, 
      */
 
@@ -674,6 +674,8 @@ acceptor_start
 		goto out;
 
 	    first_ok = 1;
+	} else {
+	    gss_mg_collect_error(preferred_mech_type, ret, *minor_status);
 	}
     }
 
@@ -879,6 +881,7 @@ acceptor_continue
 	    }
 	    if (ret != GSS_S_COMPLETE && ret != GSS_S_CONTINUE_NEEDED) {
 		free_NegotiationToken(&nt);
+		gss_mg_collect_error(ctx->negotiated_mech_type, ret, minor);
 		send_reject (minor_status, output_token);
 		HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 		return ret;

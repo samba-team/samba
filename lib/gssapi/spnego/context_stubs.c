@@ -263,18 +263,6 @@ OM_uint32 _gss_spnego_unwrap
 		      qop_state);
 }
 
-OM_uint32 _gss_spnego_display_status
-           (OM_uint32 * minor_status,
-            OM_uint32 status_value,
-            int status_type,
-            const gss_OID mech_type,
-            OM_uint32 * message_context,
-            gss_buffer_t status_string
-           )
-{
-    return GSS_S_FAILURE;
-}
-
 OM_uint32 _gss_spnego_compare_name
            (OM_uint32 *minor_status,
             const gss_name_t name1,
