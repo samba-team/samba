@@ -64,6 +64,7 @@ struct samlogon_state {
 	NTSTATUS expected_error;
 	bool old_password; /* Allow an old password to be accepted or rejected without error, as well as session key bugs */
 	DATA_BLOB chall;
+	struct smb_iconv_convenience *iconv_convenience;
 };
 
 /* 
@@ -1158,7 +1159,7 @@ static bool test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 	ZERO_STRUCT(user_session_key);
 	
 	if ((push_ucs2_talloc(samlogon_state->mem_ctx, 
-			      lp_iconv_convenience(global_loadparm), 
+			      samlogon_state->iconv_convenience, 
 			      &unicodepw, samlogon_state->password)) == -1) {
 		DEBUG(0, ("push_ucs2_allocate failed!\n"));
 		exit(1);
@@ -1169,7 +1170,7 @@ static bool test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 	password = strupper_talloc(samlogon_state->mem_ctx, samlogon_state->password);
 
 	if ((convert_string_talloc(samlogon_state->mem_ctx, 
-				   lp_iconv_convenience(global_loadparm),
+				   samlogon_state->iconv_convenience,
 				   CH_UNIX, CH_DOS, 
 				   password, strlen(password)+1, 
 				   (void**)&dospw)) == -1) {
@@ -1310,6 +1311,7 @@ static const struct ntlm_tests {
   try a netlogon SamLogon
 */
 static bool test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			  struct torture_context *tctx,
 			  struct creds_CredentialState *creds, 
 			  const char *comment,
 			  const char *account_domain, const char *account_name, 
@@ -1340,6 +1342,7 @@ static bool test_SamLogon(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	samlogon_state.chall = data_blob_talloc(fn_ctx, NULL, 8);
 	samlogon_state.parameter_control = parameter_control;
 	samlogon_state.old_password = old_password;
+	samlogon_state.iconv_convenience = lp_iconv_convenience(tctx->lp_ctx);
 
 	generate_random_buffer(samlogon_state.chall.data, 8);
 	samlogon_state.r_flags.in.server_name = talloc_asprintf(fn_ctx, "\\\\%s", dcerpc_server_name(p));
@@ -1792,7 +1795,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 			}
 		
 			if (usercreds[ci].network_login) {
-				if (!test_SamLogon(p, mem_ctx, creds, 
+				if (!test_SamLogon(p, mem_ctx, torture, creds, 
 						   usercreds[ci].comment,
 						   usercreds[ci].domain,
 						   usercreds[ci].username,
@@ -1825,7 +1828,7 @@ bool torture_rpc_samlogon(struct torture_context *torture)
 			}
 		
 			if (usercreds[0].network_login) {
-				if (!test_SamLogon(p, mem_ctx, creds,
+				if (!test_SamLogon(p, mem_ctx, torture, creds,
 						   usercreds[0].comment,
 						   usercreds[0].domain,
 						   usercreds[0].username,

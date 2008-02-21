@@ -104,6 +104,8 @@ struct pvfs_mangle_context {
 
 	/* this is used to reverse the base 36 mapping */
 	unsigned char base_reverse[256];
+
+	struct smb_iconv_convenience *iconv_convenience;
 };
 
 
@@ -388,7 +390,7 @@ static bool is_legal_name(struct pvfs_mangle_context *ctx, const char *name)
 {
 	while (*name) {
 		size_t c_size;
-		codepoint_t c = next_codepoint(lp_iconv_convenience(global_loadparm), name, &c_size);
+		codepoint_t c = next_codepoint(ctx->iconv_convenience, name, &c_size);
 		if (c == INVALID_CODEPOINT) {
 			return false;
 		}
@@ -612,6 +614,8 @@ NTSTATUS pvfs_mangle_init(struct pvfs_state *pvfs)
 	if (ctx == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+
+	ctx->iconv_convenience = lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx);
 
 	/* by default have a max of 512 entries in the cache. */
 	ctx->cache_size = lp_parm_int(pvfs->ntvfs->ctx->lp_ctx, NULL, "mangle", "cachesize", 512);
