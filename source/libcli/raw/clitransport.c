@@ -164,14 +164,15 @@ struct smbcli_request *smbcli_transport_connect_send(struct smbcli_transport *tr
 	DATA_BLOB calling_blob, called_blob;
 	TALLOC_CTX *tmp_ctx = talloc_new(transport);
 	NTSTATUS status;
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	status = nbt_name_dup(transport, called, &transport->called);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 	
-	status = nbt_name_to_blob(tmp_ctx, &calling_blob, calling);
+	status = nbt_name_to_blob(tmp_ctx, iconv_convenience, &calling_blob, calling);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
-	status = nbt_name_to_blob(tmp_ctx, &called_blob, called);
+	status = nbt_name_to_blob(tmp_ctx, iconv_convenience, &called_blob, called);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
 
   	/* allocate output buffer */

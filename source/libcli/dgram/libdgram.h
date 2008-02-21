@@ -40,6 +40,7 @@ struct nbt_dgram_request {
 struct nbt_dgram_socket {
 	struct socket_context *sock;
 	struct event_context *event_ctx;
+	struct smb_iconv_convenience *iconv_convenience;
 
 	/* the fd event */
 	struct fd_event *fde;
