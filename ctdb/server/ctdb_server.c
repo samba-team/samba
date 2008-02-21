@@ -121,6 +121,7 @@ static int ctdb_add_node(struct ctdb_context *ctdb, char *nstr)
 
 		/* do we start out in DISABLED mode? */
 		if (ctdb->start_as_disabled != 0) {
+			DEBUG(DEBUG_INFO, ("This node is configured to start in DISABLED state\n"));
 			node->flags |= NODE_FLAGS_DISABLED;
 		}
 	}

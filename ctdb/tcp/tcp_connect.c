@@ -315,6 +315,7 @@ static int ctdb_tcp_listen_automatic(struct ctdb_context *ctdb)
 		 ctdb->pnn));
 	/* do we start out in DISABLED mode? */
 	if (ctdb->start_as_disabled != 0) {
+		DEBUG(DEBUG_INFO, ("This node is configured to start in DISABLED state\n"));
 		ctdb->nodes[i]->flags |= NODE_FLAGS_DISABLED;
 	}
 	
