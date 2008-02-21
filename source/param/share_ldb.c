@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    
-   LDB based services configuration
+   LDB based shares configuration
    
    Copyright (C) Simo Sorce	2006
    

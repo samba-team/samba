@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    
-   Classic file based services configuration
+   Classic file based shares configuration
    
    Copyright (C) Simo Sorce	2006
    
