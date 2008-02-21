@@ -609,7 +609,7 @@ NTSTATUS rpccli_lsa_LookupNames(struct rpc_pipe_client *cli,
 				struct policy_handle *handle,
 				uint32_t num_names,
 				struct lsa_String *names,
-				struct lsa_RefDomainList *domains,
+				struct lsa_RefDomainList **domains,
 				struct lsa_TransSidArray *sids,
 				enum lsa_LookupNamesLevel level,
 				uint32_t *count)
@@ -649,9 +649,7 @@ NTSTATUS rpccli_lsa_LookupNames(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*sids = *r.out.sids;
 	*count = *r.out.count;
 
@@ -663,7 +661,7 @@ NTSTATUS rpccli_lsa_LookupSids(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
 			       struct policy_handle *handle,
 			       struct lsa_SidArray *sids,
-			       struct lsa_RefDomainList *domains,
+			       struct lsa_RefDomainList **domains,
 			       struct lsa_TransNameArray *names,
 			       uint16_t level,
 			       uint32_t *count)
@@ -702,9 +700,7 @@ NTSTATUS rpccli_lsa_LookupSids(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*names = *r.out.names;
 	*count = *r.out.count;
 
@@ -2472,7 +2468,7 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *handle,
 				struct lsa_SidArray *sids,
-				struct lsa_RefDomainList *domains,
+				struct lsa_RefDomainList **domains,
 				struct lsa_TransNameArray2 *names,
 				uint16_t level,
 				uint32_t *count,
@@ -2515,9 +2511,7 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*names = *r.out.names;
 	*count = *r.out.count;
 
@@ -2530,7 +2524,7 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 				 struct policy_handle *handle,
 				 uint32_t num_names,
 				 struct lsa_String *names,
-				 struct lsa_RefDomainList *domains,
+				 struct lsa_RefDomainList **domains,
 				 struct lsa_TransSidArray2 *sids,
 				 enum lsa_LookupNamesLevel level,
 				 uint32_t *count,
@@ -2574,9 +2568,7 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*sids = *r.out.sids;
 	*count = *r.out.count;
 
@@ -2922,7 +2914,7 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 				 struct policy_handle *handle,
 				 uint32_t num_names,
 				 struct lsa_String *names,
-				 struct lsa_RefDomainList *domains,
+				 struct lsa_RefDomainList **domains,
 				 struct lsa_TransSidArray3 *sids,
 				 enum lsa_LookupNamesLevel level,
 				 uint32_t *count,
@@ -2966,9 +2958,7 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*sids = *r.out.sids;
 	*count = *r.out.count;
 
@@ -3246,7 +3236,7 @@ NTSTATUS rpccli_lsa_CREDRRENAME(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				struct lsa_SidArray *sids,
-				struct lsa_RefDomainList *domains,
+				struct lsa_RefDomainList **domains,
 				struct lsa_TransNameArray2 *names,
 				uint16_t level,
 				uint32_t *count,
@@ -3288,9 +3278,7 @@ NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*names = *r.out.names;
 	*count = *r.out.count;
 
@@ -3302,7 +3290,7 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 uint32_t num_names,
 				 struct lsa_String *names,
-				 struct lsa_RefDomainList *domains,
+				 struct lsa_RefDomainList **domains,
 				 struct lsa_TransSidArray3 *sids,
 				 enum lsa_LookupNamesLevel level,
 				 uint32_t *count,
@@ -3345,9 +3333,7 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*sids = *r.out.sids;
 	*count = *r.out.count;
 

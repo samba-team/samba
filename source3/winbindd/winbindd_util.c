@@ -1272,7 +1272,7 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 				  const DOM_SID *user_sid,
 				  uint32 *p_num_groups, DOM_SID **user_sids)
 {
-	NET_USER_INFO_3 *info3 = NULL;
+	struct netr_SamInfo3 *info3 = NULL;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	int i;
 	size_t num_groups = 0;
@@ -1290,13 +1290,13 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	if (info3->num_groups == 0) {
+	if (info3->base.groups.count == 0) {
 		TALLOC_FREE(info3);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	/* always add the primary group to the sid array */
-	sid_compose(&primary_group, &info3->dom_sid.sid, info3->user_rid);
+	sid_compose(&primary_group, info3->base.domain_sid, info3->base.rid);
 	
 	status = add_sid_to_array(mem_ctx, &primary_group, user_sids,
 				  &num_groups);
@@ -1305,9 +1305,9 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 		return status;
 	}
 
-	for (i=0; i<info3->num_groups; i++) {
-		sid_copy(&group_sid, &info3->dom_sid.sid);
-		sid_append_rid(&group_sid, info3->gids[i].g_rid);
+	for (i=0; i < info3->base.groups.count; i++) {
+		sid_copy(&group_sid, info3->base.domain_sid);
+		sid_append_rid(&group_sid, info3->base.groups.rids[i].rid);
 
 		status = add_sid_to_array(mem_ctx, &group_sid, user_sids,
 					  &num_groups);
@@ -1319,13 +1319,13 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 
 	/* Add any Universal groups in the other_sids list */
 
-	for (i=0; i<info3->num_other_sids; i++) {
+	for (i=0; i < info3->sidcount; i++) {
 		/* Skip Domain local groups outside our domain.
 		   We'll get these from the getsidaliases() RPC call. */
-		if (info3->other_sids_attrib[i] & SE_GROUP_RESOURCE)
+		if (info3->sids[i].attributes & SE_GROUP_RESOURCE)
 			continue;
 
-		status = add_sid_to_array(mem_ctx, &info3->other_sids[i].sid,
+		status = add_sid_to_array(mem_ctx, info3->sids[i].sid,
 					  user_sids, &num_groups);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(info3);

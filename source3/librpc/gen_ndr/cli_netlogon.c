@@ -113,7 +113,7 @@ NTSTATUS rpccli_netr_LogonSamLogon(struct rpc_pipe_client *cli,
 				   struct netr_Authenticator *credential,
 				   struct netr_Authenticator *return_authenticator,
 				   uint16_t logon_level,
-				   union netr_LogonLevel logon,
+				   union netr_LogonLevel *logon,
 				   uint16_t validation_level,
 				   union netr_Validation *validation,
 				   uint8_t *authoritative)
@@ -220,7 +220,8 @@ NTSTATUS rpccli_netr_ServerReqChallenge(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					const char *server_name,
 					const char *computer_name,
-					struct netr_Credential *credentials)
+					struct netr_Credential *credentials,
+					struct netr_Credential *return_credentials)
 {
 	struct netr_ServerReqChallenge r;
 	NTSTATUS status;
@@ -254,7 +255,7 @@ NTSTATUS rpccli_netr_ServerReqChallenge(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*credentials = *r.out.credentials;
+	*return_credentials = *r.out.return_credentials;
 
 	/* Return result */
 	return r.out.result;
@@ -266,7 +267,8 @@ NTSTATUS rpccli_netr_ServerAuthenticate(struct rpc_pipe_client *cli,
 					const char *account_name,
 					enum netr_SchannelType secure_channel_type,
 					const char *computer_name,
-					struct netr_Credential *credentials)
+					struct netr_Credential *credentials,
+					struct netr_Credential *return_credentials)
 {
 	struct netr_ServerAuthenticate r;
 	NTSTATUS status;
@@ -302,7 +304,7 @@ NTSTATUS rpccli_netr_ServerAuthenticate(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*credentials = *r.out.credentials;
+	*return_credentials = *r.out.return_credentials;
 
 	/* Return result */
 	return r.out.result;
@@ -799,6 +801,7 @@ NTSTATUS rpccli_netr_ServerAuthenticate2(struct rpc_pipe_client *cli,
 					 enum netr_SchannelType secure_channel_type,
 					 const char *computer_name,
 					 struct netr_Credential *credentials,
+					 struct netr_Credential *return_credentials,
 					 uint32_t *negotiate_flags)
 {
 	struct netr_ServerAuthenticate2 r;
@@ -836,7 +839,7 @@ NTSTATUS rpccli_netr_ServerAuthenticate2(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	*credentials = *r.out.credentials;
+	*return_credentials = *r.out.return_credentials;
 	*negotiate_flags = *r.out.negotiate_flags;
 
 	/* Return result */
@@ -1971,7 +1974,7 @@ NTSTATUS rpccli_netr_LogonSamLogonEx(struct rpc_pipe_client *cli,
 				     const char *server_name,
 				     const char *computer_name,
 				     uint16_t logon_level,
-				     union netr_LogonLevel logon,
+				     union netr_LogonLevel *logon,
 				     uint16_t validation_level,
 				     union netr_Validation *validation,
 				     uint8_t *authoritative,

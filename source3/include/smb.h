@@ -308,6 +308,8 @@ extern const DATA_BLOB data_blob_null;
 #include "librpc/gen_ndr/samr.h"
 #include "librpc/gen_ndr/dssetup.h"
 #include "librpc/gen_ndr/libnet_join.h"
+#include "librpc/gen_ndr/krb5pac.h"
+#include "librpc/gen_ndr/ntsvcs.h"
 
 struct lsa_dom_info {
 	bool valid;

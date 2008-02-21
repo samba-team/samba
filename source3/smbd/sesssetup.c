@@ -259,7 +259,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	fstring user;
 	int sess_vuid = req->vuid;
 	NTSTATUS ret = NT_STATUS_OK;
-	PAC_DATA *pac_data = NULL;
+	struct PAC_DATA *pac_data = NULL;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
 	auth_serversupplied_info *server_info = NULL;
 	DATA_BLOB session_key = data_blob_null;
@@ -268,7 +268,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	fstring real_username;
 	bool map_domainuser_to_guest = False;
 	bool username_was_mapped;
-	PAC_LOGON_INFO *logon_info = NULL;
+	struct PAC_LOGON_INFO *logon_info = NULL;
 
 	ZERO_STRUCT(ticket);
 	ZERO_STRUCT(ap_rep);
@@ -394,10 +394,9 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 	domain = p+1;
 
-	if (logon_info && logon_info->info3.hdr_logon_dom.uni_str_len) {
-		unistr2_to_ascii(netbios_domain_name,
-				&logon_info->info3.uni_logon_dom,
-				sizeof(netbios_domain_name));
+	if (logon_info && logon_info->info3.base.domain.string) {
+		fstrcpy(netbios_domain_name,
+			logon_info->info3.base.domain.string);
 		domain = netbios_domain_name;
 		DEBUG(10, ("Mapped to [%s] (using PAC)\n", domain));
 

@@ -1859,4 +1859,14 @@ uint32 str_len_uni(UNISTR *source)
 	return i;
 }
 
+/*******************************************************************
+ Verifies policy handle
+********************************************************************/
 
+bool policy_handle_is_valid(const POLICY_HND *hnd)
+{
+	POLICY_HND zero_pol;
+
+	ZERO_STRUCT(zero_pol);
+	return ((memcmp(&zero_pol, hnd, sizeof(POLICY_HND)) == 0) ? false : true );
+}

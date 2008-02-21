@@ -36,7 +36,7 @@ static void free_regkey(void *ptr)
 }
 
 /******************************************************************
- Find a registry key handle and return a REGISTRY_KEY
+ Find a registry key handle and return a struct registry_key *
  *****************************************************************/
 
 static struct registry_key *find_regkey_by_hnd(pipes_struct *p,

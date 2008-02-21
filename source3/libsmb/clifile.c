@@ -38,8 +38,15 @@ static bool cli_link_internal(struct cli_state *cli, const char *oldname, const 
 	size_t newlen = 2*(strlen(newname)+1);
 
 	param = SMB_MALLOC_ARRAY(char, 6+newlen+2);
+
+	if (!param) {
+		return false;
+	}
+
 	data = SMB_MALLOC_ARRAY(char, oldlen+2);
-	if (!param || !data) {
+
+	if (!data) {
+		SAFE_FREE(param);
 		return false;
 	}
 

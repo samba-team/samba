@@ -5704,9 +5704,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames(struct ndr_push *ndr, int fl
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.domains));
-		if (r->out.domains) {
-			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+		if (r->out.domains == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.domains));
+		if (*r->out.domains) {
+			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
 		}
 		if (r->out.sids == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -5728,6 +5731,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames(struct ndr_pull *ndr, int fl
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_names_0;
 	TALLOC_CTX *_mem_save_domains_0;
+	TALLOC_CTX *_mem_save_domains_1;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_count_0;
 	if (flags & NDR_IN) {
@@ -5770,6 +5774,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames(struct ndr_pull *ndr, int fl
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.count, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.count));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_ALLOC(ndr, r->out.domains);
+		ZERO_STRUCTP(r->out.domains);
 		NDR_PULL_ALLOC(ndr, r->out.sids);
 		*r->out.sids = *r->in.sids;
 		NDR_PULL_ALLOC(ndr, r->out.count);
@@ -5779,18 +5785,24 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames(struct ndr_pull *ndr, int fl
 		}
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.domains);
+		}
+		_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domains));
 		if (_ptr_domains) {
-			NDR_PULL_ALLOC(ndr, r->out.domains);
+			NDR_PULL_ALLOC(ndr, *r->out.domains);
 		} else {
-			r->out.domains = NULL;
+			*r->out.domains = NULL;
 		}
-		if (r->out.domains) {
-			_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, 0);
-			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, 0);
+		if (*r->out.domains) {
+			_mem_save_domains_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.domains, 0);
+			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.sids);
 		}
@@ -5853,9 +5865,12 @@ _PUBLIC_ void ndr_print_lsa_LookupNames(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		ndr_print_ptr(ndr, "domains", r->out.domains);
 		ndr->depth++;
-		if (r->out.domains) {
-			ndr_print_lsa_RefDomainList(ndr, "domains", r->out.domains);
+		ndr_print_ptr(ndr, "domains", *r->out.domains);
+		ndr->depth++;
+		if (*r->out.domains) {
+			ndr_print_lsa_RefDomainList(ndr, "domains", *r->out.domains);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "sids", r->out.sids);
 		ndr->depth++;
@@ -5893,9 +5908,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids(struct ndr_push *ndr, int fla
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.count));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.domains));
-		if (r->out.domains) {
-			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+		if (r->out.domains == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.domains));
+		if (*r->out.domains) {
+			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
 		}
 		if (r->out.names == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -5916,6 +5934,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids(struct ndr_pull *ndr, int fla
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_domains_0;
+	TALLOC_CTX *_mem_save_domains_1;
 	TALLOC_CTX *_mem_save_names_0;
 	TALLOC_CTX *_mem_save_count_0;
 	if (flags & NDR_IN) {
@@ -5950,24 +5969,32 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids(struct ndr_pull *ndr, int fla
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.count, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.count));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_ALLOC(ndr, r->out.domains);
+		ZERO_STRUCTP(r->out.domains);
 		NDR_PULL_ALLOC(ndr, r->out.names);
 		*r->out.names = *r->in.names;
 		NDR_PULL_ALLOC(ndr, r->out.count);
 		*r->out.count = *r->in.count;
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.domains);
+		}
+		_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domains));
 		if (_ptr_domains) {
-			NDR_PULL_ALLOC(ndr, r->out.domains);
+			NDR_PULL_ALLOC(ndr, *r->out.domains);
 		} else {
-			r->out.domains = NULL;
+			*r->out.domains = NULL;
 		}
-		if (r->out.domains) {
-			_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, 0);
-			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, 0);
+		if (*r->out.domains) {
+			_mem_save_domains_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.domains, 0);
+			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.names);
 		}
@@ -6021,9 +6048,12 @@ _PUBLIC_ void ndr_print_lsa_LookupSids(struct ndr_print *ndr, const char *name, 
 		ndr->depth++;
 		ndr_print_ptr(ndr, "domains", r->out.domains);
 		ndr->depth++;
-		if (r->out.domains) {
-			ndr_print_lsa_RefDomainList(ndr, "domains", r->out.domains);
+		ndr_print_ptr(ndr, "domains", *r->out.domains);
+		ndr->depth++;
+		if (*r->out.domains) {
+			ndr_print_lsa_RefDomainList(ndr, "domains", *r->out.domains);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "names", r->out.names);
 		ndr->depth++;
@@ -9704,9 +9734,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids2(struct ndr_push *ndr, int fl
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.domains));
-		if (r->out.domains) {
-			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+		if (r->out.domains == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.domains));
+		if (*r->out.domains) {
+			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
 		}
 		if (r->out.names == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -9727,6 +9760,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids2(struct ndr_pull *ndr, int fl
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_domains_0;
+	TALLOC_CTX *_mem_save_domains_1;
 	TALLOC_CTX *_mem_save_names_0;
 	TALLOC_CTX *_mem_save_count_0;
 	if (flags & NDR_IN) {
@@ -9763,24 +9797,32 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids2(struct ndr_pull *ndr, int fl
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown2));
+		NDR_PULL_ALLOC(ndr, r->out.domains);
+		ZERO_STRUCTP(r->out.domains);
 		NDR_PULL_ALLOC(ndr, r->out.names);
 		*r->out.names = *r->in.names;
 		NDR_PULL_ALLOC(ndr, r->out.count);
 		*r->out.count = *r->in.count;
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.domains);
+		}
+		_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domains));
 		if (_ptr_domains) {
-			NDR_PULL_ALLOC(ndr, r->out.domains);
+			NDR_PULL_ALLOC(ndr, *r->out.domains);
 		} else {
-			r->out.domains = NULL;
+			*r->out.domains = NULL;
 		}
-		if (r->out.domains) {
-			_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, 0);
-			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, 0);
+		if (*r->out.domains) {
+			_mem_save_domains_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.domains, 0);
+			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.names);
 		}
@@ -9836,9 +9878,12 @@ _PUBLIC_ void ndr_print_lsa_LookupSids2(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		ndr_print_ptr(ndr, "domains", r->out.domains);
 		ndr->depth++;
-		if (r->out.domains) {
-			ndr_print_lsa_RefDomainList(ndr, "domains", r->out.domains);
+		ndr_print_ptr(ndr, "domains", *r->out.domains);
+		ndr->depth++;
+		if (*r->out.domains) {
+			ndr_print_lsa_RefDomainList(ndr, "domains", *r->out.domains);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "names", r->out.names);
 		ndr->depth++;
@@ -9883,9 +9928,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames2(struct ndr_push *ndr, int f
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.domains));
-		if (r->out.domains) {
-			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+		if (r->out.domains == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.domains));
+		if (*r->out.domains) {
+			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
 		}
 		if (r->out.sids == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -9907,6 +9955,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames2(struct ndr_pull *ndr, int f
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_names_0;
 	TALLOC_CTX *_mem_save_domains_0;
+	TALLOC_CTX *_mem_save_domains_1;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_count_0;
 	if (flags & NDR_IN) {
@@ -9951,6 +10000,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames2(struct ndr_pull *ndr, int f
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown2));
+		NDR_PULL_ALLOC(ndr, r->out.domains);
+		ZERO_STRUCTP(r->out.domains);
 		NDR_PULL_ALLOC(ndr, r->out.sids);
 		*r->out.sids = *r->in.sids;
 		NDR_PULL_ALLOC(ndr, r->out.count);
@@ -9960,18 +10011,24 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames2(struct ndr_pull *ndr, int f
 		}
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.domains);
+		}
+		_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domains));
 		if (_ptr_domains) {
-			NDR_PULL_ALLOC(ndr, r->out.domains);
+			NDR_PULL_ALLOC(ndr, *r->out.domains);
 		} else {
-			r->out.domains = NULL;
+			*r->out.domains = NULL;
 		}
-		if (r->out.domains) {
-			_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, 0);
-			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, 0);
+		if (*r->out.domains) {
+			_mem_save_domains_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.domains, 0);
+			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.sids);
 		}
@@ -10036,9 +10093,12 @@ _PUBLIC_ void ndr_print_lsa_LookupNames2(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_ptr(ndr, "domains", r->out.domains);
 		ndr->depth++;
-		if (r->out.domains) {
-			ndr_print_lsa_RefDomainList(ndr, "domains", r->out.domains);
+		ndr_print_ptr(ndr, "domains", *r->out.domains);
+		ndr->depth++;
+		if (*r->out.domains) {
+			ndr_print_lsa_RefDomainList(ndr, "domains", *r->out.domains);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "sids", r->out.sids);
 		ndr->depth++;
@@ -10452,9 +10512,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupNames3(struct ndr_push *ndr, int f
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.domains));
-		if (r->out.domains) {
-			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+		if (r->out.domains == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.domains));
+		if (*r->out.domains) {
+			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
 		}
 		if (r->out.sids == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -10476,6 +10539,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int f
 	TALLOC_CTX *_mem_save_handle_0;
 	TALLOC_CTX *_mem_save_names_0;
 	TALLOC_CTX *_mem_save_domains_0;
+	TALLOC_CTX *_mem_save_domains_1;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_count_0;
 	if (flags & NDR_IN) {
@@ -10520,6 +10584,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int f
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown2));
+		NDR_PULL_ALLOC(ndr, r->out.domains);
+		ZERO_STRUCTP(r->out.domains);
 		NDR_PULL_ALLOC(ndr, r->out.sids);
 		*r->out.sids = *r->in.sids;
 		NDR_PULL_ALLOC(ndr, r->out.count);
@@ -10529,18 +10595,24 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupNames3(struct ndr_pull *ndr, int f
 		}
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.domains);
+		}
+		_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domains));
 		if (_ptr_domains) {
-			NDR_PULL_ALLOC(ndr, r->out.domains);
+			NDR_PULL_ALLOC(ndr, *r->out.domains);
 		} else {
-			r->out.domains = NULL;
+			*r->out.domains = NULL;
 		}
-		if (r->out.domains) {
-			_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, 0);
-			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, 0);
+		if (*r->out.domains) {
+			_mem_save_domains_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.domains, 0);
+			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.sids);
 		}
@@ -10605,9 +10677,12 @@ _PUBLIC_ void ndr_print_lsa_LookupNames3(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_ptr(ndr, "domains", r->out.domains);
 		ndr->depth++;
-		if (r->out.domains) {
-			ndr_print_lsa_RefDomainList(ndr, "domains", r->out.domains);
+		ndr_print_ptr(ndr, "domains", *r->out.domains);
+		ndr->depth++;
+		if (*r->out.domains) {
+			ndr_print_lsa_RefDomainList(ndr, "domains", *r->out.domains);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "sids", r->out.sids);
 		ndr->depth++;
@@ -11006,9 +11081,12 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_LookupSids3(struct ndr_push *ndr, int fl
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.domains));
-		if (r->out.domains) {
-			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+		if (r->out.domains == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.domains));
+		if (*r->out.domains) {
+			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
 		}
 		if (r->out.names == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -11028,6 +11106,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids3(struct ndr_pull *ndr, int fl
 	uint32_t _ptr_domains;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_domains_0;
+	TALLOC_CTX *_mem_save_domains_1;
 	TALLOC_CTX *_mem_save_names_0;
 	TALLOC_CTX *_mem_save_count_0;
 	if (flags & NDR_IN) {
@@ -11057,24 +11136,32 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_LookupSids3(struct ndr_pull *ndr, int fl
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown2));
+		NDR_PULL_ALLOC(ndr, r->out.domains);
+		ZERO_STRUCTP(r->out.domains);
 		NDR_PULL_ALLOC(ndr, r->out.names);
 		*r->out.names = *r->in.names;
 		NDR_PULL_ALLOC(ndr, r->out.count);
 		*r->out.count = *r->in.count;
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.domains);
+		}
+		_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domains));
 		if (_ptr_domains) {
-			NDR_PULL_ALLOC(ndr, r->out.domains);
+			NDR_PULL_ALLOC(ndr, *r->out.domains);
 		} else {
-			r->out.domains = NULL;
+			*r->out.domains = NULL;
 		}
-		if (r->out.domains) {
-			_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, 0);
-			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, 0);
+		if (*r->out.domains) {
+			_mem_save_domains_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.domains, 0);
+			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.names);
 		}
@@ -11126,9 +11213,12 @@ _PUBLIC_ void ndr_print_lsa_LookupSids3(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		ndr_print_ptr(ndr, "domains", r->out.domains);
 		ndr->depth++;
-		if (r->out.domains) {
-			ndr_print_lsa_RefDomainList(ndr, "domains", r->out.domains);
+		ndr_print_ptr(ndr, "domains", *r->out.domains);
+		ndr->depth++;
+		if (*r->out.domains) {
+			ndr_print_lsa_RefDomainList(ndr, "domains", *r->out.domains);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "names", r->out.names);
 		ndr->depth++;
@@ -11169,9 +11259,12 @@ static enum ndr_err_code ndr_push_lsa_LookupNames4(struct ndr_push *ndr, int fla
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
 	}
 	if (flags & NDR_OUT) {
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->out.domains));
-		if (r->out.domains) {
-			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
+		if (r->out.domains == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.domains));
+		if (*r->out.domains) {
+			NDR_CHECK(ndr_push_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
 		}
 		if (r->out.sids == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
@@ -11192,6 +11285,7 @@ static enum ndr_err_code ndr_pull_lsa_LookupNames4(struct ndr_pull *ndr, int fla
 	uint32_t _ptr_domains;
 	TALLOC_CTX *_mem_save_names_0;
 	TALLOC_CTX *_mem_save_domains_0;
+	TALLOC_CTX *_mem_save_domains_1;
 	TALLOC_CTX *_mem_save_sids_0;
 	TALLOC_CTX *_mem_save_count_0;
 	if (flags & NDR_IN) {
@@ -11229,6 +11323,8 @@ static enum ndr_err_code ndr_pull_lsa_LookupNames4(struct ndr_pull *ndr, int fla
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_count_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown1));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown2));
+		NDR_PULL_ALLOC(ndr, r->out.domains);
+		ZERO_STRUCTP(r->out.domains);
 		NDR_PULL_ALLOC(ndr, r->out.sids);
 		*r->out.sids = *r->in.sids;
 		NDR_PULL_ALLOC(ndr, r->out.count);
@@ -11238,18 +11334,24 @@ static enum ndr_err_code ndr_pull_lsa_LookupNames4(struct ndr_pull *ndr, int fla
 		}
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.domains);
+		}
+		_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_domains));
 		if (_ptr_domains) {
-			NDR_PULL_ALLOC(ndr, r->out.domains);
+			NDR_PULL_ALLOC(ndr, *r->out.domains);
 		} else {
-			r->out.domains = NULL;
+			*r->out.domains = NULL;
 		}
-		if (r->out.domains) {
-			_mem_save_domains_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->out.domains, 0);
-			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, r->out.domains));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, 0);
+		if (*r->out.domains) {
+			_mem_save_domains_1 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, *r->out.domains, 0);
+			NDR_CHECK(ndr_pull_lsa_RefDomainList(ndr, NDR_SCALARS|NDR_BUFFERS, *r->out.domains));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_1, 0);
 		}
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_domains_0, LIBNDR_FLAG_REF_ALLOC);
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->out.sids);
 		}
@@ -11310,9 +11412,12 @@ _PUBLIC_ void ndr_print_lsa_LookupNames4(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		ndr_print_ptr(ndr, "domains", r->out.domains);
 		ndr->depth++;
-		if (r->out.domains) {
-			ndr_print_lsa_RefDomainList(ndr, "domains", r->out.domains);
+		ndr_print_ptr(ndr, "domains", *r->out.domains);
+		ndr->depth++;
+		if (*r->out.domains) {
+			ndr_print_lsa_RefDomainList(ndr, "domains", *r->out.domains);
 		}
+		ndr->depth--;
 		ndr->depth--;
 		ndr_print_ptr(ndr, "sids", r->out.sids);
 		ndr->depth++;

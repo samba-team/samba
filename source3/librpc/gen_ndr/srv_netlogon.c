@@ -367,7 +367,12 @@ static bool api_netr_ServerReqChallenge(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.credentials = r->in.credentials;
+	r->out.return_credentials = talloc_zero(r, struct netr_Credential);
+	if (r->out.return_credentials == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _netr_ServerReqChallenge(p, r);
 
 	if (p->rng_fault_state) {
@@ -442,7 +447,12 @@ static bool api_netr_ServerAuthenticate(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.credentials = r->in.credentials;
+	r->out.return_credentials = talloc_zero(r, struct netr_Credential);
+	if (r->out.return_credentials == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _netr_ServerAuthenticate(p, r);
 
 	if (p->rng_fault_state) {
@@ -1280,7 +1290,12 @@ static bool api_netr_ServerAuthenticate2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.credentials = r->in.credentials;
+	r->out.return_credentials = talloc_zero(r, struct netr_Credential);
+	if (r->out.return_credentials == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.negotiate_flags = r->in.negotiate_flags;
 	r->out.result = _netr_ServerAuthenticate2(p, r);
 

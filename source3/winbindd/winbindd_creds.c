@@ -29,11 +29,11 @@
 NTSTATUS winbindd_get_creds(struct winbindd_domain *domain,
 			    TALLOC_CTX *mem_ctx,
 			    const DOM_SID *sid,
-			    NET_USER_INFO_3 **info3,
+			    struct netr_SamInfo3 **info3,
 			    const uint8 *cached_nt_pass[NT_HASH_LEN],
 			    const uint8 *cred_salt[NT_HASH_LEN])
 {
-	NET_USER_INFO_3 *info;
+	struct netr_SamInfo3 *info;
 	NTSTATUS status;
 
 	status = wcache_get_creds(domain, mem_ctx, sid, cached_nt_pass, cred_salt);
@@ -56,7 +56,7 @@ NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
 			      TALLOC_CTX *mem_ctx, 
 			      const char *user, 
 			      const char *pass, 
-			      NET_USER_INFO_3 *info3,
+			      struct netr_SamInfo3 *info3,
 			      const DOM_SID *user_sid)
 {
 	NTSTATUS status;
@@ -66,10 +66,10 @@ NTSTATUS winbindd_store_creds(struct winbindd_domain *domain,
 	if (info3 != NULL) {
 	
 		DOM_SID sid;
-		sid_copy(&sid, &(info3->dom_sid.sid));
-		sid_append_rid(&sid, info3->user_rid);
+		sid_copy(&sid, info3->base.domain_sid);
+		sid_append_rid(&sid, info3->base.rid);
 		sid_copy(&cred_sid, &sid);
-		info3->user_flgs |= NETLOGON_CACHED_ACCOUNT;
+		info3->base.user_flags |= NETLOGON_CACHED_ACCOUNT;
 		
 	} else if (user_sid != NULL) {
 	
@@ -138,7 +138,7 @@ NTSTATUS winbindd_update_creds_by_info3(struct winbindd_domain *domain,
 				        TALLOC_CTX *mem_ctx,
 				        const char *user,
 				        const char *pass,
-				        NET_USER_INFO_3 *info3)
+				        struct netr_SamInfo3 *info3)
 {
 	return winbindd_store_creds(domain, mem_ctx, user, pass, info3, NULL);
 }

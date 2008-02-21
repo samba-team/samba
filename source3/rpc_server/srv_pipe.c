@@ -2376,7 +2376,7 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 
 	switch ( idx ) {
 		case PI_LSARPC:
-			lsa_get_pipe_fns( &cmds, &n_cmds );
+			lsarpc_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_DSSETUP:
 			dssetup_get_pipe_fns( &cmds, &n_cmds );
@@ -2385,7 +2385,7 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 			samr_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_NETLOGON:
-			netlog_get_pipe_fns( &cmds, &n_cmds );
+			netlogon_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_SRVSVC:
 			srvsvc2_get_pipe_fns( &cmds, &n_cmds );
@@ -2409,7 +2409,7 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 			eventlog2_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_NTSVCS:
-			ntsvcs_get_pipe_fns( &cmds, &n_cmds );
+			ntsvcs2_get_pipe_fns( &cmds, &n_cmds );
 			break;
 #ifdef DEVELOPER
 		case PI_RPCECHO:

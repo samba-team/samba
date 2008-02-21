@@ -421,7 +421,7 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	char *sidstr;
 	uint32 group_rid;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
-	NET_USER_INFO_3 *user;
+	struct netr_SamInfo3 *user = NULL;
 
 	DEBUG(3,("ads: query_user\n"));
 
@@ -437,11 +437,11 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 		DEBUG(5,("query_user: Cache lookup succeeded for %s\n", 
 			 sid_string_dbg(sid)));
 
-		sid_compose(&info->user_sid, &domain->sid, user->user_rid);
-		sid_compose(&info->group_sid, &domain->sid, user->group_rid);
+		sid_compose(&info->user_sid, &domain->sid, user->base.rid);
+		sid_compose(&info->group_sid, &domain->sid, user->base.primary_gid);
 				
-		info->acct_name = unistr2_to_ascii_talloc(mem_ctx, &user->uni_user_name);
-		info->full_name = unistr2_to_ascii_talloc(mem_ctx, &user->uni_full_name);
+		info->acct_name = talloc_strdup(mem_ctx, user->base.account_name.string);
+		info->full_name = talloc_strdup(mem_ctx, user->base.full_name.string);
 		
 		nss_get_info_cached( domain, sid, mem_ctx, NULL, NULL, 
 			      &info->homedir, &info->shell, &info->full_name, 

@@ -34,7 +34,7 @@ static const struct generic_mapping reg_generic_map =
 /********************************************************************
 ********************************************************************/
 
-static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
+static WERROR construct_registry_sd(TALLOC_CTX *ctx, SEC_DESC **psd)
 {
 	SEC_ACE ace[3];
 	SEC_ACCESS mask;
@@ -45,28 +45,39 @@ static SEC_DESC* construct_registry_sd( TALLOC_CTX *ctx )
 
 	/* basic access for Everyone */
 
-	init_sec_access(&mask, REG_KEY_READ );
-	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_access(&mask, REG_KEY_READ);
+	init_sec_ace(&ace[i++], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED,
+		     mask, 0);
 
 	/* Full Access 'BUILTIN\Administrators' */
 
-	init_sec_access(&mask, REG_KEY_ALL );
-	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_access(&mask, REG_KEY_ALL);
+	init_sec_ace(&ace[i++], &global_sid_Builtin_Administrators,
+		     SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	/* Full Access 'NT Authority\System' */
 
 	init_sec_access(&mask, REG_KEY_ALL );
-	init_sec_ace(&ace[i++], &global_sid_System, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
+	init_sec_ace(&ace[i++], &global_sid_System, SEC_ACE_TYPE_ACCESS_ALLOWED,
+		     mask, 0);
 
 	/* create the security descriptor */
 
-	if ( !(acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace)) )
-		return NULL;
+	acl = make_sec_acl(ctx, NT4_ACL_REVISION, i, ace);
+	if (acl == NULL) {
+		return WERR_NOMEM;
+	}
 
-	if ( !(sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE, NULL, NULL, NULL, acl, &sd_size)) )
-		return NULL;
+	sd = make_sec_desc(ctx, SEC_DESC_REVISION, SEC_DESC_SELF_RELATIVE,
+			   &global_sid_Builtin_Administrators,
+			   &global_sid_System, NULL, acl,
+			   &sd_size);
+	if (sd == NULL) {
+		return WERR_NOMEM;
+	}
 
-	return sd;
+	*psd = sd;
+	return WERR_OK;
 }
 
 /***********************************************************************
@@ -176,19 +187,19 @@ WERROR regkey_get_secdesc(TALLOC_CTX *mem_ctx, REGISTRY_KEY *key,
 			  struct security_descriptor **psecdesc)
 {
 	struct security_descriptor *secdesc;
+	WERROR werr;
 
 	if (key->hook && key->hook->ops && key->hook->ops->get_secdesc) {
-		WERROR err;
-
-		err = key->hook->ops->get_secdesc(mem_ctx, key->name,
-						  psecdesc);
-		if (W_ERROR_IS_OK(err)) {
+		werr = key->hook->ops->get_secdesc(mem_ctx, key->name,
+						   psecdesc);
+		if (W_ERROR_IS_OK(werr)) {
 			return WERR_OK;
 		}
 	}
 
-	if (!(secdesc = construct_registry_sd(mem_ctx))) {
-		return WERR_NOMEM;
+	werr = construct_registry_sd(mem_ctx, &secdesc);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
 	}
 
 	*psecdesc = secdesc;

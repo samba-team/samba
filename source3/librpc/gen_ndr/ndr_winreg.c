@@ -3700,7 +3700,7 @@ static enum ndr_err_code ndr_pull_winreg_QueryMultipleValues(struct ndr_pull *nd
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.buffer_size));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_size_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC_N(ndr, r->out.values, r->in.num_values);
-		memcpy(r->out.values, r->in.values, r->in.num_values * sizeof(*r->in.values));
+		memcpy(r->out.values, r->in.values, (r->in.num_values) * sizeof(*r->in.values));
 		NDR_PULL_ALLOC(ndr, r->out.buffer_size);
 		*r->out.buffer_size = *r->in.buffer_size;
 		if (r->in.values) {

@@ -6,6 +6,7 @@
    networking system include wrappers
 
    Copyright (C) Andrew Tridgell 2004
+   Copyright (C) Jelmer Vernooij 2007
    
      ** NOTE! The following LGPL license applies to the replace
      ** library. This does NOT imply that all of Samba is released
@@ -95,6 +96,31 @@ int rep_inet_pton(int af, const char *src, void *dst);
 #ifndef HAVE_INET_NTOP
 /* define is in "replace.h" */
 const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
+#endif
+
+#ifdef HAVE_IFADDRS_H
+#include <ifaddrs.h>
+#endif
+
+#ifndef HAVE_STRUCT_IFADDRS
+struct ifaddrs {
+	struct ifaddrs   *ifa_next;         /* Pointer to next struct */
+	char             *ifa_name;         /* Interface name */
+	unsigned int     ifa_flags;         /* Interface flags */
+	struct sockaddr  *ifa_addr;         /* Interface address */
+	struct sockaddr  *ifa_netmask;      /* Interface netmask */
+#undef ifa_dstaddr
+	struct sockaddr  *ifa_dstaddr;      /* P2P interface destination */
+	void             *ifa_data;         /* Address specific data */
+};
+#endif
+
+#ifndef HAVE_GETIFADDRS
+int rep_getifaddrs(struct ifaddrs **);
+#endif
+
+#ifndef HAVE_FREEIFADDRS
+void rep_freeifaddrs(struct ifaddrs *);
 #endif
 
 /*
