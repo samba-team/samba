@@ -205,6 +205,8 @@ o  Volker Lendecke <vl@samba.org>
     * Support for storing alternate data streams in xattrs.
     * Implement a generic in-memory cache based on rb-trees.
     * Add implicit temporary talloc contexts via talloc_stack().
+    * Speed up the smbclient "get" command
+    * Add the aio_fork module
 
 
 o   Stefan Metzmacher <metze@samba.org>
