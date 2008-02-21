@@ -131,12 +131,12 @@ static int pvfs_wait_destructor(struct pvfs_wait *pwait)
   if msg_type == -1 then no message is registered, and it is assumed
   that the caller handles any messaging setup needed
 */
-void *pvfs_wait_message(struct pvfs_state *pvfs, 
-			struct ntvfs_request *req, 
-			int msg_type, 
-			struct timeval end_time,
-			void (*fn)(void *, enum pvfs_wait_notice),
-			void *private_data)
+struct pvfs_wait *pvfs_wait_message(struct pvfs_state *pvfs,
+				    struct ntvfs_request *req,
+				    int msg_type,
+				    struct timeval end_time,
+				    void (*fn)(void *, enum pvfs_wait_notice),
+				    void *private_data)
 {
 	struct pvfs_wait *pwait;
 

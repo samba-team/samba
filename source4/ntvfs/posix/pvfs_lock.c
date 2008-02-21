@@ -53,7 +53,7 @@ struct pvfs_pending_lock {
 	struct pvfs_file *f;
 	struct ntvfs_request *req;
 	int pending_lock;
-	void *wait_handle;
+	struct pvfs_wait *wait_handle;
 	struct timeval end_time;
 };
 

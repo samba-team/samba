@@ -756,7 +756,7 @@ struct pvfs_open_retry {
 	struct ntvfs_module_context *ntvfs;
 	struct ntvfs_request *req;
 	union smb_open *io;
-	void *wait_handle;
+	struct pvfs_wait *wait_handle;
 	DATA_BLOB odb_locking_key;
 };
 
