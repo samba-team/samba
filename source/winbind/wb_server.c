@@ -149,6 +149,12 @@ static void winbind_task_init(struct task_server *task)
 		return;
 	}
 
+	service->idmap_ctx = idmap_init(service, task->lp_ctx);
+	if (service->idmap_ctx == NULL) {
+		task_server_terminate(task, "Failed to load idmap database");
+		return;
+	}
+
 	/* setup the unprivileged samba3 socket */
 	listen_socket = talloc(service, struct wbsrv_listen_socket);
 	if (!listen_socket) goto nomem;

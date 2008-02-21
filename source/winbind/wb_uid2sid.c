@@ -3,7 +3,7 @@
 
    Command backend for wbinfo -U
 
-   Copyright (C) Kai Blin 2007
+   Copyright (C) Kai Blin 2007-2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include "smbd/service_task.h"
 #include "winbind/wb_helper.h"
 #include "libcli/security/proto.h"
+#include "winbind/idmap.h"
 
 struct uid2sid_state {
 	struct composite_context *ctx;
@@ -50,10 +51,14 @@ struct composite_context *wb_uid2sid_send(TALLOC_CTX *mem_ctx,
 	result->private_data = state;
 	state->service = service;
 
-	/* FIXME: This is a stub so far.
-	 * We cheat by just using the uid as RID with the domain SID.*/
-	state->sid = dom_sid_add_rid(result, service->primary_sid, uid);
-	if (composite_nomem(state->sid, state->ctx)) return result;
+	state->ctx->status = idmap_uid_to_sid(service->idmap_ctx, mem_ctx, uid,
+					      &state->sid);
+	if (NT_STATUS_EQUAL(state->ctx->status, NT_STATUS_RETRY)) {
+		state->ctx->status = idmap_uid_to_sid(service->idmap_ctx,
+						      mem_ctx, uid,
+						      &state->sid);
+	}
+	if (!composite_is_ok(state->ctx)) return result;
 
 	composite_done(state->ctx);
 	return result;

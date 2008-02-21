@@ -37,6 +37,7 @@ OBJ_FILES = \
 		wb_sam_logon.o
 PRIVATE_DEPENDENCIES = \
 		WB_HELPER \
+		IDMAP \
 		NDR_WINBIND \
 		process_model \
 		RPC_NDR_LSA \
@@ -55,4 +56,14 @@ OBJ_FILES = \
 		wb_utils.o
 PUBLIC_DEPENDENCIES = RPC_NDR_LSA dcerpc_samr
 # End SUBSYSTEM WB_HELPER
+################################################
+
+################################################
+# Start SUBYSTEM IDMAP
+[SUBSYSTEM::IDMAP]
+PRIVATE_PROTO_HEADER = idmap_proto.h
+OBJ_FILES = \
+		idmap.o
+PUBLIC_DEPENDENCIES = SAMDB_COMMON
+# End SUBSYSTEM IDMAP
 ################################################

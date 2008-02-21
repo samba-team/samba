@@ -3,7 +3,7 @@
 
    Map a SID to a uid
 
-   Copyright (C) Kai Blin 2007
+   Copyright (C) Kai Blin 2007-2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 #include "smbd/service_task.h"
 #include "winbind/wb_helper.h"
 #include "libcli/security/proto.h"
+#include "winbind/idmap.h"
 
 struct sid2uid_state {
 	struct composite_context *ctx;
@@ -50,11 +51,13 @@ struct composite_context *wb_sid2uid_send(TALLOC_CTX *mem_ctx,
 	result->private_data = state;
 	state->service = service;
 
-	/*FIXME: This is a stub so far. */
-	state->ctx->status = dom_sid_split_rid(result, sid, NULL, &state->uid);
-	if(!composite_is_ok(state->ctx)) return result;
-
-	DEBUG(5, ("Rid is %d\n", state->uid));
+	state->ctx->status = idmap_sid_to_uid(service->idmap_ctx, state, sid,
+					      &state->uid);
+	if (NT_STATUS_EQUAL(state->ctx->status, NT_STATUS_RETRY)) {
+		state->ctx->status = idmap_sid_to_uid(service->idmap_ctx, state,
+						      sid, &state->uid);
+	}
+	if (!composite_is_ok(state->ctx)) return result;
 
 	composite_done(state->ctx);
 	return result;
