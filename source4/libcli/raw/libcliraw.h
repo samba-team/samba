@@ -186,6 +186,11 @@ struct smbcli_session {
 
 	/* the spnego context if we use extented security */
 	struct gensec_security *gensec;
+
+	struct smbcli_session_options {
+		uint_t lanman_auth;
+		uint_t ntlmv2_auth;
+	} options;
 };
 
 /* 

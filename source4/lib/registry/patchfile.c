@@ -273,6 +273,7 @@ _PUBLIC_ WERROR reg_generate_diff(struct registry_context *ctx1,
  * Load diff file
  */
 _PUBLIC_ WERROR reg_diff_load(const char *filename,
+			      struct smb_iconv_convenience *iconv_convenience,
 			      const struct reg_diff_callbacks *callbacks,
 			      void *callback_data)
 {
@@ -308,7 +309,7 @@ _PUBLIC_ WERROR reg_diff_load(const char *filename,
 		return reg_preg_diff_load(fd, callbacks, callback_data);
 	} else {
 		/* Must be a normal .REG file */
-		return reg_dotreg_diff_load(fd, lp_iconv_convenience(global_loadparm), callbacks, callback_data);
+		return reg_dotreg_diff_load(fd, iconv_convenience, callbacks, callback_data);
 	}
 }
 
@@ -442,5 +443,6 @@ _PUBLIC_ WERROR reg_diff_apply(struct registry_context *ctx, const char *filenam
 	callbacks.del_all_values = reg_diff_apply_del_all_values;
 	callbacks.done = NULL;
 
-	return reg_diff_load(filename, &callbacks, ctx);
+	return reg_diff_load(filename, lp_iconv_convenience(global_loadparm), 
+			     &callbacks, ctx);
 }
