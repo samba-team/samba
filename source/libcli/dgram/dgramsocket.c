@@ -158,7 +158,8 @@ static void dgm_socket_handler(struct event_context *ev, struct fd_event *fde,
   then operations will use that event context
 */
 struct nbt_dgram_socket *nbt_dgram_socket_init(TALLOC_CTX *mem_ctx, 
-					      struct event_context *event_ctx)
+					      struct event_context *event_ctx,
+					      struct smb_iconv_convenience *iconv_convenience)
 {
 	struct nbt_dgram_socket *dgmsock;
 	NTSTATUS status;
@@ -187,7 +188,7 @@ struct nbt_dgram_socket *nbt_dgram_socket_init(TALLOC_CTX *mem_ctx,
 	dgmsock->send_queue = NULL;
 	dgmsock->incoming.handler = NULL;
 	dgmsock->mailslot_handlers = NULL;
-	dgmsock->iconv_convenience = lp_iconv_convenience(global_loadparm);
+	dgmsock->iconv_convenience = iconv_convenience;
 	
 	return dgmsock;
 
