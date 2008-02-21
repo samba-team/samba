@@ -1461,8 +1461,10 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs,
 		}
 	} else if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
-		*lckp = lck;
-	} else if (lckp != NULL) {
+		if (lckp) {
+			*lckp = NULL;
+		}
+	} else if (lckp) {
 		*lckp = lck;
 	}
 
@@ -1513,8 +1515,10 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs,
 		}
 	} else if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
-		*lckp = lck;
-	} else if (lckp != NULL) {
+		if (lckp) {
+			*lckp = NULL;
+		}
+	} else if (lckp) {
 		*lckp = lck;
 	}
 
@@ -1548,6 +1552,10 @@ NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs,
 			      NTCREATEX_SHARE_ACCESS_READ |
 			      NTCREATEX_SHARE_ACCESS_WRITE,
 			      0, 0);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
+	}
 
 	return status;
 }
