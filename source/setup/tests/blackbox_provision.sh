@@ -27,11 +27,11 @@ testit() {
 	return $status
 }
 
-testit "simple" $PYTHON ./setup/provision.py $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple
+testit "simple" $PYTHON ./setup/provision $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir=$PREFIX/simple
 
 reprovision() {
-	$PYTHON ./setup/provision.py $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision"
-	$PYTHON ./setup/provision.py $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision"
+	$PYTHON ./setup/provision $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision"
+	$PYTHON ./setup/provision $CONFIGURATION --domain=FOO --realm=foo.example.com --targetdir="$PREFIX/reprovision"
 }
 
 testit "reprovision" reprovision
