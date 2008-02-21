@@ -112,7 +112,9 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 	}
 
 	/* OK, go ahead and make a PAC */
-	ret = kerberos_create_pac(mem_ctx, server_info, 
+	ret = kerberos_create_pac(mem_ctx, 
+				  lp_iconv_convenience(tctx->lp_ctx),
+				  server_info, 
 				  smb_krb5_context->krb5_context,  
 				  &krbtgt_keyblock,
 				  &server_keyblock,
@@ -137,7 +139,9 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 	dump_data(10,tmp_blob.data,tmp_blob.length);
 
 	/* Now check that we can read it back */
-	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
+	nt_status = kerberos_decode_pac(mem_ctx, 
+					lp_iconv_convenience(tctx->lp_ctx),
+					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
 					&krbtgt_keyblock,
@@ -159,7 +163,9 @@ static bool torture_pac_self_check(struct torture_context *tctx)
 	}
 
 	/* Now check that we can read it back */
-	nt_status = kerberos_pac_logon_info(mem_ctx, &logon_info,
+	nt_status = kerberos_pac_logon_info(mem_ctx, 
+					    lp_iconv_convenience(tctx->lp_ctx),
+					    &logon_info,
 					    tmp_blob,
 					    smb_krb5_context->krb5_context,
 					    &krbtgt_keyblock,
@@ -367,7 +373,9 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	}
 
 	/* Decode and verify the signaure on the PAC */
-	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
+	nt_status = kerberos_decode_pac(mem_ctx, 
+					lp_iconv_convenience(tctx->lp_ctx),
+					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
 					&krbtgt_keyblock,
@@ -386,7 +394,9 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	}
 
 	/* Parse the PAC again, for the logon info this time */
-	nt_status = kerberos_pac_logon_info(mem_ctx, &logon_info,
+	nt_status = kerberos_pac_logon_info(mem_ctx, 
+					    lp_iconv_convenience(tctx->lp_ctx),
+					    &logon_info,
 					    tmp_blob,
 					    smb_krb5_context->krb5_context,
 					    &krbtgt_keyblock,
@@ -442,6 +452,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	}
 
 	ret = kerberos_encode_pac(mem_ctx, 
+				  lp_iconv_convenience(tctx->lp_ctx),
 				  pac_data,
 				  smb_krb5_context->krb5_context,
 				  &krbtgt_keyblock,
@@ -493,6 +504,7 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	}
 
 	ret = kerberos_create_pac(mem_ctx, 
+				  lp_iconv_convenience(tctx->lp_ctx),
 				  server_info_out,
 				  smb_krb5_context->krb5_context,
 				  &krbtgt_keyblock,
@@ -565,7 +577,9 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	}
 
 	/* Break the auth time, to ensure we check this vital detail (not setting this caused all the pain in the first place... */
-	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
+	nt_status = kerberos_decode_pac(mem_ctx, 
+					lp_iconv_convenience(tctx->lp_ctx),
+					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
 					&krbtgt_keyblock,
@@ -601,7 +615,9 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 						   smb_get_krb5_error_message(smb_krb5_context->krb5_context, ret, mem_ctx)));
 	}
 
-	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
+	nt_status = kerberos_decode_pac(mem_ctx, 
+					lp_iconv_convenience(tctx->lp_ctx),
+					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
 					&krbtgt_keyblock,
@@ -619,7 +635,9 @@ static bool torture_pac_saved_check(struct torture_context *tctx)
 	/* Finally...  Bugger up the signature, and check we fail the checksum */
 	tmp_blob.data[tmp_blob.length - 2]++;
 
-	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
+	nt_status = kerberos_decode_pac(mem_ctx, 
+					lp_iconv_convenience(tctx->lp_ctx),
+					&pac_data,
 					tmp_blob,
 					smb_krb5_context->krb5_context,
 					&krbtgt_keyblock,
