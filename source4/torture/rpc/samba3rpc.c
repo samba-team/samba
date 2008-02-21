@@ -2337,6 +2337,7 @@ bool torture_samba3_rpc_lsa(struct torture_context *torture)
 }
 
 static NTSTATUS get_servername(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
+			       struct smb_iconv_convenience *iconv_convenience,
 			       char **name)
 {
 	struct rap_WserverGetInfo r;
@@ -2346,7 +2347,7 @@ static NTSTATUS get_servername(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
 	r.in.level = 0;
 	r.in.bufsize = 0xffff;
 
-	status = smbcli_rap_netservergetinfo(tree, mem_ctx, &r);
+	status = smbcli_rap_netservergetinfo(tree, iconv_convenience, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -2561,7 +2562,7 @@ bool torture_samba3_rpc_spoolss(struct torture_context *torture)
 		return false;
 	}
 
-	status = get_servername(mem_ctx, cli->tree, &servername);
+	status = get_servername(mem_ctx, cli->tree, lp_iconv_convenience(torture->lp_ctx), &servername);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "(%s) get_servername returned %s\n",
 			  __location__, nt_errstr(status));
@@ -2747,7 +2748,7 @@ bool torture_samba3_rpc_wkssvc(struct torture_context *torture)
 		return false;
 	}
 
-	status = get_servername(mem_ctx, cli->tree, &servername);
+	status = get_servername(mem_ctx, cli->tree, lp_iconv_convenience(torture->lp_ctx), &servername);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_fprintf(stderr, "(%s) get_servername returned %s\n",
 			  __location__, nt_errstr(status));
