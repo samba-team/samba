@@ -57,7 +57,17 @@ case $cmd in
 		touch $CTDB_BASE/state/periodic_vacuum
 	    	periodic_vacuum
 	}
-	
+
+	# monitor that we are not running out of memory
+	[ -z "$CTDB_MONITOR_FREE_MEMORY" ] || {
+		FREE_MEM=`free -m | grep "buffers/cache" | while read A B C D ;do /bin/echo -n $D ; done`
+		[ `expr "$FREE_MEM" "<" "$CTDB_MONITOR_FREE_MEMORY"` != "0" ] && {
+			echo "OOM. Free:$FREE_MEM while CTDB treshold is $CTDB_MONITOR_FREE_MEMORY"
+			ctdb disable
+			sleep 3
+			ctdb shutdown
+		}
+	}
 esac
 
 # all OK

@@ -77,6 +77,15 @@
 # defaults to tcp
 # CTDB_TRANSPORT="tcp"
 
+# When set, this variable makes ctdb monitor the amount of free memory
+# in the system (the second number in the buffers/cache output from free -m).
+# If the amount of free memory drops below this treshold the node will become
+# unhealthy and will be marked as DISABLED.
+# Once a node is disabled it requires administrator intervention to enable the
+# node again using the "ctdb enable" command.
+# The unit is MByte
+# CTDB_MONITOR_FREE_MEMORY=100
+
 # where to log messages
 # the default is /var/log/log.ctdb
 # CTDB_LOGFILE=/var/log/log.ctdb
