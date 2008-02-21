@@ -2355,7 +2355,7 @@ static NTSTATUS get_servername(TALLOC_CTX *mem_ctx, struct smbcli_tree *tree,
 	memcpy(servername, r.out.info.info0.name, 16);
 	servername[16] = '\0';
 
-	if (pull_ascii_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), 
+	if (pull_ascii_talloc(mem_ctx, iconv_convenience, 
 			      name, servername) < 0) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -3067,6 +3067,7 @@ static NTSTATUS get_shareinfo(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS get_hklm_handle(TALLOC_CTX *mem_ctx,
 				struct smbcli_state *cli,
+				struct smb_iconv_convenience *iconv_convenience,
 				struct dcerpc_pipe **pipe_p,
 				struct policy_handle **handle)
 {
@@ -3084,7 +3085,7 @@ static NTSTATUS get_hklm_handle(TALLOC_CTX *mem_ctx,
 
 	if (!(p = dcerpc_pipe_init(result,
 				   cli->transport->socket->event.ctx,
-				   lp_iconv_convenience(global_loadparm)))) {
+				   iconv_convenience))) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	}
@@ -3129,6 +3130,7 @@ static NTSTATUS get_hklm_handle(TALLOC_CTX *mem_ctx,
 }
 
 static NTSTATUS torture_samba3_createshare(struct smbcli_state *cli,
+					   struct smb_iconv_convenience *iconv_convenience,
 					   const char *sharename)
 {
 	struct dcerpc_pipe *p;
@@ -3143,7 +3145,7 @@ static NTSTATUS torture_samba3_createshare(struct smbcli_state *cli,
 	mem_ctx = talloc_new(cli);
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
-	status = get_hklm_handle(mem_ctx, cli, &p, &hklm);
+	status = get_hklm_handle(mem_ctx, cli, iconv_convenience, &p, &hklm);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("get_hklm_handle failed: %s\n", nt_errstr(status));
 		goto fail;
@@ -3200,7 +3202,8 @@ static NTSTATUS torture_samba3_deleteshare(struct torture_context *torture,
 	mem_ctx = talloc_new(cli);
 	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
-	status = get_hklm_handle(cli, cli, &p, &hklm);
+	status = get_hklm_handle(cli, cli, lp_iconv_convenience(torture->lp_ctx),
+				 &p, &hklm);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("get_hklm_handle failed: %s\n", nt_errstr(status));
 		goto fail;
@@ -3227,6 +3230,7 @@ static NTSTATUS torture_samba3_deleteshare(struct torture_context *torture,
 }
 
 static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
+					 struct loadparm_context *lp_ctx,
 					 const char *sharename,
 					 const char *parameter,
 					 const char *value)
@@ -3239,7 +3243,7 @@ static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
 	DATA_BLOB val;
 	NTSTATUS status;
 
-	status = get_hklm_handle(cli, cli, &p, &hklm);
+	status = get_hklm_handle(cli, cli, lp_iconv_convenience(lp_ctx), &p, &hklm);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("get_hklm_handle failed: %s\n", nt_errstr(status));
 		return status;;
@@ -3299,14 +3303,14 @@ bool torture_samba3_regconfig(struct torture_context *torture)
 		return false;
 	}
 
-	status = torture_samba3_createshare(cli, "blubber");
+	status = torture_samba3_createshare(cli, lp_iconv_convenience(torture->lp_ctx), "blubber");
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_warning(torture, "torture_samba3_createshare failed: "
 				"%s\n", nt_errstr(status));
 		goto done;
 	}
 
-	status = torture_samba3_setconfig(cli, "blubber", "comment", comment);
+	status = torture_samba3_setconfig(cli, torture->lp_ctx, "blubber", "comment", comment);
 	if (!NT_STATUS_IS_OK(status)) {
 		torture_warning(torture, "torture_samba3_setconfig failed: "
 				"%s\n", nt_errstr(status));
