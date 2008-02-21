@@ -86,6 +86,7 @@ HEIMDAL_GSS_1.0 {
 		gss_krb5_export_lucid_sec_context;
 		gss_krb5_free_lucid_sec_context;
 		gss_krb5_set_allowable_enctypes;
+		gss_mg_collect_error;
 
 		# _gsskrb5cfx_ are really internal symbols, but export
 		# then now to make testing easier.
