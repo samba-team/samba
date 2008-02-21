@@ -230,6 +230,11 @@ struct pvfs_dir;
 /* types of notification for pvfs wait events */
 enum pvfs_wait_notice {PVFS_WAIT_EVENT, PVFS_WAIT_TIMEOUT, PVFS_WAIT_CANCEL};
 
+/*
+  state of a pending retry
+*/
+struct pvfs_odb_retry;
+
 #define PVFS_EADB			"posix:eadb"
 #define PVFS_XATTR			"posix:xattr"
 #define PVFS_FAKE_OPLOCKS		"posix:fakeoplocks"

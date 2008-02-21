@@ -751,20 +751,25 @@ cleanup_delete:
 	return status;
 }
 
-
 /*
-  state of a pending open retry
+  state of a pending retry
 */
-struct pvfs_open_retry {
+struct pvfs_odb_retry {
 	struct ntvfs_module_context *ntvfs;
 	struct ntvfs_request *req;
-	union smb_open *io;
-	struct pvfs_wait *wait_handle;
 	DATA_BLOB odb_locking_key;
+	void *io;
+	void *private_data;
+	void (*callback)(struct pvfs_odb_retry *r,
+			 struct ntvfs_module_context *ntvfs,
+			 struct ntvfs_request *req,
+			 void *io,
+			 void *private_data,
+			 enum pvfs_wait_notice reason);
 };
 
-/* destroy a pending open request */
-static int pvfs_retry_destructor(struct pvfs_open_retry *r)
+/* destroy a pending request */
+static int pvfs_odb_retry_destructor(struct pvfs_odb_retry *r)
 {
 	struct pvfs_state *pvfs = r->ntvfs->private_data;
 	if (r->odb_locking_key.data) {
@@ -778,15 +783,92 @@ static int pvfs_retry_destructor(struct pvfs_open_retry *r)
 	return 0;
 }
 
-/*
-  retry an open
-*/
-static void pvfs_open_retry(void *private, enum pvfs_wait_notice reason)
+static void pvfs_odb_retry_callback(void *_r, enum pvfs_wait_notice reason)
 {
-	struct pvfs_open_retry *r = private;
-	struct ntvfs_module_context *ntvfs = r->ntvfs;
-	struct ntvfs_request *req = r->req;
-	union smb_open *io = r->io;
+	struct pvfs_odb_retry *r = talloc_get_type(_r, struct pvfs_odb_retry);
+
+	if (reason == PVFS_WAIT_EVENT) {
+		/*
+		 * The pending odb entry is already removed.
+		 * We use a null locking key to indicate this
+		 * to the destructor.
+		 */
+		data_blob_free(&r->odb_locking_key);
+	}
+
+	r->callback(r, r->ntvfs, r->req, r->io, r->private_data, reason);
+}
+
+/*
+  setup for a retry of a request that was rejected
+  by odb_open_file() or odb_can_open()
+*/
+NTSTATUS pvfs_odb_retry_setup(struct ntvfs_module_context *ntvfs,
+			      struct ntvfs_request *req,
+			      struct odb_lock *lck,
+			      struct timeval end_time,
+			      void *io,
+			      void *private_data,
+			      void (*callback)(struct pvfs_odb_retry *r,
+					       struct ntvfs_module_context *ntvfs,
+					       struct ntvfs_request *req,
+					       void *io,
+					       void *private_data,
+					       enum pvfs_wait_notice reason))
+{
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_odb_retry *r;
+	struct pvfs_wait *wait_handle;
+	NTSTATUS status;
+
+	r = talloc(req, struct pvfs_odb_retry);
+	NT_STATUS_HAVE_NO_MEMORY(r);
+
+	r->ntvfs = ntvfs;
+	r->req = req;
+	r->io = io;
+	r->private_data = private_data;
+	r->callback = callback;
+	r->odb_locking_key = odb_get_key(r, lck);
+	if (r->odb_locking_key.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* setup a pending lock */
+	status = odb_open_file_pending(lck, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	talloc_free(lck);
+
+	talloc_set_destructor(r, pvfs_odb_retry_destructor);
+
+	wait_handle = pvfs_wait_message(pvfs, req,
+					MSG_PVFS_RETRY_OPEN, end_time,
+					pvfs_odb_retry_callback, r);
+	if (wait_handle == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	talloc_steal(r, wait_handle);
+
+	talloc_steal(pvfs, r);
+
+	return NT_STATUS_OK;
+}
+
+/*
+  retry an open after a sharing violation
+*/
+static void pvfs_retry_open_sharing(struct pvfs_odb_retry *r,
+				    struct ntvfs_module_context *ntvfs,
+				    struct ntvfs_request *req,
+				    void *_io,
+				    void *private_data,
+				    enum pvfs_wait_notice reason)
+{
+	union smb_open *io = talloc_get_type(_io, union smb_open);
 	NTSTATUS status;
 
 	/* w2k3 ignores SMBntcancel for outstanding open requests. It's probably
@@ -794,8 +876,6 @@ static void pvfs_open_retry(void *private, enum pvfs_wait_notice reason)
 	if (reason == PVFS_WAIT_CANCEL) {
 		return;
 	}
-
-	talloc_free(r->wait_handle);
 
 	if (reason == PVFS_WAIT_TIMEOUT) {
 		/* if it timed out, then give the failure
@@ -806,9 +886,6 @@ static void pvfs_open_retry(void *private, enum pvfs_wait_notice reason)
 		return;
 	}
 
-	/* the pending odb entry is already removed. We use a null locking
-	   key to indicate this */
-	data_blob_free(&r->odb_locking_key);
 	talloc_free(r);
 
 	/* try the open again, which could trigger another retry setup
@@ -925,7 +1002,6 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 				      struct odb_lock *lck)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
-	struct pvfs_open_retry *r;
 	NTSTATUS status;
 	struct timeval end_time;
 
@@ -939,40 +1015,13 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 		}
 	}
 
-	r = talloc(req, struct pvfs_open_retry);
-	if (r == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	r->ntvfs = ntvfs;
-	r->req = req;
-	r->io = io;
-	r->odb_locking_key = data_blob_talloc(r, 
-					      f->handle->odb_locking_key.data, 
-					      f->handle->odb_locking_key.length);
+	/* the retry should allocate a new file handle */
+	talloc_free(f);
 
 	end_time = timeval_add(&req->statistics.request_time, 0, pvfs->sharing_violation_delay);
 
-	/* setup a pending lock */
-	status = odb_open_file_pending(lck, r);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	talloc_free(lck);
-	talloc_free(f);
-
-	talloc_set_destructor(r, pvfs_retry_destructor);
-
-	r->wait_handle = pvfs_wait_message(pvfs, req, MSG_PVFS_RETRY_OPEN, end_time, 
-					   pvfs_open_retry, r);
-	if (r->wait_handle == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	talloc_steal(pvfs, r);
-
-	return NT_STATUS_OK;
+	return pvfs_odb_retry_setup(ntvfs, req, lck, end_time, io, NULL,
+				    pvfs_retry_open_sharing);
 }
 
 /*
