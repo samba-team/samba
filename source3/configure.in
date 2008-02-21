@@ -840,7 +840,7 @@ AC_CACHE_CHECK([for unix domain sockets],samba_cv_unixsocket, [
 ],
 	samba_cv_unixsocket=yes,samba_cv_unixsocket=no)])
 if test x"$samba_cv_unixsocket" = x"yes"; then
-   AC_DEFINE(HAVE_UNIXSOCKET,1,[If we need to build with unixscoket support])
+   AC_DEFINE(HAVE_UNIXSOCKET,1,[If we need to build with unixsocket support])
 fi
 
 
