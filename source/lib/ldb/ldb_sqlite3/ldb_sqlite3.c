@@ -1903,7 +1903,7 @@ failed:
 	return -1;
 }
 
-_PUBLIC_ const struct ldb_backend_ops ldb_sqlite3_backend_ops = {
+const struct ldb_backend_ops ldb_sqlite3_backend_ops = {
 	.name = "sqlite3",
 	.connect_fn = lsqlite3_connect
 };
