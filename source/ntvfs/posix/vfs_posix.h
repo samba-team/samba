@@ -28,6 +28,8 @@
 #include "ntvfs/common/ntvfs_common.h"
 #include "dsdb/samdb/samdb.h"
 
+struct pvfs_wait;
+
 /* this is the private structure for the posix vfs backend. It is used
    to hold per-connection (per tree connect) state information */
 struct pvfs_state {
