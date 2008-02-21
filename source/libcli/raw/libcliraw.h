@@ -188,8 +188,9 @@ struct smbcli_session {
 	struct gensec_security *gensec;
 
 	struct smbcli_session_options {
-		uint_t lanman_auth;
-		uint_t ntlmv2_auth;
+		uint_t lanman_auth:1;
+		uint_t ntlmv2_auth:1;
+		uint_t plaintext_auth:1;
 	} options;
 };
 
