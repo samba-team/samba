@@ -3269,7 +3269,8 @@ static NTSTATUS torture_samba3_setconfig(struct smbcli_state *cli,
 		goto done;
 	}
 
-	if (!reg_string_to_val(hklm, "REG_SZ", value, &type, &val)) {
+	if (!reg_string_to_val(hklm, lp_iconv_convenience(lp_ctx), "REG_SZ", 
+			       value, &type, &val)) {
 		d_printf("(%s) reg_string_to_val failed\n", __location__);
 		goto done;
 	}

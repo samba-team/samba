@@ -254,11 +254,10 @@ WERROR reg_create_key(TALLOC_CTX *mem_ctx,
 
 /* Utility functions */
 const char *str_regtype(int type);
-char *reg_val_data_string(TALLOC_CTX *mem_ctx, uint32_t type,
-			  const DATA_BLOB data);
-char *reg_val_description(TALLOC_CTX *mem_ctx, const char *name,
+char *reg_val_data_string(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, uint32_t type, const DATA_BLOB data);
+char *reg_val_description(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, const char *name,
 			  uint32_t type, const DATA_BLOB data);
-bool reg_string_to_val(TALLOC_CTX *mem_ctx, const char *type_str,
+bool reg_string_to_val(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, const char *type_str,
 		       const char *data_str, uint32_t *type, DATA_BLOB *data);
 WERROR reg_open_key_abs(TALLOC_CTX *mem_ctx, struct registry_context *handle,
 			const char *name, struct registry_key **result);
