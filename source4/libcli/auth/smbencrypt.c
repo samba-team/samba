@@ -125,6 +125,8 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 
 	HMACMD5Context ctx;
 	TALLOC_CTX *mem_ctx = talloc_init("ntv2_owf_gen for %s\\%s", domain_in, user_in); 
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
+
 	if (!mem_ctx) {
 		return false;
 	}
@@ -151,14 +153,14 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 		}
 	}
 
-	user_byte_len = push_ucs2_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), &user, user_in);
+	user_byte_len = push_ucs2_talloc(mem_ctx, iconv_convenience, &user, user_in);
 	if (user_byte_len == (ssize_t)-1) {
 		DEBUG(0, ("push_uss2_talloc() for user returned -1 (probably talloc() failure)\n"));
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	domain_byte_len = push_ucs2_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), &domain, domain_in);
+	domain_byte_len = push_ucs2_talloc(mem_ctx, iconv_convenience, &domain, domain_in);
 	if (domain_byte_len == (ssize_t)-1) {
 		DEBUG(0, ("push_ucs2_talloc() for domain returned -1 (probably talloc() failure)\n"));
 		talloc_free(mem_ctx);

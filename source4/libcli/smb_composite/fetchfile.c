@@ -147,8 +147,8 @@ struct composite_context *smb_composite_fetchfile_send(struct smb_composite_fetc
 	state->connect->in.fallback_to_anonymous = false;
 	state->connect->in.workgroup    = io->in.workgroup;
 
-	lp_smbcli_options(global_loadparm, &state->connect->in.options);
-	
+	state->connect->in.options	= io->in.options;
+
 	state->creq = smb_composite_connect_send(state->connect, state, 
 						 lp_resolve_context(global_loadparm), event_ctx);
 	if (state->creq == NULL) goto failed;

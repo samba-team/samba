@@ -381,11 +381,11 @@ _PUBLIC_ NTSTATUS nbt_name_dup(TALLOC_CTX *mem_ctx, struct nbt_name *name, struc
 /**
   push a nbt name into a blob
 */
-_PUBLIC_ NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct nbt_name *name)
+_PUBLIC_ NTSTATUS nbt_name_to_blob(TALLOC_CTX *mem_ctx, struct smb_iconv_convenience *iconv_convenience, DATA_BLOB *blob, struct nbt_name *name)
 {
 	enum ndr_err_code ndr_err;
 
-	ndr_err = ndr_push_struct_blob(blob, mem_ctx, lp_iconv_convenience(global_loadparm), name, (ndr_push_flags_fn_t)ndr_push_nbt_name);
+	ndr_err = ndr_push_struct_blob(blob, mem_ctx, iconv_convenience, name, (ndr_push_flags_fn_t)ndr_push_nbt_name);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		return ndr_map_error2ntstatus(ndr_err);
 	}
