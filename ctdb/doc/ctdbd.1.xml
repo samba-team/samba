@@ -35,6 +35,7 @@
 		<arg choice="req">--reclock=&lt;filename&gt;</arg>
 		<arg choice="opt">--single-public-ip=&lt;address&gt;</arg>
 		<arg choice="opt">--socket=&lt;filename&gt;</arg>
+		<arg choice="opt">--start-as-disabled</arg>
 		<arg choice="opt">--syslog</arg>
 		<arg choice="opt">--torture</arg>
 		<arg choice="opt">--transport=&lt;STRING&gt;</arg>
@@ -266,6 +267,29 @@
           </para>
           <para>
             The default is /tmp/ctdb.socket . You only need to use this option if you plan to run multiple ctdbd daemons on the same physical host.
+          </para>
+        </listitem>
+      </varlistentry>
+
+      <varlistentry><term>--start-as-disabled</term>
+        <listitem>
+          <para>
+	  This makes the ctdb daemon to be DISABLED when it starts up.
+          </para>
+          <para>
+	  As it is DISABLED it will not get any of the public ip addresses
+	  allocated to it, and thus this allow you to start ctdb on a node 
+	  without causing any ip address to failover from other nodes onto
+	  the new node.
+          </para>
+          <para>
+	  When used, the administrator must keep track of when nodes start and
+	  manually enable them again using the "ctdb enable" command, or else
+	  the node will not host any services.
+          </para>
+          <para>
+	  A node that is DISABLED will not host any services and will not be
+	  reachable/used by any clients.
           </para>
         </listitem>
       </varlistentry>

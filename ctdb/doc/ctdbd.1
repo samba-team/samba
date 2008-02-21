@@ -1,11 +1,11 @@
 .\"     Title: ctdbd
 .\"    Author: 
 .\" Generator: DocBook XSL Stylesheets v1.71.0 <http://docbook.sf.net/>
-.\"      Date: 01/16/2008
+.\"      Date: 02/22/2008
 .\"    Manual: 
 .\"    Source: 
 .\"
-.TH "CTDBD" "1" "01/16/2008" "" ""
+.TH "CTDBD" "1" "02/22/2008" "" ""
 .\" disable hyphenation
 .nh
 .\" disable justification (adjust text to left margin only)
@@ -16,7 +16,7 @@ ctdbd \- The CTDB cluster daemon
 .HP 6
 \fBctdbd\fR
 .HP 6
-\fBctdbd\fR [\-?\ \-\-help] [\-d\ \-\-debug=<INTEGER>] {\-\-dbdir=<directory>} {\-\-dbdir\-persistent=<directory>} [\-\-event\-script\-dir=<directory>] [\-i\ \-\-interactive] [\-\-listen=<address>] [\-\-logfile=<filename>] {\-\-nlist=<filename>} [\-\-nosetsched] [\-\-public\-addresses=<filename>] [\-\-public\-interface=<interface>] {\-\-reclock=<filename>} [\-\-single\-public\-ip=<address>] [\-\-socket=<filename>] [\-\-syslog] [\-\-torture] [\-\-transport=<STRING>] [\-\-usage]
+\fBctdbd\fR [\-?\ \-\-help] [\-d\ \-\-debug=<INTEGER>] {\-\-dbdir=<directory>} {\-\-dbdir\-persistent=<directory>} [\-\-event\-script\-dir=<directory>] [\-i\ \-\-interactive] [\-\-listen=<address>] [\-\-logfile=<filename>] {\-\-nlist=<filename>} [\-\-nosetsched] [\-\-public\-addresses=<filename>] [\-\-public\-interface=<interface>] {\-\-reclock=<filename>} [\-\-single\-public\-ip=<address>] [\-\-socket=<filename>] [\-\-start\-as\-disabled] [\-\-syslog] [\-\-torture] [\-\-transport=<STRING>] [\-\-usage]
 .SH "DESCRIPTION"
 .PP
 ctdbd is the main ctdb daemon.
@@ -133,6 +133,17 @@ CTDBD only allows clients to use killtcp to kill off (RST) tcp connections to/fr
 This specifies the name of the domain socket that ctdbd will create. This socket is used for local clients to attach to and communicate with the ctdbd daemon.
 .sp
 The default is /tmp/ctdb.socket . You only need to use this option if you plan to run multiple ctdbd daemons on the same physical host.
+.RE
+.PP
+\-\-start\-as\-disabled
+.RS 3n
+This makes the ctdb daemon to be DISABLED when it starts up.
+.sp
+As it is DISABLED it will not get any of the public ip addresses allocated to it, and thus this allow you to start ctdb on a node without causing any ip address to failover from other nodes onto the new node.
+.sp
+When used, the administrator must keep track of when nodes start and manually enable them again using the "ctdb enable" command, or else the node will not host any services.
+.sp
+A node that is DISABLED will not host any services and will not be reachable/used by any clients.
 .RE
 .PP
 \-\-syslog
