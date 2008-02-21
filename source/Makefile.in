@@ -601,6 +601,7 @@ VFS_NOTIFY_FAM_OBJ = modules/vfs_notify_fam.o
 VFS_READAHEAD_OBJ = modules/vfs_readahead.o
 VFS_TSMSM_OBJ = modules/vfs_tsmsm.o
 VFS_FILEID_OBJ = modules/vfs_fileid.o
+VFS_AIO_FORK_OBJ = modules/vfs_aio_fork.o
 VFS_SYNCOPS_OBJ = modules/vfs_syncops.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
@@ -1853,6 +1854,10 @@ bin/tsmsm.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_TSMSM_OBJ)
 bin/fileid.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_FILEID_OBJ)
 	@echo "Building plugin $@"
 	@$(SHLD_MODULE) $(VFS_FILEID_OBJ)
+
+bin/aio_fork.@SHLIBEXT@: $(BINARY_PREREQS) $(VFS_AIO_FORK_OBJ)
+	@echo "Building plugin $@"
+	@$(SHLD_MODULE) $(VFS_AIO_FORK_OBJ)
 
 #########################################################
 ## IdMap NSS plugins

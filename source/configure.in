@@ -809,6 +809,56 @@ if test x"$samba_cv_unixsocket" = x"yes"; then
    AC_DEFINE(HAVE_UNIXSOCKET,1,[If we need to build with unixsocket support])
 fi
 
+#############################################
+# check for fd passing struct via msg_control
+AC_CACHE_CHECK([for fd passing via msg_control],samba_cv_msghdr_msg_control, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <sys/socket.h>
+#include <sys/un.h>],
+[
+	struct msghdr msg;
+	union {
+	      struct cmsghdr cm;
+	      char control[CMSG_SPACE(sizeof(int))];
+	} control_un;
+	msg.msg_control = control_un.control;
+	msg.msg_controllen = sizeof(control_un.control);
+],
+	samba_cv_msghdr_msg_control=yes,samba_cv_msghdr_msg_control=no)])
+if test x"$samba_cv_msghdr_msg_control" = x"yes"; then
+   AC_DEFINE(HAVE_MSGHDR_MSG_CONTROL,1,
+	     [If we can use msg_control for passing file descriptors])
+fi
+
+#############################################
+# check for fd passing struct via msg_acctrights
+AC_CACHE_CHECK([for fd passing via msg_acctrights],
+		samba_cv_msghdr_msg_acctrights, [
+    AC_TRY_COMPILE([
+#include <sys/types.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <sys/socket.h>
+#include <sys/un.h>],
+[
+	struct msghdr msg;
+	int fd;
+	msg.msg_acctrights = (caddr_t) &fd;
+	msg.msg_acctrightslen = sizeof(fd);
+],
+	samba_cv_msghdr_msg_acctrights=yes,samba_cv_msghdr_msg_acctrights=no)])
+if test x"$samba_cv_msghdr_msg_acctrights" = x"yes"; then
+   AC_DEFINE(HAVE_MSGHDR_MSG_ACCTRIGHTS,1,
+	     [If we can use msg_acctrights for passing file descriptors])
+fi
+
+if test x"$samba_cv_msghdr_msg_control" = x"yes" -o \
+	x"$samba_cv_msghdr_msg_acctright" = x"yes"; then
+	default_shared_modules="$default_shared_modules vfs_aio_fork"
+fi
 
 AC_CACHE_CHECK([for sig_atomic_t type],samba_cv_sig_atomic_t, [
     AC_TRY_COMPILE([
@@ -6038,6 +6088,7 @@ SMB_MODULE(vfs_gpfs, \$(VFS_GPFS_OBJ), "bin/gpfs.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_readahead, \$(VFS_READAHEAD_OBJ), "bin/readahead.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_tsmsm, \$(VFS_TSMSM_OBJ), "bin/tsmsm.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_fileid, \$(VFS_FILEID_OBJ), "bin/fileid.$SHLIBEXT", VFS)
+SMB_MODULE(vfs_aio_fork, \$(VFS_AIO_FORK_OBJ), "bin/aio_fork.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_syncops, \$(VFS_SYNCOPS_OBJ), "bin/syncops.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_zfsacl, \$(VFS_ZFSACL_OBJ), "bin/zfsacl.$SHLIBEXT", VFS)
 SMB_MODULE(vfs_notify_fam, \$(VFS_NOTIFY_FAM_OBJ), "bin/notify_fam.$SHLIBEXT", VFS)
