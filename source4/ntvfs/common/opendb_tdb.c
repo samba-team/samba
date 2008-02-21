@@ -2,7 +2,8 @@
    Unix SMB/CIFS implementation.
 
    Copyright (C) Andrew Tridgell 2004
-   
+   Copyright (C) Stefan Metzmacher 2008
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -463,6 +464,45 @@ static NTSTATUS odb_tdb_close_file(struct odb_lock *lck, void *file_handle)
 	return odb_push_record(lck, &file);
 }
 
+/*
+  update the oplock level of the client
+*/
+static NTSTATUS odb_tdb_update_oplock(struct odb_lock *lck, void *file_handle,
+				      uint32_t oplock_level)
+{
+	struct odb_context *odb = lck->odb;
+	struct opendb_file file;
+	int i;
+	NTSTATUS status;
+
+	status = odb_pull_record(lck, &file);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* find the entry, and update it */
+	for (i=0;i<file.num_entries;i++) {
+		if (file_handle == file.entries[i].file_handle &&
+		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &file.entries[i].server)) {
+			file.entries[i].oplock_level = oplock_level;
+			break;
+		}
+	}
+
+	if (i == file.num_entries) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* send any pending notifications, removing them once sent */
+	for (i=0;i<file.num_pending;i++) {
+		messaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
+				   file.pending[i].server,
+				   MSG_PVFS_RETRY_OPEN,
+				   file.pending[i].notify_ptr);
+	}
+	file.num_pending = 0;
+
+	return odb_push_record(lck, &file);
+}
+
 
 /*
   remove a pending opendb entry
@@ -641,7 +681,8 @@ static const struct opendb_ops opendb_tdb_ops = {
 	.odb_rename              = odb_tdb_rename,
 	.odb_set_delete_on_close = odb_tdb_set_delete_on_close,
 	.odb_get_delete_on_close = odb_tdb_get_delete_on_close,
-	.odb_can_open            = odb_tdb_can_open
+	.odb_can_open            = odb_tdb_can_open,
+	.odb_update_oplock       = odb_tdb_update_oplock
 };
 
 

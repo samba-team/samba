@@ -41,6 +41,8 @@ struct opendb_ops {
 	NTSTATUS (*odb_can_open)(struct odb_lock *lck,
 				 uint32_t share_access, uint32_t create_options, 
 				 uint32_t access_mask);
+	NTSTATUS (*odb_update_oplock)(struct odb_lock *lck, void *file_handle,
+				      uint32_t oplock_level);
 };
 
 struct opendb_oplock_break {
