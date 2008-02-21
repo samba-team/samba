@@ -1447,7 +1447,19 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs,
 		status = pvfs_access_check_simple(pvfs, req, name, SEC_STD_DELETE);
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
+	/*
+	 * if it's a sharing violation or we got no oplock
+	 * only keep the lock if the caller requested access
+	 * to the lock
+	 */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		if (lckp) {
+			*lckp = lck;
+		} else {
+			talloc_free(lck);
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
 		*lckp = lck;
 	} else if (lckp != NULL) {
@@ -1487,7 +1499,19 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs,
 			      0,
 			      SEC_STD_DELETE);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	/*
+	 * if it's a sharing violation or we got no oplock
+	 * only keep the lock if the caller requested access
+	 * to the lock
+	 */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		if (lckp) {
+			*lckp = lck;
+		} else {
+			talloc_free(lck);
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
 		*lckp = lck;
 	} else if (lckp != NULL) {
