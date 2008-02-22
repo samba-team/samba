@@ -34,10 +34,6 @@ static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs,
 {
 	NTSTATUS status;
 
-	if (!name->stream_exists) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
 	/* make sure its matches the given attributes */
 	status = pvfs_match_attrib(pvfs, name,
 				   unl->unlink.in.attrib, 0);
@@ -135,6 +131,10 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (name->stream_name) {
+		if (!name->stream_exists) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+
 		return pvfs_unlink_stream(pvfs, req, unl, name);
 	}
 
