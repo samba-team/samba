@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define SOCKET_WRAPPER_NOT_REPLACE
+
 #include "replace.h"
 #include "system/network.h"
 
