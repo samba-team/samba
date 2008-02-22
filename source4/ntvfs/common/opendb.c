@@ -81,6 +81,10 @@ _PUBLIC_ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
 	return ops->odb_lock(mem_ctx, odb, file_key);
 }
 
+_PUBLIC_ DATA_BLOB odb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
+{
+	return ops->odb_get_key(mem_ctx, lck);
+}
 
 /*
   register an open file in the open files database. This implements the share_access

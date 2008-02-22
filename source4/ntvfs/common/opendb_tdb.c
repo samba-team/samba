@@ -134,6 +134,12 @@ static struct odb_lock *odb_tdb_lock(TALLOC_CTX *mem_ctx,
 	return lck;
 }
 
+static DATA_BLOB odb_tdb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
+{
+	return data_blob_talloc(mem_ctx, lck->key.dptr, lck->key.dsize);
+}
+
+
 /*
   determine if two odb_entry structures conflict
 
@@ -609,6 +615,7 @@ static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
 static const struct opendb_ops opendb_tdb_ops = {
 	.odb_init                = odb_tdb_init,
 	.odb_lock                = odb_tdb_lock,
+	.odb_get_key             = odb_tdb_get_key,
 	.odb_open_file           = odb_tdb_open_file,
 	.odb_open_file_pending   = odb_tdb_open_file_pending,
 	.odb_close_file          = odb_tdb_close_file,
