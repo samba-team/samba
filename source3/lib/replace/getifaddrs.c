@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define SOCKET_WRAPPER_NOT_REPLACE
+
 #include "replace.h"
 #include "system/network.h"
 
@@ -84,7 +86,8 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	struct in_addr ipaddr;
 	struct in_addr nmask;
 	char *iname;
-	struct ifaddrs *curif, *lastif;
+	struct ifaddrs *curif;
+	struct ifaddrs *lastif = NULL;
 
 	*ifap = NULL;
 
@@ -114,7 +117,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 		if (lastif == NULL) {
 			*ifap = curif;
 		} else {
-			lastif->ifa_next = (*ifap);
+			lastif->ifa_next = curif;
 		}
 
 		curif->ifa_name = strdup(ifr[i].ifr_name);
@@ -168,7 +171,8 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	struct in_addr ipaddr;
 	struct in_addr nmask;
 	char *iname;
-	struct ifaddrs *curif, *lastif;
+	struct ifaddrs *curif;
+	struct ifaddrs *lastif = NULL;
 
 	*ifap = NULL;
 
@@ -206,7 +210,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 		if (lastif == NULL) {
 			*ifap = curif;
 		} else {
-			lastif->ifa_next = (*ifap);
+			lastif->ifa_next = curif;
 		}
 
 		strioctl.ic_cmd = SIOCGIFFLAGS;
@@ -268,7 +272,8 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	struct in_addr ipaddr;
 	struct in_addr nmask;
 	char *iname;
-	struct ifaddrs *curif, *lastif;
+	struct ifaddrs *curif;
+	struct ifaddrs *lastif = NULL;
 
 	*ifap = NULL;
 
@@ -303,7 +308,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 		if (lastif == NULL) {
 			*ifap = curif;
 		} else {
-			lastif->ifa_next = (*ifap);
+			lastif->ifa_next = curif;
 		}
 
 		curif->ifa_name = strdup(ifr->ifr_name);
@@ -360,7 +365,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 #endif
 
 #ifdef AUTOCONF_TEST
-/* this is the autoconf driver to test get_interfaces() */
+/* this is the autoconf driver to test getifaddrs() */
 
  int main()
 {
