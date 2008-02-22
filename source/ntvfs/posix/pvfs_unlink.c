@@ -138,6 +138,10 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 		return pvfs_unlink_stream(pvfs, req, unl, name);
 	}
 
+	if (!name->has_wildcard) {
+		return pvfs_unlink_one(pvfs, req, unl, name);
+	}
+
 	/* get list of matching files */
 	status = pvfs_list_start(pvfs, name, req, &dir);
 	if (!NT_STATUS_IS_OK(status)) {
