@@ -203,9 +203,6 @@ static WERROR net_enum_files( TALLOC_CTX *ctx, FILE_INFO_3 **info,
  ********************************************************************/
 static uint32 get_share_type(int snum) 
 {
-	char *net_name = lp_servicename(snum);
-	int len_net_name = strlen(net_name);
-	
 	/* work out the share type */
 	uint32 type = STYPE_DISKTREE;
 
@@ -213,7 +210,7 @@ static uint32 get_share_type(int snum)
 		type = STYPE_PRINTQ;
 	if (strequal(lp_fstype(snum), "IPC"))
 		type = STYPE_IPC;
-	if (net_name[len_net_name-1] == '$')
+	if (lp_hidden(snum))
 		type |= STYPE_HIDDEN;
 
 	return type;
