@@ -198,3 +198,42 @@ NTSTATUS pvfs_oplock_release(struct ntvfs_module_context *ntvfs,
 
 	return NT_STATUS_OK;
 }
+
+NTSTATUS pvfs_break_level2_oplocks(struct pvfs_file *f)
+{
+	struct pvfs_file_handle *h = f->handle;
+	struct odb_lock *olck;
+	NTSTATUS status;
+
+	if (h->oplock && h->oplock->level == OPLOCK_EXCLUSIVE) {
+		return NT_STATUS_OK;
+	}
+
+	olck = odb_lock(h, h->pvfs->odb_context, &h->odb_locking_key);
+	if (olck == NULL) {
+		DEBUG(0,("Unable to lock opendb for oplock update\n"));
+		return NT_STATUS_FOOBAR;
+	}
+
+	if (h->oplock && h->oplock->level == OPLOCK_BATCH) {
+		status = odb_update_oplock(olck, h, OPLOCK_LEVEL_II);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0,("Unable to update oplock level for '%s' - %s\n",
+				 h->name->full_name, nt_errstr(status)));
+			talloc_free(olck);
+			return status;
+		}
+	}
+
+	status = odb_break_oplocks(olck);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("Unable to break level2 oplocks to none for '%s' - %s\n",
+			 h->name->full_name, nt_errstr(status)));
+		talloc_free(olck);
+		return status;
+	}
+
+	talloc_free(olck);
+
+	return NT_STATUS_OK;
+}
