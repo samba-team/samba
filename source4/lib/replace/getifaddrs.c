@@ -363,7 +363,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 #endif
 
 #ifdef AUTOCONF_TEST
-/* this is the autoconf driver to test get_interfaces() */
+/* this is the autoconf driver to test getifaddrs() */
 
  int main()
 {
