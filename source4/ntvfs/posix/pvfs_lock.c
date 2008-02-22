@@ -307,6 +307,9 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
+	status = pvfs_break_level2_oplocks(f);
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	if (lck->lockx.in.timeout != 0 && 
 	    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
 		pending = talloc(f, struct pvfs_pending_lock);
