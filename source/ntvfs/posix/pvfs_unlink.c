@@ -29,8 +29,8 @@
  */
 static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs, 
 				   struct ntvfs_request *req,
-				   struct pvfs_filename *name, 
-				   uint16_t attrib)
+				   union smb_unlink *unl,
+				   struct pvfs_filename *name)
 {
 	NTSTATUS status;
 
@@ -39,7 +39,8 @@ static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs,
 	}
 
 	/* make sure its matches the given attributes */
-	status = pvfs_match_attrib(pvfs, name, attrib, 0);
+	status = pvfs_match_attrib(pvfs, name,
+				   unl->unlink.in.attrib, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -58,13 +59,14 @@ static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs,
 */
 static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, 
 				struct ntvfs_request *req,
-				struct pvfs_filename *name,
-				uint32_t attrib)
+				union smb_unlink *unl,
+				struct pvfs_filename *name)
 {
 	NTSTATUS status;
 
 	/* make sure its matches the given attributes */
-	status = pvfs_match_attrib(pvfs, name, attrib, 0);
+	status = pvfs_match_attrib(pvfs, name,
+				   unl->unlink.in.attrib, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -133,7 +135,7 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	}
 
 	if (name->stream_name) {
-		return pvfs_unlink_stream(pvfs, req, name, unl->unlink.in.attrib);
+		return pvfs_unlink_stream(pvfs, req, unl, name);
 	}
 
 	/* get list of matching files */
@@ -162,7 +164,7 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 			return status;
 		}
 
-		status = pvfs_unlink_one(pvfs, req, name, unl->unlink.in.attrib);
+		status = pvfs_unlink_one(pvfs, req, unl, name);
 		if (NT_STATUS_IS_OK(status)) {
 			total_deleted++;
 		}
