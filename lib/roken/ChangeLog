@@ -1,3 +1,9 @@
+2008-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Use AM_CPPFLAGS instead, not really right, but
+	definatly better then CPPFLAGS. Thanks to Mike Whitton for
+	pointing this out.
+
 2008-01-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: add missing files.
