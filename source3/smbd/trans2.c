@@ -1017,7 +1017,7 @@ static void call_trans2open(connection_struct *conn,
 	}
 
 	size = get_file_size(sbuf);
-	fattr = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
 	mtime = sbuf.st_mtime;
 	inode = sbuf.st_ino;
 	if (fattr & aDIR) {
@@ -1054,7 +1054,7 @@ static void call_trans2open(connection_struct *conn,
 	SIVAL(params,20,inode);
 	SSVAL(params,24,0); /* Padding. */
 	if (flags & 8) {
-		uint32 ea_size = estimate_ea_size(conn, fsp, fname);
+		uint32 ea_size = estimate_ea_size(conn, fsp, fsp->fsp_name);
 		SIVAL(params, 26, ea_size);
 	} else {
 		SIVAL(params, 26, 0);
