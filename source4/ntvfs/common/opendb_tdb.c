@@ -189,7 +189,7 @@ static NTSTATUS share_conflict(struct opendb_entry *e1, struct opendb_entry *e2)
 		   e2->share_access, NTCREATEX_SHARE_ACCESS_DELETE);
 	CHECK_MASK(e2->access_mask, SEC_STD_DELETE,
 		   e1->share_access, NTCREATEX_SHARE_ACCESS_DELETE);
-
+#undef CHECK_MASK
 	return NT_STATUS_OK;
 }
 
@@ -284,6 +284,25 @@ static NTSTATUS odb_oplock_break_send(struct odb_context *odb,
 	return NT_STATUS_OK;
 }
 
+static bool access_attributes_only(uint32_t access_mask,
+				   uint32_t open_disposition)
+{
+	switch (open_disposition) {
+	case NTCREATEX_DISP_SUPERSEDE:
+	case NTCREATEX_DISP_OVERWRITE_IF:
+	case NTCREATEX_DISP_OVERWRITE:
+		return false;
+	default:
+		break;
+	}
+#define CHECK_MASK(m,g) ((m) && (((m) & ~(g))==0) && (((m) & (g)) != 0))
+	return CHECK_MASK(access_mask,
+			  SEC_STD_SYNCHRONIZE |
+			  SEC_FILE_READ_ATTRIBUTE |
+			  SEC_FILE_WRITE_ATTRIBUTE);
+#undef CHECK_MASK
+}
+
 /*
   register an open file in the open files database. This implements the share_access
   rules
@@ -302,6 +321,8 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	int i;
 	struct opendb_file file;
 	NTSTATUS status;
+	uint32_t open_disposition = 0;
+	bool attrs_only = false;
 
 	if (odb->oplocks == false) {
 		oplock_level = OPLOCK_NONE;
@@ -328,6 +349,15 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	/* see if anyone has an oplock, which we need to break */
 	for (i=0;i<file.num_entries;i++) {
 		if (file.entries[i].oplock_level == OPLOCK_BATCH) {
+			/* if this is an attribute only access
+			 * it doesn't conflict with a BACTCH oplock
+			 * but we'll not grant the oplock below
+			 */
+			attrs_only = access_attributes_only(access_mask,
+							    open_disposition);
+			if (attrs_only) {
+				break;
+			}
 			/* a batch oplock caches close calls, which
 			   means the client application might have
 			   already closed the file. We have to allow
@@ -370,7 +400,10 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	  possibly grant an exclusive, batch or level2 oplock
 	*/
 	if (oplock_granted) {
-		if (oplock_level == OPLOCK_EXCLUSIVE) {
+		if (attrs_only) {
+			e.oplock_level	= OPLOCK_NONE;
+			*oplock_granted	= NO_OPLOCK_RETURN;
+		} else if (oplock_level == OPLOCK_EXCLUSIVE) {
 			if (file.num_entries == 0) {
 				e.oplock_level	= OPLOCK_EXCLUSIVE;
 				*oplock_granted	= EXCLUSIVE_OPLOCK_RETURN;
