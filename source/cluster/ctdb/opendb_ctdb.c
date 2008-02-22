@@ -464,6 +464,16 @@ static NTSTATUS odb_ctdb_update_oplock(struct odb_lock *lck, void *file_handle,
 	return NT_STATUS_FOOBAR;
 }
 
+static NTSTATUS odb_ctdb_break_oplocks(struct odb_lock *lck)
+{
+	/*
+	 * as this file will went away and isn't used yet,
+	 * copy the implementation from the tdb backend
+	 * --metze
+	 */
+	return NT_STATUS_FOOBAR;
+}
+
 /*
   remove a pending opendb entry
 */
@@ -642,7 +652,8 @@ static const struct opendb_ops opendb_ctdb_ops = {
 	.odb_set_delete_on_close = odb_ctdb_set_delete_on_close,
 	.odb_get_delete_on_close = odb_ctdb_get_delete_on_close,
 	.odb_can_open            = odb_ctdb_can_open,
-	.odb_update_oplock       = odb_ctdb_update_oplock
+	.odb_update_oplock       = odb_ctdb_update_oplock,
+	.odb_break_oplocks       = odb_ctdb_break_oplocks
 };
 
 

@@ -503,6 +503,43 @@ static NTSTATUS odb_tdb_update_oplock(struct odb_lock *lck, void *file_handle,
 	return odb_push_record(lck, &file);
 }
 
+/*
+  send oplocks breaks to none to all level2 holders
+*/
+static NTSTATUS odb_tdb_break_oplocks(struct odb_lock *lck)
+{
+	struct odb_context *odb = lck->odb;
+	NTSTATUS status;
+	struct opendb_file file;
+	int i;
+	bool modified = true;
+
+	status = odb_pull_record(lck, &file);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		return NT_STATUS_OK;
+	}
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* see if anyone has an oplock, which we need to break */
+	for (i=0;i<file.num_entries;i++) {
+		if (file.entries[i].oplock_level == OPLOCK_LEVEL_II) {
+			/*
+			 * there could be multiple level2 oplocks
+			 * and we just send a break to none to all of them
+			 * without waiting for a release
+			 */
+			odb_oplock_break_send(odb, &file.entries[i],
+					      OPLOCK_BREAK_TO_NONE);
+			file.entries[i].oplock_level = OPLOCK_NONE;
+			modified = true;
+		}
+	}
+
+	if (modified) {
+		return odb_push_record(lck, &file);
+	}
+	return NT_STATUS_OK;
+}
 
 /*
   remove a pending opendb entry
@@ -682,7 +719,8 @@ static const struct opendb_ops opendb_tdb_ops = {
 	.odb_set_delete_on_close = odb_tdb_set_delete_on_close,
 	.odb_get_delete_on_close = odb_tdb_get_delete_on_close,
 	.odb_can_open            = odb_tdb_can_open,
-	.odb_update_oplock       = odb_tdb_update_oplock
+	.odb_update_oplock       = odb_tdb_update_oplock,
+	.odb_break_oplocks       = odb_tdb_break_oplocks
 };
 
 

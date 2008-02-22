@@ -43,6 +43,7 @@ struct opendb_ops {
 				 uint32_t access_mask);
 	NTSTATUS (*odb_update_oplock)(struct odb_lock *lck, void *file_handle,
 				      uint32_t oplock_level);
+	NTSTATUS (*odb_break_oplocks)(struct odb_lock *lck);
 };
 
 struct opendb_oplock_break {
