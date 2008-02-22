@@ -1008,7 +1008,8 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 				      struct ntvfs_request *req, 
 				      union smb_open *io,
 				      struct pvfs_file *f,
-				      struct odb_lock *lck)
+				      struct odb_lock *lck,
+				      NTSTATUS parent_status)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
@@ -1027,7 +1028,15 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 	/* the retry should allocate a new file handle */
 	talloc_free(f);
 
-	end_time = timeval_add(&req->statistics.request_time, 0, pvfs->sharing_violation_delay);
+	if (NT_STATUS_EQUAL(parent_status, NT_STATUS_SHARING_VIOLATION)) {
+		end_time = timeval_add(&req->statistics.request_time,
+				       0, pvfs->sharing_violation_delay);
+	} else if (NT_STATUS_EQUAL(parent_status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		end_time = timeval_add(&req->statistics.request_time,
+				       pvfs->oplock_break_timeout, 0);
+	} else {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
 
 	return pvfs_odb_retry_setup(ntvfs, req, lck, end_time, io, NULL,
 				    pvfs_retry_open_sharing);
@@ -1253,11 +1262,16 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 			       io->generic.in.open_disposition,
 			       false, oplock_level, &oplock_granted);
 
-	/* on a sharing violation we need to retry when the file is closed by 
-	   the other user, or after 1 second */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) &&
+	/*
+	 * on a sharing violation we need to retry when the file is closed by
+	 * the other user, or after 1 second
+	 * on a non granted oplock we need to retry when the file is closed by
+	 * the other user, or after 30 seconds
+	*/
+	if ((NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	     NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) &&
 	    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
-		return pvfs_open_setup_retry(ntvfs, req, io, f, lck);
+		return pvfs_open_setup_retry(ntvfs, req, io, f, lck, status);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
