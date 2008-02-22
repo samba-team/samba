@@ -176,3 +176,8 @@ _PUBLIC_ NTSTATUS odb_update_oplock(struct odb_lock *lck, void *file_handle,
 {
 	return ops->odb_update_oplock(lck, file_handle, oplock_level);
 }
+
+_PUBLIC_ NTSTATUS odb_break_oplocks(struct odb_lock *lck)
+{
+	return ops->odb_break_oplocks(lck);
+}
