@@ -367,18 +367,32 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	}
 
 	/*
-	  possibly grant an exclusive or batch oplock if this is the only client
-	  with the file open. We don't yet grant levelII oplocks.
+	  possibly grant an exclusive, batch or level2 oplock
 	*/
-	if (oplock_granted != NULL) {
-		if ((oplock_level == OPLOCK_BATCH ||
-		     oplock_level == OPLOCK_EXCLUSIVE) &&
-		    file.num_entries == 0) {
-			(*oplock_granted) = oplock_level;
+	if (oplock_granted) {
+		if (oplock_level == OPLOCK_EXCLUSIVE) {
+			if (file.num_entries == 0) {
+				e.oplock_level	= OPLOCK_EXCLUSIVE;
+				*oplock_granted	= EXCLUSIVE_OPLOCK_RETURN;
+			} else {
+				e.oplock_level	= OPLOCK_NONE;
+				*oplock_granted	= NO_OPLOCK_RETURN;
+			}
+		} else if (oplock_level == OPLOCK_BATCH) {
+			if (file.num_entries == 0) {
+				e.oplock_level	= OPLOCK_BATCH;
+				*oplock_granted	= BATCH_OPLOCK_RETURN;
+			} else {
+				e.oplock_level	= OPLOCK_LEVEL_II;
+				*oplock_granted	= LEVEL_II_OPLOCK_RETURN;
+			}
+		} else if (oplock_level == OPLOCK_LEVEL_II) {
+			e.oplock_level	= OPLOCK_LEVEL_II;
+			*oplock_granted	= LEVEL_II_OPLOCK_RETURN;
 		} else {
-			(*oplock_granted) = OPLOCK_NONE;
+			e.oplock_level	= OPLOCK_NONE;
+			*oplock_granted	= NO_OPLOCK_RETURN;
 		}
-		e.oplock_level = (*oplock_granted);
 	}
 
 	/* it doesn't conflict, so add it to the end */
