@@ -25,32 +25,6 @@
 
 
 /*
-  unlink a stream
- */
-static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs, 
-				   struct ntvfs_request *req,
-				   union smb_unlink *unl,
-				   struct pvfs_filename *name)
-{
-	NTSTATUS status;
-
-	/* make sure its matches the given attributes */
-	status = pvfs_match_attrib(pvfs, name,
-				   unl->unlink.in.attrib, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = pvfs_can_delete(pvfs, req, name, NULL);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return pvfs_stream_delete(pvfs, name, -1);
-}
-
-
-/*
   unlink a file
 */
 static NTSTATUS pvfs_unlink_file(struct pvfs_state *pvfs,
@@ -106,6 +80,14 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
 		return status;
 	}
 
+	if (name->stream_name) {
+		if (!name->stream_exists) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+
+		return pvfs_stream_delete(pvfs, name, -1);
+	}
+
 	return pvfs_unlink_file(pvfs, name);
 }
 
@@ -139,14 +121,6 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	if (name->exists && 
 	    (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY)) {
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
-	}
-
-	if (name->stream_name) {
-		if (!name->stream_exists) {
-			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-		}
-
-		return pvfs_unlink_stream(pvfs, req, unl, name);
 	}
 
 	if (!name->has_wildcard) {
