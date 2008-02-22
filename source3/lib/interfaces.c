@@ -236,19 +236,9 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 		memcpy(&ifaces[total].netmask, ifptr->ifa_netmask, copy_size);
 
 		if (ifaces[total].flags & (IFF_BROADCAST|IFF_LOOPBACK)) {
-			if (ifptr->ifa_broadaddr) {
-				memcpy(&ifaces[total].bcast,
-					ifptr->ifa_broadaddr,
-					copy_size);
-			} else {
-				/* For some reason ifptr->ifa_broadaddr
-				 * is null. Make one from ifa_addr and
-				 * ifa_netmask.
-				 */
-				make_bcast(&ifaces[total].bcast,
-					&ifaces[total].ip,
-					&ifaces[total].netmask);
-			}
+			make_bcast(&ifaces[total].bcast,
+				&ifaces[total].ip,
+				&ifaces[total].netmask);
 		} else if ((ifaces[total].flags & IFF_POINTOPOINT) &&
 			       ifptr->ifa_dstaddr ) {
 			memcpy(&ifaces[total].bcast,
