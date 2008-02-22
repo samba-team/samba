@@ -1639,11 +1639,11 @@ void reply_open(struct smb_request *req)
 	}
 
 	size = sbuf.st_size;
-	fattr = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
 	mtime = sbuf.st_mtime;
 
 	if (fattr & aDIR) {
-		DEBUG(3,("attempt to open a directory %s\n",fname));
+		DEBUG(3,("attempt to open a directory %s\n",fsp->fsp_name));
 		close_file(fsp,ERROR_CLOSE);
 		reply_doserror(req, ERRDOS,ERRnoaccess);
 		END_PROFILE(SMBopen);
@@ -1802,7 +1802,7 @@ void reply_open_and_X(struct smb_request *req)
 		sbuf.st_size = get_allocation_size(conn,fsp,&sbuf);
 	}
 
-	fattr = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
 	mtime = sbuf.st_mtime;
 	if (fattr & aDIR) {
 		close_file(fsp,ERROR_CLOSE);
@@ -1985,7 +1985,7 @@ void reply_mknew(struct smb_request *req)
 	}
 
 	ts[0] = get_atimespec(&sbuf); /* atime. */
-	file_ntimes(conn, fname, ts);
+	file_ntimes(conn, fsp->fsp_name, ts);
 
 	reply_outbuf(req, 1, 0);
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
@@ -2000,9 +2000,9 @@ void reply_mknew(struct smb_request *req)
 				CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
 
-	DEBUG( 2, ( "reply_mknew: file %s\n", fname ) );
+	DEBUG( 2, ( "reply_mknew: file %s\n", fsp->fsp_name ) );
 	DEBUG( 3, ( "reply_mknew %s fd=%d dmode=0x%x\n",
-				fname, fsp->fh->fd, (unsigned int)fattr ) );
+		    fsp->fsp_name, fsp->fh->fd, (unsigned int)fattr ) );
 
 	END_PROFILE(SMBcreate);
 	return;
@@ -2125,9 +2125,9 @@ void reply_ctemp(struct smb_request *req)
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
 
 	/* the returned filename is relative to the directory */
-	s = strrchr_m(fname, '/');
+	s = strrchr_m(fsp->fsp_name, '/');
 	if (!s) {
-		s = fname;
+		s = fsp->fsp_name;
 	} else {
 		s++;
 	}
@@ -2154,9 +2154,9 @@ void reply_ctemp(struct smb_request *req)
 		      CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
 
-	DEBUG( 2, ( "reply_ctemp: created temp file %s\n", fname ) );
-	DEBUG( 3, ( "reply_ctemp %s fd=%d umode=0%o\n", fname, fsp->fh->fd,
-			(unsigned int)sbuf.st_mode ) );
+	DEBUG( 2, ( "reply_ctemp: created temp file %s\n", fsp->fsp_name ) );
+	DEBUG( 3, ( "reply_ctemp %s fd=%d umode=0%o\n", fsp->fsp_name,
+		    fsp->fh->fd, (unsigned int)sbuf.st_mode ) );
 
 	END_PROFILE(SMBctemp);
 	return;

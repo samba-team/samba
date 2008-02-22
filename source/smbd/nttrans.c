@@ -558,7 +558,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 	}
 
 	file_len = sbuf.st_size;
-	fattr = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
 	if (fattr == 0) {
 		fattr = FILE_ATTRIBUTE_NORMAL;
 	}
@@ -626,7 +626,7 @@ void reply_ntcreate_and_X(struct smb_request *req)
 		uint32 perms = 0;
 		p += 25;
 		if (fsp->is_directory
-		    || can_write_to_file(conn, fname, &sbuf)) {
+		    || can_write_to_file(conn, fsp->fsp_name, &sbuf)) {
 			perms = FILE_GENERIC_ALL;
 		} else {
 			perms = FILE_GENERIC_READ|FILE_EXECUTE;
@@ -1007,7 +1007,7 @@ static void call_nt_transact_create(connection_struct *conn,
 	}
 
 	file_len = sbuf.st_size;
-	fattr = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
 	if (fattr == 0) {
 		fattr = FILE_ATTRIBUTE_NORMAL;
 	}
@@ -1075,7 +1075,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		uint32 perms = 0;
 		p += 25;
 		if (fsp->is_directory
-		    || can_write_to_file(conn, fname, &sbuf)) {
+		    || can_write_to_file(conn, fsp->fsp_name, &sbuf)) {
 			perms = FILE_GENERIC_ALL;
 		} else {
 			perms = FILE_GENERIC_READ|FILE_EXECUTE;
@@ -1083,7 +1083,7 @@ static void call_nt_transact_create(connection_struct *conn,
 		SIVAL(p,0,perms);
 	}
 
-	DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
+	DEBUG(5,("call_nt_transact_create: open name = %s\n", fsp->fsp_name));
 
 	/* Send the required number of replies */
 	send_nt_replies(conn, req, NT_STATUS_OK, params, param_len, *ppdata, 0);
