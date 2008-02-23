@@ -51,7 +51,6 @@ _wind_ldap_case_exact_attribute(const uint32_t *tmp,
 				size_t *out_len)
 {
     size_t o = 0, i = 0;
-    int add_space = 0;
 
     if (olen == 0) {
 	*out_len = 0;
