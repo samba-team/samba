@@ -20,6 +20,7 @@ dist_libwind_la_SOURCES =			\
 	punycode.c				\
 	stringprep.c				\
 	wind.h					\
+	windlocl.h				\
 	utf8.c
 
 dist_include_HEADERS = wind.h
