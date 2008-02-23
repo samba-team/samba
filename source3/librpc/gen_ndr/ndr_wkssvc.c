@@ -3071,8 +3071,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaEnumUsersCtr0(struct ndr_print *ndr, cons
 		ndr->depth++;
 		for (cntr_user0_1=0;cntr_user0_1<r->entries_read;cntr_user0_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_user0_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_user0_1) != -1) {
 				ndr_print_wkssvc_NetrWkstaUserInfo0(ndr, "user0", &r->user0[cntr_user0_1]);
 				free(idx_1);
 			}
@@ -3317,8 +3316,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaEnumUsersCtr1(struct ndr_print *ndr, cons
 		ndr->depth++;
 		for (cntr_user1_1=0;cntr_user1_1<r->entries_read;cntr_user1_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_user1_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_user1_1) != -1) {
 				ndr_print_wkssvc_NetrWkstaUserInfo1(ndr, "user1", &r->user1[cntr_user1_1]);
 				free(idx_1);
 			}
@@ -3909,8 +3907,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetWkstaTransportCtr0(struct ndr_print *ndr, cons
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_wkssvc_NetWkstaTransportInfo0(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -4867,8 +4864,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetrUseEnumCtr2(struct ndr_print *ndr, const char
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_wkssvc_NetrUseInfo2(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -4954,8 +4950,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetrUseEnumCtr1(struct ndr_print *ndr, const char
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_wkssvc_NetrUseInfo1(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -5041,8 +5036,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetrUseEnumCtr0(struct ndr_print *ndr, const char
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_wkssvc_NetrUseInfo0(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -5666,8 +5660,7 @@ _PUBLIC_ void ndr_print_wkssvc_ComputerNamesCtr(struct ndr_print *ndr, const cha
 		ndr->depth++;
 		for (cntr_computer_name_1=0;cntr_computer_name_1<r->count;cntr_computer_name_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_computer_name_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_computer_name_1) != -1) {
 				ndr_print_lsa_String(ndr, "computer_name", &r->computer_name[cntr_computer_name_1]);
 				free(idx_1);
 			}
@@ -8836,8 +8829,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetrGetJoinableOus(struct ndr_print *ndr, const c
 			ndr->depth++;
 			for (cntr_ous_2=0;cntr_ous_2<*r->out.num_ous;cntr_ous_2++) {
 				char *idx_2=NULL;
-				asprintf(&idx_2, "[%d]", cntr_ous_2);
-				if (idx_2) {
+				if (asprintf(&idx_2, "[%d]", cntr_ous_2) != -1) {
 					ndr_print_ptr(ndr, "ous", (*r->out.ous)[cntr_ous_2]);
 					ndr->depth++;
 					if ((*r->out.ous)[cntr_ous_2]) {
@@ -9757,8 +9749,7 @@ _PUBLIC_ void ndr_print_wkssvc_NetrGetJoinableOus2(struct ndr_print *ndr, const 
 			ndr->depth++;
 			for (cntr_ous_2=0;cntr_ous_2<*r->out.num_ous;cntr_ous_2++) {
 				char *idx_2=NULL;
-				asprintf(&idx_2, "[%d]", cntr_ous_2);
-				if (idx_2) {
+				if (asprintf(&idx_2, "[%d]", cntr_ous_2) != -1) {
 					ndr_print_ptr(ndr, "ous", (*r->out.ous)[cntr_ous_2]);
 					ndr->depth++;
 					if ((*r->out.ous)[cntr_ous_2]) {

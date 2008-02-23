@@ -103,8 +103,7 @@ _PUBLIC_ void ndr_print_messaging_array(struct ndr_print *ndr, const char *name,
 	ndr->depth++;
 	for (cntr_messages_0=0;cntr_messages_0<r->num_messages;cntr_messages_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_messages_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_messages_0) != -1) {
 			ndr_print_messaging_rec(ndr, "messages", &r->messages[cntr_messages_0]);
 			free(idx_0);
 		}

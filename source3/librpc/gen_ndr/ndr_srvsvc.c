@@ -140,8 +140,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevCtr0(struct ndr_print *ndr, const char 
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetCharDevInfo0(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -326,8 +325,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevCtr1(struct ndr_print *ndr, const char 
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetCharDevInfo1(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -749,8 +747,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevQCtr0(struct ndr_print *ndr, const char
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetCharDevQInfo0(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -938,8 +935,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetCharDevQCtr1(struct ndr_print *ndr, const char
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetCharDevQInfo1(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -1325,8 +1321,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetConnCtr0(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetConnInfo0(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -1520,8 +1515,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetConnCtr1(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetConnInfo1(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -1769,8 +1763,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetFileCtr2(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetFileInfo2(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -1958,8 +1951,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetFileCtr3(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetFileInfo3(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -2381,8 +2373,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessCtr0(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetSessInfo0(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -2573,8 +2564,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessCtr1(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetSessInfo1(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -2798,8 +2788,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessCtr2(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetSessInfo2(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -2984,8 +2973,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessCtr10(struct ndr_print *ndr, const char *n
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetSessInfo10(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -3242,8 +3230,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetSessCtr502(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetSessInfo502(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -3694,8 +3681,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr0(struct ndr_print *ndr, const char *n
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetShareInfo0(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -3877,8 +3863,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1(struct ndr_print *ndr, const char *n
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetShareInfo1(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -4135,8 +4120,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr2(struct ndr_print *ndr, const char *n
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetShareInfo2(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -4321,8 +4305,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr501(struct ndr_print *ndr, const char 
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetShareInfo501(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -4616,8 +4599,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr502(struct ndr_print *ndr, const char 
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetShareInfo502(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -4763,8 +4745,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1004(struct ndr_print *ndr, const char
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetShareInfo1004(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -4897,8 +4878,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1005(struct ndr_print *ndr, const char
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetShareInfo1005(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -5008,8 +4988,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1006(struct ndr_print *ndr, const char
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetShareInfo1006(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -5158,8 +5137,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1007(struct ndr_print *ndr, const char
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetShareInfo1007(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -5245,8 +5223,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetShareCtr1501(struct ndr_print *ndr, const char
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_sec_desc_buf(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -11487,8 +11464,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetDiskInfo(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_disks_1=0;cntr_disks_1<r->count;cntr_disks_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_disks_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_disks_1) != -1) {
 				ndr_print_srvsvc_NetDiskInfo0(ndr, "disks", &r->disks[cntr_disks_1]);
 				free(idx_1);
 			}
@@ -11781,8 +11757,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetTransportCtr0(struct ndr_print *ndr, const cha
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetTransportInfo0(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -12030,8 +12005,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetTransportCtr1(struct ndr_print *ndr, const cha
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetTransportInfo1(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -12282,8 +12256,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetTransportCtr2(struct ndr_print *ndr, const cha
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetTransportInfo2(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -12540,8 +12513,7 @@ _PUBLIC_ void ndr_print_srvsvc_NetTransportCtr3(struct ndr_print *ndr, const cha
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_srvsvc_NetTransportInfo3(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}

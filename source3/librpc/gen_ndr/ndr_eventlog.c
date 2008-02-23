@@ -176,8 +176,7 @@ _PUBLIC_ void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name,
 	ndr->depth++;
 	for (cntr_strings_0=0;cntr_strings_0<r->num_of_strings;cntr_strings_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_strings_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_strings_0) != -1) {
 			ndr_print_string(ndr, "strings", r->strings[cntr_strings_0]);
 			free(idx_0);
 		}

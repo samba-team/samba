@@ -221,8 +221,7 @@ _PUBLIC_ void ndr_print_lsa_Strings(struct ndr_print *ndr, const char *name, con
 		ndr->depth++;
 		for (cntr_names_1=0;cntr_names_1<r->count;cntr_names_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_names_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_names_1) != -1) {
 				ndr_print_lsa_String(ndr, "names", &r->names[cntr_names_1]);
 				free(idx_1);
 			}
@@ -453,8 +452,7 @@ _PUBLIC_ void ndr_print_lsa_PrivArray(struct ndr_print *ndr, const char *name, c
 		ndr->depth++;
 		for (cntr_privs_1=0;cntr_privs_1<r->count;cntr_privs_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_privs_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_privs_1) != -1) {
 				ndr_print_lsa_PrivEntry(ndr, "privs", &r->privs[cntr_privs_1]);
 				free(idx_1);
 			}
@@ -789,8 +787,7 @@ _PUBLIC_ void ndr_print_lsa_AuditEventsInfo(struct ndr_print *ndr, const char *n
 		ndr->depth++;
 		for (cntr_settings_1=0;cntr_settings_1<r->count;cntr_settings_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_settings_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_settings_1) != -1) {
 				ndr_print_lsa_PolicyAuditPolicy(ndr, "settings", r->settings[cntr_settings_1]);
 				free(idx_1);
 			}
@@ -1622,8 +1619,7 @@ _PUBLIC_ void ndr_print_lsa_SidArray(struct ndr_print *ndr, const char *name, co
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->num_sids;cntr_sids_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sids_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sids_1) != -1) {
 				ndr_print_lsa_SidPtr(ndr, "sids", &r->sids[cntr_sids_1]);
 				free(idx_1);
 			}
@@ -1709,8 +1705,7 @@ _PUBLIC_ void ndr_print_lsa_DomainList(struct ndr_print *ndr, const char *name, 
 		ndr->depth++;
 		for (cntr_domains_1=0;cntr_domains_1<r->count;cntr_domains_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_domains_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_domains_1) != -1) {
 				ndr_print_lsa_DomainInfo(ndr, "domains", &r->domains[cntr_domains_1]);
 				free(idx_1);
 			}
@@ -1862,8 +1857,7 @@ _PUBLIC_ void ndr_print_lsa_TransSidArray(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->count;cntr_sids_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sids_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sids_1) != -1) {
 				ndr_print_lsa_TranslatedSid(ndr, "sids", &r->sids[cntr_sids_1]);
 				free(idx_1);
 			}
@@ -1954,8 +1948,7 @@ _PUBLIC_ void ndr_print_lsa_RefDomainList(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		for (cntr_domains_1=0;cntr_domains_1<r->count;cntr_domains_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_domains_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_domains_1) != -1) {
 				ndr_print_lsa_DomainInfo(ndr, "domains", &r->domains[cntr_domains_1]);
 				free(idx_1);
 			}
@@ -2112,8 +2105,7 @@ _PUBLIC_ void ndr_print_lsa_TransNameArray(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_names_1=0;cntr_names_1<r->count;cntr_names_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_names_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_names_1) != -1) {
 				ndr_print_lsa_TranslatedName(ndr, "names", &r->names[cntr_names_1]);
 				free(idx_1);
 			}
@@ -2213,8 +2205,7 @@ _PUBLIC_ void ndr_print_lsa_PrivilegeSet(struct ndr_print *ndr, const char *name
 	ndr->depth++;
 	for (cntr_set_0=0;cntr_set_0<r->count;cntr_set_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_set_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_set_0) != -1) {
 			ndr_print_lsa_LUIDAttribute(ndr, "set", &r->set[cntr_set_0]);
 			free(idx_0);
 		}
@@ -3335,8 +3326,7 @@ _PUBLIC_ void ndr_print_lsa_RightSet(struct ndr_print *ndr, const char *name, co
 		ndr->depth++;
 		for (cntr_names_1=0;cntr_names_1<r->count;cntr_names_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_names_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_names_1) != -1) {
 				ndr_print_lsa_StringLarge(ndr, "names", &r->names[cntr_names_1]);
 				free(idx_1);
 			}
@@ -3422,8 +3412,7 @@ _PUBLIC_ void ndr_print_lsa_DomainListEx(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		for (cntr_domains_1=0;cntr_domains_1<r->count;cntr_domains_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_domains_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_domains_1) != -1) {
 				ndr_print_lsa_TrustDomainInfoInfoEx(ndr, "domains", &r->domains[cntr_domains_1]);
 				free(idx_1);
 			}
@@ -3751,8 +3740,7 @@ _PUBLIC_ void ndr_print_lsa_TransNameArray2(struct ndr_print *ndr, const char *n
 		ndr->depth++;
 		for (cntr_names_1=0;cntr_names_1<r->count;cntr_names_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_names_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_names_1) != -1) {
 				ndr_print_lsa_TranslatedName2(ndr, "names", &r->names[cntr_names_1]);
 				free(idx_1);
 			}
@@ -3874,8 +3862,7 @@ _PUBLIC_ void ndr_print_lsa_TransSidArray2(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->count;cntr_sids_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sids_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sids_1) != -1) {
 				ndr_print_lsa_TranslatedSid2(ndr, "sids", &r->sids[cntr_sids_1]);
 				free(idx_1);
 			}
@@ -4024,8 +4011,7 @@ _PUBLIC_ void ndr_print_lsa_TransSidArray3(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->count;cntr_sids_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sids_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sids_1) != -1) {
 				ndr_print_lsa_TranslatedSid3(ndr, "sids", &r->sids[cntr_sids_1]);
 				free(idx_1);
 			}
@@ -4447,8 +4433,7 @@ _PUBLIC_ void ndr_print_lsa_ForestTrustInformation(struct ndr_print *ndr, const 
 		ndr->depth++;
 		for (cntr_entries_1=0;cntr_entries_1<r->count;cntr_entries_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_entries_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_entries_1) != -1) {
 				ndr_print_ptr(ndr, "entries", r->entries[cntr_entries_1]);
 				ndr->depth++;
 				if (r->entries[cntr_entries_1]) {
@@ -5842,8 +5827,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		for (cntr_names_0=0;cntr_names_0<r->in.num_names;cntr_names_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_names_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_names_0) != -1) {
 				ndr_print_lsa_String(ndr, "names", &r->in.names[cntr_names_0]);
 				free(idx_0);
 			}
@@ -10068,8 +10052,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames2(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		for (cntr_names_0=0;cntr_names_0<r->in.num_names;cntr_names_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_names_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_names_0) != -1) {
 				ndr_print_lsa_String(ndr, "names", &r->in.names[cntr_names_0]);
 				free(idx_0);
 			}
@@ -10652,8 +10635,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames3(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		for (cntr_names_0=0;cntr_names_0<r->in.num_names;cntr_names_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_names_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_names_0) != -1) {
 				ndr_print_lsa_String(ndr, "names", &r->in.names[cntr_names_0]);
 				free(idx_0);
 			}
@@ -11387,8 +11369,7 @@ _PUBLIC_ void ndr_print_lsa_LookupNames4(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		for (cntr_names_0=0;cntr_names_0<r->in.num_names;cntr_names_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_names_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_names_0) != -1) {
 				ndr_print_lsa_String(ndr, "names", &r->in.names[cntr_names_0]);
 				free(idx_0);
 			}

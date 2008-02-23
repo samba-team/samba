@@ -442,8 +442,7 @@ _PUBLIC_ void ndr_print_PAC_DATA(struct ndr_print *ndr, const char *name, const 
 	ndr->depth++;
 	for (cntr_buffers_0=0;cntr_buffers_0<r->num_buffers;cntr_buffers_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_buffers_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_buffers_0) != -1) {
 			ndr_print_PAC_BUFFER(ndr, "buffers", &r->buffers[cntr_buffers_0]);
 			free(idx_0);
 		}
@@ -645,8 +644,7 @@ _PUBLIC_ void ndr_print_PAC_DATA_RAW(struct ndr_print *ndr, const char *name, co
 	ndr->depth++;
 	for (cntr_buffers_0=0;cntr_buffers_0<r->num_buffers;cntr_buffers_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_buffers_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_buffers_0) != -1) {
 			ndr_print_PAC_BUFFER_RAW(ndr, "buffers", &r->buffers[cntr_buffers_0]);
 			free(idx_0);
 		}

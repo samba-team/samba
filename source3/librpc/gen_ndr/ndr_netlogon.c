@@ -315,8 +315,7 @@ _PUBLIC_ void ndr_print_netr_AcctLockStr(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		for (cntr_bindata_1=0;cntr_bindata_1<r->length / 2;cntr_bindata_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_bindata_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_bindata_1) != -1) {
 				ndr_print_uint16(ndr, "bindata", r->bindata[cntr_bindata_1]);
 				free(idx_1);
 			}
@@ -1111,8 +1110,7 @@ _PUBLIC_ void ndr_print_netr_SamBaseInfo(struct ndr_print *ndr, const char *name
 	ndr->depth++;
 	for (cntr_unknown_0=0;cntr_unknown_0<7;cntr_unknown_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown_0) != -1) {
 			ndr_print_uint32(ndr, "unknown", r->unknown[cntr_unknown_0]);
 			free(idx_0);
 		}
@@ -1287,8 +1285,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo3(struct ndr_print *ndr, const char *name, c
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->sidcount;cntr_sids_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sids_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sids_1) != -1) {
 				ndr_print_netr_SidAttr(ndr, "sids", &r->sids[cntr_sids_1]);
 				free(idx_1);
 			}
@@ -1396,8 +1393,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo6(struct ndr_print *ndr, const char *name, c
 		ndr->depth++;
 		for (cntr_sids_1=0;cntr_sids_1<r->sidcount;cntr_sids_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sids_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sids_1) != -1) {
 				ndr_print_netr_SidAttr(ndr, "sids", &r->sids[cntr_sids_1]);
 				free(idx_1);
 			}
@@ -1411,8 +1407,7 @@ _PUBLIC_ void ndr_print_netr_SamInfo6(struct ndr_print *ndr, const char *name, c
 	ndr->depth++;
 	for (cntr_unknown4_0=0;cntr_unknown4_0<20;cntr_unknown4_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown4_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown4_0) != -1) {
 			ndr_print_uint32(ndr, "unknown4", r->unknown4[cntr_unknown4_0]);
 			free(idx_0);
 		}
@@ -1558,8 +1553,7 @@ _PUBLIC_ void ndr_print_netr_PacInfo(struct ndr_print *ndr, const char *name, co
 	ndr->depth++;
 	for (cntr_expansionroom_0=0;cntr_expansionroom_0<10;cntr_expansionroom_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_expansionroom_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_expansionroom_0) != -1) {
 			ndr_print_uint32(ndr, "expansionroom", r->expansionroom[cntr_expansionroom_0]);
 			free(idx_0);
 		}
@@ -2810,8 +2804,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_GROUP_MEMBER(struct ndr_print *ndr, const cha
 		ndr->depth++;
 		for (cntr_rids_1=0;cntr_rids_1<r->num_rids;cntr_rids_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_rids_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_rids_1) != -1) {
 				ndr_print_uint32(ndr, "rids", r->rids[cntr_rids_1]);
 				free(idx_1);
 			}
@@ -2826,8 +2819,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_GROUP_MEMBER(struct ndr_print *ndr, const cha
 		ndr->depth++;
 		for (cntr_attribs_1=0;cntr_attribs_1<r->num_rids;cntr_attribs_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_attribs_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_attribs_1) != -1) {
 				ndr_print_uint32(ndr, "attribs", r->attribs[cntr_attribs_1]);
 				free(idx_1);
 			}
@@ -3143,8 +3135,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_POLICY(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		for (cntr_eventauditoptions_1=0;cntr_eventauditoptions_1<r->maxauditeventcount + 1;cntr_eventauditoptions_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_eventauditoptions_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_eventauditoptions_1) != -1) {
 				ndr_print_uint32(ndr, "eventauditoptions", r->eventauditoptions[cntr_eventauditoptions_1]);
 				free(idx_1);
 			}
@@ -3285,8 +3276,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_TRUSTED_DOMAIN(struct ndr_print *ndr, const c
 		ndr->depth++;
 		for (cntr_controller_names_1=0;cntr_controller_names_1<r->num_controllers;cntr_controller_names_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_controller_names_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_controller_names_1) != -1) {
 				ndr_print_lsa_String(ndr, "controller_names", &r->controller_names[cntr_controller_names_1]);
 				free(idx_1);
 			}
@@ -3484,8 +3474,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ACCOUNT(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_privilege_attrib_1=0;cntr_privilege_attrib_1<r->privilege_entries;cntr_privilege_attrib_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_privilege_attrib_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_privilege_attrib_1) != -1) {
 				ndr_print_uint32(ndr, "privilege_attrib", r->privilege_attrib[cntr_privilege_attrib_1]);
 				free(idx_1);
 			}
@@ -3500,8 +3489,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ACCOUNT(struct ndr_print *ndr, const char *na
 		ndr->depth++;
 		for (cntr_privilege_name_1=0;cntr_privilege_name_1<r->privilege_entries;cntr_privilege_name_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_privilege_name_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_privilege_name_1) != -1) {
 				ndr_print_lsa_String(ndr, "privilege_name", &r->privilege_name[cntr_privilege_name_1]);
 				free(idx_1);
 			}
@@ -5291,8 +5279,7 @@ _PUBLIC_ void ndr_print_netr_DELTA_ENUM_ARRAY(struct ndr_print *ndr, const char 
 		ndr->depth++;
 		for (cntr_delta_enum_1=0;cntr_delta_enum_1<r->num_deltas;cntr_delta_enum_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_delta_enum_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_delta_enum_1) != -1) {
 				ndr_print_netr_DELTA_ENUM(ndr, "delta_enum", &r->delta_enum[cntr_delta_enum_1]);
 				free(idx_1);
 			}
@@ -6429,8 +6416,7 @@ _PUBLIC_ void ndr_print_netr_BinaryString(struct ndr_print *ndr, const char *nam
 			ndr->depth++;
 			for (cntr_data_1=0;cntr_data_1<r->length / 2;cntr_data_1++) {
 				char *idx_1=NULL;
-				asprintf(&idx_1, "[%d]", cntr_data_1);
-				if (idx_1) {
+				if (asprintf(&idx_1, "[%d]", cntr_data_1) != -1) {
 					ndr_print_uint16(ndr, "data", r->data[cntr_data_1]);
 					free(idx_1);
 				}
@@ -6703,8 +6689,7 @@ _PUBLIC_ void ndr_print_netr_DomainQuery1(struct ndr_print *ndr, const char *nam
 	ndr->depth++;
 	for (cntr_unknown7_0=0;cntr_unknown7_0<4;cntr_unknown7_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown7_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown7_0) != -1) {
 			ndr_print_uint32(ndr, "unknown7", r->unknown7[cntr_unknown7_0]);
 			free(idx_0);
 		}
@@ -6941,8 +6926,7 @@ _PUBLIC_ void ndr_print_netr_DomainTrustInfo(struct ndr_print *ndr, const char *
 	ndr->depth++;
 	for (cntr_unknown1_0=0;cntr_unknown1_0<4;cntr_unknown1_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown1_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown1_0) != -1) {
 			ndr_print_netr_BinaryString(ndr, "unknown1", &r->unknown1[cntr_unknown1_0]);
 			free(idx_0);
 		}
@@ -6952,8 +6936,7 @@ _PUBLIC_ void ndr_print_netr_DomainTrustInfo(struct ndr_print *ndr, const char *
 	ndr->depth++;
 	for (cntr_unknown_0=0;cntr_unknown_0<4;cntr_unknown_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown_0) != -1) {
 			ndr_print_uint32(ndr, "unknown", r->unknown[cntr_unknown_0]);
 			free(idx_0);
 		}
@@ -7051,8 +7034,7 @@ _PUBLIC_ void ndr_print_netr_DomainInfo1(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		for (cntr_trusts_1=0;cntr_trusts_1<r->num_trusts;cntr_trusts_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_trusts_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_trusts_1) != -1) {
 				ndr_print_netr_DomainTrustInfo(ndr, "trusts", &r->trusts[cntr_trusts_1]);
 				free(idx_1);
 			}
@@ -7064,8 +7046,7 @@ _PUBLIC_ void ndr_print_netr_DomainInfo1(struct ndr_print *ndr, const char *name
 	ndr->depth++;
 	for (cntr_unknown_0=0;cntr_unknown_0<14;cntr_unknown_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown_0) != -1) {
 			ndr_print_uint32(ndr, "unknown", r->unknown[cntr_unknown_0]);
 			free(idx_0);
 		}
@@ -7329,8 +7310,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesWCtr(struct ndr_print *ndr, co
 		ndr->depth++;
 		for (cntr_sitename_1=0;cntr_sitename_1<r->count;cntr_sitename_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sitename_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sitename_1) != -1) {
 				ndr_print_lsa_String(ndr, "sitename", &r->sitename[cntr_sitename_1]);
 				free(idx_1);
 			}
@@ -7692,8 +7672,7 @@ _PUBLIC_ void ndr_print_netr_DomainTrustList(struct ndr_print *ndr, const char *
 		ndr->depth++;
 		for (cntr_array_1=0;cntr_array_1<r->count;cntr_array_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_array_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_array_1) != -1) {
 				ndr_print_netr_DomainTrust(ndr, "array", &r->array[cntr_array_1]);
 				free(idx_1);
 			}
@@ -7820,8 +7799,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesExWCtr(struct ndr_print *ndr, 
 		ndr->depth++;
 		for (cntr_sitename_1=0;cntr_sitename_1<r->count;cntr_sitename_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sitename_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sitename_1) != -1) {
 				ndr_print_lsa_String(ndr, "sitename", &r->sitename[cntr_sitename_1]);
 				free(idx_1);
 			}
@@ -7836,8 +7814,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesExWCtr(struct ndr_print *ndr, 
 		ndr->depth++;
 		for (cntr_subnetname_1=0;cntr_subnetname_1<r->count;cntr_subnetname_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_subnetname_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_subnetname_1) != -1) {
 				ndr_print_lsa_String(ndr, "subnetname", &r->subnetname[cntr_subnetname_1]);
 				free(idx_1);
 			}
@@ -7923,8 +7900,7 @@ _PUBLIC_ void ndr_print_DcSitesCtr(struct ndr_print *ndr, const char *name, cons
 		ndr->depth++;
 		for (cntr_sites_1=0;cntr_sites_1<r->num_sites;cntr_sites_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_sites_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_sites_1) != -1) {
 				ndr_print_lsa_String(ndr, "sites", &r->sites[cntr_sites_1]);
 				free(idx_1);
 			}
@@ -12712,8 +12688,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesW(struct ndr_print *ndr, const
 		ndr->depth++;
 		for (cntr_addresses_1=0;cntr_addresses_1<r->in.count;cntr_addresses_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_addresses_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_addresses_1) != -1) {
 				ndr_print_netr_DsRAddress(ndr, "addresses", &r->in.addresses[cntr_addresses_1]);
 				free(idx_1);
 			}
@@ -13256,8 +13231,7 @@ _PUBLIC_ void ndr_print_netr_DsRAddressToSitenamesExW(struct ndr_print *ndr, con
 		ndr->depth++;
 		for (cntr_addresses_1=0;cntr_addresses_1<r->in.count;cntr_addresses_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_addresses_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_addresses_1) != -1) {
 				ndr_print_netr_DsRAddress(ndr, "addresses", &r->in.addresses[cntr_addresses_1]);
 				free(idx_1);
 			}

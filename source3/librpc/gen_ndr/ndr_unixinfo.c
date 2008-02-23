@@ -425,8 +425,7 @@ _PUBLIC_ void ndr_print_unixinfo_GetPWUid(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		for (cntr_uids_0=0;cntr_uids_0<*r->in.count;cntr_uids_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_uids_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_uids_0) != -1) {
 				ndr_print_hyper(ndr, "uids", r->in.uids[cntr_uids_0]);
 				free(idx_0);
 			}
@@ -445,8 +444,7 @@ _PUBLIC_ void ndr_print_unixinfo_GetPWUid(struct ndr_print *ndr, const char *nam
 		ndr->depth++;
 		for (cntr_infos_0=0;cntr_infos_0<*r->out.count;cntr_infos_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_infos_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_infos_0) != -1) {
 				ndr_print_unixinfo_GetPWUidInfo(ndr, "infos", &r->out.infos[cntr_infos_0]);
 				free(idx_0);
 			}

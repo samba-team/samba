@@ -3798,8 +3798,7 @@ _PUBLIC_ void ndr_print_winreg_QueryMultipleValues(struct ndr_print *ndr, const 
 		ndr->depth++;
 		for (cntr_values_1=0;cntr_values_1<r->in.num_values;cntr_values_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_values_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_values_1) != -1) {
 				ndr_print_QueryMultipleValue(ndr, "values", &r->in.values[cntr_values_1]);
 				free(idx_1);
 			}
@@ -3828,8 +3827,7 @@ _PUBLIC_ void ndr_print_winreg_QueryMultipleValues(struct ndr_print *ndr, const 
 		ndr->depth++;
 		for (cntr_values_1=0;cntr_values_1<r->in.num_values;cntr_values_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_values_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_values_1) != -1) {
 				ndr_print_QueryMultipleValue(ndr, "values", &r->out.values[cntr_values_1]);
 				free(idx_1);
 			}
