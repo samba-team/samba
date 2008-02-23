@@ -1,5 +1,9 @@
 2008-02-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* test-ldap.c: Test ldap cases.
+
+	* Makefile.am: Drop com_err files from dist sources.
+
 	* ldap.c (_wind_ldap_case_exact_attribute): case exact matching.
 
 2008-02-12  Love Hörnquist Åstrand  <lha@it.su.se>
