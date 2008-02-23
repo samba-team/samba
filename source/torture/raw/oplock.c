@@ -1058,7 +1058,7 @@ static bool test_raw_oplock_batch12(struct torture_context *tctx, struct smbcli_
 	bool ret = true;
 	union smb_open io;
 	union smb_setfileinfo sfi;
-	uint16_t fnum=0, fnum2=0;
+	uint16_t fnum=0;
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
@@ -1118,7 +1118,6 @@ static bool test_raw_oplock_batch12(struct torture_context *tctx, struct smbcli_
 	CHECK_VAL(break_info.level, 0);
 
 	smbcli_close(cli1->tree, fnum);
-	smbcli_close(cli2->tree, fnum2);
 
 done:
 	smb_raw_exit(cli1->session);
