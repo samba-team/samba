@@ -4,7 +4,7 @@ include $(top_srcdir)/Makefile.am.common
 
 lib_LTLIBRARIES = libwind.la
 
-libwind_la_SOURCES =				\
+dist_libwind_la_SOURCES =			\
 	bidi.c					\
 	bidi_table.c				\
 	combining.c				\
@@ -19,8 +19,13 @@ libwind_la_SOURCES =				\
 	normalize_table.c			\
 	punycode.c				\
 	stringprep.c				\
-	wind_err.c				\
+	wind.h					\
 	utf8.c
+
+dist_include_HEADERS = wind.h
+
+nodist_libwind_la_SOURCES = wind_err.c wind_err.h
+nodist_include_HEADERS = wind_err.h
 
 $(libwind_la_OBJECTS): wind_err.h
 
@@ -29,7 +34,6 @@ libwind_la_LDFLAGS = -version-info 0:0:0
 if versionscript
 libwind_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
 endif
-
 
 BUILT_SOURCES =					\
 	bidi_table.c				\
@@ -46,9 +50,6 @@ BUILT_SOURCES =					\
 	punycode_examples.h			\
 	wind_err.c				\
 	wind_err.h
-
-dist_include_HEADERS = wind.h
-nodist_include_HEADERS = wind_err.h
 
 TESTS =						\
 	$(check_PROGRAMS)
