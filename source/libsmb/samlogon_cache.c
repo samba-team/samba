@@ -228,7 +228,8 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const DOM_SID *
 		goto done;
 	}
 
-	info3 = talloc_memdup(mem_ctx, &r.info3, sizeof(r.info3));
+	info3 = (struct netr_SamInfo3 *)talloc_memdup(mem_ctx, &r.info3,
+						      sizeof(r.info3));
 
  done:
 	SAFE_FREE(data.dptr);
