@@ -99,6 +99,7 @@ punycode_examples.h punycode_examples.c: gen-punycode-examples.py rfc3492.txt
 EXTRA_DIST = \
 	CompositionExclusions-3.2.0.txt \
 	UnicodeData.txt \
+	generate.py \
 	gen-bidi.py \
 	gen-errorlist.py \
 	gen-map.py \
