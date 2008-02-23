@@ -355,6 +355,9 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_ALLOCATION_INFO:
 	case RAW_SFILEINFO_ALLOCATION_INFORMATION:
+		status = pvfs_break_level2_oplocks(f);
+		NT_STATUS_NOT_OK_RETURN(status);
+
 		newstats.dos.alloc_size = info->allocation_info.in.alloc_size;
 		if (newstats.dos.alloc_size < newstats.st.st_size) {
 			newstats.st.st_size = newstats.dos.alloc_size;
@@ -365,6 +368,9 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
+		status = pvfs_break_level2_oplocks(f);
+		NT_STATUS_NOT_OK_RETURN(status);
+
 		newstats.st.st_size = info->end_of_file_info.in.size;
 		break;
 
