@@ -914,7 +914,7 @@ static bool test_raw_oplock_batch10(struct torture_context *tctx, struct smbcli_
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
 
-	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli2->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
