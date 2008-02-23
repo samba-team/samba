@@ -3,7 +3,6 @@ local.iconv.*.next_codepoint()
 base.delaywrite.finfo update on close
 base.delete.*.deltest20a
 base.delete.*.deltest20b
-raw.oplock.*.OPLOCK
 rpc.winreg
 local.registry.*.security # Not implemented yet
 rpc.wkssvc
