@@ -108,22 +108,20 @@ wind_punycode_label_toascii(const uint32_t *in, size_t in_len,
 	    out[o++] = in[i];
 	}
     }
-    if (o == i) {
-	*out_len = o;
-	return 0;
-    }
     b = h;
     if (b > 0) {
 	if (o >= *out_len)
 	    return WIND_ERR_OVERRUN;
 	out[o++] = 0x2D;
     }
-
-    if (o + 4 >= *out_len)
-	return WIND_ERR_OVERRUN;
-    memmove(out + 4, out, o);
-    memcpy(out, "xn--", 4);
-    o += 4;
+    /* is this string punycoded */
+    if (h < in_len) {
+	if (o + 4 >= *out_len)
+	    return WIND_ERR_OVERRUN;
+	memmove(out + 4, out, o);
+	memcpy(out, "xn--", 4);
+	o += 4;
+    }
 
     while (h < in_len) {
 	m = (unsigned)-1;
