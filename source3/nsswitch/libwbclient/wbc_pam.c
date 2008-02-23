@@ -136,7 +136,7 @@ static wbcErr wbc_create_auth_info(TALLOC_CTX *mem_ctx,
 		     0);
 	sn++;
 
-	p = resp->extra_data.data;
+	p = (char *)resp->extra_data.data;
 	if (!p) {
 		wbc_status = WBC_INVALID_RESPONSE;
 		BAIL_ON_WBC_ERROR(wbc_status);
