@@ -1621,6 +1621,68 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs,
 }
 
 /*
+  determine if the file size of a file can be changed,
+  or if it is prevented by an already open file
+*/
+NTSTATUS pvfs_can_update_file_size(struct pvfs_state *pvfs,
+				   struct ntvfs_request *req,
+				   struct pvfs_filename *name,
+				   struct odb_lock **lckp)
+{
+	NTSTATUS status;
+	DATA_BLOB key;
+	struct odb_lock *lck;
+	uint32_t share_access;
+	uint32_t access_mask;
+	bool break_to_none;
+	bool delete_on_close;
+
+	status = pvfs_locking_key(name, name, &key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	lck = odb_lock(req, pvfs->odb_context, &key);
+	if (lck == NULL) {
+		DEBUG(0,("Unable to lock opendb for can_stat\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* TODO: this may needs some more flags */
+	share_access	= NTCREATEX_SHARE_ACCESS_WRITE;
+	access_mask	= 0;
+	delete_on_close	= false;
+	break_to_none	= true;
+
+	status = odb_can_open(lck, name->stream_id,
+			      share_access, access_mask, delete_on_close,
+			      0, break_to_none);
+
+	/*
+	 * if it's a sharing violation or we got no oplock
+	 * only keep the lock if the caller requested access
+	 * to the lock
+	 */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		if (lckp) {
+			*lckp = lck;
+		} else {
+			talloc_free(lck);
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
+		if (lckp) {
+			*lckp = NULL;
+		}
+	} else if (lckp) {
+		*lckp = lck;
+	}
+
+	return status;
+}
+
+/*
   determine if file meta data can be accessed, or if it is prevented by an
   already open file
 */
