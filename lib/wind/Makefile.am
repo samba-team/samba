@@ -113,7 +113,7 @@ EXTRA_DIST = \
 	rfc4518.py \
 	rfc4518.txt \
 	stringprep.py \
-	warn_err.et
+	wind_err.et
 
 CLEANFILES = \
 	wind_err.c wind_err.h
