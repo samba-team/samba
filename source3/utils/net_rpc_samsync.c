@@ -979,7 +979,11 @@ static NTSTATUS fetch_alias_mem(uint32_t rid,
 static NTSTATUS fetch_domain_info(uint32_t rid,
 				  struct netr_DELTA_DOMAIN *r)
 {
-	time_t u_max_age, u_min_age, u_logout, u_lockoutreset, u_lockouttime;
+	time_t u_max_age, u_min_age, u_logout;
+#if 0
+	/* FIXME: gd */
+	time_t u_lockoutreset, u_lockouttime;
+#endif
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	const char *domname;
 
@@ -1023,7 +1027,6 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 /* FIXME: gd */
 	if (!pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT, delta->account_lockout.bad_attempt_lockout))
 		return nt_status;
-#endif
 
 	if (!pdb_set_account_policy(AP_RESET_COUNT_TIME, (uint32)u_lockoutreset/60))
 		return nt_status;
@@ -1033,6 +1036,7 @@ static NTSTATUS fetch_domain_info(uint32_t rid,
 
 	if (!pdb_set_account_policy(AP_LOCK_ACCOUNT_DURATION, (uint32)u_lockouttime))
 		return nt_status;
+#endif
 
 	if (!pdb_set_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
 				    r->logon_to_chgpass))
