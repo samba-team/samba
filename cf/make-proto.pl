@@ -4,11 +4,13 @@
 ##use Getopt::Std;
 require 'getopts.pl';
 
-$brace = 0;
-$line = "";
-$debug = 0;
-$oproto = 1;
-$private_func_re = "^_";
+my $comment = 0;
+my $if_0 = 0;
+my $brace = 0;
+my $line = "";
+my $debug = 0;
+my $oproto = 1;
+my $private_func_re = "^_";
 
 do Getopts('x:m:o:p:dqE:R:P:') || die "foo";
 
@@ -65,6 +67,14 @@ if($opt_x) {
 
 while(<>) {
     print $brace, " ", $_ if($debug);
+    
+    # Handle C comments
+    s@/\*.*\*/@@;
+    s@//.*/@@;
+    if ( s@/\*.*@@) { $comment = 1;
+    } elsif ($comment && s@.*\*/@@) { $comment = 0;
+    } elsif ($comment) { next; }
+
     if(/^\#if 0/) {
 	$if_0 = 1;
     }
