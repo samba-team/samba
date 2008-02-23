@@ -98,13 +98,15 @@ punycode_examples.h punycode_examples.c: gen-punycode-examples.py rfc3492.txt
 
 EXTRA_DIST = \
 	CompositionExclusions-3.2.0.txt \
+	UnicodeData.py \
 	UnicodeData.txt \
-	generate.py \
 	gen-bidi.py \
+	gen-combining.py \
 	gen-errorlist.py \
 	gen-map.py \
 	gen-normalize.py \
 	gen-punycode-examples.py \
+	generate.py \
 	rfc3454.py \
 	rfc3454.txt \
 	rfc3490.txt \
@@ -114,6 +116,7 @@ EXTRA_DIST = \
 	rfc4518.py \
 	rfc4518.txt \
 	stringprep.py \
+	util.py \
 	wind_err.et
 
 CLEANFILES = \
