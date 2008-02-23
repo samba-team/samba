@@ -1,5 +1,7 @@
 2008-02-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: Add unicode header files.
+
 	* punycode.c: make pass the test cases again.
 	
 	* Makefile.am: add more missing .py files.
