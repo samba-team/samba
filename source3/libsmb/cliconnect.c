@@ -581,8 +581,8 @@ static bool cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 		if (cli_is_error(cli) &&
 				!NT_STATUS_EQUAL( cli_get_nt_error(cli), 
 					NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DEBUG(0, ("cli_session_setup_blob: recieve failed (%s)\n",
-				nt_errstr(cli_get_nt_error(cli)) ));
+			DEBUG(0, ("cli_session_setup_blob: receive failed "
+				  "(%s)\n", nt_errstr(cli_get_nt_error(cli))));
 			cli->vuid = 0;
 			return False;
 		}
