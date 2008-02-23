@@ -2,7 +2,9 @@
 
 SUFFIXES = .et .h
 
-AM_CPPFLAGS = -I$(top_builddir)/include $(INCLUDES_roken)
+DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)/include
+
+AM_CPPFLAGS = $(INCLUDES_roken)
 
 if do_roken_rename
 ROKEN_RENAME = -DROKEN_RENAME
