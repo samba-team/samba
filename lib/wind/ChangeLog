@@ -1,5 +1,7 @@
 2008-02-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* punycode.c: make pass the test cases again.
+	
 	* Makefile.am: add more missing .py files.
 
 	* Makefile.am: add generate.py
