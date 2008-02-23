@@ -1,5 +1,9 @@
 2008-02-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: add more missing .py files.
+
+	* Makefile.am: add generate.py
+
 	* test-ldap.c: Test ldap cases.
 
 	* Makefile.am: Drop com_err files from dist sources.
