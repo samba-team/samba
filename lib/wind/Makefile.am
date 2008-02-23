@@ -124,6 +124,19 @@ EXTRA_DIST = \
 	wind_err.et
 
 CLEANFILES = \
-	wind_err.c wind_err.h
+	bidi_table.c \
+	bidi_table.h \
+	combining_table.c \
+	combining_table.h \
+	errorlist_table.c \
+	errorlist_table.h \
+	map_table.c \
+	map_table.h \
+	normalize_table.c \
+	normalize_table.h \
+	punycode_examples.c \
+	punycode_examples.h \
+	wind_err.c  \
+	wind_err.h
 
 wind_err.h: wind_err.et
