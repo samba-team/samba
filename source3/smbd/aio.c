@@ -202,6 +202,12 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 	size_t bufsize;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 
+	if (fsp->base_fsp != NULL) {
+		/* No AIO on streams yet */
+		DEBUG(10, ("AIO on streams not yet supported\n"));
+		return false;
+	}
+
 	if ((!min_aio_read_size || (smb_maxcnt < min_aio_read_size))
 	    && !SMB_VFS_AIO_FORCE(fsp)) {
 		/* Too small a read for aio request. */
@@ -284,6 +290,12 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	size_t inbufsize, outbufsize;
 	bool write_through = BITSETW(req->inbuf+smb_vwv7,0);
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
+
+	if (fsp->base_fsp != NULL) {
+		/* No AIO on streams yet */
+		DEBUG(10, ("AIO on streams not yet supported\n"));
+		return false;
+	}
 
 	if ((!min_aio_write_size || (numtowrite < min_aio_write_size))
 	    && !SMB_VFS_AIO_FORCE(fsp)) {
