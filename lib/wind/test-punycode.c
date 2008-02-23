@@ -56,15 +56,20 @@ main(void)
 
 	len = sizeof(buf);
 	ret = wind_punycode_label_toascii(e->val, e->len, buf, &len);
-	if (ret < 0) {
+	if (ret) {
 	    printf("punycode %u (%s) failed: %d\n", i, e->description, ret);
 	    ++failures;
 	    continue;
+	}
+	if (strncmp(buf, "xn--", 4) == 0) {
+	    memmove(buf, buf + 4, len - 4);
+	    len -= 4;
 	}
 	if (len != strlen(e->pc)) {
 	    printf("punycode %u (%s) wrong len, actual: %u, expected: %u\n",
 		   i, e->description, 
 		   (unsigned int)len, (unsigned int)strlen(e->pc));
+	    printf("buf %s != pc: %s\n", buf, e->pc);
 	    ++failures;
 	    continue;
 	}
