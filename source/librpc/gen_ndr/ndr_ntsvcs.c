@@ -45,8 +45,7 @@ _PUBLIC_ void ndr_print_PNP_HwProfInfo(struct ndr_print *ndr, const char *name, 
 	ndr->depth++;
 	for (cntr_unknown2_0=0;cntr_unknown2_0<160;cntr_unknown2_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_unknown2_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_unknown2_0) != -1) {
 			ndr_print_uint16(ndr, "unknown2", r->unknown2[cntr_unknown2_0]);
 			free(idx_0);
 		}

@@ -120,8 +120,7 @@ _PUBLIC_ void ndr_print_notify_depth(struct ndr_print *ndr, const char *name, co
 	ndr->depth++;
 	for (cntr_entries_0=0;cntr_entries_0<r->num_entries;cntr_entries_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_entries_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_entries_0) != -1) {
 			ndr_print_notify_entry(ndr, "entries", &r->entries[cntr_entries_0]);
 			free(idx_0);
 		}
@@ -184,8 +183,7 @@ _PUBLIC_ void ndr_print_notify_array(struct ndr_print *ndr, const char *name, co
 	ndr->depth++;
 	for (cntr_depth_0=0;cntr_depth_0<r->num_depths;cntr_depth_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_depth_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_depth_0) != -1) {
 			ndr_print_notify_depth(ndr, "depth", &r->depth[cntr_depth_0]);
 			free(idx_0);
 		}

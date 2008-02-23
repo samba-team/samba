@@ -506,8 +506,7 @@ _PUBLIC_ void ndr_print_dfs_Info3(struct ndr_print *ndr, const char *name, const
 		ndr->depth++;
 		for (cntr_stores_1=0;cntr_stores_1<r->num_stores;cntr_stores_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_stores_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_stores_1) != -1) {
 				ndr_print_dfs_StorageInfo(ndr, "stores", &r->stores[cntr_stores_1]);
 				free(idx_1);
 			}
@@ -670,8 +669,7 @@ _PUBLIC_ void ndr_print_dfs_Info4(struct ndr_print *ndr, const char *name, const
 		ndr->depth++;
 		for (cntr_stores_1=0;cntr_stores_1<r->num_stores;cntr_stores_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_stores_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_stores_1) != -1) {
 				ndr_print_dfs_StorageInfo(ndr, "stores", &r->stores[cntr_stores_1]);
 				free(idx_1);
 			}
@@ -1079,8 +1077,7 @@ _PUBLIC_ void ndr_print_dfs_Info6(struct ndr_print *ndr, const char *name, const
 		ndr->depth++;
 		for (cntr_stores_1=0;cntr_stores_1<r->num_stores;cntr_stores_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_stores_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_stores_1) != -1) {
 				ndr_print_dfs_StorageInfo2(ndr, "stores", &r->stores[cntr_stores_1]);
 				free(idx_1);
 			}
@@ -2271,8 +2268,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray1(struct ndr_print *ndr, const char *name, 
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_s_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_s_1) != -1) {
 				ndr_print_dfs_Info1(ndr, "s", &r->s[cntr_s_1]);
 				free(idx_1);
 			}
@@ -2358,8 +2354,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray2(struct ndr_print *ndr, const char *name, 
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_s_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_s_1) != -1) {
 				ndr_print_dfs_Info2(ndr, "s", &r->s[cntr_s_1]);
 				free(idx_1);
 			}
@@ -2445,8 +2440,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray3(struct ndr_print *ndr, const char *name, 
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_s_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_s_1) != -1) {
 				ndr_print_dfs_Info3(ndr, "s", &r->s[cntr_s_1]);
 				free(idx_1);
 			}
@@ -2532,8 +2526,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray4(struct ndr_print *ndr, const char *name, 
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_s_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_s_1) != -1) {
 				ndr_print_dfs_Info4(ndr, "s", &r->s[cntr_s_1]);
 				free(idx_1);
 			}
@@ -2619,8 +2612,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray5(struct ndr_print *ndr, const char *name, 
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_s_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_s_1) != -1) {
 				ndr_print_dfs_Info5(ndr, "s", &r->s[cntr_s_1]);
 				free(idx_1);
 			}
@@ -2706,8 +2698,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray6(struct ndr_print *ndr, const char *name, 
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_s_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_s_1) != -1) {
 				ndr_print_dfs_Info6(ndr, "s", &r->s[cntr_s_1]);
 				free(idx_1);
 			}
@@ -2793,8 +2784,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray200(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_s_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_s_1) != -1) {
 				ndr_print_dfs_Info200(ndr, "s", &r->s[cntr_s_1]);
 				free(idx_1);
 			}
@@ -2880,8 +2870,7 @@ _PUBLIC_ void ndr_print_dfs_EnumArray300(struct ndr_print *ndr, const char *name
 		ndr->depth++;
 		for (cntr_s_1=0;cntr_s_1<r->count;cntr_s_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_s_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_s_1) != -1) {
 				ndr_print_dfs_Info300(ndr, "s", &r->s[cntr_s_1]);
 				free(idx_1);
 			}
