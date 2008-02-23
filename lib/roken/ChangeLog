@@ -1,3 +1,7 @@
+2008-02-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: make AM_CPPFLAGS +=
+
 2008-02-22  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Use AM_CPPFLAGS instead, not really right, but
