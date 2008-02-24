@@ -60,3 +60,13 @@ strlcpy.c:
 	$(LN_S) $(srcdir)/../roken/strlcpy.c .
 strlcat.c:
 	$(LN_S) $(srcdir)/../roken/strlcat.c .
+
+CLEANFILES = \
+	ndbm_wrap.c \
+	ndbm_wrap.h \
+	snprintf.c \
+	strcasecmp.c \
+	strlcat.c \
+	strlcpy.c \
+	strlwr.c \
+	strncasecmp.c
