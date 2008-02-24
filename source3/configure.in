@@ -1573,7 +1573,7 @@ DSO_EXPORTS=""
 			;;
 		*aix*) AC_DEFINE(AIX,1,[Whether the host os is aix])
 			BLDSHARED="true"
-			LDSHFLAGS="-Wl,-G,-bexpall,-bbigtoc"
+			LDSHFLAGS="-Wl,-G,-bexpfull,-bbigtoc"
 			DYNEXP="-Wl,-brtl,-bexpfull,-bbigtoc"
 			PICFLAG="-O2"
 			# as AIX code is always position independent...
