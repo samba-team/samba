@@ -76,9 +76,7 @@ bin_PROGRAMS = idn-lookup
 
 idn_lookup_SOURCES = idn-lookup.c
 
-idn_lookup_LDADD = libwind.la $(LIB_roken)
-
-LDADD = libwind.la
+LDADD = libwind.la $(LIB_roken)
 
 PYTHON = python
 
