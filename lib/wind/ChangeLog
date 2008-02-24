@@ -1,3 +1,7 @@
+2008-02-24  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: Add LIB_com_err.
+
 2008-02-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Add more built files.
