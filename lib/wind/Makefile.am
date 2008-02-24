@@ -124,6 +124,7 @@ EXTRA_DIST = \
 	rfc4518.txt \
 	stringprep.py \
 	util.py \
+	version-script.map \
 	wind_err.et
 
 CLEANFILES = \
