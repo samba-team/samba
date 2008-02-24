@@ -11,6 +11,7 @@ HEIMDAL_WIND_1.0 {
 		wind_ucs4utf8_length;
 		wind_ucs2utf8;
 		wind_ucs2utf8_length;
+		wind_ucs2read;
 		# testing
 		_wind_combining_class;
 		_wind_stringprep_testbidi;
