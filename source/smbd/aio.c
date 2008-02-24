@@ -150,12 +150,18 @@ static uint16 aio_pending_array[AIO_PENDING_SIZE];
  Signal handler when an aio request completes.
 *****************************************************************************/
 
-static void signal_handler(int sig, siginfo_t *info, void *unused)
+void aio_request_done(uint16_t mid)
 {
 	if (signals_received < AIO_PENDING_SIZE) {
-		aio_pending_array[signals_received] = info->si_value.sival_int;
+		aio_pending_array[signals_received] = mid;
 		signals_received++;
-	} /* Else signal is lost. */
+	}
+	/* Else signal is lost. */
+}
+
+static void signal_handler(int sig, siginfo_t *info, void *unused)
+{
+	aio_request_done(info->si_value.sival_int);
 	sys_select_signal(RT_SIGNAL_AIO);
 }
 
