@@ -32,6 +32,9 @@ $(libwind_la_OBJECTS): wind_err.h
 
 libwind_la_LDFLAGS = -version-info 0:0:0
 
+libwind_la_LIBADD = \
+	$(LIB_com_err)
+
 if versionscript
 libwind_la_LDFLAGS += $(LDFLAGS_VERSION_SCRIPT)$(srcdir)/version-script.map
 endif
