@@ -141,10 +141,10 @@ static struct aio_extra *find_aio_ex(uint16 mid)
  We can have these many aio buffers in flight.
 *****************************************************************************/
 
-#define AIO_PENDING_SIZE 10
+static int aio_pending_size;
 static sig_atomic_t signals_received;
 static int outstanding_aio_calls;
-static uint16 aio_pending_array[AIO_PENDING_SIZE];
+static uint16 *aio_pending_array;
 
 /****************************************************************************
  Signal handler when an aio request completes.
@@ -152,7 +152,7 @@ static uint16 aio_pending_array[AIO_PENDING_SIZE];
 
 void aio_request_done(uint16_t mid)
 {
-	if (signals_received < AIO_PENDING_SIZE) {
+	if (signals_received < aio_pending_size) {
 		aio_pending_array[signals_received] = mid;
 		signals_received++;
 	}
@@ -181,6 +181,10 @@ bool aio_finished(void)
 void initialize_async_io_handler(void)
 {
 	struct sigaction act;
+
+	aio_pending_size = lp_maxmux();
+	aio_pending_array = SMB_MALLOC_ARRAY(uint16, aio_pending_size);
+	SMB_ASSERT(aio_pending_array != NULL);
 
 	ZERO_STRUCT(act);
 	act.sa_sigaction = signal_handler;
@@ -231,7 +235,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 		return False;
 	}
 
-	if (outstanding_aio_calls >= AIO_PENDING_SIZE) {
+	if (outstanding_aio_calls >= aio_pending_size) {
 		DEBUG(10,("schedule_aio_read_and_X: Already have %d aio "
 			  "activities outstanding.\n",
 			  outstanding_aio_calls ));
@@ -320,7 +324,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 		return False;
 	}
 
-	if (outstanding_aio_calls >= AIO_PENDING_SIZE) {
+	if (outstanding_aio_calls >= aio_pending_size) {
 		DEBUG(3,("schedule_aio_write_and_X: Already have %d aio "
 			 "activities outstanding.\n",
 			  outstanding_aio_calls ));
