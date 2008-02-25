@@ -10,7 +10,6 @@ use smb_build::input;
 use smb_build::config_mk;
 use smb_build::output;
 use smb_build::env;
-use smb_build::cflags;
 use smb_build::summary;
 use smb_build::config;
 use strict;
@@ -71,7 +70,8 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->Header($key) if defined($key->{PUBLIC_HEADERS});
 	if ($key->{TYPE} eq "MODULE" and defined($key->{INIT_FUNCTION})) {
 		$mkenv->output("$key->{SUBSYSTEM}_INIT_FUNCTIONS += \"$key->{INIT_FUNCTION},\"\n");
-		}
+	}
+	$mkenv->CFlags($key);
 }
 
 foreach my $key (values %$OUTPUT) {
@@ -96,9 +96,6 @@ foreach my $key (values %$OUTPUT) {
 }
 
 $mkenv->write("data.mk");
-
-cflags::create_cflags($OUTPUT, $config::config{srcdir},
-		    $config::config{builddir}, "extra_cflags.txt");
 
 summary::show($OUTPUT, \%config::config);
 
