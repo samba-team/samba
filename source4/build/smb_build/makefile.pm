@@ -328,7 +328,6 @@ sub ProtoHeader($$)
 	my ($self,$ctx) = @_;
 
 	my $target = "";
-	my $comment = "Creating ";
 
 	my $priv = undef;
 	my $pub = undef;
@@ -336,9 +335,7 @@ sub ProtoHeader($$)
 	if (defined($ctx->{PRIVATE_PROTO_HEADER})) {
 		$priv = "\$(realpath \$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER}))";
 		$target .= $priv;
-		$comment .= $priv;
 		if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
-			$comment .= " and ";
 			$target.= " ";
 		}
 		$self->output("PROTO_HEADERS += $priv\n");
@@ -349,7 +346,6 @@ sub ProtoHeader($$)
 
 	if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
 		$pub = "\$(realpath \$(addprefix $ctx->{BASEDIR}/, $ctx->{PUBLIC_PROTO_HEADER}))";
-		$comment .= $pub;
 		$target .= $pub;
 		$self->output("PROTO_HEADERS += $pub\n");
 	} else {
@@ -358,7 +354,7 @@ sub ProtoHeader($$)
 	}
 
 	$self->output("$pub: $ctx->{MK_FILE} \$($ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
-	$self->output("\t\@echo \"$comment\"\n");
+	$self->output("\t\@echo \"Creating \$@\"\n");
 	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --private=$priv --public=$pub \$($ctx->{NAME}_OBJ_LIST)\n\n");
 }
 
