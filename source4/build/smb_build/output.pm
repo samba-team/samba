@@ -9,38 +9,6 @@ package output;
 use strict;
 use smb_build::config;
 
-sub add_dir_str($$)
-{
-	my ($dir,$file) = @_;
-	my $dirsep = "/";
-
-	$dir =~ s/^\.$//g;
-	$dir =~ s/^\.\///g;
-
-	$dirsep = "" if ($dir eq "");
-
-	my $ret = $file;
-	if (substr($ret, 0, 1) ne "\$") {
-		$ret = "$dir$dirsep$file";
-		$ret =~ s/([^\/\.]+)\/\.\.\///g;
-		$ret =~ s/([^\/\.]+)\/\.\.\///g;
-	}
-
-	return $ret;
-}
-
-sub add_dir_array($$)
-{
-	my ($dir,$files) = @_;
-	my @ret = ();
-
-	foreach (@{$files}) {
-		push (@ret, add_dir_str($dir, $_));
-	}
-
-	return @ret;
-}
-
 sub generate_shared_library($)
 {
 	my $lib = shift;
@@ -168,8 +136,10 @@ sub create_output($$)
 		next unless(defined($part->{OUTPUT_TYPE}));
 
 		# Combine object lists
-		my @list = add_dir_array($part->{BASEDIR}, $part->{OBJ_FILES});
-		push(@{$part->{OBJ_LIST}}, @list) if defined($part->{OBJ_FILES});
+		if (defined($part->{OBJ_FILES})) {
+			my $list = "\$(addprefix $part->{BASEDIR}/, " . join(" ", @{$part->{OBJ_FILES}}) . ")";
+			push(@{$part->{OBJ_LIST}}, $list);
+		}
 
 		generate_binary($part) if grep(/BINARY/, @{$part->{OUTPUT_TYPE}});
 		generate_shared_library($part) if grep(/SHARED_LIBRARY/, @{$part->{OUTPUT_TYPE}});
