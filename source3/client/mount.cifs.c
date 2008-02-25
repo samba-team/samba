@@ -205,8 +205,10 @@ static int open_cred_file(char * file_name)
 				/* go past equals sign */
 				temp_val++;
 				for(length = 0;length<4087;length++) {
-					if(temp_val[length] == '\n')
+					if ((temp_val[length] == '\n')
+					    || (temp_val[length] == '\0')) {
 						break;
+					}
 				}
 				if(length > 4086) {
 					printf("mount.cifs failed due to malformed username in credentials file");
@@ -229,7 +231,7 @@ static int open_cred_file(char * file_name)
 				/* go past equals sign */
 				temp_val++;
 				for(length = 0;length<65;length++) {
-					if(temp_val[length] == '\n')
+					if(temp_val[length] == '\n' || temp_val[length] == '\0')
 						break;
 				}
 				if(length > 64) {
@@ -258,7 +260,7 @@ static int open_cred_file(char * file_name)
 				if(verboseflag)
 					printf("\nDomain %s\n",temp_val);
                                 for(length = 0;length<65;length++) {
-                                        if(temp_val[length] == '\n')
+                                        if(temp_val[length] == '\n' || temp_val[length] == '\0')
                                                 break;
                                 }
                                 if(length > 64) {
