@@ -116,11 +116,11 @@ $(1): $(2)
 endef
 
 # Create a prototype header
-# Arguments: proto header, private header, c files
+# Arguments: header file, c files
 define proto_header_template
-$(1) $(2): $(3)
+$(1): $(2)
 	@echo "Creating $@"
-	@$(PERL) $(srcdir)/script/mkproto.pl --srcdir=$(srcdir) --builddir=$(builddir) --private=$(2) --public=$(1) $(3)
+	@$(PERL) $(srcdir)/script/mkproto.pl --srcdir=$(srcdir) --builddir=$(builddir) --private=$(1)) $(2)
 endef
 
 ###############################################################################
