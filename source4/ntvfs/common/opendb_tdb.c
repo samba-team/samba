@@ -346,10 +346,13 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
 		}
 	}
 
-	if (file->delete_on_close ||
-	    (file->num_entries != 0 && delete_on_close)) {
+	if (file->delete_on_close) {
 		/* while delete on close is set, no new opens are allowed */
 		return NT_STATUS_DELETE_PENDING;
+	}
+
+	if (file->num_entries != 0 && delete_on_close) {
+		return NT_STATUS_SHARING_VIOLATION;
 	}
 
 	/* check for sharing violations */
