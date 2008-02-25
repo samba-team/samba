@@ -19,10 +19,38 @@ BNLD_FLAGS = $(LDFLAGS) $(SYS_LDFLAGS)
 HOSTCC_FLAGS = -D_SAMBA_HOSTCC_ $(CFLAGS)
 HOSTLD_FLAGS = $(LDFLAGS) $(SYS_LDFLAGS)
 
-default: all
+.DEFAULT_GOAL := all
+
+ifneq ($(automatic_deps),yes)
+ALL_PREDEP = proto
+.NOTPARALLEL:
+endif
 
 include rules.mk
 include data.mk
+
+DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
+		   include/includes.d
+
+ifeq ($(automatic_deps),yes)
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(MAKECMDGOALS),realdistclean)
+ifneq ($(SKIP_DEP_FILES),yes)
+-include $(DEP_FILES)
+endif
+endif
+endif
+endif
+
+ifneq ($(SKIP_DEP_FILES),yes)
+clean::
+	@echo Removing dependency files
+	@find . -name '*.d' -o -name '*.hd' | xargs rm -f
+endif
+else
+include $(srcdir)/static_deps.mk
+endif
 
 DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
 		  $(srcdir)/version.h

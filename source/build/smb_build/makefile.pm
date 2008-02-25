@@ -30,11 +30,6 @@ sub new($$$)
 	$self->output("################################################\n");
 	$self->output("\n");
 
-	if (!$self->{automatic_deps}) {
-		$self->output("ALL_PREDEP = proto\n");
-		$self->output(".NOTPARALLEL:\n");
-	}
-
 	return $self;
 }
 
@@ -78,23 +73,17 @@ sub _prepare_mk_files($)
 		push (@tmp, $_);
 	}
 
-	if ($self->{gnu_make}) {
-		$self->output("
+	$self->output("
 ifneq (\$(MAKECMDGOALS),clean)
 ifneq (\$(MAKECMDGOALS),distclean)
 ifneq (\$(MAKECMDGOALS),realdistclean)
 ");
-	}
-
 	$self->output("MK_FILES = " . array2oneperline(\@tmp) . "\n");
-
-	if ($self->{gnu_make}) {
-		$self->output("
+	$self->output("
 endif
 endif
 endif
 ");
-	}
 }
 
 sub array2oneperline($)
@@ -368,28 +357,6 @@ sub write($$)
 	$self->_prepare_mk_files();
 
 	$self->output($self->{mkfile});
-
-	if ($self->{automatic_deps}) {
-		$self->output("
-ifneq (\$(MAKECMDGOALS),clean)
-ifneq (\$(MAKECMDGOALS),distclean)
-ifneq (\$(MAKECMDGOALS),realdistclean)
-ifneq (\$(SKIP_DEP_FILES),yes)
--include \$(DEP_FILES)
-endif
-endif
-endif
-endif
-
-ifneq (\$(SKIP_DEP_FILES),yes)
-clean::
-	\@echo Removing dependency files
-	\@find . -name '*.d' -o -name '*.hd' | xargs rm -f
-endif
-");
-	} else {
-		$self->output("include \$(srcdir)/static_deps.mk\n");
-	}
 
 	open(MAKEFILE,">$file") || die ("Can't open $file\n");
 	print MAKEFILE $self->{output};
