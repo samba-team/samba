@@ -99,13 +99,4 @@ $mkenv->write("data.mk");
 
 summary::show($OUTPUT, \%config::config);
 
-if ($shared_libs_used) {
-	print <<EOF;
-To run binaries without installing, set the following environment variable:
-	$config::config{LIB_PATH_VAR}=$config::config{builddir}/bin/shared
-EOF
-}
-
-print "To build Samba, run $config::config{MAKE}\n";
-
 1;
