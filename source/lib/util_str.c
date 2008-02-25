@@ -2086,6 +2086,7 @@ static char *ipstr_list_add(char **ipstr_list, const struct ip_service *service)
 {
 	char *new_ipstr = NULL;
 	char addr_buf[INET6_ADDRSTRLEN];
+	int ret;
 
 	/* arguments checking */
 	if (!ipstr_list || !service) {
@@ -2100,32 +2101,29 @@ static char *ipstr_list_add(char **ipstr_list, const struct ip_service *service)
 	if (*ipstr_list) {
 		if (service->ss.ss_family == AF_INET) {
 			/* IPv4 */
-			asprintf(&new_ipstr, "%s%s%s:%d",
-					*ipstr_list,
-					IPSTR_LIST_SEP,
-					addr_buf,
-					service->port);
+			ret = asprintf(&new_ipstr, "%s%s%s:%d",	*ipstr_list,
+				       IPSTR_LIST_SEP, addr_buf,
+				       service->port);
 		} else {
 			/* IPv6 */
-			asprintf(&new_ipstr, "%s%s[%s]:%d",
-					*ipstr_list,
-					IPSTR_LIST_SEP,
-					addr_buf,
-					service->port);
+			ret = asprintf(&new_ipstr, "%s%s[%s]:%d", *ipstr_list,
+				       IPSTR_LIST_SEP, addr_buf,
+				       service->port);
 		}
 		SAFE_FREE(*ipstr_list);
 	} else {
 		if (service->ss.ss_family == AF_INET) {
 			/* IPv4 */
-			asprintf(&new_ipstr, "%s:%d",
-				addr_buf,
-				service->port);
+			ret = asprintf(&new_ipstr, "%s:%d", addr_buf,
+				       service->port);
 		} else {
 			/* IPv6 */
-			asprintf(&new_ipstr, "[%s]:%d",
-				addr_buf,
-				service->port);
+			ret = asprintf(&new_ipstr, "[%s]:%d", addr_buf,
+				       service->port);
 		}
+	}
+	if (ret == -1) {
+		return NULL;
 	}
 	*ipstr_list = new_ipstr;
 	return *ipstr_list;

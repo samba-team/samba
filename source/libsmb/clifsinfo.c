@@ -497,8 +497,7 @@ static NTSTATUS make_cli_gss_blob(struct smb_trans_enc_state *es,
 	memset(&tok_out, '\0', sizeof(tok_out));
 
 	/* Get a ticket for the service@host */
-	asprintf(&host_princ_s, "%s@%s", service, host);
-	if (host_princ_s == NULL) {
+	if (asprintf(&host_princ_s, "%s@%s", service, host) == -1) {
 		return NT_STATUS_NO_MEMORY;
 	}
 

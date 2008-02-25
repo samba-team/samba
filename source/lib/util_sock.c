@@ -1904,8 +1904,7 @@ int create_pipe_sock(const char *socket_dir,
                 goto out_close;
 	}
 
-	asprintf(&path, "%s/%s", socket_dir, socket_name);
-	if (!path) {
+	if (asprintf(&path, "%s/%s", socket_dir, socket_name) == -1) {
                 goto out_close;
 	}
 
