@@ -10,7 +10,6 @@ use smb_build::header;
 use smb_build::input;
 use smb_build::config_mk;
 use smb_build::output;
-use smb_build::env;
 use smb_build::cflags;
 use smb_build::summary;
 use smb_build::config;
