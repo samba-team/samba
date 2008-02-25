@@ -3,7 +3,7 @@
 [MODULE::ldb_asq]
 PRIVATE_DEPENDENCIES = LIBTALLOC
 CFLAGS = -Ilib/ldb/include
-INIT_FUNCTION = &ldb_asq_module_ops
+INIT_FUNCTION = LDB_MODULE(asq)
 SUBSYSTEM = LIBLDB
 OBJ_FILES = \
 		modules/asq.o
@@ -15,7 +15,7 @@ OBJ_FILES = \
 [MODULE::ldb_server_sort]
 PRIVATE_DEPENDENCIES = LIBTALLOC
 CFLAGS = -Ilib/ldb/include
-INIT_FUNCTION = &ldb_server_sort_module_ops
+INIT_FUNCTION = LDB_MODULE(server_sort)
 SUBSYSTEM = LIBLDB
 OBJ_FILES = \
 		modules/sort.o
@@ -25,7 +25,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_paged_results
 [MODULE::ldb_paged_results]
-INIT_FUNCTION = &ldb_paged_results_module_ops
+INIT_FUNCTION = LDB_MODULE(paged_results)
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = LIBLDB
@@ -37,7 +37,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_paged_results
 [MODULE::ldb_paged_searches]
-INIT_FUNCTION = &ldb_paged_searches_module_ops
+INIT_FUNCTION = LDB_MODULE(paged_searches)
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = LIBLDB
@@ -52,7 +52,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
-INIT_FUNCTION = &ldb_operational_module_ops
+INIT_FUNCTION = LDB_MODULE(operational)
 OBJ_FILES = \
 		modules/operational.o
 # End MODULE ldb_operational
@@ -64,7 +64,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
-INIT_FUNCTION = &ldb_rdn_name_module_ops
+INIT_FUNCTION = LDB_MODULE(rdn_name)
 OBJ_FILES = \
 		modules/rdn_name.o
 # End MODULE ldb_rdn_name
@@ -88,7 +88,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
-INIT_FUNCTION = &ldb_skel_module_ops
+INIT_FUNCTION = LDB_MODULE(skel)
 OBJ_FILES = modules/skel.o
 # End MODULE ldb_skel
 ################################################

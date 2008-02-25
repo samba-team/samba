@@ -207,7 +207,7 @@ sub SharedLibrary($$)
 
 $ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
-	\@mkdir -p \$(D@)
+	\@mkdir -p \$(\@D)
 	\@\$(SHLD) \$(LDFLAGS) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
 		\$($ctx->{NAME}_LINK_FLAGS) \\
@@ -233,7 +233,7 @@ sub MergedObj($$)
 #
 $ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_OBJ_LIST)
 	\@echo Partially linking \$@
-	\@mkdir -p \$(D@)
+	\@mkdir -p \$(\@D)
 	\$(PARTLINK) -o \$@ \$^
 
 __EOD__
@@ -253,7 +253,7 @@ sub StaticLibraryPrimitives($$)
 sub InitFunctions($$)
 {
 	my ($self, $ctx) = @_;
-	$self->output("\$($ctx->{NAME}_OBJ_LIST): CFLAGS+=-DSTATIC_$ctx->{NAME}_MODULES=\"\\\"\$($ctx->{NAME}_INIT_FUNCTIONS)$ctx->{INIT_FUNCTION_SENTINEL}\\\"\"\n");
+	$self->output("\$($ctx->{NAME}_OBJ_LIST): CFLAGS+=-DSTATIC_$ctx->{NAME}_MODULES=\"\$($ctx->{NAME}_INIT_FUNCTIONS)$ctx->{INIT_FUNCTION_SENTINEL}\"\n");
 }
 
 sub StaticLibrary($$)
@@ -273,7 +273,7 @@ sub Header($$)
 
 	return if ($#{$ctx->{PUBLIC_HEADERS}} == -1);
 
-	$self->output("PUBLIC_HEADERS += \$(realpath \$(addprefix $ctx->{BASEDIR}/, " . join(" ", @{$ctx->{PUBLIC_HEADERS}}) . "))\n");
+	$self->output("PUBLIC_HEADERS += \$(addprefix $ctx->{BASEDIR}/, " . join(" ", @{$ctx->{PUBLIC_HEADERS}}) . ")\n");
 }
 
 sub Binary($$)
@@ -321,7 +321,7 @@ sub PythonFiles($$)
 
 	foreach (@{$ctx->{PYTHON_FILES}}) {
 		my $target = "bin/python/".basename($_);
-		$self->output("$target: \$(realpath \$(addprefix $ctx->{BASEDIR}/, $_))\n\n");
+		$self->output("$target: \$(addprefix $ctx->{BASEDIR}/, $_)\n\n");
 		$self->output("PYTHON_PYS += $target\n");
 	}
 }
@@ -330,7 +330,7 @@ sub Manpage($$)
 {
 	my ($self,$ctx) = @_;
 
-	$self->output("MANPAGES += \$(realpath \$(addprefix $ctx->{BASEDIR}/, $ctx->{MANPAGE}))\n");
+	$self->output("MANPAGES += \$(addprefix $ctx->{BASEDIR}/, $ctx->{MANPAGE})\n");
 }
 
 sub ProtoHeader($$)
@@ -343,7 +343,7 @@ sub ProtoHeader($$)
 	my $pub = undef;
 
 	if (defined($ctx->{PRIVATE_PROTO_HEADER})) {
-		$priv = "\$(realpath \$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER}))";
+		$priv = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER})";
 		$target .= $priv;
 		if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
 			$target.= " ";
@@ -351,16 +351,16 @@ sub ProtoHeader($$)
 		$self->output("PROTO_HEADERS += $priv\n");
 	} else {
 		$ctx->{PRIVATE_PROTO_HEADER} = $ctx->{PUBLIC_PROTO_HEADER};
-		$priv = "\$(realpath \$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER}))";
+		$priv = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER})";
 	}
 
 	if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
-		$pub = "\$(realpath \$(addprefix $ctx->{BASEDIR}/, $ctx->{PUBLIC_PROTO_HEADER}))";
+		$pub = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PUBLIC_PROTO_HEADER})";
 		$target .= $pub;
 		$self->output("PROTO_HEADERS += $pub\n");
 	} else {
 		$ctx->{PUBLIC_PROTO_HEADER} = $ctx->{PRIVATE_PROTO_HEADER};
-		$pub = "\$(realpath \$(addprefix $ctx->{BASEDIR}/, $ctx->{PUBLIC_PROTO_HEADER}))";
+		$pub = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PUBLIC_PROTO_HEADER})";
 	}
 
 	$self->output("$pub: $ctx->{MK_FILE} \$($ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");

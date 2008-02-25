@@ -4,7 +4,7 @@
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBNDR NDR_MISC
-INIT_FUNCTION = objectguid_module_module_ops
+INIT_FUNCTION = LDB_MODULE(objectguid)
 OBJ_FILES = \
 		objectguid.o
 # End MODULE ldb_objectguid
@@ -17,7 +17,7 @@ SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC LIBNDR NDR_MISC NDR_DRSUAPI \
 					   NDR_DRSBLOBS LIBNDR
-INIT_FUNCTION = repl_meta_data_module_module_ops
+INIT_FUNCTION = LDB_MODULE(repl_meta_data)
 OBJ_FILES = \
 		repl_meta_data.o
 # End MODULE ldb_repl_meta_data
@@ -29,7 +29,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC
-INIT_FUNCTION = dsdb_cache_module_module_ops
+INIT_FUNCTION = LDB_MODULE(dsdb_cache)
 OBJ_FILES = \
 		dsdb_cache.o
 # End MODULE ldb_dsdb_cache
@@ -41,7 +41,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC
-INIT_FUNCTION = schema_fsmo_module_module_ops
+INIT_FUNCTION = LDB_MODULE(schema_fsmo)
 OBJ_FILES = \
 		schema_fsmo.o
 # End MODULE ldb_schema_fsmo
@@ -53,7 +53,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC
-INIT_FUNCTION = naming_fsmo_module_module_ops
+INIT_FUNCTION = LDB_MODULE(naming_fsmo)
 OBJ_FILES = \
 		naming_fsmo.o
 # End MODULE ldb_naming_fsmo
@@ -65,7 +65,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = SAMDB LIBTALLOC
-INIT_FUNCTION = pdc_fsmo_module_module_ops
+INIT_FUNCTION = LDB_MODULE(pdc_fsmo)
 OBJ_FILES = \
 		pdc_fsmo.o
 # End MODULE ldb_pdc_fsmo
@@ -77,7 +77,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LDAP_ENCODE NDR_MISC SAMDB
-INIT_FUNCTION = samldb_module_module_ops
+INIT_FUNCTION = LDB_MODULE(samldb)
 OBJ_FILES = \
 		samldb.o
 #
@@ -89,7 +89,7 @@ OBJ_FILES = \
 [MODULE::ldb_samba3sam]
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
-INIT_FUNCTION = &ldb_samba3sam_module_module_ops
+INIT_FUNCTION = LDB_MODULE(samba3sam)
 PRIVATE_DEPENDENCIES = LIBTALLOC ldb_map SMBPASSWD NSS_WRAPPER LIBSECURITY \
 					   NDR_SECURITY
 OBJ_FILES = \
@@ -103,7 +103,7 @@ OBJ_FILES = \
 [MODULE::ldb_simple_ldap_map]
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
-INIT_FUNCTION = &ldb_simple_ldap_map_module_module_ops
+INIT_FUNCTION = LDB_MODULE(simple_ldap_map)
 PRIVATE_DEPENDENCIES = LIBTALLOC ldb_map LIBNDR NDR_MISC
 ENABLE = YES
 ALIASES = entryuuid nsuniqueid
@@ -117,7 +117,7 @@ OBJ_FILES = \
 # # Start MODULE ldb_proxy
 # [MODULE::ldb_proxy]
 # SUBSYSTEM = LIBLDB
-# INIT_FUNCTION = proxy_module_module_ops
+# INIT_FUNCTION = LDB_MODULE(proxy)
 # OBJ_FILES = \
 # 		proxy.o
 # 
@@ -131,7 +131,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 PRIVATE_DEPENDENCIES = LIBTALLOC SAMDB
 OUTPUT_TYPE = SHARED_LIBRARY
-INIT_FUNCTION = rootdse_module_module_ops
+INIT_FUNCTION = LDB_MODULE(rootdse)
 OBJ_FILES = \
 		rootdse.o
 #
@@ -143,7 +143,7 @@ OBJ_FILES = \
 [MODULE::ldb_password_hash]
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
-INIT_FUNCTION = password_hash_module_module_ops
+INIT_FUNCTION = LDB_MODULE(password_hash)
 OBJ_FILES = password_hash.o
 PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS LIBTALLOC HEIMDAL_KRB5 LDAP_ENCODE \
 					   LIBCLI_AUTH NDR_DRSBLOBS KERBEROS SAMDB
@@ -157,7 +157,7 @@ PRIVATE_DEPENDENCIES = HEIMDAL_HDB_KEYS LIBTALLOC HEIMDAL_KRB5 LDAP_ENCODE \
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBNDR SAMDB
 OUTPUT_TYPE = SHARED_LIBRARY
 SUBSYSTEM = LIBLDB
-INIT_FUNCTION = local_password_module_module_ops
+INIT_FUNCTION = LDB_MODULE(local_password)
 OBJ_FILES = local_password.o
 #
 # End MODULE ldb_local_password
@@ -169,7 +169,7 @@ OBJ_FILES = local_password.o
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBSECURITY SAMDB
 OUTPUT_TYPE = SHARED_LIBRARY
 SUBSYSTEM = LIBLDB
-INIT_FUNCTION = &ldb_kludge_acl_module_ops
+INIT_FUNCTION = LDB_MODULE(kludge_acl)
 OBJ_FILES = \
 		kludge_acl.o
 #
@@ -182,7 +182,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBNDR LIBSECURITY SAMDB
-INIT_FUNCTION = &ldb_extended_dn_module_ops
+INIT_FUNCTION = LDB_MODULE(extended_dn)
 OBJ_FILES = \
 		extended_dn.o
 #
@@ -195,7 +195,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC
-INIT_FUNCTION = &ldb_show_deleted_module_ops
+INIT_FUNCTION = LDB_MODULE(show_deleted)
 OBJ_FILES = \
 		show_deleted.o
 #
@@ -208,7 +208,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC SAMDB
-INIT_FUNCTION = &ldb_partition_module_ops
+INIT_FUNCTION = LDB_MODULE(partition)
 OBJ_FILES = \
 		partition.o
 #
@@ -221,7 +221,7 @@ OBJ_FILES = \
 SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBLDB
-INIT_FUNCTION = &ldb_schema_module_ops
+INIT_FUNCTION = LDB_MODULE(schema)
 OBJ_FILES = \
 		schema.o schema_syntax.o
 #
@@ -235,7 +235,7 @@ SUBSYSTEM = LIBLDB
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC CREDENTIALS
 #Also depends on credentials, but that would loop
-INIT_FUNCTION = &ldb_update_kt_module_ops
+INIT_FUNCTION = LDB_MODULE(update_kt)
 OBJ_FILES = \
 		update_keytab.o 
 #
@@ -245,7 +245,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_objectclass
 [MODULE::ldb_objectclass]
-INIT_FUNCTION = &ldb_objectclass_module_ops
+INIT_FUNCTION = LDB_MODULE(objectclass)
 OUTPUT_TYPE = SHARED_LIBRARY
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBSECURITY NDR_SECURITY SAMDB
@@ -258,7 +258,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_subtree_rename
 [MODULE::ldb_subtree_rename]
-INIT_FUNCTION = &ldb_subtree_rename_module_ops
+INIT_FUNCTION = LDB_MODULE(subtree_rename)
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = LIBLDB
@@ -270,7 +270,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_subtree_rename
 [MODULE::ldb_subtree_delete]
-INIT_FUNCTION = &ldb_subtree_delete_module_ops
+INIT_FUNCTION = LDB_MODULE(subtree_delete)
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = LIBLDB
@@ -282,7 +282,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_linked_attributes
 [MODULE::ldb_linked_attributes]
-INIT_FUNCTION = &ldb_linked_attributes_module_ops
+INIT_FUNCTION = LDB_MODULE(linked_attributes)
 CFLAGS = -Ilib/ldb/include
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC SAMDB
@@ -295,7 +295,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_ranged_results
 [MODULE::ldb_ranged_results]
-INIT_FUNCTION = &ldb_ranged_results_module_ops
+INIT_FUNCTION = LDB_MODULE(ranged_results)
 CFLAGS = -Ilib/ldb/include
 PRIVATE_DEPENDENCIES = LIBTALLOC
 SUBSYSTEM = LIBLDB
@@ -307,7 +307,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_anr
 [MODULE::ldb_anr]
-INIT_FUNCTION = &ldb_anr_module_ops
+INIT_FUNCTION = LDB_MODULE(anr)
 CFLAGS = -Ilib/ldb/include
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL SAMDB
@@ -320,7 +320,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_normalise
 [MODULE::ldb_normalise]
-INIT_FUNCTION = &ldb_normalise_module_ops
+INIT_FUNCTION = LDB_MODULE(normalise)
 CFLAGS = -Ilib/ldb/include
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL SAMDB
@@ -333,7 +333,7 @@ OBJ_FILES = \
 ################################################
 # Start MODULE ldb_instancetype
 [MODULE::ldb_instancetype]
-INIT_FUNCTION = &ldb_instancetype_module_ops
+INIT_FUNCTION = LDB_MODULE(instancetype)
 CFLAGS = -Ilib/ldb/include
 OUTPUT_TYPE = SHARED_LIBRARY
 PRIVATE_DEPENDENCIES = LIBTALLOC

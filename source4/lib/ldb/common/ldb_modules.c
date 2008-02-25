@@ -125,14 +125,16 @@ static struct ops_list_entry {
 	struct ops_list_entry *next;	
 } *registered_modules = NULL;
 
+#define LDB_MODULE(name) (&ldb_ ## name ## _module_ops)
+
 #ifndef STATIC_LIBLDB_MODULES
 
 #define STATIC_LIBLDB_MODULES \
-	&ldb_operational_module_ops,	\
-	&ldb_rdn_name_module_ops,	\
-	&ldb_paged_results_module_ops,	\
-	&ldb_sort_module_ops,		\
-	&ldb_asq_module_ops, \
+	LDB_MODULE(operational),	\
+	LDB_MODULE(rdn_name),	\
+	LDB_MODULE(paged_results),	\
+	LDB_MODULE(server_sort),		\
+	LDB_MODULE(asq), \
 	NULL
 #endif
 
