@@ -279,11 +279,13 @@ static NTSTATUS odb_oplock_break_send(struct odb_context *odb, struct opendb_ent
   Note that the path is only used by the delete on close logic, not
   for comparing with other filenames
 */
-static NTSTATUS odb_ctdb_open_file(struct odb_lock *lck, void *file_handle,
-				  uint32_t stream_id, uint32_t share_access, 
-				  uint32_t access_mask, bool delete_on_close,
-				  const char *path, 
-				  uint32_t oplock_level, uint32_t *oplock_granted)
+static NTSTATUS odb_ctdb_open_file(struct odb_lock *lck,
+				   void *file_handle, const char *path,
+				   uint32_t stream_id, uint32_t share_access,
+				   uint32_t access_mask, bool delete_on_close,
+				   uint32_t open_disposition, bool break_to_none,
+				   uint32_t oplock_level, uint32_t *oplock_granted)
+
 {
 	struct odb_context *odb = lck->odb;
 	struct opendb_entry e;
