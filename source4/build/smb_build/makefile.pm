@@ -360,4 +360,57 @@ sub write($$)
 	print __FILE__.": creating $file\n";
 }
 
+my $sort_available = eval "use sort 'stable'; return 1;";
+$sort_available = 0 unless defined($sort_available);
+
+sub by_path {
+	return  1 if($a =~ m#^\-I/#);
+    	return -1 if($b =~ m#^\-I/#);
+	return  0;
+}
+
+sub CFlags($$)
+{
+	my ($self, $key) = @_;
+
+	my $srcdir = $self->{config}->{srcdir};
+	my $builddir = $self->{config}->{builddir};
+
+	my $src_ne_build = ($srcdir ne $builddir) ? 1 : 0;
+
+	return unless defined ($key->{OBJ_LIST});
+	return unless defined ($key->{FINAL_CFLAGS});
+	return unless (@{$key->{FINAL_CFLAGS}} > 0);
+
+	my @sorted_cflags = @{$key->{FINAL_CFLAGS}};
+	if ($sort_available) {
+		@sorted_cflags = sort by_path @{$key->{FINAL_CFLAGS}};
+	}
+
+	# Rewrite CFLAGS so that both the source and the build
+	# directories are in the path.
+	my @cflags = ();
+	foreach my $flag (@sorted_cflags) {
+		if($src_ne_build) {
+				if($flag =~ m#^-I([^/].*$)#) {
+					my $dir = $1;
+					$dir =~ s#^\$\((?:src|build)dir\)/?##;
+				push(@cflags, "-I$builddir/$dir", "-I$srcdir/$dir");
+					next;
+				}
+		}
+		push(@cflags, $flag);
+	}
+	
+	my $cflags = join(' ', @cflags);
+
+	foreach (@{$key->{OBJ_LIST}}) {
+		my $ofile = $_;
+		my $dfile = $_;
+		$dfile =~ s/\.o$/.d/;
+		$dfile =~ s/\.ho$/.d/;
+		$self->output("$ofile $dfile: CFLAGS+= $cflags\n");
+	}
+}
+
 1;
