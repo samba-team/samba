@@ -2251,8 +2251,7 @@ static param_opt_struct *get_parametrics(int snum, const char *type, const char 
 		data = ServicePtrs[snum]->param_opt;
 	}
     
-	asprintf(&param_key, "%s:%s", type, option);
-	if (!param_key) {
+	if (asprintf(&param_key, "%s:%s", type, option) == -1) {
 		DEBUG(0,("asprintf failed!\n"));
 		return NULL;
 	}

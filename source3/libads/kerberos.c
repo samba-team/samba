@@ -407,8 +407,8 @@ static char *kerberos_secrets_fetch_salting_principal(const char *service, int e
 	char *key = NULL;
 	char *ret = NULL;
 
-	asprintf(&key, "%s/%s/enctype=%d", SECRETS_SALTING_PRINCIPAL, service, enctype);
-	if (!key) {
+	if (asprintf(&key, "%s/%s/enctype=%d",
+		     SECRETS_SALTING_PRINCIPAL, service, enctype) == -1) {
 		return NULL;
 	}
 	ret = (char *)secrets_fetch(key, NULL);
@@ -438,7 +438,10 @@ static char* des_salt_key( void )
 {
 	char *key;
 
-	asprintf(&key, "%s/DES/%s", SECRETS_SALTING_PRINCIPAL, lp_realm());
+	if (asprintf(&key, "%s/DES/%s", SECRETS_SALTING_PRINCIPAL,
+		     lp_realm()) == -1) {
+		return NULL;
+	}
 
 	return key;
 }
@@ -609,9 +612,13 @@ bool kerberos_secrets_store_salting_principal(const char *service,
 		return False;
 	}
 	if (strchr_m(service, '@')) {
-		asprintf(&princ_s, "%s", service);
+		if (asprintf(&princ_s, "%s", service) == -1) {
+			goto out;
+		}
 	} else {
-		asprintf(&princ_s, "%s@%s", service, lp_realm());
+		if (asprintf(&princ_s, "%s@%s", service, lp_realm()) == -1) {
+			goto out;
+		}
 	}
 
 	if (smb_krb5_parse_name(context, princ_s, &princ) != 0) {
@@ -622,8 +629,9 @@ bool kerberos_secrets_store_salting_principal(const char *service,
 		goto out;
 	}
 
-	asprintf(&key, "%s/%s/enctype=%d", SECRETS_SALTING_PRINCIPAL, unparsed_name, enctype);
-	if (!key)  {
+	if (asprintf(&key, "%s/%s/enctype=%d",
+		     SECRETS_SALTING_PRINCIPAL, unparsed_name, enctype)
+	    == -1) {
 		goto out;
 	}
 
