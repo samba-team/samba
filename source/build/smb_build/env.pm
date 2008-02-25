@@ -50,7 +50,6 @@ sub _set_config($$)
 	}
 	
 	$self->{developer} = ($self->{config}->{developer} eq "yes");
-	$self->{gnu_make} = ($self->{config}->{GNU_MAKE} eq "yes");
 	$self->{automatic_deps} = ($self->{config}->{automatic_dependencies} eq "yes");
 }
 
