@@ -231,8 +231,10 @@ static int open_cred_file(char * file_name)
 				/* go past equals sign */
 				temp_val++;
 				for(length = 0;length<65;length++) {
-					if(temp_val[length] == '\n' || temp_val[length] == '\0')
+					if ((temp_val[length] == '\n')
+					    || (temp_val[length] == '\0')) {
 						break;
+					}
 				}
 				if(length > 64) {
 					printf("mount.cifs failed: password in credentials file too long\n");
@@ -260,8 +262,10 @@ static int open_cred_file(char * file_name)
 				if(verboseflag)
 					printf("\nDomain %s\n",temp_val);
                                 for(length = 0;length<65;length++) {
-                                        if(temp_val[length] == '\n' || temp_val[length] == '\0')
-                                                break;
+					if ((temp_val[length] == '\n')
+					    || (temp_val[length] == '\0')) {
+						break;
+					}
                                 }
                                 if(length > 64) {
                                         printf("mount.cifs failed: domain in credentials file too long\n");
