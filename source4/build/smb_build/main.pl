@@ -92,4 +92,6 @@ cflags::create_cflags($OUTPUT, $config::config{srcdir},
 
 summary::show($OUTPUT, \%config::config);
 
+print "To build Samba, run $config::config{MAKE}\n";
+
 1;
