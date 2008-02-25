@@ -440,6 +440,14 @@ PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN
 #######################
 
 #######################
+# Start SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
+[SUBSYSTEM::HEIMDAL_ASN1_COMPILE_LEX]
+CFLAGS = -Iheimdal_build -Iheimdal/lib/asn1 -Iheimdal/lib/roken  -Ilib/socket_wrapper
+OBJ_FILES = ../heimdal/lib/asn1/lex.ho 
+# End SUBSYSTEM HEIMDAL_ASN1_COMPILE_LEX
+#######################
+
+#######################
 # Start BINARY asn1_compile
 [BINARY::asn1_compile]
 CFLAGS = -Iheimdal_build -Iheimdal/lib/roken
@@ -466,9 +474,8 @@ OBJ_FILES = \
 	../heimdal/lib/asn1/symbol.ho \
 	../heimdal/lib/vers/print_version.ho \
 	../lib/socket_wrapper/socket_wrapper.ho \
-	replace.ho \
-	../heimdal/lib/asn1/lex.ho 
-PRIVATE_DEPENDENCIES = HEIMDAL_ROKEN_GETPROGNAME_H EXT_SOCKET EXT_NSL
+	replace.ho
+PRIVATE_DEPENDENCIES = HEIMDAL_ASN1_COMPILE_LEX HEIMDAL_ROKEN_GETPROGNAME_H EXT_SOCKET EXT_NSL
 
 # End BINARY asn1_compile
 #######################

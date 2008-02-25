@@ -152,7 +152,7 @@ sub SharedModule($$)
 
 	$self->output(<< "__EOD__"
 
-$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_OBJ_LIST)
+$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p \$(\@D)
 	\@\$(MDLD) \$(LDFLAGS) \$(MDLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
@@ -243,7 +243,7 @@ sub StaticLibraryPrimitives($$)
 sub InitFunctions($$)
 {
 	my ($self, $ctx) = @_;
-	$self->output("\$($ctx->{NAME}_OBJ_LIST): CFLAGS+=-DSTATIC_$ctx->{NAME}_MODULES=\"\$($ctx->{NAME}_INIT_FUNCTIONS)$ctx->{INIT_FUNCTION_SENTINEL}\"\n");
+	$self->output("\$($ctx->{NAME}_OBJ_LIST): CFLAGS+=-DSTATIC_$ctx->{NAME}_MODULES=\"\\\"\$($ctx->{NAME}_INIT_FUNCTIONS)$ctx->{INIT_FUNCTION_SENTINEL}\\\"\"\n");
 }
 
 sub StaticLibrary($$)
