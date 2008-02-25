@@ -322,6 +322,7 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	struct opendb_file file;
 	NTSTATUS status;
 	uint32_t open_disposition = 0;
+	bool break_to_none = false;
 	bool attrs_only = false;
 
 	if (odb->oplocks == false) {
@@ -349,6 +350,7 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	/* see if anyone has an oplock, which we need to break */
 	for (i=0;i<file.num_entries;i++) {
 		if (file.entries[i].oplock_level == OPLOCK_BATCH) {
+			bool oplock_return = OPLOCK_BREAK_TO_LEVEL_II;
 			/* if this is an attribute only access
 			 * it doesn't conflict with a BACTCH oplock
 			 * but we'll not grant the oplock below
@@ -365,8 +367,11 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 			   break request and suspending this call
 			   until the break is acknowledged or the file
 			   is closed */
+			if (break_to_none) {
+				oplock_return = OPLOCK_BREAK_TO_NONE;
+			}
 			odb_oplock_break_send(odb, &file.entries[i],
-					      OPLOCK_BREAK_TO_LEVEL_II/*TODO*/);
+					      oplock_return);
 			return NT_STATUS_OPLOCK_NOT_GRANTED;
 		}
 	}
@@ -391,7 +396,7 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	for (i=0;i<file.num_entries;i++) {
 		if (file.entries[i].oplock_level == OPLOCK_EXCLUSIVE) {
 			odb_oplock_break_send(odb, &file.entries[i],
-					      OPLOCK_BREAK_TO_NONE/*TODO*/);
+					      OPLOCK_BREAK_TO_NONE);
 			return NT_STATUS_OPLOCK_NOT_GRANTED;
 		}
 	}
