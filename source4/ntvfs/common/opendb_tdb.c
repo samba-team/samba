@@ -742,16 +742,13 @@ static NTSTATUS odb_tdb_get_delete_on_close(struct odb_context *odb,
   create_options and access_mask
 */
 static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
-				 uint32_t share_access, uint32_t create_options, 
-				 uint32_t access_mask)
+				 uint32_t stream_id, uint32_t share_access,
+				 uint32_t access_mask, bool delete_on_close,
+				 uint32_t open_disposition, bool break_to_none)
 {
 	struct odb_context *odb = lck->odb;
 	NTSTATUS status;
 	struct opendb_file file;
-	uint32_t stream_id = 0;
-	uint32_t open_disposition = 0;
-	bool delete_on_close = false;
-	bool break_to_none = false;
 	bool attrs_only = false;
 
 	status = odb_pull_record(lck, &file);
@@ -759,10 +756,6 @@ static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
 		return NT_STATUS_OK;
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
-
-	if (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
-		delete_on_close = true;
-	}
 
 	status = odb_tdb_open_can_internal(odb, &file, stream_id,
 					   share_access, access_mask,
