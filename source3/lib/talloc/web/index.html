@@ -12,7 +12,7 @@ destructors. It is the core memory allocator used in Samba4, and has
 made a huge difference in many aspects of Samba4 development.<p>
 
 To get started with talloc, I would recommend you read the <a
-href="http://samba.org/ftp/unpacked/samba_4_0_test/source/lib/talloc/talloc_guide.txt">talloc guide</a>.
+href="http://samba.org/ftp/unpacked/talloc/talloc_guide.txt">talloc guide</a>.
 
 <h2>Discussion and bug reports</h2>
 
@@ -24,20 +24,16 @@ bugzilla</a> bug tracking system.
 
 <h2>Download</h2>
 
-You can download the latest release either via rsync or git.
-To fetch via git use the following command:
-
-<pre>
-  git-clone git://git.samba.org/samba.git samba
-  cd samba
-  git checkout -b samba4 origin/v4-0-test
-</pre>
-
+You can download the latest release either via rsync or git.<br>
+<br>
+To fetch via git see the following guide:<br>
+<a href="http://wiki.samba.org/index.php/Using_Git_for_Samba_Development">Using Git for Samba Development</a><br>
+Once you have cloned the tree switch to the v4-0-test branch and cd into the source/lib/talloc directory.<br>
+<br>
 To fetch via rsync use this command:
 
 <pre>
-  rsync -Pavz samba.org::ftp/unpacked/samba_4_0_test/source/lib/talloc .
-  rsync -Pavz samba.org::ftp/unpacked/samba_4_0_test/source/lib/libreplace .
+  rsync -Pavz samba.org::ftp/unpacked/talloc .
 </pre>
 
 <hr>
