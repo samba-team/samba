@@ -41,9 +41,9 @@ The main features that separate ldb from other solutions are:
 Currently ldb is completely lacking in programmer or user
 documentation. This is your opportunity to make a contribution! Start
 with the public functions declared in <a
-href="http://samba.org/ftp/unpacked/samba4/source/lib/ldb/include/ldb.h">ldb.h</a>
+href="http://samba.org/ftp/unpacked/ldb/include/ldb.h">ldb.h</a>
 and the example code in the <a
-href="http://samba.org/ftp/unpacked/samba4/source/lib/ldb/tools/">tools
+href="http://samba.org/ftp/unpacked/ldb/tools/">tools
 directory</a>. Documentation in the same docbook format used by Samba
 would be preferred.
 
@@ -52,21 +52,17 @@ would be preferred.
 ldb does not currently have its own mailing list or bug tracking
 system. For now, please use the <a
 href="https://lists.samba.org/mailman/listinfo/samba-technical">samba-technical</a>
-mailing list, and the <a href="http://bugzilla.samba.org/">Samba
-bugzilla</a> bug tracking system.
+mailing list or the <a href="https://lists.samba.org/mailman/listinfo/ldb">ldb</a>
+mailing list, and the <a href="http://bugzilla.samba.org/">Samba bugzilla</a> bug tracking system.
 
 <h2>Download</h2>
 
-You can download the latest release either via rsync or anonymous
-svn. To fetch via svn use the following commands:
-
-<pre>
-  svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/ldb ldb
-  svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/tdb tdb
-  svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/talloc talloc
-  svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/replace libreplace
-</pre>
-
+You can download the latest release either via rsync or thtough git.<br>
+<br>
+To fetch via git see the following guide:<br>
+<a href="http://wiki.samba.org/index.php/Using_Git_for_Samba_Development">Using Git for Samba Development</a><br>
+Once you have cloned the tree switch to the v4-0-test branch and cd into the source/lib/ldb directory.<br>
+<br>
 To fetch via rsync use these commands:
 
 <pre>
