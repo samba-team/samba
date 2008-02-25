@@ -10,14 +10,6 @@ HDEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.ho) -MT $@ \
 PCHDEPENDS = $(CC) -M -MG -MT include/includes.h.gch -MT $@ \
     $(CFLAGS) $(CPPFLAGS) $< -o $@
 
-# $< is broken in older BSD versions:
-# when $@ is foo/bar.o, $< could be torture/foo/bar.c
-# if it also exists. So better use $* which is foo/bar
-# and append .c manually to get foo/bar.c
-#
-# If we have GNU Make, it is safe to use $<, which also lets
-# building with $srcdir != $builddir work.
-
 # Run a static analysis checker
 CHECK = $(CC_CHECKER) $(CFLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` \
     $(PICFLAG) $(CPPLAGS) -c $< -o $@
@@ -134,8 +126,10 @@ include/includes.d: include/includes.h
 	@-mkdir -p `dirname $@`
 	@$(COMPILE) && exit 0 ; \
 		echo "The following command failed:" 1>&2;\
-		echo "$(COMPILE)" 1>&2;\
 		$(COMPILE) >/dev/null 2>&1
+
+
+#		echo "$(COMPILE)" 1>&2;\
 
 .c.ho:
 	@echo "Compiling $< with host compiler"
