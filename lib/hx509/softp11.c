@@ -708,7 +708,7 @@ read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
 	    p++;
 	if (*p == '#')
 	    continue;
-	while (isspace(*p))
+	while (isspace((unsigned char)*p))
 	    p++;
 
 	s = NULL;
