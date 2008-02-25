@@ -226,3 +226,12 @@ AC_FOREACH([AC_Var], m4_defn([_AC_SUBST_VARS]), [
 AC_Var = $AC_Var])
 $MAKE_SETTINGS
 CEOF
+
+if test $USESHARED = true
+then
+	echo "To run binaries without installing, set the following environment variable:"
+	echo "$ac_cv_LIB_PATH_VAR=$builddir/bin/shared"
+fi
+
+echo
+echo "To build Samba, run $ac_cv_path_MAKE"
