@@ -180,6 +180,7 @@ static void hdb_ldb_free_entry(krb5_context context, hdb_entry_ex *entry_ex)
 }
 
 static krb5_error_code LDB_message2entry_keys(krb5_context context,
+					      struct smb_iconv_convenience *iconv_convenience,
 					      TALLOC_CTX *mem_ctx,
 					      struct ldb_message *msg,
 					      unsigned int userAccountControl,
@@ -213,7 +214,7 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 
 	/* supplementalCredentials if present */
 	if (sc_val) {
-		ndr_err = ndr_pull_struct_blob_all(sc_val, mem_ctx, lp_iconv_convenience(global_loadparm), &scb,
+		ndr_err = ndr_pull_struct_blob_all(sc_val, mem_ctx, iconv_convenience, &scb,
 						   (ndr_pull_flags_fn_t)ndr_pull_supplementalCredentialsBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			dump_data(0, sc_val->data, sc_val->length);
@@ -250,7 +251,7 @@ static krb5_error_code LDB_message2entry_keys(krb5_context context,
 		talloc_steal(mem_ctx, blob.data);
 
 		/* TODO: use ndr_pull_struct_blob_all(), when the ndr layer handles it correct with relative pointers */
-		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, lp_iconv_convenience(global_loadparm), &_pkb,
+		ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, iconv_convenience, &_pkb,
 					       (ndr_pull_flags_fn_t)ndr_pull_package_PrimaryKerberosBlob);
 		if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 			krb5_set_error_string(context, "LDB_message2entry_keys: could not parse package_PrimaryKerberosBlob");
@@ -393,6 +394,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	krb5_boolean is_computer = FALSE;
 	const char *dnsdomain = ldb_msg_find_attr_as_string(realm_ref_msg, "dnsRoot", NULL);
 	char *realm = strupper_talloc(mem_ctx, dnsdomain);
+	struct loadparm_context *lp_ctx = ldb_get_opaque((struct ldb_context *)db->hdb_db, "loadparm");
 	struct ldb_dn *domain_dn = samdb_result_dn((struct ldb_context *)db->hdb_db,
 							mem_ctx,
 							realm_ref_msg,
@@ -428,6 +430,8 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	}
 
 	private->entry_ex = entry_ex;
+	private->iconv_convenience = lp_iconv_convenience(lp_ctx);
+	private->netbios_name = lp_netbios_name(lp_ctx);
 
 	talloc_set_destructor(private, hdb_ldb_destrutor);
 
@@ -481,7 +485,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 		entry_ex->entry.flags.ok_as_delegate = 1;
 	}
 
-	if (lp_parm_bool(global_loadparm, NULL, "kdc", "require spn for service", true)) {
+	if (lp_parm_bool(lp_ctx, NULL, "kdc", "require spn for service", true)) {
 		if (!is_computer && !ldb_msg_find_attr_as_string(msg, "servicePrincipalName", NULL)) {
 			entry_ex->entry.flags.server = 0;
 		}
@@ -544,7 +548,7 @@ static krb5_error_code LDB_message2entry(krb5_context context, HDB *db,
 	entry_ex->entry.generation = NULL;
 
 	/* Get keys from the db */
-	ret = LDB_message2entry_keys(context, private, msg, userAccountControl, entry_ex);
+	ret = LDB_message2entry_keys(context, private->iconv_convenience, private, msg, userAccountControl, entry_ex);
 	if (ret) {
 		/* Could be bougus data in the entry, or out of memory */
 		goto out;

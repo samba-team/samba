@@ -247,13 +247,8 @@ static int subtree_delete_wait(struct ldb_handle *handle, enum ldb_wait_type typ
 	}
 }
 
-static const struct ldb_module_ops subtree_delete_ops = {
+const struct ldb_module_ops ldb_subtree_delete_module_ops = {
 	.name		   = "subtree_delete",
 	.del               = subtree_delete,
 	.wait              = subtree_delete_wait,
 };
-
-int ldb_subtree_delete_init(void)
-{
-	return ldb_register_module(&subtree_delete_ops);
-}

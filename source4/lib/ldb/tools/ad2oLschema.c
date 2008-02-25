@@ -656,8 +656,6 @@ static struct schema_conv process_convert(struct ldb_context *ldb, enum convert_
 	const char *target_str;
 	enum convert_target target;
 
-	ldb_global_init();
-
 	ctx = talloc_new(NULL);
 	ldb = ldb_init(ctx);
 

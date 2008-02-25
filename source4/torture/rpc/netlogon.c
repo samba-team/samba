@@ -532,7 +532,7 @@ bool test_netlogon_ops(struct dcerpc_pipe *p, struct torture_context *tctx,
 	chal = data_blob_const(ninfo.challenge, 
 			       sizeof(ninfo.challenge));
 
-	names_blob = NTLMv2_generate_names_blob(tctx, cli_credentials_get_workstation(credentials), 
+	names_blob = NTLMv2_generate_names_blob(tctx, lp_iconv_convenience(tctx->lp_ctx), cli_credentials_get_workstation(credentials), 
 						cli_credentials_get_domain(credentials));
 
 	status = cli_credentials_get_ntlm_response(cmdline_credentials, tctx, 

@@ -837,7 +837,7 @@ static bool wbinfo_auth_crap(struct loadparm_context *lp_ctx, char *username)
 		server_chal = data_blob(request.data.auth_crap.chal, 8); 
 		
 		/* Pretend this is a login to 'us', for blob purposes */
-		names_blob = NTLMv2_generate_names_blob(mem_ctx, lp_netbios_name(lp_ctx), lp_workgroup(lp_ctx));
+		names_blob = NTLMv2_generate_names_blob(mem_ctx, lp_iconv_convenience(lp_ctx), lp_netbios_name(lp_ctx), lp_workgroup(lp_ctx));
 		
 		if (!SMBNTLMv2encrypt(mem_ctx, name_user, name_domain, pass, &server_chal, 
 				      &names_blob,

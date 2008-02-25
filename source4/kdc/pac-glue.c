@@ -47,6 +47,7 @@ void	samba_kdc_plugin_fini(void *ptr)
 
 static krb5_error_code make_pac(krb5_context context,
 				TALLOC_CTX *mem_ctx, 
+				struct smb_iconv_convenience *iconv_convenience,
 				struct auth_serversupplied_info *server_info,
 				krb5_pac *pac) 
 {
@@ -73,7 +74,7 @@ static krb5_error_code make_pac(krb5_context context,
 
 	logon_info.info->info3 = *info3;
 
-	ndr_err = ndr_push_struct_blob(&pac_out, mem_ctx, lp_iconv_convenience(global_loadparm), &logon_info,
+	ndr_err = ndr_push_struct_blob(&pac_out, mem_ctx, iconv_convenience, &logon_info,
 				       (ndr_push_flags_fn_t)ndr_push_PAC_LOGON_INFO_CTR);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -126,7 +127,7 @@ krb5_error_code samba_kdc_get_pac(void *priv,
 	}
 
 	nt_status = authsam_make_server_info(mem_ctx, private->samdb, 
-					     lp_netbios_name(global_loadparm),
+					     private->netbios_name,
 					     private->msg, 
 					     private->realm_ref_msg,
 					     data_blob(NULL, 0),
@@ -138,7 +139,7 @@ krb5_error_code samba_kdc_get_pac(void *priv,
 		return ENOMEM;
 	}
 
-	ret = make_pac(context, mem_ctx, server_info, pac);
+	ret = make_pac(context, mem_ctx, private->iconv_convenience, server_info, pac);
 
 	talloc_free(mem_ctx);
 	return ret;
@@ -190,7 +191,7 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 		return ENOMEM;
 	}
 		
-	ndr_err = ndr_pull_struct_blob(&pac_in, mem_ctx, lp_iconv_convenience(global_loadparm), &logon_info,
+	ndr_err = ndr_pull_struct_blob(&pac_in, mem_ctx, private->iconv_convenience, &logon_info,
 				       (ndr_pull_flags_fn_t)ndr_pull_PAC_LOGON_INFO_CTR);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err) || !logon_info.info) {
 		nt_status = ndr_map_error2ntstatus(ndr_err);
@@ -213,7 +214,7 @@ krb5_error_code samba_kdc_reget_pac(void *priv, krb5_context context,
 	/* We will compleatly regenerate this pac */
 	krb5_pac_free(context, *pac);
 
-	ret = make_pac(context, mem_ctx, server_info_out, pac);
+	ret = make_pac(context, mem_ctx, private->iconv_convenience, server_info_out, pac);
 
 	talloc_free(mem_ctx);
 	return ret;

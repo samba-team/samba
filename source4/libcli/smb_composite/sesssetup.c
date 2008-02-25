@@ -223,7 +223,7 @@ static NTSTATUS session_setup_nt1(struct composite_context *c,
 	NTSTATUS nt_status;
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	const char *password = cli_credentials_get_password(io->in.credentials);
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, session->transport->socket->hostname, lp_workgroup(global_loadparm));
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, lp_iconv_convenience(global_loadparm), session->transport->socket->hostname, lp_workgroup(global_loadparm));
 	DATA_BLOB session_key;
 	int flags = CLI_CRED_NTLM_AUTH;
 	if (lp_client_lanman_auth(global_loadparm)) {
@@ -290,7 +290,7 @@ static NTSTATUS session_setup_old(struct composite_context *c,
 	NTSTATUS nt_status;
 	struct sesssetup_state *state = talloc_get_type(c->private_data, struct sesssetup_state);
 	const char *password = cli_credentials_get_password(io->in.credentials);
-	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, session->transport->socket->hostname, lp_workgroup(global_loadparm));
+	DATA_BLOB names_blob = NTLMv2_generate_names_blob(state, lp_iconv_convenience(global_loadparm), session->transport->socket->hostname, lp_workgroup(global_loadparm));
 	DATA_BLOB session_key;
 	int flags = 0;
 	if (lp_client_lanman_auth(global_loadparm)) {

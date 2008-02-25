@@ -925,21 +925,8 @@ static int samba3sam_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-static struct ldb_module_ops samba3sam_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_samba3sam_module_ops = {
+	LDB_MAP_OPS
 	.name		   = "samba3sam",
 	.init_context	   = samba3sam_init,
 };
-
-/* the init function */
-int ldb_samba3sam_module_init(void)
-{
-	struct ldb_module_ops ops = ldb_map_get_ops();
-	samba3sam_ops.add	= ops.add;
-	samba3sam_ops.modify	= ops.modify;
-	samba3sam_ops.del	= ops.del;
-	samba3sam_ops.rename	= ops.rename;
-	samba3sam_ops.search	= ops.search;
-	samba3sam_ops.wait	= ops.wait;
-
-	return ldb_register_module(&samba3sam_ops);
-}

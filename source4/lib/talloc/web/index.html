@@ -24,19 +24,20 @@ bugzilla</a> bug tracking system.
 
 <h2>Download</h2>
 
-You can download the latest release either via rsync or anonymous
-svn. To fetch via svn use the following command:
+You can download the latest release either via rsync or git.
+To fetch via git use the following command:
 
 <pre>
-  svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/talloc talloc
-  svn co svn://svnanon.samba.org/samba/branches/SAMBA_4_0/source/lib/replace libreplace
+  git-clone git://git.samba.org/samba.git samba
+  cd samba
+  git checkout -b samba4 origin/v4-0-test
 </pre>
 
 To fetch via rsync use this command:
 
 <pre>
-  rsync -Pavz samba.org::ftp/unpacked/samba4/source/lib/talloc .
-  rsync -Pavz samba.org::ftp/unpacked/samba4/source/lib/libreplace .
+  rsync -Pavz samba.org::ftp/unpacked/samba_4_0_test/source/lib/talloc .
+  rsync -Pavz samba.org::ftp/unpacked/samba_4_0_test/source/lib/libreplace .
 </pre>
 
 <hr>

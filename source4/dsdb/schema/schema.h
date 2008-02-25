@@ -149,6 +149,8 @@ struct dsdb_schema {
 
 	struct dsdb_attribute *attributes;
 	struct dsdb_class *classes;
+
+	struct smb_iconv_convenience *iconv_convenience;
 };
 
 #include "dsdb/schema/proto.h"

@@ -19,6 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define SOCKET_WRAPPER_NOT_REPLACE
+
 #include "replace.h"
 #include "system/network.h"
 
@@ -81,11 +83,11 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	char buff[8192];
 	int fd, i, n;
 	struct ifreq *ifr=NULL;
-	int total = 0;
 	struct in_addr ipaddr;
 	struct in_addr nmask;
 	char *iname;
-	struct ifaddrs *curif, *lastif;
+	struct ifaddrs *curif;
+	struct ifaddrs *lastif = NULL;
 
 	*ifap = NULL;
 
@@ -106,7 +108,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	n = ifc.ifc_len / sizeof(struct ifreq);
 
 	/* Loop through interfaces, looking for given IP address */
-	for (i=n-1;i>=0 && total < max_interfaces;i--) {
+	for (i=n-1; i>=0; i--) {
 		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != 0) {
 			freeifaddrs(*ifap);
 		}
@@ -115,7 +117,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 		if (lastif == NULL) {
 			*ifap = curif;
 		} else {
-			lastif->ifa_next = (*ifap);
+			lastif->ifa_next = curif;
 		}
 
 		curif->ifa_name = strdup(ifr[i].ifr_name);
@@ -166,11 +168,11 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	char buff[8192];
 	int fd, i, n;
 	struct ifreq *ifr=NULL;
-	int total = 0;
 	struct in_addr ipaddr;
 	struct in_addr nmask;
 	char *iname;
 	struct ifaddrs *curif;
+	struct ifaddrs *lastif = NULL;
 
 	*ifap = NULL;
 
@@ -201,14 +203,14 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 
 	/* Loop through interfaces */
 
-	for (i = 0; i<n && total < max_interfaces; i++) {
+	for (i = 0; i<n; i++) {
 		ifreq = ifr[i];
   
 		curif = calloc(1, sizeof(struct ifaddrs));
 		if (lastif == NULL) {
 			*ifap = curif;
 		} else {
-			lastif->ifa_next = (*ifap);
+			lastif->ifa_next = curif;
 		}
 
 		strioctl.ic_cmd = SIOCGIFFLAGS;
@@ -270,8 +272,8 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	struct in_addr ipaddr;
 	struct in_addr nmask;
 	char *iname;
-	int total = 0;
-	struct ifaddrs *curif, *lastif;
+	struct ifaddrs *curif;
+	struct ifaddrs *lastif = NULL;
 
 	*ifap = NULL;
 
@@ -306,7 +308,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 		if (lastif == NULL) {
 			*ifap = curif;
 		} else {
-			lastif->ifa_next = (*ifap);
+			lastif->ifa_next = curif;
 		}
 
 		curif->ifa_name = strdup(ifr->ifr_name);
@@ -363,7 +365,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 #endif
 
 #ifdef AUTOCONF_TEST
-/* this is the autoconf driver to test get_interfaces() */
+/* this is the autoconf driver to test getifaddrs() */
 
  int main()
 {

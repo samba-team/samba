@@ -155,8 +155,19 @@ int ldb_map_init(struct ldb_module *module, const struct ldb_map_attribute *attr
 		 const char *add_objectclass,
 		 const char *name);
 
-/* get copy of map_ops */
-struct ldb_module_ops
-ldb_map_get_ops(void);
+int map_add(struct ldb_module *module, struct ldb_request *req);
+int map_search(struct ldb_module *module, struct ldb_request *req);
+int map_rename(struct ldb_module *module, struct ldb_request *req);
+int map_delete(struct ldb_module *module, struct ldb_request *req);
+int map_modify(struct ldb_module *module, struct ldb_request *req);
+int map_wait(struct ldb_handle *handle, enum ldb_wait_type type);
+
+#define LDB_MAP_OPS \
+	.add		= map_add, \
+	.modify		= map_modify, \
+	.del		= map_delete, \
+	.rename		= map_rename, \
+	.search		= map_search, \
+	.wait		= map_wait,
 
 #endif /* __LDB_MAP_H__ */

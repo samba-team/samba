@@ -1186,7 +1186,7 @@ static int map_wait_all(struct ldb_handle *handle)
 }
 
 /* Wait for pending requests to finish. */
-static int map_wait(struct ldb_handle *handle, enum ldb_wait_type type)
+int map_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 {
 	if (type == LDB_WAIT_ALL) {
 		return map_wait_all(handle);
@@ -1199,16 +1199,6 @@ static int map_wait(struct ldb_handle *handle, enum ldb_wait_type type)
 /* Module initialization
  * ===================== */
 
-/* Provided module operations */
-static const struct ldb_module_ops map_ops = {
-	.name		= "ldb_map",
-	.add		= map_add,
-	.modify		= map_modify,
-	.del		= map_delete,
-	.rename		= map_rename,
-	.search		= map_search,
-	.wait		= map_wait,
-};
 
 /* Builtin mappings for DNs and objectClasses */
 static const struct ldb_map_attribute builtin_attribute_maps[] = {
@@ -1344,12 +1334,6 @@ static int map_init_maps(struct ldb_module *module, struct ldb_map_context *data
 	return LDB_SUCCESS;
 }
 
-/* Copy the list of provided module operations. */
-_PUBLIC_ struct ldb_module_ops ldb_map_get_ops(void)
-{
-	return map_ops;
-}
-
 /* Initialize global private data. */
 _PUBLIC_ int ldb_map_init(struct ldb_module *module, const struct ldb_map_attribute *attrs, 
 			  const struct ldb_map_objectclass *ocls,
@@ -1393,23 +1377,3 @@ _PUBLIC_ int ldb_map_init(struct ldb_module *module, const struct ldb_map_attrib
 
 	return LDB_SUCCESS;
 }
-
-/* Usage note for initialization of this module:
- *
- * ldb_map is meant to be used from a different module that sets up
- * the mappings and gets registered in ldb.
- *
- * 'ldb_map_init' initializes the private data of this module and
- * stores the attribute and objectClass maps in there.	It also looks
- * up the '@MAP' special DN so requests can be redirected to the
- * remote partition.
- *
- * This function should be called from the 'init_context' op of the
- * module using ldb_map.
- *
- * 'ldb_map_get_ops' returns a copy of ldb_maps module operations.
- *
- * It should be called from the initialize function of the using
- * module, which should then override the 'init_context' op with a
- * function making the appropriate calls to 'ldb_map_init'.
- */

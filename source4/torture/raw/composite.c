@@ -161,6 +161,7 @@ static bool test_fetchfile(struct smbcli_state *cli, struct torture_context *tct
 	io2.in.credentials = cmdline_credentials;
 	io2.in.workgroup  = lp_workgroup(tctx->lp_ctx);
 	io2.in.filename = fname;
+	lp_smbcli_options(tctx->lp_ctx, &io2.in.options);
 
 	printf("testing parallel fetchfile with %d ops\n", torture_numops);
 

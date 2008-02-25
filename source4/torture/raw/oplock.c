@@ -914,7 +914,7 @@ static bool test_raw_oplock_batch10(struct torture_context *tctx, struct smbcli_
 	CHECK_VAL(break_info.failures, 0);
 	CHECK_VAL(io.ntcreatex.out.oplock_level, 0);
 
-	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli2->tree);
 
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
 		NTCREATEX_FLAGS_REQUEST_OPLOCK | 
@@ -1058,7 +1058,7 @@ static bool test_raw_oplock_batch12(struct torture_context *tctx, struct smbcli_
 	bool ret = true;
 	union smb_open io;
 	union smb_setfileinfo sfi;
-	uint16_t fnum=0, fnum2=0;
+	uint16_t fnum=0;
 
 	if (!torture_setup_dir(cli1, BASEDIR)) {
 		return false;
@@ -1118,7 +1118,6 @@ static bool test_raw_oplock_batch12(struct torture_context *tctx, struct smbcli_
 	CHECK_VAL(break_info.level, 0);
 
 	smbcli_close(cli1->tree, fnum);
-	smbcli_close(cli2->tree, fnum2);
 
 done:
 	smb_raw_exit(cli1->session);

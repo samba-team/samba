@@ -414,7 +414,7 @@ static const struct socket_ops unixdom_ops = {
 	.fn_get_fd		= unixdom_get_fd
 };
 
-const struct socket_ops *socket_unixdom_ops(enum socket_type type)
+_PUBLIC_ const struct socket_ops *socket_unixdom_ops(enum socket_type type)
 {
 	return &unixdom_ops;
 }

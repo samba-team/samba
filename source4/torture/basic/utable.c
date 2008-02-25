@@ -98,7 +98,7 @@ bool torture_utable(struct torture_context *tctx,
 }
 
 
-static char *form_name(int c)
+static char *form_name(struct smb_iconv_convenience *iconv_convenience, int c)
 {
 	static fstring fname;
 	uint8_t c2[4];
@@ -109,7 +109,7 @@ static char *form_name(int c)
 	p = fname+strlen(fname);
 	SSVAL(c2, 0, c);
 
-	len = convert_string(lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX, 
+	len = convert_string(iconv_convenience, CH_UTF16, CH_UNIX, 
 			     c2, 2, 
 			     p, sizeof(fname)-strlen(fname));
 	p[len] = 0;
@@ -139,7 +139,7 @@ bool torture_casetable(struct torture_context *tctx,
 
 		torture_comment(tctx, "%04x (%c)\n", c, isprint(c)?c:'.');
 
-		fname = form_name(c);
+		fname = form_name(lp_iconv_convenience(tctx->lp_ctx), c);
 		fnum = smbcli_nt_create_full(cli->tree, fname, 0,
 #if 0
 					     SEC_RIGHT_MAXIMUM_ALLOWED, 

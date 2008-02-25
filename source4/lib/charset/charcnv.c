@@ -677,7 +677,7 @@ _PUBLIC_ codepoint_t next_codepoint(struct smb_iconv_convenience *ic,
 	   with codepoints above 64k */
 	olen = 2;
 	outbuf = (char *)buf;
-	smb_iconv(descriptor,  &str, &ilen, &outbuf, &olen);
+	smb_iconv(descriptor, &str, &ilen, &outbuf, &olen);
 	if (olen == 2) {
 		olen = 4;
 		outbuf = (char *)buf;

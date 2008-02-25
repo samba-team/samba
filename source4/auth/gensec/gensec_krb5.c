@@ -617,7 +617,9 @@ static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security
 		}
 
 		/* decode and verify the pac */
-		nt_status = kerberos_pac_logon_info(gensec_krb5_state, &logon_info, pac,
+		nt_status = kerberos_pac_logon_info(gensec_krb5_state, 
+						    lp_iconv_convenience(gensec_security->lp_ctx),
+						    &logon_info, pac,
 						    gensec_krb5_state->smb_krb5_context->krb5_context,
 						    NULL, gensec_krb5_state->keyblock,
 						    client_principal,
@@ -775,7 +777,7 @@ static const struct gensec_security_ops gensec_krb5_security_ops = {
 	.priority       = GENSEC_KRB5
 };
 
-NTSTATUS gensec_krb5_init(void)
+_PUBLIC_ NTSTATUS gensec_krb5_init(void)
 {
 	NTSTATUS ret;
 

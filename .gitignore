@@ -115,7 +115,6 @@ source/smb_server/smb2/smb2_proto.h
 source/smbd/process_model_proto.h
 source/smbd/service_proto.h
 source/torture/proto.h
-source/torture/util.h
 source/torture/auth/proto.h
 source/torture/basic/proto.h
 source/torture/ldap/proto.h
@@ -130,6 +129,7 @@ source/utils/net/net_proto.h
 source/web_server/proto.h
 source/winbind/wb_helper.h
 source/winbind/wb_proto.h
+source/winbind/idmap_proto.h
 source/wrepl_server/wrepl_server_proto.h
 tags
 source/auth/credentials/credentials_krb5_proto.h

@@ -66,6 +66,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 }
 
  NTSTATUS kerberos_decode_pac(TALLOC_CTX *mem_ctx,
+			      struct smb_iconv_convenience *iconv_convenience,
 			      struct PAC_DATA **pac_data_out,
 			      DATA_BLOB blob,
 			      krb5_context context,
@@ -86,7 +87,6 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 	struct PAC_LOGON_NAME *logon_name = NULL;
 	struct PAC_DATA *pac_data;
 	struct PAC_DATA_RAW *pac_data_raw;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	DATA_BLOB *srv_sig_blob = NULL;
 	DATA_BLOB *kdc_sig_blob = NULL;
@@ -340,6 +340,7 @@ static krb5_error_code check_pac_checksum(TALLOC_CTX *mem_ctx,
 }
 
 _PUBLIC_  NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
+				  struct smb_iconv_convenience *iconv_convenience,
 				  struct PAC_LOGON_INFO **logon_info,
 				  DATA_BLOB blob,
 				  krb5_context context,
@@ -352,7 +353,9 @@ _PUBLIC_  NTSTATUS kerberos_pac_logon_info(TALLOC_CTX *mem_ctx,
 	NTSTATUS nt_status;
 	struct PAC_DATA *pac_data;
 	int i;
-	nt_status = kerberos_decode_pac(mem_ctx, &pac_data,
+	nt_status = kerberos_decode_pac(mem_ctx, 
+					iconv_convenience,
+					&pac_data,
 					blob,
 					context,
 					krbtgt_keyblock,
@@ -423,6 +426,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 }
 
  krb5_error_code kerberos_encode_pac(TALLOC_CTX *mem_ctx,
+				     struct smb_iconv_convenience *iconv_convenience,
 				    struct PAC_DATA *pac_data,
 				    krb5_context context,
 				    const krb5_keyblock *krbtgt_keyblock,
@@ -437,7 +441,6 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	struct PAC_SIGNATURE_DATA *kdc_checksum = NULL;
 	struct PAC_SIGNATURE_DATA *srv_checksum = NULL;
 	int i;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	/* First, just get the keytypes filled in (and lengths right, eventually) */
 	for (i=0; i < pac_data->num_buffers; i++) {
@@ -528,6 +531,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 
 
  krb5_error_code kerberos_create_pac(TALLOC_CTX *mem_ctx,
+				     struct smb_iconv_convenience *iconv_convenience,
 				     struct auth_serversupplied_info *server_info,
 				     krb5_context context,
 				     const krb5_keyblock *krbtgt_keyblock,
@@ -640,6 +644,7 @@ static krb5_error_code make_pac_checksum(TALLOC_CTX *mem_ctx,
 	unix_to_nt_time(&LOGON_NAME->logon_time, tgs_authtime);
 
 	ret = kerberos_encode_pac(mem_ctx, 
+				  iconv_convenience,
 				  pac_data, 
 				  context,
 				  krbtgt_keyblock,

@@ -154,7 +154,7 @@ NTSTATUS tdr_pull_charset(struct tdr_pull *tdr, TALLOC_CTX *ctx, const char **v,
 
 	TDR_PULL_NEED_BYTES(tdr, el_size*length);
 	
-	ret = convert_string_talloc(ctx, lp_iconv_convenience(global_loadparm), chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v));
+	ret = convert_string_talloc(ctx, tdr->iconv_convenience, chset, CH_UNIX, tdr->data.data+tdr->offset, el_size*length, discard_const_p(void *, v));
 
 	if (ret == -1) {
 		return NT_STATUS_INVALID_PARAMETER;

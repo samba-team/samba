@@ -24,6 +24,7 @@ struct opendb_ops {
 					struct ntvfs_context *ntvfs_ctx);
 	struct odb_lock *(*odb_lock)(TALLOC_CTX *mem_ctx,
 				     struct odb_context *odb, DATA_BLOB *file_key);
+	DATA_BLOB (*odb_get_key)(TALLOC_CTX *mem_ctx, struct odb_lock *lck);
 	NTSTATUS (*odb_open_file)(struct odb_lock *lck, void *file_handle,
 				  uint32_t stream_id, uint32_t share_access, 
 				  uint32_t access_mask, bool delete_on_close,
@@ -40,8 +41,14 @@ struct opendb_ops {
 	NTSTATUS (*odb_can_open)(struct odb_lock *lck,
 				 uint32_t share_access, uint32_t create_options, 
 				 uint32_t access_mask);
+	NTSTATUS (*odb_update_oplock)(struct odb_lock *lck, void *file_handle,
+				      uint32_t oplock_level);
 };
 
+struct opendb_oplock_break {
+	void *file_handle;
+	uint8_t level;
+};
 
 void odb_set_ops(const struct opendb_ops *new_ops);
 void odb_tdb_init_ops(void);
