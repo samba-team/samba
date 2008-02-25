@@ -588,7 +588,11 @@ static bool xattr_tdb_init(int snum, struct db_context **p_db)
 	unbecome_root();
 
 	if (db == NULL) {
+#if defined(ENOTSUP)
 		errno = ENOTSUP;
+#else
+		errno = ENOSYS;
+#endif
 		return false;
 	}
 
