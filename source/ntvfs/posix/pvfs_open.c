@@ -1428,6 +1428,9 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	DATA_BLOB key;
 	struct odb_lock *lck;
+	uint32_t share_access;
+	uint32_t access_mask;
+	bool delete_on_close;
 
 	status = pvfs_locking_key(name, name, &key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1440,15 +1443,18 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = odb_can_open(lck,
-			      NTCREATEX_SHARE_ACCESS_READ |
-			      NTCREATEX_SHARE_ACCESS_WRITE | 
-			      NTCREATEX_SHARE_ACCESS_DELETE, 
-			      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 
-			      SEC_STD_DELETE);
+	share_access	= NTCREATEX_SHARE_ACCESS_READ |
+			  NTCREATEX_SHARE_ACCESS_WRITE |
+			  NTCREATEX_SHARE_ACCESS_DELETE;
+	access_mask	= SEC_STD_DELETE;
+	delete_on_close	= true;
+
+	status = odb_can_open(lck, name->stream_id,
+			      share_access, access_mask, delete_on_close,
+			      0, false);
 
 	if (NT_STATUS_IS_OK(status)) {
-		status = pvfs_access_check_simple(pvfs, req, name, SEC_STD_DELETE);
+		status = pvfs_access_check_simple(pvfs, req, name, access_mask);
 	}
 
 	/*
@@ -1487,6 +1493,9 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	DATA_BLOB key;
 	struct odb_lock *lck;
+	uint32_t share_access;
+	uint32_t access_mask;
+	bool delete_on_close;
 
 	status = pvfs_locking_key(name, name, &key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1499,11 +1508,14 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = odb_can_open(lck,
-			      NTCREATEX_SHARE_ACCESS_READ |
-			      NTCREATEX_SHARE_ACCESS_WRITE,
-			      0,
-			      SEC_STD_DELETE);
+	share_access	= NTCREATEX_SHARE_ACCESS_READ |
+			  NTCREATEX_SHARE_ACCESS_WRITE;
+	access_mask	= SEC_STD_DELETE;
+	delete_on_close	= false;
+
+	status = odb_can_open(lck, name->stream_id,
+			      share_access, access_mask, delete_on_close,
+			      0, false);
 
 	/*
 	 * if it's a sharing violation or we got no oplock
@@ -1540,6 +1552,9 @@ NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	DATA_BLOB key;
 	struct odb_lock *lck;
+	uint32_t share_access;
+	uint32_t access_mask;
+	bool delete_on_close;
 
 	status = pvfs_locking_key(name, name, &key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1552,10 +1567,14 @@ NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = odb_can_open(lck,
-			      NTCREATEX_SHARE_ACCESS_READ |
-			      NTCREATEX_SHARE_ACCESS_WRITE,
-			      0, 0);
+	share_access	= NTCREATEX_SHARE_ACCESS_READ |
+			  NTCREATEX_SHARE_ACCESS_WRITE;
+	access_mask	= 0;
+	delete_on_close	= false;
+
+	status = odb_can_open(lck, name->stream_id,
+			      share_access, access_mask, delete_on_close,
+			      0, false);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
