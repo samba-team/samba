@@ -388,18 +388,17 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
   Note that the path is only used by the delete on close logic, not
   for comparing with other filenames
 */
-static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
+static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
+				  void *file_handle, const char *path,
 				  uint32_t stream_id, uint32_t share_access,
 				  uint32_t access_mask, bool delete_on_close,
-				  const char *path,
+				  uint32_t open_disposition, bool break_to_none,
 				  uint32_t oplock_level, uint32_t *oplock_granted)
 {
 	struct odb_context *odb = lck->odb;
 	struct opendb_entry e;
 	struct opendb_file file;
 	NTSTATUS status;
-	uint32_t open_disposition = 0;
-	bool break_to_none = false;
 	bool attrs_only = false;
 
 	if (odb->oplocks == false) {
