@@ -166,10 +166,12 @@ _PUBLIC_ NTSTATUS odb_get_delete_on_close(struct odb_context *odb,
   create_options and access_mask
 */
 _PUBLIC_ NTSTATUS odb_can_open(struct odb_lock *lck,
-			       uint32_t share_access, uint32_t create_options, 
-			       uint32_t access_mask)
+			       uint32_t stream_id, uint32_t share_access,
+			       uint32_t access_mask, bool delete_on_close,
+			       uint32_t open_disposition, bool break_to_none)
 {
-	return ops->odb_can_open(lck, share_access, create_options, access_mask);
+	return ops->odb_can_open(lck, stream_id, share_access, access_mask,
+				 delete_on_close, open_disposition, break_to_none);
 }
 
 _PUBLIC_ NTSTATUS odb_update_oplock(struct odb_lock *lck, void *file_handle,
