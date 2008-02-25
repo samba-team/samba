@@ -185,7 +185,7 @@ sub create_output($$)
 		merge_array(\$part->{FINAL_CFLAGS}, $part->{CPPFLAGS});
 		merge_array(\$part->{FINAL_CFLAGS}, $part->{CFLAGS});
 
-		foreach (@{$part->{UNIQUE_DEPENDENCIES_COMPILE}}) {
+		foreach (@{$part->{UNIQUE_DEPENDENCIES_ALL}}) {
 			my $elem = $depend->{$_};
 			next if $elem == $part;
 

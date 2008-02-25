@@ -7,7 +7,7 @@ AC_CHECK_MEMBERS([struct sockaddr.sa_len],
 	 [#include <sys/socket.h>])
 
 dnl test for getifaddrs and freeifaddrs
-AC_CACHE_CHECK([for getifaddrs and freeifaddrs],samba_cv_HAVE_GETIFADDRS,[
+AC_CACHE_CHECK([for getifaddrs and freeifaddrs],libreplace_cv_HAVE_GETIFADDRS,[
 AC_TRY_COMPILE([
 #include <sys/types.h>
 #if STDC_HEADERS
@@ -24,8 +24,8 @@ struct ifaddrs *ifp = NULL;
 int ret = getifaddrs (&ifp);
 freeifaddrs(ifp);
 ],
-samba_cv_HAVE_GETIFADDRS=yes,samba_cv_HAVE_GETIFADDRS=no)])
-if test x"$samba_cv_HAVE_GETIFADDRS" = x"yes"; then
+libreplace_cv_HAVE_GETIFADDRS=yes,libreplace_cv_HAVE_GETIFADDRS=no)])
+if test x"$libreplace_cv_HAVE_GETIFADDRS" = x"yes"; then
     AC_DEFINE(HAVE_GETIFADDRS,1,[Whether the system has getifaddrs])
     AC_DEFINE(HAVE_FREEIFADDRS,1,[Whether the system has freeifaddrs])
 	AC_DEFINE(HAVE_STRUCT_IFADDRS,1,[Whether struct ifaddrs is available])
@@ -42,18 +42,16 @@ iface=no;
 ##################
 # look for a method of finding the list of network interfaces
 iface=no;
-AC_CACHE_CHECK([for iface getifaddrs],samba_cv_HAVE_IFACE_GETIFADDRS,[
-SAVE_CPPFLAGS="$CPPFLAGS"
-CPPFLAGS="$CPPFLAGS ${SAMBA_CONFIGURE_CPPFLAGS}"
+AC_CACHE_CHECK([for iface getifaddrs],libreplace_cv_HAVE_IFACE_GETIFADDRS,[
 AC_TRY_RUN([
-#define NO_CONFIG_H 1
 #define HAVE_IFACE_GETIFADDRS 1
+#define NO_CONFIG_H 1
 #define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
 #include "$libreplacedir/replace.c"
 #include "$libreplacedir/getifaddrs.c"],
-           samba_cv_HAVE_IFACE_GETIFADDRS=yes,samba_cv_HAVE_IFACE_GETIFADDRS=no,samba_cv_HAVE_IFACE_GETIFADDRS=cross)])
-CPPFLAGS="$SAVE_CPPFLAGS"
-if test x"$samba_cv_HAVE_IFACE_GETIFADDRS" = x"yes"; then
+           libreplace_cv_HAVE_IFACE_GETIFADDRS=yes,libreplace_cv_HAVE_IFACE_GETIFADDRS=no,libreplace_cv_HAVE_IFACE_GETIFADDRS=cross)])
+if test x"$libreplace_cv_HAVE_IFACE_GETIFADDRS" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_GETIFADDRS,1,[Whether iface getifaddrs is available])
 else
 	LIBREPLACEOBJ="${LIBREPLACEOBJ} getifaddrs.o"
@@ -61,39 +59,48 @@ fi
 
 
 if test $iface = no; then
-AC_CACHE_CHECK([for iface AIX],samba_cv_HAVE_IFACE_AIX,[
+AC_CACHE_CHECK([for iface AIX],libreplace_cv_HAVE_IFACE_AIX,[
 AC_TRY_RUN([
 #define HAVE_IFACE_AIX 1
+#define NO_CONFIG_H 1
 #define AUTOCONF_TEST 1
 #undef _XOPEN_SOURCE_EXTENDED
+#define SOCKET_WRAPPER_NOT_REPLACE
+#include "$libreplacedir/replace.c"
 #include "$libreplacedir/getifaddrs.c"],
-           samba_cv_HAVE_IFACE_AIX=yes,samba_cv_HAVE_IFACE_AIX=no,samba_cv_HAVE_IFACE_AIX=cross)])
-if test x"$samba_cv_HAVE_IFACE_AIX" = x"yes"; then
+           libreplace_cv_HAVE_IFACE_AIX=yes,libreplace_cv_HAVE_IFACE_AIX=no,libreplace_cv_HAVE_IFACE_AIX=cross)])
+if test x"$libreplace_cv_HAVE_IFACE_AIX" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_AIX,1,[Whether iface AIX is available])
 fi
 fi
 
 
 if test $iface = no; then
-AC_CACHE_CHECK([for iface ifconf],samba_cv_HAVE_IFACE_IFCONF,[
+AC_CACHE_CHECK([for iface ifconf],libreplace_cv_HAVE_IFACE_IFCONF,[
 AC_TRY_RUN([
 #define HAVE_IFACE_IFCONF 1
+#define NO_CONFIG_H 1
 #define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
+#include "$libreplacedir/replace.c"
 #include "$libreplacedir/getifaddrs.c"],
-           samba_cv_HAVE_IFACE_IFCONF=yes,samba_cv_HAVE_IFACE_IFCONF=no,samba_cv_HAVE_IFACE_IFCONF=cross)])
-if test x"$samba_cv_HAVE_IFACE_IFCONF" = x"yes"; then
+           libreplace_cv_HAVE_IFACE_IFCONF=yes,libreplace_cv_HAVE_IFACE_IFCONF=no,libreplace_cv_HAVE_IFACE_IFCONF=cross)])
+if test x"$libreplace_cv_HAVE_IFACE_IFCONF" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_IFCONF,1,[Whether iface ifconf is available])
 fi
 fi
 
 if test $iface = no; then
-AC_CACHE_CHECK([for iface ifreq],samba_cv_HAVE_IFACE_IFREQ,[
+AC_CACHE_CHECK([for iface ifreq],libreplace_cv_HAVE_IFACE_IFREQ,[
 AC_TRY_RUN([
 #define HAVE_IFACE_IFREQ 1
+#define NO_CONFIG_H 1
 #define AUTOCONF_TEST 1
+#define SOCKET_WRAPPER_NOT_REPLACE
+#include "$libreplacedir/replace.c"
 #include "$libreplacedir/getifaddrs.c"],
-           samba_cv_HAVE_IFACE_IFREQ=yes,samba_cv_HAVE_IFACE_IFREQ=no,samba_cv_HAVE_IFACE_IFREQ=cross)])
-if test x"$samba_cv_HAVE_IFACE_IFREQ" = x"yes"; then
+           libreplace_cv_HAVE_IFACE_IFREQ=yes,libreplace_cv_HAVE_IFACE_IFREQ=no,libreplace_cv_HAVE_IFACE_IFREQ=cross)])
+if test x"$libreplace_cv_HAVE_IFACE_IFREQ" = x"yes"; then
     iface=yes;AC_DEFINE(HAVE_IFACE_IFREQ,1,[Whether iface ifreq is available])
 fi
 fi

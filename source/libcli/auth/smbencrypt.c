@@ -100,7 +100,7 @@ _PUBLIC_ bool E_deshash(const char *passwd, uint8_t p16[16])
 	/* Password must be converted to DOS charset - null terminated, uppercase. */
 	push_string(lp_iconv_convenience(global_loadparm), dospwd, passwd, sizeof(dospwd), STR_ASCII|STR_UPPER|STR_TERMINATE);
 
-	/* Only the fisrt 14 chars are considered, password need not be null terminated. */
+	/* Only the first 14 chars are considered, password need not be null terminated. */
 	E_P16((const uint8_t *)dospwd, p16);
 
 	if (strlen(dospwd) > 14) {
@@ -125,6 +125,8 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 
 	HMACMD5Context ctx;
 	TALLOC_CTX *mem_ctx = talloc_init("ntv2_owf_gen for %s\\%s", domain_in, user_in); 
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
+
 	if (!mem_ctx) {
 		return false;
 	}
@@ -151,14 +153,14 @@ bool ntv2_owf_gen(const uint8_t owf[16],
 		}
 	}
 
-	user_byte_len = push_ucs2_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), &user, user_in);
+	user_byte_len = push_ucs2_talloc(mem_ctx, iconv_convenience, &user, user_in);
 	if (user_byte_len == (ssize_t)-1) {
 		DEBUG(0, ("push_uss2_talloc() for user returned -1 (probably talloc() failure)\n"));
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	domain_byte_len = push_ucs2_talloc(mem_ctx, lp_iconv_convenience(global_loadparm), &domain, domain_in);
+	domain_byte_len = push_ucs2_talloc(mem_ctx, iconv_convenience, &domain, domain_in);
 	if (domain_byte_len == (ssize_t)-1) {
 		DEBUG(0, ("push_ucs2_talloc() for domain returned -1 (probably talloc() failure)\n"));
 		talloc_free(mem_ctx);
@@ -294,12 +296,13 @@ void SMBsesskeygen_lm_sess_key(const uint8_t lm_hash[16],
 }
 
 DATA_BLOB NTLMv2_generate_names_blob(TALLOC_CTX *mem_ctx, 
+				     struct smb_iconv_convenience *iconv_convenience,
 				     const char *hostname, 
 				     const char *domain)
 {
 	DATA_BLOB names_blob = data_blob_talloc(mem_ctx, NULL, 0);
 	
-	msrpc_gen(mem_ctx, lp_iconv_convenience(global_loadparm), &names_blob, 
+	msrpc_gen(mem_ctx, iconv_convenience, &names_blob, 
 		  "aaa", 
 		  NTLMSSP_NAME_TYPE_DOMAIN, domain,
 		  NTLMSSP_NAME_TYPE_SERVER, hostname,

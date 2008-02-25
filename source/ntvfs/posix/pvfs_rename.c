@@ -89,6 +89,7 @@ NTSTATUS pvfs_do_rename(struct pvfs_state *pvfs, const struct pvfs_filename *nam
   resolve a wildcard rename pattern. This works on one component of the name
 */
 static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx, 
+						   struct smb_iconv_convenience *iconv_convenience,
 						   const char *fname, 
 						   const char *pattern)
 {
@@ -108,16 +109,16 @@ static const char *pvfs_resolve_wildcard_component(TALLOC_CTX *mem_ctx,
 	while (*p2) {
 		codepoint_t c1, c2;
 		size_t c_size1, c_size2;
-		c1 = next_codepoint(lp_iconv_convenience(global_loadparm), p1, &c_size1);
-		c2 = next_codepoint(lp_iconv_convenience(global_loadparm), p2, &c_size2);
+		c1 = next_codepoint(iconv_convenience, p1, &c_size1);
+		c2 = next_codepoint(iconv_convenience, p2, &c_size2);
 		if (c2 == '?') {
-			d += push_codepoint(lp_iconv_convenience(global_loadparm), d, c1);
+			d += push_codepoint(iconv_convenience, d, c1);
 		} else if (c2 == '*') {
 			memcpy(d, p1, strlen(p1));
 			d += strlen(p1);
 			break;
 		} else {
-			d += push_codepoint(lp_iconv_convenience(global_loadparm), d, c2);
+			d += push_codepoint(iconv_convenience, d, c2);
 		}
 
 		p1 += c_size1;
@@ -138,6 +139,7 @@ static const char *pvfs_resolve_wildcard(TALLOC_CTX *mem_ctx,
 {
 	const char *base1, *base2;
 	const char *ext1, *ext2;
+	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 	char *p;
 
 	/* break into base part plus extension */
@@ -165,8 +167,8 @@ static const char *pvfs_resolve_wildcard(TALLOC_CTX *mem_ctx,
 		return NULL;
 	}
 
-	base1 = pvfs_resolve_wildcard_component(mem_ctx, base1, base2);
-	ext1 = pvfs_resolve_wildcard_component(mem_ctx, ext1, ext2);
+	base1 = pvfs_resolve_wildcard_component(mem_ctx, iconv_convenience, base1, base2);
+	ext1 = pvfs_resolve_wildcard_component(mem_ctx, iconv_convenience, ext1, ext2);
 	if (base1 == NULL || ext1 == NULL) {
 		return NULL;
 	}
@@ -190,8 +192,8 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 {
 	struct pvfs_filename *name1, *name2;
 	TALLOC_CTX *mem_ctx = talloc_new(req);
+	struct odb_lock *lck = NULL;
 	NTSTATUS status;
-	struct odb_lock *lck, *lck2;
 
 	/* resolve the wildcard pattern for this name */
 	fname2 = pvfs_resolve_wildcard(mem_ctx, fname1, fname2);
@@ -214,6 +216,7 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 
 	status = pvfs_can_rename(pvfs, req, name1, &lck);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
 		goto failed;
 	}
 
@@ -221,7 +224,7 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 	status = pvfs_resolve_partial(pvfs, mem_ctx, 
 				      dir_path, fname2, &name2);
 	if (NT_STATUS_IS_OK(status)) {
-		status = pvfs_can_delete(pvfs, req, name2, &lck2);
+		status = pvfs_can_delete(pvfs, req, name2, NULL);
 		if (!NT_STATUS_IS_OK(status)) {
 			goto failed;
 		}
@@ -309,7 +312,7 @@ static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
 	struct pvfs_filename *name1, *name2;
-	struct odb_lock *lck;
+	struct odb_lock *lck = NULL;
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, ren->rename.in.pattern1, 
@@ -352,6 +355,7 @@ static NTSTATUS pvfs_rename_mv(struct ntvfs_module_context *ntvfs,
 
 	status = pvfs_can_rename(pvfs, req, name1, &lck);
 	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
 		return status;
 	}
 
@@ -373,7 +377,6 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	NTSTATUS status;
 	struct pvfs_filename *name1, *name2;
-	struct odb_lock *lck;
 
 	switch (ren->ntrename.in.flags) {
 	case RENAME_FLAG_RENAME:
@@ -419,7 +422,7 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	status = pvfs_can_rename(pvfs, req, name1, &lck);
+	status = pvfs_can_rename(pvfs, req, name1, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

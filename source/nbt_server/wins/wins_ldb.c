@@ -112,16 +112,9 @@ failed:
 	return LDB_ERR_OTHER;
 }
 
-static const struct ldb_module_ops wins_ldb_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_wins_ldb_module_ops = {
 	.name          = "wins_ldb",
 	.add           = wins_ldb_verify,
 	.modify        = wins_ldb_verify,
 	.init_context  = wins_ldb_init
 };
-
-
-/* the init function */
-int wins_ldb_module_init(void)
-{
-	return ldb_register_module(&wins_ldb_ops);
-}

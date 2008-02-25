@@ -72,7 +72,7 @@ static void dgm_socket_recv(struct nbt_dgram_socket *dgmsock)
 	}
 
 	/* parse the request */
-	ndr_err = ndr_pull_struct_blob(&blob, packet, lp_iconv_convenience(global_loadparm), packet,
+	ndr_err = ndr_pull_struct_blob(&blob, packet, dgmsock->iconv_convenience, packet,
 				      (ndr_pull_flags_fn_t)ndr_pull_nbt_dgram_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -187,6 +187,7 @@ struct nbt_dgram_socket *nbt_dgram_socket_init(TALLOC_CTX *mem_ctx,
 	dgmsock->send_queue = NULL;
 	dgmsock->incoming.handler = NULL;
 	dgmsock->mailslot_handlers = NULL;
+	dgmsock->iconv_convenience = lp_iconv_convenience(global_loadparm);
 	
 	return dgmsock;
 
@@ -229,7 +230,7 @@ NTSTATUS nbt_dgram_send(struct nbt_dgram_socket *dgmsock,
 	req->dest = dest;
 	if (talloc_reference(req, dest) == NULL) goto failed;
 
-	ndr_err = ndr_push_struct_blob(&req->encoded, req, lp_iconv_convenience(global_loadparm), packet,
+	ndr_err = ndr_push_struct_blob(&req->encoded, req, dgmsock->iconv_convenience, packet,
 				      (ndr_push_flags_fn_t)ndr_push_nbt_dgram_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);

@@ -1127,7 +1127,16 @@ import "security.idl", "svcctl.idl";
 /* srvsvc_NetDisk         */
 /**************************/
 	typedef struct {
-		[flag(STR_LEN4)] string disk;
+		/*
+		 * In theory this should be:
+		 *      [charset(UTF16),string] uint16 annotation[3]
+		 * But midl treats this as:
+		 *      [charset(UTF16),string] uint16 annotation[]
+		 * and pidl doesn't support this yet
+		 */
+		[value(0)] uint32 __disk_offset;
+		[value(strlen(disk)+1)] uint32 __disk_length;
+		[charset(UTF16)] uint16 disk[__disk_length];
 	} srvsvc_NetDiskInfo0;
 
 	typedef struct {

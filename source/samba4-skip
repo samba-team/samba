@@ -1,4 +1,3 @@
-base.defer_open
 base.delaywrite
 raw.composite
 raw.oplock
@@ -18,7 +17,6 @@ base.smb
 smb2.notify
 smb2.scan
 ntvfs.cifs.base.charset
-ntvfs.cifs.base.defer_open
 ntvfs.cifs.base.delaywrite
 ntvfs.cifs.base.iometer
 ntvfs.cifs.base.casetable

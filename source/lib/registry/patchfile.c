@@ -23,6 +23,7 @@
 #include "lib/registry/patchfile.h"
 #include "lib/registry/registry.h"
 #include "system/filesys.h"
+#include "param/param.h"
 
 
 _PUBLIC_ WERROR reg_preg_diff_load(int fd,
@@ -30,6 +31,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 				   void *callback_data);
 
 _PUBLIC_ WERROR reg_dotreg_diff_load(int fd,
+				     struct smb_iconv_convenience *iconv_convenience,
 				     const struct reg_diff_callbacks *callbacks,
 				     void *callback_data);
 
@@ -306,7 +308,7 @@ _PUBLIC_ WERROR reg_diff_load(const char *filename,
 		return reg_preg_diff_load(fd, callbacks, callback_data);
 	} else {
 		/* Must be a normal .REG file */
-		return reg_dotreg_diff_load(fd, callbacks, callback_data);
+		return reg_dotreg_diff_load(fd, lp_iconv_convenience(global_loadparm), callbacks, callback_data);
 	}
 }
 

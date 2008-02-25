@@ -50,8 +50,9 @@ plansmbtorturetest() {
 	name=$1
 	env=$2
 	shift 2
+	other_args="$*"
 	modname=`normalize_testname $name`
-	cmdline="$VALGRIND $smb4torture $* $name"
+	cmdline="$VALGRIND $smb4torture $other_args $name"
 	plantest "$modname" "$env" $cmdline
 }
 
@@ -215,12 +216,13 @@ done
 plantest "rpc.echo on ncacn_np over smb2" dc $smb4torture ncacn_np:"\$SERVER[smb2]" -U"\$USERNAME"%"\$PASSWORD" -W \$DOMAIN RPC-ECHO "$*"
 
 # Tests against the NTVFS POSIX backend
+NTVFSARGS="--option=torture:sharedelay=100000"
 smb2=`$smb4torture --list | grep "^SMB2-" | xargs`
 raw=`$smb4torture --list | grep "^RAW-" | xargs`
 base=`$smb4torture --list | grep "^BASE-" | xargs`
 
 for t in $base $raw $smb2; do
-    plansmbtorturetest "$t" dc $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD"
+    plansmbtorturetest "$t" dc $ADDARGS //\$SERVER/tmp -U"\$USERNAME"%"\$PASSWORD" $NTVFSARGS
 done
 
 rap=`$smb4torture --list | grep "^RAP-" | xargs`
@@ -230,13 +232,13 @@ done
 
 # Tests against the NTVFS CIFS backend
 for t in $base $raw; do
-    plantest "ntvfs.cifs.`normalize_testname $t`" dc $VALGRIND $smb4torture //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $t
+    plantest "ntvfs.cifs.`normalize_testname $t`" dc $VALGRIND $smb4torture //\$NETBIOSNAME/cifs -U"\$USERNAME"%"\$PASSWORD" $NTVFSARGS $t
 done
 
 # Local tests
 
 for t in `$smb4torture --list | grep "^LOCAL-" | xargs`; do
-	plansmbtorturetest "$t" none $VALGRIND $smb4torture ncalrpc: "$*"
+	plansmbtorturetest "$t" none ncalrpc: "$*"
 done
 
 if test -f $samba4bindir/tdbtorture
@@ -293,7 +295,7 @@ plantest "wbinfo -a against member server with domain creds" member $VALGRIND $s
 NBT_TESTS=`$smb4torture --list | grep "^NBT-" | xargs`
 
 for t in $NBT_TESTS; do
-	plansmbtorturetest "$t" dc //\$SERVER/_none_ $f -U\$USERNAME%\$PASSWORD 
+	plansmbtorturetest "$t" dc //\$SERVER/_none_ -U\$USERNAME%\$PASSWORD 
 done
 
 WB_OPTS="--option=\"torture:strict mode=yes\""

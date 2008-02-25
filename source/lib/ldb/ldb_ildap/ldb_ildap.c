@@ -811,9 +811,18 @@ failed:
 	return -1;
 }
 
-int ldb_ildap_init(void)
-{
-	return ldb_register_backend("ldap", ildb_connect) + 
-		   ldb_register_backend("ldapi", ildb_connect) + 
-		   ldb_register_backend("ldaps", ildb_connect);
-}
+_PUBLIC_ const struct ldb_backend_ops ldb_ldap_backend_ops = {
+	.name = "ldap",
+	.connect_fn = ildb_connect
+};
+
+_PUBLIC_ const struct ldb_backend_ops ldb_ildap_backend_ops = {
+	.name = "ildap",
+	.connect_fn = ildb_connect
+};
+
+_PUBLIC_ const struct ldb_backend_ops ldb_ldaps_backend_ops = {
+	.name = "ldaps",
+	.connect_fn = ildb_connect
+};
+

@@ -35,7 +35,7 @@ AC_CONFIG_FILES(auth/gensec/gensec.pc)
 AC_CONFIG_FILES(param/samba-config.pc)
 AC_CONFIG_FILES(librpc/dcerpc_samr.pc)
 
-SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.1.0,
+SMB_EXT_LIB_FROM_PKGCONFIG(LIBTALLOC, talloc >= 1.2.0,
 	[],
 	[
 		m4_include(lib/talloc/libtalloc.m4)

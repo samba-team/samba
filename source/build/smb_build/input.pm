@@ -233,14 +233,6 @@ sub check($$$$$)
 	my ($INPUT, $enabled, $subsys_ot, $lib_ot, $module_ot) = @_;
 
 	foreach my $part (values %$INPUT) {
-		unless (defined($part->{STANDARD_VISIBILITY})) {
-			if ($part->{TYPE} eq "MODULE" or $part->{TYPE} eq "BINARY") {
-				$part->{STANDARD_VISIBILITY} = "hidden";
-			} else {
-				$part->{STANDARD_VISIBILITY} = "default";
-			}
-		}
-
 		unless (defined($part->{PUBLIC_HEADERS})) {
 			$part->{PUBLIC_HEADERS} = [];
 		}

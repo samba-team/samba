@@ -1,194 +1,170 @@
-#!/bin/sh
-exec smbscript "$0" ${1+"$@"}
-/*
-	provision a Samba4 server
-	Copyright Andrew Tridgell 2005
-	Released under the GNU GPL v2 or later
-*/
+#!/usr/bin/python
+#
+# Unix SMB/CIFS implementation.
+# provision a Samba4 server
+# Copyright (C) Jelmer Vernooij <jelmer@samba.org> 2007-2008
+# Copyright (C) Andrew Bartlett <abartlet@samba.org> 2008
+#
+# Based on the original in EJS:
+# Copyright (C) Andrew Tridgell 2005
+#   
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#   
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#   
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 
-options = GetOptions(ARGV,
-		"POPT_AUTOHELP",
-		"POPT_COMMON_SAMBA",
-		"POPT_COMMON_VERSION",
-		"POPT_COMMON_CREDENTIALS",
-		'realm=s',
-		'domain=s',
-		'domain-guid=s',
-		'domain-sid=s',
-		'policy-guid=s',
-		'host-name=s',
-		'host-ip=s',
-		'host-guid=s',
-		'invocationid=s',
-		'adminpass=s',
-		'krbtgtpass=s',
-		'machinepass=s',
-		'dnspass=s',
-		'root=s',
-		'nobody=s',
-		'nogroup=s',
-		'wheel=s',
-		'users=s',
-		'quiet',
-		'blank',
-		'server-role=s',
-		'partitions-only',
-		'ldap-base',
-		'ldap-backend=s',
-                'ldap-module=s',
-                'aci=s');
+import getopt
+import optparse
+import os, sys
 
-if (options == undefined) {
-   println("Failed to parse options");
-   return -1;
-}
+import samba
 
-libinclude("base.js");
-libinclude("provision.js");
+from auth import system_session
+import samba.getopt as options
+import param
+from samba.provision import (provision, 
+                             provision_paths_from_lp,
+                             FILL_FULL, FILL_NT4SYNC,
+                             FILL_DRS)
 
-/*
-  print a message if quiet is not set
-*/
-function message()
-{
-	if (options["quiet"] == undefined) {
-		print(vsprintf(arguments));
-	}
-}
+parser = optparse.OptionParser("provision [options]")
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
+parser.add_option_group(options.VersionOptions(parser))
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+parser.add_option("--setupdir", type="string", metavar="DIR", 
+		help="directory with setup files")
+parser.add_option("--realm", type="string", metavar="REALM", help="set realm")
+parser.add_option("--domain", type="string", metavar="DOMAIN",
+				  help="set domain")
+parser.add_option("--domain-guid", type="string", metavar="GUID", 
+		help="set domainguid (otherwise random)")
+parser.add_option("--domain-sid", type="string", metavar="SID", 
+		help="set domainsid (otherwise random)")
+parser.add_option("--policy-guid", type="string", metavar="GUID",
+				  help="set policy guid")
+parser.add_option("--host-name", type="string", metavar="HOSTNAME", 
+		help="set hostname")
+parser.add_option("--host-ip", type="string", metavar="IPADDRESS", 
+		help="set ipaddress")
+parser.add_option("--host-guid", type="string", metavar="GUID", 
+		help="set hostguid (otherwise random)")
+parser.add_option("--invocationid", type="string", metavar="GUID", 
+		help="set invocationid (otherwise random)")
+parser.add_option("--adminpass", type="string", metavar="PASSWORD", 
+		help="choose admin password (otherwise random)")
+parser.add_option("--krbtgtpass", type="string", metavar="PASSWORD", 
+		help="choose krbtgt password (otherwise random)")
+parser.add_option("--machinepass", type="string", metavar="PASSWORD", 
+		help="choose machine password (otherwise random)")
+parser.add_option("--dnspass", type="string", metavar="PASSWORD", 
+		help="choose dns password (otherwise random)")
+parser.add_option("--root", type="string", metavar="USERNAME", 
+		help="choose 'root' unix username")
+parser.add_option("--nobody", type="string", metavar="USERNAME", 
+		help="choose 'nobody' user")
+parser.add_option("--nogroup", type="string", metavar="GROUPNAME", 
+		help="choose 'nogroup' group")
+parser.add_option("--wheel", type="string", metavar="GROUPNAME", 
+		help="choose 'wheel' privileged group")
+parser.add_option("--users", type="string", metavar="GROUPNAME", 
+		help="choose 'users' group")
+parser.add_option("--quiet", help="Be quiet", action="store_true")
+parser.add_option("--blank", action="store_true",
+		help="do not add users or groups, just the structure")
+parser.add_option("--ldap-backend", type="string", metavar="LDAPSERVER", 
+		help="LDAP server to use for this provision")
+parser.add_option("--ldap-backend-type", type="choice", metavar="LDAP-BACKEND-TYPE", 
+		help="LDB mapping module to use for the LDAP backend",
+		choices=["fedora-ds", "openldap"])
+parser.add_option("--aci", type="string", metavar="ACI", 
+		help="An arbitary LDIF fragment, particularly useful to loading a backend ACI value into a target LDAP server. You must provide at least a realm and domain")
+parser.add_option("--server-role", type="choice", metavar="ROLE",
+		          choices=["domain controller", "member server"],
+		help="Set server role to provision for (default standalone)")
+parser.add_option("--partitions-only", 
+		help="Configure Samba's partitions, but do not modify them (ie, join a BDC)", action="store_true")
+parser.add_option("--targetdir", type="string", metavar="DIR", 
+		          help="Set target directory")
 
-/*
- show some help
-*/
-function ShowHelp()
-{
-	print("
-Samba4 provisioning
+opts = parser.parse_args()[0]
 
-provision [options]
- --realm	REALM		set realm
- --domain	DOMAIN		set domain
- --domain-guid	GUID		set domainguid (otherwise random)
- --domain-sid	SID		set domainsid (otherwise random)
- --host-name	HOSTNAME	set hostname
- --host-ip	IPADDRESS	set ipaddress
- --host-guid	GUID		set hostguid (otherwise random)
- --policy-guid  GUID            set group policy guid (otherwise random)
- --invocationid	GUID		set invocationid (otherwise random)
- --adminpass	PASSWORD	choose admin password (otherwise random)
- --krbtgtpass	PASSWORD	choose krbtgt password (otherwise random)
- --machinepass	PASSWORD	choose machine password (otherwise random)
- --root         USERNAME	choose 'root' unix username
- --nobody	USERNAME	choose 'nobody' user
- --nogroup	GROUPNAME	choose 'nogroup' group
- --wheel	GROUPNAME	choose 'wheel' privileged group
- --users	GROUPNAME	choose 'users' group
- --quiet			Be quiet
- --blank			do not add users or groups, just the structure
- --server-role  ROLE            Set server role to provision for (default standalone)
- --partitions-only              Configure Samba's partitions, but do not modify them (ie, join a BDC)
- --ldap-base			output only an LDIF file, suitable for creating an LDAP baseDN
- --ldap-backend LDAPSERVER      LDAP server to use for this provision
- --ldap-module  MODULE          LDB mapping module to use for the LDAP backend
- --aci          ACI             An arbitary LDIF fragment, particularly useful to loading a backend ACI value into a target LDAP server
-You must provide at least a realm and domain
+def message(text):
+	"""print a message if quiet is not set."""
+	if not opts.quiet:
+		print text
 
-");
-	exit(1);
-}
+if opts.realm is None or opts.domain is None:
+	if opts.realm is None:
+		print >>sys.stderr, "No realm set"
+	if opts.domain is None:
+		print >>sys.stderr, "No domain set"
+	parser.print_usage()
+	sys.exit(1)
 
-if (options['host-name'] == undefined) {
-	options['host-name'] = hostname();
-}
+# cope with an initially blank smb.conf 
+private_dir = None
+lp = sambaopts.get_loadparm()
+if opts.targetdir is not None:
+    if not os.path.exists(opts.targetdir):
+        os.mkdir(opts.targetdir)
+    private_dir = os.path.join(opts.targetdir, "private")
+    if not os.path.exists(private_dir):
+        os.mkdir(private_dir)
+    lp.set("private dir", os.path.abspath(private_dir))
+    lp.set("lock dir", os.path.abspath(opts.targetdir))
+lp.set("realm", opts.realm)
+lp.set("workgroup", opts.domain)
+lp.set("server role", opts.server_role or "domain controller")
 
-/*
-   main program
-*/
-if (options["realm"] == undefined ||
-    options["domain"] == undefined ||
-    options["host-name"] == undefined) {
-	ShowHelp();
-}
+if opts.aci is not None:
+	print "set ACI: %s" % opts.aci
 
-/* cope with an initially blank smb.conf */
-var lp = loadparm_init();
-lp.set("realm", options.realm);
-lp.set("workgroup", options.domain);
-lp.set("server role", options["server-role"]);
-lp.reload();
+paths = provision_paths_from_lp(lp, opts.realm.lower())
+if sambaopts.get_loadparm_path() is not None:
+    paths.smbconf = sambaopts.get_loadparm_path()
 
-var subobj = provision_guess();
-for (r in options) {
-	var key = strupper(join("", split("-", r)));
-	subobj[key] = options[r];
-}
+creds = credopts.get_credentials()
 
-var blank = (options["blank"] != undefined);
-var ldapbackend = (options["ldap-backend"] != undefined);
-var ldapmodule = (options["ldap-module"] != undefined);
-var partitions_only = (options["partitions-only"] != undefined);
-var paths = provision_default_paths(subobj);
-if (options["aci"] != undefined) {
-	message("set ACI: %s\n", subobj["ACI"]);
-}
+setup_dir = opts.setupdir
+if setup_dir is None:
+	setup_dir = "setup"
 
-message("set DOMAIN SID: %s\n", subobj["DOMAINSID"]);
+samdb_fill = FILL_FULL
+if opts.blank:
+    samdb_fill = FILL_NT4SYNC
+elif opts.partitions_only:
+    samdb_fill = FILL_DRS
 
-provision_fix_subobj(subobj, paths);
+provision(lp, setup_dir, message, paths, 
+          system_session(), creds, 
+          samdb_fill=samdb_fill, realm=opts.realm,
+          domainguid=opts.domain_guid, domainsid=opts.domain_sid,
+          policyguid=opts.policy_guid, hostname=opts.host_name,
+          hostip=opts.host_ip, hostguid=opts.host_guid, 
+          invocationid=opts.invocationid, adminpass=opts.adminpass,
+          krbtgtpass=opts.krbtgtpass, machinepass=opts.machinepass,
+          dnspass=opts.dnspass, root=opts.root, nobody=opts.nobody,
+          nogroup=opts.nogroup, wheel=opts.wheel, users=opts.users,
+          aci=opts.aci, serverrole=opts.server_role, 
+          ldap_backend=opts.ldap_backend, 
+          ldap_backend_type=opts.ldap_backend_type)
 
-if (ldapbackend) {
-	if (options["ldap-backend"] == "ldapi") {
-		subobj.LDAPBACKEND = subobj.LDAPI_URI;
-	}
-	if (!ldapmodule) {
-		subobj.LDAPMODULE = "normalise,entryuuid";
-		subobj.TDB_MODULES_LIST = "";
-	}
-	subobj.BACKEND_MOD = subobj.LDAPMODULE + ",paged_searches";
-	subobj.DOMAINDN_LDB = subobj.LDAPBACKEND;
-	subobj.CONFIGDN_LDB = subobj.LDAPBACKEND;
-	subobj.SCHEMADN_LDB = subobj.LDAPBACKEND;
-	message("LDAP module: %s on backend: %s\n", subobj.LDAPMODULE, subobj.LDAPBACKEND);
-}
+message("To reproduce this provision, run with:")
+def shell_escape(arg):
+    if " " in arg:
+        return '"%s"' % arg
+    return arg
+message(" ".join([shell_escape(arg) for arg in sys.argv]))
 
-if (!provision_validate(subobj, message)) {
-	return -1;
-}
-
-var system_session = system_session();
-var creds = options.get_credentials();
-message("Provisioning for %s in realm %s\n", subobj.DOMAIN, subobj.REALM);
-message("Using administrator password: %s\n", subobj.ADMINPASS);
-if (partitions_only) {
-	provision_become_dc(subobj, message, false, paths, system_session);
-} else {
-	provision(subobj, message, blank, paths, system_session, creds, ldapbackend);
-	provision_dns(subobj, message, paths, system_session, creds);
-	message("To reproduce this provision, run with:\n");
-/* 	There has to be a better way than this... */
-	message("--realm='%s' --domain='%s' \\\n", subobj.REALM_CONF, subobj.DOMAIN_CONF);
-	if (subobj.DOMAINGUID != undefined) {
-		 message("--domain-guid='%s' \\\n", subobj.DOMAINGUID);
-	}
-	if (subobj.HOSTGUID != undefined) {
-		 message("--host-guid='%s' \\\n", subobj.HOSTGUID);
-	}
-	message("--policy-guid='%s' --host-name='%s' --host-ip='%s' \\\n", subobj.POLICYGUID, subobj.HOSTNAME, subobj.HOSTIP);
-	if (subobj.INVOCATIONID != undefined) {
-		message("--invocationid='%s' \\\n", subobj.INVOCATIONID);
-	}
-	message("--adminpass='%s' --krbtgtpass='%s' \\\n", subobj.ADMINPASS, subobj.KRBTGTPASS);
-	message("--machinepass='%s' --dnspass='%s' \\\n", subobj.MACHINEPASS, subobj.DNSPASS);
-	message("--root='%s' --nobody='%s' --nogroup='%s' \\\n", subobj.ROOT, subobj.NOBODY, subobj.NOGROUP);
-	message("--wheel='%s' --users='%s' --server-role='%s' \\\n", subobj.WHEEL, subobj.USERS, subobj.SERVERROLE);
-	if (ldapbackend) {
-		message("--ldap-backend='%s' \\\n", subobj.LDAPBACKEND);
-	}
-	if (ldapmodule) {
-		message("--ldap-module='%s' \\\n", + subobj.LDAPMODULE);
-	}
-	message("--aci='" + subobj.ACI + "' \\\n")
-}
-
-
-message("All OK\n");
-return 0;
+message("All OK")

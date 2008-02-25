@@ -61,8 +61,6 @@ int main(int argc, const char **argv)
 		lp_load(lp_ctx, dyn_CONFIGFILE);
 	}
 
-	ldb_global_init();
-
 	gensec_init(lp_ctx);
 	mprSetCtx(mem_ctx);
 

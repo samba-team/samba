@@ -145,7 +145,8 @@ sub SharedModule($$)
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{TYPE} ne "PYTHON") {
+	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{TYPE} ne "PYTHON" and
+		$ctx->{INIT_FUNCTION_TYPE} =~ /\(\*\)/) {
 		$self->output("\$($ctx->{NAME}_OBJ_LIST): CFLAGS+=-D$ctx->{INIT_FUNCTION}=init_module\n");
 	}
 
@@ -154,8 +155,8 @@ sub SharedModule($$)
 $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p \$(\@D)
-	\@\$(MDLD) \$(MDLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{NAME}\_OBJ_LIST) \\
+	\@\$(MDLD) \$(LDFLAGS) \$(MDLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
 		\$($ctx->{NAME}_LINK_FLAGS)
 __EOD__
 );
@@ -195,8 +196,8 @@ sub SharedLibrary($$)
 $ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p $ctx->{SHAREDDIR}
-	\@\$(SHLD) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{NAME}\_OBJ_LIST) \\
+	\@\$(SHLD) \$(LDFLAGS) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
+		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
 		\$($ctx->{NAME}_LINK_FLAGS) \\
 		\$(if \$(SONAMEFLAG), \$(SONAMEFLAG)$ctx->{LIBRARY_SONAME})
 __EOD__

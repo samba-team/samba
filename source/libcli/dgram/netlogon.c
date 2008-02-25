@@ -41,7 +41,7 @@ NTSTATUS dgram_mailslot_netlogon_send(struct nbt_dgram_socket *dgmsock,
 	TALLOC_CTX *tmp_ctx = talloc_new(dgmsock);
 
 	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, 
-				       lp_iconv_convenience(global_loadparm),
+				       dgmsock->iconv_convenience,
 				       request,
 				      (ndr_push_flags_fn_t)ndr_push_nbt_netlogon_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -76,7 +76,7 @@ NTSTATUS dgram_mailslot_netlogon_reply(struct nbt_dgram_socket *dgmsock,
 	struct socket_address *dest;
 
 	ndr_err = ndr_push_struct_blob(&blob, tmp_ctx, 
-				       lp_iconv_convenience(global_loadparm),
+				       dgmsock->iconv_convenience,
 				       reply,
 				      (ndr_push_flags_fn_t)ndr_push_nbt_netlogon_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
@@ -114,7 +114,7 @@ NTSTATUS dgram_mailslot_netlogon_parse(struct dgram_mailslot_handler *dgmslot,
 	DATA_BLOB data = dgram_mailslot_data(dgram);
 	enum ndr_err_code ndr_err;
 
-	ndr_err = ndr_pull_struct_blob(&data, mem_ctx, lp_iconv_convenience(global_loadparm), netlogon,
+	ndr_err = ndr_pull_struct_blob(&data, mem_ctx, dgmslot->dgmsock->iconv_convenience, netlogon,
 				      (ndr_pull_flags_fn_t)ndr_pull_nbt_netlogon_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);

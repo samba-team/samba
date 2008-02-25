@@ -31,7 +31,7 @@ lib/libldb.a: $(OBJS)
 	ar -rv $@ $(OBJS)
 	@-ranlib $@
 
-sample_module.$(SHLIBEXT): tests/sample_module.o
+sample.$(SHLIBEXT): tests/sample_module.o
 	$(MDLD) $(MDLD_FLAGS) -o $@ tests/sample_module.o
 
 bin/ldbadd: tools/ldbadd.o tools/cmdline.o $(LIBS)

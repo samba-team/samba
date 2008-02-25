@@ -51,7 +51,9 @@ struct kdc_server {
 
 struct hdb_ldb_private {
 	struct ldb_context *samdb;
+	struct smb_iconv_convenience *iconv_convenience;
 	struct ldb_message *msg;
 	struct ldb_message *realm_ref_msg;
 	hdb_entry_ex *entry_ex;
+	const char *netbios_name;
 };

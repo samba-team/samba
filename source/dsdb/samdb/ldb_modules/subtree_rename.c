@@ -264,13 +264,8 @@ static int subtree_rename_wait(struct ldb_handle *handle, enum ldb_wait_type typ
 	}
 }
 
-static const struct ldb_module_ops subtree_rename_ops = {
+const struct ldb_module_ops ldb_subtree_rename_module_ops = {
 	.name		   = "subtree_rename",
 	.rename            = subtree_rename,
 	.wait              = subtree_rename_wait,
 };
-
-int ldb_subtree_rename_init(void)
-{
-	return ldb_register_module(&subtree_rename_ops);
-}

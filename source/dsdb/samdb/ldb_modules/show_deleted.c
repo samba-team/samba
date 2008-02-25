@@ -194,13 +194,8 @@ static int show_deleted_init(struct ldb_module *module)
 	return ldb_next_init(module);
 }
 
-static const struct ldb_module_ops show_deleted_ops = {
+_PUBLIC_ const struct ldb_module_ops ldb_show_deleted_module_ops = {
 	.name		   = "show_deleted",
 	.search            = show_deleted_search,
 	.init_context	   = show_deleted_init
 };
-
-int ldb_show_deleted_init(void)
-{
-	return ldb_register_module(&show_deleted_ops);
-}

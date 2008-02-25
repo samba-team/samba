@@ -55,6 +55,7 @@ struct smb_composite_fetchfile {
 		struct cli_credentials *credentials;
 		const char *workgroup;
 		const char *filename;
+		struct smbcli_options options;
 	} in;
 	struct {
 		uint8_t *data;
