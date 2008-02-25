@@ -704,7 +704,7 @@ read_conf_file(const char *fn, CK_USER_TYPE userType, const char *pin)
 	st_logf("line: %s\n", buf);
 
 	p = buf;
-	while (isspace(*p))
+	while (isspace((unsigned char)*p))
 	    p++;
 	if (*p == '#')
 	    continue;
