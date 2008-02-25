@@ -2541,7 +2541,7 @@ fi
 
 AC_CACHE_CHECK([for inotify support],samba_cv_HAVE_INOTIFY,[
 AC_CHECK_HEADERS(linux/inotify.h asm/unistd.h)
-AC_CHECK_FUNC(inotify_init)
+AC_CHECK_FUNCS(inotify_init)
 AC_HAVE_DECL(__NR_inotify_init, [#include <asm/unistd.h>])
 ],
 samba_cv_HAVE_INOTIFY=yes,

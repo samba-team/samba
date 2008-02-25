@@ -30,10 +30,12 @@
 #include <asm/types.h>
 #endif
 
+#ifndef HAVE_INOTIFY_INIT
+
 #include <linux/inotify.h>
 #include <asm/unistd.h>
 
-#ifndef HAVE_INOTIFY_INIT
+
 /*
   glibc doesn't define these functions yet (as of March 2006)
 */
@@ -51,6 +53,10 @@ static int inotify_rm_watch(int fd, int wd)
 {
 	return syscall(__NR_inotify_rm_watch, fd, wd);
 }
+#else
+
+#include <sys/inotify.h>
+
 #endif
 
 
