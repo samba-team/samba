@@ -268,6 +268,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
+	f->handle->oplock            = NULL;
 	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
 
@@ -684,9 +685,6 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
-		oplock_granted = OPLOCK_BATCH;
-	}
 
 	f->ntvfs             = h;
 	f->pvfs              = pvfs;
@@ -705,11 +703,22 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
+	f->handle->oplock            = NULL;
 	f->handle->have_opendb_entry = true;
 	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
 
 	DLIST_ADD(pvfs->files.list, f);
+
+	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
+		oplock_granted = OPLOCK_BATCH;
+	} else if (oplock_granted != OPLOCK_NONE) {
+		status = pvfs_setup_oplock(f, oplock_granted);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(lck);
+			return status;
+		}
+	}
 
 	/* setup a destructor to avoid file descriptor leaks on
 	   abnormal termination */
@@ -1185,6 +1194,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
+	f->handle->oplock            = NULL;
 	f->handle->have_opendb_entry = false;
 	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
@@ -1257,6 +1267,12 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
 		oplock_granted = OPLOCK_BATCH;
+	} else if (oplock_granted != OPLOCK_NONE) {
+		status = pvfs_setup_oplock(f, oplock_granted);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(lck);
+			return status;
+		}
 	}
 
 	f->handle->have_opendb_entry = true;
