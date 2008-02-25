@@ -314,31 +314,10 @@ sub ProtoHeader($$)
 
 	my $target = "";
 
-	my $priv = undef;
-	my $pub = undef;
+	$target = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER})";
+	$self->output("PROTO_HEADERS += $target\n");
 
-	if (defined($ctx->{PRIVATE_PROTO_HEADER})) {
-		$priv = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER})";
-		$target .= $priv;
-		if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
-			$target.= " ";
-		}
-		$self->output("PROTO_HEADERS += $priv\n");
-	} else {
-		$ctx->{PRIVATE_PROTO_HEADER} = $ctx->{PUBLIC_PROTO_HEADER};
-		$priv = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER})";
-	}
-
-	if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
-		$pub = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PUBLIC_PROTO_HEADER})";
-		$target .= $pub;
-		$self->output("PROTO_HEADERS += $pub\n");
-	} else {
-		$ctx->{PUBLIC_PROTO_HEADER} = $ctx->{PRIVATE_PROTO_HEADER};
-		$pub = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PUBLIC_PROTO_HEADER})";
-	}
-
-	$self->output("\$(call proto_header_template, $pub, $priv, \$($ctx->{NAME}_OBJ_LIST:.o=.c))\n");
+	$self->output("\$(call proto_header_template, $target, \$($ctx->{NAME}_OBJ_LIST:.o=.c))\n");
 }
 
 sub write($$)
