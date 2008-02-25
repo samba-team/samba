@@ -146,7 +146,10 @@ static DATA_BLOB odb_tdb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
 
   return NT_STATUS_OK on no conflict
 */
-static NTSTATUS share_conflict(struct opendb_entry *e1, struct opendb_entry *e2)
+static NTSTATUS share_conflict(struct opendb_entry *e1,
+			       uint32_t stream_id,
+			       uint32_t share_access,
+			       uint32_t access_mask)
 {
 	/* if either open involves no read.write or delete access then
 	   it can't conflict */
@@ -157,18 +160,18 @@ static NTSTATUS share_conflict(struct opendb_entry *e1, struct opendb_entry *e2)
 				 SEC_STD_DELETE))) {
 		return NT_STATUS_OK;
 	}
-	if (!(e2->access_mask & (SEC_FILE_WRITE_DATA |
-				 SEC_FILE_APPEND_DATA |
-				 SEC_FILE_READ_DATA |
-				 SEC_FILE_EXECUTE |
-				 SEC_STD_DELETE))) {
+	if (!(access_mask & (SEC_FILE_WRITE_DATA |
+			     SEC_FILE_APPEND_DATA |
+			     SEC_FILE_READ_DATA |
+			     SEC_FILE_EXECUTE |
+			     SEC_STD_DELETE))) {
 		return NT_STATUS_OK;
 	}
 
 	/* data IO access masks. This is skipped if the two open handles
 	   are on different streams (as in that case the masks don't
 	   interact) */
-	if (e1->stream_id != e2->stream_id) {
+	if (e1->stream_id != stream_id) {
 		return NT_STATUS_OK;
 	}
 
@@ -176,18 +179,18 @@ static NTSTATUS share_conflict(struct opendb_entry *e1, struct opendb_entry *e2)
 	if (((am) & (right)) && !((sa) & (share))) return NT_STATUS_SHARING_VIOLATION
 
 	CHECK_MASK(e1->access_mask, SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
-		   e2->share_access, NTCREATEX_SHARE_ACCESS_WRITE);
-	CHECK_MASK(e2->access_mask, SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
+		   share_access, NTCREATEX_SHARE_ACCESS_WRITE);
+	CHECK_MASK(access_mask, SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
 		   e1->share_access, NTCREATEX_SHARE_ACCESS_WRITE);
 	
 	CHECK_MASK(e1->access_mask, SEC_FILE_READ_DATA | SEC_FILE_EXECUTE,
-		   e2->share_access, NTCREATEX_SHARE_ACCESS_READ);
-	CHECK_MASK(e2->access_mask, SEC_FILE_READ_DATA | SEC_FILE_EXECUTE,
+		   share_access, NTCREATEX_SHARE_ACCESS_READ);
+	CHECK_MASK(access_mask, SEC_FILE_READ_DATA | SEC_FILE_EXECUTE,
 		   e1->share_access, NTCREATEX_SHARE_ACCESS_READ);
 
 	CHECK_MASK(e1->access_mask, SEC_STD_DELETE,
-		   e2->share_access, NTCREATEX_SHARE_ACCESS_DELETE);
-	CHECK_MASK(e2->access_mask, SEC_STD_DELETE,
+		   share_access, NTCREATEX_SHARE_ACCESS_DELETE);
+	CHECK_MASK(access_mask, SEC_STD_DELETE,
 		   e1->share_access, NTCREATEX_SHARE_ACCESS_DELETE);
 #undef CHECK_MASK
 	return NT_STATUS_OK;
@@ -303,53 +306,20 @@ static bool access_attributes_only(uint32_t access_mask,
 #undef CHECK_MASK
 }
 
-/*
-  register an open file in the open files database. This implements the share_access
-  rules
-
-  Note that the path is only used by the delete on close logic, not
-  for comparing with other filenames
-*/
-static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
-				  uint32_t stream_id, uint32_t share_access, 
-				  uint32_t access_mask, bool delete_on_close,
-				  const char *path, 
-				  uint32_t oplock_level, uint32_t *oplock_granted)
+static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
+					  const struct opendb_file *file,
+					  uint32_t stream_id, uint32_t share_access,
+					  uint32_t access_mask, bool delete_on_close,
+					  uint32_t open_disposition, bool break_to_none,
+					  bool *_attrs_only)
 {
-	struct odb_context *odb = lck->odb;
-	struct opendb_entry e;
-	int i;
-	struct opendb_file file;
 	NTSTATUS status;
-	uint32_t open_disposition = 0;
-	bool break_to_none = false;
+	uint32_t i;
 	bool attrs_only = false;
 
-	if (odb->oplocks == false) {
-		oplock_level = OPLOCK_NONE;
-	}
-
-	status = odb_pull_record(lck, &file);
-	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
-		/* initialise a blank structure */
-		ZERO_STRUCT(file);
-		file.path = path;
-	} else {
-		NT_STATUS_NOT_OK_RETURN(status);
-	}
-
-	/* see if it conflicts */
-	e.server          = odb->ntvfs_ctx->server_id;
-	e.file_handle     = file_handle;
-	e.stream_id       = stream_id;
-	e.share_access    = share_access;
-	e.access_mask     = access_mask;
-	e.delete_on_close = delete_on_close;
-	e.oplock_level    = OPLOCK_NONE;
-		
 	/* see if anyone has an oplock, which we need to break */
-	for (i=0;i<file.num_entries;i++) {
-		if (file.entries[i].oplock_level == OPLOCK_BATCH) {
+	for (i=0;i<file->num_entries;i++) {
+		if (file->entries[i].oplock_level == OPLOCK_BATCH) {
 			bool oplock_return = OPLOCK_BREAK_TO_LEVEL_II;
 			/* if this is an attribute only access
 			 * it doesn't conflict with a BACTCH oplock
@@ -370,21 +340,22 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 			if (break_to_none) {
 				oplock_return = OPLOCK_BREAK_TO_NONE;
 			}
-			odb_oplock_break_send(odb, &file.entries[i],
+			odb_oplock_break_send(odb, &file->entries[i],
 					      oplock_return);
 			return NT_STATUS_OPLOCK_NOT_GRANTED;
 		}
 	}
 
-	if (file.delete_on_close || 
-	    (file.num_entries != 0 && delete_on_close)) {
+	if (file->delete_on_close ||
+	    (file->num_entries != 0 && delete_on_close)) {
 		/* while delete on close is set, no new opens are allowed */
 		return NT_STATUS_DELETE_PENDING;
 	}
 
 	/* check for sharing violations */
-	for (i=0;i<file.num_entries;i++) {
-		status = share_conflict(&file.entries[i], &e);
+	for (i=0;i<file->num_entries;i++) {
+		status = share_conflict(&file->entries[i], stream_id,
+					share_access, access_mask);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}
 
@@ -393,13 +364,69 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	   till these are broken. Note that we check for batch oplocks
 	   before checking for sharing violations, and check for
 	   exclusive oplocks afterwards. */
-	for (i=0;i<file.num_entries;i++) {
-		if (file.entries[i].oplock_level == OPLOCK_EXCLUSIVE) {
-			odb_oplock_break_send(odb, &file.entries[i],
+	for (i=0;i<file->num_entries;i++) {
+		if (file->entries[i].oplock_level == OPLOCK_EXCLUSIVE) {
+			odb_oplock_break_send(odb, &file->entries[i],
 					      OPLOCK_BREAK_TO_NONE);
 			return NT_STATUS_OPLOCK_NOT_GRANTED;
 		}
 	}
+
+	if (_attrs_only) {
+		*_attrs_only = attrs_only;
+	}
+	return NT_STATUS_OK;
+}
+
+/*
+  register an open file in the open files database. This implements the share_access
+  rules
+
+  Note that the path is only used by the delete on close logic, not
+  for comparing with other filenames
+*/
+static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
+				  uint32_t stream_id, uint32_t share_access,
+				  uint32_t access_mask, bool delete_on_close,
+				  const char *path,
+				  uint32_t oplock_level, uint32_t *oplock_granted)
+{
+	struct odb_context *odb = lck->odb;
+	struct opendb_entry e;
+	struct opendb_file file;
+	NTSTATUS status;
+	uint32_t open_disposition = 0;
+	bool break_to_none = false;
+	bool attrs_only = false;
+
+	if (odb->oplocks == false) {
+		oplock_level = OPLOCK_NONE;
+	}
+
+	status = odb_pull_record(lck, &file);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		/* initialise a blank structure */
+		ZERO_STRUCT(file);
+		file.path = path;
+	} else {
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	/* see if it conflicts */
+	status = odb_tdb_open_can_internal(odb, &file, stream_id,
+					   share_access, access_mask,
+					   delete_on_close, open_disposition,
+					   break_to_none, &attrs_only);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* see if it conflicts */
+	e.server          = odb->ntvfs_ctx->server_id;
+	e.file_handle     = file_handle;
+	e.stream_id       = stream_id;
+	e.share_access    = share_access;
+	e.access_mask     = access_mask;
+	e.delete_on_close = delete_on_close;
+	e.oplock_level    = OPLOCK_NONE;
 
 	/*
 	  possibly grant an exclusive, batch or level2 oplock
@@ -719,8 +746,11 @@ static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
 	struct odb_context *odb = lck->odb;
 	NTSTATUS status;
 	struct opendb_file file;
-	struct opendb_entry e;
-	int i;
+	uint32_t stream_id = 0;
+	uint32_t open_disposition = 0;
+	bool delete_on_close = false;
+	bool break_to_none = false;
+	bool attrs_only = false;
 
 	status = odb_pull_record(lck, &file);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
@@ -728,32 +758,15 @@ static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) && 
-	    file.num_entries != 0) {
-		return NT_STATUS_SHARING_VIOLATION;
+	if (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		delete_on_close = true;
 	}
 
-	if (file.delete_on_close) {
-		return NT_STATUS_DELETE_PENDING;
-	}
-
-	e.server       = odb->ntvfs_ctx->server_id;
-	e.file_handle  = NULL;
-	e.stream_id    = 0;
-	e.share_access = share_access;
-	e.access_mask  = access_mask;
-		
-	for (i=0;i<file.num_entries;i++) {
-		status = share_conflict(&file.entries[i], &e);
-		if (!NT_STATUS_IS_OK(status)) {
-			/* note that we discard the error code
-			   here. We do this as unless we are actually
-			   doing an open (which comes via a different
-			   function), we need to return a sharing
-			   violation */
-			return NT_STATUS_SHARING_VIOLATION;
-		}
-	}
+	status = odb_tdb_open_can_internal(odb, &file, stream_id,
+					   share_access, access_mask,
+					   delete_on_close, open_disposition,
+					   break_to_none, &attrs_only);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
 }
