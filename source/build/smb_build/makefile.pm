@@ -6,20 +6,20 @@
 #  Released under the GNU GPL
 
 package smb_build::makefile;
-use smb_build::env;
 use smb_build::output;
 use File::Basename;
 use strict;
 
-use base 'smb_build::env';
 use Cwd 'abs_path';
 
 sub new($$$)
 {
 	my ($myname, $config, $mkfile) = @_;
-	my $self = new smb_build::env($config);
-	
+	my $self = {};
+
 	bless($self, $myname);
+
+	$self->_set_config($config);
 
 	$self->{output} = "";
 
@@ -31,6 +31,29 @@ sub new($$$)
 	$self->output("\n");
 
 	return $self;
+}
+
+sub _set_config($$)
+{
+	my ($self, $config) = @_;
+
+	$self->{config} = $config;
+
+	if (not defined($self->{config}->{srcdir})) {
+		$self->{config}->{srcdir} = '.';
+	}
+
+	if (not defined($self->{config}->{builddir})) {
+		$self->{config}->{builddir}  = '.';
+	}
+
+	if ($self->{config}->{prefix} eq "NONE") {
+		$self->{config}->{prefix} = $self->{config}->{ac_default_prefix};
+	}
+
+	if ($self->{config}->{exec_prefix} eq "NONE") {
+		$self->{config}->{exec_prefix} = $self->{config}->{prefix};
+	}
 }
 
 sub output($$)
