@@ -23,6 +23,7 @@ default: all
 
 include rules.mk
 include data.mk
+include extra_cflags.txt
 
 DEFAULT_HEADERS = $(srcdir)/lib/util/dlinklist.h \
 		  $(srcdir)/version.h
