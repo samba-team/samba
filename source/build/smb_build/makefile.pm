@@ -211,7 +211,7 @@ sub MergedObj($$)
 $ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_OBJ_LIST)
 	\@echo Partially linking \$@
 	\@mkdir -p \$(D@)
-	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_OBJ_LIST)
+	\$(PARTLINK) -o \$@ \$^
 
 __EOD__
 );
@@ -222,8 +222,6 @@ sub StaticLibraryPrimitives($$)
 	my ($self,$ctx) = @_;
 
 	return unless (defined($ctx->{OBJ_FILES}));
-
-	push (@{$self->{static_libs}}, $ctx->{RESULT_STATIC_LIBRARY}) if ($ctx->{TYPE} eq "LIBRARY");
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
