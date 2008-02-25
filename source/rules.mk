@@ -93,34 +93,34 @@ unused_macros:
 # Partially link
 # Arguments: target object file, source object files
 define partial_link_template 
-$(1): $(2)
-	@echo Partially linking $@
-	@mkdir -p \$(@D)
-	$(PARTLINK) -o $@ $^
+$(1): $(2) ;
+	@echo Partially linking $$@
+	@mkdir -p $$(@D)
+	$$(PARTLINK) -o $$@ $$^
 endef
 
 # Link a binary
 # Arguments: target file, depends, flags
 define binary_link_template
-$(1): $(2)
-	@echo Linking $@
-	@$(BNLD) $(BNLD_FLAGS) $(INTERN_LDFLAGS) -o $@ $(INSTALL_LINK_FLAGS) $(3)
+$(1): $(2) ;
+	@echo Linking $$@
+	@$$(BNLD) $$(BNLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
 endef
 
 # Link a host-machine binary
 # Arguments: target file, depends, flags
 define host_binary_link_template
-$(1): $(2)
-	@echo Linking $@
-	@$(HOSTLD) $(HOSTLD_FLAGS) -L${builddir}/bin/static -o $@ $(INSTALL_LINK_FLAGS) $(3)
+$(1): $(2) ;
+	@echo Linking $$@
+	@$$(HOSTLD) $$(HOSTLD_FLAGS) -L$${builddir}/bin/static -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
 endef
 
 # Create a prototype header
 # Arguments: header file, c files
 define proto_header_template
-$(1): $(2)
-	@echo "Creating $@"
-	@$(PERL) $(srcdir)/script/mkproto.pl --srcdir=$(srcdir) --builddir=$(builddir) --private=$(1)) $(2)
+$(1): $(2) ;
+	@echo "Creating $$@"
+	@$$(PERL) $$(srcdir)/script/mkproto.pl --srcdir=$$(srcdir) --builddir=$$(builddir) --all=$$@ $$^
 endef
 
 ###############################################################################

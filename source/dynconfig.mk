@@ -21,5 +21,4 @@ PATH_FLAGS = -DCONFIGFILE=\"$(CONFIGFILE)\" \
 
 dynconfig.o: dynconfig.c Makefile
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) `$(PERL) $(srcdir)/script/cflags.pl $@` $(CPPFLAGS) $(PICFLAG) \
-		$(PATH_FLAGS) -c $(FIRST_PREREQ) -o $@
+	@$(CC) $(CFLAGS) $(CPPFLAGS) $(PICFLAG) $(PATH_FLAGS) -c $< -o $@
