@@ -5,7 +5,7 @@ VERSION = 0.0.1
 SO_VERSION = 0
 PC_FILE = ndr.pc
 PUBLIC_HEADERS = ndr/libndr.h
-PUBLIC_PROTO_HEADER = ndr/libndr_proto.h
+PRIVATE_PROTO_HEADER = ndr/libndr_proto.h
 OBJ_FILES = \
 		ndr/ndr.o \
 		ndr/ndr_basic.o \
@@ -462,7 +462,7 @@ PC_FILE = dcerpc.pc
 PUBLIC_HEADERS = rpc/dcerpc.h \
 			gen_ndr/mgmt.h gen_ndr/ndr_mgmt.h gen_ndr/ndr_mgmt_c.h \
 			gen_ndr/epmapper.h gen_ndr/ndr_epmapper.h gen_ndr/ndr_epmapper_c.h
-PUBLIC_PROTO_HEADER = rpc/dcerpc_proto.h
+PRIVATE_PROTO_HEADER = rpc/dcerpc_proto.h
 OBJ_FILES = \
 		rpc/dcerpc.o \
 		rpc/dcerpc_auth.o \

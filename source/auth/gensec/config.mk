@@ -5,7 +5,7 @@ PC_FILE = gensec.pc
 VERSION = 0.0.1
 SO_VERSION = 0
 PUBLIC_HEADERS = gensec.h spnego.h
-PUBLIC_PROTO_HEADER = gensec_proto.h
+PRIVATE_PROTO_HEADER = gensec_proto.h
 OBJ_FILES = gensec.o socket.o
 PUBLIC_DEPENDENCIES = \
 		CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO ASN1_UTIL samba-socket LIBPACKET

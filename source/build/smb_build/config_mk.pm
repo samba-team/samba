@@ -38,7 +38,6 @@ my $section_types = {
 
 		"MANPAGE"		=> "string",
 
-		"PUBLIC_PROTO_HEADER"	=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
 
 		"PUBLIC_HEADERS"	=> "list",
@@ -106,7 +105,6 @@ my $section_types = {
 
 		"PUBLIC_HEADERS"	=> "list",
 
-		"PUBLIC_PROTO_HEADER"	=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
 
 		"CFLAGS"		=> "list",

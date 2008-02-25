@@ -103,7 +103,7 @@ PUBLIC_DEPENDENCIES = LIBCLI_NBT MESSAGING
 
 [SUBSYSTEM::LIBCLI_SMB]
 PUBLIC_HEADERS = libcli.h
-PUBLIC_PROTO_HEADER = libcli_proto.h
+PRIVATE_PROTO_HEADER = libcli_proto.h
 OBJ_FILES = clireadwrite.o \
 		cliconnect.o \
 		clifile.o \

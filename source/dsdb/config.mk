@@ -5,7 +5,7 @@ mkinclude samdb/ldb_modules/config.mk
 ################################################
 # Start SUBSYSTEM SAMDB
 [SUBSYSTEM::SAMDB]
-PUBLIC_PROTO_HEADER = samdb/samdb_proto.h
+PRIVATE_PROTO_HEADER = samdb/samdb_proto.h
 PUBLIC_HEADERS = samdb/samdb.h
 PUBLIC_DEPENDENCIES = HEIMDAL_KRB5 
 PRIVATE_DEPENDENCIES = LIBNDR NDR_MISC NDR_DRSUAPI NDR_DRSBLOBS NSS_WRAPPER \
@@ -18,7 +18,7 @@ OBJ_FILES = \
 		repl/replicated_objects.o
 
 [SUBSYSTEM::SAMDB_COMMON]
-PUBLIC_PROTO_HEADER = common/proto.h
+PRIVATE_PROTO_HEADER = common/proto.h
 PRIVATE_DEPENDENCIES = LIBLDB
 OBJ_FILES = \
 		common/sidmap.o \
@@ -26,7 +26,7 @@ OBJ_FILES = \
 		common/util.o
 
 [SUBSYSTEM::SAMDB_SCHEMA]
-PUBLIC_PROTO_HEADER = schema/proto.h
+PRIVATE_PROTO_HEADER = schema/proto.h
 PUBLIC_HEADERS = schema/schema.h
 PRIVATE_DEPENDENCIES = SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS
 OBJ_FILES = \
