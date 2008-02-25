@@ -229,15 +229,7 @@ sub MergedObj($$)
 	return unless defined($ctx->{OUTPUT});
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->output(<< "__EOD__"
-#
-$ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_OBJ_LIST)
-	\@echo Partially linking \$@
-	\@mkdir -p \$(\@D)
-	\$(PARTLINK) -o \$@ \$^
-
-__EOD__
-);
+	$self->output("\$(call partial_link_template, $ctx->{RESULT_MERGED_OBJ}, \$($ctx->{NAME}_OBJ_LIST))\n");
 }
 
 sub StaticLibraryPrimitives($$)

@@ -86,12 +86,18 @@ check:: test
 unused_macros:
 	$(srcdir)/script/find_unused_macros.pl `find . -name "*.[ch]"` | sort
 
-# Create a static library
-%.a:
-	@echo Linking $@
-	@rm -f $@
-	@mkdir -p $(@D)
-	@$(STLD) $(STLD_FLAGS) $@ $^
+###############################################################################
+# Templates
+###############################################################################
+
+# Partially link
+# Arguments: target object file, source object files
+define partial_link_template 
+$(1): $(2)
+	@echo Partially linking $@
+	@mkdir -p \$(@D)
+	$(PARTLINK) -o $@ $^
+endef
 
 ###############################################################################
 # File types
@@ -144,6 +150,13 @@ include/includes.d: include/includes.h
 .l.c:
 	@echo "Building $< with $(LEX)"
 	@-$(srcdir)/script/lex_compile.sh "$(LEX)" "$<" "$@"
+
+%.a:
+	@echo Linking $@
+	@rm -f $@
+	@mkdir -p $(@D)
+	@$(STLD) $(STLD_FLAGS) $@ $^
+
 
 DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpages/docbook.xsl
 
