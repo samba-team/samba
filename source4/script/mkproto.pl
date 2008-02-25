@@ -157,7 +157,9 @@ sub process_file($$$)
 
 	$filename =~ s/\.o$/\.c/g;
 
-	if (!open(FH, "< $builddir/$filename")) {
+	if ($filename =~ /^\//) {
+		open(FH, "<$filename") or die("Failed to open $filename");
+	} elsif (!open(FH, "< $builddir/$filename")) {
 	    open(FH, "< $srcdir/$filename") || die "Failed to open $filename";
 	}
 
