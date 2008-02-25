@@ -10,7 +10,6 @@ use smb_build::header;
 use smb_build::input;
 use smb_build::config_mk;
 use smb_build::output;
-use smb_build::cflags;
 use smb_build::summary;
 use smb_build::config;
 use strict;
@@ -68,6 +67,7 @@ foreach my $key (values %$OUTPUT) {
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->PythonFiles($key) if defined($key->{PYTHON_FILES});
 	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER});
+	$mkenv->CFlags($key);
 }
 
 foreach my $key (values %$OUTPUT) {
@@ -83,9 +83,6 @@ foreach my $key (values %$OUTPUT) {
 
 $mkenv->write("data.mk");
 header::create_smb_build_h($OUTPUT, "include/build.h");
-
-cflags::create_cflags($OUTPUT, $config::config{srcdir},
-		    $config::config{builddir}, "extra_cflags.txt");
 
 summary::show($OUTPUT, \%config::config);
 
