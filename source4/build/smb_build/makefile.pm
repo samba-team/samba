@@ -184,7 +184,7 @@ sub SharedLibrary($$)
 
 $ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
-	\@mkdir -p $ctx->{SHAREDDIR}
+	\@mkdir -p \$(D@)
 	\@\$(SHLD) \$(LDFLAGS) \$(SHLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
 		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
 		\$($ctx->{NAME}_LINK_FLAGS) \\
@@ -210,7 +210,7 @@ sub MergedObj($$)
 #
 $ctx->{RESULT_MERGED_OBJ}: \$($ctx->{NAME}_OBJ_LIST)
 	\@echo Partially linking \$@
-	\@mkdir -p bin/mergedobj
+	\@mkdir -p \$(D@)
 	\$(PARTLINK) -o \$@ \$($ctx->{NAME}_OBJ_LIST)
 
 __EOD__
