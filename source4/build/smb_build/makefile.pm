@@ -272,13 +272,12 @@ sub Binary($$)
 	my ($self,$ctx) = @_;
 
 	unless (defined($ctx->{INSTALLDIR})) {
+		$self->output("binaries:: $ctx->{TARGET_BINARY}\n");
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
 		$self->output("SBIN_PROGS += $ctx->{RESULT_BINARY}\n");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
 		$self->output("BIN_PROGS += $ctx->{RESULT_BINARY}\n");
 	}
-
-	$self->output("binaries:: $ctx->{TARGET_BINARY}\n");
 
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 	$self->_prepare_list($ctx, "DEPEND_LIST");
@@ -402,11 +401,7 @@ sub CFlags($$)
 	my $cflags = join(' ', @cflags);
 
 	foreach (@{$key->{OBJ_LIST}}) {
-		my $ofile = $_;
-		my $dfile = $_;
-		$dfile =~ s/\.o$/.d/;
-		$dfile =~ s/\.ho$/.d/;
-		$self->output("$ofile $dfile: CFLAGS+= $cflags\n");
+		$self->output("\$($key->{NAME}_OBJ_FILES) \$($key->{NAME}_OBJ_FILES:.o=.d): CFLAGS+= $cflags\n");
 	}
 }
 
