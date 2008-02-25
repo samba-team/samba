@@ -29,6 +29,7 @@
 #include "dsdb/samdb/samdb.h"
 
 struct pvfs_wait;
+struct pvfs_oplock;
 
 /* this is the private structure for the posix vfs backend. It is used
    to hold per-connection (per tree connect) state information */
@@ -153,6 +154,13 @@ struct pvfs_file_handle {
 	uint64_t position;
 
 	bool have_opendb_entry;
+
+	/*
+	 * we need to wait for oplock break requests from other processes,
+	 * and we need to remember the pvfs_file so we can correctly
+	 * forward the oplock break to the client
+	 */
+	struct pvfs_oplock *oplock;
 
 	/* we need this hook back to our parent for lock destruction */
 	struct pvfs_state *pvfs;
