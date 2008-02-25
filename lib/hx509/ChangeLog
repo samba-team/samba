@@ -1,3 +1,7 @@
+2008-02-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: libhx509_la_OBJECTS depends on hx_locl.h
+
 2008-02-11  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Use ldap-prep (with libwind) to compare names
