@@ -444,7 +444,7 @@ static int vfswrap_rename(vfs_handle_struct *handle,  const char *oldname, const
 
 	START_PROFILE(syscall_rename);
 	result = rename(oldname, newname);
-	if (errno == EXDEV) {
+	if ((result == -1) && (errno == EXDEV)) {
 		/* Rename across filesystems needed. */
 		result = copy_reg(oldname, newname);
 	}
