@@ -106,4 +106,6 @@ To run binaries without installing, set the following environment variable:
 EOF
 }
 
+print "To build Samba, run $config::config{MAKE}\n";
+
 1;

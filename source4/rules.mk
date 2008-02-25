@@ -1,12 +1,12 @@
 # Dependencies command
 DEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.o) -MT $@ \
-    $(CFLAGS) $(CPPFLAGS) $(FIRST_PREREQ) -o $@
+    $(CFLAGS) $(CPPFLAGS) $< -o $@
 # Dependencies for host objects
 HDEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.ho) -MT $@ \
-    $(HOSTCC_FLAGS) $(CPPFLAGS) $(FIRST_PREREQ) -o $@
+    $(HOSTCC_FLAGS) $(CPPFLAGS) $< -o $@
 # Dependencies for precompiled headers
 PCHDEPENDS = $(CC) -M -MG -MT include/includes.h.gch -MT $@ \
-    $(CFLAGS) $(CPPFLAGS) $(FIRST_PREREQ) -o $@
+    $(CFLAGS) $(CPPFLAGS) $< -o $@
 
 # $< is broken in older BSD versions:
 # when $@ is foo/bar.o, $< could be torture/foo/bar.c
@@ -17,19 +17,19 @@ PCHDEPENDS = $(CC) -M -MG -MT include/includes.h.gch -MT $@ \
 # building with $srcdir != $builddir work.
 
 # Run a static analysis checker
-CHECK = $(CC_CHECKER) $(CFLAGS) $(PICFLAG) $(CPPLAGS) -c $(FIRST_PREREQ) -o $@
+CHECK = $(CC_CHECKER) $(CFLAGS) $(PICFLAG) $(CPPLAGS) -c $< -o $@
 
 # Run the configured compiler
 COMPILE = $(CC) $(CFLAGS) $(PICFLAG) \
 		  $(CPPFLAGS) \
-		  -c $(FIRST_PREREQ) -o $@
+		  -c $< -o $@
 
 # Run the compiler for the build host
-HCOMPILE = $(HOSTCC) $(HOSTCC_FLAGS) $(CPPFLAGS) -c $(FIRST_PREREQ) -o $@
+HCOMPILE = $(HOSTCC) $(HOSTCC_FLAGS) $(CPPFLAGS) -c $< -o $@
 
 # Precompile headers
 PCHCOMPILE = @$(CC) -Ilib/replace \
-    $(CFLAGS) $(PICFLAG) $(CPPFLAGS) -c $(FIRST_PREREQ) -o $@
+    $(CFLAGS) $(PICFLAG) $(CPPFLAGS) -c $< -o $@
 
 # Partial linking
 PARTLINK = @$(PROG_LD) -r
