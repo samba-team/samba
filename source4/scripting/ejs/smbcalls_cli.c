@@ -445,7 +445,7 @@ static int ejs_tree_connect(MprVarHandle eid, int argc, char **argv)
 	io.in.credentials            = creds;
 	io.in.fallback_to_anonymous  = false;
 	io.in.workgroup              = lp_workgroup(mprLpCtx());
-	lp_smbcli_options(global_loadparm, &io.in.options);
+	lp_smbcli_options(mprLpCtx(), &io.in.options);
 
 	result = smb_composite_connect(&io, mem_ctx, 
 				       lp_resolve_context(mprLpCtx()), 
