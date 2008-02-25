@@ -137,7 +137,7 @@ sub create_output($$)
 
 		# Combine object lists
 		if (defined($part->{OBJ_FILES})) {
-			my $list = "\$(realpath \$(addprefix $part->{BASEDIR}/, " . join(" ", @{$part->{OBJ_FILES}}) . "))";
+			my $list = "\$(abspath \$(addprefix $part->{BASEDIR}/, " . join(" ", @{$part->{OBJ_FILES}}) . "))";
 			push(@{$part->{OBJ_LIST}}, $list);
 		}
 
