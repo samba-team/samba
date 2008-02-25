@@ -168,9 +168,6 @@ DOCBOOK_MANPAGE_URL = http://docbook.sourceforge.net/release/xsl/current/manpage
 .8.xml.8:
 	$(XSLTPROC) -o $@ $(DOCBOOK_MANPAGE_URL) $<
 
-DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
-		   include/includes.d
-
 dist:: idl_full manpages configure distclean 
 
 configure: 
