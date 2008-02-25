@@ -27,6 +27,7 @@
 
 
 _PUBLIC_ WERROR reg_preg_diff_load(int fd,
+				   struct smb_iconv_convenience *iconv_convenience, 
 				   const struct reg_diff_callbacks *callbacks,
 				   void *callback_data);
 
@@ -306,7 +307,7 @@ _PUBLIC_ WERROR reg_diff_load(const char *filename,
 #endif
 	if (strncmp(hdr, "PReg", 4) == 0) {
 		/* Must be a GPO Registry.pol file */
-		return reg_preg_diff_load(fd, callbacks, callback_data);
+		return reg_preg_diff_load(fd, iconv_convenience, callbacks, callback_data);
 	} else {
 		/* Must be a normal .REG file */
 		return reg_dotreg_diff_load(fd, iconv_convenience, callbacks, callback_data);
