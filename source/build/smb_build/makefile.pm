@@ -204,7 +204,6 @@ sub SharedLibrary($$)
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
 	$self->output(<< "__EOD__"
-
 $ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
 	\@echo Linking \$\@
 	\@mkdir -p \$(\@D)
@@ -212,14 +211,14 @@ $ctx->{RESULT_SHARED_LIBRARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL
 		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
 		\$($ctx->{NAME}_LINK_FLAGS) \\
 		\$(if \$(SONAMEFLAG), \$(SONAMEFLAG)$ctx->{LIBRARY_SONAME})
+ifneq ($ctx->{LIBRARY_REALNAME}, $ctx->{LIBRARY_SONAME})
+	\@test \$($ctx->{NAME}_VERSION) = \$($ctx->{NAME}_SOVERSION) || ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}
+endif
+ifdef $ctx->{NAME}_SOVERSION
+	\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}
+endif
 __EOD__
 );
-	if ($ctx->{LIBRARY_REALNAME} ne $ctx->{LIBRARY_SONAME}) {
-		$self->output("\t\@test \$($ctx->{NAME}_VERSION) = \$($ctx->{NAME}_SOVERSION) || ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_SONAME}\n");
-	}
-	$self->output("ifdef $ctx->{NAME}_SOVERSION\n");
-	$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$ctx->{LIBRARY_DEBUGNAME}\n");
-	$self->output("endif\n");
 }
 
 sub MergedObj($$)
@@ -285,25 +284,10 @@ sub Binary($$)
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-$self->output(<< "__EOD__"
-$ctx->{RESULT_BINARY}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
-	\@echo Linking \$\@
-__EOD__
-	);
-
 	if (defined($ctx->{USE_HOSTCC}) && $ctx->{USE_HOSTCC} eq "YES") {
-		$self->output(<< "__EOD__"
-	\@\$(HOSTLD) \$(HOSTLD_FLAGS) -L\${builddir}/bin/static -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$\($ctx->{NAME}_LINK_FLAGS)
-__EOD__
-		);
+$self->output("\$(call host_binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}_LINK_FLAGS))\n");
 	} else {
-		$self->output(<< "__EOD__"
-	\@\$(BNLD) \$(BNLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$\($ctx->{NAME}_LINK_FLAGS) 
-
-__EOD__
-		);
+$self->output("\$(call binary_link_template, $ctx->{RESULT_BINARY}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}_LINK_FLAGS))\n");
 	}
 }
 
@@ -355,9 +339,7 @@ sub ProtoHeader($$)
 		$pub = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PUBLIC_PROTO_HEADER})";
 	}
 
-	$self->output("$pub: $ctx->{MK_FILE} \$($ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
-	$self->output("\t\@echo \"Creating \$@\"\n");
-	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --private=$priv --public=$pub \$($ctx->{NAME}_OBJ_LIST)\n\n");
+	$self->output("\$(call proto_header_template, $pub, $priv, \$($ctx->{NAME}_OBJ_LIST:.o=.c))\n");
 }
 
 sub write($$)

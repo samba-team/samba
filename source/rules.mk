@@ -99,6 +99,30 @@ $(1): $(2)
 	$(PARTLINK) -o $@ $^
 endef
 
+# Link a binary
+# Arguments: target file, depends, flags
+define binary_link_template
+$(1): $(2)
+	@echo Linking $@
+	@$(BNLD) $(BNLD_FLAGS) $(INTERN_LDFLAGS) -o $@ $(INSTALL_LINK_FLAGS) $(3)
+endef
+
+# Link a host-machine binary
+# Arguments: target file, depends, flags
+define host_binary_link_template
+$(1): $(2)
+	@echo Linking $@
+	@$(HOSTLD) $(HOSTLD_FLAGS) -L${builddir}/bin/static -o $@ $(INSTALL_LINK_FLAGS) $(3)
+endef
+
+# Create a prototype header
+# Arguments: proto header, private header, c files
+define proto_header_template
+$(1) $(2): $(3)
+	@echo "Creating $@"
+	@$(PERL) $(srcdir)/script/mkproto.pl --srcdir=$(srcdir) --builddir=$(builddir) --private=$(2) --public=$(1) $(3)
+endef
+
 ###############################################################################
 # File types
 ###############################################################################
