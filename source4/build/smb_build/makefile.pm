@@ -312,9 +312,7 @@ sub ProtoHeader($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $target = "";
-
-	$target = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER})";
+	my $target = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER})";
 	$self->output("PROTO_HEADERS += $target\n");
 
 	$self->output("\$(call proto_header_template, $target, \$($ctx->{NAME}_OBJ_LIST:.o=.c))\n");
@@ -367,21 +365,20 @@ sub CFlags($$)
 	my @cflags = ();
 	foreach my $flag (@sorted_cflags) {
 		if($src_ne_build) {
-				if($flag =~ m#^-I([^/].*$)#) {
-					my $dir = $1;
-					$dir =~ s#^\$\((?:src|build)dir\)/?##;
+			if($flag =~ m#^-I([^/].*$)#) {
+				my $dir = $1;
+				$dir =~ s#^\$\((?:src|build)dir\)/?##;
 				push(@cflags, "-I$builddir/$dir", "-I$srcdir/$dir");
-					next;
-				}
+				next;
+			}
 		}
 		push(@cflags, $flag);
 	}
 	
 	my $cflags = join(' ', @cflags);
 
-	foreach (@{$key->{OBJ_LIST}}) {
-		$self->output("\$($key->{NAME}_OBJ_FILES) \$($key->{NAME}_OBJ_FILES:.o=.d): CFLAGS+= $cflags\n");
-	}
+	my $ext = "o";
+	$self->output("\$($key->{NAME}_OBJ_LIST) \$(patsubst %.ho,%.d,\$($key->{NAME}_OBJ_LIST:.o=.d)): CFLAGS+=$cflags\n");
 }
 
 1;
