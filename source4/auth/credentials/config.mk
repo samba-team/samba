@@ -1,7 +1,7 @@
 #################################
 # Start SUBSYSTEM CREDENTIALS
 [SUBSYSTEM::CREDENTIALS]
-PUBLIC_PROTO_HEADER = credentials_proto.h
+PRIVATE_PROTO_HEADER = credentials_proto.h
 PUBLIC_HEADERS = credentials.h credentials_krb5.h
 OBJ_FILES = credentials.o \
 		credentials_files.o \
