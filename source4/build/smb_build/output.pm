@@ -164,8 +164,8 @@ sub create_output($$)
 			my $elem = $depend->{$_};
 			next if $elem == $part;
 
-			merge_array(\$part->{FINAL_CFLAGS}, $elem->{CPPFLAGS});
-			merge_array(\$part->{FINAL_CFLAGS}, $elem->{CFLAGS});
+			push(@{$part->{FINAL_CFLAGS}}, "\$($elem->{NAME}_CPPFLAGS)");
+			push(@{$part->{FINAL_CFLAGS}}, "\$($elem->{NAME}_CFLAGS)");
 		}
 
 		# Always import the link options of the unique dependencies
@@ -173,8 +173,8 @@ sub create_output($$)
 			my $elem = $depend->{$_};
 			next if $elem == $part;
 
-			push(@{$part->{LINK_FLAGS}}, @{$elem->{LIBS}}) if defined($elem->{LIBS});
-			push(@{$part->{LINK_FLAGS}}, @{$elem->{LDFLAGS}}) if defined($elem->{LDFLAGS});
+			push(@{$part->{LINK_FLAGS}}, "\$($elem->{NAME}_LIBS)");
+			push(@{$part->{LINK_FLAGS}}, "\$($elem->{NAME}_LDFLAGS");
 			if (defined($elem->{OUTPUT_TYPE}) and @{$elem->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ") {
 				push (@{$part->{FULL_OBJ_LIST}}, $elem->{TARGET});
 			} else {
