@@ -108,19 +108,7 @@ ${kinit} --password-file=${objdir}/foopassword user1@${R} || exitcode=1
 echo "======test unreadable/non existant keytab and its error message"
 ${context} --mech-type=krb5 host@lucid.test.h5l.se || \
 	{ exitcode=1 ; echo "test failed"; }
-chmod 0 ${keytabfile}
-echo "checking non readable keytabfile (krb5)"
-${context} --mech-type=krb5 host@lucid.test.h5l.se  > test_context.log 2>&1 && \
-	{ exitcode=1 ; echo "test failed"; }
-grep ${keytabfile} test_context.log > /dev/null || \
-	{ exitcode=1 ; echo "test failed"; }
-echo "checking non readable keytabfile (spnego)"
-${context} --mech-type=spnego host@lucid.test.h5l.se > test_context.log 2>&1 && \
-	{ exitcode=1 ; echo "test failed"; }
-grep ${keytabfile} test_context.log > /dev/null || \
-	{ exitcode=1 ; echo "test failed"; }
 
-chmod 600 ${keytabfile}
 mv ${keytabfile} ${keytabfile}.no
 
 echo "checking non existant keytabfile (krb5)"
