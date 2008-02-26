@@ -281,16 +281,7 @@ sub StaticLibrary($$)
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
 	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
 
-	$self->output(<< "__EOD__"
-#
-$ctx->{RESULT_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)
-	\@echo Linking \$@
-	\@rm -f \$@
-	\@mkdir -p $ctx->{STATICDIR}
-	\@\$(STLD) \$(STLD_FLAGS) \$@ \$($ctx->{NAME}_FULL_OBJ_LIST)
-
-__EOD__
-);
+	$self->output("$ctx->{RESULT_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)\n");
 }
 
 sub Header($$)
