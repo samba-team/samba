@@ -86,6 +86,7 @@ typedef struct {
   krb5_principal principal;
   int cred_flags;
 #define GSS_CF_DESTROY_CRED_ON_RELEASE	1
+#define GSS_CF_NO_CI_FLAGS		2
   struct krb5_keytab_data *keytab;
   OM_uint32 lifetime;
   gss_cred_usage_t usage;

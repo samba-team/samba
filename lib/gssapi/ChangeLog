@@ -1,3 +1,7 @@
+2008-02-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Add flag to krb5 to not add GSS-API INT|CONF to the negotiation
+
 2008-02-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* make the SPNEGO mech store the error itself instead, works for

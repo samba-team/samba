@@ -80,6 +80,7 @@ extern gss_OID GSS_KRB5_GET_SERVICE_KEYBLOCK_X;
 /* Extensions creds */
 extern gss_OID GSS_KRB5_IMPORT_CRED_X;
 extern gss_OID GSS_KRB5_SET_ALLOWABLE_ENCTYPES_X;
+extern gss_OID GSS_KRB5_CRED_NO_CI_FLAGS_X;
 
 /*
  * kerberos mechanism specific functions
