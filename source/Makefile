@@ -38,7 +38,7 @@ ALL_PREDEP = proto
 .NOTPARALLEL:
 endif
 
-include rules.mk
+include build/make/rules.mk
 include data.mk
 include extra_cflags.txt
 
