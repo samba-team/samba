@@ -3600,14 +3600,14 @@ static bool check_share_sanity(struct cli_state *cli, fstring netname, uint32 ty
 }
 
 /** 
- * Migrate shares from a remote RPC server to the local RPC srever
+ * Migrate shares from a remote RPC server to the local RPC server
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
