@@ -145,6 +145,14 @@ ${hxtool} cms-create-sd \
 	"$srcdir/test_chain.in" \
 	sd.data > /dev/null || exit 1
 
+echo "verify signed data (pem)"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	--pem \
+        sd.data sd.data.out > /dev/null
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
+
 echo "create signed data (pem, detached)"
 ${hxtool} cms-create-sd \
 	--certificate=FILE:$srcdir/data/test.crt,$srcdir/data/test.key \
@@ -152,6 +160,15 @@ ${hxtool} cms-create-sd \
 	--pem \
 	"$srcdir/test_chain.in" \
 	sd.data > /dev/null || exit 1
+
+echo "verify signed data (pem, detached)"
+${hxtool} cms-verify-sd \
+	--missing-revoke \
+	--anchors=FILE:$srcdir/data/ca.crt \
+	--pem \
+        --signed-content="$srcdir/test_chain.in" \
+        sd.data sd.data.out > /dev/null
+cmp "$srcdir/test_chain.in" sd.data.out || exit 1
 
 echo "create signed data (p12)"
 ${hxtool} cms-create-sd \
