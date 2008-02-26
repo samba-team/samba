@@ -228,7 +228,7 @@ sub MergedObj($$)
 	return unless defined($ctx->{OUTPUT});
 
 	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
-	$self->output("\$(call partial_link_template, $ctx->{RESULT_MERGED_OBJ}, \$($ctx->{NAME}_OBJ_LIST))\n");
+	$self->output("\$(call partial_link_template, \$($ctx->{NAME}_OUTPUT), \$($ctx->{NAME}_OBJ_LIST))\n");
 }
 
 sub StaticLibraryPrimitives($$)
