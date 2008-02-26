@@ -7,16 +7,21 @@ lib_LTLIBRARIES = libwind.la
 dist_libwind_la_SOURCES =			\
 	bidi.c					\
 	bidi_table.c				\
+	bidi_table.h				\
 	combining.c				\
 	combining_table.c			\
+	combining_table.h			\
 	doxygen.c				\
 	errorlist.c				\
 	errorlist_table.c			\
-	map_table.c				\
+	errorlist_table.h			\
 	map.c					\
+	map_table.c				\
+	map_table.h				\
 	ldap.c					\
 	normalize.c				\
 	normalize_table.c			\
+	normalize_table.h			\
 	punycode.c				\
 	stringprep.c				\
 	wind.h					\
@@ -70,7 +75,8 @@ check_PROGRAMS =				\
 
 test_punycode_SOURCES =				\
 	test-punycode.c				\
-	punycode_examples.c
+	punycode_examples.c			\
+	punycode_examples.h
 
 bin_PROGRAMS = idn-lookup
 
