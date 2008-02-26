@@ -128,7 +128,7 @@ sub SharedModule($$)
 	$sane_subsystem =~ s/^lib//;
 	
 	if ($ctx->{TYPE} eq "PYTHON") {
-		$self->output("PYTHON_DSOS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
+		$self->output("\$(call python_module_template," . basename($ctx->{NAME}) . ",$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME})\n");
 	} else {
 		$self->output("PLUGINS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
 		$self->output("installplugins:: $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
@@ -295,9 +295,7 @@ sub PythonFiles($$)
 	my ($self,$ctx) = @_;
 
 	foreach (@{$ctx->{PYTHON_FILES}}) {
-		my $target = "bin/python/".basename($_);
-		$self->output("$target: \$(addprefix $ctx->{BASEDIR}/, $_)\n\n");
-		$self->output("PYTHON_PYS += $target\n");
+		$self->output("\$(call python_module_template," . basename($_) . ",\$(addprefix $ctx->{BASEDIR}/, $_))\n");
 	}
 }
 

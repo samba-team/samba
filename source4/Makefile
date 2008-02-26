@@ -39,6 +39,7 @@ ALL_PREDEP = proto
 endif
 
 include build/make/rules.mk
+include build/make/python.mk
 include data.mk
 include extra_cflags.txt
 
