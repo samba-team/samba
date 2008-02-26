@@ -113,11 +113,16 @@ sub _prepare_list($$$)
 	$self->output("$ctx->{NAME}_$var =$tmplist\n");
 }
 
-sub SharedModulePrimitives($$)
+sub PythonModule($$)
 {
 	my ($self,$ctx) = @_;
-	
-	#FIXME
+
+	$self->output("$ctx->{NAME}_OUTPUT = $ctx->{OUTPUT}\n");
+	$self->_prepare_list($ctx, "FULL_OBJ_LIST");
+	$self->_prepare_list($ctx, "DEPEND_LIST");
+	$self->_prepare_list($ctx, "LINK_FLAGS");
+
+	$self->output("\$(eval \$(call python_c_module_template,$ctx->{LIBRARY_REALNAME},\$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS)))\n");
 }
 
 sub SharedModule($$)
@@ -127,28 +132,24 @@ sub SharedModule($$)
 	my $sane_subsystem = lc($ctx->{SUBSYSTEM});
 	$sane_subsystem =~ s/^lib//;
 	
-	if ($ctx->{TYPE} eq "PYTHON") {
-		$self->output("\$(call python_module_template," . basename($ctx->{NAME}) . ",$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME})\n");
-	} else {
-		$self->output("PLUGINS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
-		$self->output("installplugins:: $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
-		$self->output("\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
-		$self->output("\t\@mkdir -p \$(DESTDIR)\$(modulesdir)/$sane_subsystem/\n");
-		$self->output("\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
-		if (defined($ctx->{ALIASES})) {
-			foreach (@{$ctx->{ALIASES}}) {
-				$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
-			}
+	$self->output("PLUGINS += $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
+	$self->output("installplugins:: $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
+	$self->output("\t\@echo Installing $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} as \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
+	$self->output("\t\@mkdir -p \$(DESTDIR)\$(modulesdir)/$sane_subsystem/\n");
+	$self->output("\t\@cp $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
+	if (defined($ctx->{ALIASES})) {
+		foreach (@{$ctx->{ALIASES}}) {
+			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
 		}
+	}
 
-		$self->output("uninstallplugins::\n");
-		$self->output("\t\@echo Uninstalling \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
-		$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
+	$self->output("uninstallplugins::\n");
+	$self->output("\t\@echo Uninstalling \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
+	$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$ctx->{LIBRARY_REALNAME}\n");
 
-		if (defined($ctx->{ALIASES})) {
-			foreach (@{$ctx->{ALIASES}}) {
-				$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
-			}
+	if (defined($ctx->{ALIASES})) {
+		foreach (@{$ctx->{ALIASES}}) {
+			$self->output("\t\@-rm \$(DESTDIR)\$(modulesdir)/$sane_subsystem/$_.\$(SHLIBEXT)\n");
 		}
 	}
 
@@ -295,7 +296,7 @@ sub PythonFiles($$)
 	my ($self,$ctx) = @_;
 
 	foreach (@{$ctx->{PYTHON_FILES}}) {
-		$self->output("\$(call python_module_template," . basename($_) . ",\$(addprefix $ctx->{BASEDIR}/, $_))\n");
+		$self->output("\$(eval \$(call python_py_module_template," . basename($_) . ",\$(addprefix $ctx->{BASEDIR}/, $_)))\n");
 	}
 }
 
