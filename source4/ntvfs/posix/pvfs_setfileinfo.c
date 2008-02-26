@@ -152,6 +152,9 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		}
 
 		status = pvfs_can_delete(pvfs, req, name2, NULL);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
