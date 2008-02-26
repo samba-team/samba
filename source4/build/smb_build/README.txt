@@ -1,6 +1,5 @@
 The Samba Build System
-----------------------
-----------------------
+======================
 
 The build system basically has two main parts: the autoconf-generated 
 shell scripts which check for availability of functions and libraries 

@@ -361,13 +361,6 @@ sub PythonFiles($$)
 	}
 }
 
-sub Manpage($$)
-{
-	my ($self,$ctx) = @_;
-
-	$self->output("MANPAGES += " . output::add_dir_str($ctx->{BASEDIR}, $ctx->{MANPAGE}) . "\n");
-}
-
 sub ProtoHeader($$)
 {
 	my ($self,$ctx) = @_;

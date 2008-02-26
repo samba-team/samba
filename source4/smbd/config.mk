@@ -27,7 +27,6 @@ PRIVATE_PROTO_HEADER = pidfile.h
 # Start BINARY smbd
 [BINARY::smbd]
 INSTALLDIR = SBINDIR
-MANPAGE = smbd.8
 OBJ_FILES = \
 		server.o
 PRIVATE_DEPENDENCIES = \
@@ -44,5 +43,7 @@ PRIVATE_DEPENDENCIES = \
 		ntvfs \
 		share \
 		CLUSTER
+
+MANPAGES += smbd/smbd.8
 # End BINARY smbd
 #################################
