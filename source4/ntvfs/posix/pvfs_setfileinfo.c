@@ -142,8 +142,6 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 
 	/* if the destination exists, then check the rename is allowed */
 	if (name2->exists) {
-		struct odb_lock *lck;
-
 		if (strcmp(name2->full_name, name->full_name) == 0) {
 			/* rename to same name is null-op */
 			return NT_STATUS_OK;
@@ -153,7 +151,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 
-		status = pvfs_can_delete(pvfs, req, name2, &lck);
+		status = pvfs_can_delete(pvfs, req, name2, NULL);
 		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}

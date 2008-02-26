@@ -2,7 +2,8 @@
    Unix SMB/CIFS implementation.
 
    Copyright (C) Andrew Tridgell 2004
-   
+   Copyright (C) Stefan Metzmacher 2008
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -134,6 +135,12 @@ static struct odb_lock *odb_tdb_lock(TALLOC_CTX *mem_ctx,
 	return lck;
 }
 
+static DATA_BLOB odb_tdb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
+{
+	return data_blob_talloc(mem_ctx, lck->key.dptr, lck->key.dsize);
+}
+
+
 /*
   determine if two odb_entry structures conflict
 
@@ -253,12 +260,28 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 /*
   send an oplock break to a client
 */
-static NTSTATUS odb_oplock_break_send(struct odb_context *odb, struct opendb_entry *e)
+static NTSTATUS odb_oplock_break_send(struct odb_context *odb,
+				      struct opendb_entry *e,
+				      uint8_t level)
 {
+	NTSTATUS status;
+	struct opendb_oplock_break op_break;
+	DATA_BLOB blob;
+
+	ZERO_STRUCT(op_break);
+
 	/* tell the server handling this open file about the need to send the client
 	   a break */
-	return messaging_send_ptr(odb->ntvfs_ctx->msg_ctx, e->server, 
-				  MSG_NTVFS_OPLOCK_BREAK, e->file_handle);
+	op_break.file_handle	= e->file_handle;
+	op_break.level		= level;
+
+	blob = data_blob_const(&op_break, sizeof(op_break));
+
+	status = messaging_send(odb->ntvfs_ctx->msg_ctx, e->server,
+				MSG_NTVFS_OPLOCK_BREAK, &blob);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -312,7 +335,8 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 			   break request and suspending this call
 			   until the break is acknowledged or the file
 			   is closed */
-			odb_oplock_break_send(odb, &file.entries[i]);
+			odb_oplock_break_send(odb, &file.entries[i],
+					      OPLOCK_BREAK_TO_LEVEL_II/*TODO*/);
 			return NT_STATUS_OPLOCK_NOT_GRANTED;
 		}
 	}
@@ -336,7 +360,8 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	   exclusive oplocks afterwards. */
 	for (i=0;i<file.num_entries;i++) {
 		if (file.entries[i].oplock_level == OPLOCK_EXCLUSIVE) {
-			odb_oplock_break_send(odb, &file.entries[i]);
+			odb_oplock_break_send(odb, &file.entries[i],
+					      OPLOCK_BREAK_TO_NONE/*TODO*/);
 			return NT_STATUS_OPLOCK_NOT_GRANTED;
 		}
 	}
@@ -436,6 +461,45 @@ static NTSTATUS odb_tdb_close_file(struct odb_lock *lck, void *file_handle)
 
 	file.num_entries--;
 	
+	return odb_push_record(lck, &file);
+}
+
+/*
+  update the oplock level of the client
+*/
+static NTSTATUS odb_tdb_update_oplock(struct odb_lock *lck, void *file_handle,
+				      uint32_t oplock_level)
+{
+	struct odb_context *odb = lck->odb;
+	struct opendb_file file;
+	int i;
+	NTSTATUS status;
+
+	status = odb_pull_record(lck, &file);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* find the entry, and update it */
+	for (i=0;i<file.num_entries;i++) {
+		if (file_handle == file.entries[i].file_handle &&
+		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &file.entries[i].server)) {
+			file.entries[i].oplock_level = oplock_level;
+			break;
+		}
+	}
+
+	if (i == file.num_entries) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* send any pending notifications, removing them once sent */
+	for (i=0;i<file.num_pending;i++) {
+		messaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
+				   file.pending[i].server,
+				   MSG_PVFS_RETRY_OPEN,
+				   file.pending[i].notify_ptr);
+	}
+	file.num_pending = 0;
+
 	return odb_push_record(lck, &file);
 }
 
@@ -609,6 +673,7 @@ static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
 static const struct opendb_ops opendb_tdb_ops = {
 	.odb_init                = odb_tdb_init,
 	.odb_lock                = odb_tdb_lock,
+	.odb_get_key             = odb_tdb_get_key,
 	.odb_open_file           = odb_tdb_open_file,
 	.odb_open_file_pending   = odb_tdb_open_file_pending,
 	.odb_close_file          = odb_tdb_close_file,
@@ -616,7 +681,8 @@ static const struct opendb_ops opendb_tdb_ops = {
 	.odb_rename              = odb_tdb_rename,
 	.odb_set_delete_on_close = odb_tdb_set_delete_on_close,
 	.odb_get_delete_on_close = odb_tdb_get_delete_on_close,
-	.odb_can_open            = odb_tdb_can_open
+	.odb_can_open            = odb_tdb_can_open,
+	.odb_update_oplock       = odb_tdb_update_oplock
 };
 
 
