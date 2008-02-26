@@ -78,7 +78,7 @@ Must be run as a user with permission to write to the install directory.
 ::
 
   # cd source
-  # ./setup/provision --realm=YOUR.REALM --domain=YOURDOM \
+  # bin/smbpython ./setup/provision --realm=YOUR.REALM --domain=YOURDOM \
   #  --adminpass=SOMEPASSWORD --server-role='domain controller'
 
 REMINDER: Add the "bin" directory of the path you installed to
