@@ -372,7 +372,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY locktest
 #################################
 
-MANPAGES += utils/man/locktest.1
+MANPAGES += torture/man/locktest.1
 
 COV_TARGET = test
 
