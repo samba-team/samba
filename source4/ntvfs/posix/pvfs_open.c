@@ -1710,7 +1710,7 @@ NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs,
 
 	share_access	= NTCREATEX_SHARE_ACCESS_READ |
 			  NTCREATEX_SHARE_ACCESS_WRITE;
-	access_mask	= 0;
+	access_mask	= SEC_FILE_READ_ATTRIBUTE;
 	delete_on_close	= false;
 
 	status = odb_can_open(lck, name->stream_id,
