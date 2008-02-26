@@ -135,6 +135,11 @@ command = {
 		help = "unwrap in-data that's in a ContentInfo"
 	}
 	option = {
+		long = "pem"
+		type = "flag"
+		help = "unwrap in-data from PEM armor"
+	}
+	option = {
 		long = "signed-content"
 		type = "string"
 		help = "file containing content"
