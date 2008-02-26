@@ -17,14 +17,14 @@ PRIVATE_DEPENDENCIES = \
 		auth \
 		MESSAGING \
 		LIBEVENTS
-MANPAGE = man/ntlm_auth.1
 # End BINARY ntlm_auth
 #################################
+
+MANPAGES += utils/man/ntlm_auth.1
 
 #################################
 # Start BINARY getntacl
 [BINARY::getntacl]
-MANPAGE = man/getntacl.1
 INSTALLDIR = BINDIR
 OBJ_FILES = \
 		getntacl.o
@@ -37,6 +37,8 @@ PRIVATE_DEPENDENCIES = \
 
 # End BINARY getntacl
 #################################
+
+MANPAGES += utils/man/getntacl.1
 
 #################################
 # Start BINARY setntacl

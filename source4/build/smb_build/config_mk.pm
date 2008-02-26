@@ -36,8 +36,6 @@ my $section_types = {
 
 		"ENABLE"		=> "bool",
 
-		"MANPAGE"		=> "string",
-
 		"PRIVATE_PROTO_HEADER"	=> "string",
 
 		"PUBLIC_HEADERS"	=> "list",
@@ -61,7 +59,6 @@ my $section_types = {
 
 		"OUTPUT_TYPE"		=> "list",
 
-		"MANPAGE"		=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
 
 		"CFLAGS"		=> "list"
@@ -73,7 +70,6 @@ my $section_types = {
 
 		"ENABLE"		=> "bool",
 
-		"MANPAGE"		=> "string",
 		"INSTALLDIR"		=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
 
@@ -100,8 +96,6 @@ my $section_types = {
 		"PUBLIC_DEPENDENCIES"	=> "list",
 
 		"ENABLE"		=> "bool",
-
-		"MANPAGE"		=> "string",
 
 		"PUBLIC_HEADERS"	=> "list",
 
