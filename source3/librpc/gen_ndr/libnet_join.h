@@ -7,8 +7,6 @@
 #ifndef _HEADER_libnetjoin
 #define _HEADER_libnetjoin
 
-;
-
 
 struct libnet_JoinCtx {
 	struct {
