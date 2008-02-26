@@ -61,9 +61,6 @@ foreach my $key (values %$OUTPUT) {
 	    ${$key->{OUTPUT_TYPE}}[0] eq "SHARED_LIBRARY") {
 		$shared_libs_used = 1;
 	}
-	$mkenv->SharedModulePrimitives($key) if ($key->{TYPE} eq "MODULE" or 
-								   $key->{TYPE} eq "PYTHON") and
-					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->PythonFiles($key) if defined($key->{PYTHON_FILES});
 	$mkenv->Header($key) if defined($key->{PUBLIC_HEADERS});
 	if ($key->{TYPE} eq "MODULE" and @{$key->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ" and defined($key->{INIT_FUNCTION})) {
@@ -84,9 +81,9 @@ foreach my $key (values %$OUTPUT) {
 	$mkenv->StaticLibrary($key) if grep(/STATIC_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->SharedLibrary($key) if ($key->{TYPE} eq "LIBRARY") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
-	$mkenv->SharedModule($key) if ($key->{TYPE} eq "MODULE" or 
-								   $key->{TYPE} eq "PYTHON") and
-					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
+	$mkenv->SharedModule($key) if ($key->{TYPE} eq "MODULE" and
+					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}}));
+	$mkenv->PythonModule($key) if ($key->{TYPE} eq "PYTHON");
 	$mkenv->Binary($key) if grep(/BINARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER}) or 
 					 defined($key->{PUBLIC_PROTO_HEADER});
