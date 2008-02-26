@@ -1530,7 +1530,7 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs,
 
 	status = odb_can_open(lck, name->stream_id,
 			      share_access, access_mask, delete_on_close,
-			      0, false);
+			      NTCREATEX_DISP_OPEN, false);
 
 	if (NT_STATUS_IS_OK(status)) {
 		status = pvfs_access_check_simple(pvfs, req, name, access_mask);
@@ -1594,7 +1594,7 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs,
 
 	status = odb_can_open(lck, name->stream_id,
 			      share_access, access_mask, delete_on_close,
-			      0, false);
+			      NTCREATEX_DISP_OPEN, false);
 
 	/*
 	 * if it's a sharing violation or we got no oplock
@@ -1656,7 +1656,7 @@ NTSTATUS pvfs_can_update_file_size(struct pvfs_state *pvfs,
 
 	status = odb_can_open(lck, name->stream_id,
 			      share_access, access_mask, delete_on_close,
-			      0, break_to_none);
+			      NTCREATEX_DISP_OPEN, break_to_none);
 
 	/*
 	 * if it's a sharing violation or we got no oplock
@@ -1715,7 +1715,7 @@ NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs,
 
 	status = odb_can_open(lck, name->stream_id,
 			      share_access, access_mask, delete_on_close,
-			      0, false);
+			      NTCREATEX_DISP_OPEN, false);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
