@@ -118,6 +118,17 @@ $(1): $(2) ;
 	@$$(PERL) $$(srcdir)/script/mkproto.pl --srcdir=$$(srcdir) --builddir=$$(builddir) --all=$$@ $$^
 endef
 
+# Shared module
+# Arguments: Target, dependencies, objects
+define shared_module_template
+
+$(1): $(2) ;
+	@echo Linking $$@
+	@mkdir -p $$(@D)
+	@$$(MDLD) $$(LDFLAGS) $$(MDLD_FLAGS) $$(INTERN_LDFLAGS) -o $$@ $$(INSTALL_LINK_FLAGS) $(3)
+
+endef
+
 ###############################################################################
 # File types
 ###############################################################################
