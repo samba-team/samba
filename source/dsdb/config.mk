@@ -6,7 +6,6 @@ mkinclude samdb/ldb_modules/config.mk
 # Start SUBSYSTEM SAMDB
 [SUBSYSTEM::SAMDB]
 PRIVATE_PROTO_HEADER = samdb/samdb_proto.h
-PUBLIC_HEADERS = samdb/samdb.h
 PUBLIC_DEPENDENCIES = HEIMDAL_KRB5 
 PRIVATE_DEPENDENCIES = LIBNDR NDR_MISC NDR_DRSUAPI NDR_DRSBLOBS NSS_WRAPPER \
 					   auth_system_session LDAP_ENCODE LIBCLI_AUTH LIBNDR \
@@ -16,6 +15,9 @@ OBJ_FILES = \
 		samdb/samdb_privilege.o \
 		samdb/cracknames.o \
 		repl/replicated_objects.o
+
+
+PUBLIC_HEADERS += dsdb/samdb/samdb.h
 
 [SUBSYSTEM::SAMDB_COMMON]
 PRIVATE_PROTO_HEADER = common/proto.h
@@ -27,12 +29,14 @@ OBJ_FILES = \
 
 [SUBSYSTEM::SAMDB_SCHEMA]
 PRIVATE_PROTO_HEADER = schema/proto.h
-PUBLIC_HEADERS = schema/schema.h
 PRIVATE_DEPENDENCIES = SAMDB_COMMON NDR_DRSUAPI NDR_DRSBLOBS
 OBJ_FILES = \
 		schema/schema_init.o \
 		schema/schema_syntax.o \
 		schema/schema_constructed.o \
+
+
+PUBLIC_HEADERS += dsdb/schema/schema.h
 
 #######################
 # Start SUBSYSTEM DREPL_SRV

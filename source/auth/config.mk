@@ -6,9 +6,10 @@ mkinclude credentials/config.mk
 
 [SUBSYSTEM::auth_session]
 OBJ_FILES = session.o
-PUBLIC_HEADERS = session.h
 PRIVATE_PROTO_HEADER = session_proto.h
 PUBLIC_DEPENDENCIES = CREDENTIALS
+
+PUBLIC_HEADERS += auth/session.h
 
 [SUBSYSTEM::auth_system_session]
 OBJ_FILES = system_session.o
@@ -81,7 +82,6 @@ OBJ_FILES = pam_errors.o
 [SUBSYSTEM::auth]
 #VERSION = 0.0.1
 #SO_VERSION = 0
-PUBLIC_HEADERS = auth.h
 PRIVATE_PROTO_HEADER = auth_proto.h
 OBJ_FILES = \
 		auth.o \
@@ -91,6 +91,8 @@ PUBLIC_DEPENDENCIES = LIBSECURITY SAMDB CREDENTIALS
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL
 # End SUBSYSTEM auth
 #######################
+
+PUBLIC_HEADERS += auth/auth.h
 
 [PYTHON::swig_auth]
 PUBLIC_DEPENDENCIES = auth_system_session

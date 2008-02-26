@@ -4,13 +4,14 @@
 PC_FILE = gensec.pc
 VERSION = 0.0.1
 SO_VERSION = 0
-PUBLIC_HEADERS = gensec.h spnego.h
 PRIVATE_PROTO_HEADER = gensec_proto.h
 OBJ_FILES = gensec.o socket.o
 PUBLIC_DEPENDENCIES = \
 		CREDENTIALS LIBSAMBA-UTIL LIBCRYPTO ASN1_UTIL samba-socket LIBPACKET
 # End SUBSYSTEM gensec
 #################################
+
+PUBLIC_HEADERS += $(addprefix auth/gensec/, gensec.h spnego.h)
 
 ################################################
 # Start MODULE gensec_krb5

@@ -259,15 +259,6 @@ sub StaticLibrary($$)
 	$self->output("$ctx->{RESULT_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)\n");
 }
 
-sub Header($$)
-{
-	my ($self,$ctx) = @_;
-
-	return if ($#{$ctx->{PUBLIC_HEADERS}} == -1);
-
-	$self->output("PUBLIC_HEADERS += \$(addprefix $ctx->{BASEDIR}/, " . join(" ", @{$ctx->{PUBLIC_HEADERS}}) . ")\n");
-}
-
 sub Binary($$)
 {
 	my ($self,$ctx) = @_;
@@ -306,7 +297,6 @@ sub ProtoHeader($$)
 
 	my $target = "\$(addprefix $ctx->{BASEDIR}/, $ctx->{PRIVATE_PROTO_HEADER})";
 	$self->output("PROTO_HEADERS += $target\n");
-
 	$self->output("\$(call proto_header_template, $target, \$($ctx->{NAME}_OBJ_LIST:.o=.c))\n");
 }
 
