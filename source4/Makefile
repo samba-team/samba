@@ -19,6 +19,18 @@ BNLD_FLAGS = $(LDFLAGS) $(SYS_LDFLAGS)
 HOSTCC_FLAGS = -D_SAMBA_HOSTCC_ $(CFLAGS)
 HOSTLD_FLAGS = $(LDFLAGS) $(SYS_LDFLAGS)
 
+$(srcdir)/version.h: $(srcdir)/VERSION
+	@$(SHELL) script/mkversion.sh VERSION $(srcdir)/version.h $(srcdir)/
+
+regen_version::
+	@$(SHELL) script/mkversion.sh VERSION $(srcdir)/version.h $(srcdir)/
+
+clean_pch::
+	@echo "Removing precompiled headers"
+	@-rm -f include/includes.h.gch
+
+pch:: clean_pch include/includes.h.gch
+
 .DEFAULT_GOAL := all
 
 ifneq ($(automatic_deps),yes)
