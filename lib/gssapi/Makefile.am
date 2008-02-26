@@ -227,9 +227,13 @@ spnego_files =					\
 	asn1_NegTokenInitWin.x			\
 	asn1_NegTokenResp.x
 
-$(libgssapi_la_OBJECTS): $(srcdir)/krb5/gsskrb5-private.h
-$(libgssapi_la_OBJECTS): $(srcdir)/spnego/spnego-private.h
-$(libgssapi_la_OBJECTS): $(srcdir)/ntlm/ntlm-private.h
+BUILTHEADERS = \
+	$(srcdir)/krb5/gsskrb5-private.h
+	$(srcdir)/spnego/spnego-private.h \
+	$(srcdir)/ntlm/ntlm-private.h
+
+$(libgssapi_la_OBJECTS): $(BUILTHEADERS)
+$(test_context_OBJECTS): $(BUILTHEADERS)
 
 $(libgssapi_la_OBJECTS): $(srcdir)/version-script.map
 
