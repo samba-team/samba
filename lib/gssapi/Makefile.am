@@ -228,7 +228,7 @@ spnego_files =					\
 	asn1_NegTokenResp.x
 
 BUILTHEADERS = \
-	$(srcdir)/krb5/gsskrb5-private.h
+	$(srcdir)/krb5/gsskrb5-private.h \
 	$(srcdir)/spnego/spnego-private.h \
 	$(srcdir)/ntlm/ntlm-private.h
 
