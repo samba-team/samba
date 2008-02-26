@@ -3,7 +3,6 @@
 SO_VERSION = 0
 VERSION = 0.0.1
 PC_FILE = torture.pc
-PUBLIC_HEADERS = torture.h ui.h
 PRIVATE_PROTO_HEADER = proto.h
 OBJ_FILES = \
 		torture.o \
@@ -13,6 +12,8 @@ PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		LIBTALLOC \
 		LIBPOPT
+
+PUBLIC_HEADERS += torture/torture.h torture/ui.h
 
 [SUBSYSTEM::TORTURE_UTIL]
 OBJ_FILES = util_smb.o util_provision.o

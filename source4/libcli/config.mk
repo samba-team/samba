@@ -3,10 +3,12 @@ mkinclude ldap/config.mk
 mkinclude security/config.mk
 
 [SUBSYSTEM::LIBSAMBA-ERRORS]
-PUBLIC_HEADERS = util/error.h util/ntstatus.h util/doserr.h util/werror.h
 OBJ_FILES = util/doserr.o \
 		    util/errormap.o \
 		    util/nterr.o \
+
+
+PUBLIC_HEADERS += $(addprefix libcli/, util/error.h util/ntstatus.h util/doserr.h util/werror.h)
 
 [SUBSYSTEM::LIBCLI_LSA]
 PRIVATE_PROTO_HEADER = util/clilsa.h
@@ -68,9 +70,10 @@ PUBLIC_DEPENDENCIES = LIBCLI_NBT LIBNDR LIBCLI_RESOLVE
 
 [SUBSYSTEM::LIBCLI_CLDAP]
 OBJ_FILES = cldap/cldap.o
-PUBLIC_HEADERS = cldap/cldap.h
 PUBLIC_DEPENDENCIES = LIBCLI_LDAP
 PRIVATE_DEPENDENCIES = LIBSAMBA-UTIL LIBLDB
+
+PUBLIC_HEADERS += libcli/cldap/cldap.h
 
 [SUBSYSTEM::LIBCLI_WREPL]
 PRIVATE_PROTO_HEADER = wrepl/winsrepl_proto.h
@@ -102,7 +105,6 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = LIBCLI_NBT MESSAGING
 
 [SUBSYSTEM::LIBCLI_SMB]
-PUBLIC_HEADERS = libcli.h
 PRIVATE_PROTO_HEADER = libcli_proto.h
 OBJ_FILES = clireadwrite.o \
 		cliconnect.o \
@@ -114,6 +116,9 @@ OBJ_FILES = clireadwrite.o \
 PUBLIC_DEPENDENCIES = LIBCLI_RAW LIBSAMBA-ERRORS LIBCLI_AUTH \
 	LIBCLI_SMB_COMPOSITE LIBCLI_NBT LIBSECURITY LIBCLI_RESOLVE \
 	LIBCLI_DGRAM LIBCLI_SMB2 LIBCLI_FINDDCS samba-socket
+
+
+PUBLIC_HEADERS += libcli/libcli.h
 
 [SUBSYSTEM::LIBCLI_RAW]
 PRIVATE_PROTO_HEADER = raw/raw_proto.h

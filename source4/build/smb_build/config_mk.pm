@@ -38,8 +38,6 @@ my $section_types = {
 
 		"PRIVATE_PROTO_HEADER"	=> "string",
 
-		"PUBLIC_HEADERS"	=> "list",
-
 		"CFLAGS"		=> "list",
 		"LDFLAGS"		=> "list",
 		"STANDARD_VISIBILITY"	=> "string",
@@ -96,8 +94,6 @@ my $section_types = {
 		"PUBLIC_DEPENDENCIES"	=> "list",
 
 		"ENABLE"		=> "bool",
-
-		"PUBLIC_HEADERS"	=> "list",
 
 		"PRIVATE_PROTO_HEADER"	=> "string",
 

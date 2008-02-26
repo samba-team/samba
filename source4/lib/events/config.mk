@@ -32,10 +32,11 @@ INIT_FUNCTION = s4_events_standard_init
 # Start SUBSYSTEM LIBEVENTS
 [SUBSYSTEM::LIBEVENTS]
 OBJ_FILES = events.o events_timed.o events_signal.o
-PUBLIC_HEADERS = events.h events_internal.h
 PUBLIC_DEPENDENCIES = LIBTALLOC LIBSAMBA-UTIL
 # End SUBSYSTEM LIBEVENTS
 ##############################
+
+PUBLIC_HEADERS += $(addprefix lib/events/, events.h events_internal.h)
 
 [PYTHON::swig_events]
 SWIG_FILE = events.i
