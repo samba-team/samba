@@ -172,6 +172,32 @@ _PUBLIC_ void ejs_exception(const char *reason)
 */
 void smb_setup_ejs_functions(void (*exception_handler)(const char *))
 {
+	extern NTSTATUS ejs_init_security(void);
+	extern NTSTATUS ejs_init_initshutdown(void);
+	extern NTSTATUS smb_setup_ejs_reg(void);
+	extern NTSTATUS smb_setup_ejs_string(void);
+	extern NTSTATUS ejs_init_lsarpc(void);
+	extern NTSTATUS ejs_init_rpcecho(void);
+	extern NTSTATUS ejs_init_winreg(void);
+	extern NTSTATUS smb_setup_ejs_random(void);
+	extern NTSTATUS smb_setup_ejs_config(void);
+	extern NTSTATUS ejs_init_misc(void);
+	extern NTSTATUS ejs_init_netdfs(void);
+	extern NTSTATUS smb_setup_ejs_datablob(void);
+	extern NTSTATUS smb_setup_ejs_auth(void);
+	extern NTSTATUS smb_setup_ejs_nss(void);
+	extern NTSTATUS ejs_init_samr(void);
+	extern NTSTATUS ejs_init_wkssvc(void);
+	extern NTSTATUS smb_setup_ejs_system(void);
+	extern NTSTATUS smb_setup_ejs_ldb(void);
+	extern NTSTATUS ejs_init_svcctl(void);
+	extern NTSTATUS smb_setup_ejs_nbt(void);
+	extern NTSTATUS smb_setup_ejs_net(void);
+	extern NTSTATUS ejs_init_srvsvc(void);
+	extern NTSTATUS ejs_init_netlogon(void);
+	extern NTSTATUS ejs_init_drsuapi(void);
+	extern NTSTATUS ejs_init_irpc(void);
+	extern NTSTATUS ejs_init_eventlog(void);
 	init_module_fn static_init[] = { STATIC_smbcalls_MODULES };
 	init_module_fn *shared_init;
 
