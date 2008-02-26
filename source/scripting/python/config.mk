@@ -15,9 +15,6 @@ OBJ_FILES = uuidmodule.o
 PRIVATE_DEPENDENCIES = LIBNDR LIBLDB SAMDB CREDENTIALS
 SWIG_FILE = misc.i
 
-PYDOCTOR_MODULES=bin/python/ldb.py bin/python/auth.py bin/python/credentials.py bin/python/registry.py bin/python/tdb.py bin/python/security.py bin/python/events.py bin/python/net.py
+_PY_FILES = $(shell find scripting/python -name "*.py")
 
-pydoctor:: pythonmods
-	LD_LIBRARY_PATH=bin/shared PYTHONPATH=bin/python pydoctor --project-name=Samba --make-html --docformat=restructuredtext --add-package scripting/python/samba/ $(addprefix --add-module , $(PYDOCTOR_MODULES))
-
-
+$(foreach pyfile, $(_PY_FILES),$(eval $(call python_py_module_template,$(patsubst scripting/python/%,%,$(pyfile)),$(pyfile))))
