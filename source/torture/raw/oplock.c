@@ -123,9 +123,9 @@ static bool oplock_handler_close(struct smbcli_transport *transport, uint16_t ti
 	return true;
 }
 
-static bool test_raw_oplock_normal(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+static bool test_raw_oplock_exclusive1(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
 {
-	const char *fname = BASEDIR "\\test_normal.dat";
+	const char *fname = BASEDIR "\\test_exclusive1.dat";
 	NTSTATUS status;
 	bool ret = true;
 	union smb_open io;
@@ -156,7 +156,7 @@ static bool test_raw_oplock_normal(struct torture_context *tctx, struct smbcli_s
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 
-	torture_comment(tctx, "open a file with a normal oplock\n");
+	torture_comment(tctx, "open a file with an exclusive oplock (share mode: none)\n");
 	ZERO_STRUCT(break_info);
 	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED | NTCREATEX_FLAGS_REQUEST_OPLOCK;
 
@@ -1359,7 +1359,7 @@ struct torture_suite *torture_raw_oplock(TALLOC_CTX *mem_ctx)
 {
 	struct torture_suite *suite = torture_suite_create(mem_ctx, "OPLOCK");
 
-	torture_suite_add_2smb_test(suite, "NORMAL", test_raw_oplock_normal);
+	torture_suite_add_2smb_test(suite, "EXCLUSIVE1", test_raw_oplock_exclusive1);
 	torture_suite_add_2smb_test(suite, "BATCH1", test_raw_oplock_batch1);
 	torture_suite_add_2smb_test(suite, "BATCH2", test_raw_oplock_batch2);
 	torture_suite_add_2smb_test(suite, "BATCH3", test_raw_oplock_batch3);
