@@ -1,3 +1,11 @@
+2008-02-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hxtool-commands.in: Add --pem to cms-verify-sd.
+
+	* test_cms.in: Test verifying PEM signature files.
+
+	* hxtool.c: Support verifying PEM signature files.
+
 2008-02-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: libhx509_la_OBJECTS depends on hx_locl.h
