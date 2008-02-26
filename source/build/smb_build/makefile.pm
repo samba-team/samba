@@ -158,28 +158,19 @@ sub SharedModule($$)
 	$self->_prepare_list($ctx, "DEPEND_LIST");
 	$self->_prepare_list($ctx, "LINK_FLAGS");
 
-	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{TYPE} ne "PYTHON" and
-		$ctx->{INIT_FUNCTION_TYPE} =~ /\(\*\)/) {
+	if (defined($ctx->{INIT_FUNCTION}) and $ctx->{INIT_FUNCTION_TYPE} =~ /\(\*\)/) {
 		$self->output("\$($ctx->{NAME}_OBJ_LIST): CFLAGS+=-D$ctx->{INIT_FUNCTION}=init_module\n");
 	}
 
-	$self->output(<< "__EOD__"
-
-$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}: \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST)
-	\@echo Linking \$\@
-	\@mkdir -p \$(\@D)
-	\@\$(MDLD) \$(LDFLAGS) \$(MDLD_FLAGS) \$(INTERN_LDFLAGS) -o \$\@ \$(INSTALL_LINK_FLAGS) \\
-		\$($ctx->{NAME}\_FULL_OBJ_LIST) \\
-		\$($ctx->{NAME}_LINK_FLAGS)
-__EOD__
-);
+	$self->output("\$(eval \$(call shared_module_template,$ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}, \$($ctx->{NAME}_DEPEND_LIST) \$($ctx->{NAME}_FULL_OBJ_LIST), \$($ctx->{NAME}\_FULL_OBJ_LIST) \$($ctx->{NAME}_LINK_FLAGS)))\n");
 
 	if (defined($ctx->{ALIASES})) {
 		foreach (@{$ctx->{ALIASES}}) {
-			$self->output("\t\@ln -fs $ctx->{LIBRARY_REALNAME} $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
+			$self->output("$ctx->{SHAREDDIR}/$_.\$(SHLIBEXT): $ctx->{SHAREDDIR}/$ctx->{LIBRARY_REALNAME}\n");
+			$self->output("\t\@ln -fs \$(<F) \$@\n");
+			$self->output("PLUGINS += $ctx->{SHAREDDIR}/$_.\$(SHLIBEXT)\n");
 		}
 	}
-	$self->output("\n");
 }
 
 sub SharedLibraryPrimitives($$)
