@@ -1,3 +1,6 @@
+# Rules file for Samba 4
+# This relies on GNU make.
+#
 # Dependencies command
 DEPENDS = $(CC) -M -MG -MP -MT $(<:.c=.o) -MT $@ \
     $(CFLAGS) $(CPPFLAGS) $< -o $@
@@ -26,22 +29,14 @@ PCHCOMPILE = @$(CC) -Ilib/replace \
 # Partial linking
 PARTLINK = @$(PROG_LD) -r
 
+make_utility_dir = $(srcdir)/build/make/
+
 include/config.h:
 	@echo "include/config.h not present"
 	@echo "You need to rerun ./autogen.sh and ./configure"
 	@/bin/false
 
-$(srcdir)/version.h: $(srcdir)/VERSION
-	@$(SHELL) script/mkversion.sh VERSION $(srcdir)/version.h $(srcdir)/
-
-regen_version::
-	@$(SHELL) script/mkversion.sh VERSION $(srcdir)/version.h $(srcdir)/
-
-clean_pch::
-	@echo "Removing precompiled headers"
-	@-rm -f include/includes.h.gch
-
-pch:: clean_pch include/includes.h.gch
+pch::
 
 clean:: clean_pch
 	@echo Removing objects
@@ -169,11 +164,11 @@ include/includes.d: include/includes.h
 
 .y.c:
 	@echo "Building $< with $(YACC)"
-	@-$(srcdir)/script/yacc_compile.sh "$(YACC)" "$<" "$@"
+	@-$(make_utility_dir)/yacc_compile.sh "$(YACC)" "$<" "$@"
 
 .l.c:
 	@echo "Building $< with $(LEX)"
-	@-$(srcdir)/script/lex_compile.sh "$(LEX)" "$<" "$@"
+	@-$(make_utility_dir)/script/lex_compile.sh "$(LEX)" "$<" "$@"
 
 %.a:
 	@echo Linking $@
