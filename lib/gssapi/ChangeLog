@@ -1,5 +1,7 @@
 2008-02-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* Makefile.am: add missing \
+
 	* Makefile.am: reshuffle depenencies
 
 	* Add flag to krb5 to not add GSS-API INT|CONF to the negotiation
