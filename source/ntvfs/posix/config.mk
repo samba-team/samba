@@ -53,6 +53,7 @@ OBJ_FILES = \
 		pvfs_resolve.o \
 		pvfs_shortname.o \
 		pvfs_lock.o \
+		pvfs_oplock.o \
 		pvfs_wait.o \
 		pvfs_seek.o \
 		pvfs_ioctl.o \
