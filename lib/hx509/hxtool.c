@@ -145,6 +145,26 @@ peer_strings(hx509_context context,
  *
  */
 
+static int
+pem_reader(hx509_context context, const char *type, 
+	   const hx509_pem_header *headers,
+	   const void *data , size_t length, void *ctx)
+{
+    heim_octet_string *c = (heim_octet_string *)ctx;
+
+    c->data = malloc(length);
+    if (c->data == NULL)
+	return ENOMEM;
+    memcpy(c->data, data, length);
+    c->length = length;
+
+    return 0;
+}
+
+/*
+ *
+ */
+
 int
 cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 {
@@ -166,17 +186,6 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     hx509_lock_init(context, &lock);
     lock_strings(lock, &opt->pass_strings);
 
-    ret = _hx509_map_file(argv[0], &p, &sz, NULL);
-    if (ret)
-	err(1, "map_file: %s: %d", argv[0], ret);
-
-    if (opt->signed_content_string) {
-	ret = _hx509_map_file_os(opt->signed_content_string, &signeddata, NULL);
-	if (ret)
-	    err(1, "map_file: %s: %d", opt->signed_content_string, ret);
-	sd = &signeddata;
-    }
-
     ret = hx509_verify_init_ctx(context, &ctx);
 
     ret = hx509_certs_init(context, "MEMORY:cms-anchors", 0, NULL, &anchors);
@@ -185,8 +194,32 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
     certs_strings(context, "anchors", anchors, lock, &opt->anchors_strings);
     certs_strings(context, "store", store, lock, &opt->certificate_strings);
 
-    co.data = p;
-    co.length = sz;
+    if (opt->pem_flag) {
+	FILE *f;
+	
+	f = fopen(argv[0], "r");
+	if (f == NULL)
+	    err(1, "Failed to open file %s", argv[0]);
+
+	ret = hx509_pem_read(context, f, pem_reader, &co);
+	fclose(f);
+	if (ret)
+	    errx(1, "PEM reader failed: %d", ret);
+    } else {
+	ret = _hx509_map_file(argv[0], &p, &sz, NULL);
+	if (ret)
+	    err(1, "map_file: %s: %d", argv[0], ret);
+
+	co.data = p;
+	co.length = sz;
+    }
+
+    if (opt->signed_content_string) {
+	ret = _hx509_map_file_os(opt->signed_content_string, &signeddata, NULL);
+	if (ret)
+	    errx(1, "map_file: %s: %d", opt->signed_content_string, ret);
+	sd = &signeddata;
+    }
 
     if (opt->content_info_flag) {
 	heim_octet_string uwco;
@@ -235,7 +268,10 @@ cms_verify_sd(struct cms_verify_sd_options *opt, int argc, char **argv)
 	errx(1, "hx509_write_file: %d", ret);
 
     der_free_octet_string(&c);
-    _hx509_unmap_file(p, sz);
+    if (opt->pem_flag)
+	der_free_octet_string(&co);
+    else
+	_hx509_unmap_file(p, sz);
     if (sd)
 	_hx509_unmap_file_os(sd);
 
@@ -360,7 +396,8 @@ cms_create_sd(struct cms_create_sd_options *opt, int argc, char **argv)
 	FILE *f;
 
 	hx509_pem_add_header(&header, "Content-disposition", 
-			     opt->detached_signature_flag ? "detached" : "inline");
+			     opt->detached_signature_flag ?
+			     "detached" : "inline");
 	hx509_pem_add_header(&header, "Signer", signer_name);
 
 	f = fopen(argv[1], "w");
