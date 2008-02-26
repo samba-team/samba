@@ -83,6 +83,11 @@
 #include <stropts.h>
 #endif
 
+#ifndef HAVE_SOCKLEN_T
+#define HAVE_SOCKLEN_T
+typedef int socklen_t;
+#endif
+
 #ifdef REPLACE_INET_NTOA
 /* define is in "replace.h" */
 char *rep_inet_ntoa(struct in_addr ip);
@@ -243,11 +248,6 @@ void rep_freeifaddrs(struct ifaddrs *);
 
 #ifndef HOST_NAME_MAX
 #define HOST_NAME_MAX 256
-#endif
-
-#ifndef HAVE_SOCKLEN_T
-#define HAVE_SOCKLEN_T
-typedef int socklen_t;
 #endif
 
 #ifndef HAVE_SA_FAMILY_T

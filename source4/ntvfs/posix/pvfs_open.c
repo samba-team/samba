@@ -268,6 +268,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
+	f->handle->oplock            = NULL;
 	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
 
@@ -296,9 +297,10 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		}
 		
 		/* see if we are allowed to open at the same time as existing opens */
-		status = odb_open_file(lck, f->handle, f->handle->name->stream_id,
+		status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
 				       share_access, access_mask, del_on_close, 
-				       name->full_name, OPLOCK_NONE, NULL);
+				       io->generic.in.open_disposition,
+				       false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(lck);
@@ -349,9 +351,10 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 			return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
 
-		status = odb_open_file(lck, f->handle, f->handle->name->stream_id,
+		status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
 				       share_access, access_mask, del_on_close, 
-				       name->full_name, OPLOCK_NONE, NULL);
+				       io->generic.in.open_disposition,
+				       false, OPLOCK_NONE, NULL);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			goto cleanup_delete;
@@ -669,9 +672,10 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		oplock_level = OPLOCK_EXCLUSIVE;
 	}
 
-	status = odb_open_file(lck, f->handle, name->stream_id,
+	status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
 			       share_access, access_mask, del_on_close, 
-			       name->full_name, oplock_level, &oplock_granted);
+			       io->generic.in.open_disposition,
+			       false, oplock_level, &oplock_granted);
 	talloc_free(lck);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* bad news, we must have hit a race - we don't delete the file
@@ -681,9 +685,6 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
-		oplock_granted = OPLOCK_BATCH;
-	}
 
 	f->ntvfs             = h;
 	f->pvfs              = pvfs;
@@ -702,11 +703,22 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
+	f->handle->oplock            = NULL;
 	f->handle->have_opendb_entry = true;
 	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
 
 	DLIST_ADD(pvfs->files.list, f);
+
+	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
+		oplock_granted = OPLOCK_BATCH;
+	} else if (oplock_granted != OPLOCK_NONE) {
+		status = pvfs_setup_oplock(f, oplock_granted);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(lck);
+			return status;
+		}
+	}
 
 	/* setup a destructor to avoid file descriptor leaks on
 	   abnormal termination */
@@ -748,20 +760,25 @@ cleanup_delete:
 	return status;
 }
 
-
 /*
-  state of a pending open retry
+  state of a pending retry
 */
-struct pvfs_open_retry {
+struct pvfs_odb_retry {
 	struct ntvfs_module_context *ntvfs;
 	struct ntvfs_request *req;
-	union smb_open *io;
-	struct pvfs_wait *wait_handle;
 	DATA_BLOB odb_locking_key;
+	void *io;
+	void *private_data;
+	void (*callback)(struct pvfs_odb_retry *r,
+			 struct ntvfs_module_context *ntvfs,
+			 struct ntvfs_request *req,
+			 void *io,
+			 void *private_data,
+			 enum pvfs_wait_notice reason);
 };
 
-/* destroy a pending open request */
-static int pvfs_retry_destructor(struct pvfs_open_retry *r)
+/* destroy a pending request */
+static int pvfs_odb_retry_destructor(struct pvfs_odb_retry *r)
 {
 	struct pvfs_state *pvfs = r->ntvfs->private_data;
 	if (r->odb_locking_key.data) {
@@ -775,15 +792,92 @@ static int pvfs_retry_destructor(struct pvfs_open_retry *r)
 	return 0;
 }
 
-/*
-  retry an open
-*/
-static void pvfs_open_retry(void *private, enum pvfs_wait_notice reason)
+static void pvfs_odb_retry_callback(void *_r, enum pvfs_wait_notice reason)
 {
-	struct pvfs_open_retry *r = private;
-	struct ntvfs_module_context *ntvfs = r->ntvfs;
-	struct ntvfs_request *req = r->req;
-	union smb_open *io = r->io;
+	struct pvfs_odb_retry *r = talloc_get_type(_r, struct pvfs_odb_retry);
+
+	if (reason == PVFS_WAIT_EVENT) {
+		/*
+		 * The pending odb entry is already removed.
+		 * We use a null locking key to indicate this
+		 * to the destructor.
+		 */
+		data_blob_free(&r->odb_locking_key);
+	}
+
+	r->callback(r, r->ntvfs, r->req, r->io, r->private_data, reason);
+}
+
+/*
+  setup for a retry of a request that was rejected
+  by odb_open_file() or odb_can_open()
+*/
+NTSTATUS pvfs_odb_retry_setup(struct ntvfs_module_context *ntvfs,
+			      struct ntvfs_request *req,
+			      struct odb_lock *lck,
+			      struct timeval end_time,
+			      void *io,
+			      void *private_data,
+			      void (*callback)(struct pvfs_odb_retry *r,
+					       struct ntvfs_module_context *ntvfs,
+					       struct ntvfs_request *req,
+					       void *io,
+					       void *private_data,
+					       enum pvfs_wait_notice reason))
+{
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct pvfs_odb_retry *r;
+	struct pvfs_wait *wait_handle;
+	NTSTATUS status;
+
+	r = talloc(req, struct pvfs_odb_retry);
+	NT_STATUS_HAVE_NO_MEMORY(r);
+
+	r->ntvfs = ntvfs;
+	r->req = req;
+	r->io = io;
+	r->private_data = private_data;
+	r->callback = callback;
+	r->odb_locking_key = odb_get_key(r, lck);
+	if (r->odb_locking_key.data == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* setup a pending lock */
+	status = odb_open_file_pending(lck, r);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	talloc_free(lck);
+
+	talloc_set_destructor(r, pvfs_odb_retry_destructor);
+
+	wait_handle = pvfs_wait_message(pvfs, req,
+					MSG_PVFS_RETRY_OPEN, end_time,
+					pvfs_odb_retry_callback, r);
+	if (wait_handle == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	talloc_steal(r, wait_handle);
+
+	talloc_steal(pvfs, r);
+
+	return NT_STATUS_OK;
+}
+
+/*
+  retry an open after a sharing violation
+*/
+static void pvfs_retry_open_sharing(struct pvfs_odb_retry *r,
+				    struct ntvfs_module_context *ntvfs,
+				    struct ntvfs_request *req,
+				    void *_io,
+				    void *private_data,
+				    enum pvfs_wait_notice reason)
+{
+	union smb_open *io = talloc_get_type(_io, union smb_open);
 	NTSTATUS status;
 
 	/* w2k3 ignores SMBntcancel for outstanding open requests. It's probably
@@ -791,8 +885,6 @@ static void pvfs_open_retry(void *private, enum pvfs_wait_notice reason)
 	if (reason == PVFS_WAIT_CANCEL) {
 		return;
 	}
-
-	talloc_free(r->wait_handle);
 
 	if (reason == PVFS_WAIT_TIMEOUT) {
 		/* if it timed out, then give the failure
@@ -803,9 +895,6 @@ static void pvfs_open_retry(void *private, enum pvfs_wait_notice reason)
 		return;
 	}
 
-	/* the pending odb entry is already removed. We use a null locking
-	   key to indicate this */
-	data_blob_free(&r->odb_locking_key);
 	talloc_free(r);
 
 	/* try the open again, which could trigger another retry setup
@@ -919,10 +1008,10 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 				      struct ntvfs_request *req, 
 				      union smb_open *io,
 				      struct pvfs_file *f,
-				      struct odb_lock *lck)
+				      struct odb_lock *lck,
+				      NTSTATUS parent_status)
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
-	struct pvfs_open_retry *r;
 	NTSTATUS status;
 	struct timeval end_time;
 
@@ -936,40 +1025,21 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 		}
 	}
 
-	r = talloc(req, struct pvfs_open_retry);
-	if (r == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	r->ntvfs = ntvfs;
-	r->req = req;
-	r->io = io;
-	r->odb_locking_key = data_blob_talloc(r, 
-					      f->handle->odb_locking_key.data, 
-					      f->handle->odb_locking_key.length);
-
-	end_time = timeval_add(&req->statistics.request_time, 0, pvfs->sharing_violation_delay);
-
-	/* setup a pending lock */
-	status = odb_open_file_pending(lck, r);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	talloc_free(lck);
+	/* the retry should allocate a new file handle */
 	talloc_free(f);
 
-	talloc_set_destructor(r, pvfs_retry_destructor);
-
-	r->wait_handle = pvfs_wait_message(pvfs, req, MSG_PVFS_RETRY_OPEN, end_time, 
-					   pvfs_open_retry, r);
-	if (r->wait_handle == NULL) {
-		return NT_STATUS_NO_MEMORY;
+	if (NT_STATUS_EQUAL(parent_status, NT_STATUS_SHARING_VIOLATION)) {
+		end_time = timeval_add(&req->statistics.request_time,
+				       0, pvfs->sharing_violation_delay);
+	} else if (NT_STATUS_EQUAL(parent_status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		end_time = timeval_add(&req->statistics.request_time,
+				       pvfs->oplock_break_timeout, 0);
+	} else {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	talloc_steal(pvfs, r);
-
-	return NT_STATUS_OK;
+	return pvfs_odb_retry_setup(ntvfs, req, lck, end_time, io, NULL,
+				    pvfs_retry_open_sharing);
 }
 
 /*
@@ -1133,6 +1203,7 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
+	f->handle->oplock            = NULL;
 	f->handle->have_opendb_entry = false;
 	f->handle->sticky_write_time = false;
 	f->handle->open_completed    = false;
@@ -1186,15 +1257,21 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* see if we are allowed to open at the same time as existing opens */
-	status = odb_open_file(lck, f->handle, f->handle->name->stream_id,
+	status = odb_open_file(lck, f->handle, name->full_name, name->stream_id,
 			       share_access, access_mask, del_on_close,
-			       name->full_name, oplock_level, &oplock_granted);
+			       io->generic.in.open_disposition,
+			       false, oplock_level, &oplock_granted);
 
-	/* on a sharing violation we need to retry when the file is closed by 
-	   the other user, or after 1 second */
-	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) &&
+	/*
+	 * on a sharing violation we need to retry when the file is closed by
+	 * the other user, or after 1 second
+	 * on a non granted oplock we need to retry when the file is closed by
+	 * the other user, or after 30 seconds
+	*/
+	if ((NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	     NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) &&
 	    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
-		return pvfs_open_setup_retry(ntvfs, req, io, f, lck);
+		return pvfs_open_setup_retry(ntvfs, req, io, f, lck, status);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1204,6 +1281,12 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
 		oplock_granted = OPLOCK_BATCH;
+	} else if (oplock_granted != OPLOCK_NONE) {
+		status = pvfs_setup_oplock(f, oplock_granted);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(lck);
+			return status;
+		}
 	}
 
 	f->handle->have_opendb_entry = true;
@@ -1424,6 +1507,9 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	DATA_BLOB key;
 	struct odb_lock *lck;
+	uint32_t share_access;
+	uint32_t access_mask;
+	bool delete_on_close;
 
 	status = pvfs_locking_key(name, name, &key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1436,15 +1522,18 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = odb_can_open(lck,
-			      NTCREATEX_SHARE_ACCESS_READ |
-			      NTCREATEX_SHARE_ACCESS_WRITE | 
-			      NTCREATEX_SHARE_ACCESS_DELETE, 
-			      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 
-			      SEC_STD_DELETE);
+	share_access	= NTCREATEX_SHARE_ACCESS_READ |
+			  NTCREATEX_SHARE_ACCESS_WRITE |
+			  NTCREATEX_SHARE_ACCESS_DELETE;
+	access_mask	= SEC_STD_DELETE;
+	delete_on_close	= true;
+
+	status = odb_can_open(lck, name->stream_id,
+			      share_access, access_mask, delete_on_close,
+			      0, false);
 
 	if (NT_STATUS_IS_OK(status)) {
-		status = pvfs_access_check_simple(pvfs, req, name, SEC_STD_DELETE);
+		status = pvfs_access_check_simple(pvfs, req, name, access_mask);
 	}
 
 	/*
@@ -1483,6 +1572,9 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	DATA_BLOB key;
 	struct odb_lock *lck;
+	uint32_t share_access;
+	uint32_t access_mask;
+	bool delete_on_close;
 
 	status = pvfs_locking_key(name, name, &key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1495,11 +1587,76 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = odb_can_open(lck,
-			      NTCREATEX_SHARE_ACCESS_READ |
-			      NTCREATEX_SHARE_ACCESS_WRITE,
-			      0,
-			      SEC_STD_DELETE);
+	share_access	= NTCREATEX_SHARE_ACCESS_READ |
+			  NTCREATEX_SHARE_ACCESS_WRITE;
+	access_mask	= SEC_STD_DELETE;
+	delete_on_close	= false;
+
+	status = odb_can_open(lck, name->stream_id,
+			      share_access, access_mask, delete_on_close,
+			      0, false);
+
+	/*
+	 * if it's a sharing violation or we got no oplock
+	 * only keep the lock if the caller requested access
+	 * to the lock
+	 */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		if (lckp) {
+			*lckp = lck;
+		} else {
+			talloc_free(lck);
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
+		if (lckp) {
+			*lckp = NULL;
+		}
+	} else if (lckp) {
+		*lckp = lck;
+	}
+
+	return status;
+}
+
+/*
+  determine if the file size of a file can be changed,
+  or if it is prevented by an already open file
+*/
+NTSTATUS pvfs_can_update_file_size(struct pvfs_state *pvfs,
+				   struct ntvfs_request *req,
+				   struct pvfs_filename *name,
+				   struct odb_lock **lckp)
+{
+	NTSTATUS status;
+	DATA_BLOB key;
+	struct odb_lock *lck;
+	uint32_t share_access;
+	uint32_t access_mask;
+	bool break_to_none;
+	bool delete_on_close;
+
+	status = pvfs_locking_key(name, name, &key);
+	if (!NT_STATUS_IS_OK(status)) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	lck = odb_lock(req, pvfs->odb_context, &key);
+	if (lck == NULL) {
+		DEBUG(0,("Unable to lock opendb for can_stat\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* TODO: this may needs some more flags */
+	share_access	= NTCREATEX_SHARE_ACCESS_WRITE;
+	access_mask	= 0;
+	delete_on_close	= false;
+	break_to_none	= true;
+
+	status = odb_can_open(lck, name->stream_id,
+			      share_access, access_mask, delete_on_close,
+			      0, break_to_none);
 
 	/*
 	 * if it's a sharing violation or we got no oplock
@@ -1536,6 +1693,9 @@ NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs,
 	NTSTATUS status;
 	DATA_BLOB key;
 	struct odb_lock *lck;
+	uint32_t share_access;
+	uint32_t access_mask;
+	bool delete_on_close;
 
 	status = pvfs_locking_key(name, name, &key);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -1548,10 +1708,14 @@ NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = odb_can_open(lck,
-			      NTCREATEX_SHARE_ACCESS_READ |
-			      NTCREATEX_SHARE_ACCESS_WRITE,
-			      0, 0);
+	share_access	= NTCREATEX_SHARE_ACCESS_READ |
+			  NTCREATEX_SHARE_ACCESS_WRITE;
+	access_mask	= 0;
+	delete_on_close	= false;
+
+	status = odb_can_open(lck, name->stream_id,
+			      share_access, access_mask, delete_on_close,
+			      0, false);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);

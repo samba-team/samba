@@ -29,6 +29,7 @@
 #include "dsdb/samdb/samdb.h"
 
 struct pvfs_wait;
+struct pvfs_oplock;
 
 /* this is the private structure for the posix vfs backend. It is used
    to hold per-connection (per tree connect) state information */
@@ -51,8 +52,11 @@ struct pvfs_state {
 	   ntcancel */
 	struct pvfs_wait *wait_list;
 
-	/* the sharing violation timeout */
+	/* the sharing violation timeout (nsecs) */
 	uint_t sharing_violation_delay;
+
+	/* the oplock break timeout (secs) */
+	uint_t oplock_break_timeout;
 
 	/* filesystem attributes (see FS_ATTR_*) */
 	uint32_t fs_attribs;
@@ -154,6 +158,13 @@ struct pvfs_file_handle {
 
 	bool have_opendb_entry;
 
+	/*
+	 * we need to wait for oplock break requests from other processes,
+	 * and we need to remember the pvfs_file so we can correctly
+	 * forward the oplock break to the client
+	 */
+	struct pvfs_oplock *oplock;
+
 	/* we need this hook back to our parent for lock destruction */
 	struct pvfs_state *pvfs;
 
@@ -230,10 +241,16 @@ struct pvfs_dir;
 /* types of notification for pvfs wait events */
 enum pvfs_wait_notice {PVFS_WAIT_EVENT, PVFS_WAIT_TIMEOUT, PVFS_WAIT_CANCEL};
 
+/*
+  state of a pending retry
+*/
+struct pvfs_odb_retry;
+
 #define PVFS_EADB			"posix:eadb"
 #define PVFS_XATTR			"posix:xattr"
 #define PVFS_FAKE_OPLOCKS		"posix:fakeoplocks"
 #define PVFS_SHARE_DELAY		"posix:sharedelay"
+#define PVFS_OPLOCK_TIMEOUT		"posix:oplocktimeout"
 #define PVFS_ALLOCATION_ROUNDING	"posix:allocationrounding"
 #define PVFS_SEARCH_INACTIVITY		"posix:searchinactivity"
 #define PVFS_ACL			"posix:acl"
@@ -241,7 +258,8 @@ enum pvfs_wait_notice {PVFS_WAIT_EVENT, PVFS_WAIT_TIMEOUT, PVFS_WAIT_CANCEL};
 
 #define PVFS_XATTR_DEFAULT			true
 #define PVFS_FAKE_OPLOCKS_DEFAULT		false
-#define PVFS_SHARE_DELAY_DEFAULT		1000000
+#define PVFS_SHARE_DELAY_DEFAULT		1000000 /* nsecs */
+#define PVFS_OPLOCK_TIMEOUT_DEFAULT		30 /* secs */
 #define PVFS_ALLOCATION_ROUNDING_DEFAULT	512
 #define PVFS_SEARCH_INACTIVITY_DEFAULT		300
 

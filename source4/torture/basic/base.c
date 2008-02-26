@@ -664,7 +664,7 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 			}
 			if (NT_STATUS_EQUAL(smbcli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION)) {
 				double e = timeval_elapsed(&tv);
-				if (e < (0.5 * sec) || e > (1.5 * sec)) {
+				if (e < (0.5 * sec) || e > ((1.5 * sec) + 1)) {
 					torture_comment(tctx,"Timing incorrect %.2f violation 1 sec == %.2f\n",
 						e, sec);
 					return false;

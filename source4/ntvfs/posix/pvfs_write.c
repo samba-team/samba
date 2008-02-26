@@ -57,7 +57,10 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 				 wr->writex.in.count,
 				 WRITE_LOCK);
 	NT_STATUS_NOT_OK_RETURN(status);
-	
+
+	status = pvfs_break_level2_oplocks(f);
+	NT_STATUS_NOT_OK_RETURN(status);
+
 	if (f->handle->name->stream_name) {
 		ret = pvfs_stream_write(pvfs,
 					f->handle,

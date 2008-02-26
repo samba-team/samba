@@ -279,11 +279,13 @@ static NTSTATUS odb_oplock_break_send(struct odb_context *odb, struct opendb_ent
   Note that the path is only used by the delete on close logic, not
   for comparing with other filenames
 */
-static NTSTATUS odb_ctdb_open_file(struct odb_lock *lck, void *file_handle,
-				  uint32_t stream_id, uint32_t share_access, 
-				  uint32_t access_mask, bool delete_on_close,
-				  const char *path, 
-				  uint32_t oplock_level, uint32_t *oplock_granted)
+static NTSTATUS odb_ctdb_open_file(struct odb_lock *lck,
+				   void *file_handle, const char *path,
+				   uint32_t stream_id, uint32_t share_access,
+				   uint32_t access_mask, bool delete_on_close,
+				   uint32_t open_disposition, bool break_to_none,
+				   uint32_t oplock_level, uint32_t *oplock_granted)
+
 {
 	struct odb_context *odb = lck->odb;
 	struct opendb_entry e;
@@ -464,6 +466,16 @@ static NTSTATUS odb_ctdb_update_oplock(struct odb_lock *lck, void *file_handle,
 	return NT_STATUS_FOOBAR;
 }
 
+static NTSTATUS odb_ctdb_break_oplocks(struct odb_lock *lck)
+{
+	/*
+	 * as this file will went away and isn't used yet,
+	 * copy the implementation from the tdb backend
+	 * --metze
+	 */
+	return NT_STATUS_FOOBAR;
+}
+
 /*
   remove a pending opendb entry
 */
@@ -584,8 +596,9 @@ static NTSTATUS odb_ctdb_get_delete_on_close(struct odb_context *odb,
   create_options and access_mask
 */
 static NTSTATUS odb_ctdb_can_open(struct odb_lock *lck,
-				 uint32_t share_access, uint32_t create_options, 
-				 uint32_t access_mask)
+				  uint32_t stream_id, uint32_t share_access,
+				  uint32_t access_mask, bool delete_on_close,
+				  uint32_t open_disposition, bool break_to_none)
 {
 	struct odb_context *odb = lck->odb;
 	NTSTATUS status;
@@ -599,7 +612,7 @@ static NTSTATUS odb_ctdb_can_open(struct odb_lock *lck,
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) && 
+	if (delete_on_close &&
 	    file.num_entries != 0) {
 		return NT_STATUS_SHARING_VIOLATION;
 	}
@@ -642,7 +655,8 @@ static const struct opendb_ops opendb_ctdb_ops = {
 	.odb_set_delete_on_close = odb_ctdb_set_delete_on_close,
 	.odb_get_delete_on_close = odb_ctdb_get_delete_on_close,
 	.odb_can_open            = odb_ctdb_can_open,
-	.odb_update_oplock       = odb_ctdb_update_oplock
+	.odb_update_oplock       = odb_ctdb_update_oplock,
+	.odb_break_oplocks       = odb_ctdb_break_oplocks
 };
 
 
