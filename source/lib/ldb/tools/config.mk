@@ -20,7 +20,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbadd
 ################################################
 
-MANPAGES += $(ldbdir)/../man/ldbadd.1
+MANPAGES += $(ldbdir)/man/ldbadd.1
 
 ################################################
 # Start BINARY ldbdel
@@ -33,7 +33,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbdel
 ################################################
 
-MANPAGES += $(ldbdir)/../man/ldbdel.1
+MANPAGES += $(ldbdir)/man/ldbdel.1
 
 ################################################
 # Start BINARY ldbmodify
@@ -46,7 +46,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbmodify
 ################################################
 
-MANPAGES += $(ldbdir)/../man/ldbmodify.1
+MANPAGES += $(ldbdir)/man/ldbmodify.1
 
 ################################################
 # Start BINARY ldbsearch
@@ -59,7 +59,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbsearch
 ################################################
 
-MANPAGES += $(ldbdir)/../man/ldbsearch.1
+MANPAGES += $(ldbdir)/man/ldbsearch.1
 
 ################################################
 # Start BINARY ldbedit
@@ -72,7 +72,7 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbedit
 ################################################
 
-MANPAGES += $(ldbdir)/../man/ldbedit.1
+MANPAGES += $(ldbdir)/man/ldbedit.1
 
 ################################################
 # Start BINARY ldbrename
@@ -85,6 +85,6 @@ PRIVATE_DEPENDENCIES = \
 # End BINARY ldbrename
 ################################################
 
-MANPAGES += $(ldbdir)/../man/ldbrename.1
+MANPAGES += $(ldbdir)/man/ldbrename.1
 
 
