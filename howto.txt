@@ -78,12 +78,11 @@ Must be run as a user with permission to write to the install directory.
 ::
 
   # cd source
-  # ./setup/provision --realm=YOUR.REALM --domain=YOURDOM \
+  # bin/smbpython ./setup/provision --realm=YOUR.REALM --domain=YOURDOM \
   #  --adminpass=SOMEPASSWORD --server-role='domain controller'
 
-REMINDER: Add the "bin" directory of the path you installed to
-          (e.g. /usr/local/samba/bin) to your path, or the provision command
-          will not work.
+REMINDER: Use the path to smbpython, as the provision command
+          will not work with the system python.
 
 'YOURDOM' is the NT4 style domain name. 'YOUR.REALM' is your kerberos
 realm, which is typically your DNS domain name.
