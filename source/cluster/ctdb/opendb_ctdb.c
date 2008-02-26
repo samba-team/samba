@@ -133,6 +133,16 @@ static struct odb_lock *odb_ctdb_lock(TALLOC_CTX *mem_ctx,
 	return lck;
 }
 
+static DATA_BLOB odb_ctdb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
+{
+	/*
+	 * as this file will went away and isn't used yet,
+	 * copy the implementation from the tdb backend
+	 * --metze
+	 */
+	return data_blob_const(NULL, 0);
+}
+
 /*
   determine if two odb_entry structures conflict
 
@@ -440,6 +450,19 @@ static NTSTATUS odb_ctdb_close_file(struct odb_lock *lck, void *file_handle)
 	return odb_push_record(lck, &file);
 }
 
+/*
+  update the oplock level of the client
+*/
+static NTSTATUS odb_ctdb_update_oplock(struct odb_lock *lck, void *file_handle,
+				       uint32_t oplock_level)
+{
+	/*
+	 * as this file will went away and isn't used yet,
+	 * copy the implementation from the tdb backend
+	 * --metze
+	 */
+	return NT_STATUS_FOOBAR;
+}
 
 /*
   remove a pending opendb entry
@@ -610,6 +633,7 @@ static NTSTATUS odb_ctdb_can_open(struct odb_lock *lck,
 static const struct opendb_ops opendb_ctdb_ops = {
 	.odb_init                = odb_ctdb_init,
 	.odb_lock                = odb_ctdb_lock,
+	.odb_get_key             = odb_ctdb_get_key,
 	.odb_open_file           = odb_ctdb_open_file,
 	.odb_open_file_pending   = odb_ctdb_open_file_pending,
 	.odb_close_file          = odb_ctdb_close_file,
@@ -617,7 +641,8 @@ static const struct opendb_ops opendb_ctdb_ops = {
 	.odb_rename              = odb_ctdb_rename,
 	.odb_set_delete_on_close = odb_ctdb_set_delete_on_close,
 	.odb_get_delete_on_close = odb_ctdb_get_delete_on_close,
-	.odb_can_open            = odb_ctdb_can_open
+	.odb_can_open            = odb_ctdb_can_open,
+	.odb_update_oplock       = odb_ctdb_update_oplock
 };
 
 

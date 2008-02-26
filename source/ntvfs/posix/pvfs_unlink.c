@@ -25,69 +25,14 @@
 
 
 /*
-  unlink a stream
- */
-static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs, 
-				   struct ntvfs_request *req,
-				   struct pvfs_filename *name, 
-				   uint16_t attrib)
-{
-	NTSTATUS status;
-	struct odb_lock *lck;
-
-	if (!name->stream_exists) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	/* make sure its matches the given attributes */
-	status = pvfs_match_attrib(pvfs, name, attrib, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = pvfs_can_delete(pvfs, req, name, &lck);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return pvfs_stream_delete(pvfs, name, -1);
-}
-
-
-/*
-  unlink one file
+  unlink a file
 */
-static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, 
-				struct ntvfs_request *req,
-				const char *unix_path, 
-				const char *fname, uint32_t attrib)
+static NTSTATUS pvfs_unlink_file(struct pvfs_state *pvfs,
+				 struct pvfs_filename *name)
 {
-	struct pvfs_filename *name;
 	NTSTATUS status;
-	struct odb_lock *lck;
-
-	/* get a pvfs_filename object */
-	status = pvfs_resolve_partial(pvfs, req, 
-				      unix_path, fname, &name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* make sure its matches the given attributes */
-	status = pvfs_match_attrib(pvfs, name, attrib, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(name);
-		return status;
-	}
-
-	status = pvfs_can_delete(pvfs, req, name, &lck);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(name);
-		return status;
-	}
 
 	if (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
-		talloc_free(name);
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
@@ -110,9 +55,40 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
 			       name->full_name);
 	}
 
-	talloc_free(name);
-
 	return status;
+}
+
+/*
+  unlink one file
+*/
+static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
+				struct ntvfs_request *req,
+				union smb_unlink *unl,
+				struct pvfs_filename *name)
+{
+	NTSTATUS status;
+
+	/* make sure its matches the given attributes */
+	status = pvfs_match_attrib(pvfs, name,
+				   unl->unlink.in.attrib, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = pvfs_can_delete(pvfs, req, name, NULL);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (name->stream_name) {
+		if (!name->stream_exists) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+
+		return pvfs_stream_delete(pvfs, name, -1);
+	}
+
+	return pvfs_unlink_file(pvfs, name);
 }
 
 /*
@@ -147,8 +123,8 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	if (name->stream_name) {
-		return pvfs_unlink_stream(pvfs, req, name, unl->unlink.in.attrib);
+	if (!name->has_wildcard) {
+		return pvfs_unlink_one(pvfs, req, unl, name);
 	}
 
 	/* get list of matching files */
@@ -158,6 +134,7 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	}
 
 	status = NT_STATUS_NO_SUCH_FILE;
+	talloc_free(name);
 
 	ofs = 0;
 
@@ -168,10 +145,20 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 
-		status = pvfs_unlink_one(pvfs, req, pvfs_list_unix_path(dir), fname, unl->unlink.in.attrib);
+		/* get a pvfs_filename object */
+		status = pvfs_resolve_partial(pvfs, req,
+					      pvfs_list_unix_path(dir),
+					      fname, &name);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = pvfs_unlink_one(pvfs, req, unl, name);
 		if (NT_STATUS_IS_OK(status)) {
 			total_deleted++;
 		}
+
+		talloc_free(name);
 	}
 
 	if (total_deleted > 0) {

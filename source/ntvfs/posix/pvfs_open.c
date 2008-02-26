@@ -756,7 +756,7 @@ struct pvfs_open_retry {
 	struct ntvfs_module_context *ntvfs;
 	struct ntvfs_request *req;
 	union smb_open *io;
-	void *wait_handle;
+	struct pvfs_wait *wait_handle;
 	DATA_BLOB odb_locking_key;
 };
 
@@ -1447,10 +1447,24 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs,
 		status = pvfs_access_check_simple(pvfs, req, name, SEC_STD_DELETE);
 	}
 
-	if (!NT_STATUS_IS_OK(status)) {
+	/*
+	 * if it's a sharing violation or we got no oplock
+	 * only keep the lock if the caller requested access
+	 * to the lock
+	 */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		if (lckp) {
+			*lckp = lck;
+		} else {
+			talloc_free(lck);
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
-		*lckp = lck;
-	} else if (lckp != NULL) {
+		if (lckp) {
+			*lckp = NULL;
+		}
+	} else if (lckp) {
 		*lckp = lck;
 	}
 
@@ -1487,10 +1501,24 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs,
 			      0,
 			      SEC_STD_DELETE);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	/*
+	 * if it's a sharing violation or we got no oplock
+	 * only keep the lock if the caller requested access
+	 * to the lock
+	 */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	    NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		if (lckp) {
+			*lckp = lck;
+		} else {
+			talloc_free(lck);
+		}
+	} else if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
-		*lckp = lck;
-	} else if (lckp != NULL) {
+		if (lckp) {
+			*lckp = NULL;
+		}
+	} else if (lckp) {
 		*lckp = lck;
 	}
 
@@ -1524,6 +1552,10 @@ NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs,
 			      NTCREATEX_SHARE_ACCESS_READ |
 			      NTCREATEX_SHARE_ACCESS_WRITE,
 			      0, 0);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(lck);
+	}
 
 	return status;
 }
