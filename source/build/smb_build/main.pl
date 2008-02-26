@@ -65,7 +65,6 @@ foreach my $key (values %$OUTPUT) {
 								   $key->{TYPE} eq "PYTHON") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->PythonFiles($key) if defined($key->{PYTHON_FILES});
-	$mkenv->Manpage($key) if defined($key->{MANPAGE});
 	$mkenv->Header($key) if defined($key->{PUBLIC_HEADERS});
 	if ($key->{TYPE} eq "MODULE" and @{$key->{OUTPUT_TYPE}}[0] eq "MERGED_OBJ" and defined($key->{INIT_FUNCTION})) {
 		$mkenv->output("$key->{SUBSYSTEM}_INIT_FUNCTIONS += $key->{INIT_FUNCTION},\n");

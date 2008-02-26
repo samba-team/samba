@@ -314,9 +314,10 @@ PRIVATE_DEPENDENCIES = \
 		dcerpc \
 		LIBCLI_SMB \
 		SMBREADLINE
-MANPAGE = man/smbtorture.1
 # End BINARY smbtorture
 #################################
+
+MANPAGES += torture/man/smbtorture.1
 
 #################################
 # Start BINARY gentest
@@ -332,9 +333,10 @@ PRIVATE_DEPENDENCIES = \
 		POPT_CREDENTIALS \
 		LIBCLI_SMB \
 		LIBCLI_RAW
-MANPAGE = man/gentest.1
 # End BINARY gentest
 #################################
+
+MANPAGES += torture/man/gentest.1
 
 #################################
 # Start BINARY masktest
@@ -349,9 +351,10 @@ PRIVATE_DEPENDENCIES = \
 		POPT_SAMBA \
 		POPT_CREDENTIALS \
 		LIBCLI_SMB
-MANPAGE = man/masktest.1
 # End BINARY masktest
 #################################
+
+MANPAGES += torture/man/masktest.1
 
 #################################
 # Start BINARY locktest
@@ -366,9 +369,10 @@ PRIVATE_DEPENDENCIES = \
 		LIBSAMBA-UTIL \
 		LIBCLI_SMB \
 		LIBSAMBA-CONFIG
-MANPAGE = man/locktest.1
 # End BINARY locktest
 #################################
+
+MANPAGES += utils/man/locktest.1
 
 COV_TARGET = test
 

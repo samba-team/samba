@@ -301,13 +301,6 @@ sub PythonFiles($$)
 	}
 }
 
-sub Manpage($$)
-{
-	my ($self,$ctx) = @_;
-
-	$self->output("MANPAGES += \$(addprefix $ctx->{BASEDIR}/, $ctx->{MANPAGE})\n");
-}
-
 sub ProtoHeader($$)
 {
 	my ($self,$ctx) = @_;

@@ -17,9 +17,10 @@ OBJ_FILES = \
 		ldbadd.o
 PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE LIBCLI_RESOLVE
-MANPAGE = ../man/ldbadd.1
 # End BINARY ldbadd
 ################################################
+
+MANPAGES += $(ldbdir)/../man/ldbadd.1
 
 ################################################
 # Start BINARY ldbdel
@@ -29,9 +30,10 @@ OBJ_FILES= \
 		ldbdel.o
 PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE
-MANPAGE = ../man/ldbdel.1
 # End BINARY ldbdel
 ################################################
+
+MANPAGES += $(ldbdir)/../man/ldbdel.1
 
 ################################################
 # Start BINARY ldbmodify
@@ -41,9 +43,10 @@ OBJ_FILES= \
 		ldbmodify.o
 PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE
-MANPAGE = ../man/ldbmodify.1
 # End BINARY ldbmodify
 ################################################
+
+MANPAGES += $(ldbdir)/../man/ldbmodify.1
 
 ################################################
 # Start BINARY ldbsearch
@@ -53,9 +56,10 @@ OBJ_FILES= \
 		ldbsearch.o
 PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE 
-MANPAGE = ../man/ldbsearch.1
 # End BINARY ldbsearch
 ################################################
+
+MANPAGES += $(ldbdir)/../man/ldbsearch.1
 
 ################################################
 # Start BINARY ldbedit
@@ -65,9 +69,10 @@ OBJ_FILES= \
 		ldbedit.o
 PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE
-MANPAGE = ../man/ldbedit.1
 # End BINARY ldbedit
 ################################################
+
+MANPAGES += $(ldbdir)/../man/ldbedit.1
 
 ################################################
 # Start BINARY ldbrename
@@ -77,8 +82,9 @@ OBJ_FILES= \
 		ldbrename.o
 PRIVATE_DEPENDENCIES = \
 		LIBLDB_CMDLINE
-MANPAGE = ../man/ldbrename.1
 # End BINARY ldbrename
 ################################################
+
+MANPAGES += $(ldbdir)/../man/ldbrename.1
 
 
