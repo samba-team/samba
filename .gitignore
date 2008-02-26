@@ -197,3 +197,4 @@ source/apidocs
 *.swp
 source/mkconfig.mk
 source/data.mk
+source/librpc/idl-deps
