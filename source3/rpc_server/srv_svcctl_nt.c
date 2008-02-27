@@ -854,13 +854,16 @@ WERROR _svcctl_QueryServiceObjectSecurity(pipes_struct *p,
 }
 
 /********************************************************************
+ _svcctl_SetServiceObjectSecurity
 ********************************************************************/
 
-WERROR _svcctl_set_service_sec( pipes_struct *p, SVCCTL_Q_SET_SERVICE_SEC *q_u, SVCCTL_R_SET_SERVICE_SEC *r_u )
+WERROR _svcctl_SetServiceObjectSecurity(pipes_struct *p,
+					struct svcctl_SetServiceObjectSecurity *r)
 {
-	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 	SEC_DESC *sec_desc = NULL;
 	uint32 required_access;
+	NTSTATUS status;
 
 	if ( !info || !(info->type & (SVC_HANDLE_IS_SERVICE|SVC_HANDLE_IS_SCM))  )
 		return WERR_BADFID;
@@ -872,7 +875,7 @@ WERROR _svcctl_set_service_sec( pipes_struct *p, SVCCTL_Q_SET_SERVICE_SEC *q_u, 
 
 	/* check the access on the open handle */
 
-	switch ( q_u->security_flags ) {
+	switch ( r->in.security_flags ) {
 		case DACL_SECURITY_INFORMATION:
 			required_access = STD_RIGHT_WRITE_DAC_ACCESS;
 			break;
@@ -893,8 +896,12 @@ WERROR _svcctl_set_service_sec( pipes_struct *p, SVCCTL_Q_SET_SERVICE_SEC *q_u, 
 
 	/* read the security descfriptor */
 
-	if ( !sec_io_desc("", &sec_desc, &q_u->buffer.prs, 0 ) )
-		return WERR_NOMEM;
+	status = unmarshall_sec_desc(p->mem_ctx,
+				     r->in.buffer, r->in.buffer_size,
+				     &sec_desc);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
 
 	/* store the new SD */
 
@@ -906,12 +913,6 @@ WERROR _svcctl_set_service_sec( pipes_struct *p, SVCCTL_Q_SET_SERVICE_SEC *q_u, 
 
 
 WERROR _svcctl_DeleteService(pipes_struct *p, struct svcctl_DeleteService *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_SetServiceObjectSecurity(pipes_struct *p, struct svcctl_SetServiceObjectSecurity *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
