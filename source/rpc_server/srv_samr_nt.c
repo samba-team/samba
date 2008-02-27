@@ -876,6 +876,8 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx,
 	return NT_STATUS_OK;
 }
 
+#define MAX_SAM_ENTRIES MAX_SAM_ENTRIES_W2K
+
 /*******************************************************************
  _samr_EnumDomainUsers
  ********************************************************************/

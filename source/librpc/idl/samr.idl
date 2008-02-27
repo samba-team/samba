@@ -316,6 +316,10 @@ import "misc.idl", "lsa.idl", "security.idl";
 
 	/************************/
 	/* Function    0x0b     */
+
+	const int MAX_SAM_ENTRIES_W2K = 0x400; /* 1024 */
+	const int MAX_SAM_ENTRIES_W95 = 50;
+
 	NTSTATUS samr_EnumDomainGroups(
 		[in]          policy_handle *domain_handle,
 		[in,out,ref]  uint32 *resume_handle,
