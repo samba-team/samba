@@ -9,6 +9,8 @@
 #define _HEADER_samr
 
 #define SAMR_ENUM_USERS_MULTIPLIER	( 54 )
+#define PASS_MUST_CHANGE_AT_NEXT_LOGON	( 0x01 )
+#define PASS_DONT_CHANGE_AT_NEXT_LOGON	( 0x00 )
 /* bitmap samr_AcctFlags */
 #define ACB_DISABLED ( 0x00000001 )
 #define ACB_HOMDIRREQ ( 0x00000002 )
