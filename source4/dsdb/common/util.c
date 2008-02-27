@@ -596,11 +596,37 @@ struct samr_LogonHours samdb_result_logon_hours(TALLOC_CTX *mem_ctx, struct ldb_
 
 /*
   pull a set of account_flags from a result set. 
+
+  This requires that the attributes: 
+   pwdLastSet
+   userAccountControl
+  be included in 'msg'
 */
-uint16_t samdb_result_acct_flags(struct ldb_message *msg, const char *attr)
+uint32_t samdb_result_acct_flags(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ctx, 
+				 struct ldb_message *msg, struct ldb_dn *domain_dn)
 {
-	uint_t userAccountControl = ldb_msg_find_attr_as_uint(msg, attr, 0);
-	return samdb_uf2acb(userAccountControl);
+	uint32_t userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
+	uint32_t acct_flags = samdb_uf2acb(userAccountControl); 
+	if ((userAccountControl & UF_NORMAL_ACCOUNT) && !(userAccountControl & UF_DONT_EXPIRE_PASSWD)) {
+		NTTIME must_change_time;
+		NTTIME pwdLastSet = samdb_result_nttime(msg, "pwdLastSet", 0);
+		if (pwdLastSet == 0) {
+			acct_flags |= ACB_PW_EXPIRED;
+		} else {
+			NTTIME now;
+			
+			must_change_time = samdb_result_force_password_change(sam_ctx, mem_ctx, 
+									      domain_dn, msg);
+			
+			/* Test account expire time */
+			unix_to_nt_time(&now, time(NULL));
+			/* check for expired password */
+			if ((must_change_time != 0) && (must_change_time < now)) {
+				acct_flags |= ACB_PW_EXPIRED;
+			}
+		}
+	}
+	return acct_flags;
 }
 
 
