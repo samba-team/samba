@@ -155,10 +155,9 @@ _PUBLIC_ NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, bool del_on_clos
   people still have the file open
 */
 _PUBLIC_ NTSTATUS odb_get_delete_on_close(struct odb_context *odb, 
-					  DATA_BLOB *key, bool *del_on_close, 
-					  int *open_count, char **path)
+					  DATA_BLOB *key, bool *del_on_close)
 {
-	return ops->odb_get_delete_on_close(odb, key, del_on_close, open_count, path);
+	return ops->odb_get_delete_on_close(odb, key, del_on_close);
 }
 
 

@@ -734,12 +734,13 @@ static NTSTATUS odb_tdb_set_delete_on_close(struct odb_lock *lck, bool del_on_cl
   people still have the file open
 */
 static NTSTATUS odb_tdb_get_delete_on_close(struct odb_context *odb, 
-					    DATA_BLOB *key, bool *del_on_close, 
-					    int *open_count, char **path)
+					    DATA_BLOB *key, bool *del_on_close)
 {
 	NTSTATUS status;
 	struct opendb_file file;
 	struct odb_lock *lck;
+
+	(*del_on_close) = false;
 
 	lck = odb_lock(odb, odb, key);
 	NT_STATUS_HAVE_NO_MEMORY(lck);
@@ -747,7 +748,6 @@ static NTSTATUS odb_tdb_get_delete_on_close(struct odb_context *odb,
 	status = odb_pull_record(lck, &file);
 	if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_NAME_NOT_FOUND, status)) {
 		talloc_free(lck);
-		(*del_on_close) = false;
 		return NT_STATUS_OK;
 	}
 	if (!NT_STATUS_IS_OK(status)) {
@@ -756,16 +756,6 @@ static NTSTATUS odb_tdb_get_delete_on_close(struct odb_context *odb,
 	}
 
 	(*del_on_close) = file.delete_on_close;
-	if (open_count != NULL) {
-		(*open_count) = file.num_entries;
-	}
-	if (path != NULL) {
-		*path = talloc_strdup(odb, file.path);
-		NT_STATUS_HAVE_NO_MEMORY(*path);
-		if (file.num_entries == 1 && file.entries[0].delete_on_close) {
-			(*del_on_close) = true;
-		}
-	}
 
 	talloc_free(lck);
 
