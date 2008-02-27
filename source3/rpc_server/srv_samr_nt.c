@@ -11,6 +11,7 @@
  *  Copyright (C) Gerald (Jerry) Carter             2003-2004,
  *  Copyright (C) Simo Sorce                        2003.
  *  Copyright (C) Volker Lendecke		    2005.
+ *  Copyright (C) Guenther Deschner		    2008.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

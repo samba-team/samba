@@ -6,6 +6,7 @@
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Jeremy Allison               1998-2001.
  *  Copyright (C) Andrew Bartlett                   2001.
+ *  Copyright (C) Guenther Deschner		    2008.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by

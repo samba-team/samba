@@ -5,6 +5,7 @@
    Copyright (C) Andrew Bartlett                2002.
    Copyright (C) Gerald Carter			2003.
    Copyright (C) Tim Potter			2003.
+   Copyright (C) Guenther Deschner		2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
