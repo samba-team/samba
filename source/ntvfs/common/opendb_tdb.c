@@ -376,8 +376,26 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
 	   exclusive oplocks afterwards. */
 	for (i=0;i<file->num_entries;i++) {
 		if (file->entries[i].oplock_level == OPLOCK_EXCLUSIVE) {
+			bool oplock_return = OPLOCK_BREAK_TO_LEVEL_II;
+			/* if this is an attribute only access
+			 * it doesn't conflict with an EXCLUSIVE oplock
+			 * but we'll not grant the oplock below
+			 */
+			attrs_only = access_attributes_only(access_mask,
+							    open_disposition,
+							    break_to_none);
+			if (attrs_only) {
+				break;
+			}
+			/*
+			 * send an oplock break to the holder of the
+			 * oplock and tell caller to retry later
+			 */
+			if (break_to_none) {
+				oplock_return = OPLOCK_BREAK_TO_NONE;
+			}
 			odb_oplock_break_send(odb, &file->entries[i],
-					      OPLOCK_BREAK_TO_NONE);
+					      oplock_return);
 			return NT_STATUS_OPLOCK_NOT_GRANTED;
 		}
 	}
@@ -449,8 +467,8 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
 				e.oplock_level	= OPLOCK_EXCLUSIVE;
 				*oplock_granted	= EXCLUSIVE_OPLOCK_RETURN;
 			} else {
-				e.oplock_level	= OPLOCK_NONE;
-				*oplock_granted	= NO_OPLOCK_RETURN;
+				e.oplock_level	= OPLOCK_LEVEL_II;
+				*oplock_granted	= LEVEL_II_OPLOCK_RETURN;
 			}
 		} else if (oplock_level == OPLOCK_BATCH) {
 			if (file.num_entries == 0) {
