@@ -103,6 +103,16 @@ int rep_inet_pton(int af, const char *src, void *dst);
 const char *rep_inet_ntop(int af, const void *src, char *dst, socklen_t size);
 #endif
 
+#ifndef HAVE_CONNECT
+/* define is in "replace.h" */
+int rep_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+#endif
+
+#ifndef HAVE_GETHOSTBYNAME
+/* define is in "replace.h" */
+struct hostent *rep_gethostbyname(const char *name);
+#endif
+
 #ifdef HAVE_IFADDRS_H
 #include <ifaddrs.h>
 #endif

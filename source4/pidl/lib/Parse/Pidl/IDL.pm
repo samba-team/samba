@@ -2408,7 +2408,7 @@ sub _Error {
 		error($_[0]->YYData, $_[0]->YYData->{ERRMSG});
 		delete $_[0]->YYData->{ERRMSG};
 		return;
-	};
+	}
 	my $last_token = $_[0]->YYData->{LAST_TOKEN};
 	
 	error($_[0]->YYData, "Syntax error near '$last_token'");
