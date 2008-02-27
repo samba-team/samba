@@ -993,7 +993,7 @@ bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
 	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
 		
 	for ( i=0; pipe_names[i].client_pipe; i++ ) {
-		DEBUG(10,("checking %s\n", pipe_names[i].client_pipe));
+		DEBUGADD(10,("checking %s\n", pipe_names[i].client_pipe));
 		if ( strequal(pipe_names[i].client_pipe, pname)
 			&& (abstract->version == pipe_names[i].abstr_syntax.version) 
 			&& (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid, sizeof(struct GUID)) == 0)
