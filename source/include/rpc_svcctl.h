@@ -275,20 +275,6 @@ typedef struct {
 /**************************/
 
 typedef struct {
-	POLICY_HND handle;
-	uint32 security_flags;
-	uint32 buffer_size;	
-} SVCCTL_Q_QUERY_SERVICE_SEC;
-
-typedef struct {
-	RPC_BUFFER buffer;
-	uint32 needed;
-	WERROR status;
-} SVCCTL_R_QUERY_SERVICE_SEC;
-
-/**************************/
-
-typedef struct {
 	POLICY_HND handle; 
 	uint32 security_flags;        
 	RPC_BUFFER buffer;
