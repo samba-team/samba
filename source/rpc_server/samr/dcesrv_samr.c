@@ -102,10 +102,24 @@
         set_el = ldb_msg_find_element(msg, attr);			\
  	set_el->flags = LDB_FLAG_MOD_REPLACE;				\
 } while (0)								
+
+#define CHECK_FOR_MULTIPLES(value, flag, poss_flags)	\
+	do { \
+		if ((value & flag) && ((value & flag) != (value & (poss_flags)))) { \
+			return NT_STATUS_INVALID_PARAMETER;		\
+		}							\
+	} while (0)							\
 	
 /* Set account flags, discarding flags that cannot be set with SAMR */								
 #define SET_AFLAGS(msg, field, attr) do {				\
 	struct ldb_message_element *set_el;				\
+	if ((r->in.info->field & (ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST)) == 0) { \
+		return NT_STATUS_INVALID_PARAMETER; \
+	}								\
+	CHECK_FOR_MULTIPLES(r->in.info->field, ACB_NORMAL, ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST); \
+	CHECK_FOR_MULTIPLES(r->in.info->field, ACB_DOMTRUST, ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST); \
+	CHECK_FOR_MULTIPLES(r->in.info->field, ACB_WSTRUST, ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST); \
+	CHECK_FOR_MULTIPLES(r->in.info->field, ACB_SVRTRUST, ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST); \
 	if (samdb_msg_add_acct_flags(sam_ctx, mem_ctx, msg, attr, (r->in.info->field & ~(ACB_AUTOLOCK|ACB_PW_EXPIRED))) != 0) { \
 		return NT_STATUS_NO_MEMORY;				\
 	}								\
