@@ -394,7 +394,7 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 	}	
 
 	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
-				     POLICY_VIEW_LOCAL_INFORMATION,
+				     LSA_POLICY_VIEW_LOCAL_INFORMATION,
 				     &pol);
 
 	if (!NT_STATUS_IS_OK(result))

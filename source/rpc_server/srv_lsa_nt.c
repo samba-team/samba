@@ -40,10 +40,10 @@ struct lsa_info {
 };
 
 const struct generic_mapping lsa_generic_mapping = {
-	POLICY_READ,
-	POLICY_WRITE,
-	POLICY_EXECUTE,
-	POLICY_ALL_ACCESS
+	LSA_POLICY_READ,
+	LSA_POLICY_WRITE,
+	LSA_POLICY_EXECUTE,
+	LSA_POLICY_ALL_ACCESS
 };
 
 /***************************************************************************
@@ -289,17 +289,17 @@ static NTSTATUS lsa_get_generic_sd(TALLOC_CTX *mem_ctx, SEC_DESC **sd, size_t *s
 
 	SEC_ACL *psa = NULL;
 
-	init_sec_access(&mask, POLICY_EXECUTE);
+	init_sec_access(&mask, LSA_POLICY_EXECUTE);
 	init_sec_ace(&ace[0], &global_sid_World, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	sid_copy(&adm_sid, get_global_sam_sid());
 	sid_append_rid(&adm_sid, DOMAIN_GROUP_RID_ADMINS);
-	init_sec_access(&mask, POLICY_ALL_ACCESS);
+	init_sec_access(&mask, LSA_POLICY_ALL_ACCESS);
 	init_sec_ace(&ace[1], &adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	sid_copy(&local_adm_sid, &global_sid_Builtin);
 	sid_append_rid(&local_adm_sid, BUILTIN_ALIAS_RID_ADMINS);
-	init_sec_access(&mask, POLICY_ALL_ACCESS);
+	init_sec_access(&mask, LSA_POLICY_ALL_ACCESS);
 	init_sec_ace(&ace[2], &local_adm_sid, SEC_ACE_TYPE_ACCESS_ALLOWED, mask, 0);
 
 	if((psa = make_sec_acl(mem_ctx, NT4_ACL_REVISION, 3, ace)) == NULL)
@@ -390,7 +390,7 @@ NTSTATUS _lsa_OpenPolicy2(pipes_struct *p,
 	/* This is needed for lsa_open_account and rpcclient .... :-) */
 
 	if (p->pipe_user.ut.uid == sec_initial_uid())
-		acc_granted = POLICY_ALL_ACCESS;
+		acc_granted = LSA_POLICY_ALL_ACCESS;
 
 	/* associate the domain SID with the (unique) handle. */
 	if ((info = SMB_MALLOC_P(struct lsa_info)) == NULL)
@@ -483,7 +483,7 @@ NTSTATUS _lsa_EnumTrustDom(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
-	if (!(info->access & POLICY_VIEW_LOCAL_INFORMATION))
+	if (!(info->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
 	nt_status = pdb_enum_trusteddoms(p->mem_ctx, &num_domains, &domains);
@@ -558,7 +558,7 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 		uint32 policy_def = LSA_AUDIT_POLICY_ALL;
 
 		/* check if the user have enough rights */
-		if (!(handle->access & POLICY_VIEW_AUDIT_INFORMATION)) {
+		if (!(handle->access & LSA_POLICY_VIEW_AUDIT_INFORMATION)) {
 			DEBUG(10,("_lsa_QueryInfoPolicy: insufficient access rights\n"));
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -586,7 +586,7 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 		}
 	case 0x03:
 		/* check if the user have enough rights */
-		if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+		if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 			return NT_STATUS_ACCESS_DENIED;
 
 		/* Request PolicyPrimaryDomainInformation. */
@@ -615,7 +615,7 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 		break;
 	case 0x05:
 		/* check if the user have enough rights */
-		if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+		if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 			return NT_STATUS_ACCESS_DENIED;
 
 		/* Request PolicyAccountDomainInformation. */
@@ -626,7 +626,7 @@ NTSTATUS _lsa_QueryInfoPolicy(pipes_struct *p,
 		break;
 	case 0x06:
 		/* check if the user have enough rights */
-		if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+		if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 			return NT_STATUS_ACCESS_DENIED;
 
 		switch (lp_server_role()) {
@@ -793,7 +793,7 @@ NTSTATUS _lsa_LookupSids(pipes_struct *p,
 	}
 
 	/* check if the user has enough rights */
-	if (!(handle->access & POLICY_LOOKUP_NAMES)) {
+	if (!(handle->access & LSA_POLICY_LOOKUP_NAMES)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -867,7 +867,7 @@ NTSTATUS _lsa_LookupSids2(pipes_struct *p,
 		}
 
 		/* check if the user have enough rights */
-		if (!(handle->access & POLICY_LOOKUP_NAMES)) {
+		if (!(handle->access & LSA_POLICY_LOOKUP_NAMES)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
@@ -999,7 +999,7 @@ NTSTATUS _lsa_LookupNames(pipes_struct *p,
 	}
 
 	/* check if the user have enough rights */
-	if (!(handle->access & POLICY_LOOKUP_NAMES)) {
+	if (!(handle->access & LSA_POLICY_LOOKUP_NAMES)) {
 		status = NT_STATUS_ACCESS_DENIED;
 		goto done;
 	}
@@ -1138,7 +1138,7 @@ NTSTATUS _lsa_LookupNames3(pipes_struct *p,
 		}
 
 		/* check if the user have enough rights */
-		if (!(handle->access & POLICY_LOOKUP_NAMES)) {
+		if (!(handle->access & LSA_POLICY_LOOKUP_NAMES)) {
 			status = NT_STATUS_ACCESS_DENIED;
 			goto done;
 		}
@@ -1292,7 +1292,7 @@ NTSTATUS _lsa_EnumPrivs(pipes_struct *p,
 	/* check if the user have enough rights
 	   I don't know if it's the right one. not documented.  */
 
-	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+	if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (num_privs) {
@@ -1350,7 +1350,7 @@ NTSTATUS _lsa_LookupPrivDisplayName(pipes_struct *p,
 	/*
 	 * I don't know if it's the right one. not documented.
 	 */
-	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+	if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
 	DEBUG(10,("_lsa_LookupPrivDisplayName: name = %s\n", r->in.name->string));
@@ -1392,7 +1392,7 @@ NTSTATUS _lsa_EnumAccounts(pipes_struct *p,
 	if (!find_policy_by_hnd(p, r->in.handle, (void **)(void *)&handle))
 		return NT_STATUS_INVALID_HANDLE;
 
-	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+	if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
 	sid_list = NULL;
@@ -1505,7 +1505,7 @@ NTSTATUS _lsa_CreateAccount(pipes_struct *p,
 	 * I don't know if it's the right one. not documented.
 	 * but guessed with rpcclient.
 	 */
-	if (!(handle->access & POLICY_GET_PRIVATE_INFORMATION))
+	if (!(handle->access & LSA_POLICY_GET_PRIVATE_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* check to see if the pipe_user is a Domain Admin since
@@ -1554,7 +1554,7 @@ NTSTATUS _lsa_OpenAccount(pipes_struct *p,
 	 * I don't know if it's the right one. not documented.
 	 * but guessed with rpcclient.
 	 */
-	if (!(handle->access & POLICY_GET_PRIVATE_INFORMATION))
+	if (!(handle->access & LSA_POLICY_GET_PRIVATE_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* TODO: Fis the parsing routine before reenabling this check! */
@@ -1798,7 +1798,7 @@ NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
 		return NT_STATUS_INVALID_HANDLE;
 
 	/* check if the user have enough rights */
-	if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+	if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 		return NT_STATUS_ACCESS_DENIED;
 
 
@@ -1855,7 +1855,7 @@ NTSTATUS _lsa_QuerySecurity(pipes_struct *p,
 	switch (q_u->info_class) {
 	case 0x0c:
 		/* check if the user have enough rights */
-		if (!(handle->access & POLICY_VIEW_LOCAL_INFORMATION))
+		if (!(handle->access & LSA_POLICY_VIEW_LOCAL_INFORMATION))
 			return NT_STATUS_ACCESS_DENIED;
 
 		/* Request PolicyPrimaryDomainInformation. */

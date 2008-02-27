@@ -209,7 +209,7 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	/* get a handle */
 
 	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, True,
-		POLICY_VIEW_LOCAL_INFORMATION, &pol);
+		LSA_POLICY_VIEW_LOCAL_INFORMATION, &pol);
 	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
 
