@@ -633,6 +633,13 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 	int retries=4;
 	int i = 0;
 	bool correct = true;
+	int nsec;
+	int msec;
+	double sec;
+
+	nsec = torture_setting_int(tctx, "sharedelay", 1000000);
+	msec = nsec / 1000;
+	sec = ((double)nsec) / ((double) 1000000);
 
 	if (retries <= 0) {
 		torture_comment(tctx, "failed to connect\n");
@@ -657,9 +664,10 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 			}
 			if (NT_STATUS_EQUAL(smbcli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION)) {
 				double e = timeval_elapsed(&tv);
-				if (e < 0.5 || e > 1.5) {
-					torture_comment(tctx,"Timing incorrect %.2f violation\n",
-						e);
+				if (e < (0.5 * sec) || e > ((1.5 * sec) + 1)) {
+					torture_comment(tctx,"Timing incorrect %.2f violation 1 sec == %.2f\n",
+						e, sec);
+					return false;
 				}
 			}
 		} while (NT_STATUS_EQUAL(smbcli_nt_error(cli->tree),NT_STATUS_SHARING_VIOLATION));
@@ -671,13 +679,13 @@ static bool run_deferopen(struct torture_context *tctx, struct smbcli_state *cli
 
 		torture_comment(tctx, "pid %u open %d\n", (unsigned)getpid(), i);
 
-		sleep(10);
+		msleep(10 * msec);
 		i++;
 		if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnum))) {
 			torture_comment(tctx,"Failed to close %s, error=%s\n", fname, smbcli_errstr(cli->tree));
 			return false;
 		}
-		sleep(2);
+		msleep(2 * msec);
 	}
 
 	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fname))) {

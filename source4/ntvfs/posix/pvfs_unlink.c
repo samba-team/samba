@@ -23,71 +23,94 @@
 #include "vfs_posix.h"
 #include "system/dir.h"
 
+/*
+  retry an open after a sharing violation
+*/
+static void pvfs_retry_unlink(struct pvfs_odb_retry *r,
+			      struct ntvfs_module_context *ntvfs,
+			      struct ntvfs_request *req,
+			      void *_io,
+			      void *private_data,
+			      enum pvfs_wait_notice reason)
+{
+	union smb_unlink *io = talloc_get_type(_io, union smb_unlink);
+	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
+
+	talloc_free(r);
+
+	switch (reason) {
+	case PVFS_WAIT_CANCEL:
+/*TODO*/
+		status = NT_STATUS_CANCELLED;
+		break;
+	case PVFS_WAIT_TIMEOUT:
+		/* if it timed out, then give the failure
+		   immediately */
+/*TODO*/
+		status = NT_STATUS_SHARING_VIOLATION;
+		break;
+	case PVFS_WAIT_EVENT:
+
+		/* try the open again, which could trigger another retry setup
+		   if it wants to, so we have to unmark the async flag so we
+		   will know if it does a second async reply */
+		req->async_states->state &= ~NTVFS_ASYNC_STATE_ASYNC;
+
+		status = pvfs_unlink(ntvfs, req, io);
+		if (req->async_states->state & NTVFS_ASYNC_STATE_ASYNC) {
+			/* the 2nd try also replied async, so we don't send
+			   the reply yet */
+			return;
+		}
+
+		/* re-mark it async, just in case someone up the chain does
+		   paranoid checking */
+		req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC;
+		break;
+	}
+
+	/* send the reply up the chain */
+	req->async_states->status = status;
+	req->async_states->send_fn(req);
+}
 
 /*
-  unlink a stream
- */
-static NTSTATUS pvfs_unlink_stream(struct pvfs_state *pvfs, 
-				   struct ntvfs_request *req,
-				   struct pvfs_filename *name, 
-				   uint16_t attrib)
+  setup for a unlink retry after a sharing violation
+  or a non granted oplock
+*/
+static NTSTATUS pvfs_unlink_setup_retry(struct ntvfs_module_context *ntvfs,
+					struct ntvfs_request *req,
+					union smb_unlink *io,
+					struct odb_lock *lck,
+					NTSTATUS status)
 {
-	NTSTATUS status;
-	struct odb_lock *lck;
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct timeval end_time;
 
-	if (!name->stream_exists) {
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+		end_time = timeval_add(&req->statistics.request_time,
+				       0, pvfs->sharing_violation_delay);
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		end_time = timeval_add(&req->statistics.request_time,
+				       pvfs->oplock_break_timeout, 0);
+	} else {
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	/* make sure its matches the given attributes */
-	status = pvfs_match_attrib(pvfs, name, attrib, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	status = pvfs_can_delete(pvfs, req, name, &lck);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	return pvfs_stream_delete(pvfs, name, -1);
+	return pvfs_odb_retry_setup(ntvfs, req, lck, end_time, io, NULL,
+				    pvfs_retry_unlink);
 }
 
 
 /*
-  unlink one file
+  unlink a file
 */
-static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs, 
-				struct ntvfs_request *req,
-				const char *unix_path, 
-				const char *fname, uint32_t attrib)
+static NTSTATUS pvfs_unlink_file(struct pvfs_state *pvfs,
+				 struct pvfs_filename *name)
 {
-	struct pvfs_filename *name;
 	NTSTATUS status;
-	struct odb_lock *lck;
-
-	/* get a pvfs_filename object */
-	status = pvfs_resolve_partial(pvfs, req, 
-				      unix_path, fname, &name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* make sure its matches the given attributes */
-	status = pvfs_match_attrib(pvfs, name, attrib, 0);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(name);
-		return status;
-	}
-
-	status = pvfs_can_delete(pvfs, req, name, &lck);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(name);
-		return status;
-	}
 
 	if (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
-		talloc_free(name);
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
@@ -110,9 +133,54 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
 			       name->full_name);
 	}
 
-	talloc_free(name);
-
 	return status;
+}
+
+/*
+  unlink one file
+*/
+static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
+				struct ntvfs_request *req,
+				union smb_unlink *unl,
+				struct pvfs_filename *name)
+{
+	NTSTATUS status;
+	struct odb_lock *lck = NULL;
+
+	/* make sure its matches the given attributes */
+	status = pvfs_match_attrib(pvfs, name,
+				   unl->unlink.in.attrib, 0);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	status = pvfs_can_delete(pvfs, req, name, &lck);
+
+	/*
+	 * on a sharing violation we need to retry when the file is closed by
+	 * the other user, or after 1 second
+	 * on a non granted oplock we need to retry when the file is closed by
+	 * the other user, or after 30 seconds
+	 */
+	if ((NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	     NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) &&
+	    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
+		return pvfs_unlink_setup_retry(pvfs->ntvfs, req, unl, lck, status);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (name->stream_name) {
+		if (!name->stream_exists) {
+			return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		}
+
+		return pvfs_stream_delete(pvfs, name, -1);
+	}
+
+	return pvfs_unlink_file(pvfs, name);
 }
 
 /*
@@ -147,8 +215,8 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
-	if (name->stream_name) {
-		return pvfs_unlink_stream(pvfs, req, name, unl->unlink.in.attrib);
+	if (!name->has_wildcard) {
+		return pvfs_unlink_one(pvfs, req, unl, name);
 	}
 
 	/* get list of matching files */
@@ -158,6 +226,7 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 	}
 
 	status = NT_STATUS_NO_SUCH_FILE;
+	talloc_free(name);
 
 	ofs = 0;
 
@@ -168,10 +237,20 @@ NTSTATUS pvfs_unlink(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_OBJECT_NAME_INVALID;
 		}
 
-		status = pvfs_unlink_one(pvfs, req, pvfs_list_unix_path(dir), fname, unl->unlink.in.attrib);
+		/* get a pvfs_filename object */
+		status = pvfs_resolve_partial(pvfs, req,
+					      pvfs_list_unix_path(dir),
+					      fname, &name);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+
+		status = pvfs_unlink_one(pvfs, req, unl, name);
 		if (NT_STATUS_IS_OK(status)) {
 			total_deleted++;
 		}
+
+		talloc_free(name);
 	}
 
 	if (total_deleted > 0) {

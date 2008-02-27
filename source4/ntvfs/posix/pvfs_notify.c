@@ -268,9 +268,11 @@ NTSTATUS pvfs_notify(struct ntvfs_module_context *ntvfs,
 
 	/* if the buffer is empty then start waiting */
 	if (f->notify_buffer->num_changes == 0) {
-		void *wait_handle =
-			pvfs_wait_message(pvfs, req, -1, timeval_zero(), 
-					  pvfs_notify_end, f->notify_buffer);
+		struct pvfs_wait *wait_handle;
+		wait_handle = pvfs_wait_message(pvfs, req, -1,
+						timeval_zero(),
+						pvfs_notify_end,
+						f->notify_buffer);
 		NT_STATUS_HAVE_NO_MEMORY(wait_handle);
 		talloc_steal(req, wait_handle);
 		return NT_STATUS_OK;
