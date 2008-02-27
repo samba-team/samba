@@ -119,7 +119,8 @@ static int rdn_name_add(struct ldb_module *module, struct ldb_request *req)
 				      "RDN mismatch on %s: %s (%s)", 
 				      ldb_dn_get_linearized(msg->dn), rdn_name, rdn_val.data);
 			talloc_free(down_req);
-			return LDB_ERR_OPERATIONS_ERROR;
+			/* Match AD's error here */
+			return LDB_ERR_INVALID_DN_SYNTAX;
 		}
 	}
 
