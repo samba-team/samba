@@ -189,7 +189,7 @@ static bool test_usermod(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		case acct_flags:
 			continue_if_field_set(mod->in.change.acct_flags);
-			mod->in.change.acct_flags = flags[random() % (sizeof(flags)/sizeof(uint32_t))];
+			mod->in.change.acct_flags = flags[random() % ARRAY_SIZE(flags)];
 			mod->in.change.fields |= USERMOD_FIELD_ACCT_FLAGS;
 			fldname = "acct_flags";
 			break;
