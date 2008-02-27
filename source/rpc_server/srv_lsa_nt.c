@@ -529,6 +529,10 @@ NTSTATUS _lsa_EnumTrustDom(pipes_struct *p,
 	return nt_status;
 }
 
+#define LSA_AUDIT_NUM_CATEGORIES_NT4	7
+#define LSA_AUDIT_NUM_CATEGORIES_WIN2K	9
+#define LSA_AUDIT_NUM_CATEGORIES LSA_AUDIT_NUM_CATEGORIES_NT4
+
 /***************************************************************************
  _lsa_QueryInfoPolicy
  ***************************************************************************/
