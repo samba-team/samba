@@ -343,8 +343,6 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 	struct timeval now;
 	int i, testfld;
 
-	srandom((unsigned)time(NULL));
-
 	printf("Fields to change: [");
 
 	for (i = 0; i < num_changes && i < FIELDS_NUM; i++) {
