@@ -81,6 +81,10 @@ _PUBLIC_ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
 	return ops->odb_lock(mem_ctx, odb, file_key);
 }
 
+_PUBLIC_ DATA_BLOB odb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
+{
+	return ops->odb_get_key(mem_ctx, lck);
+}
 
 /*
   register an open file in the open files database. This implements the share_access
@@ -89,15 +93,16 @@ _PUBLIC_ struct odb_lock *odb_lock(TALLOC_CTX *mem_ctx,
   Note that the path is only used by the delete on close logic, not
   for comparing with other filenames
 */
-_PUBLIC_ NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
-				uint32_t stream_id, uint32_t share_access, 
+_PUBLIC_ NTSTATUS odb_open_file(struct odb_lock *lck,
+				void *file_handle, const char *path,
+				uint32_t stream_id, uint32_t share_access,
 				uint32_t access_mask, bool delete_on_close,
-				const char *path, 
+				uint32_t open_disposition, bool break_to_none,
 				uint32_t oplock_level, uint32_t *oplock_granted)
 {
-	return ops->odb_open_file(lck, file_handle, stream_id, share_access,
-				  access_mask, delete_on_close, path, oplock_level,
-				  oplock_granted);
+	return ops->odb_open_file(lck, file_handle, path, stream_id, share_access,
+				  access_mask, delete_on_close, open_disposition,
+				  break_to_none, oplock_level, oplock_granted);
 }
 
 
@@ -161,8 +166,21 @@ _PUBLIC_ NTSTATUS odb_get_delete_on_close(struct odb_context *odb,
   create_options and access_mask
 */
 _PUBLIC_ NTSTATUS odb_can_open(struct odb_lock *lck,
-			       uint32_t share_access, uint32_t create_options, 
-			       uint32_t access_mask)
+			       uint32_t stream_id, uint32_t share_access,
+			       uint32_t access_mask, bool delete_on_close,
+			       uint32_t open_disposition, bool break_to_none)
 {
-	return ops->odb_can_open(lck, share_access, create_options, access_mask);
+	return ops->odb_can_open(lck, stream_id, share_access, access_mask,
+				 delete_on_close, open_disposition, break_to_none);
+}
+
+_PUBLIC_ NTSTATUS odb_update_oplock(struct odb_lock *lck, void *file_handle,
+				    uint32_t oplock_level)
+{
+	return ops->odb_update_oplock(lck, file_handle, oplock_level);
+}
+
+_PUBLIC_ NTSTATUS odb_break_oplocks(struct odb_lock *lck)
+{
+	return ops->odb_break_oplocks(lck);
 }

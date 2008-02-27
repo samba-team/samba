@@ -775,8 +775,7 @@ sub ParseElementPrint($$$$)
 				$self->pidl("for ($counter=0;$counter<$length;$counter++) {");
 				$self->indent;
 				$self->pidl("char *idx_$l->{LEVEL_INDEX}=NULL;");
-				$self->pidl("asprintf(&idx_$l->{LEVEL_INDEX}, \"[\%d]\", $counter);");
-				$self->pidl("if (idx_$l->{LEVEL_INDEX}) {");
+				$self->pidl("if (asprintf(&idx_$l->{LEVEL_INDEX}, \"[\%d]\", $counter) != -1) {");
 				$self->indent;
 
 				$var_name = get_array_element($var_name, $counter);

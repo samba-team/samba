@@ -10,6 +10,7 @@ VPATH = @libreplacedir@
 srcdir = @srcdir@
 builddir = @builddir@
 INSTALL = @INSTALL@
+LIBS = @LIBS@
 
 .PHONY: test all showflags install installcheck clean distclean realdistclean
 
@@ -25,6 +26,7 @@ showflags:
 	@echo '  CC     = $(CC)'
 	@echo '  CFLAGS = $(CFLAGS)'
 	@echo '  LDFLAGS= $(LDFLAGS)'
+	@echo '  LIBS   = $(LIBS)'
 
 install: all
 	mkdir -p $(libdir)
@@ -41,7 +43,7 @@ installcheck: install test
 TEST_OBJS = test/testsuite.o test/os2_delete.o test/strptime.o
 
 testsuite: libreplace.a $(TEST_OBJS)
-	$(CC) -o testsuite $(TEST_OBJS) -L. -lreplace $(LDFLAGS)
+	$(CC) -o testsuite $(TEST_OBJS) -L. -lreplace $(LDFLAGS) $(LIBS)
 
 .c.o:
 	@echo Compiling $*.c

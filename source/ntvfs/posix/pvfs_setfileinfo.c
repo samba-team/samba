@@ -142,8 +142,6 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 
 	/* if the destination exists, then check the rename is allowed */
 	if (name2->exists) {
-		struct odb_lock *lck;
-
 		if (strcmp(name2->full_name, name->full_name) == 0) {
 			/* rename to same name is null-op */
 			return NT_STATUS_OK;
@@ -153,7 +151,10 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 
-		status = pvfs_can_delete(pvfs, req, name2, &lck);
+		status = pvfs_can_delete(pvfs, req, name2, NULL);
+		if (NT_STATUS_EQUAL(status, NT_STATUS_DELETE_PENDING)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
 			return NT_STATUS_ACCESS_DENIED;
 		}
@@ -354,6 +355,9 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_ALLOCATION_INFO:
 	case RAW_SFILEINFO_ALLOCATION_INFORMATION:
+		status = pvfs_break_level2_oplocks(f);
+		NT_STATUS_NOT_OK_RETURN(status);
+
 		newstats.dos.alloc_size = info->allocation_info.in.alloc_size;
 		if (newstats.dos.alloc_size < newstats.st.st_size) {
 			newstats.st.st_size = newstats.dos.alloc_size;
@@ -364,6 +368,9 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
+		status = pvfs_break_level2_oplocks(f);
+		NT_STATUS_NOT_OK_RETURN(status);
+
 		newstats.st.st_size = info->end_of_file_info.in.size;
 		break;
 
@@ -465,6 +472,84 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	return pvfs_dosattrib_save(pvfs, h->name, h->fd);
 }
 
+/*
+  retry an open after a sharing violation
+*/
+static void pvfs_retry_setpathinfo(struct pvfs_odb_retry *r,
+				   struct ntvfs_module_context *ntvfs,
+				   struct ntvfs_request *req,
+				   void *_info,
+				   void *private_data,
+				   enum pvfs_wait_notice reason)
+{
+	union smb_setfileinfo *info = talloc_get_type(_info,
+				      union smb_setfileinfo);
+	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
+
+	talloc_free(r);
+
+	switch (reason) {
+	case PVFS_WAIT_CANCEL:
+/*TODO*/
+		status = NT_STATUS_CANCELLED;
+		break;
+	case PVFS_WAIT_TIMEOUT:
+		/* if it timed out, then give the failure
+		   immediately */
+/*TODO*/
+		status = NT_STATUS_SHARING_VIOLATION;
+		break;
+	case PVFS_WAIT_EVENT:
+
+		/* try the open again, which could trigger another retry setup
+		   if it wants to, so we have to unmark the async flag so we
+		   will know if it does a second async reply */
+		req->async_states->state &= ~NTVFS_ASYNC_STATE_ASYNC;
+
+		status = pvfs_setpathinfo(ntvfs, req, info);
+		if (req->async_states->state & NTVFS_ASYNC_STATE_ASYNC) {
+			/* the 2nd try also replied async, so we don't send
+			   the reply yet */
+			return;
+		}
+
+		/* re-mark it async, just in case someone up the chain does
+		   paranoid checking */
+		req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC;
+		break;
+	}
+
+	/* send the reply up the chain */
+	req->async_states->status = status;
+	req->async_states->send_fn(req);
+}
+
+/*
+  setup for a unlink retry after a sharing violation
+  or a non granted oplock
+*/
+static NTSTATUS pvfs_setpathinfo_setup_retry(struct ntvfs_module_context *ntvfs,
+					     struct ntvfs_request *req,
+					     union smb_setfileinfo *info,
+					     struct odb_lock *lck,
+					     NTSTATUS status)
+{
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct timeval end_time;
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+		end_time = timeval_add(&req->statistics.request_time,
+				       0, pvfs->sharing_violation_delay);
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		end_time = timeval_add(&req->statistics.request_time,
+				       pvfs->oplock_break_timeout, 0);
+	} else {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return pvfs_odb_retry_setup(ntvfs, req, lck, end_time, info, NULL,
+				    pvfs_retry_setpathinfo);
+}
 
 /*
   set info on a pathname
@@ -479,6 +564,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	struct utimbuf unix_times;
 	uint32_t access_needed;
 	uint32_t change_mask = 0;
+	struct odb_lock *lck = NULL;
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, info->generic.in.file.path, 
@@ -553,6 +639,20 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_ALLOCATION_INFO:
 	case RAW_SFILEINFO_ALLOCATION_INFORMATION:
+		status = pvfs_can_update_file_size(pvfs, req, name, &lck);
+		/*
+		 * on a sharing violation we need to retry when the file is closed by
+		 * the other user, or after 1 second
+		 * on a non granted oplock we need to retry when the file is closed by
+		 * the other user, or after 30 seconds
+		*/
+		if ((NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+		     NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) &&
+		    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
+			return pvfs_setpathinfo_setup_retry(pvfs->ntvfs, req, info, lck, status);
+		}
+		NT_STATUS_NOT_OK_RETURN(status);
+
 		if (info->allocation_info.in.alloc_size > newstats.dos.alloc_size) {
 			/* strange. Increasing the allocation size via setpathinfo 
 			   should be silently ignored */
@@ -568,6 +668,20 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
 	case RAW_SFILEINFO_END_OF_FILE_INFORMATION:
+		status = pvfs_can_update_file_size(pvfs, req, name, &lck);
+		/*
+		 * on a sharing violation we need to retry when the file is closed by
+		 * the other user, or after 1 second
+		 * on a non granted oplock we need to retry when the file is closed by
+		 * the other user, or after 30 seconds
+		*/
+		if ((NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+		     NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) &&
+		    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
+			return pvfs_setpathinfo_setup_retry(pvfs->ntvfs, req, info, lck, status);
+		}
+		NT_STATUS_NOT_OK_RETURN(status);
+
 		newstats.st.st_size = info->end_of_file_info.in.size;
 		break;
 

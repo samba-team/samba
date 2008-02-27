@@ -340,6 +340,16 @@ ssize_t rep_pwrite(int __fd, const void *__buf, size_t __nbytes, off_t __offset)
 /* prototype is in "system/network.h" */
 #endif
 
+#ifndef HAVE_CONNECT
+#define connect rep_connect
+/* prototype is in "system/network.h" */
+#endif
+
+#ifndef HAVE_GETHOSTBYNAME
+#define gethostbyname rep_gethostbyname
+/* prototype is in "system/network.h" */
+#endif
+
 #ifndef HAVE_GETIFADDRS
 #define getifaddrs rep_getifaddrs
 /* prototype is in "system/network.h" */

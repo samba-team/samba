@@ -53,7 +53,7 @@ struct pvfs_pending_lock {
 	struct pvfs_file *f;
 	struct ntvfs_request *req;
 	int pending_lock;
-	void *wait_handle;
+	struct pvfs_wait *wait_handle;
 	struct timeval end_time;
 };
 
@@ -294,6 +294,10 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 		return ntvfs_map_lock(ntvfs, req, lck);
 	}
 
+	if (lck->lockx.in.mode & LOCKING_ANDX_OPLOCK_RELEASE) {
+		return pvfs_oplock_release(ntvfs, req, lck);
+	}
+
 	f = pvfs_find_fd(pvfs, req, lck->lockx.in.file.ntvfs);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
@@ -302,6 +306,9 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 	if (f->handle->fd == -1) {
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
+
+	status = pvfs_break_level2_oplocks(f);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (lck->lockx.in.timeout != 0 && 
 	    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
@@ -337,13 +344,6 @@ NTSTATUS pvfs_lock(struct ntvfs_module_context *ntvfs,
 		talloc_free(pending);
 		return NT_STATUS_DOS(ERRDOS, ERRnoatomiclocks);
 	}
-
-	if (lck->lockx.in.mode & LOCKING_ANDX_OPLOCK_RELEASE) {
-		DEBUG(0,("received unexpected oplock break\n"));
-		talloc_free(pending);
-		return NT_STATUS_NOT_IMPLEMENTED;
-	}
-
 
 	/* the unlocks happen first */
 	locks = lck->lockx.in.locks;

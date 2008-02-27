@@ -1,13 +1,10 @@
-base.defer_open
 base.delaywrite
 raw.composite
-raw.oplock
 base.iometer
 base.casetable
 base.nttrans
 .*base.bench.holdcon.*				# Very slow
 base.scan.maxfid
-raw.bench.oplock
 raw.hold.oplock
 raw.ping.pong
 rpc.samr_accessmask
@@ -18,7 +15,6 @@ base.smb
 smb2.notify
 smb2.scan
 ntvfs.cifs.base.charset
-ntvfs.cifs.base.defer_open
 ntvfs.cifs.base.delaywrite
 ntvfs.cifs.base.iometer
 ntvfs.cifs.base.casetable
@@ -27,9 +23,7 @@ ntvfs.cifs.base.scan-maxfid
 ntvfs.cifs.base.utable
 ntvfs.cifs.base.smb
 ntvfs.cifs.raw.composite
-ntvfs.cifs.raw.oplock
 ntvfs.cifs.raw.notify
-ntvfs.cifs.raw.bench-oplock
 ntvfs.cifs.raw.scan-eamax
 ntvfs.cifs.raw.context
 ntvfs.cifs.raw.qfileinfo.ipc

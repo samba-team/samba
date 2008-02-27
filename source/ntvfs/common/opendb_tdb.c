@@ -2,7 +2,8 @@
    Unix SMB/CIFS implementation.
 
    Copyright (C) Andrew Tridgell 2004
-   
+   Copyright (C) Stefan Metzmacher 2008
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
@@ -134,12 +135,21 @@ static struct odb_lock *odb_tdb_lock(TALLOC_CTX *mem_ctx,
 	return lck;
 }
 
+static DATA_BLOB odb_tdb_get_key(TALLOC_CTX *mem_ctx, struct odb_lock *lck)
+{
+	return data_blob_talloc(mem_ctx, lck->key.dptr, lck->key.dsize);
+}
+
+
 /*
   determine if two odb_entry structures conflict
 
   return NT_STATUS_OK on no conflict
 */
-static NTSTATUS share_conflict(struct opendb_entry *e1, struct opendb_entry *e2)
+static NTSTATUS share_conflict(struct opendb_entry *e1,
+			       uint32_t stream_id,
+			       uint32_t share_access,
+			       uint32_t access_mask)
 {
 	/* if either open involves no read.write or delete access then
 	   it can't conflict */
@@ -150,18 +160,18 @@ static NTSTATUS share_conflict(struct opendb_entry *e1, struct opendb_entry *e2)
 				 SEC_STD_DELETE))) {
 		return NT_STATUS_OK;
 	}
-	if (!(e2->access_mask & (SEC_FILE_WRITE_DATA |
-				 SEC_FILE_APPEND_DATA |
-				 SEC_FILE_READ_DATA |
-				 SEC_FILE_EXECUTE |
-				 SEC_STD_DELETE))) {
+	if (!(access_mask & (SEC_FILE_WRITE_DATA |
+			     SEC_FILE_APPEND_DATA |
+			     SEC_FILE_READ_DATA |
+			     SEC_FILE_EXECUTE |
+			     SEC_STD_DELETE))) {
 		return NT_STATUS_OK;
 	}
 
 	/* data IO access masks. This is skipped if the two open handles
 	   are on different streams (as in that case the masks don't
 	   interact) */
-	if (e1->stream_id != e2->stream_id) {
+	if (e1->stream_id != stream_id) {
 		return NT_STATUS_OK;
 	}
 
@@ -169,20 +179,20 @@ static NTSTATUS share_conflict(struct opendb_entry *e1, struct opendb_entry *e2)
 	if (((am) & (right)) && !((sa) & (share))) return NT_STATUS_SHARING_VIOLATION
 
 	CHECK_MASK(e1->access_mask, SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
-		   e2->share_access, NTCREATEX_SHARE_ACCESS_WRITE);
-	CHECK_MASK(e2->access_mask, SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
+		   share_access, NTCREATEX_SHARE_ACCESS_WRITE);
+	CHECK_MASK(access_mask, SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA,
 		   e1->share_access, NTCREATEX_SHARE_ACCESS_WRITE);
 	
 	CHECK_MASK(e1->access_mask, SEC_FILE_READ_DATA | SEC_FILE_EXECUTE,
-		   e2->share_access, NTCREATEX_SHARE_ACCESS_READ);
-	CHECK_MASK(e2->access_mask, SEC_FILE_READ_DATA | SEC_FILE_EXECUTE,
+		   share_access, NTCREATEX_SHARE_ACCESS_READ);
+	CHECK_MASK(access_mask, SEC_FILE_READ_DATA | SEC_FILE_EXECUTE,
 		   e1->share_access, NTCREATEX_SHARE_ACCESS_READ);
 
 	CHECK_MASK(e1->access_mask, SEC_STD_DELETE,
-		   e2->share_access, NTCREATEX_SHARE_ACCESS_DELETE);
-	CHECK_MASK(e2->access_mask, SEC_STD_DELETE,
+		   share_access, NTCREATEX_SHARE_ACCESS_DELETE);
+	CHECK_MASK(access_mask, SEC_STD_DELETE,
 		   e1->share_access, NTCREATEX_SHARE_ACCESS_DELETE);
-
+#undef CHECK_MASK
 	return NT_STATUS_OK;
 }
 
@@ -253,12 +263,129 @@ static NTSTATUS odb_push_record(struct odb_lock *lck, struct opendb_file *file)
 /*
   send an oplock break to a client
 */
-static NTSTATUS odb_oplock_break_send(struct odb_context *odb, struct opendb_entry *e)
+static NTSTATUS odb_oplock_break_send(struct odb_context *odb,
+				      struct opendb_entry *e,
+				      uint8_t level)
 {
+	NTSTATUS status;
+	struct opendb_oplock_break op_break;
+	DATA_BLOB blob;
+
+	ZERO_STRUCT(op_break);
+
 	/* tell the server handling this open file about the need to send the client
 	   a break */
-	return messaging_send_ptr(odb->ntvfs_ctx->msg_ctx, e->server, 
-				  MSG_NTVFS_OPLOCK_BREAK, e->file_handle);
+	op_break.file_handle	= e->file_handle;
+	op_break.level		= level;
+
+	blob = data_blob_const(&op_break, sizeof(op_break));
+
+	status = messaging_send(odb->ntvfs_ctx->msg_ctx, e->server,
+				MSG_NTVFS_OPLOCK_BREAK, &blob);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return NT_STATUS_OK;
+}
+
+static bool access_attributes_only(uint32_t access_mask,
+				   uint32_t open_disposition,
+				   bool break_to_none)
+{
+	switch (open_disposition) {
+	case NTCREATEX_DISP_SUPERSEDE:
+	case NTCREATEX_DISP_OVERWRITE_IF:
+	case NTCREATEX_DISP_OVERWRITE:
+		return false;
+	default:
+		break;
+	}
+
+	if (break_to_none) {
+		return false;
+	}
+
+#define CHECK_MASK(m,g) ((m) && (((m) & ~(g))==0) && (((m) & (g)) != 0))
+	return CHECK_MASK(access_mask,
+			  SEC_STD_SYNCHRONIZE |
+			  SEC_FILE_READ_ATTRIBUTE |
+			  SEC_FILE_WRITE_ATTRIBUTE);
+#undef CHECK_MASK
+}
+
+static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
+					  const struct opendb_file *file,
+					  uint32_t stream_id, uint32_t share_access,
+					  uint32_t access_mask, bool delete_on_close,
+					  uint32_t open_disposition, bool break_to_none,
+					  bool *_attrs_only)
+{
+	NTSTATUS status;
+	uint32_t i;
+	bool attrs_only = false;
+
+	/* see if anyone has an oplock, which we need to break */
+	for (i=0;i<file->num_entries;i++) {
+		if (file->entries[i].oplock_level == OPLOCK_BATCH) {
+			bool oplock_return = OPLOCK_BREAK_TO_LEVEL_II;
+			/* if this is an attribute only access
+			 * it doesn't conflict with a BACTCH oplock
+			 * but we'll not grant the oplock below
+			 */
+			attrs_only = access_attributes_only(access_mask,
+							    open_disposition,
+							    break_to_none);
+			if (attrs_only) {
+				break;
+			}
+			/* a batch oplock caches close calls, which
+			   means the client application might have
+			   already closed the file. We have to allow
+			   this close to propogate by sending a oplock
+			   break request and suspending this call
+			   until the break is acknowledged or the file
+			   is closed */
+			if (break_to_none) {
+				oplock_return = OPLOCK_BREAK_TO_NONE;
+			}
+			odb_oplock_break_send(odb, &file->entries[i],
+					      oplock_return);
+			return NT_STATUS_OPLOCK_NOT_GRANTED;
+		}
+	}
+
+	if (file->delete_on_close) {
+		/* while delete on close is set, no new opens are allowed */
+		return NT_STATUS_DELETE_PENDING;
+	}
+
+	if (file->num_entries != 0 && delete_on_close) {
+		return NT_STATUS_SHARING_VIOLATION;
+	}
+
+	/* check for sharing violations */
+	for (i=0;i<file->num_entries;i++) {
+		status = share_conflict(&file->entries[i], stream_id,
+					share_access, access_mask);
+		NT_STATUS_NOT_OK_RETURN(status);
+	}
+
+	/* we now know the open could succeed, but we need to check
+	   for any exclusive oplocks. We can't grant a second open
+	   till these are broken. Note that we check for batch oplocks
+	   before checking for sharing violations, and check for
+	   exclusive oplocks afterwards. */
+	for (i=0;i<file->num_entries;i++) {
+		if (file->entries[i].oplock_level == OPLOCK_EXCLUSIVE) {
+			odb_oplock_break_send(odb, &file->entries[i],
+					      OPLOCK_BREAK_TO_NONE);
+			return NT_STATUS_OPLOCK_NOT_GRANTED;
+		}
+	}
+
+	if (_attrs_only) {
+		*_attrs_only = attrs_only;
+	}
+	return NT_STATUS_OK;
 }
 
 /*
@@ -268,17 +395,18 @@ static NTSTATUS odb_oplock_break_send(struct odb_context *odb, struct opendb_ent
   Note that the path is only used by the delete on close logic, not
   for comparing with other filenames
 */
-static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
-				  uint32_t stream_id, uint32_t share_access, 
+static NTSTATUS odb_tdb_open_file(struct odb_lock *lck,
+				  void *file_handle, const char *path,
+				  uint32_t stream_id, uint32_t share_access,
 				  uint32_t access_mask, bool delete_on_close,
-				  const char *path, 
+				  uint32_t open_disposition, bool break_to_none,
 				  uint32_t oplock_level, uint32_t *oplock_granted)
 {
 	struct odb_context *odb = lck->odb;
 	struct opendb_entry e;
-	int i;
 	struct opendb_file file;
 	NTSTATUS status;
+	bool attrs_only = false;
 
 	if (odb->oplocks == false) {
 		oplock_level = OPLOCK_NONE;
@@ -294,6 +422,13 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	}
 
 	/* see if it conflicts */
+	status = odb_tdb_open_can_internal(odb, &file, stream_id,
+					   share_access, access_mask,
+					   delete_on_close, open_disposition,
+					   break_to_none, &attrs_only);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* see if it conflicts */
 	e.server          = odb->ntvfs_ctx->server_id;
 	e.file_handle     = file_handle;
 	e.stream_id       = stream_id;
@@ -301,59 +436,37 @@ static NTSTATUS odb_tdb_open_file(struct odb_lock *lck, void *file_handle,
 	e.access_mask     = access_mask;
 	e.delete_on_close = delete_on_close;
 	e.oplock_level    = OPLOCK_NONE;
-		
-	/* see if anyone has an oplock, which we need to break */
-	for (i=0;i<file.num_entries;i++) {
-		if (file.entries[i].oplock_level == OPLOCK_BATCH) {
-			/* a batch oplock caches close calls, which
-			   means the client application might have
-			   already closed the file. We have to allow
-			   this close to propogate by sending a oplock
-			   break request and suspending this call
-			   until the break is acknowledged or the file
-			   is closed */
-			odb_oplock_break_send(odb, &file.entries[i]);
-			return NT_STATUS_OPLOCK_NOT_GRANTED;
-		}
-	}
-
-	if (file.delete_on_close || 
-	    (file.num_entries != 0 && delete_on_close)) {
-		/* while delete on close is set, no new opens are allowed */
-		return NT_STATUS_DELETE_PENDING;
-	}
-
-	/* check for sharing violations */
-	for (i=0;i<file.num_entries;i++) {
-		status = share_conflict(&file.entries[i], &e);
-		NT_STATUS_NOT_OK_RETURN(status);
-	}
-
-	/* we now know the open could succeed, but we need to check
-	   for any exclusive oplocks. We can't grant a second open
-	   till these are broken. Note that we check for batch oplocks
-	   before checking for sharing violations, and check for
-	   exclusive oplocks afterwards. */
-	for (i=0;i<file.num_entries;i++) {
-		if (file.entries[i].oplock_level == OPLOCK_EXCLUSIVE) {
-			odb_oplock_break_send(odb, &file.entries[i]);
-			return NT_STATUS_OPLOCK_NOT_GRANTED;
-		}
-	}
 
 	/*
-	  possibly grant an exclusive or batch oplock if this is the only client
-	  with the file open. We don't yet grant levelII oplocks.
+	  possibly grant an exclusive, batch or level2 oplock
 	*/
-	if (oplock_granted != NULL) {
-		if ((oplock_level == OPLOCK_BATCH ||
-		     oplock_level == OPLOCK_EXCLUSIVE) &&
-		    file.num_entries == 0) {
-			(*oplock_granted) = oplock_level;
+	if (oplock_granted) {
+		if (attrs_only) {
+			e.oplock_level	= OPLOCK_NONE;
+			*oplock_granted	= NO_OPLOCK_RETURN;
+		} else if (oplock_level == OPLOCK_EXCLUSIVE) {
+			if (file.num_entries == 0) {
+				e.oplock_level	= OPLOCK_EXCLUSIVE;
+				*oplock_granted	= EXCLUSIVE_OPLOCK_RETURN;
+			} else {
+				e.oplock_level	= OPLOCK_NONE;
+				*oplock_granted	= NO_OPLOCK_RETURN;
+			}
+		} else if (oplock_level == OPLOCK_BATCH) {
+			if (file.num_entries == 0) {
+				e.oplock_level	= OPLOCK_BATCH;
+				*oplock_granted	= BATCH_OPLOCK_RETURN;
+			} else {
+				e.oplock_level	= OPLOCK_LEVEL_II;
+				*oplock_granted	= LEVEL_II_OPLOCK_RETURN;
+			}
+		} else if (oplock_level == OPLOCK_LEVEL_II) {
+			e.oplock_level	= OPLOCK_LEVEL_II;
+			*oplock_granted	= LEVEL_II_OPLOCK_RETURN;
 		} else {
-			(*oplock_granted) = OPLOCK_NONE;
+			e.oplock_level	= OPLOCK_NONE;
+			*oplock_granted	= NO_OPLOCK_RETURN;
 		}
-		e.oplock_level = (*oplock_granted);
 	}
 
 	/* it doesn't conflict, so add it to the end */
@@ -439,6 +552,82 @@ static NTSTATUS odb_tdb_close_file(struct odb_lock *lck, void *file_handle)
 	return odb_push_record(lck, &file);
 }
 
+/*
+  update the oplock level of the client
+*/
+static NTSTATUS odb_tdb_update_oplock(struct odb_lock *lck, void *file_handle,
+				      uint32_t oplock_level)
+{
+	struct odb_context *odb = lck->odb;
+	struct opendb_file file;
+	int i;
+	NTSTATUS status;
+
+	status = odb_pull_record(lck, &file);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* find the entry, and update it */
+	for (i=0;i<file.num_entries;i++) {
+		if (file_handle == file.entries[i].file_handle &&
+		    cluster_id_equal(&odb->ntvfs_ctx->server_id, &file.entries[i].server)) {
+			file.entries[i].oplock_level = oplock_level;
+			break;
+		}
+	}
+
+	if (i == file.num_entries) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	/* send any pending notifications, removing them once sent */
+	for (i=0;i<file.num_pending;i++) {
+		messaging_send_ptr(odb->ntvfs_ctx->msg_ctx,
+				   file.pending[i].server,
+				   MSG_PVFS_RETRY_OPEN,
+				   file.pending[i].notify_ptr);
+	}
+	file.num_pending = 0;
+
+	return odb_push_record(lck, &file);
+}
+
+/*
+  send oplocks breaks to none to all level2 holders
+*/
+static NTSTATUS odb_tdb_break_oplocks(struct odb_lock *lck)
+{
+	struct odb_context *odb = lck->odb;
+	NTSTATUS status;
+	struct opendb_file file;
+	int i;
+	bool modified = true;
+
+	status = odb_pull_record(lck, &file);
+	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		return NT_STATUS_OK;
+	}
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* see if anyone has an oplock, which we need to break */
+	for (i=0;i<file.num_entries;i++) {
+		if (file.entries[i].oplock_level == OPLOCK_LEVEL_II) {
+			/*
+			 * there could be multiple level2 oplocks
+			 * and we just send a break to none to all of them
+			 * without waiting for a release
+			 */
+			odb_oplock_break_send(odb, &file.entries[i],
+					      OPLOCK_BREAK_TO_NONE);
+			file.entries[i].oplock_level = OPLOCK_NONE;
+			modified = true;
+		}
+	}
+
+	if (modified) {
+		return odb_push_record(lck, &file);
+	}
+	return NT_STATUS_OK;
+}
 
 /*
   remove a pending opendb entry
@@ -560,14 +749,14 @@ static NTSTATUS odb_tdb_get_delete_on_close(struct odb_context *odb,
   create_options and access_mask
 */
 static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
-				 uint32_t share_access, uint32_t create_options, 
-				 uint32_t access_mask)
+				 uint32_t stream_id, uint32_t share_access,
+				 uint32_t access_mask, bool delete_on_close,
+				 uint32_t open_disposition, bool break_to_none)
 {
 	struct odb_context *odb = lck->odb;
 	NTSTATUS status;
 	struct opendb_file file;
-	struct opendb_entry e;
-	int i;
+	bool attrs_only = false;
 
 	status = odb_pull_record(lck, &file);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
@@ -575,32 +764,11 @@ static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
 	}
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) && 
-	    file.num_entries != 0) {
-		return NT_STATUS_SHARING_VIOLATION;
-	}
-
-	if (file.delete_on_close) {
-		return NT_STATUS_DELETE_PENDING;
-	}
-
-	e.server       = odb->ntvfs_ctx->server_id;
-	e.file_handle  = NULL;
-	e.stream_id    = 0;
-	e.share_access = share_access;
-	e.access_mask  = access_mask;
-		
-	for (i=0;i<file.num_entries;i++) {
-		status = share_conflict(&file.entries[i], &e);
-		if (!NT_STATUS_IS_OK(status)) {
-			/* note that we discard the error code
-			   here. We do this as unless we are actually
-			   doing an open (which comes via a different
-			   function), we need to return a sharing
-			   violation */
-			return NT_STATUS_SHARING_VIOLATION;
-		}
-	}
+	status = odb_tdb_open_can_internal(odb, &file, stream_id,
+					   share_access, access_mask,
+					   delete_on_close, open_disposition,
+					   break_to_none, &attrs_only);
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	return NT_STATUS_OK;
 }
@@ -609,6 +777,7 @@ static NTSTATUS odb_tdb_can_open(struct odb_lock *lck,
 static const struct opendb_ops opendb_tdb_ops = {
 	.odb_init                = odb_tdb_init,
 	.odb_lock                = odb_tdb_lock,
+	.odb_get_key             = odb_tdb_get_key,
 	.odb_open_file           = odb_tdb_open_file,
 	.odb_open_file_pending   = odb_tdb_open_file_pending,
 	.odb_close_file          = odb_tdb_close_file,
@@ -616,7 +785,9 @@ static const struct opendb_ops opendb_tdb_ops = {
 	.odb_rename              = odb_tdb_rename,
 	.odb_set_delete_on_close = odb_tdb_set_delete_on_close,
 	.odb_get_delete_on_close = odb_tdb_get_delete_on_close,
-	.odb_can_open            = odb_tdb_can_open
+	.odb_can_open            = odb_tdb_can_open,
+	.odb_update_oplock       = odb_tdb_update_oplock,
+	.odb_break_oplocks       = odb_tdb_break_oplocks
 };
 
 
