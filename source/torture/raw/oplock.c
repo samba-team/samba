@@ -1578,6 +1578,84 @@ done:
 	return ret;
 }
 
+static bool test_raw_oplock_batch16(struct torture_context *tctx, struct smbcli_state *cli1, struct smbcli_state *cli2)
+{
+	const char *fname = BASEDIR "\\test_batch16.dat";
+	NTSTATUS status;
+	bool ret = true;
+	union smb_open io;
+	uint16_t fnum=0, fnum2=0;
+
+	if (!torture_setup_dir(cli1, BASEDIR)) {
+		return false;
+	}
+
+	/* cleanup */
+	smbcli_unlink(cli1->tree, fname);
+
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+	smbcli_oplock_handler(cli2->transport, oplock_handler_ack_to_levelII, cli1->tree);
+
+	/*
+	  base ntcreatex parms
+	*/
+	io.generic.level = RAW_OPEN_NTCREATEX;
+	io.ntcreatex.in.root_fid = 0;
+	io.ntcreatex.in.access_mask = SEC_RIGHTS_FILE_ALL;
+	io.ntcreatex.in.alloc_size = 0;
+	io.ntcreatex.in.file_attr = FILE_ATTRIBUTE_NORMAL;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_NONE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN_IF;
+	io.ntcreatex.in.create_options = 0;
+	io.ntcreatex.in.impersonation = NTCREATEX_IMPERSONATION_ANONYMOUS;
+	io.ntcreatex.in.security_flags = 0;
+	io.ntcreatex.in.fname = fname;
+
+	torture_comment(tctx, "open with batch oplock\n");
+	ZERO_STRUCT(break_info);
+	smbcli_oplock_handler(cli1->transport, oplock_handler_ack_to_levelII, cli1->tree);
+
+
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
+		NTCREATEX_FLAGS_REQUEST_OPLOCK |
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	status = smb_raw_open(cli1->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	fnum = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, BATCH_OPLOCK_RETURN);
+
+	ZERO_STRUCT(break_info);
+
+	torture_comment(tctx, "second open with attributes only and NTCREATEX_DISP_OVERWRITE_IF dispostion causes oplock break\n");
+
+	io.ntcreatex.in.flags = NTCREATEX_FLAGS_EXTENDED |
+		NTCREATEX_FLAGS_REQUEST_OPLOCK |
+		NTCREATEX_FLAGS_REQUEST_BATCH_OPLOCK;
+	io.ntcreatex.in.access_mask = SEC_FILE_READ_ATTRIBUTE|SEC_FILE_WRITE_ATTRIBUTE|SEC_STD_SYNCHRONIZE;
+	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_READ|
+		NTCREATEX_SHARE_ACCESS_WRITE|
+		NTCREATEX_SHARE_ACCESS_DELETE;
+	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OVERWRITE_IF;
+	status = smb_raw_open(cli2->tree, tctx, &io);
+	CHECK_STATUS(tctx, status, NT_STATUS_OK);
+	fnum2 = io.ntcreatex.out.file.fnum;
+	CHECK_VAL(io.ntcreatex.out.oplock_level, LEVEL_II_OPLOCK_RETURN);
+	CHECK_VAL(break_info.count, 1);
+	CHECK_VAL(break_info.failures, 0);
+
+	smbcli_close(cli1->tree, fnum);
+	smbcli_close(cli2->tree, fnum2);
+
+done:
+	smb_raw_exit(cli1->session);
+	smb_raw_exit(cli2->session);
+	smbcli_deltree(cli1->tree, BASEDIR);
+	return ret;
+}
+
 /* 
    basic testing of oplocks
 */
@@ -1604,6 +1682,7 @@ struct torture_suite *torture_raw_oplock(TALLOC_CTX *mem_ctx)
 	torture_suite_add_2smb_test(suite, "BATCH13", test_raw_oplock_batch13);
 	torture_suite_add_2smb_test(suite, "BATCH14", test_raw_oplock_batch14);
 	torture_suite_add_2smb_test(suite, "BATCH15", test_raw_oplock_batch15);
+	torture_suite_add_2smb_test(suite, "BATCH16", test_raw_oplock_batch16);
 
 	return suite;
 }
