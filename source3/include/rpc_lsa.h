@@ -27,51 +27,38 @@
 #define LSA_AUDIT_NUM_CATEGORIES_WIN2K	9
 #define LSA_AUDIT_NUM_CATEGORIES LSA_AUDIT_NUM_CATEGORIES_NT4
 
-#define POLICY_VIEW_LOCAL_INFORMATION    0x00000001
-#define POLICY_VIEW_AUDIT_INFORMATION    0x00000002
-#define POLICY_GET_PRIVATE_INFORMATION   0x00000004
-#define POLICY_TRUST_ADMIN               0x00000008
-#define POLICY_CREATE_ACCOUNT            0x00000010
-#define POLICY_CREATE_SECRET             0x00000020
-#define POLICY_CREATE_PRIVILEGE          0x00000040
-#define POLICY_SET_DEFAULT_QUOTA_LIMITS  0x00000080
-#define POLICY_SET_AUDIT_REQUIREMENTS    0x00000100
-#define POLICY_AUDIT_LOG_ADMIN           0x00000200
-#define POLICY_SERVER_ADMIN              0x00000400
-#define POLICY_LOOKUP_NAMES              0x00000800
-
-#define POLICY_ALL_ACCESS ( STANDARD_RIGHTS_REQUIRED_ACCESS  |\
-                            POLICY_VIEW_LOCAL_INFORMATION    |\
-                            POLICY_VIEW_AUDIT_INFORMATION    |\
-                            POLICY_GET_PRIVATE_INFORMATION   |\
-                            POLICY_TRUST_ADMIN               |\
-                            POLICY_CREATE_ACCOUNT            |\
-                            POLICY_CREATE_SECRET             |\
-                            POLICY_CREATE_PRIVILEGE          |\
-                            POLICY_SET_DEFAULT_QUOTA_LIMITS  |\
-                            POLICY_SET_AUDIT_REQUIREMENTS    |\
-                            POLICY_AUDIT_LOG_ADMIN           |\
-                            POLICY_SERVER_ADMIN              |\
-                            POLICY_LOOKUP_NAMES )
+#define LSA_POLICY_ALL_ACCESS ( STANDARD_RIGHTS_REQUIRED_ACCESS  |\
+                            LSA_POLICY_VIEW_LOCAL_INFORMATION    |\
+                            LSA_POLICY_VIEW_AUDIT_INFORMATION    |\
+                            LSA_POLICY_GET_PRIVATE_INFORMATION   |\
+                            LSA_POLICY_TRUST_ADMIN               |\
+                            LSA_POLICY_CREATE_ACCOUNT            |\
+                            LSA_POLICY_CREATE_SECRET             |\
+                            LSA_POLICY_CREATE_PRIVILEGE          |\
+                            LSA_POLICY_SET_DEFAULT_QUOTA_LIMITS  |\
+                            LSA_POLICY_SET_AUDIT_REQUIREMENTS    |\
+                            LSA_POLICY_AUDIT_LOG_ADMIN           |\
+                            LSA_POLICY_SERVER_ADMIN              |\
+                            LSA_POLICY_LOOKUP_NAMES )
 
 
-#define POLICY_READ       ( STANDARD_RIGHTS_READ_ACCESS      |\
-                            POLICY_VIEW_AUDIT_INFORMATION    |\
-                            POLICY_GET_PRIVATE_INFORMATION)
+#define LSA_POLICY_READ       ( STANDARD_RIGHTS_READ_ACCESS      |\
+                            LSA_POLICY_VIEW_AUDIT_INFORMATION    |\
+                            LSA_POLICY_GET_PRIVATE_INFORMATION)
 
-#define POLICY_WRITE      ( STD_RIGHT_READ_CONTROL_ACCESS     |\
-                            POLICY_TRUST_ADMIN               |\
-                            POLICY_CREATE_ACCOUNT            |\
-                            POLICY_CREATE_SECRET             |\
-                            POLICY_CREATE_PRIVILEGE          |\
-                            POLICY_SET_DEFAULT_QUOTA_LIMITS  |\
-                            POLICY_SET_AUDIT_REQUIREMENTS    |\
-                            POLICY_AUDIT_LOG_ADMIN           |\
-                            POLICY_SERVER_ADMIN)
+#define LSA_POLICY_WRITE      ( STD_RIGHT_READ_CONTROL_ACCESS     |\
+                            LSA_POLICY_TRUST_ADMIN               |\
+                            LSA_POLICY_CREATE_ACCOUNT            |\
+                            LSA_POLICY_CREATE_SECRET             |\
+                            LSA_POLICY_CREATE_PRIVILEGE          |\
+                            LSA_POLICY_SET_DEFAULT_QUOTA_LIMITS  |\
+                            LSA_POLICY_SET_AUDIT_REQUIREMENTS    |\
+                            LSA_POLICY_AUDIT_LOG_ADMIN           |\
+                            LSA_POLICY_SERVER_ADMIN)
 
-#define POLICY_EXECUTE    ( STANDARD_RIGHTS_EXECUTE_ACCESS   |\
-                            POLICY_VIEW_LOCAL_INFORMATION    |\
-                            POLICY_LOOKUP_NAMES )
+#define LSA_POLICY_EXECUTE    ( STANDARD_RIGHTS_EXECUTE_ACCESS   |\
+                            LSA_POLICY_VIEW_LOCAL_INFORMATION    |\
+                            LSA_POLICY_LOOKUP_NAMES )
 
 /*******************************************************/
 #define MAX_REF_DOMAINS 32
