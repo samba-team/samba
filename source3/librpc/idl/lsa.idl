@@ -137,7 +137,7 @@ import "security.idl";
 	[public] NTSTATUS lsa_OpenPolicy (
 		[in,unique]       uint16 *system_name,
 		[in]   lsa_ObjectAttribute *attr,
-		[in]       uint32 access_mask,
+		[in]   lsa_PolicyAccessMask access_mask,
 		[out]  policy_handle *handle
 		);
 	
@@ -752,7 +752,7 @@ import "security.idl";
 	[public] NTSTATUS lsa_OpenPolicy2 (
 		[in,unique]      [string,charset(UTF16)] uint16 *system_name,
 		[in]  lsa_ObjectAttribute *attr,
-		[in]      uint32 access_mask,
+		[in]  lsa_PolicyAccessMask access_mask,
 		[out] policy_handle *handle
 		);
 
