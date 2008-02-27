@@ -7,7 +7,7 @@
 
     <para>This option allows the administrator to chose which backend
     will be used for storing user and possibly group information.  This allows 
-    you to swap between dfferent storage mechanisms without recompile. </para>
+    you to swap between different storage mechanisms without recompile. </para>
 
     <para>The parameter value is divided into two parts, the backend's name, and a 'location'
     string that has meaning only to that particular backed.  These are separated
