@@ -1530,7 +1530,7 @@ NTSTATUS pvfs_can_delete(struct pvfs_state *pvfs,
 
 	status = odb_can_open(lck, name->stream_id,
 			      share_access, access_mask, delete_on_close,
-			      0, false);
+			      NTCREATEX_DISP_OPEN, false);
 
 	if (NT_STATUS_IS_OK(status)) {
 		status = pvfs_access_check_simple(pvfs, req, name, access_mask);
@@ -1594,7 +1594,7 @@ NTSTATUS pvfs_can_rename(struct pvfs_state *pvfs,
 
 	status = odb_can_open(lck, name->stream_id,
 			      share_access, access_mask, delete_on_close,
-			      0, false);
+			      NTCREATEX_DISP_OPEN, false);
 
 	/*
 	 * if it's a sharing violation or we got no oplock
@@ -1648,15 +1648,25 @@ NTSTATUS pvfs_can_update_file_size(struct pvfs_state *pvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	/* TODO: this may needs some more flags */
-	share_access	= NTCREATEX_SHARE_ACCESS_WRITE;
-	access_mask	= 0;
+	share_access	= NTCREATEX_SHARE_ACCESS_READ |
+			  NTCREATEX_SHARE_ACCESS_WRITE |
+			  NTCREATEX_SHARE_ACCESS_DELETE;
+	/*
+	 * I would have thought that we would need to pass
+	 * SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA here too
+	 *
+	 * But you only need SEC_FILE_WRITE_ATTRIBUTE permissions
+	 * to set the filesize.
+	 *
+	 * --metze
+	 */
+	access_mask	= SEC_FILE_WRITE_ATTRIBUTE;
 	delete_on_close	= false;
 	break_to_none	= true;
 
 	status = odb_can_open(lck, name->stream_id,
 			      share_access, access_mask, delete_on_close,
-			      0, break_to_none);
+			      NTCREATEX_DISP_OPEN, break_to_none);
 
 	/*
 	 * if it's a sharing violation or we got no oplock
@@ -1710,12 +1720,12 @@ NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs,
 
 	share_access	= NTCREATEX_SHARE_ACCESS_READ |
 			  NTCREATEX_SHARE_ACCESS_WRITE;
-	access_mask	= 0;
+	access_mask	= SEC_FILE_READ_ATTRIBUTE;
 	delete_on_close	= false;
 
 	status = odb_can_open(lck, name->stream_id,
 			      share_access, access_mask, delete_on_close,
-			      0, false);
+			      NTCREATEX_DISP_OPEN, false);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
