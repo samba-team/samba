@@ -1807,6 +1807,7 @@ static NTSTATUS rpc_finish_auth3_bind(struct rpc_pipe_client *cli,
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0,("rpc_finish_auth3_bind: NTLMSSP update using server blob failed.\n"));
+		data_blob_free(&server_response);
 		return nt_status;
 	}
 
