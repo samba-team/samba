@@ -8,6 +8,7 @@
 
 #define LSA_ENUM_TRUST_DOMAIN_MULTIPLIER	( 60 )
 #define LSA_REF_DOMAIN_LIST_MULTIPLIER	( 32 )
+#define MAX_REF_DOMAINS	( LSA_REF_DOMAIN_LIST_MULTIPLIER )
 #define LSA_ENUM_TRUST_DOMAIN_EX_MULTIPLIER	( 82 )
 struct lsa_String {
 	uint16_t length;/* [value(2*strlen_m(string))] */
