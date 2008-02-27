@@ -527,10 +527,12 @@ static NTSTATUS odb_tdb_open_file_pending(struct odb_lock *lck, void *private)
 /*
   remove a opendb entry
 */
-static NTSTATUS odb_tdb_close_file(struct odb_lock *lck, void *file_handle)
+static NTSTATUS odb_tdb_close_file(struct odb_lock *lck, void *file_handle,
+				   const char **_delete_path)
 {
 	struct odb_context *odb = lck->odb;
 	struct opendb_file file;
+	const char *delete_path = NULL;
 	int i;
 	NTSTATUS status;
 
@@ -566,7 +568,16 @@ static NTSTATUS odb_tdb_close_file(struct odb_lock *lck, void *file_handle)
 	file.num_pending = 0;
 
 	file.num_entries--;
-	
+
+	if (file.num_entries == 0 && file.delete_on_close) {
+		delete_path = talloc_strdup(lck, file.path);
+		NT_STATUS_HAVE_NO_MEMORY(delete_path);
+	}
+
+	if (_delete_path) {
+		*_delete_path = delete_path;
+	}
+
 	return odb_push_record(lck, &file);
 }
 
