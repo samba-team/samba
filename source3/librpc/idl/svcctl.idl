@@ -125,6 +125,10 @@
 	/*****************/
 	/* Function 0x05 */
 	WERROR svcctl_SetServiceObjectSecurity(
+		[in] policy_handle *handle,
+		[in] uint32 security_flags,
+		[in,ref,size_is(buffer_size)] uint8 *buffer,
+		[in] uint32 buffer_size
 	);
 
 	/*****************/
