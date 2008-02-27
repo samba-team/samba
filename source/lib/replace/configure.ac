@@ -3,7 +3,7 @@ AC_INIT(replace.c)
 AC_CONFIG_SRCDIR([replace.c])
 AC_CONFIG_HEADER(config.h)
 
-CFLAGS="$CFLAGS -I."
+CFLAGS="$CFLAGS -I$srcdir"
 
 AC_LIBREPLACE_ALL_CHECKS
 
