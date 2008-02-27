@@ -802,12 +802,17 @@ WERROR _svcctl_UnlockServiceDatabase(pipes_struct *p,
 }
 
 /********************************************************************
+ _svcctl_QueryServiceObjectSecurity
 ********************************************************************/
 
-WERROR _svcctl_query_service_sec( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_SEC *q_u, SVCCTL_R_QUERY_SERVICE_SEC *r_u )
+WERROR _svcctl_QueryServiceObjectSecurity(pipes_struct *p,
+					  struct svcctl_QueryServiceObjectSecurity *r)
 {
-	SERVICE_INFO *info = find_service_info_by_hnd( p, &q_u->handle );
+	SERVICE_INFO *info = find_service_info_by_hnd( p, r->in.handle );
 	SEC_DESC *sec_desc;
+	NTSTATUS status;
+	uint8_t *buffer = NULL;
+	size_t len = 0;
 
 
 	/* only support the SCM and individual services */
@@ -822,7 +827,7 @@ WERROR _svcctl_query_service_sec( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_SEC *q
 
 	/* TODO: handle something besides DACL_SECURITY_INFORMATION */
 
-	if ( (q_u->security_flags & DACL_SECURITY_INFORMATION) != DACL_SECURITY_INFORMATION )
+	if ( (r->in.security_flags & DACL_SECURITY_INFORMATION) != DACL_SECURITY_INFORMATION )
 		return WERR_INVALID_PARAM;
 
 	/* lookup the security descriptor and marshall it up for a reply */
@@ -830,17 +835,20 @@ WERROR _svcctl_query_service_sec( pipes_struct *p, SVCCTL_Q_QUERY_SERVICE_SEC *q
 	if ( !(sec_desc = svcctl_get_secdesc( p->mem_ctx, info->name, get_root_nt_token() )) )
                 return WERR_NOMEM;
 
-	r_u->needed = ndr_size_security_descriptor( sec_desc, 0 );
+	*r->out.needed = ndr_size_security_descriptor( sec_desc, 0 );
 
-	if ( r_u->needed > q_u->buffer_size ) {
-		ZERO_STRUCTP( &r_u->buffer );
+	if ( *r->out.needed > r->in.buffer_size ) {
+		ZERO_STRUCTP( &r->out.buffer );
 		return WERR_INSUFFICIENT_BUFFER;
 	}
 
-	rpcbuf_init( &r_u->buffer, q_u->buffer_size, p->mem_ctx );
+	status = marshall_sec_desc(p->mem_ctx, sec_desc, &buffer, &len);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
 
-	if ( !sec_io_desc("", &sec_desc, &r_u->buffer.prs, 0 ) )
-		return WERR_NOMEM;
+	*r->out.needed = len;
+	r->out.buffer = buffer;
 
 	return WERR_OK;
 }
@@ -898,12 +906,6 @@ WERROR _svcctl_set_service_sec( pipes_struct *p, SVCCTL_Q_SET_SERVICE_SEC *q_u, 
 
 
 WERROR _svcctl_DeleteService(pipes_struct *p, struct svcctl_DeleteService *r)
-{
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
-}
-
-WERROR _svcctl_QueryServiceObjectSecurity(pipes_struct *p, struct svcctl_QueryServiceObjectSecurity *r)
 {
 	p->rng_fault_state = True;
 	return WERR_NOT_SUPPORTED;
