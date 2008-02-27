@@ -940,7 +940,7 @@ PROTO_OBJ = $(SMBD_OBJ_MAIN) $(LIBNDR_OBJ) $(LIBNDR_GEN_OBJ) \
 	    $(RPC_LSA_OBJ) $(RPC_NETLOG_OBJ) $(RPC_SAMR_OBJ) $(RPC_REG_OBJ) $(RPC_DSSETUP_OBJ) \
 	    $(RPC_SVC_OBJ) $(RPC_WKS_OBJ) $(RPC_DFS_OBJ) $(RPC_SPOOLSS_OBJ) \
 	    $(RPC_ECHO_OBJ) $(RPC_SVCCTL_OBJ) $(RPC_EVENTLOG_OBJ) $(SMBLDAP_OBJ) \
-            $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) $(RPC_UNIXINFO_OBJ) \
+            $(IDMAP_OBJ) libsmb/spnego.o $(PASSCHANGE_OBJ) \
 	    $(RPC_NTSVCS_OBJ) $(RPC_INITSHUTDOWN_OBJ) \
 	    utils/passwd_util.o $(LIBGPO_OBJ) $(NSS_INFO_OBJ) \
 	    $(RPCCLIENT_NDR_OBJ) $(DISPLAY_DSDCINFO_OBJ) \
@@ -1134,7 +1134,7 @@ modules: SHOWFLAGS $(MODULES)
 
 #####################################################################
 ## Perl IDL Compiler
-IDL_FILES = unixinfo.idl lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
+IDL_FILES = lsa.idl dfs.idl echo.idl winreg.idl initshutdown.idl \
 	srvsvc.idl svcctl.idl eventlog.idl wkssvc.idl netlogon.idl notify.idl \
 	epmapper.idl messaging.idl xattr.idl misc.idl samr.idl security.idl \
 	dssetup.idl krb5pac.idl ntsvcs.idl libnet_join.idl
@@ -1582,10 +1582,6 @@ bin/librpc_lsarpc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_LSA_OBJ)
 bin/librpc_samr.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SAMR_OBJ)
 	@echo "Linking $@"
 	@$(SHLD_MODULE) $(RPC_SAMR_OBJ)
-
-bin/librpc_unixinfo.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_UNIXINFO_OBJ)
-	@echo "Linking $@"
-	@$(SHLD_MODULE) $(RPC_UNIXINFO_OBJ)
 
 bin/librpc_srvsvc.@SHLIBEXT@: $(BINARY_PREREQS) $(RPC_SVC_OBJ)
 	@echo "Linking $@"
