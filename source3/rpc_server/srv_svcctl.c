@@ -236,23 +236,7 @@ static bool api_svcctl_unlock_service_db(pipes_struct *p)
 
 static bool api_svcctl_query_security_sec(pipes_struct *p)
 {
-	SVCCTL_Q_QUERY_SERVICE_SEC q_u;
-	SVCCTL_R_QUERY_SERVICE_SEC r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
-
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
-
-	if(!svcctl_io_q_query_service_sec("", &q_u, data, 0))
-		return False;
-
-	r_u.status = _svcctl_query_service_sec(p, &q_u, &r_u);
-
-	if(!svcctl_io_r_query_service_sec("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	return proxy_svcctl_call(p, NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY);
 }
 
 /*******************************************************************
