@@ -8,6 +8,8 @@
 #ifndef _HEADER_samr
 #define _HEADER_samr
 
+#define MAX_SAM_ENTRIES_W2K	( 0x400 )
+#define MAX_SAM_ENTRIES_W95	( 50 )
 #define SAMR_ENUM_USERS_MULTIPLIER	( 54 )
 #define PASS_MUST_CHANGE_AT_NEXT_LOGON	( 0x01 )
 #define PASS_DONT_CHANGE_AT_NEXT_LOGON	( 0x00 )
