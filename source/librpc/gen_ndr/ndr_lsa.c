@@ -640,6 +640,39 @@ _PUBLIC_ void ndr_print_lsa_ObjectAttribute(struct ndr_print *ndr, const char *n
 	ndr->depth--;
 }
 
+_PUBLIC_ enum ndr_err_code ndr_push_lsa_PolicyAccessMask(struct ndr_push *ndr, int ndr_flags, uint32_t r)
+{
+	NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r));
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_lsa_PolicyAccessMask(struct ndr_pull *ndr, int ndr_flags, uint32_t *r)
+{
+	uint32_t v;
+	NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &v));
+	*r = v;
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_lsa_PolicyAccessMask(struct ndr_print *ndr, const char *name, uint32_t r)
+{
+	ndr_print_uint32(ndr, name, r);
+	ndr->depth++;
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_VIEW_LOCAL_INFORMATION", LSA_POLICY_VIEW_LOCAL_INFORMATION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_VIEW_AUDIT_INFORMATION", LSA_POLICY_VIEW_AUDIT_INFORMATION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_GET_PRIVATE_INFORMATION", LSA_POLICY_GET_PRIVATE_INFORMATION, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_TRUST_ADMIN", LSA_POLICY_TRUST_ADMIN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_CREATE_ACCOUNT", LSA_POLICY_CREATE_ACCOUNT, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_CREATE_SECRET", LSA_POLICY_CREATE_SECRET, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_CREATE_PRIVILEGE", LSA_POLICY_CREATE_PRIVILEGE, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_SET_DEFAULT_QUOTA_LIMITS", LSA_POLICY_SET_DEFAULT_QUOTA_LIMITS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_SET_AUDIT_REQUIREMENTS", LSA_POLICY_SET_AUDIT_REQUIREMENTS, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_AUDIT_LOG_ADMIN", LSA_POLICY_AUDIT_LOG_ADMIN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_SERVER_ADMIN", LSA_POLICY_SERVER_ADMIN, r);
+	ndr_print_bitmap_flag(ndr, sizeof(uint32_t), "LSA_POLICY_LOOKUP_NAMES", LSA_POLICY_LOOKUP_NAMES, r);
+	ndr->depth--;
+}
+
 static enum ndr_err_code ndr_push_lsa_AuditLogInfo(struct ndr_push *ndr, int ndr_flags, const struct lsa_AuditLogInfo *r)
 {
 	if (ndr_flags & NDR_SCALARS) {
@@ -4924,7 +4957,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_OpenPolicy(struct ndr_push *ndr, int fla
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_lsa_ObjectAttribute(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.attr));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_lsa_PolicyAccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.handle == NULL) {
@@ -4964,7 +4997,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_OpenPolicy(struct ndr_pull *ndr, int fla
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.attr, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_ObjectAttribute(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.attr));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_attr_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_lsa_PolicyAccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.handle);
 		ZERO_STRUCTP(r->out.handle);
 	}
@@ -5001,7 +5034,7 @@ _PUBLIC_ void ndr_print_lsa_OpenPolicy(struct ndr_print *ndr, const char *name, 
 		ndr->depth++;
 		ndr_print_lsa_ObjectAttribute(ndr, "attr", r->in.attr);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_lsa_PolicyAccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
@@ -8459,7 +8492,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_lsa_OpenPolicy2(struct ndr_push *ndr, int fl
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_lsa_ObjectAttribute(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.attr));
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.access_mask));
+		NDR_CHECK(ndr_push_lsa_PolicyAccessMask(ndr, NDR_SCALARS, r->in.access_mask));
 	}
 	if (flags & NDR_OUT) {
 		if (r->out.handle == NULL) {
@@ -8505,7 +8538,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_lsa_OpenPolicy2(struct ndr_pull *ndr, int fl
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.attr, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_lsa_ObjectAttribute(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.attr));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_attr_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.access_mask));
+		NDR_CHECK(ndr_pull_lsa_PolicyAccessMask(ndr, NDR_SCALARS, &r->in.access_mask));
 		NDR_PULL_ALLOC(ndr, r->out.handle);
 		ZERO_STRUCTP(r->out.handle);
 	}
@@ -8542,7 +8575,7 @@ _PUBLIC_ void ndr_print_lsa_OpenPolicy2(struct ndr_print *ndr, const char *name,
 		ndr->depth++;
 		ndr_print_lsa_ObjectAttribute(ndr, "attr", r->in.attr);
 		ndr->depth--;
-		ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+		ndr_print_lsa_PolicyAccessMask(ndr, "access_mask", r->in.access_mask);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
