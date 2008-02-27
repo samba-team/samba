@@ -560,7 +560,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		status = pvfs_locking_key(parent, req, &locking_key);
 		NT_STATUS_NOT_OK_RETURN(status);
 		status = odb_get_delete_on_close(pvfs->odb_context, &locking_key, 
-						 &del_on_close, NULL, NULL);
+						 &del_on_close);
 		NT_STATUS_NOT_OK_RETURN(status);
 		if (del_on_close) {
 			return NT_STATUS_DELETE_PENDING;
@@ -1730,7 +1730,7 @@ bool pvfs_delete_on_close_set(struct pvfs_state *pvfs, struct pvfs_file_handle *
 	bool del_on_close;
 
 	status = odb_get_delete_on_close(pvfs->odb_context, &h->odb_locking_key, 
-					 &del_on_close, open_count, path);
+					 &del_on_close);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("WARNING: unable to determine delete on close status for open file\n"));
 		return false;
