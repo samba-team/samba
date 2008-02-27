@@ -425,6 +425,9 @@ import "security.idl";
 		[size_is(count)] lsa_TranslatedName *names;
 	} lsa_TransNameArray;
 
+	/* This number is based on Win2k and later maximum response allowed */
+	const int MAX_LOOKUP_SIDS = 0x5000; /* 20480 */
+
 	[public] NTSTATUS lsa_LookupSids (
 		[in]         policy_handle *handle,
 		[in,ref]     lsa_SidArray *sids,
