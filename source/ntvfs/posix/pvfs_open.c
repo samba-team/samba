@@ -1724,8 +1724,7 @@ NTSTATUS pvfs_can_stat(struct pvfs_state *pvfs,
 /*
   determine if delete on close is set on 
 */
-bool pvfs_delete_on_close_set(struct pvfs_state *pvfs, struct pvfs_file_handle *h, 
-			      int *open_count, char **path)
+bool pvfs_delete_on_close_set(struct pvfs_state *pvfs, struct pvfs_file_handle *h)
 {
 	NTSTATUS status;
 	bool del_on_close;
