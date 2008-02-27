@@ -696,6 +696,17 @@ _PUBLIC_ void ndr_print_svcctl_QueryServiceObjectSecurity(struct ndr_print *ndr,
 static enum ndr_err_code ndr_push_svcctl_SetServiceObjectSecurity(struct ndr_push *ndr, int flags, const struct svcctl_SetServiceObjectSecurity *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.security_flags));
+		if (r->in.buffer == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buffer_size));
+		NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->in.buffer, r->in.buffer_size));
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.buffer_size));
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_push_WERROR(ndr, NDR_SCALARS, r->out.result));
@@ -705,7 +716,25 @@ static enum ndr_err_code ndr_push_svcctl_SetServiceObjectSecurity(struct ndr_pus
 
 static enum ndr_err_code ndr_pull_svcctl_SetServiceObjectSecurity(struct ndr_pull *ndr, int flags, struct svcctl_SetServiceObjectSecurity *r)
 {
+	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.security_flags));
+		NDR_CHECK(ndr_pull_array_size(ndr, &r->in.buffer));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC_N(ndr, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer));
+		}
+		NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->in.buffer, ndr_get_array_size(ndr, &r->in.buffer)));
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.buffer_size));
+		if (r->in.buffer) {
+			NDR_CHECK(ndr_check_array_size(ndr, (void*)&r->in.buffer, r->in.buffer_size));
+		}
 	}
 	if (flags & NDR_OUT) {
 		NDR_CHECK(ndr_pull_WERROR(ndr, NDR_SCALARS, &r->out.result));
@@ -723,6 +752,16 @@ _PUBLIC_ void ndr_print_svcctl_SetServiceObjectSecurity(struct ndr_print *ndr, c
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "svcctl_SetServiceObjectSecurity");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_uint32(ndr, "security_flags", r->in.security_flags);
+		ndr_print_ptr(ndr, "buffer", r->in.buffer);
+		ndr->depth++;
+		ndr_print_array_uint8(ndr, "buffer", r->in.buffer, r->in.buffer_size);
+		ndr->depth--;
+		ndr_print_uint32(ndr, "buffer_size", r->in.buffer_size);
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
