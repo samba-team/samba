@@ -779,6 +779,10 @@ import "misc.idl", "lsa.idl", "security.idl";
 		SAMR_FIELD_OWF_PWD          = 0x20000000
 	} samr_FieldsPresent;
 
+	/* used for 'password_expired' in samr_UserInfo21 */
+	const int PASS_MUST_CHANGE_AT_NEXT_LOGON = 0x01;
+	const int PASS_DONT_CHANGE_AT_NEXT_LOGON = 0x00;
+
 	typedef struct {
 		NTTIME last_logon;
 		NTTIME last_logoff;
