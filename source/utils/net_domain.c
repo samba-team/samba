@@ -5,6 +5,7 @@
    Copyright (C) 2001 Remus Koos (remuskoos@yahoo.com)
    Copyright (C) 2002 Jim McDonough (jmcd@us.ibm.com)
    Copyright (C) 2006 Gerald (Jerry) Carter (jerry@samba.org)
+   Copyright (C) 2008 Guenther Deschner (gd@samba.org)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

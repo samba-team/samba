@@ -3,7 +3,7 @@
    Distributed SMB/CIFS Server Management Utility 
    Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
    Copyright (C) 2002 Jim McDonough (jmcd@us.ibm.com)
-   Copyright (C) 2004 Guenther Deschner (gd@samba.org)
+   Copyright (C) 2004,2008 Guenther Deschner (gd@samba.org)
    Copyright (C) 2005 Jeremy Allison (jra@samba.org)
    Copyright (C) 2006 Jelmer Vernooij (jelmer@samba.org)
 

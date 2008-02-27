@@ -6,6 +6,7 @@
    Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
    Copyright (C) Elrond                            2000,
    Copyright (C) Tim Potter                        2000
+   Copyright (C) Guenther Deschner		   2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

@@ -6,6 +6,7 @@
    Copyright (C) Rafal Szczesniak                       2002
    Copyright (C) Jeremy Allison				2005.
    Copyright (C) Michael Adam				2007.
+   Copyright (C) Guenther Deschner			2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
