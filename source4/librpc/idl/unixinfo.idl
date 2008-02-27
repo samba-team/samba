@@ -42,8 +42,8 @@ import "security.idl";
 
 	typedef struct {
 		NTSTATUS status;
-		utf8string homedir;
-		utf8string shell;
+		[charset(UTF8),string] uint8 homedir[];
+		[charset(UTF8),string] uint8 shell[];
 	} unixinfo_GetPWUidInfo;
 
 	/******************/
