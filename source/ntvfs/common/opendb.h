@@ -25,10 +25,11 @@ struct opendb_ops {
 	struct odb_lock *(*odb_lock)(TALLOC_CTX *mem_ctx,
 				     struct odb_context *odb, DATA_BLOB *file_key);
 	DATA_BLOB (*odb_get_key)(TALLOC_CTX *mem_ctx, struct odb_lock *lck);
-	NTSTATUS (*odb_open_file)(struct odb_lock *lck, void *file_handle,
-				  uint32_t stream_id, uint32_t share_access, 
+	NTSTATUS (*odb_open_file)(struct odb_lock *lck,
+				  void *file_handle, const char *path,
+				  uint32_t stream_id, uint32_t share_access,
 				  uint32_t access_mask, bool delete_on_close,
-				  const char *path, 
+				  uint32_t open_disposition, bool break_to_none,
 				  uint32_t oplock_level, uint32_t *oplock_granted);
 	NTSTATUS (*odb_open_file_pending)(struct odb_lock *lck, void *private);
 	NTSTATUS (*odb_close_file)(struct odb_lock *lck, void *file_handle);
@@ -39,10 +40,12 @@ struct opendb_ops {
 					    DATA_BLOB *key, bool *del_on_close, 
 					    int *open_count, char **path);
 	NTSTATUS (*odb_can_open)(struct odb_lock *lck,
-				 uint32_t share_access, uint32_t create_options, 
-				 uint32_t access_mask);
+				 uint32_t stream_id, uint32_t share_access,
+				 uint32_t access_mask, bool delete_on_close,
+				 uint32_t open_disposition, bool break_to_none);
 	NTSTATUS (*odb_update_oplock)(struct odb_lock *lck, void *file_handle,
 				      uint32_t oplock_level);
+	NTSTATUS (*odb_break_oplocks)(struct odb_lock *lck);
 };
 
 struct opendb_oplock_break {
