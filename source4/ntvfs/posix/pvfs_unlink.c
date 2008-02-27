@@ -23,6 +23,84 @@
 #include "vfs_posix.h"
 #include "system/dir.h"
 
+/*
+  retry an open after a sharing violation
+*/
+static void pvfs_retry_unlink(struct pvfs_odb_retry *r,
+			      struct ntvfs_module_context *ntvfs,
+			      struct ntvfs_request *req,
+			      void *_io,
+			      void *private_data,
+			      enum pvfs_wait_notice reason)
+{
+	union smb_unlink *io = talloc_get_type(_io, union smb_unlink);
+	NTSTATUS status = NT_STATUS_INTERNAL_ERROR;
+
+	talloc_free(r);
+
+	switch (reason) {
+	case PVFS_WAIT_CANCEL:
+/*TODO*/
+		status = NT_STATUS_CANCELLED;
+		break;
+	case PVFS_WAIT_TIMEOUT:
+		/* if it timed out, then give the failure
+		   immediately */
+/*TODO*/
+		status = NT_STATUS_SHARING_VIOLATION;
+		break;
+	case PVFS_WAIT_EVENT:
+
+		/* try the open again, which could trigger another retry setup
+		   if it wants to, so we have to unmark the async flag so we
+		   will know if it does a second async reply */
+		req->async_states->state &= ~NTVFS_ASYNC_STATE_ASYNC;
+
+		status = pvfs_unlink(ntvfs, req, io);
+		if (req->async_states->state & NTVFS_ASYNC_STATE_ASYNC) {
+			/* the 2nd try also replied async, so we don't send
+			   the reply yet */
+			return;
+		}
+
+		/* re-mark it async, just in case someone up the chain does
+		   paranoid checking */
+		req->async_states->state |= NTVFS_ASYNC_STATE_ASYNC;
+		break;
+	}
+
+	/* send the reply up the chain */
+	req->async_states->status = status;
+	req->async_states->send_fn(req);
+}
+
+/*
+  setup for a unlink retry after a sharing violation
+  or a non granted oplock
+*/
+static NTSTATUS pvfs_unlink_setup_retry(struct ntvfs_module_context *ntvfs,
+					struct ntvfs_request *req,
+					union smb_unlink *io,
+					struct odb_lock *lck,
+					NTSTATUS status)
+{
+	struct pvfs_state *pvfs = ntvfs->private_data;
+	struct timeval end_time;
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION)) {
+		end_time = timeval_add(&req->statistics.request_time,
+				       0, pvfs->sharing_violation_delay);
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) {
+		end_time = timeval_add(&req->statistics.request_time,
+				       pvfs->oplock_break_timeout, 0);
+	} else {
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	return pvfs_odb_retry_setup(ntvfs, req, lck, end_time, io, NULL,
+				    pvfs_retry_unlink);
+}
+
 
 /*
   unlink a file
@@ -67,6 +145,7 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
 				struct pvfs_filename *name)
 {
 	NTSTATUS status;
+	struct odb_lock *lck = NULL;
 
 	/* make sure its matches the given attributes */
 	status = pvfs_match_attrib(pvfs, name,
@@ -75,7 +154,20 @@ static NTSTATUS pvfs_unlink_one(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	status = pvfs_can_delete(pvfs, req, name, NULL);
+	status = pvfs_can_delete(pvfs, req, name, &lck);
+
+	/*
+	 * on a sharing violation we need to retry when the file is closed by
+	 * the other user, or after 1 second
+	 * on a non granted oplock we need to retry when the file is closed by
+	 * the other user, or after 30 seconds
+	 */
+	if ((NT_STATUS_EQUAL(status, NT_STATUS_SHARING_VIOLATION) ||
+	     NT_STATUS_EQUAL(status, NT_STATUS_OPLOCK_NOT_GRANTED)) &&
+	    (req->async_states->state & NTVFS_ASYNC_STATE_MAY_ASYNC)) {
+		return pvfs_unlink_setup_retry(pvfs->ntvfs, req, unl, lck, status);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

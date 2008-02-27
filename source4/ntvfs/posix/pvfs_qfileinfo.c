@@ -330,7 +330,7 @@ NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 
 	status = pvfs_can_stat(pvfs, req, name);
 	if (!NT_STATUS_IS_OK(status)) {
-		return NT_STATUS_DELETE_PENDING;
+		return status;
 	}
 
 	status = pvfs_access_check_simple(pvfs, req, name, 

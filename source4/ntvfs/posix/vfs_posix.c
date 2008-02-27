@@ -91,6 +91,10 @@ static void pvfs_setup_options(struct pvfs_state *pvfs)
 							PVFS_SHARE_DELAY,
 							PVFS_SHARE_DELAY_DEFAULT);
 
+	pvfs->oplock_break_timeout = share_int_option(scfg,
+						      PVFS_OPLOCK_TIMEOUT,
+						      PVFS_OPLOCK_TIMEOUT_DEFAULT);
+
 	pvfs->share_name = talloc_strdup(pvfs, scfg->name);
 
 	pvfs->fs_attribs = 

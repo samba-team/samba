@@ -562,12 +562,16 @@ sub provision($$$$$$)
 	gensec:require_pac = true
 	log level = $smbd_loglevel
 
+	# this is a global option
+	opendb:oplocks = yes
+
 [tmp]
 	path = $tmpdir
 	read only = no
 	ntvfs handler = posix
 	posix:sharedelay = 100000
 	posix:eadb = $lockdir/eadb.tdb
+	posix:oplocktimeout = 3
 
 [test1]
 	path = $tmpdir/test1
@@ -575,6 +579,7 @@ sub provision($$$$$$)
 	ntvfs handler = posix
 	posix:sharedelay = 100000
 	posix:eadb = $lockdir/eadb.tdb
+	posix:oplocktimeout = 3
 
 [test2]
 	path = $tmpdir/test2
@@ -582,6 +587,7 @@ sub provision($$$$$$)
 	ntvfs handler = posix
 	posix:sharedelay = 100000
 	posix:eadb = $lockdir/eadb.tdb
+	posix:oplocktimeout = 3
 
 [cifs]
 	read only = no
