@@ -27,14 +27,14 @@
 
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
-		torture_comment(tctx, "(%s): wrong value for %s got 0x%x - should be 0x%x\n", \
+		torture_result(tctx, TORTURE_FAIL, "(%s): wrong value for %s got 0x%x - should be 0x%x\n", \
 				__location__, #v, (int)v, (int)correct); \
 		ret = false; \
 	}} while (0)
 
 #define CHECK_STRMATCH(v, correct) do { \
 	if (!v || strstr((v),(correct)) == NULL) { \
-		torture_comment(tctx, "(%s): wrong value for %s got '%s' - should be '%s'\n", \
+		torture_result(tctx, TORTURE_FAIL,  "(%s): wrong value for %s got '%s' - should be '%s'\n", \
 				__location__, #v, v?v:"NULL", correct); \
 		ret = false; \
 	} \
