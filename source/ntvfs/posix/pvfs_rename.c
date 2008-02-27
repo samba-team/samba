@@ -533,6 +533,9 @@ static NTSTATUS pvfs_rename_nt(struct ntvfs_module_context *ntvfs,
 		status = pvfs_access_check_parent(pvfs, req, name2, SEC_DIR_ADD_FILE);
 		NT_STATUS_NOT_OK_RETURN(status);
 		status = pvfs_do_rename(pvfs, name1, name2->full_name);
+		if (NT_STATUS_IS_OK(status)) {
+			status = odb_rename(lck, name2->full_name);
+		}
 		NT_STATUS_NOT_OK_RETURN(status);
 		break;
 
