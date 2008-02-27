@@ -134,6 +134,14 @@ struct svcctl_LockServiceDatabase {
 
 struct svcctl_QueryServiceObjectSecurity {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t security_flags;
+		uint32_t buffer_size;/* [range(0,0x40000)] */
+	} in;
+
+	struct {
+		uint8_t *buffer;/* [ref,size_is(buffer_size)] */
+		uint32_t *needed;/* [ref,range(0,0x40000)] */
 		WERROR result;
 	} out;
 
