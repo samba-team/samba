@@ -288,7 +288,8 @@ static NTSTATUS odb_oplock_break_send(struct odb_context *odb,
 }
 
 static bool access_attributes_only(uint32_t access_mask,
-				   uint32_t open_disposition)
+				   uint32_t open_disposition,
+				   bool break_to_none)
 {
 	switch (open_disposition) {
 	case NTCREATEX_DISP_SUPERSEDE:
@@ -298,6 +299,11 @@ static bool access_attributes_only(uint32_t access_mask,
 	default:
 		break;
 	}
+
+	if (break_to_none) {
+		return false;
+	}
+
 #define CHECK_MASK(m,g) ((m) && (((m) & ~(g))==0) && (((m) & (g)) != 0))
 	return CHECK_MASK(access_mask,
 			  SEC_STD_SYNCHRONIZE |
@@ -326,7 +332,8 @@ static NTSTATUS odb_tdb_open_can_internal(struct odb_context *odb,
 			 * but we'll not grant the oplock below
 			 */
 			attrs_only = access_attributes_only(access_mask,
-							    open_disposition);
+							    open_disposition,
+							    break_to_none);
 			if (attrs_only) {
 				break;
 			}

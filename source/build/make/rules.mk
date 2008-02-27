@@ -81,6 +81,13 @@ check:: test
 unused_macros:
 	$(srcdir)/script/find_unused_macros.pl `find . -name "*.[ch]"` | sort
 
+# Create a static library
+%.a:
+	@echo Linking $@
+	@rm -f $@
+	@mkdir -p $(@D)
+	@$(STLD) $(STLD_FLAGS) $@ $^
+
 ###############################################################################
 # Templates
 ###############################################################################
