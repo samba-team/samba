@@ -2483,6 +2483,80 @@ smbc_fstat_ctx(SMBCCTX *context,
 }
 
 /*
+ * Routine to truncate a file given by its file descriptor, to a specified size
+ */
+
+static int
+smbc_ftruncate_ctx(SMBCCTX *context,
+                   SMBCFILE *file,
+                   off_t length)
+{
+	SMB_OFF_T size = length;
+	char *server = NULL;
+	char *share = NULL;
+	char *user = NULL;
+	char *password = NULL;
+	char *path = NULL;
+        char *targetpath = NULL;
+	struct cli_state *targetcli = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
+		errno = EINVAL;
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	if (!file || !DLIST_CONTAINS(context->internal->_files, file)) {
+		errno = EBADF;
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	if (!file->file) {
+		errno = EINVAL;
+		TALLOC_FREE(frame);
+		return -1;
+	}
+
+	/*d_printf(">>>fstat: parsing %s\n", file->fname);*/
+	if (smbc_parse_path(frame,
+                            context,
+                            file->fname,
+                            NULL,
+                            &server,
+                            &share,
+                            &path,
+                            &user,
+                            &password,
+                            NULL)) {
+                errno = EINVAL;
+		TALLOC_FREE(frame);
+                return -1;
+        }
+
+	/*d_printf(">>>fstat: resolving %s\n", path);*/
+	if (!cli_resolve_path(frame, "", file->srv->cli, path,
+                              &targetcli, &targetpath)) {
+		d_printf("Could not resolve %s\n", path);
+		TALLOC_FREE(frame);
+		return -1;
+	}
+	/*d_printf(">>>fstat: resolved path as %s\n", targetpath);*/
+
+        if (!cli_ftruncate(targetcli, file->cli_fd, size)) {
+                errno = EINVAL;
+                TALLOC_FREE(frame);
+                return -1;
+        }
+
+	TALLOC_FREE(frame);
+	return 0;
+
+}
+
+/*
  * Routine to open a directory
  * We accept the URL syntax explained in smbc_parse_path(), above.
  */
@@ -6703,6 +6777,7 @@ smbc_new_context(void)
         context->telldir                           = smbc_telldir_ctx;
         context->lseekdir                          = smbc_lseekdir_ctx;
         context->fstatdir                          = smbc_fstatdir_ctx;
+        context->ftruncate                         = smbc_ftruncate_ctx;
         context->chmod                             = smbc_chmod_ctx;
         context->utimes                            = smbc_utimes_ctx;
         context->setxattr                          = smbc_setxattr_ctx;
