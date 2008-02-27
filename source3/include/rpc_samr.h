@@ -74,11 +74,6 @@ SamrTestPrivateFunctionsUser
 
 ********************************************************************/
 
-#define MAX_SAM_ENTRIES_W2K 0x400
-#define MAX_SAM_ENTRIES_W95 50
-/* The following should be the greater of the preceeding two. */
-#define MAX_SAM_ENTRIES MAX_SAM_ENTRIES_W2K
-
 /* these are from the old rpc_samr.h - they are needed while the merge
    is still going on */
 #define MAX_SAM_SIDS 15
