@@ -271,20 +271,5 @@ typedef struct {
 	WERROR status;
 } SVCCTL_R_QUERY_SERVICE_STATUSEX;
 
-
-/**************************/
-
-typedef struct {
-	POLICY_HND handle; 
-	uint32 security_flags;        
-	RPC_BUFFER buffer;
-	uint32 buffer_size;
-} SVCCTL_Q_SET_SERVICE_SEC;
-
-typedef struct {
-	WERROR status;
-} SVCCTL_R_SET_SERVICE_SEC;
-
-
 #endif /* _RPC_SVCCTL_H */
 
