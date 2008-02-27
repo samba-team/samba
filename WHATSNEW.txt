@@ -22,6 +22,7 @@ Major enhancements in Samba 3.2.0 include:
   o Introduction of a registry based configuration system.
   o Improved CIFS Unix Extensions support.
   o Experimental support for file serving clusters.
+  o Support for storing alternate data streams in xattrs
 
 
   Winbind and Active Directory Integration:
@@ -195,6 +196,10 @@ o   Volker Lendecke <vl@samba.org>
     * Remove static incoming and outgoing buffers from core server SMB 
       packet processing code.
     * Add "net sam rights" command.
+    * Support for storing xattrs in tdb files
+    * Support for storing alternate data streams in xattrs
+    * Implement a generic in-memory cache based on rb-trees
+    * Add implicit temporary talloc contexts via talloc_stack()
 
 
 o   Steve French <sfrench@samba.org>
