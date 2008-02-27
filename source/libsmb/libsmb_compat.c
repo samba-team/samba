@@ -289,6 +289,12 @@ int smbc_fstat(int fd, struct stat *st)
 	return (statcont->fstat)(statcont, file, st);
 }
 
+int smbc_ftruncate(int fd, off_t size)
+{
+	SMBCFILE * file = find_fd(fd);
+	return (statcont->ftruncate)(statcont, file, size);
+}
+
 int smbc_chmod(const char *url, mode_t mode)
 {
 	return (statcont->chmod)(statcont, url, mode);
