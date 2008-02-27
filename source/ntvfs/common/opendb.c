@@ -118,9 +118,10 @@ _PUBLIC_ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 /*
   remove a opendb entry
 */
-_PUBLIC_ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle)
+_PUBLIC_ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle,
+				 const char **delete_path)
 {
-	return ops->odb_close_file(lck, file_handle);
+	return ops->odb_close_file(lck, file_handle, delete_path);
 }
 
 
