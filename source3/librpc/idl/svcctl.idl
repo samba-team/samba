@@ -115,6 +115,11 @@
 	/*****************/
 	/* Function 0x04 */
 	WERROR svcctl_QueryServiceObjectSecurity(
+		[in] policy_handle *handle,
+		[in] uint32 security_flags,
+		[out,ref,size_is(buffer_size)] uint8 *buffer,
+		[in,range(0,0x40000)] uint32 buffer_size,
+		[out,ref,range(0,0x40000)] uint32 *needed
 	);
 
 	/*****************/
