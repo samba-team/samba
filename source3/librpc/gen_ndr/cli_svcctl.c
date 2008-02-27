@@ -243,12 +243,20 @@ NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,
+						struct policy_handle *handle,
+						uint32_t security_flags,
+						uint8_t *buffer,
+						uint32_t buffer_size,
 						WERROR *werror)
 {
 	struct svcctl_SetServiceObjectSecurity r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.security_flags = security_flags;
+	r.in.buffer = buffer;
+	r.in.buffer_size = buffer_size;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_SetServiceObjectSecurity, &r);

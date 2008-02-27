@@ -150,6 +150,13 @@ struct svcctl_QueryServiceObjectSecurity {
 
 struct svcctl_SetServiceObjectSecurity {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t security_flags;
+		uint8_t *buffer;/* [ref,size_is(buffer_size)] */
+		uint32_t buffer_size;
+	} in;
+
+	struct {
 		WERROR result;
 	} out;
 

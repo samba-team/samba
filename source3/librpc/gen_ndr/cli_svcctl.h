@@ -30,6 +30,10 @@ NTSTATUS rpccli_svcctl_QueryServiceObjectSecurity(struct rpc_pipe_client *cli,
 						  WERROR *werror);
 NTSTATUS rpccli_svcctl_SetServiceObjectSecurity(struct rpc_pipe_client *cli,
 						TALLOC_CTX *mem_ctx,
+						struct policy_handle *handle,
+						uint32_t security_flags,
+						uint8_t *buffer,
+						uint32_t buffer_size,
 						WERROR *werror);
 NTSTATUS rpccli_svcctl_QueryServiceStatus(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
