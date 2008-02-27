@@ -60,7 +60,4 @@
                             LSA_POLICY_VIEW_LOCAL_INFORMATION    |\
                             LSA_POLICY_LOOKUP_NAMES )
 
-/* This number is based on Win2k and later maximum response allowed */
-#define MAX_LOOKUP_SIDS 20480	/* 0x5000 */
-
 #endif /* _RPC_LSA_H */
