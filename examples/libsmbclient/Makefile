@@ -24,6 +24,7 @@ TESTS=	testsmbc \
 	teststat \
 	teststat2 \
 	teststat3 \
+	testtruncate \
 	testchmod \
 	testutime \
 	testread \
@@ -71,6 +72,10 @@ teststat2: teststat2.o
 
 teststat3: teststat3.o
 	@echo Linking teststat3
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
+
+testtruncate: testtruncate.o
+	@echo Linking testtruncate
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< $(LIBSMBCLIENT) -lpopt
 
 testchmod: testchmod.o
