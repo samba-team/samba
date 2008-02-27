@@ -375,6 +375,8 @@ import "security.idl";
 	} lsa_TransSidArray;
 
 	const int LSA_REF_DOMAIN_LIST_MULTIPLIER = 32;
+	const int MAX_REF_DOMAINS = LSA_REF_DOMAIN_LIST_MULTIPLIER;
+
 	typedef struct {
 		[range(0,1000)] uint32 count;
 		[size_is(count)] lsa_DomainInfo *domains;
