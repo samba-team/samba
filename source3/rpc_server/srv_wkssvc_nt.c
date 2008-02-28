@@ -281,11 +281,12 @@ WERROR _wkssvc_NetrGetJoinableOus(pipes_struct *p, struct wkssvc_NetrGetJoinable
 }
 
 /********************************************************************
+ _wkssvc_NetrJoinDomain2
  ********************************************************************/
 
-WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r)
+WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p,
+			       struct wkssvc_NetrJoinDomain2 *r)
 {
-#if 0
 	struct libnet_JoinCtx *j = NULL;
 	char *cleartext_pwd = NULL;
 	char *admin_domain = NULL;
@@ -302,6 +303,8 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r
 	if (!user_has_privileges(token, &se_machine_account) &&
 	    !nt_token_check_domain_rid(token, DOMAIN_GROUP_RID_ADMINS) &&
 	    !nt_token_check_domain_rid(token, BUILTIN_ALIAS_RID_ADMINS)) {
+		DEBUG(5,("_wkssvc_NetrJoinDomain2: account doesn't have "
+			"sufficient privileges\n"));
 		return WERR_ACCESS_DENIED;
 	}
 
@@ -341,16 +344,20 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r
 	j->in.join_flags	= r->in.join_flags;
 	j->in.admin_account	= admin_account;
 	j->in.admin_password	= cleartext_pwd;
-	j->in.modify_config	= true;
+	j->in.debug		= true;
 
 	become_root();
 	werr = libnet_Join(p->mem_ctx, j);
 	unbecome_root();
 
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(5,("_wkssvc_NetrJoinDomain2: libnet_Join gave %s\n",
+			j->out.error_string ? j->out.error_string :
+			dos_errstr(werr)));
+	}
+
+	TALLOC_FREE(j);
 	return werr;
-#endif
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
 }
 
 /********************************************************************
