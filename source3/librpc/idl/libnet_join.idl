@@ -13,7 +13,7 @@ interface libnetjoin
 {
 	typedef bitmap wkssvc_joinflags wkssvc_joinflags;
 
-	[nopush,nopull] WERROR libnet_JoinCtx(
+	[nopush,nopull,noopnum] WERROR libnet_JoinCtx(
 		[in] string dc_name,
 		[in] string machine_name,
 		[in,ref] string *domain_name,
@@ -39,7 +39,7 @@ interface libnetjoin
 		[out] boolean8 domain_is_ad
 		);
 
-	[nopush,nopull] WERROR libnet_UnjoinCtx(
+	[nopush,nopull,noopnum] WERROR libnet_UnjoinCtx(
 		[in] string dc_name,
 		[in] string machine_name,
 		[in] string domain_name,
