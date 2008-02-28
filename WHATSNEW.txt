@@ -355,7 +355,7 @@ o   James Peach <jpeach@apple.com>
 
 
 o   Jiri Sasek <Jiri.Sasek@Sun.COM>
-    * Added vfs_vfsacl module.
+    * Added vfs_zfsacl module.
 
 
 o   Karolin Seeger <ks@sernet.de>
