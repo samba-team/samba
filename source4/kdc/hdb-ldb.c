@@ -1168,8 +1168,8 @@ NTSTATUS kdc_hdb_ldb_create(TALLOC_CTX *mem_ctx,
 krb5_error_code hdb_ldb_create(krb5_context context, struct HDB **db, const char *arg)
 {
 	NTSTATUS nt_status;
-	/* The global kdc_mem_ctx, Disgusting, ugly hack, but it means one less private hook */
-	nt_status = kdc_hdb_ldb_create(kdc_mem_ctx, global_loadparm, 
+	/* The global kdc_mem_ctx and kdc_lp_ctx, Disgusting, ugly hack, but it means one less private hook */
+	nt_status = kdc_hdb_ldb_create(kdc_mem_ctx, kdc_lp_ctx, 
 				       context, db, arg);
 
 	if (NT_STATUS_IS_OK(nt_status)) {

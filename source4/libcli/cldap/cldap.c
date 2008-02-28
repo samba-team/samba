@@ -241,7 +241,8 @@ static void cldap_socket_handler(struct event_context *ev, struct fd_event *fde,
   then operations will use that event context
 */
 struct cldap_socket *cldap_socket_init(TALLOC_CTX *mem_ctx, 
-				       struct event_context *event_ctx)
+				       struct event_context *event_ctx,
+				       struct smb_iconv_convenience *iconv_convenience)
 {
 	struct cldap_socket *cldap;
 	NTSTATUS status;
@@ -270,6 +271,7 @@ struct cldap_socket *cldap_socket_init(TALLOC_CTX *mem_ctx,
 
 	cldap->send_queue = NULL;
 	cldap->incoming.handler = NULL;
+	cldap->iconv_convenience = iconv_convenience;
 	
 	return cldap;
 
@@ -618,7 +620,7 @@ NTSTATUS cldap_netlogon_recv(struct cldap_request *req,
 	data = search.out.response->attributes[0].values;
 
 	ndr_err = ndr_pull_union_blob_all(data, mem_ctx, 
-					  lp_iconv_convenience(global_loadparm),
+					  req->cldap->iconv_convenience,
 					  &io->out.netlogon,
 					  io->in.version & 0xF,
 					  (ndr_pull_flags_fn_t)ndr_pull_nbt_cldap_netlogon);
@@ -714,7 +716,7 @@ NTSTATUS cldap_netlogon_reply(struct cldap_socket *cldap,
 	DATA_BLOB blob;
 
 	ndr_err = ndr_push_union_blob(&blob, tmp_ctx, 
-				      lp_iconv_convenience(global_loadparm),
+				      cldap->iconv_convenience,
 				      netlogon, version & 0xF,
 				     (ndr_push_flags_fn_t)ndr_push_nbt_cldap_netlogon);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

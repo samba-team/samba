@@ -225,7 +225,7 @@ static void generate_request(struct nbt_name_socket *nbtsock, struct wins_state 
 */
 static bool bench_wins(struct torture_context *tctx)
 {
-	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL);
+	struct nbt_name_socket *nbtsock = nbt_name_socket_init(tctx, NULL, lp_iconv_convenience(tctx->lp_ctx));
 	int num_sent=0;
 	struct timeval tv = timeval_current();
 	bool ret = true;

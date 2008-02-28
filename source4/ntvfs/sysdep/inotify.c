@@ -244,11 +244,6 @@ static void inotify_handler(struct event_context *ev, struct fd_event *fde,
 static NTSTATUS inotify_setup(struct sys_notify_context *ctx)
 {
 	struct inotify_private *in;
-
-	if (!lp_parm_bool(global_loadparm, NULL, "notify", "inotify", true)) {
-		return NT_STATUS_INVALID_SYSTEM_SERVICE;
-	}
-
 	in = talloc(ctx, struct inotify_private);
 	NT_STATUS_HAVE_NO_MEMORY(in);
 	in->fd = inotify_init();
@@ -339,6 +334,10 @@ static NTSTATUS inotify_watch(struct sys_notify_context *ctx,
 	/* maybe setup the inotify fd */
 	if (ctx->private_data == NULL) {
 		NTSTATUS status;
+		if (!lp_parm_bool(global_loadparm, NULL, "notify", "inotify", true)) {
+			return NT_STATUS_INVALID_SYSTEM_SERVICE;
+		}
+
 		status = inotify_setup(ctx);
 		NT_STATUS_NOT_OK_RETURN(status);
 	}

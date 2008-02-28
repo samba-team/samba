@@ -224,43 +224,10 @@ struct loadparm_service
 };
 
 
-/* This is a default service used to prime a services structure */
-struct loadparm_service sDefault = {
-	.szService = NULL,
-	.szPath = NULL,
-	.szCopy = NULL,
-	.szInclude = NULL,
-	.szPrintername = NULL,
-	.szHostsallow = NULL,
-	.szHostsdeny = NULL,
-	.comment = NULL,
-	.volume = NULL,
-	.fstype = NULL,
-	.ntvfs_handler = NULL,
-	.iMaxPrintJobs = 1000,
-	.iMaxConnections = 0,
-	.iCSCPolicy = 0,
-	.bAvailable = true,
-	.bBrowseable = true,
-	.bRead_only = true,
-	.bPrint_ok = false,
-	.bMap_system = false,
-	.bMap_hidden = false,
-	.bMap_archive = true,
-	.bStrictLocking = true,
-	.iCreate_mask = 0744,
-	.iCreate_force_mode = 0000,
-	.iDir_mask = 0755,
-	.iDir_force_mode = 0000,
-	.copymap = NULL,
-	.bMSDfsRoot = false,
-	.bStrictSync = false,
-	.bCIFileSystem = false,
-};
-
 struct loadparm_context *global_loadparm = NULL;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
+
 
 /* prototypes for the special type handlers */
 static bool handle_include(struct loadparm_context *lp_ctx,
@@ -521,11 +488,13 @@ static struct parm_struct parm_table[] = {
 	{NULL, P_BOOL, P_NONE, 0, NULL, NULL}
 };
 
+
 /* local variables */
 struct loadparm_context {
 	const char *szConfigFile;
 	struct loadparm_global *globals;
 	struct loadparm_service **services;
+	struct loadparm_service *sDefault;
 	int iNumServices;
 	struct loadparm_service *currentService;
 	bool bInGlobalSection;
@@ -540,6 +509,10 @@ struct loadparm_context {
 };
 
 
+struct loadparm_service *lp_default_service(struct loadparm_context *lp_ctx)
+{
+	return lp_ctx->sDefault;
+}
 
 /*
   return the parameter table
@@ -619,15 +592,13 @@ static const char *lp_string(const char *s)
  int fn_name(struct loadparm_context *lp_ctx) {return lp_ctx->globals->var_name;}
 
 #define FN_LOCAL_STRING(fn_name,val) \
- const char *fn_name(struct loadparm_service *service) {return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault.val)));}
-#define FN_LOCAL_CONST_STRING(fn_name,val) \
- const char *fn_name(struct loadparm_service *service) {return (const char *)(service != NULL && service->val != NULL) ? service->val : sDefault.val;}
+ const char *fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return(lp_string((const char *)((service != NULL && service->val != NULL) ? service->val : sDefault->val)));}
 #define FN_LOCAL_LIST(fn_name,val) \
- const char **fn_name(struct loadparm_service *service) {return(const char **)(service != NULL && service->val != NULL? service->val : sDefault.val);}
+ const char **fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return(const char **)(service != NULL && service->val != NULL? service->val : sDefault->val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
- bool fn_name(struct loadparm_service *service) {return((service != NULL)? service->val : sDefault.val);}
+ bool fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return((service != NULL)? service->val : sDefault->val);}
 #define FN_LOCAL_INTEGER(fn_name,val) \
- int fn_name(struct loadparm_service *service) {return((service != NULL)? service->val : sDefault.val);}
+ int fn_name(struct loadparm_service *service, struct loadparm_service *sDefault) {return((service != NULL)? service->val : sDefault->val);}
 
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_server_role, server_role)
 _PUBLIC_ FN_GLOBAL_LIST(lp_smb_ports, smb_ports)
@@ -722,8 +693,11 @@ _PUBLIC_ FN_GLOBAL_INTEGER(lp_security, security)
 _PUBLIC_ FN_GLOBAL_BOOL(lp_paranoid_server_security, paranoid_server_security)
 _PUBLIC_ FN_GLOBAL_INTEGER(lp_announce_as, announce_as)
 _PUBLIC_ FN_GLOBAL_LIST(lp_js_include, jsInclude)
-_PUBLIC_ FN_LOCAL_STRING(lp_servicename, szService)
-_PUBLIC_ FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
+const char *lp_servicename(const struct loadparm_service *service)
+{
+	return lp_string((const char *)service->szService);
+}
+
 _PUBLIC_ FN_LOCAL_STRING(lp_pathname, szPath)
 static FN_LOCAL_STRING(_lp_printername, szPrintername)
 _PUBLIC_ FN_LOCAL_LIST(lp_hostsallow, szHostsallow)
@@ -999,11 +973,11 @@ bool lp_parm_bool(struct loadparm_context *lp_ctx,
  * Initialise a service to the defaults.
  */
 
-static struct loadparm_service *init_service(TALLOC_CTX *mem_ctx)
+static struct loadparm_service *init_service(TALLOC_CTX *mem_ctx, struct loadparm_service *sDefault)
 {
 	struct loadparm_service *pservice =
 		talloc_zero(mem_ctx, struct loadparm_service);
-	copy_service(pservice, &sDefault, NULL);
+	copy_service(pservice, sDefault, NULL);
 	return pservice;
 }
 
@@ -1085,7 +1059,7 @@ struct loadparm_service *lp_add_service(struct loadparm_context *lp_ctx,
 		lp_ctx->iNumServices++;
 	}
 
-	lp_ctx->services[i] = init_service(lp_ctx->services);
+	lp_ctx->services[i] = init_service(lp_ctx->services, lp_ctx->sDefault);
 	if (lp_ctx->services[i] == NULL) {
 		DEBUG(0,("lp_add_service: out of memory!\n"));
 		return NULL;
@@ -1114,10 +1088,10 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
 		return false;
 
 	if (!(*(default_service->szPath))
-	    || strequal(default_service->szPath, sDefault.szPath)) {
+	    || strequal(default_service->szPath, lp_ctx->sDefault->szPath)) {
 		service->szPath = talloc_strdup(service, pszHomedir);
 	} else {
-		service->szPath = string_sub_talloc(service, lp_pathname(default_service),"%H", pszHomedir); 
+		service->szPath = string_sub_talloc(service, lp_pathname(default_service, lp_ctx->sDefault), "%H", pszHomedir); 
 	}
 
 	if (!(*(service->comment))) {
@@ -1139,7 +1113,7 @@ bool lp_add_home(struct loadparm_context *lp_ctx,
 static bool lp_add_hidden(struct loadparm_context *lp_ctx, const char *name,
 			  const char *fstype)
 {
-	struct loadparm_service *service = lp_add_service(lp_ctx, &sDefault, name);
+	struct loadparm_service *service = lp_add_service(lp_ctx, lp_ctx->sDefault, name);
 
 	if (service == NULL)
 		return false;
@@ -1243,7 +1217,7 @@ void *lp_parm_ptr(struct loadparm_context *lp_ctx,
 {
 	if (service == NULL) {
 		if (parm->class == P_LOCAL)
-			return ((char *)&sDefault)+parm->offset;
+			return ((char *)lp_ctx->sDefault)+parm->offset;
 		else if (parm->class == P_GLOBAL)
 			return ((char *)lp_ctx->globals)+parm->offset;
 		else return NULL;
@@ -2019,7 +1993,7 @@ static bool do_section(const char *pszSectionName, void *userdata)
 		/* issued by the post-processing of a previous section. */
 		DEBUG(2, ("Processing section \"[%s]\"\n", pszSectionName));
 
-		if ((lp_ctx->currentService = lp_add_service(lp_ctx, &sDefault,
+		if ((lp_ctx->currentService = lp_add_service(lp_ctx, lp_ctx->sDefault,
 							     pszSectionName))
 		    == NULL) {
 			DEBUG(0, ("Failed to add a new service\n"));
@@ -2032,12 +2006,12 @@ static bool do_section(const char *pszSectionName, void *userdata)
 
 
 /**
- * Determine if a partcular base parameter is currentl set to the default value.
+ * Determine if a particular base parameter is currently set to the default value.
  */
 
-static bool is_default(int i)
+static bool is_default(struct loadparm_service *sDefault, int i)
 {
-	void *def_ptr = ((char *)&sDefault) + parm_table[i].offset;
+	void *def_ptr = ((char *)sDefault) + parm_table[i].offset;
 	if (!defaults_saved)
 		return false;
 	switch (parm_table[i].type) {
@@ -2096,12 +2070,12 @@ static void dump_globals(struct loadparm_context *lp_ctx, FILE *f,
  * Display the contents of a single services record.
  */
 
-static void dump_a_service(struct loadparm_service * pService, FILE * f)
+static void dump_a_service(struct loadparm_service * pService, struct loadparm_service *sDefault, FILE * f)
 {
 	int i;
 	struct param_opt *data;
 
-	if (pService != &sDefault)
+	if (pService != sDefault)
 		fprintf(f, "\n[%s]\n", pService->szService);
 
 	for (i = 0; parm_table[i].label; i++)
@@ -2109,14 +2083,14 @@ static void dump_a_service(struct loadparm_service * pService, FILE * f)
 		    parm_table[i].offset != -1 &&
 		    (*parm_table[i].label != '-') &&
 		    (i == 0 || (parm_table[i].offset != parm_table[i - 1].offset))) {
-			if (pService == &sDefault) {
-				if (defaults_saved && is_default(i))
+			if (pService == sDefault) {
+				if (defaults_saved && is_default(sDefault, i))
 					continue;
 			} else {
 				if (equal_parameter(parm_table[i].type,
 						    ((char *)pService) +
 						    parm_table[i].offset,
-						    ((char *)&sDefault) +
+						    ((char *)sDefault) +
 						    parm_table[i].offset))
 					continue;
 			}
@@ -2189,7 +2163,7 @@ struct parm_struct *lp_next_parameter(struct loadparm_context *lp_ctx, int snum,
 				    !equal_parameter(parm_table[*i].type,
 						     ((char *)pService) +
 						     parm_table[*i].offset,
-						     ((char *)&sDefault) +
+						     ((char *)lp_ctx->sDefault) +
 						     parm_table[*i].offset))
 				{
 					return &parm_table[(*i)++];
@@ -2266,6 +2240,18 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 	talloc_set_destructor(lp_ctx, lp_destructor);
 	lp_ctx->bInGlobalSection = true;
 	lp_ctx->globals = talloc_zero(lp_ctx, struct loadparm_global);
+	lp_ctx->sDefault = talloc_zero(lp_ctx, struct loadparm_service);
+
+	lp_ctx->sDefault->iMaxPrintJobs = 1000;
+	lp_ctx->sDefault->bAvailable = true;
+	lp_ctx->sDefault->bBrowseable = true;
+	lp_ctx->sDefault->bRead_only = true;
+	lp_ctx->sDefault->bMap_archive = true;
+	lp_ctx->sDefault->bStrictLocking = true;
+	lp_ctx->sDefault->iCreate_mask = 0744;
+	lp_ctx->sDefault->iCreate_force_mode = 0000;
+	lp_ctx->sDefault->iDir_mask = 0755;
+	lp_ctx->sDefault->iDir_force_mode = 0000;
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
@@ -2276,7 +2262,7 @@ struct loadparm_context *loadparm_init(TALLOC_CTX *mem_ctx)
 		    !(lp_ctx->flags[i] & FLAG_CMDLINE)) {
 			char **r;
 			if (parm_table[i].class == P_LOCAL) {
-				r = (char **)(((char *)&sDefault) + parm_table[i].offset);
+				r = (char **)(((char *)lp_ctx->sDefault) + parm_table[i].offset);
 			} else {
 				r = (char **)(((char *)lp_ctx->globals) + parm_table[i].offset);
 			}
@@ -2512,21 +2498,21 @@ void lp_dump(struct loadparm_context *lp_ctx, FILE *f, bool show_defaults,
 
 	dump_globals(lp_ctx, f, show_defaults);
 
-	dump_a_service(&sDefault, f);
+	dump_a_service(lp_ctx->sDefault, lp_ctx->sDefault, f);
 
 	for (iService = 0; iService < maxtoprint; iService++)
-		lp_dump_one(f, show_defaults, lp_ctx->services[iService]);
+		lp_dump_one(f, show_defaults, lp_ctx->services[iService], lp_ctx->sDefault);
 }
 
 /**
  * Display the contents of one service in human-readable form.
  */
-void lp_dump_one(FILE *f, bool show_defaults, struct loadparm_service *service)
+void lp_dump_one(FILE *f, bool show_defaults, struct loadparm_service *service, struct loadparm_service *sDefault)
 {
 	if (service != NULL) {
 		if (service->szService[0] == '\0')
 			return;
-		dump_a_service(service, f);
+		dump_a_service(service, sDefault, f);
 	}
 }
 
@@ -2565,9 +2551,9 @@ struct loadparm_service *lp_service(struct loadparm_context *lp_ctx,
 /**
  * A useful volume label function.
  */
-const char *volume_label(struct loadparm_service *service)
+const char *volume_label(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
-	const char *ret = lp_volume(service);
+	const char *ret = lp_volume(service, sDefault);
 	if (!*ret)
 		return lp_servicename(service);
 	return ret;
@@ -2577,11 +2563,11 @@ const char *volume_label(struct loadparm_service *service)
 /**
  * If we are PDC then prefer us as DMB
  */
-const char *lp_printername(struct loadparm_service *service)
+const char *lp_printername(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
-	const char *ret = _lp_printername(service);
+	const char *ret = _lp_printername(service, sDefault);
 	if (ret == NULL || (ret != NULL && *ret == '\0'))
-		ret = lp_const_servicename(service);
+		ret = lp_servicename(service);
 
 	return ret;
 }
@@ -2590,9 +2576,9 @@ const char *lp_printername(struct loadparm_service *service)
 /**
  * Return the max print jobs per queue.
  */
-int lp_maxprintjobs(struct loadparm_service *service)
+int lp_maxprintjobs(struct loadparm_service *service, struct loadparm_service *sDefault)
 {
-	int maxjobs = (service != NULL) ? service->iMaxPrintJobs : sDefault.iMaxPrintJobs;
+	int maxjobs = (service != NULL) ? service->iMaxPrintJobs : sDefault->iMaxPrintJobs;
 	if (maxjobs <= 0 || maxjobs >= PRINT_MAX_JOBID)
 		maxjobs = PRINT_MAX_JOBID - 1;
 

@@ -329,14 +329,15 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
   reduce a name that contains .. components or repeated \ separators
   return NULL if it can't be reduced
 */
-static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, const char **fname, uint_t flags)
+static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx, 
+				 struct smb_iconv_convenience *iconv_convenience, 
+				 const char **fname, uint_t flags)
 {
 	codepoint_t c;
 	size_t c_size, len;
 	int i, num_components, err_count;
 	char **components;
 	char *p, *s, *ret;
-	struct smb_iconv_convenience *iconv_convenience = lp_iconv_convenience(global_loadparm);
 
 	s = talloc_strdup(mem_ctx, *fname);
 	if (s == NULL) return NT_STATUS_NO_MEMORY;
@@ -471,7 +472,7 @@ NTSTATUS pvfs_resolve_name(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 
 	if (NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_PATH_SYNTAX_BAD)) {
 		/* it might contain .. components which need to be reduced */
-		status = pvfs_reduce_name(*name, &cifs_name, flags);
+		status = pvfs_reduce_name(*name, lp_iconv_convenience(pvfs->ntvfs->ctx->lp_ctx), &cifs_name, flags);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}

@@ -59,6 +59,9 @@ struct parm_struct {
 	} def;
 };
 
+
+
+
 #define FLAG_DEFAULT    0x0001 /* this option was a default */
 #define FLAG_CMDLINE    0x0002 /* this option was set from the command line */
 

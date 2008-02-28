@@ -73,25 +73,25 @@ static const char *sclassic_string_option(struct share_config *scfg,
 	}
 
 	if (strcmp(opt_name, SHARE_PATH) == 0) {
-		return lp_pathname(s);
+		return lp_pathname(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_COMMENT) == 0) {
-		return lp_comment(s);
+		return lp_comment(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_VOLUME) == 0) {
-		return volume_label(s);
+		return volume_label(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_TYPE) == 0) {
-		if (lp_print_ok(s)) {
+		if (lp_print_ok(s, lp_default_service(lp_ctx))) {
 			return "PRINTER";
 		}
-		if (strcmp("NTFS", lp_fstype(s)) == 0) {
+		if (strcmp("NTFS", lp_fstype(s, lp_default_service(lp_ctx))) == 0) {
 			return "DISK";
 		}
-		return lp_fstype(s);
+		return lp_fstype(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_PASSWORD) == 0) {
@@ -131,27 +131,27 @@ static int sclassic_int_option(struct share_config *scfg, const char *opt_name, 
 	}
 
 	if (strcmp(opt_name, SHARE_CSC_POLICY) == 0) {
-		return lp_csc_policy(s);
+		return lp_csc_policy(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_MAX_CONNECTIONS) == 0) {
-		return lp_max_connections(s);
+		return lp_max_connections(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_CREATE_MASK) == 0) {
-		return lp_create_mask(s);
+		return lp_create_mask(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_DIR_MASK) == 0) {
-		return lp_dir_mask(s);
+		return lp_dir_mask(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_FORCE_DIR_MODE) == 0) {
-		return lp_force_dir_mode(s);
+		return lp_force_dir_mode(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_FORCE_CREATE_MODE) == 0) {
-		return lp_force_create_mode(s);
+		return lp_force_create_mode(s, lp_default_service(lp_ctx));
 	}
 
 
@@ -190,39 +190,39 @@ static bool sclassic_bool_option(struct share_config *scfg, const char *opt_name
 	}
 
 	if (strcmp(opt_name, SHARE_BROWSEABLE) == 0) {
-		return lp_browseable(s);
+		return lp_browseable(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_READONLY) == 0) {
-		return lp_readonly(s);
+		return lp_readonly(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_MAP_SYSTEM) == 0) {
-		return lp_map_system(s);
+		return lp_map_system(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_MAP_HIDDEN) == 0) {
-		return lp_map_hidden(s);
+		return lp_map_hidden(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_MAP_ARCHIVE) == 0) {
-		return lp_map_archive(s);
+		return lp_map_archive(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_STRICT_LOCKING) == 0) {
-		return lp_strict_locking(s);
+		return lp_strict_locking(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_STRICT_SYNC) == 0) {
-		return lp_strict_sync(s);
+		return lp_strict_sync(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_MSDFS_ROOT) == 0) {
-		return lp_msdfs_root(s);
+		return lp_msdfs_root(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_CI_FILESYSTEM) == 0) {
-		return lp_ci_filesystem(s);
+		return lp_ci_filesystem(s, lp_default_service(lp_ctx));
 	}
 
 	DEBUG(0,("request for unknown share bool option '%s'\n",
@@ -255,15 +255,15 @@ static const char **sclassic_string_list_option(TALLOC_CTX *mem_ctx, struct shar
 	}
 
 	if (strcmp(opt_name, SHARE_HOSTS_ALLOW) == 0) {
-		return lp_hostsallow(s);
+		return lp_hostsallow(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_HOSTS_DENY) == 0) {
-		return lp_hostsdeny(s);
+		return lp_hostsdeny(s, lp_default_service(lp_ctx));
 	}
 
 	if (strcmp(opt_name, SHARE_NTVFS_HANDLER) == 0) {
-		return lp_ntvfs_handler(s);
+		return lp_ntvfs_handler(s, lp_default_service(lp_ctx));
 	}
 
 	DEBUG(0,("request for unknown share list option '%s'\n",

@@ -462,7 +462,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32_t fault_code
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ncacn_push_auth(&rep->blob, call, &pkt, NULL);
+	status = ncacn_push_auth(&rep->blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx), &pkt, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -501,7 +501,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32_t reason)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ncacn_push_auth(&rep->blob, call, &pkt, NULL);
+	status = ncacn_push_auth(&rep->blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx), &pkt, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -642,8 +642,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ncacn_push_auth(&rep->blob, call, &pkt, 
-				  call->conn->auth_state.auth_info);
+	status = ncacn_push_auth(&rep->blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx), &pkt, call->conn->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -787,8 +786,7 @@ static NTSTATUS dcesrv_alter(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = ncacn_push_auth(&rep->blob, call, &pkt, 
-				  call->conn->auth_state.auth_info);
+	status = ncacn_push_auth(&rep->blob, call, lp_iconv_convenience(call->conn->dce_ctx->lp_ctx), &pkt, call->conn->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
