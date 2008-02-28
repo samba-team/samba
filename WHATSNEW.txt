@@ -168,7 +168,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       using remote idmap backends.
     * Fix LookupNames and LookupSids to use the same resolution
       heuristics as Windows XP.
-    * Fix lockups in Winbind when running nscd.
+    * Fix lookups in Winbind when running nscd.
     * UPN logon support in pam_winbind.
     * Add support for GNU linker scripts when build shared libraries
       (based on work by Julien Cristau <jcristau@debian.org> and James 
@@ -235,6 +235,10 @@ o   Jiri Sasek <Jiri.Sasek@Sun.COM>
 o   Karolin Seeger <ks@sernet.de>
     * Add deletelocalgroup and unmapunixgroup subcommand to "net sam".
     * Cleanup internal passdb functions.
+    * Improve error messages of net subcommands.
+    * Add 'net rap file user'.
+    * Change LDAP search filter to find machine accounts which
+      are not located in the user suffix.
 
 
 o   Simo Sorce <idra@samba.org>
