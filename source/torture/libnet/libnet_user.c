@@ -339,11 +339,12 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 	const char* logon_scripts[] = { "start_login.cmd", "login.bat", "start.cmd" };
 	const char* home_dirs[] = { "\\\\srv\\home", "\\\\homesrv\\home\\user", "\\\\pdcsrv\\domain" };
 	const char* home_drives[] = { "H:", "z:", "I:", "J:", "n:" };
+	const uint32_t flags[] = { (ACB_DISABLED | ACB_NORMAL),
+				   (ACB_NORMAL | ACB_PWNOEXP),
+				   (ACB_NORMAL) };
 	const char *homedir, *homedrive, *logonscript;
 	struct timeval now;
 	int i, testfld;
-
-	srandom((unsigned)time(NULL));
 
 	printf("Fields to change: [");
 
@@ -382,14 +383,14 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 
 		case home_directory:
 			continue_if_field_set(r->in.home_directory);
-			homedir = home_dirs[random() % (sizeof(home_dirs)/sizeof(char*))];
+			homedir = home_dirs[random() % ARRAY_SIZE(home_dirs)];
 			r->in.home_directory = talloc_strdup(mem_ctx, homedir);
 			fldname = "home_dir";
 			break;
 
 		case home_drive:
 			continue_if_field_set(r->in.home_drive);
-			homedrive = home_drives[random() % (sizeof(home_drives)/sizeof(char*))];
+			homedrive = home_drives[random() % ARRAY_SIZE(home_drives)];
 			r->in.home_drive = talloc_strdup(mem_ctx, homedrive);
 			fldname = "home_drive";
 			break;
@@ -403,7 +404,7 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 
 		case logon_script:
 			continue_if_field_set(r->in.logon_script);
-			logonscript = logon_scripts[random() % (sizeof(logon_scripts)/sizeof(char*))];
+			logonscript = logon_scripts[random() % ARRAY_SIZE(logon_scripts)];
 			r->in.logon_script = talloc_strdup(mem_ctx, logonscript);
 			fldname = "logon_script";
 			break;
@@ -420,6 +421,12 @@ static void set_test_changes(TALLOC_CTX *mem_ctx, struct libnet_ModifyUser *r,
 			now = timeval_add(&now, (random() % (31*24*60*60)), 0);
 			r->in.acct_expiry = (struct timeval *)talloc_memdup(mem_ctx, &now, sizeof(now));
 			fldname = "acct_expiry";
+			break;
+
+		case acct_flags:
+			continue_if_field_set(r->in.acct_flags);
+			r->in.acct_flags = flags[random() % ARRAY_SIZE(flags)];
+			fldname = "acct_flags";
 			break;
 
 		default:

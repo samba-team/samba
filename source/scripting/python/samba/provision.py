@@ -313,9 +313,9 @@ def setup_samdb_partitions(samdb_path, setup_path, message, lp, session_info,
                     "server_sort",
                     "extended_dn",
                     "asq",
-                    "samldb",
                     "rdn_name",
                     "objectclass",
+                    "samldb",
                     "kludge_acl",
                     "operational"]
     tdb_modules_list = [

@@ -156,7 +156,7 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	NTTIME now;
 	DEBUG(4,("authsam_account_ok: Checking SMB password for user %s\n", name_for_logs));
 
-	acct_flags = samdb_result_acct_flags(msg, "userAccountControl");
+	acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, domain_dn);
 	
 	acct_expiry = samdb_result_nttime(msg, "accountExpires", 0);
 	must_change_time = samdb_result_force_password_change(sam_ctx, mem_ctx, 
@@ -186,22 +186,20 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_ACCOUNT_EXPIRED;
 	}
 
-	if (!(acct_flags & ACB_PWNOEXP)) {
-		/* check for immediate expiry "must change at next logon" */
-		if (must_change_time == 0 && last_set_time != 0) {
-			DEBUG(1,("sam_account_ok: Account for user '%s' password must change!.\n", 
-				 name_for_logs));
-			return NT_STATUS_PASSWORD_MUST_CHANGE;
-		}
+	/* check for immediate expiry "must change at next logon" */
+	if (!(acct_flags & ACB_PWNOEXP) && (must_change_time == 0 && last_set_time != 0)) {
+		DEBUG(1,("sam_account_ok: Account for user '%s' password must change!.\n", 
+			 name_for_logs));
+		return NT_STATUS_PASSWORD_MUST_CHANGE;
+	}
 
-		/* check for expired password */
-		if ((must_change_time != 0) && (must_change_time < now)) {
-			DEBUG(1,("sam_account_ok: Account for user '%s' password expired!.\n", 
-				 name_for_logs));
-			DEBUG(1,("sam_account_ok: Password expired at '%s' unix time.\n", 
-				 nt_time_string(mem_ctx, must_change_time)));
-			return NT_STATUS_PASSWORD_EXPIRED;
-		}
+	/* check for expired password (dynamicly gnerated in samdb_result_acct_flags) */
+	if (acct_flags & ACB_PW_EXPIRED) {
+		DEBUG(1,("sam_account_ok: Account for user '%s' password expired!.\n", 
+			 name_for_logs));
+		DEBUG(1,("sam_account_ok: Password expired at '%s' unix time.\n", 
+			 nt_time_string(mem_ctx, must_change_time)));
+		return NT_STATUS_PASSWORD_EXPIRED;
 	}
 
 	/* Test workstation. Workstation list is comma separated. */
@@ -267,6 +265,7 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	struct dom_sid **groupSIDs = NULL;
 	struct dom_sid *account_sid;
 	struct dom_sid *primary_group_sid;
+	struct ldb_dn *domain_dn;
 	const char *str;
 	struct ldb_dn *ncname;
 	int i;
@@ -368,7 +367,10 @@ _PUBLIC_ NTSTATUS authsam_make_server_info(TALLOC_CTX *mem_ctx, struct ldb_conte
 	server_info->logon_count = samdb_result_uint(msg, "logonCount", 0);
 	server_info->bad_password_count = samdb_result_uint(msg, "badPwdCount", 0);
 
-	server_info->acct_flags = samdb_result_acct_flags(msg, "userAccountControl");
+	domain_dn = samdb_result_dn(sam_ctx, mem_ctx, msg_domain_ref, "nCName", NULL);
+
+	server_info->acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, 
+							  msg, domain_dn);
 
 	server_info->user_session_key = user_sess_key;
 	server_info->lm_session_key = lm_sess_key;

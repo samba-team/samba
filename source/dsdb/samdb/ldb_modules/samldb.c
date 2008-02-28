@@ -396,6 +396,7 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 						    struct ldb_message **ret_msg)
 {
 	int ret;
+	unsigned int group_type;
 	char *name;
 	struct ldb_message *msg2;
 	struct ldb_dn *dom_dn;
@@ -452,6 +453,26 @@ static int samldb_fill_group_object(struct ldb_module *module, const struct ldb_
 		}
 	}
 	
+	if (ldb_msg_find_element(msg2, "sAMAccountType") != NULL) {
+		ldb_asprintf_errstring(module->ldb, "sAMAccountType must not be specified");
+		talloc_free(mem_ctx);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	group_type = samdb_result_uint(msg2, "groupType", 0);
+	if (group_type == 0) {
+		ldb_asprintf_errstring(module->ldb, "groupType invalid");
+		talloc_free(mem_ctx);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	} else {
+		unsigned int account_type = samdb_gtype2atype(group_type);
+		ret = samdb_msg_add_uint(module->ldb, msg2, msg2,
+					 "sAMAccountType",
+					 account_type);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
+
 	/* Manage SID allocation, conflicts etc */
 	ret = samldb_handle_sid(module, mem_ctx, msg2, dom_dn); 
 
@@ -473,6 +494,7 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 	const char *rdn_name;
 	TALLOC_CTX *mem_ctx = talloc_new(msg);
 	const char *errstr;
+	unsigned int user_account_control;
 	if (!mem_ctx) {
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
@@ -485,36 +507,15 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 		return LDB_ERR_OPERATIONS_ERROR;
 	}
 
-	if (samdb_find_attribute(module->ldb, msg, "objectclass", "computer") != NULL) {
-
-		ret = samdb_copy_template(module->ldb, msg2, 
-					  "computer",
-					  &errstr);
-		if (ret) {
-			ldb_asprintf_errstring(module->ldb, 
-					       "samldb_fill_user_or_computer_object: "
-					       "Error copying computer template: %s",
-					       errstr);
-			talloc_free(mem_ctx);
-			return ret;
-		}
-	} else {
-		ret = samdb_copy_template(module->ldb, msg2, 
-					  "user",
-					  &errstr);
-		if (ret) {
-			ldb_asprintf_errstring(module->ldb, 
-					       "samldb_fill_user_or_computer_object: Error copying user template: %s\n",
-					       errstr);
-			talloc_free(mem_ctx);
-			return ret;
-		}
-		/* readd user objectclass */
-		ret = samdb_find_or_add_value(module->ldb, msg2, "objectclass", "user");
-		if (ret) {
-			talloc_free(mem_ctx);
-			return ret;
-		}
+	ret = samdb_copy_template(module->ldb, msg2, 
+				  "user",
+				  &errstr);
+	if (ret) {
+		ldb_asprintf_errstring(module->ldb, 
+				       "samldb_fill_user_or_computer_object: Error copying user template: %s\n",
+				       errstr);
+		talloc_free(mem_ctx);
+		return ret;
 	}
 
 	rdn_name = ldb_dn_get_rdn_name(msg2->dn);
@@ -545,14 +546,30 @@ static int samldb_fill_user_or_computer_object(struct ldb_module *module, const 
 		}
 	}
 
-	/*
-	  TODO: useraccountcontrol: setting value 0 gives 0x200 for users
-	*/
+	if (ldb_msg_find_element(msg2, "sAMAccountType") != NULL) {
+		ldb_asprintf_errstring(module->ldb, "sAMAccountType must not be specified");
+		talloc_free(mem_ctx);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+	user_account_control = samdb_result_uint(msg2, "userAccountControl", 0);
+	if (user_account_control == 0) {
+		ldb_asprintf_errstring(module->ldb, "userAccountControl invalid");
+		talloc_free(mem_ctx);
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	} else {
+		unsigned int account_type = samdb_uf2atype(user_account_control);
+		ret = samdb_msg_add_uint(module->ldb, msg2, msg2,
+					 "sAMAccountType",
+					 account_type);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+	}
 
 	/* Manage SID allocation, conflicts etc */
 	ret = samldb_handle_sid(module, mem_ctx, msg2, dom_dn); 
 
-	/* TODO: objectCategory, userAccountControl, badPwdCount, codePage, countryCode, badPasswordTime, lastLogoff, lastLogon, pwdLastSet, primaryGroupID, accountExpires, logonCount */
+	/* TODO: userAccountControl, badPwdCount, codePage, countryCode, badPasswordTime, lastLogoff, lastLogon, pwdLastSet, primaryGroupID, accountExpires, logonCount */
 
 	if (ret == 0) {
 		*ret_msg = msg2;
@@ -689,7 +706,7 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	}
 
 	/* is user or computer? */
-	if ((samdb_find_attribute(module->ldb, msg, "objectclass", "user") != NULL) ||
+	if ((samdb_find_attribute(module->ldb, msg, "objectclass", "user") != NULL) || 
 	    (samdb_find_attribute(module->ldb, msg, "objectclass", "computer") != NULL)) {
 		/*  add all relevant missing objects */
 		ret = samldb_fill_user_or_computer_object(module, msg, &msg2);
@@ -745,6 +762,53 @@ static int samldb_add(struct ldb_module *module, struct ldb_request *req)
 	return ret;
 }
 
+/* modify */
+static int samldb_modify(struct ldb_module *module, struct ldb_request *req)
+{
+	struct ldb_message *msg;
+	struct ldb_message_element *el, *el2;
+	int ret;
+	unsigned int group_type, user_account_control, account_type;
+	if (ldb_msg_find_element(req->op.mod.message, "sAMAccountType") != NULL) {
+		ldb_asprintf_errstring(module->ldb, "sAMAccountType must not be specified");
+		return LDB_ERR_UNWILLING_TO_PERFORM;
+	}
+
+	el = ldb_msg_find_element(req->op.mod.message, "groupType");
+	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+		req->op.mod.message = msg = ldb_msg_copy_shallow(req, req->op.mod.message);
+
+		group_type = strtoul((const char *)el->values[0].data, NULL, 0);
+		account_type =  samdb_gtype2atype(group_type);
+		ret = samdb_msg_add_uint(module->ldb, msg, msg,
+					 "sAMAccountType",
+					 account_type);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		el2 = ldb_msg_find_element(msg, "sAMAccountType");
+		el2->flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	el = ldb_msg_find_element(req->op.mod.message, "userAccountControl");
+	if (el && el->flags & (LDB_FLAG_MOD_ADD|LDB_FLAG_MOD_REPLACE) && el->num_values == 1) {
+		req->op.mod.message = msg = ldb_msg_copy_shallow(req, req->op.mod.message);
+
+		user_account_control = strtoul((const char *)el->values[0].data, NULL, 0);
+		account_type = samdb_uf2atype(user_account_control);
+		ret = samdb_msg_add_uint(module->ldb, msg, msg,
+					 "sAMAccountType",
+					 account_type);
+		if (ret != LDB_SUCCESS) {
+			return ret;
+		}
+		el2 = ldb_msg_find_element(msg, "sAMAccountType");
+		el2->flags = LDB_FLAG_MOD_REPLACE;
+	}
+	return ldb_next_request(module, req);
+}
+
+
 static int samldb_init(struct ldb_module *module)
 {
 	return ldb_next_init(module);
@@ -754,4 +818,5 @@ _PUBLIC_ const struct ldb_module_ops ldb_samldb_module_ops = {
 	.name          = "samldb",
 	.init_context  = samldb_init,
 	.add           = samldb_add,
+	.modify        = samldb_modify
 };
