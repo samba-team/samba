@@ -196,6 +196,7 @@ static ADS_STATUS libnet_unjoin_connect_ads(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************
+ join a domain using ADS (LDAP mods)
 ****************************************************************/
 
 static ADS_STATUS libnet_join_precreate_machine_acct(TALLOC_CTX *mem_ctx,
@@ -204,6 +205,7 @@ static ADS_STATUS libnet_join_precreate_machine_acct(TALLOC_CTX *mem_ctx,
 	ADS_STATUS status;
 	LDAPMessage *res = NULL;
 	const char *attrs[] = { "dn", NULL };
+	bool moved = false;
 
 	status = ads_search_dn(r->in.ads, &res, r->in.account_ou, attrs);
 	if (!ADS_ERR_OK(status)) {
@@ -215,15 +217,40 @@ static ADS_STATUS libnet_join_precreate_machine_acct(TALLOC_CTX *mem_ctx,
 		return ADS_ERROR_LDAP(LDAP_NO_SUCH_OBJECT);
 	}
 
+	ads_msgfree(r->in.ads, res);
+
+	/* Attempt to create the machine account and bail if this fails.
+	   Assume that the admin wants exactly what they requested */
+
 	status = ads_create_machine_acct(r->in.ads,
 					 r->in.machine_name,
 					 r->in.account_ou);
-	ads_msgfree(r->in.ads, res);
 
-	if ((status.error_type == ENUM_ADS_ERROR_LDAP) &&
-	    (status.err.rc == LDAP_ALREADY_EXISTS)) {
+	if (ADS_ERR_OK(status)) {
+		DEBUG(1,("machine account creation created\n"));
+		return status;
+	} else  if ((status.error_type == ENUM_ADS_ERROR_LDAP) &&
+		    (status.err.rc == LDAP_ALREADY_EXISTS)) {
 		status = ADS_SUCCESS;
 	}
+
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(1,("machine account creation failed\n"));
+		return status;
+	}
+
+	status = ads_move_machine_acct(r->in.ads,
+				       r->in.machine_name,
+				       r->in.account_ou,
+				       &moved);
+	if (!ADS_ERR_OK(status)) {
+		DEBUG(1,("failure to locate/move pre-existing "
+			"machine account\n"));
+		return status;
+	}
+
+	DEBUG(1,("The machine account %s the specified OU.\n",
+		moved ? "was moved into" : "already exists in"));
 
 	return status;
 }
@@ -300,6 +327,7 @@ static ADS_STATUS libnet_join_find_machine_acct(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************
+ Set a machines dNSHostName and servicePrincipalName attributes
 ****************************************************************/
 
 static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
@@ -311,10 +339,14 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	const char *spn_array[3] = {NULL, NULL, NULL};
 	char *spn = NULL;
 
+	/* Find our DN */
+
 	status = libnet_join_find_machine_acct(mem_ctx, r);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
+
+	/* Windows only creates HOST/shortname & HOST/fqdn. */
 
 	spn = talloc_asprintf(mem_ctx, "HOST/%s", r->in.machine_name);
 	if (!spn) {
@@ -338,6 +370,8 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	if (!mods) {
 		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 	}
+
+	/* fields of primary importance */
 
 	status = ads_mod_str(mem_ctx, &mods, "dNSHostName", my_fqdn);
 	if (!ADS_ERR_OK(status)) {
@@ -366,6 +400,8 @@ static ADS_STATUS libnet_join_set_machine_upn(TALLOC_CTX *mem_ctx,
 		return ADS_SUCCESS;
 	}
 
+	/* Find our DN */
+
 	status = libnet_join_find_machine_acct(mem_ctx, r);
 	if (!ADS_ERR_OK(status)) {
 		return status;
@@ -381,10 +417,14 @@ static ADS_STATUS libnet_join_set_machine_upn(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	/* now do the mods */
+
 	mods = ads_init_mods(mem_ctx);
 	if (!mods) {
 		return ADS_ERROR_LDAP(LDAP_NO_MEMORY);
 	}
+
+	/* fields of primary importance */
 
 	status = ads_mod_str(mem_ctx, &mods, "userPrincipalName", r->in.upn);
 	if (!ADS_ERR_OK(status)) {
@@ -409,10 +449,14 @@ static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
 		return ADS_SUCCESS;
 	}
 
+	/* Find our DN */
+
 	status = libnet_join_find_machine_acct(mem_ctx, r);
 	if (!ADS_ERR_OK(status)) {
 		return status;
 	}
+
+	/* now do the mods */
 
 	mods = ads_init_mods(mem_ctx);
 	if (!mods) {
@@ -423,6 +467,8 @@ static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
 	if (!os_sp) {
 		return ADS_ERROR(LDAP_NO_MEMORY);
 	}
+
+	/* fields of primary importance */
 
 	status = ads_mod_str(mem_ctx, &mods, "operatingSystem",
 			     r->in.os_name);
@@ -481,6 +527,8 @@ static bool libnet_join_derive_salting_principal(TALLOC_CTX *mem_ctx,
 		return false;
 	}
 
+	/* go ahead and setup the default salt */
+
 	std_salt = kerberos_standard_des_salt();
 	if (!std_salt) {
 		libnet_join_set_error_string(mem_ctx, r,
@@ -494,6 +542,8 @@ static bool libnet_join_derive_salting_principal(TALLOC_CTX *mem_ctx,
 	}
 
 	SAFE_FREE(std_salt);
+
+	/* if it's a Windows functional domain, we have to look for the UPN */
 
 	if (domain_func == DS_DOMAIN_FUNCTION_2000) {
 		char *upn;
@@ -565,6 +615,7 @@ static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
 #endif /* WITH_ADS */
 
 /****************************************************************
+ Store the machine password and domain SID
 ****************************************************************/
 
 static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
@@ -573,6 +624,7 @@ static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 	if (!secrets_store_domain_sid(r->out.netbios_domain_name,
 				      r->out.domain_sid))
 	{
+		DEBUG(1,("Failed to save domain sid\n"));
 		return false;
 	}
 
@@ -580,6 +632,7 @@ static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 					    r->out.netbios_domain_name,
 					    SEC_CHAN_WKSTA))
 	{
+		DEBUG(1,("Failed to save machine password\n"));
 		return false;
 	}
 
@@ -587,6 +640,7 @@ static bool libnet_join_joindomain_store_secrets(TALLOC_CTX *mem_ctx,
 }
 
 /****************************************************************
+ Do the domain join
 ****************************************************************/
 
 static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
@@ -631,6 +685,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &status);
 	if (!pipe_hnd) {
+		DEBUG(0,("Error connecting to LSA pipe. Error was %s\n",
+			nt_errstr(status)));
 		goto done;
 	}
 
@@ -667,8 +723,12 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
 	cli_rpc_pipe_close(pipe_hnd);
 
+	/* Open the domain */
+
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &status);
 	if (!pipe_hnd) {
+		DEBUG(0,("Error connecting to SAM pipe. Error was %s\n",
+			nt_errstr(status)));
 		goto done;
 	}
 
@@ -689,6 +749,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	/* Create domain user */
+
 	acct_name = talloc_asprintf(mem_ctx, "%s$", r->in.machine_name);
 	strlower_m(acct_name);
 
@@ -703,6 +765,10 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 			SAMR_USER_ACCESS_SET_ATTRIBUTES;
 		uint32_t access_granted = 0;
 
+		/* Don't try to set any acb_info flags other than ACB_WSTRUST */
+
+		DEBUG(10,("Creating account with flags: %d\n", acct_flags));
+
 		status = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
 						 &domain_pol,
 						 &lsa_acct_name,
@@ -711,12 +777,33 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 						 &user_pol,
 						 &access_granted,
 						 &user_rid);
+		if (!NT_STATUS_IS_OK(status) &&
+		    !NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
+
+			DEBUG(10,("Creation of workstation account failed: %s\n",
+				nt_errstr(status)));
+
+			/* If NT_STATUS_ACCESS_DENIED then we have a valid
+			   username/password combo but the user does not have
+			   administrator access. */
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_ACCESS_DENIED)) {
+				libnet_join_set_error_string(mem_ctx, r,
+					"User specified does not have "
+					"administrator privileges");
+			}
+
+			return status;
+		}
+
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
 			if (!(r->in.join_flags &
 			      WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED)) {
 				goto done;
 			}
 		}
+
+		/* We *must* do this.... don't ask... */
 
 		if (NT_STATUS_IS_OK(status)) {
 			rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
@@ -734,11 +821,15 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	}
 
 	if (name_types.ids[0] != SID_NAME_USER) {
+		DEBUG(0,("%s is not a user account (type=%d)\n",
+			acct_name, name_types.ids[0]));
 		status = NT_STATUS_INVALID_WORKSTATION;
 		goto done;
 	}
 
 	user_rid = user_rids.ids[0];
+
+	/* Open handle on user */
 
 	status = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
 				      &domain_pol,
@@ -748,6 +839,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
 	}
+
+	/* Create a random machine account password and generate the hash */
 
 	E_md4hash(r->in.machine_password, md4_trust_password);
 	encode_pw_buffer(pwbuf, r->in.machine_password, STR_UNICODE);
@@ -764,6 +857,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	SamOEMhashBlob(pwbuf, sizeof(pwbuf), &digested_session_key);
 	memcpy(&pwbuf[516], md5buffer, sizeof(md5buffer));
 
+	/* Fill in the additional account flags now */
+
 	acb_info |= ACB_PWNOEXP;
 	if (r->out.domain_is_ad) {
 #if !defined(ENCTYPE_ARCFOUR_HMAC)
@@ -771,6 +866,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 #endif
 		;;
 	}
+
+	/* Set password and account flags on machine account */
 
 	ZERO_STRUCT(user_info.info25);
 
@@ -785,6 +882,9 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					 25,
 					 &user_info);
 	if (!NT_STATUS_IS_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"Failed to set password for machine account (%s)\n",
+			nt_errstr(status));
 		goto done;
 	}
 
@@ -973,8 +1073,12 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	/* Open the domain */
+
 	pipe_hnd = cli_rpc_pipe_open_noauth(cli, PI_SAMR, &status);
 	if (!pipe_hnd) {
+		DEBUG(0,("Error connecting to SAM pipe. Error was %s\n",
+			nt_errstr(status)));
 		goto done;
 	}
 
@@ -995,6 +1099,8 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	/* Create domain user */
+
 	acct_name = talloc_asprintf(mem_ctx, "%s$", r->in.machine_name);
 	strlower_m(acct_name);
 
@@ -1012,11 +1118,15 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	}
 
 	if (name_types.ids[0] != SID_NAME_USER) {
+		DEBUG(0, ("%s is not a user account (type=%d)\n", acct_name,
+			name_types.ids[0]));
 		status = NT_STATUS_INVALID_WORKSTATION;
 		goto done;
 	}
 
 	user_rid = user_rids.ids[0];
+
+	/* Open handle on user */
 
 	status = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
 				      &domain_pol,
@@ -1027,6 +1137,8 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	/* Get user info */
+
 	status = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
 					   &user_pol,
 					   16,
@@ -1035,6 +1147,8 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 		goto done;
 	}
+
+	/* now disable and setuser info */
 
 	info->info16.acct_flags |= ACB_DISABLED;
 
