@@ -1434,9 +1434,9 @@ int net_ads_join(int argc, const char **argv)
 {
 	NTSTATUS nt_status;
 	TALLOC_CTX *ctx = NULL;
-	struct libnet_JoinCtx *r;
+	struct libnet_JoinCtx *r = NULL;
 	const char *domain = lp_realm();
-	WERROR werr;
+	WERROR werr = WERR_SETUP_NOT_JOINED;
 	bool createupn = False;
 	const char *machineupn = NULL;
 	const char *create_in_ou = NULL;
@@ -1447,6 +1447,7 @@ int net_ads_join(int argc, const char **argv)
 	nt_status = check_ads_config();
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, "Invalid configuration.  Exiting....\n");
+		werr = ntstatus_to_werror(nt_status);
 		goto fail;
 	}
 
@@ -1454,13 +1455,12 @@ int net_ads_join(int argc, const char **argv)
 
 	werr = libnet_init_JoinCtx(ctx, &r);
 	if (!W_ERROR_IS_OK(werr)) {
-		nt_status = werror_to_ntstatus(werr);
 		goto fail;
 	}
 
 	if (!(ctx = talloc_init("net_ads_join"))) {
 		d_fprintf(stderr, "Could not initialise talloc context.\n");
-		nt_status = NT_STATUS_NO_MEMORY;
+		werr = WERR_NOMEM;
 		goto fail;
 	}
 
@@ -1474,21 +1474,21 @@ int net_ads_join(int argc, const char **argv)
 		else if ( !StrnCaseCmp(argv[i], "createcomputer", strlen("createcomputer")) ) {
 			if ( (create_in_ou = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, "Please supply a valid OU path.\n");
-				nt_status = NT_STATUS_INVALID_PARAMETER;
+				werr = WERR_INVALID_PARAM;
 				goto fail;
 			}
 		}
 		else if ( !StrnCaseCmp(argv[i], "osName", strlen("osName")) ) {
 			if ( (os_name = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, "Please supply a operating system name.\n");
-				nt_status = NT_STATUS_INVALID_PARAMETER;
+				werr = WERR_INVALID_PARAM;
 				goto fail;
 			}
 		}
 		else if ( !StrnCaseCmp(argv[i], "osVer", strlen("osVer")) ) {
 			if ( (os_version = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, "Please supply a valid operating system version.\n");
-				nt_status = NT_STATUS_INVALID_PARAMETER;
+				werr = WERR_INVALID_PARAM;
 				goto fail;
 			}
 		}
@@ -1565,12 +1565,11 @@ int net_ads_join(int argc, const char **argv)
 fail:
 	/* issue an overall failure message at the end. */
 	d_printf("Failed to join domain: %s\n",
-		r->out.error_string ? r->out.error_string :
+		r && r->out.error_string ? r->out.error_string :
 		get_friendly_werror_msg(werr));
 	TALLOC_FREE( ctx );
 
         return -1;
-
 }
 
 /*******************************************************************
