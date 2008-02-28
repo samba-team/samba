@@ -247,7 +247,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 				       &rparam, &param_len,
 				       &rdata, &data_len) &&
                     cli_is_dos_error(cli)) {
-			/* we need to work around a Win95 bug - sometimes
+			/* We need to work around a Win95 bug - sometimes
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
 			uint32 ecode;
@@ -256,6 +256,20 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SAFE_FREE(rparam);
 
 			cli_dos_error(cli, &eclass, &ecode);
+
+			/*
+			 * OS/2 might return "no more files",
+			 * which just tells us, that searchcount is zero
+			 * in this search.
+			 * Guenter Kukkukk <linux@kukkukk.com>
+			 */
+
+			if (eclass == ERRDOS && ecode == ERRnofiles) {
+				ff_searchcount = 0;
+				cli_reset_error(cli);
+				break;
+			}
+
 			if (eclass != ERRSRV || ecode != ERRerror)
 				break;
 			smb_msleep(100);

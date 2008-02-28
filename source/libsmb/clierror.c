@@ -469,3 +469,15 @@ void cli_set_nt_error(struct cli_state *cli, NTSTATUS status)
 	SSVAL(cli->inbuf,smb_flg2, SVAL(cli->inbuf,smb_flg2)|FLAGS2_32_BIT_ERROR_CODES);
 	SIVAL(cli->inbuf, smb_rcls, NT_STATUS_V(status));
 }
+
+/* Reset an error. */
+
+void cli_reset_error(struct cli_state *cli)
+{
+        if (SVAL(cli->inbuf,smb_flg2) & FLAGS2_32_BIT_ERROR_CODES) {
+		SIVAL(cli->inbuf, smb_rcls, NT_STATUS_V(NT_STATUS_OK));
+	} else {
+		SCVAL(cli->inbuf,smb_rcls,0);
+		SSVAL(cli->inbuf,smb_err,0);
+	}
+}
