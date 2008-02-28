@@ -138,15 +138,15 @@ o   Stefan Metzmacher <metze@samba.org>
       in winbindd.
     * Fix for a crash bug in pidl generated client code.
       This could have happend with [in,out,unique] pointers
-      when the clients sends a valid pointer, but the server
-      reponse with a NULL pointer (as samba-3.0.26a do for some calls).
-    * Change NTSTAUS into enum ndr_err_code in librpc/ndr.
+      when the client sends a valid pointer, but the server
+      responds with a NULL pointer (as samba-3.0.26a does for some calls).
+    * Change NTSTATUS into enum ndr_err_code in librpc/ndr.
     * Remove unused calls in the struct based winbindd protocol.
     * Add --configfile option to wbinfo.
     * Convert winbind_env_set(), winbind_on() and winbind_off() into macros.
     * Return rids and other_sids arrays in WBFLAG_PAM_INFO3_TEXT mode.
-    * Implement wbcErrorString() and wbcAuthenticateUserEx()
-    * Convert auth_winbind to use wbcAuthenticateUserEx()
+    * Implement wbcErrorString() and wbcAuthenticateUserEx().
+    * Convert auth_winbind to use wbcAuthenticateUserEx().
 
 
 o   Karolin Seeger <ks@sernet.de>
