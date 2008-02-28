@@ -56,6 +56,7 @@ struct smb_composite_fetchfile {
 		const char *workgroup;
 		const char *filename;
 		struct smbcli_options options;
+		struct resolve_context *resolve_ctx;
 	} in;
 	struct {
 		uint8_t *data;
