@@ -1318,8 +1318,8 @@ static NTSTATUS init_samr_dispinfo_4(TALLOC_CTX *ctx,
 
 	for (i = 0; i < num_entries ; i++) {
 
-		init_lsa_AsciiString(&r->entries[i].account_name,
-				     entries[i].account_name);
+		init_lsa_AsciiStringLarge(&r->entries[i].account_name,
+					  entries[i].account_name);
 
 		r->entries[i].idx = start_idx+i+1;
 	}
@@ -1354,8 +1354,8 @@ static NTSTATUS init_samr_dispinfo_5(TALLOC_CTX *ctx,
 
 	for (i = 0; i < num_entries ; i++) {
 
-		init_lsa_AsciiString(&r->entries[i].account_name,
-				     entries[i].account_name);
+		init_lsa_AsciiStringLarge(&r->entries[i].account_name,
+					  entries[i].account_name);
 
 		r->entries[i].idx = start_idx+i+1;
 	}
