@@ -109,38 +109,33 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 
 	/* Loop through interfaces, looking for given IP address */
 	for (i=n-1; i>=0; i--) {
-		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != 0) {
+		if (ioctl(fd, SIOCGIFFLAGS, &ifr[i]) == -1) {
 			freeifaddrs(*ifap);
+			return -1;
 		}
 
 		curif = calloc(1, sizeof(struct ifaddrs));
+		curif->ifa_name = strdup(ifr[i].ifr_name);
+		curif->ifa_flags = ifr[i].ifr_flags;
+		curif->ifa_dstaddr = NULL;
+		curif->ifa_data = NULL;
+		curif->ifa_next = NULL;
+
+		curif->ifa_addr = NULL
+		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != -1) {
+			curif->ifa_addr = sockaddr_dup(&ifr[i].ifr_addr);
+		}
+
+		curif->ifa_netmask = NULL;
+		if (ioctl(fd, SIOCGIFNETMASK, &ifr[i]) != -1) {
+			curif->ifa_netmask = sockaddr_dup(&ifr[i].ifr_addr);
+		}
+
 		if (lastif == NULL) {
 			*ifap = curif;
 		} else {
 			lastif->ifa_next = curif;
 		}
-
-		curif->ifa_name = strdup(ifr[i].ifr_name);
-		curif->ifa_addr = sockaddr_dup(&ifr[i].ifr_addr);
-		curif->ifa_dstaddr = NULL;
-		curif->ifa_data = NULL;
-		curif->ifa_next = NULL;
-		curif->ifa_netmask = NULL;
-
-		if (ioctl(fd, SIOCGIFFLAGS, &ifr[i]) != 0) {
-			freeifaddrs(*ifap);
-			return -1;
-		}  
-
-		curif->ifa_flags = ifr[i].ifr_flags;
-
-		if (ioctl(fd, SIOCGIFNETMASK, &ifr[i]) != 0) {
-			freeifaddrs(*ifap);
-			return -1;
-		}  
-
-		curif->ifa_netmask = sockaddr_dup(&ifr[i].ifr_addr);
-
 		lastif = curif;
 	}
 
