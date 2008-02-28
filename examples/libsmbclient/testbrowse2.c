@@ -93,8 +93,8 @@ SMBCCTX* create_smbctx(){
 
     if ((ctx = smbc_new_context()) == NULL) return NULL;
 
-    ctx->debug = debuglevel;
-    ctx->callbacks.auth_fn = smbc_auth_fn;
+    smbc_setDebug(ctx, debuglevel);
+    smbc_setFunctionAuthData(ctx, smbc_auth_fn);
 
     if (smbc_init_context(ctx) == NULL){
 	smbc_free_context(ctx, 1);
@@ -105,7 +105,7 @@ SMBCCTX* create_smbctx(){
 }
 
 void delete_smbctx(SMBCCTX* ctx){
-    ctx->callbacks.purge_cached_fn(ctx);
+    smbc_getFunctionPurgeCachedServers(ctx)(ctx);
     smbc_free_context(ctx, 1);
 }
 
@@ -114,8 +114,9 @@ smbitem* get_smbitem_list(SMBCCTX *ctx, char *smb_path){
     struct smbc_dirent	*dirent;
     smbitem		*list = NULL, *item;
 
-    if ((fd = ctx->opendir(ctx, smb_path)) == NULL) return NULL;
-    while((dirent = ctx->readdir(ctx, fd)) != NULL){
+    if ((fd = smbc_getFunctionOpendir(ctx)(ctx, smb_path)) == NULL)
+        return NULL;
+    while((dirent = smbc_getFunctionReaddir(ctx)(ctx, fd)) != NULL){
 	if (strcmp(dirent->name, "") == 0) continue;
 	if (strcmp(dirent->name, ".") == 0) continue;
 	if (strcmp(dirent->name, "..") == 0) continue;
@@ -128,7 +129,7 @@ smbitem* get_smbitem_list(SMBCCTX *ctx, char *smb_path){
 	strcpy(item->name, dirent->name);
 	list = item;
     }
-    ctx->close_fn(ctx, fd);
+    smbc_getFunctionClose(ctx)(ctx, fd);
     return /* smbitem_list_sort */ (list);    
         
 }
@@ -167,7 +168,7 @@ void recurse(SMBCCTX *ctx, char *smb_group, char *smb_path, int maxlen){
 		    delete_smbctx(ctx1);
 		}else{
 		    recurse(ctx, smb_group, smb_path, maxlen);
-		    ctx->callbacks.purge_cached_fn(ctx);
+		    smbc_getFunctionPurgeCachedServers(ctx)(ctx);
 		}
 		break;
 	    case SMBC_FILE_SHARE:
@@ -181,7 +182,7 @@ void recurse(SMBCCTX *ctx, char *smb_group, char *smb_path, int maxlen){
 		if (list->type != SMBC_FILE){
 		    recurse(ctx, smb_group, smb_path, maxlen);
 		    if (list->type == SMBC_FILE_SHARE)
-			ctx->callbacks.purge_cached_fn(ctx);
+			smbc_getFunctionPurgeCachedServers(ctx)(ctx);
 		}
 		break;
 	}
