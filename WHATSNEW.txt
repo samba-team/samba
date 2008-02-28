@@ -51,7 +51,7 @@ Now Licensed under the GNU GPLv3
 The Samba Team has adopted the Version 3 of the GNU General Public
 License for the 3.2 and later releases.   The GPLv3 is the updated
 version of the GPLv2 license under which Samba is currently
-distributed. It has been updated to improvecompatibility with other 
+distributed. It has been updated to improve compatibility with other
 licenses and to make it easier to adopt internationally, and is an 
 improved version of the license to better suit the needs of Free
 Software in the 21st Century.
@@ -120,7 +120,12 @@ smb.conf changes
 
 Changes since 3.2.0pre1:
 -----------------------
-
+o   Kai Blin <kai@samba.org>
+    * Added support for an SMB_CONF_PATH environment variable
+      containing the path to smb.conf.
+    * Various fixes to ntlm_auth.
+    * make test now supports more extensive SPOOLSS testing using vlp.
+    * Correctly handle mixed-case hostnames in NTLMv2 authentication.
 
 Original 3.2.0pre1 commits:
 ---------------------------
