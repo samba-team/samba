@@ -124,6 +124,39 @@ smb.conf changes
 
 Changes since 3.2.0pre1:
 -----------------------
+
+o   Michael Adam <obnox@samba.org>
+    * Add library for access to the registry configuration data.
+    * BUG 5023: Separate NFS4 and POSIX ACL code in file access checks.
+    * BUG 4308: Fix Excel save operation ACL bug.
+    * Refactor and consolidate logic for retrieving the machine
+      trust password information.
+    * VFS API cleanup (remove redundant parameter).
+    * BUG 4801: Correctly implement LSA lookup levels for LookupNames.
+    * Add new option "debug class" to control printing of the debug class.
+      in debug headers.
+    * Enable building of the zfsacl and notify_fam vfs modules.
+    * BUG 5083: Fix memleak in solarisacl module.
+    * BUG 5063: Fix build on RHEL5.
+    * New smb.conf parameter "config backend = registry" to enable registry
+      only configuration.
+    * Libreplace fixes.
+    * Build fixes.
+    * Initial support for using subsystems as shared libraries.
+      Use talloc, tdb, and libnetapi as shared libraries internally.
+
+
+o   Jeremy Allison <jra@samba.org>
+    * Added support for IPv6 client and server connections.
+    * Add in the recvfile entry to the VFS layer.
+    * Removal of pstring data type.
+    * Remove unused utilities: smbctool and rpctorture.
+    * Fix service principal detection to match Windows Vista
+      (based on work from Andreas Schneider).
+    * Additional work on the session data privacy for clients
+      implementing the Unix CIFS Extensions.
+
+
 o   Kai Blin <kai@samba.org>
     * Added support for an SMB_CONF_PATH environment variable
       containing the path to smb.conf.
@@ -132,7 +165,31 @@ o   Kai Blin <kai@samba.org>
     * Correctly handle mixed-case hostnames in NTLMv2 authentication.
 
 
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Add Winbind client library.
+    * Decouple static linking between smbd and winbindd's client
+      interface.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Enhance client and server remote registry access.
+    * Add client calls for remotely joining a computer to a domain
+      (including calls from "net dom" command).
+    * Add libnetapi.so library for joining domains including
+      sample GTK+ app.
+
+
+o   Steve Langasek <vorlon@debian.org>
+    * Integrate 2 out of 3 --with-fhs patches from Debian packaging
+      for better adherence to the FHS standard.
+
+
 o  Volker Lendecke <vl@samba.org>
+    * Add talloc_stackframe() and talloc_pool() features.
+    * Removal of pstring data type.
+    * Add generic a in-memory cache.
+    * Import the Linux red-black tree implementation.
+    * Remove large amount of global variables.
     * Support for storing xattrs in tdb files
     * Support for storing alternate data streams in xattrs
     * Implement a generic in-memory cache based on rb-trees
@@ -141,6 +198,7 @@ o  Volker Lendecke <vl@samba.org>
 
 o   Stefan Metzmacher <metze@samba.org>
     * Fixes for libreplace.
+    * Pidl fixes.
     * Build fixes.
     * Add nss_wrapper support.
     * Start and test winbindd by 'make test'
@@ -159,11 +217,44 @@ o   Stefan Metzmacher <metze@samba.org>
     * Convert auth_winbind to use wbcAuthenticateUserEx().
 
 
+o   James Peach <jpeach@samba.org>
+    * Add support for DNS Service Discovery.  Based on work from
+      Rishi Srivatsavai <rishisv@gmail.com>.
+
+
+o   Andreas Schneider <anschneider@suse.de>
+    * Don't restart winbind if a corrupted tdb is found during
+      initialization.
+
+
 o   Karolin Seeger <ks@sernet.de>
     * Improve error messages of net subcommands.
     * Add 'net rap file user'.
     * Change LDAP search filter to find machine accounts which
       are not located in the user suffix.
+
+
+o   David Shaw <dshaw@jabberwocky.com>
+    * BUG 5073: Allow "delete readonly = yes" to correctly override
+      deletion of a file.
+
+
+o   Rishi Srivatsavai <rishisv@gmail.com>
+    * Register the smb service with mDNS if mDNS is supported.
+    * Add smbclient support for basic mDNS browsing.
+
+
+o   Andrew Tridgell <tridge@samba.org>
+    * Fix padding between Winbind 32bit/64bit client library in
+      the request/response structures.
+    * Added a syncops VFS module for file systems which do not
+      guarantee meta-data operations are immediately committed to
+      disk in stable form.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * Additional portability support for building shared libraries.
+
 
 
 Original 3.2.0pre1 commits:
