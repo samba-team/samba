@@ -127,6 +127,7 @@ o   Kai Blin <kai@samba.org>
     * make test now supports more extensive SPOOLSS testing using vlp.
     * Correctly handle mixed-case hostnames in NTLMv2 authentication.
 
+
 o   Stefan Metzmacher <metze@samba.org>
     * Fixes for libreplace.
     * Build fixes.
@@ -145,6 +146,14 @@ o   Stefan Metzmacher <metze@samba.org>
     * Return rids and other_sids arrays in WBFLAG_PAM_INFO3_TEXT mode.
     * Implement wbcErrorString() and wbcAuthenticateUserEx()
     * Convert auth_winbind to use wbcAuthenticateUserEx()
+
+
+o   Karolin Seeger <ks@sernet.de>
+    * Improve error messages of net subcommands.
+    * Add 'net rap file user'.
+    * Change LDAP search filter to find machine accounts which
+      are not located in the user suffix.
+
 
 Original 3.2.0pre1 commits:
 ---------------------------
@@ -254,10 +263,6 @@ o   Jiri Sasek <Jiri.Sasek@Sun.COM>
 o   Karolin Seeger <ks@sernet.de>
     * Add deletelocalgroup and unmapunixgroup subcommand to "net sam".
     * Cleanup internal passdb functions.
-    * Improve error messages of net subcommands.
-    * Add 'net rap file user'.
-    * Change LDAP search filter to find machine accounts which
-      are not located in the user suffix.
 
 
 o   Simo Sorce <idra@samba.org>
