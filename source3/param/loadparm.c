@@ -3503,8 +3503,8 @@ bool lp_file_list_changed(void)
 		    libnet_conf_get_seqnum(conf_ctx, NULL, NULL))
 		{
 			DEBUGADD(6, ("regdb seqnum changed: old = %lu, "
-				     "new = %lu\n", conf_last_seqnum,
-				     libnet_conf_get_seqnum(conf_ctx, NULL, NULL)));
+				     "new = %lu\n", (unsigned long)conf_last_seqnum,
+				     (unsigned long)libnet_conf_get_seqnum(conf_ctx, NULL, NULL)));
 			return true;
 		} else {
 			/*
