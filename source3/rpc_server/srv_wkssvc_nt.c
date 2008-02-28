@@ -361,13 +361,73 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p,
 }
 
 /********************************************************************
+ _wkssvc_NetrUnjoinDomain2
  ********************************************************************/
 
-WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p, struct wkssvc_NetrUnjoinDomain2 *r)
+WERROR _wkssvc_NetrUnjoinDomain2(pipes_struct *p,
+				 struct wkssvc_NetrUnjoinDomain2 *r)
 {
-	/* FIXME: Add implementation code here */
-	p->rng_fault_state = True;
-	return WERR_NOT_SUPPORTED;
+	struct libnet_UnjoinCtx *u = NULL;
+	char *cleartext_pwd = NULL;
+	char *admin_domain = NULL;
+	char *admin_account = NULL;
+	WERROR werr;
+	NTSTATUS status;
+	struct nt_user_token *token = p->pipe_user.nt_user_token;
+	struct netr_DsRGetDCNameInfo *info = NULL;
+
+	if (!user_has_privileges(token, &se_machine_account) &&
+	    !nt_token_check_domain_rid(token, DOMAIN_GROUP_RID_ADMINS) &&
+	    !nt_token_check_domain_rid(token, BUILTIN_ALIAS_RID_ADMINS)) {
+		DEBUG(5,("_wkssvc_NetrUnjoinDomain2: account doesn't have "
+			"sufficient privileges\n"));
+		return WERR_ACCESS_DENIED;
+	}
+
+	werr = decode_wkssvc_join_password_buffer(p->mem_ctx,
+						  r->in.encrypted_password,
+						  &p->session_key,
+						  &cleartext_pwd);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	split_domain_user(p->mem_ctx,
+			  r->in.account,
+			  &admin_domain,
+			  &admin_account);
+
+	status = dsgetdcname(p->mem_ctx,
+			     lp_realm(),
+			     NULL,
+			     NULL,
+			     DS_DIRECTORY_SERVICE_REQUIRED |
+			     DS_WRITABLE_REQUIRED |
+			     DS_RETURN_DNS_NAME,
+			     &info);
+	if (!NT_STATUS_IS_OK(status)) {
+		return ntstatus_to_werror(status);
+	}
+
+	werr = libnet_init_UnjoinCtx(p->mem_ctx, &u);
+	if (!W_ERROR_IS_OK(werr)) {
+		return werr;
+	}
+
+	u->in.dc_name		= info->dc_unc;
+	u->in.domain_name	= lp_realm();
+	u->in.unjoin_flags	= r->in.unjoin_flags |
+				  WKSSVC_JOIN_FLAGS_JOIN_TYPE;
+	u->in.admin_account	= admin_account;
+	u->in.admin_password	= cleartext_pwd;
+	u->in.debug		= true;
+
+	become_root();
+	werr = libnet_Unjoin(p->mem_ctx, u);
+	unbecome_root();
+
+	TALLOC_FREE(u);
+	return werr;
 }
 
 /********************************************************************
