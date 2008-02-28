@@ -3490,6 +3490,7 @@ bool lp_file_list_changed(void)
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
 	if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
+		uint64_t conf_cur_seqnum;
 		if (conf_ctx == NULL) {
 			WERROR werr;
 			werr = libnet_conf_open(NULL, &conf_ctx);
@@ -3499,12 +3500,12 @@ bool lp_file_list_changed(void)
 				return false;
 			}
 		}
-		if (conf_last_seqnum !=
-		    libnet_conf_get_seqnum(conf_ctx, NULL, NULL))
-		{
-			DEBUGADD(6, ("regdb seqnum changed: old = %lu, "
-				     "new = %lu\n", (unsigned long)conf_last_seqnum,
-				     (unsigned long)libnet_conf_get_seqnum(conf_ctx, NULL, NULL)));
+		conf_cur_seqnum = libnet_conf_get_seqnum(conf_ctx, NULL, NULL);
+		if (conf_last_seqnum != conf_cur_seqnum) {
+			DEBUGADD(6, ("regdb seqnum changed: old = %llu, "
+				     "new = %llu\n",
+				     (unsigned long long)conf_last_seqnum,
+				     (unsigned long long)conf_cur_seqnum));
 			return true;
 		} else {
 			/*
