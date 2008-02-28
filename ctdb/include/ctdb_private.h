@@ -493,6 +493,7 @@ enum ctdb_controls {CTDB_CONTROL_PROCESS_EXISTS          = 0,
 		    CTDB_CONTROL_START_RECOVERY          = 70,
 		    CTDB_CONTROL_END_RECOVERY            = 71,
 		    CTDB_CONTROL_RELOAD_NODES_FILE       = 72,
+		    CTDB_CONTROL_GET_RECLOCK_FILE        = 73,
 };	
 
 /*
@@ -1157,6 +1158,7 @@ int32_t ctdb_control_get_tunable(struct ctdb_context *ctdb, TDB_DATA indata,
 				 TDB_DATA *outdata);
 int32_t ctdb_control_set_tunable(struct ctdb_context *ctdb, TDB_DATA indata);
 int32_t ctdb_control_list_tunables(struct ctdb_context *ctdb, TDB_DATA *outdata);
+int32_t ctdb_control_get_reclock_file(struct ctdb_context *ctdb, TDB_DATA *outdata);
 
 void ctdb_tunables_set_defaults(struct ctdb_context *ctdb);
 

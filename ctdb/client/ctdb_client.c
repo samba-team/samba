@@ -1215,6 +1215,28 @@ int ctdb_ctrl_getdbmap(struct ctdb_context *ctdb, struct timeval timeout, uint32
 	return 0;
 }
 
+/*
+  get the reclock filename
+ */
+int ctdb_ctrl_getreclock(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode, 
+		       TALLOC_CTX *mem_ctx, const char **reclock)
+{
+	int ret;
+	TDB_DATA outdata;
+	int32_t res;
+
+	ret = ctdb_control(ctdb, destnode, 0, 
+			   CTDB_CONTROL_GET_RECLOCK_FILE, 0, tdb_null, 
+			   mem_ctx, &outdata, &res, &timeout, NULL);
+	if (ret != 0 || res != 0) {
+		DEBUG(DEBUG_ERR,(__location__ " ctdb_control for getreclock failed\n"));
+		return -1;
+	}
+
+	*reclock = (const char *)talloc_steal(mem_ctx, outdata.dptr);
+
+	return 0;
+}
 
 /*
   get a list of nodes (vnn and flags ) from a remote node

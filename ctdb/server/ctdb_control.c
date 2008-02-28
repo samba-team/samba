@@ -364,6 +364,11 @@ static int32_t ctdb_control_dispatch(struct ctdb_context *ctdb,
 
 	case CTDB_CONTROL_END_RECOVERY:
 		return ctdb_control_end_recovery(ctdb, c, async_reply);
+
+	case CTDB_CONTROL_GET_RECLOCK_FILE:
+		CHECK_CONTROL_DATA_SIZE(0);
+		return ctdb_control_get_reclock_file(ctdb, outdata);
+
 	default:
 		DEBUG(DEBUG_CRIT,(__location__ " Unknown CTDB control opcode %u\n", opcode));
 		return -1;

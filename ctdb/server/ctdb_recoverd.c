@@ -2301,7 +2301,7 @@ again:
 		goto again;
 	}
 
-	if (read(ctdb->recovery_lock_fd, &c, 1) == -1) {
+	if (pread(ctdb->recovery_lock_fd, &c, 1, 0) == -1) {
 		DEBUG(DEBUG_CRIT,("failed read from recovery_lock_fd - %s\n", strerror(errno)));
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;

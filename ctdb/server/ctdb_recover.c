@@ -864,3 +864,18 @@ int32_t ctdb_control_start_recovery(struct ctdb_context *ctdb,
 	return 0;
 }
 
+/*
+  report the location for the reclock file
+ */
+int32_t ctdb_control_get_reclock_file(struct ctdb_context *ctdb, TDB_DATA *outdata)
+{
+	char *reclock = NULL;
+
+	reclock = talloc_strdup(outdata, ctdb->recovery_lock_file);
+	CTDB_NO_MEMORY(ctdb, reclock);
+
+	outdata->dsize = strlen(reclock)+1;
+	outdata->dptr = (uint8_t *)reclock;
+
+	return 0;	
+}

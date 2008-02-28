@@ -504,6 +504,10 @@ int ctdb_ctrl_uptime_recv(struct ctdb_context *ctdb, TALLOC_CTX *mem_ctx, struct
 
 int ctdb_ctrl_end_recovery(struct ctdb_context *ctdb, struct timeval timeout, uint32_t destnode);
 
+int ctdb_ctrl_getreclock(struct ctdb_context *ctdb, 
+	struct timeval timeout, uint32_t destnode, 
+	TALLOC_CTX *mem_ctx, const char **reclock);
+
 uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
 				struct ctdb_node_map *node_map,
 				TALLOC_CTX *mem_ctx,

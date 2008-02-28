@@ -854,6 +854,25 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
 }
 
 /*
+  get the filename of the reclock file
+ */
+static int control_getreclock(struct ctdb_context *ctdb, int argc, const char **argv)
+{
+	int ret;
+	const char *reclock;
+
+	ret = ctdb_ctrl_getreclock(ctdb, TIMELIMIT(), options.pnn, ctdb, &reclock);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get reclock file from node %u\n", options.pnn));
+		return ret;
+	}
+
+	DEBUG(DEBUG_ERR, ("Reclock file : %s\n", reclock));
+	return 0;
+}
+
+
+/*
   check if the local node is recmaster or not
   it will return 1 if this node is the recmaster and 0 if it is not
   or if the local ctdb daemon could not be contacted
@@ -1242,7 +1261,8 @@ static const struct {
 	{ "vacuum",          ctdb_vacuum,		false, "vacuum the databases of empty records", "[max_records]"},
 	{ "repack",          ctdb_repack,		false, "repack all databases", "[max_freelist]"},
 	{ "listnodes",       control_listnodes,		false, "list all nodes in the cluster"},
-	{ "reloadnodes",         control_reload_nodes_file,		false, "reload the nodes file and restart the transport on all nodes"},
+	{ "reloadnodes",     control_reload_nodes_file,		false, "reload the nodes file and restart the transport on all nodes"},
+	{ "getreclock",      control_getreclock,        false,  "get the path to the reclock file" },
 };
 
 /*
