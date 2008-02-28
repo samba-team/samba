@@ -108,14 +108,15 @@ smb.conf changes
     client plaintext auth		Changed Default	No
     clustering				New		No
     cluster addresses			New		""
+    config backend			New		file
     ctdb socket				New		""
     lanman auth				Changed Default	No
-    mangle map                          Removed
+    mangle map				Removed
     open files database hashsize	Removed
-    read bmpx                           Removed
+    read bmpx				Removed				
     registry shares			New		No
-    winbind expand groups               New             1
-    winbind rpc only                    New             No
+    winbind expand groups		New		1
+    winbind rpc only			New		No
 
 
 Changes since 3.2.0pre1:
