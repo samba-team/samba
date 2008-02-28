@@ -293,7 +293,7 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r
 	WERROR werr;
 	NTSTATUS status;
 	struct nt_user_token *token = p->pipe_user.nt_user_token;
-	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+	struct netr_DsRGetDCNameInfo *info = NULL;
 
 	if (!r->in.domain_name) {
 		return WERR_INVALID_PARAM;
@@ -335,7 +335,7 @@ WERROR _wkssvc_NetrJoinDomain2(pipes_struct *p, struct wkssvc_NetrJoinDomain2 *r
 		return werr;
 	}
 
-	j->in.dc_name		= info->domain_controller_name;
+	j->in.dc_name		= info->dc_unc;
 	j->in.domain_name	= r->in.domain_name;
 	j->in.account_ou	= r->in.account_ou;
 	j->in.join_flags	= r->in.join_flags;
