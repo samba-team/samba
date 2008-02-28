@@ -1142,7 +1142,7 @@ static WERROR do_JoinConfig(struct libnet_JoinCtx *r)
 /****************************************************************
 ****************************************************************/
 
-static WERROR do_UnjoinConfig(struct libnet_UnjoinCtx *r)
+static WERROR libnet_unjoin_config(struct libnet_UnjoinCtx *r)
 {
 	WERROR werr;
 
@@ -1509,6 +1509,17 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 	return WERR_OK;
 }
 
+/****************************************************************
+****************************************************************/
+
+static WERROR libnet_unjoin_post_processing(TALLOC_CTX *mem_ctx,
+					    struct libnet_UnjoinCtx *r)
+{
+	saf_delete(r->out.netbios_domain_name);
+	saf_delete(r->out.dns_domain_name);
+
+	return libnet_unjoin_config(r);
+}
 
 /****************************************************************
 ****************************************************************/
@@ -1530,11 +1541,12 @@ WERROR libnet_Unjoin(TALLOC_CTX *mem_ctx,
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		werr = libnet_DomainUnjoin(mem_ctx, r);
 		if (!W_ERROR_IS_OK(werr)) {
+			libnet_unjoin_config(r);
 			goto done;
 		}
 	}
 
-	werr = do_UnjoinConfig(r);
+	werr = libnet_unjoin_post_processing(mem_ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
