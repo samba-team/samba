@@ -1315,7 +1315,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 #endif /* WITH_ADS */
 
 	if (!r->in.dc_name) {
-		struct DS_DOMAIN_CONTROLLER_INFO *info;
+		struct netr_DsRGetDCNameInfo *info;
 		status = dsgetdcname(mem_ctx,
 				     r->in.domain_name,
 				     NULL,
@@ -1333,7 +1333,7 @@ static WERROR libnet_DomainJoin(TALLOC_CTX *mem_ctx,
 		}
 
 		r->in.dc_name = talloc_strdup(mem_ctx,
-					      info->domain_controller_name);
+					      info->dc_unc);
 		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	}
 
@@ -1447,7 +1447,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!r->in.dc_name) {
-		struct DS_DOMAIN_CONTROLLER_INFO *info;
+		struct netr_DsRGetDCNameInfo *info;
 		status = dsgetdcname(mem_ctx,
 				     r->in.domain_name,
 				     NULL,
@@ -1465,7 +1465,7 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		}
 
 		r->in.dc_name = talloc_strdup(mem_ctx,
-					      info->domain_controller_name);
+					      info->dc_unc);
 		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	}
 
