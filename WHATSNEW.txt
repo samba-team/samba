@@ -132,6 +132,13 @@ o   Kai Blin <kai@samba.org>
     * Correctly handle mixed-case hostnames in NTLMv2 authentication.
 
 
+o  Volker Lendecke <vl@samba.org>
+    * Support for storing xattrs in tdb files
+    * Support for storing alternate data streams in xattrs
+    * Implement a generic in-memory cache based on rb-trees
+    * Add implicit temporary talloc contexts via talloc_stack()
+
+
 o   Stefan Metzmacher <metze@samba.org>
     * Fixes for libreplace.
     * Build fixes.
@@ -233,10 +240,6 @@ o   Volker Lendecke <vl@samba.org>
     * Remove static incoming and outgoing buffers from core server SMB 
       packet processing code.
     * Add "net sam rights" command.
-    * Support for storing xattrs in tdb files
-    * Support for storing alternate data streams in xattrs
-    * Implement a generic in-memory cache based on rb-trees
-    * Add implicit temporary talloc contexts via talloc_stack()
 
 
 o   Steve French <sfrench@samba.org>
