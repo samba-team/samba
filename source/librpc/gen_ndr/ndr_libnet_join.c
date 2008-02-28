@@ -95,6 +95,8 @@ _PUBLIC_ void ndr_print_libnet_UnjoinCtx(struct ndr_print *ndr, const char *name
 		ndr_print_string(ndr, "dns_domain_name", r->out.dns_domain_name);
 		ndr_print_uint8(ndr, "modified_config", r->out.modified_config);
 		ndr_print_string(ndr, "error_string", r->out.error_string);
+		ndr_print_uint8(ndr, "disabled_machine_account", r->out.disabled_machine_account);
+		ndr_print_uint8(ndr, "deleted_machine_account", r->out.deleted_machine_account);
 		ndr_print_WERROR(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
