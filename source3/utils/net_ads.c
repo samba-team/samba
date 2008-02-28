@@ -23,6 +23,8 @@
 #include "includes.h"
 #include "utils/net.h"
 
+#include "libnet/libnet.h"
+
 #ifdef HAVE_ADS
 
 int net_ads_usage(int argc, const char **argv)
@@ -810,76 +812,64 @@ static int net_ads_status(int argc, const char **argv)
 
 static int net_ads_leave(int argc, const char **argv)
 {
-	ADS_STRUCT *ads = NULL;
-	ADS_STATUS adsret;
-	NTSTATUS status;
-	int ret = -1;
-	struct cli_state *cli = NULL;
 	TALLOC_CTX *ctx;
-	DOM_SID *dom_sid = NULL;
-	const char *short_domain_name = NULL;
-
-	if (!secrets_init()) {
-		DEBUG(1,("Failed to initialise secrets database\n"));
-		return -1;
-	}
+	struct libnet_UnjoinCtx *r = NULL;
+	WERROR werr;
 
 	if (!(ctx = talloc_init("net_ads_leave"))) {
 		d_fprintf(stderr, "Could not initialise talloc context.\n");
 		return -1;
 	}
 
-	/* The finds a DC and takes care of getting the
-	   user creds if necessary */
+	use_in_memory_ccache();
 
-	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
+	werr = libnet_init_UnjoinCtx(ctx, &r);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Could not initialise unjoin context.\n");
 		return -1;
 	}
 
-	/* make RPC calls here */
+	r->in.debug		= opt_verbose;
+	r->in.dc_name		= opt_host;
+	r->in.domain_name	= lp_realm();
+	r->in.admin_account	= opt_user_name;
+	r->in.admin_password	= net_prompt_pass(opt_user_name);
+	r->in.unjoin_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
+				  WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE;
 
-	if ( !NT_STATUS_IS_OK(connect_to_ipc_krb5(&cli, &ads->ldap.ss,
-		ads->config.ldap_server_name)) )
-	{
+	werr = libnet_Unjoin(ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("%s: %s\n", get_friendly_werror_msg(werr),
+			 r->out.error_string ? r->out.error_string : "");
 		goto done;
 	}
 
-	if ( !NT_STATUS_IS_OK(netdom_get_domain_sid( ctx, cli, &short_domain_name, &dom_sid )) ) {
-		goto done;
-	}
-
-	saf_delete( short_domain_name );
-
-	status = netdom_leave_domain(ctx, cli, dom_sid);
-
-	/* Try and delete it via LDAP - the old way we used to. */
-
-	adsret = ads_leave_realm(ads, global_myname());
-	if (ADS_ERR_OK(adsret)) {
+	if (W_ERROR_IS_OK(werr)) {
 		d_printf("Deleted account for '%s' in realm '%s'\n",
-			global_myname(), ads->config.realm);
-		ret = 0;
-	} else {
-		/* We couldn't delete it - see if the disable succeeded. */
-		if (NT_STATUS_IS_OK(status)) {
-			d_printf("Disabled account for '%s' in realm '%s'\n",
-				global_myname(), ads->config.realm);
-			ret = 0;
-		} else {
-			d_fprintf(stderr, "Failed to disable machine account for '%s' in realm '%s'\n",
-				global_myname(), ads->config.realm);
-		}
+			r->in.machine_name, r->out.dns_domain_name);
+		goto done;
 	}
 
-done:
+	/* We couldn't delete it - see if the disable succeeded. */
+	if (r->out.disabled_machine_account) {
+		d_printf("Disabled account for '%s' in realm '%s'\n",
+			r->in.machine_name, r->out.dns_domain_name);
+		werr = WERR_OK;
+		goto done;
+	}
 
-	if ( cli )
-		cli_shutdown(cli);
+	d_fprintf(stderr, "Failed to disable machine account for '%s' in realm '%s'\n",
+		  r->in.machine_name, r->out.dns_domain_name);
 
-	ads_destroy(&ads);
-	TALLOC_FREE( ctx );
+ done:
+	TALLOC_FREE(r);
+	TALLOC_FREE(ctx);
 
-	return ret;
+	if (W_ERROR_IS_OK(werr)) {
+		return 0;
+	}
+
+	return -1;
 }
 
 static NTSTATUS net_ads_join_ok(void)
