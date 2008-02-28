@@ -537,7 +537,7 @@ struct cli_state *cli_initialise(void)
 		return NULL;
 	}
 
-	cli = SMB_MALLOC_P(struct cli_state);
+	cli = talloc(NULL, struct cli_state);
 	if (!cli) {
 		return NULL;
 	}
@@ -695,7 +695,7 @@ void cli_shutdown(struct cli_state *cli)
 	cli->fd = -1;
 	cli->smb_rw_error = SMB_READ_OK;
 
-	SAFE_FREE(cli);
+	TALLOC_FREE(cli);
 }
 
 /****************************************************************************
