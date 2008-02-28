@@ -1193,6 +1193,9 @@ static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 	}
 
 	if (r->in.modify_config && !lp_config_backend_is_registry()) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"Configuration manipulation requested but not "
+			"supported by backend");
 		return WERR_NOT_SUPPORTED;
 	}
 
@@ -1519,7 +1522,14 @@ static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 	}
 
 	if (r->in.modify_config && !lp_config_backend_is_registry()) {
+		libnet_unjoin_set_error_string(mem_ctx, r,
+			"Configuration manipulation requested but not "
+			"supported by backend");
 		return WERR_NOT_SUPPORTED;
+	}
+
+	if (IS_DC) {
+		return WERR_SETUP_DOMAIN_CONTROLLER;
 	}
 
 	if (!secrets_init()) {
