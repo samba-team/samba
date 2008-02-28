@@ -152,9 +152,24 @@ static ADS_STATUS libnet_join_connect_ads(TALLOC_CTX *mem_ctx,
 		libnet_join_set_error_string(mem_ctx, r,
 			"failed to connect to AD: %s",
 			ads_errstr(status));
+		return status;
 	}
 
-	return status;
+	if (!r->out.netbios_domain_name) {
+		r->out.netbios_domain_name = talloc_strdup(mem_ctx,
+							   r->in.ads->server.workgroup);
+		ADS_ERROR_HAVE_NO_MEMORY(r->out.netbios_domain_name);
+	}
+
+	if (!r->out.dns_domain_name) {
+		r->out.dns_domain_name = talloc_strdup(mem_ctx,
+						       r->in.ads->config.realm);
+		ADS_ERROR_HAVE_NO_MEMORY(r->out.dns_domain_name);
+	}
+
+	r->out.domain_is_ad = true;
+
+	return ADS_SUCCESS;
 }
 
 /****************************************************************
