@@ -108,7 +108,8 @@ main(int argc, char * argv[])
     }
 
     /* Set mandatory options (is that a contradiction in terms?) */
-    context->debug = debug;
+    smbc_setDebug(context, debug);
+#if 0
     if (context_auth) {
         context->callbacks.auth_fn = NULL;
         smbc_option_set(context,
@@ -119,6 +120,11 @@ main(int argc, char * argv[])
         context->callbacks.auth_fn =
             (no_auth ? no_auth_data_fn : get_auth_data_fn);
     }
+#else
+#warning "temporarily remove setting alternate auth function"
+    smbc_setFunctionAuthData(context, 
+                             (no_auth ? no_auth_data_fn : get_auth_data_fn));
+#endif
 
     /* If we've been asked to log to stderr instead of stdout, ... */
     if (debug_stderr) {
