@@ -623,6 +623,86 @@ NTSTATUS pvfs_resolve_name_fd(struct pvfs_state *pvfs, int fd,
 	return pvfs_fill_dos_info(pvfs, name, fd);
 }
 
+/*
+  fill in the pvfs_filename info for an open file, given the current
+  info for a (possibly) non-open file. This is used by places that need
+  to update the pvfs_filename stat information, and the path
+  after a possible rename on a different handle.
+*/
+NTSTATUS pvfs_resolve_name_handle(struct pvfs_state *pvfs,
+				  struct pvfs_file_handle *h)
+{
+	NTSTATUS status;
+
+	if (h->have_opendb_entry) {
+		struct odb_lock *lck;
+		const char *name = NULL;
+
+		lck = odb_lock(h, h->pvfs->odb_context, &h->odb_locking_key);
+		if (lck == NULL) {
+			DEBUG(0,("%s: failed to lock file '%s' in opendb\n",
+				 __FUNCTION__, h->name->full_name));
+			/* we were supposed to do a blocking lock, so something
+			   is badly wrong! */
+			return NT_STATUS_INTERNAL_DB_CORRUPTION;
+		}
+
+		status = odb_get_path(lck, &name);
+		if (NT_STATUS_IS_OK(status)) {
+			/*
+			 * This relies an the fact that
+			 * renames of open files are only
+			 * allowed by setpathinfo() and setfileinfo()
+			 * and there're only renames within the same
+			 * directory supported
+			 */
+			if (strcmp(h->name->full_name, name) != 0) {
+				const char *orig_dir;
+				const char *new_file;
+				const char *new_orig;
+				char *delim;
+
+				delim = strrchr(name, '/');
+				if (!delim) {
+					talloc_free(lck);
+					return NT_STATUS_INTERNAL_ERROR;
+				}
+
+				new_file = delim + 1;
+				delim = strrchr(h->name->original_name, '\\');
+				if (delim) {
+					delim[0] = '\0';
+					orig_dir = h->name->original_name;
+					new_orig = talloc_asprintf(h->name, "%s\\%s",
+								   orig_dir, new_file);
+					if (!new_orig) {
+						talloc_free(lck);
+						return NT_STATUS_NO_MEMORY;
+					}
+				} else {
+					new_orig = talloc_strdup(h->name, new_file);
+					if (!new_orig) {
+						talloc_free(lck);
+						return NT_STATUS_NO_MEMORY;
+					}
+				}
+
+				talloc_free(h->name->original_name);
+				talloc_free(h->name->full_name);
+				h->name->full_name = talloc_steal(h->name, name);
+				h->name->original_name = new_orig;
+			}
+		}
+
+		talloc_free(lck);
+	}
+
+	status = pvfs_resolve_name_fd(pvfs, h->fd, h->name);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	return NT_STATUS_OK;
+}
+
 
 /*
   resolve the parent of a given name
