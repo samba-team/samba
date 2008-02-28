@@ -36,6 +36,7 @@ struct opendb_ops {
 				   const char **delete_path);
 	NTSTATUS (*odb_remove_pending)(struct odb_lock *lck, void *private);
 	NTSTATUS (*odb_rename)(struct odb_lock *lck, const char *path);
+	NTSTATUS (*odb_get_path)(struct odb_lock *lck, const char **path);
 	NTSTATUS (*odb_set_delete_on_close)(struct odb_lock *lck, bool del_on_close);
 	NTSTATUS (*odb_get_delete_on_close)(struct odb_context *odb, 
 					    DATA_BLOB *key, bool *del_on_close);
