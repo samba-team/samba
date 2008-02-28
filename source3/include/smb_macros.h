@@ -305,10 +305,9 @@ NULL returns on zero request. JRA.
 #define talloc_destroy(ctx) talloc_free(ctx)
 #define TALLOC_FREE(ctx) do { if ((ctx) != NULL) {talloc_free(ctx); ctx=NULL;} } while(0)
 
-/* only define PARANOID_MALLOC_CHECKER with --enable-developer and not compiling
-   the smbmount utils */
+/* only define PARANOID_MALLOC_CHECKER with --enable-developer */
 
-#if defined(DEVELOPER) && !defined(SMBMOUNT_MALLOC)
+#if defined(DEVELOPER)
 #  define PARANOID_MALLOC_CHECKER 1
 #endif
 

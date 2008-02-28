@@ -208,7 +208,7 @@ TORTURE_PROGS = bin/smbtorture@EXEEXT@ bin/msgtest@EXEEXT@ \
 	bin/pdbtest@EXEEXT@ bin/talloctort@EXEEXT@ bin/replacetort@EXEEXT@ \
 	bin/tdbtorture@EXEEXT@
 
-BIN_PROGS = @EXTRA_BIN_PROGS@ @SMBMOUNT_PROGS@ \
+BIN_PROGS = @EXTRA_BIN_PROGS@ \
 	$(BIN_PROGS1) $(BIN_PROGS2) $(BIN_PROGS3) $(BIN_PROGS4) 
 
 EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ \
@@ -831,14 +831,6 @@ NET_OBJ = $(NET_OBJ1) $(PARAM_WITHOUT_REG_OBJ) $(SECRETS_OBJ) $(LIBSMB_OBJ) \
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
 	  $(LIB_NONSMBD_OBJ) $(KRBCLIENT_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)
 
-MOUNT_OBJ = client/smbmount.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
-
-MNT_OBJ = client/smbmnt.o $(VERSION_OBJ) $(LIBREPLACE_OBJ) $(SOCKET_WRAPPER_OBJ)
-
-UMOUNT_OBJ = client/smbumount.o $(PARAM_OBJ) $(LIBSMB_OBJ) \
-	     $(KRBCLIENT_OBJ) $(LIB_NONSMBD_OBJ) $(SECRETS_OBJ)
-
 CIFS_MOUNT_OBJ = client/mount.cifs.o
 
 CIFS_UMOUNT_OBJ = client/umount.cifs.o
@@ -1293,18 +1285,6 @@ bin/profiles@EXEEXT@: $(BINARY_PREREQS) $(PROFILES_OBJ) @BUILD_POPT@ @LIBTDB_SHA
 bin/smbspool@EXEEXT@: $(BINARY_PREREQS) $(CUPS_OBJ) @BUILD_POPT@ @LIBTDB_SHARED@
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CUPS_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) @POPTLIBS@ @LIBTDB_LIBS@
-
-bin/smbmount@EXEEXT@: $(BINARY_PREREQS) $(MOUNT_OBJ) @BUILD_POPT@ @LIBTDB_SHARED@
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) @POPTLIBS@ @LIBTDB_LIBS@
-
-bin/smbmnt@EXEEXT@: $(BINARY_PREREQS) $(MNT_OBJ) @BUILD_POPT@
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(DYNEXP) $(LDFLAGS) @POPTLIBS@
-
-bin/smbumount@EXEEXT@: $(BINARY_PREREQS) $(UMOUNT_OBJ) @BUILD_POPT@ @LIBTDB_SHARED@
-	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(DYNEXP) $(LDFLAGS) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) @POPTLIBS@ @LIBTDB_LIBS@
 
 bin/mount.cifs@EXEEXT@: $(BINARY_PREREQS) $(CIFS_MOUNT_OBJ) @BUILD_POPT@
 	@echo Linking $@
@@ -2051,8 +2031,7 @@ revert:
 	@$(SHELL) $(srcdir)/script/revert.sh $(BINDIR) $(BIN_PROGS) $(SCRIPTS)
 
 installman: installdirs
-	@SMBMOUNT_PROGS="@SMBMOUNT_PROGS@" $(SHELL) \
-		$(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) C "@ROFF@"
+	@$(SHELL) $(srcdir)/script/installman.sh $(DESTDIR)$(MANDIR) $(srcdir) C "@ROFF@"
 
 .PHONY: showlayout
 
