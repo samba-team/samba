@@ -22,9 +22,9 @@ Major enhancements in Samba 3.2.0 include:
   o Introduction of a registry based configuration system.
   o Improved CIFS Unix Extensions support.
   o Experimental support for file serving clusters.
-  o Support for IPv6 connections.
-  o Support for storing alternate data streams in xattrs
-
+  o Support for IPv6 in the server, and client tools and libraries.
+  o Support for storing alternate data streams in xattrs.
+  o Encrypted SMB transport in client tools and libraries, and server.
 
   Winbind and Active Directory Integration:
   o Full support for Windows 2003 cross-forest, transitive trusts
@@ -158,9 +158,7 @@ o   Jeremy Allison <jra@samba.org>
     * Remove unused utilities: smbctool and rpctorture.
     * Fix service principal detection to match Windows Vista
       (based on work from Andreas Schneider).
-    * Additional work on the session data privacy for clients
-      implementing the Unix CIFS Extensions.
-
+    * Encrypted SMB transport in client tools and libraries, and server.
 
 o   Kai Blin <kai@samba.org>
     * Added support for an SMB_CONF_PATH environment variable
