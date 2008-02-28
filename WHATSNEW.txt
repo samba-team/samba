@@ -28,13 +28,13 @@ Major enhancements in Samba 3.2.0 include:
 
   Winbind and Active Directory Integration:
   o Full support for Windows 2003 cross-forest, transitive trusts
-    and one-way domain trusts
+    and one-way domain trusts.
   o Support for userPrincipalName logons via pam_winbind and NSS
     lookups.
   o Support in pam_winbind for logging on using the userPrincipalName.
   o Expansion of nested domain groups via NSS calls.
   o Support for Active Directory LDAP Signing policy.
-  o New LGPL Winbind client library (libwbclient.so)
+  o New LGPL Winbind client library (libwbclient.so).
 
 
   Users & Groups:
@@ -163,6 +163,7 @@ o   Jeremy Allison <jra@samba.org>
       (based on work from Andreas Schneider).
     * Encrypted SMB transport in client tools and libraries, and server.
 
+
 o   Kai Blin <kai@samba.org>
     * Added support for an SMB_CONF_PATH environment variable
       containing the path to smb.conf.
@@ -196,10 +197,10 @@ o  Volker Lendecke <vl@samba.org>
     * Add generic a in-memory cache.
     * Import the Linux red-black tree implementation.
     * Remove large amount of global variables.
-    * Support for storing xattrs in tdb files
-    * Support for storing alternate data streams in xattrs
-    * Implement a generic in-memory cache based on rb-trees
-    * Add implicit temporary talloc contexts via talloc_stack()
+    * Support for storing xattrs in tdb files.
+    * Support for storing alternate data streams in xattrs.
+    * Implement a generic in-memory cache based on rb-trees.
+    * Add implicit temporary talloc contexts via talloc_stack().
 
 
 o   Stefan Metzmacher <metze@samba.org>
@@ -207,7 +208,7 @@ o   Stefan Metzmacher <metze@samba.org>
     * Pidl fixes.
     * Build fixes.
     * Add nss_wrapper support.
-    * Start and test winbindd by 'make test'
+    * Start and test winbindd by 'make test'.
     * Split up child_dispatch_table into domain, idmap and locator tables
       in winbindd.
     * Fix for a crash bug in pidl generated client code.
@@ -264,8 +265,9 @@ o   Andrew Tridgell <tridge@samba.org>
 o   Jelmer Vernooij <jelmer@samba.org>
     * Additional portability support for building shared libraries.
 
+
 o   Corinna Vinschen <corinna@vinschen.de>
-    * Get Samba version or capability information from Windows user space
+    * Get Samba version or capability information from Windows user space.
 
 
 Original 3.2.0pre1 commits:
@@ -345,7 +347,7 @@ o   Volker Lendecke <vl@samba.org>
 
 
 o   Steve French <sfrench@samba.org>
-    * Fixes for mount.cfs Linux utility.
+    * Fixes for mount.cifs Linux utility.
 
 
 o   Stefan Metzmacher <metze@samba.org>
