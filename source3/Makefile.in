@@ -408,7 +408,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clistr.o libsmb/cliquota.o libsmb/clifsinfo.o libsmb/clidfs.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o $(ERRORMAP_OBJ) libsmb/clirap2.o \
-	     libsmb/smb_seal.o $(DOSERR_OBJ) \
+	     libsmb/smb_seal.o $(DOSERR_OBJ) libsmb/async_smb.o \
 	     $(RPC_PARSE_OBJ1) $(LIBSAMBA_OBJ) $(LIBNMB_OBJ)
 
 RPC_CLIENT_OBJ1 = rpc_client/cli_netlogon.o rpc_client/cli_srvsvc.o
