@@ -15,7 +15,7 @@
 	<para>
 		Note that this parameter defaults to <emphasis>no</emphasis>,
 		but it is set to <emphasis>yes</emphasis> when
-		 <parameter>config bakend</parameter> is set
+		 <parameter>config backend</parameter> is set
 		to <emphasis>registry</emphasis>.
 	</para>
 </description>
