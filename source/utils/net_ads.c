@@ -1645,34 +1645,36 @@ int net_ads_join(int argc, const char **argv)
 		DEBUG(1,("Error creating host keytab!\n"));
 	}
 
-#if defined(WITH_DNS_UPDATES)
-	/* We enter this block with user creds */
-	ads_kdestroy( NULL );
-	ads_destroy(&ads);
-	ads = NULL;
-
-	if ( (ads = ads_init( lp_realm(), NULL, NULL )) != NULL ) {
-		/* kinit with the machine password */
-
-		use_in_memory_ccache();
-		asprintf( &ads->auth.user_name, "%s$", global_myname() );
-		ads->auth.password = secrets_fetch_machine_password(
-			lp_workgroup(), NULL, NULL );
-		ads->auth.realm = SMB_STRDUP( lp_realm() );
-		ads_kinit_password( ads );
-	}
-
-	if ( !ads || !NT_STATUS_IS_OK(net_update_dns( ctx, ads )) ) {
-		d_fprintf( stderr, "DNS update failed!\n" );
-	}
-
-	/* exit from this block using machine creds */
-#endif
-
 	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->server.realm);
 
-	TALLOC_FREE( ctx );
+	ads_kdestroy( NULL );
 	ads_destroy(&ads);
+
+#if defined(WITH_DNS_UPDATES)
+	{
+		/* We enter this block with user creds */
+		ADS_STRUCT *ads_dns = NULL;
+
+		if ( (ads_dns = ads_init( lp_realm(), NULL, NULL )) != NULL ) {
+			/* kinit with the machine password */
+
+			use_in_memory_ccache();
+			asprintf( &ads_dns->auth.user_name, "%s$", global_myname() );
+			ads_dns->auth.password = secrets_fetch_machine_password(
+				lp_workgroup(), NULL, NULL );
+			ads_dns->auth.realm = SMB_STRDUP( lp_realm() );
+			ads_kinit_password( ads_dns );
+		}
+
+		if ( !ads_dns || !NT_STATUS_IS_OK(net_update_dns( ctx, ads_dns )) ) {
+			d_fprintf( stderr, "DNS update failed!\n" );
+		}
+
+		/* exit from this block using machine creds */
+		ads_destroy(&ads_dns);
+	}
+#endif
+	TALLOC_FREE( ctx );
 
 	return 0;
 
