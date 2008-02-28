@@ -1341,9 +1341,10 @@ static int winbind_auth_request(pam_handle_t * pamh,
 
 		/* If winbindd returned a username, return the pointer to it
 		 * here. */
-		if (user_ret && response.extra_data.data) {
+		if (user_ret && response.data.auth.unix_username[0]) {
 			/* We have to trust it's a null terminated string. */
-			*user_ret = (char *)response.extra_data.data;
+			*user_ret = strndup(response.data.auth.unix_username,
+				    sizeof(response.data.auth.unix_username) - 1);
 		}
 	}
 

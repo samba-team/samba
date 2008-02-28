@@ -418,7 +418,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	}
 
 	if (flags & WBFLAG_PAM_UNIX_NAME) {
-		*unix_name = SMB_STRDUP((char *)response.extra_data.data);
+		*unix_name = SMB_STRDUP(response.data.auth.unix_username);
 		if (!*unix_name) {
 			winbindd_free_response(&response);
 			return NT_STATUS_NO_MEMORY;
