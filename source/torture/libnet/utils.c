@@ -29,7 +29,8 @@
 #include "param/param.h"
 
 
-bool test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_opendomain(struct torture_context *tctx, 
+		     struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		     struct policy_handle *handle, struct lsa_String *domname,
 		     struct dom_sid2 *sid)
 {
@@ -39,51 +40,41 @@ bool test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_LookupDomain r2;
 	struct samr_OpenDomain r3;
 	
-	printf("connecting\n");
+	torture_comment(tctx, "connecting\n");
 	
 	r1.in.system_name = 0;
 	r1.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r1.out.connect_handle = &h;
 	
 	status = dcerpc_samr_Connect(p, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("Connect failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "Connect failed");
 	
 	r2.in.connect_handle = &h;
 	r2.in.domain_name = domname;
 
-	printf("domain lookup on %s\n", domname->string);
+	torture_comment(tctx, "domain lookup on %s\n", domname->string);
 
 	status = dcerpc_samr_LookupDomain(p, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupDomain failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "LookupDomain failed");
 
 	r3.in.connect_handle = &h;
 	r3.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r3.in.sid = r2.out.sid;
 	r3.out.domain_handle = &domain_handle;
 
-	printf("opening domain\n");
+	torture_comment(tctx, "opening domain\n");
 
 	status = dcerpc_samr_OpenDomain(p, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenDomain failed - %s\n", nt_errstr(status));
-		return false;
-	} else {
-		*handle = domain_handle;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "OpenDomain failed");
+	*handle = domain_handle;
 
 	*sid = *r2.out.sid;
 	return true;
 }
 
 
-bool test_user_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		       struct policy_handle *domain_handle,
+bool test_user_cleanup(struct torture_context *tctx, struct dcerpc_pipe *p, 
+		       TALLOC_CTX *mem_ctx, struct policy_handle *domain_handle,
 		       const char *name)
 {
 	NTSTATUS status;
@@ -100,13 +91,10 @@ bool test_user_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r1.in.num_names      = 1;
 	r1.in.names          = names;
 	
-	printf("user account lookup '%s'\n", name);
+	torture_comment(tctx, "user account lookup '%s'\n", name);
 
 	status = dcerpc_samr_LookupNames(p, mem_ctx, &r1);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("LookupNames failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "LookupNames failed");
 
 	rid = r1.out.rids.ids[0];
 	
@@ -115,30 +103,25 @@ bool test_user_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r2.in.rid            = rid;
 	r2.out.user_handle   = &user_handle;
 
-	printf("opening user account\n");
+	torture_comment(tctx, "opening user account\n");
 
 	status = dcerpc_samr_OpenUser(p, mem_ctx, &r2);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("OpenUser failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "OpenUser failed");
 
 	r3.in.user_handle  = &user_handle;
 	r3.out.user_handle = &user_handle;
 
-	printf("deleting user account\n");
+	torture_comment(tctx, "deleting user account\n");
 	
 	status = dcerpc_samr_DeleteUser(p, mem_ctx, &r3);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("DeleteUser failed - %s\n", nt_errstr(status));
-		return false;
-	}
+	torture_assert_ntstatus_ok(tctx, status, "DeleteUser failed");
 	
 	return true;
 }
 
 
-bool test_user_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_user_create(struct torture_context *tctx, 
+		      struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		      struct policy_handle *handle, const char *name,
 		      uint32_t *rid)
 {
@@ -155,25 +138,22 @@ bool test_user_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	r.out.user_handle  = &user_handle;
 	r.out.rid          = rid;
 
-	printf("creating user account %s\n", name);
+	torture_comment(tctx, "creating user account %s\n", name);
 
 	status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("CreateUser failed - %s\n", nt_errstr(status));
 
 		if (NT_STATUS_EQUAL(status, NT_STATUS_USER_EXISTS)) {
-			printf("User (%s) already exists - attempting to delete and recreate account again\n", name);
-			if (!test_user_cleanup(p, mem_ctx, handle, name)) {
+			torture_comment(tctx, "User (%s) already exists - attempting to delete and recreate account again\n", name);
+			if (!test_user_cleanup(tctx, p, mem_ctx, handle, name)) {
 				return false;
 			}
 
-			printf("creating user account\n");
+			torture_comment(tctx, "creating user account\n");
 			
 			status = dcerpc_samr_CreateUser(p, mem_ctx, &r);
-			if (!NT_STATUS_IS_OK(status)) {
-				printf("CreateUser failed - %s\n", nt_errstr(status));
-				return false;
-			}
+			torture_assert_ntstatus_ok(tctx, status, "CreateUser failed");
 			return true;
 		}
 		return false;

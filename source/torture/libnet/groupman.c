@@ -67,12 +67,10 @@ bool torture_groupadd(struct torture_context *torture)
 					&p,
 					&ndr_table_samr);
 	
-	if (!NT_STATUS_IS_OK(status)) {
-		return false;
-	}
+	torture_assert_ntstatus_ok(torture, status, "RPC connection");
 
 	domain_name.string = lp_workgroup(torture->lp_ctx);
-	if (!test_opendomain(p, mem_ctx, &h, &domain_name, &sid)) {
+	if (!test_opendomain(torture, p, mem_ctx, &h, &domain_name, &sid)) {
 		ret = false;
 		goto done;
 	}
