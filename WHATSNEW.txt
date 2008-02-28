@@ -127,6 +127,25 @@ o   Kai Blin <kai@samba.org>
     * make test now supports more extensive SPOOLSS testing using vlp.
     * Correctly handle mixed-case hostnames in NTLMv2 authentication.
 
+o   Stefan Metzmacher <metze@samba.org>
+    * Fixes for libreplace.
+    * Build fixes.
+    * Add nss_wrapper support.
+    * Start and test winbindd by 'make test'
+    * Split up child_dispatch_table into domain, idmap and locator tables
+      in winbindd.
+    * Fix for a crash bug in pidl generated client code.
+      This could have happend with [in,out,unique] pointers
+      when the clients sends a valid pointer, but the server
+      reponse with a NULL pointer (as samba-3.0.26a do for some calls).
+    * Change NTSTAUS into enum ndr_err_code in librpc/ndr.
+    * Remove unused calls in the struct based winbindd protocol.
+    * Add --configfile option to wbinfo.
+    * Convert winbind_env_set(), winbind_on() and winbind_off() into macros.
+    * Return rids and other_sids arrays in WBFLAG_PAM_INFO3_TEXT mode.
+    * Implement wbcErrorString() and wbcAuthenticateUserEx()
+    * Convert auth_winbind to use wbcAuthenticateUserEx()
+
 Original 3.2.0pre1 commits:
 ---------------------------
 o   Michael Adam <obnox@samba.org>
