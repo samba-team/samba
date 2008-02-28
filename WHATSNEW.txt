@@ -113,6 +113,7 @@ smb.conf changes
     config backend			New		file
     ctdb socket				New		""
     debug class				New		No
+    hidden				New		No
     lanman auth				Changed Default	No
     ldap debug level			New		0
     ldap debug threshold		New		10
@@ -230,6 +231,9 @@ o   James Peach <jpeach@samba.org>
 o   Andreas Schneider <anschneider@suse.de>
     * Don't restart winbind if a corrupted tdb is found during
       initialization.
+    * Fix Windows 2008 (Longhorn) join.
+    * Fix crashbug in winbindd.
+    * Add share parameter "hidden".
 
 
 o   Karolin Seeger <ks@sernet.de>
