@@ -363,32 +363,3 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 	return -1;
 }
 #endif
-
-#ifdef AUTOCONF_TEST
-/* this is the autoconf driver to test getifaddrs() */
-
- int main()
-{
-	struct ifaddrs *ifs = NULL;
-	int ret;
-	
-	ret = getifaddrs(&ifs);
-	if (ret != 0) {
-		perror("getifaddrs() failed");
-		return 1;
-	}
-
-	while (ifs) {
-		printf("%-10s ", ifs->ifa_name);
-		if (ifs->ifa_addr != NULL && 
-		    ifs->ifa_addr->sa_family == AF_INET) {
-			printf("IP=%s ", inet_ntoa(((struct sockaddr_in *)ifs->ifa_addr)->sin_addr));
-			if (ifs->ifa_netmask != NULL)
-				printf("NETMASK=%s", inet_ntoa(((struct sockaddr_in *)ifs->ifa_netmask)->sin_addr));
-		}
-		printf("\n");
-		ifs = ifs->ifa_next;
-	}
-	return 0;
-}
-#endif
