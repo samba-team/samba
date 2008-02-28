@@ -368,20 +368,16 @@ static struct smb_trans_enc_state *make_cli_enc_state(enum smb_trans_enc_type sm
 	ZERO_STRUCTP(es);
 	es->smb_enc_type = smb_enc_type;
 
-	if (smb_enc_type == SMB_TRANS_ENC_GSS) {
 #if defined(HAVE_GSSAPI) && defined(HAVE_KRB5)
+	if (smb_enc_type == SMB_TRANS_ENC_GSS) {
 		es->s.gss_state = SMB_MALLOC_P(struct smb_tran_enc_state_gss);
 		if (!es->s.gss_state) {
 			SAFE_FREE(es);
 			return NULL;
 		}
 		ZERO_STRUCTP(es->s.gss_state);
-#else
-		DEBUG(0,("make_cli_enc_state: no krb5 compiled.\n"));
-		SAFE_FREE(es);
-		return NULL;
-#endif
 	}
+#endif
 	return es;
 }
 
