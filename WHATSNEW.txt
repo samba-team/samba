@@ -142,6 +142,9 @@ o   Michael Adam <obnox@samba.org>
     * BUG 5063: Fix build on RHEL5.
     * New smb.conf parameter "config backend = registry" to enable registry
       only configuration.
+    * Move "net conf" functionality into a separate module libnet_conf.c
+    * Restructure registry code, eliminating the dynamic overlay.
+      Make use of reg_api instead of backend code in most places.
     * Libreplace fixes.
     * Build fixes.
     * Initial support for using subsystems as shared libraries.
