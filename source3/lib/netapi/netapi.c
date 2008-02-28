@@ -50,7 +50,9 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 		return W_ERROR_V(WERR_NOMEM);
 	}
 
-	DEBUGLEVEL = 0;
+	if (!DEBUGLEVEL) {
+		DEBUGLEVEL = 0;
+	}
 	setup_logging("libnetapi", true);
 
 	dbf = x_stderr;
