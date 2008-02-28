@@ -52,11 +52,11 @@ The Samba Team has adopted the Version 3 of the GNU General Public
 License for the 3.2 and later releases.   The GPLv3 is the updated
 version of the GPLv2 license under which Samba is currently
 distributed. It has been updated to improve compatibility with other
-licenses and to make it easier to adopt internationally, and is an 
+licenses and to make it easier to adopt internationally, and is an
 improved version of the license to better suit the needs of Free
 Software in the 21st Century.
 
-The original announcement is available on-line at 
+The original announcement is available on-line at
 
     http://news.samba.org/announcements/samba_gplv3/
 
@@ -64,12 +64,12 @@ The original announcement is available on-line at
 New Security Defaults for Authentication
 ========================================
 
-Support for LanMan passwords is now disabled in both client and server 
-applications.  Additionally, clear text authentication requests are 
+Support for LanMan passwords is now disabled in both client and server
+applications.  Additionally, clear text authentication requests are
 disabled by default in client utilities such as smbclient and all
-libsmbclient based applications.  This will affect connection both 
-to and from hosts running DOS, Windows 9x/ME, and OS/2.  Please refer 
-to the "Changes" section for details on the exact parameters that were 
+libsmbclient based applications.  This will affect connection both
+to and from hosts running DOS, Windows 9x/ME, and OS/2.  Please refer
+to the "Changes" section for details on the exact parameters that were
 updated.
 
 
@@ -270,16 +270,16 @@ o   Michael Adam <obnox@samba.org>
     * Merged \winreg server code from the SAMBA_3_2 development branch.
     * Fixes for libreplace.
     * Implement new registry configuration backend.
-  
+
 
 o   Jeremy Allison <jra@samba.org>
     * Add support for file system objectIDs.
     * Winbind cache validation support.
     * Add in the UNIX capability for 24-bit readX.
     * Improve Delete-on-Close semantics.
-    * Removal of static file and path name buffers in SMB file serving 
+    * Removal of static file and path name buffers in SMB file serving
       code.
-    
+
 
 o   Danilo Almeida <dalmeida@centeris.com>
     * Move the machine account to the OU specified when running "net
@@ -287,7 +287,7 @@ o   Danilo Almeida <dalmeida@centeris.com>
 
 
 o   Andrew Bartlett <abartlet@samba.org>
-    * Tighten authentication protocol defaults in client tools and 
+    * Tighten authentication protocol defaults in client tools and
       servers.
 
 
@@ -301,7 +301,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
     * Fix lockups in Winbind when running nscd.
     * UPN logon support in pam_winbind.
     * Add support for GNU linker scripts when build shared libraries
-      (based on work by Julien Cristau <jcristau@debian.org> and James 
+      (based on work by Julien Cristau <jcristau@debian.org> and James
       Peach).
 
 
@@ -318,7 +318,7 @@ o   Guenther Deschner <gd@samba.org>
 
 o   Steve Langasek <vorlon@debian.org>
     * Allow SIGTERM to cause nmbd to exit while awaiting a interface
-      to come up. 
+      to come up.
 
 
 o   Volker Lendecke <vl@samba.org>
@@ -328,7 +328,7 @@ o   Volker Lendecke <vl@samba.org>
     * Add client support for the SamLogonEx() authentication request.
     * Implement RPC proxy stubs in the Samba server code to allow
       replacing implementation functions one by one.
-    * Remove static incoming and outgoing buffers from core server SMB 
+    * Remove static incoming and outgoing buffers from core server SMB
       packet processing code.
     * Add "net sam rights" command.
 
