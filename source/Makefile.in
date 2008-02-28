@@ -805,7 +805,7 @@ LIBNET_CONF_OBJ = libnet/libnet_conf.o
 LIBNET_OBJ = $(LIBNET_CONF_OBJ) libnet/libnet_join.o \
 	     librpc/gen_ndr/ndr_libnet_join.o
 
-NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_domain.o utils/net_help.o \
+NET_OBJ1 = utils/net.o utils/net_ads.o utils/net_help.o \
 	   utils/net_rap.o utils/net_rpc.o utils/net_rpc_samsync.o \
 	   utils/net_rpc_join.o utils/net_time.o utils/net_lookup.o \
 	   utils/net_cache.o utils/net_groupmap.o utils/net_idmap.o \
