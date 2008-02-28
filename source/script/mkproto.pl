@@ -144,7 +144,7 @@ sub handle_loadparm($$)
 
 		my %smap = (
 			    "GLOBAL" => "struct loadparm_context *",
-			    "LOCAL" => "struct loadparm_service *"
+			    "LOCAL" => "struct loadparm_service *, struct loadparm_service *"
 			    );
 
 		$file->("$tmap{$type}$name($smap{$scope});\n");
