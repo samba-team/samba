@@ -114,7 +114,6 @@ AC_SUBST(INSTALL_PAM_MODULES)
 AC_SUBST(UNINSTALL_PAM_MODULES)
 AC_SUBST(NSS_MODULES)
 AC_SUBST(EXTRA_BIN_PROGS)
-AC_SUBST(SMBMOUNT_PROGS)
 AC_SUBST(CIFSMOUNT_PROGS)
 AC_SUBST(INSTALL_CIFSMOUNT)
 AC_SUBST(UNINSTALL_CIFSMOUNT)
@@ -3982,31 +3981,6 @@ AC_ARG_WITH(automount,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_AUTOMOUNT,1,[Whether to include automount support])
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
-
-#################################################
-# check for smbmount support
-AC_MSG_CHECKING(whether to use smbmount)
-AC_ARG_WITH(smbmount,
-[AS_HELP_STRING([--with-smbmount], [Include smbmount (Linux only) support (default=no)])],
-[ case "$withval" in
-  yes)
-	case "$host_os" in
-	*linux*)
-		AC_MSG_RESULT(yes)
-		AC_DEFINE(WITH_SMBMOUNT,1,[Whether to build smbmount])
-		SMBMOUNT_PROGS="bin/smbmount bin/smbmnt bin/smbumount"
-		;;
-	*)
-		AC_MSG_ERROR(not on a linux system!)
-		;;
-	esac
     ;;
   *)
     AC_MSG_RESULT(no)
