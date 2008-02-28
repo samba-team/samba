@@ -232,7 +232,7 @@ static uint32 get_share_type(int snum)
 		type = STYPE_PRINTQ;
 	if (strequal(lp_fstype(snum), "IPC"))
 		type = STYPE_IPC;
-	if (lp_hidden(snum))
+	if (lp_administrative_share(snum))
 		type |= STYPE_HIDDEN;
 
 	return type;
