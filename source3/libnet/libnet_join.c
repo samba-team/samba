@@ -788,6 +788,132 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 /****************************************************************
 ****************************************************************/
 
+NTSTATUS libnet_join_ok(const char *netbios_domain_name,
+			const char *machine_name,
+			const char *dc_name)
+{
+	uint32_t neg_flags = NETLOGON_NEG_AUTH2_FLAGS |
+			     NETLOGON_NEG_SCHANNEL;
+	/* FIXME: NETLOGON_NEG_SELECT_AUTH2_FLAGS */
+	struct cli_state *cli = NULL;
+	struct rpc_pipe_client *pipe_hnd = NULL;
+	struct rpc_pipe_client *netlogon_pipe = NULL;
+	NTSTATUS status;
+	char *machine_password = NULL;
+	char *machine_account = NULL;
+
+	if (!dc_name) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!secrets_init()) {
+		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
+	}
+
+	machine_password = secrets_fetch_machine_password(netbios_domain_name,
+							  NULL, NULL);
+	if (!machine_password) {
+		return NT_STATUS_NO_TRUST_LSA_SECRET;
+	}
+
+	asprintf(&machine_account, "%s$", machine_name);
+	if (!machine_account) {
+		SAFE_FREE(machine_password);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	status = cli_full_connection(&cli, NULL,
+				     dc_name,
+				     NULL, 0,
+				     "IPC$", "IPC",
+				     machine_account,
+				     NULL,
+				     machine_password,
+				     0,
+				     Undefined, NULL);
+	free(machine_account);
+	free(machine_password);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		status = cli_full_connection(&cli, NULL,
+					     dc_name,
+					     NULL, 0,
+					     "IPC$", "IPC",
+					     "",
+					     NULL,
+					     "",
+					     0,
+					     Undefined, NULL);
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	netlogon_pipe = get_schannel_session_key(cli,
+						 netbios_domain_name,
+						 &neg_flags, &status);
+	if (!netlogon_pipe) {
+		if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_NETWORK_RESPONSE)) {
+			cli_shutdown(cli);
+			return NT_STATUS_OK;
+		}
+
+		DEBUG(0,("libnet_join_ok: failed to get schannel session "
+			"key from server %s for domain %s. Error was %s\n",
+		cli->desthost, netbios_domain_name, nt_errstr(status)));
+		cli_shutdown(cli);
+		return status;
+	}
+
+	if (!lp_client_schannel()) {
+		cli_shutdown(cli);
+		return NT_STATUS_OK;
+	}
+
+	pipe_hnd = cli_rpc_pipe_open_schannel_with_key(cli, PI_NETLOGON,
+						       PIPE_AUTH_LEVEL_PRIVACY,
+						       netbios_domain_name,
+						       netlogon_pipe->dc,
+						       &status);
+
+	cli_shutdown(cli);
+
+	if (!pipe_hnd) {
+		DEBUG(0,("libnet_join_ok: failed to open schannel session "
+			"on netlogon pipe to server %s for domain %s. "
+			"Error was %s\n",
+			cli->desthost, netbios_domain_name, nt_errstr(status)));
+		return status;
+	}
+
+	return NT_STATUS_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
+static WERROR libnet_join_post_verify(TALLOC_CTX *mem_ctx,
+				      struct libnet_JoinCtx *r)
+{
+	NTSTATUS status;
+
+	status = libnet_join_ok(r->out.netbios_domain_name,
+				r->in.machine_name,
+				r->in.dc_name);
+	if (!NT_STATUS_IS_OK(status)) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"failed to verify domain membership after joining: %s",
+			get_friendly_nt_error_msg(status));
+		return WERR_SETUP_NOT_JOINED;
+	}
+
+	return WERR_OK;
+}
+
+/****************************************************************
+****************************************************************/
+
 static bool libnet_join_unjoindomain_remove_secrets(TALLOC_CTX *mem_ctx,
 						    struct libnet_UnjoinCtx *r)
 {
@@ -1262,6 +1388,11 @@ WERROR libnet_Join(TALLOC_CTX *mem_ctx,
 
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		werr = libnet_DomainJoin(mem_ctx, r);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
+		}
+
+		werr = libnet_join_post_verify(mem_ctx, r);
 		if (!W_ERROR_IS_OK(werr)) {
 			goto done;
 		}
