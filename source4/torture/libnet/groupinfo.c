@@ -96,7 +96,7 @@ bool torture_groupinfo(struct torture_context *torture)
 	/*
 	 * Testing synchronous version
 	 */
-	if (!test_opendomain(p, mem_ctx, &h, &name, &sid)) {
+	if (!test_opendomain(torture, p, mem_ctx, &h, &name, &sid)) {
 		ret = false;
 		goto done;
 	}

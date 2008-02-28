@@ -152,12 +152,12 @@ bool torture_userinfo(struct torture_context *torture)
 	/*
 	 * Testing synchronous version
 	 */
-	if (!test_opendomain(p, mem_ctx, &h, &name, &sid)) {
+	if (!test_opendomain(torture, p, mem_ctx, &h, &name, &sid)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_user_create(p, mem_ctx, &h, TEST_USERNAME, &rid)) {
+	if (!test_user_create(torture, p, mem_ctx, &h, TEST_USERNAME, &rid)) {
 		ret = false;
 		goto done;
 	}
@@ -167,7 +167,7 @@ bool torture_userinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_user_cleanup(p, mem_ctx, &h, TEST_USERNAME)) {
+	if (!test_user_cleanup(torture, p, mem_ctx, &h, TEST_USERNAME)) {
 		ret = false;
 		goto done;
 	}
@@ -175,12 +175,12 @@ bool torture_userinfo(struct torture_context *torture)
 	/*
 	 * Testing asynchronous version and monitor messages
 	 */
-	if (!test_opendomain(p, mem_ctx, &h, &name, &sid)) {
+	if (!test_opendomain(torture, p, mem_ctx, &h, &name, &sid)) {
 		ret = false;
 		goto done;
 	}
 
-	if (!test_user_create(p, mem_ctx, &h, TEST_USERNAME, &rid)) {
+	if (!test_user_create(torture, p, mem_ctx, &h, TEST_USERNAME, &rid)) {
 		ret = false;
 		goto done;
 	}
@@ -190,7 +190,7 @@ bool torture_userinfo(struct torture_context *torture)
 		goto done;
 	}
 
-	if (!test_user_cleanup(p, mem_ctx, &h, TEST_USERNAME)) {
+	if (!test_user_cleanup(torture, p, mem_ctx, &h, TEST_USERNAME)) {
 		ret = false;
 		goto done;
 	}
