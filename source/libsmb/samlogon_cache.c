@@ -226,6 +226,7 @@ struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const DOM_SID *
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		DEBUG(0,("netsamlogon_cache_get: failed to pull entry from cache\n"));
 		tdb_delete(netsamlogon_tdb, data);
+		TALLOC_FREE(info3);
 		goto done;
 	}
 
