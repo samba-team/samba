@@ -55,6 +55,8 @@ interface libnetjoin
 		[out] string netbios_domain_name,
 		[out] string dns_domain_name,
 		[out] boolean8 modified_config,
-		[out] string error_string
+		[out] string error_string,
+		[out] boolean8 disabled_machine_account,
+		[out] boolean8 deleted_machine_account
 		);
 }
