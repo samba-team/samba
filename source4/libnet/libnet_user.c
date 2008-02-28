@@ -534,7 +534,7 @@ static NTSTATUS set_user_changes(TALLOC_CTX *mem_ctx, struct usermod_change *mod
 	SET_FIELD_NTTIME(r->in, user, mod, acct_expiry, USERMOD_FIELD_ACCT_EXPIRY);
 
 	/* account flags change */
-	SET_FIELD_UINT32(r->in, user, mod, acct_flags, USERMOD_FIELD_ACCT_FLAGS);
+	SET_FIELD_ACCT_FLAGS(r->in, user, mod, acct_flags, USERMOD_FIELD_ACCT_FLAGS);
 
 	return NT_STATUS_OK;
 }

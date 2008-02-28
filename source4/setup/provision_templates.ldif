@@ -18,7 +18,7 @@ objectClass: container
 description: Container for SAM account templates
 
 dn: CN=TemplateUser,CN=Templates
-userAccountControl: 514
+userAccountControl: 546
 badPwdCount: 0
 codePage: 0
 countryCode: 0
@@ -29,21 +29,6 @@ pwdLastSet: 0
 primaryGroupID: 513
 accountExpires: -1
 logonCount: 0
-sAMAccountType: 805306368
-
-dn: CN=TemplateComputer,CN=Templates
-userAccountControl: 4098
-badPwdCount: 0
-codePage: 0
-countryCode: 0
-badPasswordTime: 0
-lastLogoff: 0
-lastLogon: 0
-pwdLastSet: 0
-primaryGroupID: 513
-accountExpires: -1
-logonCount: 0
-sAMAccountType: 805306369
 
 dn: CN=TemplateTrustingDomain,CN=Templates
 userAccountControl: 2080
@@ -56,18 +41,9 @@ lastLogon: 0
 primaryGroupID: 513
 accountExpires: -1
 logonCount: 0
-sAMAccountType: 805306370
 
 dn: CN=TemplateGroup,CN=Templates
 groupType: -2147483646
-sAMAccountType: 268435456
-
-# Currently this isn't used, we don't have a way to detect it different from an incoming alias
-#
-# dn: CN=TemplateAlias,CN=Templates
-# cn: TemplateAlias
-# groupType: -2147483644
-# sAMAccountType: 268435456
 
 dn: CN=TemplateForeignSecurityPrincipal,CN=Templates
 

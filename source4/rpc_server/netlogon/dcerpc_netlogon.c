@@ -27,6 +27,7 @@
 #include "auth/auth.h"
 #include "auth/auth_sam_reply.h"
 #include "dsdb/samdb/samdb.h"
+#include "dsdb/common/flags.h"
 #include "rpc_server/samr/proto.h"
 #include "util/util_ldb.h"
 #include "libcli/auth/libcli_auth.h"
@@ -76,7 +77,7 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 	struct creds_CredentialState *creds;
 	void *sam_ctx;
 	struct samr_Password *mach_pwd;
-	uint16_t acct_flags;
+	uint32_t user_account_control;
 	int num_records;
 	struct ldb_message **msgs;
 	NTSTATUS nt_status;
@@ -113,27 +114,28 @@ static NTSTATUS dcesrv_netr_ServerAuthenticate3(struct dcesrv_call_state *dce_ca
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	acct_flags = samdb_result_acct_flags(msgs[0], 
-					     "userAccountControl");
+	
+	user_account_control = ldb_msg_find_attr_as_uint(msgs[0], "userAccountControl", 0);
 
-	if (acct_flags & ACB_DISABLED) {
+	if (user_account_control & UF_ACCOUNTDISABLE) {
 		DEBUG(1, ("Account [%s] is disabled\n", r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (r->in.secure_channel_type == SEC_CHAN_WKSTA) {
-		if (!(acct_flags & ACB_WSTRUST)) {
-			DEBUG(1, ("Client asked for a workstation secure channel, but is not a workstation (member server) acb flags: 0x%x\n", acct_flags));
+		if (!(user_account_control & UF_WORKSTATION_TRUST_ACCOUNT)) {
+			DEBUG(1, ("Client asked for a workstation secure channel, but is not a workstation (member server) acb flags: 0x%x\n", user_account_control));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else if (r->in.secure_channel_type == SEC_CHAN_DOMAIN) {
-		if (!(acct_flags & ACB_DOMTRUST)) {
-			DEBUG(1, ("Client asked for a trusted domain secure channel, but is not a trusted domain: acb flags: 0x%x\n", acct_flags));
+		if (!(user_account_control & UF_INTERDOMAIN_TRUST_ACCOUNT)) {
+			DEBUG(1, ("Client asked for a trusted domain secure channel, but is not a trusted domain: acb flags: 0x%x\n", user_account_control));
+			
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else if (r->in.secure_channel_type == SEC_CHAN_BDC) {
-		if (!(acct_flags & ACB_SVRTRUST)) {
-			DEBUG(1, ("Client asked for a server secure channel, but is not a server (domain controller): acb flags: 0x%x\n", acct_flags));
+		if (!(user_account_control & UF_SERVER_TRUST_ACCOUNT)) {
+			DEBUG(1, ("Client asked for a server secure channel, but is not a server (domain controller): acb flags: 0x%x\n", user_account_control));
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
