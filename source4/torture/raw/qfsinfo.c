@@ -38,7 +38,7 @@ static struct {
 	{"SIZE_INFO",             RAW_QFS_SIZE_INFO, },
 	{"DEVICE_INFO",           RAW_QFS_DEVICE_INFO, },
 	{"ATTRIBUTE_INFO",        RAW_QFS_ATTRIBUTE_INFO, },
-	{"UNIX_INFO",             RAW_QFS_UNIX_INFO,            CAP_UNIX},
+	{"UNIX_INFO",             RAW_QFS_UNIX_INFO, CAP_UNIX},
 	{"VOLUME_INFORMATION",    RAW_QFS_VOLUME_INFORMATION, },
 	{"SIZE_INFORMATION",      RAW_QFS_SIZE_INFORMATION, },
 	{"DEVICE_INFORMATION",    RAW_QFS_DEVICE_INFORMATION, },
@@ -130,7 +130,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 
 	/* scan all the levels, pulling the results */
 	for (i=0; levels[i].name; i++) {
-		printf("Running level %s\n", levels[i].name);
+		torture_comment(torture, "Running level %s\n", levels[i].name);
 		levels[i].fsinfo.generic.level = levels[i].level;
 		levels[i].status = smb_raw_fsinfo(cli->tree, torture, &levels[i].fsinfo);
 	}
@@ -151,14 +151,11 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 	}
 
 	if (count != 0) {
-		printf("%d levels failed\n", count);
-		if (count > 13) {
-			printf("too many level failures - giving up\n");
-			return false;
-		}
+		torture_comment(torture, "%d levels failed\n", count);
+		torture_assert(torture, count > 13, "too many level failures - giving up");
 	}
 
-	printf("check for correct aliases\n");
+	torture_comment(torture, "check for correct aliases\n");
 	s1 = find("SIZE_INFO");
 	s2 = find("SIZE_INFORMATION");
 	if (s1 && s2) {
@@ -181,7 +178,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 		STRUCT_EQUAL(volume_info, create_time,    volume_info, create_time);
 		VAL_EQUAL   (volume_info, serial_number,  volume_info, serial_number);
 		STR_EQUAL   (volume_info, volume_name.s,    volume_info, volume_name.s);
-		printf("volume_info.volume_name = '%s'\n", s1->volume_info.out.volume_name.s);
+		torture_comment(torture, "volume_info.volume_name = '%s'\n", s1->volume_info.out.volume_name.s);
 	}	
 
 	s1 = find("ATTRIBUTE_INFO");
@@ -192,10 +189,10 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 		VAL_EQUAL(attribute_info, max_file_component_length, 
 			  attribute_info, max_file_component_length);
 		STR_EQUAL(attribute_info, fs_type.s, attribute_info, fs_type.s);
-		printf("attribute_info.fs_type = '%s'\n", s1->attribute_info.out.fs_type.s);
+		torture_comment(torture, "attribute_info.fs_type = '%s'\n", s1->attribute_info.out.fs_type.s);
 	}	
 
-	printf("check for consistent disk sizes\n");
+	torture_comment(torture, "check for consistent disk sizes\n");
 	s1 = find("DSKATTR");
 	s2 = find("ALLOCATION");
 	if (s1 && s2) {
@@ -214,10 +211,10 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 			       size1, size2);
 			ret = false;
 		}
-		printf("total disk = %.0f MB\n", size1*scale/1.0e6);
+		torture_comment(torture, "total disk = %.0f MB\n", size1*scale/1.0e6);
 	}
 
-	printf("check consistent free disk space\n");
+	torture_comment(torture, "check consistent free disk space\n");
 	s1 = find("DSKATTR");
 	s2 = find("ALLOCATION");
 	if (s1 && s2) {
@@ -236,10 +233,10 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 			       size1, size2);
 			ret = false;
 		}
-		printf("free disk = %.0f MB\n", size1*scale/1.0e6);
+		torture_comment(torture, "free disk = %.0f MB\n", size1*scale/1.0e6);
 	}
 	
-	printf("volume info consistency\n");
+	torture_comment(torture, "volume info consistency\n");
 	s1 = find("VOLUME");
 	s2 = find("VOLUME_INFO");
 	if (s1 && s2) {
@@ -287,7 +284,7 @@ bool torture_raw_qfsinfo(struct torture_context *torture,
 		} \
 	}} while (0)
 
-	printf("check for correct termination\n");
+	torture_comment(torture, "check for correct termination\n");
 	
 	STR_CHECK("VOLUME",                volume,         volume_name, 0);
 	STR_CHECK("VOLUME_INFO",           volume_info,    volume_name, STR_UNICODE);
