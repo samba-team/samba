@@ -450,31 +450,41 @@ bool cli_send_smb_direct_writeX(struct cli_state *cli,
  Setup basics in a outgoing packet.
 ****************************************************************************/
 
+void cli_setup_packet_buf(struct cli_state *cli, char *buf)
+{
+	uint16 flags2;
+	cli->rap_error = 0;
+	SIVAL(buf,smb_rcls,0);
+	SSVAL(buf,smb_pid,cli->pid);
+	memset(buf+smb_pidhigh, 0, 12);
+	SSVAL(buf,smb_uid,cli->vuid);
+	SSVAL(buf,smb_mid,cli->mid);
+
+	if (cli->protocol <= PROTOCOL_CORE) {
+		return;
+	}
+
+	if (cli->case_sensitive) {
+		SCVAL(buf,smb_flg,0x0);
+	} else {
+		/* Default setting, case insensitive. */
+		SCVAL(buf,smb_flg,0x8);
+	}
+	flags2 = FLAGS2_LONG_PATH_COMPONENTS;
+	if (cli->capabilities & CAP_UNICODE)
+		flags2 |= FLAGS2_UNICODE_STRINGS;
+	if ((cli->capabilities & CAP_DFS) && cli->dfsroot)
+		flags2 |= FLAGS2_DFS_PATHNAMES;
+	if (cli->capabilities & CAP_STATUS32)
+		flags2 |= FLAGS2_32_BIT_ERROR_CODES;
+	if (cli->use_spnego)
+		flags2 |= FLAGS2_EXTENDED_SECURITY;
+	SSVAL(buf,smb_flg2, flags2);
+}
+
 void cli_setup_packet(struct cli_state *cli)
 {
-	cli->rap_error = 0;
-	SSVAL(cli->outbuf,smb_pid,cli->pid);
-	SSVAL(cli->outbuf,smb_uid,cli->vuid);
-	SSVAL(cli->outbuf,smb_mid,cli->mid);
-	if (cli->protocol > PROTOCOL_CORE) {
-		uint16 flags2;
-		if (cli->case_sensitive) {
-			SCVAL(cli->outbuf,smb_flg,0x0);
-		} else {
-			/* Default setting, case insensitive. */
-			SCVAL(cli->outbuf,smb_flg,0x8);
-		}
-		flags2 = FLAGS2_LONG_PATH_COMPONENTS;
-		if (cli->capabilities & CAP_UNICODE)
-			flags2 |= FLAGS2_UNICODE_STRINGS;
-		if ((cli->capabilities & CAP_DFS) && cli->dfsroot)
-			flags2 |= FLAGS2_DFS_PATHNAMES;
-		if (cli->capabilities & CAP_STATUS32)
-			flags2 |= FLAGS2_32_BIT_ERROR_CODES;
-		if (cli->use_spnego)
-			flags2 |= FLAGS2_EXTENDED_SECURITY;
-		SSVAL(cli->outbuf,smb_flg2, flags2);
-	}
+	cli_setup_packet_buf(cli, cli->outbuf);
 }
 
 /****************************************************************************
