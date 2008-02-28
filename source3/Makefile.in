@@ -763,8 +763,18 @@ RPCCLIENT_OBJ = $(RPCCLIENT_OBJ1) \
 PAM_WINBIND_OBJ = nsswitch/pam_winbind.o $(WBCOMMON_OBJ) \
 		  $(LIBREPLACE_OBJ) @BUILD_INIPARSER@
 
-LIBSMBCLIENT_OBJ0 = libsmb/libsmbclient.o libsmb/libsmb_compat.o \
+LIBSMBCLIENT_OBJ0 = \
 		    libsmb/libsmb_cache.o \
+		    libsmb/libsmb_compat.o \
+		    libsmb/libsmb_context.o \
+		    libsmb/libsmb_dir.o \
+		    libsmb/libsmb_file.o \
+		    libsmb/libsmb_misc.o \
+		    libsmb/libsmb_path.o \
+		    libsmb/libsmb_printjob.o \
+		    libsmb/libsmb_server.o \
+		    libsmb/libsmb_stat.o \
+		    libsmb/libsmb_xattr.o \
 		    $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		    $(LIBSMB_OBJ) $(KRBCLIENT_OBJ) \
 		    $(LIBMSRPC_OBJ) $(LIBMSRPC_GEN_OBJ) $(RPC_PARSE_OBJ) \
