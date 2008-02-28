@@ -296,13 +296,6 @@ static ADS_STATUS libnet_join_set_machine_spn(TALLOC_CTX *mem_ctx,
 	const char *spn_array[3] = {NULL, NULL, NULL};
 	char *spn = NULL;
 
-	if (!r->in.ads) {
-		status = libnet_join_connect_ads(mem_ctx, r);
-		if (!ADS_ERR_OK(status)) {
-			return status;
-		}
-	}
-
 	status = libnet_join_find_machine_acct(mem_ctx, r);
 	if (!ADS_ERR_OK(status)) {
 		return status;
@@ -358,13 +351,6 @@ static ADS_STATUS libnet_join_set_machine_upn(TALLOC_CTX *mem_ctx,
 		return ADS_SUCCESS;
 	}
 
-	if (!r->in.ads) {
-		status = libnet_join_connect_ads(mem_ctx, r);
-		if (!ADS_ERR_OK(status)) {
-			return status;
-		}
-	}
-
 	status = libnet_join_find_machine_acct(mem_ctx, r);
 	if (!ADS_ERR_OK(status)) {
 		return status;
@@ -406,13 +392,6 @@ static ADS_STATUS libnet_join_set_os_attributes(TALLOC_CTX *mem_ctx,
 
 	if (!r->in.os_name || !r->in.os_version ) {
 		return ADS_SUCCESS;
-	}
-
-	if (!r->in.ads) {
-		status = libnet_join_connect_ads(mem_ctx, r);
-		if (!ADS_ERR_OK(status)) {
-			return status;
-		}
 	}
 
 	status = libnet_join_find_machine_acct(mem_ctx, r);
@@ -524,6 +503,13 @@ static ADS_STATUS libnet_join_post_processing_ads(TALLOC_CTX *mem_ctx,
 						  struct libnet_JoinCtx *r)
 {
 	ADS_STATUS status;
+
+	if (!r->in.ads) {
+		status = libnet_join_connect_ads(mem_ctx, r);
+		if (!ADS_ERR_OK(status)) {
+			return status;
+		}
+	}
 
 	status = libnet_join_set_machine_spn(mem_ctx, r);
 	if (!ADS_ERR_OK(status)) {
