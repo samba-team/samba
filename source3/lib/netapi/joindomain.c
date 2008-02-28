@@ -48,7 +48,7 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 
 	if (join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 		NTSTATUS status;
-		struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+		struct netr_DsRGetDCNameInfo *info = NULL;
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
 				 DS_RETURN_DNS_NAME;
@@ -60,7 +60,7 @@ static WERROR NetJoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 			return ntstatus_to_werror(status);
 		}
 		r->in.dc_name = talloc_strdup(mem_ctx,
-					      info->domain_controller_name);
+					      info->dc_unc);
 		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	}
 
@@ -252,7 +252,7 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 	} else {
 		NTSTATUS status;
 		const char *domain = NULL;
-		struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+		struct netr_DsRGetDCNameInfo *info = NULL;
 		uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 				 DS_WRITABLE_REQUIRED |
 				 DS_RETURN_DNS_NAME;
@@ -269,7 +269,7 @@ static WERROR NetUnjoinDomainLocal(struct libnetapi_ctx *mem_ctx,
 			return ntstatus_to_werror(status);
 		}
 		r->in.dc_name = talloc_strdup(mem_ctx,
-					      info->domain_controller_name);
+					      info->dc_unc);
 		W_ERROR_HAVE_NO_MEMORY(r->in.dc_name);
 	}
 
@@ -562,7 +562,7 @@ static WERROR NetGetJoinableOUsLocal(struct libnetapi_ctx *ctx,
 	NTSTATUS status;
 	ADS_STATUS ads_status;
 	ADS_STRUCT *ads = NULL;
-	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+	struct netr_DsRGetDCNameInfo *info = NULL;
 	uint32_t flags = DS_DIRECTORY_SERVICE_REQUIRED |
 			 DS_RETURN_DNS_NAME;
 
@@ -574,7 +574,7 @@ static WERROR NetGetJoinableOUsLocal(struct libnetapi_ctx *ctx,
 		return ntstatus_to_werror(status);
 	}
 
-	ads = ads_init(domain, domain, info->domain_controller_name);
+	ads = ads_init(domain, domain, info->dc_unc);
 	if (!ads) {
 		return WERR_GENERAL_FAILURE;
 	}
