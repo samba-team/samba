@@ -75,7 +75,6 @@ to the "Changes" section for details on the exact parameters that were
 updated.
 
 
-
 Registry Configuration Backend
 ==============================
 
@@ -93,6 +92,11 @@ Removed Features
 
 Both the Python bindings and the libmsrpc shared library have been
 removed from the tree due to lack of an official maintainer.
+
+As smbfs is no longer supported in current kernel versions, smbmount has
+been removed in this Samba version. Please use cifs (mount.cifs) instead.
+See examples/scripts/mount/mount.smbfs as an example for a wrapper which
+calls mount.cifs instead of smbmount/mount.smbfs.
 
 
 
@@ -242,6 +246,7 @@ o   Karolin Seeger <ks@sernet.de>
     * Add 'net rap file user'.
     * Change LDAP search filter to find machine accounts which
       are not located in the user suffix.
+    * Remove smbmount.
 
 
 o   David Shaw <dshaw@jabberwocky.com>
