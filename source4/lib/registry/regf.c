@@ -1863,7 +1863,9 @@ static WERROR regf_save_hbin(struct regf_data *regf)
 	return WERR_OK;
 }
 
-WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx, const char *location,
+WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx, 
+			    struct smb_iconv_convenience *iconv_convenience,
+			    const char *location,
 			    int minor_version, struct hive_key **key)
 {
 	struct regf_data *regf;
@@ -1874,7 +1876,7 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 
 	regf = (struct regf_data *)talloc_zero(NULL, struct regf_data);
 
-	regf->iconv_convenience = lp_iconv_convenience(global_loadparm);
+	regf->iconv_convenience = iconv_convenience;
 
 	W_ERROR_HAVE_NO_MEMORY(regf);
 
@@ -1950,7 +1952,7 @@ WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 }
 
 WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location, 
-			  struct loadparm_context *lp_ctx, struct hive_key **key)
+			  struct smb_iconv_convenience *iconv_convenience, struct hive_key **key)
 {
 	struct regf_data *regf;
 	struct regf_hdr *regf_hdr;
@@ -1959,7 +1961,7 @@ WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx, const char *location,
 
 	regf = (struct regf_data *)talloc_zero(NULL, struct regf_data);
 
-	regf->iconv_convenience = lp_iconv_convenience(lp_ctx);
+	regf->iconv_convenience = iconv_convenience;
 
 	W_ERROR_HAVE_NO_MEMORY(regf);
 

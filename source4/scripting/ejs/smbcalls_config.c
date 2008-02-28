@@ -36,8 +36,8 @@ static int ejs_lpServices(MprVarHandle eid, int argc, char **argv)
 	const char **list = NULL;
 	if (argc != 0) return -1;
 	
-	for (i=0;i<lp_numservices(global_loadparm);i++) {
-		list = str_list_add(list, lp_servicename(lp_servicebynum(global_loadparm, i)));
+	for (i=0;i<lp_numservices(mprLpCtx());i++) {
+		list = str_list_add(list, lp_servicename(lp_servicebynum(mprLpCtx(), i)));
 	}
 	talloc_steal(mprMemCtx(), list);
 	mpr_Return(eid, mprList("services", list));
@@ -68,7 +68,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 	if (argc == 2) {
 		struct loadparm_service *service;
 		/* its a share parameter */
-		service = lp_service(global_loadparm, argv[0]);
+		service = lp_service(mprLpCtx(), argv[0]);
 		if (service == NULL) {
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
@@ -84,7 +84,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 				mpr_Return(eid, mprCreateUndefinedVar());
 				return 0;
 			}
-			value = lp_get_parametric(global_loadparm, service, type, option);
+			value = lp_get_parametric(mprLpCtx(), service, type, option);
 			if (value == NULL) {
 				mpr_Return(eid, mprCreateUndefinedVar());
 				return 0;
@@ -98,7 +98,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
 		}
-		parm_ptr = lp_parm_ptr(global_loadparm, service, parm);
+		parm_ptr = lp_parm_ptr(mprLpCtx(), service, parm);
 	} else if (strchr(argv[0], ':')) {
 		/* its a global parametric option */
 		const char *type = talloc_strndup(mprMemCtx(), 
@@ -109,7 +109,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
 		}
-		value = lp_get_parametric(global_loadparm, NULL, type, option);
+		value = lp_get_parametric(mprLpCtx(), NULL, type, option);
 		if (value == NULL) {
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
@@ -123,7 +123,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 			mpr_Return(eid, mprCreateUndefinedVar());
 			return 0;
 		}
-		parm_ptr = lp_parm_ptr(global_loadparm, NULL, parm);
+		parm_ptr = lp_parm_ptr(mprLpCtx(), NULL, parm);
 	}
 
 	if (parm == NULL || parm_ptr == NULL) {
@@ -166,7 +166,7 @@ static int ejs_lpGet(MprVarHandle eid, int argc, char **argv)
 */
 static int ejs_lpFilename(MprVarHandle eid, int argc, char **argv)
 {
-	mpr_ReturnString(eid, lp_configfile(global_loadparm));
+	mpr_ReturnString(eid, lp_configfile(mprLpCtx()));
 	return 0;
 }
 
@@ -184,7 +184,7 @@ static int ejs_lpSet(MprVarHandle eid, int argc, char **argv)
 		return -1;
 	}
 
-	mpr_Return(eid, mprCreateBoolVar(lp_set_cmdline(global_loadparm, argv[0], argv[1])));
+	mpr_Return(eid, mprCreateBoolVar(lp_set_cmdline(mprLpCtx(), argv[0], argv[1])));
 	return 0;
 }
 
@@ -196,9 +196,9 @@ static int ejs_lpSet(MprVarHandle eid, int argc, char **argv)
 static int ejs_lpReload(MprVarHandle eid, int argc, char **argv)
 {
 	bool ret;
-	const char *filename = lp_configfile(global_loadparm);
+	const char *filename = lp_configfile(mprLpCtx());
 
-	ret = lp_load(global_loadparm, filename);
+	ret = lp_load(mprLpCtx(), filename);
 	mpr_Return(eid, mprCreateBoolVar(ret));
 	return 0;
 }

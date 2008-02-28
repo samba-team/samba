@@ -453,7 +453,7 @@ static int ejs_ldbConnect(MprVarHandle eid, int argc, char **argv)
 
 	dbfile = argv[0];
 
-	ldb = ldb_wrap_connect(mprMemCtx(), global_loadparm, dbfile, 
+	ldb = ldb_wrap_connect(mprMemCtx(), mprLpCtx(), dbfile, 
 			       session_info, creds,
 			       0, (const char **)(argv+1));
 	if (ldb == NULL) {
