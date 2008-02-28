@@ -594,7 +594,7 @@ struct samr_DispInfoFullGroups {
 
 struct samr_DispEntryAscii {
 	uint32_t idx;
-	struct lsa_AsciiString account_name;
+	struct lsa_AsciiStringLarge account_name;
 };
 
 struct samr_DispInfoAscii {

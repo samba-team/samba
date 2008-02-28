@@ -19,7 +19,7 @@ struct lsa_String {
 
 struct lsa_StringLarge {
 	uint16_t length;/* [value(2*strlen_m(string))] */
-	uint16_t size;/* [value(2*(strlen_m(string)+1))] */
+	uint16_t size;/* [value(2*strlen_m_term(string))] */
 	const char *string;/* [unique,charset(UTF16),length_is(length/2),size_is(size/2)] */
 }/* [public] */;
 
@@ -31,7 +31,13 @@ struct lsa_Strings {
 struct lsa_AsciiString {
 	uint16_t length;/* [value(strlen_m(string))] */
 	uint16_t size;/* [value(strlen_m(string))] */
-	const char * string;/* [unique,flag(LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_SIZE4|LIBNDR_FLAG_STR_LEN4)] */
+	const char *string;/* [unique,charset(DOS),length_is(length),size_is(size)] */
+}/* [public] */;
+
+struct lsa_AsciiStringLarge {
+	uint16_t length;/* [value(strlen_m(string))] */
+	uint16_t size;/* [value(strlen_m_term(string))] */
+	const char *string;/* [unique,charset(DOS),length_is(length),size_is(size)] */
 }/* [public] */;
 
 struct lsa_LUID {

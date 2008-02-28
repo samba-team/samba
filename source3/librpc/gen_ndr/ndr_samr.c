@@ -4124,10 +4124,10 @@ static enum ndr_err_code ndr_push_samr_DispEntryAscii(struct ndr_push *ndr, int 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 4));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->idx));
-		NDR_CHECK(ndr_push_lsa_AsciiString(ndr, NDR_SCALARS, &r->account_name));
+		NDR_CHECK(ndr_push_lsa_AsciiStringLarge(ndr, NDR_SCALARS, &r->account_name));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_push_lsa_AsciiString(ndr, NDR_BUFFERS, &r->account_name));
+		NDR_CHECK(ndr_push_lsa_AsciiStringLarge(ndr, NDR_BUFFERS, &r->account_name));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -4137,10 +4137,10 @@ static enum ndr_err_code ndr_pull_samr_DispEntryAscii(struct ndr_pull *ndr, int 
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->idx));
-		NDR_CHECK(ndr_pull_lsa_AsciiString(ndr, NDR_SCALARS, &r->account_name));
+		NDR_CHECK(ndr_pull_lsa_AsciiStringLarge(ndr, NDR_SCALARS, &r->account_name));
 	}
 	if (ndr_flags & NDR_BUFFERS) {
-		NDR_CHECK(ndr_pull_lsa_AsciiString(ndr, NDR_BUFFERS, &r->account_name));
+		NDR_CHECK(ndr_pull_lsa_AsciiStringLarge(ndr, NDR_BUFFERS, &r->account_name));
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -4150,7 +4150,7 @@ _PUBLIC_ void ndr_print_samr_DispEntryAscii(struct ndr_print *ndr, const char *n
 	ndr_print_struct(ndr, name, "samr_DispEntryAscii");
 	ndr->depth++;
 	ndr_print_uint32(ndr, "idx", r->idx);
-	ndr_print_lsa_AsciiString(ndr, "account_name", &r->account_name);
+	ndr_print_lsa_AsciiStringLarge(ndr, "account_name", &r->account_name);
 	ndr->depth--;
 }
 
