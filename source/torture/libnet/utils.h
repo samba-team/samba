@@ -19,15 +19,18 @@
 */
 
 
-bool test_opendomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_opendomain(struct torture_context *tctx, 
+		     struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		     struct policy_handle *handle, struct lsa_String *domname,
 		     struct dom_sid2 *sid);
 
-bool test_user_create(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_user_create(struct torture_context *tctx, 
+		      struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		      struct policy_handle *handle, const char *name,
 		      uint32_t *rid);
 
-bool test_user_cleanup(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+bool test_user_cleanup(struct torture_context *tctx, 
+		       struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		       struct policy_handle *domain_handle,
 		       const char *name);
 
