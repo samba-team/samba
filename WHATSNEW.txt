@@ -79,10 +79,10 @@ Registry Configuration Backend
 
 Samba is now able to use a registry based configuration backed to
 supplement smb.conf setting.  This feature may be enabled by setting
-"include = registry" and "registry shares = yes" in the [global] 
-section of smb.conf and may be managed using the "net conf" command.  
+"config backend = registry" and "registry shares = yes" in the [global]
+section of smb.conf and may be managed using the "net conf" command.
 
-More information may be obtained from the smb.conf(5) and net(8) man 
+More information may be obtained from the smb.conf(5) and net(8) man
 pages.
 
 
@@ -110,7 +110,10 @@ smb.conf changes
     cluster addresses			New		""
     config backend			New		file
     ctdb socket				New		""
+    debug class				New		No
     lanman auth				Changed Default	No
+    ldap debug level			New		0
+    ldap debug threshold		New		10
     mangle map				Removed
     open files database hashsize	Removed
     read bmpx				Removed				
