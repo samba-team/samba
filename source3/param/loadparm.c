@@ -420,7 +420,7 @@ typedef struct {
 	bool bRead_only;
 	bool bNo_set_dir;
 	bool bGuest_only;
-	bool bHidden;
+	bool bAdministrative_share;
 	bool bGuest_ok;
 	bool bPrint_ok;
 	bool bMap_system;
@@ -563,7 +563,7 @@ static service sDefault = {
 	True,			/* bRead_only */
 	True,			/* bNo_set_dir */
 	False,			/* bGuest_only */
-	False,			/* bHidden */
+	False,			/* bAdministrative_share */
 	False,			/* bGuest_ok */
 	False,			/* bPrint_ok */
 	False,			/* bMap_system */
@@ -973,7 +973,7 @@ static struct parm_struct parm_table[] = {
 	{"inherit owner", P_BOOL, P_LOCAL, &sDefault.bInheritOwner, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"guest only", P_BOOL, P_LOCAL, &sDefault.bGuest_only, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"only guest", P_BOOL, P_LOCAL, &sDefault.bGuest_only, NULL, NULL, FLAG_HIDE}, 
-	{"hidden", P_BOOL, P_LOCAL, &sDefault.bHidden, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT},
+	{"administrative share", P_BOOL, P_LOCAL, &sDefault.bAdministrative_share, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT},
 
 	{"guest ok", P_BOOL, P_LOCAL, &sDefault.bGuest_ok, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"public", P_BOOL, P_LOCAL, &sDefault.bGuest_ok, NULL, NULL, FLAG_HIDE}, 
@@ -2140,7 +2140,7 @@ FN_LOCAL_BOOL(lp_readonly, bRead_only)
 FN_LOCAL_BOOL(lp_no_set_dir, bNo_set_dir)
 FN_LOCAL_BOOL(lp_guest_ok, bGuest_ok)
 FN_LOCAL_BOOL(lp_guest_only, bGuest_only)
-FN_LOCAL_BOOL(lp_hidden, bHidden)
+FN_LOCAL_BOOL(lp_administrative_share, bAdministrative_share)
 FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
 FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
@@ -2778,7 +2778,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	ServicePtrs[i]->bAvailable = True;
 	ServicePtrs[i]->bRead_only = True;
 	ServicePtrs[i]->bGuest_only = False;
-	ServicePtrs[i]->bHidden = True;
+	ServicePtrs[i]->bAdministrative_share = True;
 	ServicePtrs[i]->bGuest_ok = guest_ok;
 	ServicePtrs[i]->bPrint_ok = False;
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
