@@ -47,6 +47,15 @@ void init_lsa_AsciiString(struct lsa_AsciiString *name, const char *s)
 }
 
 /*******************************************************************
+ inits a structure.
+********************************************************************/
+
+void init_lsa_AsciiStringLarge(struct lsa_AsciiStringLarge *name, const char *s)
+{
+	name->string = s;
+}
+
+/*******************************************************************
  Inits an lsa_QosInfo structure.
 ********************************************************************/
 
