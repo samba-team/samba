@@ -41,6 +41,8 @@ struct finddcs_state {
 	struct nbtd_getdcname r;
 	struct nbt_name_status node_status;
 
+	struct smb_iconv_convenience *iconv_convenience;
+
 	int num_dcs;
 	struct nbt_dc_name *dcs;
 	uint16_t nbt_port;
@@ -67,6 +69,7 @@ struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 				       const char *domain_name,
 				       int name_type,
 				       struct dom_sid *domain_sid,
+				       struct smb_iconv_convenience *iconv_convenience,
 				       struct resolve_context *resolve_ctx,
 				       struct event_context *event_ctx,
 				       struct messaging_context *msg_ctx)
@@ -87,6 +90,7 @@ struct composite_context *finddcs_send(TALLOC_CTX *mem_ctx,
 	state->nbt_port = nbt_port;
 	state->my_netbios_name = talloc_strdup(state, my_netbios_name);
 	state->domain_name = talloc_strdup(state, domain_name);
+	state->iconv_convenience = iconv_convenience;
 	if (composite_nomem(state->domain_name, c)) return c;
 
 	if (domain_sid) {
@@ -197,7 +201,7 @@ static void fallback_node_status(struct finddcs_state *state)
 	state->node_status.in.retries = 2;
 
 	nbtsock = nbt_name_socket_init(state, state->ctx->event_ctx, 
-				       lp_iconv_convenience(global_loadparm));
+				       state->iconv_convenience);
 	if (composite_nomem(nbtsock, state->ctx)) return;
 	
 	name_req = nbt_name_status_send(nbtsock, &state->node_status);
@@ -255,6 +259,7 @@ NTSTATUS finddcs(TALLOC_CTX *mem_ctx,
 		 uint16_t nbt_port,
 		 const char *domain_name, int name_type, 
 		 struct dom_sid *domain_sid,
+		 struct smb_iconv_convenience *iconv_convenience,
 		 struct resolve_context *resolve_ctx,
 		 struct event_context *event_ctx,
 		 struct messaging_context *msg_ctx,
@@ -264,7 +269,9 @@ NTSTATUS finddcs(TALLOC_CTX *mem_ctx,
 						   my_netbios_name,
 						   nbt_port,
 						   domain_name, name_type,
-						   domain_sid, resolve_ctx,
+						   domain_sid, 
+						   iconv_convenience,
+						   resolve_ctx,
 						   event_ctx, msg_ctx);
 	return finddcs_recv(c, mem_ctx, num_dcs, dcs);
 }
