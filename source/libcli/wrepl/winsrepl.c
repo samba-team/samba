@@ -102,7 +102,7 @@ static NTSTATUS wrepl_finish_recv(void *private, DATA_BLOB packet_blob_in)
 	blob.length = packet_blob_in.length - 4;
 	
 	/* we have a full request - parse it */
-	ndr_err = ndr_pull_struct_blob(&blob, req->packet, lp_iconv_convenience(global_loadparm), req->packet,
+	ndr_err = ndr_pull_struct_blob(&blob, req->packet, wrepl_socket->iconv_convenience, req->packet,
 				       (ndr_pull_flags_fn_t)ndr_pull_wrepl_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		NTSTATUS status = ndr_map_error2ntstatus(ndr_err);
@@ -163,7 +163,8 @@ static int wrepl_socket_destructor(struct wrepl_socket *sock)
   operations will use that event context
 */
 struct wrepl_socket *wrepl_socket_init(TALLOC_CTX *mem_ctx, 
-				       struct event_context *event_ctx)
+				       struct event_context *event_ctx,
+				       struct smb_iconv_convenience *iconv_convenience)
 {
 	struct wrepl_socket *wrepl_socket;
 	NTSTATUS status;
@@ -177,6 +178,8 @@ struct wrepl_socket *wrepl_socket_init(TALLOC_CTX *mem_ctx,
 		wrepl_socket->event.ctx = talloc_reference(wrepl_socket, event_ctx);
 	}
 	if (!wrepl_socket->event.ctx) goto failed;
+
+	wrepl_socket->iconv_convenience = iconv_convenience;
 
 	status = socket_create("ip", SOCKET_TYPE_STREAM, &wrepl_socket->sock, 0);
 	if (!NT_STATUS_IS_OK(status)) goto failed;
@@ -308,6 +311,14 @@ static void wrepl_connect_handler(struct composite_context *creq)
 	composite_done(result);
 }
 
+const char *wrepl_best_ip(struct loadparm_context *lp_ctx, const char *peer_ip)
+{
+	struct interface *ifaces;
+	load_interfaces(lp_ctx, lp_interfaces(lp_ctx), &ifaces);
+	return iface_best_ip(ifaces, peer_ip);
+}
+
+
 /*
   connect a wrepl_socket to a WINS server
 */
@@ -330,12 +341,6 @@ struct composite_context *wrepl_connect_send(struct wrepl_socket *wrepl_socket,
 	result->private_data	= state;
 	state->result		= result;
 	state->wrepl_socket	= wrepl_socket;
-
-	if (!our_ip) {
-		struct interface *ifaces;
-		load_interfaces(state, lp_interfaces(global_loadparm), &ifaces);
-		our_ip = iface_best_ip(ifaces, peer_ip);
-	}
 
 	us = socket_address_from_strings(state, wrepl_socket->sock->backend_name, 
 					 our_ip, 0);
@@ -493,7 +498,7 @@ struct wrepl_request *wrepl_request_send(struct wrepl_socket *wrepl_socket,
 	}
 
 	wrap.packet = *packet;
-	ndr_err = ndr_push_struct_blob(&blob, req, lp_iconv_convenience(global_loadparm), &wrap, 
+	ndr_err = ndr_push_struct_blob(&blob, req, wrepl_socket->iconv_convenience, &wrap, 
 				       (ndr_push_flags_fn_t)ndr_push_wrepl_wrap);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);

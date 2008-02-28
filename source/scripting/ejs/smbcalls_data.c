@@ -177,7 +177,7 @@ static int ejs_regToVar(MprVarHandle eid, int argc, struct MprVar **argv)
 	case REG_EXPAND_SZ: {
 		char *s;
 		ssize_t len;
-		len = convert_string_talloc(mprMemCtx(), lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX, 
+		len = convert_string_talloc(mprMemCtx(), lp_iconv_convenience(mprLpCtx()), CH_UTF16, CH_UNIX, 
 					    blob->data, blob->length, (void **)&s);
 		if (len == -1) {
 			ejsSetErrorMsg(eid, "regToVar invalid REG_SZ string");
@@ -225,7 +225,7 @@ static int ejs_regToVar(MprVarHandle eid, int argc, struct MprVar **argv)
 			if (slen == 2 && b.length == 2 && SVAL(b.data, 0) == 0) {
 				break;
 			}
-			len = convert_string_talloc(mprMemCtx(), lp_iconv_convenience(global_loadparm), CH_UTF16, CH_UNIX, 
+			len = convert_string_talloc(mprMemCtx(), lp_iconv_convenience(mprLpCtx()), CH_UTF16, CH_UNIX, 
 						    b.data, slen, (void **)&s);
 			if (len == -1) {
 				ejsSetErrorMsg(eid, "regToVar invalid REG_MULTI_SZ string");

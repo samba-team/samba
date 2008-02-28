@@ -32,13 +32,13 @@ struct opendb_ops {
 				  uint32_t open_disposition, bool break_to_none,
 				  uint32_t oplock_level, uint32_t *oplock_granted);
 	NTSTATUS (*odb_open_file_pending)(struct odb_lock *lck, void *private);
-	NTSTATUS (*odb_close_file)(struct odb_lock *lck, void *file_handle);
+	NTSTATUS (*odb_close_file)(struct odb_lock *lck, void *file_handle,
+				   const char **delete_path);
 	NTSTATUS (*odb_remove_pending)(struct odb_lock *lck, void *private);
 	NTSTATUS (*odb_rename)(struct odb_lock *lck, const char *path);
 	NTSTATUS (*odb_set_delete_on_close)(struct odb_lock *lck, bool del_on_close);
 	NTSTATUS (*odb_get_delete_on_close)(struct odb_context *odb, 
-					    DATA_BLOB *key, bool *del_on_close, 
-					    int *open_count, char **path);
+					    DATA_BLOB *key, bool *del_on_close);
 	NTSTATUS (*odb_can_open)(struct odb_lock *lck,
 				 uint32_t stream_id, uint32_t share_access,
 				 uint32_t access_mask, bool delete_on_close,

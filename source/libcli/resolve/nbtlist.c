@@ -102,6 +102,7 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 						    const char **address_list,
 						    struct interface *ifaces,
 						    uint16_t nbt_port,
+						    int nbt_timeout,
 						    bool broadcast,
 						    bool wins_lookup)
 {
@@ -140,7 +141,8 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 		return c;
 	}
 
-	state->nbtsock = nbt_name_socket_init(state, event_ctx);
+	state->nbtsock = nbt_name_socket_init(state, event_ctx, 
+					      lp_iconv_convenience(global_loadparm));
 	if (composite_nomem(state->nbtsock, c)) return c;
 
 	/* count the address_list size */
@@ -161,7 +163,7 @@ struct composite_context *resolve_name_nbtlist_send(TALLOC_CTX *mem_ctx,
 
 		state->io_queries[i].in.broadcast   = broadcast;
 		state->io_queries[i].in.wins_lookup = wins_lookup;
-		state->io_queries[i].in.timeout     = lp_parm_int(global_loadparm, NULL, "nbt", "timeout", 1);
+		state->io_queries[i].in.timeout     = nbt_timeout;
 		state->io_queries[i].in.retries     = 2;
 
 		state->queries[i] = nbt_name_query_send(state->nbtsock, &state->io_queries[i]);
@@ -201,12 +203,14 @@ NTSTATUS resolve_name_nbtlist(struct nbt_name *name,
 			      const char **address_list,
 			      struct interface *ifaces, 
 			      uint16_t nbt_port,
+			      int nbt_timeout,
 			      bool broadcast, bool wins_lookup,
 			      const char **reply_addr)
 {
 	struct composite_context *c = resolve_name_nbtlist_send(mem_ctx, NULL, 
 								name, address_list, 
 								ifaces, nbt_port,
+								nbt_timeout,
 							        broadcast, wins_lookup);
 	return resolve_name_nbtlist_recv(c, mem_ctx, reply_addr);
 }

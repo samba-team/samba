@@ -63,6 +63,7 @@ class LoadParm(object):
     def __init__(self, *args, **kwargs): 
         _param.LoadParm_swiginit(self,_param.new_LoadParm(*args, **kwargs))
     __swig_destroy__ = _param.delete_LoadParm
+LoadParm.default_service = new_instancemethod(_param.LoadParm_default_service,None,LoadParm)
 LoadParm.load = new_instancemethod(_param.LoadParm_load,None,LoadParm)
 LoadParm.load_default = new_instancemethod(_param.LoadParm_load_default,None,LoadParm)
 LoadParm.__len__ = new_instancemethod(_param.LoadParm___len__,None,LoadParm)

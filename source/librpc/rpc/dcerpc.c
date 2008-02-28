@@ -351,7 +351,7 @@ static NTSTATUS ncacn_push_request_sign(struct dcerpc_connection *c,
 	/* non-signed packets are simpler */
 	if (!c->security_state.auth_info || 
 	    !c->security_state.generic_state) {
-		return ncacn_push_auth(blob, mem_ctx, pkt, c->security_state.auth_info);
+		return ncacn_push_auth(blob, mem_ctx, c->iconv_convenience, pkt, c->security_state.auth_info);
 	}
 
 	ndr = ndr_push_init_ctx(mem_ctx, c->iconv_convenience);
@@ -750,7 +750,7 @@ struct composite_context *dcerpc_bind_send(struct dcerpc_pipe *p,
 	pkt.u.bind.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	c->status = ncacn_push_auth(&blob, c, &pkt,
+	c->status = ncacn_push_auth(&blob, c, p->conn->iconv_convenience, &pkt,
 				    p->conn->security_state.auth_info);
 	if (!composite_is_ok(c)) return c;
 
@@ -813,7 +813,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_connection *c,
 	pkt.u.auth3.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = ncacn_push_auth(&blob, mem_ctx, &pkt, c->security_state.auth_info);
+	status = ncacn_push_auth(&blob, mem_ctx, c->iconv_convenience, &pkt, c->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -1646,7 +1646,7 @@ struct composite_context *dcerpc_alter_context_send(struct dcerpc_pipe *p,
 	pkt.u.alter.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	c->status = ncacn_push_auth(&blob, mem_ctx, &pkt,
+	c->status = ncacn_push_auth(&blob, mem_ctx, p->conn->iconv_convenience, &pkt,
 				    p->conn->security_state.auth_info);
 	if (!composite_is_ok(c)) return c;
 

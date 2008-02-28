@@ -56,14 +56,14 @@ static int ejs_doauth(MprVarHandle eid,
 	} else {
 		/* Hope we can find the event context somewhere up there... */
 		ev = event_context_find(tmp_ctx);
-		msg = messaging_client_init(tmp_ctx, lp_messaging_path(tmp_ctx, global_loadparm), 
-					    lp_iconv_convenience(global_loadparm), ev);
+		msg = messaging_client_init(tmp_ctx, lp_messaging_path(tmp_ctx, mprLpCtx()), 
+					    lp_iconv_convenience(mprLpCtx()), ev);
 	}
 
 	if (auth_types) {
-		nt_status = auth_context_create_methods(tmp_ctx, auth_types, ev, msg, global_loadparm, &auth_context);
+		nt_status = auth_context_create_methods(tmp_ctx, auth_types, ev, msg, mprLpCtx(), &auth_context);
 	} else {
-		nt_status = auth_context_create(tmp_ctx, ev, msg, global_loadparm, &auth_context);
+		nt_status = auth_context_create(tmp_ctx, ev, msg, mprLpCtx(), &auth_context);
 	}
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(false));
@@ -109,7 +109,7 @@ static int ejs_doauth(MprVarHandle eid,
 		goto done;
 	}
 
-	nt_status = auth_generate_session_info(tmp_ctx, global_loadparm, server_info, &session_info);
+	nt_status = auth_generate_session_info(tmp_ctx, mprLpCtx(), server_info, &session_info);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		mprSetPropertyValue(auth, "report", mprString("Session Info generation failed"));
 		mprSetPropertyValue(auth, "result", mprCreateBoolVar(false));
@@ -222,7 +222,7 @@ static int ejs_userAuth(MprVarHandle eid, int argc, struct MprVar **argv)
 static int ejs_system_session(MprVarHandle eid, int argc, struct MprVar **argv)
 {
 	struct MprVar *obj = mprInitObject(eid, "session_info", argc, argv);
-	struct auth_session_info *session_info = system_session(mprMemCtx(), global_loadparm);
+	struct auth_session_info *session_info = system_session(mprMemCtx(), mprLpCtx());
 
 	if (session_info == NULL) {
 		return -1;

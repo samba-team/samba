@@ -29,14 +29,14 @@ struct preg_data {
 	int fd;
 };
 
-static WERROR preg_read_utf16(int fd, char *c)
+static WERROR preg_read_utf16(struct smb_iconv_convenience *ic, int fd, char *c)
 {
 	uint16_t v;
 
 	if (read(fd, &v, 2) < 2) {
 		return WERR_GENERAL_FAILURE;
 	}
-	push_codepoint(lp_iconv_convenience(global_loadparm), c, v);
+	push_codepoint(ic, c, v);
 	return WERR_OK;
 }
 
@@ -123,6 +123,7 @@ _PUBLIC_ WERROR reg_preg_diff_save(TALLOC_CTX *ctx, const char *filename,
  * Load diff file
  */
 _PUBLIC_ WERROR reg_preg_diff_load(int fd,
+				   struct smb_iconv_convenience *iconv_convenience, 
 				   const struct reg_diff_callbacks *callbacks,
 				   void *callback_data)
 {
@@ -162,7 +163,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 	while(1) {
 		uint32_t value_type, length;
 
-		if (!W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr))) {
+		if (!W_ERROR_IS_OK(preg_read_utf16(iconv_convenience, fd, buf_ptr))) {
 			break;
 		}
 		if (*buf_ptr != '[') {
@@ -173,7 +174,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 
 		/* Get the path */
 		buf_ptr = buf;
-		while (W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) &&
+		while (W_ERROR_IS_OK(preg_read_utf16(iconv_convenience, fd, buf_ptr)) &&
 		       *buf_ptr != ';' && buf_ptr-buf < buf_size) {
 			buf_ptr++;
 		}
@@ -181,7 +182,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 
 		/* Get the name */
 		buf_ptr = buf;
-		while (W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) &&
+		while (W_ERROR_IS_OK(preg_read_utf16(iconv_convenience, fd, buf_ptr)) &&
 		       *buf_ptr != ';' && buf_ptr-buf < buf_size) {
 			buf_ptr++;
 		}
@@ -195,7 +196,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 		}
 		/* Read past delimiter */
 		buf_ptr = buf;
-		if (!(W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) &&
+		if (!(W_ERROR_IS_OK(preg_read_utf16(iconv_convenience, fd, buf_ptr)) &&
 		    *buf_ptr == ';') && buf_ptr-buf < buf_size) {
 			DEBUG(0, ("Error in PReg file.\n"));
 			ret = WERR_GENERAL_FAILURE;
@@ -209,7 +210,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 		}
 		/* Read past delimiter */
 		buf_ptr = buf;
-		if (!(W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) &&
+		if (!(W_ERROR_IS_OK(preg_read_utf16(iconv_convenience, fd, buf_ptr)) &&
 		    *buf_ptr == ';') && buf_ptr-buf < buf_size) {
 			DEBUG(0, ("Error in PReg file.\n"));
 			ret = WERR_GENERAL_FAILURE;
@@ -227,7 +228,7 @@ _PUBLIC_ WERROR reg_preg_diff_load(int fd,
 
 		/* Check if delimiter is in place (whine if it isn't) */
 		buf_ptr = buf;
-		if (!(W_ERROR_IS_OK(preg_read_utf16(fd, buf_ptr)) &&
+		if (!(W_ERROR_IS_OK(preg_read_utf16(iconv_convenience, fd, buf_ptr)) &&
 		    *buf_ptr == ']') && buf_ptr-buf < buf_size) {
 			DEBUG(0, ("Warning: Missing ']' in PReg file, expected ']', got '%c' 0x%x.\n",
 				*buf_ptr, *buf_ptr));

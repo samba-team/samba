@@ -111,7 +111,7 @@ static int ejs_typeof_native(MprVarHandle eid, int argc, struct MprVar **argv)
 static int ejs_libinclude(int eid, int argc, char **argv)
 {
 	int i, j;
-	const char **js_include = lp_js_include(global_loadparm);
+	const char **js_include = lp_js_include(mprLpCtx());
 
 	if (js_include == NULL || js_include[0] == NULL) {
 		ejsSetErrorMsg(eid, "js include path not set");
@@ -184,7 +184,7 @@ void smb_setup_ejs_functions(void (*exception_handler)(const char *))
 	smb_setup_ejs_param();
         smb_setup_ejs_literal();
 	
-	shared_init = load_samba_modules(NULL, global_loadparm, "smbcalls");
+	shared_init = load_samba_modules(NULL, mprLpCtx(), "smbcalls");
 	
 	run_init_functions(static_init);
 	run_init_functions(shared_init);

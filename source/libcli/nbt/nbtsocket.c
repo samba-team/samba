@@ -190,7 +190,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	}
 
 	/* parse the request */
-	ndr_err = ndr_pull_struct_blob(&blob, packet, lp_iconv_convenience(global_loadparm), packet,
+	ndr_err = ndr_pull_struct_blob(&blob, packet, nbtsock->iconv_convenience, packet,
 				       (ndr_pull_flags_fn_t)ndr_pull_nbt_name_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
 		status = ndr_map_error2ntstatus(ndr_err);
@@ -309,7 +309,8 @@ static void nbt_name_socket_handler(struct event_context *ev, struct fd_event *f
   then operations will use that event context
 */
 _PUBLIC_ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx, 
-					     struct event_context *event_ctx)
+					     struct event_context *event_ctx,
+					     struct smb_iconv_convenience *iconv_convenience)
 {
 	struct nbt_name_socket *nbtsock;
 	NTSTATUS status;
@@ -338,6 +339,7 @@ _PUBLIC_ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 	nbtsock->num_pending = 0;
 	nbtsock->incoming.handler = NULL;
 	nbtsock->unexpected.handler = NULL;
+	nbtsock->iconv_convenience = iconv_convenience;
 
 	nbtsock->fde = event_add_fd(nbtsock->event_ctx, nbtsock, 
 				    socket_get_fd(nbtsock->sock), 0,
@@ -395,7 +397,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	talloc_set_destructor(req, nbt_name_request_destructor);	
 
 	ndr_err = ndr_push_struct_blob(&req->encoded, req, 
-				       lp_iconv_convenience(global_loadparm),
+				       req->nbtsock->iconv_convenience,
 				       request,
 				       (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) goto failed;
@@ -444,7 +446,7 @@ NTSTATUS nbt_name_reply_send(struct nbt_name_socket *nbtsock,
 	}
 
 	ndr_err = ndr_push_struct_blob(&req->encoded, req, 
-				       lp_iconv_convenience(global_loadparm),
+				       req->nbtsock->iconv_convenience,
 				       request,
 				       (ndr_push_flags_fn_t)ndr_push_nbt_name_packet);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {

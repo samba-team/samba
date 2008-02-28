@@ -146,7 +146,7 @@ static void smbsrv_accept(struct stream_connection *conn)
 	packet_set_fde(smb_conn->packet, conn->event.fde);
 	packet_set_serialise(smb_conn->packet);
 
-	smb_conn->lp_ctx = global_loadparm;
+	smb_conn->lp_ctx = conn->lp_ctx;
 	smb_conn->connection = conn;
 	conn->private = smb_conn;
 
@@ -253,5 +253,6 @@ failed:
 /* called at smbd startup - register ourselves as a server service */
 NTSTATUS server_service_smb_init(void)
 {
+	share_init();
 	return register_server_service("smb", smbsrv_task_init);
 }

@@ -2469,12 +2469,13 @@ SWIG_Python_MustGetPtr(PyObject *obj, swig_type_info *ty, int argnum, int flags)
 #define SWIGTYPE_p_p_char swig_types[10]
 #define SWIGTYPE_p_short swig_types[11]
 #define SWIGTYPE_p_signed_char swig_types[12]
-#define SWIGTYPE_p_unsigned_char swig_types[13]
-#define SWIGTYPE_p_unsigned_int swig_types[14]
-#define SWIGTYPE_p_unsigned_long_long swig_types[15]
-#define SWIGTYPE_p_unsigned_short swig_types[16]
-static swig_type_info *swig_types[18];
-static swig_module_info swig_module = {swig_types, 17, 0, 0, 0, 0};
+#define SWIGTYPE_p_smb_iconv_convenience swig_types[13]
+#define SWIGTYPE_p_unsigned_char swig_types[14]
+#define SWIGTYPE_p_unsigned_int swig_types[15]
+#define SWIGTYPE_p_unsigned_long_long swig_types[16]
+#define SWIGTYPE_p_unsigned_short swig_types[17]
+static swig_type_info *swig_types[19];
+static swig_module_info swig_module = {swig_types, 18, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -2918,17 +2919,21 @@ SWIGINTERN PyObject *_wrap_nbt_name_socket_init(PyObject *SWIGUNUSEDPARM(self), 
   PyObject *resultobj = 0;
   TALLOC_CTX *arg1 = (TALLOC_CTX *) 0 ;
   struct event_context *arg2 = (struct event_context *) 0 ;
+  struct smb_iconv_convenience *arg3 = (struct smb_iconv_convenience *) 0 ;
   struct nbt_name_socket *result = 0 ;
   void *argp2 = 0 ;
   int res2 = 0 ;
+  void *argp3 = 0 ;
+  int res3 = 0 ;
   PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
   char *  kwnames[] = {
-    (char *) "event_ctx", NULL 
+    (char *) "event_ctx",(char *) "iconv_convenience", NULL 
   };
   
   arg2 = event_context_init(NULL);
   arg1 = NULL;
-  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|O:nbt_name_socket_init",kwnames,&obj0)) SWIG_fail;
+  if (!PyArg_ParseTupleAndKeywords(args,kwargs,(char *)"|OO:nbt_name_socket_init",kwnames,&obj0,&obj1)) SWIG_fail;
   if (obj0) {
     res2 = SWIG_ConvertPtr(obj0, &argp2,SWIGTYPE_p_event_context, 0 |  0 );
     if (!SWIG_IsOK(res2)) {
@@ -2936,7 +2941,14 @@ SWIGINTERN PyObject *_wrap_nbt_name_socket_init(PyObject *SWIGUNUSEDPARM(self), 
     }
     arg2 = (struct event_context *)(argp2);
   }
-  result = (struct nbt_name_socket *)nbt_name_socket_init(arg1,arg2);
+  if (obj1) {
+    res3 = SWIG_ConvertPtr(obj1, &argp3,SWIGTYPE_p_smb_iconv_convenience, 0 |  0 );
+    if (!SWIG_IsOK(res3)) {
+      SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "nbt_name_socket_init" "', argument " "3"" of type '" "struct smb_iconv_convenience *""'"); 
+    }
+    arg3 = (struct smb_iconv_convenience *)(argp3);
+  }
+  result = (struct nbt_name_socket *)nbt_name_socket_init(arg1,arg2,arg3);
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_nbt_name_socket, 0 |  0 );
   return resultobj;
 fail:
@@ -4135,6 +4147,7 @@ static swig_type_info _swigt__p_nbt_name_socket = {"_p_nbt_name_socket", "struct
 static swig_type_info _swigt__p_p_char = {"_p_p_char", "char **", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_short = {"_p_short", "short *|int_least16_t *|int16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_signed_char = {"_p_signed_char", "signed char *|int_least8_t *|int_fast8_t *|int8_t *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_smb_iconv_convenience = {"_p_smb_iconv_convenience", "struct smb_iconv_convenience *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_unsigned_char = {"_p_unsigned_char", "unsigned char *|uint_least8_t *|uint_fast8_t *|uint8_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_unsigned_int = {"_p_unsigned_int", "uintptr_t *|uint_least32_t *|uint_fast32_t *|uint32_t *|unsigned int *|uint_fast16_t *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_unsigned_long_long = {"_p_unsigned_long_long", "uint_least64_t *|uint_fast64_t *|uint64_t *|unsigned long long *|uintmax_t *", 0, 0, (void*)0, 0};
@@ -4154,6 +4167,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_p_char,
   &_swigt__p_short,
   &_swigt__p_signed_char,
+  &_swigt__p_smb_iconv_convenience,
   &_swigt__p_unsigned_char,
   &_swigt__p_unsigned_int,
   &_swigt__p_unsigned_long_long,
@@ -4173,6 +4187,7 @@ static swig_cast_info _swigc__p_nbt_name_socket[] = {  {&_swigt__p_nbt_name_sock
 static swig_cast_info _swigc__p_p_char[] = {  {&_swigt__p_p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_short[] = {  {&_swigt__p_short, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_signed_char[] = {  {&_swigt__p_signed_char, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_smb_iconv_convenience[] = {  {&_swigt__p_smb_iconv_convenience, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_unsigned_char[] = {  {&_swigt__p_unsigned_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_unsigned_int[] = {  {&_swigt__p_unsigned_int, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_unsigned_long_long[] = {  {&_swigt__p_unsigned_long_long, 0, 0, 0},{0, 0, 0, 0}};
@@ -4192,6 +4207,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_p_char,
   _swigc__p_short,
   _swigc__p_signed_char,
+  _swigc__p_smb_iconv_convenience,
   _swigc__p_unsigned_char,
   _swigc__p_unsigned_int,
   _swigc__p_unsigned_long_long,
