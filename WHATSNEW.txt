@@ -145,6 +145,8 @@ o   Michael Adam <obnox@samba.org>
     * Move "net conf" functionality into a separate module libnet_conf.c
     * Restructure registry code, eliminating the dynamic overlay.
       Make use of reg_api instead of backend code in most places.
+    * Add support for intercepting LDAP libraries' debug output and print
+      it in Samba's debugging system.
     * Libreplace fixes.
     * Build fixes.
     * Initial support for using subsystems as shared libraries.
