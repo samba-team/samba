@@ -1277,9 +1277,7 @@ static bool net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
 	/* if it's a Windows functional domain, we have to look for the UPN */
 
 	if ( domain_func == DS_DOMAIN_FUNCTION_2000 ) {
-		char *upn;
-
-		upn = ads_get_upn(ads, ctx, machine_name);
+		char *upn = ads_get_upn(ads, ctx, machine_name);
 		if ( upn ) {
 			fstrcpy( salt, upn );
 		}
