@@ -839,8 +839,9 @@ static int net_ads_leave(int argc, const char **argv)
 
 	werr = libnet_Unjoin(ctx, r);
 	if (!W_ERROR_IS_OK(werr)) {
-		d_printf("%s: %s\n", get_friendly_werror_msg(werr),
-			 r->out.error_string ? r->out.error_string : "");
+		d_printf("Failed to leave domain: %s\n",
+			 r->out.error_string ? r->out.error_string :
+			 get_friendly_werror_msg(werr));
 		goto done;
 	}
 
