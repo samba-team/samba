@@ -1464,6 +1464,8 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 		return ntstatus_to_werror(status);
 	}
 
+	r->out.disabled_machine_account = true;
+
 #ifdef WITH_ADS
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE) {
 		ADS_STATUS ads_status;
@@ -1473,6 +1475,12 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 			libnet_unjoin_set_error_string(mem_ctx, r,
 				"failed to remove machine account from AD: %s",
 				ads_errstr(ads_status));
+		} else {
+			r->out.deleted_machine_account = true;
+			/* dirty hack */
+			r->out.dns_domain_name = talloc_strdup(mem_ctx,
+							       r->in.ads->server.realm);
+			W_ERROR_HAVE_NO_MEMORY(r->out.dns_domain_name);
 		}
 	}
 #endif /* WITH_ADS */
