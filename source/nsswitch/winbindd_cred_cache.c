@@ -426,7 +426,7 @@ NTSTATUS add_ccache_to_list(const char *princ_name,
 NTSTATUS remove_ccache(const char *username)
 {
 	struct WINBINDD_CCACHE_ENTRY *entry = get_ccache_by_username(username);
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_OK;
 #ifdef HAVE_KRB5
 	krb5_error_code ret;
 #endif
