@@ -305,7 +305,7 @@ struct addrinfo {
 
 /* Needed for some systems that don't define it (Solaris). */
 #ifndef ifr_netmask
-#define ifr_netmask ifr_addrs
+#define ifr_netmask ifr_addr
 #endif
 
 #ifdef SOCKET_WRAPPER
