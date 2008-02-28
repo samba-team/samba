@@ -146,7 +146,7 @@ static void smbsrv_accept(struct stream_connection *conn)
 	packet_set_fde(smb_conn->packet, conn->event.fde);
 	packet_set_serialise(smb_conn->packet);
 
-	smb_conn->lp_ctx = global_loadparm;
+	smb_conn->lp_ctx = conn->lp_ctx;
 	smb_conn->connection = conn;
 	conn->private = smb_conn;
 

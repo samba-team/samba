@@ -101,6 +101,7 @@ static WERROR reg_dotreg_diff_del_all_values(void *callback_data,
  * Save registry diff
  */
 _PUBLIC_ WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename,
+				     struct smb_iconv_convenience *iconv_convenience,
 				     struct reg_diff_callbacks **callbacks,
 				     void **callback_data)
 {
@@ -109,7 +110,7 @@ _PUBLIC_ WERROR reg_dotreg_diff_save(TALLOC_CTX *ctx, const char *filename,
 	data = talloc_zero(ctx, struct dotreg_data);
 	*callback_data = data;
 
-	data->iconv_convenience = lp_iconv_convenience(global_loadparm);
+	data->iconv_convenience = iconv_convenience;
 
 	if (filename) {
 		data->fd = open(filename, O_CREAT, 0755);

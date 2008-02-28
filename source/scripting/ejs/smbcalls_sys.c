@@ -36,7 +36,7 @@ static int ejs_sys_interfaces(MprVarHandle eid, int argc, struct MprVar **argv)
 	struct MprVar ret = mprArray("interfaces");
 	struct interface *ifaces;
 
-	load_interfaces(NULL, lp_interfaces(global_loadparm), &ifaces);
+	load_interfaces(NULL, lp_interfaces(mprLpCtx()), &ifaces);
 
 	count = iface_count(ifaces);
 	for (i=0;i<count;i++) {
