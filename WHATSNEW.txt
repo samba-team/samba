@@ -187,7 +187,7 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       using remote idmap backends.
     * Fix LookupNames and LookupSids to use the same resolution
       heuristics as Windows XP.
-    * Fix lookups in Winbind when running nscd.
+    * Fix lockups in Winbind when running nscd.
     * UPN logon support in pam_winbind.
     * Add support for GNU linker scripts when build shared libraries
       (based on work by Julien Cristau <jcristau@debian.org> and James 
