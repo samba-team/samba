@@ -723,6 +723,7 @@ typedef char fstring[FSTRING_LEN];
 #include "ctdbd_conn.h"
 #include "talloc_stack.h"
 #include "memcache.h"
+#include "async_req.h"
 
 /* used in net.c */
 struct functable {
