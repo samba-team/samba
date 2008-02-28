@@ -50,6 +50,12 @@
 #define LIBNET_UNJOIN_OUT_DUMP_CTX(ctx, r) \
 	LIBNET_UNJOIN_DUMP_CTX(ctx, r, NDR_OUT)
 
+#define W_ERROR_NOT_OK_GOTO_DONE(x) do { \
+	if (!W_ERROR_IS_OK(x)) {\
+		goto done;\
+	}\
+} while (0)
+
 /****************************************************************
 ****************************************************************/
 
@@ -942,9 +948,7 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 	if (!(r->in.join_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE)) {
 
 		werr = libnet_conf_set_global_parameter(ctx, "security", "user");
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
+		W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 		werr = libnet_conf_set_global_parameter(ctx, "workgroup",
 							r->in.domain_name);
@@ -952,27 +956,22 @@ static WERROR do_join_modify_vals_config(struct libnet_JoinCtx *r)
 	}
 
 	werr = libnet_conf_set_global_parameter(ctx, "security", "domain");
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	werr = libnet_conf_set_global_parameter(ctx, "workgroup",
 						r->out.netbios_domain_name);
-	if (!W_ERROR_IS_OK(werr)) {
-		goto done;
-	}
+	W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 	if (r->out.domain_is_ad) {
 		werr = libnet_conf_set_global_parameter(ctx, "security", "ads");
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
+		W_ERROR_NOT_OK_GOTO_DONE(werr);
 
 		werr = libnet_conf_set_global_parameter(ctx, "realm",
 							r->out.dns_domain_name);
+		W_ERROR_NOT_OK_GOTO_DONE(werr);
 	}
 
-done:
+ done:
 	libnet_conf_close(ctx);
 	return werr;
 }
@@ -993,14 +992,11 @@ static WERROR do_unjoin_modify_vals_config(struct libnet_UnjoinCtx *r)
 	if (r->in.unjoin_flags & WKSSVC_JOIN_FLAGS_JOIN_TYPE) {
 
 		werr = libnet_conf_set_global_parameter(ctx, "security", "user");
-		if (!W_ERROR_IS_OK(werr)) {
-			goto done;
-		}
+		W_ERROR_NOT_OK_GOTO_DONE(werr);
+		libnet_conf_delete_global_parameter(ctx, "realm");
 	}
 
-	libnet_conf_delete_global_parameter(ctx, "realm");
-
-done:
+ done:
 	libnet_conf_close(ctx);
 	return werr;
 }
