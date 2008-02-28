@@ -1171,8 +1171,9 @@ static WERROR libnet_unjoin_config(struct libnet_UnjoinCtx *r)
 static WERROR libnet_join_pre_processing(TALLOC_CTX *mem_ctx,
 					 struct libnet_JoinCtx *r)
 {
-
 	if (!r->in.domain_name) {
+		libnet_join_set_error_string(mem_ctx, r,
+			"No domain name defined");
 		return WERR_INVALID_PARAM;
 	}
 
@@ -1496,6 +1497,12 @@ static WERROR libnet_DomainUnjoin(TALLOC_CTX *mem_ctx,
 static WERROR libnet_unjoin_pre_processing(TALLOC_CTX *mem_ctx,
 					   struct libnet_UnjoinCtx *r)
 {
+	if (!r->in.domain_name) {
+		libnet_unjoin_set_error_string(mem_ctx, r,
+			"No domain name defined");
+		return WERR_INVALID_PARAM;
+	}
+
 	if (r->in.modify_config && !lp_config_backend_is_registry()) {
 		return WERR_NOT_SUPPORTED;
 	}
