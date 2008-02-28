@@ -157,7 +157,6 @@ static NTSTATUS append_unix_username(TALLOC_CTX *mem_ctx,
 	/* We've been asked to return the unix username, per
 	   'winbind use default domain' settings and the like */
 
-	fstring username_out;
 	const char *nt_username, *nt_domain;
 
 	nt_domain = talloc_strdup(mem_ctx, info3->base.domain.string);
@@ -174,18 +173,11 @@ static NTSTATUS append_unix_username(TALLOC_CTX *mem_ctx,
 		nt_username = name_user;
 	}
 
-	fill_domain_username(username_out, nt_domain, nt_username,
-			     True);
+	fill_domain_username(state->response.data.auth.unix_username,
+			     nt_domain, nt_username, True);
 
-	DEBUG(5,("Setting unix username to [%s]\n", username_out));
-
-	SAFE_FREE(state->response.extra_data.data);
-	state->response.extra_data.data = SMB_STRDUP(username_out);
-	if (!state->response.extra_data.data) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	state->response.length +=
-		strlen((const char *)state->response.extra_data.data)+1;
+	DEBUG(5,("Setting unix username to [%s]\n",
+		state->response.data.auth.unix_username));
 
 	return NT_STATUS_OK;
 }
@@ -736,14 +728,12 @@ failed:
 static bool check_request_flags(uint32_t flags)
 {
 	uint32_t flags_edata = WBFLAG_PAM_AFS_TOKEN |
-			       WBFLAG_PAM_UNIX_NAME |
 			       WBFLAG_PAM_INFO3_TEXT |
 			       WBFLAG_PAM_INFO3_NDR;
 
 	if ( ( (flags & flags_edata) == WBFLAG_PAM_AFS_TOKEN) ||
 	     ( (flags & flags_edata) == WBFLAG_PAM_INFO3_NDR) ||
 	     ( (flags & flags_edata) == WBFLAG_PAM_INFO3_TEXT)||
-	     ( (flags & flags_edata) == WBFLAG_PAM_UNIX_NAME) ||
 	      !(flags & flags_edata) ) {
 		return True;
 	}
