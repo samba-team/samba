@@ -149,7 +149,6 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	const char *workstation_list;
 	NTTIME acct_expiry;
 	NTTIME must_change_time;
-	NTTIME last_set_time;
 
 	struct ldb_dn *domain_dn = samdb_result_dn(sam_ctx, mem_ctx, msg_domain_ref, "nCName", ldb_dn_new(mem_ctx, sam_ctx, NULL));
 
@@ -159,9 +158,11 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	acct_flags = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, domain_dn);
 	
 	acct_expiry = samdb_result_nttime(msg, "accountExpires", 0);
+
+	/* Check for when we must change this password, taking the
+	 * userAccountControl flags into account */
 	must_change_time = samdb_result_force_password_change(sam_ctx, mem_ctx, 
 							      domain_dn, msg);
-	last_set_time = samdb_result_nttime(msg, "pwdLastSet", 0);
 
 	workstation_list = samdb_result_string(msg, "userWorkstations", NULL);
 
@@ -187,14 +188,14 @@ _PUBLIC_ NTSTATUS authsam_account_ok(TALLOC_CTX *mem_ctx,
 	}
 
 	/* check for immediate expiry "must change at next logon" */
-	if (!(acct_flags & ACB_PWNOEXP) && (must_change_time == 0 && last_set_time != 0)) {
+	if (must_change_time == 0) {
 		DEBUG(1,("sam_account_ok: Account for user '%s' password must change!.\n", 
 			 name_for_logs));
 		return NT_STATUS_PASSWORD_MUST_CHANGE;
 	}
 
-	/* check for expired password (dynamicly gnerated in samdb_result_acct_flags) */
-	if (acct_flags & ACB_PW_EXPIRED) {
+	/* check for expired password */
+	if (must_change_time < now) {
 		DEBUG(1,("sam_account_ok: Account for user '%s' password expired!.\n", 
 			 name_for_logs));
 		DEBUG(1,("sam_account_ok: Password expired at '%s' unix time.\n", 
