@@ -1,6 +1,6 @@
                    =================================
                    Release Notes for Samba 3.2.0pre2
-                               Oct XX, 2007
+                               Feb 29, 2008
                    =================================
 
 This is the second preview release of Samba 3.2.0.  This is *not*
