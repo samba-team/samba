@@ -25,7 +25,7 @@ swig:: pythonmods
 
 realdistclean::
 	@echo "Removing SWIG output files"
-	@-rm -f bin/python/*
+	@-rm -rf bin/python/*
 	# FIXME: Remove _wrap.c files
 
 pythonmods:: $(PYTHON_DSOS) $(PYTHON_PYS)
