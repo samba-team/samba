@@ -289,7 +289,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* update the file information */
-	status = pvfs_resolve_name_fd(pvfs, h->fd, h->name);
+	status = pvfs_resolve_name_handle(pvfs, h);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
