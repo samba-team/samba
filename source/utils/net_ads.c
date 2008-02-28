@@ -1432,19 +1432,15 @@ static int net_ads_join_usage(int argc, const char **argv)
 
 int net_ads_join(int argc, const char **argv)
 {
-	ADS_STRUCT *ads = NULL;
-	ADS_STATUS status;
 	NTSTATUS nt_status;
-	const char *short_domain_name = NULL;
-	char *tmp_password, *password;
 	TALLOC_CTX *ctx = NULL;
-	DOM_SID *domain_sid = NULL;
+	struct libnet_JoinCtx *r;
+	const char *domain = lp_realm();
+	WERROR werr;
 	bool createupn = False;
 	const char *machineupn = NULL;
 	const char *create_in_ou = NULL;
 	int i;
-	fstring dc_name;
-	struct sockaddr_storage dcss;
 	const char *os_name = NULL;
 	const char *os_version = NULL;
 
@@ -1454,22 +1450,11 @@ int net_ads_join(int argc, const char **argv)
 		goto fail;
 	}
 
-	/* find a DC to initialize the server affinity cache */
+	use_in_memory_ccache();
 
-	get_dc_name( lp_workgroup(), lp_realm(), dc_name, &dcss );
-
-	status = ads_startup(True, &ads);
-	if (!ADS_ERR_OK(status)) {
-		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
-		nt_status = ads_ntstatus(status);
-		goto fail;
-	}
-
-	if (strcmp(ads->config.realm, lp_realm()) != 0) {
-		d_fprintf(stderr, "realm of remote server (%s) and realm in %s "
-			"(%s) DO NOT match.  Aborting join\n",
-			ads->config.realm, get_dyn_CONFIGFILE(), lp_realm());
-		nt_status = NT_STATUS_INVALID_PARAMETER;
+	werr = libnet_init_JoinCtx(ctx, &r);
+	if (!W_ERROR_IS_OK(werr)) {
+		nt_status = werror_to_ntstatus(werr);
 		goto fail;
 	}
 
@@ -1508,148 +1493,45 @@ int net_ads_join(int argc, const char **argv)
 			}
 		}
 		else {
-			d_fprintf(stderr, "Bad option: %s\n", argv[i]);
-			nt_status = NT_STATUS_INVALID_PARAMETER;
-			goto fail;
-		}
-	}
-
-	/* If we were given an OU, try to create the machine in
-	   the OU account first and then do the normal RPC join */
-
-	if  ( create_in_ou ) {
-		status = net_precreate_machine_acct( ads, create_in_ou );
-		if ( !ADS_ERR_OK(status) ) {
-			d_fprintf( stderr, "Failed to pre-create the machine object "
-				"in OU %s.\n", create_in_ou);
-			DEBUG(1, ("error calling net_precreate_machine_acct: %s\n", 
-				  ads_errstr(status)));
-			nt_status = ads_ntstatus(status);
-			goto fail;
+			domain = argv[i];
 		}
 	}
 
 	/* Do the domain join here */
 
-	tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
-	password = talloc_strdup(ctx, tmp_password);
+	r->in.domain_name	= domain;
+	r->in.create_upn	= createupn;
+	r->in.upn		= machineupn;
+	r->in.account_ou	= create_in_ou;
+	r->in.os_name		= os_name;
+	r->in.os_version	= os_version;
+	r->in.dc_name		= opt_host;
+	r->in.admin_account	= opt_user_name;
+	r->in.admin_password	= net_prompt_pass(opt_user_name);
+	r->in.debug		= opt_verbose;
+	r->in.join_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
+				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
+				  WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
 
-	nt_status = net_join_domain(ctx, ads->config.ldap_server_name,
-				    &ads->ldap.ss, &short_domain_name, &domain_sid, password);
-	if ( !NT_STATUS_IS_OK(nt_status) ) {
-		DEBUG(1, ("call of net_join_domain failed: %s\n",
-			  get_friendly_nt_error_msg(nt_status)));
+	werr = libnet_Join(ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
 	}
 
 	/* Check the short name of the domain */
 
-	if ( !strequal(lp_workgroup(), short_domain_name) ) {
+	if (!strequal(lp_workgroup(), r->out.netbios_domain_name)) {
 		d_printf("The workgroup in %s does not match the short\n", get_dyn_CONFIGFILE());
 		d_printf("domain name obtained from the server.\n");
-		d_printf("Using the name [%s] from the server.\n", short_domain_name);
+		d_printf("Using the name [%s] from the server.\n", r->out.netbios_domain_name);
 		d_printf("You should set \"workgroup = %s\" in %s.\n",
-			 short_domain_name, get_dyn_CONFIGFILE());
+			 r->out.netbios_domain_name, get_dyn_CONFIGFILE());
 	}
 
-	d_printf("Using short domain name -- %s\n", short_domain_name);
+	d_printf("Using short domain name -- %s\n", r->out.netbios_domain_name);
 
-	/*  HACK ALERT!  Store the sid and password under both the lp_workgroup() 
-	    value from smb.conf and the string returned from the server.  The former is
-	    neede to bootstrap winbindd's first connection to the DC to get the real 
-	    short domain name   --jerry */
-
-	if ( (netdom_store_machine_account( lp_workgroup(), domain_sid, password ) == -1)
-		|| (netdom_store_machine_account( short_domain_name, domain_sid, password ) == -1) )
-	{
-		/* issue an internal error here for now.
-		 * everything else would mean changing tdb routines. */
-		nt_status = NT_STATUS_INTERNAL_ERROR;
-		goto fail;
-	}
-
-	/* Verify that everything is ok */
-
-	nt_status = net_rpc_join_ok(short_domain_name,
-				    ads->config.ldap_server_name, &ads->ldap.ss);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		d_fprintf(stderr,
-			  "Failed to verify membership in domain: %s!\n",
-			  nt_errstr(nt_status));
-		goto fail;
-	}
-
-	/* create the dNSHostName & servicePrincipalName values */
-
-	status = net_set_machine_spn( ctx, ads );
-	if ( !ADS_ERR_OK(status) )  {
-
-		d_fprintf(stderr, "Failed to set servicePrincipalNames. Please ensure that\n");
-		d_fprintf(stderr, "the DNS domain of this server matches the AD domain,\n");
-		d_fprintf(stderr, "Or rejoin with using Domain Admin credentials.\n");
-
-		/* Disable the machine account in AD.  Better to fail than to leave 
-		   a confused admin.  */
-
-		if ( net_ads_leave( 0, NULL ) != 0 ) {
-			d_fprintf( stderr, "Failed to disable machine account in AD.  Please do so manually.\n");
-		}
-
-		/* clear out the machine password */
-
-		netdom_store_machine_account( lp_workgroup(), domain_sid, "" );
-		netdom_store_machine_account( short_domain_name, domain_sid, "" );
-
-		nt_status = ads_ntstatus(status);
-		goto fail;
-	}
-
-	if ( !net_derive_salting_principal( ctx, ads ) ) {
-		DEBUG(1,("Failed to determine salting principal\n"));
-		goto fail;
-	}
-
-	if ( createupn ) {
-		char *upn;
-
-		/* default to using the short UPN name */
-		if (!machineupn ) {
-			upn = talloc_asprintf(ctx,
-					"host/%s@%s", global_myname(),
-					ads->config.realm );
-			if (!upn) {
-				nt_status = NT_STATUS_NO_MEMORY;
-				goto fail;
-			}
-			machineupn = upn;
-		}
-
-		status = net_set_machine_upn( ctx, ads, machineupn );
-		if ( !ADS_ERR_OK(status) )  {
-			d_fprintf(stderr, "Failed to set userPrincipalName.  Are you a Domain Admin?\n");
-		}
-	}
-
-	/* Try to set the operatingSystem attributes if asked */
-
-	if ( os_name && os_version ) {
-		status = net_set_os_attributes( ctx, ads, os_name, os_version );
-		if ( !ADS_ERR_OK(status) )  {
-			d_fprintf(stderr, "Failed to set operatingSystem attributes.  "
-				  "Are you a Domain Admin?\n");
-		}
-	}
-
-	/* Now build the keytab, using the same ADS connection */
-
-	if (lp_use_kerberos_keytab() && ads_keytab_create_default(ads)) {
-		DEBUG(1,("Error creating host keytab!\n"));
-	}
-
-	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->server.realm);
-
-	ads_kdestroy( NULL );
-	ads_destroy(&ads);
+	d_printf("Joined '%s' to realm '%s'\n", r->in.machine_name,
+		r->out.dns_domain_name);
 
 #if defined(WITH_DNS_UPDATES)
 	{
@@ -1675,16 +1557,17 @@ int net_ads_join(int argc, const char **argv)
 		ads_destroy(&ads_dns);
 	}
 #endif
+	TALLOC_FREE(r);
 	TALLOC_FREE( ctx );
 
 	return 0;
 
 fail:
 	/* issue an overall failure message at the end. */
-	d_printf("Failed to join domain: %s\n", get_friendly_nt_error_msg(nt_status));
-
+	d_printf("Failed to join domain: %s\n",
+		r->out.error_string ? r->out.error_string :
+		get_friendly_werror_msg(werr));
 	TALLOC_FREE( ctx );
-        ads_destroy(&ads);
 
         return -1;
 
