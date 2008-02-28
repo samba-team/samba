@@ -260,6 +260,8 @@ o   Andrew Tridgell <tridge@samba.org>
 o   Jelmer Vernooij <jelmer@samba.org>
     * Additional portability support for building shared libraries.
 
+o   Corinna Vinschen <corinna@vinschen.de>
+    * Get Samba version or capability information from Windows user space
 
 
 Original 3.2.0pre1 commits:
