@@ -554,6 +554,31 @@ bool torture_raw_sfileinfo_rename(struct torture_context *torture,
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_INVALID_PARAMETER);
 	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname);
 
+	if (torture_setting_bool(torture, "samba3", false)) {
+		printf("SKIP: Trying rename by path while a handle is open\n");
+		goto done;
+	}
+
+	printf("Trying rename by path while a handle is open\n");
+	fnum_saved = fnum;
+	fnum = create_complex_file(cli, torture, path_fname);
+	sfinfo.rename_information.in.new_name  = path_fname_new+strlen(BASEDIR)+1;
+	sfinfo.rename_information.in.overwrite = 0;
+	sfinfo.rename_information.in.root_fid  = 0;
+	CHECK_CALL_PATH(RENAME_INFORMATION, NT_STATUS_OK);
+	CHECK_STR(NAME_INFO, name_info, fname.s, path_fname_new);
+	/* check that the handle returns the same name */
+	check_fnum = true;
+	CHECK_STR(NAME_INFO, name_info, fname.s, path_fname_new);
+	/* rename it back on the handle */
+	sfinfo.rename_information.in.new_name  = path_fname+strlen(BASEDIR)+1;
+	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
+	CHECK_STR(NAME_INFO, name_info, fname.s, path_fname);
+	check_fnum = false;
+	CHECK_STR(NAME_INFO, name_info, fname.s, path_fname);
+	smbcli_close(cli->tree, fnum);
+	fnum = fnum_saved;
+
 done:
 	smb_raw_exit(cli->session);
 	smbcli_close(cli->tree, fnum);
