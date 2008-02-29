@@ -42,6 +42,7 @@ struct ban_state {
 struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
 	int rec_file_fd;
+	uint32_t num_active;
 	uint32_t last_culprit;
 	uint32_t culprit_counter;
 	struct timeval first_recover_time;
@@ -1219,7 +1220,7 @@ static int recover_database(struct ctdb_recoverd *rec,
   we are the recmaster, and recovery is needed - start a recovery run
  */
 static int do_recovery(struct ctdb_recoverd *rec, 
-		       TALLOC_CTX *mem_ctx, uint32_t pnn, uint32_t num_active,
+		       TALLOC_CTX *mem_ctx, uint32_t pnn,
 		       struct ctdb_node_map *nodemap, struct ctdb_vnn_map *vnnmap,
 		       uint32_t culprit)
 {
@@ -1350,7 +1351,7 @@ static int do_recovery(struct ctdb_recoverd *rec,
 	vnnmap = talloc(mem_ctx, struct ctdb_vnn_map);
 	CTDB_NO_MEMORY(ctdb, vnnmap);
 	vnnmap->generation = generation;
-	vnnmap->size = num_active;
+	vnnmap->size = rec->num_active;
 	vnnmap->map = talloc_zero_array(vnnmap, uint32_t, vnnmap->size);
 	for (i=j=0;i<nodemap->num;i++) {
 		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
@@ -2030,7 +2031,7 @@ ctdb_recoverd_get_pnn_lock(struct ctdb_recoverd *rec)
  */
 static void monitor_cluster(struct ctdb_context *ctdb)
 {
-	uint32_t pnn, num_active, recmaster;
+	uint32_t pnn, recmaster;
 	TALLOC_CTX *mem_ctx=NULL;
 	struct ctdb_node_map *nodemap=NULL;
 	struct ctdb_node_map *remote_nodemap=NULL;
@@ -2194,10 +2195,10 @@ again:
 	rec->node_flags = nodemap->nodes[pnn].flags;
 
 	/* count how many active nodes there are */
-	num_active = 0;
+	rec->num_active = 0;
 	for (i=0; i<nodemap->num; i++) {
 		if (!(nodemap->nodes[i].flags & NODE_FLAGS_INACTIVE)) {
-			num_active++;
+			rec->num_active++;
 		}
 	}
 
@@ -2345,7 +2346,7 @@ again:
 
 	if (rec->need_recovery) {
 		/* a previous recovery didn't finish */
-		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
+		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
 		goto again;		
 	}
 
@@ -2354,7 +2355,7 @@ again:
 	 */
 	switch (verify_recmode(ctdb, nodemap)) {
 	case MONITOR_RECOVERY_NEEDED:
-		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
+		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
 		goto again;
 	case MONITOR_FAILED:
 		goto again;
@@ -2368,7 +2369,7 @@ again:
 	/* we should have the reclock - check its not stale */
 	if (ctdb->recovery_lock_fd == -1) {
 		DEBUG(DEBUG_CRIT,("recovery master doesn't have the recovery lock\n"));
-		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
+		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
 		goto again;
 	}
 
@@ -2376,7 +2377,7 @@ again:
 		DEBUG(DEBUG_CRIT,("failed read from recovery_lock_fd - %s\n", strerror(errno)));
 		close(ctdb->recovery_lock_fd);
 		ctdb->recovery_lock_fd = -1;
-		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
+		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
 		goto again;
 	}
 
@@ -2405,7 +2406,7 @@ again:
 		if (remote_nodemap->num != nodemap->num) {
 			DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different node count. %u vs %u of the local node\n",
 				  nodemap->nodes[j].pnn, remote_nodemap->num, nodemap->num));
-			do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, nodemap->nodes[j].pnn);
 			goto again;
 		}
 
@@ -2417,7 +2418,7 @@ again:
 				DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different nodemap pnn for %d (%u vs %u).\n", 
 					  nodemap->nodes[j].pnn, i, 
 					  remote_nodemap->nodes[i].pnn, nodemap->nodes[i].pnn));
-				do_recovery(rec, mem_ctx, pnn, num_active, nodemap, 
+				do_recovery(rec, mem_ctx, pnn, nodemap, 
 					    vnnmap, nodemap->nodes[j].pnn);
 				goto again;
 			}
@@ -2426,7 +2427,7 @@ again:
 				DEBUG(DEBUG_ERR, (__location__ " Remote node:%u has different nodemap flag for %d (0x%x vs 0x%x)\n", 
 					  nodemap->nodes[j].pnn, i,
 					  remote_nodemap->nodes[i].flags, nodemap->nodes[i].flags));
-				do_recovery(rec, mem_ctx, pnn, num_active, nodemap, 
+				do_recovery(rec, mem_ctx, pnn, nodemap, 
 					    vnnmap, nodemap->nodes[j].pnn);
 				goto again;
 			}
@@ -2438,10 +2439,10 @@ again:
 	/* there better be the same number of lmasters in the vnn map
 	   as there are active nodes or we will have to do a recovery
 	 */
-	if (vnnmap->size != num_active) {
+	if (vnnmap->size != rec->num_active) {
 		DEBUG(DEBUG_ERR, (__location__ " The vnnmap count is different from the number of active nodes. %u vs %u\n", 
-			  vnnmap->size, num_active));
-		do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, ctdb->pnn);
+			  vnnmap->size, rec->num_active));
+		do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, ctdb->pnn);
 		goto again;
 	}
 
@@ -2464,7 +2465,7 @@ again:
 		if (i == vnnmap->size) {
 			DEBUG(DEBUG_ERR, (__location__ " Node %u is active in the nodemap but did not exist in the vnnmap\n", 
 				  nodemap->nodes[j].pnn));
-			do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, nodemap->nodes[j].pnn);
 			goto again;
 		}
 	}
@@ -2493,7 +2494,7 @@ again:
 		if (vnnmap->generation != remote_vnnmap->generation) {
 			DEBUG(DEBUG_ERR, (__location__ " Remote node %u has different generation of vnnmap. %u vs %u (ours)\n", 
 				  nodemap->nodes[j].pnn, remote_vnnmap->generation, vnnmap->generation));
-			do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, nodemap->nodes[j].pnn);
 			goto again;
 		}
 
@@ -2501,7 +2502,7 @@ again:
 		if (vnnmap->size != remote_vnnmap->size) {
 			DEBUG(DEBUG_ERR, (__location__ " Remote node %u has different size of vnnmap. %u vs %u (ours)\n", 
 				  nodemap->nodes[j].pnn, remote_vnnmap->size, vnnmap->size));
-			do_recovery(rec, mem_ctx, pnn, num_active, nodemap, vnnmap, nodemap->nodes[j].pnn);
+			do_recovery(rec, mem_ctx, pnn, nodemap, vnnmap, nodemap->nodes[j].pnn);
 			goto again;
 		}
 
@@ -2510,7 +2511,7 @@ again:
 			if (remote_vnnmap->map[i] != vnnmap->map[i]) {
 				DEBUG(DEBUG_ERR, (__location__ " Remote node %u has different vnnmap.\n", 
 					  nodemap->nodes[j].pnn));
-				do_recovery(rec, mem_ctx, pnn, num_active, nodemap, 
+				do_recovery(rec, mem_ctx, pnn, nodemap, 
 					    vnnmap, nodemap->nodes[j].pnn);
 				goto again;
 			}
@@ -2525,14 +2526,14 @@ again:
 		ret = run_startrecovery_eventscript(ctdb, nodemap);
 		if (ret!=0) {
 			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'startrecovery' event on cluster\n"));
-			do_recovery(rec, mem_ctx, pnn, num_active, nodemap, 
+			do_recovery(rec, mem_ctx, pnn, nodemap, 
 				    vnnmap, ctdb->pnn);
 		}
 
 		ret = ctdb_takeover_run(ctdb, nodemap);
 		if (ret != 0) {
 			DEBUG(DEBUG_ERR, (__location__ " Unable to setup public takeover addresses - starting recovery\n"));
-			do_recovery(rec, mem_ctx, pnn, num_active, nodemap, 
+			do_recovery(rec, mem_ctx, pnn, nodemap, 
 				    vnnmap, ctdb->pnn);
 		}
 
@@ -2540,7 +2541,7 @@ again:
 		ret = run_recovered_eventscript(ctdb, nodemap);
 		if (ret!=0) {
 			DEBUG(DEBUG_ERR, (__location__ " Unable to run the 'recovered' event on cluster\n"));
-			do_recovery(rec, mem_ctx, pnn, num_active, nodemap, 
+			do_recovery(rec, mem_ctx, pnn, nodemap, 
 				    vnnmap, ctdb->pnn);
 		}
 	}
