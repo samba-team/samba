@@ -55,7 +55,7 @@ int getifaddrs_test(void)
 
 	ret = getifaddrs(&ifs);
 	if (ret != 0) {
-		fprintf(stderr, "getifaddrs() failed: %s", strerror(errno));
+		fprintf(stderr, "getifaddrs() failed: %s\n", strerror(errno));
 		return 1;
 	}
 
