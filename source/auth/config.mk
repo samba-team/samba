@@ -6,14 +6,14 @@ mkinclude credentials/config.mk
 
 [SUBSYSTEM::auth_session]
 OBJ_FILES = session.o
-PUBLIC_PROTO_HEADER = session_proto.h
+PRIVATE_PROTO_HEADER = session_proto.h
 PUBLIC_DEPENDENCIES = CREDENTIALS
 
 PUBLIC_HEADERS += auth/session.h
 
 [SUBSYSTEM::auth_system_session]
 OBJ_FILES = system_session.o
-PUBLIC_PROTO_HEADER = system_session_proto.h
+PRIVATE_PROTO_HEADER = system_session_proto.h
 PUBLIC_DEPENDENCIES = CREDENTIALS
 PRIVATE_DEPENDENCIES = auth_session LIBSAMBA-UTIL LIBSECURITY 
 
@@ -82,7 +82,7 @@ OBJ_FILES = pam_errors.o
 [SUBSYSTEM::auth]
 #VERSION = 0.0.1
 #SO_VERSION = 0
-PUBLIC_PROTO_HEADER = auth_proto.h
+PRIVATE_PROTO_HEADER = auth_proto.h
 OBJ_FILES = \
 		auth.o \
 		auth_util.o \

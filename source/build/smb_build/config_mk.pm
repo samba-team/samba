@@ -36,7 +36,6 @@ my $section_types = {
 
 		"ENABLE"		=> "bool",
 
-		"PUBLIC_PROTO_HEADER"	=> "string",
 		"PRIVATE_PROTO_HEADER"	=> "string",
 
 		"CFLAGS"		=> "list",
