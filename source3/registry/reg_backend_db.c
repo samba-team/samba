@@ -454,7 +454,8 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 
 	regdb_fetch_keys(key, old_subkeys);
 
-	if (ctr->num_subkeys == old_subkeys->num_subkeys) {
+	if ((ctr->num_subkeys && old_subkeys->num_subkeys) &&
+	    (ctr->num_subkeys == old_subkeys->num_subkeys)) {
 
 		for (i = 0; i<ctr->num_subkeys; i++) {
 			if (strcmp(ctr->subkeys[i],
@@ -550,6 +551,22 @@ bool regdb_store_keys(const char *key, REGSUBKEY_CTR *ctr)
 	/* now create records for any subkeys that don't already exist */
 
 	num_subkeys = regsubkey_ctr_numkeys(ctr);
+
+	if (num_subkeys == 0) {
+		if (!(subkeys = TALLOC_ZERO_P(ctr, REGSUBKEY_CTR)) ) {
+			DEBUG(0,("regdb_store_keys: talloc() failure!\n"));
+			goto fail;
+		}
+
+		if (!regdb_store_keys_internal(key, subkeys)) {
+			DEBUG(0,("regdb_store_keys: Failed to store "
+				 "new record for key [%s]\n", key));
+			goto fail;
+		}
+		TALLOC_FREE(subkeys);
+
+	}
+
 	for (i=0; i<num_subkeys; i++) {
 		path = talloc_asprintf(ctx, "%s/%s",
 					key,
