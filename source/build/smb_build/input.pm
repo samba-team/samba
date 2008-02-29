@@ -233,14 +233,6 @@ sub check($$$$$)
 	my ($INPUT, $enabled, $subsys_ot, $lib_ot, $module_ot) = @_;
 
 	foreach my $part (values %$INPUT) {
-		unless (defined($part->{PUBLIC_HEADERS})) {
-			$part->{PUBLIC_HEADERS} = [];
-		}
-		
-		if (defined($part->{PUBLIC_PROTO_HEADER})) {
-			push (@{$part->{PUBLIC_HEADERS}}, $part->{PUBLIC_PROTO_HEADER});
-		}
-
 		if (defined($enabled->{$part->{NAME}})) { 
 			$part->{ENABLE} = $enabled->{$part->{NAME}};
 			next;

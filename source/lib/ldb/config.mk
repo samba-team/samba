@@ -147,10 +147,11 @@ PUBLIC_DEPENDENCIES = \
 		LIBTALLOC
 PRIVATE_DEPENDENCIES = \
 		SOCKET_WRAPPER
-PUBLIC_HEADERS = include/ldb.h include/ldb_errors.h
 #
 # End SUBSYSTEM ldb
 ################################################
+
+PUBLIC_HEADERS += $(ldbdir)/include/ldb.h $(ldbdir)/include/ldb_errors.h
 
 MANPAGES += $(ldbdir)/man/ldb.3
 

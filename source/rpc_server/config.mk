@@ -3,14 +3,15 @@
 ################################################
 # Start SUBSYSTEM DCERPC_COMMON
 [SUBSYSTEM::DCERPC_COMMON]
-PUBLIC_PROTO_HEADER = common/proto.h
-PUBLIC_HEADERS = common/common.h
+PRIVATE_PROTO_HEADER = common/proto.h
 OBJ_FILES = \
 		common/server_info.o \
 		common/share_info.o
 #
 # End SUBSYSTEM DCERPC_COMMON
 ################################################
+
+PUBLIC_HEADERS += rpc_server/common/common.h
 
 ################################################
 # Start MODULE dcerpc_rpcecho
@@ -183,8 +184,7 @@ PRIVATE_DEPENDENCIES = \
 ################################################
 # Start SUBSYSTEM dcerpc_server
 [SUBSYSTEM::dcerpc_server]
-PUBLIC_HEADERS = dcerpc_server.h
-PUBLIC_PROTO_HEADER = dcerpc_server_proto.h
+PRIVATE_PROTO_HEADER = dcerpc_server_proto.h
 OBJ_FILES = \
 		dcerpc_server.o \
 		dcesrv_auth.o \
@@ -197,6 +197,8 @@ PRIVATE_DEPENDENCIES = \
 #
 # End SUBSYSTEM DCERPC
 ################################################
+
+PUBLIC_HEADERS += rpc_server/dcerpc_server.h
 
 [MODULE::DCESRV]
 INIT_FUNCTION = server_service_rpc_init
