@@ -816,8 +816,8 @@ _PUBLIC_ const struct ldb_backend_ops ldb_ldap_backend_ops = {
 	.connect_fn = ildb_connect
 };
 
-_PUBLIC_ const struct ldb_backend_ops ldb_ildap_backend_ops = {
-	.name = "ildap",
+_PUBLIC_ const struct ldb_backend_ops ldb_ldapi_backend_ops = {
+	.name = "ldapi",
 	.connect_fn = ildb_connect
 };
 
