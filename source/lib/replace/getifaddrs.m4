@@ -50,6 +50,7 @@ AC_TRY_RUN([
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "$libreplacedir/replace.c"
 #include "$libreplacedir/inet_ntop.c"
+#include "$libreplacedir/snprintf.c"
 #include "$libreplacedir/getifaddrs.c"
 #define getifaddrs_test main
 #include "$libreplacedir/test/getifaddrs.c"],
@@ -71,6 +72,7 @@ AC_TRY_RUN([
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "$libreplacedir/replace.c"
 #include "$libreplacedir/inet_ntop.c"
+#include "$libreplacedir/snprintf.c"
 #include "$libreplacedir/getifaddrs.c"
 #define getifaddrs_test main
 #include "$libreplacedir/test/getifaddrs.c"],
@@ -91,6 +93,7 @@ AC_TRY_RUN([
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "$libreplacedir/replace.c"
 #include "$libreplacedir/inet_ntop.c"
+#include "$libreplacedir/snprintf.c"
 #include "$libreplacedir/getifaddrs.c"
 #define getifaddrs_test main
 #include "$libreplacedir/test/getifaddrs.c"],
@@ -110,6 +113,7 @@ AC_TRY_RUN([
 #define SOCKET_WRAPPER_NOT_REPLACE
 #include "$libreplacedir/replace.c"
 #include "$libreplacedir/inet_ntop.c"
+#include "$libreplacedir/snprintf.c"
 #include "$libreplacedir/getifaddrs.c"
 #define getifaddrs_test main
 #include "$libreplacedir/test/getifaddrs.c"],
