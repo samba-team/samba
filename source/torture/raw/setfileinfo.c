@@ -453,6 +453,10 @@ bool torture_raw_sfileinfo_rename(struct torture_context *torture,
 	char *fnum_fname_new;
 	char *path_fname;
 	char *path_fname_new;
+	char *path_dname;
+	char *path_dname_new;
+	char *saved_name;
+	char *saved_name_new;
 	union smb_fileinfo finfo1, finfo2;
 	union smb_setfileinfo sfinfo;
 	NTSTATUS status, status2;
@@ -464,6 +468,8 @@ bool torture_raw_sfileinfo_rename(struct torture_context *torture,
 	asprintf(&path_fname_new, BASEDIR "\\fname_test_new_%d.txt", n);
 	asprintf(&fnum_fname, BASEDIR "\\fnum_test_%d.txt", n);
 	asprintf(&fnum_fname_new, BASEDIR "\\fnum_test_new_%d.txt", n);
+	asprintf(&path_dname, BASEDIR "\\dname_test_%d", n);
+	asprintf(&path_dname_new, BASEDIR "\\dname_test_new_%d", n);
 
 	if (!torture_setup_dir(cli, BASEDIR)) {
 		return false;
@@ -553,11 +559,49 @@ bool torture_raw_sfileinfo_rename(struct torture_context *torture,
 	sfinfo.rename_information.in.root_fid = d_fnum;
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_INVALID_PARAMETER);
 	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname);
+	smbcli_close(cli->tree, d_fnum);
 
-	if (torture_setting_bool(torture, "samba3", false)) {
-		printf("SKIP: Trying rename by path while a handle is open\n");
+	printf("Trying rename directory\n");
+	if (!torture_setup_dir(cli, path_dname)) {
+		ret = false;
 		goto done;
 	}
+	saved_name = path_fname;
+	saved_name_new = path_fname_new;
+	path_fname = path_dname;
+	path_fname_new = path_dname_new;
+	sfinfo.rename_information.in.new_name  = path_dname_new+strlen(BASEDIR)+1;
+	sfinfo.rename_information.in.overwrite = 0;
+	sfinfo.rename_information.in.root_fid  = 0;
+	CHECK_CALL_PATH(RENAME_INFORMATION, NT_STATUS_OK);
+	CHECK_STR(NAME_INFO, name_info, fname.s, path_dname_new);
+	path_fname = saved_name;
+	path_fname_new = saved_name_new;
+
+	if (torture_setting_bool(torture, "samba3", false)) {
+		printf("SKIP: Trying rename directory with a handle\n");
+		printf("SKIP: Trying rename by path while a handle is open\n");
+		printf("SKIP: Trying rename directory by path while a handle is open\n");
+		goto done;
+	}
+
+	printf("Trying rename directory with a handle\n");
+	status = create_directory_handle(cli->tree, path_dname_new, &d_fnum);
+	fnum_saved = fnum;
+	fnum = d_fnum;
+	saved_name = fnum_fname;
+	saved_name_new = fnum_fname_new;
+	fnum_fname = path_dname;
+	fnum_fname_new = path_dname_new;
+	sfinfo.rename_information.in.new_name  = path_dname+strlen(BASEDIR)+1;
+	sfinfo.rename_information.in.overwrite = 0;
+	sfinfo.rename_information.in.root_fid  = 0;
+	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
+	CHECK_STR(NAME_INFO, name_info, fname.s, path_dname);
+	smbcli_close(cli->tree, d_fnum);
+	fnum = fnum_saved;
+	fnum_fname = saved_name;
+	fnum_fname_new = saved_name_new;
 
 	printf("Trying rename by path while a handle is open\n");
 	fnum_saved = fnum;
@@ -579,16 +623,48 @@ bool torture_raw_sfileinfo_rename(struct torture_context *torture,
 	smbcli_close(cli->tree, fnum);
 	fnum = fnum_saved;
 
+	printf("Trying rename directory by path while a handle is open\n");
+	status = create_directory_handle(cli->tree, path_dname, &d_fnum);
+	fnum_saved = fnum;
+	fnum = d_fnum;
+	saved_name = path_fname;
+	saved_name_new = path_fname_new;
+	path_fname = path_dname;
+	path_fname_new = path_dname_new;
+	sfinfo.rename_information.in.new_name  = path_dname_new+strlen(BASEDIR)+1;
+	sfinfo.rename_information.in.overwrite = 0;
+	sfinfo.rename_information.in.root_fid  = 0;
+	CHECK_CALL_PATH(RENAME_INFORMATION, NT_STATUS_OK);
+	CHECK_STR(NAME_INFO, name_info, fname.s, path_dname_new);
+	path_fname = saved_name;
+	path_fname_new = saved_name_new;
+	saved_name = fnum_fname;
+	saved_name_new = fnum_fname_new;
+	fnum_fname = path_dname;
+	fnum_fname_new = path_dname_new;
+	/* check that the handle returns the same name */
+	check_fnum = true;
+	CHECK_STR(NAME_INFO, name_info, fname.s, path_dname_new);
+	/* rename it back on the handle */
+	sfinfo.rename_information.in.new_name  = path_dname+strlen(BASEDIR)+1;
+	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
+	CHECK_STR(NAME_INFO, name_info, fname.s, path_dname);
+	fnum_fname = saved_name;
+	fnum_fname_new = saved_name_new;
+	saved_name = path_fname;
+	saved_name_new = path_fname_new;
+	path_fname = path_dname;
+	path_fname_new = path_dname_new;
+	check_fnum = false;
+	CHECK_STR(NAME_INFO, name_info, fname.s, path_dname);
+	smbcli_close(cli->tree, d_fnum);
+	fnum = fnum_saved;
+	path_fname = saved_name;
+	path_fname_new = saved_name_new;
+
 done:
 	smb_raw_exit(cli->session);
-	smbcli_close(cli->tree, fnum);
-	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fnum_fname))) {
-		printf("Failed to delete %s - %s\n", fnum_fname, smbcli_errstr(cli->tree));
-	}
-	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, path_fname))) {
-		printf("Failed to delete %s - %s\n", path_fname, smbcli_errstr(cli->tree));
-	}
-
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
