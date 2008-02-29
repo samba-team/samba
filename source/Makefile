@@ -41,7 +41,6 @@ endif
 include build/make/rules.mk
 include build/make/python.mk
 include data.mk
-include extra_cflags.txt
 
 DEP_FILES = $(patsubst %.ho,%.hd,$(patsubst %.o,%.d,$(ALL_OBJS))) \
 		   include/includes.d
