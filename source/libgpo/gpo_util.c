@@ -668,6 +668,39 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 /****************************************************************
 ****************************************************************/
 
+char *gpo_flag_str(uint32_t flags)
+{
+	fstring str = "";
+
+	if (flags == 0) {
+		return NULL;
+	}
+
+	if (flags & GPO_INFO_FLAG_SLOWLINK)
+		fstrcat(str, "GPO_INFO_FLAG_SLOWLINK ");
+	if (flags & GPO_INFO_FLAG_VERBOSE)
+		fstrcat(str, "GPO_INFO_FLAG_VERBOSE ");
+	if (flags & GPO_INFO_FLAG_SAFEMODE_BOOT)
+		fstrcat(str, "GPO_INFO_FLAG_SAFEMODE_BOOT ");
+	if (flags & GPO_INFO_FLAG_NOCHANGES)
+		fstrcat(str, "GPO_INFO_FLAG_NOCHANGES ");
+	if (flags & GPO_INFO_FLAG_MACHINE)
+		fstrcat(str, "GPO_INFO_FLAG_MACHINE ");
+	if (flags & GPO_INFO_FLAG_LOGRSOP_TRANSITION)
+		fstrcat(str, "GPO_INFO_FLAG_LOGRSOP_TRANSITION ");
+	if (flags & GPO_INFO_FLAG_LINKTRANSITION)
+		fstrcat(str, "GPO_INFO_FLAG_LINKTRANSITION ");
+	if (flags & GPO_INFO_FLAG_FORCED_REFRESH)
+		fstrcat(str, "GPO_INFO_FLAG_FORCED_REFRESH ");
+	if (flags & GPO_INFO_FLAG_BACKGROUND)
+		fstrcat(str, "GPO_INFO_FLAG_BACKGROUND ");
+
+	return SMB_STRDUP(str);
+}
+
+/****************************************************************
+****************************************************************/
+
 NTSTATUS gp_find_file(TALLOC_CTX *mem_ctx,
 		      uint32_t flags,
 		      const char *filename,

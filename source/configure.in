@@ -6078,6 +6078,8 @@ SMB_MODULE(vfs_notify_fam, \$(VFS_NOTIFY_FAM_OBJ), "bin/notify_fam.$SHLIBEXT", V
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
+SMB_SUBSYSTEM(GPEXT, libgpo/gpext/gpext.o)
+
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])
 
 #################################################
