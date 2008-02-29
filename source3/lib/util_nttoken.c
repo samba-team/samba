@@ -7,6 +7,7 @@
  *  Copyright (C) Rafal Szczesniak 2002
  *  Copyright (C) Volker Lendecke 2006
  *  Copyright (C) Michael Adam 2007
+ *  Copyright (C) Guenther Deschner 2007
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -67,3 +68,52 @@ NT_USER_TOKEN *dup_nt_token(TALLOC_CTX *mem_ctx, const NT_USER_TOKEN *ptoken)
 	return token;
 }
 
+/****************************************************************************
+ merge NT tokens
+****************************************************************************/
+
+NTSTATUS merge_nt_token(TALLOC_CTX *mem_ctx,
+			const struct nt_user_token *token_1,
+			const struct nt_user_token *token_2,
+			struct nt_user_token **token_out)
+{
+	struct nt_user_token *token = NULL;
+	NTSTATUS status;
+	int i;
+
+	if (!token_1 || !token_2 || !token_out) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	token = TALLOC_ZERO_P(mem_ctx, struct nt_user_token);
+	NT_STATUS_HAVE_NO_MEMORY(token);
+
+	for (i=0; i < token_1->num_sids; i++) {
+		status = add_sid_to_array_unique(mem_ctx,
+						 &token_1->user_sids[i],
+						 &token->user_sids,
+						 &token->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(token);
+			return status;
+		}
+	}
+
+	for (i=0; i < token_2->num_sids; i++) {
+		status = add_sid_to_array_unique(mem_ctx,
+						 &token_2->user_sids[i],
+						 &token->user_sids,
+						 &token->num_sids);
+		if (!NT_STATUS_IS_OK(status)) {
+			TALLOC_FREE(token);
+			return status;
+		}
+	}
+
+	se_priv_add(&token->privileges, &token_1->privileges);
+	se_priv_add(&token->privileges, &token_2->privileges);
+
+	*token_out = token;
+
+	return NT_STATUS_OK;
+}
