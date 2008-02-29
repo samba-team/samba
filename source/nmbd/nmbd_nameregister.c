@@ -153,10 +153,11 @@ static void register_name_response(struct subnet_record *subrec,
 		if( rrec->success_fn)
 			(*(register_name_success_function)rrec->success_fn)(subrec, rrec->userdata, answer_name, nb_flags, ttl, register_ip);
 	} else {
+		struct nmb_name qname = *question_name;
 		if( rrec->fail_fn)
 			(*(register_name_fail_function)rrec->fail_fn)(subrec, rrec, question_name);
 		/* Remove the name. */
-		standard_fail_register( subrec, rrec, question_name);
+		standard_fail_register( subrec, &qname);
 	}
 
 	/* Ensure we don't retry. */
@@ -281,10 +282,11 @@ static void register_name_timeout_response(struct subnet_record *subrec,
 		if( rrec->success_fn)
 			(*(register_name_success_function)rrec->success_fn)(subrec, rrec->userdata, question_name, nb_flags, ttl, registered_ip);
 	} else {
+		struct nmb_name qname = *question_name;
 		if( rrec->fail_fn)
 			(*(register_name_fail_function)rrec->fail_fn)(subrec, rrec, question_name);
 		/* Remove the name. */
-		standard_fail_register( subrec, rrec, question_name);
+		standard_fail_register( subrec, &qname);
 	}
 
 	/* Ensure we don't retry. */

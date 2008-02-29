@@ -294,7 +294,6 @@ void standard_success_register(struct subnet_record *subrec,
  ******************************************************************/
 
 void standard_fail_register( struct subnet_record   *subrec,
-                             struct response_record *rrec,
                              struct nmb_name        *nmbname )
 {
 	struct name_record *namerec;
