@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  Group Policy Object Support
- *  Copyright (C) Guenther Deschner 2005-2007
+ *  Copyright (C) Guenther Deschner 2005-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -762,6 +762,9 @@ ADS_STATUS gp_get_machine_token(ADS_STRUCT *ads,
 	ADS_STATUS status;
 	NTSTATUS ntstatus;
 
+#ifndef HAVE_ADS
+	return ADS_ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+#endif
 	status = ads_get_sid_token(ads, mem_ctx, dn, &ad_token);
 	if (!ADS_ERR_OK(status)) {
 		return status;
