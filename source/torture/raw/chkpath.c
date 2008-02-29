@@ -54,24 +54,68 @@ static NTSTATUS single_search(struct smbcli_state *cli,
 	return status;
 }
 
-static bool test_path(struct smbcli_state *cli, const char *path, NTSTATUS expected, NTSTATUS dos_expected)
+static bool test_path_ex(struct smbcli_state *cli, struct torture_context *tctx,
+			 const char *path, const char *path_expected,
+			 NTSTATUS expected, NTSTATUS dos_expected)
 {
 	union smb_chkpath io;
+	union smb_fileinfo finfo;
 	NTSTATUS status;
+
 	io.chkpath.in.path = path;
 	status = smb_raw_chkpath(cli->tree, &io);
 	if (!NT_STATUS_EQUAL(status, expected) && !NT_STATUS_EQUAL(status, dos_expected)) {
-		printf("%-40s FAILED %s should be %s or %s\n", 
+		printf("FAILED %-30s chkpath %s should be %s or %s\n",
 		       path, nt_errstr(status), nt_errstr(expected), nt_errstr(dos_expected));
 		return false;
 	} else {
-		printf("%-40s correct (%s)\n", path, nt_errstr(status));
-
+		printf("%-30s chkpath correct (%s)\n", path, nt_errstr(status));
 	}
+
+	if (NT_STATUS_EQUAL(expected, NT_STATUS_NOT_A_DIRECTORY)) {
+		expected = NT_STATUS_OK;
+	}
+
+	ZERO_STRUCT(finfo);
+	finfo.generic.level = RAW_FILEINFO_NAME_INFO;
+	finfo.generic.in.file.path = path;
+	status = smb_raw_pathinfo(cli->tree, cli, &finfo);
+	if (!NT_STATUS_EQUAL(status, expected) && !NT_STATUS_EQUAL(status, dos_expected)) {
+		printf("FAILED: %-30s pathinfo %s should be %s or %s\n",
+		       path, nt_errstr(status), nt_errstr(expected), nt_errstr(dos_expected));
+		return false;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("%-30s chkpath correct (%s)\n", path, nt_errstr(status));
+		return true;
+	}
+
+	if (path_expected &&
+	    (!finfo.name_info.out.fname.s ||
+	     strcmp(finfo.name_info.out.fname.s, path_expected) != 0)) {
+		if (tctx && torture_setting_bool(tctx, "samba4", false)) {
+			printf("IGNORE: %-30s => %-20s should be %s\n",
+				path, finfo.name_info.out.fname.s, path_expected);
+			return true;
+		}
+		printf("FAILED: %-30s => %-20s should be %s\n",
+			path, finfo.name_info.out.fname.s, path_expected);
+		return false;
+	}
+	printf("%-30s => %-20s correct\n",
+		path, finfo.name_info.out.fname.s);
+
 	return true;
 }
 
-static bool test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+static bool test_path(struct smbcli_state *cli, const char *path,
+		      NTSTATUS expected, NTSTATUS dos_expected)
+{
+	return test_path_ex(cli, NULL, path, path, expected, dos_expected);
+}
+
+static bool test_chkpath(struct smbcli_state *cli, struct torture_context *tctx)
 {
 	union smb_chkpath io;
 	NTSTATUS status;
@@ -86,7 +130,7 @@ static bool test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	ret &= test_path(cli, BASEDIR "\\nodir", NT_STATUS_OBJECT_NAME_NOT_FOUND, NT_STATUS_DOS(ERRDOS,ERRbadpath));
 
-	fnum = create_complex_file(cli, mem_ctx, BASEDIR "\\test.txt..");
+	fnum = create_complex_file(cli, tctx, BASEDIR "\\test.txt..");
 	if (fnum == -1) {
 		printf("failed to open test.txt - %s\n", smbcli_errstr(cli->tree));
 		ret = false;
@@ -101,9 +145,20 @@ static bool test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 		goto done;
 	}
 
-	ret &= test_path(cli, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
-	ret &= test_path(cli, BASEDIR "\\foo\\..\\test.txt..", NT_STATUS_NOT_A_DIRECTORY, NT_STATUS_DOS(ERRDOS,ERRbadpath));
-	ret &= test_path(cli, "", NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, BASEDIR, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, ((char *)BASEDIR) + 1, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, ((char *)BASEDIR"\\\\") + 1, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, ((char *)BASEDIR"\\foo\\..") + 1, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, ((char *)BASEDIR"\\f\\o\\o\\..\\..\\..") + 1, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, ((char *)BASEDIR"\\foo\\\\\..\\\\") + 1, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, BASEDIR"\\", BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, BASEDIR"\\\\..\\"BASEDIR, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, BASEDIR"\\\\\\", BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, "\\\\\\\\"BASEDIR"\\\\\\\\", BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, "\\\\\\\\"BASEDIR, BASEDIR, NT_STATUS_OK, NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, BASEDIR "\\foo\\..\\test.txt..", BASEDIR "\\test.txt..",
+			    NT_STATUS_NOT_A_DIRECTORY, NT_STATUS_DOS(ERRDOS,ERRbadpath));
+	ret &= test_path_ex(cli, tctx, "", "\\", NT_STATUS_OK, NT_STATUS_OK);
 	ret &= test_path(cli, ".", NT_STATUS_OBJECT_NAME_INVALID, NT_STATUS_DOS(ERRDOS,ERRbadpath));
 	ret &= test_path(cli, ".\\", NT_STATUS_OBJECT_NAME_INVALID, NT_STATUS_DOS(ERRDOS,ERRbadpath));
 	ret &= test_path(cli, "\\\\\\.\\", NT_STATUS_OBJECT_NAME_INVALID, NT_STATUS_DOS(ERRDOS,ERRbadpath));
@@ -122,7 +177,7 @@ static bool test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	  give different NT status returns for chkpth and findfirst. */
 
 	printf("testing findfirst on %s\n", "\\.\\\\\\\\\\\\.");
-	status = single_search(cli, mem_ctx, "\\.\\\\\\\\\\\\.");
+	status = single_search(cli, tctx, "\\.\\\\\\\\\\\\.");
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_INVALID,NT_STATUS_DOS(ERRDOS,ERRinvalidname));
 
 	ret &= test_path(cli, "\\.\\\\\\\\\\\\.", NT_STATUS_OBJECT_PATH_NOT_FOUND,NT_STATUS_DOS(ERRDOS,ERRbadpath));
@@ -164,7 +219,7 @@ static bool test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	ret &= test_path(cli, "\\..\\", NT_STATUS_OBJECT_PATH_SYNTAX_BAD,NT_STATUS_DOS(ERRDOS,ERRinvalidpath));
 	ret &= test_path(cli, "\\..", NT_STATUS_OBJECT_PATH_SYNTAX_BAD,NT_STATUS_DOS(ERRDOS,ERRinvalidpath));
 	ret &= test_path(cli, BASEDIR "\\.", NT_STATUS_OBJECT_NAME_INVALID,NT_STATUS_DOS(ERRDOS,ERRbadpath));
-	ret &= test_path(cli, BASEDIR "\\..", NT_STATUS_OK,NT_STATUS_OK);
+	ret &= test_path_ex(cli, tctx, BASEDIR "\\..", "\\", NT_STATUS_OK,NT_STATUS_OK);
 	ret &= test_path(cli, BASEDIR "\\nt\\V S\\VB98\\vb600", NT_STATUS_OBJECT_NAME_NOT_FOUND,NT_STATUS_DOS(ERRDOS,ERRbadpath));
 	ret &= test_path(cli, BASEDIR "\\nt\\V S\\VB98\\vb6.exe", NT_STATUS_NOT_A_DIRECTORY,NT_STATUS_DOS(ERRDOS,ERRbadpath));
 
@@ -183,7 +238,7 @@ static bool test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND,NT_STATUS_DOS(ERRDOS,ERRbadpath));
 
 	printf("testing findfirst on %s\n", BASEDIR".\\.\\.\\.\\foo\\..\\.\\");
-	status = single_search(cli, mem_ctx, BASEDIR".\\.\\.\\.\\foo\\..\\.\\");
+	status = single_search(cli, tctx, BASEDIR".\\.\\.\\.\\foo\\..\\.\\");
 	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND,NT_STATUS_DOS(ERRDOS,ERRbadpath));
 
 	/* We expect this open to fail with the same error code as the chkpath below. */
