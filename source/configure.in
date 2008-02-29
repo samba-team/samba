@@ -855,11 +855,6 @@ if test x"$samba_cv_msghdr_msg_acctrights" = x"yes"; then
 	     [If we can use msg_acctrights for passing file descriptors])
 fi
 
-if test x"$samba_cv_msghdr_msg_control" = x"yes" -o \
-	x"$samba_cv_msghdr_msg_acctright" = x"yes"; then
-	default_shared_modules="$default_shared_modules vfs_aio_fork"
-fi
-
 AC_CHECK_FUNCS(dirfd)
 if test x"$ac_cv_func_dirfd" = x"yes"; then
 	default_shared_modules="$default_shared_modules vfs_syncops"
