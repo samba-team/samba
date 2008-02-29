@@ -265,8 +265,15 @@ static NTSTATUS pvfs_unix_path(struct pvfs_state *pvfs, const char *cifs_name,
 				   of a name */
 				return NT_STATUS_ILLEGAL_CHARACTER;
 			}
-			if (p > p_start && p[1] == 0) {
-				*p = 0;
+			if (p > p_start && (p[1] == '\\' || p[1] == '\0')) {
+				/* see if it is definately a "\\" or
+				 * a trailing "\". If it is then fail here,
+				 * and let the next layer up try again after
+				 * pvfs_reduce_name() if it wants to. This is
+				 * much more efficient on average than always
+				 * scanning for these separately
+				 */
+				return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			} else {
 				*p = '/';
 			}
