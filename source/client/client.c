@@ -979,11 +979,10 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	int handle = 0, fnum;
 	bool newhandle = false;
 	struct timeval tp_start;
-	int read_size = io_bufsize;
 	uint16 attr;
 	SMB_OFF_T size;
 	off_t start = 0;
-	off_t nread = 0;
+	ssize_t nread = 0;
 	int rc = 0;
 	struct cli_state *targetcli = NULL;
 	char *targetname = NULL;
