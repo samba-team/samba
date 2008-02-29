@@ -121,7 +121,7 @@ int rep_getifaddrs(struct ifaddrs **ifap)
 		curif->ifa_data = NULL;
 		curif->ifa_next = NULL;
 
-		curif->ifa_addr = NULL
+		curif->ifa_addr = NULL;
 		if (ioctl(fd, SIOCGIFADDR, &ifr[i]) != -1) {
 			curif->ifa_addr = sockaddr_dup(&ifr[i].ifr_addr);
 		}
