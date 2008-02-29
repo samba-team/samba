@@ -442,13 +442,7 @@ sub CFlags($$)
 	
 	my $cflags = join(' ', @cflags);
 
-	foreach (@{$key->{OBJ_LIST}}) {
-		my $ofile = $_;
-		my $dfile = $_;
-		$dfile =~ s/\.o$/.d/;
-		$dfile =~ s/\.ho$/.d/;
-		$self->output("$ofile $dfile: CFLAGS+= $cflags\n");
-	}
+	$self->output("\$(patsubst %.ho,%.d,\$(key->{NAME}_OBJ_FILES:.o=.d)) \$($key->{NAME}_OBJ_FILES): CFLAGS+= $cflags\n");
 }
 
 1;
