@@ -118,6 +118,15 @@ int count_current_connections( const char *sharename, bool clear  )
 }
 
 /****************************************************************************
+ Count the number of connections open across all shares.
+****************************************************************************/
+
+int count_all_current_connections(void)
+{
+        return count_current_connections(NULL, True /* clear stale entries */);
+}
+
+/****************************************************************************
  Claim an entry in the connections database.
 ****************************************************************************/
 

@@ -1,0 +1,6 @@
+{
+	global:
+		talloc_*;
+		_talloc_*;
+	local: *;
+};

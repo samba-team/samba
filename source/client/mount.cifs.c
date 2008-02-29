@@ -37,6 +37,7 @@
 #include <string.h>
 #include <mntent.h>
 #include <fcntl.h>
+#include <limits.h>
 
 #define MOUNT_CIFS_VERSION_MAJOR "1"
 #define MOUNT_CIFS_VERSION_MINOR "11"
@@ -62,8 +63,6 @@
 #define MS_BIND 4096
 #endif
 
-#define MAX_UNC_LEN 1024
-
 #define CONST_DISCARD(type, ptr)      ((type) ((void *) (ptr)))
 
 const char *thisprogram;
@@ -75,6 +74,7 @@ static int got_ip = 0;
 static int got_unc = 0;
 static int got_uid = 0;
 static int got_gid = 0;
+static int free_share_name = 0;
 static char * user_name = NULL;
 static char * mountpassword = NULL;
 char * domain_name = NULL;
@@ -205,8 +205,10 @@ static int open_cred_file(char * file_name)
 				/* go past equals sign */
 				temp_val++;
 				for(length = 0;length<4087;length++) {
-					if(temp_val[length] == '\n')
+					if ((temp_val[length] == '\n')
+					    || (temp_val[length] == '\0')) {
 						break;
+					}
 				}
 				if(length > 4086) {
 					printf("mount.cifs failed due to malformed username in credentials file");
@@ -229,8 +231,10 @@ static int open_cred_file(char * file_name)
 				/* go past equals sign */
 				temp_val++;
 				for(length = 0;length<65;length++) {
-					if(temp_val[length] == '\n')
+					if ((temp_val[length] == '\n')
+					    || (temp_val[length] == '\0')) {
 						break;
+					}
 				}
 				if(length > 64) {
 					printf("mount.cifs failed: password in credentials file too long\n");
@@ -258,8 +262,10 @@ static int open_cred_file(char * file_name)
 				if(verboseflag)
 					printf("\nDomain %s\n",temp_val);
                                 for(length = 0;length<65;length++) {
-                                        if(temp_val[length] == '\n')
-                                                break;
+					if ((temp_val[length] == '\n')
+					    || (temp_val[length] == '\0')) {
+						break;
+					}
                                 }
                                 if(length > 64) {
                                         printf("mount.cifs failed: domain in credentials file too long\n");
@@ -831,27 +837,17 @@ static char * check_for_domain(char **ppuser)
 	return domainnm;
 }
 
-/* replace all occurances of "from" in a string with "to" */
-static void replace_char(char *string, char from, char to)
-{
-	while (string) {
-		string = strchr(string, from);
-		if (string)
-			*string = to;
-	}
-}
-
 /* Note that caller frees the returned buffer if necessary */
 static char * parse_server(char ** punc_name)
 {
 	char * unc_name = *punc_name;
-	int length = strnlen(unc_name, MAX_UNC_LEN);
+	int length = strnlen(unc_name,1024);
 	char * share;
 	char * ipaddress_string = NULL;
 	struct hostent * host_entry = NULL;
 	struct in_addr server_ipaddr;
 
-	if(length > (MAX_UNC_LEN - 1)) {
+	if(length > 1023) {
 		printf("mount error: UNC name too long");
 		return NULL;
 	}
@@ -870,6 +866,7 @@ static char * parse_server(char ** punc_name)
 			/* check for nfs syntax ie server:share */
 			share = strchr(unc_name,':');
 			if(share) {
+				free_share_name = 1;
 				*punc_name = (char *)malloc(length+3);
 				if(*punc_name == NULL) {
 					/* put the original string back  if 
@@ -877,9 +874,9 @@ static char * parse_server(char ** punc_name)
 					*punc_name = unc_name;
 					return NULL;
 				}
+					
 				*share = '/';
 				strncpy((*punc_name)+2,unc_name,length);
-				free(unc_name);
 				unc_name = *punc_name;
 				unc_name[length+2] = 0;
 				goto continue_unc_parsing;
@@ -890,21 +887,18 @@ static char * parse_server(char ** punc_name)
 			}
 		} else {
 continue_unc_parsing:
-			unc_name[0] = '\\';
-			unc_name[1] = '\\';
+			unc_name[0] = '/';
+			unc_name[1] = '/';
 			unc_name += 2;
-
-			/* convert any '/' in unc to '\\' */
-			replace_char(unc_name, '/', '\\');
-
-			if ((share = strchr(unc_name,'\\'))) {
+			if ((share = strchr(unc_name, '/')) || 
+				(share = strchr(unc_name,'\\'))) {
 				*share = 0;  /* temporarily terminate the string */
 				share += 1;
 				if(got_ip == 0) {
 					host_entry = gethostbyname(unc_name);
 				}
-				*(share - 1) = '\\'; /* put delimiter back */
-				if ((prefixpath = strchr(share, '\\'))) {
+				*(share - 1) = '/'; /* put the slash back */
+				if ((prefixpath = strchr(share, '/'))) {
 					*prefixpath = 0;  /* permanently terminate the string */
 					if (!strlen(++prefixpath))
 						prefixpath = NULL; /* this needs to be done explicitly */
@@ -969,25 +963,6 @@ static struct option longopts[] = {
 	{ NULL, 0, NULL, 0 }
 };
 
-/* convert a string to uppercase. return false if the string
- * wasn't ASCII or was a NULL ptr */
-static int
-uppercase_string(char *string)
-{
-	if (!string)
-		return 0;
-
-	while (*string) {
-		/* check for unicode */
-		if ((unsigned char) string[0] & 0x80)
-			return 0;
-		*string = toupper((unsigned char) *string);
-		string++;
-	}
-
-	return 1;
-}
-
 int main(int argc, char ** argv)
 {
 	int c;
@@ -1000,7 +975,6 @@ int main(int argc, char ** argv)
 	char * options = NULL;
 	char * resolved_path = NULL;
 	char * temp;
-	char * dev_name;
 	int rc;
 	int rsize = 0;
 	int wsize = 0;
@@ -1037,16 +1011,8 @@ int main(int argc, char ** argv)
 	printf(" node: %s machine: %s sysname %s domain %s\n", sysinfo.nodename,sysinfo.machine,sysinfo.sysname,sysinfo.domainname);
 #endif */
 	if(argc > 2) {
-		dev_name = argv[1];
-		share_name = strndup(argv[1], MAX_UNC_LEN);
-		if (share_name == NULL) {
-			fprintf(stderr, "%s: %s", argv[0], strerror(ENOMEM));
-			exit(1);
-		}
+		share_name = argv[1];
 		mountpoint = argv[2];
-	} else {
-		mount_cifs_usage();
-		exit(1);
 	}
 
 	/* add sharename in opts string as unc= parm */
@@ -1186,7 +1152,7 @@ int main(int argc, char ** argv)
 		}
 	}
 
-	if((argc < 3) || (dev_name == NULL) || (mountpoint == NULL)) {
+	if((argc < 3) || (share_name == NULL) || (mountpoint == NULL)) {
 		mount_cifs_usage();
 		exit(1);
 	}
@@ -1344,12 +1310,10 @@ mount_retry:
 	}
 	if(verboseflag)
 		printf("\nmount.cifs kernel mount options %s \n",options);
-
-	/* convert all '\\' to '/' so that /proc/mounts looks pretty */
-	replace_char(dev_name, '\\', '/');
-
-	if(mount(dev_name, mountpoint, "cifs", flags, options)) {
+	if(mount(share_name, mountpoint, "cifs", flags, options)) {
 	/* remember to kill daemon on error */
+		char * tmp;
+
 		switch (errno) {
 		case 0:
 			printf("mount failed but no error number set\n");
@@ -1360,9 +1324,12 @@ mount_retry:
 		case ENXIO:
 			if(retry == 0) {
 				retry = 1;
-				if (uppercase_string(dev_name) &&
-				    uppercase_string(share_name) &&
-				    uppercase_string(prefixpath)) {
+				tmp = share_name;
+				while (*tmp && !(((unsigned char)tmp[0]) & 0x80)) {
+					*tmp = toupper((unsigned char)*tmp);
+		        		tmp++;
+				}
+				if(!*tmp) {
 					printf("retrying with upper case share name\n");
 					goto mount_retry;
 				}
@@ -1376,7 +1343,7 @@ mount_retry:
 	} else {
 		pmntfile = setmntent(MOUNTED, "a+");
 		if(pmntfile) {
-			mountent.mnt_fsname = dev_name;
+			mountent.mnt_fsname = share_name;
 			mountent.mnt_dir = mountpoint;
 			mountent.mnt_type = CONST_DISCARD(char *,"cifs");
 			mountent.mnt_opts = (char *)malloc(220);
@@ -1436,6 +1403,8 @@ mount_exit:
 		free(resolved_path);
 	}
 
-	free(share_name);
+	if(free_share_name) {
+		free(share_name);
+		}
 	return rc;
 }

@@ -656,6 +656,7 @@ int tdb_unpack(const uint8 *buf, int bufsize, const char *fmt, ...)
 	return PTR_DIFF(buf, buf0);
 
  no_space:
+	va_end(ap);
 	return -1;
 }
 
@@ -668,12 +669,13 @@ static void tdb_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, const char *fo
 {
 	va_list ap;
 	char *ptr = NULL;
+	int ret;
 
 	va_start(ap, format);
-	vasprintf(&ptr, format, ap);
+	ret = vasprintf(&ptr, format, ap);
 	va_end(ap);
 
-	if (!ptr || !*ptr)
+	if ((ret == -1) || !*ptr)
 		return;
 
 	DEBUG((int)level, ("tdb(%s): %s", tdb_name(tdb) ? tdb_name(tdb) : "unnamed", ptr));
@@ -866,11 +868,8 @@ static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 	va_list ap;
 	char *ptr = NULL;
 	int debuglevel = 0;
+	int ret;
 
-	va_start(ap, format);
-	vasprintf(&ptr, format, ap);
-	va_end(ap);
-	
 	switch (level) {
 	case TDB_DEBUG_FATAL:
 		debug_level = 0;
@@ -888,7 +887,11 @@ static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 		debuglevel = 0;
 	}		
 
-	if (ptr != NULL) {
+	va_start(ap, format);
+	ret = vasprintf(&ptr, format, ap);
+	va_end(ap);
+
+	if (ret != -1) {
 		const char *name = tdb_name(tdb);
 		DEBUG(debuglevel, ("tdb(%s): %s", name ? name : "unnamed", ptr));
 		free(ptr);

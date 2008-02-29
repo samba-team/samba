@@ -140,15 +140,14 @@ int elog_tdb_size( TDB_CONTEXT * tdb, int *MaxSize, int *Retention )
  return True if we made enough room to accommodate needed bytes
 ********************************************************************/
 
-bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
-			     bool whack_by_date )
+static bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
+				    bool whack_by_date )
 {
 	int start_record, i, new_start;
 	int end_record;
 	int nbytes, reclen, len, Retention, MaxSize;
 	int tresv1, trecnum, timegen, timewr;
 	TDB_DATA key, ret;
-	TALLOC_CTX *mem_ctx = NULL;
 	time_t current_time, exp_time;
 
 	/* discard some eventlogs */
@@ -156,10 +155,7 @@ bool make_way_for_eventlogs( TDB_CONTEXT * the_tdb, int32 needed,
 	/* read eventlogs from oldest_entry -- there can't be any discontinuity in recnos,
 	   although records not necessarily guaranteed to have successive times */
 	/* */
-	mem_ctx = talloc_init( "make_way_for_eventlogs" );	/* Homage to BPG */
 
-	if ( mem_ctx == NULL )
-		return False;	/* can't allocate memory indicates bigger problems */
 	/* lock */
 	tdb_lock_bystring_with_timeout( the_tdb, EVT_NEXT_RECORD, 1 );
 	/* read */

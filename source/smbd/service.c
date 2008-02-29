@@ -219,44 +219,6 @@ bool set_current_service(connection_struct *conn, uint16 flags, bool do_chdir)
 	return(True);
 }
 
-/****************************************************************************
- Add a home service. Returns the new service number or -1 if fail.
-****************************************************************************/
-
-int add_home_service(const char *service, const char *username, const char *homedir)
-{
-	int iHomeService;
-
-	if (!service || !homedir)
-		return -1;
-
-	if ((iHomeService = lp_servicenumber(HOMES_NAME)) < 0)
-		return -1;
-
-	/*
-	 * If this is a winbindd provided username, remove
-	 * the domain component before adding the service.
-	 * Log a warning if the "path=" parameter does not
-	 * include any macros.
-	 */
-
-	{
-		const char *p = strchr(service,*lp_winbind_separator());
-
-		/* We only want the 'user' part of the string */
-		if (p) {
-			service = p + 1;
-		}
-	}
-
-	if (!lp_add_home(service, iHomeService, username, homedir)) {
-		return -1;
-	}
-	
-	return lp_servicenumber(service);
-
-}
-
 static int load_registry_service(const char *servicename)
 {
 	struct registry_key *key;
@@ -348,6 +310,47 @@ void load_registry_shares(void)
 	return;
 }
 
+/****************************************************************************
+ Add a home service. Returns the new service number or -1 if fail.
+****************************************************************************/
+
+int add_home_service(const char *service, const char *username, const char *homedir)
+{
+	int iHomeService;
+
+	if (!service || !homedir)
+		return -1;
+
+	if ((iHomeService = lp_servicenumber(HOMES_NAME)) < 0) {
+		if ((iHomeService = load_registry_service(HOMES_NAME)) < 0) {
+			return -1;
+		}
+	}
+
+	/*
+	 * If this is a winbindd provided username, remove
+	 * the domain component before adding the service.
+	 * Log a warning if the "path=" parameter does not
+	 * include any macros.
+	 */
+
+	{
+		const char *p = strchr(service,*lp_winbind_separator());
+
+		/* We only want the 'user' part of the string */
+		if (p) {
+			service = p + 1;
+		}
+	}
+
+	if (!lp_add_home(service, iHomeService, username, homedir)) {
+		return -1;
+	}
+	
+	return lp_servicenumber(service);
+
+}
+
 /**
  * Find a service entry.
  *
@@ -386,7 +389,10 @@ int find_service(fstring service)
 	if (iService < 0) {
 		int iPrinterService;
 
-		if ((iPrinterService = lp_servicenumber(PRINTERS_NAME)) >= 0) {
+		if ((iPrinterService = lp_servicenumber(PRINTERS_NAME)) < 0) {
+			iPrinterService = load_registry_service(PRINTERS_NAME);
+		}
+		if (iPrinterService) {
 			DEBUG(3,("checking whether %s is a valid printer name...\n", service));
 			if (pcap_printername_ok(service)) {
 				DEBUG(3,("%s is a valid printer name\n", service));
@@ -1165,16 +1171,8 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 * assumes that all the filesystem mounted withing a share path have
 	 * the same characteristics, which is likely but not guaranteed.
 	 */
-	{
-		vfs_statvfs_struct svfs;
 
-		conn->fs_capabilities =
-		    FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
-
-		if (SMB_VFS_STATVFS(conn, conn->connectpath, &svfs) == 0) {
-			conn->fs_capabilities = svfs.FsCapabilities;
-		}
-	}
+	conn->fs_capabilities = SMB_VFS_FS_CAPABILITIES(conn);
 
 	/*
 	 * Print out the 'connected as' stuff here as we need

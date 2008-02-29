@@ -28,6 +28,7 @@ static void add_auto_printers(void)
 	const char *p;
 	int pnum = lp_servicenumber(PRINTERS_NAME);
 	char *str;
+	char *saveptr;
 
 	if (pnum < 0)
 		return;
@@ -35,7 +36,8 @@ static void add_auto_printers(void)
 	if ((str = SMB_STRDUP(lp_auto_services())) == NULL)
 		return;
 
-	for (p = strtok(str, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
+	for (p = strtok_r(str, LIST_SEP, &saveptr); p;
+	     p = strtok_r(NULL, LIST_SEP, &saveptr)) {
 		if (lp_servicenumber(p) >= 0)
 			continue;
 		

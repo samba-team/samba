@@ -164,7 +164,9 @@ void cgi_load_variables(void)
 	open("/dev/null", O_RDWR);
 
 	if ((s=query_string) || (s=getenv("QUERY_STRING"))) {
-		for (tok=strtok(s,"&;");tok;tok=strtok(NULL,"&;")) {
+		char *saveptr;
+		for (tok=strtok_r(s, "&;", &saveptr); tok;
+		     tok=strtok_r(NULL, "&;", &saveptr)) {
 			p = strchr_m(tok,'=');
 			if (!p) continue;
 			

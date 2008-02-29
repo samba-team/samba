@@ -112,7 +112,7 @@ static bool interpret_string_addr_internal(struct addrinfo **ppres,
 			&hints,
 			ppres);
 	if (ret) {
-		DEBUG(3,("interpret_string_addr_interal: getaddrinfo failed "
+		DEBUG(3,("interpret_string_addr_internal: getaddrinfo failed "
 			"for name %s [%s]\n",
 			str,
 			gai_strerror(ret) ));
@@ -476,6 +476,29 @@ bool is_address_any(const struct sockaddr_storage *psa)
 }
 
 /****************************************************************************
+ Get a port number in host byte order from a sockaddr_storage.
+****************************************************************************/
+
+uint16_t get_sockaddr_port(const struct sockaddr_storage *pss)
+{
+	uint16_t port = 0;
+
+	if (pss->ss_family != AF_INET) {
+#if defined(HAVE_IPV6)
+		/* IPv6 */
+		const struct sockaddr_in6 *sa6 =
+			(const struct sockaddr_in6 *)pss;
+		port = ntohs(sa6->sin6_port);
+#endif
+	} else {
+		const struct sockaddr_in *sa =
+			(const struct sockaddr_in *)pss;
+		port = ntohs(sa->sin_port);
+	}
+	return port;
+}
+
+/****************************************************************************
  Print out an IPv4 or IPv6 address from a struct sockaddr_storage.
 ****************************************************************************/
 
@@ -518,7 +541,7 @@ char *print_canonical_sockaddr(TALLOC_CTX *ctx,
 	char *dest = NULL;
 	int ret;
 
-	ret = getnameinfo((const struct sockaddr *)pss,
+	ret = sys_getnameinfo((const struct sockaddr *)pss,
 			sizeof(struct sockaddr_storage),
 			addr, sizeof(addr),
 			NULL, 0,
@@ -890,12 +913,10 @@ ssize_t read_udp_v4_socket(int fd,
  time_out = timeout in milliseconds
 ****************************************************************************/
 
-ssize_t read_socket_with_timeout(int fd,
-				char *buf,
-				size_t mincnt,
-				size_t maxcnt,
-				unsigned int time_out,
-				enum smb_read_errors *pre)
+NTSTATUS read_socket_with_timeout(int fd, char *buf,
+				  size_t mincnt, size_t maxcnt,
+				  unsigned int time_out,
+				  size_t *size_ret)
 {
 	fd_set fds;
 	int selrtn;
@@ -906,9 +927,7 @@ ssize_t read_socket_with_timeout(int fd,
 
 	/* just checking .... */
 	if (maxcnt <= 0)
-		return(0);
-
-	set_smb_read_error(pre,SMB_READ_OK);
+		return NT_STATUS_OK;
 
 	/* Blocking read */
 	if (time_out == 0) {
@@ -922,8 +941,7 @@ ssize_t read_socket_with_timeout(int fd,
 			if (readret == 0) {
 				DEBUG(5,("read_socket_with_timeout: "
 					"blocking read. EOF from client.\n"));
-				set_smb_read_error(pre,SMB_READ_EOF);
-				return -1;
+				return NT_STATUS_END_OF_FILE;
 			}
 
 			if (readret == -1) {
@@ -939,12 +957,11 @@ ssize_t read_socket_with_timeout(int fd,
 						"read error = %s.\n",
 						strerror(errno) ));
 				}
-				set_smb_read_error(pre,SMB_READ_ERROR);
-				return -1;
+				return map_nt_error_from_unix(errno);
 			}
 			nread += readret;
 		}
-		return((ssize_t)nread);
+		goto done;
 	}
 
 	/* Most difficult - timeout read */
@@ -978,16 +995,14 @@ ssize_t read_socket_with_timeout(int fd,
 				"read. select error = %s.\n",
 				strerror(errno) ));
 			}
-			set_smb_read_error(pre,SMB_READ_ERROR);
-			return -1;
+			return map_nt_error_from_unix(errno);
 		}
 
 		/* Did we timeout ? */
 		if (selrtn == 0) {
 			DEBUG(10,("read_socket_with_timeout: timeout read. "
 				"select timed out.\n"));
-			set_smb_read_error(pre,SMB_READ_TIMEOUT);
-			return -1;
+			return NT_STATUS_IO_TIMEOUT;
 		}
 
 		readret = sys_read(fd, buf+nread, maxcnt-nread);
@@ -996,8 +1011,7 @@ ssize_t read_socket_with_timeout(int fd,
 			/* we got EOF on the file descriptor */
 			DEBUG(5,("read_socket_with_timeout: timeout read. "
 				"EOF from client.\n"));
-			set_smb_read_error(pre,SMB_READ_EOF);
-			return -1;
+			return NT_STATUS_END_OF_FILE;
 		}
 
 		if (readret == -1) {
@@ -1014,61 +1028,27 @@ ssize_t read_socket_with_timeout(int fd,
 					"read. read error = %s.\n",
 					strerror(errno) ));
 			}
-			set_smb_read_error(pre,SMB_READ_ERROR);
-			return -1;
+			return map_nt_error_from_unix(errno);
 		}
 
 		nread += readret;
 	}
 
+ done:
 	/* Return the number we got */
-	return (ssize_t)nread;
+	if (size_ret) {
+		*size_ret = nread;
+	}
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
  Read data from the client, reading exactly N bytes.
 ****************************************************************************/
 
-ssize_t read_data(int fd,char *buffer,size_t N, enum smb_read_errors *pre)
+NTSTATUS read_data(int fd, char *buffer, size_t N)
 {
-	ssize_t ret;
-	size_t total=0;
-	char addr[INET6_ADDRSTRLEN];
-
-	set_smb_read_error(pre,SMB_READ_OK);
-
-	while (total < N) {
-		ret = sys_read(fd,buffer + total,N - total);
-
-		if (ret == 0) {
-			DEBUG(10,("read_data: read of %d returned 0. "
-				"Error = %s\n",
-				(int)(N - total), strerror(errno) ));
-			set_smb_read_error(pre,SMB_READ_EOF);
-			return 0;
-		}
-
-		if (ret == -1) {
-			if (fd == get_client_fd()) {
-				/* Try and give an error message saying
-				 * what client failed. */
-				DEBUG(0,("read_data: read failure for %d "
-					"bytes to client %s. Error = %s\n",
-					(int)(N - total),
-					get_peer_addr(fd,addr,sizeof(addr)),
-					strerror(errno) ));
-			} else {
-				DEBUG(0,("read_data: read failure for %d. "
-					"Error = %s\n",
-					(int)(N - total),
-					strerror(errno) ));
-			}
-			set_smb_read_error(pre,SMB_READ_ERROR);
-			return -1;
-		}
-		total += ret;
-	}
-	return (ssize_t)total;
+	return read_socket_with_timeout(fd, buffer, N, N, 0, NULL);
 }
 
 /****************************************************************************
@@ -1130,37 +1110,29 @@ bool send_keepalive(int client)
  Timeout is in milliseconds.
 ****************************************************************************/
 
-ssize_t read_smb_length_return_keepalive(int fd,
-					char *inbuf,
-					unsigned int timeout,
-					enum smb_read_errors *pre)
+NTSTATUS read_smb_length_return_keepalive(int fd, char *inbuf,
+					  unsigned int timeout,
+					  size_t *len)
 {
-	ssize_t len=0;
 	int msg_type;
-	bool ok = false;
+	NTSTATUS status;
 
-	while (!ok) {
-		if (timeout > 0) {
-			ok = (read_socket_with_timeout(fd,inbuf,4,4,
-						timeout,pre) == 4);
-		} else {
-			ok = (read_data(fd,inbuf,4,pre) == 4);
-		}
-		if (!ok) {
-			return -1;
-		}
+	status = read_socket_with_timeout(fd, inbuf, 4, 4, timeout, NULL);
 
-		len = smb_len(inbuf);
-		msg_type = CVAL(inbuf,0);
-
-		if (msg_type == SMBkeepalive) {
-			DEBUG(5,("Got keepalive packet\n"));
-		}
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	DEBUG(10,("got smb length of %lu\n",(unsigned long)len));
+	*len = smb_len(inbuf);
+	msg_type = CVAL(inbuf,0);
 
-	return len;
+	if (msg_type == SMBkeepalive) {
+		DEBUG(5,("Got keepalive packet\n"));
+	}
+
+	DEBUG(10,("got smb length of %lu\n",(unsigned long)(*len)));
+
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1170,25 +1142,27 @@ ssize_t read_smb_length_return_keepalive(int fd,
  Timeout is in milliseconds.
 ****************************************************************************/
 
-ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout, enum smb_read_errors *pre)
+NTSTATUS read_smb_length(int fd, char *inbuf, unsigned int timeout,
+			 size_t *len)
 {
-	ssize_t len;
+	uint8_t msgtype = SMBkeepalive;
 
-	for(;;) {
-		len = read_smb_length_return_keepalive(fd, inbuf, timeout, pre);
+	while (msgtype == SMBkeepalive) {
+		NTSTATUS status;
 
-		if(len < 0)
-			return len;
+		status = read_smb_length_return_keepalive(fd, inbuf, timeout,
+							  len);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 
-		/* Ignore session keepalives. */
-		if(CVAL(inbuf,0) != SMBkeepalive)
-			break;
+		msgtype = CVAL(inbuf, 0);
 	}
 
 	DEBUG(10,("read_smb_length: got smb length of %lu\n",
 		  (unsigned long)len));
 
-	return len;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1201,28 +1175,17 @@ ssize_t read_smb_length(int fd, char *inbuf, unsigned int timeout, enum smb_read
  Doesn't check the MAC on signed packets.
 ****************************************************************************/
 
-ssize_t receive_smb_raw(int fd,
-			char *buffer,
-			unsigned int timeout,
-			size_t maxlen,
-			enum smb_read_errors *pre)
+NTSTATUS receive_smb_raw(int fd, char *buffer, unsigned int timeout,
+			 size_t maxlen, size_t *p_len)
 {
-	ssize_t len,ret;
+	size_t len;
+	NTSTATUS status;
 
-	set_smb_read_error(pre,SMB_READ_OK);
+	status = read_smb_length_return_keepalive(fd,buffer,timeout,&len);
 
-	len = read_smb_length_return_keepalive(fd,buffer,timeout,pre);
-	if (len < 0) {
-		DEBUG(10,("receive_smb_raw: length < 0!\n"));
-
-		/*
-		 * Correct fix. smb_read_error may have already been
-		 * set. Only set it here if not already set. Global
-		 * variables still suck :-). JRA.
-		 */
-
-		cond_set_smb_read_error(pre,SMB_READ_ERROR);
-		return -1;
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("receive_smb_raw: %s!\n", nt_errstr(status)));
+		return status;
 	}
 
 	/*
@@ -1234,15 +1197,7 @@ ssize_t receive_smb_raw(int fd,
 		DEBUG(0,("Invalid packet length! (%lu bytes).\n",
 					(unsigned long)len));
 		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
-
-			/*
-			 * Correct fix. smb_read_error may have already been
-			 * set. Only set it here if not already set. Global
-			 * variables still suck :-). JRA.
-			 */
-
-			cond_set_smb_read_error(pre,SMB_READ_ERROR);
-			return -1;
+			return NT_STATUS_INVALID_PARAMETER;
 		}
 	}
 
@@ -1251,20 +1206,11 @@ ssize_t receive_smb_raw(int fd,
 			len = MIN(len,maxlen);
 		}
 
-		if (timeout > 0) {
-			ret = read_socket_with_timeout(fd,
-					buffer+4,
-					len,
-					len,
-					timeout,
-					pre);
-		} else {
-			ret = read_data(fd,buffer+4,len,pre);
-		}
+		status = read_socket_with_timeout(
+			fd, buffer+4, len, len, timeout, &len);
 
-		if (ret != len) {
-			cond_set_smb_read_error(pre,SMB_READ_ERROR);
-			return -1;
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 
 		/* not all of samba3 properly checks for packet-termination
@@ -1273,7 +1219,8 @@ ssize_t receive_smb_raw(int fd,
 		SSVAL(buffer+4,len, 0);
 	}
 
-	return len;
+	*p_len = len;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1847,7 +1794,7 @@ const char *get_peer_name(int fd, bool force_lookup)
 	}
 
 	/* Look up the remote host name. */
-	ret = getnameinfo((struct sockaddr *)&ss,
+	ret = sys_getnameinfo((struct sockaddr *)&ss,
 			length,
 			name_buf,
 			sizeof(name_buf),
@@ -1957,8 +1904,7 @@ int create_pipe_sock(const char *socket_dir,
                 goto out_close;
 	}
 
-	asprintf(&path, "%s/%s", socket_dir, socket_name);
-	if (!path) {
+	if (asprintf(&path, "%s/%s", socket_dir, socket_name) == -1) {
                 goto out_close;
 	}
 
@@ -1986,7 +1932,8 @@ int create_pipe_sock(const char *socket_dir,
 
 out_close:
 	SAFE_FREE(path);
-	close(sock);
+	if (sock != -1)
+		close(sock);
 
 out_umask:
 	umask(old_umask);
@@ -2057,13 +2004,14 @@ const char *get_mydnsfullname(void)
 			data_blob_string_const("get_mydnsfullname"),
 			data_blob_string_const(res->ai_canonname));
 
-	freeaddrinfo(res);
-
 	if (!memcache_lookup(NULL, SINGLETON_CACHE,
 			data_blob_string_const("get_mydnsfullname"),
 			&tmp)) {
-		return NULL;
+		tmp = data_blob_talloc(talloc_tos(), res->ai_canonname,
+				strlen(res->ai_canonname) + 1);
 	}
+
+	freeaddrinfo(res);
 
 	return (const char *)tmp.data;
 }

@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    dump the remote SAM using rpc samsync operations
 
@@ -7,17 +7,18 @@
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2005
    Modified by Volker Lendecke 2002
    Copyright (C) Jeremy Allison 2005.
+   Copyright (C) Guenther Deschner 2008.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -31,57 +32,62 @@ static uint32 ldif_uid = 999;
 /* Keep track of ldap initialization */
 static int init_ldap = 1;
 
-static void display_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *g)
+static void display_group_mem_info(uint32_t rid,
+				   struct netr_DELTA_GROUP_MEMBER *r)
 {
 	int i;
 	d_printf("Group mem %u: ", rid);
-	for (i=0;i<g->num_members;i++) {
-		d_printf("%u ", g->rids[i]);
+	for (i=0; i< r->num_rids; i++) {
+		d_printf("%u ", r->rids[i]);
 	}
 	d_printf("\n");
 }
 
-static void display_alias_info(uint32 rid, SAM_ALIAS_INFO *a)
+static void display_alias_info(uint32_t rid,
+			       struct netr_DELTA_ALIAS *r)
 {
-	d_printf("Alias '%s' ", unistr2_static(&a->uni_als_name));
-	d_printf("desc='%s' rid=%u\n", unistr2_static(&a->uni_als_desc), a->als_rid);
+	d_printf("Alias '%s' ", r->alias_name.string);
+	d_printf("desc='%s' rid=%u\n", r->description.string, r->rid);
 }
 
-static void display_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *a)
+static void display_alias_mem(uint32_t rid,
+			      struct netr_DELTA_ALIAS_MEMBER *r)
 {
 	int i;
 	d_printf("Alias rid %u: ", rid);
-	for (i=0;i<a->num_members;i++) {
-		d_printf("%s ", sid_string_tos(&a->sids[i].sid));
+	for (i=0; i< r->sids.num_sids; i++) {
+		d_printf("%s ", sid_string_tos(r->sids.sids[i].sid));
 	}
 	d_printf("\n");
 }
 
-static void display_account_info(uint32 rid, SAM_ACCOUNT_INFO *a)
+static void display_account_info(uint32_t rid,
+				 struct netr_DELTA_USER *r)
 {
 	fstring hex_nt_passwd, hex_lm_passwd;
 	uchar lm_passwd[16], nt_passwd[16];
 	static uchar zero_buf[16];
 
 	/* Decode hashes from password hash (if they are not NULL) */
-	
-	if (memcmp(a->pass.buf_lm_pwd, zero_buf, 16) != 0) {
-		sam_pwd_hash(a->user_rid, a->pass.buf_lm_pwd, lm_passwd, 0);
-		pdb_sethexpwd(hex_lm_passwd, lm_passwd, a->acb_info);
+
+	if (memcmp(r->lmpassword.hash, zero_buf, 16) != 0) {
+		sam_pwd_hash(r->rid, r->lmpassword.hash, lm_passwd, 0);
+		pdb_sethexpwd(hex_lm_passwd, lm_passwd, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_lm_passwd, NULL, 0);
 	}
 
-	if (memcmp(a->pass.buf_nt_pwd, zero_buf, 16) != 0) {
-		sam_pwd_hash(a->user_rid, a->pass.buf_nt_pwd, nt_passwd, 0);
-		pdb_sethexpwd(hex_nt_passwd, nt_passwd, a->acb_info);
+	if (memcmp(r->ntpassword.hash, zero_buf, 16) != 0) {
+		sam_pwd_hash(r->rid, r->ntpassword.hash, nt_passwd, 0);
+		pdb_sethexpwd(hex_nt_passwd, nt_passwd, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_nt_passwd, NULL, 0);
 	}
-	
-	printf("%s:%d:%s:%s:%s:LCT-0\n", unistr2_static(&a->uni_acct_name),
-	       a->user_rid, hex_lm_passwd, hex_nt_passwd,
-	       pdb_encode_acct_ctrl(a->acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN));
+
+	printf("%s:%d:%s:%s:%s:LCT-0\n",
+		r->account_name.string,
+		r->rid, hex_lm_passwd, hex_nt_passwd,
+		pdb_encode_acct_ctrl(r->acct_flags, NEW_PW_FORMAT_SPACE_PADDED_LEN));
 }
 
 static time_t uint64s_nt_time_to_unix_abs(const uint64 *src)
@@ -91,102 +97,201 @@ static time_t uint64s_nt_time_to_unix_abs(const uint64 *src)
 	return nt_time_to_unix_abs(&nttime);
 }
 
-static void display_domain_info(SAM_DOMAIN_INFO *a)
+static void display_domain_info(struct netr_DELTA_DOMAIN *r)
 {
 	time_t u_logout;
 
-	u_logout = uint64s_nt_time_to_unix_abs(&a->force_logoff);
+	u_logout = uint64s_nt_time_to_unix_abs((const uint64 *)&r->force_logoff_time);
 
-	d_printf("Domain name: %s\n", unistr2_static(&a->uni_dom_name));
+	d_printf("Domain name: %s\n", r->domain_name.string);
 
-	d_printf("Minimal Password Length: %d\n", a->min_pwd_len);
-	d_printf("Password History Length: %d\n", a->pwd_history_len);
+	d_printf("Minimal Password Length: %d\n", r->min_password_length);
+	d_printf("Password History Length: %d\n", r->password_history_length);
 
 	d_printf("Force Logoff: %d\n", (int)u_logout);
 
-	d_printf("Max Password Age: %s\n", display_time(a->max_pwd_age));
-	d_printf("Min Password Age: %s\n", display_time(a->min_pwd_age));
+	d_printf("Max Password Age: %s\n", display_time(r->max_password_age));
+	d_printf("Min Password Age: %s\n", display_time(r->min_password_age));
 
+#if 0
+	/* FIXME - gd */
 	d_printf("Lockout Time: %s\n", display_time(a->account_lockout.lockout_duration));
 	d_printf("Lockout Reset Time: %s\n", display_time(a->account_lockout.reset_count));
-
 	d_printf("Bad Attempt Lockout: %d\n", a->account_lockout.bad_attempt_lockout);
-	d_printf("User must logon to change password: %d\n", a->logon_chgpass);
+#endif
+	d_printf("User must logon to change password: %d\n", r->logon_to_chgpass);
 }
 
-static void display_group_info(uint32 rid, SAM_GROUP_INFO *a)
+static void display_group_info(uint32_t rid, struct netr_DELTA_GROUP *r)
 {
-	d_printf("Group '%s' ", unistr2_static(&a->uni_grp_name));
-	d_printf("desc='%s', rid=%u\n", unistr2_static(&a->uni_grp_desc), rid);
+	d_printf("Group '%s' ", r->group_name.string);
+	d_printf("desc='%s', rid=%u\n", r->description.string, rid);
 }
 
-static void display_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta)
+static void display_sam_entry(struct netr_DELTA_ENUM *r)
 {
-	switch (hdr_delta->type) {
-	case SAM_DELTA_ACCOUNT_INFO:
-		display_account_info(hdr_delta->target_rid, &delta->account_info);
+	union netr_DELTA_UNION u = r->delta_union;
+	union netr_DELTA_ID_UNION id = r->delta_id_union;
+
+	switch (r->delta_type) {
+	case NETR_DELTA_DOMAIN:
+		display_domain_info(u.domain);
 		break;
-	case SAM_DELTA_GROUP_MEM:
-		display_group_mem_info(hdr_delta->target_rid, &delta->grp_mem_info);
+	case NETR_DELTA_GROUP:
+		display_group_info(id.rid, u.group);
 		break;
-	case SAM_DELTA_ALIAS_INFO:
-		display_alias_info(hdr_delta->target_rid, &delta->alias_info);
+#if 0
+	case NETR_DELTA_DELETE_GROUP:
+		printf("Delete Group: %d\n",
+			u.delete_account.unknown);
 		break;
-	case SAM_DELTA_ALIAS_MEM:
-		display_alias_mem(hdr_delta->target_rid, &delta->als_mem_info);
+	case NETR_DELTA_RENAME_GROUP:
+		printf("Rename Group: %s -> %s\n",
+			u.rename_group->OldName.string,
+			u.rename_group->NewName.string);
 		break;
-	case SAM_DELTA_DOMAIN_INFO:
-		display_domain_info(&delta->domain_info);
+#endif
+	case NETR_DELTA_USER:
+		display_account_info(id.rid, u.user);
 		break;
-	case SAM_DELTA_GROUP_INFO:
-		display_group_info(hdr_delta->target_rid, &delta->group_info);
+#if 0
+	case NETR_DELTA_DELETE_USER:
+		printf("Delete User: %d\n",
+			id.rid);
 		break;
-		/* The following types are recognised but not handled */
-	case SAM_DELTA_RENAME_GROUP:
-		d_printf("SAM_DELTA_RENAME_GROUP not handled\n");
+	case NETR_DELTA_RENAME_USER:
+		printf("Rename user: %s -> %s\n",
+			u.rename_user->OldName.string,
+			u.rename_user->NewName.string);
 		break;
-	case SAM_DELTA_RENAME_USER:
-		d_printf("SAM_DELTA_RENAME_USER not handled\n");
+#endif
+	case NETR_DELTA_GROUP_MEMBER:
+		display_group_mem_info(id.rid, u.group_member);
 		break;
-	case SAM_DELTA_RENAME_ALIAS:
-		d_printf("SAM_DELTA_RENAME_ALIAS not handled\n");
+	case NETR_DELTA_ALIAS:
+		display_alias_info(id.rid, u.alias);
 		break;
-	case SAM_DELTA_POLICY_INFO:
-		d_printf("SAM_DELTA_POLICY_INFO not handled\n");
+#if 0
+	case NETR_DELTA_DELETE_ALIAS:
+		printf("Delete Alias: %d\n",
+			id.rid);
 		break;
-	case SAM_DELTA_TRUST_DOMS:
-		d_printf("SAM_DELTA_TRUST_DOMS not handled\n");
+	case NETR_DELTA_RENAME_ALIAS:
+		printf("Rename alias: %s -> %s\n",
+			u.rename_alias->OldName.string,
+			u.rename_alias->NewName.string);
 		break;
-	case SAM_DELTA_PRIVS_INFO:
-		d_printf("SAM_DELTA_PRIVS_INFO not handled\n");
+#endif
+	case NETR_DELTA_ALIAS_MEMBER:
+		display_alias_mem(id.rid, u.alias_member);
 		break;
-	case SAM_DELTA_SECRET_INFO:
-		d_printf("SAM_DELTA_SECRET_INFO not handled\n");
+#if 0
+	case NETR_DELTA_POLICY:
+		printf("Policy\n");
 		break;
-	case SAM_DELTA_DELETE_GROUP:
-		d_printf("SAM_DELTA_DELETE_GROUP not handled\n");
+	case NETR_DELTA_TRUSTED_DOMAIN:
+		printf("Trusted Domain: %s\n",
+			u.trusted_domain->domain_name.string);
 		break;
-	case SAM_DELTA_DELETE_USER:
-		d_printf("SAM_DELTA_DELETE_USER not handled\n");
+	case NETR_DELTA_DELETE_TRUST:
+		printf("Delete Trust: %d\n",
+			u.delete_trust.unknown);
 		break;
-	case SAM_DELTA_MODIFIED_COUNT:
-		d_printf("SAM_DELTA_MODIFIED_COUNT not handled\n");
+	case NETR_DELTA_ACCOUNT:
+		printf("Account\n");
+		break;
+	case NETR_DELTA_DELETE_ACCOUNT:
+		printf("Delete Account: %d\n",
+			u.delete_account.unknown);
+		break;
+	case NETR_DELTA_SECRET:
+		printf("Secret\n");
+		break;
+	case NETR_DELTA_DELETE_SECRET:
+		printf("Delete Secret: %d\n",
+			u.delete_secret.unknown);
+		break;
+	case NETR_DELTA_DELETE_GROUP2:
+		printf("Delete Group2: %s\n",
+			u.delete_group->account_name);
+		break;
+	case NETR_DELTA_DELETE_USER2:
+		printf("Delete User2: %s\n",
+			u.delete_user->account_name);
+		break;
+	case NETR_DELTA_MODIFY_COUNT:
+		printf("sam sequence update: 0x%016llx\n",
+			(unsigned long long) *u.modified_count);
+		break;
+#endif
+	/* The following types are recognised but not handled */
+	case NETR_DELTA_RENAME_GROUP:
+		d_printf("NETR_DELTA_RENAME_GROUP not handled\n");
+		break;
+	case NETR_DELTA_RENAME_USER:
+		d_printf("NETR_DELTA_RENAME_USER not handled\n");
+		break;
+	case NETR_DELTA_RENAME_ALIAS:
+		d_printf("NETR_DELTA_RENAME_ALIAS not handled\n");
+		break;
+	case NETR_DELTA_POLICY:
+		d_printf("NETR_DELTA_POLICY not handled\n");
+		break;
+	case NETR_DELTA_TRUSTED_DOMAIN:
+		d_printf("NETR_DELTA_TRUSTED_DOMAIN not handled\n");
+		break;
+	case NETR_DELTA_ACCOUNT:
+		d_printf("NETR_DELTA_ACCOUNT not handled\n");
+		break;
+	case NETR_DELTA_SECRET:
+		d_printf("NETR_DELTA_SECRET not handled\n");
+		break;
+	case NETR_DELTA_DELETE_GROUP:
+		d_printf("NETR_DELTA_DELETE_GROUP not handled\n");
+		break;
+	case NETR_DELTA_DELETE_USER:
+		d_printf("NETR_DELTA_DELETE_USER not handled\n");
+		break;
+	case NETR_DELTA_MODIFY_COUNT:
+		d_printf("NETR_DELTA_MODIFY_COUNT not handled\n");
+		break;
+	case NETR_DELTA_DELETE_ALIAS:
+		d_printf("NETR_DELTA_DELETE_ALIAS not handled\n");
+		break;
+	case NETR_DELTA_DELETE_TRUST:
+		d_printf("NETR_DELTA_DELETE_TRUST not handled\n");
+		break;
+	case NETR_DELTA_DELETE_ACCOUNT:
+		d_printf("NETR_DELTA_DELETE_ACCOUNT not handled\n");
+		break;
+	case NETR_DELTA_DELETE_SECRET:
+		d_printf("NETR_DELTA_DELETE_SECRET not handled\n");
+		break;
+	case NETR_DELTA_DELETE_GROUP2:
+		d_printf("NETR_DELTA_DELETE_GROUP2 not handled\n");
+		break;
+	case NETR_DELTA_DELETE_USER2:
+		d_printf("NETR_DELTA_DELETE_USER2 not handled\n");
 		break;
 	default:
-		d_printf("Unknown delta record type %d\n", hdr_delta->type);
+		printf("unknown delta type 0x%02x\n",
+			r->delta_type);
 		break;
 	}
 }
 
 static void dump_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type)
 {
-	uint32 sync_context = 0;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
-        SAM_DELTA_HDR *hdr_deltas;
-        SAM_DELTA_CTR *deltas;
-        uint32 num_deltas;
+	const char *logon_server = pipe_hnd->cli->desthost;
+	const char *computername = global_myname();
+	struct netr_Authenticator credential;
+	struct netr_Authenticator return_authenticator;
+	enum netr_SamDatabaseID database_id = db_type;
+	uint16_t restart_state = 0;
+	uint32_t sync_context = 0;
 
 	if (!(mem_ctx = talloc_init("dump_database"))) {
 		return;
@@ -208,36 +313,59 @@ static void dump_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type)
 	}
 
 	do {
-		result = rpccli_netlogon_sam_sync(pipe_hnd, mem_ctx, db_type,
-					       sync_context,
-					       &num_deltas, &hdr_deltas, &deltas);
-		if (!NT_STATUS_IS_OK(result))
-			break;
+		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 
-                for (i = 0; i < num_deltas; i++) {
-			display_sam_entry(&hdr_deltas[i], &deltas[i]);
+		netlogon_creds_client_step(pipe_hnd->dc, &credential);
+
+		result = rpccli_netr_DatabaseSync2(pipe_hnd, mem_ctx,
+						   logon_server,
+						   computername,
+						   &credential,
+						   &return_authenticator,
+						   database_id,
+						   restart_state,
+						   &sync_context,
+						   &delta_enum_array,
+						   0xffff);
+
+		/* Check returned credentials. */
+		if (!netlogon_creds_client_check(pipe_hnd->dc,
+						 &return_authenticator.cred)) {
+			DEBUG(0,("credentials chain check failed\n"));
+			return;
+		}
+
+		if (NT_STATUS_IS_ERR(result)) {
+			break;
+		}
+
+		/* Display results */
+		for (i = 0; i < delta_enum_array->num_deltas; i++) {
+			display_sam_entry(&delta_enum_array->delta_enum[i]);
                 }
-		sync_context += 1;
+
+		TALLOC_FREE(delta_enum_array);
+
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	talloc_destroy(mem_ctx);
 }
 
 /* dump sam database via samsync rpc calls */
-NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid, 
-				const char *domain_name, 
+NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
+				const char *domain_name,
 				struct cli_state *cli,
 				struct rpc_pipe_client *pipe_hnd,
-				TALLOC_CTX *mem_ctx, 
+				TALLOC_CTX *mem_ctx,
 				int argc,
-				const char **argv) 
+				const char **argv)
 {
 #if 0
 	/* net_rpc.c now always tries to create an schannel pipe.. */
 
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	uchar trust_password[16];
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS;
 	uint32 sec_channel_type = 0;
 
 	if (!secrets_fetch_trust_account_password(domain_name,
@@ -277,7 +405,8 @@ NTSTATUS rpc_samdump_internals(const DOM_SID *domain_sid,
 		    (!(s1) && (s2)) ||\
 		((s1) && (s2) && (strcmp((s1), (s2)) != 0))
 
-static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *delta)
+static NTSTATUS sam_account_from_delta(struct samu *account,
+				       struct netr_DELTA_USER *r)
 {
 	const char *old_string, *new_string;
 	time_t unix_time, stored_time;
@@ -287,15 +416,14 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 	/* Username, fullname, home dir, dir drive, logon script, acct
 	   desc, workstations, profile. */
 
-	if (delta->hdr_acct_name.buffer) {
+	if (r->account_name.string) {
 		old_string = pdb_get_nt_username(account);
-		new_string = unistr2_static(&delta->uni_acct_name);
+		new_string = r->account_name.string;
 
 		if (STRING_CHANGED) {
 			pdb_set_nt_username(account, new_string, PDB_CHANGED);
-              
 		}
-         
+
 		/* Unix username is the same - for sanity */
 		old_string = pdb_get_username( account );
 		if (STRING_CHANGED) {
@@ -303,69 +431,70 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 		}
 	}
 
-	if (delta->hdr_full_name.buffer) {
+	if (r->full_name.string) {
 		old_string = pdb_get_fullname(account);
-		new_string = unistr2_static(&delta->uni_full_name);
+		new_string = r->full_name.string;
 
 		if (STRING_CHANGED)
 			pdb_set_fullname(account, new_string, PDB_CHANGED);
 	}
 
-	if (delta->hdr_home_dir.buffer) {
+	if (r->home_directory.string) {
 		old_string = pdb_get_homedir(account);
-		new_string = unistr2_static(&delta->uni_home_dir);
+		new_string = r->home_directory.string;
 
 		if (STRING_CHANGED)
 			pdb_set_homedir(account, new_string, PDB_CHANGED);
 	}
 
-	if (delta->hdr_dir_drive.buffer) {
+	if (r->home_drive.string) {
 		old_string = pdb_get_dir_drive(account);
-		new_string = unistr2_static(&delta->uni_dir_drive);
+		new_string = r->home_drive.string;
 
 		if (STRING_CHANGED)
 			pdb_set_dir_drive(account, new_string, PDB_CHANGED);
 	}
 
-	if (delta->hdr_logon_script.buffer) {
+	if (r->logon_script.string) {
 		old_string = pdb_get_logon_script(account);
-		new_string = unistr2_static(&delta->uni_logon_script);
+		new_string = r->logon_script.string;
 
 		if (STRING_CHANGED)
 			pdb_set_logon_script(account, new_string, PDB_CHANGED);
 	}
 
-	if (delta->hdr_acct_desc.buffer) {
+	if (r->description.string) {
 		old_string = pdb_get_acct_desc(account);
-		new_string = unistr2_static(&delta->uni_acct_desc);
+		new_string = r->description.string;
 
 		if (STRING_CHANGED)
 			pdb_set_acct_desc(account, new_string, PDB_CHANGED);
 	}
 
-	if (delta->hdr_workstations.buffer) {
+	if (r->workstations.string) {
 		old_string = pdb_get_workstations(account);
-		new_string = unistr2_static(&delta->uni_workstations);
+		new_string = r->workstations.string;
 
 		if (STRING_CHANGED)
 			pdb_set_workstations(account, new_string, PDB_CHANGED);
 	}
 
-	if (delta->hdr_profile.buffer) {
+	if (r->profile_path.string) {
 		old_string = pdb_get_profile_path(account);
-		new_string = unistr2_static(&delta->uni_profile);
+		new_string = r->profile_path.string;
 
 		if (STRING_CHANGED)
 			pdb_set_profile_path(account, new_string, PDB_CHANGED);
 	}
 
-	if (delta->hdr_parameters.buffer) {
+	if (r->parameters.string) {
 		DATA_BLOB mung;
 		char *newstr;
 		old_string = pdb_get_munged_dial(account);
-		mung.length = delta->hdr_parameters.uni_str_len;
-		mung.data = (uint8 *) delta->uni_parameters.buffer;
-		newstr = (mung.length == 0) ? NULL : base64_encode_data_blob(mung);
+		mung.length = r->parameters.length;
+		mung.data = (uint8 *) r->parameters.string;
+		newstr = (mung.length == 0) ? NULL :
+			base64_encode_data_blob(talloc_tos(), mung);
 
 		if (STRING_CHANGED_NC(old_string, newstr))
 			pdb_set_munged_dial(account, newstr, PDB_CHANGED);
@@ -373,57 +502,59 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 	}
 
 	/* User and group sid */
-	if (pdb_get_user_rid(account) != delta->user_rid)
-		pdb_set_user_sid_from_rid(account, delta->user_rid, PDB_CHANGED);
-	if (pdb_get_group_rid(account) != delta->group_rid)
-		pdb_set_group_sid_from_rid(account, delta->group_rid, PDB_CHANGED);
+	if (pdb_get_user_rid(account) != r->rid)
+		pdb_set_user_sid_from_rid(account, r->rid, PDB_CHANGED);
+	if (pdb_get_group_rid(account) != r->primary_gid)
+		pdb_set_group_sid_from_rid(account, r->primary_gid, PDB_CHANGED);
 
 	/* Logon and password information */
-	if (!nt_time_is_zero(&delta->logon_time)) {
-		unix_time = nt_time_to_unix(delta->logon_time);
+	if (!nt_time_is_zero(&r->last_logon)) {
+		unix_time = nt_time_to_unix(r->last_logon);
 		stored_time = pdb_get_logon_time(account);
 		if (stored_time != unix_time)
 			pdb_set_logon_time(account, unix_time, PDB_CHANGED);
 	}
 
-	if (!nt_time_is_zero(&delta->logoff_time)) {
-		unix_time = nt_time_to_unix(delta->logoff_time);
+	if (!nt_time_is_zero(&r->last_logoff)) {
+		unix_time = nt_time_to_unix(r->last_logoff);
 		stored_time = pdb_get_logoff_time(account);
 		if (stored_time != unix_time)
 			pdb_set_logoff_time(account, unix_time,PDB_CHANGED);
 	}
 
 	/* Logon Divs */
-	if (pdb_get_logon_divs(account) != delta->logon_divs)
-		pdb_set_logon_divs(account, delta->logon_divs, PDB_CHANGED);
+	if (pdb_get_logon_divs(account) != r->logon_hours.units_per_week)
+		pdb_set_logon_divs(account, r->logon_hours.units_per_week, PDB_CHANGED);
 
+#if 0
+	/* no idea what to do with this one - gd */
 	/* Max Logon Hours */
 	if (delta->unknown1 != pdb_get_unknown_6(account)) {
 		pdb_set_unknown_6(account, delta->unknown1, PDB_CHANGED);
 	}
-
+#endif
 	/* Logon Hours Len */
-	if (delta->buf_logon_hrs.buf_len != pdb_get_hours_len(account)) {
-		pdb_set_hours_len(account, delta->buf_logon_hrs.buf_len, PDB_CHANGED);
+	if (r->logon_hours.units_per_week/8 != pdb_get_hours_len(account)) {
+		pdb_set_hours_len(account, r->logon_hours.units_per_week/8, PDB_CHANGED);
 	}
 
 	/* Logon Hours */
-	if (delta->buf_logon_hrs.buffer) {
+	if (r->logon_hours.bits) {
 		char oldstr[44], newstr[44];
 		pdb_sethexhours(oldstr, pdb_get_hours(account));
-		pdb_sethexhours(newstr, delta->buf_logon_hrs.buffer);
+		pdb_sethexhours(newstr, r->logon_hours.bits);
 		if (!strequal(oldstr, newstr))
-			pdb_set_hours(account, (const uint8 *)delta->buf_logon_hrs.buffer, PDB_CHANGED);
+			pdb_set_hours(account, r->logon_hours.bits, PDB_CHANGED);
 	}
 
-	if (pdb_get_bad_password_count(account) != delta->bad_pwd_count)
-		pdb_set_bad_password_count(account, delta->bad_pwd_count, PDB_CHANGED);
+	if (pdb_get_bad_password_count(account) != r->bad_password_count)
+		pdb_set_bad_password_count(account, r->bad_password_count, PDB_CHANGED);
 
-	if (pdb_get_logon_count(account) != delta->logon_count)
-		pdb_set_logon_count(account, delta->logon_count, PDB_CHANGED);
+	if (pdb_get_logon_count(account) != r->logon_count)
+		pdb_set_logon_count(account, r->logon_count, PDB_CHANGED);
 
-	if (!nt_time_is_zero(&delta->pwd_last_set_time)) {
-		unix_time = nt_time_to_unix(delta->pwd_last_set_time);
+	if (!nt_time_is_zero(&r->last_password_change)) {
+		unix_time = nt_time_to_unix(r->last_password_change);
 		stored_time = pdb_get_pass_last_set_time(account);
 		if (stored_time != unix_time)
 			pdb_set_pass_last_set_time(account, unix_time, PDB_CHANGED);
@@ -432,42 +563,41 @@ static NTSTATUS sam_account_from_delta(struct samu *account, SAM_ACCOUNT_INFO *d
 		pdb_set_pass_last_set_time(account, time(NULL), PDB_CHANGED);
 	}
 
-#if 0
-/*	No kickoff time in the delta? */
-	if (!nt_time_is_zero(&delta->kickoff_time)) {
-		unix_time = nt_time_to_unix(&delta->kickoff_time);
+	if (!nt_time_is_zero(&r->acct_expiry)) {
+		unix_time = nt_time_to_unix(r->acct_expiry);
 		stored_time = pdb_get_kickoff_time(account);
 		if (stored_time != unix_time)
 			pdb_set_kickoff_time(account, unix_time, PDB_CHANGED);
 	}
-#endif
 
-	/* Decode hashes from password hash 
-	   Note that win2000 may send us all zeros for the hashes if it doesn't 
+	/* Decode hashes from password hash
+	   Note that win2000 may send us all zeros for the hashes if it doesn't
 	   think this channel is secure enough - don't set the passwords at all
 	   in that case
 	*/
-	if (memcmp(delta->pass.buf_lm_pwd, zero_buf, 16) != 0) {
-		sam_pwd_hash(delta->user_rid, delta->pass.buf_lm_pwd, lm_passwd, 0);
+	if (memcmp(r->ntpassword.hash, zero_buf, 16) != 0) {
+		sam_pwd_hash(r->rid, r->ntpassword.hash, lm_passwd, 0);
 		pdb_set_lanman_passwd(account, lm_passwd, PDB_CHANGED);
 	}
 
-	if (memcmp(delta->pass.buf_nt_pwd, zero_buf, 16) != 0) {
-		sam_pwd_hash(delta->user_rid, delta->pass.buf_nt_pwd, nt_passwd, 0);
+	if (memcmp(r->lmpassword.hash, zero_buf, 16) != 0) {
+		sam_pwd_hash(r->rid, r->lmpassword.hash, nt_passwd, 0);
 		pdb_set_nt_passwd(account, nt_passwd, PDB_CHANGED);
 	}
 
 	/* TODO: account expiry time */
 
-	pdb_set_acct_ctrl(account, delta->acb_info, PDB_CHANGED);
+	pdb_set_acct_ctrl(account, r->acct_flags, PDB_CHANGED);
 
 	pdb_set_domain(account, lp_workgroup(), PDB_CHANGED);
 
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
+static NTSTATUS fetch_account_info(uint32_t rid,
+				   struct netr_DELTA_USER *r)
 {
+
 	NTSTATUS nt_ret = NT_STATUS_UNSUCCESSFUL;
 	fstring account;
 	char *add_script = NULL;
@@ -479,7 +609,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	struct passwd *passwd;
 	fstring sid_string;
 
-	fstrcpy(account, unistr2_static(&delta->uni_acct_name));
+	fstrcpy(account, r->account_name.string);
 	d_printf("Creating account: %s\n", account);
 
 	if ( !(sam_account = samu_new( NULL )) ) {
@@ -488,17 +618,17 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 
 	if (!(passwd = Get_Pwnam_alloc(sam_account, account))) {
 		/* Create appropriate user */
-		if (delta->acb_info & ACB_NORMAL) {
+		if (r->acct_flags & ACB_NORMAL) {
 			add_script = talloc_strdup(sam_account,
 					lp_adduser_script());
-		} else if ( (delta->acb_info & ACB_WSTRUST) ||
-			    (delta->acb_info & ACB_SVRTRUST) ||
-			    (delta->acb_info & ACB_DOMTRUST) ) {
+		} else if ( (r->acct_flags & ACB_WSTRUST) ||
+			    (r->acct_flags & ACB_SVRTRUST) ||
+			    (r->acct_flags & ACB_DOMTRUST) ) {
 			add_script = talloc_strdup(sam_account,
 					lp_addmachine_script());
 		} else {
 			DEBUG(1, ("Unknown user type: %s\n",
-				  pdb_encode_acct_ctrl(delta->acb_info, NEW_PW_FORMAT_SPACE_PADDED_LEN)));
+				  pdb_encode_acct_ctrl(r->acct_flags, NEW_PW_FORMAT_SPACE_PADDED_LEN)));
 			nt_ret = NT_STATUS_UNSUCCESSFUL;
 			goto done;
 		}
@@ -533,30 +663,30 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	}
 
 	sid_copy(&user_sid, get_global_sam_sid());
-	sid_append_rid(&user_sid, delta->user_rid);
+	sid_append_rid(&user_sid, r->rid);
 
 	DEBUG(3, ("Attempting to find SID %s for user %s in the passdb\n",
 		  sid_to_fstring(sid_string, &user_sid), account));
 	if (!pdb_getsampwsid(sam_account, &user_sid)) {
-		sam_account_from_delta(sam_account, delta);
-		DEBUG(3, ("Attempting to add user SID %s for user %s in the passdb\n", 
+		sam_account_from_delta(sam_account, r);
+		DEBUG(3, ("Attempting to add user SID %s for user %s in the passdb\n",
 			  sid_to_fstring(sid_string, &user_sid),
 			  pdb_get_username(sam_account)));
 		if (!NT_STATUS_IS_OK(pdb_add_sam_account(sam_account))) {
 			DEBUG(1, ("SAM Account for %s failed to be added to the passdb!\n",
 				  account));
-			return NT_STATUS_ACCESS_DENIED; 
+			return NT_STATUS_ACCESS_DENIED;
 		}
 	} else {
-		sam_account_from_delta(sam_account, delta);
-		DEBUG(3, ("Attempting to update user SID %s for user %s in the passdb\n", 
+		sam_account_from_delta(sam_account, r);
+		DEBUG(3, ("Attempting to update user SID %s for user %s in the passdb\n",
 			  sid_to_fstring(sid_string, &user_sid),
 			  pdb_get_username(sam_account)));
 		if (!NT_STATUS_IS_OK(pdb_update_sam_account(sam_account))) {
 			DEBUG(1, ("SAM Account for %s failed to be updated in the passdb!\n",
 				  account));
 			TALLOC_FREE(sam_account);
-			return NT_STATUS_ACCESS_DENIED; 
+			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
 
@@ -572,7 +702,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	} else {
 		if (map.gid != passwd->pw_gid) {
 			if (!(grp = getgrgid(map.gid))) {
-				DEBUG(0, ("Could not find unix group %lu for user %s (group SID=%s)\n", 
+				DEBUG(0, ("Could not find unix group %lu for user %s (group SID=%s)\n",
 					  (unsigned long)map.gid, pdb_get_username(sam_account), sid_string_tos(&group_sid)));
 			} else {
 				smb_set_primary_group(grp->gr_name, pdb_get_username(sam_account));
@@ -581,7 +711,7 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	}
 
 	if ( !passwd ) {
-		DEBUG(1, ("No unix user for this account (%s), cannot adjust mappings\n", 
+		DEBUG(1, ("No unix user for this account (%s), cannot adjust mappings\n",
 			pdb_get_username(sam_account)));
 	}
 
@@ -590,7 +720,8 @@ static NTSTATUS fetch_account_info(uint32 rid, SAM_ACCOUNT_INFO *delta)
 	return nt_ret;
 }
 
-static NTSTATUS fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
+static NTSTATUS fetch_group_info(uint32_t rid,
+				 struct netr_DELTA_GROUP *r)
 {
 	fstring name;
 	fstring comment;
@@ -600,8 +731,8 @@ static NTSTATUS fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	GROUP_MAP map;
 	bool insert = True;
 
-	unistr2_to_ascii(name, &delta->uni_grp_name, sizeof(name));
-	unistr2_to_ascii(comment, &delta->uni_grp_desc, sizeof(comment));
+	fstrcpy(name, r->group_name.string);
+	fstrcpy(comment, r->description.string);
 
 	/* add the group to the mapping table */
 	sid_copy(&group_sid, get_global_sam_sid());
@@ -619,14 +750,14 @@ static NTSTATUS fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 
 		/* No group found from mapping, find it from its name. */
 		if ((grp = getgrnam(name)) == NULL) {
-		
+
 			/* No appropriate group found, create one */
-			
+
 			d_printf("Creating unix group: '%s'\n", name);
-			
+
 			if (smb_create_group(name, &gid) != 0)
 				return NT_STATUS_ACCESS_DENIED;
-				
+
 			if ((grp = getgrnam(name)) == NULL)
 				return NT_STATUS_ACCESS_DENIED;
 		}
@@ -636,7 +767,7 @@ static NTSTATUS fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	map.sid = group_sid;
 	map.sid_name_use = SID_NAME_DOM_GRP;
 	fstrcpy(map.nt_name, name);
-	if (delta->hdr_grp_desc.buffer) {
+	if (r->description.string) {
 		fstrcpy(map.comment, comment);
 	} else {
 		fstrcpy(map.comment, "");
@@ -650,7 +781,8 @@ static NTSTATUS fetch_group_info(uint32 rid, SAM_GROUP_INFO *delta)
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
+static NTSTATUS fetch_group_mem_info(uint32_t rid,
+				     struct netr_DELTA_GROUP_MEMBER *r)
 {
 	int i;
 	TALLOC_CTX *t = NULL;
@@ -660,7 +792,7 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 	GROUP_MAP map;
 	struct group *grp;
 
-	if (delta->num_members == 0) {
+	if (r->num_rids == 0) {
 		return NT_STATUS_OK;
 	}
 
@@ -684,8 +816,8 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (delta->num_members) {
-		if ((nt_members = TALLOC_ZERO_ARRAY(t, char *, delta->num_members)) == NULL) {
+	if (r->num_rids) {
+		if ((nt_members = TALLOC_ZERO_ARRAY(t, char *, r->num_rids)) == NULL) {
 			DEBUG(0, ("talloc failed\n"));
 			talloc_free(t);
 			return NT_STATUS_NO_MEMORY;
@@ -694,7 +826,7 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 		nt_members = NULL;
 	}
 
-	for (i=0; i<delta->num_members; i++) {
+	for (i=0; i < r->num_rids; i++) {
 		struct samu *member = NULL;
 		DOM_SID member_sid;
 
@@ -704,11 +836,11 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 		}
 
 		sid_copy(&member_sid, get_global_sam_sid());
-		sid_append_rid(&member_sid, delta->rids[i]);
+		sid_append_rid(&member_sid, r->rids[i]);
 
 		if (!pdb_getsampwsid(member, &member_sid)) {
 			DEBUG(1, ("Found bogus group member: %d (member_sid=%s group=%s)\n",
-				  delta->rids[i], sid_string_tos(&member_sid), grp->gr_name));
+				  r->rids[i], sid_string_tos(&member_sid), grp->gr_name));
 			TALLOC_FREE(member);
 			continue;
 		}
@@ -718,7 +850,7 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 			TALLOC_FREE(member);
 			continue;
 		}
-		
+
 		d_printf("%s,", pdb_get_username(member));
 		nt_members[i] = talloc_strdup(t, pdb_get_username(member));
 		TALLOC_FREE(member);
@@ -730,7 +862,7 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 
 	while (*unix_members) {
 		bool is_nt_member = False;
-		for (i=0; i<delta->num_members; i++) {
+		for (i=0; i < r->num_rids; i++) {
 			if (nt_members[i] == NULL) {
 				/* This was a primary group */
 				continue;
@@ -750,7 +882,7 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 		unix_members += 1;
 	}
 
-	for (i=0; i<delta->num_members; i++) {
+	for (i=0; i < r->num_rids; i++) {
 		bool is_unix_member = False;
 
 		if (nt_members[i] == NULL) {
@@ -775,12 +907,13 @@ static NTSTATUS fetch_group_mem_info(uint32 rid, SAM_GROUP_MEM_INFO *delta)
 			smb_add_user_group(grp->gr_name, nt_members[i]);
 		}
 	}
-	
+
 	talloc_destroy(t);
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
+static NTSTATUS fetch_alias_info(uint32_t rid,
+				 struct netr_DELTA_ALIAS *r,
 				 DOM_SID dom_sid)
 {
 	fstring name;
@@ -791,8 +924,8 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	GROUP_MAP map;
 	bool insert = True;
 
-	unistr2_to_ascii(name, &delta->uni_als_name, sizeof(name));
-	unistr2_to_ascii(comment, &delta->uni_als_desc, sizeof(comment));
+	fstrcpy(name, r->alias_name.string);
+	fstrcpy(comment, r->description.string);
 
 	/* Find out whether the group is already mapped */
 	sid_copy(&alias_sid, &dom_sid);
@@ -837,24 +970,33 @@ static NTSTATUS fetch_alias_info(uint32 rid, SAM_ALIAS_INFO *delta,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *delta, DOM_SID dom_sid)
+static NTSTATUS fetch_alias_mem(uint32_t rid,
+				struct netr_DELTA_ALIAS_MEMBER *r,
+				DOM_SID dom_sid)
 {
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_domain_info(uint32 rid, SAM_DOMAIN_INFO *delta)
+static NTSTATUS fetch_domain_info(uint32_t rid,
+				  struct netr_DELTA_DOMAIN *r)
 {
-	time_t u_max_age, u_min_age, u_logout, u_lockoutreset, u_lockouttime;
+	time_t u_max_age, u_min_age, u_logout;
+#if 0
+	/* FIXME: gd */
+	time_t u_lockoutreset, u_lockouttime;
+#endif
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
-	char *domname;
+	const char *domname;
 
-	u_max_age = uint64s_nt_time_to_unix_abs(&delta->max_pwd_age);
-	u_min_age = uint64s_nt_time_to_unix_abs(&delta->min_pwd_age);
-	u_logout = uint64s_nt_time_to_unix_abs(&delta->force_logoff);
+	u_max_age = uint64s_nt_time_to_unix_abs((uint64 *)&r->max_password_age);
+	u_min_age = uint64s_nt_time_to_unix_abs((uint64 *)&r->min_password_age);
+	u_logout = uint64s_nt_time_to_unix_abs((uint64 *)&r->force_logoff_time);
+#if 0
+	/* FIXME: gd */
 	u_lockoutreset = uint64s_nt_time_to_unix_abs(&delta->account_lockout.reset_count);
 	u_lockouttime = uint64s_nt_time_to_unix_abs(&delta->account_lockout.lockout_duration);
-
-	domname = unistr2_to_ascii_talloc(talloc_tos(), &delta->uni_dom_name);
+#endif
+	domname = r->domain_name.string;
 	if (!domname) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -866,10 +1008,12 @@ static NTSTATUS fetch_domain_info(uint32 rid, SAM_DOMAIN_INFO *delta)
 	}
 
 
-	if (!pdb_set_account_policy(AP_PASSWORD_HISTORY, delta->pwd_history_len))
+	if (!pdb_set_account_policy(AP_PASSWORD_HISTORY,
+				    r->password_history_length))
 		return nt_status;
 
-	if (!pdb_set_account_policy(AP_MIN_PASSWORD_LEN, delta->min_pwd_len))
+	if (!pdb_set_account_policy(AP_MIN_PASSWORD_LEN,
+				    r->min_password_length))
 		return nt_status;
 
 	if (!pdb_set_account_policy(AP_MAX_PASSWORD_AGE, (uint32)u_max_age))
@@ -880,7 +1024,8 @@ static NTSTATUS fetch_domain_info(uint32 rid, SAM_DOMAIN_INFO *delta)
 
 	if (!pdb_set_account_policy(AP_TIME_TO_LOGOUT, (uint32)u_logout))
 		return nt_status;
-
+#if 0
+/* FIXME: gd */
 	if (!pdb_set_account_policy(AP_BAD_ATTEMPT_LOCKOUT, delta->account_lockout.bad_attempt_lockout))
 		return nt_status;
 
@@ -892,88 +1037,111 @@ static NTSTATUS fetch_domain_info(uint32 rid, SAM_DOMAIN_INFO *delta)
 
 	if (!pdb_set_account_policy(AP_LOCK_ACCOUNT_DURATION, (uint32)u_lockouttime))
 		return nt_status;
+#endif
 
-	if (!pdb_set_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS, delta->logon_chgpass))
+	if (!pdb_set_account_policy(AP_USER_MUST_LOGON_TO_CHG_PASS,
+				    r->logon_to_chgpass))
 		return nt_status;
 
 	return NT_STATUS_OK;
 }
 
-
-static void fetch_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta,
-		DOM_SID dom_sid)
+static void fetch_sam_entry(struct netr_DELTA_ENUM *r, DOM_SID dom_sid)
 {
-	switch(hdr_delta->type) {
-	case SAM_DELTA_ACCOUNT_INFO:
-		fetch_account_info(hdr_delta->target_rid,
-				   &delta->account_info);
+	switch(r->delta_type) {
+	case NETR_DELTA_USER:
+		fetch_account_info(r->delta_id_union.rid,
+				   r->delta_union.user);
 		break;
-	case SAM_DELTA_GROUP_INFO:
-		fetch_group_info(hdr_delta->target_rid,
-				 &delta->group_info);
+	case NETR_DELTA_GROUP:
+		fetch_group_info(r->delta_id_union.rid,
+				 r->delta_union.group);
 		break;
-	case SAM_DELTA_GROUP_MEM:
-		fetch_group_mem_info(hdr_delta->target_rid,
-				     &delta->grp_mem_info);
+	case NETR_DELTA_GROUP_MEMBER:
+		fetch_group_mem_info(r->delta_id_union.rid,
+				     r->delta_union.group_member);
 		break;
-	case SAM_DELTA_ALIAS_INFO:
-		fetch_alias_info(hdr_delta->target_rid,
-				 &delta->alias_info, dom_sid);
+	case NETR_DELTA_ALIAS:
+		fetch_alias_info(r->delta_id_union.rid,
+				 r->delta_union.alias,
+				 dom_sid);
 		break;
-	case SAM_DELTA_ALIAS_MEM:
-		fetch_alias_mem(hdr_delta->target_rid,
-				&delta->als_mem_info, dom_sid);
+	case NETR_DELTA_ALIAS_MEMBER:
+		fetch_alias_mem(r->delta_id_union.rid,
+				r->delta_union.alias_member,
+				dom_sid);
 		break;
-	case SAM_DELTA_DOMAIN_INFO:
-		fetch_domain_info(hdr_delta->target_rid,
-				&delta->domain_info);
+	case NETR_DELTA_DOMAIN:
+		fetch_domain_info(r->delta_id_union.rid,
+				  r->delta_union.domain);
 		break;
 	/* The following types are recognised but not handled */
-	case SAM_DELTA_RENAME_GROUP:
-		d_printf("SAM_DELTA_RENAME_GROUP not handled\n");
+	case NETR_DELTA_RENAME_GROUP:
+		d_printf("NETR_DELTA_RENAME_GROUP not handled\n");
 		break;
-	case SAM_DELTA_RENAME_USER:
-		d_printf("SAM_DELTA_RENAME_USER not handled\n");
+	case NETR_DELTA_RENAME_USER:
+		d_printf("NETR_DELTA_RENAME_USER not handled\n");
 		break;
-	case SAM_DELTA_RENAME_ALIAS:
-		d_printf("SAM_DELTA_RENAME_ALIAS not handled\n");
+	case NETR_DELTA_RENAME_ALIAS:
+		d_printf("NETR_DELTA_RENAME_ALIAS not handled\n");
 		break;
-	case SAM_DELTA_POLICY_INFO:
-		d_printf("SAM_DELTA_POLICY_INFO not handled\n");
+	case NETR_DELTA_POLICY:
+		d_printf("NETR_DELTA_POLICY not handled\n");
 		break;
-	case SAM_DELTA_TRUST_DOMS:
-		d_printf("SAM_DELTA_TRUST_DOMS not handled\n");
+	case NETR_DELTA_TRUSTED_DOMAIN:
+		d_printf("NETR_DELTA_TRUSTED_DOMAIN not handled\n");
 		break;
-	case SAM_DELTA_PRIVS_INFO:
-		d_printf("SAM_DELTA_PRIVS_INFO not handled\n");
+	case NETR_DELTA_ACCOUNT:
+		d_printf("NETR_DELTA_ACCOUNT not handled\n");
 		break;
-	case SAM_DELTA_SECRET_INFO:
-		d_printf("SAM_DELTA_SECRET_INFO not handled\n");
+	case NETR_DELTA_SECRET:
+		d_printf("NETR_DELTA_SECRET not handled\n");
 		break;
-	case SAM_DELTA_DELETE_GROUP:
-		d_printf("SAM_DELTA_DELETE_GROUP not handled\n");
+	case NETR_DELTA_DELETE_GROUP:
+		d_printf("NETR_DELTA_DELETE_GROUP not handled\n");
 		break;
-	case SAM_DELTA_DELETE_USER:
-		d_printf("SAM_DELTA_DELETE_USER not handled\n");
+	case NETR_DELTA_DELETE_USER:
+		d_printf("NETR_DELTA_DELETE_USER not handled\n");
 		break;
-	case SAM_DELTA_MODIFIED_COUNT:
-		d_printf("SAM_DELTA_MODIFIED_COUNT not handled\n");
+	case NETR_DELTA_MODIFY_COUNT:
+		d_printf("NETR_DELTA_MODIFY_COUNT not handled\n");
+		break;
+	case NETR_DELTA_DELETE_ALIAS:
+		d_printf("NETR_DELTA_DELETE_ALIAS not handled\n");
+		break;
+	case NETR_DELTA_DELETE_TRUST:
+		d_printf("NETR_DELTA_DELETE_TRUST not handled\n");
+		break;
+	case NETR_DELTA_DELETE_ACCOUNT:
+		d_printf("NETR_DELTA_DELETE_ACCOUNT not handled\n");
+		break;
+	case NETR_DELTA_DELETE_SECRET:
+		d_printf("NETR_DELTA_DELETE_SECRET not handled\n");
+		break;
+	case NETR_DELTA_DELETE_GROUP2:
+		d_printf("NETR_DELTA_DELETE_GROUP2 not handled\n");
+		break;
+	case NETR_DELTA_DELETE_USER2:
+		d_printf("NETR_DELTA_DELETE_USER2 not handled\n");
 		break;
 	default:
-		d_printf("Unknown delta record type %d\n", hdr_delta->type);
+		d_printf("Unknown delta record type %d\n", r->delta_type);
 		break;
 	}
 }
 
 static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type, DOM_SID dom_sid)
 {
-	uint32 sync_context = 0;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
-        SAM_DELTA_HDR *hdr_deltas;
-        SAM_DELTA_CTR *deltas;
-        uint32 num_deltas;
+	const char *logon_server = pipe_hnd->cli->desthost;
+	const char *computername = global_myname();
+	struct netr_Authenticator credential;
+	struct netr_Authenticator return_authenticator;
+	enum netr_SamDatabaseID database_id = db_type;
+	uint16_t restart_state = 0;
+	uint32_t sync_context = 0;
 
 	if (!(mem_ctx = talloc_init("fetch_database")))
 		return NT_STATUS_NO_MEMORY;
@@ -994,20 +1162,36 @@ static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type,
 	}
 
 	do {
-		result = rpccli_netlogon_sam_sync(pipe_hnd, mem_ctx,
-					       db_type, sync_context,
-					       &num_deltas,
-					       &hdr_deltas, &deltas);
+		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
 
-		if (NT_STATUS_IS_OK(result) ||
-		    NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
-			for (i = 0; i < num_deltas; i++) {
-				fetch_sam_entry(&hdr_deltas[i], &deltas[i], dom_sid);
-			}
-		} else
-			return result;
+		netlogon_creds_client_step(pipe_hnd->dc, &credential);
 
-		sync_context += 1;
+		result = rpccli_netr_DatabaseSync2(pipe_hnd, mem_ctx,
+						   logon_server,
+						   computername,
+						   &credential,
+						   &return_authenticator,
+						   database_id,
+						   restart_state,
+						   &sync_context,
+						   &delta_enum_array,
+						   0xffff);
+
+		/* Check returned credentials. */
+		if (!netlogon_creds_client_check(pipe_hnd->dc,
+						 &return_authenticator.cred)) {
+			DEBUG(0,("credentials chain check failed\n"));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		if (NT_STATUS_IS_ERR(result)) {
+			break;
+		}
+
+		for (i = 0; i < delta_enum_array->num_deltas; i++) {
+			fetch_sam_entry(&delta_enum_array->delta_enum[i], dom_sid);
+		}
+
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
 	talloc_destroy(mem_ctx);
@@ -1015,7 +1199,7 @@ static NTSTATUS fetch_database(struct rpc_pipe_client *pipe_hnd, uint32 db_type,
 	return result;
 }
 
-static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const char 
+static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const char
 		       *builtin_sid, FILE *add_fd)
 {
 	const char *user_suffix, *group_suffix, *machine_suffix, *idmap_suffix;
@@ -1047,7 +1231,7 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 		SAFE_FREE(suffix_attr);
 		return NT_STATUS_NO_MEMORY;
 	}
-	/* If it exists and is distinct from other containers, 
+	/* If it exists and is distinct from other containers,
 	   Write the Users entity */
 	if (*user_suffix && strcmp(user_suffix, suffix)) {
 		user_attr = sstring_sub(lp_ldap_user_suffix(), '=', ',');
@@ -1066,7 +1250,7 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 		SAFE_FREE(user_attr);
 		return NT_STATUS_NO_MEMORY;
 	}
-	/* If it exists and is distinct from other containers, 
+	/* If it exists and is distinct from other containers,
 	   Write the Groups entity */
 	if (*group_suffix && strcmp(group_suffix, suffix)) {
 		group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
@@ -1078,7 +1262,7 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 		fflush(add_fd);
 	}
 
-	/* If it exists and is distinct from other containers, 
+	/* If it exists and is distinct from other containers,
 	   Write the Computers entity */
 	machine_suffix = lp_ldap_machine_suffix();
 	if (machine_suffix == NULL) {
@@ -1102,7 +1286,7 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 		fflush(add_fd);
 	}
 
-	/* If it exists and is distinct from other containers, 
+	/* If it exists and is distinct from other containers,
 	   Write the IdMap entity */
 	idmap_suffix = lp_ldap_idmap_suffix();
 	if (idmap_suffix == NULL) {
@@ -1138,7 +1322,7 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	fprintf(add_fd, "\n");
 	fflush(add_fd);
 
-	/* Write the Domain Admins entity */ 
+	/* Write the Domain Admins entity */
 	fprintf(add_fd, "# Domain Admins, %s, %s\n", group_attr,
 		suffix);
 	fprintf(add_fd, "dn: cn=Domain Admins,ou=%s,%s\n", group_attr,
@@ -1155,7 +1339,7 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	fprintf(add_fd, "\n");
 	fflush(add_fd);
 
-	/* Write the Domain Users entity */ 
+	/* Write the Domain Users entity */
 	fprintf(add_fd, "# Domain Users, %s, %s\n", group_attr,
 		suffix);
 	fprintf(add_fd, "dn: cn=Domain Users,ou=%s,%s\n", group_attr,
@@ -1171,7 +1355,7 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	fprintf(add_fd, "\n");
 	fflush(add_fd);
 
-	/* Write the Domain Guests entity */ 
+	/* Write the Domain Guests entity */
 	fprintf(add_fd, "# Domain Guests, %s, %s\n", group_attr,
 		suffix);
 	fprintf(add_fd, "dn: cn=Domain Guests,ou=%s,%s\n", group_attr,
@@ -1272,7 +1456,7 @@ static NTSTATUS populate_ldap_for_ldif(fstring sid, const char *suffix, const ch
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS map_populate_groups(GROUPMAP *groupmap, ACCOUNTMAP *accountmap, fstring sid, 
+static NTSTATUS map_populate_groups(GROUPMAP *groupmap, ACCOUNTMAP *accountmap, fstring sid,
 		    const char *suffix, const char *builtin_sid)
 {
 	char *group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
@@ -1422,16 +1606,15 @@ static int fprintf_attr(FILE *add_fd, const char *attr_name,
 	base64_blob.data = (unsigned char *)value;
 	base64_blob.length = strlen(value);
 
-	base64 = base64_encode_data_blob(base64_blob);
+	base64 = base64_encode_data_blob(value, base64_blob);
 	SMB_ASSERT(base64 != NULL);
 
 	res = fprintf(add_fd, "%s:: %s\n", attr_name, base64);
 	TALLOC_FREE(value);
-	TALLOC_FREE(base64);
 	return res;
 }
 
-static NTSTATUS fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupmap,
+static NTSTATUS fetch_group_info_to_ldif(struct netr_DELTA_GROUP *r, GROUPMAP *groupmap,
 			 FILE *add_fd, fstring sid, char *suffix)
 {
 	fstring groupname;
@@ -1439,9 +1622,7 @@ static NTSTATUS fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupma
 	char *group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
 
 	/* Get the group name */
-	unistr2_to_ascii(groupname,
-	  		 &delta->group_info.uni_grp_name,
-			 sizeof(groupname));
+	fstrcpy(groupname, r->group_name.string);
 
 	/* Set up the group type (always 2 for group info) */
 	grouptype = 2;
@@ -1463,7 +1644,7 @@ static NTSTATUS fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupma
 	}
 
 	/* Map the group rid, gid, and dn */
-	g_rid = delta->group_info.gid.g_rid;
+	g_rid = r->rid;
 	groupmap->rid = g_rid;
 	groupmap->gidNumber = ldif_gid;
 	snprintf(groupmap->sambaSID, sizeof(groupmap->sambaSID),
@@ -1491,7 +1672,7 @@ static NTSTATUS fetch_group_info_to_ldif(SAM_DELTA_CTR *delta, GROUPMAP *groupma
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
+static NTSTATUS fetch_account_info_to_ldif(struct netr_DELTA_USER *r,
 					   GROUPMAP *groupmap,
 					   ACCOUNTMAP *accountmap,
 					   FILE *add_fd,
@@ -1511,21 +1692,18 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	int i;
 
 	/* Get the username */
-	unistr2_to_ascii(username,
-			 &(delta->account_info.uni_acct_name),
-			 sizeof(username));
+	fstrcpy(username, r->account_name.string);
 
 	/* Get the rid */
-	rid = delta->account_info.user_rid;
+	rid = r->rid;
 
 	/* Map the rid and username for group member info later */
 	accountmap->rid = rid;
 	snprintf(accountmap->cn, sizeof(accountmap->cn), "%s", username);
 
 	/* Get the home directory */
-	if (delta->account_info.acb_info & ACB_NORMAL) {
-		unistr2_to_ascii(homedir, &(delta->account_info.uni_home_dir),
-				 sizeof(homedir));
+	if (r->acct_flags & ACB_NORMAL) {
+		fstrcpy(homedir, r->home_directory.string);
 		if (!*homedir) {
 			snprintf(homedir, sizeof(homedir), "/home/%s", username);
 		} else {
@@ -1538,60 +1716,48 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	}
 
         /* Get the logon script */
-        unistr2_to_ascii(logonscript, &(delta->account_info.uni_logon_script),
-			 sizeof(logonscript));
+	fstrcpy(logonscript, r->logon_script.string);
 
         /* Get the home drive */
-        unistr2_to_ascii(homedrive, &(delta->account_info.uni_dir_drive),
-			 sizeof(homedrive));
+	fstrcpy(homedrive, r->home_drive.string);
 
         /* Get the home path */
-        unistr2_to_ascii(homepath, &(delta->account_info.uni_home_dir),
-			 sizeof(homepath));
+	fstrcpy(homepath, r->home_directory.string);
 
 	/* Get the description */
-	unistr2_to_ascii(description, &(delta->account_info.uni_acct_desc),
-			 sizeof(description));
+	fstrcpy(description, r->description.string);
 
 	/* Get the display name */
-	unistr2_to_ascii(fullname, &(delta->account_info.uni_full_name),
-			 sizeof(fullname));
+	fstrcpy(fullname, r->full_name.string);
 
 	/* Get the profile path */
-	unistr2_to_ascii(profilepath, &(delta->account_info.uni_profile),
-			 sizeof(profilepath));
+	fstrcpy(profilepath, r->profile_path.string);
 
 	/* Get lm and nt password data */
-	if (memcmp(delta->account_info.pass.buf_lm_pwd, zero_buf, 16) != 0) {
-		sam_pwd_hash(delta->account_info.user_rid, 
-			     delta->account_info.pass.buf_lm_pwd, 
-			     lm_passwd, 0);
-		pdb_sethexpwd(hex_lm_passwd, lm_passwd, 
-			      delta->account_info.acb_info);
+	if (memcmp(r->lmpassword.hash, zero_buf, 16) != 0) {
+		sam_pwd_hash(r->rid, r->lmpassword.hash, lm_passwd, 0);
+		pdb_sethexpwd(hex_lm_passwd, lm_passwd, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_lm_passwd, NULL, 0);
 	}
-	if (memcmp(delta->account_info.pass.buf_nt_pwd, zero_buf, 16) != 0) {
-		sam_pwd_hash(delta->account_info.user_rid, 
-			     delta->account_info.pass.buf_nt_pwd, 
-			     nt_passwd, 0);
-		pdb_sethexpwd(hex_nt_passwd, nt_passwd, 
-			      delta->account_info.acb_info);
+	if (memcmp(r->ntpassword.hash, zero_buf, 16) != 0) {
+		sam_pwd_hash(r->rid, r->ntpassword.hash, nt_passwd, 0);
+		pdb_sethexpwd(hex_nt_passwd, nt_passwd, r->acct_flags);
 	} else {
 		pdb_sethexpwd(hex_nt_passwd, NULL, 0);
 	}
-	unix_time = nt_time_to_unix(delta->account_info.pwd_last_set_time);
+	unix_time = nt_time_to_unix(r->last_password_change);
 
 	/* Increment the uid for the new user */
 	ldif_uid++;
 
 	/* Set up group id and sambaSID for the user */
-	group_rid = delta->account_info.group_rid;
+	group_rid = r->primary_gid;
 	for (i=0; i<alloced; i++) {
 		if (groupmap[i].rid == group_rid) break;
 	}
 	if (i == alloced){
-		DEBUG(1, ("Could not find rid %d in groupmap array\n", 
+		DEBUG(1, ("Could not find rid %d in groupmap array\n",
 			  group_rid));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -1599,7 +1765,7 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	snprintf(sambaSID, sizeof(sambaSID), groupmap[i].sambaSID);
 
 	/* Set up sambaAcctFlags */
-	flags = pdb_encode_acct_ctrl(delta->account_info.acb_info,
+	flags = pdb_encode_acct_ctrl(r->acct_flags,
 				     NEW_PW_FORMAT_SPACE_PADDED_LEN);
 
 	/* Add the user to the temporary add ldif file */
@@ -1626,8 +1792,8 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
                 fprintf_attr(add_fd, "sambaHomeDrive", "%s", homedrive);
         if (*logonscript)
                 fprintf_attr(add_fd, "sambaLogonScript", "%s", logonscript);
-	fprintf(add_fd, "loginShell: %s\n", 
-		((delta->account_info.acb_info & ACB_NORMAL) ?
+	fprintf(add_fd, "loginShell: %s\n",
+		((r->acct_flags & ACB_NORMAL) ?
 		 "/bin/bash" : "/bin/false"));
 	fprintf(add_fd, "gecos: System User\n");
 	if (*description)
@@ -1651,10 +1817,10 @@ static NTSTATUS fetch_account_info_to_ldif(SAM_DELTA_CTR *delta,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta,
+static NTSTATUS fetch_alias_info_to_ldif(struct netr_DELTA_ALIAS *r,
 					 GROUPMAP *groupmap,
 					 FILE *add_fd, fstring sid,
-					 char *suffix, 
+					 char *suffix,
 					 unsigned db_type)
 {
 	fstring aliasname, description;
@@ -1662,12 +1828,10 @@ static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta,
 	char *group_attr = sstring_sub(lp_ldap_group_suffix(), '=', ',');
 
 	/* Get the alias name */
-	unistr2_to_ascii(aliasname, &(delta->alias_info.uni_als_name),
-			 sizeof(aliasname));
+	fstrcpy(aliasname, r->alias_name.string);
 
 	/* Get the alias description */
-	unistr2_to_ascii(description, &(delta->alias_info.uni_als_desc),
-			 sizeof(description));
+	fstrcpy(description, r->description.string);
 
 	/* Set up the group type */
 	switch (db_type) {
@@ -1684,7 +1848,7 @@ static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta,
 
 	/*
 	  These groups are entered by populate_ldap_for_ldif
-	  Note that populate creates a group called Relicators, 
+	  Note that populate creates a group called Relicators,
 	  but NT returns a group called Replicator
 	*/
 	if (strcmp(aliasname, "Domain Admins") == 0 ||
@@ -1703,7 +1867,7 @@ static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta,
 	}
 
 	/* Map the group rid and gid */
-	g_rid = delta->group_info.gid.g_rid;
+	g_rid = r->rid;
 	groupmap->gidNumber = ldif_gid;
 	snprintf(groupmap->sambaSID, sizeof(groupmap->sambaSID),
 			"%s-%d", sid, g_rid);
@@ -1730,8 +1894,8 @@ static NTSTATUS fetch_alias_info_to_ldif(SAM_DELTA_CTR *delta,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta,
-					    SAM_DELTA_HDR *hdr_delta,
+static NTSTATUS fetch_groupmem_info_to_ldif(struct netr_DELTA_GROUP_MEMBER *r,
+					    uint32_t id_rid,
 					    GROUPMAP *groupmap,
 					    ACCOUNTMAP *accountmap,
 					    FILE *mod_fd, int alloced)
@@ -1741,8 +1905,8 @@ static NTSTATUS fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta,
 	int i, j, k;
 
 	/* Get the dn for the group */
-	if (delta->grp_mem_info.num_members > 0) {
-		group_rid = hdr_delta->target_rid;
+	if (r->num_rids > 0) {
+		group_rid = id_rid;
 		for (j=0; j<alloced; j++) {
 			if (groupmap[j].rid == group_rid) break;
 		}
@@ -1755,8 +1919,8 @@ static NTSTATUS fetch_groupmem_info_to_ldif(SAM_DELTA_CTR *delta,
 		fprintf(mod_fd, "dn: %s\n", group_dn);
 
 		/* Get the cn for each member */
-		for (i=0; i<delta->grp_mem_info.num_members; i++) {
-			rid = delta->grp_mem_info.rids[i];
+		for (i=0; i < r->num_rids; i++) {
+			rid = r->rids[i];
 			for (k=0; k<alloced; k++) {
 				if (accountmap[k].rid == rid) break;
 			}
@@ -1786,15 +1950,19 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	const char *add_template = "/tmp/add.ldif.XXXXXX";
 	const char *mod_template = "/tmp/mod.ldif.XXXXXX";
 	fstring sid, domainname;
-	uint32 sync_context = 0;
 	NTSTATUS ret = NT_STATUS_OK, result;
 	int k;
 	TALLOC_CTX *mem_ctx;
-	SAM_DELTA_HDR *hdr_deltas;
-	SAM_DELTA_CTR *deltas;
 	uint32 num_deltas;
 	FILE *add_file = NULL, *mod_file = NULL, *ldif_file = NULL;
 	int num_alloced = 0, g_index = 0, a_index = 0;
+	const char *logon_server = pipe_hnd->cli->desthost;
+	const char *computername = global_myname();
+	struct netr_Authenticator credential;
+	struct netr_Authenticator return_authenticator;
+	enum netr_SamDatabaseID database_id = db_type;
+	uint16_t restart_state = 0;
+	uint32_t sync_context = 0;
 
 	/* Set up array for mapping accounts to groups */
 	/* Array element is the group rid */
@@ -1802,7 +1970,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
 	/* Set up array for mapping account rid's to cn's */
 	/* Array element is the account rid */
-	ACCOUNTMAP *accountmap = NULL; 
+	ACCOUNTMAP *accountmap = NULL;
 
 	if (!(mem_ctx = talloc_init("fetch_database"))) {
 		return NT_STATUS_NO_MEMORY;
@@ -1838,7 +2006,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		DEBUG(1, ("Could not open %s\n", mod_name));
 		ret = NT_STATUS_UNSUCCESSFUL;
 		goto done;
-	} 
+	}
 
 	/* Get the sid */
 	sid_to_fstring(sid, &dom_sid);
@@ -1894,22 +2062,40 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		d_fprintf(stderr, "Fetching PRIVS databases\n");
 		break;
 	default:
-		d_fprintf(stderr, 
-			  "Fetching unknown database type %u\n", 
+		d_fprintf(stderr,
+			  "Fetching unknown database type %u\n",
 			  db_type );
 		break;
 	}
 
 	do {
-		result = rpccli_netlogon_sam_sync(pipe_hnd, mem_ctx,
-						  db_type, sync_context,
-						  &num_deltas, &hdr_deltas, 
-						  &deltas);
-		if (!NT_STATUS_IS_OK(result) &&
-		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
-			ret = NT_STATUS_OK;
-			goto done; /* is this correct? jmcd */
+		struct netr_DELTA_ENUM_ARRAY *delta_enum_array = NULL;
+
+		netlogon_creds_client_step(pipe_hnd->dc, &credential);
+
+		result = rpccli_netr_DatabaseSync2(pipe_hnd, mem_ctx,
+						   logon_server,
+						   computername,
+						   &credential,
+						   &return_authenticator,
+						   database_id,
+						   restart_state,
+						   &sync_context,
+						   &delta_enum_array,
+						   0xffff);
+
+		/* Check returned credentials. */
+		if (!netlogon_creds_client_check(pipe_hnd->dc,
+						 &return_authenticator.cred)) {
+			DEBUG(0,("credentials chain check failed\n"));
+			return NT_STATUS_ACCESS_DENIED;
 		}
+
+		if (NT_STATUS_IS_ERR(result)) {
+			break;
+		}
+
+		num_deltas = delta_enum_array->num_deltas;
 
 		/* Re-allocate memory for groupmap and accountmap arrays */
 		groupmap = SMB_REALLOC_ARRAY(groupmap, GROUPMAP,
@@ -1923,7 +2109,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		}
 
 		/* Initialize the new records */
-		memset(&groupmap[num_alloced], 0, 
+		memset(&groupmap[num_alloced], 0,
 		       sizeof(GROUPMAP)*num_deltas);
 		memset(&accountmap[num_alloced], 0,
 		       sizeof(ACCOUNTMAP)*num_deltas);
@@ -1933,73 +2119,60 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 
 		/* Loop through the deltas */
 		for (k=0; k<num_deltas; k++) {
-			switch(hdr_deltas[k].type) {
-			case SAM_DELTA_DOMAIN_INFO:
+
+			union netr_DELTA_UNION u =
+				delta_enum_array->delta_enum[k].delta_union;
+			union netr_DELTA_ID_UNION id =
+				delta_enum_array->delta_enum[k].delta_id_union;
+
+			switch(delta_enum_array->delta_enum[k].delta_type) {
+			case NETR_DELTA_DOMAIN:
 				/* Is this case needed? */
-				unistr2_to_ascii(
-					domainname, 
-					&deltas[k].domain_info.uni_dom_name,
-					sizeof(domainname));
+				fstrcpy(domainname,
+					u.domain->domain_name.string);
 				break;
 
-			case SAM_DELTA_GROUP_INFO:
+			case NETR_DELTA_GROUP:
 				fetch_group_info_to_ldif(
-					&deltas[k], &groupmap[g_index],
+					u.group,
+					&groupmap[g_index],
 					add_file, sid, suffix);
 				g_index++;
 				break;
 
-			case SAM_DELTA_ACCOUNT_INFO:
+			case NETR_DELTA_USER:
 				fetch_account_info_to_ldif(
-					&deltas[k], groupmap, 
+					u.user, groupmap,
 					&accountmap[a_index], add_file,
 					sid, suffix, num_alloced);
 				a_index++;
 				break;
 
-			case SAM_DELTA_ALIAS_INFO:
+			case NETR_DELTA_ALIAS:
 				fetch_alias_info_to_ldif(
-					&deltas[k], &groupmap[g_index],
+					u.alias, &groupmap[g_index],
 					add_file, sid, suffix, db_type);
 				g_index++;
 				break;
 
-			case SAM_DELTA_GROUP_MEM:
+			case NETR_DELTA_GROUP_MEMBER:
 				fetch_groupmem_info_to_ldif(
-					&deltas[k], &hdr_deltas[k], 
-					groupmap, accountmap, 
+					u.group_member, id.rid,
+					groupmap, accountmap,
 					mod_file, num_alloced);
 				break;
 
-			case SAM_DELTA_ALIAS_MEM:
-				break;
-			case SAM_DELTA_POLICY_INFO:
-				break;
-			case SAM_DELTA_PRIVS_INFO:
-				break;
-			case SAM_DELTA_TRUST_DOMS:
-				/* Implemented but broken */
-				break;
-			case SAM_DELTA_SECRET_INFO:
-				/* Implemented but broken */
-				break;
-			case SAM_DELTA_RENAME_GROUP:
-				/* Not yet implemented */
-				break;
-			case SAM_DELTA_RENAME_USER:
-				/* Not yet implemented */
-				break;
-			case SAM_DELTA_RENAME_ALIAS:
-				/* Not yet implemented */
-				break;
-			case SAM_DELTA_DELETE_GROUP:
-				/* Not yet implemented */
-				break;
-			case SAM_DELTA_DELETE_USER:
-				/* Not yet implemented */
-				break;
-			case SAM_DELTA_MODIFIED_COUNT:
-				break;
+			case NETR_DELTA_ALIAS_MEMBER:
+			case NETR_DELTA_POLICY:
+			case NETR_DELTA_ACCOUNT:
+			case NETR_DELTA_TRUSTED_DOMAIN:
+			case NETR_DELTA_SECRET:
+			case NETR_DELTA_RENAME_GROUP:
+			case NETR_DELTA_RENAME_USER:
+			case NETR_DELTA_RENAME_ALIAS:
+			case NETR_DELTA_DELETE_GROUP:
+			case NETR_DELTA_DELETE_USER:
+			case NETR_DELTA_MODIFY_COUNT:
 			default:
 				break;
 			} /* end of switch */
@@ -2065,7 +2238,7 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 		DEBUG(1,("unlink(%s) failed, error was (%s)\n",
 			 mod_name, strerror(errno)));
 	}
-	
+
 	if (ldif_file && (ldif_file != stdout)) {
 		fclose(ldif_file);
 	}
@@ -2079,15 +2252,15 @@ static NTSTATUS fetch_database_to_ldif(struct rpc_pipe_client *pipe_hnd,
 	return ret;
 }
 
-/** 
+/**
  * Basic usage function for 'net rpc vampire'
  * @param argc  Standard main() style argc
  * @param argc  Standard main() style argv.  Initial components are already
  *              stripped
  **/
 
-int rpc_vampire_usage(int argc, const char **argv) 
-{	
+int rpc_vampire_usage(int argc, const char **argv)
+{
 	d_printf("net rpc vampire [ldif [<ldif-filename>] [options]\n"
 		 "\t to pull accounts from a remote PDC where we are a BDC\n"
 		 "\t\t no args puts accounts in local passdb from smb.conf\n"
@@ -2100,13 +2273,13 @@ int rpc_vampire_usage(int argc, const char **argv)
 
 
 /* dump sam database via samsync rpc calls */
-NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid, 
-				const char *domain_name, 
+NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
+				const char *domain_name,
 				struct cli_state *cli,
 				struct rpc_pipe_client *pipe_hnd,
-				TALLOC_CTX *mem_ctx, 
+				TALLOC_CTX *mem_ctx,
 				int argc,
-				const char **argv) 
+				const char **argv)
 {
         NTSTATUS result;
 	fstring my_dom_sid_str;
@@ -2120,7 +2293,7 @@ NTSTATUS rpc_vampire_internals(const DOM_SID *domain_sid,
 			 "workgroup=%s\n\n in your smb.conf?\n",
 			 domain_name,
 			 get_global_sam_name(),
-			 sid_to_fstring(my_dom_sid_str, 
+			 sid_to_fstring(my_dom_sid_str,
 					get_global_sam_sid()),
 			 domain_name, sid_to_fstring(rem_dom_sid_str,
 						     domain_sid),

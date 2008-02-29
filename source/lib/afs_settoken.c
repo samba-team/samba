@@ -53,20 +53,21 @@ static bool afs_decode_token(const char *string, char **cell,
 {
 	DATA_BLOB blob;
 	struct ClearToken result_ct;
+	char *saveptr;
 
 	char *s = SMB_STRDUP(string);
 
 	char *t;
 
-	if ((t = strtok(s, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
+	if ((t = strtok_r(s, "\n", &saveptr)) == NULL) {
+		DEBUG(10, ("strtok_r failed\n"));
 		return False;
 	}
 
 	*cell = SMB_STRDUP(t);
 
-	if ((t = strtok(NULL, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
+	if ((t = strtok_r(NULL, "\n", &saveptr)) == NULL) {
+		DEBUG(10, ("strtok_r failed\n"));
 		return False;
 	}
 
@@ -75,8 +76,8 @@ static bool afs_decode_token(const char *string, char **cell,
 		return False;
 	}
 		
-	if ((t = strtok(NULL, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
+	if ((t = strtok_r(NULL, "\n", &saveptr)) == NULL) {
+		DEBUG(10, ("strtok_r failed\n"));
 		return False;
 	}
 
@@ -93,8 +94,8 @@ static bool afs_decode_token(const char *string, char **cell,
 
 	data_blob_free(&blob);
 
-	if ((t = strtok(NULL, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
+	if ((t = strtok_r(NULL, "\n", &saveptr)) == NULL) {
+		DEBUG(10, ("strtok_r failed\n"));
 		return False;
 	}
 
@@ -103,8 +104,8 @@ static bool afs_decode_token(const char *string, char **cell,
 		return False;
 	}
 		
-	if ((t = strtok(NULL, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
+	if ((t = strtok_r(NULL, "\n", &saveptr)) == NULL) {
+		DEBUG(10, ("strtok_r failed\n"));
 		return False;
 	}
 
@@ -113,8 +114,8 @@ static bool afs_decode_token(const char *string, char **cell,
 		return False;
 	}
 		
-	if ((t = strtok(NULL, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
+	if ((t = strtok_r(NULL, "\n", &saveptr)) == NULL) {
+		DEBUG(10, ("strtok_r failed\n"));
 		return False;
 	}
 
@@ -123,8 +124,8 @@ static bool afs_decode_token(const char *string, char **cell,
 		return False;
 	}
 		
-	if ((t = strtok(NULL, "\n")) == NULL) {
-		DEBUG(10, ("strtok failed\n"));
+	if ((t = strtok_r(NULL, "\n", &saveptr)) == NULL) {
+		DEBUG(10, ("strtok_r failed\n"));
 		return False;
 	}
 

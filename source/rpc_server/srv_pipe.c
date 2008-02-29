@@ -993,7 +993,7 @@ bool check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
 	/* we have to check all now since win2k introduced a new UUID on the lsaprpc pipe */
 		
 	for ( i=0; pipe_names[i].client_pipe; i++ ) {
-		DEBUG(10,("checking %s\n", pipe_names[i].client_pipe));
+		DEBUGADD(10,("checking %s\n", pipe_names[i].client_pipe));
 		if ( strequal(pipe_names[i].client_pipe, pname)
 			&& (abstract->version == pipe_names[i].abstr_syntax.version) 
 			&& (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid, sizeof(struct GUID)) == 0)
@@ -1105,7 +1105,7 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 	char *OIDs[ASN1_MAX_OIDS];
         int i;
 	NTSTATUS status;
-        bool got_kerberos_mechanism = False;
+        bool got_kerberos_mechanism = false;
 	AUTH_NTLMSSP_STATE *a = NULL;
 	RPC_HDR_AUTH auth_info;
 
@@ -1133,7 +1133,7 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
         }
 
 	if (strcmp(OID_KERBEROS5, OIDs[0]) == 0 || strcmp(OID_KERBEROS5_OLD, OIDs[0]) == 0) {
-		got_kerberos_mechanism = True;
+		got_kerberos_mechanism = true;
 	}
 
 	for (i=0;OIDs[i];i++) {
@@ -1154,27 +1154,38 @@ static bool pipe_spnego_auth_bind_negotiate(pipes_struct *p, prs_struct *rpc_in_
 		free_pipe_ntlmssp_auth_data(&p->auth);
 	}
 
-	/* Initialize the NTLM engine. */
-	status = auth_ntlmssp_start(&a);
-	if (!NT_STATUS_IS_OK(status)) {
-		goto err;
+	if (!got_kerberos_mechanism) {
+		/* Initialize the NTLM engine. */
+		status = auth_ntlmssp_start(&a);
+		if (!NT_STATUS_IS_OK(status)) {
+			goto err;
+		}
+
+		/*
+		 * Pass the first security blob of data to it.
+		 * This can return an error or NT_STATUS_MORE_PROCESSING_REQUIRED
+		 * which means we need another packet to complete the bind.
+		 */
+
+		status = auth_ntlmssp_update(a, secblob, &chal);
+
+		if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+			DEBUG(3,("pipe_spnego_auth_bind_negotiate: auth_ntlmssp_update failed.\n"));
+			goto err;
+		}
+
+		/* Generate the response blob we need for step 2 of the bind. */
+		response = spnego_gen_auth_response(&chal, status, OID_NTLMSSP);
+	} else {
+		/*
+		 * SPNEGO negotiate down to NTLMSSP. The subsequent
+		 * code to process follow-up packets is not complete
+		 * yet. JRA.
+		 */
+		response = spnego_gen_auth_response(NULL,
+					NT_STATUS_MORE_PROCESSING_REQUIRED,
+					OID_NTLMSSP);
 	}
-
-	/*
-	 * Pass the first security blob of data to it.
-	 * This can return an error or NT_STATUS_MORE_PROCESSING_REQUIRED
-	 * which means we need another packet to complete the bind.
-	 */
-
-        status = auth_ntlmssp_update(a, secblob, &chal);
-
-	if (!NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		DEBUG(3,("pipe_spnego_auth_bind_negotiate: auth_ntlmssp_update failed.\n"));
-		goto err;
-	}
-
-	/* Generate the response blob we need for step 2 of the bind. */
-	response = spnego_gen_auth_response(&chal, status, OID_NTLMSSP);
 
 	/* Copy the blob into the pout_auth parse struct */
 	init_rpc_hdr_auth(&auth_info, RPC_SPNEGO_AUTH_TYPE, pauth_info->auth_level, RPC_HDR_AUTH_LEN, 1);
@@ -1231,6 +1242,10 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
 	ZERO_STRUCT(auth_reply);
 	ZERO_STRUCT(response);
 
+	/*
+	 * NB. If we've negotiated down from krb5 to NTLMSSP we'll currently
+	 * fail here as 'a' == NULL.
+	 */
 	if (p->auth.auth_type != PIPE_AUTH_TYPE_SPNEGO_NTLMSSP || !a) {
 		DEBUG(0,("pipe_spnego_auth_bind_continue: not in NTLMSSP auth state.\n"));
 		goto err;
@@ -1259,7 +1274,7 @@ static bool pipe_spnego_auth_bind_continue(pipes_struct *p, prs_struct *rpc_in_p
 	 * The following call actually checks the challenge/response data.
 	 * for correctness against the given DOMAIN\user name.
 	 */
-	
+
 	if (!pipe_ntlmssp_verify_final(p, &auth_blob)) {
 		goto err;
 	}
@@ -2361,16 +2376,16 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 
 	switch ( idx ) {
 		case PI_LSARPC:
-			lsa_get_pipe_fns( &cmds, &n_cmds );
+			lsarpc_get_pipe_fns( &cmds, &n_cmds );
 			break;
-		case PI_LSARPC_DS:
-			lsa_ds_get_pipe_fns( &cmds, &n_cmds );
+		case PI_DSSETUP:
+			dssetup_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_SAMR:
 			samr_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_NETLOGON:
-			netlog_get_pipe_fns( &cmds, &n_cmds );
+			netlogon_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_SRVSVC:
 			srvsvc2_get_pipe_fns( &cmds, &n_cmds );
@@ -2394,7 +2409,7 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 			eventlog2_get_pipe_fns( &cmds, &n_cmds );
 			break;
 		case PI_NTSVCS:
-			ntsvcs_get_pipe_fns( &cmds, &n_cmds );
+			ntsvcs2_get_pipe_fns( &cmds, &n_cmds );
 			break;
 #ifdef DEVELOPER
 		case PI_RPCECHO:

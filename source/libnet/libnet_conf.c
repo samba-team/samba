@@ -48,6 +48,10 @@ static WERROR libnet_conf_add_string_to_array(TALLOC_CTX *mem_ctx,
 	}
 
 	new_array[count] = talloc_strdup(new_array, string);
+	if (new_array[count] == NULL) {
+		TALLOC_FREE(new_array);
+		return WERR_NOMEM;
+	}
 
 	*array = new_array;
 
@@ -58,7 +62,7 @@ static WERROR libnet_conf_reg_initialize(struct libnet_conf_ctx *ctx)
 {
 	WERROR werr = WERR_OK;
 
-	if (!registry_init_regdb()) {
+	if (!registry_init_smbconf()) {
 		werr = WERR_REG_IO_FAILURE;
 		goto done;
 	}
@@ -134,6 +138,10 @@ static WERROR libnet_conf_reg_open_service_key(TALLOC_CTX *mem_ctx,
 	}
 
 	path = talloc_asprintf(mem_ctx, "%s\\%s", KEY_SMBCONF, servicename);
+	if (path == NULL) {
+		werr = WERR_NOMEM;
+		goto done;
+	}
 
 	werr = libnet_conf_reg_open_path(mem_ctx, ctx, path, desired_access,
 					 key);
@@ -191,7 +199,7 @@ static WERROR libnet_conf_reg_create_service_key(TALLOC_CTX *mem_ctx,
 	/* create a new talloc ctx for creation. it will hold
 	 * the intermediate parent key (SMBCONF) for creation
 	 * and will be destroyed when leaving this function... */
-	if (!(create_ctx = talloc_new(mem_ctx))) {
+	if (!(create_ctx = talloc_stackframe())) {
 		werr = WERR_NOMEM;
 		goto done;
 	}
@@ -316,8 +324,12 @@ static char *libnet_conf_format_registry_value(TALLOC_CTX *mem_ctx,
 	case REG_MULTI_SZ: {
                 uint32 j;
                 for (j = 0; j < value->v.multi_sz.num_strings; j++) {
-                        result = talloc_asprintf(mem_ctx, "\"%s\" ",
+                        result = talloc_asprintf(mem_ctx, "%s \"%s\" ",
+						 result,
 						 value->v.multi_sz.strings[j]);
+			if (result == NULL) {
+				break;
+			}
                 }
                 break;
         }
@@ -357,7 +369,7 @@ static WERROR libnet_conf_reg_get_values(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		werr = WERR_NOMEM;
 		goto done;
@@ -470,6 +482,19 @@ void libnet_conf_close(struct libnet_conf_ctx *ctx)
 }
 
 /**
+ * Get the change sequence number of the given service/parameter.
+ *
+ * NOTE: Currently, for registry configuration, this is independent
+ * of the service and parameter, it returns the registry-sequence
+ * number.
+ */
+uint64_t libnet_conf_get_seqnum(struct libnet_conf_ctx *ctx,
+				const char *service, const char *param)
+{
+	return (uint64_t)regdb_get_seqnum();
+}
+
+/**
  * Drop the whole configuration (restarting empty).
  */
 WERROR libnet_conf_drop(struct libnet_conf_ctx *ctx)
@@ -540,7 +565,7 @@ WERROR libnet_conf_get_config(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		werr = WERR_NOMEM;
 		goto done;
@@ -615,7 +640,7 @@ WERROR libnet_conf_get_share_names(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	tmp_ctx = talloc_new(mem_ctx);
+	tmp_ctx = talloc_stackframe();
 	if (tmp_ctx == NULL) {
 		werr = WERR_NOMEM;
 		goto done;

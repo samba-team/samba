@@ -130,7 +130,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_eventlog_Record(struct ndr_pull *ndr, int nd
 			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 			NDR_PULL_ALLOC_N(ndr, r->strings, r->num_of_strings);
 			_mem_save_strings_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, *r->strings, 0);
+			NDR_PULL_SET_MEM_CTX(ndr, r->strings, 0);
 			for (cntr_strings_0 = 0; cntr_strings_0 < r->num_of_strings; cntr_strings_0++) {
 				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->strings[cntr_strings_0]));
 			}
@@ -176,8 +176,7 @@ _PUBLIC_ void ndr_print_eventlog_Record(struct ndr_print *ndr, const char *name,
 	ndr->depth++;
 	for (cntr_strings_0=0;cntr_strings_0<r->num_of_strings;cntr_strings_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_strings_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_strings_0) != -1) {
 			ndr_print_string(ndr, "strings", r->strings[cntr_strings_0]);
 			free(idx_0);
 		}
@@ -194,9 +193,9 @@ static enum ndr_err_code ndr_push_eventlog_ClearEventLogW(struct ndr_push *ndr, 
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
-		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.unknown));
-		if (r->in.unknown) {
-			NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.unknown));
+		NDR_CHECK(ndr_push_unique_ptr(ndr, r->in.backupfile));
+		if (r->in.backupfile) {
+			NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.backupfile));
 		}
 	}
 	if (flags & NDR_OUT) {
@@ -207,9 +206,9 @@ static enum ndr_err_code ndr_push_eventlog_ClearEventLogW(struct ndr_push *ndr, 
 
 static enum ndr_err_code ndr_pull_eventlog_ClearEventLogW(struct ndr_pull *ndr, int flags, struct eventlog_ClearEventLogW *r)
 {
-	uint32_t _ptr_unknown;
+	uint32_t _ptr_backupfile;
 	TALLOC_CTX *_mem_save_handle_0;
-	TALLOC_CTX *_mem_save_unknown_0;
+	TALLOC_CTX *_mem_save_backupfile_0;
 	if (flags & NDR_IN) {
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.handle);
@@ -218,17 +217,17 @@ static enum ndr_err_code ndr_pull_eventlog_ClearEventLogW(struct ndr_pull *ndr, 
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
-		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_unknown));
-		if (_ptr_unknown) {
-			NDR_PULL_ALLOC(ndr, r->in.unknown);
+		NDR_CHECK(ndr_pull_generic_ptr(ndr, &_ptr_backupfile));
+		if (_ptr_backupfile) {
+			NDR_PULL_ALLOC(ndr, r->in.backupfile);
 		} else {
-			r->in.unknown = NULL;
+			r->in.backupfile = NULL;
 		}
-		if (r->in.unknown) {
-			_mem_save_unknown_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->in.unknown, 0);
-			NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.unknown));
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_unknown_0, 0);
+		if (r->in.backupfile) {
+			_mem_save_backupfile_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->in.backupfile, 0);
+			NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.backupfile));
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_backupfile_0, 0);
 		}
 	}
 	if (flags & NDR_OUT) {
@@ -251,10 +250,10 @@ _PUBLIC_ void ndr_print_eventlog_ClearEventLogW(struct ndr_print *ndr, const cha
 		ndr->depth++;
 		ndr_print_policy_handle(ndr, "handle", r->in.handle);
 		ndr->depth--;
-		ndr_print_ptr(ndr, "unknown", r->in.unknown);
+		ndr_print_ptr(ndr, "backupfile", r->in.backupfile);
 		ndr->depth++;
-		if (r->in.unknown) {
-			ndr_print_lsa_String(ndr, "unknown", r->in.unknown);
+		if (r->in.backupfile) {
+			ndr_print_lsa_String(ndr, "backupfile", r->in.backupfile);
 		}
 		ndr->depth--;
 		ndr->depth--;
@@ -506,8 +505,16 @@ _PUBLIC_ void ndr_print_eventlog_GetNumRecords(struct ndr_print *ndr, const char
 static enum ndr_err_code ndr_push_eventlog_GetOldestRecord(struct ndr_push *ndr, int flags, const struct eventlog_GetOldestRecord *r)
 {
 	if (flags & NDR_IN) {
+		if (r->in.handle == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
 	}
 	if (flags & NDR_OUT) {
+		if (r->out.oldest_entry == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.oldest_entry));
 		NDR_CHECK(ndr_push_NTSTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -515,9 +522,29 @@ static enum ndr_err_code ndr_push_eventlog_GetOldestRecord(struct ndr_push *ndr,
 
 static enum ndr_err_code ndr_pull_eventlog_GetOldestRecord(struct ndr_pull *ndr, int flags, struct eventlog_GetOldestRecord *r)
 {
+	TALLOC_CTX *_mem_save_handle_0;
+	TALLOC_CTX *_mem_save_oldest_entry_0;
 	if (flags & NDR_IN) {
+		ZERO_STRUCT(r->out);
+
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.handle);
+		}
+		_mem_save_handle_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.handle, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_policy_handle(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.handle));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_handle_0, LIBNDR_FLAG_REF_ALLOC);
+		NDR_PULL_ALLOC(ndr, r->out.oldest_entry);
+		ZERO_STRUCTP(r->out.oldest_entry);
 	}
 	if (flags & NDR_OUT) {
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->out.oldest_entry);
+		}
+		_mem_save_oldest_entry_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->out.oldest_entry, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.oldest_entry));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_oldest_entry_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_NTSTATUS(ndr, NDR_SCALARS, &r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -533,11 +560,19 @@ _PUBLIC_ void ndr_print_eventlog_GetOldestRecord(struct ndr_print *ndr, const ch
 	if (flags & NDR_IN) {
 		ndr_print_struct(ndr, "in", "eventlog_GetOldestRecord");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
 		ndr->depth--;
 	}
 	if (flags & NDR_OUT) {
 		ndr_print_struct(ndr, "out", "eventlog_GetOldestRecord");
 		ndr->depth++;
+		ndr_print_ptr(ndr, "oldest_entry", r->out.oldest_entry);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "oldest_entry", *r->out.oldest_entry);
+		ndr->depth--;
 		ndr_print_NTSTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
@@ -592,8 +627,14 @@ static enum ndr_err_code ndr_push_eventlog_OpenEventLogW(struct ndr_push *ndr, i
 		if (r->in.unknown0) {
 			NDR_CHECK(ndr_push_eventlog_OpenUnknown0(ndr, NDR_SCALARS, r->in.unknown0));
 		}
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.logname));
-		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.servername));
+		if (r->in.logname == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.logname));
+		if (r->in.servername == NULL) {
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+		}
+		NDR_CHECK(ndr_push_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.servername));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown2));
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.unknown3));
 	}
@@ -611,6 +652,8 @@ static enum ndr_err_code ndr_pull_eventlog_OpenEventLogW(struct ndr_pull *ndr, i
 {
 	uint32_t _ptr_unknown0;
 	TALLOC_CTX *_mem_save_unknown0_0;
+	TALLOC_CTX *_mem_save_logname_0;
+	TALLOC_CTX *_mem_save_servername_0;
 	TALLOC_CTX *_mem_save_handle_0;
 	if (flags & NDR_IN) {
 		ZERO_STRUCT(r->out);
@@ -627,8 +670,20 @@ static enum ndr_err_code ndr_pull_eventlog_OpenEventLogW(struct ndr_pull *ndr, i
 			NDR_CHECK(ndr_pull_eventlog_OpenUnknown0(ndr, NDR_SCALARS, r->in.unknown0));
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_unknown0_0, 0);
 		}
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.logname));
-		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, &r->in.servername));
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.logname);
+		}
+		_mem_save_logname_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.logname, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.logname));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_logname_0, LIBNDR_FLAG_REF_ALLOC);
+		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
+			NDR_PULL_ALLOC(ndr, r->in.servername);
+		}
+		_mem_save_servername_0 = NDR_PULL_GET_MEM_CTX(ndr);
+		NDR_PULL_SET_MEM_CTX(ndr, r->in.servername, LIBNDR_FLAG_REF_ALLOC);
+		NDR_CHECK(ndr_pull_lsa_String(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.servername));
+		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_servername_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown2));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.unknown3));
 		NDR_PULL_ALLOC(ndr, r->out.handle);
@@ -663,8 +718,14 @@ _PUBLIC_ void ndr_print_eventlog_OpenEventLogW(struct ndr_print *ndr, const char
 			ndr_print_eventlog_OpenUnknown0(ndr, "unknown0", r->in.unknown0);
 		}
 		ndr->depth--;
-		ndr_print_lsa_String(ndr, "logname", &r->in.logname);
-		ndr_print_lsa_String(ndr, "servername", &r->in.servername);
+		ndr_print_ptr(ndr, "logname", r->in.logname);
+		ndr->depth++;
+		ndr_print_lsa_String(ndr, "logname", r->in.logname);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "servername", r->in.servername);
+		ndr->depth++;
+		ndr_print_lsa_String(ndr, "servername", r->in.servername);
+		ndr->depth--;
 		ndr_print_uint32(ndr, "unknown2", r->in.unknown2);
 		ndr_print_uint32(ndr, "unknown3", r->in.unknown3);
 		ndr->depth--;
@@ -812,8 +873,11 @@ static enum ndr_err_code ndr_pull_eventlog_ReadEventLogW(struct ndr_pull *ndr, i
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.flags));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.offset));
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.number_of_bytes));
+		if (r->in.number_of_bytes < 0 || r->in.number_of_bytes > 0x7FFFF) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		}
 		NDR_PULL_ALLOC_N(ndr, r->out.data, r->in.number_of_bytes);
-		memset(r->out.data, 0, r->in.number_of_bytes * sizeof(*r->out.data));
+		memset(r->out.data, 0, (r->in.number_of_bytes) * sizeof(*r->out.data));
 		NDR_PULL_ALLOC(ndr, r->out.sent_size);
 		ZERO_STRUCTP(r->out.sent_size);
 		NDR_PULL_ALLOC(ndr, r->out.real_size);

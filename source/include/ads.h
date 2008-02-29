@@ -319,11 +319,6 @@ typedef void **ADS_MODLIST;
 #define ADS_DNS_DOMAIN     0x40000000  /* DomainName is a DNS name */
 #define ADS_DNS_FOREST     0x80000000  /* DnsForestName is a DNS name */
 
-/* DomainControllerAddressType */
-#define ADS_INET_ADDRESS      0x00000001
-#define ADS_NETBIOS_ADDRESS   0x00000002
-
-
 /* ads auth control flags */
 #define ADS_AUTH_DISABLE_KERBEROS 0x01
 #define ADS_AUTH_NO_BIND          0x02
@@ -395,5 +390,12 @@ typedef struct {
 #define ADS_EXTENDED_RIGHT_APPLY_GROUP_POLICY "edacfd8f-ffb3-11d1-b41d-00a0c968f939"
 
 #define ADS_IGNORE_PRINCIPAL "not_defined_in_RFC4178@please_ignore"
+
+/* Settings for the domainFunctionality attribute in the rootDSE */
+
+#define DS_DOMAIN_FUNCTION_2000		0
+#define DS_DOMAIN_FUCNTION_2003_MIXED	1
+#define DS_DOMAIN_FUNCTION_2003		2
+#define DS_DOMAIN_FUNCTION_2008		3
 
 #endif	/* _INCLUDE_ADS_H_ */

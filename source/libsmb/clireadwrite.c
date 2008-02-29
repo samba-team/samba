@@ -20,167 +20,451 @@
 #include "includes.h"
 
 /****************************************************************************
-Issue a single SMBread and don't wait for a reply.
+  Calculate the recommended read buffer size
 ****************************************************************************/
-
-static bool cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
-			   size_t size, int i)
+static size_t cli_read_max_bufsize(struct cli_state *cli)
 {
-	bool bigoffset = False;
+	if (!client_is_signing_on(cli) && !cli_encryption_on(cli) == false
+	    && (cli->posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
+		return CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE;
+	}
+	if (cli->capabilities & CAP_LARGE_READX) {
+		return cli->is_samba
+			? CLI_SAMBA_MAX_LARGE_READX_SIZE
+			: CLI_WINDOWS_MAX_LARGE_READX_SIZE;
+	}
+	return (cli->max_xmit - (smb_size+32)) & ~1023;
+}
 
-	memset(cli->outbuf,'\0',smb_size);
-	memset(cli->inbuf,'\0',smb_size);
+/*
+ * Send a read&x request
+ */
+
+struct async_req *cli_read_andx_send(TALLOC_CTX *mem_ctx,
+				     struct cli_state *cli, int fnum,
+				     off_t offset, size_t size)
+{
+	struct async_req *result;
+	struct cli_request *req;
+	bool bigoffset = False;
+	char *enc_buf;
+
+	if (size > cli_read_max_bufsize(cli)) {
+		DEBUG(0, ("cli_read_andx_send got size=%d, can only handle "
+			  "size=%d\n", (int)size,
+			  (int)cli_read_max_bufsize(cli)));
+		return NULL;
+	}
+
+	result = cli_request_new(mem_ctx, cli->event_ctx, cli, 12, 0, &req);
+	if (result == NULL) {
+		DEBUG(0, ("cli_request_new failed\n"));
+		return NULL;
+	}
+
+	req = cli_request_get(result);
+
+	req->data.read.ofs = offset;
+	req->data.read.size = size;
+	req->data.read.received = 0;
+	req->data.read.rcvbuf = NULL;
 
 	if ((SMB_BIG_UINT)offset >> 32)
 		bigoffset = True;
 
-	cli_set_message(cli->outbuf,bigoffset ? 12 : 10,0,True);
+	cli_set_message(req->outbuf, bigoffset ? 12 : 10, 0, False);
 
-	SCVAL(cli->outbuf,smb_com,SMBreadX);
-	SSVAL(cli->outbuf,smb_tid,cli->cnum);
-	cli_setup_packet(cli);
+	SCVAL(req->outbuf,smb_com,SMBreadX);
+	SSVAL(req->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet_buf(cli, req->outbuf);
 
-	SCVAL(cli->outbuf,smb_vwv0,0xFF);
-	SSVAL(cli->outbuf,smb_vwv2,fnum);
-	SIVAL(cli->outbuf,smb_vwv3,offset);
-	SSVAL(cli->outbuf,smb_vwv5,size);
-	SSVAL(cli->outbuf,smb_vwv6,size);
-	SSVAL(cli->outbuf,smb_vwv7,(size >> 16));
-	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
+	SCVAL(req->outbuf,smb_vwv0,0xFF);
+	SCVAL(req->outbuf,smb_vwv0+1,0);
+	SSVAL(req->outbuf,smb_vwv1,0);
+	SSVAL(req->outbuf,smb_vwv2,fnum);
+	SIVAL(req->outbuf,smb_vwv3,offset);
+	SSVAL(req->outbuf,smb_vwv5,size);
+	SSVAL(req->outbuf,smb_vwv6,size);
+	SSVAL(req->outbuf,smb_vwv7,(size >> 16));
+	SSVAL(req->outbuf,smb_vwv8,0);
+	SSVAL(req->outbuf,smb_vwv9,0);
+	SSVAL(req->outbuf,smb_mid,req->mid);
 
 	if (bigoffset) {
-		SIVAL(cli->outbuf,smb_vwv10,(((SMB_BIG_UINT)offset)>>32) & 0xffffffff);
+		SIVAL(req->outbuf, smb_vwv10,
+		      (((SMB_BIG_UINT)offset)>>32) & 0xffffffff);
 	}
 
-	return cli_send_smb(cli);
+	cli_calculate_sign_mac(cli, req->outbuf);
+
+	event_fd_set_writeable(cli->fd_event);
+
+	if (cli_encryption_on(cli)) {
+		NTSTATUS status;
+		status = cli_encrypt_message(cli, req->outbuf, &enc_buf);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Error in encrypting client message. "
+				  "Error %s\n",	nt_errstr(status)));
+			TALLOC_FREE(req);
+			return NULL;
+		}
+		req->outbuf = enc_buf;
+		req->enc_state = cli->trans_enc_state;
+	}
+
+	return result;
 }
 
-/****************************************************************************
-  Read size bytes at offset offset using SMBreadX.
-****************************************************************************/
+/*
+ * Pull the data out of a finished async read_and_x request. rcvbuf is
+ * talloced from the request, so better make sure that you copy it away before
+ * you talloc_free(req). "rcvbuf" is NOT a talloc_ctx of its own, so do not
+ * talloc_move it!
+ */
 
-ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
+NTSTATUS cli_read_andx_recv(struct async_req *req, ssize_t *received,
+			    uint8_t **rcvbuf)
 {
-	char *p;
-	size_t size2;
-	size_t readsize;
-	ssize_t total = 0;
-	/* We can only do direct reads if not signing or encrypting. */
-	bool direct_reads = !client_is_signing_on(cli) && !cli_encryption_on(cli);
+	struct cli_request *cli_req = cli_request_get(req);
+	NTSTATUS status;
+	size_t size;
 
-	if (size == 0)
-		return 0;
+	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
+	if (req->state == ASYNC_REQ_ERROR) {
+		return req->status;
+	}
+
+	status = cli_pull_error(cli_req->inbuf);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* size is the number of bytes the server returned.
+	 * Might be zero. */
+	size = SVAL(cli_req->inbuf, smb_vwv5);
+	size |= (((unsigned int)(SVAL(cli_req->inbuf, smb_vwv7))) << 16);
+
+	if (size > cli_req->data.read.size) {
+		DEBUG(5,("server returned more than we wanted!\n"));
+		return NT_STATUS_UNEXPECTED_IO_ERROR;
+	}
+
+	if (size < 0) {
+		DEBUG(5,("read return < 0!\n"));
+		return NT_STATUS_UNEXPECTED_IO_ERROR;
+	}
+
+	*rcvbuf = (uint8_t *)
+		(smb_base(cli_req->inbuf) + SVAL(cli_req->inbuf, smb_vwv6));
+	*received = size;
+	return NT_STATUS_OK;
+}
+
+/*
+ * Parallel read support.
+ *
+ * cli_pull sends as many read&x requests as the server would allow via
+ * max_mux at a time. When replies flow back in, the data is written into
+ * the callback function "sink" in the right order.
+ */
+
+struct cli_pull_state {
+	struct async_req *req;
+
+	struct cli_state *cli;
+	uint16_t fnum;
+	off_t start_offset;
+	size_t size;
+
+	NTSTATUS (*sink)(char *buf, size_t n, void *priv);
+	void *priv;
+
+	size_t chunk_size;
 
 	/*
-	 * Set readsize to the maximum size we can handle in one readX,
-	 * rounded down to a multiple of 1024.
+	 * Outstanding requests
+	 */
+	int num_reqs;
+	struct async_req **reqs;
+
+	/*
+	 * For how many bytes did we send requests already?
+	 */
+	off_t requested;
+
+	/*
+	 * Next request index to push into "sink". This walks around the "req"
+	 * array, taking care that the requests are pushed to "sink" in the
+	 * right order. If necessary (i.e. replies don't come in in the right
+	 * order), replies are held back in "reqs".
+	 */
+	int top_req;
+
+	/*
+	 * How many bytes did we push into "sink"?
 	 */
 
-	if (client_is_signing_on(cli) == false &&
-			cli_encryption_on(cli) == false &&
-			(cli->posix_capabilities & CIFS_UNIX_LARGE_READ_CAP)) {
-		readsize = CLI_SAMBA_MAX_POSIX_LARGE_READX_SIZE;
-	} else if (cli->capabilities & CAP_LARGE_READX) {
-		if (cli->is_samba) {
-			readsize = CLI_SAMBA_MAX_LARGE_READX_SIZE;
-		} else {
-			readsize = CLI_WINDOWS_MAX_LARGE_READX_SIZE;
-		}
-	} else {
-		readsize = (cli->max_xmit - (smb_size+32)) & ~1023;
+	off_t pushed;
+};
+
+static char *cli_pull_print(TALLOC_CTX *mem_ctx, struct async_req *req)
+{
+	struct cli_pull_state *state = talloc_get_type_abort(
+		req->private_data, struct cli_pull_state);
+	char *result;
+
+	result = async_req_print(mem_ctx, req);
+	if (result == NULL) {
+		return NULL;
 	}
 
-	while (total < size) {
-		readsize = MIN(readsize, size-total);
+	return talloc_asprintf_append_buffer(
+		result, "num_reqs=%d, top_req=%d",
+		state->num_reqs, state->top_req);
+}
 
-		/* Issue a read and receive a reply */
+static void cli_pull_read_done(struct async_req *read_req);
 
-		if (!cli_issue_read(cli, fnum, offset, readsize, 0))
-			return -1;
+/*
+ * Prepare an async pull request
+ */
 
-		if (direct_reads) {
-			if (!cli_receive_smb_readX_header(cli))
-				return -1;
-		} else {
-			if (!cli_receive_smb(cli))
-				return -1;
-		}
+struct async_req *cli_pull_send(TALLOC_CTX *mem_ctx, struct cli_state *cli,
+				uint16_t fnum, off_t start_offset,
+				size_t size, size_t window_size,
+				NTSTATUS (*sink)(char *buf, size_t n,
+						 void *priv),
+				void *priv)
+{
+	struct async_req *result;
+	struct cli_pull_state *state;
+	int i;
 
-		/* Check for error.  Make sure to check for DOS and NT
-                   errors. */
+	result = async_req_new(mem_ctx, cli->event_ctx);
+	if (result == NULL) {
+		goto failed;
+	}
+	state = talloc(result, struct cli_pull_state);
+	if (state == NULL) {
+		goto failed;
+	}
+	result->private_data = state;
+	result->print = cli_pull_print;
+	state->req = result;
 
-                if (cli_is_error(cli)) {
-			bool recoverable_error = False;
-                        NTSTATUS status = NT_STATUS_OK;
-                        uint8 eclass = 0;
-			uint32 ecode = 0;
+	state->cli = cli;
+	state->fnum = fnum;
+	state->start_offset = start_offset;
+	state->size = size;
+	state->sink = sink;
+	state->priv = priv;
 
-                        if (cli_is_nt_error(cli))
-                                status = cli_nt_error(cli);
-                        else
-                                cli_dos_error(cli, &eclass, &ecode);
+	state->pushed = 0;
+	state->top_req = 0;
+	state->chunk_size = cli_read_max_bufsize(cli);
 
-			/*
-			 * ERRDOS ERRmoredata or STATUS_MORE_ENRTIES is a
-			 * recoverable error, plus we have valid data in the
-			 * packet so don't error out here.
-			 */
+	state->num_reqs = MAX(window_size/state->chunk_size, 1);
+	state->num_reqs = MIN(state->num_reqs, cli->max_mux);
 
-                        if ((eclass == ERRDOS && ecode == ERRmoredata) ||
-                            NT_STATUS_V(status) == NT_STATUS_V(STATUS_MORE_ENTRIES))
-				recoverable_error = True;
+	state->reqs = TALLOC_ZERO_ARRAY(state, struct async_req *,
+					state->num_reqs);
+	if (state->reqs == NULL) {
+		goto failed;
+	}
 
-			if (!recoverable_error)
-                                return -1;
-		}
+	state->requested = 0;
 
-		size2 = SVAL(cli->inbuf, smb_vwv5);
-		size2 |= (((unsigned int)(SVAL(cli->inbuf, smb_vwv7))) << 16);
+	for (i=0; i<state->num_reqs; i++) {
+		size_t size_left, request_thistime;
 
-		if (size2 > readsize) {
-			DEBUG(5,("server returned more than we wanted!\n"));
-			return -1;
-		} else if (size2 < 0) {
-			DEBUG(5,("read return < 0!\n"));
-			return -1;
-		}
-
-		if (!direct_reads) {
-			/* Copy data into buffer */
-			p = smb_base(cli->inbuf) + SVAL(cli->inbuf,smb_vwv6);
-			memcpy(buf + total, p, size2);
-		} else {
-			/* Ensure the remaining data matches the return size. */
-			ssize_t toread = smb_len_large(cli->inbuf) - SVAL(cli->inbuf,smb_vwv6);
-
-			/* Ensure the size is correct. */
-			if (toread != size2) {
-				DEBUG(5,("direct read logic fail toread (%d) != size2 (%u)\n",
-					(int)toread, (unsigned int)size2 ));
-				return -1;
-			}
-
-			/* Read data directly into buffer */
-			toread = cli_receive_smb_data(cli,buf+total,size2);
-			if (toread != size2) {
-				DEBUG(5,("direct read read failure toread (%d) != size2 (%u)\n",
-					(int)toread, (unsigned int)size2 ));
-				return -1;
-			}
-		}
-
-		total += size2;
-		offset += size2;
-
-		/*
-		 * If the server returned less than we asked for we're at EOF.
-		 */
-
-		if (size2 < readsize)
+		if (state->requested >= size) {
+			state->num_reqs = i;
 			break;
+		}
+
+		size_left = size - state->requested;
+		request_thistime = MIN(size_left, state->chunk_size);
+
+		state->reqs[i] = cli_read_andx_send(
+			state->reqs, cli, fnum,
+			state->start_offset + state->requested,
+			request_thistime);
+
+		if (state->reqs[i] == NULL) {
+			goto failed;
+		}
+
+		state->reqs[i]->async.fn = cli_pull_read_done;
+		state->reqs[i]->async.priv = result;
+
+		state->requested += request_thistime;
+	}
+	return result;
+
+failed:
+	TALLOC_FREE(result);
+	return NULL;
+}
+
+/*
+ * Handle incoming read replies, push the data into sink and send out new
+ * requests if necessary.
+ */
+
+static void cli_pull_read_done(struct async_req *read_req)
+{
+	struct async_req *pull_req = talloc_get_type_abort(
+		read_req->async.priv, struct async_req);
+	struct cli_pull_state *state = talloc_get_type_abort(
+		pull_req->private_data, struct cli_pull_state);
+	struct cli_request *read_state = cli_request_get(read_req);
+	NTSTATUS status;
+
+	status = cli_read_andx_recv(read_req, &read_state->data.read.received,
+				    &read_state->data.read.rcvbuf);
+	if (!NT_STATUS_IS_OK(status)) {
+		async_req_error(state->req, status);
+		return;
 	}
 
-	return total;
+	/*
+	 * This loop is the one to take care of out-of-order replies. All
+	 * pending requests are in state->reqs, state->reqs[top_req] is the
+	 * one that is to be pushed next. If however a request later than
+	 * top_req is replied to, then we can't push yet. If top_req is
+	 * replied to at a later point then, we need to push all the finished
+	 * requests.
+	 */
+
+	while (state->reqs[state->top_req] != NULL) {
+		struct cli_request *top_read;
+
+		DEBUG(11, ("cli_pull_read_done: top_req = %d\n",
+			   state->top_req));
+
+		if (state->reqs[state->top_req]->state < ASYNC_REQ_DONE) {
+			DEBUG(11, ("cli_pull_read_done: top request not yet "
+				   "done\n"));
+			return;
+		}
+
+		top_read = cli_request_get(state->reqs[state->top_req]);
+
+		DEBUG(10, ("cli_pull_read_done: Pushing %d bytes, %d already "
+			   "pushed\n", (int)top_read->data.read.received,
+			   (int)state->pushed));
+
+		status = state->sink((char *)top_read->data.read.rcvbuf,
+				     top_read->data.read.received,
+				     state->priv);
+		if (!NT_STATUS_IS_OK(status)) {
+			async_req_error(state->req, status);
+			return;
+		}
+		state->pushed += top_read->data.read.received;
+
+		TALLOC_FREE(state->reqs[state->top_req]);
+
+		if (state->requested < state->size) {
+			struct async_req *new_req;
+			size_t size_left, request_thistime;
+
+			size_left = state->size - state->requested;
+			request_thistime = MIN(size_left, state->chunk_size);
+
+			DEBUG(10, ("cli_pull_read_done: Requesting %d bytes "
+				   "at %d, position %d\n",
+				   (int)request_thistime,
+				   (int)(state->start_offset
+					 + state->requested),
+				   state->top_req));
+
+			new_req = cli_read_andx_send(
+				state->reqs, state->cli, state->fnum,
+				state->start_offset + state->requested,
+				request_thistime);
+
+			if (async_req_nomem(new_req, state->req)) {
+				return;
+			}
+
+			new_req->async.fn = cli_pull_read_done;
+			new_req->async.priv = pull_req;
+
+			state->reqs[state->top_req] = new_req;
+			state->requested += request_thistime;
+		}
+
+		state->top_req = (state->top_req+1) % state->num_reqs;
+	}
+
+	async_req_done(pull_req);
+}
+
+NTSTATUS cli_pull_recv(struct async_req *req, ssize_t *received)
+{
+	struct cli_pull_state *state = talloc_get_type_abort(
+		req->private_data, struct cli_pull_state);
+
+	SMB_ASSERT(req->state >= ASYNC_REQ_DONE);
+	if (req->state == ASYNC_REQ_ERROR) {
+		return req->status;
+	}
+	*received = state->pushed;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS cli_pull(struct cli_state *cli, uint16_t fnum,
+		  off_t start_offset, size_t size, size_t window_size,
+		  NTSTATUS (*sink)(char *buf, size_t n, void *priv),
+		  void *priv, ssize_t *received)
+{
+	TALLOC_CTX *frame = talloc_stackframe();
+	struct async_req *req;
+	NTSTATUS result = NT_STATUS_NO_MEMORY;
+
+	if (cli_tmp_event_ctx(frame, cli) == NULL) {
+		goto nomem;
+	}
+
+	req = cli_pull_send(frame, cli, fnum, start_offset, size, window_size,
+			    sink, priv);
+	if (req == NULL) {
+		goto nomem;
+	}
+
+	while (req->state < ASYNC_REQ_DONE) {
+		event_loop_once(cli->event_ctx);
+	}
+
+	result = cli_pull_recv(req, received);
+ nomem:
+	TALLOC_FREE(frame);
+	return result;
+}
+
+static NTSTATUS cli_read_sink(char *buf, size_t n, void *priv)
+{
+	char **pbuf = (char **)priv;
+	memcpy(*pbuf, buf, n);
+	*pbuf += n;
+	return NT_STATUS_OK;
+}
+
+ssize_t cli_read(struct cli_state *cli, int fnum, char *buf,
+		 off_t offset, size_t size)
+{
+	NTSTATUS status;
+	ssize_t ret;
+
+	status = cli_pull(cli, fnum, offset, size, size,
+			  cli_read_sink, &buf, &ret);
+	if (!NT_STATUS_IS_OK(status)) {
+		cli_set_error(cli, status);
+		return -1;
+	}
+	return ret;
 }
 
 #if 0  /* relies on client_receive_smb(), now a static in libsmb/clientgen.c */

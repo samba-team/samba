@@ -415,8 +415,6 @@ struct wkssvc_NetrWorkstationStatistics {
 /* bitmap wkssvc_renameflags */
 #define WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE ( 0x00000002 )
 
-;
-
 enum wkssvc_NetValidateNameType
 #ifndef USE_UINT_ENUMS
  {
@@ -470,8 +468,6 @@ struct wkssvc_PasswordBuffer {
 #define WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE ( 0x00000004 )
 #define WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE ( 0x00000002 )
 #define WKSSVC_JOIN_FLAGS_JOIN_TYPE ( 0x00000001 )
-
-;
 
 enum wkssvc_ComputerNameType
 #ifndef USE_UINT_ENUMS
@@ -830,7 +826,7 @@ struct wkssvc_NetrGetJoinableOus {
 	} in;
 
 	struct {
-		const char ***ous;/* [ref,charset(UTF16),size_is(*num_ous)] */
+		const char ***ous;/* [ref,charset(UTF16),size_is(,*num_ous)] */
 		uint32_t *num_ous;/* [ref] */
 		WERROR result;
 	} out;
@@ -912,7 +908,7 @@ struct wkssvc_NetrGetJoinableOus2 {
 	} in;
 
 	struct {
-		const char ***ous;/* [ref,charset(UTF16),size_is(*num_ous)] */
+		const char ***ous;/* [ref,charset(UTF16),size_is(,*num_ous)] */
 		uint32_t *num_ous;/* [ref] */
 		WERROR result;
 	} out;

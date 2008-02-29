@@ -311,15 +311,15 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 	char *domain_name = NULL;
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 
-	if (!dom_sid || (num_rids == 0)) {
-		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
-
 	/* Initialise request */
 
 	ZERO_STRUCT(request);
 	ZERO_STRUCT(response);
+
+	if (!dom_sid || (num_rids == 0)) {
+		wbc_status = WBC_ERR_INVALID_PARAM;
+		BAIL_ON_WBC_ERROR(wbc_status);
+	}
 
 	wbc_status = wbcSidToString(dom_sid, &sid_string);
 	BAIL_ON_WBC_ERROR(wbc_status);
@@ -355,6 +355,7 @@ wbcErr wbcLookupRids(struct wbcDomainSid *dom_sid,
 					&request,
 					&response);
 	talloc_free(ridlist);
+	BAIL_ON_WBC_ERROR(wbc_status);
 
 	domain_name = talloc_strdup(NULL, response.data.domain_name);
 	BAIL_ON_PTR_ERROR(domain_name, wbc_status);

@@ -58,7 +58,8 @@ int sys_select(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorfds, s
 	fd_set *readfds2, readfds_buf;
 
 	if (initialised != sys_getpid()) {
-		pipe(select_pipe);
+		if (pipe(select_pipe) == -1)
+			smb_panic("Could not create select pipe");
 
 		/*
 		 * These next two lines seem to fix a bug with the Linux

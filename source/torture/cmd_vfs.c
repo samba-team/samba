@@ -575,7 +575,7 @@ static NTSTATUS cmd_fstat(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, 
 	}
 
 	fd = atoi(argv[1]);
-	if (fd < 0 || fd > 1024) {
+	if (fd < 0 || fd >= 1024) {
 		printf("fstat: error=%d (file descriptor out of range)\n", EBADF);
 		return NT_STATUS_OK;
 	}
@@ -710,7 +710,7 @@ static NTSTATUS cmd_fchmod(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 
 	fd = atoi(argv[1]);
 	mode = atoi(argv[2]);
-	if (fd < 0 || fd > 1024) {
+	if (fd < 0 || fd >= 1024) {
 		printf("fchmod: error=%d (file descriptor out of range)\n", EBADF);
 		return NT_STATUS_OK;
 	}
@@ -763,7 +763,7 @@ static NTSTATUS cmd_fchown(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc,
 	uid = atoi(argv[2]);
 	gid = atoi(argv[3]);
 	fd = atoi(argv[1]);
-	if (fd < 0 || fd > 1024) {
+	if (fd < 0 || fd >= 1024) {
 		printf("fchown: faliure=%d (file descriptor out of range)\n", EBADF);
 		return NT_STATUS_OK;
 	}
@@ -822,7 +822,7 @@ static NTSTATUS cmd_ftruncate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 
 	fd = atoi(argv[1]);
 	off = atoi(argv[2]);
-	if (fd < 0 || fd > 1024) {
+	if (fd < 0 || fd >= 1024) {
 		printf("ftruncate: error=%d (file descriptor out of range)\n", EBADF);
 		return NT_STATUS_OK;
 	}
@@ -842,7 +842,6 @@ static NTSTATUS cmd_ftruncate(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int ar
 
 static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
-	bool ret;
 	int fd;
 	int op;
 	long offset;
@@ -914,7 +913,7 @@ static NTSTATUS cmd_lock(struct vfs_state *vfs, TALLOC_CTX *mem_ctx, int argc, c
 
 	printf("lock: debug lock(fd=%d, op=%d, offset=%ld, count=%ld, type=%d))\n", fd, op, offset, count, type);
 
-	if ((ret = SMB_VFS_LOCK(vfs->files[fd], op, offset, count, type)) == False) {
+	if (SMB_VFS_LOCK(vfs->files[fd], op, offset, count, type) == False) {
 		printf("lock: error=%d (%s)\n", errno, strerror(errno));
 		return NT_STATUS_UNSUCCESSFUL;
 	}

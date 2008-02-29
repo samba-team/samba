@@ -427,6 +427,8 @@ struct _SMBCCTX {
 	off_t      (*lseek)   (SMBCCTX *c, SMBCFILE * file, off_t offset, int whence);
 	int        (*stat)    (SMBCCTX *c, const char *fname, struct stat *st);
 	int        (*fstat)   (SMBCCTX *c, SMBCFILE *file, struct stat *st);
+        /* ftruncate added near _internal for ABI compatibility */
+                
 	int        (*close_fn) (SMBCCTX *c, SMBCFILE *file);
 
 	/** callable functions for dirs
@@ -520,6 +522,12 @@ struct _SMBCCTX {
 	int flags;
 	
         /** user options selections that apply to this session
+         *
+         *  NEW OPTIONS ARE NOT ADDED HERE!
+         *
+         *  We must maintain ABI backward compatibility.  We now use
+         *  smbc_option_set() and smbc_option_get() for all newly added
+         *  options.
          */
         struct _smbc_options {
 
@@ -580,6 +588,9 @@ struct _SMBCCTX {
                 int one_share_per_server;
         } options;
 	
+        /* Add additional functions here for ABI backward compatibility */
+        int        (*ftruncate)(SMBCCTX *c, SMBCFILE *f, off_t size);
+
 	/** INTERNAL DATA
 	 * do _NOT_ touch this from your program !
 	 */
@@ -1191,6 +1202,26 @@ int smbc_stat(const char *url, struct stat *st);
  *
  */
 int smbc_fstat(int fd, struct stat *st);
+
+
+/**@ingroup attribute
+ * Truncate a file given a file descriptor
+ * 
+ * @param fd        Open file handle from smbc_open() or smbc_creat()
+ *
+ * @param size      size to truncate the file to
+ * 
+ * @return          EBADF  filedes is bad.
+ *                  - EACCES Permission denied.
+ *                  - EBADF fd is not a valid file descriptor
+ *                  - EINVAL Problems occurred in the underlying routines
+ *		      or smbc_init not called.
+ *                  - ENOMEM Out of memory
+ *
+ * @see             , Unix ftruncate()
+ *
+ */
+int smbc_ftruncate(int fd, off_t size);
 
 
 /**@ingroup attribue

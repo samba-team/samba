@@ -391,6 +391,13 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 
 	/* try with a user specified server */
 
+	if (DEBUGLEVEL >= 11) {
+		char *s = NDR_PRINT_STRUCT_STRING(talloc_tos(), ads_struct, ads);
+		DEBUG(11,("ads_connect: entering\n"));
+		DEBUGADD(11,("%s\n", s));
+		TALLOC_FREE(s);
+	}
+
 	if (ads->server.ldap_server &&
 	    ads_try_connect(ads, ads->server.ldap_server)) {
 		goto got_connection;
@@ -401,7 +408,8 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 		goto got_connection;
 	}
 
-	return ADS_ERROR_NT(ntstatus);
+	status = ADS_ERROR_NT(ntstatus);
+	goto out;
 
 got_connection:
 
@@ -438,12 +446,14 @@ got_connection:
 	/* If the caller() requested no LDAP bind, then we are done */
 	
 	if (ads->auth.flags & ADS_AUTH_NO_BIND) {
-		return ADS_SUCCESS;
+		status = ADS_SUCCESS;
+		goto out;
 	}
 
 	ads->ldap.mem_ctx = talloc_init("ads LDAP connection memory");
 	if (!ads->ldap.mem_ctx) {
-		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		status = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+		goto out;
 	}
 	
 	/* Otherwise setup the TCP LDAP session */
@@ -451,7 +461,8 @@ got_connection:
 	ads->ldap.ld = ldap_open_with_timeout(ads->config.ldap_server_name,
 					      LDAP_PORT, lp_ldap_timeout());
 	if (ads->ldap.ld == NULL) {
-		return ADS_ERROR(LDAP_OPERATIONS_ERROR);
+		status = ADS_ERROR(LDAP_OPERATIONS_ERROR);
+		goto out;
 	}
 	DEBUG(3,("Connected to LDAP server %s\n", ads->config.ldap_server_name));
 
@@ -466,27 +477,40 @@ got_connection:
 
 	status = ADS_ERROR(smb_ldap_start_tls(ads->ldap.ld, version));
 	if (!ADS_ERR_OK(status)) {
-		return status;
+		goto out;
 	}
 
 	/* fill in the current time and offsets */
 	
 	status = ads_current_time( ads );
 	if ( !ADS_ERR_OK(status) ) {
-		return status;
+		goto out;
 	}
 
 	/* Now do the bind */
 	
 	if (ads->auth.flags & ADS_AUTH_ANON_BIND) {
-		return ADS_ERROR(ldap_simple_bind_s( ads->ldap.ld, NULL, NULL));
+		status = ADS_ERROR(ldap_simple_bind_s(ads->ldap.ld, NULL, NULL));
+		goto out;
 	}
 
 	if (ads->auth.flags & ADS_AUTH_SIMPLE_BIND) {
-		return ADS_ERROR(ldap_simple_bind_s( ads->ldap.ld, ads->auth.user_name, ads->auth.password));
+		status = ADS_ERROR(ldap_simple_bind_s(ads->ldap.ld, ads->auth.user_name, ads->auth.password));
+		goto out;
 	}
 
-	return ads_sasl_bind(ads);
+	status = ads_sasl_bind(ads);
+
+ out:
+	if (DEBUGLEVEL >= 11) {
+		char *s = NDR_PRINT_STRUCT_STRING(talloc_tos(), ads_struct, ads);
+		DEBUG(11,("ads_connect: leaving with: %s\n",
+			ads_errstr(status)));
+		DEBUGADD(11,("%s\n", s));
+		TALLOC_FREE(s);
+	}
+
+	return status;
 }
 
 /**
@@ -640,7 +664,7 @@ static ADS_STATUS ads_do_paged_search_args(ADS_STRUCT *ads,
 	else {
 		/* This would be the utf8-encoded version...*/
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs))) */
-		if (!(str_list_copy(&search_attrs, attrs))) {
+		if (!(str_list_copy(talloc_tos(), &search_attrs, attrs))) {
 			rc = LDAP_NO_MEMORY;
 			goto done;
 		}
@@ -777,7 +801,7 @@ done:
 	}
  
 	/* if/when we decide to utf8-encode attrs, take out this next line */
-	str_list_free(&search_attrs);
+	TALLOC_FREE(search_attrs);
 
 	return ADS_ERROR(rc);
 }
@@ -950,7 +974,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
 	else {
 		/* This would be the utf8-encoded version...*/
 		/* if (!(search_attrs = ads_push_strvals(ctx, attrs)))  */
-		if (!(str_list_copy(&search_attrs, attrs)))
+		if (!(str_list_copy(talloc_tos(), &search_attrs, attrs)))
 		{
 			DEBUG(1,("ads_do_search: str_list_copy() failed!"));
 			rc = LDAP_NO_MEMORY;
@@ -974,7 +998,7 @@ ADS_STATUS ads_do_search_all_fn(ADS_STRUCT *ads, const char *bind_path,
  done:
 	talloc_destroy(ctx);
 	/* if/when we decide to utf8-encode attrs, take out this next line */
-	str_list_free(&search_attrs);
+	TALLOC_FREE(search_attrs);
 	return ADS_ERROR(rc);
 }
 /**

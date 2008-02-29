@@ -633,8 +633,7 @@ _PUBLIC_ void ndr_print_string_array(struct ndr_print *ndr, const char *name, co
 	ndr->depth++;
 	for (i=0;i<count;i++) {
 		char *idx=NULL;
-		asprintf(&idx, "[%d]", i);
-		if (idx) {
+		if (asprintf(&idx, "[%d]", i) != -1) {
 			ndr_print_string(ndr, idx, a[i]);
 			free(idx);
 		}

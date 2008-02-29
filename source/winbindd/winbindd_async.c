@@ -283,9 +283,8 @@ static void lookupname_recv2(TALLOC_CTX *mem_ctx, bool success,
 		     enum lsa_SidType type) =
 		(void (*)(void *, bool, const DOM_SID *, enum lsa_SidType))c;
 	DOM_SID sid;
-	struct lookupname_state *s = talloc_get_type_abort( private_data, 
+	struct lookupname_state *s = talloc_get_type_abort( private_data,
 							    struct lookupname_state );
-	
 
 	if (!success) {
 		DEBUG(5, ("Could not trigger lookup_name\n"));
@@ -311,7 +310,7 @@ static void lookupname_recv2(TALLOC_CTX *mem_ctx, bool success,
 }
 
 /********************************************************************
- This is the first callback after contacting our own domain 
+ This is the first callback after contacting our own domain
 ********************************************************************/
 
 static void lookupname_recv(TALLOC_CTX *mem_ctx, bool success,
@@ -322,7 +321,7 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, bool success,
 		     enum lsa_SidType type) =
 		(void (*)(void *, bool, const DOM_SID *, enum lsa_SidType))c;
 	DOM_SID sid;
-	struct lookupname_state *s = talloc_get_type_abort( private_data, 
+	struct lookupname_state *s = talloc_get_type_abort( private_data,
 							    struct lookupname_state );	
 
 	if (!success) {
@@ -334,8 +333,8 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, bool success,
 	if (response->result != WINBINDD_OK) {
 		/* Try again using the forest root */
 		struct winbindd_domain *root_domain = find_root_domain();
-		struct winbindd_request request;		
-		
+		struct winbindd_request request;
+
 		if ( !root_domain ) {
 			DEBUG(5,("lookupname_recv: unable to determine forest root\n"));
 			cont(s->caller_private_data, False, NULL, SID_NAME_UNKNOWN);
@@ -346,7 +345,7 @@ static void lookupname_recv(TALLOC_CTX *mem_ctx, bool success,
 		request.cmd = WINBINDD_LOOKUPNAME;
 
 		fstrcpy( request.data.name.dom_name, s->dom_name );
-		fstrcpy( request.data.name.name, s->name );		
+		fstrcpy( request.data.name.name, s->name );
 
 		do_async_domain(mem_ctx, root_domain, &request, lookupname_recv2,
 				(void *)cont, s);
@@ -381,7 +380,7 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx,
 {
 	struct winbindd_request request;
 	struct winbindd_domain *domain;
-	struct lookupname_state *s;	
+	struct lookupname_state *s;
 
 	if ( (domain = find_lookup_domain_from_name(dom_name)) == NULL ) {
 		DEBUG(5, ("Could not find domain for name '%s'\n", dom_name));
@@ -403,6 +402,11 @@ void winbindd_lookupname_async(TALLOC_CTX *mem_ctx,
 
 	s->dom_name = talloc_strdup( s, dom_name );
 	s->name     = talloc_strdup( s, name );
+	if (!s->dom_name || !s->name) {
+		cont(private_data, False, NULL, SID_NAME_UNKNOWN);
+		return;
+	}
+
 	s->caller_private_data = private_data;
 
 	do_async_domain(mem_ctx, domain, &request, lookupname_recv,

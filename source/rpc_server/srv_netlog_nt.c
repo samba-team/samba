@@ -1,4 +1,4 @@
-/* 
+/*
  *  Unix SMB/CIFS implementation.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
@@ -6,17 +6,18 @@
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Jeremy Allison               1998-2001.
  *  Copyright (C) Andrew Bartlett                   2001.
+ *  Copyright (C) Guenther Deschner		    2008.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation; either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
@@ -34,38 +35,83 @@ extern userdom_struct current_user_info;
  init_net_r_req_chal:
  *************************************************************************/
 
-static void init_net_r_req_chal(NET_R_REQ_CHAL *r_c,
-                                DOM_CHAL *srv_chal, NTSTATUS status)
+static void init_net_r_req_chal(struct netr_Credential *r,
+				struct netr_Credential *srv_chal)
 {
 	DEBUG(6,("init_net_r_req_chal: %d\n", __LINE__));
-	memcpy(r_c->srv_chal.data, srv_chal->data, sizeof(srv_chal->data));
-	r_c->status = status;
+
+	memcpy(r->data, srv_chal->data, sizeof(r->data));
+}
+
+/*******************************************************************
+ Inits a netr_NETLOGON_INFO_1 structure.
+********************************************************************/
+
+static void init_netlogon_info1(struct netr_NETLOGON_INFO_1 *r,
+				uint32_t flags,
+				uint32_t pdc_connection_status)
+{
+	r->flags = flags;
+	r->pdc_connection_status = pdc_connection_status;
+}
+
+/*******************************************************************
+ Inits a netr_NETLOGON_INFO_2 structure.
+********************************************************************/
+
+static void init_netlogon_info2(struct netr_NETLOGON_INFO_2 *r,
+				uint32_t flags,
+				uint32_t pdc_connection_status,
+				const char *trusted_dc_name,
+				uint32_t tc_connection_status)
+{
+	r->flags = flags;
+	r->pdc_connection_status = pdc_connection_status;
+	r->trusted_dc_name = trusted_dc_name;
+	r->tc_connection_status = tc_connection_status;
+}
+
+/*******************************************************************
+ Inits a netr_NETLOGON_INFO_3 structure.
+********************************************************************/
+
+static void init_netlogon_info3(struct netr_NETLOGON_INFO_3 *r,
+				uint32_t flags,
+				uint32_t logon_attempts)
+{
+	r->flags = flags;
+	r->logon_attempts = logon_attempts;
 }
 
 /*************************************************************************
- error messages cropping up when using nltest.exe...
+ _netr_LogonControl
  *************************************************************************/
 
-#define ERROR_NO_SUCH_DOMAIN   0x54b
-#define ERROR_NO_LOGON_SERVERS 0x51f
-#define NO_ERROR               0x0
-
-/*************************************************************************
- net_reply_logon_ctrl:
- *************************************************************************/
-
-NTSTATUS _net_logon_ctrl(pipes_struct *p, NET_Q_LOGON_CTRL *q_u, 
-		       NET_R_LOGON_CTRL *r_u)
+WERROR _netr_LogonControl(pipes_struct *p,
+			  struct netr_LogonControl *r)
 {
-	uint32 flags = 0x0;
-	uint32 pdc_connection_status = 0x00; /* Maybe a win32 error code? */
-	
+	struct netr_NETLOGON_INFO_1 *info1;
+	uint32_t flags = 0x0;
+	uint32_t pdc_connection_status = W_ERROR_V(WERR_OK);
+
 	/* Setup the Logon Control response */
 
-	init_net_r_logon_ctrl(r_u, q_u->query_level, flags, 
-			      pdc_connection_status);
+	switch (r->in.level) {
+		case 1:
+			info1 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_1);
+			if (!info1) {
+				return WERR_NOMEM;
+			}
+			init_netlogon_info1(info1,
+					    flags,
+					    pdc_connection_status);
+			r->out.info->info1 = info1;
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
 
-	return r_u->status;
+	return WERR_OK;
 }
 
 /****************************************************************************
@@ -80,129 +126,153 @@ static void send_sync_message(void)
 }
 
 /*************************************************************************
- net_reply_logon_ctrl2:
+ _netr_LogonControl2
  *************************************************************************/
 
-NTSTATUS _net_logon_ctrl2(pipes_struct *p, NET_Q_LOGON_CTRL2 *q_u, NET_R_LOGON_CTRL2 *r_u)
+WERROR _netr_LogonControl2(pipes_struct *p,
+			   struct netr_LogonControl2 *r)
 {
         uint32 flags = 0x0;
         uint32 pdc_connection_status = 0x0;
         uint32 logon_attempts = 0x0;
         uint32 tc_status;
-	fstring servername, domain, dc_name, dc_name2;
+	fstring dc_name, dc_name2;
 	struct sockaddr_storage dc_ss;
+	const char *domain = NULL;
+	struct netr_NETLOGON_INFO_1 *info1;
+	struct netr_NETLOGON_INFO_2 *info2;
+	struct netr_NETLOGON_INFO_3 *info3;
 
-	/* this should be \\global_myname() */
-	unistr2_to_ascii(servername, &q_u->uni_server_name, sizeof(servername));
-
-	r_u->status = NT_STATUS_OK;
-	
-	tc_status = ERROR_NO_SUCH_DOMAIN;
+	tc_status = W_ERROR_V(WERR_NO_SUCH_DOMAIN);
 	fstrcpy( dc_name, "" );
-	
-	switch ( q_u->function_code ) {
+
+	switch (r->in.function_code) {
 		case NETLOGON_CONTROL_TC_QUERY:
-			unistr2_to_ascii(domain, &q_u->info.info6.domain, sizeof(domain));
-				
+			domain = r->in.data->domain;
+
 			if ( !is_trusted_domain( domain ) )
 				break;
-				
+
 			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
-				tc_status = ERROR_NO_LOGON_SERVERS;
+				tc_status = W_ERROR_V(WERR_NO_LOGON_SERVERS);
 				break;
 			}
 
 			fstr_sprintf( dc_name, "\\\\%s", dc_name2 );
-				
-			tc_status = NO_ERROR;
-			
+
+			tc_status = W_ERROR_V(WERR_OK);
+
 			break;
-			
+
 		case NETLOGON_CONTROL_REDISCOVER:
-			unistr2_to_ascii(domain, &q_u->info.info6.domain, sizeof(domain));
-				
+			domain = r->in.data->domain;
+
 			if ( !is_trusted_domain( domain ) )
 				break;
-				
+
 			if ( !get_dc_name( domain, NULL, dc_name2, &dc_ss ) ) {
-				tc_status = ERROR_NO_LOGON_SERVERS;
+				tc_status = W_ERROR_V(WERR_NO_LOGON_SERVERS);
 				break;
 			}
 
 			fstr_sprintf( dc_name, "\\\\%s", dc_name2 );
-				
-			tc_status = NO_ERROR;
-			
+
+			tc_status = W_ERROR_V(WERR_OK);
+
 			break;
-			
+
 		default:
 			/* no idea what this should be */
-			DEBUG(0,("_net_logon_ctrl2: unimplemented function level [%d]\n",
-				q_u->function_code));
+			DEBUG(0,("_netr_LogonControl2: unimplemented function level [%d]\n",
+				r->in.function_code));
+			return WERR_UNKNOWN_LEVEL;
 	}
-	
+
 	/* prepare the response */
-	
-	init_net_r_logon_ctrl2( r_u, q_u->query_level, flags, 
-		pdc_connection_status, logon_attempts, tc_status, dc_name );
 
-        if (lp_server_role() == ROLE_DOMAIN_BDC)
+	switch (r->in.level) {
+		case 1:
+			info1 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_1);
+			W_ERROR_HAVE_NO_MEMORY(info1);
+
+			init_netlogon_info1(info1,
+					    flags,
+					    pdc_connection_status);
+			r->out.query->info1 = info1;
+			break;
+		case 2:
+			info2 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_2);
+			W_ERROR_HAVE_NO_MEMORY(info2);
+
+			init_netlogon_info2(info2,
+					    flags,
+					    pdc_connection_status,
+					    dc_name,
+					    tc_status);
+			r->out.query->info2 = info2;
+			break;
+		case 3:
+			info3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_NETLOGON_INFO_3);
+			W_ERROR_HAVE_NO_MEMORY(info3);
+
+			init_netlogon_info3(info3,
+					    flags,
+					    logon_attempts);
+			r->out.query->info3 = info3;
+			break;
+		default:
+			return WERR_UNKNOWN_LEVEL;
+	}
+
+        if (lp_server_role() == ROLE_DOMAIN_BDC) {
                 send_sync_message();
+	}
 
-	return r_u->status;
+	return WERR_OK;
 }
 
 /*************************************************************************
- net_reply_trust_dom_list:
+ _netr_NetrEnumerateTrustedDomains
  *************************************************************************/
 
-NTSTATUS _net_trust_dom_list(pipes_struct *p, NET_Q_TRUST_DOM_LIST *q_u, NET_R_TRUST_DOM_LIST *r_u)
+WERROR _netr_NetrEnumerateTrustedDomains(pipes_struct *p,
+					 struct netr_NetrEnumerateTrustedDomains *r)
 {
-	const char *trusted_domain = "test_domain";
-	uint32 num_trust_domains = 1;
+	struct netr_Blob trusted_domains_blob;
+	DATA_BLOB blob;
 
-	DEBUG(6,("_net_trust_dom_list: %d\n", __LINE__));
+	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
 
 	/* set up the Trusted Domain List response */
-	init_r_trust_dom(r_u, num_trust_domains, trusted_domain);
 
-	DEBUG(6,("_net_trust_dom_list: %d\n", __LINE__));
+	blob = data_blob_talloc_zero(p->mem_ctx, 2);
+	trusted_domains_blob.data = blob.data;
+	trusted_domains_blob.length = blob.length;
 
-	return r_u->status;
-}
+	DEBUG(6,("_netr_NetrEnumerateTrustedDomains: %d\n", __LINE__));
 
-/***********************************************************************************
- init_net_r_srv_pwset:
- ***********************************************************************************/
+	*r->out.trusted_domains_blob = trusted_domains_blob;
 
-static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
-				 DOM_CRED *srv_cred, NTSTATUS status)  
-{
-	DEBUG(5,("init_net_r_srv_pwset: %d\n", __LINE__));
-
-	memcpy(&r_s->srv_cred, srv_cred, sizeof(r_s->srv_cred));
-	r_s->status = status;
-
-	DEBUG(5,("init_net_r_srv_pwset: %d\n", __LINE__));
+	return WERR_OK;
 }
 
 /******************************************************************
  gets a machine password entry.  checks access rights of the host.
  ******************************************************************/
 
-static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
+static NTSTATUS get_md4pw(char *md4pw, const char *mach_acct, uint16 sec_chan_type)
 {
 	struct samu *sampass = NULL;
 	const uint8 *pass;
 	bool ret;
 	uint32 acct_ctrl;
-	
+
 #if 0
 	char addr[INET6_ADDRSTRLEN];
 
     /*
      * Currently this code is redundent as we already have a filter
-     * by hostname list. What this code really needs to do is to 
+     * by hostname list. What this code really needs to do is to
      * get a hosts allowed/hosts denied list from the SAM database
      * on a per user basis, and make the access decision there.
      * I will leave this code here for now as a reminder to implement
@@ -225,7 +295,7 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 	become_root();
 	ret = pdb_getsampwnam(sampass, mach_acct);
 	unbecome_root();
- 
+
  	if (!ret) {
  		DEBUG(0,("get_md4pw: Workstation %s: no account in domain\n", mach_acct));
 		TALLOC_FREE(sampass);
@@ -241,7 +311,7 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 
 	if (!(acct_ctrl & ACB_SVRTRUST) &&
 	    !(acct_ctrl & ACB_WSTRUST) &&
-	    !(acct_ctrl & ACB_DOMTRUST)) 
+	    !(acct_ctrl & ACB_DOMTRUST))
 	{
 		DEBUG(0,("get_md4pw: Workstation %s: account is not a trust account\n", mach_acct));
 		TALLOC_FREE(sampass);
@@ -287,17 +357,18 @@ static NTSTATUS get_md4pw(char *md4pw, char *mach_acct, uint16 sec_chan_type)
 	dump_data(5, (uint8 *)md4pw, 16);
 
 	TALLOC_FREE(sampass);
-	
+
 	return NT_STATUS_OK;
- 	
+
 
 }
 
 /*************************************************************************
- _net_req_chal
+ _netr_ServerReqChallenge
  *************************************************************************/
 
-NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u)
+NTSTATUS _netr_ServerReqChallenge(pipes_struct *p,
+				  struct netr_ServerReqChallenge *r)
 {
 	if (!p->dc) {
 		p->dc = TALLOC_ZERO_P(p->pipe_state_mem_ctx, struct dcinfo);
@@ -305,65 +376,53 @@ NTSTATUS _net_req_chal(pipes_struct *p, NET_Q_REQ_CHAL *q_u, NET_R_REQ_CHAL *r_u
 			return NT_STATUS_NO_MEMORY;
 		}
 	} else {
-		DEBUG(10,("_net_req_chal: new challenge requested. Clearing old state.\n"));
+		DEBUG(10,("_netr_ServerReqChallenge: new challenge requested. Clearing old state.\n"));
 		ZERO_STRUCTP(p->dc);
 	}
 
-	rpcstr_pull(p->dc->remote_machine,
-			q_u->uni_logon_clnt.buffer,
-			sizeof(fstring),q_u->uni_logon_clnt.uni_str_len*2,0);
+	fstrcpy(p->dc->remote_machine, r->in.computer_name);
 
 	/* Save the client challenge to the server. */
-	memcpy(p->dc->clnt_chal.data, q_u->clnt_chal.data, sizeof(q_u->clnt_chal.data));
+	memcpy(p->dc->clnt_chal.data, r->in.credentials->data,
+		sizeof(r->in.credentials->data));
 
 	/* Create a server challenge for the client */
 	/* Set this to a random value. */
 	generate_random_buffer(p->dc->srv_chal.data, 8);
-	
+
 	/* set up the LSA REQUEST CHALLENGE response */
-	init_net_r_req_chal(r_u, &p->dc->srv_chal, NT_STATUS_OK);
-	
+	init_net_r_req_chal(r->out.return_credentials, &p->dc->srv_chal);
+
 	p->dc->challenge_sent = True;
 
 	return NT_STATUS_OK;
 }
 
 /*************************************************************************
- init_net_r_auth:
+ _netr_ServerAuthenticate
+ Create the initial credentials.
  *************************************************************************/
 
-static void init_net_r_auth(NET_R_AUTH *r_a, DOM_CHAL *resp_cred, NTSTATUS status)
-{
-	memcpy(r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
-	r_a->status = status;
-}
-
-/*************************************************************************
- _net_auth. Create the initial credentials.
- *************************************************************************/
-
-NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
+NTSTATUS _netr_ServerAuthenticate(pipes_struct *p,
+				  struct netr_ServerAuthenticate *r)
 {
 	NTSTATUS status;
-	fstring mach_acct;
-	fstring remote_machine;
-	DOM_CHAL srv_chal_out;
+	struct netr_Credential srv_chal_out;
 
 	if (!p->dc || !p->dc->challenge_sent) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
-	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
-
-	status = get_md4pw((char *)p->dc->mach_pw, mach_acct, q_u->clnt_id.sec_chan);
+	status = get_md4pw((char *)p->dc->mach_pw,
+			   r->in.account_name,
+			   r->in.secure_channel_type);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("_net_auth: creds_server_check failed. Failed to "
+		DEBUG(0,("_netr_ServerAuthenticate: get_md4pw failed. Failed to "
 			"get password for machine account %s "
 			"from client %s: %s\n",
-			mach_acct, remote_machine, nt_errstr(status) ));
+			r->in.account_name,
+			r->in.computer_name,
+			nt_errstr(status) ));
 		/* always return NT_STATUS_ACCESS_DENIED */
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -374,110 +433,101 @@ NTSTATUS _net_auth(pipes_struct *p, NET_Q_AUTH *q_u, NET_R_AUTH *r_u)
 			&p->dc->clnt_chal,	/* Stored client chal. */
 			&p->dc->srv_chal,	/* Stored server chal. */
 			p->dc->mach_pw,
-			&srv_chal_out);	
+			&srv_chal_out);
 
 	/* Check client credentials are valid. */
-	if (!creds_server_check(p->dc, &q_u->clnt_chal)) {
-		DEBUG(0,("_net_auth: creds_server_check failed. Rejecting auth "
+	if (!netlogon_creds_server_check(p->dc, r->in.credentials)) {
+		DEBUG(0,("_netr_ServerAuthenticate: netlogon_creds_server_check failed. Rejecting auth "
 			"request from client %s machine account %s\n",
-			remote_machine, mach_acct ));
+			r->in.computer_name,
+			r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	fstrcpy(p->dc->mach_acct, mach_acct);
-	fstrcpy(p->dc->remote_machine, remote_machine);
+	fstrcpy(p->dc->mach_acct, r->in.account_name);
+	fstrcpy(p->dc->remote_machine, r->in.computer_name);
 	p->dc->authenticated = True;
 
 	/* set up the LSA AUTH response */
 	/* Return the server credentials. */
-	init_net_r_auth(r_u, &srv_chal_out, NT_STATUS_OK);
 
-	return r_u->status;
+	memcpy(r->out.return_credentials->data, &srv_chal_out.data,
+	       sizeof(r->out.return_credentials->data));
+
+	return NT_STATUS_OK;
 }
 
 /*************************************************************************
- init_net_r_auth_2:
+ _netr_ServerAuthenticate2
  *************************************************************************/
 
-static void init_net_r_auth_2(NET_R_AUTH_2 *r_a,
-                              DOM_CHAL *resp_cred, NEG_FLAGS *flgs, NTSTATUS status)
-{
-	memcpy(r_a->srv_chal.data, resp_cred->data, sizeof(resp_cred->data));
-	memcpy(&r_a->srv_flgs, flgs, sizeof(r_a->srv_flgs));
-	r_a->status = status;
-}
-
-/*************************************************************************
- _net_auth_2
- *************************************************************************/
-
-NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
+NTSTATUS _netr_ServerAuthenticate2(pipes_struct *p,
+				   struct netr_ServerAuthenticate2 *r)
 {
 	NTSTATUS status;
-	NEG_FLAGS srv_flgs;
-	fstring mach_acct;
-	fstring remote_machine;
-	DOM_CHAL srv_chal_out;
+	uint32_t srv_flgs;
+	struct netr_Credential srv_chal_out;
 
-	rpcstr_pull(mach_acct, q_u->clnt_id.uni_acct_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_acct_name.uni_str_len*2,0);
-
-	/* We use this as the key to store the creds. */
-	rpcstr_pull(remote_machine, q_u->clnt_id.uni_comp_name.buffer,sizeof(fstring),
-				q_u->clnt_id.uni_comp_name.uni_str_len*2,0);
+	/* We use this as the key to store the creds: */
+	/* r->in.computer_name */
 
 	if (!p->dc || !p->dc->challenge_sent) {
-		DEBUG(0,("_net_auth2: no challenge sent to client %s\n",
-			remote_machine ));
+		DEBUG(0,("_netr_ServerAuthenticate2: no challenge sent to client %s\n",
+			r->in.computer_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if ( (lp_server_schannel() == True) &&
-	     ((q_u->clnt_flgs.neg_flags & NETLOGON_NEG_SCHANNEL) == 0) ) {
+	if ( (lp_server_schannel() == true) &&
+	     ((*r->in.negotiate_flags & NETLOGON_NEG_SCHANNEL) == 0) ) {
 
 		/* schannel must be used, but client did not offer it. */
-		DEBUG(0,("_net_auth2: schannel required but client failed "
+		DEBUG(0,("_netr_ServerAuthenticate2: schannel required but client failed "
 			"to offer it. Client was %s\n",
-			mach_acct ));
+			r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = get_md4pw((char *)p->dc->mach_pw, mach_acct, q_u->clnt_id.sec_chan);
+	status = get_md4pw((char *)p->dc->mach_pw,
+			   r->in.account_name,
+			   r->in.secure_channel_type);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("_net_auth2: failed to get machine password for "
+		DEBUG(0,("_netr_ServerAuthenticate2: failed to get machine password for "
 			"account %s: %s\n",
-			mach_acct, nt_errstr(status) ));
+			r->in.account_name, nt_errstr(status) ));
 		/* always return NT_STATUS_ACCESS_DENIED */
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* From the client / server challenges and md4 password, generate sess key */
-	creds_server_init(q_u->clnt_flgs.neg_flags,
+	creds_server_init(*r->in.negotiate_flags,
 			p->dc,
 			&p->dc->clnt_chal,	/* Stored client chal. */
 			&p->dc->srv_chal,	/* Stored server chal. */
 			p->dc->mach_pw,
-			&srv_chal_out);	
+			&srv_chal_out);
 
 	/* Check client credentials are valid. */
-	if (!creds_server_check(p->dc, &q_u->clnt_chal)) {
-		DEBUG(0,("_net_auth2: creds_server_check failed. Rejecting auth "
+	if (!netlogon_creds_server_check(p->dc, r->in.credentials)) {
+		DEBUG(0,("_netr_ServerAuthenticate2: netlogon_creds_server_check failed. Rejecting auth "
 			"request from client %s machine account %s\n",
-			remote_machine, mach_acct ));
+			r->in.computer_name,
+			r->in.account_name));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	srv_flgs.neg_flags = 0x000001ff;
+	srv_flgs = 0x000001ff;
 
-	if (lp_server_schannel() != False) {
-		srv_flgs.neg_flags |= NETLOGON_NEG_SCHANNEL;
+	if (lp_server_schannel() != false) {
+		srv_flgs |= NETLOGON_NEG_SCHANNEL;
 	}
 
 	/* set up the LSA AUTH 2 response */
-	init_net_r_auth_2(r_u, &srv_chal_out, &srv_flgs, NT_STATUS_OK);
+	memcpy(r->out.return_credentials->data, &srv_chal_out.data,
+	       sizeof(r->out.return_credentials->data));
+	*r->out.negotiate_flags = srv_flgs;
 
-	fstrcpy(p->dc->mach_acct, mach_acct);
-	fstrcpy(p->dc->remote_machine, remote_machine);
+	fstrcpy(p->dc->mach_acct, r->in.account_name);
+	fstrcpy(p->dc->remote_machine, r->in.computer_name);
 	fstrcpy(p->dc->domain, lp_workgroup() );
 
 	p->dc->authenticated = True;
@@ -485,39 +535,40 @@ NTSTATUS _net_auth_2(pipes_struct *p, NET_Q_AUTH_2 *q_u, NET_R_AUTH_2 *r_u)
 	/* Store off the state so we can continue after client disconnect. */
 	become_root();
 	secrets_store_schannel_session_info(p->mem_ctx,
-					remote_machine,
-					p->dc);
+					    r->in.computer_name,
+					    p->dc);
 	unbecome_root();
 
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /*************************************************************************
- _net_srv_pwset
+ _netr_ServerPasswordSet
  *************************************************************************/
 
-NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *r_u)
+NTSTATUS _netr_ServerPasswordSet(pipes_struct *p,
+				 struct netr_ServerPasswordSet *r)
 {
+	NTSTATUS status = NT_STATUS_OK;
 	fstring remote_machine;
 	struct samu *sampass=NULL;
 	bool ret = False;
 	unsigned char pwd[16];
 	int i;
 	uint32 acct_ctrl;
-	DOM_CRED cred_out;
+	struct netr_Authenticator cred_out;
 	const uchar *old_pw;
 
-	DEBUG(5,("_net_srv_pwset: %d\n", __LINE__));
+	DEBUG(5,("_netr_ServerPasswordSet: %d\n", __LINE__));
 
 	/* We need the remote machine name for the creds lookup. */
-	rpcstr_pull(remote_machine,q_u->clnt_id.login.uni_comp_name.buffer,
-		    sizeof(remote_machine),q_u->clnt_id.login.uni_comp_name.uni_str_len*2,0);
+	fstrcpy(remote_machine, r->in.computer_name);
 
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
 		   obviously did not use it. */
-		DEBUG(0,("_net_srv_pwset: client %s not using schannel for netlogon\n",
+		DEBUG(0,("_netr_ServerPasswordSet: client %s not using schannel for netlogon\n",
 			remote_machine ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -538,12 +589,12 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	DEBUG(3,("_net_srv_pwset: Server Password Set by remote machine:[%s] on account [%s]\n",
+	DEBUG(3,("_netr_ServerPasswordSet: Server Password Set by remote machine:[%s] on account [%s]\n",
 			remote_machine, p->dc->mach_acct));
-	
+
 	/* Step the creds chain forward. */
-	if (!creds_server_step(p->dc, &q_u->clnt_id.cred, &cred_out)) {
-		DEBUG(2,("_net_srv_pwset: creds_server_step failed. Rejecting auth "
+	if (!netlogon_creds_server_step(p->dc, r->in.credential, &cred_out)) {
+		DEBUG(2,("_netr_ServerPasswordSet: netlogon_creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
 			remote_machine, p->dc->mach_acct ));
 		return NT_STATUS_INVALID_PARAMETER;
@@ -568,7 +619,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	}
 
 	/* Ensure the account exists and is a machine account. */
-	
+
 	acct_ctrl = pdb_get_acct_ctrl(sampass);
 
 	if (!(acct_ctrl & ACB_WSTRUST ||
@@ -577,16 +628,16 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 		TALLOC_FREE(sampass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
-	
+
 	if (pdb_get_acct_ctrl(sampass) & ACB_DISABLED) {
 		TALLOC_FREE(sampass);
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
 
 	/* Woah - what does this to to the credential chain ? JRA */
-	cred_hash3( pwd, q_u->pwd, p->dc->sess_key, 0);
+	cred_hash3(pwd, r->in.new_password->hash, p->dc->sess_key, 0);
 
-	DEBUG(100,("Server password set : new given value was :\n"));
+	DEBUG(100,("_netr_ServerPasswordSet: new given value was :\n"));
 	for(i = 0; i < sizeof(pwd); i++)
 		DEBUG(100,("%02X ", pwd[i]));
 	DEBUG(100,("\n"));
@@ -594,7 +645,7 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	old_pw = pdb_get_nt_passwd(sampass);
 
 	if (old_pw && memcmp(pwd, old_pw, 16) == 0) {
-		/* Avoid backend modificiations and other fun if the 
+		/* Avoid backend modificiations and other fun if the
 		   client changed the password to the *same thing* */
 
 		ret = True;
@@ -605,43 +656,44 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 			TALLOC_FREE(sampass);
 			return NT_STATUS_NO_MEMORY;
 		}
-		
+
 		if (!pdb_set_nt_passwd(sampass, pwd, PDB_CHANGED)) {
 			TALLOC_FREE(sampass);
 			return NT_STATUS_NO_MEMORY;
 		}
-		
+
 		if (!pdb_set_pass_last_set_time(sampass, time(NULL), PDB_CHANGED)) {
 			TALLOC_FREE(sampass);
 			/* Not quite sure what this one qualifies as, but this will do */
-			return NT_STATUS_UNSUCCESSFUL; 
+			return NT_STATUS_UNSUCCESSFUL;
 		}
-		
+
 		become_root();
-		r_u->status = pdb_update_sam_account(sampass);
+		status = pdb_update_sam_account(sampass);
 		unbecome_root();
 	}
 
 	/* set up the LSA Server Password Set response */
-	init_net_r_srv_pwset(r_u, &cred_out, r_u->status);
+
+	memcpy(r->out.return_authenticator, &cred_out,
+	       sizeof(r->out.return_authenticator));
 
 	TALLOC_FREE(sampass);
-	return r_u->status;
+	return status;
 }
 
 /*************************************************************************
- _net_sam_logoff:
+ _netr_LogonSamLogoff
  *************************************************************************/
 
-NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOFF *r_u)
+NTSTATUS _netr_LogonSamLogoff(pipes_struct *p,
+			      struct netr_LogonSamLogoff *r)
 {
-	fstring remote_machine;
-
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
 		   obviously did not use it. */
-		DEBUG(0,("_net_sam_logoff: client %s not using schannel for netlogon\n",
+		DEBUG(0,("_netr_LogonSamLogoff: client %s not using schannel for netlogon\n",
 			get_remote_machine_name() ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -650,9 +702,8 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
-	/* Get the remote machine name for the creds store. */
-	rpcstr_pull(remote_machine,q_u->sam_id.client.login.uni_comp_name.buffer,
-		    sizeof(remote_machine),q_u->sam_id.client.login.uni_comp_name.uni_str_len*2,0);
+	/* Using the remote machine name for the creds store: */
+	/* r->in.computer_name */
 
 	if (!p->dc) {
 		/* Restore the saved state of the netlogon creds. */
@@ -660,8 +711,8 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 
 		become_root();
 		ret = secrets_restore_schannel_session_info(p->pipe_state_mem_ctx,
-						remote_machine,
-						&p->dc);
+							    r->in.computer_name,
+							    &p->dc);
 		unbecome_root();
 		if (!ret) {
 			return NT_STATUS_INVALID_HANDLE;
@@ -672,25 +723,22 @@ NTSTATUS _net_sam_logoff(pipes_struct *p, NET_Q_SAM_LOGOFF *q_u, NET_R_SAM_LOGOF
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	r_u->buffer_creds = 1; /* yes, we have valid server credentials */
-
 	/* checks and updates credentials.  creates reply credentials */
-	if (!creds_server_step(p->dc, &q_u->sam_id.client.cred, &r_u->srv_creds)) {
-		DEBUG(2,("_net_sam_logoff: creds_server_step failed. Rejecting auth "
+	if (!netlogon_creds_server_step(p->dc, r->in.credential, r->out.return_authenticator)) {
+		DEBUG(2,("_netr_LogonSamLogoff: netlogon_creds_server_step failed. Rejecting auth "
 			"request from client %s machine account %s\n",
-			remote_machine, p->dc->mach_acct ));
+			r->in.computer_name, p->dc->mach_acct ));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/* We must store the creds state after an update. */
 	become_root();
 	secrets_store_schannel_session_info(p->pipe_state_mem_ctx,
-					remote_machine,
-					p->dc);
+					    r->in.computer_name,
+					    p->dc);
 	unbecome_root();
 
-	r_u->status = NT_STATUS_OK;
-	return r_u->status;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -701,7 +749,7 @@ static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
 				       const DOM_SID *domain_sid,
 				       size_t num_sids,
 				       const DOM_SID *sids,
-				       int *numgroups, DOM_GID **pgids) 
+				       int *numgroups, DOM_GID **pgids)
 {
 	int i;
 
@@ -724,53 +772,54 @@ static NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx,
 }
 
 /*************************************************************************
- _net_sam_logon
+ _netr_LogonSamLogon
  *************************************************************************/
 
-static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
-					NET_Q_SAM_LOGON *q_u,
-					NET_R_SAM_LOGON *r_u,
-					bool process_creds)
+NTSTATUS _netr_LogonSamLogon(pipes_struct *p,
+			     struct netr_LogonSamLogon *r)
 {
 	NTSTATUS status = NT_STATUS_OK;
-	NET_USER_INFO_3 *usr_info = NULL;
-	NET_ID_INFO_CTR *ctr = q_u->sam_id.ctr;
-	UNISTR2 *uni_samlogon_user = NULL;
-	UNISTR2 *uni_samlogon_domain = NULL;
-	UNISTR2 *uni_samlogon_workstation = NULL;
+	struct netr_SamInfo3 *sam3 = NULL;
+	union netr_LogonLevel *logon = r->in.logon;
 	fstring nt_username, nt_domain, nt_workstation;
 	auth_usersupplied_info *user_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 	struct samu *sampw;
 	struct auth_context *auth_context = NULL;
-	 
+	bool process_creds = true;
+
+	switch (p->hdr_req.opnum) {
+		case NDR_NETR_LOGONSAMLOGON:
+			process_creds = true;
+			break;
+		case NDR_NETR_LOGONSAMLOGONEX:
+		default:
+			process_creds = false;
+	}
+
 	if ( (lp_server_schannel() == True) && (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) ) {
 		/* 'server schannel = yes' should enforce use of
 		   schannel, the client did offer it in auth2, but
 		   obviously did not use it. */
-		DEBUG(0,("_net_sam_logon_internal: client %s not using schannel for netlogon\n",
+		DEBUG(0,("_netr_LogonSamLogon: client %s not using schannel for netlogon\n",
 			get_remote_machine_name() ));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	usr_info = TALLOC_P(p->mem_ctx, NET_USER_INFO_3);
-	if (!usr_info) {
+	sam3 = TALLOC_ZERO_P(p->mem_ctx, struct netr_SamInfo3);
+	if (!sam3) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ZERO_STRUCTP(usr_info);
-
  	/* store the user information, if there is any. */
-	r_u->user = usr_info;
-	r_u->auth_resp = 1; /* authoritative response */
-	if (q_u->validation_level != 2 && q_u->validation_level != 3) {
-		DEBUG(0,("_net_sam_logon: bad validation_level value %d.\n", (int)q_u->validation_level ));
+	r->out.validation->sam3 = sam3;
+	*r->out.authoritative = true; /* authoritative response */
+	if (r->in.validation_level != 2 && r->in.validation_level != 3) {
+		DEBUG(0,("_netr_LogonSamLogon: bad validation_level value %d.\n",
+			(int)r->in.validation_level));
 		return NT_STATUS_ACCESS_DENIED;
 	}
-	/* We handle the return of USER_INFO_2 instead of 3 in the parse return. Sucks, I know... */
-	r_u->switch_value = q_u->validation_level; /* indicates type of validation user info */
-	r_u->buffer_creds = 1; /* Ensure we always return server creds. */
- 
+
 	if (!get_valid_user_struct(p->vuid))
 		return NT_STATUS_NO_SUCH_USER;
 
@@ -781,8 +830,8 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		/* Note this is the remote machine this request is coming from (member server),
 		   not neccessarily the workstation name the user is logging onto.
 		*/
-		rpcstr_pull(remote_machine,q_u->sam_id.client.login.uni_comp_name.buffer,
-		    sizeof(remote_machine),q_u->sam_id.client.login.uni_comp_name.uni_str_len*2,0);
+
+		fstrcpy(remote_machine, r->in.computer_name);
 
 		if (!p->dc) {
 			/* Restore the saved state of the netlogon creds. */
@@ -803,8 +852,8 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		}
 
 		/* checks and updates credentials.  creates reply credentials */
-		if (!creds_server_step(p->dc, &q_u->sam_id.client.cred,  &r_u->srv_creds)) {
-			DEBUG(2,("_net_sam_logon: creds_server_step failed. Rejecting auth "
+		if (!netlogon_creds_server_step(p->dc, r->in.credential,  r->out.return_authenticator)) {
+			DEBUG(2,("_netr_LogonSamLogon: creds_server_step failed. Rejecting auth "
 				"request from client %s machine account %s\n",
 				remote_machine, p->dc->mach_acct ));
 			return NT_STATUS_INVALID_PARAMETER;
@@ -818,20 +867,25 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		unbecome_root();
 	}
 
-	switch (q_u->sam_id.logon_level) {
+	switch (r->in.logon_level) {
 	case INTERACTIVE_LOGON_TYPE:
-		uni_samlogon_user = &ctr->auth.id1.uni_user_name;
- 		uni_samlogon_domain = &ctr->auth.id1.uni_domain_name;
+		fstrcpy(nt_username,
+			logon->password->identity_info.account_name.string);
+		fstrcpy(nt_domain,
+			logon->password->identity_info.domain_name.string);
+		fstrcpy(nt_workstation,
+			logon->password->identity_info.workstation.string);
 
-                uni_samlogon_workstation = &ctr->auth.id1.uni_wksta_name;
-            
 		DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", lp_workgroup()));
 		break;
 	case NET_LOGON_TYPE:
-		uni_samlogon_user = &ctr->auth.id2.uni_user_name;
-		uni_samlogon_domain = &ctr->auth.id2.uni_domain_name;
-		uni_samlogon_workstation = &ctr->auth.id2.uni_wksta_name;
-            
+		fstrcpy(nt_username,
+			logon->network->identity_info.account_name.string);
+		fstrcpy(nt_domain,
+			logon->network->identity_info.domain_name.string);
+		fstrcpy(nt_workstation,
+			logon->network->identity_info.workstation.string);
+
 		DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", lp_workgroup()));
 		break;
 	default:
@@ -839,24 +893,23 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		return NT_STATUS_INVALID_INFO_CLASS;
 	} /* end switch */
 
-	rpcstr_pull(nt_username,uni_samlogon_user->buffer,sizeof(nt_username),uni_samlogon_user->uni_str_len*2,0);
-	rpcstr_pull(nt_domain,uni_samlogon_domain->buffer,sizeof(nt_domain),uni_samlogon_domain->uni_str_len*2,0);
-	rpcstr_pull(nt_workstation,uni_samlogon_workstation->buffer,sizeof(nt_workstation),uni_samlogon_workstation->uni_str_len*2,0);
-
 	DEBUG(3,("User:[%s@%s] Requested Domain:[%s]\n", nt_username, nt_workstation, nt_domain));
 	fstrcpy(current_user_info.smb_name, nt_username);
 	sub_set_smb_name(nt_username);
-     
-	DEBUG(5,("Attempting validation level %d for unmapped username %s.\n", q_u->sam_id.ctr->switch_value, nt_username));
+
+	DEBUG(5,("Attempting validation level %d for unmapped username %s.\n",
+		r->in.validation_level, nt_username));
 
 	status = NT_STATUS_OK;
-	
-	switch (ctr->switch_value) {
+
+	switch (r->in.logon_level) {
 	case NET_LOGON_TYPE:
 	{
 		const char *wksname = nt_workstation;
-		
-		if (!NT_STATUS_IS_OK(status = make_auth_context_fixed(&auth_context, ctr->auth.id2.lm_chal))) {
+
+		status = make_auth_context_fixed(&auth_context,
+						 logon->network->challenge);
+		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
 
@@ -867,16 +920,16 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		if (*wksname == '\\') wksname++;
 
 		/* Standard challenge/response authenticaion */
-		if (!make_user_info_netlogon_network(&user_info, 
-						     nt_username, nt_domain, 
+		if (!make_user_info_netlogon_network(&user_info,
+						     nt_username, nt_domain,
 						     wksname,
-						     ctr->auth.id2.param_ctrl,
-						     ctr->auth.id2.lm_chal_resp.buffer,
-						     ctr->auth.id2.lm_chal_resp.str_str_len,
-						     ctr->auth.id2.nt_chal_resp.buffer,
-						     ctr->auth.id2.nt_chal_resp.str_str_len)) {
+						     logon->network->identity_info.parameter_control,
+						     logon->network->lm.data,
+						     logon->network->lm.length,
+						     logon->network->nt.data,
+						     logon->network->nt.length)) {
 			status = NT_STATUS_NO_MEMORY;
-		}	
+		}
 		break;
 	}
 	case INTERACTIVE_LOGON_TYPE:
@@ -886,20 +939,20 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		   on */
 	{
 		const uint8 *chal;
-		
+
 		if (!NT_STATUS_IS_OK(status = make_auth_context_subsystem(&auth_context))) {
 			return status;
 		}
-		
+
 		chal = auth_context->get_ntlm_challenge(auth_context);
 
-		if (!make_user_info_netlogon_interactive(&user_info, 
-							 nt_username, nt_domain, 
-							 nt_workstation, 
-							 ctr->auth.id1.param_ctrl,
+		if (!make_user_info_netlogon_interactive(&user_info,
+							 nt_username, nt_domain,
+							 nt_workstation,
+							 logon->password->identity_info.parameter_control,
 							 chal,
-							 ctr->auth.id1.lm_owf.data, 
-							 ctr->auth.id1.nt_owf.data, 
+							 logon->password->lmpassword.hash,
+							 logon->password->ntpassword.hash,
 							 p->dc->sess_key)) {
 			status = NT_STATUS_NO_MEMORY;
 		}
@@ -909,29 +962,29 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		DEBUG(2,("SAM Logon: unsupported switch value\n"));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	} /* end switch */
-	
+
 	if ( NT_STATUS_IS_OK(status) ) {
-		status = auth_context->check_ntlm_password(auth_context, 
+		status = auth_context->check_ntlm_password(auth_context,
 			user_info, &server_info);
 	}
 
-	(auth_context->free)(&auth_context);	
+	(auth_context->free)(&auth_context);
 	free_user_info(&user_info);
-	
-	DEBUG(5, ("_net_sam_logon: check_password returned status %s\n", 
+
+	DEBUG(5,("_netr_LogonSamLogon: check_password returned status %s\n",
 		  nt_errstr(status)));
 
 	/* Check account and password */
-    
+
 	if (!NT_STATUS_IS_OK(status)) {
-		/* If we don't know what this domain is, we need to 
-		   indicate that we are not authoritative.  This 
-		   allows the client to decide if it needs to try 
+		/* If we don't know what this domain is, we need to
+		   indicate that we are not authoritative.  This
+		   allows the client to decide if it needs to try
 		   a local user.  Fix by jpjanosi@us.ibm.com, #2976 */
-                if ( NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER) 
+                if ( NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)
 		     && !strequal(nt_domain, get_global_sam_name())
 		     && !is_trusted_domain(nt_domain) )
-			r_u->auth_resp = 0; /* We are not authoritative */
+			*r->out.authoritative = false; /* We are not authoritative */
 
 		TALLOC_FREE(server_info);
 		return status;
@@ -939,7 +992,7 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 
 	if (server_info->guest) {
 		/* We don't like guest domain logons... */
-		DEBUG(5,("_net_sam_logon: Attempted domain logon as GUEST "
+		DEBUG(5,("_netr_LogonSamLogon: Attempted domain logon as GUEST "
 			 "denied.\n"));
 		TALLOC_FREE(server_info);
 		return NT_STATUS_LOGON_FAILURE;
@@ -958,29 +1011,40 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 
 		int num_gids = 0;
 		const char *my_name;
-		unsigned char user_session_key[16];
-		unsigned char lm_session_key[16];
+
+		struct netr_UserSessionKey user_session_key;
+		struct netr_LMSessionKey lm_session_key;
 		unsigned char pipe_session_key[16];
 
-		sampw = server_info->sam_account;
+		NTTIME last_logon, last_logoff, acct_expiry, last_password_change;
+		NTTIME allow_password_change, force_password_change;
+		struct samr_RidWithAttributeArray groups;
+		int i;
+		struct dom_sid2 *sid = NULL;
 
-		/* set up pointer indicating user/password failed to be
-		 * found */
-		usr_info->ptr_user_info = 0;
+		ZERO_STRUCT(user_session_key);
+		ZERO_STRUCT(lm_session_key);
+
+		sampw = server_info->sam_account;
 
 		user_sid = pdb_get_user_sid(sampw);
 		group_sid = pdb_get_group_sid(sampw);
 
 		if ((user_sid == NULL) || (group_sid == NULL)) {
-			DEBUG(1, ("_net_sam_logon: User without group or user SID\n"));
+			DEBUG(1, ("_netr_LogonSamLogon: User without group or user SID\n"));
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 
 		sid_copy(&domain_sid, user_sid);
 		sid_split_rid(&domain_sid, &user_rid);
 
+		sid = sid_dup_talloc(p->mem_ctx, &domain_sid);
+		if (!sid) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
 		if (!sid_peek_check_rid(&domain_sid, group_sid, &group_rid)) {
-			DEBUG(1, ("_net_sam_logon: user %s\\%s has user sid "
+			DEBUG(1, ("_netr_LogonSamLogon: user %s\\%s has user sid "
 				  "%s\n but group sid %s.\n"
 				  "The conflicting domain portions are not "
 				  "supported for NETLOGON calls\n",
@@ -1007,9 +1071,9 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 		}
 
 		if (server_info->user_session_key.length) {
-			memcpy(user_session_key,
+			memcpy(user_session_key.key,
 			       server_info->user_session_key.data,
-			       MIN(sizeof(user_session_key),
+			       MIN(sizeof(user_session_key.key),
 				   server_info->user_session_key.length));
 			if (process_creds) {
 				/* Get the pipe session key from the creds. */
@@ -1021,13 +1085,13 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 				}
 				memcpy(pipe_session_key, p->auth.a_u.schannel_auth->sess_key, 16);
 			}
-			SamOEMhash(user_session_key, pipe_session_key, 16);
+			SamOEMhash(user_session_key.key, pipe_session_key, 16);
 			memset(pipe_session_key, '\0', 16);
 		}
 		if (server_info->lm_session_key.length) {
-			memcpy(lm_session_key,
+			memcpy(lm_session_key.key,
 			       server_info->lm_session_key.data,
-			       MIN(sizeof(lm_session_key),
+			       MIN(sizeof(lm_session_key.key),
 				   server_info->lm_session_key.length));
 			if (process_creds) {
 				/* Get the pipe session key from the creds. */
@@ -1039,36 +1103,56 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 				}
 				memcpy(pipe_session_key, p->auth.a_u.schannel_auth->sess_key, 16);
 			}
-			SamOEMhash(lm_session_key, pipe_session_key, 16);
+			SamOEMhash(lm_session_key.key, pipe_session_key, 16);
 			memset(pipe_session_key, '\0', 16);
 		}
 
-		init_net_user_info3(p->mem_ctx, usr_info,
-				    user_rid,
-				    group_rid,
-				    pdb_get_username(sampw),
-				    pdb_get_fullname(sampw),
-				    pdb_get_homedir(sampw),
-				    pdb_get_dir_drive(sampw),
-				    pdb_get_logon_script(sampw),
-				    pdb_get_profile_path(sampw),
-				    pdb_get_logon_time(sampw),
-				    get_time_t_max(),
-				    get_time_t_max(),
-				    pdb_get_pass_last_set_time(sampw),
-				    pdb_get_pass_can_change_time(sampw),
-				    pdb_get_pass_must_change_time(sampw),
-				    0, /* logon_count */
-				    0, /* bad_pw_count */
-				    num_gids,    /* uint32 num_groups */
-				    gids    , /* DOM_GID *gids */
-				    LOGON_EXTRA_SIDS, /* uint32 user_flgs (?) */
-				    pdb_get_acct_ctrl(sampw),
-				    server_info->user_session_key.length ? user_session_key : NULL,
-				    server_info->lm_session_key.length ? lm_session_key : NULL,
-				    my_name     , /* char *logon_srv */
-				    pdb_get_domain(sampw),
-				    &domain_sid);     /* DOM_SID *dom_sid */
+		groups.count = num_gids;
+		groups.rids = TALLOC_ARRAY(p->mem_ctx, struct samr_RidWithAttribute,
+					   groups.count);
+		if (!groups.rids) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (i=0; i < groups.count; i++) {
+			groups.rids[i].rid = gids[i].g_rid;
+			groups.rids[i].attributes = gids[i].attr;
+		}
+
+		unix_to_nt_time(&last_logon, pdb_get_logon_time(sampw));
+		unix_to_nt_time(&last_logoff, get_time_t_max());
+		unix_to_nt_time(&acct_expiry, get_time_t_max());
+		unix_to_nt_time(&last_password_change, pdb_get_pass_last_set_time(sampw));
+		unix_to_nt_time(&allow_password_change, pdb_get_pass_can_change_time(sampw));
+		unix_to_nt_time(&force_password_change, pdb_get_pass_must_change_time(sampw));
+
+		init_netr_SamInfo3(sam3,
+				   last_logon,
+				   last_logoff,
+				   acct_expiry,
+				   last_password_change,
+				   allow_password_change,
+				   force_password_change,
+				   talloc_strdup(p->mem_ctx, pdb_get_username(sampw)),
+				   talloc_strdup(p->mem_ctx, pdb_get_fullname(sampw)),
+				   talloc_strdup(p->mem_ctx, pdb_get_logon_script(sampw)),
+				   talloc_strdup(p->mem_ctx, pdb_get_profile_path(sampw)),
+				   talloc_strdup(p->mem_ctx, pdb_get_homedir(sampw)),
+				   talloc_strdup(p->mem_ctx, pdb_get_dir_drive(sampw)),
+				   0, /* logon_count */
+				   0, /* bad_password_count */
+				   user_rid,
+				   group_rid,
+				   groups,
+				   NETLOGON_EXTRA_SIDS,
+				   user_session_key,
+				   my_name,
+				   talloc_strdup(p->mem_ctx, pdb_get_domain(sampw)),
+				   sid,
+				   lm_session_key,
+				   pdb_get_acct_ctrl(sampw),
+				   0, /* sidcount */
+				   NULL); /* struct netr_SidAttr *sids */
 		ZERO_STRUCT(user_session_key);
 		ZERO_STRUCT(lm_session_key);
 	}
@@ -1077,25 +1161,14 @@ static NTSTATUS _net_sam_logon_internal(pipes_struct *p,
 }
 
 /*************************************************************************
- _net_sam_logon
+ _netr_LogonSamLogonEx
+ - no credential chaining. Map into net sam logon.
  *************************************************************************/
 
-NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *r_u)
+NTSTATUS _netr_LogonSamLogonEx(pipes_struct *p,
+			       struct netr_LogonSamLogonEx *r)
 {
-	return _net_sam_logon_internal(p, q_u, r_u, True);
-}
- 
-/*************************************************************************
- _net_sam_logon_ex - no credential chaining. Map into net sam logon.
- *************************************************************************/
-
-NTSTATUS _net_sam_logon_ex(pipes_struct *p, NET_Q_SAM_LOGON_EX *q_u, NET_R_SAM_LOGON_EX *r_u)
-{
-	NET_Q_SAM_LOGON q;
-	NET_R_SAM_LOGON r;
-
-	ZERO_STRUCT(q);
-	ZERO_STRUCT(r);
+	struct netr_LogonSamLogon q;
 
 	/* Only allow this if the pipe is protected. */
 	if (p->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
@@ -1104,43 +1177,409 @@ NTSTATUS _net_sam_logon_ex(pipes_struct *p, NET_Q_SAM_LOGON_EX *q_u, NET_R_SAM_L
 		return NT_STATUS_INVALID_PARAMETER;
         }
 
-	/* Map a NET_Q_SAM_LOGON_EX to NET_Q_SAM_LOGON. */
-	q.validation_level = q_u->validation_level;
+	q.in.server_name 	= r->in.server_name;
+	q.in.computer_name	= r->in.computer_name;
+	q.in.logon_level	= r->in.logon_level;
+	q.in.logon		= r->in.logon;
+	q.in.validation_level	= r->in.validation_level;
+	/* we do not handle the flags */
+	/*			= r->in.flags; */
 
- 	/* Map a DOM_SAM_INFO_EX into a DOM_SAM_INFO with no creds. */
-	q.sam_id.client.login = q_u->sam_id.client;
-	q.sam_id.logon_level = q_u->sam_id.logon_level;
-	q.sam_id.ctr = q_u->sam_id.ctr;
+	q.out.validation	= r->out.validation;
+	q.out.authoritative	= r->out.authoritative;
+	/* we do not handle the flags */
+	/*			= r->out.flags; */
 
-	r_u->status = _net_sam_logon_internal(p, &q, &r, False);
-
-	if (!NT_STATUS_IS_OK(r_u->status)) {
-		return r_u->status;
-	}
-
-	/* Map the NET_R_SAM_LOGON to NET_R_SAM_LOGON_EX. */
-	r_u->switch_value = r.switch_value;
-	r_u->user = r.user;
-	r_u->auth_resp = r.auth_resp;
-	r_u->flags = 0; /* FIXME ! */
-	return r_u->status;
+	return _netr_LogonSamLogon(p, &q);
 }
 
 /*************************************************************************
  _ds_enum_dom_trusts
  *************************************************************************/
 #if 0	/* JERRY -- not correct */
-NTSTATUS _ds_enum_dom_trusts(pipes_struct *p, DS_Q_ENUM_DOM_TRUSTS *q_u,
+ NTSTATUS _ds_enum_dom_trusts(pipes_struct *p, DS_Q_ENUM_DOM_TRUSTS *q_u,
 			     DS_R_ENUM_DOM_TRUSTS *r_u)
 {
 	NTSTATUS status = NT_STATUS_OK;
 
-	/* TODO: According to MSDN, the can only be executed against a 
+	/* TODO: According to MSDN, the can only be executed against a
 	   DC or domain member running Windows 2000 or later.  Need
-	   to test against a standalone 2k server and see what it 
-	   does.  A windows 2000 DC includes its own domain in the 
+	   to test against a standalone 2k server and see what it
+	   does.  A windows 2000 DC includes its own domain in the
 	   list.  --jerry */
 
 	return status;
 }
 #endif	/* JERRY */
+
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_LogonUasLogon(pipes_struct *p,
+			   struct netr_LogonUasLogon *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_LogonUasLogoff(pipes_struct *p,
+			    struct netr_LogonUasLogoff *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_DatabaseDeltas(pipes_struct *p,
+			      struct netr_DatabaseDeltas *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_DatabaseSync(pipes_struct *p,
+			    struct netr_DatabaseSync *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_AccountDeltas(pipes_struct *p,
+			     struct netr_AccountDeltas *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_AccountSync(pipes_struct *p,
+			   struct netr_AccountSync *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_GetDcName(pipes_struct *p,
+		       struct netr_GetDcName *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_GetAnyDCName(pipes_struct *p,
+			  struct netr_GetAnyDCName *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_DatabaseSync2(pipes_struct *p,
+			     struct netr_DatabaseSync2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_DatabaseRedo(pipes_struct *p,
+			    struct netr_DatabaseRedo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_LogonControl2Ex(pipes_struct *p,
+			     struct netr_LogonControl2Ex *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRGetDCName(pipes_struct *p,
+			  struct netr_DsRGetDCName *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRLOGONDUMMYROUTINE1(pipes_struct *p,
+				    struct netr_NETRLOGONDUMMYROUTINE1 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRLOGONSETSERVICEBITS(pipes_struct *p,
+				     struct netr_NETRLOGONSETSERVICEBITS *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_LogonGetTrustRid(pipes_struct *p,
+			      struct netr_LogonGetTrustRid *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRLOGONCOMPUTESERVERDIGEST(pipes_struct *p,
+					  struct netr_NETRLOGONCOMPUTESERVERDIGEST *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRLOGONCOMPUTECLIENTDIGEST(pipes_struct *p,
+					  struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_ServerAuthenticate3(pipes_struct *p,
+				   struct netr_ServerAuthenticate3 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRGetDCNameEx(pipes_struct *p,
+			    struct netr_DsRGetDCNameEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRGetSiteName(pipes_struct *p,
+			    struct netr_DsRGetSiteName *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_LogonGetDomainInfo(pipes_struct *p,
+				  struct netr_LogonGetDomainInfo *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_ServerPasswordSet2(pipes_struct *p,
+				  struct netr_ServerPasswordSet2 *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_ServerPasswordGet(pipes_struct *p,
+			       struct netr_ServerPasswordGet *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRLOGONSENDTOSAM(pipes_struct *p,
+				struct netr_NETRLOGONSENDTOSAM *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRAddressToSitenamesW(pipes_struct *p,
+				    struct netr_DsRAddressToSitenamesW *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRGetDCNameEx2(pipes_struct *p,
+			     struct netr_DsRGetDCNameEx2 *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(pipes_struct *p,
+						 struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NetrEnumerateTrustedDomainsEx(pipes_struct *p,
+					   struct netr_NetrEnumerateTrustedDomainsEx *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRAddressToSitenamesExW(pipes_struct *p,
+				      struct netr_DsRAddressToSitenamesExW *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsrGetDcSiteCoverageW(pipes_struct *p,
+				   struct netr_DsrGetDcSiteCoverageW *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsrEnumerateDomainTrusts(pipes_struct *p,
+				      struct netr_DsrEnumerateDomainTrusts *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsrDeregisterDNSHostRecords(pipes_struct *p,
+					 struct netr_DsrDeregisterDNSHostRecords *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_ServerTrustPasswordsGet(pipes_struct *p,
+				       struct netr_ServerTrustPasswordsGet *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_DsRGetForestTrustInformation(pipes_struct *p,
+					  struct netr_DsRGetForestTrustInformation *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_GetForestTrustInformation(pipes_struct *p,
+				       struct netr_GetForestTrustInformation *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+NTSTATUS _netr_LogonSamLogonWithFlags(pipes_struct *p,
+				      struct netr_LogonSamLogonWithFlags *r)
+{
+	p->rng_fault_state = true;
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/****************************************************************
+****************************************************************/
+
+WERROR _netr_NETRSERVERGETTRUSTINFO(pipes_struct *p,
+				    struct netr_NETRSERVERGETTRUSTINFO *r)
+{
+	p->rng_fault_state = true;
+	return WERR_NOT_SUPPORTED;
+}
+

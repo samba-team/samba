@@ -5,7 +5,7 @@
    Copyright (C) Stefan (metze) Metzmacher	2003
    Copyright (C) Volker Lendecke		2005-2007
    Copyright (C) Steve French			2005
-   Copyright (C) James Peach			2007
+   Copyright (C) James Peach			2006-2007
 
    Extensively modified by Andrew Tridgell, 1995
 
@@ -105,17 +105,22 @@ static bool samba_private_attr_name(const char *unix_ea_name)
 
 	for (i = 0; prohibited_ea_names[i]; i++) {
 		if (strequal( prohibited_ea_names[i], unix_ea_name))
-			return True;
+			return true;
 	}
-	return False;
+	if (StrnCaseCmp(unix_ea_name, SAMBA_XATTR_DOSSTREAM_PREFIX,
+			strlen(SAMBA_XATTR_DOSSTREAM_PREFIX)) == 0) {
+		return true;
+	}
+	return false;
 }
 
 /****************************************************************************
  Get one EA value. Fill in a struct ea_struct.
 ****************************************************************************/
 
-static bool get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_struct *fsp,
-				const char *fname, char *ea_name, struct ea_struct *pea)
+NTSTATUS get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn,
+		      files_struct *fsp, const char *fname,
+		      const char *ea_name, struct ea_struct *pea)
 {
 	/* Get the value of this xattr. Max size is 64k. */
 	size_t attr_size = 256;
@@ -126,7 +131,7 @@ static bool get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 
 	val = TALLOC_REALLOC_ARRAY(mem_ctx, val, char, attr_size);
 	if (!val) {
-		return False;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	if (fsp && fsp->fh->fd != -1) {
@@ -141,7 +146,7 @@ static bool get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 	}
 
 	if (sizeret == -1) {
-		return False;
+		return map_nt_error_from_unix(errno);
 	}
 
 	DEBUG(10,("get_ea_value: EA %s is of length %u\n", ea_name, (unsigned int)sizeret));
@@ -149,13 +154,124 @@ static bool get_ea_value(TALLOC_CTX *mem_ctx, connection_struct *conn, files_str
 
 	pea->flags = 0;
 	if (strnequal(ea_name, "user.", 5)) {
-		pea->name = &ea_name[5];
+		pea->name = talloc_strdup(mem_ctx, &ea_name[5]);
 	} else {
-		pea->name = ea_name;
+		pea->name = talloc_strdup(mem_ctx, ea_name);
+	}
+	if (pea->name == NULL) {
+		TALLOC_FREE(val);
+		return NT_STATUS_NO_MEMORY;
 	}
 	pea->value.data = (unsigned char *)val;
 	pea->value.length = (size_t)sizeret;
-	return True;
+	return NT_STATUS_OK;
+}
+
+NTSTATUS get_ea_names_from_file(TALLOC_CTX *mem_ctx, connection_struct *conn,
+				files_struct *fsp, const char *fname,
+				char ***pnames, size_t *pnum_names)
+{
+	/* Get a list of all xattrs. Max namesize is 64k. */
+	size_t ea_namelist_size = 1024;
+	char *ea_namelist = NULL;
+
+	char *p;
+	char **names, **tmp;
+	size_t num_names;
+	ssize_t sizeret;
+
+	if (!lp_ea_support(SNUM(conn))) {
+		*pnames = NULL;
+		*pnum_names = 0;
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * TALLOC the result early to get the talloc hierarchy right.
+	 */
+
+	names = TALLOC_ARRAY(mem_ctx, char *, 1);
+	if (names == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	while (ea_namelist_size <= 65536) {
+
+		ea_namelist = TALLOC_REALLOC_ARRAY(
+			names, ea_namelist, char, ea_namelist_size);
+		if (ea_namelist == NULL) {
+			DEBUG(0, ("talloc failed\n"));
+			TALLOC_FREE(names);
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		if (fsp && fsp->fh->fd != -1) {
+			sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist,
+						     ea_namelist_size);
+		} else {
+			sizeret = SMB_VFS_LISTXATTR(conn, fname, ea_namelist,
+						    ea_namelist_size);
+		}
+
+		if ((sizeret == -1) && (errno == ERANGE)) {
+			ea_namelist_size *= 2;
+		}
+		else {
+			break;
+		}
+	}
+
+	if (sizeret == -1) {
+		TALLOC_FREE(names);
+		return map_nt_error_from_unix(errno);
+	}
+
+	DEBUG(10, ("get_ea_list_from_file: ea_namelist size = %u\n",
+		   (unsigned int)sizeret));
+
+	if (sizeret == 0) {
+		TALLOC_FREE(names);
+		*pnames = NULL;
+		*pnum_names = 0;
+		return NT_STATUS_OK;
+	}
+
+	/*
+	 * Ensure the result is 0-terminated
+	 */
+
+	if (ea_namelist[sizeret-1] != '\0') {
+		TALLOC_FREE(names);
+		return NT_STATUS_INTERNAL_ERROR;
+	}
+
+	/*
+	 * count the names
+	 */
+	num_names = 0;
+
+	for (p = ea_namelist; p - ea_namelist < sizeret; p += strlen(p)+1) {
+		num_names += 1;
+	}
+
+	tmp = TALLOC_REALLOC_ARRAY(mem_ctx, names, char *, num_names);
+	if (tmp == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		TALLOC_FREE(names);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	names = tmp;
+	num_names = 0;
+
+	for (p = ea_namelist; p - ea_namelist < sizeret; p += strlen(p)+1) {
+		names[num_names++] = p;
+	}
+
+	*pnames = names;
+	*pnum_names = num_names;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -166,12 +282,10 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 					const char *fname, size_t *pea_total_len)
 {
 	/* Get a list of all xattrs. Max namesize is 64k. */
-	size_t ea_namelist_size = 1024;
-	char *ea_namelist;
-	char *p;
-	ssize_t sizeret;
-	int i;
+	size_t i, num_names;
+	char **names;
 	struct ea_list *ea_list_head = NULL;
+	NTSTATUS status;
 
 	*pea_total_len = 0;
 
@@ -179,63 +293,53 @@ static struct ea_list *get_ea_list_from_file(TALLOC_CTX *mem_ctx, connection_str
 		return NULL;
 	}
 
-	for (i = 0, ea_namelist = TALLOC_ARRAY(mem_ctx, char, ea_namelist_size); i < 6;
-	     ea_namelist = TALLOC_REALLOC_ARRAY(mem_ctx, ea_namelist, char, ea_namelist_size), i++) {
+	status = get_ea_names_from_file(talloc_tos(), conn, fsp, fname,
+					&names, &num_names);
 
-		if (!ea_namelist) {
+	if (!NT_STATUS_IS_OK(status) || (num_names == 0)) {
+		return NULL;
+	}
+
+	for (i=0; i<num_names; i++) {
+		struct ea_list *listp;
+		fstring dos_ea_name;
+
+		if (strnequal(names[i], "system.", 7)
+		    || samba_private_attr_name(names[i]))
+			continue;
+
+		listp = TALLOC_P(mem_ctx, struct ea_list);
+		if (listp == NULL) {
 			return NULL;
 		}
 
-		if (fsp && fsp->fh->fd != -1) {
-			sizeret = SMB_VFS_FLISTXATTR(fsp, ea_namelist, ea_namelist_size);
-		} else {
-			sizeret = SMB_VFS_LISTXATTR(conn, fname, ea_namelist, ea_namelist_size);
+		if (!NT_STATUS_IS_OK(get_ea_value(mem_ctx, conn, fsp,
+						  fname, names[i],
+						  &listp->ea))) {
+			return NULL;
 		}
 
-		if (sizeret == -1 && errno == ERANGE) {
-			ea_namelist_size *= 2;
-		} else {
-			break;
-		}
+		push_ascii_fstring(dos_ea_name, listp->ea.name);
+
+		*pea_total_len +=
+			4 + strlen(dos_ea_name) + 1 + listp->ea.value.length;
+
+		DEBUG(10,("get_ea_list_from_file: total_len = %u, %s, val len "
+			  "= %u\n", (unsigned int)*pea_total_len, dos_ea_name,
+			  (unsigned int)listp->ea.value.length));
+
+		DLIST_ADD_END(ea_list_head, listp, struct ea_list *);
+
 	}
 
-	if (sizeret == -1)
-		return NULL;
-
-	DEBUG(10,("get_ea_list_from_file: ea_namelist size = %u\n", (unsigned int)sizeret ));
-
-	if (sizeret) {
-		for (p = ea_namelist; p - ea_namelist < sizeret; p += strlen(p) + 1) {
-			struct ea_list *listp;
-
-			if (strnequal(p, "system.", 7) || samba_private_attr_name(p))
-				continue;
-
-			listp = TALLOC_P(mem_ctx, struct ea_list);
-			if (!listp)
-				return NULL;
-
-			if (!get_ea_value(mem_ctx, conn, fsp, fname, p, &listp->ea)) {
-				return NULL;
-			}
-
-			{
-				fstring dos_ea_name;
-				push_ascii_fstring(dos_ea_name, listp->ea.name);
-				*pea_total_len += 4 + strlen(dos_ea_name) + 1 + listp->ea.value.length;
-				DEBUG(10,("get_ea_list_from_file: total_len = %u, %s, val len = %u\n",
-					(unsigned int)*pea_total_len, dos_ea_name,
-					(unsigned int)listp->ea.value.length ));
-			}
-			DLIST_ADD_END(ea_list_head, listp, struct ea_list *);
-		}
-		/* Add on 4 for total length. */
-		if (*pea_total_len) {
-			*pea_total_len += 4;
-		}
+	/* Add on 4 for total length. */
+	if (*pea_total_len) {
+		*pea_total_len += 4;
 	}
 
-	DEBUG(10,("get_ea_list_from_file: total_len = %u\n", (unsigned int)*pea_total_len));
+	DEBUG(10, ("get_ea_list_from_file: total_len = %u\n",
+		   (unsigned int)*pea_total_len));
+
 	return ea_list_head;
 }
 
@@ -913,7 +1017,7 @@ static void call_trans2open(connection_struct *conn,
 	}
 
 	size = get_file_size(sbuf);
-	fattr = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
 	mtime = sbuf.st_mtime;
 	inode = sbuf.st_ino;
 	if (fattr & aDIR) {
@@ -950,7 +1054,7 @@ static void call_trans2open(connection_struct *conn,
 	SIVAL(params,20,inode);
 	SSVAL(params,24,0); /* Padding. */
 	if (flags & 8) {
-		uint32 ea_size = estimate_ea_size(conn, fsp, fname);
+		uint32 ea_size = estimate_ea_size(conn, fsp, fsp->fsp_name);
 		SIVAL(params, 26, ea_size);
 	} else {
 		SIVAL(params, 26, 0);
@@ -2355,6 +2459,41 @@ unsigned char *create_volume_objectid(connection_struct *conn, unsigned char obj
 	return objid;
 }
 
+static void samba_extended_info_version(struct smb_extended_info *extended_info)
+{
+	SMB_ASSERT(extended_info != NULL);
+
+	extended_info->samba_magic = SAMBA_EXTENDED_INFO_MAGIC;
+	extended_info->samba_version = ((SAMBA_VERSION_MAJOR & 0xff) << 24)
+				       | ((SAMBA_VERSION_MINOR & 0xff) << 16)
+				       | ((SAMBA_VERSION_RELEASE & 0xff) << 8);
+#ifdef SAMBA_VERSION_REVISION
+	extended_info->samba_version |= (tolower(*SAMBA_VERSION_REVISION) - 'a' + 1) & 0xff;
+#endif
+	extended_info->samba_subversion = 0;
+#ifdef SAMBA_VERSION_RC_RELEASE
+	extended_info->samba_subversion |= (SAMBA_VERSION_RC_RELEASE & 0xff) << 24;
+#else
+#ifdef SAMBA_VERSION_PRE_RELEASE
+	extended_info->samba_subversion |= (SAMBA_VERSION_PRE_RELEASE & 0xff) << 16;
+#endif
+#endif
+#ifdef SAMBA_VERSION_VENDOR_PATCH
+	extended_info->samba_subversion |= (SAMBA_VERSION_VENDOR_PATCH & 0xffff);
+#endif
+	extended_info->samba_gitcommitdate = 0;
+#ifdef SAMBA_VERSION_GIT_COMMIT_TIME
+	unix_to_nt_time(&extended_info->samba_gitcommitdate, SAMBA_VERSION_GIT_COMMIT_TIME);
+#endif
+
+	memset(extended_info->samba_version_string, 0,
+	       sizeof(extended_info->samba_version_string));
+
+	snprintf (extended_info->samba_version_string,
+		  sizeof(extended_info->samba_version_string),
+		  "%s", samba_version_string());
+}
+
 /****************************************************************************
  Reply to a TRANS2_QFSINFO (query filesystem info).
 ****************************************************************************/
@@ -2373,8 +2512,8 @@ static void call_trans2qfsinfo(connection_struct *conn,
 	const char *vname = volume_label(SNUM(conn));
 	int snum = SNUM(conn);
 	char *fstype = lp_fstype(SNUM(conn));
-	int quota_flag = 0;
-
+	uint32 additional_flags = 0;
+	
 	if (total_params < 2) {
 		reply_nterror(req, NT_STATUS_INVALID_PARAMETER);
 		return;
@@ -2487,16 +2626,21 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)st.st_dev, (unsi
 		case SMB_QUERY_FS_ATTRIBUTE_INFO:
 		case SMB_FS_ATTRIBUTE_INFORMATION:
 
-
+			additional_flags = 0;
 #if defined(HAVE_SYS_QUOTAS)
-			quota_flag = FILE_VOLUME_QUOTAS;
+			additional_flags |= FILE_VOLUME_QUOTAS;
 #endif
 
+			if(lp_nt_acl_support(SNUM(conn))) {
+				additional_flags |= FILE_PERSISTENT_ACLS;
+			}
+
+			/* Capabilities are filled in at connection time through STATVFS call */
+			additional_flags |= conn->fs_capabilities;
+
 			SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
-				(lp_nt_acl_support(SNUM(conn)) ? FILE_PERSISTENT_ACLS : 0)|
-				FILE_SUPPORTS_OBJECT_IDS|
-				FILE_UNICODE_ON_DISK|
-				quota_flag); /* FS ATTRIBUTES */
+				FILE_SUPPORTS_OBJECT_IDS|FILE_UNICODE_ON_DISK|
+				additional_flags); /* FS ATTRIBUTES */
 
 			SIVAL(pdata,4,255); /* Max filename component length */
 			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
@@ -2688,7 +2832,14 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
 		case SMB_FS_OBJECTID_INFORMATION:
 		{
 			unsigned char objid[16];
+			struct smb_extended_info extended_info;
 			memcpy(pdata,create_volume_objectid(conn, objid),16);
+			samba_extended_info_version (&extended_info);
+			SIVAL(pdata,16,extended_info.samba_magic);
+			SIVAL(pdata,20,extended_info.samba_version);
+			SIVAL(pdata,24,extended_info.samba_subversion);
+			SBIG_UINT(pdata,28,extended_info.samba_gitcommitdate);
+			memcpy(pdata+36,extended_info.samba_version_string,28);
 			data_len = 64;
 			break;
 		}
@@ -3463,6 +3614,72 @@ static char *store_file_unix_basic_info2(connection_struct *conn,
 	return pdata;
 }
 
+static NTSTATUS marshall_stream_info(unsigned int num_streams,
+				     const struct stream_struct *streams,
+				     char *data,
+				     unsigned int max_data_bytes,
+				     unsigned int *data_size)
+{
+	unsigned int i;
+	unsigned int ofs = 0;
+
+	for (i=0; i<num_streams; i++) {
+		unsigned int next_offset;
+		size_t namelen;
+		smb_ucs2_t *namebuf;
+
+		namelen = push_ucs2_talloc(talloc_tos(), &namebuf,
+					    streams[i].name);
+
+		if ((namelen == (size_t)-1) || (namelen <= 2)) {
+			return NT_STATUS_INVALID_PARAMETER;
+		}
+
+		/*
+		 * name_buf is now null-terminated, we need to marshall as not
+		 * terminated
+		 */
+
+		namelen -= 2;
+
+		if (ofs + 24 + namelen > max_data_bytes) {
+			TALLOC_FREE(namebuf);
+			return NT_STATUS_BUFFER_TOO_SMALL;
+		}
+
+		SIVAL(data, ofs+4, namelen);
+		SOFF_T(data, ofs+8, streams[i].size);
+		SOFF_T(data, ofs+16, streams[i].alloc_size);
+		memcpy(data+ofs+24, namebuf, namelen);
+		TALLOC_FREE(namebuf);
+
+		next_offset = ofs + 24 + namelen;
+
+		if (i == num_streams-1) {
+			SIVAL(data, ofs, 0);
+		}
+		else {
+			unsigned int align = ndr_align_size(next_offset, 8);
+
+			if (next_offset + align > max_data_bytes) {
+				return NT_STATUS_BUFFER_TOO_SMALL;
+			}
+
+			memset(data+next_offset, 0, align);
+			next_offset += align;
+
+			SIVAL(data, ofs, next_offset - ofs);
+			ofs = next_offset;
+		}
+
+		ofs = next_offset;
+	}
+
+	*data_size = ofs;
+
+	return NT_STATUS_OK;
+}
+
 /****************************************************************************
  Reply to a TRANSACT2_QFILEINFO on a PIPE !
 ****************************************************************************/
@@ -3738,17 +3955,6 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 		}
 	}
 
-	nlink = sbuf.st_nlink;
-
-	if ((nlink > 0) && S_ISDIR(sbuf.st_mode)) {
-		/* NTFS does not seem to count ".." */
-		nlink -= 1;
-	}
-
-	if ((nlink > 0) && delete_pending) {
-		nlink -= 1;
-	}
-
 	if (INFO_LEVEL_IS_UNIX(info_level) && !lp_unix_extensions()) {
 		reply_nterror(req, NT_STATUS_INVALID_LEVEL);
 		return;
@@ -3766,6 +3972,16 @@ static void call_trans2qfilepathinfo(connection_struct *conn,
 	mode = dos_mode(conn,fname,&sbuf);
 	if (!mode)
 		mode = FILE_ATTRIBUTE_NORMAL;
+
+	nlink = sbuf.st_nlink;
+
+	if (nlink && (mode&aDIR)) {
+		nlink = 1;
+	}
+
+	if ((nlink > 0) && delete_pending) {
+		nlink -= 1;
+	}
 
 	fullpathname = fname;
 	if (!(mode & aDIR))
@@ -4161,28 +4377,49 @@ total_data=%u (should be %u)\n", (unsigned int)total_data, (unsigned int)IVAL(pd
 			data_size = 4;
 			break;
 
-#if 0
 		/*
-		 * NT4 server just returns "invalid query" to this - if we try to answer
-		 * it then NTws gets a BSOD! (tridge).
-		 * W2K seems to want this. JRA.
+		 * NT4 server just returns "invalid query" to this - if we try
+		 * to answer it then NTws gets a BSOD! (tridge).  W2K seems to
+		 * want this. JRA.
+		 */
+		/* The first statement above is false - verified using Thursby
+		 * client against NT4 -- gcolley.
 		 */
 		case SMB_QUERY_FILE_STREAM_INFO:
-#endif
-		case SMB_FILE_STREAM_INFORMATION:
-			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_STREAM_INFORMATION\n"));
-			if (mode & aDIR) {
-				data_size = 0;
-			} else {
-				size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", (size_t)0xE, False);
-				SIVAL(pdata,0,0); /* ??? */
-				SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
-				SOFF_T(pdata,8,file_size);
-				SOFF_T(pdata,16,allocation_size);
-				data_size = 24 + byte_len;
-			}
-			break;
+		case SMB_FILE_STREAM_INFORMATION: {
+			unsigned int num_streams;
+			struct stream_struct *streams;
+			NTSTATUS status;
 
+			DEBUG(10,("call_trans2qfilepathinfo: "
+				  "SMB_FILE_STREAM_INFORMATION\n"));
+
+			status = SMB_VFS_STREAMINFO(
+				conn, fsp, fname, talloc_tos(),
+				&num_streams, &streams);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10, ("could not get stream info: %s\n",
+					   nt_errstr(status)));
+				reply_nterror(req, status);
+				return;
+			}
+
+			status = marshall_stream_info(num_streams, streams,
+						      pdata, max_data_bytes,
+						      &data_size);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				DEBUG(10, ("marshall_stream_info failed: %s\n",
+					   nt_errstr(status)));
+				reply_nterror(req, status);
+				return;
+			}
+
+			TALLOC_FREE(streams);
+
+			break;
+		}
 		case SMB_QUERY_COMPRESSION_INFO:
 		case SMB_FILE_COMPRESSION_INFORMATION:
 			DEBUG(10,("call_trans2qfilepathinfo: SMB_FILE_COMPRESSION_INFORMATION\n"));

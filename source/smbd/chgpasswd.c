@@ -239,7 +239,8 @@ static int dochild(int master, const char *slavedev, const struct passwd *pass,
 static int expect(int master, char *issue, char *expected)
 {
 	char buffer[1024];
-	int attempts, timeout, nread, len;
+	int attempts, timeout, nread;
+	size_t len;
 	bool match = False;
 
 	for (attempts = 0; attempts < 2; attempts++) {
@@ -248,7 +249,8 @@ static int expect(int master, char *issue, char *expected)
 				DEBUG(100, ("expect: sending [%s]\n", issue));
 
 			if ((len = sys_write(master, issue, strlen(issue))) != strlen(issue)) {
-				DEBUG(2,("expect: (short) write returned %d\n", len ));
+				DEBUG(2,("expect: (short) write returned %d\n",
+					 (int)len ));
 				return False;
 			}
 		}
@@ -261,9 +263,16 @@ static int expect(int master, char *issue, char *expected)
 		nread = 0;
 		buffer[nread] = 0;
 
-		while ((len = read_socket_with_timeout(master, buffer + nread, 1,
-						       sizeof(buffer) - nread - 1,
-						       timeout, NULL)) > 0) {
+		while (True) {
+			NTSTATUS status;
+			status = read_socket_with_timeout(
+				master, buffer + nread, 1,
+				sizeof(buffer) - nread - 1,
+				timeout, &len);
+
+			if (!NT_STATUS_IS_OK(status)) {
+				break;
+			}
 			nread += len;
 			buffer[nread] = 0;
 
@@ -1092,7 +1101,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 	if (!pdb_get_pass_can_change(hnd)) {
 		DEBUG(1, ("user %s does not have permissions to change password\n", username));
 		if (samr_reject_reason) {
-			*samr_reject_reason = REJECT_REASON_OTHER;
+			*samr_reject_reason = SAMR_REJECT_OTHER;
 		}
 		return NT_STATUS_ACCOUNT_RESTRICTION;
 	}
@@ -1106,7 +1115,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 				  "denied by Refuse Machine Password Change policy\n",
 				  username));
 			if (samr_reject_reason) {
-				*samr_reject_reason = REJECT_REASON_OTHER;
+				*samr_reject_reason = SAMR_REJECT_OTHER;
 			}
 			return NT_STATUS_ACCOUNT_RESTRICTION;
 		}
@@ -1119,7 +1128,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 			  "wait until %s\n", username,
 			  http_timestring(can_change_time)));
 		if (samr_reject_reason) {
-			*samr_reject_reason = REJECT_REASON_OTHER;
+			*samr_reject_reason = SAMR_REJECT_OTHER;
 		}
 		return NT_STATUS_ACCOUNT_RESTRICTION;
 	}
@@ -1129,7 +1138,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 			  username));
 		DEBUGADD(1, (" account policy min password len = %d\n", min_len));
 		if (samr_reject_reason) {
-			*samr_reject_reason = REJECT_REASON_TOO_SHORT;
+			*samr_reject_reason = SAMR_REJECT_TOO_SHORT;
 		}
 		return NT_STATUS_PASSWORD_RESTRICTION;
 /* 		return NT_STATUS_PWD_TOO_SHORT; */
@@ -1137,7 +1146,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 
 	if (check_passwd_history(hnd,new_passwd)) {
 		if (samr_reject_reason) {
-			*samr_reject_reason = REJECT_REASON_IN_HISTORY;
+			*samr_reject_reason = SAMR_REJECT_IN_HISTORY;
 		}
 		return NT_STATUS_PASSWORD_RESTRICTION;
 	}
@@ -1158,7 +1167,7 @@ NTSTATUS change_oem_password(struct samu *hnd, char *old_passwd, char *new_passw
 		if (check_ret != 0) {
 			DEBUG(1, ("change_oem_password: check password script said new password is not good enough!\n"));
 			if (samr_reject_reason) {
-				*samr_reject_reason = REJECT_REASON_NOT_COMPLEX;
+				*samr_reject_reason = SAMR_REJECT_COMPLEXITY;
 			}
 			TALLOC_FREE(pass);
 			return NT_STATUS_PASSWORD_RESTRICTION;

@@ -11,10 +11,6 @@
 #define STYPE_HIDDEN	( 0x80000000 )
 #define SHARE_1005_CSC_POLICY_MASK	( 0x00000030 )
 #define SHARE_1005_CSC_POLICY_SHIFT	( 4 )
-;
-
-;
-
 struct srvsvc_NetCharDevInfo0 {
 	const char *device;/* [unique,charset(UTF16)] */
 };
@@ -324,8 +320,6 @@ struct srvsvc_NetShareCtr1004 {
 /* bitmap NetShareInfo1005Flags */
 #define SHARE_1005_IN_DFS ( 0x00000001 )
 #define SHARE_1005_DFS_ROOT ( 0x00000002 )
-
-;
 
 struct srvsvc_NetShareInfo1005 {
 	uint32_t dfs_flags;

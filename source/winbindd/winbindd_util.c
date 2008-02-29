@@ -41,7 +41,7 @@ extern struct winbindd_methods passdb_methods;
    individual winbindd_domain structures cannot be made.  Keep a copy of
    the domain name instead. */
 
-static struct winbindd_domain *_domain_list;
+static struct winbindd_domain *_domain_list = NULL;
 
 /**
    When was the last scan of trusted domains done?
@@ -82,9 +82,6 @@ static bool is_internal_domain(const DOM_SID *sid)
 	if (sid == NULL)
 		return False;
 
-	if ( IS_DC )
-		return sid_check_is_builtin(sid);
-
 	return (sid_check_is_domain(sid) || sid_check_is_builtin(sid));
 }
 
@@ -92,9 +89,6 @@ static bool is_in_internal_domain(const DOM_SID *sid)
 {
 	if (sid == NULL)
 		return False;
-
-	if ( IS_DC )
-		return sid_check_is_in_builtin(sid);
 
 	return (sid_check_is_in_our_domain(sid) || sid_check_is_in_builtin(sid));
 }
@@ -218,7 +212,7 @@ static void add_trusted_domains( struct winbindd_domain *domain )
 	TALLOC_CTX *mem_ctx;
 	struct winbindd_request *request;
 	struct winbindd_response *response;
-	uint32 fr_flags = (DS_DOMAIN_TREE_ROOT|DS_DOMAIN_IN_FOREST);	
+	uint32 fr_flags = (NETR_TRUST_FLAG_TREEROOT|NETR_TRUST_FLAG_IN_FOREST);
 
 	struct trustdom_state *state;
 
@@ -391,8 +385,8 @@ static void rescan_forest_root_trusts( void )
 		   the domain_list() as our primary domain may not 
 		   have been initialized. */
 
-		if ( !(dom_list[i].trust_flags & DS_DOMAIN_TREE_ROOT) )	{
-			continue;			
+		if ( !(dom_list[i].trust_flags & NETR_TRUST_FLAG_TREEROOT) ) {
+			continue;
 		}
 	
 		/* Here's the forest root */
@@ -456,10 +450,10 @@ static void rescan_forest_trusts( void )
 
 		if ( d && (d->internal || d->primary ) )
 			continue;		
-		
-		if ( (flags & DS_DOMAIN_DIRECT_INBOUND) &&
-		     (type == DS_DOMAIN_TRUST_TYPE_UPLEVEL) &&
-		     (attribs == DS_DOMAIN_TRUST_ATTRIB_FOREST_TRANSITIVE) )
+
+		if ( (flags & NETR_TRUST_FLAG_INBOUND) &&
+		     (type == NETR_TRUST_TYPE_UPLEVEL) &&
+		     (attribs == NETR_TRUST_ATTRIBUTE_FOREST_TRANSITIVE) )
 		{
 			/* add the trusted domain if we don't know
 			   about it */
@@ -571,7 +565,7 @@ enum winbindd_result init_child_connection(struct winbindd_domain *domain,
 		/* The primary domain has to find the DC name itself */
 		request->cmd = WINBINDD_INIT_CONNECTION;
 		fstrcpy(request->domain_name, domain->name);
-		request->data.init_conn.is_primary = domain->internal ? False : True;
+		request->data.init_conn.is_primary = domain->primary ? true : false;
 		fstrcpy(request->data.init_conn.dcname, "");
 		async_request(mem_ctx, &domain->child, request, response,
 			      init_child_recv, state);
@@ -770,8 +764,8 @@ void check_domain_trusted( const char *name, const DOM_SID *user_sid )
 	   forest trust */
 
 	domain->active_directory = True;
-	domain->domain_flags = DS_DOMAIN_DIRECT_OUTBOUND;
-	domain->domain_type  = DS_DOMAIN_TRUST_TYPE_UPLEVEL;
+	domain->domain_flags = NETR_TRUST_FLAG_OUTBOUND;
+	domain->domain_type  = NETR_TRUST_TYPE_UPLEVEL;
 	domain->internal = False;
 	domain->online = True;	
 
@@ -1278,7 +1272,7 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 				  const DOM_SID *user_sid,
 				  uint32 *p_num_groups, DOM_SID **user_sids)
 {
-	NET_USER_INFO_3 *info3 = NULL;
+	struct netr_SamInfo3 *info3 = NULL;
 	NTSTATUS status = NT_STATUS_NO_MEMORY;
 	int i;
 	size_t num_groups = 0;
@@ -1296,13 +1290,13 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	if (info3->num_groups == 0) {
+	if (info3->base.groups.count == 0) {
 		TALLOC_FREE(info3);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
 	/* always add the primary group to the sid array */
-	sid_compose(&primary_group, &info3->dom_sid.sid, info3->user_rid);
+	sid_compose(&primary_group, info3->base.domain_sid, info3->base.rid);
 	
 	status = add_sid_to_array(mem_ctx, &primary_group, user_sids,
 				  &num_groups);
@@ -1311,9 +1305,9 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 		return status;
 	}
 
-	for (i=0; i<info3->num_groups; i++) {
-		sid_copy(&group_sid, &info3->dom_sid.sid);
-		sid_append_rid(&group_sid, info3->gids[i].g_rid);
+	for (i=0; i < info3->base.groups.count; i++) {
+		sid_copy(&group_sid, info3->base.domain_sid);
+		sid_append_rid(&group_sid, info3->base.groups.rids[i].rid);
 
 		status = add_sid_to_array(mem_ctx, &group_sid, user_sids,
 					  &num_groups);
@@ -1325,13 +1319,13 @@ NTSTATUS lookup_usergroups_cached(struct winbindd_domain *domain,
 
 	/* Add any Universal groups in the other_sids list */
 
-	for (i=0; i<info3->num_other_sids; i++) {
+	for (i=0; i < info3->sidcount; i++) {
 		/* Skip Domain local groups outside our domain.
 		   We'll get these from the getsidaliases() RPC call. */
-		if (info3->other_sids_attrib[i] & SE_GROUP_RESOURCE)
+		if (info3->sids[i].attributes & SE_GROUP_RESOURCE)
 			continue;
 
-		status = add_sid_to_array(mem_ctx, &info3->other_sids[i].sid,
+		status = add_sid_to_array(mem_ctx, info3->sids[i].sid,
 					  user_sids, &num_groups);
 		if (!NT_STATUS_IS_OK(status)) {
 			TALLOC_FREE(info3);
@@ -1386,31 +1380,56 @@ void ws_name_return( char *name, char replace )
 /*********************************************************************
  ********************************************************************/
 
-bool winbindd_can_contact_domain( struct winbindd_domain *domain )
+bool winbindd_can_contact_domain(struct winbindd_domain *domain)
 {
+	struct winbindd_tdc_domain *tdc = NULL;
+	TALLOC_CTX *frame = talloc_stackframe();
+	bool ret = false;
+
 	/* We can contact the domain if it is our primary domain */
 
-	if ( domain->primary )
-		return True;
+	if (domain->primary) {
+		return true;
+	}
+
+	/* Trust the TDC cache and not the winbindd_domain flags */
+
+	if ((tdc = wcache_tdc_fetch_domain(frame, domain->name)) == NULL) {
+		DEBUG(10,("winbindd_can_contact_domain: %s not found in cache\n",
+			  domain->name));
+		return false;
+	}
 
 	/* Can always contact a domain that is in out forest */
 
-	if ( domain->domain_flags & DS_DOMAIN_IN_FOREST )
-		return True;	
-
-	/* We cannot contact the domain if it is running AD and
-	   we have no inbound trust */
-
-	if ( domain->active_directory && 
-	     ((domain->domain_flags&DS_DOMAIN_DIRECT_INBOUND) != DS_DOMAIN_DIRECT_INBOUND) ) 
-	{
-		return False;
+	if (tdc->trust_flags & NETR_TRUST_FLAG_IN_FOREST) {
+		ret = true;
+		goto done;
 	}
 	
+	/*
+	 * On a _member_ server, we cannot contact the domain if it
+	 * is running AD and we have no inbound trust.
+	 */
+
+	if (!IS_DC && 
+	     domain->active_directory &&
+	    ((tdc->trust_flags & NETR_TRUST_FLAG_INBOUND) != NETR_TRUST_FLAG_INBOUND))
+	{
+		DEBUG(10, ("winbindd_can_contact_domain: %s is an AD domain "
+			   "and we have no inbound trust.\n", domain->name));
+		goto done;
+	}
+
 	/* Assume everything else is ok (probably not true but what
 	   can you do?) */
+
+	ret = true;	
+
+done:	
+	talloc_destroy(frame);
 	
-	return True;	
+	return ret;	
 }
 
 /*********************************************************************

@@ -128,7 +128,10 @@ static DOM_SID *pdb_generate_sam_sid(void)
 	}
 
 	/* check for an old MACHINE.SID file for backwards compatibility */
-	asprintf(&fname, "%s/MACHINE.SID", lp_private_dir());
+	if (asprintf(&fname, "%s/MACHINE.SID", lp_private_dir()) == -1) {
+		SAFE_FREE(sam_sid);
+		return NULL;
+	}
 
 	if (read_sid_from_file(fname, sam_sid)) {
 		/* remember it for future reference and unlink the old MACHINE.SID */

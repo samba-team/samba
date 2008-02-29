@@ -120,9 +120,9 @@ bool gencache_set(const char *keystr, const char *value, time_t timeout)
 
 	if (!gencache_init()) return False;
 	
-	asprintf(&valstr, CACHE_DATA_FMT, (int)timeout, value);
-	if (!valstr)
+	if (asprintf(&valstr, CACHE_DATA_FMT, (int)timeout, value) == -1) {
 		return False;
+	}
 
 	databuf = string_term_tdb_data(valstr);
 	DEBUG(10, ("Adding cache entry with key = %s; value = %s and timeout ="
@@ -340,8 +340,7 @@ bool gencache_set_data_blob(const char *keystr, DATA_BLOB *blob, time_t timeout)
 		return False;
 	}
 
-	asprintf(&valstr, "%12u/%s", (int)timeout, BLOB_TYPE);
-	if (!valstr) {
+	if (asprintf(&valstr, "%12u/%s", (int)timeout, BLOB_TYPE) == -1) {
 		return False;
 	}
 
@@ -452,8 +451,9 @@ void gencache_iterate(void (*fn)(const char* key, const char *value, time_t time
 			break;
 		}
 
-		asprintf(&fmt, READ_CACHE_DATA_FMT_TEMPLATE, (unsigned int)databuf.dsize - TIMEOUT_LEN);
-		if (!fmt) {
+		if (asprintf(&fmt, READ_CACHE_DATA_FMT_TEMPLATE,
+			     (unsigned int)databuf.dsize - TIMEOUT_LEN)
+		    == -1) {
 			SAFE_FREE(valstr);
 			SAFE_FREE(entry);
 			SAFE_FREE(keystr);

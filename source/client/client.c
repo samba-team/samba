@@ -309,6 +309,17 @@ static int cmd_pwd(void)
 }
 
 /****************************************************************************
+ Ensure name has correct directory separators.
+****************************************************************************/
+
+static void normalize_name(char *newdir)
+{
+	if (!(cli->posix_capabilities & CIFS_UNIX_POSIX_PATHNAMES_CAP)) {
+		string_replace(newdir,'/','\\');
+	}
+}
+
+/****************************************************************************
  Change directory - inner section.
 ****************************************************************************/
 
@@ -329,7 +340,8 @@ static int do_cd(const char *new_dir)
 		TALLOC_FREE(ctx);
 		return 1;
 	}
-	string_replace(newdir,'/','\\');
+
+	normalize_name(newdir);
 
 	/* Save the current directory in case the new directory is invalid */
 
@@ -349,17 +361,16 @@ static int do_cd(const char *new_dir)
 		if (!new_cd) {
 			goto out;
 		}
-		if ((new_cd[0] != '\0') && (*(new_cd+strlen(new_cd)-1) != CLI_DIRSEP_CHAR)) {
-			new_cd = talloc_asprintf_append(new_cd, CLI_DIRSEP_STR);
-			if (!new_cd) {
-				goto out;
-			}
+	}
+
+	/* Ensure cur_dir ends in a DIRSEP */
+	if ((new_cd[0] != '\0') && (*(new_cd+strlen(new_cd)-1) != CLI_DIRSEP_CHAR)) {
+		new_cd = talloc_asprintf_append(new_cd, CLI_DIRSEP_STR);
+		if (!new_cd) {
+			goto out;
 		}
-		client_set_cur_dir(new_cd);
 	}
-	if (!new_cd) {
-		goto out;
-	}
+	client_set_cur_dir(new_cd);
 
 	new_cd = clean_name(ctx, new_cd);
 	client_set_cur_dir(new_cd);
@@ -851,26 +862,15 @@ static int cmd_dir(void)
 	int rc = 1;
 
 	dir_total = 0;
-	if (strcmp(client_get_cur_dir(), CLI_DIRSEP_STR) != 0) {
-		mask = talloc_strdup(ctx, client_get_cur_dir());
-		if (!mask) {
-			return 1;
-		}
-		if ((mask[0] != '\0') && (mask[strlen(mask)-1]!=CLI_DIRSEP_CHAR)) {
-			mask = talloc_asprintf_append(mask, CLI_DIRSEP_STR);
-		}
-	} else {
-		mask = talloc_strdup(ctx, CLI_DIRSEP_STR);
-	}
-
+	mask = talloc_strdup(ctx, client_get_cur_dir());
 	if (!mask) {
 		return 1;
 	}
 
 	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
-		string_replace(buf,'/','\\');
+		normalize_name(buf);
 		if (*buf == CLI_DIRSEP_CHAR) {
-			mask = talloc_strdup(ctx, buf + 1);
+			mask = talloc_strdup(ctx, buf);
 		} else {
 			mask = talloc_asprintf_append(mask, buf);
 		}
@@ -920,7 +920,7 @@ static int cmd_du(void)
 	}
 
 	if (next_token_talloc(ctx, &cmd_ptr,&buf,NULL)) {
-		string_replace(buf,'/','\\');
+		normalize_name(buf);
 		if (*buf == CLI_DIRSEP_CHAR) {
 			mask = talloc_strdup(ctx, buf);
 		} else {
@@ -964,12 +964,20 @@ static int cmd_echo(void)
  Get a file from rname to lname
 ****************************************************************************/
 
+static NTSTATUS writefile_sink(char *buf, size_t n, void *priv)
+{
+	int *pfd = (int *)priv;
+	if (writefile(*pfd, buf, n) == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+	return NT_STATUS_OK;
+}
+
 static int do_get(const char *rname, const char *lname_in, bool reget)
 {
 	TALLOC_CTX *ctx = talloc_tos();
 	int handle = 0, fnum;
 	bool newhandle = false;
-	char *data = NULL;
 	struct timeval tp_start;
 	int read_size = io_bufsize;
 	uint16 attr;
@@ -980,6 +988,7 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	struct cli_state *targetcli = NULL;
 	char *targetname = NULL;
 	char *lname = NULL;
+	NTSTATUS status;
 
 	lname = talloc_strdup(ctx, lname_in);
 	if (!lname) {
@@ -1038,35 +1047,14 @@ static int do_get(const char *rname, const char *lname_in, bool reget)
 	DEBUG(1,("getting file %s of size %.0f as %s ",
 		 rname, (double)size, lname));
 
-	if(!(data = (char *)SMB_MALLOC(read_size))) {
-		d_printf("malloc fail for size %d\n", read_size);
+	status = cli_pull(targetcli, fnum, start, size, 1024*1024,
+			  writefile_sink, (void *)&handle, &nread);
+	if (!NT_STATUS_IS_OK(status)) {
+		d_fprintf(stderr, "parallel_read returned %s\n",
+			  nt_errstr(status));
 		cli_close(targetcli, fnum);
 		return 1;
 	}
-
-	while (1) {
-		int n = cli_read(targetcli, fnum, data, nread + start, read_size);
-
-		if (n <= 0)
-			break;
-
-		if (writefile(handle,data, n) != n) {
-			d_printf("Error writing local file\n");
-			rc = 1;
-			break;
-		}
-
-		nread += n;
-	}
-
-	if (nread + start < size) {
-		DEBUG (0, ("Short read when getting file %s. Only got %ld bytes.\n",
-			    rname, (long)nread));
-
-		rc = 1;
-	}
-
-	SAFE_FREE(data);
 
 	if (!cli_close(targetcli, fnum)) {
 		d_printf("Error %s closing remote file\n",cli_errstr(cli));
@@ -1112,10 +1100,7 @@ static int cmd_get(void)
 	char *rname = NULL;
 	char *fname = NULL;
 
-	rname = talloc_asprintf(ctx,
-			"%s%s",
-			client_get_cur_dir(),
-			CLI_DIRSEP_STR);
+	rname = talloc_strdup(ctx, client_get_cur_dir());
 	if (!rname) {
 		return 1;
 	}
@@ -1262,10 +1247,7 @@ static int cmd_more(void)
 	int fd;
 	int rc = 0;
 
-	rname = talloc_asprintf(ctx,
-			"%s%s",
-			client_get_cur_dir(),
-			CLI_DIRSEP_STR);
+	rname = talloc_strdup(ctx, client_get_cur_dir());
 	if (!rname) {
 		return 1;
 	}
@@ -1334,15 +1316,6 @@ static int cmd_mget(void)
 		if (!mget_mask) {
 			return 1;
 		}
-		if ((mget_mask[0] != '\0') &&
-				(mget_mask[strlen(mget_mask)-1]!=CLI_DIRSEP_CHAR)) {
-			mget_mask = talloc_asprintf_append(mget_mask,
-							CLI_DIRSEP_STR);
-			if (!mget_mask) {
-				return 1;
-			}
-		}
-
 		if (*buf == CLI_DIRSEP_CHAR) {
 			mget_mask = talloc_strdup(ctx, buf);
 		} else {
@@ -1356,18 +1329,9 @@ static int cmd_mget(void)
 	}
 
 	if (!*mget_mask) {
-		mget_mask = talloc_strdup(ctx, client_get_cur_dir());
-		if (!mget_mask) {
-			return 1;
-		}
-		if(mget_mask[strlen(mget_mask)-1]!=CLI_DIRSEP_CHAR) {
-			mget_mask = talloc_asprintf_append(mget_mask,
-							CLI_DIRSEP_STR);
-			if (!mget_mask) {
-				return 1;
-			}
-		}
-		mget_mask = talloc_asprintf_append(mget_mask, "*");
+		mget_mask = talloc_asprintf(ctx,
+					"%s*",
+					client_get_cur_dir());
 		if (!mget_mask) {
 			return 1;
 		}
@@ -1463,6 +1427,7 @@ static int cmd_mkdir(void)
 		struct cli_state *targetcli;
 		char *targetname = NULL;
 		char *p = NULL;
+		char *saveptr;
 
 		ddir2 = talloc_strdup(ctx, "");
 		if (!ddir2) {
@@ -1478,7 +1443,7 @@ static int cmd_mkdir(void)
 			return 1;
 		}
 		trim_char(ddir,'.','\0');
-		p = strtok(ddir,"/\\");
+		p = strtok_r(ddir, "/\\", &saveptr);
 		while (p) {
 			ddir2 = talloc_asprintf_append(ddir2, p);
 			if (!ddir2) {
@@ -1491,7 +1456,7 @@ static int cmd_mkdir(void)
 			if (!ddir2) {
 				return 1;
 			}
-			p = strtok(NULL,"/\\");
+			p = strtok_r(NULL, "/\\", &saveptr);
 		}
 	} else {
 		do_mkdir(mask);
@@ -1524,6 +1489,92 @@ static int cmd_altname(void)
 		return 1;
 	}
 	do_altname(name);
+	return 0;
+}
+
+/****************************************************************************
+ Show all info we can get
+****************************************************************************/
+
+static int do_allinfo(const char *name)
+{
+	fstring altname;
+	struct timespec b_time, a_time, m_time, c_time;
+	SMB_OFF_T size;
+	uint16_t mode;
+	SMB_INO_T ino;
+	NTTIME tmp;
+	unsigned int num_streams;
+	struct stream_struct *streams;
+	unsigned int i;
+
+	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, altname))) {
+		d_printf("%s getting alt name for %s\n",
+			 cli_errstr(cli),name);
+		return false;
+	}
+	d_printf("altname: %s\n", altname);
+
+	if (!cli_qpathinfo2(cli, name, &b_time, &a_time, &m_time, &c_time,
+			    &size, &mode, &ino)) {
+		d_printf("%s getting pathinfo for %s\n",
+			 cli_errstr(cli),name);
+		return false;
+	}
+
+	unix_timespec_to_nt_time(&tmp, b_time);
+	d_printf("create_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+
+	unix_timespec_to_nt_time(&tmp, a_time);
+	d_printf("access_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+
+	unix_timespec_to_nt_time(&tmp, m_time);
+	d_printf("write_time:     %s\n", nt_time_string(talloc_tos(), tmp));
+
+	unix_timespec_to_nt_time(&tmp, c_time);
+	d_printf("change_time:    %s\n", nt_time_string(talloc_tos(), tmp));
+
+	if (!cli_qpathinfo_streams(cli, name, talloc_tos(), &num_streams,
+				   &streams)) {
+		d_printf("%s getting streams for %s\n",
+			 cli_errstr(cli),name);
+		return false;
+	}
+
+	for (i=0; i<num_streams; i++) {
+		d_printf("stream: [%s], %lld bytes\n", streams[i].name,
+			 (unsigned long long)streams[i].size);
+	}
+
+	return 0;
+}
+
+/****************************************************************************
+ Show all info we can get
+****************************************************************************/
+
+static int cmd_allinfo(void)
+{
+	TALLOC_CTX *ctx = talloc_tos();
+	char *name;
+	char *buf;
+
+	name = talloc_strdup(ctx, client_get_cur_dir());
+	if (!name) {
+		return 1;
+	}
+
+	if (!next_token_talloc(ctx, &cmd_ptr, &buf, NULL)) {
+		d_printf("allinfo <file>\n");
+		return 1;
+	}
+	name = talloc_asprintf_append(name, buf);
+	if (!name) {
+		return 1;
+	}
+
+	do_allinfo(name);
+
 	return 0;
 }
 
@@ -1673,10 +1724,7 @@ static int cmd_put(void)
 	char *rname;
 	char *buf;
 
-	rname = talloc_asprintf(ctx,
-			"%s%s",
-			client_get_cur_dir(),
-			CLI_DIRSEP_STR);
+	rname = talloc_strdup(ctx, client_get_cur_dir());
 	if (!rname) {
 		return 1;
 	}
@@ -1893,10 +1941,10 @@ static int cmd_mput(void)
 						break;
 				} else { /* Yes */
 	      				SAFE_FREE(rname);
-					if(asprintf(&rname, "%s%s", cur_dir, lname) < 0) {
+					if(asprintf(&rname, "%s%s", client_get_cur_dir(), lname) < 0) {
 						break;
 					}
-					string_replace(rname,'/','\\');
+					normalize_name(rname);
 					if (!cli_chkpath(cli, rname) &&
 					    !do_mkdir(rname)) {
 						DEBUG (0, ("Unable to make dir, skipping..."));
@@ -1920,12 +1968,12 @@ static int cmd_mput(void)
 
 				/* Yes */
 				SAFE_FREE(rname);
-				if (asprintf(&rname, "%s%s", cur_dir, lname) < 0) {
+				if (asprintf(&rname, "%s%s", client_get_cur_dir(), lname) < 0) {
 					break;
 				}
 			}
 
-			string_replace(rname,'/','\\');
+			normalize_name(rname);
 
 			do_put(rname, lname, false);
 		}
@@ -3469,10 +3517,7 @@ static int cmd_reget(void)
 	char *fname = NULL;
 	char *p = NULL;
 
-	remote_name = talloc_asprintf(ctx,
-				"%s%s",
-				client_get_cur_dir(),
-				CLI_DIRSEP_STR);
+	remote_name = talloc_strdup(ctx, client_get_cur_dir());
 	if (!remote_name) {
 		return 1;
 	}
@@ -3511,10 +3556,7 @@ static int cmd_reput(void)
 	char *buf;
 	SMB_STRUCT_STAT st;
 
-	remote_name = talloc_asprintf(ctx,
-				"%s%s",
-				client_get_cur_dir(),
-				CLI_DIRSEP_STR);
+	remote_name = talloc_strdup(ctx, client_get_cur_dir());
 	if (!remote_name) {
 		return 1;
 	}
@@ -3839,6 +3881,8 @@ static struct {
 	char compl_args[2];      /* Completion argument info */
 } commands[] = {
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
+  {"allinfo",cmd_allinfo,"<file> show all available info",
+   {COMPL_NONE,COMPL_NONE}},
   {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
   {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
@@ -4069,7 +4113,7 @@ static void completion_remote_filter(const char *mnt,
 				return;
 			}
 			if (f->mode & aDIR) {
-				tmp = talloc_asprintf_append(tmp, "/");
+				tmp = talloc_asprintf_append(tmp, CLI_DIRSEP_STR);
 			}
 			if (!tmp) {
 				TALLOC_FREE(ctx);
@@ -4333,9 +4377,30 @@ static void readline_callback(void)
 	   session keepalives and then drop them here.
 	*/
 	if (FD_ISSET(cli->fd,&fds)) {
-		if (receive_smb_raw(cli->fd,cli->inbuf,0,0,&cli->smb_rw_error) == -1) {
-			DEBUG(0, ("Read from server failed, maybe it closed the "
-				"connection\n"));
+		NTSTATUS status;
+		size_t len;
+
+		set_smb_read_error(&cli->smb_rw_error, SMB_READ_OK);
+
+		status = receive_smb_raw(cli->fd, cli->inbuf, 0, 0, &len);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(0, ("Read from server failed, maybe it closed "
+				  "the connection\n"));
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+				set_smb_read_error(&cli->smb_rw_error,
+						   SMB_READ_EOF);
+				return;
+			}
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+				set_smb_read_error(&cli->smb_rw_error,
+						   SMB_READ_TIMEOUT);
+				return;
+			}
+
+			set_smb_read_error(&cli->smb_rw_error, SMB_READ_ERROR);
 			return;
 		}
 		if(CVAL(cli->inbuf,0) != SMBkeepalive) {

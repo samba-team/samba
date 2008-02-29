@@ -206,7 +206,7 @@ static NTSTATUS samu_set_unix_internal(struct samu *user, const struct passwd *p
 	/* Now deal with the user SID.  If we have a backend that can generate 
 	   RIDs, then do so.  But sometimes the caller just wanted a structure 
 	   initialized and will fill in these fields later (such as from a 
-	   NET_USER_INFO_3 structure) */
+	   netr_SamInfo3 structure) */
 
 	if ( create && !pdb_rid_algorithm() ) {
 		uint32 user_rid;
@@ -443,10 +443,7 @@ bool pdb_gethexhours(const char *p, unsigned char *hours)
 
 int algorithmic_rid_base(void)
 {
-	static int rid_offset = 0;
-
-	if (rid_offset != 0)
-		return rid_offset;
+	int rid_offset;
 
 	rid_offset = lp_algorithmic_rid_base();
 
@@ -1617,5 +1614,28 @@ bool get_trust_pw_hash(const char *domain, uint8 ret_pwd[16],
 	DEBUG(5, ("get_trust_pw_hash: could not fetch trust account "
 		"password for domain %s\n", domain));
 	return False;
+}
+
+struct samr_LogonHours get_logon_hours_from_pdb(TALLOC_CTX *mem_ctx,
+						struct samu *pw)
+{
+	struct samr_LogonHours hours;
+	const int units_per_week = 168;
+
+	ZERO_STRUCT(hours);
+	hours.bits = talloc_array(mem_ctx, uint8_t, units_per_week);
+	if (!hours.bits) {
+		return hours;
+	}
+
+	hours.units_per_week = units_per_week;
+	memset(hours.bits, 0xFF, units_per_week);
+
+	if (pdb_get_hours(pw)) {
+		memcpy(hours.bits, pdb_get_hours(pw),
+		       MIN(pdb_get_hours_len(pw), units_per_week));
+	}
+
+	return hours;
 }
 

@@ -259,7 +259,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	fstring user;
 	int sess_vuid = req->vuid;
 	NTSTATUS ret = NT_STATUS_OK;
-	PAC_DATA *pac_data = NULL;
+	struct PAC_DATA *pac_data = NULL;
 	DATA_BLOB ap_rep, ap_rep_wrapped, response;
 	auth_serversupplied_info *server_info = NULL;
 	DATA_BLOB session_key = data_blob_null;
@@ -268,7 +268,7 @@ static void reply_spnego_kerberos(struct smb_request *req,
 	fstring real_username;
 	bool map_domainuser_to_guest = False;
 	bool username_was_mapped;
-	PAC_LOGON_INFO *logon_info = NULL;
+	struct PAC_LOGON_INFO *logon_info = NULL;
 
 	ZERO_STRUCT(ticket);
 	ZERO_STRUCT(ap_rep);
@@ -394,10 +394,9 @@ static void reply_spnego_kerberos(struct smb_request *req,
 
 	domain = p+1;
 
-	if (logon_info && logon_info->info3.hdr_logon_dom.uni_str_len) {
-		unistr2_to_ascii(netbios_domain_name,
-				&logon_info->info3.uni_logon_dom,
-				sizeof(netbios_domain_name));
+	if (logon_info && logon_info->info3.base.domain.string) {
+		fstrcpy(netbios_domain_name,
+			logon_info->info3.base.domain.string);
 		domain = netbios_domain_name;
 		DEBUG(10, ("Mapped to [%s] (using PAC)\n", domain));
 
@@ -410,30 +409,24 @@ static void reply_spnego_kerberos(struct smb_request *req,
 		   name. And even w2k3 does use ntlmssp if you for example
 		   connect to an ip address. */
 
-		struct winbindd_request wb_request;
-		struct winbindd_response wb_response;
-		NSS_STATUS wb_result;
-
-		ZERO_STRUCT(wb_request);
-		ZERO_STRUCT(wb_response);
+		wbcErr wbc_status;
+		struct wbcDomainInfo *info = NULL;
 
 		DEBUG(10, ("Mapping [%s] to short name\n", domain));
 
-		fstrcpy(wb_request.domain_name, domain);
+		wbc_status = wbcDomainInfo(domain, &info);
 
-		wb_result = winbindd_request_response(WINBINDD_DOMAIN_INFO,
-					     &wb_request, &wb_response);
-
-		if (wb_result == NSS_STATUS_SUCCESS) {
+		if (WBC_ERROR_IS_OK(wbc_status)) {
 
 			fstrcpy(netbios_domain_name,
-				wb_response.data.domain_info.name);
-			domain = netbios_domain_name;
+				info->short_name);
 
+			wbcFreeMemory(info);
+			domain = netbios_domain_name;
 			DEBUG(10, ("Mapped to [%s] (using Winbind)\n", domain));
 		} else {
-			DEBUG(3, ("Could not find short name -- winbind "
-				  "not running?\n"));
+			DEBUG(3, ("Could not find short name: %s\n",
+				wbcErrorString(wbc_status)));
 		}
 	}
 
@@ -626,6 +619,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 				 uint16 vuid,
 				 AUTH_NTLMSSP_STATE **auth_ntlmssp_state,
 				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status,
+				 const char *OID,
 				 bool wrap)
 {
 	DATA_BLOB response;
@@ -686,7 +680,7 @@ static void reply_spnego_ntlmssp(struct smb_request *req,
 
 	if (wrap) {
 		response = spnego_gen_auth_response(ntlmssp_blob,
-				nt_status, OID_NTLMSSP);
+				nt_status, OID);
 	} else {
 		response = *ntlmssp_blob;
 	}
@@ -751,6 +745,28 @@ NTSTATUS parse_spnego_mechanisms(DATA_BLOB blob_in, DATA_BLOB *pblob_out,
 }
 
 /****************************************************************************
+ Fall back from krb5 to NTLMSSP.
+****************************************************************************/
+
+static void reply_spnego_downgrade_to_ntlmssp(struct smb_request *req,
+						uint16 vuid)
+{
+	DATA_BLOB response;
+
+	reply_outbuf(req, 4, 0);
+        SSVAL(req->outbuf,smb_uid,vuid);
+
+	DEBUG(3,("reply_spnego_downgrade_to_ntlmssp: Got krb5 ticket in SPNEGO "
+		"but set to downgrade to NTLMSSP\n"));
+
+	response = spnego_gen_auth_response(NULL,
+			NT_STATUS_MORE_PROCESSING_REQUIRED,
+			OID_NTLMSSP);
+	reply_sesssetup_blob(req, response, NT_STATUS_MORE_PROCESSING_REQUIRED);
+	data_blob_free(&response);
+}
+
+/****************************************************************************
  Reply to a session setup spnego negotiate packet.
 ****************************************************************************/
 
@@ -795,6 +811,15 @@ static void reply_spnego_negotiate(struct smb_request *req,
 		auth_ntlmssp_end(auth_ntlmssp_state);
 	}
 
+	if (got_kerberos_mechanism) {
+		data_blob_free(&secblob);
+		/* The mechtoken is a krb5 ticket, but
+		 * we need to fall back to NTLM. */
+		reply_spnego_downgrade_to_ntlmssp(req,
+					vuid);
+		return;
+	}
+
 	status = auth_ntlmssp_start(auth_ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* Kill the intermediate vuid */
@@ -809,7 +834,7 @@ static void reply_spnego_negotiate(struct smb_request *req,
 	data_blob_free(&secblob);
 
 	reply_spnego_ntlmssp(req, vuid, auth_ntlmssp_state,
-			     &chal, status, True);
+			     &chal, status, OID_NTLMSSP, true);
 
 	data_blob_free(&chal);
 
@@ -829,7 +854,7 @@ static void reply_spnego_auth(struct smb_request *req,
 	DATA_BLOB auth = data_blob_null;
 	DATA_BLOB auth_reply = data_blob_null;
 	DATA_BLOB secblob = data_blob_null;
-	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
+	NTSTATUS status = NT_STATUS_LOGON_FAILURE;
 
 	if (!spnego_parse_auth(blob1, &auth)) {
 #if 0
@@ -839,7 +864,7 @@ static void reply_spnego_auth(struct smb_request *req,
 		invalidate_vuid(vuid);
 
 		reply_nterror(req, nt_status_squash(
-				      NT_STATUS_INVALID_PARAMETER));
+				      NT_STATUS_LOGON_FAILURE));
 		return;
 	}
 
@@ -849,24 +874,43 @@ static void reply_spnego_auth(struct smb_request *req,
 		bool got_krb5_mechanism = False;
 		status = parse_spnego_mechanisms(auth, &secblob,
 				&got_krb5_mechanism);
-		if (NT_STATUS_IS_OK(status)) {
-			DEBUG(3,("reply_spnego_auth: Got secblob of size %lu\n",
-					(unsigned long)secblob.length));
+
+		if (!NT_STATUS_IS_OK(status)) {
+			/* Kill the intermediate vuid */
+			invalidate_vuid(vuid);
+			reply_nterror(req, nt_status_squash(status));
+			return;
+		}
+
+		DEBUG(3,("reply_spnego_auth: Got secblob of size %lu\n",
+				(unsigned long)secblob.length));
 #ifdef HAVE_KRB5
-			if ( got_krb5_mechanism && ((lp_security()==SEC_ADS) ||
-						lp_use_kerberos_keytab()) ) {
-				bool destroy_vuid = True;
-				reply_spnego_kerberos(req, &secblob,
-						      vuid, &destroy_vuid);
-				data_blob_free(&secblob);
-				data_blob_free(&auth);
-				if (destroy_vuid) {
-					/* Kill the intermediate vuid */
-					invalidate_vuid(vuid);
-				}
-				return;
+		if ( got_krb5_mechanism && ((lp_security()==SEC_ADS) ||
+					lp_use_kerberos_keytab()) ) {
+			bool destroy_vuid = True;
+			reply_spnego_kerberos(req, &secblob,
+					      vuid, &destroy_vuid);
+			data_blob_free(&secblob);
+			data_blob_free(&auth);
+			if (destroy_vuid) {
+				/* Kill the intermediate vuid */
+				invalidate_vuid(vuid);
 			}
+			return;
+		}
 #endif
+		/* Can't blunder into NTLMSSP auth if we have
+		 * a krb5 ticket. */
+
+		if (got_krb5_mechanism) {
+			/* Kill the intermediate vuid */
+			invalidate_vuid(vuid);
+			DEBUG(3,("reply_spnego_auth: network "
+				"misconfiguration, client sent us a "
+				"krb5 ticket and kerberos security "
+				"not enabled"));
+			reply_nterror(req, nt_status_squash(
+					NT_STATUS_LOGON_FAILURE));
 		}
 	}
 
@@ -874,13 +918,13 @@ static void reply_spnego_auth(struct smb_request *req,
 	data_blob_free(&secblob);
 
 	if (!*auth_ntlmssp_state) {
-		/* Kill the intermediate vuid */
-		invalidate_vuid(vuid);
-
-		/* auth before negotiatiate? */
-		reply_nterror(req, nt_status_squash(
-				      NT_STATUS_INVALID_PARAMETER));
-		return;
+		status = auth_ntlmssp_start(auth_ntlmssp_state);
+		if (!NT_STATUS_IS_OK(status)) {
+			/* Kill the intermediate vuid */
+			invalidate_vuid(vuid);
+			reply_nterror(req, nt_status_squash(status));
+			return;
+		}
 	}
 
 	status = auth_ntlmssp_update(*auth_ntlmssp_state,
@@ -888,9 +932,11 @@ static void reply_spnego_auth(struct smb_request *req,
 
 	data_blob_free(&auth);
 
+	/* Don't send the mechid as we've already sent this (RFC4178). */
+
 	reply_spnego_ntlmssp(req, vuid,
 			     auth_ntlmssp_state,
-			     &auth_reply, status, True);
+			     &auth_reply, status, NULL, true);
 
 	data_blob_free(&auth_reply);
 
@@ -1257,7 +1303,7 @@ static void reply_sesssetup_and_X_spnego(struct smb_request *req)
 
 		reply_spnego_ntlmssp(req, vuid,
 				     &vuser->auth_ntlmssp_state,
-				     &chal, status, False);
+				     &chal, status, OID_NTLMSSP, false);
 		data_blob_free(&chal);
 		return;
 	}

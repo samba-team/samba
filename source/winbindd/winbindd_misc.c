@@ -231,8 +231,8 @@ void winbindd_getdcname(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 					     struct winbindd_cli_state *state)
 {
-	char *dcname_slash = NULL;
-	char *p;
+	const char *dcname_slash = NULL;
+	const char *p;
 	struct rpc_pipe_client *netlogon_pipe;
 	NTSTATUS result;
 	WERROR werr;
@@ -259,18 +259,28 @@ enum winbindd_result winbindd_dual_getdcname(struct winbindd_domain *domain,
 
 	req_domain = find_domain_from_name_noinit(state->request.domain_name);
 	if (req_domain == domain) {
-		werr = rpccli_netlogon_getdcname(netlogon_pipe, state->mem_ctx,
-						 domain->dcname,
-						 state->request.domain_name,
-						 &dcname_slash);
+		result = rpccli_netr_GetDcName(netlogon_pipe,
+					       state->mem_ctx,
+					       domain->dcname,
+					       state->request.domain_name,
+					       &dcname_slash,
+					       &werr);
 	} else {
-		werr = rpccli_netlogon_getanydcname(netlogon_pipe, state->mem_ctx,
-						    domain->dcname,
-						    state->request.domain_name,
-						    &dcname_slash);
+		result = rpccli_netr_GetAnyDCName(netlogon_pipe,
+						  state->mem_ctx,
+						  domain->dcname,
+						  state->request.domain_name,
+						  &dcname_slash,
+						  &werr);
 	}
 	/* And restore our original timeout. */
 	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(5,("Error requesting DCname for domain %s: %s\n",
+			state->request.domain_name, nt_errstr(result)));
+		return WINBINDD_ERROR;
+	}
 
 	if (!W_ERROR_IS_OK(werr)) {
 		DEBUG(5, ("Error requesting DCname for domain %s: %s\n",

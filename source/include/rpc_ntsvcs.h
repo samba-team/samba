@@ -36,32 +36,6 @@
 /**************************/
 
 typedef struct {
-	/* nothing in the request */
-	uint32 dummy;
-} NTSVCS_Q_GET_VERSION;
-
-typedef struct {
-	uint32 version;
-	WERROR status;
-} NTSVCS_R_GET_VERSION;
-
-
-/**************************/
-
-typedef struct {
-	UNISTR2 *devicename;
-	uint32 flags;
-} NTSVCS_Q_GET_DEVICE_LIST_SIZE;
-
-typedef struct {
-	uint32 size;
-	WERROR status;
-} NTSVCS_R_GET_DEVICE_LIST_SIZE;
-
-
-/**************************/
-
-typedef struct {
 	UNISTR2 *devicename;
 	uint32 buffer_size;
 	uint32 flags;
@@ -72,17 +46,6 @@ typedef struct {
 	uint32 needed;
 	WERROR status;
 } NTSVCS_R_GET_DEVICE_LIST;
-
-/**************************/
-
-typedef struct {
-	UNISTR2 devicepath;
-	uint32 flags;
-} NTSVCS_Q_VALIDATE_DEVICE_INSTANCE;
-
-typedef struct {
-	WERROR status;
-} NTSVCS_R_VALIDATE_DEVICE_INSTANCE;
 
 /**************************/
 
@@ -104,43 +67,5 @@ typedef struct {
 	uint32 needed;
 	WERROR status;
 } NTSVCS_R_GET_DEVICE_REG_PROPERTY;
-
-
-/**************************/
-
-typedef struct {
-	uint32 index;
-	uint8 *buffer;
-	uint32 buffer_size;
-	uint32 unknown1;
-} NTSVCS_Q_GET_HW_PROFILE_INFO;
-
-typedef struct {
-	uint32 buffer_size;	/* the size (not included in the reply) 
-				   if just matched from the request */
-	uint8 *buffer;
-	WERROR status;
-} NTSVCS_R_GET_HW_PROFILE_INFO;
-
-
-/**************************/
-
-typedef struct {
-	uint32 unknown1;
-	UNISTR2 devicepath;
-	uint32 unknown2;
-	uint32 unknown3;
-	uint32 unknown4;
-	uint32 unknown5;
-	uint32 unknown6;
-	uint32 unknown7;
-} NTSVCS_Q_HW_PROFILE_FLAGS;
-
-typedef struct {
-	uint32 unknown1;
-	uint32 unknown2;
-	uint32 unknown3;
-	WERROR status;
-} NTSVCS_R_HW_PROFILE_FLAGS;
 
 #endif /* _RPC_NTSVCS_H */

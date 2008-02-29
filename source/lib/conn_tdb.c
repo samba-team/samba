@@ -34,7 +34,7 @@ static struct db_context *connections_db_ctx(bool rw)
 	}
 	else {
 		db_ctx = db_open(NULL, lock_path("connections.tdb"), 0,
-				 TDB_DEFAULT, O_RDONLY, 0);
+				 TDB_CLEAR_IF_FIRST|TDB_DEFAULT, O_RDONLY, 0);
 	}
 
 	return db_ctx;

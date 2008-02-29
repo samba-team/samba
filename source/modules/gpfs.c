@@ -22,9 +22,11 @@
 #ifdef HAVE_GPFS
 
 #include "gpfs_gpl.h"
+#include "vfs_gpfs.h"
 
 static void *libgpfs_handle = NULL;
 static bool gpfs_share_modes;
+static bool gpfs_leases;
 
 static int (*gpfs_set_share_fn)(int fd, unsigned int allow, unsigned int deny);
 static int (*gpfs_set_lease_fn)(int fd, unsigned int leaseType);
@@ -42,7 +44,7 @@ bool set_gpfs_sharemode(files_struct *fsp, uint32 access_mask,
 	if (!gpfs_share_modes) {
 		return True;
 	}
-
+	
 	if (gpfs_set_share_fn == NULL) {
 		return False;
 	}
@@ -88,7 +90,7 @@ int set_gpfs_lease(int fd, int leasetype)
 {
 	int gpfs_type = GPFS_LEASE_NONE;
 
-	if (!gpfs_share_modes) {
+	if (!gpfs_leases) {
 		return True;
 	}
 
@@ -103,6 +105,13 @@ int set_gpfs_lease(int fd, int leasetype)
 	if (leasetype == F_WRLCK) {
 		gpfs_type = GPFS_LEASE_WRITE;
 	}
+	
+	/* we unconditionally set CAP_LEASE, rather than looking for
+	   -1/EACCES as there is a bug in some versions of
+	   libgpfs_gpl.so which results in a leaked fd on /dev/ss0
+	   each time we try this with the wrong capabilities set
+	*/
+	linux_set_lease_capability();
 	return gpfs_set_lease_fn(fd, gpfs_type);
 }
 
@@ -172,11 +181,8 @@ void init_gpfs(void)
 		goto failed;
 	}
 
-	if (lp_parm_bool(-1, "gpfs", "sharemodes", True)) {
-		gpfs_share_modes = True;
-	} else {
-		gpfs_share_modes = False;
-	}
+	gpfs_share_modes = lp_parm_bool(-1, "gpfs", "sharemodes", True);
+	gpfs_leases      = lp_parm_bool(-1, "gpfs", "leases", True);
 
 	return;
 

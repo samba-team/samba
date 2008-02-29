@@ -78,9 +78,20 @@ static size_t interpret_long_filename(TALLOC_CTX *ctx,
 			len = CVAL(p, 26);
 			p += 27;
 			p += clistr_align_in(cli, p, 0);
-			if (p + len + 2 > pdata_end) {
+
+			/* We can safely use +1 here (which is required by OS/2)
+			 * instead of +2 as the STR_TERMINATE flag below is
+			 * actually used as the length calculation.
+			 * The len+2 is merely an upper bound.
+			 * Due to the explicit 2 byte null termination
+			 * in cli_receive_trans/cli_receive_nt_trans
+			 * we know this is safe. JRA + kukks
+			 */
+
+			if (p + len + 1 > pdata_end) {
 				return pdata_end - base;
 			}
+
 			/* the len+2 below looks strange but it is
 			   important to cope with the differences
 			   between win2000 and win9x for this call
@@ -317,7 +328,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 				       &rparam, &param_len,
 				       &rdata, &data_len) &&
                     cli_is_dos_error(cli)) {
-			/* we need to work around a Win95 bug - sometimes
+			/* We need to work around a Win95 bug - sometimes
 			   it gives ERRSRV/ERRerror temprarily */
 			uint8 eclass;
 			uint32 ecode;
@@ -326,6 +337,20 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			SAFE_FREE(rparam);
 
 			cli_dos_error(cli, &eclass, &ecode);
+
+			/*
+			 * OS/2 might return "no more files",
+			 * which just tells us, that searchcount is zero
+			 * in this search.
+			 * Guenter Kukkukk <linux@kukkukk.com>
+			 */
+
+			if (eclass == ERRDOS && ecode == ERRnofiles) {
+				ff_searchcount = 0;
+				cli_reset_error(cli);
+				break;
+			}
+
 			if (eclass != ERRSRV || ecode != ERRerror)
 				break;
 			smb_msleep(100);
@@ -377,6 +402,12 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 							&resume_key,
 							&last_name_raw);
 
+			if (!finfo.name) {
+				DEBUG(0,("cli_list_new: Error: unable to parse name from info level %d\n",
+					info_level));
+				ff_eos = 1;
+				break;
+			}
 			if (!First && *mask && strcsequal(finfo.name, mask)) {
 				DEBUG(0,("Error: Looping in FIND_NEXT as name %s has already been seen?\n",
 					finfo.name));
@@ -442,6 +473,11 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 							&finfo,
 							NULL,
 							NULL);
+			if (!finfo.name) {
+				DEBUG(0,("cli_list_new: unable to parse name from info level %d\n",
+					info_level));
+				break;
+			}
                         fn(mnt,&finfo, Mask, state);
                 }
         }
@@ -459,11 +495,12 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
  The length of the structure is returned.
 ****************************************************************************/
 
-static int interpret_short_filename(TALLOC_CTX *ctx,
+static bool interpret_short_filename(TALLOC_CTX *ctx,
 				struct cli_state *cli,
 				char *p,
 				file_info *finfo)
 {
+	size_t ret;
 	ZERO_STRUCTP(finfo);
 
 	finfo->cli = cli;
@@ -475,18 +512,22 @@ static int interpret_short_filename(TALLOC_CTX *ctx,
 	finfo->mtime_ts.tv_sec = finfo->atime_ts.tv_sec = finfo->ctime_ts.tv_sec;
 	finfo->mtime_ts.tv_nsec = finfo->atime_ts.tv_nsec = 0;
 	finfo->size = IVAL(p,26);
-	clistr_pull_talloc(ctx,
+	ret = clistr_pull_talloc(ctx,
 			cli,
 			&finfo->name,
 			p+30,
 			12,
 			STR_ASCII);
-	if (!finfo->name) {
-		finfo->name = talloc_strdup(ctx, finfo->short_name);
-	} else if (strcmp(finfo->name, "..") && strcmp(finfo->name, ".")) {
-		finfo->name = talloc_strdup(ctx, finfo->short_name);
+	if (ret == (size_t)-1) {
+		return false;
 	}
 
+	if (finfo->name) {
+		strlcpy(finfo->short_name,
+			finfo->name,
+			sizeof(finfo->short_name));
+	}
+	return true;
 	return(DIR_STRUCT_SIZE);
 }
 
@@ -555,6 +596,12 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 		received = SVAL(cli->inbuf,smb_vwv0);
 		if (received <= 0) break;
 
+		/* Ensure we received enough data. */
+		if ((cli->inbuf+4+smb_len(cli->inbuf) - (smb_buf(cli->inbuf)+3)) <
+				received*DIR_STRUCT_SIZE) {
+			break;
+		}
+
 		first = False;
 
 		dirlist = (char *)SMB_REALLOC(
@@ -609,7 +656,10 @@ int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute,
 	frame = talloc_stackframe();
 	for (p=dirlist,i=0;i<num_received;i++) {
 		file_info finfo;
-		p += interpret_short_filename(frame,cli, p,&finfo);
+		if (!interpret_short_filename(frame, cli, p, &finfo)) {
+			break;
+		}
+		p += DIR_STRUCT_SIZE;
 		fn("\\", &finfo, Mask, state);
 	}
 	TALLOC_FREE(frame);

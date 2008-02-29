@@ -1341,9 +1341,10 @@ static int winbind_auth_request(pam_handle_t * pamh,
 
 		/* If winbindd returned a username, return the pointer to it
 		 * here. */
-		if (user_ret && response.extra_data.data) {
+		if (user_ret && response.data.auth.unix_username[0]) {
 			/* We have to trust it's a null terminated string. */
-			*user_ret = (char *)response.extra_data.data;
+			*user_ret = strndup(response.data.auth.unix_username,
+				    sizeof(response.data.auth.unix_username) - 1);
 		}
 	}
 
@@ -1431,22 +1432,22 @@ static int winbind_chauthtok_request(pam_handle_t * pamh,
 		switch (reject_reason) {
 			case -1:
 				break;
-			case REJECT_REASON_OTHER:
+			case SAMR_REJECT_OTHER:
 				if ((min_pwd_age > 0) &&
 				    (pwd_last_set + min_pwd_age > time(NULL))) {
 					PAM_WB_REMARK_DIRECT(pamh, ctrl,
 					     "NT_STATUS_PWD_TOO_RECENT");
 				}
 				break;
-			case REJECT_REASON_TOO_SHORT:
+			case SAMR_REJECT_TOO_SHORT:
 				PAM_WB_REMARK_DIRECT(pamh, ctrl,
 					"NT_STATUS_PWD_TOO_SHORT");
 				break;
-			case REJECT_REASON_IN_HISTORY:
+			case SAMR_REJECT_IN_HISTORY:
 				PAM_WB_REMARK_DIRECT(pamh, ctrl,
 					"NT_STATUS_PWD_HISTORY_CONFLICT");
 				break;
-			case REJECT_REASON_NOT_COMPLEX:
+			case SAMR_REJECT_COMPLEXITY:
 				_make_remark(pamh, ctrl, PAM_ERROR_MSG,
 					     "Password does not meet "
 					     "complexity requirements");

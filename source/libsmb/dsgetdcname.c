@@ -110,7 +110,7 @@ void debug_dsdcinfo_flags(int lvl, uint32_t flags)
 /*********************************************************************
  ********************************************************************/
 
-static int pack_dsdcinfo(struct DS_DOMAIN_CONTROLLER_INFO *info,
+static int pack_dsdcinfo(struct netr_DsRGetDCNameInfo *info,
 			 unsigned char **buf)
 {
 	unsigned char *buffer = NULL;
@@ -122,9 +122,8 @@ static int pack_dsdcinfo(struct DS_DOMAIN_CONTROLLER_INFO *info,
 
 	ZERO_STRUCT(guid_flat);
 
-	if (info->domain_guid) {
-		const struct GUID *guid = info->domain_guid;
-		smb_uuid_pack(*guid, &guid_flat);
+	if (!GUID_all_zero(&info->domain_guid)) {
+		smb_uuid_pack(info->domain_guid, &guid_flat);
 	}
 
  again:
@@ -132,17 +131,17 @@ static int pack_dsdcinfo(struct DS_DOMAIN_CONTROLLER_INFO *info,
 
 	if (buflen > 0) {
 		DEBUG(10,("pack_dsdcinfo: Packing domain %s (%s)\n",
-			  info->domain_name, info->domain_controller_name));
+			  info->domain_name, info->dc_unc));
 	}
 
 	len += tdb_pack(buffer+len, buflen-len, "ffdBffdff",
-			info->domain_controller_name,
-			info->domain_controller_address,
-			info->domain_controller_address_type,
+			info->dc_unc,
+			info->dc_address,
+			info->dc_address_type,
 			UUID_FLAT_SIZE, guid_flat.info,
 			info->domain_name,
-			info->dns_forest_name,
-			info->flags,
+			info->forest_name,
+			info->dc_flags,
 			info->dc_site_name,
 			info->client_site_name);
 
@@ -169,33 +168,33 @@ static int pack_dsdcinfo(struct DS_DOMAIN_CONTROLLER_INFO *info,
 static NTSTATUS unpack_dsdcinfo(TALLOC_CTX *mem_ctx,
 				unsigned char *buf,
 				int buflen,
-				struct DS_DOMAIN_CONTROLLER_INFO **info_ret)
+				struct netr_DsRGetDCNameInfo **info_ret)
 {
 	int len = 0;
-	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+	struct netr_DsRGetDCNameInfo *info = NULL;
 	uint32_t guid_len = 0;
 	unsigned char *guid_buf = NULL;
 	UUID_FLAT guid_flat;
 
 	/* forgive me 6 times */
-	fstring domain_controller_name;
-	fstring domain_controller_address;
+	fstring dc_unc;
+	fstring dc_address;
 	fstring domain_name;
-	fstring dns_forest_name;
+	fstring forest_name;
 	fstring dc_site_name;
 	fstring client_site_name;
 
-	info = TALLOC_ZERO_P(mem_ctx, struct DS_DOMAIN_CONTROLLER_INFO);
+	info = TALLOC_ZERO_P(mem_ctx, struct netr_DsRGetDCNameInfo);
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
 	len += tdb_unpack(buf+len, buflen-len, "ffdBffdff",
-			  &domain_controller_name,
-			  &domain_controller_address,
-			  &info->domain_controller_address_type,
+			  &dc_unc,
+			  &dc_address,
+			  &info->dc_address_type,
 			  &guid_len, &guid_buf,
 			  &domain_name,
-			  &dns_forest_name,
-			  &info->flags,
+			  &forest_name,
+			  &info->dc_flags,
 			  &dc_site_name,
 			  &client_site_name);
 	if (len == -1) {
@@ -203,23 +202,23 @@ static NTSTATUS unpack_dsdcinfo(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	info->domain_controller_name =
-		talloc_strdup(mem_ctx, domain_controller_name);
-	info->domain_controller_address =
-		talloc_strdup(mem_ctx, domain_controller_address);
+	info->dc_unc =
+		talloc_strdup(mem_ctx, dc_unc);
+	info->dc_address =
+		talloc_strdup(mem_ctx, dc_address);
 	info->domain_name =
 		talloc_strdup(mem_ctx, domain_name);
-	info->dns_forest_name =
-		talloc_strdup(mem_ctx, dns_forest_name);
+	info->forest_name =
+		talloc_strdup(mem_ctx, forest_name);
 	info->dc_site_name =
 		talloc_strdup(mem_ctx, dc_site_name);
 	info->client_site_name =
 		talloc_strdup(mem_ctx, client_site_name);
 
-	if (!info->domain_controller_name ||
-	    !info->domain_controller_address ||
+	if (!info->dc_unc ||
+	    !info->dc_address ||
 	    !info->domain_name ||
-	    !info->dns_forest_name ||
+	    !info->forest_name ||
 	    !info->dc_site_name ||
 	    !info->client_site_name) {
 		goto failed;
@@ -235,16 +234,12 @@ static NTSTATUS unpack_dsdcinfo(TALLOC_CTX *mem_ctx,
 		memcpy(&guid_flat.info, guid_buf, guid_len);
 		smb_uuid_unpack(guid_flat, &guid);
 
-		info->domain_guid = (struct GUID *)talloc_memdup(
-			mem_ctx, &guid, sizeof(guid));
-		if (!info->domain_guid) {
-			goto failed;
-		}
+		info->domain_guid = guid;
 		SAFE_FREE(guid_buf);
 	}
 
 	DEBUG(10,("unpack_dcscinfo: Unpacked domain %s (%s)\n",
-		  info->domain_name, info->domain_controller_name));
+		  info->domain_name, info->dc_unc));
 
 	*info_ret = info;
 
@@ -297,7 +292,7 @@ static NTSTATUS dsgetdcname_cache_delete(TALLOC_CTX *mem_ctx,
 
 static NTSTATUS dsgetdcname_cache_store(TALLOC_CTX *mem_ctx,
 					const char *domain_name,
-					struct DS_DOMAIN_CONTROLLER_INFO *info)
+					struct netr_DsRGetDCNameInfo *info)
 {
 	time_t expire_time;
 	char *key;
@@ -346,7 +341,7 @@ static NTSTATUS dsgetdcname_cache_refresh(TALLOC_CTX *mem_ctx,
 					  struct GUID *domain_guid,
 					  uint32_t flags,
 					  const char *site_name,
-					  struct DS_DOMAIN_CONTROLLER_INFO *info)
+					  struct netr_DsRGetDCNameInfo *info)
 {
 	struct cldap_netlogon_reply r;
 
@@ -355,7 +350,7 @@ static NTSTATUS dsgetdcname_cache_refresh(TALLOC_CTX *mem_ctx,
 
 	ZERO_STRUCT(r);
 
-	if (ads_cldap_netlogon(info->domain_controller_name,
+	if (ads_cldap_netlogon(info->dc_unc,
 			       info->domain_name, &r)) {
 
 		dsgetdcname_cache_delete(mem_ctx, domain_name);
@@ -409,7 +404,7 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 					struct GUID *domain_guid,
 					uint32_t flags,
 					const char *site_name,
-					struct DS_DOMAIN_CONTROLLER_INFO **info,
+					struct netr_DsRGetDCNameInfo **info,
 					bool *expired)
 {
 	char *key;
@@ -438,13 +433,13 @@ static NTSTATUS dsgetdcname_cache_fetch(TALLOC_CTX *mem_ctx,
 	data_blob_free(&blob);
 
 	/* check flags */
-	if (!check_cldap_reply_required_flags((*info)->flags, flags)) {
+	if (!check_cldap_reply_required_flags((*info)->dc_flags, flags)) {
 		DEBUG(10,("invalid flags\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	if ((flags & DS_IP_REQUIRED) &&
-	    ((*info)->domain_controller_address_type != ADS_INET_ADDRESS)) {
+	    ((*info)->dc_address_type != DS_ADDRESS_TYPE_INET)) {
 	    	return NT_STATUS_INVALID_PARAMETER_MIX;
 	}
 
@@ -459,7 +454,7 @@ static NTSTATUS dsgetdcname_cached(TALLOC_CTX *mem_ctx,
 				   struct GUID *domain_guid,
 				   uint32_t flags,
 				   const char *site_name,
-				   struct DS_DOMAIN_CONTROLLER_INFO **info)
+				   struct netr_DsRGetDCNameInfo **info)
 {
 	NTSTATUS status;
 	bool expired = false;
@@ -663,40 +658,36 @@ static NTSTATUS discover_dc_dns(TALLOC_CTX *mem_ctx,
 ****************************************************************/
 
 static NTSTATUS make_domain_controller_info(TALLOC_CTX *mem_ctx,
-					    const char *domain_controller_name,
-					    const char *domain_controller_address,
-					    uint32_t domain_controller_address_type,
+					    const char *dc_unc,
+					    const char *dc_address,
+					    uint32_t dc_address_type,
 					    const struct GUID *domain_guid,
 					    const char *domain_name,
-					    const char *dns_forest_name,
+					    const char *forest_name,
 					    uint32_t flags,
 					    const char *dc_site_name,
 					    const char *client_site_name,
-					    struct DS_DOMAIN_CONTROLLER_INFO **info_out)
+					    struct netr_DsRGetDCNameInfo **info_out)
 {
-	struct DS_DOMAIN_CONTROLLER_INFO *info;
+	struct netr_DsRGetDCNameInfo *info;
 
-	info = TALLOC_ZERO_P(mem_ctx, struct DS_DOMAIN_CONTROLLER_INFO);
+	info = TALLOC_ZERO_P(mem_ctx, struct netr_DsRGetDCNameInfo);
 	NT_STATUS_HAVE_NO_MEMORY(info);
 
-	if (domain_controller_name) {
-		info->domain_controller_name = talloc_strdup(mem_ctx,
-			domain_controller_name);
-		NT_STATUS_HAVE_NO_MEMORY(info->domain_controller_name);
+	if (dc_unc) {
+		info->dc_unc = talloc_strdup(mem_ctx, dc_unc);
+		NT_STATUS_HAVE_NO_MEMORY(info->dc_unc);
 	}
 
-	if (domain_controller_address) {
-		info->domain_controller_address = talloc_strdup(mem_ctx,
-			domain_controller_address);
-		NT_STATUS_HAVE_NO_MEMORY(info->domain_controller_address);
+	if (dc_address) {
+		info->dc_address = talloc_strdup(mem_ctx, dc_address);
+		NT_STATUS_HAVE_NO_MEMORY(info->dc_address);
 	}
 
-	info->domain_controller_address_type = domain_controller_address_type;
+	info->dc_address_type = dc_address_type;
 
 	if (domain_guid) {
-		info->domain_guid = (struct GUID *)talloc_memdup(
-			mem_ctx, domain_guid, sizeof(*domain_guid));
-		NT_STATUS_HAVE_NO_MEMORY(info->domain_guid);
+		info->domain_guid = *domain_guid;
 	}
 
 	if (domain_name) {
@@ -704,13 +695,12 @@ static NTSTATUS make_domain_controller_info(TALLOC_CTX *mem_ctx,
 		NT_STATUS_HAVE_NO_MEMORY(info->domain_name);
 	}
 
-	if (dns_forest_name) {
-		info->dns_forest_name = talloc_strdup(mem_ctx,
-						      dns_forest_name);
-		NT_STATUS_HAVE_NO_MEMORY(info->dns_forest_name);
+	if (forest_name) {
+		info->forest_name = talloc_strdup(mem_ctx, forest_name);
+		NT_STATUS_HAVE_NO_MEMORY(info->forest_name);
 	}
 
-	info->flags = flags;
+	info->dc_flags = flags;
 
 	if (dc_site_name) {
 		info->dc_site_name = talloc_strdup(mem_ctx, dc_site_name);
@@ -736,7 +726,7 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 			       uint32_t flags,
 			       struct ip_service_name **dclist,
 			       int num_dcs,
-			       struct DS_DOMAIN_CONTROLLER_INFO **info)
+			       struct netr_DsRGetDCNameInfo **info)
 {
 	int i = 0;
 	bool valid_dc = false;
@@ -779,12 +769,12 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 		}
 		dc_hostname = r.hostname;
 		dc_domain_name = r.domain;
-		dc_flags |= ADS_DNS_DOMAIN | ADS_DNS_CONTROLLER;
+		dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
 	} else {
 		/* FIXME */
 		dc_hostname = r.hostname;
 		dc_domain_name = r.domain;
-		dc_flags |= ADS_DNS_DOMAIN | ADS_DNS_CONTROLLER;
+		dc_flags |= DS_DNS_DOMAIN | DS_DNS_CONTROLLER;
 	}
 
 	if (flags & DS_IP_REQUIRED) {
@@ -792,17 +782,17 @@ static NTSTATUS process_dc_dns(TALLOC_CTX *mem_ctx,
 		print_sockaddr(addr, sizeof(addr), &dclist[i]->ss);
 		dc_address = talloc_asprintf(mem_ctx, "\\\\%s",
 						addr);
-		dc_address_type = ADS_INET_ADDRESS;
+		dc_address_type = DS_ADDRESS_TYPE_INET;
 	} else {
 		dc_address = talloc_asprintf(mem_ctx, "\\\\%s",
 					     r.netbios_hostname);
-		dc_address_type = ADS_NETBIOS_ADDRESS;
+		dc_address_type = DS_ADDRESS_TYPE_NETBIOS;
 	}
 	NT_STATUS_HAVE_NO_MEMORY(dc_address);
 	smb_uuid_unpack(r.guid, &dc_guid);
 
 	if (r.forest) {
-		dc_flags |= ADS_DNS_FOREST;
+		dc_flags |= DS_DNS_FOREST;
 	}
 
 	return make_domain_controller_info(mem_ctx,
@@ -827,7 +817,7 @@ static NTSTATUS process_dc_netbios(TALLOC_CTX *mem_ctx,
 				   uint32_t flags,
 				   struct ip_service_name **dclist,
 				   int num_dcs,
-				   struct DS_DOMAIN_CONTROLLER_INFO **info)
+				   struct netr_DsRGetDCNameInfo **info)
 {
 	/* FIXME: code here */
 
@@ -842,7 +832,7 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 				       struct GUID *domain_guid,
 				       uint32_t flags,
 				       const char *site_name,
-				       struct DS_DOMAIN_CONTROLLER_INFO **info)
+				       struct netr_DsRGetDCNameInfo **info)
 {
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	struct ip_service_name *dclist;
@@ -891,71 +881,26 @@ static NTSTATUS dsgetdcname_rediscover(TALLOC_CTX *mem_ctx,
 }
 
 /********************************************************************
+ dsgetdcname.
+
+ This will be the only public function here.
 ********************************************************************/
 
-NTSTATUS dsgetdcname_remote(TALLOC_CTX *mem_ctx,
-			    const char *computer_name,
-			    const char *domain_name,
-			    struct GUID *domain_guid,
-			    const char *site_name,
-			    uint32_t flags,
-			    struct DS_DOMAIN_CONTROLLER_INFO **info)
-{
-	WERROR werr;
-	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-	struct cli_state *cli = NULL;
-	struct rpc_pipe_client *pipe_cli = NULL;
-
-	status = cli_full_connection(&cli, NULL, computer_name,
-				     NULL, 0,
-				     "IPC$", "IPC",
-				     "",
-				     "",
-				     "",
-				     0, Undefined, NULL);
-
-	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
-	}
-
-	pipe_cli = cli_rpc_pipe_open_noauth(cli, PI_NETLOGON,
-					    &status);
-	if (!pipe_cli) {
-		goto done;
-	}
-
-	werr = rpccli_netlogon_dsr_getdcname(pipe_cli,
-					     mem_ctx,
-					     computer_name,
-					     domain_name,
-					     domain_guid,
-					     NULL,
-					     flags,
-					     info);
-	status = werror_to_ntstatus(werr);
-
- done:
-	cli_rpc_pipe_close(pipe_cli);
-	if (cli) {
-		cli_shutdown(cli);
-	}
-
-	return status;
-}
-
-/********************************************************************
-********************************************************************/
-
-NTSTATUS dsgetdcname_local(TALLOC_CTX *mem_ctx,
-			   const char *computer_name,
-			   const char *domain_name,
-			   struct GUID *domain_guid,
-			   const char *site_name,
-			   uint32_t flags,
-			   struct DS_DOMAIN_CONTROLLER_INFO **info)
+NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
+		     const char *domain_name,
+		     struct GUID *domain_guid,
+		     const char *site_name,
+		     uint32_t flags,
+		     struct netr_DsRGetDCNameInfo **info)
 {
 	NTSTATUS status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-	struct DS_DOMAIN_CONTROLLER_INFO *myinfo = NULL;
+	struct netr_DsRGetDCNameInfo *myinfo = NULL;
+
+	DEBUG(10,("dsgetdcname: domain_name: %s, "
+		  "domain_guid: %s, site_name: %s, flags: 0x%08x\n",
+		  domain_name,
+		  domain_guid ? GUID_string(mem_ctx, domain_guid) : "(null)",
+		  site_name, flags));
 
 	*info = NULL;
 
@@ -990,45 +935,4 @@ NTSTATUS dsgetdcname_local(TALLOC_CTX *mem_ctx,
 	}
 
 	return status;
-}
-
-/********************************************************************
- dsgetdcname.
-
- This will be the only public function here.
-********************************************************************/
-
-NTSTATUS dsgetdcname(TALLOC_CTX *mem_ctx,
-		     const char *computer_name,
-		     const char *domain_name,
-		     struct GUID *domain_guid,
-		     const char *site_name,
-		     uint32_t flags,
-		     struct DS_DOMAIN_CONTROLLER_INFO **info)
-{
-	DEBUG(10,("dsgetdcname: computer_name: %s, domain_name: %s, "
-		  "domain_guid: %s, site_name: %s, flags: 0x%08x\n",
-		  computer_name, domain_name,
-		  domain_guid ? GUID_string(mem_ctx, domain_guid) : "(null)",
-		  site_name, flags));
-
-	*info = NULL;
-
-	if (computer_name) {
-		return dsgetdcname_remote(mem_ctx,
-					  computer_name,
-					  domain_name,
-					  domain_guid,
-					  site_name,
-					  flags,
-					  info);
-	}
-
-	return dsgetdcname_local(mem_ctx,
-				 computer_name,
-				 domain_name,
-				 domain_guid,
-				 site_name,
-				 flags,
-				 info);
 }

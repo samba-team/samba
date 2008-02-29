@@ -580,6 +580,21 @@ static int skel_aio_suspend(struct vfs_handle_struct *handle, struct files_struc
 	return vfswrap_aio_suspend(NULL, fsp, aiocb, n, ts);
 }
 
+static bool skel_aio_force(struct vfs_handle_struct *handle, struct files_struct *fsp)
+{
+	return vfswrap_aio_force(NULL, fsp);
+}
+
+static bool skel_is_offline(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf)
+{
+	return vfswrap_is_offline(NULL, path, sbuf);
+}
+
+static int skel_set_offline(struct vfs_handle_struct *handle, const char *path)
+{
+	return vfswrap_set_offline(NULL, path);
+}
+
 /* VFS operations structure */
 
 static vfs_op_tuple skel_op_tuples[] = {
@@ -676,7 +691,7 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_sys_acl_free_text),		SMB_VFS_OP_SYS_ACL_FREE_TEXT,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_sys_acl_free_acl),		SMB_VFS_OP_SYS_ACL_FREE_ACL,		SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_sys_acl_free_qualifier),	SMB_VFS_OP_SYS_ACL_FREE_QUALIFIER,	SMB_VFS_LAYER_OPAQUE},
-	
+
 	/* EA operations. */
 	{SMB_VFS_OP(skel_getxattr),			SMB_VFS_OP_GETXATTR,			SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_lgetxattr),			SMB_VFS_OP_LGETXATTR,			SMB_VFS_LAYER_OPAQUE},
@@ -699,6 +714,11 @@ static vfs_op_tuple skel_op_tuples[] = {
 	{SMB_VFS_OP(skel_aio_error),			SMB_VFS_OP_AIO_ERROR,			SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_aio_fsync),			SMB_VFS_OP_AIO_FSYNC,			SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(skel_aio_suspend),			SMB_VFS_OP_AIO_SUSPEND,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_aio_force),			SMB_VFS_OP_AIO_FORCE,			SMB_VFS_LAYER_OPAQUE},
+
+        /* offline operations */
+	{SMB_VFS_OP(skel_is_offline),		        SMB_VFS_OP_IS_OFFLINE,			SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(skel_set_offline),			SMB_VFS_OP_SET_OFFLINE,			SMB_VFS_LAYER_OPAQUE},
 
 	{NULL,						SMB_VFS_OP_NOOP,			SMB_VFS_LAYER_NOOP}
 };

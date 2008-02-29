@@ -524,7 +524,7 @@ size_t convert_string(charset_t from, charset_t to,
 size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 			       void const *src, size_t srclen, void *dst, bool allow_bad_conv)
 {
-	size_t i_len, o_len, destlen = MAX(srclen, 512);
+	size_t i_len, o_len, destlen = (srclen * 3) / 2;
 	size_t retval;
 	const char *inbuf = (const char *)src;
 	char *outbuf = NULL, *ob = NULL;
@@ -550,7 +550,8 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 
   convert:
 
-	if ((destlen*2) < destlen) {
+	/* +2 is for ucs2 null termination. */
+	if ((destlen*2)+2 < destlen) {
 		/* wrapped ! abort. */
 		if (!conv_silent)
 			DEBUG(0, ("convert_string_allocate: destlen wrapped !\n"));
@@ -561,10 +562,11 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 		destlen = destlen * 2;
 	}
 
+	/* +2 is for ucs2 null termination. */
 	if (ctx) {
-		ob = (char *)TALLOC_REALLOC(ctx, ob, destlen);
+		ob = (char *)TALLOC_REALLOC(ctx, ob, destlen + 2);
 	} else {
-		ob = (char *)SMB_REALLOC(ob, destlen);
+		ob = (char *)SMB_REALLOC(ob, destlen + 2);
 	}
 
 	if (!ob) {
@@ -619,10 +621,11 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	 * reallocs *cost*. JRA.
 	 */
 	if (o_len > 1024) {
+		/* We're shrinking here so we know the +2 is safe from wrap. */
 		if (ctx) {
-			ob = (char *)TALLOC_REALLOC(ctx,ob,destlen);
+			ob = (char *)TALLOC_REALLOC(ctx,ob,destlen + 2);
 		} else {
-			ob = (char *)SMB_REALLOC(ob,destlen);
+			ob = (char *)SMB_REALLOC(ob,destlen + 2);
 		}
 	}
 
@@ -632,6 +635,11 @@ size_t convert_string_allocate(TALLOC_CTX *ctx, charset_t from, charset_t to,
 	}
 
 	*dest = ob;
+
+	/* Must ucs2 null terminate in the extra space we allocated. */
+	ob[destlen] = '\0';
+	ob[destlen+1] = '\0';
+
 	return destlen;
 
  use_as_is:

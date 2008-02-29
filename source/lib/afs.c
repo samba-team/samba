@@ -42,20 +42,23 @@ static char *afs_encode_token(const char *cell, const DATA_BLOB ticket,
 			      const struct ClearToken *ct)
 {
 	char *base64_ticket;
-	char *result;
+	char *result = NULL;
 
 	DATA_BLOB key = data_blob(ct->HandShakeKey, 8);
 	char *base64_key;
+	TALLOC_CTX *mem_ctx;
 
-	base64_ticket = base64_encode_data_blob(ticket);
+	mem_ctx = talloc_stackframe();
+	if (mem_ctx == NULL)
+		goto done;
+
+	base64_ticket = base64_encode_data_blob(mem_ctx, ticket);
 	if (base64_ticket == NULL)
-		return NULL;
+		goto done;
 
-	base64_key = base64_encode_data_blob(key);
-	if (base64_key == NULL) {
-		TALLOC_FREE(base64_ticket);
-		return NULL;
-	}
+	base64_key = base64_encode_data_blob(mem_ctx, key);
+	if (base64_key == NULL)
+		goto done;
 
 	asprintf(&result, "%s\n%u\n%s\n%u\n%u\n%u\n%s\n", cell,
 		 ct->AuthHandle, base64_key, ct->ViceId, ct->BeginTimestamp,
@@ -63,8 +66,8 @@ static char *afs_encode_token(const char *cell, const DATA_BLOB ticket,
 
 	DEBUG(10, ("Got ticket string:\n%s\n", result));
 
-	TALLOC_FREE(base64_ticket);
-	TALLOC_FREE(base64_key);
+done:
+	TALLOC_FREE(mem_ctx);
 
 	return result;
 }

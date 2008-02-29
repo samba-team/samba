@@ -47,7 +47,10 @@
 
 	lang_msg_free(msgstr);
 
-	if (ret <= 0) return ret;
+	if (ret <= 0) {
+	  va_end(ap2);
+	  return ret;
+	}
 
 	/* now we have the string in unix format, convert it to the display
 	   charset, but beware of it growing */
@@ -56,6 +59,7 @@ again:
 	p2 = (char *)SMB_MALLOC(maxlen);
 	if (!p2) {
 		SAFE_FREE(p);
+		va_end(ap2);
 		return -1;
 	}
 	clen = convert_string(CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen, True);
@@ -71,6 +75,8 @@ again:
 	SAFE_FREE(p);
 	ret = fwrite(p2, 1, clen, f);
 	SAFE_FREE(p2);
+
+	va_end(ap2);
 
 	return ret;
 }

@@ -1,21 +1,22 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    Net_sam_logon info3 helpers
    Copyright (C) Alexander Bokovoy              2002.
    Copyright (C) Andrew Bartlett                2002.
    Copyright (C) Gerald Carter			2003.
    Copyright (C) Tim Potter			2003.
-   
+   Copyright (C) Guenther Deschner		2008.
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -29,12 +30,12 @@ static TDB_CONTEXT *netsamlogon_tdb = NULL;
 /***********************************************************************
  open the tdb
  ***********************************************************************/
- 
+
 bool netsamlogon_cache_init(void)
 {
 	if (!netsamlogon_tdb) {
 		netsamlogon_tdb = tdb_open_log(lock_path(NETSAMLOGON_TDB), 0,
-						   TDB_DEFAULT, O_RDWR | O_CREAT, 0600);
+					       TDB_DEFAULT, O_RDWR | O_CREAT, 0600);
 	}
 
 	return (netsamlogon_tdb != NULL);
@@ -47,37 +48,39 @@ bool netsamlogon_cache_init(void)
 
 bool netsamlogon_cache_shutdown(void)
 {
-	if(netsamlogon_tdb)
+	if (netsamlogon_tdb) {
 		return (tdb_close(netsamlogon_tdb) == 0);
-		
-	return True;
+	}
+
+	return true;
 }
 
 /***********************************************************************
  Clear cache getpwnam and getgroups entries from the winbindd cache
 ***********************************************************************/
-void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
+
+void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, struct netr_SamInfo3 *info3)
 {
-	bool got_tdb = False;
+	bool got_tdb = false;
 	DOM_SID sid;
 	fstring key_str, sid_string;
 
 	/* We may need to call this function from smbd which will not have
-           winbindd_cache.tdb open.  Open the tdb if a NULL is passed. */
+	   winbindd_cache.tdb open.  Open the tdb if a NULL is passed. */
 
 	if (!tdb) {
-		tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 
+		tdb = tdb_open_log(lock_path("winbindd_cache.tdb"),
 				   WINBINDD_CACHE_TDB_DEFAULT_HASH_SIZE,
 				   TDB_DEFAULT, O_RDWR, 0600);
 		if (!tdb) {
 			DEBUG(5, ("netsamlogon_clear_cached_user: failed to open cache\n"));
 			return;
 		}
-		got_tdb = True;
+		got_tdb = true;
 	}
 
-	sid_copy(&sid, &user->dom_sid.sid);
-	sid_append_rid(&sid, user->user_rid);
+	sid_copy(&sid, info3->base.domain_sid);
+	sid_append_rid(&sid, info3->base.rid);
 
 	/* Clear U/SID cache entry */
 
@@ -95,157 +98,178 @@ void netsamlogon_clear_cached_user(TDB_CONTEXT *tdb, NET_USER_INFO_3 *user)
 
 	tdb_delete(tdb, string_tdb_data(key_str));
 
-	if (got_tdb)
+	if (got_tdb) {
 		tdb_close(tdb);
+	}
 }
 
 /***********************************************************************
- Store a NET_USER_INFO_3 structure in a tdb for later user 
+ Store a netr_SamInfo3 structure in a tdb for later user
  username should be in UTF-8 format
 ***********************************************************************/
 
-bool netsamlogon_cache_store( const char *username, NET_USER_INFO_3 *user )
+bool netsamlogon_cache_store(const char *username, struct netr_SamInfo3 *info3)
 {
-	TDB_DATA 	data;
-        fstring 	keystr, tmp;
-	prs_struct 	ps;
-	bool 		result = False;
-	DOM_SID		user_sid;
-	time_t		t = time(NULL);
-	TALLOC_CTX 	*mem_ctx;
-	
+	TDB_DATA data;
+	fstring keystr, tmp;
+	bool result = false;
+	DOM_SID	user_sid;
+	time_t t = time(NULL);
+	TALLOC_CTX *mem_ctx;
+	DATA_BLOB blob;
+	enum ndr_err_code ndr_err;
+	struct netsamlogoncache_entry r;
 
-	if (!netsamlogon_cache_init()) {
-		DEBUG(0,("netsamlogon_cache_store: cannot open %s for write!\n", NETSAMLOGON_TDB));
-		return False;
+	if (!info3) {
+		return false;
 	}
 
-	sid_copy( &user_sid, &user->dom_sid.sid );
-	sid_append_rid( &user_sid, user->user_rid );
+	if (!netsamlogon_cache_init()) {
+		DEBUG(0,("netsamlogon_cache_store: cannot open %s for write!\n",
+			NETSAMLOGON_TDB));
+		return false;
+	}
+
+	sid_copy(&user_sid, info3->base.domain_sid);
+	sid_append_rid(&user_sid, info3->base.rid);
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
 	slprintf(keystr, sizeof(keystr), "%s", sid_to_fstring(tmp, &user_sid));
 
 	DEBUG(10,("netsamlogon_cache_store: SID [%s]\n", keystr));
-	
+
+	/* Prepare data */
+
+	if (!(mem_ctx = TALLOC_P( NULL, int))) {
+		DEBUG(0,("netsamlogon_cache_store: talloc() failed!\n"));
+		return false;
+	}
+
 	/* only Samba fills in the username, not sure why NT doesn't */
 	/* so we fill it in since winbindd_getpwnam() makes use of it */
-	
-	if ( !user->uni_user_name.buffer ) {
-		init_unistr2( &user->uni_user_name, username, UNI_STR_TERMINATE );
-		init_uni_hdr( &user->hdr_user_name, &user->uni_user_name );
-	}
-		
-	/* Prepare data */
-	
-	if ( !(mem_ctx = TALLOC_P( NULL, int )) ) {
-		DEBUG(0,("netsamlogon_cache_store: talloc() failed!\n"));
-		return False;
+
+	if (!info3->base.account_name.string) {
+		info3->base.account_name.string = talloc_strdup(mem_ctx, username);
 	}
 
-	prs_init( &ps, RPC_MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-	
-	{
-		uint32 ts = (uint32)t;
-		if ( !prs_uint32( "timestamp", &ps, 0, &ts ) )
-			return False;
-	}
-	
-	if ( net_io_user_info3("", user, &ps, 0, 3, 0) ) 
-	{
-		data.dsize = prs_offset( &ps );
-		data.dptr = (uint8 *)prs_data_p( &ps );
+	r.timestamp = t;
+	r.info3 = *info3;
 
-		if (tdb_store_bystring(netsamlogon_tdb, keystr, data, TDB_REPLACE) != -1)
-			result = True;
-		
-		prs_mem_free( &ps );
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(netsamlogoncache_entry, &r);
 	}
 
-	TALLOC_FREE( mem_ctx );
-		
+	ndr_err = ndr_push_struct_blob(&blob, mem_ctx, &r,
+				       (ndr_push_flags_fn_t)ndr_push_netsamlogoncache_entry);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,("netsamlogon_cache_store: failed to push entry to cache\n"));
+		TALLOC_FREE(mem_ctx);
+		return false;
+	}
+
+	data.dsize = blob.length;
+	data.dptr = blob.data;
+
+	if (tdb_store_bystring(netsamlogon_tdb, keystr, data, TDB_REPLACE) != -1) {
+		result = true;
+	}
+
+	TALLOC_FREE(mem_ctx);
+
 	return result;
 }
 
 /***********************************************************************
- Retrieves a NET_USER_INFO_3 structure from a tdb.  Caller must 
+ Retrieves a netr_SamInfo3 structure from a tdb.  Caller must
  free the user_info struct (malloc()'d memory)
 ***********************************************************************/
 
-NET_USER_INFO_3* netsamlogon_cache_get( TALLOC_CTX *mem_ctx, const DOM_SID *user_sid)
+struct netr_SamInfo3 *netsamlogon_cache_get(TALLOC_CTX *mem_ctx, const DOM_SID *user_sid)
 {
-	NET_USER_INFO_3	*user = NULL;
-	TDB_DATA 	data;
-	prs_struct	ps;
-        fstring 	keystr, tmp;
-	uint32		t;
-	
+	struct netr_SamInfo3 *info3 = NULL;
+	TDB_DATA data;
+	fstring keystr, tmp;
+	enum ndr_err_code ndr_err;
+	DATA_BLOB blob;
+	struct netsamlogoncache_entry r;
+
 	if (!netsamlogon_cache_init()) {
-		DEBUG(0,("netsamlogon_cache_get: cannot open %s for write!\n", NETSAMLOGON_TDB));
-		return False;
+		DEBUG(0,("netsamlogon_cache_get: cannot open %s for write!\n",
+			NETSAMLOGON_TDB));
+		return false;
 	}
 
 	/* Prepare key as DOMAIN-SID/USER-RID string */
 	slprintf(keystr, sizeof(keystr), "%s", sid_to_fstring(tmp, user_sid));
 	DEBUG(10,("netsamlogon_cache_get: SID [%s]\n", keystr));
 	data = tdb_fetch_bystring( netsamlogon_tdb, keystr );
-	
-	if ( data.dptr ) {
 
-		user = TALLOC_ZERO_P(mem_ctx, NET_USER_INFO_3);
-		if (user == NULL) {
-			return NULL;
-		}
+	if (!data.dptr) {
+		return NULL;
+	}
 
-		prs_init( &ps, 0, mem_ctx, UNMARSHALL );
-		prs_give_memory( &ps, (char *)data.dptr, data.dsize, True );
-		
-		if ( !prs_uint32( "timestamp", &ps, 0, &t ) ) {
-			prs_mem_free( &ps );
-			TALLOC_FREE(user);
-			return False;
-		}
-		
-		if ( !net_io_user_info3("", user, &ps, 0, 3, 0) ) {
-			TALLOC_FREE( user );
-		}
-			
-		prs_mem_free( &ps );
+	info3 = TALLOC_ZERO_P(mem_ctx, struct netr_SamInfo3);
+	if (!info3) {
+		goto done;
+	}
 
-#if 0	/* The netsamlogon cache needs to hang around.  Something about 
+	blob.data = (uint8 *)data.dptr;
+	blob.length = data.dsize;
+
+	ndr_err = ndr_pull_struct_blob(&blob, mem_ctx, &r,
+				      (ndr_pull_flags_fn_t)ndr_pull_netsamlogoncache_entry);
+
+	if (DEBUGLEVEL >= 10) {
+		NDR_PRINT_DEBUG(netsamlogoncache_entry, &r);
+	}
+
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0,("netsamlogon_cache_get: failed to pull entry from cache\n"));
+		tdb_delete(netsamlogon_tdb, data);
+		TALLOC_FREE(info3);
+		goto done;
+	}
+
+	info3 = (struct netr_SamInfo3 *)talloc_memdup(mem_ctx, &r.info3,
+						      sizeof(r.info3));
+
+ done:
+	SAFE_FREE(data.dptr);
+
+	return info3;
+
+#if 0	/* The netsamlogon cache needs to hang around.  Something about
 	   this feels wrong, but it is the only way we can get all of the
 	   groups.  The old universal groups cache didn't expire either.
 	   --jerry */
 	{
 		time_t		now = time(NULL);
 		uint32		time_diff;
-	   
+
 		/* is the entry expired? */
 		time_diff = now - t;
-		
+
 		if ( (time_diff < 0 ) || (time_diff > lp_winbind_cache_time()) ) {
 			DEBUG(10,("netsamlogon_cache_get: cache entry expired \n"));
 			tdb_delete( netsamlogon_tdb, key );
 			TALLOC_FREE( user );
 		}
-#endif
 	}
-	
-	return user;
+#endif
 }
 
 bool netsamlogon_cache_have(const DOM_SID *user_sid)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("netsamlogon_cache_have");
-	NET_USER_INFO_3 *user = NULL;
+	struct netr_SamInfo3 *info3 = NULL;
 	bool result;
 
 	if (!mem_ctx)
 		return False;
 
-	user = netsamlogon_cache_get(mem_ctx, user_sid);
+	info3 = netsamlogon_cache_get(mem_ctx, user_sid);
 
-	result = (user != NULL);
+	result = (info3 != NULL);
 
 	talloc_destroy(mem_ctx);
 

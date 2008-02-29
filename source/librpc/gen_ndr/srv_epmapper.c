@@ -17,7 +17,7 @@ static bool api_epm_Insert(pipes_struct *p)
 
 	call = &ndr_table_epmapper.calls[NDR_EPM_INSERT];
 
-	r = talloc(NULL, struct epm_Insert);
+	r = talloc(talloc_tos(), struct epm_Insert);
 	if (r == NULL) {
 		return false;
 	}
@@ -90,7 +90,7 @@ static bool api_epm_Delete(pipes_struct *p)
 
 	call = &ndr_table_epmapper.calls[NDR_EPM_DELETE];
 
-	r = talloc(NULL, struct epm_Delete);
+	r = talloc(talloc_tos(), struct epm_Delete);
 	if (r == NULL) {
 		return false;
 	}
@@ -163,7 +163,7 @@ static bool api_epm_Lookup(pipes_struct *p)
 
 	call = &ndr_table_epmapper.calls[NDR_EPM_LOOKUP];
 
-	r = talloc(NULL, struct epm_Lookup);
+	r = talloc(talloc_tos(), struct epm_Lookup);
 	if (r == NULL) {
 		return false;
 	}
@@ -250,7 +250,7 @@ static bool api_epm_Map(pipes_struct *p)
 
 	call = &ndr_table_epmapper.calls[NDR_EPM_MAP];
 
-	r = talloc(NULL, struct epm_Map);
+	r = talloc(talloc_tos(), struct epm_Map);
 	if (r == NULL) {
 		return false;
 	}
@@ -337,7 +337,7 @@ static bool api_epm_LookupHandleFree(pipes_struct *p)
 
 	call = &ndr_table_epmapper.calls[NDR_EPM_LOOKUPHANDLEFREE];
 
-	r = talloc(NULL, struct epm_LookupHandleFree);
+	r = talloc(talloc_tos(), struct epm_LookupHandleFree);
 	if (r == NULL) {
 		return false;
 	}
@@ -412,7 +412,7 @@ static bool api_epm_InqObject(pipes_struct *p)
 
 	call = &ndr_table_epmapper.calls[NDR_EPM_INQOBJECT];
 
-	r = talloc(NULL, struct epm_InqObject);
+	r = talloc(talloc_tos(), struct epm_InqObject);
 	if (r == NULL) {
 		return false;
 	}
@@ -485,7 +485,7 @@ static bool api_epm_MgmtDelete(pipes_struct *p)
 
 	call = &ndr_table_epmapper.calls[NDR_EPM_MGMTDELETE];
 
-	r = talloc(NULL, struct epm_MgmtDelete);
+	r = talloc(talloc_tos(), struct epm_MgmtDelete);
 	if (r == NULL) {
 		return false;
 	}
@@ -558,7 +558,7 @@ static bool api_epm_MapAuth(pipes_struct *p)
 
 	call = &ndr_table_epmapper.calls[NDR_EPM_MAPAUTH];
 
-	r = talloc(NULL, struct epm_MapAuth);
+	r = talloc(talloc_tos(), struct epm_MapAuth);
 	if (r == NULL) {
 		return false;
 	}

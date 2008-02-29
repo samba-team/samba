@@ -40,7 +40,7 @@ static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX
 	   already have valid creds. If not we must set them up. */
 
 	if (cli->auth.auth_type != PIPE_AUTH_TYPE_SCHANNEL) {
-		uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+		uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS;
 
 		result = rpccli_netlogon_setup_creds(cli, 
 					cli->cli->desthost, /* server name */
@@ -58,7 +58,32 @@ static NTSTATUS just_change_the_password(struct rpc_pipe_client *cli, TALLOC_CTX
 		}
 	}
 
-	result = rpccli_net_srv_pwset(cli, mem_ctx, global_myname(), new_trust_passwd_hash);
+	{
+		struct netr_Authenticator clnt_creds, srv_cred;
+		struct samr_Password new_password;
+
+		netlogon_creds_client_step(cli->dc, &clnt_creds);
+
+		cred_hash3(new_password.hash,
+			   new_trust_passwd_hash,
+			   cli->dc->sess_key, 1);
+
+		result = rpccli_netr_ServerPasswordSet(cli, mem_ctx,
+						       cli->dc->remote_machine,
+						       cli->dc->mach_acct,
+						       sec_channel_type,
+						       global_myname(),
+						       &clnt_creds,
+						       &srv_cred,
+						       &new_password);
+
+		/* Always check returned credentials. */
+		if (!netlogon_creds_client_check(cli->dc, &srv_cred.cred)) {
+			DEBUG(0,("rpccli_netr_ServerPasswordSet: "
+				"credentials chain check failed\n"));
+			return NT_STATUS_ACCESS_DENIED;
+		}
+	}
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0,("just_change_the_password: unable to change password (%s)!\n",
@@ -152,6 +177,8 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *lsa_pipe;
 	bool 		retry;
+	struct lsa_DomainList dom_list;
+	int i;
 
 	*domain_names = NULL;
 	*num_domains = 0;
@@ -182,16 +209,38 @@ bool enumerate_domain_trusts( TALLOC_CTX *mem_ctx, const char *domain,
 	/* get a handle */
 
 	result = rpccli_lsa_open_policy(lsa_pipe, mem_ctx, True,
-		POLICY_VIEW_LOCAL_INFORMATION, &pol);
+		LSA_POLICY_VIEW_LOCAL_INFORMATION, &pol);
 	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
 
 	/* Lookup list of trusted domains */
 
-	result = rpccli_lsa_enum_trust_dom(lsa_pipe, mem_ctx, &pol, &enum_ctx,
-		num_domains, domain_names, sids);
+	result = rpccli_lsa_EnumTrustDom(lsa_pipe, mem_ctx,
+					 &pol,
+					 &enum_ctx,
+					 &dom_list,
+					 (uint32_t)-1);
 	if ( !NT_STATUS_IS_OK(result) )
 		goto done;
+
+	*num_domains = dom_list.count;
+
+	*domain_names = TALLOC_ZERO_ARRAY(mem_ctx, char *, *num_domains);
+	if (!*domain_names) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	*sids = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, *num_domains);
+	if (!*sids) {
+		result = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
+
+	for (i=0; i< *num_domains; i++) {
+		(*domain_names)[i] = CONST_DISCARD(char *, dom_list.domains[i].name.string);
+		(*sids)[i] = *dom_list.domains[i].sid;
+	}
 
 done:
 	/* cleanup */

@@ -225,9 +225,6 @@ static WERROR net_enum_files( TALLOC_CTX *ctx, const char *username,
  ********************************************************************/
 static uint32 get_share_type(int snum)
 {
-	char *net_name = lp_servicename(snum);
-	int len_net_name = strlen(net_name);
-
 	/* work out the share type */
 	uint32 type = STYPE_DISKTREE;
 
@@ -235,7 +232,7 @@ static uint32 get_share_type(int snum)
 		type = STYPE_PRINTQ;
 	if (strequal(lp_fstype(snum), "IPC"))
 		type = STYPE_IPC;
-	if (net_name[len_net_name-1] == '$')
+	if (lp_hidden(snum))
 		type |= STYPE_HIDDEN;
 
 	return type;
@@ -1219,17 +1216,20 @@ done:
 
 WERROR _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u)
 {
+	const char *username = NULL;
+
 	switch ( q_u->level ) {
-	case 3: {
-		char *username;
-		if (!(username = rpcstr_pull_unistr2_talloc(
-			      p->mem_ctx, q_u->username))) {
-			return WERR_NOMEM;
+	case 3:
+		if (q_u->username) {
+			username = rpcstr_pull_unistr2_talloc(
+				p->mem_ctx, q_u->username);
+			if (!username) {
+				return WERR_NOMEM;
+			}
 		}
 
 		return net_file_enum_3(username, r_u,
 				       get_enum_hnd(&q_u->enum_hnd));
-	}
 	default:
 		return WERR_UNKNOWN_LEVEL;
 	}

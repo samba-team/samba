@@ -167,6 +167,7 @@ static NTSTATUS check_path_syntax_internal(char *path,
 	}
 
 	*d = '\0';
+
 	return ret;
 }
 
@@ -1109,6 +1110,12 @@ void reply_setatr(struct smb_request *req)
 	mode = SVAL(req->inbuf,smb_vwv0);
 	mtime = srv_make_unix_date3(req->inbuf+smb_vwv1);
 
+	if (!set_filetime(conn,fname,convert_time_t_to_timespec(mtime))) {
+		reply_unixerror(req, ERRDOS, ERRnoaccess);
+		END_PROFILE(SMBsetatr);
+		return;
+	}
+
 	if (mode != FILE_ATTRIBUTE_NORMAL) {
 		if (VALID_STAT_OF_DIR(sbuf))
 			mode |= aDIR;
@@ -1120,12 +1127,6 @@ void reply_setatr(struct smb_request *req)
 			END_PROFILE(SMBsetatr);
 			return;
 		}
-	}
-
-	if (!set_filetime(conn,fname,convert_time_t_to_timespec(mtime))) {
-		reply_unixerror(req, ERRDOS, ERRnoaccess);
-		END_PROFILE(SMBsetatr);
-		return;
 	}
 
 	reply_outbuf(req, 0, 0);
@@ -1638,11 +1639,11 @@ void reply_open(struct smb_request *req)
 	}
 
 	size = sbuf.st_size;
-	fattr = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
 	mtime = sbuf.st_mtime;
 
 	if (fattr & aDIR) {
-		DEBUG(3,("attempt to open a directory %s\n",fname));
+		DEBUG(3,("attempt to open a directory %s\n",fsp->fsp_name));
 		close_file(fsp,ERROR_CLOSE);
 		reply_doserror(req, ERRDOS,ERRnoaccess);
 		END_PROFILE(SMBopen);
@@ -1801,7 +1802,7 @@ void reply_open_and_X(struct smb_request *req)
 		sbuf.st_size = get_allocation_size(conn,fsp,&sbuf);
 	}
 
-	fattr = dos_mode(conn,fname,&sbuf);
+	fattr = dos_mode(conn,fsp->fsp_name,&sbuf);
 	mtime = sbuf.st_mtime;
 	if (fattr & aDIR) {
 		close_file(fsp,ERROR_CLOSE);
@@ -1984,7 +1985,7 @@ void reply_mknew(struct smb_request *req)
 	}
 
 	ts[0] = get_atimespec(&sbuf); /* atime. */
-	file_ntimes(conn, fname, ts);
+	file_ntimes(conn, fsp->fsp_name, ts);
 
 	reply_outbuf(req, 1, 0);
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
@@ -1999,9 +2000,9 @@ void reply_mknew(struct smb_request *req)
 				CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
 
-	DEBUG( 2, ( "reply_mknew: file %s\n", fname ) );
+	DEBUG( 2, ( "reply_mknew: file %s\n", fsp->fsp_name ) );
 	DEBUG( 3, ( "reply_mknew %s fd=%d dmode=0x%x\n",
-				fname, fsp->fh->fd, (unsigned int)fattr ) );
+		    fsp->fsp_name, fsp->fh->fd, (unsigned int)fattr ) );
 
 	END_PROFILE(SMBcreate);
 	return;
@@ -2124,9 +2125,9 @@ void reply_ctemp(struct smb_request *req)
 	SSVAL(req->outbuf,smb_vwv0,fsp->fnum);
 
 	/* the returned filename is relative to the directory */
-	s = strrchr_m(fname, '/');
+	s = strrchr_m(fsp->fsp_name, '/');
 	if (!s) {
-		s = fname;
+		s = fsp->fsp_name;
 	} else {
 		s++;
 	}
@@ -2153,9 +2154,9 @@ void reply_ctemp(struct smb_request *req)
 		      CVAL(req->outbuf,smb_flg)|CORE_OPLOCK_GRANTED);
 	}
 
-	DEBUG( 2, ( "reply_ctemp: created temp file %s\n", fname ) );
-	DEBUG( 3, ( "reply_ctemp %s fd=%d umode=0%o\n", fname, fsp->fh->fd,
-			(unsigned int)sbuf.st_mode ) );
+	DEBUG( 2, ( "reply_ctemp: created temp file %s\n", fsp->fsp_name ) );
+	DEBUG( 3, ( "reply_ctemp %s fd=%d umode=0%o\n", fsp->fsp_name,
+		    fsp->fh->fd, (unsigned int)sbuf.st_mode ) );
 
 	END_PROFILE(SMBctemp);
 	return;
@@ -2289,14 +2290,22 @@ static NTSTATUS do_unlink(connection_struct *conn,
 	/* On open checks the open itself will check the share mode, so
 	   don't do it here as we'll get it wrong. */
 
-	status = open_file_ntcreate(conn, req, fname, &sbuf,
-				    DELETE_ACCESS,
-				    FILE_SHARE_NONE,
-				    FILE_OPEN,
-				    0,
-				    FILE_ATTRIBUTE_NORMAL,
-				    req != NULL ? 0 : INTERNAL_OPEN_ONLY,
-				    NULL, &fsp);
+	status = create_file_unixpath
+		(conn,			/* conn */
+		 req,			/* req */
+		 fname,			/* fname */
+		 DELETE_ACCESS,		/* access_mask */
+		 FILE_SHARE_NONE,	/* share_access */
+		 FILE_OPEN,		/* create_disposition*/
+		 FILE_NON_DIRECTORY_FILE, /* create_options */
+		 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
+		 0,			/* oplock_request */
+		 0,			/* allocation_size */
+		 NULL,			/* sd */
+		 NULL,			/* ea_list */
+		 &fsp,			/* result */
+		 NULL,			/* pinfo */
+		 &sbuf);		/* psbuf */
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(10, ("open_file_ntcreate failed: %s\n",
@@ -2460,7 +2469,7 @@ NTSTATUS unlink_internals(connection_struct *conn, struct smb_request *req,
 			}
 
 			count++;
-			DEBUG(3,("unlink_internals: succesful unlink [%s]\n",
+			DEBUG(3,("unlink_internals: successful unlink [%s]\n",
 				 fname));
 
 			TALLOC_FREE(fname);
@@ -3329,8 +3338,8 @@ void reply_read_and_X(struct smb_request *req)
 		return;
 	}
 
-	if (!big_readX
-	    && schedule_aio_read_and_X(conn, req, fsp, startpos, smb_maxcnt)) {
+	if (!big_readX &&
+	    schedule_aio_read_and_X(conn, req, fsp, startpos, smb_maxcnt)) {
 		END_PROFILE(SMBreadX);
 		return;
 	}
@@ -3362,7 +3371,6 @@ void error_to_writebrawerr(struct smb_request *req)
 void reply_writebraw(struct smb_request *req)
 {
 	connection_struct *conn = req->conn;
-	int outsize = 0;
 	char *buf = NULL;
 	ssize_t nwritten=0;
 	ssize_t total_written=0;
@@ -3472,8 +3480,7 @@ void reply_writebraw(struct smb_request *req)
 	 * it to send more bytes */
 
 	memcpy(buf, req->inbuf, smb_size);
-	outsize = srv_set_message(buf,
-			Protocol>PROTOCOL_COREPLUS?1:0,0,True);
+	srv_set_message(buf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
 	SCVAL(buf,smb_com,SMBwritebraw);
 	SSVALS(buf,smb_vwv0,0xFFFF);
 	show_msg(buf);
@@ -3485,17 +3492,11 @@ void reply_writebraw(struct smb_request *req)
 	}
 
 	/* Now read the raw data into the buffer and write it */
-	if (read_smb_length(smbd_server_fd(),buf,
-			SMB_SECONDARY_WAIT, get_srv_read_error()) == -1) {
+	status = read_smb_length(smbd_server_fd(), buf, SMB_SECONDARY_WAIT,
+				 &numtowrite);
+	if (!NT_STATUS_IS_OK(status)) {
 		exit_server_cleanly("secondary writebraw failed");
 	}
-
-	/*
-	 * Even though this is not an smb message,
-	 * smb_len returns the generic length of a packet.
-	 */
-
-	numtowrite = smb_len(buf);
 
 	/* Set up outbuf to return the correct size */
 	reply_outbuf(req, 1, 0);
@@ -3515,11 +3516,12 @@ void reply_writebraw(struct smb_request *req)
 				(int)tcount,(int)nwritten,(int)numtowrite));
 		}
 
-		if (read_data(smbd_server_fd(), buf+4, numtowrite,get_srv_read_error())
-					!= numtowrite ) {
+		status = read_data(smbd_server_fd(), buf+4, numtowrite);
+
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("reply_writebraw: Oversize secondary write "
-				"raw read failed (%s). Terminating\n",
-				strerror(errno) ));
+				 "raw read failed (%s). Terminating\n",
+				 nt_errstr(status)));
 			exit_server_cleanly("secondary writebraw failed");
 		}
 
@@ -4001,13 +4003,13 @@ void reply_write_and_X(struct smb_request *req)
 		nwritten = 0;
 	} else {
 
-		if (req->unread_bytes == 0 &&
-				schedule_aio_write_and_X(conn, req, fsp, data,
-							startpos, numtowrite)) {
+		if ((req->unread_bytes == 0) &&
+		    schedule_aio_write_and_X(conn, req, fsp, data, startpos,
+					     numtowrite)) {
 			END_PROFILE(SMBwriteX);
 			return;
 		}
-
+		
 		nwritten = write_file(req,fsp,data,startpos,numtowrite);
 	}
 

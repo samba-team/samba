@@ -265,7 +265,7 @@ AC_DEFUN([AC_LIBREPLACE_LD_SHLIB_ALLOW_UNDEF_FLAG],
 			LD_SHLIB_ALLOW_UNDEF_FLAG="-Wl,--allow-shlib-undefined"
 			;;
 		*osf*)
-			LD_SHLIB_ALLOW_UNDEF_FLAG="-expect_unresolved '*'"
+			LD_SHLIB_ALLOW_UNDEF_FLAG="-Wl,-expect_unresolved,\"*\""
 			;;
 		*darwin*)
 			LD_SHLIB_ALLOW_UNDEF_FLAG="-undefined dynamic_lookup"
@@ -287,6 +287,9 @@ AC_DEFUN([AC_LIBREPLACE_RUNTIME_LIB_PATH_VAR],
 [
 	case "$host_os" in
 		*linux*)
+			LIB_PATH_VAR=LD_LIBRARY_PATH
+		;;
+		*netbsd*)
 			LIB_PATH_VAR=LD_LIBRARY_PATH
 		;;
 		*solaris*)

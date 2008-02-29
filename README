@@ -102,16 +102,16 @@ for more details) and are always glad to receive feedback or
 suggestions to the address samba@lists.samba.org.  More information
 on the various Samba mailing lists can be found at http://lists.samba.org/.
 
-You can also get the Samba sourcecode straight from the Subversion tree - see
-http://samba.org/samba/subversion.html.
+You can also get the Samba sourcecode straight from the git repository - see
+http://wiki.samba.org/index.php/Using_Git_for_Samba_Development.
 
 You could also send hardware/software/money/jewelry or pre-paid pizza
 vouchers directly to Andrew. The pizza vouchers would be especially
 welcome, in fact there is a special field in the survey for people who
 have paid up their pizza :-)
 
-If you like a particular feature then look through the Subversion change-log
-(on the web at http://websvn.samba.org/cgi-bin/viewcvs.cgi) and see
+If you like a particular feature then look through the git change-log
+(on the web at http://gitweb.samba.org/?p=samba.git;a=summary) and see
 who added it, then send them an email.
 
 Remember that free software of this kind lives or dies by the response

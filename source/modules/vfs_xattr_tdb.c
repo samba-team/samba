@@ -110,7 +110,7 @@ static NTSTATUS xattr_tdb_load_attrs(TALLOC_CTX *mem_ctx,
 
 	status = xattr_tdb_pull_attrs(mem_ctx, &data, presult);
 	TALLOC_FREE(data.dptr);
-	return NT_STATUS_OK;
+	return status;
 }
 
 /*
@@ -134,7 +134,7 @@ static struct db_record *xattr_tdb_lock_attrs(TALLOC_CTX *mem_ctx,
 static NTSTATUS xattr_tdb_save_attrs(struct db_record *rec,
 				     const struct tdb_xattrs *attribs)
 {
-	TDB_DATA data;
+	TDB_DATA data = tdb_null;
 	NTSTATUS status;
 
 	status = xattr_tdb_push_attrs(talloc_tos(), attribs, &data);
@@ -164,6 +164,9 @@ static ssize_t xattr_tdb_getattr(struct db_context *db_ctx,
 	uint32_t i;
 	ssize_t result = -1;
 	NTSTATUS status;
+
+	DEBUG(10, ("xattr_tdb_getattr called for file %s, name %s\n",
+		   file_id_string_tos(id), name));
 
 	status = xattr_tdb_load_attrs(talloc_tos(), db_ctx, id, &attribs);
 
@@ -250,6 +253,9 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 	struct tdb_xattrs *attribs;
 	uint32_t i;
 
+	DEBUG(10, ("xattr_tdb_setattr called for file %s, name %s\n",
+		   file_id_string_tos(id), name));
+
 	rec = xattr_tdb_lock_attrs(talloc_tos(), db_ctx, id);
 
 	if (rec == NULL) {
@@ -269,12 +275,23 @@ static int xattr_tdb_setattr(struct db_context *db_ctx,
 
 	for (i=0; i<attribs->num_xattrs; i++) {
 		if (strcmp(attribs->xattrs[i].name, name) == 0) {
+			if (flags & XATTR_CREATE) {
+				TALLOC_FREE(rec);
+				errno = EEXIST;
+				return -1;
+			}
 			break;
 		}
 	}
 
 	if (i == attribs->num_xattrs) {
 		struct tdb_xattr *tmp;
+
+		if (flags & XATTR_REPLACE) {
+			TALLOC_FREE(rec);
+			errno = ENOATTR;
+			return -1;
+		}
 
 		tmp = TALLOC_REALLOC_ARRAY(
 			attribs, attribs->xattrs, struct tdb_xattr,
@@ -558,10 +575,11 @@ static bool xattr_tdb_init(int snum, struct db_context **p_db)
 	struct db_context *db;
 	const char *dbname;
 
-	dbname = lp_parm_const_string(snum, "ea", "tdb", lock_path("eas.tdb"));
+	dbname = lp_parm_const_string(snum, "xattr_tdb", "file",
+				      lock_path("xattr.tdb"));
 
 	if (dbname == NULL) {
-		errno = ENOTSUP;
+		errno = ENOSYS;
 		return false;
 	}
 
@@ -570,7 +588,11 @@ static bool xattr_tdb_init(int snum, struct db_context **p_db)
 	unbecome_root();
 
 	if (db == NULL) {
+#if defined(ENOTSUP)
 		errno = ENOTSUP;
+#else
+		errno = ENOSYS;
+#endif
 		return false;
 	}
 
@@ -660,7 +682,7 @@ static int xattr_tdb_rmdir(vfs_handle_struct *handle, const char *path)
  * Destructor for the VFS private data
  */
 
-static void close_ea_db(void **data)
+static void close_xattr_db(void **data)
 {
 	struct db_context **p_db = (struct db_context **)data;
 	TALLOC_FREE(*p_db);
@@ -688,14 +710,14 @@ static int xattr_tdb_connect(vfs_handle_struct *handle, const char *service,
 	}
 
 	if (!xattr_tdb_init(snum, &db)) {
-		DEBUG(5, ("Could not init ea tdb\n"));
+		DEBUG(5, ("Could not init xattr tdb\n"));
 		lp_do_parameter(snum, "ea support", "False");
 		return 0;
 	}
 
 	lp_do_parameter(snum, "ea support", "True");
 
-	SMB_VFS_HANDLE_SET_DATA(handle, db, close_ea_db,
+	SMB_VFS_HANDLE_SET_DATA(handle, db, close_xattr_db,
 				struct db_context, return -1);
 
 	return 0;

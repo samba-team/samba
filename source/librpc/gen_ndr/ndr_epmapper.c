@@ -867,118 +867,118 @@ static enum ndr_err_code ndr_push_epm_rhs(struct ndr_push *ndr, int ndr_flags, c
 		if (ndr_flags & NDR_SCALARS) {
 			int level = ndr_push_get_switch_value(ndr, r);
 			switch (level) {
-				case EPM_PROTOCOL_DNET_NSP:
+				case EPM_PROTOCOL_DNET_NSP: {
 					NDR_CHECK(ndr_push_epm_rhs_dnet_nsp(ndr, NDR_SCALARS, &r->dnet_nsp));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_OSI_TP4:
+				case EPM_PROTOCOL_OSI_TP4: {
 					NDR_CHECK(ndr_push_epm_rhs_osi_tp4(ndr, NDR_SCALARS, &r->osi_tp4));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_OSI_CLNS:
+				case EPM_PROTOCOL_OSI_CLNS: {
 					NDR_CHECK(ndr_push_epm_rhs_osi_clns(ndr, NDR_SCALARS, &r->osi_clns));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_TCP:
+				case EPM_PROTOCOL_TCP: {
 					NDR_CHECK(ndr_push_epm_rhs_tcp(ndr, NDR_SCALARS, &r->tcp));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_UDP:
+				case EPM_PROTOCOL_UDP: {
 					NDR_CHECK(ndr_push_epm_rhs_udp(ndr, NDR_SCALARS, &r->udp));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_IP:
+				case EPM_PROTOCOL_IP: {
 					NDR_CHECK(ndr_push_epm_rhs_ip(ndr, NDR_SCALARS, &r->ip));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_NCADG:
+				case EPM_PROTOCOL_NCADG: {
 					NDR_CHECK(ndr_push_epm_rhs_ncadg(ndr, NDR_SCALARS, &r->ncadg));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_NCACN:
+				case EPM_PROTOCOL_NCACN: {
 					NDR_CHECK(ndr_push_epm_rhs_ncacn(ndr, NDR_SCALARS, &r->ncacn));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_NCALRPC:
+				case EPM_PROTOCOL_NCALRPC: {
 					NDR_CHECK(ndr_push_epm_rhs_ncalrpc(ndr, NDR_SCALARS, &r->ncalrpc));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_UUID:
+				case EPM_PROTOCOL_UUID: {
 					NDR_CHECK(ndr_push_epm_rhs_uuid(ndr, NDR_SCALARS, &r->uuid));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_IPX:
+				case EPM_PROTOCOL_IPX: {
 					NDR_CHECK(ndr_push_epm_rhs_ipx(ndr, NDR_SCALARS, &r->ipx));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_SMB:
+				case EPM_PROTOCOL_SMB: {
 					NDR_CHECK(ndr_push_epm_rhs_smb(ndr, NDR_SCALARS, &r->smb));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_PIPE:
+				case EPM_PROTOCOL_PIPE: {
 					NDR_CHECK(ndr_push_epm_rhs_pipe(ndr, NDR_SCALARS, &r->pipe));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_NETBIOS:
+				case EPM_PROTOCOL_NETBIOS: {
 					NDR_CHECK(ndr_push_epm_rhs_netbios(ndr, NDR_SCALARS, &r->netbios));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_NETBEUI:
+				case EPM_PROTOCOL_NETBEUI: {
 					NDR_CHECK(ndr_push_epm_rhs_netbeui(ndr, NDR_SCALARS, &r->netbeui));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_SPX:
+				case EPM_PROTOCOL_SPX: {
 					NDR_CHECK(ndr_push_epm_rhs_spx(ndr, NDR_SCALARS, &r->spx));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_NB_IPX:
+				case EPM_PROTOCOL_NB_IPX: {
 					NDR_CHECK(ndr_push_epm_rhs_nb_ipx(ndr, NDR_SCALARS, &r->nb_ipx));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_DSP:
+				case EPM_PROTOCOL_DSP: {
 					NDR_CHECK(ndr_push_epm_rhs_atalk_stream(ndr, NDR_SCALARS, &r->atalk_stream));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_DDP:
+				case EPM_PROTOCOL_DDP: {
 					NDR_CHECK(ndr_push_epm_rhs_atalk_datagram(ndr, NDR_SCALARS, &r->atalk_datagram));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_APPLETALK:
+				case EPM_PROTOCOL_APPLETALK: {
 					NDR_CHECK(ndr_push_epm_rhs_appletalk(ndr, NDR_SCALARS, &r->appletalk));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_VINES_SPP:
+				case EPM_PROTOCOL_VINES_SPP: {
 					NDR_CHECK(ndr_push_epm_rhs_vines_spp(ndr, NDR_SCALARS, &r->vines_spp));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_VINES_IPC:
+				case EPM_PROTOCOL_VINES_IPC: {
 					NDR_CHECK(ndr_push_epm_rhs_vines_ipc(ndr, NDR_SCALARS, &r->vines_ipc));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_STREETTALK:
+				case EPM_PROTOCOL_STREETTALK: {
 					NDR_CHECK(ndr_push_epm_rhs_streettalk(ndr, NDR_SCALARS, &r->streettalk));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_HTTP:
+				case EPM_PROTOCOL_HTTP: {
 					NDR_CHECK(ndr_push_epm_rhs_http(ndr, NDR_SCALARS, &r->http));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_UNIX_DS:
+				case EPM_PROTOCOL_UNIX_DS: {
 					NDR_CHECK(ndr_push_epm_rhs_unix_ds(ndr, NDR_SCALARS, &r->unix_ds));
-				break;
+				break; }
 
-				case EPM_PROTOCOL_NULL:
+				case EPM_PROTOCOL_NULL: {
 					NDR_CHECK(ndr_push_epm_rhs_null(ndr, NDR_SCALARS, &r->null));
-				break;
+				break; }
 
-				default:
+				default: {
 					{
 						uint32_t _flags_save_DATA_BLOB = ndr->flags;
 						ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
 						NDR_CHECK(ndr_push_DATA_BLOB(ndr, NDR_SCALARS, r->unknown));
 						ndr->flags = _flags_save_DATA_BLOB;
 					}
-				break;
+				break; }
 
 			}
 		}
@@ -1566,8 +1566,7 @@ _PUBLIC_ void ndr_print_epm_tower(struct ndr_print *ndr, const char *name, const
 		ndr->depth++;
 		for (cntr_floors_0=0;cntr_floors_0<r->num_floors;cntr_floors_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_floors_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_floors_0) != -1) {
 				ndr_print_epm_floor(ndr, "floors", &r->floors[cntr_floors_0]);
 				free(idx_0);
 			}
@@ -1849,8 +1848,7 @@ _PUBLIC_ void ndr_print_epm_Insert(struct ndr_print *ndr, const char *name, int 
 		ndr->depth++;
 		for (cntr_entries_0=0;cntr_entries_0<r->in.num_ents;cntr_entries_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_entries_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_entries_0) != -1) {
 				ndr_print_epm_entry_t(ndr, "entries", &r->in.entries[cntr_entries_0]);
 				free(idx_0);
 			}
@@ -1930,8 +1928,7 @@ _PUBLIC_ void ndr_print_epm_Delete(struct ndr_print *ndr, const char *name, int 
 		ndr->depth++;
 		for (cntr_entries_0=0;cntr_entries_0<r->in.num_ents;cntr_entries_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_entries_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_entries_0) != -1) {
 				ndr_print_epm_entry_t(ndr, "entries", &r->in.entries[cntr_entries_0]);
 				free(idx_0);
 			}
@@ -2131,8 +2128,7 @@ _PUBLIC_ void ndr_print_epm_Lookup(struct ndr_print *ndr, const char *name, int 
 		ndr->depth++;
 		for (cntr_entries_0=0;cntr_entries_0<*r->out.num_ents;cntr_entries_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_entries_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_entries_0) != -1) {
 				ndr_print_epm_entry_t(ndr, "entries", &r->out.entries[cntr_entries_0]);
 				free(idx_0);
 			}
@@ -2321,8 +2317,7 @@ _PUBLIC_ void ndr_print_epm_Map(struct ndr_print *ndr, const char *name, int fla
 		ndr->depth++;
 		for (cntr_towers_0=0;cntr_towers_0<*r->out.num_towers;cntr_towers_0++) {
 			char *idx_0=NULL;
-			asprintf(&idx_0, "[%d]", cntr_towers_0);
-			if (idx_0) {
+			if (asprintf(&idx_0, "[%d]", cntr_towers_0) != -1) {
 				ndr_print_epm_twr_p_t(ndr, "towers", &r->out.towers[cntr_towers_0]);
 				free(idx_0);
 			}

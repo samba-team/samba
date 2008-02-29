@@ -58,7 +58,7 @@ static enum winbindd_result dual_dsgetdcname(struct winbindd_domain *domain,
 					     struct winbindd_cli_state *state)
 {
 	NTSTATUS result;
-	struct DS_DOMAIN_CONTROLLER_INFO *info = NULL;
+	struct netr_DsRGetDCNameInfo *info = NULL;
 	const char *dc = NULL;
 
 	state->request.domain_name
@@ -67,22 +67,22 @@ static enum winbindd_result dual_dsgetdcname(struct winbindd_domain *domain,
 	DEBUG(3, ("[%5lu]: dsgetdcname for %s\n", (unsigned long)state->pid,
 		  state->request.domain_name));
 
-	result = dsgetdcname(state->mem_ctx, NULL, state->request.domain_name,
+	result = dsgetdcname(state->mem_ctx, state->request.domain_name,
 			     NULL, NULL, state->request.flags, &info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return WINBINDD_ERROR;
 	}
 
-	if (info->domain_controller_address) {
-		dc = info->domain_controller_address;
+	if (info->dc_address) {
+		dc = info->dc_address;
 		if ((dc[0] == '\\') && (dc[1] == '\\')) {
 			dc += 2;
 		}
 	}
 
-	if ((!dc || !is_ipaddress_v4(dc)) && info->domain_controller_name) {
-		dc = info->domain_controller_name;
+	if ((!dc || !is_ipaddress_v4(dc)) && info->dc_unc) {
+		dc = info->dc_unc;
 	}
 
 	if (!dc || !*dc) {

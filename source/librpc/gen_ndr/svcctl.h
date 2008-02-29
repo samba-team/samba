@@ -68,8 +68,6 @@ struct ENUM_SERVICE_STATUS {
 #define SV_TYPE_LOCAL_LIST_ONLY ( 0x40000000 )
 #define SV_TYPE_DOMAIN_ENUM ( 0x80000000 )
 
-;
-
 enum SERVICE_CONTROL
 #ifndef USE_UINT_ENUMS
  {
@@ -136,6 +134,14 @@ struct svcctl_LockServiceDatabase {
 
 struct svcctl_QueryServiceObjectSecurity {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t security_flags;
+		uint32_t buffer_size;/* [range(0,0x40000)] */
+	} in;
+
+	struct {
+		uint8_t *buffer;/* [ref,size_is(buffer_size)] */
+		uint32_t *needed;/* [ref,range(0,0x40000)] */
 		WERROR result;
 	} out;
 
@@ -143,6 +149,13 @@ struct svcctl_QueryServiceObjectSecurity {
 
 
 struct svcctl_SetServiceObjectSecurity {
+	struct {
+		struct policy_handle *handle;/* [ref] */
+		uint32_t security_flags;
+		uint8_t *buffer;/* [ref,size_is(buffer_size)] */
+		uint32_t buffer_size;
+	} in;
+
 	struct {
 		WERROR result;
 	} out;

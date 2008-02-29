@@ -15,6 +15,7 @@ struct _SMBCSRV {
 	bool no_pathinfo;
 	bool no_pathinfo2;
         bool no_nt_session;
+        POLICY_HND pol;
 
 	SMBCSRV *next, *prev;
 	

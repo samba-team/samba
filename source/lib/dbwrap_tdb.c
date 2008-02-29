@@ -31,6 +31,11 @@ static int db_tdb_record_destr(struct db_record* data)
 	struct db_tdb_ctx *ctx =
 		talloc_get_type_abort(data->private_data, struct db_tdb_ctx);
 
+	/* This hex_encode() call allocates memory on data context. By way how current 
+	   __talloc_free() code works, it is OK to allocate in the destructor as 
+	   the children of data will be freed after call to the destructor and this 
+	   new 'child' will be caught and freed correctly.
+	 */
 	DEBUG(10, (DEBUGLEVEL > 10
 		   ? "Unlocking key %s\n" : "Unlocking key %.20s\n",
 		   hex_encode(data, (unsigned char *)data->key.dptr,
@@ -86,10 +91,10 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(db->private_data,
 						       struct db_tdb_ctx);
 	struct tdb_fetch_locked_state state;
-	int res;
 
-	if (DEBUGLEVEL >= 10) {
-		char *keystr = hex_encode(NULL, key.dptr, key.dsize);
+	/* Do not accidently allocate/deallocate w/o need when debug level is lower than needed */
+	if(DEBUGLEVEL >= 10) {
+		char *keystr = hex_encode(NULL, (unsigned char*)key.dptr, key.dsize);
 		DEBUG(10, (DEBUGLEVEL > 10
 			   ? "Locking key %s\n" : "Locking key %.20s\n",
 			   keystr));
@@ -104,8 +109,7 @@ static struct db_record *db_tdb_fetch_locked(struct db_context *db,
 	state.mem_ctx = mem_ctx;
 	state.result = NULL;
 
-	res = tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetchlock_parse,
-			       &state);
+	tdb_parse_record(ctx->wtdb->tdb, key, db_tdb_fetchlock_parse, &state);
 
 	if (state.result == NULL) {
 		db_tdb_fetchlock_parse(key, tdb_null, &state);
@@ -191,15 +195,16 @@ static NTSTATUS db_tdb_delete(struct db_record *rec)
 {
 	struct db_tdb_ctx *ctx = talloc_get_type_abort(rec->private_data,
 						       struct db_tdb_ctx);
-	int res;
-	
-	res = tdb_delete(ctx->wtdb->tdb, rec->key);
 
-	if (res == 0) {
+	if (tdb_delete(ctx->wtdb->tdb, rec->key) == 0) {
 		return NT_STATUS_OK;
 	}
 
-	return map_nt_error_from_tdb(tdb_error(ctx->wtdb->tdb));
+	if (tdb_error(ctx->wtdb->tdb) == TDB_ERR_NOEXIST) {
+		return NT_STATUS_NOT_FOUND;
+	}
+
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 struct db_tdb_traverse_ctx {
@@ -318,6 +323,7 @@ struct db_context *db_open_tdb(TALLOC_CTX *mem_ctx,
 	result->traverse = db_tdb_traverse;
 	result->traverse_read = db_tdb_traverse_read;
 	result->get_seqnum = db_tdb_get_seqnum;
+	result->persistent = ((tdb_flags & TDB_CLEAR_IF_FIRST) == 0);
 	return result;
 
  fail:

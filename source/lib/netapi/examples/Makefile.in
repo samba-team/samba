@@ -3,9 +3,9 @@ GTK_LIBS=`pkg-config gtk+-2.0 --libs`
 
 KRB5LIBS=@KRB5_LIBS@
 LDAP_LIBS=@LDAP_LIBS@
-LIBS=@LIBS@ -lnetapi
+LIBS=@LIBS@ -lnetapi -ltdb -ltalloc
 DEVELOPER_CFLAGS=@DEVELOPER_CFLAGS@
-FLAGS=@CFLAGS@ $(GTK_FLAGS)
+FLAGS=-I../ -L../../../bin @CFLAGS@ $(GTK_FLAGS)
 CC=@CC@
 LDFLAGS=@PIE_LDFLAGS@ @LDFLAGS@
 DYNEXP=@DYNEXP@
@@ -14,7 +14,12 @@ DYNEXP=@DYNEXP@
 COMPILE_CC = $(CC) -I. $(FLAGS) $(PICFLAG) -c $< -o $@
 COMPILE = $(COMPILE_CC)
 
-BINARY_PREREQS = proto_exists bin/.dummy
+PROGS = bin/getdc@EXEEXT@ \
+	bin/netdomjoin@EXEEXT@ \
+	bin/netdomjoin-gui@EXEEXT@ \
+	bin/getjoinableous@EXEEXT@
+
+all: $(PROGS)
 
 MAKEDIR = || exec false; \
 	  if test -d "$$dir"; then :; else \
@@ -23,6 +28,13 @@ MAKEDIR = || exec false; \
 	  test -d "$$dir" || \
 	  mkdir "$$dir" || \
 	  exec false; fi || exec false
+
+BINARY_PREREQS = bin/.dummy
+
+bin/.dummy:
+	@if (: >> $@ || : > $@) >/dev/null 2>&1; then :; else \
+	  dir=bin $(MAKEDIR); fi
+	@: >> $@ || : > $@ # what a fancy emoticon!
 
 .c.o:
 	@if (: >> $@ || : > $@) >/dev/null 2>&1; then rm -f $@; else \
@@ -36,22 +48,25 @@ MAKEDIR = || exec false; \
 GETDC_OBJ = getdc/getdc.o
 NETDOMJOIN_OBJ = netdomjoin/netdomjoin.o
 NETDOMJOIN_GUI_OBJ = netdomjoin-gui/netdomjoin-gui.o
+GETJOINABLEOUS_OBJ = getjoinableous/getjoinableous.o
 
-PROGS = bin/getdc@EXEEXT@ bin/netdomjoin@EXEEXT@ bin/netdomjoin-gui@EXEEXT@
-
-all: $(PROGS)
-
-bin/getdc@EXEEXT@: $(GETDC_OBJ)
+bin/getdc@EXEEXT@: $(BINARY_PREREQS) $(GETDC_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(GETDC_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/netdomjoin@EXEEXT@: $(NETDOMJOIN_OBJ)
+bin/getjoinableous@EXEEXT@: $(BINARY_PREREQS) $(GETJOINABLEOUS_OBJ)
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(GETJOINABLEOUS_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
+
+bin/netdomjoin@EXEEXT@: $(BINARY_PREREQS) $(NETDOMJOIN_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NETDOMJOIN_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS)
 
-bin/netdomjoin-gui@EXEEXT@: $(NETDOMJOIN_GUI_OBJ)
+bin/netdomjoin-gui@EXEEXT@: $(BINARY_PREREQS) $(NETDOMJOIN_GUI_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) $(GTK_FLAGS) -o $@ $(NETDOMJOIN_GUI_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) $(KRB5LIBS) $(LDAP_LIBS) $(GTK_LIBS)
 
 clean:
-	@rm -f $(PROGS)
+	-rm -f $(PROGS)
+	-rm -f core */*~ *~ \
+		*/*.o */*/*.o */*/*/*.o

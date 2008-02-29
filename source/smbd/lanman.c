@@ -3175,7 +3175,7 @@ static bool api_NetWkstaGetInfo(connection_struct *conn,uint16 vuid,
 
 where:
 
-  usri11_name specifies the user name for which information is retireved
+  usri11_name specifies the user name for which information is retrieved
 
   usri11_pad aligns the next data structure element to a word boundary
 

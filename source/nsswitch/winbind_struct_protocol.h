@@ -431,6 +431,7 @@ struct winbindd_response {
 				fstring logon_srv;
 				fstring logon_dom;
 			} info3;
+			fstring unix_username;
 		} auth;
 		struct {
 			fstring name;

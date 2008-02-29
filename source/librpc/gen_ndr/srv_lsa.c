@@ -17,7 +17,7 @@ static bool api_lsa_Close(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CLOSE];
 
-	r = talloc(NULL, struct lsa_Close);
+	r = talloc(talloc_tos(), struct lsa_Close);
 	if (r == NULL) {
 		return false;
 	}
@@ -92,7 +92,7 @@ static bool api_lsa_Delete(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_DELETE];
 
-	r = talloc(NULL, struct lsa_Delete);
+	r = talloc(talloc_tos(), struct lsa_Delete);
 	if (r == NULL) {
 		return false;
 	}
@@ -165,7 +165,7 @@ static bool api_lsa_EnumPrivs(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_ENUMPRIVS];
 
-	r = talloc(NULL, struct lsa_EnumPrivs);
+	r = talloc(talloc_tos(), struct lsa_EnumPrivs);
 	if (r == NULL) {
 		return false;
 	}
@@ -246,7 +246,7 @@ static bool api_lsa_QuerySecurity(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_QUERYSECURITY];
 
-	r = talloc(NULL, struct lsa_QuerySecurity);
+	r = talloc(talloc_tos(), struct lsa_QuerySecurity);
 	if (r == NULL) {
 		return false;
 	}
@@ -274,7 +274,7 @@ static bool api_lsa_QuerySecurity(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.sdbuf = talloc_zero(r, struct sec_desc_buf);
+	r->out.sdbuf = talloc_zero(r, struct sec_desc_buf *);
 	if (r->out.sdbuf == NULL) {
 		talloc_free(r);
 		return false;
@@ -326,7 +326,7 @@ static bool api_lsa_SetSecObj(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_SETSECOBJ];
 
-	r = talloc(NULL, struct lsa_SetSecObj);
+	r = talloc(talloc_tos(), struct lsa_SetSecObj);
 	if (r == NULL) {
 		return false;
 	}
@@ -399,7 +399,7 @@ static bool api_lsa_ChangePassword(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CHANGEPASSWORD];
 
-	r = talloc(NULL, struct lsa_ChangePassword);
+	r = talloc(talloc_tos(), struct lsa_ChangePassword);
 	if (r == NULL) {
 		return false;
 	}
@@ -472,7 +472,7 @@ static bool api_lsa_OpenPolicy(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_OPENPOLICY];
 
-	r = talloc(NULL, struct lsa_OpenPolicy);
+	r = talloc(talloc_tos(), struct lsa_OpenPolicy);
 	if (r == NULL) {
 		return false;
 	}
@@ -552,7 +552,7 @@ static bool api_lsa_QueryInfoPolicy(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_QUERYINFOPOLICY];
 
-	r = talloc(NULL, struct lsa_QueryInfoPolicy);
+	r = talloc(talloc_tos(), struct lsa_QueryInfoPolicy);
 	if (r == NULL) {
 		return false;
 	}
@@ -580,7 +580,7 @@ static bool api_lsa_QueryInfoPolicy(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, union lsa_PolicyInformation);
+	r->out.info = talloc_zero(r, union lsa_PolicyInformation *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -632,7 +632,7 @@ static bool api_lsa_SetInfoPolicy(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_SETINFOPOLICY];
 
-	r = talloc(NULL, struct lsa_SetInfoPolicy);
+	r = talloc(talloc_tos(), struct lsa_SetInfoPolicy);
 	if (r == NULL) {
 		return false;
 	}
@@ -705,7 +705,7 @@ static bool api_lsa_ClearAuditLog(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CLEARAUDITLOG];
 
-	r = talloc(NULL, struct lsa_ClearAuditLog);
+	r = talloc(talloc_tos(), struct lsa_ClearAuditLog);
 	if (r == NULL) {
 		return false;
 	}
@@ -778,7 +778,7 @@ static bool api_lsa_CreateAccount(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREATEACCOUNT];
 
-	r = talloc(NULL, struct lsa_CreateAccount);
+	r = talloc(talloc_tos(), struct lsa_CreateAccount);
 	if (r == NULL) {
 		return false;
 	}
@@ -858,7 +858,7 @@ static bool api_lsa_EnumAccounts(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_ENUMACCOUNTS];
 
-	r = talloc(NULL, struct lsa_EnumAccounts);
+	r = talloc(talloc_tos(), struct lsa_EnumAccounts);
 	if (r == NULL) {
 		return false;
 	}
@@ -939,7 +939,7 @@ static bool api_lsa_CreateTrustedDomain(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREATETRUSTEDDOMAIN];
 
-	r = talloc(NULL, struct lsa_CreateTrustedDomain);
+	r = talloc(talloc_tos(), struct lsa_CreateTrustedDomain);
 	if (r == NULL) {
 		return false;
 	}
@@ -1019,7 +1019,7 @@ static bool api_lsa_EnumTrustDom(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_ENUMTRUSTDOM];
 
-	r = talloc(NULL, struct lsa_EnumTrustDom);
+	r = talloc(talloc_tos(), struct lsa_EnumTrustDom);
 	if (r == NULL) {
 		return false;
 	}
@@ -1100,7 +1100,7 @@ static bool api_lsa_LookupNames(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LOOKUPNAMES];
 
-	r = talloc(NULL, struct lsa_LookupNames);
+	r = talloc(talloc_tos(), struct lsa_LookupNames);
 	if (r == NULL) {
 		return false;
 	}
@@ -1128,7 +1128,7 @@ static bool api_lsa_LookupNames(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -1182,7 +1182,7 @@ static bool api_lsa_LookupSids(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LOOKUPSIDS];
 
-	r = talloc(NULL, struct lsa_LookupSids);
+	r = talloc(talloc_tos(), struct lsa_LookupSids);
 	if (r == NULL) {
 		return false;
 	}
@@ -1210,7 +1210,7 @@ static bool api_lsa_LookupSids(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -1264,7 +1264,7 @@ static bool api_lsa_CreateSecret(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREATESECRET];
 
-	r = talloc(NULL, struct lsa_CreateSecret);
+	r = talloc(talloc_tos(), struct lsa_CreateSecret);
 	if (r == NULL) {
 		return false;
 	}
@@ -1344,7 +1344,7 @@ static bool api_lsa_OpenAccount(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_OPENACCOUNT];
 
-	r = talloc(NULL, struct lsa_OpenAccount);
+	r = talloc(talloc_tos(), struct lsa_OpenAccount);
 	if (r == NULL) {
 		return false;
 	}
@@ -1424,7 +1424,7 @@ static bool api_lsa_EnumPrivsAccount(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_ENUMPRIVSACCOUNT];
 
-	r = talloc(NULL, struct lsa_EnumPrivsAccount);
+	r = talloc(talloc_tos(), struct lsa_EnumPrivsAccount);
 	if (r == NULL) {
 		return false;
 	}
@@ -1452,7 +1452,7 @@ static bool api_lsa_EnumPrivsAccount(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.privs = talloc_zero(r, struct lsa_PrivilegeSet);
+	r->out.privs = talloc_zero(r, struct lsa_PrivilegeSet *);
 	if (r->out.privs == NULL) {
 		talloc_free(r);
 		return false;
@@ -1504,7 +1504,7 @@ static bool api_lsa_AddPrivilegesToAccount(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_ADDPRIVILEGESTOACCOUNT];
 
-	r = talloc(NULL, struct lsa_AddPrivilegesToAccount);
+	r = talloc(talloc_tos(), struct lsa_AddPrivilegesToAccount);
 	if (r == NULL) {
 		return false;
 	}
@@ -1577,7 +1577,7 @@ static bool api_lsa_RemovePrivilegesFromAccount(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_REMOVEPRIVILEGESFROMACCOUNT];
 
-	r = talloc(NULL, struct lsa_RemovePrivilegesFromAccount);
+	r = talloc(talloc_tos(), struct lsa_RemovePrivilegesFromAccount);
 	if (r == NULL) {
 		return false;
 	}
@@ -1650,7 +1650,7 @@ static bool api_lsa_GetQuotasForAccount(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_GETQUOTASFORACCOUNT];
 
-	r = talloc(NULL, struct lsa_GetQuotasForAccount);
+	r = talloc(talloc_tos(), struct lsa_GetQuotasForAccount);
 	if (r == NULL) {
 		return false;
 	}
@@ -1723,7 +1723,7 @@ static bool api_lsa_SetQuotasForAccount(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_SETQUOTASFORACCOUNT];
 
-	r = talloc(NULL, struct lsa_SetQuotasForAccount);
+	r = talloc(talloc_tos(), struct lsa_SetQuotasForAccount);
 	if (r == NULL) {
 		return false;
 	}
@@ -1796,7 +1796,7 @@ static bool api_lsa_GetSystemAccessAccount(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_GETSYSTEMACCESSACCOUNT];
 
-	r = talloc(NULL, struct lsa_GetSystemAccessAccount);
+	r = talloc(talloc_tos(), struct lsa_GetSystemAccessAccount);
 	if (r == NULL) {
 		return false;
 	}
@@ -1821,6 +1821,13 @@ static bool api_lsa_GetSystemAccessAccount(pipes_struct *p)
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_GetSystemAccessAccount, r);
+	}
+
+	ZERO_STRUCT(r->out);
+	r->out.access_mask = talloc_zero(r, uint32_t);
+	if (r->out.access_mask == NULL) {
+		talloc_free(r);
+		return false;
 	}
 
 	r->out.result = _lsa_GetSystemAccessAccount(p, r);
@@ -1869,7 +1876,7 @@ static bool api_lsa_SetSystemAccessAccount(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_SETSYSTEMACCESSACCOUNT];
 
-	r = talloc(NULL, struct lsa_SetSystemAccessAccount);
+	r = talloc(talloc_tos(), struct lsa_SetSystemAccessAccount);
 	if (r == NULL) {
 		return false;
 	}
@@ -1942,7 +1949,7 @@ static bool api_lsa_OpenTrustedDomain(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_OPENTRUSTEDDOMAIN];
 
-	r = talloc(NULL, struct lsa_OpenTrustedDomain);
+	r = talloc(talloc_tos(), struct lsa_OpenTrustedDomain);
 	if (r == NULL) {
 		return false;
 	}
@@ -2022,7 +2029,7 @@ static bool api_lsa_QueryTrustedDomainInfo(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_QUERYTRUSTEDDOMAININFO];
 
-	r = talloc(NULL, struct lsa_QueryTrustedDomainInfo);
+	r = talloc(talloc_tos(), struct lsa_QueryTrustedDomainInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -2102,7 +2109,7 @@ static bool api_lsa_SetInformationTrustedDomain(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_SETINFORMATIONTRUSTEDDOMAIN];
 
-	r = talloc(NULL, struct lsa_SetInformationTrustedDomain);
+	r = talloc(talloc_tos(), struct lsa_SetInformationTrustedDomain);
 	if (r == NULL) {
 		return false;
 	}
@@ -2175,7 +2182,7 @@ static bool api_lsa_OpenSecret(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_OPENSECRET];
 
-	r = talloc(NULL, struct lsa_OpenSecret);
+	r = talloc(talloc_tos(), struct lsa_OpenSecret);
 	if (r == NULL) {
 		return false;
 	}
@@ -2255,7 +2262,7 @@ static bool api_lsa_SetSecret(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_SETSECRET];
 
-	r = talloc(NULL, struct lsa_SetSecret);
+	r = talloc(talloc_tos(), struct lsa_SetSecret);
 	if (r == NULL) {
 		return false;
 	}
@@ -2328,7 +2335,7 @@ static bool api_lsa_QuerySecret(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_QUERYSECRET];
 
-	r = talloc(NULL, struct lsa_QuerySecret);
+	r = talloc(talloc_tos(), struct lsa_QuerySecret);
 	if (r == NULL) {
 		return false;
 	}
@@ -2406,7 +2413,7 @@ static bool api_lsa_LookupPrivValue(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LOOKUPPRIVVALUE];
 
-	r = talloc(NULL, struct lsa_LookupPrivValue);
+	r = talloc(talloc_tos(), struct lsa_LookupPrivValue);
 	if (r == NULL) {
 		return false;
 	}
@@ -2486,7 +2493,7 @@ static bool api_lsa_LookupPrivName(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LOOKUPPRIVNAME];
 
-	r = talloc(NULL, struct lsa_LookupPrivName);
+	r = talloc(talloc_tos(), struct lsa_LookupPrivName);
 	if (r == NULL) {
 		return false;
 	}
@@ -2566,7 +2573,7 @@ static bool api_lsa_LookupPrivDisplayName(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LOOKUPPRIVDISPLAYNAME];
 
-	r = talloc(NULL, struct lsa_LookupPrivDisplayName);
+	r = talloc(talloc_tos(), struct lsa_LookupPrivDisplayName);
 	if (r == NULL) {
 		return false;
 	}
@@ -2594,13 +2601,18 @@ static bool api_lsa_LookupPrivDisplayName(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.disp_name = talloc_zero(r, struct lsa_StringLarge);
+	r->out.disp_name = talloc_zero(r, struct lsa_StringLarge *);
 	if (r->out.disp_name == NULL) {
 		talloc_free(r);
 		return false;
 	}
 
-	r->out.language_id = r->in.language_id;
+	r->out.returned_language_id = talloc_zero(r, uint16_t);
+	if (r->out.returned_language_id == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
 	r->out.result = _lsa_LookupPrivDisplayName(p, r);
 
 	if (p->rng_fault_state) {
@@ -2647,7 +2659,7 @@ static bool api_lsa_DeleteObject(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_DELETEOBJECT];
 
-	r = talloc(NULL, struct lsa_DeleteObject);
+	r = talloc(talloc_tos(), struct lsa_DeleteObject);
 	if (r == NULL) {
 		return false;
 	}
@@ -2674,6 +2686,8 @@ static bool api_lsa_DeleteObject(pipes_struct *p)
 		NDR_PRINT_IN_DEBUG(lsa_DeleteObject, r);
 	}
 
+	ZERO_STRUCT(r->out);
+	r->out.handle = r->in.handle;
 	r->out.result = _lsa_DeleteObject(p, r);
 
 	if (p->rng_fault_state) {
@@ -2720,7 +2734,7 @@ static bool api_lsa_EnumAccountsWithUserRight(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_ENUMACCOUNTSWITHUSERRIGHT];
 
-	r = talloc(NULL, struct lsa_EnumAccountsWithUserRight);
+	r = talloc(talloc_tos(), struct lsa_EnumAccountsWithUserRight);
 	if (r == NULL) {
 		return false;
 	}
@@ -2800,7 +2814,7 @@ static bool api_lsa_EnumAccountRights(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_ENUMACCOUNTRIGHTS];
 
-	r = talloc(NULL, struct lsa_EnumAccountRights);
+	r = talloc(talloc_tos(), struct lsa_EnumAccountRights);
 	if (r == NULL) {
 		return false;
 	}
@@ -2880,7 +2894,7 @@ static bool api_lsa_AddAccountRights(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_ADDACCOUNTRIGHTS];
 
-	r = talloc(NULL, struct lsa_AddAccountRights);
+	r = talloc(talloc_tos(), struct lsa_AddAccountRights);
 	if (r == NULL) {
 		return false;
 	}
@@ -2953,7 +2967,7 @@ static bool api_lsa_RemoveAccountRights(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_REMOVEACCOUNTRIGHTS];
 
-	r = talloc(NULL, struct lsa_RemoveAccountRights);
+	r = talloc(talloc_tos(), struct lsa_RemoveAccountRights);
 	if (r == NULL) {
 		return false;
 	}
@@ -3026,7 +3040,7 @@ static bool api_lsa_QueryTrustedDomainInfoBySid(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_QUERYTRUSTEDDOMAININFOBYSID];
 
-	r = talloc(NULL, struct lsa_QueryTrustedDomainInfoBySid);
+	r = talloc(talloc_tos(), struct lsa_QueryTrustedDomainInfoBySid);
 	if (r == NULL) {
 		return false;
 	}
@@ -3106,7 +3120,7 @@ static bool api_lsa_SetTrustedDomainInfo(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_SETTRUSTEDDOMAININFO];
 
-	r = talloc(NULL, struct lsa_SetTrustedDomainInfo);
+	r = talloc(talloc_tos(), struct lsa_SetTrustedDomainInfo);
 	if (r == NULL) {
 		return false;
 	}
@@ -3179,7 +3193,7 @@ static bool api_lsa_DeleteTrustedDomain(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_DELETETRUSTEDDOMAIN];
 
-	r = talloc(NULL, struct lsa_DeleteTrustedDomain);
+	r = talloc(talloc_tos(), struct lsa_DeleteTrustedDomain);
 	if (r == NULL) {
 		return false;
 	}
@@ -3252,7 +3266,7 @@ static bool api_lsa_StorePrivateData(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_STOREPRIVATEDATA];
 
-	r = talloc(NULL, struct lsa_StorePrivateData);
+	r = talloc(talloc_tos(), struct lsa_StorePrivateData);
 	if (r == NULL) {
 		return false;
 	}
@@ -3325,7 +3339,7 @@ static bool api_lsa_RetrievePrivateData(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_RETRIEVEPRIVATEDATA];
 
-	r = talloc(NULL, struct lsa_RetrievePrivateData);
+	r = talloc(talloc_tos(), struct lsa_RetrievePrivateData);
 	if (r == NULL) {
 		return false;
 	}
@@ -3398,7 +3412,7 @@ static bool api_lsa_OpenPolicy2(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_OPENPOLICY2];
 
-	r = talloc(NULL, struct lsa_OpenPolicy2);
+	r = talloc(talloc_tos(), struct lsa_OpenPolicy2);
 	if (r == NULL) {
 		return false;
 	}
@@ -3478,7 +3492,7 @@ static bool api_lsa_GetUserName(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_GETUSERNAME];
 
-	r = talloc(NULL, struct lsa_GetUserName);
+	r = talloc(talloc_tos(), struct lsa_GetUserName);
 	if (r == NULL) {
 		return false;
 	}
@@ -3554,7 +3568,7 @@ static bool api_lsa_QueryInfoPolicy2(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_QUERYINFOPOLICY2];
 
-	r = talloc(NULL, struct lsa_QueryInfoPolicy2);
+	r = talloc(talloc_tos(), struct lsa_QueryInfoPolicy2);
 	if (r == NULL) {
 		return false;
 	}
@@ -3582,7 +3596,7 @@ static bool api_lsa_QueryInfoPolicy2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.info = talloc_zero(r, union lsa_PolicyInformation);
+	r->out.info = talloc_zero(r, union lsa_PolicyInformation *);
 	if (r->out.info == NULL) {
 		talloc_free(r);
 		return false;
@@ -3634,7 +3648,7 @@ static bool api_lsa_SetInfoPolicy2(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_SETINFOPOLICY2];
 
-	r = talloc(NULL, struct lsa_SetInfoPolicy2);
+	r = talloc(talloc_tos(), struct lsa_SetInfoPolicy2);
 	if (r == NULL) {
 		return false;
 	}
@@ -3707,7 +3721,7 @@ static bool api_lsa_QueryTrustedDomainInfoByName(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_QUERYTRUSTEDDOMAININFOBYNAME];
 
-	r = talloc(NULL, struct lsa_QueryTrustedDomainInfoByName);
+	r = talloc(talloc_tos(), struct lsa_QueryTrustedDomainInfoByName);
 	if (r == NULL) {
 		return false;
 	}
@@ -3787,7 +3801,7 @@ static bool api_lsa_SetTrustedDomainInfoByName(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_SETTRUSTEDDOMAININFOBYNAME];
 
-	r = talloc(NULL, struct lsa_SetTrustedDomainInfoByName);
+	r = talloc(talloc_tos(), struct lsa_SetTrustedDomainInfoByName);
 	if (r == NULL) {
 		return false;
 	}
@@ -3860,7 +3874,7 @@ static bool api_lsa_EnumTrustedDomainsEx(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_ENUMTRUSTEDDOMAINSEX];
 
-	r = talloc(NULL, struct lsa_EnumTrustedDomainsEx);
+	r = talloc(talloc_tos(), struct lsa_EnumTrustedDomainsEx);
 	if (r == NULL) {
 		return false;
 	}
@@ -3941,7 +3955,7 @@ static bool api_lsa_CreateTrustedDomainEx(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREATETRUSTEDDOMAINEX];
 
-	r = talloc(NULL, struct lsa_CreateTrustedDomainEx);
+	r = talloc(talloc_tos(), struct lsa_CreateTrustedDomainEx);
 	if (r == NULL) {
 		return false;
 	}
@@ -4014,7 +4028,7 @@ static bool api_lsa_CloseTrustedDomainEx(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CLOSETRUSTEDDOMAINEX];
 
-	r = talloc(NULL, struct lsa_CloseTrustedDomainEx);
+	r = talloc(talloc_tos(), struct lsa_CloseTrustedDomainEx);
 	if (r == NULL) {
 		return false;
 	}
@@ -4089,7 +4103,7 @@ static bool api_lsa_QueryDomainInformationPolicy(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_QUERYDOMAININFORMATIONPOLICY];
 
-	r = talloc(NULL, struct lsa_QueryDomainInformationPolicy);
+	r = talloc(talloc_tos(), struct lsa_QueryDomainInformationPolicy);
 	if (r == NULL) {
 		return false;
 	}
@@ -4169,7 +4183,7 @@ static bool api_lsa_SetDomainInformationPolicy(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_SETDOMAININFORMATIONPOLICY];
 
-	r = talloc(NULL, struct lsa_SetDomainInformationPolicy);
+	r = talloc(talloc_tos(), struct lsa_SetDomainInformationPolicy);
 	if (r == NULL) {
 		return false;
 	}
@@ -4242,7 +4256,7 @@ static bool api_lsa_OpenTrustedDomainByName(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_OPENTRUSTEDDOMAINBYNAME];
 
-	r = talloc(NULL, struct lsa_OpenTrustedDomainByName);
+	r = talloc(talloc_tos(), struct lsa_OpenTrustedDomainByName);
 	if (r == NULL) {
 		return false;
 	}
@@ -4322,7 +4336,7 @@ static bool api_lsa_TestCall(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_TESTCALL];
 
-	r = talloc(NULL, struct lsa_TestCall);
+	r = talloc(talloc_tos(), struct lsa_TestCall);
 	if (r == NULL) {
 		return false;
 	}
@@ -4395,7 +4409,7 @@ static bool api_lsa_LookupSids2(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LOOKUPSIDS2];
 
-	r = talloc(NULL, struct lsa_LookupSids2);
+	r = talloc(talloc_tos(), struct lsa_LookupSids2);
 	if (r == NULL) {
 		return false;
 	}
@@ -4423,7 +4437,7 @@ static bool api_lsa_LookupSids2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -4477,7 +4491,7 @@ static bool api_lsa_LookupNames2(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LOOKUPNAMES2];
 
-	r = talloc(NULL, struct lsa_LookupNames2);
+	r = talloc(talloc_tos(), struct lsa_LookupNames2);
 	if (r == NULL) {
 		return false;
 	}
@@ -4505,7 +4519,7 @@ static bool api_lsa_LookupNames2(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -4559,7 +4573,7 @@ static bool api_lsa_CreateTrustedDomainEx2(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREATETRUSTEDDOMAINEX2];
 
-	r = talloc(NULL, struct lsa_CreateTrustedDomainEx2);
+	r = talloc(talloc_tos(), struct lsa_CreateTrustedDomainEx2);
 	if (r == NULL) {
 		return false;
 	}
@@ -4632,7 +4646,7 @@ static bool api_lsa_CREDRWRITE(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREDRWRITE];
 
-	r = talloc(NULL, struct lsa_CREDRWRITE);
+	r = talloc(talloc_tos(), struct lsa_CREDRWRITE);
 	if (r == NULL) {
 		return false;
 	}
@@ -4705,7 +4719,7 @@ static bool api_lsa_CREDRREAD(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREDRREAD];
 
-	r = talloc(NULL, struct lsa_CREDRREAD);
+	r = talloc(talloc_tos(), struct lsa_CREDRREAD);
 	if (r == NULL) {
 		return false;
 	}
@@ -4778,7 +4792,7 @@ static bool api_lsa_CREDRENUMERATE(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREDRENUMERATE];
 
-	r = talloc(NULL, struct lsa_CREDRENUMERATE);
+	r = talloc(talloc_tos(), struct lsa_CREDRENUMERATE);
 	if (r == NULL) {
 		return false;
 	}
@@ -4851,7 +4865,7 @@ static bool api_lsa_CREDRWRITEDOMAINCREDENTIALS(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREDRWRITEDOMAINCREDENTIALS];
 
-	r = talloc(NULL, struct lsa_CREDRWRITEDOMAINCREDENTIALS);
+	r = talloc(talloc_tos(), struct lsa_CREDRWRITEDOMAINCREDENTIALS);
 	if (r == NULL) {
 		return false;
 	}
@@ -4924,7 +4938,7 @@ static bool api_lsa_CREDRREADDOMAINCREDENTIALS(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREDRREADDOMAINCREDENTIALS];
 
-	r = talloc(NULL, struct lsa_CREDRREADDOMAINCREDENTIALS);
+	r = talloc(talloc_tos(), struct lsa_CREDRREADDOMAINCREDENTIALS);
 	if (r == NULL) {
 		return false;
 	}
@@ -4997,7 +5011,7 @@ static bool api_lsa_CREDRDELETE(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREDRDELETE];
 
-	r = talloc(NULL, struct lsa_CREDRDELETE);
+	r = talloc(talloc_tos(), struct lsa_CREDRDELETE);
 	if (r == NULL) {
 		return false;
 	}
@@ -5070,7 +5084,7 @@ static bool api_lsa_CREDRGETTARGETINFO(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREDRGETTARGETINFO];
 
-	r = talloc(NULL, struct lsa_CREDRGETTARGETINFO);
+	r = talloc(talloc_tos(), struct lsa_CREDRGETTARGETINFO);
 	if (r == NULL) {
 		return false;
 	}
@@ -5143,7 +5157,7 @@ static bool api_lsa_CREDRPROFILELOADED(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREDRPROFILELOADED];
 
-	r = talloc(NULL, struct lsa_CREDRPROFILELOADED);
+	r = talloc(talloc_tos(), struct lsa_CREDRPROFILELOADED);
 	if (r == NULL) {
 		return false;
 	}
@@ -5216,7 +5230,7 @@ static bool api_lsa_LookupNames3(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LOOKUPNAMES3];
 
-	r = talloc(NULL, struct lsa_LookupNames3);
+	r = talloc(talloc_tos(), struct lsa_LookupNames3);
 	if (r == NULL) {
 		return false;
 	}
@@ -5244,7 +5258,7 @@ static bool api_lsa_LookupNames3(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -5298,7 +5312,7 @@ static bool api_lsa_CREDRGETSESSIONTYPES(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREDRGETSESSIONTYPES];
 
-	r = talloc(NULL, struct lsa_CREDRGETSESSIONTYPES);
+	r = talloc(talloc_tos(), struct lsa_CREDRGETSESSIONTYPES);
 	if (r == NULL) {
 		return false;
 	}
@@ -5371,7 +5385,7 @@ static bool api_lsa_LSARREGISTERAUDITEVENT(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LSARREGISTERAUDITEVENT];
 
-	r = talloc(NULL, struct lsa_LSARREGISTERAUDITEVENT);
+	r = talloc(talloc_tos(), struct lsa_LSARREGISTERAUDITEVENT);
 	if (r == NULL) {
 		return false;
 	}
@@ -5444,7 +5458,7 @@ static bool api_lsa_LSARGENAUDITEVENT(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LSARGENAUDITEVENT];
 
-	r = talloc(NULL, struct lsa_LSARGENAUDITEVENT);
+	r = talloc(talloc_tos(), struct lsa_LSARGENAUDITEVENT);
 	if (r == NULL) {
 		return false;
 	}
@@ -5517,7 +5531,7 @@ static bool api_lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LSARUNREGISTERAUDITEVENT];
 
-	r = talloc(NULL, struct lsa_LSARUNREGISTERAUDITEVENT);
+	r = talloc(talloc_tos(), struct lsa_LSARUNREGISTERAUDITEVENT);
 	if (r == NULL) {
 		return false;
 	}
@@ -5579,18 +5593,18 @@ static bool api_lsa_LSARUNREGISTERAUDITEVENT(pipes_struct *p)
 	return true;
 }
 
-static bool api_lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p)
+static bool api_lsa_lsaRQueryForestTrustInformation(pipes_struct *p)
 {
 	const struct ndr_interface_call *call;
 	struct ndr_pull *pull;
 	struct ndr_push *push;
 	enum ndr_err_code ndr_err;
 	DATA_BLOB blob;
-	struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r;
+	struct lsa_lsaRQueryForestTrustInformation *r;
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LSARQUERYFORESTTRUSTINFORMATION];
 
-	r = talloc(NULL, struct lsa_LSARQUERYFORESTTRUSTINFORMATION);
+	r = talloc(talloc_tos(), struct lsa_lsaRQueryForestTrustInformation);
 	if (r == NULL) {
 		return false;
 	}
@@ -5614,10 +5628,17 @@ static bool api_lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, r);
+		NDR_PRINT_IN_DEBUG(lsa_lsaRQueryForestTrustInformation, r);
 	}
 
-	r->out.result = _lsa_LSARQUERYFORESTTRUSTINFORMATION(p, r);
+	ZERO_STRUCT(r->out);
+	r->out.forest_trust_info = talloc_zero(r, struct lsa_ForestTrustInformation *);
+	if (r->out.forest_trust_info == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.result = _lsa_lsaRQueryForestTrustInformation(p, r);
 
 	if (p->rng_fault_state) {
 		talloc_free(r);
@@ -5626,7 +5647,7 @@ static bool api_lsa_LSARQUERYFORESTTRUSTINFORMATION(pipes_struct *p)
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, r);
+		NDR_PRINT_OUT_DEBUG(lsa_lsaRQueryForestTrustInformation, r);
 	}
 
 	push = ndr_push_init_ctx(r);
@@ -5663,7 +5684,7 @@ static bool api_lsa_LSARSETFORESTTRUSTINFORMATION(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LSARSETFORESTTRUSTINFORMATION];
 
-	r = talloc(NULL, struct lsa_LSARSETFORESTTRUSTINFORMATION);
+	r = talloc(talloc_tos(), struct lsa_LSARSETFORESTTRUSTINFORMATION);
 	if (r == NULL) {
 		return false;
 	}
@@ -5736,7 +5757,7 @@ static bool api_lsa_CREDRRENAME(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_CREDRRENAME];
 
-	r = talloc(NULL, struct lsa_CREDRRENAME);
+	r = talloc(talloc_tos(), struct lsa_CREDRRENAME);
 	if (r == NULL) {
 		return false;
 	}
@@ -5809,7 +5830,7 @@ static bool api_lsa_LookupSids3(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LOOKUPSIDS3];
 
-	r = talloc(NULL, struct lsa_LookupSids3);
+	r = talloc(talloc_tos(), struct lsa_LookupSids3);
 	if (r == NULL) {
 		return false;
 	}
@@ -5837,7 +5858,7 @@ static bool api_lsa_LookupSids3(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -5891,7 +5912,7 @@ static bool api_lsa_LookupNames4(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LOOKUPNAMES4];
 
-	r = talloc(NULL, struct lsa_LookupNames4);
+	r = talloc(talloc_tos(), struct lsa_LookupNames4);
 	if (r == NULL) {
 		return false;
 	}
@@ -5919,7 +5940,7 @@ static bool api_lsa_LookupNames4(pipes_struct *p)
 	}
 
 	ZERO_STRUCT(r->out);
-	r->out.domains = talloc_zero(r, struct lsa_RefDomainList);
+	r->out.domains = talloc_zero(r, struct lsa_RefDomainList *);
 	if (r->out.domains == NULL) {
 		talloc_free(r);
 		return false;
@@ -5973,7 +5994,7 @@ static bool api_lsa_LSAROPENPOLICYSCE(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LSAROPENPOLICYSCE];
 
-	r = talloc(NULL, struct lsa_LSAROPENPOLICYSCE);
+	r = talloc(talloc_tos(), struct lsa_LSAROPENPOLICYSCE);
 	if (r == NULL) {
 		return false;
 	}
@@ -6046,7 +6067,7 @@ static bool api_lsa_LSARADTREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LSARADTREGISTERSECURITYEVENTSOURCE];
 
-	r = talloc(NULL, struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE);
+	r = talloc(talloc_tos(), struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE);
 	if (r == NULL) {
 		return false;
 	}
@@ -6119,7 +6140,7 @@ static bool api_lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LSARADTUNREGISTERSECURITYEVENTSOURCE];
 
-	r = talloc(NULL, struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE);
+	r = talloc(talloc_tos(), struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE);
 	if (r == NULL) {
 		return false;
 	}
@@ -6192,7 +6213,7 @@ static bool api_lsa_LSARADTREPORTSECURITYEVENT(pipes_struct *p)
 
 	call = &ndr_table_lsarpc.calls[NDR_LSA_LSARADTREPORTSECURITYEVENT];
 
-	r = talloc(NULL, struct lsa_LSARADTREPORTSECURITYEVENT);
+	r = talloc(talloc_tos(), struct lsa_LSARADTREPORTSECURITYEVENT);
 	if (r == NULL) {
 		return false;
 	}
@@ -6331,7 +6352,7 @@ static struct api_struct api_lsarpc_cmds[] =
 	{"LSA_LSARREGISTERAUDITEVENT", NDR_LSA_LSARREGISTERAUDITEVENT, api_lsa_LSARREGISTERAUDITEVENT},
 	{"LSA_LSARGENAUDITEVENT", NDR_LSA_LSARGENAUDITEVENT, api_lsa_LSARGENAUDITEVENT},
 	{"LSA_LSARUNREGISTERAUDITEVENT", NDR_LSA_LSARUNREGISTERAUDITEVENT, api_lsa_LSARUNREGISTERAUDITEVENT},
-	{"LSA_LSARQUERYFORESTTRUSTINFORMATION", NDR_LSA_LSARQUERYFORESTTRUSTINFORMATION, api_lsa_LSARQUERYFORESTTRUSTINFORMATION},
+	{"LSA_LSARQUERYFORESTTRUSTINFORMATION", NDR_LSA_LSARQUERYFORESTTRUSTINFORMATION, api_lsa_lsaRQueryForestTrustInformation},
 	{"LSA_LSARSETFORESTTRUSTINFORMATION", NDR_LSA_LSARSETFORESTTRUSTINFORMATION, api_lsa_LSARSETFORESTTRUSTINFORMATION},
 	{"LSA_CREDRRENAME", NDR_LSA_CREDRRENAME, api_lsa_CREDRRENAME},
 	{"LSA_LOOKUPSIDS3", NDR_LSA_LOOKUPSIDS3, api_lsa_LookupSids3},

@@ -1559,8 +1559,24 @@ static bool smbpasswd_search_next_entry(struct pdb_search *search,
 		return false;
 	}
 
-	*entry = state->entries[state->current++];
+	entry->idx = state->entries[state->current].idx;
+	entry->rid = state->entries[state->current].rid;
+	entry->acct_flags = state->entries[state->current].acct_flags;
 
+	entry->account_name = talloc_strdup(
+		search->mem_ctx, state->entries[state->current].account_name);
+	entry->fullname = talloc_strdup(
+		search->mem_ctx, state->entries[state->current].fullname);
+	entry->description = talloc_strdup(
+		search->mem_ctx, state->entries[state->current].description);
+
+	if ((entry->account_name == NULL) || (entry->fullname == NULL)
+	    || (entry->description == NULL)) {
+		DEBUG(0, ("talloc_strdup failed\n"));
+		return false;
+	}
+
+	state->current += 1;
 	return true;
 }
 

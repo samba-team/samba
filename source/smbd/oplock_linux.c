@@ -93,17 +93,27 @@ static void set_capability(unsigned capability)
 		return;
 	}
 
-	data.effective |= (1<<capability);
+	if (0 == (data.effective & (1<<capability))) {
+		data.effective |= (1<<capability);
 
-	if (capset(&header, &data) == -1) {
-		DEBUG(3,("Unable to set %d capability (%s)\n", 
-			 capability, strerror(errno)));
+		if (capset(&header, &data) == -1) {
+			DEBUG(3,("Unable to set %d capability (%s)\n", 
+				 capability, strerror(errno)));
+		}
 	}
 }
 
 /*
- Call to set the kernel lease signal handler
-*/
+ * public function to get linux lease capability. Needed by some VFS modules (eg. gpfs.c)
+ */
+void linux_set_lease_capability(void)
+{
+	set_capability(CAP_LEASE);
+}
+
+/* 
+ * Call to set the kernel lease signal handler
+ */
 int linux_set_lease_sighandler(int fd)
 {
         if (fcntl(fd, F_SETSIG, RT_SIGNAL_LEASE) == -1) {

@@ -17,7 +17,7 @@ static bool api_winreg_OpenHKCR(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_OPENHKCR];
 
-	r = talloc(NULL, struct winreg_OpenHKCR);
+	r = talloc(talloc_tos(), struct winreg_OpenHKCR);
 	if (r == NULL) {
 		return false;
 	}
@@ -97,7 +97,7 @@ static bool api_winreg_OpenHKCU(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_OPENHKCU];
 
-	r = talloc(NULL, struct winreg_OpenHKCU);
+	r = talloc(talloc_tos(), struct winreg_OpenHKCU);
 	if (r == NULL) {
 		return false;
 	}
@@ -177,7 +177,7 @@ static bool api_winreg_OpenHKLM(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_OPENHKLM];
 
-	r = talloc(NULL, struct winreg_OpenHKLM);
+	r = talloc(talloc_tos(), struct winreg_OpenHKLM);
 	if (r == NULL) {
 		return false;
 	}
@@ -257,7 +257,7 @@ static bool api_winreg_OpenHKPD(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_OPENHKPD];
 
-	r = talloc(NULL, struct winreg_OpenHKPD);
+	r = talloc(talloc_tos(), struct winreg_OpenHKPD);
 	if (r == NULL) {
 		return false;
 	}
@@ -337,7 +337,7 @@ static bool api_winreg_OpenHKU(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_OPENHKU];
 
-	r = talloc(NULL, struct winreg_OpenHKU);
+	r = talloc(talloc_tos(), struct winreg_OpenHKU);
 	if (r == NULL) {
 		return false;
 	}
@@ -417,7 +417,7 @@ static bool api_winreg_CloseKey(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_CLOSEKEY];
 
-	r = talloc(NULL, struct winreg_CloseKey);
+	r = talloc(talloc_tos(), struct winreg_CloseKey);
 	if (r == NULL) {
 		return false;
 	}
@@ -492,7 +492,7 @@ static bool api_winreg_CreateKey(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_CREATEKEY];
 
-	r = talloc(NULL, struct winreg_CreateKey);
+	r = talloc(talloc_tos(), struct winreg_CreateKey);
 	if (r == NULL) {
 		return false;
 	}
@@ -573,7 +573,7 @@ static bool api_winreg_DeleteKey(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_DELETEKEY];
 
-	r = talloc(NULL, struct winreg_DeleteKey);
+	r = talloc(talloc_tos(), struct winreg_DeleteKey);
 	if (r == NULL) {
 		return false;
 	}
@@ -646,7 +646,7 @@ static bool api_winreg_DeleteValue(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_DELETEVALUE];
 
-	r = talloc(NULL, struct winreg_DeleteValue);
+	r = talloc(talloc_tos(), struct winreg_DeleteValue);
 	if (r == NULL) {
 		return false;
 	}
@@ -719,7 +719,7 @@ static bool api_winreg_EnumKey(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_ENUMKEY];
 
-	r = talloc(NULL, struct winreg_EnumKey);
+	r = talloc(talloc_tos(), struct winreg_EnumKey);
 	if (r == NULL) {
 		return false;
 	}
@@ -796,7 +796,7 @@ static bool api_winreg_EnumValue(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_ENUMVALUE];
 
-	r = talloc(NULL, struct winreg_EnumValue);
+	r = talloc(talloc_tos(), struct winreg_EnumValue);
 	if (r == NULL) {
 		return false;
 	}
@@ -875,7 +875,7 @@ static bool api_winreg_FlushKey(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_FLUSHKEY];
 
-	r = talloc(NULL, struct winreg_FlushKey);
+	r = talloc(talloc_tos(), struct winreg_FlushKey);
 	if (r == NULL) {
 		return false;
 	}
@@ -948,7 +948,7 @@ static bool api_winreg_GetKeySecurity(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_GETKEYSECURITY];
 
-	r = talloc(NULL, struct winreg_GetKeySecurity);
+	r = talloc(talloc_tos(), struct winreg_GetKeySecurity);
 	if (r == NULL) {
 		return false;
 	}
@@ -1023,7 +1023,7 @@ static bool api_winreg_LoadKey(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_LOADKEY];
 
-	r = talloc(NULL, struct winreg_LoadKey);
+	r = talloc(talloc_tos(), struct winreg_LoadKey);
 	if (r == NULL) {
 		return false;
 	}
@@ -1096,7 +1096,7 @@ static bool api_winreg_NotifyChangeKeyValue(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_NOTIFYCHANGEKEYVALUE];
 
-	r = talloc(NULL, struct winreg_NotifyChangeKeyValue);
+	r = talloc(talloc_tos(), struct winreg_NotifyChangeKeyValue);
 	if (r == NULL) {
 		return false;
 	}
@@ -1169,7 +1169,7 @@ static bool api_winreg_OpenKey(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_OPENKEY];
 
-	r = talloc(NULL, struct winreg_OpenKey);
+	r = talloc(talloc_tos(), struct winreg_OpenKey);
 	if (r == NULL) {
 		return false;
 	}
@@ -1249,7 +1249,7 @@ static bool api_winreg_QueryInfoKey(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_QUERYINFOKEY];
 
-	r = talloc(NULL, struct winreg_QueryInfoKey);
+	r = talloc(talloc_tos(), struct winreg_QueryInfoKey);
 	if (r == NULL) {
 		return false;
 	}
@@ -1372,7 +1372,7 @@ static bool api_winreg_QueryValue(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_QUERYVALUE];
 
-	r = talloc(NULL, struct winreg_QueryValue);
+	r = talloc(talloc_tos(), struct winreg_QueryValue);
 	if (r == NULL) {
 		return false;
 	}
@@ -1450,7 +1450,7 @@ static bool api_winreg_ReplaceKey(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_REPLACEKEY];
 
-	r = talloc(NULL, struct winreg_ReplaceKey);
+	r = talloc(talloc_tos(), struct winreg_ReplaceKey);
 	if (r == NULL) {
 		return false;
 	}
@@ -1523,7 +1523,7 @@ static bool api_winreg_RestoreKey(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_RESTOREKEY];
 
-	r = talloc(NULL, struct winreg_RestoreKey);
+	r = talloc(talloc_tos(), struct winreg_RestoreKey);
 	if (r == NULL) {
 		return false;
 	}
@@ -1596,7 +1596,7 @@ static bool api_winreg_SaveKey(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_SAVEKEY];
 
-	r = talloc(NULL, struct winreg_SaveKey);
+	r = talloc(talloc_tos(), struct winreg_SaveKey);
 	if (r == NULL) {
 		return false;
 	}
@@ -1669,7 +1669,7 @@ static bool api_winreg_SetKeySecurity(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_SETKEYSECURITY];
 
-	r = talloc(NULL, struct winreg_SetKeySecurity);
+	r = talloc(talloc_tos(), struct winreg_SetKeySecurity);
 	if (r == NULL) {
 		return false;
 	}
@@ -1742,7 +1742,7 @@ static bool api_winreg_SetValue(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_SETVALUE];
 
-	r = talloc(NULL, struct winreg_SetValue);
+	r = talloc(talloc_tos(), struct winreg_SetValue);
 	if (r == NULL) {
 		return false;
 	}
@@ -1815,7 +1815,7 @@ static bool api_winreg_UnLoadKey(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_UNLOADKEY];
 
-	r = talloc(NULL, struct winreg_UnLoadKey);
+	r = talloc(talloc_tos(), struct winreg_UnLoadKey);
 	if (r == NULL) {
 		return false;
 	}
@@ -1888,7 +1888,7 @@ static bool api_winreg_InitiateSystemShutdown(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_INITIATESYSTEMSHUTDOWN];
 
-	r = talloc(NULL, struct winreg_InitiateSystemShutdown);
+	r = talloc(talloc_tos(), struct winreg_InitiateSystemShutdown);
 	if (r == NULL) {
 		return false;
 	}
@@ -1961,7 +1961,7 @@ static bool api_winreg_AbortSystemShutdown(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_ABORTSYSTEMSHUTDOWN];
 
-	r = talloc(NULL, struct winreg_AbortSystemShutdown);
+	r = talloc(talloc_tos(), struct winreg_AbortSystemShutdown);
 	if (r == NULL) {
 		return false;
 	}
@@ -2034,7 +2034,7 @@ static bool api_winreg_GetVersion(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_GETVERSION];
 
-	r = talloc(NULL, struct winreg_GetVersion);
+	r = talloc(talloc_tos(), struct winreg_GetVersion);
 	if (r == NULL) {
 		return false;
 	}
@@ -2114,7 +2114,7 @@ static bool api_winreg_OpenHKCC(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_OPENHKCC];
 
-	r = talloc(NULL, struct winreg_OpenHKCC);
+	r = talloc(talloc_tos(), struct winreg_OpenHKCC);
 	if (r == NULL) {
 		return false;
 	}
@@ -2194,7 +2194,7 @@ static bool api_winreg_OpenHKDD(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_OPENHKDD];
 
-	r = talloc(NULL, struct winreg_OpenHKDD);
+	r = talloc(talloc_tos(), struct winreg_OpenHKDD);
 	if (r == NULL) {
 		return false;
 	}
@@ -2274,7 +2274,7 @@ static bool api_winreg_QueryMultipleValues(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_QUERYMULTIPLEVALUES];
 
-	r = talloc(NULL, struct winreg_QueryMultipleValues);
+	r = talloc(talloc_tos(), struct winreg_QueryMultipleValues);
 	if (r == NULL) {
 		return false;
 	}
@@ -2351,7 +2351,7 @@ static bool api_winreg_InitiateSystemShutdownEx(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_INITIATESYSTEMSHUTDOWNEX];
 
-	r = talloc(NULL, struct winreg_InitiateSystemShutdownEx);
+	r = talloc(talloc_tos(), struct winreg_InitiateSystemShutdownEx);
 	if (r == NULL) {
 		return false;
 	}
@@ -2424,7 +2424,7 @@ static bool api_winreg_SaveKeyEx(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_SAVEKEYEX];
 
-	r = talloc(NULL, struct winreg_SaveKeyEx);
+	r = talloc(talloc_tos(), struct winreg_SaveKeyEx);
 	if (r == NULL) {
 		return false;
 	}
@@ -2497,7 +2497,7 @@ static bool api_winreg_OpenHKPT(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_OPENHKPT];
 
-	r = talloc(NULL, struct winreg_OpenHKPT);
+	r = talloc(talloc_tos(), struct winreg_OpenHKPT);
 	if (r == NULL) {
 		return false;
 	}
@@ -2577,7 +2577,7 @@ static bool api_winreg_OpenHKPN(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_OPENHKPN];
 
-	r = talloc(NULL, struct winreg_OpenHKPN);
+	r = talloc(talloc_tos(), struct winreg_OpenHKPN);
 	if (r == NULL) {
 		return false;
 	}
@@ -2657,7 +2657,7 @@ static bool api_winreg_QueryMultipleValues2(pipes_struct *p)
 
 	call = &ndr_table_winreg.calls[NDR_WINREG_QUERYMULTIPLEVALUES2];
 
-	r = talloc(NULL, struct winreg_QueryMultipleValues2);
+	r = talloc(talloc_tos(), struct winreg_QueryMultipleValues2);
 	if (r == NULL) {
 		return false;
 	}

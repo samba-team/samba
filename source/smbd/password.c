@@ -121,6 +121,10 @@ void invalidate_vuid(uint16 vuid)
 
 	data_blob_free(&vuser->session_key);
 
+	if (vuser->auth_ntlmssp_state) {
+		auth_ntlmssp_end(&vuser->auth_ntlmssp_state);
+	}
+
 	DLIST_REMOVE(validated_users, vuser);
 
 	/* clear the vuid from the 'cache' on each connection, and
@@ -582,7 +586,7 @@ static bool user_ok(const char *user, int snum)
 	ret = True;
 
 	if (lp_invalid_users(snum)) {
-		str_list_copy(&invalid, lp_invalid_users(snum));
+		str_list_copy(talloc_tos(), &invalid, lp_invalid_users(snum));
 		if (invalid &&
 		    str_list_substitute(invalid, "%S", lp_servicename(snum))) {
 
@@ -595,11 +599,10 @@ static bool user_ok(const char *user, int snum)
 			}
 		}
 	}
-	if (invalid)
-		str_list_free (&invalid);
+	TALLOC_FREE(invalid);
 
 	if (ret && lp_valid_users(snum)) {
-		str_list_copy(&valid, lp_valid_users(snum));
+		str_list_copy(talloc_tos(), &valid, lp_valid_users(snum));
 		if ( valid &&
 		     str_list_substitute(valid, "%S", lp_servicename(snum)) ) {
 
@@ -611,17 +614,17 @@ static bool user_ok(const char *user, int snum)
 			}
 		}
 	}
-	if (valid)
-		str_list_free (&valid);
+	TALLOC_FREE(valid);
 
 	if (ret && lp_onlyuser(snum)) {
-		char **user_list = str_list_make (lp_username(snum), NULL);
+		char **user_list = str_list_make(
+			talloc_tos(), lp_username(snum), NULL);
 		if (user_list &&
 		    str_list_substitute(user_list, "%S",
 					lp_servicename(snum))) {
 			ret = user_in_list(user, (const char **)user_list);
 		}
-		if (user_list) str_list_free (&user_list);
+		TALLOC_FREE(user_list);
 	}
 
 	return(ret);
@@ -759,6 +762,7 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 	if (!ok) {
 		char *auser;
 		char *user_list = NULL;
+		char *saveptr;
 
 		if ( session_userlist )
 			user_list = SMB_STRDUP(session_userlist);
@@ -768,8 +772,9 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 		if (!user_list)
 			return(False);
 
-		for (auser=strtok(user_list,LIST_SEP); !ok && auser;
-		     auser = strtok(NULL,LIST_SEP)) {
+		for (auser = strtok_r(user_list, LIST_SEP, &saveptr);
+		     !ok && auser;
+		     auser = strtok_r(NULL, LIST_SEP, &saveptr)) {
 			fstring user2;
 			fstrcpy(user2,auser);
 			if (!user_ok(user2,snum))
@@ -792,6 +797,7 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 		TALLOC_CTX *ctx = talloc_tos();
 		char *auser;
 		char *user_list = talloc_strdup(ctx, lp_username(snum));
+		char *saveptr;
 
 		if (!user_list) {
 			goto check_guest;
@@ -806,8 +812,9 @@ bool authorise_login(int snum, fstring user, DATA_BLOB password,
 			goto check_guest;
 		}
 
-		for (auser=strtok(user_list,LIST_SEP); auser && !ok;
-		     auser = strtok(NULL,LIST_SEP)) {
+		for (auser = strtok_r(user_list, LIST_SEP, &saveptr);
+		     auser && !ok;
+		     auser = strtok_r(NULL, LIST_SEP, &saveptr)) {
 			if (*auser == '@') {
 				auser = validate_group(auser+1,password,snum);
 				if (auser) {

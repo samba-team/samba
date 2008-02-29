@@ -3700,7 +3700,7 @@ static enum ndr_err_code ndr_pull_winreg_QueryMultipleValues(struct ndr_pull *nd
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.buffer_size));
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_buffer_size_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC_N(ndr, r->out.values, r->in.num_values);
-		memcpy(r->out.values, r->in.values, r->in.num_values * sizeof(*r->in.values));
+		memcpy(r->out.values, r->in.values, (r->in.num_values) * sizeof(*r->in.values));
 		NDR_PULL_ALLOC(ndr, r->out.buffer_size);
 		*r->out.buffer_size = *r->in.buffer_size;
 		if (r->in.values) {
@@ -3798,8 +3798,7 @@ _PUBLIC_ void ndr_print_winreg_QueryMultipleValues(struct ndr_print *ndr, const 
 		ndr->depth++;
 		for (cntr_values_1=0;cntr_values_1<r->in.num_values;cntr_values_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_values_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_values_1) != -1) {
 				ndr_print_QueryMultipleValue(ndr, "values", &r->in.values[cntr_values_1]);
 				free(idx_1);
 			}
@@ -3828,8 +3827,7 @@ _PUBLIC_ void ndr_print_winreg_QueryMultipleValues(struct ndr_print *ndr, const 
 		ndr->depth++;
 		for (cntr_values_1=0;cntr_values_1<r->in.num_values;cntr_values_1++) {
 			char *idx_1=NULL;
-			asprintf(&idx_1, "[%d]", cntr_values_1);
-			if (idx_1) {
+			if (asprintf(&idx_1, "[%d]", cntr_values_1) != -1) {
 				ndr_print_QueryMultipleValue(ndr, "values", &r->out.values[cntr_values_1]);
 				free(idx_1);
 			}

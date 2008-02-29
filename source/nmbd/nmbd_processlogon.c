@@ -399,6 +399,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					char *component, *dc, *q1;
 					char *q_orig = q;
 					int str_offset;
+					char *saveptr;
 
 					domain = get_mydnsdomname(talloc_tos());
 					if (!domain) {
@@ -444,7 +445,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 					str_offset = q - q_orig;
 					dc = domain;
 					q1 = q;
-					while ((component = strtok(dc, "."))) {
+					while ((component = strtok_r(dc, ".", &saveptr)) != NULL) {
 						dc = NULL;
 						if (sizeof(outbuf) - PTR_DIFF(q, outbuf) < 1) {
 							return;

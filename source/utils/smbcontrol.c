@@ -1008,6 +1008,62 @@ static bool do_dump_event_list(struct messaging_context *msg_ctx,
 	return send_message(msg_ctx, pid, MSG_DUMP_EVENT_LIST, NULL, 0);
 }
 
+static bool do_winbind_dump_domain_list(struct messaging_context *msg_ctx,
+					const struct server_id pid,
+					const int argc, const char **argv)
+{
+	const char *domain = NULL;
+	int domain_len = 0;
+	struct server_id myid;
+	uint8_t *buf = NULL;
+	int buf_len = 0;
+
+	myid = pid_to_procid(sys_getpid());
+
+	if (argc < 1 || argc > 2) {
+		fprintf(stderr, "Usage: smbcontrol <dest> dump_domain_list "
+			"<domain>\n");
+		return false;
+	}
+
+	if (argc == 2) {
+		domain = argv[1];
+		domain_len = strlen(argv[1]) + 1;
+	}
+
+	messaging_register(msg_ctx, NULL, MSG_WINBIND_DUMP_DOMAIN_LIST,
+			   print_pid_string_cb);
+
+	buf_len = sizeof(myid)+domain_len;
+	buf = SMB_MALLOC_ARRAY(uint8_t, buf_len);
+	if (!buf) {
+		return false;
+	}
+
+	memcpy(buf, &myid, sizeof(myid));
+	memcpy(&buf[sizeof(myid)], domain, domain_len);
+
+	if (!send_message(msg_ctx, pid, MSG_WINBIND_DUMP_DOMAIN_LIST,
+			  buf, buf_len))
+	{
+		SAFE_FREE(buf);
+		return false;
+	}
+
+	wait_replies(msg_ctx, procid_to_pid(&pid) == 0);
+
+	/* No replies were received within the timeout period */
+
+	SAFE_FREE(buf);
+	if (num_replies == 0) {
+		printf("No replies received\n");
+	}
+
+	messaging_deregister(msg_ctx, MSG_WINBIND_DUMP_DOMAIN_LIST, NULL);
+
+	return num_replies;
+}
+
 static void winbind_validate_cache_cb(struct messaging_context *msg,
 				      void *private_data,
 				      uint32_t msg_type,
@@ -1150,6 +1206,7 @@ static const struct {
 	{ "dump-event-list", do_dump_event_list, "Dump event list"},
 	{ "validate-cache" , do_winbind_validate_cache,
 	  "Validate winbind's credential cache" },
+	{ "dump-domain-list", do_winbind_dump_domain_list, "Dump winbind domain list"},
 	{ "noop", do_noop, "Do nothing" },
 	{ NULL }
 };
