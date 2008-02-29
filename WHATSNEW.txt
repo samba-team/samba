@@ -1,6 +1,6 @@
                    =================================
                    Release Notes for Samba 3.2.0pre2
-                               Jan 16, 2008
+                               Feb 29, 2008
                    =================================
 
 This is the second preview release of Samba 3.2.0.  This is *not*
@@ -22,18 +22,19 @@ Major enhancements in Samba 3.2.0 include:
   o Introduction of a registry based configuration system.
   o Improved CIFS Unix Extensions support.
   o Experimental support for file serving clusters.
-  o Support for IPv6 connections.
-
+  o Support for IPv6 in the server, and client tools and libraries.
+  o Support for storing alternate data streams in xattrs.
+  o Encrypted SMB transport in client tools and libraries, and server.
 
   Winbind and Active Directory Integration:
   o Full support for Windows 2003 cross-forest, transitive trusts
-    and one-way domain trusts
+    and one-way domain trusts.
   o Support for userPrincipalName logons via pam_winbind and NSS
     lookups.
   o Support in pam_winbind for logging on using the userPrincipalName.
   o Expansion of nested domain groups via NSS calls.
   o Support for Active Directory LDAP Signing policy.
-  o New LGPL Winbind client library (libwbclient.so)
+  o New LGPL Winbind client library (libwbclient.so).
 
 
   Users & Groups:
@@ -74,13 +75,12 @@ to the "Changes" section for details on the exact parameters that were
 updated.
 
 
-
 Registry Configuration Backend
 ==============================
 
 Samba is now able to use a registry based configuration backed to
 supplement smb.conf setting.  This feature may be enabled by setting
-"include = registry" and "registry shares = yes" in the [global]
+"config backend = registry" and "registry shares = yes" in the [global]
 section of smb.conf and may be managed using the "net conf" command.
 
 More information may be obtained from the smb.conf(5) and net(8) man
@@ -92,6 +92,11 @@ Removed Features
 
 Both the Python bindings and the libmsrpc shared library have been
 removed from the tree due to lack of an official maintainer.
+
+As smbfs is no longer supported in current kernel versions, smbmount has
+been removed in this Samba version. Please use cifs (mount.cifs) instead.
+See examples/scripts/mount/mount.smbfs as an example for a wrapper which
+calls mount.cifs instead of smbmount/mount.smbfs.
 
 
 
@@ -109,16 +114,20 @@ smb.conf changes
     client plaintext auth		Changed Default	No
     clustering				New		No
     cluster addresses			New		""
-    debug class                         New             No
+    config backend			New		file
     ctdb socket				New		""
+    debug class				New		No
+    hidden				New		No
     lanman auth				Changed Default	No
-    mangle map                          Removed
-    min receive file size                New             0
-    open files database hash size	Removed
-    read bmpx                           Removed
+    ldap debug level			New		0
+    ldap debug threshold		New		10
+    mangle map				Removed
+    min receive file size		New             0
+    open files database hashsize	Removed
+    read bmpx				Removed				
     registry shares			New		No
-    winbind expand groups               New             1
-    winbind rpc only                    New             No
+    winbind expand groups		New		1
+    winbind rpc only			New		No
 
 
 Changes since 3.2.0pre1:
@@ -130,13 +139,24 @@ o   Michael Adam <obnox@samba.org>
     * BUG 4308: Fix Excel save operation ACL bug.
     * Refactor and consolidate logic for retrieving the machine
       trust password information.
-    * VFS API cleanup.
+    * VFS API cleanup (remove redundant parameter).
     * BUG 4801: Correctly implement LSA lookup levels for LookupNames.
     * Add new option "debug class" to control printing of the debug class.
       in debug headers.
     * Enable building of the zfsacl and notify_fam vfs modules.
     * BUG 5083: Fix memleak in solarisacl module.
     * BUG 5063: Fix build on RHEL5.
+    * New smb.conf parameter "config backend = registry" to enable registry
+      only configuration.
+    * Move "net conf" functionality into a separate module libnet_conf.c
+    * Restructure registry code, eliminating the dynamic overlay.
+      Make use of reg_api instead of backend code in most places.
+    * Add support for intercepting LDAP libraries' debug output and print
+      it in Samba's debugging system.
+    * Libreplace fixes.
+    * Build fixes.
+    * Initial support for using subsystems as shared libraries.
+      Use talloc, tdb, and libnetapi as shared libraries internally.
 
 
 o   Jeremy Allison <jra@samba.org>
@@ -146,8 +166,15 @@ o   Jeremy Allison <jra@samba.org>
     * Remove unused utilities: smbctool and rpctorture.
     * Fix service principal detection to match Windows Vista
       (based on work from Andreas Schneider).
-    * Additional work on the session data privacy for clients
-      implementing the Unix CIFS Extensions.
+    * Encrypted SMB transport in client tools and libraries, and server.
+
+
+o   Kai Blin <kai@samba.org>
+    * Added support for an SMB_CONF_PATH environment variable
+      containing the path to smb.conf.
+    * Various fixes to ntlm_auth.
+    * make test now supports more extensive SPOOLSS testing using vlp.
+    * Correctly handle mixed-case hostnames in NTLMv2 authentication.
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
@@ -175,7 +202,12 @@ o   Volker Lendecke <vl@samba.org>
     * Add generic a in-memory cache.
     * Import the Linux red-black tree implementation.
     * Remove large amount of global variables.
-    * Add vfs_xattr_tdb module for file systems that do not implement xattrs.
+    * Support for storing xattrs in tdb files.
+    * Support for storing alternate data streams in xattrs.
+    * Implement a generic in-memory cache based on rb-trees.
+    * Add implicit temporary talloc contexts via talloc_stack().
+    * Speed up the smbclient "get" command
+    * Add the aio_fork module
 
 
 o   Stefan Metzmacher <metze@samba.org>
@@ -185,6 +217,18 @@ o   Stefan Metzmacher <metze@samba.org>
     * Networking fixes to the libreplace library.
     * Pidl fixes.
     * Remove unused Winbind pipe calls.
+    * Build fixes.
+    * Fix for a crash bug in pidl generated client code.
+      This could have happend with [in,out,unique] pointers
+      when the client sends a valid pointer, but the server
+      responds with a NULL pointer (as samba-3.0.26a does for some calls).
+    * Change NTSTATUS into enum ndr_err_code in librpc/ndr.
+    * Remove unused calls in the struct based winbindd protocol.
+    * Add --configfile option to wbinfo.
+    * Convert winbind_env_set(), winbind_on() and winbind_off() into macros.
+    * Return rids and other_sids arrays in WBFLAG_PAM_INFO3_TEXT mode.
+    * Implement wbcErrorString() and wbcAuthenticateUserEx().
+    * Convert auth_winbind to use wbcAuthenticateUserEx().
 
 
 o   James Peach <jpeach@samba.org>
@@ -195,10 +239,16 @@ o   James Peach <jpeach@samba.org>
 o   Andreas Schneider <anschneider@suse.de>
     * Don't restart winbind if a corrupted tdb is found during
       initialization.
+    * Fix Windows 2008 (Longhorn) join.
+    * Add share parameter "hidden".
 
 
 o   Karolin Seeger <ks@sernet.de>
-    * Add net rap file user.
+    * Improve error messages of net subcommands.
+    * Add 'net rap file user'.
+    * Change LDAP search filter to find machine accounts which
+      are not located in the user suffix.
+    * Remove smbmount.
 
 
 o   David Shaw <dshaw@jabberwocky.com>
@@ -222,6 +272,9 @@ o   Andrew Tridgell <tridge@samba.org>
 o   Jelmer Vernooij <jelmer@samba.org>
     * Additional portability support for building shared libraries.
 
+
+o   Corinna Vinschen <corinna@vinschen.de>
+    * Get Samba version or capability information from Windows user space.
 
 
 Original 3.2.0pre1 commits:
@@ -301,7 +354,7 @@ o   Volker Lendecke <vl@samba.org>
 
 
 o   Steve French <sfrench@samba.org>
-    * Fixes for mount.cfs Linux utility.
+    * Fixes for mount.cifs Linux utility.
 
 
 o   Stefan Metzmacher <metze@samba.org>
@@ -322,7 +375,7 @@ o   James Peach <jpeach@apple.com>
 
 
 o   Jiri Sasek <Jiri.Sasek@Sun.COM>
-    * Added vfs_vfsacl module.
+    * Added vfs_zfsacl module.
 
 
 o   Karolin Seeger <ks@sernet.de>

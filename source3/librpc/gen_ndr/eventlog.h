@@ -13,8 +13,6 @@
 #define EVENTLOG_FORWARDS_READ ( 0x0004 )
 #define EVENTLOG_BACKWARDS_READ ( 0x0008 )
 
-;
-
 /* bitmap eventlogEventTypes */
 #define EVENTLOG_SUCCESS ( 0x0000 )
 #define EVENTLOG_ERROR_TYPE ( 0x0001 )
@@ -22,8 +20,6 @@
 #define EVENTLOG_INFORMATION_TYPE ( 0x0004 )
 #define EVENTLOG_AUDIT_SUCCESS ( 0x0008 )
 #define EVENTLOG_AUDIT_FAILURE ( 0x0010 )
-
-;
 
 struct eventlog_OpenUnknown0 {
 	uint16_t unknown0;
@@ -57,7 +53,7 @@ struct eventlog_Record {
 struct eventlog_ClearEventLogW {
 	struct {
 		struct policy_handle *handle;/* [ref] */
-		struct lsa_String *unknown;/* [unique] */
+		struct lsa_String *backupfile;/* [unique] */
 	} in;
 
 	struct {
@@ -111,6 +107,11 @@ struct eventlog_GetNumRecords {
 
 struct eventlog_GetOldestRecord {
 	struct {
+		struct policy_handle *handle;/* [ref] */
+	} in;
+
+	struct {
+		uint32_t *oldest_entry;/* [ref] */
 		NTSTATUS result;
 	} out;
 
@@ -128,8 +129,8 @@ struct eventlog_ChangeNotify {
 struct eventlog_OpenEventLogW {
 	struct {
 		struct eventlog_OpenUnknown0 *unknown0;/* [unique] */
-		struct lsa_String logname;
-		struct lsa_String servername;
+		struct lsa_String *logname;/* [ref] */
+		struct lsa_String *servername;/* [ref] */
 		uint32_t unknown2;
 		uint32_t unknown3;
 	} in;
@@ -163,7 +164,7 @@ struct eventlog_ReadEventLogW {
 		struct policy_handle *handle;/* [ref] */
 		uint32_t flags;
 		uint32_t offset;
-		uint32_t number_of_bytes;
+		uint32_t number_of_bytes;/* [range(0,0x7FFFF)] */
 	} in;
 
 	struct {

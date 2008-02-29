@@ -69,15 +69,36 @@ int cli_set_port(struct cli_state *cli, int port)
 
 static ssize_t client_receive_smb(struct cli_state *cli, size_t maxlen)
 {
-	ssize_t len;
+	size_t len;
 
 	for(;;) {
-		len = receive_smb_raw(cli->fd, cli->inbuf, cli->timeout,
-				maxlen, &cli->smb_rw_error);
+		NTSTATUS status;
 
-		if (len < 0) {
+		set_smb_read_error(&cli->smb_rw_error, SMB_READ_OK);
+
+		status = receive_smb_raw(cli->fd, cli->inbuf, cli->timeout,
+					 maxlen, &len);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(10,("client_receive_smb failed\n"));
 			show_msg(cli->inbuf);
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+				set_smb_read_error(&cli->smb_rw_error,
+						   SMB_READ_EOF);
+				return -1;
+			}
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+				set_smb_read_error(&cli->smb_rw_error,
+						   SMB_READ_TIMEOUT);
+				return -1;
+			}
+
+			set_smb_read_error(&cli->smb_rw_error, SMB_READ_ERROR);
+			return -1;
+		}
+
+		if (len < 0) {
 			return len;
 		}
 
@@ -143,7 +164,7 @@ bool cli_receive_smb(struct cli_state *cli)
 		return false;
 	}
 
-	if (!cli_check_sign_mac(cli)) {
+	if (!cli_check_sign_mac(cli, cli->inbuf)) {
 		/*
 		 * If we get a signature failure in sessionsetup, then
 		 * the server sometimes just reflects the sent signature
@@ -180,12 +201,28 @@ bool cli_receive_smb(struct cli_state *cli)
 
 ssize_t cli_receive_smb_data(struct cli_state *cli, char *buffer, size_t len)
 {
-	if (cli->timeout > 0) {
-		return read_socket_with_timeout(cli->fd, buffer, len,
-						len, cli->timeout, &cli->smb_rw_error);
-	} else {
-		return read_data(cli->fd, buffer, len, &cli->smb_rw_error);
+	NTSTATUS status;
+
+	set_smb_read_error(&cli->smb_rw_error, SMB_READ_OK);
+
+	status = read_socket_with_timeout(
+		cli->fd, buffer, len, len, cli->timeout, NULL);
+	if (NT_STATUS_IS_OK(status)) {
+		return len;
 	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_END_OF_FILE)) {
+		set_smb_read_error(&cli->smb_rw_error, SMB_READ_EOF);
+		return -1;
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+		set_smb_read_error(&cli->smb_rw_error, SMB_READ_TIMEOUT);
+		return -1;
+	}
+
+	set_smb_read_error(&cli->smb_rw_error, SMB_READ_ERROR);
+	return -1;
 }
 
 /****************************************************************************
@@ -306,10 +343,11 @@ bool cli_send_smb(struct cli_state *cli)
 	if (cli->fd == -1)
 		return false;
 
-	cli_calculate_sign_mac(cli);
+	cli_calculate_sign_mac(cli, cli->outbuf);
 
 	if (enc_on) {
-		NTSTATUS status = cli_encrypt_message(cli, &buf_out);
+		NTSTATUS status = cli_encrypt_message(cli, cli->outbuf,
+						      &buf_out);
 		if (!NT_STATUS_IS_OK(status)) {
 			close(cli->fd);
 			cli->fd = -1;
@@ -412,31 +450,41 @@ bool cli_send_smb_direct_writeX(struct cli_state *cli,
  Setup basics in a outgoing packet.
 ****************************************************************************/
 
+void cli_setup_packet_buf(struct cli_state *cli, char *buf)
+{
+	uint16 flags2;
+	cli->rap_error = 0;
+	SIVAL(buf,smb_rcls,0);
+	SSVAL(buf,smb_pid,cli->pid);
+	memset(buf+smb_pidhigh, 0, 12);
+	SSVAL(buf,smb_uid,cli->vuid);
+	SSVAL(buf,smb_mid,cli->mid);
+
+	if (cli->protocol <= PROTOCOL_CORE) {
+		return;
+	}
+
+	if (cli->case_sensitive) {
+		SCVAL(buf,smb_flg,0x0);
+	} else {
+		/* Default setting, case insensitive. */
+		SCVAL(buf,smb_flg,0x8);
+	}
+	flags2 = FLAGS2_LONG_PATH_COMPONENTS;
+	if (cli->capabilities & CAP_UNICODE)
+		flags2 |= FLAGS2_UNICODE_STRINGS;
+	if ((cli->capabilities & CAP_DFS) && cli->dfsroot)
+		flags2 |= FLAGS2_DFS_PATHNAMES;
+	if (cli->capabilities & CAP_STATUS32)
+		flags2 |= FLAGS2_32_BIT_ERROR_CODES;
+	if (cli->use_spnego)
+		flags2 |= FLAGS2_EXTENDED_SECURITY;
+	SSVAL(buf,smb_flg2, flags2);
+}
+
 void cli_setup_packet(struct cli_state *cli)
 {
-	cli->rap_error = 0;
-	SSVAL(cli->outbuf,smb_pid,cli->pid);
-	SSVAL(cli->outbuf,smb_uid,cli->vuid);
-	SSVAL(cli->outbuf,smb_mid,cli->mid);
-	if (cli->protocol > PROTOCOL_CORE) {
-		uint16 flags2;
-		if (cli->case_sensitive) {
-			SCVAL(cli->outbuf,smb_flg,0x0);
-		} else {
-			/* Default setting, case insensitive. */
-			SCVAL(cli->outbuf,smb_flg,0x8);
-		}
-		flags2 = FLAGS2_LONG_PATH_COMPONENTS;
-		if (cli->capabilities & CAP_UNICODE)
-			flags2 |= FLAGS2_UNICODE_STRINGS;
-		if ((cli->capabilities & CAP_DFS) && cli->dfsroot)
-			flags2 |= FLAGS2_DFS_PATHNAMES;
-		if (cli->capabilities & CAP_STATUS32)
-			flags2 |= FLAGS2_32_BIT_ERROR_CODES;
-		if (cli->use_spnego)
-			flags2 |= FLAGS2_EXTENDED_SECURITY;
-		SSVAL(cli->outbuf,smb_flg2, flags2);
-	}
+	cli_setup_packet_buf(cli, cli->outbuf);
 }
 
 /****************************************************************************
@@ -499,7 +547,7 @@ struct cli_state *cli_initialise(void)
 		return NULL;
 	}
 
-	cli = SMB_MALLOC_P(struct cli_state);
+	cli = talloc(NULL, struct cli_state);
 	if (!cli) {
 		return NULL;
 	}
@@ -657,7 +705,7 @@ void cli_shutdown(struct cli_state *cli)
 	cli->fd = -1;
 	cli->smb_rw_error = SMB_READ_OK;
 
-	SAFE_FREE(cli);
+	TALLOC_FREE(cli);
 }
 
 /****************************************************************************

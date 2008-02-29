@@ -3,7 +3,7 @@
    Distributed SMB/CIFS Server Management Utility 
    Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
    Copyright (C) 2002 Jim McDonough (jmcd@us.ibm.com)
-   Copyright (C) 2004 Guenther Deschner (gd@samba.org)
+   Copyright (C) 2004,2008 Guenther Deschner (gd@samba.org)
    Copyright (C) 2005 Jeremy Allison (jra@samba.org)
    Copyright (C) 2006 Jelmer Vernooij (jelmer@samba.org)
 
@@ -57,8 +57,8 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	struct rpc_pipe_client *lsa_pipe;
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;
-	uint32 info_class = 5;
-	
+	union lsa_PolicyInformation *info = NULL;
+
 	lsa_pipe = cli_rpc_pipe_open_noauth(cli, PI_LSARPC, &result);
 	if (!lsa_pipe) {
 		d_fprintf(stderr, "Could not initialise lsa pipe\n");
@@ -74,14 +74,18 @@ NTSTATUS net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		return result;
 	}
 
-	result = rpccli_lsa_query_info_policy(lsa_pipe, mem_ctx, &pol,
-					      info_class, domain_name,
-					      domain_sid);
+	result = rpccli_lsa_QueryInfoPolicy(lsa_pipe, mem_ctx,
+					    &pol,
+					    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+					    &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "lsaquery failed: %s\n",
 			  nt_errstr(result));
 		return result;
 	}
+
+	*domain_name = info->account_domain.name.string;
+	*domain_sid = info->account_domain.sid;
 
 	rpccli_lsa_Close(lsa_pipe, mem_ctx, &pol);
 	cli_rpc_pipe_close(lsa_pipe);
@@ -388,7 +392,7 @@ static int rpc_join_usage(int argc, const char **argv)
  * @param argc  Standard main() style argv.  Initial components are already
  *              stripped
  *
- * Main 'net_rpc_join()' (where the admain username/password is used) is 
+ * Main 'net_rpc_join()' (where the admin username/password is used) is 
  * in net_rpc_join.c
  * Try to just change the password, but if that doesn't work, use/prompt
  * for a username/password.
@@ -440,40 +444,44 @@ NTSTATUS rpc_info_internals(const DOM_SID *domain_sid,
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	SAM_UNK_CTR ctr;
+	union samr_DomainInfo *info = NULL;
 	fstring sid_str;
 
 	sid_to_fstring(sid_str, domain_sid);
 
-	/* Get sam policy handle */	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	/* Get sam policy handle */
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not connect to SAM: %s\n", nt_errstr(result));
 		goto done;
 	}
-	
+
 	/* Get domain policy handle */
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not open domain: %s\n", nt_errstr(result));
 		goto done;
 	}
 
-	ZERO_STRUCT(ctr);
-	result = rpccli_samr_query_dom_info(pipe_hnd, mem_ctx, &domain_pol,
-					 2, &ctr);
+	result = rpccli_samr_QueryDomainInfo(pipe_hnd, mem_ctx,
+					     &domain_pol,
+					     2,
+					     &info);
 	if (NT_STATUS_IS_OK(result)) {
-		TALLOC_CTX *ctx = talloc_init("rpc_info_internals");
-		d_printf("Domain Name: %s\n", unistr2_to_ascii_talloc(ctx, &ctr.info.inf2.uni_domain));
+		d_printf("Domain Name: %s\n", info->info2.domain_name.string);
 		d_printf("Domain SID: %s\n", sid_str);
-		d_printf("Sequence number: %llu\n", (unsigned long long)ctr.info.inf2.seq_num);
-		d_printf("Num users: %u\n", ctr.info.inf2.num_domain_usrs);
-		d_printf("Num domain groups: %u\n", ctr.info.inf2.num_domain_grps);
-		d_printf("Num local groups: %u\n", ctr.info.inf2.num_local_grps);
-		talloc_destroy(ctx);
+		d_printf("Sequence number: %llu\n",
+			(unsigned long long)info->info2.sequence_num);
+		d_printf("Num users: %u\n", info->info2.num_users);
+		d_printf("Num domain groups: %u\n", info->info2.num_groups);
+		d_printf("Num local groups: %u\n", info->info2.num_aliases);
 	}
 
  done:
@@ -587,8 +595,11 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	const char *acct_name;
+	struct lsa_String lsa_acct_name;
 	uint32 acb_info;
-	uint32 access_mask, user_rid;
+	uint32 acct_flags, user_rid;
+	uint32_t access_granted = 0;
+	struct samr_Ids user_rids, name_types;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
@@ -597,20 +608,25 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	}
 
 	acct_name = argv[0];
+	init_lsa_String(&lsa_acct_name, acct_name);
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 	
 	/* Get domain policy handle */
-	
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -618,35 +634,46 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 	/* Create domain user */
 
 	acb_info = ACB_NORMAL;
-	access_mask = 0xe005000b;
+	acct_flags = SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
+		     SEC_STD_WRITE_DAC | SEC_STD_DELETE |
+		     SAMR_USER_ACCESS_SET_PASSWORD |
+		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
+		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
 
-	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-					  acct_name, acb_info, access_mask,
-					  &user_pol, &user_rid);
+	result = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 &lsa_acct_name,
+					 acb_info,
+					 acct_flags,
+					 &user_pol,
+					 &access_granted,
+					 &user_rid);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
 	if (argc == 2) {
 
-		uint32 *user_rids, num_rids, *name_types;
-		uint32 flags = 0x000003e8; /* Unknown */
-		SAM_USERINFO_CTR ctr;
-		SAM_USER_INFO_24 p24;
+		union samr_UserInfo info;
 		uchar pwbuf[516];
 
-		result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-						  flags, 1, &acct_name,
-						  &num_rids, &user_rids,
-						  &name_types);
+		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &user_rids,
+						 &name_types);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}
 
-		result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-					       MAXIMUM_ALLOWED_ACCESS,
-					       user_rids[0], &user_pol);
+		result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+					      &domain_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      user_rids.ids[0],
+					      &user_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
@@ -654,24 +681,24 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid,
 
 		/* Set password on account */
 
-		ZERO_STRUCT(ctr);
-		ZERO_STRUCT(p24);
-
 		encode_pw_buffer(pwbuf, argv[1], STR_UNICODE);
 
-		init_sam_user_info24(&p24, (char *)pwbuf,24);
+		init_samr_user_info24(&info.info24, pwbuf, 24);
 
-		ctr.switch_value = 24;
-		ctr.info.id24 = &p24;
+		SamOEMhashBlob(info.info24.password.data, 516,
+			       &cli->user_session_key);
 
-		result = rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol, 24, 
-					       &cli->user_session_key, &ctr);
+		result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+						  &user_pol,
+						  24,
+						  &info);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, "Failed to set password for user %s - %s\n", 
 				 acct_name, nt_errstr(result));
 
-			result = rpccli_samr_delete_dom_user(pipe_hnd, mem_ctx, &user_pol);
+			result = rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
+							&user_pol);
 
 			if (!NT_STATUS_IS_OK(result)) {
 				d_fprintf(stderr, "Failed to delete user %s - %s\n", 
@@ -745,16 +772,20 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 
 	/* Get sam policy and domain handles */
 
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -763,21 +794,27 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 	/* Get handle on user */
 
 	{
-		uint32 *user_rids, num_rids, *name_types;
-		uint32 flags = 0x000003e8; /* Unknown */
+		struct samr_Ids user_rids, name_types;
+		struct lsa_String lsa_acct_name;
 
-		result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-					       flags, 1, &acct_name,
-					       &num_rids, &user_rids,
-					       &name_types);
+		init_lsa_String(&lsa_acct_name, acct_name);
+
+		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &user_rids,
+						 &name_types);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}
 
-		result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-					    MAXIMUM_ALLOWED_ACCESS,
-					    user_rids[0], &user_pol);
+		result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+					      &domain_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      user_rids.ids[0],
+					      &user_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
@@ -786,7 +823,8 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 
 	/* Delete user */
 
-	result = rpccli_samr_delete_dom_user(pipe_hnd, mem_ctx, &user_pol);
+	result = rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
+					&user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -831,14 +869,9 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 info_level = 7;
 	const char *old_name, *new_name;
-	uint32 *user_rid;
-	uint32 flags = 0x000003e8; /* Unknown */
-	uint32 num_rids, *name_types;
-	uint32 num_names = 1;
-	const char **names;
-	SAM_USERINFO_CTR *user_ctr;
-	SAM_USERINFO_CTR ctr;
-	SAM_USER_INFO_7 info7;
+	struct samr_Ids user_rids, name_types;
+	struct lsa_String lsa_acct_name;
+	union samr_UserInfo *info = NULL;
 
 	if (argc != 2) {
 		d_printf("Old and new username must be specified\n");
@@ -849,62 +882,68 @@ static NTSTATUS rpc_user_rename_internals(const DOM_SID *domain_sid,
 	old_name = argv[0];
 	new_name = argv[1];
 
-	ZERO_STRUCT(ctr);
-	ZERO_STRUCT(user_ctr);
-
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 	
 	/* Get domain policy handle */
-	
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	if ((names = TALLOC_ARRAY(mem_ctx, const char *, num_names)) == NULL) {
-		result = NT_STATUS_NO_MEMORY;
-		goto done;
-	}
-	names[0] = old_name;
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-				       flags, num_names, names,
-				       &num_rids, &user_rid, &name_types);
+	init_lsa_String(&lsa_acct_name, old_name);
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &user_rids,
+					 &name_types);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
 	/* Open domain user */
-	result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				    MAXIMUM_ALLOWED_ACCESS, user_rid[0], &user_pol);
+	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      user_rids.ids[0],
+				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
 	/* Query user info */
-	result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, &user_pol,
-					 info_level, &user_ctr);
+	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+					   &user_pol,
+					   info_level,
+					   &info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	ctr.switch_value = info_level;
-	ctr.info.id7 = &info7;
-
-	init_sam_user_info7(&info7, new_name);
+	init_samr_user_info7(&info->info7, new_name);
 
 	/* Set new name */
-	result = rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol,
-				       info_level, &cli->user_session_key, &ctr);
+	result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+					  &user_pol,
+					  info_level,
+					  info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -978,12 +1017,11 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol, user_pol;
-	SAM_USERINFO_CTR ctr;
-	SAM_USER_INFO_24 p24;
 	uchar pwbuf[516];
 	const char *user;
 	const char *new_password;
 	char *prompt = NULL;
+	union samr_UserInfo info;
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
@@ -1003,16 +1041,20 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 
 	/* Get sam policy and domain handles */
 
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -1021,21 +1063,26 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 	/* Get handle on user */
 
 	{
-		uint32 *user_rids, num_rids, *name_types;
-		uint32 flags = 0x000003e8; /* Unknown */
+		struct samr_Ids user_rids, name_types;
+		struct lsa_String lsa_acct_name;
 
-		result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-					       flags, 1, &user,
-					       &num_rids, &user_rids,
-					       &name_types);
+		init_lsa_String(&lsa_acct_name, user);
 
+		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &user_rids,
+						 &name_types);
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
 		}
 
-		result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-					    MAXIMUM_ALLOWED_ACCESS,
-					    user_rids[0], &user_pol);
+		result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+					      &domain_pol,
+					      MAXIMUM_ALLOWED_ACCESS,
+					      user_rids.ids[0],
+					      &user_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
@@ -1044,18 +1091,17 @@ static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid,
 
 	/* Set password on account */
 
-	ZERO_STRUCT(ctr);
-	ZERO_STRUCT(p24);
-
 	encode_pw_buffer(pwbuf, new_password, STR_UNICODE);
 
-	init_sam_user_info24(&p24, (char *)pwbuf,24);
+	init_samr_user_info24(&info.info24, pwbuf, 24);
 
-	ctr.switch_value = 24;
-	ctr.info.id24 = &p24;
+	SamOEMhashBlob(info.info24.password.data, 516,
+		       &cli->user_session_key);
 
-	result = rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol, 24, 
-				       &cli->user_session_key, &ctr);
+	result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+					  &user_pol,
+					  24,
+					  &info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -1110,11 +1156,14 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 *rids, num_rids, *name_types, num_names;
-	uint32 flags = 0x000003e8; /* Unknown */
 	int i;
-	char **names;
-	DOM_GID *user_gids;
+	struct samr_RidWithAttributeArray *rid_array = NULL;
+	struct lsa_Strings names;
+	struct samr_Ids types;
+	uint32_t *lrids = NULL;
+	struct samr_Ids rids, name_types;
+	struct lsa_String lsa_acct_name;
+
 
 	if (argc < 1) {
 		d_printf("User must be specified\n");
@@ -1122,50 +1171,65 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_OK;
 	}
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 	
 	/* Get domain policy handle */
-	
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
 	/* Get handle on user */
 
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-				       flags, 1, &argv[0],
-				       &num_rids, &rids, &name_types);
+	init_lsa_String(&lsa_acct_name, argv[0]);
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &rids,
+					 &name_types);
 
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				    MAXIMUM_ALLOWED_ACCESS,
-				    rids[0], &user_pol);
+	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      rids.ids[0],
+				      &user_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = rpccli_samr_query_usergroups(pipe_hnd, mem_ctx, &user_pol,
-					   &num_rids, &user_gids);
+	result = rpccli_samr_GetGroupsForUser(pipe_hnd, mem_ctx,
+					      &user_pol,
+					      &rid_array);
 
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
 	/* Look up rids */
 
-	if (num_rids) {
-		if ((rids = TALLOC_ARRAY(mem_ctx, uint32, num_rids)) == NULL) {
+	if (rid_array->count) {
+		if ((lrids = TALLOC_ARRAY(mem_ctx, uint32, rid_array->count)) == NULL) {
 			result = NT_STATUS_NO_MEMORY;
 			goto done;
 		}
 
-		for (i = 0; i < num_rids; i++)
-                	rids[i] = user_gids[i].g_rid;
+		for (i = 0; i < rid_array->count; i++)
+			lrids[i] = rid_array->rids[i].rid;
 
-		result = rpccli_samr_lookup_rids(pipe_hnd, mem_ctx, &domain_pol,
-				      	      num_rids, rids,
-				      	      &num_names, &names, &name_types);
+		result = rpccli_samr_LookupRids(pipe_hnd, mem_ctx,
+						&domain_pol,
+						rid_array->count,
+						lrids,
+						&names,
+						&types);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			goto done;
@@ -1173,8 +1237,8 @@ static NTSTATUS rpc_user_info_internals(const DOM_SID *domain_sid,
 
 		/* Display results */
 
-		for (i = 0; i < num_names; i++)
-			printf("%s\n", names[i]);
+		for (i = 0; i < names.count; i++)
+			printf("%s\n", names.names[i].string);
 	}
  done:
 	return result;
@@ -1223,50 +1287,59 @@ static NTSTATUS rpc_user_list_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx=0, num_entries, i, loop_count = 0;
-	SAM_DISPINFO_CTR ctr;
-	SAM_DISPINFO_1 info1;
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 	
 	/* Get domain policy handle */
-	
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
 	/* Query domain users */
-	ZERO_STRUCT(ctr);
-	ZERO_STRUCT(info1);
-	ctr.sam.info1 = &info1;
 	if (opt_long_list_entries)
 		d_printf("\nUser name             Comment"\
 			 "\n-----------------------------\n");
 	do {
-		fstring user, desc;
+		const char *user = NULL;
+		const char *desc = NULL;
 		uint32 max_entries, max_size;
+		uint32_t total_size, returned_size;
+		union samr_DispInfo info;
 
 		get_query_dispinfo_params(
 			loop_count, &max_entries, &max_size);
 
-		result = rpccli_samr_query_dispinfo(pipe_hnd, mem_ctx, &domain_pol,
-						 &start_idx, 1, &num_entries,
-						 max_entries, max_size, &ctr);
+		result = rpccli_samr_QueryDisplayInfo(pipe_hnd, mem_ctx,
+						      &domain_pol,
+						      1,
+						      start_idx,
+						      max_entries,
+						      max_size,
+						      &total_size,
+						      &returned_size,
+						      &info);
 		loop_count++;
+		start_idx += info.info1.count;
+		num_entries = info.info1.count;
 
 		for (i = 0; i < num_entries; i++) {
-			unistr2_to_ascii(user, &(&ctr.sam.info1->str[i])->uni_acct_name, sizeof(user));
-			if (opt_long_list_entries) 
-				unistr2_to_ascii(desc, &(&ctr.sam.info1->str[i])->uni_acct_desc, sizeof(desc));
-			
+			user = info.info1.entries[i].account_name.string;
+			if (opt_long_list_entries)
+				desc = info.info1.entries[i].description.string;
 			if (opt_long_list_entries)
 				printf("%-21.21s %s\n", user, desc);
 			else
@@ -1333,9 +1406,8 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 					   TALLOC_CTX *mem_ctx,
 					   struct rpc_sh_ctx *ctx,
 					   struct rpc_pipe_client *pipe_hnd,
-					   const POLICY_HND *user_hnd,
+					   POLICY_HND *user_hnd,
 					   int argc, const char **argv))
-					   
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -1373,22 +1445,28 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx,
-				     MAXIMUM_ALLOWED_ACCESS, &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-					 MAXIMUM_ALLOWED_ACCESS,
-					 ctx->domain_sid, &domain_pol);
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					ctx->domain_sid,
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				       MAXIMUM_ALLOWED_ACCESS,
-				       rid, &user_pol);
+	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      rid,
+				      &user_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -1397,13 +1475,13 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 
  done:
 	if (is_valid_policy_hnd(&user_pol)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	}
 	if (is_valid_policy_hnd(&domain_pol)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 	}
 	if (is_valid_policy_hnd(&connect_pol)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
 	}
 	return result;
 }
@@ -1411,28 +1489,28 @@ static NTSTATUS rpc_sh_handle_user(TALLOC_CTX *mem_ctx,
 static NTSTATUS rpc_sh_user_show_internals(TALLOC_CTX *mem_ctx,
 					   struct rpc_sh_ctx *ctx,
 					   struct rpc_pipe_client *pipe_hnd,
-					   const POLICY_HND *user_hnd,
+					   POLICY_HND *user_hnd,
 					   int argc, const char **argv)
 {
 	NTSTATUS result;
-	SAM_USERINFO_CTR *ctr;
-	SAM_USER_INFO_21 *info;
+	union samr_UserInfo *info = NULL;
 
 	if (argc != 0) {
 		d_fprintf(stderr, "usage: %s show <username>\n", ctx->whoami);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, user_hnd,
-					    21, &ctr);
+	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+					   user_hnd,
+					   21,
+					   &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	info = ctr->info.id21;
-
-	d_printf("user rid: %d, group rid: %d\n", info->user_rid,
-		 info->group_rid);
+	d_printf("user rid: %d, group rid: %d\n",
+		info->info21.rid,
+		info->info21.primary_gid);
 
 	return result;
 }
@@ -1448,27 +1526,25 @@ static NTSTATUS rpc_sh_user_show(TALLOC_CTX *mem_ctx,
 
 #define FETCHSTR(name, rec) \
 do { if (strequal(ctx->thiscmd, name)) { \
-	oldval = rpcstr_pull_unistr2_talloc(mem_ctx, &usr->uni_##rec); } \
+	oldval = talloc_strdup(mem_ctx, info->info21.rec.string); } \
 } while (0);
 
 #define SETSTR(name, rec, flag) \
 do { if (strequal(ctx->thiscmd, name)) { \
-	init_unistr2(&usr->uni_##rec, argv[0], UNI_STR_TERMINATE); \
-	init_uni_hdr(&usr->hdr_##rec, &usr->uni_##rec); \
-	usr->fields_present |= ACCT_##flag; } \
+	init_lsa_String(&(info->info21.rec), argv[0]); \
+	info->info21.fields_present |= SAMR_FIELD_##flag; } \
 } while (0);
 
 static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
 					       struct rpc_sh_ctx *ctx,
 					       struct rpc_pipe_client *pipe_hnd,
-					       const POLICY_HND *user_hnd,
+					       POLICY_HND *user_hnd,
 					       int argc, const char **argv)
 {
 	NTSTATUS result;
-	SAM_USERINFO_CTR *ctr;
-	SAM_USER_INFO_21 *usr;
 	const char *username;
 	const char *oldval = "";
+	union samr_UserInfo *info = NULL;
 
 	if (argc > 1) {
 		d_fprintf(stderr, "usage: %s <username> [new value|NULL]\n",
@@ -1476,44 +1552,45 @@ static NTSTATUS rpc_sh_user_str_edit_internals(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, user_hnd,
-					    21, &ctr);
+	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+					   user_hnd,
+					   21,
+					   &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	usr = ctr->info.id21;
-
-	username = rpcstr_pull_unistr2_talloc(mem_ctx, &usr->uni_user_name);
+	username = talloc_strdup(mem_ctx, info->info21.account_name.string);
 
 	FETCHSTR("fullname", full_name);
-	FETCHSTR("homedir", home_dir);
-	FETCHSTR("homedrive", dir_drive);
+	FETCHSTR("homedir", home_directory);
+	FETCHSTR("homedrive", home_drive);
 	FETCHSTR("logonscript", logon_script);
 	FETCHSTR("profilepath", profile_path);
-	FETCHSTR("description", acct_desc);
+	FETCHSTR("description", description);
 
 	if (argc == 0) {
 		d_printf("%s's %s: [%s]\n", username, ctx->thiscmd, oldval);
 		goto done;
 	}
 
-	ZERO_STRUCTP(usr);
-
 	if (strcmp(argv[0], "NULL") == 0) {
 		argv[0] = "";
 	}
 
-	SETSTR("fullname", full_name, FULL_NAME);
-	SETSTR("homedir", home_dir, HOME_DIR);
-	SETSTR("homedrive", dir_drive, HOME_DRIVE);
-	SETSTR("logonscript", logon_script, LOGON_SCRIPT);
-	SETSTR("profilepath", profile_path, PROFILE);
-	SETSTR("description", acct_desc, DESCRIPTION);
+	ZERO_STRUCT(info->info21);
 
-	result = rpccli_samr_set_userinfo2(
-		pipe_hnd, mem_ctx, user_hnd, 21,
-		&pipe_hnd->cli->user_session_key, ctr);
+	SETSTR("fullname", full_name, FULL_NAME);
+	SETSTR("homedir", home_directory, HOME_DIRECTORY);
+	SETSTR("homedrive", home_drive, HOME_DRIVE);
+	SETSTR("logonscript", logon_script, LOGON_SCRIPT);
+	SETSTR("profilepath", profile_path, PROFILE_PATH);
+	SETSTR("description", description, DESCRIPTION);
+
+	result = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+					 user_hnd,
+					 21,
+					 info);
 
 	d_printf("Set %s's %s from [%s] to [%s]\n", username,
 		 ctx->thiscmd, oldval, argv[0]);
@@ -1544,16 +1621,15 @@ static NTSTATUS rpc_sh_user_str_edit(TALLOC_CTX *mem_ctx,
 static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
 						struct rpc_sh_ctx *ctx,
 						struct rpc_pipe_client *pipe_hnd,
-						const POLICY_HND *user_hnd,
+						POLICY_HND *user_hnd,
 						int argc, const char **argv)
 {
 	NTSTATUS result;
-	SAM_USERINFO_CTR *ctr;
-	SAM_USER_INFO_21 *usr;
 	const char *username;
 	const char *oldval = "unknown";
 	uint32 oldflags, newflags;
 	bool newval;
+	union samr_UserInfo *info = NULL;
 
 	if ((argc > 1) ||
 	    ((argc == 1) && !strequal(argv[0], "yes") &&
@@ -1565,17 +1641,17 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
 
 	newval = strequal(argv[0], "yes");
 
-	result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, user_hnd,
-					    21, &ctr);
+	result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+					   user_hnd,
+					   21,
+					   &info);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	usr = ctr->info.id21;
-
-	username = rpcstr_pull_unistr2_talloc(mem_ctx, &usr->uni_user_name);
-	oldflags = usr->acb_info;
-	newflags = usr->acb_info;
+	username = talloc_strdup(mem_ctx, info->info21.account_name.string);
+	oldflags = info->info21.acct_flags;
+	newflags = info->info21.acct_flags;
 
 	HANDLEFLG("disabled", DISABLED);
 	HANDLEFLG("pwnotreq", PWNOTREQ);
@@ -1587,14 +1663,15 @@ static NTSTATUS rpc_sh_user_flag_edit_internals(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	ZERO_STRUCTP(usr);
+	ZERO_STRUCT(info->info21);
 
-	usr->acb_info = newflags;
-	usr->fields_present = ACCT_FLAGS;
+	info->info21.acct_flags = newflags;
+	info->info21.fields_present = SAMR_FIELD_ACCT_FLAGS;
 
-	result = rpccli_samr_set_userinfo2(
-		pipe_hnd, mem_ctx, user_hnd, 21,
-		&pipe_hnd->cli->user_session_key, ctr);
+	result = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+					 user_hnd,
+					 21,
+					 info);
 
 	if (NT_STATUS_IS_OK(result)) {
 		d_printf("Set %s's %s flag from [%s] to [%s]\n", username,
@@ -1720,15 +1797,15 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, group_pol, user_pol;
 	bool group_is_primary = False;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
-	uint32 *group_rids, num_rids, *name_types, num_members, 
-               *group_attrs, group_rid;
-	uint32 flags = 0x000003e8; /* Unknown */
+	uint32_t group_rid;
+	struct samr_RidTypeArray *rids = NULL;
 	/* char **names; */
 	int i;
 	/* DOM_GID *user_gids; */
-	SAM_USERINFO_CTR *user_ctr;
-	fstring temp;
+
+	struct samr_Ids group_rids, name_types;
+	struct lsa_String lsa_acct_name;
+	union samr_UserInfo *info = NULL;
 
 	if (argc < 1) {
         	d_printf("specify group\n");
@@ -1736,50 +1813,59 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_OK; /* ok? */
 	}
 
-        result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
-                                  &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 
         if (!NT_STATUS_IS_OK(result)) {
-		d_fprintf(stderr, "Request samr_connect failed\n");
+		d_fprintf(stderr, "Request samr_Connect2 failed\n");
         	goto done;
         }
-        
-        result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-                                      MAXIMUM_ALLOWED_ACCESS,
-                                      domain_sid, &domain_pol);
-        
+
+        result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
+
         if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Request open_domain failed\n");
         	goto done;
         }
-	
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol,
-				       flags, 1, &argv[0],
-				       &num_rids, &group_rids,
-				       &name_types);
 
+	init_lsa_String(&lsa_acct_name, argv[0]);
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &group_rids,
+					 &name_types);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Lookup of '%s' failed\n",argv[0]);
    		goto done;
 	}
 
-	switch (name_types[0])
+	switch (name_types.ids[0])
 	{
 	case SID_NAME_DOM_GRP:
-		result = rpccli_samr_open_group(pipe_hnd, mem_ctx, &domain_pol,
-					     MAXIMUM_ALLOWED_ACCESS,
-					     group_rids[0], &group_pol);
+		result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+					       &domain_pol,
+					       MAXIMUM_ALLOWED_ACCESS,
+					       group_rids.ids[0],
+					       &group_pol);
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, "Request open_group failed");
    			goto done;
 		}
-                
-		group_rid = group_rids[0];
-                
-		result = rpccli_samr_query_groupmem(pipe_hnd, mem_ctx, &group_pol,
-                                 &num_members, &group_rids,
-                                 &group_attrs);
-		
+
+		group_rid = group_rids.ids[0];
+
+		result = rpccli_samr_QueryGroupMember(pipe_hnd, mem_ctx,
+						      &group_pol,
+						      &rids);
+
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, "Unable to query group members of %s",argv[0]);
    			goto done;
@@ -1787,40 +1873,44 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		
 		if (opt_verbose) {
 			d_printf("Domain Group %s (rid: %d) has %d members\n",
-				argv[0],group_rid,num_members);
+				argv[0],group_rid, rids->count);
 		}
 
 		/* Check if group is anyone's primary group */
-                for (i = 0; i < num_members; i++)
+                for (i = 0; i < rids->count; i++)
 		{
-	                result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-					            MAXIMUM_ALLOWED_ACCESS,
-					            group_rids[i], &user_pol);
+	                result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+						      &domain_pol,
+						      MAXIMUM_ALLOWED_ACCESS,
+						      rids->rids[i],
+						      &user_pol);
 	
 	        	if (!NT_STATUS_IS_OK(result)) {
-				d_fprintf(stderr, "Unable to open group member %d\n",group_rids[i]);
+				d_fprintf(stderr, "Unable to open group member %d\n",
+					rids->rids[i]);
 	           		goto done;
 	        	}
-	
-	                ZERO_STRUCT(user_ctr);
 
-	                result = rpccli_samr_query_userinfo(pipe_hnd, mem_ctx, &user_pol,
-	                                                 21, &user_ctr);
-	
+			result = rpccli_samr_QueryUserInfo(pipe_hnd, mem_ctx,
+							   &user_pol,
+							   21,
+							   &info);
+
 	        	if (!NT_STATUS_IS_OK(result)) {
-				d_fprintf(stderr, "Unable to lookup userinfo for group member %d\n",group_rids[i]);
+				d_fprintf(stderr, "Unable to lookup userinfo for group member %d\n",
+					rids->rids[i]);
 	           		goto done;
 	        	}
-	
-			if (user_ctr->info.id21->group_rid == group_rid) {
-				unistr2_to_ascii(temp, &(user_ctr->info.id21)->uni_user_name, 
-						sizeof(temp));
-				if (opt_verbose) 
-					d_printf("Group is primary group of %s\n",temp);
+
+			if (info->info21.primary_gid == group_rid) {
+				if (opt_verbose) {
+					d_printf("Group is primary group of %s\n",
+						info->info21.account_name.string);
+				}
 				group_is_primary = True;
                         }
 
-			rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+			rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 		}
                 
 		if (group_is_primary) {
@@ -1831,11 +1921,14 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 		}
      
 		/* remove all group members */
-		for (i = 0; i < num_members; i++)
+		for (i = 0; i < rids->count; i++)
 		{
 			if (opt_verbose) 
-				d_printf("Remove group member %d...",group_rids[i]);
-			result = rpccli_samr_del_groupmem(pipe_hnd, mem_ctx, &group_pol, group_rids[i]);
+				d_printf("Remove group member %d...",
+					rids->rids[i]);
+			result = rpccli_samr_DeleteGroupMember(pipe_hnd, mem_ctx,
+							       &group_pol,
+							       rids->rids[i]);
 
 			if (NT_STATUS_IS_OK(result)) {
 				if (opt_verbose)
@@ -1847,25 +1940,29 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 			}	
 		}
 
-		result = rpccli_samr_delete_dom_group(pipe_hnd, mem_ctx, &group_pol);
+		result = rpccli_samr_DeleteDomainGroup(pipe_hnd, mem_ctx,
+						       &group_pol);
 
 		break;
 	/* removing a local group is easier... */
 	case SID_NAME_ALIAS:
-		result = rpccli_samr_open_alias(pipe_hnd, mem_ctx, &domain_pol,
-					     MAXIMUM_ALLOWED_ACCESS,
-					     group_rids[0], &group_pol);
+		result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+					       &domain_pol,
+					       MAXIMUM_ALLOWED_ACCESS,
+					       group_rids.ids[0],
+					       &group_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, "Request open_alias failed\n");
    			goto done;
 		}
-		
-		result = rpccli_samr_delete_dom_alias(pipe_hnd, mem_ctx, &group_pol);
+
+		result = rpccli_samr_DeleteDomAlias(pipe_hnd, mem_ctx,
+						    &group_pol);
 		break;
 	default:
 		d_fprintf(stderr, "%s is of type %s. This command is only for deleting local or global groups\n",
-			argv[0],sid_type_lookup(name_types[0]));
+			argv[0],sid_type_lookup(name_types.ids[0]));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
@@ -1873,7 +1970,7 @@ static NTSTATUS rpc_group_delete_internals(const DOM_SID *domain_sid,
 	
 	if (NT_STATUS_IS_OK(result)) {
 		if (opt_verbose)
-			d_printf("Deleted %s '%s'\n",sid_type_lookup(name_types[0]),argv[0]);
+			d_printf("Deleted %s '%s'\n",sid_type_lookup(name_types.ids[0]),argv[0]);
 	} else {
 		d_fprintf(stderr, "Deleting of %s failed: %s\n",argv[0],
 			get_friendly_nt_error_msg(result));
@@ -1900,7 +1997,9 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 {
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	GROUP_INFO_CTR group_info;
+	union samr_GroupInfo group_info;
+	struct lsa_String grp_name;
+	uint32_t rid = 0;
 
 	if (argc != 1) {
 		d_printf("Group name must be specified\n");
@@ -1908,34 +2007,45 @@ static NTSTATUS rpc_group_add_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_OK;
 	}
 
+	init_lsa_String(&grp_name, argv[0]);
+
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 	
 	/* Get domain policy handle */
-	
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
 	/* Create the group */
 
-	result = rpccli_samr_create_dom_group(pipe_hnd, mem_ctx, &domain_pol,
-					   argv[0], MAXIMUM_ALLOWED_ACCESS,
-					   &group_pol);
+	result = rpccli_samr_CreateDomainGroup(pipe_hnd, mem_ctx,
+					       &domain_pol,
+					       &grp_name,
+					       MAXIMUM_ALLOWED_ACCESS,
+					       &group_pol,
+					       &rid);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
 	if (strlen(opt_comment) == 0) goto done;
 
 	/* We've got a comment to set */
 
-	group_info.switch_value1 = 4;
-	init_samr_group_info4(&group_info.group.info4, opt_comment);
+	init_lsa_String(&group_info.description, opt_comment);
 
-	result = rpccli_samr_set_groupinfo(pipe_hnd, mem_ctx, &group_pol, &group_info);
+	result = rpccli_samr_SetGroupInfo(pipe_hnd, mem_ctx,
+					  &group_pol,
+					  4,
+					  &group_info);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 	
  done:
@@ -1957,7 +2067,9 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 {
 	POLICY_HND connect_pol, domain_pol, alias_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	ALIAS_INFO_CTR alias_info;
+	union samr_AliasInfo alias_info;
+	struct lsa_String alias_name;
+	uint32_t rid = 0;
 
 	if (argc != 1) {
 		d_printf("Alias name must be specified\n");
@@ -1965,33 +2077,46 @@ static NTSTATUS rpc_alias_add_internals(const DOM_SID *domain_sid,
 		return NT_STATUS_OK;
 	}
 
+	init_lsa_String(&alias_name, argv[0]);
+
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 	
 	/* Get domain policy handle */
-	
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
 	/* Create the group */
 
-	result = rpccli_samr_create_dom_alias(pipe_hnd, mem_ctx, &domain_pol,
-					   argv[0], &alias_pol);
+	result = rpccli_samr_CreateDomAlias(pipe_hnd, mem_ctx,
+					    &domain_pol,
+					    &alias_name,
+					    MAXIMUM_ALLOWED_ACCESS,
+					    &alias_pol,
+					    &rid);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
 	if (strlen(opt_comment) == 0) goto done;
 
 	/* We've got a comment to set */
 
-	alias_info.level = 3;
-	init_samr_alias_info3(&alias_info.alias.info3, opt_comment);
+	init_lsa_String(&alias_info.description, opt_comment);
 
-	result = rpccli_samr_set_aliasinfo(pipe_hnd, mem_ctx, &alias_pol, &alias_info);
+	result = rpccli_samr_SetAliasInfo(pipe_hnd, mem_ctx,
+					  &alias_pol,
+					  3,
+					  &alias_info);
+
 	if (!NT_STATUS_IS_OK(result)) goto done;
 	
  done:
@@ -2080,9 +2205,8 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 	uint32 group_rid;
 	POLICY_HND group_pol;
 
-	uint32 num_rids;
-	uint32 *rids = NULL;
-	uint32 *rid_types = NULL;
+	struct samr_Ids rids, rid_types;
+	struct lsa_String lsa_acct_name;
 
 	DOM_SID sid;
 
@@ -2092,42 +2216,56 @@ static NTSTATUS rpc_add_groupmem(struct rpc_pipe_client *pipe_hnd,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* Get sam policy handle */	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		return result;
-	}
-	
-	/* Get domain policy handle */
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
+	/* Get sam policy handle */
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &sid, &domain_pol);
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol, 1000,
-				       1, &member,
-				       &num_rids, &rids, &rid_types);
+	/* Get domain policy handle */
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					&sid,
+					&domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		return result;
+	}
+
+	init_lsa_String(&lsa_acct_name, member);
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &rids,
+					 &rid_types);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not lookup up group member %s\n", member);
 		goto done;
 	}
 
-	result = rpccli_samr_open_group(pipe_hnd, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
-				     group_rid, &group_pol);
+	result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+				       &domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       group_rid,
+				       &group_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	result = rpccli_samr_add_groupmem(pipe_hnd, mem_ctx, &group_pol, rids[0]);
+	result = rpccli_samr_AddGroupMember(pipe_hnd, mem_ctx,
+					    &group_pol,
+					    rids.ids[0],
+					    0x0005); /* unknown flags */
 
  done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
 	return result;
 }
 
@@ -2160,37 +2298,45 @@ static NTSTATUS rpc_add_aliasmem(struct rpc_pipe_client *pipe_hnd,
 		return result;
 	}
 
-	/* Get sam policy handle */	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-	
-	/* Get domain policy handle */
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
+	/* Get sam policy handle */
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &sid, &domain_pol);
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	result = rpccli_samr_open_alias(pipe_hnd, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
-				     alias_rid, &alias_pol);
+	/* Get domain policy handle */
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					&sid,
+					&domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+				       &domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       alias_rid,
+				       &alias_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
-	result = rpccli_samr_add_aliasmem(pipe_hnd, mem_ctx, &alias_pol, &member_sid);
+	result = rpccli_samr_AddAliasMember(pipe_hnd, mem_ctx,
+					    &alias_pol,
+					    &member_sid);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		return result;
 	}
 
  done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
 	return result;
 }
 
@@ -2261,9 +2407,8 @@ static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
 	uint32 group_rid;
 	POLICY_HND group_pol;
 
-	uint32 num_rids;
-	uint32 *rids = NULL;
-	uint32 *rid_types = NULL;
+	struct samr_Ids rids, rid_types;
+	struct lsa_String lsa_acct_name;
 
 	DOM_SID sid;
 
@@ -2272,39 +2417,51 @@ static NTSTATUS rpc_del_groupmem(struct rpc_pipe_client *pipe_hnd,
 	if (!sid_split_rid(&sid, &group_rid))
 		return NT_STATUS_UNSUCCESSFUL;
 
-	/* Get sam policy handle */	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
-	if (!NT_STATUS_IS_OK(result))
-		return result;
-	
-	/* Get domain policy handle */
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
+	/* Get sam policy handle */
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &sid, &domain_pol);
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol, 1000,
-				       1, &member,
-				       &num_rids, &rids, &rid_types);
+	/* Get domain policy handle */
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					&sid,
+					&domain_pol);
+	if (!NT_STATUS_IS_OK(result))
+		return result;
 
+	init_lsa_String(&lsa_acct_name, member);
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &rids,
+					 &rid_types);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Could not lookup up group member %s\n", member);
 		goto done;
 	}
 
-	result = rpccli_samr_open_group(pipe_hnd, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
-				     group_rid, &group_pol);
+	result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+				       &domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       group_rid,
+				       &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_samr_del_groupmem(pipe_hnd, mem_ctx, &group_pol, rids[0]);
+	result = rpccli_samr_DeleteGroupMember(pipe_hnd, mem_ctx,
+					       &group_pol,
+					       rids.ids[0]);
 
  done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
 	return result;
 }
 
@@ -2336,35 +2493,43 @@ static NTSTATUS rpc_del_aliasmem(struct rpc_pipe_client *pipe_hnd,
 		return result;
 	}
 
-	/* Get sam policy handle */	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-	
-	/* Get domain policy handle */
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
+	/* Get sam policy handle */
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      &sid, &domain_pol);
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	result = rpccli_samr_open_alias(pipe_hnd, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
-				     alias_rid, &alias_pol);
+	/* Get domain policy handle */
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					&sid,
+					&domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+				       &domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       alias_rid,
+				       &alias_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	result = rpccli_samr_del_aliasmem(pipe_hnd, mem_ctx, &alias_pol, &member_sid);
+	result = rpccli_samr_DeleteAliasMember(pipe_hnd, mem_ctx,
+					       &alias_pol,
+					       &member_sid);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
  done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
 	return result;
 }
 
@@ -2452,7 +2617,7 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx=0, max_entries=250, num_entries, i, loop_count = 0;
-	struct acct_info *groups;
+	struct samr_SamArray *groups = NULL;
 	bool global = False;
 	bool local = False;
 	bool builtin = False;
@@ -2475,18 +2640,22 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 	
 	/* Get domain policy handle */
-	
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -2496,34 +2665,38 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 		d_printf("\nGroup name            Comment"\
 			 "\n-----------------------------\n");
 	do {
-		SAM_DISPINFO_CTR ctr;
-		SAM_DISPINFO_3 info3;
-		uint32 max_size;
-
-		ZERO_STRUCT(ctr);
-		ZERO_STRUCT(info3);
-		ctr.sam.info3 = &info3;
+		uint32_t max_size, total_size, returned_size;
+		union samr_DispInfo info;
 
 		if (!global) break;
 
 		get_query_dispinfo_params(
 			loop_count, &max_entries, &max_size);
 
-		result = rpccli_samr_query_dispinfo(pipe_hnd, mem_ctx, &domain_pol,
-						 &start_idx, 3, &num_entries,
-						 max_entries, max_size, &ctr);
+		result = rpccli_samr_QueryDisplayInfo(pipe_hnd, mem_ctx,
+						      &domain_pol,
+						      3,
+						      start_idx,
+						      max_entries,
+						      max_size,
+						      &total_size,
+						      &returned_size,
+						      &info);
+		num_entries = info.info3.count;
+		start_idx += info.info3.count;
 
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
 			break;
-						 
+
 		for (i = 0; i < num_entries; i++) {
 
-			fstring group, desc;
+			const char *group = NULL;
+			const char *desc = NULL;
 
-			unistr2_to_ascii(group, &(&ctr.sam.info3->str[i])->uni_grp_name, sizeof(group));
-			unistr2_to_ascii(desc, &(&ctr.sam.info3->str[i])->uni_grp_desc, sizeof(desc));
-			
+			group = info.info3.entries[i].account_name.string;
+			desc = info.info3.entries[i].description.string;
+
 			if (opt_long_list_entries)
 				printf("%-21.21s %-50.50s\n",
 				       group, desc);
@@ -2536,59 +2709,57 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	do {
 		if (!local) break;
 
-		/* The max_size field in cli_samr_enum_als_groups is more like
-		 * an account_control field with indiviual bits what to
-		 * retrieve. Set this to 0xffff as NT4 usrmgr.exe does to get
-		 * everything. I'm too lazy (sorry) to get this through to
-		 * rpc_parse/ etc.  Volker */
-
-		result = rpccli_samr_enum_als_groups(pipe_hnd, mem_ctx, &domain_pol,
-						  &start_idx, 0xffff,
-						  &groups, &num_entries);
-
+		result = rpccli_samr_EnumDomainAliases(pipe_hnd, mem_ctx,
+						       &domain_pol,
+						       &start_idx,
+						       &groups,
+						       0xffff,
+						       &num_entries);
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
 			break;
-						 
+
 		for (i = 0; i < num_entries; i++) {
 
-			char *description = NULL;
+			const char *description = NULL;
 
 			if (opt_long_list_entries) {
 
 				POLICY_HND alias_pol;
-				ALIAS_INFO_CTR ctr;
+				union samr_AliasInfo *info = NULL;
 
-				if ((NT_STATUS_IS_OK(rpccli_samr_open_alias(pipe_hnd, mem_ctx,
-									 &domain_pol,
-									 0x8,
-									 groups[i].rid,
-									 &alias_pol))) &&
-				    (NT_STATUS_IS_OK(rpccli_samr_query_alias_info(pipe_hnd, mem_ctx,
-									       &alias_pol, 3,
-									       &ctr))) &&
-				    (NT_STATUS_IS_OK(rpccli_samr_close(pipe_hnd, mem_ctx,
+				if ((NT_STATUS_IS_OK(rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+									   &domain_pol,
+									   0x8,
+									   groups->entries[i].idx,
+									   &alias_pol))) &&
+				    (NT_STATUS_IS_OK(rpccli_samr_QueryAliasInfo(pipe_hnd, mem_ctx,
+										&alias_pol,
+										3,
+										&info))) &&
+				    (NT_STATUS_IS_OK(rpccli_samr_Close(pipe_hnd, mem_ctx,
 								    &alias_pol)))) {
-					description = unistr2_to_ascii_talloc(mem_ctx,
-								   ctr.alias.info3.description.string);
+					description = info->description.string;
 				}
 			}
-			
+
 			if (description != NULL) {
-				printf("%-21.21s %-50.50s\n", 
-				       groups[i].acct_name,
+				printf("%-21.21s %-50.50s\n",
+				       groups->entries[i].name.string,
 				       description);
 			} else {
-				printf("%s\n", groups[i].acct_name);
+				printf("%s\n", groups->entries[i].name.string);
 			}
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
-	rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 	/* Get builtin policy handle */
-	
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      &global_sid_Builtin, &domain_pol);
+
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, &global_sid_Builtin),
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
@@ -2597,44 +2768,46 @@ static NTSTATUS rpc_group_list_internals(const DOM_SID *domain_sid,
 	do {
 		if (!builtin) break;
 
-		result = rpccli_samr_enum_als_groups(pipe_hnd, mem_ctx, &domain_pol,
-						  &start_idx, max_entries,
-						  &groups, &num_entries);
-						 
+		result = rpccli_samr_EnumDomainAliases(pipe_hnd, mem_ctx,
+						       &domain_pol,
+						       &start_idx,
+						       &groups,
+						       max_entries,
+						       &num_entries);
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
 			break;
-						 
+
 		for (i = 0; i < num_entries; i++) {
 
-			char *description = NULL;
+			const char *description = NULL;
 
 			if (opt_long_list_entries) {
 
 				POLICY_HND alias_pol;
-				ALIAS_INFO_CTR ctr;
+				union samr_AliasInfo *info = NULL;
 
-				if ((NT_STATUS_IS_OK(rpccli_samr_open_alias(pipe_hnd, mem_ctx,
-									 &domain_pol,
-									 0x8,
-									 groups[i].rid,
-									 &alias_pol))) &&
-				    (NT_STATUS_IS_OK(rpccli_samr_query_alias_info(pipe_hnd, mem_ctx,
-									       &alias_pol, 3,
-									       &ctr))) &&
-				    (NT_STATUS_IS_OK(rpccli_samr_close(pipe_hnd, mem_ctx,
+				if ((NT_STATUS_IS_OK(rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+									   &domain_pol,
+									   0x8,
+									   groups->entries[i].idx,
+									   &alias_pol))) &&
+				    (NT_STATUS_IS_OK(rpccli_samr_QueryAliasInfo(pipe_hnd, mem_ctx,
+										&alias_pol,
+										3,
+										&info))) &&
+				    (NT_STATUS_IS_OK(rpccli_samr_Close(pipe_hnd, mem_ctx,
 								    &alias_pol)))) {
-					description = unistr2_to_ascii_talloc(mem_ctx,
-								   ctr.alias.info3.description.string);
+					description = info->description.string;
 				}
 			}
-			
+
 			if (description != NULL) {
-				printf("%-21.21s %-50.50s\n", 
-				       groups[i].acct_name,
+				printf("%-21.21s %-50.50s\n",
+				       groups->entries[i].name.string,
 				       description);
 			} else {
-				printf("%s\n", groups[i].acct_name);
+				printf("%s\n", groups->entries[i].name.string);
 			}
 		}
 	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
@@ -2659,28 +2832,33 @@ static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
 {
 	NTSTATUS result;
 	POLICY_HND group_pol;
-	uint32 num_members, *group_rids, *group_attrs;
-	uint32 num_names;
-	char **names;
-	uint32 *name_types;
+	uint32 num_members, *group_rids;
 	int i;
+	struct samr_RidTypeArray *rids = NULL;
+	struct lsa_Strings names;
+	struct samr_Ids types;
 
 	fstring sid_str;
 	sid_to_fstring(sid_str, domain_sid);
 
-	result = rpccli_samr_open_group(pipe_hnd, mem_ctx, domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
-				     rid, &group_pol);
+	result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+				       domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       rid,
+				       &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	result = rpccli_samr_query_groupmem(pipe_hnd, mem_ctx, &group_pol,
-					 &num_members, &group_rids,
-					 &group_attrs);
+	result = rpccli_samr_QueryGroupMember(pipe_hnd, mem_ctx,
+					      &group_pol,
+					      &rids);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
+
+	num_members = rids->count;
+	group_rids = rids->rids;
 
 	while (num_members > 0) {
 		int this_time = 512;
@@ -2688,9 +2866,12 @@ static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
 		if (num_members < this_time)
 			this_time = num_members;
 
-		result = rpccli_samr_lookup_rids(pipe_hnd, mem_ctx, domain_pol,
-					      this_time, group_rids,
-					      &num_names, &names, &name_types);
+		result = rpccli_samr_LookupRids(pipe_hnd, mem_ctx,
+						domain_pol,
+						this_time,
+						group_rids,
+						&names,
+						&types);
 
 		if (!NT_STATUS_IS_OK(result))
 			return result;
@@ -2702,10 +2883,12 @@ static NTSTATUS rpc_list_group_members(struct rpc_pipe_client *pipe_hnd,
 
 			if (opt_long_list_entries) {
 				printf("%s-%d %s\\%s %d\n", sid_str,
-				       group_rids[i], domain_name, names[i],
+				       group_rids[i], domain_name,
+				       names.names[i].string,
 				       SID_NAME_USER);
 			} else {
-				printf("%s\\%s\n", domain_name, names[i]);
+				printf("%s\\%s\n", domain_name,
+					names.names[i].string);
 			}
 		}
 
@@ -2730,20 +2913,27 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 	char **names;
 	enum lsa_SidType *types;
 	int i;
+	struct lsa_SidArray sid_array;
 
-	result = rpccli_samr_open_alias(pipe_hnd, mem_ctx, domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS, rid, &alias_pol);
+	result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+				       domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       rid,
+				       &alias_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	result = rpccli_samr_query_aliasmem(pipe_hnd, mem_ctx, &alias_pol,
-					 &num_members, &alias_sids);
+	result = rpccli_samr_GetMembersInAlias(pipe_hnd, mem_ctx,
+					       &alias_pol,
+					       &sid_array);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		d_fprintf(stderr, "Couldn't list alias members\n");
 		return result;
 	}
+
+	num_members = sid_array.num_sids;
 
 	if (num_members == 0) {
 		return NT_STATUS_OK;
@@ -2763,6 +2953,17 @@ static NTSTATUS rpc_list_alias_members(struct rpc_pipe_client *pipe_hnd,
 		d_fprintf(stderr, "Couldn't open LSA policy handle\n");
 		cli_rpc_pipe_close(lsa_pipe);
 		return result;
+	}
+
+	alias_sids = TALLOC_ZERO_ARRAY(mem_ctx, DOM_SID, num_members);
+	if (!alias_sids) {
+		d_fprintf(stderr, "Out of memory\n");
+		cli_rpc_pipe_close(lsa_pipe);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<num_members; i++) {
+		sid_copy(&alias_sids[i], sid_array.sids[i].sid);
 	}
 
 	result = rpccli_lsa_lookup_sids(lsa_pipe, mem_ctx, &lsa_pol, num_members,
@@ -2806,27 +3007,38 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result;
 	POLICY_HND connect_pol, domain_pol;
-	uint32 num_rids, *rids, *rid_types;
+	struct samr_Ids rids, rid_types;
+	struct lsa_String lsa_acct_name;
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 	
 	/* Get domain policy handle */
-	
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol, 1000,
-				       1, argv, &num_rids, &rids, &rid_types);
+	init_lsa_String(&lsa_acct_name, argv[0]); /* sure? */
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &rids,
+					 &rid_types);
 
 	if (!NT_STATUS_IS_OK(result)) {
 
@@ -2834,22 +3046,27 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 
 		DOM_SID sid_Builtin;
 
-		rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 
 		string_to_sid(&sid_Builtin, "S-1-5-32");		
 
-		result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-					      MAXIMUM_ALLOWED_ACCESS,
-					      &sid_Builtin, &domain_pol);
+		result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+						&connect_pol,
+						MAXIMUM_ALLOWED_ACCESS,
+						&sid_Builtin,
+						&domain_pol);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, "Couldn't find group %s\n", argv[0]);
 			return result;
 		}
 
-		result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol, 1000,
-					       1, argv, &num_rids,
-					       &rids, &rid_types);
+		result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+						 &domain_pol,
+						 1,
+						 &lsa_acct_name,
+						 &rids,
+						 &rid_types);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			d_fprintf(stderr, "Couldn't find group %s\n", argv[0]);
@@ -2857,20 +3074,20 @@ static NTSTATUS rpc_group_members_internals(const DOM_SID *domain_sid,
 		}
 	}
 
-	if (num_rids != 1) {
+	if (rids.count != 1) {
 		d_fprintf(stderr, "Couldn't find group %s\n", argv[0]);
 		return result;
 	}
 
-	if (rid_types[0] == SID_NAME_DOM_GRP) {
+	if (rid_types.ids[0] == SID_NAME_DOM_GRP) {
 		return rpc_list_group_members(pipe_hnd, mem_ctx, domain_name,
 					      domain_sid, &domain_pol,
-					      rids[0]);
+					      rids.ids[0]);
 	}
 
-	if (rid_types[0] == SID_NAME_ALIAS) {
+	if (rid_types.ids[0] == SID_NAME_ALIAS) {
 		return rpc_list_alias_members(pipe_hnd, mem_ctx, &domain_pol,
-					      rids[0]);
+					      rids.ids[0]);
 	}
 
 	return NT_STATUS_NO_SUCH_GROUP;
@@ -2897,8 +3114,9 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 {
 	NTSTATUS result;
 	POLICY_HND connect_pol, domain_pol, group_pol;
-	uint32 num_rids, *rids, *rid_types;
-	GROUP_INFO_CTR ctr;
+	union samr_GroupInfo group_info;
+	struct samr_Ids rids, rid_types;
+	struct lsa_String lsa_acct_name;
 
 	if (argc != 2) {
 		d_printf("Usage: 'net rpc group rename group newname'\n");
@@ -2906,48 +3124,60 @@ static NTSTATUS rpc_group_rename_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Get sam policy handle */
-	
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 	
 	/* Get domain policy handle */
-	
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol, 1000,
-				       1, argv, &num_rids, &rids, &rid_types);
+	init_lsa_String(&lsa_acct_name, argv[0]);
 
-	if (num_rids != 1) {
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &rids,
+					 &rid_types);
+
+	if (rids.count != 1) {
 		d_fprintf(stderr, "Couldn't find group %s\n", argv[0]);
 		return result;
 	}
 
-	if (rid_types[0] != SID_NAME_DOM_GRP) {
+	if (rid_types.ids[0] != SID_NAME_DOM_GRP) {
 		d_fprintf(stderr, "Can only rename domain groups\n");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	result = rpccli_samr_open_group(pipe_hnd, mem_ctx, &domain_pol,
-				     MAXIMUM_ALLOWED_ACCESS,
-				     rids[0], &group_pol);
+	result = rpccli_samr_OpenGroup(pipe_hnd, mem_ctx,
+				       &domain_pol,
+				       MAXIMUM_ALLOWED_ACCESS,
+				       rids.ids[0],
+				       &group_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
-	ZERO_STRUCT(ctr);
+	init_lsa_String(&group_info.name, argv[1]);
 
-	ctr.switch_value1 = 2;
-	init_samr_group_info2(&ctr.group.info2, argv[1]);
-
-	result = rpccli_samr_set_groupinfo(pipe_hnd, mem_ctx, &group_pol, &ctr);
+	result = rpccli_samr_SetGroupInfo(pipe_hnd, mem_ctx,
+					  &group_pol,
+					  2,
+					  &group_info);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -3370,14 +3600,14 @@ static bool check_share_sanity(struct cli_state *cli, fstring netname, uint32 ty
 }
 
 /** 
- * Migrate shares from a remote RPC server to the local RPC srever
+ * Migrate shares from a remote RPC server to the local RPC server
  *
  * All parameters are provided by the run_rpc_command function, except for
- * argc, argv which are passes through. 
+ * argc, argv which are passed through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
  * @param cli A cli_state connected to the server.
- * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param mem_ctx Talloc context, destroyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
@@ -4000,15 +4230,17 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 					const DOM_SID *domain_sid)
 {
 	uint32 start_idx, max_entries, num_entries, i;
-	struct acct_info *groups;
+	struct samr_SamArray *groups = NULL;
 	NTSTATUS result;
 	POLICY_HND domain_pol;
 
 	/* Get domain policy handle */
-	
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result))
 		return result;
 
@@ -4016,32 +4248,36 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 	max_entries = 250;
 
 	do {
-		result = rpccli_samr_enum_als_groups(pipe_hnd, mem_ctx, &domain_pol,
-						  &start_idx, max_entries,
-						  &groups, &num_entries);
-
+		result = rpccli_samr_EnumDomainAliases(pipe_hnd, mem_ctx,
+						       &domain_pol,
+						       &start_idx,
+						       &groups,
+						       max_entries,
+						       &num_entries);
 		for (i = 0; i < num_entries; i++) {
 
 			POLICY_HND alias_pol;
 			struct full_alias alias;
-			DOM_SID *members;
+			struct lsa_SidArray sid_array;
 			int j;
 
-			result = rpccli_samr_open_alias(pipe_hnd, mem_ctx, &domain_pol,
-						     MAXIMUM_ALLOWED_ACCESS,
-						     groups[i].rid,
-						     &alias_pol);
+			result = rpccli_samr_OpenAlias(pipe_hnd, mem_ctx,
+						       &domain_pol,
+						       MAXIMUM_ALLOWED_ACCESS,
+						       groups->entries[i].idx,
+						       &alias_pol);
 			if (!NT_STATUS_IS_OK(result))
 				goto done;
 
-			result = rpccli_samr_query_aliasmem(pipe_hnd, mem_ctx,
-							 &alias_pol,
-							 &alias.num_members,
-							 &members);
+			result = rpccli_samr_GetMembersInAlias(pipe_hnd, mem_ctx,
+							       &alias_pol,
+							       &sid_array);
 			if (!NT_STATUS_IS_OK(result))
 				goto done;
 
-			result = rpccli_samr_close(pipe_hnd, mem_ctx, &alias_pol);
+			alias.num_members = sid_array.num_sids;
+
+			result = rpccli_samr_Close(pipe_hnd, mem_ctx, &alias_pol);
 			if (!NT_STATUS_IS_OK(result))
 				goto done;
 
@@ -4052,11 +4288,11 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 
 				for (j = 0; j < alias.num_members; j++)
 					sid_copy(&alias.members[j],
-						 &members[j]);
+						 sid_array.sids[j].sid);
 			}
 
 			sid_copy(&alias.sid, domain_sid);
-			sid_append_rid(&alias.sid, groups[i].rid);
+			sid_append_rid(&alias.sid, groups->entries[i].idx);
 
 			push_alias(mem_ctx, &alias);
 		}
@@ -4065,7 +4301,7 @@ static NTSTATUS rpc_fetch_domain_aliases(struct rpc_pipe_client *pipe_hnd,
 	result = NT_STATUS_OK;
 
  done:
-	rpccli_samr_close(pipe_hnd, mem_ctx, &domain_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_pol);
 
 	return result;
 }
@@ -4150,8 +4386,10 @@ static NTSTATUS rpc_aliaslist_internals(const DOM_SID *domain_sid,
 	NTSTATUS result;
 	POLICY_HND connect_pol;
 
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
-				  &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -4165,7 +4403,7 @@ static NTSTATUS rpc_aliaslist_internals(const DOM_SID *domain_sid,
 	result = rpc_fetch_domain_aliases(pipe_hnd, mem_ctx, &connect_pol,
 					  domain_sid);
 
-	rpccli_samr_close(pipe_hnd, mem_ctx, &connect_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_pol);
  done:
 	return result;
 }
@@ -5340,8 +5578,12 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
+	struct lsa_String lsa_acct_name;
 	uint32 acb_info;
-	uint32 unknown, user_rid;
+	uint32 acct_flags=0;
+	uint32 user_rid;
+	uint32_t access_granted = 0;
+	union samr_UserInfo info;
 
 	if (argc != 2) {
 		d_printf("Usage: net rpc trustdom add <domain_name> <pw>\n");
@@ -5351,71 +5593,90 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 	/* 
 	 * Make valid trusting domain account (ie. uppercased and with '$' appended)
 	 */
-	 
+
 	if (asprintf(&acct_name, "%s$", argv[0]) < 0) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	strupper_m(acct_name);
 
+	init_lsa_String(&lsa_acct_name, acct_name);
+
 	/* Get samr policy handle */
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
-				  &connect_pol);
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
-	
+
 	/* Get domain policy handle */
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
-				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
 	/* Create trusting domain's account */
-	acb_info = ACB_NORMAL; 
-	unknown = 0xe00500b0; /* No idea what this is - a permission mask?
-	                         mimir: yes, most probably it is */
+	acb_info = ACB_NORMAL;
+	acct_flags = SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
+		     SEC_STD_WRITE_DAC | SEC_STD_DELETE |
+		     SAMR_USER_ACCESS_SET_PASSWORD |
+		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
+		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
 
-	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-					  acct_name, acb_info, unknown,
-					  &user_pol, &user_rid);
+	result = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 &lsa_acct_name,
+					 acb_info,
+					 acct_flags,
+					 &user_pol,
+					 &access_granted,
+					 &user_rid);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
 	{
-		SAM_USERINFO_CTR ctr;
-		SAM_USER_INFO_23 p23;
 		NTTIME notime;
-		char nostr[] = "";
-		LOGON_HRS hrs;
+		struct samr_LogonHours hours;
+		const int units_per_week = 168;
 		uchar pwbuf[516];
 
 		encode_pw_buffer(pwbuf, argv[1], STR_UNICODE);
 
-		ZERO_STRUCT(ctr);
-		ZERO_STRUCT(p23);
 		ZERO_STRUCT(notime);
-		hrs.max_len = 1260;
-		hrs.offset = 0;
-		hrs.len = 21;
-		memset(hrs.hours, 0xFF, sizeof(hrs.hours));
-		acb_info = ACB_DOMTRUST;
 
-		init_sam_user_info23A(&p23, &notime, &notime, &notime,
-				      &notime, &notime, &notime,
-				      nostr, nostr, nostr, nostr, nostr,
-				      nostr, nostr, nostr, nostr, nostr,
-				      0, 0, acb_info, ACCT_FLAGS, 168, &hrs, 
-				      0, 0, (char *)pwbuf);
-		ctr.switch_value = 23;
-		ctr.info.id23 = &p23;
-		p23.passmustchange = 0;
+		ZERO_STRUCT(hours);
+		hours.bits = talloc_array(mem_ctx, uint8_t, units_per_week);
+		if (!hours.bits) {
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		hours.units_per_week = units_per_week;
+		memset(hours.bits, 0xFF, units_per_week);
 
-		result = rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol, 23,
-					       &cli->user_session_key, &ctr);
+		init_samr_user_info23(&info.info23,
+				      notime, notime, notime,
+				      notime, notime, notime,
+				      NULL, NULL, NULL, NULL, NULL,
+				      NULL, NULL, NULL, NULL, NULL,
+				      0, 0, ACB_DOMTRUST, SAMR_FIELD_ACCT_FLAGS,
+				      hours,
+				      0, 0, 0, 0, 0, 0, 0,
+				      pwbuf, 24);
+
+		SamOEMhashBlob(info.info23.password.data, 516,
+			       &cli->user_session_key);
+
+		result = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+						  &user_pol,
+						  23,
+						  &info);
 
 		if (!NT_STATUS_IS_OK(result)) {
 			DEBUG(0,("Could not set trust account password: %s\n",
@@ -5476,10 +5737,9 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
-	const char **names;
 	DOM_SID trust_acct_sid;
-	uint32 *user_rids, num_rids, *name_types;
-	uint32 flags = 0x000003e8; /* Unknown */
+	struct samr_Ids user_rids, name_types;
+	struct lsa_String lsa_acct_name;
 
 	if (argc != 1) {
 		d_printf("Usage: net rpc trustdom del <domain_name>\n");
@@ -5496,38 +5756,43 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 
 	strupper_m(acct_name);
 
-	if ((names = TALLOC_ARRAY(mem_ctx, const char *, 1)) == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	names[0] = acct_name;
-
-
 	/* Get samr policy handle */
-	result = rpccli_samr_connect(pipe_hnd, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
-				  &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
-	
-	/* Get domain policy handle */
-	result = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_pol,
+	result = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+				      pipe_hnd->cli->desthost,
 				      MAXIMUM_ALLOWED_ACCESS,
-				      domain_sid, &domain_pol);
+				      &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	result = rpccli_samr_lookup_names(pipe_hnd, mem_ctx, &domain_pol, flags, 1,
-				       names, &num_rids,
-				       &user_rids, &name_types);
-	
+	/* Get domain policy handle */
+	result = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					&connect_pol,
+					MAXIMUM_ALLOWED_ACCESS,
+					CONST_DISCARD(struct dom_sid2 *, domain_sid),
+					&domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	result = rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				    MAXIMUM_ALLOWED_ACCESS,
-				    user_rids[0], &user_pol);
+	init_lsa_String(&lsa_acct_name, acct_name);
+
+	result = rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 1,
+					 &lsa_acct_name,
+					 &user_rids,
+					 &name_types);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				      &domain_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      user_rids.ids[0],
+				      &user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -5535,22 +5800,23 @@ static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid,
 
 	/* append the rid to the domain sid */
 	sid_copy(&trust_acct_sid, domain_sid);
-	if (!sid_append_rid(&trust_acct_sid, user_rids[0])) {
+	if (!sid_append_rid(&trust_acct_sid, user_rids.ids[0])) {
 		goto done;
 	}
 
 	/* remove the sid */
 
-	result = rpccli_samr_remove_sid_foreign_domain(pipe_hnd, mem_ctx, &user_pol,
-						    &trust_acct_sid);
-
+	result = rpccli_samr_RemoveMemberFromForeignDomain(pipe_hnd, mem_ctx,
+							   &user_pol,
+							   &trust_acct_sid);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
 	/* Delete user */
 
-	result = rpccli_samr_delete_dom_user(pipe_hnd, mem_ctx, &user_pol);
+	result = rpccli_samr_DeleteUser(pipe_hnd, mem_ctx,
+					&user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -5608,10 +5874,10 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	DOM_SID *domain_sid;
 
 	char* domain_name;
-	const char* domain_name_pol;
 	char* acct_name;
 	fstring pdc_name;
 	char *dc_name;
+	union lsa_PolicyInformation *info = NULL;
 
 	/*
 	 * Connect to \\server\ipc$ as 'our domain' account with password
@@ -5713,10 +5979,11 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	}
 
 	/* Querying info level 5 */
-	
-	nt_status = rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, &connect_hnd,
-	                                      5 /* info level */,
-					      &domain_name_pol, &domain_sid);
+
+	nt_status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+					       &connect_hnd,
+					       LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+					       &info);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
 			nt_errstr(nt_status)));
@@ -5724,6 +5991,8 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 		talloc_destroy(mem_ctx);
 		return -1;
 	}
+
+	domain_sid = info->account_domain.sid;
 
 	/* There should be actually query info level 3 (following nt serv behaviour),
 	   but I still don't know if it's _really_ necessary */
@@ -5911,14 +6180,13 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	const char *domain_name = NULL;
 	DOM_SID *queried_dom_sid;
 	POLICY_HND connect_hnd;
+	union lsa_PolicyInformation *info = NULL;
 
 	/* trusted domains listing variables */
-	unsigned int num_domains, enum_ctx = 0;
+	unsigned int enum_ctx = 0;
 	int i;
-	DOM_SID *domain_sids;
-	char **trusted_dom_names;
+	struct lsa_DomainList dom_list;
 	fstring pdc_name;
-	const char *dummy;
 
 	/*
 	 * Listing trusted domains (stored in secrets.tdb, if local)
@@ -5969,9 +6237,10 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	};
 
 	/* query info level 5 to obtain sid of a domain being queried */
-	nt_status = rpccli_lsa_query_info_policy(
-		pipe_hnd, mem_ctx, &connect_hnd, 5 /* info level */, 
-		&dummy, &queried_dom_sid);
+	nt_status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+					       &connect_hnd,
+					       LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+					       &info);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
@@ -5981,6 +6250,8 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 		return -1;
 	}
 
+	queried_dom_sid = info->account_domain.sid;
+
 	/*
 	 * Keep calling LsaEnumTrustdom over opened pipe until
 	 * the end of enumeration is reached
@@ -5989,10 +6260,11 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 	d_printf("Vampire trusted domains:\n\n");
 
 	do {
-		nt_status = rpccli_lsa_enum_trust_dom(pipe_hnd, mem_ctx, &connect_hnd, &enum_ctx,
-						   &num_domains,
-						   &trusted_dom_names, &domain_sids);
-		
+		nt_status = rpccli_lsa_EnumTrustDom(pipe_hnd, mem_ctx,
+						    &connect_hnd,
+						    &enum_ctx,
+						    &dom_list,
+						    (uint32_t)-1);
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(nt_status)));
@@ -6000,13 +6272,15 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 			talloc_destroy(mem_ctx);
 			return -1;
 		};
-		
-		for (i = 0; i < num_domains; i++) {
 
-			print_trusted_domain(&(domain_sids[i]), trusted_dom_names[i]);
+		for (i = 0; i < dom_list.count; i++) {
+
+			print_trusted_domain(dom_list.domains[i].sid,
+					     dom_list.domains[i].name.string);
 
 			nt_status = vampire_trusted_domain(pipe_hnd, mem_ctx, &connect_hnd, 
-							   domain_sids[i], trusted_dom_names[i]);
+							   *dom_list.domains[i].sid,
+							   dom_list.domains[i].name.string);
 			if (!NT_STATUS_IS_OK(nt_status)) {
 				cli_shutdown(cli);
 				talloc_destroy(mem_ctx);
@@ -6018,7 +6292,7 @@ static int rpc_trustdom_vampire(int argc, const char **argv)
 		 * in case of no trusted domains say something rather
 		 * than just display blank line
 		 */
-		if (!num_domains) d_printf("none\n");
+		if (!dom_list.count) d_printf("none\n");
 
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
@@ -6051,20 +6325,18 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	fstring padding;
 	int ascii_dom_name_len;
 	POLICY_HND connect_hnd;
-	
+	union lsa_PolicyInformation *info = NULL;
+
 	/* trusted domains listing variables */
 	unsigned int num_domains, enum_ctx = 0;
 	int i, pad_len, col_len = 20;
-	DOM_SID *domain_sids;
-	char **trusted_dom_names;
+	struct lsa_DomainList dom_list;
 	fstring pdc_name;
-	const char *dummy;
-	
+
 	/* trusting domains listing variables */
 	POLICY_HND domain_hnd;
-	char **trusting_dom_names;
-	uint32 *trusting_dom_rids;
-	
+	struct samr_SamArray *trusts = NULL;
+
 	/*
 	 * Listing trusted domains (stored in secrets.tdb, if local)
 	 */
@@ -6114,9 +6386,10 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	};
 	
 	/* query info level 5 to obtain sid of a domain being queried */
-	nt_status = rpccli_lsa_query_info_policy(
-		pipe_hnd, mem_ctx, &connect_hnd, 5 /* info level */, 
-		&dummy, &queried_dom_sid);
+	nt_status = rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+					       &connect_hnd,
+					       LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+					       &info);
 
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
@@ -6125,7 +6398,9 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		talloc_destroy(mem_ctx);
 		return -1;
 	}
-		
+
+	queried_dom_sid = info->account_domain.sid;
+
 	/*
 	 * Keep calling LsaEnumTrustdom over opened pipe until
 	 * the end of enumeration is reached
@@ -6134,10 +6409,11 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	d_printf("Trusted domains list:\n\n");
 
 	do {
-		nt_status = rpccli_lsa_enum_trust_dom(pipe_hnd, mem_ctx, &connect_hnd, &enum_ctx,
-						   &num_domains,
-						   &trusted_dom_names, &domain_sids);
-		
+		nt_status = rpccli_lsa_EnumTrustDom(pipe_hnd, mem_ctx,
+						    &connect_hnd,
+						    &enum_ctx,
+						    &dom_list,
+						    (uint32_t)-1);
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate trusted domains. Error was %s\n",
 				nt_errstr(nt_status)));
@@ -6145,16 +6421,17 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			talloc_destroy(mem_ctx);
 			return -1;
 		};
-		
-		for (i = 0; i < num_domains; i++) {
-			print_trusted_domain(&(domain_sids[i]), trusted_dom_names[i]);
+
+		for (i = 0; i < dom_list.count; i++) {
+			print_trusted_domain(dom_list.domains[i].sid,
+					     dom_list.domains[i].name.string);
 		};
-		
+
 		/*
 		 * in case of no trusted domains say something rather
 		 * than just display blank line
 		 */
-		if (!num_domains) d_printf("none\n");
+		if (!dom_list.count) d_printf("none\n");
 
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
@@ -6186,10 +6463,12 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
-	
-	/* SamrConnect */
-	nt_status = rpccli_samr_connect(pipe_hnd, mem_ctx, SA_RIGHT_SAM_OPEN_DOMAIN,
-								 &connect_hnd);
+
+	/* SamrConnect2 */
+	nt_status = rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+					 pipe_hnd->cli->desthost,
+					 SA_RIGHT_SAM_OPEN_DOMAIN,
+					 &connect_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open SAMR policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
@@ -6197,12 +6476,14 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		talloc_destroy(mem_ctx);
 		return -1;
 	};
-	
+
 	/* SamrOpenDomain - we have to open domain policy handle in order to be
 	   able to enumerate accounts*/
-	nt_status = rpccli_samr_open_domain(pipe_hnd, mem_ctx, &connect_hnd,
-					 SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
-					 queried_dom_sid, &domain_hnd);									 
+	nt_status = rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					   &connect_hnd,
+					   SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
+					   queried_dom_sid,
+					   &domain_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open domain object. Error was %s\n",
 			nt_errstr(nt_status)));
@@ -6217,11 +6498,14 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	 
 	enum_ctx = 0;	/* reset enumeration context from last enumeration */
 	do {
-			
-		nt_status = rpccli_samr_enum_dom_users(pipe_hnd, mem_ctx, &domain_hnd,
-		                                    &enum_ctx, ACB_DOMTRUST, 0xffff,
-		                                    &trusting_dom_names, &trusting_dom_rids,
-		                                    &num_domains);
+
+		nt_status = rpccli_samr_EnumDomainUsers(pipe_hnd, mem_ctx,
+							&domain_hnd,
+							&enum_ctx,
+							ACB_DOMTRUST,
+							&trusts,
+							0xffff,
+							&num_domains);
 		if (NT_STATUS_IS_ERR(nt_status)) {
 			DEBUG(0, ("Couldn't enumerate accounts. Error was: %s\n",
 				nt_errstr(nt_status)));
@@ -6229,8 +6513,10 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			talloc_destroy(mem_ctx);
 			return -1;
 		};
-		
+
 		for (i = 0; i < num_domains; i++) {
+
+			char *str = CONST_DISCARD(char *, trusts->entries[i].name.string);
 
 			/*
 			 * get each single domain's sid (do we _really_ need this ?):
@@ -6239,22 +6525,22 @@ static int rpc_trustdom_list(int argc, const char **argv)
 			 */
 
 			/* get rid of '$' tail */
-			ascii_dom_name_len = strlen(trusting_dom_names[i]);
+			ascii_dom_name_len = strlen(str);
 			if (ascii_dom_name_len && ascii_dom_name_len < FSTRING_LEN)
-				trusting_dom_names[i][ascii_dom_name_len - 1] = '\0';
-			
+				str[ascii_dom_name_len - 1] = '\0';
+
 			/* calculate padding space for d_printf to look nicer */
-			pad_len = col_len - strlen(trusting_dom_names[i]);
+			pad_len = col_len - strlen(str);
 			padding[pad_len] = 0;
 			do padding[--pad_len] = ' '; while (pad_len);
 
 			/* set opt_* variables to remote domain */
-			strupper_m(trusting_dom_names[i]);
-			opt_workgroup = talloc_strdup(mem_ctx, trusting_dom_names[i]);
+			strupper_m(str);
+			opt_workgroup = talloc_strdup(mem_ctx, str);
 			opt_target_workgroup = opt_workgroup;
-			
-			d_printf("%s%s", trusting_dom_names[i], padding);
-			
+
+			d_printf("%s%s", str, padding);
+
 			/* connect to remote domain controller */
 			nt_status = net_make_ipc_connection(
 					NET_FLAGS_PDC | NET_FLAGS_ANONYMOUS,
@@ -6278,12 +6564,12 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
 	/* close opened samr and domain policy handles */
-	nt_status = rpccli_samr_close(pipe_hnd, mem_ctx, &domain_hnd);
+	nt_status = rpccli_samr_Close(pipe_hnd, mem_ctx, &domain_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't properly close domain policy handle for domain %s\n", domain_name));
 	};
 	
-	nt_status = rpccli_samr_close(pipe_hnd, mem_ctx, &connect_hnd);
+	nt_status = rpccli_samr_Close(pipe_hnd, mem_ctx, &connect_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't properly close samr policy handle for domain %s\n", domain_name));
 	};

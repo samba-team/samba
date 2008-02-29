@@ -20,11 +20,7 @@
 
 #include "includes.h"
 
-extern struct auth_context *negprot_global_auth_context;
 extern int smb_echo_count;
-
-const int total_buffer_size = (BUFFER_SIZE + LARGE_WRITEX_HDR_SIZE + SAFETY_MARGIN);
-static enum smb_read_errors smb_read_error = SMB_READ_OK;
 
 /*
  * Size of data we can send to client. Set
@@ -44,11 +40,6 @@ extern bool global_machine_password_needs_changing;
 extern int max_send;
 
 /* Accessor function for smb_read_error for smbd functions. */
-
-enum smb_read_errors *get_srv_read_error(void)
-{
-	return &smb_read_error;
-}
 
 /****************************************************************************
  Send an smb to a fd.
@@ -130,50 +121,20 @@ static bool valid_packet_size(size_t len)
 		DEBUG(0,("Invalid packet length! (%lu bytes).\n",
 					(unsigned long)len));
 		if (len > BUFFER_SIZE + (SAFETY_MARGIN/2)) {
-
-			/*
-			 * Correct fix. smb_read_error may have already been
-			 * set. Only set it here if not already set. Global
-			 * variables still suck :-). JRA.
-			 */
-
-			cond_set_smb_read_error(get_srv_read_error(),
-						SMB_READ_ERROR);
 			return false;
 		}
 	}
 	return true;
 }
 
-static ssize_t read_packet_remainder(int fd,
-					char *buffer,
-					unsigned int timeout,
-					ssize_t len)
+static NTSTATUS read_packet_remainder(int fd, char *buffer,
+				      unsigned int timeout, ssize_t len)
 {
-	ssize_t ret;
-
-	if(len <= 0) {
-		return len;
+	if (len <= 0) {
+		return NT_STATUS_OK;
 	}
 
-	if (timeout > 0) {
-		ret = read_socket_with_timeout(fd,
-						buffer,
-						len,
-						len,
-						timeout,
-						get_srv_read_error());
-	} else {
-		ret = read_data(fd, buffer, len, get_srv_read_error());
-	}
-
-	if (ret != len) {
-		cond_set_smb_read_error(get_srv_read_error(),
-					SMB_READ_ERROR);
-		return -1;
-	}
-
-	return len;
+	return read_socket_with_timeout(fd, buffer, len, len, timeout, NULL);
 }
 
 /****************************************************************************
@@ -192,39 +153,29 @@ static ssize_t read_packet_remainder(int fd,
 				(2*14) + /* word count (including bcc) */ \
 				1 /* pad byte */)
 
-static ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
-					const char lenbuf[4],
-					int fd,
-					char **buffer,
-					unsigned int timeout,
-					size_t *p_unread)
+static NTSTATUS receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
+						    const char lenbuf[4],
+						    int fd, char **buffer,
+						    unsigned int timeout,
+						    size_t *p_unread,
+						    size_t *len_ret)
 {
 	/* Size of a WRITEX call (+4 byte len). */
 	char writeX_header[4 + STANDARD_WRITE_AND_X_HEADER_SIZE];
 	ssize_t len = smb_len_large(lenbuf); /* Could be a UNIX large writeX. */
 	ssize_t toread;
-	ssize_t ret;
+	NTSTATUS status;
 
 	memcpy(writeX_header, lenbuf, sizeof(lenbuf));
 
-	if (timeout > 0) {
-		ret = read_socket_with_timeout(fd,
-					writeX_header + 4,
-					STANDARD_WRITE_AND_X_HEADER_SIZE,
-					STANDARD_WRITE_AND_X_HEADER_SIZE,
-					timeout,
-					get_srv_read_error());
-	} else {
-		ret = read_data(fd,
-				writeX_header+4,
-				STANDARD_WRITE_AND_X_HEADER_SIZE,
-				get_srv_read_error());
-	}
+	status = read_socket_with_timeout(
+		fd, writeX_header + 4,
+		STANDARD_WRITE_AND_X_HEADER_SIZE,
+		STANDARD_WRITE_AND_X_HEADER_SIZE,
+		timeout, NULL);
 
-	if (ret != STANDARD_WRITE_AND_X_HEADER_SIZE) {
-		cond_set_smb_read_error(get_srv_read_error(),
-					SMB_READ_ERROR);
-		return -1;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	/*
@@ -263,19 +214,17 @@ static ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 		if (*buffer == NULL) {
 			DEBUG(0, ("Could not allocate inbuf of length %d\n",
 				  (int)sizeof(writeX_header)));
-			cond_set_smb_read_error(get_srv_read_error(),
-						SMB_READ_ERROR);
-			return -1;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		/* Work out the remaining bytes. */
 		*p_unread = len - STANDARD_WRITE_AND_X_HEADER_SIZE;
-
-		return newlen + 4;
+		*len_ret = newlen + 4;
+		return NT_STATUS_OK;
 	}
 
 	if (!valid_packet_size(len)) {
-		return -1;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/*
@@ -288,9 +237,7 @@ static ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	if (*buffer == NULL) {
 		DEBUG(0, ("Could not allocate inbuf of length %d\n",
 			  (int)len+4));
-		cond_set_smb_read_error(get_srv_read_error(),
-					SMB_READ_ERROR);
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* Copy in what we already read. */
@@ -300,44 +247,34 @@ static ssize_t receive_smb_raw_talloc_partial_read(TALLOC_CTX *mem_ctx,
 	toread = len - STANDARD_WRITE_AND_X_HEADER_SIZE;
 
 	if(toread > 0) {
-		ret = read_packet_remainder(fd,
-			(*buffer) + 4 + STANDARD_WRITE_AND_X_HEADER_SIZE,
-					timeout,
-					toread);
-		if (ret != toread) {
-			return -1;
+		status = read_packet_remainder(
+			fd, (*buffer) + 4 + STANDARD_WRITE_AND_X_HEADER_SIZE,
+			timeout, toread);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
 		}
 	}
 
-	return len + 4;
+	*len_ret = len + 4;
+	return NT_STATUS_OK;
 }
 
-static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
-					int fd,
-					char **buffer,
-					unsigned int timeout,
-					size_t *p_unread)
+static NTSTATUS receive_smb_raw_talloc(TALLOC_CTX *mem_ctx, int fd,
+				       char **buffer, unsigned int timeout,
+				       size_t *p_unread, size_t *plen)
 {
 	char lenbuf[4];
-	ssize_t len,ret;
+	size_t len;
 	int min_recv_size = lp_min_receive_file_size();
+	NTSTATUS status;
 
-	set_smb_read_error(get_srv_read_error(),SMB_READ_OK);
 	*p_unread = 0;
 
-	len = read_smb_length_return_keepalive(fd, lenbuf,
-			timeout, get_srv_read_error());
-	if (len < 0) {
-		DEBUG(10,("receive_smb_raw: length < 0!\n"));
-
-		/*
-		 * Correct fix. smb_read_error may have already been
-		 * set. Only set it here if not already set. Global
-		 * variables still suck :-). JRA.
-		 */
-
-		cond_set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
-		return -1;
+	status = read_smb_length_return_keepalive(fd, lenbuf, timeout, &len);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("receive_smb_raw: %s\n", nt_errstr(status)));
+		return status;
 	}
 
 	if (CVAL(lenbuf,0) == 0 &&
@@ -345,16 +282,18 @@ static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 			smb_len_large(lenbuf) > min_recv_size && /* Could be a UNIX large writeX. */
 			!srv_is_signing_active()) {
 
-		return receive_smb_raw_talloc_partial_read(mem_ctx,
-							lenbuf,
-							fd,
-							buffer,
-							timeout,
-							p_unread);
+		status = receive_smb_raw_talloc_partial_read(
+			mem_ctx, lenbuf, fd, buffer, timeout, p_unread, &len);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("receive_smb_raw: %s\n",
+				   nt_errstr(status)));
+			return status;
+		}
 	}
 
 	if (!valid_packet_size(len)) {
-		return -1;
+		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	/*
@@ -366,46 +305,43 @@ static ssize_t receive_smb_raw_talloc(TALLOC_CTX *mem_ctx,
 	if (*buffer == NULL) {
 		DEBUG(0, ("Could not allocate inbuf of length %d\n",
 			  (int)len+4));
-		cond_set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
-		return -1;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	memcpy(*buffer, lenbuf, sizeof(lenbuf));
 
-	ret = read_packet_remainder(fd, (*buffer)+4, timeout, len);
-	if (ret != len) {
-		return -1;
+	status = read_packet_remainder(fd, (*buffer)+4, timeout, len);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	return len + 4;
+	*plen = len + 4;
+	return NT_STATUS_OK;
 }
 
-static ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx,
-				int fd,
-				char **buffer,
-				unsigned int timeout,
-				size_t *p_unread,
-				bool *p_encrypted)
+static NTSTATUS receive_smb_talloc(TALLOC_CTX *mem_ctx,	int fd,
+				   char **buffer, unsigned int timeout,
+				   size_t *p_unread, bool *p_encrypted,
+				   size_t *p_len)
 {
-	ssize_t len;
+	size_t len = 0;
+	NTSTATUS status;
 
 	*p_encrypted = false;
 
-	len = receive_smb_raw_talloc(mem_ctx, fd, buffer, timeout, p_unread);
-
-	if (len < 0) {
-		return -1;
+	status = receive_smb_raw_talloc(mem_ctx, fd, buffer, timeout,
+					p_unread, &len);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (is_encrypted_packet((uint8_t *)*buffer)) {
-		NTSTATUS status = srv_decrypt_buffer(*buffer);
+		status = srv_decrypt_buffer(*buffer);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0, ("receive_smb_talloc: SMB decryption failed on "
 				"incoming packet! Error %s\n",
 				nt_errstr(status) ));
-			cond_set_smb_read_error(get_srv_read_error(),
-					SMB_READ_BAD_DECRYPT);
-			return -1;
+			return status;
 		}
 		*p_encrypted = true;
 	}
@@ -414,11 +350,11 @@ static ssize_t receive_smb_talloc(TALLOC_CTX *mem_ctx,
 	if (!srv_check_sign_mac(*buffer, true)) {
 		DEBUG(0, ("receive_smb: SMB Signature verification failed on "
 			  "incoming packet!\n"));
-		cond_set_smb_read_error(get_srv_read_error(),SMB_READ_BAD_SIG);
-		return -1;
+		return NT_STATUS_INVALID_NETWORK_RESPONSE;
 	}
 
-	return len;
+	*p_len = len;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -775,21 +711,18 @@ static int select_on_fd(int fd, int maxfd, fd_set *fds)
 The timeout is in milliseconds
 ****************************************************************************/
 
-static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
-				char **buffer,
-				size_t *buffer_len,
-				int timeout,
-				size_t *p_unread,
-				bool *p_encrypted)
+static NTSTATUS receive_message_or_smb(TALLOC_CTX *mem_ctx, char **buffer,
+				       size_t *buffer_len, int timeout,
+				       size_t *p_unread, bool *p_encrypted)
 {
 	fd_set r_fds, w_fds;
 	int selrtn;
 	struct timeval to;
 	int maxfd = 0;
-	ssize_t len;
+	size_t len = 0;
+	NTSTATUS status;
 
 	*p_unread = 0;
-	set_smb_read_error(get_srv_read_error(),SMB_READ_OK);
 
  again:
 
@@ -843,8 +776,7 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 							msg->buf.length);
 			if (*buffer == NULL) {
 				DEBUG(0, ("talloc failed\n"));
-				set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
-				return False;
+				return NT_STATUS_NO_MEMORY;
 			}
 			*buffer_len = msg->buf.length;
 			*p_encrypted = msg->encrypted;
@@ -852,7 +784,7 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 			/* We leave this message on the queue so the open code can
 			   know this is a retry. */
 			DEBUG(5,("receive_message_or_smb: returning deferred open smb message.\n"));
-			return True;
+			return NT_STATUS_OK;
 		}
 	}
 
@@ -938,14 +870,12 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 	/* Check if error */
 	if (selrtn == -1) {
 		/* something is wrong. Maybe the socket is dead? */
-		set_smb_read_error(get_srv_read_error(),SMB_READ_ERROR);
-		return False;
+		return map_nt_error_from_unix(errno);
 	} 
     
 	/* Did we timeout ? */
 	if (selrtn == 0) {
-		set_smb_read_error(get_srv_read_error(),SMB_READ_TIMEOUT);
-		return False;
+		return NT_STATUS_IO_TIMEOUT;
 	}
 
 	/*
@@ -964,16 +894,16 @@ static bool receive_message_or_smb(TALLOC_CTX *mem_ctx,
 		goto again;
 	}
 
-	len = receive_smb_talloc(mem_ctx, smbd_server_fd(),
-				buffer, 0, p_unread, p_encrypted);
+	status = receive_smb_talloc(mem_ctx, smbd_server_fd(), buffer, 0,
+				    p_unread, p_encrypted, &len);
 
-	if (len == -1) {
-		return False;
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
-	*buffer_len = (size_t)len;
+	*buffer_len = len;
 
-	return True;
+	return NT_STATUS_OK;
 }
 
 /*
@@ -1951,26 +1881,10 @@ void check_reload(time_t t)
  Process any timeout housekeeping. Return False if the caller should exit.
 ****************************************************************************/
 
-static bool timeout_processing(int *select_timeout,
+static void timeout_processing(int *select_timeout,
 			       time_t *last_timeout_processing_time)
 {
 	time_t t;
-
-	if (*get_srv_read_error() == SMB_READ_EOF) {
-		DEBUG(3,("timeout_processing: End of file from client (client has disconnected).\n"));
-		return false;
-	}
-
-	if (*get_srv_read_error() == SMB_READ_ERROR) {
-		DEBUG(3,("timeout_processing: receive_smb error (%s) Exiting\n",
-			strerror(errno)));
-		return false;
-	}
-
-	if (*get_srv_read_error() == SMB_READ_BAD_SIG) {
-		DEBUG(3,("timeout_processing: receive_smb error bad smb signature. Exiting\n"));
-		return false;
-	}
 
 	*last_timeout_processing_time = t = time(NULL);
 
@@ -2001,14 +1915,14 @@ static bool timeout_processing(int *select_timeout,
 		if (secrets_lock_trust_account_password(lp_workgroup(), True) == False) {
 			DEBUG(0,("process: unable to lock the machine account password for \
 machine %s in domain %s.\n", global_myname(), lp_workgroup() ));
-			return True;
+			return;
 		}
 
 		if(!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd_hash, &lct, NULL)) {
 			DEBUG(0,("process: unable to read the machine account password for \
 machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 			secrets_lock_trust_account_password(lp_workgroup(), False);
-			return True;
+			return;
 		}
 
 		/*
@@ -2018,7 +1932,7 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 		if(t < lct + lp_machine_password_timeout()) {
 			global_machine_password_needs_changing = False;
 			secrets_lock_trust_account_password(lp_workgroup(), False);
-			return True;
+			return;
 		}
 
 		/* always just contact the PDC here */
@@ -2050,7 +1964,7 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup()));
 
 	*select_timeout = setup_select_timeout();
 
-	return True;
+	return;
 }
 
 /****************************************************************************
@@ -2068,8 +1982,8 @@ void smbd_process(void)
 	while (True) {
 		int select_timeout = setup_select_timeout();
 		int num_echos;
-		char *inbuf;
-		size_t inbuf_len;
+		char *inbuf = NULL;
+		size_t inbuf_len = 0;
 		bool encrypted = false;
 		TALLOC_CTX *frame = talloc_stackframe_pool(8192);
 
@@ -2077,21 +1991,35 @@ void smbd_process(void)
 
 		/* Did someone ask for immediate checks on things like blocking locks ? */
 		if (select_timeout == 0) {
-			if(!timeout_processing(&select_timeout,
-					       &last_timeout_processing_time))
-				return;
+			timeout_processing(&select_timeout,
+					   &last_timeout_processing_time);
 			num_smbs = 0; /* Reset smb counter. */
 		}
 
 		run_events(smbd_event_context(), 0, NULL, NULL);
 
-		while (!receive_message_or_smb(talloc_tos(), &inbuf, &inbuf_len,
-						select_timeout,
-						&unread_bytes,
-						&encrypted)) {
-			if(!timeout_processing(&select_timeout,
-					       &last_timeout_processing_time))
-				return;
+		while (True) {
+			NTSTATUS status;
+
+			status = receive_message_or_smb(
+				talloc_tos(), &inbuf, &inbuf_len,
+				select_timeout,	&unread_bytes, &encrypted);
+
+			if (NT_STATUS_IS_OK(status)) {
+				break;
+			}
+
+			if (NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT)) {
+				timeout_processing(
+					&select_timeout,
+					&last_timeout_processing_time);
+				continue;
+			}
+
+			DEBUG(3, ("receive_message_or_smb failed: %s, "
+				  "exiting\n", nt_errstr(status)));
+			return;
+
 			num_smbs = 0; /* Reset smb counter. */
 		}
 
@@ -2112,8 +2040,8 @@ void smbd_process(void)
 		TALLOC_FREE(inbuf);
 
 		if (smb_echo_count != num_echos) {
-			if(!timeout_processing( &select_timeout, &last_timeout_processing_time))
-				return;
+			timeout_processing(&select_timeout,
+					   &last_timeout_processing_time);
 			num_smbs = 0; /* Reset smb counter. */
 		}
 
@@ -2129,10 +2057,9 @@ void smbd_process(void)
 		if ((num_smbs % 200) == 0) {
 			time_t new_check_time = time(NULL);
 			if(new_check_time - last_timeout_processing_time >= (select_timeout/1000)) {
-				if(!timeout_processing(
-					   &select_timeout,
-					   &last_timeout_processing_time))
-					return;
+				timeout_processing(
+					&select_timeout,
+					&last_timeout_processing_time);
 				num_smbs = 0; /* Reset smb counter. */
 				last_timeout_processing_time = new_check_time; /* Reset time. */
 			}

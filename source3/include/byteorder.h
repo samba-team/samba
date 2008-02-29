@@ -167,4 +167,10 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define ALIGN4(p,base) ((p) + ((4 - (PTR_DIFF((p), (base)) & 3)) & 3))
 #define ALIGN2(p,base) ((p) + ((2 - (PTR_DIFF((p), (base)) & 1)) & 1))
 
+/* 64 bit macros */
+#define BVAL(p, ofs) (IVAL(p,ofs) | (((uint64_t)IVAL(p,(ofs)+4)) << 32))
+#define BVALS(p, ofs) ((int64_t)BVAL(p,ofs))
+#define SBVAL(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,((uint64_t)(v))>>32))
+#define SBVALS(p, ofs, v) (SBVAL(p,ofs,(uint64_t)v))
+
 #endif /* _BYTEORDER_H */

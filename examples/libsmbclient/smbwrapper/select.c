@@ -72,13 +72,12 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 	int ret;
 	fd_set *readfds2, readfds_buf, *writefds2, writefds_buf, *errorfds2, errorfds_buf;
 	struct timeval tval2, *ptval, end_time, now_time;
-        extern void GetTimeOfDay(struct timeval *tval);
 
 	readfds2 = (readfds ? &readfds_buf : NULL);
 	writefds2 = (writefds ? &writefds_buf : NULL);
 	errorfds2 = (errorfds ? &errorfds_buf : NULL);
         if (tval) {
-                GetTimeOfDay(&end_time);
+                gettimeofday(&end_time, NULL);
                 end_time.tv_sec += tval->tv_sec;
                 end_time.tv_usec += tval->tv_usec;
                 end_time.tv_sec += end_time.tv_usec / 1000000;
@@ -96,7 +95,7 @@ int sys_select_intr(int maxfd, fd_set *readfds, fd_set *writefds, fd_set *errorf
 		if (errorfds)
 			errorfds_buf = *errorfds;
 		if (tval) {
-                        GetTimeOfDay(&now_time);
+                        gettimeofday(&now_time, NULL);
                         tval2.tv_sec = end_time.tv_sec - now_time.tv_sec;
 			tval2.tv_usec = end_time.tv_usec - now_time.tv_usec;
                         if ((signed long) tval2.tv_usec < 0) {

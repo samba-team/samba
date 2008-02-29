@@ -47,11 +47,16 @@
 #define lock_type struct flock64
 #endif
 
+#ifdef HAVE_GPFS
+#include "gpfs_gpl.h"
+#endif
+
 #define MODULE "prealloc"
 static int module_debug;
 
 static int preallocate_space(int fd, SMB_OFF_T size)
 {
+#ifndef HAVE_GPFS
 	lock_type fl = {0};
 	int err;
 
@@ -77,6 +82,9 @@ static int preallocate_space(int fd, SMB_OFF_T size)
 #else
 	err = -1;
 	errno = ENOSYS;
+#endif
+#else /* GPFS uses completely different interface */
+       err = gpfs_prealloc(fd, (gpfs_off64_t)0, (gpfs_off64_t)size);
 #endif
 
 	if (err) {
@@ -191,7 +199,7 @@ static int prealloc_ftruncate(vfs_handle_struct * handle,
 
 	/* Maintain the allocated space even in the face of truncates. */
 	if ((psize = VFS_FETCH_FSP_EXTENSION(handle, fsp))) {
-		preallocate_space(fd, *psize);
+		preallocate_space(fsp->fh->fd, *psize);
 	}
 
 	return ret;
@@ -210,4 +218,3 @@ NTSTATUS vfs_prealloc_init(void)
 	return smb_register_vfs(SMB_VFS_INTERFACE_VERSION,
 		MODULE, prealloc_op_tuples);
 }
-

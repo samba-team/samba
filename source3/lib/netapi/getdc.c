@@ -22,21 +22,8 @@
 #include "lib/netapi/netapi.h"
 #include "libnet/libnet.h"
 
-#if 0
-#include "librpc/gen_ndr/cli_netlogon.h"
-#endif
-
-NTSTATUS rpccli_netr_GetDcName(struct rpc_pipe_client *cli,
-			       TALLOC_CTX *mem_ctx,
-			       const char *logon_server,
-			       const char *domainname,
-			       const char **dcname);
-NTSTATUS rpccli_netr_GetAnyDCName(struct rpc_pipe_client *cli,
-				  TALLOC_CTX *mem_ctx,
-				  const char *logon_server,
-				  const char *domainname,
-				  const char **dcname,
-				  WERROR *werror);
+/********************************************************************
+********************************************************************/
 
 static WERROR NetGetDCNameLocal(struct libnetapi_ctx *ctx,
 				const char *server_name,
@@ -45,6 +32,9 @@ static WERROR NetGetDCNameLocal(struct libnetapi_ctx *ctx,
 {
 	return WERR_NOT_SUPPORTED;
 }
+
+/********************************************************************
+********************************************************************/
 
 static WERROR NetGetDCNameRemote(struct libnetapi_ctx *ctx,
 				 const char *server_name,
@@ -76,17 +66,11 @@ static WERROR NetGetDCNameRemote(struct libnetapi_ctx *ctx,
 		goto done;
 	};
 
-#if 0
-	werr = rpccli_netr_GetDcName(pipe_cli, ctx,
-				     server_name,
-				     domain_name,
-				     (const char **)&buffer);
-#else
-	werr = rpccli_netlogon_getdcname(pipe_cli, ctx,
-					 server_name,
-					 domain_name,
-					 (char **)buffer);
-#endif
+	status = rpccli_netr_GetDcName(pipe_cli, ctx,
+				       server_name,
+				       domain_name,
+				       (const char **)buffer,
+				       &werr);
  done:
 	if (cli) {
 		cli_shutdown(cli);
@@ -94,6 +78,9 @@ static WERROR NetGetDCNameRemote(struct libnetapi_ctx *ctx,
 
 	return werr;
 }
+
+/********************************************************************
+********************************************************************/
 
 static WERROR libnetapi_NetGetDCName(struct libnetapi_ctx *ctx,
 				     const char *server_name,
@@ -112,6 +99,10 @@ static WERROR libnetapi_NetGetDCName(struct libnetapi_ctx *ctx,
 				  domain_name,
 				  buffer);
 }
+
+/****************************************************************
+ NetGetDCName
+****************************************************************/
 
 NET_API_STATUS NetGetDCName(const char *server_name,
 			    const char *domain_name,
@@ -134,8 +125,11 @@ NET_API_STATUS NetGetDCName(const char *server_name,
 		return W_ERROR_V(werr);
 	}
 
-	return 0;
+	return NET_API_STATUS_SUCCESS;
 }
+
+/********************************************************************
+********************************************************************/
 
 static WERROR NetGetAnyDCNameLocal(struct libnetapi_ctx *ctx,
 				   const char *server_name,
@@ -144,6 +138,9 @@ static WERROR NetGetAnyDCNameLocal(struct libnetapi_ctx *ctx,
 {
 	return WERR_NOT_SUPPORTED;
 }
+
+/********************************************************************
+********************************************************************/
 
 static WERROR NetGetAnyDCNameRemote(struct libnetapi_ctx *ctx,
 				    const char *server_name,
@@ -175,22 +172,14 @@ static WERROR NetGetAnyDCNameRemote(struct libnetapi_ctx *ctx,
 		goto done;
 	};
 
-#if 0
 	status = rpccli_netr_GetAnyDCName(pipe_cli, ctx,
 					  server_name,
 					  domain_name,
-					  (const char **)&buffer,
+					  (const char **)buffer,
 					  &werr);
 	if (!NT_STATUS_IS_OK(status)) {
-		werr = ntstatus_to_werror(status);
 		goto done;
 	}
-#else
-	werr = rpccli_netlogon_getanydcname(pipe_cli, ctx,
-					    server_name,
-					    domain_name,
-					    (char **)buffer);
-#endif
  done:
 	if (cli) {
 		cli_shutdown(cli);
@@ -199,6 +188,9 @@ static WERROR NetGetAnyDCNameRemote(struct libnetapi_ctx *ctx,
 	return werr;
 
 }
+
+/********************************************************************
+********************************************************************/
 
 static WERROR libnetapi_NetGetAnyDCName(struct libnetapi_ctx *ctx,
 					const char *server_name,
@@ -217,6 +209,10 @@ static WERROR libnetapi_NetGetAnyDCName(struct libnetapi_ctx *ctx,
 				     domain_name,
 				     buffer);
 }
+
+/****************************************************************
+ NetGetAnyDCName
+****************************************************************/
 
 NET_API_STATUS NetGetAnyDCName(const char *server_name,
 			       const char *domain_name,
@@ -239,5 +235,5 @@ NET_API_STATUS NetGetAnyDCName(const char *server_name,
 		return W_ERROR_V(werr);
 	}
 
-	return 0;
+	return NET_API_STATUS_SUCCESS;
 }

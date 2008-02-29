@@ -581,8 +581,8 @@ static bool cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob, DATA_B
 		if (cli_is_error(cli) &&
 				!NT_STATUS_EQUAL( cli_get_nt_error(cli), 
 					NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-			DEBUG(0, ("cli_session_setup_blob: recieve failed (%s)\n",
-				nt_errstr(cli_get_nt_error(cli)) ));
+			DEBUG(0, ("cli_session_setup_blob: receive failed "
+				  "(%s)\n", nt_errstr(cli_get_nt_error(cli))));
 			cli->vuid = 0;
 			return False;
 		}
@@ -627,7 +627,7 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *
 	if (!cli_session_setup_blob(cli, negTokenTarg, session_key_krb5)) {
 		data_blob_free(&negTokenTarg);
 		data_blob_free(&session_key_krb5);
-		ADS_ERROR_NT(cli_nt_error(cli));
+		return ADS_ERROR_NT(cli_nt_error(cli));
 	}
 
 	cli_set_session_key(cli, session_key_krb5);
@@ -757,9 +757,9 @@ static NTSTATUS cli_session_setup_ntlmssp(struct cli_state *cli, const char *use
 			
 			/* 'resign' the last message, so we get the right sequence numbers
 			   for checking the first reply from the server */
-			cli_calculate_sign_mac(cli);
+			cli_calculate_sign_mac(cli, cli->outbuf);
 			
-			if (!cli_check_sign_mac(cli)) {
+			if (!cli_check_sign_mac(cli, cli->inbuf)) {
 				nt_status = NT_STATUS_ACCESS_DENIED;
 			}
 		}
@@ -872,13 +872,27 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			!strequal(star_smbserver_name,
 				cli->desthost)) {
 			char *realm = NULL;
+			char *machine = NULL;
+			char *host = NULL;
 			DEBUG(3,("cli_session_setup_spnego: got a "
 				"bad server principal, trying to guess ...\n"));
+
+			host = strchr_m(cli->desthost, '.');
+			if (host) {
+				machine = SMB_STRNDUP(cli->desthost,
+					host - cli->desthost);
+			} else {
+				machine = SMB_STRDUP(cli->desthost);
+			}
+			if (machine == NULL) {
+				return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+			}
 
 			realm = kerberos_get_default_realm_from_ccache();
 			if (realm && *realm) {
 				if (asprintf(&principal, "%s$@%s",
-						cli->desthost, realm) < 0) {
+						machine, realm) < 0) {
+					SAFE_FREE(machine);
 					SAFE_FREE(realm);
 					return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 				}
@@ -886,6 +900,7 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 					"server principal=%s\n",
 					principal ? principal : "<null>"));
 			}
+			SAFE_FREE(machine);
 			SAFE_FREE(realm);
 		}
 

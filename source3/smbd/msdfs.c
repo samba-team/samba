@@ -288,12 +288,13 @@ static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 	char **alt_path = NULL;
 	int count = 0, i;
 	struct referral *reflist;
+	char *saveptr;
 
 	temp = talloc_strdup(ctx, target);
 	if (!temp) {
 		return False;
 	}
-	prot = strtok(temp,":");
+	prot = strtok_r(temp, ":", &saveptr);
 	if (!prot) {
 		DEBUG(0,("parse_msdfs_symlink: invalid path !\n"));
 		return False;
@@ -306,7 +307,7 @@ static bool parse_msdfs_symlink(TALLOC_CTX *ctx,
 
 	/* parse out the alternate paths */
 	while((count<MAX_REFERRAL_COUNT) &&
-	      ((alt_path[count] = strtok(NULL,",")) != NULL)) {
+	      ((alt_path[count] = strtok_r(NULL, ",", &saveptr)) != NULL)) {
 		count++;
 	}
 

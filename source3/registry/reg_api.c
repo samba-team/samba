@@ -2,6 +2,7 @@
  *  Unix SMB/CIFS implementation.
  *  Virtual Windows Registry Layer
  *  Copyright (C) Volker Lendecke 2006
+ *  Copyright (C) Michael Adam 2007-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -19,10 +20,58 @@
 
 /* Attempt to wrap the existing API in a more winreg.idl-like way */
 
+/*
+ * Here is a list of winreg.idl functions and corresponding implementations
+ * provided here:
+ *
+ * 0x00		winreg_OpenHKCR
+ * 0x01		winreg_OpenHKCU
+ * 0x02		winreg_OpenHKLM
+ * 0x03		winreg_OpenHKPD
+ * 0x04		winreg_OpenHKU
+ * 0x05		winreg_CloseKey
+ * 0x06		winreg_CreateKey			reg_createkey
+ * 0x07		winreg_DeleteKey			reg_deletekey
+ * 0x08		winreg_DeleteValue			reg_deletevalue
+ * 0x09		winreg_EnumKey				reg_enumkey
+ * 0x0a		winreg_EnumValue			reg_enumvalue
+ * 0x0b		winreg_FlushKey
+ * 0x0c		winreg_GetKeySecurity			reg_getkeysecurity
+ * 0x0d		winreg_LoadKey
+ * 0x0e		winreg_NotifyChangeKeyValue
+ * 0x0f		winreg_OpenKey				reg_openkey
+ * 0x10		winreg_QueryInfoKey			reg_queryinfokey
+ * 0x11		winreg_QueryValue			reg_queryvalue
+ * 0x12		winreg_ReplaceKey
+ * 0x13		winreg_RestoreKey			reg_restorekey
+ * 0x14		winreg_SaveKey				reg_savekey
+ * 0x15		winreg_SetKeySecurity			reg_setkeysecurity
+ * 0x16		winreg_SetValue				reg_setvalue
+ * 0x17		winreg_UnLoadKey
+ * 0x18		winreg_InitiateSystemShutdown
+ * 0x19		winreg_AbortSystemShutdown
+ * 0x1a		winreg_GetVersion			reg_getversion
+ * 0x1b		winreg_OpenHKCC
+ * 0x1c		winreg_OpenHKDD
+ * 0x1d		winreg_QueryMultipleValues
+ * 0x1e		winreg_InitiateSystemShutdownEx
+ * 0x1f		winreg_SaveKeyEx
+ * 0x20		winreg_OpenHKPT
+ * 0x21		winreg_OpenHKPN
+ * 0x22		winreg_QueryMultipleValues2
+ *
+ */
+
 #include "includes.h"
+#include "regfio.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_REGISTRY
+
+
+/**********************************************************************
+ * Helper functions
+ **********************************************************************/
 
 static WERROR fill_value_cache(struct registry_key *key)
 {
@@ -135,7 +184,7 @@ static WERROR regkey_open_onelevel(TALLOC_CTX *mem_ctx,
 	/* Look up the table of registry I/O operations */
 
 	if ( !(key->hook = reghook_cache_find( key->name )) ) {
-		DEBUG(0,("reg_open_onelevel: Failed to assigned a "
+		DEBUG(0,("reg_open_onelevel: Failed to assign a "
 			 "REGISTRY_HOOK to [%s]\n", key->name ));
 		result = WERR_BADFILE;
 		goto done;
@@ -185,6 +234,11 @@ WERROR reg_openhive(TALLOC_CTX *mem_ctx, const char *hive,
 	return regkey_open_onelevel(mem_ctx, NULL, hive, token, desired_access,
 				    pkey);
 }
+
+
+/**********************************************************************
+ * The API functions
+ **********************************************************************/
 
 WERROR reg_openkey(TALLOC_CTX *mem_ctx, struct registry_key *parent,
 		   const char *name, uint32 desired_access,
@@ -400,7 +454,6 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	TALLOC_CTX *mem_ctx;
 	char *path, *end;
 	WERROR err;
-	REGSUBKEY_CTR *subkeys;
 
 	if (!(mem_ctx = talloc_new(ctx))) return WERR_NOMEM;
 
@@ -463,11 +516,6 @@ WERROR reg_createkey(TALLOC_CTX *ctx, struct registry_key *parent,
 	/*
 	 * Actually create the subkey
 	 */
-
-	if (!(subkeys = TALLOC_ZERO_P(mem_ctx, REGSUBKEY_CTR))) {
-		err = WERR_NOMEM;
-		goto done;
-	}
 
 	err = fill_subkey_cache(create_parent);
 	if (!W_ERROR_IS_OK(err)) goto done;
@@ -627,6 +675,305 @@ WERROR reg_deletevalue(struct registry_key *key, const char *name)
 	return WERR_OK;
 }
 
+WERROR reg_getkeysecurity(TALLOC_CTX *mem_ctx, struct registry_key *key,
+			  struct security_descriptor **psecdesc)
+{
+	return regkey_get_secdesc(mem_ctx, key->key, psecdesc);
+}
+
+WERROR reg_setkeysecurity(struct registry_key *key,
+			  struct security_descriptor *psecdesc)
+{
+	return regkey_set_secdesc(key->key, psecdesc);
+}
+
+WERROR reg_getversion(uint32_t *version)
+{
+	if (version == NULL) {
+		return WERR_INVALID_PARAM;
+	}
+
+	*version = 0x00000005; /* Windows 2000 registry API version */
+	return WERR_OK;
+}
+
+/*******************************************************************
+ Note: topkeypat is the *full* path that this *key will be
+ loaded into (including the name of the key)
+ ********************************************************************/
+
+static WERROR reg_load_tree(REGF_FILE *regfile, const char *topkeypath,
+			    REGF_NK_REC *key)
+{
+	REGF_NK_REC *subkey;
+	REGISTRY_KEY registry_key;
+	REGVAL_CTR *values;
+	REGSUBKEY_CTR *subkeys;
+	int i;
+	char *path = NULL;
+	WERROR result = WERR_OK;
+
+	/* initialize the REGISTRY_KEY structure */
+
+	registry_key.hook = reghook_cache_find(topkeypath);
+	if (!registry_key.hook) {
+		DEBUG(0, ("reg_load_tree: Failed to assigned a REGISTRY_HOOK "
+			  "to [%s]\n", topkeypath));
+		return WERR_BADFILE;
+	}
+
+	registry_key.name = talloc_strdup(regfile->mem_ctx, topkeypath);
+	if (!registry_key.name) {
+		DEBUG(0, ("reg_load_tree: Talloc failed for reg_key.name!\n"));
+		return WERR_NOMEM;
+	}
+
+	/* now start parsing the values and subkeys */
+
+	subkeys = TALLOC_ZERO_P(regfile->mem_ctx, REGSUBKEY_CTR);
+	if (subkeys == NULL) {
+		return WERR_NOMEM;
+	}
+
+	values = TALLOC_ZERO_P(subkeys, REGVAL_CTR);
+	if (values == NULL) {
+		return WERR_NOMEM;
+	}
+
+	/* copy values into the REGVAL_CTR */
+
+	for (i=0; i<key->num_values; i++) {
+		regval_ctr_addvalue(values, key->values[i].valuename,
+				    key->values[i].type,
+				    (char*)key->values[i].data,
+				    (key->values[i].data_size & ~VK_DATA_IN_OFFSET));
+	}
+
+	/* copy subkeys into the REGSUBKEY_CTR */
+
+	key->subkey_index = 0;
+	while ((subkey = regfio_fetch_subkey( regfile, key ))) {
+		regsubkey_ctr_addkey(subkeys, subkey->keyname);
+	}
+
+	/* write this key and values out */
+
+	if (!store_reg_values(&registry_key, values)
+	    || !store_reg_keys(&registry_key, subkeys))
+	{
+		DEBUG(0,("reg_load_tree: Failed to load %s!\n", topkeypath));
+		result = WERR_REG_IO_FAILURE;
+	}
+
+	TALLOC_FREE(subkeys);
+
+	if (!W_ERROR_IS_OK(result)) {
+		return result;
+	}
+
+	/* now continue to load each subkey registry tree */
+
+	key->subkey_index = 0;
+	while ((subkey = regfio_fetch_subkey(regfile, key))) {
+		path = talloc_asprintf(regfile->mem_ctx,
+				       "%s\\%s",
+				       topkeypath,
+				       subkey->keyname);
+		if (path == NULL) {
+			return WERR_NOMEM;
+		}
+		result = reg_load_tree(regfile, path, subkey);
+		if (!W_ERROR_IS_OK(result)) {
+			break;
+		}
+	}
+
+	return result;
+}
+
+/*******************************************************************
+ ********************************************************************/
+
+static WERROR restore_registry_key(REGISTRY_KEY *krecord, const char *fname)
+{
+	REGF_FILE *regfile;
+	REGF_NK_REC *rootkey;
+	WERROR result;
+
+	/* open the registry file....fail if the file already exists */
+
+	regfile = regfio_open(fname, (O_RDONLY), 0);
+	if (regfile == NULL) {
+		DEBUG(0, ("restore_registry_key: failed to open \"%s\" (%s)\n",
+			  fname, strerror(errno)));
+		return ntstatus_to_werror(map_nt_error_from_unix(errno));
+	}
+
+	/* get the rootkey from the regf file and then load the tree
+	   via recursive calls */
+
+	if (!(rootkey = regfio_rootkey(regfile))) {
+		regfio_close(regfile);
+		return WERR_REG_FILE_INVALID;
+	}
+
+	result = reg_load_tree(regfile, krecord->name, rootkey);
+
+	/* cleanup */
+
+	regfio_close(regfile);
+
+	return result;
+}
+
+WERROR reg_restorekey(struct registry_key *key, const char *fname)
+{
+	return restore_registry_key(key->key, fname);
+}
+
+/********************************************************************
+********************************************************************/
+
+static WERROR reg_write_tree(REGF_FILE *regfile, const char *keypath,
+			     REGF_NK_REC *parent)
+{
+	REGF_NK_REC *key;
+	REGVAL_CTR *values;
+	REGSUBKEY_CTR *subkeys;
+	int i, num_subkeys;
+	char *key_tmp = NULL;
+	char *keyname, *parentpath;
+	char *subkeypath = NULL;
+	char *subkeyname;
+	REGISTRY_KEY registry_key;
+	WERROR result = WERR_OK;
+	SEC_DESC *sec_desc = NULL;
+
+	if (!regfile) {
+		return WERR_GENERAL_FAILURE;
+	}
+
+	if (!keypath) {
+		return WERR_OBJECT_PATH_INVALID;
+	}
+
+	/* split up the registry key path */
+
+	key_tmp = talloc_strdup(regfile->mem_ctx, keypath);
+	if (!key_tmp) {
+		return WERR_NOMEM;
+	}
+	if (!reg_split_key(key_tmp, &parentpath, &keyname)) {
+		return WERR_OBJECT_PATH_INVALID;
+	}
+
+	if (!keyname) {
+		keyname = parentpath;
+	}
+
+	/* we need a REGISTRY_KEY object here to enumerate subkeys and values */
+
+	ZERO_STRUCT(registry_key);
+
+	registry_key.name = talloc_strdup(regfile->mem_ctx, keypath);
+	if (registry_key.name == NULL) {
+		return WERR_NOMEM;
+	}
+
+	registry_key.hook = reghook_cache_find(registry_key.name);
+	if (registry_key.hook == NULL) {
+		return WERR_BADFILE;
+	}
+
+	/* lookup the values and subkeys */
+
+	subkeys = TALLOC_ZERO_P(regfile->mem_ctx, REGSUBKEY_CTR);
+	if (subkeys == NULL) {
+		return WERR_NOMEM;
+	}
+
+	values = TALLOC_ZERO_P(subkeys, REGVAL_CTR);
+	if (values == NULL) {
+		return WERR_NOMEM;
+	}
+
+	fetch_reg_keys(&registry_key, subkeys);
+	fetch_reg_values(&registry_key, values);
+
+	result = regkey_get_secdesc(regfile->mem_ctx, &registry_key, &sec_desc);
+	if (!W_ERROR_IS_OK(result)) {
+		goto done;
+	}
+
+	/* write out this key */
+
+	key = regfio_write_key(regfile, keyname, values, subkeys, sec_desc,
+			       parent);
+	if (key == NULL) {
+		result = WERR_CAN_NOT_COMPLETE;
+		goto done;
+	}
+
+	/* write each one of the subkeys out */
+
+	num_subkeys = regsubkey_ctr_numkeys(subkeys);
+	for (i=0; i<num_subkeys; i++) {
+		subkeyname = regsubkey_ctr_specific_key(subkeys, i);
+		subkeypath = talloc_asprintf(regfile->mem_ctx, "%s\\%s",
+					     keypath, subkeyname);
+		if (subkeypath == NULL) {
+			result = WERR_NOMEM;
+			goto done;
+		}
+		result = reg_write_tree(regfile, subkeypath, key);
+		if (!W_ERROR_IS_OK(result))
+			goto done;
+	}
+
+	DEBUG(6, ("reg_write_tree: wrote key [%s]\n", keypath));
+
+done:
+	TALLOC_FREE(subkeys);
+	TALLOC_FREE(registry_key.name);
+
+	return result;
+}
+
+static WERROR backup_registry_key(REGISTRY_KEY *krecord, const char *fname)
+{
+	REGF_FILE *regfile;
+	WERROR result;
+
+	/* open the registry file....fail if the file already exists */
+
+	regfile = regfio_open(fname, (O_RDWR|O_CREAT|O_EXCL),
+			      (S_IREAD|S_IWRITE));
+	if (regfile == NULL) {
+		DEBUG(0,("backup_registry_key: failed to open \"%s\" (%s)\n",
+			 fname, strerror(errno) ));
+		return ntstatus_to_werror(map_nt_error_from_unix(errno));
+	}
+
+	/* write the registry tree to the file  */
+
+	result = reg_write_tree(regfile, krecord->name, NULL);
+
+	/* cleanup */
+
+	regfio_close(regfile);
+
+	return result;
+}
+
+WERROR reg_savekey(struct registry_key *key, const char *fname)
+{
+	return backup_registry_key(key->key, fname);
+}
+
+/**********************************************************************
+ * Higher level utility functions
+ **********************************************************************/
+
 WERROR reg_deleteallvalues(struct registry_key *key)
 {
 	WERROR err;
@@ -653,9 +1000,7 @@ WERROR reg_deleteallvalues(struct registry_key *key)
 }
 
 /*
- * Utility function to open a complete registry path including the hive
- * prefix. This should become the replacement function for
- * regkey_open_internal.
+ * Utility function to open a complete registry path including the hive prefix.
  */
 
 WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
@@ -715,10 +1060,10 @@ WERROR reg_open_path(TALLOC_CTX *mem_ctx, const char *orig_path,
  * Note that reg_deletekey returns ACCESS_DENIED when called on a
  * key that has subkeys.
  */
-WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
-					struct registry_key *parent,
-					const char *path,
-					bool del_key)
+static WERROR reg_deletekey_recursive_internal(TALLOC_CTX *ctx,
+					       struct registry_key *parent,
+					       const char *path,
+					       bool del_key)
 {
 	TALLOC_CTX *mem_ctx = NULL;
 	WERROR werr = WERR_OK;
@@ -779,3 +1124,102 @@ WERROR reg_deletesubkeys_recursive(TALLOC_CTX *ctx,
 {
 	return reg_deletekey_recursive_internal(ctx, parent, path, false);
 }
+
+#if 0
+/* these two functions are unused. */
+
+/**
+ * Utility function to create a registry key without opening the hive
+ * before. Assumes the hive already exists.
+ */
+
+WERROR reg_create_path(TALLOC_CTX *mem_ctx, const char *orig_path,
+		       uint32 desired_access,
+		       const struct nt_user_token *token,
+		       enum winreg_CreateAction *paction,
+		       struct registry_key **pkey)
+{
+	struct registry_key *hive;
+	char *path, *p;
+	WERROR err;
+
+	if (!(path = SMB_STRDUP(orig_path))) {
+		return WERR_NOMEM;
+	}
+
+	p = strchr(path, '\\');
+
+	if ((p == NULL) || (p[1] == '\0')) {
+		/*
+		 * No key behind the hive, just return the hive
+		 */
+
+		err = reg_openhive(mem_ctx, path, desired_access, token,
+				   &hive);
+		if (!W_ERROR_IS_OK(err)) {
+			SAFE_FREE(path);
+			return err;
+		}
+		SAFE_FREE(path);
+		*pkey = hive;
+		*paction = REG_OPENED_EXISTING_KEY;
+		return WERR_OK;
+	}
+
+	*p = '\0';
+
+	err = reg_openhive(mem_ctx, path,
+			   (strchr(p+1, '\\') != NULL) ?
+			   SEC_RIGHTS_ENUM_SUBKEYS : SEC_RIGHTS_CREATE_SUBKEY,
+			   token, &hive);
+	if (!W_ERROR_IS_OK(err)) {
+		SAFE_FREE(path);
+		return err;
+	}
+
+	err = reg_createkey(mem_ctx, hive, p+1, desired_access, pkey, paction);
+	SAFE_FREE(path);
+	TALLOC_FREE(hive);
+	return err;
+}
+
+/*
+ * Utility function to create a registry key without opening the hive
+ * before. Will not delete a hive.
+ */
+
+WERROR reg_delete_path(const struct nt_user_token *token,
+		       const char *orig_path)
+{
+	struct registry_key *hive;
+	char *path, *p;
+	WERROR err;
+
+	if (!(path = SMB_STRDUP(orig_path))) {
+		return WERR_NOMEM;
+	}
+
+	p = strchr(path, '\\');
+
+	if ((p == NULL) || (p[1] == '\0')) {
+		SAFE_FREE(path);
+		return WERR_INVALID_PARAM;
+	}
+
+	*p = '\0';
+
+	err = reg_openhive(NULL, path,
+			   (strchr(p+1, '\\') != NULL) ?
+			   SEC_RIGHTS_ENUM_SUBKEYS : SEC_RIGHTS_CREATE_SUBKEY,
+			   token, &hive);
+	if (!W_ERROR_IS_OK(err)) {
+		SAFE_FREE(path);
+		return err;
+	}
+
+	err = reg_deletekey(hive, p+1);
+	SAFE_FREE(path);
+	TALLOC_FREE(hive);
+	return err;
+}
+#endif /* #if 0 */

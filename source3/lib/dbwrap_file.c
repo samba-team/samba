@@ -17,10 +17,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
- * Be aware that this is just sample code that has not seen too much testing
- */
-
 #include "includes.h"
 
 struct db_file_ctx {
@@ -367,6 +363,7 @@ struct db_context *db_open_file(TALLOC_CTX *mem_ctx,
 	result->fetch_locked = db_file_fetch_locked;
 	result->traverse = db_file_traverse;
 	result->traverse_read = db_file_traverse;
+	result->persistent = ((tdb_flags & TDB_CLEAR_IF_FIRST) == 0);
 
 	ctx->locked_record = NULL;
 	if (!(ctx->dirname = talloc_strdup(ctx, name))) {

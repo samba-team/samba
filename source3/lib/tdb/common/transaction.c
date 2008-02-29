@@ -219,9 +219,12 @@ static int transaction_write(struct tdb_context *tdb, tdb_off_t off,
 		uint8_t **new_blocks;
 		/* expand the blocks array */
 		if (tdb->transaction->blocks == NULL) {
-			new_blocks = malloc((blk+1)*sizeof(uint8_t *));
+			new_blocks = (uint8_t **)malloc(
+				(blk+1)*sizeof(uint8_t *));
 		} else {
-			new_blocks = realloc(tdb->transaction->blocks, (blk+1)*sizeof(uint8_t *));
+			new_blocks = (uint8_t **)realloc(
+				tdb->transaction->blocks,
+				(blk+1)*sizeof(uint8_t *));
 		}
 		if (new_blocks == NULL) {
 			tdb->ecode = TDB_ERR_OOM;
@@ -316,25 +319,18 @@ static int transaction_write_existing(struct tdb_context *tdb, tdb_off_t off,
 		return 0;
 	}
 
-	/* overwrite part of an existing block */
-	if (buf == NULL) {
-		memset(tdb->transaction->blocks[blk] + off, 0, len);
-	} else {
-		memcpy(tdb->transaction->blocks[blk] + off, buf, len);
-	}
-	if (blk == tdb->transaction->num_blocks-1) {
-		if (len + off > tdb->transaction->last_block_size) {
-			tdb->transaction->last_block_size = len + off;
+	if (blk == tdb->transaction->num_blocks-1 &&
+	    off + len > tdb->transaction->last_block_size) {
+		if (off >= tdb->transaction->last_block_size) {
+			return 0;
 		}
+		len = tdb->transaction->last_block_size - off;
 	}
+
+	/* overwrite part of an existing block */
+	memcpy(tdb->transaction->blocks[blk] + off, buf, len);
 
 	return 0;
-
-fail:
-	TDB_LOG((tdb, TDB_DEBUG_FATAL, "transaction_write: failed at off=%d len=%d\n", 
-		 (blk*tdb->transaction->block_size) + off, len));
-	tdb->transaction->transaction_error = 1;
-	return -1;
 }
 
 

@@ -90,7 +90,7 @@ static const char *family_name(int family)
 			return "AF_UNSPEC";
 		case AF_INET:
 			return "AF_INET";
-#if defined(HAVE_IPv6)
+#if defined(HAVE_IPV6)
 		case AF_INET6:
 			return "AF_INET6";
 #endif
@@ -137,9 +137,9 @@ static int smb_krb5_locator_lookup_sanity_check(enum locate_service_type svc,
 		case AF_UNSPEC:
 		case AF_INET:
 			break;
-#if defined(HAVE_IPv6)
-		case AF_INET6: /* not yet */
-			return KRB5_PLUGIN_NO_HANDLE;
+#if defined(HAVE_IPV6)
+		case AF_INET6:
+			break;
 #endif
 		default:
 			return EINVAL;

@@ -1842,7 +1842,9 @@ NTSTATUS open_file_ntcreate(connection_struct *conn,
 	set_share_mode(lck, fsp, current_user.ut.uid, 0, fsp->oplock_type, new_file_created);
 
 	/* Handle strange delete on close create semantics. */
-	if ((create_options & FILE_DELETE_ON_CLOSE) && can_set_initial_delete_on_close(lck)) {
+	if ((create_options & FILE_DELETE_ON_CLOSE)
+	    && (is_ntfs_stream_name(fname)
+		|| can_set_initial_delete_on_close(lck))) {
 		status = can_set_delete_on_close(fsp, True, new_dos_attributes);
 
 		if (!NT_STATUS_IS_OK(status)) {
@@ -2104,7 +2106,7 @@ NTSTATUS open_directory(connection_struct *conn,
 		 (unsigned int)create_disposition,
 		 (unsigned int)file_attributes));
 
-	if (is_ntfs_stream_name(fname)) {
+	if (!(file_attributes & FILE_FLAG_POSIX_SEMANTICS) && is_ntfs_stream_name(fname)) {
 		DEBUG(2, ("open_directory: %s is a stream name!\n", fname));
 		return NT_STATUS_NOT_A_DIRECTORY;
 	}
@@ -2444,6 +2446,116 @@ static struct case_semantics_state *set_posix_case_semantics(TALLOC_CTX *mem_ctx
 }
 
 /*
+ * If a main file is opened for delete, all streams need to be checked for
+ * !FILE_SHARE_DELETE. Do this by opening with DELETE_ACCESS.
+ * If that works, delete them all by setting the delete on close and close.
+ */
+
+static NTSTATUS open_streams_for_delete(connection_struct *conn,
+					const char *fname)
+{
+	struct stream_struct *stream_info;
+	files_struct **streams;
+	int i;
+	unsigned int num_streams;
+	TALLOC_CTX *frame = talloc_stackframe();
+	NTSTATUS status;
+
+	status = SMB_VFS_STREAMINFO(conn, NULL, fname, talloc_tos(),
+				    &num_streams, &stream_info);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_IMPLEMENTED)
+	    || NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND)) {
+		DEBUG(10, ("no streams around\n"));
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(10, ("SMB_VFS_STREAMINFO failed: %s\n",
+			   nt_errstr(status)));
+		goto fail;
+	}
+
+	DEBUG(10, ("open_streams_for_delete found %d streams\n",
+		   num_streams));
+
+	if (num_streams == 0) {
+		TALLOC_FREE(frame);
+		return NT_STATUS_OK;
+	}
+
+	streams = TALLOC_ARRAY(talloc_tos(), files_struct *, num_streams);
+	if (streams == NULL) {
+		DEBUG(0, ("talloc failed\n"));
+		status = NT_STATUS_NO_MEMORY;
+		goto fail;
+	}
+
+	for (i=0; i<num_streams; i++) {
+		char *streamname;
+
+		if (strequal(stream_info[i].name, "::$DATA")) {
+			streams[i] = NULL;
+			continue;
+		}
+
+		streamname = talloc_asprintf(talloc_tos(), "%s%s", fname,
+					     stream_info[i].name);
+
+		if (streamname == NULL) {
+			DEBUG(0, ("talloc_aprintf failed\n"));
+			status = NT_STATUS_NO_MEMORY;
+			goto fail;
+		}
+
+		status = create_file_unixpath
+			(conn,			/* conn */
+			 NULL,			/* req */
+			 streamname,		/* fname */
+			 DELETE_ACCESS,		/* access_mask */
+			 FILE_SHARE_READ | FILE_SHARE_WRITE
+			 | FILE_SHARE_DELETE,	/* share_access */
+			 FILE_OPEN,		/* create_disposition*/
+			 NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE, /* create_options */
+			 FILE_ATTRIBUTE_NORMAL,	/* file_attributes */
+			 0,			/* oplock_request */
+			 0,			/* allocation_size */
+			 NULL,			/* sd */
+			 NULL,			/* ea_list */
+			 &streams[i],		/* result */
+			 NULL,			/* pinfo */
+			 NULL);			/* psbuf */
+
+		TALLOC_FREE(streamname);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("Could not open stream %s: %s\n",
+				   streamname, nt_errstr(status)));
+			break;
+		}
+	}
+
+	/*
+	 * don't touch the variable "status" beyond this point :-)
+	 */
+
+	for (i -= 1 ; i >= 0; i--) {
+		if (streams[i] == NULL) {
+			continue;
+		}
+
+		DEBUG(10, ("Closing stream # %d, %s\n", i,
+			   streams[i]->fsp_name));
+		close_file(streams[i], NORMAL_CLOSE);
+	}
+
+ fail:
+	TALLOC_FREE(frame);
+	return status;
+}
+
+/*
  * Wrapper around open_file_ntcreate and open_directory
  */
 
@@ -2466,6 +2578,7 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 {
 	SMB_STRUCT_STAT sbuf;
 	int info = FILE_WAS_OPENED;
+	files_struct *base_fsp = NULL;
 	files_struct *fsp = NULL;
 	NTSTATUS status;
 
@@ -2495,7 +2608,23 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		sbuf = *psbuf;
 	}
 	else {
-		SET_STAT_INVALID(sbuf);
+		if (SMB_VFS_STAT(conn, fname, &sbuf) == -1) {
+			SET_STAT_INVALID(sbuf);
+		}
+	}
+
+	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
+	    && (access_mask & DELETE_ACCESS)
+	    && !is_ntfs_stream_name(fname)) {
+		/*
+		 * We can't open a file with DELETE access if any of the
+		 * streams is open without FILE_SHARE_DELETE
+		 */
+		status = open_streams_for_delete(conn, fname);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			goto fail;
+		}
 	}
 
 	/* This is the correct thing to do (check every time) but can_delete
@@ -2528,11 +2657,61 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 	}
 #endif
 
+	if ((conn->fs_capabilities & FILE_NAMED_STREAMS)
+	    && is_ntfs_stream_name(fname)
+	    && (!(create_options & NTCREATEX_OPTIONS_PRIVATE_STREAM_DELETE))) {
+		char *base;
+		uint32 base_create_disposition;
+
+		if (create_options & FILE_DIRECTORY_FILE) {
+			status = NT_STATUS_NOT_A_DIRECTORY;
+			goto fail;
+		}
+
+		status = split_ntfs_stream_name(talloc_tos(), fname,
+						&base, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("create_file_unixpath: "
+				"split_ntfs_stream_name failed: %s\n",
+				nt_errstr(status)));
+			goto fail;
+		}
+
+		SMB_ASSERT(!is_ntfs_stream_name(base));	/* paranoia.. */
+
+		switch (create_disposition) {
+		case FILE_OPEN:
+			base_create_disposition = FILE_OPEN;
+			break;
+		default:
+			base_create_disposition = FILE_OPEN_IF;
+			break;
+		}
+
+		status = create_file_unixpath(conn, NULL, base, 0,
+					      FILE_SHARE_READ
+					      | FILE_SHARE_WRITE
+					      | FILE_SHARE_DELETE,
+					      base_create_disposition,
+					      0, 0, 0, 0, NULL, NULL,
+					      &base_fsp, NULL, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(10, ("create_file_unixpath for base %s failed: "
+				   "%s\n", base, nt_errstr(status)));
+			goto fail;
+		}
+	}
+
 	/*
 	 * If it's a request for a directory open, deal with it separately.
 	 */
 
 	if (create_options & FILE_DIRECTORY_FILE) {
+
+		if (create_options & FILE_NON_DIRECTORY_FILE) {
+			status = NT_STATUS_INVALID_PARAMETER;
+			goto fail;
+		}
 
 		/* Can't open a temp directory. IFS kit test. */
 		if (file_attributes & FILE_ATTRIBUTE_TEMPORARY) {
@@ -2662,7 +2841,17 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 		}
 	}
 
-	DEBUG(10, ("create_file: info=%d\n", info));
+	DEBUG(10, ("create_file_unixpath: info=%d\n", info));
+
+	/*
+	 * Set fsp->base_fsp late enough that we can't "goto fail" anymore. In
+	 * the fail: branch we call close_file(fsp, ERROR_CLOSE) which would
+	 * also close fsp->base_fsp which we have to also do explicitly in
+	 * this routine here, as not in all "goto fail:" we have the fsp set
+	 * up already to be initialized with the base_fsp.
+	 */
+
+	fsp->base_fsp = base_fsp;
 
 	*result = fsp;
 	if (pinfo != NULL) {
@@ -2679,11 +2868,15 @@ NTSTATUS create_file_unixpath(connection_struct *conn,
 	return NT_STATUS_OK;
 
  fail:
-	DEBUG(10, ("create_file: %s\n", nt_errstr(status)));
+	DEBUG(10, ("create_file_unixpath: %s\n", nt_errstr(status)));
 
 	if (fsp != NULL) {
 		close_file(fsp, ERROR_CLOSE);
 		fsp = NULL;
+	}
+	if (base_fsp != NULL) {
+		close_file(base_fsp, ERROR_CLOSE);
+		base_fsp = NULL;
 	}
 	return status;
 }
@@ -2812,19 +3005,18 @@ NTSTATUS create_file(connection_struct *conn,
 			status = NT_STATUS_NO_MEMORY;
 			goto fail;
 		}
-	} else {
-		/*
-		 * Check to see if this is a mac fork of some kind.
-		 */
+	}
 
-		if (is_ntfs_stream_name(fname)) {
-			enum FAKE_FILE_TYPE fake_file_type;
+	/*
+	 * Check to see if this is a mac fork of some kind.
+	 */
 
-			fake_file_type = is_fake_file(fname);
+	if (is_ntfs_stream_name(fname)) {
+		enum FAKE_FILE_TYPE fake_file_type;
 
-			if (fake_file_type == FAKE_FILE_TYPE_NONE) {
-				return NT_STATUS_OBJECT_PATH_NOT_FOUND;
-			}
+		fake_file_type = is_fake_file(fname);
+
+		if (fake_file_type != FAKE_FILE_TYPE_NONE) {
 
 			/*
 			 * Here we go! support for changing the disk quotas
@@ -2843,8 +3035,7 @@ NTSTATUS create_file(connection_struct *conn,
 				goto fail;
 			}
 
-			SET_STAT_INVALID(sbuf);
-
+			ZERO_STRUCT(sbuf);
 			goto done;
 		}
 	}
@@ -2888,6 +3079,8 @@ NTSTATUS create_file(connection_struct *conn,
 		}
 		fname = converted_fname;
 	}
+
+	TALLOC_FREE(case_state);
 
 	/* All file access must go through check_name() */
 

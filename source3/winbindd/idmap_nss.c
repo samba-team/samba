@@ -87,10 +87,10 @@ static NTSTATUS idmap_nss_unixids_to_sids(struct idmap_domain *dom, struct id_ma
 
 		/* by default calls to winbindd are disabled
 		   the following call will not recurse so this is safe */
-		winbind_on();
+		(void)winbind_on();
 		/* Lookup name from PDC using lsa_lookup_names() */
 		ret = winbind_lookup_name(dom->name, name, ids[i]->sid, &type);
-		winbind_off();
+		(void)winbind_off();
 
 		if (!ret) {
 			/* TODO: how do we know if the name is really not mapped,
@@ -153,9 +153,9 @@ static NTSTATUS idmap_nss_sids_to_unixids(struct idmap_domain *dom, struct id_ma
 
 		/* by default calls to winbindd are disabled
 		   the following call will not recurse so this is safe */
-		winbind_on();
+		(void)winbind_on();
 		ret = winbind_lookup_sid(ctx, ids[i]->sid, &dom_name, &name, &type);
-		winbind_off();
+		(void)winbind_off();
 
 		if (!ret) {
 			/* TODO: how do we know if the name is really not mapped,

@@ -17,7 +17,7 @@ static bool api_initshutdown_Init(pipes_struct *p)
 
 	call = &ndr_table_initshutdown.calls[NDR_INITSHUTDOWN_INIT];
 
-	r = talloc(NULL, struct initshutdown_Init);
+	r = talloc(talloc_tos(), struct initshutdown_Init);
 	if (r == NULL) {
 		return false;
 	}
@@ -90,7 +90,7 @@ static bool api_initshutdown_Abort(pipes_struct *p)
 
 	call = &ndr_table_initshutdown.calls[NDR_INITSHUTDOWN_ABORT];
 
-	r = talloc(NULL, struct initshutdown_Abort);
+	r = talloc(talloc_tos(), struct initshutdown_Abort);
 	if (r == NULL) {
 		return false;
 	}
@@ -163,7 +163,7 @@ static bool api_initshutdown_InitEx(pipes_struct *p)
 
 	call = &ndr_table_initshutdown.calls[NDR_INITSHUTDOWN_INITEX];
 
-	r = talloc(NULL, struct initshutdown_InitEx);
+	r = talloc(talloc_tos(), struct initshutdown_InitEx);
 	if (r == NULL) {
 		return false;
 	}

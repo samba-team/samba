@@ -1,18 +1,18 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    VFS wrapper macros
    Copyright (C) Stefan (metze) Metzmacher	2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -26,7 +26,7 @@
  (Fixes should go also into the vfs_opaque_* and vfs_next_* macros!)
 ********************************************************************/
 
-/* Disk operations */    
+/* Disk operations */
 #define SMB_VFS_CONNECT(conn, service, user) ((conn)->vfs.ops.connect_fn((conn)->vfs.handles.connect_hnd, (service), (user)))
 #define SMB_VFS_DISCONNECT(conn) ((conn)->vfs.ops.disconnect((conn)->vfs.handles.disconnect))
 #define SMB_VFS_DISK_FREE(conn, path, small_query, bsize, dfree ,dsize) ((conn)->vfs.ops.disk_free((conn)->vfs.handles.disk_free, (path), (small_query), (bsize), (dfree), (dsize)))
@@ -34,6 +34,7 @@
 #define SMB_VFS_SET_QUOTA(conn, qtype, id, qt) ((conn)->vfs.ops.set_quota((conn)->vfs.handles.set_quota, (qtype), (id), (qt)))
 #define SMB_VFS_GET_SHADOW_COPY_DATA(fsp,shadow_copy_data,labels) ((fsp)->conn->vfs.ops.get_shadow_copy_data((fsp)->conn->vfs.handles.get_shadow_copy_data,(fsp),(shadow_copy_data),(labels)))
 #define SMB_VFS_STATVFS(conn, path, statbuf) ((conn)->vfs.ops.statvfs((conn)->vfs.handles.statvfs, (path), (statbuf)))
+#define SMB_VFS_FS_CAPABILITIES(conn) ((conn)->vfs.ops.fs_capabilities((conn)->vfs.handles.fs_capabilities))
 
 /* Directory operations */
 #define SMB_VFS_OPENDIR(conn, fname, mask, attr) ((conn)->vfs.ops.opendir((conn)->vfs.handles.opendir, (fname), (mask), (attr)))
@@ -44,7 +45,7 @@
 #define SMB_VFS_MKDIR(conn, path, mode) ((conn)->vfs.ops.mkdir((conn)->vfs.handles.mkdir,(path), (mode)))
 #define SMB_VFS_RMDIR(conn, path) ((conn)->vfs.ops.rmdir((conn)->vfs.handles.rmdir, (path)))
 #define SMB_VFS_CLOSEDIR(conn, dir) ((conn)->vfs.ops.closedir((conn)->vfs.handles.closedir, dir))
-    
+
 /* File operations */
 #define SMB_VFS_OPEN(conn, fname, fsp, flags, mode) (((conn)->vfs.ops.open)((conn)->vfs.handles.open, (fname), (fsp), (flags), (mode)))
 #define SMB_VFS_CLOSE(fsp, fd) ((fsp)->conn->vfs.ops.close_fn((fsp)->conn->vfs.handles.close_hnd, (fsp), (fd)))
@@ -82,6 +83,7 @@
 #define SMB_VFS_NOTIFY_WATCH(conn, ctx, e, callback, private_data, handle_p) ((conn)->vfs.ops.notify_watch((conn)->vfs.handles.notify_watch, (ctx), (e), (callback), (private_data), (handle_p)))
 #define SMB_VFS_CHFLAGS(conn, path, flags) ((conn)->vfs.ops.chflags((conn)->vfs.handles.chflags, (path), (flags)))
 #define SMB_VFS_FILE_ID_CREATE(conn, dev, inode) ((conn)->vfs.ops.file_id_create((conn)->vfs.handles.file_id_create, (dev), (inode)))
+#define SMB_VFS_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams) ((conn)->vfs.ops.streaminfo((conn)->vfs.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
 
 /* NT ACL operations. */
 #define SMB_VFS_FGET_NT_ACL(fsp, security_info, ppdesc) ((fsp)->conn->vfs.ops.fget_nt_acl((fsp)->conn->vfs.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -138,6 +140,11 @@
 #define SMB_VFS_AIO_ERROR(fsp,aiocb) ((fsp)->conn->vfs.ops.aio_error_fn((fsp)->conn->vfs.handles.aio_error,(fsp),(aiocb)))
 #define SMB_VFS_AIO_FSYNC(fsp,op,aiocb) ((fsp)->conn->vfs.ops.aio_fsync((fsp)->conn->vfs.handles.aio_fsync,(fsp),(op),(aiocb)))
 #define SMB_VFS_AIO_SUSPEND(fsp,aiocb,n,ts) ((fsp)->conn->vfs.ops.aio_suspend((fsp)->conn->vfs.handles.aio_suspend,(fsp),(aiocb),(n),(ts)))
+#define SMB_VFS_AIO_FORCE(fsp) ((fsp)->conn->vfs.ops.aio_force((fsp)->conn->vfs.handles.aio_force,(fsp)))
+
+/* Offline operations */
+#define SMB_VFS_IS_OFFLINE(conn,path,sbuf) ((conn)->vfs.ops.is_offline((conn)->vfs.handles.is_offline,(path),(sbuf)))
+#define SMB_VFS_SET_OFFLINE(conn,path) ((conn)->vfs.ops.set_offline((conn)->vfs.handles.set_offline,(path)))
 
 /*******************************************************************
  Don't access conn->vfs_opaque.ops directly!!!
@@ -145,7 +152,7 @@
  (Fixes should also go into the vfs_* and vfs_next_* macros!)
 ********************************************************************/
 
-/* Disk operations */    
+/* Disk operations */
 #define SMB_VFS_OPAQUE_CONNECT(conn, service, user) ((conn)->vfs_opaque.ops.connect_fn((conn)->vfs_opaque.handles.connect_hnd, (service), (user)))
 #define SMB_VFS_OPAQUE_DISCONNECT(conn) ((conn)->vfs_opaque.ops.disconnect((conn)->vfs_opaque.handles.disconnect))
 #define SMB_VFS_OPAQUE_DISK_FREE(conn, path, small_query, bsize, dfree ,dsize) ((conn)->vfs_opaque.ops.disk_free((conn)->vfs_opaque.handles.disk_free, (path), (small_query), (bsize), (dfree), (dsize)))
@@ -153,6 +160,7 @@
 #define SMB_VFS_OPAQUE_SET_QUOTA(conn, qtype, id, qt) ((conn)->vfs_opaque.ops.set_quota((conn)->vfs_opaque.handles.set_quota, (qtype), (id), (qt)))
 #define SMB_VFS_OPAQUE_GET_SHADOW_COPY_DATA(fsp,shadow_copy_data,labels) ((fsp)->conn->vfs_opaque.ops.get_shadow_copy_data((fsp)->conn->vfs_opaque.handles.get_shadow_copy_data,(fsp),(shadow_copy_data),(labels)))
 #define SMB_VFS_OPAQUE_STATVFS(conn, path, statbuf) ((conn)->vfs_opaque.ops.statvfs((conn)->vfs_opaque.handles.statvfs, (path), (statbuf)))
+#define SMB_VFS_OPAQUE_FS_CAPABILITIES(conn) ((conn)->vfs_opaque.ops.fs_capabilities((conn)->vfs_opaque.handles.fs_capabilities))
 
 /* Directory operations */
 #define SMB_VFS_OPAQUE_OPENDIR(conn, fname, mask, attr) ((conn)->vfs_opaque.ops.opendir((conn)->vfs_opaque.handles.opendir, (fname), (mask), (attr)))
@@ -163,7 +171,7 @@
 #define SMB_VFS_OPAQUE_MKDIR(conn, path, mode) ((conn)->vfs_opaque.ops.mkdir((conn)->vfs_opaque.handles.mkdir,(path), (mode)))
 #define SMB_VFS_OPAQUE_RMDIR(conn, path) ((conn)->vfs_opaque.ops.rmdir((conn)->vfs_opaque.handles.rmdir, (path)))
 #define SMB_VFS_OPAQUE_CLOSEDIR(conn, dir) ((conn)->vfs_opaque.ops.closedir((conn)->vfs_opaque.handles.closedir, dir))
-    
+
 /* File operations */
 #define SMB_VFS_OPAQUE_OPEN(conn, fname, fsp, flags, mode) (((conn)->vfs_opaque.ops.open)((conn)->vfs_opaque.handles.open, (fname), (fsp), (flags), (mode)))
 #define SMB_VFS_OPAQUE_CLOSE(fsp, fd) ((fsp)->conn->vfs_opaque.ops.close_fn((fsp)->conn->vfs_opaque.handles.close_hnd, (fsp), (fd)))
@@ -201,6 +209,7 @@
 #define SMB_VFS_OPAQUE_NOTIFY_WATCH(conn, ctx, e, callback, private_data, handle_p) ((conn)->vfs_opaque.ops.notify_watch((conn)->vfs_opaque.handles.notify_watch, (ctx), (e), (callback), (private_data), (handle_p)))
 #define SMB_VFS_OPAQUE_CHFLAGS(conn, path, flags) ((conn)->vfs_opaque.ops.chflags((conn)->vfs_opaque.handles.chflags, (path), (flags)))
 #define SMB_VFS_OPAQUE_FILE_ID_CREATE(conn, dev, inode) ((conn)->vfs.ops_opaque.file_id_create((conn)->vfs_opaque.handles.file_id_create, (dev), (inode)))
+#define SMB_VFS_OPAQUE_STREAMINFO(conn, fsp, fname, mem_ctx, num_streams, streams) ((conn)->vfs_opaque.ops.streaminfo((conn)->vfs_opaque.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
 
 /* NT ACL operations. */
 #define SMB_VFS_OPAQUE_FGET_NT_ACL(fsp, security_info, ppdesc) ((fsp)->conn->vfs_opaque.ops.fget_nt_acl((fsp)->conn->vfs_opaque.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -257,6 +266,11 @@
 #define SMB_VFS_OPAQUE_AIO_ERROR(fsp,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_error_fn((fsp)->conn->vfs_opaque.handles.aio_error,(fsp),(aiocb)))
 #define SMB_VFS_OPAQUE_AIO_FSYNC(fsp,op,aiocb) ((fsp)->conn->vfs_opaque.ops.aio_fsync((fsp)->conn->vfs_opaque.handles.aio_fsync,(fsp),(op),(aiocb)))
 #define SMB_VFS_OPAQUE_AIO_SUSPEND(fsp,aiocb,n,ts) ((fsp)->conn->vfs_opaque.ops.aio_suspend((fsp)->conn->vfs_opaque.handles.aio_suspend,(fsp),(aiocb),(n),(ts)))
+#define SMB_VFS_OPAQUE_AIO_FORCE(fsp) ((fsp)->conn->vfs_opaque.ops.aio_force((fsp)->conn->vfs_opaque.handles.aio_force,(fsp)))
+
+/* Offline operations */
+#define SMB_VFS_OPAQUE_IS_OFFLINE(conn,path,sbuf) ((conn)->vfs_opaque.ops.is_offline((conn)->vfs_opaque.handles.is_offline,(path),(sbuf)))
+#define SMB_VFS_OPAQUE_SET_OFFLINE(conn,path) ((conn)->vfs_opaque.ops.set_offline((conn)->vfs_opaque.handles.set_offline,(path)))
 
 /*******************************************************************
  Don't access handle->vfs_next.ops.* directly!!!
@@ -264,7 +278,7 @@
  (Fixes should go also into the vfs_* and vfs_opaque_* macros!)
 ********************************************************************/
 
-/* Disk operations */    
+/* Disk operations */
 #define SMB_VFS_NEXT_CONNECT(handle, service, user) ((handle)->vfs_next.ops.connect_fn((handle)->vfs_next.handles.connect_hnd, (service), (user)))
 #define SMB_VFS_NEXT_DISCONNECT(handle) ((handle)->vfs_next.ops.disconnect((handle)->vfs_next.handles.disconnect))
 #define SMB_VFS_NEXT_DISK_FREE(handle, path, small_query, bsize, dfree ,dsize) ((handle)->vfs_next.ops.disk_free((handle)->vfs_next.handles.disk_free, (path), (small_query), (bsize), (dfree), (dsize)))
@@ -272,6 +286,7 @@
 #define SMB_VFS_NEXT_SET_QUOTA(handle, qtype, id, qt) ((handle)->vfs_next.ops.set_quota((handle)->vfs_next.handles.set_quota, (qtype), (id), (qt)))
 #define SMB_VFS_NEXT_GET_SHADOW_COPY_DATA(handle, fsp, shadow_copy_data ,labels) ((handle)->vfs_next.ops.get_shadow_copy_data((handle)->vfs_next.handles.get_shadow_copy_data,(fsp),(shadow_copy_data),(labels)))
 #define SMB_VFS_NEXT_STATVFS(handle, path, statbuf) ((handle)->vfs_next.ops.statvfs((handle)->vfs_next.handles.statvfs, (path), (statbuf)))
+#define SMB_VFS_NEXT_FS_CAPABILITIES(handle) ((handle)->vfs_next.ops.fs_capabilities((handle)->vfs_next.handles.fs_capabilities))
 
 /* Directory operations */
 #define SMB_VFS_NEXT_OPENDIR(handle, fname, mask, attr) ((handle)->vfs_next.ops.opendir((handle)->vfs_next.handles.opendir, (fname), (mask), (attr)))
@@ -283,7 +298,7 @@
 #define SMB_VFS_NEXT_MKDIR(handle, path, mode) ((handle)->vfs_next.ops.mkdir((handle)->vfs_next.handles.mkdir,(path), (mode)))
 #define SMB_VFS_NEXT_RMDIR(handle, path) ((handle)->vfs_next.ops.rmdir((handle)->vfs_next.handles.rmdir, (path)))
 #define SMB_VFS_NEXT_CLOSEDIR(handle, dir) ((handle)->vfs_next.ops.closedir((handle)->vfs_next.handles.closedir, dir))
-    
+
 /* File operations */
 #define SMB_VFS_NEXT_OPEN(handle, fname, fsp, flags, mode) (((handle)->vfs_next.ops.open)((handle)->vfs_next.handles.open, (fname), (fsp), (flags), (mode)))
 #define SMB_VFS_NEXT_CLOSE(handle, fsp, fd) ((handle)->vfs_next.ops.close_fn((handle)->vfs_next.handles.close_hnd, (fsp), (fd)))
@@ -321,6 +336,7 @@
 #define SMB_VFS_NEXT_NOTIFY_WATCH(conn, ctx, e, callback, private_data, handle_p) ((conn)->vfs_next.ops.notify_watch((conn)->vfs_next.handles.notify_watch, (ctx), (e), (callback), (private_data), (handle_p)))
 #define SMB_VFS_NEXT_CHFLAGS(handle, path, flags) ((handle)->vfs_next.ops.chflags((handle)->vfs_next.handles.chflags, (path), (flags)))
 #define SMB_VFS_NEXT_FILE_ID_CREATE(handle, dev, inode) ((handle)->vfs_next.ops.file_id_create((handle)->vfs_next.handles.file_id_create, (dev), (inode)))
+#define SMB_VFS_NEXT_STREAMINFO(handle, fsp, fname, mem_ctx, num_streams, streams) ((handle)->vfs.ops.streaminfo((handle)->vfs.handles.streaminfo, (fsp), (fname), (mem_ctx), (num_streams), (streams)))
 
 /* NT ACL operations. */
 #define SMB_VFS_NEXT_FGET_NT_ACL(handle, fsp, security_info, ppdesc) ((handle)->vfs_next.ops.fget_nt_acl((handle)->vfs_next.handles.fget_nt_acl, (fsp), (security_info), (ppdesc)))
@@ -377,5 +393,10 @@
 #define SMB_VFS_NEXT_AIO_ERROR(handle,fsp,aiocb) ((handle)->vfs_next.ops.aio_error_fn((handle)->vfs_next.handles.aio_error,(fsp),(aiocb)))
 #define SMB_VFS_NEXT_AIO_FSYNC(handle,fsp,op,aiocb) ((handle)->vfs_next.ops.aio_fsync((handle)->vfs_next.handles.aio_fsync,(fsp),(op),(aiocb)))
 #define SMB_VFS_NEXT_AIO_SUSPEND(handle,fsp,aiocb,n,ts) ((handle)->vfs_next.ops.aio_suspend((handle)->vfs_next.handles.aio_suspend,(fsp),(aiocb),(n),(ts)))
+#define SMB_VFS_NEXT_AIO_FORCE(handle,fsp) ((handle)->vfs_next.ops.aio_force((handle)->vfs_next.handles.aio_force,(fsp)))
+
+/* Offline operations */
+#define SMB_VFS_NEXT_IS_OFFLINE(handle,path,sbuf) ((handle)->vfs_next.ops.is_offline((handle)->vfs_next.handles.is_offline,(path),(sbuf)))
+#define SMB_VFS_NEXT_SET_OFFLINE(handle,path) ((handle)->vfs_next.ops.set_offline((handle)->vfs_next.handles.set_offline,(path)))
 
 #endif /* _VFS_MACROS_H */

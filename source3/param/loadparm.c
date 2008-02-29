@@ -9,6 +9,7 @@
    Copyright (C) Alexander Bokovoy 2002
    Copyright (C) Stefan (metze) Metzmacher 2002
    Copyright (C) Jim McDonough <jmcd@us.ibm.com> 2003
+   Copyright (C) Michael Adam 2008
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -51,6 +52,7 @@
  */
 
 #include "includes.h"
+#include "libnet/libnet.h"
 
 bool in_client = False;		/* Not in the client by default */
 bool bLoaded = False;
@@ -70,16 +72,13 @@ extern userdom_struct current_user_info;
 #define HOMES_NAME "homes"
 #endif
 
-/* the special value for the include parameter
- * to be interpreted not as a file name but to
- * trigger loading of the global smb.conf options
- * from registry. */
-#ifndef INCLUDE_REGISTRY_NAME
-#define INCLUDE_REGISTRY_NAME "registry"
-#endif
+static uint64_t conf_last_seqnum = 0;
+static struct libnet_conf_ctx *conf_ctx = NULL;
 
-static int regdb_last_seqnum = 0;
-static bool include_registry_globals = False;
+#define CONFIG_BACKEND_FILE 0
+#define CONFIG_BACKEND_REGISTRY 1
+
+static int config_backend = CONFIG_BACKEND_FILE;
 
 /* some helpful bits */
 #define LP_SNUM_OK(i) (((i) >= 0) && ((i) < iNumServices) && (ServicePtrs != NULL) && ServicePtrs[(i)]->valid)
@@ -104,6 +103,7 @@ struct _param_opt_struct {
  * This structure describes global (ie., server-wide) parameters.
  */
 typedef struct {
+	int ConfigBackend;
 	char *smb_ports;
 	char *dos_charset;
 	char *unix_charset;
@@ -246,6 +246,8 @@ typedef struct {
 	int ldap_ssl;
 	char *szLdapSuffix;
 	char *szLdapAdminDn;
+	int ldap_debug_level;
+	int ldap_debug_threshold;
 	int iAclCompat;
 	char *szCupsServer;
 	char *szIPrintServer;
@@ -418,6 +420,7 @@ typedef struct {
 	bool bRead_only;
 	bool bNo_set_dir;
 	bool bGuest_only;
+	bool bHidden;
 	bool bGuest_ok;
 	bool bPrint_ok;
 	bool bMap_system;
@@ -560,6 +563,7 @@ static service sDefault = {
 	True,			/* bRead_only */
 	True,			/* bNo_set_dir */
 	False,			/* bGuest_only */
+	False,			/* bHidden */
 	False,			/* bGuest_ok */
 	False,			/* bPrint_ok */
 	False,			/* bMap_system */
@@ -650,6 +654,7 @@ static bool handle_netbios_aliases( int snum, const char *pszParmValue, char **p
 static bool handle_netbios_scope( int snum, const char *pszParmValue, char **ptr );
 static bool handle_charset( int snum, const char *pszParmValue, char **ptr );
 static bool handle_printing( int snum, const char *pszParmValue, char **ptr);
+static bool handle_ldap_debug_level( int snum, const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -842,6 +847,14 @@ static const struct enum_list enum_map_to_guest[] = {
 	{-1, NULL}
 };
 
+/* Config backend options */
+
+static const struct enum_list enum_config_backend[] = {
+	{CONFIG_BACKEND_FILE, "file"},
+	{CONFIG_BACKEND_REGISTRY, "registry"},
+	{-1, NULL}
+};
+
 /* Note: We do not initialise the defaults union - it is not allowed in ANSI C
  *
  * The FLAG_HIDE is explicit. Paramters set this way do NOT appear in any edit
@@ -879,6 +892,8 @@ static struct parm_struct parm_table[] = {
 	{"server string", P_STRING, P_GLOBAL, &Globals.szServerString, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED }, 
 	{"interfaces", P_LIST, P_GLOBAL, &Globals.szInterfaces, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"bind interfaces only", P_BOOL, P_GLOBAL, &Globals.bBindInterfacesOnly, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD}, 
+
+	{"config backend", P_ENUM, P_GLOBAL, &Globals.ConfigBackend, NULL, enum_config_backend, FLAG_ADVANCED},
 
 	{N_("Security Options"), P_SEP, P_SEPARATOR}, 
 
@@ -958,6 +973,7 @@ static struct parm_struct parm_table[] = {
 	{"inherit owner", P_BOOL, P_LOCAL, &sDefault.bInheritOwner, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"guest only", P_BOOL, P_LOCAL, &sDefault.bGuest_only, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"only guest", P_BOOL, P_LOCAL, &sDefault.bGuest_only, NULL, NULL, FLAG_HIDE}, 
+	{"hidden", P_BOOL, P_LOCAL, &sDefault.bHidden, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT},
 
 	{"guest ok", P_BOOL, P_LOCAL, &sDefault.bGuest_ok, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT}, 
 	{"public", P_BOOL, P_LOCAL, &sDefault.bGuest_ok, NULL, NULL, FLAG_HIDE}, 
@@ -1215,14 +1231,18 @@ static struct parm_struct parm_table[] = {
 	{"ldap page size", P_INTEGER, P_GLOBAL, &Globals.ldap_page_size, NULL, NULL, FLAG_ADVANCED},
 	{"ldap user suffix", P_STRING, P_GLOBAL, &Globals.szLdapUserSuffix, NULL, NULL, FLAG_ADVANCED}, 
 
+	{"ldap debug level", P_INTEGER, P_GLOBAL, &Globals.ldap_debug_level, handle_ldap_debug_level, NULL, FLAG_ADVANCED},
+	{"ldap debug threshold", P_INTEGER, P_GLOBAL, &Globals.ldap_debug_threshold, NULL, NULL, FLAG_ADVANCED},
+
+
+	{N_("EventLog Options"), P_SEP, P_SEPARATOR}, 
+	{"eventlog list",  P_LIST, P_GLOBAL, &Globals.szEventLogs, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
+
 	{N_("Miscellaneous Options"), P_SEP, P_SEPARATOR}, 
 	{"add share command", P_STRING, P_GLOBAL, &Globals.szAddShareCommand, NULL, NULL, FLAG_ADVANCED}, 
 	{"change share command", P_STRING, P_GLOBAL, &Globals.szChangeShareCommand, NULL, NULL, FLAG_ADVANCED}, 
 	{"delete share command", P_STRING, P_GLOBAL, &Globals.szDeleteShareCommand, NULL, NULL, FLAG_ADVANCED}, 
 
-	{N_("EventLog Options"), P_SEP, P_SEPARATOR}, 
-	{"eventlog list",  P_LIST, P_GLOBAL, &Globals.szEventLogs, NULL, NULL, FLAG_ADVANCED | FLAG_GLOBAL | FLAG_SHARE}, 
-	
 	{"config file", P_STRING, P_GLOBAL, &Globals.szConfigFile, NULL, NULL, FLAG_HIDE}, 
 	{"preload", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED}, 
 	{"auto services", P_STRING, P_GLOBAL, &Globals.szAutoServices, NULL, NULL, FLAG_ADVANCED}, 
@@ -1293,6 +1313,8 @@ static struct parm_struct parm_table[] = {
 	{"vfs objects", P_LIST, P_LOCAL, &sDefault.szVfsObjects, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"vfs object", P_LIST, P_LOCAL, &sDefault.szVfsObjects, NULL, NULL, FLAG_HIDE}, 
 
+
+	{N_("MSDFS options"), P_SEP, P_SEPARATOR},
 
 	{"msdfs root", P_BOOL, P_LOCAL, &sDefault.bMSDfsRoot, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 	{"msdfs proxy", P_STRING, P_LOCAL, &sDefault.szMSDfsProxy, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
@@ -1527,6 +1549,8 @@ static void init_globals(bool first_time_only)
 	Globals.bLoadPrinters = True;
 	Globals.PrintcapCacheTime = 750; 	/* 12.5 minutes */
 
+	Globals.ConfigBackend = config_backend;
+
 	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
 	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
 	Globals.max_xmit = 0x4104;
@@ -1628,6 +1652,9 @@ static void init_globals(bool first_time_only)
 	Globals.ldap_timeout = LDAP_CONNECT_DEFAULT_TIMEOUT;
 	Globals.ldap_page_size = LDAP_PAGE_SIZE;
 
+	Globals.ldap_debug_level = 0;
+	Globals.ldap_debug_threshold = 10;
+
 	/* This is what we tell the afs client. in reality we set the token 
 	 * to never expire, though, when this runs out the afs client will 
 	 * forget the token. Set to 0 to get NEVERDATE.*/
@@ -1679,7 +1706,7 @@ static void init_globals(bool first_time_only)
 	Globals.bWinbindTrustedDomainsOnly = False;
 	Globals.bWinbindNestedGroups = True;
 	Globals.winbind_expand_groups = 1;
-	Globals.szWinbindNssInfo = str_list_make("template", NULL);
+	Globals.szWinbindNssInfo = str_list_make(NULL, "template", NULL);
 	Globals.bWinbindRefreshTickets = False;
 	Globals.bWinbindOfflineLogon = False;
 
@@ -1942,6 +1969,8 @@ FN_GLOBAL_BOOL(lp_ldap_delete_dn, &Globals.ldap_delete_dn)
 FN_GLOBAL_INTEGER(lp_ldap_replication_sleep, &Globals.ldap_replication_sleep)
 FN_GLOBAL_INTEGER(lp_ldap_timeout, &Globals.ldap_timeout)
 FN_GLOBAL_INTEGER(lp_ldap_page_size, &Globals.ldap_page_size)
+FN_GLOBAL_INTEGER(lp_ldap_debug_level, &Globals.ldap_debug_level)
+FN_GLOBAL_INTEGER(lp_ldap_debug_threshold, &Globals.ldap_debug_threshold)
 FN_GLOBAL_STRING(lp_add_share_cmd, &Globals.szAddShareCommand)
 FN_GLOBAL_STRING(lp_change_share_cmd, &Globals.szChangeShareCommand)
 FN_GLOBAL_STRING(lp_delete_share_cmd, &Globals.szDeleteShareCommand)
@@ -2046,6 +2075,7 @@ FN_GLOBAL_INTEGER(lp_oplock_break_wait_time, &Globals.oplock_break_wait_time)
 FN_GLOBAL_INTEGER(lp_lock_spin_time, &Globals.iLockSpinTime)
 FN_GLOBAL_INTEGER(lp_usershare_max_shares, &Globals.iUsershareMaxShares)
 FN_GLOBAL_CONST_STRING(lp_socket_options, &Globals.szSocketOptions)
+FN_GLOBAL_INTEGER(lp_config_backend, &Globals.ConfigBackend);
 
 FN_LOCAL_STRING(lp_preexec, szPreExec)
 FN_LOCAL_STRING(lp_postexec, szPostExec)
@@ -2110,6 +2140,7 @@ FN_LOCAL_BOOL(lp_readonly, bRead_only)
 FN_LOCAL_BOOL(lp_no_set_dir, bNo_set_dir)
 FN_LOCAL_BOOL(lp_guest_ok, bGuest_ok)
 FN_LOCAL_BOOL(lp_guest_only, bGuest_only)
+FN_LOCAL_BOOL(lp_hidden, bHidden)
 FN_LOCAL_BOOL(lp_print_ok, bPrint_ok)
 FN_LOCAL_BOOL(lp_map_hidden, bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
@@ -2224,8 +2255,7 @@ static param_opt_struct *get_parametrics(int snum, const char *type, const char 
 		data = ServicePtrs[snum]->param_opt;
 	}
     
-	asprintf(&param_key, "%s:%s", type, option);
-	if (!param_key) {
+	if (asprintf(&param_key, "%s:%s", type, option) == -1) {
 		DEBUG(0,("asprintf failed!\n"));
 		return NULL;
 	}
@@ -2384,7 +2414,7 @@ const char **lp_parm_string_list(int snum, const char *type, const char *option,
 		return (const char **)def;
 		
 	if (data->list==NULL) {
-		data->list = str_list_make(data->value, NULL);
+		data->list = str_list_make(NULL, data->value, NULL);
 	}
 
 	return (const char **)data->list;
@@ -2481,9 +2511,10 @@ static void free_service(service *pservice)
 				     PTR_DIFF(parm_table[i].ptr, &sDefault)));
 		else if (parm_table[i].type == P_LIST &&
 			 parm_table[i].p_class == P_LOCAL)
-			     str_list_free((char ***)
-			     		    (((char *)pservice) +
-					     PTR_DIFF(parm_table[i].ptr, &sDefault)));
+			     TALLOC_FREE(*((char ***)
+					   (((char *)pservice) +
+					    PTR_DIFF(parm_table[i].ptr,
+						     &sDefault))));
 	}
 
 	data = pservice->param_opt;
@@ -2493,7 +2524,7 @@ static void free_service(service *pservice)
 		DEBUG(5,("[%s = %s]\n", data->key, data->value));
 		string_free(&data->key);
 		string_free(&data->value);
-		str_list_free(&data->list);
+		TALLOC_FREE(data->list);
 		pdata = data->next;
 		SAFE_FREE(data);
 		data = pdata;
@@ -2553,7 +2584,7 @@ static int add_a_service(const service *pservice, const char *name)
 			while (data) {
 				string_free(&data->key);
 				string_free(&data->value);
-				str_list_free(&data->list);
+				TALLOC_FREE(data->list);
 				pdata = data->next;
 				SAFE_FREE(data);
 				data = pdata;
@@ -2747,6 +2778,7 @@ static bool lp_add_ipc(const char *ipc_name, bool guest_ok)
 	ServicePtrs[i]->bAvailable = True;
 	ServicePtrs[i]->bRead_only = True;
 	ServicePtrs[i]->bGuest_only = False;
+	ServicePtrs[i]->bHidden = True;
 	ServicePtrs[i]->bGuest_ok = guest_ok;
 	ServicePtrs[i]->bPrint_ok = False;
 	ServicePtrs[i]->bBrowseable = sDefault.bBrowseable;
@@ -3262,8 +3294,9 @@ static void copy_service(service * pserviceDest, service * pserviceSource,
 					strupper_m(*(char **)dest_ptr);
 					break;
 				case P_LIST:
-					str_list_free((char ***)dest_ptr);
-					str_list_copy((char ***)dest_ptr, *(const char ***)src_ptr);
+					TALLOC_FREE(*((char ***)dest_ptr));
+					str_list_copy(NULL, (char ***)dest_ptr,
+						      *(const char ***)src_ptr);
 					break;
 				default:
 					break;
@@ -3286,7 +3319,7 @@ static void copy_service(service * pserviceDest, service * pserviceSource,
 			/* If we already have same option, override it */
 			if (strcmp(pdata->key, data->key) == 0) {
 				string_free(&pdata->value);
-				str_list_free(&data->list);
+				TALLOC_FREE(data->list);
 				pdata->value = SMB_STRDUP(data->value);
 				not_added = False;
 				break;
@@ -3351,245 +3384,46 @@ bool service_ok(int iService)
 }
 
 /*
- * lp_regdb_open - regdb helper function 
- *
- * this should be considered an interim solution that becomes
- * superfluous once the registry code has been rewritten
- * do allow use of the tdb portion of the registry alone.
- *
- * in the meanwhile this provides a lean access
- * to the registry globals.
- */
-
-static struct tdb_wrap *lp_regdb_open(void)
-{
-	struct tdb_wrap *reg_tdb = NULL;
-	const char *vstring = "INFO/version";
-	uint32 vers_id;
-
-	become_root();
-	reg_tdb = tdb_wrap_open(NULL, state_path("registry.tdb"), 0, 
-				REG_TDB_FLAGS, O_RDWR, 0600);
-	unbecome_root();
-	if (!reg_tdb) {
-		DEBUG(1, ("lp_regdb_open: failed to open %s: %s\n",
-			 state_path("registry.tdb"), strerror(errno)));
-		goto done;
-	}
-	else {
-		DEBUG(10, ("lp_regdb_open: reg tdb opened.\n"));
-	}
-
-	vers_id = tdb_fetch_int32(reg_tdb->tdb, vstring);
-	if (vers_id != REGVER_V1) {
-		DEBUG(10, ("lp_regdb_open: INFO: registry tdb %s has wrong "
-			  "INFO/version (got %d, expected %d)\n",
-			  state_path("registry.tdb"), vers_id, REGVER_V1));
-		/* this is apparently not implemented in the tdb */
-	}
-
-done:
-	return reg_tdb;
-}
-
-/*
  * process_registry_globals
- *
- * this is the interim version of process_registry globals
- *
- * until we can do it as we would like using the api and only
- * using the tdb portion of the registry (see below),
- * this just provides the needed functionality of regdb_fetch_values
- * and regdb_unpack_values, circumventing any fancy stuff, to
- * give us access to the registry globals.
  */
 static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
 {
-	bool ret = False;
-	struct tdb_wrap *reg_tdb = NULL;
-	WERROR err;
-	char *keystr;
-	TDB_DATA data;
-	/* vars for the tdb unpack loop */
-	int len = 0;
-	int i;
-	int buflen;
-	uint8 *buf;
-	uint32 type;
-	uint32 size;
-	uint32 num_values = 0;
-	uint8 *data_p;
-	char * valstr;
-	struct registry_value *value = NULL;
+	WERROR werr;
+	char **param_names;
+	char **param_values;
+	uint32_t num_params;
+	uint32_t count;
+	TALLOC_CTX *mem_ctx = talloc_stackframe();
+	bool ret = false;
 
-	include_registry_globals = True;
-
-	ZERO_STRUCT(data);
-
-	reg_tdb = lp_regdb_open();
-	if (!reg_tdb) {
-		DEBUG(1, ("Error opening the registry!\n"));
-		goto done;
-	}
-
-	/* reg_tdb is from now on used as talloc ctx.
-	 * freeing it closes the tdb (if refcount is 0) */
-
-	keystr = talloc_asprintf(reg_tdb,"%s/%s/%s", REG_VALUE_PREFIX,
-				 KEY_SMBCONF, GLOBAL_NAME);
-	normalize_dbkey(keystr);
-
-	DEBUG(10, ("process_registry_globals: fetching key '%s'\n",
-		   keystr));
-
-	data = tdb_fetch_bystring(reg_tdb->tdb, keystr);
-	if (!data.dptr) {
-		ret = True;
-		goto done;
-	}
-
-	buf = data.dptr;
-	buflen = data.dsize;
-
-	/* unpack number of values */
-	len = tdb_unpack(buf, buflen, "d", &num_values);
-	DEBUG(10, ("process_registry_globals: got %d values from tdb\n",
-		   num_values));
-
-	/* unpack the values */
-	for (i=0; i < num_values; i++) {
-		fstring valname;
-		type = REG_NONE;
-		size = 0;
-		data_p = NULL;
-		len += tdb_unpack(buf+len, buflen-len, "fdB",
-				  valname,
-				  &type,
-				  &size,
-				  &data_p);
-		if (registry_smbconf_valname_forbidden(valname)) {
-			DEBUG(10, ("process_registry_globals: Ignoring "
-				   "parameter '%s' in registry.\n", valname));
-			continue;
+	if (conf_ctx == NULL) {
+		/* first time */
+		werr = libnet_conf_open(NULL, &conf_ctx);
+		if (!W_ERROR_IS_OK(werr)) {
+			goto done;
 		}
-		DEBUG(10, ("process_registry_globals: got value '%s'\n",
-			   valname));
-		if (size && data_p) {
-			err = registry_pull_value(reg_tdb,
-						  &value,
-						  (enum winreg_Type)type,
-						  data_p,
-						  size,
-						  size);
-			SAFE_FREE(data_p);
-			if (!W_ERROR_IS_OK(err)) {
-				goto done;
-			}
-			switch(type) {
-			case REG_DWORD:
-				valstr = talloc_asprintf(reg_tdb, "%d",
-							 value->v.dword);
-				pfunc(valname, valstr);
-				break;
-			case REG_SZ:
-				pfunc(valname, value->v.sz.str);
-				break;
-			default:
-				/* ignore other types */
-				break;
-			}
+	}
+
+	werr = libnet_conf_get_share(mem_ctx, conf_ctx, GLOBAL_NAME,
+				     &num_params, &param_names, &param_values);
+	if (!W_ERROR_IS_OK(werr)) {
+		goto done;
+	}
+
+	for (count = 0; count < num_params; count++) {
+		ret = pfunc(param_names[count], param_values[count]);
+		if (ret != true) {
+			goto done;
 		}
 	}
 
 	ret = pfunc("registry shares", "yes");
-	regdb_last_seqnum = tdb_get_seqnum(reg_tdb->tdb);
+	conf_last_seqnum = libnet_conf_get_seqnum(conf_ctx, NULL, NULL);
 
 done:
-	TALLOC_FREE(reg_tdb);
-	SAFE_FREE(data.dptr);
+	TALLOC_FREE(mem_ctx);
 	return ret;
 }
-
-#if 0
-/*
- * this is process_registry_globals as it _should_ be (roughly)
- * using the reg_api functions...
- *
- * We are *not* currently doing it like this due to the large
- * linker dependecies of the registry code (see above).
- */
-static bool process_registry_globals(bool (*pfunc)(const char *, const char *))
-{
-	bool ret = False;
-	TALLOC_CTX *ctx = NULL;
-	char *regpath = NULL;
-	WERROR werr = WERR_OK;
-	struct registry_key *key = NULL;
-	struct registry_value *value = NULL;
-	char *valname = NULL;
-	char *valstr = NULL;
-	uint32 idx = 0;
-	NT_USER_TOKEN *token = NULL;
-
-	ctx = talloc_init("process_registry_globals");
-	if (!ctx) {
-		smb_panic("Failed to create talloc context!");
-	}
-
-	include_registry_globals = True;
-
-	if (!registry_init_regdb()) {
-		DEBUG(1, ("Error initializing the registry.\n"));
-		goto done;
-	}
-
-	werr = ntstatus_to_werror(registry_create_admin_token(ctx, &token));
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Error creating admin token: %s\n",dos_errstr(werr)));
-		goto done;
-	}
-
-	regpath = talloc_asprintf(ctx,"%s\\%s", KEY_SMBCONF, GLOBAL_NAME);
-	werr = reg_open_path(ctx, regpath, REG_KEY_READ, token, &key);
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(1, ("Registry smbconf global section does not exist.\n"));
-		DEBUGADD(1, ("Error opening registry path '%s\\%s: %s\n",
-			     KEY_SMBCONF, GLOBAL_NAME, dos_errstr(werr)));
-		goto done;
-	}
-
-	for (idx = 0;
-	     W_ERROR_IS_OK(werr = reg_enumvalue(ctx, key, idx, &valname,
-			     			&value));
-	     idx++)
-	{
-		DEBUG(5, ("got global registry parameter '%s'\n", valname));
-		switch(value->type) {
-		case REG_DWORD:
-			valstr = talloc_asprintf(ctx, "%d", value->v.dword);
-			pfunc(valname, valstr);
-			TALLOC_FREE(valstr);
-			break;
-		case REG_SZ:
-			pfunc(valname, value->v.sz.str);
-			break;
-		default:
-			/* ignore other types */
-			break;
-		}
-		TALLOC_FREE(value);
-		TALLOC_FREE(valstr);
-	}
-
-	ret = pfunc("registry shares", "yes");
-
-	regdb_last_seqnum = regdb_get_seqnum();
-
-done:
-	talloc_destroy(ctx);
-	return ret;
-}
-#endif /* if 0 */
 
 static struct file_lists {
 	struct file_lists *next;
@@ -3637,9 +3471,12 @@ static void add_to_file_list(const char *fname, const char *subfname)
 	}
 }
 
-bool lp_include_registry_globals(void)
+/**
+ * Utility function for outsiders to check if we're running on registry.
+ */
+bool lp_config_backend_is_registry(void)
 {
-	return include_registry_globals;
+	return (lp_config_backend() == CONFIG_BACKEND_REGISTRY);
 }
 
 /*******************************************************************
@@ -3649,18 +3486,36 @@ bool lp_include_registry_globals(void)
 bool lp_file_list_changed(void)
 {
 	struct file_lists *f = file_lists;
-	struct tdb_wrap *reg_tdb = NULL;
 
  	DEBUG(6, ("lp_file_list_changed()\n"));
 
-	if (include_registry_globals) {
-		reg_tdb = lp_regdb_open();
-		if (reg_tdb && (regdb_last_seqnum != tdb_get_seqnum(reg_tdb->tdb)))
-		{
-			DEBUGADD(6, ("regdb seqnum changed: old = %d, new = %d\n",
-				    regdb_last_seqnum, tdb_get_seqnum(reg_tdb->tdb)));
-			TALLOC_FREE(reg_tdb);
+	if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
+		uint64_t conf_cur_seqnum;
+		if (conf_ctx == NULL) {
+			WERROR werr;
+			werr = libnet_conf_open(NULL, &conf_ctx);
+			if (!W_ERROR_IS_OK(werr)) {
+				DEBUG(0, ("error opening configuration: %s\n",
+					  dos_errstr(werr)));
+				return false;
+			}
+		}
+		conf_cur_seqnum = libnet_conf_get_seqnum(conf_ctx, NULL, NULL);
+		if (conf_last_seqnum != conf_cur_seqnum) {
+			DEBUGADD(6, ("regdb seqnum changed: old = %llu, "
+				     "new = %llu\n",
+				     (unsigned long long)conf_last_seqnum,
+				     (unsigned long long)conf_cur_seqnum));
 			return true;
+		} else {
+			/*
+			 * Don't check files when config_backend is registry.
+			 * Remove this to obtain checking of files even with
+			 * registry config backend. That would enable switching
+			 * off registry configuration by changing smb.conf even
+			 * without restarting smbd.
+			 */
+			return false;
 		}
 	}
 
@@ -3695,6 +3550,7 @@ bool lp_file_list_changed(void)
 	}
 	return (False);
 }
+
 
 /***************************************************************************
  Run standard_sub_basic on netbios name... needed because global_myname
@@ -3752,8 +3608,8 @@ static bool handle_netbios_scope(int snum, const char *pszParmValue, char **ptr)
 
 static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **ptr)
 {
-	str_list_free(&Globals.szNetbiosAliases);
-	Globals.szNetbiosAliases = str_list_make(pszParmValue, NULL);
+	TALLOC_FREE(Globals.szNetbiosAliases);
+	Globals.szNetbiosAliases = str_list_make(NULL, pszParmValue, NULL);
 	return set_netbios_aliases((const char **)Globals.szNetbiosAliases);
 }
 
@@ -3764,17 +3620,6 @@ static bool handle_netbios_aliases(int snum, const char *pszParmValue, char **pt
 static bool handle_include(int snum, const char *pszParmValue, char **ptr)
 {
 	char *fname;
-
-	if (strequal(pszParmValue, INCLUDE_REGISTRY_NAME)) {
-		if (bInGlobalSection) {
-			return process_registry_globals(do_parameter);
-		}
-		else {
-			DEBUG(1, ("\"include = registry\" only effective "
-				  "in %s section\n", GLOBAL_NAME));
-			return false;
-		}
-	}
 
 	fname = alloc_sub_basic(get_current_username(),
 				current_user_info.domain,
@@ -3829,6 +3674,13 @@ static bool handle_copy(int snum, const char *pszParmValue, char **ptr)
 
 	free_service(&serviceTemp);
 	return (bRetval);
+}
+
+static bool handle_ldap_debug_level(int snum, const char *pszParmValue, char **ptr)
+{
+	Globals.ldap_debug_level = lp_int(pszParmValue);
+	init_ldap_debugging();
+	return true;
 }
 
 /***************************************************************************
@@ -4088,7 +3940,7 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 				/* If we already have same option, override it */
 				if (strcmp(data->key, param_key) == 0) {
 					string_free(&data->value);
-					str_list_free(&data->list);
+					TALLOC_FREE(data->list);
 					data->value = SMB_STRDUP(pszParmValue);
 					not_added = False;
 					break;
@@ -4181,8 +4033,9 @@ bool lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			break;
 
 		case P_LIST:
-			str_list_free((char ***)parm_ptr);
-			*(char ***)parm_ptr = str_list_make(pszParmValue, NULL);
+			TALLOC_FREE(*((char ***)parm_ptr));
+			*(char ***)parm_ptr = str_list_make(
+				NULL, pszParmValue, NULL);
 			break;
 
 		case P_STRING:
@@ -4698,6 +4551,7 @@ static void lp_add_auto_services(char *str)
 	char *s;
 	char *p;
 	int homes;
+	char *saveptr;
 
 	if (!str)
 		return;
@@ -4708,7 +4562,8 @@ static void lp_add_auto_services(char *str)
 
 	homes = lp_servicenumber(HOMES_NAME);
 
-	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
+	for (p = strtok_r(s, LIST_SEP, &saveptr); p;
+	     p = strtok_r(NULL, LIST_SEP, &saveptr)) {
 		char *home;
 
 		if (lp_servicenumber(p) >= 0)
@@ -4799,8 +4654,9 @@ static void lp_save_defaults(void)
 			continue;
 		switch (parm_table[i].type) {
 			case P_LIST:
-				str_list_copy(&(parm_table[i].def.lvalue),
-					    *(const char ***)parm_table[i].ptr);
+				str_list_copy(
+					NULL, &(parm_table[i].def.lvalue),
+					*(const char ***)parm_table[i].ptr);
 				break;
 			case P_STRING:
 			case P_USTRING:
@@ -5634,7 +5490,7 @@ void gfree_loadparm(void)
 			string_free( (char**)parm_table[i].ptr );
 		}
 		else if (parm_table[i].type == P_LIST) {
-			str_list_free( (char***)parm_table[i].ptr );
+			TALLOC_FREE( *((char***)parm_table[i].ptr) );
 		}
 	}
 }
@@ -5653,15 +5509,6 @@ bool lp_load(const char *pszFname,
 	char *n2 = NULL;
 	bool bRetval;
 	param_opt_struct *data, *pdata;
-
-	n2 = alloc_sub_basic(get_current_username(),
-				current_user_info.domain,
-				pszFname);
-	if (!n2) {
-		smb_panic("lp_load: out of memory");
-	}
-
-	add_to_file_list(pszFname, n2);
 
 	bRetval = False;
 
@@ -5683,7 +5530,7 @@ bool lp_load(const char *pszFname,
 		while (data) {
 			string_free(&data->key);
 			string_free(&data->value);
-			str_list_free(&data->list);
+			TALLOC_FREE(data->list);
 			pdata = data->next;
 			SAFE_FREE(data);
 			data = pdata;
@@ -5691,17 +5538,48 @@ bool lp_load(const char *pszFname,
 		Globals.param_opt = NULL;
 	}
 
-	/* We get sections first, so have to start 'behind' to make up */
-	iServiceIndex = -1;
-	bRetval = pm_process(n2, do_section, do_parameter);
-	SAFE_FREE(n2);
-
-	/* finish up the last section */
-	DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
-	if (bRetval) {
-		if (iServiceIndex >= 0) {
-			bRetval = service_ok(iServiceIndex);
+	if (lp_config_backend() == CONFIG_BACKEND_FILE) {
+		n2 = alloc_sub_basic(get_current_username(),
+					current_user_info.domain,
+					pszFname);
+		if (!n2) {
+			smb_panic("lp_load: out of memory");
 		}
+
+		add_to_file_list(pszFname, n2);
+
+		/* We get sections first, so have to start 'behind' to make up */
+		iServiceIndex = -1;
+		bRetval = pm_process(n2, do_section, do_parameter);
+		SAFE_FREE(n2);
+
+		/* finish up the last section */
+		DEBUG(4, ("pm_process() returned %s\n", BOOLSTR(bRetval)));
+		if (bRetval) {
+			if (iServiceIndex >= 0) {
+				bRetval = service_ok(iServiceIndex);
+			}
+		}
+
+		if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
+			/*
+			 * We need to use this extra global variable here to
+			 * survive restart: init_globals usese this as a default
+			 * for ConfigBackend. Otherwise, init_globals would
+			 *  send us into an endless loop here.
+			 */
+			config_backend = CONFIG_BACKEND_REGISTRY;
+			/* start over */
+			init_globals(false);
+			return lp_load(pszFname, global_only, save_defaults,
+				       add_ipc, initialize_globals);
+		}
+	} else if (lp_config_backend() == CONFIG_BACKEND_REGISTRY) {
+		bRetval = process_registry_globals(do_parameter);
+	} else {
+		DEBUG(0, ("Illegal config  backend given: %d\n",
+			  lp_config_backend()));
+		bRetval = false;
 	}
 
 	lp_add_auto_services(lp_auto_services());

@@ -90,6 +90,17 @@ static int vfswrap_statvfs(struct vfs_handle_struct *handle,  const char *path, 
 	return sys_statvfs(path, statbuf);
 }
 
+static uint32_t vfswrap_fs_capabilities(struct vfs_handle_struct *handle)
+{
+#if defined(DARWINOS)
+	struct vfs_statvfs_struct statbuf;
+	ZERO_STRUCT(statbuf);
+	sys_statvfs(handle->conn->connectpath, &statbuf);
+	return statbuf.FsCapabilities;
+#endif
+	return FILE_CASE_SENSITIVE_SEARCH | FILE_CASE_PRESERVED_NAMES;
+}
+
 /* Directory operations */
 
 static SMB_STRUCT_DIR *vfswrap_opendir(vfs_handle_struct *handle,  const char *fname, const char *mask, uint32 attr)
@@ -457,7 +468,7 @@ static int vfswrap_rename(vfs_handle_struct *handle,  const char *oldname, const
 
 	START_PROFILE(syscall_rename);
 	result = rename(oldname, newname);
-	if (errno == EXDEV) {
+	if ((result == -1) && (errno == EXDEV)) {
 		/* Rename across filesystems needed. */
 		result = copy_reg(oldname, newname);
 	}
@@ -942,6 +953,62 @@ static struct file_id vfswrap_file_id_create(struct vfs_handle_struct *handle, S
 	return file_id_create_dev(dev, inode);
 }
 
+static NTSTATUS vfswrap_streaminfo(vfs_handle_struct *handle,
+				   struct files_struct *fsp,
+				   const char *fname,
+				   TALLOC_CTX *mem_ctx,
+				   unsigned int *pnum_streams,
+				   struct stream_struct **pstreams)
+{
+	SMB_STRUCT_STAT sbuf;
+	unsigned int num_streams = 0;
+	struct stream_struct *streams = NULL;
+	int ret;
+
+	if ((fsp != NULL) && (fsp->is_directory)) {
+		/*
+		 * No default streams on directories
+		 */
+		goto done;
+	}
+
+	if ((fsp != NULL) && (fsp->fh->fd != -1)) {
+		ret = SMB_VFS_FSTAT(fsp, &sbuf);
+	}
+	else {
+		ret = SMB_VFS_STAT(handle->conn, fname, &sbuf);
+	}
+
+	if (ret == -1) {
+		return map_nt_error_from_unix(errno);
+	}
+
+	if (S_ISDIR(sbuf.st_mode)) {
+		goto done;
+	}
+
+	streams = talloc(mem_ctx, struct stream_struct);
+
+	if (streams == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	streams->size = sbuf.st_size;
+	streams->alloc_size = get_allocation_size(handle->conn, fsp, &sbuf);
+
+	streams->name = talloc_strdup(streams, "::$DATA");
+	if (streams->name == NULL) {
+		TALLOC_FREE(streams);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	num_streams = 1;
+ done:
+	*pnum_streams = num_streams;
+	*pstreams = streams;
+	return NT_STATUS_OK;
+}
+
 static NTSTATUS vfswrap_fget_nt_acl(vfs_handle_struct *handle,
 				    files_struct *fsp,
 				    uint32 security_info, SEC_DESC **ppdesc)
@@ -1225,6 +1292,36 @@ static int vfswrap_aio_suspend(struct vfs_handle_struct *handle, struct files_st
 	return sys_aio_suspend(aiocb, n, timeout);
 }
 
+static bool vfswrap_aio_force(struct vfs_handle_struct *handle, struct files_struct *fsp)
+{
+	return false;
+}
+
+static bool vfswrap_is_offline(struct vfs_handle_struct *handle, const char *path, SMB_STRUCT_STAT *sbuf)
+{
+	if (ISDOT(path) || ISDOTDOT(path)) {
+		return false;
+	}
+
+	if (!lp_dmapi_support(SNUM(handle->conn)) || !dmapi_have_session()) {
+#if defined(ENOTSUP)
+		errno = ENOTSUP;
+#endif
+		return false;
+	}
+
+	return (dmapi_file_flags(path) & FILE_ATTRIBUTE_OFFLINE) != 0;
+}
+
+static int vfswrap_set_offline(struct vfs_handle_struct *handle, const char *path)
+{
+	/* We don't know how to set offline bit by default, needs to be overriden in the vfs modules */
+#if defined(ENOTSUP)
+	errno = ENOTSUP;
+#endif
+	return -1;
+}
+
 static vfs_op_tuple vfs_default_ops[] = {
 
 	/* Disk operations */
@@ -1242,6 +1339,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_get_shadow_copy_data), SMB_VFS_OP_GET_SHADOW_COPY_DATA,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_statvfs),	SMB_VFS_OP_STATVFS,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_fs_capabilities), SMB_VFS_OP_FS_CAPABILITIES,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* Directory operations */
@@ -1336,6 +1435,8 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_chflags),	SMB_VFS_OP_CHFLAGS,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_file_id_create),	SMB_VFS_OP_FILE_ID_CREATE,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_streaminfo),	SMB_VFS_OP_STREAMINFO,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* NT ACL operations. */
@@ -1440,6 +1541,14 @@ static vfs_op_tuple vfs_default_ops[] = {
 	{SMB_VFS_OP(vfswrap_aio_fsync),	SMB_VFS_OP_AIO_FSYNC,
 	 SMB_VFS_LAYER_OPAQUE},
 	{SMB_VFS_OP(vfswrap_aio_suspend),SMB_VFS_OP_AIO_SUSPEND,
+	 SMB_VFS_LAYER_OPAQUE},
+
+	{SMB_VFS_OP(vfswrap_aio_force), SMB_VFS_OP_AIO_FORCE,
+	 SMB_VFS_LAYER_OPAQUE},
+
+	{SMB_VFS_OP(vfswrap_is_offline),SMB_VFS_OP_IS_OFFLINE,
+	 SMB_VFS_LAYER_OPAQUE},
+	{SMB_VFS_OP(vfswrap_set_offline),SMB_VFS_OP_SET_OFFLINE,
 	 SMB_VFS_LAYER_OPAQUE},
 
 	/* Finish VFS operations definition */

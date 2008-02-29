@@ -57,7 +57,7 @@ extern const struct ndr_interface_table ndr_table_netlogon;
 
 #define NDR_NETR_NETRLOGONSETSERVICEBITS (0x16)
 
-#define NDR_NETR_NETRLOGONGETTRUSTRID (0x17)
+#define NDR_NETR_LOGONGETTRUSTRID (0x17)
 
 #define NDR_NETR_NETRLOGONCOMPUTESERVERDIGEST (0x18)
 
@@ -73,7 +73,7 @@ extern const struct ndr_interface_table ndr_table_netlogon;
 
 #define NDR_NETR_SERVERPASSWORDSET2 (0x1e)
 
-#define NDR_NETR_NETRSERVERPASSWORDGET (0x1f)
+#define NDR_NETR_SERVERPASSWORDGET (0x1f)
 
 #define NDR_NETR_NETRLOGONSENDTOSAM (0x20)
 
@@ -95,11 +95,11 @@ extern const struct ndr_interface_table ndr_table_netlogon;
 
 #define NDR_NETR_DSRDEREGISTERDNSHOSTRECORDS (0x29)
 
-#define NDR_NETR_NETRSERVERTRUSTPASSWORDSGET (0x2a)
+#define NDR_NETR_SERVERTRUSTPASSWORDSGET (0x2a)
 
 #define NDR_NETR_DSRGETFORESTTRUSTINFORMATION (0x2b)
 
-#define NDR_NETR_NETRGETFORESTTRUSTINFORMATION (0x2c)
+#define NDR_NETR_GETFORESTTRUSTINFORMATION (0x2c)
 
 #define NDR_NETR_LOGONSAMLOGONWITHFLAGS (0x2d)
 
@@ -109,6 +109,9 @@ extern const struct ndr_interface_table ndr_table_netlogon;
 void ndr_print_netr_UasInfo(struct ndr_print *ndr, const char *name, const struct netr_UasInfo *r);
 void ndr_print_netr_UasLogoffInfo(struct ndr_print *ndr, const char *name, const struct netr_UasLogoffInfo *r);
 void ndr_print_netr_AcctLockStr(struct ndr_print *ndr, const char *name, const struct netr_AcctLockStr *r);
+enum ndr_err_code ndr_push_netr_LogonParameterControl(struct ndr_push *ndr, int ndr_flags, uint32_t r);
+enum ndr_err_code ndr_pull_netr_LogonParameterControl(struct ndr_pull *ndr, int ndr_flags, uint32_t *r);
+void ndr_print_netr_LogonParameterControl(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_netr_IdentityInfo(struct ndr_print *ndr, const char *name, const struct netr_IdentityInfo *r);
 void ndr_print_netr_PasswordInfo(struct ndr_print *ndr, const char *name, const struct netr_PasswordInfo *r);
 void ndr_print_netr_ChallengeResponse(struct ndr_print *ndr, const char *name, const struct netr_ChallengeResponse *r);
@@ -116,9 +119,6 @@ void ndr_print_netr_NetworkInfo(struct ndr_print *ndr, const char *name, const s
 enum ndr_err_code ndr_push_netr_LogonLevel(struct ndr_push *ndr, int ndr_flags, const union netr_LogonLevel *r);
 enum ndr_err_code ndr_pull_netr_LogonLevel(struct ndr_pull *ndr, int ndr_flags, union netr_LogonLevel *r);
 void ndr_print_netr_LogonLevel(struct ndr_print *ndr, const char *name, const union netr_LogonLevel *r);
-enum ndr_err_code ndr_push_netr_GroupMembership(struct ndr_push *ndr, int ndr_flags, const struct netr_GroupMembership *r);
-enum ndr_err_code ndr_pull_netr_GroupMembership(struct ndr_pull *ndr, int ndr_flags, struct netr_GroupMembership *r);
-void ndr_print_netr_GroupMembership(struct ndr_print *ndr, const char *name, const struct netr_GroupMembership *r);
 enum ndr_err_code ndr_push_netr_UserSessionKey(struct ndr_push *ndr, int ndr_flags, const struct netr_UserSessionKey *r);
 enum ndr_err_code ndr_pull_netr_UserSessionKey(struct ndr_pull *ndr, int ndr_flags, struct netr_UserSessionKey *r);
 void ndr_print_netr_UserSessionKey(struct ndr_print *ndr, const char *name, const struct netr_UserSessionKey *r);
@@ -183,8 +183,11 @@ void ndr_print_netr_NETLOGON_INFO_3(struct ndr_print *ndr, const char *name, con
 void ndr_print_netr_CONTROL_QUERY_INFORMATION(struct ndr_print *ndr, const char *name, const union netr_CONTROL_QUERY_INFORMATION *r);
 void ndr_print_netr_LogonControlCode(struct ndr_print *ndr, const char *name, enum netr_LogonControlCode r);
 void ndr_print_netr_CONTROL_DATA_INFORMATION(struct ndr_print *ndr, const char *name, const union netr_CONTROL_DATA_INFORMATION *r);
-void ndr_print_netr_DsRGetDCNameInfo(struct ndr_print *ndr, const char *name, const struct netr_DsRGetDCNameInfo *r);
 void ndr_print_netr_Blob(struct ndr_print *ndr, const char *name, const struct netr_Blob *r);
+void ndr_print_netr_DsRGetDCName_flags(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_netr_DsRGetDCNameInfo_AddressType(struct ndr_print *ndr, const char *name, enum netr_DsRGetDCNameInfo_AddressType r);
+void ndr_print_netr_DsR_DcFlags(struct ndr_print *ndr, const char *name, uint32_t r);
+void ndr_print_netr_DsRGetDCNameInfo(struct ndr_print *ndr, const char *name, const struct netr_DsRGetDCNameInfo *r);
 void ndr_print_netr_BinaryString(struct ndr_print *ndr, const char *name, const struct netr_BinaryString *r);
 void ndr_print_netr_DomainQuery1(struct ndr_print *ndr, const char *name, const struct netr_DomainQuery1 *r);
 void ndr_print_netr_DomainQuery(struct ndr_print *ndr, const char *name, const union netr_DomainQuery *r);
@@ -192,10 +195,15 @@ void ndr_print_netr_DomainTrustInfo(struct ndr_print *ndr, const char *name, con
 void ndr_print_netr_DomainInfo1(struct ndr_print *ndr, const char *name, const struct netr_DomainInfo1 *r);
 void ndr_print_netr_DomainInfo(struct ndr_print *ndr, const char *name, const union netr_DomainInfo *r);
 void ndr_print_netr_CryptPassword(struct ndr_print *ndr, const char *name, const struct netr_CryptPassword *r);
+void ndr_print_netr_DsRAddressToSitenamesWCtr(struct ndr_print *ndr, const char *name, const struct netr_DsRAddressToSitenamesWCtr *r);
+void ndr_print_netr_DsRAddress(struct ndr_print *ndr, const char *name, const struct netr_DsRAddress *r);
 void ndr_print_netr_TrustFlags(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_netr_TrustType(struct ndr_print *ndr, const char *name, enum netr_TrustType r);
 void ndr_print_netr_TrustAttributes(struct ndr_print *ndr, const char *name, uint32_t r);
 void ndr_print_netr_DomainTrust(struct ndr_print *ndr, const char *name, const struct netr_DomainTrust *r);
+void ndr_print_netr_DomainTrustList(struct ndr_print *ndr, const char *name, const struct netr_DomainTrustList *r);
+void ndr_print_netr_DsRAddressToSitenamesExWCtr(struct ndr_print *ndr, const char *name, const struct netr_DsRAddressToSitenamesExWCtr *r);
+void ndr_print_DcSitesCtr(struct ndr_print *ndr, const char *name, const struct DcSitesCtr *r);
 void ndr_print_netr_LogonUasLogon(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonUasLogon *r);
 void ndr_print_netr_LogonUasLogoff(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonUasLogoff *r);
 void ndr_print_netr_LogonSamLogon(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonSamLogon *r);
@@ -215,11 +223,11 @@ void ndr_print_netr_ServerAuthenticate2(struct ndr_print *ndr, const char *name,
 void ndr_print_netr_DatabaseSync2(struct ndr_print *ndr, const char *name, int flags, const struct netr_DatabaseSync2 *r);
 void ndr_print_netr_DatabaseRedo(struct ndr_print *ndr, const char *name, int flags, const struct netr_DatabaseRedo *r);
 void ndr_print_netr_LogonControl2Ex(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonControl2Ex *r);
-void ndr_print_netr_NETRENUMERATETRUSTEDDOMAINS(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRENUMERATETRUSTEDDOMAINS *r);
+void ndr_print_netr_NetrEnumerateTrustedDomains(struct ndr_print *ndr, const char *name, int flags, const struct netr_NetrEnumerateTrustedDomains *r);
 void ndr_print_netr_DsRGetDCName(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetDCName *r);
 void ndr_print_netr_NETRLOGONDUMMYROUTINE1(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONDUMMYROUTINE1 *r);
 void ndr_print_netr_NETRLOGONSETSERVICEBITS(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONSETSERVICEBITS *r);
-void ndr_print_netr_NETRLOGONGETTRUSTRID(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONGETTRUSTRID *r);
+void ndr_print_netr_LogonGetTrustRid(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonGetTrustRid *r);
 void ndr_print_netr_NETRLOGONCOMPUTESERVERDIGEST(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONCOMPUTESERVERDIGEST *r);
 void ndr_print_netr_NETRLOGONCOMPUTECLIENTDIGEST(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONCOMPUTECLIENTDIGEST *r);
 void ndr_print_netr_ServerAuthenticate3(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerAuthenticate3 *r);
@@ -227,20 +235,20 @@ void ndr_print_netr_DsRGetDCNameEx(struct ndr_print *ndr, const char *name, int 
 void ndr_print_netr_DsRGetSiteName(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetSiteName *r);
 void ndr_print_netr_LogonGetDomainInfo(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonGetDomainInfo *r);
 void ndr_print_netr_ServerPasswordSet2(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerPasswordSet2 *r);
-void ndr_print_netr_NETRSERVERPASSWORDGET(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRSERVERPASSWORDGET *r);
+void ndr_print_netr_ServerPasswordGet(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerPasswordGet *r);
 void ndr_print_netr_NETRLOGONSENDTOSAM(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONSENDTOSAM *r);
-void ndr_print_netr_DSRADDRESSTOSITENAMESW(struct ndr_print *ndr, const char *name, int flags, const struct netr_DSRADDRESSTOSITENAMESW *r);
+void ndr_print_netr_DsRAddressToSitenamesW(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRAddressToSitenamesW *r);
 void ndr_print_netr_DsRGetDCNameEx2(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetDCNameEx2 *r);
 void ndr_print_netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRLOGONGETTIMESERVICEPARENTDOMAIN *r);
-void ndr_print_netr_NETRENUMERATETRUSTEDDOMAINSEX(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRENUMERATETRUSTEDDOMAINSEX *r);
-void ndr_print_netr_DSRADDRESSTOSITENAMESEXW(struct ndr_print *ndr, const char *name, int flags, const struct netr_DSRADDRESSTOSITENAMESEXW *r);
-void ndr_print_netr_DSRGETDCSITECOVERAGEW(struct ndr_print *ndr, const char *name, int flags, const struct netr_DSRGETDCSITECOVERAGEW *r);
+void ndr_print_netr_NetrEnumerateTrustedDomainsEx(struct ndr_print *ndr, const char *name, int flags, const struct netr_NetrEnumerateTrustedDomainsEx *r);
+void ndr_print_netr_DsRAddressToSitenamesExW(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRAddressToSitenamesExW *r);
+void ndr_print_netr_DsrGetDcSiteCoverageW(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsrGetDcSiteCoverageW *r);
 void ndr_print_netr_LogonSamLogonEx(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonSamLogonEx *r);
 void ndr_print_netr_DsrEnumerateDomainTrusts(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsrEnumerateDomainTrusts *r);
-void ndr_print_netr_DSRDEREGISTERDNSHOSTRECORDS(struct ndr_print *ndr, const char *name, int flags, const struct netr_DSRDEREGISTERDNSHOSTRECORDS *r);
-void ndr_print_netr_NETRSERVERTRUSTPASSWORDSGET(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRSERVERTRUSTPASSWORDSGET *r);
-void ndr_print_netr_DSRGETFORESTTRUSTINFORMATION(struct ndr_print *ndr, const char *name, int flags, const struct netr_DSRGETFORESTTRUSTINFORMATION *r);
-void ndr_print_netr_NETRGETFORESTTRUSTINFORMATION(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRGETFORESTTRUSTINFORMATION *r);
+void ndr_print_netr_DsrDeregisterDNSHostRecords(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsrDeregisterDNSHostRecords *r);
+void ndr_print_netr_ServerTrustPasswordsGet(struct ndr_print *ndr, const char *name, int flags, const struct netr_ServerTrustPasswordsGet *r);
+void ndr_print_netr_DsRGetForestTrustInformation(struct ndr_print *ndr, const char *name, int flags, const struct netr_DsRGetForestTrustInformation *r);
+void ndr_print_netr_GetForestTrustInformation(struct ndr_print *ndr, const char *name, int flags, const struct netr_GetForestTrustInformation *r);
 void ndr_print_netr_LogonSamLogonWithFlags(struct ndr_print *ndr, const char *name, int flags, const struct netr_LogonSamLogonWithFlags *r);
 void ndr_print_netr_NETRSERVERGETTRUSTINFO(struct ndr_print *ndr, const char *name, int flags, const struct netr_NETRSERVERGETTRUSTINFO *r);
 #endif /* _HEADER_NDR_netlogon */

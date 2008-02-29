@@ -890,6 +890,7 @@ static bool run_netbench(int client)
 	}
 
 	while (fgets(line, sizeof(line)-1, f)) {
+		char *saveptr;
 		line_count++;
 
 		line[strlen(line)-1] = 0;
@@ -899,9 +900,9 @@ static bool run_netbench(int client)
 		all_string_sub(line,"client1", cname, sizeof(line));
 
 		/* parse the command parameters */
-		params[0] = strtok(line," ");
+		params[0] = strtok_r(line, " ", &saveptr);
 		i = 0;
-		while (params[i]) params[++i] = strtok(NULL," ");
+		while (params[i]) params[++i] = strtok_r(NULL, " ", &saveptr);
 
 		params[i] = "";
 
@@ -5098,6 +5099,74 @@ static bool run_local_rbtree(int dummy)
 	return ret;
 }
 
+static bool test_stream_name(const char *fname, const char *expected_base,
+			     const char *expected_stream,
+			     NTSTATUS expected_status)
+{
+	NTSTATUS status;
+	char *base = NULL;
+	char *stream = NULL;
+
+	status = split_ntfs_stream_name(talloc_tos(), fname, &base, &stream);
+	if (!NT_STATUS_EQUAL(status, expected_status)) {
+		goto error;
+	}
+
+	if (!NT_STATUS_IS_OK(status)) {
+		return true;
+	}
+
+	if (base == NULL) goto error;
+
+	if (strcmp(expected_base, base) != 0) goto error;
+
+	if ((expected_stream != NULL) && (stream == NULL)) goto error;
+	if ((expected_stream == NULL) && (stream != NULL)) goto error;
+
+	if ((stream != NULL) && (strcmp(expected_stream, stream) != 0))
+		goto error;
+
+	TALLOC_FREE(base);
+	TALLOC_FREE(stream);
+	return true;
+
+ error:
+	d_fprintf(stderr, "test_stream(%s, %s, %s, %s)\n",
+		  fname, expected_base ? expected_base : "<NULL>",
+		  expected_stream ? expected_stream : "<NULL>",
+		  nt_errstr(expected_status));
+	d_fprintf(stderr, "-> base=%s, stream=%s, status=%s\n",
+		  base ? base : "<NULL>", stream ? stream : "<NULL>",
+		  nt_errstr(status));
+	TALLOC_FREE(base);
+	TALLOC_FREE(stream);
+	return false;
+}
+
+static bool run_local_stream_name(int dummy)
+{
+	bool ret = true;
+
+	ret &= test_stream_name(
+		"bla", "bla", NULL, NT_STATUS_OK);
+	ret &= test_stream_name(
+		"bla::$DATA", "bla", NULL, NT_STATUS_OK);
+	ret &= test_stream_name(
+		"bla:blub:", "bla", NULL, NT_STATUS_OBJECT_NAME_INVALID);
+	ret &= test_stream_name(
+		"bla::", NULL, NULL, NT_STATUS_OBJECT_NAME_INVALID);
+	ret &= test_stream_name(
+		"bla::123", "bla", NULL, NT_STATUS_OBJECT_NAME_INVALID);
+	ret &= test_stream_name(
+		"bla:$DATA", "bla", "$DATA:$DATA", NT_STATUS_OK);
+	ret &= test_stream_name(
+		"bla:x:$DATA", "bla", "x:$DATA", NT_STATUS_OK);
+	ret &= test_stream_name(
+		"bla:x", "bla", "x:$DATA", NT_STATUS_OK);
+
+	return ret;
+}
+
 static bool data_blob_equal(DATA_BLOB a, DATA_BLOB b)
 {
 	if (a.length != b.length) {
@@ -5328,6 +5397,7 @@ static struct {
 	{ "LOCAL-GENCACHE", run_local_gencache, 0},
 	{ "LOCAL-RBTREE", run_local_rbtree, 0},
 	{ "LOCAL-MEMCACHE", run_local_memcache, 0},
+	{ "LOCAL-STREAM-NAME", run_local_stream_name, 0},
 	{NULL, NULL, 0}};
 
 

@@ -74,7 +74,7 @@ void web_set_lang(const char *lang_string)
 	int lang_num, i;
 
 	/* build the lang list */
-	lang_list = str_list_make(lang_string, ", \t\r\n");
+	lang_list = str_list_make(talloc_tos(), lang_string, ", \t\r\n");
 	if (!lang_list) return;
 	
 	/* sort the list by priority */
@@ -100,7 +100,7 @@ void web_set_lang(const char *lang_string)
 		}
 		pl[i].string = SMB_STRDUP(lang_list[i]);
 	}
-	str_list_free(&lang_list);
+	TALLOC_FREE(lang_list);
 
 	qsort(pl, lang_num, sizeof(struct pri_list), &qsort_cmp_list);
 

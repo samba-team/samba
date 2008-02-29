@@ -105,8 +105,12 @@ int sock_exec(const char *prog)
 		close(fd[0]);
 		close(0);
 		close(1);
-		dup(fd[1]);
-		dup(fd[1]);
+		if (dup(fd[1]) == -1) {
+			exit(1);
+		}
+		if (dup(fd[1]) == -1) {
+			exit(1);
+		}
 		exit(system(prog));
 	}
 	close(fd[1]);

@@ -17,7 +17,7 @@ static bool api_svcctl_CloseServiceHandle(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CLOSESERVICEHANDLE];
 
-	r = talloc(NULL, struct svcctl_CloseServiceHandle);
+	r = talloc(talloc_tos(), struct svcctl_CloseServiceHandle);
 	if (r == NULL) {
 		return false;
 	}
@@ -92,7 +92,7 @@ static bool api_svcctl_ControlService(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CONTROLSERVICE];
 
-	r = talloc(NULL, struct svcctl_ControlService);
+	r = talloc(talloc_tos(), struct svcctl_ControlService);
 	if (r == NULL) {
 		return false;
 	}
@@ -172,7 +172,7 @@ static bool api_svcctl_DeleteService(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_DELETESERVICE];
 
-	r = talloc(NULL, struct svcctl_DeleteService);
+	r = talloc(talloc_tos(), struct svcctl_DeleteService);
 	if (r == NULL) {
 		return false;
 	}
@@ -245,7 +245,7 @@ static bool api_svcctl_LockServiceDatabase(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_LOCKSERVICEDATABASE];
 
-	r = talloc(NULL, struct svcctl_LockServiceDatabase);
+	r = talloc(talloc_tos(), struct svcctl_LockServiceDatabase);
 	if (r == NULL) {
 		return false;
 	}
@@ -325,7 +325,7 @@ static bool api_svcctl_QueryServiceObjectSecurity(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICEOBJECTSECURITY];
 
-	r = talloc(NULL, struct svcctl_QueryServiceObjectSecurity);
+	r = talloc(talloc_tos(), struct svcctl_QueryServiceObjectSecurity);
 	if (r == NULL) {
 		return false;
 	}
@@ -350,6 +350,19 @@ static bool api_svcctl_QueryServiceObjectSecurity(pipes_struct *p)
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(svcctl_QueryServiceObjectSecurity, r);
+	}
+
+	ZERO_STRUCT(r->out);
+	r->out.buffer = talloc_zero_array(r, uint8_t, r->in.buffer_size);
+	if (r->out.buffer == NULL) {
+		talloc_free(r);
+		return false;
+	}
+
+	r->out.needed = talloc_zero(r, uint32_t);
+	if (r->out.needed == NULL) {
+		talloc_free(r);
+		return false;
 	}
 
 	r->out.result = _svcctl_QueryServiceObjectSecurity(p, r);
@@ -398,7 +411,7 @@ static bool api_svcctl_SetServiceObjectSecurity(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SETSERVICEOBJECTSECURITY];
 
-	r = talloc(NULL, struct svcctl_SetServiceObjectSecurity);
+	r = talloc(talloc_tos(), struct svcctl_SetServiceObjectSecurity);
 	if (r == NULL) {
 		return false;
 	}
@@ -471,7 +484,7 @@ static bool api_svcctl_QueryServiceStatus(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICESTATUS];
 
-	r = talloc(NULL, struct svcctl_QueryServiceStatus);
+	r = talloc(talloc_tos(), struct svcctl_QueryServiceStatus);
 	if (r == NULL) {
 		return false;
 	}
@@ -551,7 +564,7 @@ static bool api_svcctl_SetServiceStatus(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SETSERVICESTATUS];
 
-	r = talloc(NULL, struct svcctl_SetServiceStatus);
+	r = talloc(talloc_tos(), struct svcctl_SetServiceStatus);
 	if (r == NULL) {
 		return false;
 	}
@@ -624,7 +637,7 @@ static bool api_svcctl_UnlockServiceDatabase(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_UNLOCKSERVICEDATABASE];
 
-	r = talloc(NULL, struct svcctl_UnlockServiceDatabase);
+	r = talloc(talloc_tos(), struct svcctl_UnlockServiceDatabase);
 	if (r == NULL) {
 		return false;
 	}
@@ -699,7 +712,7 @@ static bool api_svcctl_NotifyBootConfigStatus(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_NOTIFYBOOTCONFIGSTATUS];
 
-	r = talloc(NULL, struct svcctl_NotifyBootConfigStatus);
+	r = talloc(talloc_tos(), struct svcctl_NotifyBootConfigStatus);
 	if (r == NULL) {
 		return false;
 	}
@@ -772,7 +785,7 @@ static bool api_svcctl_SCSetServiceBitsW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SCSETSERVICEBITSW];
 
-	r = talloc(NULL, struct svcctl_SCSetServiceBitsW);
+	r = talloc(talloc_tos(), struct svcctl_SCSetServiceBitsW);
 	if (r == NULL) {
 		return false;
 	}
@@ -845,7 +858,7 @@ static bool api_svcctl_ChangeServiceConfigW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CHANGESERVICECONFIGW];
 
-	r = talloc(NULL, struct svcctl_ChangeServiceConfigW);
+	r = talloc(talloc_tos(), struct svcctl_ChangeServiceConfigW);
 	if (r == NULL) {
 		return false;
 	}
@@ -925,7 +938,7 @@ static bool api_svcctl_CreateServiceW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CREATESERVICEW];
 
-	r = talloc(NULL, struct svcctl_CreateServiceW);
+	r = talloc(talloc_tos(), struct svcctl_CreateServiceW);
 	if (r == NULL) {
 		return false;
 	}
@@ -1006,7 +1019,7 @@ static bool api_svcctl_EnumDependentServicesW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMDEPENDENTSERVICESW];
 
-	r = talloc(NULL, struct svcctl_EnumDependentServicesW);
+	r = talloc(talloc_tos(), struct svcctl_EnumDependentServicesW);
 	if (r == NULL) {
 		return false;
 	}
@@ -1098,7 +1111,7 @@ static bool api_svcctl_EnumServicesStatusW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMSERVICESSTATUSW];
 
-	r = talloc(NULL, struct svcctl_EnumServicesStatusW);
+	r = talloc(talloc_tos(), struct svcctl_EnumServicesStatusW);
 	if (r == NULL) {
 		return false;
 	}
@@ -1191,7 +1204,7 @@ static bool api_svcctl_OpenSCManagerW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_OPENSCMANAGERW];
 
-	r = talloc(NULL, struct svcctl_OpenSCManagerW);
+	r = talloc(talloc_tos(), struct svcctl_OpenSCManagerW);
 	if (r == NULL) {
 		return false;
 	}
@@ -1271,7 +1284,7 @@ static bool api_svcctl_OpenServiceW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_OPENSERVICEW];
 
-	r = talloc(NULL, struct svcctl_OpenServiceW);
+	r = talloc(talloc_tos(), struct svcctl_OpenServiceW);
 	if (r == NULL) {
 		return false;
 	}
@@ -1351,7 +1364,7 @@ static bool api_svcctl_QueryServiceConfigW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICECONFIGW];
 
-	r = talloc(NULL, struct svcctl_QueryServiceConfigW);
+	r = talloc(talloc_tos(), struct svcctl_QueryServiceConfigW);
 	if (r == NULL) {
 		return false;
 	}
@@ -1437,7 +1450,7 @@ static bool api_svcctl_QueryServiceLockStatusW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICELOCKSTATUSW];
 
-	r = talloc(NULL, struct svcctl_QueryServiceLockStatusW);
+	r = talloc(talloc_tos(), struct svcctl_QueryServiceLockStatusW);
 	if (r == NULL) {
 		return false;
 	}
@@ -1523,7 +1536,7 @@ static bool api_svcctl_StartServiceW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_STARTSERVICEW];
 
-	r = talloc(NULL, struct svcctl_StartServiceW);
+	r = talloc(talloc_tos(), struct svcctl_StartServiceW);
 	if (r == NULL) {
 		return false;
 	}
@@ -1596,7 +1609,7 @@ static bool api_svcctl_GetServiceDisplayNameW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETSERVICEDISPLAYNAMEW];
 
-	r = talloc(NULL, struct svcctl_GetServiceDisplayNameW);
+	r = talloc(talloc_tos(), struct svcctl_GetServiceDisplayNameW);
 	if (r == NULL) {
 		return false;
 	}
@@ -1677,7 +1690,7 @@ static bool api_svcctl_GetServiceKeyNameW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETSERVICEKEYNAMEW];
 
-	r = talloc(NULL, struct svcctl_GetServiceKeyNameW);
+	r = talloc(talloc_tos(), struct svcctl_GetServiceKeyNameW);
 	if (r == NULL) {
 		return false;
 	}
@@ -1758,7 +1771,7 @@ static bool api_svcctl_SCSetServiceBitsA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SCSETSERVICEBITSA];
 
-	r = talloc(NULL, struct svcctl_SCSetServiceBitsA);
+	r = talloc(talloc_tos(), struct svcctl_SCSetServiceBitsA);
 	if (r == NULL) {
 		return false;
 	}
@@ -1831,7 +1844,7 @@ static bool api_svcctl_ChangeServiceConfigA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CHANGESERVICECONFIGA];
 
-	r = talloc(NULL, struct svcctl_ChangeServiceConfigA);
+	r = talloc(talloc_tos(), struct svcctl_ChangeServiceConfigA);
 	if (r == NULL) {
 		return false;
 	}
@@ -1911,7 +1924,7 @@ static bool api_svcctl_CreateServiceA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CREATESERVICEA];
 
-	r = talloc(NULL, struct svcctl_CreateServiceA);
+	r = talloc(talloc_tos(), struct svcctl_CreateServiceA);
 	if (r == NULL) {
 		return false;
 	}
@@ -1991,7 +2004,7 @@ static bool api_svcctl_EnumDependentServicesA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMDEPENDENTSERVICESA];
 
-	r = talloc(NULL, struct svcctl_EnumDependentServicesA);
+	r = talloc(talloc_tos(), struct svcctl_EnumDependentServicesA);
 	if (r == NULL) {
 		return false;
 	}
@@ -2083,7 +2096,7 @@ static bool api_svcctl_EnumServicesStatusA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMSERVICESSTATUSA];
 
-	r = talloc(NULL, struct svcctl_EnumServicesStatusA);
+	r = talloc(talloc_tos(), struct svcctl_EnumServicesStatusA);
 	if (r == NULL) {
 		return false;
 	}
@@ -2176,7 +2189,7 @@ static bool api_svcctl_OpenSCManagerA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_OPENSCMANAGERA];
 
-	r = talloc(NULL, struct svcctl_OpenSCManagerA);
+	r = talloc(talloc_tos(), struct svcctl_OpenSCManagerA);
 	if (r == NULL) {
 		return false;
 	}
@@ -2256,7 +2269,7 @@ static bool api_svcctl_OpenServiceA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_OPENSERVICEA];
 
-	r = talloc(NULL, struct svcctl_OpenServiceA);
+	r = talloc(talloc_tos(), struct svcctl_OpenServiceA);
 	if (r == NULL) {
 		return false;
 	}
@@ -2329,7 +2342,7 @@ static bool api_svcctl_QueryServiceConfigA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICECONFIGA];
 
-	r = talloc(NULL, struct svcctl_QueryServiceConfigA);
+	r = talloc(talloc_tos(), struct svcctl_QueryServiceConfigA);
 	if (r == NULL) {
 		return false;
 	}
@@ -2415,7 +2428,7 @@ static bool api_svcctl_QueryServiceLockStatusA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICELOCKSTATUSA];
 
-	r = talloc(NULL, struct svcctl_QueryServiceLockStatusA);
+	r = talloc(talloc_tos(), struct svcctl_QueryServiceLockStatusA);
 	if (r == NULL) {
 		return false;
 	}
@@ -2501,7 +2514,7 @@ static bool api_svcctl_StartServiceA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_STARTSERVICEA];
 
-	r = talloc(NULL, struct svcctl_StartServiceA);
+	r = talloc(talloc_tos(), struct svcctl_StartServiceA);
 	if (r == NULL) {
 		return false;
 	}
@@ -2574,7 +2587,7 @@ static bool api_svcctl_GetServiceDisplayNameA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETSERVICEDISPLAYNAMEA];
 
-	r = talloc(NULL, struct svcctl_GetServiceDisplayNameA);
+	r = talloc(talloc_tos(), struct svcctl_GetServiceDisplayNameA);
 	if (r == NULL) {
 		return false;
 	}
@@ -2655,7 +2668,7 @@ static bool api_svcctl_GetServiceKeyNameA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETSERVICEKEYNAMEA];
 
-	r = talloc(NULL, struct svcctl_GetServiceKeyNameA);
+	r = talloc(talloc_tos(), struct svcctl_GetServiceKeyNameA);
 	if (r == NULL) {
 		return false;
 	}
@@ -2736,7 +2749,7 @@ static bool api_svcctl_GetCurrentGroupeStateW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_GETCURRENTGROUPESTATEW];
 
-	r = talloc(NULL, struct svcctl_GetCurrentGroupeStateW);
+	r = talloc(talloc_tos(), struct svcctl_GetCurrentGroupeStateW);
 	if (r == NULL) {
 		return false;
 	}
@@ -2809,7 +2822,7 @@ static bool api_svcctl_EnumServiceGroupW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_ENUMSERVICEGROUPW];
 
-	r = talloc(NULL, struct svcctl_EnumServiceGroupW);
+	r = talloc(talloc_tos(), struct svcctl_EnumServiceGroupW);
 	if (r == NULL) {
 		return false;
 	}
@@ -2882,7 +2895,7 @@ static bool api_svcctl_ChangeServiceConfig2A(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CHANGESERVICECONFIG2A];
 
-	r = talloc(NULL, struct svcctl_ChangeServiceConfig2A);
+	r = talloc(talloc_tos(), struct svcctl_ChangeServiceConfig2A);
 	if (r == NULL) {
 		return false;
 	}
@@ -2955,7 +2968,7 @@ static bool api_svcctl_ChangeServiceConfig2W(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_CHANGESERVICECONFIG2W];
 
-	r = talloc(NULL, struct svcctl_ChangeServiceConfig2W);
+	r = talloc(talloc_tos(), struct svcctl_ChangeServiceConfig2W);
 	if (r == NULL) {
 		return false;
 	}
@@ -3028,7 +3041,7 @@ static bool api_svcctl_QueryServiceConfig2A(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICECONFIG2A];
 
-	r = talloc(NULL, struct svcctl_QueryServiceConfig2A);
+	r = talloc(talloc_tos(), struct svcctl_QueryServiceConfig2A);
 	if (r == NULL) {
 		return false;
 	}
@@ -3114,7 +3127,7 @@ static bool api_svcctl_QueryServiceConfig2W(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICECONFIG2W];
 
-	r = talloc(NULL, struct svcctl_QueryServiceConfig2W);
+	r = talloc(talloc_tos(), struct svcctl_QueryServiceConfig2W);
 	if (r == NULL) {
 		return false;
 	}
@@ -3200,7 +3213,7 @@ static bool api_svcctl_QueryServiceStatusEx(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_QUERYSERVICESTATUSEX];
 
-	r = talloc(NULL, struct svcctl_QueryServiceStatusEx);
+	r = talloc(talloc_tos(), struct svcctl_QueryServiceStatusEx);
 	if (r == NULL) {
 		return false;
 	}
@@ -3286,7 +3299,7 @@ static bool api_EnumServicesStatusExA(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_ENUMSERVICESSTATUSEXA];
 
-	r = talloc(NULL, struct EnumServicesStatusExA);
+	r = talloc(talloc_tos(), struct EnumServicesStatusExA);
 	if (r == NULL) {
 		return false;
 	}
@@ -3385,7 +3398,7 @@ static bool api_EnumServicesStatusExW(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_ENUMSERVICESSTATUSEXW];
 
-	r = talloc(NULL, struct EnumServicesStatusExW);
+	r = talloc(talloc_tos(), struct EnumServicesStatusExW);
 	if (r == NULL) {
 		return false;
 	}
@@ -3484,7 +3497,7 @@ static bool api_svcctl_SCSendTSMessage(pipes_struct *p)
 
 	call = &ndr_table_svcctl.calls[NDR_SVCCTL_SCSENDTSMESSAGE];
 
-	r = talloc(NULL, struct svcctl_SCSendTSMessage);
+	r = talloc(talloc_tos(), struct svcctl_SCSendTSMessage);
 	if (r == NULL) {
 		return false;
 	}

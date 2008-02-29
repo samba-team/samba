@@ -101,7 +101,7 @@ static int net_dom_unjoin(int argc, const char **argv)
 	status = NetUnjoinDomain(server_name, account, password, unjoin_flags);
 	if (status != 0) {
 		printf("Failed to unjoin domain: %s\n",
-			libnetapi_errstr(status));
+			libnetapi_get_error_string(ctx, status));
 		goto done;
 	}
 
@@ -215,7 +215,7 @@ static int net_dom_join(int argc, const char **argv)
 			       Account, password, join_flags);
 	if (status != 0) {
 		printf("Failed to join domain: %s\n",
-			libnetapi_errstr(status));
+			libnetapi_get_error_string(ctx, status));
 		goto done;
 	}
 

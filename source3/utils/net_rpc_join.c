@@ -3,6 +3,7 @@
    Distributed SMB/CIFS Server Management Utility 
    Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
    Copyright (C) Tim Potter     2001
+   Copyright (C) 2008 Guenther Deschner
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,7 +46,7 @@ NTSTATUS net_rpc_join_ok(const char *domain, const char *server,
 {
 	enum security_types sec;
 	unsigned int conn_flags = NET_FLAGS_PDC;
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|NETLOGON_NEG_SCHANNEL;
 	struct cli_state *cli = NULL;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 	struct rpc_pipe_client *netlogon_pipe = NULL;
@@ -132,7 +133,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	struct cli_state *cli;
 	TALLOC_CTX *mem_ctx;
         uint32 acb_info = ACB_WSTRUST;
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS|(lp_client_schannel() ? NETLOGON_NEG_SCHANNEL : 0);
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS|(lp_client_schannel() ? NETLOGON_NEG_SCHANNEL : 0);
 	uint32 sec_channel_type;
 	struct rpc_pipe_client *pipe_hnd = NULL;
 
@@ -146,20 +147,21 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	char *clear_trust_password = NULL;
 	uchar pwbuf[516];
-	SAM_USERINFO_CTR ctr;
-	SAM_USER_INFO_24 p24;
-	SAM_USER_INFO_16 p16;
 	uchar md4_trust_password[16];
+	union samr_UserInfo set_info;
 
 	/* Misc */
 
 	NTSTATUS result;
 	int retval = 1;
 	const char *domain = NULL;
-	uint32 num_rids, *name_types, *user_rids;
-	uint32 flags = 0x3e8;
 	char *acct_name;
-	const char *const_acct_name;
+	struct lsa_String lsa_acct_name;
+	uint32 acct_flags=0;
+	uint32_t access_granted = 0;
+	union lsa_PolicyInformation *info = NULL;
+	struct samr_Ids user_rids;
+	struct samr_Ids name_types;
 
 	/* check what type of join */
 	if (argc >= 0) {
@@ -209,9 +211,14 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 					  &lsa_pol),
 		      "error opening lsa policy handle");
 
-	CHECK_RPC_ERR(rpccli_lsa_query_info_policy(pipe_hnd, mem_ctx, &lsa_pol,
-						5, &domain, &domain_sid),
+	CHECK_RPC_ERR(rpccli_lsa_QueryInfoPolicy(pipe_hnd, mem_ctx,
+						 &lsa_pol,
+						 LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+						 &info),
 		      "error querying info policy");
+
+	domain = info->account_domain.name.string;
+	domain_sid = info->account_domain.sid;
 
 	rpccli_lsa_Close(pipe_hnd, mem_ctx, &lsa_pol);
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
@@ -230,15 +237,18 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		goto done;
 	}
 
-	CHECK_RPC_ERR(rpccli_samr_connect(pipe_hnd, mem_ctx, 
-				       SEC_RIGHTS_MAXIMUM_ALLOWED,
-				       &sam_pol),
+	CHECK_RPC_ERR(rpccli_samr_Connect2(pipe_hnd, mem_ctx,
+					   pipe_hnd->cli->desthost,
+					   SEC_RIGHTS_MAXIMUM_ALLOWED,
+					   &sam_pol),
 		      "could not connect to SAM database");
 
-	
-	CHECK_RPC_ERR(rpccli_samr_open_domain(pipe_hnd, mem_ctx, &sam_pol,
-					   SEC_RIGHTS_MAXIMUM_ALLOWED,
-					   domain_sid, &domain_pol),
+
+	CHECK_RPC_ERR(rpccli_samr_OpenDomain(pipe_hnd, mem_ctx,
+					     &sam_pol,
+					     SEC_RIGHTS_MAXIMUM_ALLOWED,
+					     domain_sid,
+					     &domain_pol),
 		      "could not open domain");
 
 	/* Create domain user */
@@ -247,12 +257,25 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 		goto done;
 	}
 	strlower_m(acct_name);
-	const_acct_name = acct_name;
 
-	result = rpccli_samr_create_dom_user(pipe_hnd, mem_ctx, &domain_pol,
-					  acct_name, acb_info,
-					  0xe005000b, &user_pol, 
-					  &user_rid);
+	init_lsa_String(&lsa_acct_name, acct_name);
+
+	acct_flags = SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
+		     SEC_STD_WRITE_DAC | SEC_STD_DELETE |
+		     SAMR_USER_ACCESS_SET_PASSWORD |
+		     SAMR_USER_ACCESS_GET_ATTRIBUTES |
+		     SAMR_USER_ACCESS_SET_ATTRIBUTES;
+
+	DEBUG(10, ("Creating account with flags: %d\n",acct_flags));
+
+	result = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
+					 &domain_pol,
+					 &lsa_acct_name,
+					 acb_info,
+					 acct_flags,
+					 &user_pol,
+					 &access_granted,
+					 &user_rid);
 
 	if (!NT_STATUS_IS_OK(result) && 
 	    !NT_STATUS_EQUAL(result, NT_STATUS_USER_EXISTS)) {
@@ -271,30 +294,33 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* We *must* do this.... don't ask... */
 
 	if (NT_STATUS_IS_OK(result)) {
-		rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+		rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	}
 
-	CHECK_RPC_ERR_DEBUG(rpccli_samr_lookup_names(pipe_hnd, mem_ctx,
-						  &domain_pol, flags,
-						  1, &const_acct_name, 
-						  &num_rids,
-						  &user_rids, &name_types),
+	CHECK_RPC_ERR_DEBUG(rpccli_samr_LookupNames(pipe_hnd, mem_ctx,
+						    &domain_pol,
+						    1,
+						    &lsa_acct_name,
+						    &user_rids,
+						    &name_types),
 			    ("error looking up rid for user %s: %s\n",
 			     acct_name, nt_errstr(result)));
 
-	if (name_types[0] != SID_NAME_USER) {
-		DEBUG(0, ("%s is not a user account (type=%d)\n", acct_name, name_types[0]));
+	if (name_types.ids[0] != SID_NAME_USER) {
+		DEBUG(0, ("%s is not a user account (type=%d)\n", acct_name, name_types.ids[0]));
 		goto done;
 	}
 
-	user_rid = user_rids[0];
-		
+	user_rid = user_rids.ids[0];
+
 	/* Open handle on user */
 
 	CHECK_RPC_ERR_DEBUG(
-		rpccli_samr_open_user(pipe_hnd, mem_ctx, &domain_pol,
-				   SEC_RIGHTS_MAXIMUM_ALLOWED,
-				   user_rid, &user_pol),
+		rpccli_samr_OpenUser(pipe_hnd, mem_ctx,
+				     &domain_pol,
+				     SEC_RIGHTS_MAXIMUM_ALLOWED,
+				     user_rid,
+				     &user_pol),
 		("could not re-open existing user %s: %s\n",
 		 acct_name, nt_errstr(result)));
 	
@@ -311,16 +337,15 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Set password on machine account */
 
-	ZERO_STRUCT(ctr);
-	ZERO_STRUCT(p24);
+	init_samr_user_info24(&set_info.info24, pwbuf, 24);
 
-	init_sam_user_info24(&p24, (char *)pwbuf,24);
+	SamOEMhashBlob(set_info.info24.password.data, 516,
+		       &cli->user_session_key);
 
-	ctr.switch_value = 24;
-	ctr.info.id24 = &p24;
-
-	CHECK_RPC_ERR(rpccli_samr_set_userinfo(pipe_hnd, mem_ctx, &user_pol, 24, 
-					    &cli->user_session_key, &ctr),
+	CHECK_RPC_ERR(rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+					       &user_pol,
+					       24,
+					       &set_info),
 		      "error setting trust account password");
 
 	/* Why do we have to try to (re-)set the ACB to be the same as what
@@ -332,19 +357,17 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	   seems to cope with either value so don't bomb out if the set
 	   userinfo2 level 0x10 fails.  -tpot */
 
-	ZERO_STRUCT(ctr);
-	ctr.switch_value = 16;
-	ctr.info.id16 = &p16;
-
-	init_sam_user_info16(&p16, acb_info);
+	set_info.info16.acct_flags = acb_info;
 
 	/* Ignoring the return value is necessary for joining a domain
 	   as a normal user with "Add workstation to domain" privilege. */
 
-	result = rpccli_samr_set_userinfo2(pipe_hnd, mem_ctx, &user_pol, 16, 
-					&cli->user_session_key, &ctr);
+	result = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
+					 &user_pol,
+					 16,
+					 &set_info);
 
-	rpccli_samr_close(pipe_hnd, mem_ctx, &user_pol);
+	rpccli_samr_Close(pipe_hnd, mem_ctx, &user_pol);
 	cli_rpc_pipe_close(pipe_hnd); /* Done with this pipe */
 
 	/* Now check the whole process from top-to-bottom */

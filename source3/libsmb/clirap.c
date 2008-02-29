@@ -191,12 +191,13 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 
 					sname = p;
 					type = SVAL(p,14);
-					comment_offset = IVAL(p,16) & 0xFFFF;
-					if (comment_offset < 0 || comment_offset > (int)rdrcnt) {
+					comment_offset = (IVAL(p,16) & 0xFFFF) - converter;
+					if (comment_offset < 0 ||
+							comment_offset > (int)rdrcnt) {
 						TALLOC_FREE(frame);
 						break;
 					}
-					cmnt = comment_offset?(rdata+comment_offset-converter):"";
+					cmnt = comment_offset?(rdata+comment_offset):"";
 
 					/* Work out the comment length. */
 					for (p1 = cmnt, len = 0; *p1 &&
@@ -803,6 +804,137 @@ bool cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	SAFE_FREE(rdata);
 	SAFE_FREE(rparam);
 	return True;
+}
+
+/****************************************************************************
+ Get the stream info
+****************************************************************************/
+
+bool cli_qpathinfo_streams(struct cli_state *cli, const char *fname,
+			   TALLOC_CTX *mem_ctx,
+			   unsigned int *pnum_streams,
+			   struct stream_struct **pstreams)
+{
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
+	uint16 setup = TRANSACT2_QPATHINFO;
+	char *param;
+	char *rparam=NULL, *rdata=NULL;
+	char *p;
+	unsigned int num_streams;
+	struct stream_struct *streams;
+	unsigned int ofs;
+	size_t namelen = 2*(strlen(fname)+1);
+
+	param = SMB_MALLOC_ARRAY(char, 6+namelen+2);
+	if (param == NULL) {
+		return false;
+	}
+	p = param;
+	memset(p, 0, 6);
+	SSVAL(p, 0, SMB_FILE_STREAM_INFORMATION);
+	p += 6;
+	p += clistr_push(cli, p, fname, namelen, STR_TERMINATE);
+
+	param_len = PTR_DIFF(p, param);
+
+	if (!cli_send_trans(cli, SMBtrans2,
+                            NULL,                     /* name */
+                            -1, 0,                    /* fid, flags */
+                            &setup, 1, 0,             /* setup, len, max */
+                            param, param_len, 10,     /* param, len, max */
+                            NULL, data_len, cli->max_xmit /* data, len, max */
+                           )) {
+		return false;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+                               &rparam, &param_len,
+                               &rdata, &data_len)) {
+		return false;
+	}
+
+	if (!rdata) {
+		SAFE_FREE(rparam);
+		return false;
+	}
+
+	num_streams = 0;
+	streams = NULL;
+	ofs = 0;
+
+	while ((data_len > ofs) && (data_len - ofs >= 24)) {
+		uint32_t nlen, len;
+		ssize_t size;
+		void *vstr;
+		struct stream_struct *tmp;
+		uint8_t *tmp_buf;
+
+		tmp = TALLOC_REALLOC_ARRAY(mem_ctx, streams,
+					   struct stream_struct,
+					   num_streams+1);
+
+		if (tmp == NULL) {
+			goto fail;
+		}
+		streams = tmp;
+
+		nlen                      = IVAL(rdata, ofs + 0x04);
+
+		streams[num_streams].size = IVAL_TO_SMB_OFF_T(
+			rdata, ofs + 0x08);
+		streams[num_streams].alloc_size = IVAL_TO_SMB_OFF_T(
+			rdata, ofs + 0x10);
+
+		if (nlen > data_len - (ofs + 24)) {
+			goto fail;
+		}
+
+		/*
+		 * We need to null-terminate src, how do I do this with
+		 * convert_string_talloc??
+		 */
+
+		tmp_buf = TALLOC_ARRAY(streams, uint8_t, nlen+2);
+		if (tmp_buf == NULL) {
+			goto fail;
+		}
+
+		memcpy(tmp_buf, rdata+ofs+24, nlen);
+		tmp_buf[nlen] = 0;
+		tmp_buf[nlen+1] = 0;
+
+		size = convert_string_talloc(streams, CH_UTF16, CH_UNIX,
+					     tmp_buf, nlen+2, &vstr,
+					     false);
+		TALLOC_FREE(tmp_buf);
+
+		if (size == -1) {
+			goto fail;
+		}
+		streams[num_streams].name = (char *)vstr;
+		num_streams++;
+
+		len = IVAL(rdata, ofs);
+		if (len > data_len - ofs) {
+			goto fail;
+		}
+		if (len == 0) break;
+		ofs += len;
+	}
+
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+
+	*pnum_streams = num_streams;
+	*pstreams = streams;
+	return true;
+
+ fail:
+	TALLOC_FREE(streams);
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+	return false;
 }
 
 /****************************************************************************

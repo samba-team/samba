@@ -41,15 +41,18 @@ static int print_run_command(int snum, const char* printername, bool do_sub,
 	/* check for a valid system printername and valid command to run */
 
 	if ( !printername || !*printername ) {
+		va_end(ap);
 		return -1;
 	}
 
 	if (!command || !*command) {
+		va_end(ap);
 		return -1;
 	}
 
 	syscmd = talloc_strdup(ctx, command);
 	if (!syscmd) {
+		va_end(ap);
 		return -1;
 	}
 
@@ -57,6 +60,7 @@ static int print_run_command(int snum, const char* printername, bool do_sub,
 		char *value = va_arg(ap,char *);
 		syscmd = talloc_string_sub(ctx, syscmd, arg, value);
 		if (!syscmd) {
+			va_end(ap);
 			return -1;
 		}
 	}

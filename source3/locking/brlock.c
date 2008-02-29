@@ -41,11 +41,11 @@ static struct db_context *brlock_db;
 
 static void print_lock_struct(unsigned int i, struct lock_struct *pls)
 {
-	DEBUG(10,("[%u]: smbpid = %u, tid = %u, pid = %s, ",
+	DEBUG(10,("[%u]: smbpid = %u, tid = %u, pid = %u, ",
 			i,
 			(unsigned int)pls->context.smbpid,
 			(unsigned int)pls->context.tid,
-			procid_str_static(&pls->context.pid) ));
+			(unsigned int)procid_to_pid(&pls->context.pid) ));
 	
 	DEBUG(10,("start = %.0f, size = %.0f, fnum = %d, %s %s\n",
 		(double)pls->start,
@@ -263,10 +263,9 @@ void brl_init(bool read_only)
 	if (brlock_db) {
 		return;
 	}
-	brlock_db = db_open(NULL, lock_path("brlock.tdb"), 0,
-			    TDB_DEFAULT
-			    |TDB_VOLATILE
-			    |(read_only?0x0:TDB_CLEAR_IF_FIRST),
+	brlock_db = db_open(NULL, lock_path("brlock.tdb"),
+			    lp_open_files_db_hash_size(),
+			    TDB_DEFAULT | TDB_CLEAR_IF_FIRST,
 			    read_only?O_RDONLY:(O_RDWR|O_CREAT), 0644 );
 	if (!brlock_db) {
 		DEBUG(0,("Failed to open byte range locking database %s\n",
@@ -1495,14 +1494,16 @@ static int traverse_fn(struct db_record *rec, void *state)
 		}
 	}
 
-	for ( i=0; i<num_locks; i++) {
-		cb->fn(*key,
-		       locks[i].context.pid,
-		       locks[i].lock_type,
-		       locks[i].lock_flav,
-		       locks[i].start,
-		       locks[i].size,
-		       cb->private_data);
+	if (cb->fn) {
+		for ( i=0; i<num_locks; i++) {
+			cb->fn(*key,
+				locks[i].context.pid,
+				locks[i].lock_type,
+				locks[i].lock_flav,
+				locks[i].start,
+				locks[i].size,
+				cb->private_data);
+		}
 	}
 
 	SAFE_FREE(locks);
@@ -1538,11 +1539,6 @@ int brl_forall(void (*fn)(struct file_id id, struct server_id pid,
 
 static int byte_range_lock_destructor(struct byte_range_lock *br_lck)
 {
-	TDB_DATA key;
-
-	key.dptr = (uint8 *)&br_lck->key;
-	key.dsize = sizeof(struct file_id);
-
 	if (br_lck->read_only) {
 		SMB_ASSERT(!br_lck->modified);
 	}

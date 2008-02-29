@@ -17,7 +17,7 @@ static bool api_eventlog_ClearEventLogW(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_CLEAREVENTLOGW];
 
-	r = talloc(NULL, struct eventlog_ClearEventLogW);
+	r = talloc(talloc_tos(), struct eventlog_ClearEventLogW);
 	if (r == NULL) {
 		return false;
 	}
@@ -90,7 +90,7 @@ static bool api_eventlog_BackupEventLogW(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_BACKUPEVENTLOGW];
 
-	r = talloc(NULL, struct eventlog_BackupEventLogW);
+	r = talloc(talloc_tos(), struct eventlog_BackupEventLogW);
 	if (r == NULL) {
 		return false;
 	}
@@ -163,7 +163,7 @@ static bool api_eventlog_CloseEventLog(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_CLOSEEVENTLOG];
 
-	r = talloc(NULL, struct eventlog_CloseEventLog);
+	r = talloc(talloc_tos(), struct eventlog_CloseEventLog);
 	if (r == NULL) {
 		return false;
 	}
@@ -238,7 +238,7 @@ static bool api_eventlog_DeregisterEventSource(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_DEREGISTEREVENTSOURCE];
 
-	r = talloc(NULL, struct eventlog_DeregisterEventSource);
+	r = talloc(talloc_tos(), struct eventlog_DeregisterEventSource);
 	if (r == NULL) {
 		return false;
 	}
@@ -311,7 +311,7 @@ static bool api_eventlog_GetNumRecords(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_GETNUMRECORDS];
 
-	r = talloc(NULL, struct eventlog_GetNumRecords);
+	r = talloc(talloc_tos(), struct eventlog_GetNumRecords);
 	if (r == NULL) {
 		return false;
 	}
@@ -391,7 +391,7 @@ static bool api_eventlog_GetOldestRecord(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_GETOLDESTRECORD];
 
-	r = talloc(NULL, struct eventlog_GetOldestRecord);
+	r = talloc(talloc_tos(), struct eventlog_GetOldestRecord);
 	if (r == NULL) {
 		return false;
 	}
@@ -416,6 +416,13 @@ static bool api_eventlog_GetOldestRecord(pipes_struct *p)
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(eventlog_GetOldestRecord, r);
+	}
+
+	ZERO_STRUCT(r->out);
+	r->out.oldest_entry = talloc_zero(r, uint32_t);
+	if (r->out.oldest_entry == NULL) {
+		talloc_free(r);
+		return false;
 	}
 
 	r->out.result = _eventlog_GetOldestRecord(p, r);
@@ -464,7 +471,7 @@ static bool api_eventlog_ChangeNotify(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_CHANGENOTIFY];
 
-	r = talloc(NULL, struct eventlog_ChangeNotify);
+	r = talloc(talloc_tos(), struct eventlog_ChangeNotify);
 	if (r == NULL) {
 		return false;
 	}
@@ -537,7 +544,7 @@ static bool api_eventlog_OpenEventLogW(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_OPENEVENTLOGW];
 
-	r = talloc(NULL, struct eventlog_OpenEventLogW);
+	r = talloc(talloc_tos(), struct eventlog_OpenEventLogW);
 	if (r == NULL) {
 		return false;
 	}
@@ -617,7 +624,7 @@ static bool api_eventlog_RegisterEventSourceW(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_REGISTEREVENTSOURCEW];
 
-	r = talloc(NULL, struct eventlog_RegisterEventSourceW);
+	r = talloc(talloc_tos(), struct eventlog_RegisterEventSourceW);
 	if (r == NULL) {
 		return false;
 	}
@@ -690,7 +697,7 @@ static bool api_eventlog_OpenBackupEventLogW(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_OPENBACKUPEVENTLOGW];
 
-	r = talloc(NULL, struct eventlog_OpenBackupEventLogW);
+	r = talloc(talloc_tos(), struct eventlog_OpenBackupEventLogW);
 	if (r == NULL) {
 		return false;
 	}
@@ -763,7 +770,7 @@ static bool api_eventlog_ReadEventLogW(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_READEVENTLOGW];
 
-	r = talloc(NULL, struct eventlog_ReadEventLogW);
+	r = talloc(talloc_tos(), struct eventlog_ReadEventLogW);
 	if (r == NULL) {
 		return false;
 	}
@@ -855,7 +862,7 @@ static bool api_eventlog_ReportEventW(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_REPORTEVENTW];
 
-	r = talloc(NULL, struct eventlog_ReportEventW);
+	r = talloc(talloc_tos(), struct eventlog_ReportEventW);
 	if (r == NULL) {
 		return false;
 	}
@@ -928,7 +935,7 @@ static bool api_eventlog_ClearEventLogA(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_CLEAREVENTLOGA];
 
-	r = talloc(NULL, struct eventlog_ClearEventLogA);
+	r = talloc(talloc_tos(), struct eventlog_ClearEventLogA);
 	if (r == NULL) {
 		return false;
 	}
@@ -1001,7 +1008,7 @@ static bool api_eventlog_BackupEventLogA(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_BACKUPEVENTLOGA];
 
-	r = talloc(NULL, struct eventlog_BackupEventLogA);
+	r = talloc(talloc_tos(), struct eventlog_BackupEventLogA);
 	if (r == NULL) {
 		return false;
 	}
@@ -1074,7 +1081,7 @@ static bool api_eventlog_OpenEventLogA(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_OPENEVENTLOGA];
 
-	r = talloc(NULL, struct eventlog_OpenEventLogA);
+	r = talloc(talloc_tos(), struct eventlog_OpenEventLogA);
 	if (r == NULL) {
 		return false;
 	}
@@ -1147,7 +1154,7 @@ static bool api_eventlog_RegisterEventSourceA(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_REGISTEREVENTSOURCEA];
 
-	r = talloc(NULL, struct eventlog_RegisterEventSourceA);
+	r = talloc(talloc_tos(), struct eventlog_RegisterEventSourceA);
 	if (r == NULL) {
 		return false;
 	}
@@ -1220,7 +1227,7 @@ static bool api_eventlog_OpenBackupEventLogA(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_OPENBACKUPEVENTLOGA];
 
-	r = talloc(NULL, struct eventlog_OpenBackupEventLogA);
+	r = talloc(talloc_tos(), struct eventlog_OpenBackupEventLogA);
 	if (r == NULL) {
 		return false;
 	}
@@ -1293,7 +1300,7 @@ static bool api_eventlog_ReadEventLogA(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_READEVENTLOGA];
 
-	r = talloc(NULL, struct eventlog_ReadEventLogA);
+	r = talloc(talloc_tos(), struct eventlog_ReadEventLogA);
 	if (r == NULL) {
 		return false;
 	}
@@ -1366,7 +1373,7 @@ static bool api_eventlog_ReportEventA(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_REPORTEVENTA];
 
-	r = talloc(NULL, struct eventlog_ReportEventA);
+	r = talloc(talloc_tos(), struct eventlog_ReportEventA);
 	if (r == NULL) {
 		return false;
 	}
@@ -1439,7 +1446,7 @@ static bool api_eventlog_RegisterClusterSvc(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_REGISTERCLUSTERSVC];
 
-	r = talloc(NULL, struct eventlog_RegisterClusterSvc);
+	r = talloc(talloc_tos(), struct eventlog_RegisterClusterSvc);
 	if (r == NULL) {
 		return false;
 	}
@@ -1512,7 +1519,7 @@ static bool api_eventlog_DeregisterClusterSvc(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_DEREGISTERCLUSTERSVC];
 
-	r = talloc(NULL, struct eventlog_DeregisterClusterSvc);
+	r = talloc(talloc_tos(), struct eventlog_DeregisterClusterSvc);
 	if (r == NULL) {
 		return false;
 	}
@@ -1585,7 +1592,7 @@ static bool api_eventlog_WriteClusterEvents(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_WRITECLUSTEREVENTS];
 
-	r = talloc(NULL, struct eventlog_WriteClusterEvents);
+	r = talloc(talloc_tos(), struct eventlog_WriteClusterEvents);
 	if (r == NULL) {
 		return false;
 	}
@@ -1658,7 +1665,7 @@ static bool api_eventlog_GetLogIntormation(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_GETLOGINTORMATION];
 
-	r = talloc(NULL, struct eventlog_GetLogIntormation);
+	r = talloc(talloc_tos(), struct eventlog_GetLogIntormation);
 	if (r == NULL) {
 		return false;
 	}
@@ -1731,7 +1738,7 @@ static bool api_eventlog_FlushEventLog(pipes_struct *p)
 
 	call = &ndr_table_eventlog.calls[NDR_EVENTLOG_FLUSHEVENTLOG];
 
-	r = talloc(NULL, struct eventlog_FlushEventLog);
+	r = talloc(talloc_tos(), struct eventlog_FlushEventLog);
 	if (r == NULL) {
 		return false;
 	}

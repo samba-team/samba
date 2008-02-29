@@ -429,8 +429,9 @@ static bool debug_parse_params(char **params)
 
 	/* Fill in new debug class levels */
 	for (; i < debug_num_classes && params[i]; i++) {
-		if ((class_name=strtok(params[i],":")) &&
-			(class_level=strtok(NULL, "\0")) &&
+		char *saveptr;
+		if ((class_name = strtok_r(params[i],":", &saveptr)) &&
+			(class_level = strtok_r(NULL, "\0", &saveptr)) &&
             ((ndx = debug_lookup_classname(class_name)) != -1)) {
 				DEBUGLEVEL_CLASS[ndx] = atoi(class_level);
 				DEBUGLEVEL_CLASS_ISSET[ndx] = True;
@@ -459,14 +460,14 @@ bool debug_parse_levels(const char *params_str)
 	if (AllowDebugChange == False)
 		return True;
 
-	params = str_list_make(params_str, NULL);
+	params = str_list_make(talloc_tos(), params_str, NULL);
 
 	if (debug_parse_params(params)) {
 		debug_dump_status(5);
-		str_list_free(&params);
+		TALLOC_FREE(params);
 		return True;
 	} else {
-		str_list_free(&params);
+		TALLOC_FREE(params);
 		return False;
 	}
 }
@@ -826,6 +827,7 @@ void check_log_size( void )
 		};
 		int     priority;
 		char *msgbuf = NULL;
+		int ret;
 
 		if( syslog_level >= ( sizeof(priority_map) / sizeof(priority_map[0]) ) || syslog_level < 0)
 			priority = LOG_DEBUG;
@@ -833,10 +835,10 @@ void check_log_size( void )
 			priority = priority_map[syslog_level];
 
 		va_start(ap, format_str);
-		vasprintf(&msgbuf, format_str, ap);
+		ret = vasprintf(&msgbuf, format_str, ap);
 		va_end(ap);
 
-		if (msgbuf) {
+		if (ret == -1) {
 			syslog(priority, "%s", msgbuf);
 		}
 		SAFE_FREE(msgbuf);
@@ -1058,12 +1060,13 @@ bool dbghdr(int level, int cls, const char *file, const char *func, int line)
 	va_list ap;
 	char *msgbuf = NULL;
 	bool ret = true;
+	int res;
 
 	va_start(ap, format_str);
-	vasprintf(&msgbuf, format_str, ap);
+	res = vasprintf(&msgbuf, format_str, ap);
 	va_end(ap);
 
-	if (msgbuf) {
+	if (res != -1) {
 		format_debug_text(msgbuf);
 	} else {
 		ret = false;

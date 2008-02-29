@@ -27,28 +27,11 @@
 #define DBGC_CLASS DBGC_RPC_PARSE
 
 /*******************************************************************
- Reads or writes a SEC_ACCESS structure.
-********************************************************************/
-
-bool sec_io_access(const char *desc, SEC_ACCESS *t, prs_struct *ps, int depth)
-{
-	if (t == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "sec_io_access");
-	depth++;
-	
-	if(!prs_uint32("mask", ps, depth, t))
-		return False;
-
-	return True;
-}
-
-/*******************************************************************
  Reads or writes a SEC_ACE structure.
 ********************************************************************/
 
-bool sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
+static bool sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps,
+		       int depth)
 {
 	uint32 old_offset;
 	uint32 offset_ace_size;
@@ -130,7 +113,8 @@ bool sec_io_ace(const char *desc, SEC_ACE *psa, prs_struct *ps, int depth)
  for you as it reads them.
 ********************************************************************/
 
-bool sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
+static bool sec_io_acl(const char *desc, SEC_ACL **ppsa, prs_struct *ps,
+		       int depth)
 {
 	unsigned int i;
 	uint32 old_offset;

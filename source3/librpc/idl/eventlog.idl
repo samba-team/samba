@@ -3,11 +3,11 @@
 /*
   eventlog interface definition
 */
+
 import "lsa.idl", "security.idl";
 
 [ uuid("82273fdc-e32a-18c3-3f78-827929dc23ea"),
   version(0.0),
-  pointer_default(unique),
   helpstring("Event Logger")
 ] interface eventlog
 {
@@ -59,7 +59,7 @@ import "lsa.idl", "security.idl";
 	/* Function: 0x00 */
 	NTSTATUS eventlog_ClearEventLogW(
 		[in] policy_handle *handle,
-		[in,unique] lsa_String *unknown
+		[in,unique] lsa_String *backupfile
 	);
 
 	/******************/
@@ -80,12 +80,15 @@ import "lsa.idl", "security.idl";
 	/* Function: 0x04 */
 	NTSTATUS eventlog_GetNumRecords(
 		[in] policy_handle *handle,
-		[out,ref] uint32 *number
+		[out] uint32 *number
 	);
 
 	/******************/
 	/* Function: 0x05 */
-	NTSTATUS eventlog_GetOldestRecord();
+	NTSTATUS eventlog_GetOldestRecord(
+		[in] policy_handle *handle,
+		[out,ref] uint32 *oldest_entry
+	);
 
 	/******************/
 	/* Function: 0x06 */
@@ -95,8 +98,8 @@ import "lsa.idl", "security.idl";
 	/* Function: 0x07 */
 	NTSTATUS eventlog_OpenEventLogW(
 		[in,unique]	    eventlog_OpenUnknown0 *unknown0,
-		[in]	    lsa_String logname,
-		[in]	    lsa_String servername,
+		[in,ref]    lsa_String *logname,
+		[in,ref]    lsa_String *servername,
 		[in]	    uint32 unknown2,
 		[in]	    uint32 unknown3,
 		[out]   policy_handle *handle
@@ -116,8 +119,8 @@ import "lsa.idl", "security.idl";
 		[in] policy_handle *handle,
 		[in] uint32 flags,
 		[in] uint32 offset,
-		[in] uint32 number_of_bytes,
-		[out,size_is(number_of_bytes)] uint8 *data,
+		[in] [range(0,0x7FFFF)] uint32 number_of_bytes,
+		[out,ref,size_is(number_of_bytes)] uint8 *data,
 		[out,ref] uint32 *sent_size,
 		[out,ref] uint32 *real_size
 	);

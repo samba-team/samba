@@ -498,11 +498,13 @@ DATA_BLOB spnego_gen_auth_response(DATA_BLOB *reply, NTSTATUS nt_status,
 	asn1_write_enumerated(&data, negResult);
 	asn1_pop_tag(&data);
 
-	if (reply->data != NULL) {
+	if (mechOID) {
 		asn1_push_tag(&data,ASN1_CONTEXT(1));
 		asn1_write_OID(&data, mechOID);
 		asn1_pop_tag(&data);
-		
+	}
+
+	if (reply && reply->data != NULL) {
 		asn1_push_tag(&data,ASN1_CONTEXT(2));
 		asn1_write_OctetString(&data, reply->data, reply->length);
 		asn1_pop_tag(&data);

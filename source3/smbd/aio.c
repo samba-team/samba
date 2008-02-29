@@ -141,21 +141,27 @@ static struct aio_extra *find_aio_ex(uint16 mid)
  We can have these many aio buffers in flight.
 *****************************************************************************/
 
-#define AIO_PENDING_SIZE 10
+static int aio_pending_size;
 static sig_atomic_t signals_received;
 static int outstanding_aio_calls;
-static uint16 aio_pending_array[AIO_PENDING_SIZE];
+static uint16 *aio_pending_array;
 
 /****************************************************************************
  Signal handler when an aio request completes.
 *****************************************************************************/
 
+void aio_request_done(uint16_t mid)
+{
+	if (signals_received < aio_pending_size) {
+		aio_pending_array[signals_received] = mid;
+		signals_received++;
+	}
+	/* Else signal is lost. */
+}
+
 static void signal_handler(int sig, siginfo_t *info, void *unused)
 {
-	if (signals_received < AIO_PENDING_SIZE) {
-		aio_pending_array[signals_received] = info->si_value.sival_int;
-		signals_received++;
-	} /* Else signal is lost. */
+	aio_request_done(info->si_value.sival_int);
 	sys_select_signal(RT_SIGNAL_AIO);
 }
 
@@ -175,6 +181,10 @@ bool aio_finished(void)
 void initialize_async_io_handler(void)
 {
 	struct sigaction act;
+
+	aio_pending_size = lp_maxmux();
+	aio_pending_array = SMB_MALLOC_ARRAY(uint16, aio_pending_size);
+	SMB_ASSERT(aio_pending_array != NULL);
 
 	ZERO_STRUCT(act);
 	act.sa_sigaction = signal_handler;
@@ -202,7 +212,14 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 	size_t bufsize;
 	size_t min_aio_read_size = lp_aio_read_size(SNUM(conn));
 
-	if (!min_aio_read_size || (smb_maxcnt < min_aio_read_size)) {
+	if (fsp->base_fsp != NULL) {
+		/* No AIO on streams yet */
+		DEBUG(10, ("AIO on streams not yet supported\n"));
+		return false;
+	}
+
+	if ((!min_aio_read_size || (smb_maxcnt < min_aio_read_size))
+	    && !SMB_VFS_AIO_FORCE(fsp)) {
 		/* Too small a read for aio request. */
 		DEBUG(10,("schedule_aio_read_and_X: read size (%u) too small "
 			  "for minimum aio_read of %u\n",
@@ -218,7 +235,7 @@ bool schedule_aio_read_and_X(connection_struct *conn,
 		return False;
 	}
 
-	if (outstanding_aio_calls >= AIO_PENDING_SIZE) {
+	if (outstanding_aio_calls >= aio_pending_size) {
 		DEBUG(10,("schedule_aio_read_and_X: Already have %d aio "
 			  "activities outstanding.\n",
 			  outstanding_aio_calls ));
@@ -284,7 +301,14 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 	bool write_through = BITSETW(req->inbuf+smb_vwv7,0);
 	size_t min_aio_write_size = lp_aio_write_size(SNUM(conn));
 
-	if (!min_aio_write_size || (numtowrite < min_aio_write_size)) {
+	if (fsp->base_fsp != NULL) {
+		/* No AIO on streams yet */
+		DEBUG(10, ("AIO on streams not yet supported\n"));
+		return false;
+	}
+
+	if ((!min_aio_write_size || (numtowrite < min_aio_write_size))
+	    && !SMB_VFS_AIO_FORCE(fsp)) {
 		/* Too small a write for aio request. */
 		DEBUG(10,("schedule_aio_write_and_X: write size (%u) too "
 			  "small for minimum aio_write of %u\n",
@@ -300,7 +324,7 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 		return False;
 	}
 
-	if (outstanding_aio_calls >= AIO_PENDING_SIZE) {
+	if (outstanding_aio_calls >= aio_pending_size) {
 		DEBUG(3,("schedule_aio_write_and_X: Already have %d aio "
 			 "activities outstanding.\n",
 			  outstanding_aio_calls ));
@@ -348,6 +372,8 @@ bool schedule_aio_write_and_X(connection_struct *conn,
 		delete_aio_ex(aio_ex);
 		return False;
 	}
+
+	release_level_2_oplocks_on_change(fsp);
 
 	if (!write_through && !lp_syncalways(SNUM(fsp->conn))
 	    && fsp->aio_write_behind) {
@@ -418,6 +444,9 @@ static int handle_aio_read_complete(struct aio_extra *aio_ex)
 		SSVAL(outbuf,smb_vwv6,smb_offset(data,outbuf));
 		SSVAL(outbuf,smb_vwv7,((nread >> 16) & 1));
 		SSVAL(smb_buf(outbuf),-2,nread);
+
+		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nread;
+		aio_ex->fsp->fh->position_information = aio_ex->fsp->fh->pos;
 
 		DEBUG( 3, ( "handle_aio_read_complete file %s max=%d "
 			    "nread=%d\n",
@@ -520,6 +549,8 @@ static int handle_aio_write_complete(struct aio_extra *aio_ex)
                 	DEBUG(5,("handle_aio_write: sync_file for %s returned %s\n",
 				fsp->fsp_name, nt_errstr(status) ));
 		}
+
+		aio_ex->fsp->fh->pos = aio_ex->acb.aio_offset + nwritten;
 	}
 
 	show_msg(outbuf);

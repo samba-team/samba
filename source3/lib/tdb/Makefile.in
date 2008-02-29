@@ -74,7 +74,7 @@ $(SONAME): $(SOLIB)
 	ln -s $< $@
 
 $(SOLIB): $(TDB_OBJ)
-	$(CC) $(SHLD_FLAGS) $(SONAMEFLAG)$(SONAME) -o $@ $^
+	$(CC) $(SHLD_FLAGS) -o $@ $(TDB_OBJ) $(SONAMEFLAG)$(SONAME) 
 
 TDB_LIB = libtdb.a
 

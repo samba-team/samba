@@ -1171,7 +1171,6 @@ out:
 	
 	if ( !(rb->mem_ctx = talloc_init( "read_regf_block" )) ) {
 		regfio_close( rb );
-		SAFE_FREE(rb);
 		return NULL;
 	}
 
@@ -1182,7 +1181,6 @@ out:
 	if ( (rb->fd = open(filename, flags, mode)) == -1 ) {
 		DEBUG(0,("regfio_open: failure to open %s (%s)\n", filename, strerror(errno)));
 		regfio_close( rb );
-		SAFE_FREE(rb);
 		return NULL;
 	}
 	
@@ -1192,7 +1190,6 @@ out:
 		if ( !init_regf_block( rb ) ) {
 			DEBUG(0,("regfio_open: Failed to read initial REGF block\n"));
 			regfio_close( rb );
-			SAFE_FREE(rb);
 			return NULL;
 		}
 		
@@ -1205,7 +1202,6 @@ out:
 	if ( !read_regf_block( rb ) ) {
 		DEBUG(0,("regfio_open: Failed to read initial REGF block\n"));
 		regfio_close( rb );
-		SAFE_FREE(rb);
 		return NULL;
 	}
 	
@@ -1234,7 +1230,7 @@ static void regfio_mem_free( REGF_FILE *file )
 
 	/* cleanup for a file opened for write */
 
-	if ( file->open_flags & (O_WRONLY|O_RDWR) ) {
+	if ((file->fd != -1) && (file->open_flags & (O_WRONLY|O_RDWR))) {
 		prs_struct ps;
 		REGF_SK_REC *sk;
 

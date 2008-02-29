@@ -50,7 +50,9 @@ NET_API_STATUS libnetapi_init(struct libnetapi_ctx **context)
 		return W_ERROR_V(WERR_NOMEM);
 	}
 
-	DEBUGLEVEL = 0;
+	if (!DEBUGLEVEL) {
+		DEBUGLEVEL = 0;
+	}
 	setup_logging("libnetapi", true);
 
 	dbf = x_stderr;
@@ -119,7 +121,6 @@ NET_API_STATUS libnetapi_free(struct libnetapi_ctx *ctx)
 
 	gencache_shutdown();
 	secrets_shutdown();
-	regdb_close();
 
 	TALLOC_FREE(ctx);
 	TALLOC_FREE(frame);
@@ -205,15 +206,20 @@ const char *libnetapi_errstr(NET_API_STATUS status)
 ****************************************************************/
 
 NET_API_STATUS libnetapi_set_error_string(struct libnetapi_ctx *ctx,
-					  const char *error_string)
+					  const char *format, ...)
 {
+	va_list args;
+
 	TALLOC_FREE(ctx->error_string);
-	ctx->error_string = talloc_strdup(ctx, error_string);
+
+	va_start(args, format);
+	ctx->error_string = talloc_vasprintf(ctx, format, args);
+	va_end(args);
+
 	if (!ctx->error_string) {
 		return W_ERROR_V(WERR_NOMEM);
 	}
 	return NET_API_STATUS_SUCCESS;
-
 }
 
 /****************************************************************

@@ -538,18 +538,6 @@ int winbindd_read_reply(struct winbindd_response *response)
 	return result1 + result2;
 }
 
-bool winbind_env_set(void)
-{
-	char *env;
-	
-	if ((env=getenv(WINBINDD_DONT_ENV)) != NULL) {
-		if(strcmp(env, "1") == 0) {
-			return true;
-		}
-	}
-	return false;
-}
-
 /* 
  * send simple types of requests 
  */
@@ -660,21 +648,6 @@ NSS_STATUS winbindd_priv_request_response(int req_type,
 	}
 
 	return status;
-}
-
-/*************************************************************************
- A couple of simple functions to disable winbindd lookups and re-
- enable them
- ************************************************************************/
- 
-bool winbind_off(void)
-{
-	return setenv(WINBINDD_DONT_ENV, "1", 1) != -1;
-}
-
-bool winbind_on(void)
-{
-	return setenv(WINBINDD_DONT_ENV, "0", 1) != -1;
 }
 
 /*************************************************************************

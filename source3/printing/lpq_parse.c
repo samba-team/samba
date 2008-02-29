@@ -127,6 +127,7 @@ static bool parse_lpq_bsd(char *line,print_queue_struct *buf,bool first)
 	int  count = 0;
 	TALLOC_CTX *ctx = talloc_tos();
 	char *line2 = NULL;
+	char *saveptr;
 
 	line2 = talloc_strdup(ctx, line);
 	if (!line2) {
@@ -144,10 +145,11 @@ static bool parse_lpq_bsd(char *line,print_queue_struct *buf,bool first)
 #endif	/* OSF1 */
 
 	/* FIXME: Use next_token_talloc rather than strtok! */
-	tok[0] = strtok(line2," \t");
+	tok[0] = strtok_r(line2," \t", &saveptr);
 	count++;
 
-	while ((count < MAXTOK) && ((tok[count] = strtok(NULL," \t")) != NULL)) {
+	while ((count < MAXTOK)
+	       && ((tok[count] = strtok_r(NULL, " \t", &saveptr)) != NULL)) {
 		count++;
 	}
 

@@ -22,6 +22,9 @@
 #include "lib/netapi/netapi.h"
 #include "libnet/libnet.h"
 
+/****************************************************************
+****************************************************************/
+
 static WERROR NetServerGetInfoLocal_1005(struct libnetapi_ctx *ctx,
 					 uint8_t **buffer)
 {
@@ -35,6 +38,9 @@ static WERROR NetServerGetInfoLocal_1005(struct libnetapi_ctx *ctx,
 
 	return WERR_OK;
 }
+
+/****************************************************************
+****************************************************************/
 
 static WERROR NetServerGetInfoLocal(struct libnetapi_ctx *ctx,
 				    const char *server_name,
@@ -50,6 +56,9 @@ static WERROR NetServerGetInfoLocal(struct libnetapi_ctx *ctx,
 
 	return WERR_UNKNOWN_LEVEL;
 }
+
+/****************************************************************
+****************************************************************/
 
 static WERROR NetServerGetInfoRemote(struct libnetapi_ctx *ctx,
 				     const char *server_name,
@@ -102,6 +111,9 @@ static WERROR NetServerGetInfoRemote(struct libnetapi_ctx *ctx,
 	return werr;
 }
 
+/****************************************************************
+****************************************************************/
+
 static WERROR libnetapi_NetServerGetInfo(struct libnetapi_ctx *ctx,
 					 const char *server_name,
 					 uint32_t level,
@@ -120,6 +132,10 @@ static WERROR libnetapi_NetServerGetInfo(struct libnetapi_ctx *ctx,
 				      buffer);
 
 }
+
+/****************************************************************
+ NetServerGetInfo
+****************************************************************/
 
 NET_API_STATUS NetServerGetInfo(const char *server_name,
 				uint32_t level,
@@ -142,8 +158,11 @@ NET_API_STATUS NetServerGetInfo(const char *server_name,
 		return W_ERROR_V(werr);
 	}
 
-	return 0;
+	return NET_API_STATUS_SUCCESS;
 }
+
+/****************************************************************
+****************************************************************/
 
 static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 					 uint8_t *buffer,
@@ -151,8 +170,6 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 {
 	WERROR werr;
 	struct libnet_conf_ctx *conf_ctx;
-	TALLOC_CTX *mem_ctx;
-
 	struct srvsvc_NetSrvInfo1005 *info1005;
 
 	if (!buffer) {
@@ -167,12 +184,11 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 		return WERR_INVALID_PARAM;
 	}
 
-	if (!lp_include_registry_globals()) {
+	if (!lp_config_backend_is_registry()) {
 		return WERR_NOT_SUPPORTED;
 	}
 
-	mem_ctx = talloc_stackframe();
-	werr = libnet_conf_open(mem_ctx, &conf_ctx);
+	werr = libnet_conf_open(ctx, &conf_ctx);
 	if (!W_ERROR_IS_OK(werr)) {
 		goto done;
 	}
@@ -181,11 +197,13 @@ static WERROR NetServerSetInfoLocal_1005(struct libnetapi_ctx *ctx,
 						"server string",
 						info1005->comment);
 
-done:
+ done:
 	libnet_conf_close(conf_ctx);
-	TALLOC_FREE(mem_ctx);
 	return werr;
 }
+
+/****************************************************************
+****************************************************************/
 
 static WERROR NetServerSetInfoLocal(struct libnetapi_ctx *ctx,
 				    const char *server_name,
@@ -202,6 +220,9 @@ static WERROR NetServerSetInfoLocal(struct libnetapi_ctx *ctx,
 
 	return WERR_UNKNOWN_LEVEL;
 }
+
+/****************************************************************
+****************************************************************/
 
 static WERROR NetServerSetInfoRemote(struct libnetapi_ctx *ctx,
 				     const char *server_name,
@@ -263,6 +284,9 @@ static WERROR NetServerSetInfoRemote(struct libnetapi_ctx *ctx,
 	return werr;
 }
 
+/****************************************************************
+****************************************************************/
+
 static WERROR libnetapi_NetServerSetInfo(struct libnetapi_ctx *ctx,
 					 const char *server_name,
 					 uint32_t level,
@@ -284,6 +308,9 @@ static WERROR libnetapi_NetServerSetInfo(struct libnetapi_ctx *ctx,
 				      parm_error);
 }
 
+/****************************************************************
+ NetServerSetInfo
+****************************************************************/
 
 NET_API_STATUS NetServerSetInfo(const char *server_name,
 				uint32_t level,
@@ -308,5 +335,5 @@ NET_API_STATUS NetServerSetInfo(const char *server_name,
 		return W_ERROR_V(werr);
 	}
 
-	return 0;
+	return NET_API_STATUS_SUCCESS;
 }

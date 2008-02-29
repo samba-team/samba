@@ -35,7 +35,7 @@ extern const struct ndr_interface_table ndr_table_rpcecho;
 void ndr_print_echo_info1(struct ndr_print *ndr, const char *name, const struct echo_info1 *r);
 void ndr_print_echo_info2(struct ndr_print *ndr, const char *name, const struct echo_info2 *r);
 void ndr_print_echo_info3(struct ndr_print *ndr, const char *name, const struct echo_info3 *r);
-void ndr_print_echo_info4(struct ndr_print *ndr, const char *name, const struct echo_info4 *r);
+void ndr_print_STRUCT_echo_info4(struct ndr_print *ndr, const char *name, const struct echo_info4 *r);
 void ndr_print_echo_info5(struct ndr_print *ndr, const char *name, const struct echo_info5 *r);
 void ndr_print_echo_info6(struct ndr_print *ndr, const char *name, const struct echo_info6 *r);
 void ndr_print_echo_info7(struct ndr_print *ndr, const char *name, const struct echo_info7 *r);

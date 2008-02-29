@@ -5,7 +5,8 @@
 [ uuid("4fc742e0-4a10-11cf-8273-00aa004ae673"),
   version(3.0),
   pointer_default(unique),
-  helpstring("Settings for Microsoft Distributed File System")
+  helpstring("Settings for Microsoft Distributed File System"),
+  endpoint("ncacn_np:[\\pipe\\netdfs]", "ncacn_ip_tcp:", "ncalrpc:")
 ] interface netdfs
 {
 	/******************/
@@ -49,12 +50,11 @@
 		[string,charset(UTF16)] uint16 *path;
 	} dfs_Info1;
 
-	/* first 4 bits unverified yet */
 	typedef [public,bitmap32bit] bitmap {
 		DFS_VOLUME_STATE_OK 		= 0x1,
 		DFS_VOLUME_STATE_INCONSISTENT 	= 0x2,
-		DFS_VOLUME_STATE_OFFLINE 	= 0x4,
-		DFS_VOLUME_STATE_ONLINE		= 0x8,
+		DFS_VOLUME_STATE_OFFLINE 	= 0x3,
+		DFS_VOLUME_STATE_ONLINE		= 0x4,
 		DFS_VOLUME_STATE_STANDALONE	= DFS_VOLUME_FLAVOR_STANDALONE,
 		DFS_VOLUME_STATE_AD_BLOB	= DFS_VOLUME_FLAVOR_AD_BLOB
 	} dfs_VolumeState;
@@ -263,6 +263,16 @@
 
 	typedef struct {
 		uint32 count;
+		[size_is(count)] dfs_Info5 *s;
+	} dfs_EnumArray5;
+
+	typedef struct {
+		uint32 count;
+		[size_is(count)] dfs_Info6 *s;
+	} dfs_EnumArray6;
+
+	typedef struct {
+		uint32 count;
 		[size_is(count)] dfs_Info200 *s;
 	} dfs_EnumArray200;
 
@@ -277,6 +287,8 @@
 		[case(2)] dfs_EnumArray2 *info2;
 		[case(3)] dfs_EnumArray3 *info3;
 		[case(4)] dfs_EnumArray4 *info4;
+		[case(5)] dfs_EnumArray5 *info5;
+		[case(6)] dfs_EnumArray6 *info6;
 		[case(200)] dfs_EnumArray200 *info200;
 		[case(300)] dfs_EnumArray300 *info300;
 	} dfs_EnumInfo;
@@ -363,10 +375,20 @@
 		);
 
 	/* Function 0x10 */
-	WERROR dfs_GetDcAddress();
+	WERROR dfs_GetDcAddress(
+		[in]		[string,charset(UTF16)] uint16 servername[],
+		[in,out,ref]	[string,charset(UTF16)] uint16 **server_fullname,
+		[in,out,ref] 	boolean8 *is_root,
+		[in,out,ref] 	uint32 *ttl
+		);
 
 	/* Function 0x11 */
-	WERROR dfs_SetDcAddress();
+	WERROR dfs_SetDcAddress(
+		[in]		[string,charset(UTF16)] uint16 servername[],
+		[in]		[string,charset(UTF16)] uint16 server_fullname[],
+		[in]		uint32	flags,
+		[in]		uint32	ttl
+		);
 
 	/* Function 0x12 */
 	WERROR dfs_FlushFtTable(

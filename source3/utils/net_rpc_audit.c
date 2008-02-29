@@ -1,7 +1,7 @@
 /*
    Samba Unix/Linux SMB client library
    Distributed SMB/CIFS Server Management Utility
-   Copyright (C) 2006 Guenther Deschner
+   Copyright (C) 2006,2008 Guenther Deschner
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -71,7 +71,7 @@ static NTSTATUS rpc_audit_get_internal(const DOM_SID *domain_sid,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	union lsa_PolicyInformation info;
+	union lsa_PolicyInformation *info = NULL;
 	int i;
 	uint32_t audit_category;
 
@@ -103,7 +103,7 @@ static NTSTATUS rpc_audit_get_internal(const DOM_SID *domain_sid,
 		goto done;
 	}
 
-	for (i=0; i < info.audit_events.count; i++) {
+	for (i=0; i < info->audit_events.count; i++) {
 
 		const char *val = NULL, *policy = NULL;
 
@@ -111,7 +111,7 @@ static NTSTATUS rpc_audit_get_internal(const DOM_SID *domain_sid,
 			continue;
 		}
 
-		val = audit_policy_str(mem_ctx, info.audit_events.settings[i]);
+		val = audit_policy_str(mem_ctx, info->audit_events.settings[i]);
 		policy = audit_description_str(i);
 		print_auditing_category(policy, val);
 	}
@@ -138,7 +138,7 @@ static NTSTATUS rpc_audit_set_internal(const DOM_SID *domain_sid,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	union lsa_PolicyInformation info;
+	union lsa_PolicyInformation *info = NULL;
 	uint32_t audit_policy, audit_category;
 
 	if (argc < 2 || argc > 3) {
@@ -184,12 +184,12 @@ static NTSTATUS rpc_audit_set_internal(const DOM_SID *domain_sid,
 		goto done;
 	}
 
-	info.audit_events.settings[audit_category] = audit_policy;
+	info->audit_events.settings[audit_category] = audit_policy;
 
 	result = rpccli_lsa_SetInfoPolicy(pipe_hnd, mem_ctx,
 					  &pol,
 					  LSA_POLICY_INFO_AUDIT_EVENTS,
-					  &info);
+					  info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -200,7 +200,7 @@ static NTSTATUS rpc_audit_set_internal(const DOM_SID *domain_sid,
 					    LSA_POLICY_INFO_AUDIT_EVENTS,
 					    &info);
 	{
-		const char *val = audit_policy_str(mem_ctx, info.audit_events.settings[audit_category]);
+		const char *val = audit_policy_str(mem_ctx, info->audit_events.settings[audit_category]);
 		const char *policy = audit_description_str(audit_category);
 		print_auditing_category(policy, val);
 	}
@@ -224,7 +224,7 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	union lsa_PolicyInformation info;
+	union lsa_PolicyInformation *info = NULL;
 
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 					SEC_RIGHTS_MAXIMUM_ALLOWED,
@@ -242,12 +242,12 @@ static NTSTATUS rpc_audit_enable_internal_ext(struct rpc_pipe_client *pipe_hnd,
 		goto done;
 	}
 
-	info.audit_events.auditing_mode = enable;
+	info->audit_events.auditing_mode = enable;
 
 	result = rpccli_lsa_SetInfoPolicy(pipe_hnd, mem_ctx,
 					  &pol,
 					  LSA_POLICY_INFO_AUDIT_EVENTS,
-					  &info);
+					  info);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -305,7 +305,7 @@ static NTSTATUS rpc_audit_list_internal(const DOM_SID *domain_sid,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	union lsa_PolicyInformation info;
+	union lsa_PolicyInformation *info = NULL;
 	int i;
 
 	result = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
@@ -325,7 +325,7 @@ static NTSTATUS rpc_audit_list_internal(const DOM_SID *domain_sid,
 	}
 
 	printf("Auditing:\t\t");
-	switch (info.audit_events.auditing_mode) {
+	switch (info->audit_events.auditing_mode) {
 		case true:
 			printf("Enabled");
 			break;
@@ -333,16 +333,16 @@ static NTSTATUS rpc_audit_list_internal(const DOM_SID *domain_sid,
 			printf("Disabled");
 			break;
 		default:
-			printf("unknown (%d)", info.audit_events.auditing_mode);
+			printf("unknown (%d)", info->audit_events.auditing_mode);
 			break;
 	}
 	printf("\n");
 
-	printf("Auditing categories:\t%d\n", info.audit_events.count);
+	printf("Auditing categories:\t%d\n", info->audit_events.count);
 	printf("Auditing settings:\n");
 
-	for (i=0; i < info.audit_events.count; i++) {
-		const char *val = audit_policy_str(mem_ctx, info.audit_events.settings[i]);
+	for (i=0; i < info->audit_events.count; i++) {
+		const char *val = audit_policy_str(mem_ctx, info->audit_events.settings[i]);
 		const char *policy = audit_description_str(i);
 		print_auditing_category(policy, val);
 	}

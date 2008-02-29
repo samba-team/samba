@@ -91,8 +91,7 @@ _PUBLIC_ void ndr_print_tdb_xattrs(struct ndr_print *ndr, const char *name, cons
 	ndr->depth++;
 	for (cntr_xattrs_0=0;cntr_xattrs_0<r->num_xattrs;cntr_xattrs_0++) {
 		char *idx_0=NULL;
-		asprintf(&idx_0, "[%d]", cntr_xattrs_0);
-		if (idx_0) {
+		if (asprintf(&idx_0, "[%d]", cntr_xattrs_0) != -1) {
 			ndr_print_tdb_xattr(ndr, "xattrs", &r->xattrs[cntr_xattrs_0]);
 			free(idx_0);
 		}
@@ -100,3 +99,4 @@ _PUBLIC_ void ndr_print_tdb_xattrs(struct ndr_print *ndr, const char *name, cons
 	ndr->depth--;
 	ndr->depth--;
 }
+

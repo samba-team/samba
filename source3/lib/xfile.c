@@ -223,9 +223,15 @@ size_t x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 	VA_COPY(ap2, ap);
 
 	len = vasprintf(&p, format, ap2);
-	if (len <= 0) return len;
+	if (len <= 0) {
+		va_end(ap2);
+		return len;
+	}
 	ret = x_fwrite(p, 1, len, f);
 	SAFE_FREE(p);
+
+	va_end(ap2);
+
 	return ret;
 }
 

@@ -506,6 +506,19 @@ bool file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
 }
 
 /*******************************************************************
+ Check if a unix domain socket exists - call vfs_file_exist for samba files.
+********************************************************************/
+
+bool socket_exist(const char *fname)
+{
+	SMB_STRUCT_STAT st;
+	if (sys_stat(fname,&st) != 0) 
+		return(False);
+
+	return S_ISSOCK(st.st_mode);
+}
+
+/*******************************************************************
  Check a files mod time.
 ********************************************************************/
 
@@ -2169,7 +2182,7 @@ void dump_data_pw(const char *msg, const uchar * data, size_t len)
 
 const char *tab_depth(int level, int depth)
 {
-	if( DEBUGLVL(level) ) {
+	if( CHECK_DEBUGLVL(level) ) {
 		dbgtext("%*s", depth*4, "");
 	}
 	return "";
@@ -2418,6 +2431,7 @@ char *smb_xstrndup(const char *s, size_t n)
 	if (n == -1 || ! *ptr) {
 		smb_panic("smb_xvasprintf: out of memory");
 	}
+	va_end(ap2);
 	return n;
 }
 
@@ -3260,3 +3274,93 @@ void *talloc_zeronull(const void *context, size_t size, const char *name)
 	return talloc_named_const(context, size, name);
 }
 #endif
+
+/* Split a path name into filename and stream name components. Canonicalise
+ * such that an implicit $DATA token is always explicit.
+ *
+ * The "specification" of this function can be found in the
+ * run_local_stream_name() function in torture.c, I've tried those
+ * combinations against a W2k3 server.
+ */
+
+NTSTATUS split_ntfs_stream_name(TALLOC_CTX *mem_ctx, const char *fname,
+				char **pbase, char **pstream)
+{
+	char *base = NULL;
+	char *stream = NULL;
+	char *sname; /* stream name */
+	const char *stype; /* stream type */
+
+	DEBUG(10, ("split_ntfs_stream_name called for [%s]\n", fname));
+
+	sname = strchr_m(fname, ':');
+
+	if (lp_posix_pathnames() || (sname == NULL)) {
+		if (pbase != NULL) {
+			base = talloc_strdup(mem_ctx, fname);
+			NT_STATUS_HAVE_NO_MEMORY(base);
+		}
+		goto done;
+	}
+
+	if (pbase != NULL) {
+		base = talloc_strndup(mem_ctx, fname, PTR_DIFF(sname, fname));
+		NT_STATUS_HAVE_NO_MEMORY(base);
+	}
+
+	sname += 1;
+
+	stype = strchr_m(sname, ':');
+
+	if (stype == NULL) {
+		sname = talloc_strdup(mem_ctx, sname);
+		stype = "$DATA";
+	}
+	else {
+		if (StrCaseCmp(stype, ":$DATA") != 0) {
+			/*
+			 * If there is an explicit stream type, so far we only
+			 * allow $DATA. Is there anything else allowed? -- vl
+			 */
+			DEBUG(10, ("[%s] is an invalid stream type\n", stype));
+			TALLOC_FREE(base);
+			return NT_STATUS_OBJECT_NAME_INVALID;
+		}
+		sname = talloc_strndup(mem_ctx, sname, PTR_DIFF(stype, sname));
+		stype += 1;
+	}
+
+	if (sname == NULL) {
+		TALLOC_FREE(base);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (sname[0] == '\0') {
+		/*
+		 * no stream name, so no stream
+		 */
+		goto done;
+	}
+
+	if (pstream != NULL) {
+		stream = talloc_asprintf(mem_ctx, "%s:%s", sname, stype);
+		if (stream == NULL) {
+			TALLOC_FREE(sname);
+			TALLOC_FREE(base);
+			return NT_STATUS_NO_MEMORY;
+		}
+		/*
+		 * upper-case the type field
+		 */
+		strupper_m(strchr_m(stream, ':')+1);
+	}
+
+ done:
+	if (pbase != NULL) {
+		*pbase = base;
+	}
+	if (pstream != NULL) {
+		*pstream = stream;
+	}
+	return NT_STATUS_OK;
+}

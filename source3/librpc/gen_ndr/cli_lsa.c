@@ -89,8 +89,8 @@ NTSTATUS rpccli_lsa_EnumPrivs(struct rpc_pipe_client *cli,
 			      TALLOC_CTX *mem_ctx,
 			      struct policy_handle *handle,
 			      uint32_t *resume_handle,
-			      uint32_t max_count,
-			      struct lsa_PrivArray *privs)
+			      struct lsa_PrivArray *privs,
+			      uint32_t max_count)
 {
 	struct lsa_EnumPrivs r;
 	NTSTATUS status;
@@ -135,7 +135,7 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli,
 				  TALLOC_CTX *mem_ctx,
 				  struct policy_handle *handle,
 				  uint32_t sec_info,
-				  struct sec_desc_buf *sdbuf)
+				  struct sec_desc_buf **sdbuf)
 {
 	struct lsa_QuerySecurity r;
 	NTSTATUS status;
@@ -168,21 +168,25 @@ NTSTATUS rpccli_lsa_QuerySecurity(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (sdbuf && r.out.sdbuf) {
-		*sdbuf = *r.out.sdbuf;
-	}
+	*sdbuf = *r.out.sdbuf;
 
 	/* Return result */
 	return r.out.result;
 }
 
 NTSTATUS rpccli_lsa_SetSecObj(struct rpc_pipe_client *cli,
-			      TALLOC_CTX *mem_ctx)
+			      TALLOC_CTX *mem_ctx,
+			      struct policy_handle *handle,
+			      uint32_t sec_info,
+			      struct sec_desc_buf *sdbuf)
 {
 	struct lsa_SetSecObj r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.sec_info = sec_info;
+	r.in.sdbuf = sdbuf;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_SetSecObj, &r);
@@ -299,7 +303,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy(struct rpc_pipe_client *cli,
 				    TALLOC_CTX *mem_ctx,
 				    struct policy_handle *handle,
 				    enum lsa_PolicyInfo level,
-				    union lsa_PolicyInformation *info)
+				    union lsa_PolicyInformation **info)
 {
 	struct lsa_QueryInfoPolicy r;
 	NTSTATUS status;
@@ -332,9 +336,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	return r.out.result;
@@ -469,8 +471,8 @@ NTSTATUS rpccli_lsa_EnumAccounts(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *handle,
 				 uint32_t *resume_handle,
-				 uint32_t num_entries,
-				 struct lsa_SidArray *sids)
+				 struct lsa_SidArray *sids,
+				 uint32_t num_entries)
 {
 	struct lsa_EnumAccounts r;
 	NTSTATUS status;
@@ -560,8 +562,8 @@ NTSTATUS rpccli_lsa_EnumTrustDom(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 struct policy_handle *handle,
 				 uint32_t *resume_handle,
-				 uint32_t max_size,
-				 struct lsa_DomainList *domains)
+				 struct lsa_DomainList *domains,
+				 uint32_t max_size)
 {
 	struct lsa_EnumTrustDom r;
 	NTSTATUS status;
@@ -607,9 +609,9 @@ NTSTATUS rpccli_lsa_LookupNames(struct rpc_pipe_client *cli,
 				struct policy_handle *handle,
 				uint32_t num_names,
 				struct lsa_String *names,
-				struct lsa_RefDomainList *domains,
+				struct lsa_RefDomainList **domains,
 				struct lsa_TransSidArray *sids,
-				uint16_t level,
+				enum lsa_LookupNamesLevel level,
 				uint32_t *count)
 {
 	struct lsa_LookupNames r;
@@ -647,9 +649,7 @@ NTSTATUS rpccli_lsa_LookupNames(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*sids = *r.out.sids;
 	*count = *r.out.count;
 
@@ -661,7 +661,7 @@ NTSTATUS rpccli_lsa_LookupSids(struct rpc_pipe_client *cli,
 			       TALLOC_CTX *mem_ctx,
 			       struct policy_handle *handle,
 			       struct lsa_SidArray *sids,
-			       struct lsa_RefDomainList *domains,
+			       struct lsa_RefDomainList **domains,
 			       struct lsa_TransNameArray *names,
 			       uint16_t level,
 			       uint32_t *count)
@@ -700,9 +700,7 @@ NTSTATUS rpccli_lsa_LookupSids(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*names = *r.out.names;
 	*count = *r.out.count;
 
@@ -803,7 +801,7 @@ NTSTATUS rpccli_lsa_OpenAccount(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_EnumPrivsAccount(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct policy_handle *handle,
-				     struct lsa_PrivilegeSet *privs)
+				     struct lsa_PrivilegeSet **privs)
 {
 	struct lsa_EnumPrivsAccount r;
 	NTSTATUS status;
@@ -835,9 +833,7 @@ NTSTATUS rpccli_lsa_EnumPrivsAccount(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (privs && r.out.privs) {
-		*privs = *r.out.privs;
-	}
+	*privs = *r.out.privs;
 
 	/* Return result */
 	return r.out.result;
@@ -1002,12 +998,15 @@ NTSTATUS rpccli_lsa_SetQuotasForAccount(struct rpc_pipe_client *cli,
 }
 
 NTSTATUS rpccli_lsa_GetSystemAccessAccount(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx)
+					   TALLOC_CTX *mem_ctx,
+					   struct policy_handle *handle,
+					   uint32_t *access_mask)
 {
 	struct lsa_GetSystemAccessAccount r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_GetSystemAccessAccount, &r);
@@ -1033,18 +1032,23 @@ NTSTATUS rpccli_lsa_GetSystemAccessAccount(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*access_mask = *r.out.access_mask;
 
 	/* Return result */
 	return r.out.result;
 }
 
 NTSTATUS rpccli_lsa_SetSystemAccessAccount(struct rpc_pipe_client *cli,
-					   TALLOC_CTX *mem_ctx)
+					   TALLOC_CTX *mem_ctx,
+					   struct policy_handle *handle,
+					   uint32_t access_mask)
 {
 	struct lsa_SetSystemAccessAccount r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.access_mask = access_mask;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_SetSystemAccessAccount, &r);
@@ -1441,9 +1445,10 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 					  TALLOC_CTX *mem_ctx,
 					  struct policy_handle *handle,
 					  struct lsa_String *name,
-					  struct lsa_StringLarge *disp_name,
-					  uint16_t *language_id,
-					  uint16_t unknown)
+					  uint16_t language_id,
+					  uint16_t language_id_sys,
+					  struct lsa_StringLarge **disp_name,
+					  uint16_t *returned_language_id)
 {
 	struct lsa_LookupPrivDisplayName r;
 	NTSTATUS status;
@@ -1452,7 +1457,7 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 	r.in.handle = handle;
 	r.in.name = name;
 	r.in.language_id = language_id;
-	r.in.unknown = unknown;
+	r.in.language_id_sys = language_id_sys;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_LookupPrivDisplayName, &r);
@@ -1478,22 +1483,22 @@ NTSTATUS rpccli_lsa_LookupPrivDisplayName(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (disp_name && r.out.disp_name) {
-		*disp_name = *r.out.disp_name;
-	}
-	*language_id = *r.out.language_id;
+	*disp_name = *r.out.disp_name;
+	*returned_language_id = *r.out.returned_language_id;
 
 	/* Return result */
 	return r.out.result;
 }
 
 NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli,
-				 TALLOC_CTX *mem_ctx)
+				 TALLOC_CTX *mem_ctx,
+				 struct policy_handle *handle)
 {
 	struct lsa_DeleteObject r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(lsa_DeleteObject, &r);
@@ -1519,6 +1524,7 @@ NTSTATUS rpccli_lsa_DeleteObject(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*handle = *r.out.handle;
 
 	/* Return result */
 	return r.out.result;
@@ -1657,7 +1663,7 @@ NTSTATUS rpccli_lsa_RemoveAccountRights(struct rpc_pipe_client *cli,
 					TALLOC_CTX *mem_ctx,
 					struct policy_handle *handle,
 					struct dom_sid2 *sid,
-					uint32_t unknown,
+					uint8_t remove_all,
 					struct lsa_RightSet *rights)
 {
 	struct lsa_RemoveAccountRights r;
@@ -1666,7 +1672,7 @@ NTSTATUS rpccli_lsa_RemoveAccountRights(struct rpc_pipe_client *cli,
 	/* In parameters */
 	r.in.handle = handle;
 	r.in.sid = sid;
-	r.in.unknown = unknown;
+	r.in.remove_all = remove_all;
 	r.in.rights = rights;
 
 	if (DEBUGLEVEL >= 10) {
@@ -1945,8 +1951,8 @@ NTSTATUS rpccli_lsa_OpenPolicy2(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_GetUserName(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				const char *system_name,
-				struct lsa_String *account_name,
-				struct lsa_StringPointer *authority_name)
+				struct lsa_String **account_name,
+				struct lsa_String **authority_name)
 {
 	struct lsa_GetUserName r;
 	NTSTATUS status;
@@ -1980,9 +1986,7 @@ NTSTATUS rpccli_lsa_GetUserName(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (account_name && r.out.account_name) {
-		*account_name = *r.out.account_name;
-	}
+	*account_name = *r.out.account_name;
 	if (authority_name && r.out.authority_name) {
 		*authority_name = *r.out.authority_name;
 	}
@@ -1995,7 +1999,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct policy_handle *handle,
 				     enum lsa_PolicyInfo level,
-				     union lsa_PolicyInformation *info)
+				     union lsa_PolicyInformation **info)
 {
 	struct lsa_QueryInfoPolicy2 r;
 	NTSTATUS status;
@@ -2028,9 +2032,7 @@ NTSTATUS rpccli_lsa_QueryInfoPolicy2(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	return r.out.result;
@@ -2082,7 +2084,7 @@ NTSTATUS rpccli_lsa_SetInfoPolicy2(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 						 TALLOC_CTX *mem_ctx,
 						 struct policy_handle *handle,
-						 struct lsa_String trusted_domain,
+						 struct lsa_String *trusted_domain,
 						 enum lsa_TrustDomInfoEnum level,
 						 union lsa_TrustedDomainInfo *info)
 {
@@ -2118,9 +2120,7 @@ NTSTATUS rpccli_lsa_QueryTrustedDomainInfoByName(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (info && r.out.info) {
-		*info = *r.out.info;
-	}
+	*info = *r.out.info;
 
 	/* Return result */
 	return r.out.result;
@@ -2468,7 +2468,7 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				struct policy_handle *handle,
 				struct lsa_SidArray *sids,
-				struct lsa_RefDomainList *domains,
+				struct lsa_RefDomainList **domains,
 				struct lsa_TransNameArray2 *names,
 				uint16_t level,
 				uint32_t *count,
@@ -2511,9 +2511,7 @@ NTSTATUS rpccli_lsa_LookupSids2(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*names = *r.out.names;
 	*count = *r.out.count;
 
@@ -2526,9 +2524,9 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 				 struct policy_handle *handle,
 				 uint32_t num_names,
 				 struct lsa_String *names,
-				 struct lsa_RefDomainList *domains,
+				 struct lsa_RefDomainList **domains,
 				 struct lsa_TransSidArray2 *sids,
-				 uint16_t level,
+				 enum lsa_LookupNamesLevel level,
 				 uint32_t *count,
 				 uint32_t unknown1,
 				 uint32_t unknown2)
@@ -2570,9 +2568,7 @@ NTSTATUS rpccli_lsa_LookupNames2(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*sids = *r.out.sids;
 	*count = *r.out.count;
 
@@ -2918,9 +2914,9 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 				 struct policy_handle *handle,
 				 uint32_t num_names,
 				 struct lsa_String *names,
-				 struct lsa_RefDomainList *domains,
+				 struct lsa_RefDomainList **domains,
 				 struct lsa_TransSidArray3 *sids,
-				 uint16_t level,
+				 enum lsa_LookupNamesLevel level,
 				 uint32_t *count,
 				 uint32_t unknown1,
 				 uint32_t unknown2)
@@ -2962,9 +2958,7 @@ NTSTATUS rpccli_lsa_LookupNames3(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*sids = *r.out.sids;
 	*count = *r.out.count;
 
@@ -3120,16 +3114,23 @@ NTSTATUS rpccli_lsa_LSARUNREGISTERAUDITEVENT(struct rpc_pipe_client *cli,
 	return r.out.result;
 }
 
-NTSTATUS rpccli_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
-						    TALLOC_CTX *mem_ctx)
+NTSTATUS rpccli_lsa_lsaRQueryForestTrustInformation(struct rpc_pipe_client *cli,
+						    TALLOC_CTX *mem_ctx,
+						    struct policy_handle *handle,
+						    struct lsa_String *trusted_domain_name,
+						    uint16_t unknown,
+						    struct lsa_ForestTrustInformation **forest_trust_info)
 {
-	struct lsa_LSARQUERYFORESTTRUSTINFORMATION r;
+	struct lsa_lsaRQueryForestTrustInformation r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.handle = handle;
+	r.in.trusted_domain_name = trusted_domain_name;
+	r.in.unknown = unknown;
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_IN_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, &r);
+		NDR_PRINT_IN_DEBUG(lsa_lsaRQueryForestTrustInformation, &r);
 	}
 
 	status = cli_do_rpc_ndr(cli,
@@ -3144,7 +3145,7 @@ NTSTATUS rpccli_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		NDR_PRINT_OUT_DEBUG(lsa_LSARQUERYFORESTTRUSTINFORMATION, &r);
+		NDR_PRINT_OUT_DEBUG(lsa_lsaRQueryForestTrustInformation, &r);
 	}
 
 	if (NT_STATUS_IS_ERR(status)) {
@@ -3152,6 +3153,7 @@ NTSTATUS rpccli_lsa_LSARQUERYFORESTTRUSTINFORMATION(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*forest_trust_info = *r.out.forest_trust_info;
 
 	/* Return result */
 	return r.out.result;
@@ -3234,7 +3236,7 @@ NTSTATUS rpccli_lsa_CREDRRENAME(struct rpc_pipe_client *cli,
 NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli,
 				TALLOC_CTX *mem_ctx,
 				struct lsa_SidArray *sids,
-				struct lsa_RefDomainList *domains,
+				struct lsa_RefDomainList **domains,
 				struct lsa_TransNameArray2 *names,
 				uint16_t level,
 				uint32_t *count,
@@ -3276,9 +3278,7 @@ NTSTATUS rpccli_lsa_LookupSids3(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*names = *r.out.names;
 	*count = *r.out.count;
 
@@ -3290,9 +3290,9 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
 				 uint32_t num_names,
 				 struct lsa_String *names,
-				 struct lsa_RefDomainList *domains,
+				 struct lsa_RefDomainList **domains,
 				 struct lsa_TransSidArray3 *sids,
-				 uint16_t level,
+				 enum lsa_LookupNamesLevel level,
 				 uint32_t *count,
 				 uint32_t unknown1,
 				 uint32_t unknown2)
@@ -3333,9 +3333,7 @@ NTSTATUS rpccli_lsa_LookupNames4(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
-	if (domains && r.out.domains) {
-		*domains = *r.out.domains;
-	}
+	*domains = *r.out.domains;
 	*sids = *r.out.sids;
 	*count = *r.out.count;
 

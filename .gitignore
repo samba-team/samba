@@ -1,6 +1,7 @@
 *.o
 *.po
 *~
+source/TAGS
 source/client/client_proto.h
 source/libnet/libnet_proto.h
 source/include/build_env.h
@@ -45,3 +46,19 @@ examples/VFS/module_config.h.in
 examples/VFS/shadow_copy_test.so
 examples/VFS/skel_opaque.so
 examples/VFS/skel_transparent.so
+examples/libsmbclient/smbwrapper/smbsh
+examples/libsmbclient/smbwrapper/smbwrapper.so
+examples/libsmbclient/testacl
+examples/libsmbclient/testacl2
+examples/libsmbclient/testacl3
+examples/libsmbclient/testbrowse
+examples/libsmbclient/testbrowse2
+examples/libsmbclient/testchmod
+examples/libsmbclient/testread
+examples/libsmbclient/testsmbc
+examples/libsmbclient/teststat
+examples/libsmbclient/teststat2
+examples/libsmbclient/teststat3
+examples/libsmbclient/testutime
+examples/libsmbclient/testwrite
+examples/libsmbclient/testtruncate

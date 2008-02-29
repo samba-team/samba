@@ -81,12 +81,14 @@ static void sync_child(char *name, int nm_type,
 	}
 
 	if (!cli_set_port(cli, 139)) {
+		cli_shutdown(cli);
 		return;
 	}
 
 	in_addr_to_sockaddr_storage(&ss, ip);
 	status = cli_connect(cli, name, &ss);
 	if (!NT_STATUS_IS_OK(status)) {
+		cli_shutdown(cli);
 		return;
 	}
 

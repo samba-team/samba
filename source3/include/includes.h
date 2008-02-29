@@ -250,6 +250,10 @@ typedef int ber_int_t;
 #include <langinfo.h>
 #endif
 
+#if HAVE_NETGROUP_H
+#include <netgroup.h>
+#endif
+
 #if defined(HAVE_AIO_H) && defined(WITH_AIO)
 #include <aio.h>
 #endif
@@ -694,14 +698,13 @@ typedef char fstring[FSTRING_LEN];
 #include "rpc_netlogon.h"
 #include "reg_objects.h"
 #include "reg_db.h"
-#include "rpc_samr.h"
 #include "rpc_srvsvc.h"
 #include "rpc_spoolss.h"
 #include "rpc_eventlog.h"
-#include "rpc_ds.h"
 #include "rpc_perfcount.h"
 #include "rpc_perfcount_defs.h"
 #include "librpc/gen_ndr/notify.h"
+#include "librpc/gen_ndr/xattr.h"
 #include "nt_printing.h"
 #include "idmap.h"
 #include "client.h"
@@ -720,6 +723,8 @@ typedef char fstring[FSTRING_LEN];
 #include "ctdbd_conn.h"
 #include "talloc_stack.h"
 #include "memcache.h"
+#include "async_req.h"
+#include "async_smb.h"
 
 /* used in net.c */
 struct functable {
@@ -1107,6 +1112,14 @@ char *talloc_asprintf_strupper_m(TALLOC_CTX *t, const char *fmt, ...) PRINTF_ATT
 #define VXFS_QUOTA
 #endif
 
+#ifndef XATTR_CREATE
+#define XATTR_CREATE  0x1       /* set value, fail if attr already exists */
+#endif
+
+#ifndef XATTR_REPLACE
+#define XATTR_REPLACE 0x2       /* set value, fail if attr does not exist */
+#endif
+
 #if defined(HAVE_KRB5)
 
 krb5_error_code smb_krb5_parse_name(krb5_context context,
@@ -1158,15 +1171,15 @@ bool kerberos_compatible_enctypes(krb5_context context, krb5_enctype enctype1, k
 void kerberos_free_data_contents(krb5_context context, krb5_data *pdata);
 NTSTATUS decode_pac_data(TALLOC_CTX *mem_ctx,
 			 DATA_BLOB *pac_data_blob,
-			 krb5_context context, 
+			 krb5_context context,
 			 krb5_keyblock *service_keyblock,
 			 krb5_const_principal client_principal,
 			 time_t tgs_authtime,
-			 PAC_DATA **pac_data);
+			 struct PAC_DATA **pac_data_out);
 void smb_krb5_checksum_from_pac_sig(krb5_checksum *cksum, 
-				    PAC_SIGNATURE_DATA *sig);
+				    struct PAC_SIGNATURE_DATA *sig);
 krb5_error_code smb_krb5_verify_checksum(krb5_context context,
-					 krb5_keyblock *keyblock,
+					 const krb5_keyblock *keyblock,
 					 krb5_keyusage usage,
 					 krb5_checksum *cksum,
 					 uint8 *data,
@@ -1194,7 +1207,6 @@ bool smb_krb5_principal_compare_any_realm(krb5_context context,
 					  krb5_const_principal princ2);
 int cli_krb5_get_ticket(const char *principal, time_t time_offset, 
 			DATA_BLOB *ticket, DATA_BLOB *session_key_krb5, uint32 extra_ap_opts, const char *ccname, time_t *tgs_expire);
-PAC_LOGON_INFO *get_logon_info_from_pac(PAC_DATA *pac_data);
 krb5_error_code smb_krb5_renew_ticket(const char *ccache_string, const char *client_string, const char *service_string, time_t *expire_time);
 krb5_error_code kpasswd_err_to_krb5_err(krb5_error_code res_code);
 krb5_error_code smb_krb5_gen_netbios_krb5_address(smb_krb5_addresses **kerb_addr);

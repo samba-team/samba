@@ -464,6 +464,9 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 {
 	int i;
 
+	DEBUG(10, ("lookup_rids called for domain sid '%s'\n",
+		   sid_string_dbg(domain_sid)));
+
 	if (num_rids) {
 		*names = TALLOC_ARRAY(mem_ctx, const char *, num_rids);
 		*types = TALLOC_ARRAY(mem_ctx, enum lsa_SidType, num_rids);
@@ -545,10 +548,16 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 		if (*domain_name == NULL) {
 			*domain_name = talloc_strdup(
 				mem_ctx, unix_users_domain_name());
+			if (*domain_name == NULL) {
+				return false;
+			}
 		}
 		for (i=0; i<num_rids; i++) {
 			(*names)[i] = talloc_strdup(
 				(*names), uidtoname(rids[i]));
+			if ((*names)[i] == NULL) {
+				return false;
+			}
 			(*types)[i] = SID_NAME_USER;
 		}
 		return true;
@@ -558,10 +567,16 @@ static bool lookup_rids(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 		if (*domain_name == NULL) {
 			*domain_name = talloc_strdup(
 				mem_ctx, unix_groups_domain_name());
+			if (*domain_name == NULL) {
+				return false;
+			}
 		}
 		for (i=0; i<num_rids; i++) {
 			(*names)[i] = talloc_strdup(
 				(*names), gidtoname(rids[i]));
+			if ((*names)[i] == NULL) {
+				return false;
+			}
 			(*types)[i] = SID_NAME_DOM_GRP;
 		}
 		return true;
@@ -593,6 +608,16 @@ static bool lookup_as_domain(const DOM_SID *sid, TALLOC_CTX *mem_ctx,
 
 	if (sid_check_is_wellknown_domain(sid, &tmp)) {
 		*name = talloc_strdup(mem_ctx, tmp);
+		return true;
+	}
+
+	if (sid_check_is_unix_users(sid)) {
+		*name = talloc_strdup(mem_ctx, unix_users_domain_name());
+		return true;
+	}
+
+	if (sid_check_is_unix_groups(sid)) {
+		*name = talloc_strdup(mem_ctx, unix_groups_domain_name());
 		return true;
 	}
 
@@ -921,6 +946,8 @@ bool lookup_sid(TALLOC_CTX *mem_ctx, const DOM_SID *sid,
 	struct lsa_name_info *name;
 	TALLOC_CTX *tmp_ctx;
 	bool ret = false;
+
+	DEBUG(10, ("lookup_sid called for SID '%s'\n", sid_string_dbg(sid)));
 
 	if (!(tmp_ctx = talloc_new(mem_ctx))) {
 		DEBUG(0, ("talloc_new failed\n"));

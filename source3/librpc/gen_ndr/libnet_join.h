@@ -7,8 +7,6 @@
 #ifndef _HEADER_libnetjoin
 #define _HEADER_libnetjoin
 
-;
-
 
 struct libnet_JoinCtx {
 	struct {
@@ -65,6 +63,8 @@ struct libnet_UnjoinCtx {
 		const char * dns_domain_name;
 		uint8_t modified_config;
 		const char * error_string;
+		uint8_t disabled_machine_account;
+		uint8_t deleted_machine_account;
 		WERROR result;
 	} out;
 

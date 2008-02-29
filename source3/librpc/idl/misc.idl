@@ -45,8 +45,7 @@ interface misc
 	typedef [public,v1_enum] enum {
 		SAMR_REJECT_OTHER      = 0,
 		SAMR_REJECT_TOO_SHORT  = 1,
-		SAMR_REJECT_COMPLEXITY = 2
+		SAMR_REJECT_IN_HISTORY = 2,
+		SAMR_REJECT_COMPLEXITY = 5
 	} samr_RejectReason;
-
-
 }

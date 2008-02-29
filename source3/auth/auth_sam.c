@@ -122,7 +122,7 @@ static bool logon_hours_ok(struct samu *sampass)
 }
 
 /****************************************************************************
- Do a specific test for a struct samu being vaild for this connection 
+ Do a specific test for a struct samu being valid for this connection
  (ie not disabled, expired and the like).
 ****************************************************************************/
 

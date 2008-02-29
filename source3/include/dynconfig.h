@@ -41,42 +41,60 @@ extern char dyn_PRIVATE_DIR[1024];
 
 const char *get_dyn_SBINDIR(void);
 const char *set_dyn_SBINDIR(const char *newpath);
+bool is_default_dyn_SBINDIR(void);
 
 const char *get_dyn_BINDIR(void);
 const char *set_dyn_BINDIR(const char *newpath);
+bool is_default_dyn_BINDIR(void);
 
 const char *get_dyn_SWATDIR(void);
 const char *set_dyn_SWATDIR(const char *newpath);
+bool is_default_dyn_SWATDIR(void);
 
 const char *get_dyn_CONFIGFILE(void);
 const char *set_dyn_CONFIGFILE(const char *newpath);
+bool is_default_dyn_CONFIGFILE(void);
 
-const char *get_dyn_dyn_LOGFILEBASE(void);
-const char *set_dyn_dyn_LOGFILEBASE(const char *newpath);
+const char *get_dyn_LOGFILEBASE(void);
+const char *set_dyn_LOGFILEBASE(const char *newpath);
+bool is_default_dyn_LOGFILEBASE(void);
 
 const char *get_dyn_LMHOSTSFILE(void);
 const char *set_dyn_LMHOSTSFILE(const char *newpath);
+bool is_default_dyn_LMHOSTSFILE(void);
 
 const char *get_dyn_CODEPAGEDIR(void);
 const char *set_dyn_CODEPAGEDIR(const char *newpath);
+bool is_default_dyn_CODEPAGEDIR(void);
 
 const char *get_dyn_LIBDIR(void);
 const char *set_dyn_LIBDIR(const char *newpath);
+bool is_default_dyn_LIBDIR(void);
 
 const char *get_dyn_SHLIBEXT(void);
 const char *set_dyn_SHLIBEXT(const char *newpath);
+bool is_default_dyn_SHLIBEXT(void);
 
 const char *get_dyn_LOCKDIR(void);
 const char *set_dyn_LOCKDIR(const char *newpath);
+bool is_default_dyn_LOCKDIR(void);
 
 const char *get_dyn_PIDDIR(void);
 const char *set_dyn_PIDDIR(const char *newpath);
+bool is_default_dyn_PIDDIR(void);
 
 const char *get_dyn_SMB_PASSWD_FILE(void);
 const char *set_dyn_SMB_PASSWD_FILE(const char *newpath);
+bool is_default_dyn_SMB_PASSWD_FILE(void);
 
 const char *get_dyn_PRIVATE_DIR(void);
 const char *set_dyn_PRIVATE_DIR(const char *newpath);
+bool is_default_dyn_PRIVATE_DIR(void);
 
 const char *get_dyn_STATEDIR(void);
+const char *set_dyn_STATEDIR(const char *newpath);
+bool is_default_dyn_STATEDIR(void);
+
 const char *get_dyn_CACHEDIR(void);
+const char *set_dyn_CACHEDIR(const char *newpath);
+bool is_default_dyn_CACHEDIR(bool);

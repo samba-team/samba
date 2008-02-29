@@ -789,12 +789,20 @@ NTSTATUS rpccli_dfs_AddStdRootForced(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_dfs_GetDcAddress(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
+				 const char *servername,
+				 const char **server_fullname,
+				 uint8_t *is_root,
+				 uint32_t *ttl,
 				 WERROR *werror)
 {
 	struct dfs_GetDcAddress r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.servername = servername;
+	r.in.server_fullname = server_fullname;
+	r.in.is_root = is_root;
+	r.in.ttl = ttl;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(dfs_GetDcAddress, &r);
@@ -820,6 +828,9 @@ NTSTATUS rpccli_dfs_GetDcAddress(struct rpc_pipe_client *cli,
 	}
 
 	/* Return variables */
+	*server_fullname = *r.out.server_fullname;
+	*is_root = *r.out.is_root;
+	*ttl = *r.out.ttl;
 
 	/* Return result */
 	if (werror) {
@@ -831,12 +842,20 @@ NTSTATUS rpccli_dfs_GetDcAddress(struct rpc_pipe_client *cli,
 
 NTSTATUS rpccli_dfs_SetDcAddress(struct rpc_pipe_client *cli,
 				 TALLOC_CTX *mem_ctx,
+				 const char *servername,
+				 const char *server_fullname,
+				 uint32_t flags,
+				 uint32_t ttl,
 				 WERROR *werror)
 {
 	struct dfs_SetDcAddress r;
 	NTSTATUS status;
 
 	/* In parameters */
+	r.in.servername = servername;
+	r.in.server_fullname = server_fullname;
+	r.in.flags = flags;
+	r.in.ttl = ttl;
 
 	if (DEBUGLEVEL >= 10) {
 		NDR_PRINT_IN_DEBUG(dfs_SetDcAddress, &r);

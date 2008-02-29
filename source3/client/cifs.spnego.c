@@ -3,11 +3,13 @@
 * Copyright (C) Igor Mammedov (niallain@gmail.com) 2007
 *
 * Used by /sbin/request-key for handling
-* cifs upcall for kerberos authorization of access to share.
+* cifs upcall for kerberos authorization of access to share and
+* cifs upcall for DFS srver name resolving (IPv4/IPv6 aware).
 * You should have keyutils installed and add following line to
 * /etc/request-key.conf file
 
 create cifs.spnego * * /usr/local/sbin/cifs.spnego [-v][-c] %k
+create cifs.resolver * * /usr/local/sbin/cifs.spnego [-v] %k
 
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -27,7 +29,7 @@ create cifs.spnego * * /usr/local/sbin/cifs.spnego [-v][-c] %k
 
 #include "cifs_spnego.h"
 
-const char* CIFSSPNEGO_VERSION="1.0";
+const char *CIFSSPNEGO_VERSION = "1.1";
 static const char *prog = "cifs.spnego";
 typedef enum _secType {
 	KRB5,
@@ -146,6 +148,58 @@ int decode_key_description(const char *desc, int *ver, secType_t * sec,
 	return retval;
 }
 
+int cifs_resolver(const key_serial_t key, const char *key_descr)
+{
+	int c;
+	struct addrinfo *addr;
+	char ip[INET6_ADDRSTRLEN];
+	void *p;
+	const char *keyend = key_descr;
+	/* skip next 4 ';' delimiters to get to description */
+	for (c = 1; c <= 4; c++) {
+		keyend = index(keyend+1, ';');
+		if (!keyend) {
+			syslog(LOG_WARNING, "invalid key description: %s",
+					key_descr);
+			return 1;
+		}
+	}
+	keyend++;
+
+	/* resolve name to ip */
+	c = getaddrinfo(keyend, NULL, NULL, &addr);
+	if (c) {
+		syslog(LOG_WARNING, "unable to resolve hostname: %s [%s]",
+				keyend, gai_strerror(c));
+		return 1;
+	}
+
+	/* conver ip to string form */
+	if (addr->ai_family == AF_INET) {
+		p = &(((struct sockaddr_in *)addr->ai_addr)->sin_addr);
+	} else {
+		p = &(((struct sockaddr_in6 *)addr->ai_addr)->sin6_addr);
+	}
+	if (!inet_ntop(addr->ai_family, p, ip, sizeof(ip))) {
+		syslog(LOG_WARNING, "%s: inet_ntop: %s",
+				__FUNCTION__, strerror(errno));
+		freeaddrinfo(addr);
+		return 1;
+	}
+
+	/* setup key */
+	c = keyctl_instantiate(key, ip, strlen(ip)+1, 0);
+	if (c == -1) {
+		syslog(LOG_WARNING, "%s: keyctl_instantiate: %s",
+				__FUNCTION__, strerror(errno));
+		freeaddrinfo(addr);
+		return 1;
+	}
+
+	freeaddrinfo(addr);
+	return 0;
+}
+
 int main(const int argc, char *const argv[])
 {
 	struct cifs_spnego_msg *keydata = NULL;
@@ -196,6 +250,11 @@ int main(const int argc, char *const argv[])
 		syslog(LOG_WARNING, "keyctl_describe_alloc failed: %s",
 		       strerror(errno));
 		rc = 1;
+		goto out;
+	}
+
+	if (strncmp(buf, "cifs.resolver", sizeof("cifs.resolver")-1) == 0) {
+		rc = cifs_resolver(key, buf);
 		goto out;
 	}
 

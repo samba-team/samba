@@ -1408,12 +1408,12 @@ static bool create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 
 				psa1->flags |= (psa2->flags & (SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_OBJECT_INHERIT));
 				psa2->flags &= ~(SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_OBJECT_INHERIT);
-				
+
 			} else if (psa2->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
 
 				psa2->flags |= (psa1->flags & (SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_OBJECT_INHERIT));
 				psa1->flags &= ~(SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_OBJECT_INHERIT);
-				
+
 			}
 		}
 	}
@@ -1474,10 +1474,22 @@ static bool create_canon_ace_lists(files_struct *fsp, SMB_STRUCT_STAT *pst,
 
 		} else if (sid_to_uid( &current_ace->trustee, &current_ace->unix_ug.uid)) {
 			current_ace->owner_type = UID_ACE;
-			current_ace->type = SMB_ACL_USER;
+			/* If it's the owning user, this is a user_obj, not
+			 * a user. */
+			if (current_ace->unix_ug.uid == pst->st_uid) {
+				current_ace->type = SMB_ACL_USER_OBJ;
+			} else {
+				current_ace->type = SMB_ACL_USER;
+			}
 		} else if (sid_to_gid( &current_ace->trustee, &current_ace->unix_ug.gid)) {
 			current_ace->owner_type = GID_ACE;
-			current_ace->type = SMB_ACL_GROUP;
+			/* If it's the primary group, this is a group_obj, not
+			 * a group. */
+			if (current_ace->unix_ug.gid == pst->st_gid) {
+				current_ace->type = SMB_ACL_GROUP_OBJ;
+			} else {
+				current_ace->type = SMB_ACL_GROUP;
+			}
 		} else {
 			/*
 			 * Silently ignore map failures in non-mappable SIDs (NT Authority, BUILTIN etc).
@@ -3202,57 +3214,8 @@ int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
 	return ret;
 }
 
-static NTSTATUS append_ugw_ace(files_struct *fsp,
-			SMB_STRUCT_STAT *psbuf,
-			mode_t unx_mode,
-			int ugw,
-			SEC_ACE *se)
-{
-	mode_t perms;
-	SEC_ACCESS acc;
-	enum security_ace_type nt_acl_type;
-	DOM_SID trustee;
-
-	switch (ugw) {
-		case S_IRUSR:
-			perms = unix_perms_to_acl_perms(unx_mode,
-							S_IRUSR,
-							S_IWUSR,
-							S_IXUSR);
-			uid_to_sid(&trustee, psbuf->st_uid );
-			break;
-		case S_IRGRP:
-			perms = unix_perms_to_acl_perms(unx_mode,
-							S_IRGRP,
-							S_IWGRP,
-							S_IXGRP);
-			gid_to_sid(&trustee, psbuf->st_gid );
-			break;
-		case S_IROTH:
-			perms = unix_perms_to_acl_perms(unx_mode,
-							S_IROTH,
-							S_IWOTH,
-							S_IXOTH);
-			sid_copy(&trustee, &global_sid_World);
-			break;
-		default:
-			return NT_STATUS_INVALID_PARAMETER;
-	}
-	acc = map_canon_ace_perms(SNUM(fsp->conn),
-				&nt_acl_type,
-				perms,
-				fsp->is_directory);
-
-	init_sec_ace(se,
-		&trustee,
-		nt_acl_type,
-		acc,
-		0);
-	return NT_STATUS_OK;
-}
-
 /****************************************************************************
- If this is an
+ Take care of parent ACL inheritance.
 ****************************************************************************/
 
 static NTSTATUS append_parent_acl(files_struct *fsp,
@@ -3270,7 +3233,7 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 	NTSTATUS status;
 	int info;
 	unsigned int i, j;
-	mode_t unx_mode;
+	bool is_dacl_protected = (psd->type & SE_DESC_DACL_PROTECTED);
 
 	ZERO_STRUCT(sbuf);
 
@@ -3284,12 +3247,6 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 				NULL)) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	/* Create a default mode for u/g/w. */
-	unx_mode = unix_mode(fsp->conn,
-			aARCH | (fsp->is_directory ? aDIR : 0),
-			fsp->fsp_name,
-			parent_name);
 
 	status = open_directory(fsp->conn,
 				NULL,
@@ -3318,19 +3275,22 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 
 	/*
 	 * Make room for potentially all the ACLs from
-	 * the parent, plus the user/group/other triple.
+	 * the parent. We used to add the ugw triple here,
+	 * as we knew we were dealing with POSIX ACLs.
+	 * We no longer need to do so as we can guarentee
+	 * that a default ACL from the parent directory will
+	 * be well formed for POSIX ACLs if it came from a
+	 * POSIX ACL source, and if we're not writing to a
+	 * POSIX ACL sink then we don't care if it's not well
+	 * formed. JRA.
 	 */
 
-	num_aces += parent_sd->dacl->num_aces + 3;
+	num_aces += parent_sd->dacl->num_aces;
 
 	if((new_ace = TALLOC_ZERO_ARRAY(mem_ctx, SEC_ACE,
 					num_aces)) == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	DEBUG(10,("append_parent_acl: parent ACL has %u entries. New "
-		"ACL has %u entries\n",
-		parent_sd->dacl->num_aces, num_aces ));
 
 	/* Start by copying in all the given ACE entries. */
 	for (i = 0; i < psd->dacl->num_aces; i++) {
@@ -3342,49 +3302,95 @@ static NTSTATUS append_parent_acl(files_struct *fsp,
 	 * as that really only applies to newly created files. JRA.
 	 */
 
-	 /*
-	  * Append u/g/w.
-	  */
-
-	status = append_ugw_ace(fsp, psbuf, unx_mode, S_IRUSR, &new_ace[i++]);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = append_ugw_ace(fsp, psbuf, unx_mode, S_IRGRP, &new_ace[i++]);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-	status = append_ugw_ace(fsp, psbuf, unx_mode, S_IROTH, &new_ace[i++]);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	/* Finally append any inherited ACEs. */
 	for (j = 0; j < parent_sd->dacl->num_aces; j++) {
 		SEC_ACE *se = &parent_sd->dacl->aces[j];
-		uint32 i_flags = se->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|
-					SEC_ACE_FLAG_CONTAINER_INHERIT|
-					SEC_ACE_FLAG_INHERIT_ONLY);
 
 		if (fsp->is_directory) {
-			if (i_flags == SEC_ACE_FLAG_OBJECT_INHERIT) {
-				/* Should only apply to a file - ignore. */
+			if (!(se->flags & SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+				/* Doesn't apply to a directory - ignore. */
+				DEBUG(10,("append_parent_acl: directory %s "
+					"ignoring non container "
+					"inherit flags %u on ACE with sid %s "
+					"from parent %s\n",
+					fsp->fsp_name,
+					(unsigned int)se->flags,
+					sid_string_dbg(&se->trustee),
+					parent_name));
 				continue;
 			}
 		} else {
-			if ((i_flags & (SEC_ACE_FLAG_OBJECT_INHERIT|
-					SEC_ACE_FLAG_INHERIT_ONLY)) !=
-					SEC_ACE_FLAG_OBJECT_INHERIT) {
-				/* Should not apply to a file - ignore. */
+			if (!(se->flags & SEC_ACE_FLAG_OBJECT_INHERIT)) {
+				/* Doesn't apply to a file - ignore. */
+				DEBUG(10,("append_parent_acl: file %s "
+					"ignoring non object "
+					"inherit flags %u on ACE with sid %s "
+					"from parent %s\n",
+					fsp->fsp_name,
+					(unsigned int)se->flags,
+					sid_string_dbg(&se->trustee),
+					parent_name));
 				continue;
 			}
 		}
+
+		if (is_dacl_protected) {
+			/* If the DACL is protected it means we must
+			 * not overwrite an existing ACE entry with the
+			 * same SID. This is order N^2. Ouch :-(. JRA. */
+			unsigned int k;
+			for (k = 0; k < psd->dacl->num_aces; k++) {
+				if (sid_equal(&psd->dacl->aces[k].trustee,
+						&se->trustee)) {
+					break;
+				}
+			}
+			if (k < psd->dacl->num_aces) {
+				/* SID matched. Ignore. */
+				DEBUG(10,("append_parent_acl: path %s "
+					"ignoring ACE with protected sid %s "
+					"from parent %s\n",
+					fsp->fsp_name,
+					sid_string_dbg(&se->trustee),
+					parent_name));
+				continue;
+			}
+		}
+
 		sec_ace_copy(&new_ace[i], se);
 		if (se->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
 			new_ace[i].flags &= ~(SEC_ACE_FLAG_VALID_INHERIT);
 		}
 		new_ace[i].flags |= SEC_ACE_FLAG_INHERITED_ACE;
+
+		if (fsp->is_directory) {
+			/*
+			 * Strip off any inherit only. It's applied.
+			 */
+			new_ace[i].flags &= ~(SEC_ACE_FLAG_INHERIT_ONLY);
+			if (se->flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT) {
+				/* No further inheritance. */
+				new_ace[i].flags &=
+					~(SEC_ACE_FLAG_CONTAINER_INHERIT|
+					SEC_ACE_FLAG_OBJECT_INHERIT);
+			}
+		} else {
+			/*
+			 * Strip off any container or inherit
+			 * flags, they can't apply to objects.
+			 */
+			new_ace[i].flags &= ~(SEC_ACE_FLAG_CONTAINER_INHERIT|
+						SEC_ACE_FLAG_INHERIT_ONLY|
+						SEC_ACE_FLAG_NO_PROPAGATE_INHERIT);
+		}
 		i++;
+
+		DEBUG(10,("append_parent_acl: path %s "
+			"inheriting ACE with sid %s "
+			"from parent %s\n",
+			fsp->fsp_name,
+			sid_string_dbg(&se->trustee),
+			parent_name));
 	}
 
 	parent_sd->dacl->aces = new_ace;
@@ -3413,6 +3419,9 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	bool acl_perms = False;
 	mode_t orig_mode = (mode_t)0;
 	NTSTATUS status;
+	uid_t orig_uid;
+	gid_t orig_gid;
+	bool need_chown = False;
 
 	DEBUG(10,("set_nt_acl: called for file %s\n", fsp->fsp_name ));
 
@@ -3435,6 +3444,8 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 	/* Save the original elements we check against. */
 	orig_mode = sbuf.st_mode;
+	orig_uid = sbuf.st_uid;
+	orig_gid = sbuf.st_gid;
 
 	/*
 	 * Unpack the user/group/world id's.
@@ -3449,7 +3460,11 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	 * Do we need to chown ?
 	 */
 
-	if (((user != (uid_t)-1) && (sbuf.st_uid != user)) || (( grp != (gid_t)-1) && (sbuf.st_gid != grp))) {
+	if (((user != (uid_t)-1) && (orig_uid != user)) || (( grp != (gid_t)-1) && (orig_gid != grp))) {
+		need_chown = True;
+	}
+
+	if (need_chown && (user == (uid_t)-1 || user == current_user.ut.uid)) {
 
 		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
 				fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
@@ -3487,6 +3502,11 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 		/* Save the original elements we check against. */
 		orig_mode = sbuf.st_mode;
+		orig_uid = sbuf.st_uid;
+		orig_gid = sbuf.st_gid;
+
+		/* We did chown already, drop the flag */
+		need_chown = False;
 	}
 
 	create_file_sids(&sbuf, &file_owner_sid, &file_grp_sid);
@@ -3630,6 +3650,21 @@ NTSTATUS set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 		free_canon_ace_list(dir_ace_list); 
 	}
 
+	/* Any chown pending? */
+	if (need_chown) {
+		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
+			 fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
+		
+		if(try_chown( fsp->conn, fsp->fsp_name, user, grp) == -1) {
+			DEBUG(3,("set_nt_acl: chown %s, %u, %u failed. Error = %s.\n",
+				 fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
+			if (errno == EPERM) {
+				return NT_STATUS_INVALID_OWNER;
+			}
+			return map_nt_error_from_unix(errno);
+		}
+	}
+	
 	return NT_STATUS_OK;
 }
 

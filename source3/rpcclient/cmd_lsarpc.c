@@ -4,6 +4,7 @@
 
    Copyright (C) Tim Potter              2000
    Copyright (C) Rafal Szczesniak        2002
+   Copyright (C) Guenther Deschner	 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,7 +22,6 @@
 
 #include "includes.h"
 #include "rpcclient.h"
-
 
 /* useful function to allow entering a name instead of a SID and
  * looking it up automatically */
@@ -58,107 +58,91 @@ done:
 	return result;
 }
 
-static void display_query_info_1(DOM_QUERY_1 d)
+static void display_query_info_1(struct lsa_AuditLogInfo *r)
 {
-	d_printf("percent_full:\t%d\n", d.percent_full);
-	d_printf("log_size:\t%d\n", d.log_size);
-	d_printf("retention_time:\t%lld\n", (long long)d.retention_time);
-	d_printf("shutdown_in_progress:\t%d\n", d.shutdown_in_progress);
-	d_printf("time_to_shutdown:\t%lld\n", (long long)d.time_to_shutdown);
-	d_printf("next_audit_record:\t%d\n", d.next_audit_record);
-	d_printf("unknown:\t%d\n", d.unknown);
+	d_printf("percent_full:\t%d\n", r->percent_full);
+	d_printf("log_size:\t%d\n", r->log_size);
+	d_printf("retention_time:\t%lld\n", (long long)r->retention_time);
+	d_printf("shutdown_in_progress:\t%d\n", r->shutdown_in_progress);
+	d_printf("time_to_shutdown:\t%lld\n", (long long)r->time_to_shutdown);
+	d_printf("next_audit_record:\t%d\n", r->next_audit_record);
+	d_printf("unknown:\t%d\n", r->unknown);
 }
 
-static void display_query_info_2(DOM_QUERY_2 d, TALLOC_CTX *mem_ctx)
+static void display_query_info_2(struct lsa_AuditEventsInfo *r)
 {
 	int i;
-	d_printf("Auditing enabled:\t%d\n", d.auditing_enabled);
-	d_printf("Auditing categories:\t%d\n", d.count1);
+	d_printf("Auditing enabled:\t%d\n", r->auditing_mode);
+	d_printf("Auditing categories:\t%d\n", r->count);
 	d_printf("Auditsettings:\n");
-	for (i=0; i<d.count1; i++) {
-		const char *val = audit_policy_str(mem_ctx, d.auditsettings[i]);
+	for (i=0; i<r->count; i++) {
+		const char *val = audit_policy_str(talloc_tos(), r->settings[i]);
 		const char *policy = audit_description_str(i);
 		d_printf("%s:\t%s\n", policy, val);
 	}
 }
 
-static void display_query_info_3(DOM_QUERY_3 d)
+static void display_query_info_3(struct lsa_DomainInfo *r)
 {
-	fstring name;
-
-	unistr2_to_ascii(name, &d.uni_domain_name, sizeof(name));
-
-	d_printf("Domain Name: %s\n", name);
-	d_printf("Domain Sid: %s\n", sid_string_tos(&d.dom_sid.sid));
+	d_printf("Domain Name: %s\n", r->name.string);
+	d_printf("Domain Sid: %s\n", sid_string_tos(r->sid));
 }
 
-static void display_query_info_5(DOM_QUERY_5 d)
+static void display_query_info_5(struct lsa_DomainInfo *r)
 {
-	fstring name;
-
-	unistr2_to_ascii(name, &d.uni_domain_name, sizeof(name));
-
-	d_printf("Domain Name: %s\n", name);
-	d_printf("Domain Sid: %s\n", sid_string_tos(&d.dom_sid.sid));
+	d_printf("Domain Name: %s\n", r->name.string);
+	d_printf("Domain Sid: %s\n", sid_string_tos(r->sid));
 }
 
-static void display_query_info_10(DOM_QUERY_10 d)
+static void display_query_info_10(struct lsa_AuditFullSetInfo *r)
 {
-	d_printf("Shutdown on full: %d\n", d.shutdown_on_full);
+	d_printf("Shutdown on full: %d\n", r->shutdown_on_full);
 }
 
-static void display_query_info_11(DOM_QUERY_11 d)
+static void display_query_info_11(struct lsa_AuditFullQueryInfo *r)
 {
-	d_printf("Shutdown on full: %d\n", d.shutdown_on_full);
-	d_printf("Log is full: %d\n", d.log_is_full);
-	d_printf("Unknown: %d\n", d.unknown);
+	d_printf("Shutdown on full: %d\n", r->shutdown_on_full);
+	d_printf("Log is full: %d\n", r->log_is_full);
+	d_printf("Unknown: %d\n", r->unknown);
 }
 
-static void display_query_info_12(DOM_QUERY_12 d)
+static void display_query_info_12(struct lsa_DnsDomainInfo *r)
 {
-	fstring dom_name, dns_dom_name, forest_name;
-
-	unistr2_to_ascii(dom_name, &d.uni_nb_dom_name, sizeof(dom_name));
-	unistr2_to_ascii(dns_dom_name, &d.uni_dns_dom_name, sizeof(dns_dom_name));
-	unistr2_to_ascii(forest_name, &d.uni_forest_name, sizeof(forest_name));
-
-	d_printf("Domain NetBios Name: %s\n", dom_name);
-	d_printf("Domain DNS Name: %s\n", dns_dom_name);
-	d_printf("Domain Forest Name: %s\n", forest_name);
-	d_printf("Domain Sid: %s\n", sid_string_tos(&d.dom_sid.sid));
+	d_printf("Domain NetBios Name: %s\n", r->name.string);
+	d_printf("Domain DNS Name: %s\n", r->dns_domain.string);
+	d_printf("Domain Forest Name: %s\n", r->dns_forest.string);
+	d_printf("Domain Sid: %s\n", sid_string_tos(r->sid));
 	d_printf("Domain GUID: %s\n", smb_uuid_string(talloc_tos(),
-						      d.dom_guid));
-
+						      r->domain_guid));
 }
 
-
-
-static void display_lsa_query_info(LSA_INFO_CTR *dom, TALLOC_CTX *mem_ctx)
+static void display_lsa_query_info(union lsa_PolicyInformation *info,
+				   enum lsa_PolicyInfo level)
 {
-	switch (dom->info_class) {
+	switch (level) {
 		case 1:
-			display_query_info_1(dom->info.id1);
+			display_query_info_1(&info->audit_log);
 			break;
 		case 2:
-			display_query_info_2(dom->info.id2, mem_ctx);
+			display_query_info_2(&info->audit_events);
 			break;
 		case 3:
-			display_query_info_3(dom->info.id3);
+			display_query_info_3(&info->domain);
 			break;
 		case 5:
-			display_query_info_5(dom->info.id5);
+			display_query_info_5(&info->account_domain);
 			break;
 		case 10:
-			display_query_info_10(dom->info.id10);
+			display_query_info_10(&info->auditfullset);
 			break;
 		case 11:
-			display_query_info_11(dom->info.id11);
+			display_query_info_11(&info->auditfullquery);
 			break;
 		case 12:
-			display_query_info_12(dom->info.id12);
+			display_query_info_12(&info->dns);
 			break;
 		default:
-			printf("can't display info level: %d\n", dom->info_class);
+			printf("can't display info level: %d\n", level);
 			break;
 	}
 }
@@ -169,7 +153,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	LSA_INFO_CTR dom;
+	union lsa_PolicyInformation *info = NULL;
 
 	uint32 info_class = 3;
 
@@ -190,8 +174,10 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
 			
-		result = rpccli_lsa_query_info_policy2_new(cli, mem_ctx, &pol,
-							   info_class, &dom);
+		result = rpccli_lsa_QueryInfoPolicy2(cli, mem_ctx,
+						     &pol,
+						     info_class,
+						     &info);
 		break;
 	default:
 		result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
@@ -201,12 +187,15 @@ static NTSTATUS cmd_lsa_query_info_policy(struct rpc_pipe_client *cli,
 		if (!NT_STATUS_IS_OK(result))
 			goto done;
 		
-		result = rpccli_lsa_query_info_policy_new(cli, mem_ctx, &pol, 
-							  info_class, &dom);
+		result = rpccli_lsa_QueryInfoPolicy(cli, mem_ctx,
+						    &pol,
+						    info_class,
+						    &info);
 	}
 
-
-	display_lsa_query_info(&dom, mem_ctx);
+	if (NT_STATUS_IS_OK(result)) {
+		display_lsa_query_info(info, info_class);
+	}
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
@@ -389,13 +378,12 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	DOM_SID *domain_sids;
-	char **domain_names;
+	struct lsa_DomainList domain_list;
 
 	/* defaults, but may be changed using params */
 	uint32 enum_ctx = 0;
-	uint32 num_domains = 0;
 	int i;
+	uint32_t max_size = (uint32_t)-1;
 
 	if (argc > 2) {
 		printf("Usage: %s [enum context (0)]\n", argv[0]);
@@ -407,7 +395,7 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 	}	
 
 	result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
-				     POLICY_VIEW_LOCAL_INFORMATION,
+				     LSA_POLICY_VIEW_LOCAL_INFORMATION,
 				     &pol);
 
 	if (!NT_STATUS_IS_OK(result))
@@ -419,9 +407,11 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 
 		/* Lookup list of trusted domains */
 
-		result = rpccli_lsa_enum_trust_dom(cli, mem_ctx, &pol, &enum_ctx,
-						&num_domains,
-						&domain_names, &domain_sids);
+		result = rpccli_lsa_EnumTrustDom(cli, mem_ctx,
+						 &pol,
+						 &enum_ctx,
+						 &domain_list,
+						 max_size);
 		if (!NT_STATUS_IS_OK(result) &&
 		    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
 		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES))
@@ -429,12 +419,14 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct rpc_pipe_client *cli,
 
 		/* Print results: list of names and sids returned in this
 		 * response. */	 
-		for (i = 0; i < num_domains; i++) {
+		for (i = 0; i < domain_list.count; i++) {
 			fstring sid_str;
 
-			sid_to_fstring(sid_str, &domain_sids[i]);
-			printf("%s %s\n", domain_names[i] ? domain_names[i] : 
-			       "*unknown*", sid_str);
+			sid_to_fstring(sid_str, domain_list.domains[i].sid);
+			printf("%s %s\n",
+				domain_list.domains[i].name.string ?
+				domain_list.domains[i].name.string : "*unknown*",
+				sid_str);
 		}
 	}
 
@@ -451,13 +443,10 @@ static NTSTATUS cmd_lsa_enum_privilege(struct rpc_pipe_client *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct lsa_PrivArray priv_array;
 
 	uint32 enum_context=0;
 	uint32 pref_max_length=0x1000;
-	uint32 count=0;
-	char   **privs_name;
-	uint32 *privs_high;
-	uint32 *privs_low;
 	int i;
 
 	if (argc > 3) {
@@ -478,18 +467,24 @@ static NTSTATUS cmd_lsa_enum_privilege(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_enum_privilege(cli, mem_ctx, &pol, &enum_context, pref_max_length,
-					&count, &privs_name, &privs_high, &privs_low);
-
+	result = rpccli_lsa_EnumPrivs(cli, mem_ctx,
+				      &pol,
+				      &enum_context,
+				      &priv_array,
+				      pref_max_length);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Print results */
-	printf("found %d privileges\n\n", count);
+	printf("found %d privileges\n\n", priv_array.count);
 
-	for (i = 0; i < count; i++) {
-		printf("%s \t\t%d:%d (0x%x:0x%x)\n", privs_name[i] ? privs_name[i] : "*unknown*",
-		       privs_high[i], privs_low[i], privs_high[i], privs_low[i]);
+	for (i = 0; i < priv_array.count; i++) {
+		printf("%s \t\t%d:%d (0x%x:0x%x)\n",
+		       priv_array.privs[i].name.string ? priv_array.privs[i].name.string : "*unknown*",
+		       priv_array.privs[i].luid.high,
+		       priv_array.privs[i].luid.low,
+		       priv_array.privs[i].luid.high,
+		       priv_array.privs[i].luid.low);
 	}
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
@@ -509,7 +504,8 @@ static NTSTATUS cmd_lsa_get_dispname(struct rpc_pipe_client *cli,
 	uint16 lang_id=0;
 	uint16 lang_id_sys=0;
 	uint16 lang_id_desc;
-	fstring description;
+	struct lsa_String lsa_name;
+	struct lsa_StringLarge *description = NULL;
 
 	if (argc != 2) {
 		printf("Usage: %s privilege name\n", argv[0]);
@@ -523,13 +519,21 @@ static NTSTATUS cmd_lsa_get_dispname(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_get_dispname(cli, mem_ctx, &pol, argv[1], lang_id, lang_id_sys, description, &lang_id_desc);
+	init_lsa_String(&lsa_name, argv[1]);
+
+	result = rpccli_lsa_LookupPrivDisplayName(cli, mem_ctx,
+						  &pol,
+						  &lsa_name,
+						  lang_id,
+						  lang_id_sys,
+						  &description,
+						  &lang_id_desc);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Print results */
-	printf("%s -> %s (language: 0x%x)\n", argv[1], description, lang_id_desc);
+	printf("%s -> %s (language: 0x%x)\n", argv[1], description->string, lang_id_desc);
 
 	rpccli_lsa_Close(cli, mem_ctx, &pol);
  done:
@@ -547,8 +551,7 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 
 	uint32 enum_context=0;
 	uint32 pref_max_length=0x1000;
-	DOM_SID *sids;
-	uint32 count=0;
+	struct lsa_SidArray sid_array;
 	int i;
 
 	if (argc > 3) {
@@ -569,19 +572,22 @@ static NTSTATUS cmd_lsa_enum_sids(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_enum_sids(cli, mem_ctx, &pol, &enum_context, pref_max_length,
-					&count, &sids);
+	result = rpccli_lsa_EnumAccounts(cli, mem_ctx,
+					 &pol,
+					 &enum_context,
+					 &sid_array,
+					 pref_max_length);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Print results */
-	printf("found %d SIDs\n\n", count);
+	printf("found %d SIDs\n\n", sid_array.num_sids);
 
-	for (i = 0; i < count; i++) {
+	for (i = 0; i < sid_array.num_sids; i++) {
 		fstring sid_str;
 
-		sid_to_fstring(sid_str, &sids[i]);
+		sid_to_fstring(sid_str, sid_array.sids[i].sid);
 		printf("%s\n", sid_str);
 	}
 
@@ -619,7 +625,11 @@ static NTSTATUS cmd_lsa_create_account(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_create_account(cli, mem_ctx, &dom_pol, &sid, des_access, &user_pol);
+	result = rpccli_lsa_CreateAccount(cli, mem_ctx,
+					  &dom_pol,
+					  &sid,
+					  des_access,
+					  &user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -643,10 +653,8 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 	POLICY_HND user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 access_desired = 0x000f000f;
-	
 	DOM_SID sid;
-	uint32 count=0;
-	LUID_ATTR *set;
+	struct lsa_PrivilegeSet *privs = NULL;
 	int i;
 
 	if (argc != 2 ) {
@@ -665,22 +673,31 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_open_account(cli, mem_ctx, &dom_pol, &sid, access_desired, &user_pol);
+	result = rpccli_lsa_OpenAccount(cli, mem_ctx,
+					&dom_pol,
+					&sid,
+					access_desired,
+					&user_pol);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_enum_privsaccount(cli, mem_ctx, &user_pol, &count, &set);
+	result = rpccli_lsa_EnumPrivsAccount(cli, mem_ctx,
+					     &user_pol,
+					     &privs);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
 	/* Print results */
-	printf("found %d privileges for SID %s\n\n", count, argv[1]);
+	printf("found %d privileges for SID %s\n\n", privs->count, argv[1]);
 	printf("high\tlow\tattribute\n");
 
-	for (i = 0; i < count; i++) {
-		printf("%u\t%u\t%u\n", set[i].luid.high, set[i].luid.low, set[i].attr);
+	for (i = 0; i < privs->count; i++) {
+		printf("%u\t%u\t%u\n",
+			privs->set[i].luid.high,
+			privs->set[i].luid.low,
+			privs->set[i].attribute);
 	}
 
 	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
@@ -697,10 +714,8 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 {
 	POLICY_HND dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
 	DOM_SID sid;
-	uint32 count;
-	char **rights;
+	struct lsa_RightSet rights;
 
 	int i;
 
@@ -720,16 +735,19 @@ static NTSTATUS cmd_lsa_enum_acct_rights(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_enum_account_rights(cli, mem_ctx, &dom_pol, &sid, &count, &rights);
+	result = rpccli_lsa_EnumAccountRights(cli, mem_ctx,
+					      &dom_pol,
+					      &sid,
+					      &rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	printf("found %d privileges for SID %s\n", count,
+	printf("found %d privileges for SID %s\n", rights.count,
 	       sid_string_tos(&sid));
 
-	for (i = 0; i < count; i++) {
-		printf("\t%s\n", rights[i]);
+	for (i = 0; i < rights.count; i++) {
+		printf("\t%s\n", rights.names[i].string);
 	}
 
 	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
@@ -746,8 +764,9 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 {
 	POLICY_HND dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
+	struct lsa_RightSet rights;
 	DOM_SID sid;
+	int i;
 
 	if (argc < 3 ) {
 		printf("Usage: %s SID [rights...]\n", argv[0]);
@@ -765,8 +784,21 @@ static NTSTATUS cmd_lsa_add_acct_rights(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_add_account_rights(cli, mem_ctx, &dom_pol, sid, 
-					    argc-2, argv+2);
+	rights.count = argc-2;
+	rights.names = TALLOC_ARRAY(mem_ctx, struct lsa_StringLarge,
+				    rights.count);
+	if (!rights.names) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<argc-1; i++) {
+		init_lsa_StringLarge(&rights.names[i], argv[i+2]);
+	}
+
+	result = rpccli_lsa_AddAccountRights(cli, mem_ctx,
+					     &dom_pol,
+					     &sid,
+					     &rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -785,8 +817,9 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct rpc_pipe_client *cli,
 {
 	POLICY_HND dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-
+	struct lsa_RightSet rights;
 	DOM_SID sid;
+	int i;
 
 	if (argc < 3 ) {
 		printf("Usage: %s SID [rights...]\n", argv[0]);
@@ -804,8 +837,22 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_remove_account_rights(cli, mem_ctx, &dom_pol, sid, 
-					       False, argc-2, argv+2);
+	rights.count = argc-2;
+	rights.names = TALLOC_ARRAY(mem_ctx, struct lsa_StringLarge,
+				    rights.count);
+	if (!rights.names) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	for (i=0; i<argc-2; i++) {
+		init_lsa_StringLarge(&rights.names[i], argv[i+2]);
+	}
+
+	result = rpccli_lsa_RemoveAccountRights(cli, mem_ctx,
+						&dom_pol,
+						&sid,
+						false,
+						&rights);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -825,7 +872,8 @@ static NTSTATUS cmd_lsa_lookup_priv_value(struct rpc_pipe_client *cli,
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	LUID luid;
+	struct lsa_LUID luid;
+	struct lsa_String name;
 
 	if (argc != 2 ) {
 		printf("Usage: %s name\n", argv[0]);
@@ -839,7 +887,12 @@ static NTSTATUS cmd_lsa_lookup_priv_value(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_lookup_priv_value(cli, mem_ctx, &pol, argv[1], &luid);
+	init_lsa_String(&name, argv[1]);
+
+	result = rpccli_lsa_LookupPrivValue(cli, mem_ctx,
+					    &pol,
+					    &name,
+					    &luid);
 
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -879,8 +932,10 @@ static NTSTATUS cmd_lsa_query_secobj(struct rpc_pipe_client *cli,
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
-	result = rpccli_lsa_query_secobj(cli, mem_ctx, &pol, sec_info, &sdb);
-
+	result = rpccli_lsa_QuerySecurity(cli, mem_ctx,
+					  &pol,
+					  sec_info,
+					  &sdb);
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
@@ -976,15 +1031,9 @@ static NTSTATUS cmd_lsa_query_trustdominfobysid(struct rpc_pipe_client *cli,
 	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
 
  done:
-	if (&pol)
-		rpccli_lsa_Close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
-}
-
-static void init_lsa_String(struct lsa_String *name, const char *s)
-{
-	name->string = s;
 }
 
 static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
@@ -1015,7 +1064,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 
 	result = rpccli_lsa_QueryTrustedDomainInfoByName(cli, mem_ctx,
 							 &pol,
-							 trusted_domain,
+							 &trusted_domain,
 							 info_class,
 							 &info);
 	if (!NT_STATUS_IS_OK(result))
@@ -1024,8 +1073,7 @@ static NTSTATUS cmd_lsa_query_trustdominfobyname(struct rpc_pipe_client *cli,
 	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
 
  done:
-	if (&pol)
-		rpccli_lsa_Close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
 }
@@ -1078,12 +1126,221 @@ static NTSTATUS cmd_lsa_query_trustdominfo(struct rpc_pipe_client *cli,
 	display_trust_dom_info(mem_ctx, &info, info_class, cli->pwd.password);
 
  done:
-	if (&pol)
-		rpccli_lsa_Close(cli, mem_ctx, &pol);
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
 
 	return result;
 }
 
+static NTSTATUS cmd_lsa_get_username(struct rpc_pipe_client *cli,
+                                     TALLOC_CTX *mem_ctx, int argc,
+                                     const char **argv)
+{
+	POLICY_HND pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	const char *servername = cli->cli->desthost;
+	struct lsa_String *account_name = NULL;
+	struct lsa_String *authority_name = NULL;
+
+	if (argc > 2) {
+		printf("Usage: %s servername\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = rpccli_lsa_open_policy(cli, mem_ctx, true,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_lsa_GetUserName(cli, mem_ctx,
+					servername,
+					&account_name,
+					&authority_name);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Print results */
+
+	printf("Account Name: %s, Authority Name: %s\n",
+		account_name->string, authority_name->string);
+
+	rpccli_lsa_Close(cli, mem_ctx, &pol);
+ done:
+	return result;
+}
+
+static NTSTATUS cmd_lsa_add_priv(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx, int argc,
+				 const char **argv)
+{
+	POLICY_HND dom_pol, user_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct lsa_PrivilegeSet privs;
+	struct lsa_LUIDAttribute *set = NULL;
+	DOM_SID sid;
+	int i;
+
+	ZERO_STRUCT(privs);
+
+	if (argc < 3 ) {
+		printf("Usage: %s SID [rights...]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_lsa_open_policy2(cli, mem_ctx, True,
+					 SEC_RIGHTS_MAXIMUM_ALLOWED,
+					 &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_lsa_OpenAccount(cli, mem_ctx,
+					&dom_pol,
+					&sid,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&user_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	for (i=2; i<argc; i++) {
+
+		struct lsa_String priv_name;
+		struct lsa_LUID luid;
+
+		init_lsa_String(&priv_name, argv[i]);
+
+		result = rpccli_lsa_LookupPrivValue(cli, mem_ctx,
+						    &dom_pol,
+						    &priv_name,
+						    &luid);
+		if (!NT_STATUS_IS_OK(result)) {
+			continue;
+		}
+
+		privs.count++;
+		set = TALLOC_REALLOC_ARRAY(mem_ctx, set,
+					   struct lsa_LUIDAttribute,
+					   privs.count);
+		if (!set) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		set[privs.count-1].luid = luid;
+		set[privs.count-1].attribute = 0;
+	}
+
+	privs.set = set;
+
+	result = rpccli_lsa_AddPrivilegesToAccount(cli, mem_ctx,
+						   &user_pol,
+						   &privs);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	rpccli_lsa_Close(cli, mem_ctx, &user_pol);
+	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
+ done:
+	return result;
+}
+
+static NTSTATUS cmd_lsa_del_priv(struct rpc_pipe_client *cli,
+				 TALLOC_CTX *mem_ctx, int argc,
+				 const char **argv)
+{
+	POLICY_HND dom_pol, user_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	struct lsa_PrivilegeSet privs;
+	struct lsa_LUIDAttribute *set = NULL;
+	DOM_SID sid;
+	int i;
+
+	ZERO_STRUCT(privs);
+
+	if (argc < 3 ) {
+		printf("Usage: %s SID [rights...]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+
+	result = name_to_sid(cli, mem_ctx, &sid, argv[1]);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_lsa_open_policy2(cli, mem_ctx, True,
+					 SEC_RIGHTS_MAXIMUM_ALLOWED,
+					 &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = rpccli_lsa_OpenAccount(cli, mem_ctx,
+					&dom_pol,
+					&sid,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&user_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	for (i=2; i<argc; i++) {
+
+		struct lsa_String priv_name;
+		struct lsa_LUID luid;
+
+		init_lsa_String(&priv_name, argv[i]);
+
+		result = rpccli_lsa_LookupPrivValue(cli, mem_ctx,
+						    &dom_pol,
+						    &priv_name,
+						    &luid);
+		if (!NT_STATUS_IS_OK(result)) {
+			continue;
+		}
+
+		privs.count++;
+		set = TALLOC_REALLOC_ARRAY(mem_ctx, set,
+					   struct lsa_LUIDAttribute,
+					   privs.count);
+		if (!set) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		set[privs.count-1].luid = luid;
+		set[privs.count-1].attribute = 0;
+	}
+
+	privs.set = set;
+
+
+	result = rpccli_lsa_RemovePrivilegesFromAccount(cli, mem_ctx,
+							&user_pol,
+							false,
+							&privs);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	rpccli_lsa_Close(cli, mem_ctx, &user_pol);
+	rpccli_lsa_Close(cli, mem_ctx, &dom_pol);
+ done:
+	return result;
+}
 
 
 /* List of commands exported by this module */
@@ -1103,10 +1360,8 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsacreateaccount",    RPC_RTYPE_NTSTATUS, cmd_lsa_create_account,     NULL, PI_LSARPC, NULL, "Create a new lsa account",   "" },
 	{ "lsaenumprivsaccount", RPC_RTYPE_NTSTATUS, cmd_lsa_enum_privsaccounts, NULL, PI_LSARPC, NULL, "Enumerate the privileges of an SID",   "" },
 	{ "lsaenumacctrights",   RPC_RTYPE_NTSTATUS, cmd_lsa_enum_acct_rights,   NULL, PI_LSARPC, NULL, "Enumerate the rights of an SID",   "" },
-#if 0
-	{ "lsaaddpriv",          RPC_RTYPE_NTSTATUS, cmd_lsa_add_priv,           NULL, PI_LSARPC, "Assign a privilege to a SID", "" },
-	{ "lsadelpriv",          RPC_RTYPE_NTSTATUS, cmd_lsa_del_priv,           NULL, PI_LSARPC, "Revoke a privilege from a SID", "" },
-#endif
+	{ "lsaaddpriv",          RPC_RTYPE_NTSTATUS, cmd_lsa_add_priv,           NULL, PI_LSARPC, NULL, "Assign a privilege to a SID", "" },
+	{ "lsadelpriv",          RPC_RTYPE_NTSTATUS, cmd_lsa_del_priv,           NULL, PI_LSARPC, NULL, "Revoke a privilege from a SID", "" },
 	{ "lsaaddacctrights",    RPC_RTYPE_NTSTATUS, cmd_lsa_add_acct_rights,    NULL, PI_LSARPC, NULL, "Add rights to an account",   "" },
 	{ "lsaremoveacctrights", RPC_RTYPE_NTSTATUS, cmd_lsa_remove_acct_rights, NULL, PI_LSARPC, NULL, "Remove rights from an account",   "" },
 	{ "lsalookupprivvalue",  RPC_RTYPE_NTSTATUS, cmd_lsa_lookup_priv_value,  NULL, PI_LSARPC, NULL, "Get a privilege value given its name", "" },
@@ -1114,6 +1369,7 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsaquerytrustdominfo",RPC_RTYPE_NTSTATUS, cmd_lsa_query_trustdominfo, NULL, PI_LSARPC, NULL, "Query LSA trusted domains info (given a SID)", "" },
 	{ "lsaquerytrustdominfobyname",RPC_RTYPE_NTSTATUS, cmd_lsa_query_trustdominfobyname, NULL, PI_LSARPC, NULL, "Query LSA trusted domains info (given a name), only works for Windows > 2k", "" },
 	{ "lsaquerytrustdominfobysid",RPC_RTYPE_NTSTATUS, cmd_lsa_query_trustdominfobysid, NULL, PI_LSARPC, NULL, "Query LSA trusted domains info (given a SID)", "" },
+	{ "getusername",          RPC_RTYPE_NTSTATUS, cmd_lsa_get_username, NULL, PI_LSARPC, NULL, "Get username", "" },
 
 	{ NULL }
 };

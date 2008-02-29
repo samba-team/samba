@@ -18,7 +18,7 @@ AC_CHECK_HEADERS(sys/capability.h)
 
 case "$host_os" in
 *linux*)
-AC_CACHE_CHECK([for broken RedHat 7.2 system header files],samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS,[
+AC_CACHE_CHECK([for broken RedHat 7.2 system header files],libreplace_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS,[
 AC_TRY_COMPILE([
 	#ifdef HAVE_SYS_VFS_H
 	#include <sys/vfs.h>
@@ -29,14 +29,14 @@ AC_TRY_COMPILE([
 	],[
 	int i;
 	],
-	samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS=no,
-	samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS=yes
+	libreplace_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS=no,
+	libreplace_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS=yes
 )])
-if test x"$samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS" = x"yes"; then
+if test x"$libreplace_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS" = x"yes"; then
 	AC_DEFINE(BROKEN_REDHAT_7_SYSTEM_HEADERS,1,[Broken RedHat 7.2 system header files])
 fi
 
-AC_CACHE_CHECK([for broken RHEL5 sys/capability.h],samba_cv_BROKEN_RHEL5_SYS_CAP_HEADER,[
+AC_CACHE_CHECK([for broken RHEL5 sys/capability.h],libreplace_cv_BROKEN_RHEL5_SYS_CAP_HEADER,[
 AC_TRY_COMPILE([
 	#ifdef HAVE_SYS_CAPABILITY_H
 	#include <sys/capability.h>
@@ -45,10 +45,10 @@ AC_TRY_COMPILE([
 	],[
 	__s8 i;
 	],
-	samba_cv_BROKEN_RHEL5_SYS_CAP_HEADER=no,
-	samba_cv_BROKEN_RHEL5_SYS_CAP_HEADER=yes
+	libreplace_cv_BROKEN_RHEL5_SYS_CAP_HEADER=no,
+	libreplace_cv_BROKEN_RHEL5_SYS_CAP_HEADER=yes
 )])
-if test x"$samba_cv_BROKEN_RHEL5_SYS_CAP_HEADER" = x"yes"; then
+if test x"$libreplace_cv_BROKEN_RHEL5_SYS_CAP_HEADER" = x"yes"; then
 	AC_DEFINE(BROKEN_RHEL5_SYS_CAP_HEADER,1,[Broken RHEL5 sys/capability.h])
 fi
 ;;
@@ -73,6 +73,18 @@ AC_VERIFY_C_PROTOTYPE([struct passwd *getpwent_r(struct passwd *src, char *buf, 
 	#include <unistd.h>
 	#include <pwd.h>
 	])
+AC_VERIFY_C_PROTOTYPE([struct passwd *getpwent_r(struct passwd *src, char *buf, size_t buflen)],
+	[
+	#ifndef HAVE_GETPWENT_R_DECL
+	#error missing getpwent_r prototype
+	#endif
+	return NULL;
+	],[
+	AC_DEFINE(SOLARIS_GETPWENT_R, 1, [getpwent_r irix (similar to solaris) function prototype])
+	],[],[
+	#include <unistd.h>
+	#include <pwd.h>
+	])
 AC_CHECK_FUNCS(getgrnam_r getgrgid_r getgrent_r)
 AC_HAVE_DECL(getgrent_r, [
 	#include <unistd.h>
@@ -86,6 +98,19 @@ AC_VERIFY_C_PROTOTYPE([struct group *getgrent_r(struct group *src, char *buf, in
 	return NULL;
 	],[
 	AC_DEFINE(SOLARIS_GETGRENT_R, 1, [getgrent_r solaris function prototype])
+	],[],[
+	#include <unistd.h>
+	#include <grp.h>
+	])
+
+AC_VERIFY_C_PROTOTYPE([struct group *getgrent_r(struct group *src, char *buf, size_t buflen)],
+	[
+	#ifndef HAVE_GETGRENT_R_DECL
+	#error missing getgrent_r prototype
+	#endif
+	return NULL;
+	],[
+	AC_DEFINE(SOLARIS_GETGRENT_R, 1, [getgrent_r irix (similar to solaris)  function prototype])
 	],[],[
 	#include <unistd.h>
 	#include <grp.h>

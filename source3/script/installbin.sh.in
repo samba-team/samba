@@ -19,15 +19,6 @@ for p in $*; do
  fi
  cp $p $DESTDIR/$BINDIR/
  chmod $INSTALLPERMS $DESTDIR/$BINDIR/$p2
-
- # this is a special case, mount needs this in a specific location
- if [ $p2 = smbmount ]; then
-   if [ ! -d $DESTDIR/@rootsbindir@ ]; then
-      mkdir $DESTDIR/@rootsbindir@
-   fi
-   echo "Creating sym link $DESTDIR/@rootsbindir@/mount.smbfs to $BINDIR/$p2 "
-   ln -sf $BINDIR/$p2 $DESTDIR/@rootsbindir@/mount.smbfs
- fi
 done
 
 

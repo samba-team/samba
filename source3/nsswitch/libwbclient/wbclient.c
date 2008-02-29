@@ -59,11 +59,7 @@ wbcErr wbcRequestResponse(int cmd,
 	wbcErr wbc_status = WBC_ERR_UNKNOWN_FAILURE;
 	NSS_STATUS nss_status;
 
-	if (!request || !response) {
-		wbc_status = WBC_ERR_INVALID_PARAM;
-		BAIL_ON_WBC_ERROR(wbc_status);
-	}
-
+	/* for some calls the request and/or response cna be NULL */
 
 	nss_status = winbindd_request_response(cmd, request, response);
 
@@ -72,19 +68,54 @@ wbcErr wbcRequestResponse(int cmd,
 		wbc_status = WBC_ERR_SUCCESS;
 		break;
 	case NSS_STATUS_UNAVAIL:
-		return WBC_ERR_WINBIND_NOT_AVAILABLE;
+		wbc_status = WBC_ERR_WINBIND_NOT_AVAILABLE;
 		break;
 	case NSS_STATUS_NOTFOUND:
-		return WBC_ERR_DOMAIN_NOT_FOUND;
+		wbc_status = WBC_ERR_DOMAIN_NOT_FOUND;
 		break;
 	default:
 		wbc_status = WBC_ERR_NSS_ERROR;
 		break;
 	}
 
-done:
 	return wbc_status;
 }
+
+/** @brief Translate an error value into a string
+ *
+ * @param error
+ *
+ * @return a pointer to a static string
+ **/
+const char *wbcErrorString(wbcErr error)
+{
+	switch (error) {
+	case WBC_ERR_SUCCESS:
+		return "WBC_ERR_SUCCESS";
+	case WBC_ERR_NOT_IMPLEMENTED:
+		return "WBC_ERR_NOT_IMPLEMENTED";
+	case WBC_ERR_UNKNOWN_FAILURE:
+		return "WBC_ERR_UNKNOWN_FAILURE";
+	case WBC_ERR_NO_MEMORY:
+		return "WBC_ERR_NO_MEMORY";
+	case WBC_ERR_INVALID_SID:
+		return "WBC_ERR_INVALID_SID";
+	case WBC_ERR_INVALID_PARAM:
+		return "WBC_ERR_INVALID_PARAM";
+	case WBC_ERR_WINBIND_NOT_AVAILABLE:
+		return "WBC_ERR_WINBIND_NOT_AVAILABLE";
+	case WBC_ERR_DOMAIN_NOT_FOUND:
+		return "WBC_ERR_DOMAIN_NOT_FOUND";
+	case WBC_INVALID_RESPONSE:
+		return "WBC_INVALID_RESPONSE";
+	case WBC_ERR_NSS_ERROR:
+		return "WBC_ERR_NSS_ERROR";
+	case WBC_ERR_AUTH_ERROR:
+		return "WBC_ERR_AUTH_ERROR";
+	}
+
+	return "unknown wbcErr value";
+};
 
 /** @brief Free library allocated memory
  *

@@ -570,8 +570,8 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	WERROR werr;
 	TALLOC_CTX *mem_ctx;
 	unsigned int orig_timeout;
-	char *tmp = NULL;
-	char *p;
+	const char *tmp = NULL;
+	const char *p;
 
 	/* Hmmmm. We can only open one connection to the NETLOGON pipe at the
 	 * moment.... */
@@ -602,48 +602,60 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 	orig_timeout = cli_set_timeout(netlogon_pipe->cli, 35000);
 
 	if (our_domain->active_directory) {
-		struct DS_DOMAIN_CONTROLLER_INFO *domain_info = NULL;
+		struct netr_DsRGetDCNameInfo *domain_info = NULL;
 
-		werr = rpccli_netlogon_dsr_getdcname(netlogon_pipe,
-						     mem_ctx,
-						     our_domain->dcname,
-						     domain->name,
-						     NULL,
-						     NULL,
-						     DS_RETURN_DNS_NAME,
-						     &domain_info);
+		result = rpccli_netr_DsRGetDCName(netlogon_pipe,
+						  mem_ctx,
+						  our_domain->dcname,
+						  domain->name,
+						  NULL,
+						  NULL,
+						  DS_RETURN_DNS_NAME,
+						  &domain_info,
+						  &werr);
 		if (W_ERROR_IS_OK(werr)) {
-			fstrcpy(tmp, domain_info->domain_controller_name);
+			tmp = talloc_strdup(
+				mem_ctx, domain_info->dc_unc);
+			if (tmp == NULL) {
+				DEBUG(0, ("talloc_strdup failed\n"));
+				talloc_destroy(mem_ctx);
+				return false;
+			}
 			if (strlen(domain->alt_name) == 0) {
 				fstrcpy(domain->alt_name,
 					domain_info->domain_name);
 			}
 			if (strlen(domain->forest_name) == 0) {
 				fstrcpy(domain->forest_name,
-					domain_info->dns_forest_name);
+					domain_info->forest_name);
 			}
 		}
 	} else {
-
-		werr = rpccli_netlogon_getanydcname(netlogon_pipe,
-						    mem_ctx,
-						    our_domain->dcname,
-						    domain->name,
-						    &tmp);
+		result = rpccli_netr_GetAnyDCName(netlogon_pipe, mem_ctx,
+						  our_domain->dcname,
+						  domain->name,
+						  &tmp,
+						  &werr);
 	}
 
 	/* And restore our original timeout. */
 	cli_set_timeout(netlogon_pipe->cli, orig_timeout);
 
-	talloc_destroy(mem_ctx);
-
-	if (!W_ERROR_IS_OK(werr)) {
-		DEBUG(10, ("rpccli_netlogon_getanydcname failed: %s\n",
-			   dos_errstr(werr)));
-		return False;
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(10,("rpccli_netr_GetAnyDCName failed: %s\n",
+			nt_errstr(result)));
+		talloc_destroy(mem_ctx);
+		return false;
 	}
 
-	/* cli_netlogon_getanydcname gives us a name with \\ */
+	if (!W_ERROR_IS_OK(werr)) {
+		DEBUG(10,("rpccli_netr_GetAnyDCName failed: %s\n",
+			   dos_errstr(werr)));
+		talloc_destroy(mem_ctx);
+		return false;
+	}
+
+	/* rpccli_netr_GetAnyDCName gives us a name with \\ */
 	p = tmp;
 	if (*p == '\\') {
 		p+=1;
@@ -654,7 +666,9 @@ static bool get_dc_name_via_netlogon(struct winbindd_domain *domain,
 
 	fstrcpy(dcname, p);
 
-	DEBUG(10, ("rpccli_netlogon_getanydcname returned %s\n", dcname));
+	talloc_destroy(mem_ctx);
+
+	DEBUG(10,("rpccli_netr_GetAnyDCName returned %s\n", dcname));
 
 	if (!resolve_name(dcname, dc_ss, 0x20)) {
 		return False;
@@ -672,8 +686,22 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 				char **machine_krb5_principal)
 {
 	const char *account_name;
+	const char *name = NULL;
+	
+	/* If we are a DC and this is not our own domain */
 
-	if (!get_trust_pw_clear(domain->name, machine_password,
+	if (IS_DC) {
+		name = domain->name;
+	} else {
+		struct winbindd_domain *our_domain = find_our_domain();
+
+		if (!our_domain)
+			return NT_STATUS_INVALID_SERVER_STATE;		
+		
+		name = our_domain->name;		
+	}	
+	
+	if (!get_trust_pw_clear(name, machine_password,
 				&account_name, NULL))
 	{
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -687,11 +715,15 @@ static NTSTATUS get_trust_creds(const struct winbindd_domain *domain,
 
 	/* this is at least correct when domain is our domain,
 	 * which is the only case, when this is currently used: */
-	if ((machine_krb5_principal != NULL) &&
-	    (asprintf(machine_krb5_principal, "%s$@%s", account_name,
-		      domain->alt_name) == -1))
+	if (machine_krb5_principal != NULL)
 	{
-		return NT_STATUS_NO_MEMORY;
+		if (asprintf(machine_krb5_principal, "%s$@%s",
+			     account_name, domain->alt_name) == -1)
+		{
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		strupper_m(*machine_krb5_principal);
 	}
 
 	return NT_STATUS_OK;
@@ -1691,12 +1723,11 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 {
 	struct winbindd_domain *our_domain;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	struct ds_domain_trust *domains = NULL;
-	int count = 0;
+	struct netr_DomainTrustList trusts;
 	int i;
-	uint32 flags = (DS_DOMAIN_IN_FOREST | 
-			DS_DOMAIN_DIRECT_OUTBOUND | 
-			DS_DOMAIN_DIRECT_INBOUND);
+	uint32 flags = (NETR_TRUST_FLAG_IN_FOREST |
+			NETR_TRUST_FLAG_OUTBOUND |
+			NETR_TRUST_FLAG_INBOUND);
 	struct rpc_pipe_client *cli;
 	TALLOC_CTX *mem_ctx = NULL;
 
@@ -1738,27 +1769,35 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 		return False;
 	}	
 
-	result = rpccli_ds_enum_domain_trusts(cli, mem_ctx,
-					      cli->cli->desthost, 
-					      flags, &domains,
-					      (unsigned int *)&count);
+	result = rpccli_netr_DsrEnumerateDomainTrusts(cli, mem_ctx,
+						      cli->cli->desthost,
+						      flags,
+						      &trusts,
+						      NULL);
+	if (!NT_STATUS_IS_OK(result)) {
+		DEBUG(0,("set_dc_type_and_flags_trustinfo: "
+			"failed to query trusted domain list: %s\n",
+			nt_errstr(result)));
+		talloc_destroy(mem_ctx);
+		return false;
+	}
 
 	/* Now find the domain name and get the flags */
 
-	for ( i=0; i<count; i++ ) {
-		if ( strequal( domain->name, domains[i].netbios_domain ) ) {			
-			domain->domain_flags          = domains[i].flags;
-			domain->domain_type           = domains[i].trust_type;
-			domain->domain_trust_attribs  = domains[i].trust_attributes;
-						
-			if ( domain->domain_type == DS_DOMAIN_TRUST_TYPE_UPLEVEL )
+	for ( i=0; i<trusts.count; i++ ) {
+		if ( strequal( domain->name, trusts.array[i].netbios_name) ) {
+			domain->domain_flags          = trusts.array[i].trust_flags;
+			domain->domain_type           = trusts.array[i].trust_type;
+			domain->domain_trust_attribs  = trusts.array[i].trust_attributes;
+
+			if ( domain->domain_type == NETR_TRUST_TYPE_UPLEVEL )
 				domain->active_directory = True;
 
 			/* This flag is only set if the domain is *our* 
 			   primary domain and the primary domain is in
 			   native mode */
 
-			domain->native_mode = (domain->domain_flags & DS_DOMAIN_NATIVE_MODE);
+			domain->native_mode = (domain->domain_flags & NETR_TRUST_FLAG_NATIVE);
 
 			DEBUG(5, ("set_dc_type_and_flags_trustinfo: domain %s is %sin "
 				  "native mode.\n", domain->name, 
@@ -1794,18 +1833,13 @@ static bool set_dc_type_and_flags_trustinfo( struct winbindd_domain *domain )
 static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 {
 	NTSTATUS 		result;
-	DS_DOMINFO_CTR		ctr;
+	WERROR werr;
 	TALLOC_CTX              *mem_ctx = NULL;
 	struct rpc_pipe_client  *cli;
 	POLICY_HND pol;
+	union dssetup_DsRoleInfo info;
+	union lsa_PolicyInformation *lsa_info = NULL;
 
-	const char *domain_name = NULL;
-	const char *dns_name = NULL;
-	const char *forest_name = NULL;
-	DOM_SID *dom_sid = NULL;	
-
-	ZERO_STRUCT( ctr );
-	
 	if (!connection_ok(domain)) {
 		return;
 	}
@@ -1819,24 +1853,25 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 
 	DEBUG(5, ("set_dc_type_and_flags_connect: domain %s\n", domain->name ));
 
-	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_LSARPC_DS,
+	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_DSSETUP,
 				       &result);
 
 	if (cli == NULL) {
 		DEBUG(5, ("set_dc_type_and_flags_connect: Could not bind to "
-			  "PI_LSARPC_DS on domain %s: (%s)\n",
+			  "PI_DSSETUP on domain %s: (%s)\n",
 			  domain->name, nt_errstr(result)));
 
 		/* if this is just a non-AD domain we need to continue
 		 * identifying so that we can in the end return with
 		 * domain->initialized = True - gd */
 
-		goto no_lsarpc_ds;
+		goto no_dssetup;
 	}
 
-	result = rpccli_ds_getprimarydominfo(cli, mem_ctx,
-					     DsRolePrimaryDomainInfoBasic,
-					     &ctr);
+	result = rpccli_dssetup_DsRoleGetPrimaryDomainInformation(cli, mem_ctx,
+								  DS_ROLE_BASIC_INFORMATION,
+								  &info,
+								  &werr);
 	cli_rpc_pipe_close(cli);
 
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1845,26 +1880,26 @@ static void set_dc_type_and_flags_connect( struct winbindd_domain *domain )
 			  domain->name, nt_errstr(result)));
 
 		/* older samba3 DCs will return DCERPC_FAULT_OP_RNG_ERROR for
-		 * every opcode on the LSARPC_DS pipe, continue with
-		 * no_lsarpc_ds mode here as well to get domain->initialized
+		 * every opcode on the DSSETUP pipe, continue with
+		 * no_dssetup mode here as well to get domain->initialized
 		 * set - gd */
 
 		if (NT_STATUS_V(result) == DCERPC_FAULT_OP_RNG_ERROR) {
-			goto no_lsarpc_ds;
+			goto no_dssetup;
 		}
 
 		TALLOC_FREE(mem_ctx);
 		return;
 	}
-	
-	if ((ctr.basic->flags & DSROLE_PRIMARY_DS_RUNNING) &&
-	    !(ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE)) {
+
+	if ((info.basic.flags & DS_ROLE_PRIMARY_DS_RUNNING) &&
+	    !(info.basic.flags & DS_ROLE_PRIMARY_DS_MIXED_MODE)) {
 		domain->native_mode = True;
 	} else {
 		domain->native_mode = False;
 	}
 
-no_lsarpc_ds:
+no_dssetup:
 	cli = cli_rpc_pipe_open_noauth(domain->conn.cli, PI_LSARPC, &result);
 
 	if (cli == NULL) {
@@ -1882,54 +1917,65 @@ no_lsarpc_ds:
 	if (NT_STATUS_IS_OK(result)) {
 		/* This particular query is exactly what Win2k clients use 
 		   to determine that the DC is active directory */
-		result = rpccli_lsa_query_info_policy2(cli, mem_ctx, &pol,
-						       12, &domain_name,
-						       &dns_name, &forest_name,
-						       NULL, &dom_sid);
+		result = rpccli_lsa_QueryInfoPolicy2(cli, mem_ctx,
+						     &pol,
+						     LSA_POLICY_INFO_DNS,
+						     &lsa_info);
 	}
 
 	if (NT_STATUS_IS_OK(result)) {
 		domain->active_directory = True;
 
-		if (domain_name)
-			fstrcpy(domain->name, domain_name);
+		if (lsa_info->dns.name.string) {
+			fstrcpy(domain->name, lsa_info->dns.name.string);
+		}
 
-		if (dns_name)
-			fstrcpy(domain->alt_name, dns_name);
+		if (lsa_info->dns.dns_domain.string) {
+			fstrcpy(domain->alt_name,
+				lsa_info->dns.dns_domain.string);
+		}
 
 		/* See if we can set some domain trust flags about
 		   ourself */
 
-		if ( forest_name ) {
-			fstrcpy(domain->forest_name, forest_name);		
+		if (lsa_info->dns.dns_forest.string) {
+			fstrcpy(domain->forest_name,
+				lsa_info->dns.dns_forest.string);
 
 			if (strequal(domain->forest_name, domain->alt_name)) {
-				domain->domain_flags = DS_DOMAIN_TREE_ROOT;
+				domain->domain_flags = NETR_TRUST_FLAG_TREEROOT;
 			}
 		}
 
-		if (dom_sid) 
-			sid_copy(&domain->sid, dom_sid);
+		if (lsa_info->dns.sid) {
+			sid_copy(&domain->sid, lsa_info->dns.sid);
+		}
 	} else {
 		domain->active_directory = False;
 
 		result = rpccli_lsa_open_policy(cli, mem_ctx, True, 
 						SEC_RIGHTS_MAXIMUM_ALLOWED,
 						&pol);
-			
-		if (!NT_STATUS_IS_OK(result))
-			goto done;
-			
-		result = rpccli_lsa_query_info_policy(cli, mem_ctx, 
-						      &pol, 5, &domain_name, 
-						      &dom_sid);
-			
-		if (NT_STATUS_IS_OK(result)) {
-			if (domain_name)
-				fstrcpy(domain->name, domain_name);
 
-			if (dom_sid) 
-				sid_copy(&domain->sid, dom_sid);
+		if (!NT_STATUS_IS_OK(result)) {
+			goto done;
+		}
+
+		result = rpccli_lsa_QueryInfoPolicy(cli, mem_ctx,
+						    &pol,
+						    LSA_POLICY_INFO_ACCOUNT_DOMAIN,
+						    &lsa_info);
+
+		if (NT_STATUS_IS_OK(result)) {
+
+			if (lsa_info->account_domain.name.string) {
+				fstrcpy(domain->name,
+					lsa_info->account_domain.name.string);
+			}
+
+			if (lsa_info->account_domain.sid) {
+				sid_copy(&domain->sid, lsa_info->account_domain.sid);
+			}
 		}
 	}
 done:
@@ -2076,13 +2122,14 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		  "pipe: user %s\\%s\n", domain->name,
 		  domain_name, machine_account));
 
-	result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &conn->sam_connect_handle);
+	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
+				      conn->samr_pipe->cli->desthost,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &conn->sam_connect_handle);
 	if (NT_STATUS_IS_OK(result)) {
 		goto open_domain;
 	}
-	DEBUG(10,("cm_connect_sam: ntlmssp-sealed rpccli_samr_connect "
+	DEBUG(10,("cm_connect_sam: ntlmssp-sealed rpccli_samr_Connect2 "
 		  "failed for domain %s, error was %s. Trying schannel\n",
 		  domain->name, nt_errstr(result) ));
 	cli_rpc_pipe_close(conn->samr_pipe);
@@ -2110,13 +2157,14 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 	DEBUG(10,("cm_connect_sam: connected to SAMR pipe for domain %s using "
 		  "schannel.\n", domain->name ));
 
-	result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &conn->sam_connect_handle);
+	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
+				      conn->samr_pipe->cli->desthost,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &conn->sam_connect_handle);
 	if (NT_STATUS_IS_OK(result)) {
 		goto open_domain;
 	}
-	DEBUG(10,("cm_connect_sam: schannel-sealed rpccli_samr_connect failed "
+	DEBUG(10,("cm_connect_sam: schannel-sealed rpccli_samr_Connect2 failed "
 		  "for domain %s, error was %s. Trying anonymous\n",
 		  domain->name, nt_errstr(result) ));
 	cli_rpc_pipe_close(conn->samr_pipe);
@@ -2132,23 +2180,24 @@ NTSTATUS cm_connect_sam(struct winbindd_domain *domain, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	result = rpccli_samr_connect(conn->samr_pipe, mem_ctx,
-				     SEC_RIGHTS_MAXIMUM_ALLOWED,
-				     &conn->sam_connect_handle);
+	result = rpccli_samr_Connect2(conn->samr_pipe, mem_ctx,
+				      conn->samr_pipe->cli->desthost,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED,
+				      &conn->sam_connect_handle);
 	if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(10,("cm_connect_sam: rpccli_samr_connect failed "
+		DEBUG(10,("cm_connect_sam: rpccli_samr_Connect2 failed "
 			  "for domain %s Error was %s\n",
 			  domain->name, nt_errstr(result) ));
 		goto done;
 	}
 
  open_domain:
-	result = rpccli_samr_open_domain(conn->samr_pipe,
-					 mem_ctx,
-					 &conn->sam_connect_handle,
-					 SEC_RIGHTS_MAXIMUM_ALLOWED,
-					 &domain->sid,
-					 &conn->sam_domain_handle);
+	result = rpccli_samr_OpenDomain(conn->samr_pipe,
+					mem_ctx,
+					&conn->sam_connect_handle,
+					SEC_RIGHTS_MAXIMUM_ALLOWED,
+					&domain->sid,
+					&conn->sam_domain_handle);
 
  done:
 
@@ -2291,7 +2340,7 @@ NTSTATUS cm_connect_netlogon(struct winbindd_domain *domain,
 	struct winbindd_cm_conn *conn;
 	NTSTATUS result;
 
-	uint32 neg_flags = NETLOGON_NEG_AUTH2_FLAGS;
+	uint32 neg_flags = NETLOGON_NEG_SELECT_AUTH2_FLAGS;
 	uint8  mach_pwd[16];
 	uint32  sec_chan_type;
 	const char *account_name;

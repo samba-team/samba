@@ -23,6 +23,8 @@
 #include "includes.h"
 #include "utils/net.h"
 
+#include "libnet/libnet.h"
+
 #ifdef HAVE_ADS
 
 int net_ads_usage(int argc, const char **argv)
@@ -810,76 +812,65 @@ static int net_ads_status(int argc, const char **argv)
 
 static int net_ads_leave(int argc, const char **argv)
 {
-	ADS_STRUCT *ads = NULL;
-	ADS_STATUS adsret;
-	NTSTATUS status;
-	int ret = -1;
-	struct cli_state *cli = NULL;
 	TALLOC_CTX *ctx;
-	DOM_SID *dom_sid = NULL;
-	const char *short_domain_name = NULL;
-
-	if (!secrets_init()) {
-		DEBUG(1,("Failed to initialise secrets database\n"));
-		return -1;
-	}
+	struct libnet_UnjoinCtx *r = NULL;
+	WERROR werr;
 
 	if (!(ctx = talloc_init("net_ads_leave"))) {
 		d_fprintf(stderr, "Could not initialise talloc context.\n");
 		return -1;
 	}
 
-	/* The finds a DC and takes care of getting the
-	   user creds if necessary */
+	use_in_memory_ccache();
 
-	if (!ADS_ERR_OK(ads_startup(True, &ads))) {
+	werr = libnet_init_UnjoinCtx(ctx, &r);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_fprintf(stderr, "Could not initialise unjoin context.\n");
 		return -1;
 	}
 
-	/* make RPC calls here */
+	r->in.debug		= opt_verbose;
+	r->in.dc_name		= opt_host;
+	r->in.domain_name	= lp_realm();
+	r->in.admin_account	= opt_user_name;
+	r->in.admin_password	= net_prompt_pass(opt_user_name);
+	r->in.unjoin_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
+				  WKSSVC_JOIN_FLAGS_ACCOUNT_DELETE;
 
-	if ( !NT_STATUS_IS_OK(connect_to_ipc_krb5(&cli, &ads->ldap.ss,
-		ads->config.ldap_server_name)) )
-	{
+	werr = libnet_Unjoin(ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
+		d_printf("Failed to leave domain: %s\n",
+			 r->out.error_string ? r->out.error_string :
+			 get_friendly_werror_msg(werr));
 		goto done;
 	}
 
-	if ( !NT_STATUS_IS_OK(netdom_get_domain_sid( ctx, cli, &short_domain_name, &dom_sid )) ) {
-		goto done;
-	}
-
-	saf_delete( short_domain_name );
-
-	status = netdom_leave_domain(ctx, cli, dom_sid);
-
-	/* Try and delete it via LDAP - the old way we used to. */
-
-	adsret = ads_leave_realm(ads, global_myname());
-	if (ADS_ERR_OK(adsret)) {
+	if (W_ERROR_IS_OK(werr)) {
 		d_printf("Deleted account for '%s' in realm '%s'\n",
-			global_myname(), ads->config.realm);
-		ret = 0;
-	} else {
-		/* We couldn't delete it - see if the disable succeeded. */
-		if (NT_STATUS_IS_OK(status)) {
-			d_printf("Disabled account for '%s' in realm '%s'\n",
-				global_myname(), ads->config.realm);
-			ret = 0;
-		} else {
-			d_fprintf(stderr, "Failed to disable machine account for '%s' in realm '%s'\n",
-				global_myname(), ads->config.realm);
-		}
+			r->in.machine_name, r->out.dns_domain_name);
+		goto done;
 	}
 
-done:
+	/* We couldn't delete it - see if the disable succeeded. */
+	if (r->out.disabled_machine_account) {
+		d_printf("Disabled account for '%s' in realm '%s'\n",
+			r->in.machine_name, r->out.dns_domain_name);
+		werr = WERR_OK;
+		goto done;
+	}
 
-	if ( cli )
-		cli_shutdown(cli);
+	d_fprintf(stderr, "Failed to disable machine account for '%s' in realm '%s'\n",
+		  r->in.machine_name, r->out.dns_domain_name);
 
-	ads_destroy(&ads);
-	TALLOC_FREE( ctx );
+ done:
+	TALLOC_FREE(r);
+	TALLOC_FREE(ctx);
 
-	return ret;
+	if (W_ERROR_IS_OK(werr)) {
+		return 0;
+	}
+
+	return -1;
 }
 
 static NTSTATUS net_ads_join_ok(void)
@@ -954,338 +945,6 @@ static NTSTATUS check_ads_config( void )
 	}
 
 	return NT_STATUS_OK;
-}
-
-/*******************************************************************
- Do the domain join
- ********************************************************************/
-
-static NTSTATUS net_join_domain(TALLOC_CTX *ctx, const char *servername,
-				struct sockaddr_storage *pss,
-				const char **domain,
-				DOM_SID **dom_sid,
-				const char *password)
-{
-	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
-	struct cli_state *cli = NULL;
-
-	ret = connect_to_ipc_krb5(&cli, pss, servername);
-	if ( !NT_STATUS_IS_OK(ret) ) {
-		goto done;
-	}
-
-	ret = netdom_get_domain_sid( ctx, cli, domain, dom_sid );
-	if ( !NT_STATUS_IS_OK(ret) ) {
-		goto done;
-	}
-
-	/* cli->server_domain is not filled in when using krb5
-	   session setups */
-
-	saf_store( *domain, cli->desthost );
-
-	ret = netdom_join_domain( ctx, cli, *dom_sid, password, ND_TYPE_AD );
-
-done:
-	if ( cli )
-		cli_shutdown(cli);
-
-	return ret;
-}
-
-/*******************************************************************
- Set a machines dNSHostName and servicePrincipalName attributes
- ********************************************************************/
-
-static ADS_STATUS net_set_machine_spn(TALLOC_CTX *ctx, ADS_STRUCT *ads_s )
-{
-	ADS_STATUS status = ADS_ERROR(LDAP_SERVER_DOWN);
-	char *new_dn;
-	ADS_MODLIST mods;
-	const char *servicePrincipalName[3] = {NULL, NULL, NULL};
-	char *psp;
-	fstring my_fqdn;
-	LDAPMessage *res = NULL;
-	char *dn_string = NULL;
-	const char *machine_name = global_myname();
-	int count;
-
-	if ( !machine_name ) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	/* Find our DN */
-
-	status = ads_find_machine_acct(ads_s, &res, machine_name);
-	if (!ADS_ERR_OK(status))
-		return status;
-
-	if ( (count = ads_count_replies(ads_s, res)) != 1 ) {
-		DEBUG(1,("net_set_machine_spn: %d entries returned!\n", count));
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	if ( (dn_string = ads_get_dn(ads_s, res)) == NULL ) {
-		DEBUG(1, ("ads_add_machine_acct: ads_get_dn returned NULL (malloc failure?)\n"));
-		goto done;
-	}
-
-	new_dn = talloc_strdup(ctx, dn_string);
-	ads_memfree(ads_s, dn_string);
-	if (!new_dn) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	/* Windows only creates HOST/shortname & HOST/fqdn. */
-
-	if ( !(psp = talloc_asprintf(ctx, "HOST/%s", machine_name)) )
-		goto done;
-	strupper_m(psp);
-	servicePrincipalName[0] = psp;
-
-	name_to_fqdn(my_fqdn, machine_name);
-	strlower_m(my_fqdn);
-	if ( !(psp = talloc_asprintf(ctx, "HOST/%s", my_fqdn)) )
-		goto done;
-	servicePrincipalName[1] = psp;
-
-	if (!(mods = ads_init_mods(ctx))) {
-		goto done;
-	}
-
-	/* fields of primary importance */
-
-	ads_mod_str(ctx, &mods, "dNSHostName", my_fqdn);
-	ads_mod_strlist(ctx, &mods, "servicePrincipalName", servicePrincipalName);
-
-	status = ads_gen_mod(ads_s, new_dn, mods);
-
-done:
-	ads_msgfree(ads_s, res);
-
-	return status;
-}
-
-/*******************************************************************
- Set a machines dNSHostName and servicePrincipalName attributes
- ********************************************************************/
-
-static ADS_STATUS net_set_machine_upn(TALLOC_CTX *ctx, ADS_STRUCT *ads_s, const char *upn )
-{
-	ADS_STATUS status = ADS_ERROR(LDAP_SERVER_DOWN);
-	char *new_dn;
-	ADS_MODLIST mods;
-	LDAPMessage *res = NULL;
-	char *dn_string = NULL;
-	const char *machine_name = global_myname();
-	int count;
-
-	if ( !machine_name ) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	/* Find our DN */
-
-	status = ads_find_machine_acct(ads_s, &res, machine_name);
-	if (!ADS_ERR_OK(status))
-		return status;
-
-	if ( (count = ads_count_replies(ads_s, res)) != 1 ) {
-		DEBUG(1,("net_set_machine_spn: %d entries returned!\n", count));
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	if ( (dn_string = ads_get_dn(ads_s, res)) == NULL ) {
-		DEBUG(1, ("ads_add_machine_acct: ads_get_dn returned NULL (malloc failure?)\n"));
-		goto done;
-	}
-
-	new_dn = talloc_strdup(ctx, dn_string);
-	ads_memfree(ads_s, dn_string);
-	if (!new_dn) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	/* now do the mods */
-
-	if (!(mods = ads_init_mods(ctx))) {
-		goto done;
-	}
-
-	/* fields of primary importance */
-
-	ads_mod_str(ctx, &mods, "userPrincipalName", upn);
-
-	status = ads_gen_mod(ads_s, new_dn, mods);
-
-done:
-	ads_msgfree(ads_s, res);
-
-	return status;
-}
-
-/*******************************************************************
- Set a machines dNSHostName and servicePrincipalName attributes
- ********************************************************************/
-
-static ADS_STATUS net_set_os_attributes(TALLOC_CTX *ctx, ADS_STRUCT *ads_s,
-					const char *os_name, const char *os_version )
-{
-	ADS_STATUS status = ADS_ERROR(LDAP_SERVER_DOWN);
-	char *new_dn;
-	ADS_MODLIST mods;
-	LDAPMessage *res = NULL;
-	char *dn_string = NULL;
-	const char *machine_name = global_myname();
-	int count;
-	char *os_sp = NULL;
-
-	if ( !os_name || !os_version ) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	/* Find our DN */
-
-	status = ads_find_machine_acct(ads_s, &res, machine_name);
-	if (!ADS_ERR_OK(status))
-		return status;
-
-	if ( (count = ads_count_replies(ads_s, res)) != 1 ) {
-		DEBUG(1,("net_set_machine_spn: %d entries returned!\n", count));
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	if ( (dn_string = ads_get_dn(ads_s, res)) == NULL ) {
-		DEBUG(1, ("ads_add_machine_acct: ads_get_dn returned NULL (malloc failure?)\n"));
-		goto done;
-	}
-
-	new_dn = talloc_strdup(ctx, dn_string);
-	ads_memfree(ads_s, dn_string);
-	if (!new_dn) {
-		return ADS_ERROR(LDAP_NO_MEMORY);
-	}
-
-	/* now do the mods */
-
-	if (!(mods = ads_init_mods(ctx))) {
-		goto done;
-	}
-
-	os_sp = talloc_asprintf( ctx, "Samba %s", SAMBA_VERSION_STRING );
-
-	/* fields of primary importance */
-
-	ads_mod_str(ctx, &mods, "operatingSystem", os_name);
-	ads_mod_str(ctx, &mods, "operatingSystemVersion", os_version);
-	if ( os_sp )
-		ads_mod_str(ctx, &mods, "operatingSystemServicePack", os_sp);
-
-	status = ads_gen_mod(ads_s, new_dn, mods);
-
-done:
-	ads_msgfree(ads_s, res);
-	TALLOC_FREE( os_sp );
-
-	return status;
-}
-
-/*******************************************************************
-  join a domain using ADS (LDAP mods)
- ********************************************************************/
-
-static ADS_STATUS net_precreate_machine_acct( ADS_STRUCT *ads, const char *ou )
-{
-	ADS_STATUS rc = ADS_ERROR(LDAP_SERVER_DOWN);
-	char *ou_str = NULL;
-	char *dn = NULL;
-	LDAPMessage *res = NULL;
-	bool moved;
-
-	ou_str = ads_ou_string(ads, ou);
-	if (asprintf(&dn, "%s,%s", ou_str, ads->config.bind_path) == -1) {
-		rc = ADS_ERROR(LDAP_NO_MEMORY);
-		goto done;
-	}
-
-	rc = ads_search_dn(ads, &res, dn, NULL);
-	if (!ADS_ERR_OK(rc)) {
-		d_fprintf(stderr, "The specified OU does not exist.\n");
-		goto done;
-	}
-
-		/* Attempt to create the machine account and bail if this fails.
-		   Assume that the admin wants exactly what they requested */
-
-		rc = ads_create_machine_acct( ads, global_myname(), dn );
-	if (ADS_ERR_OK(rc)) {
-		DEBUG(1, ("machine account created\n"));
-		goto done;
-		}
-	if ( !(rc.error_type == ENUM_ADS_ERROR_LDAP && rc.err.rc == LDAP_ALREADY_EXISTS) ) {
-		DEBUG(1, ("machine account creation failed\n"));
-		goto done;
-	}
-
-	rc = ads_move_machine_acct(ads, global_myname(), dn, &moved);
-	if (!ADS_ERR_OK(rc)) {
-		DEBUG(1, ("failure to locate/move pre-existing machine account\n"));
-		goto done;
-	}
-
-	if (moved) {
-		d_printf("The machine account was moved into the specified OU.\n");
-	} else {
-		d_printf("The machine account already exists in the specified OU.\n");
-	}
-
-done:
-	ads_msgfree(ads, res);
-	SAFE_FREE( ou_str );
-	SAFE_FREE( dn );
-
-	return rc;
-}
-
-/************************************************************************
- ************************************************************************/
-
-static bool net_derive_salting_principal( TALLOC_CTX *ctx, ADS_STRUCT *ads )
-{
-	uint32 domain_func;
-	ADS_STATUS status;
-	fstring salt;
-	char *std_salt;
-	const char *machine_name = global_myname();
-
-	status = ads_domain_func_level( ads, &domain_func );
-	if ( !ADS_ERR_OK(status) ) {
-		DEBUG(2,("Failed to determine domain functional level!\n"));
-		return False;
-	}
-
-	/* go ahead and setup the default salt */
-
-	if ( (std_salt = kerberos_standard_des_salt()) == NULL ) {
-		d_fprintf(stderr, "net_derive_salting_principal: failed to obtain stanard DES salt\n");
-		return False;
-	}
-
-	fstrcpy( salt, std_salt );
-	SAFE_FREE( std_salt );
-
-	/* if it's a Windows functional domain, we have to look for the UPN */
-
-	if ( domain_func == DS_DOMAIN_FUNCTION_2000 ) {
-		char *upn;
-
-		upn = ads_get_upn(ads, ctx, machine_name);
-		if ( upn ) {
-			fstrcpy( salt, upn );
-		}
-	}
-
-	return kerberos_secrets_store_des_salt( salt );
 }
 
 /*******************************************************************
@@ -1443,50 +1102,35 @@ static int net_ads_join_usage(int argc, const char **argv)
 
 int net_ads_join(int argc, const char **argv)
 {
-	ADS_STRUCT *ads = NULL;
-	ADS_STATUS status;
 	NTSTATUS nt_status;
-	const char *short_domain_name = NULL;
-	char *tmp_password, *password;
 	TALLOC_CTX *ctx = NULL;
-	DOM_SID *domain_sid = NULL;
+	struct libnet_JoinCtx *r = NULL;
+	const char *domain = lp_realm();
+	WERROR werr = WERR_SETUP_NOT_JOINED;
 	bool createupn = False;
 	const char *machineupn = NULL;
 	const char *create_in_ou = NULL;
 	int i;
-	fstring dc_name;
-	struct sockaddr_storage dcss;
 	const char *os_name = NULL;
 	const char *os_version = NULL;
 
 	nt_status = check_ads_config();
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		d_fprintf(stderr, "Invalid configuration.  Exiting....\n");
+		werr = ntstatus_to_werror(nt_status);
 		goto fail;
 	}
 
-	/* find a DC to initialize the server affinity cache */
+	use_in_memory_ccache();
 
-	get_dc_name( lp_workgroup(), lp_realm(), dc_name, &dcss );
-
-	status = ads_startup(True, &ads);
-	if (!ADS_ERR_OK(status)) {
-		DEBUG(1, ("error on ads_startup: %s\n", ads_errstr(status)));
-		nt_status = ads_ntstatus(status);
-		goto fail;
-	}
-
-	if (strcmp(ads->config.realm, lp_realm()) != 0) {
-		d_fprintf(stderr, "realm of remote server (%s) and realm in %s "
-			"(%s) DO NOT match.  Aborting join\n",
-			ads->config.realm, get_dyn_CONFIGFILE(), lp_realm());
-		nt_status = NT_STATUS_INVALID_PARAMETER;
+	werr = libnet_init_JoinCtx(ctx, &r);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
 	}
 
 	if (!(ctx = talloc_init("net_ads_join"))) {
 		d_fprintf(stderr, "Could not initialise talloc context.\n");
-		nt_status = NT_STATUS_NO_MEMORY;
+		werr = WERR_NOMEM;
 		goto fail;
 	}
 
@@ -1500,203 +1144,102 @@ int net_ads_join(int argc, const char **argv)
 		else if ( !StrnCaseCmp(argv[i], "createcomputer", strlen("createcomputer")) ) {
 			if ( (create_in_ou = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, "Please supply a valid OU path.\n");
-				nt_status = NT_STATUS_INVALID_PARAMETER;
+				werr = WERR_INVALID_PARAM;
 				goto fail;
 			}
 		}
 		else if ( !StrnCaseCmp(argv[i], "osName", strlen("osName")) ) {
 			if ( (os_name = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, "Please supply a operating system name.\n");
-				nt_status = NT_STATUS_INVALID_PARAMETER;
+				werr = WERR_INVALID_PARAM;
 				goto fail;
 			}
 		}
 		else if ( !StrnCaseCmp(argv[i], "osVer", strlen("osVer")) ) {
 			if ( (os_version = get_string_param(argv[i])) == NULL ) {
 				d_fprintf(stderr, "Please supply a valid operating system version.\n");
-				nt_status = NT_STATUS_INVALID_PARAMETER;
+				werr = WERR_INVALID_PARAM;
 				goto fail;
 			}
 		}
 		else {
-			d_fprintf(stderr, "Bad option: %s\n", argv[i]);
-			nt_status = NT_STATUS_INVALID_PARAMETER;
-			goto fail;
-		}
-	}
-
-	/* If we were given an OU, try to create the machine in
-	   the OU account first and then do the normal RPC join */
-
-	if  ( create_in_ou ) {
-		status = net_precreate_machine_acct( ads, create_in_ou );
-		if ( !ADS_ERR_OK(status) ) {
-			d_fprintf( stderr, "Failed to pre-create the machine object "
-				"in OU %s.\n", create_in_ou);
-			DEBUG(1, ("error calling net_precreate_machine_acct: %s\n", 
-				  ads_errstr(status)));
-			nt_status = ads_ntstatus(status);
-			goto fail;
+			domain = argv[i];
 		}
 	}
 
 	/* Do the domain join here */
 
-	tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
-	password = talloc_strdup(ctx, tmp_password);
+	r->in.domain_name	= domain;
+	r->in.create_upn	= createupn;
+	r->in.upn		= machineupn;
+	r->in.account_ou	= create_in_ou;
+	r->in.os_name		= os_name;
+	r->in.os_version	= os_version;
+	r->in.dc_name		= opt_host;
+	r->in.admin_account	= opt_user_name;
+	r->in.admin_password	= net_prompt_pass(opt_user_name);
+	r->in.debug		= opt_verbose;
+	r->in.join_flags	= WKSSVC_JOIN_FLAGS_JOIN_TYPE |
+				  WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE |
+				  WKSSVC_JOIN_FLAGS_DOMAIN_JOIN_IF_JOINED;
 
-	nt_status = net_join_domain(ctx, ads->config.ldap_server_name,
-				    &ads->ldap.ss, &short_domain_name, &domain_sid, password);
-	if ( !NT_STATUS_IS_OK(nt_status) ) {
-		DEBUG(1, ("call of net_join_domain failed: %s\n",
-			  get_friendly_nt_error_msg(nt_status)));
+	werr = libnet_Join(ctx, r);
+	if (!W_ERROR_IS_OK(werr)) {
 		goto fail;
 	}
 
 	/* Check the short name of the domain */
 
-	if ( !strequal(lp_workgroup(), short_domain_name) ) {
+	if (!strequal(lp_workgroup(), r->out.netbios_domain_name)) {
 		d_printf("The workgroup in %s does not match the short\n", get_dyn_CONFIGFILE());
 		d_printf("domain name obtained from the server.\n");
-		d_printf("Using the name [%s] from the server.\n", short_domain_name);
+		d_printf("Using the name [%s] from the server.\n", r->out.netbios_domain_name);
 		d_printf("You should set \"workgroup = %s\" in %s.\n",
-			 short_domain_name, get_dyn_CONFIGFILE());
+			 r->out.netbios_domain_name, get_dyn_CONFIGFILE());
 	}
 
-	d_printf("Using short domain name -- %s\n", short_domain_name);
+	d_printf("Using short domain name -- %s\n", r->out.netbios_domain_name);
 
-	/*  HACK ALERT!  Store the sid and password under both the lp_workgroup() 
-	    value from smb.conf and the string returned from the server.  The former is
-	    neede to bootstrap winbindd's first connection to the DC to get the real 
-	    short domain name   --jerry */
-
-	if ( (netdom_store_machine_account( lp_workgroup(), domain_sid, password ) == -1)
-		|| (netdom_store_machine_account( short_domain_name, domain_sid, password ) == -1) )
-	{
-		/* issue an internal error here for now.
-		 * everything else would mean changing tdb routines. */
-		nt_status = NT_STATUS_INTERNAL_ERROR;
-		goto fail;
-	}
-
-	/* Verify that everything is ok */
-
-	nt_status = net_rpc_join_ok(short_domain_name,
-				    ads->config.ldap_server_name, &ads->ldap.ss);
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		d_fprintf(stderr,
-			  "Failed to verify membership in domain: %s!\n",
-			  nt_errstr(nt_status));
-		goto fail;
-	}
-
-	/* create the dNSHostName & servicePrincipalName values */
-
-	status = net_set_machine_spn( ctx, ads );
-	if ( !ADS_ERR_OK(status) )  {
-
-		d_fprintf(stderr, "Failed to set servicePrincipalNames. Please ensure that\n");
-		d_fprintf(stderr, "the DNS domain of this server matches the AD domain,\n");
-		d_fprintf(stderr, "Or rejoin with using Domain Admin credentials.\n");
-
-		/* Disable the machine account in AD.  Better to fail than to leave 
-		   a confused admin.  */
-
-		if ( net_ads_leave( 0, NULL ) != 0 ) {
-			d_fprintf( stderr, "Failed to disable machine account in AD.  Please do so manually.\n");
-		}
-
-		/* clear out the machine password */
-
-		netdom_store_machine_account( lp_workgroup(), domain_sid, "" );
-		netdom_store_machine_account( short_domain_name, domain_sid, "" );
-
-		nt_status = ads_ntstatus(status);
-		goto fail;
-	}
-
-	if ( !net_derive_salting_principal( ctx, ads ) ) {
-		DEBUG(1,("Failed to determine salting principal\n"));
-		goto fail;
-	}
-
-	if ( createupn ) {
-		char *upn;
-
-		/* default to using the short UPN name */
-		if (!machineupn ) {
-			upn = talloc_asprintf(ctx,
-					"host/%s@%s", global_myname(),
-					ads->config.realm );
-			if (!upn) {
-				nt_status = NT_STATUS_NO_MEMORY;
-				goto fail;
-			}
-			machineupn = upn;
-		}
-
-		status = net_set_machine_upn( ctx, ads, machineupn );
-		if ( !ADS_ERR_OK(status) )  {
-			d_fprintf(stderr, "Failed to set userPrincipalName.  Are you a Domain Admin?\n");
-		}
-	}
-
-	/* Try to set the operatingSystem attributes if asked */
-
-	if ( os_name && os_version ) {
-		status = net_set_os_attributes( ctx, ads, os_name, os_version );
-		if ( !ADS_ERR_OK(status) )  {
-			d_fprintf(stderr, "Failed to set operatingSystem attributes.  "
-				  "Are you a Domain Admin?\n");
-		}
-	}
-
-	/* Now build the keytab, using the same ADS connection */
-
-	if (lp_use_kerberos_keytab() && ads_keytab_create_default(ads)) {
-		DEBUG(1,("Error creating host keytab!\n"));
-	}
+	d_printf("Joined '%s' to realm '%s'\n", r->in.machine_name,
+		r->out.dns_domain_name);
 
 #if defined(WITH_DNS_UPDATES)
-	/* We enter this block with user creds */
-	ads_kdestroy( NULL );
-	ads_destroy(&ads);
-	ads = NULL;
+	{
+		/* We enter this block with user creds */
+		ADS_STRUCT *ads_dns = NULL;
 
-	if ( (ads = ads_init( lp_realm(), NULL, NULL )) != NULL ) {
-		/* kinit with the machine password */
+		if ( (ads_dns = ads_init( lp_realm(), NULL, NULL )) != NULL ) {
+			/* kinit with the machine password */
 
-		use_in_memory_ccache();
-		asprintf( &ads->auth.user_name, "%s$", global_myname() );
-		ads->auth.password = secrets_fetch_machine_password(
-			lp_workgroup(), NULL, NULL );
-		ads->auth.realm = SMB_STRDUP( lp_realm() );
-		ads_kinit_password( ads );
+			use_in_memory_ccache();
+			asprintf( &ads_dns->auth.user_name, "%s$", global_myname() );
+			ads_dns->auth.password = secrets_fetch_machine_password(
+				lp_workgroup(), NULL, NULL );
+			ads_dns->auth.realm = SMB_STRDUP( lp_realm() );
+			ads_kinit_password( ads_dns );
+		}
+
+		if ( !ads_dns || !NT_STATUS_IS_OK(net_update_dns( ctx, ads_dns )) ) {
+			d_fprintf( stderr, "DNS update failed!\n" );
+		}
+
+		/* exit from this block using machine creds */
+		ads_destroy(&ads_dns);
 	}
-
-	if ( !ads || !NT_STATUS_IS_OK(net_update_dns( ctx, ads )) ) {
-		d_fprintf( stderr, "DNS update failed!\n" );
-	}
-
-	/* exit from this block using machine creds */
 #endif
-
-	d_printf("Joined '%s' to realm '%s'\n", global_myname(), ads->server.realm);
-
+	TALLOC_FREE(r);
 	TALLOC_FREE( ctx );
-	ads_destroy(&ads);
 
 	return 0;
 
 fail:
 	/* issue an overall failure message at the end. */
-	d_printf("Failed to join domain: %s\n", get_friendly_nt_error_msg(nt_status));
-
+	d_printf("Failed to join domain: %s\n",
+		r && r->out.error_string ? r->out.error_string :
+		get_friendly_werror_msg(werr));
 	TALLOC_FREE( ctx );
-        ads_destroy(&ads);
 
         return -1;
-
 }
 
 /*******************************************************************
@@ -2519,8 +2062,8 @@ static int net_ads_kerberos_renew(int argc, const char **argv)
 
 static int net_ads_kerberos_pac(int argc, const char **argv)
 {
-	PAC_DATA *pac = NULL;
-	PAC_LOGON_INFO *info = NULL;
+	struct PAC_DATA *pac = NULL;
+	struct PAC_LOGON_INFO *info = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
 	NTSTATUS status;
 	int ret = -1;
@@ -2551,7 +2094,9 @@ static int net_ads_kerberos_pac(int argc, const char **argv)
 
 	info = get_logon_info_from_pac(pac);
 	if (info) {
-		dump_pac_logon_info(0, info);
+		const char *s;
+		s = NDR_PRINT_STRUCT_STRING(mem_ctx, PAC_LOGON_INFO, info);
+		d_printf("The Pac: %s\n", s);
 	}
 
 	ret = 0;

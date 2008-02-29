@@ -1222,9 +1222,10 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
 static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest)
 {
 	char	*ptr;
+	char *saveptr;
 
 	/* get the next token */
-	ptr = strtok(str, delim);
+	ptr = strtok_r(str, delim, &saveptr);
 
 	/* a string of 'NULL' is used to represent an empty
 	   parameter because two consecutive delimiters
@@ -1251,7 +1252,8 @@ static bool init_drv_info_3_members ( TALLOC_CTX *mem_ctx, DRIVER_INFO_3 *info,
 {
 	char	*str, *str2;
 	uint32	len, i;
-	
+	char *saveptr = NULL;
+
 	/* fill in the UNISTR fields */
 	str = get_driver_3_param (args, ":", &info->name);
 	str = get_driver_3_param (NULL, ":", &info->driverpath);
@@ -1266,13 +1268,13 @@ static bool init_drv_info_3_members ( TALLOC_CTX *mem_ctx, DRIVER_INFO_3 *info,
 	str = str2;			
 
 	/* begin to strip out each filename */
-	str = strtok(str, ",");		
+	str = strtok_r(str, ",", &saveptr);
 	len = 0;
 	while (str != NULL)
 	{
 		/* keep a cumlative count of the str lengths */
 		len += strlen(str)+1;
-		str = strtok(NULL, ",");
+		str = strtok_r(NULL, ",", &saveptr);
 	}
 
 	/* allocate the space; add one extra slot for a terminating NULL.
@@ -1481,7 +1483,7 @@ static WERROR cmd_spoolss_setdriver(struct rpc_pipe_client *cli,
 		goto done;;
 	}
 
-	printf("Succesfully set %s to driver %s.\n", argv[1], argv[2]);
+	printf("Successfully set %s to driver %s.\n", argv[1], argv[2]);
 
 done:
 	/* Cleanup */

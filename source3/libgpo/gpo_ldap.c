@@ -44,7 +44,7 @@ bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 		goto parse_error;
 	}
 
-	ext_list = str_list_make_talloc(mem_ctx, extension_raw, "]");
+	ext_list = str_list_make(mem_ctx, extension_raw, "]");
 	if (!ext_list) {
 		goto parse_error;
 	}
@@ -87,7 +87,7 @@ bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 			p++;
 		}
 
-		ext_strings = str_list_make_talloc(mem_ctx, p, "}");
+		ext_strings = str_list_make(mem_ctx, p, "}");
 		if (ext_strings == NULL) {
 			goto parse_error;
 		}
@@ -137,12 +137,8 @@ bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 	ret = True;
 
  parse_error:
-	if (ext_list) {
-		str_list_free_talloc(mem_ctx, &ext_list);
-	}
-	if (ext_strings) {
-		str_list_free_talloc(mem_ctx, &ext_strings);
-	}
+	TALLOC_FREE(ext_list);
+	TALLOC_FREE(ext_strings);
 
 	return ret;
 }
@@ -166,7 +162,7 @@ static ADS_STATUS gpo_parse_gplink(TALLOC_CTX *mem_ctx,
 
 	DEBUG(10,("gpo_parse_gplink: gPLink: %s\n", gp_link_raw));
 
-	link_list = str_list_make_talloc(mem_ctx, gp_link_raw, "]");
+	link_list = str_list_make(mem_ctx, gp_link_raw, "]");
 	if (!link_list) {
 		goto parse_error;
 	}
@@ -226,10 +222,7 @@ static ADS_STATUS gpo_parse_gplink(TALLOC_CTX *mem_ctx,
 	status = ADS_SUCCESS;
 
  parse_error:
-
-	if (link_list) {
-		str_list_free_talloc(mem_ctx, &link_list);
-	}
+	TALLOC_FREE(link_list);
 
 	return status;
 }
