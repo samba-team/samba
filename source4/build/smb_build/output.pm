@@ -101,9 +101,6 @@ sub generate_merged_obj($)
 		$lib->{MERGED_OBJNAME} = lc($link_name).".o";
 		$lib->{RESULT_MERGED_OBJ} = $lib->{OUTPUT_MERGED_OBJ} = "bin/mergedobj/$lib->{MERGED_OBJNAME}";
 		$lib->{TARGET_MERGED_OBJ} = $lib->{RESULT_MERGED_OBJ};
-	} else {
-		$lib->{TARGET_MERGED_OBJ} = "";
-		$lib->{RESULT_MERGED_OBJ} = "";
 	}
 }
 
@@ -124,10 +121,6 @@ sub generate_static_library($)
 		$lib->{TARGET_STATIC_LIBRARY} = $lib->{RESULT_STATIC_LIBRARY};
 		$lib->{STATICDIR} = 'bin/static';
 		$lib->{OUTPUT_STATIC_LIBRARY} = "-l".lc($link_name);
-	} else {
-		$lib->{RESULT_STATIC_LIBRARY} = "";
-		$lib->{TARGET_STATIC_LIBRARY} = "";
-		$lib->{OUTPUT_STATIC_LIBRARY} = "";
 	}
 }
 
