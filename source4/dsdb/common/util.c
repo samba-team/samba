@@ -478,7 +478,7 @@ NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb,
 					  struct ldb_message *msg)
 {
 	uint64_t attr_time = samdb_result_uint64(msg, "pwdLastSet", 0);
-	uint32_t userAccountcontrol = samdb_result_uint64(msg, "userAccountControl", 0);
+	uint32_t userAccountControl = samdb_result_uint64(msg, "userAccountControl", 0);
 	int64_t maxPwdAge;
 
 	/* Machine accounts don't expire, and there is a flag for 'no expiry' */
