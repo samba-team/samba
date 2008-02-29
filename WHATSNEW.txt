@@ -185,7 +185,7 @@ smb.conf changes
     config backend			New		file
     ctdb socket				New		""
     debug class				New		No
-    hidden				New		No
+    administrative share		New		No
     lanman auth				Changed Default	No
     ldap debug level			New		0
     ldap debug threshold		New		10
@@ -345,7 +345,7 @@ o   Andreas Schneider <anschneider@suse.de>
       initialization.
     * Fix Windows 2008 (Longhorn) join.
     * Fix crashbug in winbindd.
-    * Add share parameter "hidden".
+    * Add share parameter "administrative share".
 
 
 o   Karolin Seeger <ks@sernet.de>
