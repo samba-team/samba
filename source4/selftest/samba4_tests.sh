@@ -81,6 +81,7 @@ if grep ENABLE_GNUTLS.1 include/config.h > /dev/null; then
 	plantest "ldb.ldaps with options $options" dc $samba4srcdir/../testprogs/blackbox/test_ldb.sh ldaps \$SERVER_IP $options
     done
 fi
+plantest "ldb.ldapi with options $options" dc $samba4srcdir/../testprogs/blackbox/test_ldb.sh ldapi \$PREFIX_ABS/dc/private/ldapi $options
 for t in LDAP-CLDAP LDAP-BASIC LDAP-SCHEMA LDAP-UPTODATEVECTOR
 do
 	plansmbtorturetest "$t" dc "-U\$USERNAME%\$PASSWORD" //\$SERVER_IP/_none_
