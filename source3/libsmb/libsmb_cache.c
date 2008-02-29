@@ -151,7 +151,7 @@ SMBC_get_cached_server(SMBCCTX * context,
                          * a connection to the server (other than the
                          * attribute server connection) is cool.
                          */
-                        if (context->one_share_per_server) {
+                        if (context->options.one_share_per_server) {
                                 /*
                                  * The currently connected share name
                                  * doesn't match the requested share, so

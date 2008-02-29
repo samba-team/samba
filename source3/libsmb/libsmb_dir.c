@@ -356,7 +356,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 	struct sockaddr_storage rem_ss;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 	        DEBUG(4, ("no valid context\n"));
 		errno = EINVAL + 8192;
 		TALLOC_FREE(frame);
@@ -400,7 +400,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
         }
 
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->user);
+		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -446,9 +446,9 @@ SMBC_opendir_ctx(SMBCCTX *context,
 		}
 
                 /* Determine how many local master browsers to query */
-                max_lmb_count = (context->browse_max_lmb_count == 0
+                max_lmb_count = (context->internal->browse_max_lmb_count == 0
                                  ? INT_MAX
-                                 : context->browse_max_lmb_count);
+                                 : context->internal->browse_max_lmb_count);
 
 		memset(&u_info, '\0', sizeof(u_info));
 		u_info.username = talloc_strdup(frame,user);
@@ -826,7 +826,7 @@ SMBC_opendir_ctx(SMBCCTX *context,
 
 	}
 
-	DLIST_ADD(context->files, dir);
+	DLIST_ADD(context->internal->files, dir);
 	TALLOC_FREE(frame);
 	return dir;
 
@@ -842,13 +842,13 @@ SMBC_closedir_ctx(SMBCCTX *context,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	if (!dir || !SMBC_dlist_contains(context->files, dir)) {
+	if (!dir || !SMBC_dlist_contains(context->internal->files, dir)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -856,7 +856,7 @@ SMBC_closedir_ctx(SMBCCTX *context,
 
 	remove_dir(dir); /* Clean it up */
 
-	DLIST_REMOVE(context->files, dir);
+	DLIST_REMOVE(context->internal->files, dir);
 
 	if (dir) {
 
@@ -875,7 +875,7 @@ smbc_readdir_internal(SMBCCTX * context,
                       struct smbc_dirent *src,
                       int max_namebuf_len)
 {
-        if (context->urlencode_readdir_entries) {
+        if (context->internal->urlencode_readdir_entries) {
 
                 /* url-encode the name.  get back remaining buffer space */
                 max_namebuf_len =
@@ -919,7 +919,7 @@ SMBC_readdir_ctx(SMBCCTX *context,
 
 	/* Check that all is ok first ... */
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
                 DEBUG(0, ("Invalid context in SMBC_readdir_ctx()\n"));
@@ -928,7 +928,7 @@ SMBC_readdir_ctx(SMBCCTX *context,
 
 	}
 
-	if (!dir || !SMBC_dlist_contains(context->files, dir)) {
+	if (!dir || !SMBC_dlist_contains(context->internal->files, dir)) {
 
 		errno = EBADF;
                 DEBUG(0, ("Invalid dir in SMBC_readdir_ctx()\n"));
@@ -960,8 +960,8 @@ SMBC_readdir_ctx(SMBCCTX *context,
 
         }
 
-        dirp = (struct smbc_dirent *)context->dirent;
-        maxlen = (sizeof(context->dirent) -
+        dirp = (struct smbc_dirent *)context->internal->dirent;
+        maxlen = (sizeof(context->internal->dirent) -
                   sizeof(struct smbc_dirent));
 
         smbc_readdir_internal(context, dirp, dirent, maxlen);
@@ -991,7 +991,7 @@ SMBC_getdents_ctx(SMBCCTX *context,
 
 	/* Check that all is ok first ... */
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		TALLOC_FREE(frame);
@@ -999,7 +999,7 @@ SMBC_getdents_ctx(SMBCCTX *context,
 
 	}
 
-	if (!dir || !SMBC_dlist_contains(context->files, dir)) {
+	if (!dir || !SMBC_dlist_contains(context->internal->files, dir)) {
 
 		errno = EBADF;
 		TALLOC_FREE(frame);
@@ -1033,8 +1033,8 @@ SMBC_getdents_ctx(SMBCCTX *context,
 		}
 
                 /* Do urlencoding of next entry, if so selected */
-                dirent = (struct smbc_dirent *)context->dirent;
-                maxlen = (sizeof(context->dirent) -
+                dirent = (struct smbc_dirent *)context->internal->dirent;
+                maxlen = (sizeof(context->internal->dirent) -
                           sizeof(struct smbc_dirent));
                 smbc_readdir_internal(context, dirent, dirlist->dirent, maxlen);
 
@@ -1102,7 +1102,7 @@ SMBC_mkdir_ctx(SMBCCTX *context,
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
@@ -1132,7 +1132,7 @@ SMBC_mkdir_ctx(SMBCCTX *context,
         }
 
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->user);
+		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
                 	errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1209,7 +1209,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
@@ -1239,7 +1239,7 @@ SMBC_rmdir_ctx(SMBCCTX *context,
         }
 
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->user);
+		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
                 	errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1325,7 +1325,7 @@ SMBC_telldir_ctx(SMBCCTX *context,
 {
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		TALLOC_FREE(frame);
@@ -1333,7 +1333,7 @@ SMBC_telldir_ctx(SMBCCTX *context,
 
 	}
 
-	if (!dir || !SMBC_dlist_contains(context->files, dir)) {
+	if (!dir || !SMBC_dlist_contains(context->internal->files, dir)) {
 
 		errno = EBADF;
 		TALLOC_FREE(frame);
@@ -1408,7 +1408,7 @@ SMBC_lseekdir_ctx(SMBCCTX *context,
 	struct smbc_dir_list *list_ent = (struct smbc_dir_list *)NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		TALLOC_FREE(frame);
@@ -1465,7 +1465,7 @@ SMBC_fstatdir_ctx(SMBCCTX *context,
                   struct stat *st)
 {
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -1490,7 +1490,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
 	uint16 mode;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
@@ -1521,7 +1521,7 @@ SMBC_chmod_ctx(SMBCCTX *context,
         }
 
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->user);
+		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
                 	errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1570,7 +1570,7 @@ SMBC_utimes_ctx(SMBCCTX *context,
         time_t write_time;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
@@ -1627,7 +1627,7 @@ SMBC_utimes_ctx(SMBCCTX *context,
         }
 
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->user);
+		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1668,7 +1668,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
 	SMBCSRV *srv = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
@@ -1699,7 +1699,7 @@ SMBC_unlink_ctx(SMBCCTX *context,
         }
 
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->user);
+		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1802,8 +1802,8 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	TALLOC_CTX *frame = talloc_stackframe();
 
 	if (!ocontext || !ncontext ||
-	    !ocontext->initialized ||
-	    !ncontext->initialized) {
+	    !ocontext->internal->initialized ||
+	    !ncontext->internal->initialized) {
             
 		errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
@@ -1834,7 +1834,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	}
 
 	if (!user1 || user1[0] == (char)0) {
-		user1 = talloc_strdup(frame, ocontext->user);
+		user1 = talloc_strdup(frame, ocontext->config.user);
 		if (!user1) {
                 	errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -1858,7 +1858,7 @@ SMBC_rename_ctx(SMBCCTX *ocontext,
 	}
 
 	if (!user2 || user2[0] == (char)0) {
-		user2 = talloc_strdup(frame, ncontext->user);
+		user2 = talloc_strdup(frame, ncontext->config.user);
 		if (!user2) {
                 	errno = ENOMEM;
 			TALLOC_FREE(frame);

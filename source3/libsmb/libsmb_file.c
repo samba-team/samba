@@ -46,7 +46,7 @@ SMBC_open_ctx(SMBCCTX *context,
 	int fd;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
@@ -78,7 +78,7 @@ SMBC_open_ctx(SMBCCTX *context,
         }
 
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->user);
+		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
                 	errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -120,7 +120,7 @@ SMBC_open_ctx(SMBCCTX *context,
 		/*d_printf(">>>open: resolved %s as %s\n", path, targetpath);*/
 
 		if ((fd = cli_open(targetcli, targetpath, flags,
-                                   context->share_mode)) < 0) {
+                                   context->internal->share_mode)) < 0) {
 
 			/* Handle the error ... */
 
@@ -139,7 +139,7 @@ SMBC_open_ctx(SMBCCTX *context,
 		file->offset  = 0;
 		file->file    = True;
 
-		DLIST_ADD(context->files, file);
+		DLIST_ADD(context->internal->files, file);
 
                 /*
                  * If the file was opened in O_APPEND mode, all write
@@ -208,7 +208,7 @@ SMBC_creat_ctx(SMBCCTX *context,
                mode_t mode)
 {
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		return NULL;
@@ -246,7 +246,7 @@ SMBC_read_ctx(SMBCCTX *context,
          */
         off_t offset;
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		TALLOC_FREE(frame);
@@ -256,7 +256,7 @@ SMBC_read_ctx(SMBCCTX *context,
 
 	DEBUG(4, ("smbc_read(%p, %d)\n", file, (int)count));
 
-	if (!file || !SMBC_dlist_contains(context->files, file)) {
+	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -338,7 +338,7 @@ SMBC_write_ctx(SMBCCTX *context,
 
 	/* First check all pointers before dereferencing them */
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		TALLOC_FREE(frame);
@@ -346,7 +346,7 @@ SMBC_write_ctx(SMBCCTX *context,
 
 	}
 
-	if (!file || !SMBC_dlist_contains(context->files, file)) {
+	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -418,14 +418,14 @@ SMBC_close_ctx(SMBCCTX *context,
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	if (!file || !SMBC_dlist_contains(context->files, file)) {
+	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
@@ -470,7 +470,7 @@ SMBC_close_ctx(SMBCCTX *context,
 		 * from the server cache if unused */
 		errno = SMBC_errno(context, targetcli);
 		srv = file->srv;
-		DLIST_REMOVE(context->files, file);
+		DLIST_REMOVE(context->internal->files, file);
 		SAFE_FREE(file->fname);
 		SAFE_FREE(file);
 		(context->server.remove_unused_server_fn)(context, srv);
@@ -479,7 +479,7 @@ SMBC_close_ctx(SMBCCTX *context,
 
 	}
 
-	DLIST_REMOVE(context->files, file);
+	DLIST_REMOVE(context->internal->files, file);
 	SAFE_FREE(file->fname);
 	SAFE_FREE(file);
 	TALLOC_FREE(frame);
@@ -509,7 +509,7 @@ SMBC_getatr(SMBCCTX * context,
 	time_t write_time;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		TALLOC_FREE(frame);
@@ -698,14 +698,14 @@ SMBC_lseek_ctx(SMBCCTX *context,
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	if (!file || !SMBC_dlist_contains(context->files, file)) {
+	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 
 		errno = EBADF;
 		TALLOC_FREE(frame);
@@ -803,14 +803,14 @@ SMBC_ftruncate_ctx(SMBCCTX *context,
 	struct cli_state *targetcli = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	if (!file || !SMBC_dlist_contains(context->files, file)) {
+	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;
