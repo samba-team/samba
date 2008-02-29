@@ -35,7 +35,7 @@ static ino_t
 generate_inode(SMBCCTX *context,
            const char *name)
 {
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -126,7 +126,7 @@ SMBC_stat_ctx(SMBCCTX *context,
 	SMB_INO_T ino = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		TALLOC_FREE(frame);
@@ -157,7 +157,7 @@ SMBC_stat_ctx(SMBCCTX *context,
         }
 
 	if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame,context->user);
+		user = talloc_strdup(frame,context->config.user);
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -222,14 +222,14 @@ SMBC_fstat_ctx(SMBCCTX *context,
 	SMB_INO_T ino = 0;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
 		errno = EINVAL;
 		TALLOC_FREE(frame);
 		return -1;
 	}
 
-	if (!file || !SMBC_dlist_contains(context->files, file)) {
+	if (!file || !SMBC_dlist_contains(context->internal->files, file)) {
 		errno = EBADF;
 		TALLOC_FREE(frame);
 		return -1;

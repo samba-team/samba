@@ -5,7 +5,7 @@
   Copyright (C) Richard Sharpe 2000
   Copyright (C) John Terpsra 2000
   Copyright (C) Tom Jansen (Ninja ISD) 2002 
-  Copyright (C) Derrell Lipman 2003
+  Copyright (C) Derrell Lipman 2003-2008
 
    
   This program is free software; you can redistribute it and/or modify
@@ -213,6 +213,15 @@ typedef struct _SMBCFILE SMBCFILE;
 typedef struct _SMBCCTX SMBCCTX;
 
 
+/*
+ * NEW CODE SHOULD NOT DIRECTLY MANIPULATE THE CONTEXT STRUCTURE.
+ * For these options, use smbc_option_set() and smbc_option_get().
+ */
+
+/* Flags for SMBCCTX->flags */
+# define SMB_CTX_FLAG_USE_KERBEROS (1 << 0)
+# define SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS (1 << 1)
+# define SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON (1 << 2)
 
 
 
@@ -2309,6 +2318,277 @@ smbc_version(void);
 #ifdef __cplusplus
 }
 #endif
+
+
+/**
+ * @ingroup structure
+ * Structure that contains a client context information 
+ * This structure is known as SMBCCTX
+ *
+ * DO NOT DIRECTLY MANIPULATE THE CONTEXT STRUCTURE!  The data in the context
+ * structure should all be considered private to the library.  It remains here
+ * only for backward compatibility.
+ *
+ * See the comments herein for use of the setter and getter functions which
+ * should now be used for manipulating these values.  New features, functions,
+ * etc., are not added here but rather in _internal where they are not
+ * directly visible to applications.  This makes it much easier to maintain
+ * ABI compatibility.
+ */
+struct _SMBCCTX {
+        struct
+        {
+                /**
+                 * debug level
+                 *
+                 * Use smbc_getDebug() and smbc_setDebug()
+                 */
+                int     debug;
+	
+                /**
+                 * netbios name used for making connections
+                 *
+                 * Use smbc_getNetbiosName() and smbc_setNetbiosName()
+                 */
+                char * netbios_name;
+
+                /**
+                 * workgroup name used for making connections
+                 *
+                 * Use smbc_getWorkgroup() and smbc_setWorkgroup()
+                 */
+                char * workgroup;
+
+                /**
+                 * username used for making connections
+                 *
+                 * Use smbc_getUser() and smbc_setUser()
+                 */
+                char * user;
+
+                /**
+                 * timeout used for waiting on connections / response data (in
+                 * milliseconds)
+                 *
+                 * Use smbc_getTimeout() and smbc_setTimeout()
+                 */
+                int timeout;
+        } config;
+
+	/**
+         * callable functions for files:
+	 * For usage and return values see the SMBC_* functions
+         *
+         * Use smbc_getFunction*() and smbc_setFunction*(), e.g.
+         * smbc_getFunctionOpen(), smbc_setFunctionUnlink(), etc.
+	 */ 
+        struct
+        {
+                smbc_open_fn                    open_fn;
+                smbc_creat_fn                   creat_fn;
+                smbc_read_fn                    read_fn;
+                smbc_write_fn                   write_fn;
+                smbc_unlink_fn                  unlink_fn;
+                smbc_rename_fn                  rename_fn;
+                smbc_lseek_fn                   lseek_fn;
+                smbc_stat_fn                    stat_fn;
+                smbc_fstat_fn                   fstat_fn;
+#if 0 /* internal */
+                smbc_ftruncate_fn               ftruncate_fn;
+#endif
+                smbc_close_fn                   close_fn;
+                smbc_opendir_fn                 opendir_fn;
+                smbc_closedir_fn                closedir_fn;
+                smbc_readdir_fn                 readdir_fn;
+                smbc_getdents_fn                getdents_fn;
+                smbc_mkdir_fn                   mkdir_fn;
+                smbc_rmdir_fn                   rmdir_fn;
+                smbc_telldir_fn                 telldir_fn;
+                smbc_lseekdir_fn                lseekdir_fn;
+                smbc_fstatdir_fn                fstatdir_fn;
+                smbc_chmod_fn                   chmod_fn;
+                smbc_utimes_fn                  utimes_fn;
+                smbc_setxattr_fn                setxattr_fn;
+                smbc_getxattr_fn                getxattr_fn;
+                smbc_removexattr_fn             removexattr_fn;
+                smbc_listxattr_fn               listxattr_fn;
+        }               posix_emu;
+
+        /* Printing-related functions */
+        struct
+        {
+                smbc_print_file_fn              print_file_fn;
+                smbc_open_print_job_fn          open_print_job_fn;
+                smbc_list_print_jobs_fn         list_print_jobs_fn;
+                smbc_unlink_print_job_fn        unlink_print_job_fn;
+        }               printing;
+
+        /*
+        ** Callbacks
+        * These callbacks _always_ have to be initialized because they will
+        * not be checked at dereference for increased speed.
+        */
+	struct
+        {
+		/**
+                 * authentication function callback: called upon auth requests
+                 *
+                 * Use smbc_getFunctionAuthData(), smbc_setFunctionAuthData()
+		 */
+                smbc_get_auth_data_fn get_auth_data_fn;
+		
+		/**
+                 * check if a server is still good
+                 *
+                 * Use smbc_getFunctionCheckServer(),
+                 * smbc_setFunctionCheckServer()
+		 */
+		smbc_check_server_fn check_server_fn;
+
+		/**
+                 * remove a server if unused
+                 *
+                 * Use smbc_getFunctionRemoveUnusedServer(),
+                 * smbc_setFunctionCheckServer()
+		 */
+		smbc_remove_unused_server_fn remove_unused_server_fn;
+        } server;
+
+        struct
+        {
+		/** Cache subsystem
+                 *
+		 * For an example cache system see
+		 * samba/source/libsmb/libsmb_cache.c
+                 *
+                 * Cache subsystem * functions follow.
+		 */
+
+		/**
+                 * server cache addition 
+                 *
+                 * Use smbc_getFunctionAddCachedServer(),
+                 * smbc_setFunctionAddCachedServer()
+		 */
+		smbc_add_cached_srv_fn add_cached_server_fn;
+
+		/**
+                 * server cache lookup 
+                 *
+                 * Use smbc_getFunctionGetCachedServer(),
+                 * smbc_setFunctionGetCachedServer()
+		 */
+		smbc_get_cached_srv_fn get_cached_server_fn;
+
+		/**
+                 * server cache removal
+                 *
+                 * Use smbc_getFunctionRemoveCachedServer(),
+                 * smbc_setFunctionRemoveCachedServer()
+		 */
+		smbc_remove_cached_srv_fn remove_cached_server_fn;
+		
+		/**
+                 * server cache purging, try to remove all cached servers
+                 * (disconnect)
+                 *
+                 * Use smbc_getFunctionPurgeCachedServers(),
+                 * smbc_setFunctionPurgeCachedServers()
+		 */
+		smbc_purge_cached_srv_fn purge_cached_servers_fn;
+
+                /**
+                 * Space to store private data of the server cache.
+                 *
+                 * Use smbc_getServerCacheData(), smbc_setServerCacheData()
+                 */
+                struct smbc_server_cache * server_cache_data;
+	} cache;
+
+        /*
+         * Very old configuration options.
+         * 
+         * Use smbc_option_set() and smbc_option_get() instead.
+         */
+        struct
+        {
+                int bits;
+        } flags;
+	
+        /** user options selections that apply to this session
+         *
+         *  NEW CODE SHOULD NOT DIRECTLY MANIPULATE THE CONTEXT STRUCTURE.
+         *
+         *  NEW OPTIONS ARE NOT ADDED HERE!
+         *
+         *  We must maintain ABI backward compatibility.  We now use
+         *  smbc_option_set() and smbc_option_get() for all newly added
+         *  options.
+         */
+        struct _smbc_options {
+
+                /*
+                 * From how many local master browsers should the list of
+                 * workgroups be retrieved?  It can take up to 12 minutes or
+                 * longer after a server becomes a local master browser, for
+                 * it to have the entire browse list (the list of
+                 * workgroups/domains) from an entire network.  Since a client
+                 * never knows which local master browser will be found first,
+                 * the one which is found first and used to retrieve a browse
+                 * list may have an incomplete or empty browse list.  By
+                 * requesting the browse list from multiple local master
+                 * browsers, a more complete list can be generated.  For small
+                 * networks (few workgroups), it is recommended that this
+                 * value be set to 0, causing the browse lists from all found
+                 * local master browsers to be retrieved and merged.  For
+                 * networks with many workgroups, a suitable value for this
+                 * variable is probably somewhere around 3. (Default: 3).
+                 */
+                int browse_max_lmb_count;
+
+                /*
+                 * There is a difference in the desired return strings from
+                 * smbc_readdir() depending upon whether the filenames are to
+                 * be displayed to the user, or whether they are to be
+                 * appended to the path name passed to smbc_opendir() to call
+                 * a further smbc_ function (e.g. open the file with
+                 * smbc_open()).  In the former case, the filename should be
+                 * in "human readable" form.  In the latter case, the smbc_
+                 * functions expect a URL which must be url-encoded.  Those
+                 * functions decode the URL.  If, for example, smbc_readdir()
+                 * returned a file name of "abc%20def.txt", passing a path
+                 * with this file name attached to smbc_open() would cause
+                 * smbc_open to attempt to open the file "abc def.txt" since
+                 * the %20 is decoded into a space.
+                 *
+                 * Set this option to True if the names returned by
+                 * smbc_readdir() should be url-encoded such that they can be
+                 * passed back to another smbc_ call.  Set it to False if the
+                 * names returned by smbc_readdir() are to be presented to the
+                 * user.
+                 *
+                 * For backwards compatibility, this option defaults to False.
+                 */
+                int urlencode_readdir_entries;
+
+                /*
+                 * Some Windows versions appear to have a limit to the number
+                 * of concurrent SESSIONs and/or TREE CONNECTions.  In
+                 * one-shot programs (i.e. the program runs and then quickly
+                 * ends, thereby shutting down all connections), it is
+                 * probably reasonable to establish a new connection for each
+                 * share.  In long-running applications, the limitation can be
+                 * avoided by using only a single connection to each server,
+                 * and issuing a new TREE CONNECT when the share is accessed.
+                 */
+                int one_share_per_server;
+        } options;
+	
+	/** INTERNAL DATA
+	 * do _NOT_ touch this from your program !
+	 */
+	struct SMBC_internal_data * internal;
+};
 
 
 #endif /* SMBCLIENT_H_INCLUDED */

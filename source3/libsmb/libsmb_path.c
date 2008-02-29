@@ -252,7 +252,8 @@ SMBC_parse_path(TALLOC_CTX *ctx,
          * to the workgroup in the provided context.
          */
 	if (pp_workgroup != NULL) {
-		*pp_workgroup = talloc_strdup(ctx, context->workgroup);
+		*pp_workgroup =
+                    talloc_strdup(ctx, context->config.workgroup);
 	}
 
 	if (pp_options) {
@@ -296,13 +297,13 @@ SMBC_parse_path(TALLOC_CTX *ctx,
 	}
 
 	if (*p == '/') {
-		int wl = strlen(context->workgroup);
+		int wl = strlen(context->config.workgroup);
 
 		if (wl > 16) {
 			wl = 16;
 		}
 
-		*pp_server = talloc_strdup(ctx, context->workgroup);
+		*pp_server = talloc_strdup(ctx, context->config.workgroup);
 		if (!*pp_server) {
 			return -1;
 		}
