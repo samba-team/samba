@@ -1,7 +1,7 @@
 /*
  *  Unix SMB/CIFS implementation.
  *  Group Policy Object Support
- *  Copyright (C) Guenther Deschner 2005-2007
+ *  Copyright (C) Guenther Deschner 2005-2008
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -154,3 +154,5 @@ struct gp_registry_context {
 #define GP_EXT_GUID_SECURITY "827D319E-6EAC-11D2-A4EA-00C04F79F83A"
 #define GP_EXT_GUID_REGISTRY "35378EAC-683F-11D2-A89A-00C04FBBCFA2"
 #define GP_EXT_GUID_SCRIPTS  "42B5FAAE-6536-11D2-AE5A-0000F87571E3"
+
+#include "libgpo/gpext/gpext.h"
