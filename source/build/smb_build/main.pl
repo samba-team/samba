@@ -67,8 +67,7 @@ foreach my $key (values %$OUTPUT) {
 								   $key->{TYPE} eq "PYTHON") and
 					grep(/SHARED_LIBRARY/, @{$key->{OUTPUT_TYPE}});
 	$mkenv->PythonFiles($key) if defined($key->{PYTHON_FILES});
-	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER}) or 
-					 defined($key->{PUBLIC_PROTO_HEADER});
+	$mkenv->ProtoHeader($key) if defined($key->{PRIVATE_PROTO_HEADER});
 }
 
 foreach my $key (values %$OUTPUT) {

@@ -350,39 +350,13 @@ sub ProtoHeader($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $target = "";
-	my $comment = "Creating ";
+	my $priv = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PRIVATE_PROTO_HEADER});
+	$self->output("PROTO_HEADERS += $priv\n");
 
-	my $priv = undef;
-	my $pub = undef;
-
-	if (defined($ctx->{PRIVATE_PROTO_HEADER})) {
-		$priv = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PRIVATE_PROTO_HEADER});
-		$target .= $priv;
-		$comment .= $priv;
-		if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
-			$comment .= " and ";
-			$target.= " ";
-		}
-		$self->output("PROTO_HEADERS += $priv\n");
-	} else {
-		$ctx->{PRIVATE_PROTO_HEADER} = $ctx->{PUBLIC_PROTO_HEADER};
-		$priv = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PRIVATE_PROTO_HEADER});
-	}
-
-	if (defined($ctx->{PUBLIC_PROTO_HEADER})) {
-		$pub = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PUBLIC_PROTO_HEADER});
-		$comment .= $pub;
-		$target .= $pub;
-		$self->output("PROTO_HEADERS += $pub\n");
-	} else {
-		$ctx->{PUBLIC_PROTO_HEADER} = $ctx->{PRIVATE_PROTO_HEADER};
-		$pub = output::add_dir_str($ctx->{BASEDIR}, $ctx->{PUBLIC_PROTO_HEADER});
-	}
-
-	$self->output("$pub: $ctx->{MK_FILE} \$($ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
-	$self->output("\t\@echo \"$comment\"\n");
-	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --private=$priv --public=$pub \$($ctx->{NAME}_OBJ_LIST)\n\n");
+	$self->output("$priv: $ctx->{MK_FILE} \$($ctx->{NAME}_OBJ_LIST:.o=.c) \$(srcdir)/script/mkproto.pl\n");
+	$self->output("\t\@echo \"Creating \$@\"\n");
+	$self->output("\t\@mkdir -p \$(\@D)\n");
+	$self->output("\t\@\$(PERL) \$(srcdir)/script/mkproto.pl --srcdir=\$(srcdir) --builddir=\$(builddir) --all=\$@ \$($ctx->{NAME}_OBJ_LIST)\n\n");
 }
 
 sub write($$)
