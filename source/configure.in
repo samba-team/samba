@@ -2631,24 +2631,6 @@ if test x"$samba_cv_HAVE_BROKEN_GETGROUPS" = x"yes"; then
     AC_DEFINE(HAVE_BROKEN_GETGROUPS,1,[Whether getgroups is broken])
 fi
 
-AC_CACHE_CHECK([for broken readdir],samba_cv_HAVE_BROKEN_READDIR,[
-	AC_TRY_RUN([#include "${srcdir-.}/tests/os2_delete.c"],
-		[samba_cv_HAVE_BROKEN_READDIR=no],
-			[samba_cv_HAVE_BROKEN_READDIR=yes],
-			[samba_cv_HAVE_BROKEN_READDIR="assuming not"])])
-
-if test x"$samba_cv_HAVE_BROKEN_READDIR" = x"yes"; then
-AC_CACHE_CHECK([for replacing readdir],samba_cv_REPLACE_READDIR,[
-	AC_TRY_RUN([
-#include "${srcdir-.}/lib/repdir.c"
-#include "${srcdir-.}/tests/os2_delete.c"],
-	samba_cv_REPLACE_READDIR=yes,samba_cv_REPLACE_READDIR=no)])
-fi
-
-if test x"$samba_cv_REPLACE_READDIR" = x"yes"; then
-	AC_DEFINE(REPLACE_READDIR,1,[replace readdir])
-fi
-
 SMB_CHECK_SYSCONF(_SC_NGROUPS_MAX)
 SMB_CHECK_SYSCONF(_SC_NPROC_ONLN)
 SMB_CHECK_SYSCONF(_SC_NPROCESSORS_ONLN)
