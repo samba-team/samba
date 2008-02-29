@@ -297,9 +297,9 @@ clean::
 include librpc/idl-deps
 
 librpc/gen_ndr/tables.c: $(IDL_NDR_PARSE_H_FILES)
-	@echo Generating librpc/gen_ndr/tables.c
-	@$(PERL) $(srcdir)/librpc/tables.pl --output=librpc/gen_ndr/tables.c $(IDL_NDR_PARSE_H_FILES) > librpc/gen_ndr/tables.x
-	mv librpc/gen_ndr/tables.x librpc/gen_ndr/tables.c
+	@echo Generating $@
+	@$(PERL) $(srcdir)/librpc/tables.pl --output=$@ $^ > librpc/gen_ndr/tables.x
+	@mv librpc/gen_ndr/tables.x $@
 
 [SUBSYSTEM::NDR_TABLE]
 OBJ_FILES = ndr/ndr_table.o gen_ndr/tables.o
