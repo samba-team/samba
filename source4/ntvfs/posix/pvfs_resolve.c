@@ -399,7 +399,7 @@ static NTSTATUS pvfs_reduce_name(TALLOC_CTX *mem_ctx,
 		if (ISDOTDOT(components[i])) {
 			if (i < 1) return NT_STATUS_OBJECT_PATH_SYNTAX_BAD;
 			memmove(&components[i-1], &components[i+1], 
-				sizeof(char *)*(num_components-(i+1)));
+				sizeof(char *)*(num_components-i));
 			i -= 2;
 			continue;
 		}
