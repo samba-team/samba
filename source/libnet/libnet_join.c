@@ -883,6 +883,25 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 					 &user_pol,
 					 25,
 					 &user_info);
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS(DCERPC_FAULT_INVALID_TAG))) {
+
+		uchar pwbuf2[516];
+
+		encode_pw_buffer(pwbuf2, r->in.machine_password, STR_UNICODE);
+
+		/* retry with level 24 */
+		init_samr_user_info24(&user_info.info24, pwbuf2, 24);
+
+		SamOEMhashBlob(user_info.info24.password.data, 516,
+			       &cli->user_session_key);
+
+		status = rpccli_samr_SetUserInfo2(pipe_hnd, mem_ctx,
+						  &user_pol,
+						  24,
+						  &user_info);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		libnet_join_set_error_string(mem_ctx, r,
 			"Failed to set password for machine account (%s)\n",
