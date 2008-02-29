@@ -571,7 +571,7 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	strlower_m(dnsdomname);
 
 	dnsname = get_mydnsfullname();
-	if (!dnsdomname) {
+	if (!dnsname) {
 		return NT_STATUS_INVALID_COMPUTER_NAME;
 	}
 
