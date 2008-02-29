@@ -469,8 +469,8 @@ NTTIME samdb_result_allow_password_change(struct ldb_context *sam_ldb,
 }
 
 /*
-  construct the force_password_change field from the PwdLastSet attribute and the 
-  domain password settings
+  construct the force_password_change field from the PwdLastSet
+  attribute, the userAccountControl and the domain password settings
 */
 NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb, 
 					  TALLOC_CTX *mem_ctx, 
@@ -478,10 +478,12 @@ NTTIME samdb_result_force_password_change(struct ldb_context *sam_ldb,
 					  struct ldb_message *msg)
 {
 	uint64_t attr_time = samdb_result_uint64(msg, "pwdLastSet", 0);
-	uint32_t user_flags = samdb_result_uint64(msg, "userAccountControl", 0);
+	uint32_t userAccountcontrol = samdb_result_uint64(msg, "userAccountControl", 0);
 	int64_t maxPwdAge;
 
-	if (user_flags & UF_DONT_EXPIRE_PASSWD) {
+	/* Machine accounts don't expire, and there is a flag for 'no expiry' */
+	if (!(userAccountControl & UF_NORMAL_ACCOUNT)
+	    || (userAccountControl & UF_DONT_EXPIRE_PASSWD)) {
 		return 0x7FFFFFFFFFFFFFFFULL;
 	}
 
@@ -607,24 +609,17 @@ uint32_t samdb_result_acct_flags(struct ldb_context *sam_ctx, TALLOC_CTX *mem_ct
 {
 	uint32_t userAccountControl = ldb_msg_find_attr_as_uint(msg, "userAccountControl", 0);
 	uint32_t acct_flags = samdb_uf2acb(userAccountControl); 
-	if ((userAccountControl & UF_NORMAL_ACCOUNT) && !(userAccountControl & UF_DONT_EXPIRE_PASSWD)) {
-		NTTIME must_change_time;
-		NTTIME pwdLastSet = samdb_result_nttime(msg, "pwdLastSet", 0);
-		if (pwdLastSet == 0) {
-			acct_flags |= ACB_PW_EXPIRED;
-		} else {
-			NTTIME now;
-			
-			must_change_time = samdb_result_force_password_change(sam_ctx, mem_ctx, 
-									      domain_dn, msg);
-			
-			/* Test account expire time */
-			unix_to_nt_time(&now, time(NULL));
-			/* check for expired password */
-			if ((must_change_time != 0) && (must_change_time < now)) {
-				acct_flags |= ACB_PW_EXPIRED;
-			}
-		}
+	NTTIME must_change_time;
+	NTTIME now;
+	
+	must_change_time = samdb_result_force_password_change(sam_ctx, mem_ctx, 
+							      domain_dn, msg);
+	
+	/* Test account expire time */
+	unix_to_nt_time(&now, time(NULL));
+	/* check for expired password */
+	if (must_change_time < now) {
+		acct_flags |= ACB_PW_EXPIRED;
 	}
 	return acct_flags;
 }
