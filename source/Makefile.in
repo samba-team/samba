@@ -902,6 +902,7 @@ TALLOCTORT_OBJ = @tallocdir@/testsuite.o $(PARAM_OBJ) $(LIB_NONSMBD_OBJ) \
 		 $(ERRORMAP_OBJ)
 
 REPLACETORT_OBJ = lib/replace/test/testsuite.o \
+		lib/replace/test/getifaddrs.o \
 		lib/replace/test/os2_delete.o \
 		lib/replace/test/strptime.o \
 		$(LIBREPLACE_OBJ)
