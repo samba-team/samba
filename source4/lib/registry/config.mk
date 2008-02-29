@@ -36,9 +36,10 @@ OBJ_FILES = \
 PUBLIC_DEPENDENCIES = \
 		LIBSAMBA-UTIL CHARSET TDR_REGF LIBLDB \
 		RPC_NDR_WINREG LDB_WRAP
-PUBLIC_HEADERS = registry.h hive.h patchfile.h
 # End MODULE registry_ldb
 ################################################
+
+PUBLIC_HEADERS += $(addprefix lib/registry/, registry.h hive.h patchfile.h)
 
 [SUBSYSTEM::registry_common]
 PUBLIC_DEPENDENCIES = registry

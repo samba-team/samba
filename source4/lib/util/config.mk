@@ -1,15 +1,6 @@
 [SUBSYSTEM::LIBSAMBA-UTIL]
 #VERSION = 0.0.1
 #SO_VERSION = 0
-PUBLIC_HEADERS = util.h \
-				 attr.h \
-				 byteorder.h \
-				 data_blob.h \
-				 debug.h \
-				 mutex.h \
-				 safe_string.h \
-				 time.h \
-				 xfile.h
 OBJ_FILES = xfile.o \
 		debug.o \
 		fault.o \
@@ -33,10 +24,21 @@ PUBLIC_DEPENDENCIES = \
 		SOCKET_WRAPPER EXT_NSL \
 		CHARSET EXECINFO
 
+PUBLIC_HEADERS += $(addprefix lib/util/, util.h \
+				 attr.h \
+				 byteorder.h \
+				 data_blob.h \
+				 debug.h \
+				 mutex.h \
+				 safe_string.h \
+				 time.h \
+				 xfile.h)
+
 [SUBSYSTEM::ASN1_UTIL]
-PUBLIC_PROTO_HEADER = asn1_proto.h
-PUBLIC_HEADERS = asn1.h
+PRIVATE_PROTO_HEADER = asn1_proto.h
 OBJ_FILES = asn1.o
+
+PUBLIC_HEADERS += lib/util/asn1.h
 
 [SUBSYSTEM::UNIX_PRIVS]
 PRIVATE_PROTO_HEADER = unix_privs.h

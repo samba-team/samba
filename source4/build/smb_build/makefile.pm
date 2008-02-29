@@ -295,21 +295,6 @@ sub StaticLibrary($$)
 	$self->output("$ctx->{RESULT_STATIC_LIBRARY}: \$($ctx->{NAME}_FULL_OBJ_LIST)\n");
 }
 
-sub Header($$)
-{
-	my ($self,$ctx) = @_;
-
-	return if ($#{$ctx->{PUBLIC_HEADERS}} == -1);
-
-	$self->output("PUBLIC_HEADERS +=");
-
-	foreach (@{$ctx->{PUBLIC_HEADERS}}) {
-		$self->output(" " . output::add_dir_str($ctx->{BASEDIR}, $_));
-	}
-
-	$self->output("\n");
-}
-
 sub Binary($$)
 {
 	my ($self,$ctx) = @_;

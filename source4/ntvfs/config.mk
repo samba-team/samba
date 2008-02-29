@@ -80,13 +80,14 @@ OBJ_FILES = \
 ################################################
 # Start SUBSYSTEM NTVFS
 [SUBSYSTEM::ntvfs]
-PUBLIC_HEADERS = ntvfs.h
 PRIVATE_PROTO_HEADER = ntvfs_proto.h
 OBJ_FILES = \
 		ntvfs_base.o \
 		ntvfs_generic.o \
 		ntvfs_interface.o \
 		ntvfs_util.o
+
+PUBLIC_HEADERS += ntvfs/ntvfs.h
 #
 # End SUBSYSTEM NTVFS
 ################################################
