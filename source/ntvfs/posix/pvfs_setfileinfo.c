@@ -82,21 +82,18 @@ static uint32_t pvfs_setfileinfo_access(union smb_setfileinfo *info)
 static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs, 
 					struct ntvfs_request *req, 
 					struct pvfs_filename *name,
+					DATA_BLOB *odb_locking_key,
 					union smb_setfileinfo *info)
 {
 	NTSTATUS status;
 	struct pvfs_filename *name2;
 	char *new_name, *p;
+	struct odb_lock *lck = NULL;
 
 	/* renames are only allowed within a directory */
 	if (strchr_m(info->rename_information.in.new_name, '\\') &&
 	    (req->ctx->protocol != PROTOCOL_SMB2)) {
 		return NT_STATUS_NOT_SUPPORTED;
-	}
-
-	if (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
-		/* don't allow this for now */
-		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
 	/* don't allow stream renames for now */
@@ -168,7 +165,18 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		return status;
 	}
 
+	lck = odb_lock(req, pvfs->odb_context, odb_locking_key);
+	if (lck == NULL) {
+		DEBUG(0,("Unable to lock opendb for can_stat\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
 	status = pvfs_do_rename(pvfs, name, name2->full_name);
+	if (NT_STATUS_IS_OK(status)) {
+		status = odb_rename(lck, name2->full_name);
+	}
+	talloc_free(lck);
+	NT_STATUS_NOT_OK_RETURN(status);
 	if (NT_STATUS_IS_OK(status)) {
 		name->full_name = talloc_steal(name, name2->full_name);
 		name->original_name = talloc_steal(name, name2->original_name);
@@ -289,7 +297,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	}
 
 	/* update the file information */
-	status = pvfs_resolve_name_fd(pvfs, h->fd, h->name);
+	status = pvfs_resolve_name_handle(pvfs, h);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -391,7 +399,8 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
 	case RAW_SFILEINFO_RENAME_INFORMATION_SMB2:
-		return pvfs_setfileinfo_rename(pvfs, req, h->name, 
+		return pvfs_setfileinfo_rename(pvfs, req, h->name,
+					       &h->odb_locking_key,
 					       info);
 
 	case RAW_SFILEINFO_SEC_DESC:
@@ -565,6 +574,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	uint32_t access_needed;
 	uint32_t change_mask = 0;
 	struct odb_lock *lck = NULL;
+	DATA_BLOB odb_locking_key;
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, info->generic.in.file.path, 
@@ -696,8 +706,12 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_RENAME_INFORMATION:
 	case RAW_SFILEINFO_RENAME_INFORMATION_SMB2:
-		return pvfs_setfileinfo_rename(pvfs, req, name, 
-					       info);
+		status = pvfs_locking_key(name, name, &odb_locking_key);
+		NT_STATUS_NOT_OK_RETURN(status);
+		status = pvfs_setfileinfo_rename(pvfs, req, name,
+						 &odb_locking_key, info);
+		NT_STATUS_NOT_OK_RETURN(status);
+		return NT_STATUS_OK;
 
 	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
