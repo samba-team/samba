@@ -96,11 +96,6 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		return NT_STATUS_NOT_SUPPORTED;
 	}
 
-	if (name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
-		/* don't allow this for now */
-		return NT_STATUS_FILE_IS_A_DIRECTORY;
-	}
-
 	/* don't allow stream renames for now */
 	if (name->stream_name) {
 		return NT_STATUS_INVALID_PARAMETER;
