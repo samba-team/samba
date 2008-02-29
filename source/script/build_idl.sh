@@ -23,7 +23,7 @@ for f in ${IDL_FILES}; do
 	basename=`basename $f .idl`
 	ndr="librpc/gen_ndr/ndr_$basename.c"
 
-	if [ -f $ndr ] ; then
+	if [ -f $ndr ] && false; then
 		if [ "x`find librpc/idl/$f -newer $ndr -print`" = "xlibrpc/idl/$f" ]; then
 			list="$list librpc/idl/$f"
 		fi
