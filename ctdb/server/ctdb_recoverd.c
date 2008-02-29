@@ -1964,8 +1964,9 @@ static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ct
   to the pnn slot in the reclock file
 */
 static void
-ctdb_recoverd_write_pnn_connect_count(struct ctdb_recoverd *rec, const char count)
+ctdb_recoverd_write_pnn_connect_count(struct ctdb_recoverd *rec)
 {
+	const char count = rec->num_active;
 	struct ctdb_context *ctdb = talloc_get_type(rec->ctdb, struct ctdb_context);
 
 	if (pwrite(rec->rec_file_fd, &count, 1, ctdb->pnn) == -1) {
@@ -2023,7 +2024,21 @@ ctdb_recoverd_get_pnn_lock(struct ctdb_recoverd *rec)
 	talloc_free(pnnfile);
 
 	/* we start out with 0 connected nodes */
-	ctdb_recoverd_write_pnn_connect_count(rec, 0);
+	ctdb_recoverd_write_pnn_connect_count(rec);
+}
+
+/*
+  called when we need to do the periodical reclock pnn count update
+ */
+static void ctdb_update_pnn_count(struct event_context *ev, struct timed_event *te, 
+				  struct timeval t, void *p)
+{
+	struct ctdb_recoverd *rec = talloc_get_type(p, struct ctdb_recoverd);
+
+	ctdb_recoverd_write_pnn_connect_count(rec);
+
+	event_add_timed(rec->ctdb->ev, rec->ctdb, timeval_current_ofs(60, 0), 
+				ctdb_update_pnn_count, rec);
 }
 
 /*
@@ -2072,7 +2087,11 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 
 	/* register a message port for vacuum fetch */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_VACUUM_FETCH, vacuum_fetch_handler, rec);
-	
+
+	/* update the reclock pnn file connected count on a regular basis */
+	event_add_timed(ctdb->ev, ctdb, timeval_current_ofs(60, 0), 
+				ctdb_update_pnn_count, rec);
+
 again:
 	if (mem_ctx) {
 		talloc_free(mem_ctx);
