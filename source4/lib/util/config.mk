@@ -47,7 +47,7 @@ OBJ_FILES = unix_privs.o
 ################################################
 # Start SUBSYSTEM WRAP_XATTR
 [SUBSYSTEM::WRAP_XATTR]
-PUBLIC_PROTO_HEADER = wrap_xattr.h
+PRIVATE_PROTO_HEADER = wrap_xattr.h
 OBJ_FILES = \
 		wrap_xattr.o
 PUBLIC_DEPENDENCIES = XATTR
@@ -56,13 +56,13 @@ PUBLIC_DEPENDENCIES = XATTR
 ################################################
 
 [SUBSYSTEM::UTIL_TDB]
-PUBLIC_PROTO_HEADER = util_tdb.h
+PRIVATE_PROTO_HEADER = util_tdb.h
 OBJ_FILES = \
 		util_tdb.o
 PUBLIC_DEPENDENCIES = LIBTDB
 
 [SUBSYSTEM::UTIL_LDB]
-PUBLIC_PROTO_HEADER = util_ldb.h
+PRIVATE_PROTO_HEADER = util_ldb.h
 OBJ_FILES = \
 			util_ldb.o
 PUBLIC_DEPENDENCIES = LIBLDB

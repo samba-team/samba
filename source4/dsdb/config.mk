@@ -20,7 +20,7 @@ OBJ_FILES = \
 PUBLIC_HEADERS += dsdb/samdb/samdb.h
 
 [SUBSYSTEM::SAMDB_COMMON]
-PUBLIC_PROTO_HEADER = common/proto.h
+PRIVATE_PROTO_HEADER = common/proto.h
 PRIVATE_DEPENDENCIES = LIBLDB
 OBJ_FILES = \
 		common/sidmap.o \
