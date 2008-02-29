@@ -374,7 +374,7 @@ void in_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
  Convert an IPv6 struct in_addr to a struct sockaddr_storage.
 ********************************************************************/
 
-void in6_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
+ void in6_addr_to_sockaddr_storage(struct sockaddr_storage *ss,
 		struct in6_addr ip)
 {
 	struct sockaddr_in6 *sa = (struct sockaddr_in6 *)ss;
