@@ -652,8 +652,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
 	struct lsa_String lsa_acct_name;
-	uint32 user_rid;
-	uint32 acb_info = ACB_WSTRUST;
+	uint32_t user_rid;
+	uint32_t acct_flags = ACB_WSTRUST;
 	uchar pwbuf[532];
 	struct MD5Context md5ctx;
 	uchar md5buffer[16];
@@ -690,7 +690,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, True,
+	status = rpccli_lsa_open_policy(pipe_hnd, mem_ctx, true,
 					SEC_RIGHTS_MAXIMUM_ALLOWED, &lsa_pol);
 	if (!NT_STATUS_IS_OK(status)) {
 		goto done;
@@ -757,7 +757,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	init_lsa_String(&lsa_acct_name, acct_name);
 
 	if (r->in.join_flags & WKSSVC_JOIN_FLAGS_ACCOUNT_CREATE) {
-		uint32_t acct_flags =
+		uint32_t access_desired =
 			SEC_GENERIC_READ | SEC_GENERIC_WRITE | SEC_GENERIC_EXECUTE |
 			SEC_STD_WRITE_DAC | SEC_STD_DELETE |
 			SAMR_USER_ACCESS_SET_PASSWORD |
@@ -765,15 +765,16 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 			SAMR_USER_ACCESS_SET_ATTRIBUTES;
 		uint32_t access_granted = 0;
 
-		/* Don't try to set any acb_info flags other than ACB_WSTRUST */
+		/* Don't try to set any acct_flags flags other than ACB_WSTRUST */
 
-		DEBUG(10,("Creating account with flags: %d\n", acct_flags));
+		DEBUG(10,("Creating account with desired access mask: %d\n",
+			access_desired));
 
 		status = rpccli_samr_CreateUser2(pipe_hnd, mem_ctx,
 						 &domain_pol,
 						 &lsa_acct_name,
 						 ACB_WSTRUST,
-						 acct_flags,
+						 access_desired,
 						 &user_pol,
 						 &access_granted,
 						 &user_rid);
@@ -845,7 +846,7 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	E_md4hash(r->in.machine_password, md4_trust_password);
 	encode_pw_buffer(pwbuf, r->in.machine_password, STR_UNICODE);
 
-	generate_random_buffer((uint8*)md5buffer, sizeof(md5buffer));
+	generate_random_buffer((uint8_t*)md5buffer, sizeof(md5buffer));
 	digested_session_key = data_blob_talloc(mem_ctx, 0, 16);
 
 	MD5Init(&md5ctx);
@@ -859,10 +860,10 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 
 	/* Fill in the additional account flags now */
 
-	acb_info |= ACB_PWNOEXP;
+	acct_flags |= ACB_PWNOEXP;
 	if (r->out.domain_is_ad) {
 #if !defined(ENCTYPE_ARCFOUR_HMAC)
-		acb_info |= ACB_USE_DES_KEY_ONLY;
+		acct_flags |= ACB_USE_DES_KEY_ONLY;
 #endif
 		;;
 	}
@@ -874,7 +875,8 @@ static NTSTATUS libnet_join_joindomain_rpc(TALLOC_CTX *mem_ctx,
 	user_info.info25.info.fields_present = ACCT_NT_PWD_SET |
 					       ACCT_LM_PWD_SET |
 					       SAMR_FIELD_ACCT_FLAGS;
-	user_info.info25.info.acct_flags = acb_info;
+
+	user_info.info25.info.acct_flags = acct_flags;
 	memcpy(&user_info.info25.password.data, pwbuf, sizeof(pwbuf));
 
 	status = rpccli_samr_SetUserInfo(pipe_hnd, mem_ctx,
@@ -1054,7 +1056,7 @@ static NTSTATUS libnet_join_unjoindomain_rpc(TALLOC_CTX *mem_ctx,
 	POLICY_HND sam_pol, domain_pol, user_pol;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 	char *acct_name;
-	uint32 user_rid;
+	uint32_t user_rid;
 	struct lsa_String lsa_acct_name;
 	struct samr_Ids user_rids;
 	struct samr_Ids name_types;
