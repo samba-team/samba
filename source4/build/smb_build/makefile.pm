@@ -291,13 +291,11 @@ sub Binary($$)
 {
 	my ($self,$ctx) = @_;
 
-	my $extradir = "";
-
 	unless (defined($ctx->{INSTALLDIR})) {
 	} elsif ($ctx->{INSTALLDIR} eq "SBINDIR") {
-		$self->output("SBIN_PROGS += $installdir/$ctx->{BINARY}\n");
+		$self->output("SBIN_PROGS += bin/$ctx->{BINARY}\n");
 	} elsif ($ctx->{INSTALLDIR} eq "BINDIR") {
-		$self->output("BIN_PROGS += $installdir/$ctx->{BINARY}\n");
+		$self->output("BIN_PROGS += bin/$ctx->{BINARY}\n");
 	}
 
 	$self->output("binaries:: $ctx->{TARGET_BINARY}\n");
