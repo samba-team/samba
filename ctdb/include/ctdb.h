@@ -517,4 +517,6 @@ uint32_t *list_of_vnnmap_nodes(struct ctdb_context *ctdb,
 				TALLOC_CTX *mem_ctx,
 				bool include_self);
 
+int ctdb_read_pnn_lock(int fd, int32_t pnn);
+
 #endif

@@ -858,8 +858,10 @@ static int control_getdbmap(struct ctdb_context *ctdb, int argc, const char **ar
  */
 static int control_getreclock(struct ctdb_context *ctdb, int argc, const char **argv)
 {
-	int ret;
+	int i, ret, fd;
 	const char *reclock;
+	struct ctdb_node_map *nodemap=NULL;
+	char *pnnfile;
 
 	ret = ctdb_ctrl_getreclock(ctdb, TIMELIMIT(), options.pnn, ctdb, &reclock);
 	if (ret != 0) {
@@ -867,7 +869,40 @@ static int control_getreclock(struct ctdb_context *ctdb, int argc, const char **
 		return ret;
 	}
 
-	DEBUG(DEBUG_ERR, ("Reclock file : %s\n", reclock));
+	ret = ctdb_ctrl_getnodemap(ctdb, TIMELIMIT(), options.pnn, ctdb, &nodemap);
+	if (ret != 0) {
+		DEBUG(DEBUG_ERR, ("Unable to get nodemap from node %u\n", options.pnn));
+		return ret;
+	}
+
+
+	pnnfile = talloc_asprintf(ctdb, "%s.pnn", reclock);
+	CTDB_NO_MEMORY(ctdb, pnnfile);
+
+	fd = open(pnnfile, O_RDONLY);
+	if (fd == -1) {
+		DEBUG(DEBUG_CRIT,(__location__ " Failed to open reclock pnn file %s - (%s)\n", 
+			 pnnfile, strerror(errno)));
+		exit(10);
+	}
+
+
+	printf("Reclock file : %s\n", reclock);
+	for (i=0; i<nodemap->num; i++) {
+		int count;
+
+		count = ctdb_read_pnn_lock(fd, nodemap->nodes[i].pnn);
+
+		printf("pnn:%d %-16s", nodemap->nodes[i].pnn,
+		       inet_ntoa(nodemap->nodes[i].sin.sin_addr));
+		if (count == -1) {
+			printf(" NOT ACTIVE\n");
+		} else {
+			printf(" ACTIVE with %d connections\n", count);
+		}
+	}
+
+	close(fd);
 	return 0;
 }
 

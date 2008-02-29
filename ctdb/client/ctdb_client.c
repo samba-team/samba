@@ -2720,3 +2720,38 @@ uint32_t *list_of_active_nodes(struct ctdb_context *ctdb,
 
 	return nodes;
 }
+
+/* 
+  this is used to test if a pnn lock exists and if it exists will return
+  the number of connections that pnn has reported or -1 if that recovery
+  daemon is not running.
+*/
+int
+ctdb_read_pnn_lock(int fd, int32_t pnn)
+{
+	struct flock lock;
+	char c;
+
+	lock.l_type = F_WRLCK;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = pnn;
+	lock.l_len = 1;
+	lock.l_pid = 0;
+
+	if (fcntl(fd, F_GETLK, &lock) != 0) {
+		DEBUG(DEBUG_ERR, (__location__ " F_GETLK failed with %s\n", strerror(errno)));
+		return -1;
+	}
+
+	if (lock.l_type == F_UNLCK) {
+		return -1;
+	}
+
+	if (pread(fd, &c, 1, pnn) == -1) {
+		DEBUG(DEBUG_CRIT,(__location__ " failed read pnn count - %s\n", strerror(errno)));
+		return -1;
+	}
+
+	return c;
+}
+

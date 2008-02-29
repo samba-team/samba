@@ -41,6 +41,7 @@ struct ban_state {
  */
 struct ctdb_recoverd {
 	struct ctdb_context *ctdb;
+	int rec_file_fd;
 	uint32_t last_culprit;
 	uint32_t culprit_counter;
 	struct timeval first_recover_time;
@@ -1957,6 +1958,72 @@ static enum monitor_result verify_recmaster(struct ctdb_context *ctdb, struct ct
 	return status;
 }
 
+/*
+  this function writes the number of connected nodes we have for this pnn
+  to the pnn slot in the reclock file
+*/
+static void
+ctdb_recoverd_write_pnn_connect_count(struct ctdb_recoverd *rec, const char count)
+{
+	struct ctdb_context *ctdb = talloc_get_type(rec->ctdb, struct ctdb_context);
+
+	if (pwrite(rec->rec_file_fd, &count, 1, ctdb->pnn) == -1) {
+		DEBUG(DEBUG_CRIT, (__location__ " Failed to write pnn count\n"));
+	}
+}
+
+/* 
+  this function opens the reclock file and sets a byterage lock for the single
+  byte at position pnn+1.
+  the existence/non-existence of such a lock provides an alternative mechanism
+  to know whether a remote node(recovery daemon) is running or not.
+*/
+static void
+ctdb_recoverd_get_pnn_lock(struct ctdb_recoverd *rec)
+{
+	struct ctdb_context *ctdb = talloc_get_type(rec->ctdb, struct ctdb_context);
+	struct flock lock;
+	char *pnnfile = NULL;
+
+	DEBUG(DEBUG_INFO, ("Setting PNN lock for pnn:%d\n", ctdb->pnn));
+
+	if (rec->rec_file_fd != -1) {
+		DEBUG(DEBUG_CRIT, (__location__ " rec_lock_fd is already open. Aborting\n"));
+		exit(10);
+	}
+
+	pnnfile = talloc_asprintf(rec, "%s.pnn", ctdb->recovery_lock_file);
+	CTDB_NO_MEMORY_FATAL(ctdb, pnnfile);
+
+	rec->rec_file_fd = open(pnnfile, O_RDWR|O_CREAT, 0600);
+	if (rec->rec_file_fd == -1) {
+		DEBUG(DEBUG_CRIT,(__location__ " Unable to open %s - (%s)\n", 
+			 pnnfile, strerror(errno)));
+		exit(10);
+	}
+
+	set_close_on_exec(rec->rec_file_fd);
+	lock.l_type = F_WRLCK;
+	lock.l_whence = SEEK_SET;
+	lock.l_start = ctdb->pnn;
+	lock.l_len = 1;
+	lock.l_pid = 0;
+
+	if (fcntl(rec->rec_file_fd, F_SETLK, &lock) != 0) {
+		close(rec->rec_file_fd);
+		rec->rec_file_fd = -1;
+		DEBUG(DEBUG_CRIT,(__location__ " Failed to get pnn lock on '%s'\n", pnnfile));
+		exit(10);
+	}
+
+
+	DEBUG(DEBUG_NOTICE,(__location__ " Got pnn lock on '%s'\n", pnnfile));
+
+	talloc_free(pnnfile);
+
+	/* we start out with 0 connected nodes */
+	ctdb_recoverd_write_pnn_connect_count(rec, 0);
+}
 
 /*
   the main monitoring loop
@@ -1985,6 +2052,10 @@ static void monitor_cluster(struct ctdb_context *ctdb)
 	CTDB_NO_MEMORY_FATAL(ctdb, rec->banned_nodes);
 
 	rec->priority_time = timeval_current();
+
+	/* open the rec file fd and lock our slot */
+	rec->rec_file_fd = -1;
+	ctdb_recoverd_get_pnn_lock(rec);
 
 	/* register a message port for recovery elections */
 	ctdb_set_message_handler(ctdb, CTDB_SRVID_RECOVERY, election_handler, rec);
