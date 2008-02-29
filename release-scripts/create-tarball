@@ -19,7 +19,7 @@ if [ $? -ne 0 ]; then
 fi
 
 VER_H=source/include/version.h
-(cd source && ./autogen.sh)
+(cd source && ./script/mkversion.sh)
 
 if [ ! -f $VER_H ]; then
    echo "Failed to find $VER_H!  Exiting...."
@@ -27,7 +27,10 @@ if [ ! -f $VER_H ]; then
 fi
 
 version=`grep SAMBA_VERSION_OFFICIAL_STRING $VER_H | awk '{print $3}'`
-version="$version-`grep SAMBA_VERSION_VENDOR_SUFFIX $VER_H | awk '{print $3}'`"
+vendor_version=`grep SAMBA_VERSION_VENDOR_SUFFIX $VER_H | awk '{print $3}'`
+if [ -n "$vendor_version" ]; then
+    version="$version-$vendor_version"
+fi
 version=`echo $version | sed 's/\"//g'`
 
 echo "Creating release tarball for Samba $version"
@@ -49,7 +52,7 @@ if [ "x$docsdir" != "x" ]; then
 
    /bin/rm -rf docs
    mkdir docs
-   rsync -a $docsdir/ docs/
+   rsync -a --exclude=.svn $docsdir/ docs/
 
    cd docs
    /bin/rm -rf test.pdf Samba4*pdf htmldocs/Samba4* htmldocs/test
@@ -57,6 +60,10 @@ if [ "x$docsdir" != "x" ]; then
    /bin/mv htmldocs/manpages-3 htmldocs/manpages
    cd ..
 fi
+
+cd source
+./autogen.sh
+cd ..
 
 cd ..
 tar cf samba-${version}.tar --exclude=.git* --exclude=CVS --exclude=.svn samba-${version}
