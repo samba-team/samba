@@ -400,7 +400,7 @@ sub CFlags($$)
 	
 	my $cflags = join(' ', @cflags);
 
-	$self->output("\$(patsubst %.ho,%.d,\$(key->{NAME}_OBJ_FILES:.o=.d)) \$($key->{NAME}_OBJ_FILES): CFLAGS+= $cflags\n");
+	$self->output("\$(patsubst %.ho,%.d,\$(key->{NAME}_OBJ_LIST:.o=.d)) \$($key->{NAME}_OBJ_LIST): CFLAGS+= $cflags\n");
 }
 
 1;
