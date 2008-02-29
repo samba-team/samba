@@ -58,12 +58,12 @@ SMBC_remove_unused_server(SMBCCTX * context,
 	SMBCFILE * file;
 
 	/* are we being fooled ? */
-	if (!context || !context->initialized || !srv) {
+	if (!context || !context->internal->initialized || !srv) {
                 return 1;
         }
 	
 	/* Check all open files/directories for a relation with this server */
-	for (file = context->files; file; file = file->next) {
+	for (file = context->internal->files; file; file = file->next) {
 		if (file->srv == srv) {
 			/* Still used */
 			DEBUG(3, ("smbc_remove_usused_server: "
@@ -73,7 +73,7 @@ SMBC_remove_unused_server(SMBCCTX * context,
 		}
 	}
 
-	DLIST_REMOVE(context->servers, srv);
+	DLIST_REMOVE(context->internal->servers, srv);
 
 	cli_shutdown(srv->cli);
 	srv->cli = NULL;
@@ -251,7 +251,7 @@ SMBC_server(TALLOC_CTX *ctx,
          * If we found a connection and we're only allowed one share per
          * server...
          */
-        if (srv && *share != '\0' && context->one_share_per_server) {
+        if (srv && *share != '\0' && context->internal->one_share_per_server) {
 
                 /*
                  * ... then if there's no current connection to the share,
@@ -322,7 +322,7 @@ SMBC_server(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	make_nmb_name(&calling, context->netbios_name, 0x0);
+	make_nmb_name(&calling, context->config.netbios_name, 0x0);
 	make_nmb_name(&called , server, 0x20);
 
 	DEBUG(4,("SMBC_server: server_n=[%s] server=[%s]\n", server_n, server));
@@ -339,14 +339,14 @@ SMBC_server(TALLOC_CTX *ctx,
 		return NULL;
 	}
 
-	if (context->use_kerberos) {
+	if (context->flags.bits & SMB_CTX_FLAG_USE_KERBEROS) {
 		c->use_kerberos = True;
 	}
-	if (context->fallback_after_kerberos) {
+	if (context->flags.bits & SMB_CTX_FLAG_FALLBACK_AFTER_KERBEROS) {
 		c->fallback_after_kerberos = True;
 	}
 
-	c->timeout = context->timeout;
+	c->timeout = context->config.timeout;
 
         /*
          * Force use of port 139 for first try if share is $IPC, empty, or
@@ -428,7 +428,8 @@ SMBC_server(TALLOC_CTX *ctx,
                 /* Failed.  Try an anonymous login, if allowed by flags. */
                 username_used = "";
 
-                if (context->no_auto_anonymous_login ||
+                if ((context->flags.bits &
+                     SMBCCTX_FLAG_NO_AUTO_ANONYMOUS_LOGON) ||
                     !NT_STATUS_IS_OK(cli_session_setup(c, username_used,
                                                        *pp_password, 1,
                                                        *pp_password, 0,
@@ -451,7 +452,7 @@ SMBC_server(TALLOC_CTX *ctx,
 
 	DEBUG(4,(" tconx ok\n"));
 
-	if (context->smb_encryption_level) {
+	if (context->internal->smb_encryption_level) {
 		/* Attempt UNIX smb encryption. */
 		if (!NT_STATUS_IS_OK(cli_force_encryption(c,
 						username_used,
@@ -466,7 +467,7 @@ SMBC_server(TALLOC_CTX *ctx,
 
 			DEBUG(4,(" SMB encrypt failed\n"));
 
-			if (context->smb_encryption_level == 2) {
+			if (context->internal->smb_encryption_level == 2) {
 	                        cli_shutdown(c);
 				errno = EPERM;
 				return NULL;
@@ -512,7 +513,7 @@ SMBC_server(TALLOC_CTX *ctx,
 	DEBUG(2, ("Server connect ok: //%s/%s: %p\n",
 		  server, share, srv));
 
-	DLIST_ADD(context->servers, srv);
+	DLIST_ADD(context->internal->servers, srv);
 	return srv;
 
  failed:
@@ -566,7 +567,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                 }
 
                 flags = 0;
-                if (context->use_kerberos) {
+                if (context->flags.bits & SMB_CTX_FLAG_USE_KERBEROS) {
                         flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
                 }
 
@@ -586,7 +587,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                         return NULL;
                 }
 
-		if (context->smb_encryption_level) {
+		if (context->internal->smb_encryption_level) {
 			/* Attempt UNIX smb encryption. */
 			if (!NT_STATUS_IS_OK(cli_force_encryption(ipc_cli,
 						*pp_username,
@@ -602,7 +603,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
 
 				DEBUG(4,(" SMB encrypt failed on IPC$\n"));
 
-				if (context->smb_encryption_level == 2) {
+				if (context->internal->smb_encryption_level == 2) {
 		                        cli_shutdown(ipc_cli);
 					errno = EPERM;
 					return NULL;
@@ -668,7 +669,7 @@ SMBC_attr_server(TALLOC_CTX *ctx,
                         return NULL;
                 }
 
-                DLIST_ADD(context->servers, ipc_srv);
+                DLIST_ADD(context->internal->servers, ipc_srv);
         }
 
         return ipc_srv;

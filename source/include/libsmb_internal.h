@@ -108,11 +108,12 @@ struct _SMBCFILE {
 /*
  * Context structure
  */
-struct _SMBCCTX {
+struct SMBC_internal_data {
 
 	/* True when this handle is initialized */
 	bool            initialized;
 
+#if 0 /* Left in libsmbclient.h for backward compatibility */
         /* Netbios name used for making connections */
         char *          netbios_name;
 
@@ -127,6 +128,7 @@ struct _SMBCCTX {
 
         /* Connection timeout value */
         int             timeout;
+#endif
 
         /* dirent pointer location
          *
@@ -240,6 +242,7 @@ struct _SMBCCTX {
          */
         bool            one_share_per_server;
 
+#if 0 /* Left in libsmbclient.h (flags) for backward compatibility */
         /* Kerberos-related flags */
         bool            use_kerberos;
         bool            fallback_after_kerberos;
@@ -264,10 +267,12 @@ struct _SMBCCTX {
                 smbc_remove_cached_srv_fn       remove_cached_server_fn;
                 smbc_purge_cached_srv_fn        purge_cached_server_fn;
         }               cache;
+#endif
 
         /* POSIX emulation functions */
         struct
         {
+#if 0 /* Left in libsmbclient.h for backward compatibility */
                 smbc_open_fn                    open_fn;
                 smbc_creat_fn                   creat_fn;
                 smbc_read_fn                    read_fn;
@@ -275,9 +280,11 @@ struct _SMBCCTX {
                 smbc_unlink_fn                  unlink_fn;
                 smbc_rename_fn                  rename_fn;
                 smbc_lseek_fn                   lseek_fn;
-                smbc_ftruncate_fn               ftruncate_fn;
                 smbc_stat_fn                    stat_fn;
                 smbc_fstat_fn                   fstat_fn;
+#endif
+                smbc_ftruncate_fn               ftruncate_fn;
+#if 0 /* Left in libsmbclient.h for backward compatibility */
                 smbc_close_fn                   close_fn;
                 smbc_opendir_fn                 opendir_fn;
                 smbc_closedir_fn                closedir_fn;
@@ -294,8 +301,10 @@ struct _SMBCCTX {
                 smbc_getxattr_fn                getxattr_fn;
                 smbc_removexattr_fn             removexattr_fn;
                 smbc_listxattr_fn               listxattr_fn;
+#endif
         }               posix_emu;
 
+#if 0 /* Left in libsmbclient.h for backward compatibility */
         /* Printing-related functions */
         struct
         {
@@ -304,8 +313,9 @@ struct _SMBCCTX {
                 smbc_list_print_jobs_fn         list_print_jobs_fn;
                 smbc_unlink_print_job_fn        unlink_print_job_fn;
         }               printing;
+#endif
 
-#if 0 /* not yet */
+#if 0 /* None available yet */
         /* SMB high-level functions */
         struct
         {

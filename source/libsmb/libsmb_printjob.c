@@ -42,7 +42,7 @@ SMBC_open_print_job_ctx(SMBCCTX *context,
 	char *path = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
                 errno = EINVAL;
 		TALLOC_FREE(frame);
@@ -99,8 +99,8 @@ SMBC_print_file_ctx(SMBCCTX *c_file,
         char buf[4096];
 	TALLOC_CTX *frame = talloc_stackframe();
 
-        if (!c_file || !c_file->initialized ||
-            !c_print || !c_print->initialized) {
+        if (!c_file || !c_file->internal->initialized ||
+            !c_print || !c_print->internal->initialized) {
 
                 errno = EINVAL;
 		TALLOC_FREE(frame);
@@ -189,7 +189,7 @@ SMBC_list_print_jobs_ctx(SMBCCTX *context,
 	char *path = NULL;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
                 errno = EINVAL;
 		TALLOC_FREE(frame);
@@ -220,7 +220,7 @@ SMBC_list_print_jobs_ctx(SMBCCTX *context,
         }
 
         if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->user);
+		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
@@ -267,7 +267,7 @@ SMBC_unlink_print_job_ctx(SMBCCTX *context,
         int err;
 	TALLOC_CTX *frame = talloc_stackframe();
 
-	if (!context || !context->initialized) {
+	if (!context || !context->internal->initialized) {
 
                 errno = EINVAL;
 		TALLOC_FREE(frame);
@@ -298,7 +298,7 @@ SMBC_unlink_print_job_ctx(SMBCCTX *context,
         }
 
         if (!user || user[0] == (char)0) {
-		user = talloc_strdup(frame, context->user);
+		user = talloc_strdup(frame, context->config.user);
 		if (!user) {
 			errno = ENOMEM;
 			TALLOC_FREE(frame);
