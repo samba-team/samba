@@ -566,13 +566,16 @@ static NTSTATUS ntlmssp_server_negotiate(struct ntlmssp_state *ntlmssp_state,
 	/* This should be a 'netbios domain -> DNS domain' mapping */
 	dnsdomname = get_mydnsdomname(ntlmssp_state->mem_ctx);
 	if (!dnsdomname) {
-		return NT_STATUS_BAD_NETWORK_NAME;
+		dnsdomname = talloc_strdup(ntlmssp_state->mem_ctx, "");
+	}
+	if (!dnsdomname) {
+		return NT_STATUS_NO_MEMORY;
 	}
 	strlower_m(dnsdomname);
 
 	dnsname = get_mydnsfullname();
 	if (!dnsname) {
-		return NT_STATUS_INVALID_COMPUTER_NAME;
+		dnsname = "";
 	}
 
 	/* This creates the 'blob' of names that appears at the end of the packet */
