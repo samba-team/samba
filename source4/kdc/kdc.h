@@ -30,6 +30,7 @@ struct kdc_server;
 struct socket_address;
 
 extern TALLOC_CTX *kdc_mem_ctx;
+extern struct loadparm_context *kdc_lp_ctx;
 
 bool kpasswdd_process(struct kdc_server *kdc,
 		      TALLOC_CTX *mem_ctx, 

@@ -49,6 +49,7 @@ typedef struct param_opt param_opt;
 typedef struct loadparm_context {
     %extend {
         loadparm_context(TALLOC_CTX *mem_ctx) { return loadparm_init(mem_ctx); }
+        struct loadparm_service *default_service() { return lp_default_service($self); }
         bool load(const char *filename) { return lp_load($self, filename); }
         bool load_default() { return lp_load_default($self); }
 #ifdef SWIGPYTHON
@@ -167,9 +168,9 @@ typedef struct loadparm_context {
 
 typedef struct loadparm_service {
     %extend { 
-        const char *volume_label() { return volume_label($self); }
-        const char *printername() { return lp_printername($self); }
-        int maxprintjobs() { return lp_maxprintjobs($self); } 
+        const char *volume_label(struct loadparm_service *sDefault) { return volume_label($self, sDefault); }
+        const char *printername(struct loadparm_service *sDefault) { return lp_printername($self, sDefault); }
+        int maxprintjobs(struct loadparm_service *sDefault) { return lp_maxprintjobs($self, sDefault); } 
     }
 } loadparm_service;
 

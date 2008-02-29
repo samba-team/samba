@@ -55,7 +55,7 @@ NTSTATUS libnet_FindSite(TALLOC_CTX *ctx, struct libnet_JoinSite *r)
 	search.in.acct_control = -1;
 	search.in.version = 6;
 
-	cldap = cldap_socket_init(tmp_ctx, NULL);
+	cldap = cldap_socket_init(tmp_ctx, NULL, lp_iconv_convenience(global_loadparm));
 	status = cldap_netlogon(cldap, tmp_ctx, &search);
 	if (!NT_STATUS_IS_OK(status)) {
 		/*

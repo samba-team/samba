@@ -188,7 +188,7 @@ WERROR hive_key_flush(struct hive_key *key);
 WERROR reg_open_directory(TALLOC_CTX *parent_ctx,
 			  const char *location, struct hive_key **key);
 WERROR reg_open_regf_file(TALLOC_CTX *parent_ctx,
-			  const char *location, struct loadparm_context *lp_ctx,
+			  const char *location, struct smb_iconv_convenience *iconv_convenience,
 			  struct hive_key **key);
 WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 			 struct auth_session_info *session_info,
@@ -200,6 +200,7 @@ WERROR reg_open_ldb_file(TALLOC_CTX *parent_ctx, const char *location,
 WERROR reg_create_directory(TALLOC_CTX *parent_ctx,
 			    const char *location, struct hive_key **key);
 WERROR reg_create_regf_file(TALLOC_CTX *parent_ctx,
+			    struct smb_iconv_convenience *iconv_convenience,
 			    const char *location,
 			    int major_version,
 			    struct hive_key **key);

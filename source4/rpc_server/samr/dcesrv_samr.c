@@ -56,7 +56,7 @@
 #define QUERY_LHOURS(msg, field, attr) \
 	r->out.info->field = samdb_result_logon_hours(mem_ctx, msg, attr);
 #define QUERY_AFLAGS(msg, field, attr) \
-	r->out.info->field = samdb_result_acct_flags(msg, attr);
+	r->out.info->field = samdb_result_acct_flags(sam_ctx, mem_ctx, msg, a_state->domain_state->domain_dn);
 
 
 /* these are used to make the Set[User|Group]Info code easier to follow */
@@ -102,10 +102,25 @@
         set_el = ldb_msg_find_element(msg, attr);			\
  	set_el->flags = LDB_FLAG_MOD_REPLACE;				\
 } while (0)								
-									
+
+#define CHECK_FOR_MULTIPLES(value, flag, poss_flags)	\
+	do { \
+		if ((value & flag) && ((value & flag) != (value & (poss_flags)))) { \
+			return NT_STATUS_INVALID_PARAMETER;		\
+		}							\
+	} while (0)							\
+	
+/* Set account flags, discarding flags that cannot be set with SAMR */								
 #define SET_AFLAGS(msg, field, attr) do {				\
 	struct ldb_message_element *set_el;				\
-	if (samdb_msg_add_acct_flags(sam_ctx, mem_ctx, msg, attr, r->in.info->field) != 0) { \
+	if ((r->in.info->field & (ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST)) == 0) { \
+		return NT_STATUS_INVALID_PARAMETER; \
+	}								\
+	CHECK_FOR_MULTIPLES(r->in.info->field, ACB_NORMAL, ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST); \
+	CHECK_FOR_MULTIPLES(r->in.info->field, ACB_DOMTRUST, ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST); \
+	CHECK_FOR_MULTIPLES(r->in.info->field, ACB_WSTRUST, ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST); \
+	CHECK_FOR_MULTIPLES(r->in.info->field, ACB_SVRTRUST, ACB_NORMAL | ACB_DOMTRUST | ACB_WSTRUST | ACB_SVRTRUST); \
+	if (samdb_msg_add_acct_flags(sam_ctx, mem_ctx, msg, attr, (r->in.info->field & ~(ACB_AUTOLOCK|ACB_PW_EXPIRED))) != 0) { \
 		return NT_STATUS_NO_MEMORY;				\
 	}								\
         set_el = ldb_msg_find_element(msg, attr);			\
@@ -1484,8 +1499,8 @@ static NTSTATUS dcesrv_samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, 
 	for (i=0;i<count;i++) {
 		/* Check if a mask has been requested */
 		if (r->in.acct_flags
-		    && ((samdb_result_acct_flags(res[i], 
-						 "userAccountControl") & r->in.acct_flags) == 0)) {
+		    && ((samdb_result_acct_flags(d_state->sam_ctx, mem_ctx, res[i], 
+						 d_state->domain_dn) & r->in.acct_flags) == 0)) {
 			continue;
 		}
 		entries[num_filtered_entries].idx = samdb_result_rid_from_sid(mem_ctx, res[i], "objectSid", 0);
@@ -3066,7 +3081,7 @@ static NTSTATUS dcesrv_samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TA
 	}
 	case 16:
 	{
-		static const char * const attrs2[] = {"userAccountControl", NULL};
+		static const char * const attrs2[] = {"userAccountControl", "pwdLastSet", NULL};
 		attrs = attrs2;
 		break;
 	}
@@ -3613,7 +3628,7 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 	struct ldb_message **res;
 	int ldb_cnt, count, i;
 	const char * const attrs[] = { "objectSid", "sAMAccountName", "displayName",
-					"description", "userAccountControl", NULL };
+				       "description", "userAccountControl", "pwdLastSet", NULL };
 	struct samr_DispEntryFull *entriesFull = NULL;
 	struct samr_DispEntryFullGroup *entriesFullGroup = NULL;
 	struct samr_DispEntryAscii *entriesAscii = NULL;
@@ -3702,8 +3717,9 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 			entriesGeneral[count].rid = 
 				objectsid->sub_auths[objectsid->num_auths-1];
 			entriesGeneral[count].acct_flags =
-				samdb_result_acct_flags(res[i], 
-							"userAccountControl");
+				samdb_result_acct_flags(d_state->sam_ctx, mem_ctx,
+							res[i], 
+							d_state->domain_dn);
 			entriesGeneral[count].account_name.string =
 				samdb_result_string(res[i],
 						    "sAMAccountName", "");
@@ -3719,8 +3735,9 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 
 			/* No idea why we need to or in ACB_NORMAL here, but this is what Win2k3 seems to do... */
 			entriesFull[count].acct_flags =
-				samdb_result_acct_flags(res[i], 
-							"userAccountControl") | ACB_NORMAL;
+				samdb_result_acct_flags(d_state->sam_ctx, mem_ctx,
+							res[i], 
+							d_state->domain_dn) | ACB_NORMAL;
 			entriesFull[count].account_name.string =
 				samdb_result_string(res[i], "sAMAccountName",
 						    "");
@@ -3731,9 +3748,6 @@ static NTSTATUS dcesrv_samr_QueryDisplayInfo(struct dcesrv_call_state *dce_call,
 			entriesFullGroup[count].idx = count + 1;
 			entriesFullGroup[count].rid =
 				objectsid->sub_auths[objectsid->num_auths-1];
-			entriesFullGroup[count].acct_flags =
-				samdb_result_acct_flags(res[i], 
-							"userAccountControl");
 			/* We get a "7" here for groups */
 			entriesFullGroup[count].acct_flags
 				= SE_GROUP_MANDATORY | SE_GROUP_ENABLED_BY_DEFAULT | SE_GROUP_ENABLED;

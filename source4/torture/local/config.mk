@@ -8,6 +8,7 @@ PRIVATE_PROTO_HEADER = \
 OBJ_FILES = \
 		../../lib/charset/tests/iconv.o \
 		../../lib/talloc/testsuite.o \
+		../../lib/replace/test/getifaddrs.o \
 		../../lib/replace/test/os2_delete.o \
 		../../lib/replace/test/strptime.o \
 		../../lib/replace/test/testsuite.o \

@@ -25,6 +25,7 @@
 #include "torture/torture.h"
 #include "librpc/gen_ndr/winreg.h"
 #include "system/filesys.h"
+#include "param/param.h"
 
 static bool test_del_nonexistant_key(struct torture_context *tctx,
 				     const void *test_data)
@@ -349,7 +350,8 @@ static bool hive_setup_regf(struct torture_context *tctx, void **data)
 
 	rmdir(dirname);
 
-	error = reg_create_regf_file(tctx, dirname, 5, &key);
+	error = reg_create_regf_file(tctx, lp_iconv_convenience(tctx->lp_ctx),
+				     dirname, 5, &key);
 	if (!W_ERROR_IS_OK(error)) {
 		fprintf(stderr, "Unable to create new regf file\n");
 		return false;

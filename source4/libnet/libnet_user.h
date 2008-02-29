@@ -91,6 +91,14 @@ struct libnet_ModifyUser {
 		mod->fields |= flag; \
 	}
 
+#define SET_FIELD_ACCT_FLAGS(new, current, mod, field, flag) \
+	if (new.field) { \
+		if (current->field != new.field) {	\
+			mod->field = new.field;		\
+			mod->fields |= flag;		\
+		}					\
+	}
+
 
 struct libnet_UserInfo {
 	struct {

@@ -118,9 +118,10 @@ _PUBLIC_ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 /*
   remove a opendb entry
 */
-_PUBLIC_ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle)
+_PUBLIC_ NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle,
+				 const char **delete_path)
 {
-	return ops->odb_close_file(lck, file_handle);
+	return ops->odb_close_file(lck, file_handle, delete_path);
 }
 
 
@@ -154,10 +155,9 @@ _PUBLIC_ NTSTATUS odb_set_delete_on_close(struct odb_lock *lck, bool del_on_clos
   people still have the file open
 */
 _PUBLIC_ NTSTATUS odb_get_delete_on_close(struct odb_context *odb, 
-					  DATA_BLOB *key, bool *del_on_close, 
-					  int *open_count, char **path)
+					  DATA_BLOB *key, bool *del_on_close)
 {
-	return ops->odb_get_delete_on_close(odb, key, del_on_close, open_count, path);
+	return ops->odb_get_delete_on_close(odb, key, del_on_close);
 }
 
 
