@@ -86,6 +86,4 @@ header::create_smb_build_h($OUTPUT, "include/build.h");
 
 summary::show($OUTPUT, \%config::config);
 
-print "To build Samba, run $config::config{MAKE}\n";
-
 1;
