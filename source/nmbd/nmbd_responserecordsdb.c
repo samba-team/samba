@@ -47,6 +47,24 @@ static void add_response_record(struct subnet_record *subrec,
 void remove_response_record(struct subnet_record *subrec,
 				struct response_record *rrec)
 {
+	/* It is possible this can be called twice,
+	   with a rrec pointer that has been freed. So
+	   before we inderect into rrec, search for it
+	   on the responselist first. Bug #3617. JRA. */
+
+	struct response_record *p = NULL;
+
+	for (p = subrec->responselist; p; p = p->next) {
+		if (p == rrec) {
+			break;
+		}
+	}
+
+	if (p == NULL) {
+		/* We didn't find rrec on the list. */
+		return;
+	}
+
 	DLIST_REMOVE(subrec->responselist, rrec);
 
 	if(rrec->userdata) {
