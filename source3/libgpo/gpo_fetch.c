@@ -44,15 +44,18 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 	if (!next_token_talloc(mem_ctx, &file_sys_path, server, "\\")) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+	NT_STATUS_HAVE_NO_MEMORY(*server);
 
 	if (!next_token_talloc(mem_ctx, &file_sys_path, service, "\\")) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
+	NT_STATUS_HAVE_NO_MEMORY(*service);
 
 	if ((*nt_path = talloc_asprintf(mem_ctx, "\\%s", file_sys_path))
 		== NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
+	NT_STATUS_HAVE_NO_MEMORY(*nt_path);
 
 	if ((path = talloc_asprintf(mem_ctx,
 					"%s/%s",
@@ -65,9 +68,8 @@ NTSTATUS gpo_explode_filesyspath(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if ((*unix_path = talloc_strdup(mem_ctx, path)) == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	*unix_path = talloc_strdup(mem_ctx, path);
+	NT_STATUS_HAVE_NO_MEMORY(*unix_path);
 
 	TALLOC_FREE(path);
 	return NT_STATUS_OK;
@@ -124,36 +126,23 @@ NTSTATUS gpo_fetch_files(TALLOC_CTX *mem_ctx,
 	result = gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path,
 					 &server, &service, &nt_path,
 					 &unix_path);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto out;
-	}
+	NT_STATUS_NOT_OK_RETURN(result);
 
 	result = gpo_prepare_local_store(mem_ctx, unix_path);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto out;
-	}
+	NT_STATUS_NOT_OK_RETURN(result);
 
 	unix_ini_path = talloc_asprintf(mem_ctx, "%s/%s", unix_path, GPT_INI);
 	nt_ini_path = talloc_asprintf(mem_ctx, "%s\\%s", nt_path, GPT_INI);
-	if (!unix_path || !nt_ini_path) {
-		result = NT_STATUS_NO_MEMORY;
-		goto out;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(unix_ini_path);
+	NT_STATUS_HAVE_NO_MEMORY(nt_ini_path);
 
 	result = gpo_copy_file(mem_ctx, cli, nt_ini_path, unix_ini_path);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto out;
-	}
+	NT_STATUS_NOT_OK_RETURN(result);
 
 	result = gpo_sync_directories(mem_ctx, cli, nt_path, unix_path);
-	if (!NT_STATUS_IS_OK(result)) {
-		goto out;
-	}
+	NT_STATUS_NOT_OK_RETURN(result);
 
-	result = NT_STATUS_OK;
-
- out:
-	return result;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************

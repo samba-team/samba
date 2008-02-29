@@ -27,7 +27,7 @@ bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 		      const char *extension_raw,
 		      struct GP_EXT **gp_ext)
 {
-	bool ret = False;
+	bool ret = false;
 	struct GP_EXT *ext = NULL;
 	char **ext_list = NULL;
 	char **ext_strings = NULL;
@@ -134,7 +134,7 @@ bool ads_parse_gp_ext(TALLOC_CTX *mem_ctx,
 
 	*gp_ext = ext;
 
-	ret = True;
+	ret = true;
 
  parse_error:
 	TALLOC_FREE(ext_list);
@@ -659,7 +659,7 @@ ADS_STATUS ads_get_sid_token(ADS_STRUCT *ads,
 		}
 	}
 
-	new_token = create_local_nt_token(mem_ctx, &object_sid, False,
+	new_token = create_local_nt_token(mem_ctx, &object_sid, false,
 					  num_token_sids, token_sids);
 	ADS_ERROR_HAVE_NO_MEMORY(new_token);
 
@@ -713,7 +713,7 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 	ADS_STATUS status;
 	struct GP_LINK gp_link;
 	const char *parent_dn, *site_dn, *tmp_dn;
-	bool add_only_forced_gpos = False;
+	bool add_only_forced_gpos = false;
 
 	ZERO_STRUCTP(gpo_list);
 
@@ -793,7 +793,7 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 				/* block inheritance from now on */
 				if (gp_link.gp_opts &
 				    GPOPTIONS_BLOCK_INHERITANCE) {
-					add_only_forced_gpos = True;
+					add_only_forced_gpos = true;
 				}
 
 				status = add_gplink_to_gpo_list(ads,
@@ -839,7 +839,7 @@ ADS_STATUS ads_get_gpo_list(ADS_STRUCT *ads,
 				/* block inheritance from now on */
 				if (gp_link.gp_opts &
 				    GPOPTIONS_BLOCK_INHERITANCE) {
-					add_only_forced_gpos = True;
+					add_only_forced_gpos = true;
 				}
 
 				status = add_gplink_to_gpo_list(ads,
