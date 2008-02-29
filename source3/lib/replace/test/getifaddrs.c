@@ -51,9 +51,11 @@ static const char *format_sockaddr(struct sockaddr *addr,
 int getifaddrs_test(void)
 {
 	struct ifaddrs *ifs = NULL;
+	struct ifaddrs *ifs_head = NULL;
 	int ret;
 
 	ret = getifaddrs(&ifs);
+	ifs_head = ifs;
 	if (ret != 0) {
 		fprintf(stderr, "getifaddrs() failed: %s\n", strerror(errno));
 		return 1;
@@ -90,7 +92,7 @@ int getifaddrs_test(void)
 		ifs = ifs->ifa_next;
 	}
 
-	freeifaddrs(ifs);
+	freeifaddrs(ifs_head);
 
 	return 0;
 }
