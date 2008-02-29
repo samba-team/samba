@@ -109,6 +109,7 @@ AC_SUBST(IDMAP_LIBS)
 AC_SUBST(KRB5_LIBS)
 AC_SUBST(UUID_LIBS)
 AC_SUBST(LDAP_LIBS)
+AC_SUBST(GPEXT_LIBS)
 AC_SUBST(PAM_MODULES)
 AC_SUBST(INSTALL_PAM_MODULES)
 AC_SUBST(UNINSTALL_PAM_MODULES)
@@ -6078,6 +6079,7 @@ SMB_MODULE(vfs_notify_fam, \$(VFS_NOTIFY_FAM_OBJ), "bin/notify_fam.$SHLIBEXT", V
 
 SMB_SUBSYSTEM(VFS,smbd/vfs.o)
 
+SMB_MODULE(gpext_registry, libgpo/gpext/registry.o, "bin/registry.$SHLIBEXT", GPEXT)
 SMB_SUBSYSTEM(GPEXT, libgpo/gpext/gpext.o)
 
 AC_DEFINE_UNQUOTED(STRING_STATIC_MODULES, "$string_static_modules", [String list of builtin modules])

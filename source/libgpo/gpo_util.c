@@ -668,6 +668,18 @@ NTSTATUS check_refresh_gpo_list(ADS_STRUCT *ads,
 /****************************************************************
 ****************************************************************/
 
+NTSTATUS gpo_get_unix_path(TALLOC_CTX *mem_ctx,
+			   struct GROUP_POLICY_OBJECT *gpo,
+			   char **unix_path)
+{
+	char *server, *share, *nt_path;
+	return gpo_explode_filesyspath(mem_ctx, gpo->file_sys_path,
+				       &server, &share, &nt_path, unix_path);
+}
+
+/****************************************************************
+****************************************************************/
+
 char *gpo_flag_str(uint32_t flags)
 {
 	fstring str = "";
